@@ -1,0 +1,483 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# DNSSEC-Tools:  dtck
+#
+#	This script centralizes all the DNSSEC-Tools data validation
+#	programs.  It runs dtconfchk, rollchk, and krfcheck.
+#
+#	The command is used in this way:
+#
+#		dtck
+#
+#	NOTES:
+#		- allow multiple config files
+#		- allow multiple rollrec files
+#		- allow multiple keyrec files
+#		- records all take an optional directory.  if given, the
+#		  check will be executed from that directory
+#		- checking program should exit with an error count
+#		- all checking programs should have a -count option
+#
+
+use strict;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "dtck";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.2";
+
+#######################################################################
+#
+# Data required for command line options.
+#
+my @opts =
+(
+	"count",			# Give final error count.
+	"quiet",			# Don't give any output.
+	"verbose",			# Give lotsa output.
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+my $count   = 0;			# Give count option flag.
+my $quiet   = 0;			# Quiet option flag.
+my $verbose = 0;			# Verbose option flag.
+
+my $errs = 0;				# Error count.
+
+
+my %cnfs = ();				# DNSSEC-Tools config files.
+my %rrfs = ();				# Rollrec files.
+my %krfs = ();				# Keyrec files.
+
+my $cnfchk;				# Config-verification program.
+my $krfchk;				# Keyrec-verification program.
+my $rrfchk;				# Rollrec-verification program.
+
+my $homedir;				# Initial directory.
+
+main();
+exit($errs);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Staging area.
+#
+sub main()
+{
+	my $mconf;			# The config file to check.
+
+	print STDERR "\ndtck is only reading from its __DATA__ input at the moment.\nThis is purely a developmental convenience and is temporary.\n\n";
+
+	#
+	# Get our options.
+	#
+	doopts();
+
+	#
+	# Get the master config filename to check.
+	#
+	if($ARGV[0] ne "")
+	{
+		$mconf = $ARGV[0];
+	}
+
+	#
+	# Get the current directory and some program paths.
+	#
+	$homedir = getcwd();
+	getpaths();
+
+	#
+	# Maybe print the name of the config file we're checking.
+	#
+	if($verbose && !$quiet)
+	{
+		print "checking master config file \"$mconf\"\n";
+	}
+
+	#
+	# Read the master config file.
+	#
+	readmaster($mconf);
+
+	#
+	# Check all our files.
+	#
+	checkfiles();
+
+	#
+	# Give an exit message that depends on the error count.
+	#
+	if($errs == 0)
+	{
+		print "$mconf is valid\n";
+	}
+	else
+	{
+		print "$mconf is invalid:  $errs errors\n" if($errs > 1);
+		print "$mconf is invalid:  $errs error\n"  if($errs == 1);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine deals with the command's options.
+#
+sub doopts
+{
+	my $ret;				# GetOptions() return code.
+	my %options = ();			# Filled option array.
+
+	#
+	# Check our options.
+	#
+	$ret = GetOptions(\%options,@opts);
+	exit(1) if(!$ret);
+
+	#
+	# Handle some immediate options.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Save our other options.
+	#
+	$count	 = $options{'count'};
+	$quiet	 = $options{'quiet'};
+	$verbose = $options{'verbose'};
+
+	#
+	# Now some option validation...
+	#
+	if($quiet && $verbose)
+	{
+		print STDERR "-quiet and -verbose are mutually exclusive\n";
+		exit(1);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getpaths()
+#
+# Purpose:	This routine collects a bunch of paths we'll need.
+#
+sub getpaths
+{
+	$cnfchk	= dnssec_tools_default('dtconfchk');
+	$krfchk	= dnssec_tools_default('krfcheck');
+	$rrfchk	= dnssec_tools_default('rollchk');
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	readmaster()
+#
+# Purpose:	
+#
+sub readmaster
+{
+	my $line;				# Line of configuration data.
+	my $bkcnt = 0;				# Count of invalid entry keys.
+	my %badkeys = ();			# Invalid entry keys.
+
+	#
+	# Deconstruct each entry and add it to the appropriate hash.
+	#
+	while(<DATA>)
+	{
+		my $key;			# Entry's key.
+		my $file;			# Entry's file.
+		my $dir;			# Entry's directory.
+
+		#
+		# Get the entry and get rid of unwanted whitespace.
+		#
+		$line = $_;
+		chomp $line;
+		$line =~ s/^[ \t]*//;
+		$line =~ s/[ \t]*$//;
+
+		#
+		# Skip empty lines and comments.
+		#
+		next if($line =~ /^$/);
+		next if($line =~ /^#/);
+
+		#
+		# Pull out the pieces of the entry.
+		#
+		$line =~ /^(\S*)\s*(\S*)\s*(\S*)$/;
+		$key  = lc($1);
+		$file = $2;
+		$dir  = $3;
+
+		#
+		# Put each entry into the appropriate hash.
+		#
+		if($key eq 'config')
+		{
+			$cnfs{$file} = $dir;
+		}
+		elsif($key eq 'rollrec')
+		{
+			$rrfs{$file} = $dir;
+		}
+		elsif($key eq 'keyrec')
+		{
+			$krfs{$file} = $dir;
+		}
+		else
+		{
+			$bkcnt++;
+			$badkeys{$key}++;
+		}
+	}
+
+	#
+	# Make sure there weren't any invalid keys.
+	#
+	if($bkcnt)
+	{
+		print STDERR "the following invalid lines were given in the master config file:\n";
+		foreach my $key (sort(keys(%badkeys)))
+		{
+			print STDERR "\t$key\n";
+		}
+
+		exit(1);
+	}
+
+	dumpem() if($verbose);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	checkfiles()
+#
+# Purpose:	
+#
+sub checkfiles
+{
+
+	if(%cnfs)
+	{
+		vprint("checking config files:\n");
+
+		foreach my $key (sort(keys(%cnfs)))
+		{
+			vprint("\t$key\\n");
+		}
+		vprint("\n");
+	}
+
+	if(%rrfs)
+	{
+		vprint("rollrec files:\n");
+
+		foreach my $key (sort(keys(%rrfs)))
+		{
+			vprint("\t$key\t$rrfs{$key}\n");
+		}
+		vprint("\n");
+	}
+
+	if(%krfs)
+	{
+		vprint("keyrec files:\n");
+
+		foreach my $key (sort(keys(%krfs)))
+		{
+			vprint("\t$key\t$krfs{$key}\n");
+			runner($krfchk,$key,$krfs{$key});
+		}
+		vprint("\n");
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	runner()
+#
+# Purpose:	
+#
+sub runner
+{
+	my $cmd	 = shift;			# File-checking command.
+	my $file = shift;			# File to check.
+	my $dir	 = shift;			# Optional directory.
+
+	my $opt = '';				# Command options.
+
+	#
+	# If this file has an associated directory, we'll chdir into it.
+	#
+	chdir($dir) if($dir ne '');
+
+	#
+	# Set upt some options.
+	#
+	if($quiet)
+	{
+		$opt = '-count';
+	}
+	elsif($verbose)
+	{
+		$opt = '-verbose';
+	}
+
+	#
+	# Execute the command.
+	#
+my $out;
+	$out = `$cmd $opt $file`;
+my $ret = $?;
+
+chomp $out;
+print "\n$file:  retcode - <$ret>\n";
+print  "$file:  output  - <$out>\n";
+
+	#
+	# Return to our base directory.
+	#
+	chdir($homedir);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	dumpem()
+#
+# Purpose:	
+#
+sub dumpem
+{
+
+	if(%cnfs)
+	{
+		print "config files:\n";
+
+		foreach my $key (sort(keys(%cnfs)))
+		{
+			print "\t$key\t$cnfs{$key}\n";
+		}
+		print "\n";
+	}
+
+	if(%rrfs)
+	{
+		print "rollrec files:\n";
+
+		foreach my $key (sort(keys(%rrfs)))
+		{
+			print "\t$key\t$rrfs{$key}\n";
+		}
+		print "\n";
+	}
+
+	if(%krfs)
+	{
+		print "keyrec files:\n";
+
+		foreach my $key (sort(keys(%krfs)))
+		{
+			print "\t$key\t$krfs{$key}\n";
+		}
+		print "\n";
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;				# String to print.
+
+	print "$str" if($verbose);
+}
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+dtck - Check the DNSSEC-Tools data files for sanity.
+
+=head1 SYNOPSIS
+
+  dtck [options] [master_config_file]
+
+=head1 DESCRIPTION
+
+B<dtck> checks DNSSEC-Tools data files to determine if the
+entries are valid.
+
+=head1 OPTIONS
+
+=over 4
+
+=item I<-quiet>
+
+No output will be given.  The number of errors will be used as the exit code.
+
+=item I<-verbose>
+
+Success or failure status of each check will be given.
+A B<+> or B<-> prefix will be given for each valid and invalid entry.
+The number of errors will be used as the exit code.
+
+=item I<-help>
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<dtconfchk(8)>,
+B<krfcheck(8)>,
+B<rollchk(8)>
+
+B<dnssec-tools.conf(5)>,
+B<keyrec(5)>,
+B<rollrec(5)>
+
+=cut
+
+##############################################################################
+#
+
+__DATA__
+
+config	/usr/local/etc/dnssec-tools/dt.conf
+
+rollrec	/foo/bar/rollie.rrf
+
+keyrec	test.com.krf
+# kEyReC	example2.com.krf	/var/subzones/example2.com
+
