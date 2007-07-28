@@ -1,0 +1,185 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>rollchk - Check a DNSSEC-Tools I&lt;rollrec&gt; file for problems and
+inconsistencies.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>rollchk - Check a DNSSEC-Tools <em>rollrec</em> file for problems and
+inconsistencies.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  rollchk [-roll | -skip] [-count] [-quiet] [-verbose] [-help] rollrec-file</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This script checks the <em>rollrec</em> file specified by <em>rollrec-file</em> for
+problems and inconsistencies.</p>
+<p>Recognized problems include:</p>
+<ul>
+<li><strong><a name="item_non_2dexistent_rollrec_file">non-existent rollrec file</a></strong>
+
+<p>The specified <em>rollrec</em> file does not exist.</p>
+</li>
+<li><strong><a name="item_no_zones_defined">no zones defined</a></strong>
+
+<p>No zones are defined in the specified <em>rollrec</em> file.</p>
+</li>
+<li><strong><a name="item_invalid_ksk_rollover_phase">invalid KSK rollover phase</a></strong>
+
+<p>A zone has an invalid KSK rollover phase.  These phases may be
+0, 1, 2, 3, 4, 5, 6, or 7; any other value is invalid.</p>
+</li>
+<li><strong><a name="item_mismatch_in_ksk_timestamp_data">mismatch in KSK timestamp data</a></strong>
+
+<p>A zone's KSK roll-seconds timestamp does not translate into the date stored
+in its roll-date string.</p>
+</li>
+<li><strong><a name="item_invalid_zsk_rollover_phase">invalid ZSK rollover phase</a></strong>
+
+<p>A zone has an invalid ZSK rollover phase.  These phases may be
+0, 1, 2, 3, or 4; any other value is invalid.</p>
+</li>
+<li><strong><a name="item_mismatch_in_zsk_timestamp_data">mismatch in ZSK timestamp data</a></strong>
+
+<p>A zone's ZSK roll-seconds timestamp does not translate into the date stored
+in its roll-date string.</p>
+</li>
+<li><strong><a name="item_contemporaneous_ksk_and_zsk_rollovers">contemporaneous KSK and ZSK rollovers</a></strong>
+
+<p>A zone has a KSK rollover occurring at the same time as a ZSK rollover.
+A zone may only have one rollover phase be non-zero at a time.</p>
+</li>
+<li><strong><a name="item_in_rollover_without_a_phasestart">in rollover without a phasestart</a></strong>
+
+<p>A zone is currently in rollover, but there its <em>rollrec</em> record does
+not have a <em>phasestart</em> field.</p>
+</li>
+<li><strong><a name="item_empty_administrator">empty administrator</a></strong>
+
+<p>A zone has an empty administrator field.  This field must contain an
+email address.</p>
+</li>
+<li><strong><a name="item_non_2dexistent_directory">non-existent directory</a></strong>
+
+<p>Several checks are made for a zone's directory.  If the zone has a directory
+specified, the directory must exist and it must be an actual directory.</p>
+</li>
+<li><strong><a name="item_invalid_display_flag">invalid display flag</a></strong>
+
+<p>A zone has an invalid display flag.  This flag may be 0 or 1;
+any other value is invalid.</p>
+</li>
+<li><strong><a name="item_non_2dpositive_maxttl">non-positive maxttl</a></strong>
+
+<p>The maximum TTL value must be greater than zero.</p>
+</li>
+<li><strong><a name="item_zone_file_checks">zone file checks</a></strong>
+
+<p>Several checks are made for a zone's zone file.  The zone file must exist, it
+must be a regular file, and it must not be of zero length.</p>
+</li>
+<li><strong><a name="item_keyrec_file_checks">keyrec file checks</a></strong>
+
+<p>Several checks are made for a zone's <em>keyrec</em> file.  The <em>keyrec</em> file must
+exist, it must be a regular file, and it must not be of zero length.</p>
+</li>
+</ul>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2droll">-roll</a></strong>
+
+<dd>
+<p>Only display <em>rollrec</em>s that are active (``roll'') records.
+This option is mutually exclusive of the <em>-skip</em> option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dskip">-skip</a></strong>
+
+<dd>
+<p>Only display <em>rollrec</em>s that are inactive (``skip'') records.
+This option is mutually exclusive of the <em>-roll</em> option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dcount">-count</a></strong>
+
+<dd>
+<p>Display a final count of errors.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dquiet">-quiet</a></strong>
+
+<dd>
+<p>Do not display messages.  This option supersedes the setting of the <em>-v</em>
+option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+
+<dd>
+<p>Display many messages.  This option is subordinate to the <em>-q</em> option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dhelp">-help</a></strong>
+
+<dd>
+<p>Display a usage message.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>lsroll(8)</strong>,
+<strong>rollerd(8)</strong>,
+<strong>rollinit(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
+<p><strong>file-rollrec(5)</strong></p>
+
+</body>
+
+</html>

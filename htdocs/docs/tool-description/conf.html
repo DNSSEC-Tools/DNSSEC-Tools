@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.</title>
+<title>../dnssec-tools-1-2/tools/modules/conf.pm</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -11,141 +11,9 @@
 
 <p><a name="__index__"></a></p>
 <!-- INDEX BEGIN -->
-
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#configuration_interfaces">CONFIGURATION INTERFACES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
-</ul>
 <!-- INDEX END -->
 
-<hr />
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  use Net::DNS::SEC::Tools::conf;</pre>
-<pre>
-  %dtconf = parseconfig();</pre>
-<pre>
-  %dtconf = parseconfig(&quot;localzone.keyrec&quot;);</pre>
-<pre>
-  bindcheck(\%options_hashref);</pre>
-<pre>
-  $confdir = getconfdir();</pre>
-<pre>
-  $conffile = getconffile();</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The routines in this module perform configuration operations.
-Some routines access the DNSSEC-Tools cconfiguration file, while others
-validate the execution environment.</p>
-<p>The DNSSEC tools have a configuration file for commonly used values.
-These values are the defaults for a variety of things, such as
-encryption algorithm and encryption key length.</p>
-<p><strong>/usr/local/etc/dnssec/dnssec-tools.conf</strong> is the path for the DNSSEC tools
-configuration file.  The <strong>Net::DNS::SEC::Tools::conf</strong> module provides
-methods for accessing the configuration data in this file.</p>
-<p>The DNSSEC tools configuration file consists of a set of configuration
-value entries, with only one entry per line.  Each entry has the
-``keyword value'' format.  During parsing, the line is broken into
-tokens, with tokens being separated by spaces and tabs.  The first
-token in a line is taken to be the keyword.  All other tokens in that
-line are concatenated into a single string, with a space separating
-each token.  The untokenized string is added to a hash table, with the
-keyword as the value's key.</p>
-<p>Comments may be included by prefacing them with the '#' or ';'
-comment characters.  These comments can encompass an entire line or may
-follow a configuration entry.  If a comment shares a line with an entry,
-value tokenization stops just prior to the comment character.</p>
-<p>An example configuration file follows:</p>
-<pre>
-    # Sample configuration entries.</pre>
-<pre>
-    algorithm       rsasha1     # Encryption algorithm.
-    ksk_length      1024        ; KSK key length.</pre>
-<p>
-</p>
-<hr />
-<h1><a name="configuration_interfaces">CONFIGURATION INTERFACES</a></h1>
-<dl>
-<dt><strong><a name="item_parseconfig"><strong>parseconfig()</strong></a></strong>
 
-<dd>
-<p>This routine reads and parses the system's DNSSEC tools configuration file.
-The parsed contents are put into a hash table, which is returned to the caller.</p>
-</dd>
-</li>
-<dt><strong><strong>parseconfig(conffile)</strong></strong>
-
-<dd>
-<p>This routine reads and parses a caller-specified DNSSEC tools configuration
-file.  The parsed contents are put into a hash table, which is returned to
-the caller.  The routine quietly returns if the configuration file does not
-exist.</p>
-</dd>
-</li>
-<dt><strong><a name="item_bindcheck"><strong>bindcheck(\%options_hashref)</strong></a></strong>
-
-<dd>
-<p>This routine ensures that the needed BIND commands are available and
-executable.  If any of the commands either don't exist or aren't executable,
-then an error message will be given and the process will exit.  If all is
-well, everything will proceed quietly onwards.</p>
-</dd>
-<dd>
-<p>The BIND commands currently checked are <em>checkzone</em>, <em>keygen</em>, and
-<em>signzone</em>.  The pathnames for these commands are found in the given options
-hash referenced by <em>%options_hashref</em>.  If the hash doesn't contain an entry
-for one of those commands, it is not checked.</p>
-</dd>
-</li>
-<dt><strong><a name="item_getconfdir"><strong>getconfdir()</strong></a></strong>
-
-<dd>
-<p>This routine returns the name of the DNSSEC-Tools configuration directory.</p>
-</dd>
-</li>
-<dt><strong><a name="item_getconffile"><strong>getconffile()</strong></a></strong>
-
-<dd>
-<p>This routine returns the name of the DNSSEC-Tools configuration file.</p>
-</dd>
-</li>
-</dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::keyrec(3)</strong></p>
-<p><strong>dnssec-tools.conf(5)</strong></p>
-
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

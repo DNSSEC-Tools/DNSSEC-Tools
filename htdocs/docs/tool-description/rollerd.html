@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>rollerd - DNSSEC-Tools daemon to manage DNSSEC key roll-over.</title>
+<title>rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -19,6 +19,11 @@
 	<li><a href="#description">DESCRIPTION</a></li>
 	<ul>
 
+		<li><a href="#zsk_rollover_using_the_prepublish_method">ZSK Rollover Using the Pre-Publish Method</a></li>
+		<li><a href="#ksk_rollover_using_the_double_signature_method">KSK Rollover Using the Double Signature Method</a></li>
+		<li><a href="#rollrec_files"><em>rollrec</em> Files</a></li>
+		<li><a href="#directories">Directories</a></li>
+		<li><a href="#controlling_rollerd_with_rollctl">Controlling <strong>rollerd</strong> with <strong>rollctl</strong></a></li>
 		<li><a href="#a_note_about_files_and_filenames">A Note About Files and Filenames</a></li>
 	</ul>
 
@@ -27,6 +32,7 @@
 	<li><a href="#assumptions">ASSUMPTIONS</a></li>
 	<li><a href="#known_problems">KNOWN PROBLEMS</a></li>
 	<li><a href="#possible_enhancements">POSSIBLE ENHANCEMENTS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
@@ -37,7 +43,7 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>rollerd - DNSSEC-Tools daemon to manage DNSSEC key roll-over.</p>
+<p>rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover.</p>
 <p>
 </p>
 <hr />
@@ -48,47 +54,113 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <em>rollerd</em> daemon manages key roll-over for zones.  The Pre-Publish Method
-of key roll-over is used for ZSK key roll-overs.  (Currently, <em>rollerd</em> only
-handles ZSK roll-over.) This method has four phases that are entered when it
-is time to perform the ZSK roll-over:</p>
+<p>The <strong>rollerd</strong> daemon manages key rollover for zones.  <strong>rollerd</strong> handles
+both KSK and ZSK rollover, though only one rollover may take place at a time.
+Initiation of KSK rollovers takes precedence over the initiation of ZSK
+rollovers.  The Pre-Publish Method of key rollover is used for ZSK key
+rollovers.  The Double Signature Method of key rollover is used for KSK
+rollovers.  <strong>rollerd</strong> maintains zone rollover state in files called
+<em>rollrec</em> files.  The administrator may control <strong>rollerd</strong> with the
+<strong>rollctl</strong> command.  These are described in their own sections below.</p>
+<p>
+</p>
+<h2><a name="zsk_rollover_using_the_prepublish_method">ZSK Rollover Using the Pre-Publish Method</a></h2>
+<p>The Pre-Publish Method has four phases that are entered when it is time to
+perform ZSK rollover:</p>
 <pre>
     1. wait for old zone data to expire from caches
     2. sign the zone with the KSK and Published ZSK
     3. wait for old zone data to expire from caches
     4. adjust keys in keyrec and sign the zone with new Current ZSK</pre>
-<p>The Pre-Publish Method of key roll-over is defined in the Step-by-Step DNS
+<p><strong>rollerd</strong> uses the <strong>zonesigner</strong> command during ZSK rollover phases 2 and 4.
+<strong>zonesigner</strong> will generate keys as required and sign the zone during these
+two phases.</p>
+<p>The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
 Security Operator Guidance Document.  See that document for more detailed
 information.</p>
-<p>The zones to be managed by <em>rollerd</em> are defined in a <em>rollrec</em> file.  Each
-zone's entry contains data needed by <em>rollerd</em> and some data useful to a user.
-Below is a sample <em>rollrec</em> entry:</p>
+<p>
+</p>
+<h2><a name="ksk_rollover_using_the_double_signature_method">KSK Rollover Using the Double Signature Method</a></h2>
+<p>The Double Signature Method has seven phases that are entered when it is time
+to perform ZSK rollover:</p>
+<pre>
+    1. wait for old zone data to expire from caches
+    2. generate a new (published) KSK
+    3. wait for the old DNSKEY RRset to expire from caches
+    4. roll the KSKs
+    5. transfer new keyset to the parent
+    6. wait for parent to publish the new DS record
+    7. reload the zone</pre>
+<p><strong>rollerd</strong> uses the <strong>zonesigner</strong> command during KSK rollover phases 2 and 4.
+<strong>zonesigner</strong> will generate keys as required and sign the zone during these
+two phases.</p>
+<p>Currently, steps 5 and 6 are handled manually.  In step 5, <strong>rollerd</strong> informs
+the administrator that the zone's keyset must be transferred to its parent
+in order for rollover to continue.  In step 6, after the parent has published
+a new DS record, the administrator uses <strong>rollctl</strong> to inform <strong>rollerd</strong> that
+the DS record has been published and rollover may continue.</p>
+<p>The Double Signature Method of key rollover is defined in the Step-by-Step
+DNS Security Operator Guidance Document.  See that document for more detailed
+information.</p>
+<p>
+</p>
+<h2><a name="rollrec_files"><em>rollrec</em> Files</a></h2>
+<p>The zones to be managed by <strong>rollerd</strong> are described in a <em>rollrec</em> file.
+Each zone's entry contains data needed by <strong>rollerd</strong> and some data useful to a
+user.  Below is a sample <em>rollrec</em> entry:</p>
 <pre>
         roll &quot;example.com&quot;
                 zonefile        &quot;example.com.signed&quot;
                 keyrec          &quot;example.com.krf&quot;
-                curphase        &quot;3&quot;
-                maxttl          &quot;2400&quot;
-                phasestart      &quot;Thu May  4 19:19:21 2006&quot;</pre>
-<p>The first line gives the <em>rollrec</em> entry's name.  The ``roll'' keyword
-indicates that <em>rollerd</em> should include the zone in its roll queue.  Using
-``skip'' in place of ``roll'' allows a zone to be stored in the <em>rollrec</em> file,
-but it will not be included in roll-over processing.  The first three fields
-tell <em>rollerd</em> where to find example.com's signed zone file and <em>keyrec</em>
-file and the zone's current roll-over phase.  The last two are for reference
-by the user.  The <em>maxttl</em> field is derived from the signed zone file.</p>
+                directory       &quot;dir-example.com&quot;
+                kskphase        &quot;0&quot;
+                zskphase        &quot;3&quot;
+                ksk_rollsecs    &quot;1172614842&quot;
+                ksk_rolldate    &quot;Tue Feb 27 22:20:42 2007&quot;
+                zsk_rollsecs    &quot;1172615087&quot;
+                zsk_rolldate    &quot;Tue Feb 27 22:24:47 2007&quot;
+                maxttl          &quot;60&quot;
+                display         &quot;1&quot;
+                phasestart      &quot;Tue Feb 27 22:25:07 2007&quot;</pre>
+<p>The first line gives the <em>rollrec</em> entry's name.  The lines then give the
+zone's signed zone file, <em>keyrec</em> file, the current rollover phases, the
+rollover timestamps, and other information.</p>
 <p>If either of the <em>zonefile</em> or <em>keyrec</em> files do not exist, then a ``roll''
 <em>rollrec</em> will be changed into a ``skip'' <em>rollrec</em>.  That record will not be
 processed.</p>
+<p>A more detailed explanation may be found in <em>rollrec(5)</em>.</p>
+<p>
+</p>
+<h2><a name="directories">Directories</a></h2>
+<p><strong>rollerd</strong>'s execution directory is either the directory in which it is
+executed or the directory passed in the <em>-directory</em> command-line option.
+Any files used by <strong>rollerd</strong> that were not specified with absolute paths use
+this directory as their base.</p>
+<p>The <em>directory</em> field informs <strong>rollerd</strong> where the zone's files may be found.
+For that zone, <strong>rollerd</strong> will move into that directory, then return to its
+execution directory when it finishes rollover operations for that zone.  If
+the <em>directory</em> value is a relative path, it will be appended to <strong>rollerd</strong>'s
+execution directory.  If the <em>directory</em> value is an absolute path, it will
+be used as is.</p>
+<p>
+</p>
+<h2><a name="controlling_rollerd_with_rollctl">Controlling <strong>rollerd</strong> with <strong>rollctl</strong></a></h2>
+<p>The <strong>rollctl</strong> command is used to control the behavior of <strong>rollerd</strong>.
+A number of commands are available, such as starting or stopping rollover for
+a selected zone or all zones, turning on or off a GUI rollover display, and
+halting <strong>rollerd</strong> execution.  The communications path between
+<strong>rollerd</strong> and <strong>rollctl</strong> is operating system-dependent.  On Unix-like
+systems, it is a Unix pipe that should <strong>only</strong> be writable by root.
+A more detailed explanation of <strong>rollctl</strong> may be found in <em>rollctl(8)</em>.</p>
 <p>
 </p>
 <h2><a name="a_note_about_files_and_filenames">A Note About Files and Filenames</a></h2>
-<p>There are a number of files and filenames used by <em>rollerd</em> and
-<em>zonesigner</em>.  The user must be aware of the files used by these programs,
+<p>There are a number of files and filenames used by <strong>rollerd</strong> and
+<strong>zonesigner</strong>.  The user must be aware of the files used by these programs,
 where the files are located, and where the programs are executed.</p>
-<p>By default, <em>rollerd</em> will change directory to the DNSSEC-Tools directory,
+<p>By default, <strong>rollerd</strong> will change directory to the DNSSEC-Tools directory,
 though this may be changed by the <em>-directory</em> option.  Any programs started
-by <em>rollerd</em>, most importantly <em>zonesigner</em>, will run in this same
+by <strong>rollerd</strong>, most importantly <strong>zonesigner</strong>, will run in this same
 directory.  If files and directories referenced by these programs are named
 with relative paths, those paths must be relative to this directory.</p>
 <p>The <em>rollrec</em> entry name is used as a key to the <em>rollrec</em> file and to the
@@ -102,44 +174,45 @@ files, and key files in a single directory.</p>
 </p>
 <hr />
 <h1><a name="initialization_and_usage">INITIALIZATION AND USAGE</a></h1>
-<p>The following steps must be taken to initialize and use <em>rollerd</em>.  This
+<p>The following steps must be taken to initialize and use <strong>rollerd</strong>.  This
 assumes that zone files have been created, and that BIND and DNSSEC-Tools
 have been installed.</p>
 <ol>
 <li><strong><a name="item_sign_zones">sign zones</a></strong>
 
-<p>The zones to be managed by <em>rollerd</em> must be signed.  Use <em>zonesigner</em> to
-create the signed zone files and the <em>keyrec</em> files needed by <em>rollerd</em>.
+<p>The zones to be managed by <strong>rollerd</strong> must be signed.  Use <strong>zonesigner</strong> to
+create the signed zone files and the <em>keyrec</em> files needed by <strong>rollerd</strong>.
 The <em>rollrec</em> file created in the next step <strong>must</strong> use the <em>keyrec</em> file
 names and the signed zone file names created here.</p>
 </li>
 <li><strong><a name="item_create_rollrec_file">create <em>rollrec</em> file</a></strong>
 
-<p>Before <em>rollerd</em> may be used, a <em>rollrec</em> file must first be created.
-While this file may be built by hand, the <em>rollinit</em> command was
+<p>Before <strong>rollerd</strong> may be used, a <em>rollrec</em> file must first be created.
+While this file may be built by hand, the <strong>rollinit</strong> command was
 written specifically to build the file.</p>
 </li>
 <li><strong><a name="item_select_operational_parameters">select operational parameters</a></strong>
 
-<p>A number of <em>rollerd</em>'s operational parameters are taken from the
+<p>A number of <strong>rollerd</strong>'s operational parameters are taken from the
 DNSSEC-Tools configuration file.  However, these may be overridden
 by command-line options.  See the OPTIONS section below for more details.
 If non-standard parameters are desired to always be used, the appropriate
 fields in the DNSSEC-Tools configuration file may be modified to use these
 values.</p>
 </li>
-<li><strong><a name="item_install_the_roll_2dover_configuration">install the roll-over configuration</a></strong>
+<li><strong><a name="item_install_the_rollover_configuration">install the rollover configuration</a></strong>
 
-<p>The complete roll-over configuration -- <em>rollerd</em>, <em>rollrec</em> file,
+<p>The complete rollover configuration -- <strong>rollerd</strong>, <em>rollrec</em> file,
 DNSSEC-Tools configuration file values, zone files -- should be installed.  
 The appropriate places for these locations are both installation-dependent
 and operating system-dependent.</p>
 </li>
-<li><strong><a name="item_test_the_roll_2dover_configuration">test the roll-over configuration</a></strong>
+<li><strong><a name="item_test_the_rollover_configuration">test the rollover configuration</a></strong>
 
-<p>The complete roll-over configuration should be tested.</p>
+<p>The complete rollover configuration should be tested.</p>
 <p>Edit the zone files so that their zones have short TTL values.  A minute TTL
-should be sufficient.</p>
+should be sufficient.  Test rollovers of this speed should <strong>only</strong> be done
+in a test environment without the real signed zone.</p>
 <p>Run the following command:</p>
 <pre>
     rollerd -rrfile test.rollrec -logfile - -loglevel info -sleep 60</pre>
@@ -148,16 +221,16 @@ a fair amount of log messages to the terminal, and checks its queue every 60
 seconds.  Follow the messages to ensure that the appropriate actions, as
 required by the Pre-Publish Method, are taking place.</p>
 </li>
-<li><strong><a name="item_set_rollerd_to_start_at_boot">set <em>rollerd</em> to start at boot</a></strong>
+<li><strong><a name="item_set_rollerd_to_start_at_boot">set <strong>rollerd</strong> to start at boot</a></strong>
 
-<p>Once the configuration is found to work, <em>rollerd</em> should be set to start
+<p>Once the configuration is found to work, <strong>rollerd</strong> should be set to start
 at system boot.  The actual operations required for this step are operating
 system-dependent.</p>
 </li>
 <li><strong><a name="item_reboot_and_verify">reboot and verify</a></strong>
 
-<p>The system should be rebooted and the <em>rollerd</em> logfile checked to ensure
-that <em>rollerd</em> is operating properly.</p>
+<p>The system should be rebooted and the <strong>rollerd</strong> logfile checked to ensure
+that <strong>rollerd</strong> is operating properly.</p>
 </li>
 </ol>
 <p>
@@ -166,46 +239,55 @@ that <em>rollerd</em> is operating properly.</p>
 <h1><a name="options">OPTIONS</a></h1>
 <p>The following options are recognized:</p>
 <dl>
-<dt><strong><a name="item__2drrfile__3crollrec_file_3e"><em>-rrfile &lt;rollrec_file&gt;</em></a></strong>
+<dt><strong><a name="item__2drrfile_rollrec_file"><em>-rrfile rollrec_file</em></a></strong>
 
 <dd>
 <p>Name of the <em>rollrec</em> file to be processed.  This is the only required
 ``option''.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2ddirectory__3cdir_3e"><em>-directory &lt;dir&gt;</em></a></strong>
+<dt><strong><a name="item__2ddirectory_dir"><em>-directory dir</em></a></strong>
 
 <dd>
-<p>Sets the <em>rollerd</em> execution directory.  This must be a valid directory.</p>
+<p>Sets the <strong>rollerd</strong> execution directory.  This must be a valid directory.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dlogfile__3clog_file_3e"><em>-logfile &lt;log_file&gt;</em></a></strong>
+<dt><strong><a name="item__2dlogfile_log_file"><em>-logfile log_file</em></a></strong>
 
 <dd>
-<p>Sets the <em>rollerd</em> log file to <em>log_file</em>.
+<p>Sets the <strong>rollerd</strong> log file to <em>log_file</em>.
 This must be a valid logging file, meaning that if <em>logfile</em> already
 exists, it must be a regular file.  The only exceptions to this are if
-<em>logfile</em> is <strong>/dev/stdout</strong> or <strong>/dev/tty</strong>.</p>
+<em>logfile</em> is <strong>/dev/stdout</strong>, <strong>/dev/tty</strong>, <strong>-</strong>.  Of these three, using a
+<em>log_file</em> of <strong>-</strong> is preferable since Perl will properly convert the <strong>-</strong>
+to the process' standard output.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dloglevel__3clevel_3e"><em>-loglevel &lt;level&gt;</em></a></strong>
+<dt><strong><a name="item__2dloglevel_level"><em>-loglevel level</em></a></strong>
 
 <dd>
-<p>Sets <em>rollerd</em>'s logging level to <em>level</em>.  The valid logging levels are
-defined in <strong>rollmgr.pm(3)</strong>.</p>
+<p>Sets <strong>rollerd</strong>'s logging level to <em>level</em>.  <strong>rollmgr.pm(3)</strong> contains a list
+of the valid logging levels.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dsleep__3csleeptime_3e"><em>-sleep &lt;sleeptime&gt;</em></a></strong>
+<dt><strong><a name="item__2dsleep_sleeptime"><em>-sleep sleeptime</em></a></strong>
 
 <dd>
-<p>Sets <em>rollerd</em>'s sleep time to <em>sleeptime</em>.  The sleep time is the amount
-of time <em>rollerd</em> waits between processing its <em>rollrec</em>-based queue.</p>
+<p>Sets <strong>rollerd</strong>'s sleep time to <em>sleeptime</em>.  The sleep time is the amount
+of time <strong>rollerd</strong> waits between processing its <em>rollrec</em>-based queue.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dparameters"><em>-parameters</em></a></strong>
 
 <dd>
-<p>Prints a set of <em>rollerd</em> parameters and then exit.</p>
+<p>Prints a set of <strong>rollerd</strong> parameters and then exits.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddisplay"><em>-display</em></a></strong>
+
+<dd>
+<p>Starts the <strong>blinkenlights</strong> graphical display program to show the status of
+zones managed by <strong>rollerd</strong>.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dhelp">-help</a></strong>
@@ -225,8 +307,8 @@ of time <em>rollerd</em> waits between processing its <em>rollrec</em>-based que
 </p>
 <hr />
 <h1><a name="assumptions">ASSUMPTIONS</a></h1>
-<p><em>rollover-manager</em> uses the <em>rndc</em> command to communicate with the BIND
-<em>named</em> daemon.  Therefore, it assumes that appropriate measure have been
+<p><strong>rollerd</strong> uses the <strong>rndc</strong> command to communicate with the BIND
+<strong>named</strong> daemon.  Therefore, it assumes that appropriate measure have been
 taken so that this communication is possible.</p>
 <p>
 </p>
@@ -237,25 +319,8 @@ taken so that this communication is possible.</p>
 <dt><strong><a name="item__2d">-</a></strong>
 
 <dd>
-<p>Only deals with ZSKs.</p>
-</dd>
-</li>
-<dt><strong>-</strong>
-
-<dd>
-<p>Rollrec files should be locked while in use.</p>
-</dd>
-</li>
-<dt><strong>-</strong>
-
-<dd>
-<p>Anyone can send commands to <em>rollerd</em>.  This is probably not a Good Thing.</p>
-</dd>
-</li>
-<dt><strong>-</strong>
-
-<dd>
-<p>No response is sent to <em>rollctl</em>.</p>
+<p>Any process that can write to the rollover socket can send commands to
+<strong>rollerd</strong>.  This is probably not a Good Thing.</p>
 </dd>
 </li>
 <dt><strong>-</strong>
@@ -274,18 +339,24 @@ taken so that this communication is possible.</p>
 <dt><strong>-</strong>
 
 <dd>
-<p>It'd be good to base <em>rollerd</em>'s sleep time on when the next operation must
+<p>It'd be good to base <strong>rollerd</strong>'s sleep time on when the next operation must
 take place, rather than a simple seconds count.</p>
 </dd>
 </li>
 <dt><strong>-</strong>
 
 <dd>
-<p>It'd be nice to allow a each <em>rollrec</em> entry to specify its own logging
+<p>It'd be nice to allow each <em>rollrec</em> entry to specify its own logging
 level.</p>
 </dd>
 </li>
 </dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
 <hr />
@@ -295,19 +366,20 @@ level.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p>Net::DNS::SEC::Tools::conf.pm(3),
-Net::DNS::SEC::Tools::defaults.pm(3),
-Net::DNS::SEC::Tools::keyrec.pm(3),
-Net::DNS::SEC::Tools::rollmgr.pm(3),
-Net::DNS::SEC::Tools::rollrec.pm(3)</p>
-<p>named(8),
-rndc(8),
-rollchk(8),
-rollctl(8),
-rollinit(8),
-<code>zonesigner(8)</code></p>
+<p><strong>blinkenlights(8)</strong>,
+<strong>named(8)</strong>,
+<strong>rndc(8)</strong>,
+<strong>rollchk(8)</strong>,
+<strong>rollctl(8)</strong>,
+<strong>rollinit(8)</strong>,
+<strong>zonesigner(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::rollmgr.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
+<p><strong>rollrec(5)</strong></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

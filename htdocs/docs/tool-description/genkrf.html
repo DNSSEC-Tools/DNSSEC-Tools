@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>genkrf - Generate a I&lt;keyrec&gt; file from Key Signing Key
-         and/or Zone Signing Key (ZSK) files.</title>
+and/or Zone Signing Key (ZSK) files.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -38,7 +38,7 @@
 <hr />
 <h1><a name="name">NAME</a></h1>
 <p>genkrf - Generate a <em>keyrec</em> file from Key Signing Key (KSK)
-         and/or Zone Signing Key (ZSK) files.</p>
+and/or Zone Signing Key (ZSK) files.</p>
 <p>
 </p>
 <hr />
@@ -51,22 +51,21 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <em>genkrf</em> script generates a <em>keyrec</em> file from KSK and/or ZSK files.  It
-generates new KSK and/or ZSK keys if needed.</p>
+<p><strong>genkrf</strong> generates a <em>keyrec</em> file from KSK and/or ZSK files.  It
+generates new KSK and ZSK keys if needed.</p>
 <p>The name of the <em>keyrec</em> file to be generated is given by the <em>-krfile</em>
-option.  If this option is not specified, <strong>&lt;zone-name&gt;.krf</strong> is used
-as the
-name of the <em>keyrec</em> file.  If the <em>keyrec</em> file already exists, it will be
+option.  If this option is not specified, <strong>zone-name.krf</strong> is used as the name
+of the <em>keyrec</em> file.  If the <em>keyrec</em> file already exists, it will be
 overwritten with new <em>keyrec</em> definitions.</p>
 <p>The <em>zone-file</em> argument is required.  It specifies the name of the zone file
 from which the signed zone file was created.  The optional <em>signed-zone-file</em>
 argument specifies the name of the signed zone file.  If it is not given, then
-it defaults to <strong>&lt;zone-file&gt;.signed</strong>.</p>
+it defaults to <strong>zone-file.signed</strong>.</p>
 <p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
-<p><em>genkrf</em> has a number of options that assist in creation of the <em>keyrec</em>
+<p><strong>genkrf</strong> has a number of options that assist in creation of the <em>keyrec</em>
 file.  These options will be set to the first value found from this search
 path:</p>
 <pre>
@@ -91,7 +90,7 @@ Exceptions to this are given in the option descriptions.</p>
 
 <dd>
 <p>This option specifies the name of the <em>keyrec</em> file to be generated.
-If it is not given, then <strong>&lt;zone-name&gt;.krf</strong> will be used.</p>
+If it is not given, then <strong>zone-name.krf</strong> will be used.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dalgorithm_algorithm">-algorithm <em>algorithm</em></a></strong>
@@ -111,7 +110,7 @@ measured in seconds.</p>
 
 <dd>
 <p>Source of randomness used to generate the zone's keys. See the man
-page for <em>dnssec-signzone</em> for the valid format of this field.</p>
+page for <strong>dnssec-signzone</strong> for the valid format of this field.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dverbose">-verbose</a></strong>
@@ -134,11 +133,19 @@ all options will also be displayed.</p>
 </p>
 <h2><a name="kskrelated_options">KSK-related Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dksk_ksk_2dname">-ksk <em>KSK-name</em></a></strong>
+<dt><strong><a name="item__2dkskcur_ksk_2dname">-kskcur <em>KSK-name</em></a></strong>
 
 <dd>
-<p>This option specifies the KSK's key file being used to sign the zone.  If this
-option is not given, a new KSK will be created.</p>
+<p>This option specifies the Current KSK's key file being used to sign the zone.
+If this option is not given, a new KSK will be created.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dkskcount_ksk_2dcount">-kskcount <em>KSK-count</em></a></strong>
+
+<dd>
+<p>This option specifies the number of KSK keys that will be generated.  If this
+option is not given, the default given in the DNSSEC-Tools configuration file
+will be used.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dkskdir_ksk_2ddirectory">-kskdir <em>KSK-directory</em></a></strong>
@@ -182,6 +189,14 @@ If this option is not given, a new ZSK will be created.</p>
 is not given, a new ZSK will be created.</p>
 </dd>
 </li>
+<dt><strong><a name="item__2dzskcount_zsk_2dcount">-zskcount <em>ZSK-count</em></a></strong>
+
+<dd>
+<p>This option specifies the number of current and published ZSK keys that will
+be generated.  If this option is not given, the default given in the
+DNSSEC-Tools configuration file will be used.</p>
+</dd>
+</li>
 <dt><strong><a name="item__2dzskdir_zsk_2ddirectory">-zskdir <em>ZSK-directory</em></a></strong>
 
 <dd>
@@ -209,26 +224,26 @@ the ZSK must be rolled over.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
 <hr />
 <h1><a name="author">AUTHOR</a></h1>
-<p>Abhijit Hayatnagarkar</p>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
 <p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p><em>dnssec-signzone(8)</em>,
-<em>zonesigner(8)</em></p>
+<p><strong>dnssec-keygen(8)</strong>,
+<strong>dnssec-signzone(8)</strong>,
+<strong>zonesigner(8)</strong></p>
 <p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::conf(5)</strong>,
-<strong>Net::DNS::SEC::Tools::keyrec(5)</strong></p>
+<p><strong>conf(5)</strong>,
+<strong>keyrec(5)</strong></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

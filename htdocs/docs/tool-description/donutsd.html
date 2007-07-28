@@ -2,7 +2,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>DoNutSD - Run the donuts syntax checker periodically and email the results</title>
+<title>B&lt;donutsd&gt; - Run the B&lt;donuts&gt; syntax checker periodically and report the
+results to an administrator</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -31,8 +32,8 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<pre>
-  DoNutSD - Run the donuts syntax checker periodically and email the results</pre>
+<p><strong>donutsd</strong> - Run the <strong>donuts</strong> syntax checker periodically and report the
+results to an administrator</p>
 <p>
 </p>
 <hr />
@@ -44,12 +45,12 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p><em>donutsd</em> runs <em>donuts</em> on a set of zone files every so often (the
+<p><strong>donutsd</strong> runs <strong>donuts</strong> on a set of zone files every so often (the
 frequency is specified by the <em>-z</em> flag which defaults to 24 hours) and
 watches for changes in the results.  These changes may be due to the
 time-sensitive nature of DNSSEC-related records (e.g., RRSIG validity
 periods) or because parent/child relationships have changed.  If any
-changes have occurred in the output since the last run of <em>donuts</em> on a
+changes have occurred in the output since the last run of <strong>donuts</strong> on a
 particular zone file, the results are emailed to the specified zone
 administrator's email address.</p>
 <p>
@@ -72,20 +73,20 @@ administrator's email address.</p>
 <dt><strong><a name="item__2da_arguments">-a ARGUMENTS</a></strong>
 
 <dd>
-<p>Passes arguments to command line arguments of <em>donuts</em> runs.</p>
+<p>Passes arguments to command line arguments of <strong>donuts</strong> runs.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dz_time">-z TIME</a></strong>
 
 <dd>
-<p>Sleeps TIME seconds between calls to <em>donuts</em>.</p>
+<p>Sleeps TIME seconds between calls to <strong>donuts</strong>.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2de_address">-e ADDRESS</a></strong>
 
 <dd>
 <p>Mail ADDRESS with a summary of the results from all the files.
-These are the last few lines of the <em>donuts</em> output for each zone that
+These are the last few lines of the <strong>donuts</strong> output for each zone that
 details the number of errors found.</p>
 </dd>
 </li>
@@ -105,7 +106,7 @@ is <em>localhost</em>.</p>
 <dt><strong><a name="item__2dx">-x</a></strong>
 
 <dd>
-<p>Send the <em>diff</em> output in the email message as well as the <em>donuts</em> output.</p>
+<p>Send the <em>diff</em> output in the email message as well as the <strong>donuts</strong> output.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dt_tmpdir">-t TMPDIR</a></strong>
@@ -117,7 +118,7 @@ is <em>localhost</em>.</p>
 <dt><strong><a name="item__2di_inputzones">-i INPUTZONES</a></strong>
 
 <dd>
-<p>[see the next section details]</p>
+<p>See the next section details.</p>
 </dd>
 </li>
 </dl>
@@ -125,41 +126,41 @@ is <em>localhost</em>.</p>
 </p>
 <hr />
 <h1><a name="zone_arguments">ZONE ARGUMENTS</a></h1>
-<p>The rest of the arguments to <em>donutsd</em> should be triplets of the
+<p>The rest of the arguments to <strong>donutsd</strong> should be triplets of the
 following information:</p>
 <dl>
 <dt><strong><a name="item_zonefile">ZONEFILE</a></strong>
 
 <dd>
-<p>The zone file to examine</p>
+<p>The zone file to examine.</p>
 </dd>
 </li>
 <dt><strong><a name="item_zonename">ZONENAME</a></strong>
 
 <dd>
-<p>The zonename that file is supposed to be defining</p>
+<p>The zonename that file is supposed to be defining.</p>
 </dd>
 </li>
 <dt><strong><a name="item_zonecontact">ZONECONTACT</a></strong>
 
 <dd>
 <p>An email address of the zone administrator (or a comma-separated
-list of addresses).  The results will be sent to this email address.</p>
+list of addresses.)  The results will be sent to this email address.</p>
 </dd>
 </li>
 </dl>
 <p>Additionally, instead of listing all the zones you wish to monitor on
-the command line, you can instead use the <em>-i</em> flag which specifies a
+the command line, you can use the <em>-i</em> flag which specifies a
 file to be read listing the TRIPLES instead.  Each line in this file
 should contain one triple with white-space separating the arguments.</p>
 <p>Example:</p>
 <pre>
    db.zonefile1.com   zone1.com   admin@zone1.com
    db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com</pre>
-<p>For even more control you can specify an XML file (which must end in
-<strong>.xml</strong> and you must have the <strong>XML::Smart</strong> Perl module installed) that
-describes the same information but also allows for per-zone
-customization of the <em>donuts</em> arguments:</p>
+<p>For even more control, you can specify an XML file (whose name must end in
+<strong>.xml</strong>) that describes the same information.  This also allows for per-zone
+customization of the <strong>donuts</strong> arguments.  The <strong>XML::Smart</strong> Perl module must
+be installed in order to use this feature.</p>
 <pre>
  &lt;donutsd&gt;
    &lt;zones&gt;
@@ -173,8 +174,8 @@ customization of the <em>donuts</em> arguments:</p>
     &lt;/zone&gt;
    &lt;/zones&gt;
  &lt;/donutsd&gt;</pre>
-<p>The <em>donutsd</em> tree can also contain a <em>configs</em> section where command
-line flags can be specified as well:</p>
+<p>The <strong>donutsd</strong> tree may also contain a <em>configs</em> section where
+command-line flags can be specified:</p>
 <pre>
  &lt;donutsd&gt;
   &lt;configs&gt;
@@ -198,7 +199,7 @@ in the <strong>.xml</strong> file, however.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -212,7 +213,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p><strong>donuts(8)</strong></p>
 <p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

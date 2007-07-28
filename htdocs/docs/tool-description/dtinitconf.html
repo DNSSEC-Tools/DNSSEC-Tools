@@ -48,14 +48,14 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <em>dtinitconf</em> program initializes the DNSSEC-Tools configuration file.
+<p>The <strong>dtinitconf</strong> program initializes the DNSSEC-Tools configuration file.
 By default, the actual configuration file will be created, though the created
 file can be specified by the user.  Existing files, whether the default or one
 specified by the user, will not be overwritten unless specifically directed
 by the user.</p>
 <p>Each configuration field can be individually specified on the command line.
 The user will also be prompted for the fields, with default values taken from
-the DNSSEC-Tools <em>defaults.pm</em> module.  If the <em>-noprompt</em> option is given,
+the DNSSEC-Tools <strong>defaults.pm</strong> module.  If the <em>-noprompt</em> option is given,
 then a default configuration file (modulo command-line arguments) will be
 created.</p>
 <p>Configuration entries are created for several BIND programs.  Several
@@ -75,7 +75,7 @@ group exists.</p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
-<p><em>dtinitconf</em> takes options that control the contents of the newly generated
+<p><strong>dtinitconf</strong> takes options that control the contents of the newly generated
 DNSSEC-Tools configuration file.  Each configuration file entry has a
 corresponding command-line option.  The options, described below, are ordered
 in logical groups.</p>
@@ -85,20 +85,20 @@ in logical groups.</p>
 <p>These options deal with different aspects of creating and managing
 encryption keys.</p>
 <dl>
-<dt><strong><a name="item__2dalgorithm__3calgorithm_3e"><em>-algorithm &lt;algorithm&gt;</em></a></strong>
+<dt><strong><a name="item__2dalgorithm_algorithm"><em>-algorithm algorithm</em></a></strong>
 
 <dd>
 <p>Selects the cryptographic algorithm. The value of algorithm must be one that
-is recognized by <em>dnssec-keygen</em>.</p>
+is recognized by <strong>dnssec-keygen</strong>.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dksklength__3ckeylen_3e"><em>-ksklength &lt;keylen&gt;</em></a></strong>
+<dt><strong><a name="item__2dksklength_keylen"><em>-ksklength keylen</em></a></strong>
 
 <dd>
-<p>The default KSK key length to be passed to <em>dnssec-keygen</em>.</p>
+<p>The default KSK key length to be passed to <strong>dnssec-keygen</strong>.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dksklife__3clifespan_3e"><em>-ksklife &lt;lifespan&gt;</em></a></strong>
+<dt><strong><a name="item__2dksklife_lifespan"><em>-ksklife lifespan</em></a></strong>
 
 <dd>
 <p>The default length of time between KSK roll-overs.  This is measured in   
@@ -109,19 +109,19 @@ seconds.</p>
 in any other sense.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dzskcount__3czsk_2dcount_3e"><em>-zskcount &lt;ZSK-count&gt;</em></a></strong>
+<dt><strong><a name="item__2dzskcount_zsk_2dcount"><em>-zskcount ZSK-count</em></a></strong>
 
 <dd>
 <p>The default number of ZSK keys that will be created for a zone.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dzsklength__3ckeylen_3e"><em>-zsklength &lt;keylen&gt;</em></a></strong>
+<dt><strong><a name="item__2dzsklength_keylen"><em>-zsklength keylen</em></a></strong>
 
 <dd>
 <p>The default ZSK key length to be passed to <em>dnssec-keygen</em>.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dzsklife__3clifespan_3e"><em>-zsklife &lt;lifespan&gt;</em></a></strong>
+<dt><strong><a name="item__2dzsklife_lifespan"><em>-zsklife lifespan</em></a></strong>
 
 <dd>
 <p>The default length of time between ZSK roll-overs.  This is measured in   
@@ -132,10 +132,10 @@ seconds.</p>
 in any other sense.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2drandom__3crandomdev_3e"><em>-random &lt;randomdev&gt;</em></a></strong>
+<dt><strong><a name="item__2drandom_randomdev"><em>-random randomdev</em></a></strong>
 
 <dd>
-<p>The random device generator to be passed to <em>dnssec-keygen</em>.</p>
+<p>The random device generator to be passed to <strong>dnssec-keygen</strong>.</p>
 </dd>
 </li>
 </dl>
@@ -144,10 +144,10 @@ in any other sense.</p>
 <h2><a name="zonerelated_options">Zone-related Options</a></h2>
 <p>These options deal with different aspects of zone signing.</p>
 <dl>
-<dt><strong><a name="item__2dendtime__3cendtime_3e"><em>-endtime &lt;endtime&gt;</em></a></strong>
+<dt><strong><a name="item__2dendtime_endtime"><em>-endtime endtime</em></a></strong>
 
 <dd>
-<p>The zone default expiration time to be passed to <em>dnssec-signzone</em>.</p>
+<p>The zone default expiration time to be passed to <strong>dnssec-signzone</strong>.</p>
 </dd>
 </li>
 </dl>
@@ -156,14 +156,21 @@ in any other sense.</p>
 <h2><a name="dnssectools_options">DNSSEC-Tools Options</a></h2>
 <p>These options deal specifically with functionality provided by DNSSEC-Tools.</p>
 <dl>
-<dt><strong><a name="item__2darchivedir__3cdirectory_3e"><em>-archivedir &lt;directory&gt;</em></a></strong>
+<dt><strong><a name="item__2dadmin_email_2daddress"><em>-admin email-address</em></a></strong>
+
+<dd>
+<p><strong>admin</strong> is the email address of the DNSSEC-Tools administrator.  This is the
+default address used by the <em>dt_adminmail()</em> routine.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2darchivedir_directory"><em>-archivedir directory</em></a></strong>
 
 <dd>
 <p><strong>directory</strong> is the archived-key directory.  Old encryption keys are moved to
 this directory, but only if they are to be saved and not deleted.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dbinddir__3cdirectory_3e"><em>-binddir &lt;directory&gt;</em></a></strong>
+<dt><strong><a name="item__2dbinddir_directory"><em>-binddir directory</em></a></strong>
 
 <dd>
 <p><strong>directory</strong> is the directory holding the BIND programs.</p>
@@ -172,7 +179,7 @@ this directory, but only if they are to be saved and not deleted.</p>
 <dt><strong><a name="item__2dentropy_msg"><em>-entropy_msg</em></a></strong>
 
 <dd>
-<p>A flag indicating that <em>zonesigner</em> should display a message about entropy
+<p>A flag indicating that <strong>zonesigner</strong> should display a message about entropy
 generation.  This is primarily dependent on the implementation of a system's
 random number generation.</p>
 </dd>
@@ -180,27 +187,27 @@ random number generation.</p>
 <dt><strong><a name="item__2dnoentropy_msg"><em>-noentropy_msg</em></a></strong>
 
 <dd>
-<p>A flag indicating that <em>zonesigner</em> should not display a message about
+<p>A flag indicating that <strong>zonesigner</strong> should not display a message about
 entropy generation.  This is primarily dependent on the implementation of
 a system's random number generation.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2droll_2dlogfile__3clogfile_3e"><em>-roll-logfile &lt;logfile&gt;</em></a></strong>
+<dt><strong><a name="item__2droll_2dlogfile_logfile"><em>-roll-logfile logfile</em></a></strong>
 
 <dd>
-<p><strong>logfile</strong> is the logfile for the <em>rollerd</em> daemon.</p>
+<p><strong>logfile</strong> is the logfile for the <strong>rollerd</strong> daemon.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2droll_2dloglevel__3cloglevel_3e"><em>-roll-loglevel &lt;loglevel&gt;</em></a></strong>
+<dt><strong><a name="item__2droll_2dloglevel_loglevel"><em>-roll-loglevel loglevel</em></a></strong>
 
 <dd>
-<p><strong>loglevel</strong> is the logging level for the <em>rollerd</em> daemon.</p>
+<p><strong>loglevel</strong> is the logging level for the <strong>rollerd</strong> daemon.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2droll_2dsleep__3csleep_2dtime_3e"><em>-roll-sleep &lt;sleep-time&gt;</em></a></strong>
+<dt><strong><a name="item__2droll_2dsleep_sleep_2dtime"><em>-roll-sleep sleep-time</em></a></strong>
 
 <dd>
-<p><strong>sleep-time</strong> is the sleep-time for the <em>rollerd</em> daemon.</p>
+<p><strong>sleep-time</strong> is the sleep-time for the <strong>rollerd</strong> daemon.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dsavekeys"><em>-savekeys</em></a></strong>
@@ -212,7 +219,8 @@ a system's random number generation.</p>
 <dt><strong><a name="item__2dnosavekeys"><em>-nosavekeys</em></a></strong>
 
 <dd>
-<p>A flag indicating that old keys should not be moved to the archive directory.</p>
+<p>A flag indicating that old keys should not be moved to the archive directory
+but will instead be left in place.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dusegui"><em>-usegui</em></a></strong>
@@ -232,22 +240,28 @@ used.</p>
 <p>
 </p>
 <h2><a name="dtinitconf_options">dtinitconf Options</a></h2>
-<p>These options deal specifically with <em>dtinitconf</em>.</p>
-<ol>
-<li>
-<dt><strong><a name="item__2doutfile__3cconffile_3e"><em>-outfile &lt;conffile&gt;</em></a></strong>
+<p>These options deal specifically with <strong>dtinitconf</strong>.</p>
+<dl>
+<dt><strong><a name="item__2doutfile_conffile"><em>-outfile conffile</em></a></strong>
 
 <dd>
-<p>The configuration file will be written to <strong>conffile</strong>.  If this is not given,
-then the default configuration file (as returned by
+<p>The configuration file will be written to <strong>conffile</strong>.  If this is
+not given, then the default configuration file (as returned by
 <em>Net::DNS::SEC::Tools::conf::getconffile()</em>) will be used.</p>
+</dd>
+<dd>
+<p>If <strong>conffile</strong> is given as <strong>-</strong>, then the new configuration file will be
+written to the standard output.</p>
+</dd>
+<dd>
+<p><strong>conffile</strong> must be writable.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2doverwrite"><em>-overwrite</em></a></strong>
 
 <dd>
 <p>If <em>-overwrite</em> is specified, existing output files may be overwritten.
-Without <em>-overwrite</em>, if the output file is found to exist then <em>dtinitconf</em>
+Without <em>-overwrite</em>, if the output file is found to exist then <strong>dtinitconf</strong>
 will give an error message and exit.</p>
 </dd>
 </li>
@@ -256,7 +270,13 @@ will give an error message and exit.</p>
 <dd>
 <p>If <em>-noprompt</em> is specified, the user will not be prompted for any input.
 The configuration file will be created from command-line options and
-DNSSEC-Tools defaults.</p>
+DNSSEC-Tools defaults.  Guesses will be made for the BIND paths, based on
+the PATH environment variable.</p>
+</dd>
+<dd>
+<p><strong>WARNING</strong>:  After using the <em>-noprompt</em> option, the configuration file
+<strong>must</strong> be checked to ensure that the defaults are appropriate and acceptable
+for the installation.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dedit"><em>-edit</em></a></strong>
@@ -280,12 +300,12 @@ editor will be used.</p>
 <p>Display a usage message and exit.</p>
 </dd>
 </li>
-</ol>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING file
+<p>Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING file
 included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -303,11 +323,11 @@ included with the DNSSEC-Tools package for details.</p>
 <strong>zonesigner(8)</strong></p>
 <p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::dnssectools.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::tooloptions.pm(3)</strong>,
 <strong>QWizard.pm(3)</strong></p>
 <p><strong>dnssec-tools.conf(5)</strong></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

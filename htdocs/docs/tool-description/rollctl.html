@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>rollctl - Send commands to the DNSSEC-Tools roll-over daemon.</title>
+<title>rollctl - Send commands to the DNSSEC-Tools rollover daemon.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -30,7 +30,7 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>rollctl - Send commands to the DNSSEC-Tools roll-over daemon.</p>
+<p>rollctl - Send commands to the DNSSEC-Tools rollover daemon.</p>
 <p>
 </p>
 <hr />
@@ -41,62 +41,87 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <em>rollctl</em> command sends commands to the DNSSEC-Tools roll-over daemon,
-<em>rollerd</em>.  Multiple options may be specified on a single command line and
+<p>The <strong>rollctl</strong> command sends commands to the DNSSEC-Tools rollover daemon,
+<strong>rollerd</strong>.  Multiple options may be specified on a single command line and
 they will be executed in <em>alphabetical</em> order.  The exception to this
 ordering is that the <em>-shutdown</em> command will always be executed last.</p>
-<p>In most cases, <em>rollerd</em> will send a response to <em>rollctl</em>.  <em>rollctl</em> will
+<p>In most cases, <strong>rollerd</strong> will send a response to <strong>rollctl</strong>.  <strong>rollctl</strong> will
 print a success or failure message, as appropriate.</p>
 <p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
-<p>The following options are handled by <em>rollctl</em>.</p>
+<p>The following options are handled by <strong>rollctl</strong>.</p>
 <dl>
+<dt><strong><a name="item__2ddisplay"><em>-display</em></a></strong>
+
+<dd>
+<p>Starts the rollover status GUI.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddspub_zone"><em>-dspub zone</em></a></strong>
+
+<dd>
+<p>Indicates that <em>zone</em>'s parent has published a new DS record for <em>zone</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddspuball"><em>-dspuball</em></a></strong>
+
+<dd>
+<p>Indicates that DS records have been published for all zones in phase 6 of
+KSK rollover.</p>
+</dd>
+</li>
 <dt><strong><a name="item__2dhalt"><em>-halt</em></a></strong>
 
 <dd>
-<p>Cleanly halts <em>rollerd</em> execution.</p>
+<p>Cleanly halts <strong>rollerd</strong> execution.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dlogfile__3clogfile_3e"><em>-logfile &lt;logfile&gt;</em></a></strong>
+<dt><strong><a name="item__2dlogfile_logfile"><em>-logfile logfile</em></a></strong>
 
 <dd>
-<p>Sets the <em>rollerd</em> log file to <em>logfile</em>.
+<p>Sets the <strong>rollerd</strong> log file to <em>logfile</em>.
 This must be a valid logging file, meaning that if <em>logfile</em> already
 exists, it must be a regular file.  The only exceptions to this are if
 <em>logfile</em> is <strong>/dev/stdout</strong> or <strong>/dev/tty</strong>.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dloglevel__3cloglevel_3e"><em>-loglevel &lt;loglevel&gt;</em></a></strong>
+<dt><strong><a name="item__2dloglevel_loglevel"><em>-loglevel loglevel</em></a></strong>
 
 <dd>
-<p>Sets the <em>rollerd</em> logging level to <em>loglevel</em>.
+<p>Sets the <strong>rollerd</strong> logging level to <em>loglevel</em>.
 This must be one of the valid logging levels defined in <strong>rollmgr.pm(3)</strong>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dnodisplay"><em>-nodisplay</em></a></strong>
+
+<dd>
+<p>Stops the rollover status GUI.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2drollall"><em>-rollall</em></a></strong>
 
 <dd>
-<p>Initiates roll-over for all the zones defined in the current <em>rollrec</em> file.</p>
+<p>Initiates rollover for all the zones defined in the current <em>rollrec</em> file.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2drollrec__3crollrec_file_3e"><em>-rollrec &lt;rollrec_file&gt;</em></a></strong>
+<dt><strong><a name="item__2drollrec_rollrec_file"><em>-rollrec rollrec_file</em></a></strong>
 
 <dd>
-<p>Sets the <em>rollrec</em> file to be processed by <em>rollerd</em> to <em>rollrec_file</em>.</p>
+<p>Sets the <em>rollrec</em> file to be processed by <strong>rollerd</strong> to <em>rollrec_file</em>.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2drollzone__3czone_3e"><em>-rollzone &lt;zone&gt;</em></a></strong>
+<dt><strong><a name="item__2drollzone_zone"><em>-rollzone zone</em></a></strong>
 
 <dd>
-<p>Initiates roll-over for the zone named by <em>zone</em>.</p>
+<p>Initiates rollover for the zone named by <em>zone</em>.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2drunqueue"><em>-runqueue</em></a></strong>
 
 <dd>
-<p>Wakes up <em>rollerd</em> and has it run its queue of <em>rollrec</em> entries.</p>
+<p>Wakes up <strong>rollerd</strong> and has it run its queue of <em>rollrec</em> entries.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dshutdown"><em>-shutdown</em></a></strong>
@@ -108,40 +133,51 @@ This must be one of the valid logging levels defined in <strong>rollmgr.pm(3)</s
 <dt><strong><a name="item__2dskipall"><em>-skipall</em></a></strong>
 
 <dd>
-<p>Stops roll-over for all zones in the current <em>rollrec</em> file.</p>
+<p>Stops rollover for all zones in the current <em>rollrec</em> file.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dskipzone__3czone_3e"><em>-skipzone &lt;zone&gt;</em></a></strong>
+<dt><strong><a name="item__2dskipzone_zone"><em>-skipzone zone</em></a></strong>
 
 <dd>
-<p>Stops roll-over for the zone named by <em>zone</em>.</p>
+<p>Stops rollover for the zone named by <em>zone</em>.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dsleeptime__3csleeptime_3e"><em>-sleeptime &lt;sleeptime&gt;</em></a></strong>
+<dt><strong><a name="item__2dsleeptime_sleeptime"><em>-sleeptime sleeptime</em></a></strong>
 
 <dd>
-<p>Sets <em>rollerd</em>'s sleep time to <em>sleeptime</em>.  <em>sleeptime</em> must be an integer
-at least as large as the <strong>$MIN_SLEEP</strong> value in <em>rollerd</em>.</p>
+<p>Sets <strong>rollerd</strong>'s sleep time to <em>sleeptime</em>.  <em>sleeptime</em> must be an integer
+at least as large as the <strong>$MIN_SLEEP</strong> value in <strong>rollerd</strong>.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dstatus"><em>-status</em></a></strong>
 
 <dd>
-<p>Has <em>rollerd</em> write several of its operational parameters to its log file.
-The parameters are also reported to <em>rollctl</em>, which prints them to the
+<p>Has <strong>rollerd</strong> write several of its operational parameters to its log file.
+The parameters are also reported to <strong>rollctl</strong>, which prints them to the
 screen.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzonelog"><em>-zonelog</em></a></strong>
+
+<dd>
+<p>Set the logging level for the specified zone.  The new logging level is only
+for the current execution of <strong>rollerd</strong> and is not saved to the active
+<em>rollrec</em> file.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dzonestatus"><em>-zonestatus</em></a></strong>
 
 <dd>
-<p>Has <em>rollerd</em> give the status of zones in the current <em>rollrec</em> file to the
-<em>rollerd</em> log file.  The status is also reported to <em>rollctl</em>, which prints
+<p>Has <strong>rollerd</strong> give the status of zones in the current <em>rollrec</em> file to the
+<strong>rollerd</strong> log file.  The status is also reported to <strong>rollctl</strong>, which prints
 it to the screen.</p>
 </dd>
+</li>
+<dt><strong><a name="item__2dquiet"><em>-quiet</em></a></strong>
+
 <dd>
-<p>For each zone in the <em>rollrec</em> file, the zone name, the record type (``skip''
-or ``roll'', and the current roll-over phase are given.</p>
+<p>Prevents output from being given.  Both error and non-error output is
+stopped.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dhelp"><em>-help</em></a></strong>
@@ -169,7 +205,7 @@ than in alphabetical order.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -184,7 +220,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
 <p><strong>rollerd(8)</strong></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

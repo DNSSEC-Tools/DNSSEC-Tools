@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>DoNutS - analyze DNS zone files for errors and warnings</title>
+<title>donuts - analyze DNS zone files for errors and warnings</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -29,7 +29,7 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>DoNutS - analyze DNS zone files for errors and warnings</p>
+<p>donuts - analyze DNS zone files for errors and warnings</p>
 <p>
 </p>
 <hr />
@@ -41,11 +41,12 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>DoNutS is a DNS Lint application that examines DNS zone files looking
+<p><strong>donuts</strong> is a DNS Lint application that examines DNS zone files looking
 for particular problems.  This is especially important for zones
 making use of DNSSEC security records, since many subtle problems can
 occur.</p>
-<p>Please install the Text::Wrap perl module for better output formatting.</p>
+<p>If the <strong>Text::Wrap</strong> Perl module is installed, <strong>donuts</strong> will give better
+output formatting.</p>
 <p>
 </p>
 <hr />
@@ -81,7 +82,7 @@ You probably want to run no higher than level 8.</p>
 
 <dd>
 <p>A comma-separated list of rule files to load.  The strings will be
-passed to <strong>glob()</strong> so * wildcards can be used to specify multiple files.</p>
+passed to <em>glob()</em> so * wildcards can be used to specify multiple files.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2di_ignorelist">-i <em>IGNORELIST</em></a></strong>
@@ -97,7 +98,7 @@ errors you don't wish to see.</p>
 
 <dd>
 <p>Include rules that require live queries of data.  Generally, these
-rules are ones that concentrate on pulling remote DNS data to test;
+rules concentrate on pulling remote DNS data to test;
 for example, parent/child zone relationships.</p>
 </dd>
 </li>
@@ -130,11 +131,11 @@ feature, described above.</p>
 <dd>
 <p>When <em>tcpdump</em> is run, this <em>FILTER</em> is passed to it for purposes of
 filtering traffic.  By default, this is set to <em>port 53 || ip[6:2] &amp;
-0x1fff != 0</em> which limits the traffic to traffic destined to port 53
+0x1fff != 0</em>, which limits the traffic to traffic destined to port 53
 (DNS) or fragmented packets.</p>
 </dd>
 </li>
-<dt><strong><a name="item_o">o <em>FILE</em></a></strong>
+<dt><strong><a name="item__2do_file">-o <em>FILE</em></a></strong>
 
 <dd>
 <p>Saves the <em>tcpdump</em> captured packets to <em>FILE</em>.  The following
@@ -161,7 +162,7 @@ seconds since Jan 1, 1970).</p>
 
 <dd>
 <p>Displays the personal configuration file rules and tokens that are
-acceptable to be found in a configuration file.  The output will
+acceptable in a configuration file.  The output will
 consist of a rule name, a token, and a description of its meaning.</p>
 </dd>
 <dd>
@@ -216,7 +217,7 @@ a comma separated list.  Example usage:</p>
 <p>The <em>live</em> feature allows rules that need to perform live DNS queries
 to run.  Most of these <em>live</em> rules query parent and children of the
 current zone, when appropriate, to see that the parent/child
-relationships have been built properly.  As an example, if you have a
+relationships have been built properly.  For example, if you have a
 DS record which authenticates the key used in a child zone the <em>live</em>
 feature will let a rule run which checks to see if the child is
 actually publishing the DNSKEY that corresponds to the test zone's DS
@@ -233,7 +234,7 @@ record.</p>
 <p>Displays a browsable GUI screen showing the results of the donuts tests.</p>
 </dd>
 <dd>
-<p>You must have the QWizard and Gtk2 perl modules installed for this to work.</p>
+<p>The <strong>QWizard</strong> and <strong>Gtk2</strong> Perl modules must be installed for this to work.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2d_2dlive">--live</a></strong>
@@ -247,7 +248,7 @@ record.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -264,9 +265,10 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>General DNS and DNSSEC usage:</p>
 <pre>
   B&lt;Net::DNS&gt;, B&lt;Net::DNS::SEC&gt;</pre>
+<p><strong>Gtk2.pm(3)</strong>,
+<strong>QWizard.pm(3)</strong></p>
 <p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

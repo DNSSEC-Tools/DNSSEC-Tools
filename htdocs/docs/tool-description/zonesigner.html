@@ -1,8 +1,10 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>zonesigner - Generates encryption keys and signs a DNS zone.</title>
-<link rev="made" href="mailto:root@b07.apple.com" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
@@ -52,12 +54,12 @@
 <hr />
 <h1><a name="synopsis">SYNOPSIS</a></h1>
 <pre>
-  zonesigner [options] &lt;zone-file&gt; &lt;signed-zone-file&gt;</pre>
+  zonesigner [options] &lt;zone-file&gt; &lt;signed-zone&gt;</pre>
 <pre>
   # get started immediately examples:</pre>
 <pre>
   # first run on a zone for example.com:
-  zonesigner -genkeys -endtime +2678400 example.com</pre>
+  zonesigner -genkeys -endtime +2678400 -zone example.com</pre>
 <pre>
   # future runs before expiration time (reuses the same keys):
   zonesigner -endtime +2678400 example.com</pre>
@@ -84,39 +86,40 @@ needing to manually track these fields.</p>
 <p>The following are examples that will allow a quick start on using
 <strong>zonesigner</strong>:</p>
 <dl>
-<dt><strong><a name="item_first_run_on_example_2ecom">first run on example.com</a></strong><br />
-</dt>
+<dt><strong><a name="item_first_run_on_example_2ecom">first run on example.com</a></strong>
+
 <dd>
-The following command will generate keys and sign the zone file for
+<p>The following command will generate keys and sign the zone file for
 example.com, giving an expiration date 31 days in the future.  The
 zone file is named <strong>example.com</strong> and the signed zone file will be
-named <strong>example.com.signed</strong>.
+named <strong>example.com.signed</strong>.</p>
 </dd>
 <dd>
 <pre>
     zonesigner -genkeys -endtime +2678400 example.com</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_subsequent_runs_on_example_2ecom">subsequent runs on example.com</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_subsequent_runs_on_example_2ecom">subsequent runs on example.com</a></strong>
+
 <dd>
-The following command will re-sign example.com's zone file, but will not
+<p>The following command will re-sign example.com's zone file, but will not
 generate new keys.  The files and all key-generation and zone-signing
-arguments will remain the same.
+arguments will remain the same.</p>
 </dd>
 <dd>
 <pre>
     zonesigner example.com</pre>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="using_zonesigner">USING ZONESIGNER</a></h1>
 <p><strong>zonesigner</strong> is used in this way:</p>
 <pre>
-    zonesigner [options] &lt;zone-file&gt; &lt;signed-zone-file&gt;</pre>
-<p>The <em>zone-file</em> argument is required.</p>
+    zonesigner [options] &lt;zone-file&gt; &lt;signed-zone&gt;</pre>
+<p>The <em>zone-file</em> and <em>signed-zone</em> arguments are required.</p>
 <p><em>zone-file</em> is the name of the zone file from which a signed zone file will
 be created.  If the <em>-zone</em> option is not given, then <em>zone-file</em> will be
 used as the name of the zone that will be signed.  Generated keys are given
@@ -152,8 +155,8 @@ option is given, then no <em>keyrec</em> file will be consulted or saved.</p>
 <em>keyrec</em>s, and key <em>keyrec</em>s.  Zone <em>keyrec</em>s contain information
 specifically about the zone, such as the number of ZSKs used to sign the zone,
 the end-time for the zone, and the key signing set names (names of set
-<em>keyrec</em>s.) Set <em>keyrec</em>s contain lists of key <em>keyrec</em> names used for a
-specific purpose, such as the current ZSK keys or the published ZSK keys.  Key
+<em>keyrecs</em>.) Set <em>keyrec</em>s contain lists of keys names used for a specific
+purpose, such as the current ZSK keys or the published ZSK keys.  Key
 <em>keyrec</em>s contain information about the generated keys themselves, such as
 encryption algorithm, key length, and key lifetime.</p>
 <p>Each <em>keyrec</em> contains a set of ``key/value'' entries, one per line.  Example 4
@@ -218,66 +221,66 @@ intended.  These commands are  <strong>dnssec-keygen</strong>, <strong>dnssec-si
 </p>
 <h2><a name="zonesignerspecific_options"><strong>zonesigner</strong>-specific Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dnokrfile">-nokrfile</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dnokrfile">-nokrfile</a></strong>
+
 <dd>
-No <em>keyrec</em> file will be consulted or created.
+<p>No <em>keyrec</em> file will be consulted or created.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dkrfile">-krfile</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dkrfile">-krfile</a></strong>
+
 <dd>
-<em>keyrec</em> file to use in processing options.  See the man page for
-<strong>Net::DNS::SEC::Tools::tooloptions.pm</strong> for more details about this file.
+<p><em>keyrec</em> file to use in processing options.  See the man page for
+<strong>Net::DNS::SEC::Tools::tooloptions.pm</strong> for more details about this file.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgenkeys">-genkeys</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgenkeys">-genkeys</a></strong>
+
 <dd>
-Generate new KSKs and ZSKs for the zone.
+<p>Generate new KSKs and ZSKs for the zone.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgenksk">-genksk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgenksk">-genksk</a></strong>
+
 <dd>
-Generate new Current KSKs for the zone.  Any existing Current KSKs will be
+<p>Generate new Current KSKs for the zone.  Any existing Current KSKs will be
 marked as obsolete.  If this option is not given, the last KSKs generated for
-this zone will be used.
+this zone will be used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgenzsk">-genzsk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgenzsk">-genzsk</a></strong>
+
 <dd>
-Generate new ZSKs for the zone.  By default, the last ZSKs generated for this
-zone will be used.
+<p>Generate new ZSKs for the zone.  By default, the last ZSKs generated for this
+zone will be used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dnewpubksk">-newpubksk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dnewpubksk">-newpubksk</a></strong>
+
 <dd>
-Generate new Published KSKs for the zone.  Any existing Published KSKs will
-be marked as obsolete.
+<p>Generate new Published KSKs for the zone.  Any existing Published KSKs will
+be marked as obsolete.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2duseboth">-useboth</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2duseboth">-useboth</a></strong>
+
 <dd>
-Use the existing Current <strong>and</strong> Published ZSKs to sign the zone.
+<p>Use the existing Current <strong>and</strong> Published ZSKs to sign the zone.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dusezskpub">-usezskpub</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dusezskpub">-usezskpub</a></strong>
+
 <dd>
-Use the existing Published ZSKs to sign the zone.
+<p>Use the existing Published ZSKs to sign the zone.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2darchivedir">-archivedir</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2darchivedir">-archivedir</a></strong>
+
 <dd>
-The key archive directory.  If a key archive directory hasn't been specified
+<p>The key archive directory.  If a key archive directory hasn't been specified
 (on the command line or in the DNSSEC-Tools configuration file) and the
 <em>-nosave</em> option was <strong>not</strong> given, an error message will be displayed and 
-<strong>zonesigner</strong> will exit.
+<strong>zonesigner</strong> will exit.</p>
 </dd>
 <dd>
 <p>When the files are saved into the archive directory, the existing file names
@@ -287,60 +290,60 @@ archived.</p>
 <dd>
 <p>This directory <strong>may not</strong> be the root directory.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dnosave">-nosave</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dnosave">-nosave</a></strong>
+
 <dd>
-Do not save obsolete keys to the key archive directory.  The default behavior
-is to save obsolete keys.
+<p>Do not save obsolete keys to the key archive directory.  The default behavior
+is to save obsolete keys.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dkskcount">-kskcount</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dkskcount">-kskcount</a></strong>
+
 <dd>
-The number of KSK keys to generate and with which to sign the zone.  The
-default is to use a single KSK key.
+<p>The number of KSK keys to generate and with which to sign the zone.  The
+default is to use a single KSK key.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dksklife">-ksklife</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksklife">-ksklife</a></strong>
+
 <dd>
-The time between KSK rollovers.  This is measured in seconds.
+<p>The time between KSK rollovers.  This is measured in seconds.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dksignset">-ksignset</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksignset">-ksignset</a></strong>
+
 <dd>
-The name of the KSK signing set to use.  If the signing set does not exist,
+<p>The name of the KSK signing set to use.  If the signing set does not exist,
 then this must be used in conjunction with either <em>-genkeys</em> or <em>-genksk</em>.
-The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.</p>
 </dd>
 <dd>
 <p>The default signing set name is ``signing-set-<em>N</em>'', where <em>N</em> is a number.
 If <em>-signset</em> is not specified, then <strong>zonesigner</strong> will use the default and
 increment the number for subsequent signing sets.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzsklife">-zsklife</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dzsklife">-zsklife</a></strong>
+
 <dd>
-The time between ZSK rollovers.  This is measured in seconds.
+<p>The time between ZSK rollovers.  This is measured in seconds.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzskcount">-zskcount</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dzskcount">-zskcount</a></strong>
+
 <dd>
-The number of ZSK keys to generate and with which to sign the zone.  The
-default is to use a single ZSK key.
+<p>The number of ZSK keys to generate and with which to sign the zone.  The
+default is to use a single ZSK key.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dsignset">-signset</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dsignset">-signset</a></strong>
+
 <dd>
-The name of the ZSK signing set to use as the Current ZSK signing set.  The
+<p>The name of the ZSK signing set to use as the Current ZSK signing set.  The
 zone is signed and the given signing set becomes the zone's new Current ZSK
 signing set.  If the signing set does not exist, then this must be used in
-conjunction with either <em>-genkeys</em> or <em>-genzsk</em>.
+conjunction with either <em>-genkeys</em> or <em>-genzsk</em>.</p>
 </dd>
 <dd>
 <p>The name may contain alphanumerics, underscores, hyphens, periods, and commas.
@@ -348,15 +351,15 @@ The default signing set name is ``signing-set-<em>N</em>'', where <em>N</em> is 
 If <em>-signset</em> is not specified, then <strong>zonesigner</strong> will use the default and
 increment the number for subsequent signing sets.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2drollksk">-rollksk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2drollksk">-rollksk</a></strong>
+
 <dd>
-Force a rollover of the KSK keys.  The Current KSK keys are marked as Obsolete
+<p>Force a rollover of the KSK keys.  The Current KSK keys are marked as Obsolete
 and the Published KSK keys are marked as Current.  The zone is then signed
 with the new set of Current KSK keys.  If the zone's <em>keyrec</em> does not list a
 Current or Published KSK, an error message is printed and <strong>zonesigner</strong> stops
-execution.
+execution.</p>
 </dd>
 <dd>
 <p>The zone's <em>keyrec</em> file is updated to show the new key state.</p>
@@ -381,18 +384,18 @@ management.</p>
 what you're doing.</p>
 </dd>
 <dd>
-<p><strong>Warning</strong>:  This is a <em>temporary</em> method of KSK rollover.  It <em>may</em>
+<p><strong>Warning</strong>:  This is a <em>temporary</em> method of KSK rollover.  It is <em>may</em>
 be changed in the future.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2drollzsk">-rollzsk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2drollzsk">-rollzsk</a></strong>
+
 <dd>
-Force a rollover of the ZSK keys using the Pre-Publish Key Rollover method.
+<p>Force a rollover of the ZSK keys using the Pre-Publish Key Rollover method.
 The rollover process adjusts the keys used to sign the specified zone,
 generates new keys, signs the zone with the appropriate keys, and updates the
 <em>keyrec</em> file.  The Pre-Publish Key Rollover process is described in the
-DNSSEC Operational Practices document.
+DNSSEC Operational Practices document.</p>
 </dd>
 <dd>
 <p>Three sets of ZSK keys are used in the rollover process:  Current, Published,
@@ -433,38 +436,38 @@ when using this option.  <strong>rollerd</strong> automates the rollover process
 used to safely take care of this aspect of DNSSEC management.  Using the
 <em>-rollzsk</em> option should only be used if you know what you're doing.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dintermediate">-intermediate</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dintermediate">-intermediate</a></strong>
+
 <dd>
-Filename to use for the temporary zone file.  The zone file will be copied to
-this file and then the key names appended.
+<p>Filename to use for the temporary zone file.  The zone file will be copied to
+this file and then the key names appended.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzone">-zone</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dzone">-zone</a></strong>
+
 <dd>
-Name of the zone that will be signed.  This zone name may be given with this
-option or as the first non-option command line argument.
+<p>Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dhelp">-help</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dhelp">-help</a></strong>
+
 <dd>
-Display a usage message.
+<p>Display a usage message.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dversion">-Version</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dversion">-Version</a></strong>
+
 <dd>
-Display the version information for <strong>zonesigner</strong> and the DNSSEC-Tools package.
+<p>Display the version information for <strong>zonesigner</strong> and the DNSSEC-Tools package.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dverbose">-verbose</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+
 <dd>
-Verbose output will be given.  As more instances of <em>-verbose</em> are given on
-the command line, additional levels of verbosity are achieved.
+<p>Verbose output will be given.  As more instances of <em>-verbose</em> are given on
+the command line, additional levels of verbosity are achieved.</p>
 </dd>
 <dd>
 <pre>
@@ -482,95 +485,98 @@ the command line, additional levels of verbosity are achieved.
 <p>Higher levels of verbosity are cumulative.  Specifying two instances of
 <em>-verbose</em> will get the output from the first and second levels of output.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dshowkeycmd">-showkeycmd</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dshowkeycmd">-showkeycmd</a></strong>
+
 <dd>
-Display the actual key-generation command (with options and arguments) that is
-executed.  This is a small subset of verbose level 3 output.
+<p>Display the actual key-generation command (with options and arguments) that is
+executed.  This is a small subset of verbose level 3 output.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dshowsigncmd">-showsigncmd</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dshowsigncmd">-showsigncmd</a></strong>
+
 <dd>
-Display the actual zone-signing command (with options and arguments) that is
-executed.  This is a small subset of verbose level 3 output.
+<p>Display the actual zone-signing command (with options and arguments) that is
+executed.  This is a small subset of verbose level 3 output.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="dnsseckeygenspecific_options"><strong>dnssec-keygen</strong>-specific Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dalgorithm">-algorithm</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dalgorithm">-algorithm</a></strong>
+
 <dd>
-Cryptographic algorithm used to generate the zone's keys.  The default value
+<p>Cryptographic algorithm used to generate the zone's keys.  The default value
 is RSASHA1.  The option value is passed to <strong>dnssec-keygen</strong> as the the <em>-a</em>
-flag.  Consult <strong>dnssec-keygen</strong>'s manual page to determine legal values.
+flag.  Consult <strong>dnssec-keygen</strong>'s manual page for to determine legal values.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dksklength">-ksklength</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksklength">-ksklength</a></strong>
+
 <dd>
-Bit length of the zone's KSK key.
-The default is 1024.
+<p>Bit length of the zone's KSK key.
+The default is 1024.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2drandom">-random</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2drandom">-random</a></strong>
+
 <dd>
-Source of randomness used to generate the zone's keys.	(For example, /dev/urandom.)
+<p>Source of randomness used to generate the zone's keys.	(/dev/urandom)</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzsklength">-zsklength</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dzsklength">-zsklength</a></strong>
+
 <dd>
-Bit length of the zone's ZSK key.
-The default is 512.
+<p>Bit length of the zone's ZSK key.
+The default is 512.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dkgopts">-kgopts</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dkgopts">-kgopts</a></strong>
+
 <dd>
-Additional options for <strong>dnssec-keygen</strong> may be specified using this option.
+<p>Additional options for <strong>dnssec-keygen</strong> may be specified using this option.
 The additional options are passed as a single string value as an argument to
-the <em>-kgopts</em> option.
+the <em>-kgopts</em> option.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="dnssecsignzonespecific_options"><strong>dnssec-signzone</strong>-specific Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dendtime">-endtime</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dendtime">-endtime</a></strong>
+
 <dd>
-Time that the zone expires, measured in seconds.  See the man page for
+<p>Time that the zone expires, measured in seconds.  See the man page for
 <strong>dnssec-signzone</strong> for the valid format of this field.
-The default value is 2592000 seconds (30 days.)
+The default value is 2592000 seconds (30 days.)</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgends">-gends</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgends">-gends</a></strong>
+
 <dd>
-Force <strong>dnssec-signzone</strong> to generate DS records for the zone.  This option is
-translated into <em>-g</em> when passed to <strong>dnssec-signzone</strong>.
+<p>Force <strong>dnssec-signzone</strong> to generate DS records for the zone.  This option is
+translated into <em>-g</em> when passed to <strong>dnssec-signzone</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dksdir">-ksdir</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksdir">-ksdir</a></strong>
+
 <dd>
-Specify a directory for storing keysets.  This is passed to <strong>dnssec-signzone</strong>
-as the <em>-d</em> option.
+<p>Specify a directory for storing keysets.  This is passed to <strong>dnssec-signzone</strong>
+as the <em>-d</em> option.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dszopts">-szopts</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dszopts">-szopts</a></strong>
+
 <dd>
-Additional options for <strong>dnssec-signzone</strong> may be specified using this option.
+<p>Additional options for <strong>dnssec-signzone</strong> may be specified using this option.
 The additional options are passed as a single string value as an argument to
-the <em>-szopts</em> option.
+the <em>-szopts</em> option.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
@@ -579,7 +585,7 @@ the <em>-szopts</em> option.
 <p>In the first example, an existing <em>keyrec</em> file is used to assist in signing
 the example.com domain.  Zone data are stored in <strong>example.com</strong>, and the
 keyrec is in <strong>example.krf</strong>.  The final signed zone file will be
-<strong>db.example.com.signed</strong>.  Using this execution:</p>
+<strong>db.example.com</strong>.  Using this execution:</p>
 <pre>
     # zonesigner -krfile example.krf example.com db.example.com.signed</pre>
 <p>the following files are created:</p>
@@ -596,8 +602,8 @@ keyrec is in <strong>example.krf</strong>.  The final signed zone file will be
 <pre>
     db.example.com.signed</pre>
 <p>The first six files are the KSK and ZSK keys required for the zone.  The next
-two files are created by the zone-signing process.  The last file is the 
-final signed zone file.</p>
+two files are created by the zone-signing process.  The last file is the zone
+the final signed zone file.</p>
 <p>Example 2.</p>
 <p>In the second example, an existing <em>keyrec</em> file is used to assist in signing
 the example.com domain.  Zone data are stored in <strong>example.com</strong>, and the
@@ -605,7 +611,7 @@ keyrec is in <strong>example.krf</strong>.  The generated keys, an intermediate 
 and final signed zone file will use <strong>example.com</strong> as a base.
 Using this execution:</p>
 <pre>
-    # zonesigner -krfile example.krf -intermediate example.zs example.com</pre>
+    # zonesigner -krfile example.krf -intermediate example.zs example.com db.example.com</pre>
 <p>the following files are created:</p>
 <pre>
     Kdb.example.com.+005+12354.key
@@ -619,7 +625,7 @@ Using this execution:</p>
     keyset-db.example.com.</pre>
 <pre>
     example.zs
-    example.com.signed</pre>
+    db.example.com</pre>
 <p>The first six files are the KSK and ZSK keys required for the zone.  The next
 two files are created by the zone-signing process.  The second last file is
 an intermediate file that will be signed.  The last file is file is the final
@@ -646,8 +652,8 @@ domain name as its base.  Using this execution:</p>
 two set <em>keyrec</em>s, one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.</p>
 <pre>
     zone        &quot;example.com&quot;
-        zonefile        &quot;example.com&quot;
-        signedzone      &quot;db.example.com&quot;
+        zonefile        &quot;db.example.com&quot;
+        signedzone      &quot;db.example.com.signed&quot;
         endtime         &quot;+2592000&quot;
         kskcur          &quot;signing-set-24&quot;
         kskdirectory    &quot;.&quot;
@@ -713,11 +719,12 @@ two set <em>keyrec</em>s, one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.
 <hr />
 <h1><a name="notes">NOTES</a></h1>
 <ol>
-<li><strong><a name="item_soa_serial_numbers">SOA Serial Numbers</a></strong><br />
+<li><strong><a name="item_soa_serial_numbers">SOA Serial Numbers</a></strong>
+
+<p>Serial numbers in SOA records are merely incremented in this version.  Future
+plans are to allow for more flexible serial number manipulation.</p>
 </li>
-Serial numbers in SOA records are merely incremented in this version.  Future
-plans are to allow for more flexible serial number manipulation.
-<p></p></ol>
+</ol>
 <p>
 </p>
 <hr />
