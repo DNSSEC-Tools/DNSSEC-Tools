@@ -41,6 +41,11 @@ SRC=					\
 	update-zonefile.tex		\
 	zone-reload.tex
 
+sbs.pdf: ${SRC}
+	pdflatex sbs.tex
+	pdflatex sbs.tex
+	pdflatex sbs.tex
+
 sbs.ps:	sbs.dvi
 		dvips -f sbs.dvi > sbs.ps
 
