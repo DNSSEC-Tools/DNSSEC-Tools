@@ -19,6 +19,15 @@
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#requirements">REQUIREMENTS</a></li>
 	<li><a href="#options">OPTIONS</a></li>
+	<ul>
+
+		<li><a href="#input_packet_selection">Input Packet Selection</a></li>
+		<li><a href="#output_file_options">Output File Options</a></li>
+		<li><a href="#output_visualization_options_">Output Visualization Options:</a></li>
+		<li><a href="#graphical_options_">Graphical Options:</a></li>
+		<li><a href="#debugging_">Debugging:</a></li>
+	</ul>
+
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
@@ -43,8 +52,13 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>Analyze and draw DNS flow diagrams from a <em>tcpdump</em> file.
-The flow diagram will be made in the PNG format.</p>
+<p>The <strong>dnspktflow</strong> application takes a <strong>tcpdump</strong> network traffic dump
+file, passes it through the <strong>tshark</strong> application and then displays the
+resulting DNS packet flows in a ``flow-diagram'' image.  <strong>dnspktflow</strong>
+can output a single image or a series of images which can then be
+shown in sequence as an animation.</p>
+<p><strong>dnspktflow</strong> was written as a debugging utility to help trace DNS
+queries and responses, especially as they apply to DNSSEC-enabled lookups.</p>
 <p>
 </p>
 <hr />
@@ -52,13 +66,14 @@ The flow diagram will be made in the PNG format.</p>
 <p>This application requires the following Perl modules and software
 components to work:</p>
 <pre>
-  I&lt;graphviz&gt;                  (<a href="http://www.graphviz.org/">http://www.graphviz.org/</a>)
+  B&lt;graphviz&gt;                  (<a href="http://www.graphviz.org/">http://www.graphviz.org/</a>)
   B&lt;GraphViz&gt;                  (Perl module)
-  B&lt;tethereal&gt;                 (<a href="http://www.ethereal.org/">http://www.ethereal.org/</a>)</pre>
+  B&lt;tshark&gt;                    (<a href="http://www.wireshark.org/">http://www.wireshark.org/</a>)</pre>
 <p>The following is required for outputting screen presentations:</p>
 <pre>
   MagicPoint                   (<a href="http://member.wide.ad.jp/wg/mgp/">http://member.wide.ad.jp/wg/mgp/</a>)</pre>
-<p>If the following modules are installed, it will enable a GUI interface:</p>
+<p>If the following modules are installed, a GUI interface will be enabled for
+communication with <strong>dnspktflow</strong>:</p>
 <pre>
   B&lt;QWizard&gt;                   (Perl module)
   B&lt;Getopt::GUI::Long&gt;         (Perl module)</pre>
@@ -66,47 +81,209 @@ components to work:</p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
-<pre>
-  --i=STRING
-  --ignore-hosts=STRING  A regular expression of host names to ignore
-  --r=STRING
-  --only-hosts=STRING    A regular expression of host names to analyze</pre>
-<pre>
-  --o=STRING
-  --output-file=STRING   Output PNG image file name (default: out.png)
-  --O=STRING
-  --tethereal-out=STRING Save tethereal output to this file
-  --T
-  --input-is-tethereal-out The input file is already processed by tethereal</pre>
-<pre>
-  --t
-  --show-type            Shows message type in result image
-  --q
-  --show-queries         Shows query questions in result image
-  --a
-  --show-answers         Shows query answers in result image
-  --A
-  --show-authoritative   Shows authoritative information in result image
-  --x
-  --show-additional      Shows additional information in result image
-  --l
-  --show-label-lines     Shows lines attaching labels to lines</pre>
-<pre>
-  --f
-  --show-frame-num       Shows the packet frame numbers
-  --b=INTEGER
-  --begin-frame=INTEGER  Begin at frame NUMBER</pre>
-<pre>
-  --fontsize             Font Size
-  --d
-  --dump-pkts            Dump data collected from the packets
-  --h
-  --help                 Show help for command line options</pre>
+<p><strong>dnspktflow</strong> takes a wide variety of command-line options.  These options
+are described below in the following functional groups:  input packet
+selection, output file options, output visualization options, graphical
+options, and debugging.</p>
+<p>
+</p>
+<h2><a name="input_packet_selection">Input Packet Selection</a></h2>
+<p>These options determine the packets that will be selected by <strong>dnspktflow</strong>.</p>
+<dl>
+<dt><strong><a name="item__2di_string">-i STRING</a></strong>
+
+<dt><strong><a name="item__2d_2dignore_2dhosts_3dstring">--ignore-hosts=STRING</a></strong>
+
+<dd>
+<p>A regular expression of host names to ignore in the query/response fields.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dr_string">-r STRING</a></strong>
+
+<dt><strong><a name="item__2d_2donly_2dhosts_3dstring">--only-hosts=STRING</a></strong>
+
+<dd>
+<p>A regular expression of host names to analyze in the query/response fields.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2df">-f</a></strong>
+
+<dt><strong><a name="item__2d_2dshow_2dframe_2dnum">--show-frame-num</a></strong>
+
+<dd>
+<p>Display the packet frame numbers.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2db_integer">-b INTEGER</a></strong>
+
+<dt><strong><a name="item__2d_2dbegin_2dframe_3dinteger">--begin-frame=INTEGER</a></strong>
+
+<dd>
+<p>Begin at packet frame NUMBER.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="output_file_options">Output File Options</a></h2>
+<p>These options determine the type and location of <strong>dnspktflow</strong>'s output.</p>
+<dl>
+<dt><strong><a name="item__2do_string">-o STRING</a></strong>
+
+<dt><strong><a name="item__2d_2doutput_2dfile_3dstring">--output-file=STRING</a></strong>
+
+<dd>
+<p>Output file name (default: out%03d.png as PNG format.)</p>
+</dd>
+</li>
+<dt><strong><a name="item__2d_2dfig">--fig</a></strong>
+
+<dd>
+<p>Output format should be fig.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2do_string">-O STRING</a></strong>
+
+<dt><strong><a name="item__2d_2dtshark_2dout_3dstring">--tshark-out=STRING</a></strong>
+
+<dd>
+<p>Save <strong>tshark</strong> output to this file.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dm">-m</a></strong>
+
+<dt><strong><a name="item__2d_2dmultiple_2doutputs">--multiple-outputs</a></strong>
+
+<dd>
+<p>One picture per request (use %03d in the filename.)</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dm_string">-M STRING</a></strong>
+
+<dt><strong><a name="item__2d_2dmagic_2dpoint_3dstring">--magic-point=STRING</a></strong>
+
+<dd>
+<p>Saves a MagicPoint presentation for the output.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="output_visualization_options_">Output Visualization Options:</a></h2>
+<p>These options determine specifics of <strong>dnspktflow</strong>'s output.</p>
+<dl>
+<dt><strong><a name="item__2dl">-L</a></strong>
+
+<dt><strong><a name="item__2d_2dlast_2dline_2dlabels_2donly">--last-line-labels-only</a></strong>
+
+<dd>
+<p>Only show data on the last line drawn.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dz_integer">-z INTEGER</a></strong>
+
+<dt><strong><a name="item__2d_2dmost_2dlines_3dinteger">--most-lines=INTEGER</a></strong>
+
+<dd>
+<p>Only show at most INTEGER connections.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dt">-T</a></strong>
+
+<dt><strong><a name="item__2d_2dinput_2dis_2dtshark_2dout">--input-is-tshark-out</a></strong>
+
+<dd>
+<p>The input file is already processed by <strong>tshark</strong>.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="graphical_options_">Graphical Options:</a></h2>
+<p>These options determine fields included in <strong>dnspktflow</strong>'s output.</p>
+<dl>
+<dt><strong><a name="item__2dt">-t</a></strong>
+
+<dt><strong><a name="item__2d_2dshow_2dtype">--show-type</a></strong>
+
+<dd>
+<p>Shows message type in result image.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dq">-q</a></strong>
+
+<dt><strong><a name="item__2d_2dshow_2dqueries">--show-queries</a></strong>
+
+<dd>
+<p>Shows query questions in result image.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2da">-a</a></strong>
+
+<dt><strong><a name="item__2d_2dshow_2danswers">--show-answers</a></strong>
+
+<dd>
+<p>Shows query answers in result image.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2da">-A</a></strong>
+
+<dt><strong><a name="item__2d_2dshow_2dauthoritative">--show-authoritative</a></strong>
+
+<dd>
+<p>Shows authoritative information in result image.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dx">-x</a></strong>
+
+<dt><strong><a name="item__2d_2dshow_2dadditional">--show-additional</a></strong>
+
+<dd>
+<p>Shows additional information in result image.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dl">-l</a></strong>
+
+<dt><strong><a name="item__2d_2dshow_2dlabel_2dlines">--show-label-lines</a></strong>
+
+<dd>
+<p>Shows lines attaching labels to lines.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2d_2dfontsize_3dinteger">--fontsize=INTEGER</a></strong>
+
+<dd>
+<p>Font Size</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="debugging_">Debugging:</a></h2>
+<p>These options may assist in debugging <strong>dnspktflow</strong>.</p>
+<dl>
+<dt><strong><a name="item__2dd">-d</a></strong>
+
+<dt><strong><a name="item__2d_2ddump_2dpkts">--dump-pkts</a></strong>
+
+<dd>
+<p>Dump data collected from the packets.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dh">-h</a></strong>
+
+<dt><strong><a name="item__2d_2dhelp">--help</a></strong>
+
+<dd>
+<p>Show help for command line options.</p>
+</dd>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -117,10 +294,11 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>Net::DNS</strong></p>
+<p><strong>Getopt::GUI::Long(3)</strong>
+<strong>Net::DNS(3)</strong>
+<strong>QWizard.pm(3)</strong></p>
 <p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

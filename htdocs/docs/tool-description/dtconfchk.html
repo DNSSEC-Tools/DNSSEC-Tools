@@ -1,0 +1,330 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>dtconfchk - Check a DNSSEC-Tools configuration file for sanity.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<ul>
+
+		<li><a href="#keyrelated_checks">Key-related Checks</a></li>
+		<li><a href="#zonerelated_checks">Zone-related Checks</a></li>
+		<li><a href="#path_checks">Path Checks</a></li>
+		<li><a href="#rollover_daemon_checks">Rollover Daemon Checks</a></li>
+		<li><a href="#miscellaneous_checks">Miscellaneous Checks</a></li>
+	</ul>
+
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>dtconfchk - Check a DNSSEC-Tools configuration file for sanity.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  dtconfchk [options] [config_file]</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><strong>dtconfchk</strong> checks a DNSSEC-Tools configuration file to determine if the
+entries are valid.  If a configuration file isn't specified, the system
+configuration file will be verified.</p>
+<p>Without any display options, <strong>dtconfchk</strong> displays error messages for problems
+found, followed by a summary line.  Display options will increase or decrease
+the amount of detail about the configuration file's sanity.  In all cases,
+the exit code is the count of errors found in the file.</p>
+<p>The tests are divided into five groups: key-related checks, zone-related
+checks, path checks, rollover checks, and miscellaneous checks.  The checks
+in each of these self-explanatory groups are described below.</p>
+<p>The <em>default_keyrec</em> configuration entry is not checked.  This entry
+specifies the default <em>keyrec</em> file name and isn't necessarily expected
+to exist in any particular place.</p>
+<p>
+</p>
+<h2><a name="keyrelated_checks">Key-related Checks</a></h2>
+<p>The following key-related checks are performed:</p>
+<dl>
+<dt><strong><a name="item_algorithm"><em>algorithm</em></a></strong>
+
+<dd>
+<p>Ensure the <em>algorithm</em> field is valid.  The acceptable values may be found
+in the <strong>dnssec-keygen</strong> man page.</p>
+</dd>
+</li>
+<dt><strong><a name="item_ksklength"><em>ksklength</em></a></strong>
+
+<dd>
+<p>Ensure the <em>ksklength</em> field is valid.  The acceptable values may be found
+in the <strong>dnssec-keygen</strong> man page.</p>
+</dd>
+</li>
+<dt><strong><a name="item_ksklife"><em>ksklife</em></a></strong>
+
+<dd>
+<p>Ensure the <em>ksklife</em> field is valid.  The acceptable values may be found
+in the <strong>defaults.pm(3)</strong> man page.</p>
+</dd>
+</li>
+<dt><strong><a name="item_zskcount"><em>zskcount</em></a></strong>
+
+<dd>
+<p>Ensure the <em>zskcount</em> field is valid.  The ZSK count must be positive.</p>
+</dd>
+</li>
+<dt><strong><a name="item_zsklength"><em>zsklength</em></a></strong>
+
+<dd>
+<p>Ensure the <em>zsklength</em> field is valid.  The acceptable values may be found
+in the <em>dnssec-keygen</em> man page.</p>
+</dd>
+</li>
+<dt><strong><a name="item_zsklife"><em>zsklife</em></a></strong>
+
+<dd>
+<p>Ensure the <em>zsklife</em> field is valid.  The acceptable values may be found
+in the <strong>defaults.pm(3)</strong> man page.</p>
+</dd>
+</li>
+<dt><strong><a name="item_random"><em>random</em></a></strong>
+
+<dd>
+<p>Ensure the <em>random</em> field is valid.  This file must be a character
+device file.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="zonerelated_checks">Zone-related Checks</a></h2>
+<p>The following zone-related checks are performed:</p>
+<dl>
+<dt><strong><a name="item_endtime"><em>endtime</em></a></strong>
+
+<dd>
+<p>Ensure the <em>endtime</em> field is valid.  This value is assumed to be in the
+``+NNNNNN'' format.  There is a lower limit of two hours.  (This is an
+artificial limit under which it <em>may</em> not make sense to have an end-time.)</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="path_checks">Path Checks</a></h2>
+<p>The following path checks are performed:</p>
+<dl>
+<dt><strong><a name="item_keygen"><em>keygen</em></a></strong>
+
+<dd>
+<p>Ensure the <em>keygen</em> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.</p>
+</dd>
+</li>
+<dt><strong><a name="item_viewimage"><em>viewimage</em></a></strong>
+
+<dd>
+<p>Ensure the <em>viewimage</em> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.</p>
+</dd>
+</li>
+<dt><strong><a name="item_zonecheck"><em>zonecheck</em></a></strong>
+
+<dd>
+<p>Ensure the <em>zonecheck</em> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.</p>
+</dd>
+</li>
+<dt><strong><a name="item_zonesign"><em>zonesign</em></a></strong>
+
+<dd>
+<p>Ensure the <em>zonesign</em> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="rollover_daemon_checks">Rollover Daemon Checks</a></h2>
+<p>The following checks are performed for <strong>rollerd</strong> values:</p>
+<dl>
+<dt><strong><a name="item_roll_logfile"><em>roll_logfile</em></a></strong>
+
+<dd>
+<p>Ensure that the log file for the <strong>rollerd</strong> is valid.  If the file
+exists, it must be a regular file.</p>
+</dd>
+</li>
+<dt><strong><a name="item_roll_loglevel"><em>roll_loglevel</em></a></strong>
+
+<dd>
+<p>Ensure that the logging level for the <strong>rollerd</strong> is reasonable.  The
+log level must be one of the following text or numeric values:</p>
+</dd>
+<dd>
+<pre>
+    tmi        1       (Overly verbose informational messages.)
+    info       3       (Informational messages.)
+    phase      6       (Current state of zone.)
+    err        7       (Error messages.)
+    fatal      9       (Fatal errors.)</pre>
+</dd>
+<dd>
+<p>Specifying a particular log level will causes messages of a higher numeric
+value to also be displayed.</p>
+</dd>
+</li>
+<dt><strong><a name="item_roll_sleeptime"><em>roll_sleeptime</em></a></strong>
+
+<dd>
+<p>Ensure that the <strong>rollerd</strong>'s sleep-time is reasonable.
+<strong>rollerd</strong>'s sleep-time must be at least one minute.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="miscellaneous_checks">Miscellaneous Checks</a></h2>
+<p>The following miscellaneous checks are performed:</p>
+<dl>
+<dt><strong><a name="item_admin_2demail"><em>admin-email</em></a></strong>
+
+<dd>
+<p>Ensure that the <em>admin-email</em> field is defined and has a value.  
+<strong>dtconfchk</strong> does not try to validate the email address itself.</p>
+</dd>
+</li>
+<dt><strong><a name="item_archivedir"><em>archivedir</em></a></strong>
+
+<dd>
+<p>Ensure that the <em>archivedir</em> directory is actually a directory.
+This check is only performed if the <em>savekeys</em> flag is set on.</p>
+</dd>
+</li>
+<dt><strong><a name="item_entropy_msg"><em>entropy_msg</em></a></strong>
+
+<dd>
+<p>Ensure that the <em>entropy_msg</em> flag is either 0 or 1.</p>
+</dd>
+</li>
+<dt><strong><a name="item_savekeys"><em>savekeys</em></a></strong>
+
+<dd>
+<p>Ensure that the <em>savekeys</em> flag is either 0 or 1.
+If this flag is set to 1, then the <em>archivedir</em> field will also be checked.</p>
+</dd>
+</li>
+<dt><strong><a name="item_usegui"><em>usegui</em></a></strong>
+
+<dd>
+<p>Ensure that the <em>usegui</em> flag is either 0 or 1.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dexpert"><em>-expert</em></a></strong>
+
+<dd>
+<p>This option will bypass the following checks:</p>
+</dd>
+<dd>
+<pre>
+    - KSK has a longer lifespan than the configuration
+      file's default minimum lifespan</pre>
+</dd>
+<dd>
+<pre>
+    - KSK has a shorter lifespan than the configuration
+      file's default maximum lifespan</pre>
+</dd>
+<dd>
+<pre>
+    - ZSKs have a longer lifespan than the configuration
+      file's default minimum lifespan</pre>
+</dd>
+<dd>
+<pre>
+    - ZSKs have a shorter lifespan than the configuration
+      file's default maximum lifespan</pre>
+</dd>
+</li>
+<dt><strong><a name="item__2dquiet"><em>-quiet</em></a></strong>
+
+<dd>
+<p>No output will be given.
+The number of errors will be used as the exit code.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dsummary"><em>-summary</em></a></strong>
+
+<dd>
+<p>A final summary of success or failure will be printed.
+The number of errors will be used as the exit code.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dverbose"><em>-verbose</em></a></strong>
+
+<dd>
+<p>Success or failure status of each check will be given.
+A <strong>+</strong> or <strong>-</strong> prefix will be given for each valid and invalid entry.
+The number of errors will be used as the exit code.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dhelp"><em>-help</em></a></strong>
+
+<dd>
+<p>Display a usage message.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>dtdefs(8)</strong>,
+<strong>dtinitconf(8)</strong>,
+<strong>rollerd(8)</strong>,
+<strong>zonesigner(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong></p>
+<p><strong>dnssec-tools.conf(5)</strong></p>
+
+</body>
+
+</html>

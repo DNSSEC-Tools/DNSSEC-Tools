@@ -55,7 +55,7 @@ problem spots.</p>
 <dt><strong><a name="item__2dh">-h</a></strong>
 
 <dd>
-<p>Help summary.</p>
+<p>Prints a help summary.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2do_outfile_2epng">-o OUTFILE.png</a></strong>
@@ -68,15 +68,18 @@ will be saved to <strong>map.png</strong>.</p>
 <dt><strong><a name="item__2dr">-r</a></strong>
 
 <dd>
-<p>Lists resources records assigned to each node within the map.</p>
+<p>Lists resource records assigned to each node within the map.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-t TYPE,TYPE...</a></strong>
 
 <dd>
 <p>Adds the data portion of a resource record to the displayed node
-information.  Data types passed will be automatically upper-cased for
-ease of use.  Example usage: <em>-t A</em> will add IPv4 addresses to
+information.  Data types passed will be automatically converted to
+upper-case for ease of use.</p>
+</dd>
+<dd>
+<p>Example usage: <em>-t A</em> will add IPv4 addresses to
 all displayed nodes that have A records.</p>
 </dd>
 </li>
@@ -89,8 +92,8 @@ all displayed nodes that have A records.</p>
 <dt><strong><a name="item_l">-l (neato|dot|twopi|circo|fdp)</a></strong>
 
 <dd>
-<p>Selects a layout format.  The default is <em>neato</em> which is circular in
-pattern.  See the documentation on the <em>graphviz</em> package and the
+<p>Selects a layout format.  The default is <em>neato</em>, which is circular in
+pattern.  See the documentation on the <strong>GraphViz</strong> package and the
 <strong>GraphViz</strong> Perl module for further details.</p>
 </dd>
 </li>
@@ -105,47 +108,47 @@ large zones will be difficult to decipher if this option is not used.</p>
 <dt><strong><a name="item__2de_weight">-e WEIGHT</a></strong>
 
 <dd>
-<p>Assigns an edge weight to edges.  In theory &gt;1 means shorter, &lt;1 means
-longer although I don't believe as implemented it will have any
-effect.  Should work better in the future.</p>
+<p>Assigns an edge weight to edges.  In theory, &gt;1 means shorter and &lt;1 means
+longer, although, it may not have any effect as implemented.
+This should work better in the future.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2df_integer">-f INTEGER</a></strong>
 
 <dd>
 <p>Uses the INTEGER value for the font size to print node names with.
-Defaults to 10.</p>
+The default value is 10.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dw_warntime">-w WARNTIME</a></strong>
 
 <dd>
-<p>How far in advance that warnings are turned on for signed
-resource records that are about to expire.  The default is 7 days.
-The warning time is measured in seconds.</p>
+<p>Specifies how far in advance expiration warnings are enabled for signed 
+resource records.  The default is 7 days.  The warning time is measured
+in seconds.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2di_regex">-i REGEX</a></strong>
 
 <dd>
-<p>Ignore record types matching a <em>REGEX</em> regular expression.</p>
+<p>Ignores record types matching a <em>REGEX</em> regular expression.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2ds_type_2ctype_2e_2e_2e">-s TYPE,TYPE...</a></strong>
 
 <dd>
-<p>Skips a list of record types from being analyzed or displayed in the map.
-By default, this is set to NSEC and CNAME in order to reduce clutter.
-Setting it to ``'' will display these results again.</p>
+<p>Specifies a list of record types that will not be analyzed or displayed
+in the map.  By default, this is set to NSEC and CNAME in order to reduce
+clutter.  Setting it to ``'' will display these results again.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-T TYPE,TYPE...</a></strong>
 
 <dd>
-<p>Only process record types of type <em>TYPE</em>.  This is the converse of the
-<em>-s</em> option.  It is not meaningful to use both <em>-s</em> and <em>-t</em> in the same
-invocation.  They will both work at once, however, so if <em>-T</em> specifies a
-type which <em>-s</em> excludes, it will not be shown.</p>
+<p>Restrict record types that will be processed to those of type <em>TYPE</em>.
+This is the converse of the <em>-s</em> option.  It is not meaningful to use both
+<em>-s</em> and <em>-t</em> in the same invocation.  They will both work at once, however,
+so if <em>-T</em> specifies a type which <em>-s</em> excludes, it will not be shown.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dg">-g</a></strong>
@@ -153,14 +156,14 @@ type which <em>-s</em> excludes, it will not be shown.</p>
 <dd>
 <p>Attempts to cluster nodes around the domain name.  For 'dot' layouts,
 this actually means drawing a box around the cluster.  For the other
-types, it makes very little, if any, difference.</p>
+types, it makes very little difference, if any.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dq">-q</a></strong>
 
 <dd>
-<p>Don't output warnings or errors about records that have DNSSEC signatures
-that are near or beyond their signature lifetimes.</p>
+<p>Prevents output of warnings or errors about records that have DNSSEC
+signatures that are near or beyond their signature lifetimes.</p>
 </dd>
 </li>
 </dl>
@@ -174,23 +177,23 @@ that are near or beyond their signature lifetimes.</p>
 <dd>
 <p>Writes to the default file (<strong>map.png</strong>) of a <em>zone.com</em> zone
 stored in <em>zonefile</em>.  It excludes any hosts with a name containing
-<em>dhcp</em> and ignores any record of type <em>CNAME</em> or <em>NSEC</em>.  It also
-includes a legend in the output.</p>
+<em>dhcp</em> and ignores any record of type <em>CNAME</em> or <em>NSEC</em>.  A legend
+is included in the output.</p>
 </dd>
 </li>
 <dt><strong><a name="item_mapper__2ds_txt_2chinfo_2ccname_2cnsec_2ca_2caaaa_"><em>mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong>
 
 <dd>
-<p>Removes a lot of records from the display in order to display mostly a
-map of a zone hierarchy.</p>
+<p>Removes a lot of records from the display in order to primarily display
+a map of a zone hierarchy.</p>
 </dd>
 </li>
 <dt><strong><a name="item_mapper__2dl_dot__2ds_txt_2chinfo_2ccname_2cnsec_2c"><em>mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong>
 
 <dd>
-<p>The same thing, but draws a more vertical tree-style graph of the
-zone.  This works well for fairly deep but narrow hierarchies.  Tree-style
-diagrams rarely look as nice for full zones.</p>
+<p>As the previous example, but this command draws a more vertical tree-style
+graph of the zone.  This works well for fairly deep but narrow hierarchies.
+Tree-style diagrams rarely look as nice for full zones.</p>
 </dd>
 </li>
 </dl>
@@ -198,7 +201,7 @@ diagrams rarely look as nice for full zones.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -212,7 +215,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p><strong>Net::DNS</strong></p>
 <p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

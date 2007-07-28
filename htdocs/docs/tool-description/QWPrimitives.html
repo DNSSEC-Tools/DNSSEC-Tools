@@ -37,28 +37,28 @@
   use Net::DNS::SEC::Tools::QWPrimitives;
   use Getopt::Long::GUI;</pre>
 <pre>
-  GetOptions(...,
-             ['GUI:nootherargs',1],
-             ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
-             ['GUI:submodules','getzonefiles','getzonenames'],
+  GetOptions(  ...,
+               ['GUI:nootherargs',1],
+               ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
+               ['GUI:submodules','getzonefiles','getzonenames'],
             );</pre>
 <p>
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
 <p><strong>QWizard</strong> is a dynamic GUI-construction kit.  It displays a series of
-questions, and then retrieves and acts upon the answers.  This module
+questions, then retrieves and acts upon the answers.  This module
 provides access to <strong>QWizard</strong> for DNSSEC-Tools software.</p>
-<p>In particular the <code>dnssec_tools_get_qwprimitives()</code> returns a set of
+<p>In particular, the <em>dnssec_tools_get_qwprimitives()</em> returns a set of
 primary screens for requesting a set of zone files followed by a set
 of domain names for those zone files.  These are then pushed into the
-__otherargs qwparam variable, which is what Getopt::GUI::Long uses to
-generate the @ARGV list.</p>
+<em>__otherargs</em> <em>qwparam</em> variable, which is used by <strong>Getopt::GUI::Long</strong>
+to generate the <em>@ARGV</em> list.</p>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -69,11 +69,11 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>Net::DNS</strong></p>
-<p><strong>QWizard</strong></p>
+<p><strong>Getopt::GUI::Long(3)</strong>,
+<strong>Net::DNS(3)</strong>,
+<strong>QWizard(3)</strong></p>
 <p><a href="http://www.dnssec-tools.org">http://www.dnssec-tools.org</a></p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>

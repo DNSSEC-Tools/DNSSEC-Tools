@@ -1,0 +1,192 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>rollset - Modifies entries in a DNSSEC-Tools I&lt;rollrec&gt; file.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>rollset - Modifies entries in a DNSSEC-Tools <em>rollrec</em> file.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  rollset [options] rollrec-file</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><strong>rollset</strong> modifies fields in the <em>rollrec</em> file specified by
+<em>rollrec-file</em>.  Multiple options may be combined in a single <strong>rollset</strong>
+execution.  <strong>rollset</strong> operates quietly unless it is given the <em>-verbose</em>
+option.</p>
+<p>All records in the specified <em>rollrec</em> file will be modified, unless the
+<em>-zone</em> option is given.  In that case, only the named zone will be modified.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dzone_zonename">-zone zonename</a></strong>
+
+<dd>
+<p>The zone <em>zonename</em> is selected as the only zone whose <em>rollrec</em> record
+will be modified.  If this is not given, then all <em>rollrec</em> records will
+be modified.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dfile_zone_2dfile">-file zone-file</a></strong>
+
+<dd>
+<p>The zone file in the selected <em>rollrec</em> records is modified to be
+<em>zone-file</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dkeyrec_keyrec_2dfile">-keyrec keyrec-file</a></strong>
+
+<dd>
+<p>The keyrec file in the selected <em>rollrec</em> records is modified to be
+<em>keyrec-file</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dadmin_addr">-admin addr</a></strong>
+
+<dd>
+<p>The zone administrator's email address is set to <em>addr</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddel_2dadmin">-del-admin</a></strong>
+
+<dd>
+<p>The <em>administrator</em> line is deleted.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddel_2ddirectory">-del-directory</a></strong>
+
+<dd>
+<p>The <em>directory</em> line is deleted.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddel_2dloglevel">-del-loglevel</a></strong>
+
+<dd>
+<p>The <em>loglevel</em> line is deleted.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddirectory_dir">-directory dir</a></strong>
+
+<dd>
+<p>The directory to hold the zone's files is set to <em>dir</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dloglevel_logging_2dlevel">-loglevel logging-level</a></strong>
+
+<dd>
+<p>The logging level of the selected <em>rollrec</em> records is set to
+<em>logging-level</em>.  The valid logging levels are defined in <em>rollmgr.pm(3)</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2ddisplay">-display</a></strong>
+
+<dd>
+<p>Turn on the GUI display of the zones in the selected <em>rollrec</em>s.
+This option is mutually exclusive of the <em>-nodisplay</em> option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dnodisplay">-nodisplay</a></strong>
+
+<dd>
+<p>Turn off the GUI display of the zones in the selected <em>rollrec</em>s.
+This option is mutually exclusive of the <em>-display</em> option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2droll">-roll</a></strong>
+
+<dd>
+<p>Convert the selected <em>rollrec</em>s to be active (``roll'') records.
+This option is mutually exclusive of the <em>-skip</em> option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dskip">-skip</a></strong>
+
+<dd>
+<p>Convert the selected <em>rollrec</em>s to be inactive (``skip'') records.
+This option is mutually exclusive of the <em>-roll</em> option.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dcheck">-check</a></strong>
+
+<dd>
+<p>If this option is given, the <strong>rollchk</strong> command will be run on the modified
+<em>rollrec</em> file.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+
+<dd>
+<p>Display information about every modification made to the <em>rollrec</em> file.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dversion">-Version</a></strong>
+
+<dd>
+<p>Display the current <strong>rollset</strong> and DNSSEC-Tools versions.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dhelp">-help</a></strong>
+
+<dd>
+<p>Display a usage message.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>lsroll(8)</strong>,
+<strong>rollchk(8)</strong>,
+<strong>rollerd(8)</strong>,
+<strong>rollinit(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::rollmgr.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
+<p><strong>file-rollrec(5)</strong></p>
+
+</body>
+
+</html>

@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>getdnskeys - Fetch, compare and remember a list of DNSKEYs from DNS zones.</title>
+<title>getdnskeys - Manage lists of DNSKEYs from DNS zones.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -16,6 +16,9 @@
 
 	<li><a href="#name">NAME</a></li>
 	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#examples">EXAMPLES</a></li>
 	<li><a href="#security_issues">SECURITY ISSUES</a></li>
 </ul>
 <!-- INDEX END -->
@@ -25,35 +28,92 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>getdnskeys - Fetch, compare and remember a list of DNSKEYs from DNS zones.</p>
+<p>getdnskeys - Manage lists of DNSKEYs from DNS zones.</p>
 <p>
 </p>
 <hr />
 <h1><a name="synopsis">SYNOPSIS</a></h1>
-<p># then fetch the dnssec-tools.org key using:</p>
 <pre>
-  getdnskeys -o /etc/named.trustkeys.conf -k -v -t dnssec-tools.org</pre>
-<p># then in your main named.conf file put the following line:</p>
+    getdnskeys [-i file] [-o file] [-k] [-T] [-t] [-v] [zones]</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><strong>getdnskeys</strong> manages lists of DNSKEYs from DNS zones.  It may be used
+to retrieve and compare DNSKEYs.  The output from <strong>getdnskeys</strong> may be
+included (directly or indirectly) in a <strong>named.conf</strong> file.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dh">-h</a></strong>
+
+<dd>
+<p>Gives a help message.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2di_path">-i path</a></strong>
+
+<dd>
+<p>Reads {\it path} as a \path{named.conf} with which to compare key lists.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dk">-k</a></strong>
+
+<dd>
+<p>Only looks for Key Signing Keys (KSK); all other keys are ignored.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2do_file">-o file</a></strong>
+
+<dd>
+<p>Writes the results to {\it file}.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dt">-T</a></strong>
+
+<dd>
+<p>Checks the current trusted key list from \path{named.conf}.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dt">-t</a></strong>
+
+<dd>
+<p>Encloses output in needed \path{named.conf} syntax markers.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dv">-v</a></strong>
+
+<dd>
+<p>Turns on verbose mode for additional output.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="examples">EXAMPLES</a></h1>
+<p>This \cmd{getdnskeys} will retrieve the KSK for example.com:</p>
 <pre>
-  include &quot;/etc/named.trustkeys.conf&quot;;</pre>
-<p># ... and restart named</p>
-<p># Finally, check the file against live keys occasionally.</p>
+    getdnskeys -o /etc/named.trustkeys.conf -k -v -t example.com</pre>
+<p>This \cmd{getdnskeys} will check saved keys against a live set of keys:</p>
 <pre>
-  getdnskeys -i /etc/named.trustkeys.conf -T -k -v -t</pre>
-<p># And automatically update it if you wish:</p>
+    getdnskeys -i /etc/named.trustkeys.conf -T -k -v -t</pre>
+<p>This \cmd{getdnskeys} will automatically update a set of saved keys:</p>
 <pre>
-  getdnskeys -i /etc/named.trustkeys.conf -T -o /etc/named.trustkeys.conf -k -v -t</pre>
+    getdnskeys -i /etc/named.trustkeys.conf -k -t -T -v
+               -o /etc/named.trustkeys.conf</pre>
 <p>
 </p>
 <hr />
 <h1><a name="security_issues">SECURITY ISSUES</a></h1>
 <p>Currently this does not validate new keys placed in the file in any
 way, nor does it validate change over keys which have been added.</p>
-<p>It also does not handle revokation of keys.</p>
+<p>It also does not handle revocation of keys.</p>
 <p>It should prompt you before adding a new key so that you can always
 run the auto-update feature.</p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>
