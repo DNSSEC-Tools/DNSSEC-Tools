@@ -66,6 +66,7 @@ val_create_context_with_conf(char *label,
                              val_context_t ** newcontext)
 {
     int             retval;
+    char *base_dnsval_conf = NULL;
 
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
@@ -76,22 +77,8 @@ val_create_context_with_conf(char *label,
         DEFAULT_CONTEXT_INIT();
         LOCK_DEFAULT_CONTEXT();
 
-        if (the_null_context && 
-            (the_null_context->label == NULL? 
-                    (label == NULL) : 
-                    (label != NULL && !strcmp(label, the_null_context->label))) &&
-            (the_null_context->dnsval_conf == NULL? 
-                    (dnsval_conf == NULL) : 
-                    (dnsval_conf != NULL && !strcmp(dnsval_conf, the_null_context->dnsval_conf))) &&
-            (the_null_context->resolv_conf == NULL? 
-                    (resolv_conf == NULL) : 
-                    (resolv_conf != NULL && !strcmp(resolv_conf, the_null_context->resolv_conf))) &&
-            (the_null_context->root_conf == NULL? 
-                    (root_conf == NULL) : 
-                    (root_conf != NULL && !strcmp(root_conf, the_null_context->root_conf)))) {
-
+        if (the_null_context) { 
             *newcontext = the_null_context;
-
             UNLOCK_DEFAULT_CONTEXT();
             return VAL_NO_ERROR;
         }
@@ -99,12 +86,11 @@ val_create_context_with_conf(char *label,
         UNLOCK_DEFAULT_CONTEXT();
     }
 
-    
     *newcontext = (val_context_t *) MALLOC(sizeof(val_context_t));
     if (*newcontext == NULL)
         return VAL_OUT_OF_MEMORY;
     memset(*newcontext, 0, sizeof(val_context_t));
-    
+
 #ifndef VAL_NO_THREADS
     if (0 != pthread_rwlock_init(&(*newcontext)->respol_rwlock, NULL)) {
         FREE(*newcontext);
@@ -145,11 +131,9 @@ val_create_context_with_conf(char *label,
     /* 
      * Set default configuration files 
      */
-    (*newcontext)->dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get(); 
     (*newcontext)->resolv_conf = resolv_conf? strdup(resolv_conf) : resolv_conf_get(); 
-    (*newcontext)->root_conf = root_conf? strdup(root_conf) : root_hints_get(); 
     (*newcontext)->r_timestamp = 0;
-    (*newcontext)->v_timestamp = 0;
+    (*newcontext)->root_conf = root_conf? strdup(root_conf) : root_hints_get(); 
     (*newcontext)->h_timestamp = 0;
 
     (*newcontext)->root_ns = NULL; 
@@ -183,15 +167,34 @@ val_create_context_with_conf(char *label,
      */
     (*newcontext)->q_list = NULL;
     (*newcontext)->a_list = NULL;
+    base_dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get();
+    if (base_dnsval_conf == NULL) {
+        val_log(*newcontext, LOG_ERR, "val_create_context_with_conf(): No dnsval.conf file configured");
+        retval = VAL_CONF_NOT_FOUND;
+        goto err;
+    }
+
+    /* Add a single node in the dnsval_list structure */
+    if (NULL == ((*newcontext)->dnsval_l = 
+                (struct dnsval_list *) MALLOC (sizeof(struct dnsval_list))))  {
+        FREE(base_dnsval_conf);
+        retval = VAL_OUT_OF_MEMORY;
+        goto err;
+    }
+    (*newcontext)->dnsval_l->dnsval_conf = base_dnsval_conf; 
+    (*newcontext)->dnsval_l->v_timestamp = 0;
+    (*newcontext)->dnsval_l->next = NULL;
+    
     if ((retval =
          read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
         goto err;
     }
 
-    val_log(*newcontext, LOG_DEBUG, "val_create_context_with_conf(): Context created with %s %s %s", 
-                            (*newcontext)->dnsval_conf,
-                            (*newcontext)->resolv_conf,
-                            (*newcontext)->root_conf);
+    val_log(*newcontext, LOG_DEBUG, 
+            "val_create_context_with_conf(): Context created with %s %s %s", 
+            (*newcontext)->dnsval_l->dnsval_conf,
+            (*newcontext)->resolv_conf,
+            (*newcontext)->root_conf);
 
     DEFAULT_CONTEXT_INIT();
     LOCK_DEFAULT_CONTEXT();
@@ -257,9 +260,6 @@ val_free_context(val_context_t * context)
     if (context->search)
         FREE(context->search);
 
-    if (context->dnsval_conf)
-        FREE(context->dnsval_conf);
-
     if (context->resolv_conf)
         FREE(context->resolv_conf);
 
@@ -300,52 +300,61 @@ free_validator_state(void)
 /*
  * re-read resolver policy into the context
  */
-void 
+int 
 val_refresh_resolver_policy(val_context_t * context)
 {
     if (context == NULL) 
-        return;
+        return VAL_NO_ERROR;
 
     if (read_res_config_file(context) != VAL_NO_ERROR) {
+        CTX_LOCK_RESPOL_EX(context);
         context->r_timestamp = -1;
+        CTX_UNLOCK_RESPOL(context); 
         val_log(context, LOG_WARNING, 
                 "val_refresh_resolver_policy(): Resolver configuration could not be read; using older values");
-        return; 
     }
+    return VAL_NO_ERROR; 
 }
 
 
 /*
  * re-read validator policy into the context
  */
-void 
+int 
 val_refresh_validator_policy(val_context_t * context)
 {
+    struct dnsval_list *dnsval_l;
     if (context == NULL) 
-        return;
+        return VAL_NO_ERROR;
 
     if (read_val_config_file(context, context->label) != VAL_NO_ERROR) {
-        context->v_timestamp = -1;
+        CTX_LOCK_VALPOL_EX(context);
+        for(dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next)
+            dnsval_l->v_timestamp = -1;
+        CTX_UNLOCK_VALPOL(context); 
         val_log(context, LOG_WARNING, 
                 "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
-        return; 
     }
+    return VAL_NO_ERROR; 
 }
 
 /*
  * re-read root.hints policy into the context
  */
-void 
+int 
 val_refresh_root_hints(val_context_t * context)
 {
     if (context == NULL)
-        return;
+        return VAL_NO_ERROR;
 
     if (read_root_hints_file(context) != VAL_NO_ERROR) {
+        CTX_LOCK_RESPOL_EX(context);
         context->h_timestamp = -1;
+        CTX_UNLOCK_RESPOL(context); 
         val_log(context, LOG_WARNING, 
                 "val_refresh_root_hints(): Root Hints could not be read; using older values");
-        return; 
     }
+
+    return VAL_NO_ERROR;
 }
 
