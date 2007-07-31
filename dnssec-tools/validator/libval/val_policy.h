@@ -14,6 +14,9 @@
 #define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
 
+#define POL_GLOBAL_OPTIONS_STR "global-options"
+#define POL_INCLUDE_STR "include"
+
 #define P_TRUST_ANCHOR              0
 #define P_CLOCK_SKEW                1
 #define P_PROV_UNSECURE             2
