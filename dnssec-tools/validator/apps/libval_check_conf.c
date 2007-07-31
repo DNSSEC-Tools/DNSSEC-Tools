@@ -109,6 +109,10 @@ int main(int argc, char *argv[])
 
     dnsval_conf = argv[optind++];
 
+    if (debug == 0) {
+        logp = val_log_add_optarg("5:stdout", 1);
+    }
+
     if (root_hints == NULL && debug) {
         fprintf(stdout, "root.hints is not specified. Using system defined root-hints for libval.\n");
     }
