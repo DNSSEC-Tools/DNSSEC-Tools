@@ -25,6 +25,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
