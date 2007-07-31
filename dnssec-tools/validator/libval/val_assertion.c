@@ -5644,33 +5644,53 @@ val_resolve_and_check(val_context_t * ctx,
     } else {
         /* Check if the configuration file has changed since the last time we read it */
         struct stat rsb, vsb, hsb;
+        struct dnsval_list *dnsval_l;
         
         context = (val_context_t *) ctx;
 
         CTX_LOCK_RESPOL_SH(context);
+
         GET_LATEST_TIMESTAMP(context, context->resolv_conf, context->r_timestamp, rsb);
         if (rsb.st_mtime != 0 && 
                 rsb.st_mtime != context->r_timestamp) {
+
             CTX_UNLOCK_RESPOL(context);
-            val_refresh_resolver_policy(context);
+
+            if (VAL_NO_ERROR != (retval = val_refresh_resolver_policy(context)))
+                return retval; 
             CTX_LOCK_RESPOL_SH(context);
         }
 
         GET_LATEST_TIMESTAMP(context, context->root_conf, context->h_timestamp, hsb);
         if (hsb.st_mtime != 0 && 
                 hsb.st_mtime != context->h_timestamp){
+
             CTX_UNLOCK_RESPOL(context);
-            val_refresh_root_hints(context);
+
+            if (VAL_NO_ERROR != (retval = val_refresh_root_hints(context)))
+                return retval; 
             CTX_LOCK_RESPOL_SH(context);
         }
 
         CTX_LOCK_VALPOL_SH(context);
-        GET_LATEST_TIMESTAMP(context, context->dnsval_conf, context->v_timestamp, vsb);
-        if (vsb.st_mtime != 0 && 
-                vsb.st_mtime != context->v_timestamp) {
-            CTX_UNLOCK_VALPOL(context);
-            val_refresh_validator_policy(context);
-            CTX_LOCK_VALPOL_SH(context);
+        /* dnsval.conf can point to a list of files */
+        for (dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next) {
+
+            GET_LATEST_TIMESTAMP(context, 
+                                 dnsval_l->dnsval_conf, 
+                                 dnsval_l->v_timestamp, 
+                                 vsb);
+
+            if (vsb.st_mtime != 0 && 
+                vsb.st_mtime != dnsval_l->v_timestamp) {
+
+                CTX_UNLOCK_VALPOL(context);
+
+                if (VAL_NO_ERROR != (retval = val_refresh_validator_policy(context)))
+                    return retval; 
+                CTX_LOCK_VALPOL_SH(context);
+                break;
+            }
         }
     }
   
