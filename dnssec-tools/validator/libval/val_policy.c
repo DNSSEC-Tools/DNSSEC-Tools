@@ -1097,7 +1097,8 @@ store_policy_overrides(val_context_t * ctx,
                     conf_elem_array[e->index].keyword);
         if (e->index == (*pfrag)->index) {
             val_log(ctx, LOG_WARNING,
-                    "store_policy_overrides(): Duplicate policy definition; using latest");
+                    "store_policy_overrides(): Duplicate policy definition for [%s:%s]; using latest",
+                    newp->label, conf_elem_array[e->index].keyword);
             free_policy_entry(e->pol, e->index);
             e->pol = NULL;
             break;
