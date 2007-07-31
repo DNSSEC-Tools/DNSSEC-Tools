@@ -493,7 +493,7 @@ do_verify(val_context_t * ctx,
     size_t          ver_length;
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
-    long clock_skew;
+    long clock_skew = 0;
     long ttl_x = 0;
 
     /*
