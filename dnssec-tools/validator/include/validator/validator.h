@@ -223,7 +223,6 @@ extern          "C" {
      * typecasted to one of the types defined in val_policy.h: 
      * Policies can be one of the following
      */
-#define POL_GLOBAL_OPTIONS_STR "global-options"
 #define POL_TRUST_ANCHOR_STR "trust-anchor"
 #define POL_CLOCK_SKEW_STR "clock-skew"
 #define POL_PROV_UNSEC_STR "provably-unsecure-status"
@@ -292,6 +291,12 @@ extern          "C" {
         struct policy_list *next;
     };
 
+    struct dnsval_list {
+        char   *dnsval_conf;
+        time_t v_timestamp;
+        struct dnsval_list *next;
+    };
+        
     /*
      * This list is ordered from general to more specific --
      * so "mozilla" < "sendmail" < "browser:mozilla"
@@ -321,29 +326,28 @@ extern          "C" {
         pthread_mutex_t ac_lock;
 #endif
         
-        char            id[VAL_CTX_IDLEN];
-        char            *label;
-        char            *dnsval_conf;
-        char            *resolv_conf;
-        char            *root_conf;
+        char  id[VAL_CTX_IDLEN];
+        char  *label;
 
         /*
          * root_hints
          */
-        time_t h_timestamp;
+        char   *root_conf;
         struct name_server *root_ns;
+        time_t h_timestamp;
 
         /*
          * default name server 
          */
+        char   *resolv_conf;
         time_t r_timestamp;
         struct name_server *nslist;
-        char               *search;
+        char   *search;
         
         /*
          * validator policy 
          */
-        time_t v_timestamp;
+        struct dnsval_list *dnsval_l;
         policy_entry_t **e_pol;
         global_opt_t *g_opt;
         
