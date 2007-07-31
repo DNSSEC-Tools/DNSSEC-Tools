@@ -1567,8 +1567,7 @@ read_res_config_file(val_context_t * ctx)
                     "read_res_config_file(): Resolver configuration is NULL and root-hints was not found");
             return VAL_CONF_NOT_FOUND;
         }
-        val_log(ctx, LOG_DEBUG, "read_res_config_file(): No resolv.conf file configured, but root-hints
-                available"); 
+        val_log(ctx, LOG_DEBUG, "read_res_config_file(): No resolv.conf file configured, but root-hints available"); 
         return VAL_NO_ERROR;
     }
 
