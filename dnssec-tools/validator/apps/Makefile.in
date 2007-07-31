@@ -6,10 +6,6 @@ CFLAGS_EX=-I$(INCL) -I.. -I../libsres -I../libval
 LOCALLIBS=../libval/libval$(LIBVAL_SUFFIX).la ../libsres/libsres.la
 LDFLAGS_EX=$(LOCALLIBS) $(EXTRALIBS)
 
-SRC=  	val_resquery.c \
-	crypto/val_dsasha1.c
-
-# can't use gmake conventions to translate SRC -> OBJ for portability
 VAL_OBJ= validator_driver.o \
 	validator_selftest.o 
 VAL_LOBJ= validator_driver.lo \
@@ -17,20 +13,23 @@ VAL_LOBJ= validator_driver.lo \
 
 ALL_OBJ= $(VAL_OBJ) \
 	getaddr.o \
-	gethost.o
+	gethost.o \
+    libval_check_conf.o
 
 ALL_LOBJ= $(VAL_LOBJ) \
 	getaddr.lo \
-	gethost.lo
+	gethost.lo \
+    libval_check_conf.lo
 
 VALIDATOR=validate
 GETHOST=gethost
 GETADDR=getaddr
+CHECK_CONF=libval_check_conf
 
-all: $(VALIDATOR) $(GETHOST) $(GETADDR)
+all: $(VALIDATOR) $(GETHOST) $(GETADDR) $(CHECK_CONF)
 
 clean:
-	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR)
+	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR) $(CHECK_CONF)
 
 $(VALIDATOR): $(VAL_OBJ) $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ $(VAL_OBJ) $(LDFLAGS) $(LIBS)
@@ -41,10 +40,14 @@ $(GETHOST): gethost.lo $(LOCALLIBS)
 $(GETADDR): getaddr.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS) $(LIBS)
 
+$(CHECK_CONF): libval_check_conf.lo $(LOCALLIBS)
+	$(LIBTOOLLD) -o $@ libval_check_conf.lo $(LDFLAGS) $(LIBS)
+
 install:
 	$(MKPATH) $(DESTDIR)/$(bindir)
 	$(LIBTOOLIN) $(VALIDATOR) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETHOST) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETADDR) $(DESTDIR)/$(bindir)	
+	$(LIBTOOLIN) $(CHECK_CONF) $(DESTDIR)/$(bindir)	
 	$(MKPATH) `echo @VALIDATOR_TESTCASES@ | sed 's#/[^/]*$##'`
 	$(CP) selftests.dist $(DESTDIR)/@VALIDATOR_TESTCASES@
