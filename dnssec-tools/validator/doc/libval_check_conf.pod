@@ -1,0 +1,59 @@
+
+=pod
+
+=head1 NAME
+
+libval_check_conf - command-line program for checking validity of the validator configuration file.
+
+=head1 SYNOPSIS 
+
+    libval_check_conf [options] <dnsval.conf>
+
+=head1 DESCRIPTION
+
+This program checks the validity of a given validator configuration file, typically named dnsval.conf, for any syntax errors. 
+The input to this program is a validator configuration file, but the program also requires valid resolv.conf and root.hints to be
+specified. The location for these auxiliary files may be specified using the -r and -i options respectively. If these options are not provided, 
+the default resolv.conf and root.hints files recognized by the validator library are used instead. The program displays an error
+if the default resolv.conf and root.hints files, and the -i and -r are both unspecified.  
+
+=head1 RETURN VALUE
+
+The program returns 0 on success and -1 on failure.
+
+=head1 OPTIONS
+
+=over
+
+=item -r, --resolv-conf
+
+Specifies the location for the resolv.conf file. If this option is not specified the default resolv.conf file recognized by the validator llibrary is used instead. 
+
+=item -i, --root-hints
+
+Specifies the location for the root.hints file. If this option is not specified the default root.hints file recognized by the validator library is used instead. 
+
+=item -v, --verbose
+
+Displays detailed messages and warnings associated with the validator configuration file check process. 
+    
+=item -h, --help
+
+Displays a usage help message and exits the program.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHORS
+
+Suresh Krishnaswamy (hserus@users.sourceforge.net)
+
+=head1 SEE ALSO
+
+B<dnsval.conf(3)>
+
+=cut
