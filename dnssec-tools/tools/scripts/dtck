@@ -81,7 +81,7 @@ sub main()
 {
 	my $mconf;			# The config file to check.
 
-	print STDERR "\n\t\tdtck is only reading from its __DATA__ input at the moment.\n\t\tThis is purely a developmental convenience and is temporary.\n\n";
+	print STDERR "\n\tdtck is only reading from its __DATA__ input at the moment.\n\tThis is purely a developmental convenience and is temporary.\n\n";
 
 	#
 	# Get our options.
@@ -272,18 +272,18 @@ sub readmaster
 #-----------------------------------------------------------------------------
 # Routine:	checkfiles()
 #
-# Purpose:	
+# Purpose:	Check each type of file in turn:  configuration files,
+#		rollrec	files, and keyrec files.
 #
 sub checkfiles
 {
-
 	if(%cnfs)
 	{
 		vprint("checking config files:\n");
 
-		foreach my $key (sort(keys(%cnfs)))
+		foreach my $fn (sort(keys(%cnfs)))
 		{
-			vprint("\t$key\n");
+			vprint("\t$fn\n");
 		}
 		vprint("\n");
 	}
@@ -292,9 +292,10 @@ sub checkfiles
 	{
 		vprint("rollrec files:\n");
 
-		foreach my $key (sort(keys(%rrfs)))
+		foreach my $fn (sort(keys(%rrfs)))
 		{
-			vprint("\t$key\t$rrfs{$key}\n");
+			vprint("\t$fn\t$rrfs{$fn}\n");
+			runner('rollrec',$rrfchk,$fn,$rrfs{$fn});
 		}
 		vprint("\n");
 	}
@@ -303,10 +304,10 @@ sub checkfiles
 	{
 		vprint("keyrec files:\n");
 
-		foreach my $key (sort(keys(%krfs)))
+		foreach my $fn (sort(keys(%krfs)))
 		{
-			vprint("\t$key\t$krfs{$key}\n");
-			runner($krfchk,$key,$krfs{$key});
+			vprint("\t$fn\t$krfs{$fn}\n");
+			runner('keyrec',$krfchk,$fn,$krfs{$fn});
 		}
 		vprint("\n");
 	}
@@ -320,6 +321,7 @@ sub checkfiles
 #
 sub runner
 {
+	my $type = shift;			# Type of file to check.
 	my $cmd	 = shift;			# File-checking command.
 	my $file = shift;			# File to check.
 	my $dir	 = shift;			# Optional directory.
@@ -334,39 +336,50 @@ sub runner
 	chdir($dir) if($dir ne '');
 
 	#
-	# Set up some options.
+	# If this file exists, run a krfcheck on it.
 	#
-	if($quiet)
+	if(-e $file)
 	{
-		$opt = '-count';
-	}
-	elsif($verbose)
-	{
-		$opt = '-verbose';
-	}
+		#
+		# Set up some options.
+		#
+		if($quiet)
+		{
+			$opt = '-count';
+		}
+		elsif($verbose)
+		{
+			$opt = '-verbose';
+		}
 
-	#
-	# Show the command's output if the user wants it.
-	#
-	if($verbose)
-	{
-		print "\n" . '-' x 78 . "\n\n";
-		print "$cmd $opt $file\n\n";
+		#
+		# Show the command's output if the user wants it.
+		#
+		if($verbose)
+		{
+			print "\n" . '-' x 78 . "\n\n";
+			print "$cmd $opt $file\n\n";
+		}
+
+		#
+		# Execute the command.
+		#
+		$out = `$cmd $opt $file`;
+		$ret = $?;
+
+		#
+		# Show the command's output if the user wants it.
+		#
+		if($verbose)
+		{
+			chomp $out;
+			print "$out\n\n";
+		}
 	}
-
-	#
-	# Execute the command.
-	#
-	$out = `$cmd $opt $file`;
-	$ret = $?;
-
-	#
-	# Show the command's output if the user wants it.
-	#
-	if($verbose)
+	else
 	{
-		chomp $out;
-		print "$out\n\n";
+		$errs++;
+		print "$type \"$file\" does not exist\n" if(!$quiet);
 	}
 
 	#
@@ -519,7 +532,8 @@ __DATA__
 
 config	/usr/local/etc/dnssec-tools/dt.conf
 
-rollrec	/foo/bar/rollie.rrf
+rollrec	demo.rollrec /Users/tewok/work/dnssec/src/svn.dnssec-tools/dnssec-tools/tools/demos/rollerd-manyzones
+
 
 keyrec	test.com.krf
 # kEyReC	example2.com.krf	/var/subzones/example2.com
