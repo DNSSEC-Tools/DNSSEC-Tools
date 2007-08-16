@@ -48,6 +48,10 @@ my @opts =
 	"count",			# Give final error count.
 	"quiet",			# Don't give any output.
 	"verbose",			# Give lotsa output.
+
+	"list",				# List files as they're being checked.
+	"pretty",			# Give some nice separating lines.
+
 	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
@@ -55,6 +59,9 @@ my @opts =
 my $count   = 0;			# Give count option flag.
 my $quiet   = 0;			# Quiet option flag.
 my $verbose = 0;			# Verbose option flag.
+
+my $list   = 0;				# List filenames option flag.
+my $pretty = 0;				# Give some separating output.
 
 my $errs = 0;				# Error count.
 
@@ -68,6 +75,9 @@ my $krfchk;				# Keyrec-verification program.
 my $rrfchk;				# Rollrec-verification program.
 
 my $homedir;				# Initial directory.
+
+my $TYPEDASHES = 78;			# Dashes between type lines for -pretty.
+my $FILEDASHES = 55;			# Dashes between file lines for -pretty.
 
 main();
 exit($errs);
@@ -105,10 +115,7 @@ sub main()
 	#
 	# Maybe print the name of the config file we're checking.
 	#
-	if($verbose && !$quiet)
-	{
-		print "checking master config file \"$mconf\"\n";
-	}
+	print "checking master config file \"$mconf\"\n" if(!$quiet);
 
 	#
 	# Read the master config file.
@@ -165,6 +172,9 @@ sub doopts
 	$count	 = $options{'count'};
 	$quiet	 = $options{'quiet'};
 	$verbose = $options{'verbose'};
+
+	$list	 = $options{'list'};
+	$pretty	 = $options{'pretty'};
 
 	#
 	# Now some option validation...
@@ -266,7 +276,6 @@ sub readmaster
 		exit(1);
 	}
 
-	dumpem() if($verbose);
 }
 
 #-----------------------------------------------------------------------------
@@ -277,39 +286,63 @@ sub readmaster
 #
 sub checkfiles
 {
+	my $cnt;			# Number of each type of config files.
+
 	if(%cnfs)
 	{
-		vprint("checking config files:\n");
+		lprint("checking config files:\n");
 
+		$cnt = keys(%cnfs);
 		foreach my $fn (sort(keys(%cnfs)))
 		{
-			vprint("\t$fn\n");
+			lprint("\t$fn\n");
+			$cnt--;
+			if($pretty && $cnt)
+			{
+				print "\n" . '-' x $FILEDASHES . "\n\n";
+			}
 		}
-		vprint("\n");
+		lprint("\n");
 	}
 
 	if(%rrfs)
 	{
-		vprint("rollrec files:\n");
+		print "\n" . '-' x $TYPEDASHES . "\n\n" if($pretty);
+		lprint("rollrec files:\n");
 
+		$cnt = keys(%rrfs);
 		foreach my $fn (sort(keys(%rrfs)))
 		{
-			vprint("\t$fn\t$rrfs{$fn}\n");
+			lprint("\t$fn\t$rrfs{$fn}\n");
 			runner('rollrec',$rrfchk,$fn,$rrfs{$fn});
+
+			$cnt--;
+			if($pretty && $cnt)
+			{
+				print "\n" . '-' x $FILEDASHES . "\n\n";
+			}
 		}
-		vprint("\n");
+		lprint("\n");
 	}
 
 	if(%krfs)
 	{
-		vprint("keyrec files:\n");
+		print "\n" . '-' x $TYPEDASHES . "\n\n" if($pretty);
+		lprint("keyrec files:\n");
 
+		$cnt = keys(%krfs);
 		foreach my $fn (sort(keys(%krfs)))
 		{
-			vprint("\t$fn\t$krfs{$fn}\n");
+			lprint("\t$fn\t$krfs{$fn}\n");
 			runner('keyrec',$krfchk,$fn,$krfs{$fn});
+
+			$cnt--;
+			if($pretty && $cnt)
+			{
+				print "\n" . '-' x $FILEDASHES . "\n\n";
+			}
 		}
-		vprint("\n");
+		lprint("\n");
 	}
 
 }
@@ -343,38 +376,41 @@ sub runner
 		#
 		# Set up some options.
 		#
+		$opt = "-count " if($count);
 		if($quiet)
 		{
-			$opt = '-count';
+			$opt .= ' -quiet';
 		}
 		elsif($verbose)
 		{
-			$opt = '-verbose';
+			$opt .= ' -verbose';
 		}
 
 		#
 		# Show the command's output if the user wants it.
 		#
-		if($verbose)
-		{
-			print "\n" . '-' x 78 . "\n\n";
-			print "$cmd $opt $file\n\n";
-		}
+		print "$cmd $opt $file\n\n" if($pretty);
 
 		#
 		# Execute the command.
 		#
 		$out = `$cmd $opt $file`;
 		$ret = $?;
+		chomp $out;
 
 		#
 		# Show the command's output if the user wants it.
 		#
 		if($verbose)
 		{
-			chomp $out;
-			print "$out\n\n";
+			print "$out\n\n"
 		}
+		elsif($count)
+		{
+			$out =~ s/^(.*\n)*//;
+			print "$out\n";
+		}
+
 	}
 	else
 	{
@@ -389,56 +425,13 @@ sub runner
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	dumpem()
+# Routine:	lprint()
 #
-# Purpose:	
-#
-sub dumpem
-{
-
-	if(%cnfs)
-	{
-		print "config files:\n";
-
-		foreach my $key (sort(keys(%cnfs)))
-		{
-			print "\t$key\t$cnfs{$key}\n";
-		}
-		print "\n";
-	}
-
-	if(%rrfs)
-	{
-		print "rollrec files:\n";
-
-		foreach my $key (sort(keys(%rrfs)))
-		{
-			print "\t$key\t$rrfs{$key}\n";
-		}
-		print "\n";
-	}
-
-	if(%krfs)
-	{
-		print "keyrec files:\n";
-
-		foreach my $key (sort(keys(%krfs)))
-		{
-			print "\t$key\t$krfs{$key}\n";
-		}
-		print "\n";
-	}
-
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	vprint()
-#
-sub vprint
+sub lprint
 {
 	my $str = shift;				# String to print.
 
-	print "$str" if($verbose);
+	print "$str" if($list);
 }
 
 ##############################################################################
@@ -486,21 +479,45 @@ foo
 
 =head1 OPTIONS
 
+B<dtck> takes two types of options.  Options of the first type are handled 
+directly by B<dtck>, controlling its output and processing.  Options of the
+second type are passed to the file-checking programs and are not further
+handled by B<dtck>.
+
+=head2 Options Handled by B<dtck>
+
 =over 4
 
-=item I<-quiet>
+=item I<-list>
 
-No output will be given.  The number of errors will be used as the exit code.
+The names of the files will be listed as they are checked.
 
-=item I<-verbose>
+=item I<-pretty>
 
-Success or failure status of each check will be given.
-A B<+> or B<-> prefix will be given for each valid and invalid entry.
-The number of errors will be used as the exit code.
+Clarifying output is added to the output from B<dtck> and the
+file-checking programs.
 
 =item I<-help>
 
 Display a usage message.
+
+=back
+
+=head2 Options Not Handled by B<dtck>
+
+=over 4
+
+=item I<-count>
+
+The file-checking programs will display a final error count.
+
+=item I<-quiet>
+
+No output will be given by the file-checking program.
+
+=item I<-verbose>
+
+Verbose output will be given by the file-checking program.
 
 =back
 
@@ -535,6 +552,6 @@ config	/usr/local/etc/dnssec-tools/dt.conf
 rollrec	demo.rollrec /Users/tewok/work/dnssec/src/svn.dnssec-tools/dnssec-tools/tools/demos/rollerd-manyzones
 
 
+keyrec	dummy.com.krf
 keyrec	test.com.krf
-# kEyReC	example2.com.krf	/var/subzones/example2.com
 
