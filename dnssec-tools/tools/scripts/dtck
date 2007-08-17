@@ -49,6 +49,7 @@ my @opts =
 	"quiet",			# Don't give any output.
 	"verbose",			# Give lotsa output.
 
+	"defcon",			# Check the default config file.
 	"list",				# List files as they're being checked.
 	"pretty",			# Give some nice separating lines.
 
@@ -177,6 +178,19 @@ sub doopts
 	$pretty	 = $options{'pretty'};
 
 	#
+	# If -defcon was specified, we'll add the default config file to our
+	# list of configuration files to be checked.
+	#
+	if(defined($options{'defcon'}))
+	{
+		my $cf;					# Default config file.
+		my $dir;				# Dummy value.
+
+		$cf = getconffile();
+		$cnfs{$cf} = $dir;
+	}
+
+	#
 	# Now some option validation...
 	#
 	if($quiet && $verbose)
@@ -295,11 +309,17 @@ sub checkfiles
 		$cnt = keys(%cnfs);
 		foreach my $fn (sort(keys(%cnfs)))
 		{
+print "0 <$fn>\n";
+chomp $fn;
+print "1 <$fn>\n";
 			lprint("\t$fn\n");
+			runner('config',$cnfchk,$fn,$cnfs{$fn});
+
 			$cnt--;
 			if($pretty && $cnt)
 			{
-				print "\n" . '-' x $FILEDASHES . "\n\n";
+#				print "\n" . '-' x $FILEDASHES . "\n\n";
+				print '-' x $FILEDASHES . "\n\n";
 			}
 		}
 		lprint("\n");
@@ -389,7 +409,7 @@ sub runner
 		#
 		# Show the command's output if the user wants it.
 		#
-		print "$cmd $opt $file\n\n" if($pretty);
+		print "$cmd $opt $file\n" if($pretty);
 
 		#
 		# Execute the command.
@@ -403,7 +423,7 @@ sub runner
 		#
 		if($verbose)
 		{
-			print "$out\n\n"
+			print "$out\n";
 		}
 		elsif($count)
 		{
@@ -449,31 +469,47 @@ dtck - Check the DNSSEC-Tools data files for sanity.
 
 =head1 DESCRIPTION
 
-B<dtck> checks DNSSEC-Tools data files to determine if the
-entries are valid.
+B<dtck> checks DNSSEC-Tools data files to determine if the entries are valid.
+B<dtck> checks the validity of DNSSEC-Tools configuration files, I<rollrec>
+files, and I<keyrec> files.  It does not perform the file checking itself,
+but runs checking programs specific to each type of data file.
+
+A master configuration file is consulted to determine the files to check.
+This file lists the DNSSEC-Tools data files and their types.
 
 =head1 MASTER CONFIGURATION FILE
 
 A master configuration file contains a list of the files to be checked by
-B<dtck>.  It contains the following types of records:
+B<dtck>.  Except for comments, each line has the following format:
+
+    keyword file directory
+
+I<keyword> is one of "config", "rollrec", or "keyrec".
+I<file> is the pathname of the file to be checked.
+I<directory> is the name of the directory that holds I<file> and is optional.
+
+The master configuration file contains the following types of records:
 
 =over 4
+
+=item I<config>
+
+These lines define the DNSSEC-Tools configuration files that will be checked.
+The B<dtconfchk> program will be used to verify these files.
+
+=item I<rollrec>
+
+These lines define the I<rollrec> files that will be checked.
+The B<rollchk> program will be used to verify these files.
+
+=item I<keyrec>
+
+These lines define the I<keyrec> files that will be checked.
+The B<krfcheck> program will be used to verify these files.
 
 =item comments
 
 Any lines starting with an octothorpe (#) are comment lines and are ignored.
-
-=item I<config>
-
-foo
-
-=item I<keyrec>
-
-foo
-
-=item I<rollrec>
-
-foo
 
 =back
 
@@ -487,6 +523,11 @@ handled by B<dtck>.
 =head2 Options Handled by B<dtck>
 
 =over 4
+
+=item I<-defcon>
+
+This option directs B<dtck> to add the default DNSSEC-Tools configuration
+file to the list of configuration files to be checked.
 
 =item I<-list>
 
@@ -547,7 +588,7 @@ B<rollrec(5)>
 
 __DATA__
 
-config	/usr/local/etc/dnssec-tools/dt.conf
+# config	/usr/local/etc/dnssec-tools/dt.conf
 
 rollrec	demo.rollrec /Users/tewok/work/dnssec/src/svn.dnssec-tools/dnssec-tools/tools/demos/rollerd-manyzones
 
