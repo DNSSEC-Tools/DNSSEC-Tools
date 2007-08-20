@@ -2,7 +2,7 @@
 LIBS=@LIBS@
 INCL= ../include
 LIB= ../include
-CFLAGS_EX=-I$(INCL) -I.. -I../libsres -I../libval
+CFLAGS_EX=-I$(INCL) -I.. -I../libsres -I../libval -D_GNU_SOURCE
 LOCALLIBS=../libval/libval$(LIBVAL_SUFFIX).la ../libsres/libsres.la
 LDFLAGS_EX=$(LOCALLIBS) $(EXTRALIBS)
 
