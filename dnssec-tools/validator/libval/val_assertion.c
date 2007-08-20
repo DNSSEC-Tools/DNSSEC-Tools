@@ -3280,6 +3280,11 @@ verify_provably_unsecure(val_context_t * context,
             val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find trust anchor for %s", name_p);
             goto err;
         }
+        if (curzone_n == NULL) {
+            /* no trust anchor defined */
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find trust anchor for %s", name_p);
+            goto err;
+        }
         q = namename(q_zonecut_n, curzone_n);
     }
 
