@@ -239,7 +239,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Serial number.  */
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             T(addstr("\t\t\t\t\t", 5, &buf, &buflen));
             len = SPRINTF((tmp, "%lu", t));
@@ -249,7 +249,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             spaced = 0;
 
             /** Refresh interval.  */
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             T(addstr("\t\t\t\t\t", 5, &buf, &buflen));
             T(len = ns_format_ttl(t, buf, buflen));
@@ -259,7 +259,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             spaced = 0;
 
             /** Retry interval.  */
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             T(addstr("\t\t\t\t\t", 5, &buf, &buflen));
             T(len = ns_format_ttl(t, buf, buflen));
@@ -269,7 +269,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             spaced = 0;
 
             /** Expiry.  */
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             T(addstr("\t\t\t\t\t", 5, &buf, &buflen));
             T(len = ns_format_ttl(t, buf, buflen));
@@ -279,7 +279,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             spaced = 0;
 
             /** Minimum TTL.  */
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             T(addstr("\t\t\t\t\t", 5, &buf, &buflen));
             T(len = ns_format_ttl(t, buf, buflen));
@@ -300,7 +300,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Priority.  */
-            t = ns_get16(rdata);
+            NS_GET16(t, rdata);
             rdata += NS_INT16SZ;
             len = SPRINTF((tmp, "%u ", t));
             T(addstr(tmp, len, &buf, &buflen));
@@ -318,7 +318,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Priority.  */
-            t = ns_get16(rdata);
+            NS_GET16(t, rdata);
             rdata += NS_INT16SZ;
             len = SPRINTF((tmp, "%u ", t));
             T(addstr(tmp, len, &buf, &buflen));
@@ -383,9 +383,9 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Order, Precedence.  */
-            order = ns_get16(rdata);
+            NS_GET16(order, rdata);
             rdata += NS_INT16SZ;
-            preference = ns_get16(rdata);
+            NS_GET16(preference, rdata);
             rdata += NS_INT16SZ;
             len = SPRINTF((t, "%u %u ", order, preference));
             T(addstr(t, len, &buf, &buflen));
@@ -426,11 +426,11 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Priority, Weight, Port.  */
-            priority = ns_get16(rdata);
+            NS_GET16(priority, rdata);
             rdata += NS_INT16SZ;
-            weight = ns_get16(rdata);
+            NS_GET16(weight, rdata);
             rdata += NS_INT16SZ;
-            port = ns_get16(rdata);
+            NS_GET16(port, rdata);
             rdata += NS_INT16SZ;
             len = SPRINTF((t, "%u %u %u ", priority, weight, port));
             T(addstr(t, len, &buf, &buflen));
@@ -500,7 +500,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             const char     *leader;
             int             n;
 
-            key_id = ns_get16(rdata);
+            NS_GET16(key_id, rdata);
             rdata += NS_INT16SZ;
             algo = *rdata++ & 0xF;
             digest_type = *rdata++ & 0xF;
@@ -543,7 +543,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 /** compute a checksum on the key part of the key rr */
                 key_id = id_calc(rdata, edata - rdata);
             }
-            keyflags = ns_get16(rdata);
+            NS_GET16(keyflags, rdata);
             rdata += NS_INT16SZ;
             protocol = *rdata++;
             algorithm = *rdata++;
@@ -587,11 +587,11 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Type covered, Algorithm, Label count, Original TTL.  */
-            type = ns_get16(rdata);
+            NS_GET16(type, rdata);
             rdata += NS_INT16SZ;
             algorithm = *rdata++;
             labels = *rdata++;
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             len = SPRINTF((tmp, "%s %d %d %lu ",
                            p_type(type), algorithm, labels, t));
@@ -600,19 +600,19 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Signature expiry.  */
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             len = SPRINTF((tmp, "%s ", p_secstodate(t)));
             T(addstr(tmp, len, &buf, &buflen));
 
             /** Time signed.  */
-            t = ns_get32(rdata);
+            NS_GET32(t, rdata);
             rdata += NS_INT32SZ;
             len = SPRINTF((tmp, "%s ", p_secstodate(t)));
             T(addstr(tmp, len, &buf, &buflen));
 
             /** Signature Footprint.  */
-            footprint = ns_get16(rdata);
+            NS_GET16(footprint, rdata);
             rdata += NS_INT16SZ;
             len = SPRINTF((tmp, "%u ", footprint));
             T(addstr(tmp, len, &buf, &buflen));
@@ -673,9 +673,9 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             char            base64_cert[8192], tmp[40];
             const char     *leader;
 
-            c_type = ns_get16(rdata);
+            NS_GET16(c_type, rdata);
             rdata += NS_INT16SZ;
-            key_tag = ns_get16(rdata);
+            NS_GET16(key_tag, rdata);
             rdata += NS_INT16SZ;
             alg = (u_int) * rdata++;
 
@@ -718,12 +718,13 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             T(len = addname(msg, msglen, &rdata, origin, &buf, &buflen));
             T(addstr(" ", 1, &buf, &buflen));
             rdata += 8;         /* time */
-            n = ns_get16(rdata);
+            NS_GET16(n, rdata);
             rdata += NS_INT16SZ;
             rdata += n;         /* sig */
-            n = ns_get16(rdata);
+            NS_GET16(n, rdata);
             rdata += NS_INT16SZ;        /* original id */
-            sprintf(buf, "%d", ns_get16(rdata));
+            NS_GET16(n, rdata);
+            sprintf(buf, "%d", n);
             rdata += NS_INT16SZ;
             addlen(strlen(buf), &buf, &buflen);
             break;
