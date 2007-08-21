@@ -16,6 +16,7 @@ use ExtUtils::MakeMaker;
 			    blinkenlights
 			    cleanarch
 			    cleankrf
+			    dtck
 			    dtconf
 			    dtconfchk
 			    dtdefs
