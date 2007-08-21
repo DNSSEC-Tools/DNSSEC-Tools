@@ -461,11 +461,12 @@ sub zonesign_checks
 	$endtime = $dtconf{'endtime'};
 
 	#
-	# Check if the endtime isn't defined here.
+	# Check that the endtime is defined here.
 	#
 	if(!defined($endtime))
 	{
 		prt(0,"endtime not defined");
+		$errs++;
 		return;
 	}
 
