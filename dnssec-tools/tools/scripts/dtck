@@ -65,6 +65,8 @@ my $list   = 0;				# List filenames option flag.
 my $pretty = 0;				# Give some separating output.
 
 my $errs = 0;				# Error count.
+my $probfiles = 0;			# Count of files with problems.
+my %probfiles = ();			# List of files with problems.
 
 
 my %cnfs = ();				# DNSSEC-Tools config files.
@@ -81,7 +83,7 @@ my $TYPEDASHES = 78;			# Dashes between type lines for -pretty.
 my $FILEDASHES = 55;			# Dashes between file lines for -pretty.
 
 main();
-exit($errs);
+exit($probfiles);
 
 #-----------------------------------------------------------------------------
 # Routine:	main()
@@ -90,9 +92,7 @@ exit($errs);
 #
 sub main()
 {
-	my $mconf;			# The config file to check.
-
-	print STDERR "\n\tdtck is only reading from its __DATA__ input at the moment.\n\tThis is purely a developmental convenience and is temporary.\n\n";
+	my $dconf;			# The config file to check.
 
 	#
 	# Get our options.
@@ -100,11 +100,11 @@ sub main()
 	doopts();
 
 	#
-	# Get the master config filename to check.
+	# Get the dtck config filename to check.
 	#
 	if($ARGV[0] ne "")
 	{
-		$mconf = $ARGV[0];
+		$dconf = $ARGV[0];
 	}
 
 	#
@@ -114,14 +114,34 @@ sub main()
 	getpaths();
 
 	#
-	# Maybe print the name of the config file we're checking.
+	# Check a dtck config file if one was given.  If not, then we'll
+	# just look at the DNSSEC-Tools configuration file.
 	#
-	print "checking master config file \"$mconf\"\n" if(!$quiet);
+	if($dconf ne "")
+	{
 
-	#
-	# Read the master config file.
-	#
-	readmaster($mconf);
+		#
+		# Maybe print the name of the config file we're checking.
+		#
+		print "checking dtck config file \"$dconf\"\n" if($pretty);
+
+		#
+		# Read the given dtck config file.
+		#
+		readconf($dconf);
+	}
+	else
+	{
+		my $conf;			# DNSSEC-Tools config file.
+
+		#
+		# Get the DNSSEC-Tools config file and add it to the
+		# list of config files we'll check.
+		#
+		$conf = getconffile();
+		usage() if(!$conf);
+		$cnfs{$conf} = '';
+	}
 
 	#
 	# Check all our files.
@@ -133,14 +153,37 @@ sub main()
 	#
 	if(!$quiet)
 	{
-		if($errs == 0)
+		my $plr = '';			# Plurality suffix.
+
+		#
+		# If we had no problems, say so and return.
+		#
+		if($probfiles == 0)
 		{
-			print "$mconf is valid\n";
+			print "no problems found\n";
+			return;
 		}
-		else
+
+		#
+		# Give a separator line for pretty output.
+		#
+		if($pretty)
 		{
-			print "$mconf is invalid:  $errs errors\n" if($errs > 1);
-			print "$mconf is invalid:  $errs error\n"  if($errs == 1);
+			print "\n" . '-' x $TYPEDASHES . "\n\n";
+		}
+
+		#
+		# Set up the appropriate pluralization suffix.
+		#
+		$plr = 's' if($probfiles > 1);
+
+		#
+		# And give a summary of the problem files.
+		#
+		print STDERR "problems found in $probfiles file$plr:\n";
+		foreach my $fn (sort(keys(%probfiles)))
+		{
+			print "\t$fn\t($probfiles{$fn})\n";
 		}
 	}
 }
@@ -213,20 +256,41 @@ sub getpaths
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	readmaster()
+# Routine:	readconf()
 #
 # Purpose:	
 #
-sub readmaster
+sub readconf
 {
+	my $cfile = shift;			# dtck configuration file.
+
 	my $line;				# Line of configuration data.
 	my $bkcnt = 0;				# Count of invalid entry keys.
 	my %badkeys = ();			# Invalid entry keys.
 
 	#
+	# Ensure our config file exists and is a regular file.
+	#
+	if(! -e $cfile)
+	{
+		print STDERR "dtck configuration file \"$cfile\" does not exist\n";
+		exit(1);
+	}
+	if(! -f $cfile)
+	{
+		print STDERR "dtck configuration file \"$cfile\" is not a regular file\n";
+		exit(1);
+	}
+
+	#
+	# Ensure our config file exists and is a regular file.
+	#
+	open(CFILE,"<$cfile") or die "unable to open dtck configuration file \"cfile\"";
+
+	#
 	# Deconstruct each entry and add it to the appropriate hash.
 	#
-	while(<DATA>)
+	while(<CFILE>)
 	{
 		my $key;			# Entry's key.
 		my $file;			# Entry's file.
@@ -276,12 +340,14 @@ sub readmaster
 		}
 	}
 
+	close(CFILE);
+
 	#
 	# Make sure there weren't any invalid keys.
 	#
 	if($bkcnt)
 	{
-		print STDERR "the following invalid lines were given in the master config file:\n";
+		print STDERR "the following invalid lines were given in the dtck config file:\n";
 		foreach my $key (sort(keys(%badkeys)))
 		{
 			print STDERR "\t$key\n";
@@ -309,16 +375,12 @@ sub checkfiles
 		$cnt = keys(%cnfs);
 		foreach my $fn (sort(keys(%cnfs)))
 		{
-print "0 <$fn>\n";
-chomp $fn;
-print "1 <$fn>\n";
 			lprint("\t$fn\n");
 			runner('config',$cnfchk,$fn,$cnfs{$fn});
 
 			$cnt--;
 			if($pretty && $cnt)
 			{
-#				print "\n" . '-' x $FILEDASHES . "\n\n";
 				print '-' x $FILEDASHES . "\n\n";
 			}
 		}
@@ -339,7 +401,7 @@ print "1 <$fn>\n";
 			$cnt--;
 			if($pretty && $cnt)
 			{
-				print "\n" . '-' x $FILEDASHES . "\n\n";
+				print '-' x $FILEDASHES . "\n\n";
 			}
 		}
 		lprint("\n");
@@ -359,7 +421,7 @@ print "1 <$fn>\n";
 			$cnt--;
 			if($pretty && $cnt)
 			{
-				print "\n" . '-' x $FILEDASHES . "\n\n";
+				print '-' x $FILEDASHES . "\n\n";
 			}
 		}
 		lprint("\n");
@@ -416,7 +478,21 @@ sub runner
 		#
 		$out = `$cmd $opt $file`;
 		$ret = $?;
+		$ret = $ret >> 8;
 		chomp $out;
+
+		#
+		# Add the command's return code to our error count.
+		# (The retcode *should* be the command's error count.)
+		# If there were any problems, we'll bump our count of
+		# bad files.
+		#
+		$errs += $ret;
+		if($ret)
+		{
+			$probfiles++;
+			$probfiles{$file} = $type;
+		}
 
 		#
 		# Show the command's output if the user wants it.
@@ -454,6 +530,38 @@ sub lprint
 	print "$str" if($list);
 }
 
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  dtck [options] [dtck-config-file]\n";
+	print STDERR "\twhere options are:\n";
+	print STDERR "\t\t-count	 Give final error count.\n";
+	print STDERR "\t\t-quiet	 Don't give any output.\n";
+	print STDERR "\t\t-verbose	 Give lotsa output.\n";
+
+	print STDERR "\t\t-defcon	 Check the default config file.\n";
+	print STDERR "\t\t-list		 List files as they're being checked.\n";
+	print STDERR "\t\t-pretty	 Give some nice separating lines.\n";
+
+	print STDERR "\t\t-Version	 Display the version number.\n";
+	print STDERR "\t\t-help		 Give a usage message and exit.\n";
+
+	exit(0);
+}
+
 ##############################################################################
 #
 
@@ -465,7 +573,7 @@ dtck - Check the DNSSEC-Tools data files for sanity.
 
 =head1 SYNOPSIS
 
-  dtck [options] [master_config_file]
+  dtck [options] [dtck_config_file]
 
 =head1 DESCRIPTION
 
@@ -474,12 +582,15 @@ B<dtck> checks the validity of DNSSEC-Tools configuration files, I<rollrec>
 files, and I<keyrec> files.  It does not perform the file checking itself,
 but runs checking programs specific to each type of data file.
 
-A master configuration file is consulted to determine the files to check.
-This file lists the DNSSEC-Tools data files and their types.
+A B<dtck> configuration file is consulted to determine the files to check.
+This file lists the DNSSEC-Tools data files and their types.  If a B<dtck>
+configuration file is not given on the command line, B<dtck> will only check
+the DNSSEC-Tools configuration file.  This is equivalent to running
+B<dtconfchk> directly.
 
-=head1 MASTER CONFIGURATION FILE
+=head1 DTCK CONFIGURATION FILE
 
-A master configuration file contains a list of the files to be checked by
+A B<dtck> configuration file contains a list of the files to be checked by
 B<dtck>.  Except for comments, each line has the following format:
 
     keyword file directory
@@ -488,7 +599,7 @@ I<keyword> is one of "config", "rollrec", or "keyrec".
 I<file> is the pathname of the file to be checked.
 I<directory> is the name of the directory that holds I<file> and is optional.
 
-The master configuration file contains the following types of records:
+The B<dtck> configuration file contains the following types of records:
 
 =over 4
 
@@ -582,17 +693,3 @@ B<keyrec(5)>,
 B<rollrec(5)>
 
 =cut
-
-##############################################################################
-#
-
-__DATA__
-
-# config	/usr/local/etc/dnssec-tools/dt.conf
-
-rollrec	demo.rollrec /Users/tewok/work/dnssec/src/svn.dnssec-tools/dnssec-tools/tools/demos/rollerd-manyzones
-
-
-keyrec	dummy.com.krf
-keyrec	test.com.krf
-
