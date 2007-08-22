@@ -1,18 +1,26 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
 Version: 1.2
-Release: 1%{?dist}
+Release: 4%{?dist}
 License: BSD-like
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
 Source0: http://downloads.sourceforge.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
 Source1: dnssec-tools-dnsval.conf
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Requires: perl-Net-DNS, dnssec-tools-perlmods, bind
+# Require note: the auto-detection for perl-Net-DNS-SEC will not work since
+# the tools do run time tests for their existence.  But most of the tools
+# are much more useful with the modules in place, so we hand require them.
+Requires: perl(Net::DNS), perl(Net::DNS::SEC), dnssec-tools-perlmods, bind
 Requires:  perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 BuildRequires: openssl-devel
+BuildRequires: perl(Test) perl(ExtUtils::MakeMaker)
+
 Patch4: dnssec-tools-linux-conf-paths-1.2.patch
 Patch6: dnssec-tools-donuts-rules-paths.patch
+Patch7: dnssec-tools-validator-destdir-fixes.patch
+Patch8: dnssec-tools-maketestzone-bb.patch
+Patch9: dnssec-tools-donuts-perlmod-changes.patch
 
 %description
 
@@ -51,9 +59,12 @@ C-based libraries useful for developing dnssec aware tools.
 
 %patch4 -p0
 %patch6 -p0
+%patch7 -p0
+%patch8 -p0
+%patch9 -p0
 
 %build
-%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf
+%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' validator/libtool
@@ -71,7 +82,7 @@ find %{buildroot} -type f -name .packlist -exec rm -f {} ';'
 find %{buildroot} -type f -name perllocal.pod -exec rm -f {} ';'
 find %{buildroot} -type f -name '*.bs' -size 0 -exec rm -f {} \;
 # remove empty directories
-find %{buildroot} -type d -depth -exec rmdir {} 2>/dev/null ';'
+find %{buildroot} -depth -type d -exec rmdir {} 2>/dev/null ';'
 chmod -R u+w %{buildroot}/*
 rm -f %{buildroot}%{_libdir}/*.la
 
@@ -214,6 +225,8 @@ rm -rf %{buildroot}
 %{_libdir}/*.a
 %{_libdir}/*.so
 
+%{_bindir}/libval-config
+
 %{_mandir}/man3/libval.3.gz
 %{_mandir}/man3/val_getaddrinfo.3.gz
 %{_mandir}/man3/val_gethostbyname.3.gz
@@ -248,6 +261,18 @@ rm -rf %{buildroot}
 %{_mandir}/man3/val_freeaddrinfo.3.gz
 
 %changelog
+* Thu Jul 12 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-4
+- patch to fix a donuts rule for newer perl-Net::DNS update
+- patch for maketestzone to work around a bug in Net::DNS::RR::DS
+
+* Wed Jul 11 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-3
+- Added more Requires and better BuildRequires
+
+* Thu May 31 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-2
+- fixed missing destdir in validator/Makefile.in
+- add optimize flags to perl build
+- syntatic ordering cleanup of the find argument
+
 * Tue May 22 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-1
 - Update to 1.2 release
 
