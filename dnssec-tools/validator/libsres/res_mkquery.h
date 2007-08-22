@@ -7,7 +7,13 @@
 
 #include <resolv.h>
 
+/*
+ * should be in resolv.h; define it if not. this value is from
+ * the OS X header (linux uses a different value)
+ */
+#ifndef RES_USE_EDNS0
 #define RES_USE_EDNS0   0x40000000
+#endif
 
 #ifndef T_OPT
 #define T_OPT   41
