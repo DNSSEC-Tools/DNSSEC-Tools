@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include <validator/validator.h>
+#include <validator/validator-internal.h>
 #include "val_crypto.h"
 #include "val_support.h"
 
