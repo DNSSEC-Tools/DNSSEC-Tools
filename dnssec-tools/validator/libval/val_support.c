@@ -37,6 +37,7 @@
 
 #include <validator/resolver.h>
 #include <validator/validator.h>
+#include <validator/validator-internal.h>
 #include "val_support.h"
 
 int
