@@ -85,6 +85,7 @@
 
 #include "validator/resolver.h"
 #include "res_mkquery.h"
+#include "res_support.h"
 
 /*
  * Uncomment the following line to turn on debugging for this file 
@@ -112,7 +113,7 @@ libsres_randomid(void)
 int
 res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
                  const char *dname,     /* domain name */
-                 int class, int type,   /* class and type of query */
+                 u_int16_t class, u_int16_t type,   /* class and type of query */
                  const u_char * data,   /* resource record data */
                  int datalen,   /* length of data */
                  const u_char * newrr_in,       /* new rr for modify or append */
@@ -161,10 +162,8 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
                          lastdnptr)) < 0)
             return (-1);
         cp += n;
-        NS_PUT16(type, cp);
-        cp += NS_INT16SZ;
-        NS_PUT16(class, cp);
-        cp += NS_INT16SZ;
+        RES_PUT16(type, cp);
+        RES_PUT16(class, cp);
         hp->qdcount = htons(1);
         if (op == ns_o_query || data == NULL)
             break;
@@ -178,14 +177,10 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
         if (n < 0)
             return (-1);
         cp += n;
-        NS_PUT16(ns_t_null, cp);
-        cp += NS_INT16SZ;
-        NS_PUT16(class, cp);
-        cp += NS_INT16SZ;
-        NS_PUT32(0, cp);
-        cp += NS_INT32SZ;
-        NS_PUT16(0, cp);
-        cp += NS_INT16SZ;
+        RES_PUT16(ns_t_null, cp);
+        RES_PUT16(class, cp);
+        RES_PUT32(0, cp);
+        RES_PUT16(0, cp);
         hp->arcount = htons(1);
         break;
 
@@ -196,14 +191,10 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
         if (ep - cp < 1 + NS_RRFIXEDSZ + datalen)
             return (-1);
         *cp++ = '\0';           /* no domain name */
-        NS_PUT16(type, cp);
-        cp += NS_INT16SZ;
-        NS_PUT16(class, cp);
-        cp += NS_INT16SZ;
-        NS_PUT32(0, cp);
-        cp += NS_INT32SZ;
-        NS_PUT16(datalen, cp);
-        cp += NS_INT16SZ;
+        RES_PUT16(type, cp);
+        RES_PUT16(class, cp);
+        RES_PUT32(0, cp);
+        RES_PUT16(datalen, cp);
         if (datalen) {
             memcpy(cp, data, datalen);
             cp += datalen;
@@ -247,10 +238,8 @@ res_val_nopt(struct name_server *pref_ns, int n0,       /* current offset in buf
 
     *cp++ = 0;                  /* "." */
 
-    NS_PUT16(ns_t_opt, cp);     /* TYPE */
-    cp += NS_INT16SZ;
-    NS_PUT16(anslen & 0xffff, cp);      /* CLASS = UDP payload size */
-    cp += NS_INT16SZ;
+    RES_PUT16(ns_t_opt, cp);     /* TYPE */
+    RES_PUT16(anslen & 0xffff, cp);      /* CLASS = UDP payload size */
     *cp++ = ns_r_noerror;       /* extended RCODE */
     *cp++ = 0;                  /* EDNS version */
 #ifdef DEBUG
@@ -258,10 +247,8 @@ res_val_nopt(struct name_server *pref_ns, int n0,       /* current offset in buf
         printf(";; res_opt()... ENDS0 DNSSEC\n");
 #endif
     flags |= NS_OPT_DNSSEC_OK;
-    NS_PUT16(flags, cp);
-    cp += NS_INT16SZ;
-    NS_PUT16(0, cp);            /* RDLEN */
-    cp += NS_INT16SZ;
+    RES_PUT16(flags, cp);
+    RES_PUT16(0, cp);            /* RDLEN */
     hp->arcount = htons(ntohs(hp->arcount) + 1);
 
     return (cp - buf);
