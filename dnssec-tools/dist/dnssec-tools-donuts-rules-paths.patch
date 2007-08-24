@@ -1,0 +1,26 @@
+Index: tools/donuts/donuts
+===================================================================
+--- tools/donuts/donuts	(revision 2862)
++++ tools/donuts/donuts	(working copy)
+@@ -29,7 +29,7 @@
+ 	    c => $ENV{'HOME'} . "/.donuts.conf",
+ 	    T => 'port 53 || ip[6:2] & 0x1fff != 0',
+ 	    o => '%d.%t.pcap',
+-	    r => "/usr/local/share/donuts/rules/*");
++	    r => "/usr/share/dnssec-tools/donuts/rules/*");
+ 
+ my (@rules, %rules, $rf, $current_zone_file, %nrecs,
+     @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
+Index: tools/donuts/Makefile.PL
+===================================================================
+--- tools/donuts/Makefile.PL	(revision 2886)
++++ tools/donuts/Makefile.PL	(working copy)
+@@ -21,7 +21,7 @@
+ 
+ # we have to hard code the path in donuts anyway, so this does not work:
+ #RULESDIR=$(DESTDIR)/$(PREFIX)/share/donuts/rules
+-RULESDIR=$(DESTDIR)/usr/local/share/donuts/rules
++RULESDIR=$(DESTDIR)/usr/share/dnssec-tools/donuts/rules
+ 
+ INSTALL=$(PERL) "-MExtUtils::Command" -e cp
+ 
