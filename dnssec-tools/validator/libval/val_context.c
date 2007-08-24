@@ -284,12 +284,23 @@ val_free_context(val_context_t * context)
 int
 free_validator_state(void)
 {
+    val_context_t * saved_ctx = NULL;
+
     free_validator_cache();
 
     LOCK_DEFAULT_CONTEXT();
-    if (the_null_context != NULL)
-        val_free_context(the_null_context);
+    if (the_null_context != NULL) {
+        /*
+         * must clear the_null_context to prevent deadlock
+         * in val_free_context.
+         */
+        saved_ctx = the_null_context;
+        the_null_context = NULL;
+    }
     UNLOCK_DEFAULT_CONTEXT();
+
+    if (saved_ctx)
+        val_free_context(saved_ctx);
 
     return VAL_NO_ERROR;
 }
