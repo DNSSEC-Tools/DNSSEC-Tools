@@ -1,7 +1,7 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.2
-Release: 4%{?dist}
+Version: 1.3dev
+Release: 1%{?dist}
 License: BSD-like
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
@@ -18,9 +18,6 @@ BuildRequires: perl(Test) perl(ExtUtils::MakeMaker)
 
 Patch4: dnssec-tools-linux-conf-paths-1.2.patch
 Patch6: dnssec-tools-donuts-rules-paths.patch
-Patch7: dnssec-tools-validator-destdir-fixes.patch
-Patch8: dnssec-tools-maketestzone-bb.patch
-Patch9: dnssec-tools-donuts-perlmod-changes.patch
 
 %description
 
@@ -59,9 +56,6 @@ C-based libraries useful for developing dnssec aware tools.
 
 %patch4 -p0
 %patch6 -p0
-%patch7 -p0
-%patch8 -p0
-%patch9 -p0
 
 %build
 %configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf
@@ -85,9 +79,6 @@ find %{buildroot} -type f -name '*.bs' -size 0 -exec rm -f {} \;
 find %{buildroot} -depth -type d -exec rmdir {} 2>/dev/null ';'
 chmod -R u+w %{buildroot}/*
 rm -f %{buildroot}%{_libdir}/*.la
-
-# not needed and installed in two places
-rm -f %{buildroot}%{perl_vendorlib}/TrustMan.pl
 
 %post libs -p /sbin/ldconfig
 
@@ -139,7 +130,6 @@ rm -rf %{buildroot}
 %{_bindir}/getaddr
 %{_bindir}/gethost
 
-%{_bindir}/TrustMan.pl
 %{_bindir}/trustman
 %{_bindir}/blinkenlights
 %{_bindir}/cleankrf
@@ -183,10 +173,8 @@ rm -rf %{buildroot}
 %{_mandir}/man1/krfcheck.1.gz
 %{_mandir}/man1/rolllog.1.gz
 %{_mandir}/man1/signset-editor.1.gz
-%{_mandir}/man1/TrustMan.pl.1.gz
 %{_mandir}/man1/trustman.1.gz
 
-%{_mandir}/man3/TrustMan.3pm.gz
 %{_mandir}/man3/p_ac_status.3.gz
 %{_mandir}/man3/p_val_status.3.gz
 
