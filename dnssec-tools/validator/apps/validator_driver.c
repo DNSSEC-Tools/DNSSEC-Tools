@@ -780,11 +780,15 @@ main(int argc, char *argv[])
         return 0;
     }
 
+#ifndef TEST_NULL_CTX_CREATION
     if (VAL_NO_ERROR !=
         (rc = val_create_context(label_str, &context))) {
         fprintf(stderr, "Cannot create context: %d\n", rc);
         return -1;
     }
+#else
+    context = NULL;
+#endif
 
     rc = 0;
 
