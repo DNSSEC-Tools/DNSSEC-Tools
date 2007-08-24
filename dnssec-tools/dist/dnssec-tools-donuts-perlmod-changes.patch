@@ -1,0 +1,15 @@
+Index: tools/donuts/rules/dnssec.rules.txt
+===================================================================
+--- tools/donuts/rules/dnssec.rules.txt	(revision 3387)
++++ tools/donuts/rules/dnssec.rules.txt	(working copy)
+@@ -217,7 +217,9 @@
+          my $gotone = 0;
+          for(my $i = 0; $i <= $#{$rrsigs{$type}{$rec->name}} && !$gotone; $i++){
+            $gotone = 1 if ($rrsigs{$type}{$rec->name}[$i]->signame eq 
+-                           $current_domain . ".");
++                           $current_domain . "." ||
++			   $rrsigs{$type}{$rec->name}[$i]->signame eq 
++                           $current_domain);
+          }
+          if (!$gotone) {
+            push @err, "$type:$rec->{name} is not signed by a key owned by the zone";

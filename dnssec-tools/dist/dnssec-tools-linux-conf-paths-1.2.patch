@@ -1,0 +1,40 @@
+Index: tools/etc/dnssec-tools/dnssec-tools.conf
+===================================================================
+--- tools/etc/dnssec-tools/dnssec-tools.conf	(revision 3323)
++++ tools/etc/dnssec-tools/dnssec-tools.conf	(working copy)
+@@ -12,12 +12,12 @@
+ # Paths to needed programs.  These may need adjusting for individual hosts.
+ #
+ keyarch		/usr/bin/keyarch
+-keygen		/usr/local/sbin/dnssec-keygen
+-rndc		/usr/local/sbin/rndc
+-viewimage	/usr/X11R6/bin/xview            # Used by drawvalmap.pl to
++keygen		/usr/sbin/dnssec-keygen
++rndc		/usr/sbin/rndc
++viewimage	/usr/bin/eog                    # Used by drawvalmap.pl to
+                                                 # display the generated image
+-zonecheck	/usr/local/sbin/named-checkzone
+-zonesign	/usr/local/sbin/dnssec-signzone
++zonecheck	/usr/sbin/named-checkzone
++zonesign	/usr/sbin/dnssec-signzone
+ rollrec-chk	/usr/bin/rollrec-check
+ zonesigner	/usr/bin/zonesigner
+ 
+@@ -57,7 +57,7 @@
+ # Settings that will be noticed by zonesigner.
+ #
+ # default_keyrec        output.krf
+-archivedir      /usr/local/etc/dnssec-tools/KEY-SAFE
++archivedir      /var/dnssec-tools/KEY-SAFE
+ entropy_msg	1
+ savekeys        1
+ kskcount	1
+@@ -66,7 +66,7 @@
+ #
+ # Settings for rollover-manager.
+ #
+-roll_logfile	/usr/local/etc/dnssec-tools/log-rollerd
++roll_logfile	/var/log/dnssec-tools/rollerd.log
+ roll_loglevel	info
+ roll_sleeptime	60
+ 

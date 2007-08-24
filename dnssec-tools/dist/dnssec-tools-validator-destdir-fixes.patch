@@ -1,0 +1,22 @@
+Index: validator/Makefile.in
+===================================================================
+--- validator/Makefile.in	(revision 3384)
++++ validator/Makefile.in	(working copy)
+@@ -43,7 +43,7 @@
+ 	@for i in $(INSTALLDIRS) ; do \
+ 		if test ! -d $$i ; then \
+ 			echo "creating directory $$i/" ; \
+-			$(MKPATH) $$i ; \
++			$(MKPATH) $(DESTDIR)$$i ; \
+ 		fi \
+ 	done
+ #
+@@ -67,7 +67,7 @@
+          done
+ 
+ localinstall:
+-	$(INSTALL) libval-config $(bindir)
++	$(INSTALL) libval-config $(DESTDIR)$(bindir)
+ 
+ subdirclean:
+ 	@for i in $(SUBDIRS) ; do \
