@@ -31,16 +31,8 @@ static val_context_t *the_null_context = NULL;
 
 #ifndef VAL_NO_THREADS
 
-static int ctx_mutex_init = -1;
-pthread_mutex_t ctx_default;
+pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
 
-#define DEFAULT_CONTEXT_INIT() do {\
-    if (0 != ctx_mutex_init) {\
-        if (0 != pthread_mutex_init(&ctx_default, NULL))\
-            return VAL_INTERNAL_ERROR; \
-        ctx_mutex_init = 0;\
-    }\
-} while(0)
 #define LOCK_DEFAULT_CONTEXT() do {\
     if (0 != pthread_mutex_lock(&ctx_default))\
         return VAL_INTERNAL_ERROR;\
@@ -51,7 +43,6 @@ pthread_mutex_t ctx_default;
         return VAL_INTERNAL_ERROR;\
 } while (0)
 #else
-#define DEFAULT_CONTEXT_INIT()
 #define LOCK_DEFAULT_CONTEXT()
 #define UNLOCK_DEFAULT_CONTEXT()
 #endif
@@ -75,33 +66,38 @@ val_create_context_with_conf(char *label,
     /* Check if the request is for the default context, and we have one available */
     if (label == NULL) {
 
-        DEFAULT_CONTEXT_INIT();
         LOCK_DEFAULT_CONTEXT();
 
         if (the_null_context) { 
             *newcontext = the_null_context;
             UNLOCK_DEFAULT_CONTEXT();
+            val_log(*newcontext, LOG_ERR, "reusing default context");
             return VAL_NO_ERROR;
         }
-
-        UNLOCK_DEFAULT_CONTEXT();
     }
 
     *newcontext = (val_context_t *) MALLOC(sizeof(val_context_t));
-    if (*newcontext == NULL)
+    if (*newcontext == NULL) {
+        if (label == NULL)
+            UNLOCK_DEFAULT_CONTEXT();
         return VAL_OUT_OF_MEMORY;
+    }
     memset(*newcontext, 0, sizeof(val_context_t));
 
 #ifndef VAL_NO_THREADS
     if (0 != pthread_rwlock_init(&(*newcontext)->respol_rwlock, NULL)) {
         FREE(*newcontext);
         *newcontext = NULL;
+        if (label == NULL)
+            UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
     if (0 != pthread_rwlock_init(&(*newcontext)->valpol_rwlock, NULL)) {
         pthread_rwlock_destroy(&(*newcontext)->respol_rwlock);
         FREE(*newcontext);
         *newcontext = NULL;
+        if (label == NULL)
+            UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
     if (0 != pthread_mutex_init(&(*newcontext)->ac_lock, NULL)) {
@@ -109,6 +105,8 @@ val_create_context_with_conf(char *label,
         pthread_rwlock_destroy(&(*newcontext)->valpol_rwlock);
         FREE(*newcontext);
         *newcontext = NULL;
+        if (label == NULL)
+            UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
 #endif
@@ -197,18 +195,18 @@ val_create_context_with_conf(char *label,
             (*newcontext)->resolv_conf,
             (*newcontext)->root_conf);
 
-    DEFAULT_CONTEXT_INIT();
-    LOCK_DEFAULT_CONTEXT();
     if (label == NULL) {
         the_null_context = *newcontext;
+        UNLOCK_DEFAULT_CONTEXT();
     }
-    UNLOCK_DEFAULT_CONTEXT();
     
     return VAL_NO_ERROR;
 
 err:
     val_free_context(*newcontext);
     *newcontext = NULL;
+    if (label == NULL)
+        UNLOCK_DEFAULT_CONTEXT();
     return retval;
 }
 
@@ -225,7 +223,6 @@ val_create_context(char *label,
 static int 
 unlink_if_default_context(val_context_t *context)
 {
-    DEFAULT_CONTEXT_INIT();
     LOCK_DEFAULT_CONTEXT();
     if (context == the_null_context)
         the_null_context = NULL;
@@ -289,7 +286,6 @@ free_validator_state(void)
 {
     free_validator_cache();
 
-    DEFAULT_CONTEXT_INIT();
     LOCK_DEFAULT_CONTEXT();
     if (the_null_context != NULL)
         val_free_context(the_null_context);
