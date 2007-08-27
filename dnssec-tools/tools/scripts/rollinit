@@ -107,12 +107,10 @@ sub main()
 #
 sub doopts
 {
-	my $ret;				# GetOptions() retcode.
 	#
 	# Parse the options.
 	#
-	$ret = GetOptions(\%options,@opts);
-	exit(1) if(!$ret);
+	GetOptions(\%options,@opts) || usage();
 
 	#
 	# Set our option variables based on the parsed options.
