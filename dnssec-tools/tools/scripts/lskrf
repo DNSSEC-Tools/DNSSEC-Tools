@@ -292,7 +292,7 @@ sub doopts
 	#
 	# Parse the options.
 	#
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 
 	#
 	# Handle a few immediate flags.
