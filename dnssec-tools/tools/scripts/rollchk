@@ -103,7 +103,7 @@ sub main()
 	#
 	# Check our options.
 	#
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 	$count	 = $options{'count'};
 	$quiet	 = $options{'quiet'};
 	$verbose = $options{'verbose'};
