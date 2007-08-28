@@ -347,6 +347,7 @@ sub optsandargs
 	#
 	# Slurp up the options.
 	#
+	opts_onerr(1);
 	$ropts = opts_cmdopts(@opts);
 	%opts = %$ropts 	if($ropts != undef);
 
