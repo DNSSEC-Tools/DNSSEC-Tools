@@ -131,7 +131,7 @@ sub optsandargs
 	#
 	# Parse the options.
 	#
-	GetOptions(\%options,@OPTS);
+	GetOptions(\%options,@OPTS) || usage();
 	$list	 = $options{'list'};
 	$verbose = $options{'verbose'};
 

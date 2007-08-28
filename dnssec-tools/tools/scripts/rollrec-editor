@@ -337,7 +337,7 @@ sub doopts
 
 	usage()   if($argc == 0);
 
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 
 	#
 	# Show the version number or help info if requested.

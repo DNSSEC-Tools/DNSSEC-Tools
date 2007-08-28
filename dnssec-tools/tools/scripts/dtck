@@ -195,14 +195,12 @@ sub main()
 #
 sub doopts
 {
-	my $ret;				# GetOptions() return code.
 	my %options = ();			# Filled option array.
 
 	#
 	# Check our options.
 	#
-	$ret = GetOptions(\%options,@opts);
-	exit(1) if(!$ret);
+	GetOptions(\%options,@opts) || usage();
 
 	#
 	# Handle some immediate options.

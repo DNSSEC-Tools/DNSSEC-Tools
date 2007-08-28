@@ -1989,13 +1989,11 @@ sub getkrval
 sub optsandargs
 {
 	my $argc = @ARGV;				# Number of arguments.
-	my $ret;					# GetOptions() retcode.
 
 	#
 	# Check our options.
 	#
-	$ret = GetOptions(\%opts,@opts);
-	exit(1) if(!$ret);
+	GetOptions(\%opts,@opts) || usage();
 	opts_onerr(0);
 
 	$version   = $opts{$OPT_VERSION};
