@@ -16,6 +16,8 @@
 
 package Net::DNS::SEC::Tools::tooloptions;
 
+use UNIVERSAL qw (can);
+
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Net::DNS::SEC::Tools::defaults;
 
@@ -740,9 +742,25 @@ sub localgetoptions
 	require Getopt::Long;
 	import Getopt::Long qw(:config no_ignore_case_always);
 
+	#
+	# Parse the command line for options.
+	#
 	$ret = GetOptions(localoptionsmap(@args));
 
-	exit(1) if(!$ret && $errexit);
+	#
+	# If there was an option problem and we should exit, we'll do so.
+	# If there's a usage() in the main module, we'll call that first.
+	#
+	if(!$ret && $errexit)
+	{
+		main::usage() if(can('main','usage'));
+		exit(1);
+	}
+
+	#
+	# Return the GetOptions() return code to our caller.
+	#
+	return($ret);
 }
 
 ##############################################################################
