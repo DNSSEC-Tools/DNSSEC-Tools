@@ -82,7 +82,7 @@ sub main
 #
 sub opts
 {
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 	usage() if($options{'help'});
 
 	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
