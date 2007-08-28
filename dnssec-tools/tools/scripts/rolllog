@@ -98,7 +98,7 @@ sub optsandargs
 	#
 	# Check our options.
 	#
-	GetOptions(\%opts,@opts);
+	GetOptions(\%opts,@opts) || usage();
 	usage()   if(defined($opts{$OPT_HELP}));
 	version() if(defined($opts{$OPT_VERSION}));
 

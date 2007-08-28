@@ -142,7 +142,7 @@ sub optsandargs
 	# Get the configuration file data and options.
 	#
 	%dtconf = parseconfig();
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 
 	#
 	# Check for directory-selection options.

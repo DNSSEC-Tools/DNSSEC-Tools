@@ -143,7 +143,7 @@ sub optsandargs
 {
 	my $argc = @ARGV;		# Number of command line arguments.
 
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 	$count	 = $options{'count'};
 	$list	 = $options{'list'};
 	$quiet	 = $options{'quiet'};

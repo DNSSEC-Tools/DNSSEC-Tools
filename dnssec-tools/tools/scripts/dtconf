@@ -88,7 +88,7 @@ sub doopts
 	#
 	# Check our options.
 	#
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 	$key	 = $options{'key'};
 
 	#

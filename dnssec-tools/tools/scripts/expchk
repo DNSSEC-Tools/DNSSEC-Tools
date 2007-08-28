@@ -131,7 +131,7 @@ sub doopts
 	#
 	# Check our options.
 	#
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 	$allflag	= $options{'all'};
 	$expiredflag	= $options{'expired'};
 	$validflag	= $options{'valid'};

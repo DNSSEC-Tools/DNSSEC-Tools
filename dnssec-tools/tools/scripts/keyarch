@@ -316,7 +316,7 @@ sub optsandargs
 	#
 	# Check our options.
 	#
-	GetOptions(\%opts,@opts);
+	GetOptions(\%opts,@opts) || usage();
 	$verbose = $opts{'verbose'};
 	$quiet	 = $opts{'quiet'};
 	$zone	 = $opts{'zone'};

@@ -179,7 +179,7 @@ sub doopts
 	#
 	# Check our options.
 	#
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 	$expert	 = $options{'expert'};
 	$verbose = $options{'verbose'};
 	$version = $options{'Version'};
