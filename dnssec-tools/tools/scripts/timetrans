@@ -145,7 +145,7 @@ sub optsandargs()
 	# Check our options and ensure there weren't any problems.
 	#
 	Getopt::Long::Configure("pass_through");
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 
 	#
 	# Show the version number if requested
