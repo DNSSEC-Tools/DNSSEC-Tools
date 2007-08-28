@@ -137,7 +137,7 @@ sub doopts
 	#
 	# Parse the options.
 	#
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 
 	#
 	# Set our option variables based on the parsed options.
