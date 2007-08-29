@@ -18,6 +18,7 @@ use strict;
 use Mail::Send;
 
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 
@@ -27,8 +28,43 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
 			dt_adminmail
+			dt_cmdpath
 			dt_filetype
 		);
+
+#
+# List of valid DNSSEC-Tools commands.  Used by dt_cmdpath().
+#
+my %dtcmds =
+(
+	"blinkenlights"	   => 1,
+	"cleanarch"	   => 1,
+	"cleankrf"	   => 1,
+	"dtconf"	   => 1,
+	"dtconfchk"	   => 1,
+	"dtdefs"	   => 1,
+	"dtinitconf"	   => 1,
+	"expchk"	   => 1,
+	"fixkrf"	   => 1,
+	"genkrf"	   => 1,
+	"getdnskeys"	   => 1,
+	"keyarch"	   => 1,
+	"krfcheck"	   => 1,
+	"lskrf"		   => 1,
+	"lsroll"	   => 1,
+	"rollchk"	   => 1,
+	"rollctl"	   => 1,
+	"rollerd"	   => 1,
+	"rollinit"	   => 1,
+	"rolllog"	   => 1,
+	"rollrec-editor"   => 1,
+	"rollset"	   => 1,
+	"signset-editor"   => 1,
+	"tachk"		   => 1,
+	"timetrans"	   => 1,
+	"trustman"	   => 1,
+	"zonesigner"	   => 1,
+);
 
 #-----------------------------------------------------------------------------
 #
@@ -93,6 +129,22 @@ sub dt_adminmail
 	#
 	$mh->close;
 	return(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      dt_cmdpath()
+# 
+# Purpose:      This routine returns the path to a DNSSEC-Tools command.
+#		Null is returned if the command isn't a valid DNSSEC-Tools
+#		command.  Otherwise, the command's path is returned.
+#
+sub dt_cmdpath
+{
+	my $cmd = shift;			# Command to pathenate.
+
+	return('') if($cmd eq '');
+	return('') if(!$dtcmds{$cmd});
+	return(dnssec_tools_default($cmd));
 }
 
 #-----------------------------------------------------------------------------
@@ -193,6 +245,8 @@ Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools packag
 
   dt_adminmail($subject,$msgbody,$recipient);
 
+  $zspath = dt_cmdpath('zonesigner');
+
   $ftype = dt_findtype($path);
 
 =head1 DESCRIPTION
@@ -224,6 +278,18 @@ Return values:
 
 	1 - the message was created and sent.
 	0 - an invalid recipient was specified. 
+
+=item I<dt_cmdpath(command)>
+
+This routine returns the path to a specified DNSSEC-Tools command.
+I<command> should be the name only, without any leading directories.
+The command name is checked to ensure that it is a valid DNSEC-Tools command,
+
+Return values:
+
+	The absolute path to the command is returned if the command
+	is valid.
+	Null is returned if the command is not valid.
 
 =item I<dt_filetype(path)>
 
@@ -264,3 +330,4 @@ B<Mail::Send.pm(3)>,
 B<Net::DNS::SEC::Tools::conf.pm(3)>
 
 =cut
+
