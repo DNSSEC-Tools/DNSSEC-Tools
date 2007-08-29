@@ -64,6 +64,7 @@ my $ME		= "rollerd";
 #
 my $rndc;
 my $rrchk;
+my $zonesigner;
 
 my $PWD = '/bin/pwd';
 
@@ -198,6 +199,16 @@ sub main
 	{
 		print STDERR "another rollerd is already running\n";
 		rolllog_log(LOG_ALWAYS,"","another rollerd tried to start");
+		cleanup();
+	}
+
+	#
+	# Get the pathname for zonesigner.
+	#
+	if(($zonesigner=dt_cmdpath('zonesigner')) eq '')
+	{
+		print STDERR "no absolute path defined for zonesigner; exiting...\n";
+		rolllog_log(LOG_ALWAYS,"","no absolute path defined for zonesigner; exiting...");
 		cleanup();
 	}
 
@@ -1877,7 +1888,7 @@ sub signer
 	#
 	# Have zonesigner sign the zone for us.
 	#
-	$cmdstr = "zonesigner $zsflag $zonefile $zonesigned";
+	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned";
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
 	$ret = `$cmdstr`;
