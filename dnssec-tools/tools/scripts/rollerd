@@ -2841,16 +2841,24 @@ sub cmd_rollrec
 sub cmd_rollzone
 {
 	my $zone = shift;				# Command's data.
+	my $rollret;					# Retcode from rolling.
 
 	rolllog_log(LOG_TMI,"<command>","rollzone command received; zone - \"$zone\"");
 
-	if(rollnow($zone) == 1)
+	$rollret = rollnow($zone);
+	if($rollret == 1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover started");
 	}
-	else
+	elsif($rollret == 0)
 	{
+		rolllog_log(LOG_ERR,"<command>","$zone not in rollrec file $rollrecfile");
 		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+	}
+	elsif($rollret == -1)
+	{
+		rolllog_log(LOG_ERR,"<command>","$zone has bad values in rollrec file $rollrecfile");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"$zone has bad values in rollrec file $rollrecfile");
 	}
 }
 
@@ -3235,19 +3243,6 @@ sub cmd_zonestatus
 sub rollnow
 {
 	my $zone = shift;				# Command's data.
-	my $rrr;					# Reference to rollrec.
-	my %rr;						# Rollrec hash.
-
-	#
-	# Get the rollrec for the zone.
-	#
-	$rrr = rollrec_fullrec($zone);
-	if(!defined($rrr))
-	{
-		rolllog_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
-		return(0);
-	}
-	%rr = %$rrr;
 
 	#
 	# Re-read the rollrec file and change the record's type.  We'll
@@ -3256,6 +3251,45 @@ sub rollnow
 	rollrec_lock();
 	if(rollrec_read($rollrecfile) > 0)
 	{
+		my $rrr;				# Reference to rollrec.
+		my %rr;					# Rollrec hash.
+
+		my $dir;				# Zone's directory.
+		my $krf;				# Zone's keyrec.
+		my $znf;				# Zone's zonefile.
+
+		#
+		# Get the rollrec for the zone.
+		#
+		$rrr = rollrec_fullrec($zone);
+		if(!defined($rrr))
+		{
+			rolllog_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
+			rollrec_close();
+			rollrec_unlock();
+			return(0);
+		}
+		%rr = %$rrr;
+
+		#
+		# Do a few *very* simple validation checks.
+		#
+		$dir = '.';
+		$krf = $rr{'keyrec'};
+		$znf = $rr{'zonefile'};
+		if(exists($rr{'directory'}))
+		{
+			$dir = $rr{'directory'};
+			$krf = "$dir/$krf" if($krf !~ /^\//);
+			$znf = "$dir/$znf" if($znf !~ /^\//);
+		}
+		if((! -e $dir) || (! -e $krf) || (! -e $znf))
+		{
+			rollrec_close();
+			rollrec_unlock();
+			return(-1);
+		}
+
 		#
 		# A skip record is changed to a regular rollrec.
 		#
