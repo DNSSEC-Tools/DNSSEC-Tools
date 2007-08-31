@@ -17,6 +17,7 @@ use strict;
 
 use Getopt::Long qw(:config no_ignore_case_always);
 
+use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
@@ -379,6 +380,11 @@ my $selzone;					# Selected zone name.
 my $selwidget;					# Selected zone's widget.
 my $lastrow = $STARTROW;			# Final row index.
 
+#
+# Command paths.
+#
+my $rollctl;					# Path for rollctl.
+
 ###########################################################################
 
 main();
@@ -450,7 +456,7 @@ sub optsandargs
 	#
 	if(($argc == 0) || defined($options{'display'}))
 	{
-		exec "rollctl -display" || print STDERR "unable to execute rollctl -display\n";
+		exec "$rollctl -display" || print STDERR "unable to execute $rollctl -display\n";
 		exit(1);
 	}
 
@@ -474,6 +480,16 @@ sub optsandargs
 	{
 		setopt($dtk,$blconf{$dtk});
 	}
+
+	#
+	# Get the path for the rollctl command.
+	#
+	if(($rollctl=dt_cmdpath('rollctl')) eq '')
+	{
+		print STDERR "no absolute path defined for rollctl; exiting...\n";
+		exit(1);
+	}
+
 }
 
 #---------------------------------------------------------------------------
@@ -1000,6 +1016,7 @@ sub zone_skipzone
 sub general_cmds
 {
 	my $rcmd = shift;				# Command to run.
+	my $ret;					# Command retcode.
 
 	#
 	# Don't allow commands if -nomodify was given.
@@ -1033,8 +1050,19 @@ sub general_cmds
 	#
 	# Build and execute the command string.
 	#
-	$rcmd = "rollctl -q -$rcmd";
-	system($rcmd);
+	$rcmd = "$rollctl -q -$rcmd";
+	$ret = system($rcmd);
+
+	#
+	# If the command failed, we'll re-run the command and let the
+	# user see the failure message.
+	#
+	if(($ret >> 8) != 0)
+	{
+		$rcmd =~ s/ -q//;
+		system($rcmd);
+		print "\n";
+	}
 }
 
 #---------------------------------------------------------------------------
@@ -1073,14 +1101,14 @@ sub kskcmd
 		#
 		# Move the selected zone into rollover phase 7.
 		#
-		system("rollctl -q -dspub $zone");
+		system("$rollctl -q -dspub $zone");
 	}
 	elsif($rcmd eq "dspuball")
 	{
 		#
 		# Move this zone into rollover phase 7.
 		#
-		system("rollctl -q -dspuball");
+		system("$rollctl -q -dspuball");
 	}
 
 }
@@ -1097,7 +1125,7 @@ sub commander
 	#
 	# Build and execute the command string.
 	#
-	$rcmd = "rollctl -q -$rcmd";
+	$rcmd = "$rollctl -q -$rcmd";
 	system($rcmd);
 
 	#
@@ -1476,7 +1504,7 @@ sub infostripe
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$SKIPCNTCOL,$lab);
 
-	open(RINFO,"rollctl -status |");
+	open(RINFO,"$rollctl -status |");
 	while(<RINFO>)
 	{
 		my $line;			# Input line from rollctl.
