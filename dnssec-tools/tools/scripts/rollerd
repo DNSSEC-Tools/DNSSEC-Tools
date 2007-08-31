@@ -3189,8 +3189,17 @@ sub cmd_zonestatus
 		#
 		# Get the data we're interested in.
 		#
-		$phase = $rr{'zskphase'};
+		if($rr{'kskphase'} > 0)
+		{
+			$phase = 'KSK ' . $rr{'kskphase'};
+		}
+		else
+		{
+			$phase = 'ZSK ' . $rr{'zskphase'};
+		}
 		$rtype = $rr{'rollrec_type'};
+
+		$phase = '-' if($rtype eq 'skip');
 
 		#
 		# Add the data to the output buffer and bump our zone count.
@@ -3328,8 +3337,9 @@ sub skipnow
 		}
 
 		#
-		# Move the zone to rollover phase 0.
+		# Set the zone's KSK and ZSK rollover phases to 0.
 		#
+		rollrec_setval($zone,"kskphase",0);
 		rollrec_setval($zone,"zskphase",0);
 
 		#
