@@ -2244,6 +2244,7 @@ sub rrfchk
 		rolllog_log(LOG_ERR,$rname,"changing roll record to a skip record");
 		rollrec_rectype($rname,"skip");
 		$modified++;
+		display("badzone $rname 0");
 
 	}
 
