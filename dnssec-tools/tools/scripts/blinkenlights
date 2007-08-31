@@ -153,10 +153,11 @@ my $SELECTEDFG	= 'white';			# Selected foreground color.
 # Background colors for the zones, cycling through the list for table rows.
 #
 my $NUMCOLORS = 3;				# Maximum number of colors.
-my $INFOBG = "white";				# Color for the info row.
+my $INFOBG    = "white";			# Color for the info row.
 
 my $colorind = 0;				# Current color index.
 my $skipcolor = "grey";				# Color for skip zones.
+my $ERRORBG   = "yellow";			# Color for error rows.
 
 #
 # The @kphasecolors and @zphasecolors arrays hold the color names are used for
@@ -359,6 +360,8 @@ my @zonenames = ();				# Screen-order list of zones.
 my $zonecnt = 1;				# Count of zones we're watching.
 my %keyrecs = ();				# Zones' keyrec filenames.
 my %display = ();				# Zones' display flag.
+
+my %badzones = ();				# Zones with problems.
 
 #
 # Saved zone data, needed for repaints.
@@ -1015,8 +1018,12 @@ sub zone_skipzone
 #
 sub general_cmds
 {
-	my $rcmd = shift;				# Command to run.
+	my $rcmd = shift;				# User's command.
+	my $args;					# Command arguments.
+	my $rollcmd;					# Command to execute.
 	my $ret;					# Command retcode.
+
+	my $zone = $selzone;				# Zone to handle.
 
 	#
 	# Don't allow commands if -nomodify was given.
@@ -1024,34 +1031,32 @@ sub general_cmds
 	return if($nomodify);
 
 	#
-	# These commands need a zone.  We've got to query the user for
-	# one, but until then they're unimplemented.
+	# These commands need a zone.  By hook or by crook, we'll ensure
+	# that we have one.
 	#
 	if(($rcmd eq "rollzone") || ($rcmd eq "skipzone"))
 	{
-		my $zone;				# Zone to handle.
-
 		#
 		# If a zone has been selected, we'll use it.  If not,
 		# we'll prompt the user for the zone.
 		#
 		if($selzone ne '')
 		{
-			$rcmd = "$rcmd $selzone";
+			$args = "$rcmd $selzone";
 		}
 		else
 		{
 			$zone = getzone($rcmd);
 			return if($zone eq "");
-			$rcmd = "$rcmd $zone";
+			$args = "$rcmd $zone";
 		}
 	}
 
 	#
 	# Build and execute the command string.
 	#
-	$rcmd = "$rollctl -q -$rcmd";
-	$ret = system($rcmd);
+	$rollcmd = "$rollctl -q -$args";
+	$ret = system($rollcmd);
 
 	#
 	# If the command failed, we'll re-run the command and let the
@@ -1059,9 +1064,22 @@ sub general_cmds
 	#
 	if(($ret >> 8) != 0)
 	{
-		$rcmd =~ s/ -q//;
-		system($rcmd);
-		print "\n";
+		$rollcmd = "$rollctl $args";
+		system($rollcmd);
+
+		#
+		# If we were trying to roll or skip this zone, we'll
+		# mark it as having a problem and repaint its stripe.
+		#
+		if(($rcmd eq "rollzone") || ($rcmd eq "skipzone"))
+		{
+			$badzones{$zone} = 1;
+			zonestripe($zone,'KSK',0);
+		}
+	}
+	else
+	{
+		delete($badzones{$zone});
 	}
 }
 
@@ -1669,14 +1687,26 @@ sub zonestripe
 	#
 	if(($rollers{$zone} == 0) || ($phase == -42))
 	{
+		my $zlabel = 'skipping';			# Zone's label.
+
 		return if($noskip);
+
+		#
+		# Set up some data for zones that have problems.
+		#
+		if(defined($badzones{$zone}))
+		{
+			$zlabel = 'ERROR -- check rollerd log';
+			$bgcolor = $ERRORBG;
+		}
 
 		$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
 				       -foreground => $fgcolor,
 				       -background => $bgcolor);
 		$zonetab->put($row0,$NAMECOL,$lab);
 
-		$lab = $zonetab->Label(-text => 'skipping', -font => $font,
+		$lab = $zonetab->Label(-text => $zlabel,
+				       -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor);
 		$zonetab->put($row0,$PHASECOL,$lab);
