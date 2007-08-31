@@ -1959,15 +1959,18 @@ sub rollerdcmd
 	#	zskphase	change the specified zone's ZSK phase
 	#	startroll	start a zone in rollover
 	#	stoproll	stop a zone's rollover
+	#	badzone		mark zone as having problems
 	#
 	if($cmd eq "zskphase")
 	{
 		$zoneroll{$zone} = 'ZSK';
+		delete($badzones{$zone});
 		zonestripe($zone,'ZSK',$phase);
 	}
 	if($cmd eq "kskphase")
 	{
 		$zoneroll{$zone} = 'KSK';
+		delete($badzones{$zone});
 		zonestripe($zone,'KSK',$phase);
 	}
 	elsif($cmd eq "halt")
@@ -1986,6 +1989,7 @@ sub rollerdcmd
 		infostripe();
 
 		$zonephase{$zone} = $phase;
+		delete($badzones{$zone});
 		repaint();
 	}
 	elsif($cmd eq "stoproll")
@@ -1993,6 +1997,7 @@ sub rollerdcmd
 		$rollers{$zone} = 0;
 		calcrows();
 		$zonephase{$zone} = -42;
+		delete($badzones{$zone});
 
 		infostripe();
 
@@ -2014,6 +2019,7 @@ sub rollerdcmd
 		$timestr = "starting roll in $timestr" if($phase == 0);
 		zonestripe($zone,$rolltype,$phase,$timestr);
 		$zoneroll{$zone} = '';
+		delete($badzones{$zone});
 	}
 	elsif($cmd eq "rollrec")
 	{
@@ -2024,6 +2030,12 @@ sub rollerdcmd
 	elsif($cmd eq "sleeptime")
 	{
 		infostripe();
+		return;
+	}
+	elsif($cmd eq "badzone")
+	{
+		$badzones{$zone} = 1;
+		zonestripe($zone,'KSK',0);
 		return;
 	}
 	elsif($cmd eq "nop")
@@ -2811,7 +2823,7 @@ The two window coloring behaviors are discussed more fully below:
 	  configuration file.  If you choose to use a non-standard color for
 	  skipped zones your should ensure that it is not one of the colors
 	  used for rolling zones' stripes.  Modifying the skipcolor
-	  configuration field allows the skipped-zone color to be changing.
+	  configuration field allows the skipped-zone color to be changed.
 
 	  The colors configuration field can be used to turn on or off the use
 	  of colors for zone stripes.  If stripe coloring is turned off, then
