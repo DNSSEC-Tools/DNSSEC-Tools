@@ -1964,13 +1964,14 @@ sub rollerdcmd
 	if($cmd eq "zskphase")
 	{
 		$zoneroll{$zone} = 'ZSK';
-		delete($badzones{$zone});
+		goodzone($zone);
+
 		zonestripe($zone,'ZSK',$phase);
 	}
 	if($cmd eq "kskphase")
 	{
 		$zoneroll{$zone} = 'KSK';
-		delete($badzones{$zone});
+		goodzone($zone);
 		zonestripe($zone,'KSK',$phase);
 	}
 	elsif($cmd eq "halt")
@@ -1989,15 +1990,15 @@ sub rollerdcmd
 		infostripe();
 
 		$zonephase{$zone} = $phase;
-		delete($badzones{$zone});
+		goodzone($zone);
 		repaint();
 	}
 	elsif($cmd eq "stoproll")
 	{
+		goodzone($zone);
 		$rollers{$zone} = 0;
 		calcrows();
 		$zonephase{$zone} = -42;
-		delete($badzones{$zone});
 
 		infostripe();
 
@@ -2016,10 +2017,10 @@ sub rollerdcmd
 		$timestr  = fuzzytimetrans($secs);
 		$timestr  =~ s/\.0//;
 
+		goodzone($zone);
 		$timestr = "starting roll in $timestr" if($phase == 0);
 		zonestripe($zone,$rolltype,$phase,$timestr);
 		$zoneroll{$zone} = '';
-		delete($badzones{$zone});
 	}
 	elsif($cmd eq "rollrec")
 	{
@@ -2443,6 +2444,22 @@ sub getzone
 	@selzones = $zlist->get($indarr[0]);
 	$selzone = $selzones[0];
 	return($selzone);
+}
+
+#----------------------------------------------------------------------
+# Routine:      goodzone()
+#
+# Purpose:      Ensure that this zone is considered good.
+#
+sub goodzone
+{
+	my $zone = shift;				# Zone to mark as good.
+
+	return if(!defined($badzones{$zone}));
+
+	$rollers{$zone} = 1;
+	calcrows();
+	delete($badzones{$zone});
 }
 
 #---------------------------------------------------------------------------
