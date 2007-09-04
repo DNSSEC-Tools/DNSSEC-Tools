@@ -207,7 +207,7 @@ sub doopts
 	usage() if(defined($options{'help'}));
 
 	#
-	# Give a usage flag if asked.
+	# Check for conflicting options.
 	#
 	if($rollflag && $skipflag)
 	{
