@@ -203,10 +203,10 @@ val_create_context_with_conf(char *label,
     return VAL_NO_ERROR;
 
 err:
-    val_free_context(*newcontext);
-    *newcontext = NULL;
     if (label == NULL)
         UNLOCK_DEFAULT_CONTEXT();
+    val_free_context(*newcontext);
+    *newcontext = NULL;
     return retval;
 }
 
