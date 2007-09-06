@@ -77,12 +77,18 @@ print_addrinfo(int type, void *ainfo)
             printf("AI_CANONNAME ");
         if (a->ai_flags & AI_NUMERICHOST)
             printf("AI_NUMERICHOST ");
+#ifdef AI_V4MAPPED
         if (a->ai_flags & AI_V4MAPPED)
             printf("AI_V4MAPPED ");
+#endif
+#ifdef AI_ALL
         if (a->ai_flags & AI_ALL)
             printf("AI_ALL ");
+#endif
+#ifdef AI_ADDRCONFIG
         if (a->ai_flags & AI_ADDRCONFIG)
             printf("AI_ADDRCONFIG ");
+#endif
         //              if (a->ai_flags & AI_NUMERICSERV) printf("AI_NUMERICSERV ");
         printf("]\n");
         printf("\tFamily:    %d [%s]\n", a->ai_family,
