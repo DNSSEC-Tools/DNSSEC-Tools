@@ -18,6 +18,9 @@
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
+#ifdef HAVE_CRYPTO_SHA2_H /* netbsd */
+#include <crypto/sha2.h>
+#endif
 #include <openssl/dsa.h>
 #include <openssl/md5.h>
 #include <openssl/rsa.h>
