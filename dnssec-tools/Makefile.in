@@ -23,7 +23,7 @@ all: makeit
 
 libs: subdirmake
 
-makeit: subdirmake perlmakefiles perlmake
+makeit: subdirmake perlmake
 
 install: makedirectories perlinstall subdirinstall nextstepinstructions
 
@@ -31,7 +31,7 @@ clean: perlclean subdirclean
 
 distclean: clean configclean
 
-nextstepinstructions:
+nextstepinstructions: subdirinstall
 	$(QUIET)echo ""
 	$(QUIET)echo "**********************************************************************"
 	$(QUIET)echo "** NEXT: Please run 'dtinitconf' in order to set up the required"
@@ -60,7 +60,7 @@ subdirmake:
           done \
 	fi
 
-subdirinstall:
+subdirinstall: makedirectories
 	$(QUIET)if test "x$(SUBDIRS)" != "xnone" ; then \
 	  for i in $(SUBDIRS) ; do \
 	   (cd $$i ; make install DESTDIR=$(DESTDIR) ) ; \
@@ -81,7 +81,7 @@ subdirclean:
 # Perl system build rules
 #
 
-perlmake:
+perlmake: subdirmake perlmakefiles 
 	$(QUIET)for i in $(PERLDIRS) ; do \
 	  (cd $$i ; make ) ; \
 	  if test $$? != 0 ; then \
@@ -96,7 +96,7 @@ perlmakefiles:
           fi ; \
          done
 
-perlinstall:
+perlinstall: makedirectories
 	$(QUIET)for i in $(PERLDIRS) ; do \
 	  (cd $$i ; make install INSTALLSCRIPT=$(bindir) DESTDIR=$(DESTDIR) ) ; \
 	  if test $$? != 0 ; then \
@@ -116,3 +116,5 @@ perlclean:
 configclean:
 	rm -f config.cache config.status config.log \
 		Makefile stamp-h *.core
+
+.PHONY: all libs makeit install clean distclean nextstepinstructions makedirectories subdirmake subdirinstall subdirclean perlmake perlmakefiles perlinstall perlclean configclean
