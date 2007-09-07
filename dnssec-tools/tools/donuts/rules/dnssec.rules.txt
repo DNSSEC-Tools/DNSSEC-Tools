@@ -381,6 +381,21 @@ desc: In order to facilitate future rolling of your zone signing keys (ZSKs) it 
   return \@errs;
 </test>
 
+name: DNSSEC_OPENSSL_KEY_ISSUES
+type: DNSKEY
+desc: Tests to make sure that the vulnerability found in OpenSSL does not affect current keys within a zone.
+level: 1
+<test>
+  my $algorithm = $_[0]->algorithm();
+  if ($algorithm == 1 || $algorithm == 5) {
+    my $base64 = $_[0]->key();
+    if ($base64 =~ /^(AQM|AQN|AQO|AQP)/) {
+      return ["An DNSKEY was generated with a broken version of OpenSSL.  Upgrade to a new version of bind and generate a new key.  See this web page for details:  http://marc.info/?l=bind-announce&m=116253119512445"];
+    }
+  } 
+</test>
+
+
 # XXX: nsec next order is proper
 # XXX: check all sigs?
 #
