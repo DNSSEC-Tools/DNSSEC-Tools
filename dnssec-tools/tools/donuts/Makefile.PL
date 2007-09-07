@@ -9,6 +9,7 @@ use ExtUtils::MakeMaker;
 	 'PREREQ_PM'    => { Date::Parse => '2.2',
 			   },
 	 'EXE_FILES' => [qw(donuts donutsd)],
+	 'PM_FILTER' => 'sed -e "s|/usr/local/share|$(PREFIX)/share|"',
 
 #	 'depend' => {'pure__install' => 'installrulefiles'},
 
@@ -19,9 +20,7 @@ WriteMakefile(%opts);
 sub MY::postamble {
     return '
 
-# we have to hard code the path in donuts anyway, so this does not work:
-#RULESDIR=$(DESTDIR)/$(PREFIX)/share/donuts/rules
-RULESDIR=$(DESTDIR)/usr/local/share/donuts/rules
+RULESDIR=$(DESTDIR)/$(PREFIX)/share/donuts/rules
 
 INSTALL=$(PERL) "-MExtUtils::Command" -e cp
 
