@@ -20,7 +20,7 @@ WriteMakefile(%opts);
 sub MY::postamble {
     return '
 
-RULESDIR=$(DESTDIR)/$(PREFIX)/share/donuts/rules
+RULESDIR=$(DESTDIR)/$(PREFIX)/share/dnssec-tools/donuts/rules
 
 INSTALL=$(PERL) "-MExtUtils::Command" -e cp
 
