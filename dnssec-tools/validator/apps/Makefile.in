@@ -49,5 +49,5 @@ install:
 	$(LIBTOOLIN) $(GETHOST) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETADDR) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(CHECK_CONF) $(DESTDIR)/$(bindir)	
-	$(MKPATH) `echo @VALIDATOR_TESTCASES@ | sed 's#/[^/]*$$##'`
+	$(MKPATH) `echo $(DESTDIR)/@VALIDATOR_TESTCASES@ | sed 's#/[^/]*$$##'`
 	$(CP) selftests.dist $(DESTDIR)/@VALIDATOR_TESTCASES@
