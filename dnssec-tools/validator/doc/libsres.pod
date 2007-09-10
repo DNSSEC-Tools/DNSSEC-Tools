@@ -2,13 +2,13 @@
 
 =head1 NAME
 
-I<query_send()>, I<response_rcv()>, get()> - 
+I<query_send()>, I<response_rcv()>, I<get()> - 
 send queries and receive responses from a DNS name server.
 
 I<clone_ns()>, I<clone_ns_list()>, I<free_name_server()>,
-I<free_name_servers()> - Manage name server lists
+I<free_name_servers()> - manage name server lists
 
-I<print_response()> - Display answers returned from the name server
+I<print_response()> - display answers returned from the name server
 
 =head1 SYNOPSIS
 
@@ -76,10 +76,10 @@ I<clone_ns_list()>.
 I<print_response()> provides a convenient way to display answers returned
 in I<response> by the name server.
 
-I<struct name_server> is defined in B<resolver.h> as follows.
+The I<name_server> structure is defined in B<resolver.h> as follows:
 
-  struct name_server
-  {
+    struct name_server
+    {
         u_int8_t ns_name_n[NS_MAXCDNAME];
         void *ns_tsig;
         u_int32_t ns_security_options;
@@ -90,8 +90,7 @@ I<struct name_server> is defined in B<resolver.h> as follows.
         struct name_server *ns_next;
         int ns_number_of_addresses;
         struct sockaddr_storage **ns_address;
-  };
-
+    };
 
 =over 4
 
@@ -118,9 +117,10 @@ B<SR_ZI_STATUS_LEARNED> for this field.
 
 =item I<ns_options>
 
-Specifies additional resolver flags. Currently defined flags are RES_RECURSE,
-which sets the "Recursion Desired" flag; RES_USE_DNSSEC, which sets the
-"DNSSEC OK" bit in the EDNS0 header; and RES_DEBUG, which enables debugging.
+Specifies additional resolver flags.  Currently defined flags are
+B<RES_RECURSE>, which sets the "Recursion Desired" flag; B<RES_USE_DNSSEC>,
+which sets the "DNSSEC OK" bit in the EDNS0 header; and B<RES_DEBUG>, which
+enables debugging.
 
 =item I<ns_retry>
 

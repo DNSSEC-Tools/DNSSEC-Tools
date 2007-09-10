@@ -3,19 +3,23 @@
 
 =head1 NAME
 
-libval_check_conf - command-line program for checking validity of the validator configuration file.
+B<libval_check_conf> - command-line program for checking validity of the validator configuration file.
 
-=head1 SYNOPSIS 
+=head1 SYNOPSIS
 
     libval_check_conf [options] <dnsval.conf>
 
 =head1 DESCRIPTION
 
-This program checks the validity of a given validator configuration file, typically named dnsval.conf, for any syntax errors. 
-The input to this program is a validator configuration file, but the program also requires valid resolv.conf and root.hints to be
-specified. The location for these auxiliary files may be specified using the -r and -i options respectively. If these options are not provided, 
-the default resolv.conf and root.hints files recognized by the validator library are used instead. The program displays an error
-if the default resolv.conf and root.hints files, and the -i and -r are both unspecified.  
+This program checks the validity of a given validator configuration file,
+typically named B<dnsval.conf>, for any syntax errors.  The input to this
+program is a validator configuration file, but the program also requires valid
+B<resolv.conf> and B<root.hints> to be specified.  The location for these
+auxiliary files may be specified using the I<-r> and I<-i> options
+respectively.  If these options are not provided, the default B<resolv.conf>
+and B<root.hints> files recognized by the validator library are used instead.
+The program displays an error if the default B<resolv.conf> and B<root.hints>
+files, and the I<-i> and I<-r> are both unspecified.
 
 =head1 RETURN VALUE
 
@@ -27,16 +31,20 @@ The program returns 0 on success and -1 on failure.
 
 =item -r, --resolv-conf
 
-Specifies the location for the resolv.conf file. If this option is not specified the default resolv.conf file recognized by the validator llibrary is used instead. 
+Specifies the location for the resolv.conf file.  If this option is not
+specified the default resolv.conf file recognized by the validator llibrary is
+used instead.
 
 =item -i, --root-hints
 
-Specifies the location for the root.hints file. If this option is not specified the default root.hints file recognized by the validator library is used instead. 
+Specifies the location for the root.hints file.  If this option is not
+specified the default root.hints file recognized by the validator library is
+used instead.
 
 =item -v, --verbose
 
-Displays detailed messages and warnings associated with the validator configuration file check process. 
-    
+Displays detailed messages and warnings associated with the validator configuration file check process.
+
 =item -h, --help
 
 Displays a usage help message and exits the program.
