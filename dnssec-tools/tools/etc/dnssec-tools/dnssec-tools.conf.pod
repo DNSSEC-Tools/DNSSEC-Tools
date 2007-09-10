@@ -19,7 +19,7 @@
 
 =head1 NAME
 
-dnssec-tools.conf - Configuration file for the DNSSEC-Tools programs.
+    dnssec-tools.conf - Configuration file for the DNSSEC-Tools programs.
 
 =head1 DESCRIPTION
 
@@ -55,7 +55,7 @@ The email address for the DNSSEC-Tools administrator.
 
 =item algorithm
 
-The default encryption algorithm to be passed to I<dnssec-keygen>.
+The default encryption algorithm to be passed to B<dnssec-keygen>.
 
 =item archivedir
 
@@ -67,25 +67,25 @@ The default I<keyrec> filename to be used by the B<keyrec.pm> module.
 
 =item endtime
 
-The zone default expiration time to be passed to I<dnssec-signzone>.
+The zone default expiration time to be passed to B<dnssec-signzone>.
 
 =item entropy_msg
 
-A true/false flag indicating if the I<zonesigner> command should display
+A true/false flag indicating if the B<zonesigner> command should display
 a message about entropy generation.  This is primarily dependent on the
 implementation of a system's random number generation.
 
 =item keyarch
 
-The path to the DNSSEC-Tools I<keyarch> command.
+The path to the DNSSEC-Tools B<keyarch> command.
 
 =item keygen
 
-The path to the I<dnssec-keygen> command.
+The path to the B<dnssec-keygen> command.
 
 =item keygen-opts
 
-Options to pass to the I<dnssec-keygen> command.
+Options to pass to the B<dnssec-keygen> command.
 
 =item kskcount
 
@@ -93,7 +93,7 @@ The default number of KSK keys that will be generated for each zone.
 
 =item ksklength
 
-The default KSK key length to be passed to I<dnssec-keygen>.
+The default KSK key length to be passed to B<dnssec-keygen>.
 
 =item ksklife
 
@@ -115,7 +115,7 @@ This is measured in seconds.
 
 =item random
 
-The random device generator to be passed to I<dnssec-keygen>.
+The random device generator to be passed to B<dnssec-keygen>.
 
 =item roll_logfile
 
@@ -142,23 +142,23 @@ Flag to allow/disallow usage of the GUI for specifying command options.
 
 =item zonecheck
 
-The path to the I<named-checkzone> command.
+The path to the B<named-checkzone> command.
 
 =item zonecheck-opts
 
-Options to pass to the I<named-checkzone> command.
+Options to pass to the B<named-checkzone> command.
 
 =item zonesign
 
-The path to the I<dnssec-signzone> command.
+The path to the B<dnssec-signzone> command.
 
 =item zonesign-opts
 
-Options to pass to the I<dnssec-signzone> command.
+Options to pass to the B<dnssec-signzone> command.
 
 =item zonesigner
 
-The path to the DNSSEC-Tools I<zonesigner> command.
+The path to the DNSSEC-Tools B<zonesigner> command.
 
 =item zskcount
 
@@ -166,7 +166,7 @@ The default number of ZSK keys that will be generated for each zone.
 
 =item zsklength
 
-The default ZSK key length to be passed to I<dnssec-keygen>.
+The default ZSK key length to be passed to B<dnssec-keygen>.
 
 =item zsklife
 
@@ -221,7 +221,6 @@ The following is an example B<dnssec-tools.conf> configuration file.
     ksklength	2048
     zsklength	1024
     random	/dev/urandom
-    
     
     #
     # Settings for dnssec-signzone.
