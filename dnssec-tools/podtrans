@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # podtrans
@@ -22,6 +22,7 @@ my %options = ();                       # Filled option hash.
 my @opts =
 (
 	"translator=s",			# Specific translation command.
+	"help",				# Give a usage message.
 );
 
 #
@@ -100,20 +101,20 @@ sub opts
 {
 	my $argc;				# Argument count.
 
-	GetOptions(\%options,@opts);
+	GetOptions(\%options,@opts) || usage();
 	$argc = @ARGV;
+
+	usage() if(defined($options{'help'}));
 
 	#
 	# Save any user-specified translator program.
 	#
-	if(defined($options{'translator'}))
-	{
-		$translator = $options{'translator'}
-	}
+	$translator = $options{'translator'} if(defined($options{'translator'}));
 
 	#
 	# Ensure we've got the right number of arguments, even if we
 	# have to fake a few of them.
+	#
 	if($argc == 1)
 	{
 		push(@ARGV,"/dev/stdout");
@@ -415,9 +416,9 @@ and place it in the file B<outdir/src::src::utils::testprog.html>.
 
 If a non-standard translator is specified:
 
-    podtrans -translator footrans src outdir
+    podtrans -translator foo-trans src outdir
 
-then I<podtrans> will execute the I<footrans> translator, passing
+then I<podtrans> will execute the I<foo-trans> translator, passing
 B<src/utils/testprog> as the only argument.  The output will be
 redirected into B<outdir/src::src::utils::testprog>.
 
