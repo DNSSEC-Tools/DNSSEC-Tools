@@ -813,6 +813,8 @@ get_global_options(char **buf_ptr, char *end_ptr,
     *g_opt = (global_opt_t *) MALLOC (sizeof (global_opt_t));
     if (*g_opt == NULL)
         return VAL_OUT_OF_MEMORY;
+    (*g_opt)->local_is_trusted = 0;
+    (*g_opt)->edns0_size = EDNS_UDP_SIZE;
     
     while (!endst) {
         /*
