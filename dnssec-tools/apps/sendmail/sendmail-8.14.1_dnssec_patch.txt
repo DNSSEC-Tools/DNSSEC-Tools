@@ -4,7 +4,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/devtools/Site/site.config.m4 sendmail-8.13.6
 @@ -0,0 +1,3 @@
 +APPENDDEF(`confENVDEF', `-DSUPPORT_DNSSEC=1 -DMILTER')
 +define(`confLIBSEARCH', `db 44bsd')
-+APPENDDEF(`confLIBS', `-lsres -lval -lcrypto -lpthread')
++APPENDDEF(`confLIBS', `-lsres -lval-threads -lcrypto -lpthread')
 diff -U 5 -Nar sendmail-8.13.6.orig/doc/op/op.me sendmail-8.13.6/doc/op/op.me
 --- sendmail-8.13.6.orig/doc/op/op.me	2005-11-11 21:08:04.000000000 -0500
 +++ sendmail-8.13.6/doc/op/op.me	2006-06-21 11:22:56.000000000 -0400
@@ -58,7 +58,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/libmilter/sm_gethost.c sendmail-8.13.6/libmi
 +{
 +	struct hostent *h;
 +#if SUPPORT_DNSSEC
-+	int dnssec_status = VAL_INTERNAL_ERROR;
++	val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
 +	if (RequireDNSSEC && !val_istrusted(dnssec_status)) {
 +		h = NULL;
@@ -90,7 +90,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/libmilter/sm_gethost.c sendmail-8.13.6/libmi
  }
 +#endif /* NEEDSGETIPNODE && NETINET6 */
  
-+#if (NEEDSGETIPNODE && NETINET6) || SUPPORT_DNSSEC
++#if (NEEDSGETIPNODE && NETINET6) 
  void
  freehostent(h)
  	struct hostent *h;
@@ -103,7 +103,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/libmilter/sm_gethost.c sendmail-8.13.6/libmi
  	return;
  }
 -#endif /* NEEDSGETIPNODE && NETINET6 */
-+#endif /* (NEEDSGETIPNODE && NETINET6) || SUPPORT_DNSSEC */
++#endif /* (NEEDSGETIPNODE && NETINET6) */
  
  struct hostent *
  mi_gethostbyname(name, family)
@@ -158,7 +158,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/conf.c sendmail-8.13.6/sendmail/con
 +	struct hostent *h;
 +
 +#if SUPPORT_DNSSEC
-+	int dnssec_status = VAL_INTERNAL_ERROR;
++	val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
 +	if (RequireDNSSEC && !val_istrusted(dnssec_status)) {
 +		h = NULL;
@@ -196,7 +196,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/conf.c sendmail-8.13.6/sendmail/con
  }
 +#endif /* NETINET6 && NEEDSGETIPNODE */
  
-+#if (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC
++#if (NETINET6 && NEEDSGETIPNODE) 
  void
  freehostent(h)
  	struct hostent *h;
@@ -209,7 +209,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/conf.c sendmail-8.13.6/sendmail/con
  	return;
  }
 -#endif /* NETINET6 && NEEDSGETIPNODE */
-+#endif /* (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC */
++#endif /* (NETINET6 && NEEDSGETIPNODE) */
  
  struct hostent *
  sm_gethostbyname(name, family)
@@ -248,7 +248,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/conf.c sendmail-8.13.6/sendmail/con
  		}
  	}
 -#if NETINET6
-+#if NETINET6 || SUPPORT_DNSSEC
++#if NETINET6 
  	freehostent(hp);
 -#endif /* NETINET6 */
 +#endif /* NETINET6 || SUPPORT_DNSSEC */
@@ -285,7 +285,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/domain.c sendmail-8.13.6/sendmail/d
 +	do
 +	{
 +		char dname[MAXDNAME];
-+		int dnssec_status = VAL_INTERNAL_ERROR;
++		val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +		struct val_response *resp;
 +
 +		bzero(dname, MAXDNAME);
@@ -350,13 +350,13 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/domain.c sendmail-8.13.6/sendmail/d
  				return -1;
  			}
 -# if NETINET6
-+# if NETINET6 || SUPPORT_DNSSEC
++# if NETINET6 
  			freehostent(h);
- 			hp = NULL;
+ 			h = NULL;
 -# endif /* NETINET6 */
-+# endif /* NETINET6 || SUPPORT_DNSSEC */
++# endif /* NETINET6 */
  		}
- 		if (strlen(host) >= sizeof MXHostBuf)
+ 		if (strlen(host) >= sizeof(MXHostBuf))
  		{
  			*rcode = EX_CONFIG;
  			syserr("Host name %s too long",
@@ -370,7 +370,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/domain.c sendmail-8.13.6/sendmail/d
 +		do
 +		{
 +			char dname[MAXDNAME];
-+			int dnssec_status = VAL_INTERNAL_ERROR;
++			val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +			struct val_response *resp;
 +	
 +			bzero(dname, MAXDNAME);
@@ -500,12 +500,12 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/sendmail.h sendmail-8.13.6/sendmail
  extern int	finduser __P((char *, bool *, SM_MBDB_T *));
  extern void	finis __P((bool, bool, volatile int));
  extern void	fixcrlf __P((char *, bool));
- extern long	freediskspace __P((char *, long *));
+ extern long	freediskspace __P((const char *, long *));
 -#if NETINET6 && NEEDSGETIPNODE
-+#if (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC
++#if (NETINET6 && NEEDSGETIPNODE) 
  extern void	freehostent __P((struct hostent *));
 -#endif /* NETINET6 && NEEDSGETIPNODE */
-+#endif /* (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC */
++#endif /* (NETINET6 && NEEDSGETIPNODE) */
  extern char	*get_column __P((char *, int, int, char *, int));
  extern char	*getauthinfo __P((int, bool *));
  extern int	getdtsize __P((void));
@@ -544,7 +544,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/sm_resolve.c sendmail-8.13.6/sendma
 +	{
 +		char dname[MAXDNAME];
 +		struct val_response *resp;
-+		int dnssec_status = VAL_INTERNAL_ERROR;
++		val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +
 +		bzero(dname, MAXDNAME);
 +		strncpy(dname, domain, MAXDNAME);
@@ -588,7 +588,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/sm_resolve.c sendmail-8.13.6/sendma
 +		}
 +	} while (0);
 +#  else
- 	len = res_search(domain, rr_class, rr_type, reply, sizeof reply);
+ 	len = res_search(domain, rr_class, rr_type, reply, sizeof(reply));
 +#  endif /* SUPPORT_DNSSEC */
 +
  	if (tTd(8, 16))
