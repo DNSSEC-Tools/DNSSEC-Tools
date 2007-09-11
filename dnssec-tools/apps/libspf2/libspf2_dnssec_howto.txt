@@ -1,38 +1,34 @@
-		DNSSEC extension to libspf2-1.2.5: HOWTO
+		DNSSEC extension to libspf2-x: HOWTO
 		========================================
-			     (Version 0.1)
 
 Introduction
 ------------
 
 The DNSSEC extension to libspf2 provides DNSSEC validation to DNS queries in
-libspf2.
-
-This document describes how to install libspf2-1.2.5 with DNSSEC validation
-functionality. A companion document, libspf2-1.2.5_dnssec_guide.txt, explains
+libspf2.  This document describes how to install libspf2 with DNSSEC validation
+functionality. The companion libspf2-x_guide.txt documents explain 
 how to use this DNSSEC validation functionality in applications that use
 libspf2.
 
-libspf2-1.2.5 can be downloaded from http://www.libspf2.org/download.html
+libspf2 can be downloaded from http://www.libspf2.org/download.html
+Patches are available for version libspf2-1.2.5 and libspf2-1.0.4. 
 
-To apply the libspf2-1.2.5_dnssec_patch, download libspf2-1.2.5.tar.gz from
-the above website.
+Unzip and untar the distribution using the following command 
+(replace x by the correct version number):
 
-Unzip and untar it by:
+	tar -xvzf libspf2-x.tar.gz
 
-	tar -xvzf libspf2-1.2.5.tar.gz
+Now apply the patch by (replace x by the correct version number):
 
-Now apply the patch by:
-
-	patch -p 0 -b -z .orig </path/to/patch/libspf2-1.2.5_dnssec_patch.txt
+	patch -p 0 -b -z .orig </path/to/patch/libspf2-x_dnssec_patch.txt
 
 This will apply the patch and store the original files with a .orig suffix.
 
 Before compiling libspf2 with the above patch, you will need to install
 the libsres and the libval libraries from http://dnssec-tools.sourceforge.net.
-                                                                                                                             
+
 To compile libspf2, first run the following sequence of commands from the main
-libspf2-1.2.5 directory to generate new 'configure' and other files needed
+libspf2 source directory to generate new 'configure' and other files needed
 for compilation:
 
 	aclocal
@@ -46,4 +42,4 @@ Next, configure with the --enable-dnssec-support option:
 	./configure --enable-dnssec-support
 
 Then, compile and install libspf2 as per the instructions given
-in the libspf2-1.2.5 distribution.
+in the libspf2 distribution.
