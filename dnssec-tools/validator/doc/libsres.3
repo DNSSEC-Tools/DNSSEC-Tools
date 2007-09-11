@@ -128,16 +128,16 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "libsres 3"
-.TH libsres 3 "2007-07-10" "perl v5.8.6" "Programmer's Manual"
+.IX Title "LIBSRES 1"
+.TH LIBSRES 1 "2007-09-10" "perl v5.8.6" "User Contributed Perl Documentation"
 .SH "NAME"
-\&\fIquery_send()\fR, \fIresponse_rcv()\fR, get()> \- 
+\&\fIquery_send()\fR, \fIresponse_rcv()\fR, \fIget()\fR \- 
 send queries and receive responses from a DNS name server.
 .PP
 \&\fIclone_ns()\fR, \fIclone_ns_list()\fR, \fIfree_name_server()\fR,
-\&\fIfree_name_servers()\fR \- Manage name server lists
+\&\fIfree_name_servers()\fR \- manage name server lists
 .PP
-\&\fIprint_response()\fR \- Display answers returned from the name server
+\&\fIprint_response()\fR \- display answers returned from the name server
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .Vb 1
@@ -196,7 +196,7 @@ send queries and receive responses from a DNS name server.
 The \fI\fIquery_send()\fI\fR function sends a query to the name servers specified in
 \&\fInslist\fR.  The query is comprised of the <\fIname, class, type\fR> tuple and
 \&\fItrans_id\fR provides a handle to this transaction within the \fIlibsres\fR library. 
-The buffer size advertized in the \s-1EDNS0\s0 option can be set using the \fIends0_size\fR
+The buffer size advertised in the \s-1EDNS0\s0 option can be set using the \fIends0_size\fR
 argument.
 .PP
 The \fI\fIresponse_recv()\fI\fR function returns the answers, if available, from the
@@ -221,11 +221,11 @@ The memory pointed to by \fI*respondent\fR is internally allocated by the
 \&\fI\fIprint_response()\fI\fR provides a convenient way to display answers returned
 in \fIresponse\fR by the name server.
 .PP
-\&\fIstruct name_server\fR is defined in \fBresolver.h\fR as follows.
+The \fIname_server\fR structure is defined in \fBresolver.h\fR as follows:
 .PP
 .Vb 13
-\&  struct name_server
-\&  {
+\&    struct name_server
+\&    {
 \&        u_int8_t ns_name_n[NS_MAXCDNAME];
 \&        void *ns_tsig;
 \&        u_int32_t ns_security_options;
@@ -236,7 +236,7 @@ in \fIresponse\fR by the name server.
 \&        struct name_server *ns_next;
 \&        int ns_number_of_addresses;
 \&        struct sockaddr_storage **ns_address;
-\&  };
+\&    };
 .Ve
 .IP "\fIns_name_n\fR" 4
 .IX Item "ns_name_n"
@@ -257,9 +257,10 @@ information obtained through referrals have a value of
 \&\fB\s-1SR_ZI_STATUS_LEARNED\s0\fR for this field.
 .IP "\fIns_options\fR" 4
 .IX Item "ns_options"
-Specifies additional resolver flags. Currently defined flags are \s-1RES_RECURSE\s0,
-which sets the \*(L"Recursion Desired\*(R" flag; \s-1RES_USE_DNSSEC\s0, which sets the
-\&\*(L"\s-1DNSSEC\s0 \s-1OK\s0\*(R" bit in the \s-1EDNS0\s0 header; and \s-1RES_DEBUG\s0, which enables debugging.
+Specifies additional resolver flags.  Currently defined flags are
+\&\fB\s-1RES_RECURSE\s0\fR, which sets the \*(L"Recursion Desired\*(R" flag; \fB\s-1RES_USE_DNSSEC\s0\fR,
+which sets the \*(L"\s-1DNSSEC\s0 \s-1OK\s0\*(R" bit in the \s-1EDNS0\s0 header; and \fB\s-1RES_DEBUG\s0\fR, which
+enables debugging.
 .IP "\fIns_retry\fR" 4
 .IX Item "ns_retry"
 Specifies the maximum number of attempts that must be made to obtain a name

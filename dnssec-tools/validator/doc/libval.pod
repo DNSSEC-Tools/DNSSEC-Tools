@@ -87,11 +87,11 @@ The conversion from host format to DNS wire format can be done using the
 I<ns_name_pton()> function exported by the I<libsres(3)> library.
 
 The I<flags> parameter can be used to control the results of validation.
-Two values, which may be ORd together, are currently defined for this field:
-B<VAL_QUERY_DONT_VALIDATE>, which causes the validator to disable validation
-for this query, and B<VAL_QUERY_NO_DLV>, which causes the validator to
-disable DLV processing for this query.  The second flag is only available
-if the I<libval(3)> library has been compiled with DLV support.
+Two values, which may be ORed together, are currently defined for this field.
+B<VAL_QUERY_DONT_VALIDATE> causes the validator to disable validation for this
+query.  B<VAL_QUERY_NO_DLV> causes the validator to disable DLV processing for
+this query.  The second flag is only available if the I<libval(3)> library has
+been compiled with DLV support.
 
 The first parameter to I<val_resolve_and_check()> is the validator context.
 Applications can create a new validator context using the
@@ -100,17 +100,17 @@ validator configuration files and creates the handle I<newcontext> to this
 parsed information.  Information stored as part of validator context includes
 the validation policy and resolver policy.
 
-Validator and resolver policies are
-read by default from the B</etc/dnsval.conf> and B</etc/resolv.conf> files.
-B</etc/root.hints> provides bootstrapping information for the validator when it
-functions as a full resolver (see I<dnsval.conf(3)>).  The default locations
-of each of these files may be changed using the interfaces
-I<dnsval_conf_set()>, I<resolv_conf_set()>, and I<root_hints_set()>,
-respectively.  The corresponding "get" interfaces (namely
-I<dnsval_conf_get()>, I<resolv_conf_get()>, and I<root_hints_get()>) can be
-used to return the current location from where these configuration files are
-read.  The configuration file locations may also be specified on a per-context
-basis using the I<val_create_context_with_conf()> function.
+Validator and resolver policies are read from the B</etc/dnsval.conf> and
+B</etc/resolv.conf> files by default.  B</etc/root.hints> provides
+bootstrapping information for the validator when it functions as a full
+resolver (see I<dnsval.conf(3)>).  The default locations of each of these
+files may be changed using the interfaces I<dnsval_conf_set()>,
+I<resolv_conf_set()>, and I<root_hints_set()>, respectively.  The
+corresponding "get" interfaces (namely I<dnsval_conf_get()>,
+I<resolv_conf_get()>, and I<root_hints_get()>) can be used to return the
+current location from where these configuration files are read.  The
+configuration file locations may also be specified on a per-context basis
+using the I<val_create_context_with_conf()> function.
 
 Answers returned by I<val_resolve_and_check()> are made available in the
 I<*results> linked list.  Each answer corresponds to a distinct RRset; multiple
@@ -454,7 +454,7 @@ The time when the TTL for this RRset is set to expire.
 
 =item I<val_rrset_section>
 
-Section in which the RRset was received -- B<VAL_FROM_ANSWER>,
+Section in which the RRset was received.  This value may be B<VAL_FROM_ANSWER>,
 B<VAL_FROM_AUTHORITY>, or B<VAL_FROM_ADDITIONAL>.
 
 =item I<val_rrset_data>
