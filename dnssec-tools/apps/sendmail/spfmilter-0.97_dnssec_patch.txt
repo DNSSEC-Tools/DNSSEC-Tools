@@ -1,22 +1,33 @@
-Index: configure.ac
-===================================================================
---- configure.ac	2005-06-24 15:27:27.000000000 -0400
-+++ configure.ac	2006-04-14 11:08:23.000000000 -0400
-@@ -27,6 +27,66 @@
- # a regular -lpthread library.
- AC_CHECK_LIB([c_r],[pthread_create],[LIBS="-pthread $LIBS"],[AC_CHECK_LIB([pthread],[pthread_create])])
+diff -U 5 -Nar spfmilter-0.97.orig/configure.ac spfmilter-0.97/configure.ac
+--- spfmilter-0.97.orig/configure.ac	2005-04-24 17:02:17.000000000 -0400
++++ spfmilter-0.97/configure.ac	2007-09-10 22:23:12.000000000 -0400
+@@ -15,10 +15,80 @@
+ AC_TYPE_UID_T
+ AC_TYPE_SIZE_T
+ 
+ AC_CHECK_FUNCS([daemon setsid getopt_long])
  
 +# Check whether we require support for DNSSEC validation
 +AC_MSG_CHECKING(whether we need to support DNSSEC validation)
 +AC_ARG_ENABLE(dnssec-support,
 +[  --enable-dnssec-support Support DNSSEC validation.],
 +    support_dnssec=yes)
-+
 +if test "x$support_dnssec" = "xyes"; then
 +
 +   AC_MSG_RESULT(yes)
 +
 +   dnl Check the openssl crypto library
++   AC_ARG_WITH(openssl,
++    [  --with-openssl=PATH     Look for openssl in PATH/{lib,include}.],
++    if test "x$withval" != "xyes"; then
++      if test "x$withval" != x -a -d $withval/lib; then
++          LDFLAGS="-L$withval/lib $LDFLAGS"
++      fi
++      if test "x$withval" != x -a -d $withval/include; then
++          CPPFLAGS="-I$withval/include $CPPFLAGS"
++      fi
++    fi
++   )   
 +   AC_CHECK_LIB(crypto, RSA_verify, , [
 +	echo "the openssl crypto library is required to build this program."
 +	exit 1;
@@ -54,11 +65,11 @@ Index: configure.ac
 +   )
 +
 +   dnl Check DNSSEC Validator library
-+   AC_CHECK_LIB(val, val_query, , [
++   AC_CHECK_LIB(val-threads, val_resolve_and_check, , [
 +	echo "the validator library is required to build this program."
 +        echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
-+   ], -lsres -lcrypto -lpthread -L/usr/local/lib)
++   ], -lcrypto -lpthread -lsres -L/usr/local/lib)
 +
 +   AC_DEFINE([SUPPORT_DNSSEC], [1], [Support DNSSEC validation])
 +
@@ -66,14 +77,17 @@ Index: configure.ac
 +   AC_MSG_RESULT(no)
 +fi
 +
- # Check for the milter library.  Libmilter uses pthreads, so we have to do this
- # check after the pthread one and use the library list it gave us.
- AC_CHECK_LIB([milter],[smfi_main],,,$LIBS)
-Index: spfmilter.c
-===================================================================
---- spfmilter.c	2005-06-24 15:27:36.000000000 -0400
-+++ spfmilter.c	2006-02-09 22:36:21.000000000 -0500
-@@ -97,6 +97,11 @@
+ # Check for both SPF libraries.  If both are present, the .c file will
+ # choose one.
+ AC_SEARCH_LIBS([SPF_init],[spf])
+ AC_SEARCH_LIBS([SPF_create_config],[spf2])
+ 
+diff -U 5 -Nar spfmilter-0.97.orig/spfmilter.c spfmilter-0.97/spfmilter.c
+--- spfmilter-0.97.orig/spfmilter.c	2005-06-20 21:28:57.000000000 -0400
++++ spfmilter-0.97/spfmilter.c	2007-09-10 17:06:08.000000000 -0400
+@@ -95,10 +95,15 @@
+ #define SPFMILTER_ACTION_UNKNOWN 0
+ #define SPFMILTER_ACTION_REJECT 1
  #define SPFMILTER_ACTION_MARK 2
  #define SPFMILTER_ACTION_TEMPFAIL 3
  
@@ -85,7 +99,11 @@ Index: spfmilter.c
  
  /* Structs. */
  
-@@ -213,6 +218,11 @@
+ 
+ /* Fallback list. */
+@@ -211,10 +216,15 @@
+ static int lib_do_check_recipient( lib_data_t* ld, const char* to );
+ static int lib_do_check_final( lib_data_t* ld );
  static int lib_get_result( lib_data_t* ld );
  static const char* lib_get_explanation( lib_data_t* ld );
  static const char* lib_get_error( lib_data_t* ld );
@@ -97,7 +115,11 @@ Index: spfmilter.c
  static void lib_fini_message_data( lib_data_t* ld );
  static void lib_fini_connection_data( lib_data_t* ld );
  static void lib_fini_fallback( lib_fallback_t* lf );
-@@ -235,6 +245,10 @@
+ static void lib_fini( void );
+ 
+@@ -233,10 +243,14 @@
+ static char* local_hostname;
+ static int local_hostname_len;
  
  static int header_name_len;
  
@@ -108,7 +130,11 @@ Index: spfmilter.c
  static struct smfiDesc smfilter = {
      "SPF",				/* filter name */
      SMFI_VERSION,			/* version code -- do not change */
-@@ -266,6 +280,9 @@
+     SMFIF_CHGHDRS|SMFIF_ADDHDRS,	/* flags */
+     spf_connect,			/* connection info filter */
+@@ -264,20 +278,27 @@
+     { "user",			required_argument,	NULL,	'u', },
+     { "pidfile",		required_argument,	NULL,	'p', },
      { "nodaemon",		no_argument,		NULL,	'X', },
      { "help",			no_argument,		NULL,	'h', },
      { "debug",			optional_argument,	NULL,	'd', },
@@ -118,7 +144,9 @@ Index: spfmilter.c
      { 0, 0, 0, 0 },
  };
  #define DOC_LONGOPT(l, v, t, p1) \
-@@ -275,7 +292,11 @@
+     do { \
+ 	(void) fprintf( stderr, "    --%s%c%s%*s" t "\n", l, (v ? '=' : ' '),  (v ? v : ""), p1, "" ); \
+     } while( 0 )
  #else /* HAVE_GETOPT_LONG */
  #define DOC_LONGOPT(l, v, t, p1) do { } while( 0 )
  #endif /* HAVE_GETOPT_LONG */
@@ -130,7 +158,11 @@ Index: spfmilter.c
  
  #define DOC_OPT(s, l, v, t, p0, p1) \
      do { \
-@@ -311,6 +332,9 @@
+ 	(void) fprintf( stderr, "    -%c%c%s%*s" t "\n", s, (v ? ' ' : ' '), (v ? v : ""), p0, "" ); \
+ 	DOC_LONGOPT(l, v, t, p1); \
+@@ -309,10 +330,13 @@
+     markonly = 0;
+     user = (char*) 0;
      pidfile = (char*) 0;
      nodaemon = 0;
      debug = 0;
@@ -140,7 +172,11 @@ Index: spfmilter.c
  
      /* Figure out the program's name. */
      argv0 = strrchr( argv[0], '/' );
-@@ -375,6 +399,24 @@
+     if ( argv0 != (char*) 0 )
+ 	++argv0;
+@@ -373,10 +397,28 @@
+ 		if ( optarg )
+ 		    debug = atoi( optarg );
  		else
  		    debug = 1;
  		break;
@@ -165,7 +201,11 @@ Index: spfmilter.c
  	    default:
  		(void) fprintf( stderr, "Unrecognised option '%c'\n", c );
  		exit( 1 );
-@@ -444,6 +486,9 @@
+ 	    }
+ 	}
+@@ -442,10 +484,13 @@
+     DOC_OPT( 'u', "user", "<user|uid>", "Run as specified user or UID.", 10, 16 );
+     DOC_OPT( 'p', "pidfile", "<filename>", "Write the process i.d. to the specified file.", 10, 16 );
      DOC_OPT( 'X', "nodaemon", (char*) 0, "Do not fork into the background.", 20, 26 );
      DOC_OPT( 'h', "help", (char*) 0, "Show this help.", 20, 26 );
      DOC_OPT( 'd', "debug", "[<int>]", "Enable debugging to syslog.", 13, 18 );
@@ -175,7 +215,11 @@ Index: spfmilter.c
      }
  
  
-@@ -1320,6 +1365,12 @@
+ static void
+ init_fallback( const char* fallback_filename, const char* guess_str )
+@@ -1318,10 +1363,16 @@
+     {
+     connection_data_t* cd;
      const char* exp;
      char exp_escaped[1000];
  
@@ -188,7 +232,11 @@ Index: spfmilter.c
      cd = (connection_data_t*) smfi_getpriv( ctx );
  
      switch ( cd->result )
-@@ -1350,7 +1401,21 @@
+ 	{
+ 	case SPFMILTER_RESULT_PASS:
+@@ -1348,11 +1399,25 @@
+ 	    syslog( LOG_INFO, "rejecting mail from [%s] - %s", cd->ip_str, result_str( cd->result ) );
+ 	    if ( exp != (char*) 0 )
  		escape_percents( exp, exp_escaped, sizeof(exp_escaped) );
  	    else
  		(void) strncpy( exp_escaped, "rejected by spfmilter", sizeof(exp_escaped) - 1 );
@@ -210,7 +258,11 @@ Index: spfmilter.c
  	    fini_message_data( cd );
  	    return SMFIS_REJECT;
  
-@@ -1474,6 +1539,14 @@
+ 	case SPFMILTER_ACTION_TEMPFAIL:
+ 	    syslog( LOG_INFO, "temporarily failing mail from [%s] - %s", cd->ip_str, lib_get_error( cd->lib_data ) );
+@@ -1472,10 +1537,18 @@
+ static void
+ build_header( connection_data_t* cd, char* header, size_t header_size, const char* reason )
      {
      int len;
  
@@ -225,7 +277,11 @@ Index: spfmilter.c
      (void) snprintf( header, header_size, "%s", result_str( cd->result ) );
      len = strlen( header );
      if ( reason != (char*) 0 )
-@@ -1501,7 +1574,84 @@
+ 	{
+ 	(void) snprintf( &header[len], header_size - len, " (%s)", reason );
+@@ -1499,11 +1572,88 @@
+     if ( cd->mail_from != (char*) 0 )
+ 	{
  	(void) snprintf( &header[len], header_size - len, " envelope-from=%s;", cd->mail_from );
  	len = strlen( header );
  	}
@@ -310,7 +366,11 @@ Index: spfmilter.c
      (void) snprintf( &header[len], header_size - len, " x-software=%s %s %s with %s;", SPFMILTER_PROGRAM, SPFMILTER_VERSION, SPFMILTER_URL, lib_version() );
      }
  
-@@ -1843,6 +1993,29 @@
+ 
+ static connection_data_t*
+@@ -1841,10 +1991,33 @@
+     {
+     return ld->peer_info->error;
      }
  
  
@@ -340,7 +400,11 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -2178,18 +2351,45 @@
+     }
+ 
+@@ -2176,22 +2349,49 @@
+ 
+ 
  static int
  lib_get_result( lib_data_t* ld )
      {
@@ -395,7 +459,11 @@ Index: spfmilter.c
      }
  
  
-@@ -2206,6 +2406,28 @@
+ static const char*
+ lib_get_explanation( lib_data_t* ld )
+@@ -2204,10 +2404,32 @@
+ lib_get_error( lib_data_t* ld )
+     {
      return SPF_strerror( ld->output.err );
      }
  
@@ -424,7 +492,11 @@ Index: spfmilter.c
  
  static void
  lib_fini_message_data( lib_data_t* ld )
-@@ -2316,6 +2538,14 @@
+     {
+     if ( ld->from != (char*) 0 )
+@@ -2314,10 +2536,18 @@
+ 	if ( resolvers[r].initialized )
+ 	    {
  #ifdef USE_DNS_CACHE
  	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid_c );
  #endif /* USE_DNS_CACHE */
@@ -439,7 +511,11 @@ Index: spfmilter.c
  	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
  	    }
      pthread_mutex_destroy( &resolver_mutex );
-@@ -2373,6 +2603,14 @@
+     free( (void*) resolvers );
+     }
+@@ -2371,10 +2601,18 @@
+ 
+     /* Is it initialized? */
      if ( ! resolvers[r].initialized )
  	{
  	/* Create the DNS objects. */
@@ -454,7 +530,11 @@ Index: spfmilter.c
  	resolvers[r].spfdcid_r = SPF_dns_create_config_resolv( (SPF_dns_config_t) 0, debug );
  	if ( resolvers[r].spfdcid_r == (SPF_dns_config_t) 0 )
  	    {
-@@ -2439,6 +2677,11 @@
+ 	    syslog( LOG_ERR, "SPF_dns_create_config_resolv() failed" );
+ 	    free_resolver( r );
+@@ -2437,10 +2675,15 @@
+ 
+ 
  static int
  lib_init( void )
      {
@@ -466,7 +546,11 @@ Index: spfmilter.c
      spf_server = SPF_server_new( SPF_DNS_CACHE, debug );
      if ( spf_server == (SPF_server_t*) 0 )
  	{
-@@ -2640,6 +2883,32 @@
+ 	(void) fprintf( stderr, "%s: SPF_server_new() failed\n", argv0 );
+ 	return 0;
+@@ -2638,10 +2881,36 @@
+     /*!!!*/
+     return (char*) 0;
      }
  
  
@@ -499,3 +583,5 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
+     /*!!!*/
+     }
