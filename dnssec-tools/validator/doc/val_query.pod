@@ -72,7 +72,7 @@ I<val_isvalidated()> determines if the status code indicates that the response
 was validated.  (See I<libval(3)> for further information).
 
 The I<flags> parameter controls the scope of validation and name resolution,
-and the output format.  Three values, which may be ORd together, are currently
+and the output format.  Three values, which may be ORed together, are currently
 defined for this field.  The B<VAL_QUERY_MERGE_RRSETS> flag is provided for
 applications that wish to merge all rrsets into a single
 response returned in the first element of the I<resp> array.  The response
@@ -95,12 +95,11 @@ functions are returned in their respective I<val_status> fields.
 
 =head1 RETURN VALUES
 
-The I<val_query()> function returns 0 on success.  This function internally
-invokes I<resolve_n_check()> and errors from this function may be returned.
+The I<val_query()> function returns 0 on success.  It invokes
+I<resolve_n_check()> internally and errors from this function may be returned.
 
-I<val_res_query()> and I<val_res_search()> return the number of bytes received on
-success and -1 on failure.
-
+I<val_res_query()> and I<val_res_search()> return the number of bytes received
+on success and -1 on failure.
 
 =head1 EXAMPLES
 

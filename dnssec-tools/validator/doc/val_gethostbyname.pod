@@ -57,18 +57,19 @@ val_gethostbyname2_r() - get DNSSEC-validated network host entry
 
 =head1 DESCRIPTION
 
-The I<val_gethostbyname()>, I<val_gethostbyname2()>, I<val_gethostbyname_r()>,
+I<val_gethostbyname()>, I<val_gethostbyname2()>, I<val_gethostbyname_r()>,
 I<val_gethostbyname2_r()>, I<val_gethostbyaddr()> and I<val_gethostbyaddr_r()>
-functions perform DNSSEC validation of DNS queries.  They return a network
-host entry value of type I<struct hostent> and are DNSSEC-aware versions of
+perform DNSSEC validation of DNS queries.  They return a network
+host entry value of type struct I<hostent> and are DNSSEC-aware versions of
 the I<gethostbyname(3)>, I<gethostbyname2(3)>, I<gethostbyname_r()>,
 I<gethostbyname2_r()>, I<gethostbyaddr()> and I<gethostbyaddr_r()> functions
 respectively.  (See I<gethostbyname(3)> for more information on type struct
 I<hostent>).
 
-I<val_gethostbyname()> I<val_gethostbyname_r()>, I<val_gethostbyaddr()> and
-I<val_gethostbyaddr_r()> support only IPv4 addresses.  IPv4 and IPv6 addresses
-are supported by I<val_gethostbyname2()> and I<val_gethostbyname2_r()>.
+I<val_gethostbyname()>, I<val_gethostbyname_r()>, I<val_gethostbyaddr()>, and
+I<val_gethostbyaddr_r()> support only IPv4 addresses.
+I<val_gethostbyname2()> and I<val_gethostbyname2_r()> support both IPv4 and
+IPv6 addresses.
 
 The I<val_gethostbyname_r()>, I<val_gethostbyname2_r()> and
 I<val_gethostbyaddr_r()> functions are reentrant versions and can be safely

@@ -128,11 +128,11 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "libval 3"
-.TH libval 3 "2007-07-06" "perl v5.8.6" "Programmer's Manual"
+.IX Title "LIBVAL 1"
+.TH LIBVAL 1 "2007-09-11" "perl v5.8.6" "User Contributed Perl Documentation"
 .SH "NAME"
-\&\fIval_create_context()\fR, \fIval_create_context_with_conf()\fR \fIval_free_context()\fR \-
-manage validator context
+\&\fIval_create_context()\fR, \fIval_create_context_with_conf()\fR,
+\&\fIval_free_context()\fR \- manage validator context
 .PP
 \&\fIval_resolve_and_check()\fR, \fIval_free_result_chain()\fR \- query and validate
 answers from a DNS name server
@@ -144,7 +144,7 @@ trustworthy answer
 answer that cryptographically chains down from a configured
 trust anchor
 .PP
-\&\fIval_does_not_exist()\fR \- check if status value represents 
+\&\fIval_does_not_exist()\fR \- check if status value represents
 one of the non\-existence types
 .PP
 \&\fIp_val_status()\fR, \fIp_ac_status()\fR, \fIp_val_error()\fR \- display validation status,
@@ -242,56 +242,56 @@ the default location for the validator configuration files
 The \fI\fIval_resolve_and_check()\fI\fR function queries a set of name servers for
 the \fI<domain_name_n, type, class\fR> tuple and to verifies and validates the
 response.  Verification involves checking the RRSIGs, and validation is
-verification of an authentication chain from a configured trust anchor.  
-The \fIdomain_name_n\fR parameter is the queried name in \s-1DNS\s0 wire format.  
-The conversion from host format to \s-1DNS\s0 wire format can be done using the  
-\&\fI\fIns_name_pton()\fI\fR function exported by the \fI\fIlibsres\fI\|(3)\fR library. 
+verification of an authentication chain from a configured trust anchor.
+The \fIdomain_name_n\fR parameter is the queried name in \s-1DNS\s0 wire format.
+The conversion from host format to \s-1DNS\s0 wire format can be done using the
+\&\fI\fIns_name_pton()\fI\fR function exported by the \fI\fIlibsres\fI\|(3)\fR library.
 .PP
-The \fIflags\fR parameter can be used to control the results of validation. 
-Two values, which may be ORd together, are currently defined for this field: 
-\&\fB\s-1VAL_QUERY_DONT_VALIDATE\s0\fR, which causes the validator to disable validation
-for this query, and \fB\s-1VAL_QUERY_NO_DLV\s0\fR, which causes the validator to
-disable \s-1DLV\s0 processing for this query. The second flag is only available
-if the \fI\fIlibval\fI\|(3)\fR library has been compiled with \s-1DLV\s0 support.
+The \fIflags\fR parameter can be used to control the results of validation.
+Two values, which may be ORed together, are currently defined for this field.
+\&\fB\s-1VAL_QUERY_DONT_VALIDATE\s0\fR causes the validator to disable validation for this
+query.  \fB\s-1VAL_QUERY_NO_DLV\s0\fR causes the validator to disable \s-1DLV\s0 processing for
+this query.  The second flag is only available if the \fI\fIlibval\fI\|(3)\fR library has
+been compiled with \s-1DLV\s0 support.
 .PP
 The first parameter to \fI\fIval_resolve_and_check()\fI\fR is the validator context.
 Applications can create a new validator context using the
 \&\fI\fIval_create_context()\fI\fR function.  This function parses the resolver and
 validator configuration files and creates the handle \fInewcontext\fR to this
 parsed information.  Information stored as part of validator context includes
-the validation policy and resolver policy.  
+the validation policy and resolver policy.
 .PP
-Validator and resolver policies are
-read by default from the \fB/etc/dnsval.conf\fR and \fB/etc/resolv.conf\fR files.
-\&\fB/etc/root.hints\fR provides bootstrapping information for the validator when it 
-functions as a full resolver (see \fI\fIdnsval.conf\fI\|(3)\fR).  The default locations
-of each of these files may be changed using the interfaces
-\&\fI\fIdnsval_conf_set()\fI\fR, \fI\fIresolv_conf_set()\fI\fR, and \fI\fIroot_hints_set()\fI\fR,
-respectively.  The corresponding \*(L"get\*(R" interfaces (namely
-\&\fI\fIdnsval_conf_get()\fI\fR, \fI\fIresolv_conf_get()\fI\fR, and \fI\fIroot_hints_get()\fI\fR) can be
-used to return the current location from where these configuration files are
-read. The configuration file locations may also be specified on a per-context
-basis using the \fI\fIval_create_context_with_conf()\fI\fR function. 
+Validator and resolver policies are read from the \fB/etc/dnsval.conf\fR and
+\&\fB/etc/resolv.conf\fR files by default.  \fB/etc/root.hints\fR provides
+bootstrapping information for the validator when it functions as a full
+resolver (see \fI\fIdnsval.conf\fI\|(3)\fR).  The default locations of each of these
+files may be changed using the interfaces \fI\fIdnsval_conf_set()\fI\fR,
+\&\fI\fIresolv_conf_set()\fI\fR, and \fI\fIroot_hints_set()\fI\fR, respectively.  The
+corresponding \*(L"get\*(R" interfaces (namely \fI\fIdnsval_conf_get()\fI\fR,
+\&\fI\fIresolv_conf_get()\fI\fR, and \fI\fIroot_hints_get()\fI\fR) can be used to return the
+current location from where these configuration files are read.  The
+configuration file locations may also be specified on a per-context basis
+using the \fI\fIval_create_context_with_conf()\fI\fR function.
 .PP
 Answers returned by \fI\fIval_resolve_and_check()\fI\fR are made available in the
-\&\fI*results\fR linked list. Each answer corresponds to a distinct RRset; multiple 
+\&\fI*results\fR linked list.  Each answer corresponds to a distinct RRset; multiple
 RRs within the RRset are part of the same answer.  Multiple answers are possible when
 \&\fItype\fR is \fIns_t_any\fR or \fIns_t_rrsig\fR.
 .PP
-Individual elements in \fI*results\fR point to \fIval_authentication_chain\fR linked 
-lists.  The authentication chain elements in \fIval_authentication_chain\fR contain 
+Individual elements in \fI*results\fR point to \fIval_authentication_chain\fR linked
+lists.  The authentication chain elements in \fIval_authentication_chain\fR contain
 the actual RRsets returned by  the name server in response to the query.
 .PP
 Validation result values returned in \fIval_result_chain\fR and
-authentication chain status values returned in each element of the 
+authentication chain status values returned in each element of the
 \&\fIval_authentication_chain\fR linked list can be can be converted into \s-1ASCII\s0
 format using the \fI\fIp_val_status()\fI\fR and \fI\fIp_ac_status()\fI\fR functions respectively.
 .PP
-While some applications such as \s-1DNSSEC\s0 troubleshooting utilities and packet 
-inspection tools may look at individual authentication 
-chain elements to identify the actual reasons for validation error,  
-most applications will only be interested in a single error code for determining 
-the authenticity of data.  
+While some applications such as \s-1DNSSEC\s0 troubleshooting utilities and packet
+inspection tools may look at individual authentication
+chain elements to identify the actual reasons for validation error,
+most applications will only be interested in a single error code for determining
+the authenticity of data.
 .PP
 \&\fI\fIval_isvalidated()\fI\fR identifies if a given
 validation result status value corresponds to an answer that was
@@ -299,11 +299,11 @@ cryptographically verified and validated using a locally configured
 trust anchor.
 .PP
 \&\fI\fIval_istrusted()\fI\fR identifies if a given
-validator status value is trusted. An answer may be locally trusted
+validator status value is trusted.  An answer may be locally trusted
 without being validated.
 .PP
 \&\fI\fIval_does_not_exist()\fI\fR identifies if a given
-validator status value corresponds to one of the non-existence types. 
+validator status value corresponds to one of the non-existence types.
 .PP
 The \fIlibval\fR library internally allocates memory for \fI*results\fR and this
 must be freed by the invoking application using the \fI\fIfree_result_chain()\fI\fR
@@ -314,7 +314,7 @@ interface.
 .IX Item "struct val_result_chain"
 .Vb 8
 \&  struct val_result_chain
-\&  { 
+\&  {
 \&      val_status_t                     val_rc_status;
 \&      struct val_authentication_chain *val_rc_answer;
 \&      int                              val_rc_proof_count;
@@ -331,159 +331,155 @@ Authentication chain for a given RRset.
 Pointer to the next RRset in the set of answers returned for a query.
 .IP "\fIval_rc_proofs\fR" 4
 .IX Item "val_rc_proofs"
-Pointer to authentication chains for any proof of non-existence that were returned for the query.
+Pointer to authentication chains for any proof of non-existence that were
+returned for the query.
 .IP "\fIval_rc_proof_count\fR" 4
 .IX Item "val_rc_proof_count"
-Number of proof elements stored in \fIval_rc_proofs\fR. The number cannot exceed \s-1MAX_PROOFS\s0.
+Number of proof elements stored in \fIval_rc_proofs\fR. The number cannot exceed
+\&\fB\s-1MAX_PROOFS\s0\fR.
 .IP "\fIval_rc_status\fR" 4
 .IX Item "val_rc_status"
 Validation status for a given RRset.  This can be one of the following:
 .Sp
 .Vb 2
-\&        VAL_SUCCESS
-\&                Answer received and validated successfully.
+\&    VAL_SUCCESS
+\&        Answer received and validated successfully.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_LOCAL_ANSWER
-\&                Answer was available from a local file.
+\&    VAL_LOCAL_ANSWER
+\&        Answer was available from a local file.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_BARE_RRSIG
-\&                No DNSSEC validation possible, query was
-\&                for an RRSIG.
-.Ve
-.Sp
-.Vb 6
-\&        VAL_NONEXISTENT_NAME        
-\&                No name was present and a valid proof of
-\&                non-existence confirming the missing name
-\&                (NSEC or NSEC3 span) was returned. The 
-\&        components of the proof were also 
-\&        individually validated.
+\&    VAL_BARE_RRSIG
+\&        No DNSSEC validation possible, query was
+\&        for an RRSIG.
 .Ve
 .Sp
 .Vb 5
-\&        VAL_NONEXISTENT_TYPE
-\&                No type exists for the name and a valid
-\&                proof of non-existence confirming the
-\&                missing name was returned.  The components 
-\&        of the proof were also individually validated.
+\&    VAL_NONEXISTENT_NAME
+\&        No name was present and a valid proof of non-
+\&        existence confirming the missing name (NSEC or
+\&        NSEC3 span) was returned. The components of
+\&        the proof were also individually validated.
+.Ve
+.Sp
+.Vb 5
+\&    VAL_NONEXISTENT_TYPE
+\&        No type exists for the name and a valid proof
+\&        of non-existence confirming the missing name
+\&        was returned.  The components of the proof
+\&        were also individually validated.
 .Ve
 .Sp
 .Vb 6
-\&        VAL_NONEXISTENT_NAME_NOCHAIN
-\&                No name was present and a valid proof of
-\&                non-existence confirming the missing name
-\&                was returned. The components of the proof 
-\&        were also identified to be trustworthy, but they 
-\&        were not individually validated.
+\&    VAL_NONEXISTENT_NAME_NOCHAIN
+\&        No name was present and a valid proof of non-
+\&        existence confirming the missing name was
+\&        returned. The components of the proof were also
+\&        identified to be trustworthy, but they were
+\&        not individually validated.
 .Ve
 .Sp
 .Vb 7
-\&        VAL_NONEXISTENT_TYPE_NOCHAIN
-\&                No type exists for the name and a valid
-\&                proof of non-existence confirming the
-\&                missing name (NSEC or NSEC3 span) was
-\&                returned.  The components of the proof 
-\&        were also identified to be trustworthy, 
-\&        but they were not individually validated.
-.Ve
-.Sp
-.Vb 3
-\&        VAL_DNS_CONFLICTING_ANSWERS     
-\&                Multiple conflicting answers
-\&                received for a query.
-.Ve
-.Sp
-.Vb 3
-\&        VAL_DNS_QUERY_ERROR     
-\&        Some error was encountered while 
-\&        sending the query.
-.Ve
-.Sp
-.Vb 3
-\&        VAL_DNS_RESPONSE_ERROR  
-\&            No response returned or response
-\&        with an error rcode value returned.
+\&    VAL_NONEXISTENT_TYPE_NOCHAIN
+\&        No type exists for the name and a valid proof
+\&        of non-existence confirming the missing name
+\&        (NSEC or NSEC3 span) was returned.  The
+\&        components of the proof were also identified
+\&        to be trustworthy, but they were not
+\&        individually validated.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_DNS_WRONG_ANSWER    
-\&            Wrong answer received for a query.
-.Ve
-.Sp
-.Vb 3
-\&        VAL_DNS_REFERRAL_ERROR
-\&                Some error encountered while
-\&                following referrals.
+\&    VAL_DNS_CONFLICTING_ANSWERS 
+\&        Multiple conflicting answers received for a query.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_DNS_MISSING_GLUE
-\&                Glue was missing.
+\&    VAL_DNS_QUERY_ERROR 
+\&        Some error was encountered while sending the query.
+.Ve
+.Sp
+.Vb 3
+\&    VAL_DNS_RESPONSE_ERROR      
+\&        No response returned or response with an error
+\&        rcode value returned.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_DNS_WRONG_ANSWER        
+\&        Wrong answer received for a query.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_DNS_REFERRAL_ERROR
+\&        Some error encountered while following referrals.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_DNS_MISSING_GLUE
+\&        Glue was missing.
 .Ve
 .Sp
 .Vb 5
-\&        VAL_BOGUS_PROVABLE
-\&        Response could not be validated due to signature 
-\&        verification failures or the inability to verify 
-\&        proofs for exactly one component in the 
+\&    VAL_BOGUS_PROVABLE
+\&        Response could not be validated due to signature
+\&        verification failures or the inability to verify
+\&        proofs for exactly one component in the
 \&        authentication chain below the trust anchor.
 .Ve
 .Sp
 .Vb 5
-\&        VAL_BOGUS
-\&        Response could not be validated due to signature 
-\&        verification failures or the inability to verify 
-\&        proofs for an indeterminate number of components 
+\&    VAL_BOGUS
+\&        Response could not be validated due to signature
+\&        verification failures or the inability to verify
+\&        proofs for an indeterminate number of components
 \&        in the authentication chain.
 .Ve
 .Sp
 .Vb 4
-\&        VAL_NOTRUST
-\&                All available components in the authentication
-\&                chain verified properly, but there was no trust
-\&                anchor available.
-.Ve
-.Sp
-.Vb 4
-\&        VAL_IGNORE_VALIDATION
-\&                 Local policy was configured to ignore 
-\&                 validation for the zone from which this data 
-\&                 was received.
+\&    VAL_NOTRUST
+\&        All available components in the authentication
+\&        chain verified properly, but there was no trust
+\&        anchor available.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_TRUSTED_ZONE
-\&                 Local policy was configured to trust 
-\&                 any data received from the given zone.
+\&    VAL_IGNORE_VALIDATION
+\&        Local policy was configured to ignore validation
+\&        for the zone from which this data was received.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_UNTRUSTED_ZONE
-\&                 Local policy was configured to reject 
-\&                 any data received from the given zone.
+\&    VAL_TRUSTED_ZONE
+\&        Local policy was configured to trust
+\&        any data received from the given zone.
+.Ve
+.Sp
+.Vb 3
+\&    VAL_UNTRUSTED_ZONE
+\&        Local policy was configured to reject
+\&        any data received from the given zone.
 .Ve
 .Sp
 .Vb 4
-\&        VAL_PROVABLY_UNSECURE
-\&                The record or some ancestor of the record in
-\&                the authentication chain towards the trust
-\&                anchor was known to be provably unsecure.
+\&    VAL_PROVABLY_UNSECURE
+\&        The record or some ancestor of the record in
+\&        the authentication chain towards the trust
+\&        anchor was known to be provably unsecure.
 .Ve
 .Sp
-.Vb 6
-\&        VAL_BAD_PROVABLY_UNSECURE
-\&                The record or some ancestor of the record in
-\&                the authentication chain towards the trust
-\&                anchor was known to be provably unsecure. But
-\&        the provably unsecure condition was configured
-\&        as untrustworthy.
+.Vb 5
+\&    VAL_BAD_PROVABLY_UNSECURE
+\&        The record or some ancestor of the record in the
+\&        authentication chain towards the trust anchor was
+\&        known to be provably unsecure. But the provably
+\&        unsecure condition was configured as untrustworthy.
 .Ve
 .Sp
-Status values in \fIval_status_t\fR returned by the validator can be displayed 
+Status values in \fIval_status_t\fR returned by the validator can be displayed
 in \s-1ASCII\s0 format using \fI\fIp_val_status()\fI\fR.
 .RE
 .RS 4
@@ -502,132 +498,125 @@ in \s-1ASCII\s0 format using \fI\fIp_val_status()\fI\fR.
 .IP "\fIval_ac_status\fR" 4
 .IX Item "val_ac_status"
 Validation state of the authentication chain element.  This field will
-contain the status code for the given component in the authentication chain. 
+contain the status code for the given component in the authentication chain.
 This field may contain one of the following values:
 .Sp
 .Vb 2
-\&      VAL_AC_UNSET
-\&                The status was not set.
+\&    VAL_AC_UNSET
+\&        The status was not set.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_DATA_MISSING
-\&                No data were returned for a query and the
-\&                DNS did not indicate an error.
+\&    VAL_AC_DATA_MISSING
+\&        No data were returned for a query and the
+\&        DNS did not indicate an error.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_RRSIG_MISSING
-\&                RRSIG data could not be retrieved for a
-\&                resource record.
+\&    VAL_AC_RRSIG_MISSING
+\&        RRSIG data could not be retrieved for a
+\&        resource record.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_DNSKEY_MISSING
-\&                The DNSKEY for an RRSIG covering a resource
-\&                record could not be retrieved.
+\&    VAL_AC_DNSKEY_MISSING
+\&        The DNSKEY for an RRSIG covering a resource
+\&        record could not be retrieved.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_DS_MISSING
-\&                The DS record covering a DNSKEY record was
-\&                not available.
+\&    VAL_AC_DS_MISSING
+\&        The DS record covering a DNSKEY record was
+\&        not available.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_NOT_VERIFIED
-\&                All RRSIGs covering the RRset could not
-\&                be verified.
+\&    VAL_AC_NOT_VERIFIED
+\&        All RRSIGs covering the RRset could not
+\&        be verified.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_VERIFIED
-\&                At least one RRSIG covering a resource
-\&                record had a status of VAL_AC_RRSIG_VERIFIED.
+\&    VAL_AC_VERIFIED
+\&        At least one RRSIG covering a resource
+\&        record had a status of VAL_AC_RRSIG_VERIFIED.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_TRUST_KEY
-\&                A given DNSKEY or a DS record was locally
-\&                defined to be a trust anchor.
-.Ve
-.Sp
-.Vb 5
-\&      VAL_AC_IGNORE_VALIDATION
-\&                Validation for the given resource record
-\&                was ignored, either because of some
-\&                local policy directive or because of
-\&                some protocol-specific behavior.
+\&    VAL_AC_TRUST_KEY
+\&        A given DNSKEY or a DS record was locally
+\&        defined to be a trust anchor.
 .Ve
 .Sp
 .Vb 4
-\&      VAL_AC_TRUSTED_ZONE
-\&                Local policy defined a given zone as
-\&                trusted, with no further validation
-\&                being deemed necessary.
+\&    VAL_AC_IGNORE_VALIDATION
+\&        Validation for the given resource record was ignored,
+\&        either because of some local policy directive or
+\&        because of some protocol-specific behavior.
+.Ve
+.Sp
+.Vb 3
+\&    VAL_AC_TRUSTED_ZONE
+\&        Local policy defined a given zone as trusted, with
+\&        no further validation being deemed necessary.
+.Ve
+.Sp
+.Vb 3
+\&    VAL_AC_UNTRUSTED_ZONE
+\&        Local policy defined a given zone as untrusted,
+\&        with no further validation being deemed necessary.
+.Ve
+.Sp
+.Vb 5
+\&    VAL_AC_PROVABLY_UNSECURE
+\&        The authentication chain from a trust anchor to a
+\&        given zone could not be constructed due to the
+\&        provable absence of a DS record for this zone in
+\&        the parent.
 .Ve
 .Sp
 .Vb 4
-\&      VAL_AC_UNTRUSTED_ZONE
-\&                Local policy defined a given zone as
-\&                untrusted, with no further validation
-\&                being deemed necessary.
-.Ve
-.Sp
-.Vb 5
-\&      VAL_AC_PROVABLY_UNSECURE
-\&                The authentication chain from a trust anchor
-\&                to a given zone could not be constructed due
-\&                to the provable absence of a DS record for
-\&                this zone in the parent.
-.Ve
-.Sp
-.Vb 5
-\&      VAL_AC_BARE_RRSIG
-\&                The response was for a query of type RRSIG.
-\&                RRSIGs contain the cryptographic signatures
-\&                for other DNS data and cannot themselves
-\&                be validated.
+\&    VAL_AC_BARE_RRSIG
+\&        The response was for a query of type RRSIG.  RRSIGs
+\&        contain the cryptographic signatures for other DNS
+\&        data and cannot themselves be validated.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_NO_TRUST_ANCHOR
-\&                There was no trust anchor configured for a
-\&                given authentication chain.
-.Ve
-.Sp
-.Vb 3
-\&          VAL_AC_DNS_CONFLICTING_ANSWERS        
-\&                Multiple conflicting answers
-\&                received for a query.
-.Ve
-.Sp
-.Vb 3
-\&          VAL_AC_DNS_QUERY_ERROR        
-\&        Some error was encountered 
-\&        while sending the query.
-.Ve
-.Sp
-.Vb 3
-\&          VAL_AC_DNS_RESPONSE_ERROR     
-\&            No response returned or response
-\&        with an error rcode value returned.
+\&    VAL_AC_NO_TRUST_ANCHOR
+\&        There was no trust anchor configured for a given
+\&        authentication chain.
 .Ve
 .Sp
 .Vb 2
-\&          VAL_AC_DNS_WRONG_ANSWER       
-\&            Wrong answer received for a query.
-.Ve
-.Sp
-.Vb 3
-\&          VAL_AC_DNS_REFERRAL_ERROR
-\&                Some error encountered while
-\&                following referrals.
+\&    VAL_AC_DNS_CONFLICTING_ANSWERS
+\&        Multiple conflicting answers received for a query.
 .Ve
 .Sp
 .Vb 2
-\&          VAL_AC_DNS_MISSING_GLUE
-\&                Glue was missing.
+\&    VAL_AC_DNS_QUERY_ERROR
+\&        Some error was encountered while sending the query.
+.Ve
+.Sp
+.Vb 3
+\&    VAL_AC_DNS_RESPONSE_ERROR
+\&        No response returned or response with an error
+\&        rcode value returned.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_AC_DNS_WRONG_ANSWER
+\&        Wrong answer received for a query.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_AC_DNS_REFERRAL_ERROR
+\&        Some error encountered while following referrals.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_AC_DNS_MISSING_GLUE
+\&        Glue was missing.
 .Ve
 .IP "\fIval_ac_rrset\fR" 4
 .IX Item "val_ac_rrset"
@@ -645,9 +634,9 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
 .Vb 13
 \&  struct val_rrset
 \&  {
-\&      u_int8_t      *val_msg_header; 
+\&      u_int8_t      *val_msg_header;
 \&      u_int16_t      val_msg_headerlen;
-\&      u_int8_t      *val_rrset_name_n; 
+\&      u_int8_t      *val_rrset_name_n;
 \&      u_int16_t      val_rrset_class_h;
 \&      u_int16_t      val_rrset_type_h;
 \&      u_int32_t      val_rrset_ttl_h;
@@ -681,7 +670,7 @@ Type of the RRset.
 The time when the \s-1TTL\s0 for this RRset is set to expire.
 .IP "\fIval_rrset_section\fR" 4
 .IX Item "val_rrset_section"
-Section in which the RRset was received \*(-- \fB\s-1VAL_FROM_ANSWER\s0\fR,
+Section in which the RRset was received.  This value may be \fB\s-1VAL_FROM_ANSWER\s0\fR,
 \&\fB\s-1VAL_FROM_AUTHORITY\s0\fR, or \fB\s-1VAL_FROM_ADDITIONAL\s0\fR.
 .IP "\fIval_rrset_data\fR" 4
 .IX Item "val_rrset_data"
@@ -696,8 +685,8 @@ Any associated RRSIGs for the \s-1RDATA\s0 returned in \fIval_rrset_data\fR.
 .Vb 7
 \&  struct rr_rec
 \&  {
-\&      u_int16_t        rr_rdata_length_h;  
-\&      u_int8_t        *rr_rdata;      
+\&      u_int16_t        rr_rdata_length_h;
+\&      u_int8_t        *rr_rdata;
 \&      val_astatus_t    rr_status;
 \&      struct rr_rec   *rr_next;
 \&  };
@@ -716,74 +705,76 @@ For each signature \fIrr_rec\fR member within the authentication chain
 \&\fIrr_status\fR can return one of the following values:
 .Sp
 .Vb 2
-\&      VAL_AC_RRSIG_VERIFIED - The RRSIG verified
-\&                successfully.
+\&    VAL_AC_RRSIG_VERIFIED
+\&        The RRSIG verified successfully.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_WCARD_VERIFIED - A given RRSIG covering
-\&                a resource record shows that the
-\&                record was wildcard expanded.
+\&    VAL_AC_WCARD_VERIFIED
+\&        A given RRSIG covering a resource record shows
+\&        that the record was wildcard expanded.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_RRSIG_VERIFIED_SKEW - The RRSIG verified
-\&                successfully after clock skew was taken into
-\&        account.
+\&    VAL_AC_RRSIG_VERIFIED_SKEW
+\&        The RRSIG verified successfully after clock
+\&        skew was taken into account.
 .Ve
 .Sp
 .Vb 4
-\&      VAL_AC_WCARD_VERIFIED_SKEW - A given RRSIG covering
-\&                a resource record shows that the
-\&                record was wildcard expanded, but it was verified
+\&    VAL_AC_WCARD_VERIFIED_SKEW
+\&        A given RRSIG covering a resource record shows that
+\&        the record was wildcard expanded, but it was verified
 \&        only after clock skew was taken into account.
 .Ve
 .Sp
 .Vb 2
-\&      VAL_AC_RRSIG_VERIFY_FAILED - A given RRSIG
-\&                covering an RRset was bogus.
+\&    VAL_AC_RRSIG_VERIFY_FAILED
+\&        A given RRSIG covering an RRset was bogus.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_DNSKEY_NOMATCH - An RRSIG was created
-\&                by a DNSKEY that did not exist in
-\&                the apex keyset.
+\&    VAL_AC_DNSKEY_NOMATCH
+\&        An RRSIG was created by a DNSKEY that did not
+\&        exist in the apex keyset.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_RRSIG_ALGORITHM_MISMATCH - The keytag
-\&                referenced in the RRSIG matched a
-\&                DNSKEY but the algorithms were different.
+\&    VAL_AC_RRSIG_ALGORITHM_MISMATCH
+\&        The keytag referenced in the RRSIG matched a
+\&        DNSKEY but the algorithms were different.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_WRONG_LABEL_COUNT - The number of labels
-\&                on the signature was greater than the
-\&                count given in the RRSIG RDATA.
+\&    VAL_AC_WRONG_LABEL_COUNT
+\&        The number of labels on the signature was greater
+\&        than the count given in the RRSIG RDATA.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_BAD_DELEGATION - An RRSIG was created
-\&                with a key that did not exist in
-\&                the parent DS record set.
+\&    VAL_AC_BAD_DELEGATION
+\&        An RRSIG was created with a key that did not
+\&        exist in the parent DS record set.
 .Ve
 .Sp
 .Vb 2
-\&      VAL_AC_RRSIG_NOTYETACTIVE - The RRSIG's inception
-\&                time is in the future.
-.Ve
-.Sp
-.Vb 1
-\&      VAL_AC_RRSIG_EXPIRED - The RRSIG had expired.
-.Ve
-.Sp
-.Vb 1
-\&      VAL_AC_INVALID_RRSIG - The RRSIG could not be parsed.
+\&    VAL_AC_RRSIG_NOTYETACTIVE
+\&        The RRSIG's inception time is in the future.
 .Ve
 .Sp
 .Vb 2
-\&      VAL_AC_ALGORITHM_NOT_SUPPORTED - The RRSIG
-\&                algorithm was not supported.
+\&    VAL_AC_RRSIG_EXPIRED
+\&        The RRSIG had expired.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_AC_INVALID_RRSIG
+\&        The RRSIG could not be parsed.
+.Ve
+.Sp
+.Vb 2
+\&    VAL_AC_ALGORITHM_NOT_SUPPORTED
+\&        The RRSIG algorithm was not supported.
 .Ve
 .Sp
 For each \fIrr_rec\fR member of type \s-1DNSKEY\s0 (or \s-1DS\s0, where relevant) within the
@@ -791,37 +782,38 @@ authentication chain \fIval_ac_rrset\fR, the validation status is stored in the
 variable \fIrr_status\fR and can return one of the following values:
 .Sp
 .Vb 3
-\&      VAL_AC_SIGNING_KEY - This DNSKEY was used to
-\&                create an RRSIG for the resource
-\&                record set.
+\&    VAL_AC_SIGNING_KEY
+\&        This DNSKEY was used to create an RRSIG for
+\&        the resource record set.
 .Ve
 .Sp
 .Vb 3
-\&      VAL_AC_VERIFIED_LINK - This DNSKEY provided the
-\&                link in the authentication chain from
-\&                the trust anchor to the signed record.
+\&    VAL_AC_VERIFIED_LINK
+\&        This DNSKEY provided the link in the authentication
+\&        chain from the trust anchor to the signed record.
 .Ve
 .Sp
 .Vb 2
-\&      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-\&                The DNSKEY protocol number was unrecognized.
+\&    VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+\&        The DNSKEY protocol number was unrecognized.
 .Ve
 .Sp
 .Vb 4
-\&      VAL_AC_UNKNOWN_ALGORITHM_LINK - This DNSKEY provided
-\&                the link in the authentication chain from
-\&                the trust anchor to the signed record, but
-\&                the DNSKEY algorithm was unknown.
+\&    VAL_AC_UNKNOWN_ALGORITHM_LINK
+\&        This DNSKEY provided the link in the authentication
+\&        chain from the trust anchor to the signed record,
+\&        but the DNSKEY algorithm was unknown.
+.Ve
+.Sp
+.Vb 3
+\&    VAL_AC_INVALID_KEY
+\&        The key used to verify the RRSIG was not a valid
+\&        DNSKEY.
 .Ve
 .Sp
 .Vb 2
-\&      VAL_AC_INVALID_KEY - The key used to verify the
-\&                RRSIG was not a valid DNSKEY.
-.Ve
-.Sp
-.Vb 2
-\&      VAL_AC_ALGORITHM_NOT_SUPPORTED - The DNSKEY or DS
-\&                algorithm was not supported.
+\&    VAL_AC_ALGORITHM_NOT_SUPPORTED
+\&        The DNSKEY or DS algorithm was not supported.
 .Ve
 .RE
 .RS 4
@@ -834,7 +826,7 @@ Points to the next resource record in the RRset.
 .RE
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-Return values for various functions are given below. These values can be 
+Return values for various functions are given below. These values can be
 displayed in \s-1ASCII\s0 format using the \fI\fIp_val_error()\fI\fR function.
 .IP "\fI\fIval_resolve_and_check()\fI\fR" 4
 .IX Item "val_resolve_and_check()"
@@ -865,8 +857,8 @@ Some resource (crypto possibly) was unavailable.  Currently not implemented.
 .RE
 .RS 4
 .RE
-.IP "\fI\fIval_create_context()\fI\fR, \fI\fIval_create_context_with_conf()\fI\fR" 4
-.IX Item "val_create_context(), val_create_context_with_conf()"
+.IP "\fI\fIval_create_context()\fI\fR and \fI\fIval_create_context_with_conf()\fI\fR" 4
+.IX Item "val_create_context() and val_create_context_with_conf()"
 .RS 4
 .PD 0
 .IP "\s-1VAL_NO_ERROR\s0" 4
@@ -893,7 +885,7 @@ The policy identifier being referenced was invalid.
 The validator library reads configuration information from two files,
 \&\fB/etc/resolv.conf\fR and \fB/etc/dnsval.conf\fR.
 .PP
-See \fB\f(BIdnsval.conf\fB\|(5)\fR for a description of syntax for these files. 
+See \fB\f(BIdnsval.conf\fB\|(5)\fR for a description of syntax for these files.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
 Copyright 2004\-2007 \s-1SPARTA\s0, Inc.  All rights reserved.
