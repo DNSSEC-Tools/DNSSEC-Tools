@@ -22,7 +22,7 @@ configuration of DNS zones.
 If no options are specified and no I<DOMAIN_NAME> argument is given,
 B<validate> will perform a series of pre-defined test queries against
 the I<test.dnssec-tools.org> zone.  This serves as a
-test-suite for the validator.  If any options are specified (e.g.
+test-suite for the validator.  If any options are specified (e.g.,
 configuration file locations), I<-s> or I<--selftest> must be specified
 to run the test-suite.
 
@@ -62,7 +62,7 @@ B<A> record for the given I<DOMAIN_NAME>.
 
 =item -v I<FILE>, --dnsval-conf=I<FILE>
 
-This option can be used to specify the location of the dnsval.conf
+This option can be used to specify the location of the B<dnsval.conf>
 configuration file.
 
 =item -r I<FILE>, --resolv-conf=I<FILE>
@@ -93,7 +93,7 @@ resolver.
 =item -T I<number>[:I<number>], --testcase=I<number>[:I<number>]
 
 This option can be used to run a specific test (or range of tests) 
-from the testsuite.
+from the test suite.
 
 =item -F I<file>, --testcase-conf=I<file> 
 
@@ -122,7 +122,7 @@ with the specified interval between successive queries.
 
 =head1 PRE-REQUISITES
 
-libval
+B<libval>
 
 =head1 COPYRIGHT
 
@@ -135,7 +135,7 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story
 
 =head1 SEE ALSO
 
-B<syslog(3)>
+I<syslog(3)>
 
 B<libval(3)>
 
