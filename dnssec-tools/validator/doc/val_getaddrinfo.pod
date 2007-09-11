@@ -2,8 +2,8 @@
 
 =head1 NAME
 
-val_getaddrinfo, val_freeaddrinfo - get DNSSEC-validated network address
-and service translation
+I<val_getaddrinfo()>, I<val_freeaddrinfo()> - get DNSSEC-validated network
+address and service translation
 
 =head1 SYNOPSIS
 
@@ -25,46 +25,50 @@ and service translation
                       size_t hostlen,
                       char *serv,
                       size_t servlen,
-                      int flags, 
+                      int flags,
                       val_status_t * val_status);
 
 =head1 DESCRIPTION
 
-I<val_getaddrinfo()> and I<val_getnameinfo> perform DNSSEC validation of DNS queries. 
-They are intended to be DNSSEC-aware replacements for I<getaddrinfo(3)> and I<getnameinfo(3)>. 
+I<val_getaddrinfo()> and I<val_getnameinfo> perform DNSSEC validation of DNS
+queries.  They are intended to be DNSSEC-aware replacements for
+I<getaddrinfo(3)> and I<getnameinfo(3)>.
 
-I<val_getaddrinfo()>  returns a network address value of type I<struct val_addrinfo> in the I<res>
-parameter. I<val_getnameinfo> is used to convert a sockaddr structure to a pair of host name and service strings.
+I<val_getaddrinfo()>  returns a network address value of type I<struct
+val_addrinfo> in the I<res> parameter.  I<val_getnameinfo> is used to convert a
+I<sockaddr> structure to a pair of host name and service strings.
 
-  struct val_addrinfo {
-          int ai_flags;
-          int ai_family;
-          int ai_socktype;
-          int ai_protocol;
-          size_t ai_addrlen;
-          struct sockaddr *ai_addr;
-          char * ai_canonname;
-          struct val_addrinfo *ai_next;
-          val_status_t  ai_val_status;
-  };
+    struct val_addrinfo
+    {
+         int ai_flags;
+         int ai_family;
+         int ai_socktype;
+         int ai_protocol;
+         size_t ai_addrlen;
+         struct sockaddr *ai_addr;
+         char * ai_canonname;
+         struct val_addrinfo *ai_next;
+         val_status_t  ai_val_status;
+    };
 
 The I<val_addrinfo> structure is similar to the I<addrinfo> structure
 (described in I<getaddrinfo(3)>).  I<val_addrinfo> has an additional field
 I<ai_val_status> that represents the validation status for that particular
 record.  I<val_status> gives the combined validation status value for all
-answers returned by the each of the functions. I<val_istrusted()> and I<val_isvalidated()> can be used to 
-determine the trustworthiness of data and I<p_val_status()> can be used to display the
-status value to the user in ASCII format (See I<libval(3)> more for information).  
+answers returned by the each of the functions.  I<val_istrusted()> and
+I<val_isvalidated()> can be used to determine the trustworthiness of data and
+I<p_val_status()> can be used to display the status value to the user in ASCII
+format (See I<libval(3)> more for information).
 
 The I<ctx> parameter specifies the validation context, which can be set to NULL
 for default values (see I<libval(3)> and I<dnsval.conf> for more details on validation
-contexts and validation policy). 
+contexts and validation policy).
 
-The I<nodename>, I<servname>, and I<hints> parameters have similar 
+The I<nodename>, I<servname>, and I<hints> parameters have similar
 syntax and semantics as the corresponding parameters for the original
 I<getaddrinfo()> function.  The I<res> parameter is similar to the
 I<res> parameter for I<getaddrinfo()>, except that it is of type
-I<struct val_addrinfo> instead of I<struct addrinfo>.  Please see the manual
+struct I<val_addrinfo> instead of I<struct addrinfo>.  Please see the manual
 page for I<getaddrinfo(3)> for more details about these parameters.
 
 I<val_freeaddrinfo()> frees the memory allocated for a I<val_addrinfo> linked
@@ -74,10 +78,10 @@ list.
 
 The I<val_getaddrinfo()> function returns 0 on success and a non-zero error
 code on failure.  I<*res> will point to a dynamically allocated linked list
-of I<val_addrinfo> structures on success and will be NULL if no answer was 
-available.  
+of I<val_addrinfo> structures on success and will be NULL if no answer was
+available.
 
-The I<val_status> parameter gives an indication for trustworthiness of data. If 
+The I<val_status> parameter gives an indication for trustworthiness of data. If
 I<*res> is NULL, this value gives an indication of whether the non-existence of
 data can be trusted or not.
 
@@ -96,7 +100,7 @@ data can be trusted or not.
                   printf("Usage: %s <hostname>\n", argv[0]);
                   exit(1);
           }
- 
+
           retval = val_getaddrinfo(NULL, argv[1], NULL, NULL, &ainfo);
 
           if ((retval == 0) && (ainfo != NULL)) {
@@ -122,7 +126,7 @@ Abhijit Hayatnagarkar, Michael Baer
 
 =head1 SEE ALSO
 
-I<getaddrinfo(3)> 
+I<getaddrinfo(3)>
 
 I<val_gethostbyname(3)>, I<val_query(3)>
 
