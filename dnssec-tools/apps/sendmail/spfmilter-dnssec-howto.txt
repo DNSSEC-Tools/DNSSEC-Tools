@@ -1,46 +1,44 @@
-			spfmilter-1.0.8 DNSSEC HOWTO
-			============================
-			       (Version 0.3)
+			spfmilter DNSSEC HOWTO
+			=======================
 
 Introduction
 ============
 
 This HOWTO describes the installation, configuration and execution steps for
-adding DNSSEC validation to sendmail using spfmilter-1.0.8.
+adding DNSSEC validation to sendmail using spfmilter.
 
 
 Installation
 ============
 
-Download spfmilter-1.0.8.tar.gz from http://www.libspf2.org/download.html.
+Download spfmilter-x.tar.gz from http://www.libspf2.org/download.html.
+Currently supported versions, x, are 0.97 and 1.0.8.
 
 Unzip and untar it by:
 
-	tar -xvzf spfmilter-1.0.8.tar.gz
+	tar -xvzf spfmilter-x.tar.gz
 
-Go to the spfmilter-1.0.8 directory:
+Go to the spfmilter-x directory:
 
-	cd spfmilter-1.0.8
+	cd spfmilter-x
 
-Apply the spfmilter-1.0.8_dnssec_patch.txt patch found in this directory by:
+Apply the spfmilter-x_dnssec_patch.txt patch found in this directory by:
 
-	patch -p 0 -b -z .orig </path/to/patch/spfmilter-1.0.8_dnssec_patch.txt
+	patch -p 0 -b -z .orig </path/to/patch/spfmilter-x_dnssec_patch.txt
 
 This will apply the patch and store the original files with a .orig suffix.
 
-Before compiling, run 'autoconf' from the main spfmilter-1.0.8 directory to
+Before compiling, run 'autoconf' from the main spfmilter-x directory to
 generate a new 'configure' file.  Then, run configure with the
 --enable-dnssec-support option:
 
 	./configure --enable-dnssec-support
 
 Finally, compile and install spfmilter as per the instructions given in the
-spfmilter-1.0.8 distribution.  The only change is that instead of installing
-the original libspf2, you need to patch it with the libspf2-1.x.y_dnssec_patch
-(where x.y is either 0.4 or 2.5) given in ../libspf2-1.x.y_dnssec_patch.txt,
-and then install libspf2.  For instructions on how to install libspf2 with
-the dnssec-patches, see ../libspf2-1.x.y_dnssec_howto.txt
-
+spfmilter distribution.  The only change is that instead of installing
+the original libspf2, you need to patch it with the corresponding libspf2 
+dnssec patch. For instructions on how to install libspf2 with
+the dnssec-patches, see ../libspf2.
 
 Configuration
 =============
