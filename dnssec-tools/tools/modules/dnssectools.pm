@@ -251,13 +251,12 @@ Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools packag
 
 =head1 DESCRIPTION
 
-The B<Net::DNS::SEC::Tools::dnssectools> module provides a general set of
-methods for use with DNSSEC-Tools utilities.
+The B<dnssectools> module provides a general set of methods for use with
+DNSSEC-Tools utilities.
 
 =head1 INTERFACES
 
-The interfaces to the B<Net::DNS::SEC::Tools::dnssectools> module are given
-below.
+The interfaces to the B<dnssectools> module are given below.
 
 =over 4
 

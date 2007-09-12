@@ -849,9 +849,9 @@ The command-line options are saved between calls, so a command may call
 B<tooloptions.pm> routines multiple times and still have the command-line
 options included in the final hash table.  This is useful for examining
 multiple I<keyrec>s in a single command.  Inclusion of command-line options
-may be suspended and restored using the B<opts_suspend()> and
-B<opts_restore()> calls.  Options may be discarded entirely by calling
-B<opts_drop()>; once dropped, command-line options may never be restored.
+may be suspended and restored using the I<opts_suspend()> and
+I<opts_restore()> calls.  Options may be discarded entirely by calling
+I<opts_drop()>; once dropped, command-line options may never be restored.
 Suspension, restoration, and dropping of command-line options are only
 effective after the initial B<tooloptions.pm> call.
 
@@ -877,20 +877,20 @@ will be retrieved.  The I<keyrec>'s fields are added to the hash table.  Any
 field whose keyword matches an existing hash key will override any existing
 values.
 
-=item 5. Command-Specific Options
+=item 4. Command-Specific Options
 
 Options specific to the invoking commands may be specified in I<@specopts>.
-This array is parsed by B<Getoptions()> from the B<Getopt::Long> Perl module.
+This array is parsed by I<Getoptions()> from the B<Getopt::Long> Perl module.
 These options are folded into the hash table; possibly overriding existing
 hash values.  The options given in I<@specopts> must be in the format required
-by B<Getoptions()>.
+by I<Getoptions()>.
 
 =item 5. Command-Line Options
 
-The command-line options are parsed using B<Getoptions()> from the
+The command-line options are parsed using I<Getoptions()> from the
 B<Getopt::Long> Perl module.  These options are folded into the hash table;
 again, possibly overriding existing hash values.  The options given in
-I<@specopts> must be in the format required by B<Getoptions()>.
+I<@specopts> must be in the format required by I<Getoptions()>.
 
 =back
 
@@ -908,11 +908,11 @@ B<example.keyrec> has this entry:
     key         "Kexample.com.+005+12345"
             zsklength        "1024"
 
-I<zonesigner> is executed with this command line:
+B<zonesigner> is executed with this command line:
 
     zonesigner -zsklength 4096 -wait 3600 ...  example.com
 
-B<opts_zonekr("example.keyrec","Kexample.com.+005+12345",("wait=i"))>
+I<opts_zonekr("example.keyrec","Kexample.com.+005+12345",("wait=i"))>
 will read each option source in turn, ending up with:
     I<ksklength>           512
     I<zsklength>          4096
@@ -922,9 +922,9 @@ will read each option source in turn, ending up with:
 
 =over 4
 
-=item B<opts_cmdopts(@csopts)>
+=item I<opts_cmdopts(@csopts)>
 
-This B<opts_cmdopts()> call builds an option hash from the system configuration
+This I<opts_cmdopts()> call builds an option hash from the system configuration
 file, a I<keyrec>, and a set of command-specific options.  A reference to
 this option hash is returned to the caller.
 
@@ -932,13 +932,13 @@ If I<$keyrec_file> is given as an empty string, then no I<keyrec> file will
 be consulted.  In this case, it is assumed that I<$keyrec_name> will be left
 out altogether.
 
-If a non-existent I<$keyrec_file> is given and B<opts_createkrf()> has been
-called, then the named I<keyrec> file will be created.  B<opts_createkrf()>
+If a non-existent I<$keyrec_file> is given and I<opts_createkrf()> has been
+called, then the named I<keyrec> file will be created.  I<opts_createkrf()>
 must be called for each I<keyrec> file that must be created, as the
 B<tooloptions> I<keyrec>-creation state is reset after B<tooloptions()> has
 completed.
 
-=item B<opts_zonekr($keyrec_file,$keyrec_name,@csopts)>
+=item I<opts_zonekr($keyrec_file,$keyrec_name,@csopts)>
 
 This routine returns a reference to options gathered from the basic option
 sources and from the zone I<keyrec> named by I<$keyrec_name>, which is found
@@ -949,67 +949,67 @@ I<undef> is returned.
 
 The I<$keyrec_file> argument specifies a I<keyrec> file that will be
 consulted.  The I<keyrec> named by the I<$keyrec_name> argument will be
-loaded.  If a I<keyrec> file is found and B<opts_createkrf()> has been
+loaded.  If a I<keyrec> file is found and I<opts_createkrf()> has been
 previously called, then the I<keyrec> file will be created if it doesn't
 exist.
 
 If I<$keyrec_file> is given as "", then the command-line options are searched
 for a I<-krfile> option.  If I<$keyrec_name> is given as "", then the name is
-taken from $ARGV[0].
+taken from I<$ARGV[0]>.
 
 The I<@specopts> array contains command-specific arguments; the arguments must
 be in the format prescribed by the B<Getopt::Long> Perl module.
 
-=item B<opts_setcsopts(@csopts)>
+=item I<opts_setcsopts(@csopts)>
 
 This routine saves a copy of the command-specific options given in I<@csopts>.
 This collection of options is added to the I<@csopts> array that may be passed
 to B<tooloptions.pm> routines.
 
-=item B<opts_createkrf()>
+=item I<opts_createkrf()>
 
 Force creation of an empty I<keyrec> file if the specified file does not
-exist.  This may happen on calls to B<opts_zonekr()>.
+exist.  This may happen on calls to I<opts_zonekr()>.
 
-=item B<opts_suspend()>
+=item I<opts_suspend()>
 
 Suspend inclusion of the command-line options in building the final hash
 table of responses.
 
-=item B<opts_restore()>
+=item I<opts_restore()>
 
 Restore inclusion of the command-line options in building the final hash
 table of responses.
 
-=item B<opts_drop()>
+=item I<opts_drop()>
 
 Discard the command-line options.  They will no longer be available for
 inclusion in building the final hash table of responses for this execution
 of the command.
 
-=item B<opts_reset()>
+=item I<opts_reset()>
 
 Reset an internal flag so that the command-line arguments may be
 re-examined.  This is usually only useful if the arguments have been
 modified by the calling program itself.
 
-=item B<opts_gui()>
+=item I<opts_gui()>
 
 Set an internal flag so that command arguments may be specified with a GUI.
 GUI usage requires that B<Getopt::Long::GUI> is available.  If it isn't, then 
 B<Getopt::Long> will be used.
 
-=item B<opts_nogui()>
+=item I<opts_nogui()>
 
 Set an internal flag so that the GUI will not be used for specifying
 command arguments.
 
-=item B<opts_onerr(exitflag)>
+=item I<opts_onerr(exitflag)>
 
 Set an internal flag indicating what should happen if an invalid option is
 specified on the command line.  If I<exitflag> is non-zero, then the process
 will exit on an invalid option; if it is zero, then the process will not
-exit.  The default action is to report an error without exitting.
+exit.  The default action is to report an error without exiting.
 
 The old exit action is returned.
 

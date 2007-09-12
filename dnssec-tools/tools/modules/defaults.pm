@@ -268,11 +268,11 @@ longer in use.
 
 =item B<tanamedconffile>
 
-This default specifies the name of the named configuration file.
+This default specifies the name of the B<named> configuration file.
 
 =item B<tadnsvalconffile>
 
-This default specifies the name of the dnsval configuration file.
+This default specifies the name of the B<dnsval> configuration file.
 
 =item B<tasleeptime>
 
@@ -285,8 +285,8 @@ default value for this.
 
 =item B<tasmtpserver>
 
-This is merely a placeholder for the name of the smtpserver. There is no useful
-default value for this.
+This is merely a placeholder for the name of the SMTP server. There is no
+useful default value for this.
 
 =item B<usegui>
 
