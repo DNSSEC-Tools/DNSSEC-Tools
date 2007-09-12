@@ -785,7 +785,7 @@ verify_next_assertion(val_context_t * ctx,
         }
 
         if (nextrr == NULL) {
-            val_log(ctx, LOG_INFO, "verify_next_assertion(): No RRSIG verified for this assertion");
+            val_log(ctx, LOG_INFO, "verify_next_assertion(): No DNSKEY matched for this RRSIG");
             SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
         } else if (the_set->rrs.val_rrset_type_h == ns_t_dnskey &&
             /*
