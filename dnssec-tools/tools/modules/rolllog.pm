@@ -416,22 +416,12 @@ Net::DNS::SEC::Tools::rolllog - DNSSEC-Tools rollover logging interfaces.
 =head1 DESCRIPTION
 
 The B<Net::DNS::SEC::Tools::rolllog> module provides logging interfaces for
-the rollover programs.
+the rollover programs.  The logging interfaces allow log messages to be
+recorded.  B<rollerd> must be running, as it is responsible for updating  
+the log file.
 
-=head1 LOGGING INTERFACES
-
-=over 4
-
-=item I<rolllog_levels()>
-
-This routine returns an array holding the text forms of the user-settable
-logging levels.  The levels are returned in order, from most verbose to least.
-
-=item I<rolllog_level(newlevel,useflag)>
-
-This routine sets and retrieves the logging level for B<rollerd>.
-The I<newlevel> argument specifies the new logging level to be set.  The
-valid levels are:
+Each log message is assigned a particular logging level.  The valid logging
+levels are:
 
     text       numeric  meaning
     ----       -------  -------
@@ -445,9 +435,24 @@ valid levels are:
     err        	  8     Errors are recorded.
     fatal         9     Fatal errors are saved.
 
-I<newlevel> may be given in either text or numeric form.  The levels include
-all numerically higher levels.  For example, if the log level is set to
-B<phase>, then B<err> and B<fatal> messages will also be recorded.
+The levels include all numerically higher levels.  For example, if the log
+level is set to B<phase>, then B<err> and B<fatal> messages will also be
+recorded.
+
+=head1 LOGGING INTERFACES
+
+=over 4
+
+=item I<rolllog_levels()>
+
+This routine returns an array holding the text forms of the user-settable
+logging levels.  The levels are returned in order, from most verbose to least.
+
+=item I<rolllog_level(newlevel,useflag)>
+
+This routine sets and retrieves the logging level for B<rollerd>.
+The I<newlevel> argument specifies the new logging level to be set.
+I<newlevel> may be given in either text or numeric form.
 
 The I<useflag> argument is a boolean that indicates whether or not to give a
 descriptive message and exit if an invalid logging level is given.  If
@@ -519,8 +524,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<rollctl(1)>
 
-B<Net::DNS::SEC::Tools::rollmgr.pm(3)>
-
 B<rollerd(8)>
+
+B<Net::DNS::SEC::Tools::rollmgr.pm(3)>
 
 =cut

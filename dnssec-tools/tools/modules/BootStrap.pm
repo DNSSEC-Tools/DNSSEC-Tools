@@ -91,9 +91,9 @@ error message and calls I<exit()>.  The error message describes how to
 install a module via CPAN.
 
 The arguments to I<dnssec_tools_load_mods()> are given in pairs.  Each pair is
-a module to try to load (and import) and an supplemental error message.  If
+a module to try to load (and import) and a supplemental error message.  If
 the module fails to load, the supplemental error message will be displayed
-along with the installation-via-CPAN message.  If the error   message consists
+along with the installation-via-CPAN message.  If the error message consists
 of the string "noerror", then no error message will be displayed before the
 function exits.
 
@@ -101,12 +101,12 @@ function exits.
 
 The module will try to import any exported subroutines from the
 module into the I<main> namespace.  This means that the I<BootStrap.pm>
-module is likely not useful for importing symbols into other modules.
+module is likely to not be useful for importing symbols into other modules.
 Work-arounds for this are:
 
 =over
 
-=item - import the symbols by hand into
+=item - import the symbols by hand
 
   dnssec_tools_load_mods(
      PerlModule => 'Additional help/error text'
@@ -116,7 +116,7 @@ Work-arounds for this are:
 
   func1(arg1, arg2);
 
-=item - call the fully qualified function names instead
+=item - call the fully qualified function name
 
   dnssec_tools_load_mods(
      PerlModule => 'Additional help/error text'

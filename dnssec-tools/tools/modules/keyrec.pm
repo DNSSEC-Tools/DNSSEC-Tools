@@ -1890,35 +1890,37 @@ following is an example of a key I<keyrec>:
           keyrec_gendate  "Tue Nov 23 04:22:07 2004"
 
 The first step in using this module B<must> be to create a new I<keyrec>
-file or open and read an existing one.  The B<keyrec_creat()> interface creates
-a I<keyrec> file if it does not exist and opens it.  The B<keyrec_open()>
-interface opens an existing I<keyrec> file.  The B<keyrec_read()> interface
+file or open and read an existing one.  The I<keyrec_creat()> interface creates
+a I<keyrec> file if it does not exist and opens it.  The I<keyrec_open()>
+interface opens an existing I<keyrec> file.  The I<keyrec_read()> interface
 reads the file and parses it into an internal format. The file's
 records are copied into a hash table (for easy reference by the
 B<Net::DNS::SEC::Tools::keyrec> routines) and in an array (for
 preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
-B<keyrec_fullrec()> and B<keyrec_recval()>.  The contents are modified using
-B<keyrec_add()>, and B<keyrec_setval()>.  B<keyrec_settime()> will update a
-I<keyrec>'s timestamp to the current time.  I<keyrec>s may be deleted with the
-B<keyrec_del()> interface.
+I<keyrec_fullrec()> and I<keyrec_recval()>.  The I<keyrec> contents are
+modified using I<keyrec_add()>, and I<keyrec_setval()>.  I<keyrec_settime()>
+will update a I<keyrec>'s timestamp to the current time.  I<keyrec>s may be
+deleted with the I<keyrec_del()> interface.
 
 If the I<keyrec> file has been modified, it must be explicitly written or the
-changes are not saved.  B<keyrec_write()> saves the new contents to disk.
-B<keyrec_saveas()> saves the in-memory I<keyrec> contents to the specified
+changes are not saved.  I<keyrec_write()> saves the new contents to disk.
+I<keyrec_saveas()> saves the in-memory I<keyrec> contents to the specified
 file name, without affecting the original file.
 
-B<keyrec_close()> saves the file and close the Perl file handle to the
+I<keyrec_close()> saves the file and close the Perl file handle to the
 I<keyrec> file.  If a I<keyrec> file is no longer wanted to be open, yet the
-contents should not be saved, B<keyrec_discard()> gets rid of the data, and
+contents should not be saved, I<keyrec_discard()> gets rid of the data, and
 closes the file handle B<without> saving any modified data.
 
 =head1 KEYREC INTERFACES
 
 The interfaces to the B<Net::DNS::SEC::Tools::keyrec> module are given below.
 
-=head2 I<keyrec_add(keyrec_type,keyrec_name,fields)>
+=over 4
+
+=item I<keyrec_add(keyrec_type,keyrec_name,fields)>
 
 This routine adds a new I<keyrec> to the I<keyrec> file and the internal
 representation of the file contents.  The I<keyrec> is added to both the
@@ -1953,26 +1955,26 @@ Return values are:
     0 success
     -1 invalid I<krtype>
 
-=head2 I<keyrec_close()>
+=item I<keyrec_close()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>) and closes the file
+I<keyrec_creat()>, I<keyrec_open()> or I<keyrec_read()>) and closes the file
 handle.
 
-=head2 I<keyrec_creat(keyrec_file)>
+=item I<keyrec_creat(keyrec_file)>
 
 This interface creates a I<keyrec> file if it does not exist, and truncates
 the file if it already exists.  It leaves the file in the open state.
 
-B<keyrec_creat()> returns 1 if the file was created successfully.
+I<keyrec_creat()> returns 1 if the file was created successfully.
 It returns 0 if there was an error in creating the file.
 
-=head2 I<keyrec_defkrf()>
+=item I<keyrec_defkrf()>
 
 This routine returns the default I<keyrec> filename from the DNSSEC-Tools
 configuration file.
 
-=head2 I<keyrec_del(keyrec_name)>
+=item I<keyrec_del(keyrec_name)>
 
 This routine deletes a I<keyrec> from the I<keyrec> file and the internal
 representation of the file contents.  The I<keyrec> is deleted from both
@@ -1986,49 +1988,49 @@ Return values are:
     0 successful I<keyrec> deletion
     -1 invalid I<krtype> (empty string or unknown name)
 
-=head2 I<keyrec_discard()>
+=item I<keyrec_discard()>
 
 This routine removes a I<keyrec> file from use by a program.  The internally
 stored data are deleted and the I<keyrec> file handle is closed.  However,
 modified data are not saved prior to closing the file handle.  Thus, modified
 and new data will be lost.
 
-=head2 I<keyrec_exists(keyrec_name)>
+=item I<keyrec_exists(keyrec_name)>
 
-B<keyrec_exists()> returns a boolean indicating if a I<keyrec> exists that
+I<keyrec_exists()> returns a boolean indicating if a I<keyrec> exists that
 has the specified I<keyrec_name>.
 
-=head2 I<keyrec_fullrec(keyrec_name)>
+=item I<keyrec_fullrec(keyrec_name)>
 
-B<keyrec_fullrec()> returns a reference to the I<keyrec> specified in
+I<keyrec_fullrec()> returns a reference to the I<keyrec> specified in
 I<keyrec_name>.
 
-=head2 I<keyrec_keyfields()>
+=item I<keyrec_keyfields()>
 
 This routine returns a list of the recognized fields for a key I<keyrec>.
 
-=head2 I<keyrec_names()>
+=item I<keyrec_names()>
 
 This routine returns a list of the I<keyrec> names from the file.
 
-=head2 I<keyrec_open(keyrec_file)>
+=item I<keyrec_open(keyrec_file)>
 
 This interface opens an existing I<keyrec> file.  It first attempts to open
 the I<keyrec> file for reading and writing.  If this fails, then it attempts
 to open it read-only.
 
-B<keyrec_open()> returns 1 if the file was opened successfully.  It returns 0
+I<keyrec_open()> returns 1 if the file was opened successfully.  It returns 0
 if the file does not exists or if there was an error in opening the file.
 
-=head2 I<keyrec_read(keyrec_file)>
+=item I<keyrec_read(keyrec_file)>
 
 This interface reads the specified I<keyrec> file and parses it into a
-I<keyrec> hash table and a file contents array.  B<keyrec_read()> B<must> be
+I<keyrec> hash table and a file contents array.  I<keyrec_read()> B<must> be
 called prior to any of the other B<Net::DNS::SEC::Tools::keyrec> calls.  If
 another I<keyrec> is already open, then it is saved and closed prior to
 opening the new I<keyrec>.
 
-Upon success, B<keyrec_read()> returns the number of I<keyrec>s read from the
+Upon success, I<keyrec_read()> returns the number of I<keyrec>s read from the
 file.
 
 Failure return values:
@@ -2037,7 +2039,7 @@ Failure return values:
     -2 unable to open I<keyrec> file
     -3 duplicate I<keyrec> names in file
 
-=head2 I<keyrec_recval(keyrec_name,keyrec_field)>
+=item I<keyrec_recval(keyrec_name,keyrec_field)>
 
 This routine returns the value of a specified field in a given I<keyrec>.
 I<keyrec_name> is the name of the particular I<keyrec> to consult.
@@ -2054,15 +2056,15 @@ The call:
 
 will return the value "db.example.com".
 
-=head2 I<keyrec_saveas(keyrec_file_copy)>
+=item I<keyrec_saveas(keyrec_file_copy)>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>) to the file named in
+I<keyrec_creat()>, I<keyrec_open()> or I<keyrec_read()>) to the file named in
 the I<keyrec_file_copy> parameter.  The new file's file handle is closed, 
 but the original file and the file handle to the original file are not
 affected.
 
-=head2 I<keyrec_setval(keyrec_type,keyrec_name,field,value)>
+=item I<keyrec_setval(keyrec_type,keyrec_name,field,value)>
 
 Set the value of a I<name/field> pair in a specified I<keyrec>.  The file is
 B<not> written after updating the value.  The value is saved in both
@@ -2079,24 +2081,26 @@ Return values are:
     0 if the creation succeeded
     -1 invalid type was given
 
-=head2 I<keyrec_settime(keyrec_type,keyrec_name)>
+=item I<keyrec_settime(keyrec_type,keyrec_name)>
 
 Set the timestamp of a specified I<keyrec>.  The file is B<not> written
 after updating the value.  The value is saved in both I<%keyrecs> and in
 I<@keyreclines>, and the file-modified flag is set.  The I<keyrec>'s
 I<keyrec_signdate> and I<keyrec_signsecs> fields are modified.
 
-=head2 I<keyrec_write()>
+=item I<keyrec_write()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>).  It does not close
+I<keyrec_creat()>, I<keyrec_open()> or I<keyrec_read()>).  It does not close
 the file handle.  As an efficiency measure, an internal modification flag is
 checked prior to writing the file.  If the program has not modified the
 contents of the I<keyrec> file, it is not rewritten.
 
-=head2 I<keyrec_zonefields()>
+=item I<keyrec_zonefields()>
 
 This routine returns a list of the recognized fields for a zone I<keyrec>.
+
+=back
 
 =head1 KEYREC SIGNING-SET INTERFACES
 
@@ -2107,7 +2111,9 @@ way key names are handled, the names in a Signing Set must not contain spaces.
 
 The Signing-Set-specific interfaces are given below.
 
-=head2 I<keyrec_signset_newname(zone_name)>
+=over 4
+
+=item I<keyrec_signset_newname(zone_name)>
 
 I<keyrec_signset_newname()> creates a name for a new Signing Set.  The name
 will be generated by referencing the I<lastset> field in the I<keyrec> for
@@ -2130,12 +2136,12 @@ determined:
     signing-88-set-1		  88
     signingset4321		4321
 
-=head2 I<keyrec_signset_new(signing_set_name)>
+=item I<keyrec_signset_new(signing_set_name)>
 
 I<keyrec_signset_new()> creates the Signing Set named by I<signing_set_name>.
 It returns 1 if the call is successful; 0 if it is not.
 
-=head2 I<keyrec_signset_addkey(signing_set_name,key_list)>
+=item I<keyrec_signset_addkey(signing_set_name,key_list)>
 
 I<keyrec_signset_addkey()> adds the keys listed in I<key_list> to the Signing
 Set named by I<signing_set_name>.  I<key_list> may either be an array or a set
@@ -2143,29 +2149,31 @@ or arguments to the routine.  The I<keyrec> is created if it does not already
 exist.
 It returns 1 if the call is successful; 0 if it is not.
 
-=head2 I<keyrec_signset_delkey(signing_set_name,key_name)>
+=item I<keyrec_signset_delkey(signing_set_name,key_name)>
 
 I<keyrec_signset_delkey()> deletes the key given in I<key_name> to the
 Signing Set named by I<signing_set_name>.
 It returns 1 if the call is successful; 0 if it is not.
 
-=head2 I<keyrec_signset_haskey(signing_set_name,key_name)>
+=item I<keyrec_signset_haskey(signing_set_name,key_name)>
 
 I<keyrec_signset_haskey()> returns a flag indicating if the key specified
 in I<key_name> is one of the keys in the Signing Set named by
 I<signing_set_name>.
 It returns 1 if the signing set has the key; 0 if it does not.
 
-=head2 I<keyrec_signset_clear(keyrec_name)>
+=item I<keyrec_signset_clear(keyrec_name)>
 
 I<keyrec_signset_clear()> clears the entire signing set from the I<keyrec>
 named by I<keyrec_name>.
 It returns 1 if the call is successful; 0 if it is not.
 
-=head2 I<keyrec_signsets()>
+=item I<keyrec_signsets()>
 
 I<keyrec_signsets()> returns the names of the signing sets in the I<keyrec>
 file.  These names are returned in an array.
+
+=back
 
 =head1 KEYREC INTERNAL INTERFACES
 
@@ -2174,14 +2182,16 @@ B<keyrec.pm> module.  However, there are situations where external entities
 may have need of them.  Use with caution, as misuse may result in damaged or
 lost I<keyrec> files.
 
-=head2 I<keyrec_init()>
+=over 4
+
+=item I<keyrec_init()>
 
 This routine initializes the internal I<keyrec> data.  Pending changes will
 be lost.  An open I<keyrec> file handle will remain open, though the data are
 no longer held internally.  A new I<keyrec> file must be read in order to use
 the B<keyrec.pm> interfaces again.
 
-=head2 I<keyrec_newkeyrec(kr_name,kr_type)>
+=item I<keyrec_newkeyrec(kr_name,kr_type)>
 
 This interface creates a new I<keyrec>.  The I<keyrec_name> and I<keyrec_hash>
 fields in the I<keyrec> are set to the values of the I<kr_name> and I<kr_type>
@@ -2198,7 +2208,7 @@ The following interfaces display information about the currently parsed
 I<keyrec> file.  They are intended to be used for debugging and testing, but
 may be useful at other times.
 
-=head2 I<keyrec_dump_hash()>
+=item I<keyrec_dump_hash()>
 
 This routine prints the I<keyrec> file as it is stored internally in a hash
 table.  The I<keyrec>s are printed in alphabetical order, with the fields
@@ -2206,7 +2216,7 @@ alphabetized for each I<keyrec>.  New I<keyrec>s and I<keyrec> fields are
 alphabetized along with current I<keyrec>s and fields.  Comments from the
 I<keyrec> file are not included with the hash table.
 
-=head2 I<keyrec_dump_array()>
+=item I<keyrec_dump_array()>
 
 This routine prints the I<keyrec> file as it is stored internally in
 an array.  The I<keyrec>s are printed in the order given in the file,
@@ -2215,6 +2225,8 @@ appended to the end of the array.  I<keyrec> fields added to existing
 I<keyrec>s are added at the beginning of the I<keyrec> entry.
 Comments and vertical whitespace are preserved as given in the
 I<keyrec> file.
+
+=back
 
 =head1 COPYRIGHT
 
@@ -2226,8 +2238,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
-
-B<Net::DNS::SEC::Tools::keyrec(3)>
 
 B<Net::DNS::SEC::Tools::conf(5)>,
 B<Net::DNS::SEC::Tools::keyrec(5)>

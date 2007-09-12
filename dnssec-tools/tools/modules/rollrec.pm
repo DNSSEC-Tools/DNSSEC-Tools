@@ -1252,7 +1252,7 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 The first step in using this module must be to read the I<rollrec> file.  The
 I<rollrec_read()> interface reads the file and parses it into an internal
 format.  The file's records are copied into a hash table (for easy reference
-by the B<Net::DNS::SEC::Tools::rollrec> routines) and in an array (for
+by the B<rollrec.pm> routines) and in an array (for
 preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
@@ -1297,7 +1297,7 @@ installations.  If that is found to be the case, then this will be reworked.
 
 =head1 ROLLREC INTERFACES
 
-The interfaces to the B<Net::DNS::SEC::Tools::rollrec> module are given below.
+The interfaces to the B<rollrec.pm> module are given below.
 
 =over 4
 
@@ -1388,7 +1388,7 @@ This routine returns a list of the I<rollrec> names from the file.
 
 This interface reads the specified I<rollrec> file and parses it into a
 I<rollrec> hash table and a file contents array.  I<rollrec_read()> B<must> be
-called prior to any of the other B<Net::DNS::SEC::Tools::rollrec> calls.  If
+called prior to any of the other B<rollrec.pm> calls.  If
 another I<rollrec> is already open, then it is saved and closed prior to
 opening the new I<rollrec>.
 
@@ -1477,7 +1477,7 @@ rewritten.
 =over 4
 
 The interfaces described in this section are intended for internal use by the
-B<Net::DNS::SEC::Tools::rollrec> module.  However, there are situations where
+B<rollrec.pm> module.  However, there are situations where
 external entities may have need of them.  Use with caution, as misuse may
 result in damaged or lost I<rollrec> files.
 
@@ -1486,7 +1486,7 @@ result in damaged or lost I<rollrec> files.
 This routine initializes the internal I<rollrec> data.  Pending changes will
 be lost.  An open I<rollrec> file handle will remain open, though the data are
 no longer held internally.  A new I<rollrec> file must be read in order to use
-the B<Net::DNS::SEC::Tools::rollrec> interfaces again.
+the B<rollrec.pm> interfaces again.
 
 =item I<rollrec_newrec(type,name)>
 
