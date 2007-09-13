@@ -782,13 +782,11 @@ sub usage
 =head1 NAME
 
 genkrf - Generate a I<keyrec> file from Key Signing Key (KSK)
-and/or Zone Signing Key (ZSK) files.
+and/or Zone Signing Key (ZSK) files
 
 =head1 SYNOPSIS
 
   genkrf [options] <zone-file> [<signed-zone-file>]
-
-  genkrf -help
 
 =head1 DESCRIPTION
 
@@ -818,44 +816,44 @@ path:
 See I<tooloptions.pm(3)> for more details.
 Exceptions to this are given in the option descriptions.
 
-The I<genkrf> options are described below.
+The B<genkrf> options are described below.
 
-=head2 General I<genkrf> Options
+=head2 General B<genkrf> Options
 
 =over 4
 
-=item -zone I<zone-name>
+=item B<-zone zone-name>
 
 This option specifies the name of the zone.  If it is not given then
 I<zone-file> will be used as the name of the zone.
 
-=item -krfile I<keyrec-file>
+=item B<-krfile keyrec-file>
 
 This option specifies the name of the I<keyrec> file to be generated.
 If it is not given, then B<zone-name.krf> will be used.
 
-=item -algorithm I<algorithm>
+=item B<-algorithm algorithm>
 
 This option specifies the algorithm used to generate encryption keys.
 
-=item -endtime I<endtime>
+=item B<-endtime endtime>
 
 This option specifies the time that the signature on the zone expires,
 measured in seconds.
 
-=item -random I<random-device>
+=item B<-random random-device>
 
 Source of randomness used to generate the zone's keys. See the man
 page for B<dnssec-signzone> for the valid format of this field.
 
-=item -verbose
+=item B<-verbose>
 
 Display additional messages during processing.  If this option is given at
 least once, then a message will be displayed indicating the successful
 generation of the I<keyrec> file.  If it is given twice, then the values of
 all options will also be displayed.
 
-=item -help
+=item B<-help>
 
 Display a usage message.
 
@@ -865,28 +863,28 @@ Display a usage message.
 
 =over 4
 
-=item -kskcur I<KSK-name>
+=item B<-kskcur KSK-name>
 
 This option specifies the Current KSK's key file being used to sign the zone.
 If this option is not given, a new KSK will be created.
 
-=item -kskcount I<KSK-count>
+=item B<-kskcount KSK-count>
 
 This option specifies the number of KSK keys that will be generated.  If this
 option is not given, the default given in the DNSSEC-Tools configuration file
 will be used.
 
-=item -kskdir I<KSK-directory>
+=item B<-kskdir KSK-directory>
 
 This option specifies the absolute or relative path of the directory
 where the KSK resides.  If this option is not given, it defaults to
 the current directory ".".
 
-=item -ksklength I<KSK-length>
+=item B<-ksklength KSK-length>
 
 This option specifies the length of the KSK encryption key.
 
-=item -ksklife I<KSK-lifespan>
+=item B<-ksklife KSK-lifespan>
 
 This option specifies the lifespan of the KSK encryption key.  This lifespan
 is B<not> inherent to the key itself.  It is B<only> used to determine when
@@ -898,33 +896,33 @@ the KSK must be rolled over.
 
 =over 4
 
-=item -zskcur I<ZSK-name>
+=item B<-zskcur ZSK-name>
 
 This option specifies the current ZSK being used to sign the zone.
 If this option is not given, a new ZSK will be created.
 
-=item -zskpub I<ZSK-name>
+=item B<-zskpub ZSK-name>
 
 This option specifies the published ZSK for the zone.  If this option
 is not given, a new ZSK will be created.
 
-=item -zskcount I<ZSK-count>
+=item B<-zskcount ZSK-count>
 
 This option specifies the number of current and published ZSK keys that will
 be generated.  If this option is not given, the default given in the
 DNSSEC-Tools configuration file will be used.
 
-=item -zskdir I<ZSK-directory>
+=item B<-zskdir ZSK-directory>
 
 This option specifies the absolute or relative path of the directory
 where the ZSKs reside.  If this option is not given, it defaults to
 the current directory ".".
 
-=item -zsklength I<ZSK-length>
+=item B<-zsklength ZSK-length>
 
 This option specifies the length of the ZSK encryption key.
 
-=item -zsklife I<ZSK-lifespan>
+=item B<-zsklife ZSK-lifespan>
 
 This option specifies the lifespan of the ZSK encryption key.  This lifespan
 is B<not> inherent to the key itself.  It is B<only> used to determine when

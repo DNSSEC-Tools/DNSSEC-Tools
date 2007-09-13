@@ -240,7 +240,7 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
-getdnskeys - Manage lists of DNSKEYs from DNS zones.
+getdnskeys - Manage lists of DNSKEYs from DNS zones
 
 =head1 SYNOPSIS
 
@@ -256,31 +256,31 @@ included (directly or indirectly) in a B<named.conf> file.
 
 =over 4
 
-=item -h
+=item B<-h>
 
 Gives a help message.
 
-=item -i path
+=item B<-i path>
 
 Reads I<path> as a B<named.conf> with which to compare key lists.
 
-=item -k
+=item B<-k>
 
-Only looks for Key Signing Keys (KSK); all other keys are ignored.
+Only looks for Key Signing Keys (KSKs); all other keys are ignored.
 
-=item -o file
+=item B<-o file>
 
 Writes the results to I<file>.
 
-=item -T
+=item B<-T>
 
 Checks the current trusted key list from B<named.conf>.
 
-=item -t
+=item B<-t>
 
 Encloses output in needed B<named.conf> syntax markers.
 
-=item -v
+=item B<-v>
 
 Turns on verbose mode for additional output.
 
