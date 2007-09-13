@@ -138,7 +138,7 @@ sub version
 =head1 NAME
 
 rolllog - DNSSEC-Tools utility to write messages to the DNSSEC rollover
-log file.
+log file
 
 =head1 SYNOPSIS
 
@@ -146,9 +146,9 @@ log file.
 
 =head1 DESCRIPTION
 
-The I<rolllog> program writes log messages to the DNSSEC rollover log file.
-I<rolllog> does not actually write the messages itself; rather, it sends them
-to the I<rollerd> rollover daemon to write the messages.  I<rollerd> keeps
+The B<rolllog> program writes log messages to the DNSSEC rollover log file.
+B<rolllog> does not actually write the messages itself; rather, it sends them
+to the B<rollerd> rollover daemon to write the messages.  B<rollerd> keeps
 track of a logging level, and only messages of that level or higher are
 written to the log file.
 
@@ -158,16 +158,16 @@ The following options are recognized:
 
 =over 4
 
-=item I<-loglevel level>
+=item B<-loglevel level>
 
 Logging level of this message.  The valid levels are defined in
 B<rollmgr.pm>(3).   This option is required.
 
-=item -help
+=item B<-help>
 
 Display a usage message.
 
-=item -Version
+=item B<-Version>
 
 Display a version message.
 
