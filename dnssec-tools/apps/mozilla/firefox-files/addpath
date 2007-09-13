@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 
+my $no = "0";
+my $no = shift if ($ARGV[0] eq 'no');
+
 my %origin = ('---' => '--- old-',
 	      '+++' => '+++ ');
 my %paths;
@@ -14,7 +17,7 @@ while (<I>) {
 }
 
 while(<>) {
-    s/^(---|\+\+\+) +(\S*)/$origin{$1}$paths{$2}$2/;
+    s/^(---|\+\+\+) +(\S*)/$origin{$1}$paths{$2}$2/ unless($ARGV[0] eq 'no');
     print;
 }
 
