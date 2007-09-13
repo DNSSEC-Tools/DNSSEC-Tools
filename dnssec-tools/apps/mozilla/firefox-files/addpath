@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+my %origin = ('---' => '--- old-',
+	      '+++' => '+++ ');
+my %paths;
+
+open(I,"paths");
+while (<I>) {
+    chomp($_);
+    @a = /(\S+) (.*)/;
+    $a[1] .= "/" if ($a[1] !~ /\/$/);
+    $paths{$a[0]} = $a[1];
+    $paths{"$a[0].orig"} = $a[1];
+}
+
+while(<>) {
+    s/^(---|\+\+\+) +(\S*)/$origin{$1}$paths{$2}$2/;
+    print;
+}
+
+
+exit 0;
