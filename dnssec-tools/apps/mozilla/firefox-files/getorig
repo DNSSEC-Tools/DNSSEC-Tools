@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+my %paths;
+my $rootpath = shift;
+$rootpath .= "/" if ($rootpath !~ /\/$/);
+
+open(I,"paths");
+while (<I>) {
+    chomp($_);
+    @a = /(\S+) (.*)/;
+    $a[1] .= "/" if ($a[1] !~ /\/$/);
+    $paths{$a[0]} = $a[1];
+    $paths{"$a[0].orig"} = $a[1];
+}
+
+foreach my $file (@ARGV) {
+    system("cp $rootpath$paths{$file}$file $file.orig");
+}
