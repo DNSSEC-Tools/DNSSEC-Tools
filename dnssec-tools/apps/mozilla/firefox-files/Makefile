@@ -36,14 +36,17 @@ help:
 	echo make INCLUDEDEBUGGING=0    -- builds the patch without DEBUG
 	echo make build			-- builds FF from the build tree
 
-.PHONY: $(PRPATCHFILE)
-$(PRPATCHFILE): rmpatch prnetdb-real.c.patch normalpatches
 
 rmpatch:
 	rm -f $(PRPATCHFILE)
 
-.PHONY: $(PRPATCHFILE)
+getoriginals:
+	perl getorig $(BASEBUILD) $(NORMALFILES) prnetdb.c
+
+.PHONY: $(PRPATCHFILE) prpatchfile
+prpatchfile: rmpatch normalpatches $(PRPATCHFILE)
 $(PRPATCHFILE): prnetdb-real.c
+	if [ ! -d temp ] ; then mkdir temp ; fi
 	cp $< temp/prnetdb.c
 	cp prnetdb.c.orig temp/
 	(cd temp && diff -u prnetdb.c.orig prnetdb.c) | perl addpath > $@
@@ -61,7 +64,7 @@ normalpatches:
 	done ;
 
 .PHONY: $(FULLPATCHFILE) normalpatches
-$(FULLPATCHFILE): $(PRPATCHFILE) normalpatches
+$(FULLPATCHFILE): prpatchfile normalpatches
 	cp patch.base $(FULLPATCHFILE)
 	for i in $(NORMALFILES) ; do \
 		cat $$i.patch >> $(FULLPATCHFILE) ; \
