@@ -2621,7 +2621,7 @@ sub usage
 
 =head1 NAME
 
-zonesigner - Generates encryption keys and signs a DNS zone.
+zonesigner - Generates encryption keys and signs a DNS zone
 
 =head1 SYNOPSIS
 
@@ -2943,7 +2943,7 @@ The I<keyrec>s of the ZSK keys are adjusted as follows:
         new ZSK keys' keyrecs.
     The obsolete ZSK keys are moved to the archive directory.
 
-The quick summary of proper ZSK rolling (which rollerd does for you if
+The quick summary of proper ZSK rolling (which B<rollerd> does for you if
 you use it):
 
     - wait 2 * max(TTL in zone)
@@ -3022,7 +3022,8 @@ The default is 1024.
 
 =item -random
 
-Source of randomness used to generate the zone's keys.	(For example, /dev/urandom.)
+Source of randomness used to generate the zone's keys.	This is assumed to be
+a file, for example B</dev/urandom>.
 
 =item -zsklength
 
@@ -3228,12 +3229,16 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	keyrec_gensecs	"1115166638"
 	keyrec_gendate	"Wed May  4 00:30:38 2005"
 
-
 =head1 NOTES
 
 =over 4
 
-=item 1.  SOA Serial Numbers
+=item 1.  One Zone in a I<keyrec> File
+
+There is a bug in the signing-set code that necessitates only storing one    
+zone in a I<keyrec> file.  
+
+=item 2.  SOA Serial Numbers
 
 Serial numbers in SOA records are merely incremented in this version.  Future
 plans are to allow for more flexible serial number manipulation.

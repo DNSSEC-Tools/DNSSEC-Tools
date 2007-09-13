@@ -521,7 +521,7 @@ sub usage
 
 =head1 NAME
 
-cleankrf - Clean a DNSSEC-Tools I<keyrec> files of old data.
+cleankrf - Clean a DNSSEC-Tools I<keyrec> files of old data
 
 =head1 SYNOPSIS
 
@@ -539,37 +539,37 @@ ZSK key I<keyrec>s unreferenced by any set I<keyrec>s.
 
 Obsolete keys are ZSK key I<keyrec>s with a I<keyrec_type> of B<zskobs>.
 
-I<cleankrf>'s exit code is the count of orphaned and obsolete I<keyrec>s
+B<cleankrf>'s exit code is the count of orphaned and obsolete I<keyrec>s
 found.
 
 =head1 OPTIONS
 
 =over 4
 
-=item -count
+=item B<-count>
 
 Display a final count of old I<keyrec>s found in the I<keyrec> files.  This
 option allows the count to be displayed even if the I<-quiet> option is given.
 
-=item -list
+=item B<-list>
 
 The key I<keyrec>s are checked for old I<keyrec>s, but they are not removed
 from the I<keyrec> file.  The names of the old I<keyrec>s are displayed.
 
-=item -rm
+=item B<-rm>
 
 Delete the key files, both B<.key> and B<.private>, from orphaned and
 expired I<keyrec>s.
 
-=item -quiet
+=item B<-quiet>
 
 Display no output.
 
-=item -verbose
+=item B<-verbose>
 
 Display output about referenced keys and unreferenced keys.
 
-=item -help
+=item B<-help>
 
 Display a usage message.
 

@@ -271,7 +271,7 @@ sub usage
 =head1 NAME
 
 fixkrf - Fixes DNSSEC-Tools I<keyrec> files whose encryption key files have
-been moved.
+been moved
 
 =head1 SYNOPSIS
 
@@ -281,7 +281,7 @@ been moved.
 
 B<fixkrf> checks a specified I<keyrec> file to ensure that the referenced
 encryption key files exist where listed.  If a key is not where the I<keyrec>
-specifies it should be, then I<fixkrf> will search the given directories for
+specifies it should be, then B<fixkrf> will search the given directories for
 those keys and adjust the I<keyrec> to match reality.  If a key of a
 particular filename is found in multiple places, a warning will be printed
 and the I<keyrec> file will not be changed for that key.
@@ -290,15 +290,15 @@ and the I<keyrec> file will not be changed for that key.
 
 =over 4
 
-=item -list
+=item B<-list>
 
 Display output about missing keys, but don't fix the I<keyrec> file.
 
-=item -verbose
+=item B<-verbose>
 
 Display output about found keys as well as missing keys.
 
-=item -help
+=item B<-help>
 
 Display a usage message.
 
