@@ -29,13 +29,15 @@ NORMALFILES=\
 	nsNetError.h		\
 	netError.dtd
 
-all: $(FULLPATCHFILE)
+all: help
 
 help:
-	echo make                       -- builds just the patch
+	echo make patchfile             -- builds just the patch
 	echo make INCLUDEDEBUGGING=0    -- builds the patch without DEBUG
 	echo make build			-- builds FF from the build tree
+	echo make getoriginals		-- copies .orig files from source
 
+patchfile: $(FULLPATCHFILE)
 
 rmpatch:
 	rm -f $(PRPATCHFILE)
@@ -43,13 +45,28 @@ rmpatch:
 getoriginals:
 	perl getorig $(BASEBUILD) $(NORMALFILES) prnetdb.c
 
+# upgrading to a new set of FF patches:
+# 1) make current patch set without path changes
+# 2) get new files from new tree  requires NEWVERSION= on command line
+# 3) cp to current file and then patch with created patch
+upgrade: 
+	rm *.patch
+	make normalpatches X=no
+	make getoriginals VERSION=$(NEWVERSION)
+	for i in $(NORMALFILES) ; do \
+		cp $$i.orig $$i ; \
+		patch -p0 < $$i.patch ; \
+	done
+	@echo ""
+	@echo "make sure to change VERSION= in the Makefile"
+
 .PHONY: $(PRPATCHFILE) prpatchfile
 prpatchfile: rmpatch normalpatches $(PRPATCHFILE)
 $(PRPATCHFILE): prnetdb-real.c
 	if [ ! -d temp ] ; then mkdir temp ; fi
 	cp $< temp/prnetdb.c
 	cp prnetdb.c.orig temp/
-	(cd temp && diff -u prnetdb.c.orig prnetdb.c) | perl addpath > $@
+	(cd temp && diff -u prnetdb.c.orig prnetdb.c) | perl addpath $(X) > $@
 
 prnetdb-real.c: prnetdb.c
 	if test $(INCLUDEDEBUGGING) = 1 ; then 		\
@@ -60,7 +77,7 @@ prnetdb-real.c: prnetdb.c
 
 normalpatches:
 	for i in $(NORMALFILES) ; do \
-		diff -u $$i.orig $$i | perl addpath > $$i.patch ; \
+		diff -u $$i.orig $$i | perl addpath $(X) > $$i.patch ; \
 	done ;
 
 .PHONY: $(FULLPATCHFILE) normalpatches
