@@ -1,4 +1,4 @@
-VERSION=1.5.0.10
+VERSION=1.5.0.12
 FULLPATCHFILE=dnssec-both.patch
 
 INCLUDEDEBUGGING=1
@@ -101,13 +101,13 @@ install: prnetdb-real.c
 		$(NOOP) cp -p $$i $(BASEBUILD)/`perl getpath $$i`$$i ; \
 	done
 
-# -O2 -fPIC -DLINUX1_2 -Di386 -D_XOPEN_SOURCE -DLINUX2_1  -ansi -Wall -pipe -DLINUX -Dlinux -D_POSIX_SOURCE -D_BSD_SO URCE -DHAVE_STRERROR -DXP_UNIX -DSHLIB_SUFFIX=\"so\" -DSHLIB_PREFIX=\"lib\" -UDE BUG -DNDEBUG -D_REENTRANT -I/opt/vmware/part2/BUILD/firefox-1.5.0.10/mozilla/dis t/include  -I../../../../../dist/public/nss -I../../../../../dist/private/nss -I ../../../../../dist/include -I/opt/vmware/part2/BUILD/firefox-1.5.0.10/mozilla/d ist/include/nspr -I/opt/vmware/part2/BUILD/firefox-1.5.0.10/mozilla/dist/include /dbm  
+# -O2 -fPIC -DLINUX1_2 -Di386 -D_XOPEN_SOURCE -DLINUX2_1  -ansi -Wall -pipe -DLINUX -Dlinux -D_POSIX_SOURCE -D_BSD_SO URCE -DHAVE_STRERROR -DXP_UNIX -DSHLIB_SUFFIX=\"so\" -DSHLIB_PREFIX=\"lib\" -UDE BUG -DNDEBUG -D_REENTRANT -I/opt/vmware/part2/BUILD/firefox-$(VERSION)/mozilla/dis t/include  -I../../../../../dist/public/nss -I../../../../../dist/private/nss -I ../../../../../dist/include -I/opt/vmware/part2/BUILD/firefox-$(VERSION)/mozilla/d ist/include/nspr -I/opt/vmware/part2/BUILD/firefox-$(VERSION)/mozilla/dist/include /dbm  
 build: install
-	cd $(BASEBUILD)/mozilla/; sudo make -f client.mk build LDFLAGS="-Wl,-rpath,/usr/lib/firefox-1.5.0.10"
+	cd $(BASEBUILD)/mozilla/; sudo make -f client.mk build LDFLAGS="-Wl,-rpath,/usr/lib/firefox-$(VERSION)"
 	sudo cp $(BASEBUILD)/mozilla/dist/bin/*.so /usr/lib/firefox-$(VERSION)/
 	sudo cp $(BASEBUILD)/mozilla/dist/bin/components/*.so /usr/lib/firefox-$(VERSION)/components/
 
-#	cd $(BASEBUILD)/mozilla/; sudo make -f client.mk build LDFLAGS="-Wl,-rpath,/usr/lib/firefox-1.5.0.10" CFLAGS="-g -fPIC -DLINUX1_2 -Di386 -D_XOPEN_SOURCE -DLINUX2_1  -ansi -Wall -pipe -DLINUX -Dlinux -D_POSIX_SOURCE -D_BSD_SOURCE -DHAVE_STRERROR -DXP_UNIX -DSHLIB_SUFFIX=\"so\" -DSHLIB_PREFIX=\"lib\" -UDEBUG -DNDEBUG -D_REENTRANT -I/opt/vmware/part2/BUILD/firefox-1.5.0.10/mozilla/dist/include  -I../../../../../dist/public/nss -I../../../../../dist/private/nss -I../../../../../dist/include -I/opt/vmware/part2/BUILD/firefox-1.5.0.10/mozilla/dist/include/nspr -I/opt/vmware/part2/BUILD/firefox-1.5.0.10/mozilla/dist/include/dbm"
+#	cd $(BASEBUILD)/mozilla/; sudo make -f client.mk build LDFLAGS="-Wl,-rpath,/usr/lib/firefox-$(VERSION)" CFLAGS="-g -fPIC -DLINUX1_2 -Di386 -D_XOPEN_SOURCE -DLINUX2_1  -ansi -Wall -pipe -DLINUX -Dlinux -D_POSIX_SOURCE -D_BSD_SOURCE -DHAVE_STRERROR -DXP_UNIX -DSHLIB_SUFFIX=\"so\" -DSHLIB_PREFIX=\"lib\" -UDEBUG -DNDEBUG -D_REENTRANT -I/opt/vmware/part2/BUILD/firefox-$(VERSION)/mozilla/dist/include  -I../../../../../dist/public/nss -I../../../../../dist/private/nss -I../../../../../dist/include -I/opt/vmware/part2/BUILD/firefox-$(VERSION)/mozilla/dist/include/nspr -I/opt/vmware/part2/BUILD/firefox-$(VERSION)/mozilla/dist/include/dbm"
 
 buildnetwork:
 	cd $(BASEBUILD)/mozilla/nsprpub/pr/src/; sudo make
