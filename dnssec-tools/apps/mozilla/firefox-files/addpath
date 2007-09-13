@@ -17,7 +17,7 @@ while (<I>) {
 }
 
 while(<>) {
-    s/^(---|\+\+\+) +(\S*)/$origin{$1}$paths{$2}$2/ unless($ARGV[0] eq 'no');
+    s/^(---|\+\+\+) +(\S*)/$origin{$1}$paths{$2}$2/ unless($no eq 'no');
     print;
 }
 
