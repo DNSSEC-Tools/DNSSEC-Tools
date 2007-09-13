@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+
+while(<>) {
+    if (/(BEGIN|START) DNSSEC INTERNAL/) {
+	while(<>) {
+	    last if (/END DNSSEC INTERNAL/);
+	}
+	print STDERR "warning: no end to a DNSSEC INTERNAL" if (!$_);
+    } elsif (/(DNSSECFUNDEBUG|DNSSECDEBUG)/) {
+	# noop
+    } else {
+	s/DNSSECFUNRETURN/return/;
+	print;
+    }
+}
