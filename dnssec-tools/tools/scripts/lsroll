@@ -751,7 +751,7 @@ sub usage
 
 =head1 NAME
 
-lsroll - List the I<rollrec>s in a DNSSEC-Tools I<rollrec> file.
+lsroll - List the I<rollrec>s in a DNSSEC-Tools I<rollrec> file
 
 =head1 SYNOPSIS
 
@@ -823,11 +823,11 @@ these options are mutually exclusive.
 
 =over 4
 
-=item I<-roll>
+=item B<-roll>
 
 List all "roll" records in the I<rollrec> file.
 
-=item I<-skip>
+=item B<-skip>
 
 List all "skip" records in the I<rollrec> file.
 
@@ -840,36 +840,36 @@ by B<lsroll>.
 
 =over 4
 
-=item I<-type>
+=item B<-type>
 
 Include each I<rollrec> record's type in the output.  The type will be either
 "roll" or "skip".
 
-=item I<-zone>
+=item B<-zone>
 
 The record's zonefile is included in the output.  This field is part
 of the default output.
 
-=item I<-keyrec>
+=item B<-keyrec>
 
 The record's I<keyrec> file is included in the output.
 This field is part of the default output.
 
-=item I<-kskphase>
+=item B<-kskphase>
 
 The record's KSK rollover phase are included in the output.
 If this option is given with the I<-zskphase> option, then the output will
 follow the format described for the I<-phases> option.
 This field is part of the default output.
 
-=item I<-zskphase>
+=item B<-zskphase>
 
 The record's ZSK rollover phase are included in the output.
 If this option is given with the I<-kskphase> option, then the output will
 follow the format described for the I<-phases> option.
 This field is part of the default output.
 
-=item I<-phases>
+=item B<-phases>
 
 The record's KSK and ZSK rollover phases are included in the output.
 The listing is given with the KSK phase first, followed by the ZSK phase.
@@ -881,19 +881,19 @@ Examples of output from this option are:
         3           0            3/0
         0           5            0/5
 
-=item I<-admin>
+=item B<-admin>
 
 The record's administrator value is included in the output.
 If an administrator value is not included in a I<rollrec>, then the value
 "(defadmin)" will be given.
 
-=item I<-directory>
+=item B<-directory>
 
 The name of the directory that holds the zone's files is included in the
 output.  If a zone directory is not included in a I<rollrec>, then the value
 "(defdir)" will be given.
 
-=item I<-loglevel>
+=item B<-loglevel>
 
 The B<rollerd> logging level for this zone.  This value may be given in
 the I<rollrec> file in either the textual or numeric form.  The textual form
@@ -903,25 +903,25 @@ If a logging level value is not included in a I<rollrec>, then the value
 If an undefined logging level value is included in a I<rollrec>, then the
 value "(unknownlog)" will be given.
 
-=item I<-ttl>
+=item B<-ttl>
 
 The record's TTL value is included in the output.
 
-=item I<-display>
+=item B<-display>
 
 The record's display flag, used by B<blinkenlights>, is included in the output.
 
-=item I<-phstart>
+=item B<-phstart>
 
 The record's rollover phase is included in the output.
 If no rollover has yet been performed for this zone, an empty date is given.
 
-=item I<-lastksk>
+=item B<-lastksk>
 
 The record's last KSK rollover date is included in the output.
 If no KSK rollover has yet been performed for this zone, an empty date is given.
 
-=item I<-lastzsk>
+=item B<-lastzsk>
 
 The record's last ZSK rollover date is included in the output.
 If no ZSK rollover has yet been performed for this zone, an empty date is given.
@@ -934,24 +934,24 @@ These options select the type of output that will be given by I<lsroll>.
 
 =over 4
 
-=item I<-count>
+=item B<-count>
 
 Only a count of matching keyrecs in the I<rollrec> file is given.
 
-=item I<-headers>
+=item B<-headers>
 
 Display explanatory column headers.
 
-=item I<-terse>
+=item B<-terse>
 
 Terse output is given.  Only the record name and any other fields specifically
 selected are included in the output.
 
-=item I<-long>
+=item B<-long>
 
 Long output is given.  All record fields are included.
 
-=item -help
+=item B<-help>
 
 Display a usage message.
 
