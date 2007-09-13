@@ -1230,7 +1230,7 @@ sub usage
 =head1 NAME
 
 krfcheck - Check a DNSSEC-Tools I<keyrec> file for problems and
-inconsistencies.
+inconsistencies
 
 =head1 SYNOPSIS
 
@@ -1350,39 +1350,39 @@ A key's seconds-count timestamp does not match its textual timestamp.
 
 =over 4
 
-=item -zone
+=item B<-zone>
 
 Only perform checks of zone I<keyrec>s.  This option may not be combined with
-the B<-set> or B<-key> options.
+the I<-set> or I<-key> options.
 
-=item -set
+=item B<-set>
 
 Only perform checks of set I<keyrec>s.  This option may not be combined with
-the B<-zone> or B<-key> options.
+the I<-zone> or I<-key> options.
 
-=item -key
+=item B<-key>
 
 Only perform checks of key I<keyrec>s.  This option may not be combined with
-the B<-set> or B<-zone> options.
+the I<-set> or I<-zone> options.
 
-=item -count
+=item B<-count>
 
 Display a final count of errors.
 
-=item -quiet
+=item B<-quiet>
 
-Do not display messages.  This option supersedes the setting of the I<-v>
+Do not display messages.  This option supersedes the setting of the I<-verbose>
 option.
 
-=item -verbose
+=item B<-verbose>
 
-Display many messages.  This option is subordinate to the I<-q> option.
+Display many messages.  This option is subordinate to the I<-quiet> option.
 
-=item -Version
+=item B<-Version>
 
 Display the B<krfcheck> version number and exit.
 
-=item -help
+=item B<-help>
 
 Display a usage message.
 
