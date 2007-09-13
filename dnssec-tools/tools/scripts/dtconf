@@ -223,7 +223,7 @@ sub usage
 
 =head1 NAME
 
-dtconf - Display the contents of a DNSSEC-Tools configuration file.
+dtconf - Display the contents of a DNSSEC-Tools configuration file
 
 =head1 SYNOPSIS
 
@@ -232,11 +232,11 @@ dtconf - Display the contents of a DNSSEC-Tools configuration file.
 =head1 DESCRIPTION
 
 B<dtconf> displays the key/value pairs of a DNSSEC-Tools configuration file.
-If a configuration file isn't specified, the system
-configuration file will be displayed.
+If a configuration file isn't specified, the system configuration file will
+be displayed.
 
-Without the I<key> option, B<dtconf> displays all the key/value pairs in the
-configuration file.  Comments are never displayed.  If the I<key> option is
+Without the B<-key> option, B<dtconf> displays all the key/value pairs in the
+configuration file.  Comments are never displayed.  If the B<-key> option is
 given, then only that key/value pair is displayed.  If the key isn't defined,
 then the value will be "(undefined)."
 
@@ -244,16 +244,16 @@ then the value will be "(undefined)."
 
 =over 4
 
-=item I<-key>
+=item B<-key>
 
 The value of the specified key will be printed.  If the key is not defined,
 then the value will be given as "(undefined)".
 
-=item I<-Version>
+=item B<-Version>
 
 Version information will be printed.
 
-=item I<-help>
+=item B<-help>
 
 Display a usage message.
 
@@ -273,7 +273,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 B<dtinitconf(8)>,
 B<dtconfchk(8)>
 
-B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::conf.pm(3)>
 
 B<dnssec-tools.conf(5)>
 

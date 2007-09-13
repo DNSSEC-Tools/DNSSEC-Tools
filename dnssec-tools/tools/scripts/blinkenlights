@@ -3173,7 +3173,7 @@ B<rollerd>'s execution using B<blinkenlights> menu commands.
 
 B<blinkenlights> creates a window in which to display information about each
 zone B<rollerd> is managing.  (These zones are those in B<rollerd>'s current
-I<rollrec> file.) As a zone's rollover status changes, B<blinkenlights> will
+I<rollrec> file.)  As a zone's rollover status changes, B<blinkenlights> will
 update its display for that zone.  Skipped zones, zones listed in the
 I<rollrec> file but which are not in rollover or normal operation, are
 displayed but have very little useful information to display.
@@ -3194,9 +3194,6 @@ B<blinkenlights> is only intended to be started by B<rollerd>, not directly
 by a user.  There are two ways to have B<rollerd> start B<blinkenlights>.
 First, B<rollctl> may be given the I<-display> option.  Second, the I<-display>
 option may be given on B<rollerd>'s command line.
-
-B<Important Note:>  blinkenlights is undergoing changes to allow it to display
-KSK state and manage KSK rollovers.  This support is I<not> yet complete.
 
 =head1 SCREEN LAYOUT
 

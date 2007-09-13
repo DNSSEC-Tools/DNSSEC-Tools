@@ -713,7 +713,7 @@ sub usage
 
 =head1 NAME
 
-cleanarch - Clean a DNSSEC-Tools key archive of old keys.
+cleanarch - Clean a DNSSEC-Tools key archive of old keys
 
 =head1 SYNOPSIS
 
@@ -763,16 +763,16 @@ The following options allow the user to select the archives to be cleaned.
 
 =over 4
 
-=item -archive I<directory>
+=item B<-archive directory>
 
 This option specifies an archive directory to be cleaned.
 
-=item -defarch
+=item B<-defarch>
 
 This option indicates that the default archive directory (named in the
 DNSSEC-Tools configuration file) should be cleaned. 
 
-=item -zone I<zone>
+=item B<-zone zone>
 
 This option indicates that I<zone> is the only zone whose archive will be
 cleaned.  If the archive directory is shared by other zones then their keys
@@ -786,17 +786,17 @@ The following options allow the user to select the keys to be deleted.
 
 =over 4
 
-=item -all
+=item B<-all>
 
 Deletes all keys in the selected archives.
 This option may not be used with any other key-selection options.
 
-=item -days I<days>
+=item B<-days days>
 
 Deletes all keys except those whose modification date is within the
 I<days> full days preceding the current day.
 
-=item -onezone I<zone>
+=item B<-onezone zone>
 
 Only keys with I<zone> in the key's filename are deleted.
 This is intended for use in cleaning a multi-zone key archive.
@@ -809,29 +809,31 @@ for deletion and using "com" will select any filename that contains "com".
 
 =head2 Options for Output Control
 
+The following options allow the user to control B<cleanarch>'s output.
+
 =over 4
 
-=item -dirlist
+=item B<-dirlist>
 
 This option lists the selected archive directories.  No other action is taken.
 
-=item -list
+=item B<-list>
 
 This option lists the selected keys.  No other action is taken.
 
-=item -quiet
+=item B<-quiet>
 
 Display no output.
 
-=item -verbose
+=item B<-verbose>
 
 Display verbose output.
 
-=item -Version
+=item B<-Version>
 
 Display the B<cleanarch> and DNSSEC-Tools versions.
 
-=item -help
+=item B<-help>
 
 Display a usage message and exit.
 
