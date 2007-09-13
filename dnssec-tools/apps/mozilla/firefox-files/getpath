@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+
+open(I,"paths");
+while (<I>) {
+    chomp($_);
+    @a = /(\S+) (.*)/;
+    $a[1] .= "/" if ($a[1] !~ /\/$/);
+    $paths{$a[0]} = $a[1];
+    $paths{"$a[0].orig"} = $a[1];
+}
+
+print $paths{$ARGV[0]};
