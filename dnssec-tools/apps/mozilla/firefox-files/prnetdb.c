@@ -742,8 +742,8 @@ int dnssec_validate (const char *domain_name) {
     /* check the results, or assume indeterminate if we don't know why
        the above failed */
     DNSSECDEBUG((stderr, "  val_gethostbyname returned %d,val_st=%d,errno=%d,ptr=%x\n", dnssec_status, val_status, h_errno, (unsigned int) hentryp));
-    if (!hentryp)
-        val_status = VAL_INDETERMINATE;
+    if (!hentryp && val_status == VAL_DONT_KNOW)  // Should never happen?
+        val_status = VAL_BOGUS;
 
     DNSSECDEBUG((stderr, "  val_gethostbyname's dnssec status was %d\n", dnssec_status));
 
