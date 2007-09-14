@@ -3563,7 +3563,7 @@ sub usage
 
 =head1 NAME
 
-rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover.
+rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover
 
 =head1 SYNOPSIS
 
@@ -3785,7 +3785,7 @@ Sets the B<rollerd> execution directory.  This must be a valid directory.
 =item I<-logfile log_file>
 
 Sets the B<rollerd> log file to I<log_file>.
-This must be a valid logging file, meaning that if I<logfile> already
+This must be a valid logging file, meaning that if I<log_file> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout>, B</dev/tty>, B<->.  Of these three, using a
 I<log_file> of B<-> is preferable since Perl will properly convert the B<->
@@ -3840,7 +3840,8 @@ B<rollerd>.  This is probably not a Good Thing.
 
 =item -
 
-No testing with zone files and key files not in the process' directory.
+Very little testing was done with zone files and key files not in the process'
+directory.
 
 =back
 
@@ -3854,11 +3855,6 @@ The following potential enhancements may be made:
 
 It'd be good to base B<rollerd>'s sleep time on when the next operation must
 take place, rather than a simple seconds count.
-
-=item -
-
-It'd be nice to allow each I<rollrec> entry to specify its own logging
-level.
 
 =back
 
