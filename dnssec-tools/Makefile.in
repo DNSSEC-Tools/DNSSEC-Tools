@@ -43,9 +43,9 @@ nextstepinstructions: subdirinstall
 
 makedirectories:
 	$(QUIET)for i in $(INSTALLDIRS) ; do \
-		if test ! -d $$i ; then \
-			echo "creating directory $$i/" ;\
-			$(MKPATH) $$i ; \
+		if test ! -d $(DESTDIR)/$$i ; then \
+			echo "creating directory $(DESTDIR)/$$i/" ;\
+			$(MKPATH) $(DESTDIR)/$$i ; \
 		fi \
 	done
 #

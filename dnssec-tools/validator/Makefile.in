@@ -41,9 +41,9 @@ distclean: clean configclean
 
 makedirectories:
 	@for i in $(INSTALLDIRS) ; do \
-		if test ! -d $$i ; then \
-			echo "creating directory $$i/" ; \
-			$(MKPATH) $(DESTDIR)$$i ; \
+		if test ! -d $(DESTDIR)/$$i ; then \
+			echo "creating directory $(DESTDIR)/$$i/" ; \
+			$(MKPATH) $(DESTDIR)/$$i ; \
 		fi \
 	done
 #
