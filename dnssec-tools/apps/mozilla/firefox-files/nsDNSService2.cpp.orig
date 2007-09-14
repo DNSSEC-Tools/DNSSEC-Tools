@@ -122,6 +122,10 @@ nsDNSRecord::GetNextAddr(PRUint16 port, PRNetAddr *addr)
         NS_ENSURE_STATE(mHostRecord->addr);
 
         mIter = nsnull; // no iterations
+        if (!mHostRecord->addr) {
+            mDone = !mIter;
+            return NS_ERROR_NOT_AVAILABLE;
+        }
         memcpy(addr, mHostRecord->addr, sizeof(PRNetAddr));
         // set given port
         port = PR_htons(port);
