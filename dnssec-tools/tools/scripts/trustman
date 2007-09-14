@@ -1422,7 +1422,7 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
-trustman - manage keys used as trust anchors
+trustman - Manage keys used as trust anchors
 
 =head1 SYNOPSIS
 
@@ -1439,7 +1439,7 @@ configuration files still match the same keys fetched from the zone where they
 are defined.  (B<named.conf> and B<dnsval.conf> are the usual configuration
 files.) These checks can be run once manually (-S) and in the foreground (-f).
 
-For each key mismatch check,  if key mismatches are detected then B<trustman>
+For each key mismatch check, if key mismatches are detected then B<trustman>
 performs the following operations:
 
     - sets an add hold-down timer for new keys;
@@ -1452,8 +1452,9 @@ are added or removed from the configuration file, as appropriate.
 =head1 CONFIGURATION
 
 B<trustman> can also set up configuration data in the DNSSEC-Tools
-configuration file (B<dnssec-tools.conf>) for later use by the daemon,
-making fewer command line arguments necessary.
+configuration file for later use by the daemon.  This makes
+fewer command line arguments necessary on subsequent executions.
+(The configuration file is in B<dnssec-tools.conf>.)
 
 Configuration data is stored in B<dnssec-tools.conf>.  The current version
 requires you to edit B<dnssec-tools.conf> by hand and supply values for
@@ -1465,133 +1466,104 @@ B<dnsval.conf> in that file.
 
 B<trustman> takes a number of options, each of which is described in this
 section.  Each option name may be shortened to the minimum number of unique
-characters, but some options also have an alias (as noted). The single-letter
+characters, but some options also have an alias (as noted.)  The single-letter
 form of each option is denoted in parentheses, e.g.: --anchor_data_file (-a).
 
 =over #indent
 
-=item -a
-
-=item --anchor_data_file I<datafile>
+=item B<--anchor_data_file datafile (-a)>
 
 A persistent data file for storing new keys waiting to be added.
 
-=item -c
-
-=item --config
+=item B<--config (-c)>
 
 Create a configure file for B<trustman> from the command line options given.
 
-=item -k
-
-=item --dnsval_conf_file I<conffile>
+=item B<--dnsval_conf_file conffile (-k)>
 
 A B<dnsval.conf> file to read.
 
-=item -z I<zone>
-
-=item --zone I<zone>
+=item B<--zone zone (-z)>
 
 The zone to check.  Specifying this option supersedes the default
 configuration file.
 
-=item -f
-
-=item --foreground
+=item B<--foreground (-f)>
 
 Run in the foreground.
 
-=item -h
-
-=item --help
-
-Display a help message.
-
-=item -w
-
-=item --hold_time I<seconds>
+=item B<--hold_time seconds (-w)>
 
 The value of the hold-down timer.
 
-=item -m
-
-=item --mail_contact_addr I<email-address>
+=item B<--mail_contact_addr email-address (-m)>
 
 Mail address for the contact person to whom reports should be sent.
 
-=item -n
-
-=item --named_conf_file I<conffile>
+=item B<--named_conf_file conffile (-n)>
 
 A B<named.conf> file to read.
 
-=item -N
-
-=item --no_error
+=item B<--no_error (-N)>
 
 Send report when there are no errors.
 
-=item -o
-
-=item --outfile I<output-file>
+=item B<--outfile output-file (-o)>
 
 Output file for configuration.
 
-=item -p
-
-=item --print
+=item B<--print (-p)>
 
 Log/print messages to stdout.
 
-=item -r
-
-=item --resolv_conf_file I<conffile>
+=item B<--resolv_conf_file conffile (-r)>
 
 A B<resolv.conf> file to read.  B</dev/null> can be specified to force
 libval to recursively answer the query rather than asking other name servers).
 
-=item -s 
-
-=item --smtp_server I<smtpservername>
+=item B<--smtp_server smtpservername (-s)>
 
 SMTP server that B<trustman> should use to send reports by mail.
 
-=item -S
-
-=item --single_run
+=item B<--single_run (-S)>
 
 Run only once.
 
-=item -L
-
-=item --syslog
+=item B<--syslog (-L)>
 
 Log messages to B<syslog>.
 
-=item -t
+=item B<--sleeptime seconds (-t)>
 
-=item --sleeptime I<seconds>
+The number of seconds to sleep between checks. Default is 3600 (one hour.)
 
-The number of seconds to sleep between checks. Default is 3600 (one hour)
-
-=item --test_revoke
+=item B<--test_revoke>
 
 Use this option to test the REVOKE bit. No known implementation of
 the REVOKE bit exists to date.
 
-=item -v 
+=item B<--help (-h)>
 
-=item --verbose
+Display a help message.
+
+=item B<--verbose (-v)>
 
 Verbose output.
 
-=item -V
-
-=item --version
+=item B<--version (-V)>
 
 Display version information.
 
 =back #unindent
+
+=head1 COPYRIGHT
+
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 Author
+
+Lindy Foster, lfoster@users.sourceforge.net
 
 =head1 SEE ALSO
 
@@ -1599,10 +1571,5 @@ B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>,
 
 B<dnssec-tools.conf(5)>
-
-=head1 COPYRIGHT
-
-Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.
 
 =cut

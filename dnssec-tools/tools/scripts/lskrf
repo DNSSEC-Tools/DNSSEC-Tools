@@ -2023,7 +2023,7 @@ sub usage
 
 =head1 NAME
 
-lskrf - List the I<keyrec>s in a DNSSEC-Tools I<keyrec> file.
+lskrf - List the I<keyrec>s in a DNSSEC-Tools I<keyrec> file
 
 =head1 SYNOPSIS
 
@@ -2130,7 +2130,7 @@ sets are detailed below.
 
 Record-selection options are required options; at least one record-selection
 option B<must> be selected.  Record-attribute options and output-style options
-are optional options; any number of these option B<may> be selected.
+are optional options; any number of these option I<may> be selected.
 
 =head2 Record-Selection Options
 
@@ -2138,19 +2138,19 @@ These options select the types of I<keyrec> that will be displayed.
 
 =over 4
 
-=item -all
+=item B<-all>
 
 This option displays all the records in a I<keyrec> file.
 
-=item -zones
+=item B<-zones>
 
 This option displays the zones in a I<keyrec> file.
 
-=item -sets
+=item B<-sets>
 
 This option displays the signing sets in a I<keyrec> file.
 
-=item -keys
+=item B<-keys>
 
 This option displays the keys in a I<keyrec> file.
 
@@ -2158,47 +2158,47 @@ The key data are sorted by key type in the following order:  Current KSKs,
 Published KSKs, Current ZSKs, Published ZSKs, New ZSKs, Obsolete KSKs, and
 Obsolete ZSKs.
 
-=item -ksk
+=item B<-ksk>
 
 This option displays the KSK keys in a I<keyrec> file.
 
-=item -kcur
+=item B<-kcur>
 
 This option displays the Current KSK keys in a I<keyrec> file.
 
-=item -kpub
+=item B<-kpub>
 
 This option displays the Published KSK keys in a I<keyrec> file.
 
-=item -kobs
+=item B<-kobs>
 
 This option displays the obsolete KSK keys in a I<keyrec> file.  This option
 must be give if obsolete KSK keys are to be displayed.
 
-=item -zsk
+=item B<-zsk>
 
 This option displays the ZSK keys in a I<keyrec> file.  It does not include
 obsolete ZSK keys; the I<-obs> option must be specified to display obsolete
 keys.
 
-=item -cur
+=item B<-cur>
 
 This option displays the Current ZSK keys in a I<keyrec> file.
 
-=item -new
+=item B<-new>
 
 This option displays the New ZSK keys in a I<keyrec> file.
 
-=item -pub
+=item B<-pub>
 
 This option displays the Published ZSK keys in a I<keyrec> file.
 
-=item -zobs
+=item B<-zobs>
 
 This option displays the obsolete ZSK keys in a I<keyrec> file.  This option
 must be give if obsolete ZSK keys are to be displayed.
 
-=item -obs
+=item B<-obs>
 
 This option displays the obsolete KSK and ZSK keys in a I<keyrec> file.
 This option is a shorthand method specifying the I<-kobs> and I<-zobs> options.
@@ -2212,17 +2212,17 @@ record-selection options.
 
 =over 4
 
-=item -valid
+=item B<-valid>
 
 This option displays the valid zones in a I<keyrec> file.
 It implies the I<-zones> option.
 
-=item -expired
+=item B<-expired>>
 
 This option displays the expired zones in a I<keyrec> file.
 It implies the I<-zones> option.
 
-=item -ref
+=item B<-ref>
 
 This option displays the referenced signing set I<keyrec>s and the referenced
 key I<keyrec>s in a I<keyrec> file, depending upon other selected options.
@@ -2242,7 +2242,7 @@ This option may be used with either the I<-sets> or I<-keys> options.  If it
 isn't used with any record-selection options, then it is assumed that both
 I<-sets> and I<-keys> have been specified.
 
-=item -unref
+=item B<-unref>
 
 This option displays the unreferenced signing set I<keyrec>s or the
 unreferenced key I<keyrec>s in a I<keyrec> file, depending upon other
@@ -2276,93 +2276,93 @@ will be printed.  These options must be used with the I<-zone> option.
 
 =over 4
 
-=item z-archdir
+=item B<-z-archdir>
 
 Display the zone's archive directory.  If an archive directory is not
 explicitly set for the zone, the default directory will be listed.
 
-=item z-dates
+=item B<-z-dates>
 
 Display the zone's time-stamps.  These are the signing date and the
 expiration date.
 
-=item z-dirs
+=item B<-z-dirs>
 
 Display the zone's directories.  These directories are the KSK directory,
 the ZSK directory, and the key archive directory.
 
-=item z-expdate
+=item B<-z-expdate>
 
 Display the zone's expiration date.
 
-=item z-ksk
+=item B<-z-ksk>
 
 Display the zone's KSK data.  This is the equivalent of specifying the
 I<-z-kskcount>, I<-z-kskcur>, I<-z-kskdir>, and I<-z-kskpub> options.
 
-=item z-kskcount
+=item B<-z-kskcount>
 
 Display the zone's KSK count.
 
-=item z-kskcur
+=item B<-z-kskcur>
 
 Display the zone's Current KSK signing set.
 If this is not defined, then "<unset>" will be given.
 
-=item z-kskdir
+=item B<-z-kskdir>
 
 Display the zone's KSK directory.
 If this is not defined, then "." will be given.
 
-=item z-kskpub
+=item B<-z-kskpub>
 
 Display the zone's Published KSK signing set.
 If this is not defined, then "<unset>" will be given.
 
-=item z-sets
+=item B<-z-sets>
 
 Display the zone's signing sets.  This is the equivalent of specifying the
 I<-z-kskcur>, I<-z-kskpub>, I<-z-zskcur>, I<-z-zsknew>, and I<-z-zskpub>
 options.
 
-=item z-signdate
+=item B<-z-signdate>
 
 Display the zone's signing date.
 
-=item z-signfile
+=item B<-z-signfile>
 
 Display the zone's signed zonefile.
 
-=item z-zonefile
+=item B<-z-zonefile>
 
 Display the zone's zonefile.
 
-=item z-zsk
+=item B<-z-zsk>
 
 Display the zone's ZSK data.  This is the equivalent of specifying the
 I<-z-zskcount>, I<-z-zskcur>, I<-z-zskdir>, I<-z-zsknew>, and I<-z-zskpub>
 options.
 
-=item z-zskcount
+=item B<-z-zskcount>
 
 Display the zone's ZSK count.
 
-=item z-zskcur
+=item B<-z-zskcur>
 
 Display the zone's Current ZSK signing set.
 If this is not defined, then "<unset>" will be given.
 
-=item z-zskdir
+=item B<-z-zskdir>
 
 Display the zone's ZSK directory.
 If this is not defined, then "." will be given.
 
-=item z-zsknew
+=item B<-z-zsknew>
 
 Display the zone's New ZSK signing set.
 If this is not defined, then "<unset>" will be given.
 
-=item z-zskpub
+=item B<-z-zskpub>
 
 Display the zone's Published ZSK signing set.
 If this is not defined, then "<unset>" will be given.
@@ -2377,15 +2377,15 @@ will be printed.  These options must be used with the I<-set> option.
 
 =over 4
 
-=item -s-keys
+=item B<-s-keys>
 
 Display the set's keys.
 
-=item -s-lastmod
+=item B<-s-lastmod>
 
 Display the set's date of last modification.
 
-=item -s-zone
+=item B<-s-zone>
 
 Display the set's zone name.
 
@@ -2399,38 +2399,38 @@ will be printed.  These options must be used with the I<-key> option.
 
 =over 4
 
-=item -k-algorithm
+=item B<-k-algorithm>
 
 Display the key's encryption algorithm.
 
-=item -k-enddate
+=item B<-k-enddate>
 
 Display the key's end-date, calculated by adding the key's lifespan to its
 signing date.
 
-=item -k-length
+=item B<-k-length>
 
 Display the key's length.
 
-=item -k-lifespan
+=item B<-k-lifespan>
 
 Display the key's lifespan (in seconds.) This lifespan is B<only> related to
 the time between key roll-over.  There is no other lifespan associated with a
 key.
 
-=item -k-path
+=item B<-k-path>
 
 Display the key's path.
 
-=item -k-random
+=item B<-k-random>
 
 Display the key's random number generator.
 
-=item -k-signdate
+=item B<-k-signdate>
 
 Display the key's signing date.
 
-=item -k-zone
+=item B<-k-zone>
 
 Display the key's zonefile.
 
@@ -2447,50 +2447,50 @@ options aren't given.
 
 =over 4
 
-=item -count
+=item B<-count>
 
 The count of matching records will be displayed, but the matching records
 will not be.
 
-=item -nodate
+=item B<-nodate>
 
 The key's generation date will not be printed if this flag is given.
 
-=item -headers
+=item B<-headers>
 
 Display explanatory column headers.  If this flag is given, then entry labels
 will not be printed unless explicitly requested by use of the I<-label>
 option.
 
-=item -label
+=item B<-label>
 
 A label for the I<keyrec>'s type will be given.
 
-=item -long
+=item B<-long>
 
 The long form of output will be given.  See the OUTPUT FORMATS section for
 details on data printed for each type of I<keyrec> record.
 
 Long zone output can get I<very> wide, depending on the data.
 
-=item -terse
+=item B<-terse>
 
 This options displays only the name of the zones or keys selected by other
 options.
 
-=item -help
+=item B<-help>
 
 Display a usage message and exit.
 
-=item -h-zones
+=item B<-h-zones>
 
 Display the zone-attribute options and exit.
 
-=item -h-sets
+=item B<-h-sets>
 
 Display the set-attribute options and exit.
 
-=item -h-keys
+=item B<-h-keys>
 
 Display the key-attribute options and exit.
 

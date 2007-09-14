@@ -348,8 +348,8 @@ that the email messages to the zone's administrator should be sent to
 "bob@bobhost.example.com".
 
 The I<directory> field is set to "/var/dns/zones/example.com" to indicate
-that the files for this zone (zone file, signed zone file, I<keyrec> file,
-etc.) should be found in B</var/dns/zones/example.com>.
+that the files for this zone should be found in B</var/dns/zones/example.com>.
+This includes the zone file, the signed zone file, and the I<keyrec> file.
 
 The I<loglevel> field is set to "phase" to indicate that B<rollerd> should
 only log phase-level (and greater) log messages for this zone.
@@ -411,37 +411,37 @@ B<rollinit> may be given the following options:
 
 =over 4
 
-=item I<-zone zonefile>
+=item B<-zone zonefile>
 
 This specifies the value of the I<zonefile> field.
 See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 
-=item I<-keyrec keyrec-file>
+=item B<-keyrec keyrec-file>
 
 This specifies the value of the I<keyrec> field.
 See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 
-=item I<-admin>
+=item B<-admin>
 
 This specifies the value of the I<administrator> field.  If it is not given,
 an I<administrator> field will not be included for the record.
 
-=item I<-directory>
+=item B<-directory>
 
 This specifies the value of the I<directory> field.  If it is not given,
 a I<directory> field will not be included for the record.
 
-=item I<-loglevel>
+=item B<-loglevel>
 
 This specifies the value of the I<loglevel> field.  If it is not given, a
 I<loglevel> field will not be included for the record.
 
-=item I<-skip>
+=item B<-skip>
 
 By default, B<roll> records are generated.  If this option is given, then
 B<skip> records will be generated instead.
 
-=item I<-out output-file>
+=item B<-out output-file>
 
 The new I<rollrec> entries will be appended to I<output-file>.
 The file will be created if it does not exist.
@@ -449,9 +449,13 @@ The file will be created if it does not exist.
 If this option is not given, the new I<rollrec> entries will be written
 to standard output.
 
-=item I<-help>
+=item B<-help>
 
 Display a usage message.
+
+=item B<-Version>
+
+Display version information for B<rollinit> and DNSSEC-Tools.
 
 =back
 

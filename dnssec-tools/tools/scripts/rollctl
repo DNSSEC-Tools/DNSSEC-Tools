@@ -509,7 +509,7 @@ sub usage
 
 =head1 NAME
 
-rollctl - Send commands to the DNSSEC-Tools rollover daemon.
+rollctl - Send commands to the DNSSEC-Tools rollover daemon
 
 =head1 SYNOPSIS
 
@@ -531,96 +531,96 @@ The following options are handled by B<rollctl>.
 
 =over 4
 
-=item I<-display>
+=item B<-display>
 
 Starts the rollover status GUI.
 
-=item I<-dspub zone>
+=item B<-dspub zone>
 
 Indicates that I<zone>'s parent has published a new DS record for I<zone>.
 
-=item I<-dspuball>
+=item B<-dspuball>
 
 Indicates that DS records have been published for all zones in phase 6 of
 KSK rollover.
 
-=item I<-halt>
+=item B<-halt>
 
 Cleanly halts B<rollerd> execution.
 
-=item I<-logfile logfile>
+=item B<-logfile logfile>
 
 Sets the B<rollerd> log file to I<logfile>.
 This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout> or B</dev/tty>.
 
-=item I<-loglevel loglevel>
+=item B<-loglevel loglevel>
 
 Sets the B<rollerd> logging level to I<loglevel>.
 This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
 
-=item I<-nodisplay>
+=item B<-nodisplay>
 
 Stops the rollover status GUI.
 
-=item I<-rollall>
+=item B<-rollall>
 
 Initiates rollover for all the zones defined in the current I<rollrec> file.
 
-=item I<-rollrec rollrec_file>
+=item B<-rollrec rollrec_file>
 
 Sets the I<rollrec> file to be processed by B<rollerd> to I<rollrec_file>.
 
-=item I<-rollzone zone>
+=item B<-rollzone zone>
 
 Initiates rollover for the zone named by I<zone>.
 
-=item I<-runqueue>
+=item B<-runqueue>
 
 Wakes up B<rollerd> and has it run its queue of I<rollrec> entries.
 
-=item I<-shutdown>
+=item B<-shutdown>
 
-Synonym for I<-halt>.
+Synonym for B<-halt>.
 
-=item I<-skipall>
+=item B<-skipall>
 
 Stops rollover for all zones in the current I<rollrec> file.
 
-=item I<-skipzone zone>
+=item B<-skipzone zone>
 
 Stops rollover for the zone named by I<zone>.
 
-=item I<-sleeptime sleeptime>
+=item B<-sleeptime sleeptime>
 
 Sets B<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
 at least as large as the B<$MIN_SLEEP> value in B<rollerd>.
 
-=item I<-status>
+=item B<-status>
 
 Has B<rollerd> write several of its operational parameters to its log file.
 The parameters are also reported to B<rollctl>, which prints them to the
 screen.
 
-=item I<-zonelog>
+=item B<-zonelog>
 
 Set the logging level for the specified zone.  The new logging level is only
 for the current execution of B<rollerd> and is not saved to the active
 I<rollrec> file.
 
-=item I<-zonestatus>
+=item B<-zonestatus>
 
 Has B<rollerd> write the status of zones in the current I<rollrec> file to the
 B<rollerd> log file.  The status is also reported to B<rollctl>, which prints
 it to the screen.
 
-=item I<-quiet>
+=item B<-quiet>
 
 Prevents output from being given.  Both error and non-error output is
 stopped.
 
-=item I<-help>
+=item B<-help>
 
 Displays a usage message.
 
