@@ -67,23 +67,23 @@ install:
 	  $(DOCINSTALL) $$i $(DESTDIR)/$(man3dir) ;	\
 	done
 	for i in $(LIBVAL_SYMLINKS) ; do		\
-	  rm -f $(man3dir)/$$i ;	\
+	  rm -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(LIBVAL_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 	for i in $(GHBN_SYMLINKS) ; do		\
-	  rm -f $(man3dir)/$$i ;	\
+	  rm -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(GHBN_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 	for i in $(GADDR_SYMLINKS) ; do		\
-	  rm -f $(man3dir)/$$i ;	\
+	  rm -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(GADDR_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 	for i in $(QUERY_SYMLINKS) ; do		\
-	  rm -f $(man3dir)/$$i ;	\
+	  rm -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(QUERY_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 	for i in $(POLICY_SYMLINKS) ; do		\
-	  rm -f $(man3dir)/$$i ;	\
+	  rm -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(POLICY_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 
