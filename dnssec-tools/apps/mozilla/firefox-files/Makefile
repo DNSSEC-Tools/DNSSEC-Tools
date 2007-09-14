@@ -32,10 +32,10 @@ NORMALFILES=\
 all: help
 
 help:
-	echo make patchfile             -- builds just the patch
-	echo make INCLUDEDEBUGGING=0    -- builds the patch without DEBUG
-	echo make build			-- builds FF from the build tree
-	echo make getoriginals		-- copies .orig files from source
+	@echo make patchfile             -- builds just the patch
+	@echo make INCLUDEDEBUGGING=0    -- builds the patch without DEBUG
+	@echo make build			-- builds FF from the build tree
+	@echo make getoriginals		-- copies .orig files from source
 
 patchfile: $(FULLPATCHFILE)
 
@@ -77,7 +77,7 @@ prnetdb-real.c: prnetdb.c
 
 normalpatches:
 	for i in $(NORMALFILES) ; do \
-		diff -u $$i.orig $$i | perl addpath $(X) > $$i.patch ; \
+		diff -N -u $$i.orig $$i | perl addpath $(X) > $$i.patch ; \
 	done ;
 
 .PHONY: $(FULLPATCHFILE) normalpatches
