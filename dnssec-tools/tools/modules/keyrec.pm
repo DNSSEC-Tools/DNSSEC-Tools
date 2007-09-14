@@ -2202,11 +2202,15 @@ Return values are:
     0 if the creation succeeded
     -1 if an invalid I<keyrec> type was given
 
+=back
+
 =head1 KEYREC DEBUGGING INTERFACES
 
 The following interfaces display information about the currently parsed
 I<keyrec> file.  They are intended to be used for debugging and testing, but
 may be useful at other times.
+
+=over 4
 
 =item I<keyrec_dump_hash()>
 

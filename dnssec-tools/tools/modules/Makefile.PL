@@ -12,7 +12,13 @@ use ExtUtils::MakeMaker;
 %opts = (
 	 'NAME'		=> 'Net::DNS::SEC::Tools::conf',
 	 'VERSION_FROM'	=> 'conf.pm', # finds $VERSION
+<<<<<<< .mine
+	 'DIR'          => ['ZoneFile-Fast',
+#			    'Net-DNS-SEC-Validator',
+			    'Net-addrinfo'],   # avoids the testing dir
+=======
 	 'DIR'          => $DIRS,   # avoids the testing dir
+>>>>>>> .r3648
 #	 'PM' =>           { conf.pm => '$(INST_LIBDIR)/install_as.pm'}
 	);
 
