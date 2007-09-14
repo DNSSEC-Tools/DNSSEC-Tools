@@ -1,18 +1,19 @@
 \clearpage
 
-\subsection{\cmd{donuts Rule File}}
+\subsubsection{Rule.pm for \cmd{donuts}}
 
 {\bf NAME}
 
-\cmd{donuts} Rule Files - Define \cmd{donuts} DNS record-checking rules
+\path{Net::DNS::SEC::Tools::Donuts::Rule} - Define donuts DNS record-checking
+rules
 
 {\bf DESCRIPTION}
 
-\cmd{donuts} rule files contain definitions which are used by the \cmd{donuts}
-DNS zone-file checker.  A rule file stores data that implement a given rule.
+This class wraps around a rule definition which is used by the \cmd{donuts}
+DNS zone file checker.  It stores the data that implements a given rule.
 
-Rules are defined in a \cmd{donuts} rule configuration files using the syntax
-described below.  See the \cmd{donuts} manual page for details on where to
+Rules are defined in \cmd{donuts} rule configuration files using the
+following syntax.  See the \cmd{donuts} manual page for details on where to
 place those files and how to load them.
 
 {\bf RULE FILE FORMAT}
@@ -28,7 +29,7 @@ with it.  The rule file format follows this example:
     <test>
         my ($record) = @_;
         return "problem found"
-            if ($record{xxx} != yyy);
+          if ($record{xxx} != yyy);
     </test>
 \end{verbatim}
 
@@ -41,13 +42,13 @@ and {\it init}.  See below for details.
 
 Each rule definition within a file should be separated using a blank line.
 
-Lines beginning with the `\#' character will be discarded as a comment.
+Lines beginning with the '\#' character will be discarded as a comment.
 
 \begin{description}
 
-\item [{\it name}]\verb" "
+\item {\it name}\verb" "
 
-The name of the rule.  This is mandatory, as the user may need to 
+The name of the rule.  This is mandatory, as the user may need to
 refer to names in the future for use with the {\it -i} flag,
 specifying behavior in configuration files, and for other uses.
 
@@ -63,7 +64,7 @@ Example:
     name: DNSSEC_TEST_SOME_SECURE_FEATURE
 \end{verbatim}
 
-\item [{\it level}]\verb" "
+\item {\it level}\verb" "
 
 The rule's execution level, as recognized by \cmd{donuts}.  \cmd{donuts} will
 run only those rules at or above \cmd{donuts}' current execution level.
@@ -84,7 +85,7 @@ Example:
     level: 2
 \end{verbatim}
 
-\item [{\it class}]\verb" "
+\item {\it class}\verb" "
 
 The {\it class} code indicates the type of problem associated with the
 rule.  It defaults to ``{\it Error}'', and the only other value that should
@@ -100,7 +101,7 @@ Example:
     class: Warning
 \end{verbatim}
 
-\item [{\it ruletype}]\verb" "
+\item {\it ruletype}\verb" "
 
 Rules fall into one of two types (currently): {\it record} or {\it name}.
 {\it record} rules have their test evaluated for each record in
@@ -117,7 +118,7 @@ Example:
     ruletype: record
 \end{verbatim}
 
-\item [{\it type}]\verb" "
+\item {\it type}\verb" "
 
 Rules that test a particular type of record should specify the
 {\it type} field with the type of record it will test.  The rule
@@ -134,17 +135,18 @@ Example:
     type: MX
 \end{verbatim}
 
-\item [{\it init}]\verb" "
+\item {\it init}\verb" "
 
 A block of code to be executed immediately. This is useful for
 boot-strap code to be performed only at start-up, rather than
-at every rule-test invocation.  For example, ``{\it use\ MODULE;}''
+at every rule-test invocation.  For example, ``{\it use MODULE;}''
 type statements should be used in {\it init} sections.
 
 {\it init} sections are wrapped in an XML-like syntax which
-specifies the start and end of the {\it init} section of code:
+specifies the start and end of the {\it init} section of code.
 
 Example:
+
 \begin{verbatim}
     <init>
         use My::Module;
@@ -152,7 +154,7 @@ Example:
     </init>
 \end{verbatim}
 
-\item [{\it test}]\verb" "
+\item {\it test}\verb" "
 
 A block of code defining the test for each record or name.  The
 test statement follows the same multi-line code specification
@@ -178,7 +180,7 @@ These arguments and calling conventions are as follows:
 
 \begin{description}
 
-\item [{\it record} tests]\verb" "
+\item {\it record} tests\verb" "
 
 These code snippets are expected to test a single \perlmod{Net::DNS::RR} record.
 
@@ -189,7 +191,7 @@ It is called with two arguments:
 \item the rule definition itself.
 \end{itemize}
 
-\item [{\it name} tests]\verb" "
+\item {\it name} tests\verb" "
 
 These code snippets are expected to test all the records
 associated with a given name record.
@@ -197,21 +199,22 @@ associated with a given name record.
 It is called with three arguments:
 
 \begin{itemize}
-\item A hash reference to all the record types associated
-with that name (e.g., `A', `MX', ...) and each value of
-the hash will contain an array of all the records for
-that type.  (I.e., more than one entry in the array reference
-will exist for names containing multiple `A' records.)
+\item a hash reference to all the record types associated with that name
+(e.g., 'A', 'MX', ...) and each value of the hash will contain an array of all
+the records for that type.  (I.e., more than one entry in the array reference
+will exist for names containing multiple 'A' records.)
 
 \item The rule definition.
 
-\item The record name being checked (the name associated with
-the data from 1) above.)
+\item The record name being checked (the name associated with the data from 1)
+above.)
+
 \end{itemize}
 
 \end{description}
 
 Examples:
+
 \begin{verbatim}
     # local rule to mandate that each record must have a
     # TTL > 60 seconds
@@ -219,72 +222,69 @@ Examples:
     level: 8
     type: record
     <test>
-      return "TTL too small" if ($_[0]->ttl < 60);
+        return "TTL too small" if ($_[0]->ttl < 60);
     </test>
-  
+
     # local policy to mandate that anything with an A record
     # must have an HINFO record too
     name: DNS_MX_MUST_HAVE_A
     level: 8
     type: name
     <test>
-      return "A records must have an HINFO record too"
-        if (exists($_[0]{'A'}) && !exists($_[0]{'HINFO'}));
+        return "A records must have an HINFO record too"
+            if (exists($_[0]{'A'}) && !exists($_[0]{'HINFO'}));
     </test>
+
 \end{verbatim}
 
-\item [{\it feature:} {\bf NAME}]\verb" "
+\item {\it feature:} {\bf NAME}\verb" "
 
 The feature tag prevents this rule from running unless the {\bf NAME}
 keyword was specified using the {\it --features} flag.
 
-\item [{\it desc:} {\bf DESCRIPTION}]\verb" "
+\item {\it desc:} {\bf DESCRIPTION}\verb" "
 
 A short description of what the rule tests that will be printed to the
 user in help output or in the error summary when \cmd{donuts} outputs the
 results.
 
-\item [{\it help:} {\bf TOKEN:} {\bf TOKEN-HELP}]\verb" "
+\item {\it help:} {\bf TOKEN:} {\bf TOKEN-HELP}\verb" "
 
 If the rule is configurable via the user's \path{.donuts.conf} file, this
 describes the configuration tokens for the user when they request
-configuration help via the {\it -H} or {\it --help-config} flags.  Tokens
-may be used within rules by accessing them within the rule argument passed to
+configuration help via the {\it -H} or {\it --help-config} flags.  Tokens may be
+used within rules by accessing them within the rule argument passed to
 the code (the second argument.)
 
 Example:
 
-\begin{itemize}
-
-\item In the rule file (this is an incomplete definition):
+1) In the rule file (this is an incomplete definition):
 
 \begin{verbatim}
-    name:           SOME_TEST
-    myconfig:       40
-    help: myconfig: A special number to configure this test
-    <test>
-       my ($record, $rule) = @_;
-       # ... use $rule->{'myconfig'}
-    </test>
+     name:           SOME_TEST
+     myconfig:       40
+     help: myconfig: A special number to configure this test
+     <test>
+         my ($record, $rule) = @_;
+         # ... use $rule->{'myconfig'}
+     </test>
 \end{verbatim}
 
-\item This allows the user to change the value of {\it myconfig} via
-their \path{.donuts.conf} file:
+2) This allows the user to change the value of myconfig via their
+\path{.donuts.conf} file:
 
 \begin{verbatim}
-    # change SOME_TEST config...
-    name:     SOME_TEST
-    myconfig: 40
+
+     # change SOME_TEST config...
+     name:     SOME_TEST
+     myconfig: 40
 \end{verbatim}
 
-\item Running \cmd{donuts -H} will show the help line for myconfig.
+3) and running donuts -H will show the help line for myconfig.
 
-\end{itemize}
+\item {\it noindent: 1}\verb" "
 
-% \item [{\it noindent: 1}]\verb" "
-
-\item [{\it noindent: 1}]
-\item [{\it nowrap: 1}]\verb" "
+\item {\it nowrap: 1}\verb" "
 
 Normally \cmd{donuts} will line-wrap the error summary produced by a rule
 to enable automatic pretty-printing of error results.  Sometimes,
@@ -299,6 +299,7 @@ be printed as is.
 
 {\bf SEE ALSO}
 
-\cmd{donuts(8)}
+donuts(8)
 
-\perlmod{Net::DNS}, \perlmod{Net::DNS::RR}
+Net::DNS(3), Net::DNS::RR(3)
+

@@ -1,42 +1,41 @@
 \clearpage
 
-\subsubsection{\bf fixkrf}
-
+\subsubsection{fixkrf}
 
 {\bf NAME}
 
-\cmd{fixkrf} - Fixes DNSSEC-Tools {\it keyrec} files whose encryption
-key files have been moved.
+\cmd{fixkrf} - Fixes DNSSEC-Tools \struct{keyrec} files whose encryption key
+files have been moved.
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    fixkrf [options] <keyrec-file> <dir 1> ... <dir N>
+  fixkrf [options] <keyrec-file> <dir 1> ... <dir N>
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-\cmd{fixkrf} checks a specified {\it keyrec} file to ensure that the
-referenced encryption key files exist where listed.  If a key is not
-where the {\it keyrec} specifies it should be, then {\it fixkrf} will
-search the given directories for those keys and adjust the {\it keyrec}
-to match reality.  If a key of a particular filename is found in multiple
-places, a warning will be printed and the {\it keyrec} file will not be
-changed for that key.
+\cmd{fixkrf} checks a specified \struct{keyrec} file to ensure that the
+referenced encryption key files exist where listed.  If a key is not where
+the \struct{keyrec} specifies it should be, then \cmd{fixkrf} will search the
+given directories for those keys and adjust the \struct{keyrec} to match
+reality.  If a key of a particular filename is found in multiple places, a
+warning will be printed and the \struct{keyrec} file will not be changed for
+that key.
 
 {\bf OPTIONS}
 
 \begin{description}
 
-\item {\it -list}\verb" "
+\item {\bf -list}\verb" "
 
-Display output about missing keys, but don't fix the {\it keyrec} file.
+Display output about missing keys, but don't fix the \struct{keyrec} file.
 
-\item {\it -verbose}\verb" "
+\item {\bf -verbose}\verb" "
 
 Display output about found keys as well as missing keys.
 
-\item {\it -help}\verb" "
+\item {\bf -help}\verb" "
 
 Display a usage message.
 
@@ -44,11 +43,12 @@ Display a usage message.
 
 {\bf SEE ALSO}
 
-\cmd{cleankrf(8)},
-\cmd{genkrf(8)},
-\cmd{lskrf(1)},
-\cmd{zonesigner(8)}
+cleankrf(8),
+genkrf(8),
+lskrf(8),
+zonesigner(8)
 
-\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+Net::DNS::SEC::Tools::keyrec.pm(3)
 
-\path{keyrec(5)}
+file-keyrec.pm(5)
+

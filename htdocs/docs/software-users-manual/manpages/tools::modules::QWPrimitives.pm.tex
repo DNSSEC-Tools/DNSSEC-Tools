@@ -1,23 +1,23 @@
 \clearpage
 
-\subsection{\bf QWPrimitives.pm Module}
+\subsubsection{QWPrimitives.pm}
 
 {\bf NAME}
 
-\perlmod{Net::DNS::SEC::Tools::QWPrimitives.pm} - \perlmod{QWizard} primitives
-for DNSSEC-Tools
+\perlmod{Net::DNS::SEC::Tools::QWPrimitives} - \perlmod{QWizard} primitives for
+DNSSEC-Tools
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    use Net::DNS::SEC::Tools::QWPrimitives;
-    use Getopt::Long::GUI;
+  use Net::DNS::SEC::Tools::QWPrimitives;
+  use Getopt::Long::GUI;
 
-    GetOptions(  ...,
-                 ['GUI:nootherargs',1],
-                 ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
-                 ['GUI:submodules','getzonefiles','getzonenames'],
-              );
+  GetOptions(  ...,
+               ['GUI:nootherargs',1],
+               ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
+               ['GUI:submodules','getzonefiles','getzonenames'],
+            );
 \end{verbatim}
 
 {\bf DESCRIPTION}
@@ -28,12 +28,13 @@ access to \perlmod{QWizard} for DNSSEC-Tools software.
 
 In particular, the \func{dnssec\_tools\_get\_qwprimitives()} returns a set of
 primary screens for requesting a set of zone files followed by a set of domain
-names for those zone files.  These are then pushed into the \var{\_\_otherargs}
-\var{qwparam} variable, which is used by \perlmod{Getopt::GUI::Long} to
-generate the \var{\@ARGV} list.
+names for those zone files.  These are then pushed into the
+\var{\_\_otherargs} \var{qwparam} variable, which is used by
+\perlmod{Getopt::GUI::Long} to generate the \var{\@ARGV} list.
 
 {\bf SEE ALSO}
 
-\perlmod{Getopt::GUI::Long(3)},
-\perlmod{Net::DNS(3)},
-\perlmod{QWizard.pm(3)}
+Getopt::GUI::Long(3),
+Net::DNS(3),
+QWizard(3)
+

@@ -1,41 +1,43 @@
 \clearpage
 
-\subsubsection{\bf tachk}
+\subsubsection{tachk}
 
 {\bf NAME}
 
 \cmd{tachk} - Check the validity of the trust anchors in a \path{named.conf}
-file.
+file
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    tachk [options] named.conf
+  tachk [options] <named.conf>
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
 \cmd{tachk} checks the validity of the trust anchors in the specified
-{\bf named.conf} file.  The output given depends on the options selected.
+\path{named.conf} file.  The output given depends on the options selected.
 
-Note:  \cmd{tachk} may be removed in future releases.
+Note:  This script may be removed in future releases.
 
 {\bf OPTIONS}
 
-{\bf tachk} takes two types of options:  record-attribute options
+\cmd{tachk} takes two types of options:  record-attribute options
 and output-style options.  These option sets are detailed below.
 
 {\bf Record-Attribute Options}
 
+These options define which trust anchor records will be displayed.
+
 \begin{description}
 
-\item {\it -valid}\verb" "
+\item {\bf -valid}\verb" "
 
-This option displays the valid trust anchors in a {\bf named.conf} file.
+This option displays the valid trust anchors in a \path{named.conf} file.
 
-\item {\it -invalid}\verb" "
+\item {\bf -invalid}\verb" "
 
-This option displays the invalid trust anchors in a {\bf named.conf} file.
+This option displays the invalid trust anchors in a \path{named.conf} file.
 
 \end{description}
 
@@ -47,22 +49,27 @@ for each trust anchor.
 
 \begin{description}
 
-\item {\it -count}\verb" "
+\item {\bf -count}\verb" "
 
 The count of matching records will be displayed, but the matching records
 will not be.
 
-\item {\it -long}\verb" "
+\item {\bf -long}\verb" "
 
-The long form of output will be given:  the zone name and key tag will be
+The long form of output will be given.  The zone name and key tag will be
 displayed for each trust anchor.
 
-\item {\it -terse}\verb" "
+\item {\bf -terse}\verb" "
 
 This option displays only the name of the zones selected by other options.
 
-\item {\it -help}\verb" "
+\item {\bf -help}\verb" "
 
 Display a usage message.
 
 \end{description}
+
+{\bf SEE ALSO}
+
+trustman(8)
+

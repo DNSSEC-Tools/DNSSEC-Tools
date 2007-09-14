@@ -1,27 +1,27 @@
 \clearpage
 
-\subsubsection{\bf genkrf}
+\subsubsection{genkrf}
 
 {\bf NAME}
 
-\cmd{genkrf} - Generate a {\it keyrec} file from Key Signing Key (KSK)
-and/or Zone Signing Key (ZSK) files.
+\cmd{genkrf} - Generate a \struct{keyrec} file from Key Signing Key (KSK)
+and/or Zone Signing Key (ZSK) files
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    genkrf [options] <zone-file> [<signed-zone-file>]
+  genkrf [options] <zone-file> [<signed-zone-file>]
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-{\it genkrf} generates a {\it keyrec} file from KSK and/or ZSK files.  It
+\cmd{genkrf} generates a \struct{keyrec} file from KSK and/or ZSK files.  It
 generates new KSK and ZSK keys if needed.
 
-The name of the {\it keyrec} file to be generated is given by the
-{\it -krfile} option.  If this option is not specified, \path{zone-name.krf}
-is used as the name of the {\it keyrec} file.  If the {\it keyrec} file
-already exists, it will be overwritten with new {\it keyrec} definitions.
+The name of the \struct{keyrec} file to be generated is given by the {\it
+-krfile} option.  If this option is not specified, \path{zone-name.krf} is used
+as the name of the \struct{keyrec} file.  If the \struct{keyrec} file already
+exists, it will be overwritten with new \struct{keyrec} definitions.
 
 The {\it zone-file} argument is required.  It specifies the name of the
 zone file from which the signed zone file was created.  The optional
@@ -30,18 +30,18 @@ If it is not given, then it defaults to \path{zone-file.signed}.
 
 {\bf OPTIONS}
 
-\cmd{genkrf} has a number of options that assist in creation of the {\it
-keyrec} file.  These options will be set to the first value found from this
-search path:
+\cmd{genkrf} has a number of options that assist in creation of the
+\struct{keyrec} file.  These options will be set to the first value
+found from this search path:
 
-\begin{verbatim}
-    command line options
-    DNSSEC-Tools configuration file
-    DNSSEC-Tools defaults
-\end{verbatim}
+\begin{itemize}
+\item command line options
+\item DNSSEC-Tools configuration file
+\item DNSSEC-Tools defaults
+\end{itemize}
 
 See \perlmod{tooloptions.pm(3)} for more details.
-Exceptions to this are given in the option descriptions below.
+Exceptions to this are given in the option descriptions.
 
 The \cmd{genkrf} options are described below.
 
@@ -49,38 +49,38 @@ The \cmd{genkrf} options are described below.
 
 \begin{description}
 
-\item {\it -zone zone-name}\verb" "
+\item {\bf -zone zone-name}\verb" "
 
 This option specifies the name of the zone.  If it is not given then
 {\it zone-file} will be used as the name of the zone.
 
-\item {\it -krfile keyrec-file}\verb" "
+\item {\bf -krfile keyrec-file}\verb" "
 
-This option specifies the name of the {\it keyrec} file to be generated.
+This option specifies the name of the \struct{keyrec} file to be generated.
 If it is not given, then \path{zone-name.krf} will be used.
 
-\item {\it -algorithm algorithm}\verb" "
+\item {\bf -algorithm algorithm}\verb" "
 
 This option specifies the algorithm used to generate encryption keys.
 
-\item {\it -endtime endtime}\verb" "
+\item {\bf -endtime endtime}\verb" "
 
 This option specifies the time that the signature on the zone expires,
 measured in seconds.
 
-\item {\it -random random-device}\verb" "
+\item {\bf -random random-device}\verb" "
 
 Source of randomness used to generate the zone's keys. See the man
 page for \cmd{dnssec-signzone} for the valid format of this field.
 
-\item {\it -verbose}\verb" "
+\item {\bf -verbose}\verb" "
 
-Display additional messages during processing.  If this option is given at
-least once, then a message will be displayed indicating the successful
-generation of the {\it keyrec} file.  If it is given twice, then the values
-of all options will also be displayed.
+Display additional messages during processing.  If this option is given
+at least once, then a message will be displayed indicating the successful
+generation of the \struct{keyrec} file.  If it is given twice, then the
+values of all options will also be displayed.
 
-\item {\it -help}\verb" "
+\item {\bf -help}\verb" "
 
 Display a usage message.
 
@@ -90,22 +90,28 @@ Display a usage message.
 
 \begin{description}
 
-\item {\it -ksk KSK-name}\verb" "
+\item {\bf -kskcur KSK-name}\verb" "
 
-This option specifies the KSK's key file being used to sign the zone.  If this
-option is not given, a new KSK will be created.
+This option specifies the Current KSK's key file being used to sign the zone.
+If this option is not given, a new KSK will be created.
 
-\item {\it -kskdir KSK-directory}\verb" "
+\item {\bf -kskcount KSK-count}\verb" "
+
+This option specifies the number of KSK keys that will be generated.  If this
+option is not given, the default given in the DNSSEC-Tools configuration file
+will be used.
+
+\item {\bf -kskdir KSK-directory}\verb" "
 
 This option specifies the absolute or relative path of the directory
 where the KSK resides.  If this option is not given, it defaults to
 the current directory ``.''.
 
-\item {\it -ksklength KSK-length}\verb" "
+\item {\bf -ksklength KSK-length}\verb" "
 
 This option specifies the length of the KSK encryption key.
 
-\item {\it -ksklife KSK-lifespan}\verb" "
+\item {\bf -ksklife KSK-lifespan}\verb" "
 
 This option specifies the lifespan of the KSK encryption key.  This lifespan
 is {\bf not} inherent to the key itself.  It is {\bf only} used to determine
@@ -117,33 +123,33 @@ when the KSK must be rolled over.
 
 \begin{description}
 
-\item {\it -zskcur ZSK-name}\verb" "
+\item {\bf -zskcur ZSK-name}\verb" "
 
 This option specifies the current ZSK being used to sign the zone.
 If this option is not given, a new ZSK will be created.
 
-\item {\it -zskpub ZSK-name}\verb" "
+\item {\bf -zskpub ZSK-name}\verb" "
 
 This option specifies the published ZSK for the zone.  If this option
 is not given, a new ZSK will be created.
 
-\item {\it -zskcount ZSK-count}\verb" "
+\item {\bf -zskcount ZSK-count}\verb" "
 
 This option specifies the number of current and published ZSK keys that will
 be generated.  If this option is not given, the default given in the
 DNSSEC-Tools configuration file will be used.
 
-\item {\it -zskdir ZSK-directory}\verb" "
+\item {\bf -zskdir ZSK-directory}\verb" "
 
 This option specifies the absolute or relative path of the directory
 where the ZSKs reside.  If this option is not given, it defaults to
 the current directory ``.''.
 
-\item {\it -zsklength ZSK-length}\verb" "
+\item {\bf -zsklength ZSK-length}\verb" "
 
 This option specifies the length of the ZSK encryption key.
 
-\item {\it -zsklife ZSK-lifespan}\verb" "
+\item {\bf -zsklife ZSK-lifespan}\verb" "
 
 This option specifies the lifespan of the ZSK encryption key.  This lifespan
 is {\bf not} inherent to the key itself.  It is {\bf only} used to determine
@@ -153,13 +159,14 @@ when the ZSK must be rolled over.
 
 {\bf SEE ALSO}
 
-\cmd{dnssec-keygen(8)},
-\cmd{dnssec-signzone(8)},
-\cmd{zonesigner(8)}
+dnssec-keygen(8),
+dnssec-signzone(8),
+zonesigner(8)
 
-\perlmod{Net::DNS::SEC::Tools::conf.pm(3)},
-\perlmod{Net::DNS::SEC::Tools::defaults.pm(3)}, \\
-\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+Net::DNS::SEC::Tools::conf.pm(3),
+Net::DNS::SEC::Tools::defaults.pm(3), \\
+Net::DNS::SEC::Tools::keyrec.pm(3)
 
-\path{conf(5)},
-\path{keyrec(5)}
+conf(5),
+keyrec(5)
+
