@@ -1,31 +1,43 @@
 \clearpage
 
-\subsubsection{\bf dtconfchk}
+\subsubsection{dtconfchk}
 
 {\bf NAME}
 
-\cmd{dtconfchk} - Check a DNSSEC-Tools configuration file for sanity.
+\cmd{dtconfchk} - Check a DNSSEC-Tools configuration file for sanity
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    dtconfchk [options] [config_file]
+
+  dtconfchk [options] [config_file]
+
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
 \cmd{dtconfchk} checks a DNSSEC-Tools configuration file to determine if the
-entries are valid.
+entries are valid.  If a configuration file isn't specified, the system
+configuration file will be verified.
+
+Without any display options, \cmd{dtconfchk} displays error messages for
+problems found, followed by a summary line.  Display options will increase or
+decrease the amount of detail about the configuration file's sanity.  In all
+cases, the exit code is the count of errors found in the file.
+
+The tests are divided into five groups:  key-related checks, zone-related
+checks, path checks, rollover checks, and miscellaneous checks.  The checks
+in each of these self-explanatory groups are described below.
 
 The {\it default\_keyrec} configuration entry is not checked.  This entry
-specifies the default {\it keyrec} file name and isn't necessarily expected
+specifies the default \struct{keyrec} file name and isn't necessarily expected
 to exist in any particular place.
 
 {\bf Key-related Checks}
 
 The following key-related checks are performed:
 
-\begin{description}
+\begin{itemize}
 
 \item {\it algorithm}\verb" "
 
@@ -40,7 +52,7 @@ in the \cmd{dnssec-keygen} man page.
 \item {\it ksklife}\verb" "
 
 Ensure the {\it ksklife} field is valid.  The acceptable values may be found
-in the \perlmod{defaults.pm(3)} man page.
+in the \perlmod{defaults.pm} man page.
 
 \item {\it zskcount}\verb" "
 
@@ -54,14 +66,14 @@ in the \cmd{dnssec-keygen} man page.
 \item {\it zsklife}\verb" "
 
 Ensure the {\it zsklife} field is valid.  The acceptable values may be found
-in the \perlmod{defaults.pm(3)} man page.
+in the \perlmod{defaults.pm} man page.
 
 \item {\it random}\verb" "
 
 Ensure the {\it random} field is valid.  This file must be a character
 device file.
 
-\end{description}
+\end{itemize}
 
 {\bf Zone-related Checks}
 
@@ -72,7 +84,7 @@ The following zone-related checks are performed:
 \item {\it endtime}\verb" "
 
 Ensure the {\it endtime} field is valid.  This value is assumed to be in the
-"+NNNNNN" format.  There is a lower limit of two hours.  (This is an
+``+NNNNNN" format.  There is a lower limit of two hours.  (This is an
 artificial limit under which it {\it may} not make sense to have an end-time.)
 
 \end{description}
@@ -81,35 +93,35 @@ artificial limit under which it {\it may} not make sense to have an end-time.)
 
 The following path checks are performed:
 
-\begin{description}
-
-\item {\it checkzone}\verb" "
-
-Ensure the {\it checkzone} field is valid.  If the filename starts with a '/',
-the file must be a regular executable file.
+\begin{itemize}
 
 \item {\it keygen}\verb" "
 
-Ensure the {\it keygen} field is valid.  If the filename starts with a '/',
-the file must be a regular executable file.
-
-\item {\it signzone}\verb" "
-
-Ensure the {\it signzone} field is valid.  If the filename starts with a '/',
+Ensure the {\it keygen} field is valid.  If the filename starts with a `/',
 the file must be a regular executable file.
 
 \item {\it viewimage}\verb" "
 
-Ensure the {\it viewimage} field is valid.  If the filename starts with a '/',
+Ensure the {\it viewimage} field is valid.  If the filename starts with a `/',
 the file must be a regular executable file.
 
-\end{description}
+\item {\it zonecheck}\verb" "
 
-{\bf Roll-over Daemon Checks}
+Ensure the {\it zonecheck} field is valid.  If the filename starts with a `/',
+the file must be a regular executable file.
+
+\item {\it zonesign}\verb" "
+
+Ensure the {\it zonesign} field is valid.  If the filename starts with a `/',
+the file must be a regular executable file.
+
+\end{itemize}
+
+{\bf Rollover Daemon Checks}
 
 The following checks are performed for \cmd{rollerd} values:
 
-\begin{description}
+\begin{itemize}
 
 \item {\it roll\_logfile}\verb" "
 
@@ -121,13 +133,23 @@ exists, it must be a regular file.
 Ensure that the logging level for the \cmd{rollerd} is reasonable.  The
 log level must be one of the following text or numeric values:
 
-\begin{verbatim}
-    tmi        1       (Overly verbose informational messages.)
-    info       3       (Informational messages.)
-    curphase   5       (Current state of zone.)
-    err        7       (Error messages.)
-    fatal      9       (Fatal errors.)
-\end{verbatim}
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{|l|c|l|}
+\hline
+{\bf Textual Level} & {\bf Numeric Level} & {\bf Meaning} \\
+\hline
+{\bf tmi}    & 1 & Overly verbose informational messages.		\\
+{\bf expire} & 3 & A verbose countdown of zone expiration is given.	\\
+{\bf info}   & 4 & Informational messages.				\\
+{\bf phase}  & 6 & Current state of zone.				\\
+{\bf err}    & 8 & Errors messages.					\\
+{\bf fatal}  & 9 & Fatal errors.					\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Logging Levels}
+\end{table}
 
 Specifying a particular log level will causes messages of a higher numeric
 value to also be displayed.
@@ -137,13 +159,18 @@ value to also be displayed.
 Ensure that the \cmd{rollerd}'s sleep-time is reasonable.
 \cmd{rollerd}'s sleep-time must be at least one minute.
 
-\end{description}
+\end{itemize}
 
 {\bf Miscellaneous Checks}
 
 The following miscellaneous checks are performed:
 
-\begin{description}
+\begin{itemize}
+
+\item {\it admin-email}\verb" "
+
+Ensure that the {\it admin-email} field is defined and has a value.
+\cmd{dtconfchk} does not try to validate the email address itself.
 
 \item {\it archivedir}\verb" "
 
@@ -163,13 +190,13 @@ If this flag is set to 1, then the {\it archivedir} field will also be checked.
 
 Ensure that the {\it usegui} flag is either 0 or 1.
 
-\end{description}
+\end{itemize}
 
 {\bf OPTIONS}
 
 \begin{description}
 
-\item {\it -expert}\verb" "
+\item {\bf -expert}\verb" "
 
 This option will bypass the following checks:
 
@@ -181,31 +208,31 @@ lifespan
 \item KSK has a shorter lifespan than the configuration file's default maximum
 lifespan
 
-\item ZSKs have a longer lifespan than the configuration file's default minimum
-lifespan
+\item ZSKs have a longer lifespan than the configuration file's default
+minimum lifespan
 
-\item ZSKs have a shorter lifespan than the configuration file's default maximum
-lifespan
+\item ZSKs have a shorter lifespan than the configuration file's default
+maximum lifespan
 
 \end{itemize}
 
-\item {\it -quiet}\verb" "
+\item {\bf -quiet}\verb" "
 
 No output will be given.
 The number of errors will be used as the exit code.
 
-\item {\it -summary}\verb" "
+\item {\bf -summary}\verb" "
 
 A final summary of success or failure will be printed.
 The number of errors will be used as the exit code.
 
-\item {\it -verbose}\verb" "
+\item {\bf -verbose}\verb" "
 
 Success or failure status of each check will be given.
 A {\bf +} or {\bf -} prefix will be given for each valid and invalid entry.
 The number of errors will be used as the exit code.
 
-\item {\it -help}\verb" "
+\item {\bf -help}\verb" "
 
 Display a usage message.
 
@@ -213,12 +240,13 @@ Display a usage message.
 
 {\bf SEE ALSO}
 
-\cmd{dtdefs(8)},
-\cmd{dtinitconf(8)},
-\cmd{rollerd(8)},
-\cmd{zonesigner(8)}
+dtdefs(8),
+dtinitconf(8),
+rollerd(8),
+zonesigner(8)
 
-\perlmod{Net::DNS::SEC::Tools::conf.pm(3)},
-\perlmod{Net::DNS::SEC::Tools::defaults.pm(3)}
+Net::DNS::SEC::Tools::conf.pm(3),
+Net::DNS::SEC::Tools::defaults.pm(3)
 
-\path{dnssec-tools.conf(5)}
+dnssec-tools.conf(5)
+

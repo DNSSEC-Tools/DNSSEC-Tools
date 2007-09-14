@@ -1,10 +1,10 @@
 \clearpage
 
-\subsubsection{\bf getdnskeys}
+\subsubsection{getdnskeys}
 
 {\bf NAME}
 
-\cmd{getdnskeys} - Manage lists of DNSKEYs from DNS zones.
+\cmd{getdnskeys} - Manage lists of DNSKEYs from DNS zones
 
 {\bf SYNOPSIS}
 
@@ -14,39 +14,39 @@
 
 {\bf DESCRIPTION}
 
-\cmd{getdnskeys} manages lists of DNSKEYs from DNS zones.  It may be used to
-retrieve and compare DNSKEYs.  The output from \cmd{getdnskeys} may be
+\cmd{getdnskeys} manages lists of DNSKEYs from DNS zones.  It may be used
+to retrieve and compare DNSKEYs.  The output from \cmd{getdnskeys} may be
 included (directly or indirectly) in a \path{named.conf} file.
 
 {\bf OPTIONS}
 
 \begin{description}
 
-\item {\it -h}\verb" "
+\item {\bf -h}\verb" "
 
 Gives a help message.
 
-\item {\it -i path}\verb" "
+\item {\bf -i path}\verb" "
 
 Reads {\it path} as a \path{named.conf} with which to compare key lists.
 
-\item {\it -k}\verb" "
+\item {\bf -k}\verb" "
 
-Only looks for Key Signing Keys (KSK); all other keys are ignored.
+Only looks for Key Signing Keys (KSKs); all other keys are ignored.
 
-\item {\it -o file}\verb" "
+\item {\bf -o file}\verb" "
 
 Writes the results to {\it file}.
 
-\item {\it -T}\verb" "
+\item {\bf -T}\verb" "
 
 Checks the current trusted key list from \path{named.conf}.
 
-\item {\it -t}\verb" "
+\item {\bf -t}\verb" "
 
 Encloses output in needed \path{named.conf} syntax markers.
 
-\item {\it -v}\verb" "
+\item {\bf -v}\verb" "
 
 Turns on verbose mode for additional output.
 
@@ -69,7 +69,7 @@ This \cmd{getdnskeys} will check saved keys against a live set of keys:
 This \cmd{getdnskeys} will automatically update a set of saved keys:
 
 \begin{verbatim}
-    getdnskeys -i /etc/named.trustkeys.conf -k -t -T -v   \
+    getdnskeys -i /etc/named.trustkeys.conf -k -t -T -v
                -o /etc/named.trustkeys.conf
 \end{verbatim}
 
@@ -82,3 +82,4 @@ It also does not handle revocation of keys.
 
 It should prompt you before adding a new key so that you can always
 run the auto-update feature.
+

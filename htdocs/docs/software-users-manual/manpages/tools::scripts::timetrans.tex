@@ -1,28 +1,28 @@
 \clearpage
 
-\subsubsection{\bf timetrans}
+\subsubsection{timetrans}
 
 {\bf NAME}
 
-\cmd{timetrans} - Converts time into time.
+\cmd{timetrans} - Converts time into time
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    timetrans [units-options] [-count]
+  timetrans [units-options] [-count]
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-{\it timetrans} converts time from one type of unit to another.  If any of the
-units options are specified, then {\it timetrans} will convert those time units
+\cmd{timetrans} converts time from one type of unit to another.  If any of the
+units options are specified, then \cmd{timetrans} will convert those time units
 into the number of seconds to which they add up.  If given the count option,
-{\it timetrans} will convert that number of seconds into the appropriate number
+\cmd{timetrans} will convert that number of seconds into the appropriate number
 of weeks, days, hours, minutes, and seconds.  The converted result is printed
 out.  Units options cannot be specified in the same execution as the count
 option, and vice versa.
 
-{\it timetrans} is intended for use with DNSSEC-Tools, for calculating
+\cmd{timetrans} is intended for use with DNSSEC-Tools, for calculating
 a zone's expiration time.
 
 {\bf OPTIONS}
@@ -30,27 +30,26 @@ a zone's expiration time.
 {\bf Units Options}
 
 The converted value of each unit is totaled and a single result printed.
-These options may be shortened to their first letter.
 
 \begin{description}
 
-\item {\it -seconds seconds}\verb" "
+\item {\bf -seconds seconds}\verb" "
 
 Count of seconds to convert to seconds.
 
-\item {\it -minutes minutes}\verb" "
+\item {\bf -minutes minutes}\verb" "
 
 Count of minutes to convert to seconds.
 
-\item {\it -hours hours}\verb" "
+\item {\bf -hours hours}\verb" "
 
 Count of hours to convert to seconds.
 
-\item {\it -days days}\verb" "
+\item {\bf -days days}\verb" "
 
 Count of days to convert to seconds.
 
-\item {\it -weeks weeks}\verb" "
+\item {\bf -weeks weeks}\verb" "
 
 Count of weeks to convert to seconds.
 
@@ -59,12 +58,11 @@ Count of weeks to convert to seconds.
 {\bf Count Option}
 
 The specified seconds count is converted to the appropriate number of weeks,
-days, hours, minutes, and seconds.  This option may be shortened to its first
-letter.
+days, hours, minutes, and seconds.
 
 \begin{description}
 
-\item {\it -count seconds}\verb" "
+\item {\bf -count seconds}\verb" "
 
 Count of seconds to convert to the appropriate set of units.
 
@@ -100,7 +98,8 @@ Example 4:  Converting 1 week, 1 day, and 8 hours into seconds
     720000
 \end{verbatim}
 
-Example 5:  Converting 14 weeks, 4 days, 21 hours, 8 minutes, and 8 seconds into seconds
+Example 5:  Converting 14 weeks, 4 days, 21 hours, 8 minutes, and 8 seconds
+into seconds
 
 \begin{verbatim}
     $(47)> timetrans -w 14 -d 4 -h 21 -m 8 -s 8
@@ -128,9 +127,9 @@ Example 8:  Converting 8888888 seconds into time units
     14 weeks, 4 days, 21 hours, 8 minutes, 8 seconds
 \end{verbatim}
 
-
 {\bf SEE ALSO}
 
-\cmd{zonesigner(8)}
+zonesigner(8)
 
-\perlmod{Net::DNS::SEC::Tools::timetrans.pm(3)}
+Net::DNS::SEC::Tools::timetrans.pm(3)
+

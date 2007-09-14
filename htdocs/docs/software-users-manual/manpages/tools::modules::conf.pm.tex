@@ -1,25 +1,32 @@
 \clearpage
 
-\subsection{\bf conf.pm Module}
+\subsubsection{conf.pm}
 
 {\bf NAME}
 
-\perlmod{Net::DNS::SEC::Tools::conf.pm} - DNSSEC-Tools configuration routines.
+\perlmod{Net::DNS::SEC::Tools::conf} - DNSSEC-Tools configuration routines.
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    use Net::DNS::SEC::Tools::conf;
+  use Net::DNS::SEC::Tools::conf;
 
-    %dtconf = parseconfig();
+  %dtconf = parseconfig();
 
-    %dtconf = parseconfig("localzone.keyrec");
+  %dtconf = parseconfig("localzone.keyrec");
 
-    bindcheck(\%options_hashref);
+  cmdcheck(\%options_hashref);
 
-    $confdir = getconfdir();
+  $prefixdir = getprefixdir();
 
-    $conffile = getconffile();
+  $confdir = getconfdir();
+
+  $conffile = getconffile();
+
+  $statedir = getlocalstatedir();
+
+  erraction(ERR_MSG);
+  err("unable to open keyrec file",1);
 \end{verbatim}
 
 {\bf DESCRIPTION}
@@ -30,11 +37,13 @@ execution environment.
 
 The DNSSEC tools have a configuration file for commonly used values.  These
 values are the defaults for a variety of things, such as encryption algorithm
-and encryption key length.
-
-\path{/usr/local/etc/dnssec/dnssec-tools.conf} is the path for the DNSSEC
-tools configuration file.  The \perlmod{Net::DNS::SEC::Tools::conf} module
+and encryption key length.  The \perlmod{Net::DNS::SEC::Tools::conf} module
 provides methods for accessing the configuration data in this file.
+
+\path{dnssec-tools.conf} is the filename for the DNSSEC tools configuration
+file.  The full path depends on how DNSSEC-Tools was configured; see the
+DIRECTORIES section for the complete path.  The paths required by
+\perlmod{conf.pm} are set at DNSSEC-Tools configuration time.
 
 The DNSSEC tools configuration file consists of a set of configuration value
 entries, with only one entry per line.  Each entry has the ``keyword value''
@@ -49,7 +58,7 @@ characters.  These comments can encompass an entire line or may follow a
 configuration entry.  If a comment shares a line with an entry, value
 tokenization stops just prior to the comment character.
 
-An example fragment of a configuration file follows:
+An example configuration file follows:
 
 \begin{verbatim}
     # Sample configuration entries.
@@ -58,44 +67,95 @@ An example fragment of a configuration file follows:
     ksk_length      1024        ; KSK key length.
 \end{verbatim}
 
+Another aspect of DNSSEC-Tools configuration is the error action used by the
+DNSSEC-Tools Perl modules.  The action dictates whether an error condition
+will only give an error return, print an error message to STDERR, or print an
+error message and exit.  The \func{erraction()} and \func{err()} interfaces
+are used for these operations.
+
 {\bf INTERFACES}
 
 \begin{description}
 
-\item {\it parseconfig()}\verb" "
+\item \func{parseconfig()}\verb" "
 
 This routine reads and parses the system's DNSSEC tools configuration file.
 The parsed contents are put into a hash table, which is returned to the caller.
 
-\item {\it parseconfig(conffile)}\verb" "
+\item \func{parseconfig(conffile)}\verb" "
 
 This routine reads and parses a caller-specified DNSSEC tools configuration
 file.  The parsed contents are put into a hash table, which is returned to
 the caller.  The routine quietly returns if the configuration file does not
 exist. 
 
-\item {\it bindcheck(\%options\_hashref)}\verb" "
+\item \func{cmdcheck(\%options\_hashref)}\verb" "
 
-This routine ensures that the needed BIND commands are available and
-executable.  If any of the commands either don't exist or aren't executable,
-then an error message will be given and the process will exit.  If all is
-well, everything will proceed quietly onwards.
+This routine ensures that the needed commands are available and executable.
+If any of the commands either don't exist or aren't executable, then an error
+message will be given and the process will exit.  If all is well, everything
+will proceed quietly onwards.
 
-The BIND commands currently checked are {\it checkzone}, {\it keygen}, and
-{\it signzone}.  The pathnames for these commands are found in the given
-options hash referenced by {\it \%options\_hashref}.  If the hash doesn't
+The commands keys currently checked are {\it zonecheck}, {\it keygen}, and
+{\it zonesign}.  The pathnames for these commands are found in the given
+options hash referenced by \var{\%options\_hashref}.  If the hash doesn't
 contain an entry for one of those commands, it is not checked.
 
-\item {\it getconfdir()}\verb" "
+\item \func{getconfdir()}\verb" "
 
 This routine returns the name of the DNSSEC-Tools configuration directory.
 
-\item {\it getconffile()}\verb" "
+\item \func{getconffile()}\verb" "
 
 This routine returns the name of the DNSSEC-Tools configuration file.
 
+\item \func{getprefixdir()}\verb" "
+
+This routine returns the name of the DNSSEC-Tools prefix directory.
+
+\item \func{getlocalstatedir()}\verb" "
+
+This routine returns the name of the local state directory.
+
+\item \func{erraction(error\_action)}\verb" "
+
+This interface sets the error action for DNSSEC-Tools Perl modules.
+The valid actions are:
+
+\begin{description}
+\item \const{ERR\_SILENT} - Do not print an error message, do not exit.
+\item \const{ERR\_MSG} - Print an error message, do not exit.
+\item \const{ERR\_EXIT} - Print an error message, exit.
+\end{description}
+
+\const{ERR\_SILENT} is the default action.
+
+The previously set error action is returned.
+
+\item \func{err(``error message'',exit\_code}\verb" "
+
+The \func{err()} interface is used by the DNSSEC-Tools Perl modules to report
+an error and exit, depending on the error action.
+
+The first argument is an error message to print -- if the error action allows
+error messages to be printed.
+
+The second argument is an exit code -- if the error action requires that the
+process exit.
+
+\end{description}
+
+{\bf DIRECTORIES}
+
+The default directories for this installation are:
+
+\begin{description}
+\item \const{prefix} -  \path{/usr/local}
+\item \const{sysconf} -  \path{/usr/local/etc}
+\item \const{DNSSEC-Tools configuration file} - \path{/usr/local/etc/dnssec-tools}
 \end{description}
 
 {\bf SEE ALSO}
 
-\path{dnssec-tools.conf(5)}
+dnssec-tools.conf(5)
+

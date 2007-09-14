@@ -1,59 +1,59 @@
 \clearpage
 
-\subsubsection{\bf expchk}
+\subsubsection{expchk}
 
 {\bf NAME}
 
-\cmd{expchk} - Check a DNSSEC-Tools {\it keyrec} file for expired zones.
+\cmd{expchk} - Check a \struct{keyrec} file for expired zones
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-    expchk [options] keyrec_files
+  expchk -all -expired -valid -warn numdays -zone zonename
+                -count -help keyrec_files
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-\cmd{expchk} checks a set of {\it keyrec} files to determine if the zone
-{\it keyrec}s are valid or expired.  The type of zones displayed depends
-on the options chosen; if no options are given the expired zones will be
-listed.
+\cmd{expchk} checks a set of \struct{keyrec} files to determine if the zone
+\struct{keyrec}s are valid or expired.  The type of zones displayed depends on
+the options chosen; if no options are given the expired zones will be listed.
 
 {\bf OPTIONS}
 
 \begin{description}
 
-\item {\it -all}\verb" "
+\item {\bf -all}\verb" "
 
 Display expiration information on all zones, expired or valid, in the
-specified {\it keyrec} files.
+specified \struct{keyrec} files.
 
-\item {\it -expired}\verb" "
+\item {\bf -expired}\verb" "
 
 Display expiration information on the expired zones in the specified
-{\it keyrec} files.  This is the default action.
+\struct{keyrec} files.  This is the default action.
 
-\item {\it -valid}\verb" "
+\item {\bf -valid}\verb" "
 
 Display expiration information on the valid zones in the specified
-{\it keyrec} files.
+\struct{keyrec} files.
 
-\item {\it -warn numdays}\verb" "
+\item {\bf -warn numdays}\verb" "
 
 A warning will be given for each valid zone that will expire in {\it numdays}
 days.  This option has no effect on expired zones.
 
-\item {\it -zone zonename}\verb" "
+\item {\bf -zone zonename}\verb" "
 
 Display expiration information on the zone specified in {\it zonename}.
 
-\item {\it -count}\verb" "
+\item {\bf -count}\verb" "
 
 Only the count of matching zones (valid or expired) will be given.  If both
 types of zones are selected, then the count will be the number of zones in the
-specified {\it keyrec} files.
+specified \struct{keyrec} files.
 
-\item {\it -help}\verb" "
+\item {\bf -help}\verb" "
 
 Display a usage message.
 
@@ -61,8 +61,7 @@ Display a usage message.
 
 {\bf SEE ALSO}
 
-\cmd{zonesigner(3)}
+zonesigner(8)
 
-\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+Net::DNS::SEC::Tools::keyrec.pm(3)
 
-\path{keyrec(5)}
