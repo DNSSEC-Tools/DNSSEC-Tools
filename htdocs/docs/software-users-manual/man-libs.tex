@@ -28,12 +28,25 @@ performing record validation and also no support for validation policies.
 As such, the interfaces defined herein are in a state of flux and are
 expected to change.
 
+\item{\func{val\_getaddrinfo()}}
+
+Library routines to retrieve DNSSEC-validated network address and service
+translations.
+
+\item{\func{val\_gethostbyname()}}
+
+Library routines to perform DNSSEC validation of DNS queries.
+
+\item{\func{val\_query()}}
+
+Library routines to do DNSSEC-validated resolution of DNS queries.
+
 \end{description}
 
 This section contains man pages describing these libraries.
 
-\input{manpages/lib::libsres::libsres.tex}
-\input{manpages/lib::libval::libval.tex}
-\input{manpages/lib::libval::val_getaddrinfo.tex}
-\input{manpages/lib::libval::val_gethostbyname.tex}
-\input{manpages/lib::libval::val_query.tex}
+\input{manpages/validator::doc::libsres.tex}
+\input{manpages/validator::doc::libval.tex}
+\input{manpages/validator::doc::val_getaddrinfo.tex}
+\input{manpages/validator::doc::val_gethostbyname.tex}
+\input{manpages/validator::doc::val_query.tex}
