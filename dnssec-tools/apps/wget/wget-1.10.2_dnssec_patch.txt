@@ -1,6 +1,6 @@
 diff -c -r wget-1.10.2.orig/configure.in wget-1.10.2/configure.in
-*** wget-1.10.2.orig/configure.in	2005-08-26 04:57:04.000000000 -0700
---- wget-1.10.2/configure.in	2007-04-03 15:16:33.000000000 -0700
+*** wget-1.10.2.orig/configure.in	Fri Aug 26 07:57:04 2005
+--- wget-1.10.2/configure.in	Mon Sep 17 13:08:19 2007
 ***************
 *** 175,180 ****
 --- 175,181 ----
@@ -37,8 +37,8 @@ diff -c -r wget-1.10.2.orig/configure.in wget-1.10.2/configure.in
   if test x"$with_ssl" != x"no"
   then
 diff -c -r wget-1.10.2.orig/Makefile.in wget-1.10.2/Makefile.in
-*** wget-1.10.2.orig/Makefile.in	2005-06-26 15:06:49.000000000 -0700
---- wget-1.10.2/Makefile.in	2007-04-03 14:45:34.000000000 -0700
+*** wget-1.10.2.orig/Makefile.in	Sun Jun 26 18:06:49 2005
+--- wget-1.10.2/Makefile.in	Mon Sep 17 13:08:19 2007
 ***************
 *** 57,63 ****
   CFLAGS = @CFLAGS@
@@ -57,8 +57,8 @@ diff -c -r wget-1.10.2.orig/Makefile.in wget-1.10.2/Makefile.in
   
   #
 diff -c -r wget-1.10.2.orig/src/config.h.in wget-1.10.2/src/config.h.in
-*** wget-1.10.2.orig/src/config.h.in	2005-10-13 02:22:28.000000000 -0700
---- wget-1.10.2/src/config.h.in	2007-04-04 09:10:21.000000000 -0700
+*** wget-1.10.2.orig/src/config.h.in	Thu Oct 13 05:22:28 2005
+--- wget-1.10.2/src/config.h.in	Mon Sep 17 13:08:19 2007
 ***************
 *** 87,92 ****
 --- 87,95 ----
@@ -84,8 +84,8 @@ diff -c -r wget-1.10.2.orig/src/config.h.in wget-1.10.2/src/config.h.in
   #undef HAVE_VSNPRINTF
   
 diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
-*** wget-1.10.2.orig/src/host.c	2005-07-02 06:31:37.000000000 -0700
---- wget-1.10.2/src/host.c	2007-04-04 09:09:44.000000000 -0700
+*** wget-1.10.2.orig/src/host.c	Sat Jul  2 09:31:37 2005
+--- wget-1.10.2/src/host.c	Mon Sep 17 13:13:29 2007
 ***************
 *** 59,64 ****
 --- 59,71 ----
@@ -102,6 +102,46 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   #ifndef errno
   extern int errno;
   #endif
+***************
+*** 189,198 ****
+     addrinfo.  */
+  
+  static struct address_list *
+! address_list_from_addrinfo (const struct addrinfo *ai)
+  {
+    struct address_list *al;
+!   const struct addrinfo *ptr;
+    int cnt;
+    ip_address *ip;
+  
+--- 196,205 ----
+     addrinfo.  */
+  
+  static struct address_list *
+! address_list_from_addrinfo (const struct val_addrinfo *ai)
+  {
+    struct address_list *al;
+!   const struct val_addrinfo *ptr;
+    int cnt;
+    ip_address *ip;
+  
+***************
+*** 378,384 ****
+    const char *node;
+    const char *service;
+    const struct addrinfo *hints;
+!   struct addrinfo **res;
+    int exit_code;
+  };
+  
+--- 385,391 ----
+    const char *node;
+    const char *service;
+    const struct addrinfo *hints;
+!   struct val_addrinfo **res;
+    int exit_code;
+  };
+  
 ***************
 *** 386,392 ****
   getaddrinfo_with_timeout_callback (void *arg)
@@ -130,7 +170,42 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   
   /* Just like getaddrinfo, except it times out after TIMEOUT seconds.
 ***************
-*** 787,793 ****
+*** 395,401 ****
+  
+  static int
+  getaddrinfo_with_timeout (const char *node, const char *service,
+! 			  const struct addrinfo *hints, struct addrinfo **res,
+  			  double timeout)
+  {
+    struct gaiwt_context ctx;
+--- 412,418 ----
+  
+  static int
+  getaddrinfo_with_timeout (const char *node, const char *service,
+! 			  const struct addrinfo *hints, struct val_addrinfo **res,
+  			  double timeout)
+  {
+    struct gaiwt_context ctx;
+***************
+*** 753,759 ****
+  #ifdef ENABLE_IPV6
+    {
+      int err;
+!     struct addrinfo hints, *res;
+  
+      xzero (hints);
+      hints.ai_socktype = SOCK_STREAM;
+--- 770,777 ----
+  #ifdef ENABLE_IPV6
+    {
+      int err;
+!     struct addrinfo hints;
+!     struct val_addrinfo *res;
+  
+      xzero (hints);
+      hints.ai_socktype = SOCK_STREAM;
+***************
+*** 787,797 ****
         {
   	if (!silent)
   	  logprintf (LOG_VERBOSE, _("failed: %s.\n"),
@@ -138,7 +213,11 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   	return NULL;
         }
       al = address_list_from_addrinfo (res);
---- 804,810 ----
+!     freeaddrinfo (res);
+      if (!al)
+        {
+  	logprintf (LOG_VERBOSE,
+--- 805,815 ----
         {
   	if (!silent)
   	  logprintf (LOG_VERBOSE, _("failed: %s.\n"),
@@ -146,9 +225,13 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   	return NULL;
         }
       al = address_list_from_addrinfo (res);
+!     val_freeaddrinfo (res);
+      if (!al)
+        {
+  	logprintf (LOG_VERBOSE,
 ***************
 *** 918,920 ****
---- 935,970 ----
+--- 936,963 ----
         host_name_addresses_map = NULL;
       }
   }
@@ -176,33 +259,19 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
 + } /* denssec_strerror */
 + 
 + 
-+ /* free_pf_dnssec_addrinfo - frees struct val_addrinfo.  Does a
-+                              pointer conversion to call validator
-+                              library free function. */
-+ 
-+ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo){
-+   val_freeaddrinfo((struct val_addrinfo *) ainfo);
-+ }
-+ 
 + /* End DNSSEC Additional procedures */
 diff -c -r wget-1.10.2.orig/src/host.h wget-1.10.2/src/host.h
-*** wget-1.10.2.orig/src/host.h	2005-06-19 06:47:10.000000000 -0700
---- wget-1.10.2/src/host.h	2007-04-02 14:09:33.000000000 -0700
+*** wget-1.10.2.orig/src/host.h	Sun Jun 19 09:47:10 2005
+--- wget-1.10.2/src/host.h	Mon Sep 17 13:11:08 2007
 ***************
 *** 112,117 ****
---- 112,132 ----
+--- 112,126 ----
   int is_valid_ipv6_address PARAMS ((const char *, const char *));
   #endif
   
 + /* start dnssec patch additions */
 + 
 + #define DNSSECAI_FAIL   -600  /* sharing number space with netdb.h errors */
-+ 
-+ /* Used for explicit pointer conversion (i.e. gets rid of compiler
-+    warnings). */
-+ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo);
-+ #undef  freeaddrinfo
-+ #define freeaddrinfo	free_pf_dnssec_addrinfo
 + 
 + const char   *dnssec_strerror(int ecode);
 + 
@@ -213,8 +282,8 @@ diff -c -r wget-1.10.2.orig/src/host.h wget-1.10.2/src/host.h
   int sufmatch PARAMS ((const char **, const char *));
   
 diff -c -r wget-1.10.2.orig/src/Makefile.in wget-1.10.2/src/Makefile.in
-*** wget-1.10.2.orig/src/Makefile.in	2005-06-26 15:06:49.000000000 -0700
---- wget-1.10.2/src/Makefile.in	2007-04-03 14:50:39.000000000 -0700
+*** wget-1.10.2.orig/src/Makefile.in	Sun Jun 26 18:06:49 2005
+--- wget-1.10.2/src/Makefile.in	Mon Sep 17 13:08:19 2007
 ***************
 *** 53,59 ****
   DEFS     = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
