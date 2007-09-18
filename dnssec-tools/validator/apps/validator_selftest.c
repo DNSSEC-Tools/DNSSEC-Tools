@@ -24,6 +24,7 @@
 #include <sys/file.h>
 #include <sys/fcntl.h>
 
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <resolv.h>
 
