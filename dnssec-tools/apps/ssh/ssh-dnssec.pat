@@ -1,34 +1,51 @@
-? README.dnssec
-? fb6-build
-? patch
-? patch.1
-? rsconfig
 Index: configure.ac
 ===================================================================
 RCS file: /cvs/openssh/configure.ac,v
-retrieving revision 1.370
-diff -u -p -r1.370 configure.ac
---- configure.ac	6 Oct 2006 23:07:21 -0000	1.370
-+++ configure.ac	29 Jan 2007 20:41:58 -0000
-@@ -3070,6 +3070,79 @@ AC_ARG_WITH(sectok,
+retrieving revision 1.383
+diff -u -p -r1.383 configure.ac
+--- configure.ac	10 Aug 2007 04:36:12 -0000	1.383
++++ configure.ac	20 Sep 2007 14:42:53 -0000
+@@ -3115,32 +3115,41 @@ AC_ARG_WITH(sectok,
  	]
  )
  
+-# Check whether user wants OpenSC support
+-OPENSC_CONFIG="no"
+-AC_ARG_WITH(opensc,
+-	[  --with-opensc[[=PFX]]     Enable smartcard support using OpenSC (optionally in PATH)],
+-	[
+-	    if test "x$withval" != "xno" ; then
 +LIBVAL_MSG="no"
 +# Check whether user wants DNSSEC local validation support
 +AC_ARG_WITH(local-dnssec-validation,
 +	[  --with-local-dnssec-validation Enable local DNSSEC validation using libval],
 +	[ if test "x$withval" != "xno" ; then
-+		if test "x$withval" != "xyes" ; then
+ 		if test "x$withval" != "xyes" ; then
+-  			OPENSC_CONFIG=$withval/bin/opensc-config
+-		else
+-  			AC_PATH_PROG(OPENSC_CONFIG, opensc-config, no)
 +			CPPFLAGS="$CPPFLAGS -I${withval}"
 +			LDFLAGS="$LDFLAGS -L${withval}"
 +			if test ! -z "$need_dash_r" ; then
 +				LDFLAGS="$LDFLAGS -R${withval}"
-+			fi
+ 		fi
+-		if test "$OPENSC_CONFIG" != "no"; then
+-			LIBOPENSC_CFLAGS=`$OPENSC_CONFIG --cflags`
+-			LIBOPENSC_LIBS=`$OPENSC_CONFIG --libs`
+-			CPPFLAGS="$CPPFLAGS $LIBOPENSC_CFLAGS"
+-			LIBS="$LIBS $LIBOPENSC_LIBS"
+-			AC_DEFINE(SMARTCARD)
+-			AC_DEFINE(USE_OPENSC, 1,
+-				[Define if you want smartcard support
+-				using OpenSC])
+-			SCARD_MSG="yes, using OpenSC"
 +			if test ! -z "$blibpath" ; then
 +				blibpath="$blibpath:${withval}"
-+			fi
-+		fi
+ 		fi
+ 	    fi
+-	]
+-)
+-
 +		AC_CHECK_HEADERS(validator/validator.h)
 +		if test "$ac_cv_header_validator_validator_h" != yes; then
 +			AC_MSG_ERROR(Can't find validator.h)
@@ -39,7 +56,8 @@ diff -u -p -r1.370 configure.ac
 +		fi
 +		LIBVAL_SUFFIX=""
 +		AC_CHECK_LIB(val, p_val_status,LIBS="$LIBS -lval",
-+			[ AC_CHECK_LIB(val-threads, p_val_status,
++			[ AC_CHECK_LIB(pthread, pthread_rwlock_init)
++			  AC_CHECK_LIB(val-threads, p_val_status,
 +				[ LIBS="$LIBS -lval-threads -lpthread"
 +				  LIBVAL_SUFFIX="-threads"],
 +				AC_MSG_ERROR(Can't find libval or libval-threads))
@@ -48,92 +66,46 @@ diff -u -p -r1.370 configure.ac
 +			[Define if you want local DNSSEC validation support])
 +		LIBVAL_MSG="yes, libval${LIBVAL_SUFFIX}"
 +	else
-+		# Check libraries needed by DNS fingerprint support
-+		AC_SEARCH_LIBS(getrrsetbyname, resolv,
-+			[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
-+				[Define if getrrsetbyname() exists])],
-+			[
-+				# Needed by our getrrsetbyname()
-+				AC_SEARCH_LIBS(res_query, resolv)
-+				AC_SEARCH_LIBS(dn_expand, resolv)
-+				AC_MSG_CHECKING(if res_query will link)
-+				AC_TRY_LINK_FUNC(res_query, AC_MSG_RESULT(yes),
-+				   [AC_MSG_RESULT(no)
-+				    saved_LIBS="$LIBS"
-+				    LIBS="$LIBS -lresolv"
-+				    AC_MSG_CHECKING(for res_query in -lresolv)
-+				    AC_LINK_IFELSE([
-+#include <resolv.h>
-+int main()
-+{
-+	res_query (0, 0, 0, 0, 0);
-+	return 0;
-+}
-+					],
-+					[LIBS="$LIBS -lresolv"
-+					 AC_MSG_RESULT(yes)],
-+					[LIBS="$saved_LIBS"
-+					 AC_MSG_RESULT(no)])
-+				    ])
-+				AC_CHECK_FUNCS(_getshort _getlong)
-+				AC_CHECK_DECLS([_getshort, _getlong], , ,
-+				    [#include <sys/types.h>
-+				    #include <arpa/nameser.h>])
-+				AC_CHECK_MEMBER(HEADER.ad,
-+					[AC_DEFINE(HAVE_HEADER_AD, 1,
-+					    [Define if HEADER.ad exists in arpa/nameser.h])],,
-+					[#include <arpa/nameser.h>])
-+			])
+ # Check libraries needed by DNS fingerprint support
+ AC_SEARCH_LIBS(getrrsetbyname, resolv,
+ 	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
+@@ -3177,6 +3186,35 @@ int main()
+ 			    [Define if HEADER.ad exists in arpa/nameser.h])],,
+ 			[#include <arpa/nameser.h>])
+ 	])
 +	 fi]
 +)
 +
- # Check whether user wants OpenSC support
- OPENSC_CONFIG="no"
- AC_ARG_WITH(opensc,
-@@ -3096,42 +3169,6 @@ AC_ARG_WITH(opensc,
- 	]
- )
++# Check whether user wants OpenSC support
++OPENSC_CONFIG="no"
++AC_ARG_WITH(opensc,
++	[  --with-opensc[[=PFX]]     Enable smartcard support using OpenSC (optionally in PATH)],
++	[
++	    if test "x$withval" != "xno" ; then
++		if test "x$withval" != "xyes" ; then
++  			OPENSC_CONFIG=$withval/bin/opensc-config
++		else
++  			AC_PATH_PROG(OPENSC_CONFIG, opensc-config, no)
++		fi
++		if test "$OPENSC_CONFIG" != "no"; then
++			LIBOPENSC_CFLAGS=`$OPENSC_CONFIG --cflags`
++			LIBOPENSC_LIBS=`$OPENSC_CONFIG --libs`
++			CPPFLAGS="$CPPFLAGS $LIBOPENSC_CFLAGS"
++			LIBS="$LIBS $LIBOPENSC_LIBS"
++			AC_DEFINE(SMARTCARD)
++			AC_DEFINE(USE_OPENSC, 1,
++				[Define if you want smartcard support
++				using OpenSC])
++			SCARD_MSG="yes, using OpenSC"
++		fi
++	    fi
++	]
++)
++
  
--# Check libraries needed by DNS fingerprint support
--AC_SEARCH_LIBS(getrrsetbyname, resolv,
--	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
--		[Define if getrrsetbyname() exists])],
--	[
--		# Needed by our getrrsetbyname()
--		AC_SEARCH_LIBS(res_query, resolv)
--		AC_SEARCH_LIBS(dn_expand, resolv)
--		AC_MSG_CHECKING(if res_query will link)
--		AC_TRY_LINK_FUNC(res_query, AC_MSG_RESULT(yes),
--		   [AC_MSG_RESULT(no)
--		    saved_LIBS="$LIBS"
--		    LIBS="$LIBS -lresolv"
--		    AC_MSG_CHECKING(for res_query in -lresolv)
--		    AC_LINK_IFELSE([
--#include <resolv.h>
--int main()
--{
--	res_query (0, 0, 0, 0, 0);
--	return 0;
--}
--			],
--			[LIBS="$LIBS -lresolv"
--			 AC_MSG_RESULT(yes)],
--			[LIBS="$saved_LIBS"
--			 AC_MSG_RESULT(no)])
--		    ])
--		AC_CHECK_FUNCS(_getshort _getlong)
--		AC_CHECK_DECLS([_getshort, _getlong], , ,
--		    [#include <sys/types.h>
--		    #include <arpa/nameser.h>])
--		AC_CHECK_MEMBER(HEADER.ad,
--			[AC_DEFINE(HAVE_HEADER_AD, 1,
--			    [Define if HEADER.ad exists in arpa/nameser.h])],,
--			[#include <arpa/nameser.h>])
--	])
- 
- # Check whether user wants SELinux support
- SELINUX_MSG="no"
-@@ -3972,6 +4009,7 @@ echo "              TCP Wrappers support
+ AC_MSG_CHECKING(if struct __res_state _res is an extern)
+ AC_LINK_IFELSE([
+@@ -4035,6 +4073,7 @@ echo "              TCP Wrappers support
  echo "              MD5 password support: $MD5_MSG"
  echo "                   libedit support: $LIBEDIT_MSG"
  echo "  Solaris process contract support: $SPC_MSG"
@@ -144,10 +116,10 @@ diff -u -p -r1.370 configure.ac
 Index: dns.c
 ===================================================================
 RCS file: /cvs/openssh/dns.c,v
-retrieving revision 1.25
-diff -u -p -r1.25 dns.c
---- dns.c	1 Sep 2006 05:38:36 -0000	1.25
-+++ dns.c	29 Jan 2007 20:41:59 -0000
+retrieving revision 1.26
+diff -u -p -r1.26 dns.c
+--- dns.c	5 Jan 2007 05:30:16 -0000	1.26
++++ dns.c	20 Sep 2007 14:42:53 -0000
 @@ -35,6 +35,10 @@
  #include <stdio.h>
  #include <string.h>
@@ -295,7 +267,7 @@ RCS file: /cvs/openssh/dns.h,v
 retrieving revision 1.8
 diff -u -p -r1.8 dns.h
 --- dns.h	5 Aug 2006 02:39:40 -0000	1.8
-+++ dns.h	29 Jan 2007 20:41:59 -0000
++++ dns.h	20 Sep 2007 14:42:53 -0000
 @@ -45,6 +45,7 @@ enum sshfp_hashes {
  #define DNS_VERIFY_FOUND	0x00000001
  #define DNS_VERIFY_MATCH	0x00000002
@@ -307,31 +279,33 @@ diff -u -p -r1.8 dns.h
 Index: readconf.c
 ===================================================================
 RCS file: /cvs/openssh/readconf.c,v
-retrieving revision 1.136
-diff -u -p -r1.136 readconf.c
---- readconf.c	1 Sep 2006 05:38:37 -0000	1.136
-+++ readconf.c	29 Jan 2007 20:42:00 -0000
+retrieving revision 1.139
+diff -u -p -r1.139 readconf.c
+--- readconf.c	21 Mar 2007 09:46:03 -0000	1.139
++++ readconf.c	20 Sep 2007 14:42:54 -0000
 @@ -130,6 +130,7 @@ typedef enum {
  	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
  	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
  	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
-+	oStrictDnssecChecking,
++	oStrictDnssecChecking,oAutoAnswerValidatedKeys,
  	oDeprecated, oUnsupported
  } OpCodes;
  
-@@ -226,6 +227,11 @@ static struct {
+@@ -226,6 +227,13 @@ static struct {
  	{ "tunneldevice", oTunnelDevice },
  	{ "localcommand", oLocalCommand },
  	{ "permitlocalcommand", oPermitLocalCommand },
 +#ifdef LOCAL_DNSSEC_VALIDATION
 +	{ "strictdnssecchecking", oStrictDnssecChecking },
++        { "autoanswervalidatedkeys", oAutoAnswerValidatedKeys },
 +#else
 +	{ "strictdnssecchecking", oUnsupported },
++        { "autoanswervalidatedkeys", oUnsupported },
 +#endif
  	{ NULL, oBadOption }
  };
  
-@@ -477,6 +483,10 @@ parse_yesnoask:
+@@ -477,6 +485,14 @@ parse_yesnoask:
  			*intptr = value;
  		break;
  
@@ -339,23 +313,30 @@ diff -u -p -r1.136 readconf.c
 +		intptr = &options->strict_dnssec_checking;
 +                goto parse_yesnoask;
 +
++	case oAutoAnswerValidatedKeys:
++		intptr = &options->autoanswer_validated_keys;
++                goto parse_yesnoask;
++
  	case oCompression:
  		intptr = &options->compression;
  		goto parse_flag;
-@@ -1019,6 +1029,7 @@ initialize_options(Options * options)
+@@ -1019,6 +1035,8 @@ initialize_options(Options * options)
  	options->batch_mode = -1;
  	options->check_host_ip = -1;
  	options->strict_host_key_checking = -1;
 +	options->strict_dnssec_checking = -1;
++        options->autoanswer_validated_keys = -1;
  	options->compression = -1;
  	options->tcp_keep_alive = -1;
  	options->compression_level = -1;
-@@ -1115,6 +1126,8 @@ fill_default_options(Options * options)
+@@ -1115,6 +1133,10 @@ fill_default_options(Options * options)
  		options->check_host_ip = 1;
  	if (options->strict_host_key_checking == -1)
  		options->strict_host_key_checking = 2;	/* 2 is default */
 +	if (options->strict_dnssec_checking == -1)
 +		options->strict_dnssec_checking = 2;	/* 2 is default */
++	if (options->autoanswer_validated_keys == -1)
++		options->autoanswer_validated_keys = 0;	/* 0 is default */
  	if (options->compression == -1)
  		options->compression = 0;
  	if (options->tcp_keep_alive == -1)
@@ -365,12 +346,13 @@ RCS file: /cvs/openssh/readconf.h,v
 retrieving revision 1.63
 diff -u -p -r1.63 readconf.h
 --- readconf.h	5 Aug 2006 02:39:40 -0000	1.63
-+++ readconf.h	29 Jan 2007 20:42:00 -0000
-@@ -121,6 +121,8 @@ typedef struct {
++++ readconf.h	20 Sep 2007 14:42:54 -0000
+@@ -121,6 +121,9 @@ typedef struct {
  	char	*local_command;
  	int	permit_local_command;
  
 +	int     strict_dnssec_checking;	/* Strict DNSSEC checking. */
++	int     autoanswer_validated_keys;
 +
  }       Options;
  
@@ -381,7 +363,7 @@ RCS file: /cvs/openssh/sshconnect.c,v
 retrieving revision 1.171
 diff -u -p -r1.171 sshconnect.c
 --- sshconnect.c	23 Oct 2006 17:02:24 -0000	1.171
-+++ sshconnect.c	29 Jan 2007 20:42:01 -0000
++++ sshconnect.c	20 Sep 2007 14:42:55 -0000
 @@ -26,6 +26,13 @@
  #include <netinet/in.h>
  #include <arpa/inet.h>
@@ -396,7 +378,17 @@ diff -u -p -r1.171 sshconnect.c
  #include <ctype.h>
  #include <errno.h>
  #include <netdb.h>
-@@ -76,6 +83,7 @@ extern pid_t proxy_command_pid;
+@@ -62,6 +69,9 @@ char *client_version_string = NULL;
+ char *server_version_string = NULL;
+ 
+ static int matching_host_key_dns = 0;
++#ifdef LOCAL_DNSSEC_VALIDATION
++static int validated_host_key_dns = 0;
++#endif
+ 
+ /* import */
+ extern Options options;
+@@ -76,6 +86,7 @@ extern pid_t proxy_command_pid;
  
  static int show_other_keys(const char *, Key *);
  static void warn_changed_key(Key *);
@@ -404,7 +396,7 @@ diff -u -p -r1.171 sshconnect.c
  
  /*
   * Connect to the given ssh server using a proxy command.
-@@ -167,7 +175,7 @@ ssh_proxy_connect(const char *host, u_sh
+@@ -167,7 +178,7 @@ ssh_proxy_connect(const char *host, u_sh
   * Creates a (possibly privileged) socket for use as the ssh connection.
   */
  static int
@@ -413,7 +405,7 @@ diff -u -p -r1.171 sshconnect.c
  {
  	int sock, gaierr;
  	struct addrinfo hints, *res;
-@@ -305,7 +313,11 @@ ssh_connect(const char *host, struct soc
+@@ -305,7 +316,11 @@ ssh_connect(const char *host, struct soc
  	int on = 1;
  	int sock = -1, attempt;
  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
@@ -426,7 +418,7 @@ diff -u -p -r1.171 sshconnect.c
  
  	debug2("ssh_connect: needpriv %d", needpriv);
  
-@@ -319,9 +331,45 @@ ssh_connect(const char *host, struct soc
+@@ -319,9 +334,45 @@ ssh_connect(const char *host, struct soc
  	hints.ai_family = family;
  	hints.ai_socktype = SOCK_STREAM;
  	snprintf(strport, sizeof strport, "%u", port);
@@ -474,12 +466,10 @@ diff -u -p -r1.171 sshconnect.c
  
  	for (attempt = 0; attempt < connection_attempts; attempt++) {
  		if (attempt > 0) {
-@@ -366,8 +414,12 @@ ssh_connect(const char *host, struct soc
- 		if (sock != -1)
+@@ -367,7 +418,11 @@ ssh_connect(const char *host, struct soc
  			break;	/* Successful connection. */
  	}
--
-+        
+ 
 +#ifndef LOCAL_DNSSEC_VALIDATION
  	freeaddrinfo(aitop);
 +#else
@@ -488,7 +478,168 @@ diff -u -p -r1.171 sshconnect.c
  
  	/* Return failure if we didn't get a successful connection. */
  	if (sock == -1) {
-@@ -905,6 +957,20 @@ verify_host_key(char *host, struct socka
+@@ -677,6 +732,7 @@ check_host_key(char *hostname, struct so
+ 		}
+ 		break;
+ 	case HOST_NEW:
++		debug("Host '%.200s' new.", host);
+ 		if (options.host_key_alias == NULL && port != 0 &&
+ 		    port != SSH_DEFAULT_PORT) {
+ 			debug("checking without port identifier");
+@@ -720,6 +776,17 @@ check_host_key(char *hostname, struct so
+ 					    "No matching host key fingerprint"
+ 					    " found in DNS.\n");
+ 			}
++#ifdef LOCAL_DNSSEC_VALIDATION
++                        if (options.autoanswer_validated_keys &&
++                            validated_host_key_dns && matching_host_key_dns) {
++                            snprintf(msg, sizeof(msg),
++                                     "The authenticity of host '%.200s (%s)' was "
++                                     " validated via DNSSEC%s",
++                                     host, ip, msg1);
++                            logit(msg);
++                            xfree(fp);
++                        } else {
++#endif
+ 			snprintf(msg, sizeof(msg),
+ 			    "The authenticity of host '%.200s (%s)' can't be "
+ 			    "established%s\n"
+@@ -730,6 +797,9 @@ check_host_key(char *hostname, struct so
+ 			xfree(fp);
+ 			if (!confirm(msg))
+ 				goto fail;
++#ifdef LOCAL_DNSSEC_VALIDATION
++                        }
++#endif
+ 		}
+ 		/*
+ 		 * If not in strict mode, add the key automatically to the
+@@ -765,6 +835,7 @@ check_host_key(char *hostname, struct so
+ 			    "list of known hosts.", hostp, type);
+ 		break;
+ 	case HOST_CHANGED:
++		debug("Host '%.200s' changed.", host);
+ 		if (readonly == ROQUIET)
+ 			goto fail;
+ 		if (options.check_host_ip && host_ip_differ) {
+@@ -775,6 +846,8 @@ check_host_key(char *hostname, struct so
+ 				key_msg = "is unchanged";
+ 			else
+ 				key_msg = "has a different value";
++#ifdef LOCAL_DNSSEC_VALIDATION
++                        if (!validated_host_key_dns) {
+ 			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+ 			error("@       WARNING: POSSIBLE DNS SPOOFING DETECTED!          @");
+ 			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+@@ -783,6 +856,19 @@ check_host_key(char *hostname, struct so
+ 			error("%s. This could either mean that", key_msg);
+ 			error("DNS SPOOFING is happening or the IP address for the host");
+ 			error("and its host key have changed at the same time.");
++                        }
++                        else {
++#endif
++			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
++			error("@       WARNING: HOST IP ADDRESS HAS CHANGED!             @");
++			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
++                        error("The %s host key for %s has changed,", type, host);
++			error("and the key for the according IP address %s", ip);
++			error("%s. The IP address for the host", key_msg);
++			error("and its host key have changed at the same time.");
++#ifdef LOCAL_DNSSEC_VALIDATION
++                        }
++#endif
+ 			if (ip_status != HOST_NEW)
+ 				error("Offending key for IP in %s:%d", ip_file, ip_line);
+ 		}
+@@ -796,12 +882,54 @@ check_host_key(char *hostname, struct so
+ 		 * If strict host key checking is in use, the user will have
+ 		 * to edit the key manually and we can only abort.
+ 		 */
++#ifdef LOCAL_DNSSEC_VALIDATION
++		if ((options.strict_host_key_checking == 2) &&
++                    options.autoanswer_validated_keys &&
++                    matching_host_key_dns && validated_host_key_dns) {
++                    logit("The authenticity of host '%.200s (%s)' was "
++                          " validated via DNSSEC.",
++                          host, ip);
++                    /*
++                     * If not in strict mode, add the key automatically to the
++                     * local known_hosts file.
++                     */
++                    if (options.check_host_ip && ip_status == HOST_NEW) {
++			snprintf(hostline, sizeof(hostline), "%s,%s",
++                                 host, ip);
++			hostp = hostline;
++			if (options.hash_known_hosts) {
++                            /* Add hash of host and IP separately */
++                            r = add_host_to_hostfile(user_hostfile, host,
++                                                     host_key, options.hash_known_hosts) &&
++                                add_host_to_hostfile(user_hostfile, ip,
++                                                     host_key, options.hash_known_hosts);
++			} else {
++                            /* Add unhashed "host,ip" */
++                            r = add_host_to_hostfile(user_hostfile,
++                                                     hostline, host_key,
++                                                     options.hash_known_hosts);
++			}
++                    } else {
++			r = add_host_to_hostfile(user_hostfile, host, host_key,
++                                                 options.hash_known_hosts);
++			hostp = host;
++                    }
++                    
++                    if (!r)
++			logit("Failed to add the host to the list of known "
++                              "hosts (%.500s).", user_hostfile);
++                    else
++			logit("Warning: Permanently added '%.200s' (%s) to the "
++                              "list of known hosts.", hostp, type);
++                }
++                else
++#endif
+ 		if (options.strict_host_key_checking) {
+ 			error("%s host key for %.200s has changed and you have "
+ 			    "requested strict checking.", type, host);
+ 			goto fail;
+ 		}
+-
++                else {
+ 		/*
+ 		 * If strict host key checking has not been requested, allow
+ 		 * the connection but without MITM-able authentication or
+@@ -849,9 +977,10 @@ check_host_key(char *hostname, struct so
+ 		 * XXX Should permit the user to change to use the new id.
+ 		 * This could be done by converting the host key to an
+ 		 * identifying sentence, tell that the host identifies itself
+-		 * by that sentence, and ask the user if he/she whishes to
++		 * by that sentence, and ask the user if he/she wishes to
+ 		 * accept the authentication.
+ 		 */
++                }
+ 		break;
+ 	case HOST_FOUND:
+ 		fatal("internal error");
+@@ -876,10 +1005,19 @@ check_host_key(char *hostname, struct so
+ 			error("Exiting, you have requested strict checking.");
+ 			goto fail;
+ 		} else if (options.strict_host_key_checking == 2) {
++#ifdef LOCAL_DNSSEC_VALIDATION
++                    if (options.autoanswer_validated_keys &&
++                        matching_host_key_dns && validated_host_key_dns) {
++			logit("%s", msg);
++                    } else {
++#endif
+ 			strlcat(msg, "\nAre you sure you want "
+ 			    "to continue connecting (yes/no)? ", sizeof(msg));
+ 			if (!confirm(msg))
+ 				goto fail;
++#ifdef LOCAL_DNSSEC_VALIDATION
++                    }
++#endif
+ 		} else {
+ 			logit("%s", msg);
+ 		}
+@@ -905,12 +1043,42 @@ verify_host_key(char *host, struct socka
  	if (options.verify_host_key_dns &&
  	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
  
@@ -505,7 +656,48 @@ diff -u -p -r1.171 sshconnect.c
 +			error("@  WARNING: UNTRUSTED DNS RESOLOUTION FOR HOST KEY!       @");
 +			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 +		}
++                if (flags & DNS_VERIFY_SECURE)
++                    validated_host_key_dns = 1;
 +#endif
  		if (flags & DNS_VERIFY_FOUND) {
  
  			if (options.verify_host_key_dns == 1 &&
+ 			    flags & DNS_VERIFY_MATCH &&
+ 			    flags & DNS_VERIFY_SECURE)
++#ifndef LOCAL_DNSSEC_VALIDATION
+ 				return 0;
++#else
++                        {
++                            if (flags & DNS_VERIFY_MATCH)
++				matching_host_key_dns = 1;
++                            if (options.autoanswer_validated_keys)
++                                return check_host_key(host, hostaddr, options.port,
++                                                      host_key, RDRW,
++                                                      options.user_hostfile,
++                                                      options.system_hostfile);
++                            else
++				return 0;
++                        }
++#endif
+ 
+ 			if (flags & DNS_VERIFY_MATCH) {
+ 				matching_host_key_dns = 1;
+@@ -1059,9 +1227,18 @@ warn_changed_key(Key *host_key)
+ 	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+ 	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");
+ 	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
++#ifdef LOCAL_DNSSEC_VALIDATION
++        if (matching_host_key_dns && validated_host_key_dns) {
++            error("Howerver, a matching host key, validated by DNSSEC, was found.");
++        }
++        else {
++#endif
+ 	error("IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!");
+ 	error("Someone could be eavesdropping on you right now (man-in-the-middle attack)!");
+ 	error("It is also possible that the %s host key has just been changed.", type);
++#ifdef LOCAL_DNSSEC_VALIDATION
++        }
++#endif
+ 	error("The fingerprint for the %s key sent by the remote host is\n%s.",
+ 	    type, fp);
+ 	error("Please contact your system administrator.");
