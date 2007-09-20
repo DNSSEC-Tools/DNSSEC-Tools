@@ -1,5 +1,6 @@
 Local DNSSEC validation with OpenSSH
 ====================================
+(Tested with OpenSSH 4.5p1 and 4.7p1)
 
 Introduction
 ------------
@@ -71,12 +72,31 @@ by specifying --with-local-dnssec-validation when configuring
 OpenSSH. You may also need to specify the path to the directory
 where the libraries are installed using '--with-ldflags=-L/path'.
 
+ # tar xvfz openssh-4.5p1.tar.gz
+ # cd openssh-4.5p1
+ # patch -p0 < ssh-dnssec.pat
+ # autoconf
+ # autoheader
+ # ./configure --with-local-dnssec-validation --with-ldflags=-L/usr/local/lib/
+ # make
+
 Once configured and built, clients may specify a new option:
 StrictDnssecChecking. Possible settings include yes, no and
-ask. An example invocation, which will perform validation on both the
+ask. Any DNS response which is not trusted will always trigger
+a warning. If StrictDnssecChecking.is yes, the command will
+abort. If it is 'ask', they user will be prompted to continue.
+
+An example invocation, which will perform validation on both the
 host lookup and any key fingerprint lookups, would be:
 
   ssh -o VerifyHostKeyDNS=ask -o StrictDnssecChecking=ask ssh.example.com
+
+Another new option, AutoAnswerValidatedKeys, is used in conjunction
+with VerifyHostKeyDNS. If VerifyHostKeyDNS is set to 'ask', and
+AutoAnswerValidatedKeys is set to yes, any time ssh would normally
+prompt to accept a key, the prompt will be supressed and the key
+will be accepted if a matchins SSHFP host key was found and validated
+by DNSSEC.
 
 
 Rational for Local Validation
