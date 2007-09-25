@@ -41,31 +41,14 @@
 #include "val_support.h"
 
 int
-labelcmp(const u_int8_t * name1, const u_int8_t * name2)
+label_bytes_cmp(const u_int8_t * field1, int length1, 
+                const u_int8_t * field2, int length2)
 {
-    /*
-     * Compare two names, assuming same number of labels in each 
-     */
-    int             index1 = 0;
-    int             index2 = 0;
-    int             length1;
-    int             length2;
-    int             min_len;
-    int             ret_val;
-
     u_int8_t        buffer1[NS_MAXCDNAME];
     u_int8_t        buffer2[NS_MAXCDNAME];
     int             i;
-
-    length1 = (int) name1 ? name1[index1] : 0;
-    length2 = (int) name2 ? name2[index2] : 0;
-    min_len = (length1 < length2) ? length1 : length2;
-
-    /*
-     * Degenerate case - root versus root 
-     */
-    if (length1 == 0 && length2 == 0)
-        return 0;
+    int             min_len;
+    int             ret_val;
 
     /*
      * If the first n bytes are the same, then the length determines
@@ -74,16 +57,7 @@ labelcmp(const u_int8_t * name1, const u_int8_t * name2)
     if (length1 == 0 || length2 == 0)
         return length1 - length2;
 
-    /*
-     * Recurse to try more significant label(s) first 
-     */
-    ret_val = labelcmp(&name1[length1 + 1], &name2[length2 + 1]);
-
-    /*
-     * If there is a difference, propogate that back up the calling tree 
-     */
-    if (ret_val != 0)
-        return ret_val;
+    min_len = (length1 < length2) ? length1 : length2;
 
     /*
      * Compare this label's first min_len bytes 
@@ -91,12 +65,12 @@ labelcmp(const u_int8_t * name1, const u_int8_t * name2)
     /*
      * Convert to lower case first 
      */
-    memcpy(buffer1, &name1[index1 + 1], min_len);
+    memcpy(buffer1, field1, min_len);
     for (i = 0; i < min_len; i++)
         if (isupper(buffer1[i]))
             buffer1[i] = tolower(buffer1[i]);
 
-    memcpy(buffer2, &name2[index2 + 1], min_len);
+    memcpy(buffer2, field2, min_len);
     for (i = 0; i < min_len; i++)
         if (isupper(buffer2[i]))
             buffer2[i] = tolower(buffer2[i]);
@@ -113,6 +87,64 @@ labelcmp(const u_int8_t * name1, const u_int8_t * name2)
      * the difference - if any 
      */
     return length1 - length2;
+}
+
+int
+labelcmp(const u_int8_t * name1, const u_int8_t * name2, int label_cnt)
+{
+    /*
+     * Compare two names, assuming same number of labels in each 
+     */
+    int             length1;
+    int             length2;
+    const u_int8_t  *ptr1[256];
+    const u_int8_t  *ptr2[256];
+    int offset1 = 0;
+    int offset2 = 0;
+    int i;
+    
+    length1 = (int) name1 ? name1[0] : 0;
+    length2 = (int) name2 ? name2[0] : 0;
+
+    if (length1 == 0 || length2 == 0)
+        return length1 - length2;
+
+    if (label_cnt > 256) {
+        return -1;
+    }
+    
+    /* mark all the label start points */
+    for(i=0; i<label_cnt; i++) {
+        ptr1[i] = &name1[offset1];
+        ptr2[i] = &name2[offset2];
+        offset1 += name1[offset1]+1;
+        offset2 += name2[offset2]+1; 
+    }
+    
+    /* start from the last label, work upwards */
+    while (label_cnt > 0) {
+        int retval;
+
+        length1 = *ptr1[label_cnt-1];
+        length2 = *ptr2[label_cnt-1]; 
+
+        if (length1 == 0 || length2 == 0) {
+            retval = length1 - length2;
+        } else {
+            retval = label_bytes_cmp(&ptr1[label_cnt-1][1], 
+                                     length1,
+                                     &ptr2[label_cnt-1][1],
+                                     length2);
+        }
+
+        if (retval != 0)
+            return retval;
+
+        label_cnt--; 
+    }
+
+    /* all labels are identical */
+    return 0;
 }
 
 /*
@@ -132,6 +164,8 @@ namecmp(const u_int8_t * name1, const u_int8_t * name2)
     int             index2 = 0;
     int             ret_val;
     int             i;
+    int             label_cnt;
+    int             ldiff;
 
     /*
      * deal w/any null ptrs 
@@ -160,17 +194,23 @@ namecmp(const u_int8_t * name1, const u_int8_t * name2)
     /*
      * find index in longer name where the number of labels is equal 
      */
-    if (labels1 > labels2)
-        for (i = 0; i < labels1 - labels2; i++)
-            index1 += (int) name1[index1] + 1;
-    else
-        for (i = 0; i < labels2 - labels1; i++)
-            index2 += (int) name2[index2] + 1;
+    if (labels1 > labels2) {
+        label_cnt = labels2;
+        ldiff = labels1 - labels2;
+        for (i = 0; i < ldiff; i++)
+            index1 += name1[index1] + 1;
+    }
+    else {
+        label_cnt = labels1;
+        ldiff = labels2 - labels1;
+        for (i = 0; i < ldiff; i++)
+            index2 += name2[index2] + 1;
+    }
 
     /*
      * compare last N labels 
      */
-    ret_val = labelcmp(&name1[index1], &name2[index2]);
+    ret_val = labelcmp(&name1[index1], &name2[index2], label_cnt);
 
     if (ret_val != 0)
         return ret_val;
@@ -190,12 +230,24 @@ namename(u_int8_t * big_name, u_int8_t * little_name)
     if (!big_name || !little_name)
         return NULL;
 
-    while (p && namecmp(p, little_name) && (*p != '\0')) {
+    /* if the name only consists of the root, move to the last label */
+    if (*little_name == '\0') {
+        int d = wire_name_length(p);
+        if (d >= 1)
+            return p+wire_name_length(p)-1;
+        return NULL;
+    }
+    
+    while (*p != '\0') {
+        int d = namecmp(p, little_name);
+        if (d == 0) {
+            return p;
+        }
+        else if (d < 0)
+            break; 
         p = p + p[0] + 1;
     }
 
-    if (!namecmp(p, little_name))
-        return p;
     return NULL;
 }
 
@@ -293,61 +345,6 @@ base32hex_encode(u_int8_t * in, u_int8_t inlen, u_int8_t ** out,
     }
 }
 
-/*
- * This is a straight copy from labelcmp() 
- */
-int
-nsec3_order_cmp(u_int8_t * hash1, int length1, u_int8_t * hash2,
-                int length2)
-{
-    u_int8_t        buffer1[NS_MAXCDNAME];
-    u_int8_t        buffer2[NS_MAXCDNAME];
-    int             i;
-    int             min_len;
-    int             ret_val;
-
-    min_len = (length1 < length2) ? length1 : length2;
-
-    if (length1 == 0 && length2 == 0)
-        return 0;
-
-    /*
-     * If the first n bytes are the same, then the length determines
-     * the difference - if any 
-     */
-    if (length1 == 0 || length2 == 0)
-        return length1 - length2;
-
-
-    /*
-     * Compare this label's first min_len bytes 
-     */
-    /*
-     * Convert to lower case first 
-     */
-    memcpy(buffer1, hash1, min_len);
-    for (i = 0; i < min_len; i++)
-        if (isupper(buffer1[i]))
-            buffer1[i] = tolower(buffer1[i]);
-
-    memcpy(buffer2, hash2, min_len);
-    for (i = 0; i < min_len; i++)
-        if (isupper(buffer2[i]))
-            buffer2[i] = tolower(buffer2[i]);
-
-    ret_val = memcmp(buffer1, buffer2, min_len);
-
-    /*
-     * If they differ, propgate that 
-     */
-    if (ret_val != 0)
-        return ret_val;
-    /*
-     * If the first n bytes are the same, then the length determines
-     * the difference - if any 
-     */
-    return length1 - length2;
-}
 #endif
 
 u_int16_t

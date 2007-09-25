@@ -76,14 +76,14 @@ void            my_free(void *p, char *filename, int lineno);
 void           *my_malloc(size_t t, char *filename, int lineno);
 char           *my_strdup(const char *str, char *filename, int lineno);
 
-int             labelcmp(const u_int8_t * name1, const u_int8_t * name2);
+int             label_bytes_cmp(const u_int8_t * field1, int length1,
+                                const u_int8_t * field2, int length2);
+int             labelcmp(const u_int8_t * name1, const u_int8_t * name2, int label_cnt);
 int             namecmp(const u_int8_t * name1, const u_int8_t * name2);
 u_int8_t *      namename(u_int8_t * big_name, u_int8_t * little_name);
 #ifdef LIBVAL_NSEC3
 void            base32hex_encode(u_int8_t * in, u_int8_t inlen,
                                  u_int8_t ** out, u_int8_t * outlen);
-int             nsec3_order_cmp(u_int8_t * hash1, int length1,
-                                u_int8_t * hash2, int length2);
 #endif
 u_int16_t       wire_name_labels(const u_int8_t * field);
 u_int16_t       wire_name_length(const u_int8_t * field);
