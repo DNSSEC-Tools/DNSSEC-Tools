@@ -796,6 +796,7 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
 
     fprintf(logp->opt.file.fp, buf);
     fprintf(logp->opt.file.fp, "\n");
+    fflush(logp->opt.file.fp);
 }
 
 void
