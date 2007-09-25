@@ -71,7 +71,7 @@ val_create_context_with_conf(char *label,
         if (the_null_context) { 
             *newcontext = the_null_context;
             UNLOCK_DEFAULT_CONTEXT();
-            val_log(*newcontext, LOG_ERR, "reusing default context");
+            val_log(*newcontext, LOG_INFO, "reusing default context");
             return VAL_NO_ERROR;
         }
     }
