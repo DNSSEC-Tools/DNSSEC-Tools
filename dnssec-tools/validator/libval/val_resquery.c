@@ -1637,7 +1637,8 @@ digest_response(val_context_t * context,
                         goto done;
                     }
 
-                } else if (NULL != namename(name_n, rrs_zonecut_n) && 
+                } else if ((rrs_zonecut_n == NULL || 
+                            NULL != namename(name_n, rrs_zonecut_n)) && 
                         /* ns owner is more specific than current zonecut  AND */
                            ((nothing_other_than_alias && /* cname  OR */ 
                             (from_section == VAL_FROM_AUTHORITY)) ||
