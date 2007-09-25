@@ -57,16 +57,18 @@ CONTENTS DESCRIPTION
         queries.
 
     apps/mozilla
-        Patches to mozilla 1.7.10 to enable DNSSEC name
-        checking validation on visited URLs.
+        Contains the following:
+        - Patches to firefox to enable DNSSEC name
+          checking validation on visited URLs.
+        - Patches to thunderbird to enable DNSSEC name
+          checking validation on visited URLs
+        - An extension that displays DNSSEC status information
+        - A thunderbird extension to display the x-dnssec field
+          in the Received-SPF header.
 
     apps/sendmail
         Patches to sendmail and spfmilter to provide DNSSEC
         validation of DNS queries.
-
-    apps/thunderbird
-        A thunderbird extension to display the x-dnssec field
-        in the Received-SPF header.
 
   Tools:
 
