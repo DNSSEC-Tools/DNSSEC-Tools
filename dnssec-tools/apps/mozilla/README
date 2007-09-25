@@ -4,91 +4,63 @@
 			     DNSSEC-Tools
 			Is your domain secure?
 
-This directory contains a patch to apply to the mozilla code for
-enabling DNSSEC checking of URL DNS names.  It is in beta form with a
-lot of debugging but should be usable in testing environments.
+Details on the contents of this directory:
 
-Needed Files depending on what is being built:
+#######################################################################
+  File:
+    README.firefox 
+    
+  Description:
+    Contains instructions on how to build DNSSEC capability for firefox
+    and the more generic mozilla suite.
+ 
+#######################################################################
+  File:
+    README.thunderbird 
+    
+  Description:
+    Contains instructions on how to build DNSSEC capability for the 
+    thunderbird email client.
 
-  +----------------------+-----------+--------------+--------------+
-  |                      |Firefox RPM|Firefox source|Mozilla Source|
-  +----------------------+-----------+--------------+--------------+
-  |dnssec-firefox.patch  |X          |X             |              |
-  |dnssec-both.patch     |X          |X             |X             |
-  |dnssec-mozconfig.patch|X          |              |              |
-  |firefox.spec          |X          |              |              |
-  +----------------------+-----------+--------------+--------------+
+#######################################################################
+  Directory:
+    dnssec-status 
+    
+  Description:
+    Extension for firefox and thunderbird that is capable of 
+    showing the internal DNSSEC results of DNS lookups for a given page.
 
-######################################################################
-# PREREQUISITES
-
-  All of the following instructions assume you have the dnssec-tools
-  package already install (specifically, libval and libsres).
-
-######################################################################
-# FIREFOX RPM
-#
-
-  To build the firefox linux RPM on Fedora Core (5):
-
-  First, get a copy of the firefox source from http://www.mozilla.org/firefox/ 
-
-    cp firefox.spec /usr/src/redhat/SPECS/
-    cp dnssec-firefox.patch dnssec-both.patch dnssec-mozconfig.patch /usr/src/redhat/SOURCES
-    cp firefox-1.5.0.10-source.tar.bz2 /usr/src/redhat/SOURCES
-    cd /usr/src/redhat/SPECS
-    rpmbuild -ba firefox.spec
-
-######################################################################
-# FIREFOX FROM SOURCE
-#
-
-  The following summarizes what you need to do in order to build
-  firefox from a source tree including the DNSSEC support.  It is
-  probably best to follow an example from your distribution when
-  creating a .mozconfig file.  The DNSSEC support should be
-  automatically detected by configure and turned on if you have
-  dnssec-tools installed.
+#######################################################################
+  Directory:
+    drill-firefox 
+    
+  Description:
+    Modification to the Drill Extension (available from
+    http://www.nlnetlabs.nl/dnssec/drill_extension.html) for Firefox. 
+    These modifications allow validation to be performed using the 
+    equivalent DNSSEC-Tools command-line utilities for
+    hostname validation, namely "getaddrinfo".
 
 
-  tar xjf firefox-1.5.0.10-source.tar.bz2
-  cd mozilla
-  patch -p1 < ../dnssec-firefox.patch
-  patch -p1 < ../dnssec-both.patch
-
-  # create a .mozconfig file; this is a stripped down version of what
-  # gets put into the fedora RPMs but should work everywhere???:
-  cat >> .mozconfig << EOF
-. $topsrcdir/browser/config/mozconfig
-
-ac_add_options --disable-tests
-ac_add_options --disable-debug
-ac_add_options --with-pthreads
-ac_add_options --enable-default-toolkit=gtk2
-ac_add_options --enable-pango
-ac_add_options --enable-svg
-ac_add_options --enable-canvas
-
-EOF
-
-  # finally build it all:
-  make -f client.mk build
-
-
-######################################################################
-######################################################################
-More Details on the contents of this directory:
-
+#######################################################################
+  Directory:
+    spfdnssec 
+    
+  Description:
+    Extension that displays the Received-SPF mail header and its
+    various fields in the thunderbird email application.
+    
+ 
 #######################################################################
   File:
     dnssec-both.patch
     
   Description:
-    This file contains patches that apply to both firefox and the more
-    generic mozilla suite.
+    This file contains patches that apply to both firefox, thunderbird
+    and the more generic mozilla suite.
  
   Version:
-    This is known to work with firefox 1.5.0.10
+    This is known to work with firefox 1.5.0.10 and thunderbird 1.5.0.10
 
 #######################################################################
   File:
@@ -99,6 +71,17 @@ More Details on the contents of this directory:
  
   Version:
     This is known to work with firefox 1.5.0.10
+
+#######################################################################
+  File:
+    dnssec-thunderbird.patch
+    
+  Description:
+    This file contains patches that apply to just thunderbird.
+ 
+  Version:
+    This is known to work with thunderbird 1.5.0.10
+
 
 #######################################################################
   File:
