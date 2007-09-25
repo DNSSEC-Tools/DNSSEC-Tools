@@ -28,7 +28,7 @@
 -->
 
 <statusbar id="status-bar">
-	<statusbarpanel id="dnssecstatus-status" insertafter="livemark-button">
+	<statusbarpanel id="dnssecstatus-status">
 		<label
 		  id="dnssecstatus-label"
 		  value="DNSSEC:"
@@ -36,7 +36,7 @@
                 />
 		<label
 		  id="dnssecstatus-valtext"
-		  value="Val:"
+		  value="Secure:"
 		  style="color: #00aa00;"
 		  onclick="dnssecstatus_statusbar_action();"
                 />
@@ -49,7 +49,7 @@
                 />
 		<label
 		  id="dnssecstatus-trusttext"
-		  value="Trusted:"
+		  value="Insecure:"
 		  style="color: #e49917;"
 		  onclick="dnssecstatus_statusbar_action();"
                 />
@@ -62,7 +62,7 @@
                 />
 		<label
 		  id="dnssecstatus-errtext"
-		  value="Err:"
+		  value="Errors:"
 		  style="color: #aa0000;"
 		  onclick="dnssecstatus_statusbar_action();"
                 />
