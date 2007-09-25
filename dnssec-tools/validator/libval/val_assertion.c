@@ -141,12 +141,12 @@ is_type_set(u_int8_t * field, int field_len, u_int16_t type)
 
 #ifdef LIBVAL_NSEC3
 #define CHECK_RANGE(range1, range1len, range2, range2len, hash, hashlen) \
-            ((nsec3_order_cmp(range2, range2len, hash, hashlen) != 0) &&\
-                ((nsec3_order_cmp(range2, range2len, range1, range1len) > 0)?\
-                    ((nsec3_order_cmp(hash, hashlen, range1, range1len) > 0) && \
-					(nsec3_order_cmp(hash, hashlen, range2, range2len) < 0)) :\
-                    ((nsec3_order_cmp(hash, hashlen, range2, range2len) < 0)||\
-                     (nsec3_order_cmp(hash, hashlen, range1, range1len) > 0))))
+            ((label_bytes_cmp(range2, range2len, hash, hashlen) != 0) &&\
+                ((label_bytes_cmp(range2, range2len, range1, range1len) > 0)?\
+                    ((label_bytes_cmp(hash, hashlen, range1, range1len) > 0) && \
+					(label_bytes_cmp(hash, hashlen, range2, range2len) < 0)) :\
+                    ((label_bytes_cmp(hash, hashlen, range2, range2len) < 0)||\
+                     (label_bytes_cmp(hash, hashlen, range1, range1len) > 0))))
 #endif
 
     
@@ -877,7 +877,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
 
     RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, ta_pol);
     if (ta_pol == NULL) {
-        val_log(ctx, LOG_NOTICE, "is_trusted_key(): No trust anchor policy available"); 
+        val_log(ctx, LOG_INFO, "is_trusted_key(): No trust anchor policy available"); 
         *status = VAL_AC_NO_TRUST_ANCHOR;
         return VAL_NO_ERROR;
     }
@@ -1370,14 +1370,18 @@ build_pending_query(val_context_t *context,
             /*
              * First identify the signer name from the RRSIG 
              */
+            u_int8_t *p = NULL;
             signby_name_n = &cur_rr->rr_rdata[SIGNBY];
             /* The signer name has to be within the zone */
-            if (namename(as->_as.ac_data->rrs.val_rrset_name_n, 
-                 signby_name_n) == NULL) {
+            if ((p = namename(as->_as.ac_data->rrs.val_rrset_name_n, 
+                            signby_name_n)) == NULL ||
+                /* check if the zonecut is funny */
+                (p == as->_as.ac_data->rrs.val_rrset_name_n &&
+                 as->_as.ac_data->rrs.val_rrset_type_h == ns_t_ds)) {
                 cur_rr->rr_status = VAL_AC_INVALID_RRSIG;
-            } else {
-                /* set the zonecut in the assertion */
+            }  else { 
                 if (as->_as.ac_data->rrs_zonecut_n == NULL) {
+                    /* set the zonecut in the assertion */
                     int len = wire_name_length(signby_name_n);
                     as->_as.ac_data->rrs_zonecut_n = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
                     if (as->_as.ac_data->rrs_zonecut_n == NULL)
@@ -2188,7 +2192,7 @@ prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set,
         /*
          * Check if there is an exact match 
          */
-        if (!cpe && !nsec3_order_cmp(nsec3_hash, nsec3_hashlen, hash, hashlen)) {
+        if (!cpe && !label_bytes_cmp(nsec3_hash, nsec3_hashlen, hash, hashlen)) {
             /*
              * hashes match 
              */
@@ -5816,7 +5820,7 @@ val_resolve_and_check(val_context_t * ctx,
     retval = VAL_NO_ERROR;
 
     if (results) {
-        val_log_authentication_chain(context, LOG_INFO, 
+        val_log_authentication_chain(context, LOG_NOTICE, 
             domain_name_n, q_class, type, *results);
     }
 
