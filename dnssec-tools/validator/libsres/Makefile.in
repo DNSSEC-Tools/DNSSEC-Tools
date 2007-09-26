@@ -1,7 +1,6 @@
 # the resulting Makefile is built from  TOPSRCDIR/Makefile.top and Makefile.in
 
 SRC=	ns_name.c	\
-    ns_netint.c \
 	res_support.c	\
 	res_debug.c	\
 	nsap_addr.c \
@@ -18,7 +17,6 @@ SRC=	ns_name.c	\
 
 # can't use gmake conventions to translate SRC -> OBJ for portability
 OBJ=	ns_name.o	\
-    ns_netint.o \
 	res_support.o	\
 	res_debug.o	\
 	nsap_addr.o \
@@ -34,7 +32,6 @@ OBJ=	ns_name.o	\
 	res_query.o	
 
 LOBJ=	ns_name.lo	\
-    ns_netint.lo \
 	res_support.lo	\
 	res_debug.lo	\
 	nsap_addr.lo \
