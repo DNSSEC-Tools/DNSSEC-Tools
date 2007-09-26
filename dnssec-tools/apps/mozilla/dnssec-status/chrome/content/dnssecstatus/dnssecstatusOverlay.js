@@ -43,7 +43,7 @@ function showlog(lastbit) {
     if (loginfo != "") {
         if (lastbit)
             loginfo = loginfo + lastbit;
-        alert(loginfo);
+        //alert(loginfo);
         loginfo = "";
     }
 }
@@ -148,7 +148,8 @@ function dnssecstatus_show() {
 
 	var docshell = document.getElementById("content");
 */
-	var docshell = document.getElementById("content").webNavigation;
+/*
+   var docshell = document.getElementById("content").webNavigation;
 
         var shells = 
             docshell.getDocShellEnumerator(ifs.nsIDocShellTreeItem.typeAll,
@@ -157,12 +158,14 @@ function dnssecstatus_show() {
         var docnum = 0;
         var doccounter = window._content.document.dnscount;
         while (shells.hasMoreElements())
-            { 	         
+            {           
                 var shell = shells.getNext().QueryInterface(ifs.nsIDocShell);
                 docnum++;
             }
 
         //var spot = window._content.document.documentURI.spec;
+
+*/
         var spot = current_spot;
         maybe_init_spot(spot);
         set_status("val", "Secure:", storage[spot]["valcount"],
@@ -171,8 +174,8 @@ function dnssecstatus_show() {
                    storage[spot]["trustlist"]);
         set_status("err", "Errors:", storage[spot]["errcount"], 
                    storage[spot]["errlist"]);
+        
 }
-
 /* These functions are called by the contextmenu, toolsmenu, or statusbar icon */
 
 function dnssecstatus_contextmenu_action() {
@@ -187,14 +190,6 @@ function dnssecstatus_statusbar_action() {
 	window.openDialog("chrome://dnssecstatus/content/prefs.xul");
 }
 
-//
-// Register new loading events
-//
-function dpageload() {
-    window._content.addEventListener('load', dnssecstatus_show, true);
-    loadit();
-}
-window.addEventListener('load', dpageload, true);
 
 //
 // Register for window changing events
@@ -244,8 +239,11 @@ const dnssecListener =
         trustcount = window._content.document.dnstrustcount;
 */
         // dnssecstatus_show();
-        if (current_spot == "") // till now we haven't seen the parent
+        if (current_spot == "") {
+            // till now we haven't seen the parent
+            reset_all(aURI.spec);
             merge_spot(aURI.spec, "");
+        }
         current_spot = aURI.spec;
         logit("change: " + aURI.spec + " " + get_err_summary());
         dnssecstatus_show(current_spot);
@@ -259,23 +257,28 @@ const dnssecListener =
     onLinkIconAvailable: function() {return 0;}
 }
 
+/*
 function do_load() {
     logit("loading: ");
 }
+*/
 
 function do_unload() {
+    current_spot = "";
+    reset_all(current_spot);
     logit("unload: ");
 //    showlog();
 }
 
+/*
 function loadit() {
     //logit("registering");
     var browser = getBrowser();
     browser.addProgressListener(dnssecListener);
     window._content.addEventListener("load", do_load, true);
     window._content.addEventListener("unload", do_unload, true);
-}	
-
+} 
+*/
 
 //
 // register for listening to DNSSEC status observations
@@ -313,8 +316,27 @@ observerService.addObserver(dnsRequestObserver,
   window._content.document.addEventListener('show', dnssecstatus_show, true);
   logit("show");
   }
-  window.addEventListener('load', dpageunload, true);
-  window.addEventListener('load', dpageshow, true);
+  window.addEventListener('unload', dpageunload, true);
+  window.addEventListener('show', dpageshow, true);
 */
 
+//
+// Register new loading events
+//
+
+function dpageload() {
+    //logit("registering");
+
+    window._content.addEventListener('load', dnssecstatus_show, true);
+    window._content.addEventListener('unload', do_unload, true);
+
+    try {
+        var browser = getBrowser();
+        browser.addProgressListener(dnssecListener);
+    } catch (ex) {
+        // exception thrown for Thunderbird
+        //XXX is there a progress listener for thunderbird?
+    }
+}
+window.addEventListener('load', dpageload, true);
 
