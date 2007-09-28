@@ -2611,9 +2611,9 @@ check_anc_proof(val_context_t *context,
     /* check if span check exists */
     if (!cpe || (span_chk == 0 
 #ifdef LIBVAL_NSEC3            
-            && !ncn)
+            && !ncn
 #endif
-       ) {
+       )) {
 
         *matches = 0;
         return VAL_NO_ERROR;
