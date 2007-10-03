@@ -2437,6 +2437,10 @@ sub printopts
 
 	return if($verbose < $VERBOSE_HIGH);
 
+	print "\tDNSSEC-Tools values:\n";
+	print "\t\tconf. directory	- <" . getconfdir() . ">\n";
+	print "\t\tconf. file	- <" . getconffile() . ">\n";
+
 	print "\tzonesigner options:\n";
 	print "\t\tkrfile		- <$krfile>\n";
 	print "\t\tnokrfile	- <$nokrfile>\n";
