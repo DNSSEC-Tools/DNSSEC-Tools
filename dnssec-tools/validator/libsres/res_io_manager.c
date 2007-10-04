@@ -607,8 +607,11 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
     timeout_ts.tv_sec = timeout->tv_sec;
     timeout_ts.tv_nsec = 0;
 
-    //return select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
+#ifdef HAVE_PSELECT
     return pselect(max_sock + 1, read_descriptors, NULL, NULL, &timeout_ts, NULL);
+#else
+    return select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
+#endif
 }
 
 void
