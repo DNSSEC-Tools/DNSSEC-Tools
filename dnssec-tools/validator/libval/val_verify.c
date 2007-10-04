@@ -36,8 +36,8 @@
 static void
 get_clock_skew(val_context_t *ctx,
                u_int8_t *name_n,
-               long *skew,
-               long *ttl_x)
+               u_int32_t *skew,
+               u_int32_t *ttl_x)
 {
     policy_entry_t *cs_pol, *cs_cur;
     u_int8_t       *p;
@@ -103,7 +103,7 @@ val_sigverify(val_context_t * ctx,
               const val_dnskey_rdata_t * dnskey,
               const val_rrsig_rdata_t * rrsig,
               val_astatus_t * dnskey_status, val_astatus_t * sig_status,
-              long clock_skew)
+              u_int32_t clock_skew)
 {
     struct timeval  tv;
     struct timezone tz;
@@ -494,8 +494,8 @@ do_verify(val_context_t * ctx,
     size_t          ver_length;
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
-    long clock_skew = 0;
-    long ttl_x = 0;
+    u_int32_t clock_skew = 0;
+    u_int32_t ttl_x = 0;
 
     /*
      * Wildcard expansions for DNSKEYs and DSs are not permitted
