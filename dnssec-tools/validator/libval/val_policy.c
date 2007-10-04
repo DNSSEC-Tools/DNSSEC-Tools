@@ -320,7 +320,7 @@ parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     char            cs_token[TOKEN_MAX];
     struct clock_skew_policy  *cs_pol;
     int             retval;
-    int             clock_skew;
+    u_int32_t       clock_skew;
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
         (pol_entry == NULL) || (line_number == NULL) || (endst == NULL))
@@ -333,7 +333,7 @@ parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     if (cs_pol == NULL) {
         return VAL_OUT_OF_MEMORY;
     }
-    clock_skew = (int)strtol(cs_token, (char **)NULL, 10);
+    clock_skew = (u_int32_t)strtol(cs_token, (char **)NULL, 10);
     cs_pol->clock_skew = clock_skew;
 
     pol_entry->pol = cs_pol;
@@ -1919,7 +1919,7 @@ read_root_hints_file(val_context_t * ctx)
         //                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0,
         //                        zone_n);
         rr_set = find_rr_set(NULL, &root_info, zone_n, type_h, type_h,
-                             ns_c_in, ttl_h, NULL, rdata_n, VAL_FROM_UNSET,
+                             ns_c_in, (u_int32_t)ttl_h, NULL, rdata_n, VAL_FROM_UNSET,
                              0, zone_n);
         if (rr_set == NULL) {
             retval = VAL_OUT_OF_MEMORY;
