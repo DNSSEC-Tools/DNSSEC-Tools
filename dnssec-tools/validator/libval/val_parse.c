@@ -31,12 +31,12 @@
  * return value.
  */
 
-unsigned int
+u_int16_t
 keytag(const unsigned char key[],       /* the RDATA part of the DNSKEY RR */
-       unsigned int keysize     /* the RDLENGTH */
+       int keysize     /* the RDLENGTH */
     )
 {
-    unsigned long   ac;         /* assumed to be 32 bits or larger */
+    u_int32_t   ac;         /* assumed to be 32 bits or larger */
     int             i;          /* loop index */
 
     if (key == NULL)

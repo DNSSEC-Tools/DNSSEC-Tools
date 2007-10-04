@@ -353,8 +353,8 @@ wire_name_labels(const u_int8_t * field)
     /*
      * Calculates the number of labels in a DNS wire format name 
      */
-    u_short         j;
-    u_short         l = 0;
+    u_int16_t   j;
+    u_int16_t   l = 0;
     if (field == NULL)
         return 0;
 
@@ -378,7 +378,7 @@ wire_name_length(const u_int8_t * field)
     /*
      * Calculates the number of bytes in a DNS wire format name 
      */
-    u_short         j;
+    u_int16_t j;
     if (field == NULL)
         return 0;
 
