@@ -25,7 +25,7 @@
 /*
  * Public. 
  */
-#ifdef NETBSD
+#ifdef __NetBSD__
 #define NS_GETPUT16_TYPE u_int16_t
 #define NS_GETPUT32_TYPE u_int32_t
 #else
