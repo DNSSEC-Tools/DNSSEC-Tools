@@ -20,6 +20,14 @@ extern          "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 
+/* 
+ * XXX FreeBSD no longer defines EAI_NODATA. Need to figure out why 
+ * this is so. Following is a temporary fix.
+ */
+#if !defined(EAI_NODATA) && (EAI_NONAME == 8)
+#define EAI_NODATA 7
+#endif
+
 #if !defined(NS_INT16SZ) && defined(INT16SZ)
 #define NS_INT16SZ INT16SZ
 #define NS_INT32SZ INT32SZ
