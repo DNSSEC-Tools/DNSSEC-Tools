@@ -25,33 +25,40 @@
 /*
  * Public. 
  */
+#ifdef NETBSD
+#define NS_GETPUT16_TYPE u_int16_t
+#define NS_GETPUT32_TYPE u_int32_t
+#else
+#define NS_GETPUT16_TYPE u_int
+#define NS_GETPUT32_TYPE u_long
+#endif
 
-u_int
+NS_GETPUT16_TYPE
 ns_get16(const u_char * src)
 {
-    u_int           dst;
+    NS_GETPUT16_TYPE dst;
 
     RES_GET16(dst, src);
     return (dst);
 }
 
-u_long
+NS_GETPUT32_TYPE
 ns_get32(const u_char * src)
 {
-    u_long          dst;
+    NS_GETPUT32_TYPE dst;
 
     RES_GET32(dst, src);
     return (dst);
 }
 
 void
-ns_put16(u_int src, u_char * dst)
+ns_put16(NS_GETPUT16_TYPE src, u_char * dst)
 {
     RES_PUT16(src, dst);
 }
 
 void
-ns_put32(u_long src, u_char * dst)
+ns_put32(NS_GETPUT32_TYPE src, u_char * dst)
 {
     RES_PUT32(src, dst);
 }
