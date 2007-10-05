@@ -427,14 +427,9 @@ typedef unsigned short     u_int8_t;
 #endif /* !HAVE_U_INT8_T */])
 
 dnl ----------------------------------------------------------------------
-
-AH_TEMPLATE([NETBSD], [Define if OS is NetBSD.])
 case "$host" in
  *-*-sunos4*)
     AC_DEFINE(SPRINTF_CHAR, 1, [*s*printf() functions are char*])
-    ;;
- *-*-netbsd*)
-    AC_DEFINE(NETBSD)
     ;;
 esac
 
