@@ -368,13 +368,10 @@ sub checkkeys {
                             Data::Dumper->Dump([\%newkeys], ['*newkeys']);
                         close FILE or warn "can't close newkeys file: $!";
                     }
-                # see if it has the revoke bit set
-                # below is for testing purposes lacking a real revoke bit
-                # implementation
-                # when a real REVOKE implementation is available, this 
-                # should be changed
-#                } elsif ($keyrec->REVOKE == 1) {
-                } elsif ($revoke == 1) {
+                # check if it has the revoke bit set
+                # or if we're trying to test the revoke functionality 
+                } elsif (($keyrec->flags & 128) || 
+                         ($revoke == 1)) {
                     # this key is being revoked
                     if ($dvfile) {
                         revoke_ta_dnsvalconf($z,$keyrec);
@@ -484,10 +481,10 @@ sub checkkeys {
         # these are all zones for which new keys have reached their
         # add holddown time. add these keys as new trust anchors
         # to the appropriate config files
-            if ($zone_configfile_map{$z} eq $ncfile) {
+            if ($ncfile && ($zone_configfile_map{$z} eq $ncfile)) {
                 add_ta_namedconf($z);
             }
-            if ($zone_configfile_map{$z} eq $dvfile) {
+            if ($dvfile && ($zone_configfile_map{$z} eq $dvfile)) {
                 add_ta_dnsvalconf($z);
             }
         # now that this key has been added to the appropriate
