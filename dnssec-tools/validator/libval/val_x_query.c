@@ -689,7 +689,7 @@ val_res_query(val_context_t * ctx,
         val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
             dname, p_class(class_h), p_type(type), p_val_err(retval));
         h_errno = NETDB_INTERNAL;
-        errno = EBADMSG;
+        errno = EINVAL;
         return -1;
     }
 
