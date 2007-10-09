@@ -739,7 +739,7 @@ val_gethostbyname2_r(val_context_t * context,
             if (!*h_errnop)
                 *h_errnop = NETDB_INTERNAL;
             if (!errno)
-                errno = EBADMSG;
+                errno = EINVAL;
             return errno;
         } else {
             val_free_result_chain(results);
