@@ -5,6 +5,10 @@
 #ifndef VALIDATOR_INTERNALS_H
 #define VALIDATOR_INTERNALS_H
 
+#ifndef VAL_NO_THREADS
+#include <pthread.h>
+#endif
+
 #ifdef __cplusplus
 extern          "C" {
 #endif
