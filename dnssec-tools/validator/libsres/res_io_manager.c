@@ -42,7 +42,7 @@
 
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
-#else
+#elif ! defined( HAVE_ARPA_NAMESER_H )
 #include "arpa/header.h"
 #endif
 
