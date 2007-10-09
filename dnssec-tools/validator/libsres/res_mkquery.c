@@ -79,7 +79,7 @@
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
-#else
+#elif ! defined( HAVE_ARPA_NAMESER_H )
 #include "arpa/header.h"
 #endif
 
@@ -94,6 +94,11 @@
  * #define DEBUG
  */
 
+#if ! defined( NS_HFIXEDSZ ) && defined (HFIXEDSZ)
+#define NS_HFIXEDSZ HFIXEDSZ
+#define NS_QFIXEDSZ QFIXEDSZ 
+#define NS_RRFIXEDSZ RRFIXEDSZ
+#endif
 
 extern const char *_libsres_opcodes[];
 
