@@ -466,7 +466,6 @@ sub zsk_expired
 	my $chronostr;				# Text expiration time.
 	my $cronus;				# Current time.
 	my $expired = 0;			# Expired-zone flag.
-	my $krsecs;				# Key's expiration date.
 	my $minlife = -1;			# Minimum ZSK life.
 	my $minhr;				# Ref to min-key's keyrec.
 	my $rolltime;				# Time roll should occur.
@@ -613,6 +612,13 @@ sub zsk_expired
 		return(0);
 	}
 
+    # don't roll immediately if the rollrec file was newly created 
+    if ($starter == 0)
+    {
+        rollstamp($rname,'zsk');
+        return(0);
+    }
+
 	#
 	# Get the key's expiration time.
 	#
@@ -635,7 +641,7 @@ sub zsk_expired
 	}
 	else
 	{
-		$waitsecs = $cronus - $krsecs;
+		$waitsecs = $cronus - $rolltime;
 		$chronostr = timetrans($waitsecs);
 		rolllog_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
 		display("zskphase $rname 0");
@@ -646,7 +652,7 @@ sub zsk_expired
 	# The key has not expired if the key's lifespan has yet to reach the
 	# current time.
 	#
-	$expired = 1 if($cronus > $krsecs);
+	$expired = 1 if($cronus > $rolltime);
 
 	#
 	# Return the success/failure indication.
@@ -920,7 +926,6 @@ sub ksk_expired
 	my $chronostr;				# Text expiration time.
 	my $cronus;				# Current time.
 	my $expired = 0;			# Expired-zone flag.
-	my $krsecs;				# Key's expiration date.
 	my $minlife = -1;			# Minimum KSK life.
 	my $minhr;				# Ref to min-key's keyrec.
 	my $rolltime;				# Time roll should occur.
@@ -1067,6 +1072,13 @@ sub ksk_expired
 		return(0);
 	}
 
+    # don't roll immediately if the rollrec file was newly created 
+    if ($starter == 0)
+    {
+        rollstamp($rname,'ksk');
+        return(0);
+    }
+
 	#
 	# Get the key's expiration time.
 	#
@@ -1089,7 +1101,7 @@ sub ksk_expired
 	}
 	else
 	{
-		$waitsecs = $cronus - $krsecs;
+		$waitsecs = $cronus - $rolltime;
 		$chronostr = timetrans($waitsecs);
 		rolllog_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
 		display("kskphase $rname 0");
@@ -1100,7 +1112,7 @@ sub ksk_expired
 	# The key has not expired if the key's lifespan has yet to reach the
 	# current time.
 	#
-	$expired = 1 if($cronus > $krsecs);
+	$expired = 1 if($cronus > $rolltime);
 
 	#
 	# Return the success/failure indication.
