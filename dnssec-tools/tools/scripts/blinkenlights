@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 0.7";
+my $VERS   = "$NAME version: 1.0";
 my $DTVERS = "DNSSEC-Tools Version: 1.3";
 
 #######################################################################
@@ -87,6 +87,7 @@ my $COL2  = 2;			# Column 2.
 my $COL3  = 3;			# Column 3.
 my $COL4  = 4;			# Column 4.
 my $COL5  = 5;			# Column 5.
+my $COL6  = 6;			# Column 6.
 my $MAXCOLS = 6;		# Maximum number of columns.
 
 #
@@ -2101,7 +2102,7 @@ sub selector
 	#
 	for(my $xind=0; $xind < $lastrow; $xind++)
 	{
-		for(my $yind=0; $yind < 4; $yind++)
+		for(my $yind=0; $yind < $MAXCOLS; $yind++)
 		{
 			my $pn;				# Widget's pathname.
 
