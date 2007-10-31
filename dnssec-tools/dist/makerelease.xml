@@ -1,0 +1,164 @@
+<makerelease>
+  <steps>
+
+    <step type="system" title="Setup Checck">
+      <text>
+	The following svn command shouldn't generate any locally
+	modified files.
+
+	The VERSION grep should show the last release version number created.
+      </text>
+      <commands>
+	<command>svn status -q</command>
+	<command>grep 'DNSSEC-tools Version:' tools/modules/zonesigner</command>
+      </commands>
+    </step>
+
+    <step type="prompt" prompt="Enter the new version number:"
+      title="Pick A Version Number"
+      parameter="VERSION" values="^[\.\d]+$"
+      />
+
+    <step type="modify" title="Changing Version Numbers">
+      <modifications>
+	<modify
+	  find="(DNSSEC-Tools Version:) [\.0-9]+"
+	  replace="$1 {VERSION}">
+	  <files>
+	    <file>tools/scripts/*</file>
+	    <file>tools/mapper/mapper</file>
+	    <file>tools/donuts/donuts</file>
+	    <file>tools/maketestzone/maketestzone</file>
+	    <file>tools/dnspktflow/dnspktflow</file>
+	  </files>
+	</modify>
+      </modifications>
+    </step>
+
+    <step type="system" title="Check the version number changes">
+      <commands>
+	<command ignoreerror="1">svn diff | egrep '^[-\+]'</command>
+      </commands>
+    </step>
+
+    <step type="system" title="SVN Commit the changes"
+    interactive="1">
+      <commands>
+	<command>svn commit -m "Update Version Number: {VERSION}"</command>
+      </commands>
+    </step>
+
+    <step type="section" title="Update Net::DNS::ZoneFile::Fast" interactive="1">
+      <text>
+	If the Net::DNS::ZoneFile::Fast module needs updating this
+	will let you do it...
+      </text>
+      <steps>
+	<step type="system">
+	  <text>Previous version:</text>
+	  <commands>
+	    <command>grep VERSION tools/modules/ZoneFile-Fast/Fast.pm</command>
+	  </commands>
+	</step>
+
+	<step type="prompt" prompt="Enter the new Fast.pm VERSION number:"
+	  title="Pick A Fast.pm Version Number"
+	  parameter="FASTVERSION" values="^[\.\d]+$"/>
+	
+	<step type="modify" prompt="Modify the Fast module">
+	  <modifications>
+	    <modify
+	      find="(VERSION = ')[\.\d]+"
+	      replace="$1{FASTVERSION}">
+	      <files>
+		<file>tools/modules/ZoneFile-Fast/Fast.pm</file>
+	      </files>
+	    </modify>
+	  </modifications>
+	</step>
+
+	<step type="system" title="Check the version number changes">
+	  <commands>
+	    <command ignoreerror="1">svn diff tools/modules/ZoneFile-Fast/Fast.pm</command>
+	  </commands>
+	</step>
+
+	<step type="system" title="SVN Commit the changes" interactive="1">
+	  <commands>
+	    <command>svn commit -m "Update Fast.pm Version Number: {FASTVERSION}" tools/modules/ZoneFile-Fast/Fast.pm</command>
+	  </commands>
+	</step>
+
+	<step type="system" title="Make Test">
+	  <commands>
+	    <command>cd tools/modules/ZoneFile-Fast ; perl Makefile.PL</command>
+	    <command>cd tools/modules/ZoneFile-Fast ; make test</command>
+	  </commands>
+	</step>
+
+	<step type="system" title="make dist">
+	  <commands>
+	    <command>cd tools/modules/ZoneFile-Fast ; make dist</command>
+	  </commands>
+	</step>
+
+	<step type="system" title="upload to cpan">
+	  <commands>
+	    <command>cpan-upload -mailto wjhns117@hardakers.net -user hardaker -verbose tools/modules/ZoneFile-Fast/Net-DNS-ZoneFile-Fast-{FASTVERSION}.tar.gz</command>
+	  </commands>
+	</step>
+      </steps>
+    </step>
+
+    <step type="system" title="Create the ChangeLog">
+      <commands>
+	<command>svn log > ChangeLog</command>
+      </commands>
+    </step>
+
+    <step type="system" title="Commit the ChangeLog">
+      <commands>
+	<command>svn commit -m "Update for verison {VERSION}" ChangeLog</command>
+      </commands>
+    </step>
+
+    <step type="system" title="Update the NEWS file" interactive="1">
+      <text>Please update the NEWS file with new details and we'll commit it</text>
+      <commands>
+	<command>svn commit -m "Update for verison {VERSION}" NEWS</command>
+      </commands>
+    </step>
+
+
+    <step type="system" title="svn tag the release">
+      <commands>
+	<command>svn copy -m "tag of version {VERSION}" https://dnssec-tools.svn.sourceforge.net/svnroot/dnssec-tools/trunk/dnssec-tools https://dnssec-tools.svn.sourceforge.net/svnroot/dnssec-tools/tags/dnssec-tools-{VERSION}</command>
+      </commands>
+    </step>
+
+    <step type="system" title="export the release">
+      <commands>
+	<command>svn export https://dnssec-tools.svn.sourceforge.net/svnroot/dnssec-tools/tags/dnssec-tools-{VERSION} dnssec-tools{VERSION}</command>
+      </commands>
+    </step>
+
+    <step type="system" title="create the tar file">
+      <commands>
+	<command>tar czf dnssec-tools-{VERSION}.tar.gz dnssec-tools-{VERSION}</command>
+      </commands>
+    </step>
+
+    <step type="system" title="upload the results to sourceforge" interactive="1">
+      <commands>
+	<command>ncftpput upload.sourceforge.net incoming dnssec-tools-{VERSION}.tar.gz</command>
+      </commands>
+    </step>
+
+    <step type="information" title="Advertising">
+      <text>
+	Update the SF file list
+	Advertise like crazy!
+      </text>
+    </step>
+  </steps>
+</makerelease>
