@@ -161,6 +161,7 @@ sub parse
 	  if ($param{tolower}) {
 	      $z->{name} = lc $z->{name};
 	      $z->{cname} = lc $z->{cname} if defined $z->{cname};
+	      $z->{dname} = lc $z->{dname} if defined $z->{dname};
 	      $z->{exchange} = lc $z->{exchange} if defined $z->{exchange};
 	      $z->{mname} = lc $z->{mname} if defined $z->{mname};
 	      $z->{rname} = lc $z->{rname} if defined $z->{rname};
@@ -172,6 +173,7 @@ sub parse
 	  } elsif ($param{toupper}) {
 	      $z->{name} = uc $z->{name};
 	      $z->{cname} = uc $z->{cname} if defined $z->{cname};
+	      $z->{dname} = uc $z->{dname} if defined $z->{dname};
 	      $z->{exchange} = uc $z->{exchange} if defined $z->{exchange};
 	      $z->{mname} = uc $z->{mname} if defined $z->{mname};
 	      $z->{rname} = uc $z->{rname} if defined $z->{rname};
@@ -420,6 +422,34 @@ sub parse_line
 	  } else {
 	      error("bad cname in CNAME");
 	  }
+      } elsif (/\G(dname)[ \t]+/igc) {
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      my $name = $1;
+	      $name = "$name$origin" unless $name =~ /\.$/;
+	      chop $name;
+	      push @zone, {
+			   Line  => $ln,
+			   name  => $domain,
+			   type  => "DNAME",
+			   ttl   => $ttl,
+			   class => "IN",
+			   dname => $name,
+			  };
+	  } elsif (/\G\@$pat_skip$/gc) {
+	      my $name = $origin;
+	      $name =~ s/^.// unless $name eq ".";
+	      chop $name;
+	      push @zone, {
+			   Line     => $ln,
+			   name     => $domain,
+			   type     => "DNAME",
+			   ttl      => $ttl,
+			   class    => "IN",
+			   dname    => $name,
+			  };
+	  } else {
+	      error("bad dname in DNAME");
+	  }
       } elsif (/\G(mx)[ \t]+/igc) {
 	  my $prio;
 	  if (/\G(\d+)[ \t]+/gc) {
@@ -454,7 +484,7 @@ sub parse_line
 			   exchange   => $name,
 			  };
 	  } else {
-	      error("bad exchange in CNAME");
+	      error("bad exchange in MX");
 	  }
       } elsif (/\G(aaaa)[ \t]+/igc) {
 	  if (/\G([\da-fA-F:.]+)$pat_skip$/) {
@@ -1132,6 +1162,8 @@ The module currently understands:
 =item B<AAAA> records
 
 =item B<CNAME> records
+
+=item B<DNAME> records
 
 =item B<HINFO> records
 
