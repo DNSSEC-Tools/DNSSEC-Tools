@@ -52,8 +52,8 @@ my $MAXIMUM_TTL = 0x7fffffff;
 
 my $pat_ttl = qr{[\dwdhms]+}i;
 my $pat_skip = qr{\s*(?:;.*)?};
-my $pat_name = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*};
-my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+my $pat_name = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*};
+my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
 
 my $debug;
 my $domain;
@@ -74,6 +74,7 @@ my $soft_errors;
 my $fh;
 my @fhs;
 my @lns;
+my $includes_root;
 
 # boot strap optional DNSSEC module functcions
 # (not optional if trying to parse a signed zone, but we don't need
@@ -123,6 +124,7 @@ sub parse
       $param{soft_errors} = 1 if $on_error && !exists $param{soft_errors};
       $quiet = 1 if $on_error && !exists $param{quiet};
       $soft_errors = $param{soft_errors};
+      $includes_root = $param{includes_root};
 
       eval {
 	  if ($fh) {
@@ -209,15 +211,22 @@ sub parse_line
 	      error("no include file specified $_");
 	      return;
 	  }
-	  if (! -f $1) {
-	      error("could not find file $1");
-	      return;
+          my $fn = $1;
+	  if (! -f $fn) {
+              # expand file according to includes_root
+              if ($includes_root && -f $includes_root . '/'. $fn) {
+                  $fn = $includes_root . '/'. $fn;
+              }
+              else {
+                error("could not find file $fn");
+                return;
+              }
 	  }
 	  unshift @fhs, $fh;
 	  unshift @lns, $ln;
-	  $fh = IO::File->new($1, "r");
+	  $fh = IO::File->new($fn, "r");
 	  $ln = 0;
-	  error("cannot open include file $1: $!") unless defined $fh;
+	  error("cannot open include file $fn: $!") unless defined $fh;
 	  return;
       } elsif (/^\$origin[ \t]+/ig) {
 	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
@@ -790,6 +799,27 @@ sub parse_line
 		       mbox     => $mbox,
 		       txtdname => $txtdname,
 		      };
+      } elsif (/\G(naptr)[ \t]+/igc) {
+          # Parsing taken from Net::DNS::RR::NAPTR
+          if (!/\G(\d+) \s+ (\d+) \s+ ['"] (.*?) ['"] \s+ ['"] (.*?) ['"] \s+ ['"] (.*?) ['"] \s+ (\S+)$/xgc) {
+	      error("bad NAPTR data");
+          }
+          push @zone, 
+            {
+              Line      => $ln,
+              name      => $domain,
+              class     => "IN",
+              ttl       => $ttl,
+              type      => "NAPTR",
+
+              order       => $1,
+              preference  => $2,
+              flags       => $3,
+              service     => $4,
+              regexp      => $5,
+              replacement => $6,
+            };
+          $zone[ $#zone ]{replacement} =~ s/\.+$//;
       } elsif (/\Gany\s+tsig.*$/igc) {
 	  # XXX ignore tsigs
       } else {
@@ -1183,6 +1213,14 @@ where the error occurred, and the error description.
 By default, I<parse> throws an exception on any error.  Set this
 optional parameter to a true value to avoid this.  The default is false,
 unless B<on_error> is also specified, in which case it is true.
+
+=item B<includes_root>
+
+An optional parameter.  By default, any $INCLUDE directives encountered
+will be tested for existance and readablility.  If the base path of the
+included filename is not your current working directory, this test will
+fail.  Set the B<includes_root> to the same as your named.conf file to
+avoid this failure.
 
 =item B<quiet>
 

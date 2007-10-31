@@ -15,6 +15,7 @@ BEGIN {
 	 q{10.10.10.10.in-addr.arpa. 300 PTR www.acme.com.},
 	 q{10.10.10.10.in-addr.arpa. IN PTR www.acme.com.},
 	 q{10.10.10.10.in-addr.arpa PTR www.acme.com.},
+         q{10.10/10.10.10.in-addr.arpa. IN PTR www.acme.com.},
 	 q{. 3600 IN NS dns1.acme.com.},
 	 q{acme.com. 3600 IN NS dns1.acme.com.},
 	 q{@ 3600 IN NS dns1.acme.com.},
