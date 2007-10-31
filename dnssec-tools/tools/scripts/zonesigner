@@ -102,7 +102,6 @@ my $genksk;				# Generate new KSKs.
 my $ksignset;				# KSK signing set.
 
 my $zskcur;				# Current ZSK.
-my $zskpub;				# Published ZSK.
 my $zskdir;				# Directory to hold ZSK.
 my $zsklife;				# Time between ZSK rollovers.
 my $zskcnt;				# Number of current ZSKs.
@@ -1330,7 +1329,7 @@ sub keydirs
 		}
 
 		system("$MV $zskcur.* $zskdir");
-		system("$MV $zskpub.* $zskdir");
+#		system("$MV $zskpub.* $zskdir");
 	}
 
 	vmed_print("\n");
@@ -2277,6 +2276,7 @@ sub rollzsk
 		for(my $ind=0; $ind < $zskcnt; $ind++)
 		{
 			my $krref;			# Keyrec reference.
+			my $zskpub;			# Published ZSK.
 
 			#
 			# Create a new key and save its name.
