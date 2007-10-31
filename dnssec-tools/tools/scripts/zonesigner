@@ -1292,6 +1292,7 @@ sub keydirs
 
 	#
 	# Ensure the KSK key directory exists and is actually a directory.
+	# We'll also move the KSKs into the directory.
 	#
 	if($genksk && ($kskdir ne "."))
 	{
@@ -1314,6 +1315,7 @@ sub keydirs
 
 	#
 	# Ensure the ZSK key directory exists and is a directory.
+	# We'll also move the ZSKs into the directory.
 	#
 	if($genzsk && ($zskdir ne "."))
 	{
@@ -1328,8 +1330,15 @@ sub keydirs
 			exit(3);
 		}
 
-		system("$MV $zskcur.* $zskdir");
-#		system("$MV $zskpub.* $zskdir");
+		foreach my $zsk (@zskcurlist)
+		{
+			system("$MV $zsk.* $zskdir");
+		}
+
+		foreach my $zsk (@zskpublist)
+		{
+			system("$MV $zsk.* $zskdir");
+		}
 	}
 
 	vmed_print("\n");
