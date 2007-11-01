@@ -26,13 +26,11 @@ sub InitMakeParams {
 		  );
     # test for libval install and get link/compile info
     my $ldflags = `libval-config --libs`;
-    die "error: unable to determine link flags (check validator install)" 
-	if $? or not $ldflags;
-	
+
     $Params{'LIBS'} = $ldflags;
 
     my $cflags = `libval-config --cflags`;
-    die "error: unable to determine complile flags (check validator install)" 
+    die "error: unable to determine compile flags (check validator install)" 
 	if $? or not $cflags;
 
     $Params{'CCFLAGS'} = $cflags;
