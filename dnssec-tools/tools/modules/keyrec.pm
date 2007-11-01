@@ -54,7 +54,7 @@ require Exporter;
 use strict;
 use Net::DNS::SEC::Tools::conf;
 
-our $VERSION = "0.9";
+our $VERSION = "1.3";
 
 our @ISA = qw(Exporter);
 
@@ -63,7 +63,7 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk keyrec_names
 		 keyrec_add keyrec_del keyrec_newkeyrec keyrec_exists
 		 keyrec_zonefields keyrec_setfields keyrec_keyfields
 		 keyrec_init keyrec_discard keyrec_close
-		 keyrec_write keyrec_saveas
+		 keyrec_write keyrec_saveas keyrec_keypaths
 		 keyrec_defkrf keyrec_dump_hash keyrec_dump_array
 		 keyrec_signset_newname keyrec_signset_new
 		 keyrec_signset_addkey keyrec_signset_delkey
@@ -565,6 +565,71 @@ sub keyrec_names
 	}
 
 	return(@names);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_keypaths()
+#
+# Purpose:	Return an array of the paths of a zone keyrec's keys.
+#		The type of key is specified by the caller.
+#
+sub keyrec_keypaths
+{
+	my $krn = shift;			# Keyrec name.
+	my $krt = shift;			# Keyrec type.
+
+	my $sset;				# Signing set name.
+	my $keylist;				# List of keys.
+	my @paths = ();				# Array for keyrec names.
+
+	#
+	# Ensure this is a zone keyrec.
+	#
+	return(@paths) if($keyrecs{$krn}{'keyrec_type'} ne "zone");
+
+	#
+	# Ensure the keyrec type is valid.
+	#
+	if(($krt ne "kskcur") && ($krt ne "kskpub") && ($krt ne "ksknew") &&
+	   ($krt ne "zskcur") && ($krt ne "zskpub"))
+	{
+		return(@paths);
+	}
+
+	#
+	# Get and verify the name of the appropriate signing set.
+	#
+	return(@paths) if(!defined($keyrecs{$krn}{$krt}));
+	$sset = $keyrecs{$krn}{$krt};
+
+	#
+	# Get and verify the key list.
+	#
+	return(@paths) if(!defined($keyrecs{$sset}{'keys'}));
+	$keylist = $keyrecs{$sset}{'keys'};
+
+	#
+	# Get the key's paths and add 'em to the path array.
+	#
+	foreach my $kn (split /[\s,]/, $keylist)
+	{
+		#
+		# Verify that this key exists and is the right type.
+		#
+		next if(!defined($keyrecs{$kn}));
+		next if($keyrecs{$kn}{'keyrec_type'} ne $krt);
+
+		#
+		# Push the key's path onto the path list.
+		#
+		push @paths, $keyrecs{$kn}{'keypath'};
+	}
+
+	#
+	# Return the path list.
+	#
+	return(sort(@paths));
 }
 
 #--------------------------------------------------------------------------
@@ -1835,6 +1900,8 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   keyrec_setval("zone","example.com","zonefile","db.example.com");
 
+  @kskpaths = keyrec_keypaths("example.com","kskcur");
+
   $setname = keyrec_signset_newname("example.com");
 
   keyrec_signset_new("zone","example-keys");
@@ -2080,6 +2147,19 @@ Return values are:
 
     0 if the creation succeeded
     -1 invalid type was given
+
+
+=item I<keyrec_keypaths(zonename,keytype)>
+
+I<keyrec_keypaths()> returns a list of paths to a set of key files for a
+given zone.  The zone is specified in I<zonename> and the type of key is
+given in I<keytype>.
+
+I<keytype> must be one of the following:  "kskcur", "kskpub", "ksknew",
+"zskcur", or "zskpub".
+
+If the given key type is not defined in the given zone's zone I<keyrec>, then
+a null set is returned.
 
 =item I<keyrec_settime(keyrec_type,keyrec_name)>
 
