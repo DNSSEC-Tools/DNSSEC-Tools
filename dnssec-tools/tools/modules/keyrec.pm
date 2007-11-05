@@ -1378,7 +1378,7 @@ sub keyrec_signset_newname
 	# Get the zone's last signing set.
 	#
 	$setname = $keyrecs{$zone}{'lastset'};
-	$setname = "signing-set-0" if(!defined($keyrecs{$zone}{'lastset'}));
+	$setname = "$zone-signset-0" if(!defined($keyrecs{$zone}{'lastset'}));
 
 	#
 	# Get the first number in the set name.  If there isn't a number
