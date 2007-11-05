@@ -1588,7 +1588,7 @@ sub zonesign
 	{
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\t\tKSK (cur) $keytag  $ksize  $chron\t($kskcursetname)\n";
+		print "\tKSK (cur) $keytag  $ksize  $chron\t($kskcursetname)\n";
 	}
 
 	#
@@ -1598,7 +1598,7 @@ sub zonesign
 	{
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\t\tKSK (pub) $keytag  $ksize  $chron\t($kskpubsetname)\n";
+		print "\tKSK (pub) $keytag  $ksize  $chron\t($kskpubsetname)\n";
 	}
 
 	#
@@ -1608,7 +1608,7 @@ sub zonesign
 	{
 		$zskcur =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\t\tZSK (cur) $keytag  $zsize  $chron\t($zskcursetname)\n";
+		print "\tZSK (cur) $keytag  $zsize  $chron\t($zskcursetname)\n";
 	}
 
 	#
@@ -1618,7 +1618,7 @@ sub zonesign
 	{
 		$zskpub =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\t\tZSK (pub) $keytag  $zsize  $chron\t($zskpubsetname)\n";
+		print "\tZSK (pub) $keytag  $zsize  $chron\t($zskpubsetname)\n";
 	}
 
 	#
@@ -2009,9 +2009,19 @@ sub chkkrf
 	}
 
 	#
-	# If the keyrec file is of non-zero length, we'll return now.
+	# If the keyrec file is of non-zero length, we'll check if there's
+	# a zone keyrec for this zone.  If so, we'll return now.
 	#
-	return if(-s $krfile);
+	if(-s $krfile)
+	{
+		my $kr;					# Keyrec.
+
+		$kr = keyrec_fullrec($zone);
+		if(defined($kr) && ($kr->{'keyrec_type'} eq 'zone'))
+		{
+			return;
+		}
+	}
 
 	#
 	# Set the basic zone keyrec fields for a zone.
@@ -2792,7 +2802,7 @@ For example, the KSK length has the following values:
 
     DNSSEC-Tools configuration file:	2048
 
-    zonesigner defaults:    		512
+    zonesigner defaults:    		 512
 
 If all are present, then the KSK length will be 8192.
 
@@ -2891,8 +2901,11 @@ The name of the KSK signing set to use.  If the signing set does not exist,
 then this must be used in conjunction with either I<-genkeys> or I<-genksk>.
 The name may contain alphanumerics, underscores, hyphens, periods, and commas.
 
-The default signing set name is "signing-set-I<N>", where I<N> is a number.
-If I<-signset> is not specified, then B<zonesigner> will use the default and
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+The default signing set name is "I<zone>-signset-I<N>", where I<zone> is the
+zone being signed and I<N> is a number.
+
+If I<-ksignset> is not specified, then B<zonesigner> will use the default and
 increment the number for subsequent signing sets.
 
 =item -zsklife
@@ -2912,7 +2925,9 @@ signing set.  If the signing set does not exist, then this must be used in
 conjunction with either I<-genkeys> or I<-genzsk>.
 
 The name may contain alphanumerics, underscores, hyphens, periods, and commas.
-The default signing set name is "signing-set-I<N>", where I<N> is a number.
+The default signing set name is "I<zone>signset-I<N>", where I<zone> is the
+zone being signed and I<N> is a number.
+
 If I<-signset> is not specified, then B<zonesigner> will use the default and
 increment the number for subsequent signing sets.
 
@@ -3194,28 +3209,28 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	zonefile	"example.com"
 	signedzone	"db.example.com"
 	endtime		"+2592000"
-	kskcur		"signing-set-24"
+	kskcur		"example.com.signset-24"
 	kskdirectory	"."
-	zskcur		"signing-set-42"
-	zskpub		"signing-set-43"
+	zskcur		"example.com.signset-42"
+	zskpub		"example.com.signset-43"
 	zskdirectory	"."
 	keyrec_type	"zone"
 	keyrec_signsecs	"1115166642"
 	keyrec_signdate	"Wed May  4 00:30:42 2005"
 
-    set		"signing-set-24"
+    set		"example.com.signset-24"
 	zonename	"example.com"
 	keys		"Kexample.com.+005+24082"
 	keyrec_setsecs	"1110000042"
 	keyrec_setdate	"Sat Mar  5 05:20:42 2005"
 
-    set		"signing-set-42"
+    set		"example.com.signset-42"
 	zonename	"example.com"
 	keys		"Kexample.com.+005+53135"
 	keyrec_setsecs	"1115166640"
 	keyrec_setdate	"Wed May  4 00:30:40 2005"
 
-    set		"signing-set-43"
+    set		"example.com.signset-43"
 	zonename	"example.com"
 	keys		"Kexample.com.+005+13531"
 	keyrec_setsecs	"1115166641"
@@ -3281,6 +3296,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<lskrf(1)>
+
 B<dnssec-keygen(8)>,
 B<dnssec-signzone(8)>
 
@@ -3288,5 +3305,7 @@ B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>,
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
 B<Net::DNS::SEC::Tools::tooloptions.pm(3)>
+
+B<keyrec(5)>
 
 =cut
