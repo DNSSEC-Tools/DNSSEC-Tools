@@ -612,12 +612,14 @@ sub zsk_expired
 		return(0);
 	}
 
-    # don't roll immediately if the rollrec file was newly created 
-    if ($starter == 0)
-    {
-        rollstamp($rname,'zsk');
-        return(0);
-    }
+	#
+	# Don't roll immediately if the rollrec file was newly created.
+	#
+	if($starter == 0)
+	{
+		rollstamp($rname,'zsk');
+		return(0);
+	}
 
 	#
 	# Get the key's expiration time.
@@ -790,7 +792,7 @@ sub zsk_phase2
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rolllog_log(LOG_ERR,$zone,"ZSK phase 2:  unable to reload zone, rc - $ret");
+		rolllog_log(LOG_ERR,$zone,"ZSK phase 2:  unable to reload zone, rc - $ret");
 	}
 
 	#
@@ -871,7 +873,7 @@ sub zsk_phase4
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rolllog_log(LOG_ERR,$zone,"ZSK phase 4:  unable to reload zone, rc - $ret");
+		rolllog_log(LOG_ERR,$zone,"ZSK phase 4:  unable to reload zone, rc - $ret");
 	}
 
 	#
@@ -1072,12 +1074,14 @@ sub ksk_expired
 		return(0);
 	}
 
-    # don't roll immediately if the rollrec file was newly created 
-    if ($starter == 0)
-    {
-        rollstamp($rname,'ksk');
-        return(0);
-    }
+	#
+	# Don't roll immediately if the rollrec file was newly created.
+	#
+	if($starter == 0)
+	{
+		rollstamp($rname,'ksk');
+		return(0);
+	}
 
 	#
 	# Get the key's expiration time.
@@ -1256,7 +1260,7 @@ sub ksk_phase2
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
 	}
 
 	#
