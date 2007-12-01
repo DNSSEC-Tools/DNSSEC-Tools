@@ -5,10 +5,20 @@ usage:  zonesigner [options] <zone-file> [signed-zone]
 			-nokrfile
 			-genkeys
 			-genksk
+			-newpubksk
 			-genzsk
-			-usepub
+			-rollksk
+			-rollzsk
+			-useboth
+			-usezskpub
+			-archivedir directory
+			-nosave
+			-kskcount count
 			-ksklife lifespan
+			-ksignset KSK-set-name
 			-zsklife lifespan
+			-zskcount count
+			-signset ZSK-set-name
 			-intermediate tmp-zone-file
 			-zone zone-name
 			-help
@@ -22,6 +32,7 @@ usage:  zonesigner [options] <zone-file> [signed-zone]
 			-zskcount ZSK-number
 			-random random-path
 			-kgopts dnssec-keygen-options
+			-zcopts named-checkzone-options
 
 		dnssec-signzone options:
 			-endtime end-time
