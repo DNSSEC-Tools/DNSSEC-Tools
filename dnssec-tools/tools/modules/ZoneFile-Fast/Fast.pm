@@ -1282,6 +1282,10 @@ zone parsable by BIND, and no guarantee that BIND will parse every zone
 parsable by I<parse()>.  That said, I<parse()> appears to do the right
 thing on around 50000 real life zones I tested it with.
 
+SOA serial numbers with a decimal point are not supported (they're not
+a legal zonefile contstruct, although bind8 supported them.  Even bind
+is dropping support for them in future releases).
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright 2003 by Anton Berezin and catpipe Systems ApS
