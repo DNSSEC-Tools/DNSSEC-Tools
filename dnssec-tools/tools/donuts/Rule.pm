@@ -83,23 +83,25 @@ sub print_error {
 }
 
 sub test_record {
-    my ($r, $rec, $file, $level, $features, $verbose) = @_;
-    if ((!exists($r->{'level'}) || $level >= $r->{'level'}) &&
-	(!exists($r->{'feature'}) || exists($features->{$r->{'feature'}})) &&
-	(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
+    my ($rule, $record, $file, $level, $features, $verbose) = @_;
+    if ((!exists($rule->{'level'}) || $level >= $rule->{'level'}) &&
+	(!exists($rule->{'feature'}) ||
+	 exists($features->{$rule->{'feature'}})) &&
+	(!exists($rule->{'ruletype'}) || $rule->{'ruletype'} ne 'name')) {
 
 	# this is a legal rule for this run.
 
-	if (!exists($r->{'type'}) || $rec->type eq $r->{'type'}) {
+	if (!exists($rule->{'type'}) || $record->type eq $rule->{'type'}) {
 
 	    # and the type matches
 
-	    my $res = eval { $r->{'test'}->($rec, $r); };
+	    $rrule = $rule;
+	    my $res = eval { $rule->{'test'}->($record, $rule); };
 	    if (!defined($res) && $@) {
-		print STDERR "\nProblem executing rule $r->{name}: \n";
-		print STDERR "  Record:   " . $rec->name . " -- (" 
-		  . ref($rec) . ")\n";
-		print STDERR "  Location: $file:$rec->{Line}\n\n";
+		print STDERR "\nProblem executing rule $rule->{name}: \n";
+		print STDERR "  Record:   " . $record->name . " -- (" 
+		  . ref($record) . ")\n";
+		print STDERR "  Location: $file:$record->{Line}\n\n";
 		print STDERR "  Error:    $@\n";
 		return (0,0);
 	    }
@@ -112,8 +114,8 @@ sub test_record {
 	    }
 	    if ($#$res > -1) {
 		foreach my $result (@$res) {
-		    $r->print_error($result, $rec->name,
-				    $verbose, "$file:$rec->{Line}");
+		    $rule->print_error($result, $record->name,
+				       $verbose, "$file:$record->{Line}");
 		}
 		return (1,$#$res+1);
 	    }
@@ -128,11 +130,12 @@ sub test_record {
 }
 
 sub test_name {
-    my ($r, $namerecord, $name, $file, $level, $features, $verbose) = @_;
-    if ((!exists($r->{'level'}) || $level >= $r->{'level'}) &&
-	(!exists($r->{'feature'}) || exists($features->{$r->{'feature'}})) &&
-	(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
-	my $res = $r->{'test'}->($namerecord, $r, $name);
+    my ($rule, $namerecord, $name, $file, $level, $features, $verbose) = @_;
+    if ((!exists($rule->{'level'}) || $level >= $rule->{'level'}) &&
+	(!exists($rule->{'feature'}) ||
+	 exists($features->{$rule->{'feature'}})) &&
+	(exists($rule->{'ruletype'}) && $rule->{'ruletype'} eq 'name')) {
+	my $res = $rule->{'test'}->($namerecord, $rule, $name);
 	if (ref($res) ne 'ARRAY') {
 	    if ($res) {
 		$res = [$res];
@@ -142,8 +145,8 @@ sub test_name {
 	}
 	if ($#$res > -1) {
 	    foreach my $result (@$res) {
-		$r->print_error($result, "$file::$name",
-				$verbose);
+		$rule->print_error($result, "$file::$name",
+				   $verbose);
 	    }
 	    return (1,$#$res+1);
 	}
