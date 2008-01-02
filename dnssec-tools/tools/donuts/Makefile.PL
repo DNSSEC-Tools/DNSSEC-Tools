@@ -24,10 +24,13 @@ RULESDIR=$(DESTDIR)/$(PREFIX)/share/dnssec-tools/donuts/rules
 
 INSTALL=$(PERL) "-MExtUtils::Command" -e cp
 
-install:: installrulefiles
+install:: installrulefiles installfixpaths
 
 installrulefiles:
 	$(MKPATH) $(RULESDIR)
 	$(INSTALL) rules/*.txt $(RULESDIR)
+
+installfixpaths:
+	$(PERL) -p -i -e "s|/usr/local/share|$(PREFIX)/share|" $(DISTDIR)/$(PREFIX)/bin/donuts
 ';
 }
