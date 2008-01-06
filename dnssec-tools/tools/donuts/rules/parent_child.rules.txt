@@ -14,22 +14,22 @@ desc: Tests to see if at least two NS records exist for a delegated zone.
 ruletype: name
 class: Warning
 test:
-  return "Only " . ($#{$_[0]->{'NS'}}+1) . 
-     " NS record(s) for $_[2] found, but at least " .
-     $_[1]->{'minnsrecords'} . " are suggested/required"
-        if (exists($_[0]->{'NS'}) && 
-           $#{$_[0]->{'NS'}}+1 < $_[1]->{'minnsrecords'});
+  return "Only " . ($#{$records->{'NS'}}+1) . 
+     " NS record(s) for $recordname found, but at least " .
+     $rule->{'minnsrecords'} . " are suggested/required"
+        if (exists($records->{'NS'}) && 
+           $#{$records->{'NS'}}+1 < $rule->{'minnsrecords'});
 
 name: DNSSEC_SUB_NOT_SECURE
 level: 3
 ruletype: name
 desc: Tests for the existence of a DS record in a zone for sub-domains.  If not present then the sub-domain is not being securely delegated to.
 test:
-  "sub-domain $_[2] is not securely delegated.  It is missing a DS record."
-  if ($current_domain ne $_[2]                         &&  # not the root
-      exists($_[0]->{'NS'}) && $#{$_[0]->{'NS'}} > -1  &&  # is a sub
-      exists($_[0]->{'RRSIG'})                         &&  # DS||NSEC signed
-      !exists($_[0]->{'DS'})                               # No DS
+  "sub-domain $recordname is not securely delegated.  It is missing a DS record."
+  if ($current_domain ne $recordname                         &&  # not the root
+      exists($records->{'NS'}) && $#{$records->{'NS'}} > -1  &&  # is a sub
+      exists($records->{'RRSIG'})                         &&  # DS||NSEC signed
+      !exists($records->{'DS'})                               # No DS
      );
 
 name: DNSSEC_DNSKEY_PARENT_HAS_VALID_DS
@@ -38,19 +38,18 @@ feature: live
 type: DNSKEY
 desc: tests for valid DS checksum and for RFC4034: section 5.2: The DNSKEY RR referred to in the DS RR MUST be a DNSSEC zone key.
 test:
-  my $keyrr = $_[0];
-  $keyrr->setkeytag();
-  return if ($keyrr->flags & 0x100);  # key is not a zone signing key
-  my @DSs = live_query($keyrr->name, "DS");
-  return "Parent zone has no DS records for $keyrr->{name} (keyid = $keyrr->{keytag})" if ($#DSs == -1);
-  map { if ($_->verify($keyrr)) {
-          if ($_->keytag !=  $keyrr->keytag) {  # tag ids match
-	    return "KEY with tag $keyrr->{keytag} verifies DS record with non matching tag $_->{keytag}";
+  $record->setkeytag();
+  return if ($record->flags & 0x100);  # key is not a zone signing key
+  my @DSs = live_query($record->name, "DS");
+  return "Parent zone has no DS records for $record->{name} (keyid = $record->{keytag})" if ($#DSs == -1);
+  map { if ($_->verify($record)) {
+          if ($_->keytag !=  $record->keytag) {  # tag ids match
+	    return "KEY with tag $record->{keytag} verifies DS record with non matching tag $_->{keytag}";
           }
           return;
         } } @DSs;
-  return "DNSKEY record for $keyrr->{name} (keytag = " .
-         $keyrr->keytag . 
+  return "DNSKEY record for $record->{name} (keytag = " .
+         $record->keytag . 
          ") does not have a matching DS record in the live parent zone";
 
 name: DNSSEC_DS_CHILD_HAS_MATCHING_DNSKEY
@@ -59,13 +58,12 @@ feature: live
 desc: tests for valid DS checksum and for RFC4034: section 5.2: The DNSKEY RR referred to in the DS RR MUST be a DNSSEC zone key.
 type: DS
 test:
-  my $dsrr = $_[0];
-  my @KEYs = live_query($dsrr->name, "DNSKEY");
-  return "Child zone has no DNSKEY records for $dsrr->{name}" if ($#KEYs == -1);
-  map { if ($dsrr->verify($_)) {
+  my @KEYs = live_query($record->name, "DNSKEY");
+  return "Child zone has no DNSKEY records for $record->{name}" if ($#KEYs == -1);
+  map { if ($record->verify($_)) {
           return if ($_->flags & 0x100);  # zone bit set properly
-          return "Key tag $_->{keytag} in child for $_->{name} does not match key tag $dsrr->{keytag}" if ($_->keytag != $dsrr->keytag);
-          return "Key in child for $_->{keytag} referred to by DS for $dsrr->{name} does not have the zone flag set";
+          return "Key tag $_->{keytag} in child for $_->{name} does not match key tag $record->{keytag}" if ($_->keytag != $record->keytag);
+          return "Key in child for $_->{keytag} referred to by DS for $record->{name} does not have the zone flag set";
           return;
         } } @KEYs;
-  return "DS record for $dsrr->{name} does not have a matching DNSKEY record in the live child zone";
+  return "DS record for $record->{name} does not have a matching DNSKEY record in the live child zone";

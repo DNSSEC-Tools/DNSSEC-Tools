@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 
 
@@ -31,7 +31,7 @@ my %opts = (l => 5,
 	    o => '%d.%t.pcap',
 	    r => "/usr/local/share/dnssec-tools/donuts/rules/*");
 
-my (@rules, %rules, $rf, $current_zone_file, %nrecs,
+our (@rules, %rules, $rf, $current_zone_file, %nrecs,
     @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
     $globalrulecount, $globalrrset, $globalnrecs,
     $globalerrcount, @filestested);
@@ -561,24 +561,19 @@ sub parse_rule_file {
 		$code .= $_;
 	    }
 
-	    # add sub wrapper (if not init type)
-	    if ($type ne 'init' && $code !~ /^\s*sub\s*{/) {
-		$code = "sub { $code }";
-	    }
-
 	    # evaluate it
 	    if ($type eq 'init') {
 		eval("$code");
+	    # if error, mention it
+		if ($@) {
+		    warn "broken code in $file:$count rule '$rule->{name}': $@";
+		    print STDERR "IN CODE:\n  $code\n" if ($opts{'v'});
+		    $err = 1;
+		}
 	    } else {
-		$rule->{'test'} = eval("$code");
+		$rule->{'test'} = $code;
 	    }
 
-	    # if error, mention it
-	    if ($@) {
-		warn "broken code in $file:$count rule '$rule->{name}': $@";
-		print STDERR "IN CODE:\n  $code\n" if ($opts{'v'});
-		$err = 1;
-	    }
 	    if (!/^\s/ && !/<\/(test|init)/) {
 		$count--;
 		$nextline = $_;
@@ -937,7 +932,7 @@ Obsolete command line option.  Please use I<--features live> instead.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
@@ -946,6 +941,10 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 =head1 SEE ALSO
 
+For more information on the dnssec-tools project:
+
+  http://www.dnssec-tools.org/
+
 For writing rules that can be loaded by donuts:
 
   B<Net::DNS::SEC::Tools::Donuts::Rule>, 
@@ -953,10 +952,5 @@ For writing rules that can be loaded by donuts:
 General DNS and DNSSEC usage:
 
   B<Net::DNS>, B<Net::DNS::SEC>
-
-B<Gtk2.pm(3)>,
-B<QWizard.pm(3)>
-
-http://dnssec-tools.sourceforge.net/
 
 =cut

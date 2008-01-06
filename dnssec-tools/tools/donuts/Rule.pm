@@ -12,6 +12,36 @@ our $VERSION="1.0";
 
 sub new {
     my ($class, $ref) = @_;
+
+    # based on the rule type, eval the code 'test' string into a subroutine.
+    #   - if it is already a CODE ref, let it be
+    #   - if it has a sub { prefix, just eval as is
+    #   - otherwise, prepend some local convenience variable names and sub {} it
+    if (exists($ref->{'test'}) && ref($ref->{'test'}) ne 'CODE') {
+	if ($ref->{'test'} !~ /^\s*sub\s*{/) {
+	    my $code = "no strict;   package main;   sub {\n";
+	    if ($ref->{'ruletype'} eq 'name') {
+		$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
+	    } else {
+		# assume 'record' ruletype...
+		$code .= "  my (\$record, \$rule) = \@_;\n";
+	    }
+	    $code .= "
+                    $ref->{'test'}
+                    }";
+	    $ref->{'test'} = $code;
+	}
+
+	# create the CODE ref from the string
+	$ref->{'test'} = eval("$ref->{test}");
+
+	# if error, mention it
+	if ($@) {
+	    warn "broken code in test for rule '$ref->{name}': $@";
+	    print STDERR "IN CODE:\n  $ref->{test}\n" if ($main::opts{'v'});
+	}
+    }
+
     bless $ref, $class;
     return $ref;
 }
@@ -95,7 +125,6 @@ sub test_record {
 
 	    # and the type matches
 
-	    $rrule = $rule;
 	    my $res = eval { $rule->{'test'}->($record, $rule); };
 	    if (!defined($res) && $@) {
 		print STDERR "\nProblem executing rule $rule->{name}: \n";
@@ -285,10 +314,10 @@ Example:
 =item I<ruletype>
 
 Rules fall into one of two types (currently): I<record> or I<name>.
-I<record> rules have their test evaluated for each record in
-a zone file.  I<name> rules, on the other hand, get called once per
-name stored in the database.  See the I<test> description below for
-further details on the arguments passed to each rule type.
+I<record> rules have their test section evaluated for each record in a
+zone file.  I<name> rules, on the other hand, get called once per
+record name stored in the database.  See the I<test> description below
+for further details on the arguments passed to each rule type.
 
 The default value for this clause is I<record>.
 
@@ -301,11 +330,10 @@ Example:
 
 Rules that test a particular type of record should specify the
 I<type> field with the type of record it will test.  The rule
-will only be executed for records of that type.  This will result
-in less error checking for the user in the I<test> section.
+will only be executed for records of that type.
 
 For example, if a rule is testing a particular aspect of an MX record,
-it should specify MX in this field.
+it should specify "MX" in this field.
 
 Example:
 
@@ -314,10 +342,10 @@ Example:
 
 =item I<init>
 
-A block of code to be executed immediately. This is useful for
-boot-strap code to be performed only at start-up, rather than
-at every rule-test invocation.  For example, "I<use MODULE;>"
-type statements should be used in I<init> sections.
+A block of code to be executed immediately as the rule is being parsed
+from the rule definition file. This is useful for boot-strap code to
+be performed only at start-up.  For example, perl "I<use
+MODULE::NAME;>" or similar statements should be used in I<init> sections.
 
 I<init> sections are wrapped in an XML-like syntax which
 specifies the start and end of the I<init> section of code.
@@ -331,26 +359,50 @@ Example:
 
 =item I<test>
 
-A block of code defining the test for each record or name.  The
-test statement follows the same multi-line code specification
-described in the I<init> clause above.  Specifically, all the lines
-between the <test> and </test> braces are considered part of the test
-code.
+A block of code defining the test to be executed for each record or
+record name.  The test statement follows the same multi-line code
+specification described in the I<init> clause above.  Specifically,
+all the lines between the <test> and </test> braces are considered
+part of the test code.
 
-The end result must be a subroutine reference which will be called by
-the B<donuts> program.  When the code is evaluated, if it does not
-begin with "sub {" then a "sub {" prefix and "}" suffix will be
-automatically added to the code to turn the code-snippet into a
-Perl subroutine.
+The test contents must be a block of perl code.  If it is not in the
+form of an anonymous subroutine (surrounded by "sub {" and "}"
+markers), then the code will be automatically put inside a basic
+subroutine block to turn it into an anonymous subroutine.
 
-If the test fails, it should return an error string which will be displayed
-for the user.  The text will be line-wrapped before display (and thus should
-be unformatted text.)  If the test is checking for multiple problems, a
-reference to an array of error strings may be returned.  A return value of a
-reference to an empty array also indicates no error.
+EG, the resulting code for a I<record> test will look like this:
 
-There are two types of tests (currently), and the code snippet is
-called with arguments which depend on the I<ruletype> clause above.
+  package main;
+  no strict;
+  sub
+  {
+    my ($record, $rule) = @_;  
+    TESTCODE
+  }
+
+And for I<name> test will be:
+
+  package main;
+  no strict;
+  sub
+  {
+    my ($records, $rule, $recordname) = @_;  
+    TESTCODE
+  }
+
+(Again, this structure is only created if the I<test> definition
+B<does not>b begin with "sub {" already)
+
+When the testcode is run and the test fails, it should return an error
+string which will be displayed for the user.  The text will be
+line-wrapped before display (and thus should be unformatted text.)  If
+the test is checking for multiple problems, a reference to an array of
+error strings may be returned.  A test block that has no errors to
+report should return either an empty string or a reference to an empty
+array.
+
+There are two types of tests (currently), and the test code is
+called with arguments that depend on the I<ruletype> clause of the rule.
 These arguments and calling conventions are as follows:
 
 =over
@@ -361,9 +413,13 @@ These code snippets are expected to test a single B<Net::DNS::RR> record.
 
 It is called with two arguments:
 
-  1) the record which is to be tested
+  1) $record: The record which is to be tested
 
-  2) the rule definition itself.
+  2) $recordname: The Net::DNS::SEC::Tools::Donuts::Rule object
+     reference and rule definition information.
+
+These are bound to I<$record> and I<$rule> automatically for the test
+code to use.
 
 =item I<name> tests
 
@@ -372,21 +428,27 @@ associated with a given name record.
 
 It is called with three arguments:
 
-  1) a hash reference to all the record types associated
-     with that name (e.g., 'A', 'MX', ...) and each value of
-     the hash will contain an array of all the records for
-     that type.  (I.e., more than one entry in the array
-     reference will exist for names containing multiple 'A'
-     records.)
+  1) $records: A hash reference to all the record types associated
+     with that record name (e.g., 'example.com' might have a hash
+     reference containing an entry for 'A', 'MX', ...).  Each value of
+     the hash will contain an array of all the records for that type
+     (for example, the hash entry for the 'A' key may contain an array
+     with 2 Net::DNS::RR records, one for each A record attached to
+     the 'example.com' entry).
 
-  2) The rule definition.
+  2) $rule: The Net::DNS::SEC::Tools::Donuts::Rule object reference
+     and rule definition information.
 
-  3) The record name being checked (the name associated with
-     the data from 1) above.)
+  3) $recordname: The record name being checked (the name associated
+     with the data from 1) above which might be "exmaple.com" for
+     instance, or "www.example.com">).
+
+These are bound to I<$records>, I<$rule> and I<$recordname>
+automatically for the test code to use.
 
 =back
 
-Examples:
+Example rules:
 
   # local rule to mandate that each record must have a
   # TTL > 60 seconds
@@ -394,17 +456,17 @@ Examples:
   level: 8
   type: record
   <test>
-    return "TTL too small" if ($_[0]->ttl < 60);
+    return "TTL too small" if ($record->ttl < 60);
   </test>
 
-  # local policy to mandate that anything with an A record
+  # local policy rule to mandate that anything with an A record
   # must have an HINFO record too
   name: DNS_MX_MUST_HAVE_A
   level: 8
   type: name
   <test>
     return "A records must have an HINFO record too"
-      if (exists($_[0]{'A'}) && !exists($_[0]{'HINFO'}));
+      if (exists($records{'A'}) && !exists($records{'HINFO'}));
   </test>
 
 =item I<feature:> B<NAME>
@@ -423,18 +485,17 @@ results.
 If the rule is configurable via the user's B<.donuts.conf> file, this
 describes the configuration tokens for the user when they request
 configuration help via the I<-H> or I<--help-config> flags.  Tokens may be
-used within rules by accessing them within the rule argument passed to
-the code (the second argument.)
+used within rules by accessing them using the $rule reference passed to
+the code (the second argument).
 
-Example:
+Examples:
 
-  1) In the rule file (this is an incomplete definition):
+  1) In the rule file (this is an incomplete rule definition):
 
      name:           SOME_TEST
      myconfig:       40
      help: myconfig: A special number to configure this test
      <test>
-      my ($record, $rule) = @_;
       # ... use $rule->{'myconfig'}
      </test>
 
@@ -453,18 +514,18 @@ Example:
 
 Normally B<donuts> will line-wrap the error summary produced by a rule
 to enable automatic pretty-printing of error results.  Sometimes,
-however, rules may not want this.  The I<nowrap> option indicates to
-B<donuts> that the output is pre-formatted but should still be indented
-to align with the output of the rest of the error text (currently about
-15 spaces.)  The I<noindent> tag, however, indicates that neither
-wrapping nor indenting should be performed, but that the error should
-be printed as is.
+however, rules may wish to self-format their outputs.  The I<nowrap>
+option indicates to B<donuts> that the output is pre-formatted but
+should still be indented to align with the output of the rest of the
+error text (currently about 15 spaces.)  The I<noindent> tag, however,
+indicates that neither wrapping nor indenting should be performed, but
+that the error should be printed as is.
 
 =back
 
 =head1 COPYRIGHT
 
-Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR

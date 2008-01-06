@@ -14,8 +14,8 @@ level: 1
 feature: check_data
 type: NS
 <test>
-  if ($_[0]->name eq $current_domain) {
-    $DONUTS::DNSSEC::NSADDRS{$_[0]->nsdname} = $_[0]->name;
+  if ($record->name eq $current_domain) {
+    $DONUTS::DNSSEC::NSADDRS{$record->nsdname} = $record->name;
   }
   return;
 </test>
@@ -27,7 +27,6 @@ noindent: 1
 feature: check_data
 desc: Checks to see if each of the zone's name servers are properly serving the zone's data.
 <test>
-  my ($records, $rule, $name) = @_;
   my @results;
 
   # check each resolver from our memorized NS records for data
@@ -38,7 +37,7 @@ desc: Checks to see if each of the zone's name servers are properly serving the 
 
       # query the NS server for each record type and compare the results
       foreach my $recordtype (keys(%$records)) {
-	  my @answers = live_query($name, $recordtype, $resolver);
+	  my @answers = live_query($recordname, $recordtype, $resolver);
 	  if (compare_arrays($records->{$recordtype}, \@answers,
 			     sub { $a->string eq $b->string }) != 0) {
 	      my $err = 
@@ -49,7 +48,7 @@ desc: Checks to see if each of the zone's name servers are properly serving the 
 	      map { $err .= "      ".$_->string()."\n"; } @{$records->{$recordtype}};
 	      push @results, $err;
 	  } else {
-#	      print STDERR "matched ($#answers = $#{$records->{$recordtype}}): $recordtype:$name from server $ns\n";
+#	      print STDERR "matched ($#answers = $#{$records->{$recordtype}}): $recordtype:$recordname from server $ns\n";
 	  }
       }
   }
