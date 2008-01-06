@@ -17,14 +17,14 @@ maxttl: 604800
 desc: Checks to see if reasonable TTL values (configurable) were chosen for all the records in a zone.
 help: maxttl: maximum ttl value acceptable for a record
 <test>
-  return "Record has a TTL which is unreasonably small ( " . $_[0]->ttl
+  return "Record has a TTL which is unreasonably small ( " . $record->ttl
     . " < min: "
-    . $_[1]->{'minttl'} . ")"
-     if ($_[0]->ttl < $_[1]->{'minttl'});
-  return "Record has a TTL which is unreasonably large ( " . $_[0]->ttl
+    . $rule->{'minttl'} . ")"
+     if ($record->ttl < $rule->{'minttl'});
+  return "Record has a TTL which is unreasonably large ( " . $record->ttl
     . " > max: "
-    . $_[1]->{'maxttl'} . ")"
-     if ($_[0]->ttl > $_[1]->{'maxttl'});
+    . $rule->{'maxttl'} . ")"
+     if ($record->ttl > $rule->{'maxttl'});
 </test>
 
 name: DNS_NO_DOMAIN_MX_RECORDS
@@ -34,5 +34,5 @@ ruletype: name
 desc: Checks to ensure that the zone contains at least 1 MX record.
 <test>
    "At least one MX record for $current_domain is suggested"
-      if ($_[2] eq $current_domain && $#{$_[0]->{'MX'}} == -1);
+      if ($recordname eq $current_domain && $#{$records->{'MX'}} == -1);
 </test>
