@@ -405,7 +405,17 @@ while ($#ARGV > -1) {
 	print "$errcount errors found in $current_zone_file\n"
 	  if (!$opts{'q'});
     }
-    if ($errcount) {
+    if ($#rules == -1) {
+	print "\nWARNING: no rules found to be executed!!!\n";
+	print "WARNING: (maybe use the --rules switch to fix this?)\n";
+    }
+    if ($#$rrset == -1) {
+	print "\nWARNING: no records found to be analyzed in $current_domain!!!\n";
+    }
+    if ($#a == -1) {
+	print "\nWARNING: no names found to be analyzed in $current_domain!!!\n";
+    } 
+   if ($errcount) {
 	$exitcode = 1;
     }
 }
