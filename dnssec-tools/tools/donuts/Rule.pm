@@ -456,7 +456,7 @@ Example rules:
   level: 8
   type: record
   <test>
-    return "TTL too small" if ($record->ttl < 60);
+    return "TTL for $record->{name} is too small" if ($record->ttl < 60);
   </test>
 
   # local policy rule to mandate that anything with an A record
@@ -465,8 +465,8 @@ Example rules:
   level: 8
   type: name
   <test>
-    return "A records must have an HINFO record too"
-      if (exists($records{'A'}) && !exists($records{'HINFO'}));
+    return "$recordname has an A record but does not have an HINFO record"
+      if (exists($records->{'A'}) && !exists($records->{'HINFO'}));
   </test>
 
 =item I<feature:> B<NAME>
