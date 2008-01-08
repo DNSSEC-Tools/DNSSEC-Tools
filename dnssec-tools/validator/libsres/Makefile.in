@@ -57,7 +57,7 @@ CFLAGS_EX=-I$(INCLUDE)
 all: $(LIBRES)
 
 clean:
-	rm -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
+	$(RM) -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
 
 $(LIBRES): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ) 
