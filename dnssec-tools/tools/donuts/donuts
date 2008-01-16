@@ -25,11 +25,14 @@ use strict;
 
 use Config;
 
+our @guiargs;
+
 my %opts = (l => 5,
 	    c => $ENV{'HOME'} . "/.donuts.conf",
 	    T => 'port 53 || ip[6:2] & 0x1fff != 0',
 	    o => '%d.%t.pcap',
-	    r => "/usr/local/share/dnssec-tools/donuts/rules/*");
+	    r => "/usr/local/share/dnssec-tools/donuts/rules/*.txt," .
+	    $ENV{'HOME'} . "/.dnssec-tools/donuts/rules/*.txt");
 
 our (@rules, %rules, $rf, $current_zone_file, %nrecs,
     @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
@@ -93,6 +96,7 @@ LocalGetOptions(\%opts,
 
 		['GUI:separator','Output Format Options:'],
 		["show-gui", "Display the results in a browsable window.",
+		 nocgi => 1,
 		 question => { type => 'checkbox', default => 1, indent => 1}],
 		["v|verbose",
 		 "Verbose output (show extra processing information)",
@@ -112,8 +116,10 @@ LocalGetOptions(\%opts,
 		['GUI:guionly',{type => 'button',
 				values => 'Help',
 				default => 1,
+				nocgi => 1,
 				text => 'Display Help Options',
-				name => 'displayhelp'}],
+				name => 'displayhelp'},
+		],
 
 		['GUI:screen','Advanced Configuration:', doif => 'advanced'],
 		['GUI:separator','Rules Selection Configuration:'],
@@ -125,11 +131,12 @@ LocalGetOptions(\%opts,
 		["i|ignore=s", "Regular expression for rules to ignore",
 		 indent => 1],
 		["f|features=s", "Extra features to turn on",
+		 helpdesc => '(comma separated)',
 		 indent => 1],
 
-		['GUI:separator',"Configuration Files:"],
+		['GUI:separator',"Configuration Files:", nocgi => 1],
 		["C|no-config","Do not load personal configuration files",
-		 indent => 1],
+		 indent => 1, nocgi => 1],
 		["c|config-file=s",
 		 "Use an alternate personal configuration file",
 		 indent => 1,
@@ -168,7 +175,13 @@ LocalGetOptions(\%opts,
 		 dnssec_tools_get_qwprimitives(%primaries)],
 	       ) || exit;
 
-if ($#ARGV == -1 || $#ARGV % 2 != 1) {
+push @main::ARGV, @guiargs;
+
+use Data::Dumper;
+print STDERR "here: ", Dumper(\@main::ARGV);
+
+if (!$opts{'R'} && !$opts{'F'} && !$opts{'H'} && 
+    ($#ARGV == -1 || $#ARGV % 2 != 1)) {
     print STDERR "\nUsage Error: $0 called with wrong number of arguments\n";
     print STDERR "  file and zone name arguments are both needed\n";
     print STDERR "  (EG: $0 FILE1 example.com FILE2 other.example.com)\n\n";
@@ -813,6 +826,9 @@ You probably want to run no higher than level 8.
 
 A comma-separated list of rule files to load.  The strings will be
 passed to I<glob()> so * wildcards can be used to specify multiple files.
+
+Defaults to /usr/local/share/dnssec-tools/donuts/rules/*.txt and
+$HOME/.dnssec-tools/donuts/rules/*.txt .
 
 =item -i I<IGNORELIST>
 
