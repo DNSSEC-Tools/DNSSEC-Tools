@@ -75,18 +75,21 @@ sub dnssec_tools_get_qwprimitives {
 			     $fn = "/tmp/qwHTML$fn";
 			     next if (! -f $fn);
 			     if (qwparam('dnssec_zone_names_first')) {
-				 $rstr .= qwparam('zonename'.$i) . " $fn ";
+				 push @main::guiargs,
+				   qwparam('zonename'.$i), $fn;
 			     } else {
-				 $rstr .= "$fn " . qwparam('zonename'.$i);
+				 push @main::guiargs,
+				   $fn, qwparam('zonename'.$i);
 			     }
 			 }
 		     } else {
 			 $rstr .= qwparam('file' . $i) . " " .
 			   qwparam('zonename'.$i);
+			 push @main::guiargs,
+			   qwparam('file' . $i), qwparam('zonename'.$i);
 		     }
 		 }
 	     }
-	     qwparam('__otherargs',$rstr);
 	 }],
 	questions => [{type => 'dynamic',
 		       values => sub {
@@ -130,6 +133,8 @@ Net::DNS::SEC::Tools::QWPrimitives - QWizard primitives for DNSSEC-Tools
   use Net::DNS::SEC::Tools::QWPrimitives;
   use Getopt::Long::GUI;
 
+  our @guiargs;
+
   GetOptions(  ...,
 	       ['GUI:nootherargs',1],
                ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
@@ -145,8 +150,7 @@ provides access to B<QWizard> for DNSSEC-Tools software.
 In particular, the I<dnssec_tools_get_qwprimitives()> returns a set of
 primary screens for requesting a set of zone files followed by a set
 of domain names for those zone files.  These are then pushed into the
-I<__otherargs> I<qwparam> variable, which is used by B<Getopt::GUI::Long>
-to generate the I<@ARGV> list.
+@guiargs which you should treat as the final ARGV array to process.
 
 =head1 COPYRIGHT
 
