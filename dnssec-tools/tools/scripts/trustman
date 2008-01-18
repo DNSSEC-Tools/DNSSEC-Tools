@@ -589,6 +589,8 @@ sub checkkeys {
 # add keys to a named.conf file which have been detected
 # from a validated source, and have passed their add_holddown_time.
 #
+# implements Section 2.4.1 of RFC 5011
+#
 
 sub add_ta_namedconf  {
     my $zone = @_;
@@ -624,6 +626,8 @@ sub add_ta_namedconf  {
 #
 # add keys to a dnsval.conf file which have been detected
 # from a validated source, and have passed their add_holddown_time.
+#
+# implements Section 2.4.1 of RFC 5011
 #
 
 sub add_ta_dnsvalconf  {
@@ -843,6 +847,7 @@ sub remove_ta_namedconf  {
 ################################################################
 # revoke_ta_dnsvalconf
 #
+# implements Section 2.1 Revocation from RFC 5011
 # revoke keys marked for revocation in a query response
 # from a validated zone.
 #
@@ -904,6 +909,7 @@ sub revoke_ta_dnsvalconf  {
 ################################################################
 # revoke_ta_namedconf
 #
+# implements Section 2.1 Revocation from RFC 5011
 # revoke keys marked for revocation in a query response
 # from a validated zone.
 #
@@ -1171,6 +1177,8 @@ sub read_dnsval_file {
 
 #####################################################
 # compute_add_holddown
+#
+# used in implementation of Section 2.4.1 of RFC 5011
 # 
 
 sub compute_add_holddown {
@@ -1193,6 +1201,8 @@ sub compute_add_holddown {
 #####################################################
 # compute_remove_holddown
 # 
+# used in implementation of Section 2.4.2 of RFC 5011
+#
 # 30 days from "now"
 
 sub compute_remove_holddown {
@@ -1209,6 +1219,8 @@ sub compute_remove_holddown {
 ####################################################
 #
 # compute_sleepsecs
+#
+# implements Section 2.3 of RFC 5011
 #
 # compute the sleep time in seconds
 # min(expiration interval [sigexpiration - now],1/2 * ottl, 15 days)
@@ -1246,6 +1258,9 @@ sub compute_sleepsecs {
 # 
 # compute the number of seconds to sleep in case of a query
 # failure.
+#
+# implements Section 2.3 of RFC 5011
+#
 # MAX(1 hour, MIN(1 day, 0.1 * ottl, 0.1 * expiration interval[sigexpiration - now])
 #
 
@@ -1424,7 +1439,8 @@ trustman [options]
 
 =head1 DESCRIPTION
 
-B<trustman> manages keys used by DNSSEC as trust anchors.  It may be used as
+B<trustman> manages keys used by DNSSEC as trust anchors in compliance with
+RFC5011.  It may be used as
 a daemon for ongoing key verification or manually for initialization and
 one-time key verification.
 
