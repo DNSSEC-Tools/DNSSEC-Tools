@@ -1,0 +1,167 @@
+<HTML><HEAD><TITLE>Manpage of VALIDATE</TITLE>
+</HEAD><BODY>
+<H1>VALIDATE</H1>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+validate - Query the Domain Name System and display results of the DNSSEC validation process
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<A NAME="ixAAC"></A>
+
+
+<PRE>
+  validate
+
+</PRE>
+
+
+<P>
+
+
+
+<PRE>
+  validate [options] DOMAIN_NAME
+
+</PRE>
+
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+<A NAME="ixAAD"></A>
+<B>validate</B> is a diagnostic tool built on top of the <FONT SIZE="-1">DNSSEC</FONT> validator.  It
+takes <I></I><FONT SIZE="-1"><I>DOMAIN_NAME</I></FONT><I></I> as an argument and queries the <FONT SIZE="-1">DNS</FONT> for that domain name.
+It outputs the series of responses that were received from the <FONT SIZE="-1">DNS</FONT> and the
+<FONT SIZE="-1">DNSSEC</FONT> validation results for each domain name.  An examination of the queries
+and validation results can help an administrator uncover errors in <FONT SIZE="-1">DNSSEC</FONT>
+configuration of <FONT SIZE="-1">DNS</FONT> zones.
+<P>
+
+If no options are specified and no <I></I><FONT SIZE="-1"><I>DOMAIN_NAME</I></FONT><I></I> argument is given,
+<B>validate</B> will perform a series of pre-defined test queries against
+the <I>test.dnssec-tools.org</I> zone.  This serves as a
+test-suite for the validator.  If any options are specified (e.g.,
+configuration file locations), <I>-s</I> or <I>--selftest</I> must be specified
+to run the test-suite.
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<A NAME="ixAAE"></A>
+<DL COMPACT>
+<DT>-c <I></I><FONT SIZE="-1"><I>CLASS</I></FONT><I></I>, --class=<I></I><FONT SIZE="-1"><I>CLASS</I></FONT><I></I><DD>
+<A NAME="ixAAF"></A>
+This option can be used to specify the <FONT SIZE="-1">DNS</FONT> class of the Resource
+Record queried.  If this option is not given, the default class
+<B></B><FONT SIZE="-1"><B>IN</B></FONT><B></B> is used.
+<DT>-h, --help<DD>
+<A NAME="ixAAG"></A>
+Display the help and exit.
+<DT>-m, --merge<DD>
+<A NAME="ixAAH"></A>
+When this option is given, <B>validate</B> will merge different RRsets
+in the response into a single answer.  If this option is not given,
+each RRset is output as a separate response.  This option makes
+sense only when used with the <I>-p</I> option.
+<DT>-p, --print<DD>
+<A NAME="ixAAI"></A>
+Print the answers and validation results.  By default, <B>validate</B>
+just outputs a series of responses and their validation results on
+<I>stderr</I>.  When the <I>-p</I> option is used, <B>validate</B> will also output
+the final result on <I>stdout</I>.
+<DT>-t <I></I><FONT SIZE="-1"><I>TYPE</I></FONT><I></I>, --type=<I></I><FONT SIZE="-1"><I>TYPE</I></FONT><I></I><DD>
+<A NAME="ixAAJ"></A>
+This option can be used to specify the <FONT SIZE="-1">DNS</FONT> type of the Resource Record
+queried.  If this option is not given, <B>validate</B> will query for the
+<B>A</B> record for the given <I></I><FONT SIZE="-1"><I>DOMAIN_NAME</I></FONT><I></I>.
+<DT>-v <I></I><FONT SIZE="-1"><I>FILE</I></FONT><I></I>, --dnsval-conf=<I></I><FONT SIZE="-1"><I>FILE</I></FONT><I></I><DD>
+<A NAME="ixAAK"></A>
+This option can be used to specify the location of the <B>dnsval.conf</B>
+configuration file.
+<DT>-r <I></I><FONT SIZE="-1"><I>FILE</I></FONT><I></I>, --resolv-conf=<I></I><FONT SIZE="-1"><I>FILE</I></FONT><I></I><DD>
+<A NAME="ixAAL"></A>
+This option can be used to specify the location of the <B>resolv.conf</B>
+configuration file containing the name servers to use for lookups.
+<DT>-i <I></I><FONT SIZE="-1"><I>FILE</I></FONT><I></I>, --root-hints=<I></I><FONT SIZE="-1"><I>FILE</I></FONT><I></I><DD>
+<A NAME="ixAAM"></A>
+This option can be used to specify the location of the root.hints
+configuration file, containing the root name servers.  This is only
+used when no name server is found, and <B>validate</B> must do recursive
+lookups itself.
+<DT>-S <I>suite</I>[:<I>suite</I>], --test-suite=<I>suite</I>[:<I>suite</I>]<DD>
+<A NAME="ixAAN"></A>
+This option specifies the test suite (or range of test suites) to use 
+for the internal tests.
+<DT>-s, --selftest<DD>
+<A NAME="ixAAO"></A>
+This option can be used to specify that the application should perform its
+test-suite against the <I>dnssec-tools.org</I> test domain.  If the name servers
+configured in the system <B>resolv.conf</B> do not support <FONT SIZE="-1">DNSSEC</FONT>, use the <I>-r</I>
+and <I>-i</I> options to enable <B>validate</B> to use its own internal recursive
+resolver.
+<DT>-T <I>number</I>[:<I>number</I>], --testcase=<I>number</I>[:<I>number</I>]<DD>
+<A NAME="ixAAP"></A>
+This option can be used to run a specific test (or range of tests) 
+from the test suite.
+<DT>-F <I>file</I>, --testcase-conf=<I>file</I><DD>
+<A NAME="ixAAQ"></A>
+This option is used to specify the file containing the test cases.
+<DT>-l <I>label</I>, --label=<I>label</I><DD>
+<A NAME="ixAAR"></A>
+This option can be used to specify the policy from within the <I>dnsval.conf</I> 
+file to use during validation. 
+<DT>-w <I>seconds</I>, --wait=<I>seconds</I><DD>
+<A NAME="ixAAS"></A>
+This option can be used to run the queries specified by other flags in a loop,
+with the specified interval between successive queries.
+<DT>-o, --output=&lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]<DD>
+<A NAME="ixAAT"></A>
+&lt;debug-level&gt; is 1-7, corresponding to syslog levels ALERT-DEBUG
+&lt;dest-type&gt; is one of file, net, syslog, stderr, stdout
+&lt;dest-options&gt; depends on &lt;dest-type&gt;
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;file:&lt;file-name&gt;&nbsp;&nbsp;&nbsp;(opened&nbsp;in&nbsp;append&nbsp;mode)
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;net[:&lt;host-name&gt;:&lt;host-port&gt;]&nbsp;(127.0.0.1:1053
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;syslog[:facility]&nbsp;(0-23&nbsp;(default&nbsp;1&nbsp;<FONT SIZE="-1">USER</FONT>))
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>PRE-REQUISITES</H2>
+
+<A NAME="ixAAU"></A>
+<B>libval</B>
+<A NAME="lbAG">&nbsp;</A>
+<H2>COPYRIGHT</H2>
+
+<A NAME="ixAAV"></A>
+Copyright 2005-2007 <FONT SIZE="-1">SPARTA</FONT>, Inc.  All rights reserved.
+See the <FONT SIZE="-1">COPYING</FONT> file included with the DNSSEC-Tools package for details.
+<A NAME="lbAH">&nbsp;</A>
+<H2>AUTHORS</H2>
+
+<A NAME="ixAAW"></A>
+Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story
+<A NAME="lbAI">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<A NAME="ixAAX"></A>
+
+<A HREF="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</A>
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">PRE-REQUISITES</A><DD>
+<DT><A HREF="#lbAG">COPYRIGHT</A><DD>
+<DT><A HREF="#lbAH">AUTHORS</A><DD>
+<DT><A HREF="#lbAI">SEE ALSO</A><DD>
+</DL>
+<HR>
+
+</BODY>
+</HTML>
