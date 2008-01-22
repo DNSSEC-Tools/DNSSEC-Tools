@@ -1,0 +1,20 @@
+command:
+
+root@dns~ /usr/local/bin/donutsd -i /etc/named/donutsd-zones.xml &
+
+email sent (one for each zone donustd examines):
+
+From: 
+Subject: donuts output for zone: example.com
+To: root@example.com
+Date: Tue,  8 Jan 2008 09:42:04 -0800 (PST)
+
+The donuts dns zone-file syntax checker was run on the "example.com"
+and there were resulting errors or errors that have changed since the last run.
+The results of this run of donuts can be found below:
+
+You will not receive another message until the output from donuts has changed.
+
+----------------------------------------------------------------------
+
+0 errors found in /var/named/chroot/var/named/db.example.com
