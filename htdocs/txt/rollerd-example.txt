@@ -1,0 +1,30 @@
+/usr/local/bin/rollerd -verbose -verbose -verbose -loglevel info -logfile -  -rrfile /etc/named/example.com.rrf -sleep 60 -directory /var/named/chroot/var/named/
+
+
+Jan 21 23:04:47 2008: rollerd starting ----------------------------------------
+Jan 21 23:04:47 2008: rollerd parameters:
+Jan 21 23:04:47 2008:           rollrec file    "/etc/named/example.com.rrf"
+Jan 21 23:04:47 2008:           logfile         "-"
+Jan 21 23:04:47 2008:           loglevel        "info"
+Jan 21 23:04:47 2008:           sleeptime       "60"
+Jan 21 23:04:47 2008:
+Jan 21 23:04:47 2008: example.com:         KSK expiration in 24 weeks, 3 days, 13 hours, 3 minutes, 25 seconds
+Jan 21 23:04:47 2008: example.com:         ZSK expired 1985 weeks, 4 days, 23 hours, 4 minutes, 47 seconds ago
+Jan 21 23:04:47 2008: example.com: current ZSK has expired
+Jan 21 23:04:47 2008: example.com: ZSK phase 1
+Jan 21 23:05:52 2008: example.com: ZSK phase 1; cache expires in 55 seconds
+Jan 21 23:06:57 2008: example.com: ZSK phase 2
+Jan 21 23:06:57 2008: example.com: executing "zonesigner -usezskpub example.com db.example.com.signed"
+Jan 21 23:06:58 2008: example.com: ZSK phase 3
+Jan 21 23:06:58 2008: example.com: ZSK phase 3; cache expires in 2 minutes, 0 seconds
+
+Jan 21 23:08:03 2008: example.com: ZSK phase 3; cache expires in 55 seconds
+Jan 21 23:09:08 2008: example.com: ZSK phase 4
+Jan 21 23:09:08 2008: example.com: executing "zonesigner -rollzsk example.com db.example.com.signed"
+Jan 21 23:09:09 2008: example.com: executing "zonesigner  example.com db.example.com.signed"
+Jan 21 23:09:09 2008: example.com: ZSK phase 0
+Jan 21 23:09:09 2008: example.com: ZSK expiration in 1 week, 0 seconds
+Jan 21 23:10:14 2008: example.com: KSK expiration in 24 weeks, 3 days, 12 hours, 57 minutes, 58 seconds
+Jan 21 23:10:14 2008: example.com: ZSK expiration in 6 days, 23 hours, 58 minutes, 55 seconds
+Jan 21 23:11:19 2008: example.com: KSK expiration in 24 weeks, 3 days, 12 hours, 56 minutes, 53 seconds
+Jan 21 23:11:19 2008: example.com: ZSK expiration in 6 days, 23 hours, 57 minutes, 50 seconds
