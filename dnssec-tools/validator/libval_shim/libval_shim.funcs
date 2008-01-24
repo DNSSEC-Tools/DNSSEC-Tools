@@ -1,0 +1,32 @@
+struct hostent * gethostbyname(const char *name);
+
+int gethostbyname_r(__const char * __name,struct hostent * __result_buf, char * __buf, size_t __buflen, struct hostent ** __result, int * __h_errnop);
+
+struct hostent * gethostbyaddr(__const void *addr, __socklen_t len, int type);
+
+struct hostent *gethostbyname2 (__const char *__name, int __af);
+
+int gethostbyname2_r (__const char * __name, int __af, struct hostent * __result_buf, char * __buf, size_t __buflen, struct hostent ** __result, int * __h_errnop);
+
+int getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
+
+void freeaddrinfo (struct addrinfo *ai);
+
+int getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, socklen_t hostlen, char *serv, socklen_t servlen, unsigned int flags);
+
+int res_init(void);
+
+int res_query(const char *dname, int class, int type, unsigned char *answer, int anslen);
+
+int res_querydomain(const char *name, const char *domain, int class, int type, u_char * answer, int anslen);
+
+int res_search(const char *dname, int class, int type, unsigned char *answer, int anslen);
+
+int res_send(const u_char * msg, int msglin, u_char *answer, int anslen);
+
+struct hostent *getipnodebyname(const char *name, int af, int flags, int *error_num); %not-avail%
+
+struct hostent *getipnodebyaddr(const void *addr, size_t len, int af, int *error_num); %not-avail%
+
+int getrrsetbyname(const char *hostname, unsigned int rdclass, unsigned int rdtype, unsigned int flags, struct rrsetinfo **res); %not-avail%
+
