@@ -1,0 +1,30 @@
+Usage: validate [options] [DOMAIN_NAME]
+Resolve and validate a DNS query.
+Primary Options:
+        -h, --help             Display this help and exit
+        -p, --print            Print the answer and validation result
+        -s, --selftest         Run all internal sefltest suite(s)
+        -S, --test-suite=<suite>[:<suite>] Run specified internal sefltest suite(s)
+        -T, --testcase=<number>[:<number>
+                               Specifies the test case number/range 
+        -F, --testcase-conf=<file> Specifies the file containing the test cases
+        -c, --class=<CLASS>    Specifies the class (default IN)
+        -t, --type=<TYPE>      Specifies the type (default A)
+        -v, --dnsval-conf=<file> Specifies a dnsval.conf
+        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers
+        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers
+        -w, --wait=<secs> Run tests in a loop, sleeping for specifed seconds between runs
+        -l, --label=<label-string> Specifies the policy to use during validation
+        -o, --output=<debug-level>:<dest-type>[:<dest-options>]
+              <debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG
+              <dest-type> is one of file, net, syslog, stderr, stdout
+              <dest-options> depends on <dest-type>
+                  file:<file-name>   (opened in append mode)
+                  net[:<host-name>:<host-port>] (127.0.0.1:1053
+                  syslog[:facility] (0-23 (default 1 USER))
+Advanced Options:
+        -m, --merge            Merge different RRSETs into a single answer
+
+The DOMAIN_NAME parameter is not required for the -h option.
+The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.
+If no arguments are given, this program runs a set of predefined test queries.
