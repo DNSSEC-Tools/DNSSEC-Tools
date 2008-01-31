@@ -411,6 +411,10 @@ nsWebShell::OnLinkClick(nsIContent* aContent,
                         nsIInputStream* aPostDataStream,
                         nsIInputStream* aHeadersDataStream)
 {
+  if (mFiredUnloadEvent) {
+    return NS_OK;
+  }
+  
   OnLinkClickEvent* ev;
 
   ev = new OnLinkClickEvent(this, aContent, aVerb, aURI,
@@ -443,6 +447,18 @@ nsWebShell::OnLinkClickSync(nsIContent *aContent,
                             nsIDocShell** aDocShell,
                             nsIRequest** aRequest)
 {
+  // Initialize the DocShell / Request
+  if (aDocShell) {
+    *aDocShell = nsnull;
+  }
+  if (aRequest) {
+    *aRequest = nsnull;
+  }
+
+  if (mFiredUnloadEvent) {
+    return NS_OK;
+  }
+
   {
     // defer to an external protocol handler if necessary...
     nsCOMPtr<nsIExternalProtocolService> extProtService = do_GetService(NS_EXTERNALPROTOCOLSERVICE_CONTRACTID);
@@ -518,16 +534,9 @@ nsWebShell::OnLinkClickSync(nsIContent *aContent,
     anchor->GetType(typeHint);
   }
   
-  // Initialize the DocShell / Request
-  if (aDocShell) {
-    *aDocShell = nsnull;
-  }
-  if (aRequest) {
-    *aRequest = nsnull;
-  }
-
   switch(aVerb) {
     case eLinkVerb_New:
+      NS_ASSERTION(target.IsEmpty(), "Losing window name information");
       target.AssignLiteral("_blank");
       // Fall into replace case
     case eLinkVerb_Undefined:
@@ -696,12 +705,17 @@ nsresult nsWebShell::EndPageLoad(nsIWebProgress *aProgress,
       //
       // First try keyword fixup
       //
-      if (aStatus == NS_ERROR_UNKNOWN_HOST)  
+      if (aStatus == NS_ERROR_UNKNOWN_HOST && mAllowKeywordFixup)
       {
         PRBool keywordsEnabled = PR_FALSE;
 
         if (mPrefs && NS_FAILED(mPrefs->GetBoolPref("keyword.enabled", &keywordsEnabled)))
             keywordsEnabled = PR_FALSE;
+
+        nsCOMPtr<nsIURIFixup_MOZILLA_1_8_BRANCH> uriFix =
+          do_QueryInterface(sURIFixup);
+        if (!uriFix)
+          keywordsEnabled = PR_FALSE;
 
         nsCAutoString host;
         url->GetHost(host);
@@ -727,7 +741,6 @@ nsresult nsWebShell::EndPageLoad(nsIWebProgress *aProgress,
 
         if(keywordsEnabled && (kNotFound == dotLoc)) {
           // only send non-qualified hosts to the keyword server
-          nsCAutoString keywordSpec("keyword:");
           //
           // If this string was passed through nsStandardURL by chance, then it
           // may have been converted from UTF-8 to ACE, which would result in a
@@ -745,12 +758,9 @@ nsresult nsWebShell::EndPageLoad(nsIWebProgress *aProgress,
           if (idnSrv &&
               NS_SUCCEEDED(idnSrv->IsACE(host, &isACE)) && isACE &&
               NS_SUCCEEDED(idnSrv->ConvertACEtoUTF8(host, utf8Host)))
-            keywordSpec.Append(utf8Host);
+            uriFix->KeywordToURI(utf8Host, getter_AddRefs(newURI));
           else
-            keywordSpec.Append(host);
-
-          NS_NewURI(getter_AddRefs(newURI),
-                    keywordSpec, nsnull);
+            uriFix->KeywordToURI(host, getter_AddRefs(newURI));
         } // end keywordsEnabled
       }
 
@@ -840,7 +850,8 @@ nsresult nsWebShell::EndPageLoad(nsIWebProgress *aProgress,
              aStatus == NS_ERROR_REDIRECT_LOOP ||
              aStatus == NS_ERROR_UNKNOWN_SOCKET_TYPE ||
              aStatus == NS_ERROR_NET_INTERRUPT ||
-             aStatus == NS_ERROR_NET_RESET) {
+             aStatus == NS_ERROR_NET_RESET ||
+             aStatus == NS_ERROR_UNSAFE_CONTENT_TYPE) {
       DisplayLoadError(aStatus, url, nsnull, channel);
     }
     else if (aStatus == NS_ERROR_DOCUMENT_NOT_CACHED) {
