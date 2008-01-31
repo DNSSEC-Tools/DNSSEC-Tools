@@ -168,9 +168,9 @@ function dnssecstatus_show() {
 */
         var spot = current_spot;
         maybe_init_spot(spot);
-        set_status("val", "Secure:", storage[spot]["valcount"],
+        set_status("val", "DNS: Verified:", storage[spot]["valcount"],
                    storage[spot]["vallist"]);
-        set_status("trust", "Insecure:", storage[spot]["trustcount"],
+        set_status("trust", "Unverified:", storage[spot]["trustcount"],
                    storage[spot]["trustlist"]);
         set_status("err", "Errors:", storage[spot]["errcount"], 
                    storage[spot]["errlist"]);
