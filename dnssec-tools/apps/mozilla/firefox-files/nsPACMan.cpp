@@ -40,13 +40,35 @@
 #include "nsIDNSService.h"
 #include "nsIDNSListener.h"
 #include "nsICancelable.h"
+#include "nsIAuthPrompt.h"
+#include "nsIHttpChannel.h"
+#include "nsIPrefService.h"
+#include "nsIPrefBranch.h"
 #include "nsEventQueueUtils.h"
 #include "nsNetUtil.h"
 #include "nsAutoLock.h"
 #include "nsAutoPtr.h"
-#include "nsIAuthPrompt.h"
 #include "nsCRT.h"
 #include "prmon.h"
+
+//-----------------------------------------------------------------------------
+
+// Check to see if the underlying request was not an error page in the case of
+// a HTTP request.  For other types of channels, just return true.
+static PRBool
+HttpRequestSucceeded(nsIStreamLoader *loader)
+{
+  nsCOMPtr<nsIRequest> request;
+  loader->GetRequest(getter_AddRefs(request));
+
+  PRBool result = PR_TRUE;  // default to assuming success
+
+  nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(request);
+  if (httpChannel)
+    httpChannel->GetRequestSucceeded(&result);
+
+  return result;
+}
 
 //-----------------------------------------------------------------------------
 
@@ -155,6 +177,8 @@ PendingPACQuery::OnLookupComplete(nsICancelable *request,
 nsPACMan::nsPACMan()
   : mLoadEvent(nsnull)
   , mShutdown(PR_FALSE)
+  , mScheduledReload(LL_MAXINT)
+  , mLoadFailureCount(0)
 {
   PR_INIT_CLIST(&mPendingQ);
 }
@@ -186,6 +210,8 @@ nsPACMan::GetProxyForURI(nsIURI *uri, nsACString &result)
     return NS_OK;
   }
 
+  MaybeReloadPAC();
+
   if (IsLoading())
     return NS_ERROR_IN_PROGRESS;
   if (!mPAC)
@@ -202,6 +228,8 @@ nsresult
 nsPACMan::AsyncGetProxyForURI(nsIURI *uri, nsPACManCallback *callback)
 {
   NS_ENSURE_STATE(!mShutdown);
+
+  MaybeReloadPAC();
 
   PendingPACQuery *query = new PendingPACQuery(this, uri, callback);
   if (!query)
@@ -313,6 +341,43 @@ nsPACMan::StartLoading()
 }
 
 void
+nsPACMan::MaybeReloadPAC()
+{
+  if (!mPACURI)
+    return;
+
+  if (PR_Now() > mScheduledReload) {
+    mScheduledReload = LL_MAXINT;
+    LoadPACFromURI(mPACURI);
+  }
+}
+
+void
+nsPACMan::OnLoadFailure()
+{
+  PRInt32 minInterval = 5;    // 5 seconds
+  PRInt32 maxInterval = 300;  // 5 minutes
+
+  nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
+  if (prefs) {
+    prefs->GetIntPref("network.proxy.autoconfig_retry_interval_min",
+                      &minInterval);
+    prefs->GetIntPref("network.proxy.autoconfig_retry_interval_max",
+                      &maxInterval);
+  }
+
+  PRInt32 interval = minInterval << mLoadFailureCount++;  // seconds
+  if (!interval || interval > maxInterval)
+    interval = maxInterval;
+
+#ifdef DEBUG
+  printf("PAC load failure: will retry in %d seconds\n", interval);
+#endif
+
+  mScheduledReload = PR_Now() + PRInt64(interval) * PR_USEC_PER_SEC;
+}
+
+void
 nsPACMan::CancelExistingLoad()
 {
   if (mLoader) {
@@ -367,7 +432,7 @@ nsPACMan::OnStreamComplete(nsIStreamLoader *loader,
 
   mLoader = nsnull;
 
-  if (NS_SUCCEEDED(status)) {
+  if (NS_SUCCEEDED(status) && HttpRequestSucceeded(loader)) {
     // Get the URI spec used to load this PAC script.
     nsCAutoString pacURI;
     {
@@ -394,6 +459,14 @@ nsPACMan::OnStreamComplete(nsIStreamLoader *loader,
       const char *text = (const char *) data;
       status = mPAC->Init(pacURI, NS_ConvertASCIItoUTF16(text, dataLen));
     }
+
+    // Even if the PAC file could not be parsed, we did succeed in loading the
+    // data for it.
+    mLoadFailureCount = 0;
+  } else {
+    // We were unable to load the PAC file (presumably because of a network
+    // failure).  Try again a little later.
+    OnLoadFailure();
   }
 
   // Reset mPAC if necessary
