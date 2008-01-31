@@ -1,6 +1,6 @@
---- mozilla.firefox.1.5.0.6.rpmdist/browser/components/preferences/advanced.xul	2005-09-14 14:24:40.000000000 -0700
-+++ mozilla/browser/components/preferences/advanced.xul	2006-08-24 09:17:05.000000000 -0700
-@@ -94,6 +94,9 @@
+--- mozilla/browser/components/preferences/advanced.xul.orig	2006-09-13 11:04:35.000000000 -0700
++++ mozilla/browser/components/preferences/advanced.xul	2008-01-08 14:38:28.000000000 -0800
+@@ -112,6 +112,9 @@
        <preference id="security.disable_button.openDeviceManager"
                    name="security.disable_button.openDeviceManager"
                    type="bool"/>
@@ -10,18 +10,18 @@
      </preferences>
      
      <script type="application/x-javascript" src="chrome://browser/content/preferences/advanced.js"/>
-@@ -104,6 +107,7 @@
-         <tab label="&generalTab.label;" helpTopic="prefs-advanced-general"/>
-         <tab label="&updateTab.label;" helpTopic="prefs-advanced-update"/>
-         <tab label="&securityTab.label;" helpTopic="prefs-advanced-security"/>
-+        <tab label="&dnssecTab.label;" helpTopic="prefs-advanced-dnssec"/>
+@@ -124,6 +127,7 @@
+         <tab id="networkTab" label="&networkTab.label;" helpTopic="prefs-advanced-network"/>
+         <tab id="updateTab" label="&updateTab.label;"  helpTopic="prefs-advanced-update"/>
+         <tab id="encryptionTab" label="&encryptionTab.label;" helpTopic="prefs-advanced-encryption"/>
++        <tab id="dnssecTab" label="&dnssecTab.label;" helpTopic="prefs-advanced-dnssec"/>
        </tabs>
+ 
        <tabpanels flex="1">
-         <tabpanel orient="vertical">
-@@ -251,6 +255,19 @@
- #endif
+@@ -343,6 +347,20 @@
            </groupbox>
          </tabpanel>
+ 
 +        <tabpanel orient="vertical">
 +          <groupbox>
 +            <caption label="&dnsSecurity.label;"/>
@@ -35,15 +35,17 @@
 +	    </radiogroup>
 +          </groupbox>
 +        </tabpanel>
++
        </tabpanels>
-     </tabbox>   
+     </tabbox>
    </prefpane>
---- mozilla.firefox.1.5.0.6.rpmdist/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2005-10-14 19:57:43.000000000 -0700
-+++ mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2006-08-24 09:25:25.000000000 -0700
-@@ -56,6 +56,16 @@
- <!ENTITY viewSecurityDevices.label      "Security Devices">
- <!ENTITY viewSecurityDevices.accesskey  "y">
- 
+--- mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd.orig	2006-08-16 16:45:57.000000000 -0700
++++ mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2008-01-08 14:41:07.000000000 -0800
+@@ -88,3 +88,13 @@
+ <!ENTITY verify.accesskey                "V">
+ <!ENTITY viewSecurityDevices.label       "Security Devices">
+ <!ENTITY viewSecurityDevices.accesskey   "y">
++
 +<!ENTITY dnssecTab.label                "DNS Security">
 +<!ENTITY dnssec.description             "DNS Security Policy is currently set at the system level (/etc/dnsval.conf) and this option allows that policy to be enforced or ignoredspecifies if those policies should be enforced.">
 +<!ENTITY dnsSecurity.label              "DNS Security Policy">
@@ -53,10 +55,6 @@
 +<!ENTITY possibleDNSSecure.accesskey    "E">
 +<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
 +<!ENTITY allDNSSecure.accesskey         "A">
-+
- <!ENTITY languages.caption              "Languages">
- <!ENTITY languagesInfo.label            "Choose Languages web pages are displayed in.">
- <!ENTITY showLanguages.label            "Edit Languages...">
 --- mozilla.firefox.1.5.0.6.rpmdist/browser/locales/en-US/chrome/overrides/appstrings.properties	2005-09-02 14:39:52.000000000 -0700
 +++ mozilla/browser/locales/en-US/chrome/overrides/appstrings.properties	2006-08-23 19:01:13.000000000 -0700
 @@ -37,6 +37,8 @@
