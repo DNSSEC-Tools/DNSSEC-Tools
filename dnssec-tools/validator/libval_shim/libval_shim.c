@@ -128,18 +128,17 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
 
   ret = val_getaddrinfo(ctx, node, service, hints, &vainfo_ptr, &val_status);
   if (ret == 0) {
-    fprintf(stderr, "libval_shim: getaddrinfo: res == 0, vainfo_ptr == %lx\n", vainfo_ptr);
     *res = (struct addrinfo *)vainfo_ptr;
+  }
+
+  if (val_istrusted(val_status)) {
+      return 0;
   }
 
   if (ret) {
     return ret;
-  } else {
-    if (val_istrusted(val_status)) {
-      fprintf(stderr, "libval_shim: getaddrinfo: trusted\n");
-      return 0;
-    } 
   }
+
   return (EAI_NONAME); 
 }
 
@@ -162,21 +161,21 @@ getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, socklen_t
   val_status_t          val_status;
   char *addr;
   int ret;
-  val_log_add_optarg("7:stderr", 1);
+
   addr = inet_ntoa(((struct sockaddr_in*)sa)->sin_addr);
   fprintf(stderr, "libval_shim: getnameinfo(%s,%ld) called: wrapper\n", addr, ((struct sockaddr_in*)sa)->sin_port);
 
   ret = val_getnameinfo(ctx, sa, salen, host, hostlen, serv, servlen, flags,
 			&val_status);
-  fprintf(stderr, "libval_shim: getnameinfo: ret == %ld, val_status == %ld, %s:%s\n", ret, val_status, host, serv);
+
+  if (val_istrusted(val_status)) {
+      return 0;
+  }
 
   if (ret) {
     return ret;
-  } else {
-    if (val_istrusted(val_status)) {
-      return 0;
-    }
   }
+
   return (EAI_NONAME); 
 }
 
@@ -215,13 +214,14 @@ res_query(const char *dname, int class, int type, unsigned char *answer, int ans
   ret = val_res_query(ctx, dname, class, type, answer, anslen,
 			&val_status);
 
+  if (val_istrusted(val_status)) {
+    return 0;
+  }
+
   if (ret) {
     return ret;
-  } else {
-    if (val_istrusted(val_status)) {
-      return 0;
-    }
   }
+
   return (-1); 
 }
 
@@ -325,7 +325,7 @@ getipnodebyaddr(const void *addr, size_t len, int af, int *error_num)
 }
 
 
-int
+/* int
 getrrsetbyname(const char *hostname, unsigned int rdclass, unsigned int rdtype, unsigned int flags, struct rrsetinfo **res)
 {
   // int (*lib_getrrsetbyname)(const char *hostname, unsigned int rdclass, unsigned int rdtype, unsigned int flags, struct rrsetinfo **res);
@@ -342,4 +342,5 @@ getrrsetbyname(const char *hostname, unsigned int rdclass, unsigned int rdtype, 
 
   return (int)NULL;
 }
+*/
 
