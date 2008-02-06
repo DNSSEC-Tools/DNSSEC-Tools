@@ -127,7 +127,8 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
   fprintf(stderr, "libval_shim: getaddrinfo(%s, %s) called: wrapper\n", node, service);
 
   ret = val_getaddrinfo(ctx, node, service, hints, &vainfo_ptr, &val_status);
-  if (ret == 0) {
+
+  if (res) {
     *res = (struct addrinfo *)vainfo_ptr;
   }
 
@@ -167,6 +168,9 @@ getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, socklen_t
 
   ret = val_getnameinfo(ctx, sa, salen, host, hostlen, serv, servlen, flags,
 			&val_status);
+
+  fprintf(stderr, "libval_shim: getnameinfo(%s,%ld) = (%s:%s)\n", addr, ((struct sockaddr_in*)sa)->sin_port, host, serv);
+
 
   if (val_istrusted(val_status)) {
       return 0;
