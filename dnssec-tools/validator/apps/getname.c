@@ -106,7 +106,7 @@ main(int argc, char *argv[])
         case 'p':
             portspecified = 1;
             service = optarg;
-	    sscanf("%d",service,&port);
+	    sscanf(service,"%d", &port);
             break;
         default:
             fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);
@@ -138,6 +138,7 @@ main(int argc, char *argv[])
 
         printf("Return code = %d\n", retval);
         printf("Validator status code = %d (%s)\n", val_status, p_val_status(val_status));
+	  printf("Host: %s\nServ: %s\n", host, serv);
 
         if (retval != 0) {
             printf("Error in val_getnameinfo(): %s\n",
