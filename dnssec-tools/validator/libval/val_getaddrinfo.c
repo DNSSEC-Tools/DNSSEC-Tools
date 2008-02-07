@@ -1393,7 +1393,6 @@ val_getnameinfo(val_context_t * ctx,
                 return EAI_FAIL;
             }
 
-            
             if (!val_res) 
                 return EAI_MEMORY;
 
@@ -1456,10 +1455,13 @@ val_getnameinfo(val_context_t * ctx,
      */
     if (serv && servlen > 0) {
         struct servent *sent;
+	int port = ((const struct sockaddr_in*)sa)->sin_port;
+
+	val_log(ctx, LOG_DEBUG, "val_getnameinfo(): get service for port(%d)\n",ntohs(port));
         if (flags & NI_DGRAM)
-            sent = getservbyname(serv, "UDP");
+	  sent = getservbyport(port, "udp");
         else
-            sent = getservbyname(serv, "TCP");
+	  sent = getservbyport(port, NULL);
 
         if (!sent)
             return EAI_FAIL;
