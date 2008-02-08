@@ -1373,6 +1373,7 @@ val_getnameinfo(val_context_t * ctx,
          * check flags 
          */
         if (flags & NI_NUMERICHOST) {
+            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICHOST\n");
             strncpy(host, number_string, hostlen);
             *val_status = local_ans_status;
         } else {
@@ -1393,8 +1394,10 @@ val_getnameinfo(val_context_t * ctx,
                 return EAI_FAIL;
             }
 
-            if (!val_res) 
-                return EAI_MEMORY;
+            if (!val_res) {
+	      val_log(ctx, LOG_ERR, "val_getnameinfo(): EAI_MEMORY\n");
+	      return EAI_MEMORY;
+	    }
 
             val_rnc_status = 0;
 
@@ -1466,11 +1469,12 @@ val_getnameinfo(val_context_t * ctx,
         if (!sent)
             return EAI_FAIL;
 
-        if (flags & NI_NUMERICSERV)
-            snprintf(serv, servlen, "%d", sent->s_port);
-        else
+        if (flags & NI_NUMERICSERV) {
+	  val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICSERV\n");
+	  snprintf(serv, servlen, "%d", ntohs(sent->s_port));
+        } else {
             strncpy(serv, sent->s_name, servlen);
-
+	}
         val_log(ctx, LOG_DEBUG, "val_getnameinfo(): service is %s : %s ",
                 serv, sent->s_proto);
     }

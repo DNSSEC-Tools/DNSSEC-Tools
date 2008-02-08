@@ -52,7 +52,9 @@ usage(char *progname)
             "\t-p, --service=<PORT|SERVICE>    transport-layer port or service name\n");
 }
 
-static int      validate = 0;
+static int      validate = 1;
+static int      flags = 0;
+static int      portspecified = 0;
 
 #define STRLEN 64
 int
@@ -60,29 +62,30 @@ main(int argc, char *argv[])
 {
     char           *node = NULL;
     char           *service = NULL;
-    char           host[STRLEN];
-    char           serv[STRLEN];
+    char           host_str[STRLEN];
+    char           serv_str[STRLEN];
+    char           *host = host_str;
+    char           *serv = serv_str;
+    size_t            hostlen = STRLEN;
+    size_t            servlen = STRLEN;
     int             retval;
-    int             portspecified = 0;
     int            port = 0;
-    int            flags = 0;
     val_log_t      *logp;
     val_status_t val_status;
     struct sockaddr_in saddr;
     // Parse the command line
-    validate = 1;
     while (1) {
         int             c;
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "hno:p:",
+        c = getopt_long_only(argc, argv, "hno:p:FHNSD",
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "hno:p:", prog_options, &opt_index);
+        c = getopt_long(argc, argv, "hno:p:FHNSD", prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "hno:p:");
+        c = getopt(argc, argv, "hno:p:FHNSD");
 #endif
 
         if (c == -1) {
@@ -108,6 +111,21 @@ main(int argc, char *argv[])
             service = optarg;
 	    sscanf(service,"%d", &port);
             break;
+	case 'F':
+	  flags |= NI_NOFQDN;
+	  break;
+	case 'H':
+	  flags |= NI_NUMERICHOST;
+	  break;
+	case 'N':
+	  flags |= NI_NAMEREQD;
+	  break;
+	case 'S':
+	  flags |= NI_NUMERICSERV;
+	  break;
+	case 'D':
+	  flags |= NI_DGRAM;
+	  break;
         default:
             fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);
             usage(argv[0]);
@@ -127,26 +145,28 @@ main(int argc, char *argv[])
     saddr.sin_port = htons(port);
     saddr.sin_addr.s_addr = inet_addr(node);
 
+    if (portspecified != 1) {
+      serv = NULL;
+      servlen = 0;
+    }
+
     if (validate) {
 
       retval = val_getnameinfo(NULL, 
 			       (struct sockaddr*)&saddr, 
 			       sizeof(struct sockaddr_in), 
-			       host, (size_t)STRLEN, 
-			       serv, (size_t)STRLEN, 
+			       host, hostlen, serv, servlen, 
 			       flags, &val_status);
 
         printf("Return code = %d\n", retval);
         printf("Validator status code = %d (%s)\n", val_status, p_val_status(val_status));
-	  printf("Host: %s\nServ: %s\n", host, serv);
+	printf("Host: %s\nServ: %s\n", host, serv);
 
         if (retval != 0) {
             printf("Error in val_getnameinfo(): %s\n",
                    gai_strerror(retval));
             return -1;
-        } else {
-	  printf("Host: %s\nServ: %s\n", host, serv);
-        }
+        } 
 
         /*
          * cleanup 
