@@ -4,7 +4,7 @@ SONAME    = lib$(LIBNAME).so.1.0.0
 SOVERSION = lib$(LIBNAME).so.1.0
 CFLAGS    = -Wall
 CC	  = gcc
-LIBS	  = -lsres -lval-threads -lpthread
+LIBS	  = -lsres -lval-threads -lpthread -lcrypto
  
 all:    lib$(LIBNAME).so 
  

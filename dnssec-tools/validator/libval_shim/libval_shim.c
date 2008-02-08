@@ -20,39 +20,45 @@ typedef struct val_context ValContext;
 struct hostent *
 gethostbyname(const char *name)
 {
-  int (*lib_gethostbyname)(const char *name);
-  char *error;
+  ValContext *		ctx = NULL;
+  val_status_t          val_status;
+  struct hostent *      res;
 
-  lib_gethostbyname = dlsym(RTLD_NEXT, "gethostbyname");
+  fprintf(stderr, "libval_shim: gethostbyname(%s) called: wrapper\n", name);
+  
+  res = val_gethostbyname(ctx, name, &val_status);
 
-  if ((error = dlerror()) != NULL) {
-    fprintf(stderr, "unable to load gethostbyname: %s\n", error);
-    exit(1);
+  if (val_istrusted(val_status)) {
+      return res;
   }
 
-  fprintf(stderr, "libval_shim: gethostbyname called: pass-thru\n");
-
-  return (struct hostent *)lib_gethostbyname(name);
+  return (NULL); 
 }
 
 
 
 int
-gethostbyname_r(__const char * __name,struct hostent * __result_buf, char * __buf, size_t __buflen, struct hostent ** __result, int * __h_errnop)
+gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf, size_t buflen, struct hostent ** result, int * h_errnop)
 {
-  int (*lib_gethostbyname_r)(__const char * __name,struct hostent * __result_buf, char * __buf, size_t __buflen, struct hostent ** __result, int * __h_errnop);
-  char *error;
+  ValContext *		ctx = NULL;
+  val_status_t          val_status;
+  int                   res;
 
-  lib_gethostbyname_r = dlsym(RTLD_NEXT, "gethostbyname_r");
+  fprintf(stderr, "libval_shim: gethostbyname_r(%s) called: wrapper\n", name);
 
-  if ((error = dlerror()) != NULL) {
-    fprintf(stderr, "unable to load gethostbyname_r: %s\n", error);
-    exit(1);
+  res = 
+    val_gethostbyname_r(ctx, name, result_buf, buf, buflen, result, h_errnop,
+			&val_status);
+
+  if (val_istrusted(val_status)) {
+      return 0;
   }
 
-  fprintf(stderr, "libval_shim: gethostbyname_r called: pass-thru\n");
+  if (res) {
+    return res;
+  }
 
-  return (int)lib_gethostbyname_r(__name, __result_buf, __buf, __buflen, __result, __h_errnop);
+  return (HOST_NOT_FOUND); 
 }
 
 
@@ -162,14 +168,15 @@ getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, socklen_t
   val_status_t          val_status;
   char *addr;
   int ret;
-
+  val_log_add_optarg("7:stderr", 1);
   addr = inet_ntoa(((struct sockaddr_in*)sa)->sin_addr);
-  fprintf(stderr, "libval_shim: getnameinfo(%s,%ld) called: wrapper\n", addr, ((struct sockaddr_in*)sa)->sin_port);
+  fprintf(stderr, "libval_shim: getnameinfo(%s,%d) called: wrapper\n", addr, ntohs(((struct sockaddr_in*)sa)->sin_port));
 
   ret = val_getnameinfo(ctx, sa, salen, host, hostlen, serv, servlen, flags,
 			&val_status);
 
-  fprintf(stderr, "libval_shim: getnameinfo(%s,%ld) = (%s:%s)\n", addr, ((struct sockaddr_in*)sa)->sin_port, host, serv);
+  fprintf(stderr, "libval_shim: getnameinfo(%s,%d) = (%s:%s) ret = %d\n", 
+	  addr, ntohs(((struct sockaddr_in*)sa)->sin_port), host, serv, ret);
 
 
   if (val_istrusted(val_status)) {
