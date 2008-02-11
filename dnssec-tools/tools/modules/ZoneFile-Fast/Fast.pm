@@ -552,7 +552,25 @@ sub parse_line
 	  $parse->();
 	  return;
       } elsif (/\G(txt)[ \t]+/igc) {
-	  if (/\G(["']?.*?["']?)$pat_skip$/gc) {
+	  if (/\G('[^']+')$pat_skip$/gc) {
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "TXT",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   txtdata => $1,
+			  };
+	  } elsif (/\G("[^"]+")$pat_skip$/gc) {
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "TXT",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   txtdata => $1,
+			  };
+	  } elsif (/\G(["']?.*?["']?)$pat_skip$/gc) {
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
