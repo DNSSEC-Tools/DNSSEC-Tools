@@ -177,9 +177,6 @@ LocalGetOptions(\%opts,
 
 push @main::ARGV, @guiargs;
 
-use Data::Dumper;
-print STDERR "here: ", Dumper(\@main::ARGV);
-
 if (!$opts{'R'} && !$opts{'F'} && !$opts{'H'} && 
     ($#ARGV == -1 || $#ARGV % 2 != 1)) {
     print STDERR "\nUsage Error: $0 called with wrong number of arguments\n";
