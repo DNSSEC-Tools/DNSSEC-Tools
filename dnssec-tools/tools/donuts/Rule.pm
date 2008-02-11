@@ -90,8 +90,21 @@ sub print_error {
     $r->output("$loc:");
     $r->output("Location:", $rrname) if ($rrname);
     if ($verb) {
-	$r->output("Rule Name:", $r->{name});
-	$r->output("Level:",     $r->{level});
+	if ($verb >= 5) {
+	    require Data::Dumper;
+	    import Data::Dumper qw(Dumper);
+	    $r->output("Rule Dump:", Dumper($r));
+	} else {
+	    $r->output("Rule Name:", $r->{name});
+	    $r->output("Level:",     $r->{level});
+	    if ($verb >= 2) {
+		$r->output("Rule File:", $r->{'code_file'});
+		$r->output("Rule Line:", $r->{'code_line'});
+	    }
+	    if ($verb >= 3) {
+		$r->output("Rule Code:", $r->{'ruledef'});
+	    }
+	}
     }
     # print the output error, with one of 3 formatting styles
     if ($r->{'noindent'} || $r->{'gui'}) {
