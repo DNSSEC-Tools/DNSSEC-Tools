@@ -311,7 +311,7 @@ level: 5
 desc: RFC4035: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST NOT be the only RRset at any particular owner name.
 <test>
   my @keys = sort keys(%{$records});
-  return if ($#keys == 1);
+  return if ($#keys != 1);
   "$recordname only contains NSEC and RRSIG records"
     if ($keys[0] eq 'NSEC' && $keys[1] eq 'RRSIG');
 </test>
