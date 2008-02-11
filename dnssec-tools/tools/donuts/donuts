@@ -98,8 +98,8 @@ LocalGetOptions(\%opts,
 		["show-gui", "Display the results in a browsable window.",
 		 nocgi => 1,
 		 question => { type => 'checkbox', default => 1, indent => 1}],
-		["v|verbose",
-		 "Verbose output (show extra processing information)",
+		["v|verbose+",
+		 "Verbose output (show extra processing information).  Use multiple times for increasing amounts of output.",
 		 question => { type => 'checkbox', default => 1, indent => 1 }],
 		["q|quiet", "Quiet output (Do not print summary information)",
 		 indent => 1],
@@ -561,12 +561,15 @@ sub parse_rule_file {
     open(RF, $file);
     my $nextline;
     my $count;
+    my $ruledef;
 
     $err = 0;
     while (($_ = $nextline) || ($_ = <RF>)) {
 	$nextline = undef;
 	$count++;
 	next if (/^\s*#/);
+
+	$ruledef .= $_;
 
 	# deal with multi-line records
 	if (/(<|)(test|init)(>|:)/) {
@@ -582,6 +585,7 @@ sub parse_rule_file {
 		last if ((!$xmllike && (!/^\s/ || /^\s*$/)) ||
 			 ($xmllike && /<\/(test|init)>/));
 		$code .= $_;
+		$ruledef .= $_;
 	    }
 
 	    # evaluate it
@@ -609,10 +613,17 @@ sub parse_rule_file {
 	    print STDERR "illegal rule in $file:$count for rule $rule->{name}";
 	}
 
+	if ($rule && !exists($rule->{'code_file'})) {
+	    $rule->{'code_file'} = $file;
+	    $rule->{'code_line'} = $count;
+	}
+
 	# end of rule (can get here from inside a test end too, hence
 	# not an else clause above)
 	if (/^\s*$/) {
 	    if ($rule && !$err) {
+		$rule->{'ruledef'} = $ruledef if ($opts{'v'} >= 2);
+		$ruledef = '';
 		add_rule($rule);
 	    }
 	    $rule = undef;
@@ -620,6 +631,7 @@ sub parse_rule_file {
 	}
     }
     if ($rule && !$err) {
+	$rule->{'ruledef'} = $ruledef if ($opts{'v'} >= 2);
 	add_rule($rule);
     }
 }
@@ -810,7 +822,8 @@ Displays a help message.
 
 =item -v
 
-Turns on more verbose output.
+Turns on more verbose output.  Multiple -v's will turn on increasing
+amounts of output.
 
 =item -q
 
