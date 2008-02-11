@@ -81,7 +81,7 @@ sub wrapit {
 
 # Print the results of an error for a given rule
 sub print_error {
-    my ($r, $err, $loc, $verb, $rrname) = @_;
+    my ($r, $err, $loc, $verb, $rrname, $record) = @_;
     my $class = $r->{class} || 'Error';
     my $output_width=13;
     my $indent = " " x ($output_width+2);  # to account for 2 space indent
@@ -101,7 +101,10 @@ sub print_error {
 		$r->output("Rule File:", $r->{'code_file'});
 		$r->output("Rule Line:", $r->{'code_line'});
 	    }
-	    if ($verb >= 3) {
+	    if ($verb >= 3 && defined($record)) {
+		$r->output("Record:", $record->string);
+	    }
+	    if ($verb >= 4) {
 		$r->output("Rule Code:", $r->{'ruledef'});
 	    }
 	}
@@ -157,7 +160,8 @@ sub test_record {
 	    if ($#$res > -1) {
 		foreach my $result (@$res) {
 		    $rule->print_error($result, $record->name,
-				       $verbose, "$file:$record->{Line}");
+				       $verbose, "$file:$record->{Line}",
+				       $record);
 		}
 		return (1,$#$res+1);
 	    }
