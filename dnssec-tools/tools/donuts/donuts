@@ -584,6 +584,7 @@ sub parse_rule_file {
 		$code .= $_;
 		$ruledef .= $_;
 	    }
+	    $ruledef .= $_;
 
 	    # evaluate it
 	    if ($type eq 'init') {
