@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <errno.h>
+
 
 #include <arpa/nameser.h>
 #include <validator/resolver.h>
@@ -18,7 +20,10 @@
 
 typedef struct val_context ValContext;
 
+static ValContext *libval_shim_ctx = NULL;
+
 static int libval_shim_log_set = 0;
+
 static void libval_shim_log(void)
 {
   char *shim_log = getenv("LIBVAL_SHIM_LOG");
@@ -29,18 +34,37 @@ static void libval_shim_log(void)
   } 
 }
 
+static void libval_shim_context(void)
+{
+  if (libval_shim_ctx == NULL) {
+    char *shim_ctx_name = getenv("LIBVAL_SHIM_CONTEXT");
+    
+    if (shim_ctx_name == NULL || strlen(shim_ctx_name) == 0)
+      shim_ctx_name = program_invocation_short_name;
+
+    if (val_create_context(shim_ctx_name, &libval_shim_ctx) != VAL_NO_ERROR)
+      val_create_context(":", &libval_shim_ctx);
+  }
+}
+
+static void libval_shim_init(void)
+{
+  libval_shim_log();
+
+  libval_shim_context();
+}
+
 struct hostent *
 gethostbyname(const char *name)
 {
-  ValContext *		ctx = NULL;
   val_status_t          val_status;
   struct hostent *      res;
 
-  libval_shim_log();
+  libval_shim_init();
 
   val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname(%s) called: wrapper\n", name);
   
-  res = val_gethostbyname(ctx, name, &val_status);
+  res = val_gethostbyname(libval_shim_ctx, name, &val_status);
 
   if (val_istrusted(val_status)) {
       return res;
@@ -54,16 +78,16 @@ gethostbyname(const char *name)
 int
 gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf, size_t buflen, struct hostent ** result, int * h_errnop)
 {
-  ValContext *		ctx = NULL;
   val_status_t          val_status;
   int                   ret;
 
-  libval_shim_log();
+  libval_shim_init();
 
   val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname_r(%s) called: wrapper\n", name);
 
   ret = 
-    val_gethostbyname_r(ctx, name, result_buf, buf, buflen, result, h_errnop,
+    val_gethostbyname_r(libval_shim_ctx, name, result_buf, buf, buflen, 
+			result, h_errnop,
 			&val_status);
 
   if (val_istrusted(val_status)) {
@@ -81,7 +105,7 @@ gethostbyaddr(__const void *addr, __socklen_t len, int type)
   int (*lib_gethostbyaddr)(__const void *addr, __socklen_t len, int type);
   char *error;
 
-  libval_shim_log();
+  libval_shim_init();
 
   lib_gethostbyaddr = dlsym(RTLD_NEXT, "gethostbyaddr");
 
@@ -103,7 +127,7 @@ gethostbyname2(__const char *__name, int __af)
   int (*lib_gethostbyname2)(__const char *__name, int __af);
   char *error;
 
-  libval_shim_log();
+  libval_shim_init();
 
   lib_gethostbyname2 = dlsym(RTLD_NEXT, "gethostbyname2");
 
@@ -125,7 +149,7 @@ gethostbyname2_r(__const char * __name, int __af, struct hostent * __result_buf,
   int (*lib_gethostbyname2_r)(__const char * __name, int __af, struct hostent * __result_buf, char * __buf, size_t __buflen, struct hostent ** __result, int * __h_errnop);
   char *error;
 
-  libval_shim_log();
+  libval_shim_init();
 
   lib_gethostbyname2_r = dlsym(RTLD_NEXT, "gethostbyname2_r");
 
@@ -144,17 +168,17 @@ gethostbyname2_r(__const char * __name, int __af, struct hostent * __result_buf,
 int
 getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res)
 {
-  ValContext *		ctx = NULL;
   struct val_addrinfo *	vainfo_ptr = NULL;
   val_status_t          val_status;
   int ret;
 
 
-  libval_shim_log();
+  libval_shim_init();
 
   val_log(NULL, LOG_DEBUG, "libval_shim: getaddrinfo(%s, %s) called: wrapper\n", node, service);
 
-  ret = val_getaddrinfo(ctx, node, service, hints, &vainfo_ptr, &val_status);
+  ret = val_getaddrinfo(libval_shim_ctx, node, service, hints, &vainfo_ptr, 
+			&val_status);
 
   if (res) {
     *res = (struct addrinfo *)vainfo_ptr;
@@ -172,7 +196,7 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
 void
 freeaddrinfo(struct addrinfo *ai)
 {
-  libval_shim_log();
+  libval_shim_init();
 
   val_log(NULL, LOG_DEBUG, "libval_shim: freeaddrinfo called: wrapper\n");
 
@@ -184,17 +208,17 @@ freeaddrinfo(struct addrinfo *ai)
 int
 getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, socklen_t hostlen, char *serv, socklen_t servlen, unsigned int flags)
 {
-  ValContext *		ctx = NULL;
   val_status_t          val_status;
   char *addr;
   int ret;
 
-  libval_shim_log();
+  libval_shim_init();
 
   addr = inet_ntoa(((struct sockaddr_in*)sa)->sin_addr);
   val_log(NULL, LOG_DEBUG, "libval_shim: getnameinfo(%s,%d) called: wrapper\n", addr, ntohs(((struct sockaddr_in*)sa)->sin_port));
 
-  ret = val_getnameinfo(ctx, sa, salen, host, hostlen, serv, servlen, flags,
+  ret = val_getnameinfo(libval_shim_ctx, sa, salen, host, hostlen, 
+			serv, servlen, flags,
 			&val_status);
 
   val_log(NULL, LOG_DEBUG, "libval_shim: getnameinfo(%s,%d) = (%s:%s) ret = %d\n", 
@@ -216,7 +240,7 @@ res_init(void)
   int (*lib_res_init)(void);
   char *error;
 
-  libval_shim_log();
+  libval_shim_init();
 
   lib_res_init = dlsym(RTLD_NEXT, "res_init");
 
@@ -235,16 +259,15 @@ res_init(void)
 int
 res_query(const char *dname, int class, int type, unsigned char *answer, int anslen)
 {
-  ValContext *		ctx = NULL;
   val_status_t          val_status;
   int ret;
 
-  libval_shim_log();
+  libval_shim_init();
 
   val_log(NULL, LOG_DEBUG, "libval_shim: res_query(%s,%d,%d) called: wrapper\n",
 	  dname, class, type);
 
-  ret = val_res_query(ctx, dname, class, type, answer, anslen,
+  ret = val_res_query(libval_shim_ctx, dname, class, type, answer, anslen,
 			&val_status);
 
   if (val_istrusted(val_status)) {
@@ -262,7 +285,7 @@ res_querydomain(const char *name, const char *domain, int class, int type, u_cha
   int (*lib_res_querydomain)(const char *name, const char *domain, int class, int type, u_char * answer, int anslen);
   char *error;
 
-  libval_shim_log();
+  libval_shim_init();
 
   lib_res_querydomain = dlsym(RTLD_NEXT, "res_querydomain");
 
@@ -284,7 +307,7 @@ res_search(const char *dname, int class, int type, unsigned char *answer, int an
   int (*lib_res_search)(const char *dname, int class, int type, unsigned char *answer, int anslen);
   char *error;
 
-  libval_shim_log();
+  libval_shim_init();
 
   lib_res_search = dlsym(RTLD_NEXT, "res_search");
 
@@ -306,7 +329,7 @@ res_send(const u_char * msg, int msglin, u_char *answer, int anslen)
   int (*lib_res_send)(const u_char * msg, int msglin, u_char *answer, int anslen);
   char *error;
 
-  libval_shim_log();
+  libval_shim_init();
 
   lib_res_send = dlsym(RTLD_NEXT, "res_send");
 
@@ -335,7 +358,7 @@ getipnodebyname(const char *name, int af, int flags, int *error_num)
   //   exit(1);
   // }
 
-  libval_shim_log();
+  libval_shim_init();
 
   val_log(NULL, LOG_DEBUG, "libval_shim: getipnodebyname: called: not-avail\n");
 
@@ -356,7 +379,7 @@ getipnodebyaddr(const void *addr, size_t len, int af, int *error_num)
   //   exit(1);
   // }
 
-  libval_shim_log();
+  libval_shim_init();
 
   val_log(NULL, LOG_DEBUG, "libval_shim: getipnodebyaddr: called: not-avail\n");
 
