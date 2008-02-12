@@ -140,19 +140,18 @@ sub donuts_error {
 }
 
 sub run_test {
-    my ($rule, $record, $file, $level, $features, $verbose, $arg2) = @_;
+    my ($rule, $file, $testargs, $errorargs) = @_;
 
     $current_errors = [];
 
     my $res = eval {
 	import Net::DNS::SEC::Tools::Donuts::Rule qw(donuts_error);
-	$rule->{'test'}->($record, $rule, $arg2);
+	$rule->{'test'}->(@$testargs);
     };
     if (!defined($res) && $@) {
 	print STDERR "\nProblem executing rule $rule->{name}: \n";
-	print STDERR "  Record:   " . $record->name . " -- (" 
-	  . ref($record) . ")\n";
-	print STDERR "  Location: $file:$record->{Line}\n\n";
+	print STDERR "  ZoneData: $file\n";   
+	print STDERR "  Location: $rule->{code_file}:$rule->{code_line}\n";
 	print STDERR "  Error:    $@\n";
 	return (0,0);
     }
@@ -169,9 +168,7 @@ sub run_test {
     }
     if ($#$res > -1) {
 	foreach my $result (@$res) {
-	    $rule->print_error($result, $record->name,
-			       $verbose, "$file:$record->{Line}",
-			       $record);
+	    $rule->print_error($result, @$errorargs);
 	}
 	return (1,$#$res+1);
     }
@@ -191,7 +188,9 @@ sub test_record {
 
 	    # and the type matches
 
-	    return $rule->run_test($record, $file, $level, $features, $verbose);
+	    return $rule->run_test($file, [$record, $rule],
+				   [$record->name, $verbose,
+				    "$file:$record->{Line}", $record]);
 	}
 	
 	# it was a legal rule, so we count it but no errors
@@ -209,22 +208,8 @@ sub test_name {
 	 exists($features->{$rule->{'feature'}})) &&
 	(exists($rule->{'ruletype'}) && $rule->{'ruletype'} eq 'name')) {
 
-	my $res = $rule->{'test'}->($namerecord, $rule, $name);
-	if (ref($res) ne 'ARRAY') {
-	    if ($res) {
-		$res = [$res];
-	    } else {
-		return (1,0);
-	    }
-	}
-	if ($#$res > -1) {
-	    foreach my $result (@$res) {
-		$rule->print_error($result, "$file::$name",
-				   $verbose);
-	    }
-	    return (1,$#$res+1);
-	}
-	return (1,0);
+	return $rule->run_test($file, [$namerecord, $rule, $name],
+			       ["$file::$name", $verbose]);
     }
     return (0,0);
 }
