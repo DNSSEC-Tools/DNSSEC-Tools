@@ -18,11 +18,13 @@
 
 typedef struct val_context ValContext;
 
+static int libval_shim_log_set = 0;
 static void libval_shim_log(void)
 {
   char *shim_log = getenv("LIBVAL_SHIM_LOG");
 
-  if (shim_log && strlen(shim_log)) {
+  if (shim_log && strlen(shim_log) && !libval_shim_log_set) {
+    libval_shim_log_set = 1;
     val_log_add_optarg(shim_log, 1);
   } 
 }
