@@ -10,6 +10,10 @@ use Net::DNS;
 my $have_textwrap = eval { require Text::Wrap };
 our $VERSION="1.0";
 
+require Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(donuts_error);
+
 sub new {
     my ($class, $ref) = @_;
 
@@ -98,6 +102,8 @@ sub print_error {
 	    $r->output("Rule Name:", $r->{name});
 	    $r->output("Level:",     $r->{level});
 	    if ($verb >= 2) {
+		$r->output("Rule Type:", $r->{'ruletype'} || 'record');
+		$r->output("Record Type:", $r->{'type'}) if ($r->{'type'});
 		$r->output("Rule File:", $r->{'code_file'});
 		$r->output("Rule Line:", $r->{'code_line'});
 	    }
@@ -128,6 +134,50 @@ sub print_error {
     $r->output("");
 }
 
+my ($current_errors, $current_warnings);
+sub donuts_error {
+    push @$current_errors, @_;
+}
+
+sub run_test {
+    my ($rule, $record, $file, $level, $features, $verbose, $arg2) = @_;
+
+    $current_errors = [];
+
+    my $res = eval {
+	import Net::DNS::SEC::Tools::Donuts::Rule qw(donuts_error);
+	$rule->{'test'}->($record, $rule, $arg2);
+    };
+    if (!defined($res) && $@) {
+	print STDERR "\nProblem executing rule $rule->{name}: \n";
+	print STDERR "  Record:   " . $record->name . " -- (" 
+	  . ref($record) . ")\n";
+	print STDERR "  Location: $file:$record->{Line}\n\n";
+	print STDERR "  Error:    $@\n";
+	return (0,0);
+    }
+    if (ref($res) ne 'ARRAY') {
+	if ($res) {
+	    $res = [@$current_errors, $res];
+	} elsif ($#$current_errors > -1) {
+	    $res = [@$current_errors];
+	} else {
+	    return (1,0);
+	}
+    } elsif ($#$current_errors > -1) {
+	$res = [@$current_errors, @$res];
+    }
+    if ($#$res > -1) {
+	foreach my $result (@$res) {
+	    $rule->print_error($result, $record->name,
+			       $verbose, "$file:$record->{Line}",
+			       $record);
+	}
+	return (1,$#$res+1);
+    }
+}
+
+
 sub test_record {
     my ($rule, $record, $file, $level, $features, $verbose) = @_;
     if ((!exists($rule->{'level'}) || $level >= $rule->{'level'}) &&
@@ -141,30 +191,7 @@ sub test_record {
 
 	    # and the type matches
 
-	    my $res = eval { $rule->{'test'}->($record, $rule); };
-	    if (!defined($res) && $@) {
-		print STDERR "\nProblem executing rule $rule->{name}: \n";
-		print STDERR "  Record:   " . $record->name . " -- (" 
-		  . ref($record) . ")\n";
-		print STDERR "  Location: $file:$record->{Line}\n\n";
-		print STDERR "  Error:    $@\n";
-		return (0,0);
-	    }
-	    if (ref($res) ne 'ARRAY') {
-		if ($res) {
-		    $res = [$res];
-		} else {
-		    return (1,0);
-		}
-	    }
-	    if ($#$res > -1) {
-		foreach my $result (@$res) {
-		    $rule->print_error($result, $record->name,
-				       $verbose, "$file:$record->{Line}",
-				       $record);
-		}
-		return (1,$#$res+1);
-	    }
+	    return $rule->run_test($record, $file, $level, $features, $verbose);
 	}
 	
 	# it was a legal rule, so we count it but no errors
@@ -181,6 +208,7 @@ sub test_name {
 	(!exists($rule->{'feature'}) ||
 	 exists($features->{$rule->{'feature'}})) &&
 	(exists($rule->{'ruletype'}) && $rule->{'ruletype'} eq 'name')) {
+
 	my $res = $rule->{'test'}->($namerecord, $rule, $name);
 	if (ref($res) ne 'ARRAY') {
 	    if ($res) {
