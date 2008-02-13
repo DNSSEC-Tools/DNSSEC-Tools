@@ -24,17 +24,19 @@ static ValContext *libval_shim_ctx = NULL;
 
 static int libval_shim_log_set = 0;
 
-static void libval_shim_log(void)
+static int libval_shim_log(void)
 {
   char *shim_log = getenv("LIBVAL_SHIM_LOG");
 
   if (shim_log && strlen(shim_log) && !libval_shim_log_set) {
     libval_shim_log_set = 1;
-    val_log_add_optarg(shim_log, 1);
-  } 
+    if (val_log_add_optarg(shim_log, 1) == NULL)
+      return -1;
+  }
+  return 0;
 }
 
-static void libval_shim_context(void)
+static int libval_shim_context(void)
 {
   if (libval_shim_ctx == NULL) {
     char *shim_ctx_name = getenv("LIBVAL_SHIM_CONTEXT");
@@ -43,15 +45,17 @@ static void libval_shim_context(void)
       shim_ctx_name = program_invocation_short_name;
 
     if (val_create_context(shim_ctx_name, &libval_shim_ctx) != VAL_NO_ERROR)
-      val_create_context(":", &libval_shim_ctx);
+      if (val_create_context(":", &libval_shim_ctx) != VAL_NO_ERROR)
+	return -1;
   }
+  return 0;
 }
 
-static void libval_shim_init(void)
+static int libval_shim_init(void)
 {
   libval_shim_log();
 
-  libval_shim_context();
+  return (libval_shim_context());
 }
 
 struct hostent *
@@ -60,7 +64,8 @@ gethostbyname(const char *name)
   val_status_t          val_status;
   struct hostent *      res;
 
-  libval_shim_init();
+  if (libval_shim_init())
+    return NULL;
 
   val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname(%s) called: wrapper\n", name);
   
@@ -81,7 +86,8 @@ gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf, siz
   val_status_t          val_status;
   int                   ret;
 
-  libval_shim_init();
+  if (libval_shim_init())
+    return NO_RECOVERY;
 
   val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname_r(%s) called: wrapper\n", name);
 
@@ -102,21 +108,12 @@ gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf, siz
 struct hostent *
 gethostbyaddr(__const void *addr, __socklen_t len, int type)
 {
-  int (*lib_gethostbyaddr)(__const void *addr, __socklen_t len, int type);
-  char *error;
+  if (libval_shim_init())
+    return NULL;
 
-  libval_shim_init();
+  val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyaddr called: not-available\n");
 
-  lib_gethostbyaddr = dlsym(RTLD_NEXT, "gethostbyaddr");
-
-  if ((error = dlerror()) != NULL) {
-    val_log(NULL, LOG_DEBUG, "unable to load gethostbyaddr: %s\n", error);
-    exit(1);
-  }
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyaddr called: pass-thru\n");
-
-  return (struct hostent *)lib_gethostbyaddr(addr, len, type);
+  return NULL;
 }
 
 
@@ -124,21 +121,12 @@ gethostbyaddr(__const void *addr, __socklen_t len, int type)
 struct hostent *
 gethostbyname2(__const char *__name, int __af)
 {
-  int (*lib_gethostbyname2)(__const char *__name, int __af);
-  char *error;
+  if (libval_shim_init())
+    return NULL;
 
-  libval_shim_init();
+  val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname2 called: not-available\n");
 
-  lib_gethostbyname2 = dlsym(RTLD_NEXT, "gethostbyname2");
-
-  if ((error = dlerror()) != NULL) {
-    val_log(NULL, LOG_DEBUG, "unable to load gethostbyname2: %s\n", error);
-    exit(1);
-  }
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname2 called: pass-thru\n");
-
-  return (struct hostent *)lib_gethostbyname2(__name, __af);
+  return NULL;
 }
 
 
@@ -146,21 +134,12 @@ gethostbyname2(__const char *__name, int __af)
 int
 gethostbyname2_r(__const char * __name, int __af, struct hostent * __result_buf, char * __buf, size_t __buflen, struct hostent ** __result, int * __h_errnop)
 {
-  int (*lib_gethostbyname2_r)(__const char * __name, int __af, struct hostent * __result_buf, char * __buf, size_t __buflen, struct hostent ** __result, int * __h_errnop);
-  char *error;
+  if (libval_shim_init())
+    return EAI_FAIL;
 
-  libval_shim_init();
+  val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname2_r called: not-available\n");
 
-  lib_gethostbyname2_r = dlsym(RTLD_NEXT, "gethostbyname2_r");
-
-  if ((error = dlerror()) != NULL) {
-    val_log(NULL, LOG_DEBUG, "unable to load gethostbyname2_r: %s\n", error);
-    exit(1);
-  }
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname2_r called: pass-thru\n");
-
-  return (int)lib_gethostbyname2_r(__name, __af, __result_buf, __buf, __buflen, __result, __h_errnop);
+  return EAI_FAIL;
 }
 
 
@@ -173,9 +152,11 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
   int ret;
 
 
-  libval_shim_init();
+  if (libval_shim_init())
+    return EAI_FAIL;
 
-  val_log(NULL, LOG_DEBUG, "libval_shim: getaddrinfo(%s, %s) called: wrapper\n", node, service);
+  val_log(NULL, LOG_DEBUG, "libval_shim: getaddrinfo(%s, %s) called: wrapper\n",
+	  node, service);
 
   ret = val_getaddrinfo(libval_shim_ctx, node, service, hints, &vainfo_ptr, 
 			&val_status);
@@ -196,8 +177,6 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
 void
 freeaddrinfo(struct addrinfo *ai)
 {
-  libval_shim_init();
-
   val_log(NULL, LOG_DEBUG, "libval_shim: freeaddrinfo called: wrapper\n");
 
   val_freeaddrinfo((struct val_addrinfo *)ai);
@@ -212,7 +191,8 @@ getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, socklen_t
   char *addr;
   int ret;
 
-  libval_shim_init();
+  if (libval_shim_init())
+    return EAI_FAIL;
 
   addr = inet_ntoa(((struct sockaddr_in*)sa)->sin_addr);
   val_log(NULL, LOG_DEBUG, "libval_shim: getnameinfo(%s,%d) called: wrapper\n", addr, ntohs(((struct sockaddr_in*)sa)->sin_port));
@@ -237,21 +217,9 @@ getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, socklen_t
 int
 res_init(void)
 {
-  int (*lib_res_init)(void);
-  char *error;
+  val_log(NULL, LOG_DEBUG, "libval_shim: res_init called: wrapper\n");
 
-  libval_shim_init();
-
-  lib_res_init = dlsym(RTLD_NEXT, "res_init");
-
-  if ((error = dlerror()) != NULL) {
-    val_log(NULL, LOG_DEBUG, "unable to load res_init: %s\n", error);
-    exit(1);
-  }
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: res_init called: pass-thru\n");
-
-  return (int)lib_res_init();
+  return (libval_shim_init());
 }
 
 
@@ -262,7 +230,8 @@ res_query(const char *dname, int class, int type, unsigned char *answer, int ans
   val_status_t          val_status;
   int ret;
 
-  libval_shim_init();
+  if (libval_shim_init())
+    return -1;
 
   val_log(NULL, LOG_DEBUG, "libval_shim: res_query(%s,%d,%d) called: wrapper\n",
 	  dname, class, type);
@@ -282,21 +251,9 @@ res_query(const char *dname, int class, int type, unsigned char *answer, int ans
 int
 res_querydomain(const char *name, const char *domain, int class, int type, u_char * answer, int anslen)
 {
-  int (*lib_res_querydomain)(const char *name, const char *domain, int class, int type, u_char * answer, int anslen);
-  char *error;
+  val_log(NULL, LOG_DEBUG, "libval_shim: res_querydomain called: not-available\n");
 
-  libval_shim_init();
-
-  lib_res_querydomain = dlsym(RTLD_NEXT, "res_querydomain");
-
-  if ((error = dlerror()) != NULL) {
-    val_log(NULL, LOG_DEBUG, "unable to load res_querydomain: %s\n", error);
-    exit(1);
-  }
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: res_querydomain called: pass-thru\n");
-
-  return (int)lib_res_querydomain(name, domain, class, type, answer, anslen);
+  return -1;
 }
 
 
@@ -304,21 +261,9 @@ res_querydomain(const char *name, const char *domain, int class, int type, u_cha
 int
 res_search(const char *dname, int class, int type, unsigned char *answer, int anslen)
 {
-  int (*lib_res_search)(const char *dname, int class, int type, unsigned char *answer, int anslen);
-  char *error;
+  val_log(NULL, LOG_DEBUG, "libval_shim: res_search called: not-available\n");
 
-  libval_shim_init();
-
-  lib_res_search = dlsym(RTLD_NEXT, "res_search");
-
-  if ((error = dlerror()) != NULL) {
-    val_log(NULL, LOG_DEBUG, "unable to load res_search: %s\n", error);
-    exit(1);
-  }
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: res_search called: pass-thru\n");
-
-  return (int)lib_res_search(dname, class, type, answer, anslen);
+  return -1;
 }
 
 
@@ -326,21 +271,9 @@ res_search(const char *dname, int class, int type, unsigned char *answer, int an
 int
 res_send(const u_char * msg, int msglin, u_char *answer, int anslen)
 {
-  int (*lib_res_send)(const u_char * msg, int msglin, u_char *answer, int anslen);
-  char *error;
+  val_log(NULL, LOG_DEBUG, "libval_shim: res_send called: not-available\n");
 
-  libval_shim_init();
-
-  lib_res_send = dlsym(RTLD_NEXT, "res_send");
-
-  if ((error = dlerror()) != NULL) {
-    val_log(NULL, LOG_DEBUG, "unable to load res_send: %s\n", error);
-    exit(1);
-  }
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: res_send called: pass-thru\n");
-
-  return (int)lib_res_send(msg, msglin, answer, anslen);
+  return -1;
 }
 
 
@@ -348,19 +281,7 @@ res_send(const u_char * msg, int msglin, u_char *answer, int anslen)
 struct hostent *
 getipnodebyname(const char *name, int af, int flags, int *error_num)
 {
-  // int (*lib_getipnodebyname)(const char *name, int af, int flags, int *error_num);
-  // char *error;
-
-  // lib_getipnodebyname = dlsym(RTLD_NEXT, "getipnodebyname");
-  //
-  // if ((error = dlerror()) != NULL) {
-  //   val_log(NULL, LOG_DEBUG, "unable to load getipnodebyname: %s\n", error);
-  //   exit(1);
-  // }
-
-  libval_shim_init();
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: getipnodebyname: called: not-avail\n");
+  val_log(NULL,LOG_DEBUG,"libval_shim: getipnodebyname: called: not-available\n");
 
   return (struct hostent *)NULL;
 }
@@ -369,19 +290,7 @@ getipnodebyname(const char *name, int af, int flags, int *error_num)
 struct hostent *
 getipnodebyaddr(const void *addr, size_t len, int af, int *error_num)
 {
-  // int (*lib_getipnodebyaddr)(const void *addr, size_t len, int af, int *error_num);
-  // char *error;
-
-  // lib_getipnodebyaddr = dlsym(RTLD_NEXT, "getipnodebyaddr");
-  //
-  // if ((error = dlerror()) != NULL) {
-  //   val_log(NULL, LOG_DEBUG, "unable to load getipnodebyaddr: %s\n", error);
-  //   exit(1);
-  // }
-
-  libval_shim_init();
-
-  val_log(NULL, LOG_DEBUG, "libval_shim: getipnodebyaddr: called: not-avail\n");
+  val_log(NULL,LOG_DEBUG,"libval_shim: getipnodebyaddr: called: not-available\n");
 
   return (struct hostent *)NULL;
 }
