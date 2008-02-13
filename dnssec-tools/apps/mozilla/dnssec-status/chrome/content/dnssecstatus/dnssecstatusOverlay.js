@@ -37,6 +37,7 @@ function get_err_summary() {
 
 function logit(str) {
     loginfo = loginfo + str + "- spot = " + current_spot + "\n";
+//    dump("******************** " + str + "\n");
 }
 
 function showlog(lastbit) {
@@ -109,7 +110,9 @@ function add_to_storage(spot, name, host) {
 }
 
 function dnssecstatus_got_dnssec(topic, host) { 
-    logit("- dnssec: " + topic + " => " + host);
+//    This is now commented out as it freezes firefox2 on startup for
+//    some reason:
+//    logit("- dnssec: " + topic);
     if (topic == "dnssec-status-both" || topic == "dnssec-status-validated") {
         add_to_storage(current_spot, "val", host);
     }
@@ -168,7 +171,7 @@ function dnssecstatus_show() {
 */
         var spot = current_spot;
         maybe_init_spot(spot);
-        set_status("val", "DNS: Verified:", storage[spot]["valcount"],
+        set_status("val", "Verified:", storage[spot]["valcount"],
                    storage[spot]["vallist"]);
         set_status("trust", "Unverified:", storage[spot]["trustcount"],
                    storage[spot]["trustlist"]);
