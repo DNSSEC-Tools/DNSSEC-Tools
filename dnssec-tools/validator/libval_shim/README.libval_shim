@@ -6,8 +6,8 @@
                        Validator Shim Library
 
 
-The validator shim library (libval_shim.so) is a shared library
-desinged to be dynamically loaded using the 'LD_PRELOAD' mechanism
+The validator shim library ('libval_shim.so') is a shared library
+designed to be dynamically loaded using the 'LD_PRELOAD' mechanism
 supported on linux and various other unix-like platforms. The shim
 library implements wrappers for a number of DNS related functions and
 in turn calls equivalent DNSSEC-aware validating functions from
@@ -17,17 +17,19 @@ made DNSSEC aware without code changes and recompilation.
 
 The method of mapping return codes assumes that any 'untrusted' or
 failure result from the 'libval' function is reflected as a failure to
-the original calling function. 
+the original calling function.
 
 Usage:
 
-   To load the library set LD_PRELOAD:
+   To load the library set LD_PRELOAD variable within the environment
+   of the the target application prior to execution:
 
    	export LD_PRELOAD=libval_shim.so
 
 Validation Policy:
    
-   The policy applied using 'libval' functions is chosen in the following way:
+   The policy to be applied for the invoked 'libval' functions is
+   chosen in the following way:
 
     1) The value of the 'LIBVAL_SHIM_CONTEXT' environment variable
     2) The application name
