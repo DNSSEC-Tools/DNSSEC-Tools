@@ -1388,6 +1388,7 @@ nsSocketTransport::OnSocketEvent(PRUint32 type, nsresult status, nsISupports *pa
 
     case MSG_DNS_LOOKUP_COMPLETE:
         LOG(("  MSG_DNS_LOOKUP_COMPLETE\n"));
+        LOG(("   weshere\n"));
         mDNSRequest = 0;
         if (param) {
             mDNSRecord = NS_STATIC_CAST(nsIDNSRecord *, param);
@@ -1410,8 +1411,6 @@ nsSocketTransport::OnSocketEvent(PRUint32 type, nsresult status, nsISupports *pa
         }
         else if (mState == STATE_RESOLVING)
             mCondition = InitiateSocket();
-        break;
-
 
         if (!mObserverService)
             mObserverService = do_GetService("@mozilla.org/observer-service;1");
@@ -1435,10 +1434,15 @@ nsSocketTransport::OnSocketEvent(PRUint32 type, nsresult status, nsISupports *pa
             } else {
                 topic = MSG_DNSSEC_NEITHER_TOPIC;
             }
-            mObserverService->NotifyObservers(nsnull, topic,
+            LOG(("   DNS Validator sending: %s\n", topic));
+            mObserverService->NotifyObservers(nsnull,
+                                              topic,
                                               ToNewUnicode(SocketHost()));
+            // ObserverService.NotifyObservers(null, topic, "");
+        } else {
+            LOG(("   failure to obtain observer service\n"));
         }
-
+        break;
 
     case MSG_RETRY_INIT_SOCKET:
         mCondition = InitiateSocket();
