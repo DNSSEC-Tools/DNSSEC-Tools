@@ -506,8 +506,8 @@
 +     */
 +    boolean isValidated();
  };
---- mozilla/netwerk/base/src/nsSocketTransport2.cpp.orig	2006-07-18 17:32:43.000000000 -0700
-+++ mozilla/netwerk/base/src/nsSocketTransport2.cpp	2008-01-08 20:13:31.000000000 -0800
+--- nsSocketTransport2.cpp.dnssec-both	2006-07-18 17:32:43.000000000 -0700
++++ nsSocketTransport2.cpp	2008-02-13 14:04:56.000000000 -0800
 @@ -66,6 +66,8 @@
  #include "nsISocketProvider.h"
  #include "nsISSLSocketControl.h"
@@ -548,10 +548,10 @@
                  !mProxyHost.IsEmpty())
                  mCondition = NS_ERROR_UNKNOWN_PROXY_HOST;
              else
-@@ -1406,6 +1412,34 @@
+@@ -1404,6 +1410,37 @@
+         }
+         else if (mState == STATE_RESOLVING)
              mCondition = InitiateSocket();
-         break;
- 
 +
 +        if (!mObserverService)
 +            mObserverService = do_GetService("@mozilla.org/observer-service;1");
@@ -575,14 +575,17 @@
 +            } else {
 +                topic = MSG_DNSSEC_NEITHER_TOPIC;
 +            }
-+            mObserverService->NotifyObservers(nsnull, topic,
++            LOG(("   DNS Validator sending: %s\n", topic));
++            mObserverService->NotifyObservers(nsnull,
++                                              topic,
 +                                              ToNewUnicode(SocketHost()));
++            // ObserverService.NotifyObservers(null, topic, "");
++        } else {
++            LOG(("   failure to obtain observer service\n"));
 +        }
-+
-+
-     case MSG_RETRY_INIT_SOCKET:
-         mCondition = InitiateSocket();
          break;
+ 
+     case MSG_RETRY_INIT_SOCKET:
 --- old-mozilla/netwerk/base/src/nsSocketTransport2.h.orig	2007-09-14 10:16:03.000000000 -0700
 +++ mozilla/netwerk/base/src/nsSocketTransport2.h	2007-09-14 10:16:03.000000000 -0700
 @@ -54,6 +54,7 @@
