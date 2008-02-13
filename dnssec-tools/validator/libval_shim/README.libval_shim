@@ -1,0 +1,56 @@
+
+# Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+
+                       Validator Shim Library
+
+
+The validator shim library (libval_shim.so) is a shared library
+desinged to be dynamically loaded using the 'LD_PRELOAD' mechanism
+supported on linux and various other unix-like platforms. The shim
+library implements wrappers for a number of DNS related functions and
+in turn calls equivalent DNSSEC-aware validating functions from
+'libval', mapping the results to return codes recognized by the
+original functions. In this way a wide variety of applications can be
+made DNSSEC aware without code changes and recompilation.
+
+The method of mapping return codes assumes that any 'untrusted' or
+failure result from the 'libval' function is reflected as a failure to
+the original calling function. 
+
+Usage:
+
+   To load the library set LD_PRELOAD:
+
+   	export LD_PRELOAD=libval_shim.so
+
+Validation Policy:
+   
+   The policy applied using 'libval' functions is chosen in the following way:
+
+    1) The value of the 'LIBVAL_SHIM_CONTEXT' environment variable
+    2) The application name
+    3) The default policy ':'
+
+   See 'man dnsval.conf' for information on policy labels and definition.
+
+Logging:
+
+   Logging for the 'libval' functions may be enabled in the shim
+   library by setting the 'LIBVAL_SHIM_LOG' environment variable. 
+
+	export LIBVAL_SHIM_LOG="7:stderr"
+
+	or
+
+	export LIBVAL_SHIM_LOG="7:file:/tmp/validatorlog.txt"
+
+   See 'man validate' for log output specifier format.
+
+
+Notes:
+
+1) setuid and setgid root programs (e.g., ping) do not honor the
+LD_PRELOAD setting. These application may still use the LD_PRELOAD
+mechanism when run directly from a root shell.
