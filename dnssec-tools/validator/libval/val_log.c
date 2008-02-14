@@ -479,8 +479,8 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_WRONG_LABEL_COUNT:
         return "VAL_AC_WRONG_LABEL_COUNT";
         break;
-    case VAL_AC_BAD_DELEGATION:
-        return "VAL_AC_BAD_DELEGATION";
+    case VAL_AC_DS_NOMATCH:
+        return "VAL_AC_DS_NOMATCH";
         break;
     case VAL_AC_INVALID_KEY:
         return "VAL_AC_INVALID_KEY";
@@ -530,8 +530,14 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_SIGNING_KEY:
         return "VAL_AC_SIGNING_KEY";
         break;
-    case VAL_AC_TRUST_KEY:
-        return "VAL_AC_TRUST_KEY";
+    case VAL_AC_TRUST_NOCHK:
+        return "VAL_AC_TRUST_NOCHK";
+        break;
+    case VAL_AC_TRUST:
+        return "VAL_AC_TRUST";
+        break;
+    case VAL_AC_TRUST_POINT:
+        return "VAL_AC_TRUST_POINT";
         break;
     case VAL_AC_IGNORE_VALIDATION:
         return "VAL_AC_IGNORE_VALIDATION";
