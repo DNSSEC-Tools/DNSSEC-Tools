@@ -36,7 +36,7 @@
 static void
 get_clock_skew(val_context_t *ctx,
                u_int8_t *name_n,
-               u_int32_t *skew,
+               int *skew,
                u_int32_t *ttl_x)
 {
     policy_entry_t *cs_pol, *cs_cur;
@@ -103,7 +103,7 @@ val_sigverify(val_context_t * ctx,
               const val_dnskey_rdata_t * dnskey,
               const val_rrsig_rdata_t * rrsig,
               val_astatus_t * dnskey_status, val_astatus_t * sig_status,
-              u_int32_t clock_skew)
+              int clock_skew)
 {
     struct timeval  tv;
     struct timezone tz;
@@ -494,7 +494,7 @@ do_verify(val_context_t * ctx,
     size_t          ver_length;
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
-    u_int32_t clock_skew = 0;
+    int clock_skew = 0;
     u_int32_t ttl_x = 0;
 
     /*
