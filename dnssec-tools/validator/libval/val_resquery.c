@@ -238,6 +238,9 @@ merge_glue_in_referral(val_context_t *context,
                 /* store this name server in the merged_ns list */
                 cur_ns->ns_next = pc->qc_referral->merged_glue_ns;
                 pc->qc_referral->merged_glue_ns = cur_ns;
+                val_log(context, LOG_DEBUG,
+                        "merge_glue_in_referral(): successfully fetched glue for %s", 
+                        name_p);
             }
         } else {
 
@@ -383,13 +386,10 @@ fix_glue(val_context_t * context,
                 goto err;
             }
 
-            if (next_q->qfq_query->qc_state == Q_INIT) {
+            if (next_q->qfq_query->qc_state != Q_INIT &&
+                       next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
                 val_log(context, LOG_DEBUG,
-                        "fix_glue(): successfully fetched glue for {%s %d %d}", name_p,
-                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
-            } else if (next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
-                val_log(context, LOG_DEBUG,
-                        "fix_glue(): could not fetch glue for {%s %d %d}", name_p,
+                        "fix_glue(): could not fetch glue for {%s %d %d} referral", name_p,
                         next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
             }
         }
