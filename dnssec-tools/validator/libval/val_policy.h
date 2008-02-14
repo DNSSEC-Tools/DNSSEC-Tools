@@ -153,7 +153,7 @@ struct trust_anchor_policy {
 };
 
 struct clock_skew_policy {
-    u_int32_t  clock_skew;
+    int  clock_skew;
 };
 
 struct prov_unsecure_policy {

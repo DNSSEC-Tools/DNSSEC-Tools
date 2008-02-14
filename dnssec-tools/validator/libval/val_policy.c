@@ -320,7 +320,7 @@ parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     char            cs_token[TOKEN_MAX];
     struct clock_skew_policy  *cs_pol;
     int             retval;
-    u_int32_t       clock_skew;
+    int       clock_skew;
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
         (pol_entry == NULL) || (line_number == NULL) || (endst == NULL))
@@ -333,7 +333,7 @@ parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     if (cs_pol == NULL) {
         return VAL_OUT_OF_MEMORY;
     }
-    clock_skew = (u_int32_t)strtol(cs_token, (char **)NULL, 10);
+    clock_skew = (int)strtol(cs_token, (char **)NULL, 10);
     cs_pol->clock_skew = clock_skew;
 
     pol_entry->pol = cs_pol;
