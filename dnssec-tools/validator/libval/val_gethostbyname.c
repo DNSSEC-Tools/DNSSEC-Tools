@@ -709,11 +709,18 @@ val_gethostbyname2_r(val_context_t * context,
             return 0;           // xxx-audit: what about *offset = orig_offset; ?
         }
 
-        type = ns_t_a;
-        if (af == AF_INET6) {
+        if (af == AF_INET) {
+            type = ns_t_a;
+        }
+#ifdef VAL_IPV6
+        else if (af == AF_INET6) {
             type = ns_t_aaaa;
         }
-
+#endif
+        else {
+            return EINVAL;
+        }
+        
         /*
          * Query the validator 
          */
