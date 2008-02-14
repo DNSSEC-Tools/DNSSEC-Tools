@@ -53,14 +53,15 @@
 #define VAL_AC_CAN_VERIFY           1
 #define VAL_AC_WAIT_FOR_TRUST       2
 #define VAL_AC_WAIT_FOR_RRSIG       3
-#define VAL_AC_INIT                 4
-#define VAL_AC_NEGATIVE_PROOF       5
+#define VAL_AC_TRUST_NOCHK          4
+#define VAL_AC_INIT                 5
+#define VAL_AC_NEGATIVE_PROOF       6
 
-#define VAL_AC_DONT_GO_FURTHER      6
+#define VAL_AC_DONT_GO_FURTHER      7
 #define VAL_AC_IGNORE_VALIDATION    (VAL_AC_DONT_GO_FURTHER+0)
 #define VAL_AC_TRUSTED_ZONE         (VAL_AC_DONT_GO_FURTHER+1)
 #define VAL_AC_UNTRUSTED_ZONE       (VAL_AC_DONT_GO_FURTHER+2)
-#define VAL_AC_TRUST_KEY            (VAL_AC_DONT_GO_FURTHER+3)  /* key is trusted */
+#define VAL_AC_TRUST                (VAL_AC_DONT_GO_FURTHER+3)  /* RRset contains a trust key */
 #define VAL_AC_PROVABLY_UNSECURE    (VAL_AC_DONT_GO_FURTHER+4)
 #define VAL_AC_BARE_RRSIG           (VAL_AC_DONT_GO_FURTHER+5)  /* No DNSSEC validation possible, query was for a RRSIG. */
 #define VAL_AC_NO_TRUST_ANCHOR      (VAL_AC_DONT_GO_FURTHER+6)  /* No trust anchor available, but components were verified */
@@ -75,7 +76,7 @@
 /*
  * Cannot do anything further, but should check proof of non existence 
  */
-#define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE     /* 12 */
+#define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE     /* 13 */
 #define VAL_AC_RRSIG_MISSING (VAL_AC_ERROR_BASE+1)
 #define VAL_AC_DNSKEY_MISSING (VAL_AC_ERROR_BASE+2)
 #define VAL_AC_DS_MISSING (VAL_AC_ERROR_BASE+3)
@@ -84,7 +85,7 @@
 /*
  * Cannot do anything further and should not check proof of non existence 
  */
-#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 15 */
+#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 16 */
 #define VAL_AC_DATA_MISSING (VAL_AC_BAD_BASE+1)
 #define VAL_AC_DNS_QUERY_ERROR (VAL_AC_BAD_BASE+2)
 #define VAL_AC_DNS_RESPONSE_ERROR (VAL_AC_BAD_BASE+3)
@@ -97,12 +98,12 @@
 /*
  * DNSSEC Error, but can prove the chain-of-trust above this 
  */
-#define VAL_AC_FAIL_BASE VAL_AC_LAST_BAD        /* 22 */
+#define VAL_AC_FAIL_BASE VAL_AC_LAST_BAD        /* 23 */
 #define VAL_AC_NOT_VERIFIED (VAL_AC_FAIL_BASE+1)        /*Different RRSIGs failed for different reasons */
 
 #define VAL_AC_DNSKEY_NOMATCH (VAL_AC_FAIL_BASE+2)      /*RRSIG was created by a DNSKEY that does not exist in the apex keyset. */
 #define VAL_AC_WRONG_LABEL_COUNT (VAL_AC_FAIL_BASE+3)   /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA. */
-#define VAL_AC_BAD_DELEGATION (VAL_AC_FAIL_BASE+4)      /*RRSIG created by a key that does not exist in the parent DS record set. */
+#define VAL_AC_DS_NOMATCH (VAL_AC_FAIL_BASE+4)      /*RRSIG created by a key that does not exist in the parent DS record set. */
 #define VAL_AC_INVALID_KEY (VAL_AC_FAIL_BASE+5) /*The key used to verify the RRSIG is not a zone key, or could not be parsed etc. */
 #define VAL_AC_INVALID_RRSIG (VAL_AC_FAIL_BASE+6)       /*The rrsig could not be parsed etc. */
 #define VAL_AC_RRSIG_NOTYETACTIVE (VAL_AC_FAIL_BASE+7)  /*The RRSIG's inception time is in the future. */
@@ -111,7 +112,7 @@
 #define VAL_AC_RRSIG_VERIFY_FAILED (VAL_AC_FAIL_BASE+10)        /*The RRSIG did not verify. */
 #define VAL_AC_RRSIG_ALGORITHM_MISMATCH (VAL_AC_FAIL_BASE+11)   /* The DNSKEY and RRSIG pair have a mismatch in their algorithm. */
 #define VAL_AC_UNKNOWN_DNSKEY_PROTOCOL (VAL_AC_FAIL_BASE+12)
-#define VAL_AC_LAST_FAILURE (VAL_AC_UNKNOWN_DNSKEY_PROTOCOL)       /* 34 */
+#define VAL_AC_LAST_FAILURE (VAL_AC_UNKNOWN_DNSKEY_PROTOCOL)       /* 35 */
 
 /*
  * success conditions, but must continue with validation 
@@ -126,8 +127,9 @@
                                                                 expansion, but some clock skew considerations were
                                                                 applied */
 #define VAL_AC_SIGNING_KEY (VAL_AC_LAST_FAILURE+6)
-#define VAL_AC_VERIFIED_LINK (VAL_AC_LAST_FAILURE+7)    /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
-#define VAL_AC_UNKNOWN_ALGORITHM_LINK (VAL_AC_LAST_FAILURE+8)   /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
+#define VAL_AC_TRUST_POINT (VAL_AC_LAST_FAILURE+7)
+#define VAL_AC_VERIFIED_LINK (VAL_AC_LAST_FAILURE+8)    /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
+#define VAL_AC_UNKNOWN_ALGORITHM_LINK (VAL_AC_LAST_FAILURE+9)   /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
 
 
 /*

@@ -847,7 +847,6 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
     return VAL_NO_ERROR;
 }
 
-
 static int
 is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key, 
                val_astatus_t * status, u_int8_t flags, u_int32_t *ttl_x)
@@ -899,10 +898,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
 
         if (!namecmp(ta_cur->zone_n, zp)) {
 
+            int found = 0;
             for (curkey = key; curkey; curkey = curkey->rr_next) {
-                /** clear any data from previous iterations */
-                memset(&dnskey, 0x00, sizeof(dnskey));
-
                 /*
                  * parse key and compare
                  */
@@ -920,19 +917,24 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                         char            name_p[NS_MAXDNAME];
                         if (-1 == ns_name_ntop(zp, name_p, sizeof(name_p)))
                             snprintf(name_p, sizeof(name_p), "unknown/error");
-                        if (dnskey.public_key != NULL)
-                            FREE(dnskey.public_key);
-                        curkey->rr_status = VAL_AC_VERIFIED_LINK;
+                        curkey->rr_status = VAL_AC_TRUST_POINT;
                         if (ta_cur->exp_ttl > 0)
                             *ttl_x = ta_cur->exp_ttl;
                         val_log(ctx, LOG_DEBUG, "is_trusted_key(): key %s is trusted", name_p);
-                        *status = VAL_AC_TRUST_KEY;
-                        return VAL_NO_ERROR;
+                        found = 1;
                     }
-                    if (dnskey.public_key != NULL)
-                        FREE(dnskey.public_key);
+                }
+
+                if (dnskey.public_key != NULL) {
+                    FREE(dnskey.public_key);
+                    dnskey.public_key = NULL;
                 }
             }
+            if (found) {
+                *status = VAL_AC_TRUST_NOCHK;
+                return VAL_NO_ERROR;
+            }
+
             val_log(ctx, LOG_INFO,
                     "is_trusted_key(): Existing trust anchor did not match at this level: %s", zp);
             //*status = VAL_AC_NO_TRUST_ANCHOR;
@@ -1285,6 +1287,7 @@ build_pending_query(val_context_t *context,
     int             retval;
     struct rr_rec  *cur_rr;
     u_int32_t ttl_x = 0;
+    val_astatus_t   status;
 
     if ((context == NULL) || (NULL == queries) || 
         (NULL == as) || (NULL == as->val_ac_query) || 
@@ -1330,12 +1333,21 @@ build_pending_query(val_context_t *context,
             (retval =
              is_trusted_key(context, as->_as.ac_data->rrs.val_rrset_name_n,
                             as->_as.ac_data->rrs.val_rrset_data, 
-                            &as->val_ac_status, flags, &ttl_x))) {
+                            &status, flags, &ttl_x))) {
             return retval;
-        }
+
+        } 
+
         SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
-        if (as->val_ac_status != VAL_AC_WAIT_FOR_TRUST)
+        
+        if (status != VAL_AC_WAIT_FOR_TRUST && 
+            status != VAL_AC_TRUST_NOCHK) {
+
+            as->val_ac_status = status;
             return VAL_NO_ERROR;
+        }
+
+        as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
     }
 
     if (as->_as.ac_data->rrs.val_rrset_sig == NULL) {
@@ -1396,6 +1408,11 @@ build_pending_query(val_context_t *context,
 
     if (!cur_rr) {
         as->val_ac_status = VAL_AC_RRSIG_MISSING;
+        return VAL_NO_ERROR;
+    }
+
+    if (status == VAL_AC_TRUST_NOCHK) {
+        as->val_ac_status = VAL_AC_TRUST_NOCHK;
         return VAL_NO_ERROR;
     }
 
@@ -3715,7 +3732,8 @@ try_verify_assertion(val_context_t * context,
         }
     }
 
-    if (next_as->val_ac_status == VAL_AC_CAN_VERIFY) {
+    if (next_as->val_ac_status == VAL_AC_CAN_VERIFY ||
+            next_as->val_ac_status == VAL_AC_TRUST_NOCHK) {
         struct val_digested_auth_chain *the_trust;
         char name_p[NS_MAXDNAME];
         
@@ -3728,7 +3746,12 @@ try_verify_assertion(val_context_t * context,
                 next_as->_as.ac_data->rrs.val_rrset_class_h, 
                 next_as->_as.ac_data->rrs.val_rrset_type_h);
 
-        the_trust = get_ac_trust(context, next_as, queries, flags, 0); 
+        if (next_as->val_ac_status == VAL_AC_TRUST_NOCHK) {
+            the_trust = next_as;
+        } else {
+            the_trust = get_ac_trust(context, next_as, queries, flags, 0); 
+        }
+
         verify_next_assertion(context, next_as, the_trust);
         /* 
          * Set the TTL to the minimum of the authentication 
@@ -4335,7 +4358,7 @@ verify_and_validate(val_context_t * context,
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_TRUSTED_ZONE;
-                    } else if (next_as->val_ac_status == VAL_AC_TRUST_KEY) {
+                    } else if (next_as->val_ac_status == VAL_AC_TRUST) {
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): ending authentication chain at {%s %s %s}",
                                 name_p, 

@@ -627,8 +627,11 @@ check_label_count(struct rrset_rec *the_set,
 #define SET_STATUS(savedstatus, rr, newstatus) \
 	do { \
 		rr->rr_status = newstatus; \
+        if (savedstatus == VAL_AC_TRUST_NOCHK ||\
+            savedstatus == VAL_AC_TRUST)\
+            ; /* do nothing */\
         /* Any success is good */\
-		if (newstatus == VAL_AC_RRSIG_VERIFIED ||\
+        else if (newstatus == VAL_AC_RRSIG_VERIFIED ||\
             newstatus == VAL_AC_RRSIG_VERIFIED_SKEW) \
             savedstatus = VAL_AC_VERIFIED;\
         else if (newstatus == VAL_AC_WCARD_VERIFIED ||\
@@ -640,6 +643,7 @@ check_label_count(struct rrset_rec *the_set,
                  (newstatus != VAL_AC_UNSET) &&\
                  /* success values for DNSKEYS are not relevant */\
                  (newstatus != VAL_AC_SIGNING_KEY) && \
+                 (newstatus != VAL_AC_TRUST_POINT) && \
                  (newstatus != VAL_AC_UNKNOWN_ALGORITHM_LINK) && \
                  (newstatus != VAL_AC_VERIFIED_LINK)){\
             savedstatus = VAL_AC_NOT_VERIFIED; \
@@ -667,7 +671,6 @@ verify_next_assertion(val_context_t * ctx,
         return;
     }
 
-    as->val_ac_status = VAL_AC_UNSET;
     the_set = as->_as.ac_data;
     dnskey.public_key = NULL;
 
@@ -675,6 +678,28 @@ verify_next_assertion(val_context_t * ctx,
         val_log(ctx, LOG_INFO, "verify_next_assertion(): RRSIG is missing");
         as->val_ac_status = VAL_AC_RRSIG_MISSING;
         return;
+    }
+
+    if (the_set->rrs.val_rrset_type_h != ns_t_dnskey) {
+        /*
+         * trust path contains the key 
+         */
+        if (the_trust->_as.ac_data == NULL) {
+            val_log(ctx, LOG_INFO, "verify_next_assertion(): Key is empty");
+            as->val_ac_status = VAL_AC_DNSKEY_MISSING;
+            return;
+        }
+        keyrr = the_trust->_as.ac_data->rrs.val_rrset_data;
+    } else {
+        /*
+         * data itself contains the key 
+         */
+        if (the_set->rrs.val_rrset_data == NULL) {
+            val_log(ctx, LOG_INFO, "verify_next_assertion(): Key is empty");
+            as->val_ac_status = VAL_AC_DNSKEY_MISSING;
+            return;
+        }
+        keyrr = the_set->rrs.val_rrset_data;
     }
 
     for (the_sig = the_set->rrs.val_rrset_sig;
@@ -699,30 +724,6 @@ verify_next_assertion(val_context_t * ctx,
                        VAL_AC_INVALID_RRSIG);
             val_log(ctx, LOG_INFO, "verify_next_assertion(): Cannot extract key footprint from RRSIG");
             continue;
-        }
-
-        if (the_set->rrs.val_rrset_type_h != ns_t_dnskey) {
-            /*
-             * trust path contains the key 
-             */
-            if (the_trust->_as.ac_data == NULL) {
-                SET_STATUS(as->val_ac_status, the_sig,
-                           VAL_AC_DNSKEY_NOMATCH);
-                val_log(ctx, LOG_INFO, "verify_next_assertion(): Key is empty");
-                continue;
-            }
-            keyrr = the_trust->_as.ac_data->rrs.val_rrset_data;
-        } else {
-            /*
-             * data itself contains the key 
-             */
-            if (the_set->rrs.val_rrset_data == NULL) {
-                SET_STATUS(as->val_ac_status, the_sig,
-                           VAL_AC_DNSKEY_NOMATCH);
-                val_log(ctx, LOG_INFO, "verify_next_assertion(): Key is empty");
-                continue;
-            }
-            keyrr = the_set->rrs.val_rrset_data;
         }
 
         tag_h = ntohs(signby_footprint_n);
@@ -787,7 +788,24 @@ verify_next_assertion(val_context_t * ctx,
         if (nextrr == NULL) {
             val_log(ctx, LOG_INFO, "verify_next_assertion(): No DNSKEY matched for this RRSIG");
             SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
-        } else if (the_set->rrs.val_rrset_type_h == ns_t_dnskey &&
+
+        } else if (as->val_ac_status == VAL_AC_TRUST_NOCHK || 
+                    as->val_ac_status == VAL_AC_TRUST) {
+
+            if (nextrr->rr_status == VAL_AC_TRUST_POINT && 
+                    (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+                     the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW)) {
+                    as->val_ac_status = VAL_AC_TRUST; 
+                    val_log(ctx, LOG_INFO, "verify_next_assertion(): verification traces back to trust anchor");
+            }
+            
+        } else if (the_set->rrs.val_rrset_type_h == ns_t_dnskey && 
+                     (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+                     the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW ||
+                     the_sig->rr_status == VAL_AC_ALGORITHM_NOT_SUPPORTED)) {
+
+            /* Check if we have reached our trust key */
+            
             /*
              * If this record contains a DNSKEY, check if the DS record contains this key 
              * DNSKEYs cannot be wildcard expanded, so VAL_AC_WCARD_VERIFIED does not
@@ -795,23 +813,17 @@ verify_next_assertion(val_context_t * ctx,
              * Create the link even if the DNSKEY algorithm is unknown since this 
              * may be the provably unsecure case
              */
-            (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
-             the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW ||
-             the_sig->rr_status == VAL_AC_ALGORITHM_NOT_SUPPORTED)) {
-
             /*
              * follow the trust path 
              */
             struct rr_rec  *dsrec =
                 the_trust->_as.ac_data->rrs.val_rrset_data;
-            keyrr = nextrr;
-
             while (dsrec) {
                 val_ds_rdata_t  ds;
                 if (-1 == val_parse_ds_rdata(dsrec->rr_rdata,
                                    dsrec->rr_rdata_length_h, &ds)) {
                     val_log(ctx, LOG_INFO, "verify_next_assertion(): Unknown DS algorithm");
-                    dsrec->rr_status = VAL_AC_UNKNOWN_ALGORITHM_LINK; 
+                    SET_STATUS(as->val_ac_status, dsrec, VAL_AC_UNKNOWN_ALGORITHM_LINK);
                 } else {
 
                     if (dnskey.key_tag == ds.d_keytag &&
@@ -820,14 +832,14 @@ verify_next_assertion(val_context_t * ctx,
                                      ds.d_type,
                                      ds.d_hash, ds.d_hash_len,
                                      the_set->rrs.val_rrset_name_n,
-                                     keyrr, &dsrec->rr_status)) {
+                                     nextrr, &dsrec->rr_status)) {
 
                         if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
                             the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW)
-                            SET_STATUS(as->val_ac_status, keyrr,
+                            SET_STATUS(as->val_ac_status, nextrr,
                                        VAL_AC_VERIFIED_LINK);
                         else
-                            SET_STATUS(as->val_ac_status, keyrr,
+                            SET_STATUS(as->val_ac_status, nextrr,
                                        VAL_AC_UNKNOWN_ALGORITHM_LINK);
 
                         FREE(ds.d_hash);
@@ -845,9 +857,15 @@ verify_next_assertion(val_context_t * ctx,
                     ds.d_hash = NULL;
                 }
 
-                SET_STATUS(as->val_ac_status, dsrec, dsrec->rr_status);
                 dsrec = dsrec->rr_next;
             }
+
+            /*
+             * Didn't find a valid entry in the DS record set 
+             * Not necessarily a problem, since there is no requirement that a DS be present
+             * If none match, then we set the status accordingly. See below.
+             */
+            nextrr->rr_status = VAL_AC_DS_NOMATCH;
         }
 
         if (dnskey.public_key != NULL) {
@@ -856,15 +874,8 @@ verify_next_assertion(val_context_t * ctx,
         }
     }
 
-    /*
-     * Didn't find a valid entry in the DS record set 
-     */
-    if (the_set->rrs.val_rrset_type_h == ns_t_dnskey) {
-        val_log(ctx, LOG_INFO, "verify_next_assertion(): Failed to link key upward");
-        for (the_sig = the_set->rrs.val_rrset_sig;
-             the_sig; the_sig = the_sig->rr_next) {
-            the_sig->rr_status = VAL_AC_BAD_DELEGATION;
-        }
-        as->val_ac_status = VAL_AC_BAD_DELEGATION;
+    if (as->val_ac_status == VAL_AC_TRUST_NOCHK) {
+        /* we were not able to verify our trust anchor */
+        as->val_ac_status = VAL_AC_NO_TRUST_ANCHOR;
     }
 }
