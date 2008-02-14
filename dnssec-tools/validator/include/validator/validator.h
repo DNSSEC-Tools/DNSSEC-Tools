@@ -172,10 +172,10 @@ extern          "C" {
      * Section values of an RRset 
      */
 #define VAL_FROM_UNSET            0
-#define VAL_FROM_QUERY            1
-#define VAL_FROM_ANSWER           2
-#define VAL_FROM_AUTHORITY        3
-#define VAL_FROM_ADDITIONAL       4
+#define VAL_FROM_ANSWER           1
+#define VAL_FROM_AUTHORITY        2
+#define VAL_FROM_ADDITIONAL       3
+#define VAL_FROM_QUERY            4
 
     /*
      * query flags in the lower nibble
