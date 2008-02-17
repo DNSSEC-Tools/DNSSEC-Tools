@@ -1,0 +1,27 @@
+
+INCL= ../include
+EXTRA_LIBS= -L../libsres/.libs -lsres -L../libval/.libs -lval$(LIBVAL_SUFFIX) -lpthread -lcrypto
+CFLAGS_EX=-I$(INCL) -I. -I../libsres -I../libval -D_GNU_SOURCE 
+
+SRC=  	libval_shim.c 
+
+# can't use gmake conventions to translate SRC -> OBJ for portability
+OBJ=  	libval_shim.o 
+
+LOBJ=  	libval_shim.lo 
+
+LIBVAL_SHIM=libval_shim.la
+
+all: $(LIBVAL_SHIM)
+
+clean:
+	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL)
+
+$(LIBVAL_SHIM): $(LOBJ)
+	$(LIBTOOLLD) -o $@ $(LOBJ) $(EXTRA_LIBS)
+
+install:
+	$(MKPATH) $(DESTDIR)/$(libdir)
+	$(LIBTOOLIN) $(LIBVAL_SHIM) $(DESTDIR)/$(libdir)
+	$(LIBTOOLFN)
+
