@@ -112,7 +112,7 @@ gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf,
 
 
 struct hostent *
-gethostbyaddr(__const void *addr, __socklen_t len, int type)
+gethostbyaddr(__const void *addr, socklen_t len, int type)
 {
   if (libval_shim_init())
     return NULL;
