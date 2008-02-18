@@ -190,10 +190,16 @@ freeaddrinfo(struct addrinfo *ai)
 }
 
 
-
+#ifdef __linux__
+int
+getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, 
+	    socklen_t hostlen, char *serv, socklen_t servlen, 
+	    unsigned int flags)
+#else
 int
 getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, 
 	    socklen_t hostlen, char *serv, socklen_t servlen, int flags)
+#endif
 {
   val_status_t          val_status;
   char *addr;
