@@ -193,8 +193,7 @@ freeaddrinfo(struct addrinfo *ai)
 
 int
 getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, 
-	    socklen_t hostlen, char *serv, socklen_t servlen, 
-	    unsigned int flags)
+	    socklen_t hostlen, char *serv, socklen_t servlen, int flags)
 {
   val_status_t          val_status;
   char *addr;
