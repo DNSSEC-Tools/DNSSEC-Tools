@@ -17,6 +17,38 @@
 typedef int     val_result_t;
 
 /*
+ * Check if DS hash matches the DNSKEY  
+ */
+int             ds_hash_is_equal(val_context_t *ctx,
+                    u_int8_t ds_hashtype, u_int8_t * ds_hash,
+                    u_int32_t ds_hash_len, u_int8_t * name_n,
+                    struct rr_rec *dnskey, val_astatus_t * ds_status);
+
+/*
+ * Compare if DNSKEY matches DS 
+ */
+#define DNSKEY_MATCHES_DS(ctx, dnskey, ds, name_n, dnskey_rr_rec, ds_status) \
+    ((dnskey)->key_tag == (ds)->d_keytag &&\
+     (ds)->d_algo == (dnskey)->algorithm &&\
+     ds_hash_is_equal(ctx,\
+                      (ds)->d_type,\
+                      (ds)->d_hash, (ds)->d_hash_len,\
+                      name_n,\
+                      dnskey_rr_rec, ds_status))
+
+/*
+ * Compare if two public keys are identical 
+ */
+#define DNSKEY_MATCHES_DNSKEY(key1, key2) \
+    ((key1) && (key2) && \
+     (key1)->flags == (key2)->flags &&\
+     (key1)->protocol == (key2)->protocol &&\
+     (key1)->algorithm == (key2)->algorithm &&\
+     (key1)->key_tag == (key2)->key_tag &&\
+     (key1)->public_key_len == (key2)->public_key_len &&\
+     !memcmp((key1)->public_key, (key2)->public_key, (key1)->public_key_len))
+
+/*
  * The Verifier Function.
  */
 void            verify_next_assertion(val_context_t * ctx,

@@ -165,6 +165,92 @@ val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
     } while (0)
 
 /*
+ * Parse the ds record from the string. The string contains 
+ * the keytag, Algorithm and Digest type fields
+ * delimited by spaces.
+ */
+
+int
+val_parse_ds_string(char *dsstr, int dsstrlen,
+                    val_ds_rdata_t ** ds_rdata)
+{
+    char           *sp = dsstr;
+    char           *ep = sp + dsstrlen;
+    char            token[NS_MAXDNAME];
+    char           *dsptr = NULL;
+    char           *cp;
+    int             bufsize;
+
+    if (dsstr == NULL || ds_rdata == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    (*ds_rdata) =
+        (val_ds_rdata_t *) MALLOC(sizeof(val_ds_rdata_t));
+    if ((*ds_rdata) == NULL)
+        return VAL_OUT_OF_MEMORY;
+
+    TOK_IN_STR();
+    (*ds_rdata)->d_keytag = (int)strtol(token, (char **)NULL, 10);
+
+    TOK_IN_STR();
+    (*ds_rdata)->d_algo = (int)strtol(token, (char **)NULL, 10);
+
+    TOK_IN_STR();
+    (*ds_rdata)->d_type = (int)strtol(token, (char **)NULL, 10);
+
+    /*
+     * What follows is the DS hash 
+     */
+    if (sp >= ep) {
+        FREE(*ds_rdata);
+        *ds_rdata = NULL;
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    /*
+     * Remove any white spaces
+     */
+    for (cp = sp; sp < ep; sp++) {
+        if (!isspace(*sp)) {
+            if (dsptr == NULL)
+                dsptr = cp;
+            if (cp != sp)
+                *cp = *sp;
+            cp++;
+        }
+    }
+    *cp = '\0';
+    ep = cp;
+
+    bufsize = ep - dsptr;
+    if (bufsize == 0) {
+        FREE(*ds_rdata);
+        *ds_rdata = NULL;
+        return VAL_CONF_PARSE_ERROR;
+    }
+    (*ds_rdata)->d_hash =
+        (u_char *) MALLOC(bufsize * sizeof(u_int8_t));
+    if ((*ds_rdata)->d_hash == NULL) {
+        FREE(*ds_rdata);
+        *ds_rdata = NULL;
+        return VAL_OUT_OF_MEMORY;
+    }
+
+    /* Convert the hex string to a byte string */
+    int  i = 0;
+    while (dsptr < ep && i < bufsize) { 
+        char hexdigit[3];
+        memcpy(hexdigit, dsptr, 2);
+        hexdigit[2] = '\0';
+        (*ds_rdata)->d_hash[i++] = (u_char)strtol(hexdigit, NULL, 16);
+        dsptr = dsptr+2;
+    }
+    (*ds_rdata)->d_hash_len = i;
+    
+    return VAL_NO_ERROR;
+}
+
+/*
  * Parse the dnskey from the string. The string contains the flags, 
  * protocol, algorithm and the base64 key delimited by spaces.
  */
@@ -173,7 +259,7 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
                         val_dnskey_rdata_t ** dnskey_rdata)
 {
     char           *sp = keystr;
-    char           *ep = sp + keystrlen + 1;
+    char           *ep = sp + keystrlen;
     char            token[NS_MAXDNAME];
     char           *keyptr = NULL;
     char           *cp;
@@ -183,7 +269,7 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     u_char         *bp;
     u_int16_t       flags;
 
-    if ((ep - sp > NS_MAXDNAME) || (dnskey_rdata == NULL))
+    if (keystr == NULL || dnskey_rdata == NULL)
         return VAL_BAD_ARGUMENT;
 
     (*dnskey_rdata) =
@@ -200,6 +286,11 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     TOK_IN_STR();
     (*dnskey_rdata)->algorithm = (int)strtol(token, (char **)NULL, 10);
 
+    if (sp >= ep) {
+        FREE(*dnskey_rdata);
+        *dnskey_rdata = NULL;
+        return VAL_CONF_PARSE_ERROR;
+    }
     /*
      * What follows is the public key in base64.
      */
@@ -217,8 +308,14 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
         }
     }
     *cp = '\0';
+    ep = cp;
 
     bufsize = ep - keyptr;
+    if (bufsize == 0) {
+        FREE(*dnskey_rdata);
+        *dnskey_rdata = NULL;
+        return VAL_CONF_PARSE_ERROR;
+    }
     (*dnskey_rdata)->public_key =
         (u_char *) MALLOC(bufsize * sizeof(char));
     if ((*dnskey_rdata)->public_key == NULL) {
@@ -230,11 +327,9 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     /*
      * decode the base64 public key 
      */
-    if (((*dnskey_rdata)->public_key_len = decode_base64_key(keyptr,
-                                                             (*dnskey_rdata)->
-                                                             public_key,
-                                                             bufsize)) <=
-        0) {
+    if (((*dnskey_rdata)->public_key_len = 
+                decode_base64_key(keyptr, (*dnskey_rdata)->
+                                  public_key, bufsize)) <= 0) {
 
         FREE((*dnskey_rdata)->public_key);
         FREE(*dnskey_rdata);
@@ -393,27 +488,6 @@ val_parse_ds_rdata(const unsigned char *buf, int buflen,
     return index;
 }
 
-/*
- * Compare if two public keys are identical 
- * Return 0 if they are equal, 1 if not.
- */
-int
-dnskey_compare(val_dnskey_rdata_t * key1, val_dnskey_rdata_t * key2)
-{
-
-    if (!key1 || !key2)
-        return 1;
-
-    if ((key1->flags == key2->flags) &&
-        (key1->protocol == key2->protocol) &&
-        (key1->algorithm == key2->algorithm) &&
-        (key1->key_tag == key2->key_tag) &&
-        (key1->public_key_len == key2->public_key_len) &&
-        (!memcmp
-         (key1->public_key, key2->public_key, key1->public_key_len)))
-        return 0;
-    return 1;
-}
 
 #ifdef LIBVAL_NSEC3
 val_nsec3_rdata_t *

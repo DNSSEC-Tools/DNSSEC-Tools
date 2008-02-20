@@ -14,6 +14,9 @@
 #define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
 
+#define DNSKEY_STR "DNSKEY"
+#define DS_STR "DS"
+
 #define POL_GLOBAL_OPTIONS_STR "global-options"
 #define POL_INCLUDE_STR "include"
 
@@ -150,6 +153,7 @@ extern const struct policy_conf_element conf_elem_array[];
 
 struct trust_anchor_policy {
     val_dnskey_rdata_t *publickey;
+    val_ds_rdata_t *ds;
 };
 
 struct clock_skew_policy {

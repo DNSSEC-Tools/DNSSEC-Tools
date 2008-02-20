@@ -559,7 +559,7 @@ do_verify(val_context_t * ctx,
 /*
  * wrapper around the DS comparison function
  */
-static int
+int
 ds_hash_is_equal(val_context_t *ctx,
                  u_int8_t ds_hashtype, u_int8_t * ds_hash,
                  u_int32_t ds_hash_len, u_int8_t * name_n,
@@ -826,13 +826,9 @@ verify_next_assertion(val_context_t * ctx,
                     SET_STATUS(as->val_ac_status, dsrec, VAL_AC_UNKNOWN_ALGORITHM_LINK);
                 } else {
 
-                    if (dnskey.key_tag == ds.d_keytag &&
-                        ds.d_algo == dnskey.algorithm &&
-                        ds_hash_is_equal(ctx,
-                                     ds.d_type,
-                                     ds.d_hash, ds.d_hash_len,
-                                     the_set->rrs.val_rrset_name_n,
-                                     nextrr, &dsrec->rr_status)) {
+                    if (DNSKEY_MATCHES_DS(ctx, &dnskey, &ds, 
+                            the_set->rrs.val_rrset_name_n, nextrr, 
+                            &dsrec->rr_status)) {
 
                         if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
                             the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW)
