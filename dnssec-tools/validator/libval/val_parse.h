@@ -33,6 +33,11 @@ int             val_parse_dnskey_rdata(const unsigned char *buf,
 int             val_parse_dnskey_string(char *keystr, int keystrlen,
                                         val_dnskey_rdata_t **
                                         dnskey_rdata);
+/*
+ * Parse the ds from the string. 
+ */
+int             val_parse_ds_string(char *dsstr, int dsstrlen,
+                                    val_ds_rdata_t ** ds_rdata);
 
 /*
  * Parse the rdata portion of an RRSIG resource record 
@@ -52,11 +57,6 @@ val_nsec3_rdata_t *val_parse_nsec3_rdata(u_int8_t * rr_rdata,
                                          val_nsec3_rdata_t * nd);
 #endif
 
-/*
- * Compare if two public keys are identical 
- */
-int             dnskey_compare(val_dnskey_rdata_t * key1,
-                               val_dnskey_rdata_t * key2);
 
 /*
  * Parse the ETC_HOSTS file 

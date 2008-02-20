@@ -259,7 +259,9 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     struct trust_anchor_policy *ta_pol;
     int             retval;
     char           *pkstr;
+    char           *endptr;
     val_dnskey_rdata_t *dnskey_rdata;
+    val_ds_rdata_t *ds_rdata;
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
         (pol_entry == NULL) || (line_number == NULL) || (endst == NULL))
@@ -272,6 +274,8 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     if (ta_pol == NULL) {
         return VAL_OUT_OF_MEMORY;
     }
+    ta_pol->publickey = NULL;
+    ta_pol->ds = NULL;
 
     /*
      * XXX We may want to have another token that specifies if 
@@ -279,15 +283,45 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
      * XXX Assume public key for now
      */
     pkstr = &ta_token[0];
+    endptr = pkstr + strlen(ta_token);
+    
+    /* Check if we have a DS record */
+    if (!strncasecmp(pkstr, DS_STR, strlen(DS_STR))) {
+        pkstr += strlen(DS_STR);
+        if (pkstr > endptr) {
+            FREE(ta_pol);
+            return VAL_CONF_PARSE_ERROR;
+        }
+        if (VAL_NO_ERROR !=
+            (retval =
+                 val_parse_ds_string(pkstr, strlen(pkstr), &ds_rdata))) {
+            FREE(ta_pol);
+            return retval;
+        }
+        ta_pol->ds = ds_rdata;
 
-    // Parse the public key
-    if (VAL_NO_ERROR !=
-        (retval =
-             val_parse_dnskey_string(pkstr, strlen(pkstr), &dnskey_rdata))) {
-        FREE(ta_pol);
-        return retval;
+    } else {
+        if (!strncasecmp(pkstr, DNSKEY_STR, strlen(DNSKEY_STR))) {
+            pkstr += strlen(DNSKEY_STR);
+        }
+        if (pkstr > endptr) {
+            FREE(ta_pol);
+            return VAL_CONF_PARSE_ERROR;
+        }
+               
+       /* 
+        *  Treat as though we have a DNSKEY, even if neither 
+        *  DNSKEY nor DS is specified (backwards compatibility
+        */ 
+        if (VAL_NO_ERROR !=
+            (retval =
+                 val_parse_dnskey_string(pkstr, strlen(pkstr), &dnskey_rdata))) {
+            FREE(ta_pol);
+            return retval;
+        }
+        ta_pol->publickey = dnskey_rdata;
     }
-    ta_pol->publickey = dnskey_rdata;
+
     pol_entry->pol = ta_pol;
 
     return VAL_NO_ERROR;
@@ -303,6 +337,8 @@ free_trust_anchor(policy_entry_t * pol_entry)
             if (ta_pol->publickey->public_key)
                 FREE(ta_pol->publickey->public_key);
             FREE(ta_pol->publickey);
+        } else if (ta_pol->ds) {
+            FREE(ta_pol->ds);
         }
         FREE(ta_pol);
     }

@@ -913,7 +913,15 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                     struct trust_anchor_policy *pol = 
                         (struct trust_anchor_policy *)(ta_cur->pol);
 
-                    if (!dnskey_compare(&dnskey, pol->publickey)) {
+                    val_astatus_t tmp_status;
+                        /* check if the given dnskey matches the configured dnskey */
+                    if ((pol->publickey &&
+                            DNSKEY_MATCHES_DNSKEY(&dnskey, pol->publickey)) ||
+                        /* check if the given dnskey matches the configured ds */
+                        (pol->ds &&
+                            DNSKEY_MATCHES_DS(ctx, &dnskey, pol->ds,
+                                               zp, curkey, &tmp_status))) {
+
                         char            name_p[NS_MAXDNAME];
                         if (-1 == ns_name_ntop(zp, name_p, sizeof(name_p)))
                             snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -922,9 +930,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                             *ttl_x = ta_cur->exp_ttl;
                         val_log(ctx, LOG_DEBUG, "is_trusted_key(): key %s is trusted", name_p);
                         found = 1;
-                    }
+                    } 
                 }
-
                 if (dnskey.public_key != NULL) {
                     FREE(dnskey.public_key);
                     dnskey.public_key = NULL;
@@ -1287,7 +1294,7 @@ build_pending_query(val_context_t *context,
     int             retval;
     struct rr_rec  *cur_rr;
     u_int32_t ttl_x = 0;
-    val_astatus_t   status;
+    val_astatus_t  status = VAL_DONT_KNOW;
 
     if ((context == NULL) || (NULL == queries) || 
         (NULL == as) || (NULL == as->val_ac_query) || 
