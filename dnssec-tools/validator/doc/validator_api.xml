@@ -77,12 +77,12 @@ gethostbyname() and getaddrinfo() <xref target="refs.IEEE.1003.1-2004"/> and hav
 for detailed DNSSEC validation status information. </t>
 
 <t> The low-level DNSSEC validator API enables applications to examine the 
-details of each DNSSEC validation step (also referred to as the DNSSEC 
+details of each DNSSEC validation step (i.e. the DNSSEC 
 <xref target="refs.RFC4033">authentication chain</xref>). </t>
 
 <t> The DNSSEC validator-context API enables applications 
-to control, during run-time, the policies that are used for 
-validating the DNS responses that it receives.</t>
+to control, during run-time, the DNSSEC policies that are used for 
+validating DNS responses.</t>
 
 <t> <xref target="high_level_api"/>, <xref target="low_level_api"/>,
 and <xref target="val-context"/> describe these interfaces in greater detail. </t>
@@ -123,7 +123,7 @@ the DNSSEC validator policy currently associated with a DNSSEC validator context
     <t> </t>
     <t hangText="Default DNSSEC Validator Policy:">
 the DNSSEC validator policy that is associated with a DNSSEC validator context by default, 
-when the application does not specify its own preference while creating a DNSSEC validator context. </t> 
+when the application does not specify its preference while creating a DNSSEC validator context. </t> 
   </list> </t>
 
   </section> <!-- Terminology -->
@@ -133,7 +133,7 @@ when the application does not specify its own preference while creating a DNSSEC
 
 <t> The high-level DNSSEC validator API defines DNSSEC-aware substitutes for commonly
 used DNS resolver legacy functions. 
-It provides an easy path for applications already using the above legacy functions
+It provides an easy path for applications already using DNS legacy functions
 to transition towards becoming DNSSEC-aware. A number of well-known resolver API functions exist; however, some of these 
 (such as gethostbyname_r and gethostbyname2) are only available on a subset of Operating Systems and are not part of any official 
 standard.  Further, some functions are defined only as minor extensions of other well-known resolver API functions.  
@@ -152,9 +152,8 @@ from the above list to implement DNSSEC-capability in resolver functions not cov
 
 <t> The ctx parameter in the following functions points to a DNSSEC validator context object (<xref target="val-context"/>). 
 Applications MUST either supply a reference to a valid DNSSEC validator context object created 
-using the val_create_context() function (<xref target="val-context"/>) or supply a NULL 
-value for this parameter. Applications or libraries that implement the DNSSEC Validator API MUST internally 
-use a default DNSSEC validator context when ctx is NULL. </t> 
+using the functions specified in <xref target="val-context"/> or supply a NULL 
+value for this parameter. Applications or libraries that implement the DNSSEC Validator API MUST use a default DNSSEC validator context when ctx is NULL. </t> 
 
     <section title="val_gethostbyname, val_gethostbyaddr">
     <figure>
@@ -178,11 +177,11 @@ gethostbyname() and gethostbyaddr() legacy functions.
 The new functions have an additional parameter, val_status, 
 which enables applications to check the DNSSEC validation status codes for
 the address-to-name and name-to-address translations. The other arguments to these
-functions have identical semantics to their corresponding legacy functions 
+functions have identical semantics to their corresponding legacy function 
 described in <xref target="refs.IEEE.1003.1-2004"/>. 
 The val_gethostbyname() and val_gethostbyaddr() functions SHOULD 
 only be used when retrofitting DNSSEC in existing applications
-that use the corresponding legacy functions to perform address-to-name and name-to-address 
+that use the corresponding legacy function to perform address-to-name and name-to-address 
 translations.  New applications that need to perform these translations 
 SHOULD use the functions from <xref target="hl_getaddrinfo"/> instead. </t>
 
@@ -195,33 +194,30 @@ as determined by the following rules.
     <t> A DNSSEC validation status of VAL_LOCAL_ANSWER SHOULD be returned if the complete answer is returned
 from a local configuration store (for example, /etc/hosts or its equivalent) 
 without any DNSSEC validation being performed. A DNSSEC validation status of VAL_TRUSTED_ANSWER 
-SHOULD be returned if local DNSSEC validator policy defines locally obtained answers to be trusted. </t>
+SHOULD be returned if local DNSSEC validator policy defines locally obtained answers to be valid. </t>
     <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
 returned if all the address and canonical name(s) within the
 hostent structure, if present, are themselves validated by the DNSSEC validation process. </t>
     <t> A DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be
 returned if at least one of the address and canonical name(s) within the
 hostent structure, if present, is not validated by the DNSSEC validation process, but all answers returned are still considered
-valid (<xref target="val-context"/>). </t>
+valid (<xref target="val-context"/>) through local DNSSEC validator policy. </t>
     <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one answer in the set of 
-address and canonical name(s) within the hostent structure is neither validated through the DNSSEC validation process nor considered to be locally 
-trusted. </t>
+address and canonical name(s) within the hostent structure is neither validated through the DNSSEC validation process nor considered to be 
+trusted through local DNSSEC validator policy. </t>
     <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST 
 be returned if the DNSSEC validation
 process is able to prove non-existence for the name or type being queried for. Similarly, a
 DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be returned if a DNS response with an RCODE reflecting 
 type or name non-existence is returned, and local DNSSEC validator policy is configured 
-to trust such answers. If the previous two conditions for non-existence are not satisfied, val_status
+to treat such answers as valid. If the previous two conditions for non-existence are not satisfied, val_status
 MUST be set to VAL_UNTRUSTED_ANSWER.</t>
     </list> 
 </t>
 
 <t> When evaluating the validity of a DNS response, 
 applications SHOULD use the functions described in <xref target="val-istrusted"/> 
-instead of directly inspecting the DNSSEC validation status code returned in val_status. 
-The p_val_status() function described in <xref target="val-istrusted"/> enables an 
-application to translate the DNSSEC validation status code
-into a string representation. </t>
+instead of directly inspecting the DNSSEC validation status code returned in val_status.  </t>
       </postamble>
     </figure>
     </section>
@@ -256,7 +252,7 @@ information for the specified domain name and service, while
 the val_getnameinfo() function performs an address-to-name
 translation in a protocol independent manner. These functions are 
 DNSSEC-aware versions of the getaddrinfo() and getnameinfo() legacy functions
-(<xref target="refs.RFC3493">RFC 3493</xref>) respectively. </t>
+(<xref target="refs.RFC3493"/>) respectively. </t>
 
 <t> The val_getaddrinfo() function returns its results in the res parameter. 
 The value of res MUST point to a valid val_addrinfo structure on success or NULL 
@@ -301,18 +297,19 @@ VAL_LOCAL_ANSWER, VAL_TRUSTED_ANSWER, VAL_VALIDATED_ANSWER and VAL_UNTRUSTED_ANS
     <t> A DNSSEC validation status of VAL_LOCAL_ANSWER SHOULD be returned in val_status or ai_val_status
 if the complete answer is returned from a local configuration store (for example, /etc/hosts or its equivalent) 
 without any DNSSEC validation being performed. A DNSSEC validation status of VAL_TRUSTED_ANSWER 
-SHOULD be returned if local DNSSEC validator policy defines locally obtained answers to be trusted. </t>
+SHOULD be returned if local DNSSEC validator policy defines locally obtained answers to be valid. </t>
     <t> For val_getnameinfo(), a DNSSEC validation status of VAL_VALIDATED_ANSWER or VAL_TRUSTED_ANSWER MUST
-be returned in val_status if the returned response for the hostname is itself validated by the DNSSEC process or is considered to be
-locally trusted respectively. </t>
+be returned in val_status if the returned response for the hostname is validated by the DNSSEC process
+or is considered to be trusted through local DNSSEC validator policy respectively. </t>
     <t> For val_getaddrinfo(), a DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
 returned in val_status if all ai_val_status elements in the 
 val_addrinfo list are themselves validated (as determined by the val_isvalidated() function
 in <xref target="val-istrusted"/>). </t>
     <t> For val_getaddrinfo(), a DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be
 returned in val_status if all ai_val_status elements in the 
-val_addrinfo list are themselves trusted (as determined by the val_istrusted() function
-in <xref target="val-istrusted"/>), and at least one answer in this set is not validated. </t>
+val_addrinfo list are themselves considered to be valid through local DNSSEC validator policy 
+(as determined by the val_istrusted() function
+in <xref target="val-istrusted"/>) and at least one answer in this set is not validated. </t>
     <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
 returned in ai_val_status if all address and canonical name(s) within the
 given val_addrinfo structure, if present, are themselves validated by the DNSSEC validation process. </t>
@@ -322,24 +319,22 @@ given val_addrinfo structure, if present, is not validated by the DNSSEC validat
 valid through local DNSSEC validator policy (<xref target="val-context"/>). </t>
     <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one answer in the set of 
 address and canonical name(s) within the val_addrinfo structure is neither validated through the DNSSEC process nor considered 
-to be locally trusted. </t>
+to be valid through local DNSSEC validator policy. </t>
     <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST 
 be returned in val_status if the returned pointer to val_addrinfo in val_getaddrinfo(), or the returned host in
 val_getnodeinfo() is NULL but the DNSSEC validation
 process is able to prove non-existence for the name or type being queried for. Similarly, a
 DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be returned if a DNS response with an RCODE reflecting 
 type or name non-existence is returned, and local DNSSEC validator policy is configured 
-to trust such answers (<xref target="val-context"/>). If the previous two conditions for non-existence are not satisfied, val_status
+to treat such answers as valid (<xref target="val-context"/>). If the previous two conditions for non-existence are not satisfied, val_status
 MUST be set to VAL_UNTRUSTED_ANSWER.</t>
     </list> 
 </t>
 
 <t> When evaluating the validity of a DNS response,
 applications SHOULD use the functions described in <xref target="val-istrusted"/>
-instead of directly inspecting the DNSSEC validation status code returned in val_status.
-The p_val_status() function described in <xref target="val-istrusted"/> enables an 
-application to translate the DNSSEC validation status code
-into a string representation. </t>
+instead of directly inspecting the DNSSEC validation status code returned in
+val_status. </t>
 
       </postamble>
       </figure>
@@ -389,21 +384,19 @@ type instead of returning the data for the given name, class and type.  </t>
     <t> A DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be
 returned if at least one RRset returned in the answer
 is not validated by the DNSSEC validation process, but all RRsets are still considered
-valid (<xref target="val-context"/>). Note that the returned response may indicate the
+valid through local DNSSEC validator policy (<xref target="val-context"/>). Note that the returned response may indicate the
 non-existence of a name or type through an RCODE value in the response header instead of 
 returning the data for the given name, class and type. </t>
     <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one RRset in the
-answer is neither validated through the DNSSEC validation process nor considered to be locally 
-trusted. </t>
+answer is neither validated through the DNSSEC validation process nor considered to be valid through
+local DNSSEC validator policy. </t>
     </list> 
 </t>
 
 <t> When evaluating the validity of a DNS response, 
 applications SHOULD use the functions described in <xref target="val-istrusted"/> 
-instead of directly inspecting the DNSSEC validation status code returned in val_status. 
-The p_val_status() function described in <xref target="val-istrusted"/> enables an
-application to translate the DNSSEC validation status code
-into a string representation. </t>
+instead of directly inspecting the DNSSEC validation status code returned in
+val_status. </t> 
 
       </postamble>
       </figure>
@@ -463,9 +456,8 @@ for the &lt;domain_name_n, class, type&gt; tuple and then performs the
 DNSSEC validation operation for the responses received. 
 The ctx parameter points to a DNSSEC validator context object (<xref target="val-context"/>).
 Applications MUST either supply a reference to a valid DNSSEC validator context object created
-using the val_create_context() function (<xref target="val-context"/>) or supply a NULL
-value for this parameter. Applications or libraries that implement the DNSSEC Validator API MUST internally
-use a default DNSSEC validator context when ctx is NULL. </t>
+using the functions specified in <xref target="val-context"/> or supply a NULL
+value for this parameter. Applications or libraries that implement the DNSSEC Validator API MUST use a default DNSSEC validator context when ctx is NULL. </t>
 
 <t> The flags argument specifies a list of options to the validation process, 
 logically OR'd to each other. Only the VAL_QUERY_DONT_VALIDATE flag is currently defined. 
@@ -524,10 +516,8 @@ MUST be stored in the val_rc_status field.  Possible codes for val_rc_status
 are listed in <xref target="val-status"/>. 
 When evaluating the validity of a DNS response,
 applications SHOULD use the functions described in <xref target="val-istrusted"/>
-instead of directly inspecting the DNSSEC validation status code returned in val_rc_status.
-The p_val_status() function described in <xref target="val-istrusted"/> enables an 
-application to translate the DNSSEC validation status code
-into a string representation. </t>
+instead of directly inspecting the DNSSEC validation status code returned in
+val_rc_status. </t>
 
 <t> Answers and proofs of non-existence RRsets are wrapped within the val_authentication_chain structure. This
 structure represents another linked-list whose elements comprise the DNSSEC authentication chain 
@@ -1106,20 +1096,20 @@ the DNSSEC validator policy identifier being referenced was invalid. </t>
         </list></t>
 
 <t> The error code returned above can be converted to a string representation
-using the p_val_err() function. The value returned SHOULD be the string 
-conversion for the corresponding error code identifier. For example, 
-p_val_err(VAL_NO_ERROR) SHOULD return "VAL_NO_ERROR". </t>
-        
-      <figure>
-      <artwork>
+using the p_val_err() function. </t> 
+<figure>
+    <artwork>
 #include &lt;validator.h&gt;
 
 const char *p_val_err(int err);
-      
-      </artwork>
-      <postamble>
+    </artwork>
+    <postamble>
+<t> The value returned SHOULD be the string 
+conversion for the corresponding error code identifier. For example, 
+p_val_err(VAL_NO_ERROR) SHOULD return "VAL_NO_ERROR". </t>
     </postamble>
-    </figure>
+</figure>
+
    </section> <!-- Return Values -->
 
    <section title="IANA Considerations">
