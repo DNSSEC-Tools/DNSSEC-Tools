@@ -543,7 +543,7 @@ get_nslist_from_cache(val_context_t *ctx,
         /*
          * check if zone is within query 
          */
-        if (NULL != (p = (u_int8_t *) namename(map_e->zone_n, qname_n))) {
+        if (NULL != (p = (u_int8_t *) namename(qname_n, map_e->zone_n))) {
             if (!saved_map || (namecmp(p, saved_map->zone_n) > 0)) {
                 saved_map = map_e;
             }
