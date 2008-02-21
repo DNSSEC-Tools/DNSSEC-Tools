@@ -874,6 +874,15 @@ follow_referral_or_alias_link(val_context_t * context,
     referral_zone_n = zone_n;
     matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
 
+    if (matched_q->qc_respondent_server) {
+        free_name_server(&matched_q->qc_respondent_server);
+        matched_q->qc_respondent_server = NULL;
+    }
+    if (matched_q->qc_ns_list) {
+        free_name_servers(&matched_q->qc_ns_list);
+        matched_q->qc_ns_list = NULL;
+    }
+
     if (matched_q->qc_referral == NULL) {
         ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
     }
@@ -913,7 +922,6 @@ follow_referral_or_alias_link(val_context_t * context,
             matched_q->qc_state = Q_REFERRAL_ERROR;
             goto query_err;
         }
-        referral_zone_n = matched_q->qc_zonecut_n;
 
     } else {
 
@@ -1034,43 +1042,31 @@ follow_referral_or_alias_link(val_context_t * context,
                 } 
             }
         }
+        /*
+         * Store the current referral value in the query 
+         */
+        if (matched_q->qc_zonecut_n != NULL) {
+            FREE(matched_q->qc_zonecut_n);
+            matched_q->qc_zonecut_n = NULL;
+        }
+        if (referral_zone_n != NULL) {
+            len = wire_name_length(referral_zone_n);
+            matched_q->qc_zonecut_n =
+                (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+            if (matched_q->qc_zonecut_n == NULL)
+                return VAL_OUT_OF_MEMORY;
+            memcpy(matched_q->qc_zonecut_n, referral_zone_n, len);
+        }
+        matched_q->qc_ns_list = ref_ns_list;
     }
 
   query_err:
-    if (matched_q->qc_respondent_server) {
-        free_name_server(&matched_q->qc_respondent_server);
-        matched_q->qc_respondent_server = NULL;
-    }
-    if (matched_q->qc_ns_list) {
-        free_name_servers(&matched_q->qc_ns_list);
-        matched_q->qc_ns_list = NULL;
-    }
-
-    if (matched_q->qc_zonecut_n != NULL) {
-        FREE(matched_q->qc_zonecut_n);
-        matched_q->qc_zonecut_n = NULL;
-    }
-
-    /*
-     * Store the current referral value in the query 
-     */
-    if (referral_zone_n != NULL) {
-        len = wire_name_length(referral_zone_n);
-        matched_q->qc_zonecut_n =
-            (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-        if (matched_q->qc_zonecut_n == NULL)
-            return VAL_OUT_OF_MEMORY;
-        memcpy(matched_q->qc_zonecut_n, referral_zone_n, len);
-    }
-
     if (matched_q->qc_state > Q_ERROR_BASE) {
         free_referral_members(matched_q->qc_referral);
         /*
          * don't free qc_referral itself 
          */
     }
-
-    matched_q->qc_ns_list = ref_ns_list;
 
     return VAL_NO_ERROR;
 }
