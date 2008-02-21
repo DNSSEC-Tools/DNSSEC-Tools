@@ -1687,6 +1687,7 @@ read_res_config_file(val_context_t * ctx)
         } else if (strncmp(token, "forward", strlen("forward")) == 0) {
 
             /* Read the value */
+            /* nameserver first */
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
@@ -1696,6 +1697,13 @@ read_res_config_file(val_context_t * ctx)
             ns = NULL;
             if (VAL_NO_ERROR != parse_name_server(token, &ns))
                 goto err;
+            /* zone next */
+            if (VAL_NO_ERROR !=
+                (retval =
+                val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
+                           ALL_COMMENTS, ZONE_END_STMT))) {
+                goto err;
+            }
             if (ns != NULL) {
                 if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1)
                     goto err;
