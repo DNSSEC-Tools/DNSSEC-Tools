@@ -5514,11 +5514,11 @@ create_error_result(struct val_query_chain *top_q,
     memset(&new_ts, 0, sizeof(struct stat));\
     if (!file) {\
         if (cur_ts != 0) {\
-            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s disappeared; continuing to use old", file);\
+            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s missing; trying to operate without it.", file);\
         }\
     } else {\
         if(0 != stat(file, &new_ts)) {\
-            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s disappeared; continuing to use old", file);\
+            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s missing; trying to operate without it.", file);\
         }\
     }\
 }while (0)
