@@ -1814,9 +1814,9 @@ read_root_hints_file(val_context_t * ctx)
 
     fd = open(root_hints, O_RDONLY);
     if (fd == -1) {
-        val_log(ctx, LOG_ERR, "read_root_hints_file(): Could not open root hints file for reading: %s",
+        val_log(ctx, LOG_INFO, "read_root_hints_file(): Could not open root hints file for reading: %s",
                 root_hints);
-        return VAL_CONF_NOT_FOUND;
+        return VAL_NO_ERROR;
     }
     fl.l_type = F_RDLCK;
     fcntl(fd, F_SETLKW, &fl);
