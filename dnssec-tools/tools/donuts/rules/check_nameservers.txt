@@ -38,19 +38,28 @@ desc: Checks to see if each of the zone's name servers are properly serving the 
       # query the NS server for each record type and compare the results
       foreach my $recordtype (keys(%$records)) {
 	  my @answers = live_query($recordname, $recordtype, $resolver);
-	  if (compare_arrays($records->{$recordtype}, \@answers,
-			     sub { $a->string eq $b->string }) != 0) {
+	  my $cmpresult = compare_arrays($records->{$recordtype}, \@answers,
+	  			         sub { $a->string cmp $b->string });
+	  if ($cmpresult != 0) {
 	      my $err = 
-		"query to $ns for $recordtype doesn't match:\n";
+		"query to $ns for $recordtype of $recordname doesn't match ($cmpresult):\n";
 	      $err .= "    live records:\n";
 	      map { $err .= "      ".$_->string()."\n"; } @answers;
  	      $err .= "    loaded records: \n";
 	      map { $err .= "      ".$_->string()."\n"; } @{$records->{$recordtype}};
-	      push @results, $err;
+#  	      use Data::Dumper;
+#  	      $err .= Dumper(\@answers);
+#  	      $err .= Dumper($records->{$recordtype});
+	      donuts_error($err);
 	  } else {
-#	      print STDERR "matched ($#answers = $#{$records->{$recordtype}}): $recordtype:$recordname from server $ns\n";
+#  	      print STDERR "matched ($#answers = $#{$records->{$recordtype}}): $recordtype:$recordname from server $ns\n";
+#  	      if ($recordname =~ /domainkey/) {
+#  		  print STDERR "    live records:\n";
+#  		  map { print STDERR  "      ".$_->string()."\n"; } @answers;
+#  		  print STDERR  "    loaded records: \n";
+#  		  map { print STDERR  "      ".$_->string()."\n"; } @{$records->{$recordtype}};
+#  	      }
 	  }
       }
   }
-  return \@results;
 </test>
