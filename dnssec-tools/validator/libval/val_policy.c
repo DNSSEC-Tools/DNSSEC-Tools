@@ -1995,7 +1995,7 @@ read_root_hints_file(val_context_t * ctx)
             goto err;
         }
         if (type_h != ns_t_rrsig) {
-            /** Add this record to its chain of rr_rec's. */
+            /** Add this record to its chain of val_rr_rec's. */
             retval = add_to_set(rr_set, rdata_len_h, rdata_n);
         } else {
             /** Add this record to the sig of rrset_rec. */

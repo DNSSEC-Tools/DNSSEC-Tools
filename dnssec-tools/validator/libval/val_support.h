@@ -88,7 +88,7 @@ void            base32hex_encode(u_int8_t * in, u_int8_t inlen,
 u_int16_t       wire_name_labels(const u_int8_t * field);
 u_int16_t       wire_name_length(const u_int8_t * field);
 
-void            res_sq_free_rr_recs(struct rr_rec **rr);
+void            res_sq_free_rr_recs(struct val_rr_rec **rr);
 void            res_sq_free_rrset_recs(struct rrset_rec **set);
 int             add_to_qname_chain(struct qname_chain **qnames,
                                    const u_int8_t * name_n);
@@ -141,11 +141,11 @@ int             extract_from_rr(u_int8_t * response,
                                 int *rdata_index);
 void            lower_name(u_int8_t rdata[], size_t * index);
 void            lower(u_int16_t type_h, u_int8_t * rdata, int len);
-struct rr_rec  *copy_rr_rec(u_int16_t type_h, struct rr_rec *r,
+struct val_rr_rec  *copy_rr_rec(u_int16_t type_h, struct val_rr_rec *r,
                             int dolower);
-struct rr_rec  *copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr,
+struct val_rr_rec  *copy_rr_rec_list(u_int16_t type_h, struct val_rr_rec *o_rr,
                                  int dolower);
-int             link_rr(struct rr_rec **cs, struct rr_rec *cr);
+int             link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr);
 struct rrset_rec *copy_rrset_rec(struct rrset_rec *rr_set);
 struct rrset_rec *copy_rrset_rec_list(struct rrset_rec *rr_set);
 int             register_query(struct query_list **q, u_int8_t * name_n,

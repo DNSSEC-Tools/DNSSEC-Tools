@@ -283,7 +283,7 @@ static int
 predict_sigbuflength(struct rrset_rec *rr_set,
                      size_t * field_length, int *signer_length)
 {
-    struct rr_rec  *rr;
+    struct val_rr_rec  *rr;
     int             owner_length;
 
     /** Input has already been NULL-checked **/
@@ -310,9 +310,9 @@ static int
 make_sigfield(u_int8_t ** field,
               size_t * field_length,
               struct rrset_rec *rr_set,
-              struct rr_rec *rr_sig, int is_a_wildcard)
+              struct val_rr_rec *rr_sig, int is_a_wildcard)
 {
-    struct rr_rec  *curr_rr;
+    struct val_rr_rec  *curr_rr;
     int             index;
     int             signer_length;
     int             owner_length;
@@ -456,7 +456,7 @@ make_sigfield(u_int8_t ** field,
  * the rrsig
  */
 static int
-identify_key_from_sig(struct rr_rec *sig, u_int8_t ** name_n,
+identify_key_from_sig(struct val_rr_rec *sig, u_int8_t ** name_n,
                       u_int16_t * footprint_n)
 {
     if ((sig == NULL) || (sig->rr_rdata == NULL) || (name_n == NULL) ||
@@ -483,7 +483,7 @@ do_verify(val_context_t * ctx,
           val_astatus_t * dnskey_status,
           val_astatus_t * sig_status,
           struct rrset_rec *the_set,
-          struct rr_rec *the_sig,
+          struct val_rr_rec *the_sig,
           val_dnskey_rdata_t * the_key, int is_a_wildcard)
 {
     /*
@@ -563,7 +563,7 @@ int
 ds_hash_is_equal(val_context_t *ctx,
                  u_int8_t ds_hashtype, u_int8_t * ds_hash,
                  u_int32_t ds_hash_len, u_int8_t * name_n,
-                 struct rr_rec *dnskey, val_astatus_t * ds_status)
+                 struct val_rr_rec *dnskey, val_astatus_t * ds_status)
 {
     if ((dnskey == NULL) || (ds_hash == NULL) || (name_n == NULL)) {
         val_log(ctx, LOG_INFO, "ds_hash_is_equal(): Cannot compare DS data - invalid content");
@@ -597,7 +597,7 @@ ds_hash_is_equal(val_context_t *ctx,
 
 static int
 check_label_count(struct rrset_rec *the_set,
-                  struct rr_rec *the_sig, int *is_a_wildcard)
+                  struct val_rr_rec *the_sig, int *is_a_wildcard)
 {
     u_int8_t        owner_labels;;
     u_int8_t        sig_labels;
@@ -657,13 +657,13 @@ verify_next_assertion(val_context_t * ctx,
                       struct val_digested_auth_chain *the_trust)
 {
     struct rrset_rec *the_set;
-    struct rr_rec  *the_sig;
+    struct val_rr_rec  *the_sig;
     u_int8_t       *signby_name_n;
     u_int16_t       signby_footprint_n;
     val_dnskey_rdata_t dnskey;
     int             is_a_wildcard;
-    struct rr_rec  *nextrr;
-    struct rr_rec  *keyrr;
+    struct val_rr_rec  *nextrr;
+    struct val_rr_rec  *keyrr;
     u_int16_t       tag_h;
 
     if ((as == NULL) || (as->_as.ac_data == NULL) || (the_trust == NULL)) {
@@ -816,7 +816,7 @@ verify_next_assertion(val_context_t * ctx,
             /*
              * follow the trust path 
              */
-            struct rr_rec  *dsrec =
+            struct val_rr_rec  *dsrec =
                 the_trust->_as.ac_data->rrs.val_rrset_data;
             while (dsrec) {
                 val_ds_rdata_t  ds;

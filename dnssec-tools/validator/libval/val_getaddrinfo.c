@@ -593,7 +593,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
         if (result->val_rc_answer && 
             NULL != (rrset = result->val_rc_answer->val_ac_rrset)) {
 
-            struct rr_rec  *rr = rrset->val_rrset_data;
+            struct val_rr_rec  *rr = rrset->val_rrset_data;
 
             /*
              * Check if the AI_CANONNAME flag is specified 
@@ -620,7 +620,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
             }
 
             /*
-             * Loop for each rr in the linked list of rr_rec structures 
+             * Loop for each rr in the linked list of val_rr_rec structures 
              */
             while (rr != NULL) {
                 struct val_addrinfo *ainfo = NULL;
@@ -1624,7 +1624,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
             ns_t_ptr == res->val_rc_answer->val_ac_rrset->val_rrset_type_h) {
 
             struct val_rrset *rrset = res->val_rc_answer->val_ac_rrset;
-            struct rr_rec  *rr = rrset->val_rrset_data, *rr_it = NULL;
+            struct val_rr_rec  *rr = rrset->val_rrset_data, *rr_it = NULL;
             int             count = 0, aliases_sz = 0;
 
             /*

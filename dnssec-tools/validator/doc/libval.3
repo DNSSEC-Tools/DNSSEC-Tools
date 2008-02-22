@@ -642,8 +642,8 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
 \&      u_int32_t      val_rrset_ttl_h;
 \&      u_int32_t      val_rrset_ttl_x;
 \&      u_int8_t       val_rrset_section;
-\&      struct rr_rec *val_rrset_data;
-\&      struct rr_rec *val_rrset_sig;
+\&      struct val_rr_rec *val_rrset_data;
+\&      struct val_rr_rec *val_rrset_sig;
 \&  };
 .Ve
 .RS 4
@@ -680,15 +680,15 @@ Response \s-1RDATA\s0.
 Any associated RRSIGs for the \s-1RDATA\s0 returned in \fIval_rrset_data\fR.
 .RE
 .RS 4
-.IP "\fIstruct rr_rec\fR" 4
-.IX Item "struct rr_rec"
+.IP "\fIstruct val_rr_rec\fR" 4
+.IX Item "struct val_rr_rec"
 .Vb 7
-\&  struct rr_rec
+\&  struct val_rr_rec
 \&  {
 \&      u_int16_t        rr_rdata_length_h;
 \&      u_int8_t        *rr_rdata;
 \&      val_astatus_t    rr_status;
-\&      struct rr_rec   *rr_next;
+\&      struct val_rr_rec   *rr_next;
 \&  };
 .Ve
 .RS 4

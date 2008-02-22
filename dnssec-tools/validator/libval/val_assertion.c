@@ -848,14 +848,14 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
 }
 
 static int
-is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key, 
+is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct val_rr_rec *key, 
                val_astatus_t * status, u_int8_t flags, u_int32_t *ttl_x)
 {
     policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
     int             name_len;
     u_int8_t       *ep; 
     val_dnskey_rdata_t dnskey;
-    struct rr_rec  *curkey;
+    struct val_rr_rec  *curkey;
     u_int8_t       *zp;
 
     /*
@@ -1292,7 +1292,7 @@ build_pending_query(val_context_t *context,
     u_int8_t       *signby_name_n;
     u_int16_t       tzonestatus;
     int             retval;
-    struct rr_rec  *cur_rr;
+    struct val_rr_rec  *cur_rr;
     u_int32_t ttl_x = 0;
     val_astatus_t  status = VAL_DONT_KNOW;
 
@@ -3815,7 +3815,7 @@ fix_validation_result(val_context_t * context,
                     /*
                      * see if one of the DNSKEYs links up 
                      */
-                    struct rr_rec  *drr;
+                    struct val_rr_rec  *drr;
                     for (drr = as->val_ac_rrset->val_rrset_data; drr;
                          drr = drr->rr_next) {
                         if (drr->rr_status ==

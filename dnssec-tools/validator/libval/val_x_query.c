@@ -49,7 +49,7 @@ extern int      h_errno;
 static int
 find_rrset_len(struct val_rrset *rrset)
 {
-    struct rr_rec  *rr;
+    struct val_rr_rec  *rr;
     int             resp_len = 0;
     int             rrset_name_n_len;
 
@@ -126,7 +126,7 @@ encode_response_rrset(struct val_rrset *rrset,
 {
     unsigned char  *cp;
     int            *bufindex = NULL;
-    struct rr_rec  *rr;
+    struct val_rr_rec  *rr;
     int             rrset_name_n_len;
     int            *count;
 
