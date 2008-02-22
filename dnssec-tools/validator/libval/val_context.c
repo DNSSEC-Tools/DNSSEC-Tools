@@ -51,7 +51,7 @@ pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
  * Create a context with given configuration files
  */
 int
-val_create_context_with_conf(char *label_pref, 
+val_create_context_with_conf(char *label, 
                              char *dnsval_conf, 
                              char *resolv_conf, 
                              char *root_conf, 
@@ -59,14 +59,9 @@ val_create_context_with_conf(char *label_pref,
 {
     int             retval;
     char *base_dnsval_conf = NULL;
-    char *label = NULL;
 
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
-
-    label = label_pref;
-    /* Check if we have a preference specified in the environment */
-    label = getenv(VAL_CONTEXT_LABEL);
 
     /* Check if the request is for the default context, and we have one available */
     if (label == NULL) {
