@@ -11,8 +11,9 @@ level: 2
 ruletype: name
 desc: Checks for the existence of an SOA record in a zone.
 <test>
-   "A SOA record for $current_domain is required"
-      if ($recordname eq $current_domain && $#{$records->{'SOA'}} == -1);
+  if ($recordname eq $current_domain && $#{$records->{'SOA'}} == -1) {
+     donuts_error("A SOA record for $current_domain is required");
+  }
 </test>
 
 #
@@ -38,9 +39,10 @@ type: CNAME
 desc: Checks to make sure that NS records don't point to CNAMEs
 <test>
   if (exists($DONUTS::DNSSEC::NSCNAMECHECK{$record->name})) {
-    return "A NS record for " . $DONUTS::DNSSEC::NSCNAMECHECK{$record->name}
-      . " points to " .
-      $record->name . " which is a CNAME instead of an address record";
+    donuts_error("A NS record for " .
+		 $DONUTS::DNSSEC::NSCNAMECHECK{$record->name} .
+		 " points to " . $record->name .
+		 " which is a CNAME instead of an address record");
   }
   return;
 </test>
