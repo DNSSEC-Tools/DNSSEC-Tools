@@ -702,6 +702,10 @@ sub live_query {
     return ();
 }
 
+#
+# returns 0 when arrays of records are identical.
+# returns -1 if the arrays are non-equal length
+# returns the index+1 where the arrays differ otherwise.
 sub compare_arrays {
     my ($a1, $b1, $sortfun) = @_;
     $sortfun = sub { $a cmp $b } if (!$sortfun);
@@ -709,13 +713,14 @@ sub compare_arrays {
     my @a = sort $sortfun @$a1;
     my @b = sort $sortfun @$b1;
 
-    for (my $i = 0; $i <= $#$a && $i <= $#$b; $i++) {
-	if ($a[$i] ne $b[$i]) {
-	    return $i;
+    for (my $i = 0; $i <= $#a && $i <= $#b; $i++) {
+	if ($a[$i]->string() ne $b[$i]->string()) {
+	    return $i+1;
 	}
     }
-    return $#$a+1 if ($#$a < $#$b);
-    return $#$b+1 if ($#$a < $#$a);
+    return $#a+1 if ($#a < $#b);
+    return $#b+1 if ($#a < $#a);
+    return 0;
 }
 
 sub compare_RR_arrays {
