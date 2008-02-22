@@ -75,8 +75,6 @@ extern          "C" {
 /* default EDNS0 size */
 #define EDNS_UDP_SIZE 4096
 
-#define VAL_CONTEXT_LABEL "VAL_CONTEXT_LABEL"
-
 #define VAL_DEFAULT_RESOLV_CONF "/etc/resolv.conf"
 
     /*
