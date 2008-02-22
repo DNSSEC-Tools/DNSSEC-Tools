@@ -189,6 +189,12 @@ sub parse
 	  if ($newrec->{'type'} eq 'DNSKEY') {
 	      $newrec->setkeytag;
 	  }
+	  if ($newrec->{'type'} eq 'RRSIG') {
+	      # fix an issue with RRSIG's signame being stripped of
+	      # the trailing dot.
+	      $newrec->{'signame'} .= "."
+		if ($newrec->{'signame'} !~ /\.$/);
+	  }
 	  push @r, $newrec;
 	  $r[-1]->{Line} = $line;
 	  $r[-1]->{Lines} = $lines;
@@ -781,6 +787,8 @@ sub parse_line
       } elsif (/\G(nsec)[ \t]+/igc) {
 	  if (/\G\s*($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
 	      # XXX: set the typebm field ourselves?
+	      my ($nxtdname, $typelist) = ($1, $2);
+	      $typelist = join(" ",sort split(/\s+/,$typelist));
 	      push @zone, 
 		{
 		 Line      => $ln,
@@ -788,10 +796,10 @@ sub parse_line
 		 class     => "IN",
 		 ttl       => $ttl,
 		 type      => "NSEC",
-		 nxtdname  => $1,
-		 typelist  => $2,
+		 nxtdname  => $nxtdname,
+		 typelist  => $typelist,
 		 typebm    =>
-		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$2)),
+		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$typelist)),
 		};
 	  } else {
 	      error("bad NSEC data");
