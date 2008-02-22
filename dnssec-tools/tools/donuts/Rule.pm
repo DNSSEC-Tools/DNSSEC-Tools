@@ -137,6 +137,7 @@ sub print_error {
 my ($current_errors, $current_warnings);
 sub donuts_error {
     push @$current_errors, @_;
+    return;
 }
 
 sub run_test {
