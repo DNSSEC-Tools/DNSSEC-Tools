@@ -259,11 +259,11 @@ extern          "C" {
     /*
      * Response structures  
      */
-    struct rr_rec {
+    struct val_rr_rec {
         u_int16_t       rr_rdata_length_h;      /* RDATA length */
         u_int8_t       *rr_rdata;       /* Raw RDATA */
         val_astatus_t   rr_status;
-        struct rr_rec  *rr_next;
+        struct val_rr_rec  *rr_next;
     };
 
     struct val_rrset {
@@ -283,8 +283,8 @@ extern          "C" {
         u_int32_t       val_rrset_ttl_x;        /* ttl expire time */
         u_int8_t        val_rrset_section;      /* VAL_FROM_... */
         struct sockaddr *val_rrset_server;      /* respondent server */
-        struct rr_rec  *val_rrset_data; /* All data RR's */
-        struct rr_rec  *val_rrset_sig;  /* All signatures */
+        struct val_rr_rec  *val_rrset_data; /* All data RR's */
+        struct val_rr_rec  *val_rrset_sig;  /* All signatures */
     };
 
     struct rrset_rec {

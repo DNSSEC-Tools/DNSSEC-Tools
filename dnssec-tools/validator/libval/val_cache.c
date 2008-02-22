@@ -126,7 +126,7 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
     struct rrset_rec *new_rr, *prev;
     struct rrset_rec *old;
     struct rrset_rec *trail_new;
-    struct rr_rec  *rr_exchange;
+    struct val_rr_rec  *rr_exchange;
 
     if (new_info == NULL)
         return VAL_NO_ERROR;

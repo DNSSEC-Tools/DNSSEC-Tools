@@ -418,8 +418,8 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
       u_int32_t      val_rrset_ttl_h;
       u_int32_t      val_rrset_ttl_x;
       u_int8_t       val_rrset_section;
-      struct rr_rec *val_rrset_data;
-      struct rr_rec *val_rrset_sig;
+      struct val_rr_rec *val_rrset_data;
+      struct val_rr_rec *val_rrset_sig;
   };
 
 =over 4
@@ -470,14 +470,14 @@ Any associated RRSIGs for the RDATA returned in I<val_rrset_data>.
 
 =over 4
 
-=item I<struct rr_rec>
+=item I<struct val_rr_rec>
 
-  struct rr_rec
+  struct val_rr_rec
   {
       u_int16_t        rr_rdata_length_h;
       u_int8_t        *rr_rdata;
       val_astatus_t    rr_status;
-      struct rr_rec   *rr_next;
+      struct val_rr_rec   *rr_next;
   };
 
 =over 4
@@ -492,7 +492,7 @@ RDATA bytes.
 
 =item I<rr_status>
 
-For each signature I<rr_rec> member within the authentication chain
+For each signature I<val_rr_rec> member within the authentication chain
 I<val_ac_rrset>, the validation status stored in the variable
 I<rr_status> can return one of the following values:
 
@@ -543,7 +543,7 @@ I<rr_status> can return one of the following values:
     VAL_AC_ALGORITHM_NOT_SUPPORTED
 	The RRSIG algorithm was not supported.
 
-For each I<rr_rec> member of type DNSKEY (or DS, where relevant) within the
+For each I<val_rr_rec> member of type DNSKEY (or DS, where relevant) within the
 authentication chain I<val_ac_rrset>, the validation status is stored in the
 variable I<rr_status> and can return one of the following values:
 

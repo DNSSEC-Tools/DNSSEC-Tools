@@ -73,7 +73,7 @@ get_hex_string(const unsigned char *data, int datalen, char *buf,
 }
 
 static char    *
-get_rr_string(struct rr_rec *rr, char *buf, int buflen)
+get_rr_string(struct val_rr_rec *rr, char *buf, int buflen)
 {
     char           *ptr = buf;
     char           *endptr = ptr + buflen;
@@ -248,7 +248,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
 
     u_int16_t       class_h = next_as->val_ac_rrset->val_rrset_class_h;
     u_int16_t       type_h = next_as->val_ac_rrset->val_rrset_type_h;
-    struct rr_rec  *data = next_as->val_ac_rrset->val_rrset_data;
+    struct val_rr_rec  *data = next_as->val_ac_rrset->val_rrset_data;
     struct sockaddr *serv = next_as->val_ac_rrset->val_rrset_server;
     val_astatus_t   status = next_as->val_ac_status;
 
@@ -267,7 +267,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
         serv_pr = "NULL";
 
     if (type_h == ns_t_dnskey) {
-        struct rr_rec  *curkey;
+        struct val_rr_rec  *curkey;
         for (curkey = data; curkey; curkey = curkey->rr_next) {
             if ((curkey->rr_status == VAL_AC_VERIFIED_LINK) ||
                 (curkey->rr_status == VAL_AC_UNKNOWN_ALGORITHM_LINK)) {
@@ -299,8 +299,8 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
                 p_ac_status(status), status);
     }
 #if 0
-    struct rr_rec  *rr;
-    struct rr_rec  *sig = next_as->val_ac_rrset->val_rrset_sig;
+    struct val_rr_rec  *rr;
+    struct val_rr_rec  *sig = next_as->val_ac_rrset->val_rrset_sig;
     for (rr = data; rr; rr = rr->rr_next) {
         val_log(ctx, level, "    data_status=%s:%d",
                 p_ac_status(rr->rr_status), rr->rr_status);

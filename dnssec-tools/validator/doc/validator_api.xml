@@ -561,8 +561,8 @@ struct val_rrset {
     u_int32_t       val_rrset_ttl_h; 
     u_int8_t        val_rrset_section;
     struct sockaddr *val_rrset_server;
-    struct rr_rec   *val_rrset_data;
-    struct rr_rec   *val_rrset_sig;
+    struct val_rr_rec   *val_rrset_data;
+    struct val_rr_rec   *val_rrset_sig;
 };
 </artwork>
 </figure>
@@ -594,21 +594,21 @@ if the RRset was present in the additional section of the DNS response. </t>
 <t> 
 The RDATA for the RRset MUST be queued to val_rrset_data.  Any associated
 RRSIGs MUST be queued to val_rrset_sig.  Both of these variables point to
-lists of struct rr_rec elements, which specify the RDATA and the
+lists of struct val_rr_rec elements, which specify the RDATA and the
 DNSSEC validation status for each resource-record within the RRset. </t>
 
 <figure>
 <artwork>
-struct rr_rec {
+struct val_rr_rec {
     u_int16_t       rr_rdata_length_h; 
     u_int8_t        *rr_rdata;  
     val_astatus     rr_status;      
-    struct rr_rec   *rr_next;
+    struct val_rr_rec   *rr_next;
 };
 </artwork>
 </figure>
 
-<t> The rr_status member in rr_rec is only relevant for the signatures present in
+<t> The rr_status member in val_rr_rec is only relevant for the signatures present in
 val_rrset_sig or when val_rrset_data points to DNSKEY or DS resource records.  
 This field takes on a subset of all status codes possible for val_astatus_t
 and is further described in <xref target="val-astatus"/>.  </t>
@@ -689,7 +689,7 @@ At least one RRSIG covering the RRset verified successfully.  </t>
 A DNS error was encountered during the query resolution process.  </t>
       </list> </t>
 
-      <t>  For each signature rr_rec member within an authentication chain 
+      <t>  For each signature val_rr_rec member within an authentication chain 
 pointed to by val_ac_rrset, the DNSSEC validation status stored in the variable rr_status can 
 contain one of the following codes: 
         <list style="hanging">
@@ -739,7 +739,7 @@ the DNSKEY that created the given signature
 could not be found in the zone DNSKEY RRset. </t>
       </list> </t>
 
-      <t>  For each rr_rec member of type DNSKEY (or DS where indicated) 
+      <t>  For each val_rr_rec member of type DNSKEY (or DS where indicated) 
 within an authentication chain structure pointed to by val_ac_rrset, the DNSSEC validation status 
 stored in the variable rr_status can contain one of the following codes: 
         <list style="hanging">
