@@ -1267,17 +1267,23 @@ read_val_config_file(val_context_t * ctx, char *scope)
     dnsval_list->next = NULL; 
     
     dnsval_c = dnsval_list;
-    dnsval_l = dnsval_list;
     
     while(dnsval_c) {
 
+        dnsval_l = dnsval_c;
         line_number = 1;
         fd = open(dnsval_c->dnsval_conf, O_RDONLY);
         if (fd == -1) {
             val_log(ctx, LOG_ERR, "read_val_config_file(): Could not open validator conf file for reading: %s",
                     dnsval_c->dnsval_conf);
-            retval = VAL_CONF_NOT_FOUND;
-            goto err;
+            /* check if we have at least one file */
+            if (dnsval_c == dnsval_list) {
+                retval = VAL_CONF_NOT_FOUND;
+                goto err;
+            } else {
+                dnsval_c = dnsval_c->next;
+                continue;
+            }
         }
         memset(&fl, 0, sizeof(fl));
         fl.l_type = F_RDLCK;
@@ -1389,8 +1395,10 @@ read_val_config_file(val_context_t * ctx, char *scope)
                     retval = VAL_OUT_OF_MEMORY;
                     goto err;
                 }
+
+                /* add this node after last include relative to dnsval.conf being processed */
                 dnsval_temp->dnsval_conf = base_dnsval_conf; 
-                dnsval_temp->next = NULL;
+                dnsval_temp->next = dnsval_l->next;
                 dnsval_l->next = dnsval_temp;
                 dnsval_l = dnsval_temp;
 
@@ -1615,6 +1623,19 @@ read_res_config_file(val_context_t * ctx)
     if (fd == -1) {
         val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open resolver conf file for reading: %s",
                 resolv_conf);
+    
+        /* Use default resolv.conf file */
+        FREE(ctx->resolv_conf);
+        ctx->resolv_conf = strdup(VAL_DEFAULT_RESOLV_CONF);
+        if (ctx->resolv_conf == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        resolv_config = ctx->resolv_conf;
+        fd = open(resolv_config, O_RDONLY);
+        if (fd == -1) {
+            val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open default resolver conf file for reading: %s",
+                    resolv_conf);
+        }
         return VAL_CONF_NOT_FOUND;
     }
     fl.l_type = F_RDLCK;
@@ -1761,9 +1782,13 @@ read_res_config_file(val_context_t * ctx)
 
     if (buf)
         FREE(buf);
-    fl.l_type = F_UNLCK;
-    fcntl(fd, F_SETLKW, &fl);
-    close(fd);
+
+    if (fd != -1) {
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLKW, &fl);
+        close(fd);
+    }
+
     return VAL_CONF_PARSE_ERROR;
 }
 
