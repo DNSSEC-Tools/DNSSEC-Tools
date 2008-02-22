@@ -75,6 +75,10 @@ extern          "C" {
 /* default EDNS0 size */
 #define EDNS_UDP_SIZE 4096
 
+#define VAL_CONTEXT_LABEL "VAL_CONTEXT_LABEL"
+
+#define VAL_DEFAULT_RESOLV_CONF "/etc/resolv.conf"
+
     /*
      * Query states 
      */
@@ -164,8 +168,8 @@ extern          "C" {
 #define ALG_DSASHA1 3
 #define ALG_RSASHA1 5
 #ifdef LIBVAL_NSEC3
-#define ALG_NSEC3_DSASHA1 131
-#define ALG_NSEC3_RSASHA1 133
+#define ALG_NSEC3_DSASHA1 6 
+#define ALG_NSEC3_RSASHA1 7 
 #endif
 
     /*
