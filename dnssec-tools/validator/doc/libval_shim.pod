@@ -1,0 +1,90 @@
+
+=pod
+
+=head1 NAME
+
+		      The Validator Shim Library
+
+=head1 DESCRIPTION
+
+The validator shim library (I<libval_shim.so>) is a shared library
+designed to be dynamically loaded using the 'LD_PRELOAD' mechanism
+(I<ld.so(8)>) supported on linux and various other unix-like
+platforms. The shim library implements wrappers for a number of DNS
+related functions and in turn calls equivalent DNSSEC-aware validating
+functions from I<libval(3)>, mapping the results to return codes
+recognized by the original functions. In this way a wide variety of
+applications can be made DNSSEC aware without code changes and
+recompilation.
+
+The method of mapping return codes assumes that any 'untrusted' or
+failure result from the I<libval(3)> function is reflected as a
+failure to the original calling function.
+
+=head2 I<Usage:>
+
+To load the library set LD_PRELOAD variable within the environment of
+the the target application prior to execution:
+
+=over 4
+   	export LD_PRELOAD=libval_shim.so
+=back
+
+=back
+
+=head2 I<Validation Policy:>
+
+The policy to be applied for the invoked I<libval(3)> functions is
+chosen in the following way:
+
+=over 4
+
+=item 1) The value of the 'LIBVAL_SHIM_CONTEXT' environment variable
+
+=item 2) The application name
+
+=item 3) The default policy ':'
+
+=back
+
+See I<dnsval.conf(1)> for information on policy labels and definition.
+
+=head2 I<Logging:>
+
+Logging for the I<libval(3)> functions may be enabled in the shim
+library by setting the 'LIBVAL_SHIM_LOG' environment variable.
+
+=over 4
+
+        export LIBVAL_SHIM_LOG="7:stderr"
+	or
+	export LIBVAL_SHIM_LOG="7:file:/tmp/validatorlog.txt"
+
+=back
+
+See I<validate(1)> for log output specifier format.
+
+=head1 NOTES
+
+=head2 setuid/setgid programs
+
+
+setuid and setgid root programs (e.g., I<ping(8)>) do not honor the
+LD_PRELOAD setting. These application may still use the LD_PRELOAD
+mechanism when run directly from a root shell.
+
+=head1 COPYRIGHT
+
+Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
+
+=head1 AUTHORS
+
+G. S. Marzot
+
+=head1 SEE ALSO
+
+I<libsres(3)>, I<libval(3)>, I<dnsval.conf(1)>, I<gethostbyname(3)>
+
+I<gethostbyaddr(3)>, I<getnameinfo(3)>, I<getaddrinfo(3)>, I<res_query(3)>
