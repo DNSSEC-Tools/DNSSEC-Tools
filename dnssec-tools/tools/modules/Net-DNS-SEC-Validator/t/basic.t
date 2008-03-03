@@ -146,8 +146,8 @@ ok($r);
 ($pkt, $err) = new Net::DNS::Packet(\$r);
 ok(not $err);
 
-# this crashes
-$r = $validator->res_query("mail.marzot.net", "IN", "MX");
+# this be locally trusted but not validated
+$r = $validator->res_query("marzot.net", "IN", "MX");
 ok($r);
 ok($validator->{valStatus} == VAL_TRUSTED_ANSWER);
 ok($validator->istrusted());
