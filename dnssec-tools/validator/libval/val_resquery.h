@@ -27,7 +27,8 @@ int             bootstrap_referral(val_context_t *context,
                                    struct rrset_rec **learned_zones,
                                    struct queries_for_query *matched_qfq,
                                    struct queries_for_query **queries,
-                                   struct name_server **ref_ns_list);
+                                   struct name_server **ref_ns_list,
+                                   int no_partial);
 void            free_referral_members(struct delegation_info *del);
 int             process_cname_dname_responses(u_int8_t *name_n, 
                               u_int16_t type_h, 

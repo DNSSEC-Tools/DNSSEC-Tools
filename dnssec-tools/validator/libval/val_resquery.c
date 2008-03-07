@@ -696,7 +696,8 @@ bootstrap_referral(val_context_t *context,
                    struct rrset_rec **learned_zones,
                    struct queries_for_query *matched_qfq,
                    struct queries_for_query **queries,
-                   struct name_server **ref_ns_list)
+                   struct name_server **ref_ns_list,
+                   int no_partial)
 {
     struct name_server *pending_glue;
     int             ret_val;
@@ -759,6 +760,14 @@ bootstrap_referral(val_context_t *context,
             *ref_ns_list = NULL;
             val_log(context, LOG_DEBUG, "bootstrap_referral(): Already fetching glue; not fetching again");
             matched_q->qc_state = Q_REFERRAL_ERROR;
+            return VAL_NO_ERROR;
+        }
+
+        /* if we don't want partial referrals, return NULL */
+        if (no_partial) {
+            free_name_servers(&pending_glue);
+            free_name_servers(ref_ns_list);
+            *ref_ns_list = NULL;
             return VAL_NO_ERROR;
         }
 
@@ -885,7 +894,11 @@ follow_referral_or_alias_link(val_context_t * context,
 
     if (matched_q->qc_referral == NULL) {
         ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
-    }
+    } else if (alias_chain && matched_q->qc_referral->queries) {
+        /* free up the old set of registered queries and start afresh */
+        deregister_queries(&matched_q->qc_referral->queries);
+        matched_q->qc_referral->queries = NULL;
+    } 
 
     /*
      * Consume qnames 
@@ -909,6 +922,7 @@ follow_referral_or_alias_link(val_context_t * context,
     matched_q->qc_state = Q_INIT;
 
     if (alias_chain) {
+        /* don't believe any of the cname hints that were provided */
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
 
@@ -922,7 +936,6 @@ follow_referral_or_alias_link(val_context_t * context,
             matched_q->qc_state = Q_REFERRAL_ERROR;
             goto query_err;
         }
-
     } else {
 
         if (VAL_NO_ERROR != (ret_val =
@@ -931,7 +944,8 @@ follow_referral_or_alias_link(val_context_t * context,
                                                     learned_zones,
                                                     matched_qfq,
                                                     queries,
-                                                    &ref_ns_list)))
+                                                    &ref_ns_list,
+                                                    0))) /* ok to fetch glue here */
             return ret_val;
 
         if (matched_q->qc_state == Q_WAIT_FOR_GLUE) {
