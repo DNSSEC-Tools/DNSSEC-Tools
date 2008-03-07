@@ -151,7 +151,7 @@ is_type_set(u_int8_t * field, int field_len, u_int16_t type)
 
     
 void
-free_val_rrset_members(struct val_rrset *r)
+free_val_rrset_members(struct val_rrset_rec *r)
 {
     if (r == NULL)
         return;
@@ -184,6 +184,15 @@ val_free_result_chain(struct val_result_chain *results)
     while (NULL != (prev = results)) {
         results = results->val_rc_next;
 
+        /* 
+         * if we don't have the authentication chain but 
+         * we had a raw rrset, free the latter 
+         */
+        if (!prev->val_rc_answer && prev->val_rc_rrset) {
+            free_val_rrset_members(prev->val_rc_rrset);
+        }
+        prev->val_rc_rrset = NULL;
+
         /*
          * free the chain of trust 
          */
@@ -199,6 +208,12 @@ val_free_result_chain(struct val_result_chain *results)
             FREE(trust);
         }
 
+        /* free the alias name if any */
+        if (prev->val_rc_alias) {
+            FREE(prev->val_rc_alias);
+        }
+
+        /* free the proof components */
         for (i = 0; i < prev->val_rc_proof_count; i++) {
 
             if (prev->val_rc_proofs[i] == NULL)
@@ -207,19 +222,7 @@ val_free_result_chain(struct val_result_chain *results)
             while (NULL != (trust = prev->val_rc_proofs[i])) {
                 prev->val_rc_proofs[i] = trust->val_ac_trust;
                 if (trust->val_ac_rrset != NULL) {
-                    if (trust->val_ac_rrset->val_msg_header)
-                        FREE(trust->val_ac_rrset->val_msg_header);
-                    if (trust->val_ac_rrset->val_rrset_name_n)
-                        FREE(trust->val_ac_rrset->val_rrset_name_n);
-                    if (trust->val_ac_rrset->val_rrset_server)
-                        FREE(trust->val_ac_rrset->val_rrset_server);
-                    if (trust->val_ac_rrset->val_rrset_data != NULL)
-                        res_sq_free_rr_recs(&trust->val_ac_rrset->
-                                            val_rrset_data);
-                    if (trust->val_ac_rrset->val_rrset_sig != NULL)
-                        res_sq_free_rr_recs(&trust->val_ac_rrset->
-                                            val_rrset_sig);
-
+                    free_val_rrset_members(trust->val_ac_rrset);
                     FREE(trust->val_ac_rrset);
                 }
                 FREE(trust);
@@ -489,7 +492,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if (VAL_NO_ERROR !=
                 (retval =
                     add_to_query_chain(context, name_n, type_h, class_h,
-                                    flags & VAL_QFLAGS_AFFECTS_CACHING, 
+                                    flags & VAL_Q_ONLY_MATCHING_FLAGS, 
                                     &added_q)))
             return retval;
 
@@ -509,7 +512,8 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                 if (added_q->qc_bad > 0 && 
                         !(flags & VAL_QUERY_DONT_VALIDATE)) {
                     /* Invoke bad-cache logic only if validation is requested */
-                    if (++added_q->qc_bad > QUERY_BAD_CACHE_THRESHOLD) {
+                    added_q->qc_bad++;
+                    if (added_q->qc_bad > QUERY_BAD_CACHE_THRESHOLD) {
                         added_q->qc_bad = QUERY_BAD_CACHE_THRESHOLD;
                         SET_MIN_TTL(added_q->qc_ttl_x, tv.tv_sec + QUERY_BAD_CACHE_TTL);
                     } else {
@@ -1641,66 +1645,72 @@ assimilate_answers(val_context_t * context,
 }
 
 static int
-clone_val_rrset(struct val_rrset *old_rrset, struct val_rrset *new_rrset)
+clone_val_rrset(struct val_rrset_rec *old_rrset, struct val_rrset_rec **new_rrset)
 {
     int             retval;
 
     if (new_rrset == NULL)
         return VAL_BAD_ARGUMENT;
 
-    memset(new_rrset, 0, sizeof(struct val_rrset));
+    *new_rrset = (struct val_rrset_rec *) MALLOC(sizeof(struct val_rrset_rec));
+    if (*new_rrset == NULL) {
+        return VAL_OUT_OF_MEMORY;
+    }
+
+    memset(*new_rrset, 0, sizeof(struct val_rrset_rec));
 
     if (old_rrset != NULL) {
         int             len;
 
         CLONE_NAME_LEN(old_rrset->val_msg_header,
                        old_rrset->val_msg_headerlen,
-                       new_rrset->val_msg_header,
-                       new_rrset->val_msg_headerlen);
+                       (*new_rrset)->val_msg_header,
+                       (*new_rrset)->val_msg_headerlen);
 
         len = wire_name_length(old_rrset->val_rrset_name_n);
-        new_rrset->val_rrset_name_n =
+        (*new_rrset)->val_rrset_name_n =
             (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-        if (new_rrset->val_rrset_name_n == NULL) {
+        if ((*new_rrset)->val_rrset_name_n == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
 
-        memcpy(new_rrset->val_rrset_name_n,
+        memcpy((*new_rrset)->val_rrset_name_n,
                old_rrset->val_rrset_name_n, len);
 
-        new_rrset->val_rrset_class_h = old_rrset->val_rrset_class_h;
-        new_rrset->val_rrset_type_h = old_rrset->val_rrset_type_h;
-        new_rrset->val_rrset_ttl_h = old_rrset->val_rrset_ttl_h;
-        new_rrset->val_rrset_ttl_x = old_rrset->val_rrset_ttl_x;
-        new_rrset->val_rrset_section = old_rrset->val_rrset_section;
-        new_rrset->val_rrset_data =
-            copy_rr_rec_list(new_rrset->val_rrset_type_h,
+        (*new_rrset)->val_rrset_class_h = old_rrset->val_rrset_class_h;
+        (*new_rrset)->val_rrset_type_h = old_rrset->val_rrset_type_h;
+        (*new_rrset)->val_rrset_ttl_h = old_rrset->val_rrset_ttl_h;
+        (*new_rrset)->val_rrset_ttl_x = old_rrset->val_rrset_ttl_x;
+        (*new_rrset)->val_rrset_section = old_rrset->val_rrset_section;
+        (*new_rrset)->val_rrset_data =
+            copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
                              old_rrset->val_rrset_data, 0);
-        new_rrset->val_rrset_sig =
-            copy_rr_rec_list(new_rrset->val_rrset_type_h,
+        (*new_rrset)->val_rrset_sig =
+            copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
                              old_rrset->val_rrset_sig, 0);
 
         if (old_rrset->val_rrset_server) {
-            new_rrset->val_rrset_server =
+            (*new_rrset)->val_rrset_server =
                 (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
-            if (new_rrset->val_rrset_server == NULL) {
+            if ((*new_rrset)->val_rrset_server == NULL) {
                 retval = VAL_OUT_OF_MEMORY;
                 goto err;
             }
-            memcpy(new_rrset->val_rrset_server,
+            memcpy((*new_rrset)->val_rrset_server,
                    old_rrset->val_rrset_server,
                    sizeof(struct sockaddr_storage));
         } else {
-            new_rrset->val_rrset_server = NULL;
+            (*new_rrset)->val_rrset_server = NULL;
         }
     }
 
     return VAL_NO_ERROR;
 
   err:
-    free_val_rrset_members(new_rrset);
-    memset(new_rrset, 0, sizeof(struct val_rrset));
+    free_val_rrset_members(*new_rrset);
+    FREE(*new_rrset);
+    *new_rrset = NULL;
     return retval;
 }
 
@@ -1793,17 +1803,10 @@ transform_authentication_chain(val_context_t *context,
         memset(n_ac, 0, sizeof(struct val_authentication_chain));
         n_ac->val_ac_status = o_ac->val_ac_status;
         n_ac->val_ac_trust = NULL;
-        n_ac->val_ac_rrset = (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
-        if (n_ac->val_ac_rrset == NULL) {
-            FREE(n_ac);
-            retval = VAL_OUT_OF_MEMORY;
-            goto err;
-        }
 
         if (VAL_NO_ERROR !=
             (retval =
-             clone_val_rrset(o_ac->val_ac_rrset, n_ac->val_ac_rrset))) {
-            FREE(n_ac->val_ac_rrset);
+             clone_val_rrset(o_ac->val_ac_rrset, &n_ac->val_ac_rrset))) {
             FREE(n_ac);
             goto err;
         }
@@ -1850,6 +1853,8 @@ transform_authentication_chain(val_context_t *context,
     } \
     (new_res)->val_rc_answer = NULL;\
     memset((new_res)->val_rc_proofs, 0, sizeof((new_res)->val_rc_proofs));\
+    (new_res)->val_rc_alias = NULL;\
+    (new_res)->val_rc_rrset = NULL;\
     (new_res)->val_rc_proof_count = 0;\
     (new_res)->val_rc_next = NULL;\
     if (prev_res == NULL) {\
@@ -1892,6 +1897,7 @@ transform_single_result(val_context_t *context,
     aptr = NULL;
     if (w_res && w_res->val_rc_is_proof) {
         if (proof_res) {
+            /* if we're given a proof_res, work with that */
             if (proof_res->val_rc_proof_count == MAX_PROOFS) {
                 proof_res->val_rc_status = VAL_BOGUS_PROOF;
                 *mod_res = proof_res;
@@ -1902,12 +1908,15 @@ transform_single_result(val_context_t *context,
                                               val_rc_proof_count];
             }
         } else {
+            /* create a new one */
             CREATE_RESULT_BLOCK(proof_res, prev_res, *results);
             aptr = &proof_res->val_rc_proofs[0];
         }
         proof_res->val_rc_proof_count++;
         *mod_res = proof_res;
     } else {
+        /* no data or not a proof */
+        /* if proof_res was provided, add to that, else create a new element */
         CREATE_RESULT_BLOCK(proof_res, prev_res, *results);
         aptr = &proof_res->val_rc_answer;
         *mod_res = proof_res;
@@ -1915,8 +1924,24 @@ transform_single_result(val_context_t *context,
     *aptr = NULL;
     if (w_res) {
         w_res->val_rc_consumed = 1;
-        return transform_authentication_chain(context, w_res->val_rc_rrset, queries, aptr, 
-                                              w_res->val_rc_flags);
+        if (!(w_res->val_rc_flags & VAL_QUERY_NO_AC_DETAIL)) {
+            int retval;
+            if (VAL_NO_ERROR == 
+                    (retval = transform_authentication_chain(context, 
+                                   w_res->val_rc_rrset, queries, aptr, 
+                                   w_res->val_rc_flags))) {
+                /* Point val_rc_rrset to the answer only if this is not a proof */
+                if (*aptr && !w_res->val_rc_is_proof)
+                    (*mod_res)->val_rc_rrset = (*aptr)->val_ac_rrset;
+            }
+            return retval;
+        } 
+
+        /* if not a proof, and we have data, copy the rrset into val_rc_rrset */
+        if (!w_res->val_rc_is_proof && w_res->val_rc_rrset && *mod_res) {
+            return clone_val_rrset(w_res->val_rc_rrset->val_ac_rrset,
+                                  &((*mod_res)->val_rc_rrset));
+        }
     }
 
     return VAL_NO_ERROR;
@@ -2906,7 +2931,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
 {
     int             retval;
     struct val_result_chain *results = NULL;
-    struct val_rrset *soa_rrset = NULL;
+    struct val_rrset_rec *soa_rrset = NULL;
     u_int8_t *zonecut_name_n = NULL;
     struct queries_for_query *temp_qfq = NULL;
 
@@ -5131,8 +5156,7 @@ check_alias_sanity(val_context_t * context,
     struct val_internal_result *res;
     struct val_result_chain *new_res = NULL;
     int             done = 0;
-    int             cname_seen = 0;
-    int             dname_seen = 0;
+    int             alias_seen = 0;
     u_int8_t       *qname_n = NULL;
     struct query_list *ql = NULL;
     int             loop = 0;
@@ -5143,7 +5167,7 @@ check_alias_sanity(val_context_t * context,
     u_int32_t       soa_ttl_x = 0;
     struct          val_query_chain *top_q;
 
-    if (top_qfq == NULL)
+    if (top_qfq == NULL || results == NULL)
         return VAL_BAD_ARGUMENT;
 
     top_q = top_qfq->qfq_query; /* Can never be NULL if top_qfq is not NULL */
@@ -5185,7 +5209,7 @@ check_alias_sanity(val_context_t * context,
                  * found the next element 
                  */
                 done = 0;
-                cname_seen = 1;
+                alias_seen = 1;
                 /*
                  * find the next link in the cname chain 
                  */
@@ -5210,7 +5234,7 @@ check_alias_sanity(val_context_t * context,
                  * found the next dname element 
                  */
                 done = 0;
-                dname_seen = 1;
+                alias_seen = 1;
 
                 /*
                  * find the next link in the dname chain 
@@ -5243,10 +5267,11 @@ check_alias_sanity(val_context_t * context,
                        || (top_q->qc_class_h !=
                            res->val_rc_rrset->_as.ac_data->rrs.
                            val_rrset_class_h)) {
+                /* Not a relevant answer */
                 continue;
             }
 
-            if ((res->val_rc_consumed) && results) {
+            if (res->val_rc_consumed) {
                 /*
                  * search for existing result structure 
                  */
@@ -5275,13 +5300,27 @@ check_alias_sanity(val_context_t * context,
                 }
             }
 
+            if (qname_n && !done) {
+                int len;
+                len = wire_name_length(qname_n);
+                if (new_res->val_rc_alias != NULL) {
+                    FREE(new_res->val_rc_alias);
+                }
+                new_res->val_rc_alias = (u_int8_t *)MALLOC(len);
+                if (new_res->val_rc_alias == NULL) {
+                    retval = VAL_OUT_OF_MEMORY;
+                    goto err;
+                }
+                memcpy(new_res->val_rc_alias, qname_n, len);
+            }
+            
             new_res->val_rc_status = res->val_rc_status;
 
             break;
         }
     }
 
-    if (cname_seen || dname_seen) {
+    if (alias_seen) {
         if ((new_res == NULL) && qname_n && !loop) {
             /*
              * the last element in the chain was a cname or dname,
@@ -5377,10 +5416,9 @@ perform_sanity_checks(val_context_t * context,
              * All components were not validated success
              */
             partially_wrong = 1;
-            if (top_q->qc_bad >= 0)
-                top_q->qc_bad = 1;
+            top_q->qc_bad = 1;
         } else if (val_isvalidated(res->val_rc_status)) {
-            top_q->qc_bad = -1; /* good result */
+            top_q->qc_bad = 0; /* good result */
         }
     }
 
