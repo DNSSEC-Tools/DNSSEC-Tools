@@ -87,9 +87,12 @@ The conversion from host format to DNS wire format can be done using the
 I<ns_name_pton()> function exported by the I<libsres(3)> library.
 
 The I<flags> parameter can be used to control the results of validation.
-Two values, which may be ORed together, are currently defined for this field.
+Three values, which may be ORed together, are currently defined for this field.
 B<VAL_QUERY_DONT_VALIDATE> causes the validator to disable validation for this
-query.  B<VAL_QUERY_NO_DLV> causes the validator to disable DLV processing for
+query.  B<VAL_QUERY_NO_AC_DETAIL> causes the validator to only return the RRset 
+information in val_rc_rrset of the val_result_chain structure, leaving 
+the authentication chain details in val_rc_answer and val_rc_proofs empty (NULL). 
+B<VAL_QUERY_NO_DLV> causes the validator to disable DLV processing for
 this query.  The second flag is only available if the I<libval(3)> library has
 been compiled with DLV support.
 
@@ -158,6 +161,8 @@ interface.
   struct val_result_chain
   {
       val_status_t                     val_rc_status;
+      u_int8_t                        *val_rc_alias;
+      struct val_rrset_rec            *val_rc_rrset;
       struct val_authentication_chain *val_rc_answer;
       int                              val_rc_proof_count;
       struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
@@ -184,6 +189,16 @@ returned for the query.
 
 Number of proof elements stored in I<val_rc_proofs>. The number cannot exceed
 B<MAX_PROOFS>.
+
+=item I<val_rc_alias>
+
+For an val_result_chain element that points to a name alias, this field contains the target value.
+
+=item I<val_rc_rrset>
+
+For an val_result_chain element that contains a valid (not NULL) val_rc_answer field, 
+the val_rc_rrset field points to the top-most val_rrset_rec element in the val_rc_answer 
+authentication chain. 
 
 =item I<val_rc_status>
 
@@ -299,7 +314,7 @@ in ASCII format using I<p_val_status()>.
   struct val_authentication_chain
   {
       val_astatus_t                    val_ac_status;
-      struct val_rrset                *val_ac_rrset;
+      struct val_rrset_rec                *val_ac_rrset;
       struct val_authentication_chain *val_ac_trust;
   };
 
@@ -392,7 +407,7 @@ This field may contain one of the following values:
 
 =item I<val_ac_rrset>
 
-Pointer to an RRset of type I<struct val_rrset> obtained from the DNS response.
+Pointer to an RRset of type I<struct val_rrset_rec> obtained from the DNS response.
 
 =item I<val_ac_trust>
 
@@ -406,9 +421,9 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
 
 =over 4
 
-=item I<struct val_rrset>
+=item I<struct val_rrset_rec>
 
-  struct val_rrset
+  struct val_rrset_rec
   {
       u_int8_t      *val_msg_header;
       u_int16_t      val_msg_headerlen;
@@ -476,8 +491,8 @@ Any associated RRSIGs for the RDATA returned in I<val_rrset_data>.
   {
       u_int16_t        rr_rdata_length_h;
       u_int8_t        *rr_rdata;
-      val_astatus_t    rr_status;
       struct val_rr_rec   *rr_next;
+      val_astatus_t    rr_status;
   };
 
 =over 4
