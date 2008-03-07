@@ -285,8 +285,20 @@ get_cached_rrset(struct val_query_chain *matched_q,
     new_answer = NULL;
     while (next_answer) {
 
-        if ((tv.tv_sec < next_answer->rrs.val_rrset_ttl_x) &&
-            (next_answer->rrs.val_rrset_class_h == class_h)) {
+        if (tv.tv_sec >= next_answer->rrs.val_rrset_ttl_x) {
+            // TTL expiry reached
+            struct rrset_rec *temp;
+            if (prev) {
+                prev->rrs_next = next_answer->rrs_next;
+            } 
+            temp = next_answer;
+            next_answer = temp->rrs_next;
+            temp->rrs_next = NULL;
+            res_sq_free_rrset_recs(&temp);
+            continue;
+        }
+
+        if (next_answer->rrs.val_rrset_class_h == class_h) {
 
                 /* if matching type or cname indirection */
             if (((next_answer->rrs.val_rrset_type_h == type_h ||
@@ -516,7 +528,7 @@ get_nslist_from_cache(val_context_t *ctx,
     /*
      * find closest matching name zone_n 
      */
-    struct rrset_rec *nsrrset;
+    struct rrset_rec *nsrrset, *prev;
     u_int8_t       *name_n = NULL;
     u_int8_t       *tname_n = NULL;
     u_int8_t       *p;
@@ -524,11 +536,13 @@ get_nslist_from_cache(val_context_t *ctx,
     u_int8_t       *qname_n;
     struct zone_ns_map_t *map_e, *saved_map;
     u_int8_t       *tmp_zonecut_n = NULL;
+    struct timeval  tv;
     
     qname_n = matched_qfq->qfq_query->qc_name_n;
     qtype = matched_qfq->qfq_query->qc_type_h;
 
     *zonecut_n = NULL;
+    gettimeofday(&tv, NULL);
     
     LOCK_INIT(&map_rwlock, map_rwlock_init);
     LOCK_SH(&map_rwlock);
@@ -569,7 +583,23 @@ get_nslist_from_cache(val_context_t *ctx,
     LOCK_SH(&ns_rwlock);
 
     tmp_zonecut_n = NULL;
+    prev = NULL;
     for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
+
+        if (tv.tv_sec >= nsrrset->rrs.val_rrset_ttl_x) {
+            /* TTL expiry reached */
+            struct rrset_rec *temp;
+            if (prev) {
+                prev->rrs_next = nsrrset->rrs_next;
+            } 
+            temp = nsrrset;
+            nsrrset = temp->rrs_next;
+            temp->rrs_next = NULL;
+            res_sq_free_rrset_recs(&temp);
+            continue;
+        }
+
+        prev = nsrrset;
 
         if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {
             tname_n = nsrrset->rrs.val_rrset_name_n;
@@ -612,8 +642,9 @@ get_nslist_from_cache(val_context_t *ctx,
         memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
     }
 
+    /* only ask for complete name server lists - don't want to fetch glue here */
     bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_qfq, queries,
-                       ref_ns_list);
+                       ref_ns_list, 1);
     
     UNLOCK(&ns_rwlock);
 
