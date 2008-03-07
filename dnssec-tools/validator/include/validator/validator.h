@@ -185,9 +185,10 @@ extern          "C" {
 #define VAL_QFLAGS_ANY 0xff
 #define VAL_QFLAGS_USERMASK 0x0f
 #define VAL_QUERY_DONT_VALIDATE 0x01
-#define VAL_QUERY_MERGE_RRSETS 0x02
+#define VAL_QUERY_NO_AC_DETAIL 0x02
+#define VAL_QUERY_MERGE_RRSETS 0x03
 #ifdef LIBVAL_DLV
-#define VAL_QUERY_NO_DLV 0x04 
+#define VAL_QUERY_NO_DLV 0x08 
 #endif
 
     /*  
@@ -198,7 +199,11 @@ extern          "C" {
 #define VAL_QUERY_USING_DLV 0x20 
 #endif
 
-#define VAL_QFLAGS_AFFECTS_CACHING (0xf0 | VAL_QUERY_DONT_VALIDATE) 
+/* 
+ * if any of the internal query state flags or the VAL_QUERY_DONT_VALIDATE 
+ * flag is set, we need exact flags to match in a cached record
+ */ 
+#define VAL_Q_ONLY_MATCHING_FLAGS (0xf0 | VAL_QUERY_DONT_VALIDATE) 
 
 
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
@@ -262,11 +267,11 @@ extern          "C" {
     struct val_rr_rec {
         u_int16_t       rr_rdata_length_h;      /* RDATA length */
         u_int8_t       *rr_rdata;       /* Raw RDATA */
-        val_astatus_t   rr_status;
         struct val_rr_rec  *rr_next;
+        val_astatus_t   rr_status;
     };
 
-    struct val_rrset {
+    struct val_rrset_rec {
         /*
          * Header 
          */
@@ -288,7 +293,7 @@ extern          "C" {
     };
 
     struct rrset_rec {
-        struct val_rrset rrs;
+        struct val_rrset_rec rrs;
         u_int8_t       *rrs_zonecut_n;
         u_int8_t        rrs_cred;       /* SR_CRED_... */
         u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
@@ -342,19 +347,35 @@ extern          "C" {
 
     struct val_authentication_chain {
         val_astatus_t   val_ac_status;
-        struct val_rrset *val_ac_rrset;
+        struct val_rrset_rec *val_ac_rrset;
         struct val_authentication_chain *val_ac_trust;
+    };
+
+    struct rr_rec {
+        u_int16_t     rr_length;
+        u_int8_t      *rr_data;
+        struct rr_rec *rr_next;
     };
 
 #define MAX_PROOFS 4
     struct val_result_chain {
         val_status_t    val_rc_status;
+        u_int8_t        *val_rc_alias;
+        struct val_rrset_rec *val_rc_rrset; 
         struct val_authentication_chain *val_rc_answer;
         int             val_rc_proof_count;
         struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
         struct val_result_chain *val_rc_next;
     };
 
+    struct val_answer_chain {
+        val_status_t   val_ans_status;
+        char          *val_ans_name;
+        u_int16_t      val_ans_class;
+        u_int16_t      val_ans_type;
+        struct rr_rec *val_ans;
+        struct val_answer_chain *val_ans_next;
+    };
 
     typedef struct val_dnskey_rdata {
         u_int16_t       flags;
@@ -624,10 +645,8 @@ extern          "C" {
                                     const char *nodename,
                                     const char *servname,
                                     const struct addrinfo *hints,
-                                    struct val_addrinfo **res,
+                                    struct addrinfo **res,
                                     val_status_t * val_status);
-
-    void            val_freeaddrinfo(struct val_addrinfo *ainfo);
 
     int             val_getnameinfo(val_context_t * ctx,
                                     const struct sockaddr *sa,
@@ -659,6 +678,20 @@ extern          "C" {
                                       const char *addr,
                                       int len,
                                       int type, val_status_t * val_status);
+
+
+    /*
+     * A generic high-level function to return data for a given
+     * name, class, type tuple. 
+     */
+    int val_get_rrset(val_context_t *ctx,
+                      const char *name,
+                      u_int16_t class,
+                      u_int16_t type,
+                      u_int32_t flags,
+                      struct val_answer_chain **answers);
+
+    void val_free_answer_chain(struct val_answer_chain *answers);
 
 
     /*
