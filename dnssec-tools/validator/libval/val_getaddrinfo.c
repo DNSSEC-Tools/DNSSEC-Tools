@@ -30,22 +30,22 @@
 #include <errno.h>
 
 /*
- * Function: append_val_addrinfo
+ * Function: append_addrinfo
  *
- * Purpose: A utility function to link one val_addrinfo linked list to another.
+ * Purpose: A utility function to link one addrinfo linked list to another.
  *          The scope of this function is limited to this file.
  *
  * Parameters:
- *             a1 -- A pointer to the first val_addrinfo linked list
- *             a2 -- A pointer to the second val_addrinfo linked list
+ *             a1 -- A pointer to the first addrinfo linked list
+ *             a2 -- A pointer to the second addrinfo linked list
  *
  * Returns:
  *             a2 appended to a1.
  */
-static struct val_addrinfo *
-append_val_addrinfo(struct val_addrinfo *a1, struct val_addrinfo *a2)
+static struct addrinfo *
+append_addrinfo(struct addrinfo *a1, struct addrinfo *a2)
 {
-    struct val_addrinfo *a;
+    struct addrinfo *a;
     if (a1 == NULL)
         return a2;
     if (a2 == NULL)
@@ -61,32 +61,32 @@ append_val_addrinfo(struct val_addrinfo *a1, struct val_addrinfo *a2)
 }
 
 /*
- * Function: dup_val_addrinfo
+ * Function: dup_addrinfo
  *
- * Purpose: Duplicates just the current val_addrinfo struct and its contents;
- *          does not duplicate the entire val_addrinfo linked list.
- *          Sets the ai_next pointer of the new val_addrinfo structure to NULL.
+ * Purpose: Duplicates just the current addrinfo struct and its contents;
+ *          does not duplicate the entire addrinfo linked list.
+ *          Sets the ai_next pointer of the new addrinfo structure to NULL.
  *          The scope of this function is limited to this file.
  *
  * Parameters:
- *             a -- A pointer to a struct val_addrinfo variable which is to be
+ *             a -- A pointer to a struct addrinfo variable which is to be
  *                  duplicated.
  *
- * Returns: A pointer to the duplicated struct val_addrinfo value.
+ * Returns: A pointer to the duplicated struct addrinfo value.
  */
-static struct val_addrinfo *
-dup_val_addrinfo(const struct val_addrinfo *a)
+static struct addrinfo *
+dup_addrinfo(const struct addrinfo *a)
 {
-    struct val_addrinfo *new_a = NULL;
+    struct addrinfo *new_a = NULL;
 
     if (a == NULL)
         return NULL;
 
-    new_a = (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
+    new_a = (struct addrinfo *) malloc(sizeof(struct addrinfo));
     if (new_a == NULL)
         return NULL;
 
-    memset(new_a, 0, sizeof(struct val_addrinfo));
+    memset(new_a, 0, sizeof(struct addrinfo));
 
     new_a->ai_flags = a->ai_flags;
     new_a->ai_family = a->ai_family;
@@ -112,48 +112,9 @@ dup_val_addrinfo(const struct val_addrinfo *a)
         new_a->ai_canonname = NULL;
     }
     new_a->ai_next = NULL;
-
-    new_a->ai_val_status = a->ai_val_status;
-
     return new_a;
 }
 
-
-/*
- * Function: val_freeaddrinfo
- *
- * Purpose: Free memory allocated for a val_addrinfo structure.  This
- *          function frees the entire linked list.  This function is
- *          used to free the value returned by val_getaddrinfo().
- *          This validator API function is global in scope; it can be
- *          called from anywhere in the program.
- *
- * Parameters:
- *          ainfo -- A pointer to the first element of a val_addrinfo
- *                   linked list.
- *
- * Returns:
- *          This function has no return value.
- *
- * See also: val_getaddrinfo()
- */
-void
-val_freeaddrinfo(struct val_addrinfo *ainfo)
-{
-    struct val_addrinfo *acurr = ainfo;
-
-    while (acurr != NULL) {
-        struct val_addrinfo *anext = acurr->ai_next;
-        if (acurr->ai_addr) {
-            free(acurr->ai_addr);
-        }
-        if (acurr->ai_canonname) {
-            free(acurr->ai_canonname);
-        }
-        free(acurr);
-        acurr = anext;
-    }
-}
 
 /*
  * Function: val_setport
@@ -212,29 +173,27 @@ val_setport(struct sockaddr *saddr, const char *serv, const char *proto)
 /*
  * Function: process_service_and_hints
  *
- * Purpose: Add additional val_addrinfo structures to the list depending on
+ * Purpose: Add additional addrinfo structures to the list depending on
  *          the service name and hints.
  *          The scope of this function is limited to this file.
  *
  * Parameters:
- *          val_status -- The validation status
  *            servname -- Name of the service.  Can be NULL.
  *               hints -- Hints to influence the result.  Can be NULL.
- *                 res -- Points to a linked list of val_addrinfo structures.
+ *                 res -- Points to a linked list of addrinfo structures.
  *                        On return, this linked list may be augmented by
- *                        additional val_addrinfo structures depending on
+ *                        additional _addrinfo structures depending on
  *                        the service name and hints.
  *
  * Returns: 0 if successful, a non-zero value if failure.
  */
 static int
-process_service_and_hints(val_status_t val_status,
-                          const char *servname,
+process_service_and_hints(const char *servname,
                           const struct addrinfo *hints,
-                          struct val_addrinfo **res)
+                          struct addrinfo **res)
 {
-    struct val_addrinfo *a1 = NULL;
-    struct val_addrinfo *a2 = NULL;
+    struct addrinfo *a1 = NULL;
+    struct addrinfo *a2 = NULL;
     int             proto_found = 0;
     int             created_locally = 0;
 
@@ -243,10 +202,10 @@ process_service_and_hints(val_status_t val_status,
 
     if (*res == NULL) {
         created_locally = 1;
-        a1 = (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
+        a1 = (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (a1 == NULL)
             return EAI_MEMORY;
-        memset(a1, 0, sizeof(struct val_addrinfo));
+        memset(a1, 0, sizeof(struct addrinfo));
 
         *res = a1;
     } else {
@@ -269,8 +228,6 @@ process_service_and_hints(val_status_t val_status,
         return EAI_MEMORY;
     }
 
-    a1->ai_val_status = val_status;
-
     /*
      * Flags 
      */
@@ -285,7 +242,7 @@ process_service_and_hints(val_status_t val_status,
     }
 
     /*
-     * Check if we have to return val_addrinfo structures for the
+     * Check if we have to return addrinfo structures for the
      SOCK_STREAM socktype
      */
     if (hints == NULL || hints->ai_socktype == 0
@@ -299,14 +256,14 @@ process_service_and_hints(val_status_t val_status,
     }
 
     /*
-     * Check if we have to return val_addrinfo structures for the
+     * Check if we have to return addrinfo structures for the
      SOCK_DGRAM socktype
      */
     if ((hints == NULL || hints->ai_socktype == 0
          || hints->ai_socktype == SOCK_DGRAM)) {
 
         if (proto_found) {
-            a2 = dup_val_addrinfo(a1);
+            a2 = dup_addrinfo(a1);
             if (a2 == NULL)
                 return EAI_MEMORY;
             a1->ai_next = a2;
@@ -319,14 +276,14 @@ process_service_and_hints(val_status_t val_status,
     }
 
     /*
-     * Check if we have to return val_addrinfo structures for the
+     * Check if we have to return addrinfo structures for the
      SOCK_RAW socktype
      */
     if ((hints == NULL || hints->ai_socktype == 0
          || hints->ai_socktype == SOCK_RAW)) {
 
         if (proto_found) {
-            a2 = dup_val_addrinfo(a1);
+            a2 = dup_addrinfo(a1);
             // xxx-note: uggh. may have augmented caller's res ptr
             //     above, so I hate returning an error. But then
             //     returning 0 in the face of an error doesn't
@@ -357,7 +314,7 @@ process_service_and_hints(val_status_t val_status,
          */
         if (created_locally) {
             *res = NULL;
-            val_freeaddrinfo(a1);
+            freeaddrinfo(a1);
         }
         return EAI_SERVICE;
     }
@@ -375,9 +332,9 @@ process_service_and_hints(val_status_t val_status,
  *         nodename -- Name of the node.  Must not be NULL.
  *         servname -- Name of the service.  Can be NULL.
  *            hints -- Hints that influence the results.  Can be NULL.
- *              res -- Pointer to a variable of type val_addrinfo *.  On
+ *              res -- Pointer to a variable of type addrinfo *.  On
  *                     successful return, this will contain a linked list
- *                     of val_addrinfo structures.
+ *                     of addrinfo structures.
  *
  * Returns: 0 if successful, and a non-zero value on error.
  *
@@ -388,20 +345,11 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
                             const char *nodename,
                             const char *servname,
                             const struct addrinfo *hints,
-                            struct val_addrinfo **res,
-                            val_status_t *val_status)
+                            struct addrinfo **res)
 {
     struct hosts   *hs = NULL;
-    struct val_addrinfo *retval = NULL;
+    struct addrinfo *retval = NULL;
     int ret;
-    val_status_t local_ans_status = VAL_LOCAL_ANSWER;
-    int trusted = 0;
-
-    if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
-        if (trusted) {
-            local_ans_status = VAL_TRUSTED_ANSWER;
-        }
-    }
 
     if (res == NULL) 
         return 0;
@@ -418,13 +366,13 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         struct in_addr  ip4_addr;
         struct in6_addr ip6_addr;
         struct hosts   *h_prev = hs;
-        struct val_addrinfo *ainfo;
+        struct addrinfo *ainfo;
 
         ainfo =
-            (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
+            (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (!ainfo) {
             if (retval)
-                val_freeaddrinfo(retval);
+                freeaddrinfo(retval);
             return EAI_MEMORY;
         }
 
@@ -441,7 +389,7 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
 
         //val_log(ctx, LOG_DEBUG, "}");
 
-        memset(ainfo, 0, sizeof(struct val_addrinfo));
+        memset(ainfo, 0, sizeof(struct addrinfo));
         memset(&ip4_addr, 0, sizeof(struct in_addr));
         memset(&ip6_addr, 0, sizeof(struct in6_addr));
 
@@ -453,8 +401,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
                 (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
             if (saddr4 == NULL) {
                 if (retval)
-                    val_freeaddrinfo(retval);
-                val_freeaddrinfo(ainfo);
+                    freeaddrinfo(retval);
+                freeaddrinfo(ainfo);
                 return EAI_MEMORY;
             }
             memset(saddr4, 0, sizeof(struct sockaddr_in));
@@ -473,8 +421,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
                 malloc(sizeof(struct sockaddr_in6));
             if (saddr6 == NULL) {
                 if (retval)
-                    val_freeaddrinfo(retval);
-                val_freeaddrinfo(ainfo);
+                    freeaddrinfo(retval);
+                freeaddrinfo(ainfo);
                 return EAI_MEMORY;
             }
             memset(saddr6, 0, sizeof(struct sockaddr_in6));
@@ -488,27 +436,24 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         } else {
             val_log(ctx, LOG_WARNING, 
                     "get_addrinfo_from_etc_hosts(): Host is nether an A nor an AAAA address");
-            val_freeaddrinfo(ainfo);
+            freeaddrinfo(ainfo);
             continue;
         }
-
-        ainfo->ai_val_status = local_ans_status;
 
         /*
          * Expand the results based on servname and hints 
          */
-        if ((ret = process_service_and_hints
-            (ainfo->ai_val_status, servname, hints, &ainfo)) != 0) {
-            val_freeaddrinfo(ainfo);
+        if ((ret = process_service_and_hints(servname, hints, &ainfo)) != 0) {
+            freeaddrinfo(ainfo);
             if (retval)
-                val_freeaddrinfo(retval);
+                freeaddrinfo(retval);
             val_log(ctx, LOG_INFO, 
                     "get_addrinfo_from_etc_hosts(): Failed in process_service_and_hints()");
             return ret;
         }
 
         if (retval) {
-            retval = append_val_addrinfo(retval, ainfo);
+            retval = append_addrinfo(retval, ainfo);
         } else {
             retval = ainfo;
         }
@@ -521,7 +466,6 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
 
     *res = retval;
     if (retval) {
-        *val_status = local_ans_status;
         return 0;
     } else {
         return EAI_NONAME;
@@ -533,168 +477,147 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
  * Function: get_addrinfo_from_result
  *
  * Purpose: Converts the result value from the validator (which is
- *          in the form of a linked list of val_result_chain structures)
- *          into a liked list of val_addrinfo structures.
+ *          in the form of a linked list of val_answer_chain structures)
+ *          into a liked list of addrinfo structures.
  *          The scope of this function is limited to this file.
  *
  * Parameters:
  *              ctx -- The validation context.
- *          results -- The results obtained from the val_resolve_and_check
+ *          results -- The results obtained from the get_rr_set 
  *                     method in the validator API.
  *         servname -- The service name.  Can be NULL.
  *            hints -- Hints that influence the returned results.  Can be NULL.
- *              res -- A pointer to a variable of type struct val_addrinfo *.
+ *              res -- A pointer to a variable of type struct addrinfo *.
  *                     On successful return, this will contain a linked list
- *                     of val_addrinfo structures.
+ *                     of addrinfo structures.
  *
  * Returns: 0 on success, and a non-zero error-code on error.
  *
- * See also: get_addrinfo_from_etc_hosts(), val_addrinfo()
+ * See also: get_addrinfo_from_etc_hosts(), val_getaddrinfo()
  */
 static int
 get_addrinfo_from_result(const val_context_t * ctx,
-                         struct val_result_chain *results,
+                         struct val_answer_chain *results,
                          const char *servname,
                          const struct addrinfo *hints,
-                         struct val_addrinfo **res,
+                         struct addrinfo **res,
                          val_status_t *val_status)
 {
-    struct val_addrinfo *ainfo_head = NULL;
-    struct val_addrinfo *ainfo_tail = NULL;
-    struct val_result_chain *result = NULL;
+    struct addrinfo *ainfo_head = NULL;
+    struct addrinfo *ainfo_tail = NULL;
+    struct val_answer_chain *result = NULL;
     char           *canonname = NULL;
-    int validated = 1;
-    int trusted = 1;
+    int validated;
+    int trusted;
     int retval = 0;
 
     if (res == NULL)
         return 0;
 
+    /* 
+     * we may be calling get_addrinfo_from_result() repeatedly
+     * set the starting values for validated, trusted and the answer list
+     */
+    validated = val_isvalidated(*val_status)? 1 : 0;
+    trusted = val_istrusted(*val_status)? 1 : 0;
+    
+    ainfo_head = *res;
+    ainfo_tail = ainfo_head;
+    if (ainfo_tail) {
+        while (ainfo_tail->ai_next)
+            ainfo_tail = ainfo_tail->ai_next;
+    }
+
     if (!results) {
         *val_status = VAL_UNTRUSTED_ANSWER;
-        *res = NULL;
         val_log(ctx, LOG_INFO, "get_addrinfo_from_result(): results is null");
         return EAI_NONAME;
     }
 
     /*
-     * Loop for each result in the linked list of val_result_chain structures 
+     * Loop for each result in the linked list of val_answer_chain structures 
      */
 
-    for (result = results; result != NULL; result = result->val_rc_next) {
-        struct val_rrset *rrset;
+    for (result = results; result != NULL; result = result->val_ans_next) {
 
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(result->val_rc_status))) 
+        if (!(validated && val_isvalidated(result->val_ans_status)))
             validated = 0;
-        if (!(trusted && val_istrusted(result->val_rc_status)))
+        if (!(trusted && val_istrusted(result->val_ans_status)))
             trusted = 0;
 
-        if (result->val_rc_answer && 
-            NULL != (rrset = result->val_rc_answer->val_ac_rrset)) {
+        if (result->val_ans != NULL) {
+            struct rr_rec *rr = result->val_ans;
 
-            struct val_rr_rec  *rr = rrset->val_rrset_data;
-
-            /*
-             * Check if the AI_CANONNAME flag is specified 
-             */
-            if (hints && (hints->ai_flags & AI_CANONNAME)
-                && (canonname == NULL)) {
-                char            dname[NS_MAXDNAME];
-                memset(dname, 0, sizeof(dname));
-                if (ns_name_ntop
-                    (rrset->val_rrset_name_n, dname, sizeof(dname)) < 0) {
-                    /*
-                     * error 
-                     */
-                    val_log(ctx, LOG_INFO, "get_addrinfo_from_result(): Cannot parse cannonical name");
-                } else {
-                    canonname =
-                        (char *) malloc((strlen(dname) + 1) *
-                                        sizeof(char));
-                    if (canonname != NULL)
-                        memcpy(canonname, dname, strlen(dname) + 1);
-                    else
-                        return EAI_MEMORY;
-                }
-            }
+            canonname = result->val_ans_name;
 
             /*
              * Loop for each rr in the linked list of val_rr_rec structures 
              */
             while (rr != NULL) {
-                struct val_addrinfo *ainfo = NULL;
+                struct addrinfo *ainfo = NULL;
 
-                ainfo = (struct val_addrinfo *)
-                    malloc(sizeof(struct val_addrinfo));
+                ainfo = (struct addrinfo *)
+                    malloc(sizeof(struct addrinfo));
                 if (ainfo == NULL) {
-                    if (canonname)
-                        FREE(canonname);
                     return EAI_MEMORY;
                 }
-                memset(ainfo, 0, sizeof(struct val_addrinfo));
+                memset(ainfo, 0, sizeof(struct addrinfo));
 
                 /*
                  * Check if the record-type is A 
                  */
-                if (rrset->val_rrset_type_h == ns_t_a) {
+                if (result->val_ans_type == ns_t_a) {
                     struct sockaddr_in *saddr4 = (struct sockaddr_in *)
                         malloc(sizeof(struct sockaddr_in));
                     if (saddr4 == NULL) {
-                        if (ainfo_head)
-                            val_freeaddrinfo(ainfo_head);
-                        val_freeaddrinfo(ainfo);
-                        if (canonname)
-                            FREE(canonname);
+                        freeaddrinfo(ainfo);
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type A found");
                     saddr4->sin_family = AF_INET;
                     ainfo->ai_family = AF_INET;
                     ainfo->ai_addrlen = sizeof(struct sockaddr_in);
-                    memcpy(&(saddr4->sin_addr.s_addr), rr->rr_rdata,
-                           rr->rr_rdata_length_h);
+                    memcpy(&(saddr4->sin_addr.s_addr), rr->rr_data,
+                           rr->rr_length);
                     ainfo->ai_addr = (struct sockaddr *) saddr4;
                 }
                 /*
                  * Check if the record-type is AAAA 
                  */
-                else if (rrset->val_rrset_type_h == ns_t_aaaa) {
+                else if (result->val_ans_type == ns_t_aaaa) {
                     struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)
                         malloc(sizeof(struct sockaddr_in6));
                     if (saddr6 == NULL) {
-                        if (ainfo_head)
-                            val_freeaddrinfo(ainfo_head);
-                        val_freeaddrinfo(ainfo);
-                        if (canonname)
-                            FREE(canonname);
+                        freeaddrinfo(ainfo);
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type AAAA found");
                     saddr6->sin6_family = AF_INET6;
                     ainfo->ai_family = AF_INET6;
                     ainfo->ai_addrlen = sizeof(struct sockaddr_in6);
-                    memcpy(&(saddr6->sin6_addr.s6_addr), rr->rr_rdata,
-                           rr->rr_rdata_length_h);
+                    memcpy(&(saddr6->sin6_addr.s6_addr), rr->rr_data,
+                           rr->rr_length);
                     ainfo->ai_addr = (struct sockaddr *) saddr6;
                 } else {
-                    val_freeaddrinfo(ainfo);
+                    freeaddrinfo(ainfo);
                     rr = rr->rr_next;
                     continue;
                 }
 
-                if (canonname)
+                /*
+                 * Check if the AI_CANONNAME flag is specified 
+                 */
+                if (hints && (hints->ai_flags & AI_CANONNAME) && canonname) {
                     ainfo->ai_canonname = strdup(canonname);
-                ainfo->ai_val_status = result->val_rc_status;
+                }
 
                 /*
                  * Expand the results based on servname and hints 
                  */
-                if ((retval = process_service_and_hints(ainfo->ai_val_status, 
-                                              servname, hints, &ainfo))
+                if ((retval = process_service_and_hints(servname, hints, &ainfo))
                     != 0) {
-                    val_freeaddrinfo(ainfo_head);
-                    val_freeaddrinfo(ainfo);
+                    freeaddrinfo(ainfo);
                     val_log(ctx, LOG_INFO, 
                         "get_addrinfo_from_result(): Failed in process_service_and_hints()");
                     return retval;
@@ -702,6 +625,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
 
                 if (ainfo_head == NULL) {
                     ainfo_head = ainfo;
+                    *res = ainfo_head;
                 } else {
                     ainfo_tail->ai_next = ainfo;
                 }
@@ -711,73 +635,73 @@ get_addrinfo_from_result(const val_context_t * ctx,
 
                 rr = rr->rr_next;
             }
-        } else if (result->val_rc_proof_count) {
-            if (result->val_rc_status == VAL_NONEXISTENT_NAME ||
-                result->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
-
-                    retval = EAI_NONAME;
-            } else if (result->val_rc_status == VAL_NONEXISTENT_TYPE ||
-                       result->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN) {
-                    retval = EAI_NODATA;
-            }
+        } else if (val_does_not_exist(result->val_ans_status)) {
+            *val_status = result->val_ans_status;
         }
-
     }
 
-    if (validated)
-        *val_status = VAL_VALIDATED_ANSWER;
-    else if (trusted)
-        *val_status = VAL_TRUSTED_ANSWER;
-    else
-        *val_status = VAL_UNTRUSTED_ANSWER;
-
-    if (canonname)
-        free(canonname);
-
-    *res = ainfo_head;
-    if (ainfo_head) { 
+    if (!ainfo_head) {
+        /* if data is validated, we already have the correct *val_status */
+        if (trusted && !validated) {
+            if (*val_status == VAL_NONEXISTENT_NAME ||
+                *val_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
+               *val_status = VAL_NONEXISTENT_NAME_NOCHAIN; 
+            } else {
+               *val_status = VAL_NONEXISTENT_TYPE_NOCHAIN; 
+            } 
+        }else if (trusted == 0) {
+            *val_status = VAL_UNTRUSTED_ANSWER;
+        }
+        retval = EAI_NONAME;
+    } else {
+        if (validated)
+            *val_status = VAL_VALIDATED_ANSWER;
+        else if (trusted)
+            *val_status = VAL_TRUSTED_ANSWER;
+        else
+            *val_status = VAL_UNTRUSTED_ANSWER;
         retval = 0;
     }
-    
+
     return retval;
 }                               /* get_addrinfo_from_result() */
 
 /*
  * Function: get_addrinfo_from_dns
  *
- * Purpose: Resolve the nodename from DNS and fill in the val_addrinfo
+ * Purpose: Resolve the nodename from DNS and fill in the addrinfo
  *          return value.  The scope of this function is limited to this
- *          file, and is called from val_addrinfo().
+ *          file, and is called from val_getaddrinfo().
  *
  * Parameters:
  *              ctx -- The validation context.
  *         nodename -- The name of the node.  This value must not be NULL.
  *         servname -- The service name.  Can be NULL.
  *            hints -- Hints to influence the return value.  Can be NULL.
- *              res -- A pointer to a variable of type (struct val_addrinfo *) to
+ *              res -- A pointer to a variable of type (struct addrinfo *) to
  *                     hold the result.  The caller must free this return value
- *                     using val_freeaddrinfo().
+ *                     using freeaddrinfo().
  *
  * Returns: 0 on success and a non-zero value on error.
  *
  * See also: val_getaddrinfo()
  */
+
 static int
 get_addrinfo_from_dns(val_context_t * ctx,
                       const char *nodename,
                       const char *servname,
                       const struct addrinfo *hints,
-                      struct val_addrinfo **res,
+                      struct addrinfo **res,
                       val_status_t *val_status)
 {
-    struct val_result_chain *results = NULL;
-    struct val_addrinfo *ainfo = NULL;
-    u_char          name_n[NS_MAXCDNAME];
+    struct val_answer_chain *results = NULL;
+    struct addrinfo *ainfo = NULL;
     int             ret = 0;
-    val_status_t val_status_a = VAL_VALIDATED_ANSWER;
-    val_status_t val_status_aaaa = VAL_VALIDATED_ANSWER;
 
     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns() called");
+
+    *val_status = VAL_VALIDATED_ANSWER;
 
     if (res == NULL ||
         (hints != NULL && 
@@ -785,9 +709,8 @@ get_addrinfo_from_dns(val_context_t * ctx,
          hints->ai_family != AF_INET &&
          hints->ai_family != AF_INET6)) {
 
-        val_status_a = VAL_UNTRUSTED_ANSWER;
-        val_status_aaaa = VAL_UNTRUSTED_ANSWER;
-        goto done;
+        *val_status = VAL_UNTRUSTED_ANSWER;
+        return EAI_NONAME; 
     }
     
     /*
@@ -795,56 +718,19 @@ get_addrinfo_from_dns(val_context_t * ctx,
      */
     if (hints == NULL || hints->ai_family == AF_UNSPEC
         || hints->ai_family == AF_INET) {
-        int             retval = 0;
 
         val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for A records");
 
-        /*
-         * Query the validator 
-         */
-        if ((retval =
-             ns_name_pton(nodename, name_n, sizeof(name_n))) != -1) {
-            if ((retval =
-                 val_resolve_and_check(ctx, name_n, ns_c_in, ns_t_a, 0,
-                                       &results)) != VAL_NO_ERROR) {
-                val_log(ctx, LOG_INFO, 
-                        "get_addrinfo_from_dns(): val_resolve_and_check failed - %s", 
-                        p_val_err(retval));
-            }
-        } else {
-            val_log(ctx, LOG_INFO, "get_addrinfo_from_dns(): Cannot parse name");
-        }
+        if ((VAL_NO_ERROR == 
+                    val_get_rrset(ctx, nodename, ns_c_in, ns_t_a, 0, &results)) 
+                && results) {
+            
+            ret = get_addrinfo_from_result(ctx, results, servname,
+                                         hints, &ainfo, val_status);
 
-        /*
-         * Convert the validator result into val_addrinfo 
-         */
-        if (results && 
-            (results->val_rc_answer || 
-            (results->val_rc_proof_count > 0)) &&
-            retval == VAL_NO_ERROR) {
-
-            struct val_addrinfo *ainfo_new = NULL;
-            ret =
-                get_addrinfo_from_result(ctx, results, servname,
-                                         hints, &ainfo_new, &val_status_a);
-            if (ainfo_new) {
-                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): A records found");
-                ainfo = append_val_addrinfo(ainfo, ainfo_new);
-            } else {
-                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): A records not found");
-            }
-        } else {
-            val_log(ctx, LOG_INFO, "get_addrinfo_from_dns(): results for A are NULL or empty");
-            val_status_a = VAL_UNTRUSTED_ANSWER; 
-        }
-        
-        val_free_result_chain(results);
-        results = NULL;
-        if (ret == EAI_SERVICE) {
-            if (ainfo)
-                val_freeaddrinfo(ainfo);
-            goto done;
-        }
+            val_free_answer_chain(results);
+            results = NULL;
+        } 
     } 
 
     /*
@@ -852,73 +738,23 @@ get_addrinfo_from_dns(val_context_t * ctx,
      */
     if (hints == NULL || hints->ai_family == AF_UNSPEC
         || hints->ai_family == AF_INET6) {
-        int             retval = 0;
 
         val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for AAAA records");
+        
+        if ((VAL_NO_ERROR == 
+                    val_get_rrset(ctx, nodename, ns_c_in, ns_t_aaaa, 0, &results)) 
+                && results) {
+            ret = get_addrinfo_from_result(ctx, results, servname,
+                                         hints, &ainfo, val_status);
 
-        /*
-         * Query the validator 
-         */
-        if ((retval =
-             ns_name_pton(nodename, name_n, sizeof(name_n))) != -1) {
-            if ((retval =
-                 val_resolve_and_check((val_context_t *) ctx, name_n,
-                                       ns_c_in, ns_t_aaaa, 0,
-                                       &results)) != VAL_NO_ERROR) {
-                val_log(ctx, LOG_DEBUG, 
-                        "get_addrinfo_from_dns(): val_resolve_and_check failed - %s", 
-                        p_val_err(retval));
-            }
-        } else {
-            val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): Cannot parse name");
-        }
-
-        /*
-         * Convert the validator result into val_addrinfo 
-         */
-        if (results && 
-            (results->val_rc_answer || 
-            (results->val_rc_proof_count > 0)) &&
-            retval == VAL_NO_ERROR) {
-
-            struct val_addrinfo *ainfo_new = NULL;
-            ret =
-                get_addrinfo_from_result(ctx, results, servname,
-                                         hints, &ainfo_new, &val_status_aaaa);
-            if (ainfo_new) {
-                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): AAAA records found");
-                ainfo = append_val_addrinfo(ainfo, ainfo_new);
-            } else {
-                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): AAAA records not found");
-            }
-        } else {
-            val_log(ctx, LOG_INFO, "get_addrinfo_from_dns(): results for AAAA are NULL or empty");
-            val_status_aaaa = VAL_UNTRUSTED_ANSWER; 
-        }
-        val_free_result_chain(results);
-        results = NULL;
-        if (ret == EAI_SERVICE) {
-            if (ainfo)
-                val_freeaddrinfo(ainfo);
-
-            goto done;
-        }
+            val_free_answer_chain(results);
+            results = NULL;
+        } 
     } 
 
-done:
-
-    if (val_isvalidated(val_status_a) &&
-            val_isvalidated(val_status_aaaa)) {
-        *val_status = VAL_VALIDATED_ANSWER;
-    } else if (val_istrusted(val_status_a) &&
-                   val_istrusted(val_status_aaaa)) {
-        *val_status = VAL_TRUSTED_ANSWER;
-    } else {
-        *val_status = VAL_UNTRUSTED_ANSWER;
-    }
-
+    *res = ainfo;
     if (ainfo) {
-        *res = ainfo;
+        /* some results were available */
         ret = 0;
     } else if (ret == 0) { 
         ret = EAI_NONAME;
@@ -948,9 +784,9 @@ done:
  *     [IN]  hints: Specifies  the  preferred socket type, or protocol.
  *                A NULL hints specifies that any network address or
  *                protocol is acceptable.
- *     [OUT] res: Points to a dynamically-allocated link list of val_addrinfo
+ *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
  *                structures. The caller must free this return value
- *                using val_freeaddrinfo().
+ *                using freeaddrinfo().
  *
  *     Note that at least one of nodename or servname must be a non-NULL value.
  *
@@ -961,13 +797,13 @@ done:
 int
 val_getaddrinfo(val_context_t * context,
                 const char *nodename, const char *servname,
-                const struct addrinfo *hints, struct val_addrinfo **res,
+                const struct addrinfo *hints, struct addrinfo **res,
                 val_status_t *val_status)
 {
     struct in_addr  ip4_addr;
     struct in6_addr ip6_addr;
-    struct val_addrinfo *ainfo4 = NULL;
-    struct val_addrinfo *ainfo6 = NULL;
+    struct addrinfo *ainfo4 = NULL;
+    struct addrinfo *ainfo6 = NULL;
     int             is_ip4 = 0;
     int             is_ip6 = 0;
     int             retval = 0;
@@ -1039,7 +875,7 @@ val_getaddrinfo(val_context_t * context,
             goto done;
         }
         ainfo4 =
-            (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
+            (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (ainfo4 == NULL) {
             free(saddr4);
             retval = EAI_MEMORY;
@@ -1048,7 +884,7 @@ val_getaddrinfo(val_context_t * context,
 
         is_ip4 = 1;
 
-        memset(ainfo4, 0, sizeof(struct val_addrinfo));
+        memset(ainfo4, 0, sizeof(struct addrinfo));
         memset(saddr4, 0, sizeof(struct sockaddr_in));
 
         saddr4->sin_family = AF_INET;
@@ -1058,12 +894,10 @@ val_getaddrinfo(val_context_t * context,
         saddr4 = NULL;
         ainfo4->ai_addrlen = sizeof(struct sockaddr_in);
         ainfo4->ai_canonname = NULL;
-        ainfo4->ai_val_status = local_ans_status;
 
-        if ((retval = process_service_and_hints(ainfo4->ai_val_status, servname,
-                                      cur_hints, &ainfo4))
+        if ((retval = process_service_and_hints(servname, cur_hints, &ainfo4))
             != 0) {
-            val_freeaddrinfo(ainfo4);
+            freeaddrinfo(ainfo4);
             val_log(context, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
@@ -1096,7 +930,7 @@ val_getaddrinfo(val_context_t * context,
             goto done;
         }
         ainfo6 =
-            (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
+            (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (ainfo6 == NULL) {
             free(saddr6);
             retval = EAI_MEMORY;
@@ -1105,7 +939,7 @@ val_getaddrinfo(val_context_t * context,
 
         is_ip6 = 1;
 
-        memset(ainfo6, 0, sizeof(struct val_addrinfo));
+        memset(ainfo6, 0, sizeof(struct addrinfo));
         memset(saddr6, 0, sizeof(struct sockaddr_in6));
 
         saddr6->sin6_family = AF_INET6;
@@ -1115,19 +949,17 @@ val_getaddrinfo(val_context_t * context,
         saddr6 = NULL;
         ainfo6->ai_addrlen = sizeof(struct sockaddr_in6);
         ainfo6->ai_canonname = NULL;
-        ainfo6->ai_val_status = local_ans_status;
 
-        if ((retval = process_service_and_hints(ainfo6->ai_val_status, servname,
-                                      cur_hints, &ainfo6))
+        if ((retval = process_service_and_hints(servname, cur_hints, &ainfo6))
             != 0) {
-            val_freeaddrinfo(ainfo6);
+            freeaddrinfo(ainfo6);
             val_log(context, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
         }
 
         if (NULL != *res) {
-            *res = append_val_addrinfo(*res, ainfo6);
+            *res = append_addrinfo(*res, ainfo6);
         } else {
             *res = ainfo6;
         }
@@ -1150,11 +982,18 @@ val_getaddrinfo(val_context_t * context,
        * * XXX: TODO check the order in the ETC_HOST_CONF file
        */
       if (get_addrinfo_from_etc_hosts(context, nodename, servname,
-				      cur_hints, res, val_status)
-	  == EAI_SERVICE) {
-	retval = EAI_SERVICE;
+				      cur_hints, res) == EAI_SERVICE) {
+	        retval = EAI_SERVICE;
       } else if (*res != NULL) {
-	retval = 0;
+	      retval = 0;
+          int trusted = 0;
+          if (VAL_NO_ERROR == val_is_local_trusted(context, &trusted)) {
+              if (trusted) {
+                  *val_status = VAL_TRUSTED_ANSWER;
+              } else {
+                  *val_status = VAL_LOCAL_ANSWER;
+              }
+          }
       }
 
       /*
@@ -1302,16 +1141,15 @@ val_getnameinfo(val_context_t * ctx,
 
     const int       addr_size = 100;
     char            domain_string[addr_size], number_string[addr_size];
-    u_int8_t        wire_addr[addr_size];
     const char     *theAddress = NULL;
     int             val_rnc_status = 0, ret_status = 0;
 
-    struct val_result_chain *res;
-    struct val_result_chain *val_res = NULL;
+    struct val_answer_chain *res;
+    struct val_answer_chain *val_res = NULL;
     int retval;
     val_status_t local_ans_status = VAL_LOCAL_ANSWER;
-    int trusted = 0;
 
+    int trusted;
     if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
         if (trusted) {
             local_ans_status = VAL_TRUSTED_ANSWER;
@@ -1319,7 +1157,7 @@ val_getnameinfo(val_context_t * ctx,
     }
 
     /*
-     * no need to check context, val_resolve_and_check will check and
+     * no need to check context, val_get_rrset will check and
      * create if necessary 
      */
 
@@ -1330,10 +1168,11 @@ val_getnameinfo(val_context_t * ctx,
     if (!val_status || !sa)
       return EAI_FAIL;
 
+    *val_status = VAL_UNTRUSTED_ANSWER;
+
     if (!host && !serv) 
       return EAI_NONAME;
 
-    *val_status = VAL_DONT_KNOW;
 
     /*
      * should the services be looked up 
@@ -1385,7 +1224,6 @@ val_getnameinfo(val_context_t * ctx,
        */
       memset(number_string, 0, sizeof(char) * addr_size);
       memset(domain_string, 0, sizeof(char) * addr_size);
-      memset(wire_addr, 0, sizeof(u_int8_t) * addr_size);
 
       if ((0 != (ret_status =
 		 address_to_string(theAddress, sa->sa_family,
@@ -1398,92 +1236,71 @@ val_getnameinfo(val_context_t * ctx,
 	return ret_status;
       }
 
-      ns_name_pton(domain_string, wire_addr, addr_size);
-
       /*
        * set numeric value initially for either NI_NUMERICHOST or failed lookup
        */
       strncpy(host, number_string, hostlen);
       *val_status = local_ans_status;
     }
-val_log(ctx, LOG_DEBUG, "val_getnameinfo(): pre-val flags(%d)\n",
-	      flags);
+    val_log(ctx, LOG_DEBUG, "val_getnameinfo(): pre-val flags(%d)\n", flags);
     if (!(flags & NI_NUMERICHOST) || (flags & NI_NAMEREQD)) {
-      int validated = 1;
-      int trusted = 1;
 
-      val_log(ctx, LOG_DEBUG, "val_getnameinfo(): resolve_and_check host flags(%d)\n",
+      val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)\n",
 	      flags);
 
-      if (VAL_NO_ERROR != (retval = val_resolve_and_check(ctx,       /*val_context_t*  */
-							  wire_addr, /*u_char *wire_domain_name */
-							  ns_c_in,   /*const u_int16_t q_class */
-							  ns_t_ptr,  /*const u_int16_t type */
-							  0, /*const u_int8_t flags */
-                                                             /*
-                                                              * struct val_result_chain **results 
-                                                              */
-							  &val_res))) {
+      if (VAL_NO_ERROR != 
+              (retval = val_get_rrset(ctx,       /*val_context_t*  */
+                                      domain_string, /*u_char *wire_domain_name */
+                                      ns_c_in,   /*const u_int16_t q_class */
+                                      ns_t_ptr,  /*const u_int16_t type */
+                                      0, /*const u_int8_t flags */
+                                      &val_res))) { /* struct val_answer_chain **results */
 	val_log(ctx, LOG_ERR, 
-		"val_getnameinfo(): val_resolve_and_check failed - %s", 
+		"val_getnameinfo(): val_get_rrset failed - %s", 
 		p_val_err(retval));
+        *val_status = VAL_UNTRUSTED_ANSWER;
 	return EAI_FAIL;
       }
 
       if (!val_res) {
 	val_log(ctx, LOG_ERR, "val_getnameinfo(): EAI_MEMORY\n");
+        *val_status = VAL_UNTRUSTED_ANSWER;
 	return EAI_MEMORY;
       }
 
       val_rnc_status = 0;
 
-      for (res = val_res; res; res=res->val_rc_next) {
-
+      for (res = val_res; res; res=res->val_ans_next) {
+        *val_status = res->val_ans_status;
 	/* set the value of merged trusted and validated status values */
-	if (!(validated && val_isvalidated(res->val_rc_status))) 
-	  validated = 0;
-	if (!(trusted && val_istrusted(res->val_rc_status)))
-	  trusted = 0;
-	if (res->val_rc_answer &&
-	    res->val_rc_answer->val_ac_rrset &&
-	    res->val_rc_answer->val_ac_rrset->val_rrset_data &&
-	    ns_t_ptr == res->val_rc_answer->val_ac_rrset->val_rrset_type_h) {
-	  if (host && (hostlen > 0) && !(flags && NI_NUMERICHOST)) 
-	    ns_name_ntop(res->val_rc_answer->
-			 val_ac_rrset->val_rrset_data->rr_rdata, 
+	if (res->val_ans && ns_t_ptr == res->val_ans_type) {
+	  if (host && (hostlen > 0) 
+              && (hostlen <= res->val_ans->rr_length) 
+              && !(flags && NI_NUMERICHOST))  {
+	    ns_name_ntop(res->val_ans->rr_data,
 			 host, hostlen);
+      }
 	  break;
-	} else if (res->val_rc_proof_count) {
+	} else if (val_does_not_exist(res->val_ans_status)) {
                     
-	  if ((res->val_rc_status == VAL_NONEXISTENT_TYPE) ||
-	      (res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
+	  if ((res->val_ans_status == VAL_NONEXISTENT_TYPE) ||
+	      (res->val_ans_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
 	    val_rnc_status = EAI_NODATA;
-	  } else if ((res->val_rc_status == VAL_NONEXISTENT_NAME) ||
-		     (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
+	  } else if ((res->val_ans_status == VAL_NONEXISTENT_NAME) ||
+		     (res->val_ans_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
 	    val_rnc_status = EAI_NONAME;
 	  }
 	  break;
 	}
       }
-
-      if (res) {
-	if (validated)
-	  *val_status = VAL_VALIDATED_ANSWER;
-	else if (trusted)
-	  *val_status = VAL_TRUSTED_ANSWER;
-	else
-	  *val_status = VAL_UNTRUSTED_ANSWER;
-      } else {
-	*val_status = VAL_UNTRUSTED_ANSWER;
-      }
                     
       val_log(ctx, LOG_DEBUG,
-	      "val_getnameinfo(): val_resolve_and_check for host %s, returned %s with lookup status %d and validator status %d : %s",
+	      "val_getnameinfo(): val_get_rrset for host %s, returned %s with lookup status %d and validator status %d : %s",
 	      domain_string, host,
 	      val_rnc_status, 
-	      *val_status, p_val_error(*val_status));
+	      *val_status, p_val_status(*val_status));
 
-      val_free_result_chain(val_res);
+      val_free_answer_chain(val_res);
     }
 
     /*
@@ -1515,16 +1332,13 @@ val_gethostbyaddr_r(val_context_t * ctx,
 
     const int       addr_size = 100;
     char            domain_string[addr_size];
-    u_int8_t        wire_addr[addr_size];
     int             ret_status = 0, val_rnc_status = 0, bufused = 0;
-    struct val_result_chain *val_res = NULL;
-    struct val_result_chain *res;
-    int validated = 1;
-    int trusted = 1;
+    struct val_answer_chain *val_res = NULL;
+    struct val_answer_chain *res;
     int retval;
     
     /*
-     * no need to check context, val_resolve_and_check will check and
+     * no need to check context, val_get_rrset will check and
      * create if necessary 
      */
 
@@ -1544,7 +1358,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
     ret->h_name = NULL;
     ret->h_aliases = NULL;
     ret->h_addr_list = NULL;
-    *val_status = VAL_DONT_KNOW;
+    *val_status = VAL_UNTRUSTED_ANSWER;
 
     /*
      * get the address values, only support IPv4 and IPv6 
@@ -1561,7 +1375,6 @@ val_gethostbyaddr_r(val_context_t * ctx,
     }
 
     memset(domain_string, 0, sizeof(char) * addr_size);
-    memset(wire_addr, 0, sizeof(u_int8_t) * addr_size);
 
     if (0 !=
         (ret_status = address_to_reverse_domain(addr, type,
@@ -1570,8 +1383,6 @@ val_gethostbyaddr_r(val_context_t * ctx,
         *h_errnop = ret_status;
         return ret_status;
     }
-
-    ns_name_pton(domain_string, wire_addr, addr_size);
 
     /*
      * if there is memory, add the address to hostent's address list 
@@ -1588,18 +1399,15 @@ val_gethostbyaddr_r(val_context_t * ctx,
         return (NO_RECOVERY);
     }
 
-    if (VAL_NO_ERROR != (retval = val_resolve_and_check(ctx,       /* val_context_t *  */
-                                                     wire_addr, /* u_char * wire_domain_name */
-                                                     ns_c_in,   /* const u_int16_t q_class */
-                                                     ns_t_ptr,  /* const u_int16_t type */
-                                                     0, /* const u_int8_t flags */
-                                                     /*
-                                                      * struct val_result_chain **results 
-                                                      */
-                                                     &val_res))) {
+    if (VAL_NO_ERROR != (retval = val_get_rrset(ctx,   /* val_context_t *  */
+                                                domain_string, /* domain name */ 
+                                                ns_c_in,   /* const u_int16_t q_class */
+                                                ns_t_ptr,  /* const u_int16_t type */
+                                                0,
+                                                &val_res))) { /* struct val_answer_chain **results */
 
         val_log(ctx, LOG_ERR, 
-                "val_gethostbyaddr_r(): val_resolve_and_check failed - %s", p_val_err(retval));
+                "val_gethostbyaddr_r(): val_get_rrset failed - %s", p_val_err(retval));
         *h_errnop = NO_RECOVERY;
         return NO_RECOVERY;
     }
@@ -1611,31 +1419,24 @@ val_gethostbyaddr_r(val_context_t * ctx,
 
     val_rnc_status = 0;
 
-    for (res = val_res; res; res=res->val_rc_next) {
+    for (res = val_res; res; res=res->val_ans_next) {
+
+        *val_status = res->val_ans_status;
+
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(res->val_rc_status))) 
-            validated = 0;
-        if (!(trusted && val_istrusted(res->val_rc_status)))
-            trusted = 0;
-        if (res->val_rc_answer &&
-            res->val_rc_answer->val_ac_rrset &&
-            res->val_rc_answer->val_ac_rrset->val_rrset_data &&
-            res->val_rc_answer->val_ac_rrset->val_rrset_data->rr_rdata &&
-            ns_t_ptr == res->val_rc_answer->val_ac_rrset->val_rrset_type_h) {
-
-            struct val_rrset *rrset = res->val_rc_answer->val_ac_rrset;
-            struct val_rr_rec  *rr = rrset->val_rrset_data, *rr_it = NULL;
+        struct rr_rec  *rr = res->val_ans;
+        if (rr) {
+            struct rr_rec  *rr_it = NULL;
             int             count = 0, aliases_sz = 0;
-
             /*
              * if the buffer has enough room add the first host address 
              */
-            if ((1 + rr->rr_rdata_length_h) < (buflen - bufused)) {
+            if ((1 + rr->rr_length) < (buflen - bufused)) {
                 /*
                  * setup hostent 
                  */
                 ret->h_name = buf + bufused;
-                ns_name_ntop(rr->rr_rdata, ret->h_name,
+                ns_name_ntop(rr->rr_data, ret->h_name,
                              (buflen - bufused));
                 bufused = bufused + strlen(ret->h_name) + 1;
 
@@ -1649,7 +1450,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
                      */
                     do {
                         count++;
-                        aliases_sz = aliases_sz + rr_it->rr_rdata_length_h + 1;
+                        aliases_sz = aliases_sz + rr_it->rr_length + 1;
                     } while (NULL != (rr_it = rr_it->rr_next));
 
                     /*
@@ -1671,7 +1472,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
                         count = 0;
                         do {
                             ret->h_aliases[count] = buf + bufused;
-                            ns_name_ntop(rr_it->rr_rdata,
+                            ns_name_ntop(rr_it->rr_data,
                                          ret->h_aliases[count],
                                         (buflen - bufused));
                             bufused =
@@ -1694,16 +1495,15 @@ val_gethostbyaddr_r(val_context_t * ctx,
                 *h_errnop = NO_RECOVERY;
                 return NO_RECOVERY;
             }
-
             break;
 
-        } else if (res->val_rc_proof_count) {
+        } else if  (val_does_not_exist(res->val_ans_status)) {
                     
-            if ((res->val_rc_status == VAL_NONEXISTENT_TYPE) ||
-                (res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
+            if ((res->val_ans_status == VAL_NONEXISTENT_TYPE) ||
+                (res->val_ans_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
                     val_rnc_status = NO_DATA;
-            } else if ((res->val_rc_status == VAL_NONEXISTENT_NAME) ||
-                       (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
+            } else if ((res->val_ans_status == VAL_NONEXISTENT_NAME) ||
+                       (res->val_ans_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
                    val_rnc_status = HOST_NOT_FOUND;
             }
 
@@ -1716,13 +1516,6 @@ val_gethostbyaddr_r(val_context_t * ctx,
         *h_errnop = NO_RECOVERY;
         return NO_RECOVERY;
     }
-
-    if (validated)
-        *val_status = VAL_VALIDATED_ANSWER;
-    else if (trusted)
-        *val_status = VAL_TRUSTED_ANSWER;
-    else
-        *val_status = VAL_UNTRUSTED_ANSWER;
 
     /*
      * no error, set result 
@@ -1737,8 +1530,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
 /*
  * A old version of gethostbyaddr for use with validator
  */
-struct hostent
-               *
+struct hostent *
 val_gethostbyaddr(val_context_t * ctx,
                   const char *addr,
                   int len, int type, val_status_t * val_status)
