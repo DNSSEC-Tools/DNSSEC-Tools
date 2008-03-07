@@ -116,7 +116,7 @@ extern          "C" {
     struct val_digested_auth_chain {
         val_astatus_t   val_ac_status;
         union {
-            struct val_rrset *val_ac_rrset;
+            struct val_rrset_rec *val_ac_rrset;
             struct val_rrset_digested _as;
         };
         struct val_query_chain *val_ac_query;
