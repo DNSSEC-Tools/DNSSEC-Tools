@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-getaddr - command-line test program for the I<val_gettaddrinfo()> function 
+getaddr - command-line test program for the I<val_getaddrinfo()> function 
 
 =head1 SYNOPSIS
 
@@ -13,7 +13,7 @@ getaddr - command-line test program for the I<val_gettaddrinfo()> function
 This utility is a command-line wrapper around the I<val_getaddrinfo()> function. 
 It invokes the I<val_getaddrinfo()> operation for the given command-line
 arguments and displays the return code from the function and the contents of the
-I<val_addrinfo> structure. 
+I<addrinfo> structure. 
 
 The exit status for this program is 1 if the answer received is trusted, 2 if 
 the answer received is validated, and -1 for an error.  The trusted and
