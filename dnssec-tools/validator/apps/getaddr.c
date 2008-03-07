@@ -131,11 +131,6 @@ print_addrinfo(int type, void *ainfo)
         else
             printf("\tCanonName: (null)\n");
 
-        if (type == VAL_ADDRINFO_TYPE) {
-            printf("\tValStatus: %s\n",
-                   p_val_error(((struct val_addrinfo *) a)->
-                               ai_val_status));
-        }
         printf("}\n");
 
         a = (struct addrinfo *) (a->ai_next);
@@ -149,7 +144,7 @@ main(int argc, char *argv[])
     char           *node = NULL;
     char           *service = NULL;
     struct addrinfo hints;
-    struct val_addrinfo *val_ainfo = NULL;
+    struct addrinfo *val_ainfo = NULL;
     struct addrinfo *ainfo = NULL;
     int             retval;
     int             getcanonname = 0;
@@ -235,7 +230,7 @@ main(int argc, char *argv[])
         /*
          * cleanup 
          */
-        val_freeaddrinfo(val_ainfo);
+        freeaddrinfo(val_ainfo);
         if (val_isvalidated(val_status)) {
             return 2; 
         } 
