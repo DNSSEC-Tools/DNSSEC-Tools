@@ -1543,7 +1543,7 @@ copy_rrset_rec(struct rrset_rec *rr_set)
     copy_set->rrs_next = NULL;
 
     /*
-     * Copy the val_rrset members 
+     * Copy the val_rrset_rec members 
      */
     if (rr_set->rrs.val_msg_header && rr_set->rrs.val_msg_headerlen) {
         copy_set->rrs.val_msg_headerlen = rr_set->rrs.val_msg_headerlen;

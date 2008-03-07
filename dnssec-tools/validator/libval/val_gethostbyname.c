@@ -323,7 +323,7 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
      * Count the number of aliases and addresses in the result 
      */
     for (res = results; res != NULL; res = res->val_rc_next) {
-        struct val_rrset *rrset;
+        struct val_rrset_rec *rrset;
 
         if (res->val_rc_answer == NULL)
             continue;
@@ -405,7 +405,7 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
 
         if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
 
-            struct val_rrset *rrset = res->val_rc_answer->val_ac_rrset;
+            struct val_rrset_rec *rrset = res->val_rc_answer->val_ac_rrset;
             struct val_rr_rec  *rr = rrset->val_rrset_data;
 
             while (rr) {
