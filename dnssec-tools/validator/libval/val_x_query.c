@@ -47,7 +47,7 @@ extern int      h_errno;
  * Calculate rrset length 
  */
 static int
-find_rrset_len(struct val_rrset *rrset)
+find_rrset_len(struct val_rrset_rec *rrset)
 {
     struct val_rr_rec  *rr;
     int             resp_len = 0;
@@ -109,7 +109,7 @@ determine_size(struct val_result_chain *res)
  * Returns 0 on success and -1 on error
  */
 static int
-encode_response_rrset(struct val_rrset *rrset,
+encode_response_rrset(struct val_rrset_rec *rrset,
                       val_status_t val_rc_status,
                       int resp_len,
                       unsigned char **anbuf,
@@ -256,7 +256,7 @@ compose_answer(const u_char * name_n,
 
     struct val_response *head_resp = NULL;
     struct val_response *cur_resp = NULL;
-    struct val_rrset *rrset;
+    struct val_rrset_rec *rrset;
     int validated = 1;
     int trusted = 1;
 

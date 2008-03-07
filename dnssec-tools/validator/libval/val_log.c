@@ -89,24 +89,24 @@ get_rr_string(struct val_rr_rec *rr, char *buf, int buflen)
 
 void
 val_log_val_rrset_pfx(const val_context_t * ctx, int level,
-                      const char *pfx, struct val_rrset *val_rrset)
+                      const char *pfx, struct val_rrset_rec *val_rrset_rec)
 {
     char            buf1[2049], buf2[2049];
     char            name_p[NS_MAXDNAME];
 
-    if (ns_name_ntop(val_rrset->val_rrset_name_n, name_p, sizeof(name_p))
+    if (ns_name_ntop(val_rrset_rec->val_rrset_name_n, name_p, sizeof(name_p))
         == -1)
         snprintf(name_p, sizeof(name_p), "ERROR");
     val_log(ctx, level, "%srrs->val_rrset_name=%s rrs->val_rrset_type=%s "
             "rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d "
             "rrs->val_rrset_section=%s\nrrs->val_rrset_data=%s\n"
             "rrs->val_rrset_sig=%s", pfx ? pfx : "", name_p,
-            p_type(val_rrset->val_rrset_type_h),
-            p_class(val_rrset->val_rrset_class_h),
-            val_rrset->val_rrset_ttl_h,
-            p_section(val_rrset->val_rrset_section - 1, !ns_o_update),
-            get_rr_string(val_rrset->val_rrset_data, buf1, 2048),
-            get_rr_string(val_rrset->val_rrset_sig, buf2, 2048));
+            p_type(val_rrset_rec->val_rrset_type_h),
+            p_class(val_rrset_rec->val_rrset_class_h),
+            val_rrset_rec->val_rrset_ttl_h,
+            p_section(val_rrset_rec->val_rrset_section - 1, !ns_o_update),
+            get_rr_string(val_rrset_rec->val_rrset_data, buf1, 2048),
+            get_rr_string(val_rrset_rec->val_rrset_sig, buf2, 2048));
 }
 
 void
