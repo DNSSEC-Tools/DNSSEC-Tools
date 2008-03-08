@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <arpa/inet.h>
@@ -155,7 +154,6 @@ int
 getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
 	    struct addrinfo **res)
 {
-  struct val_addrinfo *	vainfo_ptr = NULL;
   val_status_t          val_status;
   int                   ret;
 
@@ -165,12 +163,7 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
   val_log(NULL, LOG_DEBUG, "libval_shim: getaddrinfo(%s, %s) called: wrapper\n",
 	  node, service);
 
-  ret = val_getaddrinfo(libval_shim_ctx, node, service, hints, &vainfo_ptr, 
-			&val_status);
-
-  if (res) {
-    *res = (struct addrinfo *)vainfo_ptr;
-  }
+  ret = val_getaddrinfo(libval_shim_ctx, node, service, hints, res, &val_status);
 
   if (val_istrusted(val_status)) {
       return ret;
@@ -178,17 +171,6 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
 
   return (EAI_NONAME); 
 }
-
-
-
-void
-freeaddrinfo(struct addrinfo *ai)
-{
-  val_log(NULL, LOG_DEBUG, "libval_shim: freeaddrinfo called: wrapper\n");
-
-  val_freeaddrinfo((struct val_addrinfo *)ai);
-}
-
 
 #ifdef __linux__
 int
