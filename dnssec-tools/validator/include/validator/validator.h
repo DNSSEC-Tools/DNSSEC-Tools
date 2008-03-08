@@ -425,32 +425,6 @@ extern          "C" {
 
 #endif
 
-#if defined(__solaris__) || defined(__macosx__) || defined(__FreeBSD__)
-    struct val_addrinfo {
-        int             ai_flags;
-        int             ai_family;
-        int             ai_socktype;
-        int             ai_protocol;
-        size_t          ai_addrlen;
-        struct sockaddr *ai_addr;
-        char           *ai_canonname;
-        struct val_addrinfo *ai_next;
-        val_status_t    ai_val_status;
-    };
-#else
-    struct val_addrinfo {
-        int             ai_flags;
-        int             ai_family;
-        int             ai_socktype;
-        int             ai_protocol;
-        size_t          ai_addrlen;
-        char           *ai_canonname;
-        struct sockaddr *ai_addr;
-        struct val_addrinfo *ai_next;
-        val_status_t    ai_val_status;
-    };
-#endif
-
     /*
      * Logging-related definitions 
      */
@@ -697,7 +671,6 @@ extern          "C" {
     /*
      * for backwards compatibility
      */
-#define free_val_addrinfo   val_freeaddrinfo
 #define p_val_error p_val_status
 #define p_as_error p_ac_status
 

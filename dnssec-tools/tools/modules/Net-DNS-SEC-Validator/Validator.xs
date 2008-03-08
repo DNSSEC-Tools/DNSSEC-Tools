@@ -199,13 +199,13 @@ SV *rr_c2sv(u_char *name, int type, int class, int ttl, int len, u_char *data)
   return rr;
 }
 
-SV *rrset_c2sv(struct val_rrset *rrs_ptr)
+SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 {
   HV *rrset_hv;
   SV *rrset_hv_ref = &PL_sv_undef;
   AV *rrs_av;
   SV *rrs_av_ref;
-  struct rr_rec *rr;
+  struct val_rr_rec *rr;
 
   if (rrs_ptr) {
     rrset_hv = newHV();
@@ -309,7 +309,7 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
   return rc_av_ref;
 }
 
-SV *ainfo_c2sv(struct val_addrinfo *ainfo_ptr)
+SV *ainfo_c2sv(struct addrinfo *ainfo_ptr)
 {
   AV *ainfo_av = newAV();
   SV *ainfo_av_ref = newRV_noinc((SV*)ainfo_av);
@@ -342,9 +342,6 @@ SV *ainfo_c2sv(struct val_addrinfo *ainfo_ptr)
 	      newSVpv(ainfo_ptr->ai_canonname, 
 		      strlen(ainfo_ptr->ai_canonname)) :
 	     &PL_sv_undef), 0);
-    // special field for validated ainfo
-    hv_store(ainfo_hv, "val_status", strlen("val_status"), 
-	     newSViv(ainfo_ptr->ai_val_status), 0);
 
     av_push(ainfo_av, ainfo_hv_ref);
   }  
@@ -431,6 +428,9 @@ pval_create_context_with_conf(policy,dnsval_conf,resolv_conf,root_hints)
 	{
 	ValContext *vc_ptr=NULL;
 	//	fprintf(stderr,"pval_create_context_with_conf:%s:%s:%s\n",dnsval_conf,resolv_conf,root_hints);
+
+	//val_log_add_optarg("7:stderr", 1); /* XXX */
+
 	int result = val_create_context_with_conf(policy, 
 						  dnsval_conf,
 						  resolv_conf,
@@ -460,7 +460,7 @@ pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 	SV **			val_status_str_svp;
 	struct addrinfo		hints;
 	struct addrinfo *	hints_ptr = NULL;
-	struct val_addrinfo *	vainfo_ptr = NULL;
+	struct addrinfo *	ainfo_ptr = NULL;
 	val_status_t            val_status;
 	int res;
 
@@ -480,20 +480,20 @@ pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 	hints_ptr = ainfo_sv2c(hints_ref, &hints);
 
 	res = val_getaddrinfo(ctx, node, service, hints_ptr, 
-			      &vainfo_ptr, &val_status);
+			      &ainfo_ptr, &val_status);
 
 	sv_setiv(*val_status_svp, val_status);
 	sv_setpv(*val_status_str_svp, p_val_status(val_status));
 
 	if (res == 0) {
-	  RETVAL = ainfo_c2sv(vainfo_ptr);
+	  RETVAL = ainfo_c2sv(ainfo_ptr);
 	} else {
 	  sv_setiv(*error_svp, res);
 	  sv_setpv(*error_str_svp, gai_strerror(res));
 	  RETVAL = &PL_sv_undef;
 	}
 
-	val_freeaddrinfo(vainfo_ptr);
+	freeaddrinfo(ainfo_ptr);
 	}
 	OUTPUT:
 	RETVAL
@@ -625,7 +625,7 @@ pval_resolve_and_check(self,domain,type,class,flags)
 	struct val_result_chain * val_rc_ptr = NULL;
 	int res;
 	u_char                  name_n[NS_MAXCDNAME];
-	fprintf(stderr, "here we are at the start\n");
+	//fprintf(stderr, "here we are at the start\n");
 
 	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
 	ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
@@ -641,19 +641,18 @@ pval_resolve_and_check(self,domain,type,class,flags)
         sv_setpv(*val_status_str_svp, "");
 
 	RETVAL = &PL_sv_undef;
-	fprintf(stderr, "here we are way before\n");
+	//fprintf(stderr, "here we are way before\n");
 
 	if (ns_name_pton(domain, name_n, sizeof(name_n)) != -1) {
 
-	  val_log_add_optarg("7:stderr", 1); /* XXX */
 
-	  fprintf(stderr, "here we are before\n");
+	  //fprintf(stderr, "here we are before\n");
 	  res = val_resolve_and_check(ctx, (u_char*) name_n, 
 				      (u_int16_t) type, 
 				      (u_int16_t) class, 
 				      (u_int8_t) flags, 
 				      &val_rc_ptr);
-	  fprintf(stderr, "here we are after\n");
+	  //fprintf(stderr, "here we are after\n");
 	  val_log_authentication_chain(ctx, LOG_DEBUG,
 				       (u_char*) name_n, 
 				       (u_int16_t) type, 

@@ -65,3 +65,4 @@ ok(defined($ainfo) and not ref($ainfo) and $ainfo == EAI_SOCKTYPE);
 $hint = new Net::addrinfo(flags => AI_CANONNAME);
 $ainfo = getaddrinfo(undef, "www", $hint);
 ok(defined($ainfo) and not ref($ainfo) and $ainfo == EAI_BADFLAGS);
+

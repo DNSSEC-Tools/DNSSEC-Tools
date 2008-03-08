@@ -97,8 +97,6 @@ foreach $a (@r) {
 
 @r = $validator->getaddrinfo("good-cname-to-badsign-A.test.dnssec-tools.org");
 ok(@r);
-ok($r[0]->val_status == VAL_BOGUS_PROVABLE);
-
 
 $r = $validator->res_query("good-AAAA.test.dnssec-tools.org", "IN", "AAAA");
 ok($r);

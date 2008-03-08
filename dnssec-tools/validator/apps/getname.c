@@ -109,7 +109,7 @@ main(int argc, char *argv[])
         case 'p':
             portspecified = 1;
             service = optarg;
-	    sscanf(service,"%d", &port);
+	    sscanf(service, "%d", &port);
             break;
 	case 'F':
 	  flags |= NI_NOFQDN;
