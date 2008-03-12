@@ -9,7 +9,7 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 55; plan tests => $n }
+BEGIN { $n = 54; plan tests => $n }
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
