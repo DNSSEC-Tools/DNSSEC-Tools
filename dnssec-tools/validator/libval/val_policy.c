@@ -76,6 +76,19 @@
     }\
 } while (0)
 
+#define FREE_DNSVAL_FILE_LIST(dnsval_l) do {\
+    struct dnsval_list *dnsval_t, *dnsval_n;\
+    dnsval_t = dnsval_l;\
+    while (dnsval_t) {\
+        dnsval_n = dnsval_t->next;\
+        if (dnsval_t->dnsval_conf)\
+            FREE(dnsval_t->dnsval_conf);\
+        FREE(dnsval_t);\
+        dnsval_t = dnsval_n;\
+    }\
+    dnsval_l = NULL;\
+} while (0)
+
 
 /*
  ***************************************************************
@@ -835,6 +848,41 @@ parse_edns0_size_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 }
     
 static int
+parse_enable_disable_gopt(int *type, char **buf_ptr, char *end_ptr, int *line_number,
+                          int *endst, global_opt_t *g_opt)
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((type == NULL) || (buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /* read the next token */
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    if (!strcmp(token, GOPT_ENABLE_STR)) {
+        *type = VAL_POL_GOPT_ENABLE;
+    } else if (!strcmp(token, GOPT_OVERRIDE_STR)) {
+        *type = VAL_POL_GOPT_OVERRIDE;
+    } else {
+        /* default is disable */
+        *type = VAL_POL_GOPT_DISABLE;
+    } 
+
+    return VAL_NO_ERROR;
+}
+
+static int
 get_global_options(char **buf_ptr, char *end_ptr, 
                    int *line_number, global_opt_t **g_opt) 
 {
@@ -851,6 +899,8 @@ get_global_options(char **buf_ptr, char *end_ptr,
         return VAL_OUT_OF_MEMORY;
     (*g_opt)->local_is_trusted = 0;
     (*g_opt)->edns0_size = EDNS_UDP_SIZE;
+    (*g_opt)->env_policy = VAL_POL_GOPT_DISABLE;
+    (*g_opt)->app_policy = VAL_POL_GOPT_DISABLE;
     
     while (!endst) {
         /*
@@ -881,6 +931,18 @@ get_global_options(char **buf_ptr, char *end_ptr,
             if (VAL_NO_ERROR != 
                     (retval = parse_edns0_size_gopt(buf_ptr, end_ptr,
                                                     line_number, &endst, *g_opt))) {
+                goto err;
+            }
+        } else if (!strcmp(token, GOPT_ENV_POL_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_enable_disable_gopt(&((*g_opt)->env_policy), buf_ptr, end_ptr, 
+                                                        line_number, &endst, *g_opt))) {
+                goto err;
+            }
+        } else if (!strcmp(token, GOPT_APP_POL_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_enable_disable_gopt(&((*g_opt)->app_policy), buf_ptr, end_ptr, 
+                                                        line_number, &endst, *g_opt))) {
                 goto err;
             }
         } else {
@@ -1128,31 +1190,36 @@ store_policy_overrides(val_context_t * ctx,
     }
 
     /*
-     * Add this entry to the list 
+     * Check if we have an existing entry for this label/policy-type combination 
      */
+    val_log(ctx, LOG_DEBUG, "store_policy_overrides(): Adding policy [%s:%s]", 
+            newp->label, 
+            conf_elem_array[(*pfrag)->index].keyword);
+
     for (e = newp->plist; e; e = e->next) {
-        val_log(ctx, LOG_DEBUG, "store_policy_overrides(): Adding policy [%s:%s]", 
-                    newp->label, 
-                    conf_elem_array[e->index].keyword);
         if (e->index == (*pfrag)->index) {
             val_log(ctx, LOG_WARNING,
-                    "store_policy_overrides(): Duplicate policy definition for [%s:%s]; using latest",
+                    "store_policy_overrides(): Duplicate policy definition for [%s:%s]; using initial",
                     newp->label, conf_elem_array[e->index].keyword);
-            free_policy_entry(e->pol, e->index);
-            e->pol = NULL;
-            break;
+            
+            free_policy_entry((*pfrag)->pol, (*pfrag)->index);
+            (*pfrag)->pol = NULL;
+            FREE(*pfrag);
+            
+            return VAL_NO_ERROR;
         }
     }
 
-    if (!e) {
-        e = (struct policy_list *) MALLOC(sizeof(struct policy_list));
-        if (e == NULL)
-            return VAL_OUT_OF_MEMORY;
-        e->index = (*pfrag)->index;
-        e->next = newp->plist;
-        newp->plist = e;
-    }
+    /*
+     * Add policy-type to list 
+     */
+    e = (struct policy_list *) MALLOC(sizeof(struct policy_list));
+    if (e == NULL)
+        return VAL_OUT_OF_MEMORY;
 
+    e->index = (*pfrag)->index;
+    e->next = newp->plist;
+    newp->plist = e;
     e->pol = (*pfrag)->pol;
     (*pfrag)->pol = NULL;
     FREE(*pfrag);
@@ -1223,31 +1290,293 @@ destroy_valpol(val_context_t * ctx)
     }
 }
 
-/*
- * Make sense of the validator configuration file
- */
-int
-read_val_config_file(val_context_t * ctx, char *scope)
+
+#ifdef __linux__
+#define getprogname() program_invocation_short_name 
+#endif
+static int
+read_next_val_config_file(val_context_t *ctx, 
+                          char **label, 
+                          struct dnsval_list *dnsval_c, 
+                          struct dnsval_list *dnsval_list, 
+                          struct dnsval_list **added_files,
+                          struct policy_overrides **overrides,
+                          global_opt_t **g_opt)
 {
-    int             fd = -1;
+    int    fd = -1;
     struct flock    fl;
-    struct policy_fragment *pol_frag = NULL;
-    int             retval;
-    int             line_number = 1;
-    struct policy_overrides *overrides = NULL, *t;
     struct stat sb;
-    char *buf_ptr, *end_ptr;
-    char *buf = NULL;
-    int g_opt_seen = 0;
-    int include_seen = 0;
-    global_opt_t *g_opt = NULL;
-    char *base_dnsval_conf = NULL;
-    struct dnsval_list *dnsval_list = NULL;
-    struct dnsval_list *dnsval_l, *dnsval_c;
     char token[TOKEN_MAX];
     int endst = 0;
+    char *buf = NULL;
+    char *buf_ptr, *end_ptr;
+    int  line_number = 1;
+    struct policy_fragment *pol_frag = NULL;
+    int g_opt_seen = 0;
+    int include_seen = 0;
+    char *dnsval_filename = NULL;
+    struct dnsval_list *dnsval_l;
+    int retval;
+    char *next_label;
+    int done;
+
+    if (ctx == NULL || label == NULL || dnsval_c == NULL || 
+        dnsval_list == NULL || added_files == NULL || 
+        overrides == NULL || g_opt == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    done = 0;
+    pol_frag = NULL;
+    *added_files = NULL;
+
+    next_label = *label;
+    
+    fd = open(dnsval_c->dnsval_conf, O_RDONLY);
+    if (fd == -1) {
+        val_log(ctx, LOG_ERR, 
+                "read_next_val_config_file(): Could not open validator conf file for reading: %s",
+                dnsval_c->dnsval_conf);
+        /* check if we have at least one file */
+        if (dnsval_c == dnsval_list) {
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        } else {
+            return VAL_NO_ERROR;
+        }
+    }
+    memset(&fl, 0, sizeof(fl));
+    fl.l_type = F_RDLCK;
+    fcntl(fd, F_SETLKW, &fl);
+
+    if (0 != fstat(fd, &sb)) {
+        val_log(ctx, LOG_ERR, 
+                "read_next_val_config_file(): Could not stat validator conf file: %s",
+                dnsval_c->dnsval_conf);
+        retval = VAL_CONF_NOT_FOUND;
+        goto err;
+    } 
+    dnsval_c->v_timestamp = sb.st_mtime;
+
+    buf = (char *) MALLOC (sb.st_size * sizeof(char));
+    if (buf == NULL) {
+        retval = VAL_OUT_OF_MEMORY;
+        goto err;
+    }
+
+    if (-1 == read(fd, buf, sb.st_size)) {
+        val_log(ctx, LOG_ERR, "read_next_val_config_file(): Could not read validator conf file: %s",
+                dnsval_c->dnsval_conf);
+        retval = VAL_CONF_NOT_FOUND;
+        goto err;
+    }
+
+    val_log(ctx, LOG_INFO, "read_next_val_config_file(): Reading validator policy from %s",
+            dnsval_c->dnsval_conf);
+    val_log(ctx, LOG_DEBUG, "read_next_val_config_file(): Reading next policy fragment");
+
+    while (!done) {
+
+        if (pol_frag) {
+            FREE(pol_frag->label);
+            free_policy_entry(pol_frag->pol, pol_frag->index);
+            FREE(pol_frag);
+            pol_frag = NULL;
+        }
+
+        if (*added_files) {
+            FREE_DNSVAL_FILE_LIST(*added_files);
+            *added_files = NULL;
+        }
+
+        /* if we're looping again */
+        if (*overrides && dnsval_c == dnsval_list) {
+            /* trash our temporary overrides */
+            destroy_valpolovr(overrides);
+            *overrides = NULL;
+        }
+
+        buf_ptr = buf;
+        end_ptr = buf+sb.st_size;
+        dnsval_l = NULL;
+        done = 1;
+    
+        while (VAL_NO_ERROR == (retval =
+                    get_next_policy_fragment(&buf_ptr, end_ptr, 
+                                             next_label, 
+                                             &pol_frag, 
+                                             &line_number, 
+                                             &g_opt_seen,
+                                             &include_seen))) {
+            if (buf_ptr >= end_ptr) {
+                /* done reading file */
+                retval = VAL_NO_ERROR;
+                break;
+            }
+            
+            if (g_opt_seen) {
+                /* next policy fragment contains global options */ 
+                global_opt_t *gt_opt = NULL;
+                g_opt_seen = 0;
+                if (VAL_NO_ERROR != (retval =
+                        get_global_options(&buf_ptr, end_ptr, 
+                                          &line_number, &gt_opt))) {
+                    val_log(ctx, LOG_ERR, 
+                            "read_next_val_config_file(): Error in line %d of %s ",
+                            line_number, dnsval_c->dnsval_conf);
+                    goto err;
+                }
+    
+                if (*g_opt || (dnsval_c != dnsval_list)) {
+                    /* 
+                     * re-definition of global options 
+                     * or global options was not in the first file
+                     */
+                    FREE(gt_opt);
+                    gt_opt = NULL;
+                } else {
+                    *g_opt = gt_opt;
+                    val_log(ctx, LOG_DEBUG, 
+                            "read_next_val_config_file(): Using global options from line %d of %s",
+                            line_number, dnsval_c->dnsval_conf);
+                    
+                    if (gt_opt->env_policy == VAL_POL_GOPT_OVERRIDE ||
+                            (*label == NULL && gt_opt->env_policy == VAL_POL_GOPT_ENABLE)) {
+                        next_label = getenv("VAL_CONTEXT_LABEL");
+                        if (next_label != NULL) {
+                            val_log(ctx, LOG_NOTICE, 
+                                    "read_next_val_config_file(): Using policy label from environment: %s",
+                                    next_label);
+                            done = 0;
+                            break;
+                        }
+                        /* policy does not exist, dont create the impression that we have one */
+                        gt_opt->env_policy = VAL_POL_GOPT_DISABLE;
+                        next_label = *label;
+                    } 
+                    if (gt_opt->app_policy == VAL_POL_GOPT_OVERRIDE ||
+                            (*label == NULL && gt_opt->app_policy == VAL_POL_GOPT_ENABLE)) {
+                        next_label = getprogname(); 
+                        val_log(ctx, LOG_NOTICE, 
+                                "read_next_val_config_file(): Using policy label from app name: %s",
+                                next_label);
+                        done = 0;
+                        break;
+                    }
+                } 
+            } else if (include_seen) { 
+                /* need to include another file */
+                struct dnsval_list *dnsval_temp;
+                include_seen = 0;
+                /* read the filename in the next token */
+                if (VAL_NO_ERROR != (retval = 
+                        val_get_token(&buf_ptr, end_ptr, &line_number, 
+                                      token, sizeof(token), &endst,
+                                      CONF_COMMENT, CONF_END_STMT))) {
+                    val_log(ctx, LOG_ERR, 
+                            "read_next_val_config_file(): Error in line %d of %s ",
+                            line_number, dnsval_c->dnsval_conf);
+                    goto err;
+                }
+                if ((endst && (strlen(token) == 0)) || (buf_ptr >= end_ptr)) { 
+                    val_log(ctx, LOG_ERR, 
+                            "read_next_val_config_file(): Error in line %d of %s ",
+                            line_number, dnsval_c->dnsval_conf);
+                    retval = VAL_CONF_PARSE_ERROR;
+                    goto err;
+                }
+    
+                /* check if filename already exists in the list */
+                for (dnsval_temp=dnsval_list; dnsval_temp; dnsval_temp=dnsval_temp->next) {
+                    if (!strcmp(dnsval_temp->dnsval_conf, token)) {
+                        val_log(ctx, LOG_ERR, 
+                                "read_next_val_config_file(): File already included, possible loop in line %d of %s ",
+                                line_number, dnsval_c->dnsval_conf);
+                        retval = VAL_CONF_PARSE_ERROR;
+                        goto err;
+                    }
+                } 
+    
+                dnsval_filename = strdup(token);
+                if (dnsval_filename == NULL) {
+                    retval = VAL_OUT_OF_MEMORY;
+                    goto err;
+                }
+                dnsval_temp = (struct dnsval_list *) MALLOC (sizeof(struct dnsval_list));
+                if (dnsval_temp == NULL) {
+                    FREE(dnsval_filename);
+                    retval = VAL_OUT_OF_MEMORY;
+                    goto err;
+                }
+                dnsval_temp->dnsval_conf = dnsval_filename; 
+                dnsval_temp->next = NULL;
+    
+                if (dnsval_l) {
+                    dnsval_l->next = dnsval_temp;
+                } else {
+                    *added_files = dnsval_temp;
+                }
+                dnsval_l = dnsval_temp;
+            } else {
+                /*
+                 * Store this fragment as an override, consume pol_frag 
+                 */
+                store_policy_overrides(ctx, overrides, &pol_frag);
+                pol_frag = NULL;
+            }
+        }
+    }
+
+    if (retval != VAL_NO_ERROR) {
+        val_log(ctx, LOG_ERR, "read_next_val_config_file(): Error in line %d of %s", line_number,
+                dnsval_c->dnsval_conf);
+        goto err;
+    } 
+
+    *label = next_label;
+    FREE(buf);
+    buf = NULL;
+    fl.l_type = F_UNLCK;
+    fcntl(fd, F_SETLKW, &fl);
+    close(fd);
+    fd = -1;
+    return VAL_NO_ERROR;
+
+err:
+    if (pol_frag) {
+        FREE(pol_frag->label);
+        free_policy_entry(pol_frag->pol, pol_frag->index);
+        FREE(pol_frag);
+    }
+    if (buf) { 
+        FREE(buf);
+    }
+    if (fd != -1) {
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLKW, &fl);
+        close(fd);
+    }
+    return retval;
+}
+
+/*
+ * Make sense of the validator configuration file
+ * Precedence is environment, app and user
+ */
+int
+read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
+{
+    struct policy_overrides *overrides;
+    struct policy_overrides *t;
+    char *base_dnsval_conf = NULL;
+    global_opt_t *g_opt = NULL;
+    struct dnsval_list *dnsval_list = NULL;
+    struct dnsval_list *dnsval_c;
+    int             retval;
+    struct dnsval_list *added_list = NULL;
+    char *label;
+    char *newctxlab;
    
-    if (ctx == NULL)
+    if (ctx == NULL || is_override == NULL)
         return VAL_BAD_ARGUMENT;
     
     CTX_LOCK_VALPOL_SH(ctx);
@@ -1258,6 +1587,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
     if (base_dnsval_conf == NULL) 
         return VAL_OUT_OF_MEMORY;
    
+    /* create a new head element for the dnsval.conf file list */
     dnsval_list = (struct dnsval_list *) MALLOC (sizeof(struct dnsval_list));
     if (dnsval_list == NULL) {
         FREE(base_dnsval_conf);
@@ -1265,177 +1595,69 @@ read_val_config_file(val_context_t * ctx, char *scope)
     }
     dnsval_list->dnsval_conf = base_dnsval_conf;
     dnsval_list->next = NULL; 
-    
     dnsval_c = dnsval_list;
-    
+    label = scope;
+
+    overrides = NULL;
+    g_opt = NULL;
+    *is_override = 0;
+
     while(dnsval_c) {
+        added_list = NULL;
+        /* read the head element first */
+        if (VAL_NO_ERROR != (retval = 
+                read_next_val_config_file(ctx,
+                                          &label,
+                                          dnsval_c,
+                                          dnsval_list,
+                                          &added_list,
+                                          &overrides, 
+                                          &g_opt))) {
 
-        dnsval_l = dnsval_c;
-        line_number = 1;
-        fd = open(dnsval_c->dnsval_conf, O_RDONLY);
-        if (fd == -1) {
-            val_log(ctx, LOG_ERR, "read_val_config_file(): Could not open validator conf file for reading: %s",
-                    dnsval_c->dnsval_conf);
-            /* check if we have at least one file */
-            if (dnsval_c == dnsval_list) {
-                retval = VAL_CONF_NOT_FOUND;
-                goto err;
-            } else {
-                dnsval_c = dnsval_c->next;
-                continue;
-            }
-        }
-        memset(&fl, 0, sizeof(fl));
-        fl.l_type = F_RDLCK;
-        fcntl(fd, F_SETLKW, &fl);
-
-        if (0 != fstat(fd, &sb)) {
-            val_log(ctx, LOG_ERR, "read_val_config_file(): Could not stat validator conf file: %s",
-                    dnsval_c->dnsval_conf);
-            retval = VAL_CONF_NOT_FOUND;
-            goto err;
-        } 
-        dnsval_c->v_timestamp = sb.st_mtime;
-
-        buf = (char *) MALLOC (sb.st_size * sizeof(char));
-        if (buf == NULL) {
-            retval = VAL_OUT_OF_MEMORY;
-            goto err;
-        }
-        buf_ptr = buf;
-        end_ptr = buf+sb.st_size;
-
-        if (-1 == read(fd, buf, sb.st_size)) {
-            val_log(ctx, LOG_ERR, "read_val_config_file(): Could not read validator conf file: %s",
-                    dnsval_c->dnsval_conf);
-            retval = VAL_CONF_NOT_FOUND;
             goto err;
         }
 
-        val_log(ctx, LOG_INFO, "read_val_config_file(): Reading validator policy from %s",
-                dnsval_c->dnsval_conf);
-        val_log(ctx, LOG_DEBUG, "read_val_config_file(): Reading next policy fragment");
+        /* Add new file names to the list */
+        if (added_list) {
+            struct dnsval_list *dnsval_l = added_list;
+            while (dnsval_l->next)
+                dnsval_l = dnsval_l->next;
 
-        while (VAL_NO_ERROR ==
-               (retval =
-                get_next_policy_fragment(&buf_ptr, end_ptr, 
-                                         scope, &pol_frag, 
-                                         &line_number, 
-                                         &g_opt_seen,
-                                         &include_seen))) {
-            if (buf_ptr >= end_ptr) {
-                retval = VAL_NO_ERROR;
-                break;
-            }
-        
-            if (g_opt_seen) {
-                /* next policy fragment contains global options */ 
-                if (g_opt) {
-                    /* re-definition of global options */
-                    val_log(ctx, LOG_ERR, 
-                            "read_val_config_file(): Redefinition of global options in line %d of %s",
-                            line_number, dnsval_c->dnsval_conf);
-                    FREE(g_opt);
-                    g_opt = NULL;
-                    retval = VAL_CONF_PARSE_ERROR;
-                    goto err;
-                }
-                g_opt_seen = 0;
-                if (VAL_NO_ERROR != (retval =
-                    get_global_options(&buf_ptr, end_ptr, 
-                                      &line_number, &g_opt))) {
-                    val_log(ctx, LOG_ERR, 
-                            "read_val_config_file(): Error in line %d of %s ",
-                            line_number, dnsval_c->dnsval_conf);
-                    goto err;
-                }
-            } else if (include_seen) { 
-                /* need to include another file */
-                struct dnsval_list *dnsval_temp;
-                
-                include_seen = 0;
-                /* read the filename in the next token */
-                if (VAL_NO_ERROR != (retval = 
-                    val_get_token(&buf_ptr, end_ptr, &line_number, 
-                                  token, sizeof(token), &endst,
-                                  CONF_COMMENT, CONF_END_STMT))) {
-                    val_log(ctx, LOG_ERR, 
-                            "read_val_config_file(): Error in line %d of %s ",
-                            line_number, dnsval_c->dnsval_conf);
-                    goto err;
-                }
-                if ((endst && (strlen(token) == 0)) || (buf_ptr >= end_ptr)) { 
-                    val_log(ctx, LOG_ERR, 
-                            "read_val_config_file(): Error in line %d of %s ",
-                            line_number, dnsval_c->dnsval_conf);
-                    retval = VAL_CONF_PARSE_ERROR;
-                    goto err;
-                }
-
-                /* check if filename already exists in the list */
-                for (dnsval_temp=dnsval_list; dnsval_temp; dnsval_temp=dnsval_temp->next) {
-                    if (!strcmp(dnsval_temp->dnsval_conf, token)) {
-                        val_log(ctx, LOG_ERR, 
-                            "read_val_config_file(): File already included, possible loop in line %d of %s ",
-                            line_number, dnsval_c->dnsval_conf);
-                        retval = VAL_CONF_PARSE_ERROR;
-                        goto err;
-                    }
-                } 
-
-                base_dnsval_conf = strdup(token);
-                if (base_dnsval_conf == NULL) {
-                    retval = VAL_OUT_OF_MEMORY;
-                    goto err;
-                }
-
-                dnsval_temp = (struct dnsval_list *) MALLOC (sizeof(struct dnsval_list));
-                if (dnsval_temp == NULL) {
-                    FREE(base_dnsval_conf);
-                    retval = VAL_OUT_OF_MEMORY;
-                    goto err;
-                }
-
-                /* add this node after last include relative to dnsval.conf being processed */
-                dnsval_temp->dnsval_conf = base_dnsval_conf; 
-                dnsval_temp->next = dnsval_l->next;
-                dnsval_l->next = dnsval_temp;
-                dnsval_l = dnsval_temp;
-
-            } else {
-                /*
-                 * Store this fragment as an override, consume pol_frag 
-                 */
-                store_policy_overrides(ctx, &overrides, &pol_frag);
-            }
+            /* add added_list between dnsval_c and its successor */
+            dnsval_l->next = dnsval_c->next;
+            dnsval_c->next = added_list;
+            added_list = NULL;
         }
-
-        if (retval != VAL_NO_ERROR) {
-            val_log(ctx, LOG_ERR, "read_val_config_file(): Error in line %d of %s", line_number,
-                    dnsval_c->dnsval_conf);
-            goto err;
-        } 
-
-        FREE(buf);
-        buf = NULL;
-        fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
-        close(fd);
-        fd = -1;
-    
         dnsval_c = dnsval_c->next;
     }
 
-    if (scope == NULL) {
+    newctxlab = NULL;
+    if (label == NULL) {
         /*
          * Use the first policy as the default (only) policy 
          */
         if (overrides)
             destroy_valpolovr(&overrides->next);
+    } else { 
+        /* clone the label */
+        newctxlab = (char *) MALLOC (strlen(label) + 1);
+        if (newctxlab == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        strcpy(newctxlab, label);
     }
 
-    
+    if (label != scope) {
+        /* check if the pointer has changed */
+        *is_override = 1;
+    }
+        
     CTX_LOCK_VALPOL_EX(ctx);
+
+    if (ctx->label)
+        FREE(ctx->label);
+    ctx->label = newctxlab;
 
     destroy_valpol(ctx);
 
@@ -1468,31 +1690,16 @@ read_val_config_file(val_context_t * ctx, char *scope)
     return VAL_NO_ERROR;
 
 err:
+    FREE_DNSVAL_FILE_LIST(added_list);
     if (overrides) {
         destroy_valpolovr(&overrides);
+        overrides = NULL;
     }
     if (g_opt) {
         FREE(g_opt);
+        g_opt = NULL;
     }
-    if (buf) { 
-        FREE(buf);
-    }
-
-    dnsval_c = dnsval_list;
-    while (dnsval_c) {
-        struct dnsval_list *dnsval_n;
-        dnsval_n = dnsval_c->next;
-        if (dnsval_c->dnsval_conf)
-            FREE(dnsval_c->dnsval_conf);
-        FREE(dnsval_c);
-        dnsval_c = dnsval_n;
-    }
-
-    if (fd != -1) {
-        fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
-        close(fd);
-    }
+    FREE_DNSVAL_FILE_LIST(dnsval_list);
     return retval;
 }
 
