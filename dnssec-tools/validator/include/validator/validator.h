@@ -226,6 +226,8 @@ extern          "C" {
     typedef struct global_opt {
         int local_is_trusted;
         long edns0_size;    
+        int env_policy;
+        int app_policy;
     } global_opt_t;
 
     typedef struct {
@@ -253,6 +255,16 @@ extern          "C" {
 #define GOPT_EDNS0_SIZE_STR "edns0-size"
 #define TRUST_LOCAL_GOPT_YES_STR "yes"
 #define TRUST_LOCAL_GOPT_NO_STR "no"
+#define GOPT_ENV_POL_STR "env-policy"
+#define GOPT_APP_POL_STR "app-policy"
+#define GOPT_ENABLE_STR "enable"
+#define GOPT_DISBLE_STR "disable"
+#define GOPT_OVERRIDE_STR "override"
+
+#define VAL_POL_GOPT_DISABLE 0 
+#define VAL_POL_GOPT_ENABLE 1
+#define VAL_POL_GOPT_OVERRIDE 2
+
 
 #define ZONE_PU_TRUSTED_MSG "trusted"
 #define ZONE_PU_UNTRUSTED_MSG "untrusted"
