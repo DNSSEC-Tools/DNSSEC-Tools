@@ -14,12 +14,14 @@ VAL_LOBJ= validator_driver.lo \
 ALL_OBJ= $(VAL_OBJ) \
 	getaddr.o \
 	getrrset.o \
+	getquery.o \
 	gethost.o \
     libval_check_conf.o
 
 ALL_LOBJ= $(VAL_LOBJ) \
 	getaddr.lo \
 	getrrset.lo \
+	getquery.lo \
 	gethost.lo \
     libval_check_conf.lo
 
@@ -27,13 +29,14 @@ VALIDATOR=validate
 GETHOST=gethost
 GETADDR=getaddr
 GETRRSET=getrrset
+GETQUERY=getquery
 GETNAME=getname
 CHECK_CONF=libval_check_conf
 
-all: $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETNAME) $(CHECK_CONF)
+all: $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF)
 
 clean:
-	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETNAME) $(CHECK_CONF)
+	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF)
 
 $(VALIDATOR): $(VAL_OBJ) $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ $(VAL_OBJ) $(LDFLAGS) $(LIBS)
@@ -47,6 +50,9 @@ $(GETADDR): getaddr.lo $(LOCALLIBS)
 $(GETRRSET): getrrset.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ getrrset.lo $(LDFLAGS) $(LIBS)
 
+$(GETQUERY): getquery.lo $(LOCALLIBS)
+	$(LIBTOOLLD) -o $@ getquery.lo $(LDFLAGS) $(LIBS)
+
 $(GETNAME): getname.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ getname.lo $(LDFLAGS) $(LIBS)
 
@@ -59,6 +65,7 @@ install:
 	$(LIBTOOLIN) $(GETHOST) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETADDR) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETRRSET) $(DESTDIR)/$(bindir)	
+	$(LIBTOOLIN) $(GETQUERY) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETNAME) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(CHECK_CONF) $(DESTDIR)/$(bindir)	
 	$(MKPATH) `echo $(DESTDIR)/@VALIDATOR_TESTCASES@ | sed 's#/[^/]*$$##'`
