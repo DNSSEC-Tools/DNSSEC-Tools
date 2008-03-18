@@ -27,7 +27,7 @@
 #include "val_assertion.h"
 #include "val_context.h"
 
-static val_context_t *the_null_context = NULL;
+static val_context_t *the_default_context = NULL;
 
 #ifndef VAL_NO_THREADS
 
@@ -59,27 +59,34 @@ val_create_context_with_conf(char *label,
 {
     int             retval;
     char *base_dnsval_conf = NULL;
+    int is_override = 0;
 
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
 
+    LOCK_DEFAULT_CONTEXT();
+
     /* Check if the request is for the default context, and we have one available */
-    if (label == NULL) {
-
-        LOCK_DEFAULT_CONTEXT();
-
-        if (the_null_context) { 
-            *newcontext = the_null_context;
-            UNLOCK_DEFAULT_CONTEXT();
-            val_log(*newcontext, LOG_INFO, "reusing default context");
-            return VAL_NO_ERROR;
-        }
+    /* 
+     *  either label should be NULL, or if label is not NULL, our global policy should
+     *  be set so that environment overrides what ever is passed by the app
+     */
+    if (the_default_context && 
+        (label == NULL || 
+         (the_default_context->g_opt && 
+          (the_default_context->g_opt->env_policy == VAL_POL_GOPT_OVERRIDE || 
+           the_default_context->g_opt->app_policy == VAL_POL_GOPT_OVERRIDE)))) {
+        *newcontext = the_default_context;
+        UNLOCK_DEFAULT_CONTEXT();
+        val_log(*newcontext, LOG_INFO, "reusing default context");
+        return VAL_NO_ERROR;
     }
+
+    /* we could be constructing a new default context, so hold on to the context lock */
 
     *newcontext = (val_context_t *) MALLOC(sizeof(val_context_t));
     if (*newcontext == NULL) {
-        if (label == NULL)
-            UNLOCK_DEFAULT_CONTEXT();
+        UNLOCK_DEFAULT_CONTEXT();
         return VAL_OUT_OF_MEMORY;
     }
     memset(*newcontext, 0, sizeof(val_context_t));
@@ -88,16 +95,14 @@ val_create_context_with_conf(char *label,
     if (0 != pthread_rwlock_init(&(*newcontext)->respol_rwlock, NULL)) {
         FREE(*newcontext);
         *newcontext = NULL;
-        if (label == NULL)
-            UNLOCK_DEFAULT_CONTEXT();
+        UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
     if (0 != pthread_rwlock_init(&(*newcontext)->valpol_rwlock, NULL)) {
         pthread_rwlock_destroy(&(*newcontext)->respol_rwlock);
         FREE(*newcontext);
         *newcontext = NULL;
-        if (label == NULL)
-            UNLOCK_DEFAULT_CONTEXT();
+        UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
     if (0 != pthread_mutex_init(&(*newcontext)->ac_lock, NULL)) {
@@ -105,8 +110,7 @@ val_create_context_with_conf(char *label,
         pthread_rwlock_destroy(&(*newcontext)->valpol_rwlock);
         FREE(*newcontext);
         *newcontext = NULL;
-        if (label == NULL)
-            UNLOCK_DEFAULT_CONTEXT();
+        UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
 #endif
@@ -115,17 +119,6 @@ val_create_context_with_conf(char *label,
         ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u",
          (unsigned) (*newcontext)) < 0)
         strcpy((*newcontext)->id, "libval");
-
-    if (label){
-        (*newcontext)->label = (char *) MALLOC (strlen(label) + 1);
-        if ((*newcontext)->label == NULL) {
-            retval = VAL_OUT_OF_MEMORY;
-            goto err;
-        }
-        strcpy((*newcontext)->label, label);
-    } else {
-        (*newcontext)->label = NULL;
-    }
 
     /* 
      * Set default configuration files 
@@ -185,7 +178,7 @@ val_create_context_with_conf(char *label,
     (*newcontext)->dnsval_l->next = NULL;
     
     if ((retval =
-         read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
+         read_val_config_file(*newcontext, label, &is_override)) != VAL_NO_ERROR) {
         goto err;
     }
 
@@ -195,16 +188,15 @@ val_create_context_with_conf(char *label,
             (*newcontext)->resolv_conf,
             (*newcontext)->root_conf);
 
-    if (label == NULL) {
-        the_null_context = *newcontext;
-        UNLOCK_DEFAULT_CONTEXT();
+    if (label == NULL || is_override) {
+        the_default_context = *newcontext;
     }
     
+    UNLOCK_DEFAULT_CONTEXT();
     return VAL_NO_ERROR;
 
 err:
-    if (label == NULL)
-        UNLOCK_DEFAULT_CONTEXT();
+    UNLOCK_DEFAULT_CONTEXT();
     val_free_context(*newcontext);
     *newcontext = NULL;
     return retval;
@@ -224,8 +216,8 @@ static int
 unlink_if_default_context(val_context_t *context)
 {
     LOCK_DEFAULT_CONTEXT();
-    if (context == the_null_context)
-        the_null_context = NULL;
+    if (context == the_default_context)
+        the_default_context = NULL;
     UNLOCK_DEFAULT_CONTEXT();
 
     return VAL_NO_ERROR;
@@ -289,13 +281,13 @@ free_validator_state(void)
     free_validator_cache();
 
     LOCK_DEFAULT_CONTEXT();
-    if (the_null_context != NULL) {
+    if (the_default_context != NULL) {
         /*
-         * must clear the_null_context to prevent deadlock
+         * must clear the_default_context to prevent deadlock
          * in val_free_context.
          */
-        saved_ctx = the_null_context;
-        the_null_context = NULL;
+        saved_ctx = the_default_context;
+        the_default_context = NULL;
     }
     UNLOCK_DEFAULT_CONTEXT();
 
@@ -332,10 +324,11 @@ int
 val_refresh_validator_policy(val_context_t * context)
 {
     struct dnsval_list *dnsval_l;
+    int is_override = 0;
     if (context == NULL) 
         return VAL_NO_ERROR;
 
-    if (read_val_config_file(context, context->label) != VAL_NO_ERROR) {
+    if (read_val_config_file(context, context->label, &is_override) != VAL_NO_ERROR) {
         CTX_LOCK_VALPOL_EX(context);
         for(dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next)
             dnsval_l->v_timestamp = -1;
@@ -343,6 +336,13 @@ val_refresh_validator_policy(val_context_t * context)
         val_log(context, LOG_WARNING, 
                 "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
     }
+
+    if (is_override) {
+        LOCK_DEFAULT_CONTEXT();
+        the_default_context = context;
+        UNLOCK_DEFAULT_CONTEXT();
+    }
+    
     return VAL_NO_ERROR; 
 }
 
