@@ -66,16 +66,15 @@ extern          "C" {
 #define STRDUP(p) strdup(p)
 #endif
 
+/* various constants */
 #define DNS_PORT                53
 #define VAL_LOG_OPTIONS LOG_PID
-
 #define VALIDATOR_LOG_PORT 1053
 #define VALIDATOR_LOG_SERVER "127.0.0.1"
-
-/* default EDNS0 size */
 #define EDNS_UDP_SIZE 4096
-
 #define VAL_DEFAULT_RESOLV_CONF "/etc/resolv.conf"
+#define VAL_CONTEXT_LABEL "VAL_CONTEXT_LABEL"
+#define VAL_LOG_TARGET "VAL_LOG_TARGET"
 
     /*
      * Query states 
@@ -228,6 +227,7 @@ extern          "C" {
         long edns0_size;    
         int env_policy;
         int app_policy;
+        char *log_target;
     } global_opt_t;
 
     typedef struct {
@@ -260,6 +260,7 @@ extern          "C" {
 #define GOPT_ENABLE_STR "enable"
 #define GOPT_DISBLE_STR "disable"
 #define GOPT_OVERRIDE_STR "override"
+#define GOPT_LOGTARGET_STR "log"
 
 #define VAL_POL_GOPT_DISABLE 0 
 #define VAL_POL_GOPT_ENABLE 1
