@@ -238,6 +238,15 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
 
 }
 
+void
+free_global_options(global_opt_t *g)
+{
+    if (g) {
+        if (g->log_target)
+            FREE(g->log_target);
+    }
+}
+
 /*
  ***************************************************************
  * The following are the parsing and freeup routines for 
@@ -883,6 +892,33 @@ parse_enable_disable_gopt(int *type, char **buf_ptr, char *end_ptr, int *line_nu
 }
 
 static int
+parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
+                      int *endst, global_opt_t *g_opt)
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /* read the next token */
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    val_log_add_optarg(token, 1);
+    return VAL_NO_ERROR;
+}
+
+static int
 get_global_options(char **buf_ptr, char *end_ptr, 
                    int *line_number, global_opt_t **g_opt) 
 {
@@ -901,6 +937,7 @@ get_global_options(char **buf_ptr, char *end_ptr,
     (*g_opt)->edns0_size = EDNS_UDP_SIZE;
     (*g_opt)->env_policy = VAL_POL_GOPT_DISABLE;
     (*g_opt)->app_policy = VAL_POL_GOPT_DISABLE;
+    (*g_opt)->log_target = NULL;
     
     while (!endst) {
         /*
@@ -943,6 +980,12 @@ get_global_options(char **buf_ptr, char *end_ptr,
             if (VAL_NO_ERROR != 
                     (retval = parse_enable_disable_gopt(&((*g_opt)->app_policy), buf_ptr, end_ptr, 
                                                         line_number, &endst, *g_opt))) {
+                goto err;
+            }
+        } else if (!strcmp(token, GOPT_LOGTARGET_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_log_target_gopt(buf_ptr, end_ptr, 
+                                                    line_number, &endst, *g_opt))) {
                 goto err;
             }
         } else {
@@ -1431,6 +1474,7 @@ read_next_val_config_file(val_context_t *ctx,
                      * re-definition of global options 
                      * or global options was not in the first file
                      */
+                    free_global_options(gt_opt);
                     FREE(gt_opt);
                     gt_opt = NULL;
                 } else {
@@ -1441,7 +1485,7 @@ read_next_val_config_file(val_context_t *ctx,
                     
                     if (gt_opt->env_policy == VAL_POL_GOPT_OVERRIDE ||
                             (*label == NULL && gt_opt->env_policy == VAL_POL_GOPT_ENABLE)) {
-                        next_label = getenv("VAL_CONTEXT_LABEL");
+                        next_label = getenv(VAL_CONTEXT_LABEL);
                         if (next_label != NULL) {
                             val_log(ctx, LOG_NOTICE, 
                                     "read_next_val_config_file(): Using policy label from environment: %s",
@@ -1696,6 +1740,7 @@ err:
         overrides = NULL;
     }
     if (g_opt) {
+        free_global_options(g_opt);
         FREE(g_opt);
         g_opt = NULL;
     }

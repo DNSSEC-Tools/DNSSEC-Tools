@@ -60,6 +60,7 @@ val_create_context_with_conf(char *label,
     int             retval;
     char *base_dnsval_conf = NULL;
     int is_override = 0;
+    char *logtarget = NULL;
 
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
@@ -91,6 +92,11 @@ val_create_context_with_conf(char *label,
     }
     memset(*newcontext, 0, sizeof(val_context_t));
 
+    logtarget = getenv(VAL_LOG_TARGET);
+    if (logtarget) {
+        val_log_add_optarg(logtarget, 1);
+    }
+    
 #ifndef VAL_NO_THREADS
     if (0 != pthread_rwlock_init(&(*newcontext)->respol_rwlock, NULL)) {
         FREE(*newcontext);
