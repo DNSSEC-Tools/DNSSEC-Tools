@@ -34,18 +34,10 @@ the the target application prior to execution:
 
 =head2 I<Validation Policy:>
 
-The policy to be applied for the invoked I<libval(3)> functions is
-chosen in the following way:
-
-=over 4
-
-=item 1) The value of the 'LIBVAL_SHIM_CONTEXT' environment variable
-
-=item 2) The application name
-
-=item 3) The default policy ':'
-
-=back
+The validator shim library will create a policy context and cache it
+for all subsequent I<libval(3)> calls. A I<NULL> policy label will be
+passed to create the context. The policy is chosen according to rules
+defined for I<libval(3)>.
 
 See I<dnsval.conf(1)> for information on policy labels and definition.
 
