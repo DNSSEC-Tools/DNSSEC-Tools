@@ -914,6 +914,10 @@ parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
         return VAL_CONF_PARSE_ERROR;
     }
 
+    gopt->log_target = (char *) MALLOC (strlen(token) + 1);
+    if (gopt->log_target == NULL)
+        return VAL_OUT_OF_MEMORY;
+    strcpy(gopt->log_target, token);
     val_log_add_optarg(token, 1);
     return VAL_NO_ERROR;
 }
@@ -1328,6 +1332,8 @@ destroy_valpol(val_context_t * ctx)
     }
 
     if (ctx->g_opt) {
+        /*XX should stop logging to current channel */
+        free_global_options(ctx->g_opt);
         FREE(ctx->g_opt);
         ctx->g_opt = NULL;
     }
