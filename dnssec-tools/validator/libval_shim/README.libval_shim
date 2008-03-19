@@ -27,13 +27,11 @@ Usage:
    	export LD_PRELOAD=libval_shim.so
 
 Validation Policy:
-   
-   The policy to be applied for the invoked 'libval' functions is
-   chosen in the following way:
 
-    1) The value of the 'LIBVAL_SHIM_CONTEXT' environment variable
-    2) The application name
-    3) The default policy ':'
+   The validator shim library will create a policy context and cache
+   it for all subsequent 'libval' calls. A "NULL" policy label will be
+   passed to create the context. The policy is chosen according to
+   rules defined for 'libval'.
 
    See 'man dnsval.conf' for information on policy labels and definition.
 

@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval_shim 3"
-.TH libval_shim 3 "2008-02-25" "perl v5.8.8" "User Contributed Perl Documentation"
+.TH libval_shim 3 "2008-03-19" "perl v5.8.8" "User Contributed Perl Documentation"
 .SH "NAME"
 .Vb 1
 \&                      The Validator Shim Library
@@ -155,16 +155,10 @@ To load the library set \s-1LD_PRELOAD\s0 variable within the environment of
 the the target application prior to execution:
 .Sh "\fIValidation Policy:\fP"
 .IX Subsection "Validation Policy:"
-The policy to be applied for the invoked \fI\fIlibval\fI\|(3)\fR functions is
-chosen in the following way:
-.IP "1) The value of the '\s-1LIBVAL_SHIM_CONTEXT\s0' environment variable" 4
-.IX Item "1) The value of the 'LIBVAL_SHIM_CONTEXT' environment variable"
-.PD 0
-.IP "2) The application name" 4
-.IX Item "2) The application name"
-.IP "3) The default policy ':'" 4
-.IX Item "3) The default policy ':'"
-.PD
+The validator shim library will create a policy context and cache it
+for all subsequent \fI\fIlibval\fI\|(3)\fR calls. A \fI\s-1NULL\s0\fR policy label will be
+passed to create the context. The policy is chosen according to rules
+defined for \fI\fIlibval\fI\|(3)\fR.
 .PP
 See \fI\fIdnsval.conf\fI\|(1)\fR for information on policy labels and definition.
 .Sh "\fILogging:\fP"

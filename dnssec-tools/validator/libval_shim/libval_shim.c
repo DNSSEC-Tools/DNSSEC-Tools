@@ -43,13 +43,7 @@ static int
 libval_shim_context(void)
 {
   if (libval_shim_ctx == NULL) {
-    char *shim_ctx_name = getenv("LIBVAL_SHIM_CONTEXT");
-    
-    if (shim_ctx_name == NULL || strlen(shim_ctx_name) == 0)
-      shim_ctx_name = getprogname();
-
-    if (val_create_context(shim_ctx_name, &libval_shim_ctx) != VAL_NO_ERROR)
-      if (val_create_context(":", &libval_shim_ctx) != VAL_NO_ERROR)
+      if (val_create_context(NULL, &libval_shim_ctx) != VAL_NO_ERROR)
 	return -1;
   }
   return 0;
