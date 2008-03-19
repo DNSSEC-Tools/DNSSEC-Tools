@@ -71,7 +71,7 @@ gethostbyname(const char *name)
   
   res = val_gethostbyname(libval_shim_ctx, name, &val_status);
 
-  if (val_istrusted(val_status)) {
+  if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
       return res;
   }
 
@@ -96,7 +96,7 @@ gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf,
 			result, h_errnop,
 			&val_status);
 
-  if (val_istrusted(val_status)) {
+  if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
       return ret;
   }
 
@@ -159,7 +159,7 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
 
   ret = val_getaddrinfo(libval_shim_ctx, node, service, hints, res, &val_status);
 
-  if (val_istrusted(val_status)) {
+  if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
       return ret;
   }
 
@@ -195,7 +195,7 @@ getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host,
   val_log(NULL,LOG_DEBUG,"libval_shim: getnameinfo(%s,%d) = (%s:%s) ret = %d\n",
 	  addr, ntohs(((const struct sockaddr_in*)sa)->sin_port), host, serv, ret);
 
-  if (val_istrusted(val_status)) {
+  if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
       return ret;
   }
 
@@ -230,7 +230,7 @@ res_query(const char *dname, int class, int type,
   ret = val_res_query(libval_shim_ctx, dname, class, type, answer, anslen,
 			&val_status);
 
-  if (val_istrusted(val_status)) {
+  if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
     return ret;
   }
 
