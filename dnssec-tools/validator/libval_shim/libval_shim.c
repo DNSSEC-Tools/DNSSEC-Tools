@@ -24,21 +24,6 @@ typedef struct val_context ValContext;
 
 static ValContext *libval_shim_ctx = NULL;
 
-static int libval_shim_log_set = 0;
-
-static int 
-libval_shim_log(void)
-{
-  char *shim_log = getenv("LIBVAL_SHIM_LOG");
-
-  if (shim_log && strlen(shim_log) && !libval_shim_log_set) {
-    libval_shim_log_set = 1;
-    if (val_log_add_optarg(shim_log, 1) == NULL)
-      return -1;
-  }
-  return 0;
-}
-
 static int
 libval_shim_context(void)
 {
@@ -52,7 +37,6 @@ libval_shim_context(void)
 static int 
 libval_shim_init(void)
 {
-  libval_shim_log();
 
   return (libval_shim_context());
 }

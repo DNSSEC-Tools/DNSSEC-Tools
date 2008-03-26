@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval_shim 3"
-.TH libval_shim 3 "2008-03-19" "perl v5.8.8" "User Contributed Perl Documentation"
+.TH libval_shim 3 "2008-03-26" "perl v5.8.8" "User Contributed Perl Documentation"
 .SH "NAME"
 .Vb 1
 \&                      The Validator Shim Library
@@ -164,15 +164,9 @@ See \fI\fIdnsval.conf\fI\|(1)\fR for information on policy labels and definition
 .Sh "\fILogging:\fP"
 .IX Subsection "Logging:"
 Logging for the \fI\fIlibval\fI\|(3)\fR functions may be enabled in the shim
-library by setting the '\s-1LIBVAL_SHIM_LOG\s0' environment variable.
-.Sp
-.Vb 3
-\&        export LIBVAL_SHIM_LOG="7:stderr"
-\&        or
-\&        export LIBVAL_SHIM_LOG="7:file:/tmp/validatorlog.txt"
-.Ve
+library by setting an environment variable.
 .PP
-See \fI\fIvalidate\fI\|(1)\fR for log output specifier format.
+See \fI\fIvalidate\fI\|(1)\fR for specifics.
 .SH "NOTES"
 .IX Header "NOTES"
 .Sh "setuid/setgid programs"

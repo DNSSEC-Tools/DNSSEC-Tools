@@ -44,17 +44,9 @@ See I<dnsval.conf(1)> for information on policy labels and definition.
 =head2 I<Logging:>
 
 Logging for the I<libval(3)> functions may be enabled in the shim
-library by setting the 'LIBVAL_SHIM_LOG' environment variable.
+library by setting an environment variable.
 
-=over 4
-
-        export LIBVAL_SHIM_LOG="7:stderr"
-	or
-	export LIBVAL_SHIM_LOG="7:file:/tmp/validatorlog.txt"
-
-=back
-
-See I<validate(1)> for log output specifier format.
+See I<validate(1)> for specifics.
 
 =head1 NOTES
 
