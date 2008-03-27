@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <resolv.h>
+#include <errno.h>
 #ifndef VAL_NO_THREADS
 #include <pthread.h>
 #endif
