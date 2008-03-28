@@ -8,7 +8,7 @@ datadir=@datadir@
 includedir=@includedir@
 mandir=@mandir@
 top_srcdir=@top_srcdir@
-man1dir=@man1dir@
+man1dir=man1
 #man3dir=@man3dir@
 #man5dir=@man5dir@
 #man8dir=@man8dir@
@@ -18,7 +18,8 @@ PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts \
 PERLARGS=@PERLARGS@
 SUBDIRS=@DNSSEC_SUBDIRS@
 MKPATH=$(top_srcdir)/mkinstalldirs
-INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
+INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)
+DOCINSTALL=@INSTALL@ @INSTALL_DATA@		
 QUIET=@
 MAN1PAGES=\
 	dnssec-tools.1
@@ -44,9 +45,9 @@ nextstepinstructions: subdirinstall
 	$(QUIET)echo ""
 
 maninstall:
-	$(MKPATH) $(DESTDIR)/$(man1dir)
+	$(MKPATH) $(mandir)/$(man1dir)
 	for i in $(MAN1PAGES) ; do		\
-	  $(DOCINSTALL) docs/$$i $(DESTDIR)/$(MAN1DIR)/$(man1dir) ;	\
+	  $(DOCINSTALL) docs/$$i $(mandir)/$(man1dir) ;	\
 	done
 
 
