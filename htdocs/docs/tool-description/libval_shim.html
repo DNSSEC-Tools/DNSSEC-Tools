@@ -1,0 +1,110 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>NAME</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<ul>
+
+		<li><a href="#usage_"><em>Usage:</em></a></li>
+		<li><a href="#validation_policy_"><em>Validation Policy:</em></a></li>
+		<li><a href="#logging_"><em>Logging:</em></a></li>
+	</ul>
+
+	<li><a href="#notes">NOTES</a></li>
+	<ul>
+
+		<li><a href="#setuid_setgid_programs">setuid/setgid programs</a></li>
+	</ul>
+
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<pre>
+                      The Validator Shim Library</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The validator shim library (<em>libval_shim.so</em>) is a shared library
+designed to be dynamically loaded using the 'LD_PRELOAD' mechanism
+(<em>ld.so(8)</em>) supported on linux and various other unix-like
+platforms. The shim library implements wrappers for a number of DNS
+related functions and in turn calls equivalent DNSSEC-aware validating
+functions from <em>libval(3)</em>, mapping the results to return codes
+recognized by the original functions. In this way a wide variety of
+applications can be made DNSSEC aware without code changes and
+recompilation.</p>
+<p>The method of mapping return codes assumes that any 'untrusted' or
+failure result from the <em>libval(3)</em> function is reflected as a
+failure to the original calling function.</p>
+<p>
+</p>
+<h2><a name="usage_"><em>Usage:</em></a></h2>
+<p>To load the library set LD_PRELOAD variable within the environment of
+the the target application prior to execution:</p>
+<p>
+</p>
+<h2><a name="validation_policy_"><em>Validation Policy:</em></a></h2>
+<p>The validator shim library will create a policy context and cache it
+for all subsequent <em>libval(3)</em> calls. A <em>NULL</em> policy label will be
+passed to create the context. The policy is chosen according to rules
+defined for <em>libval(3)</em>.</p>
+<p>See <em>dnsval.conf(1)</em> for information on policy labels and definition.</p>
+<p>
+</p>
+<h2><a name="logging_"><em>Logging:</em></a></h2>
+<p>Logging for the <em>libval(3)</em> functions may be enabled in the shim
+library by setting an environment variable.</p>
+<p>See <em>validate(1)</em> for specifics.</p>
+<p>
+</p>
+<hr />
+<h1><a name="notes">NOTES</a></h1>
+<p>
+</p>
+<h2><a name="setuid_setgid_programs">setuid/setgid programs</a></h2>
+<p>setuid and setgid root programs (e.g., <em>ping(8)</em>) do not honor the
+LD_PRELOAD setting. These application may still use the LD_PRELOAD
+mechanism when run directly from a root shell.</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>G. S. Marzot</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><em>libsres(3)</em>, <em>libval(3)</em>, <em>dnsval.conf(1)</em>, <em>gethostbyname(3)</em></p>
+<p><em>gethostbyaddr(3)</em>, <em>getnameinfo(3)</em>, <em>getaddrinfo(3)</em>, <em>res_query(3)</em></p>
+
+</body>
+
+</html>
