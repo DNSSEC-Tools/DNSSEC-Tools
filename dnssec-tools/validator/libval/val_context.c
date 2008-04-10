@@ -92,11 +92,6 @@ val_create_context_with_conf(char *label,
     }
     memset(*newcontext, 0, sizeof(val_context_t));
 
-    logtarget = getenv(VAL_LOG_TARGET);
-    if (logtarget) {
-        val_log_add_optarg(logtarget, 1);
-    }
-    
 #ifndef VAL_NO_THREADS
     if (0 != pthread_rwlock_init(&(*newcontext)->respol_rwlock, NULL)) {
         FREE(*newcontext);
@@ -199,6 +194,12 @@ val_create_context_with_conf(char *label,
     }
     
     UNLOCK_DEFAULT_CONTEXT();
+
+    logtarget = getenv(VAL_LOG_TARGET);
+    if (logtarget) {
+        val_log_add_optarg(logtarget, 1);
+    }
+    
     return VAL_NO_ERROR;
 
 err:
