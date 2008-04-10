@@ -386,6 +386,29 @@ int
 stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
+    struct rrset_rec *r;
+    int in_bailiwick = 1;
+    
+    /* Check if all records are in bailiwick */
+    r = new_info;
+    while (r) {
+        if (!IN_BAILIWICK(r->rrs.val_rrset_name_n, matched_q)) {
+            in_bailiwick = 0;
+            break;
+        }
+        r = r->rrs_next; 
+    }
+    
+    /* If not, free the list (save all or nothing) */
+    if (!in_bailiwick) {
+        while(new_info) {
+            r = new_info->rrs_next;
+            new_info->rrs_next = NULL;
+            res_sq_free_rrset_recs(&new_info);
+            new_info = r;
+        }
+        return VAL_NO_ERROR;
+    }
     
     LOCK_INIT(&ns_rwlock, ns_rwlock_init);
     LOCK_EX(&ns_rwlock);
