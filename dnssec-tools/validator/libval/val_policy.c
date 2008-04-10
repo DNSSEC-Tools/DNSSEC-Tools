@@ -919,7 +919,6 @@ parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
     if (g_opt->log_target == NULL)
         return VAL_OUT_OF_MEMORY;
     strcpy(g_opt->log_target, token);
-    val_log_add_optarg(token, 1);
     return VAL_NO_ERROR;
 }
 
@@ -1710,6 +1709,7 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
         FREE(ctx->label);
     ctx->label = newctxlab;
 
+
     destroy_valpol(ctx);
 
     /* Replace policies */
@@ -1723,6 +1723,12 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     destroy_valpolovr(&overrides);
 
     ctx->g_opt = g_opt;
+
+    /* remove older log targets */
+    //val_log_optarg_none();
+    if (g_opt->log_target) {
+        val_log_add_optarg(g_opt->log_target, 1);
+    }
 
     /* 
      * Re-initialize caches 
