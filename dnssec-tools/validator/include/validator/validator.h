@@ -376,7 +376,7 @@ extern          "C" {
         u_int8_t        *val_rc_alias;
         struct val_rrset_rec *val_rc_rrset; 
         struct val_authentication_chain *val_rc_answer;
-        int             val_rc_proof_count;
+        int    val_rc_proof_count;
         struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
         struct val_result_chain *val_rc_next;
     };
@@ -500,11 +500,13 @@ extern          "C" {
     void            val_log(const val_context_t * ctx, int level,
                             const char *template, ...);
 
-    val_log_t      *val_log_add_cb(int level, val_log_cb_t func);
-    val_log_t      *val_log_add_filep(int level, FILE * p);
-    val_log_t      *val_log_add_file(int level, const char *filen);
-    val_log_t      *val_log_add_syslog(int level, int facility);
-    val_log_t      *val_log_add_network(int level, char *host, int port);
+    val_log_t      *val_log_add_cb(val_log_t **log_head, int level, val_log_cb_t func);
+    val_log_t      *val_log_add_filep(val_log_t **log_head, int level, FILE * p);
+    val_log_t      *val_log_add_file(val_log_t **log_head, int level, const char *filen);
+    val_log_t      *val_log_add_syslog(val_log_t **log_head, int level, int facility);
+    val_log_t      *val_log_add_network(val_log_t **log_head, int level, char *host, int port);
+    val_log_t      *val_log_add_optarg_to_list(val_log_t **list_head,
+                                        const char *args, int use_stderr);
     val_log_t      *val_log_add_optarg(const char *args, int use_stderr);
 
     int             val_log_debug_level(void);
