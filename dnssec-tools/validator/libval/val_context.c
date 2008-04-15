@@ -60,7 +60,6 @@ val_create_context_with_conf(char *label,
     int             retval;
     char *base_dnsval_conf = NULL;
     int is_override = 0;
-    char *logtarget = NULL;
 
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
@@ -148,6 +147,9 @@ val_create_context_with_conf(char *label,
         goto err;
     }
 
+    /* set the log targets to NULL */
+    (*newcontext)->val_log_targets = NULL;
+
     /*
      * Read the Resolver configuration file 
      */
@@ -194,11 +196,6 @@ val_create_context_with_conf(char *label,
     }
     
     UNLOCK_DEFAULT_CONTEXT();
-
-    logtarget = getenv(VAL_LOG_TARGET);
-    if (logtarget) {
-        val_log_add_optarg(logtarget, 1);
-    }
     
     return VAL_NO_ERROR;
 
