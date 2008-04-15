@@ -101,6 +101,7 @@ extern          "C" {
         struct dnsval_list *dnsval_l;
         policy_entry_t **e_pol;
         global_opt_t *g_opt;
+        val_log_t *val_log_targets;
         
         /* Query and authentication chain caches */
         struct val_digested_auth_chain *a_list;
