@@ -1724,10 +1724,24 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
 
     ctx->g_opt = g_opt;
 
-    /* remove older log targets */
-    //val_log_optarg_none();
+    /* free up older log targets */
+    while (ctx->val_log_targets) {
+        val_log_t *temp = ctx->val_log_targets->next;
+        FREE (ctx->val_log_targets);
+        ctx->val_log_targets = temp;
+    }
+    ctx->val_log_targets = NULL;
+    
+    /* enable logging */
     if (g_opt->log_target) {
-        val_log_add_optarg(g_opt->log_target, 1);
+        val_log_add_optarg_to_list(&ctx->val_log_targets, g_opt->log_target, 1);
+    }
+
+    /* set the log target from environment */
+    char *logtarget = NULL;
+    logtarget = getenv(VAL_LOG_TARGET);
+    if (logtarget) {
+        val_log_add_optarg_to_list(&ctx->val_log_targets, logtarget, 1);
     }
 
     /* 
