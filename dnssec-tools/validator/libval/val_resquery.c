@@ -157,6 +157,7 @@ merge_glue_in_referral(val_context_t *context,
     struct val_query_chain *pc;
     struct name_server *pending_ns;
     struct name_server *prev_ns;
+    char name_p[NS_MAXDNAME];
     u_int8_t flags;
 
     /*
@@ -176,7 +177,6 @@ merge_glue_in_referral(val_context_t *context,
     prev_ns = NULL;
     while(pending_ns) {
 
-        char name_p[NS_MAXDNAME];
         ns_name_ntop(pending_ns->ns_name_n, name_p,
                      sizeof(name_p));
         
@@ -289,6 +289,16 @@ merge_glue_in_referral(val_context_t *context,
                 free_name_servers(&pc->qc_ns_list);
                 pc->qc_ns_list = NULL;
             }
+            pc->qc_ns_list = pc->qc_referral->merged_glue_ns;
+            pc->qc_referral->merged_glue_ns = NULL;
+
+            /* save learned zone information */
+            if (VAL_NO_ERROR != (retval = 
+                        stow_zone_info(pc->qc_referral->learned_zones, pc))) {
+                return retval;
+            }
+            pc->qc_referral->learned_zones = NULL;
+
             if (pc->qc_respondent_server) {
                 free_name_server(&pc->qc_respondent_server);
                 pc->qc_respondent_server = NULL;
@@ -298,15 +308,8 @@ merge_glue_in_referral(val_context_t *context,
                 pc->qc_zonecut_n = NULL;
             }
 
-            pc->qc_ns_list = pc->qc_referral->merged_glue_ns;
-            pc->qc_referral->merged_glue_ns = NULL;
             pc->qc_state = Q_INIT;
-            /* save learned zone information */
-            if (VAL_NO_ERROR != (retval = 
-                        stow_zone_info(pc->qc_referral->learned_zones, pc))) {
-                return retval;
-            }
-            pc->qc_referral->learned_zones = NULL;
+            
         }
     }
 
@@ -867,7 +870,7 @@ follow_referral_or_alias_link(val_context_t * context,
                               struct rrset_rec **answers)
 {
     int             ret_val;
-    struct name_server *ref_ns_list, *ns;
+    struct name_server *ref_ns_list;
     int             len;
     u_int8_t       *referral_zone_n;
     struct queries_for_query *added_q = NULL;
@@ -1019,9 +1022,6 @@ follow_referral_or_alias_link(val_context_t * context,
 
             if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
             
-                for (ns = ref_ns_list; ns; ns = ns->ns_next)
-                    ns->ns_options |= RES_USE_DNSSEC;
-
                 /*
                  * Fetch DNSSEC meta-data in parallel 
                  */
@@ -1826,7 +1826,6 @@ digest_response(val_context_t * context,
          */
         if ((matched_qfq->qfq_flags & VAL_QUERY_GLUE_REQUEST) && (answer != 0) 
                 && !proof_seen && !nothing_other_than_alias) {
-
             struct rrset_rec *gluedata = copy_rrset_rec(learned_answers);
             if (VAL_NO_ERROR != (ret_val = stow_zone_info(gluedata, matched_q))) {
                 res_sq_free_rrset_recs(&gluedata);
