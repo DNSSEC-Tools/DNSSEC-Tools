@@ -702,16 +702,6 @@ get_zse(val_context_t * ctx, u_int8_t * name_n, u_int8_t flags,
 
     retval = VAL_NO_ERROR;
 
-#ifdef LIBVAL_DLV
-    /*
-     * If we are currently using DLV, we are, by definition, doing validation 
-     */ 
-    if (flags & VAL_QUERY_USING_DLV) { 
-        *status = VAL_AC_WAIT_FOR_TRUST;
-        return VAL_NO_ERROR;
-    } 
-#endif
-
     name_len = wire_name_length(name_n);
 
     /*
@@ -1325,7 +1315,15 @@ build_pending_query(val_context_t *context,
     }
     SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
 
-    if (tzonestatus != VAL_AC_WAIT_FOR_TRUST) {
+    if (tzonestatus != VAL_AC_WAIT_FOR_TRUST 
+#ifdef LIBVAL_DLV
+            /* 
+             * continue to build the authentication chain if
+             * we're doing DLV
+             */
+            && !(flags & VAL_QUERY_USING_DLV)
+#endif
+        ) {
         as->val_ac_status = tzonestatus;
         return VAL_NO_ERROR;
     }
@@ -1763,7 +1761,7 @@ get_ac_trust(val_context_t *context,
     }
 
     if (added_q->qfq_query->qc_state < Q_ANSWERED) {
-        if (next_as->val_ac_status > VAL_AC_INIT) {
+        if (next_as->val_ac_status > VAL_AC_FAIL_BASE) {
             /* data has most likely timed out */
             next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
         }
@@ -3369,7 +3367,7 @@ verify_provably_unsecure(val_context_t * context,
     
     /* remove common labels in q_zonecut_n */
     *q = '\0';
-    
+
     /* while we've not reached the zonecut for the query */
     while(*q_zonecut_n != '\0') {
 
@@ -4652,6 +4650,7 @@ verify_and_validate(val_context_t * context,
                 /* set the DLV flag */
                 res->val_rc_flags |= VAL_QUERY_USING_DLV; 
                 res->val_rc_rrset->val_ac_status = VAL_AC_INIT;
+                /* XXX need to turn on EDNS0 */
                 if (VAL_NO_ERROR !=
                     (retval = build_pending_query(context, queries, 
                                                   res->val_rc_rrset, 
@@ -4875,8 +4874,7 @@ ask_resolver(val_context_t * context,
             else
                 test_n = next_q->qfq_query->qc_name_n;
 
-            if (next_q->qfq_query->qc_ns_list &&
-                !(next_q->qfq_query->qc_ns_list->ns_options & RES_USE_DNSSEC)) {
+            if (next_q->qfq_query->qc_ns_list) { 
                 if (!(next_q->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
                     
                     if (VAL_NO_ERROR != (retval = 
@@ -4893,10 +4891,6 @@ ask_resolver(val_context_t * context,
                         for (ns = next_q->qfq_query->qc_ns_list; ns; ns = ns->ns_next)
                             ns->ns_options |= RES_USE_DNSSEC;
                     }
-
-                } else {
-                    val_log(context, LOG_DEBUG,
-                            "ask_resolver(): Not setting D0 bit nor using EDNS0");
                 }
             }
 
