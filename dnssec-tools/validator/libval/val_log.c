@@ -30,7 +30,7 @@
 #include "val_crypto.h"
 
 static int      debug_level = LOG_INFO;
-static val_log_t *log_head = NULL;
+static val_log_t *default_log_head = NULL;
 
 int
 val_log_debug_level(void)
@@ -328,10 +328,8 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 {
     struct val_result_chain *next_result;
     char name_p[NS_MAXDNAME];
-
-    if (ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
-        strcpy(name_p, "Invalid name");
-    }
+    u_int16_t real_type_h;
+    u_int16_t real_class_h;
     
     if (results == NULL) { 
         val_log(ctx, level, "Validation result for {%s, %d, %d}: NULL (Untrusted)",
@@ -344,19 +342,35 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
         struct val_authentication_chain *next_as;
         int             i;
 
+        /* Display the correct owner name, class,type for the record */
+        if (next_result->val_rc_rrset) {
+            if (ns_name_ntop(next_result->val_rc_rrset->val_rrset_name_n, 
+                        name_p, sizeof(name_p)) == -1) {
+                strcpy(name_p, "Invalid name");
+            }
+            real_type_h = next_result->val_rc_rrset->val_rrset_type_h; 
+            real_class_h = next_result->val_rc_rrset->val_rrset_class_h; 
+        } else {
+            if (ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
+                strcpy(name_p, "Invalid name");
+            }
+            real_type_h = type_h;
+            real_class_h = class_h;
+        }
+
         if (val_isvalidated(next_result->val_rc_status)) {
             val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Validated)",
-                    name_p, class_h, type_h,
+                    name_p, real_class_h, real_type_h,
                     p_val_status(next_result->val_rc_status),
                     next_result->val_rc_status);
         } else if (val_istrusted(next_result->val_rc_status)) {
             val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Trusted but not Validated)",
-                    name_p, class_h, type_h,
+                    name_p, real_class_h, real_type_h,
                     p_val_status(next_result->val_rc_status),
                     next_result->val_rc_status);
         } else {
             val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Untrusted)",
-                    name_p, class_h, type_h,
+                    name_p, real_class_h, real_type_h,
                     p_val_status(next_result->val_rc_status),
                     next_result->val_rc_status);
         }
@@ -705,18 +719,18 @@ p_val_err(int err) {
  * *********************************************************************/
 
 static void
-val_log_insert(val_log_t * logp)
+val_log_insert(val_log_t **log_head, val_log_t * logp)
 {
     val_log_t      *tmp_log;
 
-    if (NULL == logp)
+    if (NULL == logp || NULL == log_head)
         return;
 
-    for (tmp_log = log_head; tmp_log && tmp_log->next;
+    for (tmp_log = *log_head; tmp_log && tmp_log->next;
          tmp_log = tmp_log->next);
 
     if (NULL == tmp_log)
-        log_head = logp;
+        *log_head = logp;
     else
         tmp_log->next = logp;
 }
@@ -849,7 +863,7 @@ val_log_create_logp(int level)
 }
 
 val_log_t      *
-val_log_add_udp(int level, char *host, int port)
+val_log_add_udp(val_log_t **log_head, int level, char *host, int port)
 {
     val_log_t      *logp;
 
@@ -877,13 +891,13 @@ val_log_add_udp(int level, char *host, int port)
     }
 
     logp->logf = val_log_udp;
-    val_log_insert(logp);
+    val_log_insert(log_head, logp);
 
     return logp;
 }
 
 val_log_t      *
-val_log_add_cb(int level, val_log_cb_t func)
+val_log_add_cb(val_log_t **log_head, int level, val_log_cb_t func)
 {
     val_log_t      *logp;
 
@@ -897,13 +911,13 @@ val_log_add_cb(int level, val_log_cb_t func)
     logp->opt.cb.func = func;
     logp->logf = val_log_callback;
 
-    val_log_insert(logp);
+    val_log_insert(log_head, logp);
 
     return logp;
 }
 
 val_log_t      *
-val_log_add_filep(int level, FILE * p)
+val_log_add_filep(val_log_t **log_head, int level, FILE * p)
 {
     val_log_t      *logp;
 
@@ -917,13 +931,13 @@ val_log_add_filep(int level, FILE * p)
     logp->opt.file.fp = p;
     logp->logf = val_log_filep;
 
-    val_log_insert(logp);
+    val_log_insert(log_head, logp);
 
     return logp;
 }
 
 val_log_t      *
-val_log_add_file(int level, const char *filen)
+val_log_add_file(val_log_t **log_head, int level, const char *filen)
 {
     val_log_t      *logp;
     FILE           *filep;
@@ -933,7 +947,7 @@ val_log_add_file(int level, const char *filen)
 
     filep = fopen(filen, "a");
 
-    logp = val_log_add_filep(level, filep);
+    logp = val_log_add_filep(log_head, level, filep);
     if (NULL == logp)
         fclose(filep);
 
@@ -941,7 +955,7 @@ val_log_add_file(int level, const char *filen)
 }
 
 val_log_t      *
-val_log_add_syslog(int level, int facility)
+val_log_add_syslog(val_log_t **log_head, int level, int facility)
 {
     val_log_t      *logp;
 
@@ -952,13 +966,21 @@ val_log_add_syslog(int level, int facility)
     logp->opt.syslog.facility = facility;
     logp->logf = val_log_syslog;
 
-    val_log_insert(logp);
+    val_log_insert(log_head, logp);
 
     return logp;
 }
 
+/* Add log target to system list */
 val_log_t      *
 val_log_add_optarg(const char *str_in, int use_stderr)
+{
+    return val_log_add_optarg_to_list(&default_log_head, str_in, use_stderr);
+}
+
+/* Add log target to a given list */
+val_log_t      *
+val_log_add_optarg_to_list(val_log_t **log_head, const char *str_in, int use_stderr)
 {
     val_log_t      *logp = NULL;
     char           *l, *copy, *str;
@@ -987,14 +1009,14 @@ val_log_add_optarg(const char *str_in, int use_stderr)
             goto err;
         }
         str = ++l;
-        logp = val_log_add_file(level, str);
+        logp = val_log_add_file(log_head, level, str);
         break;
 
     case 's':                  /* stderr|stdout */
         if (0 == strcmp(str, "stderr"))
-            logp = val_log_add_filep(level, stderr);
+            logp = val_log_add_filep(log_head, level, stderr);
         else if (0 == strcmp(str, "stdout"))
-            logp = val_log_add_filep(level, stdout);
+            logp = val_log_add_filep(log_head, level, stdout);
         else if (0 == strcmp(str, "syslog")) {
             int             facility;
             l = strchr(str, ':');
@@ -1003,7 +1025,7 @@ val_log_add_optarg(const char *str_in, int use_stderr)
                 facility = ((int)strtol(str, (char **)NULL, 10)) << 3;
             } else
                 facility = LOG_USER;
-            logp = val_log_add_syslog(level, facility);
+            logp = val_log_add_syslog(log_head, level, facility);
         } else {
             if (use_stderr)
                 fprintf(stderr, "unknown output format string\n");
@@ -1031,7 +1053,7 @@ val_log_add_optarg(const char *str_in, int use_stderr)
             *l++ = 0;
             port = (int)strtol(str, (char **)NULL, 10);
 
-            logp = val_log_add_udp(level, host, port);
+            logp = val_log_add_udp(log_head, level, host, port);
         }
         break;
 
@@ -1050,11 +1072,26 @@ void
 val_log(const val_context_t * ctx, int level, const char *template, ...)
 {
     va_list         ap;
-    val_log_t      *logp = log_head;
+    val_log_t      *logp = default_log_head;
 
     if (NULL == template)
         return;
 
+    for (; NULL != logp; logp = logp->next) {
+
+        /** check individual level */
+        if ((level > logp->level) || (NULL == logp->logf))
+            continue;
+
+        va_start(ap, template);
+        (*logp->logf) (logp, ctx, level, template, ap);
+        va_end(ap);
+    }
+
+    if (NULL == ctx)
+        return;
+
+    logp = ctx->val_log_targets;
     for (; NULL != logp; logp = logp->next) {
 
         /** check individual level */
