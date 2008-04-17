@@ -129,9 +129,9 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2008-03-06" "perl v5.8.8" "Programmer's Manual"
+.TH libval 3 "2008-04-17" "perl v5.8.8" "Programmer's Manual"
 .SH "NAME"
-\&\fIval_create_context()\fR, \fIval_create_context_with_conf()\fR,
+\&\fIval_create_context()\fR
 \&\fIval_free_context()\fR \- manage validator context
 .PP
 \&\fIval_resolve_and_check()\fR, \fIval_free_result_chain()\fR \- query and validate
@@ -150,11 +150,7 @@ one of the non\-existence types
 \&\fIp_val_status()\fR, \fIp_ac_status()\fR, \fIp_val_error()\fR \- display validation status,
 authentication chain status and error information
 .PP
-\&\fIdnsval_conf_get()\fR, \fIresolv_conf_get()\fR, \fIroot_hints_get()\fR \- get
-the default location for the validator configuration files
-.PP
-\&\fIdnsval_conf_set()\fR, \fIresolv_conf_set()\fR, \fIroot_hints_set()\fR \- set
-the default location for the validator configuration files
+\&\fIval_log_add_optarg\fR \- control log message verbosity and output location
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .Vb 1
@@ -163,14 +159,6 @@ the default location for the validator configuration files
 .PP
 .Vb 1
 \&  int val_create_context(const char *label, val_context_t **newcontext);
-.Ve
-.PP
-.Vb 5
-\&  int val_create_context_with_conf(char *label,
-\&                         char *dnsval_conf,
-\&                         char *resolv_conf,
-\&                         char *root_conf,
-\&                         val_context_t ** newcontext);
 .Ve
 .PP
 .Vb 6
@@ -207,35 +195,15 @@ the default location for the validator configuration files
 .Ve
 .PP
 .Vb 1
+\&  val_log_t *val_log_add_optarg(const char *args, int use_stderr);
+.Ve
+.PP
+.Vb 1
 \&  void val_free_result_chain(struct val_result_chain *results);
 .Ve
 .PP
 .Vb 1
 \&  void val_free_context(val_context_t *context);
-.Ve
-.PP
-.Vb 1
-\&  char *resolv_conf_get(void);
-.Ve
-.PP
-.Vb 1
-\&  int resolv_conf_set(const char *name);
-.Ve
-.PP
-.Vb 1
-\&  char *root_hints_get(void);
-.Ve
-.PP
-.Vb 1
-\&  int root_hints_set(const char *name);
-.Ve
-.PP
-.Vb 1
-\&  char *dnsval_conf_get(void);
-.Ve
-.PP
-.Vb 1
-\&  int dnsval_conf_set(const char *name);
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
@@ -267,14 +235,7 @@ the validation policy and resolver policy.
 Validator and resolver policies are read from the \fB/etc/dnsval.conf\fR and
 \&\fB/etc/resolv.conf\fR files by default.  \fB/etc/root.hints\fR provides
 bootstrapping information for the validator when it functions as a full
-resolver (see \fI\fIdnsval.conf\fI\|(3)\fR).  The default locations of each of these
-files may be changed using the interfaces \fI\fIdnsval_conf_set()\fI\fR,
-\&\fI\fIresolv_conf_set()\fI\fR, and \fI\fIroot_hints_set()\fI\fR, respectively.  The
-corresponding \*(L"get\*(R" interfaces (namely \fI\fIdnsval_conf_get()\fI\fR,
-\&\fI\fIresolv_conf_get()\fI\fR, and \fI\fIroot_hints_get()\fI\fR) can be used to return the
-current location from where these configuration files are read.  The
-configuration file locations may also be specified on a per-context basis
-using the \fI\fIval_create_context_with_conf()\fI\fR function.
+resolver (see \fI\fIdnsval.conf\fI\|(3)\fR). 
 .PP
 Answers returned by \fI\fIval_resolve_and_check()\fI\fR are made available in the
 \&\fI*results\fR linked list.  Each answer corresponds to a distinct RRset; multiple
@@ -837,6 +798,43 @@ Points to the next resource record in the RRset.
 .RE
 .RS 4
 .RE
+.SH "LOGGING"
+.IX Header "LOGGING"
+libval provides the \fIval_log_add_optarg()\fR function for controlling the 
+verbosity and location of log message output.
+.PP
+The \fIval_log_add_optarg()\fR function takes two arguments: the first argument
+args is a character string value that specifies the location and verbosity,
+the second argument, use_stderr, if set to a value greater than 0 allows 
+libval to send log messages to stderr.
+.PP
+The character string that specifies log target location and verbosity has 
+a specific format:
+.PP
+.Vb 1
+\&    <debug-level>:<dest-type>[:<dest-options>]
+.Ve
+.PP
+where 
+    <debug\-level> is 1\-7, for increasing levels of verbosity
+    <dest\-type> is one of file, net, syslog, stderr, stdout
+    <dest\-options> depends on <dest\-type>
+        file:<file\-name>   (opened in append mode)
+        net[:<host\-name>:<host\-port>] (127.0.0.1:1053)
+        syslog[:facility] (0\-23 (default 1 \s-1USER\s0))
+.PP
+The log levels can be roughly translated into different types of log messages 
+as follows (the messages returned for each level in this list subsumes the 
+messages returned for the level above it):
+.PP
+.Vb 6
+\&    3 : Error : errror encountered
+\&    4 : Warning : recovering from error
+\&    5 : Notice : gives final validation results for a query 
+\&                 and details on policy files and labels used 
+\&    6 : Info : gives details on authentication chains 
+\&    7 : Debug : gives debug level information
+.Ve
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
 Return values for various functions are given below. These values can be
@@ -870,8 +868,8 @@ Some resource (crypto possibly) was unavailable.  Currently not implemented.
 .RE
 .RS 4
 .RE
-.IP "\fI\fIval_create_context()\fI\fR and \fI\fIval_create_context_with_conf()\fI\fR" 4
-.IX Item "val_create_context() and val_create_context_with_conf()"
+.IP "\fI\fIval_create_context()\fI\fR" 4
+.IX Item "val_create_context()"
 .RS 4
 .PD 0
 .IP "\s-1VAL_NO_ERROR\s0" 4
@@ -896,7 +894,7 @@ The policy identifier being referenced was invalid.
 .SH "FILES"
 .IX Header "FILES"
 The validator library reads configuration information from two files,
-\&\fB/etc/resolv.conf\fR and \fB/etc/dnsval.conf\fR.
+\&\fBresolv.conf\fR and \fBdnsval.conf\fR.
 .PP
 See \fB\f(BIdnsval.conf\fB\|(5)\fR for a description of syntax for these files.
 .SH "COPYRIGHT"
