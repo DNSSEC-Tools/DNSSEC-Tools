@@ -3,7 +3,7 @@
 
 =head1 NAME
 
-I<val_create_context()>, I<val_create_context_with_conf()>,
+I<val_create_context()>
 I<val_free_context()> - manage validator context
 
 I<val_resolve_and_check()>, I<val_free_result_chain()> - query and validate
@@ -22,23 +22,13 @@ one of the non-existence types
 I<p_val_status()>, I<p_ac_status()>, I<p_val_error()> - display validation status,
 authentication chain status and error information
 
-I<dnsval_conf_get()>, I<resolv_conf_get()>, I<root_hints_get()> - get
-the default location for the validator configuration files
-
-I<dnsval_conf_set()>, I<resolv_conf_set()>, I<root_hints_set()> - set
-the default location for the validator configuration files
+I<val_log_add_optarg> - control log message verbosity and output location
 
 =head1 SYNOPSIS
 
   #include <validator.h>
 
   int val_create_context(const char *label, val_context_t **newcontext);
-
-  int val_create_context_with_conf(char *label,
-                         char *dnsval_conf,
-                         char *resolv_conf,
-                         char *root_conf,
-                         val_context_t ** newcontext);
 
   int val_resolve_and_check(val_context_t *context,
                          u_char *domain_name_n,
@@ -59,21 +49,11 @@ the default location for the validator configuration files
 
   int val_does_not_exist(val_status_t status);
 
+  val_log_t *val_log_add_optarg(const char *args, int use_stderr);
+
   void val_free_result_chain(struct val_result_chain *results);
 
   void val_free_context(val_context_t *context);
-
-  char *resolv_conf_get(void);
-
-  int resolv_conf_set(const char *name);
-
-  char *root_hints_get(void);
-
-  int root_hints_set(const char *name);
-
-  char *dnsval_conf_get(void);
-
-  int dnsval_conf_set(const char *name);
 
 
 =head1 DESCRIPTION
@@ -106,14 +86,7 @@ the validation policy and resolver policy.
 Validator and resolver policies are read from the B</etc/dnsval.conf> and
 B</etc/resolv.conf> files by default.  B</etc/root.hints> provides
 bootstrapping information for the validator when it functions as a full
-resolver (see I<dnsval.conf(3)>).  The default locations of each of these
-files may be changed using the interfaces I<dnsval_conf_set()>,
-I<resolv_conf_set()>, and I<root_hints_set()>, respectively.  The
-corresponding "get" interfaces (namely I<dnsval_conf_get()>,
-I<resolv_conf_get()>, and I<root_hints_get()>) can be used to return the
-current location from where these configuration files are read.  The
-configuration file locations may also be specified on a per-context basis
-using the I<val_create_context_with_conf()> function.
+resolver (see I<dnsval.conf(3)>). 
 
 Answers returned by I<val_resolve_and_check()> are made available in the
 I<*results> linked list.  Each answer corresponds to a distinct RRset; multiple
@@ -595,6 +568,40 @@ Points to the next resource record in the RRset.
 
 =back
 
+=head1 LOGGING 
+
+libval provides the val_log_add_optarg() function for controlling the 
+verbosity and location of log message output.
+
+The val_log_add_optarg() function takes two arguments: the first argument
+args is a character string value that specifies the location and verbosity,
+the second argument, use_stderr, if set to a value greater than 0 allows 
+libval to send log messages to stderr.
+
+The character string that specifies log target location and verbosity has 
+a specific format:
+
+    <debug-level>:<dest-type>[:<dest-options>]
+
+where 
+    <debug-level> is 1-7, for increasing levels of verbosity
+    <dest-type> is one of file, net, syslog, stderr, stdout
+    <dest-options> depends on <dest-type>
+        file:<file-name>   (opened in append mode)
+        net[:<host-name>:<host-port>] (127.0.0.1:1053)
+        syslog[:facility] (0-23 (default 1 USER))
+
+The log levels can be roughly translated into different types of log messages 
+as follows (the messages returned for each level in this list subsumes the 
+messages returned for the level above it):
+
+    3 : Error : errror encountered
+    4 : Warning : recovering from error
+    5 : Notice : gives final validation results for a query 
+                 and details on policy files and labels used 
+    6 : Info : gives details on authentication chains 
+    7 : Debug : gives debug level information
+    
 =head1 RETURN VALUES
 
 Return values for various functions are given below. These values can be
@@ -636,7 +643,7 @@ Some resource (crypto possibly) was unavailable.  Currently not implemented.
 
 =back
 
-=item I<val_create_context()> and I<val_create_context_with_conf()>
+=item I<val_create_context()> 
 
 =over 4
 
@@ -667,7 +674,7 @@ The policy identifier being referenced was invalid.
 =head1 FILES
 
 The validator library reads configuration information from two files,
-B</etc/resolv.conf> and B</etc/dnsval.conf>.
+B<resolv.conf> and B<dnsval.conf>.
 
 See B<dnsval.conf(5)> for a description of syntax for these files.
 
