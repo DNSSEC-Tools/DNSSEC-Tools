@@ -93,9 +93,15 @@ my $contactaddr = $opts{'m'} ? $opts{'m'}
 my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
 
-#if ($dvfile && $ncfile) {
-#    usage(2);
-#}
+if (!$dvfile && !$ncfile) {
+    usage("You need to specify at least a dnsval.conf (-k) file or named.conf (-n) file.");
+}
+if ($dvfile && ! -f $dvfile) {
+    usage("File \"$dvfile\" does not exist");
+}
+if ($ncfile && ! -f $ncfile) {
+    usage("File \"$ncfile\" does not exist");
+}
 
 if (!$smtpserver) {
     print "smtpserver is undefined\n";
@@ -220,11 +226,9 @@ sub show_version {
 }
 
 sub usage {
-#    my ($arg) = @_;
-#    if ($arg) {
-#        print "trustman takes only one config file argument.\n";
-#        print "please indicate EITHER a dnsval.conf file OR a named.conf file.\n";
-#    }
+    my ($extratext) = @_;
+    print "\nError:\n  $extratext\n\n" if ($extratext);
+
     print "trustman [-z zone] [-L] [-f] [-c -o] [-v] [-V]\n";
     print "\tuse the -f option to run in the foreground.\n";
     print "\tIf a zone is not specified, all zones in the key_containing_files will be checked.\n";
