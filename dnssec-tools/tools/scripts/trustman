@@ -75,9 +75,9 @@ my %dtconf = parseconfig();
 # but not yet added to config files (waiting for add_holddown_time
 # to expire). Read this file if it exists, and write to it
 # any time the %newkeys structure is modified.
-my $newkeyfile = $opts{'a'} ? $opts{'a'} 
+my $newkeyfile = $opts{'a'} ? $opts{'a'}
                         : $dtconf{'taanchorfile'};
-                     
+
 my $resfile = $opts{'r'} ? $opts{'r'}
                         : $dtconf{'taresolvconffile'};
 
@@ -205,11 +205,11 @@ if ($opts{'f'}) {
     &daemonize;
     do {
         my $newsleeptime = &checkkeys($sleeptime);
-        if (!$once) { 
+        if (!$once) {
             sleep($newsleeptime);
         }
     } while (!$once);
-} 
+}
 
 sub load_newkeys {
     # load in the newkeys info from file if available
@@ -287,7 +287,7 @@ sub checkkeys {
 # check the RRSIG over the DNKSEY
         if ($query) {
             foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
-                 
+
                  my $orgttl = $rrsigrec->orgttl;
                  my $sigexp = $rrsigrec->sigexpiration;
                  my $retryobj = { ottl => $orgttl,
@@ -305,7 +305,7 @@ sub checkkeys {
                 next if (!($keyrec->flags & 1));
                 my $ttl = $keyrec->ttl;
                 my $key = $keyrec->key;
-                $key =~ s/\s+//g; # remove all spaces   
+                $key =~ s/\s+//g; # remove all spaces
                 my $nonmatch;
                 # we don't care if a DNSKEY record is found with the
                 # revoke bit set unless it is a key we have stored
@@ -317,14 +317,14 @@ sub checkkeys {
 
                 # also need to find any keys in %newkeys which do
                 # NOT appear in a subsequent RRSET
- 
+
                     my $notnewkey = 0;
                     if (keys %newkeys) {
                         for (my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
                             if ($newkeys{$z}[$i]{key} eq $key &&
                                 $newkeys{$z}[$i]{flags} eq $keyrec->flags &&
                                 $newkeys{$z}[$i]{protocol} eq $keyrec->protocol &&
-                                $newkeys{$z}[$i]{algorithm} eq $keyrec->algorithm ) 
+                                $newkeys{$z}[$i]{algorithm} eq $keyrec->algorithm )
                             {
                                 $notnewkey = 1;
                                 if (keys %pendingnewkeys) {
@@ -337,12 +337,12 @@ sub checkkeys {
                                         }
                                     }
                                 }
-                            
+
                             }
                         }
                     }
                     if (!$notnewkey) {
-                    
+
                         my $add_holddown_time;
                         if ($holdtime) {
                             $add_holddown_time = $holdtime;
@@ -359,15 +359,15 @@ sub checkkeys {
                         my $notif = "A new key has been received for zone " . $z . ". It will be added when the add holddown time is reached.\n";
                         notify($notif) if ($opts{'v'});
                         # whenever newkeys is modified, write it out
-                        open (FILE, "> $newkeyfile") 
+                        open (FILE, "> $newkeyfile")
                             or warn "can't open newkeys file: $!";
-                        print FILE 
+                        print FILE
                             Data::Dumper->Dump([\%newkeys], ['*newkeys']);
                         close FILE or warn "can't close newkeys file: $!";
                     }
                 # check if it has the revoke bit set
-                # or if we're trying to test the revoke functionality 
-                } elsif (($keyrec->flags & 128) || 
+                # or if we're trying to test the revoke functionality
+                } elsif (($keyrec->flags & 128) ||
                          ($revoke == 1)) {
                     # this key is being revoked
                     if ($dvfile) {
@@ -410,7 +410,7 @@ sub checkkeys {
                 }
 
             }
-            
+
 # only want to remove pending keys which do not appear in this
 # RRSET if the query was successful. Will deal with the unsuccessful
 # query below
@@ -422,7 +422,7 @@ sub checkkeys {
                     for (my $j = 0; $j <= $#{$newkeys{$z}}; $j++) {
                       # find the entry in newkeys that corresponds to
                       # the pending key not found
-                        if ($newkeys{$z}[$j]{key} eq 
+                        if ($newkeys{$z}[$j]{key} eq
                             $pendingnewkeys{$z}[$k]{key} &&
                             $newkeys{$z}[$j]{flags} eq
                             $pendingnewkeys{$z}[$k]{flags} &&
@@ -495,11 +495,11 @@ sub checkkeys {
                                     };
                 push (@{$keystorage{$z}}, $newstorageobj);
 
-                splice @{$newkeys{$z}},$i,1; 
+                splice @{$newkeys{$z}},$i,1;
                 # whenever newkeys is modified, write it out
-                open (FILE, "> $newkeyfile") 
+                open (FILE, "> $newkeyfile")
                     or warn "can't open newkeys: $!";
-                print FILE 
+                print FILE
                     Data::Dumper->Dump([\%newkeys], ['*newkeys']);
                 close FILE or warn "can't close newkeys file: $!";
             }
@@ -507,7 +507,7 @@ sub checkkeys {
 #        if (($contactaddr) && (@newkeyzones)) { # mail it
 #            mailcontact(0,$smtpserver,$contactaddr,@newkeyzones);
 #        }
-        
+
     }
 
     if (keys %remkeys) {
@@ -541,7 +541,7 @@ sub checkkeys {
 
     foreach my $z (keys %keys_to_verify) {
     # any zones/keys still in %keys_to_verify did not appear
-    # in a query, but are configured trust anchors. 
+    # in a query, but are configured trust anchors.
     # Set the remove holddown time (30 days) for these keys
     # and add to remkeys for processing on next go
 
@@ -580,7 +580,7 @@ sub checkkeys {
         # otherwise, just leaving the current $sleep
     }
     return $sleep;
-        
+
 } # end checkkeys
 
 #################################################################
@@ -601,7 +601,7 @@ sub add_ta_namedconf  {
         if (/^trusted-keys/) {
             print TMP "\n\n";
             for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
-                my $newkey = $zone . " " . 
+                my $newkey = $zone . " " .
                              $newkeys{$zone}[$i]{flags} . " " .
                              $newkeys{$zone}[$i]{protocol} . " " .
                              $newkeys{$zone}[$i]{algorithm} . " " .
@@ -656,7 +656,7 @@ sub add_ta_dnsvalconf  {
             }
 
             for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
-                my $newkeyentry = $zone . ". \"" . 
+                my $newkeyentry = $zone . ". \"" .
                              $newkeys{$zone}[$i]{flags} . " " .
                              $newkeys{$zone}[$i]{protocol} . " " .
                              $newkeys{$zone}[$i]{algorithm} . " " .
@@ -689,7 +689,7 @@ sub add_ta_dnsvalconf  {
 # This usually is required when a known key configured as a trust
 # anchor disappears from the query results from a validated
 # response, and remains missing for the required hold time.
-# 
+#
 
 sub remove_ta_dnsvalconf {
     my ($zone, $k, $f, $p, $a) = @_;
@@ -722,7 +722,7 @@ sub remove_ta_dnsvalconf {
                         my $remkeyrec = $z . ". " . $val;
                         print TMP "# " . $remkeyrec . "\n\n";
                         my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
-                        notify($notif); 
+                        notify($notif);
                     } else {
                         # add the trailing dot when printing zone name
                         print TMP $z . ". " . $val . "\n\n";
@@ -754,7 +754,7 @@ sub remove_ta_dnsvalconf {
 # This usually is required when a known key configured as a trust
 # anchor disappears from the query results from a validated
 # response, and remains missing for the required hold time.
-# 
+#
 
 sub remove_ta_namedconf  {
     my ($zone, $key, $flags, $proto, $algo) = @_;
@@ -958,9 +958,9 @@ sub revoke_ta_namedconf  {
                     print TMP $_;
                 }
             }
-            
+
         } elsif ($trustsection) {
-            if (/\s*\};/) { 
+            if (/\s*\};/) {
                 $trustsection = 0;
                 print TMP "\n};\n";
             } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
@@ -1026,8 +1026,8 @@ sub get_zones_keys {
                 $revzones{$z} = $#zones +1;
             }
         }
-    } 
-    
+    }
+
 
     if (!@zones) {
         print "No zones to check, exiting....\n";
@@ -1039,9 +1039,9 @@ sub get_zones_keys {
 #########################################################
 #
 # resolve_and_check_dnskey
-# called by checkkeys, queries a zone to get the 
+# called by checkkeys, queries a zone to get the
 # DNSKEY record; returns an answer only if it was validated
-# 
+#
 
 sub resolve_and_check_dnskey {
     my ($z,$file) = @_;
@@ -1052,7 +1052,7 @@ sub resolve_and_check_dnskey {
         my ($pkt, $err) = new Net::DNS::Packet(\$r);
         if (!$err) {
             return $pkt;
-        } 
+        }
     }
     return undef;
 }
@@ -1149,7 +1149,7 @@ sub read_dnsval_file {
 # if zones were supplied on the command line (-z)
 
                     if (exists($revzones{$zonename})) {
-    
+
                         $configmap->{$zonename} = $file;
 
                         push @{$storage->{$zonename}},
@@ -1179,7 +1179,7 @@ sub read_dnsval_file {
 # compute_add_holddown
 #
 # used in implementation of Section 2.4.1 of RFC 5011
-# 
+#
 
 sub compute_add_holddown {
     my $ttl = shift;
@@ -1200,7 +1200,7 @@ sub compute_add_holddown {
 
 #####################################################
 # compute_remove_holddown
-# 
+#
 # used in implementation of Section 2.4.2 of RFC 5011
 #
 # 30 days from "now"
@@ -1249,13 +1249,13 @@ sub compute_sleepsecs {
             $actrefsecs = $fifteendays
         }
     }
-    
+
     return ($actrefsecs,$actrefsecs+$nowsecs);
 }
 
 #################################################################
 # compute_queryfail_sleepsecs
-# 
+#
 # compute the number of seconds to sleep in case of a query
 # failure.
 #
@@ -1290,7 +1290,7 @@ sub compute_queryfail_sleepsecs {
     }
     if ($refreshsecs >= $onehour) {
         return ($refreshsecs);
-    } else { 
+    } else {
         return ($onehour);
     }
 }
@@ -1301,7 +1301,7 @@ sub compute_queryfail_sleepsecs {
 
 sub notify {
     my ($message) = @_;
-    
+
     if ($opts{'L'}) {
         openlog('trustman','pid','user') || warn "could not open syslog";
         syslog('warning',"%s", $message);
@@ -1382,7 +1382,7 @@ sub Verbose {
 
 ####################################################################
 # daemonize
-# 
+#
 # run as a daemon
 #
 
@@ -1415,7 +1415,7 @@ sub LocalGetOptions {
 }
 
 sub LocalOptionsMap {
-    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH')
 			    ? (1, 1, $_[0]) : (0, 2));
     for (my $i = $st; $i <= $#_; $i += $cb) {
 	if ($_[$i]) {
