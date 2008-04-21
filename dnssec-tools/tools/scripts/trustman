@@ -263,6 +263,7 @@ sub checkkeys {
          }
     }
 
+    Verbose("Checking zone keys\n");
     foreach my $z (@zones_to_check) {
         my $query;
         $query = resolve_and_check_dnskey($z,$dvfile);
@@ -275,6 +276,7 @@ sub checkkeys {
                                       key => $newkeys{$z}[$i]{key},
                                       found => 0,
                                     };
+		Verbose("  pending key for $z\n");
                 push (@{$pendingnewkeys{$z}}, $pendingkeyobj);
             }
         }
@@ -290,9 +292,12 @@ sub checkkeys {
                                 };
                  $zone_retry_times{$z} = $retryobj;
                  my ($refresh_secs,$refresh_time) = compute_sleepsecs($orgttl, $sigexp);
+		 Verbose("  $z ...  refresh_secs=$refresh_secs, refresh_time=$refresh_time\n");
                  $sleeptimes{$z} =  $refresh_secs;
                  $active_refresh_times{$z} = $refresh_time;
                  last; # only need one sleep time per zone
+		 # XXX: yeah, but should we have the shortest or the longest?
+		 # (in theory they *should* be the same...)
             }
 # if an RRSET is received which does NOT contain a pending
 # new key, remove that new key from the %newkeys
@@ -350,8 +355,9 @@ sub checkkeys {
                                           key => $key,
                                           holdtime => $add_holddown_time,
                                         };
+			Verbose("adding holddown for new key in $z\n");
                         push(@{$newkeys{$z}},$newkeyobj);
-                        my $notif = "A new key has been received for zone " . $z . ". It will be added when the add holddown time is reached.\n";
+                        my $notif = "A new key has been received for zone " . $z . ".\n   It will be added when the add holddown time is reached.\n";
                         notify($notif) if ($opts{'v'});
                         # whenever newkeys is modified, write it out
                         open (FILE, "> $newkeyfile")
@@ -1040,6 +1046,7 @@ sub get_zones_keys {
 
 sub resolve_and_check_dnskey {
     my ($z,$file) = @_;
+    Verbose(" Checking the live \"$z\" key\n");
     my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
                                                  dnsval_conf => $file);
     my $r = $validator->res_query($z, "IN", "DNSKEY");
@@ -1048,6 +1055,12 @@ sub resolve_and_check_dnskey {
         if (!$err) {
             return $pkt;
         }
+	Verbose("Got an error!! $err\n");
+    }
+    if ($r) {
+	Verbose("Help! Failed to validate keys for \"$z\"\n");
+    } else {
+	Verbose("Help! resolving failed\n");
     }
     return undef;
 }
@@ -1062,7 +1075,7 @@ sub resolve_and_check_dnskey {
 
 sub read_conf_file {
     my ($storage, $file, $configmap) = @_;
-    Verbose("reading and parsing trust keys from $file\n");
+    Verbose("Reading and parsing trust keys from $file\n");
     my $pat = "trusted-keys";
 
     # regexp pulled from Fast.pm
@@ -1095,6 +1108,7 @@ sub read_conf_file {
                                                   algorithm => $algorithm,
                                                   key => $key,
                                                 };
+			    Verbose(" Found a key for $zonename\n");
                             push (@{$storage->{$zonename}}, $newstorageobj);
                         }
                     }
@@ -1115,7 +1129,7 @@ sub read_conf_file {
 
 sub read_dnsval_file {
     my ($storage, $file, $configmap) = @_;
-    Verbose("reading and parsing trust keys from $file\n");
+    Verbose("Reading and parsing trust keys from $file\n");
     my $pat = "trust-anchor";
 
     my $fh = new IO::File;
@@ -1152,6 +1166,7 @@ sub read_dnsval_file {
 			        protocol => $proto,
 			        algorithm => $algo,
 			        key => $key };
+			Verbose(" Found a key for $zonename\n");
 	                $storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
                     }
                 } else {
@@ -1162,6 +1177,7 @@ sub read_dnsval_file {
 		            protocol => $proto,
 		            algorithm => $algo,
 		            key => $key };
+		    Verbose(" Found a key for $zonename\n");
 	            $storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
                 }
 	    }
@@ -1308,14 +1324,17 @@ sub notify {
     if ($smtpserver && $contactaddr) {
         mailcontact(0,$smtpserver,$contactaddr,$message);
     }
-
 }
+
+
 ######################################################################
 # mailcontact()
 #  - emails a contact address with the error output
 sub mailcontact {
     my ($ok,$smtp,$contact,$msg) = @_;
     my $fromaddr = 'trustman@localhost';
+
+    Verbose("sending mail to $contact\n");
 
     # set up the SMTP object and required data
     my $message = Net::SMTP->new($smtp) || die "failed to create smtp message";
