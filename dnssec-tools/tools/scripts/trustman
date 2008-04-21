@@ -111,7 +111,7 @@ my $initrun = 1;
 
 # determine zones to be managed
 my @zones;
-push @zones, split(/,/,$opts{'d'}) if ($opts{'d'});
+push @zones, split(/,/,$opts{'z'}) if ($opts{'z'});
 my %revzones;
 for (my $i = 0; $i <=$#zones; $i++) {
     $revzones{$zones[$i]} = $i;
@@ -146,16 +146,7 @@ if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
 }
 
-if ($opts{'f'}) {
-    $once = $opts{'S'};
-    get_zones_keys(\%keystorage);
-    do {
-        my $newsleeptime = &checkkeys($sleeptime);
-        if (!$once) {
-            sleep($newsleeptime);
-        }
-    } while (!$once);
-} elsif ($opts{'c'}) {
+if ($opts{'c'}) {
     my $conffile = getconffile();
     my $didnconf = 0;
     my $didvconf = 0;
@@ -202,7 +193,7 @@ if ($opts{'f'}) {
 } else {
     $once = $opts{'S'};
     get_zones_keys(\%keystorage);
-    &daemonize;
+    &daemonize if (!$opts{'f'});
     do {
         my $newsleeptime = &checkkeys($sleeptime);
         if (!$once) {
