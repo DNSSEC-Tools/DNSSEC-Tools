@@ -62,6 +62,9 @@ my @opts =
 	"roll-logfile=s",			# Logfile for rollerd.
 	"roll-loglevel=s",			# Logging level for rollerd.
 	"roll-sleep=i",				# Sleep-time for rollerd.
+
+        "ta-contact=s",                         # trustman email contact
+        "ta-smtpserver=s",                      # trustman smtp server
 );
 
 #
@@ -97,6 +100,9 @@ my $zsopts;				# Options for zone-signing program.
 my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
+
+my $tacontact;                          # trustman email contact
+my $tasmtpserver;                       # trustman smtp server
 
 #
 # Program paths.
@@ -262,6 +268,9 @@ sub optsandargs
 	$rloglevel = $opts{'roll_loglevel'} || dnssec_tools_default("roll_loglevel");
 	$rsleep	   = $opts{'roll_sleep'}    || dnssec_tools_default("roll_sleeptime");
 
+	$tacontact = $opts{'ta_contact'}    || dnssec_tools_default("ta_contact");
+	$tasmtpserver = $opts{'ta_smtpserver'}    || dnssec_tools_default("ta_smtpserver");
+
 	$entmsg	   = 0  if(defined($opts{'noentropy_msg'}));
 	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
 	$usegui	   = 0  if(defined($opts{'nousegui'}));
@@ -360,7 +369,11 @@ sub writeconf()
 
 		print "\tkeygen options     - \"$kgopts\"\n";
 		print "\tzonecheck options  - \"$zcopts\"\n";
-		print "\tzonesign  options  - \"$zsopts\"\n";
+		print "\tzonesign  options  - \"$zsopts\"\n\n";
+
+		print "\ttacontact    - \"$tacontact\"\n";
+		print "\ttasmtpserver - \"$tasmtpserver\"\n";
+		
 	}
 
 	open(DTCONF,">$outfile") or die "unable to open \"$outfile\" for writing";
@@ -444,6 +457,12 @@ zskcount	$zskcnt
 roll_logfile    $rlogfile
 roll_loglevel   $rloglevel
 roll_sleeptime  $rsleep
+
+#
+# Settings for trustman
+#
+tacontact       $tacontact
+tasmtpserver    $tasmtpserver
 
 #
 # GUI-usage flag.
@@ -692,6 +711,11 @@ sub get_dt_opts()
 	$rsleep	   = getval("Roll-over Manager's Sleep-time",$rsleep,"");
 
 	print "\n";
+
+	$tacontact = getval("TrustMan's contact address",$tacontact,"");
+	$tasmtpserver = getval("TrustMan's SMTP server",$tasmtpserver,"");
+
+	print "\n";
 }
 
 #----------------------------------------------------------------------------
@@ -936,7 +960,10 @@ sub usage()
 
 	print STDERR "\t\t-roll-logfile <logfile>\n";
 	print STDERR "\t\t-roll-loglevel <loglevel>\n";
-	print STDERR "\t\t-roll-sleep <sleep-time>\n";
+	print STDERR "\t\t-roll-sleep <sleep-time>\n\n";
+
+	print STDERR "\t\t-ta-contact <contact email>\n";
+	print STDERR "\t\t-ta-smtpserver <hostname>\n\n";
 
 	print STDERR "\t\t-outfile <conffile>\n";
 	print STDERR "\t\t-overwrite\n";
