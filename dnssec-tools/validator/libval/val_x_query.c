@@ -238,7 +238,7 @@ compose_answer(const u_char * name_n,
                const u_int16_t class_h,
                struct val_result_chain *results,
                struct val_response **f_resp, 
-               u_int8_t flags)
+               u_int32_t flags)
 {
     struct val_result_chain *res = NULL;
     int             ancount = 0;        // Answer Count
@@ -590,7 +590,7 @@ val_query(val_context_t * context,
           const char *domain_name,
           const u_int16_t class_h,
           const u_int16_t type,
-          const u_int8_t flags, 
+          const u_int32_t flags, 
           struct val_response **resp)
 {
     struct val_result_chain *results = NULL;
