@@ -181,28 +181,28 @@ extern          "C" {
     /*
      * query flags in the lower nibble
      */
-#define VAL_QFLAGS_ANY 0xff
-#define VAL_QFLAGS_USERMASK 0x0f
-#define VAL_QUERY_DONT_VALIDATE 0x01
-#define VAL_QUERY_NO_AC_DETAIL 0x02
-#define VAL_QUERY_MERGE_RRSETS 0x04
+#define VAL_QFLAGS_ANY 0xffffffff
+#define VAL_QFLAGS_USERMASK 0x00ffffff
+#define VAL_QUERY_DONT_VALIDATE 0x00000001
+#define VAL_QUERY_NO_AC_DETAIL 0x00000002
+#define VAL_QUERY_MERGE_RRSETS 0x00000004
 #ifdef LIBVAL_DLV
-#define VAL_QUERY_NO_DLV 0x08 
+#define VAL_QUERY_NO_DLV 0x00000008 
 #endif
 
     /*  
-     * Internal query state in the upper nibble 
+     * Internal query state in the upper byte 
      */
-#define VAL_QUERY_GLUE_REQUEST (0x10 | VAL_QUERY_DONT_VALIDATE) 
+#define VAL_QUERY_GLUE_REQUEST (0x01000000 | VAL_QUERY_DONT_VALIDATE) 
 #ifdef LIBVAL_DLV
-#define VAL_QUERY_USING_DLV 0x20 
+#define VAL_QUERY_USING_DLV 0x02000000 
 #endif
 
 /* 
  * if any of the internal query state flags or the VAL_QUERY_DONT_VALIDATE 
  * flag is set, we need exact flags to match in a cached record
  */ 
-#define VAL_Q_ONLY_MATCHING_FLAGS (0xf0 | VAL_QUERY_DONT_VALIDATE) 
+#define VAL_Q_ONLY_MATCHING_FLAGS (0xff000000 | VAL_QUERY_DONT_VALIDATE) 
 
 
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
@@ -536,7 +536,7 @@ extern          "C" {
                                           u_char * domain_name,
                                           const u_int16_t q_class,
                                           const u_int16_t type,
-                                          const u_int8_t flags,
+                                          const u_int32_t flags,
                                           struct val_result_chain
                                           **results);
 
@@ -579,7 +579,7 @@ extern          "C" {
                               const char *domain_name,
                               const u_int16_t q_class,
                               const u_int16_t type,
-                              const u_int8_t flags,
+                              const u_int32_t flags,
                               struct val_response **resp);
     int             val_free_response(struct val_response *resp);
     int             val_res_query(val_context_t * ctx, const char *dname,
@@ -593,7 +593,7 @@ extern          "C" {
                                    const u_int16_t class_h,
                                    struct val_result_chain *results,
                                    struct val_response **f_resp,
-                                   u_int8_t flags);
+                                   u_int32_t flags);
     /*
      * from val_gethostbyname.c 
      */
