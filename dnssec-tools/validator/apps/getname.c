@@ -33,6 +33,7 @@ static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
     {"novalidate", 0, 0, 'n'},
     {"port", 0, 0, 'p'},
+    {"output", 0, 0, 'o'},
     {0, 0, 0, 0}
 };
 #endif
@@ -50,6 +51,20 @@ usage(char *progname)
             "\t-n, --novalidate                do not use the validator\n");
     fprintf(stderr,
             "\t-p, --service=<PORT|SERVICE>    transport-layer port or service name\n");
+    fprintf(stderr, 
+            "\t-F                              add the NI_NOFQDN flag"
+            "\t-H                              add the NI_NUMERICHOST flag"
+            "\t-N                              add the NI_NAMEREQD flag"
+            "\t-S                              add the NI_NUMERICSERV flag"
+            "\t-D                              add the NI_DGRAM flag");
+    fprintf(stderr,
+            "\t-o, --output=<debug-level>:<dest-type>[:<dest-options>]\n"
+            "\t          <debug-level> is 1-7, corresponding to syslog levels\n"
+            "\t          <dest-type> is one of file, net, syslog, stderr, stdout\n"
+            "\t          <dest-options> depends on <dest-type>\n"
+            "\t              file:<file-name>   (opened in append mode)\n" 
+            "\t              net[:<host-name>:<host-port>] (127.0.0.1:1053\n" 
+            "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
 }
 
 static int      validate = 1;

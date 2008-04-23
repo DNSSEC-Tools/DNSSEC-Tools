@@ -30,6 +30,7 @@
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
     {"type", 0, 0, 't'},
+    {"output", 0, 0, 'o'},
     {0, 0, 0, 0}
 };
 #endif
@@ -45,6 +46,14 @@ usage(char *progname)
             "\t-h, --help          display usage and exit\n");
     fprintf(stderr,
             "\t-t, --type=<type>   record type. Defaults to A record.\n");
+    fprintf(stderr,
+            "\t-o, --output=<debug-level>:<dest-type>[:<dest-options>]\n"
+            "\t          <debug-level> is 1-7, corresponding to syslog levels\n"
+            "\t          <dest-type> is one of file, net, syslog, stderr, stdout\n"
+            "\t          <dest-options> depends on <dest-type>\n"
+            "\t              file:<file-name>   (opened in append mode)\n" 
+            "\t              net[:<host-name>:<host-port>] (127.0.0.1:1053\n" 
+            "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
 }
 
 int
@@ -112,6 +121,11 @@ main(int argc, char *argv[])
         return -1;
     }
 
+    //ret = val_res_query(NULL, "mail.marzot.net", 1, 15, buf, 1024, &status);
+    //ret = val_res_query(NULL, "nosig-A.test.dnssec-tools.org.", 1, 1, buf, 1024, &status);
+    //ret = val_res_query(NULL, "good-A.test.dnssec-tools.org", 1, 28, buf, 1024, &status);
+    //ret = val_res_query(NULL, "vb.futz.org", 1, 1, buf, 1024, &status);
+    
     ret = val_res_query(NULL, node, ns_c_in, type_h, buf, 1024, &status);
     printf("Return value %d\n", ret);
     printf("herrno value %d\n", h_errno);
@@ -119,5 +133,9 @@ main(int argc, char *argv[])
         print_response(buf, ret);
     }
 
+    if (val_isvalidated(status))
+        return 2;
+    else if (val_istrusted(status))
+        return 1;
     return 0;
 }
