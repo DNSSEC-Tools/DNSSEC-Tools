@@ -28,6 +28,7 @@ static struct option prog_options[] = {
     {"novalidate", 0, 0, 'n'},
     {"family", 0, 0, 'f'},
     {"reentrant", 0, 0, 'r'},
+    {"output", 0, 0, 'o'},
     {0, 0, 0, 0}
 };
 #endif
@@ -46,6 +47,14 @@ usage(char *progname)
     fprintf(stderr, "\t-f, --family=[AF_INET|AF_INET6] address family\n");
     fprintf(stderr, "\t                                AF_INET for IPv4 addresses,\n");
     fprintf(stderr, "\t                                and AF_INET6 for IPv6 addresses\n");
+    fprintf(stderr,
+            "\t-o, --output=<debug-level>:<dest-type>[:<dest-options>]\n"
+            "\t          <debug-level> is 1-7, corresponding to syslog levels\n"
+            "\t          <dest-type> is one of file, net, syslog, stderr, stdout\n"
+            "\t          <dest-options> depends on <dest-type>\n"
+            "\t              file:<file-name>   (opened in append mode)\n" 
+            "\t              net[:<host-name>:<host-port>] (127.0.0.1:1053\n" 
+            "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
     /* *INDENT-ON* */
 }
 
@@ -66,6 +75,7 @@ main(int argc, char *argv[])
     int             af = AF_INET;
     char            buf[INET6_ADDRSTRLEN];
     int             retval = 0;
+    val_log_t  *logp;
 
     bzero(&hentry, sizeof(struct hostent));
     bzero(auxbuf, AUX_BUFLEN);
@@ -77,13 +87,13 @@ main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "hrnf:",
+        c = getopt_long_only(argc, argv, "hrnf:o:",
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "hrnf:", prog_options, &opt_index);
+        c = getopt_long(argc, argv, "hrnf:o:", prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "hrnf:");
+        c = getopt(argc, argv, "hrnf:o:");
 #endif
 
         if (c == -1) {
@@ -112,6 +122,14 @@ main(int argc, char *argv[])
         case 'r':
             usereentrant = 1;
             break;
+        case 'o':
+            logp = val_log_add_optarg(optarg, 1);
+            if (NULL == logp) { /* err msg already logged */
+                usage(argv[0]);
+                return -1;
+            }
+            break;
+
         default:
             fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);
             usage(argv[0]);

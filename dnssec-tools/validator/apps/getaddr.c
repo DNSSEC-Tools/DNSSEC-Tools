@@ -53,6 +53,14 @@ usage(char *progname)
             "\t-c, --canonname                 use the AI_CANONNAME flag\n");
     fprintf(stderr,
             "\t-s, --service=<PORT|SERVICE>    transport-layer port or service name\n");
+    fprintf(stderr,
+            "\t-o, --output=<debug-level>:<dest-type>[:<dest-options>]\n"
+            "\t          <debug-level> is 1-7, corresponding to syslog levels\n"
+            "\t          <dest-type> is one of file, net, syslog, stderr, stdout\n"
+            "\t          <dest-options> depends on <dest-type>\n"
+            "\t              file:<file-name>   (opened in append mode)\n" 
+            "\t              net[:<host-name>:<host-port>] (127.0.0.1:1053\n" 
+            "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
 }
 
 static int      validate = 0;
