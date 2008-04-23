@@ -3,23 +3,18 @@
 
 =head1 NAME
 
-B<libval_check_conf> - command-line program for checking validity of the validator configuration file.
+B<libval_check_conf> - command-line program for checking validity of the
+validator configuration files.
 
 =head1 SYNOPSIS
 
-    libval_check_conf [options] <dnsval.conf>
+    libval_check_conf [options]
 
 =head1 DESCRIPTION
 
 This program checks the validity of a given validator configuration file,
-typically named B<dnsval.conf>, for any syntax errors.  The input to this
-program is a validator configuration file, but the program also requires valid
-B<resolv.conf> and B<root.hints> to be specified.  The location for these
-auxiliary files may be specified using the I<-r> and I<-i> options
-respectively.  If these options are not provided, the default B<resolv.conf>
-and B<root.hints> files recognized by the validator library are used instead.
-The program displays an error if the default B<resolv.conf> and B<root.hints>
-files, and the I<-i> and I<-r> are both unspecified.
+typically named B<dnsval.conf>, for any syntax errors. If no file is
+specified as a command line option, the default B<dnsval.conf> file is checked.
 
 =head1 RETURN VALUES
 
@@ -28,6 +23,12 @@ The program returns 0 on success and -1 on failure.
 =head1 OPTIONS
 
 =over
+
+=item -d, --dnsval-conf
+
+Specifies the location for the dnsval.conf file.  If this option is not
+specified the default dnsval.conf file recognized by the validator library is
+used instead.
 
 =item -r, --resolv-conf
 
@@ -53,7 +54,7 @@ Displays a usage help message and exits the program.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHORS

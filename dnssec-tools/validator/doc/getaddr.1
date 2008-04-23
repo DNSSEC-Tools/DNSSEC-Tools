@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "GETADDR 1"
-.TH GETADDR 1 "2008-03-06" "perl v5.8.8" "User Commands"
+.TH GETADDR 1 "2008-04-22" "perl v5.8.8" "User Commands"
 .SH "NAME"
 getaddr \- command\-line test program for the \fIval_getaddrinfo()\fR function 
 .SH "SYNOPSIS"
@@ -145,7 +145,8 @@ arguments and displays the return code from the function and the contents of the
 \&\fIaddrinfo\fR structure. 
 .PP
 The exit status for this program is 1 if the answer received is trusted, 2 if 
-the answer received is validated, and \-1 for an error.  The trusted and
+the answer received is validated, and \-1 for an error. If no validation is performed,
+or the result is neither trusted nor validated, a value of 0 is returned. The trusted and
 validated status values are obtained using the \fI\fIval_istrusted()\fI\fR and
 \&\fI\fIval_isvalidated()\fI\fR functions from \fI\fIlibval\fI\|(3)\fR.
 .SH "OPTIONS"
@@ -159,6 +160,14 @@ Use the \s-1AI_CANONNAME\s0 flag in \fI\fIval_getaddrinfo()\fI\fR.
 .IP "\-s, \-\-service=\fIPORT|SERVICE\fR" 4
 .IX Item "-s, --service=PORT|SERVICE"
 Use the specified transport-layer port or service name.
+.IP "\-o, \-\-output=<debug\-level>:<dest\-type>[:<dest\-options>]" 4
+.IX Item "-o, --output=<debug-level>:<dest-type>[:<dest-options>]"
+<debug\-level> is 1\-7, corresponding to syslog levels ALERT-DEBUG
+<dest\-type> is one of file, net, syslog, stderr, stdout
+<dest\-options> depends on <dest\-type>
+    file:<file\-name>   (opened in append mode)
+    net[:<host\-name>:<host\-port>] (127.0.0.1:1053
+    syslog[:facility] (0\-23 (default 1 \s-1USER\s0))
 .IP "\-h, \-\-help" 4
 .IX Item "-h, --help"
 Display the help and exit.

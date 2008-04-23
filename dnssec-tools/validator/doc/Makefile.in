@@ -2,7 +2,8 @@ LIBVAL_MAN=libval.3
 LIBVAL_SHIM_MAN=libval_shim.3
 GHBN_MAN=val_gethostbyname.3
 GADDR_MAN=val_getaddrinfo.3
-QUERY_MAN=val_query.3
+QUERY_MAN=val_res_query.3
+GETRRSET_MAN=val_get_rrset.3
 POLICY_MAN=dnsval.conf.3
 
 LIBVAL_SYMLINKS=\
@@ -39,6 +40,10 @@ QUERY_SYMLINKS=\
     val_res_query.3 \
     val_res_search.3 
 
+GETRRSET_SYMLINKS=\
+    val_get_rrset.3 \
+    val_free_answer_chain.3 
+
 POLICY_SYMLINKS=\
 	val_add_valpolicy.3
     
@@ -46,6 +51,7 @@ MAN3PAGES=\
 	  $(GADDR_MAN) \
 	  $(GHBN_MAN) \
 	  $(QUERY_MAN) \
+	  $(GETRRSET_MAN) \
 	  $(POLICY_MAN) \
 	  $(LIBVAL_MAN) \
 	  $(LIBVAL_SHIM_MAN) \
@@ -55,6 +61,9 @@ MAN1PAGES=\
 	validate.1 \
 	getaddr.1 \
 	gethost.1 \
+	getname.1 \
+	getquery.1 \
+	getrrset.1 \
     libval_check_conf.1
 
 all: $(MAN1PAGES) $(MAN3PAGES) 
@@ -83,6 +92,10 @@ install:
 	for i in $(QUERY_SYMLINKS) ; do		\
 	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(QUERY_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
+	for i in $(GETRRSET_SYMLINKS) ; do		\
+	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
+	  echo ".so $(GETRRSET_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 	for i in $(POLICY_SYMLINKS) ; do		\
 	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
