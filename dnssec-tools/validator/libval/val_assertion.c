@@ -1109,7 +1109,7 @@ set_ans_kind(u_int8_t * qname_n,
     }
 
     the_set->rrs_ans_kind = SR_ANS_UNSET;
-    *status = VAL_AC_DNS_WRONG_ANSWER;
+    *status = VAL_AC_DNS_ERROR;
 
     return VAL_NO_ERROR;
 }
@@ -1152,14 +1152,14 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     int             class_match;
 
     if ((NULL == the_set) || (NULL == q_names_n) || (NULL == status)) {
-        *status = VAL_AC_DNS_WRONG_ANSWER;
+        *status = VAL_AC_DNS_ERROR;
         return TRUE;
     }
 
     /*
      * If this is already a wrong answer return 
      */
-    if (*status == (VAL_AC_DNS_WRONG_ANSWER))
+    if (*status == (VAL_AC_DNS_ERROR))
         return TRUE;
 
     name_present = name_in_q_names(q_names_n, the_set->rrs.val_rrset_name_n);
@@ -1193,7 +1193,7 @@ fails_to_answer_query(struct qname_chain *q_names_n,
             return FALSE;
         }
         
-        *status = VAL_AC_DNS_WRONG_ANSWER;
+        *status = VAL_AC_DNS_ERROR;
         return TRUE;
     }
 
@@ -1817,7 +1817,7 @@ transform_authentication_chain(val_context_t *context,
         prev_ac = n_ac;
 
         if (prev_ac->val_ac_status == VAL_AC_NEGATIVE_PROOF ||
-            prev_ac->val_ac_status == VAL_AC_PROVABLY_UNSECURE) { 
+            prev_ac->val_ac_status == VAL_AC_PROVABLY_INSECURE) { 
 
             break;
         }
@@ -2704,9 +2704,9 @@ check_anc_proof(val_context_t *context,
         } else if (hp->rcode == ns_r_nxdomain) {\
             status_code = VAL_NONEXISTENT_NAME_NOCHAIN;\
         } else\
-            status_code = VAL_DNS_RESPONSE_ERROR;\
+            status_code = VAL_DNS_ERROR;\
     } else { \
-        status_code = VAL_DNS_RESPONSE_ERROR;\
+        status_code = VAL_DNS_ERROR;\
     }\
 }while (0)
 
@@ -3238,17 +3238,17 @@ prove_existence(val_context_t * context,
 
 
 /*
- * This function does the provably unsecure check in a
+ * This function does the provably insecure check in a
  * top-down fashion
  */
 static int
-verify_provably_unsecure(val_context_t * context,
+verify_provably_insecure(val_context_t * context,
                          struct queries_for_query **queries,
                          u_int8_t *q_name_n, 
                          u_int16_t q_type_h,
                          u_int8_t flags,
                          int *done,
-                         int *is_punsecure,
+                         int *is_pinsecure,
                          u_int32_t *ttl_x)
 {
     struct val_result_chain *results = NULL;
@@ -3269,12 +3269,12 @@ verify_provably_unsecure(val_context_t * context,
     u_int8_t *dlv_target = NULL;
 #endif
 
-    if ((queries == NULL) || (done == NULL) || (is_punsecure == NULL)) {
+    if ((queries == NULL) || (done == NULL) || (is_pinsecure == NULL)) {
 
         return VAL_BAD_ARGUMENT;
     }
 
-    *is_punsecure = 0;
+    *is_pinsecure = 0;
 
     if (q_type_h == ns_t_ds) {
         STRIP_LABEL(q_name_n, name_n);
@@ -3292,13 +3292,13 @@ verify_provably_unsecure(val_context_t * context,
     if ((VAL_NO_ERROR != find_next_zonecut(context, queries, name_n, done, &q_zonecut_n))
                 || (*done && q_zonecut_n == NULL)) {
 
-        val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find zone cut for %s", name_p);
+        val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
         goto err;
     }
 
     if (*done == 0) {
         /* Need more data */
-        *is_punsecure = 0;
+        *is_pinsecure = 0;
         goto donefornow;
     }
        
@@ -3307,11 +3307,11 @@ verify_provably_unsecure(val_context_t * context,
         int len;
         if (VAL_NO_ERROR != (find_dlv_trust_point(context, name_n, 
                                               &dlv_tp, &dlv_target, ttl_x))) {
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find trust anchor for %s", name_p);
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find trust anchor for %s", name_p);
             goto err;
         }
         if (dlv_tp == NULL || dlv_target == NULL) { 
-            *is_punsecure = 0;
+            *is_pinsecure = 0;
             goto donefornow;
         }
 
@@ -3329,12 +3329,12 @@ verify_provably_unsecure(val_context_t * context,
     {
         if (VAL_NO_ERROR != (find_trust_point(context, name_n, 
                                           &curzone_n, ttl_x))) {
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find trust anchor for %s", name_p);
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find trust anchor for %s", name_p);
             goto err;
         }
         if (curzone_n == NULL) {
             /* no trust anchor defined */
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find trust anchor for %s", name_p);
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find trust anchor for %s", name_p);
             goto err;
         }
         q = namename(q_zonecut_n, curzone_n);
@@ -3349,7 +3349,7 @@ verify_provably_unsecure(val_context_t * context,
          * not contained within name 
          */
         val_log(context, LOG_INFO, 
-                "verify_provably_unsecure(): trust point %s not in name, cannot do a top-down provably-unsecure test",
+                "verify_provably_insecure(): trust point %s not in name, cannot do a top-down provably-insecure test",
                 tempname_p);
         goto err;
     }
@@ -3360,7 +3360,7 @@ verify_provably_unsecure(val_context_t * context,
          * trust point, return
          */
         val_log(context, LOG_INFO, 
-                "verify_provably_unsecure(): trust point %s exists; so this zone cannot be provably unsecure",
+                "verify_provably_insecure(): trust point %s exists; so this zone cannot be provably insecure",
                 tempname_p);
         goto err;
     }
@@ -3398,13 +3398,13 @@ verify_provably_unsecure(val_context_t * context,
                 snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
             } 
 
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find zone cut for %s", tempname_p);
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", tempname_p);
             goto err;
         }
 
         if (*done == 0) {
             /* Need more data */
-            *is_punsecure = 0;
+            *is_pinsecure = 0;
             goto donefornow;
         }
 
@@ -3425,35 +3425,35 @@ verify_provably_unsecure(val_context_t * context,
         if (VAL_NO_ERROR != (retval = 
                     try_chase_query(context, zonecut_n, ns_c_in, 
                                     ns_t_ds, flags, queries, &results, done))) {
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot chase DS record for %s", tempname_p);
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot chase DS record for %s", tempname_p);
             goto err;
         }
 
         if (*done == 0) {
             /* Need more data */
-            *is_punsecure = 0;
+            *is_pinsecure = 0;
             goto donefornow;
         }
 
         /* if done,  inspect the results */
         if (results == NULL) {
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot chase DS record for %s", tempname_p);
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot chase DS record for %s", tempname_p);
             goto err;
         }
 
-        /* If result is not trustworthy, not provably unsecure */
+        /* If result is not trustworthy, not provably insecure */
         if (!val_isvalidated(results->val_rc_status)) {
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): DS record for %s did not validate successfully", tempname_p);
+            val_log(context, LOG_INFO, "verify_provably_insecure(): DS record for %s did not validate successfully", tempname_p);
             goto err; 
         }
 
-        /* if non-existent set as provably unsecure and break */
+        /* if non-existent set as provably insecure and break */
         if (val_does_not_exist(results->val_rc_status)) {
-            val_log(context, LOG_INFO, "verify_provably_unsecure(): %s is provably unsecure", name_p);
-            *is_punsecure = 1;
+            val_log(context, LOG_INFO, "verify_provably_insecure(): %s is provably insecure", name_p);
+            *is_pinsecure = 1;
         }
 
-        if (*is_punsecure) {
+        if (*is_pinsecure) {
 
             int really_done = 1;
 
@@ -3494,8 +3494,8 @@ verify_provably_unsecure(val_context_t * context,
     
 err:
     val_log(context, LOG_INFO,
-            "verify_provably_unsecure(): Cannot show that %s is provably unsecure.", name_p);
-    *is_punsecure = 0;
+            "verify_provably_insecure(): Cannot show that %s is provably insecure.", name_p);
+    *is_pinsecure = 0;
 
 donefornow:
     if (q_zonecut_n)
@@ -3528,7 +3528,7 @@ is_pu_trusted(val_context_t *ctx, u_int8_t *name_n, u_int32_t *ttl_x)
     char            name_p[NS_MAXDNAME];
     int             name_len;
 
-    RETRIEVE_POLICY(ctx, P_PROV_UNSECURE, pu_pol);
+    RETRIEVE_POLICY(ctx, P_PROV_INSECURE, pu_pol);
     if (pu_pol) {
 
         name_len = wire_name_length(name_n);
@@ -3560,25 +3560,25 @@ is_pu_trusted(val_context_t *ctx, u_int8_t *name_n, u_int32_t *ttl_x)
             }
 
             if ((root_zone || (!namecmp(p, pu_cur->zone_n))) && pu_cur->pol) {
-                struct prov_unsecure_policy *pol =
-                    (struct prov_unsecure_policy *)(pu_cur->pol);
+                struct prov_insecure_policy *pol =
+                    (struct prov_insecure_policy *)(pu_cur->pol);
                 if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
                     snprintf(name_p, sizeof(name_p), "unknown/error");
                 if (pu_cur->exp_ttl > 0)
                     *ttl_x = pu_cur->exp_ttl;
 
                 if (pol->trusted == ZONE_PU_UNTRUSTED) {
-                    val_log(ctx, LOG_INFO, "is_pu_trusted(): zone %s provable unsecure status is not trusted",
+                    val_log(ctx, LOG_INFO, "is_pu_trusted(): zone %s provable insecure status is not trusted",
                             name_p);
                     return 0;
                 } else { 
-                    val_log(ctx, LOG_INFO, "is_pu_trusted(): zone %s provably unsecure status is trusted", name_p);
+                    val_log(ctx, LOG_INFO, "is_pu_trusted(): zone %s provably insecure status is trusted", name_p);
                     return 1;
                 }
             }
         }
     }
-    return 1; /* trust provably unsecure state by default */
+    return 1; /* trust provably insecure state by default */
 }
 
 /*
@@ -3817,10 +3817,10 @@ fix_validation_result(val_context_t * context,
      * Some error most likely, reflected in the val_query_chain 
      */
     if (res->val_rc_rrset == NULL && res->val_rc_status == VAL_DONT_KNOW)
-            res->val_rc_status = VAL_DNS_RESPONSE_ERROR;
+            res->val_rc_status = VAL_DNS_ERROR;
 
     /*
-     *  Special case of provably unsecure: algorithms used
+     *  Special case of provably insecure: algorithms used
      *  for signing the DNSKEY record are not understood
      */
     if (res->val_rc_status == VAL_BOGUS_PROVABLE) {
@@ -3845,13 +3845,18 @@ fix_validation_result(val_context_t * context,
                                 VAL_AC_UNKNOWN_ALGORITHM_LINK) {
                             if (is_pu_trusted(context, 
                                         as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                                res->val_rc_status = VAL_PROVABLY_INSECURE;
                             else
-                                res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                                res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
                             SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
                             break;
                         }
                     }
+
+                    if (res->val_rc_status == VAL_BOGUS_PROVABLE) {
+                        res->val_rc_status = VAL_BOGUS;
+                    }
+                    break;
                 }
             }
 
@@ -3859,7 +3864,8 @@ fix_validation_result(val_context_t * context,
         }
     }
 
-    if (res->val_rc_status == VAL_DONT_GO_FURTHER)
+    /* If all we have is a trust key then this is a success state */
+    if (res->val_rc_status == VAL_BARE_TRUST_KEY)
         res->val_rc_status = VAL_SUCCESS;
 
 }
@@ -4326,33 +4332,33 @@ verify_and_validate(val_context_t * context,
 
                 } else {
                     /* either this is a DS or we have asked the parent */
-                    int is_punsecure;
+                    int is_pinsecure;
                     if (VAL_NO_ERROR != 
-                                (retval = verify_provably_unsecure(context, 
+                                (retval = verify_provably_insecure(context, 
                                                                    queries, 
                                                                    next_as->val_ac_rrset->val_rrset_name_n, 
                                                                    next_as->val_ac_rrset->val_rrset_type_h, 
                                                                    flags,
                                                                    &pu_done,
-                                                                   &is_punsecure,
+                                                                   &is_pinsecure,
                                                                    &ttl_x)))
                         return retval;
 
                     if (pu_done) {
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         ttl_x = 0;
-                        if (is_punsecure) {
+                        if (is_pinsecure) {
                             val_log(context, LOG_INFO, 
                                     "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
                                     name_p, 
                                     p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                     p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                            next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
+                            next_as->val_ac_status = VAL_AC_PROVABLY_INSECURE;
                             if (is_pu_trusted(context, 
                                     next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                                res->val_rc_status = VAL_PROVABLY_INSECURE;
                             else
-                                res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                                res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
                             val_log(context, LOG_INFO, 
@@ -4372,6 +4378,7 @@ verify_and_validate(val_context_t * context,
                  * Check if success 
                  */
                 if (res->val_rc_status == VAL_DONT_KNOW) {
+                    /* did not process the final state for this authentication chain before */
 
                     if (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) {
                         val_log(context, LOG_INFO, 
@@ -4404,7 +4411,7 @@ verify_and_validate(val_context_t * context,
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_UNTRUSTED_ZONE;
                     } else if (next_as->val_ac_status ==
-                               VAL_AC_PROVABLY_UNSECURE) {
+                               VAL_AC_PROVABLY_INSECURE) {
                         ttl_x = 0;
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
@@ -4413,9 +4420,9 @@ verify_and_validate(val_context_t * context,
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         if (is_pu_trusted(context, 
                                     next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                            res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                            res->val_rc_status = VAL_PROVABLY_INSECURE;
                         else
-                            res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                            res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                         val_log(context, LOG_INFO, 
@@ -4437,14 +4444,12 @@ verify_and_validate(val_context_t * context,
                         res->val_rc_status = VAL_VERIFIED_CHAIN;
                     }
                 } else {
+                    /* already processed the final state for this authentication chain before */
                     val_log(context, LOG_INFO, 
                                 "verify_and_validate(): ending authentication chain at {%s %s %s}",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                    /*
-                     * Reached a trust point but there was some error in between 
-                     */
                     SET_CHAIN_COMPLETE(res->val_rc_status);
                 }
 
@@ -4455,33 +4460,33 @@ verify_and_validate(val_context_t * context,
              * Check error conditions 
              */
             else if (next_as->val_ac_status <= VAL_AC_LAST_ERROR) {
-                int is_punsecure;
+                int is_pinsecure;
                 ttl_x = 0;
-                if (VAL_NO_ERROR != (retval = verify_provably_unsecure(context, 
+                if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
                                                                    queries, 
                                                                    next_as->val_ac_rrset->val_rrset_name_n, 
                                                                    next_as->val_ac_rrset->val_rrset_type_h, 
                                                                    flags,
                                                                    &pu_done,
-                                                                   &is_punsecure,
+                                                                   &is_pinsecure,
                                                                    &ttl_x)))
                     return retval;
 
                 if (pu_done) {
                     SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     ttl_x = 0;
-                    if (is_punsecure) {
+                    if (is_pinsecure) {
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                        next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
+                        next_as->val_ac_status = VAL_AC_PROVABLY_INSECURE;
                         if (is_pu_trusted(context, 
                                 next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                            res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                            res->val_rc_status = VAL_PROVABLY_INSECURE;
                         else
-                            res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                            res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else {
                         val_log(context, LOG_INFO, 
@@ -4489,7 +4494,7 @@ verify_and_validate(val_context_t * context,
                                 name_p, 
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                        res->val_rc_status = VAL_BOGUS_UNPROVABLE;
+                        res->val_rc_status = VAL_BOGUS;
                     }
                     break;
                 } else
@@ -4501,33 +4506,7 @@ verify_and_validate(val_context_t * context,
                         p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                         p_type(next_as->val_ac_rrset->val_rrset_type_h));
 
-                switch (next_as->val_ac_status) {
-                    case VAL_AC_DNS_RESPONSE_ERROR:
-                    default:
-                        res->val_rc_status = VAL_DNS_RESPONSE_ERROR; 
-                        break;
-                        
-                    case VAL_AC_DNS_QUERY_ERROR:
-                        res->val_rc_status = VAL_DNS_QUERY_ERROR;
-                        break;
-
-                    case VAL_AC_DNS_WRONG_ANSWER:
-                        res->val_rc_status = VAL_DNS_WRONG_ANSWER;
-                        break;
-
-                    case VAL_AC_DNS_REFERRAL_ERROR:
-                        res->val_rc_status = VAL_DNS_REFERRAL_ERROR;
-                        break;
-
-                    case VAL_AC_DNS_MISSING_GLUE:
-                        res->val_rc_status = VAL_DNS_MISSING_GLUE;
-                        break;
-
-                    case VAL_AC_DNS_CONFLICTING_ANSWERS:
-                        res->val_rc_status = VAL_DNS_CONFLICTING_ANSWERS;
-                        break;
-                };
-
+                res->val_rc_status = VAL_DNS_ERROR;
                 break;
 
             } else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
@@ -4535,35 +4514,45 @@ verify_and_validate(val_context_t * context,
                  * double failures are unprovable 
                  */
                 if (CHECK_MASKED_STATUS
-                    (res->val_rc_status, VAL_BOGUS_UNPROVABLE)) {
+                    (res->val_rc_status, VAL_BOGUS)) {
 
-                    int is_punsecure;
+                    val_log(context, LOG_INFO, 
+                        "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
+                        name_p, 
+                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                    SET_MASKED_STATUS(res->val_rc_status,
+                                      VAL_BOGUS);
+
+                } else {
+
+                    int is_pinsecure;
                     ttl_x = 0;
-                    if (VAL_NO_ERROR != (retval = verify_provably_unsecure(context, 
+                    if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
                                                                    queries, 
                                                                    next_as->val_ac_rrset->val_rrset_name_n, 
                                                                    next_as->val_ac_rrset->val_rrset_type_h, 
                                                                    flags,
                                                                    &pu_done,
-                                                                   &is_punsecure,
+                                                                   &is_pinsecure,
                                                                    &ttl_x)))
                         return retval;
 
                     if (pu_done) {
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         ttl_x = 0;
-                        if (is_punsecure) {
+                        if (is_pinsecure) {
                             val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                            next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
+                            next_as->val_ac_status = VAL_AC_PROVABLY_INSECURE;
                             if (is_pu_trusted(context, 
                                             next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                                res->val_rc_status = VAL_PROVABLY_INSECURE;
                             else
-                                res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                                res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
                             val_log(context, LOG_INFO, 
@@ -4571,20 +4560,12 @@ verify_and_validate(val_context_t * context,
                                 name_p, 
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                            res->val_rc_status = VAL_BOGUS_UNPROVABLE;
+                            res->val_rc_status = VAL_BOGUS;
                         }
                         break;
                     } else
                         thisdone = 0;
-                } else {
-                    val_log(context, LOG_INFO, 
-                        "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
-                        name_p, 
-                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                    SET_MASKED_STATUS(res->val_rc_status,
-                                      VAL_BOGUS_UNPROVABLE);
-                }
+                } 
             }
             next_as = as_trust; 
         }
@@ -5106,9 +5087,6 @@ check_wildcard_sanity(val_context_t * context,
 
                     target_res->val_rc_status = status;
                     if ((status == VAL_NONEXISTENT_NAME ||
-#ifdef LIBVAL_NSEC3
-                         status == VAL_NONEXISTENT_NAME_OPTOUT ||
-#endif
                          status == VAL_NONEXISTENT_NAME_NOCHAIN)
                         && (target_res->val_rc_answer)) {
                         /*
@@ -5464,34 +5442,10 @@ create_error_result(struct val_query_chain *top_q,
                     struct val_internal_result **w_results)
 {
     struct val_internal_result *w_temp;
-    val_status_t dnserr;
     
     if (top_q == NULL)
         return VAL_BAD_ARGUMENT;
 
-    /* map the resolver error into a validator error */
-    switch (top_q->qc_state) {
-        case Q_QUERY_ERROR:
-                dnserr = VAL_DNS_QUERY_ERROR;
-                break;        
-        case Q_RESPONSE_ERROR:
-                dnserr = VAL_DNS_RESPONSE_ERROR;
-                break;        
-        case Q_WRONG_ANSWER:
-                dnserr = VAL_DNS_WRONG_ANSWER;
-                break;        
-        case Q_REFERRAL_ERROR:
-                dnserr = VAL_DNS_REFERRAL_ERROR;
-                break;        
-        case Q_MISSING_GLUE:
-                dnserr = VAL_DNS_MISSING_GLUE;
-                break;        
-        case Q_CONFLICTING_ANSWERS:
-                dnserr = VAL_DNS_CONFLICTING_ANSWERS;
-                break;        
-        default:
-                return VAL_BAD_ARGUMENT;
-    }
     
     *w_results = NULL;
     if (top_q->qc_ans) {
@@ -5504,7 +5458,7 @@ create_error_result(struct val_query_chain *top_q,
         w_temp->val_rc_is_proof = 0;
         w_temp->val_rc_consumed = 0;
         w_temp->val_rc_flags = flags;
-        w_temp->val_rc_status = dnserr;
+        w_temp->val_rc_status = VAL_DNS_ERROR;
         w_temp->val_rc_next = NULL;
         *w_results = w_temp;
     }
@@ -5518,7 +5472,7 @@ create_error_result(struct val_query_chain *top_q,
         w_temp->val_rc_is_proof = 1;
         w_temp->val_rc_consumed = 0;
         w_temp->val_rc_flags = flags;
-        w_temp->val_rc_status = dnserr;
+        w_temp->val_rc_status = VAL_DNS_ERROR;
         w_temp->val_rc_next = NULL;
         if (*w_results == NULL)
             *w_results = w_temp;
@@ -5535,7 +5489,7 @@ create_error_result(struct val_query_chain *top_q,
         (*w_results)->val_rc_is_proof = 0;
         (*w_results)->val_rc_consumed = 0;
         (*w_results)->val_rc_flags = flags;
-        (*w_results)->val_rc_status = dnserr;
+        (*w_results)->val_rc_status = VAL_DNS_ERROR;
         (*w_results)->val_rc_next = NULL;
     }
 
@@ -5930,12 +5884,9 @@ val_istrusted(val_status_t val_status)
     case VAL_NONEXISTENT_TYPE:
     case VAL_NONEXISTENT_NAME_NOCHAIN:
     case VAL_NONEXISTENT_TYPE_NOCHAIN:
-#ifdef LIBVAL_NSEC3
-    case VAL_NONEXISTENT_NAME_OPTOUT:
-#endif
     case VAL_VALIDATED_ANSWER:
     case VAL_TRUSTED_ANSWER:
-    case VAL_PROVABLY_UNSECURE:
+    case VAL_PROVABLY_INSECURE:
     case VAL_IGNORE_VALIDATION:
     case VAL_TRUSTED_ZONE:
         return 1;
@@ -5980,9 +5931,6 @@ val_does_not_exist(val_status_t status)
 {
     if ((status == VAL_NONEXISTENT_TYPE) ||
         (status == VAL_NONEXISTENT_NAME) ||
-#ifdef LIBVAL_NSEC3
-        (status == VAL_NONEXISTENT_NAME_OPTOUT) ||
-#endif
         (status == VAL_NONEXISTENT_NAME_NOCHAIN) ||
         (status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
 
