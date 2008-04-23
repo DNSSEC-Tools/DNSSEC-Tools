@@ -307,7 +307,7 @@ free_query_chain(struct val_query_chain *queries)
 static int
 add_to_query_chain(val_context_t *context, u_char * name_n,
                    const u_int16_t type_h, const u_int16_t class_h, 
-                   const u_int8_t flags, struct val_query_chain **added_q)
+                   const u_int32_t flags, struct val_query_chain **added_q)
 {
     struct val_query_chain *temp, *prev;
     
@@ -438,7 +438,7 @@ void zap_query(val_context_t *context, struct val_query_chain *added_q)
 static struct queries_for_query * 
 check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
                  u_char * name_n, const u_int16_t type_h, const u_int16_t class_h, 
-                 const u_int8_t flags)
+                 const u_int32_t flags)
 {
     /*
      * sanity checks performed in calling function 
@@ -452,7 +452,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if ((namecmp(temp->qfq_query->qc_original_name, name_n) == 0)
             && (temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
-            && (((flags & VAL_QFLAGS_ANY) == VAL_QFLAGS_ANY) ||
+            && ((flags == VAL_QFLAGS_ANY) ||
                 (temp->qfq_flags == flags)))
             break;
         prev = temp;
@@ -465,7 +465,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
 int
 add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
                  u_char * name_n, const u_int16_t type_h, const u_int16_t class_h, 
-                 const u_int8_t flags, struct queries_for_query **added_qfq) 
+                 const u_int32_t flags, struct queries_for_query **added_qfq) 
 {
     struct queries_for_query *new_qfq = NULL;
     /* use only those flags that affect caching */
@@ -682,7 +682,7 @@ replace_name_in_name(u_int8_t *name_n,
 #endif
 
 int
-get_zse(val_context_t * ctx, u_int8_t * name_n, u_int8_t flags, 
+get_zse(val_context_t * ctx, u_int8_t * name_n, u_int32_t flags, 
         u_int16_t *status, u_int8_t ** match_ptr, u_int32_t *ttl_x)
 {
     policy_entry_t *zse_pol, *zse_cur;
@@ -843,7 +843,7 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
 
 static int
 is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct val_rr_rec *key, 
-               val_astatus_t * status, u_int8_t flags, u_int32_t *ttl_x)
+               val_astatus_t * status, u_int32_t flags, u_int32_t *ttl_x)
 {
     policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
     int             name_len;
@@ -1281,7 +1281,7 @@ build_pending_query(val_context_t *context,
                     struct queries_for_query **queries,
                     struct val_digested_auth_chain *as,
                     struct queries_for_query **added_q,
-                    u_int8_t flags)
+                    u_int32_t flags)
 {
     u_int8_t       *signby_name_n;
     u_int16_t       tzonestatus;
@@ -1462,7 +1462,7 @@ try_build_chain(val_context_t * context,
                 struct queries_for_query **queries,
                 struct val_query_chain *matched_q,
                 struct qname_chain *q_names_n,
-                u_int16_t type_h, u_int16_t class_h, u_int8_t flags)
+                u_int16_t type_h, u_int16_t class_h, u_int32_t flags)
 {
     int             retval;
     u_int8_t        kind = SR_ANS_UNSET;
@@ -1716,7 +1716,7 @@ static struct val_digested_auth_chain *
 get_ac_trust(val_context_t *context, 
              struct val_digested_auth_chain *next_as, 
              struct queries_for_query **queries,
-             u_int8_t flags, int proof)
+             u_int32_t flags, int proof)
 {
     struct queries_for_query *added_q = NULL;
 
@@ -1778,7 +1778,7 @@ transform_authentication_chain(val_context_t *context,
                                struct val_digested_auth_chain *top_as,
                                struct queries_for_query **queries,
                                struct val_authentication_chain **a_chain,
-                               u_int8_t flags)
+                               u_int32_t flags)
 {
     struct val_authentication_chain *n_ac, *prev_ac;
     struct val_digested_auth_chain *o_ac;
@@ -2589,7 +2589,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 int 
 check_anc_proof(val_context_t *context,
                 struct val_query_chain *q, 
-                u_int8_t flags,
+                u_int32_t flags,
                 u_int8_t *name_n, 
                 int check_wildcard,
                 int *matches)
@@ -3246,7 +3246,7 @@ verify_provably_insecure(val_context_t * context,
                          struct queries_for_query **queries,
                          u_int8_t *q_name_n, 
                          u_int16_t q_type_h,
-                         u_int8_t flags,
+                         u_int32_t flags,
                          int *done,
                          int *is_pinsecure,
                          u_int32_t *ttl_x)
@@ -3592,7 +3592,7 @@ static int
 try_verify_assertion(val_context_t * context, 
                      struct queries_for_query **queries,
                      struct val_digested_auth_chain *next_as,
-                     u_int8_t flags)
+                     u_int32_t flags)
 {
     int             retval;
     struct rrset_rec *pending_rrset;
@@ -3806,7 +3806,7 @@ static void
 fix_validation_result(val_context_t * context,
                       struct val_internal_result *res,
                       struct queries_for_query **queries,
-                      u_int8_t flags)
+                      u_int32_t flags)
 {
     u_int32_t ttl_x = 0;
 
@@ -3878,7 +3878,7 @@ find_dlv_record(val_context_t *context,
                 u_int8_t *name, 
                 u_int8_t *dlv_tp,
                 u_int8_t **dlv_ptr,
-                u_int8_t flags,
+                u_int32_t flags,
                 int *done)
 {
     int retval = VAL_NO_ERROR;
@@ -3940,7 +3940,7 @@ set_dlv_branchoff(val_context_t *context,
                   struct queries_for_query **queries, 
                   u_int8_t *name_n,
                   u_int16_t class_h,
-                  u_int8_t flags,
+                  u_int32_t flags,
                   int *done,
                   int *do_dlv,
                   u_int32_t *q_ttl_x)
@@ -4102,7 +4102,7 @@ verify_and_validate(val_context_t * context,
     struct queries_for_query *added_q = NULL;
     struct val_query_chain *top_q;
     u_int32_t ttl_x = 0;
-    u_int8_t flags;
+    u_int32_t flags;
     int             retval = VAL_NO_ERROR;
 
     if ((top_qfq == NULL) || (NULL == queries) || (NULL == results)
@@ -5438,7 +5438,7 @@ perform_sanity_checks(val_context_t * context,
 
 static int
 create_error_result(struct val_query_chain *top_q,
-                    u_int8_t flags,
+                    u_int32_t flags,
                     struct val_internal_result **w_results)
 {
     struct val_internal_result *w_temp;
@@ -5587,7 +5587,7 @@ int try_chase_query(val_context_t * context,
                     u_char * domain_name_n,
                     const u_int16_t q_class,
                     const u_int16_t type,
-                    const u_int8_t flags,
+                    const u_int32_t flags,
                     struct queries_for_query **queries,
                     struct val_result_chain **results,
                     int *done)
@@ -5641,7 +5641,7 @@ val_resolve_and_check(val_context_t * ctx,
                       u_char * domain_name_n,
                       const u_int16_t q_class,
                       const u_int16_t type,
-                      const u_int8_t flags,
+                      const u_int32_t flags,
                       struct val_result_chain **results)
 {
 

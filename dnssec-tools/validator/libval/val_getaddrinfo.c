@@ -1253,7 +1253,7 @@ val_getnameinfo(val_context_t * ctx,
                                       domain_string, /*u_char *wire_domain_name */
                                       ns_c_in,   /*const u_int16_t q_class */
                                       ns_t_ptr,  /*const u_int16_t type */
-                                      0, /*const u_int8_t flags */
+                                      0, /*const u_int32_t flags */
                                       &val_res))) { /* struct val_answer_chain **results */
 	val_log(ctx, LOG_ERR, 
 		"val_getnameinfo(): val_get_rrset failed - %s", 

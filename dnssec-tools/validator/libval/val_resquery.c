@@ -158,7 +158,7 @@ merge_glue_in_referral(val_context_t *context,
     struct name_server *pending_ns;
     struct name_server *prev_ns;
     char name_p[NS_MAXDNAME];
-    u_int8_t flags;
+    u_int32_t flags;
 
     /*
      * check if we have data to merge 
@@ -706,7 +706,7 @@ bootstrap_referral(val_context_t *context,
     int             ret_val;
     struct queries_for_query *added_q = NULL;
     struct val_query_chain *matched_q;
-    u_int8_t flags;
+    u_int32_t flags;
 
     if ((context == NULL) || (learned_zones == NULL) || (matched_qfq == NULL) ||
         (queries == NULL) || (ref_ns_list == NULL))
