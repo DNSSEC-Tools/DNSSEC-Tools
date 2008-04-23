@@ -483,11 +483,7 @@ compose_answer(const u_char * name_n,
                 hp->rcode = ns_r_nxdomain;
                 break;
 
-            case VAL_DNS_RESPONSE_ERROR: 
-            case VAL_DNS_WRONG_ANSWER: 
-            case VAL_DNS_REFERRAL_ERROR: 
-            case VAL_DNS_MISSING_GLUE: 
-            case VAL_DNS_CONFLICTING_ANSWERS: 
+            case VAL_DNS_ERROR: 
                 hp->rcode = ns_r_servfail;
                 break;
                 
