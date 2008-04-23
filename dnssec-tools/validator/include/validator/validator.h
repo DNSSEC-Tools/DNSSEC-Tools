@@ -242,7 +242,7 @@ extern          "C" {
      */
 #define POL_TRUST_ANCHOR_STR "trust-anchor"
 #define POL_CLOCK_SKEW_STR "clock-skew"
-#define POL_PROV_UNSEC_STR "provably-unsecure-status"
+#define POL_PROV_INSEC_STR "provably-insecure-status"
 #define POL_ZONE_SE_STR "zone-security-expectation"
 #ifdef LIBVAL_DLV
 #define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
