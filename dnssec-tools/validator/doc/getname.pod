@@ -1,0 +1,93 @@
+=pod
+
+=head1 NAME
+
+getname - command-line test program for the I<val_getnameinfo()> function 
+
+=head1 SYNOPSIS
+
+   getname [options] address 
+
+=head1 DESCRIPTION
+
+This utility is a command-line wrapper around the I<val_getnameinfo()>
+function.  It invokes the I<val_getnameinfo()> function with the given
+command-line arguments and displays the returned host and service information
+for the given node name, with a validation status value.
+
+The exit status for this program is 1 if the answer received is trusted, 2 if
+the answer received is validated, and -1 for an error.  The program returns 0 if 
+no validation was performed or if the result was neither trusted nor validated. 
+The trusted and validated status values are obtained using the I<val_istrusted()> 
+and I<val_isvalidated()> functions from I<libval(3)>.
+
+=head1 OPTIONS
+
+=over
+
+=item -n, --novalidate
+
+Do not perform validation.
+
+=item -p, --port
+
+Use the supplied port. If a port is specified, service information is not looked up.
+
+=item -F
+
+Use the NI_NOFQDN flag.
+
+=item -H
+
+Use the NI_NUMERICHOST flag.
+
+=item -N
+
+Use the NI_NAMEREQD flag.
+
+=item -S
+
+Use the NI_NUMERICSERV flag.
+
+=item -D
+
+Use the NI_DGRAM flag.
+
+=item -o, --output=<debug-level>:<dest-type>[:<dest-options>]
+
+<debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG
+<dest-type> is one of file, net, syslog, stderr, stdout
+<dest-options> depends on <dest-type>
+    file:<file-name>   (opened in append mode)
+    net[:<host-name>:<host-port>] (127.0.0.1:1053
+    syslog[:facility] (0-23 (default 1 USER))
+
+=item -h, --help
+
+Display the help and exit.
+
+=back
+
+=head1 PRE-REQUISITES
+
+libval
+
+=head1 COPYRIGHT
+
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHORS
+
+Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story, Michael Baer
+
+=head1 SEE ALSO
+
+B<val_getnameinfo(3)>
+
+B<libval(3)>
+
+http://dnssec-tools.sourceforge.net
+
+=cut
+
