@@ -258,8 +258,8 @@ free_global_options(global_opt_t *g)
 const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
     {POL_TRUST_ANCHOR_STR, parse_trust_anchor, free_trust_anchor},
     {POL_CLOCK_SKEW_STR, parse_clock_skew, free_clock_skew},
-    {POL_PROV_UNSEC_STR, parse_prov_unsecure_status, 
-     free_prov_unsecure_status},
+    {POL_PROV_INSEC_STR, parse_prov_insecure_status, 
+     free_prov_insecure_status},
     {POL_ZONE_SE_STR, parse_zone_security_expectation,
      free_zone_security_expectation},
 #ifdef LIBVAL_NSEC3
@@ -413,11 +413,11 @@ free_clock_skew(policy_entry_t * pol_entry)
  * parse additional data (trusted or untrusted) for the provably insecure status 
  */
 int
-parse_prov_unsecure_status(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
+parse_prov_insecure_status(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                            int *line_number, int *endst)
 {
     char            pu_token[TOKEN_MAX];
-    struct prov_unsecure_policy *pu_pol;
+    struct prov_insecure_policy *pu_pol;
     int             retval;
     int             zone_status;
 
@@ -435,8 +435,8 @@ parse_prov_unsecure_status(char **buf_ptr, char *end_ptr, policy_entry_t * pol_e
         return VAL_CONF_PARSE_ERROR;
     }
 
-    pu_pol = (struct prov_unsecure_policy *)
-            MALLOC(sizeof(struct prov_unsecure_policy));
+    pu_pol = (struct prov_insecure_policy *)
+            MALLOC(sizeof(struct prov_insecure_policy));
     if (pu_pol == NULL) {
         return VAL_OUT_OF_MEMORY;
     }
@@ -447,7 +447,7 @@ parse_prov_unsecure_status(char **buf_ptr, char *end_ptr, policy_entry_t * pol_e
 }
 
 int
-free_prov_unsecure_status(policy_entry_t * pol_entry)
+free_prov_insecure_status(policy_entry_t * pol_entry)
 {
     if (pol_entry && pol_entry->pol) {
         FREE(pol_entry->pol);
@@ -1419,7 +1419,7 @@ read_next_val_config_file(val_context_t *ctx,
         goto err;
     }
 
-    val_log(ctx, LOG_INFO, "read_next_val_config_file(): Reading validator policy from %s",
+    val_log(ctx, LOG_NOTICE, "read_next_val_config_file(): Reading validator policy from %s",
             dnsval_c->dnsval_conf);
     val_log(ctx, LOG_DEBUG, "read_next_val_config_file(): Reading next policy fragment");
 
@@ -1733,7 +1733,7 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     ctx->val_log_targets = NULL;
     
     /* enable logging */
-    if (g_opt->log_target) {
+    if (g_opt && g_opt->log_target) {
         val_log_add_optarg_to_list(&ctx->val_log_targets, g_opt->log_target, 1);
     }
 
@@ -1939,7 +1939,7 @@ read_res_config_file(val_context_t * ctx)
         retval = VAL_CONF_NOT_FOUND;
         goto err;
     }
-    val_log(ctx, LOG_INFO, "read_res_config_file(): Reading resolver policy from %s", resolv_config);
+    val_log(ctx, LOG_NOTICE, "read_res_config_file(): Reading resolver policy from %s", resolv_config);
 
     while(buf_ptr < end_ptr) {
 
@@ -2145,7 +2145,7 @@ read_root_hints_file(val_context_t * ctx)
         goto err;
     }
 
-    val_log(ctx, LOG_INFO, "read_root_hints_file(): Reading root hints from %s",
+    val_log(ctx, LOG_NOTICE, "read_root_hints_file(): Reading root hints from %s",
             root_hints);
 
     while (buf_ptr < end_ptr) {
