@@ -44,7 +44,7 @@ extern          "C" {
         u_int16_t       qc_class_h;
 
         u_int16_t       qc_state;       /* DOS, TIMED_OUT, etc */
-        u_int8_t        qc_flags;
+        u_int32_t       qc_flags;
         u_int32_t       qc_ttl_x;    /* ttl expiry time */
         int             qc_bad; /* contains "bad" data */
         u_int8_t       *qc_zonecut_n;
@@ -125,7 +125,7 @@ extern          "C" {
 
 
     struct queries_for_query {
-        u_int8_t qfq_flags;
+        u_int32_t qfq_flags;
         struct val_query_chain *qfq_query;
         struct queries_for_query *qfq_next;
     };
@@ -134,7 +134,7 @@ extern          "C" {
         val_status_t    val_rc_status;
         int             val_rc_is_proof;
         int             val_rc_consumed;
-        u_int8_t        val_rc_flags;
+        u_int32_t       val_rc_flags;
         struct val_digested_auth_chain *val_rc_rrset;
         struct val_internal_result *val_rc_next;
     };
