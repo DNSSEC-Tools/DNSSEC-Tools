@@ -37,7 +37,7 @@
       </address>
     </author>
 
-    <date month="February" year="2008" />
+    <date month="May" year="2008" />
     <workgroup> DNS Extensions </workgroup>
     <keyword>Internet-Draft</keyword>
 
@@ -134,7 +134,12 @@ when the application does not specify its preference while creating a DNSSEC val
 <t> The high-level DNSSEC validator API defines DNSSEC-aware substitutes for commonly
 used DNS resolver legacy functions. 
 It provides an easy path for applications already using DNS legacy functions
-to transition towards becoming DNSSEC-aware. A number of well-known resolver API functions exist; however, some of these 
+to transition towards becoming DNSSEC-aware.  This document also defines the 
+val_get_rrset() function, which enables applications to obtain the
+RRset information and inspect the validation status value for an 
+arbitrary DNS name, class and type. </t>
+
+<t> A number of well-known resolver API functions exist; however, some of these 
 (such as gethostbyname_r and gethostbyname2) are only available on a subset of Operating Systems and are not part of any official 
 standard.  Further, some functions are defined only as minor extensions of other well-known resolver API functions.  
 For example, gethostbyname2 differs from gethostbyname_r only by virue of having the extra argument to explictly 
@@ -144,7 +149,7 @@ returned in a hostent structure <xref target="refs.IEEE.1003.1-2004"/>.</t>
 
 <t> Instead of providing an exhaustive list of DNSSEC-capable replacement functions 
 for all known resolver function calls, the high-level DNSSEC validator API in this document only 
-describes extensions to a canonical set of function calls sepcified in <xref target="refs.IEEE.1003.1-2004"/>. 
+describes extensions to the canonical set of function calls sepcified in <xref target="refs.IEEE.1003.1-2004"/>. 
 These functions highlight the different ways in which 
 DNS information (and therefore the validation status information) can be returned to the 
 application. Application and resolver library developers SHOULD use the closest matching function 
@@ -153,7 +158,8 @@ from the above list to implement DNSSEC-capability in resolver functions not cov
 <t> The ctx parameter in the following functions points to a DNSSEC validator context object (<xref target="val-context"/>). 
 Applications MUST either supply a reference to a valid DNSSEC validator context object created 
 using the functions specified in <xref target="val-context"/> or supply a NULL 
-value for this parameter. Applications or libraries that implement the DNSSEC Validator API MUST use a default DNSSEC validator context when ctx is NULL. </t> 
+value for this parameter. Applications or libraries that implement the DNSSEC Validator API MUST use a default DNSSEC validator
+context when ctx is NULL. </t> 
 
     <section title="val_gethostbyname, val_gethostbyaddr">
     <figure>
@@ -186,7 +192,7 @@ translations.  New applications that need to perform these translations
 SHOULD use the functions from <xref target="hl_getaddrinfo"/> instead. </t>
 
 <t> The val_status parameter MUST contain the status of DNSSEC
-validation. Possible status codes (<xref target="val-status"/>) are  
+validation. The status code (values are defined in <xref target="val-status"/>) is  
 determined by the following rules. 
     <list style="symbols">
     <t> A DNSSEC validation status of VAL_LOCAL_ANSWER SHOULD be returned if the complete answer is returned
@@ -268,7 +274,8 @@ val_getaddrinfo() and val_getnameinfo() are identical to those specified for
 getaddrinfo() and getnameinfo() in <xref target="refs.RFC3493"/>.  </t>
 
 <t> The val_status parameter MUST contain the status of DNSSEC
-validation. Possible codes for val_status (<xref target="val-status"/>) are determined by the following rules: <t/>
+validation. The status code (values are defined in <xref target="val-status"/>) is
+determined by the following rules. 
     <list style="symbols">
     <t> A DNSSEC validation status of VAL_LOCAL_ANSWER SHOULD be returned in val_status 
 if the complete answer is returned from a local configuration store (for example, /etc/hosts or its equivalent) 
@@ -328,8 +335,9 @@ int val_res_query(const val_context_t *ctx,
 for the res_query() function (currently not documented in any standard reference).
 The val_res_query() function queries the DNS 
 for the data associated with the given domain name, class and type. 
+The result is returned as a DNS-styled response.
 In addition to returning the DNS response, 
-it also returns the DNSSEC validation status code associated with this answer. </t> 
+this function also returns the DNSSEC validation status code associated with this answer. </t> 
 
 <t> The val_res_query() function MUST return the actual size of the response packet on
 success and -1 on failure.  On success, the response
@@ -373,7 +381,85 @@ val_status. </t>
       </figure>
     </section>
 
-    <section title="Helper Functions - ns_name_pton and ns_name_ntop" anchor="pton_ntop">
+    <section title="val_get_rrset">
+      <figure>
+      <artwork>
+#include &lt;validator.h&gt;
+
+int val_get_rrset(val_context_t *ctx,
+                  const char *name,
+                  u_int16_t class,
+                  u_int16_t type,
+                  u_int32_t flags,
+                  struct val_answer_chain **answers);
+
+void val_free_answer_chain(struct val_answer_chain *answers);
+      
+      </artwork>
+      </figure>
+    
+<t> The val_get_rrset() function queries the DNS for the data associated with
+the given domain name, class and type. The flags argument specifies a list of 
+options to the validation process, logically OR'd to each other. Only one
+flag is currently defined for use by val_get_rrset().  </t>
+<figure>
+      <artwork>
+#define VAL_QUERY_DONT_VALIDATE 0x00000001
+      </artwork>
+      <postamble>
+<t> If this flag is specified, DNSSEC validation MUST be ignored for the query. </t>
+      </postamble>
+</figure> 
+
+<t> <t> val_get_rrset() MUST return 0 on success and an error code from
+<xref target="val-return-values"/> on failure. 
+val_get_rrset() returns its results in the val_answer_chain structure and MUST be
+allocated internally by the function. The user MUST release
+this memory after use using the val_free_answer_chain() function. </t>
+ 
+<t> The val_answer_chain structure is defined below. </t>
+      <figure>
+      <artwork>
+struct val_answer_chain {
+      val_status_t   val_ans_status;
+      char          *val_ans_name;
+      u_int16_t      val_ans_class;
+      u_int16_t      val_ans_type;
+      struct rr_rec *val_ans;
+      struct val_answer_chain *val_ans_next;
+};
+
+struct rr_rec {
+      u_int16_t     rr_length;
+      u_int8_t      *rr_data;
+      struct rr_rec *rr_next;
+};
+      </artwork>
+      </figure>
+
+<t> val_ans_name MUST contain the DNS name of the actual resource record set returned. 
+This value may differ from the value passed as the argument to val_get_rrset() if the resource
+record was returned after following a CNAME (<xref target="refs.RFC1034"/>) or DNAME 
+(<xref target="refs.RFC2672"/>) alias.  val_ans_name and val_ans_type
+MUST contain the actual class and type for the returned resource record. These values
+may differ from the values passed as arguments to val_get_rrset() if the query type or
+class has the value 255 (ANY). The resource record set MUST be returned as a linked list of 
+rr_length and rr_data tuples, for data returned in each resource record of the 
+resource record set.</t>
+
+<t> The consolidated DNSSEC validation status code for an RRset, based on the
+individual status codes for all components in an authentication chain,
+MUST be stored in the val_ans_status field. The authentication chain structure,
+itself, is not returned. Possible codes for val_ans_status
+are listed in <xref target="val-status"/>.
+When evaluating the validity of a DNS response,
+applications SHOULD use the functions described in <xref target="val-istrusted"/>
+instead of directly inspecting the DNSSEC validation status code returned in
+val_ans_status. </t>
+
+    </section>
+
+    <section title="ns_name_pton and ns_name_ntop" anchor="pton_ntop">
 
 <t> Domain names can be converted from a string representation to the DNS wire format and
 vice-versa using the ns_name_pton() and ns_name_ntop() functions respectively. </t>
@@ -415,7 +501,7 @@ int val_resolve_and_check( const val_context_t        *context,
                            u_char                     *domain_name_n,
                            const u_int16_t            class,
                            const u_int16_t            type, 
-                           const u_int8_t             flags,
+                           const u_int32_t            flags,
                            struct val_result_chain    **results);
 
 void val_free_result_chain( struct val_result_chain *results);
@@ -434,7 +520,7 @@ value for this parameter. Applications or libraries that implement the DNSSEC Va
 logically OR'd to each other. Two flags are currently defined: 
 <figure>
       <artwork>
-#define VAL_QUERY_DONT_VALIDATE 0x01
+#define VAL_QUERY_DONT_VALIDATE 0x00000001
       </artwork>
       <postamble>
 <t> If this flag is specified, DNSSEC validation MUST be ignored for the query and an authentication
@@ -443,10 +529,11 @@ chain SHOULD NOT be constructed for the response. </t>
 </figure> 
 <figure>
       <artwork>
-#define VAL_QUERY_NO_AC_DETAIL 0x02
+#define VAL_QUERY_NO_AC_DETAIL 0x00000002
       </artwork>
       <postamble>
-<t> If this flag is specified, details of the authentication chain are not returned in the results. </t> 
+<t> If this flag is specified, details of the authentication chain SHOULD NOT be returned in 
+the returned results. </t> 
       </postamble>
 </figure> 
 </t> 
@@ -457,9 +544,9 @@ vice-versa using the ns_name_pton() and ns_name_ntop() functions respectively, a
 
 <t> val_resolve_and_check() MUST return 0 on success and an error code from 
 <xref target="val-return-values"/> on failure.  
-Answers to the query MUST be returned in results, which is a linked-list 
-of val_result_chain structures as defined below. 
-Applications MUST release the memory
+Answers to the query is returned in results, which is a linked-list 
+of val_result_chain structures as defined below. The memory for results
+MUST be allocated by val_resolve_and_check().  Applications MUST release the memory
 allocated in results after use using the val_free_result_chain() function.</t>
 
 
@@ -632,7 +719,7 @@ DNSSEC validator considered to be
 un-trusted, with no further DNSSEC validation              
 being deemed necessary.  </t>
 <t> </t>
-<t hangText="VAL_AC_PROVABLY_UNSECURE:">
+<t hangText="VAL_AC_PROVABLY_INSECURE:">
 The RRset belongs to a zone that was determined to be 
 provably insecure (the DS record for this zone was provably absent). </t>
 <t> </t>
@@ -640,6 +727,16 @@ provably insecure (the DS record for this zone was provably absent). </t>
 The RRset contains only RRSIGs (in response to a query of type
 RRSIG). RRSIGs contain the cryptographic
 signatures for other DNS data and cannot themselves be validated.  </t>
+<t> </t>
+<t hangText="VAL_AC_NO_TRUST_ANCHOR:">
+No DNSSEC trust anchor was configured at or above the level of the 
+zone for the given RRset, therefore no
+validation could be performed. </t> 
+<t> </t>
+<t hangText="VAL_AC_TRUST:">
+At least one of the signatures covering the given
+DNSKEY RRset was directly verified using a key that was 
+configured as a DNSSEC trust anchor.  </t>
 <t> </t>
 <t hangText="VAL_AC_RRSIG_MISSING:">
 RRSIG data for the given RRset could not be located.  </t>
@@ -655,24 +752,14 @@ in question could not be located. </t>
 <t hangText="VAL_AC_DATA_MISSING:">
 The returned RRset was empty. </t>
 <t> </t>
-<t hangText="VAL_AC_NO_TRUST_ANCHOR:">
-No DNSSEC trust anchor was configured at or above the level of the 
-zone for the given RRset, therefore no
-validation could be performed. </t> 
-<t> </t>
-<t hangText="VAL_AC_TRUST:">
-At least one of the signatures covering the given
-DNSKEY RRset was directly verified using a key that was 
-configured as a DNSSEC trust anchor.  </t>
+<t hangText="VAL_AC_DNS_ERROR:">
+A DNS error was encountered during the query resolution process.  </t>
 <t> </t>
 <t hangText="VAL_AC_NOT_VERIFIED:">
 None of the RRSIGs covering the given RRset could be verified.  </t>
 <t> </t>
 <t hangText="VAL_AC_VERIFIED:">
 At least one RRSIG covering the RRset verified successfully.  </t>
-<t> </t>
-<t hangText="VAL_AC_DNS_ERROR:">
-A DNS error was encountered during the query resolution process.  </t>
       </list> </t>
 
       <t>  For each signature val_rr_rec member within an authentication chain 
@@ -740,11 +827,11 @@ the given DNSKEY had generated an RRSIG for a resource record in the authenticat
 the given DNSKEY or DS resource record provided the link in the authentication chain from 
 a DNSSEC trust anchor to the signed record.  </t>
 <t> </t>
-<t hangText="VAL_AC_UNKNOWN_DNSKEY_PROTOCOL:">
-the DNSKEY protocol number was unknown.  </t>
-<t> </t>
 <t hangText="VAL_AC_UNKNOWN_ALGORITHM_LINK:">
 the DNSKEY chained up to a DS record but the DNSKEY algorithm was unknown.  </t>
+<t> </t>
+<t hangText="VAL_AC_UNKNOWN_DNSKEY_PROTOCOL:">
+the DNSKEY protocol number was unknown.  </t>
 <t> </t>
 <t hangText="VAL_AC_ALGORITHM_NOT_SUPPORTED:">
 the DNSKEY or DS algorithm was not supported.  </t>
@@ -810,7 +897,7 @@ representing the validity of information returned by
 the DNSSEC validator. The return value MUST be greater than 0 if 
 status is one of VAL_SUCCESS, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_TYPE,
 VAL_NONEXISTENT_NAME_NOCHAIN, VAL_NONEXISTENT_TYPE_NOCHAIN,
-VAL_PROVABLY_UNSECURE, VAL_IGNORE_VALIDATION, VAL_TRUSTED_ZONE,  
+VAL_PROVABLY_INSECURE, VAL_IGNORE_VALIDATION, VAL_TRUSTED_ZONE,  
 VAL_TRUSTED_ANSWER, or VAL_VALIDATED_ANSWER 
 and MUST be equal to 0 for other status codes.  </t>
 
@@ -839,8 +926,20 @@ MUST be equal to 0 for other status codes. </t>
 codes are implementation-specific) based on the given conditions: </t>
 
         <t> <list style="hanging">
+<t hangText="VAL_VALIDATED_ANSWER:">
+returned if the combined DNSSEC validation status for a set of RRset responses represents a validated
+state.</t>
+<t> </t>
+<t hangText="VAL_TRUSTED_ANSWER:">
+returned if the combined DNSSEC validation status for a set of RRset responses represents a trusted (but
+non-validated) state.</t>
+<t> </t>
+<t hangText="VAL_UNTRUSTED_ANSWER:">
+returned if the combined DNSSEC validation status for a set of RRset responses represents an untrusted 
+state.</t>
+<t> </t>
 <t hangText="VAL_SUCCESS:">
-the response was successfully validated through the DNSSEC validation process.  </t>
+the response for the given RRset was successfully validated through the DNSSEC validation process.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_NAME:">
 the proof for denial of existence for a domain name
@@ -862,12 +961,12 @@ name queried was considered valid through local DNSSEC validator configuration;
 the authentication chain(s) for the different 
 components of the proof were not themselves validated.  </t>
 <t> </t>
-<t hangText="VAL_PROVABLY_UNSECURE:">
+<t hangText="VAL_PROVABLY_INSECURE:">
 the record or some ancestor of the record in the authentication chain 
 towards a DNSSEC trust anchor was known to be provably insecure and 
 DNSSEC validator policy is configured to trust provably insecure answers. </t>
 <t> </t>
-<t hangText="VAL_BAD_PROVABLY_UNSECURE:">
+<t hangText="VAL_BAD_PROVABLY_INSECURE:">
 the record or some ancestor of the record in the authentication chain 
 towards a DNSSEC trust anchor was known to be provably insecure, 
 but DNSSEC validator policy is configured to not trust provably insecure answers. </t> 
@@ -875,14 +974,6 @@ but DNSSEC validator policy is configured to not trust provably insecure answers
 <t hangText="VAL_BARE_RRSIG:">
 the response was for a query of type RRSIG. RRSIGs contain the cryptographic
 signatures for other DNS data and cannot themselves be validated.  </t>
-<t> </t>
-<t hangText="VAL_NOTRUST:">
-the authentication chain does not lead up to a configured DNSSEC trust anchor. </t> 
-<t> </t>
-<t hangText="VAL_BOGUS:">
-the response could not be validated due to signature verification 
-failures or the inability to verify proofs for one or more 
-components in the authentication chain.  </t>
 <t> </t>
 <t hangText="VAL_IGNORE_VALIDATION:">
 DNSSEC validator policy was configured 
@@ -897,25 +988,21 @@ to trust all responses from the zone that this data was received from.  </t>
 DNSSEC validator policy was configured to not trust
 any response from the zone that this data was received from.  </t>
 <t> </t>
-<t hangText="VAL_VALIDATED_ANSWER:">
-returned if the combined DNSSEC validation status for a set of RRset responses represents a validated
-state.</t>
-<t> </t>
-<t hangText="VAL_TRUSTED_ANSWER:">
-returned if the combined DNSSEC validation status for a set of RRset responses represents a trusted (but
-non-validated) state.</t>
-<t> </t>
-<t hangText="VAL_UNTRUSTED_ANSWER:">
-returned if the combined DNSSEC validation status for a set of RRset responses represents an untrusted 
-state.</t>
-<t> </t>
 <t hangText="VAL_LOCAL_ANSWER:">
 the response was obtained locally (for example, a file such as /etc/hosts).  
 Local answers are not considered valid unless the DNSSEC validator is specifically configured
 to treat them so, in which case the status changes to VAL_TRUSTED_ANSWER.</t>
 <t> </t>
+<t hangText="VAL_BOGUS:">
+the response could not be validated due to signature verification 
+failures or the inability to verify proofs for one or more 
+components in the authentication chain.  </t>
+<t> </t>
 <t hangText="VAL_DNS_ERROR:">
 returned if a DNS error was encountered during the query resolution process.  </t>
+<t> </t>
+<t hangText="VAL_NOTRUST:">
+the authentication chain does not lead up to a configured DNSSEC trust anchor. </t> 
         </list> </t>
 
     </section> <!-- List of DNSSEC Validation Status Codes -->
@@ -1181,26 +1268,6 @@ This draft draws on the results from that effort.</t>
               </front>
               <seriesInfo name="RFC" value="3493" />
             </reference>
-            <reference anchor="refs.RFC1034">
-              <front>
-                <title>Domain Names - Concepts and Facilities</title>
-                <author initials="P." surname="Mockapetris" fullname="Paul Mockapetris" />
-                <date month="November" year="1987" />
-              </front>
-              <seriesInfo name="RFC" value="1034" />
-            </reference>
-            <reference anchor="refs.RFC4033">
-              <front>
-                <title>DNS Security Introduction and Requirements</title>
-                <author initials="R." surname="Arends" fullname="Roy Arends" />
-                <author initials="R." surname="Austein" fullname="Rob Austein" />
-                <author initials="M." surname="Larson" fullname="Matt Larson" />
-                <author initials="D." surname="Massey" fullname="Dan Massey" />
-                <author initials="S." surname="Rose" fullname="Scott Rose" />
-                <date month="March" year="2005" />
-              </front>
-              <seriesInfo name="RFC" value="4033" />
-            </reference>
             <reference anchor="refs.RFC4034">
               <front>
                 <title>Resource Records for the DNS Security Extensions</title>
@@ -1224,6 +1291,36 @@ This draft draws on the results from that effort.</t>
                 <date month="March" year="2005" />
               </front>
               <seriesInfo name="RFC" value="4035" />
+            </reference>
+        </references>
+        <references title="Informative References">
+            <reference anchor="refs.RFC1034">
+              <front>
+                <title>Domain Names - Concepts and Facilities</title>
+                <author initials="P." surname="Mockapetris" fullname="Paul Mockapetris" />
+                <date month="November" year="1987" />
+              </front>
+              <seriesInfo name="RFC" value="1034" />
+            </reference>
+            <reference anchor="refs.RFC2672">
+              <front>
+                <title>Non-Terminal DNS Name Redirection</title>
+                <author initials="M." surname="Crawford" />
+                <date month="August" year="1999" />
+              </front>
+              <seriesInfo name="RFC" value="2672" />
+            </reference>
+            <reference anchor="refs.RFC4033">
+              <front>
+                <title>DNS Security Introduction and Requirements</title>
+                <author initials="R." surname="Arends" fullname="Roy Arends" />
+                <author initials="R." surname="Austein" fullname="Rob Austein" />
+                <author initials="M." surname="Larson" fullname="Matt Larson" />
+                <author initials="D." surname="Massey" fullname="Dan Massey" />
+                <author initials="S." surname="Rose" fullname="Scott Rose" />
+                <date month="March" year="2005" />
+              </front>
+              <seriesInfo name="RFC" value="4033" />
             </reference>
         </references>
         <!-- Appendices
