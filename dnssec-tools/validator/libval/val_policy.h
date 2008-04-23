@@ -22,7 +22,7 @@
 
 #define P_TRUST_ANCHOR              0
 #define P_CLOCK_SKEW                1
-#define P_PROV_UNSECURE             2
+#define P_PROV_INSECURE             2
 #define P_ZONE_SECURITY_EXPECTATION 3 
 #define P_BASE_LAST                 P_ZONE_SECURITY_EXPECTATION
 
@@ -105,8 +105,8 @@ int             parse_trust_anchor(char **, char *, policy_entry_t *, int *, int
 int             free_trust_anchor(policy_entry_t *);
 int             parse_clock_skew(char **, char *, policy_entry_t *, int *, int *);
 int             free_clock_skew(policy_entry_t *);
-int             parse_prov_unsecure_status(char **, char *, policy_entry_t *, int *, int *);
-int             free_prov_unsecure_status(policy_entry_t *);
+int             parse_prov_insecure_status(char **, char *, policy_entry_t *, int *, int *);
+int             free_prov_insecure_status(policy_entry_t *);
 int             parse_zone_security_expectation(char **, char *, policy_entry_t *, int *, int *);
 int             free_zone_security_expectation(policy_entry_t *);
 #ifdef LIBVAL_NSEC3
@@ -160,7 +160,7 @@ struct clock_skew_policy {
     int  clock_skew;
 };
 
-struct prov_unsecure_policy {
+struct prov_insecure_policy {
     int             trusted;
 };
 

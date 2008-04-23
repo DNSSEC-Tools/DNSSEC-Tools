@@ -811,7 +811,7 @@ verify_next_assertion(val_context_t * ctx,
              * DNSKEYs cannot be wildcard expanded, so VAL_AC_WCARD_VERIFIED does not
              * count as a good sig
              * Create the link even if the DNSKEY algorithm is unknown since this 
-             * may be the provably unsecure case
+             * may be the provably insecure case
              */
             /*
              * follow the trust path 
