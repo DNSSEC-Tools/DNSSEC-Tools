@@ -200,7 +200,7 @@ print_val_response(struct val_response *resp)
 //
 int
 sendquery(val_context_t * context, const char *desc, u_char * name_n,
-          const u_int16_t class, const u_int16_t type, u_int8_t flags,
+          const u_int16_t class, const u_int16_t type, u_int32_t flags,
           const int *result_ar, int trusted_only,
           struct val_response **resp)
 {
@@ -532,7 +532,7 @@ endless_loop(void)
 
 void 
 one_test(val_context_t *context, u_int8_t *name_n, u_int16_t class_h, 
-        u_int16_t type_h, u_int8_t flags, int retvals[], int doprint)
+        u_int16_t type_h, u_int32_t flags, int retvals[], int doprint)
 {
     struct val_response *resp = NULL;
     sendquery(context, "Result", name_n, class_h, type_h, flags, retvals, 1, &resp);
@@ -553,7 +553,7 @@ struct thread_params_st {
     val_context_t *context;
     int tcs;
     int tce;
-    u_int8_t flags;
+    u_int32_t flags;
     char *testcase_config;
     char *suite;
     int doprint;
@@ -565,7 +565,7 @@ struct thread_params_ot {
     u_int8_t *name_n;
     u_int16_t class_h;
     u_int16_t type_h;
-    u_int8_t flags;
+    u_int32_t flags;
     int *retvals;
     int doprint;
     int wait;
@@ -632,7 +632,7 @@ main(int argc, char *argv[])
     int             doprint = 0;
     int             selftest = 0;
     int             daemon = 0;
-    u_int8_t        flags = (u_int8_t) 0;
+    u_int32_t       flags = 0;
     int             retvals[] = { 0 };
     int             tcs = 0, tce = -1;
     int             wait = 0;
