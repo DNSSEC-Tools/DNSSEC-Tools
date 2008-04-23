@@ -21,6 +21,7 @@
 #ifdef HAVE_GETOPT_LONG
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
+    {"dnsval-conf", 1, 0, 'd'},
     {"resolv-conf", 1, 0, 'r'},
     {"root-hints", 1, 0, 'i'},
     {"verbose", 0, 0, 'v'},
@@ -30,10 +31,11 @@ static struct option prog_options[] = {
 
 void usage(char *progname)
 {
-    printf("Usage: %s [options] location/to/dnsval.conf\n", progname);
+    printf("Usage: %s [options] \n", progname);
     printf("Check if the provided dnsval.conf file is syntactically valid.\n");
     printf("Primary Options:\n");
     printf("        -h, --help                        Display this help and exit\n");
+    printf("        -d, --dnsval-conf=<dnsval.conf>   Specify the dnsval.conf file\n");
     printf("        -r, --resolv-conf=<resolv.conf>   Specify the resolv.conf file\n");
     printf("        -i, --root_h-nts=<root.hints>     Specify the root.hints file\n");
     printf("        -v, --verbose                     Enable verbose mode\n");
@@ -43,7 +45,7 @@ int main(int argc, char *argv[])
 {
     int             retval;
     int             c;
-    const char     *args = "hvr:i:";
+    const char     *args = "hvd:r:i:";
     char           *progname;
     val_log_t      *logp;
     val_context_t *context = NULL;
@@ -53,12 +55,6 @@ int main(int argc, char *argv[])
     int            debug = 0;
 
     progname = basename(argv[0]);
-
-    if (argc == 1) {
-        fprintf(stdout, "Nothing to check. Exiting.\n");
-        usage(progname);
-        return 0;
-    }
 
     while (1) {
 
@@ -91,6 +87,10 @@ int main(int argc, char *argv[])
                 }
                 break;
 
+            case 'd':
+                dnsval_conf = optarg;
+                break;
+
             case 'r':
                 resolv_conf = optarg;
                 break;
@@ -107,27 +107,29 @@ int main(int argc, char *argv[])
         }
     }
 
-    dnsval_conf = argv[optind++];
-
     if (debug == 0) {
         logp = val_log_add_optarg("5:stdout", 1);
     }
 
-    if (root_hints == NULL && debug) {
-        fprintf(stdout, "root.hints is not specified. Using system defined root-hints for libval.\n");
+    if (dnsval_conf == NULL && debug) {
+        fprintf(stdout, "dnsval.conf is not specified. Using system defined dnsval.conf for libval.\n");
     }
+    
     if (resolv_conf == NULL && debug) {
         fprintf(stdout, "resolv.conf is not specified. Using system defined resolv.conf for libval.\n");
     }
     
+    if (root_hints == NULL && debug) {
+        fprintf(stdout, "root.hints is not specified. Using system defined root-hints for libval.\n");
+    }
     retval = val_create_context_with_conf(NULL, dnsval_conf, resolv_conf, root_hints, &context);
 
     if (retval != VAL_NO_ERROR) {
-        fprintf(stdout, "Checking %s : FAILED. \n", dnsval_conf); 
+        fprintf(stdout, "Result: FAILED. \n"); 
         return (-1);
     }
 
-    fprintf(stdout, "Checking %s : OK. \n", dnsval_conf);
+    fprintf(stdout, "Result : OK. \n");
     val_free_context(context);
     return 0;
 }
