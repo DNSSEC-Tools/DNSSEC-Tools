@@ -18,9 +18,10 @@ command-line arguments and displays the returned I<hostent>, the validation
 status value, and the value of the I<h_errno> variable.
 
 The exit status for this program is 1 if the answer received is trusted, 2 if
-the answer received is validated, and -1 for an error.  The trusted and
-validated status values are obtained using the I<val_istrusted()> and
-I<val_isvalidated()> functions from I<libval(3)>.
+the answer received is validated, and -1 for an error.  The program returns 0 if 
+no validation was performed or if the result was neither trusted nor validated. 
+The trusted and validated status values are obtained using the 
+I<val_istrusted()> and I<val_isvalidated()> functions from I<libval(3)>.
 
 =head1 OPTIONS
 
@@ -37,6 +38,15 @@ Use the re-entrant query interface.
 =item -f, --family=I<[AF_INET|AF_INET6]>
 
 Use the specified address family for the query. 
+
+=item -o, --output=<debug-level>:<dest-type>[:<dest-options>]
+
+<debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG
+<dest-type> is one of file, net, syslog, stderr, stdout
+<dest-options> depends on <dest-type>
+    file:<file-name>   (opened in append mode)
+    net[:<host-name>:<host-port>] (127.0.0.1:1053
+    syslog[:facility] (0-23 (default 1 USER))
 
 =item -h, --help
 

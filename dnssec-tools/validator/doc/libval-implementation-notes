@@ -28,11 +28,8 @@ for the creation of applications that are either only interested in a basic
 "validated" or "not-validated" result, or more sophisticated applications that
 can look for specific errors as a sign of some network abnormality or attack.
 
-See libval(3), val_gethostbyname(3), val_getaddrinfo(3) and val_query(3) for 
-the interfaces are exported by the validator. 
-
-draft-hayatnagarkar-dnsext-validator-api, once standardized, is expected to be 
-the best reference for the validator API.
+See libval(3), val_gethostbyname(3), val_getaddrinfo(3), val_res_query(3) and
+val_get_rrset(3) for the interfaces are exported by the validator. 
 
 The validator supports the RSA/MD5 [RFC_2537], DSA/SHA-1 [RFC_2536] and 
 RSA/SHA-1 [RFC_3110] DNSSEC algorithms.  It uses the OpenSSL software package 
@@ -70,7 +67,7 @@ are untrusted.
 
 A negative proof may similarly be trusted, validated or untrusted.
 
-The provably unsecure condition may be configured by local policy
+The provably insecure condition may be configured by local policy
 to either be trusted or not.
 
 
@@ -105,12 +102,12 @@ zonecut information for is already available via the RRSIG meta-data.
 The above reasoning holds only if zones are signed most of the time. If 
 signatures are missing, the validator would have to perform a similar but 
 less query-intensive process of determining if the zone that lacked DNSSEC 
-meta-data was actually provably unsecure. The provably unsecure check is 
+meta-data was actually provably insecure. The provably insecure check is 
 straightforward to perform if validation happens top-down.
 
 Using the above rationale, the libval library has been designed to do 
 bottom-up validation by default and then switch over to top-down validation 
-in case a provably unsecure condition needs to be checked.
+in case a provably insecure condition needs to be checked.
 
 3. Multi-threading support (sharing validator contexts)
 
@@ -179,12 +176,40 @@ create fresh contexts. The rationale here is that applications that
 know what value to pass as a non-NULL label should also be intelligent 
 enough to reuse context objects that they create.
 
+5. Environment overrides for validator policy
 
-5. Minimizing false positives 
+While it is always possible to write an application that uses a specific 
+validator policy (or allow the user to supply one through a command line
+option), we wanted to provide a less intrusive way for users to specify
+a validation policy to libval. There were two approaches that we came up 
+with - reading the policy label from an variable, and dynamically 
+generating the policy label from the application name. 
+
+        locked-down system with single policy
+          An administrator that wants to (and is able to) lock down a
+          system to a particular validator policy, must be able to
+          disable other ways for a user to change the validator
+          policy
+ 
+        locked-down system with app-specific policies
+          An administrator that wants to (and is able to) lock down a
+          system to a particular dnsval.conf file, but wishes to use dif-
+          ferent policies for different applications must still be allowed
+          to disable reading policy labels from the environment. 
+
+        User controlled
+          It must be possible for an administrator to give complete 
+          flexibility to the user over the choice of policy label,
+          either on a per-application basis or on a system-wide basis.
+
+The set of precedence rules are documented in dnsval.conf(3)
+
+
+6. Minimizing false positives 
 
 While constructing the chain of trust we are willing to look at more trust
 anchors when trying to verify a proof. When trying to prove that DNSSEC is
-not required (through the provably unsecure condition), we only look at the 
+not required (through the provably insecure condition), we only look at the 
 closest matching trust anchor.
 
 
@@ -224,12 +249,12 @@ iv)	For every answer that is received, the validator assimilates this data
 
 v)	Data contained in an element of the authentcation chain can be verified
 	as long as all cryptographic components necessary to complete this
-	operation is available locally. The verification operation may be
+	operation is available. The verification operation may be
 	performed even if other components in the chain of trust are still
 	being built.
 
 vi) Since multiple RRsets may be returned in response to a query there
-    can actually be multiple authentication chains that are returned.
+    can be multiple authentication chains that are returned.
     Multiple authentication chains are also possible for negative 
     proofs where the proof is actually comprised of an SOA RR, and one 
     or more NSEC (or NSEC3) RRsets. Multiple answers are represented 
@@ -245,7 +270,7 @@ vii)For RRsets in the response that are not validated, the validator may
     configured trust anchor for the main tree.
 
 viii) For status values that map to unsuccessful conditions, an attempt is
-    made to see if the answer is actually provably unsecure. This test
+    made to see if the answer is actually provably insecure. This test
     test is made in a top-down fashion starting from the closest configured
     trust anchor and ending at the zone cut for the query in question.
 
@@ -284,7 +309,8 @@ x) Any left over elements in the val_internal_result linked list that
    and marked as bogus. 
    
 xi)	The val_resolve_and_check() method returns the val_result_chain
-   to the calling application.
+   to the calling application only if the application has requested this
+   information.
 
 
 Lower-level routines: digesting answers received from libsres
@@ -294,9 +320,9 @@ The validator uses the asynchronous query_send() and response_rcv()
 resolver interfaces (see man page for libsres(3)) to fetch answers from the DNS.
 The D0 and CD bit on the query is only set if a trust anchor is configured
 above the name being queried for. Note that since checks for the provably 
-unsecure condition are not made as the referral is being traversed, the 
+insecure condition are not made as the referral is being traversed, the 
 D0 and CD bits are also set while issuing queries for names that are under
-a provably unsecure domain.
+a provably insecure domain.
 
 After the answer is received, the first step is "digesting" the response --
 RRsets in the answer and authority sections are extracted as is any
@@ -352,43 +378,44 @@ Assertion states transition as follows:
          |
          v
      VAL_AC_INIT  
-          |                  +-----------------------+
-          +----------------->| VAL_AC_NEGATIVE_PROOF |  
-          |                  +-----------------------+
-          |                                              +----------------------+
-          +----------------->  VAL_AC_WAIT_FOR_RRSIG --> | VAL_AC_RRSIG_MISSING | --------+
-          |                              |               +----------------------+         |
-          |                              v                                                |
-          +----------------->  VAL_AC_WAIT_FOR_TRUST                                      |
-          |                              |    |   |       +-------------------+           |
-          |                              |    |   +-----> | VAL_AC_DS_MISSING |-----------+   
-          |                              |    |           +-------------------+           |
-          |                              |    |           +-------------------+           |
-          |                              |    +---------> | VAL_AC_DS_MISSING |-----------+
-          |                              |                +-------------------+           |
-          |                              v                                                |
-          |                     VAL_AC_CAN_VERIFY                                         |
+          |                                           
+          +----------------->  VAL_AC_TRUST_NOCHK --------------------------------------->+
+          |                                                                               |
+          |                  +-----------------------+                                    |
+          +----------------->| VAL_AC_NEGATIVE_PROOF |----------------------------------->+
+          |                  +-----------------------+                                    |
+          |                                                                               |
+          +----------------->  VAL_AC_WAIT_FOR_RRSIG --------+                            |
+          |                              |                   |                            |
+          |                              |                   v                            |
+          |                              |              +==============+                  |
+          |                              |              |    ERROR     |----------------->|
+          |                              |              +==============+                  |
+          |                              |                   ^                            |
+          |                              v                   |                            |
+          +----------------->  VAL_AC_WAIT_FOR_TRUST --------+                            |
+          |                              |                                                |
+          |                              |                                                |
+          |                              v              +==============+                  |
+          |                     VAL_AC_CAN_VERIFY ----> |  SUCCESS     |                  |
+          |                              |              +==============+                  |
+          |                              |                                                |
           |                              |                                                |
           |                              v                                                |
-          |                     +====================+                                    |
-          |                     |      SUCCESS       |                                    |    
-          |                     +====================+                                    |
+          | VAL_AC_FAIL_BASE    +====================+                                    |
+          +-------||----------->|       FAIL         | ---------------------------------->+
+          | VAL_AC_LAST_FAILURE +====================+                                    |
+          |                                                                               |
           |                                                                               |
           |                                                                               |
           | VAL_AC_BAD_BASE     +====================+                                    |
-          +-------||----------->|       BAD          | -----------------------------------+
+          +-------||----------->|       BAD          |                                    |
           | VAL_AC_LAST_BAD     +====================+                                    |
           |                                                                               |
           |                                                                               |
           |                                                                               |
           |                                                                               |
-          | VAL_AC_FAIL_BASE    +====================+                                    |
-          +-------||----------->|       FAIL         | -----------------------------------+
-          | VAL_AC_LAST_FAILURE +====================+                                    |
-          |                                                                               |
-          |                                                                               |
-          |                           (provably insecure)                                 |
-          |<------------------------------------------------------------------------------+
+          |<----------------------------------------------------------------------------->+
           |
           v
   +====================+
@@ -398,22 +425,28 @@ Assertion states transition as follows:
 where:
 
               +====================+
-              |    SUCCESS         | 
+              |  DONT GO FURTHER   | 
               +====================+
-                      |
-                      |---> VAL_AC_VERIFIED 
-                      |
-                      |---> Key status  
-                      |         |-------------> VAL_AC_SIGNING_KEY 
-                      |         |-------------> VAL_AC_UNKNOWN_ALGORITHM_LINK
-                      |         +-------------> VAL_AC_VERIFIED_LINK
-                      |
-                      +---> sig status 
-                                |
-                                |-------------> VAL_AC_RRSIG_VERIFIED 
-                                |-------------> VAL_AC_RRSIG_VERIFIED_SKEW
-                                |-------------> VAL_AC_WCARD_VERIFIED
-                                +-------------> VAL_AC_WCARD_VERIFIED_SKEW
+                      |---> VAL_AC_IGNORE_VALIDATION 
+                      |---> VAL_AC_TRUSTED_ZONE
+                      |---> VAL_AC_UNTRUSTED_ZONE
+                      |---> VAL_AC_PROVABLY_INSECURE
+                      |---> VAL_AC_BARE_RRSIG
+                      |---> VAL_AC_NO_TRUST_ANCHOR
+                      +---> VAL_AC_TRUST
+
+              +====================+
+              |       ERROR         | 
+              +====================+
+                      |---> VAL_AC_RRSIG_MISSING 
+                      |---> VAL_AC_DNSKEY_MISSING 
+                      +---> VAL_AC_DS_MISSING
+                      
+              +====================+
+              |        BAD         | 
+              +====================+
+                      |---> VAL_AC_DATA_MISSING 
+                      +---> VAL_AC_DNS_ERROR
                       
               +====================+
               |       FAIL         | 
@@ -421,71 +454,58 @@ where:
                       |
                       |---> VAL_AC_NOT_VERIFIED 
                       |
-                      +---> Key status
-                      |         |-------------> VAL_AC_INVALID_KEY
+                      |---> Key status
                       |         |-------------> VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+                      |         |-------------> VAL_AC_DS_NOMATCH
+                      |         |-------------> VAL_AC_INVALID_KEY
                       |         +-------------> VAL_AC_ALGORITHM_NOT_SUPPORTED
                       |
                       +---> sig status 
-                                |-------------> VAL_AC_DNSKEY_NOMATCH
                                 |-------------> VAL_AC_WRONG_LABEL_COUNT
-                                |-------------> VAL_AC_BAD_DELEGATION
                                 |-------------> VAL_AC_INVALID_RRSIG
                                 |-------------> VAL_AC_RRSIG_NOTYETACTIVE
                                 |-------------> VAL_AC_RRSIG_EXPIRED
-                                |-------------> VAL_AC_ALGORITHM_NOT_SUPPORTED
                                 |-------------> VAL_AC_RRSIG_VERIFY_FAILED 
-                                |-------------> VAL_AC_ALGORITHM_REFUSED
-                                +-------------> VAL_AC_RRSIG_ALGORITHM_MISMATCH 
+                                |-------------> VAL_AC_RRSIG_ALGORITHM_MISMATCH 
+                                |-------------> VAL_AC_DNSKEY_NOMATCH
+                                +-------------> VAL_AC_ALGORITHM_NOT_SUPPORTED
             
-            
-                                
               +====================+
-              |        BAD         | 
+              |    SUCCESS         | 
               +====================+
-                      |---> VAL_AC_DATA_MISSING 
-                      +---> VAL_AC_DNS_QUERY_ERROR 
-                      +---> VAL_AC_DNS_RESPONSE_ERROR 
-                      +---> VAL_AC_DNS_WRONG_ANSWER 
-                      +---> VAL_AC_DNS_REFERRAL_ERROR 
-                      +---> VAL_AC_DNS_MISSING_GLUE
-                      +---> VAL_AC_DNS_CONFLICTING_ANSWERS
-            
+                      |
+                      |---> VAL_AC_VERIFIED 
+                      |
+                      |---> Key status  
+                      |         |-------------> VAL_AC_TRUST_POINT 
+                      |         |-------------> VAL_AC_SIGNING_KEY 
+                      |         |-------------> VAL_AC_VERIFIED_LINK
+                      |         +-------------> VAL_AC_UNKNOWN_ALGORITHM_LINK
+                      |
+                      +---> sig status 
+                                |
+                                |-------------> VAL_AC_RRSIG_VERIFIED 
+                                |-------------> VAL_AC_WCARD_VERIFIED
+                                |-------------> VAL_AC_RRSIG_VERIFIED_SKEW
+                                +-------------> VAL_AC_WCARD_VERIFIED_SKEW
                       
-                      
-              +====================+
-              |  DONT GO FURTHER   | 
-              +====================+
-                      |---> VAL_AC_IGNORE_VALIDATION 
-                      |---> VAL_AC_TRUSTED_ZONE
-                      |---> VAL_AC_UNTRUSTED_ZONE
-                      |---> VAL_AC_TRUST_KEY
-                      |---> VAL_AC_PROVABLY_UNSECURE
-                      |---> VAL_AC_BARE_RRSIG
-                      +---> VAL_AC_NO_TRUST_ANCHOR
-
-          
 
 The consolidated dnssec validation results obtained in the results array
 are derived from the authentication chain states in the following manner:
 (Note: see val_errors.h for values of *_BASE and *_LAST)
 
-trust    any auth.chain.elem    result  
-anchor   status                 status             
+any auth.chain.elem    result  
+status                 status             
 ====================================================
 
- YES    > FAIL_BASE,             VAL_BOGUS_PROVABLE  
-        <=LAST_FAILURE   
+> FAIL_BASE,            VAL_BOGUS
+<=LAST_FAILURE   
 
- NO     > FAIL_BASE,             VAL_BOGUS
-        <=LAST_FAILURE
+VAL_AC_DNS_ERROR        VAL_DNS_ERROR 
+VAL_AC_DATA_MISSING     VAL_DNS_ERROR 
 
- --      VAL_AC_DATA_MISSING     VAL_DNS_RESPONSE_ERROR 
-
- --      VAL_AC_DNS_*            VAL_DNS_* 
-
- --     > VAL_AC_DONT_GO_FURTHER  equivalent "termination" 
-        <= VAL_AC_LAST_STATE      status
+> VAL_AC_DONT_GO_FURTHER  equivalent "termination" 
+<= VAL_AC_LAST_STATE      status
 
 
 trust    every auth.chain.elem   final result status
@@ -496,7 +516,8 @@ anchor   status  (if present)
  NO     VERIFIED                  VAL_NOTRUST
 
 
-The following status values are defined for results of negative proof checks:
+The following status values are defined for results of negative proof checks for
+the main DNS query:
 
 Condition                         final result
 ==========================================================================
@@ -512,13 +533,17 @@ non-existence is not trusted
 or proof components are trusted   
 but are incomplete
 
+For negative proofs in the middle of the authentication chain, if 
+the check for provably insecure condition could not be performed, the
+status is set to VAL_BOGUS_PROOF.
+
 
 For the provably non-existence condition, the following values exist:
 
-Provably unsecure trust status      final result
+Provably insecure trust status      final result
 ==========================================================================
-Trusted                             VAL_PROVABLY_UNSECURE
-Untrusted                           VAL_BAD_PROVABLY_UNSECURE
+Trusted                             VAL_PROVABLY_INSECURE
+Untrusted                           VAL_BAD_PROVABLY_INSECURE
 
 
 Current status of libval
@@ -537,7 +562,7 @@ of-trust
 
 3. Support for credibility level of data in the cache
 
-4. Better handling of EDNS0 in provably unsecure delegations 
+4. Better handling of EDNS0 in provably insecure delegations 
    and EDNS0 failure handling. 
 
 5. More robustness in the querying process -- falling back to other name servers 

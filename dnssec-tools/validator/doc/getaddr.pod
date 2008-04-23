@@ -16,7 +16,8 @@ arguments and displays the return code from the function and the contents of the
 I<addrinfo> structure. 
 
 The exit status for this program is 1 if the answer received is trusted, 2 if 
-the answer received is validated, and -1 for an error.  The trusted and
+the answer received is validated, and -1 for an error. If no validation is performed,
+or the result is neither trusted nor validated, a value of 0 is returned. The trusted and
 validated status values are obtained using the I<val_istrusted()> and
 I<val_isvalidated()> functions from I<libval(3)>.
 
@@ -35,6 +36,15 @@ Use the AI_CANONNAME flag in I<val_getaddrinfo()>.
 =item -s, --service=I<PORT|SERVICE>
 
 Use the specified transport-layer port or service name.
+
+=item -o, --output=<debug-level>:<dest-type>[:<dest-options>]
+
+<debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG
+<dest-type> is one of file, net, syslog, stderr, stdout
+<dest-options> depends on <dest-type>
+    file:<file-name>   (opened in append mode)
+    net[:<host-name>:<host-port>] (127.0.0.1:1053
+    syslog[:facility] (0-23 (default 1 USER))
 
 =item -h, --help
 

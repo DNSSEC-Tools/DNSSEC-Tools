@@ -69,8 +69,7 @@ I<ns_name_pton()> function exported by the I<libsres(3)> library.
 The I<flags> parameter can be used to control the results of validation.
 Three values, which may be ORed together, are currently defined for this field.
 B<VAL_QUERY_DONT_VALIDATE> causes the validator to disable validation for this
-query.  B<VAL_QUERY_NO_AC_DETAIL> causes the validator to only return the RRset 
-information in val_rc_rrset of the val_result_chain structure, leaving 
+query.  B<VAL_QUERY_NO_AC_DETAIL> causes the validator to leave 
 the authentication chain details in val_rc_answer and val_rc_proofs empty (NULL). 
 B<VAL_QUERY_NO_DLV> causes the validator to disable DLV processing for
 this query.  The second flag is only available if the I<libval(3)> library has
@@ -180,18 +179,11 @@ Validation status for a given RRset.  This can be one of the following:
     VAL_SUCCESS
         Answer received and validated successfully.
 
-    VAL_LOCAL_ANSWER
-        Answer was available from a local file.
-
-    VAL_BARE_RRSIG
-        No DNSSEC validation possible, query was
-        for an RRSIG.
-
     VAL_NONEXISTENT_NAME
         No name was present and a valid proof of non-
-	existence confirming the missing name (NSEC or
-	NSEC3 span) was returned. The components of
-	the proof were also individually validated.
+	    existence confirming the missing name (NSEC or
+ 	    NSEC3 span) was returned. The components of
+	    the proof were also individually validated.
 
     VAL_NONEXISTENT_TYPE
         No type exists for the name and a valid proof
@@ -201,10 +193,10 @@ Validation status for a given RRset.  This can be one of the following:
 
     VAL_NONEXISTENT_NAME_NOCHAIN
         No name was present and a valid proof of non-
-	existence confirming the missing name was
-	returned. The components of the proof were also
-	identified to be trustworthy, but they were
-	not individually validated.
+	    existence confirming the missing name was
+	    returned. The components of the proof were also
+	    identified to be trustworthy, but they were
+	    not individually validated.
 
     VAL_NONEXISTENT_TYPE_NOCHAIN
         No type exists for the name and a valid proof
@@ -214,41 +206,20 @@ Validation status for a given RRset.  This can be one of the following:
         to be trustworthy, but they were not
         individually validated.
 
-    VAL_DNS_CONFLICTING_ANSWERS	
-        Multiple conflicting answers received for a query.
+    VAL_PROVABLY_INSECURE
+        The record or some ancestor of the record in
+        the authentication chain towards the trust
+        anchor was known to be provably insecure.
 
-    VAL_DNS_QUERY_ERROR	
-        Some error was encountered while sending the query.
+    VAL_BAD_PROVABLY_UNSECURE
+        The record or some ancestor of the record in the
+        authentication chain towards the trust anchor was
+        known to be provably insecure. But the provably
+        insecure condition was configured as untrustworthy.
 
-    VAL_DNS_RESPONSE_ERROR	
-        No response returned or response with an error
-        rcode value returned.
-
-    VAL_DNS_WRONG_ANSWER	
-        Wrong answer received for a query.
-
-    VAL_DNS_REFERRAL_ERROR
-        Some error encountered while following referrals.
-
-    VAL_DNS_MISSING_GLUE
-        Glue was missing.
-
-    VAL_BOGUS_PROVABLE
-        Response could not be validated due to signature
-        verification failures or the inability to verify
-        proofs for exactly one component in the
-        authentication chain below the trust anchor.
-
-    VAL_BOGUS
-        Response could not be validated due to signature
-        verification failures or the inability to verify
-        proofs for an indeterminate number of components
-        in the authentication chain.
-
-    VAL_NOTRUST
-        All available components in the authentication
-        chain verified properly, but there was no trust
-        anchor available.
+    VAL_BARE_RRSIG
+        No DNSSEC validation possible, query was
+        for an RRSIG.
 
     VAL_IGNORE_VALIDATION
         Local policy was configured to ignore validation
@@ -262,16 +233,22 @@ Validation status for a given RRset.  This can be one of the following:
         Local policy was configured to reject
         any data received from the given zone.
 
-    VAL_PROVABLY_UNSECURE
-        The record or some ancestor of the record in
-        the authentication chain towards the trust
-        anchor was known to be provably unsecure.
+    VAL_LOCAL_ANSWER
+        Answer was available from a local file.
 
-    VAL_BAD_PROVABLY_UNSECURE
-        The record or some ancestor of the record in the
-        authentication chain towards the trust anchor was
-        known to be provably unsecure. But the provably
-        unsecure condition was configured as untrustworthy.
+    VAL_BOGUS
+        Response could not be validated due to signature
+        verification failures or the inability to verify
+        proofs for an indeterminate number of components
+        in the authentication chain.
+
+    VAL_DNS_ERROR	
+        Some error was encountered during DNS processing. 
+
+    VAL_NOTRUST
+        All available components in the authentication
+        chain verified properly, but there was no trust
+        anchor available.
 
 Status values in I<val_status_t> returned by the validator can be displayed
 in ASCII format using I<p_val_status()>.
@@ -302,34 +279,6 @@ This field may contain one of the following values:
     VAL_AC_UNSET
         The status was not set.
 
-    VAL_AC_DATA_MISSING
-        No data were returned for a query and the
-        DNS did not indicate an error.
-
-    VAL_AC_RRSIG_MISSING
-        RRSIG data could not be retrieved for a
-        resource record.
-
-    VAL_AC_DNSKEY_MISSING
-        The DNSKEY for an RRSIG covering a resource
-        record could not be retrieved.
-
-    VAL_AC_DS_MISSING
-        The DS record covering a DNSKEY record was
-        not available.
-
-    VAL_AC_NOT_VERIFIED
-        All RRSIGs covering the RRset could not
-        be verified.
-
-    VAL_AC_VERIFIED
-        At least one RRSIG covering a resource
-        record had a status of VAL_AC_RRSIG_VERIFIED.
-
-    VAL_AC_TRUST_KEY
-        A given DNSKEY or a DS record was locally
-        defined to be a trust anchor.
-
     VAL_AC_IGNORE_VALIDATION
         Validation for the given resource record was ignored,
         either because of some local policy directive or
@@ -343,7 +292,7 @@ This field may contain one of the following values:
         Local policy defined a given zone as untrusted,
         with no further validation being deemed necessary.
 
-    VAL_AC_PROVABLY_UNSECURE
+    VAL_AC_PROVABLY_INSECURE
         The authentication chain from a trust anchor to a
         given zone could not be constructed due to the
         provable absence of a DS record for this zone in
@@ -358,25 +307,37 @@ This field may contain one of the following values:
         There was no trust anchor configured for a given
         authentication chain.
 
-    VAL_AC_DNS_CONFLICTING_ANSWERS
-        Multiple conflicting answers received for a query.
+    VAL_AC_TRUST
+        At least one of the signatures covering the given
+        DNSKEY RRset was directly verified using a key that was
+        configured as a DNSSEC trust anchor.
 
-    VAL_AC_DNS_QUERY_ERROR
-        Some error was encountered while sending the query.
+    VAL_AC_RRSIG_MISSING
+        RRSIG data could not be retrieved for a
+        resource record.
 
-    VAL_AC_DNS_RESPONSE_ERROR
-        No response returned or response with an error
-        rcode value returned.
+    VAL_AC_DNSKEY_MISSING
+        The DNSKEY for an RRSIG covering a resource
+        record could not be retrieved.
 
-    VAL_AC_DNS_WRONG_ANSWER
-        Wrong answer received for a query.
+    VAL_AC_DS_MISSING
+        The DS record covering a DNSKEY record was
+        not available.
 
-    VAL_AC_DNS_REFERRAL_ERROR
-        Some error encountered while following referrals.
+    VAL_AC_DATA_MISSING
+        No data were returned for a query and the
+        DNS did not indicate an error.
 
-    VAL_AC_DNS_MISSING_GLUE
-        Glue was missing.
+    VAL_AC_DNS_ERROR
+        Some error was encountered during DNS processing. 
 
+    VAL_AC_NOT_VERIFIED
+        All RRSIGs covering the RRset could not
+        be verified.
+
+    VAL_AC_VERIFIED
+        At least one RRSIG covering a resource
+        record had a status of VAL_AC_RRSIG_VERIFIED.
 
 =item I<val_ac_rrset>
 
@@ -500,24 +461,12 @@ I<rr_status> can return one of the following values:
 	the record was wildcard expanded, but it was verified
 	only after clock skew was taken into account.
 
-    VAL_AC_RRSIG_VERIFY_FAILED
-	A given RRSIG covering an RRset was bogus.
-
-    VAL_AC_DNSKEY_NOMATCH
-	An RRSIG was created by a DNSKEY that did not
-	exist in the apex keyset.
-
-    VAL_AC_RRSIG_ALGORITHM_MISMATCH
-	The keytag referenced in the RRSIG matched a
-	DNSKEY but the algorithms were different.
-
     VAL_AC_WRONG_LABEL_COUNT
 	The number of labels on the signature was greater
 	than the count given in the RRSIG RDATA.
 
-    VAL_AC_BAD_DELEGATION
-	An RRSIG was created with a key that did not
-	exist in the parent DS record set.
+    VAL_AC_INVALID_RRSIG
+	The RRSIG could not be parsed.
 
     VAL_AC_RRSIG_NOTYETACTIVE
 	The RRSIG's inception time is in the future.
@@ -525,15 +474,27 @@ I<rr_status> can return one of the following values:
     VAL_AC_RRSIG_EXPIRED
 	The RRSIG had expired.
 
-    VAL_AC_INVALID_RRSIG
-	The RRSIG could not be parsed.
-
     VAL_AC_ALGORITHM_NOT_SUPPORTED
 	The RRSIG algorithm was not supported.
+
+    VAL_AC_RRSIG_VERIFY_FAILED
+	A given RRSIG covering an RRset was bogus.
+
+    VAL_AC_RRSIG_ALGORITHM_MISMATCH
+	The keytag referenced in the RRSIG matched a
+	DNSKEY but the algorithms were different.
+
+    VAL_AC_DNSKEY_NOMATCH
+	An RRSIG was created by a DNSKEY that did not
+	exist in the apex keyset.
 
 For each I<val_rr_rec> member of type DNSKEY (or DS, where relevant) within the
 authentication chain I<val_ac_rrset>, the validation status is stored in the
 variable I<rr_status> and can return one of the following values:
+
+    VAL_AC_TRUST_POINT
+    The given DNSKEY or a DS record was configured 
+    as a DNSSEC trust anchor.
 
     VAL_AC_SIGNING_KEY
 	This DNSKEY was used to create an RRSIG for
@@ -543,20 +504,24 @@ variable I<rr_status> and can return one of the following values:
 	This DNSKEY provided the link in the authentication
 	chain from the trust anchor to the signed record.
 
-    VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-	The DNSKEY protocol number was unrecognized.
-
     VAL_AC_UNKNOWN_ALGORITHM_LINK
 	This DNSKEY provided the link in the authentication
 	chain from the trust anchor to the signed record,
 	but the DNSKEY algorithm was unknown.
 
-    VAL_AC_INVALID_KEY
-	The key used to verify the RRSIG was not a valid
-	DNSKEY.
+    VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+	The DNSKEY protocol number was unrecognized.
 
     VAL_AC_ALGORITHM_NOT_SUPPORTED
 	The DNSKEY or DS algorithm was not supported.
+    
+    VAL_AC_DS_NOMATCH
+	An RRSIG was created with a key that did not
+	exist in the parent DS record set.
+
+    VAL_AC_INVALID_KEY
+	The key used to verify the RRSIG was not a valid
+	DNSKEY.
 
 =back
 
@@ -609,21 +574,17 @@ displayed in ASCII format using the I<p_val_error()> function.
 
 =over 4
 
-=item I<val_resolve_and_check()>
-
-=over 4
-
 =item VAL_NO_ERROR
 
 No error was encountered.
 
-=item VAL_GENERIC_ERROR
-
-Generic error encountered.
-
 =item VAL_NOT_IMPLEMENTED
 
 Functionality not yet implemented.
+
+=item VAL_RESOURCE_UNAVAILABLE
+
+Some resource (crypto possibly) was unavailable.  Currently not implemented.
 
 =item VAL_BAD_ARGUMENT
 
@@ -636,24 +597,6 @@ Encountered some internal error.
 =item VAL_NO_PERMISSION
 
 No permission to perform operation.  Currently not implemented.
-
-=item VAL_RESOURCE_UNAVAILABLE
-
-Some resource (crypto possibly) was unavailable.  Currently not implemented.
-
-=back
-
-=item I<val_create_context()> 
-
-=over 4
-
-=item VAL_NO_ERROR
-
-No error was encountered.
-
-=item VAL_RESOURCE_UNAVAILABLE
-
-Could not allocate memory.
 
 =item VAL_CONF_PARSE_ERROR
 
@@ -669,8 +612,6 @@ The policy identifier being referenced was invalid.
 
 =back
 
-=back
-
 =head1 FILES
 
 The validator library reads configuration information from two files,
@@ -680,7 +621,7 @@ See B<dnsval.conf(5)> for a description of syntax for these files.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 AUTHORS
