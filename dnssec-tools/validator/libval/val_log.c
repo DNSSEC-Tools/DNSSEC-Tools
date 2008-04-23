@@ -451,24 +451,29 @@ const char     *
 p_ac_status(val_astatus_t err)
 {
     switch (err) {
-    case VAL_AC_DATA_MISSING:
-        return "VAL_AC_DATA_MISSING";
+
+    case VAL_AC_IGNORE_VALIDATION:
+        return "VAL_AC_IGNORE_VALIDATION";
         break;
-    case VAL_AC_DNS_RESPONSE_ERROR:
-        return "VAL_AC_DNS_RESPONSE_ERROR";
+    case VAL_AC_TRUSTED_ZONE:
+        return "VAL_AC_TRUSTED_ZONE";
         break;
-    case VAL_AC_DNS_WRONG_ANSWER:
-        return "VAL_AC_DNS_WRONG_ANSWER";
+    case VAL_AC_UNTRUSTED_ZONE:
+        return "VAL_AC_UNTRUSTED_ZONE";
         break;
-    case VAL_AC_DNS_REFERRAL_ERROR:
-        return "VAL_AC_DNS_REFERRAL_ERROR";
+    case VAL_AC_PROVABLY_INSECURE:
+        return "VAL_AC_PROVABLY_INSECURE";
         break;
-    case VAL_AC_DNS_MISSING_GLUE:
-        return "VAL_AC_DNS_MISSING_GLUE";
+    case VAL_AC_BARE_RRSIG:
+        return "VAL_AC_BARE_RRSIG";
         break;
-    case VAL_AC_DNS_CONFLICTING_ANSWERS:
-        return "VAL_AC_DNS_CONFLICTING_ANSWERS";
+    case VAL_AC_NO_TRUST_ANCHOR:
+        return "VAL_AC_NO_TRUST_ANCHOR";
         break;
+    case VAL_AC_TRUST:
+        return "VAL_AC_TRUST";
+        break;
+
     case VAL_AC_RRSIG_MISSING:
         return "VAL_AC_RRSIG_MISSING";
         break;
@@ -478,26 +483,19 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_DS_MISSING:
         return "VAL_AC_DS_MISSING";
         break;
-    case VAL_AC_NO_TRUST_ANCHOR:
-        return "VAL_AC_NO_TRUST_ANCHOR";
+        
+    case VAL_AC_DATA_MISSING:
+        return "VAL_AC_DATA_MISSING";
         break;
-    case VAL_AC_UNTRUSTED_ZONE:
-        return "VAL_AC_UNTRUSTED_ZONE";
+    case VAL_AC_DNS_ERROR:
+        return "VAL_AC_DNS_ERROR";
         break;
-    case VAL_AC_UNKNOWN_DNSKEY_PROTOCOL:
-        return "VAL_AC_UNKNOWN_DNSKEY_PROTOCOL";
-        break;
-    case VAL_AC_DNSKEY_NOMATCH:
-        return "VAL_AC_DNSKEY_NOMATCH";
+        
+    case VAL_AC_NOT_VERIFIED:
+        return "VAL_AC_NOT_VERIFIED";
         break;
     case VAL_AC_WRONG_LABEL_COUNT:
         return "VAL_AC_WRONG_LABEL_COUNT";
-        break;
-    case VAL_AC_DS_NOMATCH:
-        return "VAL_AC_DS_NOMATCH";
-        break;
-    case VAL_AC_INVALID_KEY:
-        return "VAL_AC_INVALID_KEY";
         break;
     case VAL_AC_INVALID_RRSIG:
         return "VAL_AC_INVALID_RRSIG";
@@ -508,32 +506,48 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_RRSIG_EXPIRED:
         return "VAL_AC_RRSIG_EXPIRED";
         break;
-    case VAL_AC_ALGORITHM_NOT_SUPPORTED:
-        return "VAL_AC_ALGORITHM_NOT_SUPPORTED";
-        break;
-    case VAL_AC_RRSIG_VERIFIED:
-        return "VAL_AC_RRSIG_VERIFIED";
-        break;
-    case VAL_AC_RRSIG_VERIFIED_SKEW:
-        return "VAL_AC_RRSIG_VERIFIED_SKEW";
-        break;
-    case VAL_AC_WCARD_VERIFIED:
-        return "VAL_AC_WCARD_VERIFIED";
-        break;
-    case VAL_AC_WCARD_VERIFIED_SKEW:
-        return "VAL_AC_WCARD_VERIFIED_SKEW";
-        break;
     case VAL_AC_RRSIG_VERIFY_FAILED:
         return "VAL_AC_RRSIG_VERIFY_FAILED";
-        break;
-    case VAL_AC_NOT_VERIFIED:
-        return "VAL_AC_NOT_VERIFIED";
         break;
     case VAL_AC_RRSIG_ALGORITHM_MISMATCH:
         return "VAL_AC_RRSIG_ALGORITHM_MISMATCH";
         break;
+    case VAL_AC_DNSKEY_NOMATCH:
+        return "VAL_AC_DNSKEY_NOMATCH";
+        break;
+    case VAL_AC_UNKNOWN_DNSKEY_PROTOCOL:
+        return "VAL_AC_UNKNOWN_DNSKEY_PROTOCOL";
+        break;
+    case VAL_AC_DS_NOMATCH:
+        return "VAL_AC_DS_NOMATCH";
+        break;
+    case VAL_AC_INVALID_KEY:
+        return "VAL_AC_INVALID_KEY";
+        break;
+    case VAL_AC_ALGORITHM_NOT_SUPPORTED:
+        return "VAL_AC_ALGORITHM_NOT_SUPPORTED";
+        break;
+
     case VAL_AC_VERIFIED:
         return "VAL_AC_VERIFIED";
+        break;
+    case VAL_AC_RRSIG_VERIFIED:
+        return "VAL_AC_RRSIG_VERIFIED";
+        break;
+    case VAL_AC_WCARD_VERIFIED:
+        return "VAL_AC_WCARD_VERIFIED";
+        break;
+    case VAL_AC_RRSIG_VERIFIED_SKEW:
+        return "VAL_AC_RRSIG_VERIFIED_SKEW";
+        break;
+    case VAL_AC_WCARD_VERIFIED_SKEW:
+        return "VAL_AC_WCARD_VERIFIED_SKEW";
+        break;
+    case VAL_AC_TRUST_POINT:
+        return "VAL_AC_TRUST_POINT";
+        break;
+    case VAL_AC_SIGNING_KEY:
+        return "VAL_AC_SIGNING_KEY";
         break;
     case VAL_AC_VERIFIED_LINK:
         return "VAL_AC_VERIFIED_LINK";
@@ -541,39 +555,9 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_UNKNOWN_ALGORITHM_LINK:
         return "VAL_AC_UNKNOWN_ALGORITHM_LINK";
         break;
-    case VAL_AC_SIGNING_KEY:
-        return "VAL_AC_SIGNING_KEY";
-        break;
-    case VAL_AC_TRUST_NOCHK:
-        return "VAL_AC_TRUST_NOCHK";
-        break;
-    case VAL_AC_TRUST:
-        return "VAL_AC_TRUST";
-        break;
-    case VAL_AC_TRUST_POINT:
-        return "VAL_AC_TRUST_POINT";
-        break;
-    case VAL_AC_IGNORE_VALIDATION:
-        return "VAL_AC_IGNORE_VALIDATION";
-        break;
-    case VAL_AC_TRUSTED_ZONE:
-        return "VAL_AC_TRUSTED_ZONE";
-        break;
-    case VAL_AC_PROVABLY_UNSECURE:
-        return "VAL_AC_PROVABLY_UNSECURE";
-        break;
-    case VAL_AC_BARE_RRSIG:
-        return "VAL_AC_BARE_RRSIG";
-        break;
-
-    case VAL_AC_UNSET:
-        return "VAL_AC_UNSET";
-        break;
 
     default:
-        if (err < VAL_AC_LAST_STATE)
-            return "UNEVALUATED";
-        return "Unknown Error Value";
+        return "UNEVALUATED";
     }
 }
 
@@ -582,20 +566,17 @@ p_val_status(val_status_t err)
 {
     switch (err) {
 
-    case VAL_DONT_KNOW:
-        return "VAL_DONT_KNOW";
+    case VAL_BOGUS:
+        return "VAL_BOGUS";
         break;
-    case VAL_BOGUS_UNPROVABLE:
-        return "VAL_BOGUS_UNPROVABLE";
+    case VAL_DNS_ERROR:
+        return "VAL_DNS_ERROR";
         break;
-    case VAL_BOGUS_PROVABLE:
-        return "VAL_BOGUS_PROVABLE";
+    case VAL_NOTRUST:
+        return "VAL_NOTRUST";
         break;
-    case VAL_LOCAL_ANSWER:
-        return "VAL_LOCAL_ANSWER";
-        break;
-    case VAL_BARE_RRSIG:
-        return "VAL_BARE_RRSIG";
+    case VAL_SUCCESS:
+        return "VAL_SUCCESS";
         break;
     case VAL_NONEXISTENT_NAME:
         return "VAL_NONEXISTENT_NAME";
@@ -609,31 +590,14 @@ p_val_status(val_status_t err)
     case VAL_NONEXISTENT_TYPE_NOCHAIN:
         return "VAL_NONEXISTENT_TYPE_NOCHAIN";
         break;
-#ifdef LIBVAL_NSEC3
-    case VAL_NONEXISTENT_NAME_OPTOUT:
-        return "VAL_NONEXISTENT_NAME_OPTOUT";
+    case VAL_PROVABLY_INSECURE:
+        return "VAL_PROVABLY_INSECURE";
         break;
-#endif
-    case VAL_DNS_RESPONSE_ERROR:
-        return "VAL_DNS_RESPONSE_ERROR";
+    case VAL_BAD_PROVABLY_INSECURE:
+        return "VAL_BAD_PROVABLY_INSECURE";
         break;
-    case VAL_DNS_WRONG_ANSWER:
-        return "VAL_DNS_WRONG_ANSWER";
-        break;
-    case VAL_DNS_REFERRAL_ERROR:
-        return "VAL_DNS_REFERRAL_ERROR";
-        break;
-    case VAL_DNS_MISSING_GLUE:
-        return "VAL_DNS_MISSING_GLUE";
-        break;
-    case VAL_DNS_CONFLICTING_ANSWERS:
-        return "VAL_DNS_CONFLICTING_ANSWERS";
-        break;
-    case VAL_PROVABLY_UNSECURE:
-        return "VAL_PROVABLY_UNSECURE";
-        break;
-    case VAL_BAD_PROVABLY_UNSECURE:
-        return "VAL_BAD_PROVABLY_UNSECURE";
+    case VAL_BARE_RRSIG:
+        return "VAL_BARE_RRSIG";
         break;
     case VAL_IGNORE_VALIDATION:
         return "VAL_IGNORE_VALIDATION";
@@ -644,12 +608,10 @@ p_val_status(val_status_t err)
     case VAL_UNTRUSTED_ZONE:
         return "VAL_UNTRUSTED_ZONE";
         break;
-    case VAL_NOTRUST:
-        return "VAL_NOTRUST";
+    case VAL_LOCAL_ANSWER:
+        return "VAL_LOCAL_ANSWER";
         break;
-    case VAL_SUCCESS:
-        return "VAL_SUCCESS";
-        break;
+
     case VAL_TRUSTED_ANSWER:
         return "VAL_TRUSTED_ANSWER";
         break;
