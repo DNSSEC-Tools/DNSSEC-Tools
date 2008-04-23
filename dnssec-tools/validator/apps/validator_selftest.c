@@ -459,7 +459,7 @@ err:
 }
 
 int
-run_test_suite(val_context_t *context, int tcs, int tce, u_int8_t flags, testsuite *suite,
+run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsuite *suite,
                int doprint)
 {
     int             rc, failed = 0, run_cnt = 0, i, tc_count;
@@ -529,7 +529,7 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int8_t flags, testsui
 }
 
 int
-self_test(val_context_t *context, int tcs, int tce, u_int8_t flags, const char *tests_file,
+self_test(val_context_t *context, int tcs, int tce, u_int32_t flags, const char *tests_file,
           const char *suites, int doprint)
 {
     testsuite *suite;
