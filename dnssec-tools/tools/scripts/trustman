@@ -40,7 +40,7 @@ my %opts = (
 # Parse command-line options
 GetOptions(\%opts,
              'a|anchor_data_file=s',
-             'c|config',
+             'c|config=s',
              'f|foreground|fg',
              'k|dnsval_conf_file=s',
              'h|help',
@@ -48,7 +48,6 @@ GetOptions(\%opts,
              'm|mail_contact_addr=s',
              'n|named_conf_file=s',
              'N|no_error',
-             'o|outfile=s',
              'p|print',
              'r|resolv_conf_file=s',
              's|smtp_server=s',
@@ -160,8 +159,8 @@ if ($opts{'c'}) {
     my $didcontact = 0;
     my $didsmtp = 0;
     open(CONF,$conffile) or die "unable to open \"$conffile\".";
-    usage () unless $opts{'o'};
-    open(OUT,">$opts{'o'}") or die "unable to open \"$opts{'o'}\" for writing.";
+    usage () unless $opts{'c'};
+    open(OUT,">$opts{'c'}") or die "unable to open \"$opts{'c'}\" for writing.";
     while(<CONF>) {
         next if (/^tasleeptime/ && ($opts{'t'}));
         next if (/^tasholdime/ && ($opts{'w'}));
@@ -240,12 +239,37 @@ sub usage {
     my ($extratext) = @_;
     print "\nError:\n  $extratext\n\n" if ($extratext);
 
-    print "trustman [-z zone] [-L] [-f] [-c -o] [-v] [-V]\n";
-    print "\tuse the -f option to run in the foreground.\n";
-    print "\tIf a zone is not specified, all zones in the key_containing_files will be checked.\n";
-    print "\tIf no key_containing_files are specified, dnssec-tools.conf will be
-parsed for appropriate files.\n";
-    print "\tWhen running the configure option (-c or --config), you MUST specify an output file (-o).\n";
+    print "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-v] [-V]
+
+Options:
+       --anchor_data_file FILE (-a)
+       --config FILE (-c)
+       --dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
+       --named_conf_file /PATH/TO/NAMED.CONF (-n)
+       --zone ZONE (-z)
+       --mail_contact_addr EMAIL_ADDRESS (-m)
+       --smtp_server SMTPSERVERNAME (-s)
+       --no_error (-N)
+       --print (-p)
+       --hold_time SECONDS (-w)
+       --resolv_conf_file CONFFILE (-r)
+       --single_run (-S)
+       --foreground (-f)
+       --syslog (-L)
+       --sleeptime SECONDS (-t)
+       --test_revoke
+       --help (-h)
+       --verbose (-v)
+       --version (-V)
+
+Extra Notes:
+    - If a zone is not specified, all zones in the key_containing_files
+      will be checked.
+
+    - If missing options are not specified on the command line, some
+      values will be read from the dnssec-tools.conf.  Run with the -c
+      flag to generate suitable dnssec-tools.conf configuration lines.
+";
     exit(1);
 }
 
@@ -274,7 +298,7 @@ sub checkkeys {
          }
     }
 
-    Verbose("Checking zone keys\n");
+    Verbose("Checking zone keys for validity\n");
     foreach my $z (@zones_to_check) {
         my $query;
         $query = resolve_and_check_dnskey($z,$dvfile);
@@ -362,7 +386,7 @@ sub checkkeys {
                                           key => $key,
                                           holdtime => $add_holddown_time,
                                         };
-			Verbose("  adding holddown for new key in $z\n");
+			Verbose("  adding holddown for new key in $z ($add_holddown_time seconds from now)\n");
                         push(@{$newkeys{$z}},$newkeyobj);
                         my $notif = "A new key has been received for zone " . $z . ".\n   It will be added when the add holddown time is reached.\n";
                         notify($notif) if ($opts{'v'});
@@ -458,6 +482,8 @@ sub checkkeys {
     if (%newkeys) {
         my @newkeyzones;
 
+	Verbose("checking new keys for timing\n");
+	
         # if add_holddown_time has been reached, notify
 
         my $now = localtime();
@@ -469,7 +495,10 @@ sub checkkeys {
                     # notify about this key
 		    Verbose(" hold down timer for $z reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
                     push @newkeyzones, $z;
-                }
+                } else {
+		    Verbose(" hold down timer for $z still in the future (" .
+			    ($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
+		}
             }
         }
         foreach my $z (@newkeyzones) {
@@ -675,7 +704,7 @@ sub add_ta_dnsvalconf  {
 		    Verbose("Failed to find original zone key in $ncfile!\n");
 		}
             }
-            print TMP "\n;\n";
+            print TMP "\n;";
         } else {
             print TMP $_;
         }
@@ -1502,71 +1531,71 @@ form of each option is denoted in parentheses, e.g.: --anchor_data_file (-a).
 
 =over #indent
 
-=item B<--anchor_data_file datafile (-a)>
+=item B<--anchor_data_file FILE (-a)>
 
 A persistent data file for storing new keys waiting to be added.
 
-=item B<--config (-c)>
+=item B<--config FILE (-c) >
 
-Create a configure file for B<trustman> from the command line options given.
+Create a configure FILE for B<trustman> from the command line options
+given.  You can use this option to create a configuration file which
+can be appended to your dnssec-tools.conf file.  It will allow less
+command line options to be specified in the future.
 
-=item B<--dnsval_conf_file conffile (-k)>
+=item B<--dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)>
 
-A B<dnsval.conf> file to read.
+A B<dnsval.conf> file to read and possibly update.
 
-=item B<--zone zone (-z)>
+=item B<--named_conf_file /PATH/TO/NAMED.CONF (-n)>
+
+A B<named.conf> file to read and possibly update.
+
+=item B<--zone ZONE (-z)>
 
 The zone to check.  Specifying this option supersedes the default
 configuration file.
+
+=item B<--mail_contact_addr EMAIL_ADDRESS (-m)>
+
+Mail address for the contact person to whom reports should be sent.
+
+=item B<--smtp_server SMTPSERVERNAME (-s)>
+
+SMTP server that B<trustman> should use to send reports by mail.
+
+=item B<--no_error (-N)>
+
+Send report even when there are no errors.
+
+=item B<--print (-p)>
+
+Log/print messages to stdout.
+
+=item B<--hold_time SECONDS (-w)>
+
+The value of the hold-down timer.  This is specified in seconds from
+the time that a new key is found.  Generally the default and
+recommended value of 30 days should be used.
+
+=item B<--resolv_conf_file CONFFILE (-r)>
+
+A B<resolv.conf> file to read.  B</dev/null> can be specified to force
+libval to recursively answer the query rather than asking other name servers).
+
+=item B<--single_run (-S)>
+
+Run only once.
 
 =item B<--foreground (-f)>
 
 Run in the foreground. Trustman will still run in a loop. To simply run once,
 use the -S option instead.
 
-=item B<--hold_time seconds (-w)>
-
-The value of the hold-down timer.  This is specified in seconds from
-the time that a new key is found.
-
-=item B<--mail_contact_addr email-address (-m)>
-
-Mail address for the contact person to whom reports should be sent.
-
-=item B<--named_conf_file conffile (-n)>
-
-A B<named.conf> file to read.
-
-=item B<--no_error (-N)>
-
-Send report when there are no errors.
-
-=item B<--outfile output-file (-o)>
-
-Output file for configuration.
-
-=item B<--print (-p)>
-
-Log/print messages to stdout.
-
-=item B<--resolv_conf_file conffile (-r)>
-
-A B<resolv.conf> file to read.  B</dev/null> can be specified to force
-libval to recursively answer the query rather than asking other name servers).
-
-=item B<--smtp_server smtpservername (-s)>
-
-SMTP server that B<trustman> should use to send reports by mail.
-
-=item B<--single_run (-S)>
-
-Run only once.
-
 =item B<--syslog (-L)>
 
 Log messages to B<syslog>.
 
-=item B<--sleeptime seconds (-t)>
+=item B<--sleeptime SECONDS (-t)>
 
 The number of seconds to sleep between checks. Default is 3600 (one hour.)
 
