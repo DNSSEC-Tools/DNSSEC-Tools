@@ -73,7 +73,6 @@ static struct option prog_options[] = {
     {"dnsval-conf", 1, 0, 'v'},
     {"root-hints", 1, 0, 'i'},
     {"wait", 1, 0, 'w'},
-    {"merge", 0, 0, 'm'},
     {0, 0, 0, 0}
 };
 #endif
@@ -176,24 +175,20 @@ check_results(val_context_t * context, const char *desc, u_char * name_n,
 void
 print_val_response(struct val_response *resp)
 {
-    struct val_response *cur;
-
     if (resp == NULL) {
         printf("No answers returned. \n");
         return;
     }
 
-    for (cur = resp; cur; cur = cur->vr_next) {
-        printf("DNSSEC status: %s [%d]\n",
-               p_val_error(cur->vr_val_status), cur->vr_val_status);
-        if (val_istrusted(cur->vr_val_status)) {
-            printf("Trusted response:\n");
-        } else {
-            printf("Untrusted response:\n");
-        }
-        print_response(cur->vr_response, cur->vr_length);
-        printf("\n");
+    printf("DNSSEC status: %s [%d]\n",
+           p_val_error(resp->vr_val_status), resp->vr_val_status);
+    if (val_istrusted(resp->vr_val_status)) {
+        printf("Trusted response:\n");
+    } else {
+        printf("Untrusted response:\n");
     }
+    print_response(resp->vr_response, resp->vr_length);
+    printf("\n");
 }
 
 // A wrapper function to send a query and print the output onto stderr
@@ -202,13 +197,13 @@ int
 sendquery(val_context_t * context, const char *desc, u_char * name_n,
           const u_int16_t class, const u_int16_t type, u_int32_t flags,
           const int *result_ar, int trusted_only,
-          struct val_response **resp)
+          struct val_response *resp)
 {
     int             ret_val;
     struct val_result_chain *results = NULL;
     int             err = 0;
 
-    if ((NULL == desc) || (NULL == name_n) || (NULL == result_ar) || (resp ==NULL))
+    if ((NULL == desc) || (NULL == name_n) || (NULL == result_ar) )
         return -1;
 
     fprintf(stderr, "%s: ****START**** \n", desc);
@@ -216,12 +211,10 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
     ret_val =
         val_resolve_and_check(context, name_n, class, type, flags, &results);
 
-    *resp = NULL;
     if (ret_val == VAL_NO_ERROR) {
 
         if (resp)
-            ret_val = compose_answer(name_n, type, class, results, resp,
-                                     flags);
+            ret_val = compose_answer(name_n, type, class, results, resp);
 
         if (result_ar)
             err =
@@ -271,7 +264,6 @@ usage(char *progname)
     printf("                  net[:<host-name>:<host-port>] (127.0.0.1:1053\n");
     printf("                  syslog[:facility] (0-23 (default 1 USER))\n");
     printf("Advanced Options:\n");
-    printf("        -m, --merge            Merge different RRSETs into a single answer\n");
     printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
     printf("The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.\n");
     printf("If no arguments are given, this program runs a set of predefined test queries.\n");
@@ -342,7 +334,7 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
 {
     int             response_size_max, ret_val, err = 0;
     struct val_result_chain *results = NULL;
-    struct val_response *resp, *cur;
+    struct val_response resp;
 
     if ((NULL == desc) || (NULL == name_n) || (NULL == response) ||
         (NULL == response_size))
@@ -357,12 +349,12 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
      * Query the validator
      */
     ret_val = val_resolve_and_check(context, name_n, class_h, type_h, 
-                                VAL_QUERY_MERGE_RRSETS, &results);
+                                VAL_QUERY_NO_AC_DETAIL, &results);
 
     if (ret_val == VAL_NO_ERROR) {
 
-        ret_val = compose_answer(name_n, type_h, class_h, results, &resp,
-                                 VAL_QUERY_MERGE_RRSETS);
+        ret_val = compose_answer(name_n, type_h, class_h, results, &resp);
+        val_free_result_chain(results);
 
         if (VAL_NO_ERROR != ret_val) {
             fprintf(stderr, "%s: \t", desc);
@@ -370,41 +362,35 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
                     ret_val);
         }
         else {
-            for (cur = resp; cur; cur = cur->vr_next) {
+            if (resp.vr_response == NULL) {
+                fprintf(stderr, "FAILED: No response\n");
+            } else {
                 printf("DNSSEC status: %s [%d]\n",
-                       p_val_error(cur->vr_val_status), cur->vr_val_status);
-                if (cur->vr_val_status == VAL_SUCCESS) {
+                       p_val_error(resp.vr_val_status), resp.vr_val_status);
+                if (val_isvalidated(resp.vr_val_status)) {
                     printf("Validated response:\n");
+                } else if (val_istrusted(resp.vr_val_status)) {
+                    printf("Trusted but not validated response:\n");
                 } else {
                     printf("Non-validated response:\n");
                 }
-                print_response(cur->vr_response, cur->vr_length);
-                printf("\n");
-            }
-            
-            if (resp == NULL) {
-                fprintf(stderr, "FAILED: No response\n");
-            } else if (resp->vr_next == NULL) {
-                if (resp->vr_length > response_size_max) {
+                if (resp.vr_length > response_size_max) {
                     err = 1;
                 }
                 else {
-                    memcpy(response, resp->vr_response, resp->vr_length);
-                    *response_size = resp->vr_length;
+                    print_response(resp.vr_response, resp.vr_length);
+                    memcpy(response, resp.vr_response, resp.vr_length);
+                    *response_size = resp.vr_length;
                 }
+
+                FREE(resp.vr_response);
             }
-            else {
-                fprintf(stderr, "%s: \t", desc);
-                fprintf(stderr, "FAILED: multiple responses from val_query()\n");
-            }
-            
-            val_free_result_chain(results);
         }
 
     } else {
         fprintf(stderr, "%s: \t", desc);
-        fprintf(stderr, "FAILED: Error in val_query(): %d\n",
-                ret_val);
+        fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %d, %s\n",
+                ret_val, p_val_err(ret_val));
     }
 
     fprintf(stderr, "%s: ****END**** \n", desc);
@@ -534,18 +520,18 @@ void
 one_test(val_context_t *context, u_int8_t *name_n, u_int16_t class_h, 
         u_int16_t type_h, u_int32_t flags, int retvals[], int doprint)
 {
-    struct val_response *resp = NULL;
+    struct val_response resp;
     sendquery(context, "Result", name_n, class_h, type_h, flags, retvals, 1, &resp);
     fprintf(stderr, "\n");
 
     // If the print option is present, perform query and validation
     // again for printing the result
     if (doprint) {
-        print_val_response(resp);
+        print_val_response(&resp);
     }
 
-    if (resp) 
-        val_free_response(resp);
+    if (resp.vr_response)
+        FREE(resp.vr_response);
 }
 
 #if NO_OF_THREADS
@@ -612,6 +598,7 @@ void *firethread_ot(void *param) {
 #endif
 
 
+
 /*============================================================================
  *
  * main() BEGINS HERE
@@ -625,7 +612,7 @@ main(int argc, char *argv[])
     // Parse the command line for a query and resolve+validate it
     int             c;
     char           *domain_name = NULL;
-    const char     *args = "c:dF:hi:l:w:mo:pr:S:st:T:v:";
+    const char     *args = "c:dF:hi:l:w:o:pr:S:st:T:v:";
     u_int16_t       class_h = ns_c_in;
     u_int16_t       type_h = ns_t_a;
     int             success = 0;
@@ -763,9 +750,6 @@ main(int argc, char *argv[])
             label_str = optarg;
             break;
 
-        case 'm':
-            flags |= VAL_QUERY_MERGE_RRSETS;
-            break;
         default:
             fprintf(stderr, "Unknown option %s (c = %d [%c])\n",
                     argv[optind - 1], c, (char) c);

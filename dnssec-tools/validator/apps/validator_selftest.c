@@ -464,7 +464,7 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
 {
     int             rc, failed = 0, run_cnt = 0, i, tc_count;
     u_char          name_n[NS_MAXCDNAME];
-    struct val_response *resp;
+    struct val_response resp;
     testcase        *curr_test;
 
     if (NULL == suite)
@@ -492,7 +492,6 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
     for (i = 0; curr_test != NULL && i < tcs; i++, curr_test = curr_test->next);
 
     fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
-    resp = NULL;
     for (i = tcs;
          curr_test != NULL && curr_test->desc != NULL && i <= tce;
          curr_test = curr_test->next) {
@@ -510,13 +509,11 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
                        curr_test->qt, flags, curr_test->qr, 0, &resp);
         if (doprint) {
             fprintf(stderr, "%s: ****RESPONSE**** \n", curr_test->desc);
-            print_val_response(resp);
+            print_val_response(&resp);
         }
 
-        if (resp) {
-            val_free_response(resp);
-            resp = NULL;
-        }
+        if (resp.vr_response)
+            FREE(resp.vr_response);
 
         if (rc)
             ++failed;

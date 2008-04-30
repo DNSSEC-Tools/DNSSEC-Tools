@@ -185,7 +185,6 @@ extern          "C" {
 #define VAL_QFLAGS_USERMASK 0x00ffffff
 #define VAL_QUERY_DONT_VALIDATE 0x00000001
 #define VAL_QUERY_NO_AC_DETAIL 0x00000002
-#define VAL_QUERY_MERGE_RRSETS 0x00000004
 #ifdef LIBVAL_DLV
 #define VAL_QUERY_NO_DLV 0x00000008 
 #endif
@@ -345,7 +344,6 @@ extern          "C" {
         unsigned char  *vr_response;
         int             vr_length;
         val_status_t    vr_val_status;
-        struct val_response *vr_next;
     };
 
     struct domain_info {
@@ -575,13 +573,6 @@ extern          "C" {
     /*
      * from val_x_query.c 
      */
-    int             val_query(val_context_t * ctx,
-                              const char *domain_name,
-                              const u_int16_t q_class,
-                              const u_int16_t type,
-                              const u_int32_t flags,
-                              struct val_response **resp);
-    int             val_free_response(struct val_response *resp);
     int             val_res_query(val_context_t * ctx, const char *dname,
                                   int q_class, int type, u_char * answer,
                                   int anslen, val_status_t * val_status);
@@ -592,8 +583,7 @@ extern          "C" {
                                    const u_int16_t type_h,
                                    const u_int16_t class_h,
                                    struct val_result_chain *results,
-                                   struct val_response **f_resp,
-                                   u_int32_t flags);
+                                   struct val_response *f_resp);
     /*
      * from val_gethostbyname.c 
      */
