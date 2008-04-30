@@ -1,6 +1,6 @@
-diff -U 5 -Nar spfmilter-1.0.8.orig/config.h.in spfmilter-1.0.8/config.h.in 
+diff -U 5 -Nar spfmilter-1.0.8.orig/config.h.in spfmilter-1.0.8/config.h.in
 --- spfmilter-1.0.8.orig/config.h.in	2004-07-13 16:51:53.000000000 -0400
-+++ spfmilter-1.0.8/config.h.in	2007-09-11 10:55:59.000000000 -0400
++++ spfmilter-1.0.8/config.h.in	2008-04-26 00:21:26.000000000 -0400
 @@ -22,10 +22,13 @@
  #undef HAVE_INET_NTOP
  
@@ -54,7 +54,7 @@ diff -U 5 -Nar spfmilter-1.0.8.orig/config.h.in spfmilter-1.0.8/config.h.in
     first (like Motorola and SPARC, unlike Intel and VAX). */
 diff -U 5 -Nar spfmilter-1.0.8.orig/configure.ac spfmilter-1.0.8/configure.ac
 --- spfmilter-1.0.8.orig/configure.ac	2004-08-10 06:24:57.000000000 -0400
-+++ spfmilter-1.0.8/configure.ac	2007-09-11 10:51:44.000000000 -0400
++++ spfmilter-1.0.8/configure.ac	2008-04-26 00:21:26.000000000 -0400
 @@ -52,28 +52,112 @@
  AC_CHECK_LIB(pthread, pthread_create)
  
@@ -175,7 +175,7 @@ diff -U 5 -Nar spfmilter-1.0.8.orig/configure.ac spfmilter-1.0.8/configure.ac
  AC_CHECK_LIB(milter, smfi_main, , [
 diff -U 5 -Nar spfmilter-1.0.8.orig/spfmilter.c spfmilter-1.0.8/spfmilter.c
 --- spfmilter-1.0.8.orig/spfmilter.c	2004-08-10 06:14:59.000000000 -0400
-+++ spfmilter-1.0.8/spfmilter.c	2007-09-11 10:50:04.000000000 -0400
++++ spfmilter-1.0.8/spfmilter.c	2008-04-26 00:37:20.000000000 -0400
 @@ -25,26 +25,29 @@
  ** SUCH DAMAGE.
  **
@@ -672,58 +672,33 @@ diff -U 5 -Nar spfmilter-1.0.8.orig/spfmilter.c spfmilter-1.0.8/spfmilter.c
      {
      if ( ld->from != (char*) 0 )
  	{
-@@ -2201,11 +2449,24 @@
+@@ -2201,11 +2449,11 @@
  
      for ( r = 0; r < max_resolvers; ++r )
  	if ( resolvers[r].initialized )
  	    {
  	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid );
 -	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
-+
-+#ifdef SUPPORT_DNSSEC
-+	    if ( ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT ) ||
-+		 ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN ) )
-+		{
-+		SPF_dns_destroy_config_sresolv( resolvers[r].spfdcid_r );
-+		}
-+	    else
-+		{
-+#endif
 +		SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
-+#ifdef SUPPORT_DNSSEC
-+		}
-+#endif
  	    }
      pthread_mutex_destroy( &resolver_mutex );
      }
  
  
-@@ -2257,11 +2518,23 @@
+@@ -2257,11 +2505,11 @@
  
      /* Is it initialized? */
      if ( ! resolvers[r].initialized )
  	{
  	/* Create the DNS objects. */
 -	resolvers[r].spfdcid_r = SPF_dns_create_config_resolv( (SPF_dns_config_t) 0, debug );
-+#ifdef SUPPORT_DNSSEC
-+	if ( ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT ) ||
-+	     ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN ) )
-+	    {
-+	    resolvers[r].spfdcid_r = SPF_dns_create_config_sresolv( (SPF_dns_config_t) 0, debug, 1 );
-+	    }
-+	else
-+	    {
-+#endif
 +	    resolvers[r].spfdcid_r = SPF_dns_create_config_resolv( (SPF_dns_config_t) 0, debug );
-+#ifdef SUPPORT_DNSSEC
-+	    }
-+#endif
  	if ( resolvers[r].spfdcid_r == (SPF_dns_config_t) 0 )
  	    {
  	    syslog( LOG_ERR, "SPF_dns_create_config_resolv() failed" );
  	    free_resolver( r );
  	    return -1;
-@@ -2297,5 +2570,395 @@
+@@ -2297,5 +2545,373 @@
      --num_resolvers_inuse;
      pthread_mutex_unlock( &resolver_mutex );
      }
@@ -759,18 +734,7 @@ diff -U 5 -Nar spfmilter-1.0.8.orig/spfmilter.c spfmilter-1.0.8/spfmilter.c
 +
 +static int lib_init( void )
 +{
-+#ifdef SUPPORT_DNSSEC
-+    if ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE )
-+	{
-+#endif
-+	spf_server = SPF_server_new(SPF_DNS_CACHE, debug);
-+#ifdef SUPPORT_DNSSEC
-+	}
-+    else
-+	{
-+	spf_server = SPF_server_new( SPF_DNS_DNSSEC_RESOLV, debug );
-+	}
-+#endif
++	spf_server = SPF_server_new( SPF_DNS_RESOLV, debug );
 +    if (spf_server == NULL)
 +	{
 +	fprintf( stderr, "%s: SPF_server_new() failed\n", argv0 );
@@ -852,18 +816,7 @@ diff -U 5 -Nar spfmilter-1.0.8.orig/spfmilter.c spfmilter-1.0.8/spfmilter.c
 +	return (lib_data_t*) 0;
 +
 +    /* Create the per-connection server object creating a new one */
-+#ifdef SUPPORT_DNSSEC
-+    if ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE )
-+	{
-+#endif
-+	ld->spf_server = SPF_server_new( SPF_DNS_CACHE, debug );
-+#ifdef SUPPORT_DNSSEC
-+	}
-+    else
-+	{
-+	ld->spf_server = SPF_server_new( SPF_DNS_DNSSEC_RESOLV, debug );
-+	}
-+#endif
++	ld->spf_server = SPF_server_new( SPF_DNS_RESOLV, debug );
 +    ld->from = NULL;
 +    ld->got_response = 0;
 +    ld->requestp = SPF_request_new(ld->spf_server);
