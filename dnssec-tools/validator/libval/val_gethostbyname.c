@@ -325,10 +325,10 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     for (res = results; res != NULL; res = res->val_rc_next) {
         struct val_rrset_rec *rrset;
 
-        if (res->val_rc_answer == NULL)
+        if (res->val_rc_rrset == NULL)
             continue;
 
-        rrset = res->val_rc_answer->val_ac_rrset;
+        rrset = res->val_rc_rrset;
 
         // Get a count of aliases and addresses
         if (rrset) {
@@ -403,9 +403,9 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
         }
 
 
-        if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
+        if (res->val_rc_rrset) {
 
-            struct val_rrset_rec *rrset = res->val_rc_answer->val_ac_rrset;
+            struct val_rrset_rec *rrset = res->val_rc_rrset;
             struct val_rr_rec  *rr = rrset->val_rrset_data;
 
             while (rr) {
@@ -720,7 +720,8 @@ val_gethostbyname2_r(val_context_t * context,
         if (((retval = ns_name_pton(name, name_n, sizeof(name_n))) != -1)
             && (VAL_NO_ERROR ==
                 (retval =
-                 val_resolve_and_check(context, name_n, ns_c_in, type, 0,
+                 val_resolve_and_check(context, name_n, ns_c_in, type,
+                                       VAL_QUERY_NO_AC_DETAIL,
                                        &results)))) {
 
             /*
