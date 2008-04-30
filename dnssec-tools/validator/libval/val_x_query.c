@@ -6,7 +6,7 @@
 
 /*
  * DESCRIPTION
- * Contains implementation of the val_query, val_res_query and val_search 
+ * Contains implementation of the val_res_query and val_search 
  * functions, and their helpers.
  */
 
@@ -85,14 +85,15 @@ determine_size(struct val_result_chain *res)
     if (res == NULL)
         return 0;
     
-    if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
-        resp_len += find_rrset_len(res->val_rc_answer->val_ac_rrset);
+    if (res->val_rc_rrset) {
+        resp_len += find_rrset_len(res->val_rc_rrset);
     }
     if (res->val_rc_proof_count) {
         int             i;
         for (i = 0; i < res->val_rc_proof_count; i++) {
-            resp_len +=
-                find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
+            if (res->val_rc_proofs[i])
+                resp_len +=
+                    find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
         }
     }
     return resp_len;
@@ -224,10 +225,6 @@ encode_response_rrset(struct val_rrset_rec *rrset,
  *             results -- A linked list of val_result_chain structures returned
  *                        by the validator's val_resolve_and_check function.
  *                resp -- The structures within which answers are to be returned 
- *               flags -- Handles the VAL_QUERY_MERGE_RRSETS flag.  If
- *                        this flag is set, multiple answers are returned in a 
- *                        form similar to res_query.  
- *
  * Return value: VAL_NO_ERROR on success, and a negative valued error code 
  *               (see val_errors.h) on failure.
  */
@@ -237,8 +234,7 @@ compose_answer(const u_char * name_n,
                const u_int16_t type_h,
                const u_int16_t class_h,
                struct val_result_chain *results,
-               struct val_response **f_resp, 
-               u_int32_t flags)
+               struct val_response *f_resp)
 {
     struct val_result_chain *res = NULL;
     int             ancount = 0;        // Answer Count
@@ -254,8 +250,6 @@ compose_answer(const u_char * name_n,
     int             len;
     int             retval;
 
-    struct val_response *head_resp = NULL;
-    struct val_response *cur_resp = NULL;
     struct val_rrset_rec *rrset;
     int validated = 1;
     int trusted = 1;
@@ -280,62 +274,53 @@ compose_answer(const u_char * name_n,
     if ((f_resp == NULL) || (name_n == NULL))
         return VAL_BAD_ARGUMENT;
 
-    if (flags & VAL_QUERY_MERGE_RRSETS) {
-        for (res = results; res; res = res->val_rc_next) {
-            resp_len += determine_size(res);
-        }
-        /*
-         * Allocate a single element of the val_response array to hold the result 
-         */
-        head_resp =
-            (struct val_response *) MALLOC(sizeof(struct val_response));
-        if (head_resp == NULL)
-            return VAL_OUT_OF_MEMORY;
-        head_resp->vr_response =
-            (unsigned char *) MALLOC((resp_len + OUTER_HEADER_LEN) *
-                                     sizeof(unsigned char));
-        if (head_resp->vr_response == NULL) {
-            FREE(head_resp);
-            head_resp = NULL;
-            return VAL_OUT_OF_MEMORY;
-        }
-        head_resp->vr_length = (resp_len + OUTER_HEADER_LEN);
-        head_resp->vr_val_status = VAL_DONT_KNOW;
-        head_resp->vr_next = NULL;
-
-        /*
-         * temporary buffers for different sections 
-         */
-        anbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-        nsbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-        arbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-        if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
-            if (anbuf)
-                FREE(anbuf);
-            if (nsbuf)
-                FREE(nsbuf);
-            if (arbuf)
-                FREE(arbuf);
-            return VAL_OUT_OF_MEMORY;
-        }
-        /*
-         * Header 
-         */
-        rp = head_resp->vr_response;
-        hp = (HEADER *) rp;
-        bzero(hp, sizeof(HEADER));
-        rp += sizeof(HEADER);
-
-        /*
-         * Question section 
-         */
-        len = wire_name_length(name_n);
-        memcpy(rp, name_n, len);
-        rp += len;
-        NS_PUT16(type_h, rp);
-        NS_PUT16(class_h, rp);
-        hp->qdcount = htons(1);
+    for (res = results; res; res = res->val_rc_next) {
+        resp_len += determine_size(res);
     }
+
+    f_resp->vr_val_status = VAL_DONT_KNOW;
+    f_resp->vr_length = (resp_len + OUTER_HEADER_LEN);
+    f_resp->vr_response = (unsigned char *) MALLOC(f_resp->vr_length *
+                                     sizeof(unsigned char));
+    if (f_resp->vr_response == NULL) {
+            f_resp->vr_length = 0;
+            return VAL_OUT_OF_MEMORY;
+    }
+    
+    /*
+     * temporary buffers for different sections 
+     */
+    anbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
+    nsbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
+    arbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
+    if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
+        if (anbuf)
+            FREE(anbuf);
+        if (nsbuf)
+            FREE(nsbuf);
+        if (arbuf)
+            FREE(arbuf);
+        return VAL_OUT_OF_MEMORY;
+    }
+
+    /*
+     * Header 
+     */
+    rp = f_resp->vr_response;
+    hp = (HEADER *) rp;
+    bzero(hp, sizeof(HEADER));
+    rp += sizeof(HEADER);
+
+    /*
+     * Question section 
+     */
+    len = wire_name_length(name_n);
+    memcpy(rp, name_n, len);
+    rp += len;
+    NS_PUT16(type_h, rp);
+    NS_PUT16(class_h, rp);
+    hp->qdcount = htons(1);
+
 
     for (res = results; res; res = res->val_rc_next) {
 
@@ -344,86 +329,9 @@ compose_answer(const u_char * name_n,
             validated = 0;
         if (!(trusted && val_istrusted(res->val_rc_status))) 
             trusted = 0;
-            
-        if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
-            ancount = 0;
-            nscount = 0;
-            arcount = 0;
-            anbufindex = 0;
-            nsbufindex = 0;
-            arbufindex = 0;
-            anbuf = NULL;
-            nsbuf = NULL;
-            arbuf = NULL;
-            an_auth = 1;
-            ns_auth = 1;
 
-            rp = NULL;
-            resp_len = 0;
-
-            resp_len = determine_size(res);
-            if (NULL == 
-                    (cur_resp = (struct val_response *)
-                        MALLOC(sizeof(struct val_response)))) {
-                retval = VAL_OUT_OF_MEMORY;
-                goto err;
-            }
-            if (NULL == 
-                   (cur_resp->vr_response = (unsigned char *) 
-                        MALLOC((resp_len + OUTER_HEADER_LEN) *
-                                sizeof(unsigned char)))) {
-                FREE(cur_resp);
-                retval = VAL_OUT_OF_MEMORY;
-                goto err;
-            }
-
-            cur_resp->vr_length = (resp_len + OUTER_HEADER_LEN);
-            cur_resp->vr_val_status = res->val_rc_status;
-
-            cur_resp->vr_next = NULL;
-            if (head_resp != NULL)
-                cur_resp->vr_next = head_resp;
-            head_resp = cur_resp;
-            /*
-             * temporary buffers for different sections 
-             */
-            anbuf =
-                (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-            nsbuf =
-                (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-            arbuf =
-                (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-            if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
-                if (anbuf)
-                    FREE(anbuf);
-                if (nsbuf)
-                    FREE(nsbuf);
-                if (arbuf)
-                    FREE(arbuf);
-                retval = VAL_OUT_OF_MEMORY;
-                goto err;
-            }
-            /*
-             * Header 
-             */
-            rp = head_resp->vr_response;
-            hp = (HEADER *) rp;
-            bzero(hp, sizeof(HEADER));
-            rp += sizeof(HEADER);
-
-            /*
-             * Question section 
-             */
-            len = wire_name_length(name_n);
-            memcpy(rp, name_n, len);
-            rp += len;
-            NS_PUT16(type_h, rp);
-            NS_PUT16(class_h, rp);
-            hp->qdcount = htons(1);
-        }
-
-        if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
-            rrset = res->val_rc_answer->val_ac_rrset;
+        if (res->val_rc_rrset) {
+            rrset = res->val_rc_rrset;
             if (-1 ==
                 encode_response_rrset(rrset, res->val_rc_status, resp_len,
                                       &anbuf, &anbufindex, &ancount,
@@ -449,24 +357,7 @@ compose_answer(const u_char * name_n,
             }
         }
 
-        if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
-            if (anbuf) {
-                memcpy(rp, anbuf, anbufindex);
-                rp += anbufindex;
-            }
-            if (nsbuf) {
-                memcpy(rp, nsbuf, nsbufindex);
-                rp += nsbufindex;
-            }
-            if (arbuf) {
-                memcpy(rp, arbuf, arbufindex);
-                rp += arbufindex;
-            }
-           
-            hp->ad = val_istrusted(res->val_rc_status)? 1:0; 
-        } else {
-            hp->ad = trusted ? 1:0; 
-        }
+        hp->ad = trusted ? 1:0; 
 
         hp->ancount = htons(ancount);
         hp->nscount = htons(nscount);
@@ -495,71 +386,59 @@ compose_answer(const u_char * name_n,
                 }
                 break;
         }
-
-        if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
-            FREE(anbuf);
-            FREE(nsbuf);
-            FREE(arbuf);
-        }
     }
 
-    if (flags & VAL_QUERY_MERGE_RRSETS) {
-        if (anbuf) {
-            memcpy(rp, anbuf, anbufindex);
-            rp += anbufindex;
-        }
-
-        if (nsbuf) {
-            memcpy(rp, nsbuf, nsbufindex);
-            rp += nsbufindex;
-        }
-
-        if (arbuf) {
-            memcpy(rp, arbuf, arbufindex);
-            rp += arbufindex;
-        }
-        FREE(anbuf);
-        FREE(nsbuf);
-        FREE(arbuf);
-
-        /* 
-         * we lose a level of granularity in the validation status
-         * when we do a "merge"
-         */
-        if (results) {
-            if (validated)
-                head_resp->vr_val_status = VAL_VALIDATED_ANSWER;
-            else if (trusted)
-                head_resp->vr_val_status = VAL_TRUSTED_ANSWER;
-            else
-                head_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
-        } else {
-            head_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
-        }
+    if (anbuf) {
+        memcpy(rp, anbuf, anbufindex);
+        rp += anbufindex;
     }
 
-    *f_resp = head_resp;
+    if (nsbuf) {
+        memcpy(rp, nsbuf, nsbufindex);
+        rp += nsbufindex;
+    }
+
+    if (arbuf) {
+        memcpy(rp, arbuf, arbufindex);
+        rp += arbufindex;
+    }
+    FREE(anbuf);
+    FREE(nsbuf);
+    FREE(arbuf);
+
+    /* 
+     * we lose a level of granularity in the validation status
+     * when we do a "merge"
+     */
+    if (results) {
+        if (validated)
+            f_resp->vr_val_status = VAL_VALIDATED_ANSWER;
+        else if (trusted)
+            f_resp->vr_val_status = VAL_TRUSTED_ANSWER;
+        else
+            f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
+    } else {
+        f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
+    }
+
     return VAL_NO_ERROR;
 
   err:
-    while (NULL != (cur_resp = head_resp)) {
-        head_resp = head_resp->vr_next;
-        FREE(cur_resp->vr_response);
-        FREE(cur_resp);
-    }
+    FREE(f_resp->vr_response);
+    f_resp->vr_response = NULL;
+    f_resp->vr_length = 0;
+    f_resp->vr_val_status = VAL_DONT_KNOW;
 
-    *f_resp = NULL;
     return retval;
 
 }
-
 
 /*
  * This routine is provided for compatibility with programs that 
  * depend on the res_query() function. 
  */
 /*
- * Function: val_query
+ * Function: val_res_query
  *
  * Purpose: A DNSSEC-aware function intended as a replacement to res_query().
  *
@@ -573,87 +452,11 @@ compose_answer(const u_char * name_n,
  * domain_name -- The domain name to be queried.  Must not be NULL.
  * class -- The DNS class (typically IN)
  * type  -- The DNS type  (for example: A, CNAME etc.)
- * flags -- 
- * At present only one flag is implemented VAL_QUERY_MERGE_RRSETS.  When this flag
- * is specified, val_query will merge the RRSETs into a single response message.
- * The validation status in this case will be VAL_SUCCESS only if all the
- * individual RRSETs have the VAL_SUCCESS status.  Otherwise, the status
- * will be one of the other error codes.
  * resp -- An array of val_response structures used to return the result.
  * 
  * Return value: VAL_NO_ERROR on success, and a negative valued error code 
  *               (see val_errors.h) on failure.
  *
- */
-int
-val_query(val_context_t * context,
-          const char *domain_name,
-          const u_int16_t class_h,
-          const u_int16_t type,
-          const u_int32_t flags, 
-          struct val_response **resp)
-{
-    struct val_result_chain *results = NULL;
-    int             retval;
-    u_char          name_n[NS_MAXCDNAME];
-
-    if ((resp == NULL) || (domain_name == NULL))
-        return VAL_BAD_ARGUMENT;
-
-    if (ns_name_pton(domain_name, name_n, sizeof(name_n)) == -1) 
-        return VAL_BAD_ARGUMENT;
-
-    *resp = NULL;
-
-    val_log(context, LOG_DEBUG,
-            "val_query(): called with dname=%s, class=%s, type=%s",
-            domain_name, p_class(class_h), p_type(type));
-
-    /*
-     * Query the validator 
-     */
-    if (VAL_NO_ERROR ==
-        (retval =
-         val_resolve_and_check(context, name_n, class_h, type, flags,
-                               &results))) {
-        /*
-         * Construct the answer response in resp 
-         */
-        retval =
-            compose_answer(name_n, type, class_h, results, resp, flags);
-
-        val_free_result_chain(results);
-    }
-
-    return retval;
-}
-
-
-/*
- * Release memory allocated by the val_query() function 
- */
-int
-val_free_response(struct val_response *resp)
-{
-    struct val_response *prev, *cur;
-    cur = resp;
-
-    while (cur) {
-        prev = cur;
-        cur = cur->vr_next;
-
-        if (prev->vr_response != NULL)
-            FREE(prev->vr_response);
-        FREE(prev);
-    }
-
-    return VAL_NO_ERROR;
-}
-
-/*
- * wrapper around val_query() that is closer to res_query() 
- * Only difference is that it passes the VAL_QUERY_MERGE_RRSETS
- * flag automatically. 
  */
 int
 val_res_query(val_context_t * ctx, 
@@ -664,37 +467,53 @@ val_res_query(val_context_t * ctx,
               int anslen,
               val_status_t * val_status)
 {
-    struct val_response *resp;
-    int             retval = -1;
+    struct val_response resp;
+    int             retval;
     int             bytestocopy = 0;
     int             totalbytes = 0;
     HEADER *hp = NULL;
+    u_char          name_n[NS_MAXCDNAME];
+    struct val_result_chain *results;
 
-    if (dname == NULL || val_status == NULL || answer == NULL) {
-        val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
-            dname, p_class(class_h), p_type(type), p_val_err(VAL_BAD_ARGUMENT));
-        h_errno = NETDB_INTERNAL;
-        errno = EINVAL;
-        return -1;
-    }
+    retval = VAL_BAD_ARGUMENT;
 
-    if (VAL_NO_ERROR !=
+    if (dname == NULL || val_status == NULL || answer == NULL) 
+        goto err;
+
+    if (ns_name_pton(dname, name_n, sizeof(name_n)) == -1) 
+        goto err;
+
+    val_log(ctx, LOG_DEBUG,
+            "val_res_query(): called with dname=%s, class=%s, type=%s",
+            dname, p_class(class_h), p_type(type));
+
+    /*
+     * Query the validator 
+     */
+    if (VAL_NO_ERROR ==
         (retval =
-         val_query(ctx, dname, class_h, type, VAL_QUERY_MERGE_RRSETS,
-                   &resp))) {
-        val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
-            dname, p_class(class_h), p_type(type), p_val_err(retval));
-        h_errno = NETDB_INTERNAL;
-        errno = EINVAL;
-        return -1;
+         val_resolve_and_check(ctx, name_n, class_h, type, 
+                        VAL_QUERY_NO_AC_DETAIL, &results))) {
+        /*
+         * Construct the answer response in resp 
+         */
+        retval =
+            compose_answer(name_n, type, class_h, results, &resp);
+
+        val_free_result_chain(results);
     }
 
-    totalbytes = resp->vr_length;
+    if (retval != VAL_NO_ERROR)
+        goto err;
 
-    bytestocopy = (resp->vr_length > anslen) ? anslen : resp->vr_length;
-    memcpy(answer, resp->vr_response, bytestocopy);
-    *val_status = resp->vr_val_status;
-    val_free_response(resp);
+    
+    totalbytes = resp.vr_length;
+
+    bytestocopy = (resp.vr_length > anslen) ? anslen : resp.vr_length;
+    memcpy(answer, resp.vr_response, bytestocopy);
+    *val_status = resp.vr_val_status;
+    FREE(resp.vr_response);
+
     hp = (HEADER *) answer;
 
     if (hp) {
@@ -718,10 +537,17 @@ val_res_query(val_context_t * ctx,
 
     h_errno = NO_DATA;
     return -1;
+
+err:
+    val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
+            dname, p_class(class_h), p_type(type), p_val_err(retval));
+    h_errno = NETDB_INTERNAL;
+    errno = EINVAL;
+    return -1;
 }
 
 /*
- * wrapper around val_query() that is closer to res_search() 
+ * wrapper around val_res_query() that is closer to res_search() 
  */
 int
 val_res_search(val_context_t * ctx, const char *dname, int class_h,
