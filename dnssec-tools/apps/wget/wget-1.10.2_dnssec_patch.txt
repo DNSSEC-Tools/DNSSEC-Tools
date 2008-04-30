@@ -1,6 +1,26 @@
+diff -c -r wget-1.10.2.orig/Makefile.in wget-1.10.2/Makefile.in
+*** wget-1.10.2.orig/Makefile.in	Sun Jun 26 18:06:49 2005
+--- wget-1.10.2/Makefile.in	Mon Apr 28 16:31:47 2008
+***************
+*** 57,63 ****
+  CFLAGS = @CFLAGS@
+  CPPFLAGS = @CPPFLAGS@
+  DEFS = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+! LIBS = @LIBS@ @LIBSSL@
+  LDFLAGS = @LDFLAGS@
+  
+  #
+--- 57,63 ----
+  CFLAGS = @CFLAGS@
+  CPPFLAGS = @CPPFLAGS@
+  DEFS = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+! LIBS = @LIBS@ @LIBSSL@ @LIBVAL_THREADS@
+  LDFLAGS = @LDFLAGS@
+  
+  #
 diff -c -r wget-1.10.2.orig/configure.in wget-1.10.2/configure.in
 *** wget-1.10.2.orig/configure.in	Fri Aug 26 07:57:04 2005
---- wget-1.10.2/configure.in	Mon Sep 17 13:08:19 2007
+--- wget-1.10.2/configure.in	Mon Apr 28 16:31:47 2008
 ***************
 *** 175,180 ****
 --- 175,181 ----
@@ -36,29 +56,29 @@ diff -c -r wget-1.10.2.orig/configure.in wget-1.10.2/configure.in
   dnl Check for OpenSSL
   if test x"$with_ssl" != x"no"
   then
-diff -c -r wget-1.10.2.orig/Makefile.in wget-1.10.2/Makefile.in
-*** wget-1.10.2.orig/Makefile.in	Sun Jun 26 18:06:49 2005
---- wget-1.10.2/Makefile.in	Mon Sep 17 13:08:19 2007
+diff -c -r wget-1.10.2.orig/src/Makefile.in wget-1.10.2/src/Makefile.in
+*** wget-1.10.2.orig/src/Makefile.in	Sun Jun 26 18:06:49 2005
+--- wget-1.10.2/src/Makefile.in	Mon Apr 28 16:31:47 2008
 ***************
-*** 57,63 ****
-  CFLAGS = @CFLAGS@
-  CPPFLAGS = @CPPFLAGS@
-  DEFS = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
-! LIBS = @LIBS@ @LIBSSL@
-  LDFLAGS = @LDFLAGS@
+*** 53,59 ****
+  DEFS     = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+  CFLAGS   = @CFLAGS@
+  LDFLAGS  = @LDFLAGS@
+! LIBS     = @LIBS@ @LIBSSL@
+  exeext   = @exeext@
   
-  #
---- 57,63 ----
-  CFLAGS = @CFLAGS@
-  CPPFLAGS = @CPPFLAGS@
-  DEFS = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
-! LIBS = @LIBS@ @LIBSSL@ @LIBVAL_THREADS@
-  LDFLAGS = @LDFLAGS@
+  INCLUDES = -I. -I$(srcdir)
+--- 53,59 ----
+  DEFS     = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+  CFLAGS   = @CFLAGS@
+  LDFLAGS  = @LDFLAGS@
+! LIBS     = @LIBS@ @LIBSSL@ @LIBVAL_THREADS@
+  exeext   = @exeext@
   
-  #
+  INCLUDES = -I. -I$(srcdir)
 diff -c -r wget-1.10.2.orig/src/config.h.in wget-1.10.2/src/config.h.in
 *** wget-1.10.2.orig/src/config.h.in	Thu Oct 13 05:22:28 2005
---- wget-1.10.2/src/config.h.in	Mon Sep 17 13:08:19 2007
+--- wget-1.10.2/src/config.h.in	Mon Apr 28 16:31:47 2008
 ***************
 *** 87,92 ****
 --- 87,95 ----
@@ -85,7 +105,7 @@ diff -c -r wget-1.10.2.orig/src/config.h.in wget-1.10.2/src/config.h.in
   
 diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
 *** wget-1.10.2.orig/src/host.c	Sat Jul  2 09:31:37 2005
---- wget-1.10.2/src/host.c	Mon Sep 17 13:13:29 2007
+--- wget-1.10.2/src/host.c	Mon Apr 28 16:36:02 2008
 ***************
 *** 59,64 ****
 --- 59,71 ----
@@ -103,46 +123,6 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   extern int errno;
   #endif
 ***************
-*** 189,198 ****
-     addrinfo.  */
-  
-  static struct address_list *
-! address_list_from_addrinfo (const struct addrinfo *ai)
-  {
-    struct address_list *al;
-!   const struct addrinfo *ptr;
-    int cnt;
-    ip_address *ip;
-  
---- 196,205 ----
-     addrinfo.  */
-  
-  static struct address_list *
-! address_list_from_addrinfo (const struct val_addrinfo *ai)
-  {
-    struct address_list *al;
-!   const struct val_addrinfo *ptr;
-    int cnt;
-    ip_address *ip;
-  
-***************
-*** 378,384 ****
-    const char *node;
-    const char *service;
-    const struct addrinfo *hints;
-!   struct addrinfo **res;
-    int exit_code;
-  };
-  
---- 385,391 ----
-    const char *node;
-    const char *service;
-    const struct addrinfo *hints;
-!   struct val_addrinfo **res;
-    int exit_code;
-  };
-  
-***************
 *** 386,392 ****
   getaddrinfo_with_timeout_callback (void *arg)
   {
@@ -159,7 +139,7 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
 !   val_status_t vstatus;
 !   if (0 == (err = val_getaddrinfo((val_context_t *)NULL, ctx->node, 
 !                                   ctx->service, ctx->hints, 
-!                                   (struct val_addrinfo **)ctx->res,
+!                                   ctx->res,
 !                                   &vstatus))) {
 !       if (0 == val_istrusted(vstatus))  { 
 !           err = DNSSECAI_FAIL; 
@@ -170,42 +150,7 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   
   /* Just like getaddrinfo, except it times out after TIMEOUT seconds.
 ***************
-*** 395,401 ****
-  
-  static int
-  getaddrinfo_with_timeout (const char *node, const char *service,
-! 			  const struct addrinfo *hints, struct addrinfo **res,
-  			  double timeout)
-  {
-    struct gaiwt_context ctx;
---- 412,418 ----
-  
-  static int
-  getaddrinfo_with_timeout (const char *node, const char *service,
-! 			  const struct addrinfo *hints, struct val_addrinfo **res,
-  			  double timeout)
-  {
-    struct gaiwt_context ctx;
-***************
-*** 753,759 ****
-  #ifdef ENABLE_IPV6
-    {
-      int err;
-!     struct addrinfo hints, *res;
-  
-      xzero (hints);
-      hints.ai_socktype = SOCK_STREAM;
---- 770,777 ----
-  #ifdef ENABLE_IPV6
-    {
-      int err;
-!     struct addrinfo hints;
-!     struct val_addrinfo *res;
-  
-      xzero (hints);
-      hints.ai_socktype = SOCK_STREAM;
-***************
-*** 787,797 ****
+*** 787,793 ****
         {
   	if (!silent)
   	  logprintf (LOG_VERBOSE, _("failed: %s.\n"),
@@ -213,11 +158,7 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   	return NULL;
         }
       al = address_list_from_addrinfo (res);
-!     freeaddrinfo (res);
-      if (!al)
-        {
-  	logprintf (LOG_VERBOSE,
---- 805,815 ----
+--- 804,810 ----
         {
   	if (!silent)
   	  logprintf (LOG_VERBOSE, _("failed: %s.\n"),
@@ -225,13 +166,9 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
   	return NULL;
         }
       al = address_list_from_addrinfo (res);
-!     val_freeaddrinfo (res);
-      if (!al)
-        {
-  	logprintf (LOG_VERBOSE,
 ***************
 *** 918,920 ****
---- 936,963 ----
+--- 935,962 ----
         host_name_addresses_map = NULL;
       }
   }
@@ -262,7 +199,7 @@ diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
 + /* End DNSSEC Additional procedures */
 diff -c -r wget-1.10.2.orig/src/host.h wget-1.10.2/src/host.h
 *** wget-1.10.2.orig/src/host.h	Sun Jun 19 09:47:10 2005
---- wget-1.10.2/src/host.h	Mon Sep 17 13:11:08 2007
+--- wget-1.10.2/src/host.h	Mon Apr 28 16:31:47 2008
 ***************
 *** 112,117 ****
 --- 112,126 ----
@@ -281,23 +218,3 @@ diff -c -r wget-1.10.2.orig/src/host.h wget-1.10.2/src/host.h
   int accept_domain PARAMS ((struct url *));
   int sufmatch PARAMS ((const char **, const char *));
   
-diff -c -r wget-1.10.2.orig/src/Makefile.in wget-1.10.2/src/Makefile.in
-*** wget-1.10.2.orig/src/Makefile.in	Sun Jun 26 18:06:49 2005
---- wget-1.10.2/src/Makefile.in	Mon Sep 17 13:08:19 2007
-***************
-*** 53,59 ****
-  DEFS     = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
-  CFLAGS   = @CFLAGS@
-  LDFLAGS  = @LDFLAGS@
-! LIBS     = @LIBS@ @LIBSSL@
-  exeext   = @exeext@
-  
-  INCLUDES = -I. -I$(srcdir)
---- 53,59 ----
-  DEFS     = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
-  CFLAGS   = @CFLAGS@
-  LDFLAGS  = @LDFLAGS@
-! LIBS     = @LIBS@ @LIBSSL@ @LIBVAL_THREADS@
-  exeext   = @exeext@
-  
-  INCLUDES = -I. -I$(srcdir)
