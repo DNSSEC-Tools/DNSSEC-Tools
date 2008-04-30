@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 
 ######################################################################
@@ -254,44 +254,51 @@ sub get_ac_lineattr {
 
 	$prop{'dir'} = 'back';
 
-    if (($ac_status eq "VAL_AC_TRUST_KEY") ||
-        ($ac_status eq "VAL_AC_VERIFIED")) {
+    
+    # success
+    if (($ac_status eq "VAL_AC_VERIFIED") ||
+        ($ac_status eq "VAL_AC_TRUST")) { 
 
 		$prop{'color'} =  "green";
 		$prop{'fillcolor'} =  "green";
         $level = $SUCCESS;
 
-    } elsif (($ac_status eq "VAL_AC_IGNORE_VALIDATION") ||
+    }
+    # trusted bug not validated 
+    elsif (($ac_status eq "VAL_AC_IGNORE_VALIDATION") ||
         ($ac_status eq "VAL_AC_TRUSTED_ZONE") ||
         ($ac_status eq "VAL_AC_PROVABLY_UNSECURE") ||
-        ($ac_status eq "VAL_AC_BARE_RRSIG") ||
-        ($ac_status eq "VAL_AC_LOCAL_ANSWER")) {
+        ($ac_status eq "VAL_AC_BARE_RRSIG")) { 
 
 		$prop{'color'} =  "yellow";
 		$prop{'fillcolor'} =  "yellow";
         $level = $IGNORED;
 
-    } elsif (($ac_status eq "VAL_AC_UNTRUSTED_ZONE") ||
-        ($ac_status eq "VAL_AC_NOT_VERIFIED") ||
-        ($ac_status eq "VAL_AC_NO_TRUST_ANCHOR") ||
-        ($ac_status eq "VAL_AC_BAD_DELEGATION")) { 
+    }
+    # not trusted 
+    elsif (($ac_status eq "VAL_AC_NOT_VERIFIED") ||
+            ($ac_status eq "VAL_AC_UNTRUSTED_ZONE") ||
+            ($ac_status eq "VAL_AC_NO_TRUST_ANCHOR")) {
 
 		$prop{'color'} =  "red";
 		$prop{'fillcolor'} =  "red";
         $level = $BOGUS;
 
-    } elsif  (($ac_status eq "VAL_AC_RRSIG_MISSING") ||
+    }
+    # error conditions 
+    elsif  (($ac_status eq "VAL_AC_RRSIG_MISSING") ||
         ($ac_status eq "VAL_AC_DNSKEY_MISSING") ||
         ($ac_status eq "VAL_AC_DS_MISSING") ||
-        ($ac_status eq "VAL_AC_DATA_MISSING")) { 
+        ($ac_status eq "VAL_AC_DATA_MISSING") ||
+        ($ac_status eq "VAL_AC_DNS_ERROR")) { 
 
 		$prop{'color'} =  "red";
 		$prop{'fillcolor'} =  "red";
 		$prop{'style'} = 'dashed';
         $level = $DATA_MISSING;
     } 
+    # unexpected errors
     else { 
-        # other errors
 		$prop{'color'} =  "black";
 		$prop{'fillcolor'} =  "black";
         $level = $ERROR;
@@ -320,19 +327,20 @@ sub get_valstatus_lineattr {
 		$prop{'fillcolor'} =  "green";
 		$prop{'style'} = 'bold';
 	} 
-    elsif (($val_status eq "VAL_PROVABLY_UNSECURE") ||
+    elsif (
+		   ($val_status eq "VAL_NONEXISTENT_NAME_NOCHAIN")||
+		   ($val_status eq "VAL_NONEXISTENT_TYPE_NOCHAIN")||
+           ($val_status eq "VAL_PROVABLY_UNSECURE") ||
+           ($val_status eq "VAL_BARE_RRSIG") ||
 		   ($val_status eq "VAL_IGNORE_VALIDATION") ||
 		   ($val_status eq "VAL_TRUSTED_ZONE") ||
 		   ($val_status eq "VAL_TRUSTED_ANSWER") ||
-		   ($val_status eq "VAL_NONEXISTENT_NAME_NOCHAIN")||
-		   ($val_status eq "VAL_NONEXISTENT_TYPE_NOCHAIN")||
 		   ($val_status eq "VAL_LOCAL_ANSWER")) {
 		$prop{'color'} =  "yellow";
 		$prop{'fillcolor'} =  "yellow";
 		$prop{'style'} = 'bold';
     }
-	elsif (($val_status eq "VAL_BOGUS_PROVABLE") ||
-		   ($val_status eq "VAL_BOGUS_UNPROVABLE") ||
+	elsif (($val_status eq "VAL_BOGUS") ||
 		   ($val_status eq "VAL_UNTRUSTED_ANSWER") ||
 		   ($val_status eq "VAL_UNTRUSTED_ZONE") ||
 		   ($val_status eq "VAL_BAD_PROVABLY_UNSECURE")||
@@ -341,18 +349,11 @@ sub get_valstatus_lineattr {
 		$prop{'fillcolor'} =  "red";
 		$prop{'style'} = 'bold';
 	} 
-	elsif (($val_status eq "VAL_DONT_KNOW") ||
-			($val_status eq "VAL_INDETERMINATE") ||
-			($val_status eq "VAL_BARE_RRSIG")) {
-		$prop{'color'} =  "black";
-		$prop{'fillcolor'} =  "black";
-		$prop{'style'} = 'dashed';
-	} 
 	else {
 		# errors 
 		$prop{'color'} =  "black";
 		$prop{'fillcolor'} =  "black";
-		$prop{'style'} = 'bold';
+		$prop{'style'} = 'dashed';
 	}
 
 	return %prop;
