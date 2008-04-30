@@ -70,8 +70,10 @@ If the option is
 
       --dnssec_policy=reject
 
-then a DNSSEC validation failure will cause spfmilter to abort the processing
-of the current email message, and send an error message back to the sender.
+the spfmilter patch looks for the SPF_E_DNSSEC_FAILURE error code in the 
+response. If it detects this error code, it will return 
+SPFMILTER_RESULT_FAIL, which causes the mail
+to be rejected or marked according to the spfmilter configuration.
 The receipent will not get an email.  The sendmail maillog file will show an
 error message similar to the following:
 
