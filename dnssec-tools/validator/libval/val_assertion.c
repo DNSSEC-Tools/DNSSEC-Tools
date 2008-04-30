@@ -1910,7 +1910,8 @@ transform_single_result(val_context_t *context,
             CREATE_RESULT_BLOCK(proof_res, prev_res, *results);
             aptr = &proof_res->val_rc_proofs[0];
         }
-        proof_res->val_rc_proof_count++;
+        if (!(w_res->val_rc_flags & VAL_QUERY_NO_AC_DETAIL))
+            proof_res->val_rc_proof_count++;
         *mod_res = proof_res;
     } else {
         /* no data or not a proof */
