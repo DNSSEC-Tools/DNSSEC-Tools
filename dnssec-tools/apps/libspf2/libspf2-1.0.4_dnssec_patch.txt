@@ -1,6 +1,6 @@
 diff -U 5 -r libspf2-1.0.4.orig/config.h.in libspf2-1.0.4/config.h.in
 --- libspf2-1.0.4.orig/config.h.in	2004-07-08 13:18:43.000000000 -0400
-+++ libspf2-1.0.4/config.h.in	2007-09-10 16:57:03.000000000 -0400
++++ libspf2-1.0.4/config.h.in	2008-04-25 13:49:03.000000000 -0400
 @@ -35,25 +35,37 @@
  #undef HAVE_GETOPT_LONG_ONLY
  
@@ -69,7 +69,7 @@ diff -U 5 -r libspf2-1.0.4.orig/config.h.in libspf2-1.0.4/config.h.in
  #undef VERSION
 diff -U 5 -r libspf2-1.0.4.orig/configure.ac libspf2-1.0.4/configure.ac
 --- libspf2-1.0.4.orig/configure.ac	2004-07-07 07:55:34.000000000 -0400
-+++ libspf2-1.0.4/configure.ac	2007-09-10 16:56:06.000000000 -0400
++++ libspf2-1.0.4/configure.ac	2008-04-25 13:49:03.000000000 -0400
 @@ -1,13 +1,13 @@
  #                                               -*- Autoconf -*-
  # Process this file with autoconf to produce a configure script.
@@ -216,7 +216,7 @@ diff -U 5 -r libspf2-1.0.4.orig/configure.ac libspf2-1.0.4/configure.ac
  AC_TYPE_SIZE_T
 diff -U 5 -r libspf2-1.0.4.orig/src/include/spf.h libspf2-1.0.4/src/include/spf.h
 --- libspf2-1.0.4.orig/src/include/spf.h	2004-04-09 14:56:18.000000000 -0400
-+++ libspf2-1.0.4/src/include/spf.h	2007-09-10 16:54:56.000000000 -0400
++++ libspf2-1.0.4/src/include/spf.h	2008-04-25 13:49:03.000000000 -0400
 @@ -87,11 +87,13 @@
  #define SPF_E_NOT_CONFIG	25	/* Not configured		*/
  #define SPF_E_DNS_ERROR		26	/* DNS lookup failure		*/
@@ -259,7 +259,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/include/spf.h libspf2-1.0.4/src/include/spf.
   */
 diff -U 5 -r libspf2-1.0.4.orig/src/include/spf_dns.h libspf2-1.0.4/src/include/spf_dns.h
 --- libspf2-1.0.4.orig/src/include/spf_dns.h	2004-06-27 07:44:50.000000000 -0400
-+++ libspf2-1.0.4/src/include/spf_dns.h	2007-09-10 16:54:56.000000000 -0400
++++ libspf2-1.0.4/src/include/spf_dns.h	2008-04-25 13:49:03.000000000 -0400
 @@ -98,12 +98,16 @@
  #define	NO_RECOVERY	3		/* invalid/unimplmeneted query	*/
  #define	NO_DATA		4		/* host found, but no RR of req type*/
@@ -281,25 +281,13 @@ diff -U 5 -r libspf2-1.0.4.orig/src/include/spf_dns.h libspf2-1.0.4/src/include/
  
 diff -U 5 -r libspf2-1.0.4.orig/src/include/spf_dns_resolv.h libspf2-1.0.4/src/include/spf_dns_resolv.h
 --- libspf2-1.0.4.orig/src/include/spf_dns_resolv.h	2004-03-26 11:58:25.000000000 -0500
-+++ libspf2-1.0.4/src/include/spf_dns_resolv.h	2007-09-10 16:54:56.000000000 -0400
-@@ -38,10 +38,23 @@
++++ libspf2-1.0.4/src/include/spf_dns_resolv.h	2008-04-25 14:02:51.000000000 -0400
+@@ -38,10 +38,11 @@
  /*
   * if debugging is enabled, information about the results from
   * libresolv will be displayed.  This information is often not passed
   * on to (and not needed by) the higher level DNS layers.
   */
-+
-+#ifdef SUPPORT_DNSSEC
-+/*
-+ * The additional parameter is 'dodnssec' of type integer.  If 'dodnssec' is 0,
-+ * DNSSEC validation will not be performed.  If 'dodnssec' is 1, DNSSEC validation
-+ * will be performed.
-+ */
-+SPF_dns_config_t SPF_dns_create_config_sresolv( SPF_dns_config_t layer_below, int debug,
-+						int dodnssec );
-+void SPF_dns_reset_config_sresolv( SPF_dns_config_t spfdcid );
-+void SPF_dns_destroy_config_sresolv( SPF_dns_config_t spfdcid );
-+#endif
 +
  SPF_dns_config_t SPF_dns_create_config_resolv( SPF_dns_config_t layer_below, int debug  );
  void SPF_dns_reset_config_resolv( SPF_dns_config_t spfdcid );
@@ -308,7 +296,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/include/spf_dns_resolv.h libspf2-1.0.4/src/i
  
 diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/libspf2/spf_dns_resolv.c
 --- libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c	2004-06-27 07:44:50.000000000 -0400
-+++ libspf2-1.0.4/src/libspf2/spf_dns_resolv.c	2007-09-10 16:54:56.000000000 -0400
++++ libspf2-1.0.4/src/libspf2/spf_dns_resolv.c	2008-04-25 14:07:34.000000000 -0400
 @@ -39,10 +39,14 @@
  #endif
  #ifdef HAVE_NETDB_H
@@ -324,24 +312,10 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
  #include "spf_internal.h"
  #include "spf_dns_internal.h"
  #include "spf_dns_resolv.h"
-@@ -50,16 +54,25 @@
- 
- typedef struct
- {
-     int		debug;
-     SPF_dns_rr_t spfrr;
-+#ifdef SUPPORT_DNSSEC
-+    int         dodnssec;               /* 0: add x-dnssec=none to Received-SPF
-+					 * 1: add x-dnssec=pass to Received-SPF
-+					 *    if DNSSEC validation succeeds.
-+					 *    add x-dnssec=fail to Received-SPF
-+					 *    if DNSSEC validation fails.
-+					 */
-+#else
+@@ -55,11 +59,11 @@
  #if HAVE_DECL_RES_NINIT
      struct __res_state	res_state;
  #endif
-+#endif
  } SPF_dns_resolv_config_t; 
  
 -#if HAVE_DECL_RES_NINIT
@@ -351,7 +325,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
  #define SPF_h_errno h_errno
  #endif
  
-@@ -99,11 +112,13 @@
+@@ -99,11 +103,13 @@
      char	name_buf[ NS_MAXDNAME ];
      int		prio;
      
@@ -359,47 +333,29 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
      const u_char	*rdata, *rdata_end;
 - 
 +#ifdef SUPPORT_DNSSEC
-+    int dnssec_status = VAL_INTERNAL_ERROR;
++    val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +#endif 
  
      /*
       * initialize stuff
       */
      spfrr = &spfhook->spfrr;
-@@ -145,34 +160,87 @@
+@@ -145,34 +151,67 @@
  
      
      /*
       * try resolving the name
       */
 +#ifdef SUPPORT_DNSSEC
-+    do
++	dns_len = val_res_query ( NULL, domain, ns_c_in, rr_type, 
++                           response, sizeof( response ), &dnssec_status);
++
++	if (dns_len >= 0) 
 +    {
-+	struct val_response *resp;
-+	int retval = 0;
-+
-+	retval = val_query ( NULL, domain, ns_c_in, rr_type, VAL_QUERY_MERGE_RRSETS, &resp);
-+
-+	if (( retval == 0 ) && (resp)) {
-+		dnssec_status = resp->vr_val_status;
-+		dns_len = resp->vr_length;
-+		if(resp->vr_length > sizeof(response)) {
-+			dns_len = - (VAL_INTERNAL_ERROR);
-+		}
-+		memcpy(response, resp->vr_response, resp->vr_length);
-+
 +		if ( spfhook->debug )
-+			SPF_debugf( "val_query returned %d, dnssec_status = %s",
-+				    dns_len, p_val_status( dnssec_status ) );
++			SPF_debugf( "val_res_query returned dnssec_status = %s",
++				        p_val_status( dnssec_status ) );
 +	}
-+	else {
-+		dns_len = - (abs(retval));
-+	}
-+	if (0 != (retval = val_free_response(resp))) {
-+		dns_len = - (abs(retval));
-+	}
-+
-+    } while (0);
 +#else
  #if HAVE_DECL_RES_NINIT
      dns_len = res_nquery( &spfhook->res_state, domain, ns_c_in, rr_type,
@@ -417,15 +373,13 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
  		    dns_len, hstrerror( SPF_h_errno ), SPF_h_errno );
  
 +#ifdef SUPPORT_DNSSEC
-+	if ( spfhook->dodnssec &&
-+	    ( SPF_h_errno == NETDB_SUCCESS ) &&
++	if ( ( SPF_h_errno == NETDB_SUCCESS ) &&
 +	    ( !val_istrusted(dnssec_status)) )
 +	{
 +	    SPF_h_errno = DNSSEC_FAILURE;
 +	}
 +
-+	if ( ( !spfhook->dodnssec ) &&
-+	     spfrr->herrno == HOST_NOT_FOUND &&
++	if ( spfrr->herrno == HOST_NOT_FOUND &&
 +	     spfdic->layer_below )
 +	{
 +	    return SPF_dcid2spfdic( spfdic->layer_below )->lookup( spfdic->layer_below, domain, rr_type, should_cache );
@@ -444,7 +398,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
 -	
      
 +#ifdef SUPPORT_DNSSEC
-+	if ( spfhook->dodnssec && ( !val_istrusted(dnssec_status)) )
++	if ( !val_istrusted(dnssec_status) )
 +	{
 +	    spfrr->herrno = DNSSEC_FAILURE;
 +	}
@@ -456,14 +410,14 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
      if ( err < 0 )			/* 0 or -1 */
      {
  	if ( spfhook->debug )
-@@ -435,20 +503,45 @@
+@@ -435,20 +474,29 @@
      }
  
      if ( spfrr->num_rr == 0 )
  	spfhook->spfrr.herrno = NO_DATA;
  
 +#ifdef SUPPORT_DNSSEC
-+    if ( spfhook->dodnssec && ( !val_istrusted(dnssec_status)) )
++    if ( !val_istrusted(dnssec_status) )
 +    {
 +	if ( spfrr->herrno == NETDB_SUCCESS )
 +	{
@@ -476,23 +430,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
  }
  
  
-+#ifdef SUPPORT_DNSSEC
-+SPF_dns_config_t SPF_dns_create_config_resolv( SPF_dns_config_t layer_below,
-+					       int debug )
-+{
-+    return SPF_dns_create_config_sresolv( layer_below, debug, 0 );
-+}
-+
-+/*
-+ * The additional parameter is 'dodnssec' of type integer.  If 'dodnssec' is 0,
-+ * DNSSEC validation will not be performed.  If 'dodnssec' is 1, DNSSEC validation
-+ * will be performed.
-+ */
-+SPF_dns_config_t SPF_dns_create_config_sresolv( SPF_dns_config_t layer_below,
-+						int debug, int dodnssec )
-+#else
  SPF_dns_config_t SPF_dns_create_config_resolv( SPF_dns_config_t layer_below, int debug )
-+#endif
  {
      SPF_dns_iconfig_t     *spfdic;
      SPF_dns_resolv_config_t *spfhook;
@@ -503,15 +441,9 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
  	return NULL;
  
      spfdic->hook = calloc( 1, sizeof( SPF_dns_resolv_config_t ) );
-@@ -467,13 +560,17 @@
-     spfdic->name        = "resolv";
-     
-     spfhook = SPF_voidp2spfhook( spfdic->hook );
+@@ -470,10 +518,11 @@
  
      spfhook->debug = debug;
-+#ifdef SUPPORT_DNSSEC
-+    spfhook->dodnssec = dodnssec;
-+#endif
      SPF_dns_reset_rr( &spfhook->spfrr );
      spfhook->spfrr.source = SPF_spfdic2dcid( spfdic );
  
@@ -521,7 +453,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
      {
  	free( spfdic );
  	return NULL;
-@@ -483,10 +580,11 @@
+@@ -483,10 +532,11 @@
      {
  	free( spfdic );
  	return NULL;
@@ -533,25 +465,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
  }
  
  void SPF_dns_reset_config_resolv( SPF_dns_config_t spfdcid )
-@@ -499,10 +597,17 @@
- 
- 
-     SPF_dns_reset_rr( &(SPF_voidp2spfhook( spfdic->hook )->spfrr) );
- }
- 
-+#ifdef SUPPORT_DNSSEC
-+void SPF_dns_reset_config_sresolv( SPF_dns_config_t spfdcid )
-+{
-+    return SPF_dns_reset_config_resolv( spfdcid );
-+}
-+#endif
-+
- void SPF_dns_destroy_config_resolv( SPF_dns_config_t spfdcid )
- {
-     SPF_dns_iconfig_t     *spfdic = SPF_dcid2spfdic( spfdcid );
- 
-     if ( spfdcid == NULL )
-@@ -512,20 +617,28 @@
+@@ -512,16 +562,17 @@
      {
  	SPF_dns_resolv_config_t	*spfhook = SPF_voidp2spfhook( spfdic->hook );
  
@@ -570,20 +484,9 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
      
  
      if ( spfdic )
- 	free( spfdic );
- }
- 
-+#ifdef SUPPORT_DNSSEC
-+void SPF_dns_destroy_config_sresolv( SPF_dns_config_t spfdcid )
-+{
-+    return SPF_dns_destroy_config_resolv( spfdcid );
-+}
-+#endif
-+
- #endif	/* _WIN32 */
 diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_eval_id.c libspf2-1.0.4/src/libspf2/spf_eval_id.c
 --- libspf2-1.0.4.orig/src/libspf2/spf_eval_id.c	2004-07-08 13:24:55.000000000 -0400
-+++ libspf2-1.0.4/src/libspf2/spf_eval_id.c	2007-09-10 16:54:56.000000000 -0400
++++ libspf2-1.0.4/src/libspf2/spf_eval_id.c	2008-04-25 13:49:03.000000000 -0400
 @@ -202,10 +202,109 @@
      if ( buf ) free( buf );
      SPF_free_c_results( c_results );
@@ -980,7 +883,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_eval_id.c libspf2-1.0.4/src/libs
  
 diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_get_spf.c libspf2-1.0.4/src/libspf2/spf_get_spf.c
 --- libspf2-1.0.4.orig/src/libspf2/spf_get_spf.c	2004-06-22 18:38:55.000000000 -0400
-+++ libspf2-1.0.4/src/libspf2/spf_get_spf.c	2007-09-10 16:54:56.000000000 -0400
++++ libspf2-1.0.4/src/libspf2/spf_get_spf.c	2008-04-25 13:49:03.000000000 -0400
 @@ -48,11 +48,14 @@
      SPF_dns_rr_t	*rr_txt;
      
@@ -1079,7 +982,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_get_spf.c libspf2-1.0.4/src/libs
  }
 diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_result.c libspf2-1.0.4/src/libspf2/spf_result.c
 --- libspf2-1.0.4.orig/src/libspf2/spf_result.c	2004-06-22 18:39:13.000000000 -0400
-+++ libspf2-1.0.4/src/libspf2/spf_result.c	2007-09-10 16:54:56.000000000 -0400
++++ libspf2-1.0.4/src/libspf2/spf_result.c	2008-04-25 13:49:03.000000000 -0400
 @@ -68,14 +68,18 @@
  	{
  	    snprintf( p, p_end - p, " : Reason: %s",
@@ -1368,7 +1271,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_result.c libspf2-1.0.4/src/libsp
      return output;
 diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_strerror.c libspf2-1.0.4/src/libspf2/spf_strerror.c
 --- libspf2-1.0.4.orig/src/libspf2/spf_strerror.c	2004-06-22 18:39:16.000000000 -0400
-+++ libspf2-1.0.4/src/libspf2/spf_strerror.c	2007-09-10 16:54:56.000000000 -0400
++++ libspf2-1.0.4/src/libspf2/spf_strerror.c	2008-04-25 13:49:03.000000000 -0400
 @@ -150,11 +150,17 @@
  	break;
  	    
