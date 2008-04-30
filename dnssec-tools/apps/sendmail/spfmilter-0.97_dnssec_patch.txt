@@ -1,6 +1,6 @@
 diff -U 5 -Nar spfmilter-0.97.orig/configure.ac spfmilter-0.97/configure.ac
 --- spfmilter-0.97.orig/configure.ac	2005-04-24 17:02:17.000000000 -0400
-+++ spfmilter-0.97/configure.ac	2007-09-10 22:23:12.000000000 -0400
++++ spfmilter-0.97/configure.ac	2008-04-25 16:05:17.000000000 -0400
 @@ -15,10 +15,80 @@
  AC_TYPE_UID_T
  AC_TYPE_SIZE_T
@@ -84,7 +84,7 @@ diff -U 5 -Nar spfmilter-0.97.orig/configure.ac spfmilter-0.97/configure.ac
  
 diff -U 5 -Nar spfmilter-0.97.orig/spfmilter.c spfmilter-0.97/spfmilter.c
 --- spfmilter-0.97.orig/spfmilter.c	2005-06-20 21:28:57.000000000 -0400
-+++ spfmilter-0.97/spfmilter.c	2007-09-10 17:06:08.000000000 -0400
++++ spfmilter-0.97/spfmilter.c	2008-04-25 16:15:21.000000000 -0400
 @@ -95,10 +95,15 @@
  #define SPFMILTER_ACTION_UNKNOWN 0
  #define SPFMILTER_ACTION_REJECT 1
@@ -494,61 +494,7 @@ diff -U 5 -Nar spfmilter-0.97.orig/spfmilter.c spfmilter-0.97/spfmilter.c
  lib_fini_message_data( lib_data_t* ld )
      {
      if ( ld->from != (char*) 0 )
-@@ -2314,10 +2536,18 @@
- 	if ( resolvers[r].initialized )
- 	    {
- #ifdef USE_DNS_CACHE
- 	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid_c );
- #endif /* USE_DNS_CACHE */
-+#ifdef SUPPORT_DNSSEC
-+	    if ( ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT ) ||
-+		 ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN ) )
-+		{
-+		SPF_dns_destroy_config_sresolv( resolvers[r].spfdcid_r );
-+		}
-+	    else
-+#endif /* SUPPORT_DNSSEC */
- 	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
- 	    }
-     pthread_mutex_destroy( &resolver_mutex );
-     free( (void*) resolvers );
-     }
-@@ -2371,10 +2601,18 @@
- 
-     /* Is it initialized? */
-     if ( ! resolvers[r].initialized )
- 	{
- 	/* Create the DNS objects. */
-+#ifdef SUPPORT_DNSSEC
-+	if ( ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT ) ||
-+	     ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN ) )
-+	    {
-+	    resolvers[r].spfdcid_r = SPF_dns_create_config_sresolv( (SPF_dns_config_t) 0, debug, 1 );
-+	    }
-+	else
-+#endif /* SUPPORT_DNSSEC */
- 	resolvers[r].spfdcid_r = SPF_dns_create_config_resolv( (SPF_dns_config_t) 0, debug );
- 	if ( resolvers[r].spfdcid_r == (SPF_dns_config_t) 0 )
- 	    {
- 	    syslog( LOG_ERR, "SPF_dns_create_config_resolv() failed" );
- 	    free_resolver( r );
-@@ -2437,10 +2675,15 @@
- 
- 
- static int
- lib_init( void )
-     {
-+#ifdef SUPPORT_DNSSEC
-+    if ( dnssec_policy != SPFMILTER_DNSSEC_POLICY_IGNORE )
-+	spf_server = SPF_server_new( SPF_DNS_DNSSEC_CACHE, debug );
-+    else
-+#endif /* SUPPORT_DNSSEC */
-     spf_server = SPF_server_new( SPF_DNS_CACHE, debug );
-     if ( spf_server == (SPF_server_t*) 0 )
- 	{
- 	(void) fprintf( stderr, "%s: SPF_server_new() failed\n", argv0 );
- 	return 0;
-@@ -2638,10 +2881,36 @@
+@@ -2638,10 +2860,36 @@
      /*!!!*/
      return (char*) 0;
      }
