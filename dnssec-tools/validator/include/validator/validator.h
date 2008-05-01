@@ -626,6 +626,9 @@ extern          "C" {
                                     const struct addrinfo *hints,
                                     struct addrinfo **res,
                                     val_status_t * val_status);
+#ifndef HAVE_FREEADDRINFO
+    void            freeaddrinfo(struct addrinfo *ainfo);
+#endif
 
     int             val_getnameinfo(val_context_t * ctx,
                                     const struct sockaddr *sa,

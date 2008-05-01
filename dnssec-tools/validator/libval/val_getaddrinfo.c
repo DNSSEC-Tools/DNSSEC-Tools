@@ -29,6 +29,31 @@
 #include "val_policy.h"
 #include <errno.h>
 
+#ifndef HAVE_FREEADDRINFO
+
+/* 
+ * define this freeaddrinfo if we don't have it already available
+ */
+void
+freeaddrinfo(struct addrinfo *ainfo)
+{
+    struct addrinfo *acurr = ainfo;
+
+    while (acurr != NULL) {
+        struct addrinfo *anext = acurr->ai_next;
+        if (acurr->ai_addr) {
+            free(acurr->ai_addr);
+        }
+        if (acurr->ai_canonname) {
+            free(acurr->ai_canonname);
+        }
+        free(acurr);
+        acurr = anext;
+    }
+}
+
+#endif
+
 /*
  * Function: append_addrinfo
  *

@@ -307,6 +307,11 @@ dnl check for non-portable functions
 dnl
 AC_CHECK_FUNCS(strerror_r)
 AC_CHECK_FUNCS(pselect)
+    
+dnl ----------------------------------------------------------------------
+dnl check for missing functions 
+dnl
+AC_CHECK_FUNCS(freeaddrinfo)
 
 dnl ---------------------------------------------------------------------- 
 AC_CHECK_TYPES([ns_cert_types],,,[
