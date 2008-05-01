@@ -109,7 +109,7 @@ diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_loo
   	if (reply_header->tc == 0 || reply->buf_len >= MAX_DNS_REPLY_SIZE)
 diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myaddrinfo.c
 *** postfix-2.3.8.orig/src/util/myaddrinfo.c	2006-09-29 16:34:20.000000000 -0700
---- postfix-2.3.8/src/util/myaddrinfo.c	2007-03-21 15:17:09.000000000 -0700
+--- postfix-2.3.8/src/util/myaddrinfo.c	2008-04-30 16:54:21.000000000 -0700
 ***************
 *** 427,433 ****
   	}
@@ -133,7 +133,7 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
 !     val_status_t  vstatus;
 !     if (0 == (err = val_getaddrinfo((val_context_t *)NULL, hostname, 
 !                                        service, &hints, 
-!                                        (struct val_addrinfo **)res,
+!                                        res,
 !                                        &vstatus))) {
 ! 
 !       if (0 == val_istrusted(vstatus))  {
@@ -174,7 +174,7 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
 !     val_status_t  vstatus;
 !     if (0 == (err = val_getaddrinfo((val_context_t *)NULL, hostaddr, 
 !                                        service, &hints, 
-!                                        (struct val_addrinfo **)res,
+!                                        res,
 !                                        &vstatus))) {
 ! 
 !       if (0 == val_istrusted(vstatus))  {
@@ -195,7 +195,7 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
   	struct addrinfo *r;
 ***************
 *** 769,774 ****
---- 818,856 ----
+--- 818,846 ----
   
   #endif
   
@@ -220,16 +220,6 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
 +   /* default response*/
 +   return (gai_strerror(ecode));
 + } /* denssec_strerror */
-+ 
-+ 
-+ /* 
-+  * free_pf_dnssec_addrinfo - frees struct val_addrinfo.  Does a
-+  *                           pointer conversion to call validator
-+  *                           library free function. 
-+  */
-+ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo){
-+   free_val_addrinfo((struct val_addrinfo *) ainfo);
-+ }
 + 
 + 
   #ifdef TEST
@@ -286,7 +276,7 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
   	    } else
   		msg_info("%s -> %s", addr.buf, host.buf);
   	    freeaddrinfo(ip);
---- 876,937 ----
+--- 866,927 ----
   
       inet_proto_init(argv[0], argv[1]);
   
@@ -355,7 +345,7 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
   }
   
 ! #endif
---- 940,943 ----
+--- 930,933 ----
       exit(0);
   }
   
@@ -386,7 +376,7 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.h postfix-2.3.8/src/util/myadd
 --- 33,38 ----
 ***************
 *** 103,108 ****
---- 102,123 ----
+--- 102,117 ----
   
   #endif
   
@@ -394,12 +384,6 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.h postfix-2.3.8/src/util/myadd
 + /* start dnssec patch additions */
 + 
 + #define DNSSECAI_FAIL   -600  /* sharing number space with netdb.h errors */
-+ 
-+ /* Used for explicit pointer conversion (i.e. gets rid of compiler
-+    warnings). */
-+ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo);
-+ #undef  freeaddrinfo
-+ #define freeaddrinfo	free_pf_dnssec_addrinfo
 + 
 + const char   *dnssec_strerror(int ecode);
 + 
