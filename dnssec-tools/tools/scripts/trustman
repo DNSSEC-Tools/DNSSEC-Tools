@@ -243,23 +243,31 @@ sub usage {
 
     print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-v] [-V]
 
-Options:
+File Options:
        --anchor_data_file FILE (-a)
        --config FILE (-c)
        --dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
        --named_conf_file /PATH/TO/NAMED.CONF (-n)
-       --zone ZONE (-z)
+       --resolv_conf_file CONFFILE (-r)
+
+Logging and Output Options:
        --mail_contact_addr EMAIL_ADDRESS (-m)
        --smtp_server SMTPSERVERNAME (-s)
        --no_error (-N)
        --print (-p)
+       --syslog (-L)
+
+Operational Options:
+       --zone ZONE (-z)
        --hold_time SECONDS (-w)
-       --resolv_conf_file CONFFILE (-r)
        --single_run (-S)
        --foreground (-f)
-       --syslog (-L)
        --sleeptime SECONDS (-t)
+
+Testing Options:
        --test_revoke
+
+Help Options:
        --help (-h)
        --verbose (-v)
        --version (-V)
