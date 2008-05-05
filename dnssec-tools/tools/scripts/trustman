@@ -203,6 +203,7 @@ if ($opts{'c'}) {
     do {
         my $newsleeptime = &checkkeys($sleeptime);
         if (!$once) {
+	    Verbose("sleeping for $newsleeptime seconds\n");
             sleep($newsleeptime);
         }
     } while (!$once);
@@ -319,15 +320,20 @@ sub checkkeys {
 
 # check the RRSIG over the DNKSEY
         if ($query) {
+	    my $origttl;
             foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
 
-                 my $orgttl = $rrsigrec->orgttl;
+		 # This assumes that the orig TTLs are always the same
+		 # (which they should be).  XXX: Turn this into a
+		 # warning if not?
+                 $origttl = $rrsigrec->orgttl;
+
                  my $sigexp = $rrsigrec->sigexpiration;
-                 my $retryobj = { ottl => $orgttl,
+                 my $retryobj = { ottl => $origttl,
                                   sigexp => $sigexp
                                 };
                  $zone_retry_times{$z} = $retryobj;
-                 my ($refresh_secs,$refresh_time) = compute_sleepsecs($orgttl, $sigexp);
+                 my ($refresh_secs,$refresh_time) = compute_sleepsecs($origttl, $sigexp);
 		 Verbose("  $z ...  refresh_secs=$refresh_secs, refresh_time=$refresh_time\n");
                  $sleeptimes{$z} =  $refresh_secs;
                  $active_refresh_times{$z} = $refresh_time;
@@ -335,6 +341,11 @@ sub checkkeys {
 		 # XXX: yeah, but should we have the shortest or the longest?
 		 # (in theory they *should* be the same...)
             }
+
+	    if (!$origttl) {
+		Verbose("No original TTL found for $z???");
+	    }
+
 # if an RRSET is received which does NOT contain a pending
 # new key, remove that new key from the %newkeys
             foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer) {
@@ -380,7 +391,7 @@ sub checkkeys {
                     if (!$notnewkey) {
 
                         my $add_holddown_time =
-			  compute_add_holddown($ttl, $holdtime);
+			  compute_add_holddown($origttl, $holdtime);
                         my $newkeyobj = { flags => $keyrec->flags,
                                           protocol => $keyrec->protocol,
                                           algorithm => $keyrec->algorithm,
@@ -1377,6 +1388,7 @@ sub notify {
 	Verbose("^" x 70 . "\n");
     }
     if ($smtpserver && $contactaddr && !$opts{'nomail'}) {
+	Verbose("  mailing $contactaddr\n");
         mailcontact(0,$smtpserver,$contactaddr,$message);
     }
 }
