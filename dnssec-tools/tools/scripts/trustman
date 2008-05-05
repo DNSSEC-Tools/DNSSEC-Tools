@@ -30,7 +30,7 @@ dnssec_tools_load_mods('Date::Parse'	=> "",
 
 my %opts = (
         t => 3600, # default to one hour
-        v => 1, # verbose on
+        v => 0, # verbose on
         c => 0 # don't configure files
 );
 
@@ -51,6 +51,7 @@ GetOptions(\%opts,
              'p|print',
              'r|resolv_conf_file=s',
              's|smtp_server=s',
+             'nomail',
              'S|single_run',
              't|sleeptime=i',
              'v|verbose',
@@ -103,7 +104,7 @@ if ($ncfile && ! -f $ncfile) {
 }
 
 if (!$smtpserver) {
-    print "smtpserver is undefined\n";
+    print STDERR "smtpserver is undefined\n";
 }
 
 my $sleeptime = $opts{'t'} ? $opts{'t'}
@@ -237,9 +238,9 @@ sub show_version {
 
 sub usage {
     my ($extratext) = @_;
-    print "\nError:\n  $extratext\n\n" if ($extratext);
+    print STDERR "\nError:\n  $extratext\n\n" if ($extratext);
 
-    print "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-v] [-V]
+    print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-v] [-V]
 
 Options:
        --anchor_data_file FILE (-a)
@@ -467,8 +468,7 @@ sub checkkeys {
                 }
             }
         } else {
-            my $notif = "query failed for zone " . $z . "\n";
-            print $notif;
+            my $notif = "query for keys failed for zone " . $z . "\n";
             notify($notif) if ($opts{'v'});
             my $refresh_secs = compute_queryfail_sleepsecs(
                                    $zone_retry_times{$z}{'ottl'},
@@ -616,6 +616,8 @@ sub checkkeys {
 
 sub add_ta_namedconf  {
     my $zone = @_;
+    return if (!$ncfile);
+
     open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
     open (CONF,$ncfile) or die "unable to read named.conf file.";
     while (<CONF>) {
@@ -655,6 +657,8 @@ sub add_ta_namedconf  {
 sub add_ta_dnsvalconf  {
     my ($zone) = @_;
 
+    next if (!$dvfile);
+
     my $pat = "trust-anchor";
 
     open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
@@ -672,7 +676,6 @@ sub add_ta_dnsvalconf  {
 	    # be auto-added even though it's never been secured).
 	    my $lookingfor = $_;
             while ($lookingfor) {
-#		print "lookingfor $lookingfor\n";
 		next if ($lookingfor =~ s/^\s*#[^\n]*//);
 		next if ($lookingfor =~ s/^\s*\n//);
 		$lookingfor =~ s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//;
@@ -696,9 +699,9 @@ sub add_ta_dnsvalconf  {
                              $newkeys{$zone}[$i]{key} . "\"";
                 if ($zonefound) {
                     print TMP $newkeyentry . $2;
-                    print "Adding following key to $dvfile:\n";
-                    print $newkeyentry . "\n";
-                    my $notif = "New key added to " . $ncfile . " for zone " . $zone . "\n";
+                    Verbose("Adding the following key to $dvfile:\n");
+                    Verbose($newkeyentry . "\n");
+                    my $notif = "New key added to " . $dvfile . " for zone " . $zone . "\n";
                     notify($notif);
                 } else {
 		    Verbose("Failed to find original zone key in $ncfile!\n");
@@ -728,6 +731,8 @@ sub add_ta_dnsvalconf  {
 
 sub remove_ta_dnsvalconf {
     my ($zone, $k, $f, $p, $a) = @_;
+
+    next if (!$dvfile);
 
     my $pat = "trust-anchor";
 
@@ -793,6 +798,8 @@ sub remove_ta_dnsvalconf {
 
 sub remove_ta_namedconf  {
     my ($zone, $key, $flags, $proto, $algo) = @_;
+
+    next if (!$ncfile);
 
     my $pat = "^trusted-keys";
     my $trustsection = 0;
@@ -890,6 +897,8 @@ sub remove_ta_namedconf  {
 sub revoke_ta_dnsvalconf  {
     my ($zone,$keyrec) = @_;
 
+    next if (!$dvfile);
+
     my $pat = "trust-anchor";
 
     open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
@@ -951,6 +960,8 @@ sub revoke_ta_dnsvalconf  {
 
 sub revoke_ta_namedconf  {
     my ($zone,$keyrec) = @_;
+
+    next if (!$ncfile);
 
     my $pat = "^trusted-keys";
     my $trustsection = 0;
@@ -1065,7 +1076,7 @@ sub get_zones_keys {
 
 
     if (!@zones) {
-        print "No zones to check, exiting....\n";
+        print STDERR "No zones to check, exiting....\n";
         exit(1);
     }
 
@@ -1355,9 +1366,15 @@ sub notify {
         closelog();
     }
     if ($opts{'p'}) {
+	$| = 1;
+
+	# if in verbose mode, make sure messages are easily detectable
+	# within the verbose output.
+	Verbose("v" x 70 . "\n");
         print $message;
+	Verbose("^" x 70 . "\n");
     }
-    if ($smtpserver && $contactaddr) {
+    if ($smtpserver && $contactaddr && !$opts{'nomail'}) {
         mailcontact(0,$smtpserver,$contactaddr,$message);
     }
 }
@@ -1562,6 +1579,12 @@ Mail address for the contact person to whom reports should be sent.
 =item B<--smtp_server SMTPSERVERNAME (-s)>
 
 SMTP server that B<trustman> should use to send reports by mail.
+
+=item B<--nomail>
+
+Prevents mail from being sent; this is useful for only sending
+notifications via stdout (-p) or syslog (-L) even if a smtp server was
+specified in the configuratino file.
 
 =item B<--no_error (-N)>
 
