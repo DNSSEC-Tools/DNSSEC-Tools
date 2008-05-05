@@ -1247,7 +1247,9 @@ sub compute_add_holddown {
     $default = 2592000 if (!$default);  # default to 30 days
 
 # return secs since the epoch as the time to release this holddown
-    if ($ttl < $default) { # 30 days unless ttl is less
+
+    # Take the maximum of now+TTL or now+specified-default
+    if ($ttl > $default) {
         $holddown = $nowsecs + $ttl;
     } else {
         $holddown = $nowsecs + $default;
