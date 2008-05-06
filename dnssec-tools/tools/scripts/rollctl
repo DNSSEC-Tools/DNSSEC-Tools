@@ -15,6 +15,7 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case_always);
 
 use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::rolllog;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
@@ -181,17 +182,25 @@ sub main()
 	}
 	if($loglevelflag)
 	{
-		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag);
-
-		($ret, $resp) = rollmgr_getresp();
-		if($ret == ROLLCMD_RC_OKAY)
+		if(rolllog_validlevel($loglevelflag) == 0)
 		{
-			print "rollerd log level set to $loglevelflag\n";
+			print STDERR "invalid rollerd log level: $loglevelflag\n";
+			$rcret++;
 		}
 		else
 		{
-			print STDERR "log-level set failed:  $resp\n";
-			$rcret++;
+			rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag);
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "rollerd log level set to $loglevelflag\n";
+			}
+			else
+			{
+				print STDERR "log-level set failed:  $resp\n";
+				$rcret++;
+			}
 		}
 	}
 	if($nodispflag)
