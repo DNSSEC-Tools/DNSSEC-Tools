@@ -8,6 +8,10 @@
 This directory contains DNSSEC-Tools-specific Perl modules.  Each file has a
 pod man page which may be consulted for details.
 
+	BootStrap.pm
+		Determines at run-time, rather than at installation time, if
+		the right modules are available on the system.
+
 	QWPrimitives.pm
 		QWizard primitives for DNSSEC-Tools.
 
@@ -25,12 +29,14 @@ pod man page which may be consulted for details.
 		Manages a DNSSEC-Tools keyrec file.  Keyrec files maintain
 		meta-information about DNSSEC-signed DNS zones.
 
+	rolllog.pm
+		Interfaces for manipulating the rollerd log.
+
 	rollmgr.pm
 		Provides communications interfaces with a DNSSEC-signed DNS
 		zone roll-over manager daemon.
 
-		DO NOT USE.  This isn't even in a pre-alpha state.  This is
-		in a primordial state.
+		Beware, here be monsters...  This is a alpha code.
 
 	rollrec.pm
 		Manages a DNSSEC-Tools rollrec file.  Rollrec files maintain
@@ -48,4 +54,3 @@ pod man page which may be consulted for details.
 		DNSSEC-Tools configuration file data and keyrec files to
 		determine the final set of options values to be used by
 		DNSSEC-Tools programs.
-
