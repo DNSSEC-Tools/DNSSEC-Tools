@@ -792,7 +792,7 @@ sub zsk_phase2
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-		rolllog_log(LOG_ERR,$zone,"ZSK phase 2:  unable to reload zone, rc - $ret");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to reload zone, rc - $ret");
 	}
 
 	#
@@ -873,7 +873,7 @@ sub zsk_phase4
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-		rolllog_log(LOG_ERR,$zone,"ZSK phase 4:  unable to reload zone, rc - $ret");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to reload zone, rc - $ret");
 	}
 
 	#
