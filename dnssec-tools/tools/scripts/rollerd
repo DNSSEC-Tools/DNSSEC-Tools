@@ -77,7 +77,7 @@ my $DEFAULT_NAP	= 60;
 
 my $RM_ENDROLL	  = 1;		# Calculate from end of last roll.
 my $RM_KEYGEN	  = 2;		# Calculate from last key generation.
-my $RM_STARTROLL = 3;		# Calculate from start of last roll.  (NYI)
+my $RM_STARTROLL  = 3;		# Calculate from start of last roll.  (NYI)
 
 my $krollmethod = $RM_ENDROLL;	# Rollover calculation to use for KSKs.
 my $zrollmethod = $RM_ENDROLL;	# Rollover calculation to use for ZSKs.
@@ -176,6 +176,8 @@ sub main
 {
 	my $argc;			# Number of command line arguments.
 	my $errors = 0;			# Total error count.
+
+	$| = 1;
 
 	erraction(ERR_MSG);
 
@@ -3557,13 +3559,15 @@ sub version
 #
 sub usage
 {
-	print STDERR "usage:  rollerd [options] -rrfile <rollrec-file>\n";
+	print STDERR "usage:  rollerd [options]\n";
 	print STDERR "\toptions:\n";
+	print STDERR "\t\t-rrfile <rollrec-file>\n";
 	print STDERR "\t\t-directory <dir>\n";
 	print STDERR "\t\t-logfile <logfile>\n";
 	print STDERR "\t\t-loglevel <level>\n";
 	print STDERR "\t\t-sleep <sleeptime>\n";
 	print STDERR "\t\t-display\n";
+	print STDERR "\t\t-parameters\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
