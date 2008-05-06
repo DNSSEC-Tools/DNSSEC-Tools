@@ -1,5 +1,5 @@
 #
-# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2008 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -28,6 +28,7 @@ our @EXPORT = qw(
 
 		 rolllog_log
 		 rolllog_file
+		 rolllog_validlevel
 		 rolllog_level
 		 rolllog_levels
 		 rolllog_num
@@ -92,6 +93,38 @@ my @logstrs =					# Valid strings for levels.
 my $logfile;					# rollerd's log file.
 
 
+
+##############################################################################
+#
+# Routine:	rolllog_validlevel()
+#
+# Purpose:	Check if the given logging level is valid.  A boolean is
+#		returned indicating if it is.
+#
+sub rolllog_validlevel
+{
+	my $level = shift;			# Logging level to check.
+	my $ret;				# Return code.
+
+	#
+	# Do the Right Thing, depending on if the level is numeric or textual.
+	#
+	if($level =~ /^[\d]+$/)
+	{
+		$ret = rolllog_num($level);
+		return(0) if($ret == -1);
+	}
+	else
+	{
+		$ret = rolllog_str($level);
+		return(0) if(!defined($ret));
+	}
+
+	#
+	# We're here, so *everything* is okay.
+	#
+	return(1);
+}
 
 ##############################################################################
 #
@@ -187,14 +220,26 @@ sub rolllog_str
 	my $level = shift;				# New logging level.
 
 	#
+	# Ensure a level was given.
+	#
+	return(undef) if(!defined($level));
+
+	#
 	# If log level isn't a numeric, we'll ensure that it's a valid
 	# level string.
 	#
 	if($level =~ /[a-zA-Z]/)
 	{
+		my $lclev;				# Lowercase level.
+
+		#
+		# Convert the logging level to lowercase (for efficiency.)
+		#
+		$lclev = lc($level);
+
 		foreach my $lstr (@logstrs)
 		{
-			return($lstr) if(lc($lstr) eq lc($level));
+			return($lstr) if(lc($lstr) eq lc($lclev));
 		}
 		return(undef);
 	}
@@ -202,7 +247,6 @@ sub rolllog_str
 	#
 	# Check for out-of-bounds levels and return the text string.
 	#
-	return(undef) if(!defined($level));
 	return(undef) if(($level < $LOG_NEVER) || ($level > $LOG_ALWAYS));
 	return($logstrs[$level]);
 }
@@ -411,6 +455,9 @@ Net::DNS::SEC::Tools::rolllog - DNSSEC-Tools rollover logging interfaces.
 
   $ret = rolllog_num("info");
 
+  $bool = rolllog_validlevel($newlevel);
+  $bool = rolllog_validlevel(8);
+
   rolllog_log(LOG_INFO,"example.com","zone is valid");
 
 =head1 DESCRIPTION
@@ -509,11 +556,19 @@ B<rollerd> to group messages by the zone to which the message applies.
 The I<message> argument is the log message itself.  Trailing newlines are
 removed.
 
+=item I<rolllog_validlevel(level)>
+
+This interface returns a boolean value indicating if the given logging level
+is valid.
+
+The I<level> argument is the logging level to be validated.  It may be a
+numeric or textual value.
+
 =back
 
 =head1 COPYRIGHT
 
-Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
