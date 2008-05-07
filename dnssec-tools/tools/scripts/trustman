@@ -1548,19 +1548,6 @@ performs the following operations:
 On subsequent runs, the timers are checked.  If the timers have expired, keys
 are added or removed from the configuration file, as appropriate.
 
-=head1 CONFIGURATION
-
-B<trustman> can also set up configuration data in the DNSSEC-Tools
-configuration file for later use by the daemon.  This makes
-fewer command line arguments necessary on subsequent executions.
-(The configuration file is in B<dnssec-tools.conf>.)
-
-Configuration data is stored in B<dnssec-tools.conf>.  The current version
-requires you to edit B<dnssec-tools.conf> by hand and supply values for
-the contact person's email address (I<tacontact>) and the SMTP server
-(I<tasmtpserver>).  If necessary, edit the location of B<named.conf> and
-B<dnsval.conf> in that file.
-
 =head1 OPTIONS
 
 B<trustman> takes a number of options, each of which is described in this
@@ -1662,6 +1649,46 @@ Verbose output.
 Display version information.
 
 =back #unindent
+
+=head1 CONFIGURATION
+
+In addition to the command line arguments, the I<dnssec-tools.conf>
+file can also be configured with the following tokens to remove the
+need to use some of the command line options.  Note that the command
+line options always override the settings in the dnssec-tools.conf
+file.
+
+=over
+
+=item B<tasmtpserver> I<SERVERNAME>
+
+Equivelent to the --smtp_server flag for specifying where to send
+email notices through.
+
+=item B<tacontact> I<CONTACT_EMAIL>
+
+Equivelent to the --mail_contact_addr flag for specifying where to
+send email notices to.
+
+=item B<taanchorfile> I<FILE>
+
+Specifies the file where trustman state inforamation to be kept.  This
+is equivelent to the --anchor_data_file flag.
+
+=item B<taresolvconffile> I<FILE>
+
+Specifies the resolv.conf file to use.  Equivelent to the
+--resolv_conf_file flag.
+
+=item B<tanamedconffile> I<FILE>
+
+Specifies the named.conf file to read and write.  Equivelent to the
+--named_conf_file flag.
+
+=item B<tadnsvalconffile> I<FILE>
+
+Specifies the dnsval.conf file to read and write.  Equivelent to the
+--dnsval_conf_file flag.
 
 =head1 COPYRIGHT
 
