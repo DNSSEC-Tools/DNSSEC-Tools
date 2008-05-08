@@ -27,7 +27,8 @@ NORMALFILES=\
 	prerr.properties	\
 	nsDocShell.cpp		\
 	nsNetError.h		\
-	netError.dtd
+	netError.dtd		\
+	autoconf.mk.in
 
 all: help
 
