@@ -2018,6 +2018,7 @@ sub getkrval
 sub optsandargs
 {
 	my $argc = @ARGV;				# Number of arguments.
+	my $logdir;					# Logfile's directory.
 
 	#
 	# Check our options.
@@ -2086,6 +2087,17 @@ sub optsandargs
 	if(!defined($logfile))
 	{
 		print STDERR "rollerd:  no logfile specified on command line or in dnssec-tools.conf\n";
+		exit(1);
+	}
+
+	#
+	# Complain and die if the log file's directory doesn't exist.
+	#
+	$logfile =~ /(^\/.+)\/.*$/;
+	$logdir = $1;
+	if(! -e $logdir)
+	{
+		print STDERR "rollerd:  logfile's directory \"$logdir\" does not exist\n";
 		exit(1);
 	}
 
