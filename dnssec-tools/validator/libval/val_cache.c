@@ -231,7 +231,7 @@ int
 get_cached_rrset(struct val_query_chain *matched_q, 
                  struct domain_info **response)
 {
-    struct rrset_rec *next_answer, *prev, *new_answer;
+    struct rrset_rec **answer_head, *next_answer, *prev, *new_answer;
     struct timeval  tv;
     pthread_rwlock_t *lk;
 
@@ -242,6 +242,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
     if (!matched_q || !response)
         return VAL_BAD_ARGUMENT;
 
+    answer_head = NULL;
     *response = NULL;
     name_n = matched_q->qc_name_n;
     type_h = matched_q->qc_type_h;
@@ -256,33 +257,38 @@ get_cached_rrset(struct val_query_chain *matched_q,
         lk = &ds_rwlock;
         LOCK_INIT(lk, ds_rwlock_init);
         LOCK_SH(lk);
-        next_answer = unchecked_ds_info;
+        answer_head = &unchecked_ds_info;
         break;
 
     case ns_t_dnskey:
         lk = &key_rwlock;
         LOCK_INIT(lk, key_rwlock_init);
         LOCK_SH(lk);
-        next_answer = unchecked_key_info;
+        answer_head = &unchecked_key_info;
         break;
 
     case ns_t_ns:
         lk = &ns_rwlock;
         LOCK_INIT(lk, ns_rwlock_init);
         LOCK_SH(lk);
-        next_answer = unchecked_ns_info;
+        answer_head = &unchecked_ns_info;
         break;
 
     default:
         lk = &ans_rwlock;
         LOCK_INIT(lk, ans_rwlock_init);
         LOCK_SH(lk);
-        next_answer = unchecked_answers;
+        answer_head = &unchecked_answers;
         break;
     }
 
     prev = NULL;
     new_answer = NULL;
+    if (answer_head) 
+        next_answer = *answer_head;
+    else
+        next_answer = NULL;
+    
     while (next_answer) {
 
         if (tv.tv_sec >= next_answer->rrs.val_rrset_ttl_x) {
@@ -294,6 +300,9 @@ get_cached_rrset(struct val_query_chain *matched_q,
             temp = next_answer;
             next_answer = temp->rrs_next;
             temp->rrs_next = NULL;
+            if (temp == *answer_head) {
+                *answer_head = next_answer;
+            }
             res_sq_free_rrset_recs(&temp);
             continue;
         }
