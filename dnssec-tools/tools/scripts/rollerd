@@ -2018,7 +2018,6 @@ sub getkrval
 sub optsandargs
 {
 	my $argc = @ARGV;				# Number of arguments.
-	my $logdir;					# Logfile's directory.
 
 	#
 	# Check our options.
@@ -2048,6 +2047,15 @@ sub optsandargs
 	if($rollrecfile !~ /^\//)
 	{
 		$rollrecfile = "$curdir/$rollrecfile";
+	}
+
+	#
+	# Whine and die if the rollrec file doesn't exist.
+	#
+	if(! -e $rollrecfile)
+	{
+		print STDERR "rollerd:  rollrec file \"$rollrecfile\" does not exist\n";
+		exit(1);
 	}
 
 	#
@@ -2091,14 +2099,30 @@ sub optsandargs
 	}
 
 	#
-	# Complain and die if the log file's directory doesn't exist.
+	# If the log file contains any directories, complain and die if the
+	# directory doesn't exist.
 	#
-	$logfile =~ /(^\/.+)\/.*$/;
-	$logdir = $1;
-	if(! -e $logdir)
+	if($logfile =~ /\//)
 	{
-		print STDERR "rollerd:  logfile's directory \"$logdir\" does not exist\n";
-		exit(1);
+		my @logbits;			# Components of logfile's path.
+		my $logdir;			# Logfile's directory.
+
+		#
+		# Get the log directory without the logfile.
+		#
+		@logbits = split /\//, $logfile;
+		pop @logbits;
+		$logdir = join '/', @logbits;
+		$logdir = '/' if($logdir eq '');
+
+		#
+		# Check for the existence of the log directory.
+		#
+		if(! -e $logdir)
+		{
+			print STDERR "rollerd:  logfile's directory \"$logdir\" does not exist\n";
+			exit(1);
+		}
 	}
 
 	#
@@ -3694,12 +3718,12 @@ executed or the directory passed in the I<-directory> command-line option.
 Any files used by B<rollerd> that were not specified with absolute paths use
 this directory as their base.
 
-The I<directory> field informs B<rollerd> where the zone's files may be found.
-For that zone, B<rollerd> will move into that directory, then return to its
-execution directory when it finishes rollover operations for that zone.  If
-the I<directory> value is a relative path, it will be appended to B<rollerd>'s
-execution directory.  If the I<directory> value is an absolute path, it will
-be used as is.
+A I<rollrec> file's I<directory> field informs B<rollerd> where the zone's
+files may be found.  For that zone, B<rollerd> will move into that directory,
+then return to its execution directory when it finishes rollover operations
+for that zone.  If the I<directory> value is a relative path, it will be
+appended to B<rollerd>'s execution directory.  If the I<directory> value is an
+absolute path, it will be used as is.
 
 =head2 Controlling B<rollerd> with B<rollctl>
 
