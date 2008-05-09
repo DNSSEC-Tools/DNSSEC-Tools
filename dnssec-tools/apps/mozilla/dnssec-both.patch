@@ -1,24 +1,3 @@
---- mozilla/config/autoconf.mk.in.orig	2006-09-14 11:07:03.000000000 -0700
-+++ mozilla/config/autoconf.mk.in	2008-01-08 14:49:16.000000000 -0800
-@@ -253,7 +253,7 @@
- OS_COMPILE_CXXFLAGS = $(OS_CPPFLAGS) @COMPILE_CXXFLAGS@
- 
- OS_INCLUDES	= $(NSPR_CFLAGS) $(JPEG_CFLAGS) $(PNG_CFLAGS) $(ZLIB_CFLAGS)
--OS_LIBS		= @LIBS@
-+OS_LIBS		= @VAL_LIBS@ @LIBS@
- ACDEFINES	= @MOZ_DEFINES@
- 
- MOZ_OPTIMIZE	= @MOZ_OPTIMIZE@
-@@ -485,6 +485,9 @@
- MOZ_ENABLE_XINERAMA	= @MOZ_ENABLE_XINERAMA@
- MOZ_XINERAMA_LIBS	= @MOZ_XINERAMA_LIBS@
- 
-+VALIDAT_LIBS		= @VALIDAT_LIBS@
-+SYSTEM_VALIDAT          = @SYSTEM_VALIDAT@
-+
- MOZ_XIE_LIBS		= @MOZ_XIE_LIBS@
- XT_LIBS			= @XT_LIBS@
- 
 --- mozilla.firefox.1.5.0.6.rpmdist/embedding/browser/photon/src/Makefile.in	2005-04-26 10:37:02.000000000 -0700
 +++ mozilla/embedding/browser/photon/src/Makefile.in	2006-08-23 19:01:13.000000000 -0700
 @@ -100,6 +100,7 @@
@@ -224,8 +203,8 @@
  # If a platform has a system zlib, set USE_SYSTEM_ZLIB to 1 and
  # ZLIB_LIBS to the linker command-line arguments for the system zlib
  # (for example, -lz) in the platform's config file in coreconf.
---- old-mozilla/nsprpub/pr/include/prnetdb.h.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/nsprpub/pr/include/prnetdb.h	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/nsprpub/pr/include/prnetdb.h.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/nsprpub/pr/include/prnetdb.h	2008-01-09 09:25:07.000000000 -0800
 @@ -85,6 +85,13 @@
  #define PR_NETDB_BUF_SIZE 1024
  #endif
@@ -369,8 +348,8 @@
  PR_END_EXTERN_C
  
  #endif /* prnetdb_h___ */
---- old-mozilla/netwerk/dns/src/nsHostResolver.cpp.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/netwerk/dns/src/nsHostResolver.cpp	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/netwerk/dns/src/nsHostResolver.cpp.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/dns/src/nsHostResolver.cpp	2008-01-09 09:25:07.000000000 -0800
 @@ -58,6 +58,7 @@
  #include "pratom.h"
  #include "prthread.h"
@@ -442,8 +421,8 @@
          resolver->OnLookupComplete(rec, status, ai);
      }
      NS_RELEASE(resolver);
---- old-mozilla/netwerk/dns/src/nsHostResolver.h.orig	2007-09-14 10:16:02.000000000 -0700
-+++ mozilla/netwerk/dns/src/nsHostResolver.h	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/netwerk/dns/src/nsHostResolver.h.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/dns/src/nsHostResolver.h	2008-01-09 09:25:07.000000000 -0800
 @@ -95,9 +95,20 @@
      PRAddrInfo  *addr_info;
      PRNetAddr   *addr;
@@ -477,8 +456,8 @@
      };
  
  private:
---- old-mozilla/netwerk/dns/public/nsIDNSService.idl.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/netwerk/dns/public/nsIDNSService.idl	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/netwerk/dns/public/nsIDNSService.idl.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/dns/public/nsIDNSService.idl	2008-01-09 09:25:07.000000000 -0800
 @@ -107,4 +107,9 @@
       * if set, the canonical name of the specified host will be queried.
       */
@@ -489,8 +468,8 @@
 +     */
 +    const unsigned long RESOLVE_EXTENDED_ERRS = (1 << 2);
  };
---- old-mozilla/netwerk/dns/public/nsIDNSRecord.idl.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/netwerk/dns/public/nsIDNSRecord.idl	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/netwerk/dns/public/nsIDNSRecord.idl.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/dns/public/nsIDNSRecord.idl	2008-01-09 09:25:07.000000000 -0800
 @@ -88,4 +88,14 @@
       * address in the record.
       */
@@ -506,8 +485,8 @@
 +     */
 +    boolean isValidated();
  };
---- nsSocketTransport2.cpp.dnssec-both	2006-07-18 17:32:43.000000000 -0700
-+++ nsSocketTransport2.cpp	2008-02-13 14:04:56.000000000 -0800
+--- old-mozilla/netwerk/base/src/nsSocketTransport2.cpp.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/base/src/nsSocketTransport2.cpp	2008-02-13 13:55:53.000000000 -0800
 @@ -66,6 +66,8 @@
  #include "nsISocketProvider.h"
  #include "nsISSLSocketControl.h"
@@ -537,7 +516,15 @@
          mCondition != NS_ERROR_UNKNOWN_PROXY_HOST)
          return PR_FALSE;
  
-@@ -1396,7 +1400,9 @@
+@@ -1384,6 +1388,7 @@
+ 
+     case MSG_DNS_LOOKUP_COMPLETE:
+         LOG(("  MSG_DNS_LOOKUP_COMPLETE\n"));
++        LOG(("   weshere\n"));
+         mDNSRequest = 0;
+         if (param) {
+             mDNSRecord = NS_STATIC_CAST(nsIDNSRecord *, param);
+@@ -1396,7 +1401,9 @@
              // For SOCKS proxies (mProxyTransparent == true), the socket 
              // transport resolves the real host here, so there's no fixup 
              // (see bug 226943).
@@ -548,7 +535,7 @@
                  !mProxyHost.IsEmpty())
                  mCondition = NS_ERROR_UNKNOWN_PROXY_HOST;
              else
-@@ -1404,6 +1410,37 @@
+@@ -1404,6 +1411,37 @@
          }
          else if (mState == STATE_RESOLVING)
              mCondition = InitiateSocket();
@@ -586,8 +573,8 @@
          break;
  
      case MSG_RETRY_INIT_SOCKET:
---- old-mozilla/netwerk/base/src/nsSocketTransport2.h.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/netwerk/base/src/nsSocketTransport2.h	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/netwerk/base/src/nsSocketTransport2.h.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/base/src/nsSocketTransport2.h	2008-01-09 09:25:07.000000000 -0800
 @@ -54,6 +54,7 @@
  #include "nsIDNSListener.h"
  #include "nsIDNSRecord.h"
@@ -614,8 +601,8 @@
 +#define MSG_DNSSEC_NEITHER_TOPIC   "dnssec-status-neither"
 +
  #endif // !nsSocketTransport_h__
---- old-mozilla/netwerk/dns/src/nsDNSService2.cpp.orig	2007-09-14 10:16:02.000000000 -0700
-+++ mozilla/netwerk/dns/src/nsDNSService2.cpp	2007-09-14 10:16:02.000000000 -0700
+--- old-mozilla/netwerk/dns/src/nsDNSService2.cpp.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/dns/src/nsDNSService2.cpp	2008-05-08 14:19:47.000000000 -0700
 @@ -104,6 +104,23 @@
  }
  
@@ -640,8 +627,8 @@
  nsDNSRecord::GetNextAddr(PRUint16 port, PRNetAddr *addr)
  {
      // not a programming error to poke the DNS record when it has no more
---- mozilla/netwerk/protocol/http/src/nsHttpChannel.cpp.orig	2006-07-20 15:59:31.000000000 -0700
-+++ mozilla/netwerk/protocol/http/src/nsHttpChannel.cpp	2008-01-08 20:31:48.000000000 -0800
+--- old-mozilla/netwerk/protocol/http/src/nsHttpChannel.cpp.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/protocol/http/src/nsHttpChannel.cpp	2008-01-09 09:25:07.000000000 -0800
 @@ -73,6 +73,7 @@
  #include "nsIVariant.h"
  #include "nsChannelProperties.h"
@@ -660,9 +647,9 @@
  }
  
  PRBool
---- old-mozilla/docshell/base/nsWebShell.cpp.orig	2007-09-14 10:16:02.000000000 -0700
-+++ mozilla/docshell/base/nsWebShell.cpp	2007-09-14 10:16:03.000000000 -0700
-@@ -827,6 +827,8 @@
+--- old-mozilla/docshell/base/nsWebShell.cpp.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/docshell/base/nsWebShell.cpp	2008-01-09 09:25:07.000000000 -0800
+@@ -837,6 +837,8 @@
  
      // Errors to be shown only on top-level frames
      if ((aStatus == NS_ERROR_UNKNOWN_HOST || 
@@ -671,9 +658,9 @@
           aStatus == NS_ERROR_CONNECTION_REFUSED ||
           aStatus == NS_ERROR_UNKNOWN_PROXY_HOST || 
           aStatus == NS_ERROR_PROXY_CONNECTION_REFUSED) &&
---- old-mozilla/netwerk/base/src/nsPACMan.cpp.orig	2007-09-14 10:16:02.000000000 -0700
-+++ mozilla/netwerk/base/src/nsPACMan.cpp	2007-09-14 10:16:03.000000000 -0700
-@@ -102,7 +102,8 @@
+--- old-mozilla/netwerk/base/src/nsPACMan.cpp.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/netwerk/base/src/nsPACMan.cpp	2008-01-09 09:25:07.000000000 -0800
+@@ -124,7 +124,8 @@
    if (NS_FAILED(rv))
      return rv;
  
@@ -683,9 +670,9 @@
    if (NS_FAILED(rv))
      NS_WARNING("DNS AsyncResolve failed");
  
---- old-mozilla/docshell/resources/content/netError.xhtml.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/docshell/resources/content/netError.xhtml	2007-09-14 10:16:02.000000000 -0700
-@@ -145,6 +145,8 @@
+--- old-mozilla/docshell/resources/content/netError.xhtml.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/docshell/resources/content/netError.xhtml	2008-01-09 09:25:07.000000000 -0800
+@@ -150,6 +150,8 @@
      <div id="errorContainer">
        <div id="errorTitlesContainer">
          <h1 id="et_generic">&generic.title;</h1>
@@ -694,7 +681,7 @@
          <h1 id="et_dnsNotFound">&dnsNotFound.title;</h1>
          <h1 id="et_fileNotFound">&fileNotFound.title;</h1>
          <h1 id="et_malformedURI">&malformedURI.title;</h1>
-@@ -163,6 +165,8 @@
+@@ -168,6 +170,8 @@
        <div id="errorDescriptionsContainer">
          <div id="ed_generic">&generic.longDesc;</div>
          <div id="ed_dnsNotFound">&dnsNotFound.longDesc;</div>
@@ -703,8 +690,8 @@
          <div id="ed_fileNotFound">&fileNotFound.longDesc;</div>
          <div id="ed_malformedURI">&malformedURI.longDesc;</div>
          <div id="ed_protocolNotFound">&protocolNotFound.longDesc;</div>
---- old-mozilla/dom/locales/en-US/chrome/appstrings.properties.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/dom/locales/en-US/chrome/appstrings.properties	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/dom/locales/en-US/chrome/appstrings.properties.orig	2008-05-08 14:04:48.000000000 -0700
++++ mozilla/dom/locales/en-US/chrome/appstrings.properties	2008-01-09 09:25:07.000000000 -0800
 @@ -37,6 +37,8 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=The file %S cannot be found. Please check the location and try again.
@@ -714,29 +701,8 @@
  protocolNotFound=%S is not a registered protocol.
  connectionFailure=The connection was refused when attempting to contact %S.
  netInterrupt=The connection to %S has terminated unexpectedly. Some data may have been transferred.
---- old-mozilla/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd.orig	1969-12-31 16:00:00.000000000 -0800
-+++ mozilla/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd	2007-09-14 10:16:03.000000000 -0700
-@@ -0,0 +1,18 @@
-+<!ENTITY dnssecHeader                    "DNS Security">
-+
-+<!ENTITY dnsSecurity.label            "DNS Security Policies">
-+
-+<!--LOCALIZATION NOTE (onStartLegend.label): Don't translate "&brandShortName;".
-+    Place "&brandShortName;" in the phrase where the name of the application should
-+	 appear
-+-->
-+<!ENTITY dnssecDetails                   "Require DNS Security when resolving host names.">
-+
-+<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
-+<!ENTITY allDNSSecure.accesskey         "A">
-+
-+<!ENTITY possibleDNSSecure.label        "Use DNS security if possible.">
-+<!ENTITY possibleDNSSecure.accesskey    "P">
-+
-+<!ENTITY neverDNSSecure.label           "Ignore DNS security.">
-+<!ENTITY neverDNSSecure.accesskey       "N">
---- old-mozilla/nsprpub/pr/src/misc/prerr.c.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.c	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/nsprpub/pr/src/misc/prerr.c.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.c	2008-01-09 09:25:07.000000000 -0800
 @@ -117,11 +117,13 @@
  	{"PR_CONNECT_ABORTED_ERROR",    "Connection aborted"},
  	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
@@ -752,8 +718,8 @@
  
  void nspr_InitializePRErrorTable(void) {
      PR_ErrorInstallTable(&et);
---- old-mozilla/nsprpub/pr/include/prerr.h.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/nsprpub/pr/include/prerr.h	2007-09-14 10:16:02.000000000 -0700
+--- old-mozilla/nsprpub/pr/include/prerr.h.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/nsprpub/pr/include/prerr.h	2008-01-09 09:25:07.000000000 -0800
 @@ -269,8 +269,14 @@
  /* The library is not loaded */
  #define PR_LIBRARY_NOT_LOADED_ERROR              (-5926L)
@@ -770,8 +736,8 @@
  
  extern void nspr_InitializePRErrorTable(void);
  #define ERROR_TABLE_BASE_nspr (-6000L)
---- old-mozilla/nsprpub/pr/src/misc/prerr.et.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.et	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/nsprpub/pr/src/misc/prerr.et.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.et	2008-01-09 09:25:07.000000000 -0800
 @@ -133,6 +133,8 @@
  ec PR_CONNECT_ABORTED_ERROR,    "Connection aborted"
  ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
@@ -781,8 +747,8 @@
  
  ec PR_MAX_ERROR,                "Placeholder for the end of the list"
  
---- old-mozilla/nsprpub/pr/src/misc/prerr.properties.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.properties	2007-09-14 10:16:03.000000000 -0700
+--- old-mozilla/nsprpub/pr/src/misc/prerr.properties.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.properties	2008-01-09 09:25:07.000000000 -0800
 @@ -113,4 +113,6 @@
  PR_CONNECT_ABORTED_ERROR=Connection aborted
  PR_HOST_UNREACHABLE_ERROR=Host is unreachable
@@ -790,9 +756,22 @@
 +PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
 +PR_DNSSEC_DNE_ERROR=The DNS record does not exist
  PR_MAX_ERROR=Placeholder for the end of the list
---- old-mozilla/docshell/base/nsDocShell.cpp.orig	2007-09-14 10:16:02.000000000 -0700
-+++ mozilla/docshell/base/nsDocShell.cpp	2007-09-14 10:16:03.000000000 -0700
-@@ -2983,6 +2983,24 @@
+--- old-mozilla/docshell/base/nsDocShell.cpp.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/docshell/base/nsDocShell.cpp	2008-01-09 09:25:07.000000000 -0800
+@@ -949,12 +949,6 @@
+             }
+         }
+     }
+-    // Now make sure our editor, if any, is torn down before we go
+-    // any farther.
+-    if (mEditorData) {
+-        mEditorData->TearDownEditor();
+-    }
+-
+     return NS_OK;
+ }
+ 
+@@ -3035,6 +3029,24 @@
          formatStrCount = 1;
          error.AssignLiteral("dnsNotFound");
      }
@@ -817,9 +796,78 @@
      else if(NS_ERROR_CONNECTION_REFUSED == aError) {
          NS_ENSURE_ARG_POINTER(aURI);
          // Build up the host:port string.
---- old-mozilla/netwerk/base/public/nsNetError.h.orig	2007-09-14 10:16:02.000000000 -0700
-+++ mozilla/netwerk/base/public/nsNetError.h	2007-09-14 10:16:02.000000000 -0700
-@@ -252,6 +252,12 @@
+@@ -5667,33 +5679,9 @@
+     // Now we simulate appending child docshells for subframes.
+     for (i = 0; i < childShells.Count(); ++i) {
+         nsIDocShellTreeItem *childItem = childShells.ObjectAt(i);
+-        nsCOMPtr<nsIDocShell> childShell = do_QueryInterface(childItem);
+-
+-        // Make sure to not clobber the state of the child.  Since AddChild
+-        // always clobbers it, save it off first.
+-        PRBool allowPlugins;
+-        childShell->GetAllowPlugins(&allowPlugins);
+-
+-        PRBool allowJavascript;
+-        childShell->GetAllowJavascript(&allowJavascript);
+-
+-        PRBool allowRedirects;
+-        childShell->GetAllowMetaRedirects(&allowRedirects);
+-
+-        PRBool allowSubframes;
+-        childShell->GetAllowSubframes(&allowSubframes);
+-
+-        PRBool allowImages;
+-        childShell->GetAllowImages(&allowImages);
+-        
+         AddChild(childItem);
+ 
+-        childShell->SetAllowPlugins(allowPlugins);
+-        childShell->SetAllowJavascript(allowJavascript);
+-        childShell->SetAllowMetaRedirects(allowRedirects);
+-        childShell->SetAllowSubframes(allowSubframes);
+-        childShell->SetAllowImages(allowImages);
+-
++        nsCOMPtr<nsIDocShell> childShell = do_QueryInterface(childItem);
+         rv = childShell->BeginRestore(nsnull, PR_FALSE);
+         NS_ENSURE_SUCCESS(rv, rv);
+     }
+@@ -6841,33 +6829,6 @@
+ 
+     // If we have a saved content viewer in history, restore and show it now.
+     if (aSHEntry && (mLoadType & LOAD_CMD_HISTORY)) {
+-        // It's possible that the previous viewer of mContentViewer is the
+-        // viewer that will end up in aSHEntry when it gets closed.  If that's
+-        // the case, we need to go ahead and force it into its shentry so we
+-        // can restore it.
+-        if (mContentViewer) {
+-            nsCOMPtr<nsIContentViewer> prevViewer;
+-            mContentViewer->GetPreviousViewer(getter_AddRefs(prevViewer));
+-            if (prevViewer) {
+-#ifdef DEBUG
+-                nsCOMPtr<nsIContentViewer> prevPrevViewer;
+-                prevViewer->GetPreviousViewer(getter_AddRefs(prevPrevViewer));
+-                NS_ASSERTION(!prevPrevViewer, "Should never have viewer chain here");
+-#endif
+-                nsCOMPtr<nsISHEntry> viewerEntry;
+-                nsCOMPtr<nsIContentViewer_MOZILLA_1_8_BRANCH2>
+-                    prevViewerBranch(do_QueryInterface(prevViewer));
+-                if (prevViewerBranch) {
+-                    prevViewerBranch->
+-                        GetHistoryEntry(getter_AddRefs(viewerEntry));
+-                }
+-                if (viewerEntry == aSHEntry) {
+-                    // Make sure this viewer ends up in the right place
+-                    mContentViewer->SetPreviousViewer(nsnull);
+-                    prevViewer->Destroy();
+-                }
+-            }
+-        }
+         nsCOMPtr<nsISHEntry> oldEntry = mOSHE;
+         PRBool restoring;
+         rv = RestorePresentation(aSHEntry, &restoring);
+--- old-mozilla/netwerk/base/public/nsNetError.h.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/netwerk/base/public/nsNetError.h	2008-01-09 09:25:07.000000000 -0800
+@@ -259,6 +259,12 @@
  #define NS_ERROR_UNKNOWN_HOST \
      NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 30)
  
@@ -832,8 +880,8 @@
  /**
   * The lookup of a proxy hostname failed.
   *
---- old-mozilla/dom/locales/en-US/chrome/netError.dtd.orig	2007-09-14 10:16:03.000000000 -0700
-+++ mozilla/dom/locales/en-US/chrome/netError.dtd	2007-09-14 13:27:45.000000000 -0700
+--- old-mozilla/dom/locales/en-US/chrome/netError.dtd.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/dom/locales/en-US/chrome/netError.dtd	2008-01-09 09:25:07.000000000 -0800
 @@ -12,6 +12,12 @@
  <!ENTITY dnsNotFound.title "Address Not Found">
  <!ENTITY dnsNotFound.longDesc "<p>The browser could not find the host server for the provided address.</p><ul><li>Did you make a mistake when typing the domain? (e.g. <q><strong>ww</strong>.mozilla.org</q> instead of <q><strong>www</strong>.mozilla.org</q>)</li><li>Are you certain this domain address exists?  Its registration may have expired.</li><li>Are you unable to browse other sites?  Check your network connection and DNS server settings.</li><li>Is your computer or network protected by a firewall or proxy?  Incorrect settings can interfere with Web browsing.</li></ul>">
@@ -847,8 +895,29 @@
  <!ENTITY fileNotFound.title "File Not Found">
  <!ENTITY fileNotFound.longDesc "<ul><li>Could the item have been renamed, removed, or relocated?</li><li>Is there a spelling, capitalization, or other typographical error in the address?</li><li>Do you have sufficient access permissions to the requested item?</li></ul>">
  
---- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-09-14 13:28:13.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-09-14 13:28:13.000000000 -0700
+--- old-mozilla/config/autoconf.mk.in.orig	2008-05-08 14:04:49.000000000 -0700
++++ mozilla/config/autoconf.mk.in	2008-05-08 14:08:19.000000000 -0700
+@@ -253,7 +253,7 @@
+ OS_COMPILE_CXXFLAGS = $(OS_CPPFLAGS) @COMPILE_CXXFLAGS@
+ 
+ OS_INCLUDES	= $(NSPR_CFLAGS) $(JPEG_CFLAGS) $(PNG_CFLAGS) $(ZLIB_CFLAGS)
+-OS_LIBS		= @LIBS@
++OS_LIBS		= @VAL_LIBS@ @LIBS@
+ ACDEFINES	= @MOZ_DEFINES@
+ 
+ MOZ_OPTIMIZE	= @MOZ_OPTIMIZE@
+@@ -485,6 +485,9 @@
+ MOZ_ENABLE_XINERAMA	= @MOZ_ENABLE_XINERAMA@
+ MOZ_XINERAMA_LIBS	= @MOZ_XINERAMA_LIBS@
+ 
++VALIDAT_LIBS		= @VALIDAT_LIBS@
++SYSTEM_VALIDAT          = @SYSTEM_VALIDAT@
++
+ MOZ_XIE_LIBS		= @MOZ_XIE_LIBS@
+ XT_LIBS			= @XT_LIBS@
+ 
+--- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2008-05-08 14:30:53.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2008-05-08 14:30:53.000000000 -0700
 @@ -39,6 +39,10 @@
  
  #include <string.h>
@@ -1023,7 +1092,7 @@
 +   *    -- IE, require all lookups to return only secure results
 +   */
 +  
-+  if (val_status == VAL_SUCCESS)
++  if (val_isvalidated(val_status))
 +      DNSSECFUNRETURN(DNSSEC_SUCCESS);
 +  DNSSECFUNRETURN(DNSSEC_FAILURE);
 +}
@@ -1334,9 +1403,9 @@
 -#if defined(_PR_HAVE_GETADDRINFO)
 +#ifdef MOZ_DNSSEC
 +#define GETADDRINFO(a,b,c,d) val_getaddrinfo(NULL, a, b, c, d, &val_status)
-+#define FREEADDRINFO val_freeaddrinfo
++#define FREEADDRINFO freeaddrinfo
 +typedef struct addrinfo PRADDRINFO;
-+typedef struct val_addrinfo DNSSECPRADDRINFO;
++typedef struct addrinfo DNSSECPRADDRINFO;
 +
 +#elif defined(_PR_HAVE_GETADDRINFO)
  
@@ -1455,11 +1524,11 @@
 +          PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
 +          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning failure line:%d %s => val_status:%d\n", __LINE__, hostname, val_status));
 +          if(res)
-+              val_freeaddrinfo(res);
++              FREEADDRINFO(res);
 +          DNSSECFUNRETURN(NULL);
 +        }
 +
-+        if (!res && val_status == VAL_VALIDATED_ANSWER) {
++        if (!res && val_isvalidated(val_status)) {
 +          /* DNSSEC has proven that the record does not exist; we
 +             return a different error message to show that the lookup
 +             succeeded and there is officially no results */
@@ -1478,11 +1547,11 @@
 +              *security_flags |= PR_DNSSEC_IS_TRUSTED;
 +        }
 +#endif
- 
++
 +        if (rv == 0) {
 +          DNSSECFUNRETURN((PRAddrInfo *) res);
 +        }
-+
+ 
 +        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo failed: %d\n", rv));
          PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
      }

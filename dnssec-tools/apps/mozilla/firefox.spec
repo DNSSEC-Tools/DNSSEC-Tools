@@ -206,13 +206,19 @@ popd
 
 ###############################
 # begin dnssec related patches
-%patch201 -p1
-#%patch202 -p0
-%patch203 -p1
-#%patch204 -p0
+
+exit 5
+
+#%patch201 -p1
+#%patch203 -p1
 
 # remove the system-nspr and system-nss from the normal fedora mozconfig
-%patch205 -p0
+#%patch205 -p0
+
+# no longer needed
+#%patch202 -p0
+#%patch204 -p0
+
 
 # end dnssec related patches
 ###############################

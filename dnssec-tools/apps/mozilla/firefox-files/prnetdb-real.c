@@ -786,7 +786,7 @@ dnssec_check_policy(int val_status, int policytype)
    *    -- IE, require all lookups to return only secure results
    */
   
-  if (val_status == VAL_SUCCESS)
+  if (val_isvalidated(val_status))
       DNSSECFUNRETURN(DNSSEC_SUCCESS);
   DNSSECFUNRETURN(DNSSEC_FAILURE);
 }
@@ -2233,9 +2233,9 @@ PR_IMPLEMENT(PRUint64) PR_htonll(PRUint64 n)
 
 #ifdef MOZ_DNSSEC
 #define GETADDRINFO(a,b,c,d) val_getaddrinfo(NULL, a, b, c, d, &val_status)
-#define FREEADDRINFO val_freeaddrinfo
+#define FREEADDRINFO freeaddrinfo
 typedef struct addrinfo PRADDRINFO;
-typedef struct val_addrinfo DNSSECPRADDRINFO;
+typedef struct addrinfo DNSSECPRADDRINFO;
 
 #elif defined(_PR_HAVE_GETADDRINFO)
 
@@ -2441,11 +2441,11 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByNameExtended(const char  *hostname,
           PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
           DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning failure line:%d %s => val_status:%d\n", __LINE__, hostname, val_status));
           if(res)
-              val_freeaddrinfo(res);
+              FREEADDRINFO(res);
           DNSSECFUNRETURN(NULL);
         }
 
-        if (!res && val_status == VAL_VALIDATED_ANSWER) {
+        if (!res && val_isvalidated(val_status)) {
           /* DNSSEC has proven that the record does not exist; we
              return a different error message to show that the lookup
              succeeded and there is officially no results */
