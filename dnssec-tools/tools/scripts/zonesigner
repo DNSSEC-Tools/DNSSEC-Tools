@@ -2128,7 +2128,7 @@ sub rollksk
 {
 	my $krref;				# Reference to key's keyrec.
 	my $setlist;				# List of key names.
-	my $publife;				# Key life.
+	my $publife = $ksklife;			# Key life.
 	my $keyset;				# Current KSK keys.
 
 	vprint("forcing a KSK rollover\n");
@@ -2209,7 +2209,7 @@ sub rollzsk
 {
 	my $krref;				# Reference to key's keyrec.
 	my $zoneref;				# Reference to zone's keyrec.
-	my $publife;				# Published ZSK's lifespan.
+	my $publife = $zsklife;			# Published ZSK's lifespan.
 	my $setlist;				# List of key names.
 
 	vprint("forcing a ZSK rollover\n");
