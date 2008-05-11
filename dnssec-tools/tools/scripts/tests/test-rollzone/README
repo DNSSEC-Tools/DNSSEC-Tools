@@ -1,0 +1,109 @@
+# Copyright 2008 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+
+rollzone test
+
+	This directory contains tools and data for running a simple test
+	of the DNSSEC-Tools rollover daemon and zonesigner program.
+
+	This test shows the basic operation of rollerd as it controls zone
+	rollover for one zone.  A graphical window will appear showing
+	the zone's rollover phases and in-use encryption keys.  As rollover
+	proceeds, the phases and key names (as displayed in the graphical
+	window) will change.  A log of rollerd's actions will be displayed
+	in the window in which the test is executed.
+
+	This is *not* an automatic test that tells you whether or not things
+	are working.  You must examine the output in the graphical window
+	and in the logged output to determine the success or failure of the
+	programs.
+
+To run the test:
+
+	- As root, run the test with these commands:
+
+		# make
+		# runtest
+
+	  The first command will build and sign the zone and initialize
+	  various state.
+
+	  The second command starts the test running.
+
+To stop the test:
+
+	- Run this command:
+
+		# rollctl -halt
+
+	  Stopping rollerd will also stop the blinkenlights graphical program.
+	  Usually.
+
+Notes:
+
+	- This test uses *very* short zone lifetimes, lifetimes that
+	  are impractically short.
+
+	- A graphical window is created that holds the whole of the test
+	  output.  The window in which the test was started will have a
+	  "tail -f log.test" of rollerd's log file.
+
+Test Operation:
+
+	- The test follows the rollover operation of the example.com zone.
+	  This is a very simple test -- the rollover phase and key names are
+	  what visibly change.
+
+	- The colors of the blocks in the "Rollover Phase" column change to
+	  show the change in rollover phase:
+
+		During normal operation, the color is supposed to match the
+		rest of the row.  
+
+		During rollover, the colors start very light in phase 1 and
+		progressively converge on the color of the rest of the row 
+		as rollover phases move along
+
+	- The ZSK key names are given vertically in this order:  current,
+	  published, new.  When a rollover cycle completes:
+
+		- the old "published" key becomes the new "current" key
+		- the old "new" key becomes the new "published" key
+		- a new "new" key is created
+
+	  This gives the effect of the key names (very slowly) rolling up
+	  the screen and disappearing.
+
+	- The times given in the "Rollover Phase" columns are approximate
+	  and depend on rollerd, blinkenlights, multitasking queue updates,
+	  and timers timing out.
+
+	- Rollover phases 2 and 4 are very short-lived.  It is possible to
+	  miss them if you blink at the wrong time.  Seriously.
+
+	- If you've got all the test files, you can run the test by just
+	  executing "runtest".  It's probably best, however, to start
+	  fresh each time by running "make" before running "runtest".
+
+WARNINGS:
+
+	- This test requires the DNSSEC-Tools scripts and modules, BIND, Perl,
+	  and Perl/Tk.
+
+	- Occasionally, blinkenlights will not go away when you stop the test.
+	  Clicking in that window and giving a ctrl-Q should kill the program.
+
+
+Files:
+	Makefile		Makefile to control test set-up.
+	README			This file.
+	phaser			Adjusts zone start times in rollrec file.
+	runtest			Executes test.
+	save-db.cache		Pristine copy of test's db.cache file.
+	save-test.rollrec	Pristine copy of test's rollrec file.
+	save-example.com	Pristine copy of example.com's zone file.
