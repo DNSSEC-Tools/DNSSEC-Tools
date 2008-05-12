@@ -377,6 +377,12 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
 
     alias_index = alias_count - 1;
 
+    if (results == NULL) {
+        *val_status = VAL_UNTRUSTED_ANSWER;
+        *h_errnop = HOST_NOT_FOUND; 
+        return NULL;
+    } 
+   
     /*
      * Process the result 
      */
@@ -387,6 +393,8 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
         if (!(trusted && val_istrusted(res->val_rc_status)))
             trusted = 0;
 
+        *val_status = res->val_rc_status;
+
         /* save the non-existence state */
         if (val_does_not_exist(res->val_rc_status)) {
             if (res->val_rc_status == VAL_NONEXISTENT_NAME ||
@@ -394,14 +402,11 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
 
                 *h_errnop = HOST_NOT_FOUND;
                 break;
-            } else if (res->val_rc_status == VAL_NONEXISTENT_TYPE ||
-                       res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN) {
+            } else { 
                 *h_errnop = NO_DATA;
                 break;
             }
-            continue;
         }
-
 
         if (res->val_rc_rrset) {
 
@@ -503,22 +508,15 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
         }
     }
 
-    if (results == NULL) {
-        *val_status = VAL_UNTRUSTED_ANSWER;
-        *h_errnop = HOST_NOT_FOUND; 
-        return NULL;
-    } 
-   
-    if (validated)
-        *val_status = VAL_VALIDATED_ANSWER;
-    else if (trusted)
-        *val_status = VAL_TRUSTED_ANSWER;
-    else 
-        *val_status = VAL_UNTRUSTED_ANSWER; 
-   
-
     if (addr_count > 0) {
         *h_errnop = NETDB_SUCCESS;
+        if (validated)
+            *val_status = VAL_VALIDATED_ANSWER;
+        else if (trusted)
+            *val_status = VAL_TRUSTED_ANSWER;
+        else 
+            *val_status = VAL_UNTRUSTED_ANSWER; 
+
     } else {
         if (*h_errnop == 0)   {
             /* missing a proof of non-existence */
