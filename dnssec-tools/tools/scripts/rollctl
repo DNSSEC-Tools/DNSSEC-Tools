@@ -485,28 +485,28 @@ sub version
 sub usage
 {
 	print STDERR "usage:  rollctl [options] \n";
-	print STDERR "\t-halt				shutdown rollerd\n";
-	print STDERR "\t-display			start graphical display\n";
-	print STDERR "\t-dspub <zone>			parent has published DS record for zone\n";
-	print STDERR "\t-dspuball			parents have published DS records for zones\n";
-	print STDERR "\t-logfile <logfile>		set log file\n";
-	print STDERR "\t-loglevel <loglevel>		set logging level\n";
-	print STDERR "\t-nodisplay			stop graphical display\n";
-	print STDERR "\t-rollall			roll all zones\n";
-	print STDERR "\t-rollksk <rollrec>		roll specified zone's KSK\n";
-	print STDERR "\t-rollrec <rollrec>		set rollrec file\n";
-	print STDERR "\t-rollzone <zone>		roll named zone\n";
-	print STDERR "\t-runqueue			run queue\n";
-	print STDERR "\t-shutdown			shutdown rollerd\n";
-	print STDERR "\t-skipall <zone>			skip named zone\n";
-	print STDERR "\t-skipzone <zone>		skip named zone\n";
-	print STDERR "\t-sleeptime <sleeptime>		set sleep time (in seconds)\n";
-	print STDERR "\t-status				get rollerd's status\n";
-	print STDERR "\t-zonelog			set a zone's log level\n";
-	print STDERR "\t-zonestatus			get status of zones\n";
-	print STDERR "\t-Version			display version number\n";
-	print STDERR "\t-quiet				don't give any output\n";
-	print STDERR "\t-help				help message \n";
+	print STDERR "\t-halt			shutdown rollerd\n";
+	print STDERR "\t-display		start graphical display\n";
+	print STDERR "\t-dspub <zone>		parent has published DS record for zone\n";
+	print STDERR "\t-dspuball		parents have published DS records for zones\n";
+	print STDERR "\t-logfile <logfile>	set log file\n";
+	print STDERR "\t-loglevel <loglevel>	set logging level\n";
+	print STDERR "\t-nodisplay		stop graphical display\n";
+	print STDERR "\t-rollall		roll all zones\n";
+	print STDERR "\t-rollksk <rollrec>	roll specified zone's KSK\n";
+	print STDERR "\t-rollrec <rollrec>	set rollrec file\n";
+	print STDERR "\t-rollzone <zone>	roll named zone\n";
+	print STDERR "\t-runqueue		run queue\n";
+	print STDERR "\t-shutdown		shutdown rollerd\n";
+	print STDERR "\t-skipall <zone>		skip named zone\n";
+	print STDERR "\t-skipzone <zone>	skip named zone\n";
+	print STDERR "\t-sleeptime <seconds>	set sleep time (in seconds)\n";
+	print STDERR "\t-status			get rollerd's status\n";
+	print STDERR "\t-zonelog		set a zone's log level\n";
+	print STDERR "\t-zonestatus		get status of zones\n";
+	print STDERR "\t-Version		display version number\n";
+	print STDERR "\t-quiet			don't give any output\n";
+	print STDERR "\t-help			help message \n";
 	exit(0);
 }
 
@@ -606,10 +606,10 @@ Stops rollover for all zones in the current I<rollrec> file.
 
 Stops rollover for the zone named by I<zone>.
 
-=item B<-sleeptime sleeptime>
+=item B<-sleeptime seconds>
 
-Sets B<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
-at least as large as the B<$MIN_SLEEP> value in B<rollerd>.
+Sets B<rollerd>'s sleep time to I<seconds> seconds.  I<sleeptime> must be an
+integer at least as large as the B<$MIN_SLEEP> value in B<rollerd>.
 
 =item B<-status>
 
