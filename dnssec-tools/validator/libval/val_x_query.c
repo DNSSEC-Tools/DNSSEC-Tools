@@ -452,11 +452,7 @@ compose_answer(const u_char * name_n,
  * domain_name -- The domain name to be queried.  Must not be NULL.
  * class -- The DNS class (typically IN)
  * type  -- The DNS type  (for example: A, CNAME etc.)
- * resp -- An array of val_response structures used to return the result.
  * 
- * Return value: VAL_NO_ERROR on success, and a negative valued error code 
- *               (see val_errors.h) on failure.
- *
  */
 int
 val_res_query(val_context_t * ctx, 
@@ -475,7 +471,7 @@ val_res_query(val_context_t * ctx,
     u_char          name_n[NS_MAXCDNAME];
     struct val_result_chain *results;
 
-    retval = VAL_BAD_ARGUMENT;
+    retval = -1;
 
     if (dname == NULL || val_status == NULL || answer == NULL) 
         goto err;
