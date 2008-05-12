@@ -388,7 +388,7 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
             trusted = 0;
 
         /* save the non-existence state */
-        if (res->val_rc_proof_count) {
+        if (val_does_not_exist(res->val_rc_status)) {
             if (res->val_rc_status == VAL_NONEXISTENT_NAME ||
                 res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
 
