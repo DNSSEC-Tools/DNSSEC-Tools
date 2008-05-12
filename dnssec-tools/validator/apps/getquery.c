@@ -129,6 +129,7 @@ main(int argc, char *argv[])
     ret = val_res_query(NULL, node, ns_c_in, type_h, buf, 1024, &status);
     printf("Return value %d\n", ret);
     printf("herrno value %d\n", h_errno);
+    printf("Validation Status %s\n", p_val_status(status));
     if (ret > 0) {
         print_response(buf, ret);
     }
