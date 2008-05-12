@@ -324,6 +324,8 @@ compose_answer(const u_char * name_n,
 
     for (res = results; res; res = res->val_rc_next) {
 
+        f_resp->vr_val_status = res->val_rc_status;
+
         /* set the value of merged trusted and validated status values */
         if (!(validated && val_isvalidated(res->val_rc_status))) 
             validated = 0;
@@ -410,16 +412,14 @@ compose_answer(const u_char * name_n,
      * we lose a level of granularity in the validation status
      * when we do a "merge"
      */
-    if (results) {
+    if (ancount > 0) {
         if (validated)
             f_resp->vr_val_status = VAL_VALIDATED_ANSWER;
         else if (trusted)
             f_resp->vr_val_status = VAL_TRUSTED_ANSWER;
         else
             f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
-    } else {
-        f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
-    }
+    } 
 
     return VAL_NO_ERROR;
 
