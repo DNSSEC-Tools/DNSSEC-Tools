@@ -1,14 +1,14 @@
 diff -U 5 -Nar sendmail-8.14.1.orig/devtools/Site/site.config.m4 sendmail-8.14.1/devtools/Site/site.config.m4
 --- sendmail-8.14.1.orig/devtools/Site/site.config.m4	1969-12-31 19:00:00.000000000 -0500
-+++ sendmail-8.14.1/devtools/Site/site.config.m4	2008-04-26 00:48:46.000000000 -0400
++++ sendmail-8.14.1/devtools/Site/site.config.m4	2008-05-12 10:05:55.000000000 -0400
 @@ -0,0 +1,3 @@
 +APPENDDEF(`confENVDEF', `-DSUPPORT_DNSSEC=1 -DMILTER')
 +define(`confLIBSEARCH', `db 44bsd')
 +APPENDDEF(`confLIBS', `-lsres -lval-threads -lcrypto -lpthread')
 diff -U 5 -Nar sendmail-8.14.1.orig/libmilter/sm_gethost.c sendmail-8.14.1/libmilter/sm_gethost.c
 --- sendmail-8.14.1.orig/libmilter/sm_gethost.c	2004-08-20 17:12:37.000000000 -0400
-+++ sendmail-8.14.1/libmilter/sm_gethost.c	2008-04-26 00:50:04.000000000 -0400
-@@ -15,10 +15,47 @@
++++ sendmail-8.14.1/libmilter/sm_gethost.c	2008-05-12 10:09:42.000000000 -0400
+@@ -15,10 +15,49 @@
  #if NETINET || NETINET6
  # include <arpa/inet.h>
  #endif /* NETINET || NETINET6 */
@@ -43,6 +43,8 @@ diff -U 5 -Nar sendmail-8.14.1.orig/libmilter/sm_gethost.c sendmail-8.14.1/libmi
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
 +	if (!val_istrusted(dnssec_status)) {
 +		h = NULL;
++        h_errno = NO_DATA; 
++        
 +	}
 +#else /* SUPPORT_DNSSEC */
 +	h = gethostbyname(name);
@@ -56,7 +58,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/libmilter/sm_gethost.c sendmail-8.14.1/libmi
  **
  **	Some operating systems have wierd problems with the gethostbyXXX
  **	routines.  For example, Solaris versions at least through 2.3
-@@ -57,17 +94,19 @@
+@@ -57,17 +96,19 @@
  		/* From RFC2133, section 6.1 */
  		resv6 = bitset(RES_USE_INET6, _res.options);
  		_res.options |= RES_USE_INET6;
@@ -77,7 +79,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/libmilter/sm_gethost.c sendmail-8.14.1/libmi
  	struct hostent *h;
  {
  	/*
-@@ -75,11 +114,11 @@
+@@ -75,11 +116,11 @@
  	**  they probably don't have the free routine either.
  	*/
  
@@ -90,7 +92,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/libmilter/sm_gethost.c sendmail-8.14.1/libmi
  mi_gethostbyname(name, family)
  	char *name;
  	int family;
-@@ -108,11 +147,11 @@
+@@ -108,11 +149,11 @@
  	flags &= ~AI_ADDRCONFIG;
  #  endif /* ADDRCONFIG_IS_BROKEN */
  	h = getipnodebyname(name, family, flags, &err);
@@ -105,8 +107,8 @@ diff -U 5 -Nar sendmail-8.14.1.orig/libmilter/sm_gethost.c sendmail-8.14.1/libmi
  }
 diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/conf.c
 --- sendmail-8.14.1.orig/sendmail/conf.c	2007-04-03 17:32:29.000000000 -0400
-+++ sendmail-8.14.1/sendmail/conf.c	2008-04-26 00:50:27.000000000 -0400
-@@ -4165,10 +4165,49 @@
++++ sendmail-8.14.1/sendmail/conf.c	2008-05-12 10:09:51.000000000 -0400
+@@ -4165,10 +4165,51 @@
  	}
  	return NULL;
  }
@@ -143,6 +145,8 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
 +	if (!val_istrusted(dnssec_status)) {
 +		h = NULL;
++        h_errno = NO_DATA;
++        
 +	}
 +#else /* SUPPORT_DNSSEC */
 +	h = gethostbyname(name);
@@ -156,7 +160,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
  **
  **	Some operating systems have wierd problems with the gethostbyXXX
  **	routines.  For example, Solaris versions at least through 2.3
-@@ -4208,11 +4247,11 @@
+@@ -4208,11 +4249,11 @@
  		/* From RFC2133, section 6.1 */
  		resv6 = bitset(RES_USE_INET6, _res.options);
  		_res.options |= RES_USE_INET6;
@@ -169,7 +173,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
  	*err = h_errno;
  	return h;
  }
-@@ -4229,11 +4268,13 @@
+@@ -4229,11 +4270,13 @@
  	SM_SET_H_ERRNO(0);
  	h = gethostbyaddr(addr, len, family);
  	*err = h_errno;
@@ -183,7 +187,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
  	struct hostent *h;
  {
  	/*
-@@ -4241,11 +4282,11 @@
+@@ -4241,11 +4284,11 @@
  	**  they probably don't have the free routine either.
  	*/
  
@@ -196,7 +200,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
  sm_gethostbyname(name, family)
  	char *name;
  	int family;
-@@ -4288,11 +4329,11 @@
+@@ -4288,11 +4331,11 @@
  	flags &= ~AI_ADDRCONFIG;
  #  endif /* ADDRCONFIG_IS_BROKEN */
  	h = getipnodebyname(name, family, flags, &err);
@@ -209,7 +213,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
  	save_errno = errno;
  	if (h == NULL)
  	{
-@@ -4328,11 +4369,11 @@
+@@ -4328,11 +4371,11 @@
  # if NETINET6
  				h = getipnodebyname(hbuf, family, flags, &err);
  				SM_SET_H_ERRNO(err);
@@ -222,7 +226,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
  			}
  		}
  	}
-@@ -4635,13 +4676,13 @@
+@@ -4635,13 +4678,13 @@
  			if (tTd(0, 43))
  				sm_dprintf("\ta.k.a.: %s (already in $=w)\n",
  					*ha);
@@ -240,7 +244,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
  **
 diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/domain.c
 --- sendmail-8.14.1.orig/sendmail/domain.c	2006-12-18 20:15:07.000000000 -0500
-+++ sendmail-8.14.1/sendmail/domain.c	2008-04-26 15:10:03.000000000 -0400
++++ sendmail-8.14.1/sendmail/domain.c	2008-05-12 10:12:42.000000000 -0400
 @@ -22,10 +22,13 @@
  
  #if NAMED_BIND
@@ -262,7 +266,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  	bool trycanon = false;
  	unsigned short *prefs;
 +#if SUPPORT_DNSSEC
-+	int (*resfunc) __P((const char *, int, int, u_char *, int, val_status_t *));
++	int (*resfunc) __P((val_context_t *, const char *, int, int, u_char *, int, val_status_t *));
 +#else
  	int (*resfunc) __P((const char *, int, int, u_char *, int));
 +#endif
@@ -294,7 +298,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
 +# if SUPPORT_DNSSEC
 +    do {
 +        val_status_t dnssec_status = VAL_INTERNAL_ERROR; 
-+	    n = (*resfunc)(host, C_IN, T_MX, (unsigned char *) &answer,
++	    n = (*resfunc)(NULL, host, C_IN, T_MX, (unsigned char *) &answer,
 +		       sizeof(answer), &dnssec_status);
 +        if (n >= 0) {
 +			if (val_istrusted(dnssec_status))
@@ -307,8 +311,8 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
 +				if (tTd(8, 1))
 +					sm_dprintf("getmxrr: DNSSEC validation of MX record of %s failed.\n", host);
 +				syserr("Error: DNSSEC validation of MX record of %s failed.\n", host);
-+				*rcode = EX_NOHOST;
-+				return -1;
++                h_errno = NO_DATA;
++                n = -1;
 +			}
 +        }
 +	} while (0);
@@ -335,7 +339,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  # endif /* NETINET6 */
  		}
  		if (strlen(host) >= sizeof(MXHostBuf))
-@@ -896,12 +936,57 @@
+@@ -896,12 +936,60 @@
  # endif /* NETINET6 */
  				qtype == T_A ? "A" :
  				qtype == T_MX ? "MX" :
@@ -371,15 +375,18 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
 +						sm_dprintf("\tNO: errno=%d, h_errno=%d\n",
 +							   errno, h_errno);
 +			    
-+					if (tTd(8, 5))
-+						sm_dprintf("DNSSEC validation of %s (%s) failed.\n", dname,
-+#  if NETINET
-+						   qtype == T_AAAA ? "AAAA" :
-+#  endif /* NETINET6 */
-+						   qtype == T_A ? "A" :
-+						   qtype == T_MX ? "MX" :
-+						   "???");
-+					goto nexttype;
++                    h_errno = NO_DATA;
++                    ret = -1;
++
++
++
++
++
++
++
++
++
++
 +				}
 +			}
 +		} while (0);
@@ -395,7 +402,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  			if (tTd(8, 7))
 diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/sm_resolve.c sendmail-8.14.1/sendmail/sm_resolve.c
 --- sendmail-8.14.1.orig/sendmail/sm_resolve.c	2006-08-15 19:24:58.000000000 -0400
-+++ sendmail-8.14.1/sendmail/sm_resolve.c	2008-04-26 15:09:12.000000000 -0400
++++ sendmail-8.14.1/sendmail/sm_resolve.c	2008-05-12 10:15:06.000000000 -0400
 @@ -68,10 +68,14 @@
  	{	"AFSDB",	T_AFSDB		},
  	{	"SRV",		T_SRV		},
@@ -411,7 +418,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/sm_resolve.c sendmail-8.14.1/sendma
  /*
  **  DNS_STRING_TO_TYPE -- convert resource record name into type
  **
-@@ -407,11 +411,40 @@
+@@ -407,11 +411,41 @@
  		save_retry = _res.retry;
  		_res.retry = retry;
  	}
@@ -439,7 +446,8 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/sm_resolve.c sendmail-8.14.1/sendma
 +			{
 +				if (tTd(8, 1))
 +					sm_dprintf("\t\tdnssec validation of %s failed.\n", domain);
-+				return NULL;
++                h_errno = NO_DATA;
++                len = -1;
 +			}
 +		}
 +	} while (0);
