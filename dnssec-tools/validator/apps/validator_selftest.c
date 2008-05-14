@@ -519,8 +519,8 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
             ++failed;
         fprintf(stderr, "\n");
     }
-    fprintf(stderr, "Suite '%s': Final results: %d/%d tests failed\n",
-            suite->name, failed, run_cnt);
+    fprintf(stderr, "Suite '%s': Final results: %d/%d succeeded (%d failed)\n",
+            suite->name, run_cnt - failed, run_cnt, failed);
 
     return 0;
 }
