@@ -1,4 +1,4 @@
-$TTL	1m
+$TTL	ttl
 
 @	IN	soa	example.com.	tewok.leodhas.example.com. (
 					2005033761	; serial
