@@ -256,6 +256,7 @@ Logging and Output Options:
        --no_error (-N)
        --print (-p)
        --syslog (-L)
+       --nomail
 
 Operational Options:
        --zone ZONE (-z)
@@ -685,9 +686,9 @@ sub add_ta_dnsvalconf  {
     $/ = ";";
     while (<CONF>) {
         my $zonefound = 0;
-#        s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
+	    s/\s;\s*$//;
 
 	    # this is just looking to see if the zone we're adding a
 	    # key for is already in the file (if it's not they've
@@ -1265,7 +1266,12 @@ sub compute_add_holddown {
     my $nowsecs = str2time($now);
     $default = 2592000 if (!$default);  # default to 30 days
 
-# return secs since the epoch as the time to release this holddown
+    # return secs since the epoch as the time to release this holddown
+
+    if ($default == -42) {
+	# allow 5 seconds from now; unsafe undocumented debugging feature.
+	return $nowsecs + 5;
+    }
 
     # Take the maximum of now+TTL or now+specified-default
     if ($ttl > $default) {
