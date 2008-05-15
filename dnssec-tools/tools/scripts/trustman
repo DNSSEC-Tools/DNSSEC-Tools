@@ -685,7 +685,7 @@ sub add_ta_dnsvalconf  {
     $/ = ";";
     while (<CONF>) {
         my $zonefound = 0;
-        s/\s;\s*$//;
+#        s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
 
