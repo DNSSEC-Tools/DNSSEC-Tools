@@ -38,7 +38,7 @@ my @opts =
 	"dspub=s",			# Parent has published a DS record.
 	"dspuball",			# Parents have published DS records.
 	"logfile=s",			# Set rollerd's log file.
-	"loglevel=s",			# Set rollerd's logging level.
+	"loglevel:s",			# Set rollerd's logging level.
 	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollall",			# ZSK roll all our zones.
 	"rollksk=s",			# Roll the specified zone.
@@ -446,9 +446,17 @@ sub doopts
 	}
 
 	#
-	# Show the version number if requested
+	# Show the version number if requested.
 	#
 	version() if(defined($options{'Version'}));
+
+	#
+	# Show the logging levels if one wasn't specified.
+	#
+	if(defined($options{'loglevel'}) && ($options{'loglevel'} eq ''))
+	{
+		showloglevels();
+	}
 
 	#
 	# Give a usage flag if asked.
@@ -478,6 +486,27 @@ sub version
 	exit(1);
 }
 
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the logging levels and exit.
+#
+sub showloglevels
+{
+	my @levels = rolllog_levels();			# Valid logging levels.
+
+	print "valid rollerd logging levels:\n";
+
+	foreach my $level (@levels)
+	{
+		my $lnum;				# Numeric logging level.
+
+		$lnum = rolllog_num($level);
+		print "\t$level\t\t($lnum)\n";
+	}
+
+	exit(1);
+}
 
 #-----------------------------------------------------------------------------
 # Routine:	usage()
@@ -569,6 +598,10 @@ I<logfile> is B</dev/stdout> or B</dev/tty>.
 
 Sets the B<rollerd> logging level to I<loglevel>.
 This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
+
+If a logging level is not specified, then the list of valid levels will be
+printed and B<rollctl> will exit.  The list is given in both text and numeric
+forms.
 
 =item B<-nodisplay>
 
