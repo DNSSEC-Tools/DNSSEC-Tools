@@ -30,10 +30,13 @@ To run the test:
 		# make
 		# runtest
 
-	  The first command will build and sign the zone and initialize
-	  various state.
+	  The first command will clean up any files left over from a previous
+	  test.
 
-	  The second command starts the test running.
+	  The second command will build and sign the zone and start rollerd
+	  and a GUI that will allow the tester to monitor the test's progress.
+	  It will also display to the terminal window the running contents of
+	  the rollerd log file.
 
 To stop the test:
 
@@ -102,8 +105,7 @@ WARNINGS:
 Files:
 	Makefile		Makefile to control test set-up.
 	README			This file.
-	phaser			Adjusts zone start times in rollrec file.
-	runtest			Executes test.
+	runtest			Builds test files and xecutes test.
 	save-db.cache		Pristine copy of test's db.cache file.
 	save-test.rollrec	Pristine copy of test's rollrec file.
 	save-example.com	Pristine copy of example.com's zone file.
