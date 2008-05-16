@@ -13,14 +13,29 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case_always);
 use Net::DNS::SEC::Tools::rollrec;
 
+#
+# Data for GetOptions().
+#
 my %options = ();				# Filled option array.
 my @opts =
 (
-	"autods",				# Auto-pub DS records.
-	"loglvl=n",				# Logging level.
-	"help",					# Display help message.
+	'autods',				# Auto-pub DS records.
+	'loglvl=n',				# Logging level.
+
+	'ttl=s',				# Zone's time-to-live.
+	'ksklife=n',				# KSK lifespan.
+	'zsklife=n',				# ZSK lifespan.
+
+	'short',				# Short test.
+	'medium',				# Medium test.
+	'long',					# Long test.
+
+	'help',					# Display help message.
 );
 
+#
+# Arguments and default values for rollerd.
+#
 my $cmd;					# Test command to execute.
 my $dir;					# Current-directory argument.
 my $log;					# Log-file argument.
@@ -28,12 +43,45 @@ my $lvl;					# Log-level argument.
 my $rrf;					# Rollrec-file argument.
 my $slp;					# Sleep-time argument.
 
-my $curdir    = ".";
-my $logfile   = "log.test";
-my $loglvl    = "info";
-my $sleeptime = "15";
-my $rrfile    = "test.rollrec";
+my $curdir    = '.';
+my $logfile   = 'log.test';
+my $loglvl    = 'phase';
+my $sleeptime = '15';
+my $rrfile    = 'test.rollrec';
 
+#
+# Timing defaults and variables for the zone and its keys.
+#
+my $DEFAULT_TTL	    = '1m';
+my $DEFAULT_KSKLIFE = 600;
+my $DEFAULT_ZSKLIFE = 30;
+
+#
+# TTL - 30 seconds	KSKLIFE - 8 minutes	ZSKLIFE - 30 seconds
+#
+my $SHORT_TTL	    = '30s';
+my $SHORT_KSKLIFE   = 480;
+my $SHORT_ZSKLIFE   = 30;
+
+#
+# TTL - 1 minute	KSKLIFE - 10 minutes	ZSKLIFE - 1 minute
+#
+my $MEDIUM_TTL	    = '1m';
+my $MEDIUM_KSKLIFE  = 600;
+my $MEDIUM_ZSKLIFE  = 60;
+
+#
+# TTL - 5 minutes	KSKLIFE - 40 minutes	ZSKLIFE - 4 minutes
+#
+my $LONG_TTL	    = '5m';
+my $LONG_KSKLIFE    = 2400;
+my $LONG_ZSKLIFE    = 240;
+
+my $ttl	    = $DEFAULT_TTL;
+my $ksklife = $DEFAULT_KSKLIFE;
+my $zsklife = $DEFAULT_ZSKLIFE;
+
+#------------------------------
 
 main();
 exit();
@@ -43,38 +91,29 @@ exit();
 #
 sub main
 {
+	$| = 0;
+
 	#
 	# Set the log level, maybe using a command-line argument.
 	#
 	opts();
-	print "\nusing a loglevel of \"$loglvl\"\n\n";
+	print "\nUsing a loglevel of \"$loglvl\"\n\n";
 
 	#
-	# Set our remaining arguments.
+	# Initialize the zone for the test.
 	#
-	$dir	= "-dir $curdir";
-	$log	= "-logfile $logfile";
-	$lvl	= "-loglevel $loglvl";
-	$slp	= "-sleep $sleeptime";
-	$rrf	= "-rrf $rrfile";
+	zoneinit();
 
 	#
-	# Build our test command.
+	# Adjust the phasestart time.
 	#
-	$cmd = "rollerd $dir $log $lvl $slp $rrf -display";
+	phaser();
 
 	#
-	# Ensure rollerd is not running and zap the test log file.
+	# Run the test.
 	#
-#	system("rollctl -halt >/dev/null 2>&1 &");
-	system("rollctl -halt &");
-	system("cp /dev/null $logfile");
+	runner();
 
-	#
-	# Start the test and peek at the log file.
-	#
-	system("$cmd &");
-	system("tail -f $logfile");
 }
 
 #------------------------------------------------------------------------------
@@ -82,17 +121,75 @@ sub main
 #
 sub opts
 {
+	my $len = 0;					# Length-option counter.
+
+	#
+	# Parse the command line options.
+	#
 	GetOptions(\%options,@opts) || usage();
 	usage() if($options{'help'});
 
+	#
+	# Check for the logging level option.
+	#
 	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
 
+	#
+	# Ensure that only one of the special timing options was given.
+	#
+	$len++ if(defined($options{'short'}));
+	$len++ if(defined($options{'medium'}));
+	$len++ if(defined($options{'long'}));
+	usage() if($len > 1);
+
+	#
+	# Set the timing variables if one of the reserved words was given.
+	#
+	if(defined($options{'short'}))
+	{
+		$ttl	 = $SHORT_TTL;
+		$ksklife = $SHORT_KSKLIFE;
+		$zsklife = $SHORT_ZSKLIFE;
+	}
+	elsif(defined($options{'medium'}))
+	{
+		$ttl	 = $MEDIUM_TTL;
+		$ksklife = $MEDIUM_KSKLIFE;
+		$zsklife = $MEDIUM_ZSKLIFE;
+	}
+	elsif(defined($options{'long'}))
+	{
+		$ttl	 = $LONG_TTL;
+		$ksklife = $LONG_KSKLIFE;
+		$zsklife = $LONG_ZSKLIFE;
+	}
+
+	#
+	# Pick up single-value time-related options.
+	#
+	$ttl	 = $options{'ttl'}	if(defined($options{'ttl'}));
+	$ksklife = $options{'ksklife'}	if(defined($options{'ksklife'}));
+	$zsklife = $options{'zsklife'}	if(defined($options{'zsklife'}));
+
+	#
+	# Handle the auto-DS option.
+	#
 	if($options{'autods'})
 	{
 		print "\nstarting auto-DS checking\n";
 		autods();
 		$SIG{CHLD} = "IGNORE";
 	}
+
+	#
+	# Show the timing values we'll be using in this test.
+	#
+	print "\n";
+	print "Timing Values for Test:\n";
+	print "\tZone TTL	$ttl\n";
+	print "\tKSK Lifespan	$ksklife\n";
+	print "\tZSK Lifespan	$zsklife\n";
+	print "\n";
 }
 
 #------------------------------------------------------------------------------
@@ -131,11 +228,153 @@ sub autods
 	}
 }
 
+#-----------------------------------------------------------------------
+# Routine:	keygenner()
+#
+# Purpose:	Initialize the zone for the test.  The zone file's TTL
+#		is set and some keys are generated for the zone.
+#
+sub zoneinit
+{
+	my $tempus;				# Timestamp.
+	my $date1;				# First blob of imestamp.
+	my $min;				# Timestamp minutes.
+	my $date2;				# Last blob of imestamp.
+
+	#
+	# Adjust the zone file's TTL value.
+	#
+	system("perl -pi -e 's/ttl/$ttl/' example.com");
+
+	#
+	# Generate some keys for the test.
+	#
+	system("zonesigner -ksklife $ksklife -zsklife $zsklife -genkeys example.com");
+
+}
+
+#-----------------------------------------------------------------------
+# Routine:	phaser()
+#
+# Purpose:	This script adjusts the phasestart lines in a DNSSEC-Tools
+#		rollrec file so the current phases have only just started.
+#
+#		This is ONLY intended for building testing environments!
+#
+sub phaser
+{
+	my $tempus;				# Timestamp.
+	my $date1;				# First blob of imestamp.
+	my $min;				# Timestamp minutes.
+	my $date2;				# Last blob of imestamp.
+
+	my $phase1;				# Phase-start line.
+
+	#
+	# Get the GMT time and lop off the trailing newline.
+	#
+	$tempus = gmtime;
+	chomp $tempus;
+
+	#
+	# Split the time up into three chunks, with the minutes in the middle.
+	#
+	$tempus =~ /(.*?:)(..)(:.*)/;
+	$date1 = $1;
+	$min   = $2;
+	$date2 = $3;
+
+	#
+	# Drop the minutes back a shade.
+	#
+	$min = phase_adjust($min,1);
+
+	#
+	# Build the new "phasestart" lines for the rollrec file.
+	#
+	$phase1 = sprintf("phasestart	\"$date1%02d$date2\"",$min);
+
+	#
+	# Fix the "phasestart" lines in the rollrec file.
+	#
+	system("perl -pi -e 's/phasestart/$phase1/' $rrfile");
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	adjuster()
+#
+# Purpose:	Adjust a minutes count by a certain amount, making sure it
+#		doesn't go negative.
+#
+sub phase_adjust
+{
+	my $min = shift;				# Minutes to adjust.
+	my $adj = shift;				# Adjustment value.
+
+	$min -= $adj;
+
+	$min = 0 if($min < 0);
+	return($min);
+}
+
+#------------------------------------------------------------------------------
+# Routine:	runner()
+#
+# Purpose:	This routine runs the actual test.  It halts any currently
+#		running rollerds, zaps the test's logfile, and starts rollerd
+#		with the required test parameters.
+#
+sub runner
+{
+	#
+	# Set our remaining arguments.
+	#
+	$dir = "-dir $curdir";
+	$log = "-logfile $logfile";
+	$lvl = "-loglevel $loglvl";
+	$slp = "-sleep $sleeptime";
+	$rrf = "-rrf $rrfile";
+
+	#
+	# Build our test command.
+	#
+	$cmd = "rollerd $dir $log $lvl $slp $rrf -display";
+
+	#
+	# Ensure rollerd is not running and zap the test log file.
+	#
+#	system("rollctl -halt >/dev/null 2>&1 &");
+	system("rollctl -halt &");
+	system("cp /dev/null $logfile");
+
+	#
+	# Start the test and peek at the log file.
+	#
+	system("$cmd &");
+	system("tail -f $logfile");
+}
+
 #------------------------------------------------------------------------------
 # Routine:	usage()
 #
 sub usage
 {
-	print STDERR "usage:  runtest [-autods | -loglevel lvl]\n";
+	print STDERR "usage:  runtest [-autods | -loglevel lvl | <length> | -ttl -ksklife -zsklife]\n";
+	print STDERR "\n    <length> may be one of -short, -medium, or -long and specifies\n";
+	print STDERR "             certain test values\n";
+	print STDERR "\n    options:\n";
+
+	print STDERR "\t-autods   automatically \"publish\" DS records on KSK rollover\n";
+	print STDERR "\t-loglevel set  rollerd's logging level\n";
+	print STDERR "\t-ttl	  set the zone's TTL value\n";
+	print STDERR "\t-ksklife  set KSK lifespan\n";
+	print STDERR "\t-zsklife  set ZSK lifespan\n";
+	print STDERR "\t-short    TTL - 30 seconds, KSK life - 8 minutes,  ZSK life - 30 seconds\n";
+	print STDERR "\t-medium   TTL - 1 minute,   KSK life - 10 minutes, ZSK life - 1 minute\n";
+	print STDERR "\t-long     TTL - 5 minutes,  KSK life - 40 minutes, ZSK life - 4 minutes\n";
+
+	print STDERR "\n    The -ttl, -ksklife, and -zsklife options may be combined with a <length>\n";
+	print STDERR "    option.  These options override the values specified by the <length> option.\n";
 	exit(0);
 }
