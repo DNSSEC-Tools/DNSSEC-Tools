@@ -116,6 +116,16 @@ sub main()
 	doopts($argc);
 
 	#
+	# If rollerd isn't running, we'll give an error message and exit.
+	# Some rollmgr_running() implementations may not be fool-proof.
+	#
+	if(rollmgr_running() != 1)
+	{
+		print STDERR "rollerd is not running\n";
+		exit(1);
+	}
+
+	#
 	# Send commands for all the specified options.
 	#
 	if($dispflag)
