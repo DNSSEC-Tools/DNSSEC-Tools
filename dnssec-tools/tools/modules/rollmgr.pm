@@ -108,6 +108,7 @@ our @EXPORT = qw(
 		 rollmgr_idfile
 		 rollmgr_loadzone
 		 rollmgr_rmid
+		 rollmgr_running
 		 rollmgr_saveid
 
 		 rollmgr_channel
@@ -281,6 +282,7 @@ my $HALT	= "halt";
 my $IDFILE	= "idfile";
 my $LOADZONE	= "loadzone";
 my $RMID	= "rmid";
+my $RUNNING	= "running";
 my $SAVEID	= "saveid";
 
 ##############################################################################
@@ -298,6 +300,7 @@ my %switch_uninit =
 	$IDFILE	  =>	\&uninit_idfile,
 	$LOADZONE =>	\&uninit_loadzone,
 	$RMID	  =>	\&uninit_rmid,
+	$RUNNING  =>	\&uninit_running,
 	$SAVEID	  =>	\&uninit_saveid,
 );
 
@@ -311,6 +314,7 @@ my %switch_unknown =
 	$IDFILE	  =>	\&unknown_idfile,
 	$LOADZONE =>	\&unknown_loadzone,
 	$RMID	  =>	\&unknown_rmid,
+	$RUNNING  =>	\&unknown_running,
 	$SAVEID	  =>	\&unknown_saveid,
 );
 
@@ -324,6 +328,7 @@ my %switch_unix =
 	$IDFILE	  =>	\&unix_idfile,
 	$LOADZONE =>	\&unix_loadzone,
 	$RMID	  =>	\&unix_rmid,
+	$RUNNING  =>	\&unix_running,
 	$SAVEID	  =>	\&unix_saveid,
 );
 
@@ -555,6 +560,23 @@ sub rollmgr_rmid
 
 #--------------------------------------------------------------------------
 #
+# Routine:      rollmgr_running()
+#
+# Purpose:	Front-end to the O/S-specific "is rollerd running?" function.
+#
+sub rollmgr_running
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_running\n";
+
+	$func = $switchtab{$RUNNING};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:      rollmgr_saveid()
 #
 # Purpose:	Front-end to the O/S-specific "save rollerd's
@@ -715,6 +737,22 @@ sub uninit_rmid
 
 #--------------------------------------------------------------------------
 #
+# Routine:      uninit_running()
+#
+# Purpose:	Switch for uninitialized "is rollerd running?" command.
+#
+sub uninit_running
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_running\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_running(@args));
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:      uninit_saveid()
 #
 # Purpose:	Switch for uninitialized "save id file" command.
@@ -809,6 +847,15 @@ sub unknown_cmdint
 # Routine:      unknown_rmid()
 #
 sub unknown_rmid
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_running()
+#
+sub unknown_running
 {
 	unknown_action();
 }
@@ -999,8 +1046,8 @@ sub unix_dropid
 #
 # Routine:	unix_rmid()
 #
-# Purpose:	Delete rollerd's pidfile.  This is done when
-#		as part of the manager's clean-up process.
+# Purpose:	Delete rollerd's pidfile.  This is done as part of the
+#		manager's clean-up process.
 #
 # Return Values:
 #		 1 - The pidfile was deleted.
@@ -1059,6 +1106,54 @@ sub unix_rmid
 
 #--------------------------------------------------------------------------
 #
+# Routine:	unix_running()
+#
+# Purpose:	Determine if rollerd is running and return a boolean
+#		indicating the status.
+#
+# Return Values:
+#		 1 - The pidfile's process is running.
+#		 0 - The pidfile's process is not running.
+#		-1 - Unable to read the pidfile.
+#
+sub unix_running
+{
+	my $ret;				# kill() return code.
+	my $rdpid;				# rollerd's pid (from pidfile.)
+
+# print "unix_running:  down in\n";
+
+	#
+	# Get the pid from rollerd's pidfile.
+	#
+	$rdpid = unix_getpid(1);
+
+	#
+	# Complain and return if there is not pidfile.
+	#
+	if($rdpid == -1)
+	{
+# print "unix_running:  rollerd's pidfile does not exist\n";
+		return(-1);
+	}
+
+	#
+	# Find out if rollerd is alive.  If it isn't, return 0.
+	#
+	$ret = kill 0, $rdpid;
+	return(0) if($ret == 0);
+
+	#
+	# Check if the pid's procname is rollerd, returning an indicator.
+	#
+	$ret = `$PS -p $rdpid`;
+	return(0) if($ret !~ /rollerd/);
+	return(1);
+
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	unix_getpid()
 #
 # Purpose:	Return rollerd, as recorded in its pidfile.
@@ -1081,6 +1176,8 @@ sub unix_getpid
 {
 	my $closeflag = shift;			# Close-flag for pidfile.
 	my $pid;				# Pid from pidfile.
+
+# print "unix_getpid:  down in\n";
 
 	#
 	# Return an error if the file doesn't exist.
@@ -1557,6 +1654,8 @@ manager.
 
   rollmgr_cmdint();
 
+  $runflag = rollmgr_running();
+
   rollmgr_halt();
 
   rollmgr_channel(1);
@@ -1633,6 +1732,18 @@ Return Values:
     Anything else indicates the number of processes that were
     signaled.
     (This should only ever be 1.)
+
+=item I<rollmgr_running()>
+
+This routine determines if rollerd is running and returns a value indicating
+the status.
+
+Return Values:
+
+     1 - rollerd is running.
+     0 - The process listed in the rollerd process id file
+	 is not running.
+    -1 - Unable to get the rollerd process id.
 
 =item I<rollmgr_halt()>
 
