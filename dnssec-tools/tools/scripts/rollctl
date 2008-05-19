@@ -43,7 +43,7 @@ my @opts =
 	"rollall",			# ZSK roll all our zones.
 	"rollksk=s",			# Roll the specified zone.
 	"rollrec=s",			# Change the rollrec file.
-	"rollzone=s",			# ZSK roll the specified zone.
+	"rollzsk=s",			# ZSK roll the specified zone.
 	"runqueue",			# Run the queue.
 	"shutdown",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
@@ -70,7 +70,7 @@ my $nodispflag;
 my $rollallflag;
 my $rollkskflag;
 my $rollrecflag;
-my $rollzoneflag;
+my $rollzskflag;
 my $runqueueflag;
 my $shutdownflag;
 my $skipallflag;
@@ -258,9 +258,9 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($rollzoneflag)
+	if($rollzskflag)
 	{
-		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZONE,$rollzoneflag);
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$rollzskflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -269,7 +269,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "unable to force rollover process for $rollzoneflag:  $resp\n";
+			print STDERR "unable to force rollover process for $rollzskflag:  $resp\n";
 			$rcret++;
 		}
 	}
@@ -435,7 +435,7 @@ sub doopts
 	$rollallflag	= $options{'rollall'}	 || 0;
 	$rollkskflag	= $options{'rollksk'}	 || 0;
 	$rollrecflag	= $options{'rollrec'}	 || 0;
-	$rollzoneflag	= $options{'rollzone'}	 || 0;
+	$rollzskflag	= $options{'rollzsk'}	 || 0;
 	$runqueueflag	= $options{'runqueue'}	 || 0;
 	$shutdownflag	= ($options{'shutdown'}  || $options{'halt'})   || 0;
 	$skipallflag	= $options{'skipall'}	 || 0;
@@ -533,8 +533,8 @@ sub usage
 	print STDERR "\t-nodisplay		stop graphical display\n";
 	print STDERR "\t-rollall		roll all zones\n";
 	print STDERR "\t-rollksk <zone>		roll specified zone's KSK\n";
+	print STDERR "\t-rollzsk <zone>		roll named zone\n";
 	print STDERR "\t-rollrec <rollrec>	set rollrec file\n";
-	print STDERR "\t-rollzone <zone>	roll named zone\n";
 	print STDERR "\t-runqueue		run queue\n";
 	print STDERR "\t-shutdown		shutdown rollerd\n";
 	print STDERR "\t-skipall <zone>		skip named zone\n";
@@ -629,7 +629,7 @@ Initiates KSK rollover for the zone named by I<zone>.
 
 Sets the I<rollrec> file to be processed by B<rollerd> to I<rollrec_file>.
 
-=item B<-rollzone zone>
+=item B<-rollzsk zone>
 
 Initiates rollover for the zone named by I<zone>.
 
