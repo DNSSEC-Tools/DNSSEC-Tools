@@ -688,7 +688,7 @@ sub add_ta_dnsvalconf  {
         my $zonefound = 0;
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
-	    s/\s;\s*$//;
+	    s/\s*;\s*$//;
 
 	    # this is just looking to see if the zone we're adding a
 	    # key for is already in the file (if it's not they've
