@@ -1368,6 +1368,7 @@ read_next_val_config_file(val_context_t *ctx,
     int retval;
     char *next_label;
     int done;
+    char *env = NULL;
 
     if (ctx == NULL || label == NULL || dnsval_c == NULL || 
         dnsval_list == NULL || added_files == NULL || 
@@ -1534,6 +1535,71 @@ read_next_val_config_file(val_context_t *ctx,
                     retval = VAL_CONF_PARSE_ERROR;
                     goto err;
                 }
+
+                /* expand any environment variables */
+                if (NULL != (env = strchr(token, '$'))) {
+                    char env_token[TOKEN_MAX];
+                    char *cp1, *cp2, *cp3;
+                    int len;
+
+                    strcpy(env_token, "");
+                    cp1 = env_token;
+
+                    cp2 = env;
+                    cp2++; /* next character after $ */
+
+                    /* get the variable name in cp1 */
+                    while ((*cp2 != '\0') && isalnum(*cp2)) {
+                        *cp1 = *cp2;
+                        cp1++; cp2++;
+                    }
+                    *cp1 = '\0';
+                    
+                    /* get the value in cp1 */
+                    if ((NULL == (cp1 = getenv(env_token))) ||
+                        (strlen(token) + strlen(cp1) - strlen(env_token) 
+                            >= TOKEN_MAX)) {
+
+                        val_log(ctx, LOG_ERR, 
+                            "read_next_val_config_file(): Unknown environment"
+                            "variable in line %d of %s ", 
+                            line_number, dnsval_c->dnsval_conf);
+                        retval = VAL_CONF_PARSE_ERROR;
+                        goto err;
+                    } 
+
+                    /* save the length of the reference */
+                    /* Add 1 for the $ character */
+                    len = strlen(env_token) + 1; 
+                    
+                    /* cp3 will contain the complete expanded file name */
+                    strcpy(env_token, "");
+                    cp3 = env_token;
+
+                    /* 
+                     *  the value of the env variable is in cp1, 
+                     *  env points to the string of length len where it is 
+                     *  referenced.
+                     *  Replace reference with value and store in env_token. 
+                     */
+                    cp2 = token;
+                    while (*cp2 != '\0' && cp2 < env) { 
+                        *cp3 = *cp2;
+                        cp3++; cp2++;
+                    }
+                    while (*cp1 != '\0') {
+                        *cp3 = *cp1;
+                        cp3++; cp1++; 
+                    }
+                    cp2 = env + len;
+                    while (*cp2 != '\0') { 
+                        *cp3 = *cp2;
+                        cp3++; cp2++; 
+                    }
+                    *cp3 = '\0';
+
+                    strcpy(token, env_token);
+                } 
     
                 /* check if filename already exists in the list */
                 for (dnsval_temp=dnsval_list; dnsval_temp; dnsval_temp=dnsval_temp->next) {
