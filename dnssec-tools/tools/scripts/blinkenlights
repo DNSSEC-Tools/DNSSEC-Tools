@@ -455,12 +455,21 @@ sub optsandargs
 	usage() if(defined($options{'help'}));
 
 	#
+	# Get the path for the rollctl command.
+	#
+	if(($rollctl=dt_cmdpath('rollctl')) eq '')
+	{
+		print STDERR "no absolute path defined for rollctl; exiting...\n";
+		exit(1);
+	}
+
+	#
 	# Kick rollerd into *really* starting blinkenlights, but only if
 	# no arguments were given or -display was given.
 	#
 	if(($argc == 0) || defined($options{'display'}))
 	{
-		exec "$rollctl -display" || print STDERR "unable to execute $rollctl -display\n";
+		exec "$rollctl -q -display" || print STDERR "unable to execute $rollctl -display\n";
 		exit(1);
 	}
 
@@ -483,15 +492,6 @@ sub optsandargs
 	foreach my $dtk (keys(%blconf))
 	{
 		setopt($dtk,$blconf{$dtk});
-	}
-
-	#
-	# Get the path for the rollctl command.
-	#
-	if(($rollctl=dt_cmdpath('rollctl')) eq '')
-	{
-		print STDERR "no absolute path defined for rollctl; exiting...\n";
-		exit(1);
 	}
 
 }
@@ -613,8 +613,8 @@ sub buildmainwind
 	#
 	# Add the General Control menu entries.
 	#
-	$cmdg->command(-label => "Roll Selected Zone",
-		       -command => [\&general_cmds, "rollzone"],
+	$cmdg->command(-label => "Roll Selected Zone's ZSK",
+		       -command => [\&general_cmds, "rollzsk"],
 		       -accelerator => 'Ctrl+R');
 	$cmdg->command(-label => "Roll All Zones",
 		       -command => [\&general_cmds, "rollall"]);
@@ -630,7 +630,7 @@ sub buildmainwind
 
 	$cmdg->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-r>', \&zone_rollzone);
+	$wm->bind('<Control-Key-r>', \&zone_rollzsk);
 	$wm->bind('<Control-Key-s>', \&zone_skipzone);
 
 	if($nomodify)
@@ -991,14 +991,14 @@ sub disp_sets
 }
 
 #---------------------------------------------------------------------------
-# Routine:	zone_rollzone()
+# Routine:	zone_rollzsk()
 #
-# Purpose:	Handle the Roll Zone menu command.
+# Purpose:	Handle the Roll ZSK menu command.
 #
-sub zone_rollzone
+sub zone_rollzsk
 {
 	return if($rollers{$selzone});
-	general_cmds("rollzone");
+	general_cmds("rollzsk");
 }
 
 #---------------------------------------------------------------------------
@@ -1035,7 +1035,7 @@ sub general_cmds
 	# These commands need a zone.  By hook or by crook, we'll ensure
 	# that we have one.
 	#
-	if(($rcmd eq "rollzone") || ($rcmd eq "skipzone"))
+	if(($rcmd eq "rollzsk") || ($rcmd eq "skipzone"))
 	{
 		#
 		# If a zone has been selected, we'll use it.  If not,
@@ -1065,14 +1065,14 @@ sub general_cmds
 	#
 	if(($ret >> 8) != 0)
 	{
-		$rollcmd = "$rollctl $args";
+		$rollcmd = "$rollctl -q $args";
 		system($rollcmd);
 
 		#
 		# If we were trying to roll or skip this zone, we'll
 		# mark it as having a problem and repaint its stripe.
 		#
-		if(($rcmd eq "rollzone") || ($rcmd eq "skipzone"))
+		if(($rcmd eq "rollzsk") || ($rcmd eq "skipzone"))
 		{
 			$badzones{$zone} = 1;
 			zonestripe($zone,'KSK',0);
@@ -2376,12 +2376,12 @@ sub getzone
 	#
 	# Set the zone operation flag.
 	#
-	$opflag = 1 if($op eq "rollzone");
+	$opflag = 1 if($op eq "rollzsk");
 
 	#
 	# Massage the zone operation for the dialog box's title.
 	#
-	$op =~ s/zone//;
+	$op =~ s/zsk//;
 	$op = ucfirst($op);
 
 	#
