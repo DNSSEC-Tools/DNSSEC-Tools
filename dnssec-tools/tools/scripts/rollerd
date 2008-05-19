@@ -2455,9 +2455,9 @@ sub commander
 				last;
 			}
 		}
-		elsif($cmd eq ROLLCMD_ROLLZONE())
+		elsif($cmd eq ROLLCMD_ROLLZSK())
 		{
-			cmd_rollzone($data);
+			cmd_rollzsk($data);
 		}
 		elsif($cmd eq ROLLCMD_RUNQUEUE())
 		{
@@ -2780,7 +2780,7 @@ sub cmd_logmsg
 # Routine:	cmd_rollall()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
-#		immediate rollover.  rollnow() is called for each zone, in
+#		immediate rollover.  rollzsk() is called for each zone, in
 #		order to start rollover.  We'll also keep track of the
 #		zones we were and weren't able to put in rollover, and
 #		report them to the caller.
@@ -2811,7 +2811,7 @@ sub cmd_rollall
 		# the domain name to the list of good zones.  If it didn't
 		# work, do the same for the bad count and bad-zone list.
 		#
-		if(rollnow($zone) == 1)
+		if(rollzsk($zone) == 1)
 		{
 			$gcnt++;
 			$good .= "$zone ";
@@ -2890,19 +2890,19 @@ sub cmd_rollrec
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	cmd_rollzone()
+# Routine:	cmd_rollzsk()
 #
 # Purpose:	This command moves a zone into immediate rollover.  It
-#		calls rollnow() to move the zone into immediate rollover.
+#		calls rollzsk() to move the zone into immediate rollover.
 #
-sub cmd_rollzone
+sub cmd_rollzsk
 {
 	my $zone = shift;				# Command's data.
 	my $rollret;					# Retcode from rolling.
 
-	rolllog_log(LOG_TMI,"<command>","rollzone command received; zone - \"$zone\"");
+	rolllog_log(LOG_TMI,"<command>","rollzsk command received; zone - \"$zone\"");
 
-	$rollret = rollnow($zone);
+	$rollret = rollzsk($zone);
 	if($rollret == 1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover started");
@@ -3291,19 +3291,19 @@ sub cmd_zonestatus
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	rollnow()
+# Routine:	rollzsk()
 #
-# Purpose:	This command moves a zone into immediate rollover.  It
-#		doesn't sit in the initial waiting period, but starts
-#		right off into rollover phase 2.
+# Purpose:	This command moves a zone into immediate ZSK rollover.
+#		It doesn't sit in the initial waiting period, but starts
+#		right off into ZSK rollover phase 2.
 #
-sub rollnow
+sub rollzsk
 {
 	my $zone = shift;				# Command's data.
 
 	#
 	# Re-read the rollrec file and change the record's type.  We'll
-	# also move the zone to phase 2 of rollover.
+	# also move the zone to phase 2 of ZSK rollover.
 	#
 	rollrec_lock();
 	if(rollrec_read($rollrecfile) > 0)
@@ -3358,9 +3358,9 @@ sub rollnow
 		}
 
 		#
-		# Change the zone's phase to rollover phase 2.  This bypasses
-		# the initial rollover waiting period and gets right to the
-		# nitty gritty of doing a rollover.
+		# Change the zone's phase to ZSK rollover phase 2.  This
+		# bypasses the initial rollover waiting period and gets
+		# right to the nitty gritty of doing a rollover.
 		#
 		zskphase($zone,$rrr,2);
 
