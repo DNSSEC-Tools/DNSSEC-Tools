@@ -128,7 +128,7 @@ our @EXPORT = qw(
 			 ROLLCMD_ROLLALL
 			 ROLLCMD_ROLLKSK
 			 ROLLCMD_ROLLREC
-			 ROLLCMD_ROLLZONE
+			 ROLLCMD_ROLLZSK
 			 ROLLCMD_RUNQUEUE
 			 ROLLCMD_SHUTDOWN
 			 ROLLCMD_SKIPALL
@@ -216,7 +216,7 @@ my $ROLLCMD_LOGMSG	= "rollcmd_msg";
 my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
 my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
 my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
-my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
+my $ROLLCMD_ROLLZSK	= "rollcmd_rollzsk";
 my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
 my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
 my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
@@ -236,7 +236,7 @@ sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
 sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
 sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	};
 sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
-sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
+sub ROLLCMD_ROLLZSK		{ return($ROLLCMD_ROLLZSK);	};
 sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
 sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
 sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
@@ -259,7 +259,7 @@ my %roll_commands =
 	rollcmd_rollall		=> 1,
 	rollcmd_rollksk		=> 1,
 	rollcmd_rollrec		=> 1,
-	rollcmd_rollzone	=> 1,
+	rollcmd_rollzsk		=> 1,
 	rollcmd_runqueue	=> 1,
 	rollcmd_shutdown	=> 1,
 	rollcmd_skipall		=> 1,
@@ -1662,9 +1662,9 @@ manager.
   ($cmd,$data) = rollmgr_getcmd();
   $ret = rollmgr_verifycmd($cmd);
 
-  rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,"example.com");
+  rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZSK,"example.com");
 
-  rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZONE,"example.com");
+  rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,"example.com");
   ($retcode, $respmsg) = rollmgr_getresp();
 
 =head1 DESCRIPTION
@@ -1802,7 +1802,7 @@ The available commands and their required data are:
    ROLLCMD_ROLLKSK	zone-name	force a zone to start
 					KSK rollover
    ROLLCMD_ROLLREC	rollrec-name	change rollerd's rollrec file
-   ROLLCMD_ROLLZONE	zone-name	force a zone to start
+   ROLLCMD_ROLLZSK	zone-name	force a zone to start
 					ZSK rollover
    ROLLCMD_RUNQUEUE	none		rollerd runs through
 					its queue
