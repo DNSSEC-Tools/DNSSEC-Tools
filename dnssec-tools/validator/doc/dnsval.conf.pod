@@ -212,7 +212,8 @@ the number of iterations.  This is also the default setting for a zone.
 
 Specifies the DLV tree for the target zone. In the following example, libval will use
 the DLV registry defined at dlv.isc.org. for all queries under the root that do not
-give us a trustworthy answer using the normal DNSSEC mechanism.
+give us a trustworthy answer using the normal DNSSEC mechanism, and are not 
+marked as trusted or untrusted zones in the dnsval.conf zone-security-expectation statement.
 
     dlv dlv-trust-points
         .   dlv.isc.org.

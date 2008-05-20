@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2008-04-16" "perl v5.8.8" "Programmer's Manual"
+.TH dnsval.conf 3 "2008-05-20" "perl v5.8.8" "Programmer's Manual"
 .SH "NAME"
 dnsval.conf, resolv.conf, root.hints \- Configuration policy for the DNSSEC validator library libval(3).
 val_add_valpolicy \- Dynamically add a new policy to the validator context
@@ -343,7 +343,8 @@ the number of iterations.  This is also the default setting for a zone.
 .IX Item "dlv-trust-points [only if LIBVAL_DLV is enabled]"
 Specifies the \s-1DLV\s0 tree for the target zone. In the following example, libval will use
 the \s-1DLV\s0 registry defined at dlv.isc.org. for all queries under the root that do not
-give us a trustworthy answer using the normal \s-1DNSSEC\s0 mechanism.
+give us a trustworthy answer using the normal \s-1DNSSEC\s0 mechanism, and are not 
+marked as trusted or untrusted zones in the dnsval.conf zone-security-expectation statement.
 .Sp
 .Vb 3
 \&    dlv dlv-trust-points
