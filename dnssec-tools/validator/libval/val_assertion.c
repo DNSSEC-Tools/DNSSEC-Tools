@@ -4582,7 +4582,9 @@ verify_and_validate(val_context_t * context,
             !(flags & VAL_QUERY_DONT_VALIDATE) &&
             !(flags & VAL_QUERY_NO_DLV) &&
             !(flags & VAL_QUERY_USING_DLV) &&
-            !val_isvalidated(res->val_rc_status) &&
+            res->val_rc_status != VAL_TRUSTED_ZONE &&
+            res->val_rc_status != VAL_UNTRUSTED_ZONE &&
+            !val_isvalidated(res->val_rc_status) && 
             res->val_rc_rrset != NULL) {
 
             int do_dlv;
