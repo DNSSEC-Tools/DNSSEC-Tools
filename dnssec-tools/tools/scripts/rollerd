@@ -2780,7 +2780,7 @@ sub cmd_logmsg
 # Routine:	cmd_rollall()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
-#		immediate ZSK rollover.  rollzsk() is called for each zone,
+#		immediate ZSK rollover.  rollnow() is called for each zone,
 #		in order to start rollover.  We'll also keep track of the
 #		zones we were and weren't able to put in rollover, and
 #		report them to the caller.
@@ -2811,7 +2811,7 @@ sub cmd_rollall
 		# the domain name to the list of good zones.  If it didn't
 		# work, do the same for the bad count and bad-zone list.
 		#
-		if(rollzsk($zone) == 1)
+		if(rollnow($zone,'ZSK') == 1)
 		{
 			$gcnt++;
 			$good .= "$zone ";
@@ -2892,8 +2892,8 @@ sub cmd_rollrec
 #-----------------------------------------------------------------------------
 # Routine:	cmd_rollksk()
 #
-# Purpose:	This command moves a zone into immediate rollover.  It
-#		calls rollksk() to move the zone into immediate KSK rollover.
+# Purpose:	This command moves a zone into immediate rollover.  It calls
+#		rollnow() to move the zone into immediate KSK rollover.
 #
 sub cmd_rollksk
 {
@@ -2939,7 +2939,7 @@ sub cmd_rollksk
 	#
 	# Do the KSK rollover and send an appropriate response.
 	#
-	$rollret = rollksk($zone);
+	$rollret = rollnow($zone,'KSK');
 	if($rollret == 1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone KSK rollover started");
@@ -2959,8 +2959,8 @@ sub cmd_rollksk
 #-----------------------------------------------------------------------------
 # Routine:	cmd_rollzsk()
 #
-# Purpose:	This command moves a zone into immediate rollover.  It
-#		calls rollzsk() to move the zone into immediate ZSK rollover.
+# Purpose:	This command moves a zone into immediate rollover.  It calls
+#		rollnow() to move the zone into immediate ZSK rollover.
 #
 sub cmd_rollzsk
 {
@@ -3006,7 +3006,7 @@ sub cmd_rollzsk
 	#
 	# Do the ZSK rollover and send an appropriate response.
 	#
-	$rollret = rollzsk($zone);
+	$rollret = rollnow($zone,'ZSK');
 	if($rollret == 1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone ZSK rollover started");
@@ -3395,34 +3395,20 @@ sub cmd_zonestatus
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	rollksk()
+# Routine:	rollnow()
 #
-# Purpose:	This command moves a zone into immediate KSK rollover.
-#		It doesn't sit in the initial waiting period, but starts
-#		right off into KSK rollover phase 2.
+# Purpose:	This command moves a zone into immediate rollover for the.
+#		specified key type.  It doesn't sit in the initial waiting
+#		period, but starts right off in rollover phase 2.
 #
-sub rollksk
+sub rollnow
 {
-	my $zone = shift;				# Command's data.
-
-	rolllog_log(LOG_ERR,"<command>","rollksk command not currently defined");
-	rollmgr_sendresp(ROLLCMD_RC_KSKROLL,"rollksk command not currently defined");
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	rollzsk()
-#
-# Purpose:	This command moves a zone into immediate ZSK rollover.
-#		It doesn't sit in the initial waiting period, but starts
-#		right off into ZSK rollover phase 2.
-#
-sub rollzsk
-{
-	my $zone = shift;				# Command's data.
+	my $zone = shift;				# Zone to roll.
+	my $rolltype = shift;				# Type of roll to start.
 
 	#
 	# Re-read the rollrec file and change the record's type.  We'll
-	# also move the zone to phase 2 of ZSK rollover.
+	# also move the zone to phase 2 of rollover.
 	#
 	rollrec_lock();
 	if(rollrec_read($rollrecfile) > 0)
@@ -3477,11 +3463,18 @@ sub rollzsk
 		}
 
 		#
-		# Change the zone's phase to ZSK rollover phase 2.  This
-		# bypasses the initial rollover waiting period and gets
-		# right to the nitty gritty of doing a rollover.
+		# Change the zone's phase to rollover phase 2.  This bypasses
+		# the initial rollover waiting period and gets right to the
+		# nitty gritty of doing a rollover.
 		#
-		zskphase($zone,$rrr,2);
+		if($rolltype eq 'KSK')
+		{
+			kskphase($zone,$rrr,2);
+		}
+		elsif($rolltype eq 'ZSK')
+		{
+			zskphase($zone,$rrr,2);
+		}
 
 		#
 		# Write the rollrec file.
@@ -3499,7 +3492,7 @@ sub rollzsk
 	# Set the sleep values such that the queue will be run.
 	#
 	sleeper_awake();
-	rolllog_log(LOG_INFO,"<command>","forcing a rollover for zone $zone");
+	rolllog_log(LOG_INFO,"<command>","forcing a $rolltype rollover for zone $zone");
 	display("startroll $zone 0");
 	return(1);
 }
