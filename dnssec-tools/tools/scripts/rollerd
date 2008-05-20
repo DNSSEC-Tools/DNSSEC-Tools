@@ -2444,16 +2444,16 @@ sub commander
 		{
 			cmd_rollall();
 		}
-		elsif($cmd eq ROLLCMD_ROLLKSK())
-		{
-			cmd_rollksk();
-		}
 		elsif($cmd eq ROLLCMD_ROLLREC())
 		{
 			if(cmd_rollrec($data))
 			{
 				last;
 			}
+		}
+		elsif($cmd eq ROLLCMD_ROLLKSK())
+		{
+			cmd_rollksk($data);
 		}
 		elsif($cmd eq ROLLCMD_ROLLZSK())
 		{
@@ -2780,8 +2780,8 @@ sub cmd_logmsg
 # Routine:	cmd_rollall()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
-#		immediate rollover.  rollzsk() is called for each zone, in
-#		order to start rollover.  We'll also keep track of the
+#		immediate ZSK rollover.  rollzsk() is called for each zone,
+#		in order to start rollover.  We'll also keep track of the
 #		zones we were and weren't able to put in rollover, and
 #		report them to the caller.
 #
@@ -2890,22 +2890,126 @@ sub cmd_rollrec
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	cmd_rollksk()
+#
+# Purpose:	This command moves a zone into immediate rollover.  It
+#		calls rollksk() to move the zone into immediate KSK rollover.
+#
+sub cmd_rollksk
+{
+	my $zone = shift;				# Command's data.
+	my $rollret;					# Retcode from rolling.
+
+	my $rrr;					# Rollrec reference.
+	my %rr;						# Rollrec hash.
+
+	rolllog_log(LOG_TMI,"<command>","rollksk command received; zone - \"$zone\"");
+
+	#
+	# Get the zone's rollrec.
+	#
+	$rrr = rollrec_fullrec($zone);
+	if(!defined($rrr))
+	{
+		rolllog_log(LOG_ERR,"<command>","no rollrec defined for zone $zone");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+	}
+	%rr = %$rrr;
+
+	#
+	# Don't proceed if this zone is in the middle of KSK rollover.
+	#
+	if($rr{'kskphase'} > 0)
+	{
+		rolllog_log(LOG_TMI,"<command>","in KSK rollover (phase $rr{'kskphase'}); not attempting ZSK rollover");
+		rollmgr_sendresp(ROLLCMD_RC_KSKROLL,"$zone is already engaged in a KSK rollover");
+		return(0);
+	}
+
+	#
+	# Don't proceed if this zone is in the middle of ZSK rollover.
+	#
+	if($rr{'zskphase'} > 0)
+	{
+		rolllog_log(LOG_TMI,"<command>","in ZSK rollover (phase $rr{'zskphase'}); not attempting ZSK rollover");
+		rollmgr_sendresp(ROLLCMD_RC_ZSKROLL,"$zone is already engaged in a ZSK rollover");
+		return(0);
+	}
+
+	#
+	# Do the KSK rollover and send an appropriate response.
+	#
+	$rollret = rollksk($zone);
+	if($rollret == 1)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone KSK rollover started");
+	}
+	elsif($rollret == 0)
+	{
+		rolllog_log(LOG_ERR,"<command>","$zone not in rollrec file $rollrecfile");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+	}
+	elsif($rollret == -1)
+	{
+		rolllog_log(LOG_ERR,"<command>","$zone has bad values in rollrec file $rollrecfile");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"$zone has bad values in rollrec file $rollrecfile");
+	}
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	cmd_rollzsk()
 #
 # Purpose:	This command moves a zone into immediate rollover.  It
-#		calls rollzsk() to move the zone into immediate rollover.
+#		calls rollzsk() to move the zone into immediate ZSK rollover.
 #
 sub cmd_rollzsk
 {
 	my $zone = shift;				# Command's data.
 	my $rollret;					# Retcode from rolling.
 
+	my $rrr;					# Rollrec reference.
+	my %rr;						# Rollrec hash.
+
 	rolllog_log(LOG_TMI,"<command>","rollzsk command received; zone - \"$zone\"");
 
+	#
+	# Get the zone's rollrec.
+	#
+	$rrr = rollrec_fullrec($zone);
+	if(!defined($rrr))
+	{
+		rolllog_log(LOG_ERR,"<command>","no rollrec defined for zone $zone");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+	}
+	%rr = %$rrr;
+
+	#
+	# Don't proceed if this zone is in the middle of KSK rollover.
+	#
+	if($rr{'kskphase'} > 0)
+	{
+		rolllog_log(LOG_TMI,"<command>","in KSK rollover (phase $rr{'kskphase'}); not attempting ZSK rollover");
+		rollmgr_sendresp(ROLLCMD_RC_KSKROLL,"$zone is already engaged in a KSK rollover");
+		return(0);
+	}
+
+	#
+	# Don't proceed if this zone is in the middle of ZSK rollover.
+	#
+	if($rr{'zskphase'} > 0)
+	{
+		rolllog_log(LOG_TMI,"<command>","in ZSK rollover (phase $rr{'zskphase'}); not attempting ZSK rollover");
+		rollmgr_sendresp(ROLLCMD_RC_ZSKROLL,"$zone is already engaged in a ZSK rollover");
+		return(0);
+	}
+
+	#
+	# Do the ZSK rollover and send an appropriate response.
+	#
 	$rollret = rollzsk($zone);
 	if($rollret == 1)
 	{
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover started");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone ZSK rollover started");
 	}
 	elsif($rollret == 0)
 	{
@@ -3288,6 +3392,21 @@ sub cmd_zonestatus
 	}
 
 	rollrec_unlock();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	rollksk()
+#
+# Purpose:	This command moves a zone into immediate KSK rollover.
+#		It doesn't sit in the initial waiting period, but starts
+#		right off into KSK rollover phase 2.
+#
+sub rollksk
+{
+	my $zone = shift;				# Command's data.
+
+	rolllog_log(LOG_ERR,"<command>","rollksk command not currently defined");
+	rollmgr_sendresp(ROLLCMD_RC_KSKROLL,"rollksk command not currently defined");
 }
 
 #-----------------------------------------------------------------------------
