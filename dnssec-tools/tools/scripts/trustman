@@ -16,6 +16,7 @@ use Sys::Syslog;
 use IO::File;
 use POSIX;
 use Data::Dumper;
+use File::Temp;
 $Data::Dumper::Purity = 1;
 
 #
@@ -638,10 +639,12 @@ sub add_ta_namedconf  {
     my $zone = @_;
     return if (!$ncfile);
 
-    open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
+    my ($tmpfileh, $tmpfile) = tempfile("namedconfXXXXXX",
+					DIR => "/tmp",
+					SUFFIX => ".conf");
     open (CONF,$ncfile) or die "unable to read named.conf file.";
     while (<CONF>) {
-        print TMP $_;
+        print $tmpfileh $_;
         if (/^trusted-keys/) {
             print TMP "\n\n";
             for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
@@ -657,11 +660,11 @@ sub add_ta_namedconf  {
         }
     }
     close (CONF);
-    close (TMP);
+    $tmpfileh->close();
 # rename TMP to $ncfile
     my $origname = $ncfile . ".orig";
     rename ($ncfile,$origname);
-    rename ("/tmp/named.conf.tmp",$ncfile);
+    rename ($tmpfile,$ncfile);
 
 }
 
@@ -681,13 +684,16 @@ sub add_ta_dnsvalconf  {
 
     my $pat = "trust-anchor";
 
-    open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
+    my ($tmpfileh, $tmpfile) = tempfile("dnsvalconfXXXXXX",
+					DIR => "/tmp",
+					SUFFIX => ".conf");
+
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
     $/ = ";";
     while (<CONF>) {
         my $zonefound = 0;
         if (s/^\s*(\S*)\s*$pat\s*//) {
-            print TMP $1 . " $pat\n\n";
+            print $tmpfileh $1 . " $pat\n\n";
 	    s/\s*;\s*$//;
 
 	    # this is just looking to see if the zone we're adding a
@@ -708,7 +714,7 @@ sub add_ta_dnsvalconf  {
             }
 
 	    # dump the original contents back out; this should preserve # lines
-	    print TMP $_,"\n";
+	    print $tmpfileh $_,"\n";
 
 	    # print the new keys
             for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
@@ -718,7 +724,7 @@ sub add_ta_dnsvalconf  {
                              $newkeys{$zone}[$i]{algorithm} . " " .
                              $newkeys{$zone}[$i]{key} . "\"";
                 if ($zonefound) {
-                    print TMP $newkeyentry . $2;
+                    print $tmpfileh $newkeyentry . $2;
                     Verbose("Adding the following key to $dvfile:\n");
                     Verbose($newkeyentry . "\n");
                     my $notif = "New key added to " . $dvfile . " for zone " . $zone . "\n";
@@ -727,17 +733,17 @@ sub add_ta_dnsvalconf  {
 		    Verbose("Failed to find original zone key in $ncfile!\n");
 		}
             }
-            print TMP "\n;";
+            print $tmpfileh "\n;";
         } else {
-            print TMP $_;
+            print $tmpfileh $_;
         }
     }
     close (CONF);
-    close (TMP);
+    $tmpfileh->close();
 # rename TMP to $dvfile
     my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
-    rename ("/tmp/dnsval.conf.tmp",$dvfile);
+    rename ($tmpfile,$dvfile);
 }
 
 ######################################################################
@@ -756,14 +762,18 @@ sub remove_ta_dnsvalconf {
 
     my $pat = "trust-anchor";
 
-    open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
+
+    my ($tmpfileh, $tmpfile) = tempfile("dnsvalconfXXXXXX",
+					DIR => "/tmp",
+					SUFFIX => ".conf");
+
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
     my $origsep = $/;
     $/ = ";";
     while (<CONF>) {
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
-            print TMP $1 . " $pat\n\n";
+            print $tmpfileh $1 . " $pat\n\n";
             while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
                 my ($z, $val) = ($1, $2);
                 # strip off the trailing dot from the zone name
@@ -778,33 +788,33 @@ sub remove_ta_dnsvalconf {
                         $p eq $protocol &&
                         $a eq $algorithm) {
 # its a match, comment it out
-                        print TMP "# The following key has been removed.\n";
+                        print $tmpfileh "# The following key has been removed.\n";
                         my $remkeyrec = $z . ". " . $val;
-                        print TMP "# " . $remkeyrec . "\n\n";
+                        print $tmpfileh "# " . $remkeyrec . "\n\n";
                         my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
                         notify($notif);
                     } else {
                         # add the trailing dot when printing zone name
-                        print TMP $z . ". " . $val . "\n\n";
+                        print $tmpfileh $z . ". " . $val . "\n\n";
                     }
 
                 } else {
                     # add the trailing dot when printing zone name
-                    print TMP $z . ". " . $val . "\n\n";
+                    print $tmpfileh $z . ". " . $val . "\n\n";
                 }
             }
-            print TMP "\n;\n";
+            print $tmpfileh "\n;\n";
         } else {
-            print TMP $_;
+            print $tmpfileh $_;
         }
     }
     close (CONF);
-    close (TMP);
+    $tmpfileh->close();
     $/ = $origsep;
 # rename TMP to $dvfile
     my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
-    rename ("/tmp/dnsval.conf.tmp",$dvfile);
+    rename ($tmpfile,$dvfile);
 }
 
 ######################################################################
@@ -824,13 +834,15 @@ sub remove_ta_namedconf  {
     my $pat = "^trusted-keys";
     my $trustsection = 0;
 
-    open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
+    my ($tmpfileh, $tmpfile) = tempfile("namedconfXXXXXX",
+					DIR => "/tmp",
+					SUFFIX => ".conf");
     open (CONF,$ncfile) or die "unable to read named.conf file.";
     my $origsep = $/;
     $/ = ";";
     while (<CONF>) {
         if (s/^\s*$pat\s*//) {
-            print TMP "trusted-keys {";
+            print $tmpfileh "trusted-keys {";
             $trustsection = 1;
             s/\s*\{//;
             if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
@@ -847,22 +859,22 @@ sub remove_ta_namedconf  {
                         $proto eq $p &&
                         $algo eq $a) {
                         # its a match, comment it out
-                            print TMP $space; # attempting to preserve spacing
-                            print TMP "# The following key has been removed.\n";
+                            print $tmpfileh $space; # attempting to preserve spacing
+                            print $tmpfileh "# The following key has been removed.\n";
                             my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-                            print TMP "# " . $remkeyrec . "\n";
+                            print $tmpfileh "# " . $remkeyrec . "\n";
                             my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
                             notify($notif);
                     }
                 } else {
                 # just print it, it's not the key we're looking for
-                    print TMP $_;
+                    print $tmpfileh $_;
                 }
             }
         } elsif ($trustsection) {
             if (/\s*\};/) {
                 $trustsection = 0;
-                print TMP "\n};\n";
+                print $tmpfileh "\n};\n";
             } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
 
                 my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
@@ -878,32 +890,32 @@ sub remove_ta_namedconf  {
                         $proto eq $p &&
                         $algo eq $a) {
                         # its a match, comment it out
-                            print TMP $space; # attempting to preserve spacing
-                            print TMP "# The following key has been removed.\n";
+                            print $tmpfileh $space; # attempting to preserve spacing
+                            print $tmpfileh "# The following key has been removed.\n";
                             my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-                            print TMP "# " . $remkeyrec . "\n";
+                            print $tmpfileh "# " . $remkeyrec . "\n";
                             my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
                             notify($notif);
                     } else {
                     # just print it, it's not the key we're looking for
-                        print TMP $_;
+                        print $tmpfileh $_;
                     }
                 } else {
                 # just print it, it's not the zone we're looking for
-                    print TMP $_;
+                    print $tmpfileh $_;
                 }
             }
         } else {
-            print TMP $_;
+            print $tmpfileh $_;
         }
     }
     $/ = $origsep;
     close (CONF);
-    close (TMP);
+    $tmpfileh->close();
 # rename TMP to $dvfile
     my $origname = $ncfile . ".orig";
     rename ($ncfile,$origname);
-    rename ("/tmp/named.conf.tmp",$ncfile);
+    rename ($tmpfile,$ncfile);
 }
 
 ################################################################
@@ -921,14 +933,16 @@ sub revoke_ta_dnsvalconf  {
 
     my $pat = "trust-anchor";
 
-    open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
+    my ($tmpfileh, $tmpfile) = tempfile("dnsvalconfXXXXXX",
+					DIR => "/tmp",
+					SUFFIX => ".conf");
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
     my $origsep = $/;
     $/ = ";";
     while (<CONF>) {
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
-            print TMP $1 . " $pat\n\n";
+            print $tmpfileh $1 . " $pat\n\n";
             while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
                 my ($z, $val) = ($1, $2);
                 # strip off the trailing dot from the zone name
@@ -944,30 +958,30 @@ sub revoke_ta_dnsvalconf  {
                         $keyrec->{protocol} eq $protocol &&
                         $keyrec->{algorithm} eq $algorithm) {
 # its a match, comment it out
-                        print TMP "# The following key has been revoked.\n";
+                        print $tmpfileh "# The following key has been revoked.\n";
                         my $revkeyrec = $z . ". " . $val;
-                        print TMP "# " . $revkeyrec . "\n\n";
+                        print $tmpfileh "# " . $revkeyrec . "\n\n";
                         my $notif = "The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n";
                         notify($notif);
                     }
 
                 } else {
                     # add the trailing dot when printing zone name
-                    print TMP $z . ". " . $val . "\n\n";
+                    print $tmpfileh $z . ". " . $val . "\n\n";
                 }
             }
-            print TMP "\n;\n";
+            print $tmpfileh "\n;\n";
         } else {
-            print TMP $_;
+            print $tmpfileh $_;
         }
     }
     close (CONF);
-    close (TMP);
+    $tmpfileh->close();
     $/ = $origsep;
 # rename TMP to $dvfile
     my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
-    rename ("/tmp/dnsval.conf.tmp",$dvfile);
+    rename ($tmpfile,$dvfile);
 }
 
 ################################################################
@@ -986,13 +1000,15 @@ sub revoke_ta_namedconf  {
     my $pat = "^trusted-keys";
     my $trustsection = 0;
 
-    open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
+    my ($tmpfileh, $tmpfile) = tempfile("namedconfXXXXXX",
+					DIR => "/tmp",
+					SUFFIX => ".conf");
     open (CONF,$ncfile) or die "unable to read named.conf file.";
     my $origsep = $/;
     $/ = ";";
     while (<CONF>) {
         if (s/^\s*$pat\s*//) {
-            print TMP "trusted-keys {";
+            print $tmpfileh "trusted-keys {";
             $trustsection = 1;
             s/\s*\{//;
             if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
@@ -1009,26 +1025,26 @@ sub revoke_ta_namedconf  {
                         $keyrec->{protocol} eq $p &&
                         $keyrec->{algorithm} eq $a) {
 # its a match, comment it out
-                            print TMP $space; # attempting to preserve spacing
-                            print TMP "# The following key has been revoked.\n";
+                            print $tmpfileh $space; # attempting to preserve spacing
+                            print $tmpfileh "# The following key has been revoked.\n";
                             my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-                            print TMP "# " . $revkeyrec . "\n";
+                            print $tmpfileh "# " . $revkeyrec . "\n";
                             my $notif = "The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n";
                             notify($notif);
                     } else {
                     # just print it, it's not the zone we're looking for
-                        print TMP $_;
+                        print $tmpfileh $_;
                     }
                 } else {
                 # just print it, it's not the zone we're looking for
-                    print TMP $_;
+                    print $tmpfileh $_;
                 }
             }
 
         } elsif ($trustsection) {
             if (/\s*\};/) {
                 $trustsection = 0;
-                print TMP "\n};\n";
+                print $tmpfileh "\n};\n";
             } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
                 my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
                 # strip off the trailing dot from the zone name
@@ -1043,27 +1059,27 @@ sub revoke_ta_namedconf  {
                         $keyrec->{protocol} eq $p &&
                         $keyrec->{algorithm} eq $a) {
 # its a match, comment it out
-                            print TMP $space; # attempting to preserve spacing
-                            print TMP "# The following key has been revoked.\n";
+                            print $tmpfileh $space; # attempting to preserve spacing
+                            print $tmpfileh "# The following key has been revoked.\n";
                             my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-                            print TMP "# " . $revkeyrec . "\n";
+                            print $tmpfileh "# " . $revkeyrec . "\n";
                     }
                 } else {
                 # just print it, it's not the key we're looking for
-                    print TMP $_;
+                    print $tmpfileh $_;
                 }
             }
         } else {
-            print TMP $_;
+            print $tmpfileh $_;
         }
     }
     $/ = $origsep;
     close (CONF);
-    close (TMP);
+    $tmpfileh->close();
 # rename TMP to $dvfile
     my $origname = $ncfile . ".orig";
     rename ($ncfile,$origname);
-    rename ("/tmp/named.conf.tmp",$ncfile);
+    rename ($tmpfile,$ncfile);
 }
 
 ###############################################################
