@@ -2453,11 +2453,11 @@ sub commander
 		}
 		elsif($cmd eq ROLLCMD_ROLLKSK())
 		{
-			cmd_rollksk($data);
+			cmd_rollnow($data,'KSK');
 		}
 		elsif($cmd eq ROLLCMD_ROLLZSK())
 		{
-			cmd_rollzsk($data);
+			cmd_rollnow($data,'ZSK');
 		}
 		elsif($cmd eq ROLLCMD_RUNQUEUE())
 		{
@@ -2890,20 +2890,23 @@ sub cmd_rollrec
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	cmd_rollksk()
+# Routine:	cmd_rollnow()
 #
-# Purpose:	This command moves a zone into immediate rollover.  It calls
-#		rollnow() to move the zone into immediate KSK rollover.
+# Purpose:	This command moves a zone into immediate KSK or ZSK rollover.
+#		It calls rollnow() to move the zone into immediate rollover.
 #
-sub cmd_rollksk
+sub cmd_rollnow
 {
 	my $zone = shift;				# Command's data.
-	my $rollret;					# Retcode from rolling.
+	my $rolltype = shift;				# Type of rollover.
 
+	my $rtlc;					# LC rollever type.
+	my $rollret;					# Retcode from rolling.
 	my $rrr;					# Rollrec reference.
 	my %rr;						# Rollrec hash.
 
-	rolllog_log(LOG_TMI,"<command>","rollksk command received; zone - \"$zone\"");
+	$rtlc = lower($rolltype);
+	rolllog_log(LOG_TMI,"<command>","roll" . $rtlc . " command received; zone - \"$zone\"");
 
 	#
 	# Get the zone's rollrec.
@@ -2931,18 +2934,18 @@ sub cmd_rollksk
 	#
 	if($rr{'zskphase'} > 0)
 	{
-		rolllog_log(LOG_TMI,"<command>","in ZSK rollover (phase $rr{'zskphase'}); not attempting ZSK rollover");
+		rolllog_log(LOG_TMI,"<command>","in ZSK rollover (phase $rr{'zskphase'});\nnot attempting ZSK rollover");
 		rollmgr_sendresp(ROLLCMD_RC_ZSKROLL,"$zone is already engaged in a ZSK rollover");
 		return(0);
 	}
 
 	#
-	# Do the KSK rollover and send an appropriate response.
+	# Do the rollover and send an appropriate response.
 	#
-	$rollret = rollnow($zone,'KSK');
+	$rollret = rollnow($zone,$rolltype);
 	if($rollret == 1)
 	{
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone KSK rollover started");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone $rolltype rollover started");
 	}
 	elsif($rollret == 0)
 	{
