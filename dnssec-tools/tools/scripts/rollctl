@@ -40,7 +40,7 @@ my @opts =
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel:s",			# Set rollerd's logging level.
 	"nodisplay",			# Turn off rollerd's graphical display.
-	"rollall",			# ZSK roll all our zones.
+	"rollallzsks",			# ZSK-roll all our zones.
 	"rollksk=s",			# Roll the specified zone.
 	"rollrec=s",			# Change the rollrec file.
 	"rollzsk=s",			# ZSK roll the specified zone.
@@ -67,7 +67,7 @@ my $dspuballflag;
 my $logfileflag;
 my $loglevelflag;
 my $nodispflag;
-my $rollallflag;
+my $zrollallflag;
 my $rollkskflag;
 my $rollrecflag;
 my $rollzskflag;
@@ -228,7 +228,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($rollallflag)
+	if($zrollallflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALL);
 
@@ -258,6 +258,21 @@ sub main()
 			$rcret++;
 		}
 	}
+	if($rollkskflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$rollkskflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "unable to force KSK rollover process for $rollkskflag:  $resp\n";
+			$rcret++;
+		}
+	}
 	if($rollzskflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$rollzskflag);
@@ -269,7 +284,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "unable to force rollover process for $rollzskflag:  $resp\n";
+			print STDERR "unable to force ZSK rollover process for $rollzskflag:  $resp\n";
 			$rcret++;
 		}
 	}
@@ -425,26 +440,26 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$dispflag	= $options{'display'}	 || 0;
-	$nodispflag	= $options{'nodisplay'}	 || 0;
-	$dspubflag	= $options{'dspub'}	 || 0;
-	$dspuballflag	= $options{'dspuball'}	 || 0;
-	$quiet		= $options{'quiet'}	 || 0;
-	$logfileflag	= $options{'logfile'}	 || 0;
-	$loglevelflag	= $options{'loglevel'}	 || 0;
-	$rollallflag	= $options{'rollall'}	 || 0;
-	$rollkskflag	= $options{'rollksk'}	 || 0;
-	$rollrecflag	= $options{'rollrec'}	 || 0;
-	$rollzskflag	= $options{'rollzsk'}	 || 0;
-	$runqueueflag	= $options{'runqueue'}	 || 0;
-	$shutdownflag	= ($options{'shutdown'}  || $options{'halt'})   || 0;
-	$skipallflag	= $options{'skipall'}	 || 0;
-	$skipzoneflag	= $options{'skipzone'}	 || 0;
-	$sleeptimeflag	= $options{'sleeptime'}	 || 0;
-	$statusflag	= $options{'status'}	 || 0;
-	$zonelogflag	= $options{'zonelog'}	 || 0;
-	$zonestatflag	= $options{'zonestatus'} || 0;
-	$version        = $options{'Version'}    || 0;
+	$dispflag	= $options{'display'}	  || 0;
+	$nodispflag	= $options{'nodisplay'}	  || 0;
+	$dspubflag	= $options{'dspub'}	  || 0;
+	$dspuballflag	= $options{'dspuball'}	  || 0;
+	$quiet		= $options{'quiet'}	  || 0;
+	$logfileflag	= $options{'logfile'}	  || 0;
+	$loglevelflag	= $options{'loglevel'}	  || 0;
+	$zrollallflag	= $options{'rollallzsks'} || 0;
+	$rollkskflag	= $options{'rollksk'}	  || 0;
+	$rollrecflag	= $options{'rollrec'}	  || 0;
+	$rollzskflag	= $options{'rollzsk'}	  || 0;
+	$runqueueflag	= $options{'runqueue'}	  || 0;
+	$shutdownflag	= ($options{'shutdown'}   || $options{'halt'}) || 0;
+	$skipallflag	= $options{'skipall'}	  || 0;
+	$skipzoneflag	= $options{'skipzone'}	  || 0;
+	$sleeptimeflag	= $options{'sleeptime'}	  || 0;
+	$statusflag	= $options{'status'}	  || 0;
+	$zonelogflag	= $options{'zonelog'}	  || 0;
+	$zonestatflag	= $options{'zonestatus'}  || 0;
+	$version        = $options{'Version'}     || 0;
 
 	#
 	# Close our output descriptors if the -quiet option was given.
@@ -531,7 +546,7 @@ sub usage
 	print STDERR "\t-logfile <logfile>	set log file\n";
 	print STDERR "\t-loglevel <loglevel>	set logging level\n";
 	print STDERR "\t-nodisplay		stop graphical display\n";
-	print STDERR "\t-rollall		roll all zones\n";
+	print STDERR "\t-rollallzsks		roll all zones\n";
 	print STDERR "\t-rollksk <zone>		roll specified zone's KSK\n";
 	print STDERR "\t-rollzsk <zone>		roll named zone\n";
 	print STDERR "\t-rollrec <rollrec>	set rollrec file\n";
@@ -617,9 +632,9 @@ forms.
 
 Stops the rollover status GUI.
 
-=item B<-rollall>
+=item B<-rollallzsks>
 
-Initiates rollover for all the zones defined in the current I<rollrec> file.
+Initiates ZSK rollover for all the zones defined in the current I<rollrec> file.
 
 =item B<-rollksk zone>
 
