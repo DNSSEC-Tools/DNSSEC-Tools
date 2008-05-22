@@ -545,6 +545,7 @@ sub zsk_expired
 		# Get the key's keyrec hash.
 		#
 		$khr = keyrec_fullrec($keyname);
+		next if(!$khr);
 		%kh = %$khr;
 
 		#
@@ -2442,7 +2443,7 @@ sub commander
 		}
 		elsif($cmd eq ROLLCMD_ROLLALL())
 		{
-			cmd_rollall();
+			cmd_rollallzsks();
 		}
 		elsif($cmd eq ROLLCMD_ROLLREC())
 		{
@@ -2777,7 +2778,7 @@ sub cmd_logmsg
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	cmd_rollall()
+# Routine:	cmd_rollallzsks()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
 #		immediate ZSK rollover.  rollnow() is called for each zone,
@@ -2785,7 +2786,7 @@ sub cmd_logmsg
 #		zones we were and weren't able to put in rollover, and
 #		report them to the caller.
 #
-sub cmd_rollall
+sub cmd_rollallzsks
 {
 	my $good = "";					# Rolled zones.
 	my $bad	 = "";					# Unrolled zones.
@@ -2794,7 +2795,7 @@ sub cmd_rollall
 	my $gcnt = 0;					# Rolled count.
 	my $bcnt = 0;					# Unrolled count.
 
-	rolllog_log(LOG_TMI,"<command>","rollall command received");
+	rolllog_log(LOG_TMI,"<command>","rollallzsks command received");
 
 	#
 	# Each zone in the rollrec file will be put in the rollover process,
