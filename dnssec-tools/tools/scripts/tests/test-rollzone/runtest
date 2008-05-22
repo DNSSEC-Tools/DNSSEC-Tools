@@ -20,7 +20,7 @@ my %options = ();				# Filled option array.
 my @opts =
 (
 	'autods',				# Auto-pub DS records.
-	'loglvl=n',				# Logging level.
+	'loglevel=n',				# Logging level.
 
 	'ttl=s',				# Zone's time-to-live.
 	'ksklife=n',				# KSK lifespan.
@@ -132,7 +132,7 @@ sub opts
 	#
 	# Check for the logging level option.
 	#
-	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
+	$loglvl	= $options{'loglevel'} if(defined($options{'loglevel'}));
 
 	#
 	# Ensure that only one of the special timing options was given.
@@ -344,8 +344,8 @@ sub runner
 	#
 	# Ensure rollerd is not running and zap the test log file.
 	#
-#	system("rollctl -halt >/dev/null 2>&1 &");
-	system("rollctl -halt &");
+	system("rollctl -halt >/dev/null 2>&1 &");
+#	system("rollctl -halt &");
 	system("cp /dev/null $logfile");
 
 	#
