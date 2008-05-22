@@ -616,8 +616,8 @@ sub buildmainwind
 	$cmdg->command(-label => "Roll Selected Zone's ZSK",
 		       -command => [\&general_cmds, "rollzsk"],
 		       -accelerator => 'Ctrl+R');
-	$cmdg->command(-label => "Roll All Zones",
-		       -command => [\&general_cmds, "rollall"]);
+	$cmdg->command(-label => "Roll All Zones's ZSKs",
+		       -command => [\&general_cmds, "rollallzsks"]);
 	$cmdg->command(-label => 'Run the Queue',
 		       -command => [\&general_cmds, "runqueue"]);
 	$cmdg->separator();
@@ -1020,7 +1020,7 @@ sub zone_skipzone
 sub general_cmds
 {
 	my $rcmd = shift;				# User's command.
-	my $args;					# Command arguments.
+	my $args = $rcmd;				# Command arguments.
 	my $rollcmd;					# Command to execute.
 	my $ret;					# Command retcode.
 
