@@ -148,6 +148,8 @@ our @EXPORT = qw(
 			 ROLLCMD_RC_NOZONES
 			 ROLLCMD_RC_BADZONE
 			 ROLLCMD_RC_BADZONEDATA
+			 ROLLCMD_RC_KSKROLL
+			 ROLLCMD_RC_ZSKROLL
 
 			 CHANNEL_WAIT
 			 CHANNEL_CLOSE
@@ -180,16 +182,18 @@ sub CHANNEL_CLOSE		{ return($CHANNEL_CLOSE);	};
 # The ROLLCMD_RC_ entities are return codes sent from rollerd and received
 # by client programs from rollmgr_getresp().
 #
-my $ROLLCMD_RC_OKAY	   = 0;
-my $ROLLCMD_RC_BADLEVEL	   = 1;
-my $ROLLCMD_RC_BADFILE	   = 2;
-my $ROLLCMD_RC_BADSLEEP	   = 3;
-my $ROLLCMD_RC_BADROLLREC  = 4;
-my $ROLLCMD_RC_RRFOPEN	   = 5;
-my $ROLLCMD_RC_NOZONES	   = 6;
-my $ROLLCMD_RC_BADZONE	   = 7;
-my $ROLLCMD_RC_BADZONEDATA = 8;
-my $ROLLCMD_RC_DISPLAY	   = 9;
+my $ROLLCMD_RC_OKAY		= 0;
+my $ROLLCMD_RC_BADLEVEL		= 1;
+my $ROLLCMD_RC_BADFILE		= 2;
+my $ROLLCMD_RC_BADSLEEP	 	= 3;
+my $ROLLCMD_RC_BADROLLREC	= 4;
+my $ROLLCMD_RC_RRFOPEN		= 5;
+my $ROLLCMD_RC_NOZONES		= 6;
+my $ROLLCMD_RC_BADZONE		= 7;
+my $ROLLCMD_RC_BADZONEDATA	= 8;
+my $ROLLCMD_RC_DISPLAY		= 9;
+my $ROLLCMD_RC_KSKROLL		= 10;
+my $ROLLCMD_RC_ZSKROLL		= 11;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);		};
 sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);		};
@@ -201,6 +205,8 @@ sub ROLLCMD_RC_NOZONES		{ return($ROLLCMD_RC_NOZONES);		};
 sub ROLLCMD_RC_BADZONE		{ return($ROLLCMD_RC_BADZONE);		};
 sub ROLLCMD_RC_BADZONEDATA	{ return($ROLLCMD_RC_BADZONEDATA);	};
 sub ROLLCMD_RC_DISPLAY		{ return($ROLLCMD_RC_DISPLAY);		};
+sub ROLLCMD_RC_KSKROLL		{ return($ROLLCMD_RC_KSKROLL);		};
+sub ROLLCMD_RC_ZSKROLL		{ return($ROLLCMD_RC_ZSKROLL);		};
 
 #
 # The remaining ROLLCMD_ entities are the rollmgr_sendcmd() commands
@@ -213,7 +219,7 @@ my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
 my $ROLLCMD_LOGMSG	= "rollcmd_msg";
-my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
+my $ROLLCMD_ROLLALL	= "rollcmd_rollallzsks";
 my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
 my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
 my $ROLLCMD_ROLLZSK	= "rollcmd_rollzsk";
@@ -256,7 +262,7 @@ my %roll_commands =
 	rollcmd_loglevel	=> 1,
 	rollcmd_logmsg		=> 1,
 	rollcmd_nodisplay	=> 1,
-	rollcmd_rollall		=> 1,
+	rollcmd_rollallzsks	=> 1,
 	rollcmd_rollksk		=> 1,
 	rollcmd_rollrec		=> 1,
 	rollcmd_rollzsk		=> 1,
