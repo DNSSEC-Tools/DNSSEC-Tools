@@ -1,0 +1,128 @@
+--- mozilla/browser/components/preferences/advanced.xul.orig	2006-09-13 11:04:35.000000000 -0700
++++ mozilla/browser/components/preferences/advanced.xul	2008-01-08 14:38:28.000000000 -0800
+@@ -119,6 +119,9 @@
+       <preference id="security.disable_button.openDeviceManager"
+                   name="security.disable_button.openDeviceManager"
+                   type="bool"/>
++      <preference id="security.dnssec.dnssecBehavior"
++                  name="security.dnssec.dnssecBehavior"
++                  type="int"/>
+     </preferences>
+
+ #ifdef HAVE_SHELL_SERVICE
+@@ -136,6 +139,7 @@
+         <tab id="networkTab" label="&networkTab.label;" helpTopic="prefs-advanced-network"/>
+         <tab id="updateTab" label="&updateTab.label;"  helpTopic="prefs-advanced-update"/>
+         <tab id="encryptionTab" label="&encryptionTab.label;" helpTopic="prefs-advanced-encryption"/>
++        <tab id="dnssecTab" label="&dnssecTab.label;" helpTopic="prefs-advanced-dnssec"/>
+       </tabs>
+
+       <tabpanels flex="1">
+@@ -392,6 +396,20 @@
+           </groupbox>
+         </tabpanel>
+
++        <tabpanel orient="vertical">
++          <groupbox>
++            <caption label="&dnsSecurity.label;"/>
++            <description>&dnssec.description;</description>
++           <radiogroup id="networkDnssecBehaviour"
++                       preference="security.dnssec.dnssecBehavior">
++             <radio value="1" label="&neverDNSSecure.label;"
++                    accesskey="&neverDNSSecure.accesskey;"/>
++             <radio value="0" label="&possibleDNSSecure.label;"
++                    accesskey="&possibleDNSSecure.accesskey;"/>
++           </radiogroup>
++          </groupbox>
++        </tabpanel>
++
+       </tabpanels>
+     </tabbox>
+   </prefpane>
+--- mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd.orig	2006-08-16 16:45:57.000000000 -0700
++++ mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2008-01-08 14:41:07.000000000 -0800
+@@ -99,3 +99,13 @@
+ <!ENTITY verify2.accesskey               "V">
+ <!ENTITY viewSecurityDevices.label       "Security Devices">
+ <!ENTITY viewSecurityDevices.accesskey   "y">
++
++<!ENTITY dnssecTab.label                "DNS Security">
++<!ENTITY dnssec.description             "DNS Security Policy is currently set at the system level (/etc/dnsval.conf) and this option allows that policy to be enforced or ignoredspecifies if those policies should be enforced.">
++<!ENTITY dnsSecurity.label              "DNS Security Policy">
++<!ENTITY neverDNSSecure.label           "Ignore DNS security">
++<!ENTITY neverDNSSecure.accesskey       "N">
++<!ENTITY possibleDNSSecure.label        "Enforce DNS Security">
++<!ENTITY possibleDNSSecure.accesskey    "E">
++<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
++<!ENTITY allDNSSecure.accesskey         "A">
+--- mozilla.firefox.1.5.0.6.rpmdist/browser/locales/en-US/chrome/overrides/appstrings.properties	2005-09-02 14:39:52.000000000 -0700
++++ mozilla/browser/locales/en-US/chrome/overrides/appstrings.properties	2006-08-23 19:01:13.000000000 -0700
+@@ -37,6 +37,8 @@
+ malformedURI=The URL is not valid and cannot be loaded.
+ fileNotFound=Firefox can't find the file at %S.
+ dnsNotFound=Firefox can't find the server at %S.
++dnsDNSSECValidationError=The address (URL) failed its DNSSEC security check validation.  Please contact a system administrator for help.
++dnsDNSSECDNEError=The browser verified that there is no server for the provided address.
+ protocolNotFound=Firefox doesn't know how to open this address, because the protocol (%S) isn't associated with any program.
+ connectionFailure=Firefox can't establish a connection to the server at %S.
+ netInterrupt=The connection to %S was interrupted while the page was loading.
+--- mozilla.firefox.1.5.0.6.rpmdist/browser/locales/en-US/chrome/overrides/netError.dtd	2005-08-29 13:10:06.000000000 -0700
++++ mozilla/browser/locales/en-US/chrome/overrides/netError.dtd	2006-08-23 19:01:13.000000000 -0700
+@@ -25,6 +25,12 @@
+ </ul>
+ ">
+
++<!ENTITY dnsDNSSECValidationError.title "DNSSEC Validation Error">
++<!ENTITY dnsDNSSECValidationError.longDesc "The address (URL) failed its DNSSEC security check validation.  Please contact a system administrator for help.">
++
++<!ENTITY dnsDNSSECDNEError.title "Server Does Not Exist">
++<!ENTITY dnsDNSSECDNEError.longDesc "<p>The browser verified that there is no server for the provided address.</p><ul><li>Did you make a mistake when typing the domain? (e.g. <q><strong>ww</strong>.mozilla.org</q> instead of <q><strong>www</strong>.mozilla.org</q>)</li><li>This domain address does not exist.  Are you sure it is supposed to?  Maybe it used to but it no longer does?</li></ul>">
++
+ <!ENTITY fileNotFound.title "File not found">
+ <!ENTITY fileNotFound.longDesc "
+ <ul>
+--- mozilla.firefox.1.5.0.6.rpmdist/layout/base/nsPresContext.cpp	2006-04-21 16:30:50.000000000 -0700
++++ mozilla/layout/base/nsPresContext.cpp	2006-08-24 09:28:37.000000000 -0700
+@@ -69,6 +69,7 @@
+ #include "nsIWeakReferenceUtils.h"
+ #include "nsCSSRendering.h"
+ #include "prprf.h"
++#include "prnetdb.h"
+ #include "nsContentPolicyUtils.h"
+ #include "nsIDOMDocument.h"
+ #include "nsAutoPtr.h"
+@@ -268,6 +269,11 @@
+   nsContentUtils::UnregisterPrefCallback("image.animation_mode",
+                                          nsPresContext::PrefChangedCallback,
+                                          this);
++#ifdef MOZ_DNSSEC
++  nsContentUtils::UnregisterPrefCallback("security.dnssec.dnssecBehavior",
++                                         nsPresContext::PrefChangedCallback,
++                                         this);
++#endif
+ #ifdef IBMBIDI
+   nsContentUtils::UnregisterPrefCallback("bidi.", PrefChangedCallback, this);
+
+@@ -668,6 +674,10 @@
+   else // dynamic change to invalid value should act like it does initially
+     mImageAnimationModePref = imgIContainer::kNormalAnimMode;
+
++#ifdef MOZ_DNSSEC
++  PR_set_dnssec_validate_policy(nsContentUtils::GetIntPref("security.dnssec.dnssecBehavior"));
++#endif /* MOZ_DNSSEC */
++
+   PRUint32 bidiOptions = GetBidi();
+
+   PRInt32 prefInt =
+@@ -839,6 +849,11 @@
+   nsContentUtils::RegisterPrefCallback("image.animation_mode",
+                                        nsPresContext::PrefChangedCallback,
+                                        this);
++#ifdef MOZ_DNSSEC
++  nsContentUtils::RegisterPrefCallback("security.dnssec.dnssecBehavior",
++                                       nsPresContext::PrefChangedCallback,
++                                       this);
++#endif
+ #ifdef IBMBIDI
+   nsContentUtils::RegisterPrefCallback("bidi.", PrefChangedCallback,
+                                        this);
