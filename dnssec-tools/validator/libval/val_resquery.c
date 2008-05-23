@@ -633,6 +633,10 @@ find_nslist_for_query(val_context_t * context,
     struct name_server *ref_ns_list;
     int             ret_val;
     struct val_query_chain *next_q;
+    u_int8_t       *test_n;
+    u_int16_t       tzonestatus;
+    u_int32_t ttl_x = 0;
+    struct name_server *ns;
 
     if (next_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -642,12 +646,13 @@ find_nslist_for_query(val_context_t * context,
     ref_ns_list = NULL;
 
     /* forget existing name server information */
+    if (next_q->qc_ns_list != NULL) {
+        goto done;
+    }
+
     if (next_q->qc_zonecut_n)
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
-    if (next_q->qc_ns_list != NULL) 
-        free_name_servers(&next_q->qc_ns_list);
-    next_q->qc_ns_list = NULL;
 
     ret_val = get_nslist_from_cache(context, next_qfq, queries, &ref_ns_list, &next_q->qc_zonecut_n);
     
@@ -657,7 +662,7 @@ find_nslist_for_query(val_context_t * context,
             next_q->qc_zonecut_n = NULL;
         } else {
             next_q->qc_ns_list = ref_ns_list;
-            return VAL_NO_ERROR;
+            goto done; 
         } 
     } 
 
@@ -685,6 +690,44 @@ find_nslist_for_query(val_context_t * context,
             return VAL_OUT_OF_MEMORY;
         }
         *(next_q->qc_zonecut_n) = (u_int8_t) '\0';
+    }
+
+done:
+    /*
+     * Only set the CD and EDNS0 options if we feel the server 
+     * is capable of handling DNSSEC
+     */
+    if (next_q->qc_zonecut_n != NULL)
+        test_n = next_q->qc_zonecut_n;
+    else
+        test_n = next_q->qc_name_n;
+
+    if (next_q->qc_ns_list) { 
+        int edns0 = 0;
+        /* if query is for some DNSSEC meta data then we always turn on EDNS0 */
+        if (DNSSEC_METADATA_QTYPE(next_q->qc_type_h)) {
+            edns0 = 1;
+        } else if (!(next_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
+                    
+            /* check if the zone has a security expectation of validate */
+            if (VAL_NO_ERROR != (ret_val = 
+                    get_zse(context, test_n, next_qfq->qfq_flags, 
+                            &tzonestatus, NULL, &ttl_x))) {
+                    return ret_val;
+            }
+            SET_MIN_TTL(next_q->qc_ttl_x, ttl_x);
+
+            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
+                edns0 = 1;
+            }
+        }
+        if (edns0) {
+            val_log(context, LOG_DEBUG,
+                    " find_nslist_for_query(): Setting D0 bit and using EDNS0");
+
+            for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
+                    ns->ns_options |= RES_USE_DNSSEC;
+        }
     }
     return VAL_NO_ERROR;
 }
@@ -929,16 +972,6 @@ follow_referral_or_alias_link(val_context_t * context,
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
 
-        /*
-         * find the referral_zone_n and ref_ns_list 
-         */
-        if (VAL_NO_ERROR !=
-            find_nslist_for_query(context, matched_qfq, queries)) {
-            val_log(context, LOG_DEBUG, 
-                    "follow_referral_or_alias_link(): Cannot find name servers to send query for alias");
-            matched_q->qc_state = Q_REFERRAL_ERROR;
-            goto query_err;
-        }
     } else {
 
         if (VAL_NO_ERROR != (ret_val =
@@ -1256,7 +1289,7 @@ process_cname_dname_responses(u_int8_t *name_n,
 int
 prepare_empty_nxdomain(struct rrset_rec **answers,
                        struct name_server *respondent_server,
-                       const u_int8_t * query_name_n,
+                       u_int8_t * query_name_n,
                        u_int16_t query_type_h, u_int16_t query_class_h,
                        u_int8_t       *hptr)
 {
@@ -1367,10 +1400,9 @@ digest_response(val_context_t * context,
     struct rrset_rec *learned_answers = NULL;
     struct rrset_rec *learned_proofs = NULL;
 
-    const u_int8_t *query_name_n;
+    u_int8_t *query_name_n;
     u_int16_t       query_type_h;
     u_int16_t       query_class_h;
-    u_int16_t       tzonestatus;
     u_int8_t       *rrs_zonecut_n = NULL;
     int             referral_seen = FALSE;
     u_int8_t        referral_zone_n[NS_MAXCDNAME];
@@ -1379,13 +1411,13 @@ digest_response(val_context_t * context,
     HEADER         *header;
     u_int8_t       *end;
     int             qnamelen, tot;
-    struct name_server *ns = NULL;
     int len;
     struct qname_chain **qnames;
     int             zonecut_was_modified = 0;
-    u_int32_t ttl_x = 0;
     struct val_query_chain *matched_q;
     struct name_server *respondent_server;
+    u_int16_t tzonestatus;
+    u_int32_t ttl_x;
 
     if ((matched_qfq == NULL) || (queries == NULL) ||
         (di_response == NULL) || (response_data == NULL))
@@ -1444,11 +1476,27 @@ digest_response(val_context_t * context,
     if (rrs_to_go == 0 /*&& header->rcode == ns_r_nxdomain */ ) {
         /*
          * We got a response with no records 
-         * Create a dummy answer record to handle this.  
+         * Check if EDNS was not used when it should have
          */
+        if (VAL_NO_ERROR != (ret_val =
+                get_zse(context, query_name_n, matched_qfq->qfq_flags, 
+                        &tzonestatus, NULL, &ttl_x))) { 
+            return ret_val;
+        }
+        SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
+        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST && 
+            !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE) && 
+            matched_q->qc_respondent_server && 
+            !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+
+            requery_with_edns0(context, matched_q);
+            goto done; 
+        }
         matched_q->qc_state = Q_ANSWERED;
-        return prepare_empty_nxdomain(&di_response->di_proofs, respondent_server,
-                                      query_name_n, query_type_h, query_class_h, hptr);
+        ret_val = prepare_empty_nxdomain(&di_response->di_proofs, respondent_server,
+                                         query_name_n, query_type_h, query_class_h, hptr);
+        free_name_server(&respondent_server);
+        goto done; 
     }
 
     /*
@@ -1530,7 +1578,6 @@ digest_response(val_context_t * context,
                 || (set_type_h == ns_t_soa));
 
         proof_seen = (proof_seen) ? 1 : auth_nack;      /* save the auth_nack status */
-
 
         if (from_section == VAL_FROM_ANSWER) {
             int referral_error = 0;
@@ -1752,39 +1799,19 @@ digest_response(val_context_t * context,
 
         /*
          * if we hadn't enabled EDNS0 but we got a response for a zone 
-         * where DNSSEC is enabled, retry with EDNS0 enabled
-         * This can occur if a name server a name server is 
+         * where DNSSEC is enabled, we should retry with EDNS0 enabled
+         * (This can occur if a name server a name server is 
          * authoritative for the parent zone as well as the 
          * child zone, or if one of the name servers reached while 
-         * following referrals is also recursive
+         * following referrals is also recursive)
+         * 
+         * However, we don't do this, because process_cname_dname_responses
+         * may have changed matched_q sufficiently that we cannot safely
+         * do a rollback of this query. 
+         * 
+         * Thus in this scenario, we must look for the RRSIG
          */
         
-        if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, matched_q->qc_name_n, 
-                        matched_qfq->qfq_flags, &tzonestatus, NULL, &ttl_x))) { 
-            goto done;
-        }
-        SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
-        
-        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST
-            && matched_q->qc_respondent_server
-            && !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)
-            && !(matched_q->qc_respondent_server->
-                 ns_options & RES_USE_DNSSEC)) {
-
-            free_name_server(&matched_q->qc_respondent_server);
-            matched_q->qc_respondent_server = NULL;
-            matched_q->qc_trans_id = -1;
-            matched_q->qc_state = Q_INIT;
-            val_log(context, LOG_DEBUG,
-                    "digest_response(): EDNS0 was not used; re-issuing query");
-            val_log(context, LOG_DEBUG, "digest_response(): Setting D0 bit and using EDNS0");
-            for (ns = matched_q->qc_ns_list; ns; ns = ns->ns_next)
-                ns->ns_options |= RES_USE_DNSSEC;
-            ret_val = VAL_NO_ERROR;
-            goto done;
-        }
-
         di_response->di_answers = copy_rrset_rec_list(learned_answers);
         di_response->di_proofs = copy_rrset_rec_list(learned_proofs);
         

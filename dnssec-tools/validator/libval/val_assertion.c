@@ -423,6 +423,30 @@ delete_authentication_chain_element(val_context_t *ctx,
     return; 
 }
 
+void requery_with_edns0(val_context_t *context, 
+                        struct val_query_chain *matched_q)
+{
+    struct name_server *ns = NULL;
+    if (matched_q == NULL)
+        return;
+
+    delete_authentication_chain_element(context, matched_q->qc_ans);
+    delete_authentication_chain_element(context, matched_q->qc_proof);
+    matched_q->qc_ans = NULL;
+    matched_q->qc_proof = NULL;
+
+    if (matched_q->qc_respondent_server)
+       free_name_server(&matched_q->qc_respondent_server);
+    matched_q->qc_respondent_server = NULL;
+
+    matched_q->qc_trans_id = -1;
+    matched_q->qc_state = Q_INIT;
+    val_log(context, LOG_DEBUG,
+            "requery_with_edns0(): EDNS0 was not used; re-issuing query");
+    for (ns = matched_q->qc_ns_list; ns; ns = ns->ns_next)
+        ns->ns_options |= RES_USE_DNSSEC;
+}
+
 
 void zap_query(val_context_t *context, struct val_query_chain *added_q) 
 {
@@ -4608,17 +4632,21 @@ verify_and_validate(val_context_t * context,
 
                 val_log(context, LOG_INFO,
                         "verify_and_validate(): Attempting DLV validation");
-                if (is_proof && 
+                /* 
+                 * If we did not use EDNS earlier we wont have the DNSSEC
+                 * meta-data to prove non-existence. So retry with EDNS0 in this case
+                 */
+                if (
+                    //is_proof && 
                     top_q->qc_respondent_server &&
                         !(top_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
                     /* 
                      *  have to start all over again, this time by 
                      *  sending with CD and D0 bits set
                      */
-                    val_log(context, LOG_DEBUG,
-                            "verify_and_validate(): EDNS0 was not used; re-issuing query");
-                    zap_query(context, top_q);
+                    requery_with_edns0(context, top_q);
                     top_qfq->qfq_flags |= VAL_QUERY_USING_DLV; 
+                    top_q->qc_flags |= VAL_QUERY_USING_DLV; 
 
                     /* free up all results */
                     res = *results;
@@ -4806,8 +4834,6 @@ ask_resolver(val_context_t * context,
     int             retval;
     int             need_data = 0;
     char            name_p[NS_MAXDNAME];
-    u_int16_t       tzonestatus;
-    u_int32_t ttl_x = 0;
 
     if ((context == NULL) || (queries == NULL) || (data_received == NULL) || (data_missing == NULL)) 
         return VAL_BAD_ARGUMENT;
@@ -4819,8 +4845,6 @@ ask_resolver(val_context_t * context,
 
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
         if (next_q->qfq_query->qc_state == Q_INIT) {
-            u_int8_t       *test_n;
-            struct name_server *ns;
 
             need_data = 1;
             if (-1 ==
@@ -4840,42 +4864,9 @@ ask_resolver(val_context_t * context,
                     next_q->qfq_flags);
             }
 
-            if (next_q->qfq_query->qc_ns_list == NULL) {
-                if (VAL_NO_ERROR != (retval =
-                                     find_nslist_for_query(context,
-                                                           next_q,
-                                                           queries))) {
-                    return retval;
-                }
-            }
-
-            /*
-             * Only set the CD and EDS0 options if we feel the server 
-             * is capable of handling DNSSEC
-             */
-            if (next_q->qfq_query->qc_zonecut_n != NULL)
-                test_n = next_q->qfq_query->qc_zonecut_n;
-            else
-                test_n = next_q->qfq_query->qc_name_n;
-
-            if (next_q->qfq_query->qc_ns_list) { 
-                if (!(next_q->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
-                    
-                    if (VAL_NO_ERROR != (retval = 
-                        get_zse(context, test_n, next_q->qfq_flags, 
-                                &tzonestatus, NULL, &ttl_x))) {
-                        return retval;
-                    }
-                    SET_MIN_TTL(next_q->qfq_query->qc_ttl_x, ttl_x);
-
-                    if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
-                        val_log(context, LOG_DEBUG,
-                            "ask_resolver(): Setting D0 bit and using EDNS0");
-
-                        for (ns = next_q->qfq_query->qc_ns_list; ns; ns = ns->ns_next)
-                            ns->ns_options |= RES_USE_DNSSEC;
-                    }
-                }
+            if (VAL_NO_ERROR != 
+                    (retval = find_nslist_for_query(context, next_q, queries))) {
+                return retval;
             }
 
             /* find_nslist_for_query() could have modified the state */ 
