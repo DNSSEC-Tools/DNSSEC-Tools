@@ -107,6 +107,15 @@
 #define ns_t_ds       43
 #endif
 
+/* query types for which edns0 is required */
+#ifdef LIBVAL_DLV
+#define DNSSEC_METADATA_QTYPE(type) \
+    ((type == ns_t_rrsig || type == ns_t_dnskey || type == ns_t_ds || type == ns_t_dlv))
+#else
+#define DNSSEC_METADATA_QTYPE(type) \
+    ((type == ns_t_rrsig || type == ns_t_dnskey || type == ns_t_ds))
+#endif
+
 /*
  * Resolver errors 
  */
