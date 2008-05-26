@@ -1529,7 +1529,7 @@ preserved as given in the I<rollrec> file.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
