@@ -95,7 +95,7 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::rolllog;
 
-our $VERSION = "0.9";
+our $VERSION = "0.91";
 
 our @ISA = qw(Exporter);
 
