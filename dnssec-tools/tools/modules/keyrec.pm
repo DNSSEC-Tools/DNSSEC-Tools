@@ -54,7 +54,7 @@ require Exporter;
 use strict;
 use Net::DNS::SEC::Tools::conf;
 
-our $VERSION = "1.3";
+our $VERSION = "1.4";
 
 our @ISA = qw(Exporter);
 

@@ -8,7 +8,7 @@ package Net::DNS::SEC::Tools::Donuts::Rule;
 use strict;
 use Net::DNS;
 my $have_textwrap = eval { require Text::Wrap };
-our $VERSION="1.0";
+our $VERSION="1.1";
 
 require Exporter;
 our @ISA = qw(Exporter);
