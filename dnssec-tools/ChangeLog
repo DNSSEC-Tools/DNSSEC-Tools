@@ -1,4 +1,1411 @@
 ------------------------------------------------------------------------
+r4101 | hardaker | 2008-05-23 07:05:45 -0700 (Fri, 23 May 2008) | 1 line
+
+initial patches for firefox3; not enirely working yet
+------------------------------------------------------------------------
+r4100 | hserus | 2008-05-22 19:13:41 -0700 (Thu, 22 May 2008) | 10 lines
+
+* Create function for resetting query params so that it will use EDNS0 
+  the next time it sends out the query
+* Set EDNS0 in find_nslist_for_query() in ask_resolver(). Set EDNS0 when we are
+  looking for some DNSSEC meta-data or if the zone expection is validation. 
+* Reissue query with EDNS0 if a negative response was returned by a zone 
+  that was authoritative for both parent and child, but only child had a
+  zone security expectation of validate
+* Do not reissue query for positive answers, since this can mess up cname
+  chains 
+
+------------------------------------------------------------------------
+r4099 | hserus | 2008-05-22 19:00:50 -0700 (Thu, 22 May 2008) | 2 lines
+
+Add macro to identify DNSSEC meta-data query types
+
+------------------------------------------------------------------------
+r4098 | hardaker | 2008-05-22 16:41:14 -0700 (Thu, 22 May 2008) | 1 line
+
+constants update from the validator header file
+------------------------------------------------------------------------
+r4097 | tewok | 2008-05-21 19:30:30 -0700 (Wed, 21 May 2008) | 3 lines
+
+
+Adjusted the fontsize.
+
+------------------------------------------------------------------------
+r4096 | tewok | 2008-05-21 19:30:13 -0700 (Wed, 21 May 2008) | 3 lines
+
+
+Changed references of "-rollzone" to "-rollzsk".
+
+------------------------------------------------------------------------
+r4095 | tewok | 2008-05-21 19:29:11 -0700 (Wed, 21 May 2008) | 5 lines
+
+
+Added the ROLLCMD_RC_KSKROLL and ROLLCMD_RC_ZSKROLL return codes.
+Renamed the rollcmd_rollall() to rollcmd_rollallzsks().
+
+
+------------------------------------------------------------------------
+r4094 | tewok | 2008-05-21 19:26:54 -0700 (Wed, 21 May 2008) | 5 lines
+
+
+Added support for the "rollksk" command.
+Adjusted spacing for option sets.
+Renamed the "rollall" command to "rollallzsks".
+
+------------------------------------------------------------------------
+r4093 | tewok | 2008-05-21 19:23:55 -0700 (Wed, 21 May 2008) | 3 lines
+
+
+Renamed the -loglvl option to -loglevel.
+
+------------------------------------------------------------------------
+r4092 | tewok | 2008-05-21 19:22:37 -0700 (Wed, 21 May 2008) | 4 lines
+
+
+Renamed cmd_rollall() to cmd_rollallzsks().
+Added an error check after keyrec_fullrec().
+
+------------------------------------------------------------------------
+r4091 | tewok | 2008-05-21 19:20:34 -0700 (Wed, 21 May 2008) | 3 lines
+
+
+Renamed the "rollall" command to "rollallzsks".
+
+------------------------------------------------------------------------
+r4090 | hardaker | 2008-05-21 16:51:59 -0700 (Wed, 21 May 2008) | 1 line
+
+add note saying website needs updating
+------------------------------------------------------------------------
+r4089 | hardaker | 2008-05-21 16:42:43 -0700 (Wed, 21 May 2008) | 1 line
+
+use proper tempfile creation
+------------------------------------------------------------------------
+r4088 | tewok | 2008-05-20 18:14:22 -0700 (Tue, 20 May 2008) | 4 lines
+
+
+Collapsed cmd_rollksk() and cmd_rollzsk() into cmd_rollnow().
+ 
+
+------------------------------------------------------------------------
+r4087 | tewok | 2008-05-20 15:29:39 -0700 (Tue, 20 May 2008) | 8 lines
+
+
+Renamed rollzsk() to rollnow().
+
+Modified rollnow() (nee rollzsk()) to do either KSK or ZSK rollovers,
+depending on the key-type argument.
+
+Allow user-initiated KSK rollovers.
+
+------------------------------------------------------------------------
+r4086 | tewok | 2008-05-20 11:09:21 -0700 (Tue, 20 May 2008) | 11 lines
+
+
+Clarified header comment for cmd_rollall().
+
+Added code to cmd_rollzsk() to disallow a rollksk command or additional
+rollzsk commands while in ZSK rollover. 
+
+Added cmd_rollksk() to handle the rollksk command.
+
+Added rollksk() stub to (eventually) provide support for the rollksk command.
+
+
+------------------------------------------------------------------------
+r4085 | hserus | 2008-05-20 09:53:29 -0700 (Tue, 20 May 2008) | 2 lines
+
+Add a note that, for DLV, zones should not be marked trusted or untrusted
+
+------------------------------------------------------------------------
+r4084 | hserus | 2008-05-20 09:48:51 -0700 (Tue, 20 May 2008) | 2 lines
+
+Don't do DLV validation if we've explicitly marked a zone as trusted or untrusted
+
+------------------------------------------------------------------------
+r4083 | tewok | 2008-05-19 14:37:29 -0700 (Mon, 19 May 2008) | 3 lines
+
+
+Renamed a bunch of "rollzone" references to "rollzsk".
+
+------------------------------------------------------------------------
+r4082 | tewok | 2008-05-19 14:36:34 -0700 (Mon, 19 May 2008) | 3 lines
+
+
+Renamed "-rollzone" to "-rollzsk".
+
+------------------------------------------------------------------------
+r4081 | tewok | 2008-05-19 13:14:01 -0700 (Mon, 19 May 2008) | 3 lines
+
+
+Renamed the "rollzone" command to "rollzsk".
+
+------------------------------------------------------------------------
+r4080 | tewok | 2008-05-19 12:41:00 -0700 (Mon, 19 May 2008) | 8 lines
+
+Changed use of "rollctl -rollzone" to "rollctl -rollzsk".  Several routines
+also changed name as a result of this.
+
+Moved the code to find the path of rollctl to before it's used.
+
+Gave the -q option to a rollctl execution.
+ 
+
+------------------------------------------------------------------------
+r4079 | hserus | 2008-05-19 11:31:36 -0700 (Mon, 19 May 2008) | 2 lines
+
+Expand environment variables in the dnsval.conf "include" line
+
+------------------------------------------------------------------------
+r4078 | hardaker | 2008-05-19 11:24:36 -0700 (Mon, 19 May 2008) | 1 line
+
+don't require spaces
+------------------------------------------------------------------------
+r4077 | tewok | 2008-05-18 18:38:34 -0700 (Sun, 18 May 2008) | 3 lines
+
+
+Fixed a bit of the help message.
+
+------------------------------------------------------------------------
+r4076 | tewok | 2008-05-17 08:47:20 -0700 (Sat, 17 May 2008) | 3 lines
+
+
+Ensure that rollerd is actually running prior to sending a command.
+
+------------------------------------------------------------------------
+r4075 | tewok | 2008-05-17 08:33:28 -0700 (Sat, 17 May 2008) | 4 lines
+
+
+Added the rollmgr_running() interface and pod to determine when rollerd is
+running.
+
+------------------------------------------------------------------------
+r4074 | tewok | 2008-05-16 13:23:07 -0700 (Fri, 16 May 2008) | 4 lines
+
+
+Modified the -loglevel option so that a list of valid options is printed if
+the new level isn't specified.
+
+------------------------------------------------------------------------
+r4073 | tewok | 2008-05-16 11:38:26 -0700 (Fri, 16 May 2008) | 10 lines
+
+
+Folded the phaser script into runtest.
+
+Moved some of the pre-defined tests from Makefile into runtest.
+
+Added new options to runtest:  -ttl, -ksklife, -zsklife, -short,
+-medium, and -long.
+
+Updated README to reflect the above changes.
+
+------------------------------------------------------------------------
+r4072 | hardaker | 2008-05-15 16:33:12 -0700 (Thu, 15 May 2008) | 1 line
+
+allow -w to use a special -42 value for immediate; add --nomail to the help output; fix parsing of the dnsval.conf file when adding new entries
+------------------------------------------------------------------------
+r4071 | hserus | 2008-05-15 11:30:48 -0700 (Thu, 15 May 2008) | 4 lines
+
+Don't simply remove *all* semicolons. 
+This would result in config file errors if the dnsval.conf file contains other (non key) policy constructs.
+
+
+------------------------------------------------------------------------
+r4070 | hardaker | 2008-05-14 19:12:01 -0700 (Wed, 14 May 2008) | 1 line
+
+new constants updates
+------------------------------------------------------------------------
+r4069 | hardaker | 2008-05-14 16:19:51 -0700 (Wed, 14 May 2008) | 1 line
+
+changed failure wording to use succeeded instead
+------------------------------------------------------------------------
+r4068 | hserus | 2008-05-14 15:48:14 -0700 (Wed, 14 May 2008) | 2 lines
+
+Add some news snippets
+
+------------------------------------------------------------------------
+r4067 | hserus | 2008-05-14 15:47:13 -0700 (Wed, 14 May 2008) | 5 lines
+
+Fix bug that causes sendmail to crash. Still need to figure out why sendmail
+insists on queuing email that fails validation checks instead of dropping these
+emails.
+
+
+------------------------------------------------------------------------
+r4066 | tewok | 2008-05-14 13:32:04 -0700 (Wed, 14 May 2008) | 3 lines
+
+
+Changed to have three test cases of varying lengths.
+
+------------------------------------------------------------------------
+r4065 | tewok | 2008-05-14 13:30:39 -0700 (Wed, 14 May 2008) | 4 lines
+
+
+Change the hard-coded TTL value to a placeholder that will be changed by
+the makefile.
+
+------------------------------------------------------------------------
+r4064 | baerm | 2008-05-12 17:34:16 -0700 (Mon, 12 May 2008) | 4 lines
+
+
+renaming again to even better describe this file :).
+
+
+------------------------------------------------------------------------
+r4063 | baerm | 2008-05-12 17:33:24 -0700 (Mon, 12 May 2008) | 3 lines
+
+changing the postfix howto name for spf to be more descriptive
+it's going to change in again, sigh.
+
+------------------------------------------------------------------------
+r4062 | baerm | 2008-05-12 17:29:51 -0700 (Mon, 12 May 2008) | 5 lines
+
+
+Updated the libspf2 postfix instructions to reflect a new patch
+that works with the current 2.5.1 version of postfix.
+
+
+------------------------------------------------------------------------
+r4061 | hserus | 2008-05-12 11:32:04 -0700 (Mon, 12 May 2008) | 2 lines
+
+Return non-existence status codes when available
+
+------------------------------------------------------------------------
+r4060 | hserus | 2008-05-12 11:29:01 -0700 (Mon, 12 May 2008) | 2 lines
+
+Print validation status value
+
+------------------------------------------------------------------------
+r4059 | hserus | 2008-05-12 10:31:01 -0700 (Mon, 12 May 2008) | 2 lines
+
+Use val_does_not_exist() instead of checking for proof count (which may be 0 when no authentication chain details are returned)
+
+------------------------------------------------------------------------
+r4058 | tewok | 2008-05-12 09:01:51 -0700 (Mon, 12 May 2008) | 3 lines
+
+
+Cleaned up the usage message a little.
+
+------------------------------------------------------------------------
+r4057 | tewok | 2008-05-12 08:59:34 -0700 (Mon, 12 May 2008) | 3 lines
+
+
+Clarified usage message for -sleeptime.
+
+------------------------------------------------------------------------
+r4056 | hserus | 2008-05-12 08:36:08 -0700 (Mon, 12 May 2008) | 2 lines
+
+Set correct default return value
+
+------------------------------------------------------------------------
+r4055 | tewok | 2008-05-12 08:00:14 -0700 (Mon, 12 May 2008) | 3 lines
+
+
+Fix copyright.
+
+------------------------------------------------------------------------
+r4054 | tewok | 2008-05-10 17:36:19 -0700 (Sat, 10 May 2008) | 3 lines
+
+
+New test for rolloerd and zonesigner.
+
+------------------------------------------------------------------------
+r4053 | tewok | 2008-05-10 16:50:21 -0700 (Sat, 10 May 2008) | 3 lines
+
+
+Added two assignments so that key lifespans would be added during rollovers.
+
+------------------------------------------------------------------------
+r4052 | tewok | 2008-05-10 16:49:07 -0700 (Sat, 10 May 2008) | 3 lines
+
+
+Added a small, but critical, comment.
+
+------------------------------------------------------------------------
+r4051 | tewok | 2008-05-09 09:51:11 -0700 (Fri, 09 May 2008) | 3 lines
+
+
+A couple minor comment fixes.
+
+------------------------------------------------------------------------
+r4050 | hserus | 2008-05-09 06:02:09 -0700 (Fri, 09 May 2008) | 2 lines
+
+Reset the cache head when the current head element times out. 
+
+------------------------------------------------------------------------
+r4049 | hardaker | 2008-05-08 19:09:30 -0700 (Thu, 08 May 2008) | 1 line
+
+updated files based on modified newer firefox files as well as changes to libval
+------------------------------------------------------------------------
+r4048 | tewok | 2008-05-08 18:18:33 -0700 (Thu, 08 May 2008) | 3 lines
+
+
+Clarified a bit of directory-related pod.
+
+------------------------------------------------------------------------
+r4047 | hardaker | 2008-05-08 14:24:35 -0700 (Thu, 08 May 2008) | 1 line
+
+added autoconf.mk.in to the list of generated patch files
+------------------------------------------------------------------------
+r4046 | tewok | 2008-05-08 08:57:37 -0700 (Thu, 08 May 2008) | 3 lines
+
+
+Added some clarifying pod about the option/config file relationship.
+
+------------------------------------------------------------------------
+r4045 | tewok | 2008-05-07 20:01:14 -0700 (Wed, 07 May 2008) | 3 lines
+
+
+Add a check to ensure that the logfile's directory exists.
+
+------------------------------------------------------------------------
+r4044 | hardaker | 2008-05-07 15:37:25 -0700 (Wed, 07 May 2008) | 1 line
+
+document the dnssec-tools.conf file tokens that can be used
+------------------------------------------------------------------------
+r4043 | tewok | 2008-05-06 15:04:53 -0700 (Tue, 06 May 2008) | 4 lines
+
+Added -rrfile and -parameters to usage message.
+Unbuffered stdout output.
+
+
+------------------------------------------------------------------------
+r4042 | tewok | 2008-05-06 14:08:50 -0700 (Tue, 06 May 2008) | 3 lines
+
+
+Updated the copyright dates.
+
+------------------------------------------------------------------------
+r4041 | tewok | 2008-05-06 14:08:04 -0700 (Tue, 06 May 2008) | 3 lines
+
+
+Fixed the -Version output in the usage message.
+
+------------------------------------------------------------------------
+r4040 | tewok | 2008-05-06 14:05:39 -0700 (Tue, 06 May 2008) | 3 lines
+
+
+Added pod for -rollksk.
+
+------------------------------------------------------------------------
+r4039 | tewok | 2008-05-06 14:04:28 -0700 (Tue, 06 May 2008) | 3 lines
+
+
+Added pod for the -Version option.
+
+------------------------------------------------------------------------
+r4038 | tewok | 2008-05-06 13:45:27 -0700 (Tue, 06 May 2008) | 3 lines
+
+
+Updated copyrights.
+
+------------------------------------------------------------------------
+r4037 | tewok | 2008-05-06 11:14:55 -0700 (Tue, 06 May 2008) | 3 lines
+
+
+Fixed the zone name variables in some logging messages.
+
+------------------------------------------------------------------------
+r4036 | tewok | 2008-05-06 11:13:54 -0700 (Tue, 06 May 2008) | 4 lines
+
+
+Added some error checking to ensure a valid logging level was given
+for -loglevel.
+
+------------------------------------------------------------------------
+r4035 | tewok | 2008-05-06 11:12:12 -0700 (Tue, 06 May 2008) | 3 lines
+
+
+Added three missing command to the %roll_commands validation list.
+
+------------------------------------------------------------------------
+r4034 | tewok | 2008-05-05 18:27:05 -0700 (Mon, 05 May 2008) | 3 lines
+
+
+Added entries for a few modules.
+
+------------------------------------------------------------------------
+r4033 | tewok | 2008-05-05 18:19:01 -0700 (Mon, 05 May 2008) | 3 lines
+
+
+Added rolllog_validlevel() to allow for easy checking of valid levels.
+
+------------------------------------------------------------------------
+r4032 | tewok | 2008-05-05 18:05:46 -0700 (Mon, 05 May 2008) | 3 lines
+
+
+Changed log file name.
+
+------------------------------------------------------------------------
+r4031 | hardaker | 2008-05-05 14:32:56 -0700 (Mon, 05 May 2008) | 1 line
+
+usage output section separation
+------------------------------------------------------------------------
+r4030 | hardaker | 2008-05-05 14:04:18 -0700 (Mon, 05 May 2008) | 1 line
+
+use the original TTL for the holddown time, as specified per 5011; a bit more debugging output
+------------------------------------------------------------------------
+r4029 | hardaker | 2008-05-05 13:40:49 -0700 (Mon, 05 May 2008) | 1 line
+
+fix holddown computation to use TTL as a minimum amount
+------------------------------------------------------------------------
+r4028 | hardaker | 2008-05-05 11:26:35 -0700 (Mon, 05 May 2008) | 1 line
+
+add a new --nomail option to prevent sending of mail\nclean up of a few verbose output statements\nskip file addition checks if the filename wasn't specified\ndefault to verbose => off
+------------------------------------------------------------------------
+r4027 | baerm | 2008-05-01 16:44:02 -0700 (Thu, 01 May 2008) | 4 lines
+
+
+Addinig posttfix 2.5.1 patch update and howto changes.
+
+
+------------------------------------------------------------------------
+r4026 | hserus | 2008-05-01 07:23:22 -0700 (Thu, 01 May 2008) | 2 lines
+
+Define freeaddrinfo() if it does not exist
+
+------------------------------------------------------------------------
+r4025 | baerm | 2008-04-30 22:29:59 -0700 (Wed, 30 Apr 2008) | 5 lines
+
+
+updated patch to work with current library (i.e. to work with
+changes in getaddrinfo api)
+
+
+------------------------------------------------------------------------
+r4024 | hserus | 2008-04-30 14:19:32 -0700 (Wed, 30 Apr 2008) | 6 lines
+
+Use revised val_getaddrinfo() function.
+
+Move to more recent version of lftp. However, 
+I've still not managed to get this to compile on MacOSX 
+so the status marked in the howto file is still valid.
+
+------------------------------------------------------------------------
+r4023 | hserus | 2008-04-30 14:15:23 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+Use new val_getaddrinfo() prototype
+
+------------------------------------------------------------------------
+r4022 | hserus | 2008-04-30 14:12:17 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+Minor update to documentation
+
+------------------------------------------------------------------------
+r4021 | hserus | 2008-04-30 14:11:44 -0700 (Wed, 30 Apr 2008) | 3 lines
+
+Do not use additional enable/disable logic for validation in libspf. Delegate that to the dnsval.conf file.
+Also use the new val_res_query() interface instead of the now obsoleted val_query() function.
+
+------------------------------------------------------------------------
+r4020 | hserus | 2008-04-30 13:34:27 -0700 (Wed, 30 Apr 2008) | 4 lines
+
+Do not use modified API from libspf2. Use existing functions.
+libspf2 will perform validation based on dnsval.conf
+
+
+------------------------------------------------------------------------
+r4019 | hserus | 2008-04-30 13:32:37 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+No longer define the RequireDNSSEC policy. Validation policy will only be read from dnsval.conf
+
+------------------------------------------------------------------------
+r4018 | hserus | 2008-04-30 13:04:51 -0700 (Wed, 30 Apr 2008) | 3 lines
+
+Don't use the VAL_QUERY_MERGE_RRSET flag. Use new elements of the
+val_result_t structure.
+
+------------------------------------------------------------------------
+r4017 | hserus | 2008-04-30 12:52:10 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+Use new val_getaddrinfo() prototype
+
+------------------------------------------------------------------------
+r4016 | hserus | 2008-04-30 12:26:42 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+Use latest set of error codes
+
+------------------------------------------------------------------------
+r4015 | hserus | 2008-04-30 12:23:03 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+Don't increment number of proofs in result structure if we're not going to be storing details about them
+
+------------------------------------------------------------------------
+r4014 | hserus | 2008-04-30 12:22:39 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+Specify the VAL_QUERY_NO_AC_DETAIL flag to val_resolve_and_check
+
+------------------------------------------------------------------------
+r4013 | hserus | 2008-04-30 12:22:02 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+The -m option is no longer defined.
+
+------------------------------------------------------------------------
+r4012 | hserus | 2008-04-30 12:21:26 -0700 (Wed, 30 Apr 2008) | 2 lines
+
+Obsolete val_query/val_free_response and the VAL_QUERY_MERGE_RRSETS flag
+
+------------------------------------------------------------------------
+r4011 | hardaker | 2008-04-25 14:07:04 -0700 (Fri, 25 Apr 2008) | 1 line
+
+extra documentation and more information in the usage output
+------------------------------------------------------------------------
+r4010 | hardaker | 2008-04-23 15:57:33 -0700 (Wed, 23 Apr 2008) | 1 line
+
+put multiple instances of key saving code in a common function; more Verbose() output; better parsing of libval.conf to ignore comment lines; changed -w switch to be time from now rather than an absolute time
+------------------------------------------------------------------------
+r4009 | hserus | 2008-04-23 10:04:55 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Change flag size to u_int32_t
+
+------------------------------------------------------------------------
+r4008 | hserus | 2008-04-23 10:03:50 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Change flag size to u_int32_t
+
+------------------------------------------------------------------------
+r4007 | hserus | 2008-04-23 10:02:49 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Change flag size to u_int32_t
+
+------------------------------------------------------------------------
+r4006 | hserus | 2008-04-23 10:01:56 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Change flag size to u_int32_t
+
+------------------------------------------------------------------------
+r4005 | hserus | 2008-04-23 08:19:50 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Make error list ordering consistent with API draft
+
+------------------------------------------------------------------------
+r4004 | hserus | 2008-04-23 08:19:30 -0700 (Wed, 23 Apr 2008) | 7 lines
+
+Use single error codes VAL_AC_DNS_ERROR and VAL_DNS_ERROR instead of all the
+possible variants
+Rename unsecure to insecure
+Rename VAL_DONT_GO_FURTHER to VAL_BARE_TRUST_KEY
+Use single VAL_BOGUS state instead of differentiating between
+VAL_BOGUS_PROVABLE and VAL_BOGUS_UNPROVABLE
+
+------------------------------------------------------------------------
+r4003 | hserus | 2008-04-23 08:18:57 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Rename unsecure to insecure
+
+------------------------------------------------------------------------
+r4002 | hserus | 2008-04-23 08:18:35 -0700 (Wed, 23 Apr 2008) | 4 lines
+
+rename unsecure to insecure
+Print config file information as LOG_NOTICE
+Check for NULL before using global options
+
+------------------------------------------------------------------------
+r4001 | hserus | 2008-04-23 08:18:17 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Use single VAL_DNS_ERROR condition instead of a bunch of types
+
+------------------------------------------------------------------------
+r4000 | hserus | 2008-04-23 08:17:55 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+bring doc in sync with current code
+
+------------------------------------------------------------------------
+r3999 | hserus | 2008-04-23 08:16:53 -0700 (Wed, 23 Apr 2008) | 4 lines
+
+Document val_get_rrset()
+Change size of flags to 32 bits
+Change UNSECURE to INSECURE
+
+------------------------------------------------------------------------
+r3998 | hserus | 2008-04-23 08:16:10 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Document val_get_rrset()
+
+------------------------------------------------------------------------
+r3997 | hserus | 2008-04-23 08:15:34 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Add documentation for various command line programs
+
+------------------------------------------------------------------------
+r3996 | hserus | 2008-04-23 08:14:38 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Rename unsecure to insecure
+
+------------------------------------------------------------------------
+r3995 | hserus | 2008-04-23 08:14:14 -0700 (Wed, 23 Apr 2008) | 3 lines
+
+Use the dnsval.conf file given with the -d option, else use the system
+dnsval.conf file
+
+------------------------------------------------------------------------
+r3994 | hserus | 2008-04-23 08:13:45 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Add usage for -o option
+
+------------------------------------------------------------------------
+r3993 | hserus | 2008-04-23 08:13:05 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Use latest set of error codes from val_errors.h
+
+------------------------------------------------------------------------
+r3992 | hserus | 2008-04-23 08:11:44 -0700 (Wed, 23 Apr 2008) | 2 lines
+
+Renamed unsecure to insecure
+
+------------------------------------------------------------------------
+r3991 | hserus | 2008-04-23 08:11:18 -0700 (Wed, 23 Apr 2008) | 5 lines
+
+Remove all out of date comments
+Replace all DNS error codes with a single error code
+Make error list ordering consistent with API draft
+Renamed UNSECURE to INSECURE
+
+------------------------------------------------------------------------
+r3990 | hardaker | 2008-04-21 16:15:12 -0700 (Mon, 21 Apr 2008) | 1 line
+
+more verbose output when doing various tasks; newline wraps
+------------------------------------------------------------------------
+r3989 | hardaker | 2008-04-21 14:19:12 -0700 (Mon, 21 Apr 2008) | 1 line
+
+print an error if neither .conf exists
+------------------------------------------------------------------------
+r3988 | hardaker | 2008-04-21 13:57:48 -0700 (Mon, 21 Apr 2008) | 1 line
+
+remove a bit of duplicate code; change -d to -z code to match -z docs
+------------------------------------------------------------------------
+r3987 | hardaker | 2008-04-21 11:30:13 -0700 (Mon, 21 Apr 2008) | 1 line
+
+trailing white space removal
+------------------------------------------------------------------------
+r3986 | hardaker | 2008-04-21 11:29:25 -0700 (Mon, 21 Apr 2008) | 1 line
+
+added new options for minimal trustman config
+------------------------------------------------------------------------
+r3985 | hserus | 2008-04-21 11:24:27 -0700 (Mon, 21 Apr 2008) | 2 lines
+
+Remande val_query to val_res_query
+
+------------------------------------------------------------------------
+r3984 | hserus | 2008-04-21 11:22:49 -0700 (Mon, 21 Apr 2008) | 2 lines
+
+Remove reference to val_query
+
+------------------------------------------------------------------------
+r3983 | hserus | 2008-04-17 09:21:55 -0700 (Thu, 17 Apr 2008) | 4 lines
+
+Add documentation on val_log_add_optarg()
+Remove description for functions that allow users to manipulate locations for
+various configuration files
+
+------------------------------------------------------------------------
+r3982 | hserus | 2008-04-16 10:28:59 -0700 (Wed, 16 Apr 2008) | 2 lines
+
+Document some of the new policy hooks
+
+------------------------------------------------------------------------
+r3981 | hserus | 2008-04-15 13:38:09 -0700 (Tue, 15 Apr 2008) | 2 lines
+
+Incremental fix for EDNS0; still have to figure out best way to handle EDNS0 queries
+
+------------------------------------------------------------------------
+r3980 | hserus | 2008-04-15 13:29:28 -0700 (Tue, 15 Apr 2008) | 3 lines
+
+changes to make dlv logic work a little better. EDNS0 logic in dlv still needs
+to be fine-tuned
+
+------------------------------------------------------------------------
+r3979 | hserus | 2008-04-15 13:23:34 -0700 (Tue, 15 Apr 2008) | 2 lines
+
+Move code for reading VAL_LOG_TARGET to val_policy
+
+------------------------------------------------------------------------
+r3978 | hserus | 2008-04-15 13:22:38 -0700 (Tue, 15 Apr 2008) | 3 lines
+
+Remove existing log targets before adding new ones during a conf file
+re-read
+
+------------------------------------------------------------------------
+r3977 | hserus | 2008-04-15 13:21:29 -0700 (Tue, 15 Apr 2008) | 4 lines
+
+change val_log_add_* functions so that we add log target to the given list
+instead of a static object
+Add new funtion val_log_add_optarg_to_list() to add a log target to given list
+
+------------------------------------------------------------------------
+r3976 | hserus | 2008-04-15 13:20:25 -0700 (Tue, 15 Apr 2008) | 2 lines
+
+Add log target to context
+
+------------------------------------------------------------------------
+r3973 | hardaker | 2008-04-15 10:14:05 -0700 (Tue, 15 Apr 2008) | 1 line
+
+type typos
+------------------------------------------------------------------------
+r3971 | hardaker | 2008-04-15 08:51:32 -0700 (Tue, 15 Apr 2008) | 1 line
+
+fixed bug #1603912: typo in --help
+------------------------------------------------------------------------
+r3965 | hserus | 2008-04-10 08:06:58 -0700 (Thu, 10 Apr 2008) | 2 lines
+
+read VAL_LOG_TARGET only after context is created
+
+------------------------------------------------------------------------
+r3964 | hserus | 2008-04-10 08:03:50 -0700 (Thu, 10 Apr 2008) | 3 lines
+
+check for in-bailiwick condition before attempting to store name server
+information to cache
+
+------------------------------------------------------------------------
+r3963 | hserus | 2008-04-10 08:02:44 -0700 (Thu, 10 Apr 2008) | 2 lines
+
+Ensure that log target from environment is specified at the correct time. 
+
+------------------------------------------------------------------------
+r3961 | marz | 2008-03-28 08:01:46 -0700 (Fri, 28 Mar 2008) | 1 line
+
+fix man page install
+------------------------------------------------------------------------
+r3960 | marz | 2008-03-27 16:07:39 -0700 (Thu, 27 Mar 2008) | 1 line
+
+fix for linux progname
+------------------------------------------------------------------------
+r3959 | marz | 2008-03-26 07:23:19 -0700 (Wed, 26 Mar 2008) | 1 line
+
+libval_shim changes related to logging env. var. support in libval
+------------------------------------------------------------------------
+r3958 | hserus | 2008-03-19 12:28:23 -0700 (Wed, 19 Mar 2008) | 2 lines
+
+Check for non-existence
+
+------------------------------------------------------------------------
+r3957 | hserus | 2008-03-19 11:13:55 -0700 (Wed, 19 Mar 2008) | 1 line
+
+rename gopt to g_opt
+------------------------------------------------------------------------
+r3956 | hserus | 2008-03-19 11:08:07 -0700 (Wed, 19 Mar 2008) | 2 lines
+
+Save current log channel to context
+
+------------------------------------------------------------------------
+r3955 | hserus | 2008-03-19 10:28:36 -0700 (Wed, 19 Mar 2008) | 2 lines
+
+Add support for reading logging preference from the VAL_LOG_TARGET env variable and from a "log" global option
+
+------------------------------------------------------------------------
+r3954 | hserus | 2008-03-19 10:26:14 -0700 (Wed, 19 Mar 2008) | 2 lines
+
+Add definition for log_target
+
+------------------------------------------------------------------------
+r3953 | marz | 2008-03-19 10:23:51 -0700 (Wed, 19 Mar 2008) | 1 line
+
+related changes to support moving policy context label enviroment variable app name logic to libval itself
+------------------------------------------------------------------------
+r3952 | hserus | 2008-03-18 12:51:06 -0700 (Tue, 18 Mar 2008) | 2 lines
+
+Add default for env-policy and app-policy
+
+------------------------------------------------------------------------
+r3951 | hserus | 2008-03-18 12:49:40 -0700 (Tue, 18 Mar 2008) | 4 lines
+
+* rename the_null_context to the_default_context
+* the default context is not necessarily the "null" context, since labels may be overriden by global
+options. In such cases, the default policy is the overriding policy.
+
+------------------------------------------------------------------------
+r3950 | hserus | 2008-03-18 12:49:17 -0700 (Tue, 18 Mar 2008) | 2 lines
+
+Modify prototype for read_val_config_file() function
+
+------------------------------------------------------------------------
+r3949 | hserus | 2008-03-18 12:49:05 -0700 (Tue, 18 Mar 2008) | 6 lines
+
+* Add logic to parse new fields in global options
+* if there is duplication in policy, use the first definition and ignore later
+(instead of doing the reverse)
+* Change the dnsval.conf file parsing logic -- allow the app-policy and
+env-policy options to control how the files get (re-)read with the correct label.
+
+------------------------------------------------------------------------
+r3948 | hserus | 2008-03-18 12:48:16 -0700 (Tue, 18 Mar 2008) | 2 lines
+
+add definitions for app-policy and env-policy global options
+
+------------------------------------------------------------------------
+r3947 | hserus | 2008-03-18 08:30:35 -0700 (Tue, 18 Mar 2008) | 2 lines
+
+Check in modified man page
+
+------------------------------------------------------------------------
+r3946 | hserus | 2008-03-18 08:04:52 -0700 (Tue, 18 Mar 2008) | 2 lines
+
+Add test program from val_res_query()
+
+------------------------------------------------------------------------
+r3945 | hserus | 2008-03-17 08:23:47 -0700 (Mon, 17 Mar 2008) | 2 lines
+
+Remove policy bits that are no longer pertinent
+
+------------------------------------------------------------------------
+r3944 | hserus | 2008-03-17 06:41:10 -0700 (Mon, 17 Mar 2008) | 2 lines
+
+Remove keys that had grown stale
+
+------------------------------------------------------------------------
+r3942 | marz | 2008-03-12 07:31:15 -0700 (Wed, 12 Mar 2008) | 1 line
+
+ removed previous bogus test and update num tests
+------------------------------------------------------------------------
+r3941 | hserus | 2008-03-12 07:24:19 -0700 (Wed, 12 Mar 2008) | 2 lines
+
+Change value for VAL_QUERY_MERGE_RRSETS flag
+
+------------------------------------------------------------------------
+r3940 | marz | 2008-03-08 11:24:19 -0800 (Sat, 08 Mar 2008) | 1 line
+
+changes relsated to recent API update
+------------------------------------------------------------------------
+r3939 | hserus | 2008-03-07 07:22:00 -0800 (Fri, 07 Mar 2008) | 3 lines
+
+Use addrinfo instead of val_addrinfo
+Use val_get_rrset() instead of val_resolve_and_check()
+
+------------------------------------------------------------------------
+r3938 | hserus | 2008-03-07 07:21:44 -0800 (Fri, 07 Mar 2008) | 3 lines
+
+Add new flag to bootstrap_referral() to allow the calling function to specify
+that it does not want any partial name server information returned
+
+------------------------------------------------------------------------
+r3937 | hserus | 2008-03-07 07:21:23 -0800 (Fri, 07 Mar 2008) | 7 lines
+
+* Rename struct val_rrset to struct val_rrset_rec
+* Populate new values of val_result_chain structure: val_rc_rrset and
+ val_rc_alias
+* Rename VAL_QFLAGS_AFFECTS_CACHING to VAL_Q_ONLY_MATCHING_FLAGS
+* Do not return complete authentication chain(s) if VAL_QUERY_NO_AC_DETAIL was
+ specified
+
+------------------------------------------------------------------------
+r3936 | hserus | 2008-03-07 07:21:02 -0800 (Fri, 07 Mar 2008) | 3 lines
+
+remove elements in cache that have reached their expiry time
+Ensure that nameservers returned from cache are not incomplete
+
+------------------------------------------------------------------------
+r3935 | hserus | 2008-03-07 07:20:49 -0800 (Fri, 07 Mar 2008) | 2 lines
+
+Rename struct val_rrset to struct val_rrset_rec
+
+------------------------------------------------------------------------
+r3934 | hserus | 2008-03-07 07:20:11 -0800 (Fri, 07 Mar 2008) | 2 lines
+
+Add definition for val_get_rrset() and val_free_answer_chain() functions
+
+------------------------------------------------------------------------
+r3933 | hserus | 2008-03-07 07:19:04 -0800 (Fri, 07 Mar 2008) | 2 lines
+
+Use addrinfo instead of val_addrinfo
+
+------------------------------------------------------------------------
+r3932 | hserus | 2008-03-07 07:18:38 -0800 (Fri, 07 Mar 2008) | 2 lines
+
+Add new utility for testing the val_get_rrset() function
+
+------------------------------------------------------------------------
+r3931 | hserus | 2008-03-07 07:16:17 -0800 (Fri, 07 Mar 2008) | 3 lines
+
+Add description for VAL_QUERY_NO_AC_DETAIL and changes in structure
+definitions.
+
+------------------------------------------------------------------------
+r3930 | hserus | 2008-03-07 07:15:45 -0800 (Fri, 07 Mar 2008) | 2 lines
+
+Use addrinfo instead of val_addrinfo
+
+------------------------------------------------------------------------
+r3929 | hserus | 2008-03-07 07:15:01 -0800 (Fri, 07 Mar 2008) | 3 lines
+
+Remove help for val_query() and val_free_response(). These functions will soon
+be obsoleted; only val_res_query() will remain.
+
+------------------------------------------------------------------------
+r3928 | hserus | 2008-03-07 07:14:08 -0800 (Fri, 07 Mar 2008) | 19 lines
+
+* Add new flag VAL_QUERY_NO_AC_DETAIL to prevent authentication chain details
+ from being returned
+* Rename VAL_QFLAGS_AFFECTS_CACHING to VAL_Q_ONLY_MATCHING_FLAGS
+* Define new struct rr_rec, containing only rr information
+* Reorder elements of struct val_rr_rec so that it can be directly typecast to
+ struct rr_rec
+* Rename struct val_rrset to struct val_rrset_rec
+* Add two new members to the val_result_chain structure:
+  - val_rc_alias points to name referenced by the cname/dname alias in result
+  (if any)
+  - val_rc_rrset points to the val_rrset_rec structure for the answer
+    returned in val_rc_answer
+* Define new structure val_answer_chain that contains only rrset
+ information (without details) and validation status for a given
+ name/class/type
+* Add prototypes for new val_get_rrset() and val_free_answer_chain()
+ functions
+
+
+------------------------------------------------------------------------
+r3927 | hserus | 2008-03-07 07:12:46 -0800 (Fri, 07 Mar 2008) | 2 lines
+
+Rename struct val_rrset to struct val_rrset_rec
+
+------------------------------------------------------------------------
+r3926 | marz | 2008-03-03 06:57:48 -0800 (Mon, 03 Mar 2008) | 1 line
+
+work around odd anomaly with validating query for MX mail.marzot.net
+------------------------------------------------------------------------
+r3925 | marz | 2008-02-25 12:45:04 -0800 (Mon, 25 Feb 2008) | 1 line
+
+libval-shim doc makefile change
+------------------------------------------------------------------------
+r3924 | marz | 2008-02-25 12:41:48 -0800 (Mon, 25 Feb 2008) | 1 line
+
+libval_shim docs
+------------------------------------------------------------------------
+r3923 | hardaker | 2008-02-22 15:37:12 -0800 (Fri, 22 Feb 2008) | 1 line
+
+misc fixes and wide spread use of the new donuts_error function
+------------------------------------------------------------------------
+r3922 | hardaker | 2008-02-22 15:36:31 -0800 (Fri, 22 Feb 2008) | 1 line
+
+comment, fix and make compare_arrays return a defined result value
+------------------------------------------------------------------------
+r3921 | hardaker | 2008-02-22 15:36:04 -0800 (Fri, 22 Feb 2008) | 1 line
+
+return undef to ensure no positive return
+------------------------------------------------------------------------
+r3920 | hardaker | 2008-02-22 15:35:15 -0800 (Fri, 22 Feb 2008) | 1 line
+
+fix issues with dropped trailing dot on signame of RRSIG; sort the typelist for a NSEC
+------------------------------------------------------------------------
+r3919 | hserus | 2008-02-22 08:31:27 -0800 (Fri, 22 Feb 2008) | 2 lines
+
+Global search and replace rr_rec to val_rr_rec
+
+------------------------------------------------------------------------
+r3918 | hserus | 2008-02-22 08:21:51 -0800 (Fri, 22 Feb 2008) | 2 lines
+
+Dont use the policy label from the enviroment. Delegate this to libval_shim
+
+------------------------------------------------------------------------
+r3917 | hserus | 2008-02-22 06:45:18 -0800 (Fri, 22 Feb 2008) | 3 lines
+
+Look for a label specified in the environment VAL_CONTEXT_LABEL if one is not
+specified by the application
+
+------------------------------------------------------------------------
+r3916 | hserus | 2008-02-22 06:43:10 -0800 (Fri, 22 Feb 2008) | 4 lines
+
+Don't fail if one of the included dnsval.conf files is missing.
+Fix order for included dnsval.conf files
+Use default /etc/resolv.conf file if user-specified file is missing
+
+------------------------------------------------------------------------
+r3915 | hserus | 2008-02-22 06:39:41 -0800 (Fri, 22 Feb 2008) | 3 lines
+
+Define VAL_CONTEXT_LABEL and VAL_DEFAULT_RESOLV_CONF. Also fix algorithm
+identifiers for NSEC3
+
+------------------------------------------------------------------------
+r3914 | hserus | 2008-02-21 13:16:43 -0800 (Thu, 21 Feb 2008) | 2 lines
+
+Try to operate even if root.hints was missing
+
+------------------------------------------------------------------------
+r3913 | hserus | 2008-02-21 10:26:01 -0800 (Thu, 21 Feb 2008) | 2 lines
+
+Don't lose the value of matched_q->qc_ns_list during cname lookup 
+
+------------------------------------------------------------------------
+r3912 | hserus | 2008-02-21 10:24:50 -0800 (Thu, 21 Feb 2008) | 2 lines
+
+Swap big and little arguments to namename
+
+------------------------------------------------------------------------
+r3911 | hserus | 2008-02-21 10:24:23 -0800 (Thu, 21 Feb 2008) | 2 lines
+
+Properly read the "forward" line
+
+------------------------------------------------------------------------
+r3910 | hserus | 2008-02-20 11:16:00 -0800 (Wed, 20 Feb 2008) | 2 lines
+
+Updated root.hints
+
+------------------------------------------------------------------------
+r3909 | hserus | 2008-02-20 09:46:22 -0800 (Wed, 20 Feb 2008) | 2 lines
+
+Minor fixes
+
+------------------------------------------------------------------------
+r3908 | hserus | 2008-02-19 17:29:47 -0800 (Tue, 19 Feb 2008) | 2 lines
+
+Support DS record trust anchors 
+
+------------------------------------------------------------------------
+r3907 | hserus | 2008-02-18 12:57:20 -0800 (Mon, 18 Feb 2008) | 2 lines
+
+Changes to the API based on comments received
+
+------------------------------------------------------------------------
+r3906 | marz | 2008-02-18 08:16:59 -0800 (Mon, 18 Feb 2008) | 1 line
+
+handle val_addrinfo platform specific structure definition
+------------------------------------------------------------------------
+r3905 | marz | 2008-02-18 08:05:43 -0800 (Mon, 18 Feb 2008) | 1 line
+
+macosx compile
+------------------------------------------------------------------------
+r3904 | marz | 2008-02-18 08:02:51 -0800 (Mon, 18 Feb 2008) | 1 line
+
+macosx compile
+------------------------------------------------------------------------
+r3903 | marz | 2008-02-18 07:59:26 -0800 (Mon, 18 Feb 2008) | 1 line
+
+macosx compile
+------------------------------------------------------------------------
+r3902 | marz | 2008-02-18 07:53:39 -0800 (Mon, 18 Feb 2008) | 1 line
+
+ handle getprogname() vs program_invocation_shortname
+------------------------------------------------------------------------
+r3901 | hserus | 2008-02-18 07:09:42 -0800 (Mon, 18 Feb 2008) | 2 lines
+
+Use autoconf version 2.59
+
+------------------------------------------------------------------------
+r3900 | marz | 2008-02-17 10:59:43 -0800 (Sun, 17 Feb 2008) | 1 line
+
+Makefile fixes
+------------------------------------------------------------------------
+r3899 | marz | 2008-02-17 10:58:55 -0800 (Sun, 17 Feb 2008) | 1 line
+
+add libval_shim suport to validator makefile
+------------------------------------------------------------------------
+r3898 | marz | 2008-02-17 10:57:54 -0800 (Sun, 17 Feb 2008) | 1 line
+
+add libval_shim support to configure
+------------------------------------------------------------------------
+r3875 | hserus | 2008-02-14 13:16:48 -0800 (Thu, 14 Feb 2008) | 2 lines
+
+Add another log message during glue fetch operation
+
+------------------------------------------------------------------------
+r3874 | hserus | 2008-02-14 13:11:54 -0800 (Thu, 14 Feb 2008) | 2 lines
+
+revert previous change
+
+------------------------------------------------------------------------
+r3873 | hserus | 2008-02-14 13:04:28 -0800 (Thu, 14 Feb 2008) | 3 lines
+
+Return EINVAL if address family is neither AF_INET6 nor AF_INET. 
+
+
+------------------------------------------------------------------------
+r3872 | hserus | 2008-02-14 12:51:28 -0800 (Thu, 14 Feb 2008) | 2 lines
+
+Fix ciritical bug in validation algorithm: the chain was being marked valid without checking if the key marked as the trust anchor has a signature over the apex DNSKEY RRset.
+
+------------------------------------------------------------------------
+r3871 | hserus | 2008-02-14 12:30:03 -0800 (Thu, 14 Feb 2008) | 2 lines
+
+Allow clock skew policy to contain negative values
+
+------------------------------------------------------------------------
+r3870 | hserus | 2008-02-14 11:56:36 -0800 (Thu, 14 Feb 2008) | 2 lines
+
+Change order of VAL_FROM_* definitions so that API reads better
+
+------------------------------------------------------------------------
+r3869 | hardaker | 2008-02-13 14:36:23 -0800 (Wed, 13 Feb 2008) | 1 line
+
+wording change and comment out of log message that was causing a freeze
+------------------------------------------------------------------------
+r3868 | hardaker | 2008-02-13 14:20:27 -0800 (Wed, 13 Feb 2008) | 1 line
+
+updated patch to do better logging and remove a harmful break (moving it later)
+------------------------------------------------------------------------
+r3867 | hardaker | 2008-02-13 14:14:54 -0800 (Wed, 13 Feb 2008) | 1 line
+
+updated patch to do better logging and remove a harmful break (moving it later)
+------------------------------------------------------------------------
+r3864 | marz | 2008-02-13 08:37:54 -0800 (Wed, 13 Feb 2008) | 1 line
+
+doc fixes, fail on unimplemented wrapper
+------------------------------------------------------------------------
+r3862 | marz | 2008-02-12 17:27:46 -0800 (Tue, 12 Feb 2008) | 1 line
+
+libval shim README
+------------------------------------------------------------------------
+r3861 | marz | 2008-02-12 15:45:27 -0800 (Tue, 12 Feb 2008) | 1 line
+
+handle context creation based on app name or env var LIBVAL_SHIM_CONTEXT
+------------------------------------------------------------------------
+r3860 | hardaker | 2008-02-12 09:03:24 -0800 (Tue, 12 Feb 2008) | 1 line
+
+rework the run_test function and made the record test use it
+------------------------------------------------------------------------
+r3859 | hardaker | 2008-02-11 17:04:31 -0800 (Mon, 11 Feb 2008) | 1 line
+
+fix closing rule test defitition in code memory
+------------------------------------------------------------------------
+r3858 | hardaker | 2008-02-11 17:03:35 -0800 (Mon, 11 Feb 2008) | 1 line
+
+add a new dnssec_error() function for rules to report errors with
+------------------------------------------------------------------------
+r3857 | marz | 2008-02-11 16:00:12 -0800 (Mon, 11 Feb 2008) | 1 line
+
+set logging only once
+------------------------------------------------------------------------
+r3856 | marz | 2008-02-11 13:54:22 -0800 (Mon, 11 Feb 2008) | 1 line
+
+fixes to val_getnameinfo() and val_getaddrinfo() flag handling
+------------------------------------------------------------------------
+r3855 | hardaker | 2008-02-10 20:47:16 -0800 (Sun, 10 Feb 2008) | 1 line
+
+remove debugging print
+------------------------------------------------------------------------
+r3854 | hardaker | 2008-02-10 20:46:09 -0800 (Sun, 10 Feb 2008) | 1 line
+
+fix nsec/rrsig only test
+------------------------------------------------------------------------
+r3853 | hardaker | 2008-02-10 20:45:31 -0800 (Sun, 10 Feb 2008) | 1 line
+
+print record details if possible during error for high verbosity levels
+------------------------------------------------------------------------
+r3852 | hardaker | 2008-02-10 20:40:29 -0800 (Sun, 10 Feb 2008) | 1 line
+
+fix parsing of quoted TXT records with ;s in them
+------------------------------------------------------------------------
+r3851 | hardaker | 2008-02-10 19:44:57 -0800 (Sun, 10 Feb 2008) | 1 line
+
+make the -v switch produce increasing amounts of output
+------------------------------------------------------------------------
+r3850 | marz | 2008-02-08 10:39:40 -0800 (Fri, 08 Feb 2008) | 1 line
+
+libval_shim fixes
+------------------------------------------------------------------------
+r3849 | marz | 2008-02-07 08:32:19 -0800 (Thu, 07 Feb 2008) | 1 line
+
+fix port and service handling in getnameinfo
+------------------------------------------------------------------------
+r3848 | marz | 2008-02-07 08:30:30 -0800 (Thu, 07 Feb 2008) | 1 line
+
+fix port passing
+------------------------------------------------------------------------
+r3847 | marz | 2008-02-06 14:02:02 -0800 (Wed, 06 Feb 2008) | 1 line
+
+make support
+------------------------------------------------------------------------
+r3846 | marz | 2008-02-06 12:32:50 -0800 (Wed, 06 Feb 2008) | 1 line
+
+make support
+------------------------------------------------------------------------
+r3845 | marz | 2008-02-06 09:32:53 -0800 (Wed, 06 Feb 2008) | 1 line
+
+fix getaddrinfo for locally trusted answer
+------------------------------------------------------------------------
+r3844 | marz | 2008-02-04 15:29:42 -0800 (Mon, 04 Feb 2008) | 1 line
+
+fixed return of trusted result
+------------------------------------------------------------------------
+r3843 | marz | 2008-02-04 13:38:36 -0800 (Mon, 04 Feb 2008) | 1 line
+
+wrappers for key functions
+------------------------------------------------------------------------
+r3842 | marz | 2008-02-04 12:47:02 -0800 (Mon, 04 Feb 2008) | 1 line
+
+testprogram for getnameinfo
+------------------------------------------------------------------------
+r3841 | hardaker | 2008-01-31 13:41:37 -0800 (Thu, 31 Jan 2008) | 1 line
+
+updated patches for 2.0
+------------------------------------------------------------------------
+r3840 | hardaker | 2008-01-31 13:41:07 -0800 (Thu, 31 Jan 2008) | 1 line
+
+ignore the generated .xpi file
+------------------------------------------------------------------------
+r3839 | hardaker | 2008-01-31 13:40:06 -0800 (Thu, 31 Jan 2008) | 1 line
+
+wording changes based on group discussion
+------------------------------------------------------------------------
+r3838 | hardaker | 2008-01-31 13:39:42 -0800 (Thu, 31 Jan 2008) | 1 line
+
+allow firefox 2.0+
+------------------------------------------------------------------------
+r3837 | hardaker | 2008-01-31 13:38:26 -0800 (Thu, 31 Jan 2008) | 1 line
+
+use QWizard to allow qwparam to work
+------------------------------------------------------------------------
+r3836 | hardaker | 2008-01-31 13:18:16 -0800 (Thu, 31 Jan 2008) | 1 line
+
+ignore patterns
+------------------------------------------------------------------------
+r3835 | hardaker | 2008-01-31 12:59:16 -0800 (Thu, 31 Jan 2008) | 1 line
+
+updated firefox code
+------------------------------------------------------------------------
+r3826 | marz | 2008-01-24 12:09:48 -0800 (Thu, 24 Jan 2008) | 1 line
+
+libval_shim infrastructure
+------------------------------------------------------------------------
+r3825 | marz | 2008-01-24 11:47:20 -0800 (Thu, 24 Jan 2008) | 1 line
+
+libval_shim infrastructure
+------------------------------------------------------------------------
+r3822 | lfoster | 2008-01-21 14:35:52 -0800 (Mon, 21 Jan 2008) | 3 lines
+
+Clarify -f vs. -S options.
+
+
+------------------------------------------------------------------------
+r3819 | lfoster | 2008-01-18 13:50:50 -0800 (Fri, 18 Jan 2008) | 3 lines
+
+Added comments and documentation referring to RFC 5011 where appropriate.
+
+
+------------------------------------------------------------------------
+r3816 | hardaker | 2008-01-15 17:14:50 -0800 (Tue, 15 Jan 2008) | 1 line
+
+put the extra zone file arguments in a separate array; load local user rules by default too
+------------------------------------------------------------------------
+r3815 | hardaker | 2008-01-15 17:14:12 -0800 (Tue, 15 Jan 2008) | 1 line
+
+put the extra zone file arguments in a separate array
+------------------------------------------------------------------------
+r3814 | rstory | 2008-01-08 15:53:55 -0800 (Tue, 08 Jan 2008) | 2 lines
+
+update files to ignore
+
+------------------------------------------------------------------------
+r3813 | rstory | 2008-01-08 15:52:49 -0800 (Tue, 08 Jan 2008) | 2 lines
+
+add or update files to ignore
+
+------------------------------------------------------------------------
+r3812 | rstory | 2008-01-08 15:44:48 -0800 (Tue, 08 Jan 2008) | 1 line
+
+ignore generated files
+------------------------------------------------------------------------
+r3811 | rstory | 2008-01-08 15:42:42 -0800 (Tue, 08 Jan 2008) | 1 line
+
+ignore generated files
+------------------------------------------------------------------------
+r3810 | rstory | 2008-01-08 15:29:58 -0800 (Tue, 08 Jan 2008) | 1 line
+
+use $(RM) instead of rm
+------------------------------------------------------------------------
+r3809 | hardaker | 2008-01-07 09:50:10 -0800 (Mon, 07 Jan 2008) | 1 line
+
+fix example to use a reference
+------------------------------------------------------------------------
+r3808 | hardaker | 2008-01-07 08:31:25 -0800 (Mon, 07 Jan 2008) | 1 line
+
+add a bunch of warnings after run in case odd run cases exist (no rules, no data, ...)
+------------------------------------------------------------------------
+r3807 | hardaker | 2008-01-06 09:25:03 -0800 (Sun, 06 Jan 2008) | 1 line
+
+rewrite the eval section of the code to do automatic variable binding; rewrite the tools to use the new variable binding for better readability; improved a bunch of documentation; changed the copyright to include 2008
+------------------------------------------------------------------------
+r3806 | hardaker | 2008-01-02 10:09:17 -0800 (Wed, 02 Jan 2008) | 1 line
+
+fix donuts binary hard-coded paths
+------------------------------------------------------------------------
+r3805 | hardaker | 2008-01-02 10:08:58 -0800 (Wed, 02 Jan 2008) | 1 line
+
+use more readable variable names
+------------------------------------------------------------------------
+r3804 | hardaker | 2007-12-11 09:40:12 -0800 (Tue, 11 Dec 2007) | 1 line
+
+added a note that we don't support SOAs with floating point numbers
+------------------------------------------------------------------------
+r3803 | hardaker | 2007-12-05 19:30:03 -0800 (Wed, 05 Dec 2007) | 1 line
+
+Added a top level manual page for dnssec-tools
+------------------------------------------------------------------------
+r3802 | baerm | 2007-12-03 17:58:10 -0800 (Mon, 03 Dec 2007) | 2 lines
+
+name consistency change
+
+------------------------------------------------------------------------
+r3797 | baerm | 2007-12-03 17:11:38 -0800 (Mon, 03 Dec 2007) | 2 lines
+
+making howto names consistent 
+
+------------------------------------------------------------------------
+r3791 | tewok | 2007-11-06 13:34:15 -0800 (Tue, 06 Nov 2007) | 3 lines
+
+
+Log an error if rollerd couldn't reload the zone.
+
+------------------------------------------------------------------------
+r3790 | hardaker | 2007-11-05 09:05:25 -0800 (Mon, 05 Nov 2007) | 1 line
+
+Patch from Eric Waters to fix some generate syntax so there can be more than one word between the left and right parts
+------------------------------------------------------------------------
+r3789 | tewok | 2007-11-04 19:01:04 -0800 (Sun, 04 Nov 2007) | 6 lines
+
+
+Slightly modified the format of key information displayed to the user.
+Modified to allow multiple zones to be kept in a single keyrec file.
+Modified the pod to reflect the zone being included in the default signing
+set name.
+
+------------------------------------------------------------------------
+r3788 | tewok | 2007-11-04 18:57:13 -0800 (Sun, 04 Nov 2007) | 3 lines
+
+
+Modified default signing set name to include the zone name.
+
+------------------------------------------------------------------------
+r3786 | tewok | 2007-10-31 19:25:16 -0700 (Wed, 31 Oct 2007) | 3 lines
+
+
+Modified to properly handle keys stored in non-dot directories.
+
+------------------------------------------------------------------------
+r3785 | tewok | 2007-10-31 19:24:32 -0700 (Wed, 31 Oct 2007) | 4 lines
+
+
+Added keyrec_keypaths(), which returns a list of paths to a zones keys
+of a given type.
+
+------------------------------------------------------------------------
+r3784 | tewok | 2007-10-31 17:50:35 -0700 (Wed, 31 Oct 2007) | 3 lines
+
+
+Fixed a typo.
+
+------------------------------------------------------------------------
+r3783 | hardaker | 2007-10-31 14:53:09 -0700 (Wed, 31 Oct 2007) | 1 line
+
+final typo fixes
+------------------------------------------------------------------------
+r3781 | hardaker | 2007-10-31 14:48:56 -0700 (Wed, 31 Oct 2007) | 1 line
+
+Update for verison 1.3
+------------------------------------------------------------------------
+r3780 | hardaker | 2007-10-31 14:47:13 -0700 (Wed, 31 Oct 2007) | 1 line
+
+Update Fast.pm Version Number: 0.9
+------------------------------------------------------------------------
+r3779 | hardaker | 2007-10-31 14:46:49 -0700 (Wed, 31 Oct 2007) | 1 line
+
+version modification issue
+------------------------------------------------------------------------
+r3778 | hardaker | 2007-10-31 14:45:34 -0700 (Wed, 31 Oct 2007) | 1 line
+
+Update Version Number: 1.3
+------------------------------------------------------------------------
+r3777 | hardaker | 2007-10-31 14:45:19 -0700 (Wed, 31 Oct 2007) | 1 line
+
+case sensitivity
+------------------------------------------------------------------------
 r3776 | hardaker | 2007-10-31 14:43:28 -0700 (Wed, 31 Oct 2007) | 1 line
 
 path typo
