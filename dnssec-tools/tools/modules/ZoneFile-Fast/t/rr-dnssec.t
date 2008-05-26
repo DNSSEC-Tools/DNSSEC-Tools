@@ -8,7 +8,7 @@ BEGIN {
     @test = 
 	(
 	 q{dnssec-tools.org. 86400   RRSIG   SOA 5 2 86400 20060429134027 (
-                                        20060330134027 42869 dnssec-tools.org
+                                        20060330134027 42869 dnssec-tools.org.
                                         QZzAz5sVC5+n7vJhkXfFaN/sdjKXVpT/nv22
                                         NJI+sDde180Sj1pDXW6mFt+Efg4uUAuyLQup
                                         jLv20EVM8/oBPA7DjNu2CZHGe8UDeuAoqIth
