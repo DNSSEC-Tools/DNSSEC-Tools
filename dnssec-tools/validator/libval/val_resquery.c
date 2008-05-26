@@ -15,7 +15,7 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 /*
- * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 /*

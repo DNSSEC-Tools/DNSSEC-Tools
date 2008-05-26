@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 #ifndef VALIDATOR_H
