@@ -1323,7 +1323,7 @@ Copyright 2003 by Anton Berezin and catpipe Systems ApS
 
   Anton Berezin
 
-Copyright (c) 2004-2006, SPARTA, Inc.
+Copyright (c) 2004-2008 SPARTA, Inc.
   All rights reserved.
    
   Redistribution and use in source and binary forms, with or without
