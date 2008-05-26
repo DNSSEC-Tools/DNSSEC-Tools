@@ -482,7 +482,7 @@ dnsval.conf file.
    is free software; you can redistribute it and/or modify it under
    the same terms as Perl itself.
 
-   Copyright (c) 2006 SPARTA, Inc.  All Rights Reserved.  This program
+   Copyright (c) 2006-2008 SPARTA, Inc.  All Rights Reserved.  This program
    is free software; you can redistribute it and/or modify it under
    the same terms as Perl itself.
 
