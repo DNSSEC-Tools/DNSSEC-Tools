@@ -47,7 +47,7 @@ nextstepinstructions: subdirinstall
 maninstall:
 	$(MKPATH) $(mandir)/$(man1dir)
 	for i in $(MAN1PAGES) ; do		\
-	  $(DOCINSTALL) docs/$$i $(mandir)/$(man1dir) ;	\
+	  $(DOCINSTALL) docs/$$i $(DESTDIR)/$(mandir)/$(man1dir) ;	\
 	done
 
 
