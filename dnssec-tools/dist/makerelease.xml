@@ -112,7 +112,7 @@
 
     <step type="system" title="Create the ChangeLog">
       <commands>
-	<command>svn log > ChangeLog</command>
+	<command>svn log -v > ChangeLog</command>
       </commands>
     </step>
 
@@ -150,7 +150,7 @@
 
     <step type="system" title="upload the results to sourceforge" interactive="1">
       <commands>
-	<command>ncftpput upload.sourceforge.net incoming dnssec-tools-{VERSION}.tar.gz</command>
+	<command>rsync -v dnssec-tools-{VERSION}.tar.gz frs.sourceforge.net:uploads/</command>
       </commands>
     </step>
 
