@@ -14,19 +14,26 @@ details.
      http://www.dnssec-tools.org/wiki/index.php/Tutorials
 
  - Applications:
-   - donuts has 
-
    - trustman has seen a lot of usability improvements and now has
      more extensive documentation.
+   - rollerd and it's controlling scripts can now handle user
+     initiated KSK rollovers.
+   - zonesigner handles keys stored in other directories better.
+   - donuts output has been made more user friendly and the verbosity
+     level can now be more finely tuned.
+   - donuts rule definitions have been cleaned up and the API for
+     writing rules has been simplified.
 
  - libval
-   - API changes in libval
-   - Support for environment and app name-based policies in libval
+   - There have been a number of minor API changes in libval
+   - Support was added for environment and app name-based policies in libval
    - Initial release of the libval_shim library (LD_PRELOAD-based
      approach for transparently enabling validation for various
      applications)
+   - The perl Net::DNS::SEC::Validator binding has been updated to
+     accomodate the libval changes.
 
-
+ - Many more minor changes and improvements
 
 1.3
 
