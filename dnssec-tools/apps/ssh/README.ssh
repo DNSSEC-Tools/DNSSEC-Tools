@@ -1,6 +1,6 @@
 Local DNSSEC validation with OpenSSH
 ====================================
-(Tested with OpenSSH 4.5p1 and 4.7p1)
+(Tested with OpenSSH 4.5p1, 4.7p1 and 5.0p1)
 
 Introduction
 ------------
@@ -72,9 +72,9 @@ by specifying --with-local-dnssec-validation when configuring
 OpenSSH. You may also need to specify the path to the directory
 where the libraries are installed using '--with-ldflags=-L/path'.
 
- # tar xvfz openssh-4.5p1.tar.gz
- # cd openssh-4.5p1
- # patch -p0 < ssh-dnssec.pat
+ # tar xvfz openssh-5.0p1.tar.gz
+ # cd openssh-5.0p1
+ # patch -p0 < openssh-5.0p1-dnssec.pat
  # autoconf
  # autoheader
  # ./configure --with-local-dnssec-validation --with-ldflags=-L/usr/local/lib/
