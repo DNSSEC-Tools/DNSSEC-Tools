@@ -1312,7 +1312,7 @@ build_pending_query(val_context_t *context,
     int             retval;
     struct val_rr_rec  *cur_rr;
     u_int32_t ttl_x = 0;
-    val_astatus_t  status = VAL_DONT_KNOW;
+    val_astatus_t  status = VAL_AC_UNSET;
 
     if ((context == NULL) || (NULL == queries) || 
         (NULL == as) || (NULL == as->val_ac_query) || 
@@ -1873,6 +1873,7 @@ transform_authentication_chain(val_context_t *context,
     if (new_res == NULL) {\
         return VAL_OUT_OF_MEMORY;\
     } \
+    (new_res)->val_rc_status = VAL_DONT_KNOW;\
     (new_res)->val_rc_answer = NULL;\
     memset((new_res)->val_rc_proofs, 0, sizeof((new_res)->val_rc_proofs));\
     (new_res)->val_rc_alias = NULL;\
