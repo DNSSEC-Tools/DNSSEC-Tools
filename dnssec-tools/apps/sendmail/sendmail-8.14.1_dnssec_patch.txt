@@ -41,9 +41,9 @@ diff -U 5 -Nar sendmail-8.14.1.orig/libmilter/sm_gethost.c sendmail-8.14.1/libmi
 +#if SUPPORT_DNSSEC
 +	val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
-+	if (!val_istrusted(dnssec_status)) {
++	if (h && !val_istrusted(dnssec_status)) {
 +		h = NULL;
-+        h_errno = NO_DATA; 
++		h_errno = NO_DATA; 
 +        
 +	}
 +#else /* SUPPORT_DNSSEC */
@@ -143,9 +143,9 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
 +#if SUPPORT_DNSSEC
 +	val_status_t dnssec_status = VAL_INTERNAL_ERROR;
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
-+	if (!val_istrusted(dnssec_status)) {
++	if (h && !val_istrusted(dnssec_status)) {
 +		h = NULL;
-+        h_errno = NO_DATA;
++		h_errno = NO_DATA;
 +        
 +	}
 +#else /* SUPPORT_DNSSEC */
@@ -282,7 +282,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  		goto punt;
  	if (HasWildcardMX && ConfigLevel >= 6)
 +#if SUPPORT_DNSSEC
-+        resfunc = val_res_query;
++		resfunc = val_res_query;
 +#else
  		resfunc = res_query;
 +#endif
@@ -296,11 +296,11 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  	errno = 0;
 +
 +# if SUPPORT_DNSSEC
-+    do {
-+        val_status_t dnssec_status = VAL_INTERNAL_ERROR; 
-+	    n = (*resfunc)(NULL, host, C_IN, T_MX, (unsigned char *) &answer,
-+		       sizeof(answer), &dnssec_status);
-+        if (n >= 0) {
++	do {
++		val_status_t dnssec_status = VAL_INTERNAL_ERROR; 
++		n = (*resfunc)(NULL, host, C_IN, T_MX, (unsigned char *) &answer,
++						sizeof(answer), &dnssec_status);
++		if (n >= 0) {
 +			if (val_istrusted(dnssec_status))
 +			{
 +				if (tTd(8, 2))
@@ -310,11 +310,11 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
 +			{
 +				if (tTd(8, 1))
 +					sm_dprintf("getmxrr: DNSSEC validation of MX record of %s failed.\n", host);
-+				syserr("Error: DNSSEC validation of MX record of %s failed.\n", host);
-+                h_errno = NO_DATA;
-+                n = -1;
++					syserr("Error: DNSSEC validation of MX record of %s failed.\n", host);
++					h_errno = NO_DATA;
++					n = -1;
 +			}
-+        }
++		}
 +	} while (0);
 +# else 
  	n = (*resfunc)(host, C_IN, T_MX, (unsigned char *) &answer,
@@ -360,10 +360,10 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
 +				sm_dprintf("dns_getcanonname(938): performing dnssec validation query.\n");
 +
 +			/* perform DNSSEC validation query */
-+			ret = val_res_query (NULL, dname, C_IN, qtype, answer.qb2, 
-+                    sizeof(answer.qb2), &dnssec_status);
++			ret = val_res_query (NULL, dname, C_IN, qtype, (unsigned char *) &answer, 
++                    sizeof(answer), &dnssec_status);
 +
-+			if (ret >= 0) { 
++			if (ret > 0) { 
 +				if (val_istrusted(dnssec_status))
 +				{
 +					if (tTd(8, 2))
