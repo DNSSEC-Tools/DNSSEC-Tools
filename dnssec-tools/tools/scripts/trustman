@@ -536,6 +536,7 @@ sub checkkeys {
             if ($ncfile && ($zone_configfile_map{$z} eq $ncfile)) {
                 add_ta_namedconf($z);
             }
+	    print "here: $dvfile && ($zone_configfile_map{$z} eq $dvfile)\n";
             if ($dvfile && ($zone_configfile_map{$z} eq $dvfile)) {
                 add_ta_dnsvalconf($z);
             }
@@ -633,7 +634,27 @@ sub checkkeys {
 
 } # end checkkeys
 
-my ($conffileh, $tmpfileh, $tmpfile, $currenttmpdir);
+my ($conffileh, $tmpfileh, $tmpfile, $currenttmpdir, $oldsep);
+
+sub start_read_config {
+    my ($currentfile) = @_;
+
+    $oldsep = $/;
+    $/ = ";";
+
+    $conffileh = new IO::File;
+    Die("Failed to create a file handle for opening $currentfile")
+      if (!$conffileh);
+
+    if (!$conffileh->open("$currentfile")) {
+	Die("Failed to open the file handle for reading $currentfile")
+    }
+}
+
+sub end_read_config {
+    $conffileh->close();
+    $/ = $oldsep;
+}
 
 sub start_tmpfile {
     my ($currentfile) = @_;
@@ -659,13 +680,7 @@ sub start_tmpfile {
 
     Die("Failed to open $currenttmpdir/$newfile.$suffix") if (!$tmpfileh);
 
-    $conffileh = new IO::File;
-    Die("Failed to create a file handle for opening $currentfile")
-      if (!$conffileh);
-
-    if (!$conffileh->open("$currentfile")) {
-	Die("Failed to open the file handle for reading $currentfile")
-    }
+    start_read_config($currentfile);
 
     Verbose("Opened $currenttmpdir/$tmpfile to create a replacement for $currentfile\n");
     return ($tmpfileh, $tmpfile)
@@ -673,8 +688,8 @@ sub start_tmpfile {
 
 sub end_tmpfile {
     my ($currentfile) = @_;
+    end_read_config($currentfile);
     $tmpfileh->close();
-    $conffileh->close();
     # rename TMP to $ncfile
     my $origname = $currentfile . ".orig";
     if (!rename($currentfile,$origname)) {
@@ -684,6 +699,37 @@ sub end_tmpfile {
 	Die("Fatal Error:  Failed to rename newly created $tmpfile to $currentfile;\nAn appropriate -T flag or tatmpdir setting may correct this problem.");
     }
     Verbose("Closed $tmpfile and renamed back to $currentfile\n");
+    $tmpfileh = undef;
+}
+
+#
+# this parses the dnsval.conf file into pieces.  Specifically:
+#   - Reads in a section
+#   - Assures the bounding ';' was not within a comment
+#   - strips off any leading comments so the first section should be
+#     of the "name type" clause it's looking for (eg: ":
+#     trust-anchor").
+#   - leaves the text in $_
+#   - *iff* $tmpfileh is defined, prints out the stripped parts to ensure
+#     that they're saved back to the tmp file being created.
+sub read_next_ta_chunk {
+    $_ = <$conffileh>;
+
+    # the ; separator may be in the middle of a comment unfortunately.
+    # read in more lines if so.
+    while (/[\n\r]\s*#[^\n\r]*;\s*$/ ||
+	   /^\s*#[^\n\r]*;\s*$/) {
+	my $nextline = <$conffileh>;
+	last if ($nextline eq '');
+	$_ .= $nextline;
+    }
+
+    # weed out any comments that occur before the starting line we're
+    # looking for.
+    while (s/^(\s*#[^\n\r]*[\n\r])//) {
+	print $tmpfileh $1 if (defined($tmpfileh));
+    }
+    return $_;
 }
 
 #################################################################
@@ -731,29 +777,17 @@ sub add_ta_namedconf  {
 sub add_ta_dnsvalconf  {
     my ($zone) = @_;
 
+    print "here: $dvfile / $zone\n";
     next if (!$dvfile);
 
     my $pat = "trust-anchor";
 
     start_tmpfile($dvfile);
-    my $origsep = $/;
-    $/ = ";";
-    while (<$conffileh>) {
 
-	# the ; separator may be in the middle of a comment unfortunately.
-	while (/[\n\r]\s*#[^\n\r]*;\s*$/ ||
-	       /^\s*#[^\n\r]*;\s*$/) {
-	    my $nextline = <$conffileh>;
-	    last if ($nextline eq '');
-	    $_ .= $nextline;
-	}
-
-	# weed out any comments that occur before the starting line
-	while (s/^(\s*#[^\n\r]*[\n\r])//) {
-	    print $tmpfileh $1;
-	}
+    while (read_next_ta_chunk()) {
 
         my $zonefound = 0;
+	print "here: $_\n";
         if (s/(\s*[^\n\r]+\s+$pat\s*)//) {
 	    # reprint the segment we just read and smashed
             print $tmpfileh "$1";
@@ -765,8 +799,12 @@ sub add_ta_dnsvalconf  {
 	    # be auto-added even though it's never been secured).
 	    my $lookingfor = $_;
             while ($lookingfor) {
-		next if ($lookingfor =~ s/^\s*#[^\n]*//);
+		# no comments
+		next if ($lookingfor =~ s/^\s*#[^\n]*\n+//);
+		# no blank lines
 		next if ($lookingfor =~ s/^\s*\n//);
+
+		# spot the actual zone-name/data combo
 		$lookingfor =~ s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//;
                 my ($z, $val) = ($1, $2);
                 # strip off the trailing dot from the zone name
@@ -802,7 +840,6 @@ sub add_ta_dnsvalconf  {
         }
     }
     end_tmpfile($dvfile);
-    $/ = $origsep;
 }
 
 ######################################################################
@@ -822,8 +859,6 @@ sub remove_ta_dnsvalconf {
     my $pat = "trust-anchor";
 
     start_tmpfile($dvfile);
-    my $origsep = $/;
-    $/ = ";";
     while (<$conffileh>) {
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
@@ -863,7 +898,6 @@ sub remove_ta_dnsvalconf {
         }
     }
     end_tmpfile($dvfile);
-    $/ = $origsep;
 }
 
 ######################################################################
@@ -884,8 +918,6 @@ sub remove_ta_namedconf  {
     my $trustsection = 0;
 
     start_tmpfile($ncfile);
-    my $origsep = $/;
-    $/ = ";";
     while (<$conffileh>) {
         if (s/^\s*$pat\s*//) {
             print $tmpfileh "trusted-keys {";
@@ -955,7 +987,6 @@ sub remove_ta_namedconf  {
             print $tmpfileh $_;
         }
     }
-    $/ = $origsep;
     end_tmpfile ($ncfile);
 }
 
@@ -975,8 +1006,6 @@ sub revoke_ta_dnsvalconf  {
     my $pat = "trust-anchor";
 
     start_tmpfile($dvfile);
-    my $origsep = $/;
-    $/ = ";";
     while (<$conffileh>) {
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
@@ -1013,7 +1042,6 @@ sub revoke_ta_dnsvalconf  {
             print $tmpfileh $_;
         }
     }
-    $/ = $origsep;
     end_tmpfile($dvfile);
 }
 
@@ -1034,8 +1062,6 @@ sub revoke_ta_namedconf  {
     my $trustsection = 0;
 
     start_tmpfile($ncfile);
-    my $origsep = $/;
-    $/ = ";";
     while (<$conffileh>) {
         if (s/^\s*$pat\s*//) {
             print $tmpfileh "trusted-keys {";
@@ -1103,7 +1129,6 @@ sub revoke_ta_namedconf  {
             print $tmpfileh $_;
         }
     }
-    $/ = $origsep;
     end_tmpfile($ncfile);
 }
 
@@ -1238,14 +1263,10 @@ sub read_dnsval_file {
     Verbose("Reading and parsing trust keys from $file\n");
     my $pat = "trust-anchor";
 
-    my $fh = new IO::File;
-    if (!$fh->open("<$file")) {
-	print STDERR "Could not open named configuration file: $file\n";
-	exit (1);
-    }
-    # set separator to semicolon in order to get whole chunk
-    $/ = ";";
-    while (<$fh>) {
+    start_read_config($file);
+
+    my $fh = $conffileh;
+    while (read_next_ta_chunk()) {
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
             my $trustanchor_type = $1;
