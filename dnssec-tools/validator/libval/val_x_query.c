@@ -381,11 +381,10 @@ compose_answer(const u_char * name_n,
                 break;
                 
             default:
-                if (hp->ancount > 0) {
+                if (hp->ancount > 0)
                     hp->rcode = ns_r_noerror;
-                } else {
-                    hp->rcode = ns_r_servfail;
-                }
+                else
+                    hp->rcode = ns_r_nxdomain;
                 break;
         }
     }
@@ -455,7 +454,7 @@ compose_answer(const u_char * name_n,
  * 
  */
 int
-val_res_query(val_context_t * ctx, 
+val_res_query(val_context_t * context, 
               const char *dname, 
               int class_h,
               int type, 
@@ -470,18 +469,27 @@ val_res_query(val_context_t * ctx,
     HEADER *hp = NULL;
     u_char          name_n[NS_MAXCDNAME];
     struct val_result_chain *results;
+    val_context_t *ctx = NULL;
 
-    retval = -1;
-
-    if (dname == NULL || val_status == NULL || answer == NULL) 
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            goto err;
+        } 
+    } else {
+        ctx = context;
+    }
+    
+    if (dname == NULL || val_status == NULL || answer == NULL) { 
         goto err;
-
-    if (ns_name_pton(dname, name_n, sizeof(name_n)) == -1) 
-        goto err;
-
+    }
+        
     val_log(ctx, LOG_DEBUG,
             "val_res_query(): called with dname=%s, class=%s, type=%s",
             dname, p_class(class_h), p_type(type));
+
+    if (ns_name_pton(dname, name_n, sizeof(name_n)) == -1)  {
+        goto err;
+    }
 
     /*
      * Query the validator 
@@ -499,9 +507,10 @@ val_res_query(val_context_t * ctx,
         val_free_result_chain(results);
     }
 
-    if (retval != VAL_NO_ERROR)
-        goto err;
 
+    if (retval != VAL_NO_ERROR) {
+        goto err;
+    }
     
     totalbytes = resp.vr_length;
 
@@ -546,14 +555,29 @@ err:
  * wrapper around val_res_query() that is closer to res_search() 
  */
 int
-val_res_search(val_context_t * ctx, const char *dname, int class_h,
+val_res_search(val_context_t * context, const char *dname, int class_h,
               int type, u_char * answer, int anslen,
               val_status_t * val_status)
 {
     int             retval = -1;
     char           *dot, *search, *pos;
     char            buf[NS_MAXDNAME];
+    val_context_t *ctx = NULL;
     
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            h_errno = NETDB_INTERNAL;
+            errno = EINVAL;
+            return -1;
+        } 
+    } else {
+        ctx = context;
+    }
+
+    val_log(ctx, LOG_DEBUG,
+            "val_res_query(): called with dname=%s, class=%s, type=%s",
+            dname, p_class(class_h), p_type(type));
+
     if ((dname == NULL) || (val_status == NULL) || (answer == NULL)) {
         val_log(ctx, LOG_ERR, "val_res_search(%s, %d, %d): Error - %s", 
             dname, p_class(class_h), p_type(type), p_val_err(VAL_BAD_ARGUMENT));
