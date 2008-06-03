@@ -41,7 +41,7 @@ val_free_answer_chain(struct val_answer_chain *answers)
 }
 
 int
-val_get_rrset(val_context_t *ctx,
+val_get_rrset(val_context_t *context,
               const char *name,
               u_int16_t class,
               u_int16_t type,
@@ -60,6 +60,15 @@ val_get_rrset(val_context_t *ctx,
     int len;
     char *p;
     u_int8_t *name_alias = NULL;
+    val_context_t *ctx = NULL;
+    
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            return retval;
+        } 
+    } else {
+        ctx = context;
+    }
     
     if (name == NULL || answers == NULL) {
         return VAL_BAD_ARGUMENT;
