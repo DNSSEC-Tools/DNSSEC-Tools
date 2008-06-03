@@ -581,17 +581,28 @@ val_gethostbyname2_r(val_context_t * context,
     int             offset = 0;
     val_status_t local_ans_status = VAL_LOCAL_ANSWER;
     int trusted = 0;
+    int             retval;
+    struct val_result_chain *results = NULL;
+    u_char          name_n[NS_MAXCDNAME];
+    u_int16_t       type;
 
-    if (VAL_NO_ERROR == val_is_local_trusted(context, &trusted)) {
+    val_context_t *ctx = NULL;
+    
+    if (context == NULL) {
+        if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
+            goto err; 
+        } 
+    } else {
+        ctx = context;
+    }
+
+    if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
         if (trusted) {
             local_ans_status = VAL_TRUSTED_ANSWER;
         }
     }
     if (!name || !ret || !h_errnop || !val_status || !result || !buf) {
-        if (result) {
-            *result = NULL;
-        }
-        return EINVAL;
+        goto err;
     }
 
     *val_status = VAL_DONT_KNOW;
@@ -607,7 +618,7 @@ val_gethostbyname2_r(val_context_t * context,
         // Name
         ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
         if (ret->h_name == NULL) {
-            return ERANGE;
+            goto err; 
         }
         memcpy(ret->h_name, name, strlen(name) + 1);
 
@@ -615,7 +626,7 @@ val_gethostbyname2_r(val_context_t * context,
         ret->h_aliases =
             (char **) bufalloc(buf, buflen, &offset, sizeof(char *));
         if (ret->h_aliases == NULL) {
-            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+            goto err;      // xxx-audit: what about *offset = orig_offset; ?
         }
         ret->h_aliases[0] = 0;
 
@@ -625,13 +636,13 @@ val_gethostbyname2_r(val_context_t * context,
         ret->h_addr_list =
             (char **) bufalloc(buf, buflen, &offset, 2 * sizeof(char *));
         if (ret->h_addr_list == NULL) {
-            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+            goto err;      // xxx-audit: what about *offset = orig_offset; ?
         }
         ret->h_addr_list[0] =
             (char *) bufalloc(buf, buflen, &offset,
                               sizeof(struct in_addr));
         if (ret->h_addr_list[0] == NULL) {
-            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+            goto err;      // xxx-audit: what about *offset = orig_offset; ?
         }
         memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
         ret->h_addr_list[1] = 0;
@@ -639,8 +650,6 @@ val_gethostbyname2_r(val_context_t * context,
         *val_status = local_ans_status;
         *h_errnop = NETDB_SUCCESS;
         *result = ret;
-
-        return 0;
     }
 
     /*
@@ -653,7 +662,7 @@ val_gethostbyname2_r(val_context_t * context,
         // Name
         ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
         if (ret->h_name == NULL) {
-            return ERANGE;
+            goto err;
         }
         memcpy(ret->h_name, name, strlen(name) + 1);
 
@@ -661,7 +670,7 @@ val_gethostbyname2_r(val_context_t * context,
         ret->h_aliases =
             (char **) bufalloc(buf, buflen, &offset, sizeof(char *));
         if (ret->h_aliases == NULL) {
-            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+            goto err;      // xxx-audit: what about *offset = orig_offset; ?
         }
         ret->h_aliases[0] = 0;
 
@@ -671,13 +680,13 @@ val_gethostbyname2_r(val_context_t * context,
         ret->h_addr_list =
             (char **) bufalloc(buf, buflen, &offset, 2 * sizeof(char *));
         if (ret->h_addr_list == NULL) {
-            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+            goto err;      // xxx-audit: what about *offset = orig_offset; ?
         }
         ret->h_addr_list[0] =
             (char *) bufalloc(buf, buflen, &offset,
                               sizeof(struct in6_addr));
         if (ret->h_addr_list[0] == NULL) {
-            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+            goto err;      // xxx-audit: what about *offset = orig_offset; ?
         }
         memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
         ret->h_addr_list[1] = 0;
@@ -686,26 +695,17 @@ val_gethostbyname2_r(val_context_t * context,
         *h_errnop = NETDB_SUCCESS;
         *result = ret;
 
-        return 0;
-    } else {
-        int             retval;
-        struct val_result_chain *results = NULL;
-        u_char          name_n[NS_MAXCDNAME];
-        u_int16_t       type;
-
+    } else if (NULL != 
+                (*result = get_hostent_from_etc_hosts(ctx, name, af, 
+                                                      ret, buf, buflen, &offset))) {
         /*
          * First check the ETC_HOSTS file
          * XXX: TODO check the order in the ETC_HOST_CONF file
          */
-        *result =
-            get_hostent_from_etc_hosts(context, name, af, ret, buf, buflen,
-                                       &offset);
+        *val_status = local_ans_status;
+        *h_errnop = NETDB_SUCCESS;
 
-        if (*result != NULL) {
-            *val_status = local_ans_status;
-            *h_errnop = NETDB_SUCCESS;
-            return 0;           // xxx-audit: what about *offset = orig_offset; ?
-        }
+    } else {
 
         type = ns_t_a;
         if (af == AF_INET6) {
@@ -718,7 +718,7 @@ val_gethostbyname2_r(val_context_t * context,
         if (((retval = ns_name_pton(name, name_n, sizeof(name_n))) != -1)
             && (VAL_NO_ERROR ==
                 (retval =
-                 val_resolve_and_check(context, name_n, ns_c_in, type,
+                 val_resolve_and_check(ctx, name_n, ns_c_in, type,
                                        VAL_QUERY_NO_AC_DETAIL,
                                        &results)))) {
 
@@ -726,27 +726,35 @@ val_gethostbyname2_r(val_context_t * context,
              * Convert the validator result into hostent 
              */
             *result =
-                get_hostent_from_response(context, af, ret, results,
+                get_hostent_from_response(ctx, af, ret, results,
                                           h_errnop, buf, buflen, &offset, val_status);
 
         } else {
-            val_log(context, LOG_ERR, 
+            val_log(ctx, LOG_ERR, 
                     "val_gethostbyname2_r(): val_resolve_and_check failed - %s", p_val_err(retval));
         }
 
         if (*result == NULL) {
-            if (!*h_errnop)
-                *h_errnop = NETDB_INTERNAL;
-            if (!errno)
-                errno = EINVAL;
-            return errno;
+            goto err;
         } else {
             val_free_result_chain(results);
             *h_errnop = NETDB_SUCCESS;
         }
 
-        return 0;
     }
+    val_log(ctx, LOG_DEBUG, "val_gethostbyname2_r returned success, herrno = %d, val_status = %s", 
+                *h_errnop, val_status? p_val_status(*val_status) : NULL); 
+    return 0;
+
+err:
+    if (result) {
+        *result = NULL;
+    }
+    if (h_errnop) 
+        *h_errnop = NO_RECOVERY;
+    val_log(ctx, LOG_DEBUG, "val_gethostbyname2_r returned failure, herrno = %d, val_status = %s", 
+                *h_errnop, val_status? p_val_status(*val_status) : NULL); 
+    return (NO_RECOVERY);
 }
 
 /*
@@ -814,7 +822,6 @@ val_gethostbyname(val_context_t * ctx,
                   const char *name, val_status_t * val_status)
 {
     return val_gethostbyname2(ctx, name, AF_INET, val_status);
-
 }                               /* val_gethostbyname() */
 
 /*
