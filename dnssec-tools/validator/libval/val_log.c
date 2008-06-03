@@ -910,8 +910,10 @@ val_log_add_file(val_log_t **log_head, int level, const char *filen)
     filep = fopen(filen, "a");
 
     logp = val_log_add_filep(log_head, level, filep);
-    if (NULL == logp)
-        fclose(filep);
+    if (NULL == logp) {
+        if (filep)
+            fclose(filep);
+    }
 
     return logp;
 }
