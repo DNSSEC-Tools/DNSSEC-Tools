@@ -839,8 +839,17 @@ val_getaddrinfo(val_context_t * context,
     const struct addrinfo *cur_hints;
     val_status_t local_ans_status = VAL_LOCAL_ANSWER;
     int trusted = 0;
+    val_context_t *ctx = NULL;
+    
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            return EAI_FAIL; 
+        } 
+    } else {
+        ctx = context;
+    }
 
-    if (VAL_NO_ERROR == val_is_local_trusted(context, &trusted)) {
+    if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
         if (trusted) {
             local_ans_status = VAL_TRUSTED_ANSWER;
         }
@@ -851,7 +860,7 @@ val_getaddrinfo(val_context_t * context,
     *res = NULL;
     *val_status = VAL_DONT_KNOW;
 
-    val_log(context, LOG_DEBUG,
+    val_log(ctx, LOG_DEBUG,
             "val_getaddrinfo called with nodename = %s, servname = %s",
             nodename == NULL ? "(null)" : nodename,
             servname == NULL ? "(null)" : servname);
@@ -923,7 +932,7 @@ val_getaddrinfo(val_context_t * context,
         if ((retval = process_service_and_hints(servname, cur_hints, &ainfo4))
             != 0) {
             freeaddrinfo(ainfo4);
-            val_log(context, LOG_INFO, 
+            val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
         }
@@ -978,7 +987,7 @@ val_getaddrinfo(val_context_t * context,
         if ((retval = process_service_and_hints(servname, cur_hints, &ainfo6))
             != 0) {
             freeaddrinfo(ainfo6);
-            val_log(context, LOG_INFO, 
+            val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
         }
@@ -1006,13 +1015,13 @@ val_getaddrinfo(val_context_t * context,
        * First check ETC_HOSTS file
        * * XXX: TODO check the order in the ETC_HOST_CONF file
        */
-      if (get_addrinfo_from_etc_hosts(context, nodename, servname,
+      if (get_addrinfo_from_etc_hosts(ctx, nodename, servname,
 				      cur_hints, res) == EAI_SERVICE) {
 	        retval = EAI_SERVICE;
       } else if (*res != NULL) {
 	      retval = 0;
           int trusted = 0;
-          if (VAL_NO_ERROR == val_is_local_trusted(context, &trusted)) {
+          if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
               if (trusted) {
                   *val_status = VAL_TRUSTED_ANSWER;
               } else {
@@ -1024,8 +1033,10 @@ val_getaddrinfo(val_context_t * context,
       /*
        * Try DNS
        */
-      else return get_addrinfo_from_dns(context, nodename, servname,
+      else {
+         retval = get_addrinfo_from_dns(ctx, nodename, servname,
 					cur_hints, res, val_status);
+      }
     }
 
  done:
@@ -1155,7 +1166,7 @@ address_to_string(const char *saddr, int family, char *nadd, int nlen)
 
 
 int
-val_getnameinfo(val_context_t * ctx,
+val_getnameinfo(val_context_t * context,
                 const struct sockaddr *sa,
                 socklen_t salen,
                 char *host,
@@ -1175,6 +1186,15 @@ val_getnameinfo(val_context_t * ctx,
     val_status_t local_ans_status = VAL_LOCAL_ANSWER;
 
     int trusted;
+    val_context_t *ctx = NULL;
+    
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            return EAI_FAIL; 
+        } 
+    } else {
+        ctx = context;
+    }
     if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
         if (trusted) {
             local_ans_status = VAL_TRUSTED_ANSWER;
@@ -1344,7 +1364,7 @@ val_getnameinfo(val_context_t * ctx,
  * A thread-safe, re-entrant version of val_gethostbyaddr 
  */
 int
-val_gethostbyaddr_r(val_context_t * ctx,
+val_gethostbyaddr_r(val_context_t * context,
                     const char *addr,
                     int len,
                     int type,
@@ -1361,6 +1381,17 @@ val_gethostbyaddr_r(val_context_t * ctx,
     struct val_answer_chain *val_res = NULL;
     struct val_answer_chain *res;
     int retval;
+    val_context_t *ctx = NULL;
+    
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            if (h_errnop)
+                *h_errnop = NO_RECOVERY;
+            return (NO_RECOVERY);
+        } 
+    } else {
+        ctx = context;
+    }
     
     /*
      * no need to check context, val_get_rrset will check and
@@ -1372,7 +1403,8 @@ val_gethostbyaddr_r(val_context_t * ctx,
      */
     if (!addr || !ret || !buf || (buflen <= 0) ||
         !result || !h_errnop || !val_status) {
-        *h_errnop = NO_RECOVERY;
+        if (h_errnop)
+            *h_errnop = NO_RECOVERY;
         return (NO_RECOVERY);
     }
     
@@ -1556,7 +1588,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
  * A old version of gethostbyaddr for use with validator
  */
 struct hostent *
-val_gethostbyaddr(val_context_t * ctx,
+val_gethostbyaddr(val_context_t * context,
                   const char *addr,
                   int len, int type, val_status_t * val_status)
 {
@@ -1569,6 +1601,16 @@ val_gethostbyaddr(val_context_t * ctx,
 
     struct hostent *result_hostent = NULL;
     int             errnum = 0;
+    val_context_t *ctx = NULL;
+    
+    if (context == NULL) {
+        if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
+            h_errno = NO_RECOVERY;
+            return NULL;
+        } 
+    } else {
+        ctx = context;
+    }
 
     /*
      * set defaults for static values 
