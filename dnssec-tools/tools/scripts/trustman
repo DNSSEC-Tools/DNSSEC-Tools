@@ -55,7 +55,7 @@ GetOptions(\%opts,
              'nomail',
              'S|single_run',
              't|sleeptime=i',
-	     'T|tmpdir=s',
+	     'T|tmp_dir=s',
              'v|verbose',
              'V|version',
              'w|hold_time=s',
@@ -1654,6 +1654,14 @@ A B<dnsval.conf> file to read and possibly update.
 
 A B<named.conf> file to read and possibly update.
 
+=item B<--tmp_dir DIRECTORY (-T)>
+
+Specifies where temporary files should be created.  This is used when
+creating new versions of the dnsval.conf and named.conf files before
+they're moved into place.  Most operating systems require the tmp
+directory to be on the same partition as the dnsval.conf/named.conf
+files since renames across partitions will fail.
+
 =item B<--zone ZONE (-z)>
 
 The zone to check.  Specifying this option supersedes the default
@@ -1767,6 +1775,14 @@ Specifies the named.conf file to read and write.  Equivelent to the
 
 Specifies the dnsval.conf file to read and write.  Equivelent to the
 --dnsval_conf_file flag.
+
+=item B<tatmpfile> I<DIRECTORY>
+
+Specifies where temporary files should be created.  This is used when
+creating new versions of the dnsval.conf and named.conf files before
+they're moved into place.  Most operating systems require the tmp
+directory to be on the same partition as the dnsval.conf/named.conf
+files since renames across partitions will fail.
 
 =head1 COPYRIGHT
 
