@@ -16,7 +16,7 @@ use Sys::Syslog;
 use IO::File;
 use POSIX;
 use Data::Dumper;
-use File::Temp;
+use File::Temp qw(tempfile);
 $Data::Dumper::Purity = 1;
 
 #
@@ -55,6 +55,7 @@ GetOptions(\%opts,
              'nomail',
              'S|single_run',
              't|sleeptime=i',
+	     'T|tmpdir=s',
              'v|verbose',
              'V|version',
              'w|hold_time=s',
@@ -66,6 +67,9 @@ if ($opts{'h'}) {
     usage();
 }
 
+if ($opts{'V'}) {
+    show_version();
+}
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
 
@@ -93,6 +97,9 @@ my $contactaddr = $opts{'m'} ? $opts{'m'}
 
 my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
+
+my $tmpdir =  $opts{'T'} ? $opts{'T'}
+                             : $dtconf{'tatmpdir'};
 
 if (!$dvfile && !$ncfile) {
     usage("You need to specify at least a dnsval.conf (-k) file or named.conf (-n) file.");
@@ -626,6 +633,59 @@ sub checkkeys {
 
 } # end checkkeys
 
+my ($conffileh, $tmpfileh, $tmpfile, $currenttmpdir);
+
+sub start_tmpfile {
+    my ($currentfile) = @_;
+
+    my $newfile = $currentfile;
+    $newfile =~ s/(.*)\/([^\/]*)(\.[^\/]*)/$2-XXXXXX/; # contains dir path
+    my ($base, $suffix);
+    ($currenttmpdir, $base, $suffix) = ($1, $2, $3);
+    if (!$suffix) {
+	# doesn't contain dir path
+	$newfile =~ s/^([^\/]*)(\.[^\/]*)/$1-XXXXXX/;
+	($currenttmpdir, $base, $suffix) = ("/tmp",$1, $2);
+    }
+    if (!$suffix) {
+	$newfile = "tmpfile-XXXXXX";
+	$currenttmpdir = "/tmp";
+	$suffix = ".conf";
+    }
+    $currenttmpdir = $tmpdir if ($tmpdir);
+    ($tmpfileh, $tmpfile) = tempfile($newfile,
+				     DIR => $currenttmpdir,
+				     SUFFIX => $suffix);
+
+    Die("Failed to open $currenttmpdir/$newfile.$suffix") if (!$tmpfileh);
+
+    $conffileh = new IO::File;
+    Die("Failed to create a file handle for opening $currentfile")
+      if (!$conffileh);
+
+    if (!$conffileh->open("$currentfile")) {
+	Die("Failed to open the file handle for reading $currentfile")
+    }
+
+    Verbose("Opened $currenttmpdir/$tmpfile to create a replacement for $currentfile\n");
+    return ($tmpfileh, $tmpfile)
+}
+
+sub end_tmpfile {
+    my ($currentfile) = @_;
+    $tmpfileh->close();
+    $conffileh->close();
+    # rename TMP to $ncfile
+    my $origname = $currentfile . ".orig";
+    if (!rename($currentfile,$origname)) {
+	Die("Fatal Error:  Failed to rename $currentfile to $origname!");
+    }
+    if (!rename ($tmpfile,$currentfile)) {
+	Die("Fatal Error:  Failed to rename newly created $tmpfile to $currentfile;\nAn appropriate -T flag or tatmpdir setting may correct this problem.");
+    }
+    Verbose("Closed $tmpfile and renamed back to $currentfile\n");
+}
+
 #################################################################
 # add_ta_namedconf
 #
@@ -639,11 +699,8 @@ sub add_ta_namedconf  {
     my $zone = @_;
     return if (!$ncfile);
 
-    my ($tmpfileh, $tmpfile) = tempfile("namedconfXXXXXX",
-					DIR => "/tmp",
-					SUFFIX => ".conf");
-    open (CONF,$ncfile) or die "unable to read named.conf file.";
-    while (<CONF>) {
+    start_tmpfile($ncfile);
+    while (<$conffileh>) {
         print $tmpfileh $_;
         if (/^trusted-keys/) {
             print TMP "\n\n";
@@ -659,13 +716,7 @@ sub add_ta_namedconf  {
             }
         }
     }
-    close (CONF);
-    $tmpfileh->close();
-# rename TMP to $ncfile
-    my $origname = $ncfile . ".orig";
-    rename ($ncfile,$origname);
-    rename ($tmpfile,$ncfile);
-
+    end_tmpfile($ncfile);
 }
 
 #################################################################
@@ -684,15 +735,23 @@ sub add_ta_dnsvalconf  {
 
     my $pat = "trust-anchor";
 
-    my ($tmpfileh, $tmpfile) = tempfile("dnsvalconfXXXXXX",
-					DIR => "/tmp",
-					SUFFIX => ".conf");
-
-    open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
+    start_tmpfile($dvfile);
+    # XXX: this should be reset later!!!
     $/ = ";";
-    while (<CONF>) {
+    print "saving zone $zone in $dvfile\n";
+    while (<$conffileh>) {
+
+	# the ; separator may be in the middle of a comment unfortunately.
+	while (/[\n\r]\s*#[^\n\r]*;\s*$/ ||
+	       /^\s*#[^\n\r]*;\s*$/) {
+	    my $nextline = <$conffileh>;
+	    last if ($nextline eq '');
+	    $_ .= $nextline;
+	}
+
         my $zonefound = 0;
-        if (s/^\s*(\S*)\s*$pat\s*//) {
+        if (s/\s*([^\n\r]+)\s*$pat\s*//) {
+	    print "found $pat\n";
             print $tmpfileh $1 . " $pat\n\n";
 	    s/\s*;\s*$//;
 
@@ -738,12 +797,7 @@ sub add_ta_dnsvalconf  {
             print $tmpfileh $_;
         }
     }
-    close (CONF);
-    $tmpfileh->close();
-# rename TMP to $dvfile
-    my $origname = $dvfile . ".orig";
-    rename ($dvfile,$origname);
-    rename ($tmpfile,$dvfile);
+    end_tmpfile($dvfile);
 }
 
 ######################################################################
@@ -762,15 +816,10 @@ sub remove_ta_dnsvalconf {
 
     my $pat = "trust-anchor";
 
-
-    my ($tmpfileh, $tmpfile) = tempfile("dnsvalconfXXXXXX",
-					DIR => "/tmp",
-					SUFFIX => ".conf");
-
-    open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
+    start_tmpfile($dvfile);
     my $origsep = $/;
     $/ = ";";
-    while (<CONF>) {
+    while (<$conffileh>) {
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print $tmpfileh $1 . " $pat\n\n";
@@ -808,13 +857,7 @@ sub remove_ta_dnsvalconf {
             print $tmpfileh $_;
         }
     }
-    close (CONF);
-    $tmpfileh->close();
-    $/ = $origsep;
-# rename TMP to $dvfile
-    my $origname = $dvfile . ".orig";
-    rename ($dvfile,$origname);
-    rename ($tmpfile,$dvfile);
+    end_tmpfile($dvfile);
 }
 
 ######################################################################
@@ -834,13 +877,10 @@ sub remove_ta_namedconf  {
     my $pat = "^trusted-keys";
     my $trustsection = 0;
 
-    my ($tmpfileh, $tmpfile) = tempfile("namedconfXXXXXX",
-					DIR => "/tmp",
-					SUFFIX => ".conf");
-    open (CONF,$ncfile) or die "unable to read named.conf file.";
+    start_tmpfile($ncfile);
     my $origsep = $/;
     $/ = ";";
-    while (<CONF>) {
+    while (<$conffileh>) {
         if (s/^\s*$pat\s*//) {
             print $tmpfileh "trusted-keys {";
             $trustsection = 1;
@@ -910,12 +950,7 @@ sub remove_ta_namedconf  {
         }
     }
     $/ = $origsep;
-    close (CONF);
-    $tmpfileh->close();
-# rename TMP to $dvfile
-    my $origname = $ncfile . ".orig";
-    rename ($ncfile,$origname);
-    rename ($tmpfile,$ncfile);
+    end_tmpfile ($ncfile);
 }
 
 ################################################################
@@ -933,13 +968,10 @@ sub revoke_ta_dnsvalconf  {
 
     my $pat = "trust-anchor";
 
-    my ($tmpfileh, $tmpfile) = tempfile("dnsvalconfXXXXXX",
-					DIR => "/tmp",
-					SUFFIX => ".conf");
-    open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
+    start_tmpfile($dvfile);
     my $origsep = $/;
     $/ = ";";
-    while (<CONF>) {
+    while (<$conffileh>) {
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print $tmpfileh $1 . " $pat\n\n";
@@ -975,13 +1007,8 @@ sub revoke_ta_dnsvalconf  {
             print $tmpfileh $_;
         }
     }
-    close (CONF);
-    $tmpfileh->close();
     $/ = $origsep;
-# rename TMP to $dvfile
-    my $origname = $dvfile . ".orig";
-    rename ($dvfile,$origname);
-    rename ($tmpfile,$dvfile);
+    end_tmpfile($dvfile);
 }
 
 ################################################################
@@ -1000,13 +1027,10 @@ sub revoke_ta_namedconf  {
     my $pat = "^trusted-keys";
     my $trustsection = 0;
 
-    my ($tmpfileh, $tmpfile) = tempfile("namedconfXXXXXX",
-					DIR => "/tmp",
-					SUFFIX => ".conf");
-    open (CONF,$ncfile) or die "unable to read named.conf file.";
+    start_tmpfile($ncfile);
     my $origsep = $/;
     $/ = ";";
-    while (<CONF>) {
+    while (<$conffileh>) {
         if (s/^\s*$pat\s*//) {
             print $tmpfileh "trusted-keys {";
             $trustsection = 1;
@@ -1074,12 +1098,7 @@ sub revoke_ta_namedconf  {
         }
     }
     $/ = $origsep;
-    close (CONF);
-    $tmpfileh->close();
-# rename TMP to $dvfile
-    my $origname = $ncfile . ".orig";
-    rename ($ncfile,$origname);
-    rename ($tmpfile,$ncfile);
+    end_tmpfile($ncfile);
 }
 
 ###############################################################
@@ -1489,6 +1508,12 @@ sub compare_keys {
 #
 sub Verbose {
     print STDERR @_ if ($opts{'v'});
+}
+
+sub Die {
+    print STDERR @_,"\n";
+    print STDERR "This is a fatal error.  EXITING!\n";
+    exit(1);
 }
 
 ####################################################################
