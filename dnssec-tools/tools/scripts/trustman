@@ -536,7 +536,6 @@ sub checkkeys {
             if ($ncfile && ($zone_configfile_map{$z} eq $ncfile)) {
                 add_ta_namedconf($z);
             }
-	    print "here: $dvfile && ($zone_configfile_map{$z} eq $dvfile)\n";
             if ($dvfile && ($zone_configfile_map{$z} eq $dvfile)) {
                 add_ta_dnsvalconf($z);
             }
@@ -777,7 +776,6 @@ sub add_ta_namedconf  {
 sub add_ta_dnsvalconf  {
     my ($zone) = @_;
 
-    print "here: $dvfile / $zone\n";
     next if (!$dvfile);
 
     my $pat = "trust-anchor";
@@ -787,7 +785,6 @@ sub add_ta_dnsvalconf  {
     while (read_next_ta_chunk()) {
 
         my $zonefound = 0;
-	print "here: $_\n";
         if (s/(\s*[^\n\r]+\s+$pat\s*)//) {
 	    # reprint the segment we just read and smashed
             print $tmpfileh "$1";
