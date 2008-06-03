@@ -731,6 +731,30 @@ sub read_next_ta_chunk {
     return $_;
 }
 
+# looks for a particular section of the dnsval.conf file
+#  (pretty much always "trust-anchor" is likely to be looked for)
+sub find_next_ta_chunk_type {
+    my ($type) = @_;
+
+    while (read_next_ta_chunk()) {
+
+        my $zonefound = 0;
+        if (s/^(\s*\S+\s+$type\s*)//) {
+	    # reprint the segment we just read and smashed
+            print $tmpfileh "$1";
+
+	    # strip the trailing ;
+	    s/\s*;\s*$//;
+
+	    # return the rest for processing
+	    return $_;
+        } else {
+            print $tmpfileh $_;
+	}
+    }
+}
+	
+
 #################################################################
 # add_ta_namedconf
 #
@@ -782,59 +806,52 @@ sub add_ta_dnsvalconf  {
 
     start_tmpfile($dvfile);
 
-    while (read_next_ta_chunk()) {
+    while (find_next_ta_chunk_type($pat)) {
 
         my $zonefound = 0;
-        if (s/(\s*[^\n\r]+\s+$pat\s*)//) {
-	    # reprint the segment we just read and smashed
-            print $tmpfileh "$1";
-	    s/\s*;\s*$//;
 
-	    # this is just looking to see if the zone we're adding a
-	    # key for is already in the file (if it's not they've
-	    # likely set a security expectation that allowd the key to
-	    # be auto-added even though it's never been secured).
-	    my $lookingfor = $_;
-            while ($lookingfor) {
-		# no comments
-		next if ($lookingfor =~ s/^\s*#[^\n]*\n+//);
-		# no blank lines
-		next if ($lookingfor =~ s/^\s*\n//);
+	# this is just looking to see if the zone we're adding a
+	# key for is already in the file (if it's not they've
+	# likely set a security expectation that allowd the key to
+	# be auto-added even though it's never been secured).
+	my $lookingfor = $_;
+	while ($lookingfor) {
+	    # no comments
+	    next if ($lookingfor =~ s/^\s*#[^\n]*\n+//);
+	    # no blank lines
+	    next if ($lookingfor =~ s/^\s*\n//);
 
-		# spot the actual zone-name/data combo
-		$lookingfor =~ s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//;
-                my ($z, $val) = ($1, $2);
-                # strip off the trailing dot from the zone name
-                $z =~ s/\.$//;
-                if ($z eq $zone) {
-                    $zonefound = 1;
-                }
-            }
+	    # spot the actual zone-name/data combo
+	    $lookingfor =~ s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//;
+	    my ($z, $val) = ($1, $2);
+	    # strip off the trailing dot from the zone name
+	    $z =~ s/\.$//;
+	    if ($z eq $zone) {
+		$zonefound = 1;
+	    }
+	}
 
-	    # dump the original contents back out; this should preserve # lines
-	    print $tmpfileh $_,"\n";
+	# dump the original contents back out; this should preserve # lines
+	print $tmpfileh $_,"\n";
 
-	    # print the new keys
-            for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
-                my $newkeyentry = $zone . ". \"" .
-                             $newkeys{$zone}[$i]{flags} . " " .
-                             $newkeys{$zone}[$i]{protocol} . " " .
-                             $newkeys{$zone}[$i]{algorithm} . " " .
-                             $newkeys{$zone}[$i]{key} . "\"";
-                if ($zonefound) {
-                    print $tmpfileh $newkeyentry . $2;
-                    Verbose("Adding the following key to $dvfile:\n");
-                    Verbose($newkeyentry . "\n");
-                    my $notif = "New key added to " . $dvfile . " for zone " . $zone . "\n";
-                    notify($notif);
-                } else {
-		    Verbose("Failed to find original zone key in $ncfile!\n");
-		}
-            }
-            print $tmpfileh "\n;";
-        } else {
-            print $tmpfileh $_;
-        }
+	# print the new keys
+	for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
+	    my $newkeyentry = $zone . ". \"" .
+	      $newkeys{$zone}[$i]{flags} . " " .
+		$newkeys{$zone}[$i]{protocol} . " " .
+		  $newkeys{$zone}[$i]{algorithm} . " " .
+		    $newkeys{$zone}[$i]{key} . "\"";
+	    if ($zonefound) {
+		print $tmpfileh $newkeyentry . $2;
+		Verbose("Adding the following key to $dvfile:\n");
+		Verbose($newkeyentry . "\n");
+		my $notif = "New key added to " . $dvfile . " for zone " . $zone . "\n";
+		notify($notif);
+	    } else {
+		Verbose("Failed to find original zone key in $ncfile!\n");
+	    }
+	}
+	print $tmpfileh "\n;";
     }
     end_tmpfile($dvfile);
 }
@@ -856,43 +873,38 @@ sub remove_ta_dnsvalconf {
     my $pat = "trust-anchor";
 
     start_tmpfile($dvfile);
-    while (<$conffileh>) {
-        s/\s;\s*$//;
-        if (s/^\s*(\S*)\s*$pat\s*//) {
-            print $tmpfileh $1 . " $pat\n\n";
-            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-                my ($z, $val) = ($1, $2);
-                # strip off the trailing dot from the zone name
-                $z =~ s/\.$//;
-                $val =~ s/[\n\r]//g;
-                if ($z eq $zone) {
-                    my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
-                    $key =~ s/\s+//g;
-                    $k =~ s/[\n\r]//g;
-                    if ($k eq $key &&
-                        $f eq $flags &&
-                        $p eq $protocol &&
-                        $a eq $algorithm) {
-# its a match, comment it out
-                        print $tmpfileh "# The following key has been removed.\n";
-                        my $remkeyrec = $z . ". " . $val;
-                        print $tmpfileh "# " . $remkeyrec . "\n\n";
-                        my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
-                        notify($notif);
-                    } else {
-                        # add the trailing dot when printing zone name
-                        print $tmpfileh $z . ". " . $val . "\n\n";
-                    }
+    while (find_next_ta_chunk_type($pat)) {
 
-                } else {
-                    # add the trailing dot when printing zone name
-                    print $tmpfileh $z . ". " . $val . "\n\n";
-                }
-            }
-            print $tmpfileh "\n;\n";
-        } else {
-            print $tmpfileh $_;
-        }
+	while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
+	    my ($z, $val) = ($1, $2);
+	    # strip off the trailing dot from the zone name
+	    $z =~ s/\.$//;
+	    $val =~ s/[\n\r]//g;
+	    if ($z eq $zone) {
+		my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+		$key =~ s/\s+//g;
+		$k =~ s/[\n\r]//g;
+		if ($k eq $key &&
+		    $f eq $flags &&
+		    $p eq $protocol &&
+		    $a eq $algorithm) {
+		    # its a match, comment it out
+		    print $tmpfileh "# The following key has been removed.\n";
+		    my $remkeyrec = $z . ". " . $val;
+		    print $tmpfileh "# " . $remkeyrec . "\n\n";
+		    my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
+		    notify($notif);
+		} else {
+		    # add the trailing dot when printing zone name
+		    print $tmpfileh $z . ". " . $val . "\n\n";
+		}
+
+	    } else {
+		# add the trailing dot when printing zone name
+		print $tmpfileh $z . ". " . $val . "\n\n";
+	    }
+	}
+	print $tmpfileh "\n;\n";
     }
     end_tmpfile($dvfile);
 }
@@ -1003,41 +1015,35 @@ sub revoke_ta_dnsvalconf  {
     my $pat = "trust-anchor";
 
     start_tmpfile($dvfile);
-    while (<$conffileh>) {
-        s/\s;\s*$//;
-        if (s/^\s*(\S*)\s*$pat\s*//) {
-            print $tmpfileh $1 . " $pat\n\n";
-            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-                my ($z, $val) = ($1, $2);
-                # strip off the trailing dot from the zone name
-                $z =~ s/\.$//;
-                $val =~ s/[\n\r]//g;
-                if ($z eq $zone) {
-                    my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
-                    $key =~ s/\s+//g;
-                    my $keyin = $keyrec->{key};
-                    $keyin =~ s/[\n\r]//g;
-                    if ($keyin eq $key &&
-                        $keyrec->{flags} eq $flags &&
-                        $keyrec->{protocol} eq $protocol &&
-                        $keyrec->{algorithm} eq $algorithm) {
-# its a match, comment it out
-                        print $tmpfileh "# The following key has been revoked.\n";
-                        my $revkeyrec = $z . ". " . $val;
-                        print $tmpfileh "# " . $revkeyrec . "\n\n";
-                        my $notif = "The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n";
-                        notify($notif);
-                    }
+    while (find_next_ta_chunk_type($pat)) {
+	while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
+	    my ($z, $val) = ($1, $2);
+	    # strip off the trailing dot from the zone name
+	    $z =~ s/\.$//;
+	    $val =~ s/[\n\r]//g;
+	    if ($z eq $zone) {
+		my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+		$key =~ s/\s+//g;
+		my $keyin = $keyrec->{key};
+		$keyin =~ s/[\n\r]//g;
+		if ($keyin eq $key &&
+		    $keyrec->{flags} eq $flags &&
+		    $keyrec->{protocol} eq $protocol &&
+		    $keyrec->{algorithm} eq $algorithm) {
+		    # its a match, comment it out
+		    print $tmpfileh "# The following key has been revoked.\n";
+		    my $revkeyrec = $z . ". " . $val;
+		    print $tmpfileh "# " . $revkeyrec . "\n\n";
+		    my $notif = "The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n";
+		    notify($notif);
+		}
 
-                } else {
-                    # add the trailing dot when printing zone name
-                    print $tmpfileh $z . ". " . $val . "\n\n";
-                }
-            }
-            print $tmpfileh "\n;\n";
-        } else {
-            print $tmpfileh $_;
-        }
+	    } else {
+		# add the trailing dot when printing zone name
+		print $tmpfileh $z . ". " . $val . "\n\n";
+	    }
+	}
+	print $tmpfileh "\n;\n";
     }
     end_tmpfile($dvfile);
 }
