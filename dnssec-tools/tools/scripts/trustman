@@ -736,7 +736,7 @@ sub add_ta_dnsvalconf  {
     my $pat = "trust-anchor";
 
     start_tmpfile($dvfile);
-    # XXX: this should be reset later!!!
+    my $origsep = $/;
     $/ = ";";
     print "saving zone $zone in $dvfile\n";
     while (<$conffileh>) {
@@ -798,6 +798,7 @@ sub add_ta_dnsvalconf  {
         }
     }
     end_tmpfile($dvfile);
+    $/ = $origsep;
 }
 
 ######################################################################
@@ -858,6 +859,7 @@ sub remove_ta_dnsvalconf {
         }
     }
     end_tmpfile($dvfile);
+    $/ = $origsep;
 }
 
 ######################################################################
