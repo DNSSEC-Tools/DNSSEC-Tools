@@ -1535,6 +1535,7 @@ sub Verbose {
 }
 
 sub Die {
+    notify(join("",@_, "\n", "This is a fatal error.  EXITING!\n"));
     print STDERR @_,"\n";
     print STDERR "This is a fatal error.  EXITING!\n";
     exit(1);
