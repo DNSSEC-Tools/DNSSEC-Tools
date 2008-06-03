@@ -703,14 +703,14 @@ sub add_ta_namedconf  {
     while (<$conffileh>) {
         print $tmpfileh $_;
         if (/^trusted-keys/) {
-            print TMP "\n\n";
+            print $tmpfileh "\n\n";
             for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
                 my $newkey = $zone . " " .
                              $newkeys{$zone}[$i]{flags} . " " .
                              $newkeys{$zone}[$i]{protocol} . " " .
                              $newkeys{$zone}[$i]{algorithm} . " " .
                              $newkeys{$zone}[$i]{key} . "\";\n";
-                print TMP $newkey;
+                print $tmpfileh $newkey;
                 my $notif = "New key added to " . $ncfile . " for zone " . $zone . "\n";
                 notify($notif);
             }
@@ -738,7 +738,6 @@ sub add_ta_dnsvalconf  {
     start_tmpfile($dvfile);
     my $origsep = $/;
     $/ = ";";
-    print "saving zone $zone in $dvfile\n";
     while (<$conffileh>) {
 
 	# the ; separator may be in the middle of a comment unfortunately.
@@ -749,10 +748,15 @@ sub add_ta_dnsvalconf  {
 	    $_ .= $nextline;
 	}
 
+	# weed out any comments that occur before the starting line
+	while (s/^(\s*#[^\n\r]*[\n\r])//) {
+	    print $tmpfileh $1;
+	}
+
         my $zonefound = 0;
-        if (s/\s*([^\n\r]+)\s*$pat\s*//) {
-	    print "found $pat\n";
-            print $tmpfileh $1 . " $pat\n\n";
+        if (s/(\s*[^\n\r]+\s+$pat\s*)//) {
+	    # reprint the segment we just read and smashed
+            print $tmpfileh "$1";
 	    s/\s*;\s*$//;
 
 	    # this is just looking to see if the zone we're adding a
