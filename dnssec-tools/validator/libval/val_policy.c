@@ -1658,6 +1658,7 @@ read_next_val_config_file(val_context_t *ctx,
     return VAL_NO_ERROR;
 
 err:
+    FREE_DNSVAL_FILE_LIST(*added_files);
     if (pol_frag) {
         FREE(pol_frag->label);
         free_policy_entry(pol_frag->pol, pol_frag->index);
@@ -1688,7 +1689,6 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     struct dnsval_list *dnsval_list = NULL;
     struct dnsval_list *dnsval_c;
     int             retval;
-    struct dnsval_list *added_list = NULL;
     char *label;
     char *newctxlab;
    
@@ -1719,7 +1719,7 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     *is_override = 0;
 
     while(dnsval_c) {
-        added_list = NULL;
+        struct dnsval_list *added_list = NULL;
         /* read the head element first */
         if (VAL_NO_ERROR != (retval = 
                 read_next_val_config_file(ctx,
@@ -1730,7 +1730,13 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
                                           &overrides, 
                                           &g_opt))) {
 
-            goto err;
+             /* 
+              * Ignore files that could not be read at all, 
+              * flag error in other cases 
+              */
+            if (retval != VAL_CONF_NOT_FOUND) {
+                goto err;
+            }
         }
 
         /* Add new file names to the list */
@@ -1827,7 +1833,6 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     return VAL_NO_ERROR;
 
 err:
-    FREE_DNSVAL_FILE_LIST(added_list);
     if (overrides) {
         destroy_valpolovr(&overrides);
         overrides = NULL;
