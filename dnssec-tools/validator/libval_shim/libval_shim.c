@@ -15,6 +15,7 @@
 #include <arpa/nameser.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
+#include <validator-config.h>
 
 #ifdef __linux__
 #define getprogname() program_invocation_short_name 
