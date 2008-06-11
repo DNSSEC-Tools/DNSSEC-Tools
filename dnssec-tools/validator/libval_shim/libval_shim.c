@@ -13,12 +13,20 @@
 
 
 #include <arpa/nameser.h>
+#include <validator-config.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
-#include <validator-config.h>
 
 #ifdef __linux__
 #define getprogname() program_invocation_short_name 
+#endif
+
+#ifdef solaris2
+#define R_FUNCS_RETURN_STRUCT
+#define GETHOSTBYADDR_USES_INT
+#else
+#define R_FUNCS_RETURN_INT
+#define GETHOSTBYADDR_USES_SOCKT
 #endif
 
 typedef struct val_context ValContext;
@@ -64,9 +72,36 @@ gethostbyname(const char *name)
 }
 
 
+#ifdef R_FUNCS_RETURN_STRUCT
+struct hostent *
+gethostbyname_r(const char * name,struct hostent * result_buf, char * buf, 
+		int buflen, int * h_errnop)
+{
+  val_status_t          val_status;
+  int                   ret;
+  struct hostent *result = NULL;
+  
+  if (libval_shim_init())
+      return NULL;
+
+  val_log(NULL, LOG_DEBUG, "libval_shim: gethostbyname_r(%s) called: wrapper\n", name);
+
+  ret = 
+    val_gethostbyname_r(libval_shim_ctx, name, result_buf, buf, buflen, 
+			&result, h_errnop,
+			&val_status);
+
+  if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
+      return result;
+  }
+
+  return (NULL); 
+}
+#endif
+#ifdef R_FUNCS_RETURN_INT
 int
 gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf, 
-		size_t buflen, struct hostent ** result, int * h_errnop)
+                size_t buflen, struct hostent ** result, int * h_errnop)
 {
   val_status_t          val_status;
   int                   ret;
@@ -87,10 +122,15 @@ gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf,
 
   return (HOST_NOT_FOUND); 
 }
-
+#endif
 
 struct hostent *
+#ifdef GETHOSTBYADDR_USES_INT
+gethostbyaddr(const char *addr, int len, int type)
+#endif
+#ifdef GETHOSTBYADDR_USES_SOCKT
 gethostbyaddr(__const void *addr, socklen_t len, int type)
+#endif
 {
   if (libval_shim_init())
     return NULL;
