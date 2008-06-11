@@ -180,6 +180,35 @@ AC_ARG_WITH(ssl,,
 AC_ARG_ENABLE(ssl,,
         AC_MSG_ERROR([ Invalid option. Use --with-openssl/--without-openssl instead ]) )
 
+
+########################################
+# add in -Dsolaris2, -Dlinux, etc as needed
+
+AC_CANONICAL_TARGET
+changequote(, )
+PARTIALTARGETOS=`echo $target_os | sed 's/[-._].*//'`
+changequote([, ])
+
+#
+# Check whether we can use -Ux -Dx=x with the expected behaviour
+#
+AC_MSG_CHECKING([whether to un-define target system token (before redefining)])
+OLD_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="-U$PARTIALTARGETOS -D$PARTIALTARGETOS=$PARTIALTARGETOS"
+
+AC_EGREP_CPP(yes,[[
+#ifdef $PARTIALTARGETOS
+yes
+#endif
+]],
+[PARTIALTARGETFLAGS="-U$PARTIALTARGETOS -D$PARTIALTARGETOS=$PARTIALTARGETOS"
+ AC_MSG_RESULT([yes])],
+[PARTIALTARGETFLAGS="-D$PARTIALTARGETOS=$PARTIALTARGETOS"
+ AC_MSG_RESULT([no])])
+CFLAGS="$CFLAGS $PARTIALTARGETFLAGS"
+CPPFLAGS="$OLD_CPPFLAGS"
+CFLAGS="$CFLAGS $PARTIALTARGETFLAGS"
+
 dnl openssl defaults to /usr/local/ssl, so add it to the search path.
 if test "x$opensslpathset" != "x1"; then
     AC_ADD_SEARCH_PATH(/usr/local/ssl)
