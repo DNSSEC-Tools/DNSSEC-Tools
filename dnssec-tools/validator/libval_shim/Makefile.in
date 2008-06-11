@@ -1,6 +1,6 @@
 
 INCL= ../include
-EXTRA_LIBS= -L../libsres/.libs -lsres -L../libval/.libs -lval$(LIBVAL_SUFFIX) -lpthread -lcrypto
+EXTRA_LIBS= -L../libsres/.libs -lsres -L../libval/.libs -lval$(LIBVAL_SUFFIX) -lpthread @LDFLAGS@ -lcrypto
 CFLAGS_EX=-I$(INCL) -I. -I../libsres -I../libval -D_GNU_SOURCE 
 
 SRC=  	libval_shim.c 
