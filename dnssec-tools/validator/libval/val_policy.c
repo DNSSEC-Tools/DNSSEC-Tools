@@ -1343,6 +1343,9 @@ destroy_valpol(val_context_t * ctx)
 #ifdef __linux__
 #define getprogname() program_invocation_short_name 
 #endif
+#ifdef solaris2
+#define getprogname() getexecname()
+#endif
 static int
 read_next_val_config_file(val_context_t *ctx, 
                           char **label, 
