@@ -63,8 +63,8 @@ my @opts =
 	"roll-loglevel=s",			# Logging level for rollerd.
 	"roll-sleep=i",				# Sleep-time for rollerd.
 
-        "ta-contact=s",                         # trustman email contact
-        "ta-smtpserver=s",                      # trustman smtp server
+	"ta-contact=s",				# trustman email contact
+	"ta-smtpserver=s",			# trustman smtp server
 );
 
 #
@@ -101,8 +101,8 @@ my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 
-my $tacontact;                          # trustman email contact
-my $tasmtpserver;                       # trustman smtp server
+my $tacontact;				# trustman email contact.
+my $tasmtpserver;			# trustman smtp server.
 
 #
 # Program paths.
@@ -461,8 +461,8 @@ roll_sleeptime  $rsleep
 #
 # Settings for trustman
 #
-tacontact       $tacontact
-tasmtpserver    $tasmtpserver
+tacontact	$tacontact
+tasmtpserver	$tasmtpserver
 
 #
 # GUI-usage flag.
