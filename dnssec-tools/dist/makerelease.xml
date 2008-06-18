@@ -22,7 +22,7 @@
     <step type="modify" title="Changing Version Numbers">
       <modifications>
 	<modify
-	  find="(DNSSEC-Tools Version:) [\.0-9]+"
+	  find="(DNSSEC-Tools Version:) [\.0-9]+(\.rc\d+|\.pre\d+|)"
 	  replace="$1 {VERSION}">
 	  <files>
 	    <file>tools/scripts/*</file>
@@ -68,7 +68,7 @@
 	<step type="modify" title="Modify the Fast module">
 	  <modifications>
 	    <modify
-	      find="(VERSION = ')[\.\d](rc\d|pre\d|)+"
+	      find="(VERSION = ')[\.\d]+"
 	      replace="${1}{FASTVERSION}">
 	      <files>
 		<file>tools/modules/ZoneFile-Fast/Fast.pm</file>
