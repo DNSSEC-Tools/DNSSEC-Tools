@@ -16,13 +16,13 @@
 
     <step type="prompt" prompt="Enter the new version number:"
       title="Pick A Version Number"
-      parameter="VERSION" values="^[\.\d]+(\.rc\d+|\.pre\d|)$"
+      parameter="VERSION" values="^[\.\d]+(\rc\d+|\pre\d|)$"
       />
 
     <step type="modify" title="Changing Version Numbers">
       <modifications>
 	<modify
-	  find="(DNSSEC-Tools Version:) [\.0-9]+(\.rc\d+|\.pre\d+|)"
+	  find="(DNSSEC-Tools Version:\s*) [\.0-9]+(rc\d+|pre\d+|)"
 	  replace="$1 {VERSION}">
 	  <files>
 	    <file>tools/scripts/*</file>
