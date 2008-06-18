@@ -463,7 +463,7 @@ val_res_query(val_context_t * context,
               val_status_t * val_status)
 {
     struct val_response resp;
-    int             retval;
+    int             retval = VAL_NO_ERROR;
     int             bytestocopy = 0;
     int             totalbytes = 0;
     HEADER *hp = NULL;
