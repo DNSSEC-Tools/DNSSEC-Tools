@@ -31,7 +31,9 @@ AC_PROG_MAKE_SET
 dnl ----------------------------------------------------------------------
 AC_ARG_WITH(validator,
 [  --without-validator     Build without libsres, libval and binary apps
-                          (Disable if they fail to build on your platform).]
+                          (Disable if they fail to build on your platform).
+
+   Validator specific options:]
 )
 
 if test "x$with_validator" != "xno"; then
@@ -43,6 +45,22 @@ else
   PERLARGS="NOVALIDATOR"
 fi
 AC_SUBST(DNSSEC_SUBDIRS)
+
+#
+# these are bogus flags for this script but get passed down to validator/config*
+#
+AC_ARG_WITH(openssl,
+[      --with-openssl=PATH     Look for openssl in PATH/{lib,include}.])
+AC_ARG_WITH(ipv6,
+[      --with-ipv6             Enable IPv6 support.])
+AC_ARG_WITH(nsec3,
+[      --with-nsec3            Enable nsec3 support.])
+AC_ARG_WITH(dlv,
+[      --with-dlv              Enable DLV support.])
+AC_ARG_WITH(threads,
+[      --without-threads       Don't use threads.
+])
+
 
 dnl ----------------------------------------------------------------------
 dnl perl specific arguments
