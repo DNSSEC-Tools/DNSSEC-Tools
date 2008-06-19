@@ -137,6 +137,7 @@ our @EXPORT = qw(
 			 ROLLCMD_STATUS
 			 ROLLCMD_ZONELOG
 			 ROLLCMD_ZONESTATUS
+			 ROLLCMD_ZSARGS
 
 			 ROLLCMD_RC_OKAY
 			 ROLLCMD_RC_BADLEVEL
@@ -150,6 +151,7 @@ our @EXPORT = qw(
 			 ROLLCMD_RC_BADZONEDATA
 			 ROLLCMD_RC_KSKROLL
 			 ROLLCMD_RC_ZSKROLL
+			 ROLLCMD_RC_NOARGS
 
 			 CHANNEL_WAIT
 			 CHANNEL_CLOSE
@@ -194,6 +196,7 @@ my $ROLLCMD_RC_BADZONEDATA	= 8;
 my $ROLLCMD_RC_DISPLAY		= 9;
 my $ROLLCMD_RC_KSKROLL		= 10;
 my $ROLLCMD_RC_ZSKROLL		= 11;
+my $ROLLCMD_RC_NOARGS		= 12;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);		};
 sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);		};
@@ -207,6 +210,7 @@ sub ROLLCMD_RC_BADZONEDATA	{ return($ROLLCMD_RC_BADZONEDATA);	};
 sub ROLLCMD_RC_DISPLAY		{ return($ROLLCMD_RC_DISPLAY);		};
 sub ROLLCMD_RC_KSKROLL		{ return($ROLLCMD_RC_KSKROLL);		};
 sub ROLLCMD_RC_ZSKROLL		{ return($ROLLCMD_RC_ZSKROLL);		};
+sub ROLLCMD_RC_NOARGS		{ return($ROLLCMD_RC_NOARGS);		};
 
 #
 # The remaining ROLLCMD_ entities are the rollmgr_sendcmd() commands
@@ -231,6 +235,7 @@ my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_STATUS	= "rollcmd_status";
 my $ROLLCMD_ZONELOG	= "rollcmd_zonelog";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
+my $ROLLCMD_ZSARGS	= "rollcmd_zsargs";
 
 sub ROLLCMD_DISPLAY		{ return($ROLLCMD_DISPLAY);	};
 sub ROLLCMD_DSPUB		{ return($ROLLCMD_DSPUB);	};
@@ -251,6 +256,7 @@ sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 sub ROLLCMD_ZONELOG		{ return($ROLLCMD_ZONELOG);	};
 sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
+sub ROLLCMD_ZSARGS		{ return($ROLLCMD_ZSARGS);	};
 
 my %roll_commands =
 (
@@ -274,6 +280,7 @@ my %roll_commands =
 	rollcmd_status		=> 1,
 	rollcmd_zonelog		=> 1,
 	rollcmd_zonestatus	=> 1,
+	rollcmd_zsargs		=> 1,
 );
 
 ##############################################################################
@@ -1803,6 +1810,10 @@ The available commands and their required data are:
 					published
    ROLLCMD_DSPUBALL	none		DS records published for all
 					zones in KSK rollover phase 6
+   ROLLCMD_GETSTATUS	none		currently unused
+   ROLLCMD_LOGFILE	log filename	change the log file
+   ROLLCMD_LOGLEVEL	log level	set a new logging level
+   ROLLCMD_LOGMSG	log message	add a message to the log
    ROLLCMD_ROLLALL	none		force all zones to start
 					ZSK rollover
    ROLLCMD_ROLLKSK	zone-name	force a zone to start
@@ -1813,9 +1824,17 @@ The available commands and their required data are:
    ROLLCMD_RUNQUEUE	none		rollerd runs through
 					its queue
    ROLLCMD_SHUTDOWN	none		stop rollerd
+   ROLLCMD_SKIPALL	none		suspend all rollovers
+   ROLLCMD_SKIPZONE	zone name	suspend rollover for a zone
    ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
-   ROLLCMD_STATUS	none		get rollerd's status
-
+   ROLLCMD_STATUS	none		get status of rollerd
+   ROLLCMD_ZONELOG	zone name	set the logging level for
+			logging level	a particular zone
+   ROLLCMD_ZONESTATUS	none		get status of the zones
+   ROLLCMD_ZSARGS	zonesigner args	add a (probably temporary)
+			zone list	set of options to the signing
+					of a set of zones
+	
 The data aren't checked for validity by I<rollmgr_sendcmd()>; validity
 checking is a responsibility of B<rollerd>.
 
