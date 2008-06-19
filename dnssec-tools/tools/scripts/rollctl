@@ -23,7 +23,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 #
 my $NAME   = "rollctl";
 my $VERS   = "$NAME version: 0.9";
-my $DTVERS = "DNSSEC-Tools Version: 1.4";
+my $DTVERS = "DNSSEC-Tools Version: 1.4.rc1";
 
 #######################################################################
 
@@ -52,6 +52,7 @@ my @opts =
 	"status",			# Get rollerd's status.
 	"zonelog=s",			# Set a zone's logging level.
 	"zonestatus",			# Get status of zones.
+	"zsargs",			# Set zonesigner args for some zones.
 
 	"Version",			# Display the version number.
 	"quiet",			# Don't print anything.
@@ -79,6 +80,7 @@ my $sleeptimeflag;
 my $statusflag;
 my $zonelogflag;
 my $zonestatflag;
+my $zsargsflag;
 
 my $quiet;
 
@@ -410,6 +412,33 @@ sub main()
 			$rcret++;
 		}
 	}
+	if($zsargsflag)
+	{
+		if(@ARGV == 0)
+		{
+			print STDERR "zoneargs failed:  arguments are required\n";
+			$rcret++;
+		}
+		else
+		{
+			my $zsargs;			# Zonesigner arguments.
+
+			$zsargs = join ',', @ARGV;
+
+			rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZSARGS,$zsargs);
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "$resp";
+			}
+			else
+			{
+				print STDERR "zsarg failed:  \"$resp\"\n";
+				$rcret++;
+			}
+		}
+	}
 
 	return($rcret);
 }
@@ -459,6 +488,7 @@ sub doopts
 	$statusflag	= $options{'status'}	  || 0;
 	$zonelogflag	= $options{'zonelog'}	  || 0;
 	$zonestatflag	= $options{'zonestatus'}  || 0;
+	$zsargsflag	= $options{'zsargs'}	  || 0;
 	$version        = $options{'Version'}     || 0;
 
 	#
@@ -558,6 +588,7 @@ sub usage
 	print STDERR "\t-status			get rollerd's status\n";
 	print STDERR "\t-zonelog		set a zone's log level\n";
 	print STDERR "\t-zonestatus		get status of zones\n";
+	print STDERR "\t-zsargs			set zonesigner arguments for zones\n";
 	print STDERR "\t-Version		display version number\n";
 	print STDERR "\t-quiet			don't give any output\n";
 	print STDERR "\t-help			help message \n";
