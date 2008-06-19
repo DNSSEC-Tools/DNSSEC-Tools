@@ -1889,29 +1889,41 @@ sub signer
 {
 	my $rname  = shift;			# Name of rollrec.
 	my $zsflag = shift;			# Flag for key generation.
-	my $rrr	   = shift;			# Reference to rollrec.
+	my $krr	   = shift;			# Reference to zone's keyrec.
 
-	my %rr;					# Rollrec hash.
+	my $rrr;				# Reference to zone's rollrec.
+	my $zsargs;				# Zonesigner args from rollrec.
 
 	my $zonefile;				# Zone file from keyrec.
 	my $zonesigned;				# Signed zone file from keyrec.
 	my $cmdstr;				# Command to be executed.
 
 	#
+	# Get the rollrec for this name and check if there are any
+	# user-specified zonesigner arguments.
+	#
+	$rrr = rollrec_fullrec($rname);
+	$zsargs = $rrr->{'zsargs'};
+	$zsflag = "$zsflag $zsargs" if($zsargs ne '');
+
+	#
 	# Dig a few data out of the zone's keyrec file.
 	#
-	$zonefile = getkrval($rname,$rrr,"zonefile");
+	$zonefile = getkrval($rname,$krr,"zonefile");
 	return("") if($zonefile eq "");
 
-	$zonesigned = getkrval($rname,$rrr,"signedzone");
+	$zonesigned = getkrval($rname,$krr,"signedzone");
 	return("") if($zonesigned eq "");
 
 	#
-	# Have zonesigner sign the zone for us.
+	# Build the command to execute.
 	#
 	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned";
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
+	#
+	# Have zonesigner sign the zone for us.
+	#
 	$ret = `$cmdstr`;
 
 	return($ret);
@@ -2491,6 +2503,10 @@ sub commander
 		elsif($cmd eq ROLLCMD_ZONESTATUS())
 		{
 			cmd_zonestatus($data);
+		}
+		elsif($cmd eq ROLLCMD_ZSARGS())
+		{
+			cmd_zsargs($data);
 		}
 		else
 		{
@@ -3396,6 +3412,144 @@ sub cmd_zonestatus
 	}
 
 	rollrec_unlock();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_zsargs()
+#
+# Purpose:	Set zone-specific arguments.
+#
+sub cmd_zsargs
+{
+	my $data = shift;			# Command's data.
+
+	my @args = ();				# Command's split args.
+	my @zsargs = ();			# Zonesigner's args.
+	my @zones = ();				# Zones to modify.
+	my @badzones = ();			# Invalid zones.
+
+	my $zsargstr = '';			# Final argument string.
+	my $clear = 0;				# Flag for zapping argstr.
+
+	rolllog_log(LOG_TMI,"<command>","zsargs command received");
+
+	#
+	# Split the argument into its molecules.
+	#
+	@args = split /,/, $data;
+
+	#
+	# Divide up the arguments between zones and zonesigner arguments.
+	# Zonesigner arguments have equal signs; zones don't.
+	#
+	foreach my $arg (@args)
+	{
+		if($arg =~ /\=/)
+		{
+			push @zsargs, $arg;
+		}
+		else
+		{
+			push @zones, $arg;
+		}
+	}
+
+	#
+	# Ensure we've got both zones and zonesigner arguments.
+	#
+	if(@zsargs == 0)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_NOARGS,"no arguments given to zsargs command");
+		rolllog_log(LOG_ALWAYS,"<command>","no arguments given to zsargs command\n");
+		return;
+	}
+	if(@zones == 0)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_NOZONES,"no zones given to zsargs command");
+		rolllog_log(LOG_ALWAYS,"<command>","no zones given to zsargs command\n");
+		return;
+	}
+
+	#
+	# Put the arguments into the form zonesigner is expecting and join
+	# up the bits into a single argument string.
+	#
+	for(my $ind=0; $ind < @zsargs; $ind++)
+	{
+		$zsargs[$ind] =~ s/^/-/;
+		$zsargs[$ind] =~ s/=/ /;
+	}
+
+	$zsargstr = join ' ', @zsargs;
+
+	#
+	# Set the "clear argument" flag if the fake "clear" option is given.
+	#
+	$clear = 1 if($zsargstr =~ /-clear/);
+
+	#
+	# Read the rollrec file.  If we couldn't read it, complain and return.
+	#
+	rollrec_lock();
+	if(rollrec_read($rollrecfile) <= 0)
+	{
+		rollrec_unlock();
+		rollmgr_sendresp(ROLLCMD_RC_RRFOPEN,"unable to open rollrec file $rollrecfile");
+		rolllog_log(LOG_ALWAYS,"<command>","unable to open rollrec file $rollrecfile\n");
+		return;
+	}
+
+	#
+	# Ensure the specified zones are in the rollrec file.
+	# 
+	foreach my $rname (@zones)
+	{
+		my $rrr;		# Reference to rollrec.
+
+		$rrr = rollrec_fullrec($rname);
+		if(!defined($rrr))
+		{
+			push @badzones, $rname;
+		}
+	}
+
+	#
+	# Return an error if any zones were specified that aren't in the
+	# rollrec file,
+	# 
+	if(@badzones > 0)
+	{
+		rollrec_unlock();
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"non-existent zones specified - @badzones");
+		rolllog_log(LOG_ALWAYS,"<command>","non-existent zones specified - @badzones\n");
+		return;
+	}
+
+	#
+	# Set (or clear) the new zsargs field in the rollrec entries for the
+	# given zones.
+	#
+	foreach my $zone (@zones)
+	{
+		if($clear)
+		{
+			rollrec_delfield($zone,"zsargs");
+			rolllog_log(LOG_INFO,"<command>","clearing zsargs from zone $zone to $zsargstr");
+		}
+		else
+		{
+			rollrec_setval($zone,"zsargs",$zsargstr);
+			rolllog_log(LOG_INFO,"<command>","setting zsargs for zone $zone to $zsargstr");
+		}
+	}
+
+	#
+	# Tidy up the rollrec file and tell the user we're done.
+	#
+	rollrec_write();
+	rollrec_close();
+	rollrec_unlock();
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zsargs command completed\n");
 }
 
 #-----------------------------------------------------------------------------
