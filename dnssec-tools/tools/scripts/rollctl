@@ -747,6 +747,39 @@ Has B<rollerd> write the status of zones in the current I<rollrec> file to the
 B<rollerd> log file.  The status is also reported to B<rollctl>, which prints
 it to the screen.
 
+=item B<-zsargs arglist zones>
+
+Provides additional B<zonesigner> arguments for a given set of zones.  These
+arguments will override the arguments in the DNSSEC-Tools defaults file, the
+DNSSEC-Tools configuration file, and the zones' I<keyrec> files.
+
+The B<zonesigner> argument list is given in I<arglist>.  Given the B<rollctl>
+argument processing, the new arguments for B<zonesigner> cannot be specified
+as expected.  Instead, the arguments should be given in the following manner.
+The leading dash should be replaced with an equals sign.  If the option takes
+an argument, the space that would separate the option from the option's
+argument should also be replaced by an equals sign.  B<rollerd> translates
+these arguments to the appropriate format for B<zonesigner>.  These examples
+should clarify the modifications:
+
+    normal zonesigner option		-zsargs options
+    ------------------------		---------------
+	-nokrfile			   =nokrfile
+	-zskcount 5			   =zskcount=5
+
+The I<zones> list is a space-separated list of zones.  B<All> the new
+B<zonesigner> arguments will be applied to B<all> the listed zones.
+
+The "=clear" argument is special.  B<rollerd> translates it to "-clear",
+which is not a normal B<zonesigner> option.  Instead, B<rollerd> recognizes
+"-clear" as an indicator that it should remove the I<zsargs> field from the
+I<rollrec> records for the specified zones.
+
+The following are valid uses of I<-zsargs>:
+
+    # rollctl -zsargs =ksklength=1024 example.com
+    # rollctl -zsargs =ksklen=1024 =zsklen=1024 example.com test.com
+
 =item B<-Version>
 
 Displays the version information for B<rollctl> and the DNSSEC-Tools package.
