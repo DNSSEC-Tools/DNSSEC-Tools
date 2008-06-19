@@ -3476,7 +3476,7 @@ sub cmd_zsargs
 	#
 	for(my $ind=0; $ind < @zsargs; $ind++)
 	{
-		$zsargs[$ind] =~ s/^/-/;
+		$zsargs[$ind] =~ s/^=/-/;
 		$zsargs[$ind] =~ s/=/ /;
 	}
 
