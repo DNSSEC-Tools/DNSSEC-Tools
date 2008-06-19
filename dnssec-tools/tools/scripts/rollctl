@@ -145,7 +145,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($dspubflag)
+	elsif($dspubflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$dspubflag);
 
@@ -161,7 +161,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($dspuballflag)
+	elsif($dspuballflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUBALL,$dspuballflag);
 
@@ -177,7 +177,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($logfileflag)
+	elsif($logfileflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGFILE,$logfileflag);
 
@@ -192,7 +192,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($loglevelflag)
+	elsif($loglevelflag)
 	{
 		if(rolllog_validlevel($loglevelflag) == 0)
 		{
@@ -215,7 +215,7 @@ sub main()
 			}
 		}
 	}
-	if($nodispflag)
+	elsif($nodispflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,0);
 
@@ -230,7 +230,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($zrollallflag)
+	elsif($zrollallflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALL);
 
@@ -245,7 +245,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($rollrecflag)
+	elsif($rollrecflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLREC,$rollrecflag);
 
@@ -260,7 +260,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($rollkskflag)
+	elsif($rollkskflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$rollkskflag);
 
@@ -275,7 +275,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($rollzskflag)
+	elsif($rollzskflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$rollzskflag);
 
@@ -290,7 +290,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($runqueueflag)
+	elsif($runqueueflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_RUNQUEUE);
 
@@ -308,7 +308,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($skipallflag)
+	elsif($skipallflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPALL,$skipzoneflag);
 
@@ -323,7 +323,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($skipzoneflag)
+	elsif($skipzoneflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$skipzoneflag);
 
@@ -338,7 +338,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($sleeptimeflag)
+	elsif($sleeptimeflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag);
 
@@ -353,7 +353,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($statusflag)
+	elsif($statusflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_STATUS);
 
@@ -368,7 +368,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($shutdownflag)
+	elsif($shutdownflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SHUTDOWN);
 		($ret, $resp) = rollmgr_getresp();
@@ -382,7 +382,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($zonelogflag)
+	elsif($zonelogflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONELOG,$zonelogflag);
 
@@ -397,7 +397,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($zonestatflag)
+	elsif($zonestatflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONESTATUS);
 
@@ -412,7 +412,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	if($zsargsflag)
+	elsif($zsargsflag)
 	{
 		if(@ARGV == 0)
 		{
@@ -455,6 +455,7 @@ sub main()
 sub doopts
 {
 	my $argc = shift;			# Command line argument count.
+	my $argcnt;				# Specified-argument count.
 
 	#
 	# Give a usage flag if there aren't any options.
@@ -490,6 +491,36 @@ sub doopts
 	$zonestatflag	= $options{'zonestatus'}  || 0;
 	$zsargsflag	= $options{'zsargs'}	  || 0;
 	$version        = $options{'Version'}     || 0;
+
+	#
+	# Ensure that only one argument was given.
+	#
+	$argcnt = $dispflag		+
+		  $nodispflag		+
+		  $dspubflag		+
+		  $dspuballflag		+
+		  $quiet		+
+		  $logfileflag		+
+		  $loglevelflag		+
+		  $zrollallflag		+
+		  $rollkskflag		+
+		  $rollrecflag		+
+		  $rollzskflag		+
+		  $runqueueflag		+
+		  $shutdownflag		+
+		  $skipallflag		+
+		  $skipzoneflag		+
+		  $sleeptimeflag	+
+		  $statusflag		+
+		  $zonelogflag		+
+		  $zonestatflag		+
+		  $zsargsflag		+
+		  $version;
+	if($argcnt != 1)
+	{
+		print STDERR "only one argument may be specified per execution\n";
+		exit(1);
+	}
 
 	#
 	# Close our output descriptors if the -quiet option was given.
@@ -613,9 +644,7 @@ rollctl - Send commands to the DNSSEC-Tools rollover daemon
 =head1 DESCRIPTION
 
 The B<rollctl> command sends commands to the DNSSEC-Tools rollover daemon,
-B<rollerd>.  Multiple options may be specified on a single command line and
-they will be executed in I<alphabetical> order.  The exception to this
-ordering is that the I<-shutdown> command will always be executed last.
+B<rollerd>.  Only one option may be specified on a command line.
 
 In most cases, B<rollerd> will send a response to B<rollctl>.  B<rollctl> will
 print a success or failure message, as appropriate.
