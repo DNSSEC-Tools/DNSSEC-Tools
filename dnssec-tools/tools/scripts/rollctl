@@ -495,26 +495,28 @@ sub doopts
 	#
 	# Ensure that only one command argument was given.
 	#
-	$argcnt = $dispflag		+
-		  $nodispflag		+
-		  $dspubflag		+
-		  $dspuballflag		+
-		  $logfileflag		+
-		  $loglevelflag		+
-		  $zrollallflag		+
-		  $rollkskflag		+
-		  $rollrecflag		+
-		  $rollzskflag		+
-		  $runqueueflag		+
-		  $shutdownflag		+
-		  $skipallflag		+
-		  $skipzoneflag		+
-		  $sleeptimeflag	+
-		  $statusflag		+
-		  $zonelogflag		+
-		  $zonestatflag		+
-		  $zsargsflag;
-	if($argcnt != 1)
+	$argcnt =
+		defined($options{'display'})	 +
+		defined($options{'nodisplay'})	 +
+		defined($options{'dspub'})	 +
+		defined($options{'dspuball'})	 +
+		defined($options{'logfile'})	 +
+		defined($options{'loglevel'})	 +
+		defined($options{'rollallzsks'}) +
+		defined($options{'rollksk'})	 +
+		defined($options{'rollrec'})	 +
+		defined($options{'rollzsk'})	 +
+		defined($options{'runqueue'})	 +
+		defined($options{'shutdown'})	 +
+		defined($options{'halt'})	 +
+		defined($options{'skipall'})	 +
+		defined($options{'skipzone'})	 +
+		defined($options{'sleeptime'})	 +
+		defined($options{'status'})	 +
+		defined($options{'zonelog'})	 +
+		defined($options{'zonestatus'})	 +
+		defined($options{'zsargs'});
+	if($argcnt > 1)
 	{
 		print STDERR "only one argument may be specified per execution\n";
 		exit(1);
