@@ -493,13 +493,12 @@ sub doopts
 	$version        = $options{'Version'}     || 0;
 
 	#
-	# Ensure that only one argument was given.
+	# Ensure that only one command argument was given.
 	#
 	$argcnt = $dispflag		+
 		  $nodispflag		+
 		  $dspubflag		+
 		  $dspuballflag		+
-		  $quiet		+
 		  $logfileflag		+
 		  $loglevelflag		+
 		  $zrollallflag		+
@@ -514,8 +513,7 @@ sub doopts
 		  $statusflag		+
 		  $zonelogflag		+
 		  $zonestatflag		+
-		  $zsargsflag		+
-		  $version;
+		  $zsargsflag;
 	if($argcnt != 1)
 	{
 		print STDERR "only one argument may be specified per execution\n";
