@@ -494,29 +494,10 @@ sub doopts
 
 	#
 	# Ensure that only one command argument was given.
+	# We'll get rid of the non-command options before checking.
 	#
-	$argcnt =
-		defined($options{'display'})	 +
-		defined($options{'nodisplay'})	 +
-		defined($options{'dspub'})	 +
-		defined($options{'dspuball'})	 +
-		defined($options{'logfile'})	 +
-		defined($options{'loglevel'})	 +
-		defined($options{'rollallzsks'}) +
-		defined($options{'rollksk'})	 +
-		defined($options{'rollrec'})	 +
-		defined($options{'rollzsk'})	 +
-		defined($options{'runqueue'})	 +
-		defined($options{'shutdown'})	 +
-		defined($options{'halt'})	 +
-		defined($options{'skipall'})	 +
-		defined($options{'skipzone'})	 +
-		defined($options{'sleeptime'})	 +
-		defined($options{'status'})	 +
-		defined($options{'zonelog'})	 +
-		defined($options{'zonestatus'})	 +
-		defined($options{'zsargs'});
-	if($argcnt > 1)
+	delete($options{'quiet'});
+	if(keys(%options) > 1)
 	{
 		print STDERR "only one argument may be specified per execution\n";
 		exit(1);
@@ -534,7 +515,7 @@ sub doopts
 	#
 	# Show the version number if requested.
 	#
-	version() if(defined($options{'Version'}));
+	version() if($version);
 
 	#
 	# Show the logging levels if one wasn't specified.
@@ -573,7 +554,7 @@ sub version
 }
 
 #----------------------------------------------------------------------
-# Routine:	version()
+# Routine:	showloglevels()
 #
 # Purpose:	Print the logging levels and exit.
 #
