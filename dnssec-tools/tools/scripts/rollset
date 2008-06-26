@@ -39,6 +39,7 @@ my $doall   = 0;			# Edit all rollrec entries flag.
 my $zonename	= "";
 my $zonefile	= "";
 my $keyrec	= "";
+my $zsargs	= "";
 my $roll	= 0;
 my $skip	= 0;
 my $display	= 0;
@@ -49,6 +50,7 @@ my $loglvl	= -1;
 my $deladm	= 0;
 my $deldir	= 0;
 my $dellog	= 0;
+my $delzsa	= 0;
 
 my %options = ();			# Filled option array.
 my @opts =
@@ -63,9 +65,11 @@ my @opts =
 	"loglevel=s",			# New logging level value.
 	"display",			# Turn on display flag.
 	"nodisplay",			# Turn off display flag.
+	"zsargs=s",			# New zonesigner arguments.
 	"del-admin",			# Delete the administrator line.
 	"del-directory",		# Delete the directory line.
 	"del-loglevel",			# Delete the logging level line.
+	"del-zsargs",			# Delete the zonesigner arguments.
 
 	"check",			# Run rollchk after edits.
 	"verbose",			# Give lotsa output.
@@ -133,9 +137,11 @@ sub doopts
 	$display   = $options{'display'};
 	$nodisplay = $options{'nodisplay'};
 	$loglvl	   = $options{'loglevel'}   if(defined($options{'loglevel'}));
+	$zsargs	   = $options{'zsargs'};
 	$deladm	   = $options{'del-admin'};
 	$deldir	   = $options{'del-directory'};
 	$dellog	   = $options{'del-loglevel'};
+	$delzsa	   = $options{'del-zsargs'};
 
 	$check	   = $options{'check'};
 	$verbose   = $options{'verbose'};
@@ -160,6 +166,11 @@ sub doopts
 		print STDERR "-display and -nodisplay are mutually exclusive\n";
 		exit(1);
 	}
+	if(defined($zsargs) && $delzsa)
+	{
+		print STDERR "-zsargs and -del-zsargs are mutually exclusive\n";
+		exit(1);
+	}
 
 	#
 	# Ensure the logging level is valid.
@@ -178,26 +189,38 @@ sub doopts
 	}
 
 	#
+	# Convert the zonesigner arguments into their real form.
+	#
+	if($zsargs ne '')
+	{
+		my @zsargs = split / /, $zsargs;
+
+		for(my $ind=0; $ind < @zsargs; $ind++)
+		{
+			$zsargs[$ind] =~ s/^=/-/;
+			$zsargs[$ind] =~ s/=/ /;
+		}
+		$zsargs = join ' ', @zsargs;
+	}
+
+
+	#
 	# If a zone name wasn't specified, we'll apply the fix to every
 	# rollrec in the file.
 	#
 	$doall = 1 if(! $zonename);
 
+
 	#
-	# Ensure that we were actually given something to do.
+	# Delete the non-command options and ensure that we were given
+	# something to do.
 	#
-	if(($zonefile  eq "")	&&
-	   ($keyrec    eq "")	&&
-	   ($admin     eq "")	&&
-	   ($directory eq "")	&&
-	   ($roll      == 0)	&&
-	   ($skip      == 0)	&&
-	   ($display   == 0)	&&
-	   ($loglvl    == -1)	&&
-	   ($nodisplay == 0)	&&
-	   ($deladm    == 0)	&&
-	   ($deldir    == 0)	&&
-	   ($dellog    == 0))
+	delete $options{'zone'};
+	delete $options{'check'};
+	delete $options{'verbose'};
+	delete $options{'Version'};
+	delete $options{'help'};
+	if(keys(%options) == 0)
 	{
 		print STDERR "you must specify something to be changed\n";
 		exit(4);
@@ -289,6 +312,7 @@ sub editrrf
 		changer($keyrec,$name,'keyrec',$keyrec);
 		changer($admin,$name,'administrator',$admin);
 		changer($directory,$name,'directory',$directory);
+		changer($zsargs,$name,'zsargs',$zsargs);
 		changer($display,$name,'display',1);
 		changer($nodisplay,$name,'display',0);
 		changer($loglvl,$name,'loglevel',$loglvl)    if($loglvl > -1);
@@ -299,6 +323,7 @@ sub editrrf
 		deleter($deladm,$name,'administrator');
 		deleter($deldir,$name,'directory');
 		deleter($dellog,$name,'loglevel');
+		deleter($delzsa,$name,'zsargs');
 
 	}
 
@@ -440,11 +465,13 @@ sub usage
 	print STDERR "		-admin admin-email\n";
 	print STDERR "		-directory zone-directory\n";
 	print STDERR "		-loglevel logging-level\n";
+	print STDERR "		-zsargs zonesigner-arguments\n";
 	print STDERR "		-display\n";
 	print STDERR "		-nodisplay\n";
 	print STDERR "		-del-admin\n";
 	print STDERR "		-del-directory\n";
 	print STDERR "		-del-loglevel\n";
+	print STDERR "		-del-zsargs\n";
 
 	print STDERR "		-check\n";
 	print STDERR "		-verbose\n";
@@ -515,6 +542,12 @@ The I<directory> line is deleted.
 
 The I<loglevel> line is deleted.
 
+=item -del-zsargs
+
+The I<zsargs> line is deleted.
+
+The I<-zsargs> and I<-delzsargs> options are mutually exclusive.
+
 =item -directory dir
 
 The directory to hold the zone's files is set to I<dir>.
@@ -543,6 +576,34 @@ This option is mutually exclusive of the I<-skip> option.
 
 Convert the selected I<rollrec>s to be inactive ("skip") records.
 This option is mutually exclusive of the I<-roll> option.
+
+=item B<-zsargs arglist>
+
+Provides additional B<zonesigner> arguments.  These arguments will override
+the arguments in the DNSSEC-Tools defaults file, the DNSSEC-Tools
+configuration file, and the zones' I<keyrec> files.  The B<zonesigner>
+argument list is given in I<arglist>.  If more than one argument is given,
+the set of arguments should be enclosed in quotes.
+
+Given the B<rollset> argument processing, the new arguments for B<zonesigner>
+cannot be specified as expected.  Instead, the arguments should be given in
+the following manner.  The leading dash should be replaced with an equals
+sign.  If the option takes an argument, the space that would separate the
+option from the option's argument should also be replaced by an equals sign.
+B<rollset> translates these arguments to the appropriate format for
+B<zonesigner>.  These examples should clarify the argument modifications:
+
+    normal zonesigner option		-zsargs options
+    ------------------------		---------------
+	-nokrfile			   =nokrfile
+	-zskcount 5			   =zskcount=5
+
+The following are valid uses of I<-zsargs>:
+
+    # rollset -zsargs =ksklength=1024 example.rollrec
+    # rollset -zsargs "=ksklen=1024 =zsklen=1024" example.rollrec
+
+The I<-zsargs> and I<-delzsargs> options are mutually exclusive.
 
 =item -check
 
