@@ -504,78 +504,78 @@ execution.  B<rollset> operates quietly unless it is given the I<-verbose>
 option.
 
 All records in the specified I<rollrec> file will be modified, unless the
-I<-zone> option is given.  In that case, only the named zone will be modified.
+B<-zone> option is given.  In that case, only the named zone will be modified.
 
 =head1 OPTIONS
 
 =over 4
 
-=item -zone zonename
+=item B<-zone zonename>
 
 The zone I<zonename> is selected as the only zone whose I<rollrec> record
 will be modified.  If this is not given, then all I<rollrec> records will
 be modified.
 
-=item -file zone-file
+=item B<-file zone-file>
 
 The zone file in the selected I<rollrec> records is modified to be
 I<zone-file>.
 
-=item -keyrec keyrec-file
+=item B<-keyrec keyrec-file>
 
 The keyrec file in the selected I<rollrec> records is modified to be
 I<keyrec-file>.
 
-=item -admin addr
+=item B<-admin addr>
 
 The zone administrator's email address is set to I<addr>.
 
-=item -del-admin
+=item B<-del-admin>
 
 The I<administrator> line is deleted.
 
-=item -del-directory
+=item B<-del-directory>
 
 The I<directory> line is deleted.
 
-=item -del-loglevel
+=item B<-del-loglevel>
 
 The I<loglevel> line is deleted.
 
-=item -del-zsargs
+=item B<-del-zsargs>
 
 The I<zsargs> line is deleted.
 
-The I<-zsargs> and I<-delzsargs> options are mutually exclusive.
+The B<-zsargs> and B<-delzsargs> options are mutually exclusive.
 
-=item -directory dir
+=item B<-directory dir>
 
 The directory to hold the zone's files is set to I<dir>.
 
-=item -loglevel logging-level
+=item B<-loglevel logging-level>
 
 The logging level of the selected I<rollrec> records is set to
 I<logging-level>.  The valid logging levels are defined in I<rollmgr.pm(3)>.
 
-=item -display
+=item B<-display>
 
 Turn on the GUI display of the zones in the selected I<rollrec>s.
 This option is mutually exclusive of the I<-nodisplay> option.
 
-=item -nodisplay
+=item B<-nodisplay>
 
 Turn off the GUI display of the zones in the selected I<rollrec>s.
-This option is mutually exclusive of the I<-display> option.
+This option is mutually exclusive of the B<-display> option.
 
-=item -roll
+=item B<-roll>
 
 Convert the selected I<rollrec>s to be active ("roll") records.
-This option is mutually exclusive of the I<-skip> option.
+This option is mutually exclusive of the B<-skip> option.
 
-=item -skip
+=item B<-skip>
 
 Convert the selected I<rollrec>s to be inactive ("skip") records.
-This option is mutually exclusive of the I<-roll> option.
+This option is mutually exclusive of the B<-roll> option.
 
 =item B<-zsargs arglist>
 
@@ -603,22 +603,22 @@ The following are valid uses of I<-zsargs>:
     # rollset -zsargs =ksklength=1024 example.rollrec
     # rollset -zsargs "=ksklen=1024 =zsklen=1024" example.rollrec
 
-The I<-zsargs> and I<-delzsargs> options are mutually exclusive.
+The B<-zsargs> and B<-delzsargs> options are mutually exclusive.
 
-=item -check
+=item B<-check>
 
 If this option is given, the B<rollchk> command will be run on the modified
 I<rollrec> file.
 
-=item -verbose
+=item B<-verbose>
 
 Display information about every modification made to the I<rollrec> file.
 
-=item -Version
+=item B<-Version>
 
 Display the current B<rollset> and DNSSEC-Tools versions.
 
-=item -help
+=item B<-help>
 
 Display a usage message.
 
