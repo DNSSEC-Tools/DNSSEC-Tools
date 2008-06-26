@@ -368,6 +368,12 @@ zone has not yet undergone ZSK rollover.
 The I<display> field is set to indicate that B<blinkenlights> should display
 the record.  The I<maxttl> and I<phasestart> fields are set to dummy values.
 
+I<rollrec> files also have the I<zsargs> field that holds user-specified
+options for B<zonesigner>.  This field is set during B<rollerd> execution
+when the administrator determines that some zone fields should be modified.
+It is not an initial I<rollrec> field and consequently cannot be specified
+by B<rollinit>.
+
 The keywords B<roll> and B<skip> indicate whether B<rollerd> should process
 or ignore a particular I<rollrec> entry.  B<roll> records are created by
 default; B<skip> entries are created if the I<-skip> option is specified.
