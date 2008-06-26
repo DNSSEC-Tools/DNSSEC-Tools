@@ -101,6 +101,12 @@ The time-stamp of the beginning of the zone's current phase.
 
 The zone's zone file.
 
+ * zsargs
+
+The user-specified arguments for B<zonesigner>.  This field is set by the
+B<rollctl -zsargs> command to allow modification of a zone's rollover options
+without having to restart B<rollerd>.
+
  * zskphase
 
 The zone's current ZSK rollover phase.  A value of zero indicates that the zone
@@ -131,6 +137,7 @@ The following is an example of a roll I<rollrec>:
             loglevel        "info"
             maxttl          "60"
             display         "1"
+	    zsargs          "-zsklength 1024"
             ksk_rollsecs    "1172614842"
             ksk_rolldate    "Tue Feb 27 22:20:42 2007"
             zsk_rollsecs    "1172615087"
@@ -168,6 +175,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 B<lsroll(1)>
 
 B<blinkenlights(8)>,
+B<rollctl(8)>,
 B<rollerd(8)>,
 B<zonesigner(8)>
 
