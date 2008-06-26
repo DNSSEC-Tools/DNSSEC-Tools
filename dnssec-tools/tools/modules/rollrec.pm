@@ -112,6 +112,7 @@ my @ROLLFIELDS = (
 			'loglevel',
 			'kskphase',
 			'zskphase',
+			'zsargs',
 			'ksk_rollsecs',
 			'ksk_rolldate',
 			'zsk_rollsecs',
