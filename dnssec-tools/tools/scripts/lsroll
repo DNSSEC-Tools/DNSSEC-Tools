@@ -51,6 +51,7 @@ my @opts =
 		"phstart",		# Phase start.
 		"lastksk",		# Timestamp of last KSK rollover.
 		"lastzsk",		# Timestamp of last ZSK rollover.
+		"zsargs",		# User-specified zonesigner arguments.
 
 	# Output format:
 		"count",		# Only give count of matching keyrecs.
@@ -83,6 +84,7 @@ my $dispflag;
 my $phstartflag;
 my $lastkskflag;
 my $lastzskflag;
+my $zsargsflag;
 
 my $cntflag;
 my $headerflag;
@@ -248,6 +250,7 @@ sub doopts
 	$phstartflag	= 0;
 	$lastkskflag	= 0;
 	$lastzskflag	= 0;
+	$zsargsflag	= 0;
 
 	#
 	# Set the output flags for -skip.
@@ -265,6 +268,7 @@ sub doopts
 		$phstartflag	= 0;
 		$lastkskflag	= 0;
 		$lastzskflag	= 0;
+		$zsargsflag	= 0;
 	}
 
 	#
@@ -285,6 +289,7 @@ sub doopts
 		$phstartflag	= 1;
 		$lastkskflag	= 1;
 		$lastzskflag	= 1;
+		$zsargsflag	= 1;
 	}
 	elsif($terse)
 	{
@@ -301,6 +306,7 @@ sub doopts
 		$phstartflag	= 0;
 		$lastkskflag	= 0;
 		$lastzskflag	= 0;
+		$zsargsflag	= 0;
 	}
 
 	#
@@ -320,6 +326,7 @@ sub doopts
 	$lastzskflag	= 1 if($options{'lastzsk'});
 	$kphaseflag	= 1 if($options{'kskphase'});
 	$zphaseflag	= 1 if($options{'zskphase'});
+	$zsargsflag	= 1 if($options{'zsargs'});
 
 	#
 	# Adjust the phase-related flags to ensure that The Right Thing
@@ -458,6 +465,19 @@ sub getrollrecs
 		}
 
 		#
+		# Add quotes to the zonesigner arguments.  If the rollrec
+		# has no zsargs specified, give it a default message.
+		#
+		if(defined($rollrecs{$rn}{'zsargs'}))
+		{
+			$rollrecs{$rn}{'zsargs'} = "\"$rollrecs{$rn}{'zsargs'}\"";
+		}
+		else
+		{
+			$rollrecs{$rn}{'zsargs'} = "(none)";
+		}
+
+		#
 		# If this is a skip rollrec, zap a few roll-specific fields.
 		#
 		if($rollrecs{$rn}{'rollrec_type'} eq "skip")
@@ -542,6 +562,7 @@ sub makeheader
 	$rr{'zonename'}		= 'Zone';
 	$rr{'zsk_rolldate'}	= 'Last ZSK Rollover';
 	$rr{'zskphase'}		= 'ZSK Phase';
+	$rr{'zsargs'}		= 'Zonesigner Arguments';
 
 	$rollrecs{$HEADER_RRN} = \%rr;
 }
@@ -571,6 +592,7 @@ sub showrollrecs
 	my $type;				# Rollrec's type.
 	my $zonefile;				# Zone file in rollrec.
 	my $zonename;				# Zone name in rollrec.
+	my $zsargs;				# Zonesigner arguments.
 	my $zskphase;				# Current ZSK phase in rollrec.
 
 	#
@@ -611,6 +633,7 @@ sub showrollrecs
 		$admin	  = $rr{'administrator'};
 		$direct	  = $rr{'directory'};
 		$loglevel = $rr{'loglevel'};
+		$zsargs	  = $rr{'zsargs'};
 
 		#
 		# Build the output string.
@@ -637,6 +660,7 @@ sub showrollrecs
 		$out .= outfld($rrn,'phasestart',$phstart,$phstartflag);
 		$out .= outfld($rrn,'ksk_rolldate',$lastksk,$lastkskflag);
 		$out .= outfld($rrn,'zsk_rolldate',$lastzsk,$lastzskflag);
+		$out .= outfld($rrn,'zsargs',$zsargs,$zsargsflag);
 
 		#
 		# Write the output.
@@ -731,6 +755,7 @@ sub usage
 	print STDERR "\t\t-phstart	start of rollover phase\n";
 	print STDERR "\t\t-lastksk	time last KSK rollover ended\n";
 	print STDERR "\t\t-lastzsk	time last ZSK rollover ended\n";
+	print STDERR "\t\t-zsargs		zonesigner arguments\n";
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-headers	give explanatory column headers\n";
@@ -805,6 +830,7 @@ The table below shows the fields displayed for each output format.
     phase start            no            no          yes        no
     last KSK rollover      no            no          yes        no
     last ZSK rollover      no            no          yes        no
+    zonesigner arguments   no            no          yes        no
 
 =head1 OPTIONS
 
@@ -925,6 +951,11 @@ If no KSK rollover has yet been performed for this zone, an empty date is given.
 
 The record's last ZSK rollover date is included in the output.
 If no ZSK rollover has yet been performed for this zone, an empty date is given.
+
+=item B<-zsargs>
+
+The record's user-defined B<zonesigner> arguments are included in the output.
+If no arguments have been set for this zone, then the value "(none)" is given.
 
 =back
 
