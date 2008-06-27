@@ -444,8 +444,8 @@ sub rollrec_validate
 	#
 	# Check the keyrec and zone files.
 	#
-	$errs += checkfile($rrname,"keyrec",$krfile);
-	$errs += checkfile($rrname,"zonefile",$zonefile);
+	$errs += checkfile($rrname,"keyrec",$krfile,$dir);
+	$errs += checkfile($rrname,"zonefile",$zonefile,$dir);
 
 	#
 	# Check the directory.
@@ -524,6 +524,10 @@ sub checkdir
 #			- the file is a regular file
 #			- the file isn't empty
 #
+#		If the file isn't an absolute path and the rollrec has a
+#		directory specified, then the directory is added to the
+#		beginning of the pathname.
+#
 #		A boolean indicates if the file is valid (0) or not (1).
 #
 sub checkfile
@@ -531,6 +535,16 @@ sub checkfile
 	my $rrname   = shift;				# Rollrec name.
 	my $filetype = shift;				# File's type.
 	my $fname    = shift;				# File's name.
+	my $dir	     = shift;				# File's directory.
+
+	#
+	# Add the file's directory, if it's defined and the file isn't
+	# an absolute path.
+	#
+	if(($dir ne "") && ($fname !~ /^\//))
+	{
+		$fname = "$dir/$fname"
+	}
 
 	#
 	# Check the existence of the file.
@@ -734,13 +748,21 @@ The maximum TTL value must be greater than zero.
 
 =item * zone file checks
 
-Several checks are made for a zone's zone file.  The zone file must exist, it
-must be a regular file, and it must not be of zero length.
+Several checks are made for a zone's zone file.  The zone file must exist,
+it must be a regular file, and it must not be of zero length.
+
+If the file is not an absolute path and the file's I<rollrec> has a
+I<directory> entry, then the directory is prepended to the filename
+prior to performing any checks.
 
 =item * keyrec file checks
 
-Several checks are made for a zone's I<keyrec> file.  The I<keyrec> file must
-exist, it must be a regular file, and it must not be of zero length.
+Several checks are made for a zone's I<keyrec> file.  The I<keyrec> file
+must exist, it must be a regular file, and it must not be of zero length.
+
+If the file is not an absolute path and the file's I<rollrec> has a
+I<directory> entry, then the directory is prepended to the filename
+prior to performing any checks.
 
 =item * empty zsargs
 
