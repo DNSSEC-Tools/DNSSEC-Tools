@@ -3193,8 +3193,29 @@ is available in the MENU COMMANDS section.
 
 B<blinkenlights> is only intended to be started by B<rollerd>, not directly
 by a user.  There are two ways to have B<rollerd> start B<blinkenlights>.
-First, B<rollctl> may be given the I<-display> option.  Second, the I<-display>
+First, B<rollctl> may be given the B<-display> option.  Second, the B<-display>
 option may be given on B<rollerd>'s command line.
+
+=head1 OPTIONS
+
+B<blinkenlights> takes the following options:
+
+=over 4
+
+=item B<-display>
+
+Tells B<rollerd> to execute B<blinkenlights> as a child process.
+
+=item B<-Version>
+
+Displays the version information for B<blinkenlights> and the DNSSEC-Tools
+package.
+
+=item B<-help>
+
+Displays a usage message and exits.
+
+=back
 
 =head1 SCREEN LAYOUT
 

@@ -11,7 +11,8 @@
 
 use strict;
 
-use Getopt::Long;
+use Getopt::Long qw(:config no_ignore_case_always);
+
 
 use Net::DNS;
 use Net::DNS::SEC::Tools::conf;
@@ -36,7 +37,7 @@ my @opts =
 
 	"count",			# Only give a count of trust anchors
 	"terse",			# Give terse output.
-	"version",			# Display Version.
+	"Version",			# Display version.
 	"long",				# Give long output.
 
 	"help",				# Give a usage message and exit.
@@ -148,12 +149,12 @@ sub doopts
 	$cntflag	= $options{'count'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
-	$version	= $options{'version'}	|| 0;
+	$version	= $options{'Version'}	|| 0;
 
 	#
 	# Display the version number
 	#
-	show_version() if ($options{'version'});
+	show_version() if ($options{'Version'});
 
 	#
 	# Give a usage flag if asked.
@@ -376,7 +377,8 @@ sub usage
 	print STDERR "\t\t-count		only give count of matching trust anchors\n";
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
-	print STDERR "\t\t-h		help message \n";
+	print STDERR "\t\t-Version	version message \n";
+	print STDERR "\t\t-help		help message \n";
 	exit(0);
 }
 
@@ -445,6 +447,10 @@ displayed for each trust anchor.
 
 This option displays only the name of the zones selected by other options.
 
+=item B<-Version>
+
+Displays the version information for B<tachk> and the DNSSEC-Tools package.
+
 =item B<-help>
 
 Display a usage message.
@@ -458,6 +464,8 @@ Wesley Griffin, wgriffin@users.sourceforge.net
 =head1 SEE ALSO
 
 B<trustman(8)>
+
+B<named.conf(5)>
 
 =cut
 

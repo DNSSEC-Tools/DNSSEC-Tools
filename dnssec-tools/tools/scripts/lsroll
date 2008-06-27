@@ -795,18 +795,18 @@ displayed.
 The output displayed for each zone in a I<rollrec> file depends on the
 selected records, the selected attributes, and the selected output format.
 Each option in these option groups is described in detail in the next section.
-The three base output formats, along with the default I<-skip> format, are
+The three base output formats, along with the default B<-skip> format, are
 described here.
 
-The I<-terse> option indicates that a minimal amount of output is desired;
-the I<-long> option indicates that a great deal of output is desired.  The
+The B<-terse> option indicates that a minimal amount of output is desired;
+the B<-long> option indicates that a great deal of output is desired.  The
 record-selection and attribute-selection options may be used in conjunction
-with I<-terse> to display exactly the set of I<rollrec> fields needed.
+with B<-terse> to display exactly the set of I<rollrec> fields needed.
 
-The default output format is that used when neither I<-terse> nor I<-long>
+The default output format is that used when neither B<-terse> nor B<-long>
 is given, and is a middle ground between terse and long output.
 
-If the I<-skip> option is given, then the default output format is a little
+If the B<-skip> option is given, then the default output format is a little
 more restricted than the normal default.  Some I<rollrec> fields don't make
 sense in the context of a skip records, and so are given as "---".  These
 fields are the KSK rollover phase, the ZSK rollover phase, the TTL value, and
@@ -884,15 +884,15 @@ This field is part of the default output.
 =item B<-kskphase>
 
 The record's KSK rollover phase are included in the output.
-If this option is given with the I<-zskphase> option, then the output will
-follow the format described for the I<-phases> option.
+If this option is given with the B<-zskphase> option, then the output will
+follow the format described for the B<-phases> option.
 This field is part of the default output.
 
 =item B<-zskphase>
 
 The record's ZSK rollover phase are included in the output.
-If this option is given with the I<-kskphase> option, then the output will
-follow the format described for the I<-phases> option.
+If this option is given with the B<-kskphase> option, then the output will
+follow the format described for the B<-phases> option.
 This field is part of the default output.
 
 =item B<-phases>
@@ -985,6 +985,10 @@ Long output is given.  All record fields are included.
 =item B<-help>
 
 Display a usage message.
+
+=item B<-Version>
+
+Displays the version information for B<lsroll> and the DNSSEC-Tools package.
 
 =back
 

@@ -793,7 +793,7 @@ and/or Zone Signing Key (ZSK) files
 B<genkrf> generates a I<keyrec> file from KSK and/or ZSK files.  It
 generates new KSK and ZSK keys if needed.
 
-The name of the I<keyrec> file to be generated is given by the I<-krfile>
+The name of the I<keyrec> file to be generated is given by the B<-krfile>
 option.  If this option is not specified, B<zone-name.krf> is used as the name
 of the I<keyrec> file.  If the I<keyrec> file already exists, it will be
 overwritten with new I<keyrec> definitions.
@@ -852,6 +852,10 @@ Display additional messages during processing.  If this option is given at
 least once, then a message will be displayed indicating the successful
 generation of the I<keyrec> file.  If it is given twice, then the values of
 all options will also be displayed.
+
+=item B<-Version>
+
+Displays the version information for B<genkrf> and the DNSSEC-Tools package.
 
 =item B<-help>
 

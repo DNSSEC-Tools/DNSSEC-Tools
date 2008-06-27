@@ -3429,7 +3429,7 @@ explicitly from the Button Window.
 As stated above, verification checks are performed when saving an edited
 I<rollrec> record.  One set of checks ensures that files and directories
 associated with a zone actually exist.  This check may be turned off at
-command start-up with the I<-ignore-warns> command line option.  It may be
+command start-up with the B<-ignore-warns> command line option.  It may be
 modified during execution with the "Ignore Edit Warnings" menu command.
 
 =head2 Button Window Layout
@@ -3437,7 +3437,7 @@ modified during execution with the "Ignore Edit Warnings" menu command.
 The Button Window contains a button for each I<rollrec> record in the
 selected file.  The buttons are arranged in a table that with at least three
 columns.  The number of columns may be set at command start-up with the 
-I<-columns> command line option.  It may be modified during execution with
+B<-columns> command line option.  It may be modified during execution with
 the "Columns in Button Window" menu command.
 
 When setting the number of columns, B<rollrec-editor> minimizes the space
@@ -3483,26 +3483,27 @@ B<rollrec-editor> supports the following options.
 
 =over 4
 
-=item -columns columns
+=item B<-columns columns>
 
 This option allows the user to specify the number of columns to be used in
 the Button Window.
 
-=item -ignore-warns
+=item B<-ignore-warns>
 
 This option causes B<rollrec-editor> to ignore edit warnings when performing
 validation checks on the contents of I<rollrec> records.
 
-=item -no-filter
+=item B<-no-filter>
 
 This option turns off name filtering when B<rollrec-editor> presents a
 file-selection dialog for choosing a new I<rollrec> file.  If this option
 is not given, then the file-selection dialog will only list regular files
 with a suffix of B<.rrf>.
 
-=item -V
+=item B<-Version>
 
-This option displays the program and DNSSEC-Tools version.
+Displays the version information for B<rollrec-editor> and the DNSSEC-Tools
+package.
 
 =back
 
