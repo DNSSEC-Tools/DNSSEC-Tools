@@ -26,6 +26,7 @@
 #			- non-existent directory
 #			- non-directory directory
 #		- invalid logging level
+#		- empty zsargs field
 #
 
 use strict;
@@ -42,7 +43,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollchk";
-my $VERS   = "$NAME version: 0.7";
+my $VERS   = "$NAME version: 0.8";
 my $DTVERS = "DNSSEC-Tools Version: 1.4";
 
 #######################################################################
@@ -301,6 +302,7 @@ sub runchecks
 #				- empty directory field
 #				- non-existent directory
 #				- non-directory directory
+#			- empty zsargs field
 #
 sub rollrec_validate
 {
@@ -320,6 +322,7 @@ sub rollrec_validate
 	my $loglevel;				# Logging level.
 	my $maxttl;				# Maximum TTL.
 	my $zonefile;				# Zonefile.
+	my $zsargs;				# Zonesigner arguments.
 	my $zskphase;				# Current ZSK phase.
 	my $zskdate;				# ZSK roll date string.
 	my $zskrsecs;				# ZSK roll timestamp.
@@ -337,6 +340,7 @@ sub rollrec_validate
 	$loglevel = $rr{'loglevel'};
 	$maxttl	  = $rr{'maxttl'};
 	$zonefile = $rr{'zonefile'};
+	$zsargs	  = $rr{'zsargs'};
 	$zskdate  = $rr{'zsk_rolldate'};
 	$zskphase = $rr{'zskphase'};
 	$zskrsecs = $rr{'zsk_rollsecs'};
@@ -458,6 +462,15 @@ sub rollrec_validate
 			qprint("$rrname:  no phasestart listed for zskphase $zskphase\n");
 			$errs++;
 		}
+	}
+
+	#
+	# Make sure we've got a non-empty set of zonesigner arguments.
+	#
+	if(defined($rr{'zsargs'}) && ($zsargs eq ""))
+	{
+		qprint("$rrname:  empty zsargs\n");
+		$errs++;
 	}
 
 	return($errs);
@@ -702,8 +715,8 @@ not have a I<phasestart> field.
 
 =item * empty administrator
 
-A zone has an empty administrator field.  This field must contain an
-email address.
+A zone has an empty administrator field.  This field must contain a non-empty
+data value.  The value itself is not parsed for accuracy.
 
 =item * non-existent directory
 
@@ -728,6 +741,11 @@ must be a regular file, and it must not be of zero length.
 
 Several checks are made for a zone's I<keyrec> file.  The I<keyrec> file must
 exist, it must be a regular file, and it must not be of zero length.
+
+=item * empty zsargs
+
+A zone has an empty zonesigner-arguments field.  If this field exists, it must
+contain a non-empty data value.  The value itself is not parsed for accuracy.
 
 =back
 
