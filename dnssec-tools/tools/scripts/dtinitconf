@@ -430,7 +430,7 @@ endtime		$endtime		# RRSIGs good for thirty days.
 
 #
 # Life-times for keys.  These defaults indicate how long a key has
-# between roll-overs.  The values are measured in seconds.
+# between rollovers.  The values are measured in seconds.
 #
 # Sample values:
 #	3600		hour
@@ -706,9 +706,9 @@ sub get_dt_opts()
 	$zsopts = getval("Zone-Signing Options","");
 	print "\n";
 
-	$rlogfile  = getval("Roll-over Manager's Logfile",$rlogfile,"");
-	$rloglevel = getval("Roll-over Manager's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
-	$rsleep	   = getval("Roll-over Manager's Sleep-time",$rsleep,"");
+	$rlogfile  = getval("Rollover Manager's Logfile",$rlogfile,"");
+	$rloglevel = getval("Rollover Manager's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
+	$rsleep	   = getval("Rollover Manager's Sleep-time",$rsleep,"");
 
 	print "\n";
 
@@ -1001,7 +1001,7 @@ by the user.
 
 Each configuration field can be individually specified on the command line.
 The user will also be prompted for the fields, with default values taken from
-the DNSSEC-Tools B<defaults.pm> module.  If the I<-noprompt> option is given,
+the DNSSEC-Tools B<defaults.pm> module.  If the B<-noprompt> option is given,
 then a default configuration file (modulo command-line arguments) will be
 created.
 
@@ -1034,40 +1034,40 @@ encryption keys.
 
 =over 4
 
-=item I<-algorithm algorithm>
+=item B<-algorithm algorithm>
 
 Selects the cryptographic algorithm. The value of algorithm must be one that
 is recognized by B<dnssec-keygen>.
 
-=item I<-ksklength keylen>
+=item B<-ksklength keylen>
 
 The default KSK key length to be passed to B<dnssec-keygen>.
 
-=item I<-ksklife lifespan>
+=item B<-ksklife lifespan>
 
-The default length of time between KSK roll-overs.  This is measured in   
+The default length of time between KSK rollovers.  This is measured in   
 seconds.
 
-This value is B<only> used for key roll-over.  Keys do not have a life-time
+This value is B<only> used for key rollover.  Keys do not have a life-time
 in any other sense.
 
-=item I<-zskcount ZSK-count>
+=item B<-zskcount ZSK-count>
 
 The default number of ZSK keys that will be created for a zone.
 
-=item I<-zsklength keylen>
+=item B<-zsklength keylen>
 
 The default ZSK key length to be passed to B<dnssec-keygen>.
 
-=item I<-zsklife lifespan>
+=item B<-zsklife lifespan>
 
-The default length of time between ZSK roll-overs.  This is measured in   
+The default length of time between ZSK rollovers.  This is measured in   
 seconds.
 
-This value is B<only> used for key roll-over.  Keys do not have a life-time
+This value is B<only> used for key rollover.  Keys do not have a life-time
 in any other sense.
 
-=item I<-random randomdev>
+=item B<-random randomdev>
 
 The random device generator to be passed to B<dnssec-keygen>.
 
@@ -1079,7 +1079,7 @@ These options deal with different aspects of zone signing.
 
 =over 4
 
-=item I<-endtime endtime>
+=item B<-endtime endtime>
 
 The zone default expiration time to be passed to B<dnssec-signzone>.
 
@@ -1091,58 +1091,58 @@ These options deal specifically with functionality provided by DNSSEC-Tools.
 
 =over 4
 
-=item I<-admin email-address>
+=item B<-admin email-address>
 
 B<admin> is the email address of the DNSSEC-Tools administrator.  This is the
 default address used by the I<dt_adminmail()> routine.
 
-=item I<-archivedir directory>
+=item B<-archivedir directory>
 
 B<directory> is the archived-key directory.  Old encryption keys are moved to
 this directory, but only if they are to be saved and not deleted.
 
-=item I<-binddir directory>
+=item B<-binddir directory>
 
 B<directory> is the directory holding the BIND programs.
 
-=item I<-entropy_msg>
+=item B<-entropy_msg>
 
 A flag indicating that B<zonesigner> should display a message about entropy
 generation.  This is primarily dependent on the implementation of a system's
 random number generation.
 
-=item I<-noentropy_msg>
+=item B<-noentropy_msg>
 
 A flag indicating that B<zonesigner> should not display a message about
 entropy generation.  This is primarily dependent on the implementation of
 a system's random number generation.
 
-=item I<-roll-logfile logfile>
+=item B<-roll-logfile logfile>
 
 B<logfile> is the logfile for the B<rollerd> daemon.
 
-=item I<-roll-loglevel loglevel>
+=item B<-roll-loglevel loglevel>
 
 B<loglevel> is the logging level for the B<rollerd> daemon.
 
-=item I<-roll-sleep sleep-time>
+=item B<-roll-sleep sleep-time>
 
 B<sleep-time> is the sleep-time for the B<rollerd> daemon.
 
-=item I<-savekeys>
+=item B<-savekeys>
 
 A flag indicating that old keys should be moved to the archive directory.
 
-=item I<-nosavekeys>
+=item B<-nosavekeys>
 
 A flag indicating that old keys should not be moved to the archive directory
 but will instead be left in place.
 
-=item I<-usegui>
+=item B<-usegui>
 
 A flag indicating that the GUI for specifying command options may be used.
 
-=item I<-nousegui>
+=item B<-nousegui>
 
 A flag indicating that the GUI for specifying command options should not be
 used.
@@ -1155,7 +1155,7 @@ These options deal specifically with B<dtinitconf>.
 
 =over 4
 
-=item I<-outfile conffile>
+=item B<-outfile conffile>
 
 The configuration file will be written to B<conffile>.  If this is
 not given, then the default configuration file (as returned by
@@ -1166,35 +1166,39 @@ written to the standard output.
 
 B<conffile> must be writable.
 
-=item I<-overwrite>
+=item B<-overwrite>
 
-If I<-overwrite> is specified, existing output files may be overwritten.
-Without I<-overwrite>, if the output file is found to exist then B<dtinitconf>
+If B<-overwrite> is specified, existing output files may be overwritten.
+Without B<-overwrite>, if the output file is found to exist then B<dtinitconf>
 will give an error message and exit.
 
-=item I<-noprompt>
+=item B<-noprompt>
 
-If I<-noprompt> is specified, the user will not be prompted for any input.
+If B<-noprompt> is specified, the user will not be prompted for any input.
 The configuration file will be created from command-line options and
 DNSSEC-Tools defaults.  Guesses will be made for the BIND paths, based on
 the PATH environment variable.
 
-B<WARNING>:  After using the I<-noprompt> option, the configuration file
+B<WARNING>:  After using the B<-noprompt> option, the configuration file
 B<must> be checked to ensure that the defaults are appropriate and acceptable
 for the installation.
 
-=item I<-edit>
+=item B<-edit>
 
-If I<-edit> is specified, the output file will be edited after it has been
+If B<-edit> is specified, the output file will be edited after it has been
 created.  The EDITOR environment variable is consulted for the editor to
 use.  If the EDITOR environment variable isn't defined, then the B<vi>
 editor will be used.
 
-=item I<-verbose>
+=item B<-verbose>
 
 Provide verbose output.
 
-=item I<-help>
+=item B<-Version>
+
+Displays the version information for B<dtinitconf> and the DNSSEC-Tools package.
+
+=item B<-help>
 
 Display a usage message and exit.
 

@@ -738,12 +738,12 @@ exist, it must be a regular file, and it must not be of zero length.
 =item B<-roll>
 
 Only display I<rollrec>s that are active ("roll") records.
-This option is mutually exclusive of the I<-skip> option.
+This option is mutually exclusive of the B<-skip> option.
 
 =item B<-skip>
 
 Only display I<rollrec>s that are inactive ("skip") records.
-This option is mutually exclusive of the I<-roll> option.
+This option is mutually exclusive of the B<-roll> option.
 
 =item B<-count>
 
@@ -751,12 +751,16 @@ Display a final count of errors.
 
 =item B<-quiet>
 
-Do not display messages.  This option supersedes the setting of the I<-v>
-option.
+Do not display messages.  This option supersedes the setting of the
+B<-verbose> option.
 
 =item B<-verbose>
 
-Display many messages.  This option is subordinate to the I<-q> option.
+Display many messages.  This option is subordinate to the B<-quiet> option.
+
+=item B<-Version>
+
+Displays the version information for B<rollchk> and the DNSSEC-Tools package.
 
 =item B<-help>
 

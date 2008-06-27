@@ -11,7 +11,7 @@
 #	existing signing sets may be modified or deleted from signset-editor.
 #	The command is used in this way:
 #
-#               signset-editor [-v] <keyrec-file>
+#               signset-editor [-V] <keyrec-file>
 #
 #	The -v option will cause signset-editor to print a version message
 #	and exit.
@@ -2046,6 +2046,24 @@ proper meaning of the data is kept.
 
 After a "Save" operation, the data required for reversing modifications are
 deleted.  This is not the case for the "Save As" operation.
+
+=head1 OPTIONS
+
+B<signset-editor> takes the following options:
+
+=over 4
+
+=item B<-Version>
+
+Displays the version information for B<signset-editor> and the DNSSEC-Tools
+package.
+
+=item B<-help>
+
+Displays a usage message.
+
+=back
+
 
 =head1 COMMANDS
 

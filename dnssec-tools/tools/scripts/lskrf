@@ -2038,8 +2038,8 @@ later I<keyrec> will be the one whose data are displayed.
 
 B<lskrf> has three base output formats.  In ascending levels of detail, these
 formats are terse output, default format, and long format.  Terse output is
-given when the I<-terse> option is specified; long output is given when the
-I<-long> option is specified.
+given when the B<-terse> option is specified; long output is given when the
+B<-long> option is specified.
 
 The output displayed for each record in a I<keyrec> file depends on the
 selected records, the selected attributes, and the selected output format.
@@ -2055,16 +2055,16 @@ I<keyrec> fields related to that type.  For example, zone I<keyrec> records
 contain data about all the keys associated with a particular zone; key
 I<keyrec> records contain key lengths and algorithms for each particular key.
 The data to be printed must be specified by selecting some combination of the
-I<-zone>, I<-set>, I<-key>, and  I<-all> options.  There are also options for
+B<-zone>, B<-set>, B<-key>, and  B<-all> options.  There are also options for
 specifying specific types of keys to be printed. 
 
 The three base output formats are the default format, the terse format, and
-the long format.  The I<-terse> option indicates that a minimal amount of
-output is desired; the I<-long> option indicates that a great deal of output
+the long format.  The B<-terse> option indicates that a minimal amount of
+output is desired; the B<-long> option indicates that a great deal of output
 is desired.  The record-selection and attribute-selection options may be used
-in conjunction with I<-terse> to display exactly the set of I<keyrec> fields
+in conjunction with B<-terse> to display exactly the set of I<keyrec> fields
 needed.  The default output format is a middle ground between terse and long
-output and is that used when neither I<-terse> nor <-long> is given.
+output and is that used when neither B<-terse> nor B<-long> is given.
 
 =head2 Zone I<keyrec> Output
 
@@ -2178,7 +2178,7 @@ must be give if obsolete KSK keys are to be displayed.
 =item B<-zsk>
 
 This option displays the ZSK keys in a I<keyrec> file.  It does not include
-obsolete ZSK keys; the I<-obs> option must be specified to display obsolete
+obsolete ZSK keys; the B<-obs> option must be specified to display obsolete
 keys.
 
 =item B<-cur>
@@ -2201,7 +2201,7 @@ must be give if obsolete ZSK keys are to be displayed.
 =item B<-obs>
 
 This option displays the obsolete KSK and ZSK keys in a I<keyrec> file.
-This option is a shorthand method specifying the I<-kobs> and I<-zobs> options.
+This option is a shorthand method specifying the B<-kobs> and B<-zobs> options.
 
 =back
 
@@ -2215,12 +2215,12 @@ record-selection options.
 =item B<-valid>
 
 This option displays the valid zones in a I<keyrec> file.
-It implies the I<-zones> option.
+It implies the B<-zones> option.
 
 =item B<-expired>>
 
 This option displays the expired zones in a I<keyrec> file.
-It implies the I<-zones> option.
+It implies the B<-zones> option.
 
 =item B<-ref>
 
@@ -2238,9 +2238,9 @@ Referenced state depends on the following:
   * ZSKs are considered to be referenced if they are listed
     in a signing set keyrec that is listed in a zone keyrec.
 
-This option may be used with either the I<-sets> or I<-keys> options.  If it
+This option may be used with either the B<-sets> or B<-keys> options.  If it
 isn't used with any record-selection options, then it is assumed that both
-I<-sets> and I<-keys> have been specified.
+B<-sets> and B<-keys> have been specified.
 
 =item B<-unref>
 
@@ -2262,17 +2262,17 @@ Unreferenced state depends on the following:
   * Obsolete ZSKs are checked, whether or not the -obs flag
     was specified.
 
-This option may be used with either the I<-sets> or I<-keys> options.  If it
+This option may be used with either the B<-sets> or B<-keys> options.  If it
 isn't used with any record-selection options, then it is assumed that both
-I<-sets> and I<-keys> have been specified.
+B<-sets> and B<-keys> have been specified.
 
 =back
 
 =head2 Zone-Attribute Options
 
 These options allow specific zone fields to be included in the output.  If
-combined with the I<-terse> option, only those fields specifically desired
-will be printed.  These options must be used with the I<-zone> option.
+combined with the B<-terse> option, only those fields specifically desired
+will be printed.  These options must be used with the B<-zone> option.
 
 =over 4
 
@@ -2298,7 +2298,7 @@ Display the zone's expiration date.
 =item B<-z-ksk>
 
 Display the zone's KSK data.  This is the equivalent of specifying the
-I<-z-kskcount>, I<-z-kskcur>, I<-z-kskdir>, and I<-z-kskpub> options.
+B<-z-kskcount>, B<-z-kskcur>, B<-z-kskdir>, and B<-z-kskpub> options.
 
 =item B<-z-kskcount>
 
@@ -2322,7 +2322,7 @@ If this is not defined, then "<unset>" will be given.
 =item B<-z-sets>
 
 Display the zone's signing sets.  This is the equivalent of specifying the
-I<-z-kskcur>, I<-z-kskpub>, I<-z-zskcur>, I<-z-zsknew>, and I<-z-zskpub>
+B<-z-kskcur>, B<-z-kskpub>, B<-z-zskcur>, B<-z-zsknew>, and B<-z-zskpub>
 options.
 
 =item B<-z-signdate>
@@ -2340,7 +2340,7 @@ Display the zone's zonefile.
 =item B<-z-zsk>
 
 Display the zone's ZSK data.  This is the equivalent of specifying the
-I<-z-zskcount>, I<-z-zskcur>, I<-z-zskdir>, I<-z-zsknew>, and I<-z-zskpub>
+B<-z-zskcount>, B<-z-zskcur>, B<-z-zskdir>, B<-z-zsknew>, and B<-z-zskpub>
 options.
 
 =item B<-z-zskcount>
@@ -2372,8 +2372,8 @@ If this is not defined, then "<unset>" will be given.
 =head2 Set-Attribute Options
 
 These options allow specific set fields to be included in the output.  If
-combined with the I<-terse> option, only those fields specifically desired
-will be printed.  These options must be used with the I<-set> option.
+combined with the B<-terse> option, only those fields specifically desired
+will be printed.  These options must be used with the B<-set> option.
 
 =over 4
 
@@ -2394,8 +2394,8 @@ Display the set's zone name.
 =head2 Key-Attribute Options
 
 These options allow specific key fields to be included in the output.  If
-combined with the I<-terse> option, only those fields specifically desired
-will be printed.  These options must be used with the I<-key> option.
+combined with the B<-terse> option, only those fields specifically desired
+will be printed.  These options must be used with the B<-key> option.
 
 =over 4
 
@@ -2415,7 +2415,7 @@ Display the key's length.
 =item B<-k-lifespan>
 
 Display the key's lifespan (in seconds.) This lifespan is B<only> related to
-the time between key roll-over.  There is no other lifespan associated with a
+the time between key rollover.  There is no other lifespan associated with a
 key.
 
 =item B<-k-path>
@@ -2459,7 +2459,7 @@ The key's generation date will not be printed if this flag is given.
 =item B<-headers>
 
 Display explanatory column headers.  If this flag is given, then entry labels
-will not be printed unless explicitly requested by use of the I<-label>
+will not be printed unless explicitly requested by use of the B<-label>
 option.
 
 =item B<-label>
@@ -2477,6 +2477,10 @@ Long zone output can get I<very> wide, depending on the data.
 
 This options displays only the name of the zones or keys selected by other
 options.
+
+=item B<-Version>
+
+Displays the version information for B<lskrf> and the DNSSEC-Tools package.
 
 =item B<-help>
 

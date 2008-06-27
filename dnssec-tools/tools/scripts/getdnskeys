@@ -5,6 +5,13 @@ use Net::DNS;
 use IO::File;
 use Net::DNS::SEC::Tools::BootStrap;
 
+#
+# Version information.
+#
+my $NAME   = "getdnskeys";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.4";
+
 ######################################################################
 # detect needed perl module requirements
 #
@@ -33,12 +40,15 @@ LocalGetOptions(\%opts,
 
 		['GUI:separator','Miscellaneous Configuration:'],
 		['v|verbose','Verbose mode'],
+		['V|Version','Program and DNSSEC-Tools versions'],
 );
 
 my $res = Net::DNS::Resolver->new;
 $res->udppacketsize(4096);
 my %keystorage;
 my $output;
+
+version() if($opts{'V'});
 
 read_named_conf_keys(\%keystorage, $opts{'i'}) if ($opts{'i'});
 
@@ -214,12 +224,12 @@ sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	require Getopt::Long;
 	import Getopt::GUI::Long;
-	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
+	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case_always));
 	return GetOptions(@_);
     }
     require Getopt::Long;
     import Getopt::Long;
-    Getopt::Long::Configure(qw(auto_help no_ignore_case));
+    Getopt::Long::Configure(qw(auto_help no_ignore_case_always));
     GetOptions(LocalOptionsMap(@_));
 }
 
@@ -235,6 +245,21 @@ sub LocalOptionsMap {
     }
     return @opts;
 }
+
+#######################################################################
+# version()
+#
+# Prints version information and exits.
+#
+sub version {
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	 
+	exit(1);
+}
+
+#######################################################################
+#
 
 =pod
 
@@ -254,11 +279,9 @@ included (directly or indirectly) in a B<named.conf> file.
 
 =head1 OPTIONS
 
+B<getdnskeys> takes the following options: 
+
 =over 4
-
-=item B<-h>
-
-Gives a help message.
 
 =item B<-i path>
 
@@ -284,11 +307,19 @@ Encloses output in needed B<named.conf> syntax markers.
 
 Turns on verbose mode for additional output.
 
+=item B<-Version>
+
+Displays the version information for B<getdnskeys> and the DNSSEC-Tools package.
+
+=item B<-h>
+
+Gives a help message.
+
 =back
 
 =head1 EXAMPLES
 
-This \cmd{getdnskeys} will retrieve the KSK for example.com:
+This B<getdnskeys> will retrieve the KSK for example.com:
 
     getdnskeys -o /etc/named.trustkeys.conf -k -v -t example.com
 
@@ -312,3 +343,4 @@ It should prompt you before adding a new key so that you can always
 run the auto-update feature.
 
 =cut
+

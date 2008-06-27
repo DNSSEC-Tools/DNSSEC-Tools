@@ -57,7 +57,7 @@ GetOptions(\%opts,
              't|sleeptime=i',
 	     'T|tmp_dir=s',
              'v|verbose',
-             'V|version',
+             'V|Version',
              'w|hold_time=s',
              'z|zone=s',
              'test_revoke=s',
@@ -813,7 +813,7 @@ sub add_ta_dnsvalconf  {
 
 	# this is just looking to see if the zone we're adding a
 	# key for is already in the file (if it's not they've
-	# likely set a security expectation that allowd the key to
+	# likely set a security expectation that allowed the key to
 	# be auto-added even though it's never been secured).
 	my $lookingfor = $_;
 	while ($lookingfor) {
@@ -1595,6 +1595,9 @@ sub LocalOptionsMap {
     return @opts;
 }
 
+##############################################################################
+#
+
 =pod
 
 =head1 NAME
@@ -1608,14 +1611,14 @@ trustman [options]
 =head1 DESCRIPTION
 
 B<trustman> manages keys used by DNSSEC as trust anchors in compliance with
-RFC5011.  It may be used as
-a daemon for ongoing key verification or manually for initialization and
-one-time key verification.
+RFC5011.  It may be used as a daemon for ongoing key verification or manually
+for initialization and one-time key verification.
 
 By default, B<trustman> runs as a daemon to ensure that keys stored locally in
 configuration files still match the same keys fetched from the zone where they
 are defined.  (B<named.conf> and B<dnsval.conf> are the usual configuration
-files.) These checks can be run once manually (-S) and in the foreground (-f).
+files.)  These checks can be run once manually (B<-S>) and in the foreground
+(B<-f>).
 
 For each key mismatch check, if key mismatches are detected then B<trustman>
 performs the following operations:
@@ -1632,55 +1635,56 @@ are added or removed from the configuration file, as appropriate.
 B<trustman> takes a number of options, each of which is described in this
 section.  Each option name may be shortened to the minimum number of unique
 characters, but some options also have an alias (as noted.)  The single-letter
-form of each option is denoted in parentheses, e.g.: --anchor_data_file (-a).
+form of each option is denoted in parentheses, e.g.: B<--anchor_data_file>
+(B<-a>).
 
 =over #indent
 
-=item B<--anchor_data_file FILE (-a)>
+=item B<--anchor_data_file file (-a)>
 
 A persistent data file for storing new keys waiting to be added.
 
-=item B<--config FILE (-c) >
+=item B<--config file (-c) >
 
-Create a configure FILE for B<trustman> from the command line options
-given.  You can use this option to create a configuration file which
-can be appended to your dnssec-tools.conf file.  It will allow less
+Create a configure file for B<trustman> from the command line options
+given.  This option can be used to create a configuration file which
+can be appended to the B<dnssec-tools.conf> file.  It will allow less
 command line options to be specified in the future.
 
-=item B<--dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)>
+=item B<--dnsval_conf_file /path/to/dnsval.conf (-k)>
 
 A B<dnsval.conf> file to read and possibly update.
 
-=item B<--named_conf_file /PATH/TO/NAMED.CONF (-n)>
+=item B<--named_conf_file /path/to/named.conf (-n)>
 
 A B<named.conf> file to read and possibly update.
 
-=item B<--tmp_dir DIRECTORY (-T)>
+=item B<--tmp_dir directory (-T)>
 
 Specifies where temporary files should be created.  This is used when
-creating new versions of the dnsval.conf and named.conf files before
-they're moved into place.  Most operating systems require the tmp
-directory to be on the same partition as the dnsval.conf/named.conf
+creating new versions of the B<dnsval.conf> and B<named.conf> files before
+they're moved into place.  Most operating systems require the B</tmp>
+directory to be on the same partition as the B<dnsval.conf>/B<named.conf>
 files since renames across partitions will fail.
 
-=item B<--zone ZONE (-z)>
+=item B<--zone zone (-z)>
 
 The zone to check.  Specifying this option supersedes the default
 configuration file.
 
-=item B<--mail_contact_addr EMAIL_ADDRESS (-m)>
+=item B<--mail_contact_addr email_address (-m)>
 
 Mail address for the contact person to whom reports should be sent.
 
-=item B<--smtp_server SMTPSERVERNAME (-s)>
+=item B<--smtp_server smtpservername (-s)>
 
 SMTP server that B<trustman> should use to send reports by mail.
 
 =item B<--nomail>
 
-Prevents mail from being sent; this is useful for only sending
-notifications via stdout (-p) or syslog (-L) even if a smtp server was
-specified in the configuratino file.
+Prevents mail from being sent; this is useful for only sending notifications
+via B<stdout> (B<-p>) or B<syslog> (B<-L>) even if an SMTP server was
+specified in the configuration file.
 
 =item B<--no_error (-N)>
 
@@ -1688,18 +1692,19 @@ Send report even when there are no errors.
 
 =item B<--print (-p)>
 
-Log/print messages to stdout.
+Log messages to B<stdout>.
 
-=item B<--hold_time SECONDS (-w)>
+=item B<--hold_time seconds (-w)>
 
-The value of the hold-down timer.  This is specified in seconds from
-the time that a new key is found.  Generally the default and
-recommended value of 30 days should be used.
+The value of the hold-down timer.  This is specified in seconds from the time
+that a new key is found.  Generally the default and recommended value of 30
+days should be used.
 
-=item B<--resolv_conf_file CONFFILE (-r)>
+=item B<--resolv_conf_file conffile (-r)>
 
 A B<resolv.conf> file to read.  B</dev/null> can be specified to force
-libval to recursively answer the query rather than asking other name servers).
+I<libval> to recursively answer the query rather than asking other name
+servers.)
 
 =item B<--single_run (-S)>
 
@@ -1707,20 +1712,20 @@ Run only once.
 
 =item B<--foreground (-f)>
 
-Run in the foreground. Trustman will still run in a loop. To simply run once,
-use the -S option instead.
+Run in the foreground.  B<trustman> will still run in a loop.
+To run once, use the B<-S> option instead.
 
 =item B<--syslog (-L)>
 
 Log messages to B<syslog>.
 
-=item B<--sleeptime SECONDS (-t)>
+=item B<--sleeptime seconds (-t)>
 
-The number of seconds to sleep between checks. Default is 3600 (one hour.)
+The number of seconds to sleep between checks.  Default is 3600 (one hour.)
 
 =item B<--test_revoke>
 
-Use this option to test the REVOKE bit. No known implementation of
+Use this option to test the REVOKE bit.  No known implementation of
 the REVOKE bit exists to date.
 
 =item B<--help (-h)>
@@ -1731,59 +1736,58 @@ Display a help message.
 
 Verbose output.
 
-=item B<--version (-V)>
+=item B<--Version (-V)>
 
-Display version information.
+Displays the version information for B<trustman> and the DNSSEC-Tools package.
 
 =back #unindent
 
 =head1 CONFIGURATION
 
-In addition to the command line arguments, the I<dnssec-tools.conf>
-file can also be configured with the following tokens to remove the
-need to use some of the command line options.  Note that the command
-line options always override the settings in the dnssec-tools.conf
-file.
+In addition to the command line arguments, the B<dnssec-tools.conf> file can
+also be configured with the following tokens to remove the need to use some of
+the command-line options.  The command-line options always override the
+settings in the B<dnssec-tools.conf> file.
 
 =over
 
-=item B<tasmtpserver> I<SERVERNAME>
+=item B<tasmtpserver servername>
 
-Equivelent to the --smtp_server flag for specifying where to send
+This is equivalent to the B<--smtp_server> flag for specifying where to send
 email notices through.
 
-=item B<tacontact> I<CONTACT_EMAIL>
+=item B<tacontact contact_email>
 
-Equivelent to the --mail_contact_addr flag for specifying where to
+This is equivalent to the B<--mail_contact_addr> flag for specifying where to
 send email notices to.
 
-=item B<taanchorfile> I<FILE>
+=item B<taanchorfile file>
 
-Specifies the file where trustman state inforamation to be kept.  This
-is equivelent to the --anchor_data_file flag.
+This specifies the file where B<trustman> state information to be kept.
+This is equivalent to the B<--anchor_data_file> flag.
 
-=item B<taresolvconffile> I<FILE>
+=item B<taresolvconffile file>
 
-Specifies the resolv.conf file to use.  Equivelent to the
---resolv_conf_file flag.
+This specifies the B<resolv.conf> file to use.
+This is equivalent to the B<--resolv_conf_file> flag.
 
-=item B<tanamedconffile> I<FILE>
+=item B<tanamedconffile file>
 
-Specifies the named.conf file to read and write.  Equivelent to the
---named_conf_file flag.
+This specifies the B<named.conf> file to read and write.
+This is equivalent to the B<--named_conf_file> flag.
 
-=item B<tadnsvalconffile> I<FILE>
+=item B<tadnsvalconffile file>
 
-Specifies the dnsval.conf file to read and write.  Equivelent to the
---dnsval_conf_file flag.
+This specifies the B<dnsval.conf> file to read and write.
+This is equivalent to the B<--dnsval_conf_file> flag.
 
-=item B<tatmpfile> I<DIRECTORY>
+=item B<tatmpfile directory>
 
-Specifies where temporary files should be created.  This is used when
-creating new versions of the dnsval.conf and named.conf files before
-they're moved into place.  Most operating systems require the tmp
-directory to be on the same partition as the dnsval.conf/named.conf
-files since renames across partitions will fail.
+This specifies where temporary files should be created.  This is used when
+creating new versions of the B<dnsval.conf> and B<named.conf> files before
+they're moved into place.  Most operating systems require the B</tmp> directory
+to be on the same partition as the B<dnsval.conf>/B<named.conf> files since
+renames across partitions will fail.
 
 =head1 COPYRIGHT
 
