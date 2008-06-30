@@ -19,6 +19,7 @@ pristine-files:
 	cp save-yowzah.com yowzah.com
 	cp save-zero.com zero.com
 	phaser demo.rollrec
+	phaser demo-smallset.rollrec
 
 zones-short:
 	zonesigner -zsklife 15 -e +25 -genkeys dummy.com
