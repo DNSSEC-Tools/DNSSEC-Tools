@@ -9,6 +9,12 @@
 #
 #	This is ONLY intended for building testing and demo environments!
 #
+#	This script can be copied for use in other demos.  The only thing
+#	that'll *probably* need to be modified is the number of phasestart
+#	lines in the rollrec file.  This version looks for three; others
+#	must look for how many ever the rollrec has.  Also, each zone's
+#	phasestart should be numbered differently from the others.
+#
 
 usage() if(@ARGV == 0);
 
@@ -34,6 +40,10 @@ $date2 = $3;
 $min1 = adjuster($min,3);
 $min2 = adjuster($min,2);
 $min3 = adjuster($min,1);
+$min4 = adjuster($min,2);
+$min5 = adjuster($min,3);
+$min6 = adjuster($min,2);
+$min7 = adjuster($min,1);
 
 #
 # Build the new "phasestart" lines for the rollrec file.
@@ -41,6 +51,10 @@ $min3 = adjuster($min,1);
 $phase1 = sprintf("phasestart	\"$date1%02d$date2\"",$min1);
 $phase2 = sprintf("phasestart	\"$date1%02d$date2\"",$min2);
 $phase3 = sprintf("phasestart	\"$date1%02d$date2\"",$min3);
+$phase4 = sprintf("phasestart	\"$date1%02d$date2\"",$min4);
+$phase5 = sprintf("phasestart	\"$date1%02d$date2\"",$min5);
+$phase6 = sprintf("phasestart	\"$date1%02d$date2\"",$min6);
+$phase7 = sprintf("phasestart	\"$date1%02d$date2\"",$min7);
 
 #
 # Fix the "phasestart" lines in the rollrec file.
@@ -53,6 +67,19 @@ print "gmtime  - $tempus\n";
 print "phase 1 - $phase1\n";
 print "phase 2 - $phase2\n";
 print "phase 3 - $phase3\n";
+
+if($rrf eq "demo.rollrec")
+{
+	system("perl -pi -e 's/phasestart4/$phase4/' $rrf");
+	system("perl -pi -e 's/phasestart5/$phase5/' $rrf");
+	system("perl -pi -e 's/phasestart6/$phase6/' $rrf");
+	system("perl -pi -e 's/phasestart7/$phase7/' $rrf");
+
+	print "phase 4 - $phase4\n";
+	print "phase 5 - $phase5\n";
+	print "phase 6 - $phase6\n";
+	print "phase 7 - $phase7\n";
+}
 
 exit(0);
 
