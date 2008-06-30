@@ -9,6 +9,12 @@
 #
 #	This is ONLY intended for building testing and demo environments!
 #
+#	This script can be copied for use in other demos.  The only thing
+#	that'll *probably* need to be modified is the number of phasestart
+#	lines in the rollrec file.  This version looks for three; others
+#	must look for how many ever the rollrec has.  Also, each zone's
+#	phasestart should be numbered differently from the others.
+#
 
 usage() if(@ARGV == 0);
 
