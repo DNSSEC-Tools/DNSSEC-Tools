@@ -8,6 +8,8 @@
 DIRDUMMY=	dir-dummy
 DIREXAMPLE=	dir-example
 
+all:		basic
+
 basic:		short
 
 basic-rollerd:	basic
@@ -59,3 +61,4 @@ clean:
 	rm -f dummy.com example.com test.com db.cache demo.rollrec
 	rm -fr ${DIRDUMMY} ${DIREXAMPLE}
 	@echo NOT deleting log.demo
+

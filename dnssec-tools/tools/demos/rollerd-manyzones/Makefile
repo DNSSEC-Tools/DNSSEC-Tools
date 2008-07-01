@@ -5,6 +5,8 @@
 # Makefile for building demo data for the many-zones rollerd demo.
 #
 
+all: many-zones-rollerd
+
 many-zones-rollerd:	clean pristine-files zones-short
 
 pristine-files:
@@ -36,3 +38,4 @@ clean:
 	rm -f db.cache demo.rollrec demo-smallset.rollrec
 	@echo NOT deleting log.demo
 	@echo ' '
+
