@@ -284,6 +284,7 @@ my $null;						# Empty frame.
 my $file;						# File menu.
 my $disp;						# Edit menu.
 my $cmdg;						# General Commands menu.
+my $cmdz;						# ZSK Commands menu.
 my $cmdk;						# KSK Commands menu.
 my $zdsp;						# Display menu.
 my $help;						# Help menu.
@@ -539,6 +540,9 @@ sub buildmainwind
 	$cmdg = $mbar->Menubutton(-text	     => 'General Control',
 				  -tearoff   => 1,
 				  -underline => 0);
+	$cmdz = $mbar->Menubutton(-text	     => 'ZSK Control',
+				  -tearoff   => 1,
+				  -underline => 0);
 	$cmdk = $mbar->Menubutton(-text	     => 'KSK Control',
 				  -tearoff   => 1,
 				  -underline => 0);
@@ -613,15 +617,9 @@ sub buildmainwind
 	#
 	# Add the General Control menu entries.
 	#
-	$cmdg->command(-label => "Roll Selected Zone's ZSK",
-		       -command => [\&general_cmds, "rollzsk"],
-		       -accelerator => 'Ctrl+R');
-	$cmdg->command(-label => "Roll All Zones' ZSKs",
-		       -command => [\&general_cmds, "rollallzsks"]);
 	$cmdg->command(-label => 'Run the Queue',
 		       -command => [\&general_cmds, "runqueue"]);
 	$cmdg->separator();
-
 	$cmdg->command(-label => 'Skip Selected Zone',
 		       -command => [\&general_cmds, "skipzone"],
 		       -accelerator => 'Ctrl+S');
@@ -630,9 +628,6 @@ sub buildmainwind
 
 	$cmdg->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-r>', \&zone_rollzsk);
-	$wm->bind('<Control-Key-s>', \&zone_skipzone);
-
 	if($nomodify)
 	{
 		$cmdg->configure(-state => 'disabled');
@@ -640,12 +635,32 @@ sub buildmainwind
 
 	##################################################
 	#
+	# Add the ZSK Control menu entries.
+	#
+	$cmdz->command(-label => "Roll Selected Zone's ZSK",
+		       -command => [\&zskcmds, "rollzsk"],
+		       -accelerator => 'Ctrl+R');
+	$cmdz->command(-label => "Roll All Zones' ZSKs",
+		       -command => [\&zskcmds, "rollallzsks"]);
+
+	$cmdz->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-r>', \&zone_rollzsk);
+	$wm->bind('<Control-Key-s>', \&zone_skipzone);
+
+	if($nomodify)
+	{
+		$cmdz->configure(-state => 'disabled');
+	}
+
+	##################################################
+	#
 	# Add the KSK Control menu entries.
 	#
 	$cmdk->command(-label	=> 'DS Published Selected Zone',
-		       -command => [\&kskcmd, "dspub"]);
+		       -command => [\&kskcmds, "dspub"]);
 	$cmdk->command(-label	=> 'DS Published All Zones',
-		       -command => [\&kskcmd, "dspuball"], );
+		       -command => [\&kskcmds, "dspuball"], );
 
 	$cmdk->pack(-side => 'left');
 
@@ -784,6 +799,7 @@ sub disp_modify
 	{
 		$op_mdfy->configure(-label => $DISALLOWCMDS);
 		$cmdg->configure(-state => 'normal');
+		$cmdz->configure(-state => 'normal');
 		$cmdk->configure(-state => 'normal');
 		$nomodify = 0;
 	}
@@ -791,6 +807,7 @@ sub disp_modify
 	{
 		$op_mdfy->configure(-label => $ALLOWCMDS);
 		$cmdg->configure(-state => 'disabled');
+		$cmdz->configure(-state => 'disabled');
 		$cmdk->configure(-state => 'disabled');
 		$nomodify = 1;
 	}
@@ -1015,7 +1032,7 @@ sub zone_skipzone
 #---------------------------------------------------------------------------
 # Routine:	general_cmds()
 #
-# Purpose:	Handle the General Command menu commands.
+# Purpose:	Handle the General Commands menu commands.
 #
 sub general_cmds
 {
@@ -1035,7 +1052,7 @@ sub general_cmds
 	# These commands need a zone.  By hook or by crook, we'll ensure
 	# that we have one.
 	#
-	if(($rcmd eq "rollzsk") || ($rcmd eq "skipzone"))
+	if($rcmd eq "skipzone")
 	{
 		#
 		# If a zone has been selected, we'll use it.  If not,
@@ -1069,10 +1086,10 @@ sub general_cmds
 		system($rollcmd);
 
 		#
-		# If we were trying to roll or skip this zone, we'll
-		# mark it as having a problem and repaint its stripe.
+		# If we were trying to skip this zone, we'll mark
+		# it as having a problem and repaint its stripe.
 		#
-		if(($rcmd eq "rollzsk") || ($rcmd eq "skipzone"))
+		if($rcmd eq "skipzone")
 		{
 			$badzones{$zone} = 1;
 			zonestripe($zone,'KSK',0);
@@ -1085,11 +1102,83 @@ sub general_cmds
 }
 
 #---------------------------------------------------------------------------
-# Routine:	kskcmd()
+# Routine:	zskcmds()
+#
+# Purpose:	Handle the ZSK Commands menu commands.
+#
+sub zskcmds
+{
+	my $rcmd = shift;				# User's command.
+	my $args = $rcmd;				# Command arguments.
+	my $rollcmd;					# Command to execute.
+	my $ret;					# Command retcode.
+
+	my $zone = $selzone;				# Zone to handle.
+
+	#
+	# Don't allow commands if -nomodify was given.
+	#
+	return if($nomodify);
+
+	#
+	# These commands need a zone.  By hook or by crook, we'll ensure
+	# that we have one.
+	#
+	if($rcmd eq "rollzsk")
+	{
+		#
+		# If a zone has been selected, we'll use it.  If not,
+		# we'll prompt the user for the zone.
+		#
+		if($selzone ne '')
+		{
+			$args = "$rcmd $selzone";
+		}
+		else
+		{
+			$zone = getzone($rcmd);
+			return if($zone eq "");
+			$args = "$rcmd $zone";
+		}
+	}
+
+	#
+	# Build and execute the command string.
+	#
+	$rollcmd = "$rollctl -q -$args";
+	$ret = system($rollcmd);
+
+	#
+	# If the command failed, we'll re-run the command and let the
+	# user see the failure message.
+	#
+	if(($ret >> 8) != 0)
+	{
+		$rollcmd = "$rollctl -q $args";
+		system($rollcmd);
+
+		#
+		# If we were trying to roll a zone, we'll mark
+		# it as having a problem and repaint its stripe.
+		#
+		if($rcmd eq "rollzsk")
+		{
+			$badzones{$zone} = 1;
+			zonestripe($zone,'KSK',0);
+		}
+	}
+	else
+	{
+		delete($badzones{$zone});
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	kskcmds()
 #
 # Purpose:	Handle the KSK Command menu commands.
 #
-sub kskcmd
+sub kskcmds
 {
 	my $rcmd = shift;				# Command to run.
 
@@ -3461,22 +3550,6 @@ related to I<general> zone management.
 
 =item *
 
-Roll Selected Zone
-
-The selected zone will be moved to the rollover state.  This only has an
-effect on skipped zones.  A zone may be selected by clicking on its zone
-stripe.  If this command is selected without a zone having been selected,
-a dialog box is displayed from which a currently skipped zone may be chosen.
-
-=item *
-
-Roll All Zones
-
-All zones will be moved to the rollover state.  This has no effect on
-currently rolling zones.
-
-=item *
-
 Run the Queue
 
 B<rollerd> is awoken and runs through its queue of zones.  The operation
@@ -3504,6 +3577,31 @@ Halt Rollerd
 
 B<rollerd>'s execution is halted.  As a result, B<blinkenlights>' execution
 will also be halted.
+
+=back
+
+=head2 ZSK Control Menu
+
+The commands in this menu are GUI interfaces for the B<rollctl> commands
+related to ZSK-specific zone management.
+
+=over 4
+
+=item *
+
+Roll Selected Zone's ZSK
+
+The selected zone's ZSK will be moved to the rollover state.  This only has an
+effect on skipped zones.  A zone may be selected by clicking on its zone
+stripe.  If this command is selected without a zone having been selected, a
+dialog box is displayed from which a currently skipped zone may be chosen.
+
+=item *
+
+Roll All Zones' ZSK
+
+All zones' ZSKs will be moved to the rollover state.  This has no effect on
+currently rolling zones.
 
 =back
 
