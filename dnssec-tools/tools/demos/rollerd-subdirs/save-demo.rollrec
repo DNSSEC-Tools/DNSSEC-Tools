@@ -1,0 +1,23 @@
+
+roll "dummy.com"
+	zonefile	"dummy.com.signed"
+	keyrec		"dummy.com.krf"
+	directory	"dir-dummy"
+	maxttl		"60"
+	display		"1"
+	phasestart1
+
+roll "example.com"
+	zonefile	"example.com.signed"
+	keyrec		"example.com.krf"
+	directory	"dir-example"
+	maxttl		"60"
+	display		"1"
+	phasestart2
+
+roll "test.com"
+	zonefile	"test.com.signed"
+	keyrec		"test.com.krf"
+	maxttl		"60"
+	display		"1"
+	phasestart3
