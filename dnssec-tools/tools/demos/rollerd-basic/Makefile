@@ -5,6 +5,8 @@
 # Makefile for building demo data for the basic rollerd demo.
 #
 
+all: basic
+
 basic:		short
 
 basic-rollerd:	basic
@@ -46,3 +48,4 @@ clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
 	rm -f example.com test.com db.cache demo.rollrec
 	@echo NOT deleting log.demo
+
