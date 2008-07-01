@@ -10,13 +10,15 @@ programs.  The tools and data files are divided into subdirectories by demo.
 The demos are described below.
 
 
+For all demos, as rollover proceeds, the phases and key names (as displayed in
+the graphical window) will change.
+
 rollerd-basic
 
 	This demo shows the basic operation of rollerd as it controls zone
-	rollover for three zones.  A graphical window will appear showing the
-	zones' rollover phases and in-use encryption keys.  As rollover
-	proceeds, the phases and key names (as displayed in the graphical
-	window) will change.
+	rollover for two zones.  There are two zones:  example.com and
+	test.com.  example.com starts as a rolling zone; test.com starts
+	as a skipped zone.
 
 rollerd-manyzones
 
@@ -25,6 +27,11 @@ rollerd-manyzones
 	fast rollover, though one of them starts the demo in the "skipped"
 	state.  The other four zones have very long rollover times.
 
-	A graphical window will appear showing the zones' rollover phases and
-	in-use encryption keys.  As rollover proceeds, the phases and key
-	names (as displayed in the graphical window) will change.
+rollerd-subdirs
+
+	This demo shows the basic operation of rollerd as it controls zone
+	rollover for three zones.  There are three zones:  dummy.com,
+	example.com, and test.com.  example.com starts as a skipped zone;
+	dummy.com and test.com start as skipped zones.  In addition, the
+	files for dummy.com and example.com are kept in separate
+	subdirectories.
