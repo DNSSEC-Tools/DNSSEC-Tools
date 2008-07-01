@@ -46,19 +46,16 @@ $min3 = adjuster($min,1);
 #
 $phase1 = sprintf("phasestart	\"$date1%02d$date2\"",$min1);
 $phase2 = sprintf("phasestart	\"$date1%02d$date2\"",$min2);
-$phase3 = sprintf("phasestart	\"$date1%02d$date2\"",$min3);
 
 #
 # Fix the "phasestart" lines in the rollrec file.
 #
 system("perl -pi -e 's/phasestart1/$phase1/' $rrf");
 system("perl -pi -e 's/phasestart2/$phase2/' $rrf");
-system("perl -pi -e 's/phasestart3/$phase3/' $rrf");
 
 print "gmtime  - $tempus\n";
 print "phase 1 - $phase1\n";
 print "phase 2 - $phase2\n";
-print "phase 3 - $phase3\n";
 
 exit(0);
 

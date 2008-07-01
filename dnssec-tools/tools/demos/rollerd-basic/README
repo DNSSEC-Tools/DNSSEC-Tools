@@ -50,8 +50,8 @@ To stop the demo:
 
 Demo Operation:
 
-	- The demo follows the rollover operation of three zones:  dummy.com,
-	  example.com, and test.com.  This is a very simple demo -- the rollover
+	- The demo follows the rollover operation of two zones:  example.com
+	  and test.com.  This is a very simple demo -- the rollover
 	  phase and key names are what visibly change.
 
 	- The colors of the blocks in the "Rollover Phase" column change to
@@ -81,12 +81,12 @@ Demo Operation:
 	  and depend on rollerd, blinkenlights, multitasking queue updates,
 	  and timers timing out.
 
-	- When the demo is first started, dummy.com and test.com are in
-	  active rollover management.  example.com is not being rolled at
-	  the start of the demo.  At some point, rollover for example.com
+	- When the demo is first started, example.com is in
+	  active rollover management.  test.com is not being rolled at
+	  the start of the demo.  At some point, rollover for test.com
 	  should be started with this command:
 
-		# rollctl -rollzsk example.com
+		# rollctl -rollzsk test.com
 
 	- If you want to disable a zone's rollover, use this command:
 
@@ -146,6 +146,5 @@ Files:
 	phaser			Adjusts zone start times in rollrec file.
 	rundemo			Executes demo.
 	save-demo.rollrec	Pristine copy of demo's rollrec file.
-	save-dummy.com		Pristine copy of dummy.com's zone file.
 	save-example.com	Pristine copy of example.com's zone file.
 	save-test.com		Pristine copy of test.com's zone file.
