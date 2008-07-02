@@ -34,6 +34,8 @@ my $loglvl    = "info";
 my $sleeptime = "15";
 my $rrfile    = "demo.rollrec";
 
+my $autods    = 0;				# Auto-DS'ing flag.
+my $cpid      = 0;				# autods child pid.
 
 main();
 exit();
@@ -67,8 +69,12 @@ sub main
 	# Ensure rollerd is not running and zap the demo log file.
 	#
 #	system("rollctl -halt >/dev/null 2>&1 &");
-	system("rollctl -halt &");
+	system("rollctl -halt");
 	system("cp /dev/null $logfile");
+
+	#
+	# Set up automatic DS handling.  (maybe)
+	autods();
 
 	#
 	# Start the demo and peek at the log file.
@@ -87,12 +93,7 @@ sub opts
 
 	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
 
-	if($options{'autods'})
-	{
-		print "\nstarting auto-DS checking\n";
-		autods();
-		$SIG{CHLD} = "IGNORE";
-	}
+	$autods = defined($options{'autods'});
 }
 
 #------------------------------------------------------------------------------
@@ -101,7 +102,13 @@ sub opts
 sub autods
 {
 	my $nap = $sleeptime * 2;			# autods sleep-time.
-	my $cpid;					# Retcode from fork().
+
+	#
+	# Only set up autods childproc if -autods was given.
+	#
+	return if(!$autods);
+	print "\nstarting auto-DS checking\n\n";
+	$SIG{CHLD} = "IGNORE";
 
 	#
 	# Spawn a child and let the parent return.
