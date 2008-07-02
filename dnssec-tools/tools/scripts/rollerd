@@ -2917,12 +2917,12 @@ sub cmd_rollnow
 	my $zone = shift;				# Command's data.
 	my $rolltype = shift;				# Type of rollover.
 
-	my $rtlc;					# LC rollever type.
+	my $rtlc;					# LC rollover type.
 	my $rollret;					# Retcode from rolling.
 	my $rrr;					# Rollrec reference.
 	my %rr;						# Rollrec hash.
 
-	$rtlc = lower($rolltype);
+	$rtlc = lc($rolltype);
 	rolllog_log(LOG_TMI,"<command>","roll" . $rtlc . " command received; zone - \"$zone\"");
 
 	#
@@ -3929,7 +3929,7 @@ information.
 =head2 KSK Rollover Using the Double Signature Method
 
 The Double Signature Method has seven phases that are entered when it is time
-to perform ZSK rollover:
+to perform KSK rollover:
 
     1. wait for old zone data to expire from caches
     2. generate a new (published) KSK
