@@ -1,8 +1,22 @@
 Patch to add local validation to ncftp.
 
+This patch has been tested on ncftp-3.2.0 and 3.2.1.
+
 1) Apply patch
-2) run autoheader and autoconf to regenerate several important files. I had
-   to use autoconf version 2.13.
+2) run autoheader and autoconf to regenerate several important
+   files. I had to use autoconf version 2.13.  This will likely
+   require:
+   # cd ncftp-3.2.0/autoconf/
+   # cp acconfig.h aclocal.m4 ..
+   before running autoheader and autoconf.
 3) Configure with: ./configure --with-dnssec-local-validation
 4) make
 5) sudo make install
+
+
+Note: There is a minor validation hole.  Ncftp bookmarks save the IP
+      address.  When bookmarks are used the DNS is not consulted and
+      no DNSSEC validation is done.  In practice, this means that if
+      the IP address for a hostname changes, the bookmark will
+      continue to try and connect to the old address regardless of
+      DNS or validation.
