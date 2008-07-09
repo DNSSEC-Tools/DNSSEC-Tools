@@ -93,7 +93,7 @@
 
 #ifdef LIBVAL_NSEC3
 #ifndef ns_t_nsec3
-#define ns_t_nsec3   65324
+#define ns_t_nsec3   50
 #endif
 #endif
 
