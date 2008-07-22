@@ -26,6 +26,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <openssl/rand.h>
 
 #include <arpa/nameser.h>
 
@@ -203,4 +205,17 @@ free_name_servers(struct name_server **ns)
             free_name_servers(&((*ns)->ns_next));
         free_name_server(ns);
     }
+}
+
+u_int16_t libsres_random(void)
+{
+    u_int16_t rnd;
+    if (!RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd))) {
+        /* bytes generated are not cryptographically strong */
+        u_int16_t seed;
+        seed = random() & 0xffff;
+        RAND_seed(&seed, sizeof(seed));
+        RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd));
+    }
+    return rnd;
 }

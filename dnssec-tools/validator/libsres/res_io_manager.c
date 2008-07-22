@@ -26,7 +26,6 @@
 #include <arpa/inet.h>
 
 #include <unistd.h>
-#include <sys/time.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_FILIO_H
@@ -118,6 +117,45 @@ static int      next_transaction = 0;
 #else
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
+
+/*
+ * Find a port in the range 1024 - 65535 
+ */
+static int
+bind_to_random_source(int s)
+{   
+    /* XXX This is not IPv6 ready yet. Probably need to have
+     * XXX a config statement in dnsval.conf that allows the
+     * XXX user to specify the preferred source IP
+     */
+    struct sockaddr_storage ea_source;
+    struct sockaddr_in *sa = (struct sockaddr_in *) &ea_source;
+    u_int16_t next_port, start_port;
+
+    memset(sa, 0, sizeof(struct sockaddr_in));
+    sa->sin_family = AF_INET;
+    sa->sin_addr.s_addr = htonl(INADDR_ANY);
+    start_port = (libsres_random() % 64512) + 1024;
+    next_port = start_port;
+
+    do {
+        sa->sin_port = htons(next_port);
+        if (!bind(s, (const struct sockaddr *)sa, 
+                    sizeof(struct sockaddr_in))) {
+            return 0; /* success */
+        } else  {
+            /* error */
+            if (next_port == 65535)
+                next_port = 1024;
+            else
+                next_port++;
+        }
+    } while (next_port != start_port);
+
+    /* wrapped around and still no ports found */
+
+    return 1; /* failure */
+}
 
 long
 res_timeout(struct name_server *ns)
@@ -214,10 +252,18 @@ res_io_send(struct expected_arrival *shipit)
      */
     if (shipit->ea_socket == -1) {
         int             i = shipit->ea_which_address;
+
         if ((shipit->ea_socket = socket( shipit->ea_ns->ns_address[i]->ss_family,
                                         socket_type, 0)) == -1)
             return SR_IO_SOCKET_ERROR;
 
+        /* Set the source port */
+        if (bind_to_random_source(shipit->ea_socket)) {
+            /* error */
+            close(shipit->ea_socket);
+            return SR_IO_SOCKET_ERROR;
+        }
+         
         /*
          * OS X wants the socket size to be sockaddr_in for INET,
          * while Linux is happy with sockaddr_storage. Might need
@@ -751,6 +797,7 @@ res_io_read_udp(struct expected_arrival *arrival)
             memcmp(&from_in->sin_addr, &arr_in->sin_addr,
                    sizeof(struct in_addr)))
             goto error;
+        /* XXX Wait for actual response */ 
     }
 #ifdef VAL_IPV6
     else if (PF_INET6 == from.ss_family) {
@@ -761,6 +808,7 @@ res_io_read_udp(struct expected_arrival *arrival)
             memcmp(&from_in->sin6_addr, &arr_in->sin6_addr,
                    sizeof(struct in6_addr)))
             goto error;
+        /* XXX Wait for actual response */ 
     }
 #endif
     else

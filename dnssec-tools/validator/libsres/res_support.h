@@ -78,5 +78,6 @@ void            dump_response(const u_int8_t * ans, int resplen);
 int             wire_to_ascii_name(char *name, u_int8_t * wire,
                                    int name_length);
 u_int16_t       retrieve_type(const u_int8_t * rr);
+u_int16_t       libsres_random(void);
 
 #endif                          /* RES_SUPPORT_H */

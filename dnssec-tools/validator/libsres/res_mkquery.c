@@ -71,7 +71,6 @@
 
 #include <sys/types.h>
 #include <sys/param.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 #include <stdio.h>
@@ -101,15 +100,6 @@
 #endif
 
 extern const char *_libsres_opcodes[];
-
-u_int
-libsres_randomid(void)
-{
-    struct timeval  now;
-
-    gettimeofday(&now, NULL);
-    return (0xffff & (now.tv_sec ^ now.tv_usec ^ getpid()));
-}
 
 /*
  * Form all types of queries.
@@ -144,7 +134,7 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
         return (-1);
     memset(buf, 0, NS_HFIXEDSZ);
     hp = (HEADER *) buf;
-    hp->id = libsres_randomid();
+    hp->id = libsres_random();
     hp->opcode = op;
     hp->rd = (pref_ns->ns_options & RES_RECURSE) != 0U;
     hp->rcode = ns_r_noerror;
