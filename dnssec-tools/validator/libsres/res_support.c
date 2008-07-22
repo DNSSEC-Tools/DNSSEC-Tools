@@ -210,6 +210,11 @@ free_name_servers(struct name_server **ns)
 u_int16_t libsres_random(void)
 {
     u_int16_t rnd;
+    if (!RAND_bytes((unsigned char *)&rnd, sizeof(rnd))) {
+        RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd));
+    }
+    
+#if 0
     if (!RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd))) {
         /* bytes generated are not cryptographically strong */
         u_int16_t seed;
@@ -217,5 +222,7 @@ u_int16_t libsres_random(void)
         RAND_seed(&seed, sizeof(seed));
         RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd));
     }
+#endif
+
     return rnd;
 }
