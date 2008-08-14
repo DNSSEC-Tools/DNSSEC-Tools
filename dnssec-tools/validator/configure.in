@@ -414,6 +414,49 @@ AC_CHECK_TYPES([int8_t, uint8_t, u_int8_t])
 AC_CHECK_TYPES([int16_t, uint16_t, u_int16_t])
 AC_CHECK_TYPES([int32_t, uint32_t, u_int32_t])
 
+dnl ---------------------------------------------------------------------
+AH_TEMPLATE([GETHOSTBYADDR_USES_INT], [Define if gethostbyaddr expects an int intstead of a socklen_t])
+AC_MSG_CHECKING([whether gethostbyaddr expects socklen_t or an int])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <sys/socket.h>
+],
+[
+struct hostent *gethostbyaddr(const char *addr, int len, int type);
+/* or: gethostbyaddr(__const void *addr, socklen_t len, int type) */
+
+int i = 1;
+
+/* struct hostent *testit = gethostbyaddr("127.0.0.1", int len, int type) */
+],[
+  AC_MSG_RESULT([int])
+  AC_DEFINE(GETHOSTBYADDR_USES_INT, 1)
+], [
+  AC_MSG_RESULT([socklen_t])
+]
+)
+
+AH_TEMPLATE([R_FUNCS_RETURN_STRUCT],
+            [Define if gethostbyname_r returns a struct hostent])
+AC_MSG_CHECKING([whether gethostbyaddr_r returns an int or a struct hostent])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <sys/socket.h>
+],
+[
+struct hostent *
+gethostbyname_r(const char * name,struct hostent * result_buf, char * buf, 
+		int buflen, int * h_errnop);
+int i = 1;
+],[
+  AC_MSG_RESULT([hostent])
+  AC_DEFINE(R_FUNCS_RETURN_STRUCT, 1)
+], [
+  AC_MSG_RESULT([int])
+]
+)
+
+
 AH_BOTTOM([
 #define MAX_TEST_RESULTS 10
 

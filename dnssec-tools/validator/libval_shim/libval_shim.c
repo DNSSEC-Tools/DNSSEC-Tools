@@ -21,14 +21,6 @@
 #define getprogname() program_invocation_short_name 
 #endif
 
-#ifdef solaris2
-#define R_FUNCS_RETURN_STRUCT
-#define GETHOSTBYADDR_USES_INT
-#else
-#define R_FUNCS_RETURN_INT
-#define GETHOSTBYADDR_USES_SOCKT
-#endif
-
 typedef struct val_context ValContext;
 
 static ValContext *libval_shim_ctx = NULL;
@@ -98,7 +90,7 @@ gethostbyname_r(const char * name,struct hostent * result_buf, char * buf,
   return (NULL); 
 }
 #endif
-#ifdef R_FUNCS_RETURN_INT
+#ifndef R_FUNCS_RETURN_STRUCT
 int
 gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf, 
                 size_t buflen, struct hostent ** result, int * h_errnop)
@@ -127,8 +119,7 @@ gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf,
 struct hostent *
 #ifdef GETHOSTBYADDR_USES_INT
 gethostbyaddr(const char *addr, int len, int type)
-#endif
-#ifdef GETHOSTBYADDR_USES_SOCKT
+#else
 gethostbyaddr(__const void *addr, socklen_t len, int type)
 #endif
 {
