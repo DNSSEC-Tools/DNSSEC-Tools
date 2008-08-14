@@ -1,5 +1,8 @@
 /* include/validator-config.h.in.  Generated from configure.in by autoheader.  */
 
+/* Define if gethostbyaddr expects an int intstead of a socklen_t */
+#undef GETHOSTBYADDR_USES_INT
+
 /* Define to 1 if you have the <arpa/nameser_compat.h> header file. */
 #undef HAVE_ARPA_NAMESER_COMPAT_H
 
@@ -189,13 +192,16 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* The size of a `int', as computed by sizeof. */
+/* Define if gethostbyname_r returns a struct hostent */
+#undef R_FUNCS_RETURN_STRUCT
+
+/* The size of `int', as computed by sizeof. */
 #undef SIZEOF_INT
 
-/* The size of a `long', as computed by sizeof. */
+/* The size of `long', as computed by sizeof. */
 #undef SIZEOF_LONG
 
-/* The size of a `short', as computed by sizeof. */
+/* The size of `short', as computed by sizeof. */
 #undef SIZEOF_SHORT
 
 /* *s*printf() functions are char* */
