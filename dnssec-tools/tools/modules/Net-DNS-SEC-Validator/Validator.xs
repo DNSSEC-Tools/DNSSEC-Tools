@@ -27,6 +27,8 @@
 #include <resolv.h>
 
 #include <arpa/nameser.h>
+
+#include <validator-config.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
 
