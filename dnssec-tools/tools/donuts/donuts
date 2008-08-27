@@ -34,6 +34,12 @@ my %opts = (l => 5,
 	    r => "/usr/local/share/dnssec-tools/donuts/rules/*.txt," .
 	    $ENV{'HOME'} . "/.dnssec-tools/donuts/rules/*.txt");
 
+# override some defaults if we're a self-extracting perl archive with
+# the files contained within the archive.
+if ($ENV{'PAR_TEMP'}) {
+    $opts{'r'} = $ENV{'PAR_TEMP'} . "/inc/rules/" . "*.txt,"
+}
+
 our (@rules, %rules, $rf, $current_zone_file, %nrecs,
     @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
     $globalrulecount, $globalrrset, $globalnrecs,
