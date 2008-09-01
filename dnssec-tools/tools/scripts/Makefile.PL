@@ -25,6 +25,7 @@ use ExtUtils::MakeMaker;
 			    fixkrf
 			    genkrf
 			    getdnskeys
+			    getds
 			    keyarch
 			    krfcheck
 			    lskrf
