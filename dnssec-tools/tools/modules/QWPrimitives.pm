@@ -31,13 +31,13 @@ sub dnssec_tools_get_qwprimitives {
 			       push @qs,
 				 {type => 'fileupload',
 				  text => 'Zone File ' . $i,
-				  name => 'file' . $i},
+				  name => 'file' . $i};
 			       push @qs,
 				 {type => 'hidden',
 				  text => '',
 				  name => 'tmp_name' . $i,
-				  values => ''},
-			      }
+				  values => ''};
+			   }
 			   return \@qs;
 		       }},
 		     ],
