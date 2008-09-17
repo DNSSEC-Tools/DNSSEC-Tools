@@ -54,6 +54,7 @@ my $pat_ttl = qr{[\dwdhms]+}i;
 my $pat_skip = qr{\s*(?:;.*)?};
 my $pat_name = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*};
 my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
+my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
 
 my $debug;
 my $domain;
@@ -277,10 +278,10 @@ sub parse_line
 	  if (/\G\s+($pat_ttl)$pat_skip$/) {
 	      my $v = $1;
 	      $ttl = $default_ttl = ttl_fromtext($v);
-	      if ($default_ttl <= 0 || $default_ttl > $MAXIMUM_TTL) {
+	      if ($default_ttl < 0 || $default_ttl > $MAXIMUM_TTL) {
 		  error("bad TTL value `$v'");
 	      } else {
-		  debug("\$TTL <= $default_ttl\n") if $debug;
+		  debug("\$TTL < $default_ttl\n") if $debug;
 	      }
 	  } else {
 	      error("wrong \$TTL");
@@ -312,7 +313,7 @@ sub parse_line
 	  if ($ttl == 0) {
 	      $ttl = $default_ttl;
 	  } else {
-	      if ($ttl <= 0 || $ttl > $MAXIMUM_TTL) {
+	      if ($ttl < 0 || $ttl > $MAXIMUM_TTL) {
 		  error("bad TTL value `$v'");
 	      }
 	  }
@@ -448,7 +449,7 @@ sub parse_line
 	  } else {
 	      error("bad priority in MX");
 	  }
-	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	  if (/\G($pat_maybefullnameorroot)$pat_skip$/gc) {
 	      my $name = $1;
 	      $name = "$name$origin" unless $name =~ /\.$/;
 	      chop $name;

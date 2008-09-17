@@ -31,6 +31,7 @@ BEGIN {
 	 q{* 10 IN A 1.2.3.4},
 #	 q{* IN 10 A 1.2.3.4},   XXX newer Net::DNS does not like this syntax
 	 q{acme.com. 200 IN MX 10 mailhost.acme.com.},
+	 q{acme.com. 200 IN MX 10 .},
 	 q{acme.com. IN MX 10 mailhost.acme.com.},
 	 q{acme.com. MX 10 mailhost.acme.com.},
 	 q{acme.com 200 IN MX 10 mailhost.acme.com.},
