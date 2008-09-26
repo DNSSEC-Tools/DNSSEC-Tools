@@ -308,10 +308,12 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
         }
     }
     *cp = '\0';
-    ep = cp;
+    ep = cp; /* this is the last character in the public key */
 
-    bufsize = ep - keyptr;
-    if (bufsize == 0) {
+    if (keyptr != NULL)
+        bufsize = ep - keyptr;
+
+    if (keyptr == NULL || bufsize == 0) {
         FREE(*dnskey_rdata);
         *dnskey_rdata = NULL;
         return VAL_CONF_PARSE_ERROR;
