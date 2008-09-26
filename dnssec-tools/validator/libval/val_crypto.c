@@ -161,6 +161,10 @@ rsamd5_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
     }
 #endif
 
+    if (exp_len > buflen - index) {
+        return VAL_BAD_ARGUMENT;
+    }
+    
     /*
      * Extract the exponent 
      */
