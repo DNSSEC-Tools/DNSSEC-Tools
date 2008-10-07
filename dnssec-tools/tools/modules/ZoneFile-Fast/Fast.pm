@@ -76,6 +76,7 @@ my $fh;
 my @fhs;
 my @lns;
 my $includes_root;
+my $globalerror;
 
 # boot strap optional DNSSEC module functcions
 # (not optional if trying to parse a signed zone, but we don't need
@@ -146,6 +147,7 @@ sub parse
 	  }
       };
       if ($@) {
+	  die "$globalerror (at input line #$ln)" if ($globalerror);
 	  return undef if $param{soft_errors};
 	  die;
       }
@@ -206,7 +208,12 @@ sub parse
 sub error
   {
       if ($on_error) {
-	  $on_error->($ln, @_);
+	  eval { $on_error->($ln, @_) };
+	  if($@ ne '') {
+	      # set global error so parse can die appropriately later.
+	      $globalerror = $@;
+	      die;
+	  }
       } else {
 	  warn "@_, line $ln\n" if $soft_errors && !$quiet;
       }
