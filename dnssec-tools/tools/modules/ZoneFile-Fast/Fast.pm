@@ -46,7 +46,7 @@ use Net::DNS;
 use Net::DNS::RR;
 use MIME::Base64;
 
-$VERSION = '1.0';
+$VERSION = '1.01';
 
 my $MAXIMUM_TTL = 0x7fffffff;
 
