@@ -52,7 +52,7 @@ ok(defined($p = Net::DNS::ZoneFile::Fast::parse("\$TTL 2W3D4H30M45S\na.b. A 1.2.
    '$TTL with weeks, days, hours, minutes, and seconds [1]');
 is($p->[0]->ttl, 1485045, "TTL == something [1]");
 
-ok(!defined($p = Net::DNS::ZoneFile::Fast::parse(text => "\$TTL 2W3D4H30M45\na.b. A 1.2.3.4", quiet => 1, soft_errors => 1)),
+ok(!defined($p = Net::DNS::ZoneFile::Fast::parse(text => "\$TTL 2W3D4H30M45x\na.b. A 1.2.3.4", quiet => 1, soft_errors => 1)),
    '$TTL with weeks, days, hours, minutes, and seconds [2]');
 
 ok(defined($p = Net::DNS::ZoneFile::Fast::parse("\$TTL 30M45S2W\na.b. A 1.2.3.4")),
