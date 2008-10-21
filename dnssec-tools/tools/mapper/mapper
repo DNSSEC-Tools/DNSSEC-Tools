@@ -93,7 +93,10 @@ LocalGetOptions(\%opts,
 		 'Font Size.  (default is 10)'],
 		['x|map-width=i', 'Maximum width of the map in pixels'],
 		['y|map-height=i', 'Maximum height of the map in pixels'],
-		
+
+		['edge-style=s','Additional style parameters for edges; major tokens are comma-separated and minor are colon separated'],
+		['node-style=s','Additional style parameters for edges; major tokens are comma-separated and minor are colon separated'],
+                ['dump-styles', 'Dump the current style formats'],
 ) || exit();
 
 exit() if (exists($opts{'h'}));
@@ -129,6 +132,46 @@ my %nodeparameters =
    default => { fillcolor => ".5137,.3804,1" },
    root => { fillcolor => '.5765,.6902,1'},
   );
+
+# read in the command line style options
+if ($opts{'edge-style'}) {
+    foreach my $edgestyle (split(/\s*\/\s*/, $opts{'edge-style'})) {
+	$edgestyle =~ s/^(\w+)://;
+	my $major = $1;
+	foreach my $edgeparm (split(/\s*:\s*/, $edgestyle)) {
+	    my ($left, $right) = split(/\s*=\s*/,$edgeparm);
+	    $edgeparameters{$major}{$left} = $right;
+	}
+    }
+}
+
+if ($opts{'node-style'}) {
+    foreach my $nodestyle (split(/\s*\/\s*/, $opts{'node-style'})) {
+	$nodestyle =~ s/^(\w+)://;
+	my $major = $1;
+	foreach my $nodeparm (split(/\s*:\s*/, $nodestyle)) {
+	    my ($left, $right) = split(/\s*=\s*/,$nodeparm);
+	    $nodeparameters{$major}{$left} = $right;
+	}
+    }
+}
+
+if ($opts{'dump-styles'}) {
+    print "node styles:\n";
+    foreach my $label (sort keys(%nodeparameters)) {
+	print "  $label:\n";
+	foreach my $key (sort keys(%{$nodeparameters{$label}})) {
+	    print "    $key=$nodeparameters{$label}{$key}\n";
+	}
+    }
+    print "edge styles:\n";
+    foreach my $label (sort keys(%edgeparameters)) {
+	print "  $label:\n";
+	foreach my $key (sort keys(%{$edgeparameters{$label}})) {
+	    print "    $key=$edgeparameters{$label}{$key}\n";
+	}
+    }
+}
 
 # must be ordered by priority of importance in the results
 my @nodetypes = qw(AAAA MX NS CNAME RRSIG RRSIGWARN RRSIGERR root);
@@ -562,6 +605,27 @@ types, it makes very little difference, if any.
 
 Prevents output of warnings or errors about records that have DNSSEC
 signatures that are near or beyond their signature lifetimes.
+
+=item --dump-styles
+
+Dumps the current style settings for both nodes and edges.
+
+=item --node-style=FORMATS
+
+=item --edge-style=FORMATS
+
+Allows specific style settings to be used when drawing nodes and
+edges.  Major format specifications are delimited by '/'s and pairs
+within that are delimited by ':'s.  The first token in a ':' listi s
+expected to be the record name.
+
+For example, to make all A address records appear as a red box and all
+MX records to appear as a triangle use this specification:
+
+  --node-style=A:shape=box:fillcolor=red/MX:shape=triangle
+
+Run mapper with --dump-styles to show its default settings and/or how
+you've modified it the options have been used.
 
 =back
 
