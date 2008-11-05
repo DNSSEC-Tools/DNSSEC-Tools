@@ -482,7 +482,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
 ! 	debug("ValStatus: %s", p_val_status(val_status));
 ! 	if (!val_istrusted(val_status)) {
 ! 		error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-! 		error("@ WARNING: UNTRUSTED DNS RESOLOUTION FOR HOST IP ADRRESS! @");
+! 		error("@ WARNING: UNTRUSTED DNS RESOLUTION FOR HOST IP ADRRESS! @");
 ! 		error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 ! 		error("The authenticity of DNS data for the host '%.200s' "
 ! 		    "can't be established.", host);
@@ -728,7 +728,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
 + 		 */
 + 		if (!(flags & DNS_VERIFY_TRUSTED)) {
 + 			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-+ 			error("@  WARNING: UNTRUSTED DNS RESOLOUTION FOR HOST KEY!       @");
++ 			error("@  WARNING: UNTRUSTED DNS RESOLUTION FOR HOST KEY!       @");
 + 			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 + 		}
 +                 if (flags & DNS_VERIFY_SECURE)
