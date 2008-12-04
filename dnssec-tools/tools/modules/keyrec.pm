@@ -1372,6 +1372,8 @@ sub keyrec_signset_newname
 	my $oldind;				# Old index of zone's last set.
 	my $newind;				# New index of zone's last set.
 
+	my $setprefix = '-signset-';
+
 # print "keyrec_signset_newname($zone):  down in\n";
 
 	#
@@ -1384,8 +1386,9 @@ sub keyrec_signset_newname
 	# Get the first number in the set name.  If there isn't a number
 	# in the set name, we'll append a zero.
 	#
-	$setname =~ /(\d+)/;
+	$setname =~ /$setprefix(\d+)/;
 	$oldind = $1;
+	
 	if($oldind eq '')
 	{
 		$setname = $setname . "0";
@@ -1397,7 +1400,7 @@ sub keyrec_signset_newname
 	# The set name in our pile o' options will be changed to the new name.
 	#
 	$newind = int($oldind) + 1;
-	$setname =~ s/$oldind/$newind/;
+	$setname =~ s/$setprefix$oldind/$setprefix$newind/;
 #	$keyrecs{$zone}{'lastset'} = $setname;
 	keyrec_setval('zone',$zone,'lastset',$setname);
 
