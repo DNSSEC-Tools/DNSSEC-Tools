@@ -1881,17 +1881,6 @@ sub serialincr
 	$serialnum = $1;
 
 	#
-	# We'll use the larger serial number of the one in the zone file
-	# and in the keyrec file.
-	#
-	if(defined($opts{'serial'}))
-	{
-		my $serial = $opts{'serial'};
-
-		$serialnum = $serial if($serial > $serialnum);
-	}
-
-	#
 	# We assumed the serial number was parenthesized.  If we didn't
 	# find it, we'll look for it in an unparenthesized line.
 	#
@@ -1914,6 +1903,17 @@ sub serialincr
 		# return a failure.
 		#
 		return(-1) if($serialnum eq "");
+	}
+
+	#
+	# We'll use the larger serial number of the one in the zone file
+	# and in the keyrec file.
+	#
+	if(defined($opts{'serial'}))
+	{
+		my $serial = $opts{'serial'};
+
+		$serialnum = $serial if($serial > $serialnum);
 	}
 
 	#
