@@ -1506,6 +1506,7 @@ sub zonesign
 	my $cmdopts;			# Options for dnssec-signzone.
 	my $status;			# Execution return code.
 	my $zscmd;			# Zone-signing command line.
+	my $zcq = '-q';			# Quiet option for zone checker.
 
 	#
 	# Build the collection of KSKs.
@@ -1556,11 +1557,12 @@ sub zonesign
 	# Ensure the signing succeeded.
 	#
 	vprint("checking zone\n");
-	$status = system("$zonecheck -q $zone $szone");
+	$zcq = '' if($verbose > $VERBOSE_LOW);
+	$status = system("$zonecheck $zcopts $zcq $zone $szone");
 	if($status != 0)
 	{
 		print STDERR "problems with zone signing\n";
-		system("$zonecheck $zone $szone");
+		system("$zonecheck $zcopts $zone $szone");
 		return($status);
 	}
 
