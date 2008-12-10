@@ -998,7 +998,7 @@ sub unix_dropid
 		#	However, the $pfpid seems to be dropped
 		#	when using that method.
 		#
-		$pscmd = "$PS -wax";
+		$pscmd = "$PS wax";
 		$openrc = open(PSOUT,"$pscmd |");
 		$psline = <PSOUT>;
 		while(<PSOUT>)
