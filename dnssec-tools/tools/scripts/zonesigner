@@ -585,10 +585,10 @@ sub verify_zonefile
 
 	vprint("initial zone verification\n");
 	$zcq = '' if($verbose > $VERBOSE_LOW);
-	$status = system("$zonecheck $zcopts $zcq $zone $zonefile");
+	$status = System("$zonecheck $zcopts $zcq $zone $zonefile");
 	if($status != 0)
 	{
-		$status = system("$zonecheck $zcopts $zone $zonefile");
+		$status = System("$zonecheck $zcopts $zone $zonefile");
 		exit($status);
 	}
 	vmed_print("zone verified\n\n");
@@ -1077,12 +1077,11 @@ sub genksk
 	$cmdopts = "$kgopts $random $alg $ksize";
 	$cmd	 = "$keygen $cmdopts -n zone -f KSK $zone";
 	if($showkeycmd)	{ print "\t$cmd\n";	 }
-	else		{ vhigh_print("$cmd\n"); }
 
 	#
 	# Execute the command to create the new KSK.
 	#
-	$ksk = `$cmd`;
+	$ksk = System_output($cmd);
 	if($? != 0)
 	{
 		print STDERR "unable to generate KSK key file;\n";
@@ -1162,12 +1161,11 @@ sub genzsk
 	$cmdopts = "$kgopts $random $alg $zsize";
 	$cmd	 = "$keygen $cmdopts -n zone $zone";
 	if($showkeycmd)	{ print "\t$cmd\n";	 }
-	else		{ vhigh_print("$cmd\n"); }
 
 	#
 	# Create the new ZSK key.
 	#
-	$zsk = `$cmd`;
+	$zsk = System_output($cmd);
 	if($? != 0)
 	{
 		print STDERR "unable to generate $keytype ZSK key file;\n";
@@ -1241,7 +1239,7 @@ sub setkeytype
 	if(! -e $archdir)
 	{
 		vmed_print("creating key archive directory $archdir\n\n");
-		system("$MKDIR -p -m 0700 $archdir");
+		System("$MKDIR -p -m 0700 $archdir");
 	}
 	else
 	{
@@ -1269,7 +1267,7 @@ sub setkeytype
 			$newname = "$archdir/$kronos.$archfn";
 			vhigh_print("moving $key to $newname\n\n");
 
-			system("$MV $archfn $newname");
+			System("$MV $archfn $newname");
 
 			if($archfn =~ /\.key$/)
 			{
@@ -1309,7 +1307,7 @@ sub keydirs
 
 		foreach my $ksk (@kskcurlist)
 		{
-			system("$MV $ksk.* $kskdir");
+			System("$MV $ksk.* $kskdir");
 		}
 	}
 
@@ -1334,12 +1332,12 @@ sub keydirs
 
 		foreach my $zsk (@zskcurlist)
 		{
-			system("$MV $zsk.* $zskdir");
+			System("$MV $zsk.* $zskdir");
 		}
 
 		foreach my $zsk (@zskpublist)
 		{
-			system("$MV $zsk.* $zskdir");
+			System("$MV $zsk.* $zskdir");
 		}
 		@zskpublist = @newlist;
 	}
@@ -1462,7 +1460,7 @@ sub zoneincludes
 		#
 		# Copy the zone data to a new file.
 		#
-		system("$CP $zonefile $zoneftmp") if($zonefile ne $zoneftmp);
+		System("$CP $zonefile $zoneftmp") if($zonefile ne $zoneftmp);
 		open(ZF,"+< $zonefile");
 		@zonestat = stat($zonefile);
 	}
@@ -1473,7 +1471,7 @@ sub zoneincludes
 		#
 		# Copy the zone data to a new file.
 		#
-		system("$CP $zonefile $zoneftmp") if($zonefile ne $zoneftmp);
+		System("$CP $zonefile $zoneftmp") if($zonefile ne $zoneftmp);
 
 		#
 		# Get the include-keys section.
@@ -1541,12 +1539,11 @@ sub zonesign
 	$zscmd = "$zonesign $cmdopts $zoneftmp @usekeys";
 	vprint("signing zone\n");
 	if($showsigncmd)	{ print "\t$zscmd\n";	 }
-	else			{ vhigh_print("$zscmd\n"); }
 
 	#
 	# Sign the zone.
 	#
-	$szone = `$zscmd`;
+	$szone = System_output($zscmd);
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
@@ -1558,11 +1555,11 @@ sub zonesign
 	#
 	vprint("checking zone\n");
 	$zcq = '' if($verbose > $VERBOSE_LOW);
-	$status = system("$zonecheck $zcopts $zcq $zone $szone");
+	$status = System("$zonecheck $zcopts $zcq $zone $szone");
 	if($status != 0)
 	{
 		print STDERR "problems with zone signing\n";
-		system("$zonecheck $zcopts $zone $szone");
+		System("$zonecheck $zcopts $zone $szone");
 		return($status);
 	}
 
@@ -1650,10 +1647,10 @@ sub zonesign
 		{
 			my $now = time();
 			my $newzftmp = "$zoneftmp.$now";
-			system("$CP $zoneftmp $newzftmp");
+			System("$CP $zoneftmp $newzftmp");
 		}
 
-		system("$RM $zoneftmp");
+		System("$RM $zoneftmp");
 	}
 
 	return(0);
@@ -2571,6 +2568,30 @@ sub helpchk
 			usage(1);
 		}
 	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	System()
+#
+# Purpose:	Run a system command and optionally print what it's doing
+#
+sub System
+{
+	print "\trunning: ", join(" ", @_),"\n" if ($verbose > $VERBOSE_LOW);
+	return system(@_);
+}
+
+#----------------------------------------------------------------------
+# Routine:	System_output()
+#
+# Purpose:	Run a system command and optionally print what it's doing
+#               Return the stdout text as if it had been run in `s
+#
+sub System_output
+{
+	my $cmd = join(" ", @_);
+	print "\trunning: $cmd\n" if ($verbose > $VERBOSE_LOW);
+	return `$cmd`;
 }
 
 #----------------------------------------------------------------------
