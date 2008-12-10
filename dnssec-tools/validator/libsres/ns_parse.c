@@ -54,7 +54,7 @@ static void     setsection(ns_msg * msg, ns_sect sect);
 /*
  * These need to be in the same order as the nres.h:ns_flag enum. 
  */
-struct _ns_flagdata _ns_flagdata[16] = {
+struct _ns_flagdata _ns_flagdata_flags[16] = {
     {0x8000, 15},               /* qr. */
     {0x7800, 11},               /* opcode. */
     {0x0400, 10},               /* aa. */
@@ -82,7 +82,7 @@ struct _ns_flagdata _ns_flagdata[16] = {
 int
 ns_msg_getflag(ns_msg han, int flag)
 {
-    return (((han)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].
+    return (((han)._flags & _ns_flagdata_flags[flag].mask) >> _ns_flagdata_flags[flag].
             shift);
 }
 #endif
