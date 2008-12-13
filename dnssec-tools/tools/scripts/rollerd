@@ -3955,9 +3955,13 @@ information.
 
 =head2 I<rollrec> Files
 
-The zones to be managed by B<rollerd> are described in a I<rollrec> file.
-Each zone's entry contains data needed by B<rollerd> and some data useful to a
-user.  Below is a sample I<rollrec> entry:
+The zones to be managed by B<rollerd> are described in a I<rollrec>
+file.  Generally speaking most people will want to use the B<rollinit>
+command to create an initial I<rollrec> file instead of typing their
+own from scratch.  See the INITIALIZATION AND USAGE section below and
+the B<rollinit> manual page for details. Each zone's entry contains
+data needed by B<rollerd> and some data useful to a user.  Below is a
+sample I<rollrec> entry:
 
 	roll "example.com"
 		zonefile        "example.com.signed"
