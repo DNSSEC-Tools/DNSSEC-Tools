@@ -169,11 +169,6 @@ sub main
 	if(-e $outfile)
 	{
 		#
-		# Convert an output file of "-" to the terminal.
-		#
-		$outfile = "/dev/tty" if($outfile eq "-");
-
-		#
 		# Only overwrite an existing config file if the user wants it.
 		#
 		if((-f $outfile) && !$overwrite)
