@@ -173,7 +173,7 @@ sub doopts
 #
 sub setout
 {
-	$outfile = "/dev/tty" if($outfile eq "");
+	$outfile = "-" if($outfile eq "");
 
 	open(OUT,">> $outfile");
 }
