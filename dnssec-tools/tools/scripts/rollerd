@@ -487,7 +487,7 @@ sub zsk_expired
 	#
 	if($rr{'kskphase'} > 0)
 	{
-		rolllog_log(LOG_TMI,$rname,"in KSK rollover (phase $rr{'kskphase'}); not attempting ZSK rollover");
+		rolllog_log(LOG_TMI,$rname,"in KSK rollover (phase $rr{'kskphase'}: " . rollmgr_get_phase('KSK', $rr{'kskphase'}) . "); not attempting ZSK rollover");
 		return(0);
 	}
 
@@ -950,7 +950,7 @@ sub ksk_expired
 	#
 	if($rr{'zskphase'} > 0)
 	{
-		rolllog_log(LOG_TMI,$rname,"in ZSK rollover (phase $rr{'zskphase'}); not attempting KSK rollover");
+		rolllog_log(LOG_TMI,$rname,"in ZSK rollover (phase $rr{'zskphase'}: " . rollmgr_get_phase('KSK', $rr{'kskphase'}) . "); not attempting KSK rollover");
 		return(0);
 	}
 
@@ -1565,6 +1565,8 @@ sub ttlexpire
 	my $phase   = shift;			# Zone's current phase.
 	my $keytype = shift;			# Type of key.
 
+	my $phasedesc = rollmgr_get_phase($keytype, $phase);
+
 	my %rr;					# Rollrec hash.
 
 	my $zonefile;				# Zone file.
@@ -1629,7 +1631,7 @@ sub ttlexpire
 
 	$timediff = $endtempus - $curtempus;
 	$tdstr = timetrans($timediff);
-	rolllog_log(LOG_INFO,$rname,"$keytype phase $phase; cache expires in $tdstr");
+	rolllog_log(LOG_INFO,$rname,"$keytype phase $phase ($phasedesc); cache expires in $tdstr");
 	display("expiration $rname $phase $keytype $timediff");
 
 	return(0)
@@ -1684,6 +1686,8 @@ sub zskphase
 	my $rrr	  = shift;				# Rollrec reference.
 	my $phase = shift;				# New phase.
 
+	my $phasedesc = rollmgr_get_phase('ZSK', $phase); # human phase descr
+
 	my %rr = %$rrr;					# Rollrec hash.
 
 	my $krname;					# Name of key's rollrec.
@@ -1701,10 +1705,10 @@ sub zskphase
 	}
 	else
 	{
-		rolllog_log(LOG_TMI,$rname,"moving to ZSK phase $phase");
+		rolllog_log(LOG_TMI,$rname,"moving to ZSK phase $phase ($phasedesc)");
 	}
 
-	rolllog_log(LOG_PHASE,$rname,"ZSK phase $phase");
+	rolllog_log(LOG_PHASE,$rname,"ZSK phase $phase ($phasedesc)");
 
 	$rrr->{'zskphase'} = $phase;
 	rollrec_setval($rname,"zskphase",$phase);
@@ -1785,6 +1789,8 @@ sub kskphase
 	my $rrr	  = shift;				# Rollrec reference.
 	my $phase = shift;				# New phase.
 
+	my $phasedesc = rollmgr_get_phase('KSK', $phase); # human phase descr
+
 	my %rr = %$rrr;					# Rollrec hash.
 
 	my $krname;					# Name of key's rollrec.
@@ -1802,7 +1808,7 @@ sub kskphase
 	}
 	else
 	{
-		rolllog_log(LOG_TMI,$rname,"moving to KSK phase $phase");
+		rolllog_log(LOG_TMI,$rname,"moving to KSK phase $phase ($phasedesc)");
 	}
 
 	rolllog_log(LOG_PHASE,$rname,"KSK phase $phase");
@@ -1839,12 +1845,12 @@ sub kskphase
 	#
 	if($setrec->{'keyrec_type'} ne 'set')
 	{
-		rolllog_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to KSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to KSK phase $phase ($phasedesc)");
 		return(0);
 	}
 	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
 	{
-		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to KSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to KSK phase $phase ($phasedesc)");
 		return(0);
 	}
 
@@ -3380,11 +3386,13 @@ sub cmd_zonestatus
 		#
 		if($rr{'kskphase'} > 0)
 		{
-			$phase = 'KSK ' . $rr{'kskphase'};
+			$phase = 'KSK ' . $rr{'kskphase'} . ": " .
+			  rollmgr_get_phase('KSK', $rr{'kskphase'});
 		}
 		else
 		{
-			$phase = 'ZSK ' . $rr{'zskphase'};
+			$phase = 'ZSK ' . $rr{'zskphase'} . ": " .
+			  rollmgr_get_phase('ZSK', $rr{'zskphase'});
 		}
 		$rtype = $rr{'rollrec_type'};
 

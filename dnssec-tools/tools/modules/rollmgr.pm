@@ -118,6 +118,8 @@ our @EXPORT = qw(
 		 rollmgr_sendcmd
 		 rollmgr_sendresp
 		 rollmgr_verifycmd
+		 rollmgr_get_phase
+
 			 ROLLCMD_DISPLAY
 			 ROLLCMD_DSPUB
 			 ROLLCMD_DSPUBALL
@@ -378,6 +380,32 @@ my $PS = "/bin/ps";
 my $osclass   = "uninitialized";
 my %switchtab = %{$port_archs{$osclass}};
 
+##############################################################################
+#
+# These are textual descriptions of the rolling phases
+# 
+my @zsk_roll_phases =
+  ('Not Rolling',
+   'Waiting for the old zone data to expire from caches',
+   'Signing the zone with the KSK and published ZSK',
+   'Waiting for the old zone data to expire from caches',
+   'Adjusting keys in the keyrec and signing the zone with new ZSK',
+  );
+
+my @ksk_roll_phases =
+  ('Not Rolling',
+   'Waiting for the old zone data to expire from caches',
+   'Generating a new published KSK',
+   'Waiting for the old DNSKEY RRset to expire from caches',
+   'Rolling the KSK(s)',
+   'Transfer the new KSK keyset to the parent',
+   'Waiting for the parent to publish the new DS record',
+   'Reloading the zone',
+  );
+
+my %key_phases = 
+  ( 'KSK' => \@ksk_roll_phases,
+    'ZSK' => \@zsk_roll_phases );
 
 ##############################################################################
 ##############################################################################
@@ -1638,6 +1666,21 @@ sub rollmgr_verifycmd
 
 	return(0) if(!defined($hval));
 	return(1);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_get_phase()
+#
+# Purpose:	This routine translates the numerical phases of rolling
+#               keys into textual strings that are better descriptions
+#               for human consumption.
+#
+sub rollmgr_get_phase
+{
+    my ($keytype, $keyphase) = @_;
+    return '' if ($keyphase !~ /^\d$/); # must be a single digit number
+    return $key_phases{uc($keytype)}[$keyphase];
 }
 
 1;
