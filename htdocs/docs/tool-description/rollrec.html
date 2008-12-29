@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.</title>
+<title>B&lt;rollrec&gt; - Rollover-related zone data used by DNSSEC-Tools programs.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:suresh@localhost.localdomain" />
 </head>
 
 <body style="background-color: white">
@@ -15,12 +15,9 @@
 <ul>
 
 	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#rollrec_locking">ROLLREC LOCKING</a></li>
-	<li><a href="#rollrec_interfaces">ROLLREC INTERFACES</a></li>
-	<li><a href="#rollrec_internal_interfaces">ROLLREC INTERNAL INTERFACES</a></li>
-	<li><a href="#rollrec_debugging_interfaces">ROLLREC DEBUGGING INTERFACES</a></li>
+	<li><a href="#fields">FIELDS</a></li>
+	<li><a href="#examples">EXAMPLES</a></li>
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
@@ -32,427 +29,139 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  use Net::DNS::SEC::Tools::rollrec;</pre>
-<pre>
-  rollrec_lock();
-  rollrec_read(&quot;localhost.rollrec&quot;);</pre>
-<pre>
-  @rrnames = rollrec_names();</pre>
-<pre>
-  $flag = rollrec_exists(&quot;example.com&quot;);</pre>
-<pre>
-  $rrec = rollrec_fullrec(&quot;example.com&quot;);
-  %rrhash = %$rrec;
-  $zname = $rrhash{&quot;maxttl&quot;};</pre>
-<pre>
-  $val = rollrec_recval(&quot;example.com&quot;,&quot;zonefile&quot;);</pre>
-<pre>
-  rollrec_add(&quot;roll&quot;,&quot;example.com&quot;,\%rollfields);
-  rollrec_add(&quot;skip&quot;,&quot;example.com&quot;,\%rollfields);</pre>
-<pre>
-  rollrec_del(&quot;example.com&quot;);</pre>
-<pre>
-  rollrec_type(&quot;example.com&quot;,&quot;roll&quot;);
-  rollrec_type(&quot;example.com&quot;,&quot;skip&quot;);</pre>
-<pre>
-  rollrec_setval(&quot;example.com&quot;,&quot;zonefile&quot;,&quot;db.example.com&quot;);</pre>
-<pre>
-  rollrec_delfield(&quot;example.com&quot;,&quot;directory&quot;);</pre>
-<pre>
-  rollrec_settime(&quot;example.com&quot;);
-  rollrec_settime(&quot;example.com&quot;,0);</pre>
-<pre>
-  @rollrecfields = rollrec_fields();</pre>
-<pre>
-  $default_file = rollrec_default();</pre>
-<pre>
-  rollrec_write();
-  rollrec_close();
-  rollrec_discard();</pre>
-<pre>
-  rollrec_unlock();</pre>
+<p><strong>rollrec</strong> - Rollover-related zone data used by DNSSEC-Tools programs.</p>
 <p>
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>Net::DNS::SEC::Tools::rollrec</strong> module manipulates the contents of a
-DNSSEC-Tools <em>rollrec</em> file.  <em>rollrec</em> files describe the status of a
-zone rollover process, as performed by the DNSSEC-Tools programs.  Module
-interfaces exist for looking up <em>rollrec</em> records, creating new records,
-and modifying existing records.</p>
-<p>A <em>rollrec</em> file is organized in sets of <em>rollrec</em> records.  <em>rollrec</em>s
-describe the state of a rollover operation.  A <em>rollrec</em> consists of a set
-of keyword/value entries.  The following is an example of a <em>rollrec</em>:</p>
+<p><em>rollrec</em> files contain data used by the DNSSEC-Tools to manage key rollover.
+A <em>rollrec</em> file is organized in sets of <em>rollrec</em> records.  Each <em>rollrec</em>
+record describes the rollover state of a single zone and must be either of
+<em>roll</em> type or <em>skip</em> type.  Zone <em>rollrec</em>s record information about
+currently rolling zones.  Skip <em>rollrec</em>s record information about zones that
+are not being rolled.  A <em>rollrec</em> consists of a set of keyword/value
+entries.</p>
+<p>The DNSSEC-Tools <strong>rollrec.pm</strong> module manipulates the contents of a <em>rollrec</em>
+file.  Module interfaces exist for looking up <em>rollrec</em> records, creating
+new records, and modifying existing records.</p>
+<p>Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
+Comment lines start with either a '#' character or a ';' character.</p>
+<p>A <em>rollrec</em>'s name may consist of alphabetic characters, numbers, and several
+special characters.  The special characters are the minus sign, the plus sign,
+the underscore, the comma, the period, the colon, the forward-slash, the
+space, and the tab.</p>
+<p>The values in a <em>rollrec</em>'s entries may consist of alphabetic characters,
+numbers, and several special characters.  The special characters are the minus
+sign, the plus sign, the underscore, the comma, the period, the colon, the
+forward-slash, the space, and the tab.</p>
+<p>
+</p>
+<hr />
+<h1><a name="fields">FIELDS</a></h1>
+<p>The fields in a <em>rollrec</em> record are:</p>
+<pre>
+ * administrator</pre>
+<p>This is the email address for the zone's administrative user.  If it is not
+set, the default from the DNSSEC-Tools configuration file will be used.</p>
+<pre>
+ * directory</pre>
+<p>This field contains the name of the directory in which <strong>rollerd</strong> will
+execute for the <em>rollrec</em>'s zone.  If it is not specified, then the
+normal <strong>rollerd</strong> execution directory will be used.</p>
+<pre>
+ * display</pre>
+<p>This boolean field indicates whether or not the zone should be displayed by
+the <strong>blinkenlights</strong> program.</p>
+<pre>
+ * keyrec</pre>
+<p>The zone's <em>keyrec</em> file.</p>
+<pre>
+ * kskphase</pre>
+<p>The zone's current KSK rollover phase.  A value of zero indicates that the
+zone is not in rollover, but is in normal operation.  A numeric value of 1-7
+indicates that the zone is in that phase of KSK rollover.</p>
+<pre>
+ * ksk_rolldate</pre>
+<p>The time at which the zone's last KSK rollover completed.  This is only used
+to provide a human-readable format of the timestamp.  It is derived from the
+<em>ksk_rollsecs</em> field.</p>
+<pre>
+ * ksk_rollsecs</pre>
+<p>The time at which the zone's last KSK rollover completed.  This value is used
+to derive the <em>ksk_rolldate</em> field.</p>
+<pre>
+ * loglevel</pre>
+<p>The <strong>rollerd</strong> logging level for this zone.</p>
+<pre>
+ * maxttl</pre>
+<p>The maximum time-to-live for the zone.  This is measured in seconds.</p>
+<pre>
+ * phasestart</pre>
+<p>The time-stamp of the beginning of the zone's current phase.</p>
+<pre>
+ * zonefile</pre>
+<p>The zone's zone file.</p>
+<pre>
+ * zsargs</pre>
+<p>The user-specified arguments for <strong>zonesigner</strong>.  This field is set by the
+<strong>rollctl -zsargs</strong> command to allow modification of a zone's rollover options
+without having to restart <strong>rollerd</strong>.</p>
+<pre>
+ * zskphase</pre>
+<p>The zone's current ZSK rollover phase.  A value of zero indicates that the zone
+is not in rollover, but is in normal operation.  A value of 1, 2, 3, 4
+indicates that the zone is in that phase of ZSK rollover.</p>
+<pre>
+ * zsk_rolldate</pre>
+<p>The time at which the zone's last ZSK rollover completed.  This is only used
+to provide a human-readable format of the timestamp.  It is derived from the
+<em>ksk_rollsecs</em> field.</p>
+<pre>
+ * zsk_rollsecs</pre>
+<p>The time at which the zone's last ZSK rollover completed.  This value is used
+to derive the <em>ksk_rolldate</em> field.</p>
+<p>
+</p>
+<hr />
+<h1><a name="examples">EXAMPLES</a></h1>
+<p>The following is an example of a roll <em>rollrec</em>:</p>
 <pre>
     roll &quot;example.com&quot;
-        zonefile                &quot;/usr/etc/dnssec-tools/zones/db.example.com&quot;
-        keyrec                  &quot;/usr/etc/dnssec-tools/keyrec/example.keyrec&quot;
-        directory               &quot;/usr/etc/dnssec-tools/dir-example.com&quot;
-        kskphase                &quot;0&quot;
-        zskphase                &quot;2&quot;
-        maxttl                  &quot;86400&quot;
-        administrator           &quot;bob@bobhost.example.com&quot;
-        phasestart              &quot;Wed Mar 09 21:49:22 2005&quot;
-        display                 &quot;0&quot;
-        loglevel                &quot;info&quot;
-        rollrec_rollsecs        &quot;1115923362&quot;
-        rollrec_rolldate        &quot;Tue Mar 09 19:12:54 2005&quot;</pre>
-<p>The first step in using this module must be to read the <em>rollrec</em> file.  The
-<em>rollrec_read()</em> interface reads the file and parses it into an internal
-format.  The file's records are copied into a hash table (for easy reference
-by the <strong>Net::DNS::SEC::Tools::rollrec</strong> routines) and in an array (for
-preserving formatting and comments.)</p>
-<p>After the file has been read, the contents are referenced using
-<em>rollrec_fullrec()</em> and <em>rollrec_recval()</em>.  The <em>rollrec_add()</em>,
-<em>rollrec_setval()</em>, and <em>rollrec_settime()</em> interfaces are used
-to modify the contents of a {\it rollrec} record.</p>
-<p>If the <em>rollrec</em> file has been modified, it must be explicitly written or
-the changes will not saved.  <em>rollrec_write()</em> saves the new contents to disk.
-<em>rollrec_close()</em> saves the file and close the Perl file handle to the
-<em>rollrec</em> file.  If a <em>rollrec</em> file is no longer wanted to be open, yet
-the contents should not be saved, <em>rollrec_discard()</em> gets rid of the data
-closes and the file handle <strong>without</strong> saving any modified data.</p>
-<p>
-</p>
-<hr />
-<h1><a name="rollrec_locking">ROLLREC LOCKING</a></h1>
-<p>This module includes interfaces for synchronizing access to the <em>rollrec</em>
-files.  This synchronization is very simple and relies upon locking and
-unlocking a single lock file for all <em>rollrec</em> files.</p>
-<p><em>rollrec</em> locking is not required before using this module, but it is
-recommended.  The expected use of these facilities follows:</p>
+            zonefile        &quot;example.signed&quot;
+            keyrec          &quot;example.krf&quot;
+            kskphase        &quot;1&quot;
+            zskphase        &quot;0&quot;
+            administrator   &quot;bob@bobbox.example.com&quot;
+            loglevel        &quot;info&quot;
+            maxttl          &quot;60&quot;
+            display         &quot;1&quot;
+            zsargs          &quot;-zsklength 1024&quot;
+            ksk_rollsecs    &quot;1172614842&quot;
+            ksk_rolldate    &quot;Tue Feb 27 22:20:42 2007&quot;
+            zsk_rollsecs    &quot;1172615087&quot;
+            zsk_rolldate    &quot;Tue Feb 27 22:24:47 2007&quot;
+            phasestart      &quot;Mon Feb 20 12:34:56 2007&quot;</pre>
+<p>The following is an example of a skip <em>rollrec</em>:</p>
 <pre>
-    rollrec_lock() || die &quot;unable to lock rollrec file\n&quot;;
-    rollrec_read();
-    ... perform other rollrec operations ...
-    rollrec_close();
-    rollrec_unlock();</pre>
-<p>Synchronization is performed in this manner due to the way the module's
-functionality is implemented, as well as providing flexibility to users
-of the module.  It also provides a clear delineation in callers' code as
-to where and when <em>rollrec</em> locking is performed.</p>
-<p>This synchronization method has the disadvantage of having a single lockfile
-as a bottleneck to all <em>rollrec</em> file access.  However, it reduces complexity
-in the locking interfaces and cuts back on the potential number of required
-lockfiles.</p>
-<p>Using a single synchronization file may not be practical in large
-installations.  If that is found to be the case, then this will be reworked.</p>
-<p>
-</p>
-<hr />
-<h1><a name="rollrec_interfaces">ROLLREC INTERFACES</a></h1>
-<p>The interfaces to the <strong>Net::DNS::SEC::Tools::rollrec</strong> module are given below.</p>
-<dl>
-<dt><strong><a name="item_rollrec_add"><em>rollrec_add(rollrec_type,rollrec_name,fields)</em></a></strong>
-
-<dd>
-<p>This routine adds a new <em>rollrec</em> to the <em>rollrec</em> file and the internal
-representation of the file contents.  The <em>rollrec</em> is added to both the
-<em>%rollrecs</em> hash table and the <em>@rollreclines</em> array.  Entries are only
-added if they are defined for <em>rollrec</em>s.</p>
-</dd>
-<dd>
-<p><em>rollrec_type</em> is the type of the <em>rollrec</em>.  This must be either ``roll''
-or ``skip''.  <em>rollrec_name</em> is the name of the <em>rollrec</em>.  <em>fields</em> is a
-reference to a hash table that contains the name/value <em>rollrec</em> fields.  The
-keys of the hash table are always converted to lowercase, but the entry values
-are left as given.</p>
-</dd>
-<dd>
-<p>Timestamp fields are added at the end of the <em>rollrec</em>.  These fields have
-the key values <em>rollrec_gensecs</em> and <em>rollrec_gendate</em>.</p>
-</dd>
-<dd>
-<p>A blank line is added after the final line of the new <em>rollrec</em>.
-The <em>rollrec</em> file is not written after <em>rollrec_add()</em>, though
-it is internally marked as having been modified.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_del"><em>rollrec_del(rollrec_name)</em></a></strong>
-
-<dd>
-<p>This routine deletes a <em>rollrec</em> from the <em>rollrec</em> file and the internal
-representation of the file contents.  The <em>rollrec</em> is deleted from both
-the <em>%rollrecs</em> hash table and the <em>@rollreclines</em> array.</p>
-</dd>
-<dd>
-<p>Only the <em>rollrec</em> itself is deleted from the file.  Any associated comments
-and blank lines surrounding it are left intact.  The <em>rollrec</em> file is not
-written after <em>rollrec_del()</em>, though it is internally marked as having been
-modified.</p>
-</dd>
-<dd>
-<p>Return values are:</p>
-</dd>
-<dd>
-<pre>
-    0 successful rollrec deletion</pre>
-</dd>
-<dd>
-<pre>
-    -1 unknown name</pre>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_close"><em>rollrec_close()</em></a></strong>
-
-<dd>
-<p>This interface saves the internal version of the <em>rollrec</em> file (opened with
-<em>rollrec_read()</em>) and closes the file handle.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_delfield"><em>rollrec_delfield(rollrec_name,field)</em></a></strong>
-
-<dd>
-<p>Deletes the given field from the specified <em>rollrec</em>.  The file is
-<strong>not</strong> written after updating the value, but the internal file-modified flag
-is set.  The value is saved in both <em>%rollrecs</em> and in <em>@rollreclines</em>.</p>
-</dd>
-<dd>
-<p>Return values:</p>
-</dd>
-<dd>
-<pre>
-    0 - failure (rollrec not found or rollrec does not
-        contain the field)
-    1 - success</pre>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_discard"><em>rollrec_discard()</em></a></strong>
-
-<dd>
-<p>This routine removes a <em>rollrec</em> file from use by a program.  The internally
-stored data are deleted and the <em>rollrec</em> file handle is closed.  However,
-modified data are not saved prior to closing the file handle.  Thus, modified
-and new data will be lost.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_exists"><em>rollrec_exists(rollrec_name)</em></a></strong>
-
-<dd>
-<p>This routine returns a boolean flag indicating if the <em>rollrec</em> named in
-<em>rollrec_name</em> exists.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_fullrec"><em>rollrec_fullrec(rollrec_name)</em></a></strong>
-
-<dd>
-<p><em>rollrec_fullrec()</em> returns a reference to the <em>rollrec</em> specified in
-<em>rollrec_name</em>.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_lock"><em>rollrec_lock()</em></a></strong>
-
-<dd>
-<p><em>rollrec_lock()</em> locks the <em>rollrec</em> lockfile.  An exclusive lock is
-requested, so the execution will suspend until the lock is available.  If the
-<em>rollrec</em> synchronization file does not exist, it will be created.  If the
-process can't create the synchronization file, an error will be returned.
-Success or failure is returned.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_names"><em>rollrec_names()</em></a></strong>
-
-<dd>
-<p>This routine returns a list of the <em>rollrec</em> names from the file.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_read"><em>rollrec_read(rollrec_file)</em></a></strong>
-
-<dd>
-<p>This interface reads the specified <em>rollrec</em> file and parses it into a
-<em>rollrec</em> hash table and a file contents array.  <em>rollrec_read()</em> <strong>must</strong> be
-called prior to any of the other <strong>Net::DNS::SEC::Tools::rollrec</strong> calls.  If
-another <em>rollrec</em> is already open, then it is saved and closed prior to
-opening the new <em>rollrec</em>.</p>
-</dd>
-<dd>
-<p><em>rollrec_read()</em> attempts to open the <em>rollrec</em> file for reading and
-writing.  If this fails, then it attempts to open the file for reading only.</p>
-</dd>
-<dd>
-<p>Upon success, <em>rollrec_read()</em> returns the number of <em>rollrec</em>s read from
-the file.</p>
-</dd>
-<dd>
-<p>Failure return values:</p>
-</dd>
-<dd>
-<pre>
-    -1 specified rollrec file doesn't exit</pre>
-</dd>
-<dd>
-<pre>
-    -2 unable to open rollrec file</pre>
-</dd>
-<dd>
-<pre>
-    -3 duplicate rollrec names in file</pre>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_rectype"><em>rollrec_rectype(rollrec_name,rectype)</em></a></strong>
-
-<dd>
-<p>Set the type of the specified <em>rollrec</em> record.  The file is
-<strong>not</strong> written after updating the value, but the internal file-modified flag
-is set.  The value is saved in both <em>%rollrecs</em> and in <em>@rollreclines</em>.</p>
-</dd>
-<dd>
-<p><em>rollrec_name</em> is the name of the <em>rollrec</em> that will be modified.
-<em>rectype</em> is the new type of the <em>rollrec</em>, which must be either ``roll''
-or ``skip''.</p>
-</dd>
-<dd>
-<p>Return values:</p>
-</dd>
-<dd>
-<pre>
-    0 - failure (invalid record type or rollrec not found)
-    1 - success</pre>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_recval"><em>rollrec_recval(rollrec_name,rollrec_field)</em></a></strong>
-
-<dd>
-<p>This routine returns the value of a specified field in a given <em>rollrec</em>.
-<em>rollrec_name</em> is the name of the particular <em>rollrec</em> to consult.
-<em>rollrec_field</em> is the field name within that <em>rollrec</em>.</p>
-</dd>
-<dd>
-<p>For example, the current <em>rollrec</em> file contains the following <em>rollrec</em>.</p>
-</dd>
-<dd>
-<pre>
-    roll        &quot;example.com&quot;
-                zonefile        &quot;db.example.com&quot;</pre>
-</dd>
-<dd>
-<p>The call:</p>
-</dd>
-<dd>
-<pre>
-    rollrec_recval(&quot;example.com&quot;,&quot;zonefile&quot;)</pre>
-</dd>
-<dd>
-<p>will return the value ``db.example.com''.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_settime"><em>rollrec_settime(rollrec_name,val)</em></a></strong>
-
-<dd>
-<p>Set the phase-start timestamp in the <em>rollrec</em> specified by <em>rollrec_name</em>
-to the current time.  If the optional <em>val</em> parameter is given and it is
-zero, then the phase-start timestamp is set to a null value.</p>
-</dd>
-<dd>
-<p>The file is <strong>not</strong> written after updating the value.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_setval"><em>rollrec_setval(rollrec_name,field,value)</em></a></strong>
-
-<dd>
-<p>Set the value of a name/field pair in a specified <em>rollrec</em>.  The file is
-<strong>not</strong> written after updating the value, but the internal file-modified flag
-is set.  The value is saved in both <em>%rollrecs</em> and in <em>@rollreclines</em>.</p>
-</dd>
-<dd>
-<p><em>rollrec_name</em> is the name of the <em>rollrec</em> that will be modified.  If the
-named <em>rollrec</em> does not exist, it will be created as a ``roll''-type
-<em>rollrec</em>.
-<em>field</em> is the <em>rollrec</em> field which will be modified.
-<em>value</em> is the new value for the field.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_unlock"><em>rollrec_unlock()</em></a></strong>
-
-<dd>
-<p><em>rollrec_unlock()</em> unlocks the <em>rollrec</em> synchronization file.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_write"><em>rollrec_write()</em></a></strong>
-
-<dd>
-<p>This interface saves the internal version of the <em>rollrec</em> file (opened with
-<em>rollrec_read()</em>).  It does not close the file handle.  As an efficiency
-measure, an internal modification flag is checked prior to writing the file.
-If the program has not modified the contents of the <em>rollrec</em> file, it is not
-rewritten.</p>
-</dd>
-</li>
-</dl>
-<p>
-</p>
-<hr />
-<h1><a name="rollrec_internal_interfaces">ROLLREC INTERNAL INTERFACES</a></h1>
-<p>The interfaces described in this section are intended for internal use by the
-<strong>Net::DNS::SEC::Tools::rollrec</strong> module.  However, there are situations where
-external entities may have need of them.  Use with caution, as misuse may
-result in damaged or lost <em>rollrec</em> files.</p>
-<dl>
-<dt><strong><a name="item_rollrec_init"><em>rollrec_init()</em></a></strong>
-
-<dd>
-<p>This routine initializes the internal <em>rollrec</em> data.  Pending changes will
-be lost.  An open <em>rollrec</em> file handle will remain open, though the data are
-no longer held internally.  A new <em>rollrec</em> file must be read in order to use
-the <strong>Net::DNS::SEC::Tools::rollrec</strong> interfaces again.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_newrec"><em>rollrec_newrec(type,name)</em></a></strong>
-
-<dd>
-<p>This interface creates a new <em>rollrec</em>.  The <em>rollrec_name</em> field in the
-<em>rollrec</em> is set to the values of the <em>name</em> parameter.  The <em>type</em>
-parameter must be either ``roll'' or ``skip''.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_default"><em>rollrec_default()</em></a></strong>
-
-<dd>
-<p>This routine returns the name of the default <em>rollrec</em> file.</p>
-</dd>
-</li>
-</dl>
-<p>
-</p>
-<hr />
-<h1><a name="rollrec_debugging_interfaces">ROLLREC DEBUGGING INTERFACES</a></h1>
-<p>The following interfaces display information about the currently parsed
-<em>rollrec</em> file.  They are intended to be used for debugging and testing, but
-may be useful at other times.</p>
-<dl>
-<dt><strong><a name="item_rollrec_dump_hash"><em>rollrec_dump_hash()</em></a></strong>
-
-<dd>
-<p>This routine prints the <em>rollrec</em> file as it is stored internally in a hash
-table.  The <em>rollrec</em>s are printed in alphabetical order, with the fields
-alphabetized for each <em>rollrec</em>.  New <em>rollrec</em>s and <em>rollrec</em> fields are
-alphabetized along with current <em>rollrec</em>s and fields.  Comments from the
-<em>rollrec</em> file are not included with the hash table.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rollrec_dump_array"><em>rollrec_dump_array()</em></a></strong>
-
-<dd>
-<p>This routine prints the <em>rollrec</em> file as it is stored internally in an
-array.  The <em>rollrec</em>s are printed in the order given in the file, with the
-fields ordered in the same manner.  New <em>rollrec</em>s are appended to the end
-of the array.  <em>rollrec</em> fields added to existing <em>rollrec</em>s are added at
-the beginning of the <em>rollrec</em> entry.  Comments and vertical whitespace are
-preserved as given in the <em>rollrec</em> file.</p>
-</dd>
-</li>
-</dl>
+    skip &quot;test.com&quot;
+            zonefile        &quot;test.com.signed&quot;
+            keyrec          &quot;test.com.krf&quot;
+            kskphase        &quot;0&quot;
+            zskphase        &quot;2&quot;
+            administrator   &quot;tess@test.com&quot;
+            loglevel        &quot;info&quot;
+            maxttl          &quot;60&quot;
+            display         &quot;1&quot;
+            ksk_rollsecs    &quot;1172614800&quot;
+            ksk_rolldate    &quot;Tue Feb 27 22:20:00 2007&quot;
+            zsk_rollsecs    &quot;1172615070&quot;
+            zsk_rolldate    &quot;Tue Feb 27 22:24:30 2007&quot;
+            phasestart      &quot;Mon Feb 20 12:34:56 2007&quot;</pre>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2008 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -463,11 +172,14 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>lsroll(1)</strong>,
-<strong>rollchk(8)</strong>,
-<strong>rollinit(8)</strong></p>
+<p><strong>lsroll(1)</strong></p>
+<p><strong>blinkenlights(8)</strong>,
+<strong>rollctl(8)</strong>,
+<strong>rollerd(8)</strong>,
+<strong>zonesigner(8)</strong></p>
 <p><strong>Net::DNS::SEC::Tools::keyrec(3)</strong>,
-<strong>Net::DNS::SEC::Tools::keyrec(5)</strong></p>
+<strong>Net::DNS::SEC::Tools::rollrec(3)</strong></p>
+<p><strong>keyrec(5)</strong></p>
 
 </body>
 
