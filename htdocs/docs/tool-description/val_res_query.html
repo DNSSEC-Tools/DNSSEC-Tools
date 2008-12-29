@@ -1,0 +1,105 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>I&lt;val_res_search&gt; - DNSSEC-validated resolution of DNS queries</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:suresh@localhost.localdomain" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#return_values">RETURN VALUES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p><em>val_res_query()</em>, <em>val_res_search()</em> - DNSSEC-validated resolution of DNS queries</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  #include &lt;validator.h&gt;</pre>
+<pre>
+  int val_res_query(const val_context_t *ctx,
+                    const char *dname,
+                    int class,
+                    int type,
+                    u_char *answer,
+                    int anslen,
+                    val_status_t *val_status);</pre>
+<pre>
+  int val_res_search(val_context_t * ctx,
+            const char *dname,
+            int class_h,
+            int type,
+            u_char * answer,
+            int anslen,
+            val_status_t * val_status);</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <em>val_res_query()</em> function performs DNSSEC validation
+of DNS queries.  It is a DNSSEC-aware substitute for the <em>res_query(3)</em> legacy function.
+<em>val_res_search()</em> performs an operation similar to <em>val_res_query()</em>.
+In addition, it uses the search paths specified within the <strong>/etc/resolv.conf</strong>
+file to create the fully qualified domain name.
+<em>val_res_search()</em> is a DNSSEC-aware substitute for the <em>res_search(3)</em> function.</p>
+<p>The <em>ctx</em> parameter is the validator context and can be set to NULL for
+default settings.  More information about this field can be found in
+<em>libval(3)</em>.</p>
+<p>The <em>dname</em> parameter specifies the domain name, <em>class</em> specifies the
+DNS class and <em>type</em> specifies the DNS type.</p>
+<p>The validation status values for <em>val_res_query()</em> and <em>val_res_search()</em>
+functions are returned in their respective <em>val_status</em> fields.
+<em>p_val_status()</em> returns a brief
+string description of the error code.  <em>val_istrusted()</em> determines if the
+status code indicates that the response can be trusted and
+<em>val_isvalidated()</em> determines if the status code indicates that the response
+was validated.  (See <em>libval(3)</em> for further information).</p>
+<p>
+</p>
+<hr />
+<h1><a name="return_values">RETURN VALUES</a></h1>
+<p><em>val_res_query()</em> and <em>val_res_search()</em> return the number of bytes received
+on success and -1 on failure.</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story.</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><em>res_query(3)</em></p>
+<p><em>get_context(3)</em>, <em>val_getaddrinfo(3)</em>, <em>val_gethostbyname(3)</em></p>
+<p><em>libval(3)</em></p>
+<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
+
+</body>
+
+</html>

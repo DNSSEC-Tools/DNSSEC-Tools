@@ -1,0 +1,504 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>rollrec-editor - DNSSEC-Tools Rollrec GUI Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:suresh@localhost.localdomain" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<ul>
+
+		<li><a href="#button_window_layout">Button Window Layout</a></li>
+		<li><a href="#undoing_modifications">UNDOING MODIFICATIONS</a></li>
+	</ul>
+
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#commands">COMMANDS</a></li>
+	<ul>
+
+		<li><a href="#file_menu">File Menu</a></li>
+		<li><a href="#edit_menu">Edit Menu</a></li>
+		<li><a href="#commands_menu">Commands Menu</a></li>
+		<li><a href="#view_menu">View Menu</a></li>
+		<li><a href="#options_menu">Options Menu</a></li>
+		<li><a href="#help_menu">Help Menu</a></li>
+	</ul>
+
+	<li><a href="#keyboard_accelerators">KEYBOARD ACCELERATORS</a></li>
+	<li><a href="#requirements">REQUIREMENTS</a></li>
+	<li><a href="#known_issues">KNOWN ISSUES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>rollrec-editor - DNSSEC-Tools Rollrec GUI Editor</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  rollrec-editor [options] &lt;rollrec-file&gt;</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><strong>rollrec-editor</strong> provides the capability for easy GUI-based management of
+<em>rollrec</em> files.  A <strong>rollrec</strong> file contains one or more <em>rollrec</em> records.
+These records are used by the DNSSEC-Tools rollover utilities (<strong>rollerd</strong>,
+etc.) to describe zones' rollover state.  Each zone's <em>rollrec</em> record
+contains such information as the zone file, the rollover phase, and logging
+level.  <em>rollrec</em> files are text files and may be edited by any text editor.
+<strong>rollrec-editor</strong> allows editing of only those records a user should change
+and performs error checking on the data.</p>
+<p>When <strong>rollrec-editor</strong> starts, a window is created that has ``buttons'' for each
+<em>rollrec</em> record in the given <em>rollrec</em> file.  (In this documentation, this
+window is called the Button Window.)  Clicking on the buttons selects (or
+deselects) that zone.  After one or more zones are selected, one of several
+commands may be executed.  Commands allow modification and deletion of
+existing <em>rollrec</em> records, creation of new <em>rollrec</em> records, merging of
+<em>rollrec</em> files, and verification of file validity.</p>
+<p><strong>rollrec-editor</strong>'s commands are available through the menus and most have a
+keyboard accelerator.  The commands are described below in the COMMANDS
+section.</p>
+<p>When a <em>rollrec</em> record is selected for modification, a new window is created
+to hold the editable fields of the record.  The fields may be modified in
+place.  When editing is complete, the record is ``saved''.  This does not save
+the modified <em>rollrec</em> into its on-disk file; the file must be saved
+explicitly from the Button Window.</p>
+<p>As stated above, verification checks are performed when saving an edited
+<em>rollrec</em> record.  One set of checks ensures that files and directories
+associated with a zone actually exist.  This check may be turned off at
+command start-up with the <strong>-ignore-warns</strong> command line option.  It may be
+modified during execution with the ``Ignore Edit Warnings'' menu command.</p>
+<p>
+</p>
+<h2><a name="button_window_layout">Button Window Layout</a></h2>
+<p>The Button Window contains a button for each <em>rollrec</em> record in the
+selected file.  The buttons are arranged in a table that with at least three
+columns.  The number of columns may be set at command start-up with the 
+<strong>-columns</strong> command line option.  It may be modified during execution with
+the ``Columns in Button Window'' menu command.</p>
+<p>When setting the number of columns, <strong>rollrec-editor</strong> minimizes the space
+required to display the selected file's <em>rollrec</em> buttons.  This will
+sometimes cause the number of columns to differ from that requested.</p>
+<p>For example, assume a <em>rollrec</em> file has 12 <em>rollrec</em> records.  The
+following table shows how many rows and columns are given for each of
+the given column selections.</p>
+<pre>
+        column count    rows    columns
+              1          12        1
+              2          6         2
+              3          4         3
+              4          3         4
+              5          3         4
+              6          2         6
+              7          2         6
+              8          2         6
+              9          2         6
+              10         2         6
+              11         2         6
+              12         1         12</pre>
+<p>The actual rows and columns for a requested column count will vary in order
+to allow a ``best-fit''.</p>
+<p>
+</p>
+<h2><a name="undoing_modifications">UNDOING MODIFICATIONS</a></h2>
+<p><strong>The ``undo'' capability is not currently implemented.</strong></p>
+<p><strong>rollrec-editor</strong> has the ability to reverse modifications it has made to a
+<em>rollrec</em> file.  This historical restoration will only work for modifications
+made during a particular execution of <strong>rollrec-editor</strong>; modifications made
+during a previous execution may not be undone.</p>
+<p>After a ``Save'' operation, the data required for reversing modifications are
+deleted.  This is not the case for the ``Save As'' operation.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<p><strong>rollrec-editor</strong> supports the following options.</p>
+<dl>
+<dt><strong><a name="item__2dcolumns_columns"><strong>-columns columns</strong></a></strong>
+
+<dd>
+<p>This option allows the user to specify the number of columns to be used in
+the Button Window.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dignore_2dwarns"><strong>-ignore-warns</strong></a></strong>
+
+<dd>
+<p>This option causes <strong>rollrec-editor</strong> to ignore edit warnings when performing
+validation checks on the contents of <em>rollrec</em> records.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dno_2dfilter"><strong>-no-filter</strong></a></strong>
+
+<dd>
+<p>This option turns off name filtering when <strong>rollrec-editor</strong> presents a
+file-selection dialog for choosing a new <em>rollrec</em> file.  If this option
+is not given, then the file-selection dialog will only list regular files
+with a suffix of <strong>.rrf</strong>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dversion"><strong>-Version</strong></a></strong>
+
+<dd>
+<p>Displays the version information for <strong>rollrec-editor</strong> and the DNSSEC-Tools
+package.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="commands">COMMANDS</a></h1>
+<p><strong>rollrec-editor</strong> provides the following commands, organized by menus:
+File, Edit, Commands, Rollrecs, and Options.</p>
+<p>
+</p>
+<h2><a name="file_menu">File Menu</a></h2>
+<p>The File Menu contains commands for manipulating <em>rollrec</em> files and
+stopping execution.</p>
+<dl>
+<dt><strong><a name="item_open"><strong>Open</strong></a></strong>
+
+<dd>
+<p>Open a new <em>rollrec</em> file.  If the specified file does not exist, the user
+will be prompted for the action to take.  If the user chooses the ``Continue''
+action, then <strong>rollrec-editor</strong> will continue editing the current <em>rollrec</em>
+file.  If the ``Quit'' action is selected, then <strong>rollrec-editor</strong> will exit.</p>
+</dd>
+</li>
+<dt><strong><a name="item_save"><strong>Save</strong></a></strong>
+
+<dd>
+<p>Save the current <em>rollrec</em> file.  The data for the ``Undo Changes'' command are
+purged, so this file will appear to be unmodified.</p>
+</dd>
+<dd>
+<p>Nothing will happen if no changes have been made.</p>
+</dd>
+</li>
+<dt><strong><a name="item_save_as"><strong>Save As</strong></a></strong>
+
+<dd>
+<p>Save the current <em>rollrec</em> file to a name selected by the user.</p>
+</dd>
+</li>
+<dt><strong><a name="item_quit"><strong>Quit</strong></a></strong>
+
+<dd>
+<p>Exit <strong>rollrec-editor</strong>.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="edit_menu">Edit Menu</a></h2>
+<p>The Edit Menu contains commands for general editing operations.</p>
+<dl>
+<dt><strong><a name="item_undo_changes"><strong>Undo Changes</strong></a></strong>
+
+<dd>
+<p>Reverse modifications made to the <em>rollrec</em> records.  This is <strong>only</strong>
+for the in-memory version of the <em>rollrec</em> file.</p>
+</dd>
+<dd>
+<p><strong>Not currently implemented.</strong></p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="commands_menu">Commands Menu</a></h2>
+<p>The Commands Menu contains commands for modifying <em>rollrec</em> records.</p>
+<dl>
+<dt><strong><a name="item_new_rollrec"><strong>New Rollrec</strong></a></strong>
+
+<dd>
+<p>Create a new <em>rollrec</em> record.   The user is given a new window in which to
+edit the user-modifiable <em>rollrec</em> fields.  A button for the new <em>rollrec</em>
+record will be inserted into the Button Window.</p>
+</dd>
+<dd>
+<p>After editing is completed, the ``Save'' button will add the new <em>rollrec</em>
+record to the in-memory <em>rollrec</em> file.  The file must be saved in order to
+have the new <em>rollrec</em> added to the file.</p>
+</dd>
+<dd>
+<p>Potentially erroneous conditions will be reported to the user at save time.  
+If the <em>ignore-warnings</em> flag has been turned on, then these warnings will
+not be reported.  Errors (e.g., invalid log conditions) will always be
+reported.</p>
+</dd>
+</li>
+<dt><strong><a name="item_delete_selected_rollrecs"><strong>Delete Selected Rollrecs</strong></a></strong>
+
+<dd>
+<p>Delete the selected <em>rollrec</em> records.  The buttons for each selected record
+will be removed from the Button Window.</p>
+</dd>
+</li>
+<dt><strong><a name="item_edit_selected_rollrecs"><strong>Edit Selected Rollrecs</strong></a></strong>
+
+<dd>
+<p>Modify the selected <em>rollrec</em> records.   For every record selected
+for modification, the user is given a new window in which to edit the
+user-modifiable <em>rollrec</em> fields.  When the edit window goes away (after a
+``Save'' or ``Cancel''), the <em>rollrec</em> record's button is deselected.</p>
+</dd>
+<dd>
+<p>After editing is completed, the ``Save'' button will add the new <em>rollrec</em>
+record to the in-memory <em>rollrec</em> file.  The file must be saved in order to
+have the new <em>rollrec</em> added to the file.</p>
+</dd>
+<dd>
+<p>Potentially erroneous conditions will be reported to the user at save time.  
+If the <em>ignore-warnings</em> flag has been turned on, then these warnings will
+not be reported.  Errors (e.g., invalid log conditions) will always be
+reported.</p>
+</dd>
+</li>
+<dt><strong><a name="item_merge_rollrec_files"><strong>Merge Rollrec Files</strong></a></strong>
+
+<dd>
+<p>Merge a <em>rollrec</em> file with the currently open <em>rollrec</em> file.  After a
+successful merge, the <em>rollrec</em> records in the second file will be added 
+to the <em>end</em> of the currently open <em>rollrec</em> file.</p>
+</dd>
+<dd>
+<p>If there are any <em>rollrec</em> name collisions in the files, then the user will
+be asked whether to continue with the merge or cancel it.  If the merge
+continues, then the conflicting <em>rollrec</em> records from the ``new'' file will be
+discarded in favor of the currently open <em>rollrec</em> file.</p>
+</dd>
+</li>
+<dt><strong><a name="item_verify_rollrec_file"><strong>Verify Rollrec File</strong></a></strong>
+
+<dd>
+<p>Verify the validity of the <em>rollrec</em> file.  The user-editable fields in the
+open <em>rollrec</em> file are checked for validity.  An edit window is opened for
+each <em>rollrec</em> record that registers an error or warning.</p>
+</dd>
+<dd>
+<p>If the <em>ignore-warnings</em> flag has been turned on, then potentially erroneous
+conditions will not be reported.  Errors (e.g., invalid log conditions) will
+always be reported.</p>
+</dd>
+</li>
+<dt><strong><a name="item_summarize_problems"><strong>Summarize Problems</strong></a></strong>
+
+<dd>
+<p>Summarize the warning and error counts of the <em>rollrec</em> file.  Each
+<em>rollrec</em> record in the open <em>rollrec</em> file is checked for validity.  If
+any warnings or errors are found, a window is displayed that lists the name
+of each <em>rollrec</em> record and its warning and error counts.</p>
+</dd>
+<dd>
+<p>If the <em>ignore-warnings</em> flag has been turned on, then potentially erroneous
+conditions will not be reported.  Errors (e.g., invalid log conditions) will
+always be reported.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="view_menu">View Menu</a></h2>
+<p>The View Menu contains miscellaneous commands for viewing edit windows.</p>
+<dl>
+<dt><strong><a name="item_select_all_rollrecs_2funselect_all_rollrecs"><strong>Select All Rollrecs/Unselect All Rollrecs</strong></a></strong>
+
+<dd>
+<p>Select or unselect all <em>rollrec</em> buttons.  All the buttons in the Button
+Window will be selected or unselected.  If <strong>any</strong> of the buttons are not
+selected, this command will cause all the buttons to become selected.  If
+<em>all</em> of the buttons are selected, this command will cause all the buttons
+to be deselected.</p>
+</dd>
+<dd>
+<p>This command is a toggle that switches between Select All Rollrecs and
+Unselect All Rollrecs.</p>
+</dd>
+</li>
+<dt><strong><a name="item_reveal_rollrec_edit_windows"><strong>Reveal Rollrec Edit Windows</strong></a></strong>
+
+<dd>
+<p>Raise all <em>rollrec</em> edit windows.  This command brings all <em>rollrec</em> edit
+windows to the front so that any that are hidden behind other windows will
+become visible.</p>
+</dd>
+</li>
+<dt><strong><a name="item_close_rollrec_edit_windows"><strong>Close Rollrec Edit Windows</strong></a></strong>
+
+<dd>
+<p>Close all <em>rollrec</em> edit windows.  This command closes and deselects all
+<em>rollrec</em> edit windows.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="options_menu">Options Menu</a></h2>
+<p>The Options Menu allows the user to set several options that control
+<strong>rollrec-editor</strong> behavior.</p>
+<dl>
+<dt><strong><a name="item_ignore_edit_warnings_2fdon_27t_ignore_edit_warning"><strong>Ignore Edit Warnings/Don't Ignore Edit Warnings</strong></a></strong>
+
+<dd>
+<p>Certain operations perform validation checks on the contents of <em>rollrec</em>
+records.  Warnings and errors may be reported by these checks.  This option 
+controls whether or not warnings are flagged during validation.  If they
+are flagged, then the operation will not continue until the warning condition
+is fixed or the operation canceled.  If the warnings are ignored, then the
+operation will complete without the condition being fixed.</p>
+</dd>
+<dd>
+<p>This command is a toggle that switches between Ignore Edit Warnings mode and
+Don't Ignore Edit Warnings mode.</p>
+</dd>
+</li>
+<dt><strong><a name="item_filter_name_selection_2fdon_27t_filter_name_select"><strong>Filter Name Selection/Don't Filter Name Selection</strong></a></strong>
+
+<dd>
+<p>When opening <em>rollrec</em> files for editing or merging, a file-selection dialog
+box is displayed to allow the user to select a <em>rollrec</em> file.  This option
+controls whether a filename filter is used by the dialog box.  If Filter Names
+Selection mode is used, then only regular files with a suffix of <strong>.rrf</strong> will
+be displayed by the dialog box.  If Don't Filter Name Selection mode is used,
+then all regular files will be displayed by the dialog box.</p>
+</dd>
+<dd>
+<p>This command is a toggle that switches between Filter Name Selection display
+and Don't Filter Name Selection display.</p>
+</dd>
+</li>
+<dt><strong><a name="item_columns_in_button_window"><strong>Columns in Button Window</strong></a></strong>
+
+<dd>
+<p>Set the number of columns used in the Button Window.  See the Button Window
+Layout section for more information on columns in the Button Window.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="help_menu">Help Menu</a></h2>
+<p>The Help Menu contains commands for getting assistance.</p>
+<dl>
+<dt><strong><a name="item_help"><strong>Help</strong></a></strong>
+
+<dd>
+<p>Display a help window.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="keyboard_accelerators">KEYBOARD ACCELERATORS</a></h1>
+<p>Below are the keyboard accelerators for the <strong>rollrec-editor</strong> commands:</p>
+<pre>
+    Ctrl-A  Select All Rollrecs</pre>
+<pre>
+    Ctrl-D  Delete Selected Rollrecs</pre>
+<pre>
+    Ctrl-E  Edit Selected Rollrecs</pre>
+<pre>
+    Ctrl-H  Help</pre>
+<pre>
+    Ctrl-K  Close Rollrec Edit Windows</pre>
+<pre>
+    Ctrl-M  Merge Rollrec Files</pre>
+<pre>
+    Ctrl-N  New Rollrec</pre>
+<pre>
+    Ctrl-O  Open</pre>
+<pre>
+    Ctrl-Q  Quit</pre>
+<pre>
+    Ctrl-R  Reveal Rollrec Edit Windows</pre>
+<pre>
+    Ctrl-S  Save</pre>
+<pre>
+    Ctrl-U  Undo Changes  (not currently implemented)</pre>
+<pre>
+    Ctrl-V  Verify Rollrec File</pre>
+<p>These accelerators are all lowercase letters.</p>
+<p>
+</p>
+<hr />
+<h1><a name="requirements">REQUIREMENTS</a></h1>
+<p><strong>rollrec-editor</strong> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+installed on your system.</p>
+<p>
+</p>
+<hr />
+<h1><a name="known_issues">KNOWN ISSUES</a></h1>
+<p>The following are known issues.  These will be resolved in the fullness of time.</p>
+<dl>
+<dt>
+<dd>
+<p>There is an issue with the column count and adding new <em>rollrecs</em>.
+It doesn't always work properly, thus occasionally leaving some <em>rollrec</em>
+buttons undisplayed.</p>
+</dd>
+</li>
+<dt>
+<dd>
+<p>Segmentation violation on exit.  Should not affect anything as file has
+already been saved.  Occurs on MacOS X 10.4.9-10.4.11 with Perl 5.8.6;
+does not occur on Linux FC5 with Perl 5.8.8.</p>
+</dd>
+</li>
+<dt>
+<dd>
+<p>There is no undo command.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2007-2008 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>lsroll(1)</strong>,
+<strong>rollchk(8)</strong>,
+<strong>rollerd(8)</strong>
+<strong>rollinit(8)</strong>,
+<strong>rollset(8)</strong>,
+<strong>zonesigner(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::rollrec(3)</strong></p>
+<p><strong>file-rollrec(5)</strong>
+
+</p>
+
+</body>
+
+</html>

@@ -1,0 +1,147 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>I&lt;val_getaddrinfo&gt; - get DNSSEC-validated network
+address and service translation</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:suresh@localhost.localdomain" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#return_values">RETURN VALUES</a></li>
+	<li><a href="#example">EXAMPLE</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p><em>val_getaddrinfo()</em> - get DNSSEC-validated network
+address and service translation</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  #include &lt;validator.h&gt;</pre>
+<pre>
+  int val_getaddrinfo(const struct val_context *ctx,
+                      const char *nodename,
+                      const char *servname,
+                      const struct addrinfo *hints,
+                      struct addrinfo **res,
+                      val_status_t * val_status);</pre>
+<pre>
+  int val_getnameinfo(val_context_t * ctx,
+                      const struct sockaddr *sa,
+                      socklen_t salen,
+                      char *host,
+                      size_t hostlen,
+                      char *serv,
+                      size_t servlen,
+                      int flags,
+                      val_status_t * val_status);</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><em>val_getaddrinfo()</em> and <em>val_getnameinfo</em> perform DNSSEC validation of DNS
+queries.  They are intended to be DNSSEC-aware replacements for
+<em>getaddrinfo(3)</em> and <em>getnameinfo(3)</em>.</p>
+<p><em>val_getaddrinfo()</em>  returns a network address value of type <em>struct
+addrinfo</em> in the <em>res</em> parameter.  <em>val_getnameinfo</em> is used to convert a
+<em>sockaddr</em> structure to a pair of host name and service strings.</p>
+<p><em>val_status</em> gives the combined validation status value for all
+answers returned by the each of the functions.  <em>val_istrusted()</em> and
+<em>val_isvalidated()</em> can be used to determine the trustworthiness of data and
+<em>p_val_status()</em> can be used to display the status value to the user in ASCII
+format (See <em>libval(3)</em> more for information).</p>
+<p>The <em>ctx</em> parameter specifies the validation context, which can be set to NULL
+for default values (see <em>libval(3)</em> and <em>dnsval.conf</em> for more details on validation
+contexts and validation policy).</p>
+<p>The <em>nodename</em>, <em>servname</em>, and <em>hints</em> parameters have similar
+syntax and semantics as the corresponding parameters for the original
+<em>getaddrinfo()</em> function.  The <em>res</em> parameter is similar to the
+<em>res</em> parameter for <em>getaddrinfo()</em>.  Please see the manual
+page for <em>getaddrinfo(3)</em> for more details about these parameters.</p>
+<p>
+</p>
+<hr />
+<h1><a name="return_values">RETURN VALUES</a></h1>
+<p>The <em>val_getaddrinfo()</em> function returns 0 on success and a non-zero error
+code on failure.  <em>*res</em> will point to a dynamically allocated linked list
+of <em>addrinfo</em> structures on success and will be NULL if no answer was
+available.</p>
+<p>The <em>val_status</em> parameter gives an indication for trustworthiness of data. If
+<em>*res</em> is NULL, this value gives an indication of whether the non-existence of
+data can be trusted or not.</p>
+<p>
+</p>
+<hr />
+<h1><a name="example">EXAMPLE</a></h1>
+<pre>
+ #include &lt;stdio.h&gt;
+ #include &lt;stdlib.h&gt;
+ #include &lt;validator.h&gt;</pre>
+<pre>
+ int main(int argc, char *argv[])
+ {
+          struct addrinfo *ainfo = NULL;
+          int retval;</pre>
+<pre>
+          if (argc &lt; 2) {
+                  printf(&quot;Usage: %s &lt;hostname&gt;\n&quot;, argv[0]);
+                  exit(1);
+          }</pre>
+<pre>
+          retval = val_getaddrinfo(NULL, argv[1], NULL, NULL, &amp;ainfo);</pre>
+<pre>
+          if ((retval == 0) &amp;&amp; (ainfo != NULL)) {</pre>
+<pre>
+                  printf(&quot;Validation Status = %d [%s]\n&quot;,
+                         ainfo-&gt;ai_val_status,
+                         p_val_status(ainfo-&gt;ai_val_status));</pre>
+<pre>
+                  freeaddrinfo(ainfo);
+          }</pre>
+<pre>
+          return 0;
+ }</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Abhijit Hayatnagarkar, Michael Baer</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><em>getaddrinfo(3)</em></p>
+<p><em>val_gethostbyname(3)</em>, <em>val_res_query(3)</em></p>
+<p><em>libval(3)</em></p>
+<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
+
+</body>
+
+</html>
