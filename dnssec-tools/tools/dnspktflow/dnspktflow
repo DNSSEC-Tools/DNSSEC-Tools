@@ -41,6 +41,9 @@ LocalGetOptions(\%opts,
 #		 question => { 'type' => 'fileupload' }
 		],
 		['fig','Output format should be fig'],
+		['svg','Output format should be svg'],
+		['svgz','Output format should be svgz'],
+		['ps','Output format should be postscript'],
 		['O|tshark-out=s','Save tshark output to this file',
 #		 question => { 'type' => 'fileupload' }
 		],
@@ -298,6 +301,12 @@ sub save_now {
     my ($gv,$file) = @_;
     if ($opts{'fig'}) {
 	$gv->as_fig($file);
+    } elsif ($opts{'svg'}) {
+	$gv->as_svg($file);
+    } elsif ($opts{'svgz'}) {
+	$gv->as_svgz($file);
+    } elsif ($opts{'ps'}) {
+	$gv->as_ps($file);
     } else {
 	$gv->as_png($file);
     }
