@@ -106,6 +106,7 @@ our @EXPORT = qw(
 		 rollmgr_getid
 		 rollmgr_halt
 		 rollmgr_idfile
+		 rollmgr_set_idfile
 		 rollmgr_loadzone
 		 rollmgr_rmid
 		 rollmgr_running
@@ -295,6 +296,7 @@ my $GETDIR	= "getdir";
 my $GETID	= "getid";
 my $HALT	= "halt";
 my $IDFILE	= "idfile";
+my $SETIDFILE	= "setidfile";
 my $LOADZONE	= "loadzone";
 my $RMID	= "rmid";
 my $RUNNING	= "running";
@@ -307,44 +309,47 @@ my $SAVEID	= "saveid";
 # 
 my %switch_uninit =
 (
-	$CMDINT	  =>	\&uninit_cmdint,
-	$DROPID	  =>	\&uninit_dropid,
-	$GETDIR	  =>	\&uninit_dir,
-	$GETID	  =>	\&uninit_getid,
-	$HALT	  =>	\&uninit_halt,
-	$IDFILE	  =>	\&uninit_idfile,
-	$LOADZONE =>	\&uninit_loadzone,
-	$RMID	  =>	\&uninit_rmid,
-	$RUNNING  =>	\&uninit_running,
-	$SAVEID	  =>	\&uninit_saveid,
+	$CMDINT	   =>	\&uninit_cmdint,
+	$DROPID	   =>	\&uninit_dropid,
+	$GETDIR	   =>	\&uninit_dir,
+	$GETID	   =>	\&uninit_getid,
+	$HALT	   =>	\&uninit_halt,
+	$IDFILE	   =>	\&uninit_idfile,
+	$SETIDFILE =>	\&uninit_set_idfile,
+	$LOADZONE  =>	\&uninit_loadzone,
+	$RMID	   =>	\&uninit_rmid,
+	$RUNNING   =>	\&uninit_running,
+	$SAVEID	   =>	\&uninit_saveid,
 );
 
 my %switch_unknown =
 (
-	$CMDINT	  =>	\&unknown_cmdint,
-	$DROPID	  =>	\&unknown_dropid,
-	$GETDIR	  =>	\&unknown_dir,
-	$GETID	  =>	\&unknown_getid,
-	$HALT	  =>	\&unknown_halt,
-	$IDFILE	  =>	\&unknown_idfile,
-	$LOADZONE =>	\&unknown_loadzone,
-	$RMID	  =>	\&unknown_rmid,
-	$RUNNING  =>	\&unknown_running,
-	$SAVEID	  =>	\&unknown_saveid,
+	$CMDINT	   =>	\&unknown_cmdint,
+	$DROPID	   =>	\&unknown_dropid,
+	$GETDIR	   =>	\&unknown_dir,
+	$GETID	   =>	\&unknown_getid,
+	$HALT	   =>	\&unknown_halt,
+	$IDFILE	   =>	\&unknown_idfile,
+	$SETIDFILE =>	\&unknown_set_idfile,
+	$LOADZONE  =>	\&unknown_loadzone,
+	$RMID	   =>	\&unknown_rmid,
+	$RUNNING   =>	\&unknown_running,
+	$SAVEID	   =>	\&unknown_saveid,
 );
 
 my %switch_unix =
 (
-	$CMDINT	  =>	\&unix_cmdint,
-	$DROPID	  =>	\&unix_dropid,
-	$GETDIR	  =>	\&unix_dir,
-	$GETID	  =>	\&unix_getid,
-	$HALT	  =>	\&unix_halt,
-	$IDFILE	  =>	\&unix_idfile,
-	$LOADZONE =>	\&unix_loadzone,
-	$RMID	  =>	\&unix_rmid,
-	$RUNNING  =>	\&unix_running,
-	$SAVEID	  =>	\&unix_saveid,
+	$CMDINT	   =>	\&unix_cmdint,
+	$DROPID	   =>	\&unix_dropid,
+	$GETDIR	   =>	\&unix_dir,
+	$GETID	   =>	\&unix_getid,
+	$HALT	   =>	\&unix_halt,
+	$IDFILE	   =>	\&unix_idfile,
+	$SETIDFILE =>	\&unix_set_idfile,
+	$LOADZONE  =>	\&unix_loadzone,
+	$RMID	   =>	\&unix_rmid,
+	$RUNNING   =>	\&unix_running,
+	$SAVEID	   =>	\&unix_saveid,
 );
 
 
@@ -367,8 +372,8 @@ my %port_archs =
 # Unix-related constants.
 # 
 
-my $UNIX_ROLLMGR_DIR	    = getconfdir();
-my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/rollmgr.pid");
+my $UNIX_ROLLMGR_DIR	    = getlocalstatedir() . "/run";
+our $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/rollmgr.pid");
 
 my $PS = "/bin/ps";
 
@@ -543,6 +548,24 @@ sub rollmgr_idfile
 # print "rollmgr_idfile\n";
 
 	$func = $switchtab{$IDFILE};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_set_idfile()
+#
+# Purpose:	Front-end to the O/S-specific "set rollerd's
+#		identity filename" function.
+#
+sub rollmgr_set_idfile
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_set_idfile\n";
+
+	$func = $switchtab{$SETIDFILE};
 	return(&$func(@args));
 }
 
@@ -730,6 +753,22 @@ sub uninit_idfile
 
 #--------------------------------------------------------------------------
 #
+# Routine:      uninit_idfile()
+#
+# Purpose:	Switch for uninitialized "get id file" command.
+#
+sub uninit_set_idfile
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_set_idfile\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_set_idfile(@args));
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:      uninit_loadzone()
 #
 # Purpose:	Switch for uninitialized "load the zone" command.
@@ -867,6 +906,15 @@ sub unknown_idfile
 
 #--------------------------------------------------------------------------
 #
+# Routine:      unknown_set_idfile()
+#
+sub unknown_set_idfile
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:      unknown_loadzone()
 #
 sub unknown_loadzone
@@ -943,6 +991,17 @@ sub unix_idfile
 
 #--------------------------------------------------------------------------
 #
+# Routine:	unix_set_idfile()
+#
+# Purpose:	Sets rollerd's id file to a particular value
+#
+sub unix_set_idfile
+{
+    $UNIX_ROLLMGR_PIDFILE = $_[0];
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	unix_loadzone()
 #
 # Purpose:	Kick the name server so it'll load the given zone.
@@ -1002,6 +1061,7 @@ sub unix_dropid
 	if($pfpid < 0)
 	{
 # print "unix_dropid:  opening $UNIX_ROLLMGR_PIDFILE\n";
+
 		unlink("$UNIX_ROLLMGR_PIDFILE");
 		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPID UNABLE TO OPEN \"$UNIX_ROLLMGR_PIDFILE\"\n";
 		flock(PIDFILE,LOCK_EX);
