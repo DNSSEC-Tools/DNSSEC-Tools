@@ -96,18 +96,19 @@ my $DT_LOGFILE	= "roll_logfile";
 my $DT_LOGLEVEL	= "roll_loglevel";
 my $DT_SLEEP	= "roll_sleeptime";
 
-my $OPT_HELP	 = "help";
-my $OPT_DIR	 = "directory";
-my $OPT_DISPLAY	 = "display";
-my $OPT_LOGFILE	 = "logfile";
-my $OPT_LOGLEVEL = "loglevel";
-my $OPT_PARAMS	 = "parameters";
-my $OPT_SINGLERUN = "singlerun";
-my $OPT_PIDFILE = "pidfile";
-my $OPT_RRFILE	 = "rrfile";
-my $OPT_SLEEP	 = "sleep";
-my $OPT_VERBOSE	 = "verbose";
-my $OPT_VERSION	 = "Version";
+my $OPT_HELP	   = "help";
+my $OPT_DIR	   = "directory";
+my $OPT_DISPLAY	   = "display";
+my $OPT_LOGFILE	   = "logfile";
+my $OPT_LOGLEVEL   = "loglevel";
+my $OPT_PARAMS	   = "parameters";
+my $OPT_SINGLERUN  = "singlerun";
+my $OPT_FOREGROUND = "foreground";
+my $OPT_PIDFILE    = "pidfile";
+my $OPT_RRFILE	   = "rrfile";
+my $OPT_SLEEP	   = "sleep";
+my $OPT_VERBOSE	   = "verbose";
+my $OPT_VERSION	   = "Version";
 
 my %opts = ();			# Filled option array.
 my @opts =
@@ -120,7 +121,8 @@ my @opts =
 	"pidfile=s",			# pid storage file.
 	"sleep=i",			# Sleep amount (in seconds.)
 	"parameters",			# Display the parameters and exit.
-	"singlerun",			# Single run: process everything once 
+	"singlerun",			# Single run: process everything once
+	"foreground",			# Run in the forground; don't fork
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
@@ -138,6 +140,7 @@ my $sleep_override = 0;			# Sleep-override flag.
 my $sleepcnt;				# Time we've slept so far.
 my $verbose = 0;			# Verbose option.
 my $singlerun = 0;			# Single run only
+my $foreground = 0;			# Run in the foreground
 my $pidfile;                            # pid storage file
 
 my $display = 0;			# Do display processing.
@@ -198,7 +201,7 @@ sub main
 	#
 	# Daemonize ourself.
 	#
-	exit(0) if(!$singlerun && fork());
+	exit(0) if(!$singlerun && !$foreground && fork());
 	POSIX::setsid();
 
 	#
@@ -2056,12 +2059,13 @@ sub optsandargs
 	GetOptions(\%opts,@opts) || usage();
 	opts_onerr(0);
 
-	$version   = $opts{$OPT_VERSION};
-	$singlerun = $opts{$OPT_SINGLERUN};
-	$pidfile   = $opts{$OPT_PIDFILE};
-	$verbose   = $opts{$OPT_VERBOSE};
-	$logfile   = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
-	$loglevel  = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
+	$version    = $opts{$OPT_VERSION};
+	$singlerun  = $opts{$OPT_SINGLERUN};
+	$foreground = $opts{$OPT_FOREGROUND};
+	$pidfile    = $opts{$OPT_PIDFILE};
+	$verbose    = $opts{$OPT_VERBOSE};
+	$logfile    = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
+	$loglevel   = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
 	$sleeptime = $opts{$OPT_SLEEP}	  || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 
 	$display = $opts{$OPT_DISPLAY}	  || 0;
@@ -3902,6 +3906,7 @@ sub usage
 	print STDERR "\t\t-display\n";
 	print STDERR "\t\t-parameters\n";
 	print STDERR "\t\t-singlerun\n";
+	print STDERR "\t\t-forground\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
@@ -4189,6 +4194,12 @@ serve as examples:
   cmd "rollzsk example.com"
   cmd "rollksk example.com"
   cmd "dspub example.com"          # (for when the parent publishes the new ksk)
+
+The I<-singlerun> option implicitly implies I<-foreground> as well.
+
+=item B<-foreground>
+
+Run in the foreground and do not fork into a daemon.
 
 =item B<-display>
 
