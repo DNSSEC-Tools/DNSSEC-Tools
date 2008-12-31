@@ -102,6 +102,8 @@ my $OPT_DISPLAY	 = "display";
 my $OPT_LOGFILE	 = "logfile";
 my $OPT_LOGLEVEL = "loglevel";
 my $OPT_PARAMS	 = "parameters";
+my $OPT_SINGLERUN = "singlerun";
+my $OPT_PIDFILE = "pidfile";
 my $OPT_RRFILE	 = "rrfile";
 my $OPT_SLEEP	 = "sleep";
 my $OPT_VERBOSE	 = "verbose";
@@ -115,8 +117,10 @@ my @opts =
 	"display",			# Use output GUI.
 	"logfile=s",			# Log file.
 	"loglevel=s",			# Logging level.
+	"pidfile=s",			# pid storage file.
 	"sleep=i",			# Sleep amount (in seconds.)
 	"parameters",			# Display the parameters and exit.
+	"singlerun",			# Single run: process everything once 
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
@@ -133,7 +137,8 @@ my $sleeptime;				# Sleep interval in seconds.
 my $sleep_override = 0;			# Sleep-override flag.
 my $sleepcnt;				# Time we've slept so far.
 my $verbose = 0;			# Verbose option.
-
+my $singlerun = 0;			# Single run only
+my $pidfile;                            # pid storage file
 
 my $display = 0;			# Do display processing.
 
@@ -193,7 +198,7 @@ sub main
 	#
 	# Daemonize ourself.
 	#
-	exit(0) if(fork());
+	exit(0) if(!$singlerun && fork());
 	POSIX::setsid();
 
 	#
@@ -288,6 +293,7 @@ sub main
 		#
 		# Turn on our signal handlers and then take a nap.
 		#
+		return(0) if ($singlerun);
 		controllers(1);
 		sleeper($sleeptime);
 
@@ -2047,6 +2053,8 @@ sub optsandargs
 	opts_onerr(0);
 
 	$version   = $opts{$OPT_VERSION};
+	$singlerun = $opts{$OPT_SINGLERUN};
+	$pidfile   = $opts{$OPT_PIDFILE};
 	$verbose   = $opts{$OPT_VERBOSE};
 	$logfile   = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
 	$loglevel  = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
@@ -2146,6 +2154,9 @@ sub optsandargs
 		}
 	}
 
+	if (defined($pidfile) && $pidfile ne '') {
+	    rollmgr_set_idfile($pidfile);
+	}
 	#
 	# If the user only wants the parameters, print 'em and exit.
 	#
@@ -3881,9 +3892,11 @@ sub usage
 	print STDERR "\t\t-directory <dir>\n";
 	print STDERR "\t\t-logfile <logfile>\n";
 	print STDERR "\t\t-loglevel <level>\n";
+	print STDERR "\t\t-pidfile <pidfile>\n";
 	print STDERR "\t\t-sleep <sleeptime>\n";
 	print STDERR "\t\t-display\n";
 	print STDERR "\t\t-parameters\n";
+	print STDERR "\t\t-singlerun\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
@@ -4137,6 +4150,11 @@ I<logfile> is B</dev/stdout>, B</dev/tty>, B<->.  Of these three, using a
 I<log_file> of B<-> is preferable since Perl will properly convert the B<->
 to the process' standard output.
 
+=item B<-pidfile pid_file>
+
+Stores the running process PID into I<pid_file>.  This defaults to
+/var/run/rollerd.pid on most systems.
+
 =item B<-loglevel level>
 
 Sets B<rollerd>'s logging level to I<level>.  B<rollmgr.pm(3)> contains a list
@@ -4151,6 +4169,15 @@ queue.
 =item B<-parameters>
 
 Prints a set of B<rollerd> parameters and then exits.
+
+=item B<-singlerun>
+
+Processes all needed steps once and exits.  This is not the idealy way
+to run rollerd but is potentially useful for environments where keying
+material is only available when specific hardware tokens have been
+made available.  Note that the timing between the steps will be
+potentially longer since the time between rollerd runs is dependent on
+when rollerd is executed.
 
 =item B<-display>
 
