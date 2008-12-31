@@ -4177,7 +4177,13 @@ to run rollerd but is potentially useful for environments where keying
 material is only available when specific hardware tokens have been
 made available.  Note that the timing between the steps will be
 potentially longer since the time between rollerd runs is dependent on
-when rollerd is executed.
+when rollerd is executed.  "cmd" lines will be needed to be added
+rollrec file to do particular actions.  The following lines should
+serve as examples:
+
+  cmd "rollzsk example.com"
+  cmd "rollksk example.com"
+  cmd "dspub example.com"          # (for when the parent publishes the new ksk)
 
 =item B<-display>
 

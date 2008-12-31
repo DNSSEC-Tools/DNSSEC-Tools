@@ -59,6 +59,7 @@ use strict;
 use Fcntl qw(:DEFAULT :flock);
 
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::rollmgr;
 
 our $VERSION = "0.9";
 
@@ -305,6 +306,27 @@ sub rollrec_read
 			}
 			rollrec_newrec($keyword,$name);
 			next;
+		}
+
+		if ($keyword =~ /^cmd$/i) {
+		    #
+		    # The line is used to issue a specific command to run
+		    # We queue it for later processing
+		    my $commandtoload = $value;
+		    my ($cmdname, $argument) =
+		      ($commandtoload =~ /^\s*(\w+)\s*(.*)$/);
+		    $cmdname = "rollcmd_" . $cmdname;
+		    if (rollmgr_verifycmd($cmdname) == 0) {
+			err("rollrec_read: invalid command $commandtoload\n", -1);
+			next;
+		    }
+
+		    # save the command in our queue to process
+		    rollmgr_queuecmd($cmdname, $argument);
+
+		    # remove the line from the file to write back out
+		    pop @rollreclines;
+		    next;
 		}
 
 		#
@@ -1111,6 +1133,16 @@ sub rollrec_write
 	}
 
 	#
+	# remember any unprocessed queue commands
+	#
+	my ($cmdandvalue);
+	while ($cmdandvalue = rollmgr_getqueueitem()) {
+	    last if (ref($cmdandvalue) ne 'ARRAY');
+	    $cmdandvalue->[0] =~ s/^rollcmd_//;
+	    $rrc .= "cmd \"$cmdandvalue->[0] $cmdandvalue->[1]\"";
+	}
+
+	#
 	# Zap the rollrec file and write out the new one.
 	#
 	seek(ROLLREC,0,0);
@@ -1249,6 +1281,13 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 	loglevel		"info"
 	rollrec_rollsecs	"1115923362"
 	rollrec_rolldate	"Tue Mar 09 19:12:54 2005"
+
+Additionally cmds to be acted upon at start up can be defined using
+the "cmd" token as shown in the following example.  Use this feature
+with caution and only if you understand the internals of the
+application.
+
+    cmd "rollzsk example.com"
 
 The first step in using this module must be to read the I<rollrec> file.  The
 I<rollrec_read()> interface reads the file and parses it into an internal

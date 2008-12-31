@@ -117,6 +117,8 @@ our @EXPORT = qw(
 		 rollmgr_getcmd
 		 rollmgr_getresp
 		 rollmgr_sendcmd
+		 rollmgr_queuecmd
+		 rollmgr_getqueueitem
 		 rollmgr_sendresp
 		 rollmgr_verifycmd
 		 rollmgr_get_phase
@@ -182,6 +184,7 @@ my $CHANNEL_WAIT	= 0;
 my $CHANNEL_CLOSE	= 1;
 sub CHANNEL_WAIT		{ return($CHANNEL_WAIT);	};
 sub CHANNEL_CLOSE		{ return($CHANNEL_CLOSE);	};
+my @queuedcmds;
 
 #
 # The ROLLCMD_RC_ entities are return codes sent from rollerd and received
@@ -1492,6 +1495,41 @@ sub rollmgr_closechan
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	rollmgr_queuecmd()
+#
+# Purpose:      This routine can be called internally to queue a command
+#          	for later processing via calls to rollmgr_getcmd().
+#          	It is useful when doing initial startup before full
+#          	processing is to commence.  Commands queued by this
+#          	process take precidence over commands received via the
+#          	command intervace (ie, via rollmgr_sendcmd()).
+#
+sub rollmgr_queuecmd
+{
+    my ($cmd, $value) = @_;
+    return 0 if (rollmgr_verifycmd($cmd) == 0);
+    push @queuedcmds, [$cmd, $value];
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_getqueueitem()
+#
+# Purpose:      This routine can be called pull a command from the queue
+#
+sub rollmgr_getqueueitem
+{
+    if ($#queuedcmds > -1) {
+	my $cmd = shift @queuedcmds;
+	return $cmd;
+    }
+    return;
+}
+
+
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	rollmgr_getcmd()
 #
 # Purpose:	This routine is called by the server to fetch a command and
@@ -1512,7 +1550,14 @@ sub rollmgr_getcmd
 # print "rollmgr_getcmd:  down in\n";
 
 	#
-	# Set a time limit on how long we'll wait for the connection.
+	# if we have anything queued up, process those first.
+	#
+	my $cmdandvalue = rollmgr_getqueueitem();
+	return (@$cmdandvalue)
+	  if (defined($cmdandvalue) && ref($cmdandvalue) eq 'ARRAY');
+
+	#
+	# set a time limit on how long we'll wait for the connection.
 	# Our alarm handler is a dummy, only intended to keep us from
 	# waiting forever.
 	#
@@ -1888,11 +1933,20 @@ If I<serverflag> is false, then the client's side of the channel is created.
 Currently, the connection may only be made to the localhost.  This may be
 changed to allow remote connections, if this is found to be needed.
 
+=item I<rollmgr_queuecmd(cmdname, value)>
+
+This interface internally remembers a command and it's optional value
+for later processing.  See the I<rollmgr_getcmd()> next for further
+details.
+
 =item I<rollmgr_getcmd()>
 
-I<rollmgr_getcmd()> retrieves a command sent over B<rollerd>'s communications
-channel by a client program.  The command and the command's data are sent in
-each message.
+I<rollmgr_getcmd()> processes commands that need to be dealt with.  If
+there are any internally stored commands queued via the
+I<rollmgr_queuecmd()> function, they are dealt with first.  After that it
+retrieves a command sent over B<rollerd>'s communications channel by a
+client program.  The command and the command's data are sent in each
+message.
 
 The command and the command's data are returned to the caller.
 
