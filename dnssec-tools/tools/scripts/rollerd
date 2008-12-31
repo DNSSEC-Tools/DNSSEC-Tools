@@ -293,7 +293,11 @@ sub main
 		#
 		# Turn on our signal handlers and then take a nap.
 		#
-		return(0) if ($singlerun);
+		if ($singlerun) {
+		    halt_handler();
+		    exit(0);
+		}
+		
 		controllers(1);
 		sleeper($sleeptime);
 
@@ -3790,6 +3794,7 @@ sub halt_handler
 	display("halt woof 0");
 
 	rolllog_log(LOG_ALWAYS,"","rollover manager shutting down...\n");
+	rollrec_write(1);         # dump the current file with commands
 	rollmgr_rmid();
 	exit(0);
 }

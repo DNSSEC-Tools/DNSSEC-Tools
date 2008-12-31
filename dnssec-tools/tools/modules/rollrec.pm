@@ -204,8 +204,15 @@ sub rollrec_read
 	my $name;			# Name of the rollrec.
 	my $rrcnt;			# Number of rollrecs we found.
 	my @sbuf;			# Buffer for stat().
+	my $havecmdsalready = 0;
 
 # print "rollrec_read:  down in\n";
+
+	#
+	# if we already have cmds loaded, don't reload them
+	#
+	my @currentcmds = rollmgr_getallqueuedcmds();
+	$havecmdsalready = 1 if ($#currentcmds > -1);
 
 	#
 	# Use the default rollrec file, unless the caller specified
@@ -312,6 +319,11 @@ sub rollrec_read
 		    #
 		    # The line is used to issue a specific command to run
 		    # We queue it for later processing
+		    #
+
+		    print STDERR "processing command: $value / $havecmdsalready\n";
+		    next if ($havecmdsalready);
+
 		    my $commandtoload = $value;
 		    my ($cmdname, $argument) =
 		      ($commandtoload =~ /^\s*(\w+)\s*(.*)$/);
@@ -1114,15 +1126,18 @@ sub rollrec_close
 #
 sub rollrec_write
 {
+	my $writecmds = shift;  # write out the stored commands too
 	my $rrc = "";		# Concatenated rollrec file contents.
 	my $ofh;		# Old file handle.
 
 # print STDERR "rollrec_write:  down in\n";
 
+	my @currentcmds = rollmgr_getallqueuedcmds();
+
 	#
 	# If the file hasn't changed, we'll skip writing.
 	#
-	return if(!$modified);
+	return if(!$modified && $#currentcmds == -1);
 
 	#
 	# Loop through the array of rollrec lines and concatenate them all.
@@ -1135,11 +1150,12 @@ sub rollrec_write
 	#
 	# remember any unprocessed queue commands
 	#
-	my ($cmdandvalue);
-	while ($cmdandvalue = rollmgr_getqueueitem()) {
-	    last if (ref($cmdandvalue) ne 'ARRAY');
-	    $cmdandvalue->[0] =~ s/^rollcmd_//;
-	    $rrc .= "cmd \"$cmdandvalue->[0] $cmdandvalue->[1]\"";
+	if ($writecmds) {
+	    foreach my $cmdandvalue (rollmgr_getallqueuedcmds()) {
+		my ($cmd, $value) = @$cmdandvalue;
+		$cmd =~ s/^rollcmd_//;
+		$rrc .= "cmd \"$cmd $value\"\n";
+	    }
 	}
 
 	#

@@ -119,6 +119,7 @@ our @EXPORT = qw(
 		 rollmgr_sendcmd
 		 rollmgr_queuecmd
 		 rollmgr_getqueueitem
+		 rollmgr_getallqueuedcmds
 		 rollmgr_sendresp
 		 rollmgr_verifycmd
 		 rollmgr_get_phase
@@ -1516,6 +1517,8 @@ sub rollmgr_queuecmd
 # Routine:	rollmgr_getqueueitem()
 #
 # Purpose:      This routine can be called pull a command from the queue
+#               This is intended to process the the item, so it is removed
+#               from the queue.
 #
 sub rollmgr_getqueueitem
 {
@@ -1524,6 +1527,23 @@ sub rollmgr_getqueueitem
 	return $cmd;
     }
     return;
+}
+
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_getallqueuedcmds()
+#
+# Purpose:      This routine returns all the queued commands in the stack
+#               The items are left in place unless an truthful argument
+#               (e.g. "1") is passed in.
+#
+sub rollmgr_getallqueuedcmds
+{
+    my $removefromqueue = shift;
+    my @results = @queuedcmds;
+    @queuedcmds = () if ($removefromqueue);
+    return @queuedcmds;
 }
 
 
