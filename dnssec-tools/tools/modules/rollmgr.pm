@@ -1447,7 +1447,7 @@ sub rollmgr_channel
 		#
 		# Build the socket name and construct the socket data.
 		#
-		$unixsock = getconfdir() . $UNIXSOCK;
+		$unixsock = getstatedir() . "/dnssec-tools" . $UNIXSOCK;
 # print STDERR "rollmgr_channel:  unixsock - <$unixsock>\n";
 		$sockdata = sockaddr_un($unixsock);
 
