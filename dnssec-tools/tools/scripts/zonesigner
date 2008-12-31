@@ -1853,7 +1853,7 @@ sub serialincr
 	my $soafields;				# SOA's fields.
 	my $serialnum;				# Current serial number.
 	my $serialnew;				# New serial number.
-
+	
 	#
 	# Get the zone file's length and contents.
 	#
@@ -1862,65 +1862,33 @@ sub serialincr
 	read(ZF,$file,$flen);
 
 	#
-	# Find the SOA line and save everything after it.
+	# Find the SOA line and components
 	#
-	$file =~ /\s+IN\s+SOA\s+/si;
-	$remnant = $';
-
-	#
-	# Find the SOA's parenthesized fields.
-	#
-	$remnant =~ /\(.*?\)/s;
-	$soafields = $&;
-
-	#
-	# Get the SOA's serial number and increment it.
-	#
-	$soafields =~ /([0-9]+)/;
-	$serialnum = $1;
-
-	#
-	# We assumed the serial number was parenthesized.  If we didn't
-	# find it, we'll look for it in an unparenthesized line.
-	#
-	if($serialnum eq "")
-	{
-		#
-		# Pick up the SOA line.
-		#
-		$file =~ /\s+IN\s+SOA\s+/si;
-		$remnant = $';
-
-		#
-		# Snork out the serial number.
-		#
-		$remnant =~ /\S+\s+\S+\s+(\S+)\s+/;
-		$serialnum = $1;
-
-		#
-		# If we didn't find the serial number here either,
-		# return a failure.
-		#
-		return(-1) if($serialnum eq "");
-	}
+	
+	($serialnum) = 
+	  ($file =~ /\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s+(\d+)/s);
+	
+	return(-1) if(!defined($serialnum) || $serialnum eq '');
 
 	#
 	# We'll use the larger serial number of the one in the zone file
 	# and in the keyrec file.
 	#
+	$serialnew = $serialnum + 1;
 	if(defined($opts{'serial'}))
 	{
 		my $serial = $opts{'serial'};
 
-		$serialnum = $serial if($serial > $serialnum);
+		$serialnew = $serial if($serial > $serialnum);
 	}
 
 	#
 	# Increment the serial number and change it in the file contents.
 	# We'll also save the new serial number in the keyrec.
 	#
-	$serialnew = $serialnum + 1;
-	$file =~ s/$serialnum/$serialnew/;
+	print "here: $serialnum -> $serialnew\n";
+	$file =~ s/(\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s+)(\d+)/$1$serialnew/s;
+	print "$file\n";
 	keyrec_setval('zone',$zone,'serial',$serialnew);
 	$opts{'serial'} = $serialnew;
 
