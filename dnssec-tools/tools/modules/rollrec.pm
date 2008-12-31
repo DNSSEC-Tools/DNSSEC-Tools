@@ -143,7 +143,7 @@ my $modified;				# File-modified flag.
 #
 sub rollrec_lock
 {
-	my $confdir;			# Configuration file directory.
+	my $lockdir;			# Configuration file directory.
 	my $lockfile;			# Name of the lock file.
 
 # print "rollrec_lock:  down in\n";
@@ -151,12 +151,13 @@ sub rollrec_lock
 	#
 	# Get the DNSSEC-Tools config directory.
 	#
-	$confdir = getlocalstatedir() || $DEFAULT_DNSSECTOOLS_DIR;
+	$lockdir = getlocalstatedir() . "/dnssec-tools"
+	  || $DEFAULT_DNSSECTOOLS_DIR;
 
 	#
 	# Build our lock file.
 	#
-	$lockfile = "$confdir/$LOCKNAME";
+	$lockfile = "$lockdir/$LOCKNAME";
 
 	#
 	# Open (and create?) our lock file.
