@@ -1252,7 +1252,7 @@ sub unix_running
 	# Check if the pid's procname is rollerd, returning an indicator.
 	#
 	$ret = `$PS -p $rdpid`;
-	return(0) if($ret !~ /rollerd/);
+	return(0) if($ret !~ /(rollerd|perl)/);
 	return(1);
 
 }
@@ -1447,7 +1447,7 @@ sub rollmgr_channel
 		#
 		# Build the socket name and construct the socket data.
 		#
-		$unixsock = getstatedir() . "/dnssec-tools" . $UNIXSOCK;
+		$unixsock = getlocalstatedir() . "/dnssec-tools" . $UNIXSOCK;
 # print STDERR "rollmgr_channel:  unixsock - <$unixsock>\n";
 		$sockdata = sockaddr_un($unixsock);
 
