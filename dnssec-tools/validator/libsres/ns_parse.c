@@ -77,15 +77,15 @@ struct _ns_flagdata _ns_flagdata_flags[16] = {
  * ns_msg_getflag is a macro on linux, but Solaris and Darwin
  * both use defines of the function to map to other function
  * names.
+ *
+ * We completely rename the function for internal usage just to independent
  */
-#if !defined(ns_msg_getflag) || defined(sun) || defined(__APPLE__)
 int
-ns_msg_getflag(ns_msg han, int flag)
+libsres_msg_getflag(ns_msg han, int flag)
 {
     return (((han)._flags & _ns_flagdata_flags[flag].mask) >> _ns_flagdata_flags[flag].
             shift);
 }
-#endif
 
 int
 ns_skiprr(const u_char * ptr, const u_char * eom, ns_sect section,

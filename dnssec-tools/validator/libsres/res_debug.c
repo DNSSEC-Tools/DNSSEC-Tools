@@ -191,7 +191,7 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
         return;
     }
 
-    opcode = (ns_opcode) ns_msg_getflag(*handle, ns_f_opcode);
+    opcode = (ns_opcode) libsres_msg_getflag(*handle, ns_f_opcode);
     rrnum = 0;
     for (;;) {
         if (ns_parserr(handle, section, rrnum, &rr)) {
@@ -278,8 +278,8 @@ libsres_pquery(const u_char * msg, int len, FILE * file)
 
         return;
     }
-    opcode = ns_msg_getflag(handle, ns_f_opcode);
-    rcode = ns_msg_getflag(handle, ns_f_rcode);
+    opcode = libsres_msg_getflag(handle, ns_f_opcode);
+    rcode = libsres_msg_getflag(handle, ns_f_rcode);
     id = ns_msg_id(handle);
     qdcount = ns_msg_count(handle, ns_s_qd);
     ancount = ns_msg_count(handle, ns_s_an);
@@ -294,21 +294,21 @@ libsres_pquery(const u_char * msg, int len, FILE * file)
             _libsres_opcodes[opcode], p_rcode(rcode), id);
     putc(';', file);
     fprintf(file, "; flags:");
-    if (ns_msg_getflag(handle, ns_f_qr))
+    if (libsres_msg_getflag(handle, ns_f_qr))
         fprintf(file, " qr");
-    if (ns_msg_getflag(handle, ns_f_aa))
+    if (libsres_msg_getflag(handle, ns_f_aa))
         fprintf(file, " aa");
-    if (ns_msg_getflag(handle, ns_f_tc))
+    if (libsres_msg_getflag(handle, ns_f_tc))
         fprintf(file, " tc");
-    if (ns_msg_getflag(handle, ns_f_rd))
+    if (libsres_msg_getflag(handle, ns_f_rd))
         fprintf(file, " rd");
-    if (ns_msg_getflag(handle, ns_f_ra))
+    if (libsres_msg_getflag(handle, ns_f_ra))
         fprintf(file, " ra");
-    if (ns_msg_getflag(handle, ns_f_z))
+    if (libsres_msg_getflag(handle, ns_f_z))
         fprintf(file, " ??");
-    if (ns_msg_getflag(handle, ns_f_ad))
+    if (libsres_msg_getflag(handle, ns_f_ad))
         fprintf(file, " ad");
-    if (ns_msg_getflag(handle, ns_f_cd))
+    if (libsres_msg_getflag(handle, ns_f_cd))
         fprintf(file, " cd");
 
     fprintf(file, "; %s: %d", p_section(ns_s_qd, opcode), qdcount);
