@@ -79,5 +79,6 @@ int             wire_to_ascii_name(char *name, u_int8_t * wire,
                                    int name_length);
 u_int16_t       retrieve_type(const u_int8_t * rr);
 u_int16_t       libsres_random(void);
+int             libsres_msg_getflag(ns_msg han, int flag);
 
 #endif                          /* RES_SUPPORT_H */
