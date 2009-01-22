@@ -25,18 +25,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "validator/resolver.h"
-#include "res_mkquery.h"
-#include "res_support.h"
-#include "res_tsig.h"
-#include "res_io_manager.h"
-
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
 #elif ! defined( HAVE_ARPA_NAMESER_H )
 #include "arpa/header.h"
 #endif
+
+#include "validator/resolver.h"
+#include "res_mkquery.h"
+#include "res_support.h"
+#include "res_tsig.h"
+#include "res_io_manager.h"
 
 #ifndef NULL
 #define NULL (void*)0
