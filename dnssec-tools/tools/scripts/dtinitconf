@@ -75,6 +75,10 @@ my $endtime;				# Endtime of signature validity.
 my $ksklife;				# Lifespan of the KSK.
 my $ksklen;				# The KSK size.
 my $random;				# The source of randomness.
+my $usensec3;				# Use nsec3 by default?
+my $nsec3salt;				# The default salt to use
+my $nsec3iter;				# The default iterations to use
+my $nsec3optout;			# Default to NSEC3 optout
 my $zskcnt;				# Count of ZSK keys.
 my $zsklife;				# Lifespan of the ZSK.
 my $zsklen;				# The ZSK size.
@@ -254,6 +258,11 @@ sub optsandargs
 	$endtime   = $opts{'endtime'}	|| dnssec_tools_default("enddate");
 	$random	   = $opts{'random'}	|| dnssec_tools_default("random");
 
+	$usensec3  = $opts{'usensec3'}	|| dnssec_tools_default("usensec3");
+	$nsec3salt = $opts{'nsec3salt'}	|| dnssec_tools_default("nsec3salt");
+	$nsec3iter = $opts{'nsec3iter'}	|| dnssec_tools_default("nsec3iter");
+	$nsec3optout = $opts{'nsec3optout'} || dnssec_tools_default("nsec3optout");
+
 	$keyarch   = $opts{'archivedir'};
 	$savekeys  = $opts{'savekeys'}	  || dnssec_tools_default("savekeys");
 	$usegui	   = $opts{'usegui'}	  || dnssec_tools_default("usegui");
@@ -305,6 +314,7 @@ sub gatherdata()
 {
 	get_paths();
 	get_key_opts();
+	get_nsec3_opts();
 	get_zone_opts();
 	get_dt_opts();
 }
@@ -345,6 +355,10 @@ sub writeconf()
 		print "\tzskcount   - \"$zskcnt\"\n\n";
 		print "\tzsklen     - \"$zsklen\"\n";
 		print "\tzsklife    - \"$zsklife\"\n\n";
+		print "\tusensec3   - \"$usensec3\"\n";
+		print "\tnsec3salt  - \"$nsec3salt\"\n";
+		print "\tnsec3iter  - \"$nsec3iter\"\n\n";
+		print "\tnsec3optout  - \"$nsec3optout\"\n\n";
 
 		print "\tendtime    - \"$endtime\"\n\n";
 
@@ -419,6 +433,14 @@ zsklen		$zsklen
 random		$random
 
 #
+# NSEC3 functionality
+#
+usensec3        $usensec3
+nsec3iter       $nsec3iter
+nsec3salt       $nsec3salt
+nsec3optout     $nsec3optout
+
+#
 # Settings for dnssec-signzone.
 #
 endtime		$endtime		# RRSIGs good for thirty days.
@@ -466,6 +488,7 @@ usegui		$usegui
 ";
 
 	close(DTCONF);
+	print "Wrote $outfile\n";
 }
 
 #----------------------------------------------------------------------------
@@ -660,6 +683,26 @@ sub get_key_opts()
 	$zsklen	 = getval("ZSK Length (in bits)",$zsklen);
 	$zsklife = getval("ZSK Lifespan (in seconds)",$zsklife);
 	$zskcnt	 = getval("ZSK Count",$zskcnt);
+
+	print "\n";
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	get_nsec3_opts()
+#
+# Purpose:	Get NSEC3 options.
+#
+sub get_nsec3_opts()
+{
+	print "Key-related Options:\n";
+
+	$usensec3    = getval("Use NSEC3 by default",$usensec3);
+
+	print "\tWhen using NSEC3:\n";
+	$nsec3iter   = getval("  NSEC3 Iterations to use",$nsec3iter);
+	$nsec3salt   = getval("  NSEC3 salt to use",$nsec3salt);
+	$nsec3optout = getval("  Default to NSEC3 OptOut",$nsec3optout);
 
 	print "\n";
 }

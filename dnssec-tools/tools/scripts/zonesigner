@@ -88,6 +88,11 @@ my $ksdir;				# Directory to hold keysets.
 my $nokrfile;				# Flag for not using a keyrec file.
 my $random;				# Random number generation method.
 my $szopts;				# Additional zone-signing options.
+my $usensec3;                           # Use NSEC3
+my $nsec3salt;                          # NSEC3 salt to use
+my $nsec3iter;                          # NSEC3 iterations to use
+my $nsec3optout;                        # Use NSEC3 optout support
+my $nsec3opts;                          # NSEC3 signing options
 my $zcopts;				# Additional zone-checking options.
 my $verbose = 0;			# Turn off verbosity.
 
@@ -152,6 +157,8 @@ my @zsopts = ( '',
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
 	       ["usezskpub",		'Use Published ZSK for signing.'],
+	       ["usensec3",             'Use NSEC3 when signing zones.'],
+	       ["nsec3optout",          'Use NSEC3 Opt-Out for insecurely delegated subzones.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	       ["nosave",		'Do not save old keys.'],
 	       ["showsigncmd",		'Show the zone-signing command.'],
@@ -163,6 +170,7 @@ my $rollksk	= 0;			# Force-a-KSK-rollover flag.
 my $rollzsk	= 0;			# Force-a-ZSK-rollover flag.
 my $useboth	= 0;			# Use-Current-and-Published-ZSK flag.
 my $usezskpub	= 0;			# Use-Published-ZSK flag.
+my $nsec3	= 0;			# Use-Published-ZSK flag.
 
 my $showsigncmd	= 0;			# Show-zone-sign-command flag.
 my $showkeycmd	= 0;			# Show-key-generation-command flag.
@@ -307,6 +315,8 @@ sub optsandargs
 	$enddate  = $opts{'endtime'}	|| dnssec_tools_default("enddate");
 	$gends	  = $opts{'gends'}	|| "";
 	$random   = $opts{'random'}	|| dnssec_tools_default("random");
+	$usensec3 = $opts{'usensec3'}	|| dnssec_tools_default("usensec3");
+	$nsec3optout = $opts{'nsec3optout'}  || dnssec_tools_default("nsec3optout");
 	$kgopts   = $opts{'kgopts'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
 	$ksignset = $opts{'ksignset'}	|| "";
@@ -386,6 +396,11 @@ sub optsandargs
 
 	if($alg ne "")
 	{
+		if (($usensec3 eq 'yes' || $usensec3 eq '1') &&
+		    ($alg eq 'rsasha1' || $alg eq 'dsa')) {
+		    print STDERR "WARNING: changing algorithm from $alg to nsec3$alg since NSEC3 is in use\n";
+		    $alg = "nsec3$alg";
+		}
 		$opts{'algorithm'} = $alg;
 		$alg = "-a $alg";
 	}
@@ -409,6 +424,17 @@ sub optsandargs
 	}
 
 	$gends	 = "-g"		 if($gends ne "");
+
+	if ($usensec3 eq 'yes' || $usensec3 eq '1') {
+	    my $salt  = dnssec_tools_default("nsec3salt");
+	    my $iters = dnssec_tools_default("nsec3iter");
+
+	    $nsec3opts = "-3 $salt -H $iters";
+
+	    if ($nsec3optout eq 'yes' || $nsec3optout eq '1') {
+		$nsec3opts .= " -A";
+	    }
+	}
 
 	#
 	# Run some verification if we're supposed to archive keys.  Ensure
@@ -1522,7 +1548,7 @@ sub zonesign
 	# necessary, but it does keep the dnssec-signzone execution a bit
 	# cleaner than it would be otherwise.
 	#
-	$cmdopts = "$szopts $gends $ksdir $useksks -o $zone $enddate -f $zoneout";
+	$cmdopts = "$szopts $nsec3opts $gends $ksdir $useksks -o $zone $enddate -f $zoneout";
 
 	#
 	# Normally, we'll use the Current ZSKs; however, we'll use the
@@ -1866,7 +1892,7 @@ sub serialincr
 	#
 	
 	($serialnum) = 
-	  ($file =~ /\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s+(\d+)/s);
+	  ($file =~ /\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s*(\d+)/s);
 	
 	return(-1) if(!defined($serialnum) || $serialnum eq '');
 
@@ -1886,9 +1912,7 @@ sub serialincr
 	# Increment the serial number and change it in the file contents.
 	# We'll also save the new serial number in the keyrec.
 	#
-	print "here: $serialnum -> $serialnew\n";
 	$file =~ s/(\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s+)(\d+)/$1$serialnew/s;
-	print "$file\n";
 	keyrec_setval('zone',$zone,'serial',$serialnew);
 	$opts{'serial'} = $serialnew;
 
@@ -2597,6 +2621,7 @@ sub usage
 	print STDERR "\t\t\t-rollzsk\n";
 	print STDERR "\t\t\t-useboth\n";
 	print STDERR "\t\t\t-usezskpub\n";
+	print STDERR "\t\t\t-nsec3\n";
 	print STDERR "\t\t\t-archivedir directory\n";
 	print STDERR "\t\t\t-nosave\n";
 	print STDERR "\t\t\t-kskcount count\n";
@@ -3066,6 +3091,24 @@ The default is 512.
 Additional options for B<dnssec-keygen> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the B<-kgopts> option.
+
+=item B<-nsec3>
+
+Signs the zone using I<NSEC3> (see I<RFC5155>) proof-of-non-existence
+records rather than I<NSEC> records.  Note that the keys used to sign
+the zone must be ones that support the use of NSEC3 or else
+zone-signing will fail.  Zonesigner will automatically generate new
+keys of the correct type if one of the I<-genkeys> or similar options
+is used.
+
+=item B<-nsec3optout>
+
+When this flag and the I<-nsec3> flag are set, the zone will be signed
+using the Opt-Out support described in I<RFC5155>.  A quick summary is
+that only sub-domains with valid DS or public keys available will be
+signed and the rest will not be.  This greatly reduces the
+computational and memory requirements of extremely large zones with
+lots of unsigned children.
 
 =back
 
