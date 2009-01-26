@@ -426,8 +426,35 @@ sub optsandargs
 	$gends	 = "-g"		 if($gends ne "");
 
 	if ($usensec3 eq 'yes' || $usensec3 eq '1') {
-	    my $salt  = dnssec_tools_default("nsec3salt");
-	    my $iters = dnssec_tools_default("nsec3iter");
+	    my $salt  = $opts{"nsec3salt"} || dnssec_tools_default("nsec3salt");
+	    my $iters = $opts{"nsec3iter"} || dnssec_tools_default("nsec3iter");
+
+	    if ($salt =~ /^random:(\d+)$/) {
+		# use a random salt for each signing, using OpenSSL
+		# random if we can load the module.
+		my $bitsneeded = $1;
+
+		require POSIX;
+		# upper-case/lower-case/numbers case entropy
+		my $bytesneeded = POSIX::ceil($bitsneeded/8);
+		my @bytes;
+
+		my $have_openssl = eval { require Crypt::OpenSSL::Random; };
+		if ($have_openssl) {
+		    # good randomness
+		    Crypt::OpenSSL::Random::random_seed(time());
+		    for (my $i = 0; $i < $bytesneeded; $i++) {
+			push @bytes, ord(Crypt::OpenSSL::Random::random_bytes(1));
+		    }
+		} else {
+		    # bad randomness
+		    print STDERR "Warning: please install Crypt::OpenSSL::Random for better NSEC3 salt generation\n\n";
+		    for (my $i = 0; $i < $bytesneeded; $i++) {
+			push @bytes, rand(256);
+		    }
+		}
+		$salt = sprintf(("%02x" x ($#bytes+1)), @bytes);
+	    }
 
 	    $nsec3opts = "-3 $salt -H $iters";
 
