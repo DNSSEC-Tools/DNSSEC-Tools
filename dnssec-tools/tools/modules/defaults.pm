@@ -62,7 +62,10 @@ my %defaults =
 	"zskcount"	   => 1,		# Number of Current ZSK keys.
 	"zsklength"	   => 1024,		# Length of ZSK key.
 	"zsklife"	   => 604800,		# Lifespan of ZSK key.
-
+	"usensec3"         => "no",             # Use NSEC3 by default
+	"nsec3iter"	   => 100,              # default NSEC3 iteratations
+	"nsec3salt"	   => "-",              # default NSEC3 salt
+	"nsec3optout"	   => "no",             # NSEC3 opt-out default
 	"blinkenlights"	   => "$installdir/blinkenlights",
 	"cleanarch"	   => "$installdir/cleanarch",
 	"cleankrf"	   => "$installdir/cleankrf",

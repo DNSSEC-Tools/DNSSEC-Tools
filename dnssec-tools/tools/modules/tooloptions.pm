@@ -996,7 +996,7 @@ modified by the calling program itself.
 =item I<opts_gui()>
 
 Set an internal flag so that command arguments may be specified with a GUI.
-GUI usage requires that B<Getopt::Long::GUI> is available.  If it isn't, then 
+GUI usage requires that B<Getopt::GUI::Long> is available.  If it isn't, then
 B<Getopt::Long> will be used.
 
 =item I<opts_nogui()>
