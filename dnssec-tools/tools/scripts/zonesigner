@@ -1919,7 +1919,7 @@ sub serialincr
 	#
 	
 	($serialnum) = 
-	  ($file =~ /\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s*(\d+)/s);
+	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w]+\s+\(?\s*(\d+)/s);
 	
 	return(-1) if(!defined($serialnum) || $serialnum eq '');
 
