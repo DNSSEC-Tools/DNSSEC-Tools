@@ -10,8 +10,13 @@ desc: Checks to see if the TTL of an RRSIG record matches the original record. [
 level: 3
 type:  RRSIG
 <test>
-  if ($record->ttl ne $record->orgttl) {
-    donuts_error("RRSIG ORGTTL must match TTL");
+  if ($record->ttl ne $record->orgttl &&
+      # err...  NSEC3PARAM output by bind lists a TTL of 0, but the
+      # RRSIG is the default.
+      $record->typecovered ne 'NSEC3PARAM') {
+    donuts_error("RRSIG ORGTTL must match TTL name=" . $record->name .
+    ", type=" . $record->typecovered . " (" . $record->ttl . " ne
+    " . $record->orgttl . ")");
   }
 </test>
 
@@ -33,6 +38,22 @@ type: NS
 </test>
 
 #
+# Is this an NSEC3 zone?
+#
+name: DNSSEC_CHECK_IF_NSEC3
+desc: Checks to see if a given zone contains an NSEC3PARAM record.
+level: 1
+type: NSEC3PARAM
+internal: yes
+<test>
+  if ($record->name eq $current_domain &&
+      $record->type eq 'NSEC3PARAM') {
+      $DONUTS::DNSSEC::NSEC3ZONE = 1;
+      return;
+  }
+</test>
+
+#
 # NSEC is present?
 #
 name: DNSSEC_MISSING_NSEC_RECORD
@@ -41,7 +62,8 @@ level: 3
 ruletype: name
 <test>
     if (!exists($records->{'NSEC'}) &&
-        !exists($DONUTS::DNSSEC::NS{lc($recordname)})) {
+        !exists($DONUTS::DNSSEC::NS{lc($recordname)}) &&
+	!$DONUTS::DNSSEC::NSEC3ZONE) {
 	donuts_error("name $recordname does not have an NSEC record, which is required for secure domains.");
     }
 </test>
@@ -147,6 +169,25 @@ type: NSEC
 
   if ($record->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum) {
       donuts_error("NSEC TTL for " . $record->name . " (" . $record->ttl . 
+		   ") does not match SOA MIN TTL (" . 
+		   $nrecs{$current_domain}{'SOA'}[0]->minimum . ")");
+  }
+</test>
+
+# Note: this only works if the SOA has already been seen 
+# (should have been first anyway)
+#
+level: 5
+name: DNSSEC_NSEC3_TTL
+desc: RFC5155: The TTL value for any NSEC3 RR SHOULD be the same as the minimum TTL value field in the zone SOA RR.
+type: NSEC3
+<test>
+  # skip the current record if it's not within our current zone
+  # (happens with glue especially)
+  return if ($record->name !~ /$current_domain$/);
+
+  if ($record->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum) {
+      donuts_error("NSEC3 TTL for " . $record->name . " (" . $record->ttl . 
 		   ") does not match SOA MIN TTL (" . 
 		   $nrecs{$current_domain}{'SOA'}[0]->minimum . ")");
   }
