@@ -83,7 +83,10 @@ my $globalerror;
 # these modules unless we are.
 eval {
     require Net::DNS::RR::NSEC;
+    require Net::DNS::RR::NSEC3;
+    require Net::DNS::RR::NSEC3PARAM;
     require Net::DNS::RR::DNSKEY;
+    require MIME::Base63;
 };
 
 
@@ -192,12 +195,16 @@ sub parse
 	  if ($newrec->{'type'} eq 'DNSKEY') {
 	      $newrec->setkeytag;
 	  }
-	  if ($newrec->{'type'} eq 'RRSIG') {
+
+	  # no longer an issue with recent Net::DNS
+	  #if ($newrec->{'type'} eq 'RRSIG') {
 	      # fix an issue with RRSIG's signame being stripped of
 	      # the trailing dot.
-	      $newrec->{'signame'} .= "."
-		if ($newrec->{'signame'} !~ /\.$/);
-	  }
+
+
+	      # $newrec->{'signame'} .= "."
+	      # if ($newrec->{'signame'} !~ /\.$/);
+          #}
 	  push @r, $newrec;
 	  $r[-1]->{Line} = $line;
 	  $r[-1]->{Lines} = $lines;
@@ -808,6 +815,57 @@ sub parse_line
 		 typelist  => $typelist,
 		 typebm    =>
 		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$typelist)),
+		};
+	  } else {
+	      error("bad NSEC data");
+	  }
+      } elsif (/\G(nsec3)[ \t]+/igc) {
+	  if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
+	      # XXX: set the typebm field ourselves?
+	      my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
+		($1, $2, $3, $4, $5, $6);
+	      $typelist = join(" ",sort split(/\s+/,$typelist));
+	      my $binhash = MIME::Base32::decode uc $nxthash;
+	      push @zone, 
+		{
+		 Line        => $ln,
+		 name        => $domain,
+		 class       => "IN",
+		 ttl         => $ttl,
+		 type        => "NSEC3",
+		 hashalgo    => $alg,
+		 flags       => $flags,
+		 iterations  => $iters,
+		 hnxtname    => $nxthash,
+		 hnxtnamebin => $binhash,
+		 hashlength  => length($binhash),
+		 salt        => $salt,
+		 saltbin     => pack("H*",$salt),
+		 saltlength  => int(length($salt)/2),
+		 typelist    => $typelist,
+		 typebm      =>
+		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$typelist)),
+		};
+	  } else {
+	      error("bad NSEC data");
+	  }
+      } elsif (/\G(nsec3param)[ \t]+/igc) {
+	  if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)$pat_skip$/gc) {
+	      # XXX: set the typebm field ourselves?
+	      my ($alg, $flags, $iters, $salt) = ($1, $2, $3, $4);
+	      push @zone, 
+		{
+		 Line        => $ln,
+		 name        => $domain,
+		 class       => "IN",
+		 ttl         => $ttl,
+		 type        => "NSEC3PARAM",
+		 hashalgo    => $alg,
+		 flags       => $flags,
+		 iterations  => $iters,
+		 salt        => $salt,
+		 saltbin     => pack("H*",$salt),
+		 saltlength  => int(length($salt)/2),
 		};
 	  } else {
 	      error("bad NSEC data");
