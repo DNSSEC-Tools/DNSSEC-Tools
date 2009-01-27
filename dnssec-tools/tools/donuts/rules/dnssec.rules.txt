@@ -313,6 +313,7 @@ desc: RFC4035: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST
 <test>
   my @keys = sort keys(%{$records});
   return if ($#keys != 1);
+  return if ($recordname eq '');
   if ($keys[0] eq 'NSEC' && $keys[1] eq 'RRSIG') {
     donuts_error("$recordname only contains NSEC and RRSIG records");
   }
