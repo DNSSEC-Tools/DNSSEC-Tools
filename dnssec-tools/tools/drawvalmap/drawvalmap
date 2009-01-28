@@ -275,8 +275,7 @@ sub get_ac_lineattr {
     }
     # trusted bug not validated 
     elsif (($ac_status eq "VAL_AC_IGNORE_VALIDATION") ||
-        ($ac_status eq "VAL_AC_TRUSTED_ZONE") ||
-        ($ac_status eq "VAL_AC_PROVABLY_UNSECURE") ||
+        ($ac_status eq "VAL_AC_PINSECURE") ||
         ($ac_status eq "VAL_AC_BARE_RRSIG")) { 
 
 		$prop{'color'} =  "yellow";
@@ -339,12 +338,11 @@ sub get_valstatus_lineattr {
     elsif (
 		   ($val_status eq "VAL_NONEXISTENT_NAME_NOCHAIN")||
 		   ($val_status eq "VAL_NONEXISTENT_TYPE_NOCHAIN")||
-           ($val_status eq "VAL_PROVABLY_UNSECURE") ||
+           ($val_status eq "VAL_PINSECURE") ||
            ($val_status eq "VAL_BARE_RRSIG") ||
 		   ($val_status eq "VAL_IGNORE_VALIDATION") ||
-		   ($val_status eq "VAL_TRUSTED_ZONE") ||
 		   ($val_status eq "VAL_TRUSTED_ANSWER") ||
-		   ($val_status eq "VAL_LOCAL_ANSWER")) {
+		   ($val_status eq "VAL_OOB_ANSWER")) {
 		$prop{'color'} =  "yellow";
 		$prop{'fillcolor'} =  "yellow";
 		$prop{'style'} = 'bold';
@@ -352,7 +350,7 @@ sub get_valstatus_lineattr {
 	elsif (($val_status eq "VAL_BOGUS") ||
 		   ($val_status eq "VAL_UNTRUSTED_ANSWER") ||
 		   ($val_status eq "VAL_UNTRUSTED_ZONE") ||
-		   ($val_status eq "VAL_BAD_PROVABLY_UNSECURE")||
+		   ($val_status eq "VAL_PINSECURE_UNTRUSTED")||
 		   ($val_status eq "VAL_NOTRUST")){
 		$prop{'color'} = "red";
 		$prop{'fillcolor'} =  "red";
