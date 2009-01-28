@@ -110,15 +110,17 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
                  const char *dname,     /* domain name */
                  u_int16_t class, u_int16_t type,   /* class and type of query */
                  const u_char * data,   /* resource record data */
-                 int datalen,   /* length of data */
+                 size_t datalen,   /* length of data */
                  const u_char * newrr_in,       /* new rr for modify or append */
                  u_char * buf,  /* buffer to put query */
-                 int buflen)
+                 size_t buflen,
+                 size_t *query_length)
 {                               /* size of buffer */
     register HEADER *hp;
     register u_char *cp, *ep;
     register int    n;
     u_char         *dnptrs[20], **dpp, **lastdnptr;
+    u_int16_t datalen_16 = (u_int16_t)datalen;
 
     //      UNUSED(newrr_in);
 
@@ -130,8 +132,11 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
     /*
      * Initialize header fields.
      */
-    if ((buf == NULL) || (buflen < NS_HFIXEDSZ))
+    if ((buf == NULL) || (buflen < NS_HFIXEDSZ) || query_length == NULL 
+            || datalen > datalen_16)
         return (-1);
+    *query_length = 0;
+    
     memset(buf, 0, NS_HFIXEDSZ);
     hp = (HEADER *) buf;
     hp->id = libsres_random();
@@ -183,16 +188,16 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
         /*
          * Initialize answer section
          */
-        if (ep - cp < 1 + NS_RRFIXEDSZ + datalen)
+        if (ep - cp < 1 + NS_RRFIXEDSZ + datalen_16)
             return (-1);
         *cp++ = '\0';           /* no domain name */
         RES_PUT16(type, cp);
         RES_PUT16(class, cp);
         RES_PUT32(0, cp);
-        RES_PUT16(datalen, cp);
-        if (datalen) {
-            memcpy(cp, data, datalen);
-            cp += datalen;
+        RES_PUT16(datalen_16, cp);
+        if (datalen_16) {
+            memcpy(cp, data, datalen_16);
+            cp += datalen_16;
         }
         hp->ancount = htons(1);
         break;
@@ -200,7 +205,10 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
     default:
         return (-1);
     }
-    return (cp - buf);
+    if (cp > buf)
+        *query_length = (cp - buf);
+
+    return 0;
 }
 
 #ifdef RES_USE_EDNS0
@@ -209,10 +217,11 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
  */
 
 int
-res_val_nopt(struct name_server *pref_ns, int n0,       /* current offset in buffer */
+res_val_nopt(struct name_server *pref_ns, 
              u_char * buf,      /* buffer to put query */
-             int buflen,        /* size of buffer */
-             int anslen)
+             size_t buflen,        /* size of buffer */
+             int edns0_size, 
+             size_t *query_length)
 {                               /* UDP answer buffer size */
     register HEADER *hp;
     register u_char *cp, *ep;
@@ -223,8 +232,11 @@ res_val_nopt(struct name_server *pref_ns, int n0,       /* current offset in buf
         printf(";; res_nopt()\n");
 #endif
 
+    if (query_length == NULL)
+        return -1;
+
     hp = (HEADER *) buf;
-    cp = buf + n0;
+    cp = buf + *query_length;
     ep = buf + buflen;
 
     if ((ep - cp) < 1 + NS_RRFIXEDSZ)
@@ -234,7 +246,7 @@ res_val_nopt(struct name_server *pref_ns, int n0,       /* current offset in buf
     *cp++ = 0;                  /* "." */
 
     RES_PUT16(ns_t_opt, cp);     /* TYPE */
-    RES_PUT16(anslen & 0xffff, cp);      /* CLASS = UDP payload size */
+    RES_PUT16(edns0_size & 0xffff, cp);      /* CLASS = UDP payload size */
     *cp++ = ns_r_noerror;       /* extended RCODE */
     *cp++ = 0;                  /* EDNS version */
 #ifdef DEBUG
@@ -246,6 +258,9 @@ res_val_nopt(struct name_server *pref_ns, int n0,       /* current offset in buf
     RES_PUT16(0, cp);            /* RDLEN */
     hp->arcount = htons(ntohs(hp->arcount) + 1);
 
-    return (cp - buf);
+    if (cp > buf)
+        *query_length = cp - buf;
+
+    return 0;
 }
 #endif

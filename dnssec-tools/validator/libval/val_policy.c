@@ -300,11 +300,6 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     ta_pol->publickey = NULL;
     ta_pol->ds = NULL;
 
-    /*
-     * XXX We may want to have another token that specifies if 
-     * XXX this is a DS or a DNSKEY
-     * XXX Assume public key for now
-     */
     pkstr = &ta_token[0];
     endptr = pkstr + strlen(ta_token);
     
@@ -334,7 +329,7 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
                
        /* 
         *  Treat as though we have a DNSKEY, even if neither 
-        *  DNSKEY nor DS is specified (backwards compatibility
+        *  DNSKEY nor DS is specified (backwards compatibility)
         */ 
         if (VAL_NO_ERROR !=
             (retval =
@@ -476,8 +471,6 @@ parse_zone_security_expectation(char **buf_ptr, char *end_ptr, policy_entry_t * 
 
     if (!strcmp(se_token, ZONE_SE_IGNORE_MSG))
         zone_status = ZONE_SE_IGNORE;
-    else if (!strcmp(se_token, ZONE_SE_TRUSTED_MSG))
-        zone_status = ZONE_SE_TRUSTED;
     else if (!strcmp(se_token, ZONE_SE_DO_VAL_MSG))
         zone_status = ZONE_SE_DO_VAL;
     else if (!strcmp(se_token, ZONE_SE_UNTRUSTED_MSG))
@@ -564,8 +557,8 @@ parse_dlv_trust_points(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry
     char            dlv_token[TOKEN_MAX];
     struct dlv_policy *dlv_pol;
     int             retval;
-    int             len;
-    u_int8_t        zone_n[NS_MAXCDNAME];
+    size_t        len;
+    u_char        zone_n[NS_MAXCDNAME];
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
         (pol_entry == NULL) || (line_number == NULL))
@@ -584,7 +577,7 @@ parse_dlv_trust_points(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry
         return VAL_OUT_OF_MEMORY;
     }
     len = wire_name_length(zone_n);
-    dlv_pol->trust_point = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+    dlv_pol->trust_point = (u_char *) MALLOC (len * sizeof(u_char));
     if (dlv_pol->trust_point == NULL) {
         FREE(dlv_pol);
         return VAL_OUT_OF_MEMORY;
@@ -600,7 +593,7 @@ int
 free_dlv_trust_points(policy_entry_t * pol_entry)
 {
     if (pol_entry && pol_entry->pol) {
-        u_int8_t *tp = ((struct dlv_policy *)(pol_entry->pol))->trust_point;
+        u_char *tp = ((struct dlv_policy *)(pol_entry->pol))->trust_point;
         if (tp)
             FREE(tp);
         FREE(pol_entry->pol);
@@ -820,9 +813,9 @@ parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number,
         return VAL_CONF_PARSE_ERROR;
     }
 
-    if (!strcmp(token, TRUST_LOCAL_GOPT_YES_STR))
+    if (!strcmp(token, TRUST_OOB_GOPT_YES_STR))
         g_opt->local_is_trusted = 1;
-    else if (!strcmp(token, TRUST_LOCAL_GOPT_NO_STR))
+    else if (!strcmp(token, TRUST_OOB_GOPT_NO_STR))
         g_opt->local_is_trusted = 0;
     else
         return VAL_CONF_PARSE_ERROR;
@@ -962,7 +955,7 @@ get_global_options(char **buf_ptr, char *end_ptr,
         }
 
         /* parse the option value based on the type */
-        if (!strcmp(token, GOPT_TRUST_LOCAL_STR)) {
+        if (!strcmp(token, GOPT_TRUST_OOB_STR)) {
             if (VAL_NO_ERROR != 
                     (retval = parse_local_answer_gopt(buf_ptr, end_ptr,
                                                       line_number, &endst, *g_opt))) {
@@ -1952,7 +1945,7 @@ read_res_config_file(val_context_t * ctx)
     struct name_server *ns_head = NULL;
     struct name_server *ns_tail = NULL;
     struct name_server *ns = NULL;
-    u_int8_t zone_n[NS_MAXCDNAME];
+    u_char zone_n[NS_MAXCDNAME];
     struct stat sb;
     char *buf_ptr, *end_ptr;
     char *buf = NULL;
@@ -2550,9 +2543,9 @@ parse_etc_hosts(const char *name)
 
 
 int 
-val_add_valpolicy(val_context_t *context, const char *keyword, 
-                  char *zone, char *value, long ttl, 
-                  val_policy_entry_t **pol)
+val_add_valpolicy(val_context_t *context, 
+                  void *policy_definition,
+                  val_policy_handle_t **pol)
 {
     int index;
     u_char zone_n[NS_MAXCDNAME];
@@ -2566,7 +2559,16 @@ val_add_valpolicy(val_context_t *context, const char *keyword,
     val_context_t *ctx = NULL;
     int retval;
 
-    if (keyword == NULL || zone == NULL || value == NULL || pol == NULL)
+    libval_policy_definition_t *libval_pol;
+
+    if (policy_definition == NULL || pol == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    libval_pol = (libval_policy_definition_t *) policy_definition;
+
+    if (libval_pol->keyword == NULL || 
+        libval_pol->zone == NULL || 
+        libval_pol->value == NULL)
         return VAL_BAD_ARGUMENT;
 
     if (context == NULL) {
@@ -2580,7 +2582,7 @@ val_add_valpolicy(val_context_t *context, const char *keyword,
     
     /* find the policy according to the keyword */
     for (index = 0; index < MAX_POL_TOKEN; index++) {
-        if (!strcmp(keyword, conf_elem_array[index].keyword)) {
+        if (!strcmp(libval_pol->keyword, conf_elem_array[index].keyword)) {
             break;
         }
     }
@@ -2588,18 +2590,18 @@ val_add_valpolicy(val_context_t *context, const char *keyword,
         return VAL_BAD_ARGUMENT;
     }
 
-    if (ns_name_pton(zone, zone_n, NS_MAXCDNAME) == -1) {
+    if (ns_name_pton(libval_pol->zone, zone_n, NS_MAXCDNAME) == -1) {
         return VAL_BAD_ARGUMENT;
     } 
 
-    if (ttl > 0) {
+    if (libval_pol->ttl > 0) {
         gettimeofday(&tv, NULL);
-        ttl_x = ttl + tv.tv_sec;
+        ttl_x = libval_pol->ttl + tv.tv_sec;
     } else
         ttl_x = -1;
         
-    buf_ptr = value;
-    end_ptr = value+strlen(value);
+    buf_ptr = libval_pol->value;
+    end_ptr = libval_pol->value+strlen(libval_pol->value);
 
     pol_entry = (policy_entry_t *) MALLOC (sizeof(policy_entry_t));
     if (pol_entry == NULL) {
@@ -2634,7 +2636,7 @@ val_add_valpolicy(val_context_t *context, const char *keyword,
         }
         UNLOCK_QC(q);    
     }
-    *pol = (val_policy_entry_t *) MALLOC (sizeof(val_policy_entry_t));
+    *pol = (val_policy_handle_t *) MALLOC (sizeof(val_policy_handle_t));
     if (*pol == NULL) {
         retval = VAL_OUT_OF_MEMORY;
         goto err;
@@ -2654,7 +2656,7 @@ err:
 }  
 
 int 
-val_remove_valpolicy(val_context_t *context, val_policy_entry_t *pol)
+val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
 {
     val_context_t *ctx = NULL;
     policy_entry_t *p, *prev;

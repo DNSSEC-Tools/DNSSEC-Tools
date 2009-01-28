@@ -46,10 +46,10 @@ val_log_set_debug_level(int level)
 
 
 char           *
-get_hex_string(const unsigned char *data, int datalen, char *buf,
-               int buflen)
+get_hex_string(const u_char *data, size_t datalen, char *buf,
+               size_t buflen)
 {
-    int             i;
+    size_t             i;
     char           *ptr = buf;
     char           *endptr = ptr + buflen;
 
@@ -65,6 +65,9 @@ get_hex_string(const unsigned char *data, int datalen, char *buf,
         return buf;
 
     for (i = 0; i < datalen; i++) {
+        if (ptr >= endptr) {
+            return "ERR:BadHash";
+        }
         snprintf(ptr, endptr - ptr, "%02x", data[i]);
         ptr += strlen(ptr);
     }
@@ -73,12 +76,12 @@ get_hex_string(const unsigned char *data, int datalen, char *buf,
 }
 
 static char    *
-get_rr_string(struct val_rr_rec *rr, char *buf, int buflen)
+get_rr_string(struct val_rr_rec *rr, char *buf, size_t buflen)
 {
     char           *ptr = buf;
     char           *endptr = ptr + buflen;
     while (rr) {
-        get_hex_string(rr->rr_rdata, rr->rr_rdata_length_h, ptr,
+        get_hex_string(rr->rr_rdata, rr->rr_rdata_length, ptr,
                        endptr - ptr);
         ptr += strlen(ptr);
         rr = rr->rr_next;
@@ -92,34 +95,22 @@ val_log_val_rrset_pfx(const val_context_t * ctx, int level,
                       const char *pfx, struct val_rrset_rec *val_rrset_rec)
 {
     char            buf1[2049], buf2[2049];
-    char            name_p[NS_MAXDNAME];
 
-    if (ns_name_ntop(val_rrset_rec->val_rrset_name_n, name_p, sizeof(name_p))
-        == -1)
-        snprintf(name_p, sizeof(name_p), "ERROR");
+    if (!val_rrset_rec)
+        return;
+
     val_log(ctx, level, "%srrs->val_rrset_name=%s rrs->val_rrset_type=%s "
             "rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d "
             "rrs->val_rrset_section=%s\nrrs->val_rrset_data=%s\n"
-            "rrs->val_rrset_sig=%s", pfx ? pfx : "", name_p,
-            p_type(val_rrset_rec->val_rrset_type_h),
-            p_class(val_rrset_rec->val_rrset_class_h),
-            val_rrset_rec->val_rrset_ttl_h,
+            "rrs->val_rrset_sig=%s", pfx ? pfx : "", 
+            val_rrset_rec->val_rrset_name,
+            p_type(val_rrset_rec->val_rrset_type),
+            p_class(val_rrset_rec->val_rrset_class),
+            val_rrset_rec->val_rrset_ttl,
             p_section(val_rrset_rec->val_rrset_section - 1, !ns_o_update),
             get_rr_string(val_rrset_rec->val_rrset_data, buf1, 2048),
             get_rr_string(val_rrset_rec->val_rrset_sig, buf2, 2048));
 }
-
-void
-val_log_rrset(const val_context_t * ctx, int level,
-              struct rrset_rec *rrset)
-{
-    while (rrset) {
-
-        val_log_val_rrset_pfx(ctx, level, NULL, &rrset->rrs);
-        rrset = rrset->rrs_next;
-    }
-}
-
 
 static const char *
 get_algorithm_string(u_int8_t algo)
@@ -207,7 +198,7 @@ val_log_dnskey_rdata(val_context_t * ctx, int level, const char *prefix,
 }
 
 const char    *
-val_get_ns_string(struct sockaddr *serv, char *dst, int size)
+val_get_ns_string(struct sockaddr *serv, char *dst, size_t size)
 {
     struct sockaddr_in *sin;
 #ifdef VAL_IPV6
@@ -235,19 +226,18 @@ val_get_ns_string(struct sockaddr *serv, char *dst, int size)
 
 void
 val_log_assertion_pfx(const val_context_t * ctx, int level,
-                      const char *prefix, const u_char * name_n,
+                      const char *prefix, const char * name_pr,
                       struct val_authentication_chain *next_as)
 {
-    char            name[NS_MAXDNAME];
     char            name_buf[INET6_ADDRSTRLEN + 1];
-    const char     *name_pr, *serv_pr;
+    const char     *serv_pr;
     int             tag = 0;
 
     if (next_as == NULL)
         return;
 
-    u_int16_t       class_h = next_as->val_ac_rrset->val_rrset_class_h;
-    u_int16_t       type_h = next_as->val_ac_rrset->val_rrset_type_h;
+    int       class_h = next_as->val_ac_rrset->val_rrset_class;
+    int       type_h = next_as->val_ac_rrset->val_rrset_type;
     struct val_rr_rec  *data = next_as->val_ac_rrset->val_rrset_data;
     struct sockaddr *serv = next_as->val_ac_rrset->val_rrset_server;
     val_astatus_t   status = next_as->val_ac_status;
@@ -255,10 +245,6 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     if (NULL == prefix)
         prefix = "";
 
-    if (ns_name_ntop(name_n, name, sizeof(name)) != -1)
-        name_pr = name;
-    else
-        name_pr = "ERR_NAME";
     if (serv)
         serv_pr =
             ((serv_pr =
@@ -275,8 +261,8 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
                  * Extract the key tag 
                  */
                 val_dnskey_rdata_t dnskey;
-                if (-1 == val_parse_dnskey_rdata(curkey->rr_rdata,
-                                       curkey->rr_rdata_length_h, &dnskey)) {
+                if (VAL_NO_ERROR != val_parse_dnskey_rdata(curkey->rr_rdata,
+                                       curkey->rr_rdata_length, &dnskey)) {
                     val_log(ctx, LOG_INFO, "val_log_assertion_pfx(): Cannot parse DNSKEY data");
                 } else {
                     tag = dnskey.key_tag;
@@ -314,29 +300,26 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
 
 void
 val_log_assertion(const val_context_t * ctx, int level,
-                  const u_char * name_n,
+                  const char * name,
                   struct val_authentication_chain *next_as)
 {
-    val_log_assertion_pfx(ctx, level, NULL, name_n, next_as);
+    val_log_assertion_pfx(ctx, level, NULL, name, next_as);
 }
 
 void
 val_log_authentication_chain(const val_context_t * ctx, int level,
-                             u_char * name_n, u_int16_t class_h,
-                             u_int16_t type_h,
+                             char * name_p, int class_h,
+                             int type_h,
                              struct val_result_chain *results)
 {
     struct val_result_chain *next_result;
-    char name_p[NS_MAXDNAME];
-    u_int16_t real_type_h;
-    u_int16_t real_class_h;
-    
-    if (results == NULL) { 
-        val_log(ctx, level, "Validation result for {%s, %d, %d}: NULL (Untrusted)",
-                name_p, class_h, type_h);
-        return;
-    }
+    int real_type_h;
+    int real_class_h;
 
+    if (results == NULL) { 
+        return;
+    } 
+    
     for (next_result = results; next_result;
          next_result = next_result->val_rc_next) {
         struct val_authentication_chain *next_as;
@@ -344,16 +327,9 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 
         /* Display the correct owner name, class,type for the record */
         if (next_result->val_rc_rrset) {
-            if (ns_name_ntop(next_result->val_rc_rrset->val_rrset_name_n, 
-                        name_p, sizeof(name_p)) == -1) {
-                strcpy(name_p, "Invalid name");
-            }
-            real_type_h = next_result->val_rc_rrset->val_rrset_type_h; 
-            real_class_h = next_result->val_rc_rrset->val_rrset_class_h; 
+            real_type_h = next_result->val_rc_rrset->val_rrset_type; 
+            real_class_h = next_result->val_rc_rrset->val_rrset_class; 
         } else {
-            if (ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
-                strcpy(name_p, "Invalid name");
-            }
             real_type_h = type_h;
             real_class_h = class_h;
         }
@@ -383,13 +359,12 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                         p_ac_status(next_as->val_ac_status),
                         next_as->val_ac_status);
             } else {
-                const u_char   *t_name_n;
-                if (next_as->val_ac_rrset->val_rrset_name_n == NULL)
-                    t_name_n = (const u_char *) "NULL_DATA";
-                else
-                    t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
+                const char   *t_name;
+                t_name = next_as->val_ac_rrset->val_rrset_name;
+                if (t_name == NULL)
+                    t_name = (const char *) "NULL_DATA";
 
-                val_log_assertion_pfx(ctx, level, "    ", t_name_n,
+                val_log_assertion_pfx(ctx, level, "    ", t_name,
                                       next_as);
                 //                val_log_val_rrset_pfx(ctx, level, "     ",
                 //                                  next_as->val_ac_rrset);
@@ -406,13 +381,12 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                             p_ac_status(next_as->val_ac_status),
                             next_as->val_ac_status);
                 } else {
-                    const u_char   *t_name_n;
-                    if (next_as->val_ac_rrset->val_rrset_name_n == NULL)
-                        t_name_n = (const u_char *) "NULL_DATA";
-                    else
-                        t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
+                    const char   *t_name;
+                    t_name = next_as->val_ac_rrset->val_rrset_name;
+                    if (t_name == NULL)
+                        t_name = (const char *) "NULL_DATA";
 
-                    val_log_assertion_pfx(ctx, level, "      ", t_name_n,
+                    val_log_assertion_pfx(ctx, level, "      ", t_name,
                                           next_as);
                 }
             }
@@ -455,14 +429,11 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_IGNORE_VALIDATION:
         return "VAL_AC_IGNORE_VALIDATION";
         break;
-    case VAL_AC_TRUSTED_ZONE:
-        return "VAL_AC_TRUSTED_ZONE";
-        break;
     case VAL_AC_UNTRUSTED_ZONE:
         return "VAL_AC_UNTRUSTED_ZONE";
         break;
-    case VAL_AC_PROVABLY_INSECURE:
-        return "VAL_AC_PROVABLY_INSECURE";
+    case VAL_AC_PINSECURE:
+        return "VAL_AC_PINSECURE";
         break;
     case VAL_AC_BARE_RRSIG:
         return "VAL_AC_BARE_RRSIG";
@@ -590,11 +561,11 @@ p_val_status(val_status_t err)
     case VAL_NONEXISTENT_TYPE_NOCHAIN:
         return "VAL_NONEXISTENT_TYPE_NOCHAIN";
         break;
-    case VAL_PROVABLY_INSECURE:
-        return "VAL_PROVABLY_INSECURE";
+    case VAL_PINSECURE:
+        return "VAL_PINSECURE";
         break;
-    case VAL_BAD_PROVABLY_INSECURE:
-        return "VAL_BAD_PROVABLY_INSECURE";
+    case VAL_PINSECURE_UNTRUSTED:
+        return "VAL_PINSECURE_UNTRUSTED";
         break;
     case VAL_BARE_RRSIG:
         return "VAL_BARE_RRSIG";
@@ -602,14 +573,11 @@ p_val_status(val_status_t err)
     case VAL_IGNORE_VALIDATION:
         return "VAL_IGNORE_VALIDATION";
         break;
-    case VAL_TRUSTED_ZONE:
-        return "VAL_TRUSTED_ZONE";
-        break;
     case VAL_UNTRUSTED_ZONE:
         return "VAL_UNTRUSTED_ZONE";
         break;
-    case VAL_LOCAL_ANSWER:
-        return "VAL_LOCAL_ANSWER";
+    case VAL_OOB_ANSWER:
+        return "VAL_OOB_ANSWER";
         break;
 
     case VAL_TRUSTED_ANSWER:

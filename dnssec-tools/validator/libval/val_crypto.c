@@ -43,28 +43,36 @@
  * Returns VAL_NO_ERROR on success, other values on failure 
  */
 static int
-dsasha1_parse_public_key(const unsigned char *buf, int buflen, DSA * dsa)
+dsasha1_parse_public_key(const u_char *buf, size_t buflen, DSA * dsa)
 {
     u_int8_t        T;
     int             index = 0;
     BIGNUM         *bn_p, *bn_q, *bn_g, *bn_y;
 
-    if (!dsa) {
+    if (!dsa || buflen == 0) {
         return VAL_BAD_ARGUMENT;
     }
 
     T = (u_int8_t) (buf[index]);
     index++;
-
+    
+    if (index+20 > buflen)
+        return VAL_BAD_ARGUMENT;
     bn_q = BN_bin2bn(buf + index, 20, NULL);
     index += 20;
 
+    if (index+64 + (T * 8) > buflen)
+        return VAL_BAD_ARGUMENT;
     bn_p = BN_bin2bn(buf + index, 64 + (T * 8), NULL);
     index += (64 + (T * 8));
 
+    if (index+64 + (T * 8) > buflen)
+        return VAL_BAD_ARGUMENT;
     bn_g = BN_bin2bn(buf + index, 64 + (T * 8), NULL);
     index += (64 + (T * 8));
 
+    if (index+64 + (T * 8) > buflen)
+        return VAL_BAD_ARGUMENT;
     bn_y = BN_bin2bn(buf + index, 64 + (T * 8), NULL);
     index += (64 + (T * 8));
 
@@ -78,16 +86,16 @@ dsasha1_parse_public_key(const unsigned char *buf, int buflen, DSA * dsa)
 
 void
 dsasha1_sigverify(val_context_t * ctx,
-                  const unsigned char *data,
-                  int data_len,
+                  const u_char *data,
+                  size_t data_len,
                   const val_dnskey_rdata_t * dnskey,
                   const val_rrsig_rdata_t * rrsig,
                   val_astatus_t * key_status, val_astatus_t * sig_status)
 {
     char            buf[1028];
-    int             buflen = 1024;
+    size_t          buflen = 1024;
     DSA            *dsa = NULL;
-    unsigned char   sha1_hash[SHA_DIGEST_LENGTH];
+    u_char   sha1_hash[SHA_DIGEST_LENGTH];
 
     val_log(ctx, LOG_DEBUG,
             "dsasha1_sigverify(): parsing the public key...");
@@ -109,7 +117,7 @@ dsasha1_sigverify(val_context_t * ctx,
     }
 
     bzero(sha1_hash, SHA_DIGEST_LENGTH);
-    SHA1(data, data_len, (unsigned char *) sha1_hash);
+    SHA1(data, data_len, sha1_hash);
     val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): SHA-1 hash = %s",
             get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
 
@@ -117,7 +125,7 @@ dsasha1_sigverify(val_context_t * ctx,
             "dsasha1_sigverify(): verifying DSA signature...");
 
     if (DSA_verify
-        (NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
+        (NID_sha1, (u_char *) sha1_hash, SHA_DIGEST_LENGTH,
          rrsig->signature, rrsig->signature_len, dsa)) {
         val_log(ctx, LOG_INFO, "dsasha1_sigverify(): returned SUCCESS");
         DSA_free(dsa);
@@ -134,7 +142,7 @@ dsasha1_sigverify(val_context_t * ctx,
  * Returns VAL_NO_ERROR on success, other values on failure 
  */
 static int
-rsamd5_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
+rsamd5_parse_public_key(const u_char *buf, size_t buflen, RSA * rsa)
 {
     int             index = 0;
     const u_char   *cp;
@@ -142,24 +150,24 @@ rsamd5_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
     BIGNUM         *bn_exp;
     BIGNUM         *bn_mod;
 
-    if (!rsa)
+    if (!rsa || buflen == 0)
         return VAL_BAD_ARGUMENT;
 
     cp = buf;
 
-#if 1
-    if ((u_int8_t) (buf[index]) == (u_int8_t) 0) {
+    if (buf[index] == 0) {
+
+        if (buflen < 3)
+            return VAL_BAD_ARGUMENT;
+
         index += 1;
         cp = (buf + index);
         VAL_GET16(exp_len, cp);
         index += 2;
     } else {
-#endif
-        exp_len += (u_int8_t) (buf[index]);
+        exp_len += buf[index];
         index += 1;
-#if 1
     }
-#endif
 
     if (exp_len > buflen - index) {
         return VAL_BAD_ARGUMENT;
@@ -171,6 +179,10 @@ rsamd5_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
     bn_exp = BN_bin2bn(buf + index, exp_len, NULL);
 
     index += exp_len;
+
+    if (buflen <= index) {
+        return VAL_BAD_ARGUMENT;
+    }
 
     /*
      * Extract the modulus 
@@ -192,12 +204,12 @@ rsamd5_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
  *   of the public key modulus)."
  */
 u_int16_t
-rsamd5_keytag(const unsigned char *pubkey, int pubkey_len)
+rsamd5_keytag(const u_char *pubkey, size_t pubkey_len)
 {
     RSA            *rsa = NULL;
     BIGNUM         *modulus;
     u_int16_t       keytag = 0x0000;
-    unsigned char  *modulus_bin;
+    u_char  *modulus_bin;
     int             modulus_len;
 
     if ((rsa = RSA_new()) == NULL) {
@@ -212,7 +224,7 @@ rsamd5_keytag(const unsigned char *pubkey, int pubkey_len)
     modulus = rsa->n;
     modulus_len = BN_num_bytes(modulus);
     modulus_bin =
-        (unsigned char *) MALLOC(modulus_len * sizeof(unsigned char));
+        (u_char *) MALLOC(modulus_len * sizeof(u_char));
 
     BN_bn2bin(modulus, modulus_bin);
 
@@ -226,16 +238,16 @@ rsamd5_keytag(const unsigned char *pubkey, int pubkey_len)
 
 void
 rsamd5_sigverify(val_context_t * ctx,
-                 const unsigned char *data,
-                 int data_len,
+                 const u_char *data,
+                 size_t data_len,
                  const val_dnskey_rdata_t * dnskey,
                  const val_rrsig_rdata_t * rrsig,
                  val_astatus_t * key_status, val_astatus_t * sig_status)
 {
     char            buf[1028];
-    int             buflen = 1024;
+    size_t          buflen = 1024;
     RSA            *rsa = NULL;
-    unsigned char   md5_hash[MD5_DIGEST_LENGTH];
+    u_char   md5_hash[MD5_DIGEST_LENGTH];
 
     val_log(ctx, LOG_DEBUG,
             "rsamd5_sigverify(): parsing the public key...");
@@ -256,14 +268,14 @@ rsamd5_sigverify(val_context_t * ctx,
     }
 
     bzero(md5_hash, MD5_DIGEST_LENGTH);
-    MD5(data, data_len, (unsigned char *) md5_hash);
+    MD5(data, data_len, (u_char *) md5_hash);
     val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): MD5 hash = %s",
             get_hex_string(md5_hash, MD5_DIGEST_LENGTH, buf, buflen));
 
     val_log(ctx, LOG_DEBUG,
             "rsamd5_sigverify(): verifying RSA signature...");
 
-    if (RSA_verify(NID_md5, (unsigned char *) md5_hash, MD5_DIGEST_LENGTH,
+    if (RSA_verify(NID_md5, (u_char *) md5_hash, MD5_DIGEST_LENGTH,
                    rrsig->signature, rrsig->signature_len, rsa)) {
         val_log(ctx, LOG_INFO, "rsamd5_sigverify(): returned SUCCESS");
         RSA_free(rsa);
@@ -280,7 +292,7 @@ rsamd5_sigverify(val_context_t * ctx,
  * Returns VAL_NO_ERROR on success, other values on failure 
  */
 static int
-rsasha1_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
+rsasha1_parse_public_key(const u_char *buf, size_t buflen, RSA * rsa)
 {
     int             index = 0;
     const u_char   *cp;
@@ -288,26 +300,36 @@ rsasha1_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
     BIGNUM         *bn_exp;
     BIGNUM         *bn_mod;
 
-    if (!rsa)
+    if (!rsa || buflen == 0)
         return VAL_BAD_ARGUMENT;
 
     cp = buf;
 
-    if ((u_int8_t) (buf[index]) == (u_int8_t) 0) {
+    if (buf[index] == 0) {
+        if (buflen < 3)
+            return VAL_BAD_ARGUMENT;
         index += 1;
         cp = (buf + index);
         VAL_GET16(exp_len, cp);
         index += 2;
     } else {
-        exp_len += (u_int8_t) (buf[index]);
+        exp_len += buf[index];
         index += 1;
     }
 
+    if (index + exp_len > buflen) {
+        return VAL_BAD_ARGUMENT;
+    }
+    
     /*
      * Extract the exponent 
      */
     bn_exp = BN_bin2bn(buf + index, exp_len, NULL);
     index += exp_len;
+
+    if (buflen <= index) {
+        return VAL_BAD_ARGUMENT;
+    }
 
     /*
      * Extract the modulus 
@@ -322,8 +344,8 @@ rsasha1_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
 
 void
 rsasha1_sigverify(val_context_t * ctx,
-                  const unsigned char *data,
-                  int data_len,
+                  const u_char *data,
+                  size_t data_len,
                   const val_dnskey_rdata_t * dnskey,
                   const val_rrsig_rdata_t * rrsig,
                   val_astatus_t * key_status, val_astatus_t * sig_status)
@@ -331,7 +353,7 @@ rsasha1_sigverify(val_context_t * ctx,
     char            buf[1028];
     int             buflen = 1024;
     RSA            *rsa = NULL;
-    unsigned char   sha1_hash[SHA_DIGEST_LENGTH];
+    u_char   sha1_hash[SHA_DIGEST_LENGTH];
 
     val_log(ctx, LOG_DEBUG,
             "rsasha1_sigverify(): parsing the public key...");
@@ -343,7 +365,7 @@ rsasha1_sigverify(val_context_t * ctx,
     };
 
     if (rsasha1_parse_public_key
-        (dnskey->public_key, dnskey->public_key_len,
+        (dnskey->public_key, (size_t)dnskey->public_key_len,
          rsa) != VAL_NO_ERROR) {
         val_log(ctx, LOG_INFO,
                 "rsasha1_sigverify(): Error in parsing public key.");
@@ -353,7 +375,7 @@ rsasha1_sigverify(val_context_t * ctx,
     }
 
     bzero(sha1_hash, SHA_DIGEST_LENGTH);
-    SHA1(data, data_len, (unsigned char *) sha1_hash);
+    SHA1(data, data_len, sha1_hash);
     val_log(ctx, LOG_DEBUG, "rsasha1_sigverify(): SHA-1 hash = %s",
             get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
 
@@ -361,7 +383,7 @@ rsasha1_sigverify(val_context_t * ctx,
             "rsasha1_sigverify(): verifying RSA signature...");
 
     if (RSA_verify
-        (NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
+        (NID_sha1, sha1_hash, SHA_DIGEST_LENGTH,
          rrsig->signature, rrsig->signature_len, rsa)) {
         val_log(ctx, LOG_INFO, "rsasha1_sigverify(): returned SUCCESS");
         RSA_free(rsa);
@@ -375,14 +397,14 @@ rsasha1_sigverify(val_context_t * ctx,
 }
 
 int
-ds_sha_hash_is_equal(u_int8_t * name_n,
-                     u_int8_t * rrdata,
-                     u_int16_t rrdatalen, 
-                     u_int8_t * ds_hash,
-                     u_int32_t ds_hash_len)
+ds_sha_hash_is_equal(u_char * name_n,
+                     u_char * rrdata,
+                     size_t rrdatalen, 
+                     u_char * ds_hash,
+                     size_t ds_hash_len)
 {
-    u_int8_t        ds_digest[SHA_DIGEST_LENGTH];
-    int             namelen;
+    u_char        ds_digest[SHA_DIGEST_LENGTH];
+    size_t        namelen;
     SHA_CTX         c;
 
     if (rrdata == NULL || ds_hash_len != SHA_DIGEST_LENGTH)
@@ -405,15 +427,15 @@ ds_sha_hash_is_equal(u_int8_t * name_n,
 
 #ifdef HAVE_SHA_256
 int
-ds_sha256_hash_is_equal(u_int8_t * name_n,
-                        u_int8_t * rrdata,
-                        u_int16_t rrdatalen, 
-                        u_int8_t * ds_hash,
-                        u_int32_t ds_hash_len)
+ds_sha256_hash_is_equal(u_char * name_n,
+                        u_char * rrdata,
+                        size_t rrdatalen, 
+                        u_char * ds_hash,
+                        size_t ds_hash_len)
 {
-    u_int8_t        ds_digest[SHA256_DIGEST_LENGTH];
-    int             namelen;
-    SHA256_CTX         c;
+    u_char        ds_digest[SHA256_DIGEST_LENGTH];
+    size_t        namelen;
+    SHA256_CTX    c;
 
     if (rrdata == NULL || ds_hash_len != SHA256_DIGEST_LENGTH)
         return 0;
@@ -435,18 +457,18 @@ ds_sha256_hash_is_equal(u_int8_t * name_n,
 #endif
 
 #ifdef LIBVAL_NSEC3
-u_int8_t       *
-nsec3_sha_hash_compute(u_int8_t * qc_name_n, u_int8_t * salt,
-                       u_int8_t saltlen, u_int16_t iter, u_int8_t ** hash,
-                       u_int8_t * hashlen)
+u_char       *
+nsec3_sha_hash_compute(u_char * qc_name_n, u_char * salt,
+                       size_t saltlen, size_t iter, u_char ** hash,
+                       size_t * hashlen)
 {
     /*
      * Assume that the caller has already performed all sanity checks 
      */
     SHA_CTX         c;
-    int             i;
+    size_t          i;
 
-    *hash = (u_int8_t *) MALLOC(SHA_DIGEST_LENGTH * sizeof(u_int8_t));
+    *hash = (u_char *) MALLOC(SHA_DIGEST_LENGTH * sizeof(u_char));
     if (*hash == NULL)
         return NULL;
     *hashlen = SHA_DIGEST_LENGTH;
@@ -475,8 +497,8 @@ nsec3_sha_hash_compute(u_int8_t * qc_name_n, u_int8_t * salt,
 #endif
 
 char           *
-get_base64_string(unsigned char *message, int message_len, char *buf,
-                  int bufsize)
+get_base64_string(u_char *message, size_t message_len, char *buf,
+                  size_t bufsize)
 {
     BIO            *b64 = BIO_new(BIO_f_base64());
     BIO            *mem = BIO_new_mem_buf(message, message_len);
@@ -490,7 +512,7 @@ get_base64_string(unsigned char *message, int message_len, char *buf,
 }
 
 int
-decode_base64_key(char *keyptr, u_char * public_key, int keysize)
+decode_base64_key(char *keyptr, u_char * public_key, size_t keysize)
 {
     BIO            *b64;
     BIO            *mem;

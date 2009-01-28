@@ -43,24 +43,21 @@ val_free_answer_chain(struct val_answer_chain *answers)
 int
 val_get_rrset(val_context_t *context,
               const char *name,
-              u_int16_t class,
-              u_int16_t type,
+              int class,
+              int type,
               u_int32_t flags,
               struct val_answer_chain **answers) 
 {
-    u_int8_t name_n[NS_MAXCDNAME];
     struct val_result_chain *results = NULL;
     struct val_result_chain *res = NULL;
     struct val_answer_chain *ans = NULL;
     struct val_answer_chain *last_ans = NULL;
     int retval = VAL_NO_ERROR;
-    int validated = 1;
-    int trusted = 1;
-    u_int8_t *n = NULL;
+    char *n = NULL;
     int len;
-    char *p;
-    u_int8_t *name_alias = NULL;
+    char *name_alias = NULL;
     val_context_t *ctx = NULL;
+    int trusted, validated;
     
     if (context == NULL) {
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
@@ -77,17 +74,13 @@ val_get_rrset(val_context_t *context,
     *answers = NULL;
     last_ans = NULL;
    
-    if ((retval = ns_name_pton(name, name_n, sizeof(name_n))) != -1) {
 
-        if ((retval = val_resolve_and_check(ctx, name_n, class, type, 
+    if ((retval = val_resolve_and_check(ctx, name, class, type, 
                                        flags | VAL_QUERY_NO_AC_DETAIL,
                                        &results)) != VAL_NO_ERROR) {
-            val_log(ctx, LOG_INFO,
-                    "get_addrinfo_from_dns(): val_resolve_and_check failed - %s",
-                    p_val_err(retval));
-        }
-    } else {
-        val_log(ctx, LOG_INFO, "val_get_rrset(): Cannot parse name %s", name);
+        val_log(ctx, LOG_INFO,
+                "get_addrinfo_from_dns(): val_resolve_and_check failed - %s",
+                p_val_err(retval));
     }
 
     if (results == NULL) {
@@ -112,10 +105,12 @@ val_get_rrset(val_context_t *context,
         return VAL_NO_ERROR;
     }
 
+    trusted = 1;
+    validated = 1;
+
     /* Construct the val_answer_chain linked list for returned results */
     for (res = results; res; res=res->val_rc_next) {
 
-        /* keep track of the "merged" status*/ 
         if (!validated || !val_isvalidated(res->val_rc_status))
             validated = 0;
         if (!trusted || !val_istrusted(res->val_rc_status))
@@ -145,57 +140,64 @@ val_get_rrset(val_context_t *context,
         }
         last_ans = ans;
         
-        /* Set merged validation status value */
-        if (validated)
-           ans->val_ans_status = VAL_VALIDATED_ANSWER;
-        else if (trusted)
-            ans->val_ans_status = VAL_TRUSTED_ANSWER;
-        else
-            ans->val_ans_status = VAL_UNTRUSTED_ANSWER;        
-
-        if (name_alias) {
-            n = name_alias; /* the last alias target */ 
-        } else {
-            n = name_n; /* the name being queried for */
-        }
-        ans->val_ans_class = class; 
-        ans->val_ans_type = type; 
-        ans->val_ans = NULL;
-
         if (res->val_rc_rrset) {
             /* use values from the rrset */
-            n = res->val_rc_rrset->val_rrset_name_n;
-            ans->val_ans_class = res->val_rc_rrset->val_rrset_class_h; 
-            ans->val_ans_type = res->val_rc_rrset->val_rrset_type_h; 
+            n = res->val_rc_rrset->val_rrset_name;
+            ans->val_ans_class = res->val_rc_rrset->val_rrset_class; 
+            ans->val_ans_type = res->val_rc_rrset->val_rrset_type; 
             ans->val_ans = (struct rr_rec *) (res->val_rc_rrset->val_rrset_data);
             res->val_rc_rrset->val_rrset_data = NULL;
-        } else if (val_does_not_exist(res->val_rc_status)) {
-            /* if we have a p.n.e. use the exact value modulus the trusted/validated status */
-            if (validated) {
-                ans->val_ans_status = res->val_rc_status;
-            } else if (trusted) {
-                if (res->val_rc_status == VAL_NONEXISTENT_NAME ||
-                    res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
-                   ans->val_ans_status = VAL_NONEXISTENT_NAME_NOCHAIN; 
-                } else {
-                   ans->val_ans_status = VAL_NONEXISTENT_TYPE_NOCHAIN; 
-                }
+        } else {
+            if (name_alias) {
+                n = name_alias; /* the last alias target */ 
+            } else {
+                n = name; /* the name being queried for */
             }
+            ans->val_ans_class = class; 
+            ans->val_ans_type = type; 
+            ans->val_ans = NULL;
         } 
 
         /* Convert the name to a string */
         ans->val_ans_name = NULL;    
-        len = wire_name_length(n);
-        p = (char *) MALLOC (len * sizeof (char));
-        if (p == NULL) {
+        len = strlen(n) + 1;
+        ans->val_ans_name = (char *) MALLOC (len * sizeof (char));
+        if (ans->val_ans_name == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
-        if (ns_name_ntop(n, p, len) < 0) {
-            memset(p, 0, len);
-        } 
-        ans->val_ans_name = p;    
+        strcpy(ans->val_ans_name, n);
 
+        /* 
+         * if the current answer was validated or 
+         * if the current answer was trusted use the exact status
+         */
+        if (validated || 
+            (trusted && !val_isvalidated(res->val_rc_status))) {
+           ans->val_ans_status = res->val_rc_status;
+        } else if (trusted) {
+        /*
+         * If the combined answer was trusted but the current answer
+         * was validated (implied), use the lower bounds of trust 
+         */
+            if (val_does_not_exist(res->val_rc_status)) {
+                if (res->val_rc_status == VAL_NONEXISTENT_NAME)
+                   ans->val_ans_status = VAL_NONEXISTENT_NAME_NOCHAIN; 
+                else 
+                   ans->val_ans_status = VAL_NONEXISTENT_TYPE_NOCHAIN; 
+            } else {
+                ans->val_ans_status = VAL_TRUSTED_ANSWER;
+            }
+        } else {
+            ans->val_ans_status = VAL_UNTRUSTED_ANSWER;        
+        }
+
+        /* 
+         * reset the below values so that we are able to handle different 
+         * status values for different answers
+         */
+        validated = 1;
+        trusted = 1;
     } 
 
     val_free_result_chain(results);

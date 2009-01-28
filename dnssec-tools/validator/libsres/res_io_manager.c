@@ -84,10 +84,10 @@ struct expected_arrival {
     struct name_server *ea_ns;
     int             ea_which_address;
     int             ea_using_stream;
-    u_int8_t       *ea_signed;
-    int             ea_signed_length;
-    u_int8_t       *ea_response;
-    int             ea_response_length;
+    u_char         *ea_signed;
+    size_t          ea_signed_length;
+    u_char         *ea_response;
+    size_t          ea_response_length;
     int             ea_remaining_attempts;
     struct timeval  ea_next_try;
     struct timeval  ea_cancel_time;
@@ -170,7 +170,7 @@ res_timeout(struct name_server *ns)
 }
 
 void            res_print_ea(struct expected_arrival *ea);
-int             res_quecmp(u_int8_t * query, u_int8_t * response);
+int             res_quecmp(u_char * query, u_char * response);
 
 void
 res_sq_free_expected_arrival(struct expected_arrival **ea)
@@ -201,7 +201,7 @@ set_alarm(struct timeval *tv, long delay)
 }
 
 struct expected_arrival *
-res_ea_init(u_int8_t * signed_query, int signed_length,
+res_ea_init(u_char * signed_query, size_t signed_length,
             struct name_server *ns, long delay)
 {
     struct expected_arrival *temp;
@@ -237,8 +237,8 @@ res_io_send(struct expected_arrival *shipit)
      * socket and whether or not the length of the query is sent first.
      */
     int             socket_type;
-    int             socket_size;
-    int             bytes_sent;
+    size_t          socket_size;
+    size_t          bytes_sent;
 
     if (shipit == NULL)
         return SR_IO_INTERNAL_ERROR;
@@ -291,8 +291,8 @@ res_io_send(struct expected_arrival *shipit)
      * cause the source to be cancelled.
      */
     if (shipit->ea_using_stream) {
-        u_int16_t       length_n =
-            htons((u_int16_t) (shipit->ea_signed_length));
+        u_int16_t length_n =
+            htons(shipit->ea_signed_length);
 
         if ((bytes_sent =
              send(shipit->ea_socket, &length_n, sizeof(u_int16_t), 0))
@@ -522,8 +522,8 @@ res_io_check(int transaction_id, struct timeval *next_evt)
 }
 
 int
-res_io_deliver(int *transaction_id, u_int8_t * signed_query,
-               int signed_length, struct name_server *ns, long delay)
+res_io_deliver(int *transaction_id, u_char * signed_query,
+               size_t signed_length, struct name_server *ns, long delay)
 {
     int             try_index;
     struct expected_arrival *temp;
@@ -682,8 +682,8 @@ wait_for_res_data(fd_set * pending_desc, struct timeval *closest_event)
 }
 
 int
-res_io_get_a_response(struct expected_arrival *ea_list, u_int8_t ** answer,
-                      u_int * answer_length,
+res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
+                      size_t * answer_length,
                       struct name_server **respondent)
 {
     int             retval;
@@ -717,7 +717,8 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_int8_t ** answer,
 int
 res_io_read_tcp(struct expected_arrival *arrival)
 {
-    u_int16_t       len_h, len_n;
+    u_int16_t    len_n;
+    size_t       len_h;
 
     /*
      * Read length 
@@ -734,12 +735,14 @@ res_io_read_tcp(struct expected_arrival *arrival)
     /*
      * read() message 
      */
-    arrival->ea_response = (u_int8_t *) MALLOC(len_h);
+    arrival->ea_response = (u_char *) MALLOC(len_h * sizeof(u_char));
+    if (arrival->ea_response == NULL) {
+        close(arrival->ea_socket);
+        arrival->ea_socket = -1;
+        return SR_IO_MEMORY_ERROR;
+    }
 
-    /*
-     * Check for out of memory ! 
-     */
-    arrival->ea_response_length = (int) len_h;
+    arrival->ea_response_length = len_h;
 
     if (complete_read(arrival->ea_socket, arrival->ea_response, len_h) !=
         len_h) {
@@ -761,7 +764,7 @@ res_io_read_tcp(struct expected_arrival *arrival)
 int
 res_io_read_udp(struct expected_arrival *arrival)
 {
-    int             bytes_waiting;
+    size_t bytes_waiting;
     struct sockaddr_storage from;
     socklen_t       from_length = sizeof(from);
     int             ret_val, arr_family;
@@ -777,7 +780,7 @@ res_io_read_udp(struct expected_arrival *arrival)
         return SR_IO_SOCKET_ERROR;
     }
 
-    arrival->ea_response = (u_int8_t *) MALLOC(bytes_waiting);
+    arrival->ea_response = (u_char *) MALLOC(bytes_waiting * sizeof(u_char));
     if (NULL == arrival->ea_response)
         return SR_IO_MEMORY_ERROR;
 
@@ -786,7 +789,7 @@ res_io_read_udp(struct expected_arrival *arrival)
                  0, (struct sockaddr*)&from, &from_length);
 
     arr_family = arrival->ea_ns->ns_address[arrival->ea_which_address]->ss_family;
-    if ((ret_val == -1) || (from.ss_family != arr_family))
+    if ((ret_val < 0) || (from.ss_family != arr_family))
         goto error;
     
     if (PF_INET == from.ss_family) {
@@ -814,6 +817,7 @@ res_io_read_udp(struct expected_arrival *arrival)
     else
         goto error; /* unknown family */
 
+    /* ret_val is greater than zero here */
     arrival->ea_response_length = ret_val;
     return SR_IO_UNSET;
 
@@ -944,8 +948,9 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 int
 res_io_accept(int transaction_id, fd_set *pending_desc, 
               struct timeval *closest_event, 
-              u_int8_t ** answer,
-              u_int * answer_length, struct name_server **respondent)
+              u_char ** answer,
+              size_t * answer_length, 
+              struct name_server **respondent)
 {
     int             ret_val;
     struct timeval  next_event;

@@ -35,13 +35,13 @@
  */
 static void
 get_clock_skew(val_context_t *ctx,
-               u_int8_t *name_n,
+               u_char *name_n,
                int *skew,
                u_int32_t *ttl_x)
 {
     policy_entry_t *cs_pol, *cs_cur;
-    u_int8_t       *p;
-    int             name_len;
+    u_char       *p;
+    size_t       name_len;
 
     if (ctx == NULL || name_n == NULL || skew == NULL || ttl_x == NULL) {
         val_log(ctx, LOG_DEBUG, "get_clock_skew(): Cannot check for clock skew policy, bad args"); 
@@ -64,7 +64,7 @@ get_clock_skew(val_context_t *ctx,
          */
         for (; cs_cur; cs_cur = cs_cur->next) {
             int             root_zone = 0;
-            if (!namecmp(cs_cur->zone_n, (const u_int8_t *) ""))
+            if (!namecmp(cs_cur->zone_n, (const u_char *) ""))
                 root_zone = 1;
             else {
                 /*
@@ -98,8 +98,8 @@ get_clock_skew(val_context_t *ctx,
 static void
 val_sigverify(val_context_t * ctx,
               int is_a_wildcard,
-              const unsigned char *data,
-              int data_len,
+              const u_char *data,
+              size_t data_len,
               const val_dnskey_rdata_t * dnskey,
               const val_rrsig_rdata_t * rrsig,
               val_astatus_t * dnskey_status, val_astatus_t * sig_status,
@@ -281,24 +281,24 @@ val_sigverify(val_context_t * ctx,
  */
 static int
 predict_sigbuflength(struct rrset_rec *rr_set,
-                     size_t * field_length, int *signer_length)
+                     size_t * field_length, size_t *signer_length)
 {
     struct val_rr_rec  *rr;
     int             owner_length;
 
     /** Input has already been NULL-checked **/
-    owner_length = wire_name_length(rr_set->rrs.val_rrset_name_n);
+    owner_length = wire_name_length(rr_set->rrs_name_n);
 
     *signer_length =
-        wire_name_length(&rr_set->rrs.val_rrset_sig->rr_rdata[SIGNBY]);
+        wire_name_length(&rr_set->rrs_sig->rr_rdata[SIGNBY]);
 
     if (*signer_length == 0)
         return VAL_BAD_ARGUMENT;
 
     *field_length = SIGNBY + (*signer_length);
 
-    for (rr = rr_set->rrs.val_rrset_data; rr; rr = rr->rr_next)
-        *field_length += owner_length + ENVELOPE + rr->rr_rdata_length_h;
+    for (rr = rr_set->rrs_data; rr; rr = rr->rr_next)
+        *field_length += owner_length + ENVELOPE + rr->rr_rdata_length;
 
     return VAL_NO_ERROR;
 }
@@ -307,34 +307,34 @@ predict_sigbuflength(struct rrset_rec *rr_set,
  * Create the buffer over which the signature is to be verified
  */
 static int
-make_sigfield(u_int8_t ** field,
+make_sigfield(u_char ** field,
               size_t * field_length,
               struct rrset_rec *rr_set,
               struct val_rr_rec *rr_sig, int is_a_wildcard)
 {
     struct val_rr_rec  *curr_rr;
-    int             index;
-    int             signer_length;
-    int             owner_length;
+    size_t          index;
+    size_t          signer_length;
+    size_t          owner_length;
     u_int16_t       type_n;
     u_int16_t       class_n;
     u_int32_t       ttl_n;
     u_int16_t       rdata_length_n;
-    u_int8_t        lowered_owner_n[NS_MAXCDNAME];
+    u_char          lowered_owner_n[NS_MAXCDNAME];
     size_t          l_index;
     int             retval;
 
     if ((field == NULL) || (field_length == NULL) || (rr_set == NULL) ||
-        (rr_sig == NULL) || (rr_set->rrs.val_rrset_name_n == NULL) ||
-        (rr_set->rrs.val_rrset_sig == NULL) || 
-        (rr_set->rrs.val_rrset_sig->rr_rdata == NULL))
+        (rr_sig == NULL) || (rr_set->rrs_name_n == NULL) ||
+        (rr_set->rrs_sig == NULL) || 
+        (rr_set->rrs_sig->rr_rdata == NULL))
         return VAL_BAD_ARGUMENT;
 
     if ((retval = predict_sigbuflength(rr_set, field_length, &signer_length)) !=
         VAL_NO_ERROR)
         return retval;
 
-    *field = (u_int8_t *) MALLOC(*field_length);
+    *field = (u_char *) MALLOC(*field_length * sizeof(u_char));
 
     if (*field == NULL)
         return VAL_OUT_OF_MEMORY;
@@ -344,24 +344,24 @@ make_sigfield(u_int8_t ** field,
      */
 
     memcpy(&ttl_n, &rr_sig->rr_rdata[TTL], sizeof(u_int32_t));
-    rr_set->rrs.val_rrset_ttl_h = ntohl(ttl_n);
+    rr_set->rrs_ttl_h = ntohl(ttl_n);
 
     /*
      * While we're at it, we'll gather other common info, specifically
      * network ordered numbers (type, class) and name length.
      */
 
-    owner_length = wire_name_length(rr_set->rrs.val_rrset_name_n);
+    owner_length = wire_name_length(rr_set->rrs_name_n);
 
     if (owner_length == 0)
         goto err;
 
-    memcpy(lowered_owner_n, rr_set->rrs.val_rrset_name_n, owner_length);
+    memcpy(lowered_owner_n, rr_set->rrs_name_n, owner_length);
     l_index = 0;
     lower_name(lowered_owner_n, &l_index);
 
-    type_n = htons(rr_set->rrs.val_rrset_type_h);
-    class_n = htons(rr_set->rrs.val_rrset_class_h);
+    type_n = htons(rr_set->rrs_type_h);
+    class_n = htons(rr_set->rrs_class_h);
 
     /*
      * Copy in the SIG RDATA (up to the signature 
@@ -377,7 +377,7 @@ make_sigfield(u_int8_t ** field,
      * For each record of data, copy in the envelope & the lower cased rdata 
      */
 
-    for (curr_rr = rr_set->rrs.val_rrset_data; curr_rr;
+    for (curr_rr = rr_set->rrs_data; curr_rr;
          curr_rr = curr_rr->rr_next) {
         if (curr_rr->rr_rdata == NULL)
             goto err;
@@ -390,16 +390,16 @@ make_sigfield(u_int8_t ** field,
             /*
              * Construct the original name 
              */
-            u_char          wcard_n[NS_MAXCDNAME];
-            u_int8_t       *np = lowered_owner_n;
-            int             i;
-            int             outer_len;
+            u_char wcard_n[NS_MAXCDNAME];
+            u_char *np = lowered_owner_n;
+            int    i;
+            size_t outer_len;
 
             for (i = 0; i < is_a_wildcard; i++)
                 np += np[0] + 1;
             outer_len = wire_name_length(np);
 
-            wcard_n[0] = (u_int8_t) 1;
+            wcard_n[0] = (u_char) 1;
             wcard_n[1] = '*';
             if ((outer_len + 2) > sizeof(wcard_n))
                 goto err;
@@ -430,15 +430,15 @@ make_sigfield(u_int8_t ** field,
          * Now the RR-specific info, the length and the data 
          */
 
-        rdata_length_n = htons(curr_rr->rr_rdata_length_h);
-        if ((index + sizeof(u_int16_t) + curr_rr->rr_rdata_length_h)
+        rdata_length_n = htons(curr_rr->rr_rdata_length);
+        if ((index + sizeof(u_int16_t) + curr_rr->rr_rdata_length)
             > *field_length)
             goto err;
         memcpy(&(*field)[index], &rdata_length_n, sizeof(u_int16_t));
         index += sizeof(u_int16_t);
         memcpy(&(*field)[index], curr_rr->rr_rdata,
-               curr_rr->rr_rdata_length_h);
-        index += curr_rr->rr_rdata_length_h;
+               curr_rr->rr_rdata_length);
+        index += curr_rr->rr_rdata_length;
     }
 
     *field_length = index;
@@ -456,11 +456,11 @@ make_sigfield(u_int8_t ** field,
  * the rrsig
  */
 static int
-identify_key_from_sig(struct val_rr_rec *sig, u_int8_t ** name_n,
+identify_key_from_sig(struct val_rr_rec *sig, u_char ** name_n,
                       u_int16_t * footprint_n)
 {
     if ((sig == NULL) || (sig->rr_rdata == NULL) || (name_n == NULL) ||
-        (footprint_n == NULL) || (sig->rr_rdata_length_h < SIGNBY)) {
+        (footprint_n == NULL) || (sig->rr_rdata_length < SIGNBY)) {
         if (name_n != NULL)
             *name_n = NULL;
         if (footprint_n != NULL)
@@ -479,7 +479,7 @@ identify_key_from_sig(struct val_rr_rec *sig, u_int8_t ** name_n,
  */
 static void
 do_verify(val_context_t * ctx,
-          u_int8_t *zone_n,
+          u_char *zone_n,
           val_astatus_t * dnskey_status,
           val_astatus_t * sig_status,
           struct rrset_rec *the_set,
@@ -490,7 +490,7 @@ do_verify(val_context_t * ctx,
      * Use the crypto routines to verify the signature
      */
 
-    u_int8_t       *ver_field;
+    u_char       *ver_field;
     size_t          ver_length;
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
@@ -501,8 +501,8 @@ do_verify(val_context_t * ctx,
      * Wildcard expansions for DNSKEYs and DSs are not permitted
      */
     if (is_a_wildcard &&
-        ((the_set->rrs.val_rrset_type_h == ns_t_ds) ||
-         (the_set->rrs.val_rrset_type_h == ns_t_dnskey))) {
+        ((the_set->rrs_type_h == ns_t_ds) ||
+         (the_set->rrs_type_h == ns_t_dnskey))) {
         val_log(ctx, LOG_INFO, "do_verify(): Invalid DNSKEY or DS record - cannot be wildcard expanded");
         *dnskey_status = VAL_AC_INVALID_KEY;
         return;
@@ -524,9 +524,9 @@ do_verify(val_context_t * ctx,
      * Find the signature - no memory is malloc'ed for this operation  
      */
 
-    if (-1 == val_parse_rrsig_rdata(the_sig->rr_rdata, 
-                                     the_sig->rr_rdata_length_h,
-                                     &rrsig_rdata)) {
+    if (VAL_NO_ERROR != val_parse_rrsig_rdata(the_sig->rr_rdata, 
+                                   the_sig->rr_rdata_length,
+                                   &rrsig_rdata)) {
         if (ver_field)
             FREE(ver_field);
         val_log(ctx, LOG_INFO, 
@@ -539,7 +539,7 @@ do_verify(val_context_t * ctx,
 
     get_clock_skew(ctx, zone_n, &clock_skew, &ttl_x);
     /* the state is valid for only as long as the policy validity period */
-    SET_MIN_TTL(the_set->rrs.val_rrset_ttl_x, ttl_x);
+    SET_MIN_TTL(the_set->rrs_ttl_x, ttl_x);
 
     /*
      * Perform the verification 
@@ -561,8 +561,8 @@ do_verify(val_context_t * ctx,
  */
 int
 ds_hash_is_equal(val_context_t *ctx,
-                 u_int8_t ds_hashtype, u_int8_t * ds_hash,
-                 u_int32_t ds_hash_len, u_int8_t * name_n,
+                 u_int8_t ds_hashtype, u_char * ds_hash,
+                 size_t ds_hash_len, u_char * name_n,
                  struct val_rr_rec *dnskey, val_astatus_t * ds_status)
 {
     if ((dnskey == NULL) || (ds_hash == NULL) || (name_n == NULL)) {
@@ -575,7 +575,7 @@ ds_hash_is_equal(val_context_t *ctx,
      */
     if (ds_hashtype == ALG_DS_HASH_SHA1) {
         return ds_sha_hash_is_equal(name_n, dnskey->rr_rdata,
-                                    dnskey->rr_rdata_length_h, 
+                                    (size_t)dnskey->rr_rdata_length, 
                                     ds_hash, ds_hash_len);
 
     } 
@@ -583,7 +583,7 @@ ds_hash_is_equal(val_context_t *ctx,
 #ifdef HAVE_SHA_256
     else if (ds_hashtype == ALG_DS_HASH_SHA256) {
         return ds_sha256_hash_is_equal(name_n, dnskey->rr_rdata,
-                                       dnskey->rr_rdata_length_h, 
+                                       (size_t)dnskey->rr_rdata_length, 
                                        ds_hash, ds_hash_len);
     } 
 #endif
@@ -599,13 +599,13 @@ static int
 check_label_count(struct rrset_rec *the_set,
                   struct val_rr_rec *the_sig, int *is_a_wildcard)
 {
-    u_int8_t        owner_labels;;
-    u_int8_t        sig_labels;
+    size_t        owner_labels;;
+    size_t        sig_labels;
 
     if ((the_set == NULL) || (the_sig == NULL) || (is_a_wildcard == NULL))
         return 0;
 
-    owner_labels = wire_name_labels(the_set->rrs.val_rrset_name_n);
+    owner_labels = wire_name_labels(the_set->rrs_name_n);
     sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
 
     if (sig_labels > owner_labels)
@@ -658,7 +658,7 @@ verify_next_assertion(val_context_t * ctx,
 {
     struct rrset_rec *the_set;
     struct val_rr_rec  *the_sig;
-    u_int8_t       *signby_name_n;
+    u_char       *signby_name_n;
     u_int16_t       signby_footprint_n;
     val_dnskey_rdata_t dnskey;
     int             is_a_wildcard;
@@ -666,43 +666,43 @@ verify_next_assertion(val_context_t * ctx,
     struct val_rr_rec  *keyrr;
     u_int16_t       tag_h;
 
-    if ((as == NULL) || (as->_as.ac_data == NULL) || (the_trust == NULL)) {
+    if ((as == NULL) || (as->val_ac_rrset.ac_data == NULL) || (the_trust == NULL)) {
         val_log(ctx, LOG_INFO, "verify_next_assertion(): Cannot verify assertion - no data");
         return;
     }
 
-    the_set = as->_as.ac_data;
+    the_set = as->val_ac_rrset.ac_data;
     dnskey.public_key = NULL;
 
-    if (the_set->rrs.val_rrset_sig == NULL) {
+    if (the_set->rrs_sig == NULL) {
         val_log(ctx, LOG_INFO, "verify_next_assertion(): RRSIG is missing");
         as->val_ac_status = VAL_AC_RRSIG_MISSING;
         return;
     }
 
-    if (the_set->rrs.val_rrset_type_h != ns_t_dnskey) {
+    if (the_set->rrs_type_h != ns_t_dnskey) {
         /*
          * trust path contains the key 
          */
-        if (the_trust->_as.ac_data == NULL) {
+        if (the_trust->val_ac_rrset.ac_data == NULL) {
             val_log(ctx, LOG_INFO, "verify_next_assertion(): Key is empty");
             as->val_ac_status = VAL_AC_DNSKEY_MISSING;
             return;
         }
-        keyrr = the_trust->_as.ac_data->rrs.val_rrset_data;
+        keyrr = the_trust->val_ac_rrset.ac_data->rrs_data;
     } else {
         /*
          * data itself contains the key 
          */
-        if (the_set->rrs.val_rrset_data == NULL) {
+        if (the_set->rrs_data == NULL) {
             val_log(ctx, LOG_INFO, "verify_next_assertion(): Key is empty");
             as->val_ac_status = VAL_AC_DNSKEY_MISSING;
             return;
         }
-        keyrr = the_set->rrs.val_rrset_data;
+        keyrr = the_set->rrs_data;
     }
 
-    for (the_sig = the_set->rrs.val_rrset_sig;
+    for (the_sig = the_set->rrs_sig;
          the_sig; the_sig = the_sig->rr_next) {
 
         /*
@@ -728,8 +728,8 @@ verify_next_assertion(val_context_t * ctx,
 
         tag_h = ntohs(signby_footprint_n);
         for (nextrr = keyrr; nextrr; nextrr = nextrr->rr_next) {
-            if (-1 == val_parse_dnskey_rdata(nextrr->rr_rdata,
-                                             nextrr->rr_rdata_length_h,
+            if (VAL_NO_ERROR != val_parse_dnskey_rdata(nextrr->rr_rdata,
+                                             nextrr->rr_rdata_length,
                                              &dnskey)) {
                 val_log(ctx, LOG_INFO, "verify_next_assertion(): Cannot parse DNSKEY data");
                 SET_STATUS(as->val_ac_status, nextrr, VAL_AC_INVALID_KEY);
@@ -799,7 +799,7 @@ verify_next_assertion(val_context_t * ctx,
                     val_log(ctx, LOG_INFO, "verify_next_assertion(): verification traces back to trust anchor");
             }
             
-        } else if (the_set->rrs.val_rrset_type_h == ns_t_dnskey && 
+        } else if (the_set->rrs_type_h == ns_t_dnskey && 
                      (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
                      the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW ||
                      the_sig->rr_status == VAL_AC_ALGORITHM_NOT_SUPPORTED)) {
@@ -817,17 +817,18 @@ verify_next_assertion(val_context_t * ctx,
              * follow the trust path 
              */
             struct val_rr_rec  *dsrec =
-                the_trust->_as.ac_data->rrs.val_rrset_data;
+                the_trust->val_ac_rrset.ac_data->rrs_data;
             while (dsrec) {
                 val_ds_rdata_t  ds;
-                if (-1 == val_parse_ds_rdata(dsrec->rr_rdata,
-                                   dsrec->rr_rdata_length_h, &ds)) {
+                if (VAL_NO_ERROR != 
+                        val_parse_ds_rdata(dsrec->rr_rdata,
+                                   dsrec->rr_rdata_length, &ds)) {
                     val_log(ctx, LOG_INFO, "verify_next_assertion(): Unknown DS algorithm");
                     SET_STATUS(as->val_ac_status, dsrec, VAL_AC_UNKNOWN_ALGORITHM_LINK);
                 } else {
 
                     if (DNSKEY_MATCHES_DS(ctx, &dnskey, &ds, 
-                            the_set->rrs.val_rrset_name_n, nextrr, 
+                            the_set->rrs_name_n, nextrr, 
                             &dsrec->rr_status)) {
 
                         if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||

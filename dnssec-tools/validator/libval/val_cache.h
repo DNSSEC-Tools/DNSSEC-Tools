@@ -13,12 +13,12 @@ int             stow_answers(struct rrset_rec *new_info, struct val_query_chain 
 int             stow_negative_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q);
 int             get_cached_rrset(struct val_query_chain *matched_q, struct domain_info **response);
 int             free_validator_cache(void);
-int             store_ns_for_zone(u_int8_t * zonecut_n,
+int             store_ns_for_zone(u_char * zonecut_n,
                                   struct name_server *resp_server);
 int             get_nslist_from_cache(val_context_t *ctx,
                                       struct queries_for_query *matched_qfq,
                                       struct queries_for_query **queries,
                                       struct name_server **ref_ns_list,
-                                      u_int8_t **zonecut_n);
+                                      u_char **zonecut_n);
 
 #endif

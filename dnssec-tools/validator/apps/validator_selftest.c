@@ -6,7 +6,7 @@
 // # a suite for nsec3
 // nsec3:
 // "Test Case 2" www.n0.n1u.ws.nsec3.org ns_c_in ns_t_a
-//     VAL_PROVABLY_INSECURE;
+//     VAL_PINSECURE;
 // "Test Case 3" www.n3.n1s.ws.nsec3.org ns_c_in ns_t_a,
 //     VAL_SUCCESS;
 */
@@ -35,8 +35,8 @@
 typedef struct testcase_st {
     char               *desc;
     char               *qn;
-    u_int16_t           qc;
-    u_int16_t           qt;
+    int                 qc;
+    int                 qt;
     int                 qr[MAX_TEST_RESULTS];
     struct testcase_st *next;
 } testcase;
@@ -86,10 +86,10 @@ selftest_cleanup(void)
  *
  * returns dns class, or 0 on error.
  */
-static u_int16_t
+static int
 vtc_parse_class(const char *dns_class)
 {
-    u_int16_t rtn;
+    int rtn;
     int       rc;
     
     if (NULL == dns_class)
@@ -103,7 +103,7 @@ vtc_parse_class(const char *dns_class)
         if ((rc < 0) || (rc >= 0xffff))
             rtn = 0;
         else
-            rtn = (u_int16_t)rc;
+            rtn = rc;
         return rtn;
     }
 
@@ -130,10 +130,10 @@ vtc_parse_class(const char *dns_class)
  *
  * returns dns type, or 0 on error.
  */
-static u_int16_t
+static int
 vtc_parse_type(const char *dns_class)
 {
-    u_int16_t rtn;
+    int rtn;
     int       rc;
     
     if (NULL == dns_class)
@@ -147,7 +147,7 @@ vtc_parse_type(const char *dns_class)
         if ((rc < 0) || (rc >= 0xffff))
             rtn = 0;
         else
-            rtn = (u_int16_t)rc;
+            rtn = rc;
         return rtn;
     }
 
@@ -186,13 +186,12 @@ vtc_parse_result(const char *result)
         {"NONEXISTENT_TYPE", VAL_NONEXISTENT_TYPE},
         {"NONEXISTENT_NAME_NOCHAIN", VAL_NONEXISTENT_NAME_NOCHAIN},
         {"NONEXISTENT_TYPE_NOCHAIN", VAL_NONEXISTENT_TYPE_NOCHAIN},
-        {"PROVABLY_INSECURE", VAL_PROVABLY_INSECURE},
-        {"BAD_PROVABLY_INSECURE", VAL_BAD_PROVABLY_INSECURE},
+        {"PINSECURE", VAL_PINSECURE},
+        {"PINSECURE_UNTRUSTED", VAL_PINSECURE_UNTRUSTED},
         {"BARE_RRSIG", VAL_BARE_RRSIG},
         {"IGNORE_VALIDATION", VAL_IGNORE_VALIDATION},
-        {"TRUSTED_ZONE", VAL_TRUSTED_ZONE},
         {"UNTRUSTED_ZONE", VAL_UNTRUSTED_ZONE},
-        {"LOCAL_ANSWER", VAL_LOCAL_ANSWER},
+        {"OOB_ANSWER", VAL_OOB_ANSWER},
         {"TRUSTED_ANSWER", VAL_TRUSTED_ANSWER},
         {"VALIDATED_ANSWER", VAL_VALIDATED_ANSWER},
         {"UNTRUSTED_ANSWER", VAL_UNTRUSTED_ANSWER},
@@ -463,7 +462,6 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
                int doprint)
 {
     int             rc, failed = 0, run_cnt = 0, i, tc_count;
-    u_char          name_n[NS_MAXCDNAME];
     struct val_response resp;
     testcase        *curr_test;
 
@@ -498,14 +496,8 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
 
         ++run_cnt;
         fprintf(stderr, "%d: ", ++i);
-        if (ns_name_pton(curr_test->qn, name_n, NS_MAXCDNAME) == -1) {
-            fprintf(stderr, "Cannot convert %s to wire format\n",
-                    curr_test->qn);
-            ++failed;
-            continue;
-        }
         rc = sendquery(context, curr_test->desc,
-                       name_n, curr_test->qc,
+                       curr_test->qn, curr_test->qc,
                        curr_test->qt, flags, curr_test->qr, 0, &resp);
         if (doprint) {
             fprintf(stderr, "%s: ****RESPONSE**** \n", curr_test->desc);

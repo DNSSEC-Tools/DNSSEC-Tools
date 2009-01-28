@@ -33,14 +33,17 @@
 #endif
 
 int
-res_tsig_sign(u_int8_t * query,
-              int query_length,
+res_tsig_sign(u_char * query,
+              size_t query_length,
               struct name_server *ns,
-              u_int8_t ** signed_query, int *signed_length)
+              u_char ** signed_query, 
+              size_t *signed_length)
 {
     if (query && query_length) {
         if (!(ns->ns_security_options & ZONE_USE_TSIG)) {
-            *signed_query = (u_int8_t *) MALLOC(query_length);
+            *signed_query = (u_char *) MALLOC(query_length * sizeof(u_char));
+            if (*signed_query == NULL) 
+                return SR_TS_FAIL;
             memcpy(*signed_query, query, query_length);
             *signed_length = query_length;
             return SR_TS_OK;
@@ -52,7 +55,7 @@ res_tsig_sign(u_int8_t * query,
 
 int
 res_tsig_verifies(struct name_server *respondent,
-                  u_int8_t * answer, int answer_length)
+                  u_char * answer, size_t answer_length)
 {
     if (!(respondent->ns_security_options & ZONE_USE_TSIG))
         return SR_TS_OK;

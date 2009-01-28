@@ -45,13 +45,13 @@
 #define ENVELOPE   10
 #define EMSG_MAX   2048
 
-static          u_int16_t
-wire_name_length(const u_int8_t * field)
+static          size_t
+wire_name_length(const u_char * field)
 {
     /*
      * Calculates the number of bytes in a DNS wire format name 
      */
-    u_short         j;
+    size_t         j;
     if (field == NULL)
         return 0;
 
@@ -68,21 +68,21 @@ wire_name_length(const u_int8_t * field)
 }
 
 
-static int
-skip_questions(const u_int8_t * buf)
+static size_t
+skip_questions(const u_char * buf)
 {
     return 12 + wire_name_length(&buf[12]) + 4;
 }
 
 void
-dump_response(const u_int8_t * ans, int resplen)
+dump_response(const u_char * ans, size_t resplen)
 {
     /*
      * Prints the "raw" response from DNS 
      */
-    int             i, j, k;
+    size_t             i, j, k;
 
-    printf("Message length is %d\n", resplen);
+    printf("Message length is %d\n", (int)resplen);
 
     for (i = 0; i < 12; i++)
         printf("%02x ", (u_char) ans[i]);
@@ -110,19 +110,19 @@ dump_response(const u_int8_t * ans, int resplen)
 
 
 u_int16_t
-retrieve_type(const u_int8_t * rr)
+retrieve_type(const u_char * rr)
 {
     u_int16_t       type_n;
-    int             name_length = wire_name_length(rr);
+    size_t          name_length = wire_name_length(rr);
 
     memcpy(&type_n, &rr[name_length], sizeof(u_int16_t));
     return ntohs(type_n);
 }
 
 int
-res_quecmp(u_int8_t * query, u_int8_t * response)
+res_quecmp(u_char * query, u_char * response)
 {
-    int             length;
+    size_t length;
 
     if (query == NULL || response == NULL)
         return 1;
@@ -136,15 +136,15 @@ res_quecmp(u_int8_t * query, u_int8_t * response)
 }
 
 int
-right_sized(u_int8_t * response, u_int32_t response_length)
+right_sized(u_char * response, size_t response_length)
 {
     HEADER         *header = (HEADER *) response;
-    int             index = skip_questions(response);
-    int             records =
+    size_t         index = skip_questions(response);
+    size_t         records =
         ntohs(header->ancount) + ntohs(header->nscount)
         + ntohs(header->arcount);
-    int             i;
-    u_int16_t       rdata_len_n;
+    size_t  i;
+    u_int16_t  rdata_len_n;
 
     if (index > response_length)
         return TRUE;
@@ -166,8 +166,8 @@ right_sized(u_int8_t * response, u_int32_t response_length)
 }
 
 int
-theres_something_wrong_with_header(u_int8_t * response,
-                                   u_int32_t response_length)
+theres_something_wrong_with_header(u_char * response,
+                                   size_t response_length)
 {
     HEADER         *header = (HEADER *) response;
 
@@ -202,8 +202,8 @@ theres_something_wrong_with_header(u_int8_t * response,
 
         /** if (ntohs(header->nscount) > 1) */
         {
-            int             i;
-            int             auth_index = skip_questions(response);
+            size_t          i;
+            size_t          auth_index = skip_questions(response);
             u_int16_t       type_h;
             u_int16_t       rdata_len_n;
 
@@ -367,17 +367,17 @@ query_send(const char *name,
            int edns0_size,
            int *trans_id)
 {
-    u_int8_t        query[12 + NS_MAXDNAME + 4];
-    int             query_limit = 12 + NS_MAXDNAME + 4;
-    int             query_length;
+    u_char          query[12 + NS_MAXDNAME + 4];
+    size_t          query_limit = 12 + NS_MAXDNAME + 4;
+    size_t          query_length = 0;
     int             ret_val;
 
-    u_int8_t       *signed_query;
-    int             signed_length;
+    u_char         *signed_query;
+    size_t          signed_length;
 
     struct name_server *ns_list = NULL;
     struct name_server *ns;
-    long            delay = 0;
+    long   delay = 0;
 
     *trans_id = -1;
 
@@ -401,18 +401,20 @@ query_send(const char *name,
         /*
          * Form the query with res_val_nmkquery_n 
          */
-        query_length =
+        ret_val =
             res_val_nmkquery(ns, ns_o_query, name, class_h, type_h, NULL,
-                             0, NULL, query, query_limit);
+                             0, NULL, query, query_limit, &query_length);
+        if (ret_val==  -1)
+            return SR_MKQUERY_INTERNAL_ERROR;
 
         if (ns->ns_options & RES_USE_DNSSEC) {
-            query_length =
-                res_val_nopt(ns, query_length, query, query_limit,
-                             edns0_size);
+            ret_val =
+                res_val_nopt(ns, query, query_limit,
+                             edns0_size, &query_length);
             /** Set the CD flag */
             ((HEADER *) query)->cd = 1;
         }
-        if (query_length == -1)
+        if (ret_val == -1)
             return SR_MKQUERY_INTERNAL_ERROR;
         // ((HEADER *)query)->rd = 0;
 
@@ -450,7 +452,7 @@ response_recv(int *trans_id,
               fd_set *pending_desc,
               struct timeval *closest_event,
               struct name_server **respondent,
-              u_int8_t ** answer, u_int * answer_length)
+              u_char ** answer, size_t * answer_length)
 {
     int             ret_val;
 
@@ -507,7 +509,7 @@ get(const char *name,
     struct name_server *nslist,
     int edns0_size,
     struct name_server **server,
-    u_int8_t ** response, u_int * response_length)
+    u_char ** response, size_t * response_length)
 {
     int             ret_val;
     int             trans_id;

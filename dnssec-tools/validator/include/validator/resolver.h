@@ -144,7 +144,7 @@
 #define SR_REFUSED                14    /*RCODE set to REFUSED */
 
 struct name_server {
-    u_int8_t        ns_name_n[NS_MAXCDNAME];
+    u_char          ns_name_n[NS_MAXCDNAME];
     void           *ns_tsig;
     u_int32_t       ns_security_options;
     u_int32_t       ns_status;
@@ -178,7 +178,7 @@ int             response_recv(int *trans_id,
                               fd_set *pending_desc,
                               struct timeval *closest_event,
                               struct name_server **respondent,
-                              u_int8_t ** answer, u_int * answer_length);
+                              u_char ** answer, size_t * answer_length);
 void            wait_for_res_data(fd_set * pending_desc, 
                                   struct timeval *closest_event);
 int             get(const char *name_n,
@@ -187,8 +187,8 @@ int             get(const char *name_n,
                     struct name_server *nslist,
                     int edns0_size,
                     struct name_server **server,
-                    u_int8_t ** response, u_int * response_length);
-void            print_response(u_int8_t * ans, int resplen);
+                    u_char ** response, size_t * response_length);
+void            print_response(u_char * ans, size_t resplen);
 int             clone_ns(struct name_server **cloned_ns,
                          struct name_server *ns);
 int             clone_ns_list(struct name_server **ns_list,

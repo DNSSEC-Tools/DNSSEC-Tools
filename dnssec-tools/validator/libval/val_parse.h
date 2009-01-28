@@ -17,43 +17,43 @@
 /*
  * Parse a domain name 
  */
-int             val_parse_dname(const unsigned char *buf, int buflen,
-                                int offset, char *dname);
+int             val_parse_dname(const u_char *buf, size_t buflen,
+                                size_t offset, char *dname, size_t *namelen);
 
 /*
  * Parse the rdata portion of a DNSKEY resource record 
  */
-int             val_parse_dnskey_rdata(const unsigned char *buf,
-                                       int buflen,
+int             val_parse_dnskey_rdata(const u_char *buf,
+                                       size_t buflen,
                                        val_dnskey_rdata_t * rdata);
 /*
  * Parse the dnskey from the string. The string contains the flags, 
  * protocol, algorithm and the base64 key delimited by spaces.
  */
-int             val_parse_dnskey_string(char *keystr, int keystrlen,
+int             val_parse_dnskey_string(char *keystr, size_t keystrlen,
                                         val_dnskey_rdata_t **
                                         dnskey_rdata);
 /*
  * Parse the ds from the string. 
  */
-int             val_parse_ds_string(char *dsstr, int dsstrlen,
+int             val_parse_ds_string(char *dsstr, size_t dsstrlen,
                                     val_ds_rdata_t ** ds_rdata);
 
 /*
  * Parse the rdata portion of an RRSIG resource record 
  */
-int             val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
+int             val_parse_rrsig_rdata(const u_char *buf, size_t buflen,
                                       val_rrsig_rdata_t * rdata);
 
 /*
  * Parse the rdata portion of an DS resource record 
  */
-int             val_parse_ds_rdata(const unsigned char *buf, int buflen,
+int             val_parse_ds_rdata(const u_char *buf, size_t buflen,
                                    val_ds_rdata_t * rdata);
 
 #ifdef LIBVAL_NSEC3
-val_nsec3_rdata_t *val_parse_nsec3_rdata(u_int8_t * rr_rdata,
-                                         u_int16_t rdatalen,
+val_nsec3_rdata_t *val_parse_nsec3_rdata(u_char * rr_rdata,
+                                         size_t rdatalen,
                                          val_nsec3_rdata_t * nd);
 #endif
 

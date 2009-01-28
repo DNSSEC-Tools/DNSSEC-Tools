@@ -69,19 +69,18 @@
  */
 
 #define VAL_AC_IGNORE_VALIDATION    (VAL_AC_DONT_GO_FURTHER+0)
-#define VAL_AC_TRUSTED_ZONE         (VAL_AC_DONT_GO_FURTHER+1)
-#define VAL_AC_UNTRUSTED_ZONE       (VAL_AC_DONT_GO_FURTHER+2)
-#define VAL_AC_PROVABLY_INSECURE    (VAL_AC_DONT_GO_FURTHER+3)
-#define VAL_AC_BARE_RRSIG           (VAL_AC_DONT_GO_FURTHER+4) 
-#define VAL_AC_NO_TRUST_ANCHOR      (VAL_AC_DONT_GO_FURTHER+5)
-#define VAL_AC_TRUST                (VAL_AC_DONT_GO_FURTHER+6) 
+#define VAL_AC_UNTRUSTED_ZONE       (VAL_AC_DONT_GO_FURTHER+1)
+#define VAL_AC_PINSECURE            (VAL_AC_DONT_GO_FURTHER+2)
+#define VAL_AC_BARE_RRSIG           (VAL_AC_DONT_GO_FURTHER+3) 
+#define VAL_AC_NO_TRUST_ANCHOR      (VAL_AC_DONT_GO_FURTHER+4)
+#define VAL_AC_TRUST                (VAL_AC_DONT_GO_FURTHER+5) 
 #define VAL_AC_LAST_STATE           VAL_AC_TRUST
 
 
 /*
  * Cannot do anything further, but should check proof of non existence 
  */
-#define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE     /* 13 */
+#define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE     /* 12 */
 #define VAL_AC_RRSIG_MISSING (VAL_AC_ERROR_BASE+1)
 #define VAL_AC_DNSKEY_MISSING (VAL_AC_ERROR_BASE+2)
 #define VAL_AC_DS_MISSING (VAL_AC_ERROR_BASE+3)
@@ -91,7 +90,7 @@
 /*
  * Cannot do anything further and should not check proof of non existence 
  */
-#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 16 */
+#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 15 */
 #define VAL_AC_DATA_MISSING (VAL_AC_BAD_BASE+1)
 #define VAL_AC_DNS_ERROR (VAL_AC_BAD_BASE+2)
 #define VAL_AC_LAST_BAD VAL_AC_DNS_ERROR 
@@ -101,7 +100,7 @@
  * DNSSEC Error, but can prove the chain-of-trust above this 
  */
 
-#define VAL_AC_FAIL_BASE VAL_AC_LAST_BAD        /* 18 */
+#define VAL_AC_FAIL_BASE VAL_AC_LAST_BAD        /* 17 */
 #define VAL_AC_NOT_VERIFIED (VAL_AC_FAIL_BASE+1) 
 
 /* -- only related to signature */
@@ -121,7 +120,7 @@
 /* -- related to both signature and key */
 #define VAL_AC_ALGORITHM_NOT_SUPPORTED (VAL_AC_FAIL_BASE+12) 
 
-#define VAL_AC_LAST_FAILURE (VAL_AC_ALGORITHM_NOT_SUPPORTED)       /* 30 */
+#define VAL_AC_LAST_FAILURE (VAL_AC_ALGORITHM_NOT_SUPPORTED)       /* 29 */
 
 
 
@@ -163,7 +162,7 @@
 
 /* 
  * This is a transient state. It will settle either at 
- * VAL_(BAD_)PROVABLY_INSECURE, if we find the offending
+ * VAL_PINSECURE*, if we find the offending
  * link in the authentication chain to be that for an unknown
  * algorithm in the DS, or at VAL_BOGUS.
  */
@@ -179,23 +178,22 @@
 #define VAL_NONEXISTENT_TYPE            ((5) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_NONEXISTENT_NAME_NOCHAIN    ((6)  | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_NONEXISTENT_TYPE_NOCHAIN    ((7) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_PROVABLY_INSECURE           ((8) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_BAD_PROVABLY_INSECURE       ((9) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_PINSECURE                   ((8) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_PINSECURE_UNTRUSTED         ((9) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_BARE_RRSIG                  ((10) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_IGNORE_VALIDATION           ((11) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_TRUSTED_ZONE                ((12) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_UNTRUSTED_ZONE              ((13) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_LOCAL_ANSWER                ((14) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_UNTRUSTED_ZONE              ((12) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_OOB_ANSWER                  ((13) | VAL_FLAG_CHAIN_COMPLETE)
 
-#define VAL_TRUSTED_ANSWER              ((15) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_VALIDATED_ANSWER            ((16) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_UNTRUSTED_ANSWER            ((17) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_TRUSTED_ANSWER              ((14) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_VALIDATED_ANSWER            ((15) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_UNTRUSTED_ANSWER            ((16) | VAL_FLAG_CHAIN_COMPLETE)
 #ifdef LIBVAL_NSEC3
 /* 
  * This is a transient state -- it will settle to one of VAL_NONEXISTENT_NAME_NOCHAIN
  * or VAL_NONEXISTENT_TYPE_NOCHAIN
  */
-#define VAL_NONEXISTENT_NAME_OPTOUT     ((18) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_NONEXISTENT_NAME_OPTOUT     ((17) | VAL_FLAG_CHAIN_COMPLETE)
 #endif
 
 

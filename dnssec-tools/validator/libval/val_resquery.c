@@ -88,13 +88,13 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
         int             i;
         struct sockaddr_storage **new_addr = NULL;
 
-        if ((addr_rr->rr_rdata_length_h != 4)
+        if ((addr_rr->rr_rdata_length != 4)
 #ifdef VAL_IPV6
-            && addr_rr->rr_rdata_length_h != sizeof(struct in6_addr)
+            && addr_rr->rr_rdata_length != sizeof(struct in6_addr)
 #endif
             ) {
             val_log(NULL, LOG_DEBUG, "extract_glue_from_rdata(): Skipping address with bad len=%d.",
-                    addr_rr->rr_rdata_length_h);
+                    addr_rr->rr_rdata_length);
             addr_rr = addr_rr->rr_next;
             continue;
         }
@@ -113,7 +113,7 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
             FREE((*ns)->ns_address);
         (*ns)->ns_address = new_addr;
 
-        if (addr_rr->rr_rdata_length_h == 4) {
+        if (addr_rr->rr_rdata_length == 4) {
             sock_in = (struct sockaddr_in *)
                 (*ns)->ns_address[(*ns)->ns_number_of_addresses];
 
@@ -177,8 +177,10 @@ merge_glue_in_referral(val_context_t *context,
     prev_ns = NULL;
     while(pending_ns) {
 
-        ns_name_ntop(pending_ns->ns_name_n, name_p,
-                     sizeof(name_p));
+        if (ns_name_ntop(pending_ns->ns_name_n, name_p,
+                     sizeof(name_p)) < 0) {
+            strncpy(name_p, "unknown/error", sizeof(name_p)-1); 
+        }
         
         /*
          * Identify the query in the query chain 
@@ -214,17 +216,17 @@ merge_glue_in_referral(val_context_t *context,
             }
             
             /* This could be a cname or dname alias; search for the A record */
-            for (as=glueptr->qc_ans; as; as=as->_as.val_ac_rrset_next) {
-                if (as->_as.ac_data && 
-                    (as->_as.ac_data->rrs.val_rrset_type_h == ns_t_a ||
-                     as->_as.ac_data->rrs.val_rrset_type_h == ns_t_aaaa))
+            for (as=glueptr->qc_ans; as; as=as->val_ac_rrset.val_ac_rrset_next) {
+                if (as->val_ac_rrset.ac_data && 
+                    (as->val_ac_rrset.ac_data->rrs_type_h == ns_t_a ||
+                     as->val_ac_rrset.ac_data->rrs_type_h == ns_t_aaaa))
                     break;
             }
        
             if (!as || 
                 glueptr->qc_state != Q_ANSWERED ||
                 VAL_NO_ERROR != (retval = 
-                    extract_glue_from_rdata(as->_as.ac_data->rrs.val_rrset_data, 
+                    extract_glue_from_rdata(as->val_ac_rrset.ac_data->rrs_data, 
                                             &cur_ns))) { 
 
                 val_log(context, LOG_DEBUG, 
@@ -418,7 +420,7 @@ err:
  */ 
 int
 res_zi_unverified_ns_list(struct name_server **ns_list,
-                          u_int8_t * zone_name,
+                          u_char * zone_name,
                           struct rrset_rec *unchecked_zone_info,
                           struct name_server **pending_glue)
 {
@@ -445,11 +447,11 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
      */
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL) {
-        if (unchecked_set->rrs.val_rrset_type_h == ns_t_ns &&
-            (namecmp(zone_name, unchecked_set->rrs.val_rrset_name_n) == 0))
+        if (unchecked_set->rrs_type_h == ns_t_ns &&
+            (namecmp(zone_name, unchecked_set->rrs_name_n) == 0))
         {
             if ((*ns_list == NULL) || (trailer == NULL)) {
-                ns_rr = unchecked_set->rrs.val_rrset_data;
+                ns_rr = unchecked_set->rrs_data;
                 while (ns_rr) {
                     /*
                      * Create the structure for the name server 
@@ -524,8 +526,8 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
 
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL) {
-        if (unchecked_set->rrs.val_rrset_type_h == ns_t_a ||
-            unchecked_set->rrs.val_rrset_type_h == ns_t_aaaa) {
+        if (unchecked_set->rrs_type_h == ns_t_a ||
+            unchecked_set->rrs_type_h == ns_t_aaaa) {
             /*
              * If the owner name matches the name in an *ns_list entry...
              */
@@ -533,7 +535,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
             ns = *ns_list;
             while (ns) {
                 if (namecmp
-                    (unchecked_set->rrs.val_rrset_name_n,
+                    (unchecked_set->rrs_name_n,
                      ns->ns_name_n) == 0) {
                     struct name_server *old_ns = ns;
                     /*
@@ -541,8 +543,8 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                      */
                     if (VAL_NO_ERROR !=
                         (retval =
-                         extract_glue_from_rdata(unchecked_set->rrs.
-                                                 val_rrset_data, &ns)))
+                         extract_glue_from_rdata(unchecked_set->
+                                                 rrs_data, &ns)))
                         return retval;
                     if (old_ns != ns) {
                         /*
@@ -633,7 +635,7 @@ find_nslist_for_query(val_context_t * context,
     struct name_server *ref_ns_list;
     int             ret_val;
     struct val_query_chain *next_q;
-    u_int8_t       *test_n;
+    u_char       *test_n;
     u_int16_t       tzonestatus;
     u_int32_t ttl_x = 0;
     struct name_server *ns;
@@ -685,11 +687,11 @@ find_nslist_for_query(val_context_t * context,
             return VAL_CONF_NOT_FOUND;
         }
         clone_ns_list(&next_q->qc_ns_list, context->root_ns);
-        next_q->qc_zonecut_n = (u_int8_t *) MALLOC(sizeof(u_int8_t));
+        next_q->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
         if (next_q->qc_zonecut_n == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
-        *(next_q->qc_zonecut_n) = (u_int8_t) '\0';
+        *(next_q->qc_zonecut_n) = (u_char) '\0';
     }
 
 done:
@@ -738,7 +740,7 @@ done:
  */
 int
 bootstrap_referral(val_context_t *context,
-                   u_int8_t * referral_zone_n,
+                   u_char * referral_zone_n,
                    struct rrset_rec **learned_zones,
                    struct queries_for_query *matched_qfq,
                    struct queries_for_query **queries,
@@ -762,7 +764,7 @@ bootstrap_referral(val_context_t *context,
      *  If we received a referral for the root, use our 
      *  pre-parsed root.hints information 
      */
-    if (!namecmp(referral_zone_n, (u_int8_t *)"\0")) {
+    if (!namecmp(referral_zone_n, (u_char *)"\0")) {
         if (context->root_ns == NULL) {
             /*
              * No root hints; should not happen here 
@@ -905,7 +907,7 @@ free_referral_members(struct delegation_info *del)
 static int
 follow_referral_or_alias_link(val_context_t * context,
                               int alias_chain,
-                              u_int8_t * zone_n,
+                              u_char * zone_n,
                               struct queries_for_query *matched_qfq,
                               struct rrset_rec **learned_zones,
                               struct qname_chain **qnames,
@@ -914,8 +916,8 @@ follow_referral_or_alias_link(val_context_t * context,
 {
     int             ret_val;
     struct name_server *ref_ns_list;
-    int             len;
-    u_int8_t       *referral_zone_n;
+    size_t             len;
+    u_char       *referral_zone_n;
     struct queries_for_query *added_q = NULL;
     struct val_query_chain *matched_q;
     u_int16_t       tzonestatus;
@@ -1007,9 +1009,15 @@ follow_referral_or_alias_link(val_context_t * context,
             char            debug_name2[NS_MAXDNAME];
             memset(debug_name1, 0, 1024);
             memset(debug_name2, 0, 1024);
-            ns_name_ntop(matched_q->qc_name_n, debug_name1,
-                     sizeof(debug_name1));
-            ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
+            if(ns_name_ntop(matched_q->qc_name_n, debug_name1,
+                     sizeof(debug_name1)) < 0) {
+                strncpy(debug_name1, "unknown/error", sizeof(debug_name1)-1);
+            } 
+            if (ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2))
+                    < 0) {
+                strncpy(debug_name2, "unknown/error", sizeof(debug_name2)-1);
+            }
+            
             val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): QUERYING '%s.' (referral to %s)",
                     debug_name1, debug_name2);
         }
@@ -1030,7 +1038,7 @@ follow_referral_or_alias_link(val_context_t * context,
         }
 
         if (!(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
-            u_int8_t *tp = NULL;
+            u_char *tp = NULL;
             int diff_name = 0;
 
             if (VAL_NO_ERROR != (ret_val =
@@ -1099,7 +1107,7 @@ follow_referral_or_alias_link(val_context_t * context,
         if (referral_zone_n != NULL) {
             len = wire_name_length(referral_zone_n);
             matched_q->qc_zonecut_n =
-                (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+                (u_char *) MALLOC(len * sizeof(u_char));
             if (matched_q->qc_zonecut_n == NULL)
                 return VAL_OUT_OF_MEMORY;
             memcpy(matched_q->qc_zonecut_n, referral_zone_n, len);
@@ -1151,14 +1159,14 @@ follow_referral_or_alias_link(val_context_t * context,
 
 #define FIX_ZONECUT(the_rrset, zonecut_n, retval) do {                  \
         struct rrset_rec *cur_rrset;                                    \
-        int len = wire_name_length(zonecut_n);                          \
+        size_t len = wire_name_length(zonecut_n);                          \
         retval = VAL_NO_ERROR;                                          \
         for (cur_rrset = the_rrset; cur_rrset;                          \
                 cur_rrset=cur_rrset->rrs_next){                         \
             if (cur_rrset->rrs_zonecut_n)                               \
                 FREE(cur_rrset->rrs_zonecut_n);                         \
             cur_rrset->rrs_zonecut_n =                                  \
-                    (u_int8_t *) MALLOC(len * sizeof(u_int8_t));        \
+                    (u_char *) MALLOC(len * sizeof(u_char));        \
             if (cur_rrset->rrs_zonecut_n == NULL) {                     \
                 retval = VAL_OUT_OF_MEMORY;                             \
                 break;                                                  \
@@ -1172,15 +1180,15 @@ follow_referral_or_alias_link(val_context_t * context,
  * Check if CNAME or DNAME chain are invalid or contain a loop
  */
 int
-process_cname_dname_responses(u_int8_t *name_n, 
+process_cname_dname_responses(u_char *name_n, 
                               u_int16_t type_h, 
-                              u_int8_t *rdata, 
+                              u_char *rdata, 
                               struct val_query_chain *matched_q,
                               struct qname_chain **qnames,
                               int *referral_error)
 {
-    u_int8_t        temp_name[NS_MAXCDNAME];
-    u_int8_t       *p;
+    u_char        temp_name[NS_MAXCDNAME];
+    u_char       *p;
     int ret_val;
 
     if (!name_n || !rdata || !matched_q || 
@@ -1219,16 +1227,18 @@ process_cname_dname_responses(u_int8_t *name_n,
         matched_q->qc_state = Q_INIT;
     }
 
+    u_char  *qname_n = (*qnames)->qnc_name_n;
     if (type_h == ns_t_dname &&
         matched_q->qc_type_h != ns_t_dname &&
         ((matched_q->qc_type_h != ns_t_any &&
          matched_q->qc_type_h != ns_t_rrsig)||
-        namecmp((*qnames)->qnc_name_n, name_n) != 0) &&
-        NULL != (p = (u_int8_t *) namename((*qnames)->qnc_name_n, name_n))) {
+        namecmp(qname_n, name_n) != 0) &&
+        NULL != (p = namename(qname_n, name_n)) &&
+        p > qname_n) {
 
-        u_int8_t       *qname_n = (*qnames)->qnc_name_n;
-        int             len1 = p - qname_n;
-        int             len2 = wire_name_length(rdata);
+        u_char *qname_n = (*qnames)->qnc_name_n;
+        size_t len1 = p - qname_n;
+        size_t len2 = wire_name_length(rdata);
         if (len1 + len2 > sizeof(temp_name)) {
             matched_q->qc_state = Q_REFERRAL_ERROR;
             if (referral_error)
@@ -1289,9 +1299,9 @@ process_cname_dname_responses(u_int8_t *name_n,
 int
 prepare_empty_nxdomain(struct rrset_rec **answers,
                        struct name_server *respondent_server,
-                       u_int8_t * query_name_n,
+                       u_char * query_name_n,
                        u_int16_t query_type_h, u_int16_t query_class_h,
-                       u_int8_t       *hptr)
+                       u_char *hptr)
 {
     size_t          length = wire_name_length(query_name_n);
 
@@ -1303,53 +1313,43 @@ prepare_empty_nxdomain(struct rrset_rec **answers,
         return VAL_OUT_OF_MEMORY;
 
     (*answers)->rrs_zonecut_n = NULL;
-    (*answers)->rrs.val_rrset_name_n = (u_int8_t *) MALLOC(length);
+    (*answers)->rrs_name_n = (u_char *) MALLOC(length * sizeof(u_char));
 
-    if ((*answers)->rrs.val_rrset_name_n == NULL) {
+    if ((*answers)->rrs_name_n == NULL) {
         FREE(*answers);
         *answers = NULL;
         return VAL_OUT_OF_MEMORY;
     }
 
-    memcpy((*answers)->rrs.val_rrset_name_n, query_name_n, length);
     if (hptr) {
-        (*answers)->rrs.val_msg_header =
-            (u_int8_t *) MALLOC(sizeof(HEADER) * sizeof(u_int8_t));
-        if ((*answers)->rrs.val_msg_header == NULL) {
-            FREE((*answers)->rrs.val_rrset_name_n);
-            FREE(*answers);
-            *answers = NULL;
-            return VAL_OUT_OF_MEMORY;
-        }
-        memcpy((*answers)->rrs.val_msg_header, hptr, sizeof(HEADER));
-        (*answers)->rrs.val_msg_headerlen = sizeof(HEADER);
+        (*answers)->rrs_rcode = ((HEADER *)hptr)->rcode;
     } else {
-        (*answers)->rrs.val_msg_header = NULL;
-        (*answers)->rrs.val_msg_headerlen = 0;
+        (*answers)->rrs_rcode = 0; 
     }
-    (*answers)->rrs.val_rrset_type_h = query_type_h;
-    (*answers)->rrs.val_rrset_class_h = query_class_h;
-    (*answers)->rrs.val_rrset_ttl_h = 0;
+    memcpy((*answers)->rrs_name_n, query_name_n, length);
+    (*answers)->rrs_type_h = query_type_h;
+    (*answers)->rrs_class_h = query_class_h;
+    (*answers)->rrs_ttl_h = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
-    (*answers)->rrs.val_rrset_section = VAL_FROM_UNSET;
+    (*answers)->rrs_section = VAL_FROM_UNSET;
     if ((respondent_server) &&
         (respondent_server->ns_number_of_addresses > 0)) {
-        (*answers)->rrs.val_rrset_server =
+        (*answers)->rrs_server =
             (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
-        if ((*answers)->rrs.val_rrset_server == NULL) {
-            FREE((*answers)->rrs.val_rrset_name_n);
+        if ((*answers)->rrs_server == NULL) {
+            FREE((*answers)->rrs_name_n);
             FREE(*answers);
             *answers = NULL;
             return VAL_OUT_OF_MEMORY;
         }
-        memcpy((*answers)->rrs.val_rrset_server,
+        memcpy((*answers)->rrs_server,
                respondent_server->ns_address[0],
                sizeof(struct sockaddr_storage));
     } else {
-        (*answers)->rrs.val_rrset_server = NULL;
+        (*answers)->rrs_server = NULL;
     }
-    (*answers)->rrs.val_rrset_data = NULL;
-    (*answers)->rrs.val_rrset_sig = NULL;
+    (*answers)->rrs_data = NULL;
+    (*answers)->rrs_sig = NULL;
     (*answers)->rrs_next = NULL;
 
     return VAL_NO_ERROR;
@@ -1374,23 +1374,24 @@ static int
 digest_response(val_context_t * context,
                 struct queries_for_query *matched_qfq,
                 struct queries_for_query **queries,
-                u_int8_t * response_data,
-                u_int32_t response_length, struct domain_info *di_response)
+                u_char * response_data,
+                size_t response_length, 
+                struct domain_info *di_response)
 {
     u_int16_t       question, answer, authority, additional;
     u_int16_t       rrs_to_go;
     int             i;
-    int             response_index;
-    u_int8_t        name_n[NS_MAXCDNAME];
+    size_t          response_index;
+    u_char          name_n[NS_MAXCDNAME];
     u_int16_t       type_h;
     u_int16_t       set_type_h;
     u_int16_t       class_h;
     u_int32_t       ttl_h;
-    u_int16_t       rdata_len_h;
-    int             rdata_index;
+    size_t          rdata_len_h;
+    size_t          rdata_index;
     int             authoritive;
-    u_int8_t       *rdata;
-    u_int8_t       *hptr;
+    u_char         *rdata;
+    u_char         *hptr;
     int             ret_val;
     int             nothing_other_than_alias;
     int             from_section;
@@ -1400,18 +1401,18 @@ digest_response(val_context_t * context,
     struct rrset_rec *learned_answers = NULL;
     struct rrset_rec *learned_proofs = NULL;
 
-    u_int8_t *query_name_n;
+    u_char *query_name_n;
     u_int16_t       query_type_h;
     u_int16_t       query_class_h;
-    u_int8_t       *rrs_zonecut_n = NULL;
+    u_char         *rrs_zonecut_n = NULL;
     int             referral_seen = FALSE;
-    u_int8_t        referral_zone_n[NS_MAXCDNAME];
+    u_char          referral_zone_n[NS_MAXCDNAME];
     int             auth_nack = 0;
     int             proof_seen = 0;
     HEADER         *header;
-    u_int8_t       *end;
-    int             qnamelen, tot;
-    int len;
+    u_char         *end;
+    size_t         qnamelen, tot;
+    size_t len;
     struct qname_chain **qnames;
     int             zonecut_was_modified = 0;
     struct val_query_chain *matched_q;
@@ -1428,7 +1429,7 @@ digest_response(val_context_t * context,
     
     qnames = &(di_response->di_qnames);
     header = (HEADER *) response_data;
-    end = (u_int8_t *) ((u_int32_t) response_data + response_length);
+    end = response_data + response_length;
 
     query_name_n = matched_q->qc_name_n;
     query_type_h = matched_q->qc_type_h;
@@ -1530,8 +1531,7 @@ digest_response(val_context_t * context,
         if ((ret_val =
              extract_from_rr(response_data, &response_index, end, name_n,
                              &type_h, &set_type_h, &class_h, &ttl_h,
-                             &rdata_len_h,
-                             &rdata_index)) != VAL_NO_ERROR) {
+                             &rdata_len_h, &rdata_index)) != VAL_NO_ERROR) {
             goto done;
         }
 
@@ -1634,7 +1634,7 @@ digest_response(val_context_t * context,
                     FREE(matched_q->qc_zonecut_n);
                 len = wire_name_length(name_n);
                 matched_q->qc_zonecut_n = 
-                    (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+                    (u_char *) MALLOC (len * sizeof(u_char));
                 if (matched_q->qc_zonecut_n == NULL)
                     goto done;    
                 memcpy (matched_q->qc_zonecut_n, name_n, len);
@@ -1725,7 +1725,7 @@ digest_response(val_context_t * context,
                             FREE(matched_q->qc_zonecut_n);
                         len = wire_name_length(name_n);
                         matched_q->qc_zonecut_n = 
-                            (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+                            (u_char *) MALLOC (len * sizeof(u_char));
                         if (matched_q->qc_zonecut_n == NULL)
                             goto done;    
                         memcpy (matched_q->qc_zonecut_n, name_n, len);
@@ -1955,9 +1955,9 @@ val_resquery_rcv(val_context_t * context,
                  struct timeval *closest_event)
 {
     struct name_server *server = NULL;
-    u_int8_t       *response_data = NULL;
-    u_int32_t       response_length = 0;
-    char            name_p[NS_MAXDNAME];
+    u_char       *response_data = NULL;
+    size_t       response_length = 0;
+    char         name_p[NS_MAXDNAME];
     struct val_query_chain *matched_q;
 
     int             ret_val;

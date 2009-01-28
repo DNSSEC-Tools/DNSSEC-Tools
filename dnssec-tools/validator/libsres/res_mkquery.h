@@ -28,16 +28,18 @@ int
                                  const char *dname,     /* domain name */
                                  u_int16_t class, u_int16_t type,   /* class and type of query */
                                  const u_char * data,   /* resource record data */
-                                 int datalen,   /* length of data */
+                                 size_t datalen,   /* length of data */
                                  const u_char * newrr_in,       /* new rr for modify or append */
                                  u_char * buf,  /* buffer to put query */
-                                 int buflen);   /* size of buffer */
+                                 size_t buflen,
+                                 size_t *query_length);   /* size of buffer */
 
 int
-                res_val_nopt(struct name_server *pref_ns, int n0,       /* current offset in buffer */
+                res_val_nopt(struct name_server *pref_ns, 
                              u_char * buf,      /* buffer to put query */
-                             int buflen,        /* size of buffer */
-                             int anslen);       /* UDP answer buffer size */
+                             size_t buflen,        /* size of buffer */
+                             int edns0_size,
+                             size_t * query_length);       /* UDP answer buffer size */
 
 
 #endif                          /* RES_MKQUERY_H */

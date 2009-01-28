@@ -257,7 +257,7 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
  * This is intended to be primarily a debugging routine.
  */
 void
-libsres_pquery(const u_char * msg, int len, FILE * file)
+libsres_pquery(const u_char * msg, size_t len, FILE * file)
 {
     ns_msg          handle;
     int             qdcount, ancount, nscount, arcount;

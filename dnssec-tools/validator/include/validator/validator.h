@@ -215,7 +215,7 @@ extern          "C" {
     typedef struct val_context val_context_t;
 
     typedef struct policy_entry {
-        u_int8_t        zone_n[NS_MAXCDNAME];
+        u_char        zone_n[NS_MAXCDNAME];
         long            exp_ttl;
         void *          pol;
         struct policy_entry *next;
@@ -232,7 +232,14 @@ extern          "C" {
     typedef struct {
         policy_entry_t *pe;
         int index;
-    }  val_policy_entry_t;
+    }  val_policy_handle_t;
+
+    typedef struct {
+        char *keyword;
+        char *zone;
+        char *value;
+        long ttl;
+    } libval_policy_definition_t;
 
     /*
      * The above is a generic data type for a policy entry
@@ -250,10 +257,10 @@ extern          "C" {
 #define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
 #endif
 
-#define GOPT_TRUST_LOCAL_STR "trust-local-answers"
+#define GOPT_TRUST_OOB_STR "trust-oob-answers"
 #define GOPT_EDNS0_SIZE_STR "edns0-size"
-#define TRUST_LOCAL_GOPT_YES_STR "yes"
-#define TRUST_LOCAL_GOPT_NO_STR "no"
+#define TRUST_OOB_GOPT_YES_STR "yes"
+#define TRUST_OOB_GOPT_NO_STR "no"
 #define GOPT_ENV_POL_STR "env-policy"
 #define GOPT_APP_POL_STR "app-policy"
 #define GOPT_ENABLE_STR "enable"
@@ -269,7 +276,6 @@ extern          "C" {
 #define ZONE_PU_TRUSTED_MSG "trusted"
 #define ZONE_PU_UNTRUSTED_MSG "untrusted"
 #define ZONE_SE_IGNORE_MSG     "ignore"
-#define ZONE_SE_TRUSTED_MSG    "trusted"
 #define ZONE_SE_DO_VAL_MSG     "validate"
 #define ZONE_SE_UNTRUSTED_MSG  "untrusted"
 
@@ -277,39 +283,22 @@ extern          "C" {
      * Response structures  
      */
     struct val_rr_rec {
-        u_int16_t       rr_rdata_length_h;      /* RDATA length */
-        u_int8_t       *rr_rdata;       /* Raw RDATA */
+        size_t rr_rdata_length;      /* RDATA length */
+        u_char *rr_rdata;       /* Raw RDATA */
         struct val_rr_rec  *rr_next;
         val_astatus_t   rr_status;
     };
 
     struct val_rrset_rec {
-        /*
-         * Header 
-         */
-        u_int8_t       *val_msg_header;
-        u_int16_t       val_msg_headerlen;
-
-        /*
-         * Answer 
-         */
-        u_int8_t       *val_rrset_name_n;       /* Owner */
-        u_int16_t       val_rrset_class_h;      /* ns_c_... */
-        u_int16_t       val_rrset_type_h;       /* ns_t_... */
-        u_int32_t       val_rrset_ttl_h;        /* Received ttl */
-        u_int32_t       val_rrset_ttl_x;        /* ttl expire time */
-        u_int8_t        val_rrset_section;      /* VAL_FROM_... */
+        int val_rrset_rcode;
+        char  *val_rrset_name;       /* Owner */
+        int val_rrset_class;      /* ns_c_... */
+        int val_rrset_type;       /* ns_t_... */
+        long val_rrset_ttl;        /* Received ttl */
+        int  val_rrset_section;      /* VAL_FROM_... */
         struct sockaddr *val_rrset_server;      /* respondent server */
         struct val_rr_rec  *val_rrset_data; /* All data RR's */
         struct val_rr_rec  *val_rrset_sig;  /* All signatures */
-    };
-
-    struct rrset_rec {
-        struct val_rrset_rec rrs;
-        u_int8_t       *rrs_zonecut_n;
-        u_int8_t        rrs_cred;       /* SR_CRED_... */
-        u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
-        struct rrset_rec *rrs_next;
     };
 
     struct policy_list {
@@ -336,24 +325,14 @@ extern          "C" {
     };
 
     struct qname_chain {
-        u_int8_t        qnc_name_n[NS_MAXCDNAME];
+        u_char        qnc_name_n[NS_MAXCDNAME];
         struct qname_chain *qnc_next;
     };
 
     struct val_response {
-        unsigned char  *vr_response;
-        int             vr_length;
+        u_char  *vr_response;
+        size_t  vr_length;
         val_status_t    vr_val_status;
-    };
-
-    struct domain_info {
-        char           *di_requested_name_h;
-        u_int16_t       di_requested_type_h;
-        u_int16_t       di_requested_class_h;
-        struct rrset_rec *di_answers;
-        struct rrset_rec *di_proofs;
-        struct qname_chain *di_qnames;
-        int             di_res_error;
     };
 
     struct val_authentication_chain {
@@ -363,15 +342,15 @@ extern          "C" {
     };
 
     struct rr_rec {
-        u_int16_t     rr_length;
-        u_int8_t      *rr_data;
+        size_t rr_length;
+        u_char *rr_data;
         struct rr_rec *rr_next;
     };
 
 #define MAX_PROOFS 4
     struct val_result_chain {
-        val_status_t    val_rc_status;
-        u_int8_t        *val_rc_alias;
+        val_status_t val_rc_status;
+        char  *val_rc_alias;
         struct val_rrset_rec *val_rc_rrset; 
         struct val_authentication_chain *val_rc_answer;
         int    val_rc_proof_count;
@@ -381,9 +360,9 @@ extern          "C" {
 
     struct val_answer_chain {
         val_status_t   val_ans_status;
-        char          *val_ans_name;
-        u_int16_t      val_ans_class;
-        u_int16_t      val_ans_type;
+        char *val_ans_name;
+        int val_ans_class;
+        int val_ans_type;
         struct rr_rec *val_ans;
         struct val_answer_chain *val_ans_next;
     };
@@ -416,7 +395,7 @@ extern          "C" {
         u_int16_t       d_keytag;
         u_int8_t        d_algo;
         u_int8_t        d_type;
-        u_int8_t       *d_hash;
+        u_char         *d_hash;
         u_int32_t       d_hash_len;
     } val_ds_rdata_t;
 
@@ -426,9 +405,9 @@ extern          "C" {
         u_int8_t        flags;
         u_int16_t       iterations;
         u_int8_t        saltlen;
-        u_int8_t       *salt;
+        u_char         *salt;
         u_int8_t        nexthashlen;
-        u_int8_t       *nexthash;
+        u_char         *nexthash;
         u_int16_t       bit_field;
     } val_nsec3_rdata_t;
 
@@ -448,8 +427,8 @@ extern          "C" {
 
     typedef struct val_log {
         val_log_logger_t logf;  /* log function ptr */
-        unsigned char   level;  /* 0 - 9, corresponds w/sylog severities */
-        unsigned char   lflags; /* generic log flags */
+        u_char   level;  /* 0 - 9, corresponds w/sylog severities */
+        u_char   lflags; /* generic log flags */
 
         void           *a_void; /* logger dependent */
 
@@ -475,13 +454,8 @@ extern          "C" {
         struct val_log *next;
     } val_log_t;
 
-    char           *get_hex_string(const unsigned char *data, int datalen,
-                                   char *buf, int buflen);
-    void            val_log_rrset(const val_context_t * ctx, int level,
-                                  struct rrset_rec *rrset);
-    void            val_log_base64(val_context_t * ctx, int level,
-                                   unsigned char *message,
-                                   int message_len);
+    char           *get_hex_string(const u_char *data, size_t datalen,
+                                   char *buf, size_t buflen);
     void            val_log_rrsig_rdata(const val_context_t * ctx,
                                         int level, const char *prefix,
                                         val_rrsig_rdata_t * rdata);
@@ -490,9 +464,9 @@ extern          "C" {
                                          val_dnskey_rdata_t * rdata);
     void            val_log_authentication_chain(const val_context_t * ctx,
                                                  int level,
-                                                 u_char * name_n,
-                                                 u_int16_t class_h,
-                                                 u_int16_t type_h,
+                                                 char * name,
+                                                 int class_h,
+                                                 int type_h,
                                                  struct val_result_chain
                                                  *results);
     void            val_log(const val_context_t * ctx, int level,
@@ -510,7 +484,7 @@ extern          "C" {
     int             val_log_debug_level(void);
     void            val_log_set_debug_level(int);
     const char     *val_get_ns_string(struct sockaddr *serv, char *dst,
-                                      int size);
+                                      size_t size);
 
 
     const char     *p_ac_status(val_astatus_t valerrno);
@@ -531,10 +505,10 @@ extern          "C" {
     void            val_free_result_chain(struct val_result_chain
                                           *results);
     int             val_resolve_and_check(val_context_t * context,
-                                          u_char * domain_name,
-                                          const u_int16_t q_class,
-                                          const u_int16_t type,
-                                          const u_int32_t flags,
+                                          char * domain_name,
+                                          int qclass,
+                                          int qtype,
+                                          u_int32_t flags,
                                           struct val_result_chain
                                           **results);
 
@@ -561,14 +535,15 @@ extern          "C" {
     int             root_hints_set(const char *name);
     char           *dnsval_conf_get(void);
     int             dnsval_conf_set(const char *name);
-    int             val_add_valpolicy(val_context_t *context, const char *keyword, 
-                                      char *zone, char *value, long ttl, 
-                                      val_policy_entry_t **pol);
-    int             val_remove_valpolicy(val_context_t *context, val_policy_entry_t *pol);
+    int             val_add_valpolicy(val_context_t *context, 
+                                      void *policy_defintion,
+                                      val_policy_handle_t **pol);
+    int             val_remove_valpolicy(val_context_t *context, 
+                                      val_policy_handle_t *pol);
     /*
      * from val_support.h 
      */
-    u_int16_t       wire_name_length(const u_int8_t * field);
+    size_t       wire_name_length(const u_char * field);
 
     /*
      * from val_x_query.c 
@@ -579,9 +554,9 @@ extern          "C" {
     int             val_res_search(val_context_t * ctx, const char *dname,
                                    int class_h, int type, u_char * answer,
                                    int anslen, val_status_t * val_status);
-    int             compose_answer(const u_char * name_n,
-                                   const u_int16_t type_h,
-                                   const u_int16_t class_h,
+    int             compose_answer(const char * name,
+                                   int type_h,
+                                   int class_h,
                                    struct val_result_chain *results,
                                    struct val_response *f_resp);
     /*
@@ -668,8 +643,8 @@ extern          "C" {
      */
     int val_get_rrset(val_context_t *ctx,
                       const char *name,
-                      u_int16_t class,
-                      u_int16_t type,
+                      int class,
+                      int type,
                       u_int32_t flags,
                       struct val_answer_chain **answers);
 
