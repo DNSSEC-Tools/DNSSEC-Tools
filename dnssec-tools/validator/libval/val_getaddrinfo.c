@@ -545,6 +545,12 @@ get_addrinfo_from_result(const val_context_t * ctx,
      */
     validated = val_isvalidated(*val_status)? 1 : 0;
     trusted = val_istrusted(*val_status)? 1 : 0;
+
+    if (!results) {
+        *val_status = VAL_UNTRUSTED_ANSWER;
+        val_log(ctx, LOG_INFO, "get_addrinfo_from_result(): results is null");
+        return EAI_NONAME;
+    }
     
     ainfo_head = *res;
     ainfo_tail = ainfo_head;
@@ -553,16 +559,9 @@ get_addrinfo_from_result(const val_context_t * ctx,
             ainfo_tail = ainfo_tail->ai_next;
     }
 
-    if (!results) {
-        *val_status = VAL_UNTRUSTED_ANSWER;
-        val_log(ctx, LOG_INFO, "get_addrinfo_from_result(): results is null");
-        return EAI_NONAME;
-    }
-
     /*
      * Loop for each result in the linked list of val_answer_chain structures 
      */
-
     for (result = results; result != NULL; result = result->val_ans_next) {
 
         /* set the value of merged trusted and validated status values */
@@ -661,20 +660,15 @@ get_addrinfo_from_result(const val_context_t * ctx,
                 rr = rr->rr_next;
             }
         } else if (val_does_not_exist(result->val_ans_status)) {
-            *val_status = result->val_ans_status;
+            break;
         }
     }
 
     if (!ainfo_head) {
-        /* if data is validated, we already have the correct *val_status */
-        if (trusted && !validated) {
-            if (*val_status == VAL_NONEXISTENT_NAME ||
-                *val_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
-               *val_status = VAL_NONEXISTENT_NAME_NOCHAIN; 
-            } else {
-               *val_status = VAL_NONEXISTENT_TYPE_NOCHAIN; 
-            } 
-        }else if (trusted == 0) {
+        if (result) {
+            /* if result is not NULL, this corresponds to a p.n.e */
+            *val_status = result->val_ans_status;
+        } else {
             *val_status = VAL_UNTRUSTED_ANSWER;
         }
         retval = EAI_NONAME;
@@ -777,14 +771,6 @@ get_addrinfo_from_dns(val_context_t * ctx,
         } 
     } 
 
-    *res = ainfo;
-    if (ainfo) {
-        /* some results were available */
-        ret = 0;
-    } else if (ret == 0) { 
-        ret = EAI_NONAME;
-    }
-
     return ret;
 
 }                               /* get_addrinfo_from_dns() */
@@ -837,7 +823,7 @@ val_getaddrinfo(val_context_t * context,
     const char     *nname = nodename;
     struct addrinfo default_hints;
     const struct addrinfo *cur_hints;
-    val_status_t local_ans_status = VAL_LOCAL_ANSWER;
+    val_status_t local_ans_status = VAL_OOB_ANSWER;
     int trusted = 0;
     val_context_t *ctx = NULL;
     
@@ -858,7 +844,7 @@ val_getaddrinfo(val_context_t * context,
         return 0;
 
     *res = NULL;
-    *val_status = VAL_DONT_KNOW;
+    *val_status = VAL_UNTRUSTED_ANSWER;
 
     val_log(ctx, LOG_DEBUG,
             "val_getaddrinfo called with nodename = %s, servname = %s",
@@ -879,8 +865,7 @@ val_getaddrinfo(val_context_t * context,
      * Check that at least one of nodename or servname is non-NULL
      */
     if (NULL == nodename && NULL == servname) {
-        retval = EAI_NONAME;
-        goto done;
+        return EAI_NONAME;
     }
 
     memset(&ip4_addr, 0, sizeof(struct in_addr));
@@ -905,15 +890,13 @@ val_getaddrinfo(val_context_t * context,
         struct sockaddr_in *saddr4 =
             (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
         if (saddr4 == NULL) {
-            retval = EAI_MEMORY;
-            goto done;
+            return EAI_MEMORY;
         }
         ainfo4 =
             (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (ainfo4 == NULL) {
             free(saddr4);
-            retval = EAI_MEMORY;
-            goto done;
+            return EAI_MEMORY;
         }
 
         is_ip4 = 1;
@@ -934,7 +917,7 @@ val_getaddrinfo(val_context_t * context,
             freeaddrinfo(ainfo4);
             val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
-            goto done;
+            return retval;
         }
 
         *res = ainfo4;
@@ -960,15 +943,13 @@ val_getaddrinfo(val_context_t * context,
         struct sockaddr_in6 *saddr6 =
             (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
         if (saddr6 == NULL) {
-            retval = EAI_MEMORY;
-            goto done;
+            return EAI_MEMORY;
         }
         ainfo6 =
             (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (ainfo6 == NULL) {
             free(saddr6);
-            retval = EAI_MEMORY;
-            goto done;
+            return EAI_MEMORY;
         }
 
         is_ip6 = 1;
@@ -989,7 +970,7 @@ val_getaddrinfo(val_context_t * context,
             freeaddrinfo(ainfo6);
             val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
-            goto done;
+            return retval;
         }
 
         if (NULL != *res) {
@@ -1001,45 +982,39 @@ val_getaddrinfo(val_context_t * context,
     }
 
     if (*res) {
-        *val_status = local_ans_status;
-    } else if (nodename) {
+        *val_status = VAL_TRUSTED_ANSWER;
+        return retval;
+    } 
+    if (nodename) {
 
-      /*
-       * If nodename was specified and was not an IPv4 or IPv6
-       * address, get its information from local store or from dns
-       * or return error if AI_NUMERICHOST specified
-       */
-      if (cur_hints->ai_flags & AI_NUMERICHOST)
-	return EAI_NONAME;
-      /*
-       * First check ETC_HOSTS file
-       * * XXX: TODO check the order in the ETC_HOST_CONF file
-       */
-      if (get_addrinfo_from_etc_hosts(ctx, nodename, servname,
+        /*
+         * If nodename was specified and was not an IPv4 or IPv6
+         * address, get its information from local store or from dns
+         * or return error if AI_NUMERICHOST specified
+         */
+        if (cur_hints->ai_flags & AI_NUMERICHOST)
+            return EAI_NONAME;
+        /*
+         * First check ETC_HOSTS file
+         * * XXX: TODO check the order in the ETC_HOST_CONF file
+         */
+        if (get_addrinfo_from_etc_hosts(ctx, nodename, servname,
 				      cur_hints, res) == EAI_SERVICE) {
 	        retval = EAI_SERVICE;
-      } else if (*res != NULL) {
-	      retval = 0;
-          int trusted = 0;
-          if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
-              if (trusted) {
-                  *val_status = VAL_TRUSTED_ANSWER;
-              } else {
-                  *val_status = VAL_LOCAL_ANSWER;
-              }
-          }
-      }
+        } else if (*res != NULL) {
+	        retval = 0;
+            *val_status = local_ans_status;
+        }
 
-      /*
-       * Try DNS
-       */
-      else {
-         retval = get_addrinfo_from_dns(ctx, nodename, servname,
-					cur_hints, res, val_status);
-      }
+        /*
+         * Try DNS
+         */
+        else {
+            retval = get_addrinfo_from_dns(ctx, nodename, servname,
+        					cur_hints, res, val_status);
+        }
     }
 
- done:
     return retval;
 
 }                               /* val_getaddrinfo() */
@@ -1183,29 +1158,8 @@ val_getnameinfo(val_context_t * context,
     struct val_answer_chain *res;
     struct val_answer_chain *val_res = NULL;
     int retval;
-    val_status_t local_ans_status = VAL_LOCAL_ANSWER;
-
-    int trusted;
     val_context_t *ctx = NULL;
     
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            return EAI_FAIL; 
-        } 
-    } else {
-        ctx = context;
-    }
-    if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
-        if (trusted) {
-            local_ans_status = VAL_TRUSTED_ANSWER;
-        }
-    }
-
-    /*
-     * no need to check context, val_get_rrset will check and
-     * create if necessary 
-     */
-
     /*
      * check misc parameters, there should be at least one of host or
      * server, check if flags indicate host is required 
@@ -1217,31 +1171,38 @@ val_getnameinfo(val_context_t * context,
 
     if (!host && !serv) 
       return EAI_NONAME;
-
+    
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            return EAI_FAIL; 
+        } 
+    } else {
+        ctx = context;
+    }
 
     /*
      * should the services be looked up 
      */
     if (serv && servlen > 0) {
         struct servent *sent;
-	int port = ((const struct sockaddr_in*)sa)->sin_port;
+        int port = ((const struct sockaddr_in*)sa)->sin_port;
 
-	val_log(ctx, LOG_DEBUG, 
-		"val_getnameinfo(): get service for port(%d)\n",ntohs(port));
+        val_log(ctx, LOG_DEBUG, 
+            "val_getnameinfo(): get service for port(%d)\n",ntohs(port));
         if (flags & NI_DGRAM)
-	  sent = getservbyport(port, "udp");
+            sent = getservbyport(port, "udp");
         else
-	  sent = getservbyport(port, NULL);
+            sent = getservbyport(port, NULL);
 
         if (!sent)
             return EAI_FAIL;
 
         if (flags & NI_NUMERICSERV) {
-	  val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICSERV\n");
-	  snprintf(serv, servlen, "%d", ntohs(sent->s_port));
+            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICSERV\n");
+            snprintf(serv, servlen, "%d", ntohs(sent->s_port));
         } else {
             strncpy(serv, sent->s_name, servlen);
-	}
+        }
         val_log(ctx, LOG_DEBUG, "val_getnameinfo(): service is %s : %s ",
                 serv, sent->s_proto);
     }
@@ -1263,388 +1224,98 @@ val_getnameinfo(val_context_t * context,
      * should the host be looked up 
      */
     if (host && hostlen > 0) {
-      /*
-       * get string values: address string, reverse domain string, on
-       * the wire reverse domain string 
-       */
-      memset(number_string, 0, sizeof(char) * addr_size);
-      memset(domain_string, 0, sizeof(char) * addr_size);
+        /*
+         * get string values: address string, reverse domain string, on
+         * the wire reverse domain string 
+         */
+        memset(number_string, 0, sizeof(char) * addr_size);
+        memset(domain_string, 0, sizeof(char) * addr_size);
 
-      if ((0 != (ret_status =
-		 address_to_string(theAddress, sa->sa_family,
-				   number_string, addr_size)))
-	  ||
-	  (0 != (ret_status =
-		 address_to_reverse_domain(theAddress, sa->sa_family,
-					   domain_string, addr_size)))
-	  ) {
-	return ret_status;
-      }
+        if ((0 != (ret_status =
+             address_to_string(theAddress, sa->sa_family,
+                number_string, addr_size)))
+              ||
+            (0 != (ret_status =
+              address_to_reverse_domain(theAddress, sa->sa_family,
+                domain_string, addr_size)))) {
+            return ret_status;
+        }
 
-      /*
-       * set numeric value initially for either NI_NUMERICHOST or failed lookup
-       */
-      strncpy(host, number_string, hostlen);
-      *val_status = local_ans_status;
+        /*
+         * set numeric value initially for either NI_NUMERICHOST or failed lookup
+         */
+        strncpy(host, number_string, hostlen);
+        *val_status = VAL_TRUSTED_ANSWER;
     }
+
     val_log(ctx, LOG_DEBUG, "val_getnameinfo(): pre-val flags(%d)\n", flags);
+
     if (!(flags & NI_NUMERICHOST) || (flags & NI_NAMEREQD)) {
+        return 0;
+    }
 
-      val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)\n",
-	      flags);
-
-      if (VAL_NO_ERROR != 
+    val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)\n", flags);
+    if (VAL_NO_ERROR != 
               (retval = val_get_rrset(ctx,       /*val_context_t*  */
                                       domain_string, /*u_char *wire_domain_name */
                                       ns_c_in,   /*const u_int16_t q_class */
                                       ns_t_ptr,  /*const u_int16_t type */
                                       0, /*const u_int32_t flags */
                                       &val_res))) { /* struct val_answer_chain **results */
-	val_log(ctx, LOG_ERR, 
-		"val_getnameinfo(): val_get_rrset failed - %s", 
-		p_val_err(retval));
+	    val_log(ctx, LOG_ERR, 
+                "val_getnameinfo(): val_get_rrset failed - %s", 
+                p_val_err(retval));
         *val_status = VAL_UNTRUSTED_ANSWER;
-	return EAI_FAIL;
-      }
-
-      if (!val_res) {
-	val_log(ctx, LOG_ERR, "val_getnameinfo(): EAI_MEMORY\n");
-        *val_status = VAL_UNTRUSTED_ANSWER;
-	return EAI_MEMORY;
-      }
-
-      val_rnc_status = 0;
-
-      for (res = val_res; res; res=res->val_ans_next) {
-        *val_status = res->val_ans_status;
-	/* set the value of merged trusted and validated status values */
-	if (res->val_ans && ns_t_ptr == res->val_ans_type) {
-	  if (host && (hostlen > 0) 
-              && (hostlen <= res->val_ans->rr_length) 
-              && !(flags && NI_NUMERICHOST))  {
-	    ns_name_ntop(res->val_ans->rr_data,
-			 host, hostlen);
-      }
-	  break;
-	} else if (val_does_not_exist(res->val_ans_status)) {
-                    
-	  if ((res->val_ans_status == VAL_NONEXISTENT_TYPE) ||
-	      (res->val_ans_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
-	    val_rnc_status = EAI_NODATA;
-	  } else if ((res->val_ans_status == VAL_NONEXISTENT_NAME) ||
-		     (res->val_ans_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
-	    val_rnc_status = EAI_NONAME;
-	  }
-	  break;
-	}
-      }
-                    
-      val_log(ctx, LOG_DEBUG,
-	      "val_getnameinfo(): val_get_rrset for host %s, returned %s with lookup status %d and validator status %d : %s",
-	      domain_string, host,
-	      val_rnc_status, 
-	      *val_status, p_val_status(*val_status));
-
-      val_free_answer_chain(val_res);
-    }
-
-    /*
-     * end of checking host info 
-     */
-
-    /*
-     * end of service lookup 
-     */
-    return val_rnc_status;
-
-}                               // val_getnameinfo
-
-
-/*
- * A thread-safe, re-entrant version of val_gethostbyaddr 
- */
-int
-val_gethostbyaddr_r(val_context_t * context,
-                    const char *addr,
-                    int len,
-                    int type,
-                    struct hostent *ret,
-                    char *buf,
-                    int buflen,
-                    struct hostent **result,
-                    int *h_errnop, val_status_t * val_status)
-{
-
-    const int       addr_size = 100;
-    char            domain_string[addr_size];
-    int             ret_status = 0, val_rnc_status = 0, bufused = 0;
-    struct val_answer_chain *val_res = NULL;
-    struct val_answer_chain *res;
-    int retval;
-    val_context_t *ctx = NULL;
-    
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            if (h_errnop)
-                *h_errnop = NO_RECOVERY;
-            return (NO_RECOVERY);
-        } 
-    } else {
-        ctx = context;
-    }
-    
-    /*
-     * no need to check context, val_get_rrset will check and
-     * create if necessary 
-     */
-
-    /*
-     * check misc parameters exist 
-     */
-    if (!addr || !ret || !buf || (buflen <= 0) ||
-        !result || !h_errnop || !val_status) {
-        if (h_errnop)
-            *h_errnop = NO_RECOVERY;
-        return (NO_RECOVERY);
-    }
-    
-    /*
-     * default the input parameters 
-     */
-    *result = NULL;
-    ret->h_name = NULL;
-    ret->h_aliases = NULL;
-    ret->h_addr_list = NULL;
-    *val_status = VAL_UNTRUSTED_ANSWER;
-
-    /*
-     * get the address values, only support IPv4 and IPv6 
-     */
-    if (AF_INET == type && len >= sizeof(struct in_addr)) {
-        ret->h_addrtype = type;
-        ret->h_length = sizeof(struct in_addr);
-    } else if (AF_INET6 == type && len >= sizeof(struct in6_addr)) {
-        ret->h_addrtype = type;
-        ret->h_length = sizeof(struct in6_addr);
-    } else {
-        *h_errnop = NO_RECOVERY;
-        return (NO_RECOVERY);
-    }
-
-    memset(domain_string, 0, sizeof(char) * addr_size);
-
-    if (0 !=
-        (ret_status = address_to_reverse_domain(addr, type,
-                                                domain_string, addr_size))
-        ) {
-        *h_errnop = ret_status;
-        return ret_status;
-    }
-
-    /*
-     * if there is memory, add the address to hostent's address list 
-     */
-    if ((buflen - bufused) >= (ret->h_length + (sizeof(char *) * 2))) {
-        ret->h_addr_list = (char **) (buf + bufused);
-        bufused = bufused + (sizeof(char *) * 2);
-        ret->h_addr_list[0] = buf + bufused;
-        ret->h_addr_list[1] = NULL;
-        bufused = bufused + ret->h_length;
-        memcpy(ret->h_addr_list[0], addr, ret->h_length);
-    } else {                    /* no memory, fail */
-        *h_errnop = NO_RECOVERY;
-        return (NO_RECOVERY);
-    }
-
-    if (VAL_NO_ERROR != (retval = val_get_rrset(ctx,   /* val_context_t *  */
-                                                domain_string, /* domain name */ 
-                                                ns_c_in,   /* const u_int16_t q_class */
-                                                ns_t_ptr,  /* const u_int16_t type */
-                                                0,
-                                                &val_res))) { /* struct val_answer_chain **results */
-
-        val_log(ctx, LOG_ERR, 
-                "val_gethostbyaddr_r(): val_get_rrset failed - %s", p_val_err(retval));
-        *h_errnop = NO_RECOVERY;
-        return NO_RECOVERY;
+        return EAI_FAIL;
     }
 
     if (!val_res) {
-        *h_errnop = NO_RECOVERY;
-        return NO_RECOVERY;
+        val_log(ctx, LOG_ERR, "val_getnameinfo(): EAI_MEMORY\n");
+        *val_status = VAL_UNTRUSTED_ANSWER;
+        return EAI_MEMORY;
     }
 
     val_rnc_status = 0;
 
     for (res = val_res; res; res=res->val_ans_next) {
-
-        *val_status = res->val_ans_status;
-
         /* set the value of merged trusted and validated status values */
-        struct rr_rec  *rr = res->val_ans;
-        if (rr) {
-            struct rr_rec  *rr_it = NULL;
-            int             count = 0, aliases_sz = 0;
-            /*
-             * if the buffer has enough room add the first host address 
-             */
-            if ((1 + rr->rr_length) < (buflen - bufused)) {
-                /*
-                 * setup hostent 
-                 */
-                ret->h_name = buf + bufused;
-                ns_name_ntop(rr->rr_data, ret->h_name,
-                             (buflen - bufused));
-                bufused = bufused + strlen(ret->h_name) + 1;
-
-                rr_it = rr->rr_next;
-                /*
-                 * are there other hostnames? 
-                 */
-                if (rr_it) {
-                    /*
-                     * calculate the amount of memory we need for aliases. 
-                     */
-                    do {
-                        count++;
-                        aliases_sz = aliases_sz + rr_it->rr_length + 1;
-                    } while (NULL != (rr_it = rr_it->rr_next));
-
-                    /*
-                     * check that we have the space in the buffer 
-                     */
-                    if (buflen >=
-                        (bufused + (sizeof(char *) * (count + 1)) +
-                        aliases_sz)) {
-                        /*
-                         * assign the string pointer array 
-                         */
-                        ret->h_aliases = (char **) (buf + bufused);
-                        bufused = bufused + (sizeof(char *) * (count + 1));
-
-                        /*
-                         * assign the strings 
-                         */
-                        rr_it = rr->rr_next;
-                        count = 0;
-                        do {
-                            ret->h_aliases[count] = buf + bufused;
-                            ns_name_ntop(rr_it->rr_data,
-                                         ret->h_aliases[count],
-                                        (buflen - bufused));
-                            bufused =
-                                bufused + strlen(ret->h_aliases[count]) + 1;
-                            count++;
-                        } while (NULL != (rr_it = rr_it->rr_next));
-                        /*
-                         * mark end of array 
-                         */
-                        ret->h_aliases[count] = NULL;
-                    }
-                    /*
-                     * else we didn't have enough memory for the aliases.  They
-                     * will be ignored with only one hostname returned 
-                     */
-                }                   /* else there are no other hostnames/aliases */
-
-            } else {                /* else there is not enough room for even one host name, fail */
-                ret->h_name = NULL;
-                *h_errnop = NO_RECOVERY;
-                return NO_RECOVERY;
+        if (res->val_ans) {
+            if (host && (hostlen > 0) 
+                && (hostlen <= res->val_ans->rr_length) 
+                && !(flags && NI_NUMERICHOST))  {
+                    ns_name_ntop(res->val_ans->rr_data,
+                               host, hostlen);
             }
+            if (val_isvalidated(res->val_ans_status))
+                *val_status = VAL_VALIDATED_ANSWER;
+            else if (val_istrusted(res->val_ans_status))
+                *val_status = VAL_TRUSTED_ANSWER;
+            else
+                *val_status = VAL_UNTRUSTED_ANSWER;
             break;
-
-        } else if  (val_does_not_exist(res->val_ans_status)) {
-                    
+        } else if (val_does_not_exist(res->val_ans_status)) {
             if ((res->val_ans_status == VAL_NONEXISTENT_TYPE) ||
-                (res->val_ans_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
-                    val_rnc_status = NO_DATA;
-            } else if ((res->val_ans_status == VAL_NONEXISTENT_NAME) ||
-                       (res->val_ans_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
-                   val_rnc_status = HOST_NOT_FOUND;
+                    (res->val_ans_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
+                val_rnc_status = EAI_NODATA;
+            } else { 
+                val_rnc_status = EAI_NONAME;
             }
-
             break;
-        }
+        } 
     }
 
-    if (!res) { /* no rrset, but a succesful return from the query?, fail */
-        ret->h_name = NULL;
-        *h_errnop = NO_RECOVERY;
-        return NO_RECOVERY;
+    if (res == NULL) {
+        *val_status = VAL_UNTRUSTED_ANSWER;
     }
+                    
+    val_log(ctx, LOG_DEBUG,
+          "val_getnameinfo(): val_get_rrset for host %s, returned %s with lookup status %d and validator status %d : %s",
+          domain_string, host,
+          val_rnc_status, 
+          *val_status, p_val_status(*val_status));
 
-    /*
-     * no error, set result 
-     */
-    *result = ret;
-    *h_errnop = val_rnc_status;
+    val_free_answer_chain(val_res);
+
     return val_rnc_status;
 
-}                               /* val_getthostbyaddr_r */
-
-
-/*
- * A old version of gethostbyaddr for use with validator
- */
-struct hostent *
-val_gethostbyaddr(val_context_t * context,
-                  const char *addr,
-                  int len, int type, val_status_t * val_status)
-{
-    /*
-     * static buffer size for hostent is set to 512 
-     */
-    const int       buflen = 512;
-    static char     buffer[512];        /* compiler doesn't consider a const, constant */
-    static struct hostent ret_hostent;
-
-    struct hostent *result_hostent = NULL;
-    int             errnum = 0;
-    val_context_t *ctx = NULL;
-    
-    if (context == NULL) {
-        if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
-            h_errno = NO_RECOVERY;
-            return NULL;
-        } 
-    } else {
-        ctx = context;
-    }
-
-    /*
-     * set defaults for static values 
-     */
-    memset(buffer, 0, sizeof(char) * buflen);
-    ret_hostent.h_name = NULL;
-    ret_hostent.h_aliases = NULL;
-    ret_hostent.h_addrtype = 0;
-    ret_hostent.h_length = 0;
-    ret_hostent.h_addr_list = NULL;
-
-    int             response = val_gethostbyaddr_r(ctx,
-                                                   addr, len, type,
-                                                   &ret_hostent,
-                                                   buffer, buflen,
-                                                   &result_hostent,
-                                                   &errnum,
-                                                   val_status);
-
-    if (response != 0) {
-        h_errno = response;
-        return NULL;
-    }
-    /*
-     * should have succeeded, if memory doesn't match, fail. 
-     */
-    else if (&ret_hostent != result_hostent) {
-        h_errno = NO_RECOVERY;
-        return NULL;
-    }
-
-    /*
-     * success 
-     */
-    h_errno = 0;
-    return &ret_hostent;
-}                               /* val_gethostbyaddr */
+}                               // val_getnameinfo

@@ -33,7 +33,7 @@
 
 #include "validator/resolver.h"
 
-extern void     libsres_pquery(const u_char * msg, int len, FILE * file);
+extern void     libsres_pquery(const u_char * msg, size_t len, FILE * file);
 
 
 static int      seq_number = 0;
@@ -82,7 +82,7 @@ my_strdup(const char *str, char *filename, int lineno)
 }
 
 void
-print_response(u_int8_t * ans, int resplen)
+print_response(u_char * ans, size_t resplen)
 {
     /*
      * fp_nquery is a resolver debug routine (I think), the rest
@@ -95,7 +95,7 @@ print_response(u_int8_t * ans, int resplen)
 }
 
 void
-print_hex_field(u_int8_t field[], int length, int width, char *pref)
+print_hex_field(u_char field[], size_t length, size_t width, char *pref)
 {
     /*
      * Prints an arbitrary bit field, from one address for some number of
@@ -105,7 +105,7 @@ print_hex_field(u_int8_t field[], int length, int width, char *pref)
      * 
      * This is very useful in gdb to see what's in a memory field.
      */
-    int             i, start, stop;
+    size_t             i, start, stop;
 
     start = 0;
     do {
@@ -128,12 +128,12 @@ print_hex_field(u_int8_t field[], int length, int width, char *pref)
 }
 
 void
-print_hex(u_int8_t field[], int length)
+print_hex(u_char field[], size_t length)
 {
     /*
      * Prints the hex values of a field...not as pretty as the print_hex_field.
      */
-    int             i, start, stop;
+    size_t             i, start, stop;
 
     start = 0;
     do {
@@ -147,10 +147,10 @@ print_hex(u_int8_t field[], int length)
 }
 
 int
-complete_read(int sock, void *field, int length)
+complete_read(int sock, void *field, size_t length)
 {
-    int             bytes;
-    int             bytes_read = 0;
+    size_t             bytes;
+    size_t             bytes_read = 0;
     memset(field, '\0', length);
 
     do {
@@ -163,21 +163,6 @@ complete_read(int sock, void *field, int length)
     } while (bytes_read < length);
     return length;
 }
-
-
-int
-wire_to_ascii_name(char *name, u_int8_t * wire, int name_length)
-{
-    int             ret_val;
-    memset(name, 0, name_length);
-    ret_val = ns_name_ntop(wire, name, name_length - 1);
-    if (name[strlen(name) - 1] != '.')
-        strcat(name, ".");
-    else
-        ret_val--;
-    return ret_val;
-}
-
 
 void
 free_name_server(struct name_server **ns)

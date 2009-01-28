@@ -100,7 +100,7 @@ print_results(struct val_answer_chain *results)
         
         for (j=1, rr = res->val_ans; rr; rr=rr->rr_next) {
             char            buf[1028];
-            int             buflen = 1024;
+            int          buflen = 1024;
             
             get_hex_string(rr->rr_data, rr->rr_length, buf, buflen);
             fprintf(stderr, "RR %d : %s\n", j++, buf); 
@@ -118,7 +118,7 @@ main(int argc, char *argv[])
     char           *node = NULL;
     int             retval;
     val_log_t      *logp;
-    u_int16_t      type_h = ns_t_a;
+    int      type_h = ns_t_a;
     struct val_answer_chain *results = NULL;
     int success = 0;
 
@@ -153,7 +153,7 @@ main(int argc, char *argv[])
             break;
 
         case 't':
-            type_h = res_nametotype(optarg, &success);
+            type_h = (int)res_nametotype(optarg, &success);
             if (!success) {
                 fprintf(stderr, "Unrecognized type %s\n", optarg);
                 usage (argv[0]);

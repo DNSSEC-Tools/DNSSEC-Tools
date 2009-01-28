@@ -20,8 +20,8 @@ typedef int     val_result_t;
  * Check if DS hash matches the DNSKEY  
  */
 int             ds_hash_is_equal(val_context_t *ctx,
-                    u_int8_t ds_hashtype, u_int8_t * ds_hash,
-                    u_int32_t ds_hash_len, u_int8_t * name_n,
+                    u_int8_t ds_hashtype, u_char * ds_hash,
+                    size_t ds_hash_len, u_char * name_n,
                     struct val_rr_rec *dnskey, val_astatus_t * ds_status);
 
 /*
@@ -32,7 +32,7 @@ int             ds_hash_is_equal(val_context_t *ctx,
      (ds)->d_algo == (dnskey)->algorithm &&\
      ds_hash_is_equal(ctx,\
                       (ds)->d_type,\
-                      (ds)->d_hash, (ds)->d_hash_len,\
+                      (ds)->d_hash, (size_t)((ds)->d_hash_len),\
                       name_n,\
                       dnskey_rr_rec, ds_status))
 

@@ -32,12 +32,12 @@
  */
 
 u_int16_t
-keytag(const unsigned char key[],       /* the RDATA part of the DNSKEY RR */
-       int keysize     /* the RDLENGTH */
+keytag(const u_char key[],       /* the RDATA part of the DNSKEY RR */
+       size_t keysize     /* the RDLENGTH */
     )
 {
     u_int32_t   ac;         /* assumed to be 32 bits or larger */
-    int             i;          /* loop index */
+    size_t  i;          /* loop index */
 
     if (key == NULL)
         return 0;
@@ -50,25 +50,26 @@ keytag(const unsigned char key[],       /* the RDATA part of the DNSKEY RR */
 
 /*
  * Parse a domain name
- * Returns the number of bytes used by the domain name
  */
 int
-val_parse_dname(const unsigned char *buf, int buflen, int offset,
-                char *dname)
+val_parse_dname(const u_char *buf, size_t buflen, size_t offset,
+                char *dname, size_t *dlen)
 {
-    int             newoffset;
-    int             nindex = 0;
-    int             count = 0;
-    int             compressed = 0;
+    size_t             newoffset;
+    size_t             nindex = 0;
+    size_t             count = 0;
+    int                compressed = 0;
 
-    if ((dname == NULL) || (buf == NULL) || (offset > buflen))
-        return 0;
+    if ((dname == NULL) || (dlen == NULL) 
+            || (buf == NULL) || (offset > buflen))
+        return VAL_BAD_ARGUMENT;
 
     newoffset = offset;
     bzero(dname, sizeof(dname));
+    *dlen = 0;
 
     while ((newoffset < buflen) && (buf[newoffset] != 0)) {
-        int             len, i;
+        size_t             len, i;
 
         if ((buf[newoffset] & 0xC0) == 0xC0) {  /* domain name compression */
 
@@ -97,26 +98,27 @@ val_parse_dname(const unsigned char *buf, int buflen, int offset,
         newoffset += (len + 1);
     }
 
-    return count + 1;
+    *dlen = count + 1;
+    return VAL_NO_ERROR;
 }
 
 /*
  * Parse rdata portion of a DNSKEY Resource Record.
  * Returns the number of bytes in the DNSKEY rdata portion that were parsed on success. 
- * Returns -1 on failure.
+ * Returns 0 on failure.
  */
 int
-val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
+val_parse_dnskey_rdata(const u_char *buf, size_t buflen,
                        val_dnskey_rdata_t * rdata)
 {
-    int             index = 0;
+    size_t index = 0;
     const u_char   *cp;
 
     if (!rdata || !buf)
-        return -1;
+        return VAL_BAD_ARGUMENT;
 
     if (index + 4 > buflen)
-        return -1;
+        return VAL_BAD_ARGUMENT;
 
     cp = buf;
     VAL_GET16(rdata->flags, cp);
@@ -134,7 +136,7 @@ val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
         rdata->public_key =
             (u_char *) MALLOC(rdata->public_key_len * sizeof(u_char));
         if (rdata->public_key == NULL)
-            return -1;
+            return VAL_OUT_OF_MEMORY;
         memcpy(rdata->public_key, buf + index, rdata->public_key_len);
         index += rdata->public_key_len;
     } else
@@ -146,8 +148,7 @@ val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
         rdata->key_tag = keytag(buf, buflen);
     }
 
-
-    return index;
+    return VAL_NO_ERROR;
 }
 
 
@@ -171,7 +172,7 @@ val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
  */
 
 int
-val_parse_ds_string(char *dsstr, int dsstrlen,
+val_parse_ds_string(char *dsstr, size_t dsstrlen,
                     val_ds_rdata_t ** ds_rdata)
 {
     char           *sp = dsstr;
@@ -179,7 +180,7 @@ val_parse_ds_string(char *dsstr, int dsstrlen,
     char            token[NS_MAXDNAME];
     char           *dsptr = NULL;
     char           *cp;
-    int             bufsize;
+    size_t          bufsize;
 
     if (dsstr == NULL || ds_rdata == NULL)
         return VAL_BAD_ARGUMENT;
@@ -229,7 +230,7 @@ val_parse_ds_string(char *dsstr, int dsstrlen,
         return VAL_CONF_PARSE_ERROR;
     }
     (*ds_rdata)->d_hash =
-        (u_char *) MALLOC(bufsize * sizeof(u_int8_t));
+        (u_char *) MALLOC(bufsize * sizeof(u_char));
     if ((*ds_rdata)->d_hash == NULL) {
         FREE(*ds_rdata);
         *ds_rdata = NULL;
@@ -255,7 +256,7 @@ val_parse_ds_string(char *dsstr, int dsstrlen,
  * protocol, algorithm and the base64 key delimited by spaces.
  */
 int
-val_parse_dnskey_string(char *keystr, int keystrlen,
+val_parse_dnskey_string(char *keystr, size_t keystrlen,
                         val_dnskey_rdata_t ** dnskey_rdata)
 {
     char           *sp = keystr;
@@ -263,8 +264,8 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     char            token[NS_MAXDNAME];
     char           *keyptr = NULL;
     char           *cp;
-    int             bufsize;
-    int             buflen;
+    size_t         bufsize;
+    size_t         buflen;
     u_char         *buf;
     u_char         *bp;
     u_int16_t       flags;
@@ -310,14 +311,12 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     *cp = '\0';
     ep = cp; /* this is the last character in the public key */
 
-    if (keyptr != NULL)
-        bufsize = ep - keyptr;
-
-    if (keyptr == NULL || bufsize == 0) {
+    if (keyptr == NULL || keyptr >= ep) {
         FREE(*dnskey_rdata);
         *dnskey_rdata = NULL;
         return VAL_CONF_PARSE_ERROR;
     }
+    bufsize = ep - keyptr;
     (*dnskey_rdata)->public_key =
         (u_char *) MALLOC(bufsize * sizeof(char));
     if ((*dnskey_rdata)->public_key == NULL) {
@@ -387,17 +386,19 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
  * Caller assumes responsiblity for allocated dnskey_rdata memory.
  */
 int
-val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
+val_parse_rrsig_rdata(const u_char *buf, size_t buflen,
                       val_rrsig_rdata_t * rdata)
 {
-    int             index = 0;
+    size_t index = 0;
     const u_char   *cp;
+    size_t namelen;
+    int retval;
 
     if (!rdata || !buf)
-        return -1;
+        return VAL_BAD_ARGUMENT;
 
     if (index + 18 > buflen)
-        return -1;
+        return VAL_BAD_ARGUMENT;
 
     cp = buf;
     VAL_GET16(rdata->type_covered, cp);
@@ -422,8 +423,13 @@ val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
     VAL_GET16(rdata->key_tag, cp);
     index += 2;
 
-    index +=
-        val_parse_dname(buf, buflen, index, (char *) rdata->signer_name);
+    if (VAL_NO_ERROR != 
+            (retval = val_parse_dname(buf, buflen, index, 
+                        (char *) rdata->signer_name,
+                        &namelen))) {
+        return retval;
+    }
+    index += namelen;
 
     rdata->signature_len = (buflen > index) ? (buflen - index) : 0;
 
@@ -431,31 +437,30 @@ val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
         rdata->signature =
             (u_char *) MALLOC(rdata->signature_len * sizeof(u_char));
         if (rdata->signature == NULL)
-            return -1;
+            return VAL_OUT_OF_MEMORY;
         memcpy(rdata->signature, buf + index, rdata->signature_len);
         index += rdata->signature_len;
     } else
         rdata->signature = NULL;
 
-    return index;
+    return VAL_NO_ERROR;
 }
 
 /*
  * Parse rdata portion of a DS Resource Record.
- * Returns the number of bytes in the DS rdata portion that were parsed.
  */
 int
-val_parse_ds_rdata(const unsigned char *buf, int buflen,
+val_parse_ds_rdata(const u_char *buf, size_t buflen,
                    val_ds_rdata_t * rdata)
 {
-    int             index = 0;
+    size_t index = 0;
     const u_char   *cp = buf;
 
     if (!rdata || !buf)
-        return -1;
+        return VAL_BAD_ARGUMENT;
 
     if (index + 2 + 1 + 1 > buflen)
-        return -1;
+        return VAL_BAD_ARGUMENT;
 
     VAL_GET16(rdata->d_keytag, cp);
     index += 2;
@@ -474,31 +479,31 @@ val_parse_ds_rdata(const unsigned char *buf, int buflen,
     else if (rdata->d_type == ALG_DS_HASH_SHA256)
         rdata->d_hash_len = SHA256_DIGEST_LENGTH;
     else
-        return -1;
-
-    rdata->d_hash =
-        (u_int8_t *) MALLOC(rdata->d_hash_len * sizeof(u_int8_t));
-    if (rdata->d_hash == NULL)
-        return -1;
+        return VAL_BAD_ARGUMENT;
 
     if (index + rdata->d_hash_len > buflen)
-        return -1;
+        return VAL_BAD_ARGUMENT;
+
+    rdata->d_hash =
+        (u_char *) MALLOC(rdata->d_hash_len * sizeof(u_char));
+    if (rdata->d_hash == NULL)
+        return VAL_OUT_OF_MEMORY;
 
     memcpy(rdata->d_hash, buf + index, rdata->d_hash_len);
     index += rdata->d_hash_len;
 
-    return index;
+    return VAL_NO_ERROR;
 }
 
 
 #ifdef LIBVAL_NSEC3
 val_nsec3_rdata_t *
-val_parse_nsec3_rdata(u_int8_t * rr_rdata, u_int16_t rdatalen,
+val_parse_nsec3_rdata(u_char * rr_rdata, size_t rdatalen,
                       val_nsec3_rdata_t * nd)
 {
-    u_int8_t       *cp;
-    u_int8_t        nexthashlen;
-    u_int8_t       *nexthash;
+    u_char       *cp;
+    size_t        nexthashlen, retlen;
+    u_char       *nexthash;
 
     if (nd == NULL)
         return NULL;
@@ -538,7 +543,10 @@ val_parse_nsec3_rdata(u_int8_t * rr_rdata, u_int16_t rdatalen,
         return NULL;
 
     base32hex_encode(nexthash, nexthashlen, &(nd->nexthash),
-                     &(nd->nexthashlen));
+                     &retlen);
+    nd->nexthashlen = (u_int8_t)retlen;
+    if (retlen > nd->nexthashlen)
+        return NULL;
 
     nd->bit_field = cp - rr_rdata;
     if ((cp - rr_rdata) >= rdatalen)

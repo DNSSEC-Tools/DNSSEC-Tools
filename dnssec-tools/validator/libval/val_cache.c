@@ -53,7 +53,7 @@ static struct rrset_rec *unchecked_answers = NULL;
 static struct rrset_rec *unchecked_proofs = NULL;
 
 struct zone_ns_map_t {
-    u_int8_t        zone_n[NS_MAXCDNAME];
+    u_char        zone_n[NS_MAXCDNAME];
     struct name_server *nslist;
     struct zone_ns_map_t *next;
 };
@@ -145,7 +145,7 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
         trail_new = NULL;
         while (new_rr) {
 
-            if (!IN_BAILIWICK(new_rr->rrs.val_rrset_name_n, matched_q)) {
+            if (!IN_BAILIWICK(new_rr->rrs_name_n, matched_q)) {
                 /*
                  * delete new 
                  */
@@ -161,34 +161,34 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
                 res_sq_free_rrset_recs(&new_rr);
                 break;
 
-            } else if (old->rrs.val_rrset_type_h == new_rr->rrs.val_rrset_type_h
-                && old->rrs.val_rrset_class_h ==
-                new_rr->rrs.val_rrset_class_h
-                && namecmp(old->rrs.val_rrset_name_n,
-                           new_rr->rrs.val_rrset_name_n) == 0) {
+            } else if (old->rrs_type_h == new_rr->rrs_type_h
+                && old->rrs_class_h ==
+                new_rr->rrs_class_h
+                && namecmp(old->rrs_name_n,
+                           new_rr->rrs_name_n) == 0) {
 
                 /*
                  * old and new are competitors 
                  */
                 if (!(old->rrs_cred < new_rr->rrs_cred ||
                       (old->rrs_cred == new_rr->rrs_cred &&
-                       old->rrs.val_rrset_section <=
-                       new_rr->rrs.val_rrset_section))) {
+                       old->rrs_section <=
+                       new_rr->rrs_section))) {
                     /*
                      * exchange the two -
                      * copy from new to old: cred, status, section, ans_kind
                      * exchange: data, sig
                      */
                     old->rrs_cred = new_rr->rrs_cred;
-                    old->rrs.val_rrset_section =
-                        new_rr->rrs.val_rrset_section;
+                    old->rrs_section =
+                        new_rr->rrs_section;
                     old->rrs_ans_kind = new_rr->rrs_ans_kind;
-                    rr_exchange = old->rrs.val_rrset_data;
-                    old->rrs.val_rrset_data = new_rr->rrs.val_rrset_data;
-                    new_rr->rrs.val_rrset_data = rr_exchange;
-                    rr_exchange = old->rrs.val_rrset_sig;
-                    old->rrs.val_rrset_sig = new_rr->rrs.val_rrset_sig;
-                    new_rr->rrs.val_rrset_sig = rr_exchange;
+                    rr_exchange = old->rrs_data;
+                    old->rrs_data = new_rr->rrs_data;
+                    new_rr->rrs_data = rr_exchange;
+                    rr_exchange = old->rrs_sig;
+                    old->rrs_sig = new_rr->rrs_sig;
+                    new_rr->rrs_sig = rr_exchange;
                 }
 
                 /*
@@ -237,7 +237,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
 
     u_int16_t type_h;
     u_int16_t class_h;
-    u_int8_t *name_n;
+    u_char *name_n;
 
     if (!matched_q || !response)
         return VAL_BAD_ARGUMENT;
@@ -291,7 +291,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
     
     while (next_answer) {
 
-        if (tv.tv_sec >= next_answer->rrs.val_rrset_ttl_x) {
+        if (tv.tv_sec >= next_answer->rrs_ttl_x) {
             // TTL expiry reached
             struct rrset_rec *temp;
             if (prev) {
@@ -307,23 +307,23 @@ get_cached_rrset(struct val_query_chain *matched_q,
             continue;
         }
 
-        if (next_answer->rrs.val_rrset_class_h == class_h) {
+        if (next_answer->rrs_class_h == class_h) {
 
                 /* if matching type or cname indirection */
-            if (((next_answer->rrs.val_rrset_type_h == type_h ||
-                 (next_answer->rrs.val_rrset_type_h == ns_t_cname &&
+            if (((next_answer->rrs_type_h == type_h ||
+                 (next_answer->rrs_type_h == ns_t_cname &&
                   type_h != ns_t_any && type_h != ns_t_rrsig)) &&
                 /* and name is an exact match */
-                (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0)) ||
+                (namecmp(next_answer->rrs_name_n, name_n) == 0)) ||
                 /* OR */
                 /* DNAME indirection */
-                ((next_answer->rrs.val_rrset_type_h == ns_t_dname &&
+                ((next_answer->rrs_type_h == ns_t_dname &&
                   type_h != ns_t_any && type_h != ns_t_rrsig) &&
                 /* and name applies */
-                 (NULL != (u_int8_t *) namename(name_n, 
-                                    next_answer->rrs.val_rrset_name_n)))) {
+                 (NULL != (u_char *) namename(name_n, 
+                                    next_answer->rrs_name_n)))) {
 
-                if (next_answer->rrs.val_rrset_data != NULL) {
+                if (next_answer->rrs_data != NULL) {
                     new_answer = copy_rrset_rec(next_answer);
                     break;
                 }
@@ -379,9 +379,9 @@ get_cached_rrset(struct val_query_chain *matched_q,
         matched_q->qc_state = Q_ANSWERED;
 
         return process_cname_dname_responses( 
-                        new_answer->rrs.val_rrset_name_n, 
-                        new_answer->rrs.val_rrset_type_h, 
-                        new_answer->rrs.val_rrset_data->rr_rdata, 
+                        new_answer->rrs_name_n, 
+                        new_answer->rrs_type_h, 
+                        new_answer->rrs_data->rr_rdata, 
                         matched_q, &(*response)->di_qnames, 
                         NULL);
 
@@ -401,7 +401,7 @@ stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
     /* Check if all records are in bailiwick */
     r = new_info;
     while (r) {
-        if (!IN_BAILIWICK(r->rrs.val_rrset_name_n, matched_q)) {
+        if (!IN_BAILIWICK(r->rrs_name_n, matched_q)) {
             in_bailiwick = 0;
             break;
         }
@@ -484,7 +484,7 @@ stow_negative_answers(struct rrset_rec *new_info, struct val_query_chain *matche
  * data for it 
  */
 int
-store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
+store_ns_for_zone(u_char * zonecut_n, struct name_server *resp_server)
 {
     struct zone_ns_map_t *map_e;
 
@@ -555,19 +555,19 @@ get_nslist_from_cache(val_context_t *ctx,
                       struct queries_for_query *matched_qfq,
                       struct queries_for_query **queries,
                       struct name_server **ref_ns_list,
-                      u_int8_t **zonecut_n)
+                      u_char **zonecut_n)
 {
     /*
      * find closest matching name zone_n 
      */
     struct rrset_rec *nsrrset, *prev;
-    u_int8_t       *name_n = NULL;
-    u_int8_t       *tname_n = NULL;
-    u_int8_t       *p;
-    u_int16_t       qtype;
-    u_int8_t       *qname_n;
+    u_char       *name_n = NULL;
+    u_char       *tname_n = NULL;
+    u_char       *p;
+    u_int16_t     qtype;
+    u_char       *qname_n;
     struct zone_ns_map_t *map_e, *saved_map;
-    u_int8_t       *tmp_zonecut_n = NULL;
+    u_char       *tmp_zonecut_n = NULL;
     struct timeval  tv;
     
     qname_n = matched_qfq->qfq_query->qc_name_n;
@@ -589,7 +589,7 @@ get_nslist_from_cache(val_context_t *ctx,
         /*
          * check if zone is within query 
          */
-        if (NULL != (p = (u_int8_t *) namename(qname_n, map_e->zone_n))) {
+        if (NULL != (p = namename(qname_n, map_e->zone_n))) {
             if (!saved_map || (namecmp(p, saved_map->zone_n) > 0)) {
                 saved_map = map_e;
             }
@@ -598,7 +598,8 @@ get_nslist_from_cache(val_context_t *ctx,
 
     if (saved_map) {
         clone_ns_list(ref_ns_list, saved_map->nslist);
-        *zonecut_n = (u_int8_t *) MALLOC (wire_name_length(saved_map->zone_n) * sizeof (u_int8_t));
+        *zonecut_n = (u_char *) MALLOC (wire_name_length(saved_map->zone_n) *
+                sizeof (u_char));
         if (*zonecut_n == NULL) {
             UNLOCK(&map_rwlock);
             return VAL_OUT_OF_MEMORY;
@@ -618,7 +619,7 @@ get_nslist_from_cache(val_context_t *ctx,
     prev = NULL;
     for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
 
-        if (tv.tv_sec >= nsrrset->rrs.val_rrset_ttl_x) {
+        if (tv.tv_sec >= nsrrset->rrs_ttl_x) {
             /* TTL expiry reached */
             struct rrset_rec *temp;
             if (prev) {
@@ -633,15 +634,14 @@ get_nslist_from_cache(val_context_t *ctx,
 
         prev = nsrrset;
 
-        if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {
-            tname_n = nsrrset->rrs.val_rrset_name_n;
+        if (nsrrset->rrs_type_h == ns_t_ns) {
+            tname_n = nsrrset->rrs_name_n;
 
             /*
              * Check if tname_n is within qname_n 
              */
             if (NULL !=
-                (p =
-                 (u_int8_t *) namename(qname_n, tname_n))) {
+                (p = namename(qname_n, tname_n))) {
 
                 if ((!name_n) ||
                     (wire_name_length(tname_n) >
@@ -666,7 +666,8 @@ get_nslist_from_cache(val_context_t *ctx,
     }
 
     if (ref_ns_list && tmp_zonecut_n) {
-        *zonecut_n = (u_int8_t *) MALLOC (wire_name_length(tmp_zonecut_n) * sizeof (u_int8_t));
+        *zonecut_n = (u_char *) MALLOC (wire_name_length(tmp_zonecut_n) *
+                sizeof (u_char));
         if (*zonecut_n == NULL) {
             UNLOCK(&ns_rwlock);
             return VAL_OUT_OF_MEMORY;

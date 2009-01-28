@@ -90,7 +90,7 @@ sig_shutdown(int a)
 }
 
 int
-check_results(val_context_t * context, const char *desc, u_char * name_n,
+check_results(val_context_t * context, const char *desc, char * name,
               const u_int16_t class, const u_int16_t type,
               const int *result_ar, struct val_result_chain *results,
               int trusted_only)
@@ -194,8 +194,8 @@ print_val_response(struct val_response *resp)
 // A wrapper function to send a query and print the output onto stderr
 //
 int
-sendquery(val_context_t * context, const char *desc, u_char * name_n,
-          const u_int16_t class, const u_int16_t type, u_int32_t flags,
+sendquery(val_context_t * context, const char *desc, char * name,
+          int class, int type, u_int32_t flags,
           const int *result_ar, int trusted_only,
           struct val_response *resp)
 {
@@ -203,22 +203,22 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
     struct val_result_chain *results = NULL;
     int             err = 0;
 
-    if ((NULL == desc) || (NULL == name_n) || (NULL == result_ar) )
+    if ((NULL == desc) || (NULL == name) || (NULL == result_ar) )
         return -1;
 
     fprintf(stderr, "%s: ****START**** \n", desc);
     
     ret_val =
-        val_resolve_and_check(context, name_n, class, type, flags, &results);
+        val_resolve_and_check(context, name, class, type, flags, &results);
 
     if (ret_val == VAL_NO_ERROR) {
 
         if (resp)
-            ret_val = compose_answer(name_n, type, class, results, resp);
+            ret_val = compose_answer(name, type, class, results, resp);
 
         if (result_ar)
             err =
-                check_results(context, desc, name_n, class, type,
+                check_results(context, desc, name, class, type,
                               result_ar, results, trusted_only);
 
     } else {
@@ -328,15 +328,15 @@ wait_for_packet(void)
 }
 
 static int
-get_results(val_context_t * context, const char *desc, u_char *name_n,
-            const u_int16_t class_h, const u_int16_t type_h, u_char *response,
+get_results(val_context_t * context, const char *desc, char *name,
+            int class_h, int type_h, u_char *response,
             int *response_size, int trusted_only)
 {
     int             response_size_max, ret_val, err = 0;
     struct val_result_chain *results = NULL;
     struct val_response resp;
 
-    if ((NULL == desc) || (NULL == name_n) || (NULL == response) ||
+    if ((NULL == desc) || (NULL == name) || (NULL == response) ||
         (NULL == response_size))
         return -1;
 
@@ -348,12 +348,12 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
     /*
      * Query the validator
      */
-    ret_val = val_resolve_and_check(context, name_n, class_h, type_h, 
+    ret_val = val_resolve_and_check(context, name, class_h, type_h, 
                                 VAL_QUERY_NO_AC_DETAIL, &results);
 
     if (ret_val == VAL_NO_ERROR) {
 
-        ret_val = compose_answer(name_n, type_h, class_h, results, &resp);
+        ret_val = compose_answer(name, type_h, class_h, results, &resp);
         val_free_result_chain(results);
 
         if (VAL_NO_ERROR != ret_val) {
@@ -449,7 +449,7 @@ process_packet(val_context_t *context)
 
     response_size = sizeof(response);
     
-    get_results(context, "test", &query[sizeof(HEADER)], q_class, q_type,
+    get_results(context, "test", &query[sizeof(HEADER)], (int)q_class, (int)q_type,
                 response, &response_size, 0);
 
     /*
@@ -517,11 +517,11 @@ endless_loop(void)
 }
 
 void 
-one_test(val_context_t *context, u_int8_t *name_n, u_int16_t class_h, 
-        u_int16_t type_h, u_int32_t flags, int retvals[], int doprint)
+one_test(val_context_t *context, char *name, int class_h, 
+        int type_h, u_int32_t flags, int retvals[], int doprint)
 {
     struct val_response resp;
-    sendquery(context, "Result", name_n, class_h, type_h, flags, retvals, 1, &resp);
+    sendquery(context, "Result", name, class_h, type_h, flags, retvals, 1, &resp);
     fprintf(stderr, "\n");
 
     // If the print option is present, perform query and validation
@@ -548,9 +548,9 @@ struct thread_params_st {
 
 struct thread_params_ot {
     val_context_t *context;
-    u_int8_t *name_n;
-    u_int16_t class_h;
-    u_int16_t type_h;
+    char *name;
+    int class_h;
+    int type_h;
     u_int32_t flags;
     int *retvals;
     int doprint;
@@ -583,7 +583,7 @@ void *firethread_ot(void *param) {
             (unsigned int)pthread_self(), 
             (unsigned int)threadparams->context);
     do {
-        one_test(threadparams->context, threadparams->name_n, threadparams->class_h, 
+        one_test(threadparams->context, threadparams->name, threadparams->class_h, 
                   threadparams->type_h, threadparams->flags, 
                   threadparams->retvals, threadparams->doprint);
         if (threadparams->wait)
@@ -613,8 +613,8 @@ main(int argc, char *argv[])
     int             c;
     char           *domain_name = NULL;
     const char     *args = "c:dF:hi:l:w:o:pr:S:st:T:v:";
-    u_int16_t       class_h = ns_c_in;
-    u_int16_t       type_h = ns_t_a;
+    int            class_h = ns_c_in;
+    int            type_h = ns_t_a;
     int             success = 0;
     int             doprint = 0;
     int             selftest = 0;
@@ -625,7 +625,6 @@ main(int argc, char *argv[])
     int             wait = 0;
     char           *label_str = NULL, *nextarg = NULL;
     char           *suite = NULL, *testcase_config = NULL;
-    u_char          name_n[NS_MAXCDNAME];
     val_log_t      *logp;
     int             rc;
 
@@ -814,16 +813,11 @@ main(int argc, char *argv[])
     }
 
     domain_name = argv[optind++];
-    if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME) == -1) {
-        fprintf(stderr, "Cannot convert name to wire format\n");
-        rc = -1;
-        goto done;
-    }
 
 #if NO_OF_THREADS
     pthread_t tids[NO_OF_THREADS];
     struct thread_params_ot 
-                threadparams = {context, name_n, class_h, type_h, flags, retvals, doprint, wait};
+                threadparams = {context, domain_name, class_h, type_h, flags, retvals, doprint, wait};
     int j;
                 
     for (j=0; j < NO_OF_THREADS; j++) {
@@ -836,7 +830,7 @@ main(int argc, char *argv[])
     fprintf(stderr, "Parent exiting\n");
 #else
     do { /* endless loop */
-        one_test(context, name_n, class_h, type_h, flags, retvals, doprint);
+        one_test(context, domain_name, class_h, type_h, flags, retvals, doprint);
 
         if (wait)
             sleep(wait);

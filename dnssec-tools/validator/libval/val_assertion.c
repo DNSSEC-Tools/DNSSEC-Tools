@@ -49,10 +49,10 @@
 
 #define APPEND_LABEL(label1, label2)  do {\
     if (label1 && label2) {\
-        int len1 = wire_name_length(label1);\
-        int len2 = wire_name_length(label2);\
-        u_int8_t *catlabel;\
-        catlabel = (u_int8_t *) MALLOC ((len1+len2-1) * sizeof (u_int8_t));\
+        size_t len1 = wire_name_length(label1);\
+        size_t len2 = wire_name_length(label2);\
+        u_char *catlabel;\
+        catlabel = (u_char *) MALLOC ((len1+len2-1) * sizeof (u_char));\
         if (catlabel != NULL) {\
             memcpy(catlabel, label1, len1);\
             memcpy(catlabel+len1-1, label2, len2);\
@@ -63,8 +63,8 @@
 } while (0)
 
 #define CUT_AND_APPEND_LABEL(q_zonecut_n, qname) do {\
-    u_int8_t *stptr = q_zonecut_n;\
-    u_int8_t *prevptr = NULL;\
+    u_char *stptr = q_zonecut_n;\
+    u_char *prevptr = NULL;\
     while (stptr && (*stptr != '\0')) {\
         prevptr = stptr;\
         STRIP_LABEL(prevptr, stptr);\
@@ -79,7 +79,7 @@
  * The encoding of the bitmap is a sequence of <block#, len, bitmap> tuples
  */
 static int
-is_type_set(u_int8_t * field, int field_len, u_int16_t type)
+is_type_set(u_char * field, size_t field_len, u_int16_t type)
 {
     int             block, blen;
 
@@ -124,20 +124,6 @@ is_type_set(u_int8_t * field, int field_len, u_int16_t type)
     return 0;
 }
 
-#define CLONE_NAME_LEN(oldb, oldlen, newb, newlen) do {\
-        if (oldlen) {                                                   \
-            newb =	(u_int8_t *) MALLOC (oldlen * sizeof(u_int8_t)); \
-            if (newb == NULL) {                                         \
-                retval = VAL_OUT_OF_MEMORY;                             \
-                goto err;                                               \
-            }                                                           \
-            memcpy(newb, oldb, oldlen);                                 \
-        }                                                               \
-        else                                                            \
-            newb = NULL;                                                \
-        newlen = oldlen;                                                \
-    } while (0)
-
 
 #ifdef LIBVAL_NSEC3
 #define CHECK_RANGE(range1, range1len, range2, range2len, hash, hashlen) \
@@ -156,10 +142,8 @@ free_val_rrset_members(struct val_rrset_rec *r)
     if (r == NULL)
         return;
 
-    if (r->val_msg_header)
-        FREE(r->val_msg_header);
-    if (r->val_rrset_name_n)
-        FREE(r->val_rrset_name_n);
+    if (r->val_rrset_name)
+        FREE(r->val_rrset_name);
     if (r->val_rrset_server)
         FREE(r->val_rrset_server);
     if (r->val_rrset_data != NULL)
@@ -386,8 +370,8 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
 void
 free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
 {
-    if (assertions && assertions->_as.ac_data)
-        res_sq_free_rrset_recs(&(assertions->_as.ac_data));
+    if (assertions && assertions->val_ac_rrset.ac_data)
+        res_sq_free_rrset_recs(&(assertions->val_ac_rrset.ac_data));
 }
 
 void
@@ -402,18 +386,18 @@ delete_authentication_chain_element(val_context_t *ctx,
     if(as == NULL)
         return; 
 
-    if(as->_as.val_ac_rrset_next) 
-        delete_authentication_chain_element(ctx, as->_as.val_ac_rrset_next); 
+    if(as->val_ac_rrset.val_ac_rrset_next) 
+        delete_authentication_chain_element(ctx, as->val_ac_rrset.val_ac_rrset_next); 
     
     t_as_prev = NULL;
-    for(t_as=ctx->a_list; t_as; t_as=t_as->_as.val_ac_next) {
+    for(t_as=ctx->a_list; t_as; t_as=t_as->val_ac_rrset.val_ac_next) {
         if (t_as == as) {
             if (t_as_prev) {
-                t_as_prev->_as.val_ac_next = t_as->_as.val_ac_next;
+                t_as_prev->val_ac_rrset.val_ac_next = t_as->val_ac_rrset.val_ac_next;
             } else {
-                ctx->a_list = t_as->_as.val_ac_next;
+                ctx->a_list = t_as->val_ac_rrset.val_ac_next;
             }
-            t_as->_as.val_ac_next = NULL;
+            t_as->val_ac_rrset.val_ac_next = NULL;
             free_authentication_chain_structure(t_as);
             FREE(t_as);
             return;
@@ -589,14 +573,14 @@ free_qfq_chain(struct queries_for_query *queries)
 
 #ifdef LIBVAL_DLV
 static int
-find_dlv_trust_point(val_context_t * ctx, u_int8_t * zone_n, 
-                 u_int8_t ** dlv_tp, u_int8_t ** dlv_target, u_int32_t *ttl_x)
+find_dlv_trust_point(val_context_t * ctx, u_char * zone_n, 
+                 u_char ** dlv_tp, u_char ** dlv_target, u_int32_t *ttl_x)
 {
 
     policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
-    int             name_len;
-    u_int8_t       *zp = zone_n;
-    u_int8_t       *ep;
+    size_t       name_len;
+    u_char       *zp = zone_n;
+    u_char       *ep;
 
     /*
      * This function should never be called with a NULL zone_n, but still... 
@@ -635,20 +619,20 @@ find_dlv_trust_point(val_context_t * ctx, u_int8_t * zone_n,
 
             if (namecmp(ta_cur->zone_n, zp) == 0) {
                 /** We have hope */
-                int len;
+                size_t len;
 
-                u_int8_t *tp = ((struct dlv_policy *)(ta_cur->pol))->trust_point;
+                u_char *tp = ((struct dlv_policy *)(ta_cur->pol))->trust_point;
                 if (!tp)
                     continue;
                 len = wire_name_length(tp);
-                *dlv_tp = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+                *dlv_tp = (u_char *) MALLOC(len * sizeof(u_char));
                 if (*dlv_tp == NULL)
                     return VAL_OUT_OF_MEMORY;
                 memcpy(*dlv_tp, tp, len);
     
                 len = wire_name_length(zp);
                 *dlv_target =
-                    (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+                    (u_char *) MALLOC(len * sizeof(u_char));
                 if (*dlv_target == NULL) {
                     FREE(*dlv_tp);
                     *dlv_tp = NULL;
@@ -673,12 +657,22 @@ find_dlv_trust_point(val_context_t * ctx, u_int8_t * zone_n,
 }
 
 int 
-replace_name_in_name(u_int8_t *name_n,
-                     u_int8_t *s,
-                     u_int8_t *d,
-                     u_int8_t **new_name)
+replace_name_in_name(u_char *name_n,
+                     u_char *s,
+                     u_char *d,
+                     u_char **new_name)
 { 
-    u_int8_t *p;
+    u_char *p;
+    size_t len1, len2;
+   
+    if (name_n == NULL || s == NULL || d == NULL || new_name == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    len1 = wire_name_length(name_n);
+    len2 = wire_name_length(d);
+    
+    if (len1 == 0 || len2 == 0)
+        return VAL_BAD_ARGUMENT;
 
     /* replace dlv_tp in cl_target with dlv_target */
     p = namename(name_n, s);
@@ -690,9 +684,7 @@ replace_name_in_name(u_int8_t *name_n,
     *p = '\0'; /* temporarily */
 
     if (name_n && d) {
-        int len1 = wire_name_length(name_n);
-        int len2 = wire_name_length(d);
-        *new_name = (u_int8_t *) MALLOC ((len1+len2-1) * sizeof (u_int8_t));
+        *new_name = (u_char *) MALLOC ((len1+len2-1) * sizeof (u_char));
         if (*new_name == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
@@ -706,12 +698,12 @@ replace_name_in_name(u_int8_t *name_n,
 #endif
 
 int
-get_zse(val_context_t * ctx, u_int8_t * name_n, u_int32_t flags, 
-        u_int16_t *status, u_int8_t ** match_ptr, u_int32_t *ttl_x)
+get_zse(val_context_t * ctx, u_char * name_n, u_int32_t flags, 
+        u_int16_t *status, u_char ** match_ptr, u_int32_t *ttl_x)
 {
     policy_entry_t *zse_pol, *zse_cur;
-    int             name_len;
-    u_int8_t       *p;
+    size_t          name_len;
+    u_char         *p;
     int             retval;
 
     /*
@@ -746,7 +738,7 @@ get_zse(val_context_t * ctx, u_int8_t * name_n, u_int32_t flags,
          */
         for (; zse_cur; zse_cur = zse_cur->next) {
             int             root_zone = 0;
-            if (!namecmp(zse_cur->zone_n, (const u_int8_t *) ""))
+            if (!namecmp(zse_cur->zone_n, (const u_char *) ""))
                 root_zone = 1;
             else {
                 /*
@@ -774,9 +766,6 @@ get_zse(val_context_t * ctx, u_int8_t * name_n, u_int32_t flags,
                 if (pol->trusted == ZONE_SE_UNTRUSTED) {
                     *status = VAL_AC_UNTRUSTED_ZONE;
                     goto done;
-                } else if (pol->trusted == ZONE_SE_TRUSTED) {
-                    *status = VAL_AC_TRUSTED_ZONE;
-                    goto done;
                 } else if (pol->trusted == ZONE_SE_DO_VAL) {
                     *status = VAL_AC_WAIT_FOR_TRUST;
                     goto done;
@@ -798,14 +787,14 @@ done:
 }
 
 int
-find_trust_point(val_context_t * ctx, u_int8_t * zone_n, 
-                 u_int8_t ** matched_zone, u_int32_t *ttl_x)
+find_trust_point(val_context_t * ctx, u_char * zone_n, 
+                 u_char ** matched_zone, u_int32_t *ttl_x)
 {
 
     policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
-    int             name_len;
-    u_int8_t       *zp = zone_n;
-    u_int8_t       *ep;
+    size_t       name_len;
+    u_char       *zp = zone_n;
+    u_char       *ep;
 
     /*
      * This function should never be called with a NULL zone_n, but still... 
@@ -842,11 +831,11 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
                 ta_tmphead = ta_cur->next;
 
             if (namecmp(ta_cur->zone_n, zp) == 0) {
-                int len;
+                size_t len;
                 len = wire_name_length(zp);
                 /** We have hope */
                 *matched_zone =
-                   (u_int8_t *) MALLOC( len * sizeof(u_int8_t));
+                   (u_char *) MALLOC( len * sizeof(u_char));
                 if (*matched_zone == NULL) {
                     return VAL_OUT_OF_MEMORY;
                 }
@@ -866,15 +855,15 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
 }
 
 static int
-is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct val_rr_rec *key, 
+is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key, 
                val_astatus_t * status, u_int32_t flags, u_int32_t *ttl_x)
 {
     policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
-    int             name_len;
-    u_int8_t       *ep; 
+    size_t       name_len;
+    u_char       *ep; 
     val_dnskey_rdata_t dnskey;
     struct val_rr_rec  *curkey;
-    u_int8_t       *zp;
+    u_char       *zp;
 
     /*
      * This function should never be called with a NULL zone_n, but still... 
@@ -921,8 +910,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct val_rr_rec *key,
                 /*
                  * parse key and compare
                  */
-                if (-1 == val_parse_dnskey_rdata(curkey->rr_rdata,
-                                       curkey->rr_rdata_length_h, &dnskey)) {
+                if (VAL_NO_ERROR != val_parse_dnskey_rdata(curkey->rr_rdata,
+                                       curkey->rr_rdata_length, &dnskey)) {
                     val_log(ctx, LOG_INFO, "is_trusted_key(): could not parse DNSKEY");
                     continue;
                 }
@@ -977,7 +966,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct val_rr_rec *key,
         /*
          * trim the top label from our candidate zone 
          */
-        zp += (int) zp[0] + 1;
+        zp += zp[0] + 1;
         for (ta_cur = ta_tmphead; ta_cur; ta_cur = ta_cur->next) {
             if (wire_name_length(zp) < wire_name_length(ta_cur->zone_n))
                 /** next time look from this point */
@@ -1010,7 +999,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct val_rr_rec *key,
 
 
 static int
-set_ans_kind(u_int8_t * qname_n,
+set_ans_kind(u_char * qname_n,
              const u_int16_t q_type_h,
              const u_int16_t q_class_h,
              struct rrset_rec *the_set, u_int16_t * status)
@@ -1022,8 +1011,8 @@ set_ans_kind(u_int8_t * qname_n,
      * Referals won't make it this far, they are handled in digest_response 
      */
 
-    if ((the_set->rrs.val_rrset_data == NULL)
-        && (the_set->rrs.val_rrset_sig != NULL)) {
+    if ((the_set->rrs_data == NULL)
+        && (the_set->rrs_sig != NULL)) {
         the_set->rrs_ans_kind = SR_ANS_BARE_RRSIG;
         return VAL_NO_ERROR;
     }
@@ -1031,8 +1020,8 @@ set_ans_kind(u_int8_t * qname_n,
     /*
      * Answer is a NACK if... 
      */
-    if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
+    if (the_set->rrs_type_h == ns_t_nsec) {
+        if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_nsec))
             /*
              * We asked for it 
@@ -1047,8 +1036,8 @@ set_ans_kind(u_int8_t * qname_n,
     /*
      * Answer is also a NACK if... 
      */
-    if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
+    if (the_set->rrs_type_h == ns_t_nsec3) {
+        if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_nsec3))
             /*
              * We asked for it 
@@ -1065,8 +1054,8 @@ set_ans_kind(u_int8_t * qname_n,
      * Answer is a also a NACK if... 
      */
 
-    if (the_set->rrs.val_rrset_type_h == ns_t_soa) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
+    if (the_set->rrs_type_h == ns_t_soa) {
+        if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_soa))
             /*
              * We asked for it 
@@ -1082,8 +1071,8 @@ set_ans_kind(u_int8_t * qname_n,
      * Answer is a CNAME if... 
      */
 
-    if (the_set->rrs.val_rrset_type_h == ns_t_cname) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
+    if (the_set->rrs_type_h == ns_t_cname) {
+        if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_cname))
             /*
              * We asked for it 
@@ -1099,8 +1088,8 @@ set_ans_kind(u_int8_t * qname_n,
      * Answer is a DNAME if... 
      */
 
-    if (the_set->rrs.val_rrset_type_h == ns_t_dname) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
+    if (the_set->rrs_type_h == ns_t_dname) {
+        if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_dname))
             /*
              * We asked for it 
@@ -1116,11 +1105,11 @@ set_ans_kind(u_int8_t * qname_n,
     /*
      * Answer is an ANSWER if... 
      */
-    if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
+    if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
         (q_type_h == ns_t_any
-         || q_type_h == the_set->rrs.val_rrset_type_h)) {
+         || q_type_h == the_set->rrs_type_h)) {
 
-        if (the_set->rrs.val_rrset_data == NULL) {
+        if (the_set->rrs_data == NULL) {
             /* No data response */
             the_set->rrs_ans_kind = SR_ANS_NACK;
         } else {
@@ -1143,7 +1132,7 @@ set_ans_kind(u_int8_t * qname_n,
 #define NOT_IN_QNAMES   2
 
 static int
-name_in_q_names(struct qname_chain *q_names_n, u_int8_t *name_n)
+name_in_q_names(struct qname_chain *q_names_n, u_char *name_n)
 {
     struct qname_chain *temp_qc;
 
@@ -1186,10 +1175,10 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     if (*status == (VAL_AC_DNS_ERROR))
         return TRUE;
 
-    name_present = name_in_q_names(q_names_n, the_set->rrs.val_rrset_name_n);
-    type_match = (the_set->rrs.val_rrset_type_h == q_type_h)
+    name_present = name_in_q_names(q_names_n, the_set->rrs_name_n);
+    type_match = (the_set->rrs_type_h == q_type_h)
         || ((q_type_h == ns_t_any) && (name_present == TOP_OF_QNAMES));
-    class_match = (the_set->rrs.val_rrset_class_h == q_class_h)
+    class_match = (the_set->rrs_class_h == q_class_h)
         || (q_class_h == ns_c_any);
 
     if (!class_match ||
@@ -1210,8 +1199,8 @@ fails_to_answer_query(struct qname_chain *q_names_n,
         if (the_set->rrs_ans_kind == SR_ANS_CNAME &&
             type_match &&
             class_match &&
-            the_set->rrs.val_rrset_data &&
-            name_in_q_names(q_names_n, the_set->rrs.val_rrset_data->rr_rdata) == MID_OF_QNAMES) {
+            the_set->rrs_data &&
+            name_in_q_names(q_names_n, the_set->rrs_data->rr_rdata) == MID_OF_QNAMES) {
             /* synthesized CNAME */
             *status = VAL_AC_IGNORE_VALIDATION;
             return FALSE;
@@ -1253,18 +1242,18 @@ add_to_authentication_chain(struct val_digested_auth_chain **assertions,
         new_as = (struct val_digested_auth_chain *)
             MALLOC(sizeof(struct val_digested_auth_chain));
 
-        new_as->_as.ac_data = copy_rrset_rec(next_rr);
+        new_as->val_ac_rrset.ac_data = copy_rrset_rec(next_rr);
 
-        new_as->_as.val_ac_rrset_next = NULL;
-        new_as->_as.val_ac_next = NULL;
+        new_as->val_ac_rrset.val_ac_rrset_next = NULL;
+        new_as->val_ac_rrset.val_ac_next = NULL;
         new_as->val_ac_status = VAL_AC_INIT;
         new_as->val_ac_query = matched_q;
 
-        SET_MIN_TTL(matched_q->qc_ttl_x, next_rr->rrs.val_rrset_ttl_x);
+        SET_MIN_TTL(matched_q->qc_ttl_x, next_rr->rrs_ttl_x);
 
         if (last_as != NULL) {
-            last_as->_as.val_ac_rrset_next = new_as;
-            last_as->_as.val_ac_next = new_as;
+            last_as->val_ac_rrset.val_ac_rrset_next = new_as;
+            last_as->val_ac_rrset.val_ac_next = new_as;
         } else {
             first_as = new_as;
         }
@@ -1272,7 +1261,7 @@ add_to_authentication_chain(struct val_digested_auth_chain **assertions,
         next_rr = next_rr->rrs_next;
     }
     if (first_as) {
-        last_as->_as.val_ac_next = *assertions;
+        last_as->val_ac_rrset.val_ac_next = *assertions;
         *assertions = first_as;
     }
 
@@ -1289,8 +1278,8 @@ free_authentication_chain(struct val_digested_auth_chain *assertions)
     if (assertions == NULL)
         return;
 
-    if (assertions->_as.val_ac_next)
-        free_authentication_chain(assertions->_as.val_ac_next);
+    if (assertions->val_ac_rrset.val_ac_next)
+        free_authentication_chain(assertions->val_ac_rrset.val_ac_next);
 
     free_authentication_chain_structure(assertions);
 
@@ -1307,7 +1296,7 @@ build_pending_query(val_context_t *context,
                     struct queries_for_query **added_q,
                     u_int32_t flags)
 {
-    u_int8_t       *signby_name_n;
+    u_char       *signby_name_n;
     u_int16_t       tzonestatus;
     int             retval;
     struct val_rr_rec  *cur_rr;
@@ -1319,12 +1308,12 @@ build_pending_query(val_context_t *context,
         (NULL == added_q))
         return VAL_BAD_ARGUMENT;
 
-    if (as->_as.ac_data == NULL) {
+    if (as->val_ac_rrset.ac_data == NULL) {
         as->val_ac_status = VAL_AC_DATA_MISSING;
         return VAL_NO_ERROR;
     }
 
-    if (as->_as.ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) {
+    if (as->val_ac_rrset.ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) {
         as->val_ac_status = VAL_AC_BARE_RRSIG;
         return VAL_NO_ERROR;
     }
@@ -1333,7 +1322,7 @@ build_pending_query(val_context_t *context,
      * Check if this zone is locally trusted/untrusted 
      */
     if (VAL_NO_ERROR != (retval = 
-        get_zse(context, as->_as.ac_data->rrs.val_rrset_name_n, 
+        get_zse(context, as->val_ac_rrset.ac_data->rrs_name_n, 
                 flags, &tzonestatus, NULL, &ttl_x))) {
         return retval;
     }
@@ -1352,7 +1341,7 @@ build_pending_query(val_context_t *context,
         return VAL_NO_ERROR;
     }
 
-    if (as->_as.ac_data->rrs.val_rrset_data == NULL) {
+    if (as->val_ac_rrset.ac_data->rrs_data == NULL) {
         as->val_ac_status = VAL_AC_DATA_MISSING;
         return VAL_NO_ERROR;
     }
@@ -1361,11 +1350,11 @@ build_pending_query(val_context_t *context,
      * Check if this is a DNSKEY and it is trusted
      */
     ttl_x = 0;
-    if (as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
+    if (as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey) {
         if (VAL_NO_ERROR !=
             (retval =
-             is_trusted_key(context, as->_as.ac_data->rrs.val_rrset_name_n,
-                            as->_as.ac_data->rrs.val_rrset_data, 
+             is_trusted_key(context, as->val_ac_rrset.ac_data->rrs_name_n,
+                            as->val_ac_rrset.ac_data->rrs_data, 
                             &status, flags, &ttl_x))) {
             return retval;
 
@@ -1383,20 +1372,20 @@ build_pending_query(val_context_t *context,
         as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
     }
 
-    if (as->_as.ac_data->rrs.val_rrset_sig == NULL) {
+    if (as->val_ac_rrset.ac_data->rrs_sig == NULL) {
         as->val_ac_status = VAL_AC_WAIT_FOR_RRSIG;
         /*
          * create a query and link it as the pending query for this assertion 
          */
         if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
                                                        queries,
-                                                       as->_as.ac_data->
-                                                       rrs.
-                                                       val_rrset_name_n,
+                                                       as->val_ac_rrset.ac_data->
+                                                       
+                                                       rrs_name_n,
                                                        ns_t_rrsig,
-                                                       as->_as.ac_data->
-                                                       rrs.
-                                                       val_rrset_class_h,
+                                                       as->val_ac_rrset.ac_data->
+                                                       
+                                                       rrs_class_h,
                                                        flags,
                                                        added_q)))
             return retval;
@@ -1404,7 +1393,7 @@ build_pending_query(val_context_t *context,
         return VAL_NO_ERROR;
     }
     
-    cur_rr = as->_as.ac_data->rrs.val_rrset_sig;
+    cur_rr = as->val_ac_rrset.ac_data->rrs_sig;
     while (cur_rr) {
         /*
          * Identify the DNSKEY that created the RRSIG:
@@ -1415,23 +1404,24 @@ build_pending_query(val_context_t *context,
             /*
              * First identify the signer name from the RRSIG 
              */
-            u_int8_t *p = NULL;
+            u_char *p = NULL;
             signby_name_n = &cur_rr->rr_rdata[SIGNBY];
             /* The signer name has to be within the zone */
-            if ((p = namename(as->_as.ac_data->rrs.val_rrset_name_n, 
+            if ((p = namename(as->val_ac_rrset.ac_data->rrs_name_n, 
                             signby_name_n)) == NULL ||
                 /* check if the zonecut is funny */
-                (p == as->_as.ac_data->rrs.val_rrset_name_n &&
-                 as->_as.ac_data->rrs.val_rrset_type_h == ns_t_ds)) {
+                (p == as->val_ac_rrset.ac_data->rrs_name_n &&
+                 as->val_ac_rrset.ac_data->rrs_type_h == ns_t_ds)) {
                 cur_rr->rr_status = VAL_AC_INVALID_RRSIG;
             }  else { 
-                if (as->_as.ac_data->rrs_zonecut_n == NULL) {
+                if (as->val_ac_rrset.ac_data->rrs_zonecut_n == NULL) {
                     /* set the zonecut in the assertion */
                     int len = wire_name_length(signby_name_n);
-                    as->_as.ac_data->rrs_zonecut_n = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
-                    if (as->_as.ac_data->rrs_zonecut_n == NULL)
+                    as->val_ac_rrset.ac_data->rrs_zonecut_n = 
+                        (u_char *) MALLOC (len * sizeof(u_char));
+                    if (as->val_ac_rrset.ac_data->rrs_zonecut_n == NULL)
                         return VAL_OUT_OF_MEMORY;
-                    memcpy(as->_as.ac_data->rrs_zonecut_n, signby_name_n, len);
+                    memcpy(as->val_ac_rrset.ac_data->rrs_zonecut_n, signby_name_n, len);
                 }
                 break;
             }
@@ -1452,7 +1442,7 @@ build_pending_query(val_context_t *context,
     /*
      * Then look for  {signby_name_n, DNSKEY/DS, type} 
      */
-    if (as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
+    if (as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey) {
 
         /*
          * Create a query for missing data 
@@ -1460,7 +1450,7 @@ build_pending_query(val_context_t *context,
         if (VAL_NO_ERROR !=
             (retval =
              add_to_qfq_chain(context, queries, signby_name_n, ns_t_ds,
-                              as->_as.ac_data->rrs.val_rrset_class_h, 
+                              as->val_ac_rrset.ac_data->rrs_class_h, 
                               flags, added_q)))
             return retval;
 
@@ -1471,7 +1461,7 @@ build_pending_query(val_context_t *context,
         if (VAL_NO_ERROR !=
             (retval =
              add_to_qfq_chain(context, queries, signby_name_n, ns_t_dnskey,
-                              as->_as.ac_data->rrs.val_rrset_class_h, 
+                              as->val_ac_rrset.ac_data->rrs_class_h, 
                               flags, added_q)))
             return retval;
     }
@@ -1495,24 +1485,24 @@ try_build_chain(val_context_t * context,
     /*
      * Identify the state for each of the assertions obtained 
      */
-    for (; as; as = as->_as.val_ac_rrset_next) {
+    for (; as; as = as->val_ac_rrset.val_ac_rrset_next) {
 
         /*
          * Cover error conditions first 
          * SOA checks will appear during sanity checks later on 
          */
         if ((set_ans_kind(q_names_n->qnc_name_n, type_h, class_h,
-                          as->_as.ac_data,
+                          as->val_ac_rrset.ac_data,
                           &as->val_ac_status) != VAL_NO_ERROR)
             || fails_to_answer_query(q_names_n, type_h, class_h,
-                                     as->_as.ac_data,
+                                     as->val_ac_rrset.ac_data,
                                      &as->val_ac_status)) {
 
             continue;
         }
 
         if (kind == SR_ANS_UNSET)
-            kind = as->_as.ac_data->rrs_ans_kind;
+            kind = as->val_ac_rrset.ac_data->rrs_ans_kind;
         else {
             switch (kind) {
                 /*
@@ -1521,9 +1511,9 @@ try_build_chain(val_context_t * context,
             case SR_ANS_STRAIGHT:
             case SR_ANS_CNAME:
             case SR_ANS_DNAME:
-                if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME) &&
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_DNAME)) {
+                if ((as->val_ac_rrset.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
+                    (as->val_ac_rrset.ac_data->rrs_ans_kind != SR_ANS_CNAME) &&
+                    (as->val_ac_rrset.ac_data->rrs_ans_kind != SR_ANS_DNAME)) {
                     matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 }
                 break;
@@ -1532,7 +1522,7 @@ try_build_chain(val_context_t * context,
                  * Only bare RRSIGs together 
                  */
             case SR_ANS_BARE_RRSIG:
-                if (as->_as.ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG) {
+                if (as->val_ac_rrset.ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG) {
                     matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 }
                 break;
@@ -1542,7 +1532,7 @@ try_build_chain(val_context_t * context,
                  * check if there is a mix of NSEC and NSEC3 later in the proof 
                  */
             case SR_ANS_NACK :
-                if (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK) {
+                if (as->val_ac_rrset.ac_data->rrs_ans_kind != SR_ANS_NACK) {
                     matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 }
                 break;
@@ -1667,12 +1657,18 @@ assimilate_answers(val_context_t * context,
 }
 
 static int
-clone_val_rrset(struct val_rrset_rec *old_rrset, struct val_rrset_rec **new_rrset)
+clone_val_rrset(struct rrset_rec *old_rrset, 
+                struct val_rrset_rec **new_rrset)
 {
     int             retval;
 
     if (new_rrset == NULL)
         return VAL_BAD_ARGUMENT;
+
+    if (old_rrset == NULL) {
+        /* nothing to do */
+        return VAL_NO_ERROR;
+    }
 
     *new_rrset = (struct val_rrset_rec *) MALLOC(sizeof(struct val_rrset_rec));
     if (*new_rrset == NULL) {
@@ -1682,37 +1678,36 @@ clone_val_rrset(struct val_rrset_rec *old_rrset, struct val_rrset_rec **new_rrse
     memset(*new_rrset, 0, sizeof(struct val_rrset_rec));
 
     if (old_rrset != NULL) {
-        int             len;
+        (*new_rrset)->val_rrset_rcode = (int)old_rrset->rrs_rcode;
 
-        CLONE_NAME_LEN(old_rrset->val_msg_header,
-                       old_rrset->val_msg_headerlen,
-                       (*new_rrset)->val_msg_header,
-                       (*new_rrset)->val_msg_headerlen);
-
-        len = wire_name_length(old_rrset->val_rrset_name_n);
-        (*new_rrset)->val_rrset_name_n =
-            (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-        if ((*new_rrset)->val_rrset_name_n == NULL) {
+        (*new_rrset)->val_rrset_name = 
+            (char *) MALLOC (NS_MAXDNAME * sizeof(char));
+        if ((*new_rrset)->val_rrset_name == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
+        
+        if (ns_name_ntop(old_rrset->rrs_name_n, 
+                     (*new_rrset)->val_rrset_name,
+                     NS_MAXDNAME) < 0) {
+            strncpy((*new_rrset)->val_rrset_name,
+                    "unknown/error",
+                    NS_MAXDNAME-1);
 
-        memcpy((*new_rrset)->val_rrset_name_n,
-               old_rrset->val_rrset_name_n, len);
+        }
 
-        (*new_rrset)->val_rrset_class_h = old_rrset->val_rrset_class_h;
-        (*new_rrset)->val_rrset_type_h = old_rrset->val_rrset_type_h;
-        (*new_rrset)->val_rrset_ttl_h = old_rrset->val_rrset_ttl_h;
-        (*new_rrset)->val_rrset_ttl_x = old_rrset->val_rrset_ttl_x;
-        (*new_rrset)->val_rrset_section = old_rrset->val_rrset_section;
+        (*new_rrset)->val_rrset_class = (int)old_rrset->rrs_class_h;
+        (*new_rrset)->val_rrset_type = (int)old_rrset->rrs_type_h;
+        (*new_rrset)->val_rrset_ttl = (long)old_rrset->rrs_ttl_h;
+        (*new_rrset)->val_rrset_section = (int)old_rrset->rrs_section;
         (*new_rrset)->val_rrset_data =
-            copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
-                             old_rrset->val_rrset_data, 0);
+            copy_rr_rec_list((*new_rrset)->val_rrset_type,
+                             old_rrset->rrs_data, 0);
         (*new_rrset)->val_rrset_sig =
-            copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
-                             old_rrset->val_rrset_sig, 0);
+            copy_rr_rec_list((*new_rrset)->val_rrset_type,
+                             old_rrset->rrs_sig, 0);
 
-        if (old_rrset->val_rrset_server) {
+        if (old_rrset->rrs_server) {
             (*new_rrset)->val_rrset_server =
                 (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
             if ((*new_rrset)->val_rrset_server == NULL) {
@@ -1720,7 +1715,7 @@ clone_val_rrset(struct val_rrset_rec *old_rrset, struct val_rrset_rec **new_rrse
                 goto err;
             }
             memcpy((*new_rrset)->val_rrset_server,
-                   old_rrset->val_rrset_server,
+                   old_rrset->rrs_server,
                    sizeof(struct sockaddr_storage));
         } else {
             (*new_rrset)->val_rrset_server = NULL;
@@ -1745,8 +1740,8 @@ get_ac_trust(val_context_t *context,
     struct queries_for_query *added_q = NULL;
 
     if (!next_as ||
-        !next_as->_as.ac_data ||
-        !next_as->_as.ac_data->rrs_zonecut_n) {
+        !next_as->val_ac_rrset.ac_data ||
+        !next_as->val_ac_rrset.ac_data->rrs_zonecut_n) {
 
         return NULL;
     }
@@ -1758,16 +1753,16 @@ get_ac_trust(val_context_t *context,
     /*
      * Then look for  {zonecut, DNSKEY/DS, type} 
      */
-    if (next_as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
+    if (next_as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey) {
 
         /*
          * Create a query for missing data 
          */
         if (VAL_NO_ERROR !=
              add_to_qfq_chain(context, queries, 
-                              next_as->_as.ac_data->rrs_zonecut_n, 
+                              next_as->val_ac_rrset.ac_data->rrs_zonecut_n, 
                               ns_t_ds,
-                              next_as->_as.ac_data->rrs.val_rrset_class_h, 
+                              next_as->val_ac_rrset.ac_data->rrs_class_h, 
                               flags, &added_q))
             return NULL;
 
@@ -1777,9 +1772,9 @@ get_ac_trust(val_context_t *context,
          */
         if (VAL_NO_ERROR !=
              add_to_qfq_chain(context, queries, 
-                              next_as->_as.ac_data->rrs_zonecut_n, 
+                              next_as->val_ac_rrset.ac_data->rrs_zonecut_n, 
                               ns_t_dnskey,
-                              next_as->_as.ac_data->rrs.val_rrset_class_h, 
+                              next_as->val_ac_rrset.ac_data->rrs_class_h, 
                               flags, &added_q))
             return NULL;
     }
@@ -1828,7 +1823,8 @@ transform_authentication_chain(val_context_t *context,
 
         if (VAL_NO_ERROR !=
             (retval =
-             clone_val_rrset(o_ac->val_ac_rrset, &n_ac->val_ac_rrset))) {
+             clone_val_rrset(o_ac->val_ac_rrset.ac_data, 
+                             &n_ac->val_ac_rrset))) {
             FREE(n_ac);
             goto err;
         }
@@ -1841,7 +1837,7 @@ transform_authentication_chain(val_context_t *context,
         prev_ac = n_ac;
 
         if (prev_ac->val_ac_status == VAL_AC_NEGATIVE_PROOF ||
-            prev_ac->val_ac_status == VAL_AC_PROVABLY_INSECURE) { 
+            prev_ac->val_ac_status == VAL_AC_PINSECURE) { 
 
             break;
         }
@@ -1963,7 +1959,7 @@ transform_single_result(val_context_t *context,
 
         /* if not a proof, and we have data, copy the rrset into val_rc_rrset */
         if (!w_res->val_rc_is_proof && w_res->val_rc_rrset && *mod_res) {
-            return clone_val_rrset(w_res->val_rc_rrset->val_ac_rrset,
+            return clone_val_rrset(w_res->val_rc_rrset->val_ac_rrset.ac_data,
                                   &((*mod_res)->val_rc_rrset));
         }
     }
@@ -2031,36 +2027,42 @@ transform_outstanding_results(val_context_t *context,
 
 
 static void
-prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_name_n, 
-                u_int8_t * qname_n, u_int16_t qtype_h, int *span_chk, 
-                int *wcard_chk, u_int8_t **ce)
+prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, 
+                u_char *soa_name_n, 
+                u_char * qname_n, u_int16_t qtype_h, int *span_chk, 
+                int *wcard_chk, u_char **ce)
 {
 
-    int             nsec_bit_field;
-    int             offset;
-    u_int8_t *q1, *q2, *q;
+    size_t  nsec_bit_field;
+    size_t  offset;
+    u_char *q1, *q2, *q;
    
-    if (!namecmp(the_set->rrs.val_rrset_name_n, qname_n)) {
+    if (!namecmp(the_set->rrs_name_n, qname_n)) {
         /*
          * NSEC owner = query name & q_type not in list 
          */
         nsec_bit_field =
-            wire_name_length(the_set->rrs.val_rrset_data->rr_rdata);
-        offset = the_set->rrs.val_rrset_data->rr_rdata_length_h - nsec_bit_field;
+            wire_name_length(the_set->rrs_data->rr_rdata);
+        if (nsec_bit_field > the_set->rrs_data->rr_rdata_length) {
+            val_log(ctx, LOG_INFO, "prove_nsec_span(): Bad NSEC offset");
+            return;
+        }
+            
+        offset = the_set->rrs_data->rr_rdata_length - nsec_bit_field;
         
-        if (is_type_set((&(the_set->rrs.val_rrset_data->
+        if (is_type_set((&(the_set->rrs_data->
                             rr_rdata[nsec_bit_field])), offset, qtype_h)) { 
             // Type exists at NSEC record
             val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - type exists at wildcard");
             return;
         }
-        if (is_type_set((&(the_set->rrs.val_rrset_data->
+        if (is_type_set((&(the_set->rrs_data->
                       rr_rdata[nsec_bit_field])), offset, ns_t_cname)) { 
             // CNAME exists at NSEC record, but was not checked
             val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - CNAME exists at wildcard");
             return;
         }
-        if (is_type_set((&(the_set->rrs.val_rrset_data->
+        if (is_type_set((&(the_set->rrs_data->
                       rr_rdata[nsec_bit_field])), offset, ns_t_dname)) {
             //DNAME exists at NSEC record, but was not checked 
             val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - DNAME exists at wildcard");
@@ -2071,7 +2073,7 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_nam
         *wcard_chk = 1;
 
         return;
-    } else if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) > 0) {
+    } else if (namecmp(the_set->rrs_name_n, qname_n) > 0) {
         /*
          * query name comes after the NSEC owner 
          */
@@ -2081,8 +2083,8 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_nam
     /*
      * Find the next name 
      */
-    u_int8_t       *nxtname = the_set->rrs.val_rrset_data ?
-        the_set->rrs.val_rrset_data->rr_rdata : NULL;
+    u_char  *nxtname = the_set->rrs_data ?
+        the_set->rrs_data->rr_rdata : NULL;
 
     if (namecmp(qname_n, nxtname) >= 0) {
         /*
@@ -2104,7 +2106,7 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_nam
      * update the closest enclosure
      */
 
-    q1 = the_set->rrs.val_rrset_name_n;
+    q1 = the_set->rrs_name_n;
     while (*q1 != '\0' && namename(qname_n, q1) == NULL) {
 
         STRIP_LABEL(q1,q1);
@@ -2123,18 +2125,18 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_nam
 }
 
 #ifdef LIBVAL_NSEC3
-u_int8_t       *
-compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
-                   u_int8_t * soa_name_n, u_int8_t alg, u_int16_t iter,
-                   u_int8_t saltlen, u_int8_t * salt,
-                   u_int8_t * b32_hashlen, u_int8_t ** b32_hash, u_int32_t *ttl_x)
+u_char *
+compute_nsec3_hash(val_context_t * ctx, u_char * qname_n,
+                   u_char * soa_name_n, u_int8_t alg, u_int16_t iter,
+                   u_int8_t saltlen, u_char * salt,
+                   size_t * b32_hashlen, u_char ** b32_hash, u_int32_t *ttl_x)
 {
     int             name_len;
     policy_entry_t *pol, *cur;
-    u_int8_t       *p;
+    u_char         *p;
     char            name_p[NS_MAXDNAME];
-    u_int8_t        hashlen;
-    u_int8_t       *hash;
+    size_t          hashlen;
+    u_char         *hash;
 
     if (alg != ALG_NSEC3_HASH_SHA1)
         return NULL;
@@ -2161,7 +2163,7 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
              */
             for (; cur; cur = cur->next) {
                 int             root_zone = 0;
-                if (!namecmp(cur->zone_n, (const u_int8_t *) ""))
+                if (!namecmp(cur->zone_n, (const u_char *) ""))
                     root_zone = 1;
                 else {
                     /*
@@ -2196,8 +2198,8 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
     }
 
     if (NULL ==
-        nsec3_sha_hash_compute(qname_n, salt, saltlen, iter, &hash,
-                               &hashlen))
+        nsec3_sha_hash_compute(qname_n, salt, (size_t)saltlen, 
+                               (size_t)iter, &hash, &hashlen))
         return NULL;
 
     base32hex_encode(hash, hashlen, b32_hash, b32_hashlen);
@@ -2207,40 +2209,41 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
 
 static void
 prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set, 
-                 u_int8_t *soa_name_n, u_int8_t * qname_n, 
+                 u_char *soa_name_n, u_char * qname_n, 
                  u_int16_t qtype_h, u_int32_t *ttl_x, 
-                 u_int8_t **ncn, u_int8_t **cpe,
+                 u_char **ncn, u_char **cpe,
                  int *optout) 
 {
-    u_int8_t       *cp = NULL;
+    u_char       *cp = NULL;
     val_nsec3_rdata_t nd;
-    u_int8_t        nsec3_hashlen;
-    u_int8_t       *nsec3_hash = NULL;
-    u_int8_t        hashlen;
-    u_int8_t       *hash = NULL;
-    int             nsec3_bm_len;
+    size_t        nsec3_hashlen;
+    u_char       *nsec3_hash = NULL;
+    size_t        hashlen;
+    u_char       *hash = NULL;
+    size_t        nsec3_bm_len;
     
     cp = qname_n;
    
-    nsec3_hashlen = the_set->rrs.val_rrset_name_n[0];
+    nsec3_hashlen = the_set->rrs_name_n[0];
     nsec3_hash = (nsec3_hashlen == 0) ? 
-                    NULL : the_set->rrs.val_rrset_name_n + 1;
+                    NULL : the_set->rrs_name_n + 1;
 
-    if (NULL == val_parse_nsec3_rdata(the_set->rrs.val_rrset_data->
+    if (NULL == val_parse_nsec3_rdata(the_set->rrs_data->
                                       rr_rdata,
-                                      the_set->rrs.val_rrset_data->
-                                      rr_rdata_length_h, &nd)) {
+                                      the_set->rrs_data->
+                                      rr_rdata_length, &nd) ||
+            nd.bit_field >= the_set->rrs_data->rr_rdata_length) {
         val_log(ctx, LOG_INFO, "prove_nsec3_span(): Cannot parse NSEC3 rdata");
         return; 
     }
-    nsec3_bm_len = the_set->rrs.val_rrset_data->rr_rdata_length_h - nd.bit_field;
+    nsec3_bm_len = the_set->rrs_data->rr_rdata_length - nd.bit_field;
     /*
      * NS can only be set if the SOA bit is set 
      */
     if (qtype_h == ns_t_ds && 
-        (is_type_set((&(the_set->rrs.val_rrset_data->
+        (is_type_set((&(the_set->rrs_data->
                         rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_ns)) &&
-        (!is_type_set((&(the_set->rrs.val_rrset_data->
+        (!is_type_set((&(the_set->rrs_data->
                         rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_soa))) {
 
         val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - NS can only be set if the SOA bit is set");
@@ -2271,19 +2274,19 @@ prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set,
              */
             if (cp == qname_n) {
 
-                if (is_type_set((&(the_set->rrs.val_rrset_data->
+                if (is_type_set((&(the_set->rrs_data->
                         rr_rdata[nd.bit_field])), nsec3_bm_len, qtype_h)) { 
                     /* type exists */
                     val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Type exists at NSEC3 record");
                     break;
                 }
-                if (is_type_set((&(the_set->rrs.val_rrset_data->
+                if (is_type_set((&(the_set->rrs_data->
                           rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_cname)) {
                     /* CNAME exists */
                     val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - CNAME exists at NSEC3 record, but was not checked");
                     break;
                 }
-                if (is_type_set((&(the_set->rrs.val_rrset_data->
+                if (is_type_set((&(the_set->rrs_data->
                                   rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_dname)) {
                     /* DNAME exists */
                     val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - DNAME exists at NSEC3 record, but was not checked");
@@ -2346,15 +2349,15 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 int only_span_chk,
                 struct val_result_chain **proof_res,
                 struct val_result_chain **results,
-                u_int8_t *soa_name_n,
-                u_int8_t * qname_n, u_int16_t qtype_h, 
+                u_char *soa_name_n,
+                u_char * qname_n, u_int16_t qtype_h, 
                 val_status_t * status, u_int32_t *ttl_x)
 {
 
     int retval;
-    u_int8_t       *ncn = NULL;
-    u_int8_t       *cpe = NULL;
-    u_char          wc_n[NS_MAXCDNAME];
+    u_char  *ncn = NULL;
+    u_char  *cpe = NULL;
+    u_char   wc_n[NS_MAXCDNAME];
     struct val_result_chain *new_res;
     struct val_internal_result *res;
     int optout = 0;
@@ -2370,13 +2373,13 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         if (!res->val_rc_is_proof)
             continue;
 
-        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        if (the_set->rrs.val_rrset_type_h != ns_t_nsec3)
+        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
+        if (the_set->rrs_type_h != ns_t_nsec3)
             continue;
 
         if (!ncn || !cpe) {
-            u_int8_t       *o_ncn = ncn;
-            u_int8_t       *o_cpe = cpe;
+            u_char       *o_ncn = ncn;
+            u_char       *o_cpe = cpe;
 
             prove_nsec3_span(ctx, the_set, soa_name_n, qname_n, 
                              qtype_h, ttl_x, 
@@ -2451,8 +2454,8 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         if (!res->val_rc_is_proof)
             continue;
 
-        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        if (the_set->rrs.val_rrset_type_h != ns_t_nsec3)
+        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
+        if (the_set->rrs_type_h != ns_t_nsec3)
             continue;
 
         prove_nsec3_span(ctx, the_set, soa_name_n, wc_n, 
@@ -2495,14 +2498,14 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                int only_span_chk,
                struct val_result_chain **proof_res,
                struct val_result_chain **results,
-               u_int8_t *soa_name_n,
-               u_int8_t * qname_n, u_int16_t qtype_h,
+               u_char *soa_name_n,
+               u_char * qname_n, u_int16_t qtype_h,
                val_status_t * status)
 {
     struct val_internal_result *res;
     int             wcard_chk = 0;
     int             span_chk = 0;
-    u_int8_t       *ce = NULL;
+    u_char       *ce = NULL;
     struct val_internal_result *wcard_proof = NULL;
     struct val_result_chain *new_res;
     u_char          domain_name_n[NS_MAXCDNAME];
@@ -2521,8 +2524,8 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         if (!res->val_rc_is_proof)
             continue;
 
-        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        if (the_set->rrs.val_rrset_type_h != ns_t_nsec)
+        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
+        if (the_set->rrs_type_h != ns_t_nsec)
             continue;
 
         prove_nsec_span(ctx, the_set, soa_name_n, qname_n,
@@ -2577,7 +2580,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             span_chk = 0;
             wcard_chk = 0;
             ce = NULL;
-            prove_nsec_span(ctx, wcard_proof->val_rc_rrset->_as.ac_data, 
+            prove_nsec_span(ctx, wcard_proof->val_rc_rrset->val_ac_rrset.ac_data, 
                             soa_name_n, domain_name_n,
                             qtype_h, &span_chk, &wcard_chk, &ce);
 
@@ -2616,18 +2619,18 @@ int
 check_anc_proof(val_context_t *context,
                 struct val_query_chain *q, 
                 u_int32_t flags,
-                u_int8_t *name_n, 
+                u_char *name_n, 
                 int check_wildcard,
                 int *matches)
 {
     struct val_digested_auth_chain *as;
 
 #ifdef LIBVAL_NSEC3
-    u_int8_t  *ncn = NULL;
+    u_char  *ncn = NULL;
     int optout = 0;
     u_int32_t ttl_x = 0;
 #endif
-    u_int8_t  *cpe = NULL;
+    u_char  *cpe = NULL;
     int span_chk = 0;
     int wcard_chk = 0;
     int retval;
@@ -2637,16 +2640,16 @@ check_anc_proof(val_context_t *context,
     
     *matches = 0;
 
-    for (as = q->qc_proof; as; as=as->_as.val_ac_rrset_next) {
-        struct rrset_rec *the_set = as->_as.ac_data;
+    for (as = q->qc_proof; as; as=as->val_ac_rrset.val_ac_rrset_next) {
+        struct rrset_rec *the_set = as->val_ac_rrset.ac_data;
         if (the_set) {
-            if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
+            if (the_set->rrs_type_h == ns_t_nsec) {
                
-                if ((the_set->rrs.val_rrset_sig) && 
-                    the_set->rrs.val_rrset_sig->rr_rdata_length_h >= SIGNBY) {
+                if ((the_set->rrs_sig) && 
+                    the_set->rrs_sig->rr_rdata_length >= SIGNBY) {
 
-                    u_int8_t *soa_name_n = NULL;
-                    soa_name_n =  &the_set->rrs.val_rrset_sig->rr_rdata[SIGNBY];
+                    u_char *soa_name_n = NULL;
+                    soa_name_n =  &the_set->rrs_sig->rr_rdata[SIGNBY];
                     prove_nsec_span(context, the_set, soa_name_n, name_n,
                                     q->qc_type_h, &span_chk, &wcard_chk, &cpe);
                     if (span_chk) {
@@ -2658,14 +2661,14 @@ check_anc_proof(val_context_t *context,
                 }
             } 
 #ifdef LIBVAL_NSEC3
-            else if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
+            else if (the_set->rrs_type_h == ns_t_nsec3) {
 
                 if ((!ncn || !cpe) && 
-                    (the_set->rrs.val_rrset_sig) && 
-                    the_set->rrs.val_rrset_sig->rr_rdata_length_h >= SIGNBY) {
+                    (the_set->rrs_sig) && 
+                    the_set->rrs_sig->rr_rdata_length >= SIGNBY) {
 
-                    u_int8_t *soa_name_n = NULL;
-                    soa_name_n =  &the_set->rrs.val_rrset_sig->rr_rdata[SIGNBY];
+                    u_char *soa_name_n = NULL;
+                    soa_name_n =  &the_set->rrs_sig->rr_rdata[SIGNBY];
                     prove_nsec3_span(context, the_set, soa_name_n, name_n, 
                                      q->qc_type_h, &ttl_x, &ncn, &cpe, &optout);
                     if (ncn && cpe) {
@@ -2722,12 +2725,11 @@ check_anc_proof(val_context_t *context,
 
 #define GET_HEADER_STATUS_CODE(qc_proof, status_code) do {\
     if (qc_proof &&\
-        qc_proof->val_ac_rrset &&\
-        qc_proof->val_ac_rrset->val_msg_header) {\
-        HEADER *hp = (HEADER *) qc_proof->val_ac_rrset->val_msg_header;\
-        if (hp->rcode == ns_r_noerror) {\
+        qc_proof->val_ac_rrset.ac_data ) {\
+        int rcode = qc_proof->val_ac_rrset.ac_data->rrs_rcode;\
+        if (rcode == ns_r_noerror) {\
             status_code = VAL_NONEXISTENT_TYPE_NOCHAIN;\
-        } else if (hp->rcode == ns_r_nxdomain) {\
+        } else if (rcode == ns_r_nxdomain) {\
             status_code = VAL_NONEXISTENT_NAME_NOCHAIN;\
         } else\
             status_code = VAL_DNS_ERROR;\
@@ -2756,7 +2758,7 @@ prove_nonexistence(val_context_t * ctx,
     int             retval;
 
     int             nsec = 0;
-    u_int8_t        *soa_name_n = NULL;
+    u_char          *soa_name_n = NULL;
 #ifdef LIBVAL_NSEC3
     int             nsec3 = 0;
     u_int32_t       ttl_x = 0;
@@ -2781,10 +2783,9 @@ prove_nonexistence(val_context_t * ctx,
      * inspect the SOA record first 
      */
     for (res = w_results; res; res = res->val_rc_next) {
-        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        int offset;
+        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
         if ((the_set) && 
-            (the_set->rrs.val_rrset_type_h == ns_t_soa)) {
+            (the_set->rrs_type_h == ns_t_soa)) {
             struct val_result_chain *new_res;
             /*
              * This proof is relevant 
@@ -2795,17 +2796,19 @@ prove_nonexistence(val_context_t * ctx,
                 goto err;
             }
             *proof_res = new_res;
-            soa_name_n = the_set->rrs.val_rrset_name_n;
+            soa_name_n = the_set->rrs_name_n;
     
             /* Use the SOA minimum time */
-            if (the_set->rrs.val_rrset_data &&
-                the_set->rrs.val_rrset_data->rr_rdata &&
-                (offset = the_set->rrs.val_rrset_data->rr_rdata_length_h - sizeof(u_int32_t)) > 0) {
+            if (the_set->rrs_data &&
+                the_set->rrs_data->rr_rdata &&
+                the_set->rrs_data->rr_rdata_length > sizeof(u_int32_t)) { 
                 u_int32_t t_ttl;
-                memcpy(&t_ttl, &the_set->rrs.val_rrset_data[offset], sizeof(u_int32_t));
+                int offset = the_set->rrs_data->rr_rdata_length -
+                                    sizeof(u_int32_t);
+                memcpy(&t_ttl, &the_set->rrs_data[offset], sizeof(u_int32_t));
                 *soa_ttl_x = ntohl(t_ttl); 
             } else {
-                *soa_ttl_x = the_set->rrs.val_rrset_ttl_x;
+                *soa_ttl_x = the_set->rrs_ttl_x;
             }
             break;
         }
@@ -2839,40 +2842,40 @@ prove_nonexistence(val_context_t * ctx,
             return VAL_NO_ERROR;
         }
 
-        the_set = res->val_rc_rrset->_as.ac_data;
+        the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
 
         if ((!the_set) || 
-            (!the_set->rrs.val_rrset_data)) {
+            (!the_set->rrs_data)) {
 
             val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - No data exists in proof");
             *status = VAL_BOGUS_PROOF;
             return VAL_NO_ERROR;
         }
 
-        if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
+        if (the_set->rrs_type_h == ns_t_nsec) {
             nsec = 1;
-            if ((!the_set->rrs.val_rrset_sig) ||
-                the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
+            if ((!the_set->rrs_sig) ||
+                the_set->rrs_sig->rr_rdata_length < SIGNBY) {
 
                 val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
             if (soa_name_n == NULL)
-                soa_name_n = &the_set->rrs.val_rrset_sig->rr_rdata[SIGNBY];
+                soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
         }
 #ifdef LIBVAL_NSEC3
-        else if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
+        else if (the_set->rrs_type_h == ns_t_nsec3) {
             nsec3 = 1;
-            if ((!the_set->rrs.val_rrset_sig) ||
-                the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
+            if ((!the_set->rrs_sig) ||
+                the_set->rrs_sig->rr_rdata_length < SIGNBY) {
 
                 val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
             if (soa_name_n == NULL)
-                soa_name_n = &the_set->rrs.val_rrset_sig->rr_rdata[SIGNBY];
+                soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
         }
 #endif
     }
@@ -2951,13 +2954,14 @@ prove_nonexistence(val_context_t * ctx,
  */
 static int
 find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
-              u_int8_t * qname, int *done, u_int8_t ** name_n)
+              u_char * qname_n, int *done, u_char ** name_n)
 {
     int             retval;
     struct val_result_chain *results = NULL;
     struct val_rrset_rec *soa_rrset = NULL;
-    u_int8_t *zonecut_name_n = NULL;
+    u_char *zonecut_name_n = NULL;
     struct queries_for_query *temp_qfq = NULL;
+    u_char tname_n[NS_MAXCDNAME];
 
     if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
@@ -2965,25 +2969,25 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     *name_n = NULL;
     *done = 1;
 
-    if (qname == NULL)
+    if (qname_n == NULL)
         return VAL_NO_ERROR;
 
     /* if we already have a DNSKEY or DS, pick up zonecut info from here */
-    if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname, 
+    if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname_n, 
                                ns_t_dnskey, ns_c_in, VAL_QFLAGS_ANY)) &&
         temp_qfq->qfq_query->qc_state == Q_ANSWERED) {
 
-        zonecut_name_n = qname;
+        zonecut_name_n = qname_n;
         *done = 1;
         
-    } else if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname, 
-                               ns_t_ds, ns_c_in, VAL_QFLAGS_ANY)) &&
+    } else if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, 
+                            qname_n, ns_t_ds, ns_c_in, VAL_QFLAGS_ANY)) &&
         temp_qfq->qfq_query->qc_state == Q_ANSWERED) {
         
-        zonecut_name_n = qname;
+        zonecut_name_n = qname_n;
         *done = 1;
     } else if (VAL_NO_ERROR !=
-            (retval = try_chase_query(context, qname, ns_c_in,
+            (retval = try_chase_query(context, qname_n, ns_c_in,
                                       ns_t_soa, VAL_QUERY_DONT_VALIDATE,
                                       queries, &results, done))) {
         return retval;
@@ -2998,7 +3002,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                     continue;
                 for (i = 0; i < res->val_rc_proof_count; i++) {
                     if (res->val_rc_proofs[i]->val_ac_rrset->
-                        val_rrset_type_h == ns_t_soa) {
+                        val_rrset_type == ns_t_soa) {
                         break;
                     }
                 }
@@ -3006,11 +3010,19 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                     continue;
                 soa_rrset = res->val_rc_proofs[i]->val_ac_rrset;
             } else if (res->val_rc_answer->val_ac_rrset->
-                       val_rrset_type_h == ns_t_soa) {
+                       val_rrset_type == ns_t_soa) {
                 soa_rrset = res->val_rc_answer->val_ac_rrset;
             }
             if (soa_rrset) {
-                zonecut_name_n = soa_rrset->val_rrset_name_n;
+                /* store resultant name into *tname_n */
+                if (ns_name_pton(soa_rrset->val_rrset_name, 
+                            tname_n, sizeof(tname_n)) == -1) {
+
+                    /* Cannot find the zonecut */
+                    *name_n = NULL;
+                    return VAL_NO_ERROR;
+                }
+                zonecut_name_n = tname_n;
                 break;
             }
         }
@@ -3018,7 +3030,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
 
     if (zonecut_name_n) {
         int len = wire_name_length(zonecut_name_n);
-        *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+        *name_n = (u_char *) MALLOC(len * sizeof(u_char));
         if (*name_n == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
@@ -3035,11 +3047,11 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
  */
 static int
 find_next_zonecut_old(val_context_t * context, struct queries_for_query **queries,
-                  struct rrset_rec *rrset, int *done, u_int8_t ** name_n)
+                  struct rrset_rec *rrset, int *done, u_char ** name_n)
 {
-    u_int8_t       *qname;
+    u_char       *qname;
     int             retval;
-    int             len;
+    size_t             len;
 
     if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
@@ -3052,47 +3064,47 @@ find_next_zonecut_old(val_context_t * context, struct queries_for_query **querie
         return VAL_NO_ERROR;
     }
 
-    qname = rrset->rrs.val_rrset_name_n;
+    qname = rrset->rrs_name_n;
 
-    if ((rrset->rrs.val_rrset_type_h == ns_t_soa)
-        || (rrset->rrs.val_rrset_type_h == ns_t_dnskey)) {
-        len = wire_name_length(rrset->rrs.val_rrset_name_n);
-        *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+    if ((rrset->rrs_type_h == ns_t_soa)
+        || (rrset->rrs_type_h == ns_t_dnskey)) {
+        len = wire_name_length(rrset->rrs_name_n);
+        *name_n = (u_char *) MALLOC(len * sizeof(u_char));
         if (*name_n == NULL)
             return VAL_OUT_OF_MEMORY;
-        memcpy(*name_n, rrset->rrs.val_rrset_name_n, len);
+        memcpy(*name_n, rrset->rrs_name_n, len);
         return VAL_NO_ERROR;
-    } else if (rrset->rrs.val_rrset_sig != NULL) {
+    } else if (rrset->rrs_sig != NULL) {
         /*
          * the signer name is the zone cut 
          */
-        u_int8_t       *signby_name_n;
-        signby_name_n = &rrset->rrs.val_rrset_sig->rr_rdata[SIGNBY];
+        u_char       *signby_name_n;
+        signby_name_n = &rrset->rrs_sig->rr_rdata[SIGNBY];
         len = wire_name_length(signby_name_n);
-        *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+        *name_n = (u_char *) MALLOC(len * sizeof(u_char));
         if (*name_n == NULL)
             return VAL_OUT_OF_MEMORY;
         memcpy(*name_n, signby_name_n, len);
         return VAL_NO_ERROR;
-    } else if (rrset->rrs.val_rrset_type_h == ns_t_ds) {
+    } else if (rrset->rrs_type_h == ns_t_ds) {
         /* advance qname by one label */
-        STRIP_LABEL(rrset->rrs.val_rrset_name_n, qname);
+        STRIP_LABEL(rrset->rrs_name_n, qname);
     }
 
     if (rrset->rrs_zonecut_n != NULL) {
-        if ((rrset->rrs.val_rrset_type_h == ns_t_ds) &&
+        if ((rrset->rrs_type_h == ns_t_ds) &&
             (!namecmp(rrset->rrs_zonecut_n,
-                      rrset->rrs.val_rrset_name_n))) {
+                      rrset->rrs_name_n))) {
             /*
              * for the DS, zonecut cannot be the same as the qname
              * Obviously some name server returned something bad
              */
             FREE(rrset->rrs_zonecut_n);
             rrset->rrs_zonecut_n = NULL;
-            STRIP_LABEL(rrset->rrs.val_rrset_name_n, qname);
+            STRIP_LABEL(rrset->rrs_name_n, qname);
         } else {
             len = wire_name_length(rrset->rrs_zonecut_n);
-            *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+            *name_n = (u_char *) MALLOC(len * sizeof(u_char));
             if (*name_n == NULL)
                 return VAL_OUT_OF_MEMORY;
             memcpy(*name_n, rrset->rrs_zonecut_n, len);
@@ -3110,7 +3122,7 @@ find_next_zonecut_old(val_context_t * context, struct queries_for_query **querie
     }
     rrset->rrs_zonecut_n = *name_n; 
     len = wire_name_length(*name_n);
-    *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+    *name_n = (u_char *) MALLOC(len * sizeof(u_char));
     if (*name_n == NULL) {
         return VAL_OUT_OF_MEMORY;
     }
@@ -3123,9 +3135,9 @@ find_next_zonecut_old(val_context_t * context, struct queries_for_query **querie
 #if 0
 static int
 prove_existence(val_context_t * context,
-                u_int8_t * qname_n,
+                u_char * qname_n,
                 u_int16_t qtype_h,
-                u_int8_t * soa_name_n,
+                u_char * soa_name_n,
                 struct val_internal_result *w_results,
                 struct queries_for_query **queries,
                 struct val_result_chain **proof_res,
@@ -3135,12 +3147,12 @@ prove_existence(val_context_t * context,
     struct val_internal_result *res;
     int             nsec_bit_field;
 #ifdef LIBVAL_NSEC3
-    u_int8_t        nsec3_hashlen;
+    size_t        nsec3_hashlen;
     val_nsec3_rdata_t nd;
-    u_int8_t        hashlen;
-    u_int8_t       *hash;
-    u_int8_t       *cp = NULL;
-    u_int8_t       *nsec3_hash = NULL;
+    size_t        hashlen;
+    u_char       *hash;
+    u_char       *cp = NULL;
+    u_char       *nsec3_hash = NULL;
 #endif
     int             retval;
 
@@ -3148,26 +3160,25 @@ prove_existence(val_context_t * context,
         if (!res->val_rc_is_proof)
             continue;
 
-        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        if ((!the_set) || (!the_set->rrs.val_rrset_data)) {
+        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
+        if ((!the_set) || (!the_set->rrs_data)) {
             continue;
         }
 
-        if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
+        if (the_set->rrs_type_h == ns_t_nsec) {
 
-            if (!namecmp(the_set->rrs.val_rrset_name_n, qname_n)) {
+            if (!namecmp(the_set->rrs_name_n, qname_n)) {
                 /*
                  * NSEC owner = query name & q_type not in list 
                  */
                 nsec_bit_field =
-                    wire_name_length(the_set->rrs.val_rrset_data->
+                    wire_name_length(the_set->rrs_data->
                                      rr_rdata);
-                if (is_type_set
-                    ((&
-                      (the_set->rrs.val_rrset_data->
-                       rr_rdata[nsec_bit_field])),
-                     the_set->rrs.val_rrset_data->rr_rdata_length_h -
-                     nsec_bit_field, qtype_h)) {
+                if (the_set->rrs_data->rr_rdata_length > nsec_bit_field &&
+                        is_type_set ((&(the_set->rrs_data->
+                            rr_rdata[nsec_bit_field])),
+                            the_set->rrs_data->rr_rdata_length -
+                            nsec_bit_field, qtype_h)) {
                     val_log(context, LOG_INFO,
                             "prove_existence(): Wildcard expansion: Type exists at NSEC record");
                     *status = VAL_SUCCESS;
@@ -3176,18 +3187,18 @@ prove_existence(val_context_t * context,
             }
         }
 #ifdef LIBVAL_NSEC3
-        else if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
+        else if (the_set->rrs_type_h == ns_t_nsec3) {
 
-            nsec3_hashlen = the_set->rrs.val_rrset_name_n[0];
+            nsec3_hashlen = the_set->rrs_name_n[0];
             nsec3_hash =
                 (nsec3_hashlen ==
-                 0) ? NULL : the_set->rrs.val_rrset_name_n + 1;
+                 0) ? NULL : the_set->rrs_name_n + 1;
 
             if (NULL ==
-                val_parse_nsec3_rdata(the_set->rrs.val_rrset_data->
+                val_parse_nsec3_rdata(the_set->rrs_data->
                                       rr_rdata,
-                                      the_set->rrs.val_rrset_data->
-                                      rr_rdata_length_h, &nd)) {
+                                      the_set->rrs_data->
+                                      rr_rdata_length, &nd)) {
                 val_log(context, LOG_INFO, "prove_existence(): Cannot parse NSEC3 rdata");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
@@ -3211,13 +3222,14 @@ prove_existence(val_context_t * context,
              * Check if there is an exact match 
              */
             if ((nsec3_hashlen == hashlen)
-                && !memcmp(hash, nsec3_hash, hashlen)) {
-                int             nsec3_bm_len =
-                    the_set->rrs.val_rrset_data->rr_rdata_length_h -
+                && !memcmp(hash, nsec3_hash, hashlen) 
+                && the_set->rrs_data->rr_rdata_length > nd.bit_field) {
+                size_t  nsec3_bm_len =
+                    the_set->rrs_data->rr_rdata_length -
                     nd.bit_field;
 
                 if (is_type_set
-                    ((&(the_set->rrs.val_rrset_data->
+                    ((&(the_set->rrs_data->
                         rr_rdata[nd.bit_field])), nsec3_bm_len, qtype_h)) {
                     val_log(context, LOG_INFO,
                             "prove_existence(): Wildcard expansion: Type exists at NSEC3 record");
@@ -3270,7 +3282,7 @@ prove_existence(val_context_t * context,
 static int
 verify_provably_insecure(val_context_t * context,
                          struct queries_for_query **queries,
-                         u_int8_t *q_name_n, 
+                         u_char *q_name_n, 
                          u_int16_t q_type_h,
                          u_int32_t flags,
                          int *done,
@@ -3281,18 +3293,18 @@ verify_provably_insecure(val_context_t * context,
     char            name_p[NS_MAXDNAME];
     char            tempname_p[NS_MAXDNAME];
 
-    u_int8_t       *curzone_n = NULL;
-    u_int8_t       *q_zonecut_n = NULL;
-    u_int8_t       *zonecut_n = NULL;
-    u_int8_t       *nxt_qname = NULL;
-    u_int8_t       *name_n = NULL;
-    u_int8_t       *q = NULL;
+    u_char       *curzone_n = NULL;
+    u_char       *q_zonecut_n = NULL;
+    u_char       *zonecut_n = NULL;
+    u_char       *nxt_qname = NULL;
+    u_char       *name_n = NULL;
+    u_char       *q = NULL;
 
     int             retval;
 
 #ifdef LIBVAL_DLV
-    u_int8_t *dlv_tp = NULL;
-    u_int8_t *dlv_target = NULL;
+    u_char *dlv_tp = NULL;
+    u_char *dlv_target = NULL;
 #endif
 
     if ((queries == NULL) || (done == NULL) || (is_pinsecure == NULL)) {
@@ -3330,7 +3342,7 @@ verify_provably_insecure(val_context_t * context,
        
 #ifdef LIBVAL_DLV
     if (flags & VAL_QUERY_USING_DLV) {
-        int len;
+        size_t len;
         if (VAL_NO_ERROR != (find_dlv_trust_point(context, name_n, 
                                               &dlv_tp, &dlv_target, ttl_x))) {
             val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find trust anchor for %s", name_p);
@@ -3342,7 +3354,7 @@ verify_provably_insecure(val_context_t * context,
         }
 
         len = wire_name_length(dlv_tp);
-        curzone_n = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+        curzone_n = (u_char *) MALLOC (len * sizeof(u_char));
         if (curzone_n == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
@@ -3398,8 +3410,8 @@ verify_provably_insecure(val_context_t * context,
     while(*q_zonecut_n != '\0') {
 
         if (nxt_qname == NULL) {
-            int len = wire_name_length(curzone_n);
-            nxt_qname = (u_int8_t *) MALLOC (len * sizeof (u_int8_t));
+            size_t len = wire_name_length(curzone_n);
+            nxt_qname = (u_char *) MALLOC (len * sizeof (u_char));
             if (nxt_qname == NULL) {
                 retval = VAL_OUT_OF_MEMORY;
                 goto err;
@@ -3486,7 +3498,7 @@ verify_provably_insecure(val_context_t * context,
 #ifdef LIBVAL_DLV
             if (flags & VAL_QUERY_USING_DLV) {
                 if (dlv_target && dlv_tp) {
-                    u_int8_t *last_name = NULL;
+                    u_char *last_name = NULL;
                     if (VAL_NO_ERROR != (retval = 
                             replace_name_in_name(zonecut_n, dlv_tp, dlv_target, &last_name))) {
                         goto err;
@@ -3547,12 +3559,12 @@ donefornow:
 }
 
 static int
-is_pu_trusted(val_context_t *ctx, u_int8_t *name_n, u_int32_t *ttl_x)
+is_pu_trusted(val_context_t *ctx, u_char *name_n, u_int32_t *ttl_x)
 {
     policy_entry_t *pu_pol, *pu_cur;
-    u_int8_t       *p;
-    char            name_p[NS_MAXDNAME];
-    int             name_len;
+    u_char       *p;
+    char         name_p[NS_MAXDNAME];
+    size_t       name_len;
 
     RETRIEVE_POLICY(ctx, P_PROV_INSECURE, pu_pol);
     if (pu_pol) {
@@ -3571,7 +3583,7 @@ is_pu_trusted(val_context_t *ctx, u_int8_t *name_n, u_int32_t *ttl_x)
          */
         for (; pu_cur; pu_cur = pu_cur->next) {
             int             root_zone = 0;
-            if (!namecmp(pu_cur->zone_n, (const u_int8_t *) ""))
+            if (!namecmp(pu_cur->zone_n, (const u_char *) ""))
                 root_zone = 1;
             else {
                 /*
@@ -3639,13 +3651,13 @@ try_verify_assertion(val_context_t * context,
         /* find the pending query */
         if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
                                                        queries,
-                                                       next_as->_as.ac_data->
-                                                       rrs.
-                                                       val_rrset_name_n,
+                                                       next_as->val_ac_rrset.ac_data->
+                                                       
+                                                       rrs_name_n,
                                                        ns_t_rrsig,
-                                                       next_as->_as.ac_data->
-                                                       rrs.
-                                                       val_rrset_class_h,
+                                                       next_as->val_ac_rrset.ac_data->
+                                                       
+                                                       rrs_class_h,
                                                        flags,
                                                        &pc)))
                 return retval;
@@ -3657,7 +3669,7 @@ try_verify_assertion(val_context_t * context,
         else if (pc->qfq_query->qc_state < Q_ANSWERED)
             return VAL_NO_ERROR; 
             
-        if (next_as->_as.ac_data == NULL) {
+        if (next_as->val_ac_rrset.ac_data == NULL) {
             /*
              * if no data exists, why are we waiting for an RRSIG again? 
              */
@@ -3666,14 +3678,14 @@ try_verify_assertion(val_context_t * context,
         } else {
             struct val_digested_auth_chain *pending_as;
             for (pending_as = pc->qfq_query->qc_ans; pending_as;
-                 pending_as = pending_as->_as.val_ac_rrset_next) {
+                 pending_as = pending_as->val_ac_rrset.val_ac_rrset_next) {
                 /*
                  * We were waiting for the RRSIG 
                  */
-                pending_rrset = pending_as->_as.ac_data;
+                pending_rrset = pending_as->val_ac_rrset.ac_data;
                 if ((pending_rrset == NULL) ||
-                    (pending_rrset->rrs.val_rrset_sig == NULL) ||
-                    (pending_rrset->rrs.val_rrset_sig->rr_rdata == NULL)) {
+                    (pending_rrset->rrs_sig == NULL) ||
+                    (pending_rrset->rrs_sig->rr_rdata == NULL)) {
                         continue;
                 }
 
@@ -3687,18 +3699,18 @@ try_verify_assertion(val_context_t * context,
                      */
                     u_int16_t       rrsig_type_n;
                     memcpy(&rrsig_type_n,
-                           pending_rrset->rrs.val_rrset_sig->rr_rdata,
+                           pending_rrset->rrs_sig->rr_rdata,
                            sizeof(u_int16_t));
-                    if (next_as->_as.ac_data->rrs.val_rrset_type_h ==
+                    if (next_as->val_ac_rrset.ac_data->rrs_type_h ==
                         ntohs(rrsig_type_n)) {
                         /*
                          * store the RRSIG in the assertion 
                          */
-                        next_as->_as.ac_data->rrs.val_rrset_sig =
-                            copy_rr_rec_list(pending_rrset->rrs.
-                                             val_rrset_type_h,
-                                             pending_rrset->rrs.
-                                             val_rrset_sig, 0);
+                        next_as->val_ac_rrset.ac_data->rrs_sig =
+                            copy_rr_rec_list(pending_rrset->
+                                             rrs_type_h,
+                                             pending_rrset->
+                                             rrs_sig, 0);
                         next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
                         /*
                          * create a pending query for the trust portion 
@@ -3721,8 +3733,8 @@ try_verify_assertion(val_context_t * context,
         }
     } else if (next_as->val_ac_status == VAL_AC_WAIT_FOR_TRUST) {
 
-        if (next_as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
-            if (next_as->_as.ac_data->rrs_zonecut_n == NULL) {
+        if (next_as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey) {
+            if (next_as->val_ac_rrset.ac_data->rrs_zonecut_n == NULL) {
                 next_as->val_ac_status = VAL_AC_DS_MISSING;
                 return VAL_NO_ERROR;
             }
@@ -3730,8 +3742,8 @@ try_verify_assertion(val_context_t * context,
             if (VAL_NO_ERROR !=
                 (retval =
                     add_to_qfq_chain(context, queries, 
-                          next_as->_as.ac_data->rrs_zonecut_n, ns_t_ds,
-                          next_as->_as.ac_data->rrs.val_rrset_class_h, 
+                          next_as->val_ac_rrset.ac_data->rrs_zonecut_n, ns_t_ds,
+                          next_as->val_ac_rrset.ac_data->rrs_class_h, 
                           flags, &pc)))
                 return retval;
 
@@ -3743,15 +3755,15 @@ try_verify_assertion(val_context_t * context,
                 return VAL_NO_ERROR; 
             
         } else {
-            if (next_as->_as.ac_data->rrs_zonecut_n == NULL) {
+            if (next_as->val_ac_rrset.ac_data->rrs_zonecut_n == NULL) {
                 next_as->val_ac_status = VAL_AC_DNSKEY_MISSING;
                 return VAL_NO_ERROR;
             }
             if (VAL_NO_ERROR !=
                 (retval =
                     add_to_qfq_chain(context, queries, 
-                          next_as->_as.ac_data->rrs_zonecut_n, ns_t_dnskey,
-                          next_as->_as.ac_data->rrs.val_rrset_class_h, 
+                          next_as->val_ac_rrset.ac_data->rrs_zonecut_n, ns_t_dnskey,
+                          next_as->val_ac_rrset.ac_data->rrs_class_h, 
                           flags, &pc)))
                 return retval;
 
@@ -3764,8 +3776,8 @@ try_verify_assertion(val_context_t * context,
         }
         
         if ((pc->qfq_query->qc_ans) && 
-            (pc->qfq_query->qc_ans->_as.ac_data) && 
-            (pc->qfq_query->qc_ans->_as.ac_data->rrs_ans_kind == SR_ANS_STRAIGHT)) {
+            (pc->qfq_query->qc_ans->val_ac_rrset.ac_data) && 
+            (pc->qfq_query->qc_ans->val_ac_rrset.ac_data->rrs_ans_kind == SR_ANS_STRAIGHT)) {
             /*
              * if the pending assertion contains a straight answer, 
              * trust is useful for verification 
@@ -3793,14 +3805,14 @@ try_verify_assertion(val_context_t * context,
         struct val_digested_auth_chain *the_trust;
         char name_p[NS_MAXDNAME];
         
-        if (-1 == ns_name_ntop(next_as->_as.ac_data->rrs.val_rrset_name_n, 
+        if (-1 == ns_name_ntop(next_as->val_ac_rrset.ac_data->rrs_name_n, 
                                name_p, sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO, 
                 "try_verify_assertion(): verifying next assertion: {%s, %d, %d}",
                 name_p, 
-                next_as->_as.ac_data->rrs.val_rrset_class_h, 
-                next_as->_as.ac_data->rrs.val_rrset_type_h);
+                next_as->val_ac_rrset.ac_data->rrs_class_h, 
+                next_as->val_ac_rrset.ac_data->rrs_type_h);
 
         if (next_as->val_ac_status == VAL_AC_TRUST_NOCHK) {
             the_trust = next_as;
@@ -3813,14 +3825,14 @@ try_verify_assertion(val_context_t * context,
          * Set the TTL to the minimum of the authentication 
          * chain element and the trust element
          */
-        if (the_trust && the_trust->_as.ac_data) {
-            if (the_trust->_as.ac_data->rrs.val_rrset_ttl_x <
-                    next_as->_as.ac_data->rrs.val_rrset_ttl_x) {
-                next_as->_as.ac_data->rrs.val_rrset_ttl_x =
-                    the_trust->_as.ac_data->rrs.val_rrset_ttl_x;
+        if (the_trust && the_trust->val_ac_rrset.ac_data) {
+            if (the_trust->val_ac_rrset.ac_data->rrs_ttl_x <
+                    next_as->val_ac_rrset.ac_data->rrs_ttl_x) {
+                next_as->val_ac_rrset.ac_data->rrs_ttl_x =
+                    the_trust->val_ac_rrset.ac_data->rrs_ttl_x;
 
                 SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x,
-                            the_trust->_as.ac_data->rrs.val_rrset_ttl_x);
+                            the_trust->val_ac_rrset.ac_data->rrs_ttl_x);
             }
         }
     }
@@ -3858,22 +3870,23 @@ fix_validation_result(val_context_t * context,
         top_as = res->val_rc_rrset;
         as = top_as;
         while(as) {
-            if ((as->val_ac_rrset) &&
-                (as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey)) {
+            if ((as->val_ac_rrset.ac_data) &&
+                (as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey)) {
                 if (as->val_ac_status == VAL_AC_NOT_VERIFIED) {
                     /*
                      * see if one of the DNSKEYs links up 
                      */
                     struct val_rr_rec  *drr;
-                    for (drr = as->val_ac_rrset->val_rrset_data; drr;
+                    for (drr = as->val_ac_rrset.ac_data->rrs_data; drr;
                          drr = drr->rr_next) {
                         if (drr->rr_status ==
                                 VAL_AC_UNKNOWN_ALGORITHM_LINK) {
                             if (is_pu_trusted(context, 
-                                        as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                                res->val_rc_status = VAL_PROVABLY_INSECURE;
+                                        as->val_ac_rrset.ac_data->rrs_name_n, 
+                                        &ttl_x))
+                                res->val_rc_status = VAL_PINSECURE;
                             else
-                                res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
+                                res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                             SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
                             break;
                         }
@@ -3901,15 +3914,15 @@ fix_validation_result(val_context_t * context,
 static int
 find_dlv_record(val_context_t *context,
                 struct queries_for_query **queries,
-                u_int8_t *name, 
-                u_int8_t *dlv_tp,
-                u_int8_t **dlv_ptr,
+                u_char *name, 
+                u_char *dlv_tp,
+                u_char **dlv_ptr,
                 u_int32_t flags,
                 int *done)
 {
     int retval = VAL_NO_ERROR;
     struct val_result_chain *results = NULL;
-    u_int8_t *q;
+    u_char *q;
    
     if (context == NULL || queries == NULL || name == NULL ||
             dlv_tp == NULL || dlv_ptr == NULL || done == NULL)
@@ -3964,19 +3977,19 @@ done:
 static int
 set_dlv_branchoff(val_context_t *context, 
                   struct queries_for_query **queries, 
-                  u_int8_t *name_n,
+                  u_char *name_n,
                   u_int16_t class_h,
                   u_int32_t flags,
                   int *done,
                   int *do_dlv,
                   u_int32_t *q_ttl_x)
 {
-    u_int8_t *tp = NULL;
-    u_int8_t *dlv_tp = NULL;
-    u_int8_t *dlv_target = NULL;
-    u_int8_t *cl_target_ptr = NULL;
-    u_int8_t *last_name = NULL;
-    u_int8_t *dlv_name = NULL;
+    u_char *tp = NULL;
+    u_char *dlv_tp = NULL;
+    u_char *dlv_target = NULL;
+    u_char *cl_target_ptr = NULL;
+    u_char *last_name = NULL;
+    u_char *dlv_name = NULL;
     char name_p[NS_MAXDNAME];
     u_int32_t ttl_x = 0;
     u_int16_t       tzonestatus;
@@ -4072,21 +4085,21 @@ set_dlv_branchoff(val_context_t *context,
         if (copyfrm->qc_ans) {
             if (VAL_NO_ERROR != (retval = 
                         add_to_authentication_chain(&context->a_list, q, 
-                                                    copyfrm->qc_ans->_as.ac_data))) 
+                                                    copyfrm->qc_ans->val_ac_rrset.ac_data))) 
                 goto done;
             q->qc_ans = context->a_list;
-            q->qc_ans->_as.ac_data->rrs_ans_kind = 
-               copyfrm->qc_ans->_as.ac_data->rrs_ans_kind; 
+            q->qc_ans->val_ac_rrset.ac_data->rrs_ans_kind = 
+               copyfrm->qc_ans->val_ac_rrset.ac_data->rrs_ans_kind; 
             q->qc_ans->val_ac_status = copyfrm->qc_ans->val_ac_status;
         }
         if (copyfrm->qc_proof) {
             if (VAL_NO_ERROR != (retval = 
                         add_to_authentication_chain(&context->a_list, q, 
-                                                    copyfrm->qc_proof->_as.ac_data))) 
+                                                    copyfrm->qc_proof->val_ac_rrset.ac_data))) 
                 goto done;
             q->qc_proof = context->a_list;
-            q->qc_proof->_as.ac_data->rrs_ans_kind = 
-               copyfrm->qc_proof->_as.ac_data->rrs_ans_kind; 
+            q->qc_proof->val_ac_rrset.ac_data->rrs_ans_kind = 
+               copyfrm->qc_proof->val_ac_rrset.ac_data->rrs_ans_kind; 
             q->qc_proof->val_ac_status = copyfrm->qc_proof->val_ac_status;
         }
         
@@ -4155,7 +4168,7 @@ verify_and_validate(val_context_t * context,
      * Look at every answer that was returned 
      */
     for (as_more = top_as; as_more;
-         as_more = as_more->_as.val_ac_rrset_next) {
+         as_more = as_more->val_ac_rrset.val_ac_rrset_next) {
         int             thisdone = 1;
         int             pu_done = 0;
 
@@ -4220,7 +4233,7 @@ verify_and_validate(val_context_t * context,
         next_as = as_more;
         while (next_as) {
             char   name_p[NS_MAXDNAME];
-            if (-1 == ns_name_ntop(next_as->val_ac_rrset->val_rrset_name_n, 
+            if (-1 == ns_name_ntop(next_as->val_ac_rrset.ac_data->rrs_name_n, 
                                        name_p, sizeof(name_p))) {
                 snprintf(name_p, sizeof(name_p), "unknown/error");
             }
@@ -4243,14 +4256,14 @@ verify_and_validate(val_context_t * context,
              * chain of trust (not-validated)
              * also the case where trust for an SOA is returned as another SOA
              */
-            if ((next_as->_as.ac_data != NULL) &&
+            if ((next_as->val_ac_rrset.ac_data != NULL) &&
                 (next_as == as_trust)) {
                 val_log(context, LOG_INFO, 
                         "verify_and_validate(): trying to verify PNE \
                         for {%s %s %s}; but trust points backward",
                         name_p, 
-                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                        p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                        p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                 next_as->val_ac_status = VAL_AC_DNSKEY_MISSING;
                 break;
             }
@@ -4275,7 +4288,7 @@ verify_and_validate(val_context_t * context,
                  */
                 int             asked_the_child = 0;
 
-                if (next_as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey) {
+                if (next_as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey) {
 
                     struct val_digested_auth_chain *as;
                     struct val_digested_auth_chain *ds_proof = NULL;
@@ -4288,8 +4301,8 @@ verify_and_validate(val_context_t * context,
                             "verify_and_validate(): trust point "
                             "for {%s %s %s} contains an empty proof of non-existence",
                             name_p, 
-                            p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                            p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                            p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                            p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         break;
                     }
                     /*
@@ -4297,13 +4310,13 @@ verify_and_validate(val_context_t * context,
                      * owner name of the DS record
                      */
                     for (as = ds_proof; as;
-                         as = as->_as.val_ac_rrset_next) {
-                        if ((as->val_ac_rrset != NULL)
-                            && (as->val_ac_rrset->val_rrset_type_h ==
+                         as = as->val_ac_rrset.val_ac_rrset_next) {
+                        if ((as->val_ac_rrset.ac_data != NULL)
+                            && (as->val_ac_rrset.ac_data->rrs_type_h ==
                                 ns_t_soa)) {
                             if (!namecmp
-                                (as->val_ac_rrset->val_rrset_name_n,
-                                 next_as->val_ac_rrset->val_rrset_name_n))
+                                (as->val_ac_rrset.ac_data->rrs_name_n,
+                                 next_as->val_ac_rrset.ac_data->rrs_name_n))
                                 asked_the_child = 1;
                             break;
                         }
@@ -4324,8 +4337,8 @@ verify_and_validate(val_context_t * context,
                                 "verify_and_validate(): response for {%s %s %s} received from child zone;\
                                 no root.hints configured",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         break;
                     } 
                         
@@ -4347,8 +4360,8 @@ verify_and_validate(val_context_t * context,
                                 "verify_and_validate(): response for {%s %s %s} received from child zone;\
                                 bailing out",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         res->val_rc_status = VAL_BOGUS_PROOF;
                         break;
                     }
@@ -4361,13 +4374,13 @@ verify_and_validate(val_context_t * context,
                     int is_pinsecure;
                     if (VAL_NO_ERROR != 
                                 (retval = verify_provably_insecure(context, 
-                                                                   queries, 
-                                                                   next_as->val_ac_rrset->val_rrset_name_n, 
-                                                                   next_as->val_ac_rrset->val_rrset_type_h, 
-                                                                   flags,
-                                                                   &pu_done,
-                                                                   &is_pinsecure,
-                                                                   &ttl_x)))
+                                                queries, 
+                                                next_as->val_ac_rrset.ac_data->rrs_name_n, 
+                                                next_as->val_ac_rrset.ac_data->rrs_type_h, 
+                                                flags,
+                                                &pu_done,
+                                                &is_pinsecure,
+                                                &ttl_x)))
                         return retval;
 
                     if (pu_done) {
@@ -4377,21 +4390,21 @@ verify_and_validate(val_context_t * context,
                             val_log(context, LOG_INFO, 
                                     "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
                                     name_p, 
-                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                            next_as->val_ac_status = VAL_AC_PROVABLY_INSECURE;
+                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                            next_as->val_ac_status = VAL_AC_PINSECURE;
                             if (is_pu_trusted(context, 
-                                    next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                                res->val_rc_status = VAL_PROVABLY_INSECURE;
+                                    next_as->val_ac_rrset.ac_data->rrs_name_n, &ttl_x))
+                                res->val_rc_status = VAL_PINSECURE;
                             else
-                                res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
+                                res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
                             val_log(context, LOG_INFO, 
                                     "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
                                     name_p, 
-                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                             res->val_rc_status = VAL_BOGUS_PROOF;
                         }
                         break;
@@ -4410,52 +4423,44 @@ verify_and_validate(val_context_t * context,
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Ignore Validation",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         res->val_rc_status = VAL_IGNORE_VALIDATION;
-                    } else if (next_as->val_ac_status ==
-                               VAL_AC_TRUSTED_ZONE) {
-                        val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Trusted Zone",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                        res->val_rc_status = VAL_TRUSTED_ZONE;
                     } else if (next_as->val_ac_status == VAL_AC_TRUST) {
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): ending authentication chain at {%s %s %s}",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         SET_CHAIN_COMPLETE(res->val_rc_status);
                     } else if (next_as->val_ac_status ==
                                VAL_AC_UNTRUSTED_ZONE) {
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Untrusted Zone",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         res->val_rc_status = VAL_UNTRUSTED_ZONE;
                     } else if (next_as->val_ac_status ==
-                               VAL_AC_PROVABLY_INSECURE) {
+                               VAL_AC_PINSECURE) {
                         ttl_x = 0;
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         if (is_pu_trusted(context, 
-                                    next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                            res->val_rc_status = VAL_PROVABLY_INSECURE;
+                                    next_as->val_ac_rrset.ac_data->rrs_name_n, &ttl_x))
+                            res->val_rc_status = VAL_PINSECURE;
                         else
-                            res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
+                            res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bare RRSIG",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         res->val_rc_status = VAL_BARE_RRSIG;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_NO_TRUST_ANCHOR) {
@@ -4465,8 +4470,8 @@ verify_and_validate(val_context_t * context,
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): marking authentication chain status for {%s %s %s} as verified without trust",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         res->val_rc_status = VAL_VERIFIED_CHAIN;
                     }
                 } else {
@@ -4474,8 +4479,8 @@ verify_and_validate(val_context_t * context,
                     val_log(context, LOG_INFO, 
                                 "verify_and_validate(): ending authentication chain at {%s %s %s}",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                     SET_CHAIN_COMPLETE(res->val_rc_status);
                 }
 
@@ -4489,13 +4494,13 @@ verify_and_validate(val_context_t * context,
                 int is_pinsecure;
                 ttl_x = 0;
                 if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
-                                                                   queries, 
-                                                                   next_as->val_ac_rrset->val_rrset_name_n, 
-                                                                   next_as->val_ac_rrset->val_rrset_type_h, 
-                                                                   flags,
-                                                                   &pu_done,
-                                                                   &is_pinsecure,
-                                                                   &ttl_x)))
+                                                    queries, 
+                                                    next_as->val_ac_rrset.ac_data->rrs_name_n, 
+                                                    next_as->val_ac_rrset.ac_data->rrs_type_h, 
+                                                    flags,
+                                                    &pu_done,
+                                                    &is_pinsecure,
+                                                    &ttl_x)))
                     return retval;
 
                 if (pu_done) {
@@ -4505,21 +4510,21 @@ verify_and_validate(val_context_t * context,
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                        next_as->val_ac_status = VAL_AC_PROVABLY_INSECURE;
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                        next_as->val_ac_status = VAL_AC_PINSECURE;
                         if (is_pu_trusted(context, 
-                                next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                            res->val_rc_status = VAL_PROVABLY_INSECURE;
+                                next_as->val_ac_rrset.ac_data->rrs_name_n, &ttl_x))
+                            res->val_rc_status = VAL_PINSECURE;
                         else
-                            res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
+                            res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else {
                         val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         res->val_rc_status = VAL_BOGUS;
                     }
                     break;
@@ -4529,8 +4534,8 @@ verify_and_validate(val_context_t * context,
                 val_log(context, LOG_INFO, 
                         "verify_and_validate(): marking authentication chain status for {%s %s %s} as bad",
                         name_p, 
-                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                        p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                        p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
 
                 res->val_rc_status = VAL_DNS_ERROR;
                 break;
@@ -4545,8 +4550,8 @@ verify_and_validate(val_context_t * context,
                     val_log(context, LOG_INFO, 
                         "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
                         name_p, 
-                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                        p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                        p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                     SET_MASKED_STATUS(res->val_rc_status,
                                       VAL_BOGUS);
 
@@ -4555,13 +4560,13 @@ verify_and_validate(val_context_t * context,
                     int is_pinsecure;
                     ttl_x = 0;
                     if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
-                                                                   queries, 
-                                                                   next_as->val_ac_rrset->val_rrset_name_n, 
-                                                                   next_as->val_ac_rrset->val_rrset_type_h, 
-                                                                   flags,
-                                                                   &pu_done,
-                                                                   &is_pinsecure,
-                                                                   &ttl_x)))
+                                                        queries, 
+                                                        next_as->val_ac_rrset.ac_data->rrs_name_n, 
+                                                        next_as->val_ac_rrset.ac_data->rrs_type_h, 
+                                                        flags,
+                                                        &pu_done,
+                                                        &is_pinsecure,
+                                                        &ttl_x)))
                         return retval;
 
                     if (pu_done) {
@@ -4571,21 +4576,22 @@ verify_and_validate(val_context_t * context,
                             val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                            next_as->val_ac_status = VAL_AC_PROVABLY_INSECURE;
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                            next_as->val_ac_status = VAL_AC_PINSECURE;
                             if (is_pu_trusted(context, 
-                                            next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                                res->val_rc_status = VAL_PROVABLY_INSECURE;
+                                            next_as->val_ac_rrset.ac_data->rrs_name_n, 
+                                            &ttl_x))
+                                res->val_rc_status = VAL_PINSECURE;
                             else
-                                res->val_rc_status = VAL_BAD_PROVABLY_INSECURE;
+                                res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
                             val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                             res->val_rc_status = VAL_BOGUS;
                         }
                         break;
@@ -4607,7 +4613,6 @@ verify_and_validate(val_context_t * context,
             !(flags & VAL_QUERY_DONT_VALIDATE) &&
             !(flags & VAL_QUERY_NO_DLV) &&
             !(flags & VAL_QUERY_USING_DLV) &&
-            res->val_rc_status != VAL_TRUSTED_ZONE &&
             res->val_rc_status != VAL_UNTRUSTED_ZONE &&
             !val_isvalidated(res->val_rc_status) && 
             res->val_rc_rrset != NULL) {
@@ -4621,8 +4626,8 @@ verify_and_validate(val_context_t * context,
             if (VAL_NO_ERROR != 
                     (retval =
                         set_dlv_branchoff(context, queries, 
-                            as->val_ac_rrset->val_rrset_name_n,
-                            as->val_ac_rrset->val_rrset_class_h,               
+                            as->val_ac_rrset.ac_data->rrs_name_n,
+                            as->val_ac_rrset.ac_data->rrs_class_h,               
                             flags, &thisdone, &do_dlv, 
                             &as->val_ac_query->qc_ttl_x))) {
                 return retval; 
@@ -4962,8 +4967,8 @@ check_proof_sanity(val_context_t * context,
         for (res = w_results; res; res = res->val_rc_next) {
             if (NULL == (as = res->val_rc_rrset))
                 continue;
-            if (as->val_ac_rrset->val_rrset_type_h == ns_t_soa) {
-                if (!namecmp(as->val_ac_rrset->val_rrset_name_n,
+            if (as->val_ac_rrset.ac_data->rrs_type_h == ns_t_soa) {
+                if (!namecmp(as->val_ac_rrset.ac_data->rrs_name_n,
                              top_q->qc_name_n)) {
                     val_log(context, LOG_INFO,
                             "check_proof_sanity(): Bogus Response - Proof of non-existence for DS received from child");
@@ -5005,7 +5010,7 @@ check_wildcard_sanity(val_context_t * context,
     struct val_result_chain *target_res;
     struct val_result_chain *new_res;
     struct val_query_chain *top_q;
-    u_int8_t       *zonecut_n;
+    u_char       *zonecut_n;
     val_status_t    status;
     int             retval;
     u_int32_t       ttl_x = 0;
@@ -5058,9 +5063,9 @@ check_wildcard_sanity(val_context_t * context,
                 /*
                  * we need to prove that the name does not itself exist 
                  */
-                if ((res->val_rc_rrset->_as.ac_data) &&
+                if ((res->val_rc_rrset->val_ac_rrset.ac_data) &&
                     ((zonecut_n =
-                      res->val_rc_rrset->_as.ac_data->rrs_zonecut_n))) {
+                      res->val_rc_rrset->val_ac_rrset.ac_data->rrs_zonecut_n))) {
                     /*
                      * Check if this proves non-existence of name 
                      */
@@ -5072,8 +5077,8 @@ check_wildcard_sanity(val_context_t * context,
                                             top_q->qc_proof, &status,
                                             &ttl_x)))
                          /*prove_existence(context, top_q->qc_name_n,
-                                         res->val_rc_rrset->_as.ac_data->
-                                         rrs.val_rrset_type_h, zonecut_n,
+                                         res->val_rc_rrset->val_ac_rrset.ac_data->
+                                         rrs_type_h, zonecut_n,
                                          w_results, queries, &target_res, results,
                                          &status, &ttl_x) */
                         goto err;
@@ -5122,17 +5127,17 @@ check_alias_sanity(val_context_t * context,
 {
     struct val_internal_result *res;
     struct val_result_chain *new_res = NULL;
-    int             done = 0;
-    int             alias_seen = 0;
-    u_int8_t       *qname_n = NULL;
+    int  done = 0;
+    int  alias_seen = 0;
+    u_char *qname_n = NULL;
     struct query_list *ql = NULL;
-    int             loop = 0;
-    int             retval;
-    u_int8_t       *p;
-    int             is_same_name;
-    u_int8_t        temp_name[NS_MAXCDNAME];
-    u_int32_t       soa_ttl_x = 0;
-    struct          val_query_chain *top_q;
+    int  loop = 0;
+    int  retval;
+    u_char *p;
+    int   is_same_name;
+    u_char temp_name[NS_MAXCDNAME];
+    u_int32_t soa_ttl_x = 0;
+    struct val_query_chain *top_q;
 
     if (top_qfq == NULL || results == NULL)
         return VAL_BAD_ARGUMENT;
@@ -5140,6 +5145,7 @@ check_alias_sanity(val_context_t * context,
     top_q = top_qfq->qfq_query; /* Can never be NULL if top_qfq is not NULL */
     
     qname_n = top_q->qc_original_name;
+    
     while (!done && qname_n) {
         done = 1;
         new_res = NULL;
@@ -5160,17 +5166,17 @@ check_alias_sanity(val_context_t * context,
              * try constructing a cname/dname chain 
              */
 
-            if (!res->val_rc_rrset || !res->val_rc_rrset->_as.ac_data)
+            if (!res->val_rc_rrset || !res->val_rc_rrset->val_ac_rrset.ac_data)
                 continue;
 
             is_same_name =
                 (0 ==
                  namecmp(qname_n,
-                         res->val_rc_rrset->_as.ac_data->rrs.
-                         val_rrset_name_n));
+                         res->val_rc_rrset->val_ac_rrset.ac_data->
+                         rrs_name_n));
 
             if ((is_same_name) &&
-                (res->val_rc_rrset->_as.ac_data->rrs_ans_kind ==
+                (res->val_rc_rrset->val_ac_rrset.ac_data->rrs_ans_kind ==
                  SR_ANS_CNAME)) {
                 /*
                  * found the next element 
@@ -5180,23 +5186,21 @@ check_alias_sanity(val_context_t * context,
                 /*
                  * find the next link in the cname chain 
                  */
-                if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
+                if (res->val_rc_rrset->val_ac_rrset.ac_data->rrs_data) {
                     qname_n =
-                        res->val_rc_rrset->_as.ac_data->rrs.
-                        val_rrset_data->rr_rdata;
+                        res->val_rc_rrset->val_ac_rrset.ac_data->
+                        rrs_data->rr_rdata;
                 } else {
                     qname_n = NULL;
                     res->val_rc_status = VAL_BOGUS;
                 }
             } else
-                if ((res->val_rc_rrset->_as.ac_data->rrs_ans_kind ==
+                if ((res->val_rc_rrset->val_ac_rrset.ac_data->rrs_ans_kind ==
                      SR_ANS_DNAME)
                     && (NULL !=
-                        (p =
-                         (u_int8_t *) namename(qname_n,
-                                             res->val_rc_rrset->_as.
-                                             ac_data->rrs.
-                                             val_rrset_name_n)))) {
+                        (p = namename(qname_n,
+                                      res->val_rc_rrset->val_ac_rrset.
+                                      ac_data->rrs_name_n)))) {
                 /*
                  * found the next dname element 
                  */
@@ -5206,19 +5210,19 @@ check_alias_sanity(val_context_t * context,
                 /*
                  * find the next link in the dname chain 
                  */
-                if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
-                    int             len1 = p - qname_n;
-                    int             len2 =
-                        wire_name_length(res->val_rc_rrset->_as.ac_data->
-                                         rrs.val_rrset_data->rr_rdata);
+                if (res->val_rc_rrset->val_ac_rrset.ac_data->rrs_data &&
+                        p > qname_n) {
+                    size_t len1 = p - qname_n;
+                    size_t len2 = wire_name_length(res->val_rc_rrset->
+                            val_ac_rrset.ac_data->rrs_data->rr_rdata);
                     if (len1 + len2 > sizeof(temp_name)) {
                         qname_n = NULL;
                         res->val_rc_status = VAL_BOGUS;
                     } else {
                         memcpy(temp_name, qname_n, len1);
                         memcpy(&temp_name[len1],
-                               res->val_rc_rrset->_as.ac_data->rrs.
-                               val_rrset_data->rr_rdata, len2);
+                               res->val_rc_rrset->val_ac_rrset.ac_data->
+                               rrs_data->rr_rdata, len2);
                         qname_n = temp_name;
                     }
                 } else {
@@ -5228,28 +5232,32 @@ check_alias_sanity(val_context_t * context,
 
             } else if (!is_same_name ||
                        (top_q->qc_type_h !=
-                            res->val_rc_rrset->_as.ac_data->rrs.
-                            val_rrset_type_h && 
+                            res->val_rc_rrset->val_ac_rrset.ac_data->
+                            rrs_type_h && 
                         top_q->qc_type_h != ns_t_any)
                        || (top_q->qc_class_h !=
-                           res->val_rc_rrset->_as.ac_data->rrs.
-                           val_rrset_class_h)) {
+                           res->val_rc_rrset->val_ac_rrset.ac_data->
+                           rrs_class_h)) {
                 /* Not a relevant answer */
                 continue;
             }
 
             if (res->val_rc_consumed) {
+                char qname[NS_MAXDNAME];
                 /*
                  * search for existing result structure 
                  */
+                if (ns_name_ntop (qname_n, qname, sizeof(qname)) < 0) {
+                    retval = VAL_BAD_ARGUMENT;
+                    goto err;
+                }
                 for (new_res = *results; new_res;
                      new_res = new_res->val_rc_next) {
                     if (new_res->val_rc_answer
                         && new_res->val_rc_answer->val_ac_rrset) {
-                        if (!namecmp
-                            (qname_n,
-                             new_res->val_rc_answer->val_ac_rrset->
-                             val_rrset_name_n)) {
+                        if (!strcmp(qname, 
+                                    new_res->val_rc_answer->
+                                    val_ac_rrset->val_rrset_name)) {
                             break;
                         }
                     }
@@ -5268,17 +5276,20 @@ check_alias_sanity(val_context_t * context,
             }
 
             if (qname_n && !done) {
-                int len;
-                len = wire_name_length(qname_n);
+                char qname[NS_MAXDNAME];
+                if (ns_name_ntop (qname_n, qname, sizeof(qname)) < 0) {
+                    retval = VAL_BAD_ARGUMENT;
+                    goto err;
+                }
                 if (new_res->val_rc_alias != NULL) {
                     FREE(new_res->val_rc_alias);
                 }
-                new_res->val_rc_alias = (u_int8_t *)MALLOC(len);
+                new_res->val_rc_alias = (char *)MALLOC(strlen(qname)+1);
                 if (new_res->val_rc_alias == NULL) {
                     retval = VAL_OUT_OF_MEMORY;
                     goto err;
                 }
-                memcpy(new_res->val_rc_alias, qname_n, len);
+                strcpy(new_res->val_rc_alias, qname);
             }
             
             new_res->val_rc_status = res->val_rc_status;
@@ -5315,8 +5326,8 @@ check_alias_sanity(val_context_t * context,
                  */
                 if (VAL_NO_ERROR !=
                     (retval =
-                     transform_single_result(context, NULL, queries, results, NULL,
-                                             &new_res))) {
+                     transform_single_result(context, NULL, queries, results, 
+                                             NULL, &new_res))) {
                     goto err;
                 }
                 new_res->val_rc_status = VAL_INCOMPLETE_PROOF;
@@ -5633,10 +5644,10 @@ int try_chase_query(val_context_t * context,
  */
 int
 val_resolve_and_check(val_context_t * ctx,
-                      u_char * domain_name_n,
-                      const u_int16_t q_class,
-                      const u_int16_t type,
-                      const u_int32_t flags,
+                      char * domain_name,
+                      int qclass,
+                      int qtype,
+                      u_int32_t flags,
                       struct val_result_chain **results)
 {
 
@@ -5650,10 +5661,30 @@ val_resolve_and_check(val_context_t * ctx,
     int data_received;
     int data_missing;
     val_context_t  *context = NULL;
+    u_char domain_name_n[NS_MAXCDNAME];
+    u_int16_t q_class, q_type;
     
-    if ((results == NULL) || (domain_name_n == NULL))
+    if ((results == NULL) || (domain_name == NULL))
         return VAL_BAD_ARGUMENT;
 
+    /* 
+     * Sanity check the values of class and type 
+     * Should not be larger than sizeof u_int16_t
+     */
+    if (qclass < 0 || qtype < 0 || 
+        qtype > ns_t_max || qclass > ns_c_max) {
+        return VAL_BAD_ARGUMENT;
+    } 
+    q_class = (u_int16_t) qclass;
+    q_type = (u_int16_t) qtype;
+
+    if ((retval = ns_name_pton(domain_name, 
+                        domain_name_n, sizeof(domain_name_n))) == -1) {
+        val_log(ctx, LOG_INFO, "val_resolve_and_check(): Cannot parse name %s",
+                domain_name);
+        return VAL_BAD_ARGUMENT;
+    }
+    
     /*
      * Create a default context if one does not exist 
      */
@@ -5718,7 +5749,7 @@ val_resolve_and_check(val_context_t * ctx,
     CTX_LOCK_ACACHE(context);
     
     if (VAL_NO_ERROR != (retval =
-                add_to_qfq_chain(context, &queries, domain_name_n, type,
+                add_to_qfq_chain(context, &queries, domain_name_n, q_type,
                                  q_class, flags & VAL_QFLAGS_USERMASK, 
                                  &added_q))) {
         goto err;
@@ -5832,7 +5863,7 @@ val_resolve_and_check(val_context_t * ctx,
 
     if (results) {
         val_log_authentication_chain(context, LOG_NOTICE, 
-            domain_name_n, q_class, type, *results);
+            domain_name, qclass, qtype, *results);
     }
 
   err:
@@ -5881,9 +5912,8 @@ val_istrusted(val_status_t val_status)
     case VAL_NONEXISTENT_TYPE_NOCHAIN:
     case VAL_VALIDATED_ANSWER:
     case VAL_TRUSTED_ANSWER:
-    case VAL_PROVABLY_INSECURE:
+    case VAL_PINSECURE:
     case VAL_IGNORE_VALIDATION:
-    case VAL_TRUSTED_ZONE:
         return 1;
 
         

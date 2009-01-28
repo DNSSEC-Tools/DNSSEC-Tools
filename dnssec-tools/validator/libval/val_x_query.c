@@ -46,30 +46,30 @@ extern int      h_errno;
 /*
  * Calculate rrset length 
  */
-static int
-find_rrset_len(struct val_rrset_rec *rrset)
+static size_t
+find_rrset_len(struct val_rrset_rec *rrset, u_char *name_n)
 {
     struct val_rr_rec  *rr;
-    int             resp_len = 0;
-    int             rrset_name_n_len;
+    size_t resp_len = 0;
+    size_t rrset_name_n_len;
 
-    if (rrset == NULL)
+    if (rrset == NULL || name_n == NULL)
         return 0;
 
-    rrset_name_n_len = wire_name_length(rrset->val_rrset_name_n);
+    rrset_name_n_len = wire_name_length(name_n);
     /* data */
     for (rr = rrset->val_rrset_data; rr; rr = rr->rr_next) {
         resp_len +=
             rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) +
             sizeof(u_int32_t)
-            + sizeof(u_int16_t) + rr->rr_rdata_length_h;
+            + sizeof(u_int16_t) + rr->rr_rdata_length;
     }
     /* signatures */
     for (rr = rrset->val_rrset_sig; rr; rr = rr->rr_next) {
         resp_len +=
             rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) +
             sizeof(u_int32_t)
-            + sizeof(u_int16_t) + rr->rr_rdata_length_h;
+            + sizeof(u_int16_t) + rr->rr_rdata_length;
     }
     return resp_len;
 }
@@ -77,23 +77,23 @@ find_rrset_len(struct val_rrset_rec *rrset)
 /* 
  * determine the size of the response from individual rrsets
  */  
-static int
-determine_size(struct val_result_chain *res)
+static size_t
+determine_size(struct val_result_chain *res, u_char *name_n)
 {
-    int             resp_len = 0;
+    size_t resp_len = 0;
 
-    if (res == NULL)
+    if (res == NULL || name_n == NULL)
         return 0;
     
     if (res->val_rc_rrset) {
-        resp_len += find_rrset_len(res->val_rc_rrset);
+        resp_len += find_rrset_len(res->val_rc_rrset, name_n);
     }
     if (res->val_rc_proof_count) {
         int             i;
         for (i = 0; i < res->val_rc_proof_count; i++) {
             if (res->val_rc_proofs[i])
                 resp_len +=
-                    find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
+                    find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset, name_n);
         }
     }
     return resp_len;
@@ -111,28 +111,47 @@ determine_size(struct val_result_chain *res)
  */
 static int
 encode_response_rrset(struct val_rrset_rec *rrset,
+                      u_char * name_n,
                       val_status_t val_rc_status,
-                      int resp_len,
-                      unsigned char **anbuf,
-                      int *anbufindex,
-                      int *ancount,
-                      unsigned char **nsbuf,
-                      int *nsbufindex,
-                      int *nscount,
-                      unsigned char **arbuf,
-                      int *arbufindex,
-                      int *arcount, 
+                      size_t resp_len,
+                      u_char **anbuf,
+                      size_t *anbufindex,
+                      size_t *ancount,
+                      u_char **nsbuf,
+                      size_t *nsbufindex,
+                      size_t *nscount,
+                      u_char **arbuf,
+                      size_t *arbufindex,
+                      size_t *arcount, 
                       int *an_auth, 
                       int *ns_auth)
 {
-    unsigned char  *cp;
-    int            *bufindex = NULL;
+    u_char  *cp;
+    size_t *bufindex = NULL;
     struct val_rr_rec  *rr;
-    int             rrset_name_n_len;
-    int            *count;
+    size_t rrset_name_n_len;
+    size_t *count;
+    u_int16_t class_h, type_h;
+    u_int32_t ttl_h;
 
-    if (rrset == NULL)
+    if (rrset == NULL || name_n == NULL)
         return 0;
+
+    /* 
+     * Sanity check the values of class and type 
+     * Should not be larger than sizeof u_int16_t
+     */
+    if (rrset->val_rrset_class < 0 || rrset->val_rrset_type < 0 || 
+        rrset->val_rrset_type > ns_t_max || rrset->val_rrset_class > ns_c_max ||
+        rrset->val_rrset_ttl < 0) {
+        return 0;
+    } 
+
+    rrset_name_n_len = wire_name_length(name_n);
+    class_h = (u_int16_t) rrset->val_rrset_class;
+    type_h = (u_int16_t) rrset->val_rrset_type;
+    ttl_h = (u_int32_t) rrset->val_rrset_ttl;
+    
 
     /** other inputs are checked by the calling method **/
     
@@ -159,51 +178,58 @@ encode_response_rrset(struct val_rrset_rec *rrset,
     /*
      * Answer/Authority/Additional section 
      */
-    rrset_name_n_len = wire_name_length(rrset->val_rrset_name_n);
     /* for each data */
     for (rr = rrset->val_rrset_data; rr; rr = rr->rr_next) {
 
+        u_int16_t rr_data_length_n = (u_int16_t)rr->rr_rdata_length;
+        if (rr->rr_rdata_length > rr_data_length_n)
+            return -1;
         if ((*bufindex + rrset_name_n_len + 10 +
-             rr->rr_rdata_length_h) > resp_len) {
+             rr_data_length_n) > resp_len) {
             /** log error message?  */
             return -1;
         }
 
         (*count)++;
 
-        memcpy(cp, rrset->val_rrset_name_n, rrset_name_n_len);
+        memcpy(cp, name_n, rrset_name_n_len);
         cp += rrset_name_n_len;
-        NS_PUT16(rrset->val_rrset_type_h, cp);
-        NS_PUT16(rrset->val_rrset_class_h, cp);
-        NS_PUT32(rrset->val_rrset_ttl_h, cp);
-        NS_PUT16(rr->rr_rdata_length_h, cp);
-        memcpy(cp, rr->rr_rdata, rr->rr_rdata_length_h);
-        cp += rr->rr_rdata_length_h;
+
+        NS_PUT16(type_h, cp);
+        NS_PUT16(class_h, cp);
+        NS_PUT32(ttl_h, cp);
+        NS_PUT16(rr_data_length_n, cp);
+        memcpy(cp, rr->rr_rdata, rr_data_length_n);
+        cp += rr_data_length_n;
 
     }  
     /* for each rrsig */
     for (rr = rrset->val_rrset_sig; rr; rr = rr->rr_next) {
 
+        u_int16_t rr_data_length_n = (u_int16_t)rr->rr_rdata_length;
+        if (rr->rr_rdata_length > rr_data_length_n)
+            return -1;
+
         if ((*bufindex + rrset_name_n_len + 10 +
-             rr->rr_rdata_length_h) > resp_len) {
+             rr_data_length_n) > resp_len) {
             /** log error message?  */
             return -1;
         }
 
         (*count)++;
 
-        memcpy(cp, rrset->val_rrset_name_n, rrset_name_n_len);
+        memcpy(cp, name_n, rrset_name_n_len);
         cp += rrset_name_n_len;
         NS_PUT16(ns_t_rrsig, cp);
-        NS_PUT16(rrset->val_rrset_class_h, cp);
-        NS_PUT32(rrset->val_rrset_ttl_h, cp);
-        NS_PUT16(rr->rr_rdata_length_h, cp);
-        memcpy(cp, rr->rr_rdata, rr->rr_rdata_length_h);
-        cp += rr->rr_rdata_length_h;
+        NS_PUT16(class_h, cp);
+        NS_PUT32(ttl_h, cp);
+        NS_PUT16(rr_data_length_n, cp);
+        memcpy(cp, rr->rr_rdata, rr_data_length_n);
+        cp += rr_data_length_n;
 
     }                           // end for each rr
 
-    *bufindex += find_rrset_len(rrset);
+    *bufindex += find_rrset_len(rrset, name_n);
     if (*bufindex > resp_len) {
         /** log error message?  */
         return -1;
@@ -230,25 +256,27 @@ encode_response_rrset(struct val_rrset_rec *rrset,
  */
 
 int
-compose_answer(const u_char * name_n,
-               const u_int16_t type_h,
-               const u_int16_t class_h,
+compose_answer(const char * name,
+               int type_h,
+               int class_h,
                struct val_result_chain *results,
                struct val_response *f_resp)
 {
     struct val_result_chain *res = NULL;
-    int             ancount = 0;        // Answer Count
-    int             nscount = 0;        // Authority Count
-    int             arcount = 0;        // Additional Count
-    int             anbufindex = 0, nsbufindex = 0, arbufindex = 0;
-    unsigned char  *anbuf = NULL, *nsbuf = NULL, *arbuf = NULL;
-    int             an_auth = 1;
-    int             ns_auth = 1;
-    unsigned char  *rp = NULL;
-    int             resp_len = 0;
+    size_t ancount = 0;        // Answer Count
+    size_t nscount = 0;        // Authority Count
+    size_t arcount = 0;        // Additional Count
+    size_t anbufindex = 0, nsbufindex = 0, arbufindex = 0;
+    u_char  *anbuf = NULL, *nsbuf = NULL, *arbuf = NULL;
+    int an_auth = 1;
+    int ns_auth = 1;
+    u_char  *rp = NULL;
+    size_t          resp_len = 0;
     HEADER         *hp = NULL;
-    int             len;
+    size_t          len;
     int             retval;
+    u_char name_n[NS_MAXCDNAME];
+    u_int16_t class_n, type_n;
 
     struct val_rrset_rec *rrset;
     int validated = 1;
@@ -270,29 +298,47 @@ compose_answer(const u_char * name_n,
     resp_len = 0;
 
     retval = VAL_NO_ERROR;
+    //h_errno = NETDB_INTERNAL;
+    h_errno = NO_RECOVERY;
     
-    if ((f_resp == NULL) || (name_n == NULL))
+    if ((f_resp == NULL) || (name == NULL))
         return VAL_BAD_ARGUMENT;
 
-    for (res = results; res; res = res->val_rc_next) {
-        resp_len += determine_size(res);
+    /* 
+     * Sanity check the values of class and type 
+     * Should not be larger than sizeof u_int16_t
+     */
+    if (class_h < 0 || type_h < 0 || 
+        type_h > ns_t_max || class_h > ns_c_max) {
+        return VAL_BAD_ARGUMENT;
+    } 
+    class_n = (u_int16_t) class_h;
+    type_n = (u_int16_t) type_h;
+
+    if ((retval = ns_name_pton(name, name_n, sizeof(name_n))) == -1) {
+        return VAL_BAD_ARGUMENT;
     }
 
-    f_resp->vr_val_status = VAL_DONT_KNOW;
+    for (res = results; res; res = res->val_rc_next) {
+        resp_len += determine_size(res, name_n);
+    }
+
+    f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
     f_resp->vr_length = (resp_len + OUTER_HEADER_LEN);
-    f_resp->vr_response = (unsigned char *) MALLOC(f_resp->vr_length *
-                                     sizeof(unsigned char));
+    f_resp->vr_response = (u_char *) MALLOC(f_resp->vr_length *
+                                     sizeof(u_char));
     if (f_resp->vr_response == NULL) {
             f_resp->vr_length = 0;
             return VAL_OUT_OF_MEMORY;
     }
+
     
     /*
      * temporary buffers for different sections 
      */
-    anbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-    nsbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-    arbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
+    anbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
+    nsbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
+    arbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
     if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
         if (anbuf)
             FREE(anbuf);
@@ -317,10 +363,13 @@ compose_answer(const u_char * name_n,
     len = wire_name_length(name_n);
     memcpy(rp, name_n, len);
     rp += len;
-    NS_PUT16(type_h, rp);
-    NS_PUT16(class_h, rp);
+    NS_PUT16(type_n, rp);
+    NS_PUT16(class_n, rp);
     hp->qdcount = htons(1);
 
+    if (results == NULL) {
+        return VAL_NO_ERROR;
+    }
 
     for (res = results; res; res = res->val_rc_next) {
 
@@ -335,7 +384,8 @@ compose_answer(const u_char * name_n,
         if (res->val_rc_rrset) {
             rrset = res->val_rc_rrset;
             if (-1 ==
-                encode_response_rrset(rrset, res->val_rc_status, resp_len,
+                encode_response_rrset(rrset, name_n,
+                                      res->val_rc_status, resp_len,
                                       &anbuf, &anbufindex, &ancount,
                                       &nsbuf, &nsbufindex, &nscount,
                                       &arbuf, &arbufindex, &arcount,
@@ -348,7 +398,8 @@ compose_answer(const u_char * name_n,
             for (i = 0; i < res->val_rc_proof_count; i++) {
                 rrset = res->val_rc_proofs[i]->val_ac_rrset;
                 if (-1 ==
-                    encode_response_rrset(rrset, res->val_rc_status,
+                    encode_response_rrset(rrset, name_n,
+                                          res->val_rc_status,
                                           resp_len, &anbuf, &anbufindex,
                                           &ancount, &nsbuf, &nsbufindex,
                                           &nscount, &arbuf, &arbufindex,
@@ -369,22 +420,29 @@ compose_answer(const u_char * name_n,
             case VAL_NONEXISTENT_TYPE:
             case VAL_NONEXISTENT_TYPE_NOCHAIN: 
                 hp->rcode = ns_r_noerror;
+                h_errno = NO_DATA;
                 break;
 
             case VAL_NONEXISTENT_NAME:
             case VAL_NONEXISTENT_NAME_NOCHAIN: 
                 hp->rcode = ns_r_nxdomain;
+                h_errno = HOST_NOT_FOUND;
                 break;
 
             case VAL_DNS_ERROR: 
                 hp->rcode = ns_r_servfail;
+                h_errno = TRY_AGAIN;
                 break;
                 
             default:
-                if (hp->ancount > 0)
+                if (hp->ancount > 0) {
                     hp->rcode = ns_r_noerror;
-                else
+                    h_errno = NETDB_SUCCESS;
+                }
+                else {
                     hp->rcode = ns_r_nxdomain;
+                    h_errno = NO_DATA;
+                }
                 break;
         }
     }
@@ -411,14 +469,12 @@ compose_answer(const u_char * name_n,
      * we lose a level of granularity in the validation status
      * when we do a "merge"
      */
-    if (ancount > 0) {
-        if (validated)
-            f_resp->vr_val_status = VAL_VALIDATED_ANSWER;
-        else if (trusted)
-            f_resp->vr_val_status = VAL_TRUSTED_ANSWER;
-        else
-            f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
-    } 
+    if (validated)
+        f_resp->vr_val_status = VAL_VALIDATED_ANSWER;
+    else if (trusted)
+        f_resp->vr_val_status = VAL_TRUSTED_ANSWER;
+    else
+        f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
 
     return VAL_NO_ERROR;
 
@@ -426,7 +482,7 @@ compose_answer(const u_char * name_n,
     FREE(f_resp->vr_response);
     f_resp->vr_response = NULL;
     f_resp->vr_length = 0;
-    f_resp->vr_val_status = VAL_DONT_KNOW;
+    f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
 
     return retval;
 
@@ -463,14 +519,17 @@ val_res_query(val_context_t * context,
               val_status_t * val_status)
 {
     struct val_response resp;
-    int             retval = VAL_NO_ERROR;
-    int             bytestocopy = 0;
-    int             totalbytes = 0;
+    int    retval = VAL_NO_ERROR;
+    size_t bytestocopy = 0;
+    size_t totalbytes = 0;
     HEADER *hp = NULL;
-    u_char          name_n[NS_MAXCDNAME];
     struct val_result_chain *results;
     val_context_t *ctx = NULL;
 
+    if (dname == NULL || val_status == NULL || answer == NULL) { 
+        goto err;
+    }
+        
     if (context == NULL) {
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
             goto err;
@@ -479,30 +538,22 @@ val_res_query(val_context_t * context,
         ctx = context;
     }
     
-    if (dname == NULL || val_status == NULL || answer == NULL) { 
-        goto err;
-    }
-        
     val_log(ctx, LOG_DEBUG,
             "val_res_query(): called with dname=%s, class=%s, type=%s",
             dname, p_class(class_h), p_type(type));
-
-    if (ns_name_pton(dname, name_n, sizeof(name_n)) == -1)  {
-        goto err;
-    }
 
     /*
      * Query the validator 
      */
     if (VAL_NO_ERROR ==
         (retval =
-         val_resolve_and_check(ctx, name_n, class_h, type, 
+         val_resolve_and_check(ctx, dname, class_h, type, 
                         VAL_QUERY_NO_AC_DETAIL, &results))) {
         /*
          * Construct the answer response in resp 
          */
         retval =
-            compose_answer(name_n, type, class_h, results, &resp);
+            compose_answer(dname, type, class_h, results, &resp);
 
         val_free_result_chain(results);
     }
@@ -520,33 +571,17 @@ val_res_query(val_context_t * context,
     FREE(resp.vr_response);
 
     hp = (HEADER *) answer;
-
-    if (hp) {
-        if (hp->rcode == ns_r_servfail) {
-            h_errno = TRY_AGAIN;
-            return -1;
-        } else if (hp->rcode == ns_r_nxdomain) {
-            h_errno = HOST_NOT_FOUND;
-            return -1;
-        } else if (hp->rcode != ns_r_noerror) {
-            /*
-             * Not a success condition 
-             */
-            h_errno = NO_RECOVERY;
-            return -1;
-        } else if (hp->ancount > 0) {
-            h_errno = NETDB_SUCCESS;
-            return totalbytes;
-        }
+    if (!hp || (hp->rcode != ns_r_noerror) || hp->ancount <= 0) {
+        return -1;
     }
 
-    h_errno = NO_DATA;
-    return -1;
+    return totalbytes;
 
 err:
     val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
             dname, p_class(class_h), p_type(type), p_val_err(retval));
-    h_errno = NETDB_INTERNAL;
+    //h_errno = NETDB_INTERNAL;
+    h_errno = NO_RECOVERY;
     errno = EINVAL;
     return -1;
 }
@@ -563,10 +598,11 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     char           *dot, *search, *pos;
     char            buf[NS_MAXDNAME];
     val_context_t *ctx = NULL;
+    h_errno = NO_RECOVERY;
+    //h_errno = NETDB_INTERNAL;
     
     if (context == NULL) {
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            h_errno = NETDB_INTERNAL;
             errno = EINVAL;
             return -1;
         } 
@@ -581,7 +617,6 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     if ((dname == NULL) || (val_status == NULL) || (answer == NULL)) {
         val_log(ctx, LOG_ERR, "val_res_search(%s, %d, %d): Error - %s", 
             dname, p_class(class_h), p_type(type), p_val_err(VAL_BAD_ARGUMENT));
-        h_errno = NETDB_INTERNAL;
         errno = EINVAL;
         return -1;
     }

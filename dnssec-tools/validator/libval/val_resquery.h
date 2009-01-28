@@ -15,7 +15,7 @@ int             fix_glue(val_context_t * context,
                          struct queries_for_query **queries,
                          int *data_missing);
 int             res_zi_unverified_ns_list(struct name_server **ns_list,
-                                          u_int8_t * zone_name,
+                                          u_char * zone_name,
                                           struct rrset_rec
                                           *unchecked_zone_info, struct name_server
                                           **pending_glue);
@@ -23,16 +23,16 @@ int             find_nslist_for_query(val_context_t * context,
                                       struct queries_for_query *next_qfq,
                                       struct queries_for_query **queries);
 int             bootstrap_referral(val_context_t *context,
-                                   u_int8_t * referral_zone_n,
+                                   u_char * referral_zone_n,
                                    struct rrset_rec **learned_zones,
                                    struct queries_for_query *matched_qfq,
                                    struct queries_for_query **queries,
                                    struct name_server **ref_ns_list,
                                    int no_partial);
 void            free_referral_members(struct delegation_info *del);
-int             process_cname_dname_responses(u_int8_t *name_n, 
+int             process_cname_dname_responses(u_char *name_n, 
                               u_int16_t type_h, 
-                              u_int8_t *rdata, 
+                              u_char *rdata, 
                               struct val_query_chain *matched_q,
                               struct qname_chain **qnames,
                               int *referral_error);

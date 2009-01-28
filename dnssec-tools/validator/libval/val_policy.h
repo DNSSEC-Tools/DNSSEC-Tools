@@ -47,9 +47,8 @@
 #define ZONE_PU_UNTRUSTED 2
 
 #define ZONE_SE_IGNORE 1
-#define ZONE_SE_TRUSTED 2
-#define ZONE_SE_DO_VAL 3
-#define ZONE_SE_UNTRUSTED 4
+#define ZONE_SE_DO_VAL 2
+#define ZONE_SE_UNTRUSTED 3
 
 #define RETRIEVE_POLICY(ctx, index, pol) do {\
     pol = (ctx == NULL) ? NULL :\
@@ -84,16 +83,6 @@
 } while(0)
     
 
-char           *resolv_conf_get(void);
-int             resolv_conf_set(const char *name);
-
-char           *root_hints_get(void);
-int             root_hints_set(const char *name);
-
-char           *dnsval_conf_get(void);
-int             dnsval_conf_set(const char *name);
-
-
 int             read_root_hints_file(val_context_t * ctx);
 int             read_res_config_file(val_context_t * ctx);
 int             read_val_config_file(val_context_t * ctx, char *scope, int *is_override);
@@ -119,9 +108,6 @@ int             free_dlv_trust_points(policy_entry_t *);
 #endif
 int             check_relevance(char *label, char *scope, int *label_count,
                                 int *relevant);
-int             val_add_valpolicy(val_context_t *context, const char *keyword, char *zone, 
-                                  char *value, long ttl, val_policy_entry_t **pol);
-int             val_remove_valpolicy(val_context_t *context, val_policy_entry_t *pol);
 int             val_is_local_trusted(val_context_t *context, int *trusted);
 int             val_get_token(char **buf_ptr,
                               char *end_ptr,
@@ -177,7 +163,7 @@ struct nsec3_max_iter_policy {
 
 #ifdef LIBVAL_DLV
 struct dlv_policy {
-    u_int8_t *trust_point;
+    u_char *trust_point;
 };
 #endif
 
