@@ -8,12 +8,20 @@ val_remove_valpolicy - Remove a dynamically added policy from the validator cont
 
 =head1 SYNOPSIS
 
-    int val_add_valpolicy(val_context_t *context, const char *keyword,
-                    char *zone, char *value, long ttl,
+    int val_add_valpolicy(val_context_t *context, 
+                    void *policy_definition,
                     val_policy_entry_t **pol);
 
     int val_remove_valpolicy(val_context_t *context,
                     val_policy_entry_t *pol);
+
+    typedef struct {
+        char *keyword;
+        char *zone;
+        char *value;
+        long ttl;
+    } libval_policy_definition_t;
+
 
 =head1 DESCRIPTION
 
@@ -23,10 +31,14 @@ and untrusted algorithms for cryptographic keys and hashes.  Local policy
 may vary for different applications and operating scenarios.
 
 The I<val_add_valpolicy()> function can be used to dynamically add a new policy
-for a given context.  The I<keyword>, I<zone> and I<value> arguments are
+for a given context (the policies are not added persistently to the system
+configuration). The policy_definition field contains an implementation-specific
+definition of the validator policy to be added. For the libval library this is
+represented by the libval_policy_definition_t structure, which contains four
+fields: I<keyword>, I<zone> and I<value> arguments are
 identical to I<keyword>, I<zone> and I<additional-data> defined below for
 B<dnsval.conf>.  I<ttl> specifies the duration in seconds for which the
-policy is kept in effect.  A value of B<-1> adds to policy to the context
+policy is kept in effect.  A I<tt> value of B<-1> adds to policy to the context
 indefinitely.  A handle to the newly added policy is returned in I<*pol>.
 This structure is opaque to the applications; applications must not modify the
 contents of the memory returned in I<*pol>.
@@ -130,11 +142,6 @@ security expectation for names in that domain, where value can be one of the fol
 
 Ignore DNSSEC validation for names under this domain. 
 
-=item trusted
-
-Trust all answers received for names under this domain regardless of their DNSSEC
-verification status.
-
 =item validate
 
 Perform DNSSEC validation of answers received for names under this domain.
@@ -147,7 +154,7 @@ Reject all answers received for names under this domain.
 
 This zone-security-expectation DNSSEC validator policy construct makes it possible to define
 various islands of trust for DNSSEC-enabled zones and to
-ignore or trust data from selected zones. The default zone
+ignore or validate data from selected zones. The default zone
 security expectation for a domain is "validate".
 In the following example, for DNSSEC validator contexts created with a DNSSEC validator policy label of "browser",
 the DNSSEC validation is only performed for names
@@ -242,11 +249,12 @@ The following keywords are defined for global-options in B<dnsval.conf>
 
 =over 4
 
-=item trust-local-answers
+=item trust-oob-answers
 
 If the value against this option is B<yes> then, for all answers returned
-from a local store such as /etc/hosts, the value returned from the 
-val_istrusted() function (see B<libval(3)>) is greater than one.
+using some out-of-band mechanism (e.g. a file store such as /etc/hosts), 
+the value returned from the val_istrusted() function (see B<libval(3)>) 
+is greater than one.
 
 =item edns0-size
 
@@ -277,7 +285,7 @@ val_add_log_optarg (see B<libval(3)>).
 An example global-policy construct is given below:
 
     global-policy
-        trust-local-answers yes
+        trust-oob-answers yes
         edns0-size 4096
         env-policy enable
         app-policy enable

@@ -22,9 +22,11 @@ I<print_response()> - display answers returned from the name server
             int                 *trans_id);
 
   int response_recv(int         *trans_id,
+            fd_set              *pending_desc,
+            struct timeval      *closest_event,
             struct name_server  **respondent,
-            u_int8_t            **response,
-            u_int32_t           *response_length);
+            u_char              **response,
+            size_t              *response_length);
 
   int get(const char          *name_n,
           const u_int16_t     type_h,
@@ -32,8 +34,8 @@ I<print_response()> - display answers returned from the name server
           struct name_server  *nslist,
           int                 edns0_size,
           struct name_server  **respondent,
-          u_int8_t            **response,
-          u_int32_t           *response_length);
+          u_char              **response,
+          size_t              *response_length);
 
   int clone_ns(struct name_server **cloned_ns, struct name_server *ns);
 
@@ -44,7 +46,7 @@ I<print_response()> - display answers returned from the name server
 
   void free_name_servers(struct name_server **ns);
 
-  void print_response(u_int8_t *response, int response_length);
+  void print_response(u_char *response, size_t response_length);
 
 =head1 DESCRIPTION
 

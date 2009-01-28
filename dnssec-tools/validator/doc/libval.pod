@@ -31,9 +31,9 @@ I<val_log_add_optarg> - control log message verbosity and output location
   int val_create_context(const char *label, val_context_t **newcontext);
 
   int val_resolve_and_check(val_context_t *context,
-                         u_char *domain_name_n,
-                         const u_int16_t class,
-                         const u_int16_t type,
+                         char *domain_name,
+                         int class,
+                         int type,
                          const u_int32_t  flags,
                          struct val_result_chain  **results);
 
@@ -59,12 +59,9 @@ I<val_log_add_optarg> - control log message verbosity and output location
 =head1 DESCRIPTION
 
 The I<val_resolve_and_check()> function queries a set of name servers for
-the I<<domain_name_n, type, class>> tuple and to verifies and validates the
+the I<<domain_name, type, class>> tuple and to verifies and validates the
 response.  Verification involves checking the RRSIGs, and validation is
 verification of an authentication chain from a configured trust anchor.
-The I<domain_name_n> parameter is the queried name in DNS wire format.
-The conversion from host format to DNS wire format can be done using the
-I<ns_name_pton()> function exported by the I<libsres(3)> library.
 
 The I<flags> parameter can be used to control the results of validation.
 Three values, which may be ORed together, are currently defined for this field.
@@ -133,7 +130,7 @@ interface.
   struct val_result_chain
   {
       val_status_t                     val_rc_status;
-      u_int8_t                        *val_rc_alias;
+      char                            *val_rc_alias;
       struct val_rrset_rec            *val_rc_rrset;
       struct val_authentication_chain *val_rc_answer;
       int                              val_rc_proof_count;
@@ -206,12 +203,12 @@ Validation status for a given RRset.  This can be one of the following:
         to be trustworthy, but they were not
         individually validated.
 
-    VAL_PROVABLY_INSECURE
+    VAL_PINSECURE
         The record or some ancestor of the record in
         the authentication chain towards the trust
         anchor was known to be provably insecure.
 
-    VAL_BAD_PROVABLY_UNSECURE
+    VAL_PINSECURE_UNTRUSTED
         The record or some ancestor of the record in the
         authentication chain towards the trust anchor was
         known to be provably insecure. But the provably
@@ -225,16 +222,13 @@ Validation status for a given RRset.  This can be one of the following:
         Local policy was configured to ignore validation
         for the zone from which this data was received.
 
-    VAL_TRUSTED_ZONE
-        Local policy was configured to trust
-        any data received from the given zone.
-
     VAL_UNTRUSTED_ZONE
         Local policy was configured to reject
         any data received from the given zone.
 
-    VAL_LOCAL_ANSWER
-        Answer was available from a local file.
+    VAL_OOB_ANSWER
+        Answer was obtained using some Out of Band 
+        method, such as a local configuration file.
 
     VAL_BOGUS
         Response could not be validated due to signature
@@ -284,15 +278,11 @@ This field may contain one of the following values:
         either because of some local policy directive or
         because of some protocol-specific behavior.
 
-    VAL_AC_TRUSTED_ZONE
-        Local policy defined a given zone as trusted, with
-        no further validation being deemed necessary.
-
     VAL_AC_UNTRUSTED_ZONE
         Local policy defined a given zone as untrusted,
         with no further validation being deemed necessary.
 
-    VAL_AC_PROVABLY_INSECURE
+    VAL_AC_PINSECURE
         The authentication chain from a trust anchor to a
         given zone could not be constructed due to the
         provable absence of a DS record for this zone in
@@ -359,52 +349,47 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
 
   struct val_rrset_rec
   {
-      u_int8_t      *val_msg_header;
-      u_int16_t      val_msg_headerlen;
-      u_int8_t      *val_rrset_name_n;
-      u_int16_t      val_rrset_class_h;
-      u_int16_t      val_rrset_type_h;
-      u_int32_t      val_rrset_ttl_h;
-      u_int32_t      val_rrset_ttl_x;
+      int            val_rrset_rcode;
+      char          *val_rrset_name;
+      u_int16_t      val_rrset_class;
+      u_int16_t      val_rrset_type;
+      u_int32_t      val_rrset_ttl;
       u_int8_t       val_rrset_section;
+      struct sockaddr *val_rrset_server;
       struct val_rr_rec *val_rrset_data;
       struct val_rr_rec *val_rrset_sig;
   };
 
 =over 4
 
-=item I<val_msg_header>
+=item I<val_rrset_rcode>
 
-Header of the DNS response in which the RRset was received.
+The rcode on the response header for this rrset.
 
-=item I<val_msg_headerlen>
+=item I<val_rrset_name>
 
-Length of the header information in I<val_msg_header>.
+Owner name of the RRset. 
 
-=item I<val_rrset_name_n>
-
-Owner name of the RRset represented in on-the-wire format.
-
-=item I<val_rrset_class_h>
+=item I<val_rrset_class>
 
 Class of the RRset.
 
-=item I<val_val_rrset_type_h>
+=item I<val_val_rrset_type>
 
 Type of the RRset.
 
-=item I<val_rrset_ttl_h>
+=item I<val_rrset_ttl>
 
 TTL of the RRset.
-
-=item I<val_rrset_ttl_x>
-
-The time when the TTL for this RRset is set to expire.
 
 =item I<val_rrset_section>
 
 Section in which the RRset was received.  This value may be B<VAL_FROM_ANSWER>,
 B<VAL_FROM_AUTHORITY>, or B<VAL_FROM_ADDITIONAL>.
+
+=item I<val_rrset_server>
+
+The name server that returned this reponse.
 
 =item I<val_rrset_data>
 
@@ -423,8 +408,8 @@ Any associated RRSIGs for the RDATA returned in I<val_rrset_data>.
 
   struct val_rr_rec
   {
-      u_int16_t        rr_rdata_length_h;
-      u_int8_t        *rr_rdata;
+      size_t           rr_rdata_length;
+      u_char          *rr_rdata;
       struct val_rr_rec   *rr_next;
       val_astatus_t    rr_status;
   };
