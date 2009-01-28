@@ -168,36 +168,33 @@ static struct addrinfo *ainfo_sv2c(SV *ainfo_ref, struct addrinfo *ainfo_ptr)
   return ainfo_ptr;
 }
 
-SV *rr_c2sv(u_char *name, int type, int class, int ttl, int len, u_char *data)
+SV *rr_c2sv(char *name, int type, int class, long ttl, size_t len, u_char *data)
 {
   dSP ;
   SV *rr = &PL_sv_undef;
-  char name_p[NS_MAXCDNAME];
 
-  if (ns_name_ntop(name, name_p, sizeof(name_p)) != -1) {
-    ENTER ;
-    SAVETMPS;
+  ENTER ;
+  SAVETMPS;
 
-    PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
-    XPUSHs(sv_2mortal(newSVpv((char*)name_p, 0))) ;
-    XPUSHs(sv_2mortal(newSVpv(p_sres_type(type), 0))) ;
-    XPUSHs(sv_2mortal(newSVpv(p_class(class), 0))) ;
-    XPUSHs(sv_2mortal(newSViv(ttl))) ;
-    XPUSHs(sv_2mortal(newSViv(len))) ;
-    XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
-    PUTBACK;
+  PUSHMARK(SP);
+  XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
+  XPUSHs(sv_2mortal(newSVpv((char*)name, 0))) ;
+  XPUSHs(sv_2mortal(newSVpv(p_sres_type(type), 0))) ;
+  XPUSHs(sv_2mortal(newSVpv(p_class(class), 0))) ;
+  XPUSHs(sv_2mortal(newSViv(ttl))) ;
+  XPUSHs(sv_2mortal(newSViv(len))) ;
+  XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
+  PUTBACK;
 
-    call_method("new_from_data", G_SCALAR);
+  call_method("new_from_data", G_SCALAR);
 
-    SPAGAIN ;
+  SPAGAIN ;
 
-    rr = newSVsv(POPs);
+  rr = newSVsv(POPs);
 
-    PUTBACK ;
-    FREETMPS ;
-    LEAVE ;
-  }
+  PUTBACK ;
+  FREETMPS ;
+  LEAVE ;
   return rr;
 }
 
@@ -218,11 +215,11 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 
     for (rr = rrs_ptr->val_rrset_data; rr; rr = rr->rr_next) {
       av_push(rrs_av, 
-	      rr_c2sv(rrs_ptr->val_rrset_name_n,
-		      rrs_ptr->val_rrset_type_h,
-		      rrs_ptr->val_rrset_class_h,
-		      rrs_ptr->val_rrset_ttl_h,
-		      rr->rr_rdata_length_h,
+	      rr_c2sv(rrs_ptr->val_rrset_name,
+		      rrs_ptr->val_rrset_type,
+		      rrs_ptr->val_rrset_class,
+		      rrs_ptr->val_rrset_ttl,
+		      rr->rr_rdata_length,
 		      rr->rr_rdata)
 	      );
     }
@@ -234,11 +231,11 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 
     for (rr = rrs_ptr->val_rrset_sig; rr; rr = rr->rr_next) {
       av_push(rrs_av, 
-	      rr_c2sv(rrs_ptr->val_rrset_name_n,
+	      rr_c2sv(rrs_ptr->val_rrset_name,
 		      ns_t_rrsig,
-		      rrs_ptr->val_rrset_class_h,
-		      rrs_ptr->val_rrset_ttl_h,
-		      rr->rr_rdata_length_h,
+		      rrs_ptr->val_rrset_class,
+		      rrs_ptr->val_rrset_ttl,
+		      rr->rr_rdata_length,
 		      rr->rr_rdata)
 	      );
     }
@@ -290,8 +287,13 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
 
     /* fprintf(stderr, "rc status == %d\n", rc_ptr->val_rc_status); XXX */
     
-    hv_store(result_hv, "answer", strlen("answer"), 
-	     ac_c2sv(rc_ptr->val_rc_answer), 0);
+    if (rc_ptr->val_rc_answer != NULL) {
+        hv_store(result_hv, "answer", strlen("answer"), 
+	        ac_c2sv(rc_ptr->val_rc_answer), 0);
+    } else {
+        hv_store(result_hv, "rrset", strlen("rrset"),
+            rrset_c2sv(rc_ptr->val_rc_rrset), 0);
+    }
 
     proofs_av = newAV();
     proofs_av_ref = newRV_noinc((SV*)proofs_av);
@@ -626,7 +628,6 @@ pval_resolve_and_check(self,domain,type,class,flags)
 	SV **			val_status_str_svp;
 	struct val_result_chain * val_rc_ptr = NULL;
 	int res;
-	u_char                  name_n[NS_MAXCDNAME];
 	//fprintf(stderr, "here we are at the start\n");
 
 	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
@@ -645,20 +646,18 @@ pval_resolve_and_check(self,domain,type,class,flags)
 	RETVAL = &PL_sv_undef;
 	//fprintf(stderr, "here we are way before\n");
 
-	if (ns_name_pton(domain, name_n, sizeof(name_n)) != -1) {
-
 
 	  //fprintf(stderr, "here we are before\n");
-	  res = val_resolve_and_check(ctx, (u_char*) name_n, 
-				      (u_int16_t) type, 
-				      (u_int16_t) class, 
-				      (u_int8_t) flags, 
+	  res = val_resolve_and_check(ctx, domain, 
+				      class, 
+				      type, 
+				      (u_int32_t) flags, 
 				      &val_rc_ptr);
 	  //fprintf(stderr, "here we are after\n");
 	  val_log_authentication_chain(ctx, LOG_DEBUG,
-				       (u_char*) name_n, 
-				       (u_int16_t) type, 
-				       (u_int16_t) class, 
+				       domain, 
+				       class, 
+				       type, 
 				       val_rc_ptr);
 	  if (res == 0) {
 	    RETVAL = rc_c2sv(val_rc_ptr);
@@ -668,7 +667,6 @@ pval_resolve_and_check(self,domain,type,class,flags)
 	  }
 
 	  val_free_result_chain(val_rc_ptr);
-	}
 	}
 	OUTPUT:
 	RETVAL
