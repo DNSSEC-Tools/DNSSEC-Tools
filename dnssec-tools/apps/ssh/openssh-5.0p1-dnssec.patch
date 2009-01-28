@@ -170,7 +170,7 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
 + 	struct rrsetinfo *fingerprints = NULL;
 + #else
 + 	struct val_result_chain *val_res, *val_results = NULL;
-+ 	char hostname_n[NS_MAXDNAME];
++ 	
 + #endif
 + 
   	u_int8_t dnskey_algorithm;
@@ -210,8 +210,8 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   	xfree(hostkey_digest); /* from key_fingerprint_raw() */
   	freerrset(fingerprints);
 + #else
-+ 	ns_name_pton(hostname, hostname_n, sizeof(hostname_n));
-+ 	result = val_resolve_and_check(NULL, hostname_n, DNS_RDATACLASS_IN,
++ 
++ 	result = val_resolve_and_check(NULL, hostname, DNS_RDATACLASS_IN,
 + 	    DNS_RDATATYPE_SSHFP, 0, &val_results);
 + 	if (result != VAL_NO_ERROR){
 + 		verbose("DNS lookup error: %s", p_ac_status(val_results->val_rc_status));
@@ -248,7 +248,7 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
 + 			if (!dns_read_rdata(&dnskey_algorithm, &dnskey_digest_type,
 + 			    &dnskey_digest, &dnskey_digest_len,
 + 			    rr->rr_rdata,
-+ 			    rr->rr_rdata_length_h)) {
++ 			    rr->rr_rdata_length)) {
 + 				verbose("Error parsing fingerprint from DNS.");
 + 				continue;
 + 			}
