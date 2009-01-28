@@ -12,22 +12,22 @@ information
   struct val_answer_chain {
       val_status_t   val_ans_status;
       char          *val_ans_name;
-      u_int16_t      val_ans_class;
-      u_int16_t      val_ans_type;
+      int            val_ans_class;
+      int            val_ans_type;
       struct rr_rec *val_ans;
       struct val_answer_chain *val_ans_next;
   };
 
   struct rr_rec {
-      u_int16_t     rr_length;
-      u_int8_t      *rr_data;
+      size_t         rr_length;
+      u_char        *rr_data;
       struct rr_rec *rr_next;
   };
 
   int val_get_rrset(val_context_t *ctx,
                     const char *name,
-                    u_int16_t class,
-                    u_int16_t type,
+                    int class,
+                    int type,
                     u_int32_t flags,
                     struct val_answer_chain **answers);
       

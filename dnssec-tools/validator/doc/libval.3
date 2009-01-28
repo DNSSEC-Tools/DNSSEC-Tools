@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2008-04-23" "perl v5.8.8" "Programmer's Manual"
+.TH libval 3 "2009-01-26" "perl v5.8.8" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_create_context()\fR
 \&\fIval_free_context()\fR \- manage validator context
@@ -163,9 +163,9 @@ authentication chain status and error information
 .PP
 .Vb 6
 \&  int val_resolve_and_check(val_context_t *context,
-\&                         u_char *domain_name_n,
-\&                         const u_int16_t class,
-\&                         const u_int16_t type,
+\&                         char *domain_name,
+\&                         int class,
+\&                         int type,
 \&                         const u_int32_t  flags,
 \&                         struct val_result_chain  **results);
 .Ve
@@ -208,12 +208,9 @@ authentication chain status and error information
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 The \fI\fIval_resolve_and_check()\fI\fR function queries a set of name servers for
-the \fI<domain_name_n, type, class\fR> tuple and to verifies and validates the
+the \fI<domain_name, type, class\fR> tuple and to verifies and validates the
 response.  Verification involves checking the RRSIGs, and validation is
 verification of an authentication chain from a configured trust anchor.
-The \fIdomain_name_n\fR parameter is the queried name in \s-1DNS\s0 wire format.
-The conversion from host format to \s-1DNS\s0 wire format can be done using the
-\&\fI\fIns_name_pton()\fI\fR function exported by the \fI\fIlibsres\fI\|(3)\fR library.
 .PP
 The \fIflags\fR parameter can be used to control the results of validation.
 Three values, which may be ORed together, are currently defined for this field.
@@ -279,7 +276,7 @@ interface.
 \&  struct val_result_chain
 \&  {
 \&      val_status_t                     val_rc_status;
-\&      u_int8_t                        *val_rc_alias;
+\&      char                            *val_rc_alias;
 \&      struct val_rrset_rec            *val_rc_rrset;
 \&      struct val_authentication_chain *val_rc_answer;
 \&      int                              val_rc_proof_count;
@@ -355,14 +352,14 @@ Validation status for a given RRset.  This can be one of the following:
 .Ve
 .Sp
 .Vb 4
-\&    VAL_PROVABLY_INSECURE
+\&    VAL_PINSECURE
 \&        The record or some ancestor of the record in
 \&        the authentication chain towards the trust
 \&        anchor was known to be provably insecure.
 .Ve
 .Sp
 .Vb 5
-\&    VAL_BAD_PROVABLY_UNSECURE
+\&    VAL_PINSECURE_UNTRUSTED
 \&        The record or some ancestor of the record in the
 \&        authentication chain towards the trust anchor was
 \&        known to be provably insecure. But the provably
@@ -382,20 +379,15 @@ Validation status for a given RRset.  This can be one of the following:
 .Ve
 .Sp
 .Vb 3
-\&    VAL_TRUSTED_ZONE
-\&        Local policy was configured to trust
-\&        any data received from the given zone.
-.Ve
-.Sp
-.Vb 3
 \&    VAL_UNTRUSTED_ZONE
 \&        Local policy was configured to reject
 \&        any data received from the given zone.
 .Ve
 .Sp
-.Vb 2
-\&    VAL_LOCAL_ANSWER
-\&        Answer was available from a local file.
+.Vb 3
+\&    VAL_OOB_ANSWER
+\&        Answer was obtained using some Out of Band 
+\&        method, such as a local configuration file.
 .Ve
 .Sp
 .Vb 5
@@ -453,19 +445,13 @@ This field may contain one of the following values:
 .Ve
 .Sp
 .Vb 3
-\&    VAL_AC_TRUSTED_ZONE
-\&        Local policy defined a given zone as trusted, with
-\&        no further validation being deemed necessary.
-.Ve
-.Sp
-.Vb 3
 \&    VAL_AC_UNTRUSTED_ZONE
 \&        Local policy defined a given zone as untrusted,
 \&        with no further validation being deemed necessary.
 .Ve
 .Sp
 .Vb 5
-\&    VAL_AC_PROVABLY_INSECURE
+\&    VAL_AC_PINSECURE
 \&        The authentication chain from a trust anchor to a
 \&        given zone could not be constructed due to the
 \&        provable absence of a DS record for this zone in
@@ -545,47 +531,43 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
 .RE
 .IP "\fIstruct val_rrset_rec\fR" 4
 .IX Item "struct val_rrset_rec"
-.Vb 13
+.Vb 12
 \&  struct val_rrset_rec
 \&  {
-\&      u_int8_t      *val_msg_header;
-\&      u_int16_t      val_msg_headerlen;
-\&      u_int8_t      *val_rrset_name_n;
-\&      u_int16_t      val_rrset_class_h;
-\&      u_int16_t      val_rrset_type_h;
-\&      u_int32_t      val_rrset_ttl_h;
-\&      u_int32_t      val_rrset_ttl_x;
+\&      int            val_rrset_rcode;
+\&      char          *val_rrset_name;
+\&      u_int16_t      val_rrset_class;
+\&      u_int16_t      val_rrset_type;
+\&      u_int32_t      val_rrset_ttl;
 \&      u_int8_t       val_rrset_section;
+\&      struct sockaddr *val_rrset_server;
 \&      struct val_rr_rec *val_rrset_data;
 \&      struct val_rr_rec *val_rrset_sig;
 \&  };
 .Ve
 .RS 4
-.IP "\fIval_msg_header\fR" 4
-.IX Item "val_msg_header"
-Header of the \s-1DNS\s0 response in which the RRset was received.
-.IP "\fIval_msg_headerlen\fR" 4
-.IX Item "val_msg_headerlen"
-Length of the header information in \fIval_msg_header\fR.
-.IP "\fIval_rrset_name_n\fR" 4
-.IX Item "val_rrset_name_n"
-Owner name of the RRset represented in on-the-wire format.
-.IP "\fIval_rrset_class_h\fR" 4
-.IX Item "val_rrset_class_h"
+.IP "\fIval_rrset_rcode\fR" 4
+.IX Item "val_rrset_rcode"
+The rcode on the response header for this rrset.
+.IP "\fIval_rrset_name\fR" 4
+.IX Item "val_rrset_name"
+Owner name of the RRset. 
+.IP "\fIval_rrset_class\fR" 4
+.IX Item "val_rrset_class"
 Class of the RRset.
-.IP "\fIval_val_rrset_type_h\fR" 4
-.IX Item "val_val_rrset_type_h"
+.IP "\fIval_val_rrset_type\fR" 4
+.IX Item "val_val_rrset_type"
 Type of the RRset.
-.IP "\fIval_rrset_ttl_h\fR" 4
-.IX Item "val_rrset_ttl_h"
+.IP "\fIval_rrset_ttl\fR" 4
+.IX Item "val_rrset_ttl"
 \&\s-1TTL\s0 of the RRset.
-.IP "\fIval_rrset_ttl_x\fR" 4
-.IX Item "val_rrset_ttl_x"
-The time when the \s-1TTL\s0 for this RRset is set to expire.
 .IP "\fIval_rrset_section\fR" 4
 .IX Item "val_rrset_section"
 Section in which the RRset was received.  This value may be \fB\s-1VAL_FROM_ANSWER\s0\fR,
 \&\fB\s-1VAL_FROM_AUTHORITY\s0\fR, or \fB\s-1VAL_FROM_ADDITIONAL\s0\fR.
+.IP "\fIval_rrset_server\fR" 4
+.IX Item "val_rrset_server"
+The name server that returned this reponse.
 .IP "\fIval_rrset_data\fR" 4
 .IX Item "val_rrset_data"
 Response \s-1RDATA\s0.
@@ -599,8 +581,8 @@ Any associated RRSIGs for the \s-1RDATA\s0 returned in \fIval_rrset_data\fR.
 .Vb 7
 \&  struct val_rr_rec
 \&  {
-\&      u_int16_t        rr_rdata_length_h;
-\&      u_int8_t        *rr_rdata;
+\&      size_t           rr_rdata_length;
+\&      u_char          *rr_rdata;
 \&      struct val_rr_rec   *rr_next;
 \&      val_astatus_t    rr_status;
 \&  };

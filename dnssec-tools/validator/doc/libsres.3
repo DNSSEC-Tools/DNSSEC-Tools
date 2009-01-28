@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libsres 3"
-.TH libsres 3 "2008-05-26" "perl v5.8.8" "Programmer's Manual"
+.TH libsres 3 "2009-01-26" "perl v5.8.8" "Programmer's Manual"
 .SH "NAME"
 \&\fIquery_send()\fR, \fIresponse_rcv()\fR, \fIget()\fR \- 
 send queries and receive responses from a DNS name server.
@@ -153,11 +153,13 @@ send queries and receive responses from a DNS name server.
 \&            int                 *trans_id);
 .Ve
 .PP
-.Vb 4
+.Vb 6
 \&  int response_recv(int         *trans_id,
+\&            fd_set              *pending_desc,
+\&            struct timeval      *closest_event,
 \&            struct name_server  **respondent,
-\&            u_int8_t            **response,
-\&            u_int32_t           *response_length);
+\&            u_char              **response,
+\&            size_t              *response_length);
 .Ve
 .PP
 .Vb 8
@@ -167,8 +169,8 @@ send queries and receive responses from a DNS name server.
 \&          struct name_server  *nslist,
 \&          int                 edns0_size,
 \&          struct name_server  **respondent,
-\&          u_int8_t            **response,
-\&          u_int32_t           *response_length);
+\&          u_char              **response,
+\&          size_t              *response_length);
 .Ve
 .PP
 .Vb 1
@@ -189,7 +191,7 @@ send queries and receive responses from a DNS name server.
 .Ve
 .PP
 .Vb 1
-\&  void print_response(u_int8_t *response, int response_length);
+\&  void print_response(u_char *response, size_t response_length);
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"

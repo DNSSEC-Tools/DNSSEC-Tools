@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2008-05-20" "perl v5.8.8" "Programmer's Manual"
+.TH dnsval.conf 3 "2009-01-27" "perl v5.8.8" "Programmer's Manual"
 .SH "NAME"
 dnsval.conf, resolv.conf, root.hints \- Configuration policy for the DNSSEC validator library libval(3).
 val_add_valpolicy \- Dynamically add a new policy to the validator context
@@ -137,14 +137,23 @@ val_remove_valpolicy \- Remove a dynamically added policy from the validator con
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .Vb 3
-\&    int val_add_valpolicy(val_context_t *context, const char *keyword,
-\&                    char *zone, char *value, long ttl,
+\&    int val_add_valpolicy(val_context_t *context, 
+\&                    void *policy_definition,
 \&                    val_policy_entry_t **pol);
 .Ve
 .PP
 .Vb 2
 \&    int val_remove_valpolicy(val_context_t *context,
 \&                    val_policy_entry_t *pol);
+.Ve
+.PP
+.Vb 6
+\&    typedef struct {
+\&        char *keyword;
+\&        char *zone;
+\&        char *value;
+\&        long ttl;
+\&    } libval_policy_definition_t;
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
@@ -154,10 +163,14 @@ and untrusted algorithms for cryptographic keys and hashes.  Local policy
 may vary for different applications and operating scenarios.
 .PP
 The \fI\fIval_add_valpolicy()\fI\fR function can be used to dynamically add a new policy
-for a given context.  The \fIkeyword\fR, \fIzone\fR and \fIvalue\fR arguments are
+for a given context (the policies are not added persistently to the system
+configuration). The policy_definition field contains an implementation-specific
+definition of the validator policy to be added. For the libval library this is
+represented by the libval_policy_definition_t structure, which contains four
+fields: \fIkeyword\fR, \fIzone\fR and \fIvalue\fR arguments are
 identical to \fIkeyword\fR, \fIzone\fR and \fIadditional-data\fR defined below for
 \&\fBdnsval.conf\fR.  \fIttl\fR specifies the duration in seconds for which the
-policy is kept in effect.  A value of \fB\-1\fR adds to policy to the context
+policy is kept in effect.  A \fItt\fR value of \fB\-1\fR adds to policy to the context
 indefinitely.  A handle to the newly added policy is returned in \fI*pol\fR.
 This structure is opaque to the applications; applications must not modify the
 contents of the memory returned in \fI*pol\fR.
@@ -262,10 +275,6 @@ security expectation for names in that domain, where value can be one of the fol
 .IP "ignore" 4
 .IX Item "ignore"
 Ignore \s-1DNSSEC\s0 validation for names under this domain. 
-.IP "trusted" 4
-.IX Item "trusted"
-Trust all answers received for names under this domain regardless of their \s-1DNSSEC\s0
-verification status.
 .IP "validate" 4
 .IX Item "validate"
 Perform \s-1DNSSEC\s0 validation of answers received for names under this domain.
@@ -277,7 +286,7 @@ Reject all answers received for names under this domain.
 .Sp
 This zone-security-expectation \s-1DNSSEC\s0 validator policy construct makes it possible to define
 various islands of trust for DNSSEC-enabled zones and to
-ignore or trust data from selected zones. The default zone
+ignore or validate data from selected zones. The default zone
 security expectation for a domain is \*(L"validate\*(R".
 In the following example, for \s-1DNSSEC\s0 validator contexts created with a \s-1DNSSEC\s0 validator policy label of \*(L"browser\*(R",
 the \s-1DNSSEC\s0 validation is only performed for names
@@ -374,11 +383,12 @@ There can only be one global-options construct defined for \fBdnsval.conf\fR.
 If multiple constructs are defined, only the first is used.
 .Sp
 The following keywords are defined for global-options in \fBdnsval.conf\fR
-.IP "trust-local-answers" 4
-.IX Item "trust-local-answers"
+.IP "trust-oob-answers" 4
+.IX Item "trust-oob-answers"
 If the value against this option is \fByes\fR then, for all answers returned
-from a local store such as /etc/hosts, the value returned from the 
-\&\fIval_istrusted()\fR function (see \fB\f(BIlibval\fB\|(3)\fR) is greater than one.
+using some out-of-band mechanism (e.g. a file store such as /etc/hosts), 
+the value returned from the \fIval_istrusted()\fR function (see \fB\f(BIlibval\fB\|(3)\fR) 
+is greater than one.
 .IP "edns0\-size" 4
 .IX Item "edns0-size"
 This option can be used for specifying the \s-1EDNS0\s0 window size.
@@ -406,7 +416,7 @@ An example global-policy construct is given below:
 .Sp
 .Vb 7
 \&    global-policy
-\&        trust-local-answers yes
+\&        trust-oob-answers yes
 \&        edns0-size 4096
 \&        env-policy enable
 \&        app-policy enable

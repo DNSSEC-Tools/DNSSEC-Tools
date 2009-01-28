@@ -428,9 +428,8 @@ where:
               |  DONT GO FURTHER   | 
               +====================+
                       |---> VAL_AC_IGNORE_VALIDATION 
-                      |---> VAL_AC_TRUSTED_ZONE
                       |---> VAL_AC_UNTRUSTED_ZONE
-                      |---> VAL_AC_PROVABLY_INSECURE
+                      |---> VAL_AC_PINSECURE
                       |---> VAL_AC_BARE_RRSIG
                       |---> VAL_AC_NO_TRUST_ANCHOR
                       +---> VAL_AC_TRUST
@@ -542,8 +541,8 @@ For the provably non-existence condition, the following values exist:
 
 Provably insecure trust status      final result
 ==========================================================================
-Trusted                             VAL_PROVABLY_INSECURE
-Untrusted                           VAL_BAD_PROVABLY_INSECURE
+Trusted                             VAL_PINSECURE
+Untrusted                           VAL_PINSECURE_UNTRUSTED
 
 
 Current status of libval
