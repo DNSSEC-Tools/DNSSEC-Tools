@@ -4365,6 +4365,13 @@ verify_and_validate(val_context_t * context,
                     }
                     clone_ns_list(&added_q->qfq_query->qc_ns_list,
                                   context->root_ns);
+                    if (added_q->qfq_query->qc_zonecut_n)
+                        FREE(added_q->qfq_query->qc_zonecut_n);
+                    added_q->qfq_query->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
+                    if (added_q->qfq_query->qc_zonecut_n == NULL) {
+                        return VAL_OUT_OF_MEMORY;
+                    }
+                    *(added_q->qfq_query->qc_zonecut_n) = (u_char) '\0';
                     thisdone = 0;
 
                 } else {
