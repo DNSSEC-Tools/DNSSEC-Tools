@@ -4802,9 +4802,10 @@ ask_cache(val_context_t * context,
                     }
                 } else {
                     val_log(context, LOG_INFO,
-                            "ask_cache(): received error response for {%s %d %d}, flags=%d",
+                            "ask_cache(): received error response for {%s %d %d}, flags=%d: %d",
                             name_p, next_q->qfq_query->qc_class_h,
-                            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+                            next_q->qfq_query->qc_type_h, next_q->qfq_flags,
+                            next_q->qfq_query->qc_state);
                 }
 
                 free_domain_info_ptrs(response);
@@ -4916,9 +4917,10 @@ ask_resolver(val_context_t * context,
                     }
                 } else if (next_q->qfq_query->qc_state > Q_ERROR_BASE) {
                     val_log(context, LOG_INFO,
-                            "ask_resolver(): received error response for {%s %d %d}, flags=%d",
+                            "ask_resolver(): received error response for {%s %d %d}, flags=%d: %d",
                             name_p, next_q->qfq_query->qc_class_h,
-                            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+                            next_q->qfq_query->qc_type_h, next_q->qfq_flags,
+                            next_q->qfq_query->qc_state);
                 }
                 
                 if (response != NULL) {
