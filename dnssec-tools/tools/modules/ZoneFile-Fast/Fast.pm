@@ -67,6 +67,7 @@ my $ttl;
 my @zone;
 my $soa;
 my $rrsig;
+my $sshfp;
 my $dnskey;
 my $ds;
 my $on_error;
@@ -77,18 +78,18 @@ my @fhs;
 my @lns;
 my $includes_root;
 my $globalerror;
+my $nsec3capable;
 
 # boot strap optional DNSSEC module functcions
 # (not optional if trying to parse a signed zone, but we don't need
 # these modules unless we are.
-eval {
+$nsec3capable = eval {
     require Net::DNS::RR::NSEC;
+    require Net::DNS::RR::DNSKEY;
     require Net::DNS::RR::NSEC3;
     require Net::DNS::RR::NSEC3PARAM;
-    require Net::DNS::RR::DNSKEY;
-    require MIME::Base63;
+    require MIME::Base32;
 };
-
 
 sub parse
   {
@@ -604,7 +605,19 @@ sub parse_line
 	      error("bad txtdata in TXT");
 	  }
       } elsif (/\G(sshfp)[ \t]+/igc) {
-	  if (/\G(\d+)\s+(\d+)\s+(.*)$pat_skip$/gc) {
+	  if (/\G(\d+)\s+(\d+)\s+\(\s*$/gc) {
+	      # multi-line
+	      $sshfp = { 
+			Line    => $ln,
+			name    => $domain,
+			type    => "SSHFP",
+			ttl     => $ttl,
+			class   => "IN",
+			algorithm => $1,
+			fptype => $2,
+		       };
+	      $parse = \&parse_sshfp;
+	  } elsif (/\G(\d+)\s+(\d+)\s+(.*)$pat_skip$/gc) {
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
@@ -820,6 +833,8 @@ sub parse_line
 	      error("bad NSEC data");
 	  }
       } elsif (/\G(nsec3)[ \t]+/igc) {
+	  error ("You are missing required modules for NSEC3 support")
+	    if (!$nsec3capable);
 	  if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
 	      # XXX: set the typebm field ourselves?
 	      my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
@@ -1038,6 +1053,30 @@ sub parse_rrsig
 	      } else {
 		  error("bad rrsig remaining lines");
 	      }
+	  }
+      }
+  }
+
+sub parse_sshfp
+  {
+      # got more data
+      if (/\)\s*$/) {
+	  # last line
+	  if (/\G\s*(\S+)\s*\)\s*$/gc) {
+	      $sshfp->{'fingerprint'} .= $1;
+	      # we're done
+	      $parse = \&parse_line;
+
+	      push @zone, $sshfp;
+	      $sshfp = undef;
+	  } else {
+	      error("bad sshfp last line");
+	  }
+      } else {
+	  if (/\G\s*(\S+)\s*$/gc) {
+	      $sshfp->{'fingerprint'} .= $1;
+	  } else {
+	      error("bad sshfp remaining lines");
 	  }
       }
   }
