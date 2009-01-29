@@ -46,8 +46,6 @@
  * we have caches for DNSKEY, DS, NS/glue, answers, and proofs
  * XXX negative cache functionality is currently unimplemented
  */
-static struct rrset_rec *unchecked_key_info = NULL;
-static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 static struct rrset_rec *unchecked_proofs = NULL;
@@ -68,10 +66,6 @@ static struct zone_ns_map_t *zone_ns_map = NULL;
  * provide thread-safe access to each of the
  * various caches
  */
-static pthread_rwlock_t key_rwlock;
-static int key_rwlock_init = -1;
-static pthread_rwlock_t ds_rwlock;
-static int ds_rwlock_init = -1;
 static pthread_rwlock_t ns_rwlock;
 static int ns_rwlock_init = -1;
 static pthread_rwlock_t ans_rwlock;
@@ -253,20 +247,6 @@ get_cached_rrset(struct val_query_chain *matched_q,
 
     switch (type_h) {
 
-    case ns_t_ds:
-        lk = &ds_rwlock;
-        LOCK_INIT(lk, ds_rwlock_init);
-        LOCK_SH(lk);
-        answer_head = &unchecked_ds_info;
-        break;
-
-    case ns_t_dnskey:
-        lk = &key_rwlock;
-        LOCK_INIT(lk, key_rwlock_init);
-        LOCK_SH(lk);
-        answer_head = &unchecked_key_info;
-        break;
-
     case ns_t_ns:
         lk = &ns_rwlock;
         LOCK_INIT(lk, ns_rwlock_init);
@@ -428,32 +408,6 @@ stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 }
 
 int
-stow_key_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
-{
-    int             rc;
-
-    LOCK_INIT(&key_rwlock, key_rwlock_init);
-    LOCK_EX(&key_rwlock);
-    rc = stow_info(&unchecked_key_info, new_info, matched_q);
-    UNLOCK(&key_rwlock);
-
-    return rc;
-}
-
-int
-stow_ds_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
-{
-    int             rc;
-
-    LOCK_INIT(&ds_rwlock, ds_rwlock_init);
-    LOCK_EX(&ds_rwlock);
-    rc = stow_info(&unchecked_ds_info, new_info, matched_q);
-    UNLOCK(&ds_rwlock);
-
-    return rc;
-}
-
-int
 stow_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
@@ -569,7 +523,13 @@ get_nslist_from_cache(val_context_t *ctx,
     struct zone_ns_map_t *map_e, *saved_map;
     u_char       *tmp_zonecut_n = NULL;
     struct timeval  tv;
+
+    if (matched_qfq == NULL || queries == NULL || ref_ns_list == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *ref_ns_list = NULL;
     
+    /* matched_qfq->qfq_query cannot be NULL */
     qname_n = matched_qfq->qfq_query->qc_name_n;
     qtype = matched_qfq->qfq_query->qc_type_h;
 
@@ -675,9 +635,11 @@ get_nslist_from_cache(val_context_t *ctx,
         memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
     }
 
-    /* only ask for complete name server lists - don't want to fetch glue here */
-    bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_qfq, queries,
+    if (name_n) {
+        /* only ask for complete name server lists - don't want to fetch glue here */
+        bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_qfq, queries,
                        ref_ns_list, 1);
+    }
     
     UNLOCK(&ns_rwlock);
 
@@ -687,18 +649,6 @@ get_nslist_from_cache(val_context_t *ctx,
 int
 free_validator_cache(void)
 {
-    LOCK_INIT(&key_rwlock, key_rwlock_init);
-    LOCK_EX(&key_rwlock);
-    res_sq_free_rrset_recs(&unchecked_key_info);
-    unchecked_key_info = NULL;
-    UNLOCK(&key_rwlock);
-    
-    LOCK_INIT(&ds_rwlock, ds_rwlock_init);
-    LOCK_EX(&ds_rwlock);
-    res_sq_free_rrset_recs(&unchecked_ds_info);
-    unchecked_ds_info = NULL;
-    UNLOCK(&ds_rwlock);
-    
     LOCK_INIT(&ns_rwlock, ns_rwlock_init);
     LOCK_EX(&ns_rwlock);
     res_sq_free_rrset_recs(&unchecked_ns_info);
