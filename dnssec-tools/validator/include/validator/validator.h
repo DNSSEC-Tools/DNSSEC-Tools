@@ -285,8 +285,8 @@ extern          "C" {
     struct val_rr_rec {
         size_t rr_rdata_length;      /* RDATA length */
         u_char *rr_rdata;       /* Raw RDATA */
-        struct val_rr_rec  *rr_next;
         val_astatus_t   rr_status;
+        struct val_rr_rec  *rr_next;
     };
 
     struct val_rrset_rec {
