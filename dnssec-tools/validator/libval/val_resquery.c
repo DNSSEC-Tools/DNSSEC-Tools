@@ -123,7 +123,7 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
             memcpy(&(sock_in->sin_addr), addr_rr->rr_rdata, sizeof(u_int32_t));
         }
 #ifdef VAL_IPV6
-        else if (addr_rr->rr_rdata_length_h == sizeof(struct in6_addr)) {
+        else if (addr_rr->rr_rdata_length == sizeof(struct in6_addr)) {
             sock_in6 = (struct sockaddr_in6 *)
                 (*ns)->ns_address[(*ns)->ns_number_of_addresses];
 
@@ -658,9 +658,14 @@ find_nslist_for_query(val_context_t * context,
 
     ret_val = get_nslist_from_cache(context, next_qfq, queries, &ref_ns_list, &next_q->qc_zonecut_n);
     
-    if ((ret_val == VAL_NO_ERROR) && (next_q->qc_zonecut_n)) {
-        if (ref_ns_list == NULL) {
-            FREE(next_q->qc_zonecut_n);
+    if (ret_val == VAL_NO_ERROR) {
+        /* if any one is NULL, get rid of both */
+        if (next_q->qc_zonecut_n == NULL) {
+            free_name_servers(&ref_ns_list);
+            ref_ns_list = NULL;
+        } else if (ref_ns_list == NULL) {
+            if (next_q->qc_zonecut_n)
+                FREE(next_q->qc_zonecut_n);
             next_q->qc_zonecut_n = NULL;
         } else {
             next_q->qc_ns_list = ref_ns_list;
@@ -674,6 +679,8 @@ find_nslist_for_query(val_context_t * context,
          *  to that name server
          */
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+        for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
+            ns->ns_options |= RES_RECURSE;
     } else {
         /*
          * work downward from root 
@@ -699,10 +706,6 @@ done:
      * Only set the CD and EDNS0 options if we feel the server 
      * is capable of handling DNSSEC
      */
-    if (next_q->qc_zonecut_n != NULL)
-        test_n = next_q->qc_zonecut_n;
-    else
-        test_n = next_q->qc_name_n;
 
     if (next_q->qc_ns_list) { 
         int edns0 = 0;
@@ -710,6 +713,10 @@ done:
         if (DNSSEC_METADATA_QTYPE(next_q->qc_type_h)) {
             edns0 = 1;
         } else if (!(next_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
+            if (next_q->qc_zonecut_n != NULL)
+                test_n = next_q->qc_zonecut_n;
+            else
+                test_n = next_q->qc_name_n;
                     
             /* check if the zone has a security expectation of validate */
             if (VAL_NO_ERROR != (ret_val = 
@@ -973,36 +980,35 @@ follow_referral_or_alias_link(val_context_t * context,
         /* don't believe any of the cname hints that were provided */
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
+        return VAL_NO_ERROR;
 
-    } else {
+    } 
 
-        if (VAL_NO_ERROR != (ret_val =
-                                 bootstrap_referral(context,
+    if (VAL_NO_ERROR != (ret_val = bootstrap_referral(context,
                                                     referral_zone_n,
                                                     learned_zones,
                                                     matched_qfq,
                                                     queries,
                                                     &ref_ns_list,
                                                     0))) /* ok to fetch glue here */
-            return ret_val;
+        return ret_val;
 
-        if (matched_q->qc_state == Q_WAIT_FOR_GLUE) {
-            matched_q->qc_referral->learned_zones = *learned_zones;        
-        } else if (VAL_NO_ERROR != (ret_val = stow_zone_info(*learned_zones, matched_q))) {
-            res_sq_free_rrset_recs(learned_zones);
-            return ret_val;
-        }
-        *learned_zones = NULL; /* consumed */
+    if (matched_q->qc_state == Q_WAIT_FOR_GLUE) {
+        matched_q->qc_referral->learned_zones = *learned_zones;        
+    } else if (VAL_NO_ERROR != (ret_val = stow_zone_info(*learned_zones, matched_q))) {
+        res_sq_free_rrset_recs(learned_zones);
+        return ret_val;
+    }
+    *learned_zones = NULL; /* consumed */
 
-        if (ref_ns_list == NULL &&
-            (matched_q->qc_state != Q_WAIT_FOR_GLUE)) {
-            /*
-             * nowhere to look 
-             */
-            val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Missing glue");
-            matched_q->qc_state = Q_MISSING_GLUE;
-            goto query_err;
-        }
+    if (ref_ns_list == NULL && (matched_q->qc_state != Q_WAIT_FOR_GLUE)) {
+        /*
+         * nowhere to look 
+         */
+        val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Missing glue");
+        matched_q->qc_state = Q_MISSING_GLUE;
+        goto query_err;
+    }
 
         {
             char            debug_name1[NS_MAXDNAME];
@@ -1022,98 +1028,96 @@ follow_referral_or_alias_link(val_context_t * context,
                     debug_name1, debug_name2);
         }
 
-        /*
-         * Register the request name and zone with our referral monitor
-         */
-        if ((matched_q->qc_state != Q_WAIT_FOR_GLUE) &&
-            register_query
-            (&matched_q->qc_referral->queries, matched_q->qc_name_n,
+    /*
+     * Register the request name and zone with our referral monitor
+     */
+    if ((matched_q->qc_state != Q_WAIT_FOR_GLUE) &&
+        register_query(&matched_q->qc_referral->queries, matched_q->qc_name_n,
             matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
-            /*
-             * If this request has already been made then Referral Error
-             */
-            val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Referral loop encountered");
-            matched_q->qc_state = Q_REFERRAL_ERROR;
-            goto query_err;
-        }
+        /*
+         * If this request has already been made then Referral Error
+         */
+        val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Referral loop encountered");
+        matched_q->qc_state = Q_REFERRAL_ERROR;
+        goto query_err;
+    }
 
         if (!(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
             u_char *tp = NULL;
             int diff_name = 0;
 
-            if (VAL_NO_ERROR != (ret_val =
+        if (VAL_NO_ERROR != (ret_val =
                 get_zse(context, referral_zone_n, matched_qfq->qfq_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
-                return ret_val;
-            }
-            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
+            return ret_val;
+        }
+        SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
 
-            ttl_x = 0;
-            if (VAL_NO_ERROR != (ret_val = 
+        ttl_x = 0;
+        if (VAL_NO_ERROR != (ret_val = 
                 find_trust_point(context, referral_zone_n, 
                                  &tp, &ttl_x))) {
-                return ret_val;
-            }
-            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
+            return ret_val;
+        }
+        SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
 
-            if (tp) {
-                diff_name = (namecmp(tp, referral_zone_n) != 0);
-                FREE(tp);
-            } 
+        if (tp) {
+            diff_name = (namecmp(tp, referral_zone_n) != 0);
+            FREE(tp);
+        } 
 
-            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
+        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
             
-                /*
-                 * Fetch DNSSEC meta-data in parallel 
-                 */
-                /*
-                 * If we expect DNSSEC meta-data to be returned
-                 * in the additional section of the response, we
-                 * should modify the way in which we ask for the DNSKEY
-                 * (the DS query logic should not be changed) as 
-                 * follows:
-                 *  - invoke the add_to_qfq_chain logic only if we are 
-                 *    below the trust point (see the DS fetching logic below)
-                 *  - instead of querying for the referral_zone_n/DNSKEY
-                 *    query for the DNSKEY in the current zone 
-                 *    (matched_q->qc_zonecut_n)
-                 */
+        /*
+         * Fetch DNSSEC meta-data in parallel 
+         */
+        /*
+         * If we expect DNSSEC meta-data to be returned
+         * in the additional section of the response, we
+         * should modify the way in which we ask for the DNSKEY
+         * (the DS query logic should not be changed) as 
+         * follows:
+         *  - invoke the add_to_qfq_chain logic only if we are 
+         *    below the trust point (see the DS fetching logic below)
+         *  - instead of querying for the referral_zone_n/DNSKEY
+         *    query for the DNSKEY in the current zone 
+         *    (matched_q->qc_zonecut_n)
+         */
             
-                if(VAL_NO_ERROR != 
+         if(VAL_NO_ERROR != 
                     (ret_val = add_to_qfq_chain(context, queries, 
                                             referral_zone_n, ns_t_dnskey,
                                             ns_c_in, matched_qfq->qfq_flags, &added_q)))
-                    return ret_val;
+             return ret_val;
 
-                /* fetch DS only if are below the trust point */    
-                if (diff_name) {
+        /* fetch DS only if are below the trust point */    
+        if (diff_name) {
                 
-                    if (VAL_NO_ERROR != 
+             if (VAL_NO_ERROR != 
                         (ret_val = add_to_qfq_chain(context, queries, 
                                                     referral_zone_n, ns_t_ds,
                                                     ns_c_in, matched_qfq->qfq_flags, 
                                                     &added_q)))
-                        return ret_val;
-                } 
-            }
+                 return ret_val;
+            } 
         }
-        /*
-         * Store the current referral value in the query 
-         */
-        if (matched_q->qc_zonecut_n != NULL) {
-            FREE(matched_q->qc_zonecut_n);
-            matched_q->qc_zonecut_n = NULL;
-        }
-        if (referral_zone_n != NULL) {
-            len = wire_name_length(referral_zone_n);
-            matched_q->qc_zonecut_n =
-                (u_char *) MALLOC(len * sizeof(u_char));
-            if (matched_q->qc_zonecut_n == NULL)
-                return VAL_OUT_OF_MEMORY;
-            memcpy(matched_q->qc_zonecut_n, referral_zone_n, len);
-        }
-        matched_q->qc_ns_list = ref_ns_list;
     }
+    /*
+     * Store the current referral value in the query 
+     */
+    if (matched_q->qc_zonecut_n != NULL) {
+        FREE(matched_q->qc_zonecut_n);
+        matched_q->qc_zonecut_n = NULL;
+    }
+    if (referral_zone_n != NULL) {
+        len = wire_name_length(referral_zone_n);
+        matched_q->qc_zonecut_n =
+                (u_char *) MALLOC(len * sizeof(u_char));
+        if (matched_q->qc_zonecut_n == NULL)
+            return VAL_OUT_OF_MEMORY;
+        memcpy(matched_q->qc_zonecut_n, referral_zone_n, len);
+    }
+    matched_q->qc_ns_list = ref_ns_list;
 
   query_err:
     if (matched_q->qc_state > Q_ERROR_BASE) {
@@ -1149,9 +1153,7 @@ follow_referral_or_alias_link(val_context_t * context,
             }                                                           \
         }                                                               \
         if (ret_val != VAL_NO_ERROR) {                                  \
-            res_sq_free_rrset_recs(&learned_keys);                      \
             res_sq_free_rrset_recs(&learned_zones);                     \
-            res_sq_free_rrset_recs(&learned_ds);                        \
             FREE(rdata);                                                \
             return ret_val;                                             \
         }                                                               \
@@ -1296,8 +1298,8 @@ process_cname_dname_responses(u_char *name_n,
 /*
  * Create error rrset_rec structure
  */
-int
-prepare_empty_nxdomain(struct rrset_rec **answers,
+static int
+prepare_empty_nonexistence(struct rrset_rec **answers,
                        struct name_server *respondent_server,
                        u_char * query_name_n,
                        u_int16_t query_type_h, u_int16_t query_class_h,
@@ -1329,7 +1331,7 @@ prepare_empty_nxdomain(struct rrset_rec **answers,
     memcpy((*answers)->rrs_name_n, query_name_n, length);
     (*answers)->rrs_type_h = query_type_h;
     (*answers)->rrs_class_h = query_class_h;
-    (*answers)->rrs_ttl_h = 0;
+    (*answers)->rrs_ttl_h = 0;/* don't have any basis to set the TTL value */
     (*answers)->rrs_cred = SR_CRED_UNSET;
     (*answers)->rrs_section = VAL_FROM_UNSET;
     if ((respondent_server) &&
@@ -1396,8 +1398,6 @@ digest_response(val_context_t * context,
     int             nothing_other_than_alias;
     int             from_section;
     struct rrset_rec *learned_zones = NULL;
-    struct rrset_rec *learned_keys = NULL;
-    struct rrset_rec *learned_ds = NULL;
     struct rrset_rec *learned_answers = NULL;
     struct rrset_rec *learned_proofs = NULL;
 
@@ -1407,7 +1407,6 @@ digest_response(val_context_t * context,
     u_char         *rrs_zonecut_n = NULL;
     int             referral_seen = FALSE;
     u_char          referral_zone_n[NS_MAXCDNAME];
-    int             auth_nack = 0;
     int             proof_seen = 0;
     HEADER         *header;
     u_char         *end;
@@ -1444,15 +1443,28 @@ digest_response(val_context_t * context,
     answer = ntohs(header->ancount);
     authority = ntohs(header->nscount);
     additional = ntohs(header->arcount);
+
     if (answer == 0)
         nothing_other_than_alias = 0;
     else
         nothing_other_than_alias = 1;
 
     /*
+     * Add the query name to the chain of acceptable 
+     * names in the response 
+     */
+    if ((ret_val =
+         add_to_qname_chain(qnames, query_name_n)) != VAL_NO_ERROR)
+        return ret_val;
+
+    /*
+     * Extract zone cut from the query chain element if it exists 
+     */
+    rrs_zonecut_n = matched_q->qc_zonecut_n;
+
+    /*
      *  Skip question section 
      */
-
     if (response_length <= sizeof(HEADER)) {
         response_index = 0;
     } else {
@@ -1466,13 +1478,6 @@ digest_response(val_context_t * context,
     }
 
     rrs_to_go = answer + authority + additional;
-
-    /*
-     * Add the query name to the chain of acceptable names 
-     */
-    if ((ret_val =
-         add_to_qname_chain(qnames, query_name_n)) != VAL_NO_ERROR)
-        return ret_val;
 
     if (rrs_to_go == 0 /*&& header->rcode == ns_r_nxdomain */ ) {
         /*
@@ -1493,18 +1498,20 @@ digest_response(val_context_t * context,
             requery_with_edns0(context, matched_q);
             goto done; 
         }
+        /*
+         * Else this is a non-existence result
+         * Type is decided by the rcode, which we will check later
+         */
         matched_q->qc_state = Q_ANSWERED;
-        ret_val = prepare_empty_nxdomain(&di_response->di_proofs, respondent_server,
+        ret_val = prepare_empty_nonexistence(&di_response->di_proofs, respondent_server,
                                          query_name_n, query_type_h, query_class_h, hptr);
         free_name_server(&respondent_server);
         goto done; 
     }
 
     /*
-     * Extract zone cut from the query chain element if it exists 
+     * Now start processing each RRSet in the response
      */
-    rrs_zonecut_n = matched_q->qc_zonecut_n;
-
     for (i = 0; i < rrs_to_go; i++) {
 
         rdata = NULL;
@@ -1512,7 +1519,6 @@ digest_response(val_context_t * context,
         /*
          * Determine what part of the response I'm reading 
          */
-
         if (i < answer)
             from_section = VAL_FROM_ANSWER;
         else if (i < answer + authority)
@@ -1527,16 +1533,12 @@ digest_response(val_context_t * context,
          * Leave a pointer to the rdata 
          * Advance the response_index 
          */
-
         if ((ret_val =
              extract_from_rr(response_data, &response_index, end, name_n,
                              &type_h, &set_type_h, &class_h, &ttl_h,
                              &rdata_len_h, &rdata_index)) != VAL_NO_ERROR) {
             goto done;
         }
-
-        authoritive = (header->aa == 1)
-            && qname_chain_first_name(*qnames, name_n);
 
         /*
          * response[rdata_index] is the first byte of the RDATA of the
@@ -1553,39 +1555,33 @@ digest_response(val_context_t * context,
          * Check if the only RRsets in the answer section are CNAMEs/DNAMEs
          */
         if (nothing_other_than_alias && (i < answer)) {
-            nothing_other_than_alias =
-                ((set_type_h == ns_t_cname) || (set_type_h == ns_t_dname));
             /*
-             * check if we had explicitly asked for this alias 
+             * check if we received a non-alias or had explicitly asked for this alias 
              */
-            if (nothing_other_than_alias) {
-                if ((((query_type_h == ns_t_cname)
-                      && (set_type_h == ns_t_cname))
-                     || ((query_type_h == ns_t_dname)
-                         && (set_type_h == ns_t_dname))
-                     || (query_type_h == ns_t_any)
-                     || (query_type_h == ns_t_rrsig))
-                    && (!namecmp(name_n, (*qnames)->qnc_name_n)))
-                    nothing_other_than_alias = 0;
+            if ((set_type_h != ns_t_cname && set_type_h != ns_t_dname) ||
+                ((query_type_h == ns_t_cname) && (set_type_h == ns_t_cname)) ||
+                ((query_type_h == ns_t_dname) && (set_type_h == ns_t_dname)) ||
+                (query_type_h == ns_t_any) ||
+                (query_type_h == ns_t_rrsig)) {
+
+                nothing_other_than_alias = 0;
             }
         }
 
-        auth_nack = (from_section == VAL_FROM_AUTHORITY)
-            && ((set_type_h == ns_t_nsec)
-#ifdef LIBVAL_NSEC3
-                || (set_type_h == ns_t_nsec3)
-#endif
-                || (set_type_h == ns_t_soa));
+        /*
+         * we're only authoritative for the first name in the
+         * CNAME chain
+         */
+        authoritive = (header->aa == 1)
+            && qname_chain_first_name(*qnames, name_n);
 
-        proof_seen = (proof_seen) ? 1 : auth_nack;      /* save the auth_nack status */
-
+        /*
+         * If it is from the answer section, it may be an alias 
+         * If it is from the authority section, it may be a proof or a referral 
+         * If it is from the additional section it may contain some DNSSEC meta-data or it may be glue
+         */
         if (from_section == VAL_FROM_ANSWER) {
             int referral_error = 0;
-
-            SAVE_RR_TO_LIST(respondent_server, &learned_answers, name_n, type_h,
-                            set_type_h, class_h, ttl_h, hptr, rdata,
-                            rdata_len_h, from_section, authoritive,
-                            rrs_zonecut_n);
 
             /* process CNAMEs or DNAMEs if they exist */
             if ((VAL_NO_ERROR != (ret_val = 
@@ -1594,40 +1590,101 @@ digest_response(val_context_t * context,
                                                   &referral_error))) || 
                     (referral_error)) {
                 if (referral_error) 
-                    val_log(context, LOG_DEBUG, "disgest_response(): CNAME/DNAME error or loop encountered");
+                    val_log(context, LOG_DEBUG, "digest_response(): CNAME/DNAME error or loop encountered");
 
                 goto done;
             }
 
-
-        } else if (auth_nack) {
-            SAVE_RR_TO_LIST(respondent_server, &learned_proofs, name_n, type_h,
+            SAVE_RR_TO_LIST(respondent_server, &learned_answers, name_n, type_h,
                             set_type_h, class_h, ttl_h, hptr, rdata,
                             rdata_len_h, from_section, authoritive,
                             rrs_zonecut_n);
+
+
+        } else if (from_section == VAL_FROM_AUTHORITY) {
+            if ((set_type_h == ns_t_nsec)
+#ifdef LIBVAL_NSEC3
+                    || (set_type_h == ns_t_nsec3)
+#endif
+                    || (set_type_h == ns_t_soa)) {
+
+                proof_seen = 1;
+
+                SAVE_RR_TO_LIST(respondent_server, &learned_proofs, name_n, type_h,
+                                set_type_h, class_h, ttl_h, hptr, rdata,
+                                rdata_len_h, from_section, authoritive,
+                                rrs_zonecut_n);
+            } else if (set_type_h == ns_t_ns) {
+                /* 
+                 * The zonecut information for name servers is 
+                 * their respective owner name 
+                 */
+                SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
+                                type_h, set_type_h, class_h, ttl_h, hptr,
+                                rdata, rdata_len_h, from_section,
+                                authoritive, name_n);
+            }
+        } else if (from_section == VAL_FROM_ADDITIONAL) {
+            if (set_type_h == ns_t_dnskey || set_type_h == ns_t_ds) {
+                SAVE_RR_TO_LIST(respondent_server, &learned_answers, name_n,
+                                type_h, set_type_h, class_h, ttl_h, hptr,
+                                rdata, rdata_len_h, from_section,
+                                authoritive, rrs_zonecut_n);
+            } else if (set_type_h == ns_t_a || set_type_h == ns_t_aaaa) {
+                SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
+                                type_h, set_type_h, class_h, ttl_h, hptr,
+                                rdata, rdata_len_h, from_section,
+                                authoritive, name_n);
+            }
         }
 
-        if (set_type_h == ns_t_soa) {
-            /*
-             * If there is an SOA RRset, use its owner name as the zone-cut 
-             * we need this if the parent is also authoritative for the child or if
-             * recursion is enabled on the parent zone.
-             * Although we may end up "fixing" the zone cut for even out-of-zone
-             * data (think of out-of-bailiwick glue), these records will not
-             * be saved because of the anti-pollution rules.
-             */
-            if (zonecut_was_modified) {
-                if (namecmp(rrs_zonecut_n, name_n)) {
-                    /*
-                     * Multiple NS records;
-                     */
-                    val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
-                    matched_q->qc_state =
-                        Q_CONFLICTING_ANSWERS;
-                    ret_val = VAL_NO_ERROR;
-                    goto done;
+        /*
+         * if we have an SOA in the ans/auth section
+         *  or if we have a DNSKEY in the ans section
+         *  or if we have an NS in the ans/auth section with answer > 0 or a noerror error code
+         * AND if owner name is more specific than current zonecut 
+         * we must use the provided zone cut hint
+         * we need this if the parent is also authoritative for the child or if
+         * recursion is enabled on the parent zone.
+         * Although we may end up "fixing" the zone cut for even out-of-zone
+         * data (think of out-of-bailiwick glue), these records will not
+         * be saved because of the anti-pollution rules.
+         */
+        int fix_zonecut = 0;
+        if (from_section < (answer + authority) &&
+            (set_type_h == ns_t_soa || 
+             (set_type_h == ns_t_dnskey && from_section < answer) ||
+             (set_type_h == ns_t_ns && 
+              (answer > 0 || header->rcode != ns_r_noerror))) &&
+            (rrs_zonecut_n == NULL || NULL != namename(name_n, rrs_zonecut_n))) {
+
+            fix_zonecut = 1;
+            if (nothing_other_than_alias) {
+                /* 
+                 * make sure that the NS is closer to the alias than the target; 
+                 * if not don't fix the zonecut
+                 */
+                u_int8_t *n1 = NULL;
+                u_int8_t *n2 = NULL;
+
+                if (*qnames) {
+                    struct qname_chain *q = *qnames;
+
+                    /* Compare with target */
+                    n1 = namename(name_n, q->qnc_name_n); 
+
+                    while(q->qnc_next) {
+                        q = q->qnc_next;
+                    }
+                    /* compare with alias */
+                    n2 = namename(name_n, q->qnc_name_n);
                 }
-            } else {
+
+               if (!n1 || !n2 || namename(n1, n2))
+                   fix_zonecut = 0;
+            } 
+
+            if (fix_zonecut && !zonecut_was_modified) {
                 zonecut_was_modified = 1;
                 /* update the zonecut information */
                 if (matched_q->qc_zonecut_n)
@@ -1639,6 +1696,8 @@ digest_response(val_context_t * context,
                     goto done;    
                 memcpy (matched_q->qc_zonecut_n, name_n, len);
                 rrs_zonecut_n = matched_q->qc_zonecut_n;
+
+                val_log(context, LOG_DEBUG, "digest_response(): Fixing zonecut");
                 /*
                  * go back to all the rrsets that we created 
                  * and fix the zonecut info 
@@ -1652,129 +1711,53 @@ digest_response(val_context_t * context,
                 FIX_ZONECUT(learned_zones, rrs_zonecut_n, ret_val);
                 if (ret_val != VAL_NO_ERROR)
                     goto done;
-                FIX_ZONECUT(learned_keys, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR)
-                    goto done;
-                FIX_ZONECUT(learned_ds, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR)
-                    goto done;
+            } else if (fix_zonecut && namecmp(rrs_zonecut_n, name_n)) {
+                /*
+                 * Multiple Zonecuts
+                 */
+                val_log(context, LOG_DEBUG, "digest_response(): Ambiguous zonecut");
+                matched_q->qc_state = Q_CONFLICTING_ANSWERS;
+                ret_val = VAL_NO_ERROR;
+                goto done;
             }
-        } else if (set_type_h == ns_t_dnskey) {
-            SAVE_RR_TO_LIST(respondent_server, &learned_keys, name_n,
-                            type_h, set_type_h, class_h, ttl_h, hptr,
-                            rdata, rdata_len_h, from_section,
-                            authoritive, rrs_zonecut_n);
-        } else if (set_type_h == ns_t_ds) {
-            SAVE_RR_TO_LIST(respondent_server, &learned_ds, name_n, type_h,
-                            set_type_h, class_h, ttl_h, hptr, rdata,
-                            rdata_len_h, from_section, authoritive,
-                            rrs_zonecut_n);
-        } else if ((set_type_h == ns_t_ns) ||
-            ((set_type_h == ns_t_a)
-             && (from_section == VAL_FROM_ADDITIONAL))) {
-
-            if ((set_type_h == ns_t_ns) && !proof_seen) {
-
-                if ((answer == 0) && (from_section == VAL_FROM_AUTHORITY)) {
-                    /*
-                     * This is a referral 
-                     */
-                    if (referral_seen == FALSE) {
-                        memcpy(referral_zone_n, name_n,
-                               wire_name_length(name_n));
-                        referral_seen = TRUE;
-                    } else if (namecmp(referral_zone_n, name_n) != 0) {
-                        /*
-                         * Multiple NS records; Malformed referral notice 
-                         */
-                        val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
-                        matched_q->qc_state =
-                                Q_REFERRAL_ERROR;
-                        ret_val = VAL_NO_ERROR;
-                        goto done;
-                    }
-
-                } else if ((rrs_zonecut_n == NULL || 
-                            NULL != namename(name_n, rrs_zonecut_n)) && 
-                        /* ns owner is more specific than current zonecut  AND */
-                           ((nothing_other_than_alias && /* cname  OR */ 
-                            (from_section == VAL_FROM_AUTHORITY)) ||
-                           ((answer != 0) && /* complete answer */
-                            !nothing_other_than_alias &&
-                            (from_section != VAL_FROM_ADDITIONAL)))) {
-
-                    /* This is zonecut information */
-
-                    /*
-                     * Use the NS rrset owner name as the zone-cut 
-                     */
-                    if (zonecut_was_modified) {
-                        if (namecmp(rrs_zonecut_n, name_n)) {
-                            /*
-                             * Multiple NS records;
-                             */
-                            val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
-                            matched_q->qc_state =
-                                Q_CONFLICTING_ANSWERS;
-                            ret_val = VAL_NO_ERROR;
-                            goto done;
-                        }
-                    } else {
-                        /* update the zonecut information */
-                        if (matched_q->qc_zonecut_n)
-                            FREE(matched_q->qc_zonecut_n);
-                        len = wire_name_length(name_n);
-                        matched_q->qc_zonecut_n = 
-                            (u_char *) MALLOC (len * sizeof(u_char));
-                        if (matched_q->qc_zonecut_n == NULL)
-                            goto done;    
-                        memcpy (matched_q->qc_zonecut_n, name_n, len);
-                        rrs_zonecut_n = matched_q->qc_zonecut_n;
-                        zonecut_was_modified = 1;
-                        /*
-                         * go back to all the rrsets that we created 
-                         * and fix the zonecut info 
-                         * we need this if the parent is also authoritative 
-                         * for the child or if recursion is enabled on the 
-                         * parent zone.
-                         * Although we may end up "fixing" the zone cut for 
-                         * even out-of-zone data (think of out-of-bailiwick glue), 
-                         * these records will not be saved because of the 
-                         * anti-pollution rules.
-                         */
-                        FIX_ZONECUT(learned_answers, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR)
-                            goto done;
-                        FIX_ZONECUT(learned_proofs, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR)
-                            goto done;
-                        FIX_ZONECUT(learned_zones, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR)
-                            goto done;
-                        FIX_ZONECUT(learned_keys, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR)
-                            goto done;
-                        FIX_ZONECUT(learned_ds, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR)
-                            goto done;
-                    }
-
-                }
+        } else if (set_type_h == ns_t_ns && from_section == VAL_FROM_AUTHORITY && answer == 0) {
+            if (referral_seen == FALSE) {
+                memcpy(referral_zone_n, name_n,
+                       wire_name_length(name_n));
+                referral_seen = TRUE;
+            } else if (namecmp(referral_zone_n, name_n) != 0) {
+                /*
+                 * Multiple NS records; Malformed referral notice 
+                 */
+                val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
+                matched_q->qc_state = Q_REFERRAL_ERROR;
+                ret_val = VAL_NO_ERROR;
+                goto done;
             }
-
-            /* 
-             * The zonecut information for name servers is 
-             * their respective owner name 
-             */
-            SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
-                            type_h, set_type_h, class_h, ttl_h, hptr,
-                            rdata, rdata_len_h, from_section,
-                            authoritive, name_n);
         }
 
         FREE(rdata);
         rdata = NULL;
-    }
+
+    } 
+    
+    /*
+     * Identify proofs of non-existence 
+     */
+    if (proof_seen) {
+    
+        if (nothing_other_than_alias) {
+            /* XXX Alias target non-existence */
+                
+        } else if (referral_seen) {
+            /* XXX if this is a no-data response, it is not a referral */
+
+            /* XXX else this is a DS non-existence proof */
+
+        } else {
+            /* XXX non-existence of queried type */
+        }
+    } 
 
     if (referral_seen || nothing_other_than_alias) {
         struct rrset_rec *cloned_answers;
@@ -1794,8 +1777,12 @@ digest_response(val_context_t * context,
 
     } else {
 
-        /* we no longer need learned_zones */
-        res_sq_free_rrset_recs(&learned_zones);
+        /* save any zones we've learned along the way */
+        if (VAL_NO_ERROR != (ret_val = 
+                    stow_zone_info(learned_zones, matched_q))) {
+            goto done;
+        }
+        learned_zones = NULL; /* consumed */
 
         /*
          * if we hadn't enabled EDNS0 but we got a response for a zone 
@@ -1869,15 +1856,6 @@ digest_response(val_context_t * context,
         goto done;
     }
 
-    if (VAL_NO_ERROR != (ret_val = stow_key_info(learned_keys, matched_q))) {
-        goto done;
-    }
-
-    if (VAL_NO_ERROR != (ret_val = stow_ds_info(learned_ds, matched_q))) {
-        goto done;
-    }
-
-
     return ret_val;
 
   done:
@@ -1886,8 +1864,6 @@ digest_response(val_context_t * context,
     res_sq_free_rrset_recs(&learned_answers);
     res_sq_free_rrset_recs(&learned_proofs);
     res_sq_free_rrset_recs(&learned_zones);
-    res_sq_free_rrset_recs(&learned_keys);
-    res_sq_free_rrset_recs(&learned_ds);
     return ret_val;
 }
 /*
