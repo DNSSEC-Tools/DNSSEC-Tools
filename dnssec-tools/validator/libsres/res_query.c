@@ -416,7 +416,12 @@ query_send(const char *name,
         }
         if (ret_val == -1)
             return SR_MKQUERY_INTERNAL_ERROR;
-        // ((HEADER *)query)->rd = 0;
+        if (ns->ns_options & RES_RECURSE) {
+            ((HEADER *)query)->rd = 1;
+        } else {
+            /* don't ask for recursion */
+            ((HEADER *)query)->rd = 0;
+        }
 
         if ((ret_val = res_tsig_sign(query, query_length, ns,
                                      &signed_query,
