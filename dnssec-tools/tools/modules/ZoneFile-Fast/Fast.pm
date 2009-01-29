@@ -840,7 +840,7 @@ sub parse_line
 	      my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
 		($1, $2, $3, $4, $5, $6);
 	      $typelist = join(" ",sort split(/\s+/,$typelist));
-	      my $binhash = MIME::Base32::decode uc $nxthash;
+	      my $binhash = MIME::Base32::decode(uc($nxthash));
 	      push @zone, 
 		{
 		 Line        => $ln,
