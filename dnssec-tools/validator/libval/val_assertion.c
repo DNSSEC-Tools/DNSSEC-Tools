@@ -1740,8 +1740,7 @@ get_ac_trust(val_context_t *context,
     struct queries_for_query *added_q = NULL;
 
     if (!next_as ||
-        !next_as->val_ac_rrset.ac_data ||
-        !next_as->val_ac_rrset.ac_data->rrs_zonecut_n) {
+        !next_as->val_ac_rrset.ac_data) {
 
         return NULL;
     }
@@ -1760,13 +1759,17 @@ get_ac_trust(val_context_t *context,
          */
         if (VAL_NO_ERROR !=
              add_to_qfq_chain(context, queries, 
-                              next_as->val_ac_rrset.ac_data->rrs_zonecut_n, 
+                              next_as->val_ac_rrset.ac_data->rrs_name_n, 
                               ns_t_ds,
                               next_as->val_ac_rrset.ac_data->rrs_class_h, 
                               flags, &added_q))
             return NULL;
 
     } else {
+        
+        if (!next_as->val_ac_rrset.ac_data->rrs_zonecut_n)
+            return NULL;
+
         /*
          * look for DNSKEY records 
          */
@@ -3734,15 +3737,10 @@ try_verify_assertion(val_context_t * context,
     } else if (next_as->val_ac_status == VAL_AC_WAIT_FOR_TRUST) {
 
         if (next_as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey) {
-            if (next_as->val_ac_rrset.ac_data->rrs_zonecut_n == NULL) {
-                next_as->val_ac_status = VAL_AC_DS_MISSING;
-                return VAL_NO_ERROR;
-            }
-
             if (VAL_NO_ERROR !=
                 (retval =
                     add_to_qfq_chain(context, queries, 
-                          next_as->val_ac_rrset.ac_data->rrs_zonecut_n, ns_t_ds,
+                          next_as->val_ac_rrset.ac_data->rrs_name_n, ns_t_ds,
                           next_as->val_ac_rrset.ac_data->rrs_class_h, 
                           flags, &pc)))
                 return retval;
