@@ -44,7 +44,7 @@
 <t>The DNS Security Extensions (DNSSEC) provide origin authentication and
 integrity of DNS data.  However, the current resolver Application Programming 
 Interface (API) does not specify how a validating stub resolver 
-should communicate detailed results of DNSSEC processing back to the application.  
+should communicate results of DNSSEC processing back to the application.  
 This document describes an API between applications and a 
 validating stub resolver that allows applications to control the 
 DNSSEC validation process and obtain results of DNSSEC processing.</t>
@@ -55,8 +55,8 @@ DNSSEC validation process and obtain results of DNSSEC processing.</t>
   <section title="Introduction">
   <!--           ############## -->
 
-<t>The DNS Security Extensions (<xref target="refs.RFC4033">RFC 4033</xref>,
-<xref target="refs.RFC4034">RFC 4034</xref>, <xref target="refs.RFC4035">RFC 4035</xref>)
+<t>The DNS Security Extensions (<xref target="refs.RFC4033"/>, <xref target="refs.RFC4034"/>, 
+<xref target="refs.RFC4035"/>)
 enable DNS resolvers to test the origin authenticity and integrity of data returned by the 
 DNS.  A DNSSEC validator, or more formally, a validating stub resolver, 
 is a piece of software that performs these tests by 
@@ -65,12 +65,12 @@ from a locally configured DNSSEC <xref target="refs.RFC4033">trust anchor</xref>
 to a cryptographic signature that covers the DNS information in question.
 This document presents an API between an application and a DNSSEC validator, which 
 enables applications to control the DNSSEC validation process and enables applications 
-to obtain detailed DNSSEC validation results upon which to base program behavior. </t>
+to obtain DNSSEC validation results upon which to base program behavior. </t>
 
-<t>The API can be broadly divided into three groups: the high-Level DNSSEC validator API, 
-the low-Level DNSSEC validator API and the DNSSEC validator-context API. 
+<t>The API can be broadly divided into three groups: the high-level DNSSEC validator API, 
+the low-level DNSSEC validator API and the DNSSEC validator-context API. 
 <xref target="high_level_api"/>, <xref target="low_level_api"/>,
-and <xref target="val-context"/> describe these interfaces in greater detail. </t>
+and <xref target="val-context"/> describe these groups in greater detail. </t>
 
 <t> The high-level DNSSEC validator API is designed for ease of use and mirrors 
 existing DNS-related functions. This API is best suited for existing 
@@ -86,9 +86,8 @@ to control the DNSSEC policies that are used for validating DNS responses.</t>
 
 <t> The range of functions provided in this API supports different classes of 
 applications, ranging from those that are only interested in basic DNSSEC results 
-such as "validated" or "not-validated", to more sophisticated 
-applications that can look for specific errors in an authentication 
-chain as a sign of some abnormality or attack. </t>
+to more sophisticated applications that can look for specific errors in an 
+authentication chain as a sign of some abnormality or attack. </t>
   </section> <!-- Introduction -->
 
 
@@ -100,7 +99,7 @@ chain as a sign of some abnormality or attack. </t>
   <list style="hanging">
     <t> </t>
     <t hangText="Legacy DNS Functions:"> 
-functions, such as gethostbyname() and getaddrinfo(), that are 
+existing functions, such as gethostbyname() and getaddrinfo(), which are 
 not capable of returning DNSSEC validation status codes for DNS responses. </t>
     <t> </t>
     <t hangText="DNSSEC Validator Policy:"> 
@@ -119,14 +118,15 @@ the application's run-time handle to the DNSSEC validator policy.  </t>
 <t> The high-level DNSSEC validator API defines DNSSEC-aware substitutes for commonly
 used legacy DNS functions. 
 It provides an easy path for applications already using legacy DNS functions
-to transition towards becoming DNSSEC-aware.  The high-level API also defines the 
+to transition towards becoming DNSSEC-aware.  This API also defines the 
 val_get_rrset() function, which enables applications to obtain data for an 
 arbitrary DNS name, class and type, and inspect the corresponding 
-DNSSEC validation status values. </t>
+DNSSEC validation status value(s). </t>
 
-<t> A number of resolver API functions exist; however, some of these functions 
-(such as gethostbyname_r and gethostbyname2) are only available on a subset of Operating Systems and are not part of any official 
-standard.  Also, some functions are defined only as minor extensions of other well-known resolver API functions.  
+<t> A number of legacy DNS functions exist; however, some of these functions 
+(such as gethostbyname_r and gethostbyname2) are only available on a subset of 
+Operating Systems and are not part of any official 
+standard.  Also, some functions are defined as minor extensions of other well-known legacy DNS functions.  
 For example, gethostbyname2 differs from gethostbyname_r only by virtue of having the extra argument to explictly 
 specify the address family. Further, some functions differ from others 
 only by virtue of being able to support a re-entrant and thread-safe implementation. 
@@ -141,8 +141,7 @@ points to a DNSSEC validator context object (<xref target="val-context"/>).
 Applications MUST either supply a reference to a valid DNSSEC validator context object created 
 using the functions specified in <xref target="val-context"/> or supply a NULL 
 value for this parameter. Libraries that implement the DNSSEC Validator API 
-MUST internally use a
-DNSSEC validator context created with a default DNSSEC validator policy
+MUST internally use a default DNSSEC validator context 
 when the application supplies a NULL value for ctx. </t> 
 
     <section title="val_gethostbyname, val_gethostbyaddr">
@@ -166,7 +165,7 @@ gethostbyname() and gethostbyaddr() legacy DNS functions.
 The new functions have an additional parameter, val_status, 
 which enables applications to check the DNSSEC validation status codes for
 the address-to-name and name-to-address translations. The other arguments to these
-functions have identical semantics to the corresponding legacy DNS functions as 
+functions and their return values have identical semantics to the corresponding legacy DNS functions as 
 described in <xref target="refs.IEEE.1003.1-2004"/>. 
 The val_gethostbyname() and val_gethostbyaddr() functions SHOULD 
 only be used when retrofitting DNSSEC in existing applications that use the
@@ -181,23 +180,23 @@ applications SHOULD use the functions described in <xref target="val-istrusted"/
 instead of directly inspecting the DNSSEC validation status code returned in val_status.  </t>
 
 <t> The status code returned in val_status is determined by the following rules. </t> 
-<t/>
     <list style="symbols">
-    <t> A DNSSEC validation status of VAL_OOB_ANSWER SHOULD be returned if the complete answer is returned 
+    <t> A DNSSEC validation status of VAL_OOB_ANSWER MUST be returned if the complete answer is returned 
 using some out-of-band mechanism (for example, from a local configuration store such as /etc/hosts or its equivalent)
 without any DNSSEC validation being performed. However, if local DNSSEC validator policy
 defines out-of-band answers to be trustworthy, a DNSSEC validation status of VAL_TRUSTED_ANSWER
 SHOULD be returned instead. </t>
     <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
-returned if all resource record sets for the various addresses and canonical names within the
+returned if all addresses and canonical names within the
 hostent structure are validated successfully. </t>
     <t> A DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be
-returned if at least one resource record set for the various addresses and 
-canonical names within the hostent structure is not validated by the DNSSEC validation process, 
-but all returned resource record sets are still considered trustworthy 
+returned if at least one address or canonical name within the hostent structure 
+is not validated by the DNSSEC validation process, 
+but all answers are still considered trustworthy 
 (<xref target="val-context"/>) by way of the configured local DNSSEC validator policy. </t>
-    <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one resource record set
-for the various addresses and canonical names within the hostent structure is neither validated through the DNSSEC validation process nor considered to be trusted according to the configured local DNSSEC validator policy. </t>
+    <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one 
+address or canonical name within the hostent structure is neither validated through 
+the DNSSEC validation process nor considered to be trusted according to the configured local DNSSEC validator policy. </t>
     <t> A DNSSEC validation status of VAL_NONEXISTENT_NAME or VAL_NONEXISTENT_TYPE MUST 
 be returned if the DNSSEC validation
 process is able to prove non-existence for the name or type being queried for. A 
@@ -245,44 +244,41 @@ information for the specified domain name and service. The
 val_getnameinfo() function performs an address-to-name
 translation in a protocol independent manner.  </t>
 
-<t> The results from the val_getaddrinfo() function is returned in the res parameter. 
-The value of res MUST point to a valid addrinfo structure (<xref target="refs.RFC3493"/>) 
-on success or NULL in case of error.  Any library that implements the 
-val_getaddrinfo() function MUST internally allocate sufficient memory to hold the linked list pointed to by res.
-The caller MUST release this memory after use by invoking the freeaddrinfo() function 
+<t> The value of res MUST point to a valid addrinfo structure (<xref target="refs.RFC3493"/>) 
+on a successful return from the val_getaddrinfo() function or NULL in case of error.  
+Sufficient memory MUST be internally allocated to hold the linked list pointed to by res.
+This memory MUST be released when applications invoke the freeaddrinfo() function.
 (<xref target="refs.RFC3493"/>). </t>
 
 <t> The DNSSEC validation status is returned in the val_status parameter.
-For val_getaddrinfo(), this MUST represent the effective DNSSEC validation status code for
-all answers returned in the addrinfo linked list. 
-When evaluating the validity of a DNS response, applications SHOULD use the functions described in <xref target="val-istrusted"/> 
+When evaluating the validity of a DNS response, applications SHOULD use the functions 
+described in <xref target="val-istrusted"/> 
 instead of directly inspecting the DNSSEC validation status code returned in val_status.  
 The syntax and semantics of other parameters in 
-val_getaddrinfo() and val_getnameinfo() are identical to those specified for 
+val_getaddrinfo() and val_getnameinfo() and their return values are identical to those specified for 
 getaddrinfo() and getnameinfo() in <xref target="refs.RFC3493"/>.  </t>
 
 <t> The status code returned in val_status is determined by the following rules. </t> 
-<t/>
     <list style="symbols">
-    <t> A DNSSEC validation status of VAL_OOB_ANSWER SHOULD be returned in val_status 
+    <t> A DNSSEC validation status of VAL_OOB_ANSWER MUST be returned in val_status 
 if the complete answer is returned using some out-of-band mechanism (for example, 
 from a local configuration store such as /etc/hosts or its equivalent) 
 without any DNSSEC validation being performed. However, if local DNSSEC validator policy
 defines out-of-band answers to be trustworthy, a DNSSEC validation status of VAL_TRUSTED_ANSWER 
 SHOULD be returned instead. </t> 
-    <t> For val_getnameinfo(), a DNSSEC validation status of VAL_VALIDATED_ANSWER or VAL_TRUSTED_ANSWER MUST
-be returned in val_status if the returned response for the hostname is validated by the DNSSEC process
-or is considered to be trustworthy through the local DNSSEC validator policy respectively. </t>
-    <t> For val_getaddrinfo(), a DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
-returned in val_status if all resource record sets for the various addresses and canonical names within the
-returned addrinfo structure are validated through the DNSSEC process. </t>
-    <t> For val_getaddrinfo(), a DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be
-returned in val_status if at least resource record set for the various addresses and canonical names 
-within the returned addrinfo structure is not validated by the DNSSEC validation process, but all 
-returned resource record sets are still considered to be trustworthy through the local DNSSEC validator policy (<xref target="val-context"/>). </t>
-    <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one resource record set
-(for the various addresses and canonical names returned by val_getaddrinfo() within the addrinfo structure, or 
-for the returned hostname in val_getnameinfo()) is neither validated through the DNSSEC process nor considered 
+    <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
+returned in val_status if the hostname returned by val_getnameinfo(), or 
+all addresses and canonical names returned by val_getaddrinfo(), 
+are validated through the DNSSEC process. </t>
+    <t> A DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be
+returned in val_status if the hostname returned by val_getnameinfo(), 
+or at least one address or canonical name returned by val_getaddrinfo(), 
+is not validated by the DNSSEC validation process but all
+answers are still considered to be trustworthy 
+through the local DNSSEC validator policy (<xref target="val-context"/>). </t>
+    <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one 
+address or canonical name returned by val_getaddrinfo() within the addrinfo structure, or 
+the returned hostname in val_getnameinfo(), is neither validated through the DNSSEC process nor considered 
 to be trustworthy according to the local DNSSEC validator policy. </t>
     <t> A DNSSEC validation status of VAL_NONEXISTENT_NAME or VAL_NONEXISTENT_TYPE MUST 
 be returned in val_status if the DNSSEC validation
@@ -318,23 +314,19 @@ int val_res_query(val_context_t *ctx,
 for the res_query() function (currently not documented in any standard reference).
 The val_res_query() function queries the DNS 
 for the data associated with the given domain name, class and type, 
-and returns the result as a DNS-style response. </t>
+and returns the resulting resource record sets in a DNS-style response. </t>
 
-<t> The val_res_query() function returns the actual size of the response packet on
+<t> The val_res_query() function MUST return the actual size of the response packet on
 success and -1 on failure.  On success, the response
 from the DNS MUST be copied to the user-allocated buffer in answer and MUST NOT 
-exceed the buffer size specified in anslen. 
-The caller MUST check that the returned packet size is not greater than the 
-length of the buffer provided in anslen.  If the returned size is greater, 
-the caller SHOULD allocate a larger buffer in answer and call val_res_query() again. </t> 
+exceed the buffer size specified in anslen. </t> 
 
 <t> The DNSSEC validation status is returned in the val_status parameter.
 When evaluating the validity of a DNS response, applications SHOULD use the functions described 
 in <xref target="val-istrusted"/>
-instead of directly inspecting the DNSSEC validation status code returned in val_status.
-The validation status MUST correspond to the combined DNSSEC validation status 
-code for all resource record sets returned in the response, and is determined by the following rules. </t>
-<t/>
+instead of directly inspecting the DNSSEC validation status code returned in val_status. </t>
+
+<t> The status code returned in val_status is determined by the following rules. </t> 
     <list style="symbols">
     <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
 returned if all resource record sets returned in the answer
@@ -379,14 +371,12 @@ void val_free_answer_chain(struct val_answer_chain *answers);
     
 <t> The val_get_rrset() function queries the DNS for the data associated with
 the given domain name, class and type. The flags argument is currently unused
-and SHOULD be set to 0. </t> 
+and SHOULD be set to 0. val_get_rrset() MUST return 0 on success and an error code from
+<xref target="val-return-values"/> on failure. </t>
 
-<t> val_get_rrset() returns 0 on success and an error code from
-<xref target="val-return-values"/> on failure. 
-val_get_rrset() returns its results in the val_answer_chain structure. Memory for
-the val_answer_chain structure MUST be
-allocated internally by the function. The user MUST release
-this memory after use using the val_free_answer_chain() function. </t>
+<t> val_get_rrset() MUST return its results in the val_answer_chain structure after 
+allocating sufficient memory for this structure. This memory MUST be released when 
+applications invoke the val_free_answer_chain() function. </t>
  
 <t> The val_answer_chain structure is defined below. </t>
       <figure>
@@ -409,21 +399,22 @@ struct rr_rec {
       </figure>
 
 <t> val_ans_name MUST be set to the DNS name of the actual resource record set returned. 
-This value may differ from the value passed as the argument to val_get_rrset() if the resource
+This value may differ from the name argument in val_get_rrset() if the resource
 record is returned after following a CNAME (<xref target="refs.RFC1034"/>) or DNAME 
 (<xref target="refs.RFC2672"/>) alias.  val_ans_class and val_ans_type
 MUST be set to the actual class and type for the returned resource record. These values
-may differ from the values passed as arguments to val_get_rrset() if the query type or
-class has the value 255 (ANY). The resource record sets are returned in val_ans as a linked list of 
+may differ from the class and type arguments in val_get_rrset() if the query type or
+class has the value 255 (ANY). The resource record sets MUST be returned in val_ans as a linked list of 
 rr_rec structures, with each element containing the rr_length and rr_data tuple
 for a resource record in the resource record set. val_ans MUST be set to NULL if no
 answer was returned for the given query or if a proof of non-existence was returned.  </t>
 
-<t> The  DNSSEC validation status code is returned in the val_ans_status field.
-This value MUST correspond to the consolidated validation status value 
-for a resource record set, based on the
-individual status codes for all components in an authentication chain.
-Possible codes for val_ans_status are listed in <xref target="val-status"/>.
+<t> The  DNSSEC validation status code  is returned in the val_ans_status field.
+Since validation status codes returned by val_get_rrset() are available per resource 
+record set, the set of possible values for val_ans_status is more granular than that 
+possible for the val_status field in other
+high-level API functions. 
+The list of possible codes for val_ans_status are listed in <xref target="val-status"/>.
 When evaluating the validity of a DNS response,
 applications SHOULD use the functions described in <xref target="val-istrusted"/>
 instead of directly inspecting the DNSSEC validation status code returned in
@@ -467,18 +458,17 @@ logically OR'd to each other. Only one flag is currently defined:
 #define VAL_QUERY_NO_AC_DETAIL 0x00000001
       </artwork>
       <postamble>
-<t> If this flag is specified, details of the authentication chain MUST NOT be returned in 
-the returned results. </t> 
+<t> If this flag is specified, details of the authentication chain MUST NOT be returned in the returned results. </t> 
       </postamble>
 </figure> 
 </t> 
 
-<t> val_resolve_and_check() returns 0 on success and an error code from 
+<t> val_resolve_and_check() MUST return 0 on success and an error code from 
 <xref target="val-return-values"/> on failure.  
-Answers to the query is returned in results, which is a linked list 
-of val_result_chain structures as defined below. The memory for results
-MUST be allocated by val_resolve_and_check().  Applications MUST release the memory
-allocated in results after use using the val_free_result_chain() function.</t>
+Answers to the query MUST be returned in results, which is a linked list 
+of val_result_chain structures, as defined below. val_resolve_and_check() MUST
+allocate sufficient memory to hold the contents of results.
+This memory MUST be released when applications invoke the val_free_result_chain() function.</t> 
 
 <figure>
 <artwork>
@@ -497,29 +487,35 @@ struct val_result_chain {
 </artwork>
 </figure>
 
-<t> Each element in the val_rc_answer linked list MUST point 
-to a distinct resource record set returned in the answer section. Any 
-associated proofs of non-existence SHOULD be returned in in val_rc_proofs. 
-val_rc_proof_count MUST be set to the
-number of proof elements that are available.
+<t> Each element in the val_result_chain linked list MUST point 
+to a distinct resource record set returned in the response. 
+Multiple resource record sets can be returned in a response when the 
+query is for the type code of 255 (ANY) or 46 (RRSIG). 
+The val_rc_next field enables an application to iterate
+through the list of all results returned by the DNSSEC validator.
+For all val_result_chain elements that 
+represent a name alias, val_rc_alias MUST point to the target name referenced by that alias. </t> 
+
+<t>val_rc_answer MUST point to a resource record in the answer portion; all 
+associated proofs of non-existence (either in support of the answer in val_rc_answer 
+or to prove the non-existence of a record) MUST be returned in val_rc_proofs. 
+val_rc_proof_count MUST be set to the number of proof elements that are available.
  val_rc_answer and val_rc_proofs MUST both point to NULL if the 
  VAL_QUERY_NO_AC_DETAIL flag is specified in the flags argument for
- val_resolve_and_check(). </t> 
+ val_resolve_and_check().  </t> 
 
-<t> Multiple resource record sets can be returned in a response when the 
-query is for the type code of 255 (ANY) or 46 (RRSIG). 
-val_rc_rrset MUST be set to NULL if val_rc_answer is NULL.
+<t> 
+val_rc_rrset MUST point to resource record set information corresponding 
+to the current element in the val_result_chain linked list. 
 If val_rc_answer is not NULL, val_rc_rrset MUST point to the 
 val_rrset_rec structure within the first element of the authentication 
-chain pointed to by val_rc_answer. For all val_result_chain elements that 
-represent a name alias, val_rc_alias MUST point to the target name referenced by that alias.
-The val_rc_next field enables an application to iterate 
-through the list of all results returned by the DNSSEC validator.  </t>
+chain pointed to by val_rc_answer. If no answers are returned (or a proof of
+non-existence is returned) in response to the query, val_rc_rrset MUST be set to NULL.
+</t>
 
 <t> The  DNSSEC validation status code is returned in the val_rc_status field.
-This value MUST correspond to the consolidated validation status value 
-for a resource record set, based on the
-individual status codes for all components in an authentication chain.
+Since validation status codes  are available per resource
+record set, it is possible to have a highly granular set of values for val_rc_status. 
 Possible codes for val_rc_status  are listed in <xref target="val-status"/>. 
 When evaluating the validity of a DNS response,
 applications SHOULD use the functions described in <xref target="val-istrusted"/>
@@ -528,7 +524,7 @@ val_rc_status. </t>
 
 <t> The val_authentication_chain structure represents a linked list 
 whose elements comprise the DNSSEC authentication chain 
-for an answer or proof of non-existence resource record set, and is further described below. </t> 
+for an answer or proof of non-existence resource record set. </t> 
 
 <figure>
 <artwork>
@@ -542,27 +538,19 @@ struct val_authentication_chain {
 
 <t> The DNSSEC validation status for the specified resource record set MUST be set
 in the val_ac_status field. Possible codes for 
-this field are defined in <xref target="val-astatus"/>. The p_ac_status() function
-defined in <xref target="val-astatus"/> enables an application to translate this code 
-into a more user-friendly string representation.
-The val_ac_trust field points to the next element in the authentication chain
+this field are defined in <xref target="val-astatus"/>. 
+The val_ac_trust field MUST point to the next element in the authentication chain
 proceeding from the signed record towards a DNSSEC trust anchor.
 For an element with type DNSKEY, the next element MUST correspond to a DS record 
 in the parent zone and for a DS record the next element MUST correspond to the 
-DNSKEY in the same zone as the DS record. The value of val_ac_trust MUST be set to NULL for 
-any of the following conditions: </t>
+DNSKEY in the same zone as the DS record. The value of val_ac_trust MUST be set to NULL 
+if either the current element in the linked list points to a valid DNSSEC trust anchor
+or if an error condition is encountered.
+The validation status code stored in the val_ac_status field can be 
+used to differentiate between different error conditions.  </t>
 
-<t> <list style="symbols">
-<t> the current element in the linked list points to a valid DNSSEC trust anchor </t> 
-<t> an error condition is encountered </t>
-<t> no authentication chain details are being returned. </t>
-</list></t>
-
-<t> The validation status code stored in the val_ac_status field can be 
-used to differentiate between error conditions and the valid trust anchor condition.  </t>
-
-<t> The val_ac_rrset field in the val_authentication_chain structure points to 
-a val_rrset_rec structure, which holds the actual resource record set fields 
+<t> The val_ac_rrset field in the val_authentication_chain structure MUST point to 
+a val_rrset_rec structure holding the actual resource record set fields 
 (<xref target="refs.RFC1034"/>) as described below. </t> 
 
 <figure>
@@ -581,16 +569,17 @@ struct val_rrset_rec {
 </artwork>
 </figure>
 
-<t> The information stored in the val_rrset_rec structure includes 
-data obtained from the DNS response header, including the DNS response error code 
+<t> The information stored in the val_rrset_rec structure 
+MUST be obtained from the actual DNS response and includes 
+the DNS response error code 
 in the val_rrset_rcode field, and the DNS response "envelope"
 comprising of the name, class, type and time-to-live tuple in the 
 val_rrset_name, val_rrset_class, val_rrset_type and val_rrset_ttl 
-fields respectively. 
-The name server from where this resource record set has been 
-received is stored in the sockaddr data structure (<xref target="refs.IEEE.1003.1-2004"/>) 
+fields respectively. Additionally, the name server from where 
+this resource record set was received MUST be stored in the 
+sockaddr data structure (<xref target="refs.IEEE.1003.1-2004"/>) 
 pointed to by the val_rrset_server field.
-The section where the resource record set appeared in the DNS response is saved in the 
+The section where the resource record set appeared in the DNS response MUST be saved in the 
 val_rrset_section field within the val_rrset_rec structure, and MUST be set to one
 of the following values: </t> 
 
@@ -607,7 +596,7 @@ of the following values: </t>
 
 <t> 
 The data returned for the resource record set MUST be queued to val_rrset_data.  Any associated
-RRSIGs MUST be queued to val_rrset_sig.  Both of these variables point to
+RRSIGs MUST be queued to val_rrset_sig.  Both of these variables MUST point to
 lists of struct val_rr_rec elements, which specify the resource record data and the
 DNSSEC validation status for each resource-record within the resource record set as defined below. </t>
 
@@ -616,8 +605,8 @@ DNSSEC validation status for each resource-record within the resource record set
 struct val_rr_rec {
     size_t               rr_rdata_length; 
     u_char              *rr_rdata;  
-    struct val_rr_rec   *rr_next;
     val_astatus_t        rr_status;      
+    struct val_rr_rec   *rr_next;
 };
 </artwork>
 </figure>
@@ -635,12 +624,11 @@ val_astatus_t type and is further described in <xref target="val-astatus"/>.  </
     <section title="Authentication Chain Status Codes and p_ac_status()" anchor="val-astatus">
 
         <t> For each authentication chain element in the val_authentication_chain structure, the 
-        val_ac_status field can contain one of the following codes:
+        val_ac_status field MUST contain one of the following codes:
         <list style="hanging">
 <t> </t>
 <t hangText="VAL_AC_UNSET:">
-DNSSEC validation for the given resource record set could not be attempted 
-for any reason.  </t>
+DNSSEC validation for the given resource record set was not attempted. </t>
 <t> </t>
 <t hangText="VAL_AC_IGNORE_VALIDATION:">
 DNSSEC validation for the given resource record set was ignored on
@@ -696,7 +684,7 @@ At least one RRSIG covering the resource record set verified successfully.  </t>
       </list> </t>
 
       <t>  For each signature val_rr_rec member within an authentication chain 
-pointed to by val_ac_rrset, the DNSSEC validation status stored in the variable rr_status can 
+pointed to by val_ac_rrset, the DNSSEC validation status stored in the variable rr_status MUST 
 be set to one of the following codes: 
         <list style="hanging">
 <t> </t>
@@ -750,7 +738,7 @@ could not be found in the zone DNSKEY resource record set. </t>
 
       <t>  For each val_rr_rec member of type DNSKEY (or DS where indicated) 
 within an authentication chain structure pointed to by val_ac_rrset, the DNSSEC validation status 
-stored in the variable rr_status can be set to one of the following codes: 
+stored in the variable rr_status MUST be set to one of the following codes: 
         <list style="hanging">
 <t> </t>
 <t hangText="VAL_AC_UNSET:">
@@ -783,8 +771,8 @@ The given DNSKEY was invalid.  </t>
       </list> </t>
 
     <t> The numerical values for the codes listed above are implementation-specific. 
-    The DNSSEC validation status code stored in struct val_authentication_chain  
-can be converted to a string representation using the p_ac_status() function. </t>
+    The p_ac_status() function is used to convert the DNSSEC validation status code stored 
+in struct val_authentication_chain to a string representation. </t>
 <figure>
 <artwork>
     #include &lt;validator/validator.h&gt;
@@ -793,8 +781,8 @@ can be converted to a string representation using the p_ac_status() function. </
 </artwork>
 </figure>
 <postamble>
-The value returned SHOULD be the string conversion for the corresponding val_astatus_t identifier. For example, 
-p_ac_status(VAL_AC_VERIFIED) SHOULD return "VAL_AC_VERIFIED". 
+The value returned MAY be the string conversion for the corresponding val_astatus_t identifier. For example, 
+the return value from p_ac_status(VAL_AC_VERIFIED) MAY be "VAL_AC_VERIFIED". 
 </postamble> 
     </section>
 
@@ -806,21 +794,22 @@ p_ac_status(VAL_AC_VERIFIED) SHOULD return "VAL_AC_VERIFIED".
 <t> DNSSEC validator policy can be used to influence the DNSSEC validation outcome. 
 Examples of DNSSEC validator policy include DNSSEC trust anchors for 
 different zones and acceptable clock-skew values for checking 
-inception and expiration times on signatures from different zones.
-DNSSEC validator policy MAY be configured differently for different 
-applications and operating scenarios. </t> 
+inception and expiration times on signatures from different zones. </t>
 
-<t> DNSSEC validator policy is stored in the local 
-system configuration (for example, the configuration file /etc/dnsval.conf).  
+<t> DNSSEC validator policy is stored in the local system configuration 
+(for example, the configuration file /etc/dnsval.conf) and could be 
+configured differently for different applications and operating scenarios.  
 Policies are identified by simple text strings called labels, which MUST be 
 unique within the system configuration. As an example, "browser" could be used 
 as the label that defines the DNSSEC validator policy for all web-browsers in a
-system. The label for the validation policy that is to be used for an
-application MAY be supplied during application-startup through the environment variable, VAL_CONTEXT_LABEL.</t> 
+system. The manner of supplying the validation policy label to an 
+application is implementation-specific, but the label MAY also 
+be supplied during application-startup through the environment variable, 
+VAL_CONTEXT_LABEL.</t> 
 
-
-<t> DNSSEC validator policy definitions in the system configuration are implementation-specific.
-A possible definition is described in <xref target="pol-config"/>.  </t>
+<t> All DNSSEC validator policy definitions in the system configuration are 
+implementation-specific.  A possible definition is described in 
+<xref target="pol-config"/>.  </t>
 
     <section title="val_create_context, val_free_context">
       <figure>
@@ -834,26 +823,22 @@ void val_free_context( val_context_t *ctx );
       </artwork>
       <postamble>
 <t> An application maintains a run-time handle to its validator policy 
-through the validator context. </t>
-
-<t> val_create_context() creates a new DNSSEC validator context.
+through the validator context. 
+val_create_context() creates a new DNSSEC validator context.
 The scope parameter identifies the DNSSEC validator policy to be used 
 by the application for DNSSEC validation.  
 
 The manner in which the scope argument is used within the system configuration to
 identify specific validator policy settings is implementation-specific.
+However, all libraries that implement this API MUST internally create a 
+DNSSEC validator context with a (system-defined) default DNSSEC validator 
+policy if scope is NULL. </t>
 
-Any library that implements this API MUST internally create a 
-DNSSEC validator context with a default DNSSEC validator policy if scope is NULL. </t>
-
-<t>The val_create_context() function returns 0 on success, 
+<t>The val_create_context() function MUST return 0 on success, 
 and an error code from <xref target="val-return-values"/> on failure. 
-The newly created DNSSEC validator context is returned in the newctx field.
-A NULL DNSSEC validator context MUST be returned if an error is encountered.  
-The memory allocated for the DNSSEC validator context 
-after a successful call to val_create_context() 
-MUST be released after use by the application using the val_free_context() function. </t> 
-
+Memory for the newly created DNSSEC validator context MUST be returned in the 
+newctx field. This memory MUST be released when applications invoke the
+val_free_context() function. newctx MUST be set to NULL if an error is encountered.</t>
     </postamble>
     </figure>
     </section>
@@ -876,7 +861,8 @@ validator policy definition to an existing DNSSEC validator context.
 The newly added policy MUST only be associated with the current DNSSEC 
 validator context and MUST NOT be stored persistently in the system 
 configuration. The policy_definition field points to a policy definition 
-structure and is implementation-specific. A timeout MAY be attached to 
+structure; its internal representation is implementation-specific. 
+A timeout value MAY be attached to 
 the DNSSEC validator policy as part of the policy_definition structure
 such that after the timeout interval, the effects of the newly added DNSSEC 
 validator policy is ignored. A handle to the newly 
@@ -888,9 +874,10 @@ applications MUST NOT modify its contents. </t>
 policy before the expiry of its timeout interval using the 
 val_remove_valpolicy() function. The DNSSEC validator policy 
 that is to be removed from the DNSSEC validator context is identified by its
-handle, pol. </t>
+handle, pol. Memory allocated for the val_policy_entry_t structure MUST be 
+released when an application invokes the val_remove_valpolicy() function.</t>
 
-<t> The above functions return 0 on success and an error code from 
+<t> The above functions MUST return 0 on success and an error code from 
 <xref target="val-return-values"/> on failure.  </t>
     </postamble>
     </figure>
@@ -901,9 +888,9 @@ handle, pol. </t>
   <section title="Function Return Codes and p_val_err()" anchor="val-return-values">
     <!--            ####################### -->
 
-<t> The following codes can be returned by functions defined in the low-level API, 
-DNSSEC validator-context API, and by the  val_get_rrset() function defined
-in the high-level API. Other high-level API functions mirror existing 
+<t> The return values from functions defined in the low-level API, 
+the DNSSEC validator-context API, and the val_get_rrset() function MUST be 
+from the list below. Other high-level API functions mirror existing 
 legacy DNS functions, so the return codes from these functions are
 identical to their predecessors. The numerical values for the return codes listed below 
 are implementation-specific.</t>
@@ -936,8 +923,8 @@ system configuration.  </t>
 The DNSSEC validator policy identifier being referenced was invalid. </t>
         </list></t>
 
-<t> The error codes listed above can be converted to a string representation
-using the p_val_err() function. </t> 
+<t> The p_val_err() function is used to convert an error code from the list above 
+to a string representation. </t> 
 <figure>
     <artwork>
 #include &lt;validator/validator.h&gt;
@@ -945,9 +932,9 @@ using the p_val_err() function. </t>
 const char *p_val_err(int err);
     </artwork>
     <postamble>
-<t> The returned value from p_val_err() SHOULD be the string 
+<t> The returned value from p_val_err() MAY be the string 
 conversion for the corresponding error code identifier. For example, 
-p_val_err(VAL_NO_ERROR) SHOULD return "VAL_NO_ERROR". </t>
+the return value from p_val_err(VAL_NO_ERROR) MAY be "VAL_NO_ERROR". </t>
     </postamble>
 </figure>
 
@@ -958,14 +945,14 @@ p_val_err(VAL_NO_ERROR) SHOULD return "VAL_NO_ERROR". </t>
 
     <t> The result of DNSSEC validation for a resource record set, based on the individual 
 status code of each element in an authentication chain, is returned in a variable of 
-type val_status_t. val_status_t can contain one of possible codes
+type val_status_t. val_status_t can contain one of the possible codes
 listed in <xref target="val-status"/>. 
 The functions provided in <xref target="val-istrusted"/> simplify the
 task of evaluating validity of an answer by wrapping around the different 
 status codes possible for each type of answer.</t>
 
     <section title="DNSSEC Validation Status Codes and p_val_status()" anchor="val-status">
-        <t> A variable of type val_status_t can contain one of the following codes (the numerical values
+        <t> A variable of type val_status_t MUST contain one of the following codes (the numerical values
             for these codes are implementation-specific): </t>
 
         <t> <list style="hanging">
@@ -1043,8 +1030,9 @@ Returned if a DNS error was encountered during the query resolution process.  </
 The authentication chain does not lead up to a configured DNSSEC trust anchor. </t> 
         </list> </t>
 
-    <t> The DNSSEC validation status code stored in a variable of type 
- val_status_t can be converted to a string representation using the p_val_status() function.  </t>
+    <t> The p_val_status() function is used to convert the DNSSEC validation 
+ status code stored in a variable of type val_status_t to a string 
+ representation.  </t>
 <figure>
 <artwork>
 #include &lt;validator/validator.h&gt;
@@ -1052,9 +1040,9 @@ The authentication chain does not lead up to a configured DNSSEC trust anchor. <
 const char *p_val_status(val_status_t status);
 </artwork>
 <postamble>
-<t> The value returned SHOULD be the string conversion
-for the corresponding val_status_t identifier. For example, p_val_status(VAL_SUCCESS) SHOULD return
-"VAL_SUCCESS". </t> 
+<t> The value returned MAY be the string conversion
+for the corresponding val_status_t identifier. For example,
+the return value from p_val_status(VAL_SUCCESS) MAY be "VAL_SUCCESS". </t> 
 </postamble>
 </figure>
 
@@ -1073,8 +1061,8 @@ int val_does_not_exist(val_status_t status);
       </artwork>
       <postamble>
 
-    <t> Most applications will be interested in a single value
- that represents the validity of DNS data. In some instances an
+    <t> Most applications will only be interested in a single value
+ that represents the validity of DNS data. In some instances, an
 application may also need to distinguish between cases where the 
 answer was cryptographically validated and cases where the answer
 was locally trusted.  The val_istrusted() and val_isvalidated()
@@ -1100,7 +1088,7 @@ and MUST be equal to 0 for other status codes.  </t>
 allows an application to determine from the DNSSEC validation status value if the answer was
 provably non-existent. In combination with the val_istrusted() and val_isvalidated() functions,
 it can give an indication about the manner in which validity was determined (cryptographically 
-verified or locally trusted by the DNSSEC validator).
+verified or trusted through local DNSSEC validator policy).
 The return value from val_does_not_exist() MUST be greater than 0 if status is one of VAL_NONEXISTENT_TYPE,
 VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME_NOCHAIN, or VAL_NONEXISTENT_TYPE_NOCHAIN and
 MUST be equal to 0 for other status codes. </t>
@@ -1115,9 +1103,9 @@ MUST be equal to 0 for other status codes. </t>
 
   <t> Certain applications are known to cache DNS data for an application-specific 
  length of time, independent of the TTL limits placed on the relevant DNS resource records. 
- Since DNS data is ephemeral by design, any caching performed independently by an 
- application could violate the data publisher's intent of wanting to modify
- the DNS data within the duration that the application has this data cached. An extension to this
+ Since DNS data is ephemeral by design, any caching performed independently by 
+ applications may conflict with zone publishers' needs to change such DNS records frequently. 
+ An extension to this
  problem is the scenario where an application caches DNS data for an application-specific length of time
  during which period a zone operator may revoke a DNSSEC key, thus rendering that  
  particular cached data as untrustworthy. </t>
@@ -1127,7 +1115,8 @@ MUST be equal to 0 for other status codes. </t>
  is to delegate the function of caching DNS data to a stub resolver or 
  a local recursive resolver library, and to only use DNS API functions to request answers 
  whenever necessary. The stub or recursive resolver libraries should, in turn, determine 
- if a cached answer is available or if a fresh DNS query is to be issued. </t> 
+ from the resource record TTLs if a cached answer is available or if a fresh DNS query 
+ needs to be issued. </t> 
 
   </section>
 
@@ -1144,7 +1133,7 @@ If this information is modified during a DHCP lookup, for example, the client
 system should ensure that the DHCP server is a trusted source, and that the
 communication path between the DHCP server and the client system is secured. 
  If these conditions are not satisfied and if the application chooses to trust
-a locally available answer, an attaker may be able to poison the system
+a locally available answer, an attacker may be able to poison the system
 configuration and cause an application to use invalid answers. If applications are
 to treat out-of-band answers as trusted, this choice SHOULD be made explicit 
 through a validator policy configuration knob.</t>
@@ -1158,16 +1147,16 @@ able to detect the integrity of DNS data for such zones. </t>
 the current Internet environment where not all DNS name servers are
 expected to be DNSSEC-aware.  If the name server pointed to by the system configuration 
 is not DNSSEC-aware (i.e. it does not return DNSSEC records), DNSSEC validation will not 
-be performed. </t>
+work as expected. </t>
 
 <t> The DNSSEC validator configuration information needs to be protected 
 so that it cannot be overwritten by unauthorized users or processes. 
 The system administrator must ensure that the list of DNSSEC trust anchors is kept
 accurate and up-to-date.  If the DNSSEC trust anchors are outdated (in the event of key-rollovers),
-the DNSSEC validator may either not be able to perform DNSSEC validation or may 
+the DNSSEC validator may either falsely mark zones as bogus or may 
 operate with the false belief of having validated a response when 
 the response should really have been flagged as bogus.  Any subversion of the DNSSEC policy configuration
-(including definition of new trust anchors) can similarly completely undermine the value of DNSSEC.
+(including definition of new trust anchors) can similarly completely undermine the value provided by DNSSEC.
 </t>
   </section> <!-- Security Considerations -->
 
@@ -1267,47 +1256,46 @@ this draft draws on the results from that effort.</t>
         <section ...>
         <section ...>
         -->
-        <section title="DNSSEC Validator Policy" anchor="pol-config">
+        <section title="Possible DNSSEC Validator Policy Definition" anchor="pol-config">
 <t> DNSSEC validator policy definitions in the system
 configuration are implementation-specific. The
-system MAY be implemented using
-hierarchical representation for the scope
+system may be implemented in the following manner. </t>
+
+<t> A hierarchical representation can be used for the scope
 parameter in val_create_context(), with each element in the hierarchy identifying 
 a different DNSSEC validator policy label in the system configuration. 
-Each policy label within the scope parameter is separated by the ':' character. 
-The DNSSEC validator creates an effective DNSSEC validator policy for the current
-DNSSEC validator context by cumulatively applying the policies for each label
+Each policy label within the scope parameter can be separated by the ':' character; 
+the DNSSEC validator can then create an effective DNSSEC validator policy for the current
+DNSSEC validator context by cumulatively applying the policies corresponding to each label
 specified in the scope parameter. </t> 
 
-<t> A label value of ":" for a DNSSEC validator policy in the system
-configuration identifies the default DNSSEC validator policy.
-The ":" DNSSEC policy label, as with other DNSSEC policy labels in the system configuration, 
-MUST be unique within the system configuration.
-Furthermore, the ':' character MUST only be present in the default DNSSEC validator policy label.
-The system configuration MUST flag an error if some other DNSSEC policy label contains the 
-':' character. </t> 
+<t> Since the ':' character functions as a label separator, the system configuration must 
+flag an error if any DNSSEC policy label in the system configuration contains the ':' character. An 
+exception to this rule could be the label with value of ":", which could be used to 
+identify the default DNSSEC validator policy for the system.
+The ":" DNSSEC policy label, as with other DNSSEC policy labels,
+must be unique within the system configuration. </t> 
 
 <t> When adopting this approach for constructing a validator
 context from a given policy scope,
 the DNSSEC validator policy identified by the ":" label 
-MUST always be applied first. For example, for the DNSSEC validator policy scope 
-"mozilla:browser", the effective DNSSEC validator policy for a DNSSEC validator context is 
+should always be applied first. For example, for the DNSSEC validator policy scope 
+"mozilla:browser", the effective DNSSEC validator policy for a DNSSEC validator context should be 
 computed by applying policies for the ":", "browser" and "mozilla" policies, in that order. </t>
 
-<t> A DNSSEC policy attribute may be defined as one of the DNSSEC validator's configurable p
-arameters that, when combined with other policy attributes, forms the validator policy.
-The following validator policy attributes MAY be defined: </t> 
+<t> Additional attributes for the DNSSEC validator policy may be specified as indicated below. </t>
 
         <section title="Zone-Specific Validator Policy Settings">
-<t> Zone-specific validator policy settings MAY have the following structure.  </t> 
+<t> Zone-specific validator policy settings may have the following structure.  </t> 
 <t> &lt;label&gt; &lt;attribute&gt; &lt;additional-data&gt;; </t>
+
 <t> Sample values for &lt;attribute&gt; are "trust-anchor",
 "zone-security-expectation", "provably-insecure-status",
 "clock-skew".  The value for &lt;additional-data&gt; 
-will depend on the type of attribute specified.  </t>
+would depend on the type of attribute specified.  </t>
 
 <t><list style="symbols">
-<t>For the "trust-anchor" attribute additional-data SHOULD be a sequence of 
+<t>For the "trust-anchor" attribute additional-data could be a sequence of 
 ordered pairs, each consisting of the zone name and a quoted
 string containing the resource record data for the 
 trust anchor's DNSKEY. An example is given below. 
@@ -1334,8 +1322,8 @@ trust anchor's DNSKEY. An example is given below.
 
 <t><list style="symbols">
 <t>For the "zone-security-expectation" attribute additional-data 
-SHOULD be a sequence of  &lt;domain name,value&gt; tuples representing the 
-security expectation for names in that domain, where value can be one of the following:
+could be a sequence of  &lt;domain name,value&gt; tuples representing the 
+security expectation for names in that domain, where value could be one of the following:
         <list style="hanging">
             <t></t>
             <t hangText="ignore:">
@@ -1349,11 +1337,11 @@ security expectation for names in that domain, where value can be one of the fol
 This zone-security-expectation DNSSEC validator policy construct makes it possible to define 
 various islands of trust for DNSSEC-enabled zones and to 
 ignore or trust data from selected zones. The default zone
-security expectation for a domain SHOULD be "validate".
+security expectation for a domain should be "validate".
 In the following example, for DNSSEC validator contexts created with a DNSSEC validator policy label of "browser",
-the DNSSEC validation is only performed for names 
-under the example.com domain; names under the somebogusdomain.org domain are always
-considered to be untrusted and DNSSEC validation for all other domain names is ignored. 
+DNSSEC validation would only be performed for names 
+under the example.com domain; names under the somebogusdomain.org domain would always
+considered to be untrusted and DNSSEC validation for all other domain names would be ignored. 
     <figure>
     <artwork>
     browser zone-security-expectation           
@@ -1370,9 +1358,9 @@ considered to be untrusted and DNSSEC validation for all other domain names is i
 
 <t><list style="symbols">
 <t>
-For the "provably-insecure-status" attribute additional-data SHOULD be a sequence 
+For the "provably-insecure-status" attribute additional-data could be a sequence 
 of  &lt;domain name,value&gt; tuples representing the validity of the 
-provably insecure condition, where value SHOULD be one of the following: 
+provably insecure condition, where value could be one of the following: 
         <list style="hanging">
             <t></t>
             <t hangText="trusted:">
@@ -1381,10 +1369,10 @@ provably insecure condition, where value SHOULD be one of the following:
             Treat the provably insecure condition as invalid.  </t>
             <t></t>
         </list> 
-The default value for the provably insecure status for a domain SHOULD be "trusted".
+The default value for the provably insecure status for a domain should be "trusted".
 In the following example, for DNSSEC validator contexts created with the default label, 
-the provably insecure condition is treated as trustworthy for all domains except the net domain, 
-where this condition is treated as invalid.
+the provably insecure condition would be treated as trustworthy for all domains except the net domain, 
+where this condition would be treated as invalid.
     <figure>
     <artwork>
     : provably-insecure-status
@@ -1400,13 +1388,13 @@ where this condition is treated as invalid.
 
 <t><list style="symbols">
 <t>
-For the "clock-skew" attribute additional-data SHOULD be a sequence of the
+For the "clock-skew" attribute additional-data could be a sequence of the
 domain name and the number of seconds of clock-skew acceptable for signatures
-on names in that domain. A clock skew value of -1 SHOULD have the effect of turning off
+on names in that domain. A clock skew value of -1 could have the effect of turning off
 inception and expiration time checks on signatures from that domain. The default clock 
-skew SHOULD be 0.
+skew should be 0.
 In the following example, for DNSSEC validator contexts created with the "mta" label, signature 
-inception and expiration checks are disabled for all names under the example.com domain.
+inception and expiration checks would be disabled for all names under the example.com domain.
     <figure>
     <artwork>
     mta clock-skew
@@ -1425,7 +1413,7 @@ inception and expiration checks are disabled for all names under the example.com
         <section title="Global Validator Policy">
 
         <t> Global policy options guide validator behavior across multiple zones.
-Global policy options for the DNSSEC validator may be defined under a separate 
+Global policy options for the DNSSEC validator could be defined under a separate 
 section within the validator system configuration. Some of the possible configuration
 knobs for global validator policy include the following. </t>
        
