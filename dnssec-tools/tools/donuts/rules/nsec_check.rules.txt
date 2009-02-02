@@ -1,0 +1,114 @@
+# -*- mmm-classes: donuts-perl -*-
+# Copyright 2009 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# This file implements rules to check DNSSEC record validity
+#
+
+name:     DNSSEC_NSEC_MEMORIZE
+internal: yes
+level:    1
+type:     NSEC
+feature:  nsec_check
+<test>
+  push @DONUTS::DNSSEC::NSEC, $record;
+  return;
+</test>
+
+name:     DNSSEC_NSEC3_MEMORIZE
+internal: yes
+level:    1
+type:     NSEC3
+feature:  nsec_check
+<test>
+  push @DONUTS::DNSSEC::NSEC3, $record;
+  return;
+</test>
+
+name:     DNSSEC_NSEC3_CHECK
+level:    3
+feature:  nsec_check
+ruletype: name
+desc:     This rule checks to see if all the NSEC3 records are complete and contain no breaks in record data gaps.
+<test>
+  # only do this check once
+  return if ($current_domain ne $recordname);
+
+  if ($DONUTS::DNSSEC::NSEC3ZONE) {
+    my @sorted = sort { $a->name cmp $b->name } @DONUTS::DNSSEC::NSEC3;
+    my @results;
+
+#    print STDERR Dumper(\@sorted);
+
+    for($i = 0 ; $i < $#sorted; $i++) {
+	if ($sorted[$i]->hnxtname  . ".$current_domain"
+	    ne $sorted[$i+1]->name) {
+	    push @results, "NSEC3 gap: next from " .
+	      $sorted[$i]->name . " was expected to be " .
+		$sorted[$i+1]->name . ".$current_domain but was actually " .
+		  $sorted[$i]->hnxtname;
+	}
+    }
+
+    if ($sorted[$#sorted]->hnxtname . ".$current_domain" ne $sorted[0]->name) {
+	push @results, "NSEC3 loop gap: next from " .
+	  $sorted[$#sorted]->name . " was expected to be " .
+	    $sorted[0]->name . ".$current_domain but was actually " .
+	      $sorted[$#sorted]->hnxtname;
+    }
+    return \@results;
+  }
+  return;
+</test>
+
+name:     DNSSEC_NSEC_CHECK
+level:    3
+feature:  nsec_check
+ruletype: name
+desc:     This rule checks to see if all the NSEC records are complete and contain no breaks in record data gaps.
+<test>
+  # only do this check once
+  return if ($current_domain ne $recordname);
+
+  if (!$DONUTS::DNSSEC::NSEC3ZONE) {
+    my @sorted = sort { 
+        @dname1=Net::DNS::name2labels($a->name());
+        @dname2=Net::DNS::name2labels($b->name());
+
+	my $i = 0;
+	while ($i <= $#dname1 &&
+               $i <= $#dname2 &&
+	       $dname1[$#dname1-$i] eq $dname1[$#dname2-$i]) {
+	    $i++;
+	}
+
+# 	print "comparing: $dname1[$#dname1-$i] cmp $dname2[$#dname2-$i]\n";
+# 	print "       $i: " . join(".",@dname1) . " and " . join(".",@dname2) . "\n";
+	return $dname1[$#dname1-$i] cmp $dname2[$#dname2-$i]
+	
+	#$a->_canonicaldata() cmp $b->_canonicaldata()
+    } @DONUTS::DNSSEC::NSEC;
+    my @results;
+
+
+    for($i = 0 ; $i < $#sorted; $i++) {
+
+#        print "canon: " . $sorted[$i]->name . " \n";
+	if ($sorted[$i]->nxtdname ne $sorted[$i+1]->name) {
+	    push @results, "NSEC gap: next from " .
+	      $sorted[$i]->name . " was expected to be " .
+		$sorted[$i+1]->name  . " but was actually " .
+		  $sorted[$i]->nxtdname;
+	}
+    }
+
+    if ($sorted[$#sorted]->nxtdname ne $sorted[0]->name) {
+	push @results, "NSEC loop gap: next from " .
+	  $sorted[$#sorted]->name . " was expected to be " .
+	    $sorted[0]->name . " but was actually " .
+	      $sorted[$#sorted]->nxtdname;
+    }
+    return \@results;
+  }
+  return;
+</test>
