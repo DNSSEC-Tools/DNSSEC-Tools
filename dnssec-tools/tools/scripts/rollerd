@@ -3648,17 +3648,21 @@ sub rollnow
 		}
 
 		#
-		# Change the zone's phase to rollover phase 2.  This bypasses
-		# the initial rollover waiting period and gets right to the
-		# nitty gritty of doing a rollover.
+		# Change the zone's phase to rollover phase 1 (starting).
+		#
+		# WJH: This used to be set to phase 2 to bypass
+		# the initial rollover waiting period and get right to the
+		# nitty gritty of doing a rollover.  But I changed it back
+		# to phase one, which is especially important for frequent
+		# or sudden rollovers.
 		#
 		if($rolltype eq 'KSK')
 		{
-			kskphase($zone,$rrr,2);
+			kskphase($zone,$rrr,1);
 		}
 		elsif($rolltype eq 'ZSK')
 		{
-			zskphase($zone,$rrr,2);
+			zskphase($zone,$rrr,1);
 		}
 
 		#
