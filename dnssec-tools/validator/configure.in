@@ -469,7 +469,7 @@ AC_TRY_LINK([
 #include <sys/socket.h>
 ],
 [
-int getnameinfo(struct sockaddr *sa, socklen_t len, char *host,
+int getnameinfo(const struct sockaddr *sa, socklen_t len, char *host,
                             socklen_t hostlen, char *serv, socklen_t servlen,
                             int flags);
 int i = 1;
@@ -493,7 +493,7 @@ AC_TRY_LINK([
 #include <sys/socket.h>
 ],
 [
-int getnameinfo(struct sockaddr *sa, socklen_t len, char *host,
+int getnameinfo(const struct sockaddr *sa, socklen_t len, char *host,
                             size_t hostlen, char *serv, size_t servlen,
                             int flags);
 int i = 1;
