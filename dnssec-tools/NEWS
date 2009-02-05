@@ -3,6 +3,42 @@ ChangeLog file for a complete set of changes and their details
 details.
 
 
+1.5
+ - New Features:
+   - zonesigner:   - NSEC3 support: --usensec3     (requires bind 9.6)
+   - donuts:       - NSEC3 support
+   - rollerd: 	   - Added a -pidfile option
+              	   - Added a -singlerun option
+              	   - Added a -foreground option
+   - mapper:  	   - added two new options: --edge-style and --node-style
+   - getds:        - a new tool to calculate a DS record from a key lookup
+   - dnspktflow:   - Added output options for svg, svgz, and postscript
+
+ - Bug fixes
+   - libval:  	   - should compile better on more OSes
+   - rollerd: 	   - Fixed the -zsargs option in most rollerd related tools
+              	   - Other minor fixes
+   - zonesigner:   - fixed serial number auto-incrementing
+            
+
+1.4.1
+ - Security Issue:
+   The DNSSEC-Tools libval validating resolver library does suffer
+   from the same issues that the other DNS resolvers were faced with
+   as described by:    http://www.kb.cert.org/vuls/id/800113
+
+   Although DNSSEC will prevent the issues, it is assumed that not
+   everyone is using libval with only 100% DNSSEC protected zones.
+
+   The supporting tools that do not use libval are not affected by
+   this problem (eg, zonesigner, rollerd, donuts, etc are just fine).
+
+ - NSEC3 value change
+
+   Now that the NSEC3 RFC has been published we've changed the
+   internal numeric RR code to the assigned value.  The NSEC3 code,
+   however, is still considered experimental and not fully tested.
+
 1.4
 
  
