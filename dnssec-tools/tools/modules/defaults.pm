@@ -27,7 +27,7 @@ our @EXPORT = qw(
 
 our $VERSION = "1.0";
 
-my $installdir = "/usr/bin";		# DNSSEC-Tools installation directory.
+my $installdir = getprefixdir() . "/bin"; # DNSSEC-Tools installation directory.
 
 my %defaults =
 (
