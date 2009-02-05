@@ -1,7 +1,13 @@
 /* include/validator-config.h.in.  Generated from configure.in by autoheader.  */
 
-/* Define if gethostbyaddr expects an int intstead of a socklen_t */
-#undef GETHOSTBYADDR_USES_INT
+/* Define if gethostbyaddr expects a char, int, int */
+#undef GETHOSTBYADDR_USES_CHAR_INT
+
+/* Define if gethostbyaddr expects void, int, int */
+#undef GETHOSTBYADDR_USES_VOID_INT
+
+/* Define if gethostbyaddr expects void, socklen_t, int */
+#undef GETHOSTBYADDR_USES_VOID_SOCKLEN
 
 /* Define if getnameinfo expects a size_t and an int */
 #undef GETNAMEINFO_USES_SIZET_AND_INT

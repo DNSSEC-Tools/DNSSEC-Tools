@@ -415,8 +415,9 @@ AC_CHECK_TYPES([int16_t, uint16_t, u_int16_t])
 AC_CHECK_TYPES([int32_t, uint32_t, u_int32_t])
 
 dnl ---------------------------------------------------------------------
-AH_TEMPLATE([GETHOSTBYADDR_USES_INT], [Define if gethostbyaddr expects an int intstead of a socklen_t])
-AC_MSG_CHECKING([whether gethostbyaddr expects socklen_t or an int])
+found_gethostbyaddr=0
+AH_TEMPLATE([GETHOSTBYADDR_USES_CHAR_INT], [Define if gethostbyaddr expects a char, int, int])
+AC_MSG_CHECKING([for the proper gethostbyaddr prototype])
 AC_TRY_LINK([
 #include <netdb.h>
 #include <sys/socket.h>
@@ -430,11 +431,60 @@ int i = 1;
 /* struct hostent *testit = gethostbyaddr("127.0.0.1", int len, int type) */
 ],[
   AC_MSG_RESULT([int])
-  AC_DEFINE(GETHOSTBYADDR_USES_INT, 1)
+  AC_DEFINE(GETHOSTBYADDR_USES_CHAR_INT, 1)
+  found_gethostbyaddr=1
 ], [
   AC_MSG_RESULT([socklen_t])
 ]
 )
+
+if test $found_gethostbyaddr == 0 ; then
+dnl ---------------------------------------------------------------------
+AH_TEMPLATE([GETHOSTBYADDR_USES_VOID_SOCKLEN], [Define if gethostbyaddr expects void, socklen_t, int])
+AC_MSG_CHECKING([for the proper gethostbyaddr prototype])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <sys/socket.h>
+],
+[
+struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type);
+
+int i = 1;
+
+/* struct hostent *testit = gethostbyaddr("127.0.0.1", int len, int type) */
+],[
+  AC_MSG_RESULT([void and socklen_t])
+  AC_DEFINE(GETHOSTBYADDR_USES_VOID_SOCKLEN, 1)
+  found_gethostbyaddr=1
+], [
+  AC_MSG_RESULT([socklen_t])
+]
+)
+fi
+
+if test $found_gethostbyaddr == 0 ; then
+dnl ---------------------------------------------------------------------
+AH_TEMPLATE([GETHOSTBYADDR_USES_VOID_INT], [Define if gethostbyaddr expects void, int, int])
+AC_MSG_CHECKING([for the proper gethostbyaddr prototype])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <sys/socket.h>
+],
+[
+struct hostent *gethostbyaddr(const void *addr, int len, int type);
+
+int i = 1;
+
+/* struct hostent *testit = gethostbyaddr("127.0.0.1", int len, int type) */
+],[
+  AC_MSG_RESULT([void and int])
+  AC_DEFINE(GETHOSTBYADDR_USES_VOID_INT, 1)
+  found_gethostbyaddr=1
+], [
+  AC_MSG_RESULT([socklen_t])
+]
+)
+fi
 
 dnl ---------------------------------------------------------------------
 found_getnameinfo=0
