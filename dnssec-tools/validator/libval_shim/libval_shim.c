@@ -117,10 +117,15 @@ gethostbyname_r(__const char * name,struct hostent * result_buf, char * buf,
 #endif
 
 struct hostent *
-#ifdef GETHOSTBYADDR_USES_INT
+#if    defined(GETHOSTBYADDR_USES_CHAR_INT)
 gethostbyaddr(const char *addr, int len, int type)
-#else
+#elif  defined(GETHOSTBYADDR_USES_VOID_SOCKLEN)
 gethostbyaddr(const void *addr, socklen_t len, int type)
+#elif  defined(GETHOSTBYADDR_USES_VOID_INT)
+gethostbyaddr(const void *addr, int len, int type)
+#else
+/* GUESSSSSS */
+gethostbyaddr(const char *addr, socklen_t len, int type)
 #endif
 {
   if (libval_shim_init())
