@@ -120,7 +120,7 @@ struct hostent *
 #ifdef GETHOSTBYADDR_USES_INT
 gethostbyaddr(const char *addr, int len, int type)
 #else
-gethostbyaddr(__const void *addr, socklen_t len, int type)
+gethostbyaddr(const void *addr, socklen_t len, int type)
 #endif
 {
   if (libval_shim_init())
@@ -182,15 +182,25 @@ getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
   return (EAI_NONAME); 
 }
 
-#ifdef __linux__
+#if    defined(GETNAMEINFO_USES_SOCKLEN_AND_UINT)
 int
-getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, 
+getnameinfo(const struct sockaddr * sa, socklen_t salen, char * host, 
 	    socklen_t hostlen, char *serv, socklen_t servlen, 
 	    unsigned int flags)
-#else
+#elif  defined(GETNAMEINFO_USES_SOCKLEN_AND_INT)
 int
-getnameinfo(__const struct sockaddr * sa, socklen_t salen,char * host, 
+getnameinfo(const struct sockaddr * sa, socklen_t salen, char * host, 
 	    socklen_t hostlen, char *serv, socklen_t servlen, int flags)
+#elif  defined(GETNAMEINFO_USES_SIZET_AND_INT)
+int
+getnameinfo(const struct sockaddr * sa, socklen_t salen, char * host, 
+	    size_t hostlen, char *serv, size_t servlen, int flags)
+#else
+/* GUESSSSSS */
+int
+getnameinfo(const struct sockaddr * sa, socklen_t salen, char * host, 
+	    socklen_t hostlen, char *serv, socklen_t servlen, 
+	    unsigned int flags)
 #endif
 {
   val_status_t          val_status;
