@@ -430,11 +430,11 @@ int i = 1;
 
 /* struct hostent *testit = gethostbyaddr("127.0.0.1", int len, int type) */
 ],[
-  AC_MSG_RESULT([int])
+  AC_MSG_RESULT([char and int])
   AC_DEFINE(GETHOSTBYADDR_USES_CHAR_INT, 1)
   found_gethostbyaddr=1
 ], [
-  AC_MSG_RESULT([socklen_t])
+  AC_MSG_RESULT([unknown])
 ]
 )
 
@@ -457,7 +457,7 @@ int i = 1;
   AC_DEFINE(GETHOSTBYADDR_USES_VOID_SOCKLEN, 1)
   found_gethostbyaddr=1
 ], [
-  AC_MSG_RESULT([socklen_t])
+  AC_MSG_RESULT([unknown])
 ]
 )
 fi
@@ -481,7 +481,7 @@ int i = 1;
   AC_DEFINE(GETHOSTBYADDR_USES_VOID_INT, 1)
   found_gethostbyaddr=1
 ], [
-  AC_MSG_RESULT([socklen_t])
+  AC_MSG_RESULT([unknown])
 ]
 )
 fi
