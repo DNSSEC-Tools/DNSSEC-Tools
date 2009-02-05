@@ -34,6 +34,7 @@ our @EXPORT = qw(
 			getconfdir
 			getconffile
 			getlocalstatedir
+			makelocalstatedir
 			getprefixdir
 			parseconfig
 
@@ -292,6 +293,25 @@ sub getlocalstatedir
 
 #######################################################################
 #
+# Routine:	makelocalstatedir()
+#
+# Purpose:	Return the local state directory name.
+#               Create it and the path if it doesn't exist
+#               and we have the File::Path module available
+#
+sub makelocalstatedir
+{
+        my $statedir = getlocalstatedir();
+	if (! -d $statedir &&
+	    eval { require File::Path; }) {
+		import File::Path;
+		mkpath($statedir);
+	}
+	return($statedir);
+}
+
+#######################################################################
+#
 # Routine:	erraction()
 #
 # Purpose:	Set the action to take on error.
@@ -456,6 +476,12 @@ This routine returns the name of the DNSSEC-Tools prefix directory.
 =item I<getlocalstatedir()>
 
 This routine returns the name of the local state directory.
+
+=item I<getlocalstatedir()>
+
+This routine returns the name of the local state directory just like
+I<getlocalstatedir()> but also creates the path if it doesn't exist and if
+the I<File::Path> module is loadable (should be true on all modern perl).
 
 =item I<erraction(error_action)>
 
