@@ -477,6 +477,7 @@ int i = 1;
 ],[
   AC_MSG_RESULT([socklen_t and int])
   AC_DEFINE(GETNAMEINFO_USES_SOCKLEN_AND_INT, 1)
+  found_getnameinfo=1
 ], [
   AC_MSG_RESULT([unknown])
 ]
@@ -501,6 +502,7 @@ int i = 1;
 ],[
   AC_MSG_RESULT([size_t and int])
   AC_DEFINE(GETNAMEINFO_USES_SIZET_AND_INT, 1)
+  found_getnameinfo=1
 ], [
   AC_MSG_RESULT([unknown])
 ]
