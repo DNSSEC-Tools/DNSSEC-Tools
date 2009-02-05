@@ -438,7 +438,7 @@ int i = 1;
 ]
 )
 
-if test $found_gethostbyaddr == 0 ; then
+if test $found_gethostbyaddr = 0 ; then
 dnl ---------------------------------------------------------------------
 AH_TEMPLATE([GETHOSTBYADDR_USES_VOID_SOCKLEN], [Define if gethostbyaddr expects void, socklen_t, int])
 AC_MSG_CHECKING([for the proper gethostbyaddr prototype])
@@ -462,7 +462,7 @@ int i = 1;
 )
 fi
 
-if test $found_gethostbyaddr == 0 ; then
+if test $found_gethostbyaddr = 0 ; then
 dnl ---------------------------------------------------------------------
 AH_TEMPLATE([GETHOSTBYADDR_USES_VOID_INT], [Define if gethostbyaddr expects void, int, int])
 AC_MSG_CHECKING([for the proper gethostbyaddr prototype])
@@ -510,7 +510,7 @@ int i = 1;
 ]
 )
 
-if test $found_getnameinfo == 0 ; then
+if test $found_getnameinfo = 0 ; then
 
 AH_TEMPLATE([GETNAMEINFO_USES_SOCKLEN_AND_INT], [Define if getnameinfo expects a socklen_t and an int])
 AC_MSG_CHECKING([for correct getnameinfo prototype])
@@ -535,7 +535,7 @@ int i = 1;
 
 fi
 
-if test $found_getnameinfo == 0 ; then
+if test $found_getnameinfo = 0 ; then
 
 AH_TEMPLATE([GETNAMEINFO_USES_SIZET_AND_INT], [Define if getnameinfo expects a size_t and an int])
 AC_MSG_CHECKING([for correct getnameinfo prototype])
