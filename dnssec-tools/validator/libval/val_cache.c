@@ -577,18 +577,20 @@ get_nslist_from_cache(val_context_t *ctx,
 
     tmp_zonecut_n = NULL;
     prev = NULL;
-    for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
+    nsrrset = unchecked_ns_info;
+    while (nsrrset) {
 
         if (tv.tv_sec >= nsrrset->rrs_ttl_x) {
             /* TTL expiry reached */
-            struct rrset_rec *temp;
-            if (prev) {
-                prev->rrs_next = nsrrset->rrs_next;
-            } 
-            temp = nsrrset;
+            struct rrset_rec *temp = nsrrset;
             nsrrset = temp->rrs_next;
             temp->rrs_next = NULL;
             res_sq_free_rrset_recs(&temp);
+            if (prev) {
+                prev->rrs_next = nsrrset;
+            } else {
+                unchecked_ns_info = nsrrset;
+            } 
             continue;
         }
 
@@ -611,18 +613,17 @@ get_nslist_from_cache(val_context_t *ctx,
                      * If type is DS, you don't want an exact match
                      * since that will lead you to the child zone
                      */
-                    if ((qtype == ns_t_ds) && (p == qname_n)) {
-                        continue;
+                    if ((qtype != ns_t_ds) || (p != qname_n)) {
+                        /*
+                         * New name is longer than old name 
+                         */
+                        name_n = tname_n;
+                        tmp_zonecut_n = nsrrset->rrs_zonecut_n;
                     }
-
-                    /*
-                     * New name is longer than old name 
-                     */
-                    name_n = tname_n;
-                    tmp_zonecut_n = nsrrset->rrs_zonecut_n;
                 }
             }
         }
+        nsrrset = nsrrset->rrs_next;
     }
 
     if (ref_ns_list && tmp_zonecut_n) {
