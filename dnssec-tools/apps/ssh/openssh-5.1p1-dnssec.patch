@@ -441,26 +441,41 @@ diff -c -r openssh-5.1p1.orig/sshconnect.c openssh-5.1p1/sshconnect.c
   /*
    * Connect to the given ssh server using a proxy command.
 ***************
-*** 206,211 ****
---- 214,220 ----
-  	hints.ai_socktype = ai->ai_socktype;
-  	hints.ai_protocol = ai->ai_protocol;
-  	hints.ai_flags = AI_PASSIVE;
-+ #ifndef LOCAL_DNSSEC_VALIDATION
-  	gaierr = getaddrinfo(options.bind_address, NULL, &hints, &res);
-  	if (gaierr) {
-  		error("getaddrinfo: %s: %s", options.bind_address,
+*** 326,332 ****
+  	int on = 1;
+  	int sock = -1, attempt;
+  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+! 	struct addrinfo hints, *ai, *aitop;
+  
+  	debug2("ssh_connect: needpriv %d", needpriv);
+  
+--- 334,344 ----
+  	int on = 1;
+  	int sock = -1, attempt;
+  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+! 	struct addrinfo hints;
+! 	struct addrinfo *ai, *aitop = NULL;
+! #ifdef LOCAL_DNSSEC_VALIDATION
+! 	val_status_t val_status;
+! #endif
+  
+  	debug2("ssh_connect: needpriv %d", needpriv);
+  
 ***************
-*** 213,218 ****
---- 222,264 ----
-  		close(sock);
-  		return -1;
-  	}
+*** 340,348 ****
+--- 352,398 ----
+  	hints.ai_family = family;
+  	hints.ai_socktype = SOCK_STREAM;
+  	snprintf(strport, sizeof strport, "%u", port);
++ #ifndef LOCAL_DNSSEC_VALIDATION
+  	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0)
+  		fatal("%s: Could not resolve hostname %.100s: %s", __progname,
+  		    host, ssh_gai_strerror(gaierr));
 + #else
-+ 	gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
-+ 							 &val_status);
-+  	if (gaierr)
-+             fatal("%s: %.100s: %s", __progname, host, gai_strerror(gaierr));
++ 	if ((gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
++ 							 &val_status)) != 0) 
++ 		fatal("%s: Could not resolve hostname %.100s: %s", __progname,
++ 		    host, ssh_gai_strerror(gaierr));
 +  	debug("ValStatus: %s", p_val_status(val_status));
 +  	if (!val_istrusted(val_status)) {
 +             error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -478,8 +493,8 @@ diff -c -r openssh-5.1p1.orig/sshconnect.c openssh-5.1p1/sshconnect.c
 +                     if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
 +                         continue;
 +                     if (getnameinfo(ai->ai_addr, ai->ai_addrlen,
-+  				    ntop, sizeof(ntop), strport, sizeof(strport),
-+  				    NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
++                             ntop, sizeof(ntop), strport, sizeof(strport),
++                             NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
 +                         error("ssh_connect: getnameinfo failed");
 +                         continue;
 +                     }
@@ -488,35 +503,14 @@ diff -c -r openssh-5.1p1.orig/sshconnect.c openssh-5.1p1/sshconnect.c
 +                 snprintf(msg,sizeof(msg),
 +                          "Are you sure you want to attempt to connect "
 +                          "(yes/no)? ");
-+                 if (!confirm(msg))
++                 if (!confirm(msg)) 
 +                     return (-1);
 +             }
 +  	}
-+ #endif
-  	if (bind(sock, res->ai_addr, res->ai_addrlen) < 0) {
-  		error("bind: %s: %s", options.bind_address, strerror(errno));
-  		close(sock);
-***************
-*** 326,332 ****
-  	int on = 1;
-  	int sock = -1, attempt;
-  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
-! 	struct addrinfo hints, *ai, *aitop;
++ #endif /* LOCAL_DNSSEC_VALIDATION */
   
-  	debug2("ssh_connect: needpriv %d", needpriv);
-  
---- 372,382 ----
-  	int on = 1;
-  	int sock = -1, attempt;
-  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
-! 	struct addrinfo hints;
-! 	struct addrinfo *ai, *aitop = NULL;
-! #ifdef LOCAL_DNSSEC_VALIDATION
-! 	val_status_t val_status;
-! #endif
-  
-  	debug2("ssh_connect: needpriv %d", needpriv);
-  
+  	for (attempt = 0; attempt < connection_attempts; attempt++) {
+  		if (attempt > 0) {
 ***************
 *** 738,743 ****
 --- 788,794 ----
