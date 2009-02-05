@@ -945,7 +945,7 @@ more intensive or require a live network connection, for instance.
 Use the --features flag to turn them on.  The LIST argument should be
 a comma separated list.  Example usage:
 
-  --features live,data_check
+  --features live,nsec_check
 
 Features available in the default rule set:
 
@@ -961,6 +961,12 @@ DS record which authenticates the key used in a child zone the I<live>
 feature will let a rule run which checks to see if the child is
 actually publishing the DNSKEY that corresponds to the test zone's DS
 record.
+
+=item nsec_check
+
+This checks all the NSEC or NSEC3 records (as appropriate for the
+zone) to ensure the chain is complete and that no-overlaps exist.  It
+is fairly memory and cpu intensive in large zones.
 
 =back
 
