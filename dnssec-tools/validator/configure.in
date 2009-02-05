@@ -436,6 +436,78 @@ int i = 1;
 ]
 )
 
+dnl ---------------------------------------------------------------------
+found_getnameinfo=0
+AH_TEMPLATE([GETNAMEINFO_USES_SOCKLEN_AND_UINT], [Define if getnameinfo expects a socklen_t and a unsigned int])
+AC_MSG_CHECKING([for correct getnameinfo prototype])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <sys/socket.h>
+],
+[
+int getnameinfo(const struct sockaddr *sa,
+                            socklen_t len, char *host,
+                            socklen_t hostlen, char *serv, socklen_t servlen,
+                            unsigned int flags);
+int i = 1;
+
+],[
+  AC_MSG_RESULT([socklen_t and uint])
+  AC_DEFINE(GETNAMEINFO_USES_SOCKLEN_AND_UINT, 1)
+  found_getnameinfo=1
+], [
+  AC_MSG_RESULT([unknown])
+]
+)
+
+if test $found_getnameinfo == 0 ; then
+
+AH_TEMPLATE([GETNAMEINFO_USES_SOCKLEN_AND_INT], [Define if getnameinfo expects a socklen_t and an int])
+AC_MSG_CHECKING([for correct getnameinfo prototype])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <sys/socket.h>
+],
+[
+int getnameinfo(struct sockaddr *sa, socklen_t len, char *host,
+                            socklen_t hostlen, char *serv, socklen_t servlen,
+                            int flags);
+int i = 1;
+
+],[
+  AC_MSG_RESULT([socklen_t and int])
+  AC_DEFINE(GETNAMEINFO_USES_SOCKLEN_AND_INT, 1)
+], [
+  AC_MSG_RESULT([unknown])
+]
+)
+
+fi
+
+if test $found_getnameinfo == 0 ; then
+
+AH_TEMPLATE([GETNAMEINFO_USES_SIZET_AND_INT], [Define if getnameinfo expects a size_t and an int])
+AC_MSG_CHECKING([for correct getnameinfo prototype])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <sys/socket.h>
+],
+[
+int getnameinfo(struct sockaddr *sa, socklen_t len, char *host,
+                            size_t hostlen, char *serv, size_t servlen,
+                            int flags);
+int i = 1;
+
+],[
+  AC_MSG_RESULT([size_t and int])
+  AC_DEFINE(GETNAMEINFO_USES_SIZET_AND_INT, 1)
+], [
+  AC_MSG_RESULT([unknown])
+]
+)
+
+fi
+
 AH_TEMPLATE([R_FUNCS_RETURN_STRUCT],
             [Define if gethostbyname_r returns a struct hostent])
 AC_MSG_CHECKING([whether gethostbyaddr_r returns an int or a struct hostent])
