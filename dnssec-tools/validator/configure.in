@@ -489,7 +489,7 @@ fi
 dnl ---------------------------------------------------------------------
 found_getnameinfo=0
 AH_TEMPLATE([GETNAMEINFO_USES_SOCKLEN_AND_UINT], [Define if getnameinfo expects a socklen_t and a unsigned int])
-AC_MSG_CHECKING([for correct getnameinfo prototype])
+AC_MSG_CHECKING([for the proper getnameinfo prototype])
 AC_TRY_LINK([
 #include <netdb.h>
 #include <sys/socket.h>
@@ -513,7 +513,7 @@ int i = 1;
 if test $found_getnameinfo = 0 ; then
 
 AH_TEMPLATE([GETNAMEINFO_USES_SOCKLEN_AND_INT], [Define if getnameinfo expects a socklen_t and an int])
-AC_MSG_CHECKING([for correct getnameinfo prototype])
+AC_MSG_CHECKING([for the proper getnameinfo prototype])
 AC_TRY_LINK([
 #include <netdb.h>
 #include <sys/socket.h>
@@ -538,7 +538,7 @@ fi
 if test $found_getnameinfo = 0 ; then
 
 AH_TEMPLATE([GETNAMEINFO_USES_SIZET_AND_INT], [Define if getnameinfo expects a size_t and an int])
-AC_MSG_CHECKING([for correct getnameinfo prototype])
+AC_MSG_CHECKING([for the proper getnameinfo prototype])
 AC_TRY_LINK([
 #include <netdb.h>
 #include <sys/socket.h>
