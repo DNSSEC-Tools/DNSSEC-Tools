@@ -771,6 +771,8 @@ get_addrinfo_from_dns(val_context_t * ctx,
         } 
     } 
 
+    *res = ainfo;
+
     return ret;
 
 }                               /* get_addrinfo_from_dns() */
