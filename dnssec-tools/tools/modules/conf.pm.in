@@ -293,7 +293,7 @@ sub getlocalstatedir
 
 #######################################################################
 #
-# Routine:	makelocalstatedir()
+# Routine:	makelocalstatedir(subpath)
 #
 # Purpose:	Return the local state directory name.
 #               Create it and the path if it doesn't exist
@@ -301,7 +301,9 @@ sub getlocalstatedir
 #
 sub makelocalstatedir
 {
+	my $subdir = shift;
         my $statedir = getlocalstatedir();
+	$statedir .= "/$subdir" if (defined($subdir));
 	if (! -d $statedir &&
 	    eval { require File::Path; }) {
 		import File::Path;
@@ -477,11 +479,14 @@ This routine returns the name of the DNSSEC-Tools prefix directory.
 
 This routine returns the name of the local state directory.
 
-=item I<getlocalstatedir()>
+=item I<makelocalstatedir(SUFFIX)>
 
 This routine returns the name of the local state directory just like
 I<getlocalstatedir()> but also creates the path if it doesn't exist and if
 the I<File::Path> module is loadable (should be true on all modern perl).
+
+If the optional SUFFIX is passed in, it's expected to be a
+sub-directory to create. It is appended to the return value as well.
 
 =item I<erraction(error_action)>
 
