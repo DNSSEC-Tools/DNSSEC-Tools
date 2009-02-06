@@ -3759,6 +3759,9 @@ sub skipnow
 #
 # Purpose:	Initialize handlers for our externally provided commands.
 #
+my $queued_int = 0;
+my $queued_hup = 0;
+
 sub controllers
 {
 	my $onflag = shift;				# Handler on/off flag.
@@ -3768,14 +3771,44 @@ sub controllers
 	#
 	if($onflag)
 	{
+		if ($queued_int) {
+			$queued_int = 0;
+			halt_handler();
+	    	}
+
+		if ($queued_hup) {
+			$queued_hup = 0;
+			intcmd_handler();
+	    	}
+
 		$SIG{'HUP'} = \&intcmd_handler;
 		$SIG{'INT'} = \&halt_handler;
 	}
 	else
 	{
-		$SIG{'HUP'} = 'IGNORE';
-		$SIG{'INT'} = 'IGNORE';
+		$SIG{'HUP'} = \&queue_hup_handler;
+		$SIG{'INT'} = \&queue_int_handler;
 	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:       queue_int_handler()
+#
+# Purpose: Remember that a sig INT was received for later processing
+#
+sub queue_int_handler
+{
+    $queued_int = 1;
+}
+
+#-----------------------------------------------------------------------------
+# Routine:       queue_hup_handler()
+#
+# Purpose:       Remember that a sig HUP was received for later processing
+#
+sub queue_hup_handler
+{
+    $queued_hup = 1;
 }
 
 #-----------------------------------------------------------------------------
