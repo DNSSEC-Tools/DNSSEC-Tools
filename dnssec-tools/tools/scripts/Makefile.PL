@@ -30,6 +30,7 @@ use ExtUtils::MakeMaker;
 			    krfcheck
 			    lskrf
 			    lsroll
+			    lsdnssec
 			    rollchk
 			    rollctl
 			    rollerd

@@ -1,0 +1,362 @@
+#!/usr/bin/perl
+#
+# Copyright 2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::BootStrap;
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::tooloptions;
+use Net::DNS::SEC::Tools::timetrans;
+use POSIX qw(getcwd);
+use IO::Dir;
+use Data::Dumper;
+
+#
+# Detect required Perl modules.
+#
+dnssec_tools_load_mods('Date::Parse'	=> "",
+		       'Date::Format'	=> "",);
+
+our $VERSION = "0.1";
+
+my %opts = (d => '5');
+
+LocalGetOptions(\%opts,
+		['GUI:VERSION',"0.1\nDNSSEC-Tools Version: 1.4"],
+
+#		['o|obsolete', 'Show obsolete keys/etc as well as current'],
+
+		['d|detail=i', 'Details level (1-9, 5 = default)',
+		 values => [1..9], type => 'menu', default => 5],
+		["debug",
+		 "Debugging output (show extra processing information)."],
+
+		['GUI:otherargs_text',"[FILES OR DIRECTORIES...]"],
+	       ) || exit;
+
+@ARGV = (getcwd()) if ($#ARGV == -1);
+# XXX: deal with '.' passed in on the command line
+
+my @files = @ARGV;
+my @filestodo;
+my %zoneinfo;
+
+my $todaystime = time();
+my $gmtime = str2time(scalar gmtime());
+
+# generate the list of files to read in.
+expand_files(@files);
+
+# load the contents of everything into memory.
+load_files(@filestodo);
+
+# print summarized results
+print_zone_information();
+
+
+#
+# load the various types of files we understand
+#
+
+my %krfdata;
+my %krflookup;
+
+sub remember_keyrecs {
+    my @krnames = keyrec_names();
+    foreach my $krn (@krnames) {
+	debug("looking up: $krn\n");
+	my $krf = keyrec_fullrec($krn);
+	if ($krf->{'keyrec_type'}) {
+	    push @{$krfdata{$krf->{'zonename'}}{$krf->{'keyrec_type'}}}, $krf;
+	    $krflookup{$krf->{'keyrec_name'}} = $krf;
+	}
+    }
+}
+
+my %rrdata;
+my %rrlookup;
+
+sub remember_rollrecs {
+    my @rrnames = rollrec_names();
+    foreach my $rrn (@rrnames) {
+	debug("looking up rr: $rrn\n");
+	my $rr = rollrec_fullrec($rrn);
+	if ($rr->{'rollrec_type'}) {
+	    push @{$rrdata{$rr->{'rollrec_name'}}{$rr->{'rollrec_type'}}}, $rr;
+	    $rrlookup{$rr->{'rollrec_name'}} = $rr;
+	}
+    }
+}
+
+sub load_files {
+    my @todolist = @_;
+    foreach my $file (@todolist) {
+	if ($file =~ /\.krf$/) {
+	    # load it as a krf
+	    keyrec_read($file);
+	    remember_keyrecs();
+	} elsif ($file =~ /\.rollrec$/) {
+	    # load it as a rollrec
+	    rollrec_read($file);
+	    remember_rollrecs();
+	} else {
+	    # XXX: maybe look at the first line to determine what it is?
+	}
+	# XXX: load .signed files and look for sig expirary times?
+    }
+}
+
+# expand the list of files/directories to just all the files
+# i.e. remove the directories and replace with their file contents
+sub expand_files {
+    my @files = @_;
+    foreach my $file (@files) {
+	if (-f $file) {
+	    push @filestodo, $file;
+	} elsif (-d $file) {
+	    my $dirh = IO::Dir->new($file);
+	    my $direntry;
+	    $file .= "/" if ($file !~ /\/$/);
+	    while (defined($direntry = $dirh->read)) {
+		my $fullfile = $file . $direntry;
+		push @filestodo, $fullfile if (-f $fullfile);
+		# XXX: add recursive option.
+	    }
+	}
+    }
+}
+
+sub print_key {
+    my ($keytype, $key) = @_;
+
+    my $keytag = $key->{'keyrec_name'};
+    $keytag =~ s/.*\+//;
+
+    my $smalltype   = substr($keytype, 0, 3);
+    my $smallstatus = substr($keytype, 3, 3);
+
+    my $life = $key->{$smalltype . 'life'};
+    my $created = $key->{'keyrec_gensecs'};
+    my $age = $todaystime - $created;
+    my $percent;
+
+    if ($age > $life) {
+	$percent = 100;
+    } else {
+	$percent = int(100*($age/$life));
+    }
+
+    printf("  key:  %05.5d %3.3s %3.3s %4.4d %-12.12s %3.3d%%\n",
+	   $keytag, uc($keytype), $smallstatus,
+	   $key->{$smalltype . 'length'}, $key->{'algorithm'},
+	   $percent);
+
+    if ($opts{'d'} > 8) {
+	printf("  file: %s\n", $key->{'keypath'});
+    }
+
+    if ($opts{'d'} > 4) {
+	print "  life: |";
+	print "=" x int(65*($percent/100));
+	print "O";
+	print "-" x (65-int(65*($percent/100)));
+	print ($percent < 100 ? "|" : "X");
+	print "\n";
+    }
+
+    if ($percent == 100) {
+	print "  WARN:       *** key has passed its expected lifetime ***\n";
+    } elsif ($opts{'d'} > 6) {
+	print "        (" . fuzzytimetrans($life-$age) . " remaining)\n";
+    }
+
+    print "\n" if ($opts{'d'} > 2);
+}
+
+sub print_roll {
+    my ($rolltype, $rollrec) = @_;
+
+    my $type;
+
+    if ($rollrec->{'zskphase'} > 0) {
+	$type = 'zsk';
+    } elsif ($rollrec->{'kskphase'} > 0) {
+	$type = 'ksk';
+    } else {
+	print("  roll: not current rolling any keys\n");
+	return;
+    }
+
+    my $phase = $rollrec->{$type . 'phase'};
+    printf("  roll: %3.3s phase:  %d - %s\n", uc($type),
+	   $phase, rollmgr_get_phase(uc($type), $phase));
+
+    printf("        started:    $rollrec->{phasestart}\n")
+      if ($opts{'d'} > 6);
+
+    if ($opts{'d'} > 4 &&
+	(($type eq 'zsk' &&
+	  ($phase == 1 || $phase == 3)) ||
+	 ($type eq 'ksk' &&
+	  ($phase == 1 || $phase == 3)))
+       ) {
+	my $started = str2time($rollrec->{'phasestart'});
+	my $timeremaining = $rollrec->{'maxttl'}*2 - ($gmtime - $started);
+
+	if ($timeremaining > 0) {
+	    printf("        remaining:  %s\n", fuzzytimetrans($timeremaining))
+	} else {
+	    printf("        remaining:  none -- ready for next phase\n");
+	}
+
+	printf("\n");
+    }
+
+}
+
+sub print_zone_information {
+    my $zonelineformat = "%-30s\n";
+
+    foreach my $zone (keys(%krfdata)) {
+	next if ($zone eq '');
+	
+	print "Zone: $zone\n";
+
+	# print each active key
+	foreach my $keytype (qw(kskpub kskcur zskpub zskcur)) {
+#	    print "  here: $zone .. $keytype\n";
+	    foreach my $key (@{$krfdata{$zone}{$keytype}}) {
+		print_key($keytype, $krflookup{$key->{'keyrec_name'}});
+	    }
+	}
+
+	# print each roller roll
+	foreach my $rolltype (qw(roll)) {
+	    foreach my $roll (@{$rrdata{$zone}{$rolltype}}) {
+		print_roll($rolltype, $rrlookup{$roll->{'rollrec_name'}});
+	    }
+	}
+
+	print "\n";
+    }
+}
+
+
+#######################################################################
+# debugging output
+#
+sub debug {
+    print STDERR @_ if ($opts{'v'});
+}
+
+#######################################################################
+# Getopt::GUI::Long safe calling in case it doesn't exist on the system
+#
+sub LocalGetOptions {
+    if (eval {require Getopt::GUI::Long;}) {
+	require Getopt::Long;
+	import Getopt::GUI::Long;
+	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
+	return GetOptions(@_);
+    }
+    require Getopt::Long;
+    import Getopt::Long;
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
+}
+
+=pod
+
+=head1 NAME
+
+lsdnssec - List DNSSEC components of zones from files or directories
+
+=head1 SYNOPSIS
+
+  lsdnssec [-d 1-9] [FILES OR DIRECTIORIES...]
+
+=head1 DESCRIPTION
+
+The lsdnssec program summarizes together information about DNSSEC
+related files given to it, or in files within directories that were
+given to it.  Various levels of detail can be output based on the -d flag.
+
+Each zone that the tool collects information about has the following
+information shown about it:
+
+=over
+
+=item keys
+
+Key information is shown about the keys currently in use.  A bar graph
+is included that shows the age of the key with respect to the
+configured expected key-life time.
+
+This information is collected from any .krf files the tool finds.
+
+=item rolling status
+
+If any zone keys are being rolled via rollerd, then the status of the
+rolling state is shown (along with the time needed to reach the next
+state).
+
+This information is collected from any .rollrec files the tool finds.
+
+=back
+
+=head1 OPTIONS
+
+=over
+
+=item -d 1-9
+
+Controls the amount of information shown in the output.  A level of 9
+shows everything, and a level of 1 shows a minimal amount.  The
+default level is 5.
+
+=item --debug
+
+Turns on extra debugging information.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2009 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker <hardaker AT AT AT users.sourceforge.net>
+
+=head1 SEE ALSO
+
+B<lskrf(1)>
+
+B<zonesigner(8)>,
+B<rollerd(8)>
+
+=cut
+
