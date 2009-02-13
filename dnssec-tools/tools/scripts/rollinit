@@ -119,7 +119,6 @@ sub doopts
 	
 	# backwards compat: honor -zone if -zonefile isn't given
 	$zonefileopt  = $options{'zonefile'}	  || $options{'zone'} || "";
-	$zonefileopt  = 	                  || "";
 	$kropt	      = $options{'keyrec'}	  || "";
 	$adminopt     = $options{'admin'}	  || "";
 	$diropt	      = $options{'directory'}     || "";
