@@ -4254,6 +4254,18 @@ The I<-singlerun> option implicitly implies I<-foreground> as well.
 
 Run in the foreground and do not fork into a daemon.
 
+=item B<-alwayssign>
+
+Tells rollerd to sign the zones that aren't in the middle of being
+rolled.  This allows rollerd to refresh signed zone signatures and
+allows complete management of zone signing to be taken over by rollerd.
+
+Note that the downside is that all the non-rolling zones will be
+signed after every sleep, which may be expensive computationally.
+
+Note: that the zone files are not updated/installed at this time.
+Manual copying and installing is still needed.
+
 =item B<-display>
 
 Starts the B<blinkenlights> graphical display program to show the status of
