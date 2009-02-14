@@ -9,6 +9,7 @@ use strict;
 use File::Temp qw(tempfile);
 use IO::File;
 use Net::DNS::SEC::Tools::BootStrap;
+use Net::DNS::SEC::Tools::QWPrimitives;
 
 ######################################################################
 # detect needed GraphViz requirement
@@ -25,7 +26,7 @@ my $mapinwindow;
 	);
 
 use QWizard;
-LocalGetOptions(\%opts,
+DTGetOptions(\%opts,
 		['GUI:otherargs_text', 'tcpdump files to analyze'],
 
 		["GUI:screen", "Input Packet Selection:"],
@@ -385,37 +386,6 @@ sub add_breakdown {
 	$lab .= "\n$tag/$txt$type($count)";
     }
     return $lab;
-}
-
-######################################################################
-# Getopt::GUI::Long niceness wrapper
-#
-
-sub LocalGetOptions {
-    if (eval {require Getopt::GUI::Long;}) {
-	import Getopt::GUI::Long;
-	# optional configure call
-        Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
-	return GetOptions(@_);
-    }
-    require Getopt::Long;
-    import Getopt::Long;
-    # optional configure call
-    Getopt::Long::Configure(qw(auto_help no_ignore_case));
-    GetOptions(LocalOptionsMap(@_));
-}
-
-sub LocalOptionsMap {
-    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH')
-			    ? (1, 1, $_[0]) : (0, 2));
-    for (my $i = $st; $i <= $#_; $i += $cb) {
-	if ($_[$i]) {
-	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
-	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
-	    push @opts, $_[$i+1] if ($cb == 2);
-	}
-    }
-    return @opts;
 }
 
 =pod
