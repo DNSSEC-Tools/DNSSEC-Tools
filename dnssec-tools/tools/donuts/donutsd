@@ -4,13 +4,14 @@
 
 use Net::SMTP;
 use strict;
+use Net::DNS::SEC::Tools::QWprimitives;
 
 my %opts = (z => 60*60*24,
 	    t => '/tmp/donutsd',
 	    f => $ENV{'USER'} || $ENV{'LOGNAME'},
 	    s => 'localhost');
 
-LocalGetOptions(\%opts,
+DTGetOptions(\%opts,
 		['a|donuts-arguments=s', 'Arguments to pass to donuts'],
 		['z|time-between-checks=s', 'Time between checks'],
 		['t|temporary-directory=s', 'Temporary directory to store results in'],
@@ -206,34 +207,6 @@ sub verbose {
 sub System {
     verbose("  running: ", @_);
     system(@_);
-}
-
-######################################################################
-# argument parsing
-#
-sub LocalGetOptions {
-    if (eval {require Getopt::GUI::Long;}) {
-	import Getopt::GUI::Long;
-	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
-	return GetOptions(@_);
-    }
-    require Getopt::Long;
-    import Getopt::Long;
-    Getopt::Long::Configure(qw(auto_help no_ignore_case));
-    GetOptions(LocalOptionsMap(@_));
-}
-
-sub LocalOptionsMap {
-    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
-			    ? (1, 1, $_[0]) : (0, 2));
-    for (my $i = $st; $i <= $#_; $i += $cb) {
-	if ($_[$i]) {
-	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
-	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
-	    push @opts, $_[$i+1] if ($cb == 2);
-	}
-    }
-    return @opts;
 }
 
 =pod
