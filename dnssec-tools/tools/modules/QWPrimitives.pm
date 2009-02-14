@@ -9,13 +9,70 @@ package Net::DNS::SEC::Tools::QWPrimitives;
 use strict;
 require Exporter;
 
-our $VERSION = "1.1";
+use Net::DNS::SEC::Tools::conf;
+
+
+our $VERSION = "1.2";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(dnssec_tools_get_qwprimitives);
+our @EXPORT = qw(dnssec_tools_get_qwprimitives DTGetOptions);
 
 our $gui_file_slots = 5;
+
+#######################################################################
+# Getopt::GUI::Long safe calling in case it doesn't exist on the system
+#
+sub DTGetOptions {
+
+    # read in the default config file
+    my %config = parseconfig();
+
+    my $nogui = 0;
+    my $have_gui = eval {require Getopt::GUI::Long;};
+
+    # if the default config says not to use a GUI, mark it not to load.
+    if ($config{'usegui'} eq '0' || $config{'usegui'} =~ /^no*/i) {
+	if ($Getopt::GUI::Long::VERSION >= 0.9) {
+	    $nogui = 2;
+	} else {
+	    $nogui = 1;
+	}
+    }
+
+    # then do the right thing based on if we have the Getopt::GUI::Long package
+    # and whether we should use it or not by default.
+    if ($nogui != 1 && $have_gui) {
+	require Getopt::Long;
+	import Getopt::GUI::Long;
+	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
+	if ($nogui == 2) {
+	    # we *can perform* a GUI at this point, but the default is off.
+	    # the user can still override using --gui
+	    Getopt::GUI::Long::Configure(qw(no_gui));
+	}
+	return GetOptions(@_);
+    }
+
+    # fall back to the normal Getopt::Long support
+    require Getopt::Long;
+    import Getopt::Long;
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
+}
 
 sub dnssec_tools_get_qwprimitives {
     my %qwp =
