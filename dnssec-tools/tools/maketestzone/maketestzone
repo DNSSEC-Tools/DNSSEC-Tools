@@ -8,6 +8,7 @@ use IO::File;
 use Net::DNS;
 use Net::DNS::RR;
 use Net::DNS::SEC::Tools::BootStrap;
+use Net::DNS::SEC::Tools::QWprimitives;
 
 # this is actually not used directly, but there is an autoload bug in
 # Net::DNS::RR::DS that gets triggered if you don't have it.
@@ -49,7 +50,7 @@ my %opts =
     'P' => 'insecure-ns,good-ns,badsign-ns,nosig-ns,nods-ns,futuredate-ds,pastdate-ds,reverseddates-ns,rollzsk-ns,newzsk-ns,newkeys-ns,rsamd5keys-ns,nsec3-ns',
   );
 
-LocalGetOptions(\%opts,
+DTGetOptions(\%opts,
 		['GUI:VERSION',"1.0\nDNSSEC-Tools Version: 1.4"],
 		['GUI:separator',"Output File Naming:"],
 		['o|output-file-prefix=s',
@@ -895,35 +896,6 @@ sub System {
     Verbose("running: ",@_);
     system(@_);
     die "system command failed!!!\n" if ($_[0] !~ /^donuts/ && $? != 0)
-}
-
-######################################################################
-# Getopts related functions
-#
-sub LocalGetOptions {
-    if (eval {require Getopt::GUI::Long;}) {
-	import Getopt::GUI::Long;
-        Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
-	return GetOptions(@_);
-    } else {
-	require Getopt::Long;
-	import Getopt::Long;
-    }
-    Getopt::Long::Configure(qw(auto_help no_ignore_case));
-    GetOptions(LocalOptionsMap(@_));
-}
-
-sub LocalOptionsMap {
-    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
-			    ? (1, 1, $_[0]) : (0, 2));
-    for (my $i = $st; $i <= $#_; $i += $cb) {
-	if ($_[$i]) {
-	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
-	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
-	    push @opts, $_[$i+1] if ($cb == 2);
-	}
-    }
-    return @opts;
 }
 
 =head1 NAME
