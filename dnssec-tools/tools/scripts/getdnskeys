@@ -4,6 +4,7 @@ use strict;
 use Net::DNS;
 use IO::File;
 use Net::DNS::SEC::Tools::BootStrap;
+use Net::DNS::SEC::Tools::QWprimitives;
 
 #
 # Version information.
@@ -20,7 +21,7 @@ dnssec_tools_load_mods('Net::DNS::SEC' => "");
 my %opts;
 my @origargs = @ARGV;
 
-LocalGetOptions(\%opts,
+DTGetOptions(\%opts,
 		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 1.4"],
 		['GUI:separator',"DNS Configuration:"],
 		['k','Only look for key signing keys (KSK) and ignore others'],
@@ -215,35 +216,6 @@ sub Output_Key {
     # if we're storing output (! -q) then print the keys
     Output(sprintf "  %s  %d %d %d \"%s\";\n",
 	   $domain, $flags, $protocol, $algorithm, $keydata);
-}
-
-#######################################################################
-# Getopt::GUI::Long portability
-#
-sub LocalGetOptions {
-    if (eval {require Getopt::GUI::Long;}) {
-	require Getopt::Long;
-	import Getopt::GUI::Long;
-	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case_always));
-	return GetOptions(@_);
-    }
-    require Getopt::Long;
-    import Getopt::Long;
-    Getopt::Long::Configure(qw(auto_help no_ignore_case_always));
-    GetOptions(LocalOptionsMap(@_));
-}
-
-sub LocalOptionsMap {
-    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
-			    ? (1, 1, $_[0]) : (0, 2));
-    for (my $i = $st; $i <= $#_; $i += $cb) {
-	if ($_[$i]) {
-	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
-	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
-	    push @opts, $_[$i+1] if ($cb == 2);
-	}
-    }
-    return @opts;
 }
 
 #######################################################################
