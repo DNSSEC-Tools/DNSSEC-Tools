@@ -35,6 +35,8 @@ LocalGetOptions(\%opts,
 
 #		['o|obsolete', 'Show obsolete keys/etc as well as current'],
 
+		['z|zone=s',   'Show information only about zone1,zone2,...'],
+
 		['d|detail=i', 'Details level (1-9, 5 = default)',
 		 values => [1..9], type => 'menu', default => 5],
 		["debug",
@@ -226,7 +228,13 @@ sub print_roll {
 sub print_zone_information {
     my $zonelineformat = "%-30s\n";
 
-    foreach my $zone (keys(%krfdata)) {
+    my @zones;
+    if ($opts{'z'}) {
+	@zones = split(/\s*,\s*/, $opts{'z'});
+    } else {
+	@zones = keys(%krfdata);
+    }
+    foreach my $zone (@zones) {
 	next if ($zone eq '');
 	
 	print "Zone: $zone\n";
