@@ -39,8 +39,12 @@ DTGetOptions(\%opts,
 
 		['z|zone=s',   'Show information only about zone1,zone2,...'],
 
+	        ['k|key-data',    'Show keying data (default = everything)'],
+	        ['r|roll-status', 'Show rolling status (default = everything)'],
+
 		['d|detail=i', 'Details level (1-9, 5 = default)',
 		 values => [1..9], type => 'menu', default => 5],
+
 		["debug",
 		 "Debugging output (show extra processing information)."],
 
@@ -254,17 +258,21 @@ sub print_zone_information {
 	print "Zone: $zone\n";
 
 	# print each active key
-	foreach my $keytype (qw(kskpub kskcur zskpub zskcur)) {
-#	    print "  here: $zone .. $keytype\n";
-	    foreach my $key (@{$krfdata{$zone}{$keytype}}) {
-		print_key($keytype, $krflookup{$key->{'keyrec_name'}});
+	if ($opts{'k'} || !($opts{'k'} || $opts{'r'})) {
+	    foreach my $keytype (qw(kskpub kskcur zskpub zskcur)) {
+		#	    print "  here: $zone .. $keytype\n";
+		foreach my $key (@{$krfdata{$zone}{$keytype}}) {
+		    print_key($keytype, $krflookup{$key->{'keyrec_name'}});
+		}
 	    }
 	}
 
 	# print each roller roll
-	foreach my $rolltype (qw(roll)) {
-	    foreach my $roll (@{$rrdata{$zone}{$rolltype}}) {
-		print_roll($rolltype, $rrlookup{$roll->{'rollrec_name'}});
+	if ($opts{'r'} || !($opts{'k'} || $opts{'r'})) {
+	    foreach my $rolltype (qw(roll)) {
+		foreach my $roll (@{$rrdata{$zone}{$rolltype}}) {
+		    print_roll($rolltype, $rrlookup{$roll->{'rollrec_name'}});
+		}
 	    }
 	}
 
@@ -322,6 +330,16 @@ This information is collected from any .rollrec files the tool finds.
 =head1 OPTIONS
 
 =over
+
+=item -r
+
+Show only rolling information from the rollrec files.  By default both
+rolling and keying information is shown.
+
+=item -k
+
+Show only keying information from the krf files.  By default both
+rolling and keying information is shown.
 
 =item -d 1-9
 
