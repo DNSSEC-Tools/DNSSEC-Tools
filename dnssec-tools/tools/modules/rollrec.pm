@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006-2008 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # DNSSEC Tools
@@ -1589,7 +1589,7 @@ preserved as given in the I<rollrec> file.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
