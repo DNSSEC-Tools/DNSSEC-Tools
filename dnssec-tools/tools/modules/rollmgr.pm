@@ -403,9 +403,9 @@ my @zsk_roll_phases =
 
 my @ksk_roll_phases =
   ('Not Rolling',
-   'Waiting for the old zone data to expire from caches',
+   'Waiting for zone data cache and/or holddown timer to expire',
    'Generating a new published KSK',
-   'Waiting for the old DNSKEY RRset to expire from caches',
+   'Waiting for old DNSKEY RRset cache and/or holddown timer to expire',
    'Rolling the KSK(s)',
    'Transfer the new KSK keyset to the parent',
    'Waiting for the parent to publish the new DS record',

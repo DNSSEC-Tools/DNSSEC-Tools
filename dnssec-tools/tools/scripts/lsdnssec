@@ -17,6 +17,7 @@ use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::QWPrimitives;
+use Net::DNS::ZoneFile::Fast;
 use POSIX qw(getcwd);
 use IO::Dir;
 use Data::Dumper;
@@ -214,6 +215,18 @@ sub print_roll {
        ) {
 	my $started = str2time($rollrec->{'phasestart'});
 	my $timeremaining = $rollrec->{'maxttl'}*2 - ($gmtime - $started);
+
+	if ($type eq 'ksk' && $phase == 3 && $rollrec->{'istrustanchor'}) {
+	    # we should do a proper RFC5011 waiting period
+	    # use either their defined value or a default of 60 days
+	    # The 60 days comes from the rollerd 60 day default
+	    my $addtime = 
+	      Net::DNS::ZoneFile::Fast::ttl_fromtext($rollrec->{'holddowntime'});
+	    $addtime ||= (2*30*24*60*60);
+
+	    # now
+	    $timeremaining = $addtime - ($gmtime - $started);
+	}
 
 	if ($timeremaining > 0) {
 	    printf("        remaining:  %s\n", fuzzytimetrans($timeremaining))

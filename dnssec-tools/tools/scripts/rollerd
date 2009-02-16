@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2008 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 #
@@ -1221,6 +1221,9 @@ sub ksk_phasewait
 	# go to the next rollrec entry and return to this later.
 	#
 	return($phase) if(!ttlexpire($rname,$rrr,$phase,'KSK'));
+	return($phase) if(($rrr->{'istrustanchor'} eq '1' ||
+			   $rrr->{'istrustanchor'} =~ /(y|yes)/i) &&
+			  !holddownexpire($rname,$rrr,$phase));
 
 	#
 	# Bump this rollrec's KSK phase number and return the new phase.
@@ -1658,6 +1661,106 @@ sub ttlexpire
 	$tdstr = timetrans($timediff);
 	rolllog_log(LOG_INFO,$rname,"$keytype phase $phase ($phasedesc); cache expires in $tdstr");
 	display("expiration $rname $phase $keytype $timediff");
+
+	return(0)
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	holddownexpire()
+#
+# Purpose:	Returns a boolean indicating if we can move to the next phase
+#		of rollover based on the hold-down timer of RFC5011,
+#		which is 30 days long.
+#
+# Return Values:
+#		0 - Zone's hold-down timer is still active.
+#		1 - Zone's hold-down timer date/time has passed.
+#
+sub holddownexpire
+{
+	my $rname   = shift;			# Name of rollrec.
+	my $rrr	    = shift;			# Reference to rollrec.
+	my $phase   = shift;			# Zone's current phase.
+	my $keytype = shift;			# Type of key.
+
+	my $phasedesc = rollmgr_get_phase($keytype, $phase);
+
+	my %rr;					# Rollrec hash.
+
+	my $zonefile;				# Zone file.
+	my $maxttl;				# Zone's maximum TTL value.
+	my $phstart;				# Start of zone's phase.
+	my $holddowntime;                       # hold-down time
+
+	my $curtime;				# Current time string.
+	my $curtempus;				# Current time in seconds.
+	my $endtempus;				# End-date in seconds.
+
+	my $timediff;				# Time until expiration.
+	my $tdstr;				# String of timediff.
+
+	my $addholddown;
+
+	# this is only needed for phase 3 (currently at least)
+	return 1 if ($phase != 3);
+
+	#
+	# Get a few fields from the rollrec.
+	#
+	%rr = %$rrr;
+	$zonefile     = $rr{'zonefile'};
+	$phstart      = $rr{'phasestart'};
+
+	# By default, we use a holddowntime of 60 days which is twice what
+	# is required for validators to use as a add-hold-time (RFC5011).
+	# (ideally this should be longer and can be set by the user if needed)
+	$holddowntime =
+	  Net::DNS::ZoneFile::Fast::ttl_fromtext($rr{'holddowntime'});
+
+	# default to 60 days
+	# lsdnssec should change too if this default is changed
+	$holddowntime ||= 2*30*24*60*60;
+
+	print "here: $rr{'holddowntime'} $holddowntime\n";
+	
+	#
+	# Get the current time in seconds.
+	#
+	$curtime = gmtime;
+	$curtempus = str2time($curtime);
+
+	#
+	# Get the end-time (in seconds) and add the holddown.
+	#
+	$endtempus = str2time($phstart);
+	$endtempus += $holddowntime;
+
+	#
+	# Give any desired verbose output.
+	#
+	if($verbose)
+	{
+		my $endtime;				# End-date string.
+
+		$endtime = ctime($endtempus);
+		chomp $endtime;
+
+		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase holddown time check");
+		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase endtime\t$endtime");
+		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase curtime\t$curtime");
+	}
+
+	#
+	# Return success if we've passed the zone's adjusted end-date.
+	# Return failure (not expired) if the zone's adjusted end-date
+	# is in the future.
+	#
+	return(1) if($curtempus >= $endtempus);
+
+	$timediff = $endtempus - $curtempus;
+	$tdstr = timetrans($timediff);
+	rolllog_log(LOG_INFO,$rname,"$keytype phase $phase ($phasedesc); holddown timer expires in $tdstr");
+	display("holddown $rname $phase $keytype $timediff");
 
 	return(0)
 }
@@ -4037,6 +4140,25 @@ The Double Signature Method of key rollover is defined in the Step-by-Step
 DNS Security Operator Guidance Document.  See that document for more detailed
 information.
 
+=head2 KSK Rollover Using the Double Signature Method and RFC5011
+
+RFC5011 describes what remote validating resolvers need to do in order
+to track KSK changes within a zone.  Rollerd supports adding an extra
+long period of time between the point a new KSK is created and
+published and the point where the actual switch to using it takes
+place.  RFC5011 specifies that remote validators should add a
+"hold-down timer" to the rollover process such that the new key is not
+added as a trust-anchor until 30 days have past.  Thus, rollerd will
+wait for 60 days (by default) during phase 3 of the KSK rollover
+process if the "istrustanchor" field of the rollrec definition has
+been set to either 1 or "yes".  To wait for a different length of time
+other than 60 days, use the B<holddowntime> field.
+
+Note: at this time, the other conventions of RFC5011 aren't being
+followed.  Specifically, its not waiting for a while before removing
+the old key and its not adding the revoke bit to the old key after
+switching either.
+
 =head2 I<rollrec> Files
 
 The zones to be managed by B<rollerd> are described in a I<rollrec>
@@ -4060,6 +4182,9 @@ sample I<rollrec> entry:
 		maxttl          "60"
 		display         "1"
 		phasestart      "Tue Feb 27 22:25:07 2007"
+        	# optional records for RFC5011 rolling:
+		istrustanchor   "no"
+        	holddowntime    "60D"
 
 The first line gives the I<rollrec> entry's name.  The following lines give
 the zone's signed zone file, I<keyrec> file, the current rollover phases, the
@@ -4319,7 +4444,7 @@ take place, rather than a simple seconds count.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2009 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR

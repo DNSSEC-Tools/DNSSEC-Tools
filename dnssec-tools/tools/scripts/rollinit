@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006-2008 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 #
@@ -267,6 +267,9 @@ sub newrollrec
 	print OUT "	maxttl		\"0\"\n";
 	print OUT "	display		\"1\"\n";
 	print OUT "	phasestart	\"new\"\n";
+        print OUT "	# optional records for RFC5011 rolling:\n";
+	print OUT "	istrustanchor           \"no\"\n";
+        print OUT "	holddowntime            \"60D\"\n";
 	print OUT "\n";
 }
 
@@ -340,6 +343,9 @@ A I<rollrec> entry has this format:
 	maxttl		"604800"
 	display		"1"
 	phasestart	"Mon Jan 9 16:00:00 2006"
+        # optional records for RFC5011 rolling:
+	istrustanchor   "no"
+        holddowntime    "60D"
 
 The I<zonefile> and I<keyrec> fields are set according to command-line options
 and arguments.  The manner of generating the I<rollrec>'s actual values is a
@@ -376,6 +382,13 @@ options for B<zonesigner>.  This field is set during B<rollerd> execution
 when the administrator determines that some zone fields should be modified.
 It is not an initial I<rollrec> field and consequently cannot be specified
 by B<rollinit>.
+
+The B<istrustanchor> field specifies whether to roll the KSK keys in a
+manner compilant with any remote validating resolver using the KSK as
+a trust-anchor.  If set to "yes" then 60 days will be the minimum wait
+time during phase 3 of KSK rolling to ensure remote validators can
+properly follow the steps needed as specified by RFC5011.  The 60 day
+default can be changed via the B<holddowntime> field.
 
 The keywords B<roll> and B<skip> indicate whether B<rollerd> should process
 or ignore a particular I<rollrec> entry.  B<roll> records are created by
