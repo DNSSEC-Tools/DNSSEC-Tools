@@ -260,10 +260,12 @@ sub print_zone_information {
 	# print each active key
 	if ($opts{'k'} || !($opts{'k'} || $opts{'r'})) {
 	    foreach my $keytype (qw(kskpub kskcur zskpub zskcur)) {
-		#	    print "  here: $zone .. $keytype\n";
-		foreach my $key (@{$krfdata{$zone}{$keytype}}) {
-		    print_key($keytype, $krflookup{$key->{'keyrec_name'}});
-		}
+
+		# for each keytype, look up the set containing the key(s)
+		# print the resulting key.
+		my $set = $krflookup{$krflookup{$zone}{$keytype}};
+		next if (!defined($set));
+		print_key($keytype, $krflookup{$set->{'keys'}});
 	    }
 	}
 
