@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Copyright 2004-2008 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 
 $DIRS = ['ZoneFile-Fast'];
