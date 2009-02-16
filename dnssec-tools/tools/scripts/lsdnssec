@@ -181,7 +181,7 @@ sub print_key {
 	print "\n";
     }
 
-    if ($percent == 100) {
+    if ($percent == 100 && $opts{'d'} > 2) {
 	print "  WARN:       *** key has passed its expected lifetime ***\n";
     } elsif ($opts{'d'} > 6) {
 	print "        (" . fuzzytimetrans($life-$age) . " remaining)\n";
