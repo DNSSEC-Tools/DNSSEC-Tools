@@ -1298,6 +1298,9 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 	loglevel		"info"
 	rollrec_rollsecs	"1115923362"
 	rollrec_rolldate	"Tue Mar 09 19:12:54 2005"
+        # optional records:
+        istrustanchor           "yes"
+        holddowntime            "8W"
 
 Additionally cmds to be acted upon at start up can be defined using
 the "cmd" token as shown in the following example.  Use this feature
