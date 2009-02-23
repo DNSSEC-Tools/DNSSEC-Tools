@@ -437,14 +437,37 @@ sub rollkeys
 			rolllog_log(LOG_TMI,$rname,"current ZSK still valid");
 		}
 
-		if ($alwayssign &&
-		    $rrr->{'zskphase'} == 0 && $rrr->{'kskphase'} == 0) {
-			rolllog_log(LOG_TMI,$rname,"Signing anyway (-alwayssign)");
+		#
+		# if -alwayssign was specified, always sign the zone
+		# even if we didn't need to for this period
+		#
+
+		# XXX: this could double sign if some of the above steps
+		# already signed the zone.  We should only sign if nothing
+		# was done above.
+
+		if ($alwayssign) {
+			rolllog_log(LOG_TMI,$rname,
+				    "Signing the zone (-alwayssign specified)");
 
 			# check value/file existence/etc like line 1265 does
 			my $krr = opts_zonekr($rrr->{'keyrec'}, $rname);
 
-			signer($rname, "", $krr);
+			my $extraargs = "";
+			
+			# if we're in phases 2-3, make sure to use the
+			# published zsk.
+			if ($rrr->{'zskphase'} >= 2 &&
+			    $rrr->{'zskphase'} <= 3) {
+			    $extraargs = "-usezskpub";
+			}
+
+			# KSK signing uses double-signature so nothing
+			# is needed since zonesigner always uses all
+			# available keys.
+
+			# actually do the signing
+			signer($rname, "-usezskpub", $krr);
 		}
 
 	}
