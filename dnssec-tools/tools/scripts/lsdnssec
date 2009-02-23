@@ -144,6 +144,27 @@ sub expand_files {
     }
 }
 
+sub get_ksk_phase3_length {
+    my ($rollrec) = @_;
+
+    my $length = $rollrec->{'maxttl'}*2;
+
+    if ($rollrec->{'istrustanchor'}) {
+	# we should do a proper RFC5011 waiting period
+	# use either their defined value or a default of 60 days
+	# The 60 days comes from the rollerd 60 day default
+	my $addtime = 
+	  Net::DNS::ZoneFile::Fast::ttl_fromtext($rollrec->{'holddowntime'});
+	
+	$addtime ||= (2*30*24*60*60);
+
+	$length += $addtime;
+    }
+
+    return $length;
+}
+
+
 sub print_key {
     my ($keytype, $key) = @_;
 
@@ -164,10 +185,10 @@ sub print_key {
 	$percent = int(100*($age/$life));
     }
 
-    printf("  key:  %05.5d %3.3s %3.3s %4.4d %-12.12s %3.3d%%\n",
+    printf("  key:  %05.5d %3.3s %3.3s %4.4d %-12.12s %3.3d%% %30s|\n",
 	   $keytag, uc($keytype), $smallstatus,
 	   $key->{$smalltype . 'length'}, $key->{'algorithm'},
-	   $percent);
+	   $percent, fuzzytimetrans($life));
 
     if ($opts{'d'} > 8) {
 	printf("  file: %s\n", $key->{'keypath'});
@@ -212,36 +233,181 @@ sub print_roll {
     printf("        started:    $rollrec->{phasestart}\n")
       if ($opts{'d'} > 6);
 
+    my $started = str2time($rollrec->{'phasestart'});
+
+    #
+    # bar graph
+    #
+    my $rolltimelength = 0;
+    my $currentperiod = 0;
+
+    my $barlength = 66;
+
+    my @phasespots;
+
+    if ($type eq 'zsk') {
+	# phase 1
+	$rolltimelength += $rollrec->{'maxttl'}*2;
+	$phasespots[1] = 0;
+
+	if ($phase == 1) {
+	    $currentperiod += ($gmtime - $started);
+	} else {
+	    $currentperiod = $rolltimelength;
+	}
+
+	# phase 2
+	$phasespots[2] = $rolltimelength;
+	# $rolltimelength += 0;
+	# $currentperiod += 0;
+
+	# phase 3
+	$phasespots[3] = $rolltimelength;
+	if ($phase == 3) {
+	    $currentperiod = $rolltimelength + ($gmtime - $started);
+	} else {
+	    $currentperiod = $rolltimelength + $rollrec->{'maxttl'}*2;
+	}
+	$rolltimelength += $rollrec->{'maxttl'}*2;
+
+	# phase 4
+	$phasespots[4] = $rolltimelength;
+	# $rolltimelength += 0;
+	# $currentperiod += 0;
+
+	my $percentdone = $currentperiod / $rolltimelength;
+
+	if ($opts{'d'} > 4) {
+	    #
+	    # now construct the timeline based on the gathered information
+	    #
+
+	    my $outstring = "=" x int($barlength * $percentdone);
+	    $outstring .= "-" x int($barlength - ($barlength * $percentdone));
+
+	    my $lastpt = -1;
+	    foreach my $phasepoint (1..4) {
+		my $pt =
+		  int($barlength * $phasespots[$phasepoint]/$rolltimelength);
+		$pt++ if ($lastpt == $pt);
+
+		$pt -= 1 if ($pt == $barlength);
+
+		substr($outstring, $pt, 1, $phasepoint);
+		$lastpt = $pt;
+	    }
+
+	    # and finally print it out
+	    printf("  time: |%s|\n", $outstring);
+	}
+
+    } elsif ($type eq 'ksk') {
+	# phase 1
+	$rolltimelength += $rollrec->{'maxttl'}*2;
+	$phasespots[1] = 0;
+
+	if ($phase == 1) {
+	    $currentperiod += ($gmtime - $started);
+	} else {
+	    $currentperiod = $rolltimelength;
+	}
+
+	# phase 2
+	$phasespots[2] = $rolltimelength;
+	# $rolltimelength += 0;
+	# $currentperiod += 0;
+
+	# phase 3
+	$phasespots[3] = $rolltimelength;
+	$rolltimelength += get_ksk_phase3_length($rollrec);
+
+	if ($phase == 3) {
+	    $currentperiod = $phasespots[3] + ($gmtime - $started);
+	} else {
+	    $currentperiod = $rolltimelength;
+	}
+
+	# phase 4
+	$phasespots[4] = $rolltimelength;
+	# $rolltimelength += 0;
+	# $currentperiod += 0;
+
+	# phase 5
+	$phasespots[5] = $rolltimelength;
+	# $rolltimelength += 0;
+	# $currentperiod += 0;
+
+	# phase 6
+	$phasespots[6] = $rolltimelength;
+	# $rolltimelength += 0;
+	# $currentperiod += 0;
+
+	# phase 7
+	# XXX: rollerd needs to be fixed to wait for 2*parent_TTL
+	$phasespots[7] = $rolltimelength;
+	# $rolltimelength += 0;
+	# $currentperiod += 0;
+
+	my $percentdone = $currentperiod / $rolltimelength;
+
+	#
+	# now construct the timeline based on the gathered information
+	#
+
+	if ($opts{'d'} > 4) {
+	    my $outstring = "=" x int($barlength * $percentdone);
+	    $outstring .= "-" x int($barlength - ($barlength * $percentdone));
+
+	    my $lastpt = -1;
+	    foreach my $phasepoint (1..7) {
+		my $pt =
+		  int($barlength * $phasespots[$phasepoint]/$rolltimelength);
+		$pt++ if ($lastpt == $pt);
+
+		$pt = $barlength-2 if ($pt > $barlength-2);
+
+		substr($outstring, $pt, 1, $phasepoint);
+		$lastpt = $pt;
+	    }
+
+	    # ugly hack to force fit 4, 5 and 6 phases in to the left
+	    $outstring =~ s/.7/67/ if ($outstring !~ /6/);
+	    $outstring =~ s/.6/56/ if ($outstring !~ /5/);
+	    $outstring =~ s/.5/45/ if ($outstring !~ /4/);
+
+	    # and finally print it out
+	    printf("  time: |%s|\n", $outstring);
+	}
+    }
+
+    #
+    # remaining time
+    #
     if ($opts{'d'} > 4 &&
 	(($type eq 'zsk' &&
 	  ($phase == 1 || $phase == 3)) ||
 	 ($type eq 'ksk' &&
 	  ($phase == 1 || $phase == 3)))
        ) {
-	my $started = str2time($rollrec->{'phasestart'});
-	my $timeremaining = $rollrec->{'maxttl'}*2 - ($gmtime - $started);
+	my $timeremaining = $rollrec->{'maxttl'}*2;
+	$timeremaining = get_ksk_phase3_length($rollrec)
+	  if ($type eq 'ksk' && $phase == 3);
 
-	if ($type eq 'ksk' && $phase == 3 && $rollrec->{'istrustanchor'}) {
-	    # we should do a proper RFC5011 waiting period
-	    # use either their defined value or a default of 60 days
-	    # The 60 days comes from the rollerd 60 day default
-	    my $addtime = 
-	      Net::DNS::ZoneFile::Fast::ttl_fromtext($rollrec->{'holddowntime'});
-	    $addtime ||= (2*30*24*60*60);
+	$timeremaining -= ($gmtime - $started);
 
-	    # now
-	    $timeremaining = $addtime - ($gmtime - $started);
-	}
-
+	my $phaseremaining = "";
 	if ($timeremaining > 0) {
-	    printf("        remaining:  %s\n", fuzzytimetrans($timeremaining))
+	    $phaseremaining = fuzzytimetrans($timeremaining);
 	} else {
-	    printf("        remaining:  none -- ready for next phase\n");
+	    $phaseremaining = "none -- ready for next phase";
 	}
 
-	printf("\n");
+	printf("  time: remaining phase $phase: %-30.30s %17.17s\n", $phaseremaining, "total: " . fuzzytimetrans($rolltimelength) . "|");
     }
 
+    if ($opts{'d'} > 2) {
+	printf("\n");
+    }
 }
 
 sub print_zone_information {
