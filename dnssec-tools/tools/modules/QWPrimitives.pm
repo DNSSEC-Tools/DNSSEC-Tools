@@ -31,6 +31,13 @@ sub DTGetOptions {
     my $nogui = 0;
     my $have_gui = eval {require Getopt::GUI::Long;};
 
+    my $extraopts = [];
+
+    if ($_[0] eq 'config') {
+	shift @_;
+	$extraopts = shift @_;
+    }
+
     # if the default config says not to use a GUI, mark it not to load.
     if ($config{'usegui'} eq '0' || $config{'usegui'} =~ /^no*/i) {
 	if ($Getopt::GUI::Long::VERSION >= 0.9) {
@@ -49,7 +56,7 @@ sub DTGetOptions {
 	if ($nogui == 2) {
 	    # we *can perform* a GUI at this point, but the default is off.
 	    # the user can still override using --gui
-	    Getopt::GUI::Long::Configure(qw(no_gui));
+	    Getopt::GUI::Long::Configure(qw(no_gui), @$extraopts);
 	}
 	return GetOptions(@_);
     }
