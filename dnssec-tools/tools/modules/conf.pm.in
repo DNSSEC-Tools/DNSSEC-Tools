@@ -47,11 +47,14 @@ our @EXPORT = qw(
 
 our @COMMANDS = qw(zonecheck keygen zonesign);
 
-our $prefixdir = "@prefix@";
-our $sysconfdir = "@expanded_sysconfdir@";
+our $prefixdir  = $ENV{'DT_PREFIX'}     || "@prefix@";
+our $sysconfdir = $ENV{'DT_SYSCONFDIR'} || "@expanded_sysconfdir@";
+
+# Local state directory.
+our $STATEDIR   = $ENV{'DT_STATEDIR'}   || "@expanded_localstatedir@";
 
 our $CONFFILE = "${sysconfdir}/dnssec-tools/dnssec-tools.conf"; # Configuration file.
-our $STATEDIR = "@expanded_localstatedir@";		# Local state directory.
+
 
 ###############################################################################
 #
@@ -313,6 +316,7 @@ sub makelocalstatedir
 		       { error => \$errorlist });
 		if ($#$errorlist > -1) {
                     print STDERR "Errors creating path: $statedir:\n";
+		    print STDERR "  (set DT_STATEDIR to change the location)\n";
 		    foreach my $err (@$errorlist) {
 			my ($file, $msg) = each %$err;
 			print STDERR "  $file: $msg";
