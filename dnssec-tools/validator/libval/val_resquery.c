@@ -463,6 +463,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                          * Since we're in trouble, free up just in case 
                          */
                         free_name_servers(ns_list);
+                        ns_list = NULL;
                         return VAL_OUT_OF_MEMORY;
                     }
 
@@ -472,6 +473,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                     name_len = wire_name_length(ns_rr->rr_rdata);
                     if (name_len > sizeof(temp_ns->ns_name_n)) {
                         free_name_servers(ns_list);
+                        ns_list = NULL;
                         return VAL_OUT_OF_MEMORY;
                     }
                     memcpy(temp_ns->ns_name_n, ns_rr->rr_rdata, name_len);
@@ -1061,46 +1063,45 @@ follow_referral_or_alias_link(val_context_t * context,
         }
         SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
 
-        if (tp) {
-            diff_name = (namecmp(tp, referral_zone_n) != 0);
-            FREE(tp);
-        } 
-
-        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
+        if (tp && tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
             
-        /*
-         * Fetch DNSSEC meta-data in parallel 
-         */
-        /*
-         * If we expect DNSSEC meta-data to be returned
-         * in the additional section of the response, we
-         * should modify the way in which we ask for the DNSKEY
-         * (the DS query logic should not be changed) as 
-         * follows:
-         *  - invoke the add_to_qfq_chain logic only if we are 
-         *    below the trust point (see the DS fetching logic below)
-         *  - instead of querying for the referral_zone_n/DNSKEY
-         *    query for the DNSKEY in the current zone 
-         *    (matched_q->qc_zonecut_n)
-         */
+            /*
+             * Fetch DNSSEC meta-data in parallel 
+             */
+            /*
+             * If we expect DNSSEC meta-data to be returned
+             * in the additional section of the response, we
+             * should modify the way in which we ask for the DNSKEY
+             * (the DS query logic should not be changed) as 
+             * follows:
+             *  - invoke the add_to_qfq_chain logic only if we are 
+             *    below the trust point (see the DS fetching logic below)
+             *  - instead of querying for the referral_zone_n/DNSKEY
+             *    query for the DNSKEY in the current zone 
+             *    (matched_q->qc_zonecut_n)
+             */
             
-         if(VAL_NO_ERROR != 
+            if(VAL_NO_ERROR != 
                     (ret_val = add_to_qfq_chain(context, queries, 
                                             referral_zone_n, ns_t_dnskey,
                                             ns_c_in, matched_qfq->qfq_flags, &added_q)))
-             return ret_val;
+                return ret_val;
 
-        /* fetch DS only if are below the trust point */    
-        if (diff_name) {
+            /* fetch DS only if are below the trust point */    
+            diff_name = (namecmp(tp, referral_zone_n) != 0);
+            if (diff_name) {
                 
-             if (VAL_NO_ERROR != 
+                if (VAL_NO_ERROR != 
                         (ret_val = add_to_qfq_chain(context, queries, 
                                                     referral_zone_n, ns_t_ds,
                                                     ns_c_in, matched_qfq->qfq_flags, 
                                                     &added_q)))
-                 return ret_val;
+                    return ret_val;
             } 
         }
+        if (tp) {
+            FREE(tp);
+        } 
     }
     /*
      * Store the current referral value in the query 
@@ -1415,7 +1416,6 @@ digest_response(val_context_t * context,
     struct qname_chain **qnames;
     int             zonecut_was_modified = 0;
     struct val_query_chain *matched_q;
-    struct name_server *respondent_server;
     u_int16_t tzonestatus;
     u_int32_t ttl_x;
 
@@ -1424,7 +1424,6 @@ digest_response(val_context_t * context,
         return VAL_BAD_ARGUMENT;
 
     matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
-    respondent_server = matched_q->qc_respondent_server;
     
     qnames = &(di_response->di_qnames);
     header = (HEADER *) response_data;
@@ -1503,9 +1502,9 @@ digest_response(val_context_t * context,
          * Type is decided by the rcode, which we will check later
          */
         matched_q->qc_state = Q_ANSWERED;
-        ret_val = prepare_empty_nonexistence(&di_response->di_proofs, respondent_server,
-                                         query_name_n, query_type_h, query_class_h, hptr);
-        free_name_server(&respondent_server);
+        ret_val = prepare_empty_nonexistence(&di_response->di_proofs, 
+                        matched_q->qc_respondent_server,
+                        query_name_n, query_type_h, query_class_h, hptr);
         goto done; 
     }
 
@@ -1595,7 +1594,8 @@ digest_response(val_context_t * context,
                 goto done;
             }
 
-            SAVE_RR_TO_LIST(respondent_server, &learned_answers, name_n, type_h,
+            SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                            &learned_answers, name_n, type_h,
                             set_type_h, class_h, ttl_h, hptr, rdata,
                             rdata_len_h, from_section, authoritive,
                             rrs_zonecut_n);
@@ -1610,7 +1610,8 @@ digest_response(val_context_t * context,
 
                 proof_seen = 1;
 
-                SAVE_RR_TO_LIST(respondent_server, &learned_proofs, name_n, type_h,
+                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                                &learned_proofs, name_n, type_h,
                                 set_type_h, class_h, ttl_h, hptr, rdata,
                                 rdata_len_h, from_section, authoritive,
                                 rrs_zonecut_n);
@@ -1619,19 +1620,22 @@ digest_response(val_context_t * context,
                  * The zonecut information for name servers is 
                  * their respective owner name 
                  */
-                SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
+                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                                &learned_zones, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
                                 authoritive, name_n);
             }
         } else if (from_section == VAL_FROM_ADDITIONAL) {
             if (set_type_h == ns_t_dnskey || set_type_h == ns_t_ds) {
-                SAVE_RR_TO_LIST(respondent_server, &learned_answers, name_n,
+                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                                &learned_answers, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
                                 authoritive, rrs_zonecut_n);
             } else if (set_type_h == ns_t_a || set_type_h == ns_t_aaaa) {
-                SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
+                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                                &learned_zones, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
                                 authoritive, name_n);
