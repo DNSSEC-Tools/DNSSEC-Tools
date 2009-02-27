@@ -1,4 +1,4 @@
-#
+# -*- perl -*-
 # Copyright 2004-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
@@ -306,8 +306,18 @@ sub makelocalstatedir
 	$statedir .= "/$subdir" if (defined($subdir));
 	if (! -d $statedir &&
 	    eval { require File::Path; }) {
+	        my @errorlist;
 		import File::Path;
-		mkpath($statedir);
+		my $errorlist;
+		mkpath($statedir,
+		       { error => \$errorlist });
+		if ($#$errorlist > -1) {
+                    print STDERR "Errors creating path: $statedir:\n";
+		    foreach my $err (@$errorlist) {
+			my ($file, $msg) = each %$err;
+			print STDERR "  $file: $msg";
+		    }
+                }
 	}
 	return($statedir);
 }
