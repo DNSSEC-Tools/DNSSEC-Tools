@@ -534,7 +534,15 @@ The default directories for this installation are:
 
   prefix                         : @prefix@
   sysconf                        : @expanded_sysconfdir@
+  localstatedir                  : @expanded_localstatedir@
+
   DNSSEC-Tools configuration file: @expanded_sysconfdir@/dnssec-tools
+
+These can be overridden using the following environmental variables:
+
+  prefix                         : DT_PREFIX
+  sysconf                        : DT_SYSCONFDIR
+  localstatedir                  : DT_STATEDIR
 
 =head1 COPYRIGHT
 
