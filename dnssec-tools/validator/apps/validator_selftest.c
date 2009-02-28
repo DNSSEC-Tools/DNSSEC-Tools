@@ -55,7 +55,8 @@ val_get_token(char **buf_ptr,
               int *line_number,
               char *conf_token,
               int conf_limit, int *endst, 
-              const char *comment_c, char endstmt_c);
+              const char *comment_c, char endstmt_c,
+              int ignore_space);
 
 static void
 selftest_cleanup(void)
@@ -278,7 +279,7 @@ read_val_testcase_file(const char *filename)
         int i;
 
         retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
-                           &endst, "#", ';');
+                           &endst, "#", ';', 0);
         if ((VAL_NO_ERROR != retval) || (buf_ptr >= end_ptr))
             break;
         if (endst) {
@@ -312,7 +313,7 @@ read_val_testcase_file(const char *filename)
             }
 
             retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
-                                   &endst, "#", ';');
+                                   &endst, "#", ';', 0);
             if (VAL_NO_ERROR != retval)
                 break;
             if (endst || (buf_ptr >= end_ptr)) {
@@ -343,7 +344,7 @@ read_val_testcase_file(const char *filename)
         }
         
         retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
-                           &endst, "#", ';');
+                           &endst, "#", ';', 0);
         if (VAL_NO_ERROR != retval)
             break;
         if (endst || (buf_ptr >= end_ptr)) {
@@ -357,7 +358,7 @@ read_val_testcase_file(const char *filename)
         }
         
         retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
-                           &endst, "#", ';');
+                           &endst, "#", ';', 0);
         if (VAL_NO_ERROR != retval)
             break;
         if (endst || (buf_ptr >= end_ptr)) {
@@ -372,7 +373,7 @@ read_val_testcase_file(const char *filename)
         }
         
         retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
-                           &endst, "#", ';');
+                           &endst, "#", ';', 0);
         if (VAL_NO_ERROR != retval)
             break;
         if (endst || (buf_ptr >= end_ptr)) {
@@ -389,7 +390,7 @@ read_val_testcase_file(const char *filename)
         i = 0;
         while (!endst && (buf_ptr <end_ptr) && (i<MAX_TEST_RESULTS)) {
             retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
-                               &endst, "#", ';');
+                               &endst, "#", ';', 0);
             if (VAL_NO_ERROR != retval)
                 break;
             if ((buf_ptr < end_ptr) || endst) {
