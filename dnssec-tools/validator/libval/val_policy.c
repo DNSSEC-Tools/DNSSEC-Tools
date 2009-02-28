@@ -46,7 +46,7 @@
      */\
     if (VAL_NO_ERROR != (retval =\
          val_get_token(buf_ptr, end_ptr, line_number, token, sizeof(token), endst,\
-                       CONF_COMMENT, CONF_END_STMT)))\
+                       CONF_COMMENT, CONF_END_STMT, 1)))\
         return retval;\
 } while (0)
 
@@ -630,8 +630,11 @@ val_get_token(char **buf_ptr,
               char *end_ptr,
               int *line_number,
               char *conf_token,
-              int conf_limit, int *endst, 
-              const char *comment_c, char endstmt_c)
+              int conf_limit, 
+              int *endst, 
+              const char *comment_c, 
+              char endstmt_c,
+              int ignore_space)
 {
     int             i = 0;
     int             quoted = 0;
@@ -676,8 +679,12 @@ val_get_token(char **buf_ptr,
 
     i = 0;
 
-    while (*buf_ptr < end_ptr && 
-           (!isspace((c = **buf_ptr)) || quoted || escaped)) {
+    while (*buf_ptr < end_ptr) {
+        c = **buf_ptr;
+        /* if spaces are meant to be delimiters, break */
+        if (!ignore_space && isspace(c) && !quoted && !escaped) {
+            break;
+        }
            
         (*buf_ptr)++;
         if (i == conf_limit)
@@ -697,7 +704,7 @@ val_get_token(char **buf_ptr,
                 break;
 
             case '\n' :
-                if (!escaped) {
+                if (!escaped && !quoted) {
                     goto done;
                 }
                 (*line_number)++;
@@ -805,7 +812,7 @@ parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number,
     if (VAL_NO_ERROR != (retval = 
         val_get_token(buf_ptr, end_ptr, line_number, 
                       token, sizeof(token), endst,
-                      CONF_COMMENT, CONF_END_STMT))) {
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
         return retval;
     }
     if ((endst && (strlen(token) == 0)) ||
@@ -837,7 +844,7 @@ parse_edns0_size_gopt(char **buf_ptr, char *end_ptr, int *line_number,
     if (VAL_NO_ERROR != (retval = 
         val_get_token(buf_ptr, end_ptr, line_number, 
                       token, sizeof(token), endst,
-                      CONF_COMMENT, CONF_END_STMT))) {
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
         return retval;
     }
     if ((endst && (strlen(token) == 0)) ||
@@ -865,7 +872,7 @@ parse_enable_disable_gopt(int *type, char **buf_ptr, char *end_ptr, int *line_nu
     if (VAL_NO_ERROR != (retval = 
         val_get_token(buf_ptr, end_ptr, line_number, 
                       token, sizeof(token), endst,
-                      CONF_COMMENT, CONF_END_STMT))) {
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
         return retval;
     }
     if ((endst && (strlen(token) == 0)) ||
@@ -900,7 +907,7 @@ parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
     if (VAL_NO_ERROR != (retval = 
         val_get_token(buf_ptr, end_ptr, line_number, 
                       token, sizeof(token), endst,
-                      CONF_COMMENT, CONF_END_STMT))) {
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
         return retval;
     }
     if ((endst && (strlen(token) == 0)) ||
@@ -943,7 +950,7 @@ get_global_options(char **buf_ptr, char *end_ptr,
         if (VAL_NO_ERROR != (retval = 
             val_get_token(buf_ptr, end_ptr, line_number, 
                           token, sizeof(token), &endst,
-                          CONF_COMMENT, CONF_END_STMT))) {
+                          CONF_COMMENT, CONF_END_STMT, 0))) {
             goto err;
         }
         if (endst && (strlen(token) == 0)) {
@@ -1036,7 +1043,7 @@ get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(buf_ptr, end_ptr, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT)))
+                       CONF_COMMENT, CONF_END_STMT, 0)))
             return retval;
         if (*buf_ptr >= end_ptr)
             return VAL_NO_ERROR;
@@ -1074,7 +1081,7 @@ get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(buf_ptr, end_ptr, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT))) {
+                       CONF_COMMENT, CONF_END_STMT, 0))) {
             FREE(label);
             return retval;
         }
@@ -1101,7 +1108,7 @@ get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
              */
             if (VAL_NO_ERROR != (retval = 
                 val_get_token(buf_ptr, end_ptr, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT))) {
+                       CONF_COMMENT, CONF_END_STMT, 0))) {
 
                 free_policy_entry(pol, index);
                 pol = NULL;
@@ -1518,7 +1525,7 @@ read_next_val_config_file(val_context_t *ctx,
                 if (VAL_NO_ERROR != (retval = 
                         val_get_token(&buf_ptr, end_ptr, &line_number, 
                                       token, sizeof(token), &endst,
-                                      CONF_COMMENT, CONF_END_STMT))) {
+                                      CONF_COMMENT, CONF_END_STMT, 0))) {
                     val_log(ctx, LOG_ERR, 
                             "read_next_val_config_file(): Error in line %d of %s ",
                             line_number, dnsval_c->dnsval_conf);
@@ -2014,7 +2021,7 @@ read_res_config_file(val_context_t * ctx)
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                       ALL_COMMENTS, ZONE_END_STMT))) {
+                       ALL_COMMENTS, ZONE_END_STMT, 0))) {
             goto err;
         }
 
@@ -2032,7 +2039,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           ALL_COMMENTS, ZONE_END_STMT))) {
+                           ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
             ns = NULL;
@@ -2058,7 +2065,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           ALL_COMMENTS, ZONE_END_STMT))) {
+                           ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
             ns = NULL;
@@ -2068,7 +2075,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           ALL_COMMENTS, ZONE_END_STMT))) {
+                           ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
             if (ns != NULL) {
@@ -2086,7 +2093,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           ALL_COMMENTS, ZONE_END_STMT))) {
+                           ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
             if (ctx->search)
@@ -2223,7 +2230,7 @@ read_root_hints_file(val_context_t * ctx)
         if (VAL_NO_ERROR !=
             (retval =
             val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                   ZONE_COMMENT, ZONE_END_STMT))) {
+                   ZONE_COMMENT, ZONE_END_STMT, 0))) {
             goto err;
         }
         if (buf_ptr >= end_ptr) {
@@ -2246,7 +2253,7 @@ read_root_hints_file(val_context_t * ctx)
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                       ZONE_COMMENT, ZONE_END_STMT))) {
+                       ZONE_COMMENT, ZONE_END_STMT, 0))) {
             goto err;
             
         }
@@ -2265,7 +2272,7 @@ read_root_hints_file(val_context_t * ctx)
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                       ZONE_COMMENT, ZONE_END_STMT))) {
+                       ZONE_COMMENT, ZONE_END_STMT, 0))) {
             goto err;
         }
         class_h = res_nametoclass(token, &success);
@@ -2288,7 +2295,7 @@ read_root_hints_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                       ZONE_COMMENT, ZONE_END_STMT))) {
+                       ZONE_COMMENT, ZONE_END_STMT, 0))) {
                 goto err;
             }
         }
@@ -2309,7 +2316,7 @@ read_root_hints_file(val_context_t * ctx)
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                       ZONE_COMMENT, ZONE_END_STMT))) {
+                       ZONE_COMMENT, ZONE_END_STMT, 0))) {
             goto err;
         }
         if (type_h == ns_t_a) {

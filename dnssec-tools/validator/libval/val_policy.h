@@ -114,7 +114,8 @@ int             val_get_token(char **buf_ptr,
                               int *line_number,
                               char *conf_token,
                               int conf_limit, int *endst, 
-                              const char *comment_c, char endstmt_c);
+                              const char *comment_c, char endstmt_c,
+                              int ignore_space);
 int free_policy_entry(policy_entry_t *pol_entry, int index);
 
 
