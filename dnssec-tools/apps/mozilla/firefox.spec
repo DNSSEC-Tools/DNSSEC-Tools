@@ -1,78 +1,52 @@
-%define indexhtml file:///usr/share/doc/HTML/index.html
+%define homepage http://start.fedoraproject.org/
+%define default_bookmarks_file %{_datadir}/bookmarks/default-bookmarks.html
 %define desktop_file_utils_version 0.9
-%define nspr_version 4.6
-%define nss_version 3.11.1
-%define cairo_version 0.5
-%define builddir %{_builddir}/mozilla
-%define build_devel_package 1
+%define firefox_app_id \{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}
 
-%define official_branding 1
+%define mozappdir            %{_libdir}/%{name}-%{version}
 
-Summary:        Mozilla Firefox Web browser.
+%define gecko_version 1.9.0.6
+
+%define official_branding    1
+%define build_langpacks      1
+
+%if ! %{official_branding}
+%define cvsdate 20080327
+%define nightly .cvs%{cvsdate}
+%endif
+
+Summary:        Mozilla Firefox Web browser
 Name:           firefox
-Version:        1.5.0.10
-Release:        5%{?dist}.fc6.dnssec.1
+Version:        3.0.6
+Release:        1%{?dist}
 URL:            http://www.mozilla.org/projects/firefox/
-License:        MPL/LGPL
+License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
 %if %{official_branding}
 %define tarball firefox-%{version}-source.tar.bz2
 %else
-%define tarball firefox-1.5rc3-source.tar.bz2
+%define tarball mozilla-%{cvsdate}.tar.bz2
 %endif
 Source0:        %{tarball}
-Source2:        firefox-langpacks-%{version}-20070219.tar.bz2
+%if %{build_langpacks}
+Source2:        firefox-langpacks-%{version}-20090204.tar.bz2
+%endif
 Source10:       firefox-mozconfig
 Source11:       firefox-mozconfig-branded
-Source12:       firefox-redhat-default-bookmarks.html
-Source13:       firefox-redhat-default-prefs.js
+Source12:       firefox-redhat-default-prefs.js
 Source20:       firefox.desktop
 Source21:       firefox.sh.in
 Source22:       firefox.png
 Source23:       firefox.1
-Source50:       firefox-xremote-client.sh.in
 Source100:      find-external-requires
-Source101:      add-gecko-provides.in
 
-# build patches
-#Patch3:         firefox-1.5.0.10-nss-system-nspr.patch
-#Patch4:         firefox-1.5.0.10-with-system-nss.patch
-Patch5:         firefox-1.5-visibility.patch
 
-# customization patches
-Patch20:        firefox-redhat-homepage.patch
-Patch21:        firefox-0.7.3-psfonts.patch
-Patch22:        firefox-1.1-default-applications.patch
-Patch23:        firefox-1.1-software-update.patch
-Patch24:        firefox-RC1-stock-icons-be.patch
-Patch25:        firefox-RC1-stock-icons-fe.patch
-Patch26:        firefox-RC1-stock-icons-gnomestripe.patch
-Patch27:        firefox-gnomestripe-0.1-livemarks.patch
-
-# local bugfixes
-Patch40:        firefox-1.5-bullet-bill.patch
-Patch42:        firefox-1.1-uriloader.patch
-
-# font system fixes
-Patch81:        firefox-1.5-nopangoxft.patch
-Patch82:        firefox-1.5-pango-mathml.patch
-Patch83:        firefox-1.5-pango-cursor-position.patch
-Patch84:        firefox-1.5-pango-printing.patch
-Patch85:        firefox-1.5-pango-cursor-position-more.patch
-Patch86:        firefox-1.5-pango-justified-range.patch
-Patch87:        firefox-1.5-pango-underline.patch
-Patch88:        firefox-1.5-xft-rangewidth.patch
-
-# Other
-Patch102:       firefox-1.5-theme-change.patch
-Patch103:       firefox-1.5-ppc64.patch
-
+# Upstream patches
 
 # DNSSEC Patches
 Patch201:       dnssec-firefox.patch
 Patch203:       dnssec-both.patch
 Patch205:       dnssec-mozconfig.patch
-
 
 %if %{official_branding}
 # Required by Mozilla Corporation
@@ -83,335 +57,231 @@ Patch205:       dnssec-mozconfig.patch
 
 
 %endif
+
 # ---------------------------------------------------
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-#BuildRequires:  nspr-devel >= %{nspr_version}
-#BuildRequires:  nss-devel >= %{nss_version}
-#BuildRequires:  cairo-devel >= %{cairo_version}
-BuildRequires:  libpng-devel, libjpeg-devel
-BuildRequires:  zlib-devel, zip
+BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+BuildRequires:  zip
 BuildRequires:  libIDL-devel
 BuildRequires:  desktop-file-utils
 BuildRequires:  gtk2-devel
 BuildRequires:  gnome-vfs2-devel
-BuildRequires:  libgnome-devel
 BuildRequires:  libgnomeui-devel
 BuildRequires:  krb5-devel
 BuildRequires:  pango-devel
 BuildRequires:  freetype-devel >= 2.1.9
 BuildRequires:  libXt-devel
 BuildRequires:  libXrender-devel
+BuildRequires:  system-bookmarks
+BuildRequires:  startup-notification-devel
+BuildRequires:  gecko-devel-unstable = %{gecko_version}
 BuildRequires:  autoconf213
 
-#Requires:       nspr >= %{nspr_version}
-#Requires:       nss >= %{nss_version}
 Requires:       desktop-file-utils >= %{desktop_file_utils_version}
-Requires:	dnssec-tools >= 0.9.2
-Obsoletes:      phoenix, mozilla-firebird, MozillaFirebird
+Requires:       gecko-libs = %{gecko_version}
+Requires:       system-bookmarks
 Obsoletes:      mozilla <= 37:1.7.13
 Provides:       webclient
-%define mozappdir %{_libdir}/firefox-%{version}
+
 
 %define _use_internal_dependency_generator 0
-
-%if %{build_devel_package}
-%define __find_provides %{_builddir}/add-gecko-provides
-%else
 %define __find_requires %{SOURCE100}
-%endif
 
 %description
 Mozilla Firefox is an open-source web browser, designed for standards
 compliance, performance and portability.
 
-%if %{build_devel_package}
-%package devel
-Summary: Development files for Firefox
-Group: Development/Libraries
-Obsoletes: mozilla-devel
-Requires: firefox = %{version}-%{release}
-Requires: nspr-devel >= %{nspr_version}
-Requires: nss-devel >= %{nss_version}
-
-%description devel
-Development files for Firefox.  This package exists temporarily.
-When xulrunner has reached version 1.0, firefox-devel will be
-removed in favor of xulrunner-devel.
-%endif
-
 #---------------------------------------------------------------------
 
 %prep
-%setup -q -c %{name}-%{version}
+%setup -q -c
 cd mozilla
-
-#%patch3  -p1
-#%patch4  -p1
-
-# Pragma visibility is broken on most platforms for some reason.
-# It works on i386 so leave it alone there.  Disable elsewhere.
-# See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=20297
-%ifnarch i386
-%patch5  -p0
-%endif
-
-%patch20 -p0
-%patch21 -p1
-%patch22 -p0
-#%patch23 -p0
-#%patch24 -p0
-#%patch25 -p0
-#%patch26 -p0
-#%patch27 -p1
-%patch40 -p1
-%patch42 -p0
-
-# font system fixes
-%patch81 -p1 -b .nopangoxft
-%patch82 -p1 -b .pango-mathml
-%patch83 -p1 -b .pango-cursor-position
-%patch84 -p1 -b .pango-printing
-%patch85 -p1 -b .pango-cursor-position-more
-%patch86 -p1 -b .pango-justified-range
-%patch87 -p1 -b .pango-underline
-%patch88 -p1 -b .nopangoxft2
-pushd gfx/src/ps
-  # This sort of sucks, but it works for now.
-  ln -s ../gtk/nsFontMetricsPango.h .
-  ln -s ../gtk/nsFontMetricsPango.cpp .
-  ln -s ../gtk/mozilla-decoder.h .
-  ln -s ../gtk/mozilla-decoder.cpp .
-popd
-
-%patch102 -p0 -b .theme-change
-%patch103 -p1 -b .ppc64
-
-# dnssec: moved this above the patches, since it's patched.
-%{__rm} -f .mozconfig
-%{__cp} %{SOURCE10} .mozconfig
-%if %{official_branding}
-%{__cat} %{SOURCE11} >> .mozconfig
-%endif
 
 # For branding specific patches.
 
 %if %{official_branding}
 # Required by Mozilla Corporation
 
-
 %else
 # Not yet approved by Mozilla Corporation
+
+
 %endif
+
+
+%{__rm} -f .mozconfig
+%{__cp} %{SOURCE10} .mozconfig
+%if %{official_branding}
+%{__cat} %{SOURCE11} >> .mozconfig
+%endif
+
+# Manually generate configure since we patched the base
+autoconf-2.13
+
+
+# Set up SDK path
+echo "ac_add_options --with-libxul-sdk=\
+`pkg-config --variable=sdkdir libxul`" >> .mozconfig
 
 ###############################
 # begin dnssec related patches
-
-exit 5
-
-#%patch201 -p1
-#%patch203 -p1
-
+%patch201 -b.dnssec -p1
+%patch203 -b.dnssec -p1
 # remove the system-nspr and system-nss from the normal fedora mozconfig
-#%patch205 -p0
+%patch205 -b.dnssec -p0
 
-# no longer needed
 #%patch202 -p0
 #%patch204 -p0
-
-
-# end dnssec related patches
-###############################
-
-
-
-# set up our default bookmarks
-%{__cp} %{SOURCE12} profile/defaults/bookmarks.html
-
 
 # rebuild configure(s) due to dnssec patches
 /bin/rm -f ./configure
 /usr/bin/autoconf-2.13
 /bin/rm -f ./nsprpub/configure
 (cd nsprpub && /usr/bin/autoconf-2.13)
+# end dnssec related patches
+###############################
+
 
 #---------------------------------------------------------------------
 
 %build
 cd mozilla
 
-# Build with -Os as it helps the browser; also, don't override mozilla's warning
-# level; they use -Wall but disable a few warnings that show up _everywhere_
-MOZ_OPT_FLAGS=$(echo $RPM_OPT_FLAGS | %{__sed} -e 's/-O2/-Os/' -e 's/-Wall//')
+# Mozilla builds with -Wall with exception of a few warnings which show up
+# everywhere in the code; so, don't override that.
+MOZ_OPT_FLAGS=$(echo $RPM_OPT_FLAGS | %{__sed} -e 's/-Wall//')
+export CFLAGS=$MOZ_OPT_FLAGS
+export CXXFLAGS=$MOZ_OPT_FLAGS
 
-export RPM_OPT_FLAGS=$MOZ_OPT_FLAGS
 export PREFIX='%{_prefix}'
 export LIBDIR='%{_libdir}'
 
-%ifarch ppc ppc64 s390 s390x
-%define moz_make_flags -j1
-%else
-%define moz_make_flags %{?_smp_mflags}
+MOZ_SMP_FLAGS=-j1
+%ifnarch ppc ppc64 s390 s390x
+[ -z "$RPM_BUILD_NCPUS" ] && \
+     RPM_BUILD_NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`"
+[ "$RPM_BUILD_NCPUS" -gt 1 ] && MOZ_SMP_FLAGS=-j2
 %endif
 
-export LDFLAGS="-Wl,-rpath,%{mozappdir}"
-export MAKE="gmake %{moz_make_flags}"
-make -f client.mk build
+INTERNAL_GECKO=%{version}
+MOZ_APP_DIR=%{_libdir}/%{name}-${INTERNAL_GECKO}
+
+export LDFLAGS="-Wl,-rpath,${MOZ_APP_DIR}"
+make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS"
 
 #---------------------------------------------------------------------
 
 %install
-cd mozilla
 %{__rm} -rf $RPM_BUILD_ROOT
+cd mozilla
 
-cd browser/installer
-%{__make} STRIP=/bin/true
-cd -
+DESTDIR=$RPM_BUILD_ROOT make install
 
-%{__mkdir_p} $RPM_BUILD_ROOT{%{_libdir},%{_bindir},%{_datadir}/applications}
+%{__mkdir_p} $RPM_BUILD_ROOT{%{_libdir},%{_bindir},%{_datadir}/applications,%{_datadir}/pixmaps},
 
-%{__tar} -C $RPM_BUILD_ROOT%{_libdir}/ -xzf dist/%{name}-*linux*.tar.gz
-%{__mv} $RPM_BUILD_ROOT%{_libdir}/%{name} $RPM_BUILD_ROOT%{mozappdir}
-
-%{__rm} -f $RPM_BUILD_ROOT%{_libdir}/%{name}-*linux*.tar
-
-%{__install} -p -D %{SOURCE22} $RPM_BUILD_ROOT%{_datadir}/pixmaps/%{name}.png
+%{__install} -p -D -m 644 %{SOURCE22} $RPM_BUILD_ROOT%{_datadir}/pixmaps/%{name}.png
 
 desktop-file-install --vendor mozilla \
   --dir $RPM_BUILD_ROOT%{_datadir}/applications \
-  --add-category X-Fedora \
-  --add-category Application \
+  --add-category WebBrowser \
   --add-category Network \
   %{SOURCE20} 
 
 # set up the firefox start script
+%{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/firefox
 %{__cat} %{SOURCE21} | %{__sed} -e 's,FIREFOX_VERSION,%{version},g' > \
   $RPM_BUILD_ROOT%{_bindir}/firefox
 %{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/firefox
 
 # set up our default preferences
-%{__cat} %{SOURCE13} | %{__sed} -e 's,FIREFOX_RPM_VR,%{version}-%{release},g' > rh-default-prefs
-%{__cp} rh-default-prefs $RPM_BUILD_ROOT/%{mozappdir}/greprefs/all-redhat.js
-%{__cp} rh-default-prefs $RPM_BUILD_ROOT/%{mozappdir}/defaults/pref/all-redhat.js
+%{__cat} %{SOURCE12} | %{__sed} -e 's,FIREFOX_RPM_VR,%{version}-%{release},g' > rh-default-prefs
+
+# set up our default homepage
+%{__cat} > $RPM_BUILD_ROOT/%{mozappdir}/browserconfig.properties << EOF
+browser.startup.homepage=%{homepage}
+EOF
+
+# Export correct locale
+%{__cat} > $RPM_BUILD_ROOT/%{mozappdir}/defaults/preferences/firefox-l10n.js << EOF
+pref("general.useragent.locale", "chrome://global/locale/intl.properties");
+EOF
+%{__chmod} 644 $RPM_BUILD_ROOT/%{mozappdir}/defaults/preferences/firefox-l10n.js
+
+# place the preferences
+%{__cp} rh-default-prefs $RPM_BUILD_ROOT/%{mozappdir}/defaults/preferences/all-redhat.js
 %{__rm} rh-default-prefs
 
 # set up our default bookmarks
-%{__install} -p -D %{SOURCE12} $RPM_BUILD_ROOT%{mozappdir}/defaults/profile/bookmarks.html
+%{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/defaults/profile/bookmarks.html
+ln -s %{default_bookmarks_file} $RPM_BUILD_ROOT/%{mozappdir}/defaults/profile/bookmarks.html
 
-%{__cat} %{SOURCE50} | %{__sed} -e 's,FFDIR,%{mozappdir},g' -e 's,LIBDIR,%{_libdir},g' > \
-  $RPM_BUILD_ROOT%{mozappdir}/firefox-xremote-client
+%{__install} -p -D -m 644 %{SOURCE23} $RPM_BUILD_ROOT%{_mandir}/man1/firefox.1
 
-%{__chmod} 755 $RPM_BUILD_ROOT%{mozappdir}/firefox-xremote-client
-%{__install} -p -D %{SOURCE23} $RPM_BUILD_ROOT%{_mandir}/man1/firefox.1
+%{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/firefox-config
 
-%{__rm} -f $RPM_BUILD_ROOT%{mozappdir}/firefox-config
+#cd $RPM_BUILD_ROOT/%{mozappdir}/chrome
+#find . -name "*" -type d -maxdepth 1 -exec %{__rm} -rf {} \;
+#cd -
 
-cd $RPM_BUILD_ROOT%{mozappdir}/chrome
-find . -name "*" -type d -maxdepth 1 -exec %{__rm} -rf {} \;
-cd -
+#%{__cat} > $RPM_BUILD_ROOT/%{mozappdir}/defaults/pref/firefox-l10n.js << EOF
+#pref("general.useragent.locale", "chrome://global/locale/intl.properties");
+#EOF
+#%{__chmod} 644 $RPM_BUILD_ROOT/%{mozappdir}/defaults/pref/firefox-l10n.js
 
-%{__cat} > $RPM_BUILD_ROOT%{mozappdir}/defaults/pref/firefox-l10n.js << EOF
-pref("general.useragent.locale", "chrome://global/locale/intl.properties");
-EOF
-%{__chmod} 644 $RPM_BUILD_ROOT%{mozappdir}/defaults/pref/firefox-l10n.js
+%{__mkdir_p} $RPM_BUILD_ROOT/%{mozappdir}/chrome/icons/default/
+%{__cp} other-licenses/branding/%{name}/default16.png \
+        $RPM_BUILD_ROOT/%{mozappdir}/chrome/icons/default/ 
+%{__cp} other-licenses/branding/%{name}/default16.png \
+        $RPM_BUILD_ROOT/%{mozappdir}/icons/
 
-%{__mkdir_p} $RPM_BUILD_ROOT%{mozappdir}/chrome/icons/default/
-%{__cp} other-licenses/branding/%{name}/default.xpm \
-        $RPM_BUILD_ROOT%{mozappdir}/chrome/icons/default/ 
-%{__cp} other-licenses/branding/%{name}/default.xpm \
-        $RPM_BUILD_ROOT%{mozappdir}/icons/
-
-# own mozilla plugin dir (#135050)
-%{__mkdir_p} $RPM_BUILD_ROOT%{_libdir}/mozilla/plugins
-
+echo > ../%{name}.lang
+%if %{build_langpacks}
 # Install langpacks
-%{__mkdir_p} $RPM_BUILD_ROOT%{mozappdir}/extensions
+%{__mkdir_p} $RPM_BUILD_ROOT/%{mozappdir}/extensions
 %{__tar} xjf %{SOURCE2}
-
 for langpack in `ls firefox-langpacks/*.xpi`; do
   language=`basename $langpack .xpi`
-  extensiondir=$RPM_BUILD_ROOT%{mozappdir}/extensions/langpack-$language@firefox.mozilla.org
+  extensiondir=$RPM_BUILD_ROOT/%{mozappdir}/extensions/langpack-$language@firefox.mozilla.org
   %{__mkdir_p} $extensiondir
   unzip $langpack -d $extensiondir
   find $extensiondir -type f | xargs chmod 644
 
-  langtmp=%{_tmpdir}/%{name}/langpack-$language
+  tmpdir=`mktemp -d %{name}.XXXXXXXX`
+  langtmp=$tmpdir/%{name}/langpack-$language
   %{__mkdir_p} $langtmp
   jarfile=$extensiondir/chrome/$language.jar
   unzip $jarfile -d $langtmp
 
-  sed -i -e "s|browser.startup.homepage.*$|browser.startup.homepage=%{indexhtml}|g;" \
-         -e "s|homePageDefault.*$|homePageDefault=%{indexhtml}|g;" \
-         -e "s|startup.homepage_override_url.*$|startup.homepage_override_url=%{indexhtml}|g;" \
-      $langtmp/locale/browser-region/region.properties
+  sed -i -e "s|browser.startup.homepage.*$|browser.startup.homepage=%{homepage}|g;" \
+         $langtmp/locale/browser-region/region.properties
 
   find $langtmp -type f | xargs chmod 644
   %{__rm} -rf $jarfile
   cd $langtmp
   zip -r -D $jarfile locale
-  %{__rm} -rf locale
   cd -
+  %{__rm} -rf $tmpdir
+
+  language=`echo $language | sed -e 's/-/_/g'`
+  extensiondir=`echo $extensiondir | sed -e "s,^$RPM_BUILD_ROOT,,"`
+  echo "%%lang($language) $extensiondir" >> ../%{name}.lang
 done
 %{__rm} -rf firefox-langpacks
+%endif # build_langpacks
 
-# Prepare our devel package
-%if %{build_devel_package}
-# Fix multilib devel conflicts...
-%ifarch x86_64 ia64 s390x ppc64
-%define mozbits 64
-%else
-%define mozbits 32
-%endif
+# System extensions
+%{__mkdir_p} $RPM_BUILD_ROOT%{_datadir}/mozilla/extensions/%{firefox_app_id}
+%{__mkdir_p} $RPM_BUILD_ROOT%{_libdir}/mozilla/extensions/%{firefox_app_id}
 
-for genheader in js/jsautocfg mozilla-config; do
-mv dist/include/${genheader}.h dist/include/${genheader}%{mozbits}.h
-cat > dist/include/${genheader}.h << EOF
-// This file exists to fix multilib conflicts
-#if defined(__x86_64__) || defined(__ia64__) || defined(__s390x__) || defined(__powerpc64__)
-#include "${genheader#*/}64.h"
-#else
-#include "${genheader#*/}32.h"
-#endif
-EOF
-done
-
-%{__mkdir_p} $RPM_BUILD_ROOT/%{_includedir}/firefox-%{version}
-%{__mkdir_p} $RPM_BUILD_ROOT/%{_datadir}/idl/firefox-%{version}
-%{__mkdir_p} $RPM_BUILD_ROOT/%{_libdir}/pkgconfig
-%{__cp} -rL dist/include/* \
-  $RPM_BUILD_ROOT/%{_includedir}/firefox-%{version}
-%{__cp} -rL dist/idl/* \
-  $RPM_BUILD_ROOT/%{_datadir}/idl/firefox-%{version}
-install -c -m 755 dist/bin/xpcshell \
-  dist/bin/xpidl \
-  dist/bin/xpt_dump \
-  dist/bin/xpt_link \
-  $RPM_BUILD_ROOT/%{mozappdir}
-install -c -m 644 build/unix/*.pc \
-  $RPM_BUILD_ROOT/%{_libdir}/pkgconfig
-%endif
-
-# GRE stuff
-%ifarch x86_64 ia64 ppc64 s390x
-%define gre_conf_file gre64.conf
-%else
-%define gre_conf_file gre.conf
-%endif
-
-%{__mkdir_p} $RPM_BUILD_ROOT/etc/gre.d/
-%{__cat} > $RPM_BUILD_ROOT/etc/gre.d/%{gre_conf_file} << EOF
-[%{version}]
-GRE_PATH=%{mozappdir}
-EOF
-
-GECKO_VERSION=$(./config/milestone.pl --topsrcdir='.')
-%{__cat} %{SOURCE101} | %{__sed} -e "s/@GECKO_VERSION@/$GECKO_VERSION/g" > \
-                        %{_builddir}/add-gecko-provides
-chmod +x %{_builddir}/add-gecko-provides
+# Copy over the LICENSE
+%{__install} -p -c -m 644 LICENSE $RPM_BUILD_ROOT/%{mozappdir}
 
 # ghost files
-touch $RPM_BUILD_ROOT%{mozappdir}/components/compreg.dat
-touch $RPM_BUILD_ROOT%{mozappdir}/components/xpti.dat
+touch $RPM_BUILD_ROOT/%{mozappdir}/components/compreg.dat
+touch $RPM_BUILD_ROOT/%{mozappdir}/components/xpti.dat
+
+# jemalloc shows up sometimes, but it's not needed here, it's in XR
+%{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/libjemalloc.so
 
 #---------------------------------------------------------------------
 
@@ -421,31 +291,39 @@ touch $RPM_BUILD_ROOT%{mozappdir}/components/xpti.dat
 #---------------------------------------------------------------------
 
 %post
-update-desktop-database %{_datadir}/applications
+update-desktop-database &> /dev/null || :
+touch --no-create %{_datadir}/icons/hicolor
+if [ -x %{_bindir}/gtk-update-icon-cache ]; then
+  %{_bindir}/gtk-update-icon-cache --quiet %{_datadir}/icons/hicolor || :
+fi
 
 %postun
-update-desktop-database %{_datadir}/applications
+update-desktop-database &> /dev/null || :
+touch --no-create %{_datadir}/icons/hicolor
+if [ -x %{_bindir}/gtk-update-icon-cache ]; then
+  %{_bindir}/gtk-update-icon-cache --quiet %{_datadir}/icons/hicolor || :
+fi
 
 %preun
 # is it a final removal?
 if [ $1 -eq 0 ]; then
   %{__rm} -rf %{mozappdir}/components
   %{__rm} -rf %{mozappdir}/extensions
+  %{__rm} -rf %{mozappdir}/plugins
 fi
 
-%files
+
+%files -f %{name}.lang
 %defattr(-,root,root,-)
 %{_bindir}/firefox
-%{_mandir}/man1/*
+%doc %{_mandir}/man1/*
+%dir %{_datadir}/mozilla/extensions/%{firefox_app_id}
+%dir %{_libdir}/mozilla/extensions/%{firefox_app_id}
 %{_datadir}/applications/mozilla-%{name}.desktop
 %{_datadir}/pixmaps/firefox.png
-%{_libdir}/mozilla
-%dir /etc/gre.d
-/etc/gre.d/%{gre_conf_file}
-
 %dir %{mozappdir}
-%{mozappdir}/LICENSE
-%{mozappdir}/README.txt
+%doc %{mozappdir}/LICENSE
+%doc %{mozappdir}/README.txt
 %{mozappdir}/*.properties
 %{mozappdir}/chrome
 %dir %{mozappdir}/components
@@ -453,93 +331,377 @@ fi
 %ghost %{mozappdir}/components/xpti.dat
 %{mozappdir}/components/*.so
 %{mozappdir}/components/*.xpt
-%{mozappdir}/components/*.js
+%attr(644, root, root) %{mozappdir}/blocklist.xml
+%attr(644, root, root) %{mozappdir}/components/*.js
 %{mozappdir}/defaults
-%{mozappdir}/extensions
-%{mozappdir}/greprefs
+%dir %{mozappdir}/extensions
+%{mozappdir}/extensions/{972ce4c6-7e08-4474-a285-3208198ce6fd}
 %{mozappdir}/icons
-%{mozappdir}/init.d
-%{mozappdir}/plugins
-%{mozappdir}/res
 %{mozappdir}/searchplugins
-%{mozappdir}/*.so
-%{mozappdir}/*.chk
 %{mozappdir}/firefox
-%{mozappdir}/firefox-bin
-%{mozappdir}/firefox-xremote-client
-%{mozappdir}/mozilla-xremote-client
 %{mozappdir}/run-mozilla.sh
+%{mozappdir}/application.ini
+%dir %{mozappdir}/modules
+%{mozappdir}/modules/distribution.js
+%{mozappdir}/.autoreg
 # XXX See if these are needed still
-%{mozappdir}/dependentlibs.list
 %{mozappdir}/updater*
-%{mozappdir}/removed-files
-
-%if %{build_devel_package}
-%files devel
-%defattr(-,root,root)
-%{_datadir}/idl/firefox-%{version}
-%{_includedir}/firefox-%{version}
-%{mozappdir}/xpcshell
-%{mozappdir}/xpicleanup
-%{mozappdir}/xpidl
-%{mozappdir}/xpt_dump
-%{mozappdir}/xpt_link
-%{_libdir}/pkgconfig/firefox-xpcom.pc
-%{_libdir}/pkgconfig/firefox-plugin.pc
-%{_libdir}/pkgconfig/firefox-js.pc
-%{_libdir}/pkgconfig/firefox-gtkmozembed.pc
-%exclude %{_libdir}/pkgconfig/firefox-nspr.pc
-%exclude %{_libdir}/pkgconfig/firefox-nss.pc
-%endif
+%exclude %{mozappdir}/removed-files
 
 #---------------------------------------------------------------------
 
 %changelog
-* Mon Mar 26 2007 Wes Hardaker <hardaker@users.sourceforge.net> - 1.5.0.10-5.fc6.dnssec.1
-- Added DNNSEC support
+* Wed Feb  4 2009 Christopher Aillon <caillon@redhat.com> - 3.0.6-1
+- Update to 3.0.6
 
-* Tue Mar 13 2007 Martin Stransky <stransky@redhat.com> 1.5.0.10-5
-- Rebuild to get useragent smaller. (#230333)
+* Wed Jan  7 2009 Jan Horak <jhorak@redhat.com> - 3.0.5-2
+- Fixed wrong LANG and LC_MESSAGES variables interpretation (#441973) 
+  in startup script.
 
-* Wed Mar 7 2007 David Woodhouse <dwmw2@redhat.com> 1.5.0.10-4
+* Tue Dec 16 2008 Christopher Aillon <caillon@redhat.com> 3.0.5-1
+- Update to 3.0.5
+
+* Tue Nov 13 2008 Jan Horak <jhorak@redhat.com> 3.0.4-2
+- Removed firefox-2.0-getstartpage.patch patch 
+- Start page is set by different way
+
+* Wed Nov 12 2008 Christopher Aillon <caillon@redhat.com> 3.0.4-1
+- Update to 3.0.4
+
+* Tue Sep 23 2008 Christopher Aillon <caillon@redhat.com> 3.0.2-1
+- Update to 3.0.2
+
+* Wed Jul 16 2008 Christopher Aillon <caillon@redhat.com> 3.0.1-1
+- Update to 3.0.1
+
+* Tue Jun 17 2008 Christopher Aillon <caillon@redhat.com> 3.0-1
+- Firefox 3 Final
+
+* Thu May 08 2008 Colin Walters <walters@redhat.com> 3.0-0.61
+- Rebuild to pick up new xulrunner (bug #445543)
+
+* Wed Apr 30 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.60
+- Rebuild
+
+* Mon Apr 28 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.59
+- Zero out the lang file we generate during builds
+
+* Mon Apr 28 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.58
+- Bounce a few unneeded items from the spec and clean up some tabs
+
+* Fri Apr 25 2008 Martin Stransky <stransky@redhat.com> 3.0-0.57
+- Enable anti-pishing protection (#443403)
+
+* Fri Apr 18 2008 Martin Stransky <stransky@redhat.com> 3.0-0.55
+- Don't show an welcome page during first browser start (#437065)
+
+* Sat Apr 12 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.54
+- Remove the broken Macedonian (mk) langpack
+- Download to Download/
+
+* Mon Apr  7 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.53
+- Add langpacks, marked with %%lang
+- Translate the .desktop file
+
+* Wed Apr  2 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.52
+- Beta 5
+
+* Mon Mar 31 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.51
+- Beta 5 RC2
+
+* Thu Mar 27 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.50
+- Update to latest trunk (2008-03-27)
+
+* Wed Mar 26 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.49
+- Update to latest trunk (2008-03-26)
+
+* Tue Mar 25 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.48
+- Update to latest trunk (2008-03-25)
+
+* Mon Mar 24 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.47
+- Update to latest trunk (2008-03-24)
+
+* Thu Mar 20 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.46
+- Update to latest trunk (2008-03-20)
+
+* Mon Mar 17 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.45
+- Update to latest trunk (2008-03-17)
+
+* Mon Mar 17 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.44
+- Revert to trunk from the 15th to fix crashes on HTTPS sites
+
+* Sun Mar 16 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.43
+- Update to latest trunk (2008-03-16)
+
+* Sat Mar 15 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.42
+- Update to latest trunk (2008-03-15)
+
+* Sat Mar 15 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.41
+- Avoid conflicts between gecko debuginfo packages
+
+* Wed Mar 12 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.40
+- Update to latest trunk (2008-03-12)
+
+* Tue Mar 11 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.39
+- Update to latest trunk (2008-03-11)
+
+* Mon Mar 10 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.38
+- Update to latest trunk (2008-03-10)
+
+* Sun Mar  9 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.37
+- Update to latest trunk (2008-03-09)
+
+* Fri Mar  7 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta4.36
+- Update to latest trunk (2008-03-07)
+
+* Thu Mar  6 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta4.35
+- Update to latest trunk (2008-03-06)
+
+* Tue Mar  4 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.34
+- Update to latest trunk (2008-03-04)
+
+* Sun Mar  2 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.33
+- Update to latest trunk (2008-03-02)
+
+* Sat Mar  1 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.32
+- Update to latest trunk (2008-03-01)
+
+* Fri Feb 29 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.31
+- Update to latest trunk (2008-02-29)
+
+* Thu Feb 28 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.30
+- Update to latest trunk (2008-02-28)
+
+* Wed Feb 27 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.29
+- Update to latest trunk (2008-02-27)
+
+* Tue Feb 26 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.28
+- Update to latest trunk (2008-02-26)
+
+* Sat Feb 23 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.27
+- Update to latest trunk (2008-02-23)
+
+* Fri Feb 22 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.26
+- Update to latest trunk (2008-02-22)
+
+* Thu Feb 21 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.25
+- Update to latest trunk (2008-02-21)
+
+* Sun Feb 17 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.23
+- Update to latest trunk (2008-02-17)
+
+* Fri Feb 15 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.22
+- Update to latest trunk (2008-02-15)
+
+* Thu Feb 14 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.21
+- Update to latest trunk (2008-02-14)
+
+* Wed Feb 13 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta3.20
+- Update to latest trunk (2008-02-13)
+
+* Mon Feb 11 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.19
+- Update to latest trunk (2008-02-11)
+
+* Sun Feb 10 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.18
+- Update to latest trunk (2008-02-10)
+
+* Sat Feb  9 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.17
+- Update to latest trunk (2008-02-09)
+
+* Wed Feb  6 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.16
+- Update to latest trunk (2008-02-06)
+
+* Wed Jan 30 2008 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.15
+- Update to latest trunk (2008-01-30)
+- Backported an old laucher
+
+* Mon Jan 28 2008 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.13
+- cleared starting scripts, removed useless parts
+
+* Mon Jan 21 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.12
+- Update to latest trunk (2008-01-21)
+
+* Tue Jan 15 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.11
+- Update to latest trunk (2008-01-15)
+- Now with system extensions directory support
+- Temporarily disable langpacks while we're on the bleeding edge
+- Remove skeleton files; they are in xulrunner now
+
+* Sun Jan 13 2008 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.10
+- Update to latest trunk (20080113)
+- Fix the default prefs, homepage, and useragent string
+
+* Thu Jan 10 2008 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.9
+- rebuilt agains xulrunner-devel-unstable
+
+* Mon Jan 7 2008 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.8
+- added ssl exception patch (mozbz #411037)
+
+* Fri Jan 4 2008 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.7
+- removed broken langpack
+- built against libxul
+
+* Thu Jan 3 2008 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.6
+- updated to the latest trunk (20080103)
+
+* Wed Jan 2 2008 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.5
+- added default fedora homepage
+- updated a language pack (#427182)
+
+* Mon Dec 31 2007 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.4
+- Create and own /etc/skel/.mozilla
+- No longer need add-gecko-provides
+
+* Sat Dec 22 2007 Christopher Aillon <caillon@redhat.com> 3.0-0.beta2.3
+- When there are both 32- and 64-bit versions of XPCOM installed on disk
+  make sure to load the correct one.
+
+* Tue Dec 20 2007 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.2
+- fixed xulrunner dependency
+
+* Tue Dec 18 2007 Martin Stransky <stransky@redhat.com> 3.0-0.beta2.1
+- moved to XUL Runner and updated to 3.0b3pre
+- removed firefox-devel package, gecko-libs is provided 
+  by xulrunner-devel now.
+
+* Thu Dec 13 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.10-5
+- Fix the getStartPage method to not return blank.
+  Patch by pspencer@fields.utoronto.ca
+
+* Sun Dec  9 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.10-4
+- Fix up some rpmlint warnings
+- Use only one pref for the homepage for now
+- Drop some old patches and some obsolote Obsoletes
+
+* Tue Dec 4 2007 Martin Stransky <stransky@redhat.com> 2.0.0.10-3
+- fixed an icon location
+
+* Mon Dec 3 2007 Martin Stransky <stransky@redhat.com> 2.0.0.10-2
+- removed gre.conf file (most of the gtkmozembed applications
+  run with xulrunner now)
+
+* Mon Nov 26 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.10-1
+- Update to 2.0.0.10
+
+* Tue Nov 5 2007 Martin Stransky <stransky@redhat.com> 2.0.0.9-1
+- updated to the latest upstream
+
+* Wed Oct 31 2007 Martin Stransky <stransky@redhat.com> 2.0.0.8-3
+- added mozilla-plugin-config to startup script
+
+* Tue Oct 30 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.8-2
+- Tweak the default backspace behavior to be more in line with
+  GNOME convention, Mozilla upstream, and other distros
+
+* Tue Oct 23 2007 Martin Stransky <stransky@redhat.com> 2.0.0.8-1
+- updated to the latest upstream
+- moved preference updates to build section
+
+* Thu Oct 18 2007 Jesse Keating <jkeating@redhat.com> - 2.0.0.6-12
+- Disable the Firefox startup notification support for now.
+
+* Mon Sep 26 2007 Martin Stransky <stransky@redhat.com> 2.0.0.6-11
+- Fixed #242657 - firefox -g doesn't work
+
+* Mon Sep 25 2007 Martin Stransky <stransky@redhat.com> 2.0.0.6-10
+- Removed hardcoded MAX_PATH, PATH_MAX and MAXPATHLEN macros
+
+* Mon Sep 24 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.6-9
+- Startup notification support
+
+* Tue Sep 11 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.6-8
+- Fix crashes when using GTK+ themes containing a gtkrc which specify 
+  GtkOptionMenu::indicator_size and GtkOptionMenu::indicator_spacing
+
+* Mon Sep 10 2007 Martin Stransky <stransky@redhat.com> 2.0.0.6-7
+- added fix for #246248 - firefox crashes when searching for word "do"
+
+* Thu Sep  6 2007 Christopher Aillon <caillon@redhat.com> - 2.0.0.6-6
+- Fix default page for all locales
+
+* Wed Aug 29 2007 Christopher Aillon <caillon@redhat.com> - 2.0.0.6-5
+- Tweak the default home page
+
+* Fri Aug 24 2007 Adam Jackson <ajax@redhat.com> - 2.0.0.6-4
+- Rebuild for build ID
+
+* Mon Aug 13 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.6-3
+- Update the license tag
+
+* Mon Aug  6 2007 Martin Stransky <stransky@redhat.com> 2.0.0.6-2
+- unwrapped plugins moved to the old location
+- removed plugin configuration utility
+
+* Sat Aug  4 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.6-1
+- Update to 2.0.0.6
+- Fix dnd support to/from gtk2 apps
+- Fix installed permissions of *.png
+
+* Mon Jul 23 2007 Martin Stransky <stransky@redhat.com> 2.0.0.5-3
+- added nspluginwrapper support
+
+* Wed Jul 18 2007 Kai Engert <kengert@redhat.com> - 2.0.0.5-2
+- Update to 2.0.0.5
+
+* Fri Jun 29 2007 Martin Stransky <stransky@redhat.com> 2.0.0.4-3
+- backported pango patches from FC6 (1.5.0.12)
+
+* Sun Jun  3 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.4-2
+- Properly clean up threads with newer NSPR
+
+* Wed May 30 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.4-1
+- Final version
+
+* Wed May 23 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.4-0.rc3
+- Update to 2.0.0.4 RC3
+
+* Tue Apr 17 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.3-4
+- Fix permissions of the man page
+
+* Tue Apr 10 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.3-3
+- Ensure initial homepage on all locales is our proper default
+
+* Sun Mar 25 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.3-2
+- Fix the symlink to default bookmarks
+- Use mktemp for temp dirs
+
+* Tue Mar 20 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.3-1
+- Update to 2.0.0.3
+
+* Tue Mar 20 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.2-3
+- Default bookmarks no longer live here; use system-bookmarks
+
+* Mon Mar 12 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.2-2
+- Oops, define the variables I expect to use.
+
+* Fri Feb 23 2007 Martin Stransky <stransky@redhat.com> 2.0.0.2-1
+- Update to 2002
+
+* Wed Feb 21 2007 David Woodhouse <dwmw2@redhat.com> 2.0.0.1-6
 - Fix PPC64 runtime
 - Fix firefox script to use 32-bit browser by default on PPC64 hardware
 
-* Thu Mar 1 2007 Martin Stransky <stransky@redhat.com> 1.5.0.10-3
-- added fix for #227262 - Can't find jsautocfg64.h per firefox-js.pc
+* Fri Feb  9 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.1-5
+- Start using the specified locale
 
-* Mon Feb 26 2007 Martin Stransky <stransky@redhat.com> 1.5.0.10-2
-- changed __ppc64__ arch tag to __powerpc64__
-
-* Thu Feb 22 2007 Martin Stransky <stransky@redhat.com> 1.5.0.10-1
-- Update to 1.5.0.10
-
-* Fri Feb  9 2007 Martin Stransky <stransky@redhat.com> 1.5.0.9-3
-- added fix for #227406: garbage characters on some websites 
-  (when pango is disabled)
-
-* Tue Jan 30 2007 Christopher Aillon <caillon@redhat.com> 1.5.0.9-2
+* Tue Jan 30 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.1-4
 - Fix the DND implementation to not grab, so it works with new GTK+.
-- Multilib -devel and -debuginfo fixes
-- Various pango fixes from behdad and tagoh
-- Some minor langpack fixes
 
-* Tue Dec 19 2006 Christopher Aillon <caillon@redhat.com> 1.5.0.9-1
-- Update to 1.5.0.9
+* Thu Jan 18 2007 Christopher Aillon <caillon@redhat.com> 2.0.0.1-3
+- Remove the XLIB_SKIP_ARGB_VISUALS=1 workaround; the plugin got fixed.
 
-* Tue Dec  5 2006 Christopher Aillon <caillon@redhat.com> 1.5.0.8-2
-- Updated pango patches from behdad
-- Fix a leak in liveconnect
-- Fix a potential crash in CSS
-- Let Firefox handle gcc warnings; it weeds out frequent offenders.
+* Fri Dec 22 2006 Christopher Aillon <caillon@redhat.com> 2.0.0.1-2
+- Strip out some frequent warnings; they muddy up the build output
 
-* Tue Nov  7 2006 Christopher Aillon <caillon@redhat.com> 1.5.0.8-1
-- Update to 1.5.0.8
-- Allow choosing of download directory
-- Take the user to the correct directory from the Download Manager.
+* Thu Dec 21 2006 Christopher Aillon <caillon@redhat.com> 2.0.0.1-1
+- Update to 2001
 
-* Tue Oct 24 2006 Christopher Aillon <caillon@redhat.com> 1.5.0.7-8
-- Patch to add support for printing via pango from Behdad.
+* Fri Oct 27 2006 Christopher Aillon <caillon@redhat.com> 2.0-2
+- Tweak the .desktop file
+
+* Tue Oct 24 2006 Christopher Aillon <caillon@redhat.com> 2.0-1
+- Update to 2.0
+- Add patch from Behdad to fix pango printing.
 
 * Wed Oct 11 2006 Christopher Aillon <caillon@redhat.com> 1.5.0.7-7
 - Add virtual provides for gecko applications.
