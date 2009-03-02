@@ -1,4 +1,4 @@
-# Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 
 			     DNSSEC-Tools
@@ -8,6 +8,10 @@ This directory contains a patch to apply to the mozilla code for
 enabling DNSSEC checking of URL DNS names.  It is in beta form with a
 lot of debugging but should be usable in testing environments.
 
+The current patches are for Firefox 3.0.6, though they may work with
+other 3.X releases.
+
+
 Needed Files depending on what is being built:
 
   +-------------------------+-----------+--------------+--------------+
@@ -15,7 +19,6 @@ Needed Files depending on what is being built:
   +-------------------------+-----------+--------------+--------------+
   |dnssec-firefox.patch     |X          |X             |              |
   |dnssec-both.patch        |X          |X             |X             |
-  |dnssec-mozconfig.patch   |X          |              |              |
   |firefox.spec             |X          |              |              |
   +-------------------------+-----------+--------------+--------------+
 
@@ -28,6 +31,10 @@ Needed Files depending on what is being built:
 ######################################################################
 # FIREFOX RPM
 #
+
+  The Fedora RPMs require patches to the xulrunner package and the
+  nspr package.  The dnssec-both.patch can be applied completely to
+  the xulrunner package during its build.  However, 
 
   To build the firefox linux RPM on Fedora Core (5):
 
@@ -51,7 +58,7 @@ Needed Files depending on what is being built:
   dnssec-tools installed.
 
 
-  tar xjf firefox-1.5.0.10-source.tar.bz2
+  tar xjf firefox-3.0.6-source.tar.bz2
   cd mozilla
   patch -p1 < ../dnssec-firefox.patch
   patch -p1 < ../dnssec-both.patch

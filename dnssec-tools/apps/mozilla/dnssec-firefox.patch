@@ -1,6 +1,6 @@
 --- mozilla/browser/components/preferences/advanced.xul.orig	2006-09-13 11:04:35.000000000 -0700
 +++ mozilla/browser/components/preferences/advanced.xul	2008-01-08 14:38:28.000000000 -0800
-@@ -112,6 +112,9 @@
+@@ -119,6 +119,9 @@
        <preference id="security.disable_button.openDeviceManager"
                    name="security.disable_button.openDeviceManager"
                    type="bool"/>
@@ -9,30 +9,30 @@
 +                  type="int"/>
      </preferences>
      
-     <script type="application/x-javascript" src="chrome://browser/content/preferences/advanced.js"/>
-@@ -124,6 +127,7 @@
+ #ifdef HAVE_SHELL_SERVICE
+@@ -136,6 +139,7 @@
          <tab id="networkTab" label="&networkTab.label;" helpTopic="prefs-advanced-network"/>
          <tab id="updateTab" label="&updateTab.label;"  helpTopic="prefs-advanced-update"/>
          <tab id="encryptionTab" label="&encryptionTab.label;" helpTopic="prefs-advanced-encryption"/>
 +        <tab id="dnssecTab" label="&dnssecTab.label;" helpTopic="prefs-advanced-dnssec"/>
        </tabs>
- 
+
        <tabpanels flex="1">
-@@ -343,6 +347,20 @@
+@@ -392,6 +396,20 @@
            </groupbox>
          </tabpanel>
- 
+
 +        <tabpanel orient="vertical">
 +          <groupbox>
 +            <caption label="&dnsSecurity.label;"/>
 +            <description>&dnssec.description;</description>
-+	    <radiogroup id="networkDnssecBehaviour"
-+	                preference="security.dnssec.dnssecBehavior">
-+	      <radio value="1" label="&neverDNSSecure.label;"
-+	             accesskey="&neverDNSSecure.accesskey;"/>
-+	      <radio value="0" label="&possibleDNSSecure.label;"
-+	             accesskey="&possibleDNSSecure.accesskey;"/>
-+	    </radiogroup>
++           <radiogroup id="networkDnssecBehaviour"
++                       preference="security.dnssec.dnssecBehavior">
++             <radio value="1" label="&neverDNSSecure.label;"
++                    accesskey="&neverDNSSecure.accesskey;"/>
++             <radio value="0" label="&possibleDNSSecure.label;"
++                    accesskey="&possibleDNSSecure.accesskey;"/>
++           </radiogroup>
 +          </groupbox>
 +        </tabpanel>
 +
@@ -41,8 +41,8 @@
    </prefpane>
 --- mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd.orig	2006-08-16 16:45:57.000000000 -0700
 +++ mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2008-01-08 14:41:07.000000000 -0800
-@@ -88,3 +88,13 @@
- <!ENTITY verify.accesskey                "V">
+@@ -99,3 +99,13 @@
+ <!ENTITY verify2.accesskey               "V">
  <!ENTITY viewSecurityDevices.label       "Security Devices">
  <!ENTITY viewSecurityDevices.accesskey   "y">
 +
@@ -83,21 +83,18 @@
  <ul>
 --- mozilla.firefox.1.5.0.6.rpmdist/layout/base/nsPresContext.cpp	2006-04-21 16:30:50.000000000 -0700
 +++ mozilla/layout/base/nsPresContext.cpp	2006-08-24 09:28:37.000000000 -0700
-@@ -68,6 +68,7 @@
+@@ -69,6 +69,7 @@
  #include "nsIWeakReferenceUtils.h"
  #include "nsCSSRendering.h"
  #include "prprf.h"
 +#include "prnetdb.h"
  #include "nsContentPolicyUtils.h"
- #include "nsIScriptGlobalObject.h"
  #include "nsIDOMDocument.h"
-@@ -258,6 +259,14 @@
+ #include "nsAutoPtr.h"
+@@ -268,6 +269,11 @@
    nsContentUtils::UnregisterPrefCallback("image.animation_mode",
                                           nsPresContext::PrefChangedCallback,
                                           this);
-+  nsContentUtils::UnregisterPrefCallback("image.animation_mode",
-+                                         nsPresContext::PrefChangedCallback,
-+                                         this);
 +#ifdef MOZ_DNSSEC
 +  nsContentUtils::UnregisterPrefCallback("security.dnssec.dnssecBehavior",
 +                                         nsPresContext::PrefChangedCallback,
@@ -105,20 +102,19 @@
 +#endif
  #ifdef IBMBIDI
    nsContentUtils::UnregisterPrefCallback("bidi.", PrefChangedCallback, this);
- 
-@@ -571,6 +580,11 @@
-   else if (animatePref.Equals("once"))
-     mImageAnimationModePref = imgIContainer::kLoopOnceAnimMode;
- 
+
+@@ -668,6 +674,10 @@
+   else // dynamic change to invalid value should act like it does initially
+     mImageAnimationModePref = imgIContainer::kNormalAnimMode;
+
 +#ifdef MOZ_DNSSEC
 +  PR_set_dnssec_validate_policy(nsContentUtils::GetIntPref("security.dnssec.dnssecBehavior"));
 +#endif /* MOZ_DNSSEC */
 +
-+
- #ifdef IBMBIDI
+   PRUint32 bidiOptions = GetBidi();
+
    PRInt32 prefInt =
-     nsContentUtils::GetIntPref("bidi.direction",
-@@ -704,6 +718,11 @@
+@@ -839,6 +849,11 @@
    nsContentUtils::RegisterPrefCallback("image.animation_mode",
                                         nsPresContext::PrefChangedCallback,
                                         this);
