@@ -33,7 +33,7 @@ my $time = time();
 
 my %primes = dnssec_tools_get_qwprimitives();
 
-DTOptions(\%opts,
+DTGetOptions(\%opts,
 		['GUI:screen','Basic Options'],
 		['GUI:VERSION',"1.1\nDNSSEC-Tools Version: 1.4"],
 		['GUI:separator', 'Map Output Style Options:'],
