@@ -14,6 +14,7 @@
 
 #include <validator/validator.h>
 #include <validator/resolver.h>
+#include "val_support.h"
 
 void
 val_free_answer_chain(struct val_answer_chain *answers)
@@ -27,15 +28,11 @@ val_free_answer_chain(struct val_answer_chain *answers)
         struct val_answer_chain *temp_ans = ans;
         if (temp_ans->val_ans_name) 
             FREE(temp_ans->val_ans_name);
-        while (temp_ans->val_ans) {
-            /* the answer is actually of type val_rr_rec */
-            struct val_rr_rec  *temp_rr = (struct val_rr_rec *)(temp_ans->val_ans);
-            if (temp_rr->rr_rdata)
-                FREE(temp_rr->rr_rdata);
-            temp_ans->val_ans = (struct rr_rec *)(temp_rr->rr_next);
-            FREE(temp_rr);
+        /* the answer is actually of type val_rr_rec */
+        if (temp_ans->val_ans) {
+            res_sq_free_rr_recs((struct val_rr_rec **)(&temp_ans->val_ans));
         }
-        ans = temp_ans->val_ans_next;
+        ans=temp_ans->val_ans_next;
         FREE(temp_ans);
     }
 }
