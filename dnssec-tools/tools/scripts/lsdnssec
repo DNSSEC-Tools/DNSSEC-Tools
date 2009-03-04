@@ -113,7 +113,7 @@ sub load_files {
 	    # load it as a krf
 	    keyrec_read($file);
 	    remember_keyrecs();
-	} elsif ($file =~ /\.rollrec$/) {
+	} elsif ($file =~ /\.(rollrec|rrf)$/) {
 	    # load it as a rollrec
 	    rollrec_read($file);
 	    remember_rollrecs();
