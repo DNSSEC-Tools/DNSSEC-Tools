@@ -93,7 +93,7 @@ extern          "C" {
 
 
 #define QUERY_BAD_CACHE_THRESHOLD 5
-#define QUERY_BAD_CACHE_TTL 3600
+#define QUERY_BAD_CACHE_TTL 60
 
     /*
      * Credibility values of an RRset - from DNSIND-Clarify 
@@ -285,8 +285,8 @@ extern          "C" {
     struct val_rr_rec {
         size_t rr_rdata_length;      /* RDATA length */
         u_char *rr_rdata;       /* Raw RDATA */
-        val_astatus_t   rr_status;
         struct val_rr_rec  *rr_next;
+        val_astatus_t   rr_status;
     };
 
     struct val_rrset_rec {
