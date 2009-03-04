@@ -1414,6 +1414,7 @@ copy_rr_rec_list(u_int16_t type_h, struct val_rr_rec *o_rr, int dolower)
         o_rr = o_rr->rr_next;
         n_rr = n_rr->rr_next;
     }
+    n_rr->rr_next = NULL;
 
     return n_head;
 }
