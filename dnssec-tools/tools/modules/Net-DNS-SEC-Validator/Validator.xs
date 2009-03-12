@@ -671,7 +671,7 @@ pval_resolve_and_check(self,domain,type,class,flags)
 	OUTPUT:
 	RETVAL
 
-char *
+const char *
 pval_ac_status(err)
 	int err
 	CODE:
@@ -681,7 +681,7 @@ pval_ac_status(err)
 	OUTPUT:
 	RETVAL
 
-char *
+const char *
 pval_val_status(err)
 	int err
 	CODE:
