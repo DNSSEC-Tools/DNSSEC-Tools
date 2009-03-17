@@ -51,10 +51,13 @@ LOBJ=  	val_resquery.lo \
 
 LIBVAL=libval$(LIBVAL_SUFFIX).la
 
+LT_DIR= .libs
+
 all: $(LIBVAL)
 
 clean:
 	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL)
+	$(RM) -rf $(LT_DIR)
 
 $(LIBVAL): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ)
