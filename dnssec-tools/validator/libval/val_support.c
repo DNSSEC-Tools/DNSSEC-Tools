@@ -26,6 +26,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/time.h>
+#include <sys/types.h>
 
 #ifndef NAMESER_HAS_HEADER
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
