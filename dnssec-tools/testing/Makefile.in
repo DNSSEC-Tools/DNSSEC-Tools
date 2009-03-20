@@ -1,0 +1,34 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+sysconfdir=@sysconfdir@
+bindir=@bindir@
+sbindir=@sbindir@
+libdir=@libdir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+includedir=@includedir@
+mandir=@mandir@
+top_srcdir=@top_srcdir@
+
+export BUILDDIR=@abs_top_builddir@
+PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts \
+         tools/dnspktflow tools/maketestzone tools/etc tools/drawvalmap
+
+QUIET=@
+# QUIET=''
+
+
+TEST_FILES=t/*.t
+
+
+all :: authtest
+
+
+authtest : $(TEST_FILES)
+	$(QUIET) for i in $(TEST_FILES) ; do \
+	  perl $$i ;               \
+        done
+
+rollerd : t/040rollerd.t
+	perl rollerd.t 
+
