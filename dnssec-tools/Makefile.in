@@ -119,7 +119,7 @@ perlinstall: makedirectories
 
 perlclean:
 	$(QUIET)for i in $(PERLDIRS) ; do \
-	  (cd $$i ; make clean ) ; \
+	  (cd $$i ; make clean ; ) ; \
          done
 
 #
