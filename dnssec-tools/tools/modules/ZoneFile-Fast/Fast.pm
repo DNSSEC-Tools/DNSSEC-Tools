@@ -573,12 +573,13 @@ sub parse_line
 		 };
 	  $parse->();
 	  return;
-      } elsif (/\G(txt)[ \t]+/igc) {
+      } elsif (/\G(txt|spf)[ \t]+/igc) {
+	  my $type = uc($1);
 	  if (/\G('[^']+')$pat_skip$/gc) {
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
-			   type    => "TXT",
+			   type    => $type,
 			   ttl     => $ttl,
 			   class   => "IN",
 			   txtdata => $1,
@@ -587,7 +588,7 @@ sub parse_line
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
-			   type    => "TXT",
+			   type    => $type,
 			   ttl     => $ttl,
 			   class   => "IN",
 			   txtdata => $1,
@@ -596,13 +597,13 @@ sub parse_line
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
-			   type    => "TXT",
+			   type    => $type,
 			   ttl     => $ttl,
 			   class   => "IN",
 			   txtdata => $1,
 			  };
 	  } else {
-	      error("bad txtdata in TXT");
+	      error("bad txtdata in $type");
 	  }
       } elsif (/\G(sshfp)[ \t]+/igc) {
 	  if (/\G(\d+)\s+(\d+)\s+\(\s*$/gc) {
