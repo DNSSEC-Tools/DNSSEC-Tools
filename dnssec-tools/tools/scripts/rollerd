@@ -2063,6 +2063,10 @@ sub signer
 	$zsargs = $rrr->{'zsargs'};
 	$zsflag = "$zsflag $zsargs" if($zsargs ne '');
 
+	if ($zsflag !~ /-zone/) {
+	    $zsflag .= " -zone $rname";
+	}
+
 	#
 	# Dig a few data out of the zone's keyrec file.
 	#
