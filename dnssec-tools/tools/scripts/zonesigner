@@ -3119,7 +3119,7 @@ Additional options for B<dnssec-keygen> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the B<-kgopts> option.
 
-=item B<-nsec3>
+=item B<-usensec3>
 
 Signs the zone using I<NSEC3> (see I<RFC5155>) proof-of-non-existence
 records rather than I<NSEC> records.  Note that the keys used to sign
@@ -3130,7 +3130,7 @@ is used.
 
 =item B<-nsec3optout>
 
-When this flag and the I<-nsec3> flag are set, the zone will be signed
+When this flag and the I<-usensec3> flag are set, the zone will be signed
 using the Opt-Out support described in I<RFC5155>.  A quick summary is
 that only sub-domains with valid DS or public keys available will be
 signed and the rest will not be.  This greatly reduces the
