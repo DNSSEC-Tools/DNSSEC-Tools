@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+
+use Net::DNS::SEC::Tools::TrustAnchor;
+use Net::DNS::SEC::Tools::QWPrimitives;
+use strict;
+
+my %opts;
+
+DTGetOptions(\%opts,
+	     ["i|input-file=s",  "Input file(s)"],
+	     ["o|output-file=s", "Output file(s)"],
+	    ) || exit 1;
+
+my $input_file = $opts{'i'} || shift @ARGV;
+my $output_file = $opts{'o'} || shift @ARGV;
+
+my ($mod, $file, $options) = parse_component($input_file);
+
+my $tar = $mod->read();
+return if (!$tar);
+
+if ($output_file ne '') {
+    my ($mod, $file, $options) = parse_component($output_file);
+    return if (!$mod);
+    $mod->write($tar, $file);
+}
