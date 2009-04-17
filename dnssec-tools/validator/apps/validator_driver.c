@@ -24,6 +24,7 @@
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
+#include <sys/types.h>
 
 #include <sys/socket.h>
 #include <arpa/nameser.h>
