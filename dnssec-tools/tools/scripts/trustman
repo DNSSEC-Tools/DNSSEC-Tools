@@ -49,7 +49,6 @@ GetOptions(\%opts,
              'm|mail_contact_addr=s',
              'n|named_conf_file=s',
              'N|no_error',
-             'o|root_hints_file=s',
              'p|print',
              'r|resolv_conf_file=s',
              's|smtp_server=s',
@@ -92,9 +91,6 @@ my $ncfile = $opts{'n'} ? $opts{'n'}
 
 my $dvfile = $opts{'k'} ? $opts{'k'}
                         : $dtconf{'tadnsvalconffile'};
-
-my $rhfile = $opts{'o'} ? $opts{'o'}
-                        : $dtconf{'taroothintsfile'};
 
 my $contactaddr = $opts{'m'} ? $opts{'m'}
                              : $dtconf{'tacontact'};
@@ -182,7 +178,6 @@ if ($opts{'c'}) {
         next if (/^taresolvconffile/ && ($opts{'r'}));
         next if (/^tanamedconffile/ && ($opts{'n'}));
         next if (/^tadnsvalconffile/ && ($opts{'k'}));
-        next if (/^taroothintsfile/ && ($opts{'o'}));
         print OUT $_;
     }
     if ($opts{'t'}) {
@@ -206,9 +201,6 @@ if ($opts{'c'}) {
     if ($opts{'k'}) {
         print OUT "tadnsvalconffile\t" . $dvfile . "\n";
     }
-    if ($opts{'o'}) {
-        print OUT "taroothintsfile\t" . $rhfile . "\n";
-    }
     close (OUT);
     close (CONF);
 
@@ -227,7 +219,7 @@ if ($opts{'c'}) {
 
 sub load_newkeys {
     # load in the newkeys info from file if available
-    open (FILE, "< $newkeyfile") or warn "can't open newkey file \'$newkeyfile\': $!";
+    open (FILE, "< $newkeyfile") or warn "can't open newkey file: $!";
     my $undefval = $/;
     undef $/;
     eval <FILE>;
@@ -265,7 +257,6 @@ File Options:
        --dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
        --named_conf_file /PATH/TO/NAMED.CONF (-n)
        --resolv_conf_file CONFFILE (-r)
-       --root_hints_file /PATH/TO/root.hints (-o)
        --tmp_dir TMPDIR (-T)
 
 Logging and Output Options:
@@ -1191,10 +1182,8 @@ sub get_zones_keys {
 sub resolve_and_check_dnskey {
     my ($z,$file) = @_;
     Verbose(" Checking the live \"$z\" key\n");
-
     my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
-                                                 dnsval_conf => $file,
-						 root_hints => $rhfile);
+                                                 dnsval_conf => $file);
     my $r = $validator->res_query($z, "IN", "DNSKEY");
     if ($r && $validator->isvalidated) {
         my ($pkt, $err) = new Net::DNS::Packet(\$r);
@@ -1639,10 +1628,6 @@ A B<dnsval.conf> file to read and possibly update.
 
 A B<named.conf> file to read and possibly update.
 
-=item B<--root_hints_file /path/to/root.hints (-o)>
-
-A B<root.hints> file to read.
-
 =item B<--tmp_dir directory (-T)>
 
 Specifies where temporary files should be created.  This is used when
@@ -1764,11 +1749,6 @@ This is equivalent to the B<--named_conf_file> flag.
 
 This specifies the B<dnsval.conf> file to read and write.
 This is equivalent to the B<--dnsval_conf_file> flag.
-
-=item B<taroothintsfile file>
-
-This specifies the B<root.hints> file to read.
-This is equivalent to the B<--root_hints_file> flag.
 
 =item B<tatmpfile directory>
 

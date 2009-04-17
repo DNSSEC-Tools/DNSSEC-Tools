@@ -46,7 +46,7 @@ use Net::DNS;
 use Net::DNS::RR;
 use MIME::Base64;
 
-$VERSION = '1.02';
+$VERSION = '1.01';
 
 my $MAXIMUM_TTL = 0x7fffffff;
 
@@ -573,13 +573,12 @@ sub parse_line
 		 };
 	  $parse->();
 	  return;
-      } elsif (/\G(txt|spf)[ \t]+/igc) {
-	  my $type = uc($1);
+      } elsif (/\G(txt)[ \t]+/igc) {
 	  if (/\G('[^']+')$pat_skip$/gc) {
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
-			   type    => $type,
+			   type    => "TXT",
 			   ttl     => $ttl,
 			   class   => "IN",
 			   txtdata => $1,
@@ -588,7 +587,7 @@ sub parse_line
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
-			   type    => $type,
+			   type    => "TXT",
 			   ttl     => $ttl,
 			   class   => "IN",
 			   txtdata => $1,
@@ -597,13 +596,13 @@ sub parse_line
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
-			   type    => $type,
+			   type    => "TXT",
 			   ttl     => $ttl,
 			   class   => "IN",
 			   txtdata => $1,
 			  };
 	  } else {
-	      error("bad txtdata in $type");
+	      error("bad txtdata in TXT");
 	  }
       } elsif (/\G(sshfp)[ \t]+/igc) {
 	  if (/\G(\d+)\s+(\d+)\s+\(\s*$/gc) {

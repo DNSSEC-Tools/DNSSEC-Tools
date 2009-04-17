@@ -376,7 +376,7 @@ my %port_archs =
 # Unix-related constants.
 # 
 
-my $UNIX_ROLLMGR_DIR	    = getlocalstatedir() . "/run";
+my $UNIX_ROLLMGR_DIR	    = makelocalstatedir("run");
 our $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/rollmgr.pid");
 
 my $PS = "/bin/ps";
@@ -1447,7 +1447,7 @@ sub rollmgr_channel
 		#
 		# Build the socket name and construct the socket data.
 		#
-		$unixsock = getlocalstatedir() . "/dnssec-tools" . $UNIXSOCK;
+		$unixsock = makelocalstatedir("/dnssec-tools") . $UNIXSOCK;
 # print STDERR "rollmgr_channel:  unixsock - <$unixsock>\n";
 		$sockdata = sockaddr_un($unixsock);
 

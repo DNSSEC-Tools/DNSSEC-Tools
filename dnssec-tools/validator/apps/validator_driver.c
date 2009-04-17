@@ -24,7 +24,6 @@
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-#include <sys/types.h>
 
 #include <sys/socket.h>
 #include <arpa/nameser.h>
@@ -222,13 +221,13 @@ sendquery(val_context_t * context, const char *desc, char * name,
                 check_results(context, desc, name, class, type,
                               result_ar, results, trusted_only);
 
-        val_free_result_chain(results);
     } else {
         fprintf(stderr, "%s: \t", desc);
         fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %s\n",
                 p_val_err(ret_val));
     }
 
+    val_free_result_chain(results);
     results = NULL;
     fprintf(stderr, "%s: ****END**** \n", desc);
 

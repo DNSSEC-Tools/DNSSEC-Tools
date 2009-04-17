@@ -102,20 +102,20 @@ SV *ainfo_c2sv(struct addrinfo *ainfo_ptr)
     // fprintf(stderr,"::ainfo_ptr->ai_protocol=%d\n", ainfo_ptr->ai_protocol);
     // fprintf(stderr,"::ainfo_ptr->ai_addrlen=%d\n", ainfo_ptr->ai_addrlen);
     //fprintf(stderr,"::ainfo_ptr->ai_canonname=%s\n",ainfo_ptr->ai_canonname);
-    (void)hv_store(ainfo_hv, "flags", strlen("flags"), 
+    hv_store(ainfo_hv, "flags", strlen("flags"), 
 	     newSViv(ainfo_ptr->ai_flags), 0);
-    (void)hv_store(ainfo_hv, "family", strlen("family"), 
+    hv_store(ainfo_hv, "family", strlen("family"), 
 	     newSViv(ainfo_ptr->ai_family), 0);
-    (void)hv_store(ainfo_hv, "socktype", strlen("socktype"), 
+    hv_store(ainfo_hv, "socktype", strlen("socktype"), 
 	     newSViv(ainfo_ptr->ai_socktype), 0);
-    (void)hv_store(ainfo_hv, "protocol", strlen("protocol"), 
+    hv_store(ainfo_hv, "protocol", strlen("protocol"), 
 	     newSViv(ainfo_ptr->ai_protocol), 0);
-    (void)hv_store(ainfo_hv, "addr", strlen("addr"), 
+    hv_store(ainfo_hv, "addr", strlen("addr"), 
 	     newSVpv((char*)ainfo_ptr->ai_addr, 
 		     ainfo_ptr->ai_addrlen), 0);
-    (void)hv_store(ainfo_hv, "addrlen", strlen("addrlen"), 
+    hv_store(ainfo_hv, "addrlen", strlen("addrlen"), 
 	     newSViv(ainfo_ptr->ai_addrlen), 0);
-    (void)hv_store(ainfo_hv, "canonname", strlen("canonname"), 
+    hv_store(ainfo_hv, "canonname", strlen("canonname"), 
 	     (ainfo_ptr->ai_canonname ?
 	      newSVpv(ainfo_ptr->ai_canonname, 
 		      strlen(ainfo_ptr->ai_canonname)) :

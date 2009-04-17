@@ -21,7 +21,6 @@
 #include <netinet/in.h>
 #include <resolv.h>
 #include <errno.h>
-#include <sys/types.h>
 
 #include <validator/resolver.h>
 #include <validator/validator.h>

@@ -62,30 +62,29 @@ my @opts =
 #
 # Flags for the options.  Variable/option mapping should obvious.
 #
-my $commandcount  = 0;
+my $dispflag;
+my $dspubflag;
+my $dspuballflag;
+my $logfileflag;
+my $loglevelflag;
+my $nodispflag;
+my $zrollallflag;
+my $rollkskflag;
+my $rollrecflag;
+my $rollzskflag;
+my $runqueueflag;
+my $shutdownflag;
+my $skipallflag;
+my $skipzoneflag;
+my $sleeptimeflag;
+my $statusflag;
+my $zonelogflag;
+my $zonestatflag;
+my $zsargsflag;
 
-my $dispflag      = 0;
-my $dspubflag     = 0;
-my $dspuballflag  = 0;
-my $logfileflag   = 0;
-my $loglevelflag  = 0;
-my $nodispflag    = 0;
-my $zrollallflag  = 0;
-my $rollkskflag   = 0;
-my $rollrecflag   = 0;
-my $rollzskflag   = 0;
-my $runqueueflag  = 0;
-my $shutdownflag  = 0;
-my $skipallflag   = 0;
-my $skipzoneflag  = 0;
-my $sleeptimeflag = 0;
-my $statusflag    = 0;
-my $zonelogflag   = 0;
-my $zonestatflag  = 0;
-my $zsargsflag    = 0;
+my $quiet;
 
-my $quiet         = 0;
-my $version	  = 0;			# Display the version number.
+my $version	= 0;			# Display the version number.
 
 #######################################################################
 
@@ -133,14 +132,10 @@ sub main()
 	#
 	if($dispflag)
 	{
-                if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,1)) 
-		{
-			print STDERR "rollctl: Error: sending command DISPLAY\n";
-			exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,1);
 
 		($ret, $resp) = rollmgr_getresp();
-		if (($ret == ROLLCMD_RC_OKAY) && ($ret ne ""))
+		if($ret == ROLLCMD_RC_OKAY)
 		{
 			print "rollerd display started\n";
 		}
@@ -152,11 +147,7 @@ sub main()
 	}
 	elsif($dspubflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$dspubflag))
-                {
-                        print STDERR "rollctl: Error: sending command DSPUB";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$dspubflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -172,11 +163,7 @@ sub main()
 	}
 	elsif($dspuballflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUBALL,$dspuballflag))
-                {
-                        print STDERR "rollctl: Error: sending command DSPUBALL\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUBALL,$dspuballflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -192,11 +179,7 @@ sub main()
 	}
 	elsif($logfileflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGFILE,$logfileflag))
-                {
-                        print STDERR "rollctl: Error: sending command LOGFILE\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGFILE,$logfileflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -218,11 +201,7 @@ sub main()
 		}
 		else
 		{
-			if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag))
-                {
-                        print STDERR "rollctl: Error: sending command LOGLEVEL\n";
-                        exit(1);
-                }
+			rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag);
 
 			($ret, $resp) = rollmgr_getresp();
 			if($ret == ROLLCMD_RC_OKAY)
@@ -238,11 +217,7 @@ sub main()
 	}
 	elsif($nodispflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,0))
-                {
-                        print STDERR "rollctl: Error: sending command DISPLAY\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,0);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -257,11 +232,7 @@ sub main()
 	}
 	elsif($zrollallflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALL))
-                {
-                        print STDERR "rollctl: Error: sending command ROLLALL\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALL);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -276,11 +247,7 @@ sub main()
 	}
 	elsif($rollrecflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLREC,$rollrecflag) )
-                {
-                        print STDERR "rollctl: Error: sending command ROLLREC\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLREC,$rollrecflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -295,11 +262,7 @@ sub main()
 	}
 	elsif($rollkskflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$rollkskflag) )
-                {
-                        print STDERR "rollctl: Error: sending command ROLLKSK\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$rollkskflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -314,11 +277,7 @@ sub main()
 	}
 	elsif($rollzskflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$rollzskflag))
-                {
-                        print STDERR "rollctl: Error: sending command ROLLZSK\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$rollzskflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -333,11 +292,7 @@ sub main()
 	}
 	elsif($runqueueflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_RUNQUEUE))
-                {
-                        print STDERR "rollctl: Error: sending command RUNQQUEUE\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_RUNQUEUE);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -355,11 +310,7 @@ sub main()
 	}
 	elsif($skipallflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPALL,$skipzoneflag))
-                {
-                        print STDERR "rollctl: Error: sending command SKIPALL\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPALL,$skipzoneflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -374,11 +325,7 @@ sub main()
 	}
 	elsif($skipzoneflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$skipzoneflag))
-                {
-                        print STDERR "rollctl: Error: sending command SKIPZONE\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$skipzoneflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -393,11 +340,7 @@ sub main()
 	}
 	elsif($sleeptimeflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag))
-                {
-                        print STDERR "rollctl: Error: sending command SLEEPTIME\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -412,11 +355,7 @@ sub main()
 	}
 	elsif($statusflag)
 	{
-		if (!rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_STATUS))
-                {
-                        print STDERR "rollctl: Error: sending command ZONELOG\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_STATUS);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -431,11 +370,7 @@ sub main()
 	}
 	elsif($shutdownflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SHUTDOWN))
-                {
-                        print STDERR "rollctl: Error: sending command SHUTDOWN\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SHUTDOWN);
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
@@ -449,11 +384,7 @@ sub main()
 	}
 	elsif($zonelogflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONELOG,$zonelogflag))
-                {
-                        print STDERR "rollctl: Error: sending command ZONELOG\n";
-                        exit(1);
-                }
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONELOG,$zonelogflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -468,12 +399,8 @@ sub main()
 	}
 	elsif($zonestatflag)
 	{
-		if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONESTATUS))
-		{
-                        print STDERR "rollctl: Error: sending command ZONESTATUS\n";
-                        exit(1);
-                }
-			
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONESTATUS);
+
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
@@ -498,11 +425,7 @@ sub main()
 
 			$zsargs = join ',', @ARGV;
 
-			if (! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZSARGS,$zsargs))
-			{
-			     print STDERR "rollctl: Error: sending command ZSARGS\n";
-			     exit(1);
-			}
+			rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZSARGS,$zsargs);
 
 			($ret, $resp) = rollmgr_getresp();
 			if($ret == ROLLCMD_RC_OKAY)
@@ -547,100 +470,36 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
+	$dispflag	= $options{'display'}	  || 0;
+	$nodispflag	= $options{'nodisplay'}	  || 0;
+	$dspubflag	= $options{'dspub'}	  || 0;
+	$dspuballflag	= $options{'dspuball'}	  || 0;
 	$quiet		= $options{'quiet'}	  || 0;
-
-        #
-        # Command Options
-        #
-	if (exists $options{'logfile'}) {
-		$logfileflag = $options{'logfile'};
-		$commandcount++;
-        }
-	if (exists $options{'loglevel'}) {
-		$loglevelflag	= $options{'loglevel'};
-		$commandcount++;
-	}		
-	if (exists $options{'display'}) {
-		$dispflag = $options{'display'};
-		$commandcount++;
-	}
-	if (exists $options{'nodisplay'}) {
-		$nodispflag = $options{'nodisplay'};
-		$commandcount++;
-	}
-	if (exists $options{'dspub'}) {
-		$dspubflag = $options{'dspub'};
-		$commandcount++;
-	}
-	if (exists $options{'dspuball'}) {
-		$dspuballflag = $options{'dspuball'};
-		$commandcount++;
-	}
-	if (exists $options{'rollallzsks'}) {
-		$zrollallflag = $options{'rollallzsks'};
-		$commandcount++;
-	}
-	if (exists $options{'rollksk'}) {
-		$rollkskflag = $options{'rollksk'};
-		$commandcount++;
-	}
-	if (exists $options{'rollrec'}) {
-		$rollrecflag = $options{'rollrec'};
-		$commandcount++;
-	}
-	if (exists $options{'rollzsk'}) {
-		$rollzskflag = $options{'rollzsk'};
-		$commandcount++;
-	}
-	if (exists $options{'runqueue'}) {
-		$runqueueflag = $options{'runqueue'};
-		$commandcount++;
-	}
-	if (exists $options{'shutdown'} || exists $options{'halt'}) {
-                $shutdownflag =	1;
-                $commandcount++;
-        }
-	if (exists $options{'skipall'}) {
-		$skipallflag = $options{'skipall'};
-		$commandcount++;
-	}
-	if (exists $options{'skipzone'}) {
-		$skipzoneflag = $options{'skipzone'};
-		$commandcount++;
-	}
-	if (exists $options{'sleeptime'}) {
-		$sleeptimeflag = $options{'sleeptime'};
-		$commandcount++;
-	}
-	if (exists $options{'status'}) {
-		$statusflag = $options{'status'};
-		$commandcount++;
-	}
-	if (exists $options{'zonelog'}) {
-		$zonelogflag = $options{'zonelog'};
-		$commandcount++;
-	}
-	if (exists $options{'zonestatus'}) {
-		$zonestatflag = $options{'zonestatus'};
-		$commandcount++;
-	}
-	if (exists $options{'zsargs'}) {
-		$zsargsflag = $options{'zsargs'};
-		$commandcount++;
-	}
-	if (exists $options{'Version'}) {
-		$version = $options{'Version'};
-		$commandcount++;
-	}
+	$logfileflag	= $options{'logfile'}	  || 0;
+	$loglevelflag	= $options{'loglevel'}	  || 0;
+	$zrollallflag	= $options{'rollallzsks'} || 0;
+	$rollkskflag	= $options{'rollksk'}	  || 0;
+	$rollrecflag	= $options{'rollrec'}	  || 0;
+	$rollzskflag	= $options{'rollzsk'}	  || 0;
+	$runqueueflag	= $options{'runqueue'}	  || 0;
+	$shutdownflag	= ($options{'shutdown'}   || $options{'halt'}) || 0;
+	$skipallflag	= $options{'skipall'}	  || 0;
+	$skipzoneflag	= $options{'skipzone'}	  || 0;
+	$sleeptimeflag	= $options{'sleeptime'}	  || 0;
+	$statusflag	= $options{'status'}	  || 0;
+	$zonelogflag	= $options{'zonelog'}	  || 0;
+	$zonestatflag	= $options{'zonestatus'}  || 0;
+	$zsargsflag	= $options{'zsargs'}	  || 0;
+	$version        = $options{'Version'}     || 0;
 
 	#
 	# Ensure that only one command argument was given.
 	# We'll get rid of the non-command options before checking.
 	#
-
-	if($commandcount > 1)
+	delete($options{'quiet'});
+	if(keys(%options) > 1)
 	{
-		print STDERR "only one command argument may be specified per execution\n";
+		print STDERR "only one argument may be specified per execution\n";
 		exit(1);
 	}
 

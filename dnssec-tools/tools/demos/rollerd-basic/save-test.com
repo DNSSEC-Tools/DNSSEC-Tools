@@ -1,6 +1,6 @@
 $TTL	1m
 
-@	IN	SOA	test.com.	tewok.leodhas.test.com. (
+@	IN	soa	test.com.	tewok.leodhas.test.com. (
 					2005035548	; serial
 					3h		; refresh
 					30m		; retry
