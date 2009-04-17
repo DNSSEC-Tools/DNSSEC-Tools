@@ -1,7 +1,7 @@
 $ORIGIN com.
 $TTL 3h
 example     IN SOA dns.example.com. admin.example.com. (
-                2009030142  ;SERIALNUM
+                2009030143  ;SERIALNUM
                 3H  ; Refresh
                 1H  ; Retry
                 1W  ; Expire
