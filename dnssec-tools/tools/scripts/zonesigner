@@ -1919,7 +1919,7 @@ sub serialincr
 	#
 	
 	($serialnum) = 
-	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w]+\s+\(?\s*(\d+)/s);
+	  ($file =~ /\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s+(\d+)/s);
 	
 	return(-1) if(!defined($serialnum) || $serialnum eq '');
 
@@ -1939,7 +1939,9 @@ sub serialincr
 	# Increment the serial number and change it in the file contents.
 	# We'll also save the new serial number in the keyrec.
 	#
+	print "here: $serialnum -> $serialnew\n";
 	$file =~ s/(\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s+)(\d+)/$1$serialnew/s;
+	print "$file\n";
 	keyrec_setval('zone',$zone,'serial',$serialnew);
 	$opts{'serial'} = $serialnew;
 

@@ -151,7 +151,7 @@ sub rollrec_lock
 	#
 	# Get the DNSSEC-Tools config directory.
 	#
-	$lockdir = makelocalstatedir("/dnssec-tools")
+	$lockdir = getlocalstatedir() . "/dnssec-tools"
 	  || $DEFAULT_DNSSECTOOLS_DIR;
 
 	#
