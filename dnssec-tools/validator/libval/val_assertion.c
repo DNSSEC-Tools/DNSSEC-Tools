@@ -2039,6 +2039,9 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set,
     size_t  nsec_bit_field;
     size_t  offset;
     u_char *q1, *q2, *q;
+
+    if (the_set == NULL || the_set->rrs_data == NULL)
+        return;
    
     if (!namecmp(the_set->rrs_name_n, qname_n)) {
         /*
@@ -2226,6 +2229,9 @@ prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set,
     size_t        nsec3_bm_len;
     
     cp = qname_n;
+
+    if (the_set == NULL || the_set->rrs_data == NULL)
+        return;
    
     nsec3_hashlen = the_set->rrs_name_n[0];
     nsec3_hash = (nsec3_hashlen == 0) ? 
@@ -2373,7 +2379,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
     for (res = w_results; res; res = res->val_rc_next) {
 
-        if (!res->val_rc_is_proof)
+        if (!res->val_rc_is_proof || !res->val_rc_rrset)
             continue;
 
         struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
@@ -2454,7 +2460,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     
     for (res = w_results; res; res = res->val_rc_next) {
 
-        if (!res->val_rc_is_proof)
+        if (!res->val_rc_is_proof || !res->val_rc_rrset)
             continue;
 
         struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
@@ -2524,7 +2530,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     for (res = w_results; res; res = res->val_rc_next) {
 
         int this_span_chk = 0;
-        if (!res->val_rc_is_proof)
+        if (!res->val_rc_is_proof || !res->val_rc_rrset)
             continue;
 
         struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
@@ -2574,7 +2580,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             val_log(ctx, LOG_INFO,
                     "nsec_proof_chk(): NSEC Error - label length with wildcard exceeds bounds");
             *status = VAL_BOGUS_PROOF;
-        } else {
+        } else if (wcard_proof && wcard_proof->val_rc_rrset){
             domain_name_n[0] = 0x01;
             domain_name_n[1] = 0x2a;    /* for the '*' character */
             memcpy(&domain_name_n[2], ce,
