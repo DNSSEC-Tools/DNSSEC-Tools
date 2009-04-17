@@ -12,10 +12,13 @@ LOBJ=  	libval_shim.lo
 
 LIBVAL_SHIM=libval_shim.la
 
+LT_DIR= .libs
+
 all: $(LIBVAL_SHIM)
 
 clean:
 	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL)
+	$(RM) -rf $(LT_DIR)
 
 $(LIBVAL_SHIM): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ) $(EXTRA_LIBS)
