@@ -54,13 +54,10 @@ LIBRES= libsres.la
 INCLUDE= ../include
 CFLAGS_EX=-I$(INCLUDE)
 
-LT_DIR= .libs
-
 all: $(LIBRES)
 
 clean:
 	$(RM) -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
-	$(RM) -rf $(LT_DIR)
 
 $(LIBRES): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ) 

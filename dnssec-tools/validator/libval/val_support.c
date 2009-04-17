@@ -26,7 +26,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/time.h>
-#include <sys/types.h>
 
 #ifndef NAMESER_HAS_HEADER
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
@@ -539,6 +538,22 @@ is_tail(u_char * full, u_char * tail)
     return FALSE;
 }
 
+/*
+ * make sure that this is the correct nxt, rrsig combination (both from parent, or both from child) 
+ */
+int
+nsec_sig_match(u_char * owner, u_char * next, u_char * signer)
+{
+    size_t             o_len = wire_name_length(owner);
+    size_t             s_len = wire_name_length(signer);
+
+    if (o_len == s_len && memcmp(signer, owner, o_len) == 0)
+        return (is_tail(next, signer));
+    else
+        return (is_tail(next, signer) && !is_tail(next, owner));
+}
+
+
 int
 add_to_set(struct rrset_rec *rr_set, size_t rdata_len_h,
            u_char * rdata)
@@ -741,7 +756,7 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
         a->rrs_class_h == c &&                   /* does class match */       \
 		a->rrs_type_h == ns_t_nsec &&													\
         memcmp (a->rrs_name_n,n,l)==0 &&         /* does name match */        \
-        is_tail(a->rrs_data->rr_rdata,&r[SIGNBY])                               \
+        nsec_sig_match (n,a->rrs_data->rr_rdata,&r[SIGNBY])                    \
                                                  /* does sig match nxt */     \
         )                                                                     \
         ||                                   /* or */                         \
@@ -751,7 +766,7 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
         a->rrs_class_h == c &&                   /* does class match */       \
 		a->rrs_type_h == ns_t_nsec &&													\
         memcmp (a->rrs_name_n,n,l)==0 &&         /* does name match */        \
-        is_tail(r,&a->rrs_sig->rr_rdata[SIGNBY])                                \
+        nsec_sig_match (n,r,&a->rrs_sig->rr_rdata[SIGNBY])                     \
                                                  /* does sig match nxt */     \
         )                                                                     \
     )                                                                         \

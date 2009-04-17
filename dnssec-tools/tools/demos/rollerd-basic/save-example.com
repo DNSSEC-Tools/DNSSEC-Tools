@@ -1,6 +1,6 @@
 $TTL	1m
 
-@	IN	SOA	example.com.	tewok.leodhas.example.com. (
+@	IN	soa	example.com.	tewok.leodhas.example.com. (
 					2005033761	; serial
 					3h		; refresh
 					30m		; retry

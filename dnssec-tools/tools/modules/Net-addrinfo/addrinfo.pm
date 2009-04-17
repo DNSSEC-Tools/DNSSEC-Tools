@@ -3,9 +3,9 @@
 #
 #    written by G. S. Marzot (marz@users.sourceforge.net)
 #
-#    Copyright (c) 2006-2009 G. S. Marzot. All rights reserved.
+#    Copyright (c) 2006 G. S. Marzot. All rights reserved.
 #
-#    Copyright (c) 2006-2009 SPARTA, Inc.  All rights reserved.
+#    Copyright (c) 2006-2008 SPARTA, Inc.  All rights reserved.
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the same terms as Perl itself.
@@ -14,7 +14,7 @@ package Net::addrinfo;
 use Socket qw(:all);
 use Carp;
 
-our $VERSION = '1.02';   # current release version number
+our $VERSION = '1.01';   # current release version number
 
 use Exporter;
 use DynaLoader;
@@ -181,11 +181,7 @@ sub stringify {
 
 
 sub getaddrinfo { 
-    my $node = shift;
-    my $service = shift;
-    my $hints = shift;
-
-    my $result = Net::addrinfo::_getaddrinfo($node, $service, $hints); 
+    my $result = Net::addrinfo::_getaddrinfo(@_); 
     
     $result = [$result] unless ref $result eq 'ARRAY';
     

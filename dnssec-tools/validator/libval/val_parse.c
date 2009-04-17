@@ -13,7 +13,6 @@
 #include <strings.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <sys/types.h>
 
 #include <arpa/nameser.h>
 #include <validator/resolver.h>
