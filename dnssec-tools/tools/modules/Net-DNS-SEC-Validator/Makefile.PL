@@ -13,6 +13,25 @@ my %opts;
 GetOptions(\%opts, 'topdir=s', 'sysconfdir=s');
 $ENV{PATH} = "$opts{topdir}/validator:$ENV{PATH}" if exists $opts{topdir};
 
+local $LD_LPATH;
+$LD_LPATH = "$opts{topdir}/validator/libsres/.libs:$opts{topdir}/validator/libval/.libs:\$LD_LIBRARY_PATH" if exists $opts{topdir};
+
+
+sub MY::test_via_harness {
+  my($self, $perl, $tests) = @_;
+  local $_ = $self->MM::test_via_harness($perl, $tests);
+  s/PERL_DL_NONLAZY=1/$& LD_LIBRARY_PATH=$LD_LPATH/g if defined $LD_LPATH;
+  return $_;
+}
+
+sub MY::test_via_script {
+  my($self, $perl, $tests) = @_;
+  local $_ = $self->MM::test_via_script($perl, $tests);
+  s/PERL_DL_NONLAZY=1/$& LD_LIBRARY_PATH=$LD_LPATH/g if defined $LD_LPATH;
+  return $_;
+}
+
+
 %MakeParams = InitMakeParams();
 
 WriteMakefile(%MakeParams);
@@ -40,7 +59,6 @@ sub InitMakeParams {
 	$Params{'LIBS'} = "-L$opts{topdir}/validator/libval/.libs " .
 	    "-L$opts{topdir}/validator/libsres/.libs " .
 	    $Params{'LIBS'};
-	$Params{'INC'} = "-I$opts{topdir}/validator/include";
     }
 
     my $dnsval_conf = `libval-config --dnsval_config`; chomp $dnsval_conf;
@@ -52,3 +70,4 @@ sub InitMakeParams {
 	
     return(%Params);
 }
+

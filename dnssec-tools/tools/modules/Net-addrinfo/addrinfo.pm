@@ -14,7 +14,7 @@ package Net::addrinfo;
 use Socket qw(:all);
 use Carp;
 
-our $VERSION = '1.01';   # current release version number
+our $VERSION = '1.02';   # current release version number
 
 use Exporter;
 use DynaLoader;
@@ -181,7 +181,11 @@ sub stringify {
 
 
 sub getaddrinfo { 
-    my $result = Net::addrinfo::_getaddrinfo(@_); 
+    my $node = shift;
+    my $service = shift;
+    my $hints = shift;
+
+    my $result = Net::addrinfo::_getaddrinfo($node, $service, $hints); 
     
     $result = [$result] unless ref $result eq 'ARRAY';
     

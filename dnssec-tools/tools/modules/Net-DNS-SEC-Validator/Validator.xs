@@ -224,7 +224,7 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 	      );
     }
 
-    hv_store(rrset_hv, "data", strlen("data"), rrs_av_ref, 0);
+    (void)hv_store(rrset_hv, "data", strlen("data"), rrs_av_ref, 0);
 
     rrs_av = newAV();
     rrs_av_ref = newRV_noinc((SV*)rrs_av);
@@ -240,7 +240,7 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 	      );
     }
 
-    hv_store(rrset_hv, "sigs", strlen("s"), rrs_av_ref, 0);
+    (void)hv_store(rrset_hv, "sigs", strlen("s"), rrs_av_ref, 0);
   }
 
   return rrset_hv_ref;
@@ -255,13 +255,13 @@ SV *ac_c2sv(struct val_authentication_chain *ac_ptr)
     ac_hv = newHV();
     ac_hv_ref = newRV_noinc((SV*)ac_hv);
 
-    hv_store(ac_hv, "status", strlen("status"), 
+    (void)hv_store(ac_hv, "status", strlen("status"), 
 	     newSViv(ac_ptr->val_ac_status), 0);
 
-    hv_store(ac_hv, "rrset", strlen("rrset"), 
+    (void)hv_store(ac_hv, "rrset", strlen("rrset"), 
 	     rrset_c2sv(ac_ptr->val_ac_rrset), 0);
 
-    hv_store(ac_hv, "trust", strlen("trust"), 
+    (void)hv_store(ac_hv, "trust", strlen("trust"), 
 	       ac_c2sv(ac_ptr->val_ac_trust), 0);
   }
 
@@ -282,16 +282,16 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
     result_hv = newHV();
     result_hv_ref = newRV_noinc((SV*)result_hv);
 
-    hv_store(result_hv, "status", strlen("status"), 
+    (void)hv_store(result_hv, "status", strlen("status"), 
 	     newSViv(rc_ptr->val_rc_status), 0);
 
     /* fprintf(stderr, "rc status == %d\n", rc_ptr->val_rc_status); XXX */
     
     if (rc_ptr->val_rc_answer != NULL) {
-        hv_store(result_hv, "answer", strlen("answer"), 
+        (void)hv_store(result_hv, "answer", strlen("answer"), 
 	        ac_c2sv(rc_ptr->val_rc_answer), 0);
     } else {
-        hv_store(result_hv, "rrset", strlen("rrset"),
+        (void)hv_store(result_hv, "rrset", strlen("rrset"),
             rrset_c2sv(rc_ptr->val_rc_rrset), 0);
     }
 
@@ -303,7 +303,7 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
       av_push(proofs_av, ac_c2sv(rc_ptr->val_rc_proofs[i]));
     }
 
-    hv_store(result_hv, "proofs", strlen("proofs"), proofs_av_ref, 0);
+    (void)hv_store(result_hv, "proofs", strlen("proofs"), proofs_av_ref, 0);
 
     av_push(rc_av, result_hv_ref);  
 
@@ -330,18 +330,18 @@ SV *ainfo_c2sv(struct addrinfo *ainfo_ptr)
     // fprintf(stderr,"::ainfo_ptr->ai_protocol=%d\n", ainfo_ptr->ai_protocol);
     // fprintf(stderr,"::ainfo_ptr->ai_addrlen=%d\n", ainfo_ptr->ai_addrlen);
     //fprintf(stderr,"::ainfo_ptr->ai_canonname=%s\n",ainfo_ptr->ai_canonname);
-    hv_store(ainfo_hv, "flags", strlen("flags"), 
+    (void)hv_store(ainfo_hv, "flags", strlen("flags"), 
 	     newSViv(ainfo_ptr->ai_flags), 0);
-    hv_store(ainfo_hv, "family", strlen("family"), 
+    (void)hv_store(ainfo_hv, "family", strlen("family"), 
 	     newSViv(ainfo_ptr->ai_family), 0);
-    hv_store(ainfo_hv, "socktype", strlen("socktype"), 
+    (void)hv_store(ainfo_hv, "socktype", strlen("socktype"), 
 	     newSViv(ainfo_ptr->ai_socktype), 0);
-    hv_store(ainfo_hv, "protocol", strlen("protocol"), 
+    (void)hv_store(ainfo_hv, "protocol", strlen("protocol"), 
 	     newSViv(ainfo_ptr->ai_protocol), 0);
-    hv_store(ainfo_hv, "addr", strlen("addr"), 
+    (void)hv_store(ainfo_hv, "addr", strlen("addr"), 
 	     newSVpv((char*)ainfo_ptr->ai_addr, 
 		     ainfo_ptr->ai_addrlen), 0);
-    hv_store(ainfo_hv, "canonname", strlen("canonname"), 
+    (void)hv_store(ainfo_hv, "canonname", strlen("canonname"), 
 	     (ainfo_ptr->ai_canonname ?
 	      newSVpv(ainfo_ptr->ai_canonname, 
 		      strlen(ainfo_ptr->ai_canonname)) :
