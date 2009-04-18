@@ -31,6 +31,7 @@ sub write {
     my ($self, $data, $location, $options) = @_;
     open(O, ">", $location);
     XMLout($data, OutputFile => $location, RootName => 'zone');
+    close(O);
     return 0;
 }
 
