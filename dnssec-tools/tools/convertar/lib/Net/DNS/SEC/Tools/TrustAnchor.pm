@@ -37,8 +37,6 @@ sub load_module {
 sub parse_component {
     my ($file) = @_;
 
-    print STDERR "bar: $file\n";
-
     # no extra options
     if ($file !~ /:/) {
 	# XXX: try file extension
