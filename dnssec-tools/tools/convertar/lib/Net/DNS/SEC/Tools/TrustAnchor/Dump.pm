@@ -17,4 +17,17 @@ sub write {
     return 0;
 }
 
+sub read {
+    my ($self, $location, $options) = @_;
+
+    $location ||= $self->{'file'};
+    $options ||= $self->{'options'};
+
+    open(I, "$location");
+    my $data;
+    read(I, $data, 2**16);
+    return eval "$data";
+}
+
+
 =pod
