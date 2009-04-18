@@ -9,14 +9,6 @@ use Data::Dumper;
 
 use XML::Simple;
 
-sub write {
-    my ($self, $data, $location, $options) = @_;
-    open(O, ">$location");
-    print O Dumper($data);
-    close(O);
-    return 0;
-}
-
 sub read {
     my ($self, $location, $options) = @_;
 
@@ -29,5 +21,12 @@ sub read {
     return eval "$data";
 }
 
+sub write {
+    my ($self, $data, $location, $options) = @_;
+    open(O, ">$location");
+    print O Dumper($data);
+    close(O);
+    return 0;
+}
 
 =pod
