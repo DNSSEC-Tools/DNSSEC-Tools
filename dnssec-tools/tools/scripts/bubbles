@@ -1,0 +1,1387 @@
+#!/usr/bin/perl
+#
+# Copyright 2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# DNSSEC-Tools:  bubbles
+#
+#	bubbles provides the a simple overview of the roll-state of a set
+#	of zones.
+#
+
+use strict;
+
+use Net::DNS::SEC::Tools::dnssectools;
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::BootStrap;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+my %key_lists;
+my @ssnames;
+my @krnames;
+
+######################################################################
+#
+# Detect required Perl modules.
+#
+dnssec_tools_load_mods(
+			'Tk'			=> "",
+			'Tk::Dialog'		=> "",
+			'Tk::DialogBox'		=> "",
+			'Tk::FileSelect'	=> "",
+			'Tk::Pane'		=> "",
+			'Tk::Table'		=> "",
+		      );
+
+#
+# Version information.
+#
+my $NAME   = "bubbles";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.4";
+
+#######################################################################
+#
+#			program (non-GUI) data
+#
+
+#
+# Variables for command options.
+#
+my %options = ();				# Filled option array.
+my @opts =
+(
+	"kskcolor=s",				# Color for KSK rollers.
+	"zskcolor=s",				# Color for ZSK rollers.
+	"noncolor=s",				# Color for non-rollers.
+
+	"showksk",				# Show KSK-rolling zones.
+	"showzsk",				# Show ZSK-rolling zones.
+	"showrolls",				# Show rolling zones.
+	"shownonrolls",				# Show non-rolling zones.
+
+	"columns=i",				# Columns in button window.
+	"interval=s",				# Interval between file checks.
+	"no-filter",				# No-name-filtering flag.
+	"ignore-display",			# Ignore rollrec display flag.
+
+	"Version",				# Display the version number.
+	"help",					# Give a usage message and exit.
+);
+
+#
+# Default colors for zone buttons.
+#
+my $RRTAB_KSKROLL  = 'red';
+my $RRTAB_ZSKROLL  = 'yellow';
+my $RRTAB_NONROLL  = 'green';
+
+#
+# Values for options.
+#
+my $kskclr = $RRTAB_KSKROLL;			# Color for KSK rollers.
+my $zskclr = $RRTAB_ZSKROLL;			# Color for ZSK rollers.
+my $nonclr = $RRTAB_NONROLL;			# Color for non-rollers.
+my $showksk = 0;				# Show KSK-rolling zones.
+my $showzsk = 0;				# Show ZSK-rolling zones.
+my $shownon = 0;				# Show non-rolling zones.
+my $igndisp = 0;				# Ignore rollrec display flag.
+
+my $namefilter	= 1;				# Use-name-filter flag (FS).
+
+#
+# File name variables.
+#
+my $rrfile  = "dummy";				# Rollrec file we're examining.
+my $curnode = "dummy";				# Node of rrfile.
+my $lastmod = 0;				# Last mod. time for rrf.
+
+#
+# Lists of rollrecs.
+#
+my %rollrecs = ();				# Rollrec hash.
+my @rollrecs = ();				# Rollrec array.
+my @rrnames = ();				# List of rollrec names.
+my $numrrnames;					# Number of rollrec names.
+
+my $DEFAULT_INTERVAL = 60;			# Default interval in seconds.
+my $SMALL_INT	     = 10;			# Smallest interval.
+my $interval	     = $DEFAULT_INTERVAL;	# Interval between file checks.
+
+###########################################################################
+#
+#			Tk GUI data
+#
+
+########################################################
+#
+# Main window data.
+#
+my $MAINTITLE	= "DNSSEC-Tools Zone States";
+
+my $title   = "dummy";				# Node for title.
+
+#
+# The main window and help window.
+#
+my $wm;						# Main window.
+my $helpwin;					# Help window.
+my $inhelpwind	 = 0;				# Showing help window flag.
+
+#
+# The contents of the main window and its frames.
+#
+my $mbar;					# Menubar frame.
+my $rrfl;					# Keyrec frame.
+my $body;					# Window body frame.
+my $bodylist;					# Listbox for body.
+my $null;					# Empty frame.
+
+########################################################
+#
+# Menubar and menu data.
+#
+
+#
+# Menu item widgets.
+#
+my $fm_open;					# Open keyrec file item.
+my $fm_quit;					# Quit file item.
+
+my $tog_namefilt = 1;				# Use-name-filter toggle.
+
+my $hm_help;					# Help item.
+
+########################################################
+#
+# Button window data.
+#
+
+#
+# Column and row data for button windows.
+#
+my $MAXCOLS = 12;			# Maximum allowable button columns.
+my $MINCOLS = 3;			# Minimum allowable button columns.
+
+my $numcols;				# Current number of table cols.
+my $numrows;				# Current number of table rows.
+
+my $columncount;			# Column count.
+
+#
+# Font data for text in button window.
+#
+my $fontsize    = 18;
+my $font        = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+
+#
+# Constants for message text colors.
+#
+
+my $rrnametab;					# Rollrec name table widget.
+
+###########################################################################
+
+main();
+exit(0);
+
+#---------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $argc = @ARGV;
+
+	erraction(ERR_EXIT);
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the rollrec filename and the path's node.
+	#
+	$rrfile = $ARGV[0];
+	$curnode = getnode($rrfile);
+	settitle($curnode);
+
+	#
+	# Ensure this rollrec file actually exists.
+	#
+	if(! -e $rrfile)
+	{
+		print STDERR "$rrfile does not exist\n";
+		exit(1);
+	}
+
+	#
+	# Build the main window.
+	#
+	buildmainwind();
+
+	#
+	# Start the whole shebang rollin'.
+	#
+	MainLoop();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine gets the options from the command line.
+#
+sub doopts
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $tmprolls = 0;		# Temporary argument variable.
+	my $tmpnons  = 0;		# Temporary argument variable.
+	my $tmpival  = '';		# Temporary interval value.
+
+	usage()   if($argc == 0);
+
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or help info if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Set some flags based on the command line.
+	#
+	$tmpival    = $options{'interval'} if(defined($options{'interval'}));
+	$namefilter = 0 if(defined($options{'no-filter'}));
+	$kskclr	    = $options{'kskcolor'} if(defined($options{'kskcolor'}));
+	$zskclr	    = $options{'zskcolor'} if(defined($options{'zskcolor'}));
+	$nonclr	    = $options{'noncolor'} if(defined($options{'noncolor'}));
+	$showksk    = $options{'showksk'}  if(defined($options{'showksk'}));
+	$showzsk    = $options{'showzsk'}  if(defined($options{'showzsk'}));
+	$shownon    = $options{'shownonrolls'}  if(defined($options{'shownonrolls'}));
+	$igndisp    = $options{'ignore-display'}  if(defined($options{'ignore-display'}));
+	$tmprolls   = $options{'showrolls'} if(defined($options{'showrolls'}));
+
+	#
+	# Check for the column-count option.
+	#
+	if(defined($options{'columns'}))
+	{
+		$columncount  = $options{'columns'};
+		if($columncount < $MINCOLS)
+		{
+			print STDERR "column count must be at least $MINCOLS\n";
+			exit(1);
+		}
+	}
+
+	#
+	# Parse the interval argument.  If a time unit isn't given, we'll 
+	# assume we're dealing in minutes.
+	#
+	if($tmpival ne '')
+	{
+		my $nums;				# Number of time units.
+		my $unit;				# Time unit.
+		my $mult;				# Time-unit multiplier.
+
+		#
+		# Pull the number/units tuple out of the argument.
+		#
+		if(! ($tmpival =~ /^([0-9]+)([smh])$/))
+		{
+			if(! ($tmpival =~ /^([0-9]+)$/))
+			{
+				print STDERR "invalid interval\n";
+				usage();
+			}
+
+			$nums = $tmpival;
+			$unit = 'm';
+		}
+		else
+		{
+			$nums = $1;
+			$unit = $2;
+		}
+
+		#
+		# Get the unit multiplier.
+		#
+		if($unit eq 's')
+		{
+			$mult = 1;
+		}
+		elsif($unit eq 'm')
+		{
+			$mult = 60;
+		}
+		elsif($unit eq 'h')
+		{
+			$mult = 60 * 60;
+		}
+
+		#
+		# Calculate the number of seconds in our interval.
+		#
+		$interval = $nums * $mult;
+	}
+
+	#
+	# Ensure the file-check interval isn't too small, then bump it up
+	# into the realm of milliseconds.
+	#
+	if($interval < $SMALL_INT)
+	{
+		print STDERR "smallest interval is $SMALL_INT seconds\n";
+		exit(1);
+	}
+	$interval = $interval * 1000;
+
+	#
+	# Adjust the display flags.
+	#
+	if($tmprolls)
+	{
+		$showksk = 1;
+		$showzsk = 1;
+	}
+	if(!$showksk && !$showzsk && !$shownon)
+	{
+		$showksk = 1;
+		$showzsk = 1;
+		$shownon = 1;
+	}
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	reader()
+#
+# Purpose:	Forces a re-read of the rollrec file if it has been
+#		modified since it was last read.
+#
+sub reader
+{
+	my @stat;			# Rollrec file's file info.
+
+	@stat = stat $rrfile;
+
+	if($stat[9] > $lastmod)
+	{
+		buildtable(1);
+		$lastmod = $stat[9];
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildmainwind()
+#
+# Purpose:	Create and initialize the main window.
+#
+sub buildmainwind
+{
+	my $file;					# File menu.
+	my $view;					# View menu.
+	my $opts;					# Options menu.
+	my $help;					# Help menu.
+
+	my $curfile;					# Current keyrec.
+	my $keyrecs;					# Keyrec listbox.
+	my $nulline;					# Empty line.
+
+	#
+	# Create the main window and set its size.
+	#
+	$wm = MainWindow->new(-title => $MAINTITLE);
+
+	#
+	# Get the keyrec file info.  No error message; it was given below.
+	#
+	exit(1) if(readrrf($rrfile) == 0);
+
+	#
+	# Create the frames we'll need.
+	#
+	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$rrfl = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$null = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$mbar->pack(-fill => 'x');
+	$rrfl->pack(-fill => 'x');
+	$body->pack(-fill => 'x');
+	$null->pack(-fill => 'x');
+
+	#
+	# Create our menus.
+	#
+	$file = $mbar->Menubutton(-text => 'File',
+				  -tearoff => 0,
+				  -underline => 0);
+	$view = $mbar->Menubutton(-text => 'View',
+				  -tearoff => 0,
+				  -underline => 0);
+	$opts = $mbar->Menubutton(-text => 'Options',
+				  -tearoff => 0,
+				  -underline => 0);
+	$help = $mbar->Menubutton(-text => 'Help',
+				  -tearoff => 0,
+				  -underline => 0);
+
+	##################################################
+	#
+	# Add the File menu entries.
+	#
+	$fm_open = $file->command(-label => 'Open...',
+			          -command => \&file_open,
+			          -accelerator => 'Ctrl+O',
+			          -underline => 0);
+	$file->separator();
+	$fm_quit = $file->command(-label => 'Quit',
+			          -command => \&file_quit,
+			          -accelerator => 'Ctrl+Q',
+			          -underline => 0);
+	$file->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-o>',\&file_open);
+	$wm->bind('<Control-Key-q>',\&file_quit);
+
+	##################################################
+	#
+	# Add the Options menu entries.
+	#
+	$opts->command(-label => 'Columns in Button Window',
+		       -command => [\&set_btncols, 0],
+		       -underline => 0);
+	$opts->pack(-side => 'left');
+
+
+	##################################################
+	#
+	# Add the Help menu entries.
+	#
+	$hm_help = $help->command(-label => 'Help',
+			          -command => \&help_help,
+			          -accelerator => 'Ctrl+H',
+			          -underline => 0);
+	$help->pack(-side => 'right');
+
+	$wm->bind('<Control-Key-h>',\&help_help);
+
+	##################################################
+	#
+	# Create a line holding the current rollrec filename.
+	#
+
+	$curfile = $rrfl->Label(-text => "Viewing Rollrec File:  ");
+	$curfile->pack(-side => 'left');
+	$curfile = $rrfl->Label(-textvariable => \$title);
+	$curfile->pack(-side => 'left');
+	$rrfl->pack(-side => 'top', -fill => 'x');
+
+	##################################################
+	#
+	# Create a listbox to hold the button window. 
+	#
+	buildtable(42);
+
+	#
+	# Create a line holding the current rollrec filename.
+	#
+	$nulline = $null->Label(-text => " ");
+	$nulline->pack();
+	$null->pack(-side => 'top', -fill => 'x');
+
+	#
+	# Arrange to have the table rebuilt in a bit.
+	#
+	$wm->repeat($interval, \&reader);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildtable()
+#
+# Purpose:	Rebuild the rollrec name table.  This also re-reads the
+#		current rollrec file, so the list of rollrec names may
+#		increase or shrink depending on the state of that file.
+#
+sub buildtable
+{
+	my $readflag = shift;			# Rollrec-read flag.
+
+	my $cnt = 0;				# Count of rollrec names added.
+
+	#
+	# Read the list of rollrec names.
+	#
+	readrrf($rrfile,1) if($readflag);
+	return if($numrrnames == 0);
+
+	#
+	# Ensure the rollrec name list is sorted.
+	#
+	@rrnames = sort(@rrnames);
+
+	#
+	# Figure out the number of columns we'll use.
+	#
+	$columncount = int(sqrt($numrrnames));
+	if($columncount < $MINCOLS)
+	{
+		$columncount = $MINCOLS;
+	}
+
+	#
+	# Create a brand new table.
+	#
+	maketable();
+
+	#
+	# Re-populate and update the table.
+	#
+	for(my $ind = 0; $ind < $numrrnames; $ind++)
+	{
+		my $btn;			# Button widget.
+		my $row;			# Cell's row index.
+		my $col;			# Cell's column index.
+		my $clr;			# Cell's background color.
+		my $rrn;			# Name in rollrec.
+
+		#
+		# Get name for this rollrec.
+		#
+		$rrn = $rrnames[$ind];
+
+		#
+		# Get the column and row indices.
+		#
+		($col,$row) = ind2cr($ind);
+
+		#
+		# Set color according to roll status.
+		#
+		if($rollrecs{$rrn}{'kskphase'} > 0)
+		{
+			$clr = $kskclr;
+			$rrn .= "($rollrecs{$rrn}{'kskphase'})";
+		}
+		elsif($rollrecs{$rrn}{'zskphase'} > 0)
+		{
+			$clr = $zskclr;
+			$rrn .= "($rollrecs{$rrn}{'zskphase'})";
+		}
+		else
+		{
+			$clr = $nonclr;
+		}
+
+		#
+		# Create the new button.
+		#
+		$btn = $rrnametab->Button(-text => "$rrn",
+					  -font => $font,
+					  -anchor => 'w',
+					  -state  => 'normal',
+					  -command => [\&rrname_toggle,
+						       $ind],
+					  -activebackground => $clr,
+					  -background => $clr);
+
+		$rrnametab->put($row,$col,$btn);
+	}
+
+	$rrnametab->update();
+
+	#
+	# Pack it all up.
+	#
+	$rrnametab->pack(-fill => 'both', -expand => 1);
+	$body->pack(-fill => 'both', -expand => 1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      rrname_toggle()
+#
+# Purpose:      A rollrec name's button has been pushed.  Figure out what
+#		to do with it...
+#
+sub rrname_toggle
+{
+	my $rrind = shift;			# Rollrec's name index.
+
+	my $rowind;				# Cell's row index.
+	my $colind;				# Cell's column index.
+
+	my $btn;				# Selected button.
+	my $bgclr;				# New button background color.
+
+	#
+	# Get the rollrec's button.
+	#
+	$btn = getbutton($rrind);
+
+	#
+	# Choose an appropriate background color given the button's
+	# current state...
+	#
+	$bgclr = $btn->cget(-background);
+#	$bgclr = ($bgclr eq $RRTAB_ROLL) ? $RRTAB_NONROLL : $RRTAB_ROLL;
+
+	#
+	# ... and set the button's color.
+	#
+	$btn->configure(-activebackground => $bgclr, -background => $bgclr);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      getbutton()
+#
+# Purpose:      Return a rollrec's button widget given the name's index into
+#		@rrnames.
+#
+sub getbutton
+{
+	my $rrind = shift;			# Rollrec's name index.
+
+	my $rowind;				# Cell's row index.
+	my $colind;				# Cell's column index.
+
+	#
+	# Get the column and row indices.
+	#
+	($colind,$rowind) = ind2cr($rrind);
+
+	#
+	# Return the proper button widget.
+	#
+	return($rrnametab->get($rowind,$colind));
+}
+
+#---------------------------------------------------------------------------
+# Routine:      ind2cr()
+#
+# Purpose:      Convert a rollrec name table index to its table rows and
+#		column indices.
+#
+sub ind2cr
+{
+	my $nind = shift;				# Rollrec name index.
+	my $col;					# Column index.
+	my $row;					# Row index.
+
+	$col = int($nind / $numrows);
+	$row = $nind % $numrows;
+
+	return($col,$row);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      maketable()
+#
+# Purpose:      Create the rollrec name table.
+#
+sub maketable
+{
+	#
+	# Don't do anything if we don't have any rollrec names.
+	#
+	return if($numrrnames == 0);
+
+	#
+	# Calculate the size of the button table.
+	#
+	if($numrrnames != 0)
+	{
+		$numrows = int($numrrnames / $columncount);
+		$numrows++ if(($numrrnames % $columncount) != 0);
+
+		$numcols = $columncount;
+	}
+
+	#
+	# Destroy the rollrec-name table's widgets.
+	#
+	if($rrnametab)
+	{
+		$rrnametab->clear;
+		$rrnametab->destroy;
+	}
+
+	#
+	# Create the new button table.
+	#
+	$rrnametab = $body->Table(-rows		=> $numrows,
+				  -columns	=> $numcols,
+				  -scrollbars	=> 'e',
+				  -relief	=> 'raised',
+				  -borderwidth	=> 1,
+				  -fixedrows	=> 0,
+				  -takefocus	=> 1,
+			         );
+
+}
+
+##############################################################################
+#
+# Menu widget interface routines.
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	file_open()
+#
+sub file_open
+{
+	my $fowin;					# File-open widget.
+	my %fsopts = ();				# FileSelect() options.
+	my $newfile;					# New file name.
+
+	#
+	# Set up options for FileSelect.
+	#
+	%fsopts = (-directory => '.');
+	$fsopts{'-filter'} = '*.rrf' if($namefilter);
+
+	#
+	# Prompt for the new file.  Return to our caller if nothing was chosen.
+	#
+	$fowin = $wm->FileSelect(%fsopts);
+	$newfile = $fowin->Show;
+	return if($newfile eq "");
+
+	#
+	# Save the new filename and its node.
+	#
+	$rrfile = $newfile;
+	$curnode = getnode($rrfile);
+	settitle($curnode);
+
+	#
+	# Read the new rollrec file and rebuild the button window.
+	#
+	if(readrrf($rrfile))
+	{
+		buildtable(0);
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_quit()
+#
+sub file_quit
+{
+	#
+	# Destroy the rollrec name table's widgets.
+	#
+	if($rrnametab)
+	{
+		$rrnametab->clear;
+		$rrnametab->destroy;
+	}
+
+	rollrec_discard();
+
+	print STDERR "exiting...\n";
+	exit(0);
+}
+
+##############################################################################
+#
+# Utility routines
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	readrrf()
+#
+sub readrrf
+{
+	my $rrf = shift;				# Rollrec file.
+	my @names;					# Rollrec names.
+
+	#
+	# If the specified file doesn't exist, ask the user if we should
+	# continue or quit.
+	#
+	if(! -e $rrf)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$curnode does not exist",
+				   -buttons => ["Continue", "Quit" ]);
+		$ret = $dlg->Show();
+
+		return(1) if($ret eq "Continue");
+
+		file_quit();
+	}
+
+	#
+	# Ensure the file is actually a rollrec file.
+	#
+	if(dt_filetype($rrf) ne "rollrec")
+	{
+		my $curnode = getnode($rrf);
+
+		errorbox("$curnode is not a rollrec file; unable to continue");
+		return(0);
+	}
+
+	#
+	# Zap the old data.
+	#
+	@rrnames = ();
+
+	#
+	# Get data from the rollrec file.
+	#
+	rollrec_read($rrf);
+	@rrnames = rollrec_names();
+	$numrrnames = @rrnames;
+
+	#
+	# Initialize the rollrecs hash for each rollrec.
+	#
+	foreach my $rrn (@rrnames)
+	{
+		my $rrec;				# This rollrec's data.
+
+		#
+		# Get this rollrec's data.
+		#
+		$rrec = rollrec_fullrec($rrn);
+
+		#
+		# Add the rollrec's necessary data to the %rollrecs hash.
+		#
+		$rollrecs{$rrn}{'display'}	 = $rrec->{'display'};
+		$rollrecs{$rrn}{'kskphase'}	 = $rrec->{'kskphase'};
+		$rollrecs{$rrn}{'zskphase'}	 = $rrec->{'zskphase'};
+
+		#
+		# Set up the radio buttons' data areas for the record type and
+		# the display flag.
+		#
+#		$editrbs{$rrn} = $rollrecs{$rrn}{'rollrec_type'} eq 'roll' ? 1 : 0;
+	}
+
+	#
+	# Drop out the zones that aren't to be displayed.
+	#
+	for(my $ind=$numrrnames-1; $ind >= 0; $ind--)
+	{
+		my $rrec;				# This rollrec's data.
+		my $rrn;
+
+		#
+		# Get the zone name and its rollrec.
+		#
+		$rrn = $rrnames[$ind];
+		$rrec = rollrec_fullrec($rrn);
+
+		#
+		# If the zone's display flag is off, lop it out of the list.
+		#
+		if(($igndisp == 0) && ($rollrecs{$rrn}{'display'} == 0))
+		{
+			splice @rrnames, $ind, 1;
+			next;
+		}
+
+		#
+		# If this zone is doing a KSK roll and we aren't displaying
+		# KSK-rolling zones, we'll remove it from the list.
+		#
+		if(($showksk == 0) && ($rollrecs{$rrn}{'kskphase'} > 0))
+		{
+			splice @rrnames, $ind, 1;
+			next;
+		}
+
+		#
+		# If this zone is doing a ZSK roll and we aren't displaying
+		# ZSK-rolling zones, we'll remove it from the list.
+		#
+		if(($showzsk == 0) && ($rollrecs{$rrn}{'zskphase'} > 0))
+		{
+			splice @rrnames, $ind, 1;
+			next;
+		}
+
+		#
+		# If we're displaying non-rolling zones and this zone isn't
+		# doing a roll, we'll remove it from the list.
+		#
+		if(($shownon == 0) &&
+		   (($rollrecs{$rrn}{'kskphase'} == 0) &&
+		    ($rollrecs{$rrn}{'zskphase'} == 0)))
+		{
+			splice @rrnames, $ind, 1;
+			next;
+		}
+
+	}
+
+	#
+	# Recalculate the number of zones we'll track.
+	#
+	$numrrnames = @rrnames;
+
+	return(1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getnode()
+#
+# Purpose:	Get the node of a pathname.
+#
+sub getnode
+{
+	my $path = shift;				# Path to nodify.
+
+	my @pathelts;					# Path elements.
+	my $pathnode;					# Last path elements.
+
+	@pathelts = split /\//, $path;
+	$pathnode = pop @pathelts;
+
+	return($pathnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	set_btncols()
+#
+# Purpose:	
+#
+sub set_btncols
+{
+	my $err = shift;				# Error flag.
+
+	my $dlg;					# Dialog widget.
+	my $lab;					# Label for dialog box.
+	my $ent;					# Entry for dialog box.
+
+	my $col;					# New column count.
+	my $ret;					# Dialog box return.
+
+	#
+	# Create the new dialog box.
+	#
+	$dlg = $wm->DialogBox(-title	=> 'Set Columns for Button Window',
+			      -buttons	=> ["Okay", "Cancel" ]);
+
+	#
+	# Add a label to the dialog.
+	#
+	$lab = $dlg->Label(-text => 'Enter New Column Count:');
+	$lab->pack(-side => 'left');
+
+	#
+	# Add a text entry slot and focus on the entry.
+	#
+	$ent = $dlg->add('Entry');
+	$ent->pack(-side => 'left');
+	$dlg->configure(-focus => $ent);
+
+	#
+	# Add a potential error location to the dialog.
+	#
+	$lab = $dlg->Label(-text => ' ');
+	$lab->pack(-side => 'bottom');
+	if($err)
+	{
+		$lab->configure(-text => "Count must be between 1 and $MAXCOLS",
+				-foreground => 'red')
+	}
+
+	#
+	# Show the dialog box and handle cancellations.
+	#
+	$ret = $dlg->Show();
+	return if($ret eq 'Cancel');
+
+	#
+	# Get the user's column size.
+	#
+	$col = $ent->get();
+
+	#
+	# If this is an invalid column count, give an error message and
+	# ask again.
+	#
+	set_btncols(1) if(($col < 1) || ($col > $MAXCOLS));
+
+	#
+	# Save the new column count and rebuild the table.
+	#
+	$columncount = $col;
+	buildtable(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	helpbegone()
+#
+# Purpose:	Destroy a help window.
+#
+sub helpbegone
+{
+	$helpwin->destroy();
+	$inhelpwind = 0;
+}
+
+#############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	errorbox()
+#
+# Purpose:	Display an error dialog box.
+#
+sub errorbox
+{
+	my $msg  = shift;			# Warning message.
+	my $dlg;				# Warning dialog widget.
+
+	$dlg = $wm->Dialog(-title => "$NAME Error",
+			   -text  => $msg,
+			   -default_button => "Okay",
+			   -buttons => ["Okay"]);
+	$dlg->Show();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	errorbox_multi()
+#
+# Purpose:	Display a multiline error dialog box.  Newlines in the message
+#		signal a new line (implemented with a new label) in the dialog
+#		box.
+#
+sub errorbox_multi
+{
+	my $msgs  = shift;			# Messages to display.
+
+	my $dlg;				# Warning dialog widget.
+	my $lab;				# Label for table.
+
+	my @lines;				# Lines in message.
+	my $line;				# Individual message line.
+
+	$dlg = $wm->DialogBox(-title	=> "$NAME Error",
+			      -buttons	=> ["Okay"]);
+
+	@lines = split /\n/, $msgs;
+
+	foreach $line (@lines)
+	{
+		$lab = $dlg->Label(-text => $line);
+		$lab->pack(-side => 'top');
+	}
+
+	$dlg->Show();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	help_help()
+#
+# Purpose:	Display a help window.
+#
+sub help_help
+{
+	my $hframe;					# Help frame.
+	my $wdgt;					# General widget.
+
+	my $helpstr;
+
+	$helpstr = "
+
+bubbles - DNSSEC-Tools Rollrec Simple GUI Display
+         
+SYNOPSIS
+         
+    bubbles [options] <rollrec-file>
+
+DESCRIPTION
+
+bubbles gives a simple display of the roll status of a set of zones listed in
+a rollrec file.  In contrast, blinkenlights gives a detailed display of the
+roll status of a set of zones.
+
+A rollrec file contains one or more rollrec records.  These records are used
+by the DNSSEC-Tools rollover utilities (rollerd, etc.) to describe zones'
+rollover states.  Each zone's rollrec record contains such information as the
+zone file, the rollover phase, and logging level.  rollrec files are text
+files.
+
+When bubbles starts, a window is created that has 'bubbles' for each zone with
+a rollrec record in the given rollrec file.  (Clicking on a bubble doesn't do
+anything.)  By default, all zones with a display flag set on will be shown in
+the bubbles window.  Options may be given to modify this behavior.
+
+More information may be found in bubbles' man page.
+
+";
+
+	#
+	# If we've already got another help window, we'll give an error and
+	# return.  Otherwise, we'll turn on our in-helpwindow flag.
+	#
+	if($inhelpwind)
+	{
+		errorbox("Multiple help windows cannot be created\n");
+		return;
+	}
+	$inhelpwind = 1;
+
+	#
+	# Create a new window to hold our help info.  Bind up some
+	# key accelerators, too.
+	#
+	$helpwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Help!',
+				  -borderwidth => 1);
+	$helpwin->bind('<Control-Key-q>',\&file_quit);
+	$helpwin->bind('<Control-Key-w>',\&helpbegone);
+
+	#
+	# Now make the containers for the window.
+	#
+	$hframe = $helpwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$hframe->pack(-fill => 'x');
+
+	#
+	# Add the help data to the frame.
+	#
+	$wdgt = $hframe->Label(-text => $helpstr,
+			       -justify => 'left');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Add a button to dismiss the window.
+	#
+	$wdgt = $hframe->Button(-text => 'Done',
+				-command => \&helpbegone);
+	$wdgt->pack(-side => 'top');
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      settitle()
+#
+# Purpose:      Set the title for use in the "Editing File" line.
+#
+sub settitle
+{
+	my $name = shift;				# Name to use.
+
+	$title = $name;
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:      Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  bubbles [options] <rollrec-file>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-no-filter		turn off name filtering\n";
+	print STDERR "\t\t-columns columns	columns in button window\n";
+	print STDERR "\t\t-V			program version\n";
+	exit(0);
+}
+
+1;
+
+#############################################################################
+
+=pod
+
+=head1 NAME
+
+bubbles - DNSSEC-Tools Rollrec Simple GUI Display
+
+=head1 SYNOPSIS
+
+  bubbles [options] <rollrec-file>
+
+=head1 DESCRIPTION
+
+B<bubbles> gives a simple display of the roll status of a set of zones
+listed in a I<rollrec> file.  In contrast, B<blinkenlights> gives a detailed
+display of the roll status of a set of zones.
+
+A B<rollrec> file contains one or more I<rollrec> records.  These records are
+used by the DNSSEC-Tools rollover utilities (B<rollerd>, etc.) to describe
+zones' rollover states.  Each zone's I<rollrec> record contains such
+information as the zone file, the rollover phase, and logging level.
+I<rollrec> files are text files.
+
+When B<bubbles> starts, a window is created that has "bubbles" for each
+zone with a I<rollrec> record in the given I<rollrec> file.  (Clicking on a
+bubble doesn't do anything.)  By default, all zones with a I<display> flag
+set on will be shown in the B<bubbles> window.  Options may be given to
+modify this behavior.
+
+The zone bubbles are color-coded according to roll-over state.  The default
+colors are:
+
+* green: not in roll-over
+
+* yellow: in ZSK roll-over
+
+* red: in KSK roll-over
+
+These colors may be specified by the user via command-line options.
+
+In building the bubble window, B<bubbles> window defaults to creating a square
+window.  This may be overridden by specifying the number of columns, using the
+B<-columns> option.
+
+=head1 OPTIONS
+
+B<bubbles> supports the following options.
+
+=over 4
+
+=item B<-columns columns>
+
+This option allows the user to specify the number of columns to be used in
+the Button Window.
+
+=item B<-kskcolor color>
+
+Set the bubble color for zones that are performing KSK roll-overs.
+
+=item B<-zskcolor color>
+
+Set the bubble color for zones that are performing ZSK roll-overs.
+
+=item B<-noncolor color>
+
+Set the bubble color for zones that are not in roll-over.
+
+=item B<-ignore-display>
+
+Ignore the B<rollrec> display flag and display every zone in the B<rollrec>
+file.
+
+=item B<-interval wait-time>
+
+Interval between checks of the B<rollrec> file.  By default, I<wait-time> is
+given in minutes.  This can be adjusted by specifying one of the following
+time-unit suffixes.
+
+* s - seconds
+
+* m - minutes
+
+* h - hours
+
+Examples:
+
+* I<-interval 24> - 24 minutes
+
+* I<-interval 24s> - 24 seconds
+
+* I<-interval 24m> - 24 minutes
+
+* I<-interval 24h> - 24 hours
+
+=item B<-no-filter>
+
+This option turns off name filtering when B<bubbles> presents a
+file-selection dialog for choosing a new I<rollrec> file.  If this option
+is not given, then the file-selection dialog will only list regular files
+with a suffix of B<.rrf>.
+
+=item B<-showksk>
+
+Show the zones that are performing KSK roll-overs.
+
+=item B<-shownonrolls>
+
+Show the zones that are not in roll-over.
+
+=item B<-showrolls>
+
+Show the zones that are performing either type of roll-over.
+
+=item B<-showzsk>
+
+Show the zones that are performing ZSK roll-overs.
+
+=item B<-help>
+
+Give a usage message and exit.
+
+=item B<-Version>
+
+Displays the version information for B<bubbles> and the DNSSEC-Tools
+package.
+
+=back
+
+=head1 REQUIREMENTS
+
+B<bubbles> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+installed on your system.
+
+=head1 KNOWN ISSUES
+
+The following are known issues.  These will be resolved in the fullness of time.
+
+=over 4
+
+=item
+
+Segmentation violation on exit.
+This occurs on MacOS X 10.4.9-10.4.11 with Perl 5.8.6.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2009 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<lsroll(1)>
+
+B<blinkenlights(8)>,
+B<rollchk(8)>,
+B<rollerd(8)>
+B<rollinit(8)>,
+B<rollrec-editor(8)>
+B<rollset(8)>,
+
+B<Net::DNS::SEC::Tools::rollrec(3)>
+
+B<file-rollrec(5)>
+
+=cut
+
