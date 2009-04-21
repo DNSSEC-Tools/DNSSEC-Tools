@@ -51,29 +51,28 @@ sub read {
     return $doc;
 }
 
-sub write {
-    my ($self, $data, $location, $options) = @_;
-    open(O, ">", $location);
-    print O "# saved by Net::DNS::SEC::Tools::TrustAnchor::Bind\n";
-    print O $self->create_extra_info_string($data, {}, "#"),"\n";
-    print O "trusted-keys {\n";
-    foreach my $key (keys(%{$data->{'delegation'}})) {
-	if (exists($data->{'delegation'}{$key}{'ds'})) {
-	    foreach my $record (@{$data->{'delegation'}{$key}{'ds'}}) {
-		print O "# unsupported DS record type for $key\n";
-	    }
-	}
-	if (exists($data->{'delegation'}{$key}{'dnskey'})) {
-	    foreach my $record (@{$data->{'delegation'}{$key}{'dnskey'}}) {
-		my $keytag = "";
-		$keytag = " # $record->{keytag}" if (exists($record->{keytag}));
-		printf O "\t%15s $record->{flags} $record->{algorithm} $record->{digesttype} \"$record->{content}\";$keytag\n", $key;
-	    }
-	}
-    }
-    print O "}\n";
-    close(O);
-    return 0;
+sub write_ds {
+    my ($self, $fh, $name, $record) = @_;
+    my $status;
+    $fh->printf("# unsupported DS record type for $name\n");
+}
+
+sub write_dnskey {
+    my ($self, $fh, $name, $record) = @_;
+    my $status;
+    my $keytag = "";
+    $keytag = " # $record->{keytag}" if (exists($record->{keytag}));
+    $fh->printf("\t%15s $record->{flags} $record->{algorithm} $record->{digesttype} \"$record->{content}\";$keytag\n", $name);
+}
+
+sub write_header {
+    my ($self, $fh, $options) = @_;
+    $fh->print("trusted-keys {\n");
+}
+
+sub write_trailer{
+    my ($self, $fh, $options) = @_;
+    $fh->print("}\n");
 }
 
 =pod
