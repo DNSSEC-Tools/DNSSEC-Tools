@@ -14,8 +14,12 @@ sub new {
     my $self = {};
     %$self = @_;
     bless($self, $class);
-    $self->init_global($self->{'dbh'}) if ($self->{'dbh'});
+    $self->init_extras();
     return $self;
+}
+
+# sub function for child classes to override at init time
+sub init_extras {
 }
 
 sub load_module {
@@ -91,10 +95,12 @@ sub write_extra_info {
 # blank prototypes
 sub write_header {
     my ($self, $fh) = @_;
+    $fh->print($self->{'header'}) if (exists($self->{'header'}));
 }
 
 sub write_trailer {
     my ($self, $fh) = @_;
+    $fh->print($self->{'trailer'}) if (exists($self->{'trailer'}));
 }
 
 sub write {
