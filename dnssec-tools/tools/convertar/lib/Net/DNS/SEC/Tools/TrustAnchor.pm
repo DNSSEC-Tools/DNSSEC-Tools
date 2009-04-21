@@ -94,12 +94,12 @@ sub write_extra_info {
 
 # blank prototypes
 sub write_header {
-    my ($self, $fh) = @_;
+    my ($self, $fh, $options, $data) = @_;
     $fh->print($self->{'header'}) if (exists($self->{'header'}));
 }
 
 sub write_trailer {
-    my ($self, $fh) = @_;
+    my ($self, $fh, $options, $data) = @_;
     $fh->print($self->{'trailer'}) if (exists($self->{'trailer'}));
 }
 
@@ -125,7 +125,7 @@ sub write {
     #
     $self->write_extra_info($fh, $data);
 
-    $self->write_header($fh, $options);
+    $self->write_header($fh, $options, $data);
 
     #
     # save the data itself
@@ -142,7 +142,7 @@ sub write {
 	    }
 	}
     }
-    $self->write_trailer($fh, $options);
+    $self->write_trailer($fh, $options, $data);
     $fh->close();
     return 0;
 }
