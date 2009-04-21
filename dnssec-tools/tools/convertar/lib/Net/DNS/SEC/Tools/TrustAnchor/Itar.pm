@@ -1,5 +1,6 @@
 package Net::DNS::SEC::Tools::TrustAnchor::Itar;
 
+use strict;
 use Net::DNS::SEC::Tools::TrustAnchor;
 
 our @ISA = qw(Net::DNS::SEC::Tools::TrustAnchor);
