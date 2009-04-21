@@ -1,6 +1,7 @@
 package Net::DNS::SEC::Tools::TrustAnchor;
 
 use Exporter;
+use IO::File;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(load_module parse_component);
@@ -73,16 +74,117 @@ sub read {
     return 1;
 }
 
+sub get_extra_info {
+    return {};
+}
+
+sub write_extra_info {
+    my ($self, $fh, $data) = @_;
+    #
+    # save extra parameters as a comment at the top
+    #
+    print $fh
+      $self->create_extra_info_string($data, $self->get_extra_info(),
+				      $self->{'commentprefix'} || "#"),"\n";
+}
+
+
 sub write {
-    my ($self, $location, $options) = @_;
-    print STDERR "The TrustAnchor module " . ref($self) . " does not support writing\n";
-    return 1;
+    my ($self, $data, $location, $options) = @_;
+
+    my $status;
+
+    if (!$self->can('write_ds') || !$self->can('write_dnskey')) {
+	print STDERR "The TrustAnchor module " . ref($self) . " does not support writing\n";
+	return 1;
+    }
+
+    my $fh = new IO::File;
+    $fh->open(">$location");
+    if (!defined($fh)) {
+	print STDERR "failed to open $location for writing\n";
+	return 1;
+    }
+
+    #
+    # save extra parameters as a comment at the top
+    #
+    $self->write_extra_info($fh, $data);
+
+    #
+    # save the data itself
+    #
+    foreach my $key (keys(%{$data->{'delegation'}})) {
+	if (exists($data->{'delegation'}{$key}{'ds'})) {
+	    foreach my $record (@{$data->{'delegation'}{$key}{'ds'}}) {
+		$self->write_ds($fh, $key, $record);
+	    }
+	}
+	if (exists($data->{'delegation'}{$key}{'dnskey'})) {
+	    foreach my $record (@{$data->{'delegation'}{$key}{'dnskey'}}) {
+		$self->write_dnskey($fh, $key, $record);
+	    }
+	}
+    }
+    $fh->close();
+    return 0;
 }
 
 sub modify {
     my ($self, $location, $options) = @_;
     print STDERR "The TrustAnchor module " . ref($self) . " does not support inline-modification\n";
     return 1;
+}
+
+#
+# these two routines save and read a commonly formated comment-style tag
+# for including extra info that doesn't fit into normal syntax structures, like
+# data version numbers etc.
+#
+my $EIVER=1;
+sub create_extra_info_string {
+    my ($self, $data, $moduleinfo, $prefix) = @_;
+    #
+    # save extra parameters as a comment at the top
+    #
+    $prefix ||= "";
+    my $topstring = $prefix . " " . "EIVER=$EIVER";
+
+    # datainfo
+    foreach my $keyword (qw(serial name)) {
+	$topstring .= " $keyword=$data->{$keyword}";
+    }
+
+    # mid-string break between datatypes
+    $topstring .= " /";
+
+    # module specific info
+    if ($moduleinfo) {
+	foreach my $keyword (keys(%$moduleinfo)) {
+	    $topstring .= " $keyword=$moduleinfo->{$keyword}";
+	}
+    }
+
+    return $topstring;
+}
+
+sub parse_extra_info_string {
+    my ($self, $line, $data, $prefix) = @_;
+    my $localinfo = {};
+
+    if ($line !~ s/$prefix EIVER=1//) {
+	die("unknown extra info version in data; can't recover\n");
+    }
+
+    while ($line =~ s/^\s*([^=]+)=(\S+)\s*//) {
+	$data->{$1} = $2;
+	last if ($line =~ s/^\s*\/\s*//);
+    }
+
+    while ($line =~ s/^\s*([^=]+)=(\S+)\s*//) {
+	$localinfo->{$1} = $2;
+    }
+    return $localinfo;
 }
 
 =pod
