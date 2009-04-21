@@ -64,26 +64,26 @@ sub read {
     return $doc;
 }
 
-sub write {
-    my ($self, $data, $location, $options) = @_;
-    open(O, ">", $location);
-    print O "# saved by Net::DNS::SEC::Tools::TrustAnchor::Libval\n";
-    print O $self->create_extra_info_string($data, {}, "#"),"\n";
-    print O ($options->{'contextname'} || ":") . " trust-anchor\n";
-    foreach my $key (keys(%{$data->{'delegation'}})) {
-	if (exists($data->{'delegation'}{$key}{'ds'})) {
-	    foreach my $record (@{$data->{'delegation'}{$key}{'ds'}}) {
-		printf O "\t%15s DS \"$record->{keytag} $record->{algorithm} $record->{digesttype} $record->{content}\"\n", $key;
-	    }
-	}
-	if (exists($data->{'delegation'}{$key}{'dnskey'})) {
-	    foreach my $record (@{$data->{'delegation'}{$key}{'dnskey'}}) {
-		printf O "\t%15s \"$record->{flags} $record->{algorithm} $record->{digesttype} $record->{content}\"\n", $key;
-	    }
-	}
-    }
-    close(O);
-    return 0;
+sub write_ds {
+    my ($self, $fh, $name, $record) = @_;
+    my $status;
+    $fh->printf("\t%15s DS \"$record->{keytag} $record->{algorithm} $record->{digesttype} $record->{content}\"\n", $name);
+}
+
+sub write_dnskey {
+    my ($self, $fh, $name, $record) = @_;
+    my $status;
+    $fh->printf("\t%15s \"$record->{flags} $record->{algorithm} $record->{digesttype} $record->{content}\"\n", $name);
+}
+
+sub write_header {
+    my ($self, $fh, $options) = @_;
+    $fh->print(($options->{'contextname'} || ":") . " trust-anchor\n");
+}
+
+sub write_trailer{
+    my ($self, $fh, $options) = @_;
+    $fh->print(";");
 }
 
 =pod

@@ -88,6 +88,14 @@ sub write_extra_info {
 				      $self->{'commentprefix'} || "#"),"\n";
 }
 
+# blank prototypes
+sub write_header {
+    my ($self, $fh) = @_;
+}
+
+sub write_trailer {
+    my ($self, $fh) = @_;
+}
 
 sub write {
     my ($self, $data, $location, $options) = @_;
@@ -111,6 +119,8 @@ sub write {
     #
     $self->write_extra_info($fh, $data);
 
+    $self->write_header($fh, $options);
+
     #
     # save the data itself
     #
@@ -126,6 +136,7 @@ sub write {
 	    }
 	}
     }
+    $self->write_trailer($fh, $options);
     $fh->close();
     return 0;
 }
