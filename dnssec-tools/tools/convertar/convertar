@@ -17,7 +17,7 @@ my $output_file = $opts{'o'} || shift @ARGV;
 my ($mod, $file, $options) = parse_component($input_file);
 
 my $tar = $mod->read();
-return if (!$tar);
+die "reading tar from $input_file failed\n" if (!$tar);
 
 if ($output_file ne '') {
     my ($mod, $file, $options) = parse_component($output_file);
