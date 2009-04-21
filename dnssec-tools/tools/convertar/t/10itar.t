@@ -22,7 +22,7 @@ ok($mod, "failed to read the tar from $tarfile");
 #
 
 
-my $outfile = "t/outtar.xml";
+my $outfile = "t/tmp.outtar.xml";
 ($mod, $file, $options) = parse_component("itar:$outfile");
 ok($mod, "parse_component failed of $outfile");
 $mod->write($tar, $file);
@@ -34,7 +34,5 @@ my $f1 = XMLin($tarfile);
 my $f2 = XMLin($outfile);
 
 is_deeply($f2, $f1, "comparison of input and output XML structures differ");
-
-unlink($outfile);
 
 ok(1, "didn't get to the end");

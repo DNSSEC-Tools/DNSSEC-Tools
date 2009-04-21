@@ -21,7 +21,7 @@ ok($mod, "failed to read the tar from $tarfile");
 # write it back out
 #
 
-my $outfile = "t/outtar.csv";
+my $outfile = "t/tmp.outtar.csv";
 ($mod, $file, $options) = parse_component("csv:$outfile");
 ok($mod, "parse_component failed of $outfile");
 $mod->write($tar, $file);
@@ -37,7 +37,5 @@ my $newtar = $mod->read();
 # compare them deeply to ensure they're the same
 #
 is_deeply($newtar, $tar, "comparison of input and output data differ");
-
-unlink($outfile);
 
 ok(1, "didn't get to the end");
