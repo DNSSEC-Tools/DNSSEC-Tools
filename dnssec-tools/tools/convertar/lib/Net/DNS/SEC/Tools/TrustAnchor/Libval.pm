@@ -83,7 +83,7 @@ sub write_header {
 
 sub write_trailer{
     my ($self, $fh, $options) = @_;
-    $fh->print(";");
+    $fh->print(";\n");
 }
 
 =pod
