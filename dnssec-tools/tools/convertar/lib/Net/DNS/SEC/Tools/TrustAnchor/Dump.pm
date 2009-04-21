@@ -1,5 +1,7 @@
 package Net::DNS::SEC::Tools::TrustAnchor::Dump;
 
+# XXX: fails for some reason if included; probably in the eval
+#use strict;
 use Net::DNS::SEC::Tools::TrustAnchor;
 
 our @ISA = qw(Net::DNS::SEC::Tools::TrustAnchor);
