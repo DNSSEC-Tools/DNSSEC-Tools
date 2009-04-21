@@ -89,49 +89,4 @@ sub write_dnskey {
     $fh->print($self->get_csv()->string() . "\n");
 }
 
-sub write_foo {
-    my ($self, $data, $location, $options) = @_;
-
-    my $csv = Text::CSV->new();
-    my $status;
-
-    open(O, ">$location");
-
-    #
-    # save extra parameters as a comment at the top
-    #
-    my $topstring = "# VERSION=$VERSION";
-    foreach my $keyword (qw(serial name)) {
-	$topstring .= " $keyword=$data->{$keyword}";
-    }
-    print O
-      $self->create_extra_info_string($data, { VERSION => $VERSION }, "#"),"\n";
-
-    #
-    # save the data itself
-    #
-    foreach my $key (keys(%{$data->{'delegation'}})) {
-	if (exists($data->{'delegation'}{$key}{'ds'})) {
-	    foreach my $record (@{$data->{'delegation'}{$key}{'ds'}}) {
-		$status = $csv->combine($key, 'DS', $record->{'keytag'},
-					$record->{'algorithm'},
-					$record->{'digesttype'},
-					$record->{'content'});
-		print O $csv->string(),"\n";
-	    }
-	}
-	if (exists($data->{'delegation'}{$key}{'dnskey'})) {
-	    foreach my $record (@{$data->{'delegation'}{$key}{'dnskey'}}) {
-		$status = $csv->combine($key, 'DNSKEY', $record->{'flags'},
-					$record->{'algorithm'},
-					$record->{'digesttype'},
-					$record->{'content'});
-		print O $csv->string(),"\n";
-	    }
-	}
-    }
-    close(O);
-    return 0;
-}
-
 =pod
