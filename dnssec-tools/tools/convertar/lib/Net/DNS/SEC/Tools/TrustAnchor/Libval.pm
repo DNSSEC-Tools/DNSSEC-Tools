@@ -31,7 +31,7 @@ sub read {
 	      $self->parse_extra_info_string($_, $doc, "#");
 	}
 
-	next if (/^#/);
+	next if (/^\s*#/);
 
 	if (/^(\S+)\s+trust-anchor/) {
 	    $intrustanchor = 1;
