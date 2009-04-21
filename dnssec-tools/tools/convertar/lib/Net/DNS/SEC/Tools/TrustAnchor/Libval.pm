@@ -8,6 +8,13 @@ our $VERSION = '0.1';
 
 use XML::Simple;
 
+sub init_extras {
+    my $self = shift;
+    # XXX: allow for other contexts besides :
+    $self->{'header'} = ": trust-anchors\n";
+    $self->{'tailer'} = ";\n";
+}
+
 sub read {
     my ($self, $location, $options) = @_;
 
@@ -74,16 +81,6 @@ sub write_dnskey {
     my ($self, $fh, $name, $record) = @_;
     my $status;
     $fh->printf("\t%15s \"$record->{flags} $record->{algorithm} $record->{digesttype} $record->{content}\"\n", $name);
-}
-
-sub write_header {
-    my ($self, $fh, $options) = @_;
-    $fh->print(($options->{'contextname'} || ":") . " trust-anchor\n");
-}
-
-sub write_trailer{
-    my ($self, $fh, $options) = @_;
-    $fh->print(";\n");
 }
 
 =pod

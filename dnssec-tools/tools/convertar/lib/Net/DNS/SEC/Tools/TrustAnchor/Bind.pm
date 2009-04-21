@@ -8,6 +8,13 @@ our $VERSION = '0.1';
 
 use XML::Simple;
 
+sub init_extras {
+    my $self = shift;
+    $self->{'header'} = "trusted-keys {\n";
+    $self->{'tailer'} = "}\n";
+}
+
+
 sub read {
     my ($self, $location, $options) = @_;
 
@@ -24,7 +31,9 @@ sub read {
 	      $self->parse_extra_info_string($_, $doc, "#");
 	}
 
-	next if (/^#/);
+	# skip comments
+	next if (/^\s*[#;]/);
+	next if (/^\s*\/\//);
 
 	if (/trusted-keys\s+{/) {
 	    $intrustanchor = 1;
@@ -63,16 +72,6 @@ sub write_dnskey {
     my $keytag = "";
     $keytag = " # $record->{keytag}" if (exists($record->{keytag}));
     $fh->printf("\t%15s $record->{flags} $record->{algorithm} $record->{digesttype} \"$record->{content}\";$keytag\n", $name);
-}
-
-sub write_header {
-    my ($self, $fh, $options) = @_;
-    $fh->print("trusted-keys {\n");
-}
-
-sub write_trailer{
-    my ($self, $fh, $options) = @_;
-    $fh->print("}\n");
 }
 
 =pod
