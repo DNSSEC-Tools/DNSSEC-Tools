@@ -467,7 +467,10 @@ sub rollkeys
 			# available keys.
 
 			# actually do the signing
-			signer($rname, "-usezskpub", $krr);
+			my $ret = signer($rname, "-usezskpub", $krr);
+			if ($ret) {
+			    rolllog_log(LOG_ERR, "signing $rname failed!");
+			}
 		}
 
 	}
@@ -828,7 +831,7 @@ sub zsk_phase2
 	# Sign the zone with the Published ZSK.
 	#
 	$ret = signer($rname,"-usezskpub",$krr);
-	if($ret eq "")
+	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to sign zone with the Published ZSK");
 	}
@@ -906,7 +909,7 @@ sub zsk_phase4
 	# Adjust ZSKs in the zone's keyrec.
 	#
 	$ret = signer($rname,"-rollzsk",$krr);
-	if($ret eq "")
+	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to adjust ZSK keyrec");
 	}
@@ -915,7 +918,7 @@ sub zsk_phase4
 	# Sign the zone with the current ZSK.
 	#
 	$ret = signer($rname,"",$krr);
-	if($ret eq "")
+	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the current ZSK");
 	}
@@ -1305,7 +1308,7 @@ sub ksk_phase2
 	# Sign the zone with a new Published KSK.
 	#
 	$ret = signer($rname,"-newpubksk",$krr);
-	if($ret eq "")
+	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published ZSK");
 	}
@@ -1373,7 +1376,7 @@ sub ksk_phase4
 	# Roll the Published KSK to the Current KSK.
 	#
 	$ret = signer($rname,"-rollksk",$krr);
-	if($ret eq "")
+	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to sign zone with the Published ZSK");
 	}
@@ -2085,8 +2088,8 @@ sub signer
 	#
 	# Have zonesigner sign the zone for us.
 	#
-	$ret = `$cmdstr`;
-
+	$ret = system($cmdstr);
+	$ret >>= 8;
 	$rrr->{'signed'} = 1;
 
 	return($ret);
