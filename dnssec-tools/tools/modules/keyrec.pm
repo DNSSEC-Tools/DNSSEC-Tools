@@ -83,6 +83,7 @@ my @ZONEFIELDS = (
 			'kskcount',
 			'kskcur',
 			'kskpub',
+			'kskrev',
 			'signedzone',
 			'zskcount',
 			'zskcur',
@@ -409,7 +410,7 @@ sub keyrec_fmtchk()
 		# pointing to a signing set.  If not, create a new
 		# set and move the key there.
 		#
-		foreach my $key (qw /kskcur kskpub zskcur zskpub zsknew/)
+		foreach my $key (qw /kskcur kskpub kskrev zskcur zskpub zsknew/)
 		{
 			my $keyname;		# Key's name.
 			my $set;		# Signing set name.
@@ -510,7 +511,7 @@ sub keyrec_fmtchk()
 			# any of the zone's key sets.
 			#
 			$zone = $krec{'zonename'};
-			foreach my $key (qw /kskcur kskpub/)
+			foreach my $key (qw /kskcur kskpub kskrev/)
 			{
 				$set = $keyrecs{$zone}{$key};
 				if(keyrec_signset_haskey($set,$krn))
@@ -592,7 +593,7 @@ sub keyrec_keypaths
 	# Ensure the keyrec type is valid.
 	#
 	if(($krt ne "kskcur") && ($krt ne "kskpub") && ($krt ne "ksknew") &&
-	   ($krt ne "zskcur") && ($krt ne "zskpub"))
+	   ($krt ne "kskrev") && ($krt ne "zskcur") && ($krt ne "zskpub"))
 	{
 		return(@paths);
 	}
