@@ -20,7 +20,7 @@ my $phaselog   = "$ENV{'BUILDDIR'}/testing/rollerd/phase.log";
 
 my $domain     = "example.com";
 my $domainfile = $domain;
-my $statedir   = "tmp";
+my $statedir   = "$testdir/tmp";
 
 
 my %rollerd_response = ( 
@@ -44,7 +44,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 2
- example.com: executing "/usr/local/bin/zonesigner -newpubksk example.com example.com.signed"
+ example.com: executing "/usr/local/bin/zonesigner -newpubksk -zone example.com example.com example.com.signed"
  example.com: KSK phase 3
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -57,7 +57,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "/usr/local/bin/zonesigner -rollksk example.com example.com.signed"
+ example.com: executing "/usr/local/bin/zonesigner -rollksk -zone example.com example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -71,7 +71,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "/usr/local/bin/zonesigner -rollksk example.com example.com.signed"
+ example.com: executing "/usr/local/bin/zonesigner -rollksk -zone example.com example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -86,7 +86,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "/usr/local/bin/zonesigner -rollksk example.com example.com.signed"
+ example.com: executing "/usr/local/bin/zonesigner -rollksk -zone example.com example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -117,7 +117,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: ZSK phase 2 (Signing the zone with the KSK and published ZSK)
- example.com: executing "/usr/local/bin/zonesigner -usezskpub example.com example.com.signed"
+ example.com: executing "/usr/local/bin/zonesigner -usezskpub -zone example.com example.com example.com.signed"
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches)
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -130,8 +130,8 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: ZSK phase 4 (Adjusting keys in the keyrec and signing the zone with new ZSK)
- example.com: executing "/usr/local/bin/zonesigner -rollzsk example.com example.com.signed"
- example.com: executing "/usr/local/bin/zonesigner example.com example.com.signed"
+ example.com: executing "/usr/local/bin/zonesigner -rollzsk -zone example.com example.com example.com.signed"
+ example.com: executing "/usr/local/bin/zonesigner -zone example.com example.com example.com.signed"
  example.com: ZSK phase 0 (Not Rolling)
  example.com: ZSK expiration in 1 week, 0 seconds
  rollover manager shutting down...
@@ -142,39 +142,38 @@ my %rollerd_response = (
 
 #                    ****   MAIN   ****
 
+# Remove and create directory to work in (via creating the path to
+# the state directory)
 
+if ((!rmtree("$testdir",)) && ("No such file or directory" ne "$!")) {
+  die "unable to remove \'$testdir\' directory: $!\n";
+}
+mkpath("$statedir",) or
+  die "unable to make \'$statedir\' directory: $!\n";
 chdir "$testdir" or die "unable to change to \'$testdir\' directory: $!\n";
 
-# State directory needed to run an uninstalled dnssec.
-# Remove the local state directory, create a new one, set
-# environmental variable.
-rmtree( ("./$statedir") ) or  die "Unable to remove ./$statedir";
-mkdir "$statedir" or die "unable to create \'$statedir\' directory: $!\n";
 $ENV{'DT_STATEDIR'} = "$statedir";
 
-# Cleanup any earlier created files
-opendir DIRH, "."; my @dirlist = readdir DIRH; closedir DIRH;
-@dirlist = grep /((keyset|dsset)-$domainfile\.|($domainfile\.(krf|signed|zs))|(K$domainfile\..*\.(key|private))|$logfile)$/, @dirlist;
-unlink @dirlist;
-
 # setup default files
-copy ("save-example.com","example.com") or
-  die "Unable to copy save-example.com to example.com: $!\n";
-copy ("save-example.rollrec","example.rollrec") or
+copy ("../rollerd-example.com","example.com") or
+  die "Unable to copy saved-example.com to example.com: $!\n";
+copy ("../saved-example.rollrec","example.rollrec") or
   die "Unable to copy save-example.rollrec to example.rollrec: $!\n";
 
+
+# testing
 
 # create commands
 
 my $zonesigner_signzone = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $zonesigner -v -genkeys $domain >> $logfile 2>&1";
 
-my $rollerd_singlerun = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -singlerun ";
+my $rollerd_singlerun = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -singlerun >> $logfile 2>&1 ";
 
-my $rollerd_tillstopped = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec ";
+my $rollerd_tillstopped = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec >> $logfile 2>&1 ";
 
-my $rollerd_dspub = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollctl -dspub $domain";
+my $rollerd_dspub = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollctl -dspub $domain >> $logfile 2>&1 ";
 
-my $rollerd_halt = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollctl -halt";
+my $rollerd_halt = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollctl -halt >> $logfile 2>&1 ";
 
 
 # run tests
@@ -220,15 +219,15 @@ is($log, $rollerd_response{ksk46}, "Checking rollerd: checking rollerd KSK phase
 
 # rollctl and rollerd PHASE 7 KSK
 
-is(system("$rollerd_dspub"), 0, "Checking rollerd: rollctl notifying rollerd of \'$domain\' Delegation Signer publish");
+is(system("$rollerd_dspub"), 0, "Checking rollerd/rollctl: rollctl notifying rollerd of \'$domain\' Delegation Signer publish");
 
 $log = &parselog;
 is($log, $rollerd_response{ksk7}, "Checking rollerd: checking rollerd KSK phase 7 output");
 
-is(system("$rollerd_halt"), 0, "Checking rollerd: rollctl notifying rollerd to shutdown");
+is(system("$rollerd_halt"), 0, "Checking rollerd/rollctl: rollctl notifying rollerd to shutdown");
 
 $log = &parselog;
-is($log, $rollerd_response{kskhalt}, "Checking rollerd: checking rollerd shutdown output");
+is($log, $rollerd_response{kskhalt}, "Checking rollerd/rollctl: checking rollerd shutdown output");
 
 
 # rollerd PHASE 1 ZSK
