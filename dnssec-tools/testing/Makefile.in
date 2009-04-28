@@ -29,6 +29,6 @@ authtest : $(TEST_FILES)
 	  perl $$i ;               \
         done
 
-rollerd : t/040rollerd.t
-	perl rollerd.t 
+test : t/025donutsd.t
+	perl t/025donutsd.t
 
