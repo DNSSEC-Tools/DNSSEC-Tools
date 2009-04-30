@@ -15,8 +15,9 @@ DTGetOptions(\%opts,
 		['a|donuts-arguments=s', 'Arguments to pass to donuts'],
 		['z|time-between-checks=s', 'Time between checks'],
 		['t|temporary-directory=s', 'Temporary directory to store results in'],
-                ['i|input-list=s',           'File containing file/zonename/zonecontact pairings'],
-                ['o|run-once',               'Run once and exit'],
+                ['i|input-list=s',          'File containing file/zonename/zonecontact pairings'],
+                ['o|run-once',              'Run once and exit'],
+                ['O|run-count=i',           'Number of times to run before exiting'],
                 '',
                 ['GUI:separator',   'E-Mail options:'],
 		['s|smtp-server=s', 'SMTP server to mail mail through (localhost)'],
@@ -84,6 +85,8 @@ if (! -d $opts{'t'}) {
     mkdir($opts{'t'});
 }
 
+my $loopcount = 0;
+
 while (!$opts{o}) {
     my @args = @ARGV;
     while ($#args > -1) {
@@ -133,6 +136,11 @@ while (!$opts{o}) {
     verbose("  $opts{t}/donuts.summary.new => $opts{t}/donuts.summary");
     rename("$opts{t}/donuts.summary.new", "$opts{t}/donuts.summary");
 
+    # check for limited looping
+    if (exists $opts{O}) {
+      if ($loopcount >= $opts{O}) { $opts{o} = 1; }
+      else                        { $loopcount++; }
+    }
     # sleep and start again in a while
     verbose("sleeping for $opts{z}\n");
     sleep($opts{z});
@@ -143,6 +151,11 @@ while (!$opts{o}) {
 #  - emails a contact address with the donuts error output
 sub mailcontact {
     my ($contact, $file, $zonename) = @_;
+
+    if ($contact eq '') {
+      verbose("  Warning: invalid mail address: mail can not be sent");
+      return 1;
+    }
 
     # set up the SMTP object and required data
     my $message = Net::SMTP->new($opts{s});
