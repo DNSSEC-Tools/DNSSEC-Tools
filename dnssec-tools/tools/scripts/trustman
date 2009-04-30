@@ -327,7 +327,7 @@ sub checkkeys {
          }
     }
 
-    Verbose("Checking zone keys for validity\n");
+    Verbose(" Checking zone keys for validity\n");
     foreach my $z (@zones_to_check) {
         my $query;
         $query = resolve_and_check_dnskey($z,$dvfile);
@@ -1195,6 +1195,12 @@ sub resolve_and_check_dnskey {
     my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
                                                  dnsval_conf => $file,
 						 root_hints => $rhfile);
+
+    if (!$validator) {
+      Verbose ("Help! Failed to create validator object using:\n  resolv_conf: \'$resfile\', dnsval_conf: \'$file\', root_hints: \'$rhfile\'\n");
+      return undef;
+    }
+
     my $r = $validator->res_query($z, "IN", "DNSKEY");
     if ($r && $validator->isvalidated) {
         my ($pkt, $err) = new Net::DNS::Packet(\$r);
