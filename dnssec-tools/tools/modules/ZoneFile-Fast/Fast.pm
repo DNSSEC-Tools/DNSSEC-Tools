@@ -274,7 +274,7 @@ sub parse_line
 	  	error("\$GENERATE pattern without a wildcard") if $pat !~ /\$/;
 	  	while ($from <= $to) {
 	  		$_ = $pat;
-	  		s{\$ (?:\{ (\d+) (?:, (\d+) (?:, ([doxX]) )? )? \})?}
+	  		s{\$ (?:\{ ([\d+-]+) (?:, (\d+) (?:, ([doxX]) )? )? \})?}
 	  			{
 	  				my ($offset, $width, $base) = ($1, $2, $3);
 	  				$offset ||= 0;
