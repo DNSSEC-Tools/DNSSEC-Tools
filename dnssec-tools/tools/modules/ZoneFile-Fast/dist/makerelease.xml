@@ -43,14 +43,14 @@
 
 	<step type="system" title="Make Test">
 	  <commands>
-	    <command>cd tools/modules/ZoneFile-Fast ; perl Makefile.PL</command>
-	    <command>cd tools/modules/ZoneFile-Fast ; make test</command>
+	    <command>perl Makefile.PL</command>
+	    <command>make test</command>
 	  </commands>
 	</step>
 
 	<step type="system" title="make dist">
 	  <commands>
-	    <command>cd tools/modules/ZoneFile-Fast ; make dist</command>
+	    <command>make dist</command>
 	  </commands>
 	</step>
 
