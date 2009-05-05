@@ -225,7 +225,9 @@ AC_CHECK_LIB(crypto, SHA256_Init,
 
 dnl add any libraries that may be dependencies
 AC_CHECK_LIB(nsl, inet_ntop)
+dnl check for the socket library 
 AC_CHECK_LIB(socket, gai_strerror)
+AC_SEARCH_LIBS(socket, socket)
 
 AH_TEMPLATE([HAVE_NSAP_ADDR],
             [Define if libc contains inet_nsap_ntoa.])
