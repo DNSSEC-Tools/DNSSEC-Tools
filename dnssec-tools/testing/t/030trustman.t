@@ -17,6 +17,12 @@ my $statedir    = "$testdir/tmp";
 my $logfile     = "$testdir/trustman.log";
 my $anchor_data = "$testdir/anchor_data";
 
+my $libvalpath  = "$ENV{'BUILDDIR'}/validator/libval/.libs";
+my $libsrespath  = "$ENV{'BUILDDIR'}/validator/libsres/.libs";
+
+$ENV{'LD_LIBRARY_PATH'} = "$libvalpath:$libsrespath";
+
+
 my %trustman_response = (
     "firsttest" =>   q{Reading and parsing trust keys from ./dnsval.conf
  Found a key for dnssec-tools.org
@@ -34,7 +40,7 @@ vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 A new key has been received for zone dnssec-tools.org.
    It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Writing new keys to /home/baerm/snmp/svn-dnssec/trunk/dnssec-tools/testing/trustman/anchor_data
+Writing new keys to
 checking new keys for timing
  hold down timer for dnssec-tools.org still in the future (25 seconds)
 }
@@ -92,7 +98,7 @@ sub parselog {
 
   $logtext =~ s/time=12(\d+)/time=12/g;
   $logtext =~ s/(\d\d)\d+ +seconds/\1 seconds/g;
-
+  $logtext =~ s/Writing new keys to.*/Writing new keys to/g;
   print "after:\n$logtext\n" if (exists $lconf{verbose});
   return $logtext;
 }
