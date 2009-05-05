@@ -9,7 +9,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(%opts);
 
 sub InitMakeParams {
-    $DIRS = ['ZoneFile-Fast', 'TrustAnchor'];
+    $DIRS = ['ZoneFile-Fast'];
     if ($ARGV[0] ne 'NOVALIDATOR') {
 	unshift @$DIRS, 'Net-DNS-SEC-Validator', 'Net-addrinfo';
     }
