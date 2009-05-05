@@ -21,7 +21,7 @@ my $statedir   = "$testdir/tmp";
 
 my %donutsd_response = ( 
     "loops3" =>   q{running donuts on example.com.signed/example.com
-  running: donuts -C -r '/home/baerm/snmp/svn-dnssec/trunk/dnssec-tools/tools/donuts/rules/*'   example.com.signed example.com > ./tmp/example.com.new 2>&1
+  running: donuts -C -r '../../tools/donuts/rules/*'   example.com.signed example.com > ./tmp/example.com.new 2>&1
   there was no data from a previous run
   output changed; mailing  about example.com.signed
   Warning: invalid mail address: mail can not be sent
@@ -30,7 +30,7 @@ my %donutsd_response = (
   ./tmp/donuts.summary.new => ./tmp/donuts.summary
 sleeping for 10
 running donuts on example.com.signed/example.com
-  running: donuts -C -r '/home/baerm/snmp/svn-dnssec/trunk/dnssec-tools/tools/donuts/rules/*'   example.com.signed example.com > ./tmp/example.com.new 2>&1
+  running: donuts -C -r '../../tools/donuts/rules/*'   example.com.signed example.com > ./tmp/example.com.new 2>&1
   comparing results from last run
   running: tail -1 ./tmp/example.com.new >> ./tmp/donuts.summary.new
   ./tmp/example.com.new => ./tmp/example.com
@@ -86,6 +86,7 @@ sub parselog {
   print "before:\n$logtext\n" if (exists $lconf{verbose});
 
   $logtext =~ s/$testdir/./g;
+  $logtext =~ s/$ENV{'BUILDDIR'}/..\/../g;
 
   print "after:\n$logtext\n" if (exists $lconf{verbose});
   return $logtext;
