@@ -159,6 +159,8 @@ copy ("../rollerd-example.com","example.com") or
   die "Unable to copy saved-example.com to example.com: $!\n";
 copy ("../saved-example.rollrec","example.rollrec") or
   die "Unable to copy save-example.rollrec to example.rollrec: $!\n";
+copy ("$ENV{'BUILDDIR'}/tools/etc/dnssec-tools/dnssec-tools.conf","dnssec-tools.conf")
+  or die "Unable to copy tools/etc/dnssec-tools/dnssec-tools.conf to test directory: $!\n";
 
 
 # testing
