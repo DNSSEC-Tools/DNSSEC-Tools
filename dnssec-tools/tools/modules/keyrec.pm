@@ -84,6 +84,7 @@ my @ZONEFIELDS = (
 			'kskcur',
 			'kskpub',
 			'kskrev',
+	                'rfc5011',
 			'signedzone',
 			'zskcount',
 			'zskcur',
@@ -276,7 +277,7 @@ sub keyrec_read
 		# be enclosed in double quotes.
 		#
 #		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$line =~ /^[ \t]*([a-zA-Z0-9_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$keyword = $1;
 		$value = $2;
 #		print "keyrec_read:  keyword <$keyword>\t\t<$value>\n";
@@ -740,7 +741,7 @@ sub keyrec_setval
 		# Dig out the line's keyword and value.
 		#
 #		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$line =~ /^[ \t]*([a-zA-Z0-9_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$krtype = $1;
 		$krname = $2;
 
@@ -779,7 +780,7 @@ sub keyrec_setval
 		# Get the line's keyword and value.
 		#
 #		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$line =~ /^[ \t]*([a-zA-Z0-9_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$lkw = $1;
 		$lval = $2;
 
@@ -903,7 +904,7 @@ sub keyrec_delval
 		#
 		# Dig out the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$line =~ /^[ \t]*([a-zA-Z0-9_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$krtype = $1;
 		$krname = $2;
 
@@ -941,7 +942,7 @@ sub keyrec_delval
 		#
 		# Get the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$line =~ /^[ \t]*([a-zA-Z0-9_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$lkw = $1;
 		$lval = $2;
 
