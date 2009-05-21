@@ -53,6 +53,7 @@ my @opts =
 	"zonelog=s",			# Set a zone's logging level.
 	"zonestatus",			# Get status of zones.
 	"zsargs",			# Set zonesigner args for some zones.
+	"pidfile=s",			# pid storage file.
 
 	"Version",			# Display the version number.
 	"quiet",			# Don't print anything.
@@ -83,6 +84,7 @@ my $statusflag    = 0;
 my $zonelogflag   = 0;
 my $zonestatflag  = 0;
 my $zsargsflag    = 0;
+my $pidfile       = '';
 
 my $quiet         = 0;
 my $version	  = 0;			# Display the version number.
@@ -627,6 +629,10 @@ sub doopts
 	if (exists $options{'zsargs'}) {
 		$zsargsflag = $options{'zsargs'};
 		$commandcount++;
+	}
+	if (exists $options{'pidfile'}) {
+		$pidfile = $options{'pidfile'};
+		rollmgr_set_idfile($pidfile) if ($pidfile ne '');
 	}
 	if (exists $options{'Version'}) {
 		$version = $options{'Version'};
