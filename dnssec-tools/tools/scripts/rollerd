@@ -110,6 +110,7 @@ my $OPT_RRFILE	   = "rrfile";
 my $OPT_SLEEP	   = "sleep";
 my $OPT_VERBOSE	   = "verbose";
 my $OPT_VERSION	   = "Version";
+my $OPT_ZONESIGNER = "zonesigner";
 
 my %opts = ();			# Filled option array.
 my @opts =
@@ -120,6 +121,7 @@ my @opts =
 	"logfile=s",			# Log file.
 	"loglevel=s",			# Logging level.
 	"pidfile=s",			# pid storage file.
+	"dtconfig=s",			# dnssec-tools config file to use.
 	"sleep=i",			# Sleep amount (in seconds.)
 	"parameters",			# Display the parameters and exit.
 	"singlerun",			# Single run: process everything once
@@ -128,6 +130,7 @@ my @opts =
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
+        "zonesigner=s",                 # location of zonesigner executable
 );
 
 #
@@ -197,7 +200,17 @@ sub main
 	#
 	# Check our options and arguments.
 	#
-	%dtconf = parseconfig();
+
+	# Run GetOptions before parseconfig to check for a
+	# dnssec-tools config file command line option.
+	GetOptions(\%opts,@opts) || usage();
+	if (exists $opts{'dtconfig'}) {
+	  %dtconf = parseconfig($opts{'dtconfig'});
+	}
+	else {
+	  %dtconf = parseconfig();
+	}
+
 	optsandargs();
 	getprogs();
 
@@ -218,9 +231,11 @@ sub main
 	}
 
 	#
-	# Get the pathname for zonesigner.
+	# If it hasn't been set yet, get the pathname for zonesigner.
 	#
-	if(($zonesigner=dt_cmdpath('zonesigner')) eq '')
+
+	if(($zonesigner eq '') &&
+	   (($zonesigner=dt_cmdpath('zonesigner')) eq ''))
 	{
 		print STDERR "no absolute path defined for zonesigner; exiting...\n";
 		rolllog_log(LOG_ALWAYS,"","no absolute path defined for zonesigner; exiting...");
@@ -2064,6 +2079,7 @@ sub signer
 	#
 	$rrr = rollrec_fullrec($rname);
 	$zsargs = $rrr->{'zsargs'};
+
 	$zsflag = "$zsflag $zsargs" if($zsargs ne '');
 
 	if ($zsflag !~ /-zone/) {
@@ -2203,7 +2219,6 @@ sub optsandargs
 	#
 	# Check our options.
 	#
-	GetOptions(\%opts,@opts) || usage();
 	opts_onerr(0);
 
 	$version    = $opts{$OPT_VERSION};
@@ -2212,11 +2227,11 @@ sub optsandargs
 	$alwayssign = $opts{$OPT_ALWAYSSIGN};
 	$pidfile    = $opts{$OPT_PIDFILE};
 	$verbose    = $opts{$OPT_VERBOSE};
-	$logfile    = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
-	$loglevel   = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
-	$sleeptime = $opts{$OPT_SLEEP}	  || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
-
-	$display = $opts{$OPT_DISPLAY}	  || 0;
+	$logfile    = $opts{$OPT_LOGFILE}    || $dtconf{$DT_LOGFILE};
+	$loglevel   = $opts{$OPT_LOGLEVEL}   || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
+	$sleeptime  = $opts{$OPT_SLEEP}	      || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
+	$display    = $opts{$OPT_DISPLAY}    || 0;
+	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
 
 	#
 	# Show the version number if requested
@@ -4088,6 +4103,8 @@ sub usage
 	print STDERR "\t\t-loglevel <level>\n";
 	print STDERR "\t\t-pidfile <pidfile>\n";
 	print STDERR "\t\t-sleep <sleeptime>\n";
+	print STDERR "\t\t-dtconfig <dnssec-tools-config-file>\n";
+	print STDERR "\t\t-zonesigner <full-path-to-zonesigner>\n";
 	print STDERR "\t\t-display\n";
 	print STDERR "\t\t-parameters\n";
 	print STDERR "\t\t-singlerun\n";
