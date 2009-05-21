@@ -170,6 +170,9 @@ my @zsopts = ( '',
 	       ["mergerevoked",		'Merge newly revoked keys with old.'],
 	       ["showsigncmd",		'Show the zone-signing command.'],
 	       ["showkeycmd",		'Show the key-generation command.'],
+	       ["keygen=s",		'location of dnssec-keygen'],
+	       ["zonecheck=s",		'location of named-checkzone'],
+	       ["zonesign=s",		'location of dnssec-signzone'],
 	     );
 
 my $pubksk	= 0;			# Create-Published-KSKs flag.
@@ -2793,6 +2796,9 @@ sub usage
 	print STDERR "\n";
 
 	print STDERR "\t\tdnssec-keygen options:\n";
+	print STDERR "\t\t\t-keygen    named-keygen location\n";
+	print STDERR "\t\t\t-zonecheck named-checkzone location\n";
+	print STDERR "\t\t\t-zonesign  named-signzone location\n";
 	print STDERR "\t\t\t-algorithm algorithm\n";
 	print STDERR "\t\t\t-ksklength KSK-size\n";
 	print STDERR "\t\t\t-zsklength ZSK-size\n";
