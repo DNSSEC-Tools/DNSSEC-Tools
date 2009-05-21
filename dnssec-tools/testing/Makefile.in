@@ -29,6 +29,24 @@ authtest : $(TEST_FILES)
 	  perl $$i ;               \
         done
 
-test : t/025donutsd.t
+test : trustman
+
+zonesigner : 
+	perl t/010zonesigner.t
+
+donuts : 
+	perl t/020donuts.t
+
+donutsd : 
 	perl t/025donutsd.t
 
+trustman :
+	perl t/030trustman.t
+
+rollerd : 
+	perl t/040rollerd.t
+
+clean : 
+	rm -rf zones trustman donuts donutsd rollerd
+
+.PHONY : zonesigner donuts donutsd trustman rollerd clean

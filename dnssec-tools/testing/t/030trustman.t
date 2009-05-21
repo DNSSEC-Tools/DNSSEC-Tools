@@ -74,11 +74,12 @@ copy ("$etcfiles/resolv.conf","resolv.conf") or
 
 # commands
 
-my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k ./dnsval.conf -S -f -v -p --nomail --anchor_data_file $anchor_data --resolv_conf ./resolv.conf --tmp_dir $statedir >> $logfile 2>&1 ";
+my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
 
 # print "trustmand command :\n$trustman_command\n";
 
 # Tests
+
 
 is(system("$trustman_command"), 0,
    "Checking trustman: trustman examining \'dnsval.conf\'");
@@ -86,6 +87,7 @@ is(system("$trustman_command"), 0,
 my $log = &parselog;
 is($log, $trustman_response{firsttest},
    "Checking trustman: checking the output from examining \'dnsval.conf\'");
+
 
 
 
