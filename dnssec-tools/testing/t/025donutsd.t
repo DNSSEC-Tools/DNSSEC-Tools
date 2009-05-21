@@ -59,12 +59,18 @@ copy ("../saved-example.com","example.com") or
   die "Unable to copy saved-example.com to example.com : $!\n";
 
 
-# testing
+# sign the zone file
 
-my $command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -genkeys $domain >> /dev/null 2>&1";
+my $keygen    = `which dnssec-keygen`;
+my $zonecheck = `which named-checkzone`;
+my $zonesign  = `which dnssec-signzone`;
+chomp ($keygen, $zonecheck, $zonesign);
+
+my $command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> /dev/null 2>&1";
 
 is(system("$command"), 0, "Checking donutsd: zonesigner signing '$domainfile' for donutsd");
 
+# test donutsd
 
 $command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib  -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $donutsd --time-between-checks=10  --temporary-directory=$statedir --verbose  --donuts-arguments=\"-C -r '$donutsrules' \" -s '' -O 1 $domainfile.signed $domainfile ''   >> $logfile 2>&1";
 
