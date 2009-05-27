@@ -21,9 +21,9 @@ my $statedir   = "$testdir/tmp";
 # Remove and create directory to work in (via creating the path to
 # the state directory)
 
-if ((!rmtree("$testdir",)) && ("No such file or directory" ne "$!")) {
-  die "unable to remove \'$testdir\' directory: $!\n";
-}
+rmtree("$testdir",);
+die "unable to remove \'$testdir\' directory: $!\n" if ( -e "$testdir" );
+
 mkpath("$statedir",) or
   die "unable to make \'$statedir\' directory: $!\n";
 mkpath("$locallibpath",) or
