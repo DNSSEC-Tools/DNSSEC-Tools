@@ -10,20 +10,23 @@ use File::Copy;
 my %lconf  = ();
 # $lconf{verbose} = 1;
 
-my $zonesigner  = "$ENV{'BUILDDIR'}/tools/scripts/zonesigner";
-my $rollerd     = "$ENV{'BUILDDIR'}/tools/scripts/rollerd";
-my $rollctl     = "$ENV{'BUILDDIR'}/tools/scripts/rollctl";
+my $zonesigner = "$ENV{'BUILDDIR'}/tools/scripts/zonesigner";
+my $rollerd    = "$ENV{'BUILDDIR'}/tools/scripts/rollerd";
+my $rollctl    = "$ENV{'BUILDDIR'}/tools/scripts/rollctl";
 
-my $testdir    = "$ENV{'BUILDDIR'}/testing/rollerd/";
-my $logfile    = "$ENV{'BUILDDIR'}/testing/rollerd/rollerd.log";
-my $phaselog   = "$ENV{'BUILDDIR'}/testing/rollerd/phase.log";
+my $dt_plibs   = "$ENV{'BUILDDIR'}/tools/modules/blib/lib";
+my $dt_parch   = "$ENV{'BUILDDIR'}/tools/modules/blib/arch";
+
+my $testdir    = "$ENV{'BUILDDIR'}/testing/rollerd";
+my $logfile    = "$testdir/rollerd.log";
+my $phaselog   = "$testdir/phase.log";
 
 my $domain     = "example.com";
 my $domainfile = $domain;
-my $statedir   = "$testdir/tmp";
-my $pidfile    = "./rollmgr.pid";
 
-my $archivedir = "./keyarchive";
+my $statedir   = "$testdir/tmp";
+my $pidfile    = "$testdir/rollmgr.pid";
+my $archivedir = "$testdir/keyarchive";
 
 # find bind commands
 my $keygen    = `which dnssec-keygen`;
@@ -36,7 +39,9 @@ if (!( -x $keygen && -x $zonecheck && -x $zonesign )) {
 }
 
 my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir";
-
+my $zsargs_resp   = parsestring($zsargs);
+my $dt_plibs_resp = parsestring($dt_plibs);
+my $dt_parch_resp = parsestring($dt_parch);
 
 my %rollerd_response = ( 
     "ksk1" =>   q{ rollerd starting ----------------------------------------
@@ -59,7 +64,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -newpubksk $zsargs example.com example.com.signed"
+ example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -newpubksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 3
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -72,7 +77,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs example.com example.com.signed"
+ example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -86,7 +91,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs example.com example.com.signed"
+ example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -101,7 +106,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs example.com example.com.signed"
+ example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -116,7 +121,7 @@ my %rollerd_response = (
  loglevel "info"
  sleeptime "15"
  
- example.com: KSK phase 7: unable to archive KSK keys, rc - 0
+ example.com: KSK phase 7: zone, key files archived
  example.com: KSK phase 0
  example.com: KSK expiration in weeks, days, hours, seconds
  example.com: creating new zsk_rollsecs record and forcing ZSK rollover
@@ -132,7 +137,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: ZSK phase 2 (Signing the zone with the KSK and published ZSK)
- example.com: executing "../../tools/scripts/zonesigner -usezskpub $zsargs example.com example.com.signed"
+ example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -usezskpub $zsargs_resp example.com example.com.signed"
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches)
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -145,8 +150,8 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: ZSK phase 4 (Adjusting keys in the keyrec and signing the zone with new ZSK)
- example.com: executing "../../tools/scripts/zonesigner -rollzsk $zsargs example.com example.com.signed"
- example.com: executing "../../tools/scripts/zonesigner $zsargs example.com example.com.signed"
+ example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollzsk $zsargs_resp example.com example.com.signed"
+ example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner $zsargs_resp example.com example.com.signed"
  example.com: ZSK phase 0 (Not Rolling)
  example.com: ZSK expiration in weeks, days, hours, seconds
  rollover manager shutting down...
@@ -165,6 +170,8 @@ die "Unable to remove \'$testdir\' directory: $!\n" if ( -e "$testdir");
 mkpath("$statedir",) or
   die "Unable to make \'$statedir\' directory: $!\n";
 chdir "$testdir" or die "unable to change to \'$testdir\' directory: $!\n";
+mkpath("$archivedir",) or
+  die "Unable to make \'$archivedir\' directory: $!\n";
 
 
 $ENV{'DT_STATEDIR'} = "$statedir";
@@ -184,17 +191,27 @@ print ROLLREC "\tarchivedir\t\"$archivedir\"\n";
 print ROLLREC "\tzsargs\t\"$zsargs\"\n";
 close (ROLLREC);
 
+open(DTC, ">./dnssec-tools.conf") || 
+  die "Unable to create ./dnssec-tools.conf ";
+print DTC "admin-email\n\n";
+print DTC "keyarch\t$ENV{'BUILDDIR'}/tools/scripts/keyarch\n";
+print DTC "zonecheck\t\"$zonecheck\"\n";
+print DTC "zonesign\t\"$zonesign\"\n";
+print DTC "zonesigner\t\"$zonesign\"\n";
+print DTC "archivedir\t\"$archivedir\"\n";
+close (DTC);
+
 # Create Commands
 
-my $zonesigner_signzone = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner $zsargs -genkeys $domain >> $logfile 2>&1";
+my $zonesigner_signzone = "perl -I$dt_plibs -I$dt_parch $zonesigner $zsargs -genkeys $domain >> $logfile 2>&1";
 
-my $rollerd_singlerun =   "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner -singlerun >> $logfile 2>&1 ";
+my $rollerd_singlerun =   "perl -I$dt_plibs -I$dt_parch  $rollerd -dtplibs $dt_plibs -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner -dtconf ./dnssec-tools.conf -singlerun >> $logfile 2>&1 ";
 
-my $rollerd_tillstopped = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner >> $logfile 2>&1 ";
+my $rollerd_tillstopped = "perl -I$dt_plibs -I$dt_parch  $rollerd -dtplibs $dt_plibs -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner -dtconf ./dnssec-tools.conf >> $logfile 2>&1 ";
 
-my $rollctl_dspub = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollctl -pidfile $pidfile -dspub $domain >> $logfile 2>&1 ";
+my $rollctl_dspub = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -dspub $domain >> $logfile 2>&1 ";
 
-my $rollctl_halt = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch  $rollctl -pidfile $pidfile -halt >> $logfile 2>&1 ";
+my $rollctl_halt = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -halt >> $logfile 2>&1 ";
 
 #print "zonesigner_signzone:\n$zonesigner_signzone\n";
 #print "rollerd_singlerun:\n$rollerd_singlerun\n";
@@ -303,19 +320,29 @@ sub waittime {
   printf "\r$msg: 0 seconds      \n";
 }
 
+
+
 sub parselog {
   my $logtext = `cat $phaselog`;
   print "before:\n$logtext\n" if (exists $lconf{verbose});
-  $logtext =~ s/.*2\d\d\d:(.*)/\1/g;
-  $logtext =~ s/(logfile.*"|rollrec file.*").*(testing\/rollerd\/)/\1\2/g;
-  $logtext =~ s/[ \t]+/ /g;
-  $logtext =~ s/cache expires in (\d+) (minutes*), (\d+)/cache expires in minutes,/g;
-  $logtext =~ s/expiration in \d+.*/expiration in weeks, days, hours, seconds/g;
-  $logtext =~ s/admin must transfer/admin notified to transfer/g;
-  $logtext =~ s/.*invalid admin; unable to notify.*\n//g;
-  $logtext =~ s/$ENV{'BUILDDIR'}/..\/../g;
-
+  $logtext = parsestring($logtext);
   print "after:\n$logtext\n" if (exists $lconf{verbose});
   return $logtext;
+}
+
+
+sub parsestring {
+  my $pstring = @_[0];
+
+  $pstring =~ s/.*2\d\d\d:(.*)/\1/g;
+  $pstring =~ s/(logfile.*"|rollrec file.*").*(testing\/rollerd\/)/\1\2/g;
+  $pstring =~ s/[ \t]+/ /g;
+  $pstring =~ s/cache expires in (\d+) (minutes*), (\d+)/cache expires in minutes,/g;
+  $pstring =~ s/expiration in \d+.*/expiration in weeks, days, hours, seconds/g;
+  $pstring =~ s/admin must transfer/admin notified to transfer/g;
+  $pstring =~ s/.*invalid admin; unable to notify.*\n//g;
+  $pstring =~ s/$ENV{'BUILDDIR'}/..\/../g;
+
+  return $pstring;
 }
 
