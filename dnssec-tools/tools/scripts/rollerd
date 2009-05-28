@@ -67,6 +67,7 @@ my $ME		= "rollerd";
 my $rndc;
 my $rrchk;
 my $zonesigner;
+my $dtplibs;
 
 my $PWD = '/bin/pwd';
 
@@ -111,6 +112,7 @@ my $OPT_SLEEP	   = "sleep";
 my $OPT_VERBOSE	   = "verbose";
 my $OPT_VERSION	   = "Version";
 my $OPT_ZONESIGNER = "zonesigner";
+my $OPT_DTPLIBS     = "dtplibs";
 
 my %opts = ();			# Filled option array.
 my @opts =
@@ -130,7 +132,8 @@ my @opts =
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
-        "zonesigner=s",                 # location of zonesigner executable
+	"zonesigner=s",                 # Location of zonesigner executable.
+	"dtplibs=s",			# Additional perl libs for zonesigner.
 );
 
 #
@@ -1531,9 +1534,11 @@ sub ksk_phase7
 	# Reload the zone.
 	#
 	$krf = $rr{'keyrec'};
-#	$ret = system("$keyarch -verbose -zone $rname $krf");
-	$ret = system("$keyarch -quiet -zone $rname $krf");
-	if($ret <= 0)
+#	my $keyarch_cmd = "perl -I$dtplibs $keyarch -verbose -zone $rname $krf";
+	my $keyarch_cmd = "perl -I$dtplibs $keyarch -quiet -zone $rname $krf";
+
+	$ret = system("$keyarch_cmd");
+	if($ret < 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
 	}
@@ -2098,7 +2103,7 @@ sub signer
 	#
 	# Build the command to execute.
 	#
-	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned";
+	$cmdstr = "perl -I$dtplibs $zonesigner $zsflag $zonefile $zonesigned";
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
 	#
@@ -2232,6 +2237,7 @@ sub optsandargs
 	$sleeptime  = $opts{$OPT_SLEEP}	      || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 	$display    = $opts{$OPT_DISPLAY}    || 0;
 	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
+	$dtplibs    = $opts{$OPT_DTPLIBS}   || '';
 
 	#
 	# Show the version number if requested
