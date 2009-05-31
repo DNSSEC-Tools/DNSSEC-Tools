@@ -40,6 +40,8 @@
 #			algorithm	"rsasha1"
 #			length		"1024"
 #			ksklife		"15768000"
+#                       revperiod       "3888000"
+#                       revtime         "1103277532"
 #			random		"-r /dev/urandom"
 #
 #	The current implementation assumes that only one keyrec file will be
@@ -58,8 +60,9 @@ our $VERSION = "1.4";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk keyrec_names
-		 keyrec_fullrec keyrec_recval keyrec_setval keyrec_settime
+our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk
+		 keyrec_names keyrec_fullrec keyrec_recval keyrec_setval
+		 keyrec_settime keyrec_age_revoked
 		 keyrec_add keyrec_del keyrec_newkeyrec keyrec_exists
 		 keyrec_zonefields keyrec_setfields keyrec_keyfields
 		 keyrec_init keyrec_discard keyrec_close
@@ -119,6 +122,8 @@ my @KEYFIELDS = (
 			'keypath',		# Only set for obsolete ZSKs.
 			'ksklength',
 			'ksklife',
+			'revperiod',
+			'revtime',
 			'zsklength',
 			'zsklife',
 			'kgopts',
@@ -349,7 +354,7 @@ sub keyrec_read
 #
 #			key keyrecs:
 #				- ksk:
-#					Change to a kskcur, kskpub, or kskobs.
+#					Change to a kskcur, kskpub, kskrev or kskobs.
 #
 sub keyrec_fmtchk()
 {
@@ -473,7 +478,7 @@ sub keyrec_fmtchk()
 
 	#
 	# Check key keyrecs for problems:
-	#	- Change ksk type keyrecs to kskcur, kskpub, or kskobs.
+	#	- Change ksk type keyrecs to kskcur, kskpub, kskrev or kskobs.
 	#
 	foreach $krn (keyrec_names())
 	{
@@ -529,11 +534,12 @@ sub keyrec_fmtchk()
 			#
 			if($found ne "")
 			{
-				keyrec_setval('key',$krn,'keyrec_type',$found);
+			  keyrec_setval('key',$krn,'keyrec_type',$found);
 			}
 			else
 			{
-				keyrec_setval('key',$krn,'keyrec_type','kskobs');
+			  keyrec_setval('key',$krn,'keyrec_type','kskobs');
+			  # XXX - shouldn't these be archived??
 			}
 			$changes++;
 		}
@@ -548,6 +554,42 @@ sub keyrec_fmtchk()
 		keyrec_close();
 		keyrec_read($krf);
 	}
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_age_revoked()
+#
+# Purpose: Process all revoked KSKs and obsolete those which have
+# exceeded the 'revperiod'. Aged reoked KSKs will be removed from the
+# 'kskrev' signset and marked 'kskobs'. Return the number of keys
+# aged.
+#
+sub keyrec_age_revoked
+{
+  my $set = shift;
+  my @keys = split / /, keyrec_recval($set,'keys');
+  my @res;
+
+  foreach my $key (@keys) {
+    my $revtime = keyrec_recval($key, 'revtime');
+    my $revperiod = keyrec_recval($key, 'revperiod');
+
+    if (defined $revtime and defined $revperiod) {
+      my $now = time();
+
+      if (($now - $revtime) > $revperiod){
+	keyrec_setval('key', $key, 'keyrec_type', 'kskobs');
+	# XXX - shouldn't these be archived??
+      } else {
+	push(@res, $key);
+      }
+    } else {
+      err("keyrec_age_revoked: $key: undefined revocation data\n", -1);
+    }
+
+  }
+  return @res;
 }
 
 #--------------------------------------------------------------------------
@@ -1087,8 +1129,8 @@ sub keyrec_add
 			#
 			if($fields{'keyrec_type'} !~ /^ksk/)
 			{
-				if(($fn eq 'ksklength')		||
-				   ($fn eq 'ksklife'))
+				if(($fn eq 'ksklength')	|| ($fn eq 'ksklife') ||
+				    ($fn eq 'revperiod') || ($fn eq 'revtime'))
 				{
 					next;
 				}
@@ -1958,6 +2000,8 @@ following is an example of a key I<keyrec>:
           random          "/dev/urandom"
           ksklength       "512"
 	  ksklife	  "15768000"
+	  revperiod	  "3888000"
+	  revtime	  "1103277532"
           keyrec_gensecs  "1101183727"
           keyrec_gendate  "Tue Nov 23 04:22:07 2004"
 

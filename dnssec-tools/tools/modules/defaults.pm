@@ -40,6 +40,7 @@ my %defaults =
 	"kskcount"	   => 1,		# Number of KSK keys.
 	"ksklength"	   => 2048,		# Length of KSK key.
 	"ksklife"	   => 15768000,		# Lifespan of KSK key.
+	"revperiod"	   => 3888000,		# Revocation period.
 	"lifespan-max"	   => 94608000,		# Max lifespan (two years.)
 	"lifespan-min"	   => 3600,		# Min lifespan (one hour.)
 	"random"	   => "/dev/urandom",	# Random no. generator device.
@@ -234,6 +235,13 @@ This default holds the default length of a KSK key.
 This default holds the default lifespan of a KSK key.  This is only used
 for determining when to rollover the KSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
+
+=item B<revperiod>
+
+This default holds the default revocation periodof a KSK key. This is
+the minimum period of time a revoked KSK is required to remain in the
+signing set so that it is properly observed by resolvers.  This is
+measured in seconds.
 
 =item B<lifespan-max>
 
