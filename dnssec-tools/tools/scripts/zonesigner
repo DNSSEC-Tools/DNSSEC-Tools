@@ -108,6 +108,7 @@ my $genksk;				# Generate new KSKs.
 my $ksignset;				# KSK signing set.
 
 my $rfc5011;                            # RFC5011 compliant KSK revocation
+my $droprevoked;                        # Explicitly drop existing revoked set
 
 my $zskcur;				# Current ZSK.
 my $zskdir;				# Directory to hold ZSK.
@@ -160,14 +161,14 @@ my @zsopts = ( '',
 	       ["newpubksk",		'Create a set of Published KSK keys.'],
 	       ["rollksk",		'Force the rollover of KSK keys.'],
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
+	       ["norfc5011",		'Disable rfc5011 revocation.'],
+	       ["droprevoked",		'Obsolete existing revoked keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
 	       ["usezskpub",		'Use Published ZSK for signing.'],
 	       ["usensec3",             'Use NSEC3 when signing zones.'],
 	       ["nsec3optout",          'Use NSEC3 Opt-Out for insecurely delegated subzones.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	       ["nosave",		'Do not save old keys.'],
-	       ["norfc5011",		'Disable rfc5011 revocation.'],
-	       ["mergerevoked",		'Merge newly revoked keys with old.'],
 	       ["showsigncmd",		'Show the zone-signing command.'],
 	       ["showkeycmd",		'Show the key-generation command.'],
 	       ["keygen=s",		'location of dnssec-keygen'],
@@ -310,6 +311,7 @@ sub optsandargs
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
 	$rfc5011  = defined $opts{'rfc5011'} ? $opts{'rfc5011'} : $DEF_RFC5011;
 	$rfc5011  = 0 if $opts{'norfc5011'}; $opts{'rfc5011'} = $rfc5011;
+	$droprevoked = $opts{'droprevoked'} || 0;
 	$useboth  = $opts{'useboth'}	  || 0;
 	$usezskpub = $opts{'usezskpub'}	  || 0;
 
@@ -962,6 +964,17 @@ sub genksks
     my $setlist;
     my @keylist;
 
+    if (length $kskrevsetname) {
+      if ($opts{'droprevoked'}) {
+	setkeytype($kskrevsetname, 'kskobs', 1) ;
+	@kskrevlist = ();
+      } else {
+	@kskrevlist = keyrec_age_revoked($kskrevsetname);
+      }
+      $setlist = join(' ', @kskrevlist);
+      keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
+    }
+
     if ($pubksk) {
 	#
 	# Create a new set of Published KSKs.
@@ -970,30 +983,23 @@ sub genksks
 	# Any existing Published KSKs are marked as obsolete or revoked.
 	#
 	if (length $kskpubsetname) {
-
 	    if ($opts{'rfc5011'}) {
 		if (length $kskrevsetname) {
-		    if ($opts{'mergerevoked'}) {
-			# remove keys from old set and remove set
-			keyrec_setval('set', $kskpubsetname, 'keys','');
-			setkeytype($kskpubsetname, 'kskobs', 0);
-		    } else {
-			setkeytype($kskrevsetname, 'kskobs', 1) ;
-			$kskrevsetname = $opts{'kskrev'} = $kskpubsetname;
-			@kskrevlist = ();
-		    }
+		    # remove keys from old set and remove set
+		    keyrec_setval('set', $kskpubsetname, 'keys','');
+		    setkeytype($kskpubsetname, 'kskobs', 0);
 		} else {
 		    # Reuse old pub KSKs as newly revoked
 		    $kskrevsetname = $opts{'kskrev'} = $kskpubsetname;
 		}
 
 		# Add pub KSKs to revoked list
-		while (@kskpublist) {push @kskrevlist, pop @kskpublist;} 
+		while (@kskpublist) {push @kskrevlist, pop @kskpublist;}
 
-		setkeytype($kskrevsetname, 'kskrev', 0);
-		keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
 		$setlist = join ' ', @kskrevlist;
 		keyrec_setval('set', $kskrevsetname ,"keys", $setlist);
+		setkeytype($kskrevsetname, 'kskrev', 0);
+		keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
 	    } else {
 		setkeytype($kskpubsetname,'kskobs',1);
 	    }
@@ -1040,27 +1046,21 @@ sub genksks
 	if (length $opts{'kskcur'}) {
 	    if ($opts{'rfc5011'}) {
 		if (length $kskrevsetname) {
-		    if ($opts{'mergerevoked'}) {
-			# remove keys from old set and remove set
-			keyrec_setval('set', $kskcursetname, 'keys','');
-			setkeytype($kskcursetname, 'kskobs', 0);
-		    } else {
-			setkeytype($kskrevsetname, 'kskobs', 1) ;
-			$kskrevsetname = $opts{'kskrev'} = $kskcursetname;
-			@kskrevlist = ();
-		    }
+		  # remove keys from old set and remove set
+		  keyrec_setval('set', $kskcursetname, 'keys','');
+		  setkeytype($kskcursetname, 'kskobs', 0);
 		} else {
-		    # Reuse old cur KSKs as newly revoked
-		    $kskrevsetname = $opts{'kskrev'} = $kskcursetname;
+		  # Reuse old cur KSKs as newly revoked
+		  $kskrevsetname = $opts{'kskrev'} = $kskcursetname;
 		}
 
 		# Add cur KSKs to revoked list
 		while (@kskcurlist) {push @kskrevlist, pop @kskcurlist;} 
 
-		setkeytype($kskrevsetname, 'kskrev', 0);
-		keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
 		$setlist = join ' ', @kskrevlist;
 		keyrec_setval('set', $kskrevsetname ,"keys", $setlist);
+		setkeytype($kskrevsetname, 'kskrev', 0);
+		keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
 	    } else {
 		setkeytype($opts{'kskcur'}, 'kskobs', 1);
 	    }
@@ -1333,21 +1333,25 @@ sub setkeytype
 	#
 	$keys = keyrec_recval($signset,'keys');
 	@keylist = split / /, $keys;
-	foreach my $key (@keylist)
-	{
-		keyrec_setval('key',$key,'keyrec_type',$newtype);
-		vmed_print("$key now has type $newtype\n");
-		if ($newtype eq 'kskrev') {
-		    my $path;
-		    my $cwd = `pwd`; chomp $cwd;
-		    $path = keyrec_recval($key,'keypath');
-		    $path = "$path.key" if($path !~ /\.key$/);
-		    # Set the revoke bit on KSKs
-		    my $cmd = "perl -pi -e 's/(DNSKEY\\s+)257/\${1}385/;' $path";
-		    vmed_print("setting revoke bit($cwd): $cmd\n");
+	foreach my $key (@keylist) {
+	  if (keyrec_recval($key, 'keyrec_type') ne $newtype) {
+	    keyrec_setval('key', $key, 'keyrec_type', $newtype);
+	    vmed_print("$key now has type $newtype\n");
+	    if ($newtype eq 'kskrev') {
+	      my $path;
+	      my $cwd = `pwd`; chomp $cwd;
+	      $path = keyrec_recval($key, 'keypath');
+	      $path = "$path.key" if($path !~ /\.key$/);
+	      # Set the revoke bit on KSKs
+	      my $cmd = "perl -pi -e 's/(DNSKEY\\s+)257/\${1}385/;' $path";
+	      vmed_print("setting revoke bit($cwd): $cmd\n");
 
-		    System($cmd);
-		}
+	      System($cmd);
+
+	      # record the time when key is revoked
+	      keyrec_setval('key', $key, 'revtime', time());
+	    }
+	  }
 	}
 
 	#
@@ -2285,30 +2289,25 @@ sub rollksk
 
 	if ($opts{'rfc5011'}) {
 	    if (length $kskrevsetname) {
-		if ($opts{'mergerevoked'}) {
-		    # remove keys from old set and remove set
-		    keyrec_setval('set', $kskcursetname, 'keys','');
-		    setkeytype($kskcursetname, 'kskobs', 0);
-		} else {
-		    setkeytype($kskrevsetname, 'kskobs', 1) ;
-		    $kskrevsetname = $opts{'kskrev'} = $kskcursetname;
-		    @kskrevlist = ();
-		}
+	      # remove keys from old set and remove set
+	      keyrec_setval('set', $kskcursetname, 'keys','');
+	      setkeytype($kskcursetname, 'kskobs', 0);
 	    } else {
-		# Reuse old cur KSKs as newly revoked
-		$kskrevsetname = $opts{'kskrev'} = $kskcursetname;
+	      # Reuse old cur KSKs as newly revoked
+	      $kskrevsetname = $opts{'kskrev'} = $kskcursetname;
 	    }
 
 	    # Add cur KSKs to revoked list
-	    while (@kskcurlist) {push @kskrevlist, pop @kskcurlist;} 
+	    while (@kskcurlist) { push @kskrevlist, pop @kskcurlist; }
 
+	    $setlist = join ' ', @kskrevlist;
+	    keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
 	    setkeytype($kskrevsetname, 'kskrev', 0);
 	    keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
-	    $setlist = join ' ', @kskrevlist;
-	    keyrec_setval('set', $kskrevsetname ,"keys", $setlist);
 	} else {
 	    setkeytype($opts{'kskcur'}, 'kskobs', 1);
 	}
+
 	#
 	# Transmogrify the Published KSKs into being the Current KSKs.
 	#
@@ -2639,8 +2638,9 @@ sub printopts
 	print "\t\tksklife		- <$ksklife>\n";
 	print "\t\tgenksk		- <$genksk>\n";
 	print "\t\tsignset		- <$signset>\n";
-	print "\t\tuseboth	        - <$useboth>\n";
 	print "\t\trfc5011          - <$rfc5011>\n";
+	print "\t\tdroprevoked          - <$droprevoked>\n";
+	print "\t\tuseboth	        - <$useboth>\n";
 	print "\t\tusezskpub        - <$usezskpub>\n";
 	print "\t\tzsize		- <$zsize>\n";
 	print "\t\tzskcount     	- <$zskcnt>\n";
@@ -2777,6 +2777,8 @@ sub usage
 	print STDERR "\t\t\t-genzsk\n";
 	print STDERR "\t\t\t-rollksk\n";
 	print STDERR "\t\t\t-rollzsk\n";
+	print STDERR "\t\t\t-norfc5011\n";
+	print STDERR "\t\t\t-droprevoked\n";
 	print STDERR "\t\t\t-useboth\n";
 	print STDERR "\t\t\t-usezskpub\n";
 	print STDERR "\t\t\t-nsec3\n";
@@ -3036,6 +3038,16 @@ zone will be used.
 
 Generate new Published KSKs for the zone.  Any existing Published KSKs will
 be marked as obsolete.
+
+=item B<-norfc5011>
+
+Disable RFC5011 KSK revocation when rolling or replacing existing KSK
+key sets. Supercedes this default behavior and any option setting within KRF.
+
+=item B<-droprevoked>
+
+Explicitly obsolete currently revoked KSKs and remove them from the
+signing set before resigning.
 
 =item B<-useboth>
 

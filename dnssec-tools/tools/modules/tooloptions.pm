@@ -86,6 +86,7 @@ my @stdopts =
 		["kskdirectory=s",	"Directory for KSK keys"],
 		["ksklength=i",		"Length of KSK"],
 		["ksklife=i",		"Life-span of KSK"],
+		["revperiod=i",		"Revocation period"],
 		["ksdir=s",		"Directory for keyset files"],
 
 	'',
