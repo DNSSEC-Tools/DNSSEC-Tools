@@ -33,6 +33,7 @@ our @EXPORT = qw(
 			cmdcheck
 			getconfdir
 			getconffile
+			setconffile
 			getlocalstatedir
 			makelocalstatedir
 			getprefixdir
@@ -54,6 +55,7 @@ our $sysconfdir = $ENV{'DT_SYSCONFDIR'} || "@expanded_sysconfdir@";
 our $STATEDIR   = $ENV{'DT_STATEDIR'}   || "@expanded_localstatedir@";
 
 our $CONFFILE = "${sysconfdir}/dnssec-tools/dnssec-tools.conf"; # Configuration file.
+our $conffile = $CONFFILE;
 
 
 ###############################################################################
@@ -88,7 +90,6 @@ sub ERR_SILENT 	{ return($ERR_SILENT);	};
 #
 sub parseconfig
 {
-	my $conffile = $CONFFILE;
 	my $numargs  = @_;
 	my %dnssec_conf = ();
 
@@ -266,7 +267,7 @@ sub getconfdir
 {
 	my $dir;			# DNSSEC-Tools configuration directory.
 
-	$CONFFILE =~ /^(.*)\/.*$/;
+	$conffile =~ /^(.*)\/.*$/;
 	$dir = $1;
 
 	return($dir);
@@ -280,7 +281,22 @@ sub getconfdir
 #
 sub getconffile
 {
-	return($CONFFILE);
+	return($conffile);
+}
+
+#######################################################################
+#
+# Routine:	setconffile()
+#
+# Purpose:	Set the configuration file name.
+#
+sub setconffile
+{
+	my $newconf = shift;
+
+	return(0) if(! -f $newconf);
+	$conffile = $newconf;
+	return(1);
 }
 
 #######################################################################
@@ -402,6 +418,8 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
 
   $conffile = getconffile();
 
+  setconffile("dt-local.conf");
+
   $statedir = getlocalstatedir();
 
   erraction(ERR_MSG);
@@ -484,6 +502,15 @@ This routine returns the name of the DNSSEC-Tools configuration directory.
 =item I<getconffile()>
 
 This routine returns the name of the DNSSEC-Tools configuration file.
+
+=item I<setconffile()>
+
+This routine sets the name of the DNSSEC-Tools configuration file.
+
+Return values:
+    1	returned on success
+    0	returned if the specified configuration file does not
+          exist or is not a regular file
 
 =item I<getprefixdir()>
 
