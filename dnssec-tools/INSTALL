@@ -35,10 +35,14 @@ INSTRUCTIONS
 
       Software needed if you want to sign zones using zonesigner:
          bind 9.3.1 or later.  ( http://www.isc.org/sw/bind/ )
+	 openssl and its development libraries ( http://www.openssl.org )
 
       Extra perl modules needed for various tools:
          Text::Wrap
          Date::Parse
+         ExtUtils::MakeMaker
+         MailTools
+         Test::Simple
 
       Software for displaying zone maps, tcpdump traces, validator traces:
          graphviz                  [ http://www.graphviz.org/ ]
@@ -61,7 +65,7 @@ INSTRUCTIONS
 
   4) make
 
-  5) make install                 [as root]
+p  5) make install                 [as root]
 
   6) install the logwatch extensions for parsing DNSSEC related
      reports from syslog messages (note: these patches are included in
