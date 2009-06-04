@@ -964,15 +964,17 @@ sub genksks
     my $setlist;
     my @keylist;
 
-    if (length $kskrevsetname) {
-      if ($opts{'droprevoked'}) {
-	setkeytype($kskrevsetname, 'kskobs', 1) ;
-	@kskrevlist = ();
-      } else {
-	@kskrevlist = keyrec_age_revoked($kskrevsetname);
+    if ($opts{'rfc5011'}) {
+      if (length $kskrevsetname) {
+	if ($opts{'droprevoked'}) {
+	  setkeytype($kskrevsetname, 'kskobs', 1) ;
+	  @kskrevlist = ();
+	} else {
+	  @kskrevlist = keyrec_age_revoked($kskrevsetname);
+	}
+	$setlist = join(' ', @kskrevlist);
+	keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
       }
-      $setlist = join(' ', @kskrevlist);
-      keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
     }
 
     if ($pubksk) {
@@ -1634,7 +1636,7 @@ sub zonesign
 	my $chron;			# Today's date.
 	my $keytag;			# Tag value from keys.
 	my $szone;			# Result from zone-signing command.
-	my $useksks;			# KSKs to use in zone-signing.
+	my $ksks;			# KSKs to use in zone-signing.
 	my @usekeys;			# Keys to use in zone-signing.
 	my $cmdopts;			# Options for dnssec-signzone.
 	my $status;			# Execution return code.
@@ -1645,19 +1647,17 @@ sub zonesign
 	# Build the collection of KSKs.
 	#
 
-
-#	$useksks = join " -k ", @kskcurlist, @kskpublist;
-#	$useksks = "-k $useksks";
-
-	$useksks = join " -k ", keyrec_keypaths($zone,'kskcur'), keyrec_keypaths($zone,'kskpub'), keyrec_keypaths($zone,'kskrev');
-	$useksks = "-k $useksks";
+	$ksks = join (' -k ',
+		      keyrec_keypaths($zone,'kskcur'),
+		      keyrec_keypaths($zone,'kskpub'),
+		      ($opts{'rfc5011'} ? keyrec_keypaths($zone,'kskrev'):()));
 
 	#
 	# Build a set of options for dnssec-signzone.  This isn't strictly
 	# necessary, but it does keep the dnssec-signzone execution a bit
 	# cleaner than it would be otherwise.
 	#
-	$cmdopts = "$szopts $nsec3opts $gends $ksdir $useksks -o $zone $enddate -f $zoneout";
+	$cmdopts = "$szopts $nsec3opts $gends $ksdir -k $ksks -o $zone $enddate -f $zoneout";
 
 	#
 	# Normally, we'll use the Current ZSKs; however, we'll use the
