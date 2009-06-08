@@ -112,7 +112,7 @@ my $OPT_SLEEP	   = "sleep";
 my $OPT_VERBOSE	   = "verbose";
 my $OPT_VERSION	   = "Version";
 my $OPT_ZONESIGNER = "zonesigner";
-my $OPT_DTPLIBS     = "dtplibs";
+my $OPT_DTPLIBS	   = "dtplibs";
 
 my %opts = ();			# Filled option array.
 my @opts =
@@ -132,7 +132,7 @@ my @opts =
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
-	"zonesigner=s",                 # Location of zonesigner executable.
+	"zonesigner=s",			# Location of zonesigner executable.
 	"dtplibs=s",			# Additional perl libs for zonesigner.
 );
 
@@ -147,10 +147,10 @@ my $sleeptime;				# Sleep interval in seconds.
 my $sleep_override = 0;			# Sleep-override flag.
 my $sleepcnt;				# Time we've slept so far.
 my $verbose = 0;			# Verbose option.
-my $singlerun = 0;			# Single run only
-my $foreground = 0;			# Run in the foreground
-my $alwayssign = 0;			# Always sign the zone in -singlerun
-my $pidfile;                            # pid storage file
+my $singlerun = 0;			# Single run only.
+my $foreground = 0;			# Run in the foreground.
+my $alwayssign = 0;			# Always sign the zone in -singlerun.
+my $pidfile;				# Pid storage file.
 
 my $display = 0;			# Do display processing.
 
@@ -201,19 +201,33 @@ sub main
 	erraction(ERR_MSG);
 
 	#
+	# Set up the appropriate DNSSEC-Tools config file.  If there's a
+	# -dtconfig command line option, we'll use that.  If we're running
+	# in a packed configuration, we'll use the config file in the current
+	# directory.  Otherwise, we'll use the default config file.
+	#
+	GetOptions(\%opts,@opts) || usage();
+	if(exists $opts{'dtconfig'})
+	{
+		setconffile($opts{'dtconfig'});
+	}
+	else
+	{
+		#
+		# Use a local config file if we're running as part of a packed
+		# configuration.
+		#
+		if(packfiles("dnssec-tools.conf", "keyarch", "blinkenlights",
+			     "rollchk", "zonesigner", "rndc"))
+		{
+			setconffile("./dnssec-tools.conf");
+		}
+	}
+
+	#
 	# Check our options and arguments.
 	#
-
-	# Run GetOptions before parseconfig to check for a
-	# dnssec-tools config file command line option.
-	GetOptions(\%opts,@opts) || usage();
-	if (exists $opts{'dtconfig'}) {
-	  %dtconf = parseconfig($opts{'dtconfig'});
-	}
-	else {
-	  %dtconf = parseconfig();
-	}
-
+	%dtconf = parseconfig();
 	optsandargs();
 	getprogs();
 
@@ -317,9 +331,10 @@ sub main
 		#
 		# Turn on our signal handlers and then take a nap.
 		#
-		if ($singlerun) {
-		    halt_handler();
-		    exit(0);
+		if($singlerun)
+		{
+			halt_handler();
+			exit(0);
 		}
 		
 		controllers(1);
@@ -456,38 +471,48 @@ sub rollkeys
 		}
 
 		#
-		# if -alwayssign was specified, always sign the zone
-		# even if we didn't need to for this period
+		# If -alwayssign was specified, always sign the zone
+		# even if we didn't need to for this period.
 		#
 
+		#
 		# XXX: this could double sign if some of the above steps
 		# already signed the zone.  We should only sign if nothing
 		# was done above.
-
-		if ($alwayssign) {
+		#
+		if($alwayssign)
+		{
 			rolllog_log(LOG_TMI,$rname,
 				    "Signing the zone (-alwayssign specified)");
 
-			# check value/file existence/etc like line 1265 does
+			#
+			# Check value and file existence, etc.
+			#
 			my $krr = opts_zonekr($rrr->{'keyrec'}, $rname);
 
 			my $extraargs = "";
 			
-			# if we're in phases 2-3, make sure to use the
+			#
+			# If we're in phases 2-3, make sure to use the
 			# published zsk.
-			if ($rrr->{'zskphase'} >= 2 &&
-			    $rrr->{'zskphase'} <= 3) {
-			    $extraargs = "-usezskpub";
+			#
+			if(($rrr->{'zskphase'} >= 2) &&
+			   ($rrr->{'zskphase'} <= 3))
+			{
+				$extraargs = "-usezskpub";
 			}
 
 			# KSK signing uses double-signature so nothing
 			# is needed since zonesigner always uses all
 			# available keys.
 
-			# actually do the signing
+			#
+			# Actually do the signing.
+			#
 			my $ret = signer($rname, "-usezskpub", $krr);
-			if ($ret) {
-			    rolllog_log(LOG_ERR, "signing $rname failed!");
+			if($ret)
+			{
+				rolllog_log(LOG_ERR, "signing $rname failed!");
 			}
 		}
 
@@ -760,9 +785,9 @@ sub zsk_phaser
 	#
 	$phase = zskphase($rname,$rrr,1)	if($phase == 0);
 	$phase = zsk_phasewait($rname,$rrr,1)	if($phase == 1);
-	$phase = zsk_phase2($rname,$rrr)     	if($phase == 2);
+	$phase = zsk_phase2($rname,$rrr)	if($phase == 2);
 	$phase = zsk_phasewait($rname,$rrr,3)	if($phase == 3);
-	$phase = zsk_phase4($rname,$rrr)     	if($phase == 4);
+	$phase = zsk_phase4($rname,$rrr)	if($phase == 4);
 }
 
 #-----------------------------------------------------------------------------
@@ -1231,12 +1256,12 @@ sub ksk_phaser
 	#
 	$phase = kskphase($rname,$rrr,1)	if($phase == 0);
 	$phase = ksk_phasewait($rname,$rrr,1)	if($phase == 1);
-	$phase = ksk_phase2($rname,$rrr)     	if($phase == 2);
+	$phase = ksk_phase2($rname,$rrr)	if($phase == 2);
 	$phase = ksk_phasewait($rname,$rrr,3)	if($phase == 3);
-	$phase = ksk_phase4($rname,$rrr)     	if($phase == 4);
-	$phase = ksk_phase5($rname,$rrr)     	if($phase == 5);
-	$phase = ksk_phase6($rname,$rrr)     	if($phase == 6);
-	$phase = ksk_phase7($rname,$rrr)     	if($phase == 7);
+	$phase = ksk_phase4($rname,$rrr)	if($phase == 4);
+	$phase = ksk_phase5($rname,$rrr)	if($phase == 5);
+	$phase = ksk_phase6($rname,$rrr)	if($phase == 6);
+	$phase = ksk_phase7($rname,$rrr)	if($phase == 7);
 
 }
 
@@ -1534,8 +1559,8 @@ sub ksk_phase7
 	# Reload the zone.
 	#
 	$krf = $rr{'keyrec'};
-#	my $keyarch_cmd = "perl -I$dtplibs $keyarch -verbose -zone $rname $krf";
-	my $keyarch_cmd = "perl -I$dtplibs $keyarch -quiet -zone $rname $krf";
+#	my $keyarch_cmd = "perl $dtplibs $keyarch -verbose -zone $rname $krf";
+	my $keyarch_cmd = "perl $dtplibs $keyarch -quiet -zone $rname $krf";
 
 	$ret = system("$keyarch_cmd");
 	if($ret < 0)
@@ -1736,7 +1761,7 @@ sub holddownexpire
 	my $zonefile;				# Zone file.
 	my $maxttl;				# Zone's maximum TTL value.
 	my $phstart;				# Start of zone's phase.
-	my $holddowntime;                       # hold-down time
+	my $holddowntime;			# Hold-down time.
 
 	my $curtime;				# Current time string.
 	my $curtempus;				# Current time in seconds.
@@ -1757,14 +1782,18 @@ sub holddownexpire
 	$zonefile     = $rr{'zonefile'};
 	$phstart      = $rr{'phasestart'};
 
+	#
 	# By default, we use a holddowntime of 60 days which is twice what
 	# is required for validators to use as a add-hold-time (RFC5011).
-	# (ideally this should be longer and can be set by the user if needed)
+	# (Ideally this should be longer and can be set by the user if needed.)
+	#
 	$holddowntime =
 	  Net::DNS::ZoneFile::Fast::ttl_fromtext($rr{'holddowntime'});
 
-	# default to 60 days
+	#
+	# Default to 60 days.
 	# lsdnssec should change too if this default is changed
+	#
 	$holddowntime ||= 2*30*24*60*60;
 
 	print "here: $rr{'holddowntime'} $holddowntime\n";
@@ -2087,8 +2116,12 @@ sub signer
 
 	$zsflag = "$zsflag $zsargs" if($zsargs ne '');
 
-	if ($zsflag !~ /-zone/) {
-	    $zsflag .= " -zone $rname";
+	#
+	# If the -zone flag wasn't specified, we'll force it in here.
+	#
+	if($zsflag !~ /-zone/)
+	{
+		$zsflag .= " -zone $rname";
 	}
 
 	#
@@ -2103,7 +2136,7 @@ sub signer
 	#
 	# Build the command to execute.
 	#
-	$cmdstr = "perl -I$dtplibs $zonesigner $zsflag $zonefile $zonesigned";
+	$cmdstr = "perl $dtplibs $zonesigner $zsflag $zonefile $zonesigned";
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
 	#
@@ -2234,10 +2267,10 @@ sub optsandargs
 	$verbose    = $opts{$OPT_VERBOSE};
 	$logfile    = $opts{$OPT_LOGFILE}    || $dtconf{$DT_LOGFILE};
 	$loglevel   = $opts{$OPT_LOGLEVEL}   || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
-	$sleeptime  = $opts{$OPT_SLEEP}	      || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
+	$sleeptime  = $opts{$OPT_SLEEP}	     || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 	$display    = $opts{$OPT_DISPLAY}    || 0;
 	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
-	$dtplibs    = $opts{$OPT_DTPLIBS}   || '';
+	$dtplibs    = $opts{$OPT_DTPLIBS}    || '';
 
 	#
 	# Show the version number if requested
@@ -2331,9 +2364,19 @@ sub optsandargs
 		}
 	}
 
-	if (defined($pidfile) && $pidfile ne '') {
-	    rollmgr_set_idfile($pidfile);
+	#
+	# If additional libraries were given, we'll add the "-I".
+	#
+	$dtplibs = "-I$dtplibs"	if($dtplibs ne '');
+
+	#
+	# If a pid file was specified, we'll pass it to the rollmgr module.
+	#
+	if(defined($pidfile) && ($pidfile ne ''))
+	{
+		rollmgr_set_idfile($pidfile);
 	}
+
 	#
 	# If the user only wants the parameters, print 'em and exit.
 	#
@@ -3940,15 +3983,17 @@ sub controllers
 	#
 	if($onflag)
 	{
-		if ($queued_int) {
+		if($queued_int)
+		{
 			$queued_int = 0;
 			halt_handler();
-	    	}
+		}
 
-		if ($queued_hup) {
+		if($queued_hup)
+		{
 			$queued_hup = 0;
 			intcmd_handler();
-	    	}
+		}
 
 		$SIG{'HUP'} = \&intcmd_handler;
 		$SIG{'INT'} = \&halt_handler;
@@ -3961,23 +4006,23 @@ sub controllers
 }
 
 #-----------------------------------------------------------------------------
-# Routine:       queue_int_handler()
+# Routine:	queue_int_handler()
 #
-# Purpose: Remember that a sig INT was received for later processing
+# Purpose:	Remember that a sig INT was received for later processing.
 #
 sub queue_int_handler
 {
-    $queued_int = 1;
+	$queued_int = 1;
 }
 
 #-----------------------------------------------------------------------------
-# Routine:       queue_hup_handler()
+# Routine:	queue_hup_handler()
 #
-# Purpose:       Remember that a sig HUP was received for later processing
+# Purpose:	Remember that a sig HUP was received for later processing.
 #
 sub queue_hup_handler
 {
-    $queued_hup = 1;
+	$queued_hup = 1;
 }
 
 #-----------------------------------------------------------------------------
@@ -4004,7 +4049,7 @@ sub halt_handler
 	display("halt woof 0");
 
 	rolllog_log(LOG_ALWAYS,"","rollover manager shutting down...\n");
-	rollrec_write(1);         # dump the current file with commands
+	rollrec_write(1);	# dump the current file with commands
 	rollmgr_rmid();
 	exit(0);
 }
