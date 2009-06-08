@@ -52,7 +52,7 @@ print "<html>
   <link rel=\"StyleSheet\" type=\"text/css\" href=\"/dnssec-tools.css\" />
 </head>
 <body>
-<h1>Downloads</h1>
+<h2>Downloads</h2>
 
 <p> The files available for download are listed below.  All release
 contain source code, if you wish to install from source (installing
@@ -65,7 +65,7 @@ turned on (use <i>chmod a+x FILE</i> on unix).  The first launch of a
 pre-compiled binary will take a bit to run as it unpacks various files
 to a tempororay directory.  Subsequent launches should execute much faster.</p>
 
-<h1>Available Downloads</h1>
+<h2>Available Downloads</h2>
 ";
 
 #
