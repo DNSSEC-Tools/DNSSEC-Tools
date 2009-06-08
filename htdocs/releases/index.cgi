@@ -3,7 +3,7 @@
 use IO::Dir;
 use strict;
 
-my $downloaddir = "/home/hardaker/tmp/w/dnssec-tools-downloads/";
+my $downloaddir = "/var/www/html/dnssec-tools.org/releases/";
 my %stuff;
 
 #
