@@ -4,6 +4,7 @@ use IO::Dir;
 use strict;
 
 my $downloaddir = "/var/www/html/dnssec-tools.org/releases/";
+
 my %stuff;
 
 #
@@ -30,7 +31,7 @@ my $dir;
 while (defined($dir = $dirh->read)) {
     next if ($dir =~ /^\./);
 
-    my $subversion;
+    my $subversion = "&nbsp;";
 
     my ($name, $ver, $type) = ($dir =~ /([^\d]+)-([-\.\drcpre]+)\.(.*)/);
     if ($ver =~ s/-(\d+)//) {
@@ -74,50 +75,84 @@ to a tempororay directory.  Subsequent launches should execute much faster.</p>
 
 # table header
 print "<table class=\"bordered\"><th>Version</th><th>Subversion</th><th>Name</th><th>Release<br />Type</th><th>File<br />Type</th><th>Architecture</th></tr>\n";
+output_release('dnssec-tools', '(tar.gz|zip|src.rpm)', 'Source');
+print "</table>\n";
 
-# each release
-foreach my $ver (sort sort_versions keys(%stuff)) {
+print "<hr />\n";
 
-    foreach my $subver (sort sort_subversions keys(%{$stuff{$ver}})) {
+print "<table class=\"bordered\"><th>Version</th><th>Subversion</th><th>Name</th><th>Release<br />Type</th><th>File<br />Type</th><th>Architecture</th></tr>\n";
+output_release('.','src.rpm', 'Source');
+print "</table>\n";
 
-    # dnssec-tools source releases
-	if (exists($stuff{$ver}{$subver}{'dnssec-tools'}{'tar.gz'})) {
-	    print "<tr><td>$ver</td>";
-	    print "<td>$stuff{$ver}{$subver}{'dnssec-tools'}{'tar.gz'}[1]</td>";
-	    print "<td><a href=\"$stuff{$ver}{$subver}{'dnssec-tools'}{'tar.gz'}[0]\">$stuff{$ver}{$subver}{'dnssec-tools'}{'tar.gz'}[0]</a></td>";
-	    print "<td>Source</td><td>tar.gz</td><td>Any</td></tr>\n";
-	    delete $stuff{$ver}{$subver}{'dnssec-tools'}{'tar.gz'};
-	}
+sub output_release {
+    my ($include_pattern, $primary_pattern, $primereltype, $secondreltype) = @_;
 
-	if (exists($stuff{$ver}{$subver}{'dnssec-tools'}{'zip'})) {
-	    print "<tr><td>$ver</td>";
-	    print "<td>$stuff{$ver}{$subver}{'dnssec-tools'}{'tar.gz'}[1]</td>";
-	    print "<td><a href=\"$stuff{$ver}{$subver}{'dnssec-tools'}{'zip'}[0]\">$stuff{$ver}{$subver}{'dnssec-tools'}{'zip'}[0]</a></td>";
-	    print "<td>Source</td><td>zip</td><td>Any</td></tr>\n";
-	    delete $stuff{$ver}{$subver}{'dnssec-tools'}{'zip'};
-	}
+    $primereltype ||= 'Binary';
+    $secondreltype ||= 'Binary';
+
+    # each release
+    foreach my $ver (sort sort_versions keys(%stuff)) {
+
+	foreach my $subver (sort sort_subversions keys(%{$stuff{$ver}})) {
+
+	    # do main packaging first (source, etc)
+	    foreach my $name (sort keys(%{$stuff{$ver}{$subver}})) {
+		
+		next if ($include_pattern &&
+			 $name !~ /$include_pattern/);
+
+		foreach my $type 
+		  (sort {
+		      # first by subversion in reverse
+		      my $result = $stuff{$ver}{$subver}{$name}{$b}[1] <=>
+			$stuff{$ver}{$subver}{$name}{$a}[1];
+		      return $result if ($result ne '0');
+		      # then by type
+		      return $a cmp $b;
+		  } keys(%{$stuff{$ver}{$subver}{$name}})) {
+
+		      next if ($primary_pattern &&
+			       $type !~ /$primary_pattern/);
+
+		      my ($archtype, $filetype) =
+			($type =~ /(.*)\.([a-zA-Z]+)/);
+
+		      print "<tr><td>$ver</td>";
+		      print "<td>$stuff{$ver}{$subver}{$name}{$type}[1]</td>";
+		      print "<td><a href=\"$stuff{$ver}{$subver}{$name}{$type}[0]\">$name</a></td>";
+		      print "<td>$primereltype</td><td>$filetype</td><td>$archtype</td></tr>\n";
+		      delete $stuff{$ver}{$subver}{$name}{$type}
+		  }
+	    }
 
 
-	# binary single-tool releases
-	foreach my $name (sort keys(%{$stuff{$ver}{$subver}})) {
-	    foreach my $type 
-	      (sort {
-		  # first by subversion in reverse
-		  my $result = $stuff{$ver}{$subver}{$name}{$b}[1] <=>
-		    $stuff{$ver}{$subver}{$name}{$a}[1];
-		  return $result if ($result ne '0');
-		  # then by type
-		  return $a cmp $b;
-	      } keys(%{$stuff{$ver}{$subver}{$name}})) {
-		  my ($archtype, $filetype) =
-		    ($type =~ /(.*)\.([a-zA-Z]+)/);
-		  # deal with other types here
+	    # other releases
+	    foreach my $name (sort keys(%{$stuff{$ver}{$subver}})) {
 
-		  print "<tr><td>$ver</td>";
-		  print "<td>$stuff{$ver}{$subver}{$name}{$type}[1]</td>";
-		  print "<td><a href=\"$stuff{$ver}{$subver}{$name}{$type}[0]\">$name</a></td>";
-		  print "<td>Binary</td><td>$filetype</td><td>$archtype</td></tr>\n";
-	      }
+		next if ($include_pattern &&
+			 $name !~ /$include_pattern/);
+
+		foreach my $type 
+		  (sort {
+		      # first by subversion in reverse
+		      my $result = $stuff{$ver}{$subver}{$name}{$b}[1] <=>
+			$stuff{$ver}{$subver}{$name}{$a}[1];
+		      return $result if ($result ne '0');
+		      # then by type
+		      return $a cmp $b;
+		  } keys(%{$stuff{$ver}{$subver}{$name}})) {
+
+		      my ($archtype, $filetype) =
+			($type =~ /(.*)\.([a-zA-Z]+)/);
+		      # deal with other types here
+
+		      print "<tr><td>$ver</td>";
+		      print "<td>$stuff{$ver}{$subver}{$name}{$type}[1]</td>";
+		      print "<td><a href=\"$stuff{$ver}{$subver}{$name}{$type}[0]\">$name</a></td>";
+		      print "<td>$secondreltype</td><td>$filetype</td><td>$archtype</td></tr>\n";
+		      delete $stuff{$ver}{$subver}{$name}{$type}
+		  }
+	    }
 	}
     }
 }
