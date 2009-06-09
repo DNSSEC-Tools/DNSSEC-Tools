@@ -3,7 +3,7 @@
 use IO::Dir;
 use strict;
 
-my $downloaddir = "/var/www/html/dnssec-tools.org/releases/";
+my $downloaddir = "/var/www/html/dnssec-tools.org/download/";
 
 my %stuff;
 
@@ -61,11 +61,6 @@ any dependencies needed first).  There are also some pre-compiled
 binary packages as well as pre-compilred versions of single
 tools.</p>
 
-<p>Pre-compiled single-tool binaries may need to have the execute bit
-turned on (use <i>chmod a+x FILE</i> on unix).  The first launch of a
-pre-compiled binary will take a bit to run as it unpacks various files
-to a tempororay directory.  Subsequent launches should execute much faster.</p>
-
 <h4>Jump points:</h4>
 <ul>
 <li><a href=\"#dtcdown\">Complete DNSSEC-Tools Package Downloads</a></li>
@@ -87,6 +82,12 @@ print "</table>\n";
 
 print "<a name=\"dtidown\" />
 <h2>Available DNSSEC-Tools Individual Component Downloads</h2>
+
+<p>Pre-compiled single-tool binaries may need to have the execute bit
+turned on (use <i>chmod a+x FILE</i> on unix).  The first launch of a
+pre-compiled binary will take a bit to run as it unpacks various files
+to a tempororay directory.  Subsequent launches should execute much faster.</p>
+
 ";
 
 
