@@ -66,7 +66,7 @@ turned on (use <i>chmod a+x FILE</i> on unix).  The first launch of a
 pre-compiled binary will take a bit to run as it unpacks various files
 to a tempororay directory.  Subsequent launches should execute much faster.</p>
 
-<h3>Jump points:</h3>
+<h4>Jump points:</h4>
 <ul>
 <li><a href=\"#dtcdown\">Complete DNSSEC-Tools Package Downloads</a></li>
 <li><a href=\"#dtidown\">Individual DNSSEC-Tools Component Downloads</a></li>
