@@ -34,7 +34,7 @@ while (defined($dir = $dirh->read)) {
     my $subversion = "&nbsp;";
 
     my ($name, $ver, $type) = ($dir =~ /([^\d]+)-([-\.\drcpre]+)\.(.*)/);
-    if ($ver =~ s/-(\d+)//) {
+    if ($ver =~ s/-([\d\.]+)//) {
 	$subversion = $1;
     }
 
