@@ -66,7 +66,14 @@ turned on (use <i>chmod a+x FILE</i> on unix).  The first launch of a
 pre-compiled binary will take a bit to run as it unpacks various files
 to a tempororay directory.  Subsequent launches should execute much faster.</p>
 
-<h2>Available Downloads</h2>
+<ul>
+<li><a href=\"#dtcdown\">Complete DNSSEC-Tools Package Downloads</a></li>
+<li><a href=\"#dtidown\">Individual DNSSEC-Tools Component Downloads</a></li>
+<li><a href=\"#dtadown\">DNSSEC Instrumented Application Downloads</a></li>
+</ul>
+
+<a name=\"dtcdown\" />
+<h2>Available DNSSEC-Tools Downloads</h2>
 ";
 
 #
@@ -74,21 +81,29 @@ to a tempororay directory.  Subsequent launches should execute much faster.</p>
 #
 
 # table header
-print "<table class=\"bordered\"><th>Version</th><th>Subversion</th><th>Name</th><th>Release<br />Type</th><th>File<br />Type</th><th>Architecture</th></tr>\n";
 output_release('dnssec-tools', '(tar.gz|zip|src.rpm)', 'Source');
 print "</table>\n";
 
-print "<hr />\n";
+print "<a name=\"dtidown\" />
+<h2>Available DNSSEC-Tools Individual Component Downloads</h2>
+";
 
-print "<table class=\"bordered\"><th>Version</th><th>Subversion</th><th>Name</th><th>Release<br />Type</th><th>File<br />Type</th><th>Architecture</th></tr>\n";
+
+output_release('(donuts|zonesigner|rollerd)');
+
+print "<a name=\"dtadown\" />
+<h2>Available DNSSEC Instrumented Application Downloads</h2>
+";
+
 output_release('.','src.rpm', 'Source');
-print "</table>\n";
 
 sub output_release {
     my ($include_pattern, $primary_pattern, $primereltype, $secondreltype) = @_;
 
     $primereltype ||= 'Binary';
     $secondreltype ||= 'Binary';
+
+    print "<table class=\"bordered\"><th>Version</th><th>Subversion</th><th>Name</th><th>Release<br />Type</th><th>File<br />Type</th><th>Architecture</th></tr>\n";
 
     # each release
     foreach my $ver (sort sort_versions keys(%stuff)) {
@@ -155,6 +170,7 @@ sub output_release {
 	    }
 	}
     }
+    print "</table>\n";
 }
 
 # sorting version numbers by newest first
