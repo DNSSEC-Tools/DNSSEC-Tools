@@ -135,7 +135,7 @@ sub output_release {
 
 		      print "<tr><td>$ver</td>";
 		      print "<td>$stuff{$ver}{$subver}{$name}{$type}[1]</td>";
-		      print "<td><a href=\"$stuff{$ver}{$subver}{$name}{$type}[0]\">$name</a></td>";
+		      print "<td><a href=\"$stuff{$ver}{$subver}{$name}{$type}[0]\">$stuff{$ver}{$subver}{$name}{$type}[0]</a></td>";
 		      print "<td>$primereltype</td><td>$filetype</td><td>$archtype</td></tr>\n";
 		      delete $stuff{$ver}{$subver}{$name}{$type}
 		  }
@@ -164,7 +164,7 @@ sub output_release {
 
 		      print "<tr><td>$ver</td>";
 		      print "<td>$stuff{$ver}{$subver}{$name}{$type}[1]</td>";
-		      print "<td><a href=\"$stuff{$ver}{$subver}{$name}{$type}[0]\">$name</a></td>";
+		      print "<td><a href=\"$stuff{$ver}{$subver}{$name}{$type}[0]\">$stuff{$ver}{$subver}{$name}{$type}[0]</a></td>";
 		      print "<td>$secondreltype</td><td>$filetype</td><td>$archtype</td></tr>\n";
 		      delete $stuff{$ver}{$subver}{$name}{$type}
 		  }
