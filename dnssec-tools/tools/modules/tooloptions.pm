@@ -907,7 +907,7 @@ B<dnssec-tools.conf> has these entries:
 B<example.keyrec> has this entry:
 
     key         "Kexample.com.+005+12345"
-            zsklength        "1024"
+            zsklength        "2048"
 
 B<zonesigner> is executed with this command line:
 

@@ -38,7 +38,7 @@
 #			zonename	"example.com"
 #			keyrec_type	"kskcur"
 #			algorithm	"rsasha1"
-#			length		"1024"
+#			length		"2048"
 #			ksklife		"15768000"
 #                       revperiod       "3888000"
 #                       revtime         "1103277532"

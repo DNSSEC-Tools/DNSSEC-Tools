@@ -3247,7 +3247,7 @@ Consult B<dnssec-keygen>'s manual page to determine legal values.
 =item B<-ksklength>
 
 Bit length of the zone's KSK key.
-The default is 1024.
+The default is 2048.
 
 =item B<-random>
 
@@ -3449,7 +3449,7 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	algorithm	"rsasha1"
 	random		"/dev/urandom"
 	keypath		"./Kexample.com.+005+24082.key"
-	ksklength	"1024"
+	ksklength	"2048"
 	ksklife		"15768000"
 	keyrec_gensecs	"1110000042"
 	keyrec_gendate	"Sat Mar  5 05:20:42 2005"
