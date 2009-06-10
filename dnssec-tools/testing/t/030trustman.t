@@ -23,7 +23,6 @@ my $libsrespath  = "$ENV{'BUILDDIR'}/validator/libsres/.libs";
 
 $ENV{'LD_LIBRARY_PATH'} = "$libvalpath:$libsrespath";
 
-
 my %trustman_response = (
     "firsttest" =>   q{Reading and parsing trust keys from ./dnsval.conf
  Found a key for dnssec-tools.org
@@ -31,11 +30,11 @@ my %trustman_response = (
  Found a key for dnsops.biz
  Checking zone keys for validity
  Checking the live "dnsops.biz" key
-  dnsops.biz ...  refresh_secs=1800, refresh_time=12
+  dnsops.biz ...  refresh_secs=18, refresh_time=12
  Checking the live "dnsops.gov" key
-  dnsops.gov ...  refresh_secs=1800, refresh_time=12
+  dnsops.gov ...  refresh_secs=18, refresh_time=12
  Checking the live "dnssec-tools.org" key
-  dnssec-tools.org ...  refresh_secs=43200, refresh_time=12
+  dnssec-tools.org ...  refresh_secs=18, refresh_time=12
   adding holddown for new key in dnssec-tools.org (12 seconds from now)
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 A new key has been received for zone dnssec-tools.org.
@@ -81,7 +80,7 @@ copy ("$ENV{'BUILDDIR'}/tools/modules/Net-DNS-SEC-Validator/Validator.pm","$loca
 
 my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
 
-# print "trustmand command :\n$trustman_command\n";
+print "trustmand command :\n$trustman_command\n";
 
 # Tests
 
@@ -103,6 +102,7 @@ sub parselog {
   my $logtext = `cat $logfile`;
   print "before:\n$logtext\n" if (exists $lconf{verbose});
 
+  $logtext =~ s/secs=\d+,/secs=18,/g;
   $logtext =~ s/time=12(\d+)/time=12/g;
   $logtext =~ s/(\d\d)\d+ +seconds/\1 seconds/g;
   $logtext =~ s/Writing new keys to.*/Writing new keys to/g;
