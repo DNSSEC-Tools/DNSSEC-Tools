@@ -4439,7 +4439,7 @@ to the process' standard output.
 =item B<-pidfile pid_file>
 
 Stores the running process PID into I<pid_file>.  This defaults to
-/var/run/rollerd.pid on most systems.
+B</var/run/rollerd.pid> on most systems.
 
 =item B<-loglevel level>
 
@@ -4458,14 +4458,13 @@ Prints a set of B<rollerd> parameters and then exits.
 
 =item B<-singlerun>
 
-Processes all needed steps once and exits.  This is not the idealy way
-to run rollerd but is potentially useful for environments where keying
-material is only available when specific hardware tokens have been
-made available.  Note that the timing between the steps will be
-potentially longer since the time between rollerd runs is dependent on
-when rollerd is executed.  "cmd" lines will be needed to be added
-rollrec file to do particular actions.  The following lines should
-serve as examples:
+Processes all needed steps once and exits.  This is not the ideal way to run
+B<rollerd>, but it is potentially useful for environments where keying
+material is only available when specific hardware tokens have been made
+available.  The timing between the steps will be potentially longer since the
+time between B<rollerd> runs is dependent on when B<rollerd> is executed.
+"cmd" lines must be added to the I<rollrec> file to do particular actions.
+The following lines should serve as examples:
 
   cmd "rollzsk example.com"
   cmd "rollksk example.com"
@@ -4479,14 +4478,14 @@ Run in the foreground and do not fork into a daemon.
 
 =item B<-alwayssign>
 
-Tells rollerd to sign the zones that aren't in the middle of being
-rolled.  This allows rollerd to refresh signed zone signatures and
-allows complete management of zone signing to be taken over by rollerd.
+Tells B<rollerd> to sign the zones that aren't in the middle of being
+rolled.  This allows B<rollerd> to refresh signed zone signatures and
+allows complete management of zone signing to be taken over by B<rollerd>.
 
 Note that the downside is that all the non-rolling zones will be
 signed after every sleep, which may be expensive computationally.
 
-Note: that the zone files are not updated/installed at this time.
+Note:  The zone files are not updated or installed at this time.
 Manual copying and installing is still needed.
 
 =item B<-display>
