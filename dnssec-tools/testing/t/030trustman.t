@@ -80,7 +80,7 @@ copy ("$ENV{'BUILDDIR'}/tools/modules/Net-DNS-SEC-Validator/Validator.pm","$loca
 
 my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
 
-print "trustmand command :\n$trustman_command\n";
+# print "trustmand command :\n$trustman_command\n";
 
 # Tests
 
