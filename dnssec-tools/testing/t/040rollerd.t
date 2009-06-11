@@ -223,16 +223,16 @@ my $rollctl_halt = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -ha
 # run tests
 
 # prepare by signing zone
-is(system("$zonesigner_signzone"), 0, "Checking rollerd: zonesigner signing \'$domainfile\'");
+dois(system("$zonesigner_signzone"), 0, "Checking rollerd: zonesigner signing \'$domainfile\'");
 
 
 # rollerd PHASE 1 KSK
 
 unlink "$phaselog";
-is(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' KSK phase 1");
+dois(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' KSK phase 1");
 
 my $log = &parselog;
-is($log, $rollerd_response{ksk1}, "Checking rollerd: checking rollerd KSK phase 1 output");
+dois($log, $rollerd_response{ksk1}, "Checking rollerd: checking rollerd KSK phase 1 output");
 
 &waittime(125, 5, "Waiting until TTL timeout for next key rolling phase");
 
@@ -240,10 +240,10 @@ is($log, $rollerd_response{ksk1}, "Checking rollerd: checking rollerd KSK phase 
 # rollerd PHASE 2-3 KSK
 
 unlink "$phaselog";
-is(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' KSK phase 2-3");
+dois(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' KSK phase 2-3");
 
 $log = &parselog;
-is($log, $rollerd_response{ksk23}, "Checking rollerd: checking rollerd KSK phase 2-3 output");
+dois($log, $rollerd_response{ksk23}, "Checking rollerd: checking rollerd KSK phase 2-3 output");
 
 &waittime(125, 5, "Waiting until TTL timeout for next key rolling phase");
 
@@ -252,51 +252,51 @@ is($log, $rollerd_response{ksk23}, "Checking rollerd: checking rollerd KSK phase
 # Note: not stopping rollerd
 
 unlink "$phaselog";
-is(system("$rollerd_tillstopped"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' KSK phase 4-6");
+dois(system("$rollerd_tillstopped"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' KSK phase 4-6");
 
 &waittime(10, 1, "Waiting for phase 4-6 transition");
 
 $log = &parselog;
-is($log, $rollerd_response{ksk46}, "Checking rollerd: checking rollerd KSK phase 4-6 output");
+dois($log, $rollerd_response{ksk46}, "Checking rollerd: checking rollerd KSK phase 4-6 output");
 
 
 # rollctl and rollerd PHASE 7 KSK
 
-is(system("$rollctl_dspub"), 0, "Checking rollerd/rollctl: rollctl notifying rollerd of \'$domain\' Delegation Signer publish");
+dois(system("$rollctl_dspub"), 0, "Checking rollerd/rollctl: rollctl notifying rollerd of \'$domain\' Delegation Signer publish");
 
 $log = &parselog;
-is($log, $rollerd_response{ksk7}, "Checking rollerd: checking rollerd KSK phase 7 output");
+dois($log, $rollerd_response{ksk7}, "Checking rollerd: checking rollerd KSK phase 7 output");
 
-is(system("$rollctl_halt"), 0, "Checking rollerd/rollctl: rollctl notifying rollerd to shutdown");
+dois(system("$rollctl_halt"), 0, "Checking rollerd/rollctl: rollctl notifying rollerd to shutdown");
 
 $log = &parselog;
-is($log, $rollerd_response{kskhalt}, "Checking rollerd/rollctl: checking rollerd shutdown output");
+dois($log, $rollerd_response{kskhalt}, "Checking rollerd/rollctl: checking rollerd shutdown output");
 
 
 # rollerd PHASE 1 ZSK
 
 unlink "$phaselog";
-is(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' ZSK phase 1");
+dois(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' ZSK phase 1");
 $log = &parselog;
-is($log, $rollerd_response{zsk1}, "Checking rollerd: checking rollerd ZSK phase 1 output");
+dois($log, $rollerd_response{zsk1}, "Checking rollerd: checking rollerd ZSK phase 1 output");
 &waittime(125, 5, "Waiting until TTL timeout for next key rolling phase");
 
 
 # rollerd PHASE 2-3 ZSK
 
 unlink "$phaselog";
-is(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' ZSK phase 2");
+dois(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' ZSK phase 2");
 $log = &parselog;
-is($log, $rollerd_response{zsk23}, "Checking rollerd: checking rollerd ZSK phase 2-3 output");
+dois($log, $rollerd_response{zsk23}, "Checking rollerd: checking rollerd ZSK phase 2-3 output");
 &waittime(125, 5, "Waiting until TTL timeout for next key rolling phase");
 
 
 # rollerd PHASE 4 ZSK
 
 unlink "$phaselog";
-is(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' ZSK phase 4");
+dois(system("$rollerd_singlerun"), 0, "Checking rollerd: rollerd rolling \'$domainfile\' ZSK phase 4");
 $log = &parselog;
-is($log, $rollerd_response{zsk4}, "Checking rollerd: checking rollerd ZSK phase 4 output");
+dois($log, $rollerd_response{zsk4}, "Checking rollerd: checking rollerd ZSK phase 4 output");
 
 
 # end MAIN
@@ -320,6 +320,13 @@ sub waittime {
   printf "\r$msg: 0 seconds      \n";
 }
 
+
+sub dois {
+  my ($is1, $is2, $istext) = @_;
+  if (! is($is1, $is2, $istext) ) {
+    BAIL_OUT("Cannot complete succeeding tests after a fail.");
+  }
+}
 
 
 sub parselog {
