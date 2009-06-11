@@ -89,10 +89,10 @@ is(system("$trustman_command"), 0,
    "Checking trustman: trustman examining \'dnsval.conf\'");
 
 my $log = &parselog;
-is($log, $trustman_response{firsttest},
-   "Checking trustman: checking the output from examining \'dnsval.conf\'");
-
-
+if (! is($log, $trustman_response{firsttest},
+	 "Checking trustman: checking the output from examining \'dnsval.conf\'") ) {
+  print"\tPossible Problem: host has incorrect date (e.g. 1+ days incorrect)\n";
+}
 
 
 #  **** procedures ****
