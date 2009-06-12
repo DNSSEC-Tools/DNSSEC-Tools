@@ -38,10 +38,11 @@ if (!( -x $keygen && -x $zonecheck && -x $zonesign )) {
   die "Unable to execute/find 1+ of $keygen, $zonecheck, or $zonesign\n";
 }
 
+$ENV{'PERL5LIB'} = "$dt_plibs:$dt_parch";
+
 my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir";
 my $zsargs_resp   = parsestring($zsargs);
-my $dt_plibs_resp = parsestring($dt_plibs);
-my $dt_parch_resp = parsestring($dt_parch);
+
 
 my %rollerd_response = ( 
     "ksk1" =>   q{ rollerd starting ----------------------------------------
@@ -64,7 +65,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 2
- example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -newpubksk $zsargs_resp example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -newpubksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 3
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -77,7 +78,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -91,7 +92,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -106,7 +107,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -137,7 +138,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: ZSK phase 2 (Signing the zone with the KSK and published ZSK)
- example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -usezskpub $zsargs_resp example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -usezskpub $zsargs_resp example.com example.com.signed"
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches)
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -150,8 +151,8 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: ZSK phase 4 (Adjusting keys in the keyrec and signing the zone with new ZSK)
- example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner -rollzsk $zsargs_resp example.com example.com.signed"
- example.com: executing "perl -I$dt_plibs_resp ../../tools/scripts/zonesigner $zsargs_resp example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -rollzsk $zsargs_resp example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner $zsargs_resp example.com example.com.signed"
  example.com: ZSK phase 0 (Not Rolling)
  example.com: ZSK expiration in weeks, days, hours, seconds
  rollover manager shutting down...
@@ -205,9 +206,9 @@ close (DTC);
 
 my $zonesigner_signzone = "perl -I$dt_plibs -I$dt_parch $zonesigner $zsargs -genkeys $domain >> $logfile 2>&1";
 
-my $rollerd_singlerun =   "perl -I$dt_plibs -I$dt_parch  $rollerd -dtplibs $dt_plibs -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner -dtconf ./dnssec-tools.conf -singlerun >> $logfile 2>&1 ";
+my $rollerd_singlerun =   "perl -I$dt_plibs -I$dt_parch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner -dtconf ./dnssec-tools.conf -singlerun >> $logfile 2>&1 ";
 
-my $rollerd_tillstopped = "perl -I$dt_plibs -I$dt_parch  $rollerd -dtplibs $dt_plibs -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner -dtconf ./dnssec-tools.conf >> $logfile 2>&1 ";
+my $rollerd_tillstopped = "perl -I$dt_plibs -I$dt_parch  $rollerd -dir . -logfile $phaselog -loglevel info -sleep 15 -rrf example.rollrec -pidfile $pidfile -zonesigner $zonesigner -dtconf ./dnssec-tools.conf >> $logfile 2>&1 ";
 
 my $rollctl_dspub = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -dspub $domain >> $logfile 2>&1 ";
 
@@ -324,8 +325,18 @@ sub waittime {
 sub dois {
   my ($is1, $is2, $istext) = @_;
   if (! is($is1, $is2, $istext) ) {
+    outdiff($is1, $is2) if (exists $lconf{verbose});
     BAIL_OUT("Cannot complete succeeding tests after a fail.");
   }
+}
+
+
+sub outdiff {
+  my ($got, $expected) = @_;
+  `echo "$expected" > expected.txt`;
+  `echo "$got" > got.txt`;
+  my $temp = `diff -E  expected.txt got.txt`;
+  print "the diff expected/got is:\n$temp\n\n";
 }
 
 
