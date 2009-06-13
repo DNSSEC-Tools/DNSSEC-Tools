@@ -152,7 +152,6 @@ my $pidfile;				# Pid storage file.
 my $display = 0;			# Do display processing.
 
 my $boottime = gmtime();		# Timestamp of rollerd's start time.
-my $version  = 0;			# Display the version number.
 
 my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
@@ -2258,7 +2257,6 @@ sub optsandargs
 	#
 	opts_onerr(0);
 
-	$version    = $opts{$OPT_VERSION};
 	$singlerun  = $opts{$OPT_SINGLERUN};
 	$foreground = $opts{$OPT_FOREGROUND};
 	$alwayssign = $opts{$OPT_ALWAYSSIGN};
