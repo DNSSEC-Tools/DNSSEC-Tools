@@ -38,6 +38,7 @@ our @EXPORT = qw(
 			makelocalstatedir
 			getprefixdir
 			parseconfig
+			runpacked
 
 			erraction
 			err
@@ -199,6 +200,7 @@ sub cmdcheck
 	my $ropts = shift;			# Options hash reference.
 	my %opts = %$ropts;			# Options hash.
 	my $cmd;				# Command path.
+	my $packed = runpacked();		# Packed-running flag.
 
 	#
 	# Check each of these commands for existence and executability.
@@ -210,6 +212,15 @@ sub cmdcheck
 		#
 		next if(!exists($opts{$bcmd}));
 		$cmd = $opts{$bcmd};
+
+		#
+		# If we're running packed, check for the packed version of
+		# the command.
+		#
+		if($packed)
+		{
+			$cmd = "$ENV{'PAR_TEMP'}/inc/$cmd";
+		}
 
 		#
 		# Check command name's existence.
@@ -227,6 +238,15 @@ sub cmdcheck
 		{
 			err("BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n",3);
 			return(0);
+		}
+
+		#
+		# If we're running packed, force the packed BIND files
+		# to be executable.
+		#
+		if($packed)
+		{
+			chmod 0755, $cmd;
 		}
 
 		#
@@ -308,6 +328,17 @@ sub setconffile
 sub getlocalstatedir
 {
 	return($STATEDIR);
+}
+
+#######################################################################
+#
+# Routine:	runpacked()
+#
+# Purpose:	Return a boolean indicating we're running packed or regular.
+#
+sub runpacked
+{
+	return(defined($ENV{'PAR_TEMP'}));
 }
 
 #######################################################################
@@ -422,6 +453,8 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
 
   $statedir = getlocalstatedir();
 
+  $packed = runpacked();
+
   erraction(ERR_MSG);
   err("unable to open keyrec file",1);
 
@@ -495,6 +528,10 @@ I<zonesign>.  The pathnames for these commands are found in the given options
 hash referenced by I<%options_hashref>.  If the hash doesn't contain an entry
 for one of those commands, it is not checked.
 
+If this routine is called from a PAR-packed script, then it will look in the
+package directory for the commands.  It will also set their file mode to
+0755, as PAR appears to ignore file modes when packaging programs.
+
 =item I<getconfdir()>
 
 This routine returns the name of the DNSSEC-Tools configuration directory.
@@ -519,6 +556,11 @@ This routine returns the name of the DNSSEC-Tools prefix directory.
 =item I<getlocalstatedir()>
 
 This routine returns the name of the local state directory.
+
+=item I<runpacked()>
+
+This routine returns a boolean indicating if the executing command is running
+from a PAR-packed script.
 
 =item I<makelocalstatedir(SUFFIX)>
 
