@@ -185,6 +185,7 @@ my $nsec3	= 0;			# Use-Published-ZSK flag.
 
 my $showsigncmd	= 0;			# Show-zone-sign-command flag.
 my $showkeycmd	= 0;			# Show-key-generation-command flag.
+my $packed	= 0;			# Running-packed flag.
 
 #
 # Do our work.
@@ -211,6 +212,16 @@ sub main
 	# Give the usage and exit if help was specified.
 	#
 	helpchk();
+
+	#
+	# Use a local config file if we're running as part of a packed
+	# configuration.
+	#
+	$packed = runpacked();
+	if($packed)
+	{
+		setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+	}
 
 	#
 	# Munch on the options and arguments.  Print out our options,
@@ -309,8 +320,6 @@ sub optsandargs
 	$pubksk	  = $opts{'newpubksk'}	  || 0;
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
-	$rfc5011  = defined $opts{'rfc5011'} ? $opts{'rfc5011'} : $DEF_RFC5011;
-	$rfc5011  = 0 if $opts{'norfc5011'}; $opts{'rfc5011'} = $rfc5011;
 	$droprevoked = $opts{'droprevoked'} || 0;
 	$useboth  = $opts{'useboth'}	  || 0;
 	$usezskpub = $opts{'usezskpub'}	  || 0;
@@ -320,6 +329,17 @@ sub optsandargs
 
 	if(defined($opts{'zskcount'}))	{ $zskcnt = $opts{'zskcount'}; }
 	else				{ $zskcnt = 1; }
+
+	#
+	# Figure out RFC-5011 compliance.
+	#
+	$rfc5011  = defined($opts{'rfc5011'}) ? $opts{'rfc5011'} : $DEF_RFC5011;
+	$rfc5011  = 0 if $opts{'norfc5011'};
+	if(defined($opts{'rfc5011'}) && defined($opts{'norfc5011'}))
+	{
+		print STDERR "-rfc5011 and -norfc5011 are mutually exclusive\n";
+		exit(1);
+	}
 
 	#
 	# Get the rest of the options.
@@ -410,11 +430,13 @@ sub optsandargs
 
 	if($alg ne "")
 	{
-		if (($usensec3 eq 'yes' || $usensec3 eq '1') &&
-		    ($alg eq 'rsasha1' || $alg eq 'dsa')) {
-		    print STDERR "WARNING: changing algorithm from $alg to nsec3$alg since NSEC3 is in use\n";
-		    $alg = "nsec3$alg";
+		if((($usensec3 eq 'yes') || ($usensec3 eq '1')) &&
+		   (($alg eq 'rsasha1')  || ($alg eq 'dsa')))
+		{
+			print STDERR "WARNING: changing algorithm from $alg to nsec3$alg since NSEC3 is in use\n";
+			$alg = "nsec3$alg";
 		}
+
 		$opts{'algorithm'} = $alg;
 		$alg = "-a $alg";
 	}
@@ -439,42 +461,63 @@ sub optsandargs
 
 	$gends	 = "-g"		 if($gends ne "");
 
-	if ($usensec3 eq 'yes' || $usensec3 eq '1') {
-	    my $salt  = $opts{"nsec3salt"} || dnssec_tools_default("nsec3salt");
-	    my $iters = $opts{"nsec3iter"} || dnssec_tools_default("nsec3iter");
+	#
+	# Set up NSEC3 options, if they're needed.
+	#
+	if(($usensec3 eq 'yes') || ($usensec3 eq '1'))
+	{
+		my $salt  = $opts{"nsec3salt"} || dnssec_tools_default("nsec3salt");
+		my $iters = $opts{"nsec3iter"} || dnssec_tools_default("nsec3iter");
 
-	    if ($salt =~ /^random:(\d+)$/) {
-		# use a random salt for each signing, using OpenSSL
-		# random if we can load the module.
-		my $bitsneeded = $1;
+		if($salt =~ /^random:(\d+)$/)
+		{
+			#
+			# Use a random salt for each signing, using OpenSSL
+			# random if we can load the module.
+			#
+			my $bitsneeded = $1;
 
-		require POSIX;
-		# upper-case/lower-case/numbers case entropy
-		my $bytesneeded = POSIX::ceil($bitsneeded/8);
-		my @bytes;
+			require POSIX;
 
-		my $have_openssl = eval { require Crypt::OpenSSL::Random; };
-		if ($have_openssl) {
-		    # good randomness
-		    Crypt::OpenSSL::Random::random_seed(time());
-		    for (my $i = 0; $i < $bytesneeded; $i++) {
-			push @bytes, ord(Crypt::OpenSSL::Random::random_bytes(1));
-		    }
-		} else {
-		    # bad randomness
-		    print STDERR "Warning: please install Crypt::OpenSSL::Random for better NSEC3 salt generation\n\n";
-		    for (my $i = 0; $i < $bytesneeded; $i++) {
-			push @bytes, rand(256);
-		    }
+			#
+			# Upper-case/lower-case/numbers case entropy.
+			#
+			my $bytesneeded = POSIX::ceil($bitsneeded/8);
+			my @bytes;
+
+			my $have_openssl = eval { require Crypt::OpenSSL::Random; };
+			if($have_openssl)
+			{
+				#
+				# Good randomness.
+				#
+				Crypt::OpenSSL::Random::random_seed(time());
+				for(my $i = 0; $i < $bytesneeded; $i++)
+				{
+					push @bytes, ord(Crypt::OpenSSL::Random::random_bytes(1));
+				}
+			}
+			else
+			{
+				#
+				# Bad randomness.
+				#
+				print STDERR "Warning: please install Crypt::OpenSSL::Random for better NSEC3 salt generation\n\n";
+
+				for(my $i = 0; $i < $bytesneeded; $i++)
+				{
+					push @bytes, rand(256);
+				}
+			}
+			$salt = sprintf(("%02x" x ($#bytes+1)), @bytes);
 		}
-		$salt = sprintf(("%02x" x ($#bytes+1)), @bytes);
-	    }
 
-	    $nsec3opts = "-3 $salt -H $iters";
+		$nsec3opts = "-3 $salt -H $iters";
 
-	    if ($nsec3optout eq 'yes' || $nsec3optout eq '1') {
-		$nsec3opts .= " -A";
-	    }
+		if(($nsec3optout eq 'yes') || ($nsec3optout eq '1'))
+		{
+			$nsec3opts .= " -A";
+		}
 	}
 
 	#
@@ -531,6 +574,17 @@ sub optsandargs
 	$keygen	   = $opts{'keygen'}    || dnssec_tools_default("keygen");
 	$zonecheck = $opts{'zonecheck'} || dnssec_tools_default("zonecheck");
 	$zonesign  = $opts{'zonesign'}  || dnssec_tools_default("zonesign");
+
+	#
+	# If we're running packed, we'll use the packed copies of a set
+	# of programs.
+	#
+	if($packed)
+	{
+		$keygen	   = "$ENV{'PAR_TEMP'}/inc/dnssec-keygen";
+		$zonecheck = "$ENV{'PAR_TEMP'}/inc/named-checkzone";
+		$zonesign  = "$ENV{'PAR_TEMP'}/inc/dnssec-signzone";
+	}
 
 	#
 	# Turn off the usezskpub flag if -useboth was given.
@@ -883,7 +937,6 @@ sub genzsks
 	#
 	if($signset ne "")
 	{
-
 		if(keyrec_fullrec($signset) ne "")
 		{
 			print STDERR "\nSigning set named \"$signset\" already exists\n";
@@ -895,28 +948,30 @@ sub genzsks
 	}
 	else
 	{
-	    #
-	    # Render any Current ZSKs obsolete.  Their keyrecs will be
-	    # marked as zskobs and the keys will (may) be moved to the
-	    # archive directory.
-	    #
-	    if (length $zskcursetname) {
-		setkeytype($zskcursetname,'zskobs',1);
-		@zskcurlist = ();
-	    }
-	    
-	    #
-	    # Render any Published ZSKs obsolete.  Their keyrecs will be
-	    # marked as zskobs and the keys will (may) be moved to the
-	    # archive directory.
-	    #
-	    if (length $zskpubsetname) {
-		setkeytype($zskpubsetname,'zskobs',1);
-		@zskpublist = ();
-	    }
-	    
-	    $zskcursetname = keyrec_signset_newname($zone);
-	    $zskpubsetname = keyrec_signset_newname($zone);
+		#
+		# Render any Current ZSKs obsolete.  Their keyrecs will be
+		# marked as zskobs and the keys will (may) be moved to the
+		# archive directory.
+		#
+		if(length($zskcursetname))
+		{
+			setkeytype($zskcursetname,'zskobs',1);
+			@zskcurlist = ();
+		}
+
+		#
+		# Render any Published ZSKs obsolete.  Their keyrecs will be
+		# marked as zskobs and the keys will (may) be moved to the
+		# archive directory.
+		#
+		if(length($zskpubsetname))
+		{
+			setkeytype($zskpubsetname,'zskobs',1);
+			@zskpublist = ();
+		}
+
+		$zskcursetname = keyrec_signset_newname($zone);
+		$zskpubsetname = keyrec_signset_newname($zone);
 	}
 
 	#
@@ -959,216 +1014,276 @@ sub genzsks
 #
 sub genksks
 {
-    my $setname;				# Name of signing set.
-    my $keyset;				# Keys in signing set.
-    my $setlist;
-    my @keylist;
+	my $setname;				# Name of signing set.
+	my $keyset;				# Keys in signing set.
+	my $setlist;
+	my @keylist;
 
-    if ($opts{'rfc5011'}) {
-      if (length $kskrevsetname) {
-	if ($opts{'droprevoked'}) {
-	  setkeytype($kskrevsetname, 'kskobs', 1) ;
-	  @kskrevlist = ();
-	} else {
-	  @kskrevlist = keyrec_age_revoked($kskrevsetname);
+	#
+	# Set up for handling revoked keys.
+	#
+	if($rfc5011)
+	{
+		if(length($kskrevsetname))
+		{
+			if($opts{'droprevoked'})
+			{
+				setkeytype($kskrevsetname, 'kskobs', 1) ;
+				@kskrevlist = ();
+			}
+			else
+			{
+				@kskrevlist = keyrec_age_revoked($kskrevsetname);
+			}
+
+			$setlist = join(' ', @kskrevlist);
+			keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
+		}
 	}
-	$setlist = join(' ', @kskrevlist);
-	keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
-      }
-    }
 
-    if ($pubksk) {
 	#
-	# Create a new set of Published KSKs.
+	# Create a set of Published KSKs.
 	#
-	#
-	# Any existing Published KSKs are marked as obsolete or revoked.
-	#
-	if (length $kskpubsetname) {
-	    if ($opts{'rfc5011'}) {
-		if (length $kskrevsetname) {
-		    # remove keys from old set and remove set
-		    keyrec_setval('set', $kskpubsetname, 'keys','');
-		    setkeytype($kskpubsetname, 'kskobs', 0);
-		} else {
-		    # Reuse old pub KSKs as newly revoked
-		    $kskrevsetname = $opts{'kskrev'} = $kskpubsetname;
+	if($pubksk)
+	{
+		#
+		# Create a new set of Published KSKs.
+		#
+		#
+		# Any existing Published KSKs are marked as obsolete or revoked.
+		#
+		if(length($kskpubsetname))
+		{
+			if($rfc5011)
+			{
+				if(length($kskrevsetname))
+				{
+					#
+					# Remove keys from old set and
+					# remove set.
+					#
+					keyrec_setval('set', $kskpubsetname, 'keys','');
+					setkeytype($kskpubsetname, 'kskobs', 0);
+				}
+				else
+				{
+					#
+					# Reuse old pub KSKs as newly revoked.
+					#
+					$kskrevsetname = $opts{'kskrev'} = $kskpubsetname;
+				}
+
+				#
+				# Add pub KSKs to revoked list.
+				#
+				while(@kskpublist)
+				{
+					push @kskrevlist, pop @kskpublist;
+				}
+
+				$setlist = join ' ', @kskrevlist;
+				keyrec_setval('set', $kskrevsetname ,"keys", $setlist);
+				setkeytype($kskrevsetname, 'kskrev', 0);
+				keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
+			}
+			else
+			{
+				setkeytype($kskpubsetname,'kskobs',1);
+			}
 		}
 
-		# Add pub KSKs to revoked list
-		while (@kskpublist) {push @kskrevlist, pop @kskpublist;}
+		#
+		# Make a new Published KSK signing set.
+		#
+		$kskpubsetname = keyrec_signset_newname($zone);
+		keyrec_signset_new($zone,$kskpubsetname);
+		$lastset = keyrec_recval($zone,'lastset');
 
-		$setlist = join ' ', @kskrevlist;
-		keyrec_setval('set', $kskrevsetname ,"keys", $setlist);
-		setkeytype($kskrevsetname, 'kskrev', 0);
-		keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
-	    } else {
-		setkeytype($kskpubsetname,'kskobs',1);
-	    }
-	}
-
-	#
-	# Make a new Published KSK signing set.
-	#
-	$kskpubsetname = keyrec_signset_newname($zone);
-	keyrec_signset_new($zone,$kskpubsetname);
-	$lastset = keyrec_recval($zone,'lastset');
-
-	#
-	# Generate a set of KSKs and save their names.
-	#
-	for (1 .. $kskcnt) {
-	    push @kskpublist, genksk('kskpub');
-	}
-
-	$keyset = join ' ', @kskpublist;
-	keyrec_setval('set',$kskpubsetname,'keys',$keyset);
-
-	vmed_print("\n");
-	updzonerec($UPD_KSKS);
-	return;
-    }
-
-    #
-    # Handle a KSK rollover.
-    #
-    if ($rollksk) {
-	rollksk();
-	vmed_print("\n");
-	return;
-    }
-
-    #
-    # We're generating a new set of Current KSKs.
-    #
-    if ($genksk) {
-	#
-	# Obsolete or Revoke any Current KSKs we have.
-	#
-	if (length $opts{'kskcur'}) {
-	    if ($opts{'rfc5011'}) {
-		if (length $kskrevsetname) {
-		  # remove keys from old set and remove set
-		  keyrec_setval('set', $kskcursetname, 'keys','');
-		  setkeytype($kskcursetname, 'kskobs', 0);
-		} else {
-		  # Reuse old cur KSKs as newly revoked
-		  $kskrevsetname = $opts{'kskrev'} = $kskcursetname;
+		#
+		# Generate a set of KSKs and save their names.
+		#
+		for (1 .. $kskcnt)
+		{
+			push @kskpublist, genksk('kskpub');
 		}
 
-		# Add cur KSKs to revoked list
-		while (@kskcurlist) {push @kskrevlist, pop @kskcurlist;} 
+		$keyset = join ' ', @kskpublist;
+		keyrec_setval('set',$kskpubsetname,'keys',$keyset);
 
-		$setlist = join ' ', @kskrevlist;
-		keyrec_setval('set', $kskrevsetname ,"keys", $setlist);
-		setkeytype($kskrevsetname, 'kskrev', 0);
-		keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
-	    } else {
-		setkeytype($opts{'kskcur'}, 'kskobs', 1);
-	    }
+		vmed_print("\n");
+		updzonerec($UPD_KSKS);
+		return;
 	}
 
 	#
-	# Get the name of the KSK set -- either from the -ksignset
-	# command line option or generate a new name.
+	# Handle a KSK rollover.
 	#
-	if ($ksignset) {
-	    $kskcursetname = $ksignset;
-	    if (keyrec_exists($kskcursetname)){
-		print STDERR "\nKSK signing set \"$kskcursetname\" already exists; unable to assign new KSKs to an existing set name\n";
-		exit(1);
-	    }
-	} else {
-	    $kskcursetname = keyrec_signset_newname($zone);
+	if($rollksk)
+	{
+		rollksk();
+		vmed_print("\n");
+		return;
 	}
 
 	#
-	# Create the new signing set.
+	# We're generating a new set of Current KSKs.
 	#
-	keyrec_signset_new($zone,$kskcursetname);
-	$lastset = keyrec_recval($zone,'lastset');
+	if($genksk)
+	{
+		#
+		# Obsolete or Revoke any Current KSKs we have.
+		#
+		if(length($opts{'kskcur'}))
+		{
+			if($rfc5011)
+			{
+				if(length($kskrevsetname))
+				{
+					#
+					# Remove keys from old set and
+					# remove set.
+					#
+					keyrec_setval('set', $kskcursetname, 'keys','');
+					setkeytype($kskcursetname, 'kskobs', 0);
+				}
+				else
+				{
+					#
+					# Reuse old cur KSKs as newly revoked.
+					#
+					$kskrevsetname = $opts{'kskrev'} = $kskcursetname;
+				}
 
-	#
-	# Generate a set of KSKs and save their names.
-	#
-	for (1 .. $kskcnt)	{
-	    push @kskcurlist, genksk('kskcur');
+				#
+				# Add cur KSKs to revoked list.
+				#
+				while(@kskcurlist)
+				{
+					push @kskrevlist, pop @kskcurlist;
+				}
+
+				$setlist = join ' ', @kskrevlist;
+				keyrec_setval('set', $kskrevsetname ,"keys", $setlist);
+				setkeytype($kskrevsetname, 'kskrev', 0);
+				keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
+			}
+			else
+			{
+				setkeytype($opts{'kskcur'}, 'kskobs', 1);
+			}
+		}
+
+		#
+		# Get the name of the KSK set -- either from the -ksignset
+		# command line option or generate a new name.
+		#
+		if($ksignset)
+		{
+			$kskcursetname = $ksignset;
+			if(keyrec_exists($kskcursetname))
+			{
+				print STDERR "\nKSK signing set \"$kskcursetname\" already exists; unable to assign new KSKs to an existing set name\n";
+				exit(1);
+			}
+		}
+		else
+		{
+			$kskcursetname = keyrec_signset_newname($zone);
+		}
+
+		#
+		# Create the new signing set.
+		#
+		keyrec_signset_new($zone,$kskcursetname);
+		$lastset = keyrec_recval($zone,'lastset');
+
+		#
+		# Generate a set of KSKs and save their names.
+		#
+		for(1 .. $kskcnt)
+		{
+			push @kskcurlist, genksk('kskcur');
+		}
+
+		#
+		# Update the keyrec file.
+		#
+		updzonerec($UPD_KSKS);
+		vmed_print("\n");
+		return;
 	}
 
 	#
-	# Update the keyrec file.
+	# If we get here, then we're reusing the KSKs.  We'll ensure we have
+	# some KSKs and grab the key lists.
 	#
-	updzonerec($UPD_KSKS);
-	vmed_print("\n");
-	return;
-    }
+	if($genksk == 0)
+	{
+		my $keyset;			# Keys in signing set.
+		my $setname;			# Name of signing set.
 
-    #
-    # If we get here, then we're reusing the KSKs.  We'll ensure we have
-    # some KSKs and grab the key lists.
-    #
-    if ($genksk == 0) {
-	my $keyset;			# Keys in signing set.
-	my $setname;			# Name of signing set.
+		#
+		# Ensure that we've got a Current KSK signing set.
+		#
+		if($opts{'kskcur'} eq "")
+		{
+			$kskcursetname = keyrec_recval($zone,'kskcur');
+			if($kskcursetname eq "")
+			{
+				print STDERR "\nKSKs do not exist; unable to re-use non-existent KSKs\n";
+				exit(1);
+			}
 
-	#
-	# Ensure that we've got a Current KSK signing set.
-	#
-	if($opts{'kskcur'} eq "") {
-	    $kskcursetname = keyrec_recval($zone,'kskcur');
-	    if ($kskcursetname eq "") {
+			$opts{'kskcur'} = $kskcursetname;
+		}
 
-		print STDERR "\nKSKs do not exist; unable to re-use non-existent KSKs\n";
-		exit(1);
-	    }
+		#
+		# Get the Current KSK signing set name.
+		#
+		$kskcursetname = $opts{'kskcur'};
+		if(!keyrec_exists($kskcursetname))
+		{
+			print STDERR "\nCurrent KSK keyrec \"$kskcursetname\" does not exist; unable to re-use non-existent KSK\n";
+			exit(1);
+		}
 
-	    $opts{'kskcur'} = $kskcursetname;
+		vprint("reusing existing Current KSK set - $kskcursetname\n");
+
+		#
+		# Get the KSKs.
+		#
+		$keyset  = keyrec_recval($kskcursetname,'keys');
+		@kskcurlist = split / /, $keyset;
+
+		#
+		# Get the Published KSK signing set name -- if it exists.
+		#
+		$kskpubsetname = "";
+		@kskpublist = ();
+		if(defined($opts{'kskpub'}))
+		{
+			$kskpubsetname = $opts{'kskpub'};
+			if(!keyrec_exists($kskpubsetname))
+			{
+				print STDERR "\nPublished KSK keyrec \"$kskpubsetname\" does not exist; unable to re-use non-existent KSK\n";
+				exit(1);
+			}
+
+			vprint("reusing existing Published KSK set - $kskpubsetname\n");
+
+			#
+			# Get the KSKs.
+			#
+			$keyset  = keyrec_recval($kskpubsetname,'keys');
+			@kskpublist = split / /, $keyset;
+		}
+
+		return;
 	}
 
 	#
-	# Get the Current KSK signing set name.
+	# Should never get here...
 	#
-	$kskcursetname = $opts{'kskcur'};
-	if (!keyrec_exists($kskcursetname)) {
-	    print STDERR "\nCurrent KSK keyrec \"$kskcursetname\" does not exist; unable to re-use non-existent KSK\n";
-	    exit(1);
-	}
-
-	vprint("reusing existing Current KSK set - $kskcursetname\n");
-
-	#
-	# Get the KSKs.
-	#
-	$keyset  = keyrec_recval($kskcursetname,'keys');
-	@kskcurlist = split / /, $keyset;
-
-	#
-	# Get the Published KSK signing set name -- if it exists.
-	#
-	$kskpubsetname = "";
-	@kskpublist = ();
-	if (defined($opts{'kskpub'})) {
-	    $kskpubsetname = $opts{'kskpub'};
-	    if (!keyrec_exists($kskpubsetname)) {
-		print STDERR "\nPublished KSK keyrec \"$kskpubsetname\" does not exist; unable to re-use non-existent KSK\n";
-		exit(1);
-	    }
-
-	    vprint("reusing existing Published KSK set - $kskpubsetname\n");
-
-	    #
-	    # Get the KSKs.
-	    #
-	    $keyset  = keyrec_recval($kskpubsetname,'keys');
-	    @kskpublist = split / /, $keyset;
-	}
-
-	return;
-    }
-
-    #
-    # Should never get here...
-    #
 }
 
 #----------------------------------------------------------------------
@@ -1335,25 +1450,35 @@ sub setkeytype
 	#
 	$keys = keyrec_recval($signset,'keys');
 	@keylist = split / /, $keys;
-	foreach my $key (@keylist) {
-	  if (keyrec_recval($key, 'keyrec_type') ne $newtype) {
-	    keyrec_setval('key', $key, 'keyrec_type', $newtype);
-	    vmed_print("$key now has type $newtype\n");
-	    if ($newtype eq 'kskrev') {
-	      my $path;
-	      my $cwd = `pwd`; chomp $cwd;
-	      $path = keyrec_recval($key, 'keypath');
-	      $path = "$path.key" if($path !~ /\.key$/);
-	      # Set the revoke bit on KSKs
-	      my $cmd = "perl -pi -e 's/(DNSKEY\\s+)257/\${1}385/;' $path";
-	      vmed_print("setting revoke bit($cwd): $cmd\n");
+	foreach my $key (@keylist)
+	{
+		if(keyrec_recval($key, 'keyrec_type') ne $newtype)
+		{
+			keyrec_setval('key', $key, 'keyrec_type', $newtype);
+			vmed_print("$key now has type $newtype\n");
 
-	      System($cmd);
+			if($newtype eq 'kskrev')
+			{
+				my $cmd;
+				my $path;
+				my $cwd = `pwd`; chomp $cwd;
+				$path = keyrec_recval($key, 'keypath');
+				$path = "$path.key" if($path !~ /\.key$/);
 
-	      # record the time when key is revoked
-	      keyrec_setval('key', $key, 'revtime', time());
-	    }
-	  }
+				#
+				# Set the revoke bit on KSKs.
+				#
+				$cmd = "perl -pi -e 's/(DNSKEY\\s+)257/\${1}385/;' $path";
+				vmed_print("setting revoke bit($cwd): $cmd\n");
+
+				System($cmd);
+
+				#
+				# Record the time when key is revoked.
+				#
+				keyrec_setval('key', $key, 'revtime', time());
+			}
+		}
 	}
 
 	#
@@ -1646,11 +1771,10 @@ sub zonesign
 	#
 	# Build the collection of KSKs.
 	#
-
-	$ksks = join (' -k ',
+        $ksks = join (' -k ',
 		      keyrec_keypaths($zone,'kskcur'),
 		      keyrec_keypaths($zone,'kskpub'),
-		      ($opts{'rfc5011'} ? keyrec_keypaths($zone,'kskrev'):()));
+		      ($rfc5011 ?  keyrec_keypaths($zone,'kskrev') : ()));
 
 	#
 	# Build a set of options for dnssec-signzone.  This isn't strictly
@@ -1667,6 +1791,7 @@ sub zonesign
 	@usekeys = keyrec_keypaths($zone,'zskcur');
 	@usekeys = keyrec_keypaths($zone,'zskpub')	if($usezskpub);
 	push @usekeys, keyrec_keypaths($zone,'zskpub')	if($useboth);
+
 	#
 	# Build the zone-signing command.
 	#
@@ -1698,7 +1823,7 @@ sub zonesign
 	}
 
 	#
-	# Add the ZSK's keyrec to the keyrec file.
+	# Add the ZSKs' keyrecs to the keyrec file.
 	#
 	updzonerec($UPD_ALLKEYS);
 
@@ -2255,6 +2380,7 @@ EOF
 
 	return($incstr);
 }
+
 #----------------------------------------------------------------------
 # Routine:	rollksk()
 #
@@ -2286,26 +2412,40 @@ sub rollksk
 	# will be marked as kskobs or kskrev and the keys may be moved
 	# to the archive directory.
 	#
+	if($rfc5011)
+	{
+		if(length($kskrevsetname))
+		{
+			#
+			# Remove keys from old set and remove set.
+			#
+			keyrec_setval('set', $kskcursetname, 'keys','');
+			setkeytype($kskcursetname, 'kskobs', 0);
+		}
+		else
+		{
+			#
+			# Reuse old cur KSKs as newly revoked.
+			#
+			$kskrevsetname = $opts{'kskrev'} = $kskcursetname;
+		}
 
-	if ($opts{'rfc5011'}) {
-	    if (length $kskrevsetname) {
-	      # remove keys from old set and remove set
-	      keyrec_setval('set', $kskcursetname, 'keys','');
-	      setkeytype($kskcursetname, 'kskobs', 0);
-	    } else {
-	      # Reuse old cur KSKs as newly revoked
-	      $kskrevsetname = $opts{'kskrev'} = $kskcursetname;
-	    }
+		#
+		# Add cur KSKs to revoked list
+		#
+		while(@kskcurlist)
+		{
+			push @kskrevlist, pop @kskcurlist;
+		}
 
-	    # Add cur KSKs to revoked list
-	    while (@kskcurlist) { push @kskrevlist, pop @kskcurlist; }
-
-	    $setlist = join ' ', @kskrevlist;
-	    keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
-	    setkeytype($kskrevsetname, 'kskrev', 0);
-	    keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
-	} else {
-	    setkeytype($opts{'kskcur'}, 'kskobs', 1);
+		$setlist = join ' ', @kskrevlist;
+		keyrec_setval('set', $kskrevsetname ,'keys', $setlist);
+		setkeytype($kskrevsetname, 'kskrev', 0);
+		keyrec_setval('zone',$zone, 'kskrev', $kskrevsetname);
+	}
+	else
+	{
+		setkeytype($opts{'kskcur'}, 'kskobs', 1);
 	}
 
 	#
@@ -2723,25 +2863,25 @@ sub helpchk
 #----------------------------------------------------------------------
 # Routine:	System()
 #
-# Purpose:	Run a system command and optionally print what it's doing
+# Purpose:	Run a system command and optionally print what it's doing.
 #
 sub System
 {
 	print "\trunning: ", join(" ", @_),"\n" if ($verbose > $VERBOSE_LOW);
-	return system(@_);
+	return(system(@_));
 }
 
 #----------------------------------------------------------------------
 # Routine:	System_output()
 #
-# Purpose:	Run a system command and optionally print what it's doing
-#               Return the stdout text as if it had been run in `s
+# Purpose:	Run a system command and optionally print what it's doing.
+#		Return the stdout text as if it had been run in backquotes.
 #
 sub System_output
 {
 	my $cmd = join(" ", @_);
 	print "\trunning: $cmd\n" if ($verbose > $VERBOSE_LOW);
-	return `$cmd`;
+	return(`$cmd`);
 }
 
 #----------------------------------------------------------------------
