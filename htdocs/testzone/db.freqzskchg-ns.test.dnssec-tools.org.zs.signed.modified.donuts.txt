@@ -1,0 +1,106 @@
+pastdate-a.freqzskchg-ns.test.dnssec-tools.org:
+  Location:    db.freqzskchg-ns.test.dnssec-tools.org.zs.signed.modified:288
+  Error:       RRSIG record for
+	       pastdate-a.freqzskchg-ns.test.dnssec-tools.org has expired
+
+pastdate-aaaa.freqzskchg-ns.test.dnssec-tools.org:
+  Location:    db.freqzskchg-ns.test.dnssec-tools.org.zs.signed.modified:303
+  Error:       RRSIG record for
+	       pastdate-aaaa.freqzskchg-ns.test.dnssec-tools.org has
+	       expired
+
+reverseddates-a.freqzskchg-ns.test.dnssec-tools.org:
+  Location:    db.freqzskchg-ns.test.dnssec-tools.org.zs.signed.modified:310
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.freqzskchg-ns.test.dnssec-tools.org:
+  Location:    db.freqzskchg-ns.test.dnssec-tools.org.zs.signed.modified:326
+  Error:       RRSIG is nearing its expiration time
+
+pastdate-aaaa.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       pastdate-aaaa.freqzskchg-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature has expired since:
+	       20060825161912
+
+futuredate-a.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-a.freqzskchg-ns.test.dnssec-tools.org type: A
+	       failed to verify: Signature may only be used in the future;
+	       after 20070825162412
+
+reverseddates-a.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.freqzskchg-ns.test.dnssec-tools.org type: A
+	       failed to verify: RSA Verification failed
+
+badsign-aaaa.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       badsign-aaaa.freqzskchg-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
+addedlater-withsig-AAAA.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-withsig-AAAA.freqzskchg-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+badsign-a.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-a.freqzskchg-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+pastdate-a.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       pastdate-a.freqzskchg-ns.test.dnssec-tools.org type: A
+	       failed to verify: Signature has expired since:
+	       20060825161912
+
+addedlater-nosig-A.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.freqzskchg-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-A.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.freqzskchg-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+futuredate-aaaa.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-aaaa.freqzskchg-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: Signature may only be used in the
+	       future; after 20070825162412
+
+addedlater-nosig-AAAA.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-nosig-AAAA.freqzskchg-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-AAAA.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-nosig-AAAA.freqzskchg-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+baddata-aaaa.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       baddata-aaaa.freqzskchg-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
+baddata-a.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-a.freqzskchg-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+addedlater-withsig-A.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-withsig-A.freqzskchg-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+reverseddates-aaaa.freqzskchg-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-aaaa.freqzskchg-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: RSA Verification failed
+
+20 errors found in db.freqzskchg-ns.test.dnssec-tools.org.zs.signed.modified

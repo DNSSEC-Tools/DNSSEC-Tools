@@ -1,0 +1,2325 @@
+; File written on Mon Sep  1 10:19:32 2008
+; dnssec_signzone version 9.5.0-P2
+test.dnssec-tools.org.	600	IN SOA	dns.test.dnssec-tools.org. hardaker.test.dnssec-tools.org. (
+					1220289548 ; serial
+					7200       ; refresh (2 hours)
+					3600       ; retry (1 hour)
+					604800     ; expire (1 week)
+					600        ; minimum (10 minutes)
+					)
+			600	RRSIG	SOA 5 3 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					VmDS0JX1at7rkHoBJqrrRvzkdvKBIFLpqalf
+					lq5z/2iarkqs2hNH6fUwhI0oyJJu/mi1ih+J
+					M0I+ABltjie8o9WUvZztJ0qR5bhd4aptu8VP
+					fP/g9OPOEV4uA3jhdlq4iDa68NjMQ/6qZRcn
+					TQ14iza+uafZ1pBIe4XX3M4+DM8= )
+			86400	NS	dns1.test.dnssec-tools.org.
+			86400	NS	dns2.test.dnssec-tools.org.
+			86400	RRSIG	NS 5 3 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					cmfQi0HRbtFcN2I57Xu4f9IaT6PVMai2h8I0
+					UWvt9yH7IR6wsheQYDG4hwuz4s3od6nOv8sa
+					BBDPRy9VBnnR4CJ5dawVN+NCo4Psp8SMyxVO
+					PWywa/tDectqacACzaeZSZd3iyFcJS5RbyNb
+					a1HkGw3HNJ5OBHie/9D72pfFVrs= )
+			86400	TXT	"DNSSEC-TOOLS test zone for test.dnssec-tools.org"
+			86400	RRSIG	TXT 5 3 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					fJMkW/u4XtVS3FmRaHnhFYTRXa/HMnAqRQvD
+					BIA+KgVrx0S7szZfztxAncY09A/OlXT/r6A8
+					ZuPDZmG4VCKFRbZz+mMX+Fdh6q/ZzBa1n1jv
+					UJrE0yrJi5iAYw8xIm4NB+dgdApny+SeSrgq
+					aSE7UtOgu2RHsiPClIw5qT/hBlM= )
+			600	NSEC	baddata-a.test.dnssec-tools.org. NS SOA TXT RRSIG NSEC DNSKEY
+			600	RRSIG	NSEC 5 3 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					GdSi4UbnCf0eGowh8WRFBD0x3UbDJ0w1z7MG
+					Cqmk1PLBDm1UIhr1n+RGeoCBc9GdG4zDFsSB
+					punOMmglUq+CWyFSadnvccBvPBaao3E2un1r
+					2Fh2R4C3475Llebsj/pfLSdmuG7PuLGrN9k5
+					7/dmSAbK673zXRLMq9kwnkh0kMg= )
+			86400	DNSKEY	256 3 5 (
+					AQPXOnkFeyoD9Ypwt4rZgLoeO6hwJtFx+k/L
+					Nqv6CMSZAsPm5mbEo3kedYZ9RlgTr1b7qH3b
+					so5qdYGJkz3u6j05GcoIJmwXlHQY+NtPtsuk
+					N/4Rh+jcyX8N2WdYhYGlQZ6W25ljszZ5F3mh
+					gnXrMz+o9S2t+l8ppM9LipPXuMhMFQ==
+					) ; key id = 19442
+			86400	DNSKEY	256 3 5 (
+					AQPgjVLwLeMvBCZSYvwabhRsJ0rQ5lylkc8M
+					9OrNoR1BLDep23A1uXbYq/fV9jwjFvIcI//Y
+					/3Hmmk87+DBvojKV5XngSi8B95wJW+w+IEuT
+					aTgPgFg3XiuX5LaU7G2Q6IQF2Fwpcw+gf613
+					srYCQAk1EflwDaaC0mX64gFqq3tisQ==
+					) ; key id = 62984
+			86400	DNSKEY	257 3 5 (
+					AQPUlH65Otuo6toxYX2zHCwdojmAKFa9gobY
+					WrNEojKQAWJuvGMd4okTnlOJTL0hBWKC4Uhf
+					40ePpDR8QJayeI/eZg29UZLMBleZ96a0mSo/
+					JU4Sq3G06X9d5Z01EVCvTkJUHHEvvmzZhBsO
+					+43NcWYrSUoXX1JbXs9QKuO1BLPHuS5G/UfE
+					syVonfl39dGrEput1gDWxIvov2UENM2eX0LE
+					5ZIyGiX2uDdN4SVIa0Rd+F2pSCiddE1bYxIi
+					2IlW6bpeim+mdC1BDJkEB70+ekeBR3as5D33
+					9z+9KeMyZgPs82SAQswbGdZvkWL8mgSdbf6D
+					iuTkkNIUzbS/6fxlQO/GOdq0NlTr28sW4Byj
+					9gkpb2Clbqog72yJJ3s5CV4LGZ1jtpnoFcsK
+					wMlLnOj0X+L2iY7Spe5M9D59Jqxl9cAWjATs
+					SXG5TvCUNBT2Eh6Jw7OimThJe4pUmFxGqhpl
+					Pqs2dlnDgfcuVNf9lwa36Re7pUt+FlT0A9FI
+					Wk4utfUgZO3eWnKrw1Fw8QF9wKm252iscULN
+					zKwYvfK8NGSBOfyYRvAw7ZnAoxMKFIOLq3W8
+					IsFjti5dLhLYWpFEGZOT+eDc/lPhyaEsmsjH
+					QnEEyj4TmomV8n91s3H8IbrKu0cdIH1/k5iu
+					+sLi9EIAprOnxrxO+tHDiEZUoimBRFtETCcm
+					sQ==
+					) ; key id = 28827
+			86400	DNSKEY	257 3 5 (
+					AQPbjy5TVjquKVVTYjCYOHUHorMbj0LxpVSF
+					7/QAJTi+Y6hcMoQrWjrlaLSLNNa0wFDMxXnn
+					lD/KYj9GtX5Vq/dP/glW73lOU5CXrwXujvyX
+					p7Whvu8F2jLJEUoU1bZD12ZfGTmnflYblAJz
+					3lPNy5ZHiiSicD+7+uW0rSSXLLEwHd007jcE
+					MgrH6B/jjk3bCHnXnQMclTEx2k/dKqcs+Ohr
+					hc98oK8rDQz+Rq+uTOoscWHuKy8aORYDXCqb
+					UxS5VwIJxgLTC7DQ3c3qSOIkvWdAKJJTnPab
+					PWeELK15CIO3+uAC+oUyJ51EC2qpJlpJc6kn
+					EeCYNYZP/HBpaFS8Vz2j
+					) ; key id = 55926
+			86400	RRSIG	DNSKEY 5 3 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					WGveuaKMy+eQnGmtDhfHXS4KK/E6wUg3o1bb
+					2zyvdKVhPBM1WkRnCMmuqvzFdULgoK0QJXjt
+					Aq+Zb8CehNT0jg+1EX+OzotognBbnAAZz5aA
+					z8VoRtRkAkxMd+9f2HB6y/FATGfpnL928hyL
+					6T7mH33/JTl6bAvBQAlk/IzCmXE= )
+			86400	RRSIG	DNSKEY 5 3 86400 20081001161932 (
+					20080901161932 28827 test.dnssec-tools.org.
+					CQz108FFmuzST4ti37jhrH9WMhjFWSokmSpF
+					9ZnJWYZENAqLtb6pK5zVSKMcrTdSPua5wNZv
+					ixPEr17CN1hu/LBllCFGBbtiZ6LSBle0CwnV
+					GWDPLzVnducVBbu6uDnc+/FDKSp5CJqpMrqr
+					yfEliB9uqNozRyQDPPZxxV4muFD6NQxihKeB
+					iFBFtlyll4870ryVxfHLntscJn9+KWpx7H29
+					wqchnU0c47qoKoJOWhdD+qM0VkhioIeLxlsW
+					FUkxw0uJYwwP8bsOmyJOrU6UXOH0N6vKkRUr
+					ocyaAEd8IMZyp8Vgjh8ck1W/PXBb5Gk/7Onj
+					9BgEHGp01KoRRHa5M2Z8kVN9kZy4W45LqAPP
+					dKoSShKsqHlKOG+C1gZ5s2nRcsMgkxWsWGMJ
+					muoTvsGN63d1e1Rb25jn5WfyzIbHZtJhdQsQ
+					qAbiabcPcN4qnFRNAJwXCU9AWAzj5G7L5yTG
+					Lz4ghmKWHqYSjuQk9d3eC3tV3zSTBezLn/O6
+					5OaXJpBRsssCgccR2rP497tAFl/vAg52V2sA
+					3S9pM61D/gF2/MeMfw9VkguBeZ/2zxZpRzDn
+					0XBRKfqYnAnRbYM8NIAE+32N3Xzq0+KNONXL
+					vJY6vgqqOSRQDcA58ZcLJOOM7l6LZIRgC5PZ
+					UZNR6dE6lvqwUyA2b+Q0FE0BOdoC5UUSFR0= )
+			86400	RRSIG	DNSKEY 5 3 86400 20081001161932 (
+					20080901161932 55926 test.dnssec-tools.org.
+					uIDdslF/iPgozjPRyeU8zDOhqMYdbl2xDpf5
+					9yphcEanb98eSBYj0nPB45uSxv6zgYC4gPTh
+					8QRhSsj3Nu5r6HwOXUAngyXfSPX5dhOFBVLz
+					BLpoUzzaxUIJnJHB+V7zq2jR/mL96am4SIKR
+					jONWU5O0EjTlpMMJsZz95iN17tPgpwrVjprE
+					r4BRIL/O3iJ8q7mNqGFIZzTl32SvApvbnr8W
+					J4Xh2iWVjKmJFaJwIa0x6SwAQaYCyCR7g5xi
+					nMn90mTqDCGNdrBwXjKs8a3pATTduXiP6cNY
+					0z1+UE+RF6FQ/3imndLsFzgF3kUqf1XN0m6h
+					XPVMvVrD3x82lDilKg== )
+baddata-a.test.dnssec-tools.org. 86400 IN A 168.150.236.40
+			86400	RRSIG	A 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					XFaCHdEZxH3T8SDIbQwsf3UGf1+EAsIOMXff
+					jsZxcO0GJL1/54LFg5A4oWDTL73g47rmw7Ke
+					upV3aTRINJK5C6q2zdJo54AVYHjqmafqsRTU
+					4qVr/Z7SyI2ri+Dl1fQw7DRfjnXN69QseSaz
+					BPo3a13aS3HZrqK4CkhCKDTB81g= )
+			600	NSEC	baddata-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					vYeBsciVDIhGAnVRGPnqKLGozdmmSqI9J7jm
+					ydaRNVTHzX/mmr224itW2XSGBupeA2RUJKbT
+					U4FkCSNtEUJu4Cz5NncHXr4/Nkd+SmdpVC8n
+					Ckw3Uu2pJBy4KNfD5kPpHGDozvniyId9F9gH
+					LuT6bRcc+7RTX1nubNimoNIjeo8= )
+baddata-aaaa.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::0
+			86400	RRSIG	AAAA 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					RQ22M5JdS3QG8krO7NNe9x/y4L4H5mTkUeA4
+					VC4X0wCNXe3yUwVZKsA1UTx+WxoQMi0vfmi8
+					MsPQccY4sLoZpbZu6H2p4xflGnCwJeitAjod
+					kK+yX8S2ylE5gf+WghgQ9HnhgbgknhslHHPx
+					beHWmtonQ4Sf00IvOJtvd6d1LDY= )
+			600	NSEC	baddata-cname-to-baddata-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					vh6y/wQUwYQ1/ZnxOg1TEwdimaBjmpXc8mAi
+					V+AJRBX6/t+JEdrZOktZcTncQvLwh8QZXkKk
+					eKs9LipGhs9xHInDOwjxW4xi9snpzwMLCq34
+					CZD6eP1VnedesmvywOUlEYSUcFBgm5xea1Gy
+					cvgpv1sJ5uRrcsmrOzhyso5V6/w= )
+baddata-cname-to-baddata-a.test.dnssec-tools.org. 86400	IN CNAME other-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Qe02ZYcx2eeKBa1fHsJHzXkuzN+Wrh9v3JX+
+					FVWjWU+ik5r1hDKEMqFditgwR2RlpIrGi1aU
+					UBeecH+B7LrKNXq6uO0twh1/ZLSZYPqxZ4iY
+					4lJ72pm+c4QdduEmy4aj0cDeBU58yogUlmN4
+					YnulSzFauIdxo522BdgaxObNYn4= )
+			600	NSEC	baddata-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					QRQRChDWuLfVPvRVKDkWu7xXqyK6iVamHrTG
+					wrGGrVmx2MAvOn2zCB8rmhp9xI8FcWhlU0Q3
+					662eDapk5iR32102skDdw05oRgvWaA0kj67c
+					8n/C54FDiMjAVF20L3O6t5XSWK5C1E91yByI
+					bGutA/sREa8JwcscDA/OHCJ5rDA= )
+baddata-cname-to-baddata-aaaa.test.dnssec-tools.org. 86400 IN CNAME other-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					tArtki94obpsD4QVQkdxNyXCuOpL5IH1tLIp
+					puInBCmKQuXKpdE9V/oBkBnZxz1qLe5hTYW2
+					Sifh0PF1QEbhkb4d7QWEAgjZ89YdGmgeRMML
+					g++PowAaAEXJ6c6ntUyoZ0i7wYd3TVgy0o6k
+					QirMukjyNOIXU9yMygfygzOaxik= )
+			600	NSEC	baddata-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					1tC6eZg/X4dWfH/0GFpakCTHpvgnCwtaf3Yg
+					cMSZ7zJkrn3bBP0Ms2JpeTwfghcazZfxpAL4
+					j8fV+nFu1pH2QILpRCoJergmdDNA56Alxja1
+					E4idbi7SS7No3hNaiPQYAQarFs/H9G0BM8cP
+					zteG302YwcIOSBDSyYpqLtkOtXM= )
+baddata-cname-to-badsign-a.test.dnssec-tools.org. 86400	IN CNAME other-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					EQ/HuvMqw+EvhYy5xVSwBOAPGAVQ0XpS7UMH
+					4qm3dcJlN3JwnsQ+P1WRfX8hk4hPIY9hoA2q
+					SH2ZD2fvzOkdqKT+NSyYLTFetPS0+OEotYTC
+					cfbIQn/1KgrrlSrPE0y8hc2idwvvz4ZinSpQ
+					OifWeUB/lieUfdKDC2ZAfmH/X6U= )
+			600	NSEC	baddata-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					PV0mJhX1u3rq/x/nK7pLyDYIjWusNOMxdfad
+					5s+vDYD5C9mVW0im2h7inima6AogPNwQOzb9
+					oS9zTgPlciyhGA/DZm3pV7x1fCXoxm/svepd
+					6J8mxwgQOzGjmeBAnP4ZZTasuuk6tMYKRxD4
+					BVkVus/6d3tWmHVFbFDyH6YYLx0= )
+baddata-cname-to-badsign-aaaa.test.dnssec-tools.org. 86400 IN CNAME other-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					DMwhl5i2Lr0FyW8TBgmdlmVhdNMbxLPCZdfd
+					zHkJY4CCIjIyGyZWRFnzXU/MsiKO9dgGtlpu
+					kReEhmM5wGf6CuOf8du4Ba9q4qkH2p7GqlFX
+					58KkOwuqSvDnmER18kyy4c6zMVLEeOl4D96G
+					+hi8tcalXQcxQJz7hUJjZeZ8u3I= )
+			600	NSEC	baddata-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					n5Ka+hKcF6Dcc8gljTSk8jSRCOVj8XkvxmBJ
+					IYWefGrVIXr+VSaYx4Fjym5A0tINY2K18F6P
+					R4OvwVH3SOJG58R9t9NKmluKT3SM/0bjzYlv
+					UJpg2sz8jhJuPShUgKE8PS5ZuCCuYV/H39d+
+					Ceq6iDNPoGJmJS7NgkshlxpE/Hw= )
+baddata-cname-to-futuredate-a.test.dnssec-tools.org. 86400 IN CNAME other-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					dwx+eNm3xfU97OkUdJ6wGSpmylRXfMeqfkKE
+					d3CU+XYv3jbHGiIR2ft/SB/ofJMzUdxJiwZg
+					5CvDCV+pkJjrxF90Hm5d1G1ZQDO78PYa0pul
+					GZcfPdAIdSY17DtcXmGQCKVFG6Iq+OVrECMs
+					lAYVAvy8oh4xIs6QFVxnJ9NlNoU= )
+			600	NSEC	baddata-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					qCH0hRvZrDB2Nm4FlJ/XZ15bAKDRXoU1yXdx
+					vQ1I1tyG1IM6k5uu93T92BxW/NNRpQIfiqkZ
+					r1/OySuYk6b3VirVm14ZstvNPmVp58Qgk8IL
+					VmXOKScN5P2XqnN2dtViMVcWE9Nen9IA/6MQ
+					79FI0DphLDvGpD2t61EA8ReeMWI= )
+baddata-cname-to-futuredate-aaaa.test.dnssec-tools.org.	86400 IN CNAME other-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					LDbC5t7kC9XyEEPM35mlqaleDsdAwNLjzZuw
+					lHF9jouGRUg1zLRJ1EH37P7Y0oJ4DqM8h2Y0
+					6XM5bZcAMWKrdfypjpZYOs2/fyfkCkz1MB0c
+					31nWdz+7UKA2zGoPBv0WY4UxHxHubxAbQitw
+					NWofNgm4QiADXlnz5kGh46pd+rA= )
+			600	NSEC	baddata-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					gTCD/0ZzqvYx4EJKaS21SkdMqGVLCLD+Zd30
+					67Pd+vUXZC/n7GbejnqiNroc6AzigOaEAtep
+					9Jp3uIEdLrQzzKVZvqXCEFnY7ZZCzTqjFtgJ
+					uuTylY4ObwBRCtHWUoS7lhyQqWGGF9M3usrf
+					KdreC837G/dpTQ/JUSXPBg2P9ns= )
+baddata-cname-to-good-a.test.dnssec-tools.org. 86400 IN	CNAME other-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					hbWIxvll6DzIk8ysUQbNdKGHOOu3hLULHLE8
+					5OzSfvnTcxVZKBhUez9DX39exCwq/Z9dwdye
+					sBgH7WoyhRHWMJHIUabi94hwv9dbe2q97PxF
+					V54oiqCQtVU6SzdzZfFpwfwZg1mYpZSFdAxR
+					N3UhP5L5JKxhVy6stZm4CzvmRYE= )
+			600	NSEC	baddata-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					N1FGrLqnyKBQamUJYtLVPkRU6irTpnx9y6iW
+					/MkH+rkZMahPIT9Xfx50JpL8mljcxz+0qZUh
+					vh33iqoRaHcq6W0XgS+gFWOk3wF8zCD7JGcS
+					Bghh1PiFB2DiAZD8zlbYR2Rf9WAjpMOViqyp
+					2/3hsWJgRnLZIMP6ueJU8hiuodA= )
+baddata-cname-to-good-aaaa.test.dnssec-tools.org. 86400	IN CNAME other-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					sJXc70V0g52FWNcwDuvb9F580H0Feg05QbiD
+					21hZ7ulMM6NdkMnD6uVa4+4Q0xMjx3SqHakY
+					OgLveToQfso5Llskx9FcKEUrxeLy5kOJgYoK
+					7S1ouhX1JnfXrFGyTZCDInCymW15isYOFb8C
+					OOviKbfUAf0nXcEv9mvYXPKe8R4= )
+			600	NSEC	baddata-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					vjda7tMjqo28ZTN3tfjLmZKxPCeGA9STkKcm
+					iG/GNIvRTcRfxxNRdS7RoYsOqo+1biQz+BIr
+					dHYPUI2V8RTjT0z3u2VaurP9ctzaOxGLjSua
+					rVyZzhwGCBESqHL76IyjoPU5z1+AtKousjA8
+					pvLrlnxBHRE5fNo6zZ9Q+X1750o= )
+baddata-cname-to-nosig-a.test.dnssec-tools.org.	86400 IN CNAME other-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					RMszkXxmeilfCQKdUPg3xYkFE3lS36tAWSsu
+					tqLx8imm2Kg+p/bYyOzJSzaQCN1JmaetWKF1
+					/h6PzbLwRBAe2OK4yXUkZe7MH/DWltkyx3vp
+					lGfUzoZlTfctTyWtnd5psbojpvmN2UykXVDA
+					XRZJXCvrIhmetE/K3SDGDeNoT3Q= )
+			600	NSEC	baddata-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					lX860J/u8cjTCHtMdhiCAVKl+/i4E/UIojx7
+					NFWsmoZIoZAbqdH7hn77cri3lS1Jf0ELJmxe
+					LYMPBHIWiyXHZMMh/0OySIXATo4ossfOHXxh
+					isA5zEwiSy90UF0WmhVe8neX6tK0cWb2Fzlt
+					hdukGvT4/9pA0Oze+HcGPmMIsqU= )
+baddata-cname-to-nosig-aaaa.test.dnssec-tools.org. 86400 IN CNAME other-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					dHF4XzmIJ0r2AN4cwAi8jmAckspdMcOqT67M
+					PXAPKW84lP44i792/R3Ov9NMfDjC7FZajZ/G
+					V1j0q+vZN3L7I7+mTDT3pAAfslkfcLnwAd/n
+					3Jja/u0KBFHctXTiIMWasIurG6MaO7fr0Zxi
+					X6UvxMy+Vz1t5iia6l5sMtMWdQc= )
+			600	NSEC	baddata-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Lx0c8MOY3OEGm7bomRfcB4lLPjw+z4TdVMKo
+					NRUJfoNAyitG31k+3WziEi4bgURaeOJj5OmJ
+					qOPQwonjI9c5M58ItkTK5OTupJ9V1Wys439g
+					Z7VCr1iDD9bRXsQCelHJGf/wH/iRxTfbA0M1
+					vuGqKZ7XhVM0fxhdfY8lnJthIfo= )
+baddata-cname-to-pastdate-a.test.dnssec-tools.org. 86400 IN CNAME other-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					tsr0SS+lTP6DzsctTfqwjFKZIlAo5vR72EpJ
+					l1cc4t6pIvQUtBnBtGhTSJ6wGIZkXq8ISw+P
+					9WTJkU00nYHigg7UNsfNeaUQD89nGYgu7Sht
+					tLHwPqxcPL2ovcxZr3MvG4zH6To7AfX0MMgE
+					ZQ81BsM/Ta72sjIu93q0h6MLdC4= )
+			600	NSEC	baddata-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Dy09/WOo3A+58AMnh9b288mW5ydBvowqvps3
+					IIw1FLos+bgxy3NjyXanq0SCr8RqxocYeCFY
+					rQxylNyQuRplX1NgPiqYOLEp+AKmPWDItI14
+					Tqy66wFQ51r/2dJFiAxLrZfSUD+hYAzVBn+9
+					+3VCBEAUSogCfHv5pbQbaXRHYAY= )
+baddata-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN CNAME other-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					rVdCL/3qF/2OZjdfROw1wF3UJll5Pnlpb/r6
+					jNPXPJztjIP8LTosbwX4WCfmcfdZ1LlR4m7R
+					JGcVRPFEPSttjSLoJRuL2HPm37zgmDFUSk2y
+					FpebttK/QOtoVse62xoOt9YYN6+SQk8tS7Oi
+					mzqq+e/LCBNi3x72hvrlbRxVsqA= )
+			600	NSEC	baddata-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					FQcs/ugHOyrLWr0VW2LXe7cBzhBniPMFkUKp
+					NU7Rus10/jmETPYWA6Qr7q1lzA9xs6JTFRsv
+					NM4MlhUyQbe5BczFXz01eC5A97ykU+6HAT83
+					SsBBoFsZ+RAAhSw5B81u5cysIBMXddv5jT7G
+					Ey/52ho3GO6/rsJnrEfM/df4Svs= )
+baddata-cname-to-reverseddates-a.test.dnssec-tools.org.	86400 IN CNAME other-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					xdOiNBFjO1Qn31SzOHwYj505jEEHnzZtHiAd
+					oy59RCwm9RG8I5tsRK+5CUlXu9s1THA6cJ/F
+					26C7p8iW44SHDHSEJ6QTJht937CdBi331jyc
+					ahHysUawX0dozAqUNTZn/aGTMnKEwrmsjSdT
+					HH/cTevWr3cBTJmHHGSdppw8i1I= )
+			600	NSEC	baddata-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					qiTIsC+K+lV7jBEw9dNEgUZKKvEF7xdEspuu
+					JtsvK0028G30wrCJcc+9DdhAjkWhF+qBif6n
+					XQIpBnjzY38W1et+VgBAMKGtkdkV38VP1ZZc
+					iX8W1jKvIKXFtBD4X8r4XUY+abrUvbqx8itW
+					JCiKapk8JVc/1hPKT7jHljIK6xw= )
+baddata-cname-to-reverseddates-aaaa.test.dnssec-tools.org. 86400 IN CNAME other-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					tgTFi1so2D1F0Vo2M9P8X9ibEBUjRpEVqeIv
+					M8M+wX8MbiIB97TfdC3EgyR0Z77q2y9Ri8tG
+					YQJxCuD6xvnyEFTd4s5OJoFO2CEjAVxKiuJ1
+					m4+99RWYi7CL28BPTNcxwZ6YDtbzpQqQrfp0
+					Hx+N27RitmeAoE8JSn/g35oJt8M= )
+			600	NSEC	badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					FG/ivtBl9wGGIKmIDBvyn9AQnwx++XpGvdXT
+					9I9J860wuClAIYCepdqmY2Xx1QC8paHXJiU7
+					W07/AnMA4r/7unQA1XnvZ/gCmD0vPIlwdlFC
+					mWcSBvShzTPXUgfRq3OFFoVzhJemfKvYCyYQ
+					uPCuPoUxlct9jpu+JBxbZMnhT68= )
+badsign-a.test.dnssec-tools.org. 86400 IN A 168.150.236.43
+			86400	RRSIG	A 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					AaOJIYEZtw32uRuH7kLPdSJbqrpFRl9lalWs
+					BwyBk609FZnToKwyW+NejUAu/wOPwHVvrL0e
+					RXzGLndqbXiFxNUGibwnUuSmW35d1Vk+4FuS
+					DIaqN/DTnLYQjLOfg/+ZfoUFs5norgHsjYyN
+					x0e+Xz7wFnExEaGWIY/RM1tzpdo= )
+			600	NSEC	badsign-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					BM74qY1LIkN4PNC59hWz4PSj+tKX++moj++Q
+					hKQGX+CDirbaQeLew6QkeckazH2dt+LSqS9D
+					QutTw9l/Js9NZCdDq4VyaNP567eEzTTKI4Xo
+					u65BDPbnSo8JC9tfGsxkK6q9GWAaPtyI9Sc1
+					S1ccU/+dMdDKcyBPXCvREvinF64= )
+badsign-aaaa.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::1
+			86400	RRSIG	AAAA 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Mn0rAwUDlZjBw0LhCoP+y0OGhBZieCW0h0Yd
+					yl8doCQiGQvEKsexok0OadExFYOgXRkQ+ZqR
+					tqkcI1Qf6Dl5rgFQ6hJnWmiroXaYpO/SpxFp
+					BAbqtrtL5wp3yn81wfAjyq+lKBdCzVJrnvqq
+					xCRO9UKqhEYTsQvfszymp8yhKno= )
+			600	NSEC	badsign-cname-to-baddata-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Qvn7SYMX88+HN7EOspN5/XmxxXAVeBArZrKt
+					Guad1iu+ga6XG9Hg/Df5q7/FZPEYzwv6zOqM
+					j529ovYvNgjIHAkbitlgCjSF6iFaxlivYSEU
+					P+EfZySptT4um5PAsD6+61hnTK7tGBfuR2lP
+					bCDWjTwC/5VP5/HGN9DLk52Xuz4= )
+badsign-cname-to-baddata-a.test.dnssec-tools.org. 86400	IN CNAME baddata-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					VBnUVQWsa8rm3ZeO+5SxKKuR0UUsgMOeux9R
+					nZ011uFovwKJc7py0gsjQ4hfv50pnLdkvWcE
+					RNC1KYfr3rSs8qW120C3VUqxGHQognBHhMnu
+					5Gw/KnFbKoSJdhLXVZmiiFuvpNAmtEGkadtp
+					xrBLJlMPezxiczoBE2bXGrsZ8s4= )
+			600	NSEC	badsign-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					qoXG9iYqhnhX3dT7b8322yBxGCFpaJDndcF9
+					43RQtLTwa67WR0tdrC6mNphxmnapo+FNXMl7
+					Yyr37sb8YlCesZ5rYTpMr1vXCD2iBFEk3tQb
+					uTgULUfYfephP0QaRFO++EMgR8LHTnJ+my5e
+					Popm5gMQZZmfu0FcUiwMn8YLQlU= )
+badsign-cname-to-baddata-aaaa.test.dnssec-tools.org. 86400 IN CNAME baddata-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					L2uwm5pvD/2eXX5wFhPfXJdj6XIyUTQyDhTR
+					+arRclsh95+ULiMoyxjDEtcoPJj/2fNUKb1F
+					yLxNPndYwqrIpdRQAzkgqHAHyIu1xqjrWDLH
+					Dzlz2MwX82sGTx4Mh8UHtXJVdV4xE85JYKnv
+					x1s9vmgIBalEbYqXaVTV3WzAlbU= )
+			600	NSEC	badsign-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					e5JMuqCIaHm31+Firk5iOgsenH7neRijzLt5
+					Yl5DiUSwMrfK3DBA/qS4q3vihkmmfDc76Aim
+					DNkzb/bxIeegOiamfSQLfc0lkgu7z16jlgmX
+					JbgnWj1JWuHhK0Nk3HvnQpvt1G2rcAecH/Z+
+					UlaEOO0c+EXosrfJXrpKuaoiCBg= )
+badsign-cname-to-badsign-a.test.dnssec-tools.org. 86400	IN CNAME badsign-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					vKhZ4R6MfPAjaTV1AZjS7kHuJUsesmRwVUDr
+					CUCvSiK8WH3n/CQWe4eCtkw8THkAJgXI3zBg
+					MeUIo1OajciFAqfLTf1gcGvotn4LHKnhPIe+
+					0bimd/UGgYtfXiJDJD1U9zd/GGI56I9OCE4j
+					x8PuyQX/u4se5OSh/dGaVniFLvI= )
+			600	NSEC	badsign-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					rckWWX3HHvsvOfIs4Auk851iOcj8k5q3k1mD
+					YpuT0OSXnrh8dQfR7ieQOEeLn3c3bad3WLsT
+					O48YujhC0qaKIMv0xzmaWVJePhGqBOuvn+VN
+					D5u4caxXXVyJpb/g7R5EBD5s888cBHqoWAdD
+					kMHUFUZV6iIbcNWXmVBV6LEsfww= )
+badsign-cname-to-badsign-aaaa.test.dnssec-tools.org. 86400 IN CNAME badsign-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Iv/FKop+7sXqtxDZRyH+z53DtlheC5zu7QLc
+					as9frBghL93Q+Ty+vDFcTreonnXXfaTpRXIs
+					gsjQihhUW4C/m/tIRGCVgKvpMN6ToXb88bPy
+					1xlhYxUsg+wIoX3EVLFtbQHLEK3OBKB09tEc
+					xZfPe2wWPqJX1RVSrPayOODGLWU= )
+			600	NSEC	badsign-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					KrIMM0pmFS0dGwZrys3+YgnZGuxRN8PfyMgO
+					PW8crmOu4CYPA5nzW6Tb6WLwY44ZF+50Mxtm
+					fxK4UsFYEkOWfakPmWU81vImHcnp75xOA7ek
+					tGCwZrqMZ4FyRb5Zx+WuAs43MLgz6i77IU6Q
+					L3bbI8mnv0PFuSW0R/x/bmBhIqY= )
+badsign-cname-to-futuredate-a.test.dnssec-tools.org. 86400 IN CNAME futuredate-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					DcgHINqtn23wKqpCLkTPscuN2zxtTlS1Y9dX
+					IPGq5HZEKQDinqxjehhw4pnYM5wkRdBUszz1
+					Xc8NVsvIeDErD0+A4mlH9UixFROijRwzqQKU
+					oGBzQDSvmcJPihIV2tA4AkdYqYE/dCKpgfEg
+					xH/K3Mcjh/xGaEA1l8yfqqjFlKM= )
+			600	NSEC	badsign-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					HNt3Nm88SPG134Dn3j0zJ4GHmJLxB7tbqadn
+					teCT3t0JPhEVu8HrvdOrTzrANntQShIxSvOv
+					OAuMKe4yznJ4Ti0PbgJly+WNwGqfn1JNfb/X
+					DTPQ+Q8FtL/uP4uI/p3ozB5asBbg0TtqwEwo
+					AtgwBKPcFb6jU44lc/eBoEzjsvY= )
+badsign-cname-to-futuredate-aaaa.test.dnssec-tools.org.	86400 IN CNAME futuredate-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					W9qrEOJkgSMRrErU/Tt4lgaVTwOWy8tNeQyx
+					KEv0Po5GD1RjoqR7Yc6pxoVYhyNjTnJo3BG9
+					5TcZWGvp7wHKutC6A4uP+Yg8am7vPgAnR5nv
+					72m9/TWVauz8l3RyBTKTMjUqLDQAqmzthskm
+					xIU37vMO4H0ewA4MMclkuIbCOII= )
+			600	NSEC	badsign-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					YHbtM/Y+uXeGQb7aIYyZLpQA4gt6WpuhP+7W
+					m3UWGn5aE+ZDO7BmqlnCgGAIC20h8t9jYbY4
+					fsMU+u54nraqm1oxMnvrXhEjCIevoxdNCtT+
+					v0V6Wrjmpbb5VhIjgoF539jUM8nwc122XUXl
+					sec2l4ulptjN2DnYjGSWXWroh+I= )
+badsign-cname-to-good-a.test.dnssec-tools.org. 86400 IN	CNAME good-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					sW6JOfa6mCX2jxqul6Viw7lbmqEAm1cpfXgu
+					xFoyGjp2bRcVryluslX+Bcd+DeoG8CzIP7bD
+					vqW14F2JJX0kUl6nFpHR9a8JEzTk4oCVrtX/
+					mIS5Y9VamT3nT2mEXFEZ2moR5WcPYOILZli3
+					x9CEst4Q/LBBBItjyWS4av2Npy8= )
+			600	NSEC	badsign-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					OVwXvQwtiTRBujXcjiyXg3v60bmpf9mqNMix
+					xS+WD2HKi8WBbtBcgQW/DThB//ECqr3X/uE3
+					Pal72WcEjIyywa+U9O5f+chuKl65EMxa8lX/
+					UgjQFH5RVy9bOhIxh5nHa+Gx1OdrWKvgDugR
+					Cqx1RyNFucKP6wi2fQRTttiFotM= )
+badsign-cname-to-good-aaaa.test.dnssec-tools.org. 86400	IN CNAME good-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ag03kJQUUyeSXoCSepog5VrXlMIpjTHg8ENs
+					XstWEy7hOZdAzEp9ZJvy1iTOCkRjB1V9s+Pf
+					+EPimaViSiEQMaoMjatXs1tD48NTzWqziqxl
+					8NoarYgF01ZbW5kpAMY2VhbXMjU0lzr8JPM5
+					x7R7QSCsA3qoKIEkUucgTUUF6+E= )
+			600	NSEC	badsign-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					weSgqj5qcVWjb5JwAeLc8Hz43WB9kkj2THvY
+					ga/aODuXhsnixPSkGZX+9OUI1KsNjyvk7Bg3
+					9WKlI42/SuczoyyGl9JngMliwlPIsGSpTj6v
+					BUztQgD4LO090cXalUGSCT77gBafz3dF0amK
+					AanOWjog+cKOUZvepamLWaPiquA= )
+badsign-cname-to-nosig-a.test.dnssec-tools.org.	86400 IN CNAME nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					X8Vi1af2gPqFDWnCHxVQjwPgFT76LZtpar/2
+					2ugGcOFA13W6E30HpTp97qTMTMCSS8AhkROl
+					lCaCyFwuXZBul+PgbF0u4OYFyt5XH1ZOi5eW
+					ScnsBztgyeHZxv8w7wdO+V97JPuCwSbILwrb
+					xiiI31mYYbsBJhnTAc68myjhPj0= )
+			600	NSEC	badsign-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					CrQvNmgh+ajuoOyOxtOecchEiXgcdXUIu0MG
+					T8tDNU0P/cyeZIn1lRcs2ggouzoz9KHxvr1E
+					m13azDESy7uVQ5JB7IP3Gld8yGQxIX7l44lc
+					cvi48Oyzs1HWIoOtVTGvXaqidWRhjHxIi4uw
+					s9iKC5Br+VYcm6jDH2f+dnfzS2c= )
+badsign-cname-to-nosig-aaaa.test.dnssec-tools.org. 86400 IN CNAME nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ZYLkR2EQ/GL3BZxKd27tN6lL2vJXKllOSin/
+					5c4MLDb3J/4JgHRBtzMBBy0wO9yqCKxg+cfT
+					0jElalh/YdgQE4rotObQDWWmVn+uKwLGRVIW
+					vkzyn5sb6L5+YgSqtI4lhFqqSJyE+ZhVIdy5
+					xXSS6Eh4rvtCOBzxHEAyoi2tgLc= )
+			600	NSEC	badsign-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					vp0cTNpoVz+caxe6CgbxjJpiPpB2SgnpeLBg
+					c/US+8w5QoR9yzqlfNzxxPsYU4YZVg1ZZ7BZ
+					oF2qmqERPKsG+OLS2Ez0o8onaWT4n/9IjvTr
+					2omUTNmxi9mIYQAXYc23nLNFTP96h/Qc6dnh
+					/iw+wpLQn4RNSCs7KVJN6K6nHao= )
+badsign-cname-to-pastdate-a.test.dnssec-tools.org. 86400 IN CNAME pastdate-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					J/bnfgH4SfFKZIUotW7g8dV9r8BlJlKvDwb6
+					WJqjd0xMFiLVHifgXHdPCBiYr5oMB/IeLu4A
+					kkYKCB6HUxSA7Zmlg2RNsx2MZxIgBH1Bib+K
+					sPfycxYkPMRAaQl9AgWSVWOji4bqnrYGgx6O
+					xP+vO+N5mhxec3yC8ccigN+KOFQ= )
+			600	NSEC	badsign-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					H2D+lLPJG57s4anvx28KtZSSKAg4kI5DNciZ
+					wSOPIlO3blyK7qVVXz4TxKNWgYC2qvL0r4B4
+					qtsL7VSdEmh4ZTp7lcN0KttVDzTqdjgJwZAT
+					jhoHCvLI+PeYyiogizVx3/OdzJta/73j+47c
+					UpllATs79jyrrZB6auI6DtC7rIk= )
+badsign-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN CNAME pastdate-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					xidM2I8rxWsHgSHw9E46gSmNI2rL8RC2H+P/
+					JsiyHzrxWZ1hp2DzJKBsvKEcy0yEzeyxYMM6
+					+SNoHtCQxIJVYHem0tw5NLNE170dnJPSos8S
+					Q6VFVmYlbU3eM2OkaFHs6giQomjzO+DDkC6F
+					xYf83BbBjk1UhQadlM3wnY/FlC8= )
+			600	NSEC	badsign-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					nETL6VgCRjAsmrbx52zZf1qS4maI72a1Vbmw
+					UlkQRpVDmWwoE3uzb+j+tx33xcO23AyR6+Di
+					I3NIQk+06ZJJnAyPCnJkE4GdO+rERBEI3k7B
+					7Xf819QZYbWMZe/yUq2kj9zDSks7TvpyXyUw
+					BWHdUDKd/RHaze7NXZLsthkuoMw= )
+badsign-cname-to-reverseddates-a.test.dnssec-tools.org.	86400 IN CNAME reverseddates-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					YuiGZnVfwA915jXTotMKu3EH6/KAZALbGQ0j
+					gFEUee1dpyqAyuRZDLk5yyVVqYEH6eARR9M8
+					6+25MtpFq1vw4ANnLx1OdeGIGEOj8NMhK+uR
+					dWYJmb19H28Pm6GRU/M+98xEI92T8TQe62II
+					xUimiytEJEJWOfxgLrrgxxN56Pg= )
+			600	NSEC	badsign-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					JSsXfcjldaY6WMCRT/Zfs7FdVqR3++EjDVF5
+					JrFQQnk/Qu6jSl/4Rs5CQUCBZ6S4MrOWTo6S
+					Emac6rRgMYTQ3+9LM34ZA1Avo0ipgK0w4teF
+					G6dmuAfGwmhy2r37bsVI68M0/plGtP7Abodi
+					Sr6/VhGiIKZyaU1YMAXyHRKr4k0= )
+badsign-cname-to-reverseddates-aaaa.test.dnssec-tools.org. 86400 IN CNAME reverseddates-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					o1s+cj4AVo+7nIuPFYDCle9sTJpBYhvvZDcO
+					BIXsqhsiEo192Cygz6lv/PTn1XTdxgCvYT3/
+					TfGawdMGgzSSvlXSrzaIjcyiZLCkAVLM5F+U
+					RqHJQS7rZVCFKmFogJlRZHOjoPEkJEmBrjc7
+					yTU8aFcLjijLH1QvLDcPSFYK9nI= )
+			600	NSEC	badsign-ns.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Eh5BxKrA3ZbUoKKkrt2152Ru5EsUh0d2qnw0
+					d/v1m+3zEmxts/XkYwcka2hilr5q9V78v61G
+					dw+nzx86OsE7Hp6FBB+XMCH4umQFp2+fuUZm
+					Cd7P4Cl42aFeymNE0lpKMKyydN3fTahu2nr2
+					O6o0j1JWh8ZgPYLMEL4jtkG5FXA= )
+badsign-ns.test.dnssec-tools.org. 86400	IN NS ns1.badsign-ns.test.dnssec-tools.org.
+			86400	DS	22827 5 1 (
+					0858524092AF9E57D4C628CECEE313BEDA69
+					5411 )
+			86400	DS	22827 5 2 (
+					79738A21E1414898C9E01BA9A167E87A40E5
+					A491317A5829700B630A79CF871F )
+			86400	RRSIG	DS 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					GZnNKgrGeMStk50JywAl3ZkoO+KiQbTZrnDA
+					ek7nVWmcr8O5LJ6pMulakxJBx4y8Sru7RRvA
+					X114uqMS3hqQHjG2Oe0w+u860RbeRJFghckf
+					z7qZ4+C5wvR7Txgtt1kJutLS0/6tISKniK/v
+					xFjxL6uQVYZ2lZ72GFOhuIV16VQ= )
+			600	NSEC	cnametodne-cname-to-baddata-a.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					KpuJHKDDBQutPvTCmB+Ga1fcGVU2w+2f5qCl
+					hqA0FEBxw3rNK9G1Nzphx4T0NRY69tOhv1ON
+					WAnNmu/aWu7mnn0PZDuKzkOAQlTTLkLjG788
+					jkcP5ulPO7DXK+eecHJSbPwgIbClZaWXlNcS
+					WXfQDqG8yc1b1I929AcUTC0va0U= )
+cnametodne-cname-to-baddata-a.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					BR3MWfuo5nKOf69aSFTIbHGnFQtZ3HWI1nNb
+					eTU5kJxnGJuYyZ41vKjnpytwd/aN8sDn7/TP
+					vzbD9rapEI4zu+Gs+wb2PT+thPjmj5bpBjOG
+					9pfnhOtdbEcYcsVIiKD0j7SWLpn0JAt0smvB
+					i8/KISs0/S/I/Q8JeSlyd9s00kE= )
+			600	NSEC	cnametodne-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					OGNFHGZobae3MvneVivjruGV282EZRWsEM7/
+					1wnV/GGce5jdVuI2f4HzfDc6QGkdAjCDpTkF
+					pHlZM4HpniTPvSd6YR0bM4o7SHggobiYr0L+
+					nwScgfJA+5ggJYgT4eupUn6P6UBxDa56uXyg
+					6a/+t92xChugy6F5Jp7x+cpjKOU= )
+cnametodne-cname-to-baddata-aaaa.test.dnssec-tools.org.	86400 IN CNAME addedlater-nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					kCRWTYtXuG8EVS7LLHGLGy82RTXlATngtLym
+					Pw7BrTjx+0Je5BsQMHFLndsyeotvR2DSnnWQ
+					VhsJpkmyCnwlA81YeEuoCCTaFiWU1JoZ0jCc
+					sjj34axafSWPnNcga/p8WaWJ3NYq4Dy8kjch
+					EYA5wmKA5dvqS2mZISVcm1BBt5w= )
+			600	NSEC	cnametodne-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					WWBSbiUkkWO3LfhsVdUq71cZH0zJYbFa8/iR
+					qz6qvO01gsvODsDjhOUntSWAcJgnFtTpmkjr
+					l7VfT7l7JV/3x5du1EgtV+QSjbcweLGp55eL
+					0C7U9I8vVMSeSfoumdLQUvRanxxSZIKgKp2R
+					HzkODoV4PiDrnXRsHFrwd57Gfnw= )
+cnametodne-cname-to-badsign-a.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					0HV6uSPvmCx69Ax8gkvI6OwgRfqyzameeYhi
+					/dtLf2a7c8WjHUX/56dUGxovMBPKhBAjgusM
+					SXBLd7+hSieEEbHajSREuRg/hPvVcTkyEysq
+					yBBarOWqOgx/ToXc5pjQgqzrUPlEpj4EyA+9
+					sH/Nj5MmBoNpAMcPGbqYL5eIvug= )
+			600	NSEC	cnametodne-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					sSC8+45l8H8VizPmgNZmO/DAH998g0tsOtvP
+					G4FP23TU1pD7rHvsWyE8w3aJutjD73agM7u+
+					bPFsLdV2+jlZqeBkv3Sb1U+Loemnt8bj+3np
+					5DIGHNr8deOgf1RHTJxK9eqUxEG7uiiu52IX
+					o6tMaZYvhSZ9SEisiB9YPdK32wU= )
+cnametodne-cname-to-badsign-aaaa.test.dnssec-tools.org.	86400 IN CNAME addedlater-nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					M98DGMFvojkCavlT6B8sxpFfOuK7mH2+DkK6
+					7t/DDi0Azj5eK6xsJiEP6zkfO2YetLRFYbKr
+					FxpkO4s12w9qZ0o+PG8fQ4ZnCBWzZmgVek8l
+					lSmcPCxiGOAl9OXKRG1XeR/9TdFxCiDBMCZR
+					GC65nbzriDXTjUJT9Y36adDetKM= )
+			600	NSEC	cnametodne-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					UYnOsSv1njlIdySsXwJ5IHQkRjSGVoYaOEdz
+					G4aIRtdjjno1j4awkg7oWMkkUa1lAN76o6zC
+					Z4wc1ew2xFv7b08SfXNVv2UqLzkRZR0n8yCA
+					M6gRaIHaKiZIXpwTt9SBOrSx9JFelyDn322P
+					ABoCs7W78cWvkVkDgC/hI2Jc5KI= )
+cnametodne-cname-to-futuredate-a.test.dnssec-tools.org.	86400 IN CNAME addedlater-nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					kXblCdaw7wJojYo+A+TggX0gBA5JneEklWkI
+					/AXxoWIr1Omyd79TTeNgzMu3fzERkXboPIvx
+					/AopJBD27j0NzJSWDzO5Ws+iNLfJcsRAgtDY
+					flLDfSe+rYARMLtgwn/UWfeY6PElQics4TQA
+					Iez77W3X/d/Y0ryoDEjp9rGwIiQ= )
+			600	NSEC	cnametodne-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					VvqGe03Y5MBHsL62qcDRI88LHZjtUHlRe0Bx
+					n94iRO0GLybqfM+rCwjqODvhtV/KEPRUytXc
+					hiKPabhT+tFsg81ttheXSQa9egM/fWDK5CFZ
+					p8mPCGo57i9APlnbL/ZqcSRuQRk7o9f5qUzE
+					l6RSCmP8wHYKBHbddebTX9+/38I= )
+cnametodne-cname-to-futuredate-aaaa.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					MxTWAUObkmz9fCT+tQTvFQPf4WX518U3eAKJ
+					qy9t4Bic6EZ6Oomu8MKuUFV6uiBzTkHKuRIE
+					pFryOjeU2P0ZKQIGkG1rATFVbM775mGZc9RH
+					MdQgQzTv4UBSe+tweZku9t/F81sp8ETUDa7c
+					AL+ckhGloE7N9CLFv17S8HBu0As= )
+			600	NSEC	cnametodne-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					sC1jxgxJ8FVur20NnYmdbByCr33cUv4tiZUm
+					6+NjGQyJp3beshzJDAR14V7TjjT0MyzjhAu1
+					rUqoxtRGz3tqZ94cRfslGplJOpWrHBO2UIIL
+					wNbCBvfxtHaK7v19UQ4GfLkzLHHQLhUXQuQC
+					WtSAfBag85sqnFWJ5ji2CYbdE1U= )
+cnametodne-cname-to-good-a.test.dnssec-tools.org. 86400	IN CNAME addedlater-nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					QPUZpKVs9oYKtyPc/sQmL3QCjwpZpZnNlU5Q
+					nAP9UkSqbe7seKZse0AhnOgV5V/Wvz202WR/
+					yOW+RbSrpRl4BBNTvgIly0WwyrSV8vFhuJ+S
+					38yARK2k5+ErG5vF09wmRbdMh9R9eTRRmsOn
+					QpP/GvNy4b7yjwDAgGOsHkEylbg= )
+			600	NSEC	cnametodne-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					bwegKmpN/Hkg89rA2DasIwq1xLlYCQwVDVr7
+					mZvOCRD3VVcLRkvQFQX9IG1zeTp6mhojpGjn
+					zclFnxZa8nQb+iD2Z/aTFGC57JpdWW/tUKhU
+					4ctwPvamUQJOXHpNLL+q0yQeuFjzrAHGYe/S
+					UiQTc86nFqd9NR3AMZOtBlgn2wg= )
+cnametodne-cname-to-good-aaaa.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					eUyPJVZAt2rdqnppZBp6fB5A/nrEurKuzJHx
+					SABgtkpjcR0Tgi0WH8watm5zrS6OFoC8Jjpk
+					2MjDTTst9J5IQ/YAARYVso1P84SpXXUmZzhl
+					sQn33sWR1pbZoaTMHmkz3Z8ipVyNLPhSfs7Q
+					b95YB/+q03v6RaqtP6xvxCAimMg= )
+			600	NSEC	cnametodne-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Zz+UclRo46YMmL0d3JJyusOtPMohsiMkt6Kk
+					WTxbUzs+TTYxnGxTfjSM1hTYJ1i0yUaZ0ioJ
+					poPSc2t73TJmQHaX2iO/eNoaB8X99f6/T4Rn
+					d/wjWaZxfRcrGx/GnoBF+78QGi9s4NATPwYN
+					k5Zmr54njsbAiMMkg3GHZESps+w= )
+cnametodne-cname-to-nosig-a.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					gpfkEIPX3jF2af3ChKXYemqZCTfVkMOJJqME
+					sKmiOh9zLlU4F+o/HHltlEh0BuXLM7pVUwQX
+					SHBGAGiqAAwgjY0QvzT+PuYh0pOSbno9vjDH
+					kdLmqi4tK3tkSZyblxxz7s2EUH18ZpQT3tPb
+					pjqlbpRtO6b3qXU7V6UNQOTULfU= )
+			600	NSEC	cnametodne-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ZS+t5HoXp2SNq1ay85aszMNfI8gQIZfbAKfg
+					be6UNZQk8j5pqRLPKli2cf/EUjifj7ERuk3a
+					yzuKMCdVEAxrZ+QaRE9BBk6eohp3SJTInZPZ
+					WLEDVoMxzAD8ana7VELbW8EP6CnbVeT0tl09
+					IrBpQ9JSu3xW5z7l7Vmjy1308Fs= )
+cnametodne-cname-to-nosig-aaaa.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					VMoUQ5rS2aBwfQW7A+iGnpoWxDVBTQrxwrZ+
+					yZduMil66gFtef8c9gncJt/CRiWWB0pOjt6b
+					pbkPFQ4cx+5v4FLcsFle2VxlR2PHRzRpryu9
+					sNRZJ+Yzm6kmxeoi2K5BAhPKMDcXb0DGlLhW
+					Vir1zkKHYpZGPHojoPbeIyE6u1s= )
+			600	NSEC	cnametodne-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					aMjnE7V0iwOOHmOm7pIvO7PS/ULB6K2r72q2
+					bKqizcf1XqH/jcT+6FWeAJaUJDD4QDxnNU5X
+					duh1DWdoNi6uEbqROJqdhhRxDhinPBudPUy1
+					VL2X33Voc4XCK0tR0TYHmxYkyKjUrKK5TVXs
+					pX8oZ2jpIYlRR7Y8sxd59VljM6E= )
+cnametodne-cname-to-pastdate-a.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ROMj53BDFiTU38z2lwioxp/vHN0kTCtKJ+fu
+					ezx+lEhS/C3+CTh50iYK63Gs1jnCv36QWmqF
+					Y82Y/bN5heKqqqC/vu25B6njdwfqM1Addl5T
+					lNWnfBaBkxgpLeIYVzn8kClvdQgmrx80+GzL
+					P7/WCqZQVKytnxLHf+e6V2DGzq8= )
+			600	NSEC	cnametodne-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					NxNOgjPJneFWx9yufk+j67NeNvBH+KxcxgnX
+					fvT9Fwn7jKf13rDy0aEFhBho5TXuGPrRDAAK
+					K8XHgEmHxbs/sB/B5HymlE4odjqeSswCbIua
+					zLNNoCngJujxDllvK967W8KBBczwMAAB7FrE
+					TLu8dfiATWHjq+SDMZibbqkptvQ= )
+cnametodne-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN CNAME	addedlater-nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					D7PiwhoonqcZ4OakZxfv6oPrFNPm/ga374xi
+					lgF5LThOk+KwXSFDRgeZIFrx3ZIj4Pxw78Vy
+					Jh0Ho+u4bkzcvhoM3MFy+LMJxXXegebnMZSE
+					LrYIYQiP6SO2QxYt8ykKzMfsdEcnHs2smxJ5
+					CZWdyv+nd3wD46zKdse3fiX+0Uw= )
+			600	NSEC	cnametodne-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					SmdFXvOBWApj49L+DQdfIugT+TUXX9Rcnf8g
+					N1mgh1Pda2BybwUTULCdgreyD34ZLURx8YZq
+					bEv8rOOdFlxzmpQcJ6a1cTpZjrq+eTyw1nTp
+					JeDioCZJNdEm7j0tlC9PqSsEgC/JXJTP+h98
+					oK6aBgVnJb7vnLq9fQDRKELBiiM= )
+cnametodne-cname-to-reverseddates-a.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ler9G+YO3cS60sgVaB0PR8ZL4QE0Hl+2JFV7
+					aGV4/74JuzDRYDs9rJBUUwDFh27qKer/AIKz
+					H8Y5JrsZox7cExAh0fDr3G7NYxTeW9tbxRZh
+					zGGTB2MBYFVCIFj4ex0sqeFBGYxff5pFiBTV
+					DQmCbzuL0qvCmIiqTiX/+QykCx8= )
+			600	NSEC	cnametodne-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					mdsfDgt1h/l3ey5/Cr+xmAwifEqNPmebb7m9
+					x+fmBLbOt9bDKHR/aXbS7X1EgWLRvcwhWyCu
+					1+VEOm5mH2OFHa+ryzzh/9mEnh9IotHbJJWo
+					byDcfF/SGBMpFMGKzN7uYsJJ7n0jOIOwT6Ma
+					O7qIPwv04vcG6FDvkCECLyh/Lc0= )
+cnametodne-cname-to-reverseddates-aaaa.test.dnssec-tools.org. 86400 IN CNAME addedlater-nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					UzQprg/qG3Is9ZnAqbz1aPc7FHHjYt97gcSP
+					ElAgfNka6sswHQ/S5wN/WzCIIczCaLfby6tk
+					rRYxCCiuIrxDqDdBIWf3FexhMbJojtWyD2iM
+					KkA3TXhIf4AsS/cao8G9vmxOlqJjjihGyYCv
+					CQ5JESpWgc4hvUHK5ex8Fg+qZWk= )
+			600	NSEC	dns1.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					fPXUO6rQKcV6HI3rSXmvqfK7rMUaCwdJj7eZ
+					mqtk1Ftklgms09pXnP070WL0JQtxomEWSvZX
+					Ti6Ou+Flse1hqOh1JBFGjgY+PrDhSqahjFCG
+					8d4y38Dn/jH2khwKiImIHuoTQGU0oAQSsy6D
+					iGS7WZQ/B9t2DArhl+BJA3K3O5U= )
+dns1.test.dnssec-tools.org. 86400 IN A	168.150.236.43
+			86400	RRSIG	A 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					oGOn0sby0j8AyEiNLWiKwEDe8sXydR/jD76w
+					rVGqKKjL6IBmOj5y8/27evFhdBrth3xMDMYF
+					rwdUP1ahhKr6BXFJ9o0zkBhZ/diTz5lJ+Iyq
+					5eFjXPz0CYmxh8SEYwTMo6cK4HmjHTohehm6
+					3Li1vxsaBeDGQXRXoxRfxGQKPuc= )
+			600	NSEC	dns2.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					icSmRanzIuKZPhti035NtGZAGAP1Lb1FxJ0Q
+					WM7oXeJPGKUvqA6XSVBT0tXc3aCvfpU57e3f
+					pkn3csR77KeFIoy8qYSD8I9h+SAMb2xElkQm
+					lue5DMvbS/DltoOJZABwtLW9vxYBFxesxfsC
+					idkanO8JZIatIU+DnreUnIe9zRU= )
+dns2.test.dnssec-tools.org. 86400 IN A	76.216.12.217
+			86400	RRSIG	A 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					LnT2szm1YbTPkDkqNsyKJ2XgVlQ0mIePzsQ+
+					AH1TKyE85fyccj8Id6qzrKf5MCBco3BVj4Fz
+					ypjHLGWbfUNxLI8nZSdtr5NmNzwbnYb0uYwm
+					ZcwJ5xoLwQjTOBKDZXZkpb7K9J9rVzcji+ye
+					qC7SUnwbwsaYmRp+UoxylROG/SI= )
+			600	NSEC	extra-txt.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					UChZR5huiNmiePPLR5J5nePeo0IXx3IFDGZQ
+					1BamkdKwosRqsQ74vtCxPJZe7zXth0S72UYu
+					5OhOjvFwHIx7/ttcomLsawxHP2/irKjXLZER
+					IM1wx3LmDkeTOZfeZuw/E8TOSPs4+tv7v12k
+					u4MVKXBDfOG+xWaki3j7p5+Kv18= )
+extra-txt.test.dnssec-tools.org. 86400 IN TXT "TXT record test"
+			86400	RRSIG	TXT 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					luWvxXYtTK9qXQSCsLfPP0IPR6U3378RtJZG
+					jgPytV9S+98+vQLzKw0188FNv+PH9ikxAahn
+					Cls7IBNjQWvBNY3CQ1ApV8Lw+dAGBK91PV5F
+					e6VlfOq2aLPyO/f8+PQXk9lJqpUOgAsdmLLE
+					Dl/G7HXb50PDMFRbxedWCpqhn88= )
+			600	NSEC	futuredate-a.test.dnssec-tools.org. TXT RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ZYlxCkukPody0PikkI+RhH76sA9FuQI9MtjU
+					20rugA0wpJW5UGCQtlOH3LdIdOvmh3uxuSGF
+					X/SZvbu6RzmKFsp/pjqKMQ583j2/S1nyBh4l
+					idbrnfIvAW0bb1gg3u7VUDjW0/YBbc8heIBN
+					6MTme1k9kt/11+vsgRXm/sYSXuo= )
+futuredate-a.test.dnssec-tools.org. 86400 IN A 168.150.236.43
+			600	NSEC	futuredate-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					i9nQa/iKdKF/dTZGgZG3oZ6OynpEcWkrMPG8
+					j8HzNSIdkGPHvsAyxxALtOu0rLQ6PKW8wFlq
+					hnpZn1TkIzHS+frfTrQfycS5ztqFicNEUJMf
+					Lm+5AJfSlAHgcd0dUtF3EL4M4Zqp9M15lfPm
+					evldFj/efU3bLf9ioxys7v9Cha0= )
+futuredate-a.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  4  86400  20081130091934 (
+			20081031101934 19442  test.dnssec-tools.org.
+			pyhddtqejZYQ4cwSXHrHlxIXXJ/poD/XCk8IJ+5M+RSIT
+			KIZGe9waCcUkzRtOpDS6dVDcAPuD9Yt+thzLA/O+Uh4PG
+			prXO/L6xMKJK1Pk3YCf3Ki3+g6j6a1eors8im5o5oW2Gl
+			73fJBjiC9SW2X7tbJXjQdvIAB3Hvs/leI/s0= )
+futuredate-aaaa.test.dnssec-tools.org. 86400 IN	AAAA 2001:470:1f00:ffff::1
+			600	NSEC	futuredate-cname-to-baddata-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					iORmbmlKuT9S9VCsSebQReYqISLp8oyucnjJ
+					WdSsl01tH/LP24VRGa4anZ7KrdtrhQQszOiG
+					jMHXUr04HEkacMpgPfEzD4qjjJTBtj40umqp
+					4XNBkE7sesj38uwm7oRcluvXHSLy5HdRtIRa
+					0e2YiBqTvlHcsHszCi0+Ryf2Dwc= )
+futuredate-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  4  86400  20081130091934 (
+			20081031101934 19442  test.dnssec-tools.org.
+			HtfAC1Z5vKN6UvgUGnx7TJE1B6CgbtdqEDTZSR9FS7Dev
+			E8aB6XlXSM9WRsFCeL7ArXOt8qTOzt1hpMG3rq9gX+Gzq
+			G6gtsnCkW1VKcH64zRqrdxDbMtZIPQ9SdFpGijxiGMQua
+			Zjllw4KdKk93r5S7yZ0Qr+k1jzH7soD50G14= )
+futuredate-cname-to-baddata-a.test.dnssec-tools.org. 86400 IN CNAME baddata-a.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					vLu1ut+kZtljYleGHp4ersPOHlU5v9QuRbby
+					M1+/ieaG6tu5RF7d1GOTZbENzdSBesjwCMIa
+					YbSL3BH1jb8Ay7zOIphbUH5t7NHSz5ow8dc8
+					t3MPhqqztA6r5CLH6xaLOF8Geded9fblGH0k
+					/YNks/oIM6kNEC8f3k++JiVy2tQ= )
+futuredate-cname-to-baddata-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			YjCi2A9hcc9Rkh+iZm8f3xqKon6hQKDCV+YCWA+j8utdu
+			7JT04IKDq6gly92U/YAnSSmKOFNeMnBmzVxe8bwO3iy0x
+			jBfS5D8ZHHQVKg/4obGWcnH9SsPkSCf+0VzI/9TLCDgmu
+			8n/35rJXCwI6BkEtDX56s0t45Ej/q+ckekY0= )
+futuredate-cname-to-baddata-aaaa.test.dnssec-tools.org.	86400 IN CNAME baddata-aaaa.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					tevgVLQc24TLL5re/h8jeYZUS6RKyF0cLTzS
+					wpSGqFDw+nAjv/nF3Dj6ryaqZFCW/T4nXfw0
+					YXiE5pAs9fP+n2XTy3y35r05vbBZ+ZSeGN1W
+					HFvypenCBeodwhOvQqFvFc3hd89mI0mEaNWf
+					5eePpk4p9ngEfF5brV0tP2es+tY= )
+futuredate-cname-to-baddata-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			gOU9o/ft1N48pSG3HgnqCOVsbvC209XcwF95FUJKZU0o9
+			1+XqRrbKBMh6+NymP7fZkThk2cHptgA75ksTR0FTtj9Rz
+			L3VforKlsKOGYu3l0CLE4hNLSt4OjOIkKKdHZ44MzsOLf
+			g8j8hmKdaTeQz83O/gPb1MgPBwROS6u6f8us= )
+futuredate-cname-to-badsign-a.test.dnssec-tools.org. 86400 IN CNAME badsign-a.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					p89CJTGVFTO5tL1tE3PAutdoBe6q4nDi06Bi
+					dkFcy3djy6i80KEW2nBIpN9c/Fl597i3UWD3
+					om2nIz5n2AHXUzaWLg6ljuCvF11Ph0tcMAly
+					OdxXFfih0R2+kFZSVHCyGTkJG8z0e6m/lkYp
+					gxSLtJQuVNgq3awcuS1VAD49+nc= )
+futuredate-cname-to-badsign-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			M83ZKOK3AMlOOHr2zGHIiu2Lp7/fbPJw9x5BT3f+jf9gX
+			7AGNn8z/dcz7N6KSGoINllPZf8srFmXUrujED1Nz34t6Q
+			cZ4jDTjEC0tYbVO9HNEBmHv5wZ+h8mVHC2cUEhf6s/gsX
+			bwu1yslk29hZ+yngfNcMWU6zxTcqP5tZRoSg= )
+futuredate-cname-to-badsign-aaaa.test.dnssec-tools.org.	86400 IN CNAME badsign-aaaa.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					aCHLM6hwDED4/F7lRb2jFGoC4sxbVPSmmKjQ
+					g6+PLPxXETBZCdPz5mF9y3qpw/I7DnA8e5b/
+					woU4gtGhn2IlzIu/j+a2Ezn6pd8vbJtgi+aQ
+					y3fSSL9LqnPOuZWGVjqYBycRFU4TPt8vPfWa
+					VUBRsuDqnmH9+Lh5v8ukpt94c2c= )
+futuredate-cname-to-badsign-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			sY0nPUMBwI0SmBQPUVRDuCaZy6sYcQGwv8plO98im2QRK
+			usqiBi0Io0ylGtHkGIS4BX4K3b4jJzUYgAX+S6qEPvV8F
+			rWWCbcG2COo7ofyWfZFsfdi7G2pgZbR4HfgXtXi+Bp5P+
+			m4wSk08kXYuNYtU1o5i76ZrI4S+BSz3MzNiY= )
+futuredate-cname-to-futuredate-a.test.dnssec-tools.org.	86400 IN CNAME futuredate-a.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					eT9VgKHcQn0eLhMCwliF6/gjjsI6rmBoHDK8
+					hIPemxpzFiEtmAHEXI4nUiMLWNjJ4bQGZ80D
+					IQEiiS/p6mmoBckauI1VUiGB7VJY9v+1+0E2
+					sYE75wSMqTNe9TuydtQXpPUXUOh9aKg/mNC1
+					Iwn/eEeIoyhYvbj1f13x6gwT+iU= )
+futuredate-cname-to-futuredate-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			Kfr8/WPRpxY7+ZyNH/tpUlFndY+6facRWRG5jjynaM5jg
+			DSp5LPElDFa1BGrdMOCsaNzxAuySbyd2TwPTJWlHsM1vQ
+			ZPluUzXfvnRkQMsM+fYguNsvqpBj6M0o421zyQLY2qKTG
+			VVSsLzS8YwM8FxPHgMsMqBHQ9CZjirohiB4U= )
+futuredate-cname-to-futuredate-aaaa.test.dnssec-tools.org. 86400 IN CNAME futuredate-aaaa.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					T2WlS6P8HBwEepXIA9IH8KZbTCeTxroG1KJC
+					qRilyyXiANx653drrxJCATOyHDOqUdwf51VG
+					Er/MnAbU/OL37+3F9IewoGNytZyMqZu2AowZ
+					1U8n1hpTBVEBPBAAb8cMpU06LLiC3yg4aDrX
+					l0StfQkT0Ufxuduzx/BDdUBYNeA= )
+futuredate-cname-to-futuredate-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			farMmYJox01HiHKVXeg6U4qPwzRj7/VreEiEzmqj+oAdX
+			ScB+S0AGeIMx/bPKwYrRclhNuhhMWtzfsiaGObLmCxTdF
+			YC7ol0wsg0KhtYIMB8zGtZpRclJpdivpwJ2yRWswGqXVB
+			/CQ6IRZWjUfM63DFPc5oVqI3dvQ1Tqy1vyfg= )
+futuredate-cname-to-good-a.test.dnssec-tools.org. 86400	IN CNAME good-a.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					mg6GdEJuQcWWg6Re/AshS2az5nyjoB8c5i1n
+					Q3oTW9gR2951Xk3PwdFo1vIQqceoxlvC1p/d
+					aNacZpZK9Cim2pPvacdwTQctDZ31/WAt4Iek
+					7qCewAf4HCICTX6RHqpCJSy+i9yead03Z6v2
+					xDt6/WuMUzBfg+TJSCBojEU9NEE= )
+futuredate-cname-to-good-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			ChcEFlTRIfz479CoM9VdyYAV4luFa5Ru6lVdSVbPI6d6f
+			DnKxL60uABozmooLi4z6qVo1vYozWduy0lvA+FDvqKKeJ
+			Cbk+oJ1if+crZ+jIfC3D393FoIvbMpLc4WEyKx7d35gbr
+			uvWVIrPG40X6FGVxFCT0Oq1x23x2dDy12AA4= )
+futuredate-cname-to-good-aaaa.test.dnssec-tools.org. 86400 IN CNAME good-aaaa.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					F6nLWnfqEZFITwY5Lct3Q765ugbEm1/2+t6D
+					1wZQh+xIHSPolwBnVCX+0a0KLaiXauFx3jNJ
+					CBeXDAIdCVmll54g/8HFtOkK/FENLh3mpXkw
+					5KqrTMdliB/3anFNUdqP3QAIaHACqev4UPf9
+					Le4ZAqQ25HczoDR0AvpEG3dFkCM= )
+futuredate-cname-to-good-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			LtArnq7SHbBdaR43WtRWfT0XmsdlkIDQqDNkpHO/dc2vB
+			XUF7/m2aQLeS20pqcD3k4f+kt6j5Uofpzw9pHn3ceUXXv
+			i9FKFCL0wozu10yIRLfy2PB8PuoypI/HBCPz4mkc7iN9L
+			ZdrotDFGVjOyg+TdeVJrcwRj8VHrEcMoUBkg= )
+futuredate-cname-to-nosig-a.test.dnssec-tools.org. 86400 IN CNAME nosig-a.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ldSWGFWprUQKiYvHcr9CKBNjETDeLaec3sdp
+					xYTMgCd4wJI8Lx68NYv1752+thWWfzbXBRCo
+					ngdw5UB/9tZvH8ksYSyeVvCfJjZkF6TI/38v
+					reZH982SoJaPgnkJqv52zjKj6Ug7UPb/k6md
+					uVbZFWSs+G8bQIBkO7QI0DktWug= )
+futuredate-cname-to-nosig-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			LmS29qysoBRuWUngr5V3aaHukXV31KEK08tV/vTz8msfT
+			jcy8nwXB90Zjox1jhRUSH6i5IY/n2ueR6UtLkVC5yGUBf
+			793nqejchcb3krsReigv99Sc30/C1BeHJhY5bcoGFa9dX
+			KWycXpLuxg2diWZmU9Wj/XPdtVbtekSxVl8E= )
+futuredate-cname-to-nosig-aaaa.test.dnssec-tools.org. 86400 IN CNAME nosig-aaaa.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					gQt+wychEcQgELkwvaqIKfzmFM3USSGNZbKK
+					dY3mWvdnvI05ONa90rJS4TIObZUddWNZpgLN
+					6scG2Hm8l1gUOW/yN+9oKV/v5mdHroN7EsDL
+					OYVXG3X9dV8Ky4JOEpt89tegVXkfNR7B+YL3
+					dgrJ9giyo6pI1wuPKUuy33VdbsA= )
+futuredate-cname-to-nosig-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			B0YqNt8Xt6AoRMvUPS6IUIOS4WDgnnQz017FoYlAKF5jY
+			lJDo2IyIMkHWwfAmfny1SjJByEvQ+bBArgWqm7LiC0PoC
+			AHTC92H/Zhq39iUyqZiX61kws/2hkDdgx/t90cD3kHrHK
+			jr1saOjvv+lWfgxNJw+PdeeJc+HjY2hPwDwQ= )
+futuredate-cname-to-pastdate-a.test.dnssec-tools.org. 86400 IN CNAME pastdate-a.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					yyWLCvl2R9TCWxuIY3u5r/hP1HI43W5C9+NX
+					e3zw1eg6YhubtSPOMqyHYR7q1BvyTa0n8lCl
+					LePs1/zGzlwe63Fz2XtzJ2MVtCTQQMy2NmBy
+					MPfDsP5y9cNWgzNvIxFde/1m/4layOWxomAW
+					ksssC0SBVn61IoMLg456ckTkxu4= )
+futuredate-cname-to-pastdate-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			sbqqgy73DflxGJfmDsr73W+b3SFaA0OFL2M2yLe06shRq
+			xw6YgUGiZbo4z9oy7u+3lr1VLHp0GQo+xh8NLC1zRcoRF
+			iMYQyLyQN+PGCyBqmfH/3Nj/t57FpFvDZPzlW6ixqfHBI
+			DTMv4V4ZRQ6Tj9nzoEysDu1qLcptSyCXsCNc= )
+futuredate-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN CNAME	pastdate-aaaa.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					jCN8QnwJlPooF2z2LZOYUOBxYt9erGvVvrs8
+					NzsKDKI7d44QYLl+P8PkEa4Uf7TOWhc0uirk
+					cnl4s9F2l8j/9S/7rtfIFeYv0CQGse37BGB2
+					aI3U3aQQB0fBYzgpTelPtDIpEpQffJ1KSbt3
+					A9K3/m+BZTMdI0x4Z0scsmhgcbY= )
+futuredate-cname-to-pastdate-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			yfHT3uXbz1LR8A8heDE8pHALvisnr0jjn3lXy3FSFIuhn
+			MIbQmXciMw12wWEjsZuY2/DO6OB1bbJeV0+i986nRT0sk
+			DaKAjprO5DEMFbr8ojQ7tHJWE3JMYySTb0ZO6Zx9hPiul
+			yXe2YJuKgkQet3UltVg7hWhS7CM6G9Law8ho= )
+futuredate-cname-to-reverseddates-a.test.dnssec-tools.org. 86400 IN CNAME reverseddates-a.test.dnssec-tools.org.
+			600	NSEC	futuredate-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					XdtesAUEKIz66QFb8VGvyTDfuXVNzJ814Vus
+					CPzt9H0lStykXlRYd3ai1Hy/nnqY961lsY4S
+					yOF/NB4dBvQVDYG96Y1ABcBO/zpkCjyT3NP3
+					ttDXEpDDa4t3QfPKQeX5G9SXGoL//uiMAFlU
+					OOJG4Op3scwds6ouKiFH8UZ9s2o= )
+futuredate-cname-to-reverseddates-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			lIC03p9yX5RA88yfYdZ93A87omK0onVMwkGBBNycoeD33
+			dP1o4ZJ+hzIkcD9R4J9tgTrk6ZQW0wslKXaLcMZPHedks
+			k6p2URBjldOPOgFEXMn8RlHVo+frucGioVuRdJTyEPv/h
+			r7bo8gKOkolxxTwiY7CD/ZWPULDh5pJKsgMQ= )
+futuredate-cname-to-reverseddates-aaaa.test.dnssec-tools.org. 86400 IN CNAME reverseddates-aaaa.test.dnssec-tools.org.
+			600	NSEC	futuredate-ds.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					D5Ws6KEoj23Oe27UMjDq6AGVsM/u+Gsqy+H6
+					7Er+AKjcuu88ulQaOhCMpDuRh5RiAtP/60w0
+					XciROJ8WeKHWQDnFzoM4veJjQN0HT4NNr1rz
+					C8ovRA9Zs/vtE2CMfnoPk/aR0g+ENdBC1yni
+					4uB216pIhauZ2x5rqfGEA38MuWc= )
+futuredate-cname-to-reverseddates-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			zMQNFu2cBkCfQVtEpbtypqgtCPyIWbA3Y/junm6oOFs7D
+			5MCHhPbgk3Y6tI8NigFPOXVMy5pgutD9IxhUuwEFrdTPm
+			LSO4cGcjyMNLFM59pG0XjZibhQsilfSnfyL6zl2qG6Da8
+			o5XtnSrW6rCpOQ19tK3lJ6b3V9lOOviU00i4= )
+futuredate-ds.test.dnssec-tools.org. 86400 IN NS ns1.futuredate-ds.test.dnssec-tools.org.
+			600	NSEC	good-a.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					IYEVdr/QCYekONFpb/jmhlZF+4PAJ7kdrfgv
+					cSsSW30/EdgrVgbSQSXY68EMGnPPkl80ObXu
+					fDFC3wlHZ8iRv9J2zXyAHckeyh9N3uxorgzO
+					aEM1lN3PINnM1NO8k7qJdOntZUm2zIRAqaOj
+					rIEespzimPmkDoJxHNK5QzPsH/E= )
+futuredate-ds.test.dnssec-tools.org.	86400	IN	DS	5343  5  2  5735B16035F5D2C36E9FA91D6D119410FBEE3DA8BB59622FEBFE0EFC61676F6D ; xihof-hosuk-bityz-hygas-firen-zapec-toric-cahuc-bevov-vyzap-muvyh-nymad-zapuz-vafiz-somyk-leryk-tuxex
+futuredate-ds.test.dnssec-tools.org.	86400	IN	RRSIG	DS  5  4  86400  20081130091935 (
+			20081031101935 19442  test.dnssec-tools.org.
+			Cp4M5qLLlFTACuJsjyHOx81VZSBiNeLzIav4P75U/y5VW
+			zdi/03wnxWuG3JOrR/gSoIpPdKPU47LAJv73HQS0XGLuh
+			SAYCwxMo5gWvtpCVZf39++1yaOC0URwnn+DgYZwiJqaQ/
+			gj7VcrTfE7FdFaxK9A4p6TDqwBAzCC1F9bXE= )
+good-a.test.dnssec-tools.org. 86400 IN A 168.150.236.43
+			86400	RRSIG	A 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					GJXSkKHx4dkb3S+QLX/7pKxgETogzb2HRrOJ
+					rSiY5hTkkBBYpYCKmLY1dIQdAijp+gsg+0e8
+					yXkF6j6SQs7b/auiOlzolsOPlMEmCJ+rlhfX
+					jyCBpTWW8CkcqIxkCyyn/tZAA+jChJ3nQF+G
+					Nxr9Z5HdjQc/PoaIoLNXSYhohnM= )
+			600	NSEC	good-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					wTiQX97MwVgLt+AqwaTKok4XdU1reb4GiCPG
+					rCaU0lA/uNSduq4oYH6wr87H/OkxdWGJq7V8
+					PPXeHVLT8AWyxcxe894JSyXYsDNen6lsUyze
+					2N6i3irKn6KI531Z2aRI5VNblnAFYAJa8xGB
+					vRkRZ8qxl62UBgMMm6Gdcj8EQAg= )
+good-aaaa.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::1
+			86400	RRSIG	AAAA 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					haohz1j5k/35mYfqrTLmnHAmUF5Iu0sZ7tfT
+					0eW9Aj45Rlxs5CVDcF6JnHR+x7X9076foTEj
+					0Ai31m9yAbUuHdvr3m+8919rkxqODWfzhr8V
+					l+ESGCznBq9UDDBuJZhyDYHEl4Pc8L1phXq3
+					obm1FKXuDD1doMAgIPJOjTojRMo= )
+			600	NSEC	good-cname-to-baddata-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					gpXt0H2L17SCfnYPLG51D2MuWSEi1qfzbYeh
+					yvbLRh45oDqQEGzcyTiWw4UbB7qcH2T1ECn8
+					ApqYOH+nLSVyT/iOD4lorUA+ktheIsqCc6Uo
+					t4sudgrXa/bvwz5tPTSRiQFffwcQJHAZb8L9
+					qLwh+7fc9TGU5FAi2z9qnalgQo8= )
+good-cname-to-baddata-a.test.dnssec-tools.org. 86400 IN	CNAME baddata-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					yREo4oHTLImnaFP38ZHoanly+UdyHOG2p3hK
+					h9Eqkk0jON4F8WF8xyBSNm8ro/vL8ozKhJU1
+					cKYxkg2FusLOL3CoqvYZxGjjWMhmZAkPQsRM
+					dw54+3RawU+ijJTz6egaDkARXScHAaQuN9RN
+					YXiLxT8Rn/ZcetEh83EEsOVSF28= )
+			600	NSEC	good-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Al1rlHuRGPOzSPYKevGayeXPOiyP2eb1e8a1
+					ZWZPE85QIMijZRzX5u+G85ApbW9er/N3PFMv
+					oRtUV+7l3MUAFpQhk5qy+fnFKXoX4EWFKO4o
+					uWLYK0oi4crJMJtpNU3yi3514ZaXQy4iyKtr
+					Xf0Zkn4gfKBSgAO7SCZPwpVxk8g= )
+good-cname-to-baddata-aaaa.test.dnssec-tools.org. 86400	IN CNAME baddata-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					zf9YMDr0Ht43paWbWQB6IIwcZZUgumYvKLr8
+					7sGooacoCrsRwMUihplommjwBRPKTObiPmh3
+					v9uJgPfVGWGG+leFizbId9ZB0sDVJsbWj+TF
+					Dz/ecI14cFxtmcG2PjEcbtlbzNIUhL2keJlW
+					IxBRPjuQrzhy69oKLDhDhbdTLBI= )
+			600	NSEC	good-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					JhFgQ8KaMw4aUFs0MUzc450Ntg/2fVEh2PrQ
+					Xnb4ZnvWvlPFOx9QDXfqe2NkBqwHrgeehjNn
+					Dxv76ocp8QQAummAAeNhYvPZjXHI/T+q532a
+					GHxgaeBDHgyV43s3Cge+bVpLyoT6ghc7qA7H
+					tyyWWmaB3PsGOzZs2ajzjiv6GwQ= )
+good-cname-to-badsign-a.test.dnssec-tools.org. 86400 IN	CNAME badsign-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					yXgJ8u9IFhMJCkxDnO15rN3tp75DED6PX0di
+					QOVHQmPMkjBtkbf3J8SsOJ1APlH3X0ACOpq8
+					7LPomXiMEUORsOR4ldlB3H1DS14Z3XWO8O4C
+					iEB4jd7z7B83WmKwGvX7t9lRGkQZ9Sopqvb2
+					heK9xRPJHO+H6cp9w/kL7H5cxoQ= )
+			600	NSEC	good-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					I6OGC9HRTTv0Cumwsp+xMt3iJoBtZntON3li
+					tvGOv+VEj7MEdBj0mMP50qs5dKM8VhJVEq9D
+					vs29qMn9iJ05jvL9BFY08zH5bVFU5LKYOOVy
+					e7FIX++c1Kgq/PtoL1k1S3714LiLZypkMMSc
+					QLPFeFfmOK5xmgM1XZhZDxuSWHU= )
+good-cname-to-badsign-aaaa.test.dnssec-tools.org. 86400	IN CNAME badsign-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					UisuzmKx0Vser/UbAFN0vZROqCjsnmowV+iC
+					TOcRUQT5SAZAr52lRf4lfH3JQZq/d0VdTVcH
+					Ft89ReEgFtrZUv50pdU3RuQzuXL1URwOEpam
+					Vu/08rnS0RVitROP/gKET2zsTxBmZ3eL8E+H
+					jZgUE+FmXuBbVpV/IUJOzcOBEqY= )
+			600	NSEC	good-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					x6eZwJeG/XHk8nGWsLCJNVthH4qAW+XS57DF
+					tL7YBpofuv1TaPV6c9zKsY91LrTDYihTu2gE
+					PHzXNIn25KTuwAHrngawwz4nutzs+KGyUNS1
+					BSb+Hoq4UVJpvBSU9piz2v0E7JsBUonBmJGF
+					doiaQiTSpEhzTtdSYl3ZWPJvQ7c= )
+good-cname-to-futuredate-a.test.dnssec-tools.org. 86400	IN CNAME futuredate-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					jW4HHOm1ilMVzLDpczg3EmdJ4RZ2dy7s/5uA
+					oV48bm/jJ5yFbffbHsHmKjjqU1/U5TAXQ0T6
+					k3fIFZq2f5PW7QmcspT345HqG4V3y2XiDMuF
+					BQW8u+pce4EQh5VlsJX1JnuILu1aMRNzbMra
+					BSaxssfc1Fu/ZHp/Meav9Bv/Vo8= )
+			600	NSEC	good-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Z0hKVIe7pEsENEjN5yUqkTe+xWgkHXNH81Ic
+					VuqYuuQa5m/txUvQBemTaxT5MkJra+AkwJfE
+					qZyZ7MyV29V77x9jx8gOZwbssSiGZF+k8vma
+					Qtx70doiCoF19sOdJ72gqcZNJ0zQnDzV1IfO
+					31iDq4KgwoVciOVV+3qmz/nqi/4= )
+good-cname-to-futuredate-aaaa.test.dnssec-tools.org. 86400 IN CNAME futuredate-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					FepfKBq+79mOrb9iLAWI5FXA8wjbOzfHarBg
+					DGUol0NxAkH2Sy/paBmh88fm5XNM4Z8uva/h
+					Q5q8jLrmGXEw8aIWNAZOFbdk/JhdEcrb1x/q
+					ZECM36S3rUtg5EYJfXZjrxM5j8h3YREjE2eQ
+					Ye2l2HuJVytvbnYkxOxhxmBElBM= )
+			600	NSEC	good-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					w6WfUF+LDoDIJFCUk4Es4MOC23I9/eliDTIU
+					92h/SLaXRVzHTGeOAkLdQsypDuRhf46H5fpq
+					3a0enwOzO/xjpKrhtSgFa7M6CglqeJ9J6FdG
+					Y/cvD1a+vMe5Pvehs0XekYKz9m37JJyiP3dG
+					lUsabHWw3RQTOcpcA5Y2an6On5A= )
+good-cname-to-good-a.test.dnssec-tools.org. 86400 IN CNAME good-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					jnQ9Asuf3m2OninJHtsxrLNPlrvpZQdPZH5D
+					ILjjcfWgOLPEZ/myRh5zgWWT0vYrmzLP6+RQ
+					YIfcSUnDYsLuy4D0obiLL4r6FyaD/Jd70gdX
+					cnkph+YPOdvD58OM7lSbN2vXfW9KhA/W12+0
+					7ylwbXRfP2C8Wdw8nKWMMDDs4xY= )
+			600	NSEC	good-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					QfTwT12yA82rUWFLN2oN9vr1HOjGtmLp/QSG
+					Eq3O1nYkf4nk6m1WU11x/ccnu6rmPIXLcdo4
+					pwYZNMCHbpB9gCy8B2N5MkQ6ieh6rz9uJtwu
+					JL9KdJU0Do4BUlzDSB+7Psl3TAFYKTB+7qHD
+					ZLhYE7USvMi4j0P/CXZwWaQ8RUQ= )
+good-cname-to-good-aaaa.test.dnssec-tools.org. 86400 IN	CNAME good-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					o2p3ZnVNVG+3q3JPp9qgtVHE+odunxSlJ34n
+					QREfUKGhlpkOqP0TwprOdNaRILkKxAqp5lNb
+					7ovYV3mq9GP8Tk73nCzyHcRt9fnEJlBjjiBY
+					YFlPS1Ki9PQrkoof8jFQx2BvigywOufAEv3U
+					+Y/HkPxh86izLQI86E0f9x26daA= )
+			600	NSEC	good-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Y03rOD+t87/+A0CO51zF3RYY4wX5yOBtD31T
+					PewtsXR/frnR6MZdyFzYJ/xioRebeEt434/2
+					8ZSUV5+iZfxY1LWbaYDIMRSrQKA0cLN1ep6v
+					3+G+z+ZE3uVTB9YcNoxXrM44ulCgUt/91DBc
+					h1bn7Ssapa7yVbTl85uxjp1uSFk= )
+good-cname-to-nosig-a.test.dnssec-tools.org. 86400 IN CNAME nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Z116J6RRL40sXkRMoa/IqMOQinPzP+Ibd2uw
+					f+lklklE5hR3AIc9eLlO/gdHYUOPO/88Y96E
+					R9acjyKn0mC3MeZblDwTPJmK78sdM+GSkshQ
+					2LjSOolQePySQii86PRyUQjyBFoo3xQMYCY8
+					ccmEGGuBGGLzQAEvyHnCKNeGnMk= )
+			600	NSEC	good-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					gdoLUFrrq1VQ52gmWMS83NonUjYwYA35orhj
+					enuYlHXm+K09hpe1cKnt0KUoKk8kK4QtmUZ+
+					ns4Bg5+qOCXORXpNMNTzhspFYklJNMvjGyca
+					BQGqu2Ie1TCy+V12DRlpqtTy5D44TTqE82L7
+					Zfi1obxhXEBVDAAaVyU5/vTaYyE= )
+good-cname-to-nosig-aaaa.test.dnssec-tools.org.	86400 IN CNAME nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Xly88GZ9zs/0DnEZoE1QniFzoVgZSB5KMkFc
+					ZrEA5zh+83cJ9lxGgjyqouO0877ZbCG4ifb2
+					oY37dUEgGTCysB0M41PpU5xnIWLDbHhvMenm
+					kNVlapPxkAThf6SfeVLpdundmIzg7rIN2Nap
+					YTEQ9JEWCO9lJ1pufxNWSpA26Bo= )
+			600	NSEC	good-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					X5H9ry6mVxUIR3XNrJ3pCNiwUzCYKNatIAZp
+					FbUejE+CrxJ4V3sfZ6X17veQ5oLv4JaxXJLE
+					v6Md6NVbhqzGVkff+dD4AZHogdllgKJlQhF1
+					nzQXt5u7kHSSCK8ROoxu2ZWyo+jswW/Joi27
+					TGbA55smaz4ypEOWYuM/5L9OyzA= )
+good-cname-to-pastdate-a.test.dnssec-tools.org.	86400 IN CNAME pastdate-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					cgZLUl+0kYS1g2QgO/5A6NiLkxK+YjOaDq6A
+					Pqfq6YVgmJ8umyK8+UyEoyQddrwaXipcIdm3
+					zX3il2n6y9LCeD7bPoEFDxfYIkUzNHadYQ0H
+					lPp3lan2CRekh3Ure7eHCEWwkXQvz3Gw1Jrk
+					Hn8dMWIW14t2QrjtnHHPgT93JQ0= )
+			600	NSEC	good-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					pN1JPIomKdJJU+Ql7ecGjQ/jtT+6bL1cCRaB
+					3DpqqTiRdckIuy8A3+EOIi90IQQFdlbQVmdN
+					A12Su7W8F+Wy21EEUq4lMAp5GjafimMs9noi
+					0sL7FkGuB5qtR7OBmLPpjomRReoqwwXeLeQq
+					0heznd+IT2j6DO+NgZ4EQrZUAlU= )
+good-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN CNAME pastdate-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					IIpuQn+hJzzxptx1A3xLpO6HcdAtLPAA75FY
+					z8pOVLR/gV3PLUhnTcdmFkgK098WqAyHmE2I
+					KHB2TbN6ughJ1FDkuFGWDI3StHuJbs0hRhRc
+					VIsjwo4svmc6jf91MNOTwTZlwL1a0ixigjxC
+					sWuoBq/2SAgoRvjgFg/wEqvSvVw= )
+			600	NSEC	good-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					oycmxxDI7EWDCuQO2WVsTHJWgRdNFLtVQt7D
+					g1emtkFRRUR/rF2VdKKmGYF6XRbYO8QUL1y6
+					VUC9I0jQoHKXGxgt03ZLeYpS/RHM//F4K+kN
+					MdavbHxJLJrR6YT9r+neFkyHrj+X3iPI60/i
+					/rUBuaj2PkUD8312Yq+5SB0Gbdg= )
+good-cname-to-reverseddates-a.test.dnssec-tools.org. 86400 IN CNAME reverseddates-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					KR4flOoUTVM2IzL5yPEt1TC4WUmDAZbMJQSh
+					dlHpP5yOJiSDlscP4RospSTKbU1ZGAOIqH76
+					YkKMG1b9/jur+N7RlROXjoefhorN9FK58shM
+					cIgO8g9Y5K9mN76yc4XbuEaag68Wi6e2eVK1
+					vSKYmgIXtAGGxld7B3tmcZYoCVY= )
+			600	NSEC	good-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					tEOtX4QY148x4kgKUIinG9JJuMxLwruEq79+
+					n1F3/xnwjlGSeAljNifl8U895AgNZCD0iD6C
+					r4ZUQKc/nMeRGHkIWiLGvNxUfYUeI0EDptUB
+					C1FbVdnaP4jWBbw3tPKV66oX2n4pBH9/nRJU
+					JVZskHQyAlCaWB4pYonOd2PB6w4= )
+good-cname-to-reverseddates-aaaa.test.dnssec-tools.org.	86400 IN CNAME reverseddates-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					1q+3+YggqIj8iQDgoBRoW5qSu9VKmYA9D/B8
+					tSfrqdiYDorfmISzobRJ29LoM77/ncp/8hLp
+					giyosrfI2QMfsge5RnODaChxMZAtLNIAedpG
+					D8N/QsGhvxS5TR2W4C3X5u/UJJT77QAeX5eu
+					yykWv38PcDH3g0thXMrYy3XXekk= )
+			600	NSEC	good-ns.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					GSAOyBYialuUxwB4SYCVlzpzBAAsfD46+m4O
+					F2CEZ9spdKtRfpYbXLlMzf3jb7661bS/9Zw1
+					/w1jjhZ9Aam1f0lzK7qD3lY2g4m9HlaolPq7
+					gLoC4CawGpqyq46hDThaO8Pm8IZ8U1p60bQy
+					QUrIlC2TsuRATzojtYZhHceSHFI= )
+good-ns.test.dnssec-tools.org. 86400 IN	NS ns1.good-ns.test.dnssec-tools.org.
+			86400	DS	37611 5 1 (
+					C3AE2BABE0B35B35E36F4B8FF75F7F12089D
+					EBE8 )
+			86400	DS	37611 5 2 (
+					A16195B3A6B5C5D5975C9313C4AC889BD85D
+					CD48898F33CC3A61145446CFA224 )
+			86400	RRSIG	DS 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					MjrwHvj3YYhVGJ0JIAFMafiHT44eUxVxJYzW
+					Sl8u7GMyucLN19cTQkrmlJTP+unGxBZd7zke
+					k+Vprl0g/b4ZWg10NLdjmUHRdVvSMovEo9TC
+					Hw6qAMtPEdtYxIOV7GUlFn7Qi0uDCC4CILHw
+					3aT8M8FDKWIRXh0nVOi9pMJS2XE= )
+			600	NSEC	insecure-ns.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					JZOxhdFiwMjTp5/sTDItNSO4NLA3aWlIp2B6
+					LI7sqLpLMNd5YSsp5f/M7pEAL523PL7amGjV
+					DZnI+NwrZRoTMR+zmdB+v9liMIHJ25iH6Ciw
+					JUfeLJXFkzucB5Lx2ZCSN2YDKQEa5ieAHCX2
+					KS4uN6myh2o7+21MrmVB4r/JuRs= )
+insecure-ns.test.dnssec-tools.org. 86400 IN NS ns1.insecure-ns.test.dnssec-tools.org.
+			600	NSEC	longlabel-01234567890123456789012345678901234567890123456789012.test.dnssec-tools.org. NS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					F1pE58ePEl/wWufp+TnebVeIwTChwqHVh3cr
+					/RlM13iUYykB3lzg5RS8x6+ZOoC4N0VjMBVG
+					GFo9X7sXSzF+wJBC+LlPlMsX9LqxJz6R5P16
+					jZiCqleAhvaS6uYykiOWC0QWhHLE9dG7cI6Y
+					ZJmbgRUgG2EY4Tno+0AuFcjSZhw= )
+longlabel-01234567890123456789012345678901234567890123456789012.test.dnssec-tools.org. 86400 IN	TXT "Long Label Test"
+			86400	RRSIG	TXT 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					HFCFhfcS9D5okWukzPFZ5e+Pim4RCmF20L16
+					krsb8VAB7/4rp+1ja8oWwoqvUrGyST8NiqMh
+					p5pmwtQaxL/GwTJj1v2mW/yMnKkz3uwvDJnW
+					4yAl4NNsiw2pMc/r2lN/1qQic1C1y0Fq9z3h
+					Bzj//QrWWbmihznCERQdSGTVk3s= )
+			600	NSEC	newkeys-ns.test.dnssec-tools.org. TXT RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					AfFS0Kupx+HIBcWR4f1YeGEl59PllgtioSge
+					o+OfqEicHCqvWWwdwm/uENyLGVScgZnmdB5i
+					BSst96CJM2SXFvy/aNNdG3vy1mq4rOBO2W5b
+					adgsqmugasV17zbKRDo9PtG+POwtXSgGzlj9
+					nY3vHHm8lbg2M1eiVdBCmubDkpI= )
+newkeys-ns.test.dnssec-tools.org. 86400	IN NS ns1.newkeys-ns.test.dnssec-tools.org.
+			86400	DS	60646 5 1 (
+					038FB0534F9F067F3122A5E52CC39D0D8760
+					C61F )
+			86400	DS	60646 5 2 (
+					69D3C2EEAE46AFA916C68055F26462DDA62F
+					C5E676165A88EB5EC8FD13D1E945 )
+			86400	RRSIG	DS 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					yN7LFq0gkxJf31v0YVyo7vgR+clCNYXQkGaV
+					H3VoooDSSYQEle6exSUoeD2Nd8ZX170SQzkI
+					LhQ0y9ecjAr28LqxVyodeXHVevVsra5gbyp1
+					B+QFaTJ0LkW6bf70DTT8GNXlbgQJ30MBggTk
+					Bu5ZnCaw6hqLauZQb2/8Z6dtpyk= )
+			600	NSEC	newzsk-ns.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					NVujHaerEa7CUB9HckVmPWy/ArWoBEZfVNSV
+					Kvaz2syqUkfWeXVPV6sBI/uGeBE1fGjHfTIT
+					GoTle908jUyQX8cHUzTPkJfAotKNTU+r3Yr4
+					M3mVn/ZPpKUkNJO4FokNAdUjYcaUrNjPVJsh
+					RA87Uawa6f8uvxX+QCC7cAKD/i4= )
+newzsk-ns.test.dnssec-tools.org. 86400 IN NS ns1.newzsk-ns.test.dnssec-tools.org.
+			86400	DS	43170 5 1 (
+					056497671F217CF183A0A35322CB524F9ECB
+					7A73 )
+			86400	DS	43170 5 2 (
+					09B8F2CF711478A14549FC30FC813DC684F5
+					9272D59BE090FE4746A32FD23145 )
+			86400	RRSIG	DS 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					fIKAw5hUtnD7bRaP++C74wj5vWV4EnNL6NcK
+					P8yVL9w90dipXev7Li3tsHM9Ql2tp2nAa/H/
+					0zySrJmKh/yAWCl0AjYVTWTT0MMEi3AXbYxj
+					6Su5lyUsMwRKiMBh/CNE7XnKd1wWebkCXIgi
+					e7pTt+YfXVll6njGkQ5JGFk2Bts= )
+			600	NSEC	nods-ns.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					DZkVHSF+JFqxWB9v5lotqJycG0mMhxKYgXDU
+					/PQjmAiJeIYEm2myPWBoTXvPAVj1oIIh3ubO
+					1TKZ+cDWHvj6OUjnOzkpKdgBZhmrLyiLc0KP
+					r3DrlZleHaHCWniD+s4iW8HJjeWT4t/SBWN3
+					p151HKkvDi0urCzolUNI+ub/f58= )
+nods-ns.test.dnssec-tools.org. 86400 IN	NS ns1.nods-ns.test.dnssec-tools.org.
+nosig-a.test.dnssec-tools.org. 86400 IN	A 168.150.236.43
+			600	NSEC	nosig-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Is65CZhVo5aHmguHv/bXmaKoHETvuRKok3rj
+					gpXIAKQcz3GUfDbnCpid9AOzZ7la1DnAtvn0
+					8hHMC9RK4KhK182uuD+wOxKC/9xUwymYkmLt
+					gAWm02dVEW0c3ZJRDKTf0i2Gof3T/pAtoUXV
+					UlT9h6C/mAdl6d111/95wOmHGeI= )
+nosig-aaaa.test.dnssec-tools.org. 86400	IN AAAA	2001:470:1f00:ffff::1
+			600	NSEC	nosig-cname-to-baddata-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					MND74emXOpwtE/clk3gVnUFrenJhyuWkb+ZW
+					/62ilP+s7ugWtRNDX5CPGRYCgUCY7sggXXQK
+					w295B7bSq98zLZ2rB2Ee22nw6VXbf1gDZRKe
+					vHo5IfISS5cXThzBs5C3x9rV6WiKh/6ubsTB
+					DL34pgQPx3/4H5TmTEEK7JyYIlo= )
+nosig-cname-to-baddata-a.test.dnssec-tools.org.	86400 IN CNAME baddata-a.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					kAZeKat7VHTdKdTswi9hD7Q6Nl2X2EJySg9w
+					rOvI/u7VKnMxtErJsgUn1m8dw/UaLRqNsE4L
+					0y15NCVFHyMYyOzQds2BLC176dS+djBSi3Fr
+					2d8plB+WWZ31aele0oUcdPqL0ZX4eUltlE93
+					KYgLGuh0UraxTtBCSAFI0fljfOo= )
+nosig-cname-to-baddata-aaaa.test.dnssec-tools.org. 86400 IN CNAME baddata-aaaa.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					hx8q98QWNgQPOLJz33NlhNQ99Y+gG5xZQePu
+					O0kwz0rS5I5B0JFhw5eDANuz0xRsUAQdk2Ic
+					Yr25dzS6zeht97Tu+i1CkAKoFDvm/OuVViIE
+					RQwaWhJsienoz8nZkZZDp7EzA5grNyEhMlQw
+					P1zI17884sSKuP/y35xGpzzvLmM= )
+nosig-cname-to-badsign-a.test.dnssec-tools.org.	86400 IN CNAME badsign-a.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					VDXrkVPqM9MDq1bkkvlgEa5xHQCpV8h5QFtE
+					wjpa5+WvdWIGk1V3nzw2C2pEwXZxyy/SZo5G
+					ovdezPyiRMLJMEkyip0kHGjfeeoBlrDa6tqC
+					gjVArNDJTA2sQgV1X81S5RlFCi8RdSqvBq8z
+					myxqcYM+aB40yvaGvt9WQIz7Cj4= )
+nosig-cname-to-badsign-aaaa.test.dnssec-tools.org. 86400 IN CNAME badsign-aaaa.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					sSEwWiiUvBSON2Ry07Sd5MzYCpbpp1jB1/S6
+					4rdJXpGyRYqT/PmIWThJ+Lt/Ig2EvvEswpPD
+					DmLMgnwDXXFBS5lFwjK4fx1LoaSJspYjGVWz
+					54Wyw7zk4S0ovKddPeob+OLWELcoKXmie6qk
+					uqTm2Q8F0KfIDQ/f4FBbzI6zP9w= )
+nosig-cname-to-futuredate-a.test.dnssec-tools.org. 86400 IN CNAME futuredate-a.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					DayNATRMlXnv68kuOI3Jd7wC0ev4zgN71Lei
+					Wh4k8uVmn271Y2r4jTA/y+dI0Fl3vm37k2P0
+					DGTQgezZeYHl8HVCzPyqhBXyxD5jv53YmIzi
+					Zhj8fEnAvLm6Wj7y6ErkAgQ+WIkqEA704IoA
+					BnQZZ7stTlcEFZOkbPi46OtCKEk= )
+nosig-cname-to-futuredate-aaaa.test.dnssec-tools.org. 86400 IN CNAME futuredate-aaaa.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					WWee5N44Kzcw+aIp3CYsALLjBkDqK6yj67cg
+					fHN1hgQoDGQ5cKbZciYtEEvGTYFnO2m2g4Xo
+					ouWUl2m29wJLLIUeSGBZvZUo3PK3YY4vWW8s
+					tNujO7j2eqSVe4Kedm16W5uz+TrkLSVjsOJE
+					hOCm08zNRmMGzx4ysBfSAXallRU= )
+nosig-cname-to-good-a.test.dnssec-tools.org. 86400 IN CNAME good-a.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					iYA2E7w+BGBmYceqfmsdUoIKCeKU+1yqqRST
+					ougIDI+jdpaQ4QA0Rrr9RK254byrFRN6Pdwo
+					2o61yZS6alixwRdWTAs5LZjl0sQdLYmRoBFu
+					Rj3HnY3n9BtoBljF5Dn1SJSrNO+YDtzZxZNu
+					eLo4PCK0P9YY4O4u3g493s4z71M= )
+nosig-cname-to-good-aaaa.test.dnssec-tools.org.	86400 IN CNAME good-aaaa.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					QbkEFSi/3MqdkBC5VYUj7gJyS+B7Jdb0/3s9
+					OM36CkFFF2gnCR0HD7cLfbi/YQOIXY5hZgIF
+					yxkaWmfk4/slupeKHOev1IJlacaxb5qRvOKQ
+					INYOz+jvDaF4+eZPsu7o25ev9Nyr0kSsT148
+					OWs4FQRh5mlpsoQCrGTNCXLHbx0= )
+nosig-cname-to-nosig-a.test.dnssec-tools.org. 86400 IN CNAME nosig-a.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					hbOkIvXfKdfm6UveIOhv1TvHdhQ8gWeG3mwb
+					VKmLf4j79VgjdbBrc9tUZhWU3kgpkLYncVdu
+					aosvBdaEAfFm3juyGGplAsXvFymIMYuXSa9a
+					wickv6QYeeFggDFzFdKg6/IlHeDk4m97z1zz
+					KGa5lScfU9/w4TPT3dTKwzk/c5w= )
+nosig-cname-to-nosig-aaaa.test.dnssec-tools.org. 86400 IN CNAME	nosig-aaaa.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					dCWL0n1UzmorUnhI8/reAjhMe+eggi8ItEcl
+					9DBz8RHfo6JRwkWJON+RNvhteMgcHHhH6KIq
+					5PPulqOzz6Sh2H4lCcirbbQtyGvPllsLp54k
+					ysA0mDYO/wFDW6hYVAH4/X4P3HYTJe7mtVNN
+					Io+yIpixVCISkAGEWShMoD+Py4c= )
+nosig-cname-to-pastdate-a.test.dnssec-tools.org. 86400 IN CNAME	pastdate-a.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					eudPuy/HCLX36roScXxKgbiu92rZvt8WXTS/
+					yYtQstIaG+cWrgwk9diWQDWx5aclUeQV38Gd
+					zGqq+urNj0dVMT/EuZHKlrj3tIBSjLjEgTxa
+					DEoaiRChJAf/UAkXFQjTgC41iv7TbF7gTLyP
+					dVnoQGkXq804cXZKN+2fd55rwdk= )
+nosig-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN CNAME pastdate-aaaa.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Dl4S0s8/teM6tfbc/vYjXhskgP7IUwqzxoOK
+					dMf4ko/Xq7HJsKNu48aN3XAXymVVHd25+w2R
+					hwGsxQPf+OEh6lrDz4TVtF2fh93gldP93+72
+					4AOpeqVmdm0rOSQnmbUj+URA+rtiTY1cY7El
+					otViSwvqvLhclWpG/PooejBC8aI= )
+nosig-cname-to-reverseddates-a.test.dnssec-tools.org. 86400 IN CNAME reverseddates-a.test.dnssec-tools.org.
+			600	NSEC	nosig-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					eSCksaXctjnQRgqKmJbWY91aOCdqcRw2OCA0
+					ZP7ST9pSUzG37Z66YxEUCvm/j2Kwn6mNoI1f
+					Radqvhn6FjU9W+cUXHwgp2bjA/SVXV3x2x25
+					9J+G9wf+0iZIx9z2M98K+RWHK2TTEWNEZGi1
+					LE8cUzVICQbKjTDP/cFK6yuAnXw= )
+nosig-cname-to-reverseddates-aaaa.test.dnssec-tools.org. 86400 IN CNAME	reverseddates-aaaa.test.dnssec-tools.org.
+			600	NSEC	nosig-ns.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					MD36v4F3rylAFTDCgjwMAn3CyPa5teHjx1Zd
+					wPjiytMYQMgj51NV9oA2pTwmASiU9yqPp9TF
+					XWv+Gnbmf5PQzETRq5kZkcACldtoGtUGIDeZ
+					porqX7b4ja5jz2RKKhUGI/wqtys/RnOP2Hnt
+					EfRikvW6FN1BIRCzvfySRvUBby8= )
+nosig-ns.test.dnssec-tools.org.	86400 IN NS ns1.nosig-ns.test.dnssec-tools.org.
+			86400	DS	27306 5 1 (
+					12F447DB15D061DFC036826AAC34E399F0E1
+					D749 )
+			86400	DS	27306 5 2 (
+					921ABF1517A7F593D4C2577B19997F2F05A8
+					769E92367C2516E5C1147D492497 )
+			600	NSEC	other-a.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					avBswWNSs1yeQygH3lTN8cA8/nrXatn32Rl7
+					W3MyJNTI3i1h96RscyypfkO+dQIBV/zuNuzu
+					7BFghjwch91I4kNvr/XVLqwt1z4I80wdOXqk
+					aqunSnTCqwdfPudjuhAXqkmCAYD5MWfLPbjN
+					K2j2FkuGTA+/yJ1e711OafPU8Ec= )
+other-a.test.dnssec-tools.org. 86400 IN	A 168.150.236.43
+			86400	RRSIG	A 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					plfHJMusXeD55Yq7ROA4UxlDQ+1AKE5IkZ63
+					WBQcvoa0mpWlx2ZbiVBmP8FVEI7Pr3hOlZ/c
+					qY4r6HLVJQ1ZKGmA30n+SWGA6LKmhxmkohBj
+					+VoGwrf6HsCluq2X5P8xZahQXl8NpqSV/CE/
+					EvMC4z4AYQdWEyfWTyJluzc1Iwo= )
+			600	NSEC	other-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					wHPkDKjIRI/oxx2VFGwvwuYXLL1PrtKMpmXz
+					KpO0dqjiC27huejuQ/l7QK9UFounhL15wq22
+					0sASj5Xb5xA3+dbhiSXITlnT9UPoibx9QmcK
+					OcOOlcHaapOV98rVyGMds3TeI3M6S4tZ+eaR
+					1T36iWMemIS5oqyk72nfVWX8CnU= )
+other-aaaa.test.dnssec-tools.org. 86400	IN AAAA	2001:470:1f00:ffff::1
+			86400	RRSIG	AAAA 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					VFrqAlR+m+7WK4jhGe6QQ5IONdjkVmtfhywF
+					p4bQMtrQ+p53zoV0cScv4yZnMcYn30EQMFx/
+					DAhJmkn5b/w9WSf5vRuv8ijvx/6z2mT9m4qS
+					C/StFxtUOCEMdH1G332rq9wp+NKYhZiZj/ZC
+					/f7dWfKcqQgkTRconsbDmAad5K0= )
+			600	NSEC	pastdate-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					VF4trLcO1JmJJ//VA03wkfM6vOaGQ6ZQoGMr
+					wQNB2A4RW85oAepgEUCNEmppE47LFFCvAzGA
+					CL1mBUiciTBZxyGEK2HqT61H//CPkU8Mf7UM
+					IUavMeIYkluuftZirAz3lGAsgQqD7a32kTze
+					kSupuA4297iKPr55mi0+S50ogZo= )
+pastdate-a.test.dnssec-tools.org. 86400	IN A 168.150.236.43
+			600	NSEC	pastdate-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					qdnKiGuu6FM19Kx2MBgyQ30CkFtXXk4A6sQm
+					ha7e9qbwwN2LF3tEvLyb7K8hWg6XU2sqeieM
+					rhsM4NIm+AXZL7gB19bRmyzOkqcsoMJka1Mt
+					XGJC4VDTbAx/NMrqZrn5rNYHxKsOVM78pp9s
+					a6vRcYXCxeKJ2VaN1i7NCv5JE/o= )
+pastdate-a.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			czKkzZ3+cuRd/Bk/8sxd+Xixyh6n8bO97JhoDB2pgjNwO
+			xfOVd9Wv04s18kgB+OoRwYjwwSLoR2jfdTDXcqCIyjBRJ
+			mKyolsJTO3IMUyW22Pn5A47F3juQOP0zjFm1t7YHQ+fxt
+			uEToS32x4PRMjKW4UfZ+btCC1kcWk62Yapi8= )
+pastdate-aaaa.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::1
+			600	NSEC	pastdate-cname-to-baddata-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					F2+TSVWWj8Vs7dJwHZyELuYoQiVnNnt1xjhZ
+					qMWRRty7v+0pHhU+BWWGXgft/H2XpehICHwu
+					+lAU/yu21I6LZpDoiR/8X03AQYNKfkTgWsOx
+					GqY5XqkY8uWR6Xi5hS3Y2SFjmkA8La0dPTGm
+					5o8qzoX70lEK1c+hongzPb9F+Ww= )
+pastdate-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			my7IjPywkVujQSI14VL730mhQKqtV4xdWzhVKvELmE7GL
+			QeGzn/I0O75GX2b7RX1E58rUUP+YYucDTzC+lwfMQLHYU
+			bsHw4H/X3DlQ3fyYrlvFL41Q2lSUPRva9Y4kjysb3hCAL
+			VZSKAYl3ciyn/Cb+ZXZE0uVTG073zeUnI/Uk= )
+pastdate-cname-to-baddata-a.test.dnssec-tools.org. 86400 IN CNAME baddata-a.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					QOMPUepkBxfWZXwAgcoF33R9uStUxfJ/wSOM
+					ZfbOau/2hrptDZhnRHWB92kU3vTRwmM80ixJ
+					V0n4wmfgb9qPyLvhiWiFptkAKNsKkotgj8p2
+					nits3aXQbZ3oeKrV+gA7ynolk1Tfq6MvO/RP
+					BM/x3p6QFHqoZYm6KZ+/eHzk7aY= )
+pastdate-cname-to-baddata-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			LzwGigDO3rNHyuGssGoLjBgqtNM2m0moEKwyiE1nf+9sB
+			vkN7KcgchMa3CLxcIh3ZjSH4WIyKoI1WFO6/lZ/YspUWF
+			IPn6V9k4Ro8Qg9dUTmIiGzkVcA9T8M86Jeiw8x5OdluNO
+			wf91sgmEqNziCdI5W7PLsNPyIcfzxVF6L7Ug= )
+pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org. 86400 IN CNAME baddata-aaaa.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					c3m2lWNBTKyF4LFqHHt7rLSSANYQhHDiRIIF
+					0xcpJ/1W7URTf5YmUa/YIDLlxG6zz2irqzKJ
+					6ak4KE/VZEcpI7Nw5dROXlOp88nm/5NliUdO
+					3BYS7Df5LNiwllNnKIfNB+rOENWRMZJlzemp
+					IUKfFJnmaFMYqCBeo2Deku3x8hk= )
+pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			WS5BCERhisPHYf4j02uRyQlSPRwN/pPsj/0WZGcGEEb55
+			HVNVpRBtlG643S+K+6gNwUvm5Gocd3OGyGRYci9fOayDh
+			hEzmMLFRW3Orhdzg4t9s/15FJpsW7H+WP44Rt3qReuVbt
+			9d+WMOese7gNjynw83wD2KcELxN+dUQ5jukw= )
+pastdate-cname-to-badsign-a.test.dnssec-tools.org. 86400 IN CNAME badsign-a.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					L3A1xSMIyrIPeSSHSJAxaSXgHD+y1lyJ34CG
+					qJ1DsjEbM5t3LCqYxJC3r/mopytHOUnewyRK
+					05grmzA9rlKPkYwq19f/nWvpIkh4FcVkPT5Z
+					do/vcQGtnBdjjXGfJ7v3yY/leLzJwf2qbHZP
+					6aq0hvBbJOQpt9YG7v94RFm5ZU4= )
+pastdate-cname-to-badsign-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			JogiDjEq23Wt4wHzK4PXWoLWhNuR54wkw7JWrYsphZ/PD
+			1KM3pivqA4rnovXYyVPe5hFXBCBjCG/J2qyNy6ys5qWBN
+			w98koQ9TqBZyve3b7TN6quUqz+W4fiIYWJPrEF0rFCM9m
+			g5B414XwgfYBJfyDkQ18EqgmNUudTg/tZReM= )
+pastdate-cname-to-badsign-aaaa.test.dnssec-tools.org. 86400 IN CNAME badsign-aaaa.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					uz9Jy/et6t0z7nKnS8biuE8/Sj5C8741NVCz
+					3vAf6RYuJsgjv/Jk885CXpoOUFrQQWU9zS8t
+					FSKE3vjdDD08xgCtWsAQP2MLwEZvZ2NTHEW7
+					UpQWfIDJ9vFM/065L6Mrvd5MZFTRwHAkTv8S
+					Cf++sWGTAohm3tOHOGitGK/vO+M= )
+pastdate-cname-to-badsign-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			g4i+yJd/siZqAeaxoPCr524Zc/pDS0PgN19QVhfsDWj3x
+			1vE9ob+PmTNRaCmjy44IFcWjBD/90s0NZ98BGlWWJkPou
+			/lXzzGCWCaNX/zLOZNGZBSTXeOOaGYTghWUWSqqixxiF6
+			bgE7H2hATWyoy2UcORob6lmnh3gFbz4T5wP4= )
+pastdate-cname-to-futuredate-a.test.dnssec-tools.org. 86400 IN CNAME futuredate-a.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					CBU4HGv2pv/PxJw+U1AIDFm+Pa1z6dEEqkHf
+					FZDEIdnnGALJS8+RVrk/2J527u1M7FBX3LjX
+					Tal6Td6hu0UdkDSXBkv4lZiTGlLzB9wul2HN
+					xpQmvVSJEDrecGBMSvgQ3Y1s4ILhD3ZX339q
+					Ex6dA63u7PmeLnSDupuOOKs7+G0= )
+pastdate-cname-to-futuredate-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			vFrULj64x/AFW3vOnPXcLo6CPYU+8sdz7OyCpvcBUaIHT
+			Jj1/Pl89OduQPRrPdRqa9oIXButO7rbZFVSJ1zCyV2Tm9
+			UkKLpp329YLhqtiaxL7PQJ2AQapWCP29oa9FpfFNCjvt6
+			J4R6bNWMUX2FdpLWmrN0iDklH6k/A9gD6K98= )
+pastdate-cname-to-futuredate-aaaa.test.dnssec-tools.org. 86400 IN CNAME	futuredate-aaaa.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					oPjg1gajbCVPkbVVpX8rE3mC34GodtVPcp+n
+					ZLr9M0LLCu5jcu5xTN9s/90AcpRxIAzjkwk4
+					YubvivJYiXHg/lRzz1t6uFyQgk/flElSze6K
+					dQqVjs13lGvTfE91ocInMdE6jEpscasr+V94
+					zT2OBHs12vd7VSEFACWfqVe3F+0= )
+pastdate-cname-to-futuredate-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			SpKJ33+ytIXKH+uc6uRjGo+48iQqBs99L6WNmMYZw5Bij
+			vaHbPYsvU6iUZiv+GNepCpHY0QtUuWqrpajA2mR8d/hXr
+			710KCdtjWzv5okYlp/jiXB0snvFu3ysthC24GoYLrCQn7
+			8Xjx+b7FZm3nsUz9nMnnIX2VLNfzeu6Q7Tp8= )
+pastdate-cname-to-good-a.test.dnssec-tools.org.	86400 IN CNAME good-a.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					azH0MTKprouJmrVo55RpWexW6aQ2kmmTMM7b
+					zQlJ+WvefRquYw08A1W5v6LV2gcZf491b5Rx
+					b411RJ4IcQy2yXKlU5zd/DF1K6fx5WcjPE8B
+					zFCAI67hhp/TTRuy3A8As/dWukVM7Infxv1n
+					5iT3jepTJ98zjFfO8ub+aizXY1g= )
+pastdate-cname-to-good-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			ucvlRqw1o39/kiPrJ63dgMgnsoxaZH20yxFabYnOIaQ58
+			slxi7prE/JC6GMyiPkaCiA8dL4llQijlxR2bbITKhfuwK
+			xAHgWqXQTwt6Ih5QufXQy1jNNCZExWza+k59dlQb30kxa
+			KCkd78szJ5xAaC3lIGnVQFMMxIATAJeCWai8= )
+pastdate-cname-to-good-aaaa.test.dnssec-tools.org. 86400 IN CNAME good-aaaa.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					dn/xD484+sKRRo2sa/8GqGP3o5yic7oJIcoU
+					OBH8nBKg/bIxfnYPsKjLcfs0g1Eg438BndvV
+					+ClWZnK3vm9D29q+c6gCJ1qj2rd6Nix45x5w
+					FE6rMavs/c8L8PXYWdWAoubTWkzbbnvfabiA
+					xDSnKuGh1LFNNw+pVZ9bE2/ZPoU= )
+pastdate-cname-to-good-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			sIg/CFnoYBBaBViCFHKzV26w4/hbHAeBdR4k5VYW+mvnl
+			NtIU7ExQD9f+bgYJwcn+m1CWxlpVkZq3i7YcBLnNKKlZ2
+			lg0ZD9uV7eCUPk9ETciboP4AVi72bQ3aSufGHeVYHAmct
+			AMLUa7d1pK8HmuzC6eTK/my4XgIO1i/yiyzQ= )
+pastdate-cname-to-nosig-a.test.dnssec-tools.org. 86400 IN CNAME	nosig-a.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					X06jP0hy4o/4INq8nmZU/03SUUGjbpKXCrF3
+					W+KH4dpSpi+CDNfG+GLZklnv4V9uV3Huh57x
+					T0W+pzKCtV10f9zt4Doptp86rZqshHK63IMy
+					XHfIsUCjrwJ/mC1PpGXW1K/Na9Q9ZBzMRHyT
+					byvQZxDphT1zeLwBYnEgRLIGKj8= )
+pastdate-cname-to-nosig-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			utkivWscd6N3HqoAwWLC6KE87nuExa99eUQNvRr5iDx9r
+			iMovrt01Zx1gX1ScqzXvE+2Gztmi4RT8n0W8BgsbR8DeF
+			A1pA06DxeS+PpbHelpp5ZrImjy7ym4zaSxh3Hi1EA2ToP
+			ScOC585N3xIyEcogjAKEXIY+zFxcBrJ+jjxc= )
+pastdate-cname-to-nosig-aaaa.test.dnssec-tools.org. 86400 IN CNAME nosig-aaaa.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					xdWgi3RCh/X29O4owBsUT7NuNF/LO6Z+xIFl
+					6hi+QWwvatNSITxMxnU5QU2IBn5gdEsLxzud
+					FNdLIwBUG+yVCxJ0wSgXHpIO5nlipg6nrrNn
+					P5OTqKEAnJQS9XFJ0HckulYGuNFf22VJEnpv
+					7Snx7j9nxVIieteXAMNJElit6JY= )
+pastdate-cname-to-nosig-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			N2QXelAh0Sbd987iEHVVmlErrFI0LA/IIzG7ZK3CDVm3q
+			QJBV4v032uTjZP2WsLOCPIQT+Wi7CHMxMmUTv6anBS/mF
+			S6xuS5Hjx8vpxyPiA1oQp64ibKLmvuMmOjhWtX/pu0O7o
+			n1vcwd6U0RY9JGwT+0kbKNwWSDHStleQe7FQ= )
+pastdate-cname-to-pastdate-a.test.dnssec-tools.org. 86400 IN CNAME pastdate-a.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					b1IIs4Dn2SXkivl5Y1va9YWpWr0/yytbWyvU
+					WH6lTF3leuSMOu2Zpg8mnGidD2qknVmDi9qo
+					MCO/PEnqwa4H7u9DKtbrytOXiJQyeDSWzOwd
+					uhTVaYdggvV4k4rFOILUzlr8Fd1AXHuB9vVT
+					b7e9+lSc7pg39RAfswqzsFFvsZk= )
+pastdate-cname-to-pastdate-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			wcYC2F2fy2RIde78V2IhyVCfsDROu6+/9eebiLMM3eOgd
+			O12uAgT6Cwv2e49/D+4HXqGRL+ppYP9TWZDtKehDqfeRq
+			Hum/+S/9X3AYMXk7jiZDN/GcD/bfD1vP05xStxHUUAD0T
+			JmPcJIphl9xxkmCQ2toGxQCIIvPQ9EbLBhrc= )
+pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN	CNAME pastdate-aaaa.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					BP9ycjK1+hG6KfNSgDsbCNJHgjAiAzFY3COK
+					4wDmxZH/LzjSRVddmjea5PLuWFL3IMIHR9JW
+					SIBreeqjmvcDKa+TL+hEYyBWr64fAwYnzubK
+					4yJRQ6JuBN1afnuuo7Wr6Aij0D2e+HYsFzy7
+					NiJTTR2Vr48uRDbV9aIpNMvjhHk= )
+pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			KZ73M/rEqBjBeCSXo5kfqsdmm3UMx/6t/+na3mInEhGn9
+			0AKCzOIduL/b2JcH5FzbQ49FVg5jbXpmt3eeuzZH8tDg9
+			JUk4TMYkO4hoTjIqf220n5D++K+9mqtJfZ3qc5o0CM1tZ
+			JgRYBvSu9L4sNVAWKewIvLFLDMkNZTqu701s= )
+pastdate-cname-to-reverseddates-a.test.dnssec-tools.org. 86400 IN CNAME	reverseddates-a.test.dnssec-tools.org.
+			600	NSEC	pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					t/8cU1ieaA1YgBM200J7Xf+72biqjl6/2/Rk
+					XQZFJECaZ+CwE49Bi0P6fSrHAmKkxIl1nbUv
+					ERbzm8KgkfK7AGh68IPNlYYFC5WFJAAkJ+0A
+					2t3dKOkpcrb+g341vgcBq3Uz5b2vDj4E5fST
+					NRPMT5X2p1ze623elsznxMASVS8= )
+pastdate-cname-to-reverseddates-a.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			nJ2cGuVuPeKqAJzpP2PAiJiRAvpRw/9Y+r96hy6DsovwS
+			QlWk4oN/YndQBplQHyUlr1Hdg6+LJ9Sz9BWCi3xXtWihr
+			fW4TySvQJ/xfN9gKtptT/Z2oapw2FksvM5Ye3/VvTlmNM
+			z3AHzU9GY/MbagyWB+Ml7BR4efTqWyw1gsn4= )
+pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org. 86400 IN CNAME reverseddates-aaaa.test.dnssec-tools.org.
+			600	NSEC	pastdate-ds.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					sx4dkd1s0OctCw/aed0l/o2hQ1bbaC6twk7f
+					pflNVpV6ra9TsOLF6iWWPmRvIVRk4Qj/Xgt/
+					wQL3VNu+51KRzLxZxLFjdylcOWNrhPMhpsC8
+					R1ypz6XcwvI4g4fEs6oVW+qxOak7IOf0Jxt+
+					vf7xRAzeIxriTJTklUyQcYSyu90= )
+pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org.	86400	IN	RRSIG	CNAME  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			mqfK2VmpRnyF5b2zMiEqTF7zDGKXnom9vCCPrjn6XFRtL
+			CIsJJ4+dp0vD1cG8PcUUgOpZ9yt0BXaSvhSc+CgEhtDg5
+			ASe6u83OKTPUPOCiGSd7ErnmRCL0OOV+rXf25azxIENiC
+			nmDDQOBZMPuC1W5wAjhqdx0g0/QOt6xbINUA= )
+pastdate-ds.test.dnssec-tools.org. 86400 IN NS ns1.pastdate-ds.test.dnssec-tools.org.
+			600	NSEC	reverseddates-a.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					s6HWg9a6BdpWvsS6Vj05QM9BrF8gjAWEiOSC
+					jp1nALoaEGpiSPN+Q9HWZH0APw4pBdoWrG8i
+					VJsfdBGmYVz2a5cciYxz1BG8pGokQRK0dz0y
+					TfMg7e+JiKgmZLQU8EAbCh+ozQW6fMih8q6F
+					ZdW0x+PajC1Mub/mYQGIDpiqO50= )
+pastdate-ds.test.dnssec-tools.org.	86400	IN	DS	55041  5  2  E958534893AA2319F9A946233B393FE93F166B2C991FB1C6F79718AB207C15A9 ; xupeh-mogig-mygap-pimuc-nevup-necod-fovyf-nyzov-nozyc-kypid-sykyc-zosos-kyten-lakyp-romol-sohup-nexux
+pastdate-ds.test.dnssec-tools.org.	86400	IN	RRSIG	DS  5  4  86400  20080901101436 (
+			20080802101936 19442  test.dnssec-tools.org.
+			HnMnDmevgoviUyJFtyjwWhed1Q63tiJUj4ChsZtMzE/Sw
+			d2j75C9ymUsJiIin2yBkJVXrnoRtqFkfSL1foKVD2rvYO
+			SrUCQkulZsHBlohLMuNA6Mg1SO3Deky8w3ycx3IU/NonJ
+			bRzM4MTcuPAbuF7jRmNG0+Nhrs7nTrr7Uz4g= )
+reverseddates-a.test.dnssec-tools.org. 86400 IN	A 168.150.236.43
+			86400	RRSIG	A 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					sD5QFi03xqG6L6/shv5PR52blMlcIpo1Ehp1
+					0QZirpzHnmCyPsYPKOgZmYCBdOcCrLqasrBU
+					cGwOtb1ok+sLNfeXN9uME4/O0tp7TD0eOEgp
+					4hSIhIyJrd/HVNgxJTArytwZOa5tGHBTiIZ4
+					5y/Zp3EYP6RM2rO0AlF4GoA5c3g= )
+			600	NSEC	reverseddates-aaaa.test.dnssec-tools.org. A RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Q4QMtAsHmghIrY5RKPhhDPp7pOpZnJPce7di
+					pKmdDGS0/ISoDA20tUyRIa+NBOKxV0VUAb/G
+					FTNR947C9FwytWlJwUEWaf94CoVKMivymJfs
+					IK3CtxTyhZvovPwfh/d5SQd7HkphMpXUSDYj
+					ZiGbfUykOK9KDlTuPeHIfzTSC6A= )
+reverseddates-aaaa.test.dnssec-tools.org. 86400	IN AAAA	2001:470:1f00:ffff::1
+			86400	RRSIG	AAAA 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					IEWYU+A8+UYywF4LMBeHgTw1W9KLqDtiHyNR
+					Lawe4TeLRziKSSkp6l+QufMgHwtVB4mSCx0s
+					tL3hdNim2GrUeVOHro4NtnFmCV96HN72IGu5
+					pNILiKjDhMvWIFTG5mbFqEpV6oeWOyaJfPvS
+					fuhKW+y3lUqbbg2M4jyNesFUsbA= )
+			600	NSEC	reverseddates-cname-to-baddata-a.test.dnssec-tools.org. AAAA RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ZMp3F/Js6IIXxLF0K3cg8j8wJi56ECCIYC7G
+					BjxprASuEoyVjNK2xKH3fgAKtnUVpTWaZ90j
+					BwDZ+VQX/sBAWKVF7IJ8J3cWe+0apnApRmpp
+					vK2K+V2104neGXlZcbY8nWehQPFklvUz7ErJ
+					+84Czx96RtzxqhLzvnTcLvsxFYw= )
+reverseddates-cname-to-baddata-a.test.dnssec-tools.org.	86400 IN CNAME baddata-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					BQ1QUohCvm7oVnLDohfGKyMye+6qaXSkwJfc
+					aCRW360uQG4Bm7gHya+nqiBMhMnW/3sInptx
+					dPXkkaNHxgFDWSWf/MD3kLsM9NbB2NUiav9M
+					nRzWTPQIfoOYysMG4zISdkbhHZBNT1/MXpmF
+					2kqcS0RUMC5A2HiaZQVjAxM1Tw8= )
+			600	NSEC	reverseddates-cname-to-baddata-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					jLQ8E+Ca2waI2W6dI9nY0Ry8mzD7JZz8BFy4
+					RZVFv55lCP20r43OMXZw6VUNwag7ytV553RS
+					C0K6eCuptqC2g5p0pQCueb5gkV/mi25T+VEI
+					Y7KOg4R3scdq3E9B2iKlRYVIYfi7OGwtf91w
+					0uixKiihKoQKZSJO34oLh/Kgprg= )
+reverseddates-cname-to-baddata-aaaa.test.dnssec-tools.org. 86400 IN CNAME baddata-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					E3dk/6VMlGRwbqHQbF03PUdu0zwqMcAgksTk
+					KhBtz0bKCNRISNoMa0BC/w2hRmGqjwe80UBq
+					d9ou3bD1vrL/Eq3Tq6GA5lfm5W9IkKaibZzc
+					7E2g3vE4E4fdpQzBM/RuTrQEg6pLC73livh7
+					xyRPYf5bl7oabyvS83vSbjrdHVs= )
+			600	NSEC	reverseddates-cname-to-badsign-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					yUU1lX1AuaTunvueEhdBLbulUpz3lqtDS2IX
+					1U8uKXqA+VbaLdK9YcnNHk8E+Tg6fhO3o34w
+					YFXlV8BTBuLy1fnD4JEx5M5xkznXGQQGjfRo
+					iyUUhTD8Xsp3ZyXFiKYvI2IWuBZ0hZuSSTsw
+					2rLpP2pls2SUL51cp33wWtE9nUY= )
+reverseddates-cname-to-badsign-a.test.dnssec-tools.org.	86400 IN CNAME badsign-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					Y8ohLAISkk/p7cDc0LeP/aViNGOukx+TUJlT
+					yD9qaUo0zLNM7AyLRV6HcZ1MpIccf4d83VhM
+					qRDuRgEhMFWkQX9YCk3y0T+byfSYzJXnUSTa
+					8yVISxTRxXOOzPNISZJNPwGjTEifVuwLt5wx
+					3DFRMv2qk76sQ8Ytou1sAfTfgQo= )
+			600	NSEC	reverseddates-cname-to-badsign-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					RsH0SzuOcBf23QR9RybNOXGio6WvA9mcAADj
+					8I+H+osgUClxGu+AdPz4Cdu5pRSmMNs2dNME
+					pFBUOAFsc7I3ekGNF4iptza7iEyG6jp6KYSx
+					iJ8hssTn+5mXZIU6ESqAv7BNz43qy1fi3kUm
+					hT4l9/4yF6jUsAtHqB6IB5VxR3c= )
+reverseddates-cname-to-badsign-aaaa.test.dnssec-tools.org. 86400 IN CNAME badsign-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					W+3gZIv2vbGyqM6+uuSHGqFQ7sKvJtTtcd4t
+					teuzg7/chKWkFIgb/pNS0zCAz88hDLwHaYlp
+					edtNAVeMLORuNY5S+05tTtBv2EGLQ6pH/APA
+					t2Pjbm3lTTxn49lBdkCk3RA4YJFODmpV2oZe
+					rV0RBCmqW45AZRfQufF8FyNNH4s= )
+			600	NSEC	reverseddates-cname-to-futuredate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					bKgHqA1bz4vZPwsn+U4HVoJzYcd2nYnU1dj/
+					N1DR79H2Zlqnv53GPEy7F8wYU0Dpeo6DiSVN
+					Updh/YeC+Yua5+6nw3Ap6+gm4ILOh6sDgNFm
+					E/99bZSrz6Togw0u2VoxlodmEr6OdrEEuzHH
+					bYsVqJWlrjxLcFhmyI+5aDkPr+c= )
+reverseddates-cname-to-futuredate-a.test.dnssec-tools.org. 86400 IN CNAME futuredate-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					JWklcg8nTYxA6PPQjtZHXCVCVw9CzS+CAOGK
+					kNsA9y2stacACb4hf9FwS//I/jv/3NJQgNpT
+					nKjxHIITK+wgU8HhryvMtiTsHHKBJ6dqw/ZS
+					AaKS593F5xxLiCC/Zy8J+vVcC699BgW+9DW+
+					6peK+bWIXTZ+pz9+4s3wNEb4ZJM= )
+			600	NSEC	reverseddates-cname-to-futuredate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					vFLzcoF9VqsHkngsi0yafpC6fSwzCCrn/5ch
+					fQM5+NRIUVdBhpHi3ihEbFM+FLAu1JYsvTzP
+					hL+2kkufU2uxZmhmHipMT85K8bQLoh8znhf2
+					bYPYNyeMATVLbWLDGYRxVH8A9BtodTEzUsw3
+					/U7c7q77j0xL+DHkjA0iflsZ7J8= )
+reverseddates-cname-to-futuredate-aaaa.test.dnssec-tools.org. 86400 IN CNAME futuredate-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					WA1mlLZansXjj2UVQ/XeBil6qrjHQBT6lrOi
+					vR33akjBanKpjvUQCYEEKg4i7A4xVUFy0E5P
+					wYTdfKk9uAYr6VkepzVIrOZMjGSEVFmYD4Z9
+					eUaR5W6eMP1ax6VmcEXkyIxz7b8bTS9AFKbP
+					xBhruaWDVXSgc55mC+Ab/I0pWCE= )
+			600	NSEC	reverseddates-cname-to-good-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					txJdWhPc3V2v3h+nIiQ20fF6UiaBf1rQN06M
+					ampKttAwI8rXB2EBggXkAHKbXOfxN+yrTH+W
+					7HW/TQwCzkpvGmbFXrre/ZxdbDAlFzXX1seN
+					CyvVx+pmcV4fXZBAJS74r+6ywvvY4SxNs7YT
+					Tn1NDj7nCZNqQF7VvwDSy06dyOM= )
+reverseddates-cname-to-good-a.test.dnssec-tools.org. 86400 IN CNAME good-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					pedt2GJ7vBOsUbQolqAmD0surcIl6X9yW/Gs
+					dYQKCN+S6upMKjl0PP1wzxytXJ1W8Xa7WzpW
+					HSLfZeldtTGwS9JVwEdabuJvt5k2p/jm3/XE
+					ODsiif1nw3/SBrio0+VSkLNY3uVV6RxjLQv0
+					OHccYJSxhmjm1CP8kG5S3QqL2J4= )
+			600	NSEC	reverseddates-cname-to-good-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					TWTI+p80Ukzs2CnSmRwkC/5DL51xconGkyGW
+					Iwl4fyESL2jO9BbNDPonsmvnNdmG3O2pKiTY
+					Nr2fFDVJCYaM3OfRolPxouq/eomXy+JYK98f
+					QS8cYkoN54ooTBu+HqQpvXOHLWvHaPVLGPEP
+					gijiu5S99GiH2mnxfNCZXUtaT3E= )
+reverseddates-cname-to-good-aaaa.test.dnssec-tools.org.	86400 IN CNAME good-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					Z6NkA9qNSxlBo4mkgq8cJdVjDRL0b5lz9LpX
+					FNXT+MtfflZrq4/1eyBFHZmb0P9BipKz2XRD
+					YYoYhtsYdiI7Firj57dVnFDpDIL8oPbrIrKo
+					+ZpsFS+Oui0UVZJnGswkm0M4JCmgCyuR/3gC
+					AlKbx1MCuhT52hKWdtVWtNtzXkQ= )
+			600	NSEC	reverseddates-cname-to-nosig-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					UXPWg8mhgwbRipGLNXmzw0POOimRQtef4ObB
+					bljVkJzYzHEGF1ONw2O8QUQDnzP4oeh8Mre8
+					OMgEK9/fZP1aFK1Jq9QwhMTB2pX6munZ1WQM
+					o9Jag1OYkS/wKE0JDLv0jW4sqVDCc95I83Yj
+					avpSujx8ZWmLPGnmG1gJiBQeeRg= )
+reverseddates-cname-to-nosig-a.test.dnssec-tools.org. 86400 IN CNAME nosig-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					D5pSWEI4yI48MqKVJFmR8JQK8DTBwN79lThC
+					2x+cbZPVtyDpdB4trGied/vx1Pa8F57lJi37
+					6RedmB2ze3xRa0ib+t8HHdMGvsABlsV2jJ40
+					aLDNfpawIi6nPICBVgFxax4yNTR3RwjUvSDS
+					oXe21L5Hhc9jfAywiPbsyNCPtlk= )
+			600	NSEC	reverseddates-cname-to-nosig-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					FvsCZ6NEF4O9NeNlwMpezUuMDH/3XDhJjiR2
+					W5Z/hs/2OQsgORV50Ib1o9Frj+FX49s+FQE1
+					x1vGUZQsdv+Gn8L6fbMGLx3OfVuXhVhr6NUn
+					se6yb8s213N/dtSZtRdzzGtKI7UlggwBHkuq
+					3ltSSpVHJfgOAVGd16fcTHwUiN8= )
+reverseddates-cname-to-nosig-aaaa.test.dnssec-tools.org. 86400 IN CNAME	nosig-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					KBvmMLiMmCLF+xD8gajE3tY8nhyouSxJF6cA
+					SDgZJTaQLazJ8GMD3KoQE2T3LVIFz8TIFvwi
+					FYtwl/GaTYvYCo910Dzxm5qABcIzpfC2K1Y8
+					VezBmZiDBJmpJgiJTNgSfHvBDkmSsurju8yd
+					eb4jtWPraha2QF+1h9h81v0+zGY= )
+			600	NSEC	reverseddates-cname-to-pastdate-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					b2rEtrDdiwCk+wwzBFsdWCArcrJJM+XAtx/I
+					jJC1wk2rG2zinenLvoAHXWJObn0yyXWCW++s
+					gOpZmoksqZ2LsWsH5wyG0Kg6x46HktpdhM1c
+					07v/5LE7Yp7ceR9J1+xm8Yv42QwqlW4Jn6IQ
+					xkTGAR+2Np+bGLE8DSMODwyeUyk= )
+reverseddates-cname-to-pastdate-a.test.dnssec-tools.org. 86400 IN CNAME	pastdate-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					DWIFoS1t4R/6XZUM8tp5NrJJxekz9b2OFa/P
+					esFdInwabMFZzOMnIYsFkATRRFpho+T9t0WE
+					qBWyOZZyLRbwMzwv2PeJgD4iX72Im0zO0lwk
+					nZmBN8v5iqwe11phgtSzOMJPH/Og2UoZp6XI
+					PErsVO2bC4iSr2Q5Bmlwf+hqKxc= )
+			600	NSEC	reverseddates-cname-to-pastdate-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					N4swjgMntOCEVwUE9OPfhSfuCWtO9n1w4GLJ
+					K/1b9fRTd6QNmaQKq/re1yuX24bWhuM76uKj
+					Q22Hz2Vn44a2sXJjSC5ZM+SeGBKF5BYCBY5s
+					/NqeA7AASTNHrNJVxlsTz4iB604ppfhIbD+l
+					woAwNVIEa3qYKxv808TxfqGMIrQ= )
+reverseddates-cname-to-pastdate-aaaa.test.dnssec-tools.org. 86400 IN CNAME pastdate-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					apomKZ2bNTBKcgyhH2owFa5RHEPLX7tIj46a
+					K3ZKRB1LLCBonzCdL/PW6w9r+0ugOYVB+zyk
+					wZg8RFmE4m6oDnOwSBdsrT4vjYEV7Z1g1OFJ
+					Tyl0GWpBdhiPGQbm51n5rwD6tN5ZakMYMMpV
+					EhAXUinPrI5Tu/DqWYWXqJSY2yo= )
+			600	NSEC	reverseddates-cname-to-reverseddates-a.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					jqXRZHF9JGDnuUwCNcIHF8HxO0f+esdK+kof
+					yLlf3RWJoW9zLYzv1uKyKj/ekIpevkJlRj76
+					ZHhLnijrc0wPPZPHrDTVxQCXPubZNc3Ron08
+					vtjRMVfSr5bHYKR9i7Ocya1wNMw4faODKKD1
+					UZ9zIlFxE6naaVqOdh8FFBX32sw= )
+reverseddates-cname-to-reverseddates-a.test.dnssec-tools.org. 86400 IN CNAME reverseddates-a.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					ZrFuH8w73q4KiwRQeU9HCspgj3/36hCEa385
+					x6WLxVRSRY0YoPfaLDUHXSoN0pZQezcEizdQ
+					v+VPAEmPE2IU0TjHiBuWAhZo/7As2ONS9d8s
+					k+K2H98VrDYgBHDKJHFp9H+ZZn6Zb2P/rtyt
+					1z+Nin2z5959EMZsleY+a9dkAqQ= )
+			600	NSEC	reverseddates-cname-to-reverseddates-aaaa.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					B62tPXoC+TZoxd4UoadKWr/PquqbEgTnYJPA
+					iZ05LuYDahyM1Mgt4OKhm7qpGXX7LbX+D13p
+					OcG5fWCyB8HFjkncvdVj73IsFv33NwE+PEK/
+					qjiXA0Dg437DdWPjYpxfsMOQO8Oxin+mQ4QF
+					QfmNufFY/hMjfJOdVEybSpSdM4s= )
+reverseddates-cname-to-reverseddates-aaaa.test.dnssec-tools.org. 86400 IN CNAME	reverseddates-aaaa.test.dnssec-tools.org.
+			86400	RRSIG	CNAME 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					qMhILJ/0O8kU2k2Clc7UervAHvpoavTSpHVR
+					H/VgKO6LDVmD2JPEtjPASfejRdBz6FVVacti
+					dc+S9XnbfKe2+oZi4rhOQwaQNHREMMDV6FiT
+					CWBpAZUFibi6pyq1OKgkOuo6kwGPWBIFRzyJ
+					pY4wYA0hkC0kPqOjyx1YOouE404= )
+			600	NSEC	reverseddates-ns.test.dnssec-tools.org. CNAME RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ekqrBAYVCIFpIQLYtIqjMI/KZv3E59RphcMb
+					1GIDFUZcFeMAHILX7vNnG8CodWYvt1XYfrfa
+					WcAxtrOkk5nx4UO/rEU+708ArG3FNhLIn682
+					Ati0gdxZG8ivwrhKGzV28bKgZRnuj+a6TOwO
+					p+IyOVpL3PwLb4Awwu+ub3DeOS0= )
+reverseddates-ns.test.dnssec-tools.org.	86400 IN NS ns1.reverseddates-ns.test.dnssec-tools.org.
+			86400	DS	21960 5 1 (
+					65C1EBA2D2A5BEFECA0F61B92002E06F1F01
+					0DC5 )
+			86400	DS	21960 5 2 (
+					93E3A32B5E4B15A8B68C0EF2F67B47FD6610
+					285F5E1D16227B870AA660B626FB )
+			86400	RRSIG	DS 5 4 86400 20080901161932 (
+					20081001161932 19442 test.dnssec-tools.org.
+					0cK3oIRiGx/oVsbpWBP0ma66tlPvFvmguCW/
+					FcDNTjgsa3I7PTfDAus2uJQRJJFL+3BrYUns
+					MkIfr8v5BB2HYqmmxrJJLmo+jAU6D9YIZJ0e
+					7PkhgyGOTCVlchJfoc21+ECs7mLnJJGpwBEP
+					T/SauaY+aOw9kqzZVzcNtIdtZX8= )
+			600	NSEC	rollzsk-ns.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					1V3OisOkuwYLSRqPMDlM3/rTCf+c9Pohkd33
+					JgHJdZTCphbOXJb6NEnicOJdoqxmrVlyl/xD
+					Ei+bNM4RZ/njEE9jEhoWcVe7AV/U+xN2zQod
+					dK539QCWrmJAB78eHerWiGAyFmBHJWUhJAaa
+					/2CNNak17PkqaxB1nP0kfiQFJf4= )
+rollzsk-ns.test.dnssec-tools.org. 86400	IN NS ns1.rollzsk-ns.test.dnssec-tools.org.
+			86400	DS	10395 5 1 (
+					FA0A22A73E662FFF92B429261E9BF9C015FC
+					DD75 )
+			86400	DS	10395 5 2 (
+					AA6E787CFBDE5778AD2E6DBA7DB5C777C1E1
+					35915CB3FD5D31C3F27A0F518AD7 )
+			86400	RRSIG	DS 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					rgRIwha13OVOeFh7k592vxqr0Q0BeUAWGVIN
+					42YXbAHDxZpJHbUb+amGZ6A61SQOB4PYnGhq
+					BJGVJkxDxFYt4zHr7rcO9Z/iwSDym9dmC9d5
+					OYowmRkvrsXogurH7cugafattjv+LetYjnrj
+					IEmV9Xf2lJ6k1AfDripx1OhlH1Q= )
+			600	NSEC	rsamd5keys-ns.test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					evoBUp5xED92A7qHF3nsb7+z0J4rWIROsb0i
+					xHcrkntUrL4Dl/5F3WqTmYQd6lYKQ2nxlAsv
+					CK1o3xf4pG92rjufN42y+dmD4TLsBU5TZkh8
+					YgMMAI5BFeZ87qLUjSEgnUv0mXxs2RXlQbV5
+					jz7/ye90iTgOGkZpVvX84IPzx0w= )
+rsamd5keys-ns.test.dnssec-tools.org. 86400 IN NS ns1.rsamd5keys-ns.test.dnssec-tools.org.
+			86400	DS	7172 1 1 (
+					6C783F3BF80E2B3FE97D26032AC8E442420E
+					8E4B )
+			86400	DS	7172 1 2 (
+					DE900EE9C6F57A61EF4EE57BF9395E81AC24
+					E006FA2EA492FC19552E6C4C5A39 )
+			86400	RRSIG	DS 5 4 86400 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					Dj3wNFL/qCHKov+EUUduHwNXXSuKv4uZmiTO
+					zbkbXYBrwOVk6EkJZzeyTwjh1b10iT2ObQTa
+					YaUx6fDciDC/1uAmE3hOuLEDNVtmDQjXdnYT
+					wKoP/i5OkNPUeZUBTgBTMvcsvbH399JrHNsY
+					bj5n48d9koi0RNkhMBzzpUu0evQ= )
+			600	NSEC	test.dnssec-tools.org. NS DS RRSIG NSEC
+			600	RRSIG	NSEC 5 4 600 20081001161932 (
+					20080901161932 19442 test.dnssec-tools.org.
+					ZB9m/bDkX0+t/b6o0/MTLSzH4apguIF+3eUB
+					mg+LV7z/DaOX3m8DKpFgLZ4Ts0B3QYoCIvAi
+					OWLcL5yiCbk6nEZo09EjqJSL07C9cycUEFWS
+					8AyawjdViOmAJtLga4d7GLfaSUjikuYTH1cb
+					Td91RUMQ5kRzrKF4qiQsRkZPgKY= )
+; records added later after signing took place
+addedlater-nosig-A.test.dnssec-tools.org. 86400 IN A 168.150.236.43
+addedlater-withsig-A.test.dnssec-tools.org. 86400 IN A 168.150.236.43
+addedlater-withsig-A.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  4  86400  20081001171937 (
+			20080901171937 19442  test.dnssec-tools.org.
+			mHSryctOYXIQ5MmwS1w5BnSvRcYkph+NwEsFkPMbbKcGw
+			sn1FqiS9SpsdRb4eVPc25mq5/jbqSRG7+N/1U6jqXk0B3
+			UkllUFxz74mz2WKEPVM3A8wzuFv+Fw7uclr32Fp90SgFP
+			Ynrjr/lbv7y/eDFWx4CQC8EnXK16davqpIuM= )
+addedlater-nosig-AAAA.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1F00:FFFF::1
+addedlater-withsig-AAAA.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1F00:FFFF::1
+addedlater-withsig-AAAA.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  4  86400  20081001171937 (
+			20080901171937 19442  test.dnssec-tools.org.
+			iJr03X/cpWZu8/owPX4ITxj/oqnCN0gXmuEozriI3Rm0H
+			GGgvjBuuqCwHK8zFo0RjKCUhmcYu93/AsbXwS7GB2xSoD
+			iXcJzTEyGpO4RTgw7Z0noLzgYltLgFC/dKTqcFI0C6XL5
+			wB0sIGorW8ty50SLf4olTBTiz6QG0vhO+Mfs= )

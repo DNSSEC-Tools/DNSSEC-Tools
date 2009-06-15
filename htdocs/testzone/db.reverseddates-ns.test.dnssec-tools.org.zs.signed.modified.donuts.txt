@@ -1,0 +1,137 @@
+reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:42
+  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
+	       Upgrade to a new version of bind and generate a new key. 
+	       See this web page for details: 
+	       http://marc.info/?l=bind-announce&m=116253119512445
+
+reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:49
+  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
+	       Upgrade to a new version of bind and generate a new key. 
+	       See this web page for details: 
+	       http://marc.info/?l=bind-announce&m=116253119512445
+
+reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:56
+  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
+	       Upgrade to a new version of bind and generate a new key. 
+	       See this web page for details: 
+	       http://marc.info/?l=bind-announce&m=116253119512445
+
+pastdate-a.reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:336
+  Error:       RRSIG record for
+	       pastdate-a.reverseddates-ns.test.dnssec-tools.org has
+	       expired
+
+pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:351
+  Error:       RRSIG record for
+	       pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org has
+	       expired
+
+reverseddates-a.reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:358
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:374
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-aaaa.reverseddates-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: RSA Verification failed
+
+addedlater-nosig-AAAA.reverseddates-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-nosig-AAAA.reverseddates-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-AAAA.reverseddates-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-nosig-AAAA.reverseddates-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: Signature has expired since:
+	       20080901101420
+
+futuredate-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-aaaa.reverseddates-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: Signature may only be used in the
+	       future; after 20081031101920
+
+addedlater-withsig-A.reverseddates-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-withsig-A.reverseddates-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-withsig-A.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       addedlater-withsig-A.reverseddates-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+addedlater-nosig-A.reverseddates-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-nosig-A.reverseddates-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-A.reverseddates-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-nosig-A.reverseddates-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+baddata-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       baddata-aaaa.reverseddates-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: RSA Verification failed
+
+futuredate-a.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-a.reverseddates-ns.test.dnssec-tools.org type: A
+	       failed to verify: Signature may only be used in the future;
+	       after 20081031101920
+
+badsign-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       badsign-aaaa.reverseddates-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: RSA Verification failed
+
+addedlater-withsig-AAAA.reverseddates-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-withsig-AAAA.reverseddates-ns.test.dnssec-tools.o
+	       rg does not have an NSEC record, which is required for
+	       secure domains.
+
+baddata-a.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       baddata-a.reverseddates-ns.test.dnssec-tools.org type: A
+	       failed to verify: RSA Verification failed
+
+pastdate-a.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       pastdate-a.reverseddates-ns.test.dnssec-tools.org type: A
+	       failed to verify: Signature has expired since:
+	       20080901101420
+
+reverseddates-a.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.reverseddates-ns.test.dnssec-tools.org type:
+	       A failed to verify: RSA Verification failed
+
+badsign-a.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       badsign-a.reverseddates-ns.test.dnssec-tools.org type: A
+	       failed to verify: RSA Verification failed
+
+24 errors found in db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified
