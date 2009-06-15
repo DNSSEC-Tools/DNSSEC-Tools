@@ -157,6 +157,7 @@ my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
 my $curdir;				# Directory.
 my $keyarch;				# Key-archive program.
+my $packed = 0;				# Flag indicating if running packed.
 my $xqtdir;				# Execution directory.
 
 #######################################################################
@@ -192,31 +193,37 @@ sub main
 	my $argc;			# Number of command line arguments.
 	my $errors = 0;			# Total error count.
 
+	#
+	# Initialize a few things...
+	#	- force nonbuffered
+	#	- default error action
+	#	- set run-packed flag
+	#
 	$| = 1;
-
 	erraction(ERR_MSG);
+	$packed = runpacked();
 
 	#
-	# Set up the appropriate DNSSEC-Tools config file.  If there's a
-	# -dtconfig command line option, we'll use that.  If we're running
-	# in a packed configuration, we'll use the config file in the current
-	# directory.  Otherwise, we'll use the default config file.
+	# Parse our command line into an options hash.
 	#
 	GetOptions(\%opts,@opts) || usage();
-	if(exists $opts{'dtconfig'})
+
+	#
+	# Set up the appropriate DNSSEC-Tools config file.  If we're running
+	# in a packed configuration, we'll use the config file in the packed
+	# environment's directory.  If there's a -dtconfig command line option,
+	# we'll use that.  Otherwise, we'll use the default config file.
+	#
+	if($packed)
 	{
-		setconffile($opts{'dtconfig'});
+		$opts{$OPT_DIR} = ".";
+		setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
 	}
 	else
 	{
-		#
-		# Use a local config file if we're running as part of a packed
-		# configuration.
-		#
-		if(packfiles("dnssec-tools.conf", "keyarch", "blinkenlights",
-			     "rollchk", "zonesigner", "rndc"))
+		if(exists $opts{'dtconfig'})
 		{
-			setconffile("./dnssec-tools.conf");
+			setconffile($opts{'dtconfig'});
 		}
 	}
 
@@ -246,7 +253,6 @@ sub main
 	#
 	# If it hasn't been set yet, get the pathname for zonesigner.
 	#
-
 	if(($zonesigner eq '') &&
 	   (($zonesigner=dt_cmdpath('zonesigner')) eq ''))
 	{
@@ -2271,7 +2277,7 @@ sub optsandargs
 	#
 	# Show the version number if requested
 	#
-	usage() if(defined($opts{$OPT_HELP}));
+	usage()   if(defined($opts{$OPT_HELP}));
 	version() if(defined($opts{$OPT_VERSION}));
 
 	#
@@ -2404,6 +2410,23 @@ sub optsandargs
 sub getprogs
 {
 	#
+	# If we're running packed, we'll force the command paths to be taken
+	# from the packed versions.
+	#
+	#	NOTE:  In this version of packed rollerd, we're assuming
+	#	       that rollerd will not be interacting with named.
+	#	       Consequently, we won't be using rndc.
+	#
+	if($packed)
+	{
+		$rndc 	    = '';
+		$keyarch    = "$ENV{'PAR_TEMP'}/inc/keyarch";
+		$rrchk	    = "$ENV{'PAR_TEMP'}/inc/rollrec_chk";
+		$zonesigner = "$ENV{'PAR_TEMP'}/inc/zonesigner";
+		return;
+	}
+
+	#
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
@@ -2432,6 +2455,7 @@ sub bootmsg
 
 	rolllog_log(LOG_ALWAYS,"","$ME parameters:");
 	rolllog_log(LOG_ALWAYS,"","		rollrec file	\"$rollrecfile\"");
+	rolllog_log(LOG_ALWAYS,"","		directory	\"$xqtdir\"");
 	rolllog_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
 	rolllog_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
 	rolllog_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
