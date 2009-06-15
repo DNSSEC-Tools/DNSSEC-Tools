@@ -1,0 +1,96 @@
+pastdate-a.newksk-ns.test.dnssec-tools.org:
+  Location:    db.newksk-ns.test.dnssec-tools.org.zs.signed.modified:288
+  Error:       RRSIG record for pastdate-a.newksk-ns.test.dnssec-tools.org
+	       has expired
+
+pastdate-aaaa.newksk-ns.test.dnssec-tools.org:
+  Location:    db.newksk-ns.test.dnssec-tools.org.zs.signed.modified:303
+  Error:       RRSIG record for
+	       pastdate-aaaa.newksk-ns.test.dnssec-tools.org has expired
+
+reverseddates-a.newksk-ns.test.dnssec-tools.org:
+  Location:    db.newksk-ns.test.dnssec-tools.org.zs.signed.modified:310
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.newksk-ns.test.dnssec-tools.org:
+  Location:    db.newksk-ns.test.dnssec-tools.org.zs.signed.modified:326
+  Error:       RRSIG is nearing its expiration time
+
+baddata-aaaa.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-aaaa.newksk-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: RSA Verification failed
+
+reverseddates-aaaa.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-aaaa.newksk-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: RSA Verification failed
+
+reverseddates-a.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.newksk-ns.test.dnssec-tools.org type: A
+	       failed to verify: RSA Verification failed
+
+futuredate-a.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: futuredate-a.newksk-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature may only be used in the
+	       future; after 20070825163536
+
+badsign-aaaa.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-aaaa.newksk-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: RSA Verification failed
+
+pastdate-aaaa.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-aaaa.newksk-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: Signature has expired since:
+	       20060825163036
+
+addedlater-nosig-AAAA.newksk-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-AAAA.newksk-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-AAAA.newksk-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-AAAA.newksk-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+futuredate-aaaa.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-aaaa.newksk-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature may only be used in the future;
+	       after 20070825163536
+
+addedlater-withsig-A.newksk-ns.test.dnssec-tools.org:
+  Error:       name addedlater-withsig-A.newksk-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+baddata-a.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-a.newksk-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+badsign-a.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-a.newksk-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+pastdate-a.newksk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-a.newksk-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature has expired since:
+	       20060825163036
+
+addedlater-nosig-A.newksk-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.newksk-ns.test.dnssec-tools.org does
+	       not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-A.newksk-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.newksk-ns.test.dnssec-tools.org does
+	       not have a RRSIG record, which is required for secure
+	       domains.
+
+addedlater-withsig-AAAA.newksk-ns.test.dnssec-tools.org:
+  Error:       name addedlater-withsig-AAAA.newksk-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+20 errors found in db.newksk-ns.test.dnssec-tools.org.zs.signed.modified
