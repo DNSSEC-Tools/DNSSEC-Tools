@@ -47,7 +47,26 @@ our @EXPORT = qw(
 			ERR_SILENT
 		);
 
-our @COMMANDS = qw(zonecheck keygen zonesign);
+our @COMMANDS = qw(
+			keyarch
+			keygen
+			rndc
+			rollrec-chk
+			zonecheck
+			zonesign
+			zonesigner
+);
+
+our %CMD_PACKAGES = (
+			"dnssec-keygen"	  => "BIND (9.3.1 or later)",
+			"rndc"		  => "BIND (9.3.1 or later)",
+			"named-checkzone" => "BIND (9.3.1 or later)",
+			"dnssec-signzone" => "BIND (9.3.1 or later)",
+			"keyarch"	  => "DNSSEC-Tools (1.4 or later)",
+			"rollctl"	  => "DNSSEC-Tools (1.4 or later)",
+			"rollerd"	  => "DNSSEC-Tools (1.4 or later)",
+			"zonesigner"	  => "DNSSEC-Tools (1.4 or later)",
+);
 
 our $prefixdir  = $ENV{'DT_PREFIX'}     || "@prefix@";
 our $sysconfdir = $ENV{'DT_SYSCONFDIR'} || "@expanded_sysconfdir@";
@@ -190,6 +209,10 @@ sub parseconfig
 #		then an error message will be given and the process will exit.
 #		If all is well, everything will proceed quietly onwards.
 #
+#		When running packed, we'll force the command paths to be in
+#		the package directory.  We'll also make them executable, since 
+#		PAR seems to ignore original file permissions.
+#
 #		Things that make you go "hmmm....":
 #			Is it *really* a good idea for a library routine
 #			to exit on error, rather than just giving an
@@ -207,6 +230,8 @@ sub cmdcheck
 	#
 	foreach my $bcmd (@COMMANDS)
 	{
+		my $pkg;			# Package for this command.
+
 		#
 		# Only check the defined commands.
 		#
@@ -223,11 +248,16 @@ sub cmdcheck
 		}
 
 		#
+		# Get the package for this command name.
+		#
+		$pkg = $CMD_PACKAGES{$opts{$bcmd}};
+
+		#
 		# Check command name's existence.
 		#
 		if($cmd eq "")
 		{
-			err("command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n",3);
+			err("command \"$bcmd\" does not exist; please install $pkg\n",3);
 			return(0);
 		}
 
@@ -236,7 +266,7 @@ sub cmdcheck
 		#
 		if(! -e $cmd)
 		{
-			err("BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n",3);
+			err("command \"$cmd\" does not exist; please install $pkg\n",3);
 			return(0);
 		}
 
@@ -529,7 +559,7 @@ hash referenced by I<%options_hashref>.  If the hash doesn't contain an entry
 for one of those commands, it is not checked.
 
 If this routine is called from a PAR-packed script, then it will look in the
-package directory for the commands.  It will also set their file mode to
+package directory for the commands.  It will also set their file modes to
 0755, as PAR appears to ignore file modes when packaging programs.
 
 =item I<getconfdir()>
