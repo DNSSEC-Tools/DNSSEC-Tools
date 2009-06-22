@@ -232,7 +232,12 @@ sub main
 	#
 	%dtconf = parseconfig();
 	optsandargs();
+
+	#
+	# Check our required external commands.
+	#
 	getprogs();
+	cmdcheck(\%opts);
 
 	#
 	# Daemonize ourself.
@@ -2139,7 +2144,8 @@ sub signer
 	#
 	# Build the command to execute.
 	#
-	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned";
+	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned > /dev/null 2>&1";
+#	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned";
 
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
@@ -2421,8 +2427,17 @@ sub getprogs
 	{
 		$rndc 	    = '';
 		$keyarch    = "$ENV{'PAR_TEMP'}/inc/keyarch";
-		$rrchk	    = "$ENV{'PAR_TEMP'}/inc/rollrec_chk";
+		$rrchk	    = "$ENV{'PAR_TEMP'}/inc/rollchk";
 		$zonesigner = "$ENV{'PAR_TEMP'}/inc/zonesigner";
+
+		delete($opts{'rndc'});
+		$opts{'keyarch'}     = "keyarch";
+		$opts{'rollrec-chk'} = "rollchk";
+		$opts{'zonesigner'}  = "zonesigner";
+		$opts{'keygen'}	     = "dnssec-keygen";
+		$opts{'zonesign'}    = "dnssec-signzone";
+		$opts{'zonecheck'}   = "named-checkzone";
+
 		return;
 	}
 
