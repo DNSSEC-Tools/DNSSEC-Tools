@@ -2947,7 +2947,7 @@ sub usage
 	print STDERR "\t\t\t-droprevoked\n";
 	print STDERR "\t\t\t-useboth\n";
 	print STDERR "\t\t\t-usezskpub\n";
-	print STDERR "\t\t\t-nsec3\n";
+	print STDERR "\t\t\t-usensec3\n";
 	print STDERR "\t\t\t-archivedir directory\n";
 	print STDERR "\t\t\t-nosave\n";
 	print STDERR "\t\t\t-kskcount count\n";
@@ -2964,9 +2964,9 @@ sub usage
 	print STDERR "\n";
 
 	print STDERR "\t\tdnssec-keygen options:\n";
-	print STDERR "\t\t\t-keygen    named-keygen location\n";
+	print STDERR "\t\t\t-keygen    dnssec-keygen location\n";
 	print STDERR "\t\t\t-zonecheck named-checkzone location\n";
-	print STDERR "\t\t\t-zonesign  named-signzone location\n";
+	print STDERR "\t\t\t-zonesign  dnssec-signzone location\n";
 	print STDERR "\t\t\t-algorithm algorithm\n";
 	print STDERR "\t\t\t-ksklength KSK-size\n";
 	print STDERR "\t\t\t-zsklength ZSK-size\n";
