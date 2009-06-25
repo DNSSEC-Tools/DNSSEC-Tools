@@ -28,6 +28,7 @@
 #			--------	---------
 #			FreeBSD		Unix
 #			Mac OSX		Unix
+#			Solaris		Solaris/Unix
 #
 #		When extending the interface or porting this module to another
 #		O/S, the following entities must be modified as described
@@ -356,6 +357,21 @@ my %switch_unix =
 	$SAVEID	   =>	\&unix_saveid,
 );
 
+my %switch_solaris =
+(
+	$CMDINT	   =>	\&unix_cmdint,
+	$DROPID	   =>	\&unix_psef_dropid,
+	$GETDIR	   =>	\&unix_dir,
+	$GETID	   =>	\&unix_getid,
+	$HALT	   =>	\&unix_halt,
+	$IDFILE	   =>	\&unix_idfile,
+	$SETIDFILE =>	\&unix_set_idfile,
+	$LOADZONE  =>	\&unix_loadzone,
+	$RMID	   =>	\&unix_rmid,
+	$RUNNING   =>	\&unix_running,
+	$SAVEID	   =>	\&unix_saveid,
+);
+
 
 ##############################################################################
 #
@@ -455,6 +471,14 @@ sub rollmgr_prepdep
 	   ($osname eq "darwin"))
 	{
 		$osclass = "unix";
+	}
+
+	#
+	# Figure out which operating system class we're running on.
+	#
+	if(($osname eq "solaris"))
+	{
+		$osclass = "solaris";
 	}
 
 	#
@@ -1035,10 +1059,23 @@ sub unix_loadzone
 
 #--------------------------------------------------------------------------
 #
+# Routine:	unix_psef_dropid()
+#
+# Purpose:      Replaces unix_dropid on ps -ef based systems
+#
+sub unix_psef_dropid
+{
+	return unix_dropid('-ps', '-ef', 1, @_);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	unix_dropid()
 #
 # Purpose:	Ensures that another instance of rollerd is not running and
 #		then creates a pid file for future reference.
+#
+# Options:      [-ps FLAGS PIDPOSITION]
 #
 # Return Values:
 #		 1 - The pidfile was initialized for this process.
@@ -1050,6 +1087,15 @@ sub unix_dropid
 	my $ego = $$;					# My identity.
 	my $pfpid;					# Pid from the pidfile.
 	my $pspid = -1;					# Pid from ps execution.
+	my $psflags = "wax";
+	my $pidposition = 0;
+
+	if ($_[0] eq '-ps')
+	{
+		shift @_;
+		$psflags = shift @_;
+		$pidposition = shift @_;
+	}
 
 # print "unix_dropid:  down in\n";
 
@@ -1090,7 +1136,7 @@ sub unix_dropid
 		#	However, the $pfpid seems to be dropped
 		#	when using that method.
 		#
-		$pscmd = "$PS wax";
+		$pscmd = "$PS $psflags";
 		$openrc = open(PSOUT,"$pscmd |");
 		$psline = <PSOUT>;
 		while(<PSOUT>)
@@ -1106,8 +1152,8 @@ sub unix_dropid
 			# Get the pid from the line and drop out.
 			#
 			s/^[ ]*//;
-			@psout = split / /;
-			$pspid = $psout[0];
+			@psout = split / +/;
+			$pspid = $psout[$pidposition];
 			last;
 		}
 		close(PSOUT);
@@ -1146,6 +1192,7 @@ sub unix_dropid
 	$rollmgrid = $ego;
 	return(1);
 }
+
 
 #--------------------------------------------------------------------------
 #
