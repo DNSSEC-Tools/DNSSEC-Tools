@@ -100,6 +100,15 @@ sub main
 	erraction(ERR_MSG);
 
 	#
+	# Use a local config file if we're running as part of a packed
+	# configuration.
+	#
+	if(runpacked())
+	{
+		setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+	}
+
+	#
 	# Check our options and arguments.
 	#
 	optsandargs();
@@ -230,19 +239,19 @@ sub chkzone
 		$keytype = keyrec_recval($krn,'keyrec_type');
 
 		#
-		# Skip non-obsolete keys.
+		# Skip non-obsolete and non-revoked keys.
 		#
-		next if($keytype !~ /obs/);
+		next if(($keytype !~ /obs/) && ($keytype !~ /rev/));
 
 		#
 		# Skip KSKs if we're only archiving ZSKs.
 		#
-		next if(($keytype eq 'kskobs') && !$kskonly);
+		next if(($keytype =~ /ksk/) && !$kskonly);
 
 		#
 		# Skip ZSKs if we're only archiving KSKs.
 		#
-		next if(($keytype eq 'zskobs') && !$zskonly);
+		next if(($keytype =~ /zsk/) && !$zskonly);
 
 		#
 		# Build the key file names.
@@ -505,8 +514,9 @@ keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys
 
 =head1 DESCRIPTION
 
-The B<keyarch> program archives old KSK and ZSK keys.  Keys are considered
-old if they are obsolete and are marked as either I<kskobs> or I<zskobs>.
+The B<keyarch> program archives old KSK and ZSK keys.  Keys are considered old
+if they are revoked or obsolete.  Keys marked as either I<kskrev> or I<zskrev>
+are revoked; keys marked as either I<kskobs> or I<zskobs> are obsolete.
 Archived keys are prefixed with the seconds-since-epoch as a means of
 distinguishing a zone's keys that have the same five digit number.
 
@@ -514,8 +524,8 @@ If the required file argument is a I<keyrec> file, then expired keys listed
 in that file are archived.  If the file argument is a I<rollrec> file, the
 I<keyrec> files of the zones in that file are checked for expired keys.
 
-If the B<-zone> option is given, then only obsolete keys belonging to the
-specified zone will be archived.
+If the B<-zone> option is given, then only revoked and obsolete keys belonging
+to the specified zone will be archived.
 
 The archive directory is either zone-specific (listed in the zone's I<keyrec>
 record in the zone's I<keyrec> file) or the default archive directory given
