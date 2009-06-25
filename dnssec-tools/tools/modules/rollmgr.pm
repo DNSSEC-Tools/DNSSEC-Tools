@@ -357,7 +357,7 @@ my %switch_unix =
 	$SAVEID	   =>	\&unix_saveid,
 );
 
-my %switch_solaris =
+my %switch_sysv =
 (
 	$CMDINT	   =>	\&unix_cmdint,
 	$DROPID	   =>	\&unix_psef_dropid,
@@ -384,6 +384,7 @@ my %port_archs =
 	"uninitialized"	=>	\%switch_uninit,
 	"unknown"	=>	\%switch_unknown,
 	"unix"		=>	\%switch_unix,
+	"sysv"	 	=>	\%switch_sysv,
 );
 
 
@@ -478,7 +479,7 @@ sub rollmgr_prepdep
 	#
 	if(($osname eq "solaris"))
 	{
-		$osclass = "solaris";
+		$osclass = "sysv";
 	}
 
 	#
