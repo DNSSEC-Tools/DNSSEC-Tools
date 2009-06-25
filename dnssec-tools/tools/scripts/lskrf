@@ -41,12 +41,18 @@ my @opts =
 		"kcur",			# List Current KSK key keyrecs.
 		"kpub",			# List Published KSK key keyrecs.
 		"kobs",			# List obsolete KSK key keyrecs.
+		"krev",			# List revoked KSK key keyrecs.
+		"kinv",			# List revoked and obs. KSK key keyrecs.
 	"zsk",				# List ZSK keyrecs.
 		"cur",			# List Current ZSK key keyrecs.
 		"new",			# List New ZSK key keyrecs.
 		"pub",			# List Published ZSK key keyrecs.
 		"zobs",			# List obsolete ZSK key keyrecs.
+		"zrev",			# List revoked ZSK key keyrecs.
+		"zinv",			# List revoked and obs. ZSK key keyrecs.
 	"obs",				# List all obsolete-key keyrecs.
+	"rev",				# List all revoked-key keyrecs.
+	"invalid",			# List all obs- and rev-key keyrecs.
 
 	"ref",				# List referenced key keyrecs.
 	"unref",			# List unreferenced key keyrecs.
@@ -113,6 +119,8 @@ my $kskflag;
 my $kcurflag;
 my $kpubflag;
 my $kobsflag;
+my $krevflag;
+my $kinvflag;
 my $obsflag;
 my $zskflag;
 my $zcurflag;
@@ -124,11 +132,15 @@ my $zzsksflag;
 my $znewflag;
 my $zpubflag;
 my $zobsflag;
+my $zrevflag;
+my $zinvflag;
 
 my $refflag;
 my $unrefflag;
 my $validflag;
 my $expiredflag;
+my $revflag;
+my $invflag;
 
 my $cntflag;
 my $nodateflag;
@@ -203,10 +215,12 @@ my %zskkeys  = ();			# ZSK keyrecs.
 my %kcurkeys = ();			# Current KSK keyrecs.
 my %kpubkeys = ();			# Published KSK keyrecs.
 my %kobskeys = ();			# Obsolete KSK keyrecs.
+my %krevkeys = ();			# Obsolete KSK keyrecs.
 my %zcurkeys = ();			# Current ZSK keyrecs.
 my %znewkeys = ();			# New ZSK keyrecs.
 my %zpubkeys = ();			# Published ZSK keyrecs.
 my %zobskeys = ();			# Obsolete ZSK keyrecs.
+my %zrevkeys = ();			# Revoked ZSK keyrecs.
 
 my $archive;				# Default archive directory.
 
@@ -311,12 +325,17 @@ sub doopts
 	$kcurflag	= $options{'kcur'}	|| 0;
 	$kpubflag	= $options{'kpub'}	|| 0;
 	$kobsflag	= $options{'kobs'}	|| 0;
-	$obsflag	= $options{'obs'}	|| 0;
+	$krevflag	= $options{'krev'}	|| 0;
+	$kinvflag	= $options{'kinv'}	|| 0;
 	$zskflag	= $options{'zsk'}	|| 0;
 	$zcurflag	= $options{'cur'}	|| 0;
 	$znewflag	= $options{'new'}	|| 0;
 	$zpubflag	= $options{'pub'}	|| 0;
 	$zobsflag	= $options{'zobs'}	|| 0;
+	$zrevflag	= $options{'zrev'}	|| 0;
+	$zinvflag	= $options{'zinv'}	|| 0;
+	$obsflag	= $options{'obs'}	|| 0;
+	$revflag	= $options{'rev'}	|| 0;
 
 	$zdatesflag	= $options{'z-dates'}	|| 0;
 	$zdirsflag	= $options{'z-dirs'}	|| 0;
@@ -328,6 +347,7 @@ sub doopts
 	$unrefflag	= $options{'unref'}	|| 0;
 	$validflag	= $options{'valid'}	|| 0;
 	$expiredflag	= $options{'expired'}	|| 0;
+	$invflag	= $options{'invalid'}	|| 0;
 
 	$cntflag	= $options{'count'}	|| 0;
 	$nodateflag	= $options{'nodate'}	|| 0;
@@ -391,7 +411,16 @@ sub doopts
 	#
 
 	#
-	# If the -obs options was given, convert it to -kobs and -zobs.
+	# If the -invalid option was given, convert it to -obs and -rev.
+	#
+	if($invflag)
+	{
+		$obsflag = 1;
+		$revflag = 1;
+	}
+
+	#
+	# If the -obs option was given, convert it to -kobs and -zobs.
 	#
 	if($obsflag)
 	{
@@ -400,13 +429,23 @@ sub doopts
 	}
 
 	#
+	# If the -rev option was given, convert it to -krev and -zrev.
+	#
+	if($revflag)
+	{
+		$krevflag = 1;
+		$zrevflag = 1;
+	}
+
+	#
 	# If none of the normal record selection flags were given but
 	# either the referenced or unreferenced record flags were given,
 	# then we'll assume the user wants all the referenced sets and keys.
 	#
 	if(!$allflag && !$zonesflag && !$setsflag && !$keysflag &&
-	   !$kskflag && !$kcurflag  && !$kpubflag && !$kobsflag &&
-	   !$zskflag && !$zcurflag  && !$znewflag && !$zpubflag && !$zobsflag)
+	   !$kskflag && !$kcurflag  && !$kpubflag &&
+	   !$zskflag && !$zcurflag  && !$zpubflag && !$znewflag &&
+	   !$kobsflag && !$krevflag && !$zobsflag && !$zrevflag	)
 	{
 		if($refflag || $unrefflag)
 		{
@@ -448,8 +487,8 @@ sub doopts
 	}
 
 	#
-	# Set the appropriate keys flags.  The obsolete keys must be
-	# explicitly requested.  The all-keys flag won't pick it up.
+	# Set the appropriate keys flags.  The obsolete and revoked keys must
+	# be explicitly requested.  The all-keys flag won't pick up either.
 	#
 	if($keysflag)
 	{
@@ -642,8 +681,9 @@ sub doopts
 	#
 	# Set up some key output flags.
 	#
-	if($kskflag || $kcurflag || $kpubflag || $kobsflag ||
-	   $zskflag || $zcurflag || $znewflag || $zpubflag || $zobsflag)
+	if($kskflag  || $kcurflag || $kpubflag ||
+	   $zskflag  || $zcurflag || $zpubflag || $znewflag ||
+	   $kobsflag || $krevflag || $zobsflag || $zrevflag)
 	{
 		#
 		# Set our defaults.
@@ -698,6 +738,7 @@ sub doopts
 		#
 		# $keysflag isn't used any more for output selection, so we'll
 		# set it to indicate that some keys should be printed.
+		#
 		$keysflag = 1;
 	}
 
@@ -719,8 +760,8 @@ sub doopts
 # Purpose:	This routine reads the specified keyrec file and puts each
 #		keyrec into the appropriate keyrec hash table.  There are
 #		hashes for zones, KSK keys, ZSK keys, current KSKs, obsolete
-#		KSKs, and all keys.  current ZSKs, new ZSKs, published ZSKs,
-#		obsolete ZSKs, and all keys.
+#		KSKs, revoked KSKs, current ZSKs, new ZSKs, published ZSKs,
+#		obsolete ZSKs, and revoked ZSKs.
 #
 sub getkeyrecs
 {
@@ -780,6 +821,11 @@ sub getkeyrecs
 			$kobskeys{$krn}	= $kr;
 			$kskkeys{$krn}	= $kr;
 		}
+		elsif($type eq 'kskrev')
+		{
+			$krevkeys{$krn}	= $kr;
+			$kskkeys{$krn}	= $kr;
+		}
 		elsif($type eq 'zskcur')
 		{
 			$allkeys{$krn}	= $kr;
@@ -801,6 +847,11 @@ sub getkeyrecs
 		elsif($type eq 'zskobs')
 		{
 			$zobskeys{$krn}	= $kr;
+			$zskkeys{$krn}	= $kr;
+		}
+		elsif($type eq 'zskrev')
+		{
+			$zrevkeys{$krn}	= $kr;
 			$zskkeys{$krn}	= $kr;
 		}
 	}
@@ -1358,6 +1409,18 @@ sub showkeys
 	}
 
 	#
+	# Select the information about the revoked KSK keys.
+	#
+	if($krevflag)
+	{
+		foreach my $k (sort(keys(%krevkeys)))
+		{
+			$krr = $krevkeys{$k};
+			selkey($k,$krr,"KSK-rev");
+		}
+	}
+
+	#
 	# Select the information about the Current ZSK keys.
 	#
 	if($zcurflag)
@@ -1402,6 +1465,18 @@ sub showkeys
 		{
 			$krr = $zobskeys{$k};
 			selkey($k,$krr,"ZSK-obs");
+		}
+	}
+
+	#
+	# Select the information about the revoked ZSK keys.
+	#
+	if($zrevflag)
+	{
+		foreach my $k (sort(keys(%zrevkeys)))
+		{
+			$krr = $zrevkeys{$k};
+			selkey($k,$krr,"ZSK-rev");
 		}
 	}
 
@@ -1712,7 +1787,7 @@ sub writekeys
 	#
 	# Write each of the key types in a nice orderly fashion.
 	#
-	foreach my $kt ('Key Type', 'KSK-cur', 'KSK-pub', 'ZSK-cur', 'ZSK-pub', 'ZSK-new', 'KSK-obs', 'ZSK-obs')
+	foreach my $kt ('Key Type', 'KSK-cur', 'KSK-pub', 'ZSK-cur', 'ZSK-pub', 'ZSK-new', 'KSK-obs', 'KSK-rev', 'ZSK-obs', 'ZSK-rev')
 	{
 		writekeytype($kt);
 	}
@@ -1932,13 +2007,17 @@ sub usage
 		print STDERR "\t\t-ksk		list KSK keys\n";
 		print STDERR "\t\t  -kcur		list Current KSK keys\n";
 		print STDERR "\t\t  -kpub		list Published KSK keys\n";
-		print STDERR "\t\t  -kobs		list Obsolete KSK keys\n";
+		print STDERR "\t\t  -kobs		list obsolete KSK keys\n";
+		print STDERR "\t\t  -krev		list revoked KSK keys\n";
 		print STDERR "\t\t-zsk		list ZSK keys\n";
 		print STDERR "\t\t  -cur		list Current ZSK keys\n";
 		print STDERR "\t\t  -pub		list Published ZSK keys\n";
 		print STDERR "\t\t  -new		list New ZSK keys\n";
 		print STDERR "\t\t  -zobs		list obsolete ZSK keys\n";
+		print STDERR "\t\t  -zrev		list revoked ZSK keys\n";
 		print STDERR "\t\t-obs		list obsolete KSK and ZSK keys\n";
+		print STDERR "\t\t-rev		list revoked KSK and ZSK keys\n";
+		print STDERR "\t\t-invalid	list obsolete and revoked KSK and ZSK keys\n";
 
 		print STDERR "\trecord-attribute options:\n";
 		print STDERR "\t\t-valid\t	show keyrecs of unexpired zones\n";
@@ -2175,6 +2254,11 @@ This option displays the Published KSK keys in a I<keyrec> file.
 This option displays the obsolete KSK keys in a I<keyrec> file.  This option
 must be give if obsolete KSK keys are to be displayed.
 
+=item B<-krev>
+
+This option displays the revoked KSK keys in a I<keyrec> file.  This option
+must be give if revoked KSK keys are to be displayed.
+
 =item B<-zsk>
 
 This option displays the ZSK keys in a I<keyrec> file.  It does not include
@@ -2198,10 +2282,26 @@ This option displays the Published ZSK keys in a I<keyrec> file.
 This option displays the obsolete ZSK keys in a I<keyrec> file.  This option
 must be give if obsolete ZSK keys are to be displayed.
 
+=item B<-zrev>
+
+This option displays the revoked ZSK keys in a I<keyrec> file.  This option
+must be give if revoked ZSK keys are to be displayed.
+
 =item B<-obs>
 
 This option displays the obsolete KSK and ZSK keys in a I<keyrec> file.
 This option is a shorthand method specifying the B<-kobs> and B<-zobs> options.
+
+=item B<-rev>
+
+This option displays the revoked KSK and ZSK keys in a I<keyrec> file.
+This option is a shorthand method specifying the B<-krev> and B<-zrev> options.
+
+=item B<-invalid>
+
+This option displays the obsolete and revoked KSK and ZSK keys in a I<keyrec>
+file.  This option is a shorthand method specifying the B<-obs> and B<-rev>
+options.
 
 =back
 
