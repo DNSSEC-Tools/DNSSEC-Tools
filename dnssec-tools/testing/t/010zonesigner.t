@@ -1,9 +1,26 @@
 # This is -*- perl -*-
 
 use strict;
-use Test::More tests => 1;
+use Test::Builder;
+
 use File::Copy;
 use File::Path;
+
+require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
+
+# verbosity check
+use Getopt::Std;
+my %options = ();
+getopts("v",\%options);
+
+# TEST object
+my $test = Test::Builder->new;
+$test->plan( tests => 4);
+
+#verbose setup for test object and dt_testingtools.
+if (exists $options{v}) { $test->no_diag(0); dt_testingtools_verbose(1); }
+else                    { $test->no_diag(1); dt_testingtools_verbose(0); }
+
 
 my $zonesigner  = "$ENV{'BUILDDIR'}/tools/scripts/zonesigner";
 
@@ -13,6 +30,61 @@ my $logfile    = "$ENV{'BUILDDIR'}/testing/zones/test.log";
 my $domain     = "example.com";
 my $domainfile = $domain;
 my $statedir   = "$testdir/tmp";
+
+my %zonesigner_response = (
+    "gentest" =>   q{    using default keyrec file example.com.krf
+    checking options and arguments
+    using keyrec file example.com.krf
+    check existence of zone file
+    initial zone verification
+
+     if zonesigner appears hung, strike keys until the program completes
+     (see the "Entropy" section in the man page for details)
+
+    generating key files
+    adding key includes to zone file
+    signing zone
+    checking zone
+
+zone signed successfully
+
+example.com:
+     KSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-3)
+     ZSK (cur) 12345  -b 1024  01/01/01     (example.com-signset-1)
+     ZSK (pub) 12345  -b 1024  01/01/01     (example.com-signset-2)
+
+zone will expire in 4 weeks, 2 days, 0 seconds
+DO NOT delete the keys until this time has passed.
+},
+    "nsec3test" =>   q{    using default keyrec file nsec3.example.com.krf
+    checking options and arguments
+    using keyrec file nsec3.example.com.krf
+    check existence of zone file
+    initial zone verification
+
+     if zonesigner appears hung, strike keys until the program completes
+     (see the "Entropy" section in the man page for details)
+
+    generating key files
+    adding key includes to zone file
+    signing zone
+    checking zone
+
+zone signed successfully
+
+nsec3.example.com:
+     KSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-3)
+     ZSK (cur) 12345  -b 1024  01/01/01     (nsec3.example.com-signset-1)
+     ZSK (pub) 12345  -b 1024  01/01/01     (nsec3.example.com-signset-2)
+
+zone will expire in 4 weeks, 2 days, 0 seconds
+DO NOT delete the keys until this time has passed.
+}
+);
+
+
+
+# MAIN
 
 
 # Remove and create directory to work in (via creating the path to
@@ -31,16 +103,71 @@ $ENV{'DT_STATEDIR'} = "$statedir";
 copy ("../saved-example.com","example.com") or
   die "Unable to copy saved-example.com to example.com : $!\n";
 
+copy ("../saved-nsec3.example.com","nsec3.example.com") or
+  die "Unable to copy saved-nsec3.example.com to nsec3.example.com : $!\n";
+
 # run zonesigner
 
+my $keyarch   = "$ENV{'BUILDDIR'}/tools/scripts/keyarch";
 my $keygen    = `which dnssec-keygen`;
 my $zonecheck = `which named-checkzone`;
 my $zonesign  = `which dnssec-signzone`;
 chomp ($keygen, $zonecheck, $zonesign);
 
-my $command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> $logfile 2>&1";
+my $gencommand = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keyarch $keyarch -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> $logfile 2>&1";
 
-# print "$command\n";
+# generate new keys in order to support nsec3
+my $nsec3command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keyarch $keyarch -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -algorithm nsec3rsasha1 -genkeys -usensec3 nsec3.$domain >> $logfile 2>&1";
 
-is(system("$command"), 0, "Checking zonesigner: signing \'$domainfile\'");
+if (exists $options{v}) {
+  print "general command:\n$gencommand\n";
+  print "nsec3 command:\n$nsec3command\n";
+}
+
+$test->is_eq(system("$gencommand"), 0,
+	     "zonesigner: signing \'$domainfile\'");
+
+my $log = &parselog;
+do_is($test, $log, $zonesigner_response{gentest},
+      "zonesigner: output of signing: \'$domainfile\'");
+
+
+unlink "$logfile";
+
+$test->is_eq(system("$nsec3command"), 0,
+	     "zonesigner: signing with nsec3 \'nsec3.$domainfile\'");
+
+$log = &parselog;
+
+do_is($test, $log, $zonesigner_response{nsec3test},
+      "zonesigner: output of nsec3 signing : \'nsec3.$domainfile\'");
+
+
+summary($test, "zonesigner");
+
+exit(0);
+
+
+# end MAIN
+
+
+####    **** procedures ****    ####
+
+
+sub parselog {
+  my $logtext = `cat $logfile`;
+#   print "before:\n$logtext\n"  if (exists $options{v});
+
+  $logtext =~ s/\d+\/\d+\/\d+/01\/01\/01/g;
+  $logtext =~ s/\((cur|pub)\) \d\d\d\d\d/(\1) 12345/g;
+  $logtext =~ s/\d+ +seconds/0 seconds/g;
+  $logtext =~ s/\t/     /g;
+  # commands not currently used by zonesigner, but searched for by
+  # configuration modules
+  $logtext =~ s/^command ".*\/(keyarch|rndc|rollrec-check)" does not exist; please install(.*)\n//g;
+
+#   print "after:\n$logtext\n"  if (exists $options{v});
+  return $logtext;
+}
+
 
