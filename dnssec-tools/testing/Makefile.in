@@ -29,6 +29,11 @@ authtest : $(TEST_FILES)
 	  perl $$i ;               \
         done
 
+verbose : $(TEST_FILES)
+	$(QUIET) for i in $(TEST_FILES) ; do \
+	  perl $$i -v;               \
+        done
+
 test : trustman
 
 zonesigner : 

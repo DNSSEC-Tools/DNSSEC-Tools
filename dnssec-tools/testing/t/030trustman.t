@@ -1,12 +1,26 @@
 # This is -*- perl -*-
 
 use strict;
-use Test::More tests => 2;
-use File::Path;
-use File::Copy;
+use Test::Builder;
 
-my %lconf  = ();
-# $lconf{verbose} = 1;
+use File::Copy;
+use File::Path;
+
+require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
+
+# verbosity check
+use Getopt::Std;
+my %options = ();
+getopts("v",\%options);
+
+# TEST object
+my $test = Test::Builder->new;
+$test->plan( tests => 2);
+
+#verbose setup for test object and dt_testingtools.
+if (exists $options{v}) { $test->no_diag(0); dt_testingtools_verbose(1); }
+else                    { $test->no_diag(1); dt_testingtools_verbose(0); }
+
 
 my $trustman    = "$ENV{'BUILDDIR'}/tools/scripts/trustman";
 
@@ -80,33 +94,44 @@ copy ("$ENV{'BUILDDIR'}/tools/modules/Net-DNS-SEC-Validator/Validator.pm","$loca
 
 my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
 
-# print "trustmand command :\n$trustman_command\n";
+print "trustmand command :\n$trustman_command\n" if (exists $options{v});
+
 
 # Tests
 
-
-is(system("$trustman_command"), 0,
-   "Checking trustman: trustman examining \'dnsval.conf\'");
+$test->is_eq(system("$trustman_command"), 0,
+	     "trustman: examining \'dnsval.conf\'");
 
 my $log = &parselog;
-if (! is($log, $trustman_response{firsttest},
-	 "Checking trustman: checking the output from examining \'dnsval.conf\'") ) {
-  print"\tPossible Problem: host has incorrect date (e.g. 1+ days incorrect)\n";
+if (! do_ok($test, $log, $trustman_response{firsttest},
+	    "trustman: output from examining \'dnsval.conf\'") ) {
+  print"\tPossible Problems: \n";
+  print"\t\tThe DNS used does not support DNSSEC (e.g. ISP, opendns.org).\n";
+  print"\t\tThis host has an incorrect date (e.g. 1+ days incorrect).\n";
 }
+
+
+summary($test, "trustman");
+
+exit(0);
+
+
+# end MAIN
 
 
 #  **** procedures ****
 
+
 sub parselog {
-#  $lconf{verbose} = 1;
   my $logtext = `cat $logfile`;
-  print "before:\n$logtext\n" if (exists $lconf{verbose});
+  #   print "before:\n$logtext\n"  if (exists $options{v});
 
   $logtext =~ s/secs=\d+,/secs=18,/g;
   $logtext =~ s/time=12(\d+)/time=12/g;
   $logtext =~ s/(\d\d)\d+ +seconds/\1 seconds/g;
   $logtext =~ s/Writing new keys to.*/Writing new keys to/g;
-  print "after:\n$logtext\n" if (exists $lconf{verbose});
+
+#   print "after:\n$logtext\n"  if (exists $options{v});
   return $logtext;
 }
 

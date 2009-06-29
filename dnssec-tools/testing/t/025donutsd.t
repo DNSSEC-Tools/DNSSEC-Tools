@@ -1,12 +1,26 @@
 # This is -*- perl -*-
 
 use strict;
-use Test::More tests => 3;
+use Test::Builder;
+
 use File::Copy;
 use File::Path;
 
-my %lconf  = ();
-# $lconf{verbose} = 1;
+require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
+
+# verbosity check
+use Getopt::Std;
+my %options = ();
+getopts("v",\%options);
+
+# TEST object
+my $test = Test::Builder->new;
+$test->plan( tests => 3);
+
+#verbose setup for test object and dt_testingtools.
+if (exists $options{v}) { $test->no_diag(0); dt_testingtools_verbose(1); }
+else                    { $test->no_diag(1); dt_testingtools_verbose(0); }
+
 
 my $zonesigner  = "$ENV{'BUILDDIR'}/tools/scripts/zonesigner";
 my $donutsd     = "$ENV{'BUILDDIR'}/tools/donuts/donutsd";
@@ -68,7 +82,8 @@ chomp ($keygen, $zonecheck, $zonesign);
 
 my $command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> /dev/null 2>&1";
 
-is(system("$command"), 0, "Checking donutsd: zonesigner signing '$domainfile' for donutsd");
+$test->is_eq(system("$command"), 0, 
+	     "donutsd: signing '$domainfile'");
 
 # test donutsd
 
@@ -77,23 +92,32 @@ $command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib  -I$ENV{'BUILDDIR'}/t
 # print STDERR "using command: $commandn";
 
 print "       Checking a running donutsd, should take about 20 seconds\n";
-is(system("$command"), 0, "Checking donutsd: running donutsd on zone file '$domainfile'");
+$test->is_eq(system("$command"), 0, 
+	     "donutsd: using zone file '$domainfile.signed'");
 
 my $log = parselog();
-is($log, $donutsd_response{loops3}, "Checking donutsd: donutsd output");
+do_is($test, $log, $donutsd_response{loops3}, 
+      "donutsd: donutsd output");
 
+
+summary($test, "donutsd");
+
+exit(0);
+
+
+# end MAIN
 
 
 #    **** procedures ****
 
+
 sub parselog {
-  #  $lconf{verbose} = 1;
   my $logtext = `cat $logfile`;
-  print "before:\n$logtext\n" if (exists $lconf{verbose});
+#   print "before:\n$logtext\n"  if (exists $options{v});
 
   $logtext =~ s/$testdir/./g;
   $logtext =~ s/$ENV{'BUILDDIR'}/..\/../g;
 
-  print "after:\n$logtext\n" if (exists $lconf{verbose});
+#   print "after:\n$logtext\n"  if (exists $options{v});
   return $logtext;
 }
