@@ -159,6 +159,7 @@ my @zonestat;				# stat() buffer for zone file.
 #
 # Some path variables to be set from the config file.
 #
+my $keyarch;
 my $keygen;
 my $zonecheck;
 my $zonesign;
@@ -184,6 +185,7 @@ my @zsopts = ( '',
 	       ["nosave",		'Do not save old keys.'],
 	       ["showsigncmd",		'Show the zone-signing command.'],
 	       ["showkeycmd",		'Show the key-generation command.'],
+	       ["keyarch=s",		'location of keyarch'],
 	       ["keygen=s",		'location of dnssec-keygen'],
 	       ["zonecheck=s",		'location of named-checkzone'],
 	       ["zonesign=s",		'location of dnssec-signzone'],
@@ -597,6 +599,7 @@ sub optsandargs
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
+	$keyarch   = $opts{'keyarch'}   || dnssec_tools_default("keyarch");
 	$keygen	   = $opts{'keygen'}    || dnssec_tools_default("keygen");
 	$zonecheck = $opts{'zonecheck'} || dnssec_tools_default("zonecheck");
 	$zonesign  = $opts{'zonesign'}  || dnssec_tools_default("zonesign");
@@ -2825,9 +2828,10 @@ sub printopts
 	print "\n";
 
 	print "\texternal commands:\n";
+	print "\t\tkeyarch		- <$keyarch>\n";
 	print "\t\tkeygen		- <$keygen>\n";
-	print "\t\tzonecheck	- <$zonecheck>\n";
-	print "\t\tzonesign	- <$zonesign>\n";
+	print "\t\tzonecheck		- <$zonecheck>\n";
+	print "\t\tzonesign		- <$zonesign>\n";
 	print "\n";
 }
 
