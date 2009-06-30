@@ -50,8 +50,8 @@ zone signed successfully
 
 example.com:
      KSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-3)
-     ZSK (cur) 12345  -b 1024  01/01/01     (example.com-signset-1)
-     ZSK (pub) 12345  -b 1024  01/01/01     (example.com-signset-2)
+     ZSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-1)
+     ZSK (pub) 12345  -b 2048  01/01/01     (example.com-signset-2)
 
 zone will expire in 4 weeks, 2 days, 0 seconds
 DO NOT delete the keys until this time has passed.
@@ -74,8 +74,8 @@ zone signed successfully
 
 nsec3.example.com:
      KSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-3)
-     ZSK (cur) 12345  -b 1024  01/01/01     (nsec3.example.com-signset-1)
-     ZSK (pub) 12345  -b 1024  01/01/01     (nsec3.example.com-signset-2)
+     ZSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-1)
+     ZSK (pub) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-2)
 
 zone will expire in 4 weeks, 2 days, 0 seconds
 DO NOT delete the keys until this time has passed.
@@ -139,8 +139,11 @@ $test->is_eq(system("$nsec3command"), 0,
 
 $log = &parselog;
 
-do_is($test, $log, $zonesigner_response{nsec3test},
-      "zonesigner: output of nsec3 signing : \'nsec3.$domainfile\'");
+if (! do_is($test, $log, $zonesigner_response{nsec3test},
+	    "zonesigner: output of nsec3 signing : \'nsec3.$domainfile\'")) {
+  print "\tPossible causes:\n";
+  print "\t\tnsec3 support requires Bind >= 9.6\n";
+}
 
 
 summary($test, "zonesigner");
@@ -159,7 +162,7 @@ sub parselog {
 #   print "before:\n$logtext\n"  if (exists $options{v});
 
   $logtext =~ s/\d+\/\d+\/\d+/01\/01\/01/g;
-  $logtext =~ s/\((cur|pub)\) \d\d\d\d\d/(\1) 12345/g;
+  $logtext =~ s/\((cur|pub)\) \d\d\d\d\d  -b \d\d\d\d/(\1) 12345  -b 2048/g;
   $logtext =~ s/\d+ +seconds/0 seconds/g;
   $logtext =~ s/\t/     /g;
   # commands not currently used by zonesigner, but searched for by
