@@ -373,7 +373,7 @@ sub optsandargs
 	# Get the rest of the options.
 	#
 	$alg	  = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
-	$archdir  = $opts{'archivedir'}	|| "";
+	$archdir  = $opts{'archivedir'}	|| ".";
 	$enddate  = $opts{'endtime'}	|| dnssec_tools_default("enddate");
 	$gends	  = $opts{'gends'}	|| "";
 	$random   = $opts{'random'}	|| dnssec_tools_default("random");
@@ -3231,8 +3231,8 @@ Use the existing Published ZSKs to sign the zone.
 
 The key archive directory.  If a key archive directory hasn't been specified
 (on the command line or in the DNSSEC-Tools configuration file) and the
-B<-nosave> option was B<not> given, an error message will be displayed and 
-B<zonesigner> will exit.
+B<-nosave> option was B<not> given, then B<zonesigner> will leave the files
+in its current directory.
 
 When the files are saved into the archive directory, the existing file names
 are prepended with a timestamp.  The timestamp indicates when the files are
