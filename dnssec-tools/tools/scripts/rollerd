@@ -2308,7 +2308,7 @@ sub optsandargs
 	#
 	# Validate our execution directory.
 	#
-	$xqtdir = $opts{$OPT_DIR} || getconfdir();
+	$xqtdir = $opts{$OPT_DIR} || ".";
 	if($xqtdir eq ".")
 	{
 		$xqtdir = `$PWD`;
