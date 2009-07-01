@@ -51,6 +51,7 @@ my @opts =
 	"zone=s",			# Zone to archive.
 	"kskonly",			# Only archives KSKs.
 	"zskonly",			# Only archives ZSKs.
+	"dtconfig=s",			# Execution-specific config file.
 	"help",				# Give a usage message and exit.
 	"quiet",			# Quiet output.
 	"verbose",			# Verbose output.
@@ -221,6 +222,9 @@ sub chkzone
 
 	#
 	# Get the zone's archive directory.
+	#
+	#	This check is performed here (instead of with other options)
+	#	so that each zone can have its own personal archive directory.
 	#
 	$archdir = keyrec_recval($zone,'archivedir') || $dtconf{'archivedir'};
 	return if(!checkdir($zone,$archdir));
@@ -394,6 +398,15 @@ sub optsandargs
 	}
 
 	#
+	# If there's a -dtconfig command line option, we'll use that,
+	# if we're running packed.
+	#
+	if(exists($opts{'dtconfig'}))
+	{
+		setconffile($opts{'dtconfig'});
+	}
+
+	#
 	# Check for a rollrec file name.
 	#
 	%dtconf = parseconfig();
@@ -490,6 +503,7 @@ sub usage
 	print STDERR "\t\t-zone <zonename>\n";
 	print STDERR "\t\t-kskonly\n";
 	print STDERR "\t\t-zskonly\n";
+	print STDERR "\t\t-dtconfig <config_file>\n";
 	print STDERR "\t\t-quiet\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
@@ -552,6 +566,13 @@ Only archive KSK keys.
 =item B<-zskonly>
 
 Only archive ZSK keys.
+
+=item B<-dtconfig config_file>
+
+Name of an alternate DNSSEC-Tools configuration file to be processed.
+If specified, this configuration file is used I<in place> of the normal
+DNSSEC-Tools configuration file B<not> in addition to it.  Also, it will be
+handled prior to I<keyrec> files, I<rollrec> files, and command-line options.
 
 =item B<-quiet>
 
