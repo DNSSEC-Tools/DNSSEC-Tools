@@ -599,7 +599,7 @@ sub optsandargs
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$keyarch   = $opts{'keyarch'}   || dnssec_tools_default("keyarch");
+	$keyarch   = $opts{'keyarch'}	|| dnssec_tools_default("keyarch");
 	$keygen	   = $opts{'keygen'}    || dnssec_tools_default("keygen");
 	$zonecheck = $opts{'zonecheck'} || dnssec_tools_default("zonecheck");
 	$zonesign  = $opts{'zonesign'}  || dnssec_tools_default("zonesign");
@@ -3231,8 +3231,8 @@ Use the existing Published ZSKs to sign the zone.
 
 The key archive directory.  If a key archive directory hasn't been specified
 (on the command line or in the DNSSEC-Tools configuration file) and the
-B<-nosave> option was B<not> given, then B<zonesigner> will leave the files
-in its current directory.
+B<-nosave> option was B<not> given, then B<zonesigner> will leave the keys
+in the current directory.
 
 When the files are saved into the archive directory, the existing file names
 are prepended with a timestamp.  The timestamp indicates when the files are
