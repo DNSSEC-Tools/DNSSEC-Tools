@@ -1,0 +1,84 @@
+pastdate-a.nsec3-ns.test.dnssec-tools.org:
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:200
+  Error:       RRSIG record for pastdate-a.nsec3-ns.test.dnssec-tools.org
+	       has expired
+
+pastdate-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:207
+  Error:       RRSIG record for
+	       pastdate-aaaa.nsec3-ns.test.dnssec-tools.org has expired
+
+reverseddates-a.nsec3-ns.test.dnssec-tools.org:
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:214
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:222
+  Error:       RRSIG is nearing its expiration time
+
+addedlater-nosig-A.nsec3-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.nsec3-ns.test.dnssec-tools.org does
+	       not have a RRSIG record, which is required for secure
+	       domains.
+
+baddata-a.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-a.nsec3-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+reverseddates-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-aaaa.nsec3-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
+pastdate-a.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-a.nsec3-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature has expired since:
+	       20090617131950
+
+nosig-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Error:       name nosig-aaaa.nsec3-ns.test.dnssec-tools.org does not have
+	       a RRSIG record, which is required for secure domains.
+
+pastdate-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-aaaa.nsec3-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: Signature has expired since:
+	       20090617131950
+
+badsign-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-aaaa.nsec3-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: RSA Verification failed
+
+futuredate-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-aaaa.nsec3-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature may only be used in the future;
+	       after 20090816132450
+
+futuredate-a.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: futuredate-a.nsec3-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature may only be used in the
+	       future; after 20090816132449
+
+addedlater-nosig-AAAA.nsec3-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-AAAA.nsec3-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+reverseddates-a.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.nsec3-ns.test.dnssec-tools.org type: A
+	       failed to verify: RSA Verification failed
+
+baddata-aaaa.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-aaaa.nsec3-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: RSA Verification failed
+
+nosig-a.nsec3-ns.test.dnssec-tools.org:
+  Error:       name nosig-a.nsec3-ns.test.dnssec-tools.org does not have a
+	       RRSIG record, which is required for secure domains.
+
+badsign-a.nsec3-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-a.nsec3-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+18 errors found in db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified
