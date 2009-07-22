@@ -1,44 +1,44 @@
-; File written on Wed Jun 17 13:24:21 2009
-; dnssec_signzone version 9.6.0-P1
+; File written on Wed Jul 22 13:20:39 2009
+; dnssec_signzone version 9.6.1
 badsign-ns.test.dnssec-tools.org. 600 IN SOA dns.badsign-ns.test.dnssec-tools.org. hardaker.badsign-ns.test.dnssec-tools.org. (
-					1245270261 ; serial
+					1248294039 ; serial
 					7200       ; refresh (2 hours)
 					3600       ; retry (1 hour)
 					604800     ; expire (1 week)
 					600        ; minimum (10 minutes)
 					)
-			600	RRSIG	SOA 5 4 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					SP67f5EgI6c1KMFVFZMtKEEYzcBzOpyYay7m
-					G1x7fId5Hh/fVvId7tSsoRqH1QlG1D6M/CqM
-					1vwm4DdDYxYhpDpiDVoAK3MMlqzJMOd+kZlq
-					vowmKbzgUckB/SRPfPOvy1M3qSMMYybC1IdX
-					bcwQ46ljXv65fPlqTh8vpCysdgM= )
+			600	RRSIG	SOA 5 4 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					RpTM+hlv+vj8BnSLc9DZJTb22L0Jt/cvAvOC
+					TqVChc4/BBgEoImuPKvaIF7TyUVlZabg2PcN
+					DS7BTwo+xBpTHkg3cyd933/2Ye7j37i9EqwM
+					xo+4Si0jNoex7CPZ7AszDAsVv9tuYUh+8x40
+					CSaJXuyyUXWmn0s54SoxUS6ccQw= )
 			86400	NS	dns1.badsign-ns.test.dnssec-tools.org.
 			86400	NS	dns2.badsign-ns.test.dnssec-tools.org.
-			86400	RRSIG	NS 5 4 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					jVGYWrmFwXGrwa7rlAbu2r/o1vjdnuEGSowP
-					0RSpNDA6uYUsKxQdW/xl624AT5saI22r9St9
-					nSdh3MdRvBkYjJ7+gDCF2cJlpayyuUNk6F9a
-					wifJ/C3WLsNSw70idF9wf7SlXH7oInG99ggK
-					CAUwhRVGM77PnEaWlTM4LKgl690= )
+			86400	RRSIG	NS 5 4 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					gh5Yg2sgteQKlcklQfczqJFbScVpjdGDdXno
+					GlZwQXv6wrtoARb45AGbSopGKht80k7zvT7O
+					8zneJNjngTSjlkJGAr2DLDmGh9COwHwfBvy5
+					fgVn7+khlYIi6cdjPVQSGFrwQ/mIdTWbEPJD
+					EsXsGiN4H/gwVjguGUnbJZr0dqM= )
 			86400	TXT	"DNSSEC-TOOLS test zone for badsign-ns.test.dnssec-tools.org"
-			86400	RRSIG	TXT 5 4 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					awgRWkm1Q03kCwsUGN1/lQ0uXHu1WedA2PlB
-					Mwk7g1vaL8cIYc7lTtUSOIV/qa7Io5CrXeoU
-					l/DB75W3EyvmzSYjPT01IXMzB3t22lkhS20d
-					yIlFWN8UomgHOWnUIfJhZpWPHTVTJtW2rqoJ
-					80QGN4fCUlhzIhruvt2KnZdyDs8= )
+			86400	RRSIG	TXT 5 4 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					MLYjYWqMqSn2A70MgM2MS4jWe9dA31YygEia
+					0WbzG6iCv1LtX213d9HZNs6r/FgIYBW5fmdw
+					0nhWjamChl5rHe8k846un/QOsMxsGPGoXBwJ
+					t9i4Cne0i8ruq7oZxt83ZL3IqBqDh+O9P0bw
+					LaDyuHxpRYppzJbFccUu5Sjz1gE= )
 			600	NSEC	baddata-a.badsign-ns.test.dnssec-tools.org. NS SOA TXT RRSIG NSEC DNSKEY
-			600	RRSIG	NSEC 5 4 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					ZjeRNzWk6HaKAdhBKHpk+dkQHIpq96Jo1lDI
-					EyowYwaAUhCdV3ajn6MmZ4RyZj5xpo+owOia
-					lw2Q/4zOsl96yTyHogDkspmiwGJuWWbF26Df
-					ZLv8gZ7bkbvXS7QDzXEUu57pV4DsOCCgUcc3
-					yYCnhXcVaRoLHz57VIcU/LgPsPc= )
+			600	RRSIG	NSEC 5 4 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					HXjWpDgVQzFSox/BWiUa9JUK3N2lrNQyZRXX
+					rkJGZ2O7UweFMY8kXWfAdKTDu/MeDzgpbiua
+					AM2BrjmuiY7xeZ0kZZMmsZGoN/lcK2u2WEaV
+					6XbaUh1lqixlOElzPzoHWS2HNNMWKZVjgiFe
+					o30ghbLv3T7szkNwZ31i1Fxs6Ug= )
 			86400	DNSKEY	256 3 5 (
 					AQOauTbjfqL30aHdftQiiL+Q0nrXmrY2z+YQ
 					XiWTrrokNCSTnNWrhVDXTLj3QGEkuydz3lDL
@@ -65,341 +65,341 @@ badsign-ns.test.dnssec-tools.org. 600 IN SOA dns.badsign-ns.test.dnssec-tools.or
 					cRFRCFU4mbUGS3YYwWvNr+rX701tNhU4z77Y
 					kGmx4/EXeEEk4GKXwHwX
 					) ; key id = 22827
-			86400	RRSIG	DNSKEY 5 4 86400 20090717192421 (
-					20090617192421 22827 badsign-ns.test.dnssec-tools.org.
-					kgqE1Ixb4NyeJ6TtCUqzo0vHG7qBJfBvpDhT
-					9MgTH9FhqOBKd0FkmJ+QRDjj930XnDjOuV3j
-					Q2jGeg4yRbU4X2ybVDHJLQQuE37AjkW2JTBL
-					+qaxmwJXfkzz70GeeYliFI+JcaF9LMgEo4G3
-					35XIkM4tmYOm2R8D3N4Qm21MTN+xApbZKKC6
-					W5jrOt6vblqTqPUW+2/fH7CJrLmPdLrxYG0M
-					0zGfGDdjvM0unxNv34Co2G6dR12V8T/26GMn
-					2cSMEKcXIcik1S+Sy5PZIytDbemz7aFKBWi5
-					04lJmO3NNTXklxYnlNVKEta/Iwcv0ljOpGYR
-					qF0ZQTiOaWI6lxjjRA== )
-			86400	RRSIG	DNSKEY 5 4 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					QLdkDSqjHMAm4rhuI8P1FQLvd5pNs4Qu2unA
-					gJWsN6WoBV2/aVRE8x9YH8NeoRbDGcmwP/0l
-					xrnahL0F+eWP3eBGu30a/58TpHy78erPm9TK
-					hupfhD2RArUP4hvtKrEZE+aVTRuXy2jnB+82
-					t6HRtyJp2xDXnTvm76I/MeFPgKk= )
+			86400	RRSIG	DNSKEY 5 4 86400 20090821192039 (
+					20090722192039 22827 badsign-ns.test.dnssec-tools.org.
+					Qw191HApsRXLG/8LoQHcI5/QBceMxMwqgxYC
+					89dy2SNuSPZYla2NCNmsN6EPaRFMI+VGyRhE
+					o8fNM/mNtBMcGSw9Khp4IjIe0bdDqJ40hGiE
+					pTbH4xsq3s+rYW+VQoW/lxCIvouubgig1VlW
+					xi+M6RWFiInNVccTTiljZjRrvSi/q0NOsrjo
+					ga0P4Rp1+9Ug7CmqVPu/+6mkrVZZ7zf8NO2E
+					tBIlfYrxDmeySnmCLkw/zZrpYDar7xGNq2hX
+					97S7/0KWRL1SJebLaSGeJNQs5sbeNZ2Lq/91
+					RYa33vRLsXeBGRKY1QWc64Ot2Yq216NDjf5D
+					HVbybih8PEx51xk4ww== )
+			86400	RRSIG	DNSKEY 5 4 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					A0nT7qAW7EAzUTbgQbkG29YZOJrjSkKUvrQZ
+					OeoV8dN/TqA92TFOCJZy/VSYQ7dcN4zu/GFV
+					8ftYqYZVgkRAKYVRnJuS7FnZoDDig3jt/GS4
+					pbdb3vUwBgEdCfq7HWU6ifJUFmAaY5kWbx+A
+					hEtEqix26XvKaWR6kqqx2lFEBPA= )
 baddata-a.badsign-ns.test.dnssec-tools.org. 86400 IN A 75.119.216.30
-			86400	RRSIG	A 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					N4RrGw0E8OISrT7ow3FqA2vFPhLshcI5QK/y
-					xbcLgj9tUhlHAXbNt9YIYbH4LMZqFPISYFxI
-					NAireOAwk7zGn63qunTWquQ2ry18ZQqvGNiy
-					GYk7yD/nY7jZMA4cRNpwZBjQVJix2QjoSgs6
-					1w/5qhZ9vmnbldoZ5DX8fwfxt9c= )
+			86400	RRSIG	A 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					C7OVkZrXnVuvTNq3PfuBsISwIHjAnSQLnVv5
+					NtiX2yhX7gTJBVSe1XsdZwRhKrDNnk79ea4H
+					ntwhuzeO0H6CcxTQgIMifMLk2N64OmAPF4Qo
+					kz/k6NVrPajv2GQCMytLb+sqh4d6tgF03OJN
+					COK1gX+0AqT2n13UuzUKsuBtoWQ= )
 			600	NSEC	baddata-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					J6nmxrK93e87X/lmSz/jb5EhbKqTzynfuKGk
-					G7osCmwa3vZRN4e1YPU4Pe+k6/ZH3YKxT6LJ
-					CI8yJTr4JZp3jwD/mCs1GwiaLwUM6DzHABo7
-					QYCxgap0rPceY3JRsr4OLKm8SwtekzJ13O8G
-					8gIvXYbdwSb7gnnSrbQAZgvVVHE= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					Ki6gan+/InX+VE4PmnI6qYeVAPm6+aob7KeD
+					alH7iSbO9SWEA0/EDBNlrpoui+B+m5wWd5ax
+					KZAsZBlA+5v0lO0S+gi264PpXnbzzx4Yp3lf
+					3AqyotOLzk2hQbFjuHu2LqMBtYKwvOaE/c96
+					Nhxe1rmVSbdkGTHPP2q9zcFwAlw= )
 baddata-aaaa.badsign-ns.test.dnssec-tools.org. 86400 IN	AAAA 2001:470:1f00:ffff::0
-			86400	RRSIG	AAAA 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					fd1dhDhgS/QlSaQ9vJRoT3dJFVbAKukw1Wkv
-					bXBvq7JMaC1M7+32zQNcYj4YW/NxXOsEeCQ1
-					gCqyDtj9tyvgdofc+29RvvGZLZw8CLkBPdGM
-					pVhqP0Dw0YX8/l2Zkwx0MkeDB0EfaF9v4QxG
-					AJU/UhWmxO1gStYbAAsJvz+xgKc= )
+			86400	RRSIG	AAAA 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					k15+JMFPB0ByrTQRLb8u2mIh2kiq7iq2vIch
+					XRSp+7FdBr+n4QWqbmNFMCVNiq/n5J/vJTur
+					tB1om7X0Q30UkEWv+VG2sJChqOQwyHCa3Ih3
+					y0uFyrMbKrmDxiKC9Lh0yxlePpYAGdY28den
+					eX/fbPeZlY3j9OCqTFtoHr3am6Q= )
 			600	NSEC	badsign-a.badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					ATsFwuF3xPqAQWBMtrOqSmNsMJ6z5Leq3ZH2
-					466NVa/bREiMruNJtz/V+O9J1EjxY5NOWCah
-					dTXUAYPFRF69sDpnskHCqpyC6/srEdvu5MTO
-					3VeaWAVPK8qkdlyY8XRvX8RYzWc8iKT/dPSt
-					oWgroX44kB6zlz2TKQWoriBumcY= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					aMTkS6LCgXFT1XX6Un9ol/jqQycvzNpPR4hF
+					IfHofHkTeV8Ne6SuR3iwUHJXRSvy5Y2rx191
+					UgQaPOBxEvFC5GgGHyBnUxBplz94rdZ5Ia9L
+					1z6OXNPAMcRUQK/lVoRGoftU2tDYEc33fpwu
+					wsN2OjHx/c3BbUx7D4ZT/zi47KQ= )
 badsign-a.badsign-ns.test.dnssec-tools.org. 86400 IN A 75.119.216.33
-			86400	RRSIG	A 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					X5L3K694NLIt1sQq53f2+M0oaQh6gEFf2xG/
-					WXZ+USOky2hYeiQUEgrVWrYnqXeCt1Utsf7g
-					fjdF5Mr1BB3t4BsJJxXO3Hd6DMTybEK7SL4Q
-					IKPmsE9gd336AdJzxVFqUQadwy8jaSRdUQgT
-					xOnsTZkRiCvXFHD3fkuFngXAvPU= )
+			86400	RRSIG	A 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					Zg9SfhtmZ0QGoqHV1BS6nMbyPQ4R2ezN5Sog
+					WjQxx8IphhaA4UK21AQZv6iAjFBwebAioH8Z
+					Tw+CCE0+7oQ/CS3GpXbAMIVT39J6fDebU7lB
+					KE3xUWhJad1th8RlhSltxZ9WuajGAeneF2FL
+					xv5KnANnUkqbVcJrhRQ6RmonaSE= )
 			600	NSEC	badsign-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					PssbZ+pZHQNyl5mmehAwMdy+aHjliw95yW2u
-					jPIeWoFgkQlaMrEBDT1dPKoZ9+xTGDxXrlmR
-					u1VdwSE9nvG3D581IoM6Ad5EUwNza5/R7aBl
-					LsZt5wYuN/eiGMkDvuesdIg3/FwfFJHtJKSX
-					hpXSY0ThI2PMv6M8TkAOPdPk0OE= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					IbQugyPTiQOLWSc9GJ5Y1Qzh8lmd62+Vk83b
+					y+CYLbPjqOh0lh0mkgo78guom6dmwu1mz80C
+					eTm1MIkP90GCRS60LrEb4Kwgs7QIdW/CaOc+
+					H7OLwgrSSzHS1jmHf/2piRUb4CrBvO9OfCdK
+					7FPp4oqVI5o5+FfwuvspxAUEKE4= )
 badsign-aaaa.badsign-ns.test.dnssec-tools.org. 86400 IN	AAAA 2001:470:1f00:ffff::1
-			86400	RRSIG	AAAA 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					MMb80s1yQ84WfzJnkErekMhFmw007iqAH3DV
-					MkAGra0ybAD5sAgJWJQX7DdIsM47fxHO2CmF
-					N+sw8UbYYJiliWv862l66H0ArlKsOtoEImK9
-					x6eHoMYdDuygxWxtm+FNqjToKahsGGC7HULm
-					xbASvKgd/N9SFoHjy/lw8OaOrs4= )
+			86400	RRSIG	AAAA 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					PZU28qRmMfqq5e/Xo1UtBFyfpXTmvqmlA7aU
+					hZdZd7mV2RU+L/M+IltzVQ/pIM9OeHlLWFve
+					VOd3JTjB77ABKBQ8fhrtU1kPkU/62ixpX49G
+					M0g9z6/W2UXIw2SywcpWk+RGQ3FUa05XrOu0
+					xGzIXvjS+abdFlDmP3OqoWMYAPE= )
 			600	NSEC	dns1.badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					TMZixQhDLl7MCL294/bA33KRM55BGMosZhAK
-					WTQ8V+oEk0RhNF3s6c7ZvO1ocrYHNV8TuOPc
-					KdnKTcmNw+pwbnyT8rVLOM3x0rgtPke4a4tJ
-					6LCd07biJibTQhnzTwJai9q2MaWOEC7NEbh0
-					3yLeyhVqQitKKsv7RefNcpXq4vA= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					UApvCumZfom4M+TjYL18duulFltRZ7ptPP/x
+					J+juVGBcGTWmx1eq1MACCfvQiQu4Nz7a7/Ps
+					Nn528SPGLq8YkZDXQSDDI52nqMuw5XNm3AOS
+					eVuI1dfF/3a7dj8YiBQ++Ri52U58x1c6QY/Q
+					86lhi5ZlG/FcV6QGzfVyCUr65QI= )
 dns1.badsign-ns.test.dnssec-tools.org. 86400 IN	A 168.150.236.43
-			86400	RRSIG	A 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					kv2uzXIKXkjiFKHLSQm0kg3bUWmb7V3I30je
-					Vgpd5yZ18rTTAdqhP8orhzczZhYixHraZtq9
-					gnPwyMm/pc8HDBWQugfv84sGGmLt28KOwqyS
-					nHIg04lZ/TZL4kC3F+XD3Ig81aDeCNeD5xmt
-					uqMaIQor+1aZNERzrmTmWnuw3IY= )
+			86400	RRSIG	A 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					WGfS9KOm7PVw3bIhKjyEVEr1f6AzIkFtmadM
+					Bj8/FYeF/I+5npGh5blIPqte2IaHUzqO2aM4
+					Pwhjqqjqq04MZupFXENuF8JwCPNeqL94kDky
+					kT8AH96GE7Tu+L9bFfYAd8FtbxVxhYN8l9aT
+					Pj02vaThZACbes6NRMfHFqHfD1Y= )
 			600	NSEC	dns2.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					Z+vE5E6xIeSaRiLJh/aCZZ9cr4iNKY2FxAun
-					eOVxhb++BZPCgwD4qzLziAIhEHqyxW7ghaXv
-					IWfGsntl85a6t+DGt/86Tun0s48wXQwpFmL/
-					tFZpCxROR56CmoNQut4YURb9n6Mi9AoIOKzv
-					S2501qphf9tJq+m+zKCyUQbmbtM= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					gXfLTpZvHW2H1qrTkFVQSBuw8+keRmixn6YR
+					PKHsemBXVdiVKEhReJ6J5IBMBZ4dLaVAL5vo
+					NjGMjCXf6Son4FMbxpy9Wardc20PQ+ZYcOTq
+					5+NhD6Ni/4r6870/ajKX0HfEqJmeqX86gRFc
+					6bHzpenzkmexO1JoFczUxYTm4lY= )
 dns2.badsign-ns.test.dnssec-tools.org. 86400 IN	A 76.216.12.217
-			86400	RRSIG	A 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					emF9AB+nCfVF6RhVFgGlPoEXEcTvM3AsNMD5
-					Yz5FAOS5+Umg8lYxNxuH7SY16nHsZut2z1sR
-					K7CJJxZJ1OCrsBXmCll+4h3Fd6G+uon/iRzv
-					3PW2Dkw76uNB9CMIJEix8vbcDpDMHkJzuLvk
-					0b1vy1hH4ubxdzexrehnLPoK/Ps= )
+			86400	RRSIG	A 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					bjRQFeF7HD/ejz28QxamytkIQJHWA8+7eDT3
+					12uDIupCe05NhBhsxGTtoSQa+t2KP76zkZEb
+					EMonchI2d8A9wXh2HRxQSANNVS7xuyT4KMIn
+					SY121lX1niHpaQFUCzH3EdSVmwuTOJBcWySv
+					eznNaveUxGxcaFCy+OwkgJiNZ5w= )
 			600	NSEC	extra-txt.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					E25qhReJRyQJrdeKTKxHmcPlkn8Fpbao8ZAl
-					4emmETybosQLFyo7spG/UGB/GkhNB23q8zmm
-					BgoW3ouT6rBEaYDQTU/ZBK2PoU80EcNpxBXh
-					TWwXzv9z25+leWPRiX/f/zSWbEJtFg8MEmCQ
-					hce5WsaTbGV0/mEs9H0MuMRqs+4= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					ZoU+AmnfFGcC83b+mFxRtN9froZu9HurVVHS
+					GeKXngGtkE9NKK98l/v73AnyOgT7FKQBMvUp
+					wUlk2jvfveI1nzcaGZE5cfe9iuP5WnTg9ikL
+					t4mLPr1sRNDZiZQxYVOQRO6DrU7AXpFSnlqX
+					9u9aOYVyDDZM70HxqUeO5WAbwiE= )
 extra-txt.badsign-ns.test.dnssec-tools.org. 86400 IN TXT "TXT record test"
-			86400	RRSIG	TXT 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					bCTKO+AItMVKxa78pkSRWqp9XgG40JfisRyt
-					z0VJS/MpX7tre+DWyacVEBSTg0NM3dtDmPVM
-					ni5BdkjONt4Jrbb/xkfm3dFn+NRD97XlvhN7
-					kKtMX+nmRViVbIP6hVLjecpPLuTUa3emzpcQ
-					FnK+Iave07KNqz0V97uLv/UVjqA= )
+			86400	RRSIG	TXT 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					BRcwMKU93eklcbhoKqKOqlCOigtO3mOMRiLx
+					2z13vDxCQEjq9jka4Y3yAgsbMaFEZ37Yy7i+
+					/NHGP+PaAUeMM12J2krRxnMCwi5IQUwHC95k
+					ChKOZmbJA1VX9+yA/rfrYejpwPAjs4axVW4w
+					iF28oWhkGB16tE/8CdeTFGREm/Q= )
 			600	NSEC	futuredate-a.badsign-ns.test.dnssec-tools.org. TXT RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					PcqiazVusHZmr1WTrKJpqrrmSKyvqyVKR/on
-					j+6aw/yU8njPnTBHzGS172ZN2o0D8ry64wLG
-					RP1HR9cHWEZQiRPBQDEwzYCg1XgdiA/lCDKH
-					dPKJ0KHAKyjdy9q2SI7/wGPQshOhQTBsoOM6
-					hh0QRdPcNeA/kuhVzGXf0z2GVH8= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					XxLLj49Qu7rZu5p+jAX3eDWGa198ltTb/yI6
+					2Q16g9X7aCfBDYE9kiNQnsBmkUq4YjjtPFuc
+					6lc53lc0KadjPJti0rK/20iN5H78YJZZ6YG8
+					zEvYlYFehD9AZH/pjdbrfMJpP3PeFts4tWDg
+					7xkjDMgee+ug8QTUbFpdgtLsL5A= )
 futuredate-a.badsign-ns.test.dnssec-tools.org. 86400 IN	A 75.119.216.33
 			600	NSEC	futuredate-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					DnCrCnzEQoOWY6Us/YppYn+Q/sCKZMypCh7m
-					Pz28vGHyGICRdUu3HoJagig4oC0/dzCWjG4R
-					XNxBmKufrKqwQVqQmEDSWr90L31BZ+zv9nfm
-					nYNjGgkzx98DBU1cYWqoe/tJqrb9GambaRRB
-					FUQy5LbL14der0EyRECrZ0wnT54= )
-futuredate-a.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  5  86400  20090915132422 (
-			20090816132422 27299  badsign-ns.test.dnssec-tools.org.
-			NJ8GQMDejrAXXWQ5DQqoebo5Sb0Nem9GAMpt60cPVaOgJ
-			lP1mUvLU3FbVRwcOKYJ/3rp9dx1q2NtsFDgr4sqgUqufV
-			XJ6YfKsfVp767bd/bpp4DyQILiiGA9nQQ3MrJCjJXMAo6
-			rynU/RWszI2mcKE1qRHh1e0E1D3KQxDctJlc= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					O+Th2YGNo4SICAaPnlMDBTabBETN3cfn9Er1
+					Appe5vfV+/cUBZyJi4MyYkoZ5JORt7PlWvTN
+					BueXwHjbaTZIP3RXloinYU1TJtjPUbs0M7Zh
+					scUo0e5F5/zcq/OP8dit7n/HFd/dlbBC3/dY
+					WW80wQ90IGU1IEyvpBHBS/Tk3rk= )
+futuredate-a.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  5  86400  20091020132039 (
+			20090920132039 27299  badsign-ns.test.dnssec-tools.org.
+			dw5sBpKUCZg5BScBaYungdqzb5OimMt2eay0bW5lM7edq
+			GYexfN3EzA9nTQyhI3JaWAm0ntK+nghHk7ScYD+KIiibo
+			67scAgrs74HmrT4d/PKDPojqZU2QjtmfzpQAQqUdSF3XG
+			Mv5QMSMKiDeUNN/MFAXLUpR5V5fTWRavIUe8= )
 futuredate-aaaa.badsign-ns.test.dnssec-tools.org. 86400	IN AAAA	2001:470:1f00:ffff::1
 			600	NSEC	good-a.badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					hQBqz2KlWfDAV5qb1cSr/duqu2vnlkIxG+CD
-					eQLWODphTaAU/azqsPKhU3scChUwNSuj14Cs
-					56pRtgkj3zHqeHg+bJo6+eWBhHMG8t2k9TA/
-					sf+7KqBR2Q9iLXecLfvFI6PQm7VcDtS10zXl
-					Iqb9iswyV4WzOmnC5WamkBdwl2M= )
-futuredate-aaaa.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  5  86400  20090915132422 (
-			20090816132422 27299  badsign-ns.test.dnssec-tools.org.
-			gm5kLJ/vEZEsEfBIg4FXIDmbBfhadcIJVj36mqlv03pvn
-			3upw5rvbEKppVMf/TaI1fGXzDQo6WBzxEsYeCftW9tbaO
-			yNpF6Wc3Zui7C6kCGSD5ClonFkgDfAF6eNthmOgKXtZAj
-			nr85UbKJUGb2fItFt+YplQHn0U2ohAATKnv4= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					aSJR7VOQNfbJqInww1HYGpVupxt3eNvzTLnZ
+					Qyy7GyZE1j6HU6nazzD4DWvfrVLWfVzmmgnd
+					LMxiiEJwm55ub5p0SkFml90l+y5m3fd9dnxo
+					29fqSpSoGGoabtAv6bRMmBad5GpdOikLGbwA
+					ewvlrJo1khIjHc2YB/41h0jO8ug= )
+futuredate-aaaa.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  5  86400  20091020132039 (
+			20090920132039 27299  badsign-ns.test.dnssec-tools.org.
+			d86ETb9ZHpp2wMgKgxiXLgVnnrHmmRv5dWpzKp1CpRmFp
+			X1YZgRFEF8xvnMaDoIHDjq4teg4r78VrpA9OenPXDe0BQ
+			rGpxkrPpgOFD/3PrZWkBKJ16x7gjvXp9exMLAoquwecne
+			jimL4HvW8fLX48cPJNjlzQnIzZYCQVpuO1xE= )
 good-a.badsign-ns.test.dnssec-tools.org. 86400 IN A 75.119.216.33
-			86400	RRSIG	A 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					lekpxb2Awx8LwVSkgasuQEgDUuK8pvWX1+ht
-					N2iohoCzfO4zgawQruPTtfA9vnVADjtO0/pt
-					psyxYArvDHHxjvgxWAFzhT93MZCyXnI52Xhv
-					1G+3UePQsGlcq+VP9vQNVhZ44E8REpRgGrCL
-					nJOzZ3yZpbpwF+yuHZXAksAD75k= )
+			86400	RRSIG	A 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					A1c2EiA7nCemVyyhhYdWNrFTy95MguotYx7c
+					+uLIUIkFC07d7yOq/6vGdZNq1nTYN6sQfjJ0
+					kCsZuAvXpogWVIrUCQhwKz1y7lUaSmqJnlw+
+					6+Wzz3UAow+vfr5eIVGafD7p9lRgaMkD8U9U
+					uM5qO8OgeLRnmQm7lvyfHcbXx6E= )
 			600	NSEC	good-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					Sk6o95vloy90zc9kbfIfEE1Wk/YW6MZnsGQN
-					2mHtMSfyKmAHgfUMDC9W9H1haaBY6XzVc4f7
-					IdTjHB/dY7eYQy8ILm+bj2VCKmuquGrASk9y
-					CLzebM+WOKONXF/1alFeohZeeMh67V7qdrzP
-					AaZPZZnXI5o0COKF0CwIaXpQhPc= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					lYlCGUXcC7xWgkPpulokiUvs/N5cV+Berdi1
+					4fvmvQeEUIUHToUl1iMSTq6HZQUx0HFwksgF
+					uG4GntTDEZkrbSttNfpCwTFw42liNdYe0cXZ
+					cQkwtiLmO22GfGT7Cud3HYRTuDDW4ckHjgHs
+					ne3FPy6EWYMs5w9xZ/8Fmw+lr0E= )
 good-aaaa.badsign-ns.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::1
-			86400	RRSIG	AAAA 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					FIZRh+2X7fzpOdaQULfnVhA1Upq2E/l2jmxE
-					6QdBIWoURDINaOmx167BKtSfg4j7hpJqPvwG
-					VIk0Oi7v7K6EBypQY17doalrxRzYogG+Vi9+
-					/H7HbCjSLaNhurk3or9lMOZJYKolVZmxsJw1
-					LG7R1SW/ubDFjg+MHXfOnv+sgj4= )
+			86400	RRSIG	AAAA 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					OaQ0oT+hRoXID7YIYINtI/ST7WvpTiX6U4kL
+					YHv4YjU7Yu02Ii6enp2hG/fGxRLR707ErqmA
+					Bste81tK5LK17DPJCE7wkWGBx7uK9kWuSQvO
+					BAn+hxci6aFHbhfHYgZxgrpiRfxGVGIyOzHq
+					IcclaehwrLMt1sa4q4SKQO52PD0= )
 			600	NSEC	longlabel-01234567890123456789012345678901234567890123456789012.badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					k0lLXdtgxEG/44tZXmy2Ovf9SxqmIi+1wFlx
-					p1gOeQ8JxCdALuf/NJqeL8M+ciR+F5m7F8wP
-					VRAfzMb2oejLJlbufsWdQ+b8Ocqug1NVVMXm
-					3mUOBEauaimVpvx4vWP6gLbH7dLdbPLPExGW
-					cvhKljyFMA18QyP//TPDPkNgB+4= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					NoQvoGefZpDXOPTUPjafBdCge3u5r8HstxWU
+					QzRjNgISitGDbtzioZJmVguB8Xwxx/nLQCVj
+					h0erqWwCLsH0wBYSH5u/gS33qGM/7oE1kdz+
+					qmAMizlEYaFGaG7UuEVzh8XX7suSpdZg1IHe
+					tKB5e1/rjKP458ii2/G48JZIXSU= )
 longlabel-01234567890123456789012345678901234567890123456789012.badsign-ns.test.dnssec-tools.org. 86400	IN TXT "Long Label Test"
-			86400	RRSIG	TXT 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					Kq9qDal/0zNR+7/LvQACHchq6p79+UvagCIZ
-					PGFkW/tmdTxMJXPbMIqEUItOhUM2N+uhEa1m
-					rQd2dDrnvtUMWWKAl4UXOvb1cHsqhuxIHjj/
-					7rMOXmG+xmxAeBxJHPsX4JOSdbRMgZxx+aOA
-					RGlz0OGgR1JL690dQOeN9JbBOMc= )
+			86400	RRSIG	TXT 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					gu/9FFhTTGFAwIaxvCafxz39XbsH6Nk2i42W
+					qJTW4P3/z/HfI26XjjM8V20gg+Zb99PY9099
+					JYW4+34O7Ssx3uCvOYvHGz8/2WL697/m/Zdm
+					ZJekjSrX5KtGTU328rbrRT3GaUWadpCs2p2v
+					dwkxJNowMginbNaK5/laJUB+d6Q= )
 			600	NSEC	nosig-a.badsign-ns.test.dnssec-tools.org. TXT RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					cxUZyTUDUax+0AX4HJWJWkOQqkJC4fLJ6XS9
-					oIrEPsZv113IGGG6W3mPhiDVPEzcJJJ3QiPE
-					JlAhKitk2JlWPavfE2dmxkttwJtcHWvxGf/F
-					Pnmy4BSRxffPO4bDWC/X6xroy+GaO92wIOcA
-					TZ0FcyS4zyToQdH/Wkt2cpelnc4= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					MNVR74o4L6DeNJFtSYtjsv6MhdTvUYtEx76W
+					qqjEbZy66P8ikq/I1UbRJoUSrgLERopDZt82
+					F0ggRIjPx9vWQ4AMPr5N1exdysLjC8DpokGW
+					mK2+fVL7zvxL9LI5C5B8EDxHN3EzSnu+Hrkt
+					sMe/+7zhk3AM6pFD+OfcFCvcL9c= )
 nosig-a.badsign-ns.test.dnssec-tools.org. 86400	IN A 75.119.216.33
 			600	NSEC	nosig-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					gLzWe89vmX4cxO+6rRD8Eo93mwyLgsRR4tJY
-					4We23nzHT/tsyyMfyeA4xjWpaoxniY4B7d97
-					kfd2Hcg8Y4hyc9TKRre8jVX1JO5C49fvg4GZ
-					UgO3Wnys/5W+WYMEK1KgM9EUmqwWCOz2Wne2
-					v/H9vksul9X9O4GGfizvH67AZn8= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					CfwVW7bjrVMQc0OlS/sRibzeEXK8G+lXeOFl
+					JhC3nluuyzGLgm5glzMj7jHSIcqBIgRtJDjZ
+					tVWcIGiocqB155yRPD098VgLvYzKOxLxtC9d
+					najsS3iNi2zjhu9foVqPCIsRpslN0N5+P2nv
+					pvDTvhlp8JalTwRi5CGDf1RECQQ= )
 nosig-aaaa.badsign-ns.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::1
 			600	NSEC	other-a.badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					CX2q96C8MYy67j/bZrR9B3sC9dSkbPRL357F
-					HHM1miOZjCcgvsTSW9jbyLes1m2j2yjS+zMm
-					Y2qULX7eIrE1QjfKqcJ+5WhNm1jOFaUJEIRy
-					1mBV3jMklmBwImWY0jPNhNrGUdQqwy+3Etrj
-					VamecOmUbYMp0mQ+xF3IGngGDT0= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					jQu7EnegANbyGDrheCkg/9MUC+4holQArU4w
+					ElKcNU1kUb7Kgl4sElnnXx/Paa8I/mYispWI
+					q3RLUDdouqnJCRwAzsfwrdzSzpZdOnHj+QR7
+					rPB1M7/TA/dQWrPeifA3xLuyhXcmNrFlEYIc
+					y8zIZosT7TN3o92WQRgyrYjtbi8= )
 other-a.badsign-ns.test.dnssec-tools.org. 86400	IN A 75.119.216.33
-			86400	RRSIG	A 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					kfOViiqKsyR2+8wK6w3pOK00WD+YEepEZqOg
-					HhHTaFVT6vXmkfHp/i9TadBiFshibuPeXbnW
-					opYcecv5cVMbcno7sBf80y3S3YmuRJ+A8MPW
-					ZjX62NFW6Okl2EsHjcukFQKFhYAW4U+Vo2Ge
-					VSY/Y0Sd0wGufU4hwMtuzz/Hwl4= )
+			86400	RRSIG	A 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					YAnYNl8XfvKXhPlAX4d4t6T+sfEXZuOh5wvI
+					c4UyBEge5BD3LtVQnejTK/epHML40k31/6xN
+					9qJe/wy3NkTR9R7mqZDS3rIAcq73ek7fevt7
+					m98eeMIBl1DfupdGQ2trD9A12RW8nokKB4++
+					weADqR3lUBGuwbaCNjFNwS8zyww= )
 			600	NSEC	other-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					FZPbvVbP0VITgfQTnMEaG4tt8DlaamCh1wXZ
-					aaFklxohliwABTcq+3zNldwEeDMooJ+LUC89
-					FdKDkCyt1xXmpeFmjqQ7TeNABnOu9NQKoB8b
-					DihK38KNS3j4G0/CMl/VlBtpVSlvhFhZTEKt
-					lSPt3itDB6chq6Q1+Xax1FsL21w= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					JK2Z0eVRy638aWo2t5+biJy2AEDa8R9Pq1sQ
+					CJpN9pMmaqtNv9kqlw0OuZT5apdtYDuz03LD
+					fLvZjMuf1Zj/jjL18PLGPQq44fn148fvoHoN
+					Lv862BlNSFocow4BLQg/3aBc7ZQQw+fTgw0m
+					iLraZhon0a9i1GCRH/yp3YFajt8= )
 other-aaaa.badsign-ns.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::1
-			86400	RRSIG	AAAA 5 5 86400 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					hahTlmcB33SgpeJglUmInKPT+CbVkb8cNcZR
-					rDm3YvcSYGcRwUOepizDUK5EulUC0Rb0+CL1
-					WXh/YL+lqcsrf2yQ8cNYL18q9w7zUYVBcBkd
-					+ftttjNW4qUcIMrjuVKFN+UpzQp8E8VK6uVS
-					WUxAoUJysV3Vg3oIb/h3rv9AU1E= )
+			86400	RRSIG	AAAA 5 5 86400 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					ciIy7pLlUcfh9vML2MhBsgQFnCyIim7rgIR7
+					milflW84vyXCDsNOVsePogQ6gJ4Hc1YVV4bZ
+					4iU+aq/4kbsBhYlYWIA7wYFgk4o/iiPZU6C8
+					c7GKA8vbreRHCjV1seueEphvHYwhvaGfmccq
+					gOuVlZTJWDfPbSy415TTWf59EfY= )
 			600	NSEC	pastdate-a.badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					biOBuV3zk0jXOdaLumn3Kg2vyuNd30V8VJBk
-					PTLNd89PX9+Ps3v+tNfClj3sWt45UwQ5Ww1n
-					c//2/ULZilgQ+qhWZ1whklLe+5SqCCCkY6CD
-					WYE4CVyBNGWhI9ucOHtf/biFZ7mihXHwyIGU
-					KuAuFxNPGe6BtcfTsZJsBt0HdaU= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					aAkMGK537LsjMvF35lA9MTjxRrQ512WutgrT
+					aDMpbdu2zipACOAz3zEtPUPBHMCAAVG8DJxw
+					URPRc/HAyOnSdqQTFJGuSOKIAcwBpKoaP2vu
+					A5mc4RmPfdRAHBV1NJgd96llnufN7Q8tOl/n
+					RBcevGDfTzNlSlK9ZF+dH0ALUXA= )
 pastdate-a.badsign-ns.test.dnssec-tools.org. 86400 IN A	75.119.216.33
 			600	NSEC	pastdate-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					lLQgeXyyAh1qSC5Q8TznbWbYWeli/sZm0nL7
-					9yVQnfWXs/9xD2mU51tLAa7pub//nLQOmEjE
-					FNBIAvZKxQCa5ItdPaseq7FR07b9qEVNZat1
-					0MKKnMc+AfiK8HgAAIucPuh41htxT5Kf083/
-					tjHd/u3CfWLrZmG4o5CvyNyayF0= )
-pastdate-a.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  5  86400  20090617131922 (
-			20090518132422 27299  badsign-ns.test.dnssec-tools.org.
-			S0LKE+q3uDtd+1wXCRVBUYWZ+68Lw2rzYomlHvsNUZiVt
-			b6kpl/gRZ/Q55LxaVribMf9AyFa5pDaVmjQAk+fDyaOTL
-			BCUFCcRGeDC5/OUslCfEK3n74nK1uele9x5qMepYWXBZ7
-			4jN8iWFyYwYlIgU5RD+y3zvD/R1073FSRy9s= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					iZVrh6DFiSB1CM42idvTVCp7DxUI53bnVbB9
+					vmqWvN9kdl0UbsgZ/tpH1+8d19hXJqGQ0/Lr
+					AfV5Nv0l/YxDwK9SyjiNXoLNX31lV8ZAOPBB
+					yHMWFmp1+yRIU7SzUN/CzvPWG/aQYevCD6AF
+					ir8kXqE96eb1mSnfpu52LKHy4yY= )
+pastdate-a.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  5  86400  20090722131539 (
+			20090622132039 27299  badsign-ns.test.dnssec-tools.org.
+			M5hHJU2Q2aTz7YL+GyAU3Ck6nk5zn3TbmVTEZ1SoTfaVC
+			k+gpHu9lrq5SRkXZSPJVYQ/S/PffVJRZQIBKaPVgk9q/C
+			pnWtEDf8y8rLqI22VQ3Z+8BlRkjQYQirLzAsKhXBDvxKz
+			qAJUTrwdEMnKIZlL9wGRte9eMVtBfocXkZOw= )
 pastdate-aaaa.badsign-ns.test.dnssec-tools.org.	86400 IN AAAA 2001:470:1f00:ffff::1
 			600	NSEC	reverseddates-a.badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					idJx53AfhfXx+YdTUZ8VKZdzh3DZE4b+heQf
-					v+iMr0KyXmtncGb7qgGV61I2dMwc5IzmU2jd
-					vv5Qwa+0/ymOY1Uquf+Jl01MlBFiAuc4sX/l
-					CTllxUvP6MuP7ahnyObpFI9phZzlFGDWtPzT
-					gZ/HMytmSVjYtIuk/kixbdPPv5U= )
-pastdate-aaaa.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  5  86400  20090617131922 (
-			20090518132422 27299  badsign-ns.test.dnssec-tools.org.
-			HeWajKfTjQKlUWc+rsf3PcE4SKYGPRyK9hvbrgh8R75Tp
-			YI6ZAdOYPcZDT/BYANyrRshk9zj4Tj0U5LCxolRymD8Mh
-			RRSWOw84iMz/jWwH1dGrWqy9jP7Ofps06d5hG6wRRk83r
-			+WQeidqJuBR6EQ7gPARAX6eu+zhies4MGNRg= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					fI4eJYJbWuPdnDOIFyn1YFpCPavgnueA5ntd
+					Ua5bnin1dGeDDPn19SZTFSYUAFxHztl2Ujyx
+					JsSYKogmaU53FpSuBvkTxfal+oQkuBjVHuP6
+					Vrl3BDP/9uH9nu3iMn47y4v/wjkCF2YDCqas
+					94MXMlX+F/QY2l5JPqw05r/j4Tw= )
+pastdate-aaaa.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  5  86400  20090722131540 (
+			20090622132040 27299  badsign-ns.test.dnssec-tools.org.
+			Vrm78KyhFAD/HLWsWHpkSJf/x6GsqQYohizamcZ4NI1LY
+			LroVVo37YCUpbSpCy3zmQBthem1HxUXQo6FURKwGHzrV7
+			+nHQXT1RIZfBKQ4L96MjVgwbp13LEJ1GsL8kvONz/XdjB
+			/PGygfndtlVRcbYB/hJM3G1YbeBlD1hX5Mik= )
 reverseddates-a.badsign-ns.test.dnssec-tools.org. 86400	IN A 75.119.216.33
-			86400	RRSIG	A 5 5 86400 20090617192421 (
-					20090717192421 27299 badsign-ns.test.dnssec-tools.org.
-					HGpuI+yfKhQu+Ow1MjXblRQdAW+mTQewb0sy
-					kVKycoyRQi9GZSeGY9lFlxn9OvbhWRJkeK75
-					8wa1FqI2UHCXrmoz7nXKmIb5sabgTk3FDflZ
-					Xm46qrJmLh55/QCy0iZy+sKII/vufomJVhDY
-					28hrOfQOotUHR0hyqBWvbLUI8Yk= )
+			86400	RRSIG	A 5 5 86400 20090722192039 (
+					20090821192039 27299 badsign-ns.test.dnssec-tools.org.
+					jMr8dMu+KEtolxLTDbfTfXHKU68A03HRb5ce
+					wE9sbBX++eX5glJ67jmJxJ1FHZda30Dq1HfF
+					y/HuO3brXZVd+ANBGq+gHmSL28pYfGO2kIRd
+					1VXFl5lY0Rxdb7U7sCj5e4QGoQiJIq0NH717
+					8JEDR1xFNsqC/w5MO4jA+eFqa7w= )
 			600	NSEC	reverseddates-aaaa.badsign-ns.test.dnssec-tools.org. A RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					jM7I6y9pZBobjIOe7WJcBPGn/zBcqCbWzcz9
-					0+v/l7CnnOtNtF1Uu9yQbcCRaq5MQQXySRbq
-					zh1QXTmC4BUJW0blhTwyZkQQ1DLGY/4EQ2sv
-					ud4yYyc+PPpcEh7emEtYCTJwdvGFbOF4tjLy
-					J3nI5WEJK+3Bd8M90vAruM4ChBA= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					T0CE4bZc1HpqI6hSGI6MSuFAykZ9HHCQXRvO
+					itgz5JMjafQm7vqDYtoFMNvVE2GPwdgTuE4z
+					iVQbBM7PWV4thUmdTK6U2yBkI73Wp0FU03PY
+					OKahyuGY/i+e2NEQgwUYYjl9Gl5XxPAIpJz4
+					zhA/WXzrCUHT6zhCi8pumoMc1ZI= )
 reverseddates-aaaa.badsign-ns.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1f00:ffff::1
-			86400	RRSIG	AAAA 5 5 86400 20090617192421 (
-					20090717192421 27299 badsign-ns.test.dnssec-tools.org.
-					TGplWcDhAVesOhkONLkNd9QhLPcMkwnJTUVs
-					CyI6kAVhACjqBhOBpmOe+Jap0+OGcCLfcwXT
-					ZXOxLZFgbmrasab7G1kfAc6Wkbx2a/ct4VSE
-					/WynzshfbRivej8kgFZSckp8I8mRBCHE2AXW
-					0ktFa0A0F/coBFyssr/69VioZUA= )
+			86400	RRSIG	AAAA 5 5 86400 20090722192039 (
+					20090821192039 27299 badsign-ns.test.dnssec-tools.org.
+					VhedFkOvU6t+rmlFbBV+d/dHYqIpoY41LioK
+					2AzsYVq2S8XFCi9PZa/jE3CUm8DXRWwPlpVo
+					iBrF3Toi+puHk3snetMWc3lPEGjo2ccKubdR
+					+DwnFmiFAQSvla2WBT4cw61/RF0AcgiSexua
+					1JwY3OfbmHQb0QEmUmj+rwWPibg= )
 			600	NSEC	badsign-ns.test.dnssec-tools.org. AAAA RRSIG NSEC
-			600	RRSIG	NSEC 5 5 600 20090717192421 (
-					20090617192421 27299 badsign-ns.test.dnssec-tools.org.
-					k9ctOI/V9hQQd/1HIZUkM2HlYHLvytLawtHY
-					VOAm82z4c/DYcs4sJ8/dkSaZqc2yW2pA8CMs
-					M2vT29qXVTXNcxFrHCjMUKQthc7OD04D7vGu
-					oT3V9kotx0GcXF8wSnCWimeXAH476dI6HKdr
-					4zMHJ514WYzGzn6ZUjccqS4aeL4= )
+			600	RRSIG	NSEC 5 5 600 20090821192039 (
+					20090722192039 27299 badsign-ns.test.dnssec-tools.org.
+					mWiIAYpOl7PR3Z7l669GbwTOOxF2OFUSosLu
+					is3uAdWJZeTilbANBxNlJZWMxvFYKR0Kx27S
+					Jgcfu6sz4MpdhHrWVs1to+K4ahBtuBGlZx1+
+					gxivitau8ja/sPqmTz9Z5MfyL0kENxUh0vwj
+					iRdA490vTiiKhVGR0sLQZBuqfKo= )
 ; records added later after signing took place
 addedlater-nosig-A.badsign-ns.test.dnssec-tools.org. 86400 IN A 75.119.216.33
 addedlater-withsig-A.badsign-ns.test.dnssec-tools.org. 86400 IN A 75.119.216.33
-addedlater-withsig-A.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  5  86400  20090717202422 (
-			20090617202422 27299  badsign-ns.test.dnssec-tools.org.
-			bzkLCavwcDjACtV/EQmzfCiieZN4ADsnKdoiPES7OOSwr
-			4O6Brg0sbEjcUJnhUiYk7CK9h131w0nxK4EDWJYaU6lcO
-			LZUC4CPPS8u7cOB1vYEZa9qxGvdhUAnO3q9dUygeHIToH
-			WhYmiJ3s3Td2HNoAVEi4cx+rPAqWQglVNUms= )
+addedlater-withsig-A.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	A  5  5  86400  20090821202040 (
+			20090722202040 27299  badsign-ns.test.dnssec-tools.org.
+			dJ4JlYxEAtVnvmtfC2WQeb92yPXTHskYemexg6yH3xSi2
+			0kpQOQlT1dOSIAH15qp8GrXRl6ogvvAo/Res7VwCgJE54
+			UNHO3g1ei+o3s8q64hL19382PKQRRqD57WBCwSRqOw4LA
+			BVTrA3IQF+4T+yrK0VANrvLjauPniVGIicJY= )
 addedlater-nosig-AAAA.badsign-ns.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1F00:FFFF::1
 addedlater-withsig-AAAA.badsign-ns.test.dnssec-tools.org. 86400 IN AAAA 2001:470:1F00:FFFF::1
-addedlater-withsig-AAAA.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  5  86400  20090717202422 (
-			20090617202422 27299  badsign-ns.test.dnssec-tools.org.
-			B8P3sEs4FH/Lkhd1K0i69BJizSMlcbwRH80j2oBxsQ3Jq
-			SLOP5O+jzdiuNtF0bFGkyABvdpUCEqMzo85Y2gmIdScBx
-			BlOccllbwC3M7iFT/DhK6VITIvYq37up4k2YUrho3Ut9r
-			t2e6djqNKYvJEXvyeFjMGKS1KcaDkzwhg4kU= )
+addedlater-withsig-AAAA.badsign-ns.test.dnssec-tools.org.	86400	IN	RRSIG	AAAA  5  5  86400  20090821202040 (
+			20090722202040 27299  badsign-ns.test.dnssec-tools.org.
+			b9G/Lt5rAiFNO0PN0jc4m9VBDS2FlL3hR9HB/I3Ls4aCS
+			CVAo6Axi2JkrGZj7Ye7N1D9vRy4KEpPy/M0B134ljhuaF
+			zJKWLA79rHQ+k9ZdfrrmDK9vejkNVp1nVUjqBwk6uHc+g
+			zhKCGQfiZ+Twv3R0r87zu6d6qObxGSOSPKfU= )
