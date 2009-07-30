@@ -68,6 +68,7 @@ my @stdopts =
 	'',
 
 	['GUI:separator',	'Configuration Options:'],
+		["dtconfig=s",		"DNSSEC-Tools configuration file"],
 		["keyrec=s",		"Keyrec name",
 		  helpdesc => 'test'
 		],
@@ -294,14 +295,9 @@ sub opts_zonekr
 	%optionset = dnssec_tools_alldefaults();
 
 	#
-	# Get the config file and mix the file contents in with the defaults.
-	#
+	# Get the config file contents.
 	#
 	%subopts = parseconfig();
-	foreach my $k (sort(keys(%subopts)))
-	{
-		$optionset{$k} = $subopts{$k};
-	}
 
 	#
 	# Set the GUI-usage flag according to the config file.  This must be
@@ -310,9 +306,26 @@ sub opts_zonekr
 	$gui = $optionset{'usegui'};
 
 	#
-	# Mix in the command-line options with all the others.
+	# Get the command-line options.
 	#
 	%cmdopts = opts_int_cmdline(@csopts);
+
+	#
+	# If the user specified a different config file, we'll parse it.
+	#
+	if(defined($cmdopts{'dtconfig'}))
+	{
+		setconffile($cmdopts{'dtconfig'});
+		%subopts = parseconfig();
+	}
+
+	#
+	# Mix the config file contents in with the defaults.
+	#
+	foreach my $k (sort(keys(%subopts)))
+	{
+		$optionset{$k} = $subopts{$k};
+	}
 
 	#
 	# Get the keyrec file (from command line options) and keyrec name
@@ -324,7 +337,6 @@ sub opts_zonekr
 
 	#
 	# Initialize and read the keyrec file and the specified zone.
-	# We'll only read the 
 	#
 	$optionset{'krfile'} = $krfile;
 	if($krfile ne "")
@@ -960,6 +972,10 @@ taken from I<$ARGV[0]>.
 
 The I<@specopts> array contains command-specific arguments; the arguments must
 be in the format prescribed by the B<Getopt::Long> Perl module.
+
+If the command line contains the I<-dtconfig> option, then I<opts_zonekr>()
+sets that option to be the configuration file.  It then parses that file and
+uses it as the source for configuration file data.
 
 =item I<opts_setcsopts(@csopts)>
 
