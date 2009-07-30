@@ -2160,8 +2160,8 @@ sub signer
 	#
 	# Build the command to execute.
 	#
-	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned > /dev/null 2>&1";
-#	$cmdstr = "$zonesigner $zsflag $zonefile $zonesigned";
+	$cmdstr = "$zonesigner -dtconfig $dtcf $zsflag $zonefile $zonesigned > /dev/null 2>&1";
+#	$cmdstr = "$zonesigner -dtconfig $dtcf $zsflag $zonefile $zonesigned";
 
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
