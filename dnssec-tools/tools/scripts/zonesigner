@@ -334,6 +334,10 @@ sub optsandargs
 	opts_createkrf();
 	opts_onerr(1);
 	$ropts = opts_zonekr();
+
+	#
+	# Set the option hash to the returned reference.
+	#
 	%opts = %$ropts    if($ropts != undef);
 
 	#
@@ -686,8 +690,7 @@ sub optsandargs
 	}
 
 	#
-	# If the keyrec file is empty, we'll create a keyrec for
-	# the zone.
+	# If the keyrec file is empty, we'll create a keyrec for the zone.
 	#
 	chkkrf();
 
