@@ -77,9 +77,10 @@ my $ME		= "rollerd";
 #
 # Some path variables to be set from the config file.
 #
-my $rndc;
-my $rrchk;
-my $zonesigner;
+my $dtconfig;				# DNSSEC-Tools configuration file.
+my $rndc;				# BIND name server control program.
+my $rrchk;				# Rollrec file checking program.
+my $zonesigner;				# Zone-signing program.
 
 my $PWD = '/bin/pwd';
 
@@ -245,6 +246,7 @@ sub main
 	#
 	# Check our options and arguments.
 	#
+	$dtconfig = getconffile();
 	%dtconf = parseconfig();
 	optsandargs();
 
@@ -2405,7 +2407,7 @@ sub optsandargs
 		print "$ME parameters:\n";
 		print "	rollrec file	\"$rollrecfile\"\n";
 		print "	directory	\"$xqtdir\"\n";
-		print "	config file	\"$opts{$OPT_DTCONF}\"\n";
+		print "	config file	\"$dtconfig\"";
 		print "	logfile		\"$logfile\"\n";
 		print "	loglevel	\"$loglevel\"\n";
 		print "	sleeptime	\"$sleeptime\"\n";
@@ -2489,7 +2491,7 @@ sub bootmsg
 	rolllog_log(LOG_ALWAYS,"","$ME parameters:");
 	rolllog_log(LOG_ALWAYS,"","		rollrec file	\"$rollrecfile\"");
 	rolllog_log(LOG_ALWAYS,"","		directory	\"$xqtdir\"");
-	rolllog_log(LOG_ALWAYS,"","		config file	\"$opts{$OPT_DTCONF}\"");
+	rolllog_log(LOG_ALWAYS,"","		config file	\"$dtconfig\"");
 	rolllog_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
 	rolllog_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
 	rolllog_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
@@ -3519,7 +3521,7 @@ sub cmd_status
 	$outbuf  = "boot-time:          $boottime\n";
 	$outbuf .= "directory:          $curdir\n";
 	$outbuf .= "rollrec file:       $rollrecfile\n";
-	$outbuf .= "config file:        $opts{$OPT_DTCONF}\n";
+	$outbuf .= "config file:        $dtconfig\n";
 	$outbuf .= "logfile:            $lfile\n";
 	$outbuf .= "loglevel:           $lvl\n";
 	$outbuf .= "sleeptime:          $sleeptime\n";
