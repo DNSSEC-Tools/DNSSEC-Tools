@@ -904,6 +904,14 @@ sub zsk_phase2
 	}
 
 	#
+	# Re-read the keyrec file, since it was rewritten by zonesigner.
+	# Also, we'll get rid of any changes we've made to the keyrec.
+	# (This *shouldn't* be a problem; further testing will tell...)
+	#
+	keyrec_discard();
+	keyrec_read($krf);
+
+	#
 	# Update the timestamp in the zone's keyrec.
 	#
 	keyrec_settime("zone",$rname);
@@ -2194,7 +2202,7 @@ sub zonekeykr
 	my %kh;					# Keyrec hash.
 
 	#
-	# Get the keyrec file's name and then read the file.
+	# Read the keyrec file.
 	#
 	keyrec_read($krname);
 
