@@ -809,53 +809,53 @@ sub presigned
 #
 sub genkeys
 {
-    vprint("generating key files\n");
+	vprint("generating key files\n");
 
-    #
-    # Get the Current KSKs.
-    #
-    $kskcursetname = $opts{'kskcur'};
-    @kskcurlist = split / /, keyrec_recval($kskcursetname,'keys');
+	#
+	# Get the Current KSKs.
+	#
+	$kskcursetname = $opts{'kskcur'};
+	@kskcurlist = split / /, keyrec_recval($kskcursetname,'keys');
 
-    #
-    # Get the Published KSKs..
-    #
-    $kskpubsetname = $opts{'kskpub'};
-    @kskpublist = split / /, keyrec_recval($kskpubsetname, 'keys');
+	#
+	# Get the Published KSKs..
+	#
+	$kskpubsetname = $opts{'kskpub'};
+	@kskpublist = split / /, keyrec_recval($kskpubsetname, 'keys');
 
-    #
-    # Get the Revoked KSK list.
-    #
-    $kskrevsetname = $opts{'kskrev'};
-    @kskrevlist = split / /, keyrec_recval($kskrevsetname,'keys');
+	#
+	# Get the Revoked KSK list.
+	#
+	$kskrevsetname = $opts{'kskrev'};
+	@kskrevlist = split / /, keyrec_recval($kskrevsetname,'keys');
 
-    #
-    # Get the current ZSK list.
-    #
-    $zskcursetname = $opts{'zskcur'};
-    @zskcurlist = split / /, keyrec_recval($zskcursetname,'keys');
+	#
+	# Get the current ZSK list.
+	#
+	$zskcursetname = $opts{'zskcur'};
+	@zskcurlist = split / /, keyrec_recval($zskcursetname,'keys');
 
-    #
-    # Get the published ZSK list.
-    #
-    $zskpubsetname = $opts{'zskpub'};
-    @zskpublist = split / /, keyrec_recval($zskpubsetname,'keys');
+	#
+	# Get the published ZSK list.
+	#
+	$zskpubsetname = $opts{'zskpub'};
+	@zskpublist = split / /, keyrec_recval($zskpubsetname,'keys');
 
-    #
-    # Get the new ZSK list.
-    #
-    $zsknewsetname = $opts{'zsknew'};
-    @zsknewlist = split / /, keyrec_recval($zsknewsetname,'keys');
+	#
+	# Get the new ZSK list.
+	#
+	$zsknewsetname = $opts{'zsknew'};
+	@zsknewlist = split / /, keyrec_recval($zsknewsetname,'keys');
 
-    #
-    # Generate the set of ZSK keys.
-    #
-    genzsks();
+	#
+	# Generate the set of ZSK keys.
+	#
+	genzsks();
 
-    #
-    # Generate the set of KSK keys.
-    #
-    genksks();
+	#
+	# Generate the set of KSK keys.
+	#
+	genksks();
 }
 
 #----------------------------------------------------------------------
@@ -2166,7 +2166,7 @@ sub serialincr
 	my $soafields;				# SOA's fields.
 	my $serialnum;				# Current serial number.
 	my $serialnew;				# New serial number.
-	
+
 	#
 	# Get the zone file's length and contents.
 	#
@@ -2175,12 +2175,11 @@ sub serialincr
 	read(ZF,$file,$flen);
 
 	#
-	# Find the SOA line and components
+	# Find the SOA line and components.
 	#
-	
 	($serialnum) = 
 	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w]+\s+\(?\s*(\d+)/si);
-	
+
 	return(-1) if(!defined($serialnum) || $serialnum eq '');
 
 	#
