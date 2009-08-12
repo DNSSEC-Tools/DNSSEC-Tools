@@ -141,6 +141,9 @@ if (!$dvfile && !$ncfile) {
     usage("You need to specify at least a dnsval.conf (-k) file or named.conf (-n) file.");
 }
 
+#
+# Validate the files we've been given.
+#
 chkfile(1,$dvfile);
 chkfile(1,$ncfile);
 chkfile(1,$resfile);
