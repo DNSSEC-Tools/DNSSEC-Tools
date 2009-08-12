@@ -4,6 +4,17 @@
 # file distributed with this software for details.
 #
 
+#
+# If we're executing from a packed environment, make sure we've got the
+# library path for the packed modules.
+#
+BEGIN {
+    if ($ENV{'PAR_TEMP'}) {
+	unshift @INC, ("$ENV{'PAR_TEMP'}/inc/lib");
+    }
+}
+
+
 use strict;
 
 use Net::DNS;
@@ -42,6 +53,7 @@ my %opts = (
 GetOptions(\%opts,
              'a|anchor_data_file=s',
              'c|config=s',
+             'd|dtconfig=s',
              'f|foreground|fg',
              'k|dnsval_conf_file=s',
              'h|help',
@@ -71,6 +83,24 @@ if ($opts{'h'}) {
 if ($opts{'V'}) {
     show_version();
 }
+
+
+#
+# Use a local config file if we're running as part of a packed
+# configuration.
+#
+if (runpacked()) {
+    setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+}
+
+#
+# If there's a -dtconfig command line option, we'll use that.
+#
+if (exists($opts{'d'})) {
+    setconffile($opts{'d'});
+}
+
+
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
 
@@ -257,11 +287,12 @@ sub usage {
     my ($extratext) = @_;
     print STDERR "\nError:\n  $extratext\n\n" if ($extratext);
 
-    print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-v] [-V]
+    print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-d DNSSECCONFIGFILE] [-v] [-V]
 
 File Options:
        --anchor_data_file FILE (-a)
        --config FILE (-c)
+       --dtconfig DTCONFFILE (-d)
        --dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
        --named_conf_file /PATH/TO/NAMED.CONF (-n)
        --resolv_conf_file CONFFILE (-r)
@@ -1636,6 +1667,13 @@ Create a configure file for B<trustman> from the command line options
 given.  This option can be used to create a configuration file which
 can be appended to the B<dnssec-tools.conf> file.  It will allow less
 command line options to be specified in the future.
+
+=item B<-dtconfig config_file (-d)>
+
+Name of an alternate DNSSEC-Tools configuration file to be processed.
+If specified, this configuration file is used I<in place> of the normal
+DNSSEC-Tools configuration file B<not> in addition to it.  Also, it will be
+handled prior to I<keyrec> files, I<rollrec> files, and command-line options.
 
 =item B<--dnsval_conf_file /path/to/dnsval.conf (-k)>
 
