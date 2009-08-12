@@ -144,11 +144,12 @@ if (!$dvfile && !$ncfile) {
 #
 # Validate the files we've been given.
 #
-chkfile(1,$dvfile);
-chkfile(1,$ncfile);
-chkfile(1,$resfile);
-chkfile(1,$rhfile);
-chkfile(0,$tmpdir);
+chkfile(1,1,$newkeyfile,"taanchorfile");
+chkfile(1,0,$dvfile,"tadnsvalconffile");
+chkfile(1,0,$ncfile,"tanamedconffile");
+chkfile(1,0,$resfile,"taresolvconffile");
+chkfile(1,0,$rhfile,"taroothintsfile");
+chkfile(0,0,$tmpdir,"tatmpdir");
 
 if (!$smtpserver) {
     print STDERR "tasmtpserver is undefined in configuration file\n";
@@ -310,7 +311,13 @@ sub show_version {
 #
 sub chkfile {
     my $fflag = shift;					# File/directory flag.
-    my $name = shift;					# Node name to check.
+    my $reqd  = shift;					# Required flag.
+    my $name  = shift;					# Node name to check.
+    my $field = shift;					# Node's description.
+
+    if($reqd && ($name eq '')) {
+	clierr("$field is not set");
+    }
 
     return if (! $name);
 
