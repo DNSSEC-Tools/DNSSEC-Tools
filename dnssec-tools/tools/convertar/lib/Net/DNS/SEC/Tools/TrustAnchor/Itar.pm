@@ -37,3 +37,6 @@ sub write {
 }
 
 =pod
+
+=cut
+

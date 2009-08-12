@@ -84,3 +84,6 @@ sub write_dnskey {
 }
 
 =pod
+
+=cut
+
