@@ -213,7 +213,7 @@ Net::DNS::SEC::Tools::TrustAnchor
 =head1 SYNOPSIS
 
 This is a base class for multiple types of trustanchor repositories
-that know how to read, write and modify trust anchor repositories.
+that know how to read, write, and modify trust anchor repositories.
 
 =head1 AUTHOR
 
