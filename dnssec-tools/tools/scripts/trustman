@@ -114,6 +114,8 @@ my %dtconf = parseconfig();
 my $newkeyfile = $opts{'a'} ? $opts{'a'}
                         : $dtconf{'taanchorfile'};
 
+my $newconf = $opts{'c'};
+
 my $resfile = $opts{'r'} ? $opts{'r'}
                         : $dtconf{'taresolvconffile'};
 
@@ -138,15 +140,15 @@ my $tmpdir =  $opts{'T'} ? $opts{'T'}
 if (!$dvfile && !$ncfile) {
     usage("You need to specify at least a dnsval.conf (-k) file or named.conf (-n) file.");
 }
-if ($dvfile && ! -f $dvfile) {
-    usage("File \"$dvfile\" does not exist");
-}
-if ($ncfile && ! -f $ncfile) {
-    usage("File \"$ncfile\" does not exist");
-}
+
+chkfile(1,$dvfile);
+chkfile(1,$ncfile);
+chkfile(1,$resfile);
+chkfile(1,$rhfile);
+chkfile(0,$tmpdir);
 
 if (!$smtpserver) {
-    print STDERR "smtpserver is undefined\n";
+    print STDERR "tasmtpserver is undefined in configuration file\n";
 }
 
 my $sleeptime = $opts{'t'} ? $opts{'t'}
@@ -194,7 +196,7 @@ if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
 }
 
-if ($opts{'c'}) {
+if ($newconf) {
     my $conffile = getconffile();
     my $didnconf = 0;
     my $didvconf = 0;
@@ -202,8 +204,8 @@ if ($opts{'c'}) {
     my $didcontact = 0;
     my $didsmtp = 0;
     open(CONF,$conffile) or die "unable to open \"$conffile\".";
-    usage () unless $opts{'c'};
-    open(OUT,">$opts{'c'}") or die "unable to open \"$opts{'c'}\" for writing.";
+    usage () unless $newconf;
+    open(OUT,">$newconf") or die "unable to open \"$newconf\" for writing.";
     while(<CONF>) {
         next if (/^tasleeptime/ && ($opts{'t'}));
         next if (/^tasholdime/ && ($opts{'w'}));
@@ -255,6 +257,11 @@ if ($opts{'c'}) {
     } while (!$once);
 }
 
+##################################################################
+# load_newkeys
+#
+# Loads the newkeys info from a file.
+#
 sub load_newkeys {
     # load in the newkeys info from file if available
     open (FILE, "< $newkeyfile") or warn "can't open newkey file \'$newkeyfile\': $!";
@@ -266,6 +273,11 @@ sub load_newkeys {
     $/ = $undefval;
 }
 
+##################################################################
+# save_newkeys
+#
+# Save any available new-key informaiton.
+#
 sub save_newkeys {
     # whenever newkeys is modified, write it out
     Verbose("Writing new keys to $newkeyfile\n");
@@ -277,12 +289,60 @@ sub save_newkeys {
 }
 
 
+##################################################################
+# show_version
+#
+# Prints a version message and exits.
+#
 sub show_version {
     print STDERR "Version: 1.2\n";
     print STDERR "DNSSEC-Tools Version: 1.4\n";
+    exit(0);
+}
+
+##################################################################
+# chkfile
+#
+# Verify the given file exists and is a file or directory.
+#
+sub chkfile {
+    my $fflag = shift;					# File/directory flag.
+    my $name = shift;					# Node name to check.
+
+    return if (! $name);
+
+    if (! -e $name) {
+	clierr("\"$name\" does not exist");
+    }
+
+    if($fflag) {
+	if (! -f $name) {
+	    clierr("\"$name\" is not a regular file");
+	}
+    } else {
+	if (! -d $name) {
+	    clierr("\"$name\" is not a directory");
+	}
+    }
+}
+
+##################################################################
+# clierr
+#
+# Prints a command-line-option error message and exits.
+#
+sub clierr {
+    my $msg = shift;
+
+    print STDERR "\nError:\n  $msg\n";
     exit(1);
 }
 
+##################################################################
+# usage
+#
+# Prints a command-usage message, with an optional error message, and exits.
+#
 sub usage {
     my ($extratext) = @_;
     print STDERR "\nError:\n  $extratext\n\n" if ($extratext);
@@ -1589,6 +1649,11 @@ sub Verbose {
     print STDERR @_ if ($opts{'v'});
 }
 
+#######################################################################
+# Die()
+#
+# Prints a fatal error message to STDERR and exits.
+#
 sub Die {
     notify(join("",@_, "\n", "This is a fatal error.  EXITING!\n"));
     print STDERR @_,"\n";
@@ -1663,10 +1728,13 @@ A persistent data file for storing new keys waiting to be added.
 
 =item B<--config file (-c) >
 
-Create a configure file for B<trustman> from the command line options
-given.  This option can be used to create a configuration file which
-can be appended to the B<dnssec-tools.conf> file.  It will allow less
-command line options to be specified in the future.
+Create a configuration file for B<trustman> from the command line options
+given.  The existing DNSSEC-Tools configuration file is copied to the
+specified configuration file, and new configuration entries are appended
+corresponding to the command line options.  B<trustman>-specific entries
+already in the existing configuration file will be replaced with new entries
+from the command line.  This will allow fewer command
+line options to be specified in the future.
 
 =item B<-dtconfig config_file (-d)>
 
@@ -1691,8 +1759,8 @@ A B<root.hints> file to read.
 
 Specifies where temporary files should be created.  This is used when
 creating new versions of the B<dnsval.conf> and B<named.conf> files before
-they're moved into place.  Most operating systems require the B</tmp>
-directory to be on the same partition as the B<dnsval.conf>/B<named.conf>
+they are moved into place.  Most operating systems require the B</tmp>
+directory to be on the same partition as the B<dnsval.conf> and B<named.conf>
 files since renames across partitions will fail.
 
 =item B<--zone zone (-z)>
@@ -1710,9 +1778,9 @@ SMTP server that B<trustman> should use to send reports by mail.
 
 =item B<--nomail>
 
-Prevents mail from being sent; this is useful for only sending notifications
-via B<stdout> (B<-p>) or B<syslog> (B<-L>) even if an SMTP server was
-specified in the configuration file.
+Prevents mail from being sent, even if an SMTP server was specified in the
+configuration file.  This is useful for only sending notifications via
+B<stdout> (B<-p>) or B<syslog> (B<-L>).
 
 =item B<--no_error (-N)>
 
@@ -1725,7 +1793,7 @@ Log messages to B<stdout>.
 =item B<--hold_time seconds (-w)>
 
 The value of the hold-down timer.  This is specified in seconds from the time
-that a new key is found.  Generally the default and recommended value of 30
+that a new key is found.  Generally, the default and recommended value of 30
 days should be used.
 
 =item B<--resolv_conf_file conffile (-r)>
@@ -1753,7 +1821,7 @@ The number of seconds to sleep between checks.  Default is 3600 (one hour.)
 
 =item B<--test_revoke>
 
-Use this option to test the REVOKE bit.  No known implementation of
+This option tests the REVOKE bit.  No known implementation of
 the REVOKE bit exists to date.
 
 =item B<--help (-h)>
@@ -1762,7 +1830,7 @@ Display a help message.
 
 =item B<--verbose (-v)>
 
-Verbose output.
+Gives verbose output.
 
 =item B<--Version (-V)>
 
@@ -1773,7 +1841,7 @@ Displays the version information for B<trustman> and the DNSSEC-Tools package.
 =head1 CONFIGURATION
 
 In addition to the command line arguments, the B<dnssec-tools.conf> file can
-also be configured with the following tokens to remove the need to use some of
+be configured with the following tokens to remove the need to use some of
 the command-line options.  The command-line options always override the
 settings in the B<dnssec-tools.conf> file.
 
@@ -1819,8 +1887,8 @@ This is equivalent to the B<--root_hints_file> flag.
 This specifies where temporary files should be created.  This is used when
 creating new versions of the B<dnsval.conf> and B<named.conf> files before
 they're moved into place.  Most operating systems require the B</tmp> directory
-to be on the same partition as the B<dnsval.conf>/B<named.conf> files since
-renames across partitions will fail.
+to be on the same partition as the B<dnsval.conf> and B<named.conf> files,
+since renames across partitions will fail.
 
 =head1 COPYRIGHT
 
