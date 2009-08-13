@@ -272,8 +272,8 @@ sub optsandargs
 	$rloglevel = $opts{'roll-loglevel'} || dnssec_tools_default("roll_loglevel");
 	$rsleep	   = $opts{'roll-sleeptime'}|| dnssec_tools_default("roll_sleeptime");
 
-	$tacontact = $opts{'ta_contact'}    || dnssec_tools_default("ta_contact");
-	$tasmtpserver = $opts{'ta_smtpserver'}    || dnssec_tools_default("ta_smtpserver");
+	$tacontact = $opts{'tacontact'}    || dnssec_tools_default("tacontact");
+	$tasmtpserver = $opts{'tasmtpserver'}    || dnssec_tools_default("tasmtpserver");
 
 	$entmsg	   = 0  if(defined($opts{'noentropy_msg'}));
 	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
