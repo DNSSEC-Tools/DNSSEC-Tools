@@ -64,6 +64,7 @@ my @opts =
 	"roll-sleeptime=i",			# Sleep-time for rollerd.
 
 	"ta-contact=s",				# trustman email contact
+	"ta-resolvconf=s",			# resolv.conf file
 	"ta-smtpserver=s",			# trustman smtp server
 );
 
@@ -106,6 +107,7 @@ my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 
 my $tacontact;				# trustman email contact.
+my $taresolvconf;			# resolv.conf file
 my $tasmtpserver;			# trustman smtp server.
 
 #
@@ -272,8 +274,9 @@ sub optsandargs
 	$rloglevel = $opts{'roll-loglevel'} || dnssec_tools_default("roll_loglevel");
 	$rsleep	   = $opts{'roll-sleeptime'}|| dnssec_tools_default("roll_sleeptime");
 
-	$tacontact = $opts{'tacontact'}    || dnssec_tools_default("tacontact");
-	$tasmtpserver = $opts{'tasmtpserver'}    || dnssec_tools_default("tasmtpserver");
+	$tacontact    = $opts{'ta-contact'}    || dnssec_tools_default("tacontact");
+	$taresolvconf = $opts{'ta-resolvconf'}    || dnssec_tools_default("taresolvconf");
+	$tasmtpserver = $opts{'ta-smtpserver'}    || dnssec_tools_default("tasmtpserver");
 
 	$entmsg	   = 0  if(defined($opts{'noentropy_msg'}));
 	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
@@ -380,9 +383,10 @@ sub writeconf()
 		print "\tzonecheck options  - \"$zcopts\"\n";
 		print "\tzonesign  options  - \"$zsopts\"\n\n";
 
-		print "\ttacontact    - \"$tacontact\"\n";
-		print "\ttasmtpserver - \"$tasmtpserver\"\n";
-		
+		print "\tta-contact    - \"$tacontact\"\n";
+		print "\tta-resolvconf - \"$taresolvconf\"\n";
+		print "\tta-smtpserver - \"$tasmtpserver\"\n";
+
 	}
 
 	open(DTCONF,">$outfile") or die "unable to open \"$outfile\" for writing";
@@ -480,6 +484,7 @@ roll_sleeptime  $rsleep
 #
 tacontact	$tacontact
 tasmtpserver	$tasmtpserver
+taresolvconf	$taresolvconf
 
 #
 # GUI-usage flag.
@@ -752,6 +757,7 @@ sub get_dt_opts()
 
 	$tacontact = getval("TrustMan's contact address",$tacontact,"");
 	$tasmtpserver = getval("TrustMan's SMTP server",$tasmtpserver,"");
+	$taresolvconf = getval("TrustMan's resolv.conf file",$tasmtpserver,"");
 
 	print "\n";
 }
@@ -1001,6 +1007,7 @@ sub usage()
 	print STDERR "\t\t-roll-sleeptime <sleep-time>\n\n";
 
 	print STDERR "\t\t-ta-contact <contact email>\n";
+	print STDERR "\t\t-ta-resolvconf <resolv.conf file>\n";
 	print STDERR "\t\t-ta-smtpserver <hostname>\n\n";
 
 	print STDERR "\t\t-outfile <conffile>\n";
@@ -1120,6 +1127,26 @@ These options deal with different aspects of zone signing.
 =item B<-endtime endtime>
 
 The zone default expiration time to be passed to B<dnssec-signzone>.
+
+=back
+
+=head2 TrustMan-related Options
+
+These options deal with different aspects of executing B<TrustMan>.
+
+=over 4
+
+=item B<-ta-contact email>
+
+The email address of the B<TrustMan> administrator.
+
+=item B<-ta-resolvconf resolvconffile>
+
+The location of the B<resolv.conf> file.
+
+=item B<-ta-smtpserver hostname>
+
+The SMTP server for the B<TrustMan> command.
 
 =back
 
