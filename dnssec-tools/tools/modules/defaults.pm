@@ -53,7 +53,8 @@ my %defaults =
 	"tadnsvalconffile" => getconfdir() . "/dnsval.conf",
 	"tanamedconffile"  => getconfdir() . "/named/named.conf",
 	"tasleeptime"      => 3600,
-	"tasmtpserver"     => "",
+	"tasmtpserver"     => "localhost",	# Trustman's SMTP server.
+	"taresolvconf"	   => "/etc/resolv.conf",	# resolv.conf file.
 	"usegui"	   => 0,		# Use GUI for option entry flag.
 	"viewimage"	   => "/usr/X11R6/bin/viewimage",
 	"zonecheck"	   => getprefixdir() . "/sbin/named-checkzone",
@@ -277,27 +278,30 @@ daemon.
 This default indicates whether or not keys should be deleted when they are no
 longer in use.
 
-=item B<tanamedconffile>
-
-This default specifies the name of the B<named> configuration file.
-
-=item B<tadnsvalconffile>
-
-This default specifies the name of the B<dnsval> configuration file.
-
-=item B<tasleeptime>
-
-This default holds the default value for how long the daemon should sleep.
-
 =item B<tacontact>
 
 This is merely a placeholder for the contact information. There is no useful
 default value for this.
 
+=item B<tadnsvalconffile>
+
+This default specifies the path of the B<dnsval> configuration file.
+
+=item B<tanamedconffile>
+
+This default specifies the path of the B<named> configuration file.
+
+=item B<taresolvconf>
+
+This default specifies the path to the DNS B<resolv.conf> file.
+
+=item B<tasleeptime>
+
+This default holds the default value for how long the daemon should sleep.
+
 =item B<tasmtpserver>
 
-This is merely a placeholder for the name of the SMTP server. There is no
-useful default value for this.
+This default specifies the name of the SMTP server.
 
 =item B<usegui>
 
