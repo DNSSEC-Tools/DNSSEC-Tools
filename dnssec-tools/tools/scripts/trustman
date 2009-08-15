@@ -197,6 +197,7 @@ if ($opts{'test_revoke'}) {
 }
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
+    print STDERR "No reporting method chosen; please select -m, -L, or -p.\n\n";
     usage();
 }
 
