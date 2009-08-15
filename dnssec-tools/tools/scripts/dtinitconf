@@ -63,9 +63,10 @@ my @opts =
 	"roll-loglevel=s",			# Logging level for rollerd.
 	"roll-sleeptime=i",			# Sleep-time for rollerd.
 
-	"ta-contact=s",				# trustman email contact
-	"ta-resolvconf=s",			# resolv.conf file
-	"ta-smtpserver=s",			# trustman smtp server
+	"ta-contact=s",				# TrustMan email contact.
+	"ta-resolvconf=s",			# Location of resolv.conf file.
+	"ta-smtpserver=s",			# TrustMan SMTP server.
+	"genroothints=s",			# Create root.hints file.
 );
 
 #
@@ -91,12 +92,10 @@ my $savekeys;				# Save/delete old keys.
 my $usegui;				# Use-GUI flag.
 
 my $editflag;				# Edit resulting config file.
-my $helpflag;				# Give usage message.
 my $noprompt = 0;			# Don't prompt -- just use defaults.
 my $outfile;				# Output filename.
 my $overwrite;				# Overwrite existing output file.
 my $verbose = 0;			# Give verbose output.
-my $version = 0;			# Display the version number.
 
 my $kgopts;				# Options for key-generation program.
 my $zcopts;				# Options for zone-checking program.
@@ -106,9 +105,10 @@ my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 
-my $tacontact;				# trustman email contact.
-my $taresolvconf;			# resolv.conf file
-my $tasmtpserver;			# trustman smtp server.
+my $tacontact;				# TrustMan email contact.
+my $taresolvconf;			# Location of resolv.conf file.
+my $tasmtpserver;			# TrustMan SMTP server.
+my $roothints;				# root.hints file to create.
 
 #
 # Program paths.
@@ -247,6 +247,16 @@ sub optsandargs
 	%opts = %$ropts 	if($ropts != undef);
 
 	#
+	# Give usage message if desired.
+	#
+	usage() if($opts{'help'});
+
+	#
+	# Display the version number.
+	#
+	version() if($opts{'Version'});
+
+	#
 	# Get the option values.  If these weren't given on the command
 	# line, they'll be taken the DNSSEC-Tools defaults.
 	#
@@ -277,6 +287,7 @@ sub optsandargs
 	$tacontact    = $opts{'ta-contact'}    || dnssec_tools_default("tacontact");
 	$taresolvconf = $opts{'ta-resolvconf'}    || dnssec_tools_default("taresolvconf");
 	$tasmtpserver = $opts{'ta-smtpserver'}    || dnssec_tools_default("tasmtpserver");
+	$roothints    = $opts{'genroothints'};
 
 	$entmsg	   = 0  if(defined($opts{'noentropy_msg'}));
 	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
@@ -290,20 +301,76 @@ sub optsandargs
 	$overwrite = $opts{'overwrite'};
 
 	$verbose   = $opts{'verbose'}   || $opts{'v'};
-	$version   = $opts{'Version'};
-	$helpflag  = $opts{'help'};
 	$editflag  = $opts{'edit'};
 	$noprompt  = $opts{'noprompt'};
 
 	#
-	# Display the version number
+	# Generate a new root.hints file, if the user so desires.
+	# We will ensure the file doesn't already exist.
 	#
-	version() if($version);
+	if($roothints)
+	{
+		if(-e $roothints)
+		{
+			print STDERR "root.hints file \"$roothints\" already exists\n";
+			exit(1);
+		}
 
-	#
-	# Give usage message if desired.
-	#
-	usage() if($helpflag);
+		open(RH,"> $roothints") or die "unable to create \"$roothints\".";
+
+		print RH '
+; <<>> DiG 9.4.1-P1 <<>> @e.root-servers.net . ns
+; (1 server found)
+;; global options:  printcmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 61190
+;; flags: qr aa rd; QUERY: 1, ANSWER: 13, AUTHORITY: 0, ADDITIONAL: 14
+;; WARNING: recursion requested but not available
+
+;; QUESTION SECTION:
+;.				IN	NS
+
+;; ANSWER SECTION:
+.			518400	IN	NS	J.ROOT-SERVERS.NET.
+.			518400	IN	NS	B.ROOT-SERVERS.NET.
+.			518400	IN	NS	M.ROOT-SERVERS.NET.
+.			518400	IN	NS	E.ROOT-SERVERS.NET.
+.			518400	IN	NS	I.ROOT-SERVERS.NET.
+.			518400	IN	NS	L.ROOT-SERVERS.NET.
+.			518400	IN	NS	C.ROOT-SERVERS.NET.
+.			518400	IN	NS	G.ROOT-SERVERS.NET.
+.			518400	IN	NS	D.ROOT-SERVERS.NET.
+.			518400	IN	NS	A.ROOT-SERVERS.NET.
+.			518400	IN	NS	F.ROOT-SERVERS.NET.
+.			518400	IN	NS	K.ROOT-SERVERS.NET.
+.			518400	IN	NS	H.ROOT-SERVERS.NET.
+
+;; ADDITIONAL SECTION:
+A.ROOT-SERVERS.NET.	3600000	IN	A	198.41.0.4
+A.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:503:ba3e::2:30
+B.ROOT-SERVERS.NET.	3600000	IN	A	192.228.79.201
+C.ROOT-SERVERS.NET.	3600000	IN	A	192.33.4.12
+D.ROOT-SERVERS.NET.	3600000	IN	A	128.8.10.90
+E.ROOT-SERVERS.NET.	3600000	IN	A	192.203.230.10
+F.ROOT-SERVERS.NET.	3600000	IN	A	192.5.5.241
+F.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:500:2f::f
+G.ROOT-SERVERS.NET.	3600000	IN	A	192.112.36.4
+H.ROOT-SERVERS.NET.	3600000	IN	A	128.63.2.53
+H.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:500:1::803f:235
+I.ROOT-SERVERS.NET.	3600000	IN	A	192.36.148.17
+J.ROOT-SERVERS.NET.	3600000	IN	A	192.58.128.30
+J.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:503:c27::2:30
+
+;; Query time: 80 msec
+;; SERVER: 192.203.230.10#53(192.203.230.10)
+;; WHEN: Wed Feb 20 14:14:35 2008
+;; MSG SIZE  rcvd: 500
+
+';
+		close(RH);
+
+		$roothints = "roothints	$roothints";
+	}
 
 }
 
@@ -386,6 +453,7 @@ sub writeconf()
 		print "\tta-contact    - \"$tacontact\"\n";
 		print "\tta-resolvconf - \"$taresolvconf\"\n";
 		print "\tta-smtpserver - \"$tasmtpserver\"\n";
+		print "\tgenroothints  - \"$roothints\"\n";
 
 	}
 
@@ -485,6 +553,7 @@ roll_sleeptime  $rsleep
 tacontact	$tacontact
 tasmtpserver	$tasmtpserver
 taresolvconf	$taresolvconf
+$roothints
 
 #
 # GUI-usage flag.
@@ -758,6 +827,7 @@ sub get_dt_opts()
 	$tacontact = getval("TrustMan's contact address",$tacontact,"");
 	$tasmtpserver = getval("TrustMan's SMTP server",$tasmtpserver,"");
 	$taresolvconf = getval("TrustMan's resolv.conf file",$tasmtpserver,"");
+	$roothints    = getval("root.hints file","");
 
 	print "\n";
 }
@@ -1008,7 +1078,8 @@ sub usage()
 
 	print STDERR "\t\t-ta-contact <contact email>\n";
 	print STDERR "\t\t-ta-resolvconf <resolv.conf file>\n";
-	print STDERR "\t\t-ta-smtpserver <hostname>\n\n";
+	print STDERR "\t\t-ta-smtpserver <hostname>\n";
+	print STDERR "\t\t-genroothints <root.hints file>\n\n";
 
 	print STDERR "\t\t-outfile <conffile>\n";
 	print STDERR "\t\t-overwrite\n";
@@ -1135,6 +1206,11 @@ The zone default expiration time to be passed to B<dnssec-signzone>.
 These options deal with different aspects of executing B<TrustMan>.
 
 =over 4
+
+=item B<-genroothints roothints>
+
+A new B<root.hints> file will be created at the specified location.
+B<dtinitconf> requires that the file not already exist.
 
 =item B<-ta-contact email>
 
