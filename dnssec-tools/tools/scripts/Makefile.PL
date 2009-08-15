@@ -114,6 +114,9 @@ PP	= /usr/bin/pp
 DTCONFFILE = dnssec-tools.conf.PAR
 CONF_DT    = -a \"dnssec-tools.conf.PAR;dnssec-tools.conf\"
 
+ROOTHINTSFILE = root.hints
+ROOTHINTS  = -a \$(ROOTHINTSFILE)
+
 #######
 
 MOD_STD = -M lib -M Text::Wrap -M Date::Parse -M Date::Format -M Mail::Mailer::sendmail
@@ -135,10 +138,11 @@ PROGS_PACK = \$(PROGS_BIND) \$(PROGS_DT)
 
 #######
 
-PACKEDCMDS = pack_rollctl pack_rollerd pack_zonesigner
+PACKEDCMDS = pack_rollctl pack_rollerd pack_zonesigner pack_trustman
 
 packer_rollctl	  = rollctl.\`uname -s\`
 packer_rollerd	  = rollerd.\`uname -s\`
+packer_trustman	  = trustman.\`uname -s\`
 packer_zonesigner = zonesigner.\`uname -s\`
 
 packed_commands: newconf \$(PACKEDCMDS) pack_cleaner
@@ -146,10 +150,12 @@ packed_commands: newconf \$(PACKEDCMDS) pack_cleaner
 #######
 
 newconf:
+	\$(RM) -f \$(ROOTHINTSFILE)
 	dtinitconf -noprompt -overwrite -binddir .	\\
 		-ksklife 60 -ksklength 2048		\\
 		-zsklife 30 -zsklength 2048		\\
 		-roll-sleep 60 -roll-loglevel info	\\
+		-genroothints \$(ROOTHINTSFILE)		\\
 		-outfile \$(DTCONFFILE)
 
 pack_rollctl:		copy_bind
@@ -164,7 +170,7 @@ pack_rollerd:		copy_bind
 
 pack_trustman:		copy_bind
 	\$(RM) -f \$(packer_trustman)
-	\$(PP) -o \$(packer_trustman) \$(MODULES) \$(CONF_DT) \$(PROGS_PACK) trustman
+	\$(PP) -o \$(packer_trustman) \$(MODULES) \$(CONF_DT) \$(ROOTHINTS) trustman
 	\@echo ' '
 
 pack_zonesigner:	copy_bind
@@ -197,6 +203,7 @@ pack_cleaner:
 		fi					\\
 	 done
 	\$(RM) -f dnssec-tools.conf.PAR
+	\$(RM) -f root.hints
 
 
 MOD_DT =						\\
@@ -209,7 +216,8 @@ MOD_DT =						\\
 	-M Net::DNS::SEC::Tools::rollmgr		\\
 	-M Net::DNS::SEC::Tools::rollrec		\\
 	-M Net::DNS::SEC::Tools::timetrans		\\
-	-M Net::DNS::SEC::Tools::tooloptions
+	-M Net::DNS::SEC::Tools::tooloptions		\\
+	-M Net::DNS::SEC::Validator
 
 MOD_DNSRR =						\\
 	-M Net::DNS::RR					\\
