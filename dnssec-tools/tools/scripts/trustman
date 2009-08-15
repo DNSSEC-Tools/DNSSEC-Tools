@@ -74,7 +74,7 @@ GetOptions(\%opts,
              'w|hold_time=s',
              'z|zone=s',
              'test_revoke=s',
-           );
+           ) || usage();
 
 if ($opts{'h'}) {
     usage();
@@ -86,8 +86,7 @@ if ($opts{'V'}) {
 
 
 #
-# Use a local config file if we're running as part of a packed
-# configuration.
+# Use a local config file if we're running as part of a packed configuration.
 #
 if (runpacked()) {
     setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
@@ -101,15 +100,15 @@ if (exists($opts{'d'})) {
 }
 
 
-# Parse the dnssec-tools.conf file
+# Parse the dnssec-tools.conf file.
 my %dtconf = parseconfig();
 
-# then $dtconf{'name_of_option_in_dnssec-tools.conf'}
-# contains the value of that option as set in the conf file
+# Then $dtconf{'name_of_option_in_dnssec-tools.conf'}
+# contains the value of that option as set in the conf file.
 
 # newkeyfile will hold data about new keys detected,
 # but not yet added to config files (waiting for add_holddown_time
-# to expire). Read this file if it exists, and write to it
+# to expire).  Read this file if it exists, and write to it
 # any time the %newkeys structure is modified.
 my $newkeyfile = $opts{'a'} ? $opts{'a'}
                         : $dtconf{'taanchorfile'};
@@ -126,7 +125,7 @@ my $dvfile = $opts{'k'} ? $opts{'k'}
                         : $dtconf{'tadnsvalconffile'};
 
 my $rhfile = $opts{'o'} ? $opts{'o'}
-                        : $dtconf{'taroothintsfile'};
+                        : '';
 
 my $contactaddr = $opts{'m'} ? $opts{'m'}
                              : $dtconf{'tacontact'};
@@ -139,6 +138,15 @@ my $tmpdir =  $opts{'T'} ? $opts{'T'}
 
 if (!$dvfile && !$ncfile) {
     usage("You need to specify at least a dnsval.conf (-k) file or named.conf (-n) file.");
+}
+
+#
+# Use a local root.hints file if we're running in a packed configuration.
+#
+if (runpacked()) {
+    if ($rhfile eq '') {
+	$rhfile = "$ENV{'PAR_TEMP'}/inc/root.hints";
+    }
 }
 
 #
@@ -579,9 +587,9 @@ sub checkkeys {
 
             }
 
-# only want to remove pending keys which do not appear in this
-# RRSET if the query was successful. Will deal with the unsuccessful
-# query below
+	    # Only want to remove pending keys which do not appear in this
+	    # RRSET if the query was successful.  Will deal with the
+	    # unsuccessful query below.
 
             for (my $k = 0; $k <= $#{$pendingnewkeys{$z}}; $k++) {
                 # any pending key still not marked found should be
