@@ -15,6 +15,7 @@ use strict;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::tooloptions;
+use LWP::UserAgent;
 
 #
 # Version information.
@@ -37,6 +38,8 @@ my @COMMON_BINDLOCS =
 );
 
 my $DEFAULT_EDITOR = "vi";
+
+my $ROOTHINTS = 'http://www.internic.net/zones/named.root';
 
 #
 # Command-line options specifically for this program.
@@ -306,68 +309,58 @@ sub optsandargs
 
 	#
 	# Generate a new root.hints file, if the user so desires.
-	# We will ensure the file doesn't already exist.
+	# The current root.hints will be pull from InterNIC.
+	# We will ensure the user-specified file doesn't already exist.
 	#
 	if($roothints)
 	{
+		my $ua;					# HTTP user agent.
+		my $rq;					# HTTP request object.
+		my $rz;					# Request response.
+
+		#
+		# Complain and die if the specified file already exists.
+		#
 		if(-e $roothints)
 		{
 			print STDERR "root.hints file \"$roothints\" already exists\n";
 			exit(1);
 		}
 
-		open(RH,"> $roothints") or die "unable to create \"$roothints\".";
+		#
+		# Create the user agent that'll fetch the file.
+		#
+		$ua = LWP::UserAgent->new;
+		$ua->agent("dtinitconf");
 
-		print RH '
-; <<>> DiG 9.4.1-P1 <<>> @e.root-servers.net . ns
-; (1 server found)
-;; global options:  printcmd
-;; Got answer:
-;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 61190
-;; flags: qr aa rd; QUERY: 1, ANSWER: 13, AUTHORITY: 0, ADDITIONAL: 14
-;; WARNING: recursion requested but not available
+		#
+		# Create the request that'll be sent.
+		#
+		$rq = HTTP::Request->new(GET => "$ROOTHINTS");
+		$rq->content_type('application/x-www-form-urlencoded');
+		$rq->content('query=libwww-perl&mode=dist');
 
-;; QUESTION SECTION:
-;.				IN	NS
+		#
+		# Pass the request to the user agent.
+		#
+		$rz = $ua->request($rq);
 
-;; ANSWER SECTION:
-.			518400	IN	NS	J.ROOT-SERVERS.NET.
-.			518400	IN	NS	B.ROOT-SERVERS.NET.
-.			518400	IN	NS	M.ROOT-SERVERS.NET.
-.			518400	IN	NS	E.ROOT-SERVERS.NET.
-.			518400	IN	NS	I.ROOT-SERVERS.NET.
-.			518400	IN	NS	L.ROOT-SERVERS.NET.
-.			518400	IN	NS	C.ROOT-SERVERS.NET.
-.			518400	IN	NS	G.ROOT-SERVERS.NET.
-.			518400	IN	NS	D.ROOT-SERVERS.NET.
-.			518400	IN	NS	A.ROOT-SERVERS.NET.
-.			518400	IN	NS	F.ROOT-SERVERS.NET.
-.			518400	IN	NS	K.ROOT-SERVERS.NET.
-.			518400	IN	NS	H.ROOT-SERVERS.NET.
-
-;; ADDITIONAL SECTION:
-A.ROOT-SERVERS.NET.	3600000	IN	A	198.41.0.4
-A.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:503:ba3e::2:30
-B.ROOT-SERVERS.NET.	3600000	IN	A	192.228.79.201
-C.ROOT-SERVERS.NET.	3600000	IN	A	192.33.4.12
-D.ROOT-SERVERS.NET.	3600000	IN	A	128.8.10.90
-E.ROOT-SERVERS.NET.	3600000	IN	A	192.203.230.10
-F.ROOT-SERVERS.NET.	3600000	IN	A	192.5.5.241
-F.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:500:2f::f
-G.ROOT-SERVERS.NET.	3600000	IN	A	192.112.36.4
-H.ROOT-SERVERS.NET.	3600000	IN	A	128.63.2.53
-H.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:500:1::803f:235
-I.ROOT-SERVERS.NET.	3600000	IN	A	192.36.148.17
-J.ROOT-SERVERS.NET.	3600000	IN	A	192.58.128.30
-J.ROOT-SERVERS.NET.	3600000	IN	AAAA	2001:503:c27::2:30
-
-;; Query time: 80 msec
-;; SERVER: 192.203.230.10#53(192.203.230.10)
-;; WHEN: Wed Feb 20 14:14:35 2008
-;; MSG SIZE  rcvd: 500
-
-';
-		close(RH);
+		#
+		# If we fetched the file, save it to the specified file.
+		# If not, give an error message and continue.
+		#
+		if($rz->is_success)
+		{
+			open(RH,"> $roothints") or print STDERR "unable to create \"$roothints\".\n";
+			print RH $rz->content;
+			close(RH);
+		}
+		else
+		{
+			print STDERR "unable to fetch root.hints file ($rz->status_line)\n";
+			print STDERR "fetch the root.hints file manually from $ROOTHINTS\n";
+			print STDERR "continuing to build DNSSEC-Tools configuration file\n";
+		}
 
 		$roothints = "roothints	$roothints";
 	}
