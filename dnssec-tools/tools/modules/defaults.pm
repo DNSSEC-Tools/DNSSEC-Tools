@@ -50,6 +50,7 @@ my %defaults =
 	"roll_sleeptime"   => 3600,		# Rollerd's sleep time.
 	"savekeys"	   => 1,		# Save/delete old keys flag.
 	"tacontact" 	   => "",
+	"tadir" 	   => "/tmp/dnssec-tools/trustman",
 	"tadnsvalconffile" => getconfdir() . "/dnsval.conf",
 	"tanamedconffile"  => getconfdir() . "/named/named.conf",
 	"tasleeptime"      => 3600,
@@ -302,6 +303,10 @@ This default holds the default value for how long the daemon should sleep.
 =item B<tasmtpserver>
 
 This default specifies the name of the SMTP server.
+
+=item B<tatmpdir>
+
+This default specifies the location of B<trustman>'s temporary directory.
 
 =item B<usegui>
 
