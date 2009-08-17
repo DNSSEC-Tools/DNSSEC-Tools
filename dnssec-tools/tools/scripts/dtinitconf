@@ -357,7 +357,7 @@ sub optsandargs
 		}
 		else
 		{
-			print STDERR "unable to fetch root.hints file ($rz->status_line)\n";
+			print STDERR "unable to retrieve root.hints file (" . $rz->status_line . ")\n";
 			print STDERR "fetch the root.hints file manually from $ROOTHINTS\n";
 			print STDERR "continuing to build DNSSEC-Tools configuration file\n";
 		}
@@ -1204,6 +1204,11 @@ These options deal with different aspects of executing B<TrustMan>.
 
 A new B<root.hints> file will be created at the specified location.
 B<dtinitconf> requires that the file not already exist.
+
+The B<root.hints> file is retrieved from
+B<http://www.internic.net/zones/named.root>.  It is not considered a fatal
+error if B<dtinitconf> is unable to fetch the file.  Rather, a warning message
+will be given and creation of the configuration file will continue.
 
 =item B<-ta-contact email>
 
