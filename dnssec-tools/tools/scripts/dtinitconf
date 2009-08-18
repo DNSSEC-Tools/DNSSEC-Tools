@@ -66,9 +66,10 @@ my @opts =
 	"roll-loglevel=s",			# Logging level for rollerd.
 	"roll-sleeptime=i",			# Sleep-time for rollerd.
 
-	"ta-contact=s",				# TrustMan email contact.
+	"ta-contact=s",				# trustman's email contact.
 	"ta-resolvconf=s",			# Location of resolv.conf file.
-	"ta-smtpserver=s",			# TrustMan SMTP server.
+	"ta-smtpserver=s",			# trustman's SMTP server.
+	"ta-tmpdir=s",				# trustman's temp. directory.
 	"genroothints=s",			# Create root.hints file.
 );
 
@@ -108,9 +109,10 @@ my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 
-my $tacontact;				# TrustMan email contact.
+my $tacontact;				# trustman's email contact.
 my $taresolvconf;			# Location of resolv.conf file.
-my $tasmtpserver;			# TrustMan SMTP server.
+my $tasmtpserver;			# trustman's SMTP server.
+my $tatmpdir;				# trustman's temporary directory.
 my $roothints;				# root.hints file to create.
 
 #
@@ -288,8 +290,9 @@ sub optsandargs
 	$rsleep	   = $opts{'roll-sleeptime'}|| dnssec_tools_default("roll_sleeptime");
 
 	$tacontact    = $opts{'ta-contact'}    || dnssec_tools_default("tacontact");
-	$taresolvconf = $opts{'ta-resolvconf'}    || dnssec_tools_default("taresolvconf");
-	$tasmtpserver = $opts{'ta-smtpserver'}    || dnssec_tools_default("tasmtpserver");
+	$taresolvconf = $opts{'ta-resolvconf'} || dnssec_tools_default("taresolvconf");
+	$tasmtpserver = $opts{'ta-smtpserver'} || dnssec_tools_default("tasmtpserver");
+	$tatmpdir     = $opts{'ta-tmpdir'}     || dnssec_tools_default("tatmpdir");
 	$roothints    = $opts{'genroothints'};
 
 	$entmsg	   = 0  if(defined($opts{'noentropy_msg'}));
@@ -446,6 +449,7 @@ sub writeconf()
 		print "\tta-contact    - \"$tacontact\"\n";
 		print "\tta-resolvconf - \"$taresolvconf\"\n";
 		print "\tta-smtpserver - \"$tasmtpserver\"\n";
+		print "\tta-tmpdir     - \"$tatmpdir\"\n";
 		print "\tgenroothints  - \"$roothints\"\n";
 
 	}
@@ -546,6 +550,7 @@ roll_sleeptime  $rsleep
 tacontact	$tacontact
 tasmtpserver	$tasmtpserver
 taresolvconf	$taresolvconf
+tatmpdir	$tatmpdir
 $roothints
 
 #
@@ -817,9 +822,10 @@ sub get_dt_opts()
 
 	print "\n";
 
-	$tacontact = getval("TrustMan's contact address",$tacontact,"");
-	$tasmtpserver = getval("TrustMan's SMTP server",$tasmtpserver,"");
-	$taresolvconf = getval("TrustMan's resolv.conf file",$tasmtpserver,"");
+	$tacontact = getval("trustman's contact address",$tacontact,"");
+	$tasmtpserver = getval("trustman's SMTP server",$tasmtpserver,"");
+	$tatmpdir     = getval("trustman's temporary directory",$tatmpdir,"");
+	$taresolvconf = getval("trustman's resolv.conf file",$tasmtpserver,"");
 	$roothints    = getval("root.hints file","");
 
 	print "\n";
@@ -1072,6 +1078,7 @@ sub usage()
 	print STDERR "\t\t-ta-contact <contact email>\n";
 	print STDERR "\t\t-ta-resolvconf <resolv.conf file>\n";
 	print STDERR "\t\t-ta-smtpserver <hostname>\n";
+	print STDERR "\t\t-ta-tmpdir <temporary directory>\n";
 	print STDERR "\t\t-genroothints <root.hints file>\n\n";
 
 	print STDERR "\t\t-outfile <conffile>\n";
@@ -1194,9 +1201,9 @@ The zone default expiration time to be passed to B<dnssec-signzone>.
 
 =back
 
-=head2 TrustMan-related Options
+=head2 trustman-related Options
 
-These options deal with different aspects of executing B<TrustMan>.
+These options deal with different aspects of executing B<trustman>.
 
 =over 4
 
@@ -1212,7 +1219,7 @@ will be given and creation of the configuration file will continue.
 
 =item B<-ta-contact email>
 
-The email address of the B<TrustMan> administrator.
+The email address of the B<trustman> administrator.
 
 =item B<-ta-resolvconf resolvconffile>
 
@@ -1220,7 +1227,11 @@ The location of the B<resolv.conf> file.
 
 =item B<-ta-smtpserver hostname>
 
-The SMTP server for the B<TrustMan> command.
+The SMTP server for the B<trustman> command.
+
+=item B<-ta-tmpdir hostname>
+
+The temporary directory for the B<trustman> command.
 
 =back
 
