@@ -1313,11 +1313,6 @@ sub resolve_and_check_dnskey {
     my ($z,$file) = @_;
     Verbose(" Checking the live \"$z\" key\n");
 
-print "\n";
-print "resolv_conf	<$resfile>\n";
-print "dnsval_conf	<$file>\n";
-print "root.hints 	<$rhfile>\n";
-print "\n";
     my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
                                                  dnsval_conf => $file,
 						 root_hints => $rhfile);
