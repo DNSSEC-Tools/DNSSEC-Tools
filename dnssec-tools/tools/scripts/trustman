@@ -100,6 +100,11 @@ if (exists($opts{'d'})) {
 }
 
 
+#
+# Option error count.
+#
+my $errs = 0;
+
 # Parse the dnssec-tools.conf file.
 my %dtconf = parseconfig();
 
@@ -134,10 +139,11 @@ my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
 
 my $tmpdir =  $opts{'T'} ? $opts{'T'}
-                             : $dtconf{'tatmpdir'};
+			 : $dtconf{'tatmpdir'};
 
 if (!$dvfile && !$ncfile) {
-    usage("You need to specify at least a dnsval.conf (-k) file or named.conf (-n) file.");
+    print STDERR "Error:  a dnsval.conf (-k) file or named.conf (-n) file must be specified.\n";
+    $errs++;
 }
 
 #
@@ -160,14 +166,28 @@ chkfile(1,0,$rhfile,"taroothintsfile");
 chkfile(0,0,$tmpdir,"tatmpdir");
 
 if (!$smtpserver) {
-    print STDERR "tasmtpserver is undefined in configuration file\n";
+    print STDERR "Error:  tasmtpserver is undefined in configuration file\n";
+    $errs++;
 }
 
 my $sleeptime = $opts{'t'} ? $opts{'t'}
                            : $dtconf{'tasleeptime'};
 
 my $holdtime = $opts{'w'} ? $opts{'w'}
-                           : $dtconf{'taholdtime'};
+                          : $dtconf{'taholdtime'};
+
+if (!$contactaddr && !$opts{'L'} && !$opts{'p'}) {
+    print STDERR "Error:  No reporting method chosen; please select -m, -L, or -p.\n";
+    $errs++;
+}
+
+#
+# Give a usage message if there were any errors.
+#
+if ($errs) {
+    print "\n";
+    usage();
+}
 
 my $initrun = 1;
 
@@ -202,11 +222,6 @@ if ($opts{'test_revoke'}) {
     $revoke = 1;
 } else {
     $revoke = 0;
-}
-
-if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
-    print STDERR "No reporting method chosen; please select -m, -L, or -p.\n\n";
-    usage();
 }
 
 if ($newconf) {
@@ -325,36 +340,32 @@ sub chkfile {
     my $field = shift;					# Node's description.
 
     if($reqd && ($name eq '')) {
-	clierr("$field is not set");
+	print STDERR "Error:  $field is not set in configuration file\n";
+	$errs++;
+	return;
     }
 
     return if (! $name);
 
     if (! -e $name) {
-	clierr("\"$name\" does not exist");
+	print STDERR "Error:  \"$name\" does not exist\n";
+	$errs++;
+	return;
     }
 
     if($fflag) {
 	if (! -f $name) {
-	    clierr("\"$name\" is not a regular file");
+	    print STDERR "Error:  \"$name\" is not a regular file\n";
+	    $errs++;
+	    return;
 	}
     } else {
 	if (! -d $name) {
-	    clierr("\"$name\" is not a directory");
+	    print STDERR "Error:  \"$name\" is not a directory\n";
+	    $errs++;
+	    return;
 	}
     }
-}
-
-##################################################################
-# clierr
-#
-# Prints a command-line-option error message and exits.
-#
-sub clierr {
-    my $msg = shift;
-
-    print STDERR "\nError:\n  $msg\n";
-    exit(1);
 }
 
 ##################################################################
@@ -1302,6 +1313,11 @@ sub resolve_and_check_dnskey {
     my ($z,$file) = @_;
     Verbose(" Checking the live \"$z\" key\n");
 
+print "\n";
+print "resolv_conf	<$resfile>\n";
+print "dnsval_conf	<$file>\n";
+print "root.hints 	<$rhfile>\n";
+print "\n";
     my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
                                                  dnsval_conf => $file,
 						 root_hints => $rhfile);
