@@ -153,6 +153,10 @@ if (runpacked()) {
     if ($rhfile eq '') {
 	$rhfile = "$ENV{'PAR_TEMP'}/inc/root.hints";
     }
+
+    if ($resfile eq '') {
+	$resfile = "$ENV{'PAR_TEMP'}/inc/resolv.conf";
+    }
 }
 
 #
@@ -380,37 +384,37 @@ sub usage {
     print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-d DNSSECCONFIGFILE] [-v] [-V]
 
 File Options:
-       --anchor_data_file FILE (-a)
-       --config FILE (-c)
-       --dtconfig DTCONFFILE (-d)
-       --dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
-       --named_conf_file /PATH/TO/NAMED.CONF (-n)
-       --resolv_conf_file CONFFILE (-r)
-       --root_hints_file /PATH/TO/root.hints (-o)
-       --tmp_dir TMPDIR (-T)
+       -anchor_data_file FILE (-a)
+       -config FILE (-c)
+       -dtconfig DTCONFFILE (-d)
+       -dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
+       -named_conf_file /PATH/TO/NAMED.CONF (-n)
+       -resolv_conf_file CONFFILE (-r)
+       -root_hints_file /PATH/TO/root.hints (-o)
+       -tmp_dir TMPDIR (-T)
 
 Logging and Output Options:
-       --mail_contact_addr EMAIL_ADDRESS (-m)
-       --smtp_server SMTPSERVERNAME (-s)
-       --no_error (-N)
-       --print (-p)
-       --syslog (-L)
-       --nomail
+       -mail_contact_addr EMAIL_ADDRESS (-m)
+       -smtp_server SMTPSERVERNAME (-s)
+       -no_error (-N)
+       -print (-p)
+       -syslog (-L)
+       -nomail
 
 Operational Options:
-       --zone ZONE (-z)
-       --hold_time SECONDS (-w)
-       --single_run (-S)
-       --foreground (-f)
-       --sleeptime SECONDS (-t)
+       -zone ZONE (-z)
+       -hold_time SECONDS (-w)
+       -single_run (-S)
+       -foreground (-f)
+       -sleeptime SECONDS (-t)
 
 Testing Options:
-       --test_revoke
+       -test_revoke
 
 Help Options:
-       --help (-h)
-       --verbose (-v)
-       --version (-V)
+       -help (-h)
+       -verbose (-v)
+       -version (-V)
 
 Extra Notes:
     - If a zone is not specified, all zones in the key_containing_files
@@ -1747,16 +1751,16 @@ are added or removed from the configuration file, as appropriate.
 B<trustman> takes a number of options, each of which is described in this
 section.  Each option name may be shortened to the minimum number of unique
 characters, but some options also have an alias (as noted.)  The single-letter
-form of each option is denoted in parentheses, e.g.: B<--anchor_data_file>
+form of each option is denoted in parentheses, e.g.: B<-anchor_data_file>
 (B<-a>).
 
 =over 4
 
-=item B<--anchor_data_file file (-a)>
+=item B<-anchor_data_file file (-a)>
 
 A persistent data file for storing new keys waiting to be added.
 
-=item B<--config file (-c) >
+=item B<-config file (-c) >
 
 Create a configuration file for B<trustman> from the command line options
 given.  The existing DNSSEC-Tools configuration file is copied to the
@@ -1773,19 +1777,19 @@ If specified, this configuration file is used I<in place> of the normal
 DNSSEC-Tools configuration file B<not> in addition to it.  Also, it will be
 handled prior to I<keyrec> files, I<rollrec> files, and command-line options.
 
-=item B<--dnsval_conf_file /path/to/dnsval.conf (-k)>
+=item B<-dnsval_conf_file /path/to/dnsval.conf (-k)>
 
 A B<dnsval.conf> file to read and possibly update.
 
-=item B<--named_conf_file /path/to/named.conf (-n)>
+=item B<-named_conf_file /path/to/named.conf (-n)>
 
 A B<named.conf> file to read and possibly update.
 
-=item B<--root_hints_file /path/to/root.hints (-o)>
+=item B<-root_hints_file /path/to/root.hints (-o)>
 
 A B<root.hints> file to read.
 
-=item B<--tmp_dir directory (-T)>
+=item B<-tmp_dir directory (-T)>
 
 Specifies where temporary files should be created.  This is used when
 creating new versions of the B<dnsval.conf> and B<named.conf> files before
@@ -1793,76 +1797,76 @@ they are moved into place.  Most operating systems require the B</tmp>
 directory to be on the same partition as the B<dnsval.conf> and B<named.conf>
 files since renames across partitions will fail.
 
-=item B<--zone zone (-z)>
+=item B<-zone zone (-z)>
 
 The zone to check.  Specifying this option supersedes the default
 configuration file.
 
-=item B<--mail_contact_addr email_address (-m)>
+=item B<-mail_contact_addr email_address (-m)>
 
 Mail address for the contact person to whom reports should be sent.
 
-=item B<--smtp_server smtpservername (-s)>
+=item B<-smtp_server smtpservername (-s)>
 
 SMTP server that B<trustman> should use to send reports by mail.
 
-=item B<--nomail>
+=item B<-nomail>
 
 Prevents mail from being sent, even if an SMTP server was specified in the
 configuration file.  This is useful for only sending notifications via
 B<stdout> (B<-p>) or B<syslog> (B<-L>).
 
-=item B<--no_error (-N)>
+=item B<-no_error (-N)>
 
 Send report even when there are no errors.
 
-=item B<--print (-p)>
+=item B<-print (-p)>
 
 Log messages to B<stdout>.
 
-=item B<--hold_time seconds (-w)>
+=item B<-hold_time seconds (-w)>
 
 The value of the hold-down timer.  This is specified in seconds from the time
 that a new key is found.  Generally, the default and recommended value of 30
 days should be used.
 
-=item B<--resolv_conf_file conffile (-r)>
+=item B<-resolv_conf_file conffile (-r)>
 
 A B<resolv.conf> file to read.  B</dev/null> can be specified to force
 I<libval> to recursively answer the query rather than asking other name
 servers.)
 
-=item B<--single_run (-S)>
+=item B<-single_run (-S)>
 
 Run only once.
 
-=item B<--foreground (-f)>
+=item B<-foreground (-f)>
 
 Run in the foreground.  B<trustman> will still run in a loop.
 To run once, use the B<-S> option instead.
 
-=item B<--syslog (-L)>
+=item B<-syslog (-L)>
 
 Log messages to B<syslog>.
 
-=item B<--sleeptime seconds (-t)>
+=item B<-sleeptime seconds (-t)>
 
 The number of seconds to sleep between checks.  Default is 3600 (one hour.)
 
-=item B<--test_revoke>
+=item B<-test_revoke>
 
 This option tests the REVOKE bit.  No known implementation of
 the REVOKE bit exists to date.
 
-=item B<--help (-h)>
+=item B<-help (-h)>
 
 Display a help message.
 
-=item B<--verbose (-v)>
+=item B<-verbose (-v)>
 
 Gives verbose output.
 
-=item B<--Version (-V)>
+=item B<-Version (-V)>
 
 Displays the version information for B<trustman> and the DNSSEC-Tools package.
 
@@ -1879,38 +1883,38 @@ settings in the B<dnssec-tools.conf> file.
 
 =item B<tasmtpserver servername>
 
-This is equivalent to the B<--smtp_server> flag for specifying where to send
+This is equivalent to the B<-smtp_server> flag for specifying where to send
 email notices through.
 
 =item B<tacontact contact_email>
 
-This is equivalent to the B<--mail_contact_addr> flag for specifying where to
+This is equivalent to the B<-mail_contact_addr> flag for specifying where to
 send email notices to.
 
 =item B<taanchorfile file>
 
 This specifies the file where B<trustman> state information to be kept.
-This is equivalent to the B<--anchor_data_file> flag.
+This is equivalent to the B<-anchor_data_file> flag.
 
 =item B<taresolvconffile file>
 
 This specifies the B<resolv.conf> file to use.
-This is equivalent to the B<--resolv_conf_file> flag.
+This is equivalent to the B<-resolv_conf_file> flag.
 
 =item B<tanamedconffile file>
 
 This specifies the B<named.conf> file to read and write.
-This is equivalent to the B<--named_conf_file> flag.
+This is equivalent to the B<-named_conf_file> flag.
 
 =item B<tadnsvalconffile file>
 
 This specifies the B<dnsval.conf> file to read and write.
-This is equivalent to the B<--dnsval_conf_file> flag.
+This is equivalent to the B<-dnsval_conf_file> flag.
 
 =item B<taroothintsfile file>
 
 This specifies the B<root.hints> file to read.
-This is equivalent to the B<--root_hints_file> flag.
+This is equivalent to the B<-root_hints_file> flag.
 
 =item B<tatmpdir directory>
 
