@@ -117,17 +117,29 @@ CONF_DT    = -a \"dnssec-tools.conf.PAR;dnssec-tools.conf\"
 ROOTHINTSFILE = root.hints
 ROOTHINTS  = -a \$(ROOTHINTSFILE)
 
+RESOLVCONFFILE = resolv.conf
+RESOLVCONF = -a \$(RESOLVCONFFILE)
+
 #######
 
 MOD_STD = -M lib -M Text::Wrap -M Date::Parse -M Date::Format -M Mail::Mailer::sendmail
 
+MOD_NET	= -M Net::addrinfo -M Net::hostent -M Carp
+
 MOD_DNS = -M Net::DNS -M Net::DNS::ZoneFile::Fast -M Net::DNS::Keyset -M Net::DNS::SEC -M Net::DNS::SEC::Private
 
-MODULES = \$(MOD_DNS) \$(MOD_DT) \$(MOD_DNSRR) \$(MOD_STD) \$(CRYPTOLIB)
+MODULES = \$(MOD_NET) \$(MOD_DNS) \$(MOD_DT) \$(MOD_DNSRR) \$(MOD_STD) \$(PACKLIBS)
 
 #######
 
-CRYPTOLIB = -l /usr/lib/libcrypto.dylib
+STDLIBS = -l /usr/lib/libcrypto.dylib			\\
+	  -l /usr/lib/libpthread.dylib
+
+DTLIBS  = -l /opt/local/lib/libsres.dylib		\\
+	  -l /opt/local/lib/libval-threads.dylib
+
+
+PACKLIBS  = \$(STDLIBS) \$(DTLIBS)
 
 #######
 
@@ -151,10 +163,12 @@ packed_commands: newconf \$(PACKEDCMDS) pack_cleaner
 
 newconf:
 	\$(RM) -f \$(ROOTHINTSFILE)
+	\$(CP) /dev/null \$(RESOLVCONFFILE)
 	dtinitconf -noprompt -overwrite -binddir .	\\
 		-ksklife 60 -ksklength 2048		\\
 		-zsklife 30 -zsklength 2048		\\
 		-roll-sleep 60 -roll-loglevel info	\\
+		-ta-resolvconf \$(RESOLVCONFFILE)	\\
 		-genroothints \$(ROOTHINTSFILE)		\\
 		-outfile \$(DTCONFFILE)
 
@@ -170,7 +184,7 @@ pack_rollerd:		copy_bind
 
 pack_trustman:		copy_bind
 	\$(RM) -f \$(packer_trustman)
-	\$(PP) -o \$(packer_trustman) \$(MODULES) \$(CONF_DT) \$(ROOTHINTS) trustman
+	\$(PP) -o \$(packer_trustman) \$(MODULES) \$(CONF_DT) \$(RESOLVCONF) \$(ROOTHINTS) trustman
 	\@echo ' '
 
 pack_zonesigner:	copy_bind
@@ -217,7 +231,7 @@ MOD_DT =						\\
 	-M Net::DNS::SEC::Tools::rollrec		\\
 	-M Net::DNS::SEC::Tools::timetrans		\\
 	-M Net::DNS::SEC::Tools::tooloptions		\\
-	-M Net::DNS::SEC::Validator
+	-M Net::DNS::SEC::Validator \\
 
 MOD_DNSRR =						\\
 	-M Net::DNS::RR					\\
