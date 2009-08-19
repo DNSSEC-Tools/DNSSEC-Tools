@@ -1,4 +1,11 @@
 #!/usr/bin/perl
+#
+# Copyright 2008-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# getds
+#
 
 use Net::DNS;
 use Net::DNS::SEC;
@@ -14,7 +21,7 @@ DTGetOptions(\%opts,
 
 		['a|hash-algorithm=s',
 		 'Hash algorithm to use (SHA256 or SHA1)'],
-		['z|print-zsks',     'Print ZSK DS records too, not just KSKS'],
+		['z|print-zsks',     'Print ZSK DS records as well as KSKs'],
 
 		['GUI:otherargs_text',"DOMAIN_NAME"],
 	       ) || exit;
@@ -43,20 +50,48 @@ getds - Create a DS record from DNSKEYing information
 
 =head1 SYNOPSIS
 
-getds dnssec-tools.org
+getds <domain>
 
 =head1 DESCRIPTION
 
-B<getds> will create a DS record from DNSKEYs for a particular DNS
+B<getds> will create a DS record from DNSKEYs for the specified DNS
 domain.  It does this by converting DNSKEYs to DS records using the
 specified hashing algorithm.  The results can then be passed to
-upstream DNSSEC supporting parents or to DLV registries.
+upstream DNSSEC-supporting parents or to DLV registries.
+
+=head1 OPTIONS
+
+B<getds> takes the following options:
+
+=over 4
+
+=item B<-hash-algorithm algorithm>  (-a)
+
+This option specifies the hash algorithm to use when converting DNSKEYs to DS
+records.  This may be either SHA256 (the default) or SHA1.
+B<-a> is an alias for this option.
+
+=item B<-print-zsks>  (-z)
+    
+This option causes B<getds> to print ZSK DS records, as well as KSK records.
+B<-z> is an alias for this option.
+
+=back
 
 =head1 SECURITY CONSIDERATIONS
 
-By default, getds pulls data from the live DNS.  If you DNS resolver
+By default, getds pulls data from the live DNS.  If your DNS resolver
 isn't configured so that this is pulled securely, then the results
 can't be trusted.
+
+=head1 COPYRIGHT
+
+Copyright 2008-2009 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker, hardaker AT AT AT users.sourceforge.net
 
 =cut
 
