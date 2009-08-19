@@ -58,6 +58,7 @@ sub DTGetOptions {
 	    # the user can still override using --gui
 	    Getopt::GUI::Long::Configure(qw(no_gui), @$extraopts);
 	}
+
 	return GetOptions(@_);
     }
 
@@ -199,11 +200,11 @@ Net::DNS::SEC::Tools::QWPrimitives - QWizard primitives for DNSSEC-Tools
 
   our @guiargs;
 
-  GetOptions(  ...,
-	       ['GUI:nootherargs',1],
-               ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
-  	       ['GUI:submodules','getzonefiles','getzonenames'],
-            );
+  DTGetOptions(  ...,
+	         ['GUI:nootherargs',1],
+                 ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
+  	         ['GUI:submodules','getzonefiles','getzonenames'],
+              );
 
 =head1 DESCRIPTION
 
@@ -214,7 +215,7 @@ provides access to B<QWizard> for DNSSEC-Tools software.
 In particular, the I<dnssec_tools_get_qwprimitives()> returns a set of
 primary screens for requesting a set of zone files followed by a set
 of domain names for those zone files.  These are then pushed into the
-@guiargs which you should treat as the final ARGV array to process.
+@guiargs which should be treated as the final ARGV array to process.
 
 =head1 COPYRIGHT
 
