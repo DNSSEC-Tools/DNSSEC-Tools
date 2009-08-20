@@ -13,6 +13,7 @@
 #define TOKEN_MAX 2048
 #define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
+#define IPADDR_STRING_MAX 128
 
 #define DNSKEY_STR "DNSKEY"
 #define DS_STR "DS"

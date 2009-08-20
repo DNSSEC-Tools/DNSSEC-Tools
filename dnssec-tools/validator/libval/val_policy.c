@@ -1861,6 +1861,9 @@ destroy_respol(val_context_t * ctx)
 static int
 parse_name_server(char *cp, struct name_server **ns)
 { 
+    short port_num = DNS_PORT;
+    char *cpt, addr[IPADDR_STRING_MAX];
+
     struct sockaddr_storage serv_addr;
     struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
 #ifdef VAL_IPV6
@@ -1901,11 +1904,31 @@ parse_name_server(char *cp, struct name_server **ns)
     (*ns)->ns_next = NULL;
     (*ns)->ns_number_of_addresses = 0;
 
+    /*
+     * Look for port number in address string
+     * syntax of '[address]:port'
+     */
+    cpt = cp;
+    if ( (*cpt == '[') && (cpt = strchr(cpt,']')) ) {
+      if ( IPADDR_STRING_MAX < (cpt - cp) ) {
+	goto parse_err;
+      }
+      bzero(addr, IPADDR_STRING_MAX);
+      strncpy(addr, (cp + 1), (cpt - cp - 1));
+      cp = addr;
+      if ( (*(++cpt) = ':') && (0 == (port_num = atoi(++cpt))) ) {
+	  goto parse_err;
+      }
+    }
+
+    /*
+     * convert address string
+     */
     bzero(&serv_addr, sizeof(serv_addr));
     if (inet_pton(AF_INET, cp, &address.v4) > 0) {
         sin->sin_family = AF_INET;     // host byte order
         sin->sin_addr = address.v4;
-        sin->sin_port = htons(DNS_PORT);       // short, network byte order
+        sin->sin_port = htons(port_num);       // short, network byte order
     }
     else {
 #ifdef VAL_IPV6
@@ -1914,7 +1937,7 @@ parse_name_server(char *cp, struct name_server **ns)
 
         sin6->sin6_family = AF_INET6;     // host byte order
         memcpy(&sin6->sin6_addr, &address.v6, sizeof(address.v6));
-        sin6->sin6_port = htons(DNS_PORT);       // short, network byte order
+        sin6->sin6_port = htons(port_num);       // short, network byte order
 #else
         goto parse_err;
 #endif
@@ -2040,11 +2063,16 @@ read_res_config_file(val_context_t * ctx)
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
                            ALL_COMMENTS, ZONE_END_STMT, 0))) {
+                val_log(ctx, LOG_WARNING,
+			"read_res_config_file(): error getting nameserver token!");
                 goto err;
             }
             ns = NULL;
-            if (VAL_NO_ERROR != parse_name_server(token, &ns))
+            if (VAL_NO_ERROR != parse_name_server(token, &ns)) {
+                val_log(ctx, LOG_WARNING,
+			"read_res_config_file(): error parsing nameserver token!");
                 goto err;
+	    }
             if (ns != NULL) {
                 if (ns_tail == NULL) {
                     ns_head = ns;
