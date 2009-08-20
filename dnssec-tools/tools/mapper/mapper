@@ -482,7 +482,7 @@ sub get_label {
 
 =head1 SYNOPSIS
 
-    mapper [options] zonefile1 ... zonefileN
+    mapper [options] zonefile1 domainname1 ... zonefileN domainnameN
 
 =head1 DESCRIPTION
 
@@ -590,7 +590,7 @@ Dumps the current style settings for both nodes and edges.
 
 Allows specific style settings to be used when drawing nodes and
 edges.  Major format specifications are delimited by '/'s and pairs
-within that are delimited by ':'s.  The first token in a ':' listi s
+within that are delimited by ':'s.  The first token in a ':' list is
 expected to be the record name.
 
 For example, to make all A address records appear as a red box and all
