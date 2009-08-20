@@ -1,0 +1,590 @@
+#!/usr/bin/perl
+#
+# Copyright 2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# DNSSEC-Tools:  dtreqmods
+#
+#	This script checks that all Perl modules required by the
+#	DNSSEC-Tools scripts are available.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+
+#
+# Version information.
+#
+my $NAME   = "dtreqmods";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.4";
+
+
+########################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"verbose",			# Give results for all modules.
+	"list",				# List all modules without checking.
+	"quiet",			# Check modules w/o printing results.
+	"inc",				# Display @INC.
+
+	"dnssec",			# Check DNSSEC modules
+	"rr",				# Check DNS RR modules.
+	"misc",				# Check non-DNSSEC, non-RR modules.
+
+	"help",				# Display help and exit.
+	"Version",			# Display versions and exit.
+);
+
+my $verbose  = 0;			# Verbose-output flag.
+my $quiet    = 0;			# No-output flag.
+my $listmods = 0;			# Just list the modules to be checked.
+my $dodnssec = 0;			# Check DNSSEC modules.
+my $dorr     = 0;			# Check RR modules.
+my $domisc   = 0;			# Check non-DNSSEC, non-RR modules.
+my $doinc    = 0;			# Display the contents of @INC.
+
+#------------------------------------------------------------------------
+
+#
+# The list of modules we'll be searching for.
+#
+my @reqmods =
+(
+	"Net::DNS::SEC",
+	"Net::DNS::SEC::Tools::BootStrap",
+	"Net::DNS::SEC::Tools::Donuts::Rule",
+	"Net::DNS::SEC::Tools::QWPrimitives",
+	"Net::DNS::SEC::Tools::TrustAnchor",
+	"Net::DNS::SEC::Tools::conf",
+	"Net::DNS::SEC::Tools::defaults",
+	"Net::DNS::SEC::Tools::dnssectools",
+	"Net::DNS::SEC::Tools::keyrec",
+	"Net::DNS::SEC::Tools::rolllog",
+	"Net::DNS::SEC::Tools::rollmgr",
+	"Net::DNS::SEC::Tools::rollrec",
+	"Net::DNS::SEC::Tools::timetrans",
+	"Net::DNS::SEC::Tools::tooloptions",
+	"Net::DNS::SEC::Validator",
+
+	"Net::DNS::RR",
+	"Net::DNS::RR::A",
+	"Net::DNS::RR::AAAA",
+	"Net::DNS::RR::AFSDB",
+	"Net::DNS::RR::APL",
+	"Net::DNS::RR::CERT",
+	"Net::DNS::RR::CNAME",
+	"Net::DNS::RR::DLV",
+	"Net::DNS::RR::DNAME",
+	"Net::DNS::RR::DNSKEY",
+	"Net::DNS::RR::DS",
+	"Net::DNS::RR::EID",
+	"Net::DNS::RR::HINFO",
+	"Net::DNS::RR::IPSECKEY",
+	"Net::DNS::RR::ISDN",
+	"Net::DNS::RR::KEY",
+	"Net::DNS::RR::LOC",
+	"Net::DNS::RR::MB",
+	"Net::DNS::RR::MG",
+	"Net::DNS::RR::MINFO",
+	"Net::DNS::RR::MR",
+	"Net::DNS::RR::MX",
+	"Net::DNS::RR::NAPTR",
+	"Net::DNS::RR::NIMLOC",
+	"Net::DNS::RR::NS",
+	"Net::DNS::RR::NSAP",
+	"Net::DNS::RR::NSEC",
+	"Net::DNS::RR::NSEC3",
+	"Net::DNS::RR::NSEC3PARAM",
+	"Net::DNS::RR::NULL",
+	"Net::DNS::RR::NXT",
+	"Net::DNS::RR::OPT",
+	"Net::DNS::RR::PTR",
+	"Net::DNS::RR::PX",
+	"Net::DNS::RR::RP",
+	"Net::DNS::RR::RRSIG",
+	"Net::DNS::RR::RT",
+	"Net::DNS::RR::SIG",
+	"Net::DNS::RR::SOA",
+	"Net::DNS::RR::SPF",
+	"Net::DNS::RR::SRV",
+	"Net::DNS::RR::SSHFP",
+	"Net::DNS::RR::TKEY",
+	"Net::DNS::RR::TSIG",
+	"Net::DNS::RR::TXT",
+	"Net::DNS::RR::Unknown",
+	"Net::DNS::RR::X25",
+
+	"Carp",
+	"Config",
+	"Crypt::OpenSSL::Bignum",
+	"Crypt::OpenSSL::RSA",
+	"Cwd",
+	"Data::Dumper",
+	"Date::Format",
+	"Date::Parse",
+	"Digest::BubbleBabble",
+	"Digest::SHA",
+	"DynaLoader",
+	"Exporter",
+	"ExtUtils::Constant",
+	"ExtUtils::MakeMaker",
+	"Fcntl",
+	"File::Temp",
+	"Getopt::GUI::Long",
+	"Getopt::Long",
+	"GraphViz",
+	"Gtk2",
+	"IO::Dir",
+	"IO::File",
+	"IO::Socket::INET",
+	"Logwatch",
+	"MIME::Base64",
+	"Mail::Mailer::sendmail",
+	"Mail::Send",
+	"Net::DNS",
+	"Net::DNS::Packet",
+	"Net::DNS::ZoneFile::Fast",
+	"Net::SMTP",
+	"Net::addrinfo",
+	"Net::hostent",
+	"QWizard",
+	"Socket",
+	"Sys::Syslog",
+	"Test",
+	"Test::More",
+	"Test::Simple",
+	"Text::CSV",
+	"Text::Wrap",
+	"UNIVERSAL",
+	"XML::Simple",
+
+);
+
+
+my @nomods	= ();				# Modules we couldn't find.
+my @foundmods	= ();				# Modules we found.
+
+my $ret;					# Count of errors found.
+
+#------------------------------------------------------------------------
+
+$ret = main();
+exit($ret);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Do Everything.
+#
+sub main
+{
+	my $mod;				# Module name.
+	my $errcnt = 0;				# Error count.
+
+	#
+	# Check options.
+	#
+	opts();
+
+	#
+	# Should we just list the modules to be checked?
+	#
+	incshow() if($doinc);
+
+	#
+	# Should we just list the modules to be checked?
+	#
+	lister() if($listmods);
+
+	#
+	# Check each of our listed modules.
+	#
+	$errcnt = chkmodules($mod);
+
+	#
+	# Give the user the type of output they want.
+	#
+	if(!$quiet)
+	{
+		#
+		# Display the missing modules.
+		#
+		if(@foundmods)
+		{
+			if($verbose)
+			{
+				print "modules found:\n";
+				foreach $mod (@foundmods)
+				{
+					printit($mod);
+				}
+				print "\n";
+			}
+		}
+
+		#
+		# Display the missing modules.
+		#
+		if($errcnt)
+		{
+			print "missing modules:\n";
+			foreach $mod (@nomods)
+			{
+				printit($mod);
+			}
+		}
+
+	}
+
+	#
+	# Return the count of missing modules.
+	#
+	return($errcnt);
+}
+
+#------------------------------------------------------------------------
+# Routine:	opts()
+#
+# Purpose:	Parse the command line and perform option verification.
+#
+sub opts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(1)   if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$verbose  = $options{'verbose'};
+	$quiet    = $options{'quiet'};
+	$listmods = $options{'list'};
+	$dodnssec = $options{'dnssec'};
+	$dorr	  = $options{'rr'};
+	$domisc   = $options{'misc'};
+	$doinc	  = $options{'inc'};
+
+	#
+	# Ensure that exclusive options actually are.
+	#
+	if($verbose && $quiet)
+	{
+		print STDERR "-verbose and -quiet are mutually exclusive; not checking modules\n";
+		exit(1);
+	}
+	if($verbose && $listmods)
+	{
+		print STDERR "-verbose and -list are mutually exclusive; not checking modules\n";
+		exit(1);
+	}
+	if($quiet && $listmods)
+	{
+		print STDERR "-quiet and -list are mutually exclusive; not checking modules\n";
+		exit(1);
+	}
+
+	#
+	# If none of the module-type selectors were specified, we'll give
+	# them all.
+	#
+	if(!$dodnssec && !$dorr && !$domisc)
+	{
+		$dodnssec = 1;	
+		$dorr	  = 1;	
+		$domisc	  = 1;	
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	chkmodules()
+#
+# Purpose:	Determine if the specified modules are in our @INC and save
+#		the names to the appropriate success/fail arrays.
+#
+sub chkmodules
+{
+	my $mod = shift;			# Module name to check.
+	my $misscnt = 0;			# Count of missing modules.
+
+	#
+	# Check the module list for missing modules.
+	#
+	foreach $mod (@reqmods)
+	{
+		#
+		# Determine if this module is in our @INC.
+		#
+		eval "require $mod";
+
+		#
+		# Save the module name to the appropriate result array.
+		#
+		if($@)
+		{
+			push @nomods, $mod;
+#			$errs{$mod} = $@;
+
+			#
+			# Adjust the count according to options.
+			#
+			if($dodnssec && ($mod =~ /Net::DNS::SEC/))
+			{
+				$misscnt++;
+			}
+
+			if($dorr && ($mod =~ /Net::DNS::RR/))
+			{
+				$misscnt++;
+			}
+
+			if($domisc && (($mod !~ /Net::DNS::SEC/) &&
+				       ($mod !~ /Net::DNS::RR/)))
+			{
+				$misscnt++;
+			}
+
+		}
+		else
+		{
+			push @foundmods, $mod;
+		}
+	}
+
+	return($misscnt);
+}
+
+#------------------------------------------------------------------------
+# Routine:	printit()
+#
+# Purpose:	Print the module name depending on option values.
+#
+sub printit
+{
+	my $mod = shift;			# Module to maybe-print.
+
+	if($dodnssec && ($mod =~ /Net::DNS::SEC/))
+	{
+		print "\t$mod\n";
+	}
+
+	if($dorr && ($mod =~ /Net::DNS::RR/))
+	{
+		print "\t$mod\n";
+	}
+
+	if($domisc && (($mod !~ /Net::DNS::SEC/) &&
+		       ($mod !~ /Net::DNS::RR/)))
+	{
+		print "\t$mod\n";
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	incshow()
+#
+# Purpose:	Display the contents of @INC.
+#
+sub incshow
+{
+	print "\@INC:\n";
+	foreach my $dir (@INC)
+	{
+		print "\t$dir\n";
+	}
+	print "\n";
+}
+
+#------------------------------------------------------------------------
+# Routine:	lister()
+#
+# Purpose:	Display the modules we check and exit.  If any of the
+#		module-type selectors were given, then we'll only print
+#		the selected module types.
+#
+sub lister
+{
+	foreach my $mod (@reqmods)
+	{
+		printit($mod);
+	}
+
+	exit(0);
+}
+
+#----------------------------------------------------------------------  
+#
+# Routine:      version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(1);
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage:  dtreqmods [options]\n";
+	print "\t    display options:\n";
+	print "\t\tverbose      give results for all modules\n";
+	print "\t\tquiet        check modules without printing results\n";
+	print "\t\tlist         list all modules without performing checks\n";
+
+	print "\t    module-type options:\n";
+	print "\t\tdnssec       check DNSSEC modules\n";
+	print "\t\trr           check DNS RR modules\n";
+	print "\t\tmisc         check non-DNSSEC, non-RR modules\n";
+
+	print "\t    misc. options:\n";
+	print "\t\tinc          display @\INC\n";
+	print "\t\thelp         display help and exit\n";
+	print "\t\tVersion      display versions and exit\n";
+
+	exit(0);
+
+}
+
+1;   
+
+##############################################################################
+#
+
+=pod     
+
+=head1 NAME
+
+dtreqmods - Checks that all required Perl modules are available
+
+=head1 SYNOPSIS
+
+  dtreqmods [options]
+
+=head1 DESCRIPTION
+
+B<dtreqmods> checks that all Perl modules required by the DNSSEC-Tools scripts
+are available.  This includes modules included by other modules.  The default
+action is to print a list of all the modules that were not found.  This action
+may be modified by a number of options.
+
+There are several types of modules checked:  DNSSEC Tools modules, DNS
+Resource Record modules, and everything else.  By default, all module types
+are checked, but there are options to narrow B<dtreqmods>' checking to a
+subset of these types.
+
+By default, only information is displayed for those modules that aren't
+found.  The B<-verbose> option displays information about all modules.
+The B<-quiet> option displays no information.
+
+The return code for B<dtreqmods> is the number of missing modules.
+
+=head1 Module Search Details
+
+Module accessibility is determined by using Perl's I<require> function.  Each
+module is passed to I<require>, and its result determines whether the module
+is consider available or missing.  I<require> looks for the modules in the
+directories stored in Perl's @INC variable.  The contents of this variable,
+as seen by B<dtreqmods> may be displayed by use of the B<-inc> option.
+
+=head1 OPTIONS
+
+B<dtreqmods> supports several types of options.  These options are detailed
+below.
+
+=head2 Display Options
+
+These options control the amount of output that is given.  Only one display
+option may be specified in a particular invocation of B<dtreqmods>.
+
+=over 4
+
+=item B<-verbose>
+
+Display information for all modules, missing or found.
+B<-verbose> and B<-quiet> are mutually exclusive.
+
+=item B<-quiet>
+
+Display no information.
+B<-quiet> and B<-verbose> are mutually exclusive.
+
+=item B<-list>
+
+Display the modules we check and then exit.
+B<-list> may only be used with the module-type options.
+
+=back
+
+=head2 Module-Type Options
+
+These options control the types of modules that are displayed.
+
+=over 4
+
+=item B<-dnssec>
+
+Check the DNSSEC Tools-related modules.
+
+=item B<-rr>
+
+Check the DNS Resource Record-related modules.
+
+=item B<-misc>
+
+Check the modules that aren't related to DNSSEC Tools or DNS Resource Records.
+
+=back
+
+=head2 Other Options
+
+The remaining options are detailed here.
+
+=over 4
+
+=item B<-inc>
+
+Display the contents of @INC.  The directories are not sorted, but are given
+in the order listed in @INC.
+
+=item B<-Version>
+
+Display B<dtreqmods>' version information and exit.
+
+=item B<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2009 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+=cut
+
