@@ -2,11 +2,33 @@
 # Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 
+######################################################################
+#
+# If we're executing from a packed environment, make sure we've got the
+# library path for the packed modules.
+#
+BEGIN {
+    if($ENV{'PAR_TEMP'}) {
+	unshift @INC, ("$ENV{'PAR_TEMP'}/inc/lib");
+    }
+}
+
+
+
 use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Net::DNS::SEC::Tools::BootStrap;
+use Net::DNS::SEC::Tools::conf;
 use Data::Dumper;
 use strict;
+
+######################################################################
+#
+# Use a local config file if we're running as part of a packed configuration.
+#
+if(runpacked()) {
+    setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+}
 
 ######################################################################
 # detect basic needed module requirements
