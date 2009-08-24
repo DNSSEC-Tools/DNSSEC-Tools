@@ -34,3 +34,170 @@ installfixpaths:
 	$(PERL) -p -i -e "s|/usr/local/share|$(PREFIX)/share|" $(DISTDIR)/$(PREFIX)/bin/donuts
 ';
 }
+
+#------------------------------------------------------------------------
+
+use strict;
+
+my $tddir;				# tcpdump directory.
+my $packedmakefilestr;			# Makefile lines for packing files.
+
+my $tdcmd = "tcpdump";			# tcpdump command to look for.
+my @commondirs =			# Directories to search for tcpdump.
+(
+	"/usr/sbin",
+	"/usr/local/bin",
+	"/usr/local/sbin",
+	"/opt/local/bin",
+	"/opt/local/sbin",
+	"/usr/bin",
+);
+
+#
+# Finds the location of tcpdump.
+# The location is saved, or NULL if the command wasn't found.
+#
+foreach my $dir (@commondirs)
+{
+	my $bpath;				# tcpdump path.
+
+	$bpath = "$dir/$tdcmd";
+
+	if((-e $bpath) && (-f $bpath))
+	{
+		$tddir = $dir;
+		last;
+	}
+}
+
+
+#------------------------------------------------------------------------
+#
+# The packer parts of the makefile are the next large block of text.
+#
+# The following targets are available for general use:
+#
+#	packed_commands		Build the packed command files.
+#	clean_packed		Clean the packed commands.
+#
+
+$packedmakefilestr = "
+
+##########################################################################
+#
+# The following Makefile sections are for creating packed commands.
+#
+
+TDDIR = $tddir
+
+CP	= /bin/cp
+RM	= /bin/rm
+PP	= /usr/bin/pp
+FIND	= /usr/bin/find
+GREP	= /usr/bin/grep
+
+#######
+
+LOCALRULESDIR	= rules
+RULESFILE	= rules.list
+
+DTCONFFILE = dnssec-tools.conf.PAR
+CONF_DT    = -a \"dnssec-tools.conf.PAR;dnssec-tools.conf\"
+
+#######
+
+MODULES = \$(MOD_NET) \$(MOD_DNS) \$(MOD_DT) \$(MOD_DNSRR) \$(MOD_STD) \$(PACKLIBS)
+
+#######
+
+STDLIBS = -l /usr/lib/libcrypto.dylib
+
+PACKLIBS  = \$(STDLIBS)
+
+#######
+
+PROGS_TD   = -a tcpdump
+
+PROGS_PACK = \$(PROGS_TD)
+
+#######
+
+PACKEDCMDS = pack_donuts
+
+packer_donuts  = donuts.\`uname -s\`
+packer_donutsd = donutsd.\`uname -s\`
+
+packed_commands: newconf \$(PACKEDCMDS) pack_cleaner
+
+#######
+
+newconf:
+	dtinitconf -noprompt -overwrite -outfile \$(DTCONFFILE)
+
+pack_donuts:	copy_tcpdump new_rules
+	\$(RM) -f \$(packer_donuts)
+	\$(PP) -o \$(packer_donuts) \$(MODULES) \$(CONF_DT) 		\\
+		  -A \$(RULESFILE) \$(PROGS_PACK)			\\
+		  donuts
+	\@echo ' '
+
+copy_tcpdump:
+	\$(RM) -f tcpdump
+	\$(CP) \$(TDDIR)/tcpdump tcpdump
+
+new_rules:
+	\$(RM) -f \$(RULESFILE)
+	\$(FIND) \$(LOCALRULESDIR) | \$(GREP) -v '~' | \$(GREP) -v '.bak' | \$(GREP) -v '.svn' | \$(GREP) \\/ > \$(RULESFILE)
+
+
+clean_packed:	pack_cleaner
+	\$(RM) -f \$(packer_donuts)
+
+pack_cleaner:
+	\$(RM) -f dnssec-tools.conf.PAR
+	\$(RM) -f tcpdump
+#	\$(RM) -f \$(RULESFILE)
+
+MOD_STD =						\\
+	-M Config      					\\
+	-M Data::Dumper      				\\
+	-M Date::Format					\\
+	-M Date::Parse					\\
+	-M Getopt::GUI::Long				\\
+	-M Gtk2						\\
+	-M QWizard					\\
+	-M Text::Wrap
+
+MOD_NET =						\\
+	-M Net::DNS					\\
+	-M Net::DNS::ZoneFile::Fast
+
+MOD_DT =						\\
+	-M Net::DNS::SEC::Tools::BootStrap		\\
+	-M Net::DNS::SEC::Tools::Donuts::Rule		\\
+	-M Net::DNS::SEC::Tools::QWPrimitives		\\
+	-M Net::DNS::SEC::Tools::conf			\\
+	-M Net::DNS::SEC::Tools::defaults		\\
+	-M Net::DNS::SEC::Tools::dnssectools
+
+MOD_DNSRR =						\\
+	-M Net::DNS::RR					\\
+	-M Net::DNS::RR::DNSKEY				\\
+	-M Net::DNS::RR::DS				\\
+	-M Net::DNS::RR::NSEC				\\
+	-M Net::DNS::RR::RRSIG
+
+";
+
+#
+# This is the end of the packer text that is added to the makefile.
+#
+#------------------------------------------------------------------------
+
+
+#
+# Write the makefile lines to the makefile.
+#
+open(MK,">> Makefile");
+print MK $packedmakefilestr;
+close(MK);
