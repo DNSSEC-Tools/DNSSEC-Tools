@@ -2,12 +2,23 @@
 # Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 
+#
+# If we're executing from a packed environment, make sure we've got the
+# library path for the packed modules.
+#
+BEGIN {
+    if ($ENV{'PAR_TEMP'}) {
+	unshift @INC, ("$ENV{'PAR_TEMP'}/inc/lib");
+    }
+}
+
 
 use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Net::DNS::SEC::Tools::BootStrap;
+use Net::DNS::SEC::Tools::conf;
 
 ######################################################################
 # detect needed perl module requirements
@@ -34,10 +45,16 @@ my %opts = (l => 5,
 	    r => "/usr/local/share/dnssec-tools/donuts/rules/*.txt," .
 	    $ENV{'HOME'} . "/.dnssec-tools/donuts/rules/*.txt");
 
+my $TCPDUMP = "tcpdump";
+
 # override some defaults if we're a self-extracting perl archive with
 # the files contained within the archive.
-if ($ENV{'PAR_TEMP'}) {
-    $opts{'r'} = $ENV{'PAR_TEMP'} . "/inc/rules/" . "*.txt,"
+if (runpacked()) {
+    $opts{'r'} = $ENV{'PAR_TEMP'} . "/inc/rules/" . "*.txt,";
+
+    setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+
+    $TCPDUMP = "./tcpdump";
 }
 
 our (@rules, %rules, $rf, $current_zone_file, %nrecs,
@@ -353,7 +370,7 @@ while ($#ARGV > -1) {
 	    open(STDERR,">/dev/null");
 
 	    # exec tcpdump
-	    exec("tcpdump", @args);
+	    exec($TCPDUMP, @args);
 	}
     }
 
@@ -764,7 +781,7 @@ sub maybe_output_to_web {
     }
 }
 
-# this is merely a convience function for rule authors to place into
+# this is merely a convenience function for rule authors to place into
 # rules so a break point can be put on the function to stop in a
 # particular location within a rule definition.
 sub break_here {
@@ -784,7 +801,7 @@ donuts - analyze DNS zone files for errors and warnings
 
 =head1 DESCRIPTION
 
-B<donuts> is a DNS Lint application that examines DNS zone files looking
+B<donuts> is a DNS lint application that examines DNS zone files looking
 for particular problems.  This is especially important for zones
 making use of DNSSEC security records, since many subtle problems can
 occur.
@@ -802,12 +819,12 @@ Displays a help message.
 
 =item -v
 
-Turns on more verbose output.  Multiple -v's will turn on increasing
+Turns on more verbose output.  Multiple I<-v>'s will turn on increasing
 amounts of output.
 
 =item -q
 
-Turns on more quiet output.
+Turns on a quieter output mode.
 
 =item -l I<LEVEL>
 
@@ -820,8 +837,8 @@ You probably want to run no higher than level 8.
 A comma-separated list of rule files to load.  The strings will be
 passed to I<glob()> so * wildcards can be used to specify multiple files.
 
-Defaults to /usr/local/share/dnssec-tools/donuts/rules/*.txt and
-$HOME/.dnssec-tools/donuts/rules/*.txt .
+Defaults to B</usr/local/share/dnssec-tools/donuts/rules/*.txt> and
+B<$HOME/.dnssec-tools/donuts/rules/*.txt>.
 
 =item -i I<IGNORELIST>
 
@@ -832,7 +849,7 @@ errors you don't wish to see.
 
 =item -L
 
-Include rules that require live queries of data.  Generally, these
+Includes rules that require live queries of data.  Generally, these
 rules concentrate on pulling remote DNS data to test;
 for example, parent/child zone relationships.
 
@@ -863,7 +880,7 @@ filtering traffic.  By default, this is set to I<port 53 || ip[6:2] &
 
 =item -o I<FILE>
 
-Saves the B<tcpdump> captured packets to I<FILE>.  The following
+Saves the B<tcpdump>-captured packets to I<FILE>.  The following
 special fields can be used to help generate unique file names:
 
 =over
@@ -910,11 +927,11 @@ available).
 
 =item --features=LIST
 
-The --features option specifies additional rule features that should
+The I<--features> option specifies additional rule features that should
 be executed.  Some rules are turned off by default because they are
 more intensive or require a live network connection, for instance.
-Use the --features flag to turn them on.  The LIST argument should be
-a comma separated list.  Example usage:
+Use the I<--features> flag to turn them on.  The LIST argument should be
+a comma-separated list.  Example usage:
 
   --features live,nsec_check
 
@@ -937,7 +954,7 @@ record.
 
 This checks all the NSEC or NSEC3 records (as appropriate for the
 zone) to ensure the chain is complete and that no-overlaps exist.  It
-is fairly memory and cpu intensive in large zones.
+is fairly memory- and cpu-intensive in large zones.
 
 =back
 
