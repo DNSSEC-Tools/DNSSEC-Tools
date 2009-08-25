@@ -796,15 +796,17 @@ donuts - analyze DNS zone files for errors and warnings
 
 =head1 SYNOPSIS
 
-  donuts [-h] [-H] [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
-         [-C] [-c configfile] ZONEFILE DOMAINNAME...
+  donuts [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
+         [-C] [-c configfile] [-h] [-H] ZONEFILE DOMAINNAME...
 
 =head1 DESCRIPTION
 
-B<donuts> is a DNS lint application that examines DNS zone files looking
-for particular problems.  This is especially important for zones
-making use of DNSSEC security records, since many subtle problems can
-occur.
+B<donuts> is a DNS lint application that examines DNS zone files
+looking for particular problems.  This is especially important for
+zones making use of DNSSEC security records, since many subtle
+problems can occur.  The default mode of operation assumes you want to
+check for DNSSEC related issues; to turn off the invocation of the
+DNSSEC-related rules run donuts with "-i DNSSEC".
 
 If the B<Text::Wrap> Perl module is installed, B<donuts> will give better
 output formatting.
@@ -813,26 +815,19 @@ output formatting.
 
 =over
 
-=item -h
-
-Displays a help message.
-
-=item -v
-
-Turns on more verbose output.  Multiple I<-v>'s will turn on increasing
-amounts of output.
-
-=item -q
-
-Turns on a quieter output mode.
+=head2 Rule Set Configuration:
 
 =item -l I<LEVEL>
+
+=item --level=I<LEVEL>
 
 Sets the level of errors to be displayed.  The default is level 5.
 The maximum value is level 9, which displays many debugging results.
 You probably want to run no higher than level 8.
 
 =item -r I<RULEFILES>
+
+=item --rules=I<RULEFILES>
 
 A comma-separated list of rule files to load.  The strings will be
 passed to I<glob()> so * wildcards can be used to specify multiple files.
@@ -842,28 +837,73 @@ B<$HOME/.dnssec-tools/donuts/rules/*.txt>.
 
 =item -i I<IGNORELIST>
 
+=item --ignore=I<IGNORELIST>
+
 A comma-separated list of regex patterns which are checked against
 rule names to determine if some should be ignored.  Run with I<-v> to
 figure out rule names if you're not sure which rule is generating
 errors you don't wish to see.
 
-=item -L
+=item -f LIST
 
-Includes rules that require live queries of data.  Generally, these
-rules concentrate on pulling remote DNS data to test;
-for example, parent/child zone relationships.
+=item --features=LIST
+
+The I<--features> option specifies additional rule features that should
+be executed.  Some rules are turned off by default because they are
+more intensive or require a live network connection, for instance.
+Use the I<--features> flag to turn them on.  The LIST argument should be
+a comma-separated list.  Example usage:
+
+  --features live,nsec_check
+
+Features available in the default rule set distributed with donuts:
+
+=over
+
+=item live
+
+The I<live> feature allows rules that need to perform live DNS queries
+to run.  Most of these I<live> rules query parent and children of the
+current zone, when appropriate, to see that the parent/child
+relationships have been built properly.  For example, if you have a
+DS record which authenticates the key used in a child zone the I<live>
+feature will let a rule run which checks to see if the child is
+actually publishing the DNSKEY that corresponds to the test zone's DS
+record.
+
+=item nsec_check
+
+This checks all the NSEC or NSEC3 records (as appropriate for the
+zone) to ensure the chain is complete and that no-overlaps exist.  It
+is fairly memory- and cpu-intensive in large zones.
+
+=back
+
+=head2 Configuration File Options:
 
 =item -c I<CONFIGFILE>
+
+=item --config-file=I<CONFIGFILE>
+
 
 Parse a configuration file to change constraints specified by rules.
 This defaults to B<$HOME/.donuts.conf>.
 
 =item -C
 
+=item --no-config
+
 Don't read user configuration files at all, such as those specified by
 the I<-c> option or the B<$HOME/.donuts.conf> file.
 
+=head2 Extra Live Query Options:
+
+Live Queries are enabled through the use of the I<-f live> arguments.
+These options are only useful if that feature has been enabled.
+
 =item -t I<INTERFACE>
+
+=item --tcpdump-capture=I<INTERFACE>
 
 Specifies that B<tcpdump> should be started on I<INTERFACE> (e.g.,
 "eth0") just before donuts begins its run of rules for each domain
@@ -873,12 +913,16 @@ feature, described above.
 
 =item -T I<FILTER>
 
+=item --tcpdump-filter=I<FILTER>
+
 When B<tcpdump> is run, this I<FILTER> is passed to it for purposes of
 filtering traffic.  By default, this is set to I<port 53 || ip[6:2] &
 0x1fff != 0>, which limits the traffic to traffic destined to port 53
 (DNS) or fragmented packets.
 
 =item -o I<FILE>
+
+=item --tcpdump-output-file=I<FILE>
 
 Saves the B<tcpdump>-captured packets to I<FILE>.  The following
 special fields can be used to help generate unique file names:
@@ -898,6 +942,16 @@ seconds since Jan 1, 1970).
 =back
 
 This field defaults to I<%d.%t.pcap>.
+
+=item --show-gui
+
+[alpha code]
+
+Displays a browsable GUI screen showing the results of the donuts tests.
+
+The B<QWizard> and B<Gtk2> Perl modules must be installed for this to work.
+
+=head2 Help Options
 
 =item -H
 
@@ -923,54 +977,73 @@ This allows you to override certain aspects of how rules are executed.
 Displays a list of all known rules along with their description (if
 available).
 
-=item -F LIST
+=item -h
 
-=item --features=LIST
+Displays a help message.
 
-The I<--features> option specifies additional rule features that should
-be executed.  Some rules are turned off by default because they are
-more intensive or require a live network connection, for instance.
-Use the I<--features> flag to turn them on.  The LIST argument should be
-a comma-separated list.  Example usage:
+=item --help
 
-  --features live,nsec_check
+Displays a help message more tailored to people who prefer long-style
+options.
 
-Features available in the default rule set:
+=item -q
+
+Turns on a quieter output mode.  This only affects one case: if no
+errors are found, it will not print out "0 errors found".
+
+-q is ignored if a -v argument is present.
+
+=item -v
+
+Turns on more verbose output.  Multiple I<-v>'s will turn on increasing
+amounts of output.  The number of -v's will dictate output:
 
 =over
 
-=item live
+=item 1
 
-The I<live> feature allows rules that need to perform live DNS queries
-to run.  Most of these I<live> rules query parent and children of the
-current zone, when appropriate, to see that the parent/child
-relationships have been built properly.  For example, if you have a
-DS record which authenticates the key used in a child zone the I<live>
-feature will let a rule run which checks to see if the child is
-actually publishing the DNSKEY that corresponds to the test zone's DS
-record.
+Describes which rules are being loaded and extra detail for rules that found errors (rule Level and extra text detail)
 
-=item nsec_check
+=item 2
 
-This checks all the NSEC or NSEC3 records (as appropriate for the
-zone) to ensure the chain is complete and that no-overlaps exist.  It
-is fairly memory- and cpu-intensive in large zones.
+Even more detail about rules that found errors: file name, file line
+number, rule type.
+
+=item 3
+
+Shows extra detail on the record text being analyized (the detail is
+not always available, however).
+
+=item 4
+
+Even more detail about rules that found errors: dumps the rule code itself.
+
+=item 5
+
+Even more detail about rules that found errors: dumps the internal
+rule structure.
 
 =back
 
-=item --show-gui
+=head2 Obsolete Options
 
-[alpha code]
-
-Displays a browsable GUI screen showing the results of the donuts tests.
-
-The B<QWizard> and B<Gtk2> Perl modules must be installed for this to work.
-
-=item --live
+=item -L
 
 Obsolete command line option.  Please use I<--features live> instead.
 
 =back
+
+=head1 EXAMPLES
+
+Run donuts in it's default mode on the I<example.com> zone which is
+contained in the I<db.example.com>:
+
+  % donuts db.example.com example.com
+
+Run donuts with significantly more output, both in terms of verbosity
+and in terms of the number of rules that are run to analyize the file:
+
+  % donuts -v -v --level 9 db.example.com example.com
 
 =head1 COPYRIGHT
 
