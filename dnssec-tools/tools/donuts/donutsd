@@ -4,7 +4,18 @@
 
 use Net::SMTP;
 use strict;
+use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::QWPrimitives;
+
+
+my $donuts = "donuts";				# Name for donuts script.
+
+#
+# If we're running packed, we'll use our local copy of donuts.
+#
+if (runpacked()) {
+    $donuts = "$ENV{'PAR_TEMP'}/inc/donuts";
+}
 
 my %opts = (z => 60*60*24,
 	    t => '/tmp/donutsd',
@@ -97,7 +108,7 @@ while (!$opts{o}) {
 	my $mailit;
 	
 	verbose("running donuts on $file/$zonename");
-	System("donuts $opts{a} $zoneinfo{$zonename}{'donutsargs'} $file $zonename > $opts{t}/$zonename.new 2>&1");
+	System("$donuts $opts{a} $zoneinfo{$zonename}{'donutsargs'} $file $zonename > $opts{t}/$zonename.new 2>&1");
 	if (-f "$opts{t}/$zonename") {
 	    verbose("  comparing results from last run");
 	    system("diff -u $opts{t}/$zonename $opts{t}/$zonename.new > $opts{t}/$zonename.diff 2>&1");
@@ -159,6 +170,11 @@ sub mailcontact {
 
     # set up the SMTP object and required data
     my $message = Net::SMTP->new($opts{s});
+    if(! $message) {
+	print STDERR "unable to connect to mail host \"$opts{s}\"; not sending donuts results\n";
+	return;
+    }
+
     $message->mail($opts{f});
     $message->to(split(/,\s*/,$contact));
     $message->data();
@@ -169,7 +185,7 @@ sub mailcontact {
     $message->datasend("Subject: donuts output for zone: $zonename\n\n");
 
     # create the body of the message: the warning
-    $message->datasend("The donuts dns zone-file syntax checker was run on the \"$zonename\"\n");
+    $message->datasend("The donuts DNS zone-file syntax checker was run on \"$zonename\"\n");
     $message->datasend("and there were resulting errors or errors that have changed since the last run.\n");
     $message->datasend("The results of this run of donuts can be found below:\n\n");
     $message->datasend("You will not receive another message until the output from donuts has changed.\n\n");
