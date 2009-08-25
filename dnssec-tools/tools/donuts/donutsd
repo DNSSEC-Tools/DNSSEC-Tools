@@ -80,7 +80,7 @@ if (($#ARGV+1)%3 != 0) {
     exit 1;
 }
 
-# creat temporary directory
+# create temporary directory
 if (! -d $opts{'t'}) {
     mkdir($opts{'t'});
 }
@@ -259,7 +259,7 @@ Run once and quit, as opposed to sleeping or re-running forever.
 
 =item -a ARGUMENTS
 
-Passes arguments to command line arguments of B<donuts> runs.
+Specifies command line arguments to be passed to B<donuts> executions.
 
 =item -z TIME
 
@@ -351,7 +351,7 @@ command-line flags can be specified:
 
  <donutsd>
   <configs>
-   <config><flag>a</flag><value>--fetaures live --level 8</value></config>
+   <config><flag>a</flag><value>--features live --level 8</value></config>
    <config><flag>e</flag><value>wes@example.com</value></config>
   </configs>
   <zones>
