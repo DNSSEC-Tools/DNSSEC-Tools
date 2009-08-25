@@ -263,7 +263,9 @@ Passes arguments to command line arguments of B<donuts> runs.
 
 =item -z TIME
 
-Sleeps TIME seconds between calls to B<donuts>.
+Sleeps TIME seconds between calls to B<donuts>.  The DNSSEC-Tools
+B<timetrans> program can be used to convert from large time units (e.g.,
+weeks and days) to seconds.
 
 =item -e ADDRESS
 
@@ -377,6 +379,8 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 =head1 SEE ALSO
 
 B<donuts(8)>
+
+B<timetrans(1)>
 
 http://dnssec-tools.sourceforge.net
 
