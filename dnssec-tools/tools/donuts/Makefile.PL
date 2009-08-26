@@ -46,11 +46,11 @@ my $tdcmd = "tcpdump";			# tcpdump command to look for.
 my @commondirs =			# Directories to search for tcpdump.
 (
 	"/usr/sbin",
+	"/usr/bin",
 	"/usr/local/bin",
 	"/usr/local/sbin",
 	"/opt/local/bin",
 	"/opt/local/sbin",
-	"/usr/bin",
 );
 
 #
@@ -108,9 +108,14 @@ CONF_DT    = -a \"dnssec-tools.conf.PAR;dnssec-tools.conf\"
 
 MODULES = \$(MOD_NET) \$(MOD_DNS) \$(MOD_DT) \$(MOD_DNSRR) \$(MOD_STD) \$(PACKLIBS)
 
+MOD_DONUTSD = -M Net::SMTP				\\
+	      -M XML::Smart				\\
+	      -M Net::DNS::SEC::Tools::conf		\\
+	      -M Net::DNS::SEC::Tools::QWPrimitives 
+
 #######
 
-STDLIBS = -l /usr/lib/libcrypto.dylib
+STDLIBS = -l /usr/lib/libcrypto.dylib -l /usr/lib/libpcap.dylib
 
 PACKLIBS  = \$(STDLIBS)
 
@@ -122,7 +127,7 @@ PROGS_PACK = \$(PROGS_TD)
 
 #######
 
-PACKEDCMDS = pack_donuts
+PACKEDCMDS = pack_donuts pack_donutsd
 
 packer_donuts  = donuts.\`uname -s\`
 packer_donutsd = donutsd.\`uname -s\`
@@ -137,8 +142,13 @@ newconf:
 pack_donuts:	copy_tcpdump new_rules
 	\$(RM) -f \$(packer_donuts)
 	\$(PP) -o \$(packer_donuts) \$(MODULES) \$(CONF_DT) 		\\
-		  -A \$(RULESFILE) \$(PROGS_PACK)			\\
-		  donuts
+		  -A \$(RULESFILE) \$(PROGS_PACK) donuts
+	\@echo ' '
+
+pack_donutsd:
+	\$(RM) -f \$(packer_donutsd)
+	\$(PP) -o \$(packer_donutsd) \$(CONF_DT) \$(MOD_DONUTSD)	\\
+		  \$(PACKLIBS) -a donuts donutsd
 	\@echo ' '
 
 copy_tcpdump:
