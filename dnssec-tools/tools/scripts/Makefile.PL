@@ -59,6 +59,8 @@ my $packedmakefilestr;			# Makefile lines for packing files.
 my $bindcmd = "dnssec-keygen";		# BIND command to look for.
 my @commondirs =			# Common directories to search for BIND.
 (
+	"/bin",
+	"/sbin",
 	"/usr/bin",
 	"/usr/sbin",
 	"/usr/local/bin",
