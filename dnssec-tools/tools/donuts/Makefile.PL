@@ -117,7 +117,7 @@ MOD_DONUTSD = -M Net::SMTP				\\
 
 #######
 
-STDLIBS = -l /usr/lib/libcrypto.dylib -l /usr/lib/libpcap.dylib
+STDLIBS = -l crypto -l pcap
 
 PACKLIBS  = \$(STDLIBS)
 
