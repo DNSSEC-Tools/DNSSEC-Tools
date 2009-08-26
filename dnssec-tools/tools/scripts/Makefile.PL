@@ -134,11 +134,11 @@ MODULES = \$(MOD_NET) \$(MOD_DNS) \$(MOD_DT) \$(MOD_DNSRR) \$(MOD_STD) \$(PACKLI
 
 #######
 
-STDLIBS = -l /usr/lib/libcrypto.dylib			\\
-	  -l /usr/lib/libpthread.dylib
+STDLIBS = -l crypto		\\
+	  -l pthread
 
-DTLIBS  = -l /opt/local/lib/libsres.dylib		\\
-	  -l /opt/local/lib/libval-threads.dylib
+DTLIBS  = -l sres		\\
+	  -l val-threads
 
 
 PACKLIBS  = \$(STDLIBS) \$(DTLIBS)
