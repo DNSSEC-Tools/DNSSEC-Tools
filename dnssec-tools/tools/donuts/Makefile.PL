@@ -45,6 +45,8 @@ my $packedmakefilestr;			# Makefile lines for packing files.
 my $tdcmd = "tcpdump";			# tcpdump command to look for.
 my @commondirs =			# Directories to search for tcpdump.
 (
+	"/bin",
+	"/sbin",
 	"/usr/sbin",
 	"/usr/bin",
 	"/usr/local/bin",
