@@ -1,10 +1,42 @@
 #!/usr/bin/perl
 
+use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::TrustAnchor;
 use Net::DNS::SEC::Tools::QWPrimitives;
 use strict;
 
 my %opts;
+
+#
+# Perform some housekeeping if we're running packed.
+#	- use the packed DNSSEC-Tools config file
+#	- make sure the packed ParserDetails.ini file is where XML::SAX expects
+#
+if (runpacked()) {
+
+    #
+    # Use the packed config file.
+    #
+    setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+
+    #
+    # Move the ParserDetails.ini file to its required location.
+    #
+    if (! -e "$ENV{'PAR_TEMP'}/SAX") {
+	use Cwd;
+
+	my $cwd = getcwd;
+
+	chdir($ENV{'PAR_TEMP'});
+
+	if (-e "inc/SAX") {
+	    rename("inc/SAX", "SAX");
+	}
+
+	chdir($cwd);
+    }
+}
+
 
 DTGetOptions(\%opts,
 	     ["i|input-file=s",  "Input file(s)"],
