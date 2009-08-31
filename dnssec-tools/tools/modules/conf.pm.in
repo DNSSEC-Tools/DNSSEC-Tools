@@ -375,32 +375,80 @@ sub runpacked
 #
 # Routine:	makelocalstatedir(subpath)
 #
-# Purpose:	Return the local state directory name.
-#               Create it and the path if it doesn't exist
-#               and we have the File::Path module available
+# Purpose:	Create the local state directory (and an optional) subdirectory)
+#		and return its name.  Create the directory/subdirectory iff it
+#		doesn't exist and if the File::Path module is available.
 #
 sub makelocalstatedir
 {
-	my $subdir = shift;
-        my $statedir = getlocalstatedir();
-	$statedir .= "/$subdir" if (defined($subdir));
-	if (! -d $statedir &&
-	    eval { require File::Path; }) {
-	        my @errorlist;
-		import File::Path;
-		my $errorlist;
-		mkpath($statedir,
-		       { error => \$errorlist });
-		if ($#$errorlist > -1) {
-                    print STDERR "Errors creating path: $statedir:\n";
-		    print STDERR "  (set DT_STATEDIR to change the location)\n";
-		    foreach my $err (@$errorlist) {
-			my ($file, $msg) = each %$err;
-			print STDERR "  $file: $msg";
-		    }
-                }
+	my $subdir	= shift;			# Optional subdirectory.
+	my $statedir	= getlocalstatedir();		# Local state directory.
+	my $subpath;					# Path w/ subdirectory.
+
+	#
+	# Create the local state directory if it doesn't exist.
+	#
+	if(! -d $statedir)
+	{
+		my $ret;				# mkdir() return code.
+
+		$ret = mkdir($statedir);
+		return('') if($ret == 0);
 	}
-	return($statedir);
+
+	#
+	# Return now if a subdirectory wasn't given.
+	#
+	return($statedir) if(! defined($subdir));
+
+	#
+	# Build the path the caller wants.
+	#
+	$subpath = "$statedir/$subdir";
+
+	#
+	# If File::Path is unavailable, we'll return an error.
+	#
+	if((eval { require File::Path; }) != 1)
+	{
+		return('');
+	}
+
+	#
+	# Create the caller's subdirectory if it doesn't exist.
+	#
+	if(! -d $subpath)
+	{
+		import File::Path;
+
+		my $errorlist;		# Errors hit during path creation.
+
+		#
+		# Create the subdirectory.
+		#
+		mkpath($subpath, { error => \$errorlist });
+
+		#
+		# Display error messages for any problems encountered.
+		#
+		if($#$errorlist > -1)
+		{
+			print STDERR "Errors creating path:  $subpath:\n";
+			print STDERR "    (set DT_STATEDIR to change the location)\n";
+			foreach my $err (@$errorlist)
+			{
+				my ($file, $msg) = each %$err;
+				print STDERR "  $file:  $msg";
+			}
+
+			return('');
+		}
+	}
+
+	#
+	# Return the path of the subdirectory.
+	#
+	return($subpath);
 }
 
 #######################################################################
@@ -482,6 +530,10 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
   setconffile("dt-local.conf");
 
   $statedir = getlocalstatedir();
+
+  $statedir = makelocalstatedir();
+  $statesub = makelocalstatedir("logs/zones");
+
 
   $packed = runpacked();
 
@@ -592,14 +644,28 @@ This routine returns the name of the local state directory.
 This routine returns a boolean indicating if the executing command is running
 from a PAR-packed script.
 
-=item I<makelocalstatedir(SUFFIX)>
+=item I<makelocalstatedir(subdir)>
 
-This routine returns the name of the local state directory just like
-I<getlocalstatedir()> but also creates the path if it doesn't exist and if
-the I<File::Path> module is loadable (should be true on all modern perl).
+This routine makes the local state directory and returns its name.  The
+directory is created only if it doesn't exist already and if the I<File::Path>
+module is loadable (which be true on all modern Perl versions.)
 
-If the optional SUFFIX is passed in, it's expected to be a
-sub-directory to create. It is appended to the return value as well.
+If the optional I<subdir> subdirectory is specified, then that directory is
+created within the local state directory.  In this case, the path of I<subdir>
+is returned.  I<subdir> may consist of several intermediate directories, as
+well as the terminal directory.  For example,
+I<makelocalstatedir("logs/zones/errors")> will create the B<logs/zones/errors>
+hierarchy within the local state directory.
+
+I<makelocalstatedir(subdir)> uses the I<File::Path> module, which is available
+on all modern Perl versions.
+
+An empty string is returned if there are any errors.  The following errors may
+be encountered:
+
+    * Unable to create the local state directory
+    * I<File::Path> could not be loaded
+    * Unable to create a component of I<subdir>.
 
 =item I<erraction(error_action)>
 
