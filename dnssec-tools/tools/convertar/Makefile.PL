@@ -91,6 +91,7 @@ pack_cleaner:
 
 clean_packed:
 	\$(RM) -f \$(packer_convertar) \$(DTCONFFILE) $pdfile
+	\$(RM) -fr SAX
 
 MOD_TAR =							\\
 	-M Net::DNS::SEC::Tools::TrustAnchor			\\
