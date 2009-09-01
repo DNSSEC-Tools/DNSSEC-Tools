@@ -383,28 +383,7 @@ sub makelocalstatedir
 {
 	my $subdir	= shift;			# Optional subdirectory.
 	my $statedir	= getlocalstatedir();		# Local state directory.
-	my $subpath;					# Path w/ subdirectory.
-
-	#
-	# Create the local state directory if it doesn't exist.
-	#
-	if(! -d $statedir)
-	{
-		my $ret;				# mkdir() return code.
-
-		$ret = mkdir($statedir);
-		return('') if($ret == 0);
-	}
-
-	#
-	# Return now if a subdirectory wasn't given.
-	#
-	return($statedir) if(! defined($subdir));
-
-	#
-	# Build the path the caller wants.
-	#
-	$subpath = "$statedir/$subdir";
+	my $subpath	= $statedir;			# Path w/ subdirectory.
 
 	#
 	# If File::Path is unavailable, we'll return an error.
@@ -415,33 +394,35 @@ sub makelocalstatedir
 	}
 
 	#
-	# Create the caller's subdirectory if it doesn't exist.
+	# Create the local state directory if it doesn't exist.
 	#
-	if(! -d $subpath)
+	if(! -d $statedir)
 	{
-		import File::Path;
-
-		my $errorlist;		# Errors hit during path creation.
-
-		#
-		# Create the subdirectory.
-		#
-		mkpath($subpath, { error => \$errorlist });
-
-		#
-		# Display error messages for any problems encountered.
-		#
-		if($#$errorlist > -1)
+		if(dirmaker($statedir) == 0)
 		{
-			print STDERR "Errors creating path:  $subpath:\n";
-			print STDERR "    (set DT_STATEDIR to change the location)\n";
-			foreach my $err (@$errorlist)
-			{
-				my ($file, $msg) = each %$err;
-				print STDERR "  $file:  $msg";
-			}
-
 			return('');
+		}
+	}
+
+	#
+	# Create the optional subdirectory.
+	#
+	if(defined($subdir))
+	{
+		#
+		# Build the path to the caller's subdirectory.
+		#
+		$subpath = "$statedir/$subdir";
+
+		#
+		# Create the caller's subdirectory if it doesn't exist.
+		#
+		if(! -d $subpath)
+		{
+			if(dirmaker($subpath) == 0)
+			{
+				return('');
+			}
 		}
 	}
 
@@ -449,6 +430,47 @@ sub makelocalstatedir
 	# Return the path of the subdirectory.
 	#
 	return($subpath);
+}
+
+#######################################################################
+#
+# Routine:	dirmaker()
+#
+# Purpose:	Create the given directory, and any intermediate directories.
+#
+sub dirmaker
+{
+	my $path = shift;				# Path to create.
+	my $errorlist;					# Path creation errors.
+
+	import File::Path;
+
+	#
+	# Create the subdirectory.
+	#
+	mkpath($path, { error => \$errorlist });
+
+	#
+	# Display error messages for any problems encountered and return
+	# an error.
+	#
+	if($#$errorlist > -1)
+	{
+		print STDERR "Errors creating path:  $path:\n";
+		print STDERR "    (set DT_STATEDIR to change the location)\n";
+		foreach my $err (@$errorlist)
+		{
+			my ($file, $msg) = each %$err;
+			print STDERR "  $file:  $msg";
+		}
+
+		return(0);
+	}
+
+	#
+	# Return success.
+	#
+	return(1);
 }
 
 #######################################################################
