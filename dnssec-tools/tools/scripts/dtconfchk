@@ -542,9 +542,10 @@ sub check_rollerd
 	# level is acceptable or not.
 	#
 	if(($loglevel =~ /^tmi$/i)	|| ($loglevel == 1)	||
-	   ($loglevel =~ /^info$/i)	|| ($loglevel == 3)	||
+	   ($loglevel =~ /^expire$/i)	|| ($loglevel == 3)	||
+	   ($loglevel =~ /^info$/i)	|| ($loglevel == 4)	||
 	   ($loglevel =~ /^phase$/i)	|| ($loglevel == 6)	||
-	   ($loglevel =~ /^err$/i)	|| ($loglevel == 7)	||
+	   ($loglevel =~ /^err$/i)	|| ($loglevel == 8)	||
 	   ($loglevel =~ /^fatal$/i)	|| ($loglevel == 9))
 	{
 		prt(1,"rollover loglevel ($loglevel) acceptable");
