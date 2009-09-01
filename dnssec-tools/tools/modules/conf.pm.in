@@ -384,6 +384,7 @@ sub makelocalstatedir
 	my $subdir	= shift;			# Optional subdirectory.
 	my $statedir	= getlocalstatedir();		# Local state directory.
 	my $subpath	= $statedir;			# Path w/ subdirectory.
+	my $errorlist;					# Path creation errors.
 
 	#
 	# If File::Path is unavailable, we'll return an error.
@@ -394,69 +395,35 @@ sub makelocalstatedir
 	}
 
 	#
-	# Create the local state directory if it doesn't exist.
+	# Build the path to the caller's subdirectory.
 	#
-	if(! -d $statedir)
+	$subpath = "$statedir/$subdir" if(defined($subdir));
+
+	#
+	# Return success if the path exists and is a directory.
+	# Return failure if the path exists and isn't a directory.
+	#
+	if(-e $subpath)
 	{
-		if(dirmaker($statedir) == 0)
-		{
-			return('');
-		}
+		return($subpath) if(-d $subpath);
+		return('');
 	}
 
-	#
-	# Create the optional subdirectory.
-	#
-	if(defined($subdir))
-	{
-		#
-		# Build the path to the caller's subdirectory.
-		#
-		$subpath = "$statedir/$subdir";
-
-		#
-		# Create the caller's subdirectory if it doesn't exist.
-		#
-		if(! -d $subpath)
-		{
-			if(dirmaker($subpath) == 0)
-			{
-				return('');
-			}
-		}
-	}
-
-	#
-	# Return the path of the subdirectory.
-	#
-	return($subpath);
-}
-
-#######################################################################
-#
-# Routine:	dirmaker()
-#
-# Purpose:	Create the given directory, and any intermediate directories.
-#
-sub dirmaker
-{
-	my $path = shift;				# Path to create.
-	my $errorlist;					# Path creation errors.
 
 	import File::Path;
 
 	#
 	# Create the subdirectory.
 	#
-	mkpath($path, { error => \$errorlist });
+	mkpath($subpath, { error => \$errorlist });
 
 	#
-	# Display error messages for any problems encountered and return
-	# an error.
+	# Display error messages for any problems encountered and
+	# return an error.
 	#
 	if($#$errorlist > -1)
 	{
-		print STDERR "Errors creating path:  $path:\n";
+		print STDERR "Errors creating path:  $subpath:\n";
 		print STDERR "    (set DT_STATEDIR to change the location)\n";
 		foreach my $err (@$errorlist)
 		{
@@ -464,13 +431,13 @@ sub dirmaker
 			print STDERR "  $file:  $msg";
 		}
 
-		return(0);
+		return('');
 	}
 
 	#
-	# Return success.
+	# Return the path of the subdirectory.
 	#
-	return(1);
+	return($subpath);
 }
 
 #######################################################################
@@ -669,8 +636,7 @@ from a PAR-packed script.
 =item I<makelocalstatedir(subdir)>
 
 This routine makes the local state directory and returns its name.  The
-directory is created only if it doesn't exist already and if the I<File::Path>
-module is loadable (which be true on all modern Perl versions.)
+directory is created only if it doesn't exist already.
 
 If the optional I<subdir> subdirectory is specified, then that directory is
 created within the local state directory.  In this case, the path of I<subdir>
@@ -685,9 +651,11 @@ on all modern Perl versions.
 An empty string is returned if there are any errors.  The following errors may
 be encountered:
 
-    * Unable to create the local state directory
     * I<File::Path> could not be loaded
-    * Unable to create a component of I<subdir>.
+    * Unable to create the local state directory
+    * Unable to create a component of I<subdir>
+    * Full path (local state directory and I<subdir>) already
+      exists and is not a directory
 
 =item I<erraction(error_action)>
 
@@ -702,7 +670,7 @@ ERR_SILENT is the default action.
 
 The previously set error action is returned.
 
-=item I<err("error message",exit_code>
+=item I<err("error message",exit_code)>
 
 The I<err()> interface is used by the DNSSEC-Tools Perl modules to report
 an error and exit, depending on the error action.
