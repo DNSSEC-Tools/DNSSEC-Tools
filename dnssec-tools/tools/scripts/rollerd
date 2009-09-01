@@ -106,6 +106,7 @@ my $zrollmethod = $RM_ENDROLL;	# Rollover calculation to use for ZSKs.
 my $rollrecfile;			# Rollrec file to be managed.
 
 my %dtconf;				# DNSSEC-Tools config file.
+my $DT_LOADZONE	= "roll_loadzone";
 my $DT_LOGFILE	= "roll_logfile";
 my $DT_LOGLEVEL	= "roll_loglevel";
 my $DT_SLEEP	= "roll_sleeptime";
@@ -116,6 +117,7 @@ my $OPT_DISPLAY	   = "display";
 my $OPT_DTCONF	   = "dtconfig";
 my $OPT_LOGFILE	   = "logfile";
 my $OPT_LOGLEVEL   = "loglevel";
+my $OPT_NORELOAD   = "noreload";
 my $OPT_PARAMS	   = "parameters";
 my $OPT_SINGLERUN  = "singlerun";
 my $OPT_FOREGROUND = "foreground";
@@ -135,6 +137,7 @@ my @opts =
 	"display",			# Use output GUI.
 	"logfile=s",			# Log file.
 	"loglevel=s",			# Logging level.
+	"noreload",			# Don't reload zone files.
 	"pidfile=s",			# pid storage file.
 	"dtconfig=s",			# dnssec-tools config file to use.
 	"sleep=i",			# Sleep amount (in seconds.)
@@ -158,6 +161,7 @@ my $foreground = 0;			# Run in the foreground.
 my $logfile;				# Log file.
 my $loglevel;				# Logging level.
 my $loglevel_save;			# Saved logging level.
+my $zoneload = 1;			# Zone-reload flag.
 my $pidfile;				# Pid storage file.
 my $singlerun = 0;			# Single run only.
 my $sleep_override = 0;			# Sleep-override flag.
@@ -920,7 +924,7 @@ sub zsk_phase2
 	#
 	# Reload the zone.
 	#
-	$ret = rollmgr_loadzone($rndc,$rname);
+	$ret = loadzone($rndc,$rname,"ZSK phase 2");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to reload zone, rc - $ret");
@@ -1001,7 +1005,7 @@ sub zsk_phase4
 	#
 	# Reload the zone.
 	#
-	$ret = rollmgr_loadzone($rndc,$rname);
+	$ret = loadzone($rndc,$rname,"ZSK phase 4");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to reload zone, rc - $ret");
@@ -1391,7 +1395,7 @@ sub ksk_phase2
 	#
 	# Reload the zone.
 	#
-	$ret = rollmgr_loadzone($rndc,$rname);
+	$ret = loadzone($rndc,$rname,"KSK phase 2");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
@@ -1581,7 +1585,7 @@ sub ksk_phase7
 	#
 	# Reload the zone.
 	#
-	$ret = rollmgr_loadzone($rndc,$rname);
+	$ret = loadzone($rndc,$rname,"KSK phase 7");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
@@ -2307,6 +2311,12 @@ sub optsandargs
 	$display    = $opts{$OPT_DISPLAY}    || 0;
 	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
 
+	$zoneload = dnssec_tools_default($DT_LOADZONE);
+	if(defined($opts{$OPT_NORELOAD}) && ($opts{$OPT_NORELOAD} == 1))
+	{
+		$zoneload = 0;
+	}
+
 	#
 	# Show the version number if requested
 	#
@@ -2413,12 +2423,13 @@ sub optsandargs
 	if($opts{$OPT_PARAMS})
 	{
 		print "$ME parameters:\n";
-		print "	rollrec file	\"$rollrecfile\"\n";
-		print "	directory	\"$xqtdir\"\n";
-		print "	config file	\"$dtconfig\"";
-		print "	logfile		\"$logfile\"\n";
-		print "	loglevel	\"$loglevel\"\n";
-		print "	sleeptime	\"$sleeptime\"\n";
+		print "\trollrec file   \"$rollrecfile\"\n";
+		print "\tdirectory      \"$xqtdir\"\n";
+		print "\tconfig file    \"$dtconfig\"\n";
+		print "\tlogfile        \"$logfile\"\n";
+		print "\tloglevel       \"$loglevel\"\n";
+		print "\tzone reload    \"$zoneload\"\n";
+		print "\tsleeptime      \"$sleeptime\"\n";
 		exit(0)
 	}
 
@@ -2502,6 +2513,7 @@ sub bootmsg
 	rolllog_log(LOG_ALWAYS,"","		config file	\"$dtconfig\"");
 	rolllog_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
 	rolllog_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
+	rolllog_log(LOG_ALWAYS,"","		zone reload	\"$zoneload\"");
 	rolllog_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
 	rolllog_log(LOG_ALWAYS,""," ");
 }
@@ -3532,6 +3544,7 @@ sub cmd_status
 	$outbuf .= "config file:        $dtconfig\n";
 	$outbuf .= "logfile:            $lfile\n";
 	$outbuf .= "loglevel:           $lvl\n";
+	$outbuf .= "zone reload:        $zoneload\n";
 	$outbuf .= "sleeptime:          $sleeptime\n";
 
 	#
@@ -4066,6 +4079,36 @@ sub controllers
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	loadzone()
+#
+# Purpose:	Initiates zone-reload, but obeys the $zoneload flag.
+#
+sub loadzone
+{
+	my $rndc = shift;				# Zone-loading program.
+	my $rname = shift;				# Zone to reload.
+	my $phase = shift;				# Zone's current phase.
+	my $ret;					# Return code.
+
+	#
+	# If the user doesn't want to reload the zone, we'll pretend we have.
+	#
+	if(!$zoneload)
+	{
+		rolllog_log(LOG_INFO,$rname,"not reloading zone for $phase\n");
+		return(0);
+	}
+
+	#
+	# Reload the zone for real.
+	#
+	rolllog_log(LOG_INFO,$rname,"reloading zone for $phase\n");
+	$ret = rollmgr_loadzone($rndc,$rname);
+	return($ret);
+}
+
+
+#-----------------------------------------------------------------------------
 # Routine:	queue_int_handler()
 #
 # Purpose:	Remember that a sig INT was received for later processing.
@@ -4212,6 +4255,7 @@ sub usage
 	print STDERR "\t\t-directory <dir>\n";
 	print STDERR "\t\t-logfile <logfile>\n";
 	print STDERR "\t\t-loglevel <level>\n";
+	print STDERR "\t\t-noreload\n";
 	print STDERR "\t\t-pidfile <pidfile>\n";
 	print STDERR "\t\t-sleep <sleeptime>\n";
 	print STDERR "\t\t-dtconfig <dnssec-tools-config-file>\n";
@@ -4478,14 +4522,37 @@ The following options are recognized:
 
 =over 4
 
-=item B<-rrfile rollrec_file>
+=item B<-alwayssign>
 
-Name of the I<rollrec> file to be processed.  This is the only required
-"option".
+Tells B<rollerd> to sign the zones that aren't in the middle of being
+rolled.  This allows B<rollerd> to refresh signed zone signatures and
+allows complete management of zone signing to be taken over by B<rollerd>.
+
+The downside to using this option is that all the non-rolling zones will be
+signed after every sleep, which may be expensive computationally.
+
+Note:  The zone files are not updated or installed at this time.
+Manual copying and installation is still needed.
 
 =item B<-directory dir>
 
 Sets the B<rollerd> execution directory.  This must be a valid directory.
+
+=item B<-display>
+
+Starts the B<blinkenlights> graphical display program to show the status of
+zones managed by B<rollerd>.
+
+=item B<-dtconfig config_file>
+
+Name of an alternate DNSSEC-Tools configuration file to be processed.
+If specified, this configuration file is used I<in place> of the normal
+DNSSEC-Tools configuration file B<not> in addition to it.  Also, it will be
+handled prior to I<keyrec> files, I<rollrec> files, and command-line options.
+
+=item B<-foreground>
+
+Run in the foreground and do not fork into a daemon.
 
 =item B<-logfile log_file>
 
@@ -4496,25 +4563,28 @@ I<logfile> is B</dev/stdout>, B</dev/tty>, B<->.  Of these three, using a
 I<log_file> of B<-> is preferable since Perl will properly convert the B<->
 to the process' standard output.
 
-=item B<-pidfile pid_file>
-
-Stores the running process PID into I<pid_file>.  This defaults to
-B</var/run/rollerd.pid> on most systems.
-
 =item B<-loglevel level>
 
 Sets B<rollerd>'s logging level to I<level>.  B<rollmgr.pm(3)> contains a list
 of the valid logging levels.
 
-=item B<-sleep sleeptime>
+=item B<-noreload>
 
-Sets B<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
-of time (in seconds) B<rollerd> waits between processing its I<rollrec>-based
-queue.
+Prevents B<rollerd> from telling the DNS daemon to reload zones.
 
 =item B<-parameters>
 
 Prints a set of B<rollerd> parameters and then exits.
+
+=item B<-pidfile pid_file>
+
+Stores the running process PID into I<pid_file>.  This defaults to
+B</var/run/rollerd.pid> on most systems.
+
+=item B<-rrfile rollrec_file>
+
+Name of the I<rollrec> file to be processed.  This is the only required
+"option".
 
 =item B<-singlerun>
 
@@ -4536,33 +4606,11 @@ The following lines should serve as examples:
 
 The I<-singlerun> option implicitly implies I<-foreground> as well.
 
-=item B<-foreground>
+=item B<-sleep sleeptime>
 
-Run in the foreground and do not fork into a daemon.
-
-=item B<-alwayssign>
-
-Tells B<rollerd> to sign the zones that aren't in the middle of being
-rolled.  This allows B<rollerd> to refresh signed zone signatures and
-allows complete management of zone signing to be taken over by B<rollerd>.
-
-Note that the downside is that all the non-rolling zones will be
-signed after every sleep, which may be expensive computationally.
-
-Note:  The zone files are not updated or installed at this time.
-Manual copying and installing is still needed.
-
-=item B<-display>
-
-Starts the B<blinkenlights> graphical display program to show the status of
-zones managed by B<rollerd>.
-
-=item B<-dtconfig config_file>
-
-Name of an alternate DNSSEC-Tools configuration file to be processed.
-If specified, this configuration file is used I<in place> of the normal
-DNSSEC-Tools configuration file B<not> in addition to it.  Also, it will be
-handled prior to I<keyrec> files, I<rollrec> files, and command-line options.
+Sets B<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
+of time (in seconds) B<rollerd> waits between processing its I<rollrec>-based
+queue.
 
 =item B<-Version>
 
