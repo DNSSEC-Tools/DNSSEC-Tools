@@ -45,6 +45,7 @@ my %defaults =
 	"lifespan-min"	   => 3600,		# Min lifespan (one hour.)
 	"random"	   => "/dev/urandom",	# Random no. generator device.
 	"rndc"		   => getprefixdir() . "/sbin/rndc",
+	"roll_loadzone"	   => 1,		# Zone-reloading flag.
 	"roll_logfile"	   => makelocalstatedir() . "/log.rollerd",
 	"roll_loglevel"	   => "phase",		# Rollerd's logging level.
 	"roll_sleeptime"   => 3600,		# Rollerd's sleep time.
@@ -260,6 +261,11 @@ This default holds the default random number generator device.
 =item B<rndc>
 
 This default is the default path of the BIND B<rndc> program.
+
+=item B<roll_loadzone>
+
+This default is flag indicates if B<rollerd> should have the DNS daemon
+reload its zones.
 
 =item B<roll_logfile>
 
