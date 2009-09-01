@@ -499,13 +499,23 @@ sub zonesign_checks
 #
 sub check_rollerd
 {
+	my $loadzone;				# Loadzone flag for rollerd.
 	my $logfile;				# Logfile for rollerd.
 	my $loglevel;				# Log level for rollerd.
 	my $sleep;				# Sleep time for rollerd.
 
+	#
+	# Get rollerd's configuration values.
+	#
+	$loadzone = $dtconf{"roll_loadzone"};
 	$logfile  = $dtconf{"roll_logfile"};
 	$loglevel = $dtconf{"roll_loglevel"};
 	$sleep	  = $dtconf{"roll_sleeptime"};
+
+	#
+	# Ensure rollerd's loadzone flag is an acceptable boolean.
+	#
+	bool_check('roll_loadzone');
 
 	#
 	# Ensure rollerd's logfile (if it exists) is a regular file.
@@ -762,7 +772,7 @@ sub file_check
 #
 # Routine:	bool_check()
 #
-# Purpose:	Checks a boolean for good values (0 or 1.)
+# Purpose:	Checks a boolean for good values (0/no/false or 1/yes/true.)
 #
 sub bool_check
 {
@@ -770,7 +780,8 @@ sub bool_check
 	my $val;					# Value of label.
 
 	$val = $dtconf{$label};
-	if(($val ne "0") && ($val ne "1"))
+	if(($val ne "0") && ($val !~ /^no$/i)  && ($val !~ /^false$/i) &&
+	   ($val ne "1") && ($val !~ /^yes$/i) && ($val !~ /^true$/i))
 	{
 		prt(0,"$label flag has unrecognized value  ($val)");
 		$errs++;
@@ -1000,6 +1011,10 @@ the file must be a regular executable file.
 The following checks are performed for B<rollerd> values:
 
 =over 8
+
+=item I<roll_loadzone>
+
+Ensure that the I<roll_loadzone> flag is either 0 or 1.
 
 =item I<roll_logfile>
 
