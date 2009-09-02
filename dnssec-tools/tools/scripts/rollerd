@@ -2309,6 +2309,7 @@ sub optsandargs
 	$sleeptime  = $opts{$OPT_SLEEP}	     || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 	$dtcf	    = $opts{$OPT_DTCONF}     || getconffile();
 	$display    = $opts{$OPT_DISPLAY}    || 0;
+	$xqtdir	    = $opts{$OPT_DIR}	     || ".";
 	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
 
 	#
@@ -2336,6 +2337,22 @@ sub optsandargs
 	}
 
 	#
+	# If the user only wants the parameters, print 'em and exit.
+	#
+	if($opts{$OPT_PARAMS})
+	{
+		print "$ME parameters:\n";
+		print "\trollrec file   \"$rollrecfile\"\n";
+		print "\tdirectory      \"$xqtdir\"\n";
+		print "\tconfig file    \"$dtconfig\"\n";
+		print "\tlogfile        \"$logfile\"\n";
+		print "\tloglevel       \"$loglevel\"\n";
+		print "\tzone reload    \"$zoneload\"\n";
+		print "\tsleeptime      \"$sleeptime\"\n";
+		exit(0)
+	}
+
+	#
 	# Whine and die if the rollrec file doesn't exist.
 	#
 	if(! -e $rollrecfile)
@@ -2347,7 +2364,6 @@ sub optsandargs
 	#
 	# Validate our execution directory.
 	#
-	$xqtdir = $opts{$OPT_DIR} || ".";
 	if($xqtdir eq ".")
 	{
 		$xqtdir = `$PWD`;
@@ -2375,8 +2391,7 @@ sub optsandargs
 	chdir($xqtdir);
 
 	#
-	# Complain and die if a log file wasn't given on the command line
-	# or in the config file.
+	# Ensure a log file was given on the command line or in the config file.
 	#
 	if(!defined($logfile))
 	{
@@ -2385,8 +2400,7 @@ sub optsandargs
 	}
 
 	#
-	# If the log file contains any directories, complain and die if the
-	# directory doesn't exist.
+	# Ensure the log file's directory actually exists.
 	#
 	if($logfile =~ /\//)
 	{
@@ -2417,22 +2431,6 @@ sub optsandargs
 	if(defined($pidfile) && ($pidfile ne ''))
 	{
 		rollmgr_set_idfile($pidfile);
-	}
-
-	#
-	# If the user only wants the parameters, print 'em and exit.
-	#
-	if($opts{$OPT_PARAMS})
-	{
-		print "$ME parameters:\n";
-		print "\trollrec file   \"$rollrecfile\"\n";
-		print "\tdirectory      \"$xqtdir\"\n";
-		print "\tconfig file    \"$dtconfig\"\n";
-		print "\tlogfile        \"$logfile\"\n";
-		print "\tloglevel       \"$loglevel\"\n";
-		print "\tzone reload    \"$zoneload\"\n";
-		print "\tsleeptime      \"$sleeptime\"\n";
-		exit(0)
 	}
 
 	#
@@ -4591,7 +4589,9 @@ Prevents B<rollerd> from telling the DNS daemon to reload zones.
 
 =item B<-parameters>
 
-Prints a set of B<rollerd> parameters and then exits.
+Prints a set of B<rollerd> parameters and then exits.  This shows the
+parameters with which B<rollerd> will execute, but very little parameter
+validation is performed.
 
 =item B<-pidfile pid_file>
 
