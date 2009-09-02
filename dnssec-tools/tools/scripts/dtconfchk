@@ -150,6 +150,11 @@ sub main()
 	check_rollerd();
 
 	#
+	# Check the nsec3 records.
+	#
+	check_nsec3();
+
+	#
 	# Check the miscellaneous records.
 	#
 	check_misc();
@@ -574,6 +579,31 @@ sub check_rollerd
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	check_nsec3()
+#
+# Purpose:	Check the NSEC3 fields.
+#
+sub check_nsec3
+{
+	my $iter;				# Loadzone flag for rollerd.
+	my $salt;				# Logfile for rollerd.
+
+	#
+	# Get the NSEC3 configuration values.
+	#
+	$iter = $dtconf{"nsec3iter"};
+	$salt = $dtconf{"nsec3salt"};
+
+	#
+	# Ensure the usensec3 and nsec3optout flags are valid booleans.
+	#
+	bool_check('usensec3');
+	bool_check('nsec3optout');
+
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	check_files()
 #
 # Purpose:	Check the file configuration fields.
@@ -773,16 +803,23 @@ sub file_check
 #
 # Routine:	bool_check()
 #
-# Purpose:	Checks a boolean for good values (0/no/false or 1/yes/true.)
+# Purpose:	Checks a boolean for good values (0/no/n/f/false or
+#		1/yes/y/t/true.)
 #
 sub bool_check
 {
 	my $label = shift;				# Label to check.
 	my $val;					# Value of label.
 
+	#
+	# Convert the label's value into a boolean and check it for validity.
+	#
 	$val = $dtconf{$label};
-	if(($val ne "0") && ($val !~ /^no$/i)  && ($val !~ /^false$/i) &&
-	   ($val ne "1") && ($val !~ /^yes$/i) && ($val !~ /^true$/i))
+	if(($val ne "0")	&& ($val ne "1")	&&
+	   ($val !~ /^no$/i) 	&& ($val !~ /^n$/i)	&&
+	   ($val !~ /^false$/i)	&& ($val !~ /^f$/i)	&&
+	   ($val !~ /^yes$/i)	&& ($val !~ /^y$/i)	&&
+	   ($val !~ /^true$/i)	&& ($val !~ /^t$/i))
 	{
 		prt(0,"$label flag has unrecognized value  ($val)");
 		$errs++;
@@ -923,6 +960,20 @@ The I<default_keyrec> configuration entry is not checked.  This entry
 specifies the default I<keyrec> file name and isn't necessarily expected
 to exist in any particular place.
 
+=head2 Boolean Values
+
+The DNSSEC-Tools configuration file has a number of fields that are expected
+to hold boolean values.  The recognized values for booleans are as follows:
+
+    true values  - 1, true,  t, yes, y
+    false values - 0, false, f, no,  n
+
+Positive values greater than 1 are recognized as true values, but it probably
+would be best to use 1.
+
+Text values that aren't in the set above are not valid and will translate to
+false values.
+
 =head2 Key-related Checks
 
 The following key-related checks are performed:
@@ -1015,7 +1066,7 @@ The following checks are performed for B<rollerd> values:
 
 =item I<roll_loadzone>
 
-Ensure that the I<roll_loadzone> flag is either 0 or 1.
+Ensure that the I<roll_loadzone> flag is a valid boolean.
 
 =item I<roll_logfile>
 
@@ -1044,6 +1095,22 @@ B<rollerd>'s sleep-time must be at least one minute.
 
 =back
 
+=head2 NSEC3 Checks
+
+The following checks are performed for NSEC3-related values:
+
+=over 8
+
+=item I<usensec3>
+
+Ensure that the I<usensec3> flag is a valid boolean.
+
+=item I<nsec3optout>
+
+Ensure that the I<nsec3optout> flag is a valid boolean.
+
+=back
+
 =head2 Miscellaneous Checks
 
 The following miscellaneous checks are performed:
@@ -1062,16 +1129,16 @@ This check is only performed if the I<savekeys> flag is set on.
 
 =item I<entropy_msg>
 
-Ensure that the I<entropy_msg> flag is either 0 or 1.
+Ensure that the I<entropy_msg> flag is a valid boolean.
 
 =item I<savekeys>
 
-Ensure that the I<savekeys> flag is either 0 or 1.
+Ensure that the I<savekeys> flag is a valid boolean.
 If this flag is set to 1, then the I<archivedir> field will also be checked.
 
 =item I<usegui>
 
-Ensure that the I<usegui> flag is either 0 or 1.
+Ensure that the I<usegui> flag is a valid boolean.
 
 =back
 
