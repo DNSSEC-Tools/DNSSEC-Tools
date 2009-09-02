@@ -46,31 +46,33 @@ my $ROOTHINTS = 'http://www.internic.net/zones/named.root';
 #
 my @opts =
 (
-	"outfile=s",				# Output config file.
-	"edit",					# Edit resulting file.
-	"overwrite",				# Overwrite existing files.
-	"noprompt",				# Don't prompt user.
-	"verbose",				# Verbose equivalent.
-	"Version",			        # Display the version number.
+	"outfile=s",			# Output config file.
+	"edit",				# Edit resulting file.
+	"overwrite",			# Overwrite existing files.
+	"noprompt",			# Don't prompt user.
+	"verbose",			# Verbose equivalent.
+	"Version",		        # Display the version number.
 
-	"usegui",				# Use option GUI.
-	"noentropy_msg",			# Don't give entropy message.
-	"nosavekeys",				# Don't save old keys.
-	"nousegui",				# Don't use option GUI.
+	"usegui",			# Use option GUI.
+	"noentropy_msg",		# Don't give entropy message.
+	"nosavekeys",			# Don't save old keys.
+	"nousegui",			# Don't use option GUI.
 
-	"admin=s",				# Administrator's email address.
-	"binddir=s",				# Path to BIND programs.
-	"viewimage=s",				# Path to image viewer.
+	"admin=s",			# Administrator's email address.
+	"binddir=s",			# Path to BIND programs.
+	"viewimage=s",			# Path to image viewer.
 
-	"roll-logfile=s",			# Logfile for rollerd.
-	"roll-loglevel=s",			# Logging level for rollerd.
-	"roll-sleeptime=i",			# Sleep-time for rollerd.
+	"roll-loadzone",		# Turn on rollerd's zone-loading flag.
+	"no-roll-loadzone",		# Turn off rollerd's zone-loading flag.
+	"roll-logfile=s",		# Logfile for rollerd.
+	"roll-loglevel=s",		# Logging level for rollerd.
+	"roll-sleeptime=i",		# Sleep-time for rollerd.
 
-	"ta-contact=s",				# trustman's email contact.
-	"ta-resolvconf=s",			# Location of resolv.conf file.
-	"ta-smtpserver=s",			# trustman's SMTP server.
-	"ta-tmpdir=s",				# trustman's temp. directory.
-	"genroothints=s",			# Create root.hints file.
+	"ta-contact=s",			# trustman's email contact.
+	"ta-resolvconf=s",		# Location of resolv.conf file.
+	"ta-smtpserver=s",		# trustman's SMTP server.
+	"ta-tmpdir=s",			# trustman's temp. directory.
+	"genroothints=s",		# Create root.hints file.
 );
 
 #
@@ -105,6 +107,7 @@ my $kgopts;				# Options for key-generation program.
 my $zcopts;				# Options for zone-checking program.
 my $zsopts;				# Options for zone-signing program.
 
+my $rloadzone;				# rollerd's zone-loading flag.
 my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
@@ -285,9 +288,12 @@ sub optsandargs
 	$usegui	   = $opts{'usegui'}	  || dnssec_tools_default("usegui");
 	$entmsg	   = $opts{'entropy_msg'} || dnssec_tools_default("entropy_msg");
 
-	$rlogfile  = $opts{'roll-logfile'}  || dnssec_tools_default("roll_logfile");
-	$rloglevel = $opts{'roll-loglevel'} || dnssec_tools_default("roll_loglevel");
-	$rsleep	   = $opts{'roll-sleeptime'}|| dnssec_tools_default("roll_sleeptime");
+	$rloadzone = dnssec_tools_default("roll_loadzone");
+	$rloadzone = 0 if(defined($opts{'no-roll-loadzone'}));
+	$rloadzone = 1 if(defined($opts{'roll-loadzone'}));
+	$rlogfile  = $opts{'roll-logfile'}   || dnssec_tools_default("roll_logfile");
+	$rloglevel = $opts{'roll-loglevel'}  || dnssec_tools_default("roll_loglevel");
+	$rsleep	   = $opts{'roll-sleeptime'} || dnssec_tools_default("roll_sleeptime");
 
 	$tacontact    = $opts{'ta-contact'}    || dnssec_tools_default("tacontact");
 	$taresolvconf = $opts{'ta-resolvconf'} || dnssec_tools_default("taresolvconf");
@@ -433,6 +439,7 @@ sub writeconf()
 		print "\tsave-old-keys flag    - \"$savekeys\"\n";
 		print "\tuse-gui flag          - \"$usegui\"\n\n";
 
+		print "\troll-loadzone         - \"$rloadzone\"\n";
 		print "\troll-logfile          - \"$rlogfile\"\n";
 		print "\troll-loglevel         - \"$rloglevel\"\n";
 		print "\troll-sleep            - \"$rsleep\"\n\n";
@@ -540,6 +547,7 @@ zskcount	$zskcnt
 #
 # Settings for rollerd.
 #
+roll_loadzone   $rloadzone
 roll_logfile    $rlogfile
 roll_loglevel   $rloglevel
 roll_sleeptime  $rsleep
@@ -816,6 +824,7 @@ sub get_dt_opts()
 	$zsopts = getval("Zone-Signing Options","");
 	print "\n";
 
+	$rloadzone = getval("Rollover Manager's Zone-loading Flag",$rloadzone,"boolean");
 	$rlogfile  = getval("Rollover Manager's Logfile",$rlogfile,"");
 	$rloglevel = getval("Rollover Manager's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
 	$rsleep	   = getval("Rollover Manager's Sleep-time",$rsleep,"");
@@ -1071,6 +1080,8 @@ sub usage()
 	print STDERR "\t\t-usegui\n";
 	print STDERR "\t\t-nousegui\n\n";
 
+	print STDERR "\t\t-roll-loadzone\n";
+	print STDERR "\t\t-no-roll-loadzone\n";
 	print STDERR "\t\t-roll-logfile <logfile>\n";
 	print STDERR "\t\t-roll-loglevel <loglevel>\n";
 	print STDERR "\t\t-roll-sleeptime <sleep-time>\n\n";
@@ -1266,6 +1277,13 @@ random number generation.
 A flag indicating that B<zonesigner> should not display a message about
 entropy generation.  This is primarily dependent on the implementation of
 a system's random number generation.
+
+=item B<-roll-loadzone>
+
+=item B<-no-roll-loadzone>
+
+Flags indicating whether or not B<rollerd> should have the DNS daemon load
+zones.
 
 =item B<-roll-logfile logfile>
 
