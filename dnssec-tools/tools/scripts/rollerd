@@ -142,9 +142,9 @@ my @opts =
 	"dtconfig=s",			# dnssec-tools config file to use.
 	"sleep=i",			# Sleep amount (in seconds.)
 	"parameters",			# Display the parameters and exit.
-	"singlerun",			# Single run: process everything once
-	"foreground",			# Run in the forground; don't fork
-	"alwayssign",			# Always sign when running in singlerun
+	"singlerun",			# Single run:  process everything once.
+	"foreground",			# Run in the foreground; don't fork.
+	"alwayssign",			# Always sign when running in singlerun.
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
@@ -2311,11 +2311,13 @@ sub optsandargs
 	$display    = $opts{$OPT_DISPLAY}    || 0;
 	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
 
+	#
+	# Determine whether or not we'll load zones.
+	#
 	$zoneload = dnssec_tools_default($DT_LOADZONE);
-	if(defined($opts{$OPT_NORELOAD}) && ($opts{$OPT_NORELOAD} == 1))
-	{
-		$zoneload = 0;
-	}
+	$zoneload = $dtconf{$DT_LOADZONE} if(defined($dtconf{$DT_LOADZONE}));
+	$zoneload = 0 if(defined($opts{$OPT_NORELOAD}));
+	$zoneload = boolconvert($zoneload);
 
 	#
 	# Show the version number if requested
@@ -4360,6 +4362,21 @@ Note: at this time, the other conventions of RFC5011 aren't being
 followed.  Specifically, its not waiting for a while before removing
 the old key and its not adding the revoke bit to the old key after
 switching either.
+
+=head2 Zone Reloading
+
+B<rollerd> has the opportunity to inform the DNS daemon to reload a zone in
+KSK phase 2, KSK phase 7, ZSK phase 2, and ZSK phase 4.  This is the
+B<rollerd>'s default behavior.  However, there are situations where this
+shouldn't be done, such as for off-line signing.
+
+The B<roll_loadzone> field of the DNSSEC-Tools configuration file is a boolean
+field that overrides the default to force the zone-reload behavior either on
+or off.  This field takes precedence over the default.
+
+Similarly, the B<-noreload> option prevents B<rollerd> from requesting a zone
+reload, and it takes precedence over the B<roll_loadzone> configuration field
+and the default.
 
 =head2 I<rollrec> Files
 
