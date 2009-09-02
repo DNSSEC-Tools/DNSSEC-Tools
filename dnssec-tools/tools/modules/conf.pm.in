@@ -30,6 +30,7 @@ our $VERSION = "0.9";
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
+			boolconvert
 			cmdcheck
 			getconfdir
 			getconffile
@@ -290,6 +291,48 @@ sub cmdcheck
 	}
 
 	return(1);
+}
+
+#######################################################################
+#
+# Routine:	boolconvert()
+#
+# Purpose:	Converts a textual boolean value from the configuration file
+#		into a numeric boolean.
+#
+sub boolconvert
+{
+	my $bval = shift;				# Boolean to convert.
+
+	#
+	# Handle the simple case of zero.
+	#
+	return(0) if($bval eq "0");
+
+	#
+	# Now deal with the acceptable false text cases.
+	#
+	return(0) if(($bval =~ /no/i)	||
+		     ($bval =~ /n/i)	||
+		     ($bval =~ /f/i)	||
+		     ($bval =~ /false/i));
+
+	#
+	# Next we'll handle the acceptable true text cases.
+	#
+	return(1) if(($bval =~ /yes/i)	||
+		     ($bval =~ /y/i)	||
+		     ($bval =~ /t/i)	||
+		     ($bval =~ /true/i));
+
+	#
+	# And now the positive values.
+	#
+	return(1) if($bval > 0);
+
+	#
+	# Anything else is false.
+	return(0);
 }
 
 #######################################################################
@@ -656,6 +699,18 @@ be encountered:
     * Unable to create a component of I<subdir>
     * Full path (local state directory and I<subdir>) already
       exists and is not a directory
+
+=item I<boolconvert(config-value)>
+
+This routine converts configuration values into appropriate boolean values.
+The following text conversions are made:
+
+    1 - 'true', 't', 'yes', 'y'
+    0 - 'false', 'f', 'no', 'n'
+
+All other text values are converted to 0.
+
+Positive values are converted to 1.  Negative values are converted to 0.
 
 =item I<erraction(error_action)>
 
