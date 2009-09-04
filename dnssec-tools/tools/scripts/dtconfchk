@@ -43,31 +43,43 @@ my @opts =
 
 #
 # List of valid encryption algorithms and length ranges.
-# (These values are taken from the dnssec-keygen man page.)
+# (These values are taken from experimenting with dnssec-keygen.)
 #
-my @algorithms = ("rsasha1", "rsamd5", "dsa", "dh", "hmac-md5");
+my @algorithms =
+(
+	"rsasha1",
+	"rsamd5",
+	"dsa",
+	"dh",
+	"hmac-md5",
+	"nsec3rsasha1"
+);
 
 my %length_low =
 (
-	"rsasha1"  => 512,
-	"rsamd5"   => 512,
-	"dsa"	   => 512,
-	"dh"	   => 128,
-	"hmac-md5" => 1
+	"rsasha1"	=> 512,
+	"nsec3rsasha1"	=> 512,
+	"rsamd5"	=> 512,
+	"dsa"		=> 512,
+	"dh"		=> 128,
+	"hmac-md5"	=> 1
 );
 
 my %length_high =
 (
-	"rsasha1"  => 2048,
-	"rsamd5"   => 2048,
-	"dsa"	   => 1024,
-	"dh"	   => 4096,
-	"hmac-md5" => 512
+	"rsasha1"	=> 4096,
+	"nsec3rsasha1"	=> 4096,
+	"rsamd5"	=> 4096,
+	"dsa"		=> 1024,
+	"dh"		=> 4096,
+	"hmac-md5"	=> 512
 );
 
 my $MINEND = ((60*60) * 2);			# Minimum endtime (two hours.)
 
 my $MINSLEEP = 60;				# Minimum realistic sleeptime.
+
+my $MAXNSEC3ITER = 65535;			# Maximum iterations for NSEC3.
 
 #######################################################################
 
@@ -227,11 +239,25 @@ sub key_checks
 	# Get the key-related config entries.
 	#
 	$algorithm = lc($dtconf{'algorithm'});
-	$ksklen	   = $dtconf{'ksklength'};
-	$zsklen	   = $dtconf{'zsklength'};
 	$ksklife   = $dtconf{'ksklife'};
 	$zsklife   = $dtconf{'zsklife'};
 	$zskcnt	   = $dtconf{'zskcount'};
+
+	#
+	# Use "ksklength/zsklength" or "ksklen/zsklen".
+	#
+	$ksklen	   = $dtconf{'ksklength'};
+	if(!defined($dtconf{'ksklength'}))
+	{
+		$ksklen	   = $dtconf{'ksklen'};
+		$dtconf{'ksklength'} = $ksklen;
+	}
+	$zsklen	   = $dtconf{'zsklength'};
+	if(!defined($dtconf{'zsklength'}))
+	{
+		$zsklen	   = $dtconf{'zsklen'};
+		$dtconf{'zsklength'} = $zsklen;
+	}
 
 	#
 	# If the key's encryption algorithm isn't defined here, then we
@@ -285,7 +311,7 @@ sub key_checks
 			#
 			if(!defined($dtconf{'ksklength'}))
 			{
-				prt(1,"ksklength not defined");
+				prt(0,"ksklength not defined");
 				$errs++;
 			}
 			else
@@ -318,7 +344,7 @@ sub key_checks
 			#
 			if(!defined($dtconf{'zsklength'}))
 			{
-				prt(1,"zsklength not defined");
+				prt(0,"zsklength not defined");
 				$errs++;
 			}
 			else
@@ -599,6 +625,32 @@ sub check_nsec3
 	#
 	bool_check('usensec3');
 	bool_check('nsec3optout');
+
+	#
+	# Ensure the NSEC3 iteration count is positive.
+	#
+	if($iter < 1)
+	{
+		prt(0,"NSEC3 iterations must be positive ($iter)");
+		$errs++;
+	}
+	else
+	{
+		prt(1,"NSEC3 iterations ($iter) acceptable");
+	}
+
+	#
+	# Ensure the NSEC3 iteration count is not too big.
+	#
+	if($iter > $MAXNSEC3ITER)
+	{
+		prt(0,"NSEC3 iterations is too big ($iter > $MAXNSEC3ITER)");
+		$errs++;
+	}
+	else
+	{
+		prt(1,"NSEC3 iterations ($iter) acceptable");
+	}
 
 }
 
@@ -988,7 +1040,7 @@ in the B<dnssec-keygen> man page.
 =item I<ksklength>
 
 Ensure the I<ksklength> field is valid.  The acceptable values may be found
-in the B<dnssec-keygen> man page.
+in the B<dnssec-keygen> man page.  This may also be specified as I<ksklen>.
 
 =item I<ksklife>
 
@@ -1002,7 +1054,7 @@ Ensure the I<zskcount> field is valid.  The ZSK count must be positive.
 =item I<zsklength>
 
 Ensure the I<zsklength> field is valid.  The acceptable values may be found
-in the B<dnssec-keygen> man page.
+in the B<dnssec-keygen> man page.  This may also be specified as I<zsklen>.
 
 =item I<zsklife>
 
@@ -1101,13 +1153,18 @@ The following checks are performed for NSEC3-related values:
 
 =over 8
 
-=item I<usensec3>
+=item I<nsec3iter>
 
-Ensure that the I<usensec3> flag is a valid boolean.
+Ensure that the I<nsec3iter> iteration count falls within the range used by
+B<dnssec-signzone>.  The current values are from 1 - 65535.
 
 =item I<nsec3optout>
 
 Ensure that the I<nsec3optout> flag is a valid boolean.
+
+=item I<usensec3>
+
+Ensure that the I<usensec3> flag is a valid boolean.
 
 =back
 
