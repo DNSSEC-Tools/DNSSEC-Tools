@@ -387,7 +387,7 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
      */
     for (res = results; res != NULL; res = res->val_rc_next) {
 
-        u_char *alias_target = NULL;
+        char *alias_target = NULL;
         rrset = res->val_rc_rrset;
 
         if (!(validated && val_isvalidated(res->val_rc_status))) 
