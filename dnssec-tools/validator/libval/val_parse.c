@@ -480,7 +480,7 @@ val_parse_ds_rdata(const u_char *buf, size_t buflen,
     else if (rdata->d_type == ALG_DS_HASH_SHA256)
         rdata->d_hash_len = SHA256_DIGEST_LENGTH;
     else
-        return VAL_BAD_ARGUMENT;
+        return VAL_NOT_IMPLEMENTED;
 
     if (index + rdata->d_hash_len > buflen)
         return VAL_BAD_ARGUMENT;
