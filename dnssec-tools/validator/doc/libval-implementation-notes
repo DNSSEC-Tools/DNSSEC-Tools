@@ -431,7 +431,7 @@ where:
                       |---> VAL_AC_UNTRUSTED_ZONE
                       |---> VAL_AC_PINSECURE
                       |---> VAL_AC_BARE_RRSIG
-                      |---> VAL_AC_NO_TRUST_ANCHOR
+                      |---> VAL_AC_NO_LINK
                       +---> VAL_AC_TRUST
 
               +====================+
@@ -452,6 +452,10 @@ where:
               +====================+
                       |
                       |---> VAL_AC_NOT_VERIFIED 
+                      |
+                      |---> DS status
+                      |         |-------------> VAL_AC_INVALID_DS
+                      |         +-------------> VAL_AC_ALGORITHM_NOT_SUPPORTED
                       |
                       |---> Key status
                       |         |-------------> VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
