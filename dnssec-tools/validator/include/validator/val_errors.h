@@ -72,7 +72,8 @@
 #define VAL_AC_UNTRUSTED_ZONE       (VAL_AC_DONT_GO_FURTHER+1)
 #define VAL_AC_PINSECURE            (VAL_AC_DONT_GO_FURTHER+2)
 #define VAL_AC_BARE_RRSIG           (VAL_AC_DONT_GO_FURTHER+3) 
-#define VAL_AC_NO_TRUST_ANCHOR      (VAL_AC_DONT_GO_FURTHER+4)
+#define VAL_AC_NO_LINK              (VAL_AC_DONT_GO_FURTHER+4)
+#define VAL_AC_TRUST_ANCHOR         VAL_AC_NO_LINK 
 #define VAL_AC_TRUST                (VAL_AC_DONT_GO_FURTHER+5) 
 #define VAL_AC_LAST_STATE           VAL_AC_TRUST
 
@@ -117,10 +118,13 @@
 #define VAL_AC_DS_NOMATCH (VAL_AC_FAIL_BASE+10)  
 #define VAL_AC_INVALID_KEY (VAL_AC_FAIL_BASE+11)
 
-/* -- related to both signature and key */
-#define VAL_AC_ALGORITHM_NOT_SUPPORTED (VAL_AC_FAIL_BASE+12) 
+/* -- only related to DS */
+#define VAL_AC_INVALID_DS (VAL_AC_FAIL_BASE+12)
 
-#define VAL_AC_LAST_FAILURE (VAL_AC_ALGORITHM_NOT_SUPPORTED)       /* 29 */
+/* -- related to signature, key and DS */
+#define VAL_AC_ALGORITHM_NOT_SUPPORTED (VAL_AC_FAIL_BASE+13) 
+
+#define VAL_AC_LAST_FAILURE (VAL_AC_ALGORITHM_NOT_SUPPORTED)       /* 30 */
 
 
 
