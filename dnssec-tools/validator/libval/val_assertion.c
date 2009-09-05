@@ -876,7 +876,7 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
     /*
      * Default value, will change 
      */
-    *status = VAL_AC_NO_TRUST_ANCHOR;
+    *status = VAL_AC_NO_LINK;
 
     name_len = wire_name_length(zp);
     ep = zp + name_len;
@@ -884,7 +884,7 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
     RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, ta_pol);
     if (ta_pol == NULL) {
         val_log(ctx, LOG_INFO, "is_trusted_key(): No trust anchor policy available"); 
-        *status = VAL_AC_NO_TRUST_ANCHOR;
+        *status = VAL_AC_NO_LINK;
         return VAL_NO_ERROR;
     }
 
@@ -951,7 +951,7 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
 
             val_log(ctx, LOG_INFO,
                     "is_trusted_key(): Existing trust anchor did not match at this level: %s", zp);
-            //*status = VAL_AC_NO_TRUST_ANCHOR;
+            //*status = VAL_AC_NO_LINK;
             //return VAL_NO_ERROR;
 
             /* we will continue as long as there is a trust anchor above this level */
@@ -993,7 +993,7 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
     val_log(ctx, LOG_INFO,
             "is_trusted_key(): Cannot find a good trust anchor for the chain of trust above %s",
             zp);
-    *status = VAL_AC_NO_TRUST_ANCHOR;
+    *status = VAL_AC_NO_LINK;
     return VAL_NO_ERROR;
 }
 
@@ -3335,6 +3335,8 @@ verify_provably_insecure(val_context_t * context,
     if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
+    val_log(context, LOG_INFO, "verify_provably_insecure(): Checking PI status for %s", name_p);
+
     /* find the zonecut for the query */
     if ((VAL_NO_ERROR != find_next_zonecut(context, queries, name_n, done, &q_zonecut_n))
                 || (*done && q_zonecut_n == NULL)) {
@@ -4474,7 +4476,7 @@ verify_and_validate(val_context_t * context,
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                         res->val_rc_status = VAL_BARE_RRSIG;
                     } else if (next_as->val_ac_status ==
-                               VAL_AC_NO_TRUST_ANCHOR) {
+                               VAL_AC_NO_LINK) {
                         /*
                          * verified but no trust 
                          */
