@@ -293,9 +293,9 @@ This field may contain one of the following values:
         contain the cryptographic signatures for other DNS
         data and cannot themselves be validated.
 
-    VAL_AC_NO_TRUST_ANCHOR
+    VAL_AC_NO_LINK
         There was no trust anchor configured for a given
-        authentication chain.
+        authentication chain or the chain didn't link up.
 
     VAL_AC_TRUST
         At least one of the signatures covering the given
@@ -508,6 +508,9 @@ variable I<rr_status> and can return one of the following values:
 	The key used to verify the RRSIG was not a valid
 	DNSKEY.
 
+    VAL_AC_INVALID_DS
+	The DS used to validatate the DNSKEY could not be
+    parsed 
 =back
 
 =item I<rr_next>
