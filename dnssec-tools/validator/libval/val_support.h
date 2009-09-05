@@ -64,6 +64,7 @@
             }\
             FREE(ns_address);\
             ns_address = NULL;\
+            break; \
         }\
     }\
 }while(0)
