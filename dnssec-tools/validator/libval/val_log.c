@@ -438,8 +438,8 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_BARE_RRSIG:
         return "VAL_AC_BARE_RRSIG";
         break;
-    case VAL_AC_NO_TRUST_ANCHOR:
-        return "VAL_AC_NO_TRUST_ANCHOR";
+    case VAL_AC_NO_LINK:
+        return "VAL_AC_NO_LINK";
         break;
     case VAL_AC_TRUST:
         return "VAL_AC_TRUST";
@@ -493,6 +493,9 @@ p_ac_status(val_astatus_t err)
         return "VAL_AC_DS_NOMATCH";
         break;
     case VAL_AC_INVALID_KEY:
+        return "VAL_AC_INVALID_KEY";
+        break;
+    case VAL_AC_INVALID_DS:
         return "VAL_AC_INVALID_KEY";
         break;
     case VAL_AC_ALGORITHM_NOT_SUPPORTED:
