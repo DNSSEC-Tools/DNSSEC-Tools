@@ -641,6 +641,7 @@ find_nslist_for_query(val_context_t * context,
     u_int16_t       tzonestatus;
     u_int32_t ttl_x = 0;
     struct name_server *ns;
+    int recurse = 0;
 
     if (next_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -657,6 +658,16 @@ find_nslist_for_query(val_context_t * context,
     if (next_q->qc_zonecut_n)
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
+
+    if (context->nslist != NULL) {
+        /* 
+         * if we have a default name server in our resolv.conf file, send
+         *  to that name server
+         */
+        clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+        recurse = 1;
+        goto done;
+    } 
 
     ret_val = get_nslist_from_cache(context, next_qfq, queries, &ref_ns_list, &next_q->qc_zonecut_n);
     
@@ -675,35 +686,35 @@ find_nslist_for_query(val_context_t * context,
         } 
     } 
 
-    if (context->nslist != NULL) {
-        /* 
-         * if we have a default name server in our resolv.conf file, send
-         *  to that name server
+    /*
+     * work downward from root 
+     */
+    if (context->root_ns == NULL) {
+        /*
+         * No root hints; should not happen here 
          */
-        clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+        val_log(context, LOG_WARNING, 
+                "find_nslist_for_query(): Trying to answer query recursively, but no root hints file found.");
+        return VAL_CONF_NOT_FOUND;
+    }
+    clone_ns_list(&next_q->qc_ns_list, context->root_ns);
+    next_q->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
+    if (next_q->qc_zonecut_n == NULL) {
+        return VAL_OUT_OF_MEMORY;
+    }
+    *(next_q->qc_zonecut_n) = (u_char) '\0';
+
+done:
+
+    /* Set recursion only if we need it, else turn it off */
+    if (recurse) {
         for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
             ns->ns_options |= RES_RECURSE;
     } else {
-        /*
-         * work downward from root 
-         */
-        if (context->root_ns == NULL) {
-            /*
-             * No root hints; should not happen here 
-             */
-            val_log(context, LOG_WARNING, 
-                    "find_nslist_for_query(): Trying to answer query recursively, but no root hints file found.");
-            return VAL_CONF_NOT_FOUND;
-        }
-        clone_ns_list(&next_q->qc_ns_list, context->root_ns);
-        next_q->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
-        if (next_q->qc_zonecut_n == NULL) {
-            return VAL_OUT_OF_MEMORY;
-        }
-        *(next_q->qc_zonecut_n) = (u_char) '\0';
+        for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
+            ns->ns_options ^= RES_RECURSE;
     }
 
-done:
     /*
      * Only set the CD and EDNS0 options if we feel the server 
      * is capable of handling DNSSEC
@@ -1392,7 +1403,7 @@ digest_response(val_context_t * context,
     u_int32_t       ttl_h;
     size_t          rdata_len_h;
     size_t          rdata_index;
-    int             authoritive;
+    int             authoritive = 0;
     u_char         *rdata;
     u_char         *hptr;
     int             ret_val;
@@ -1654,9 +1665,9 @@ digest_response(val_context_t * context,
          * data (think of out-of-bailiwick glue), these records will not
          * be saved because of the anti-pollution rules.
          */
-        // XXX AA bit must be set
         int fix_zonecut = 0;
-        if (from_section < (answer + authority) &&
+        if (header->aa == 1 &&
+            from_section < (answer + authority) &&
             (set_type_h == ns_t_soa || 
              (set_type_h == ns_t_dnskey && from_section < answer) ||
              (set_type_h == ns_t_ns && 
@@ -1664,7 +1675,15 @@ digest_response(val_context_t * context,
             (rrs_zonecut_n == NULL || NULL != namename(name_n, rrs_zonecut_n))) {
 
             fix_zonecut = 1;
-            if (nothing_other_than_alias) {
+
+            /* 
+             *  special case for DS record: zonecut cannot be the same or larger 
+             *  than the queried name
+             */
+            if (query_type_h == ns_t_ds &&
+                NULL != namename (name_n, query_name_n)) {
+                fix_zonecut = 0;
+            } else if (nothing_other_than_alias) {
                 /* 
                  * make sure that the NS is closer to the alias than the target; 
                  * if not don't fix the zonecut
@@ -1688,14 +1707,6 @@ digest_response(val_context_t * context,
                if (!n1 || !n2 || namename(n1, n2))
                    fix_zonecut = 0;
             } 
-            /* 
-             *  special case for DS record: zonecut cannot be the same or larger 
-             *  than the queried name
-             */
-            if (query_type_h == ns_t_ds &&
-                NULL != namename (name_n, query_name_n)) {
-                fix_zonecut = 0;
-            }
 
             if (fix_zonecut && !zonecut_was_modified) {
                 zonecut_was_modified = 1;
@@ -1791,9 +1802,12 @@ digest_response(val_context_t * context,
     } else {
 
         /* save any zones we've learned along the way */
-        if (VAL_NO_ERROR != (ret_val = 
+        /* save only if we did not request recursion */
+        if (header->ra == 0) {
+            if (VAL_NO_ERROR != (ret_val = 
                     stow_zone_info(learned_zones, matched_q))) {
-            goto done;
+                goto done;
+            }
         }
         learned_zones = NULL; /* consumed */
 
