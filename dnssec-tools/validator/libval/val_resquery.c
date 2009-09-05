@@ -1654,6 +1654,7 @@ digest_response(val_context_t * context,
          * data (think of out-of-bailiwick glue), these records will not
          * be saved because of the anti-pollution rules.
          */
+        // XXX AA bit must be set
         int fix_zonecut = 0;
         if (from_section < (answer + authority) &&
             (set_type_h == ns_t_soa || 
@@ -1687,6 +1688,14 @@ digest_response(val_context_t * context,
                if (!n1 || !n2 || namename(n1, n2))
                    fix_zonecut = 0;
             } 
+            /* 
+             *  special case for DS record: zonecut cannot be the same or larger 
+             *  than the queried name
+             */
+            if (query_type_h == ns_t_ds &&
+                NULL != namename (name_n, query_name_n)) {
+                fix_zonecut = 0;
+            }
 
             if (fix_zonecut && !zonecut_was_modified) {
                 zonecut_was_modified = 1;
