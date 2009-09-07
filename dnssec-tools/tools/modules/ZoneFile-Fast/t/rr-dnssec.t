@@ -19,6 +19,13 @@ BEGIN {
                                         X2K/kKxjcFcQhkukMUxjzzmAP3xJHq6vgwVM
                                         tpm/qaR0g5jH5B46iJefGYzwcMAyexbLOQEW
                                         uv1Xs6i/lBwQo9T7xw== )},
+         q{.		86400	RRSIG	SOA 5 0 86400 20090913150000 (
+					20090907150000 18160 .
+					kgbUsnZwzY/s9zGcHvQ30tTNk5raweJuvo71
+					9GzBI+Ennjn25bGp7CYbfLk0tMk9Fcai5nfg
+					8hDshKwEUemign1r+SkHsiwISOr3vpTAUANg
+					+GzQwLSrZHT81wvS06DYXE/O0L/pxSKfQBON
+					8owuxhnczIDncP3xeh0Stai2jeU= )},
 # failing oddly during text compare.  spacing is different.
 #	 q{dnssec-tools.org. 86400   RRSIG   SOA 5 2 86400 20060429134027 20060330134027 42869 dnssec-tools.org. QZzAz5sVC5+n7vJhkXfFaN/sdjKXVpT/nv22 NJI+sDde180Sj1pDXW6mFt+Efg4uUAuyLQup jLv20EVM8/oBPA7DjNu2CZHGe8UDeuAoqIth Q/79Ltw4NtP7W1zWAs/ms/oSKiKYrAUHqt0U UskiXkCA1GKn6RNqVT4+IuSUgALLYSMLjlaA 2kE/KaffqeGnynIO2AC5BMFzUlxCSMDSxus3 bJm2xAIxMiUYomw9XfbGfrkCtfIrH+H/LVG/ X2K/kKxjcFcQhkukMUxjzzmAP3xJHq6vgwVM tpm/qaR0g5jH5B46iJefGYzwcMAyexbLOQEW uv1Xs6i/lBwQo9T7xw== },
 	 q{dnssec-tools.org. 10800   NSEC cvs.dnssec-tools.org A DNSKEY MX NS NSEC RRSIG SOA TXT},
