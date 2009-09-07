@@ -10,6 +10,8 @@ BEGIN {
 	 q{localhost IN A 127.0.0.1},
 	 q{localhost A 127.0.0.1},
 	 q{localhost. 300 A 127.0.0.1},
+	 q{*.acme.com. 300 IN MX 10 host.acme.com.},
+	 q{*           300 IN MX 10 host.acme.com.},
 	 q{10.10.10.10.in-addr.arpa 300 IN PTR www.acme.com.},
 	 q{10.10.10.10.in-addr.arpa. 300 IN PTR www.acme.com.},
 	 q{10.10.10.10.in-addr.arpa. 300 PTR www.acme.com.},
