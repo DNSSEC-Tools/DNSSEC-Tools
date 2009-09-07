@@ -46,6 +46,11 @@ BEGIN {
 	 q{. IN SOA dns1.acme.com. hostmaster.acme.com. ( 1 1 1 1 1 )},
 	 q{@ IN SOA dns1.acme.com. hostmaster.acme.com. ( 1 1 1 1 1 )},
 	 q{. IN SOA dns1.acme.com. hostmaster.acme.com. ( 1 1 1 1 1 )},
+         # included te test cpan bug 17745
+	 q{. IN SOA dns1.acme.com. hostmaster.acme.com ( 1 1 1 1 1 )},
+	 q{. IN SOA dns1.acme.com. hostmaster ( 1 1 1 1 1 )},
+	 q{. IN SOA dns1.acme.com hostmaster.acme.com. ( 1 1 1 1 1 )},
+	 q{. IN SOA dns1 hostmaster. ( 1 1 1 1 1 )},
 	 q{. IN SOA @ hostmaster.acme.com. ( 1 1 1 1 1 )},
 	 q{acme.com. IN AAAA 2001:688:0:102::1:2},
 	 q{acme.com. IN AAAA 2001:688:0:102::3},

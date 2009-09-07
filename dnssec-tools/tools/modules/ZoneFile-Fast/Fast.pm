@@ -1180,8 +1180,8 @@ sub parse_soa_number
 	  }
 	  delete $soa->{nextkey};
 	  delete $soa->{breakable};
-	  chop $soa->{mname};
-	  chop $soa->{rname};
+	  $soa->{mname} =~ s/\.$//;
+	  $soa->{rname} =~ s/\.$//;
 	  $soa->{Lines} = $ln - $soa->{Line} + 1;
 	  push @zone, $soa;
 	  $soa = undef;
