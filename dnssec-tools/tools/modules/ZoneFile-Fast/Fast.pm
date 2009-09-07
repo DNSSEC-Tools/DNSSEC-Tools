@@ -52,7 +52,7 @@ my $MAXIMUM_TTL = 0x7fffffff;
 
 my $pat_ttl = qr{[\dwdhms]+}i;
 my $pat_skip = qr{\s*(?:;.*)?};
-my $pat_name = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*};
+my $pat_name = qr{[-\*\w\$\d\/*]+(?:\.[-\*\w\$\d\/]+)*};
 my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
 my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
 
