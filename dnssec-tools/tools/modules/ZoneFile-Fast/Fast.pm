@@ -746,7 +746,7 @@ sub parse_line
 	  if (/\G\(\s*$/gc) {
 	      # multi-line
 	      $parse = \&parse_rrsig;
-	  } elsif (/\G(\d+)\s+(\d+)\s+($pat_maybefullname)\s+([^=]+=)\s*/gc) {
+	  } elsif (/\G(\d+)\s+(\d+)\s+($pat_maybefullnameorroot)\s+([^=]+=)\s*/gc) {
 	      # single-line
 	      $rrsig->{'siginception'} = $1;
 	      $rrsig->{'keytag'} = $2;
@@ -814,7 +814,7 @@ sub parse_line
 	      error("bad DS data");
 	  }
       } elsif (/\G(nsec)[ \t]+/igc) {
-	  if (/\G\s*($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
+	  if (/\G\s*($pat_maybefullnameorroot)\s+(.*)$pat_skip$/gc) {
 	      # XXX: set the typebm field ourselves?
 	      my ($nxtdname, $typelist) = ($1, $2);
 	      $typelist = join(" ",sort split(/\s+/,$typelist));
@@ -1028,7 +1028,7 @@ sub parse_rrsig
       # got more data
       if ($rrsig->{'first'}) {
 	  delete $rrsig->{'first'};
-	  if (/\G\s*(\d+)\s+(\d+)\s+($pat_maybefullname)/gc) {
+	  if (/\G\s*(\d+)\s+(\d+)\s+($pat_maybefullnameorroot)/gc) {
 	      $rrsig->{'siginception'} = $1;
 	      $rrsig->{'keytag'} = $2;
 	      $rrsig->{'signame'} = $3;
