@@ -694,9 +694,8 @@ sub parse_line
 	      error("bad LOC data");
 	  }
       } elsif (/\G(hinfo)[ \t]+/igc) {
-	  # parsing stolen from Net::DNS::RR::HINFO
-	  if (/\G["'](.*?)["']\s+["'](.*?)["']$pat_skip$/gc) {
-	      push @zone, {
+	  if (/\G(["'].*?["']|\S+)\s+(["'].*?["']|\S+)$pat_skip$/gc) {
+	      my $result = {
 			   Line      => $ln,
 			   name      => $domain,
 			   type      => "HINFO",
@@ -705,6 +704,11 @@ sub parse_line
 			   cpu       => $1,
 			   os        => $2,
 			  };
+	      $result->{'cpu'} =~ s/^["']//;
+	      $result->{'cpu'} =~ s/["']$//;
+	      $result->{'os'} =~ s/^["']//;
+	      $result->{'os'} =~ s/["']$//;
+	      push @zone, $result;
 	  } else {
 	      error("bad HINFO data");
 	  }
