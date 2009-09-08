@@ -6,7 +6,9 @@ use ExtUtils::MakeMaker;
 
 %opts = (
 	 'NAME'		=> 'convertar',
-	 'EXE_FILES' => [qw(convertar)]
+	 'EXE_FILES' => [qw(convertar)],
+	 'PREREQ_PM'    => { XML::Simple => 0,
+			     IO::File => 0 },
 	);
 
 WriteMakefile(%opts);
@@ -16,21 +18,42 @@ WriteMakefile(%opts);
 
 use strict;
 
-use XML::SAX;
+my $havexmlsax = eval {
+	require XML::SAX;
+};
 
 my $packedmakefilestr;			# Makefile lines for packing files.
+my $xmlsaxmods = "";			# XML::SAX available modules
+my $xmlsaxcpcmds = "";			# XML::SAX install commands
+my $xmlsaxcleancmds = "";		# XML::SAX clean-up commands
+my $xmlsaxppargs = "";			# XML::SAX needed pp arguments
 
-my $pddir;				# Parser-details directory.
-my $pdfile = "ParserDetails.ini";	# Actual parser-details file.
-my $parserdetails;			# Parser-details file.
+if ($havexmlsax) {
+	import XML::SAX;
 
-#
-# Get a path to the XML::SAX ParserDetails file.
-#
-$pddir = "$INC{'XML/SAX.pm'}";
-$pddir =~ s/\.pm$//;
-$parserdetails = "$pddir/$pdfile";
+	my $pddir;				# Parser-details directory.
+	my $pdfile = "ParserDetails.ini";	# Actual parser-details file.
+	my $parserdetails;			# Parser-details file.
 
+	#
+	# Get a path to the XML::SAX ParserDetails file.
+	#
+	$pddir = "$INC{'XML/SAX.pm'}";
+	$pddir =~ s/\.pm$//;
+	$parserdetails = "$pddir/$pdfile";
+
+	$xmlsaxmods ="-M XML::LibXML::SAX		\\
+	  -M XML::SAX::PurePerl         \\\n";
+	$xmlsaxcpcmds = "\$(RM) -fr SAX
+	\$(MKDIR) SAX
+	\$(CP) $parserdetails SAX/$pdfile\n";
+
+	$xmlsaxcleancmds ="\$(RM) -f \$(packer_convertar) \$(DTCONFFILE) $pdfile
+	\$(RM) -fr SAX\n";
+
+	$xmlsaxppargs = "-a SAX/$pdfile"
+
+}
 
 #------------------------------------------------------------------------
 #
@@ -78,20 +101,17 @@ newconf:
 
 pack_convertar: copy_parser
 	\$(RM) -f \$(packer_convertar)
-	\$(PP) -o \$(packer_convertar) -a SAX/$pdfile \$(MODULES) convertar
+	\$(PP) -o \$(packer_convertar) $xmlsaxppargs \$(MODULES) convertar
 	\@echo ' '
 
 copy_parser:
-	\$(RM) -fr SAX
-	\$(MKDIR) SAX
-	\$(CP) $parserdetails SAX/$pdfile
+	$xmlsaxcpcmds
 
 pack_cleaner:
 	\$(RM) -f \$(DTCONFFILE)
 
 clean_packed:
-	\$(RM) -f \$(packer_convertar) \$(DTCONFFILE) $pdfile
-	\$(RM) -fr SAX
+	$xmlsaxcleancmds
 
 MOD_TAR =							\\
 	-M Net::DNS::SEC::Tools::TrustAnchor			\\
@@ -105,14 +125,12 @@ MOD_TAR =							\\
 MOD_DNS = -M Net::DNS::SEC::Tools::conf			\\
 	  -M Net::DNS::SEC::Tools::QWPrimitives
 
-MOD_STD = -M Data::Dumper		\\
+MOD_STD = $xmlsaxmods	  -M Data::Dumper		\\
 	  -M Exporter			\\
 	  -M IO::File			\\
 	  -M Text::CSV			\\
 	  -M Text::CSV_PP		\\
-	  -M XML::Simple		\\
-	  -M XML::LibXML::SAX		\\
-	  -M XML::SAX::PurePerl
+	  -M XML::Simple		
 
 ";
 
