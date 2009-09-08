@@ -2337,6 +2337,30 @@ sub optsandargs
 	}
 
 	#
+	# Validate our execution directory.
+	#
+	if($xqtdir eq ".")
+	{
+		$xqtdir = `$PWD`;
+		chomp($xqtdir);
+	}
+	if(!defined($xqtdir))
+	{
+		print STDERR "rollerd:  no execution directory defined\n";
+		exit(1);
+	}
+	if(! -e $xqtdir)
+	{
+		print STDERR "rollerd:  execution directory \"$xqtdir\" does not exist\n";
+		exit(1);
+	}
+	if(! -d $xqtdir)
+	{
+		print STDERR "rollerd:  execution directory \"$xqtdir\" is not a directory\n";
+		exit(1);
+	}
+
+	#
 	# If the user only wants the parameters, print 'em and exit.
 	#
 	if($opts{$OPT_PARAMS})
@@ -2358,30 +2382,6 @@ sub optsandargs
 	if(! -e $rollrecfile)
 	{
 		print STDERR "rollerd:  rollrec file \"$rollrecfile\" does not exist\n";
-		exit(1);
-	}
-
-	#
-	# Validate our execution directory.
-	#
-	if($xqtdir eq ".")
-	{
-		$xqtdir = `$PWD`;
-		chomp($xqtdir);
-	}
-	if(!defined($xqtdir))
-	{
-		print STDERR "rollerd:  no execution directory defined\n";
-		exit(1);
-	}
-	if(! -e $xqtdir)
-	{
-		print STDERR "rollerd:  execution directory \"$xqtdir\" does not exist\n";
-		exit(1);
-	}
-	if(! -d $xqtdir)
-	{
-		print STDERR "rollerd:  execution directory \"$xqtdir\" is not a directory\n";
 		exit(1);
 	}
 
