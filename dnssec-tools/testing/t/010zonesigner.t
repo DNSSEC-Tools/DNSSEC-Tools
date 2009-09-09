@@ -32,6 +32,8 @@ my $domain     = "example.com";
 my $domainfile = $domain;
 my $statedir   = "$testdir/tmp";
 
+my $bindnsec3version = "9.6";
+
 my %zonesigner_response = (
     "gentest" =>   q{    using default keyrec file example.com.krf
     checking options and arguments
@@ -135,17 +137,23 @@ do_is($test, $log, $zonesigner_response{gentest},
 
 unlink "$logfile";
 
-$test->is_eq(system("$nsec3command"), 0,
-	     "zonesigner: signing with nsec3 \'nsec3.$domainfile\'");
 
-$log = &parselog;
-
-if (! do_is($test, $log, $zonesigner_response{nsec3test},
-	    "zonesigner: output of nsec3 signing : \'nsec3.$domainfile\'")) {
-  print "\tPossible causes:\n";
-  print "\t\tnsec3 support requires Bind >= 9.6\n";
+my $bindversion = dnssecsignzone_version();
+if ($bindversion < $bindnsec3version) {
+  print "       NSEC3 requires bind version >= $bindnsec3version (current v$bindversion)\n";
+  $test->skip("NSEC3 not supported");
+  $test->skip("NSEC3 not supported");
 }
-
+else {
+  $test->is_eq(system("$nsec3command"), 0,
+	       "zonesigner: signing with nsec3 \'nsec3.$domainfile\'");
+  $log = &parselog;
+  if (! do_is($test, $log, $zonesigner_response{nsec3test},
+	      "zonesigner: output of nsec3 signing : \'nsec3.$domainfile\'")) {
+    print "\tPossible causes:\n";
+    print "\t\tnsec3 support requires Bind >= 9.6\n";
+  }
+}
 
 summary($test, "zonesigner");
 
@@ -175,3 +183,11 @@ sub parselog {
 }
 
 
+sub dnssecsignzone_version {
+  my $version = 0;
+  my $resp = `dnssec-signzone -h 2>&1`;
+  if ($resp =~ /Version: +([0-9.]+)/ ) {
+    $version = sprintf("%.1f", $1);
+  }
+  return $version;
+}
