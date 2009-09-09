@@ -3,18 +3,19 @@
 use strict;
 use Test::Builder;
 
-use File::Copy;
-use File::Path;
+use File::Copy qw( copy );
+use File::Path qw( rmtree mkpath );
 
 require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
 
 # verbosity check
 use Getopt::Std;
 my %options = ();
-getopts("v",\%options);
+getopts("vV",\%options);
 
 # TEST object
 my $test = Test::Builder->new;
+$test->diag("Testing Trustman");
 $test->plan( tests => 2);
 
 #verbose setup for test object and dt_testingtools.
@@ -26,7 +27,6 @@ my $trustman    = "$ENV{'BUILDDIR'}/tools/scripts/trustman";
 
 my $etcfiles    = "$ENV{'BUILDDIR'}/validator/etc";
 my $testdir     = "$ENV{'BUILDDIR'}/testing/trustman";
-my $locallibpath = "$testdir/lib/Net/DNS/SEC";
 my $statedir    = "$testdir/tmp";
 
 my $logfile     = "$testdir/trustman.log";
@@ -72,11 +72,11 @@ die "unable to remove \'$testdir\' directory: $!\n" if ( -e "$testdir" );
 
 mkpath("$statedir",) or
   die "unable to make \'$statedir\' directory: $!\n";
-mkpath("$locallibpath",) or
-  die "unable to make \'$locallibpath\' directory: $!\n";
+
 chdir "$testdir" or die "unable to change to \'$testdir\' directory: $!\n";
 
 $ENV{'DT_STATEDIR'} = "$statedir";
+
 
 # setup default files
 copy ("$etcfiles/dnsval.conf","dnsval.conf") or
@@ -86,13 +86,12 @@ copy ("$etcfiles/root.hints","root.hints") or
 copy ("$etcfiles/resolv.conf","resolv.conf") or
   die "Unable to copy $etcfiles/resolv.conf to resolv.conf : $!\n";
 `touch $anchor_data`;
-copy ("$ENV{'BUILDDIR'}/tools/modules/Net-DNS-SEC-Validator/Validator.pm","$locallibpath/")
-  or die "Unable to copy Validator.pm to local lib directory : $!\n";
 
 
 # commands
 
-my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
+
+my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
 
 print "trustmand command :\n$trustman_command\n" if (exists $options{v});
 
@@ -108,6 +107,7 @@ if (! do_ok($test, $log, $trustman_response{firsttest},
   print"\tPossible Problems: \n";
   print"\t\tThe DNS used does not support DNSSEC (e.g. ISP, opendns.org).\n";
   print"\t\tThis host has an incorrect date (e.g. 1+ days incorrect).\n";
+  outdiff($log, $trustman_response{firsttest}) if (exists $options{V});
 }
 
 

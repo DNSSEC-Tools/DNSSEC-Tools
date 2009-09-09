@@ -8,6 +8,10 @@ use File::Path;
 
 require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
 
+#SIGNAL CATCHING
+$SIG{INT}  = sub { &local_cleanup(); exit; };
+$SIG{TERM} = sub { &local_cleanup(); exit; };
+
 # verbosity check
 use Getopt::Std;
 my %options = ();
@@ -15,12 +19,13 @@ getopts("vV",\%options);
 
 # TEST object
 my $test = Test::Builder->new;
+$test->diag("Testing Rollerd");
 $test->plan( tests => 17);
 
 #verbose setup for test object and dt_testingtools.
 if (exists $options{v}) { $test->no_diag(0); dt_testingtools_verbose(1); }
 else                    { $test->no_diag(1); dt_testingtools_verbose(0); }
-dt_testingtools_bail(1);
+dt_testingtools_bail(1, \&local_cleanup);
 
 # Variables
 
@@ -63,8 +68,10 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
@@ -76,12 +83,15 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
  example.com: KSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -newpubksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: reloading zone for KSK phase 2
  example.com: KSK phase 3
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -90,12 +100,14 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -105,12 +117,14 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -121,12 +135,14 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -138,10 +154,13 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
+ example.com: reloading zone for KSK phase 7
  example.com: KSK phase 7: zone, key files archived
  example.com: KSK phase 0
  example.com: KSK expiration in weeks, days, hours, seconds
@@ -154,12 +173,15 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
  example.com: ZSK phase 2 (Signing the zone with the KSK and published ZSK)
- example.com: executing "../../tools/scripts/zonesigner -usezskpub $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -usezskpub $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: reloading zone for ZSK phase 2
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches)
  example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -168,13 +190,16 @@ my %rollerd_response = (
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
  directory "../../testing/rollerd"
+ config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
+ zone reload "1"
  sleeptime "15"
  
  example.com: ZSK phase 4 (Adjusting keys in the keyrec and signing the zone with new ZSK)
- example.com: executing "../../tools/scripts/zonesigner -rollzsk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: executing "../../tools/scripts/zonesigner $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollzsk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: reloading zone for ZSK phase 4
  example.com: ZSK phase 0 (Not Rolling)
  example.com: ZSK expiration in weeks, days, hours, seconds
  rollover manager shutting down...
@@ -190,14 +215,12 @@ my %rollerd_response = (
 rmtree("$testdir",);
 die "Unable to remove \'$testdir\' directory: $!\n" if ( -e "$testdir");
 
-mkpath("$statedir",) or
-  die "Unable to make \'$statedir\' directory: $!\n";
+mkpath("$statedir",) or die "Unable to make \'$statedir\' directory: $!\n";
 chdir "$testdir" or die "unable to change to \'$testdir\' directory: $!\n";
-mkpath("$archivedir",) or
-  die "Unable to make \'$archivedir\' directory: $!\n";
-
+mkpath("$archivedir",) or die "Unable to make \'$archivedir\' directory: $!\n";
 
 $ENV{'DT_STATEDIR'} = "$statedir";
+
 
 # setup default files
 copy ("../rollerd-example.com","example.com") or
@@ -248,11 +271,14 @@ if (exists $options{v}) {
 # run tests
 
 # prepare by signing zone
-do_is($test, system("$zonesigner_signzone"), 0, 
+do_is($test, system("$zonesigner_signzone"), 0,
       "rollerd: signing \'$domainfile\'");
 
 
-# rollerd PHASE 1 KSK
+# rollerd PHASE 1 KSK,
+# Initiate rollerd files
+# Phase 1: wait for TTL to ensure current zone values have been
+# distributed.
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_singlerun"), 0, 
@@ -264,8 +290,9 @@ do_is($test, $log, $rollerd_response{ksk1},
 
 &waittime(125, 5, "       Waiting on TTL for next key rolling phase");
 
-
 # rollerd PHASE 2-3 KSK
+# Phase 2: create new published ksk
+# Phase 3: wait TTL for pub ksk distribution
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_singlerun"), 0, 
@@ -280,6 +307,10 @@ do_is($test, $log, $rollerd_response{ksk23},
 
 # rollerd PHASE 4-6 KSK
 # Note: not stopping rollerd
+# Phase 4: roll, curksk -> obsksk, pubksk -> curksk
+# Phase 5: notifiy admin of change and DS update
+# Phase 6: wait to be notified that parent has published the new DS
+#          record.
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_tillstopped"), 0, 
@@ -293,6 +324,7 @@ do_is($test, $log, $rollerd_response{ksk46},
 
 
 # rollctl and rollerd PHASE 7 KSK
+# Phase 7: Notified of parent DS publication
 
 $test->is_eq(system("$rollctl_dspub"), 0, 
 	     "rollerd/rollctl: notifying rollerd of DS publication");
@@ -304,12 +336,15 @@ do_is($test, $log, $rollerd_response{ksk7},
 $test->is_eq(system("$rollctl_halt"), 0, 
 	     "rollerd/rollctl: notifying rollerd to shutdown");
 
+# rollerd shutdown
 $log = &parselog;
 do_is($test, $log, $rollerd_response{kskhalt}, 
       "rollerd/rollctl: checking shutdown output");
 
 
 # rollerd PHASE 1 ZSK
+# Phase 1: wait for TTL to ensure current zone values have been
+# distributed.
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_singlerun"), 0, 
@@ -321,6 +356,8 @@ do_is($test, $log, $rollerd_response{zsk1},
 
 
 # rollerd PHASE 2-3 ZSK
+# Phase 2: sign with pubzsk
+# Phase 3: wait for TTL to ensure pubzsk RRSIG values distributed
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_singlerun"), 0, 
@@ -332,16 +369,17 @@ do_is($test, $log, $rollerd_response{zsk23},
 
 
 # rollerd PHASE 4 ZSK
+# Phase 4: roll, curzsk->obszsk, pubzsk->curzsk, create new pubzsk
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_singlerun"), 0, 
 	     "rollerd: rolling \'$domainfile\' ZSK phase 4");
 $log = &parselog;
-do_is($test, $log, $rollerd_response{zsk4}, 
+do_is($test, $log, $rollerd_response{zsk4},
       "rollerd: checking ZSK phase 4 output");
 
 
-summary($test, "rollerd");
+&local_cleanup();
 
 exit(0);
 
@@ -351,20 +389,15 @@ exit(0);
 
 #                   **** PROCEDURES ****
 
+sub local_cleanup {
 
-sub waittime {
-  my($wait, $sleeptime, $msg) = @_;
-  return if( ($wait <= 0) || ($sleeptime <= 0) );
-  $msg = "Waiting" if ( $msg eq "" );
-
-  print "$msg: $wait seconds";
-  sleep $sleeptime;
-  while ($wait > 0) {
-    printf "\r$msg: $wait seconds     ";
-    sleep $sleeptime;
-    $wait = $wait - $sleeptime;
+  if ( -r "$pidfile" ) {
+    my $rollerd_pid = `cat $pidfile`;  chomp $rollerd_pid;
+    my $rollkill = `kill $rollerd_pid`;
+    print "Warning: had to kill rollerd: $rollkill\n";
   }
-  printf "\r$msg: 0 seconds      \n";
+
+  summary($test, "rollerd");
 }
 
 
