@@ -15,7 +15,6 @@ PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts \
          tools/dnspktflow tools/maketestzone tools/etc tools/drawvalmap
 
 QUIET=@
-# QUIET=''
 
 
 TEST_FILES=t/*.t
@@ -51,7 +50,10 @@ trustman :
 rollerd : 
 	perl t/040rollerd.t
 
-clean : 
-	rm -rf zones trustman donuts donutsd rollerd
+trustman-rollerd :
+	perl t/050trustman-rollerd.t
 
-.PHONY : zonesigner donuts donutsd trustman rollerd clean
+clean : 
+	rm -rf zones trustman donuts donutsd rollerd trustman-rollerd
+
+.PHONY : zonesigner donuts donutsd trustman rollerd trustman-rollerd clean
