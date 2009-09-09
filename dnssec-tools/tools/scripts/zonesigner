@@ -38,6 +38,7 @@ BEGIN
 
 use strict;
 
+use Cwd;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
@@ -175,6 +176,7 @@ my @zsopts = ( '',
 	       ["newpubksk",		'Create a set of Published KSK keys.'],
 	       ["rollksk",		'Force the rollover of KSK keys.'],
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
+	       ["keydirectory=s",	'Directory for KSK and ZSK keys.'],
 	       ["norfc5011",		'Disable rfc5011 revocation.'],
 	       ["droprevoked",		'Obsolete existing revoked keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
@@ -377,7 +379,7 @@ sub optsandargs
 	# Get the rest of the options.
 	#
 	$alg	  = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
-	$archdir  = $opts{'archivedir'}	|| ".";
+	$archdir  = $opts{'archivedir'}	|| '.';
 	$enddate  = $opts{'endtime'}	|| dnssec_tools_default("enddate");
 	$gends	  = $opts{'gends'}	|| "";
 	$random   = $opts{'random'}	|| dnssec_tools_default("random");
@@ -404,6 +406,43 @@ sub optsandargs
 		$genksk = 1;
 		$genzsk = 1;
 	}
+
+	#
+	# If -keydirectory was given, then we'll set -kskdirectory and
+	# -zskdirectory to the -keydirectory argument.
+	#
+	if(defined($opts{'keydirectory'}))
+	{
+		#
+		# -keydirectory can't be used with -kskdirectory.
+		#
+		if($kskdir ne '.')
+		{
+			print STDERR "-keydirectory and -kskdirectory are mutually exclusive\n";
+			exit(1);
+		}
+
+		#
+		# -keydirectory can't be used with -zskdirectory.
+		#
+		if($zskdir ne '.')
+		{
+			print STDERR "-keydirectory and -zskdirectory are mutually exclusive\n";
+			exit(1);
+		}
+
+		#
+		# Save the directory name.
+		#
+		$kskdir = $opts{'keydirectory'};
+		$zskdir = $opts{'keydirectory'};
+	}
+
+	#
+	# Translate dotted key directories to actual paths.
+	#
+	$kskdir = getcwd() if($kskdir eq '.');
+	$zskdir = getcwd() if($zskdir eq '.');
 
 	#
 	# Set the savekeys flag.  If -nosave was given, then we'll turn
@@ -584,6 +623,34 @@ sub optsandargs
 	{
 		print STDERR "-savekeys and -nosave are mutually exclusive\n";
 		exit(1);
+	}
+
+	#
+	# Run some verification on the key directories.  Ensure the directories
+	# are real directories, if they already exist.  We also won't allow
+	# the directories to be /.
+	#
+	foreach my $tdirref ([$kskdir, 'KSK'], [$zskdir, 'ZSK'])
+	{
+		my $dir = $tdirref->[0];
+		my $lbl = $tdirref->[1];
+
+		if($dir eq "")
+		{
+			print STDERR "no $lbl directory specified\n";
+			exit(1);
+		}
+
+		if((-e $dir) && (! -d $dir))
+		{
+			print STDERR "$lbl key directory $dir is not a directory\n";
+			exit(1);
+		}
+		if($dir eq '/')
+		{
+			print STDERR "$lbl key directory must not be /\n";
+			exit(1);
+		}
 	}
 
 	#
@@ -3244,6 +3311,13 @@ archived.
 
 This directory B<may not> be the root directory.
 
+=item B<-keydirectory>
+
+The directory in which KSK and ZSK keys will be stored.  The default is to
+store the keys in the directory in which B<zonesigner> is executed.
+
+This directory B<may not> be the root directory.
+
 =item B<-nosave>
 
 Do not save obsolete keys to the key archive directory.  The default behavior
@@ -3258,6 +3332,8 @@ default is to use a single KSK key.
 
 The directory in which KSK keys will be stored.  The default is to store the
 keys in the directory in which B<zonesigner> is executed.
+
+This directory B<may not> be the root directory.
 
 =item B<-ksklife>
 
@@ -3285,6 +3361,8 @@ default is to use a single ZSK key.
 
 The directory in which ZSK keys will be stored.  The default is to store the
 keys in the directory in which B<zonesigner> is executed.
+
+This directory B<may not> be the root directory.
 
 =item B<-zsklife>
 
