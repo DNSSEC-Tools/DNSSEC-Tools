@@ -462,7 +462,7 @@ sub optsandargs
 
 	if($alg ne "")
 	{
-		if((($usensec3 eq 'yes') || ($usensec3 eq '1')) &&
+		if((boolconvert($usensec3) == 1)	&&
 		   (($alg eq 'rsasha1')  || ($alg eq 'dsa')))
 		{
 			print STDERR "WARNING: changing algorithm from $alg to nsec3$alg since NSEC3 is in use\n";
@@ -496,7 +496,7 @@ sub optsandargs
 	#
 	# Set up NSEC3 options, if they're needed.
 	#
-	if(($usensec3 eq 'yes') || ($usensec3 eq '1'))
+	if(boolconvert($usensec3) == 1)
 	{
 		my $salt  = $opts{"nsec3salt"} || dnssec_tools_default("nsec3salt");
 		my $iters = $opts{"nsec3iter"} || dnssec_tools_default("nsec3iter");
@@ -546,7 +546,7 @@ sub optsandargs
 
 		$nsec3opts = "-3 $salt -H $iters";
 
-		if(($nsec3optout eq 'yes') || ($nsec3optout eq '1'))
+		if(boolconvert($nsec3optout) == 1)
 		{
 			$nsec3opts .= " -A";
 		}
@@ -1803,7 +1803,7 @@ sub zonesign
 	#
 	# Build the collection of KSKs.
 	#
-        $ksks = join (' -k ',
+	$ksks = join (' -k ',
 		      keyrec_keypaths($zone,'kskcur'),
 		      keyrec_keypaths($zone,'kskpub'),
 		      ($rfc5011 ?  keyrec_keypaths($zone,'kskrev') : ()));
@@ -2043,7 +2043,7 @@ sub updzonerec
 	}
 
 	#
-        # Set a timestamp for the zone entry.
+	# Set a timestamp for the zone entry.
 	#
 	$chronosecs = time();
 	$chronostr  = gmtime($chronosecs);
@@ -2957,10 +2957,12 @@ sub usage
 	print STDERR "\t\t\t-archivedir directory\n";
 	print STDERR "\t\t\t-nosave\n";
 	print STDERR "\t\t\t-kskcount count\n";
+	print STDERR "\t\t\t-kskdirectory directory\n";
 	print STDERR "\t\t\t-ksklife lifespan\n";
 	print STDERR "\t\t\t-ksignset KSK-set-name\n";
-	print STDERR "\t\t\t-zsklife lifespan\n";
 	print STDERR "\t\t\t-zskcount count\n";
+	print STDERR "\t\t\t-zskdirectory directory\n";
+	print STDERR "\t\t\t-zsklife lifespan\n";
 	print STDERR "\t\t\t-signset ZSK-set-name\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
@@ -3252,6 +3254,11 @@ is to save obsolete keys.
 The number of KSK keys to generate and with which to sign the zone.  The
 default is to use a single KSK key.
 
+=item B<-kskdirectory>
+
+The directory in which KSK keys will be stored.  The default is to store the
+keys in the directory in which B<zonesigner> is executed.
+
 =item B<-ksklife>
 
 The time between KSK rollovers.  This is measured in seconds.
@@ -3269,14 +3276,19 @@ zone being signed and I<N> is a number.
 If B<-ksignset> is not specified, then B<zonesigner> will use the default and
 increment the number for subsequent signing sets.
 
-=item B<-zsklife>
-
-The time between ZSK rollovers.  This is measured in seconds.
-
 =item B<-zskcount>
 
 The number of ZSK keys to generate and with which to sign the zone.  The
 default is to use a single ZSK key.
+
+=item B<-zskdirectory>
+
+The directory in which ZSK keys will be stored.  The default is to store the
+keys in the directory in which B<zonesigner> is executed.
+
+=item B<-zsklife>
+
+The time between ZSK rollovers.  This is measured in seconds.
 
 =item B<-signset>
 
