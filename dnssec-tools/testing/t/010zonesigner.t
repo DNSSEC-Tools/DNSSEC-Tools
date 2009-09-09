@@ -15,6 +15,7 @@ getopts("v",\%options);
 
 # TEST object
 my $test = Test::Builder->new;
+$test->diag("Testing Zonesigner");
 $test->plan( tests => 4);
 
 #verbose setup for test object and dt_testingtools.

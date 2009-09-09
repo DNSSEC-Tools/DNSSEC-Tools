@@ -15,6 +15,7 @@ getopts("v",\%options);
 
 # TEST object
 my $test = Test::Builder->new;
+$test->diag("Testing Donuts");
 $test->plan( tests => 2);
 
 #verbose setup for test object and dt_testingtools.
