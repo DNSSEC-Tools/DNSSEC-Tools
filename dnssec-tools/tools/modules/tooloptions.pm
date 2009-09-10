@@ -914,7 +914,7 @@ A reference to the hash table created in these steps is returned to the caller.
 B<dnssec-tools.conf> has these entries:
 
     ksklength      2048
-    zsklength      512
+    zsklength      1024
 
 B<example.keyrec> has this entry:
 
@@ -927,7 +927,7 @@ B<zonesigner> is executed with this command line:
 
 I<opts_zonekr("example.keyrec","Kexample.com.+005+12345",("wait=i"))>
 will read each option source in turn, ending up with:
-    I<ksklength>           512
+    I<ksklength>          1024
     I<zsklength>          4096
     I<wait>                600
 

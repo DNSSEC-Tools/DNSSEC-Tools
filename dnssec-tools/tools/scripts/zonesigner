@@ -3223,9 +3223,9 @@ For example, the KSK length has the following values:
 
     keyrec file:               		1024
 
-    DNSSEC-Tools configuration file:	2048
+    DNSSEC-Tools configuration file:	 512
 
-    zonesigner defaults:    		 512
+    zonesigner defaults:    		2048
 
 If all are present, then the KSK length will be 8192.
 
@@ -3522,7 +3522,7 @@ a file, for example B</dev/urandom>.
 =item B<-zsklength>
 
 Bit length of the zone's ZSK key.
-The default is 512.
+The default is 1024.
 
 =item B<-kgopts>
 
@@ -3725,7 +3725,7 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	algorithm	"rsasha1"
 	random		"/dev/urandom"
 	keypath		"./Kexample.com.+005+53135.key"
-	zsklength	"512"
+	zsklength	"1024"
 	zsklife		"604800"
 	keyrec_gensecs	"1115166638"
 	keyrec_gendate	"Wed May  4 00:30:38 2005"
@@ -3736,7 +3736,7 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	algorithm	"rsasha1"
 	random		"/dev/urandom"
 	keypath		"./Kexample.com.+005+13531.key"
-	zsklength	"512"
+	zsklength	"1024"
 	zsklife		"604800"
 	keyrec_gensecs	"1115166638"
 	keyrec_gendate	"Wed May  4 00:30:38 2005"
