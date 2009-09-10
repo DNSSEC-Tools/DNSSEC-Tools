@@ -1998,7 +1998,7 @@ following is an example of a key I<keyrec>:
           keyrec_type     "kskcur"
           algorithm       "rsasha1"
           random          "/dev/urandom"
-          ksklength       "512"
+          ksklength       "2048"
 	  ksklife	  "15768000"
 	  revperiod	  "3888000"
 	  revtime	  "1103277532"
