@@ -38,7 +38,12 @@
 #endif
 
 
-#define RES_RETRY 1
+#define RES_RETRY 1 /* number of times to retry */
+#define LIBSRES_NS_STAGGER 0.5 /* how far apart should we stagger queries to
+                                different authoritative name servers */
+#ifndef RES_TIMEOUT
+#define RES_TIMEOUT 5 /* min seconds between retries */
+#endif
 
 #ifndef RES_USE_DNSSEC
 #define RES_USE_DNSSEC  0x00200000
@@ -179,6 +184,9 @@ int             response_recv(int *trans_id,
                               struct timeval *closest_event,
                               struct name_server **respondent,
                               u_char ** answer, size_t * answer_length);
+void            res_cancel(int *transaction_id);
+int             res_skipns(int transaction_id, struct timeval *closest_event);
+
 void            wait_for_res_data(fd_set * pending_desc, 
                                   struct timeval *closest_event);
 int             get(const char *name_n,
