@@ -95,7 +95,7 @@ int             res_io_accept(int transaction_id,
                               struct name_server **respondent);
 
 /*
- * res_io_cancel
+ * res_cancel
  * 
  * Cancels all outstanding requests remaining for a transaction.
  * 
@@ -105,7 +105,7 @@ int             res_io_accept(int transaction_id,
  * assigned in the first delivery call.  On exit it is set to -1 to
  * remind the caller that the transaction is dead.
  */
-void            res_io_cancel(int *transaction_id);
+void            res_cancel(int *transaction_id);
 
 /*
  * res_io_cancel_all
@@ -142,7 +142,6 @@ long            res_timeout(struct name_server *ns);
 /*
  * Early abort of a query attempt. Perform additional retries if desired
  */
-void            res_io_abort_current_attempt(int transaction_id, 
-                                             struct timeval *closest_event);
+int             res_skipns(int transaction_id, struct timeval *closest_event);
 
 #endif
