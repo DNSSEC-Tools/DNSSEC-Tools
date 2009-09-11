@@ -639,7 +639,7 @@ get_nslist_from_cache(val_context_t *ctx,
     if (name_n) {
         /* only ask for complete name server lists - don't want to fetch glue here */
         bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_qfq, queries,
-                       ref_ns_list, 1);
+                       ref_ns_list);
     }
     
     UNLOCK(&ns_rwlock);

@@ -24,8 +24,10 @@ extern          "C" {
         struct query_list *queries;
         struct qname_chain *qnames;
         struct rrset_rec *answers;
+        struct name_server *cur_pending_glue_ns;
         struct name_server *pending_glue_ns;
         struct name_server *merged_glue_ns;
+        u_char             *saved_zonecut_n;
         struct rrset_rec *learned_zones;
     };
 

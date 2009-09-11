@@ -156,7 +156,6 @@ merge_glue_in_referral(val_context_t *context,
     struct val_query_chain *glueptr = NULL;
     struct val_query_chain *pc;
     struct name_server *pending_ns;
-    struct name_server *prev_ns;
     char name_p[NS_MAXDNAME];
     u_int32_t flags;
 
@@ -169,14 +168,11 @@ merge_glue_in_referral(val_context_t *context,
     pc = qfq_pc->qfq_query; /* Can never be NULL if qfq_pc is not NULL */
     
     /* Nothing to do */
-    if ((pc->qc_referral == NULL) || (pc->qc_referral->pending_glue_ns == NULL))
+    if (pc->qc_referral == NULL) 
         return VAL_NO_ERROR;
     
-    /* For each glue request that we have */
-    pending_ns = pc->qc_referral->pending_glue_ns;
-    prev_ns = NULL;
-    while(pending_ns) {
-
+    if (pc->qc_referral->cur_pending_glue_ns) {
+        pending_ns = pc->qc_referral->cur_pending_glue_ns;
         if (ns_name_ntop(pending_ns->ns_name_n, name_p,
                      sizeof(name_p)) < 0) {
             strncpy(name_p, "unknown/error", sizeof(name_p)-1); 
@@ -202,18 +198,6 @@ merge_glue_in_referral(val_context_t *context,
         if (glueptr->qc_state >= Q_ANSWERED) { 
 
             struct val_digested_auth_chain *as;
-            struct name_server *cur_ns;
-
-            /* Isolate pending_ns from the list */
-            if (prev_ns) {
-                prev_ns->ns_next = pending_ns->ns_next;
-                cur_ns = pending_ns;
-                pending_ns = prev_ns->ns_next;
-            } else {
-                pc->qc_referral->pending_glue_ns = pending_ns->ns_next;
-                cur_ns = pending_ns;
-                pending_ns = pc->qc_referral->pending_glue_ns;
-            }
             
             /* This could be a cname or dname alias; search for the A record */
             for (as=glueptr->qc_ans; as; as=as->val_ac_rrset.val_ac_rrset_next) {
@@ -227,22 +211,61 @@ merge_glue_in_referral(val_context_t *context,
                 glueptr->qc_state != Q_ANSWERED ||
                 VAL_NO_ERROR != (retval = 
                     extract_glue_from_rdata(as->val_ac_rrset.ac_data->rrs_data, 
-                                            &cur_ns))) { 
+                                            &pending_ns))) { 
 
                 val_log(context, LOG_DEBUG, 
                         "merge_glue_in_referral(): Could not fetch glue for %s", 
                         name_p);
                 /* free this name server */
-                free_name_server(&cur_ns);
+                free_name_server(&pending_ns);
+                pc->qc_referral->cur_pending_glue_ns = NULL;
+                pc->qc_state = Q_MISSING_GLUE;
 
             } else  {
                 
-                /* store this name server in the merged_ns list */
-                cur_ns->ns_next = pc->qc_referral->merged_glue_ns;
-                pc->qc_referral->merged_glue_ns = cur_ns;
+                /* continue referral using the fetched glue records */
+
                 val_log(context, LOG_DEBUG,
                         "merge_glue_in_referral(): successfully fetched glue for %s", 
                         name_p);
+            
+                /* save learned zone information */
+                if (VAL_NO_ERROR != (retval = 
+                        stow_zone_info(pc->qc_referral->learned_zones, pc))) {
+                    return retval;
+                }
+                pc->qc_referral->learned_zones = NULL;
+
+                if (pc->qc_respondent_server) {
+                    free_name_server(&pc->qc_respondent_server);
+                    pc->qc_respondent_server = NULL;
+                }
+                if (pc->qc_ns_list) {
+                    free_name_servers(&pc->qc_ns_list);
+                    pc->qc_ns_list = NULL;
+                }
+
+                pc->qc_ns_list = pending_ns;
+                /* release older reference to pending_ns */
+                pc->qc_referral->cur_pending_glue_ns = NULL;
+
+                if (pc->qc_zonecut_n != NULL) {
+                    FREE(pc->qc_zonecut_n);
+                    pc->qc_zonecut_n = NULL;
+                }
+                /* update the zonecut to the current referral point */
+                u_char *cur_ref_n = pc->qc_referral->saved_zonecut_n;
+                if (cur_ref_n != NULL) {
+                    size_t len = wire_name_length(cur_ref_n);
+                    pc->qc_zonecut_n =
+                            (u_char *) MALLOC(len * sizeof(u_char));
+                    if (pc->qc_zonecut_n == NULL)
+                        return VAL_OUT_OF_MEMORY;
+                    memcpy(pc->qc_zonecut_n, cur_ref_n, len);
+                }
+
+                pc->qc_state = Q_INIT;
+                return VAL_NO_ERROR;            
             }
         } else {
 
@@ -271,49 +294,34 @@ merge_glue_in_referral(val_context_t *context,
                     bucket->qfq_count++;
                 }
             }
-            
-            prev_ns = pending_ns;
-            pending_ns = pending_ns->ns_next;
         }
-    }
+    } 
+    
+   if (pc->qc_state >= Q_ERROR_BASE &&
+       pc->qc_referral->pending_glue_ns != NULL) {
 
-    /* Check if there was more glue to fetch */
-    if (pc->qc_referral->pending_glue_ns == NULL) {
+        /* there is more glue to fetch */
+        u_int32_t flags;
+        struct queries_for_query *added_q = NULL;
 
-        if (pc->qc_referral->merged_glue_ns == NULL) {
-            /* couldn't find any answers for the glue fetch requests */
-            val_log(context, LOG_DEBUG, "merge_glue_in_referral(): No good answer for glue fetch");
-            pc->qc_state = Q_REFERRAL_ERROR;
-        } else {
-            /* continue referral using the fetched glue records */
-            
-            if (pc->qc_ns_list) {
-                free_name_servers(&pc->qc_ns_list);
-                pc->qc_ns_list = NULL;
-            }
-            pc->qc_ns_list = pc->qc_referral->merged_glue_ns;
-            pc->qc_referral->merged_glue_ns = NULL;
+        pc->qc_referral->cur_pending_glue_ns = pc->qc_referral->pending_glue_ns;
+        pending_ns = pc->qc_referral->cur_pending_glue_ns;
 
-            /* save learned zone information */
-            if (VAL_NO_ERROR != (retval = 
-                        stow_zone_info(pc->qc_referral->learned_zones, pc))) {
-                return retval;
-            }
-            pc->qc_referral->learned_zones = NULL;
+        pc->qc_referral->pending_glue_ns = pending_ns->ns_next;
+        pending_ns->ns_next = NULL;
+        /*
+         * Create a query for glue for pending_ns 
+         */
+        flags = qfq_pc->qfq_flags | VAL_QUERY_GLUE_REQUEST;
 
-            if (pc->qc_respondent_server) {
-                free_name_server(&pc->qc_respondent_server);
-                pc->qc_respondent_server = NULL;
-            }
-            if (pc->qc_zonecut_n != NULL) {
-                FREE(pc->qc_zonecut_n);
-                pc->qc_zonecut_n = NULL;
-            }
+        if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
+                                       queries, pending_ns->ns_name_n, ns_t_a,
+                                       ns_c_in, flags, &added_q)))
+           return retval;
 
-            pc->qc_state = Q_INIT;
-            
-        }
-    }
+        pc->qc_state = Q_WAIT_FOR_GLUE;
+
+    } 
 
     return VAL_NO_ERROR;
 }
@@ -348,7 +356,9 @@ fix_glue(val_context_t * context,
         if (next_q->qfq_query->qc_state < Q_ANSWERED) {
             *data_missing = 1;
         }
-        if (next_q->qfq_query->qc_state == Q_WAIT_FOR_GLUE) {
+        if (next_q->qfq_query->qc_state == Q_WAIT_FOR_GLUE ||
+            next_q->qfq_query->qc_state >= Q_ERROR_BASE) {
+
             struct glue_fetch_bucket *b;
 
             if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
@@ -394,8 +404,9 @@ fix_glue(val_context_t * context,
             if (next_q->qfq_query->qc_state != Q_INIT &&
                        next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
                 val_log(context, LOG_DEBUG,
-                        "fix_glue(): could not fetch glue for {%s %d %d} referral", name_p,
-                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
+                        "fix_glue(): {%s %d %d} referral failed (%d)", name_p,
+                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h,
+                        next_q->qfq_query->qc_state);
             }
         }
     }
@@ -764,8 +775,7 @@ bootstrap_referral(val_context_t *context,
                    struct rrset_rec **learned_zones,
                    struct queries_for_query *matched_qfq,
                    struct queries_for_query **queries,
-                   struct name_server **ref_ns_list,
-                   int no_partial)
+                   struct name_server **ref_ns_list)
 {
     struct name_server *pending_glue;
     int             ret_val;
@@ -820,22 +830,14 @@ bootstrap_referral(val_context_t *context,
          * Don't fetch glue if we're already fetching glue 
          */
         if (matched_q->qc_referral &&
-            (matched_q->qc_referral->pending_glue_ns != NULL ||
-             matched_q->qc_referral->merged_glue_ns != NULL)) { 
+            (matched_q->qc_referral->cur_pending_glue_ns != NULL ||
+             matched_q->qc_referral->pending_glue_ns != NULL)) { 
 
             free_name_servers(&pending_glue);
             free_name_servers(ref_ns_list);
             *ref_ns_list = NULL;
             val_log(context, LOG_DEBUG, "bootstrap_referral(): Already fetching glue; not fetching again");
             matched_q->qc_state = Q_REFERRAL_ERROR;
-            return VAL_NO_ERROR;
-        }
-
-        /* if we don't want partial referrals, return NULL */
-        if (no_partial) {
-            free_name_servers(&pending_glue);
-            free_name_servers(ref_ns_list);
-            *ref_ns_list = NULL;
             return VAL_NO_ERROR;
         }
 
@@ -846,36 +848,45 @@ bootstrap_referral(val_context_t *context,
             ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
         } 
             
-        matched_q->qc_referral->pending_glue_ns = pending_glue;
-        matched_q->qc_referral->merged_glue_ns = *ref_ns_list;
-        *ref_ns_list = NULL;
-        
-        /*
-         * Create a query for glue for pending_ns 
-         */
-        flags = matched_qfq->qfq_flags |
-                VAL_QUERY_GLUE_REQUEST;
+        matched_q->qc_referral->cur_pending_glue_ns = NULL;
+        matched_q->qc_referral->pending_glue_ns = NULL;
 
-        for (; pending_glue; pending_glue=pending_glue->ns_next) {
+        /* save a copy of the current zonecut in the delegation info */
+        if(referral_zone_n) {
+            size_t len = wire_name_length(referral_zone_n); 
+            matched_q->qc_referral->saved_zonecut_n = 
+                (u_char *) MALLOC (len * sizeof(u_char));
+            if (matched_q->qc_referral->saved_zonecut_n == NULL) {
+                free_name_servers(&pending_glue);
+                free_name_servers(ref_ns_list);
+                *ref_ns_list = NULL;
+                return VAL_OUT_OF_MEMORY;
+            }
+            memcpy(matched_q->qc_referral->saved_zonecut_n,
+                    referral_zone_n,
+                    len);
+        }
 
-            
+        if (*ref_ns_list != NULL) {
+            matched_q->qc_referral->pending_glue_ns = pending_glue;
+            matched_q->qc_state = Q_INIT;
+        } else {
+            matched_q->qc_referral->cur_pending_glue_ns = pending_glue;
+            matched_q->qc_referral->pending_glue_ns = pending_glue->ns_next;
+            pending_glue->ns_next = NULL;
+
+            /*
+             * Create a query for glue for pending_ns 
+            */
+            flags = matched_qfq->qfq_flags | VAL_QUERY_GLUE_REQUEST;
+
             if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
                                        queries, pending_glue->ns_name_n, ns_t_a,
                                        ns_c_in, flags, &added_q)))
                 return ret_val;
 
-            /* use known name servers first */
-            if (added_q && 
-                added_q->qfq_query->qc_state == Q_INIT &&
-                added_q->qfq_query->qc_ns_list == NULL &&
-                matched_q->qc_referral->merged_glue_ns != NULL) {
-               
-                clone_ns_list(&added_q->qfq_query->qc_ns_list, 
-                              matched_q->qc_referral->merged_glue_ns);
-            }
+            matched_q->qc_state = Q_WAIT_FOR_GLUE;
         }
-        
-        matched_q->qc_state = Q_WAIT_FOR_GLUE;
     } else if (*ref_ns_list != NULL) {
         matched_q->qc_state = Q_INIT;
     } 
@@ -904,13 +915,17 @@ free_referral_members(struct delegation_info *del)
         free_qname_chain(&del->qnames);
         del->qnames = NULL;
     }
+    if (del->cur_pending_glue_ns) {
+        free_name_servers(&del->cur_pending_glue_ns);
+        del->cur_pending_glue_ns = NULL;
+    }
     if (del->pending_glue_ns) {
         free_name_servers(&del->pending_glue_ns);
         del->pending_glue_ns = NULL;
     }
-    if (del->merged_glue_ns) {
-        free_name_servers(&del->merged_glue_ns);
-        del->merged_glue_ns = NULL;
+    if (del->saved_zonecut_n) {
+        FREE(del->saved_zonecut_n);
+        del->saved_zonecut_n = NULL;
     }
     if (del->learned_zones) {
         res_sq_free_rrset_recs(&del->learned_zones);
@@ -1002,8 +1017,7 @@ follow_referral_or_alias_link(val_context_t * context,
                                                     learned_zones,
                                                     matched_qfq,
                                                     queries,
-                                                    &ref_ns_list,
-                                                    0))) /* ok to fetch glue here */
+                                                    &ref_ns_list))) 
         return ret_val;
 
     if (matched_q->qc_state == Q_WAIT_FOR_GLUE) {
@@ -1055,12 +1069,11 @@ follow_referral_or_alias_link(val_context_t * context,
         goto query_err;
     }
 
-        if (!(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
+    if (matched_q->qc_zonecut_n && !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
             u_char *tp = NULL;
-            int diff_name = 0;
 
         if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, referral_zone_n, matched_qfq->qfq_flags, 
+                get_zse(context, matched_q->qc_zonecut_n, matched_qfq->qfq_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
             return ret_val;
         }
@@ -1068,7 +1081,7 @@ follow_referral_or_alias_link(val_context_t * context,
 
         ttl_x = 0;
         if (VAL_NO_ERROR != (ret_val = 
-                find_trust_point(context, referral_zone_n, 
+                find_trust_point(context, matched_q->qc_zonecut_n, 
                                  &tp, &ttl_x))) {
             return ret_val;
         }
@@ -1079,28 +1092,15 @@ follow_referral_or_alias_link(val_context_t * context,
             /*
              * Fetch DNSSEC meta-data in parallel 
              */
-            /*
-             * If we expect DNSSEC meta-data to be returned
-             * in the additional section of the response, we
-             * should modify the way in which we ask for the DNSKEY
-             * (the DS query logic should not be changed) as 
-             * follows:
-             *  - invoke the add_to_qfq_chain logic only if we are 
-             *    below the trust point (see the DS fetching logic below)
-             *  - instead of querying for the referral_zone_n/DNSKEY
-             *    query for the DNSKEY in the current zone 
-             *    (matched_q->qc_zonecut_n)
-             */
             
             if(VAL_NO_ERROR != 
                     (ret_val = add_to_qfq_chain(context, queries, 
-                                            referral_zone_n, ns_t_dnskey,
+                                            matched_q->qc_zonecut_n, ns_t_dnskey,
                                             ns_c_in, matched_qfq->qfq_flags, &added_q)))
                 return ret_val;
 
-            /* fetch DS only if are below the trust point */    
-            diff_name = (namecmp(tp, referral_zone_n) != 0);
-            if (diff_name) {
+            /* fetch DS only if are about to enter a zone that is below the trust point */    
+            if (referral_zone_n && namename(referral_zone_n, tp) != NULL) {
                 
                 if (VAL_NO_ERROR != 
                         (ret_val = add_to_qfq_chain(context, queries, 
@@ -1429,6 +1429,9 @@ digest_response(val_context_t * context,
     struct val_query_chain *matched_q;
     u_int16_t tzonestatus;
     u_int32_t ttl_x;
+    char query_name_p[NS_MAXDNAME];
+    char rrs_zonecut_p[NS_MAXDNAME];
+    char name_p[NS_MAXDNAME];
 
     if ((matched_qfq == NULL) || (queries == NULL) ||
         (di_response == NULL) || (response_data == NULL))
@@ -1466,11 +1469,26 @@ digest_response(val_context_t * context,
     if ((ret_val =
          add_to_qname_chain(qnames, query_name_n)) != VAL_NO_ERROR)
         return ret_val;
+    strcpy(query_name_p, "");
+    if (query_name_n && 
+            ns_name_ntop(query_name_n, query_name_p, sizeof(query_name_p)) == -1) {
+       ret_val =  VAL_BAD_ARGUMENT;
+       goto done;
+    }
 
     /*
      * Extract zone cut from the query chain element if it exists 
      */
     rrs_zonecut_n = matched_q->qc_zonecut_n;
+    strcpy(rrs_zonecut_p, "");
+    if (rrs_zonecut_n && 
+            ns_name_ntop(rrs_zonecut_n, rrs_zonecut_p, sizeof(rrs_zonecut_p)) == -1) {
+       ret_val =  VAL_BAD_ARGUMENT;
+       goto done;
+    }
+
+    val_log(context, LOG_DEBUG, "digest_response(): Processing response for {%s %d %d} in zonecut: %s",
+            query_name_p, query_class_h, query_type_h, rrs_zonecut_p); 
 
     /*
      *  Skip question section 
@@ -1489,7 +1507,7 @@ digest_response(val_context_t * context,
 
     rrs_to_go = answer + authority + additional;
 
-    if (rrs_to_go == 0 /*&& header->rcode == ns_r_nxdomain */ ) {
+    if (rrs_to_go == 0) {
         /*
          * We got a response with no records 
          * Check if EDNS was not used when it should have
@@ -1501,12 +1519,17 @@ digest_response(val_context_t * context,
         }
         SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
         if (tzonestatus == VAL_AC_WAIT_FOR_TRUST && 
-            !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE) && 
-            matched_q->qc_respondent_server && 
-            !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+            !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
+           
+            if (matched_q->qc_respondent_server && 
+                !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
 
-            requery_with_edns0(context, matched_q);
-            goto done; 
+                requery_with_edns0(context, matched_q);
+                goto done; 
+            }
+
+            matched_q->qc_state = Q_RESPONSE_ERROR; 
+            goto done;
         }
         /*
          * Else this is a non-existence result
@@ -1667,14 +1690,35 @@ digest_response(val_context_t * context,
          */
         int fix_zonecut = 0;
         if (header->aa == 1 &&
-            from_section < (answer + authority) &&
+            i < (answer + authority) &&
             (set_type_h == ns_t_soa || 
-             (set_type_h == ns_t_dnskey && from_section < answer) ||
+             (set_type_h == ns_t_dnskey && i < answer) ||
              (set_type_h == ns_t_ns && 
-              (answer > 0 || header->rcode != ns_r_noerror))) &&
-            (rrs_zonecut_n == NULL || NULL != namename(name_n, rrs_zonecut_n))) {
+              (answer > 0 || header->rcode != ns_r_noerror)))) {
 
             fix_zonecut = 1;
+        }
+           
+        /* check if this is a lame delegation */
+        if (fix_zonecut &&
+            set_type_h == ns_t_soa && 
+            rrs_zonecut_n && 
+            /* new zonecut is not the same as the old */
+            namecmp(rrs_zonecut_n, name_n) &&
+            /* old zonecut is closer more specific than the new zonecut */
+            (namename(rrs_zonecut_n, name_n) != NULL)) { 
+
+            val_log(context, LOG_DEBUG, "digest_response(): {%s %d %d} appears to lead to a lame server",
+                    query_name_p, query_class_h, query_type_h);
+            matched_q->qc_state = Q_LAME_SERVER;
+            ret_val = VAL_NO_ERROR;
+            goto done;
+         }
+
+         /* make sure that our new zonecut is closer */
+         if (fix_zonecut &&
+              (rrs_zonecut_n == NULL 
+               || NULL != namename(name_n, rrs_zonecut_n))) {
 
             /* 
              *  special case for DS record: zonecut cannot be the same or larger 
@@ -1709,6 +1753,7 @@ digest_response(val_context_t * context,
             } 
 
             if (fix_zonecut && !zonecut_was_modified) {
+
                 zonecut_was_modified = 1;
                 /* update the zonecut information */
                 if (matched_q->qc_zonecut_n)
@@ -1720,8 +1765,16 @@ digest_response(val_context_t * context,
                     goto done;    
                 memcpy (matched_q->qc_zonecut_n, name_n, len);
                 rrs_zonecut_n = matched_q->qc_zonecut_n;
+    
+                if (rrs_zonecut_n && 
+                        ns_name_ntop(rrs_zonecut_n, rrs_zonecut_p, sizeof(rrs_zonecut_p)) == -1) {
+                    ret_val =  VAL_BAD_ARGUMENT;
+                    goto done;
+                }
 
-                val_log(context, LOG_DEBUG, "digest_response(): Fixing zonecut");
+                val_log(context, LOG_DEBUG, 
+                        "digest_response(): Setting zonecut for {%s %d %d} query responses to %s",
+                        query_name_p, query_class_h, query_type_h, rrs_zonecut_p);
                 /*
                  * go back to all the rrsets that we created 
                  * and fix the zonecut info 
@@ -1739,7 +1792,14 @@ digest_response(val_context_t * context,
                 /*
                  * Multiple Zonecuts
                  */
-                val_log(context, LOG_DEBUG, "digest_response(): Ambiguous zonecut");
+                if (name_n && 
+                        ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
+                    ret_val =  VAL_BAD_ARGUMENT;
+                    goto done;
+                }
+                val_log(context, LOG_DEBUG, 
+                        "digest_response(): Ambiguous zonecut for {%s %d %d} query responses -- %s versus %s", 
+                        query_name_p, query_class_h, query_type_h, rrs_zonecut_p, name_p);
                 matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 ret_val = VAL_NO_ERROR;
                 goto done;
@@ -1893,6 +1953,8 @@ digest_response(val_context_t * context,
     res_sq_free_rrset_recs(&learned_zones);
     return ret_val;
 }
+
+
 /*
  * This is the interface between libval and libsres for sending queries
  */
@@ -1972,18 +2034,22 @@ val_resquery_rcv(val_context_t * context,
     *response = NULL;
     ret_val = response_recv(&(matched_q->qc_trans_id), pending_desc, closest_event,
                             &server, &response_data, &response_length);
+
     if (ret_val == SR_NO_ANSWER_YET)
         return VAL_NO_ERROR;
 
     matched_q->qc_respondent_server = server;
 
-    if (ret_val != SR_UNSET) {
+    if (ret_val == SR_NO_ANSWER) {
+        if (-1 == res_skipns(matched_q->qc_trans_id, closest_event)) {
+            /* give up */
+            res_cancel(&(matched_q->qc_trans_id));
+            matched_q->qc_state = Q_RESPONSE_ERROR;
+        }
         if (response_data)
             FREE(response_data);
-        matched_q->qc_state = Q_RESPONSE_ERROR;
         return VAL_NO_ERROR;
     }
-
     if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
         matched_q->qc_state = Q_RESPONSE_ERROR;
         if (response_data)
@@ -1997,6 +2063,8 @@ val_resquery_rcv(val_context_t * context,
             FREE(response_data);
         return VAL_OUT_OF_MEMORY;
     }
+
+    /* we have an answer, that we need to process */
 
     /*
      * Initialize the response structure 
@@ -2025,13 +2093,25 @@ val_resquery_rcv(val_context_t * context,
         return ret_val;
     }
 
-    if (matched_q->qc_state > Q_ERROR_BASE)
-        (*response)->di_res_error = matched_q->qc_state;
-    else
+    if (matched_q->qc_state > Q_ERROR_BASE) {
+        /* try a different NS if possible */
+        free_domain_info_ptrs(*response);
+        FREE(*response);
+        *response = NULL;
+        if (-1 == res_skipns(matched_q->qc_trans_id, closest_event)) {
+            res_cancel(&(matched_q->qc_trans_id));
+            matched_q->qc_state = Q_RESPONSE_ERROR;
+        } else
+            matched_q->qc_state = Q_SENT;
+    }
+    else {
+        /* we're good to go, cancel pending query transactions */
+        res_cancel(&(matched_q->qc_trans_id));
         (*response)->di_res_error = SR_UNSET;
-
+    }
 
     FREE(response_data);
+
     /*
      * What happens when an empty NXDOMAIN is returned? 
      */
