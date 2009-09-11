@@ -90,6 +90,7 @@ extern          "C" {
 #define Q_REFERRAL_ERROR (Q_ERROR_BASE + 3) 
 #define Q_MISSING_GLUE (Q_ERROR_BASE + 4) 
 #define Q_CONFLICTING_ANSWERS (Q_ERROR_BASE + 5) 
+#define Q_LAME_SERVER (Q_ERROR_BASE + 6) 
 
 
 #define QUERY_BAD_CACHE_THRESHOLD 5
