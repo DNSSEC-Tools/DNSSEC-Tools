@@ -427,27 +427,15 @@ query_send(const char *name,
         if ((ret_val = res_tsig_sign(query, query_length, ns,
                                      &signed_query,
                                      &signed_length)) != SR_TS_OK) {
-            if (ret_val == SR_TS_FAIL)
-                continue;
-            else {              /* SR_TS_CALL_ERROR */
-
-                res_io_cancel(trans_id);
-                return SR_TSIG_INTERNAL_ERROR;
-            }
+            continue;
         }
 
         if ((ret_val = res_io_deliver(trans_id, signed_query,
                                       signed_length, ns, delay)) < 0) {
-
-            res_io_cancel(trans_id);
-
-            if (ret_val == SR_IO_MEMORY_ERROR)
-                return SR_MEMORY_ERROR;
-
-            return SR_SEND_INTERNAL_ERROR;
+            continue;
         }
 
-        delay += res_timeout(ns);
+        delay += LIBSRES_NS_STAGGER;
     }
 
     return SR_UNSET;
@@ -489,7 +477,6 @@ response_recv(int *trans_id,
             printf(":\n");
             print_response(*answer, *answer_length);
 #endif
-            res_io_cancel(trans_id);
             return SR_UNSET;
 
         } else {
@@ -500,7 +487,7 @@ response_recv(int *trans_id,
                 free_name_server(respondent);
             }
             *respondent = NULL;
-            res_io_abort_current_attempt(*trans_id, closest_event);
+            return SR_NO_ANSWER; 
         }
     } 
         
