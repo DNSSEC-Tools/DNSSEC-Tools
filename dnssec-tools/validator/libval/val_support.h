@@ -44,7 +44,8 @@
 		ref->answers = NULL; \
 		ref->qnames = NULL; \
 		ref->pending_glue_ns = NULL; \
-		ref->merged_glue_ns = NULL; \
+		ref->cur_pending_glue_ns = NULL; \
+		ref->saved_zonecut_n = NULL; \
 		ref->learned_zones = NULL; \
 } while(0)
 

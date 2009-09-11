@@ -571,6 +571,7 @@ free_qfq_chain(struct queries_for_query *queries)
     return VAL_NO_ERROR;
 }
 
+
 #ifdef LIBVAL_DLV
 static int
 find_dlv_trust_point(val_context_t * ctx, u_char * zone_n, 
@@ -656,6 +657,7 @@ find_dlv_trust_point(val_context_t * ctx, u_char * zone_n,
     return VAL_NO_ERROR;
 }
 
+/* replace s in name_n with d */
 int 
 replace_name_in_name(u_char *name_n,
                      u_char *s,
@@ -674,7 +676,6 @@ replace_name_in_name(u_char *name_n,
     if (len1 == 0 || len2 == 0)
         return VAL_BAD_ARGUMENT;
 
-    /* replace dlv_tp in cl_target with dlv_target */
     p = namename(name_n, s);
     if (p == NULL) {
         *new_name = NULL;
@@ -2959,7 +2960,7 @@ prove_nonexistence(val_context_t * ctx,
 }
 
 /*
- * find the zonecut for this name and type 
+ * find the zonecut for this name
  */
 static int
 find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
@@ -2984,16 +2985,18 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     /* if we already have a DNSKEY or DS, pick up zonecut info from here */
     if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname_n, 
                                ns_t_dnskey, ns_c_in, VAL_QFLAGS_ANY)) &&
-        temp_qfq->qfq_query->qc_state == Q_ANSWERED) {
+            temp_qfq->qfq_query->qc_state == Q_ANSWERED &&
+            temp_qfq->qfq_query->qc_zonecut_n != NULL) {
 
-        zonecut_name_n = qname_n;
+        zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
         *done = 1;
         
     } else if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, 
                             qname_n, ns_t_ds, ns_c_in, VAL_QFLAGS_ANY)) &&
-        temp_qfq->qfq_query->qc_state == Q_ANSWERED) {
+            temp_qfq->qfq_query->qc_state == Q_ANSWERED &&
+            temp_qfq->qfq_query->qc_zonecut_n != NULL) {
         
-        zonecut_name_n = qname_n;
+        zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
         *done = 1;
     } else if (VAL_NO_ERROR !=
             (retval = try_chase_query(context, qname_n, ns_c_in,
@@ -3011,7 +3014,10 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                     continue;
                 for (i = 0; i < res->val_rc_proof_count; i++) {
                     if (res->val_rc_proofs[i]->val_ac_rrset->
-                        val_rrset_type == ns_t_soa) {
+                        val_rrset_type == ns_t_soa &&
+                        /* ensure that this is a real soa and not a hand-crafted one */
+                        (res->val_rc_proofs[i]->val_ac_rrset->
+                         val_rrset_data != NULL)) {
                         break;
                     }
                 }
@@ -3038,12 +3044,17 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     }
 
     if (zonecut_name_n) {
+        /* zonecut cannot be more specific than query name */
         int len = wire_name_length(zonecut_name_n);
-        *name_n = (u_char *) MALLOC(len * sizeof(u_char));
-        if (*name_n == NULL) {
-            return VAL_OUT_OF_MEMORY;
+        if (namename(zonecut_name_n, qname_n) == NULL || 
+            len != wire_name_length(qname_n)) {
+
+            *name_n = (u_char *) MALLOC(len * sizeof(u_char));
+            if (*name_n == NULL) {
+                return VAL_OUT_OF_MEMORY;
+            }
+            memcpy(*name_n, zonecut_name_n, len);
         }
-        memcpy(*name_n, zonecut_name_n, len);
     }
 
     val_free_result_chain(results);
@@ -3291,6 +3302,7 @@ prove_existence(val_context_t * context,
 static int
 verify_provably_insecure(val_context_t * context,
                          struct queries_for_query **queries,
+                         u_char *known_zonecut_n,
                          u_char *q_name_n, 
                          u_int16_t q_type_h,
                          u_int32_t flags,
@@ -3316,21 +3328,14 @@ verify_provably_insecure(val_context_t * context,
     u_char *dlv_target = NULL;
 #endif
 
-    if ((queries == NULL) || (done == NULL) || (is_pinsecure == NULL)) {
-
+    if ((q_name_n == NULL) || (queries == NULL) || (done == NULL) || (is_pinsecure == NULL)) {
         return VAL_BAD_ARGUMENT;
     }
 
     *is_pinsecure = 0;
-
-    if (q_type_h == ns_t_ds) {
-        STRIP_LABEL(q_name_n, name_n);
-    } else {
-        name_n = q_name_n;
-    }
-    
     *done = 1;
     retval = VAL_NO_ERROR;
+    name_n = q_name_n;
     
     if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -3338,17 +3343,17 @@ verify_provably_insecure(val_context_t * context,
     val_log(context, LOG_INFO, "verify_provably_insecure(): Checking PI status for %s", name_p);
 
     /* find the zonecut for the query */
-    if ((VAL_NO_ERROR != find_next_zonecut(context, queries, name_n, done, &q_zonecut_n))
-                || (*done && q_zonecut_n == NULL)) {
+    if (known_zonecut_n == NULL) {
+        if (VAL_NO_ERROR != find_next_zonecut(context, queries, name_n, done, &q_zonecut_n)
+             || (*done && q_zonecut_n == NULL)) {
 
-        val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
-        goto err;
-    }
-
-    if (*done == 0) {
-        /* Need more data */
-        *is_pinsecure = 0;
-        goto donefornow;
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
+            goto err;
+        }
+        if (*done == 0) {
+            /* Need more data */
+            goto donefornow;
+        }
     }
        
 #ifdef LIBVAL_DLV
@@ -3360,7 +3365,6 @@ verify_provably_insecure(val_context_t * context,
             goto err;
         }
         if (dlv_tp == NULL || dlv_target == NULL) { 
-            *is_pinsecure = 0;
             goto donefornow;
         }
 
@@ -3417,6 +3421,8 @@ verify_provably_insecure(val_context_t * context,
     /* remove common labels in q_zonecut_n */
     *q = '\0';
 
+    /* q_zonecut_n will only contain leading labels that are not common between the zonecut and the trust point*/
+
     /* while we've not reached the zonecut for the query */
     while(*q_zonecut_n != '\0') {
 
@@ -3453,7 +3459,6 @@ verify_provably_insecure(val_context_t * context,
 
         if (*done == 0) {
             /* Need more data */
-            *is_pinsecure = 0;
             goto donefornow;
         }
 
@@ -3464,23 +3469,28 @@ verify_provably_insecure(val_context_t * context,
             continue;
         }
 
-        FREE(nxt_qname);
-        nxt_qname = NULL;
-
         if (-1 == ns_name_ntop(zonecut_n, tempname_p, sizeof(tempname_p))) 
             snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
+
+        /* if older zonecut is more specific than the new one bail out */
+        if (namename(curzone_n, zonecut_n) != NULL) {
+            val_log(context, LOG_INFO, 
+                    "verify_provably_insecure(): Older zonecut is more current than the current one: %s",
+                    tempname_p);
+            goto err;
+        }
 
         /* try validating the DS */
         if (VAL_NO_ERROR != (retval = 
                     try_chase_query(context, zonecut_n, ns_c_in, 
                                     ns_t_ds, flags, queries, &results, done))) {
-            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot chase DS record for %s", tempname_p);
+            val_log(context, LOG_INFO, 
+                    "verify_provably_insecure(): Cannot chase DS record for %s", tempname_p);
             goto err;
         }
 
         if (*done == 0) {
             /* Need more data */
-            *is_pinsecure = 0;
             goto donefornow;
         }
 
@@ -3504,12 +3514,12 @@ verify_provably_insecure(val_context_t * context,
 
         if (*is_pinsecure) {
 
-            int really_done = 1;
-
 #ifdef LIBVAL_DLV
             if (flags & VAL_QUERY_USING_DLV) {
                 if (dlv_target && dlv_tp) {
                     u_char *last_name = NULL;
+                    *is_pinsecure = 0;
+                    /* replace dlv_tp in zonecut_n with dlv_target */
                     if (VAL_NO_ERROR != (retval = 
                             replace_name_in_name(zonecut_n, dlv_tp, dlv_target, &last_name))) {
                         goto err;
@@ -3523,28 +3533,27 @@ verify_provably_insecure(val_context_t * context,
                     if (zonecut_n)
                         FREE(zonecut_n);
                     zonecut_n = last_name;
-                    really_done = 0;
+                    FREE(nxt_qname);
+                    nxt_qname = NULL;
+                } else {
+                    goto donefornow;
                 }
-            } 
+            } else
 #endif
-            if (really_done) {
                 goto donefornow;
-            }
         }
 
-        /* validated DS; look for next zonecut */ 
+        /* validated DS; look for next (more specific) zonecut */ 
         if (curzone_n) {
             FREE(curzone_n);
         }
         curzone_n = zonecut_n;
         zonecut_n = NULL;
-
     }
     
 err:
     val_log(context, LOG_INFO,
             "verify_provably_insecure(): Cannot show that %s is provably insecure.", name_p);
-    *is_pinsecure = 0;
 
 donefornow:
     if (q_zonecut_n)
@@ -4015,6 +4024,7 @@ set_dlv_branchoff(val_context_t *context,
     if (dlv_tp == NULL || dlv_target == NULL)
         goto done;
 
+    /* replace dlv_target in name_n with dlv_tp */
     if (VAL_NO_ERROR != (retval = 
                 replace_name_in_name(name_n, dlv_target, dlv_tp, &dlv_name))) {
         goto done;
@@ -4039,6 +4049,7 @@ set_dlv_branchoff(val_context_t *context,
         goto done;
     }
 
+     /* replace dlv_tp in cl_target_ptr with dlv_target */
     if (VAL_NO_ERROR != (retval = 
                 replace_name_in_name(cl_target_ptr, dlv_tp, dlv_target, &last_name))) {
         goto done;
@@ -4388,6 +4399,7 @@ verify_and_validate(val_context_t * context,
                     if (VAL_NO_ERROR != 
                                 (retval = verify_provably_insecure(context, 
                                                 queries, 
+                                                next_as->val_ac_rrset.ac_data->rrs_zonecut_n,
                                                 next_as->val_ac_rrset.ac_data->rrs_name_n, 
                                                 next_as->val_ac_rrset.ac_data->rrs_type_h, 
                                                 flags,
@@ -4508,6 +4520,7 @@ verify_and_validate(val_context_t * context,
                 ttl_x = 0;
                 if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
                                                     queries, 
+                                                    next_as->val_ac_rrset.ac_data->rrs_zonecut_n,
                                                     next_as->val_ac_rrset.ac_data->rrs_name_n, 
                                                     next_as->val_ac_rrset.ac_data->rrs_type_h, 
                                                     flags,
@@ -4574,6 +4587,7 @@ verify_and_validate(val_context_t * context,
                     ttl_x = 0;
                     if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
                                                         queries, 
+                                                        next_as->val_ac_rrset.ac_data->rrs_zonecut_n,
                                                         next_as->val_ac_rrset.ac_data->rrs_name_n, 
                                                         next_as->val_ac_rrset.ac_data->rrs_type_h, 
                                                         flags,
@@ -4928,6 +4942,11 @@ ask_resolver(val_context_t * context,
                         return retval;
                     }
                 } else if (next_q->qfq_query->qc_state > Q_ERROR_BASE) {
+                    if (-1 ==
+                        ns_name_ntop(next_q->qfq_query->qc_name_n, name_p,
+                                     sizeof(name_p)))
+                        snprintf(name_p, sizeof(name_p),
+                                 "unknown/error");
                     val_log(context, LOG_INFO,
                             "ask_resolver(): received error response for {%s %d %d}, flags=%d: %d",
                             name_p, next_q->qfq_query->qc_class_h,
