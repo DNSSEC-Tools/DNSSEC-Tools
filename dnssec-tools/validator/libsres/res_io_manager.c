@@ -333,9 +333,8 @@ res_io_send(struct expected_arrival *shipit)
     return SR_IO_UNSET;
 }
 
-void 
-res_io_abort_current_attempt(int transaction_id, 
-                             struct timeval *closest_event)
+int 
+res_skipns(int transaction_id, struct timeval *closest_event)
 {
     struct expected_arrival *temp, *t;
     int i;
@@ -350,12 +349,18 @@ res_io_abort_current_attempt(int transaction_id,
         (temp = transactions[transaction_id]) == NULL) {
         
         pthread_mutex_unlock(&mutex);
-       return;  
+        return -1;  
+    }
+
+    if (temp->ea_remaining_attempts == 0) {
+        pthread_mutex_unlock(&mutex);
+        return -1;
     }
 
     gettimeofday(&temp->ea_next_try, NULL);
     for (i = 0; i < temp->ea_remaining_attempts; i++)
         delay += temp->ea_ns->ns_retrans << i;
+
     set_alarm(&temp->ea_cancel_time, delay); 
     UPDATE(closest_event, temp->ea_next_try);
     /* 
@@ -373,6 +378,7 @@ res_io_abort_current_attempt(int transaction_id,
         }
     }
     pthread_mutex_unlock(&mutex);
+    return 0;
 }
 
 static int
@@ -1043,7 +1049,7 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
 }
 
 void
-res_io_cancel(int *transaction_id)
+res_cancel(int *transaction_id)
 {
     struct expected_arrival *ea;
 
@@ -1068,7 +1074,7 @@ res_io_cancel_all(void)
     int             i, j;
     for (i = 0; i < MAX_TRANSACTIONS; i++) {
         j = i;
-        res_io_cancel(&j);
+        res_cancel(&j);
     }
 }
 
