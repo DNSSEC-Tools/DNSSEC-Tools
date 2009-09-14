@@ -4345,14 +4345,15 @@ verify_and_validate(val_context_t * context,
                      * We could only be asking the child if our default name server is 
                      * the child, so ty again starting from root; state will be WAIT_FOR_TRUST 
                      */
-                    if (context->root_ns == NULL) {
+                    if (context->root_ns == NULL || context->nslist != NULL) {
                         /*
-                         * No root hints configured 
+                         * No root hints configured or we had configured a 
+                         * particular name server to use 
                          */
                         res->val_rc_status = VAL_BOGUS_PROOF;
                         val_log(context, LOG_WARNING, 
                                 "verify_and_validate(): response for {%s %s %s} received from child zone;\
-                                no root.hints configured",
+                                no root.hints configured; or local recursive name server specified",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
