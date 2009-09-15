@@ -111,6 +111,7 @@ pack_cleaner:
 	\$(RM) -f \$(DTCONFFILE)
 
 clean_packed:
+	\$(RM) -f \$(packer_convertar)
 	$xmlsaxcleancmds
 
 MOD_TAR =							\\
