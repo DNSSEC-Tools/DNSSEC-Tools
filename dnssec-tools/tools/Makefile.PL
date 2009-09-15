@@ -8,7 +8,7 @@
 use ExtUtils::MakeMaker;
 
 %opts = (
-		'NAME'	=> 'DNSSEC-Tools Tools Distribution'
+		'NAME'	=> 'DNSSEC-Tools'
 	);
 
 WriteMakefile(%opts);
