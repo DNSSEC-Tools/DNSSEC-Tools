@@ -207,7 +207,8 @@ copy_bind:
 
 
 clean_packed:	pack_cleaner
-	\$(RM) -f \$(packer_rollctl) \$(packer_rollerd) \$(packer_zonesigner)
+	\$(RM) -f \$(packer_rollctl) \$(packer_rollerd)
+	\$(RM) -f \$(packer_trustman) \$(packer_zonesigner)
 
 pack_cleaner:
 	\@for p in \$(PROGS_BIND);			\\
