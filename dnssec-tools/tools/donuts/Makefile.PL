@@ -163,7 +163,7 @@ new_rules:
 
 
 clean_packed:	pack_cleaner
-	\$(RM) -f \$(packer_donuts)
+	\$(RM) -f \$(packer_donuts) \$(packer_donutsd)
 
 pack_cleaner:
 	\$(RM) -f dnssec-tools.conf.PAR
