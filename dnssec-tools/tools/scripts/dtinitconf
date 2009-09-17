@@ -15,7 +15,7 @@ use strict;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::tooloptions;
-use LWP::UserAgent;
+use Net::DNS::SEC::Tools::BootStrap;
 
 #
 # Version information.
@@ -326,6 +326,11 @@ sub optsandargs
 		my $ua;					# HTTP user agent.
 		my $rq;					# HTTP request object.
 		my $rz;					# Request response.
+
+		#
+		# This module is only required if we're generating hints
+		#
+		dnssec_tools_load_mods('LWP::UserAgent' => "");
 
 		#
 		# Complain and die if the specified file already exists.
