@@ -67,13 +67,12 @@ sub summary {
   }
 
   if ( $planned == $success ) {
-    printf "$success/$total : passed/attempted: $outtext\n";
+    printf "       $outtext: PASS : $success/$total\n";
   }
   else {
-    printf "$success/$total ($planned) : passed/attempted: $outtext\n";
-
+    printf "       $outtext: tests passed/tried (planned): $success/$total ($planned)\n";
     $outtext = uc $outtext;
-    printf "$outtext:\t *** FAILED %d test(s) ***\n\n",
+    printf "\n$outtext:\t *** FAILED %d test(s) ***\n",
       ($total - $success), ($planned - $total);
   }
   print "\n";

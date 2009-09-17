@@ -40,13 +40,7 @@ $ENV{'LD_LIBRARY_PATH'} = "$libvalpath:$libsrespath";
 my %trustman_response = (
     "firsttest" =>   q{Reading and parsing trust keys from ./dnsval.conf
  Found a key for dnssec-tools.org
- Found a key for dnsops.gov
- Found a key for dnsops.biz
  Checking zone keys for validity
- Checking the live "dnsops.biz" key
-  dnsops.biz ...  refresh_secs=18, refresh_time=12
- Checking the live "dnsops.gov" key
-  dnsops.gov ...  refresh_secs=18, refresh_time=12
  Checking the live "dnssec-tools.org" key
   dnssec-tools.org ...  refresh_secs=18, refresh_time=12
   adding holddown for new key in dnssec-tools.org (12 seconds from now)
@@ -131,7 +125,7 @@ sub parselog {
   $logtext =~ s/(\d\d)\d+ +seconds/\1 seconds/g;
   $logtext =~ s/Writing new keys to.*/Writing new keys to/g;
 
-#   print "after:\n$logtext\n"  if (exists $options{v});
+  #   print "after:\n$logtext\n"  if (exists $options{v});
   return $logtext;
 }
 

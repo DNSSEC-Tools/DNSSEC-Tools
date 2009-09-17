@@ -6,9 +6,12 @@ use Test::Builder;
 use File::Copy qw( copy );
 use File::Path qw( rmtree mkpath);
 
+unshift @INC, "$ENV{'BUILDDIR'}/tools/modules/blib/arch";
+unshift @INC, "$ENV{'BUILDDIR'}/tools/modules/blib/lib";
 use Net::DNS::SEC::Validator;
 
 require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
+
 
 #SIGNAL CATCHING
 $SIG{INT}  = sub { &local_cleanup(); exit; };
@@ -192,15 +195,9 @@ my %trustman_response = (
     "talktonamed" => qq{Reading and parsing trust keys from $dnsvalfile
  Found a key for example.com
  Found a key for dnssec-tools.org
- Found a key for dnsops.gov
- Found a key for dnsops.biz
  Checking zone keys for validity
  Checking the live "example.com" key
  example.com ... refresh_secs=18, refresh_time=12
- Checking the live "dnsops.biz" key
- dnsops.biz ... refresh_secs=18, refresh_time=12
- Checking the live "dnsops.gov" key
- dnsops.gov ... refresh_secs=18, refresh_time=12
  Checking the live "dnssec-tools.org" key
  dnssec-tools.org ... refresh_secs=18, refresh_time=12
  adding holddown for new key in dnssec-tools.org (12 seconds from now)
@@ -215,8 +212,6 @@ checking new keys for timing
     "findnewkey" => qq{Reading and parsing trust keys from $dnsvalfile
  Found a key for example.com
  Found a key for dnssec-tools.org
- Found a key for dnsops.gov
- Found a key for dnsops.biz
  Checking zone keys for validity
  Checking the live "example.com" key
  example.com ... refresh_secs=18, refresh_time=12
@@ -226,10 +221,6 @@ A new key has been received for zone example.com.
  It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
- Checking the live "dnsops.biz" key
- dnsops.biz ... refresh_secs=18, refresh_time=12
- Checking the live "dnsops.gov" key
- dnsops.gov ... refresh_secs=18, refresh_time=12
  Checking the live "dnssec-tools.org" key
  pending key for dnssec-tools.org
  dnssec-tools.org ... refresh_secs=18, refresh_time=12
@@ -240,16 +231,10 @@ checking new keys for timing
     "newkeytodnsval" => qq{Reading and parsing trust keys from $dnsvalfile
  Found a key for example.com
  Found a key for dnssec-tools.org
- Found a key for dnsops.gov
- Found a key for dnsops.biz
  Checking zone keys for validity
  Checking the live "example.com" key
  pending key for example.com
  example.com ... refresh_secs=18, refresh_time=12
- Checking the live "dnsops.biz" key
- dnsops.biz ... refresh_secs=18, refresh_time=12
- Checking the live "dnsops.gov" key
- dnsops.gov ... refresh_secs=18, refresh_time=12
  Checking the live "dnssec-tools.org" key
  pending key for dnssec-tools.org
  dnssec-tools.org ... refresh_secs=18, refresh_time=12
@@ -527,8 +512,10 @@ sub local_cleanup {
   my $tkill = "";
   $tkill = `kill $named_pid` if (int($named_pid) > 0);
 
-  print "Warning: trust/roll: killing named: \'$tkill\'\n"
-    if (  $tkill ne "");
+  if ( $tkill ne "") {
+    print "Warning: trust/roll: killing named: \'$tkill\'\n"
+  }
+  elsif ( exists($options{v}) ) { print "trust/roll: killed named\n"; }
 
   if ( -r "$pidfile" ) {
     my $rollerd_pid = `cat $pidfile`;  chomp $rollerd_pid;
