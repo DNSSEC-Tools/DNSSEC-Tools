@@ -148,11 +148,8 @@ else {
   $test->is_eq(system("$nsec3command"), 0,
 	       "zonesigner: signing with nsec3 \'nsec3.$domainfile\'");
   $log = &parselog;
-  if (! do_is($test, $log, $zonesigner_response{nsec3test},
-	      "zonesigner: output of nsec3 signing : \'nsec3.$domainfile\'")) {
-    print "\tPossible causes:\n";
-    print "\t\tnsec3 support requires Bind >= 9.6\n";
-  }
+  do_is($test, $log, $zonesigner_response{nsec3test},
+	"zonesigner: output of nsec3 signing : \'nsec3.$domainfile\'");
 }
 
 summary($test, "zonesigner");

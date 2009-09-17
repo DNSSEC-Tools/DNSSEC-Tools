@@ -35,25 +35,49 @@ verbose : $(TEST_FILES)
 
 test : trustman
 
-zonesigner : 
+zonesigner:
 	perl t/010zonesigner.t
 
-donuts : 
+zonesignerv :
+	perl t/010zonesigner.t -v
+
+
+donuts:
 	perl t/020donuts.t
 
-donutsd : 
+donutsv :
+	perl t/020donuts.t -v
+
+
+donutsd:
 	perl t/025donutsd.t
 
-trustman :
+donutsdv :
+	perl t/025donutsd.t -v
+
+
+trustman:
 	perl t/030trustman.t
 
-rollerd : 
+trustmanv :
+	perl t/030trustman.t -v
+
+
+rollerd:
 	perl t/040rollerd.t
 
-trustman-rollerd :
+rollerdv :
+	perl t/040rollerd.t -v
+
+
+trustman-rollerd:
 	perl t/050trustman-rollerd.t
 
-clean : 
+trustman-rollerdv :
+	perl t/050trustman-rollerd.t -v
+
+
+clean :
 	rm -rf zones trustman donuts donutsd rollerd trustman-rollerd
 
 .PHONY : zonesigner donuts donutsd trustman rollerd trustman-rollerd clean
