@@ -34,6 +34,23 @@
 
 #endif /*VAL_NO_THREADS*/
 
+
+struct nsecprooflist {
+    struct rrset_rec *the_set;
+    struct val_internal_result *res;
+    struct nsecprooflist *next;
+};
+#ifdef LIBVAL_NSEC3
+struct nsec3prooflist {
+    val_nsec3_rdata_t nd;
+    size_t nsec3_hashlen;
+    u_char *nsec3_hash;
+    struct val_internal_result *res;
+    struct rrset_rec *the_set;
+    struct nsec3prooflist *next;
+};
+#endif
+
 int             add_to_qfq_chain(val_context_t *context,
                                  struct queries_for_query **queries,
                                  u_char * name_n, const u_int16_t type_h,
@@ -55,7 +72,6 @@ int             check_anc_proof(val_context_t *context,
                                 struct val_query_chain *q, 
                                 u_int32_t flags,
                                 u_char *name_n, 
-                                int check_wildcard,
                                 int *matches);
 #endif
 int             try_chase_query(val_context_t * context,
