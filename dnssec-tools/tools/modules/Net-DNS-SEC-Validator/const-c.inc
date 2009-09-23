@@ -562,7 +562,7 @@ static int
 constant_13 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     CAN_SIGN_ZONE EDNS_UDP_SIZE Q_LAME_SERVER Q_QUERY_ERROR SR_CALL_ERROR 
+     CAN_SIGN_ZONE EDNS_UDP_SIZE Q_QUERY_ERROR SR_CALL_ERROR 
      SR_CRED_UNSET SR_TSIG_ERROR VAL_CTX_IDLEN VAL_DNS_ERROR VAL_DONT_KNOW 
      VAL_NO_POLICY ZONE_USE_TSIG VAL_PINSECURE */
   /* Offset 5 gives the best switch position.  */
@@ -572,15 +572,6 @@ constant_13 (pTHX_ const char *name, IV *iv_return) {
     /*                    ^              */
 #ifdef SR_CRED_UNSET
       *iv_return = SR_CRED_UNSET;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "Q_LAME_SERVER", 13)) {
-    /*                    ^              */
-#ifdef Q_LAME_SERVER
-      *iv_return = Q_LAME_SERVER;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
