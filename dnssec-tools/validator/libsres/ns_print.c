@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include "nsap_addr.h"
 #include "validator/resolver.h"
@@ -41,6 +42,20 @@
 #define MIN(a, b)       ((a) < (b) ? (a) : (b))
 #endif
 
+#define ADD_BYTES(sptr, eptr) do { \
+    int             n, m;\
+    char           *p;\
+    const u_char   *teptr = eptr;\
+    while (sptr < teptr) {\
+        p = tmp;\
+        n = MIN(32, teptr - sptr);\
+        for (m = 0; m < n; m++)\
+            p += SPRINTF((p, "%02x", sptr[m]));\
+        T(addstr(tmp, p - tmp, &buf, &buflen));\
+        p = tmp;\
+        sptr += n;\
+    }\
+} while (0);
 
 /*
  * Forward. 
@@ -480,38 +495,38 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             break;
         }
 
-#define SHA1SIZE	20
     case ns_t_ds:{
             u_int           key_id;
             u_int           algo;
             u_int           digest_type;
-            char            DS_hash[SHA1SIZE];
-            const char     *leader;
-            int             n;
+            u_int           hashlen = 0;
 
             RES_GET16(key_id, rdata);
             algo = *rdata++ & 0xF;
             digest_type = *rdata++ & 0xF;
 
-            len = b64_ntop(rdata, edata - rdata, DS_hash, sizeof(DS_hash));
-            if (len > 15) {
-                T(addstr(" (", 2, &buf, &buflen));
-                leader = "\n\t\t";
-                spaced = 0;
-            } else
-                leader = " ";
-            if (len < 0)
+            len = SPRINTF((tmp, "%u %u",
+                           algo, digest_type));
+            T(addstr(tmp, len, &buf, &buflen));
+
+            /* check if length of remaining data matches hash length */
+            len = edata - rdata;
+            if(digest_type == ALG_DS_HASH_SHA1)
+                hashlen = SHA_DIGEST_LENGTH;
+            else if(digest_type == ALG_DS_HASH_SHA256)
+                hashlen = SHA256_DIGEST_LENGTH;
+            else
                 goto formerr;
-            for (n = 0; n < len; n += 48) {
-                T(addstr(leader, strlen(leader), &buf, &buflen));
-                T(addstr(DS_hash + n, MIN(len - n, 48), &buf, &buflen));
-            }
-            if (len > 15)
-                T(addstr(" )", 2, &buf, &buflen));
+
+            if (len != hashlen)
+                goto formerr;
+
+            len = SPRINTF((tmp, "\n\t\t"));
+            T(addstr(tmp, len, &buf, &buflen));
+            ADD_BYTES(rdata, edata);
+
             break;
-
-        };
-
+        }
 
     case ns_t_dnskey:{
             char            base64_key[NS_MD5RSA_MAX_BASE64];
@@ -622,13 +637,53 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             break;
         }
 
-    case ns_t_nsec:{
+    case ns_t_nsec3: {
+            u_int           algo;
+            u_int           flags;
+            u_int           iterations;
+            u_int           saltlen;
+            u_int           hashlen;
+
+            if (rdlen < 0U + NS_INT8SZ + NS_INT8SZ + NS_INT16SZ + NS_INT8SZ)
+                goto formerr;
+
+            /* algorithm flags iterations saltlen */
+            algo = *rdata++ & 0xF;
+            flags = *rdata++ & 0xF;
+            RES_GET16(iterations, rdata);
+
+            len = SPRINTF((tmp, "%u %u %u ",
+                           algo, flags, iterations));
+            T(addstr(tmp, len, &buf, &buflen));
+
+            saltlen = *rdata++ & 0xF;
+            if (edata - rdata < saltlen) 
+                goto formerr;
+
+            if (saltlen >  0) {
+                ADD_BYTES(rdata, (rdata + saltlen));
+                len = SPRINTF((tmp, " "));
+                T(addstr(tmp, len, &buf, &buflen));
+            }
+
+            hashlen = *rdata++;
+            if (hashlen > edata - rdata)
+                goto formerr;
+
+            len = SPRINTF((tmp, "\n\t\t"));
+            T(addstr(tmp, len, &buf, &buflen));
+            ADD_BYTES(rdata, (rdata + hashlen));
+            goto nxtbitmaps;
+        }
+
+    case ns_t_nsec: {
             int             c, n;
             u_char          b, l;
 
             /** Next domain name.  */
             T(addname(msg, msglen, &rdata, origin, &buf, &buflen));
 
+nxtbitmaps:
             /** Type bit map.  */
             while (edata - rdata > 0) {
                 b = *rdata;
@@ -787,6 +842,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
         return (buf - obuf);
     }
 }
+
 
 /*
  * Private. 
