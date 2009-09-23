@@ -101,7 +101,6 @@
 }while (0)
 
 
-
 /*
  * Identify if the type is present in the bitmap
  * The encoding of the bitmap is a sequence of <block#, len, bitmap> tuples
@@ -5156,9 +5155,8 @@ check_wildcard_sanity(val_context_t * context,
                 SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
 
                 target_res->val_rc_status = status;
-                if ((status == VAL_NONEXISTENT_NAME ||
-                     status == VAL_NONEXISTENT_NAME_NOCHAIN)
-                     && (target_res->val_rc_answer)) {
+                if (status == VAL_NONEXISTENT_NAME 
+                     && target_res->val_rc_answer) {
                     /*
                      * Change from VAL_AC_WCARD_VERIFIED to VAL_AC_VERIFIED 
                      */
