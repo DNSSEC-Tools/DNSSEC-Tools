@@ -192,13 +192,6 @@
 #define VAL_TRUSTED_ANSWER              ((14) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_VALIDATED_ANSWER            ((15) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_UNTRUSTED_ANSWER            ((16) | VAL_FLAG_CHAIN_COMPLETE)
-#ifdef LIBVAL_NSEC3
-/* 
- * This is a transient state -- it will settle to one of VAL_NONEXISTENT_NAME_NOCHAIN
- * or VAL_NONEXISTENT_TYPE_NOCHAIN
- */
-#define VAL_NONEXISTENT_NAME_OPTOUT     ((17) | VAL_FLAG_CHAIN_COMPLETE)
-#endif
 
 
 #endif                          /* VAL_ERRORS_H */
