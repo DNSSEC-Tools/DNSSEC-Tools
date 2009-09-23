@@ -1704,7 +1704,7 @@ digest_response(val_context_t * context,
 
             val_log(context, LOG_DEBUG, "digest_response(): {%s %d %d} appears to lead to a lame server",
                     query_name_p, query_class_h, query_type_h);
-            matched_q->qc_state = Q_LAME_SERVER;
+            matched_q->qc_state = Q_REFERRAL_ERROR;
             ret_val = VAL_NO_ERROR;
             goto done;
          }
