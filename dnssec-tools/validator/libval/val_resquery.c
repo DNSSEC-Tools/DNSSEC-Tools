@@ -836,7 +836,8 @@ bootstrap_referral(val_context_t *context,
             free_name_servers(&pending_glue);
             free_name_servers(ref_ns_list);
             *ref_ns_list = NULL;
-            val_log(context, LOG_DEBUG, "bootstrap_referral(): Already fetching glue; not fetching again");
+            val_log(context, LOG_DEBUG, 
+                    "bootstrap_referral(): Already fetching glue; not fetching again");
             matched_q->qc_state = Q_REFERRAL_ERROR;
             return VAL_NO_ERROR;
         }
@@ -1012,6 +1013,38 @@ follow_referral_or_alias_link(val_context_t * context,
 
     } 
 
+    if (referral_zone_n) {
+        char            debug_name1[NS_MAXDNAME];
+        char            debug_name2[NS_MAXDNAME];
+        memset(debug_name1, 0, 1024);
+        memset(debug_name2, 0, 1024);
+        if(ns_name_ntop(matched_q->qc_name_n, debug_name1,
+            sizeof(debug_name1)) < 0) {
+            strncpy(debug_name1, "unknown/error", sizeof(debug_name1)-1);
+        } 
+        if (ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2))
+                    < 0) {
+            strncpy(debug_name2, "unknown/error", sizeof(debug_name2)-1);
+        }
+            
+        val_log(context, LOG_DEBUG, 
+                "follow_referral_or_alias_link(): Processing referral to %s for query {%s %d %d})", 
+                debug_name2, debug_name1, matched_q->qc_class_h, matched_q->qc_type_h);
+    }
+
+    /*
+     * Register the request name and zone with our referral monitor
+     */
+    if (register_query(&matched_q->qc_referral->queries, matched_q->qc_name_n,
+            matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
+        /*
+         * If this request has already been made then Referral Error
+         */
+        val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Referral loop encountered");
+        matched_q->qc_state = Q_REFERRAL_ERROR;
+        return VAL_NO_ERROR;
+    }
+
     if (VAL_NO_ERROR != (ret_val = bootstrap_referral(context,
                                                     referral_zone_n,
                                                     learned_zones,
@@ -1034,39 +1067,7 @@ follow_referral_or_alias_link(val_context_t * context,
          */
         val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Missing glue");
         matched_q->qc_state = Q_MISSING_GLUE;
-        goto query_err;
-    }
-
-        {
-            char            debug_name1[NS_MAXDNAME];
-            char            debug_name2[NS_MAXDNAME];
-            memset(debug_name1, 0, 1024);
-            memset(debug_name2, 0, 1024);
-            if(ns_name_ntop(matched_q->qc_name_n, debug_name1,
-                     sizeof(debug_name1)) < 0) {
-                strncpy(debug_name1, "unknown/error", sizeof(debug_name1)-1);
-            } 
-            if (ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2))
-                    < 0) {
-                strncpy(debug_name2, "unknown/error", sizeof(debug_name2)-1);
-            }
-            
-            val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): QUERYING '%s.' (referral to %s)",
-                    debug_name1, debug_name2);
-        }
-
-    /*
-     * Register the request name and zone with our referral monitor
-     */
-    if ((matched_q->qc_state != Q_WAIT_FOR_GLUE) &&
-        register_query(&matched_q->qc_referral->queries, matched_q->qc_name_n,
-            matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
-        /*
-         * If this request has already been made then Referral Error
-         */
-        val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Referral loop encountered");
-        matched_q->qc_state = Q_REFERRAL_ERROR;
-        goto query_err;
+        return VAL_NO_ERROR;
     }
 
     if (matched_q->qc_zonecut_n && !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
@@ -1130,14 +1131,6 @@ follow_referral_or_alias_link(val_context_t * context,
         memcpy(matched_q->qc_zonecut_n, referral_zone_n, len);
     }
     matched_q->qc_ns_list = ref_ns_list;
-
-  query_err:
-    if (matched_q->qc_state > Q_ERROR_BASE) {
-        free_referral_members(matched_q->qc_referral);
-        /*
-         * don't free qc_referral itself 
-         */
-    }
 
     return VAL_NO_ERROR;
 }
@@ -1487,7 +1480,8 @@ digest_response(val_context_t * context,
        goto done;
     }
 
-    val_log(context, LOG_DEBUG, "digest_response(): Processing response for {%s %d %d} in zonecut: %s",
+    val_log(context, LOG_DEBUG, 
+            "digest_response(): Processing response for {%s %d %d} from zonecut: %s",
             query_name_p, query_class_h, query_type_h, rrs_zonecut_p); 
 
     /*
@@ -1987,13 +1981,13 @@ val_resquery_send(val_context_t * context,
         return VAL_BAD_ARGUMENT;
     }
 
-    val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for %s to:", name_p);
+    val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for {%s %d %d} to:", 
+            name_p, matched_q->qc_class_h, matched_q->qc_type_h);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
         val_log(context, LOG_DEBUG, "    %s",
                 val_get_ns_string((struct sockaddr *)tempns->ns_address[0],
                                   name_buf, sizeof(name_buf)));
     }
-    val_log(context, LOG_DEBUG, "val_resquery_send(): End of Sending query for %s", name_p);
 
     ends0_size = (context && context->g_opt)? context->g_opt->edns0_size : EDNS_UDP_SIZE;
     if ((ret_val =
