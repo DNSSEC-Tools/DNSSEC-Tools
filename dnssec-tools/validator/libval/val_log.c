@@ -66,7 +66,8 @@ get_hex_string(const u_char *data, size_t datalen, char *buf,
 
     for (i = 0; i < datalen; i++) {
         if (ptr >= endptr) {
-            return "ERR:BadHash";
+            strncpy(buf, "ERR:BadHash", buflen);
+            return buf;
         }
         snprintf(ptr, endptr - ptr, "%02x", data[i]);
         ptr += strlen(ptr);
