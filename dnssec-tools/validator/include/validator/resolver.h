@@ -112,6 +112,25 @@
 #define ns_t_ds       43
 #endif
 
+/* Keep the following consistent with validator.h */
+/* 
+ *  we are duplicating the following since there's no reason
+ *  for files in libsres that need these definitions to include
+ *  the complete validator.h file
+ */
+#ifndef SHA_DIGEST_LENGTH
+#define SHA_DIGEST_LENGTH   20
+#endif
+#ifndef SHA256_DIGEST_LENGTH
+#define SHA256_DIGEST_LENGTH 32
+#endif
+#ifndef ALG_DS_HASH_SHA1
+#define ALG_DS_HASH_SHA1 1
+#endif
+#ifndef ALG_DS_HASH_SHA256
+#define ALG_DS_HASH_SHA256 2
+#endif
+
 /* query types for which edns0 is required */
 #ifdef LIBVAL_DLV
 #define DNSSEC_METADATA_QTYPE(type) \
