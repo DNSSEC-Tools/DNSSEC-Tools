@@ -47,9 +47,9 @@ label_bytes_cmp(const u_char * field1, size_t length1,
 {
     u_char        buffer1[NS_MAXCDNAME];
     u_char        buffer2[NS_MAXCDNAME];
-    size_t             i;
-    size_t             min_len;
-    size_t             ret_val;
+    size_t        i;
+    size_t        min_len;
+    int           ret_val;
 
     /*
      * If the first n bytes are the same, then the length determines
