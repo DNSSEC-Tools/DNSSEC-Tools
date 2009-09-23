@@ -540,7 +540,9 @@ val_parse_nsec3_rdata(u_char * rr_rdata, size_t rdatalen,
 
     nexthash = cp;
     cp += nexthashlen;
-    if ((cp - rr_rdata) >= rdatalen)
+    /* note that the next check does not check >= */
+    /* this is because the bit field can be empty */
+    if ((cp - rr_rdata) > rdatalen)
         return NULL;
 
     base32hex_encode(nexthash, nexthashlen, &(nd->nexthash),
@@ -549,9 +551,12 @@ val_parse_nsec3_rdata(u_char * rr_rdata, size_t rdatalen,
     if (retlen > nd->nexthashlen)
         return NULL;
 
-    nd->bit_field = cp - rr_rdata;
-    if ((cp - rr_rdata) >= rdatalen)
-        return NULL;
+    /* bit field can be empty */
+    if (cp - rr_rdata == rdatalen) {
+        nd->bit_field = 0;
+    } else { 
+        nd->bit_field = cp - rr_rdata;
+    }
 
     return nd;
 }
