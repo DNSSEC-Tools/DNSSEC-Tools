@@ -74,6 +74,34 @@
         *prevptr= '\0';\
 } while (0)
 
+
+#ifdef LIBVAL_NSEC3
+#define CHECK_RANGE(range1, range1len, range2, range2len, hash, hashlen) \
+            ((label_bytes_cmp(range2, range2len, hash, hashlen) != 0) &&\
+                ((label_bytes_cmp(range2, range2len, range1, range1len) > 0)?\
+                    ((label_bytes_cmp(hash, hashlen, range1, range1len) > 0) && \
+					(label_bytes_cmp(hash, hashlen, range2, range2len) < 0)) :\
+                    ((label_bytes_cmp(hash, hashlen, range2, range2len) < 0)||\
+                     (label_bytes_cmp(hash, hashlen, range1, range1len) > 0))))
+#endif
+
+#define GET_HEADER_STATUS_CODE(qc_proof, status_code) do {\
+    if (qc_proof &&\
+        qc_proof->val_ac_rrset.ac_data ) {\
+        int rcode = qc_proof->val_ac_rrset.ac_data->rrs_rcode;\
+        if (rcode == ns_r_noerror) {\
+            status_code = VAL_NONEXISTENT_TYPE_NOCHAIN;\
+        } else if (rcode == ns_r_nxdomain) {\
+            status_code = VAL_NONEXISTENT_NAME_NOCHAIN;\
+        } else\
+            status_code = VAL_DNS_ERROR;\
+    } else { \
+        status_code = VAL_DNS_ERROR;\
+    }\
+}while (0)
+
+
+
 /*
  * Identify if the type is present in the bitmap
  * The encoding of the bitmap is a sequence of <block#, len, bitmap> tuples
@@ -84,23 +112,21 @@ is_type_set(u_char * field, size_t field_len, u_int16_t type)
     int             block, blen;
 
     /** The type will be present in the following block */
-    int             t_block = type / 256;
+    int             t_block = type/256;
     /** within the bitmap, the type will be present in the following byte */
-    int             t_bm_offset = type % 256 - 1;
+    int             t_bm_offset = type/8;
 
     int             cnt = 0;
 
-    if (t_bm_offset == -1) {
-        if (t_block == 0)
-            return 0;
-        t_block--;
-        t_bm_offset = 255;
-    } 
-    
+    if (type < 1)
+        return 0;
+
+    block = 0;
+
     /*
-     * need at least two bytes 
+     * ensure that we have at least two bytes and we've not gone past our block 
      */
-    while (field_len > cnt + 2) {
+    while ((field_len > cnt + 2) && (block <= t_block)) {
 
         block = field[cnt];
         blen = field[cnt + 1];
@@ -110,7 +136,7 @@ is_type_set(u_char * field, size_t field_len, u_int16_t type)
             /*
              * see if we have space 
              */
-            if ((blen >= t_bm_offset) && (field_len >= cnt + blen)) {
+            if ((t_bm_offset < blen) && (field_len >= cnt + blen)) {
                 /*
                  * see if the bit is set 
                  */
@@ -123,17 +149,6 @@ is_type_set(u_char * field, size_t field_len, u_int16_t type)
     }
     return 0;
 }
-
-
-#ifdef LIBVAL_NSEC3
-#define CHECK_RANGE(range1, range1len, range2, range2len, hash, hashlen) \
-            ((label_bytes_cmp(range2, range2len, hash, hashlen) != 0) &&\
-                ((label_bytes_cmp(range2, range2len, range1, range1len) > 0)?\
-                    ((label_bytes_cmp(hash, hashlen, range1, range1len) > 0) && \
-					(label_bytes_cmp(hash, hashlen, range2, range2len) < 0)) :\
-                    ((label_bytes_cmp(hash, hashlen, range2, range2len) < 0)||\
-                     (label_bytes_cmp(hash, hashlen, range1, range1len) > 0))))
-#endif
 
     
 void
@@ -322,7 +337,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 int matches;
                 /* check for aggressive negative caching */
                 if (VAL_NO_ERROR != (retval = 
-                            check_anc_proof(context, temp, flags, name_n, 1, &matches))) {
+                            check_anc_proof(context, temp, flags, name_n, &matches))) {
                     return retval;
                 } 
                 if (matches) {
@@ -2031,104 +2046,256 @@ transform_outstanding_results(val_context_t *context,
 
 
 static void
-prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, 
+prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist, 
                 u_char *soa_name_n, 
-                u_char * qname_n, u_int16_t qtype_h, int *span_chk, 
-                int *wcard_chk, u_char **ce)
+                u_char * qname_n, u_int16_t qtype_h, 
+                struct nsecprooflist **span_proof, 
+                struct nsecprooflist **wcard_proof,
+                int *notype)
 {
 
-    size_t  nsec_bit_field;
-    size_t  offset;
-    u_char *q1, *q2, *q;
+    struct nsecprooflist *n;
+    u_char   wc_n[NS_MAXCDNAME];
+    u_char       *ce = NULL;
 
-    if (the_set == NULL || the_set->rrs_data == NULL)
-        return;
-   
-    if (!namecmp(the_set->rrs_name_n, qname_n)) {
-        /*
-         * NSEC owner = query name & q_type not in list 
-         */
-        nsec_bit_field =
-            wire_name_length(the_set->rrs_data->rr_rdata);
-        if (nsec_bit_field > the_set->rrs_data->rr_rdata_length) {
-            val_log(ctx, LOG_INFO, "prove_nsec_span(): Bad NSEC offset");
-            return;
-        }
-            
-        offset = the_set->rrs_data->rr_rdata_length - nsec_bit_field;
-        
-        if (is_type_set((&(the_set->rrs_data->
-                            rr_rdata[nsec_bit_field])), offset, qtype_h)) { 
-            // Type exists at NSEC record
-            val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - type exists at wildcard");
-            return;
-        }
-        if (is_type_set((&(the_set->rrs_data->
-                      rr_rdata[nsec_bit_field])), offset, ns_t_cname)) { 
-            // CNAME exists at NSEC record, but was not checked
-            val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - CNAME exists at wildcard");
-            return;
-        }
-        if (is_type_set((&(the_set->rrs_data->
-                      rr_rdata[nsec_bit_field])), offset, ns_t_dname)) {
-            //DNAME exists at NSEC record, but was not checked 
-            val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - DNAME exists at wildcard");
-            return;
-        }
-
-        *span_chk = 1;
-        *wcard_chk = 1;
-
-        return;
-    } else if (namecmp(the_set->rrs_name_n, qname_n) > 0) {
-        /*
-         * query name comes after the NSEC owner 
-         */
+    if (ctx == NULL || nlist == NULL || soa_name_n == NULL || qname_n == NULL || 
+            span_proof == NULL || wcard_proof == NULL || notype == NULL) {
         return;
     }
 
-    /*
-     * Find the next name 
-     */
-    u_char  *nxtname = the_set->rrs_data ?
-        the_set->rrs_data->rr_rdata : NULL;
+    *span_proof = NULL;
+    *wcard_proof = NULL;
+    *notype = 0;
 
-    if (namecmp(qname_n, nxtname) >= 0) {
-        /*
-         * check if the next name wraps around 
-         */
-        if (namecmp(nxtname, soa_name_n) != 0) {
+    for (n = nlist; n; n=n->next) {
+        u_char *q1, *q2, *q;
+        u_char  *nxtname;
+        int cmp;
+
+        if (!n->the_set || !n->the_set->rrs_name_n || 
+            !n->the_set->rrs_data || !n->the_set->rrs_data->rr_rdata)
+            continue;
+
+        nxtname = n->the_set->rrs_data->rr_rdata;
+
+        cmp = namecmp(qname_n, n->the_set->rrs_name_n);
+        if (cmp ==0) {
+            int  nsec_bit_field;
+            int  offset;
+
             /*
-             * if no, check if this is the proof for no wild-card present 
-             * i.e the proof must tell us that "*" does not exist 
+             * NSEC owner == query name 
              */
+            nsec_bit_field = wire_name_length(nxtname);
+
+            if (nsec_bit_field > n->the_set->rrs_data->rr_rdata_length) {
+                val_log(ctx, LOG_INFO, "prove_nsec_span(): Bad NSEC offset");
+                continue;
+            }
+            
+            offset = n->the_set->rrs_data->rr_rdata_length - nsec_bit_field;
+        
+            if (is_type_set((&(n->the_set->rrs_data->
+                            rr_rdata[nsec_bit_field])), offset, qtype_h)) { 
+                // Type exists at NSEC record
+                val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - type exists at wildcard");
+                continue;
+            }
+            if (is_type_set((&(n->the_set->rrs_data->
+                      rr_rdata[nsec_bit_field])), offset, ns_t_cname)) { 
+                // CNAME exists at NSEC record, but was not checked
+                val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - CNAME exists at wildcard");
+                continue;
+            }
+            if (is_type_set((&(n->the_set->rrs_data->
+                      rr_rdata[nsec_bit_field])), offset, ns_t_dname)) {
+                //DNAME exists at NSEC record, but was not checked 
+                val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - DNAME exists at wildcard");
+                continue;
+            }
+
+            *span_proof = n;
+            *wcard_proof = n;
+            *notype = 1;
+            return;
+
+        } else if (cmp > 0) {
+            /*
+             * check if query name comes before the next name 
+             * or if the next name wraps around 
+             */
+
+            if (namecmp(qname_n, nxtname) <= 0 ||
+                !namecmp(nxtname, soa_name_n)) {
+
+                *span_proof = n;
+            }
+        }
+
+        /* find the closest enclosure */
+        q1 = n->the_set->rrs_name_n;
+        while (*q1 != '\0' && namename(qname_n, q1) == NULL) {
+            STRIP_LABEL(q1,q1);
+        }
+        q2 = nxtname;
+        while (*q2 != '\0' && namename(qname_n, q2) == NULL) {
+            STRIP_LABEL(q2,q2);
+        }
+        q = (wire_name_length(q1) > wire_name_length(q2))? q1 : q2;
+        ce = (ce && wire_name_length(ce) > wire_name_length(q))? ce : q;
+    }
+
+    /* if we didn't find a closest enclosure, return */
+    if (ce == NULL)
+        return;
+
+    /* Check for wildcard proof */
+
+    if (NS_MAXCDNAME < wire_name_length(ce) + 2) {
+        val_log(ctx, LOG_INFO,
+                "prove_nsec_span(): NSEC3 Error - label length with wildcard exceeds bounds");
+        return;
+    }
+    memset(wc_n, 0, sizeof(wc_n));
+    wc_n[0] = 0x01;
+    wc_n[1] = 0x2a;             /* for the '*' character */
+    memcpy(&wc_n[2], ce, wire_name_length(ce));
+
+    for (n = nlist; n; n=n->next) {
+        u_char  *nxtname;
+        int cmp;
+
+        if (!n->the_set || !n->the_set->rrs_name_n || 
+            !n->the_set->rrs_data || !n->the_set->rrs_data->rr_rdata)
+            continue;
+
+        nxtname = n->the_set->rrs_data->rr_rdata;
+        cmp = namecmp(wc_n, n->the_set->rrs_name_n);
+
+        if (cmp == 0 || (cmp > 0 && namecmp(wc_n, nxtname) <= 0)) {
+            *wcard_proof = n;
             return;
         }
     }
+}
+
+static int
+nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
+               struct queries_for_query **queries,
+               int only_span_chk,
+               struct val_result_chain **proof_res,
+               struct val_result_chain **results,
+               u_char *soa_name_n,
+               u_char * qname_n, u_int16_t qtype_h,
+               val_status_t * status)
+{
+    struct val_internal_result *res;
+    struct val_result_chain *new_res;
+    struct nsecprooflist *nlist, *n;
+    struct rrset_rec *the_set;
+    struct nsecprooflist *span, *wcard;
+    int notype;
+    int             retval;
+
+    if (ctx == NULL || queries == NULL || proof_res == NULL ||
+        results == NULL || qname_n == NULL || status == NULL) {
+
+        return VAL_BAD_ARGUMENT;
+    }
+
+    nlist = NULL;
+    span = NULL;
+    wcard = NULL;
+    notype = 0;
+
+    /* save all proofs to a list */
+    for (res = w_results; res; res = res->val_rc_next) {
+
+        if (!res->val_rc_is_proof || !res->val_rc_rrset)
+            continue;
+
+        the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
+        if (the_set == NULL || the_set->rrs_type_h != ns_t_nsec)
+            continue;
+
+        n = (struct nsecprooflist *) MALLOC (sizeof(struct nsecprooflist));
+        if (n == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        n->res = res; 
+        n->the_set = the_set;
+        n->next = nlist;
+        nlist = n; 
+    }
+
+    prove_nsec_span(ctx, nlist, soa_name_n, qname_n,
+                    qtype_h, &span, &wcard, &notype);
+    if (!span) {
+        val_log(ctx, LOG_INFO, "nsec_proof_chk() : Incomplete Proof - Proof does not cover span");
+        *status = VAL_INCOMPLETE_PROOF;
+        retval = VAL_NO_ERROR;
+        goto done;
+    }
+
+    if (notype) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, span->res, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
+        *status = VAL_NONEXISTENT_TYPE;
+        retval = VAL_NO_ERROR;
+        goto done;
+    }
+
+    if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, span->res, queries, results,
+                                                  *proof_res, &new_res))) {
+        goto err;
+    }
+    *proof_res = new_res;
+
+    *status = VAL_NONEXISTENT_NAME;
+
+    if (only_span_chk) {
+        retval =  VAL_NO_ERROR;
+        goto done;
+    }
+
+    if (!wcard) {
+        val_log(ctx, LOG_INFO, "nsec_proof_chk(): Incomplete Proof - Cannot prove wildcard non-existence");
+        *status = VAL_INCOMPLETE_PROOF;
+        retval =  VAL_NO_ERROR;
+        goto done;
+    }
+    if (!wcard->res->val_rc_consumed) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, wcard->res, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+    }
+    *proof_res = new_res;
+    goto done;
+
+  err:
     /*
-     * else 
+     * free actual results 
      */
+    val_free_result_chain(*results);
+    *results = NULL;
+    *proof_res = NULL;
 
-    /* 
-     * update the closest enclosure
-     */
-
-    q1 = the_set->rrs_name_n;
-    while (*q1 != '\0' && namename(qname_n, q1) == NULL) {
-
-        STRIP_LABEL(q1,q1);
+  done:
+    /* free the list of nsec3 proofs */
+    while (nlist) {
+        n = nlist;
+        nlist = n->next;
+        FREE(n);
     }
-    q2 = nxtname;
-    while (*q2 != '\0' && namename(qname_n, q2) == NULL) {
-
-        STRIP_LABEL(q2,q2);
-    }
-
-    q = (wire_name_length(q1) > wire_name_length(q2))? q1 : q2;
-    *ce = (*ce && wire_name_length(*ce) > wire_name_length(q))? *ce : q;
-
-    *span_chk = 1;
-    return;
+    return retval;
 }
 
 #ifdef LIBVAL_NSEC3
@@ -2215,141 +2382,220 @@ compute_nsec3_hash(val_context_t * ctx, u_char * qname_n,
 }
 
 static void
-prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set, 
+prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist, 
                  u_char *soa_name_n, u_char * qname_n, 
                  u_int16_t qtype_h, u_int32_t *ttl_x, 
-                 u_char **ncn, u_char **cpe,
+                 struct nsec3prooflist **ncn, 
+                 struct nsec3prooflist **cpe, 
+                 struct nsec3prooflist **wcp, 
+                 int *notype,
                  int *optout) 
 {
     u_char       *cp = NULL;
-    val_nsec3_rdata_t nd;
-    size_t        nsec3_hashlen;
-    u_char       *nsec3_hash = NULL;
+    u_char       *s_cp, *e_cp, *n_cp;
     size_t        hashlen;
     u_char       *hash = NULL;
-    size_t        nsec3_bm_len;
-    
+    u_char   wc_n[NS_MAXCDNAME];
+    struct nsec3prooflist *n;
+
+    if (ctx == NULL || nlist == NULL || soa_name_n == NULL || 
+            qname_n == NULL || ttl_x == NULL || ncn == NULL || 
+            cpe == NULL || wcp == NULL || notype == NULL || optout == NULL)
+        return;
+
     cp = qname_n;
-
-    if (the_set == NULL || the_set->rrs_data == NULL)
-        return;
+    *ncn = NULL;
+    *cpe = NULL;
+    *wcp = NULL;
+    *notype = 0;
+    *optout = 0;
    
-    nsec3_hashlen = the_set->rrs_name_n[0];
-    nsec3_hash = (nsec3_hashlen == 0) ? 
-                    NULL : the_set->rrs_name_n + 1;
-
-    if (NULL == val_parse_nsec3_rdata(the_set->rrs_data->
-                                      rr_rdata,
-                                      the_set->rrs_data->
-                                      rr_rdata_length, &nd) ||
-            nd.bit_field >= the_set->rrs_data->rr_rdata_length) {
-        val_log(ctx, LOG_INFO, "prove_nsec3_span(): Cannot parse NSEC3 rdata");
-        return; 
-    }
-    nsec3_bm_len = the_set->rrs_data->rr_rdata_length - nd.bit_field;
-    /*
-     * NS can only be set if the SOA bit is set 
-     */
-    if (qtype_h == ns_t_ds && 
-        (is_type_set((&(the_set->rrs_data->
-                        rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_ns)) &&
-        (!is_type_set((&(the_set->rrs_data->
-                        rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_soa))) {
-
-        val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - NS can only be set if the SOA bit is set");
-        FREE(nd.nexthash);
-        FREE(hash);
-        return;
-    }
-
     while (namecmp(cp, soa_name_n) >= 0) {
 
+        for (n = nlist; n; n=n->next) {
+
+            hash = NULL;
+            hashlen = 0;
+
+            if (!n->the_set || !n->the_set->rrs_data || 
+                    !n->the_set->rrs_data->rr_rdata)
+                continue;
+
+            /*
+             * hash name according to nsec3 parameters 
+             */
+            if (NULL == compute_nsec3_hash(ctx, cp, soa_name_n, n->nd.alg,
+                                   n->nd.iterations, n->nd.saltlen, n->nd.salt,
+                                   &hashlen, &hash, ttl_x)) {
+                val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Cannot compute hash with given params");
+                continue;
+            }
+
+            /*
+             * Check if there is an exact match 
+             */
+            if (!label_bytes_cmp(n->nsec3_hash, n->nsec3_hashlen, hash, hashlen)) {
+                /*
+                 * hashes match 
+                 */
+                if (cp == qname_n) {
+                    int nsec3_bm_len;
+                    if (n->nd.bit_field == 0)
+                        nsec3_bm_len = 0;
+                    else
+                        nsec3_bm_len = n->the_set->rrs_data->rr_rdata_length - n->nd.bit_field;
+
+                   if (nsec3_bm_len > 0) {
+                       /*
+                        * NS can only be set if the SOA bit is not set 
+                        */
+                       if (qtype_h == ns_t_ds && 
+                                (is_type_set((&(n->the_set->rrs_data->
+                                rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_ns)) &&
+                           (!is_type_set((&(n->the_set->rrs_data->
+                                rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_soa))) {
+
+                           val_log(ctx, LOG_INFO, 
+                                   "nsec3_proof_check(): NSEC3 error - NS can only be set if the SOA bit is not set");
+                           FREE(hash);
+                           continue;
+                       }
+                       if (is_type_set((&(n->the_set->rrs_data->
+                            rr_rdata[n->nd.bit_field])), nsec3_bm_len, qtype_h)) { 
+                            /* type exists */
+                           val_log(ctx, LOG_INFO, 
+                                    "prove_nsec3_span(): NSEC3 error - Type exists at NSEC3 record");
+                           FREE(hash);
+                           continue;
+                       } else if (is_type_set((&(n->the_set->rrs_data->
+                           rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_cname)) {
+                           /* CNAME exists */
+                           val_log(ctx, LOG_INFO, 
+                                    "prove_nsec3_span(): NSEC3 error - CNAME exists at NSEC3 record, but was not checked");
+                           FREE(hash);
+                           continue;
+                       } else if (is_type_set((&(n->the_set->rrs_data->
+                              rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_dname)) {
+                           /* DNAME exists */
+                           val_log(ctx, LOG_INFO, 
+                                    "prove_nsec3_span(): NSEC3 error - DNAME exists at NSEC3 record, but was not checked");
+                           FREE(hash);
+                           continue;
+                       }
+                   } 
+
+                    /*
+                     * This is the closest provable encounter 
+                     */
+                    *cpe = n;
+                    *ncn = n;
+                    *notype = 1;
+
+                } else if (!(*cpe)) {
+                    /*
+                     * This is the closest provable encounter 
+                     * if it is closer than the previous one
+                     */
+                    *cpe = n;
+                }
+                FREE(hash);
+                break;
+            }
+            FREE(hash);
+        }
+        if (*cpe != NULL)
+            break;
+        STRIP_LABEL(cp, cp);
+    }
+
+    if (*cpe == NULL)
+        return;
+
+    /* We now have a CPE; find the NCN */
+       
+    /* find the name one label greater than cp */
+    s_cp = qname_n;
+    e_cp = qname_n + wire_name_length(qname_n);
+    while (s_cp < e_cp) {
+        n_cp = s_cp + s_cp[0] +1; 
+        if (n_cp == cp) 
+            break;
+        s_cp = n_cp;
+    }
+    if (s_cp >= e_cp) {
+        return;
+    }
+
+    /* Check range of s_cp */
+    for (n = nlist; n; n=n->next) {
         /*
          * hash name according to nsec3 parameters 
          */
-        if (NULL == compute_nsec3_hash(ctx, cp, soa_name_n, nd.alg,
-                                   nd.iterations, nd.saltlen, nd.salt,
+        if (NULL == compute_nsec3_hash(ctx, s_cp, soa_name_n, n->nd.alg,
+                                   n->nd.iterations, n->nd.saltlen, n->nd.salt,
                                    &hashlen, &hash, ttl_x)) {
-            val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Cannot compute hash with given params");
-            FREE(nd.nexthash);
-            return;
-        }
-
-        /*
-         * Check if there is an exact match 
-         */
-        if (!cpe && !label_bytes_cmp(nsec3_hash, nsec3_hashlen, hash, hashlen)) {
-            /*
-             * hashes match 
-             */
-            if (cp == qname_n) {
-
-                if (is_type_set((&(the_set->rrs_data->
-                        rr_rdata[nd.bit_field])), nsec3_bm_len, qtype_h)) { 
-                    /* type exists */
-                    val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Type exists at NSEC3 record");
-                    break;
-                }
-                if (is_type_set((&(the_set->rrs_data->
-                          rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_cname)) {
-                    /* CNAME exists */
-                    val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - CNAME exists at NSEC3 record, but was not checked");
-                    break;
-                }
-                if (is_type_set((&(the_set->rrs_data->
-                                  rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_dname)) {
-                    /* DNAME exists */
-                    val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - DNAME exists at NSEC3 record, but was not checked");
-                    break; 
-                }
-
-                /*
-                 * This proof is relevant 
-                 */
-                *cpe = cp;
-                *ncn = cp;
-                break;
-            }
-            
-            /*
-             * This is the closest provable encounter 
-             */
-            *cpe = cp;
-            if (*ncn) {
-                if (namecmp(*cpe, (*ncn + *ncn[0] + 1))) {
-                    /* what we found earlier was not the real ncn */
-                    *ncn = NULL; 
-                }
-            }
-            break;
+           val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Cannot compute hash with given params");
+           return;
         }
 
         /*
          * Check if NSEC3 covers the hash 
          */
-        if (CHECK_RANGE(nsec3_hash, nsec3_hashlen, nd.nexthash, nd.nexthashlen,
+        if (CHECK_RANGE(n->nsec3_hash, n->nsec3_hashlen, n->nd.nexthash, n->nd.nexthashlen,
                         hash, hashlen)) {
-            if (*ncn == NULL || 
-                namecmp(*ncn, cp) > 0) {
-                /* this ncn is closer to the cpe */
-                *ncn = cp;
-                if (nd.flags & NSEC3_FLAG_OPTOUT) {
-                    *optout = 1;
-                } else {
-                    *optout = 0;
-                }
+            /* this ncn is closer to the cpe */
+            *ncn = n;
+            if (n->nd.flags & NSEC3_FLAG_OPTOUT) {
+                *optout = 1;
+            } else {
+                *optout = 0;
             }
+            FREE(hash);
+            break;
         }
 
         FREE(hash);
-        /*
-         * strip leading label 
-         */
-        STRIP_LABEL(cp, cp);
     }
 
-    FREE(nd.nexthash);
-    FREE(hash);
+    if (ncn == NULL)
+        return;
+
+    /* last iteration: look for wildcard proof */
+    if (NS_MAXCDNAME < wire_name_length(cp) + 2) {
+        val_log(ctx, LOG_INFO,
+                "prove_nsec3_span(): NSEC3 Error - label length with wildcard exceeds bounds");
+        return;
+    }
+    memset(wc_n, 0, sizeof(wc_n));
+    wc_n[0] = 0x01;
+    wc_n[1] = 0x2a;             /* for the '*' character */
+    memcpy(&wc_n[2], cp, wire_name_length(cp));
+
+    for (n = nlist; n; n=n->next) {
+        /*
+         * hash name according to nsec3 parameters 
+         */
+        if (NULL == compute_nsec3_hash(ctx, wc_n, soa_name_n, n->nd.alg,
+                                   n->nd.iterations, n->nd.saltlen, n->nd.salt,
+                                   &hashlen, &hash, ttl_x)) {
+           val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Cannot compute hash with given params");
+           return;
+        }
+
+        /*
+         * Check if NSEC3 covers the hash 
+         */
+        if (CHECK_RANGE(n->nsec3_hash, n->nsec3_hashlen, 
+                        n->nd.nexthash, n->nd.nexthashlen,
+                        hash, hashlen)) {
+            /* this ncn is closer to the cpe */
+            *wcp = n;
+            FREE(hash);
+            break;
+        }
+
+        FREE(hash);
+    }
 }
 
 
@@ -2361,135 +2607,139 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 struct val_result_chain **results,
                 u_char *soa_name_n,
                 u_char * qname_n, u_int16_t qtype_h, 
-                val_status_t * status, u_int32_t *ttl_x)
+                val_status_t * status, 
+                struct val_digested_auth_chain *qc_proof)
 {
 
     int retval;
-    u_char  *ncn = NULL;
-    u_char  *cpe = NULL;
-    u_char   wc_n[NS_MAXCDNAME];
+    struct nsec3prooflist  *ncn = NULL;
+    struct nsec3prooflist  *cpe = NULL;
+    struct nsec3prooflist  *wcp = NULL;
     struct val_result_chain *new_res;
     struct val_internal_result *res;
     int optout = 0;
+    u_int32_t ttl_x = 0;
+    struct nsec3prooflist *nlist, *n;
+    struct rrset_rec *the_set;
+    int notype;
 
     if (ctx == NULL || queries == NULL || proof_res == NULL || results == NULL ||
-        qname_n == NULL || status == NULL || ttl_x == NULL) {
+        qname_n == NULL || status == NULL || qc_proof == NULL) {
 
         return VAL_BAD_ARGUMENT;
     }
 
+    nlist = NULL;
+    notype = 0;
+    /*
+     * First save all the NSEC3 hashes in a list
+     */
     for (res = w_results; res; res = res->val_rc_next) {
 
         if (!res->val_rc_is_proof || !res->val_rc_rrset)
             continue;
 
-        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
-        if (the_set->rrs_type_h != ns_t_nsec3)
+        the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
+        if (the_set == NULL || the_set->rrs_type_h != ns_t_nsec3 || the_set->rrs_data == NULL)
             continue;
-
-        if (!ncn || !cpe) {
-            u_char       *o_ncn = ncn;
-            u_char       *o_cpe = cpe;
-
-            prove_nsec3_span(ctx, the_set, soa_name_n, qname_n, 
-                             qtype_h, ttl_x, 
-                             &ncn, &cpe, &optout);
-
-            if (o_ncn != ncn || o_cpe != cpe) {
-                /*
-                 * This proof is relevant 
-                 */
-
-                if (VAL_NO_ERROR !=
-                    (retval = transform_single_result(ctx, res, queries, results,
-                                                  *proof_res, &new_res))) {
-                    goto err;
-                }
-                *proof_res = new_res;
-            }
-
-        } else 
-           break; 
+        
+        n = (struct nsec3prooflist *) MALLOC (sizeof(struct nsec3prooflist));
+        if (n == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        if (NULL == val_parse_nsec3_rdata(the_set->rrs_data->
+                                          rr_rdata,
+                                          the_set->rrs_data->
+                                          rr_rdata_length, &(n->nd))) {
+            FREE(n);
+            val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Cannot parse NSEC3 rdata");
+            continue; 
+        }
+        n->nsec3_hashlen = the_set->rrs_name_n[0]; 
+        n->nsec3_hash = (n->nsec3_hashlen == 0) ?
+                        NULL : the_set->rrs_name_n + 1; 
+        n->res = res; 
+        n->the_set = the_set;
+        n->next = nlist;
+        nlist = n; 
     }
-  
+
+    prove_nsec3_span(ctx, nlist, soa_name_n, qname_n, qtype_h, 
+            &ttl_x, &ncn, &cpe, &wcp, &notype, &optout);
+
+    if (qc_proof) {
+        SET_MIN_TTL(qc_proof->val_ac_query->qc_ttl_x, ttl_x);
+    }
+
     if (!ncn) {
         val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - NCN was not found");
         *status = VAL_INCOMPLETE_PROOF;
-        return VAL_NO_ERROR;
+        retval = VAL_NO_ERROR;
+        goto done;
     }
     
     if (!cpe) {
         val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - CPE was not found");
         *status = VAL_INCOMPLETE_PROOF;
-        return VAL_NO_ERROR;
+        retval = VAL_NO_ERROR;
+        goto done;
     }
 
-    if (!namecmp(ncn, cpe)) {
-        *status = VAL_NONEXISTENT_TYPE;
-    } else if (namecmp(cpe, ncn + ncn[0] + 1)) {
-        /*
-         * if ncn is not one label greater than cpe then we have a problem 
-         */
-        val_log(ctx, LOG_INFO,
-                "nsec3_proof_chk(): NSEC3 error - NCN is not one label greater than CPE");
-        *status = VAL_BOGUS_PROOF;
-        return VAL_NO_ERROR;
-    }
-   
-    if (optout) {
-        *status = VAL_NONEXISTENT_NAME_OPTOUT;
-    } else {
-        *status = VAL_NONEXISTENT_NAME;
-    }
-    
-    if (only_span_chk) {
-        return VAL_NO_ERROR;
-    }
-
-    if (NS_MAXCDNAME < wire_name_length(cpe) + 2) {
-        val_log(ctx, LOG_INFO,
-                "nsec3_proof_chk(): NSEC3 Error - label length with wildcard exceeds bounds");
-        *status = VAL_BOGUS_PROOF;
-        return VAL_NO_ERROR;
-    }
-
-   /* wildcard test */ 
-    memset(wc_n, 0, sizeof(wc_n));
-    wc_n[0] = 0x01;
-    wc_n[1] = 0x2a;             /* for the '*' character */
-    memcpy(&wc_n[2], cpe, wire_name_length(cpe));
-    
-    for (res = w_results; res; res = res->val_rc_next) {
-
-        if (!res->val_rc_is_proof || !res->val_rc_rrset)
-            continue;
-
-        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
-        if (the_set->rrs_type_h != ns_t_nsec3)
-            continue;
-
-        prove_nsec3_span(ctx, the_set, soa_name_n, wc_n, 
-                         qtype_h, ttl_x, &ncn, &cpe, &optout);
-  
-        if (ncn) {
-            break;
-        }
-    }
-
-    if (res == NULL) {
-        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - Wildcard proof does not cover span");
-        *status = VAL_INCOMPLETE_PROOF;
-    } else if (!res->val_rc_consumed || *proof_res == NULL) {
+    if (notype) {
+        /* we've proved that a type was missing */
         if (VAL_NO_ERROR !=
-                    (retval = transform_single_result(ctx, res, queries, results,
+                (retval = transform_single_result(ctx, cpe->res, queries, results,
                                                   *proof_res, &new_res))) {
             goto err;
         }
         *proof_res = new_res;
-        // leave the status untouched
+        *status = VAL_NONEXISTENT_TYPE;
+        retval = VAL_NO_ERROR;
+        goto done;
+    }
+
+    if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, cpe->res, queries, results,
+                                                  *proof_res, &new_res))) {
+        goto err;
+    }
+    *proof_res = new_res;
+
+    if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, ncn->res, queries, results,
+                                                  *proof_res, &new_res))) {
+        goto err;
+    }
+    *proof_res = new_res;
+
+    if (optout) {
+        GET_HEADER_STATUS_CODE(qc_proof, *status);
+    } else {
+        *status = VAL_NONEXISTENT_NAME;
     }
     
-    return VAL_NO_ERROR;
+    if (only_span_chk || optout) {
+        /* we don't do wildcard checks here */
+        retval =  VAL_NO_ERROR;
+        goto done;
+    }
+
+    if (!wcp) {
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - Cannot prove wildcard non-existence");
+        *status = VAL_INCOMPLETE_PROOF;
+        retval =  VAL_NO_ERROR;
+        goto done;
+    }
+    if (!wcp->res->val_rc_consumed) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, wcp->res, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+    }
+    *proof_res = new_res;
+    goto done;
 
   err:
     /*
@@ -2498,131 +2748,19 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     val_free_result_chain(*results);
     *results = NULL;
     *proof_res = NULL;
+
+  done:
+    /* free the list of nsec3 proofs */
+    while (nlist) {
+        n = nlist;
+        nlist = n->next;
+        FREE(n->nd.nexthash);
+        FREE(n);
+    }
     return retval;
+
 }
 #endif
-
-static int
-nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
-               struct queries_for_query **queries,
-               int only_span_chk,
-               struct val_result_chain **proof_res,
-               struct val_result_chain **results,
-               u_char *soa_name_n,
-               u_char * qname_n, u_int16_t qtype_h,
-               val_status_t * status)
-{
-    struct val_internal_result *res;
-    int             wcard_chk = 0;
-    int             span_chk = 0;
-    u_char       *ce = NULL;
-    struct val_internal_result *wcard_proof = NULL;
-    struct val_result_chain *new_res;
-    u_char          domain_name_n[NS_MAXCDNAME];
-    int             retval;
-
-    if (ctx == NULL || queries == NULL || proof_res == NULL ||
-        proof_res == NULL || results == NULL ||
-        qname_n == NULL || status == NULL) {
-
-        return VAL_BAD_ARGUMENT;
-    }
-
-    for (res = w_results; res; res = res->val_rc_next) {
-
-        int this_span_chk = 0;
-        if (!res->val_rc_is_proof || !res->val_rc_rrset)
-            continue;
-
-        struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
-        if (the_set->rrs_type_h != ns_t_nsec)
-            continue;
-
-        prove_nsec_span(ctx, the_set, soa_name_n, qname_n,
-                            qtype_h, &this_span_chk, &wcard_chk, &ce);
-        if (this_span_chk && !span_chk) {
-            /*
-             * This proof is relevant 
-             */
-            span_chk = 1;
-            if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, res, queries, results,
-                                                  *proof_res, &new_res))) {
-                goto err;
-            }
-            *proof_res = new_res;
-
-            if (wcard_chk) {
-                break;
-            }
-            /* the same proof could prove wildcard non-existence */
-            if (wcard_proof == NULL)
-                wcard_proof = res;
-        } else {
-            wcard_proof = res;
-        }
-    }
-
-    if (!span_chk) {
-        val_log(ctx, LOG_INFO, "nsec_proof_chk() : Incomplete Proof - Proof does not cover span");
-        *status = VAL_INCOMPLETE_PROOF;
-    }
-    else if (only_span_chk) 
-        *status = VAL_NONEXISTENT_NAME;
-    else if (wcard_chk) 
-        /* name and type were matched in a single proof */
-        *status = VAL_NONEXISTENT_TYPE;
-    else if (!wcard_proof || !ce) {
-        val_log(ctx, LOG_INFO, "nsec_proof_chk(): Incomplete Proof - Cannot prove wildcard non-existence");
-        *status = VAL_INCOMPLETE_PROOF;
-    }
-    else {
-        if (NS_MAXCDNAME < wire_name_length(ce) + 2) {
-            val_log(ctx, LOG_INFO,
-                    "nsec_proof_chk(): NSEC Error - label length with wildcard exceeds bounds");
-            *status = VAL_BOGUS_PROOF;
-        } else if (wcard_proof && wcard_proof->val_rc_rrset){
-            domain_name_n[0] = 0x01;
-            domain_name_n[1] = 0x2a;    /* for the '*' character */
-            memcpy(&domain_name_n[2], ce,
-                    wire_name_length(ce));
-
-            span_chk = 0;
-            wcard_chk = 0;
-            ce = NULL;
-            prove_nsec_span(ctx, wcard_proof->val_rc_rrset->val_ac_rrset.ac_data, 
-                            soa_name_n, domain_name_n,
-                            qtype_h, &span_chk, &wcard_chk, &ce);
-
-            if (!span_chk) {
-                val_log(ctx, LOG_INFO, "nsec_proof_chk(): Incomplete Proof - Wildcard proof does not cover span");
-                *status = VAL_INCOMPLETE_PROOF;
-            } else {
-                *status = VAL_NONEXISTENT_NAME;
-                if (!wcard_proof->val_rc_consumed || *proof_res == NULL) {
-                    
-                    if (VAL_NO_ERROR !=
-                        (retval = transform_single_result(ctx, wcard_proof, queries, results,
-                                                  *proof_res, &new_res))) {
-                        goto err;
-                    }
-                    *proof_res = new_res;
-                }
-            }
-        }
-    }
-
-    return VAL_NO_ERROR;
-
-  err:
-    /*
-     * free actual results 
-     */
-    val_free_result_chain(*results);
-    *results = NULL;
-    *proof_res = NULL;
-    return retval;
-}
 
 #ifdef LIBVAL_DLV
 int 
@@ -2630,123 +2768,143 @@ check_anc_proof(val_context_t *context,
                 struct val_query_chain *q, 
                 u_int32_t flags,
                 u_char *name_n, 
-                int check_wildcard,
                 int *matches)
 {
     struct val_digested_auth_chain *as;
 
 #ifdef LIBVAL_NSEC3
-    u_char  *ncn = NULL;
+    struct nsec3prooflist  *ncn, *cpe, *wcp3;
+    struct nsec3prooflist  *nsec3list = NULL;
+    struct nsec3prooflist  *n3;
     int optout = 0;
     u_int32_t ttl_x = 0;
+    int nsec3;
 #endif
-    u_char  *cpe = NULL;
-    int span_chk = 0;
-    int wcard_chk = 0;
+    struct nsecprooflist  *span, *wcp;
+    struct nsecprooflist  *nseclist = NULL;
+    struct nsecprooflist  *n;
+    int nsec;
+    int notype;
     int retval;
+
+    u_char *soa_name_n = NULL;
     
     if (context == NULL || q == NULL || name_n == NULL || matches == NULL)
         return VAL_BAD_ARGUMENT;
     
     *matches = 0;
+    nsec = 0;
+#ifdef LIBVAL_NSEC3
+    nsec3 = 0;
+#endif
+    notype = 0;
 
     for (as = q->qc_proof; as; as=as->val_ac_rrset.val_ac_rrset_next) {
         struct rrset_rec *the_set = as->val_ac_rrset.ac_data;
-        if (the_set) {
-            if (the_set->rrs_type_h == ns_t_nsec) {
-               
-                if ((the_set->rrs_sig) && 
-                    the_set->rrs_sig->rr_rdata_length >= SIGNBY) {
 
-                    u_char *soa_name_n = NULL;
-                    soa_name_n =  &the_set->rrs_sig->rr_rdata[SIGNBY];
-                    prove_nsec_span(context, the_set, soa_name_n, name_n,
-                                    q->qc_type_h, &span_chk, &wcard_chk, &cpe);
-                    if (span_chk) {
-                        if (wcard_chk) {
-                            *matches = 1;
-                            return VAL_NO_ERROR;
-                        }
-                    }
-                }
-            } 
-#ifdef LIBVAL_NSEC3
-            else if (the_set->rrs_type_h == ns_t_nsec3) {
+        if (!the_set ||
+            !the_set->rrs_sig ||
+            the_set->rrs_sig->rr_rdata_length < SIGNBY) {
+            continue;
+        }
 
-                if ((!ncn || !cpe) && 
-                    (the_set->rrs_sig) && 
-                    the_set->rrs_sig->rr_rdata_length >= SIGNBY) {
+        /* identify the soa name */
+        if (!soa_name_n) {
+            soa_name_n =  &the_set->rrs_sig->rr_rdata[SIGNBY];
+        } else {
+            if (namecmp(soa_name_n, &the_set->rrs_sig->rr_rdata[SIGNBY]) != 0)
+                continue;
+        }
 
-                    u_char *soa_name_n = NULL;
-                    soa_name_n =  &the_set->rrs_sig->rr_rdata[SIGNBY];
-                    prove_nsec3_span(context, the_set, soa_name_n, name_n, 
-                                     q->qc_type_h, &ttl_x, &ncn, &cpe, &optout);
-                    if (ncn && cpe) {
-                        if (optout || !namecmp(ncn, cpe)) {
-                            SET_MIN_TTL(q->qc_ttl_x, ttl_x);
-                            *matches = 1;
-                            return VAL_NO_ERROR;
-                        }
-                    }
-                }
+        if (the_set->rrs_type_h == ns_t_nsec) {
+            nsec = 1;
+            /* save proof to nsecprooflist */
+            n = (struct nsecprooflist *) MALLOC (sizeof(struct nsecprooflist));
+            if (n == NULL) {
+                retval = VAL_OUT_OF_MEMORY;
+                goto err;
             }
+            n->res = NULL; 
+            n->the_set = the_set;
+            n->next = nseclist;
+            nseclist = n; 
+        }
+#ifdef LIBVAL_NSEC3
+        else if (the_set->rrs_type_h == ns_t_nsec3) {
+            nsec3 = 1;
+            /* save proof to nsec3prooflist */
+            n3 = (struct nsec3prooflist *) MALLOC (sizeof(struct nsec3prooflist));
+            if (n3 == NULL) {
+                retval = VAL_OUT_OF_MEMORY;
+                goto err;
+            }
+            if (NULL == val_parse_nsec3_rdata(the_set->rrs_data->
+                                          rr_rdata,
+                                          the_set->rrs_data->
+                                          rr_rdata_length, &(n3->nd))) {
+                FREE(n3);
+                val_log(context, LOG_INFO, "check_anc_proof(): Cannot parse NSEC3 rdata");
+                continue; 
+            }
+            n3->nsec3_hashlen = the_set->rrs_name_n[0]; 
+            n3->nsec3_hash = (n3->nsec3_hashlen == 0) ?
+                        NULL : the_set->rrs_name_n + 1; 
+            n3->res = NULL; 
+            n3->the_set = the_set;
+            n3->next = nsec3list;
+            nsec3list = n3; 
+        } 
 #endif
+        else {
+            continue;
         }
     } 
 
-    /* check if span check exists */
-    if (!cpe || (span_chk == 0 
-#ifdef LIBVAL_NSEC3            
-            && !ncn
-#endif
-       )) {
-
+#ifdef LIBVAL_NSEC3
+    if (nsec && nsec3) {
         *matches = 0;
-        return VAL_NO_ERROR;
-    }
-
-    if (check_wildcard) {
-        u_char          wc_n[NS_MAXCDNAME];
-
-        if (NS_MAXCDNAME < wire_name_length(cpe) + 2) {
-            val_log(context, LOG_INFO, 
-                    "check_anc_proof(): label length with wildcard exceeds bounds");
-            *matches = 0;
-            return VAL_NO_ERROR;
+    } else if (nsec3) {
+        prove_nsec3_span(context, nsec3list, soa_name_n, name_n, q->qc_type_h, 
+                &ttl_x, &ncn, &cpe, &wcp3, &notype, &optout);
+        if (ncn && cpe && (optout || wcp)) {
+            SET_MIN_TTL(q->qc_ttl_x, ttl_x);
+            *matches = 1;
         }
+    } else
+#endif
+    if (nsec) {
+        prove_nsec_span(context, nseclist, soa_name_n, name_n, 
+                        q->qc_type_h, &span, &wcp, &notype);
 
-        memset(wc_n, 0, sizeof(wc_n));
-        wc_n[0] = 0x01;
-        wc_n[1] = 0x2a;             /* for the '*' character */
-        memcpy(&wc_n[2], cpe, wire_name_length(cpe));
-
-        if (VAL_NO_ERROR != (retval = 
-                check_anc_proof(context, q, flags, wc_n, 0, matches))) {
-            return retval;
-        } 
+        /* check if span check exists */
+        if (span && wcp) {
+            *matches = 1;
+        }
     } else {
-        *matches = 1;
+        *matches = 0;
     }
-    
-    return VAL_NO_ERROR;
+
+    retval = VAL_NO_ERROR;
+
+err:
+    while (nseclist) {
+        n = nseclist;
+        nseclist = n->next;
+        FREE(n);
+    }
+
+#ifdef LIBVAL_NSEC3
+    while (nsec3list) {
+        n3 = nsec3list;
+        nsec3list = n3->next;
+        FREE(n3->nd.nexthash);
+        FREE(n3);
+    }
+#endif
+
+    return retval;
 } 
 #endif
-
-
-#define GET_HEADER_STATUS_CODE(qc_proof, status_code) do {\
-    if (qc_proof &&\
-        qc_proof->val_ac_rrset.ac_data ) {\
-        int rcode = qc_proof->val_ac_rrset.ac_data->rrs_rcode;\
-        if (rcode == ns_r_noerror) {\
-            status_code = VAL_NONEXISTENT_TYPE_NOCHAIN;\
-        } else if (rcode == ns_r_nxdomain) {\
-            status_code = VAL_NONEXISTENT_NAME_NOCHAIN;\
-        } else\
-            status_code = VAL_DNS_ERROR;\
-    } else { \
-        status_code = VAL_DNS_ERROR;\
-    }\
-}while (0)
 
 
 static int
@@ -2763,15 +2921,16 @@ prove_nonexistence(val_context_t * ctx,
                    val_status_t * status,
                    u_int32_t *soa_ttl_x)
 {
+    struct val_result_chain *new_res;
     struct val_internal_result *res;
-    char            name_p[NS_MAXDNAME];
-    int             retval;
+    char   name_p[NS_MAXDNAME];
+    int    retval;
+    int    skip_validation = 0;
 
     int             nsec = 0;
     u_char          *soa_name_n = NULL;
 #ifdef LIBVAL_NSEC3
     int             nsec3 = 0;
-    u_int32_t       ttl_x = 0;
 #endif
 
     if (proof_res == NULL)
@@ -2794,9 +2953,35 @@ prove_nonexistence(val_context_t * ctx,
      */
     for (res = w_results; res; res = res->val_rc_next) {
         struct rrset_rec *the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
-        if ((the_set) && 
-            (the_set->rrs_type_h == ns_t_soa)) {
-            struct val_result_chain *new_res;
+
+        if (!the_set || !res->val_rc_is_proof)
+            continue;
+
+        /*
+         * check if can skip validation 
+         */
+        if (val_istrusted(res->val_rc_status) &&
+            !val_isvalidated(res->val_rc_status)) {
+
+            skip_validation = 1;
+            continue;
+        }
+
+        if (skip_validation) {
+            /* conflict: some other proof fragment says that validation is required */
+            *status = VAL_BOGUS_PROOF;
+            retval = VAL_NO_ERROR; 
+            /* free any result structures that might have been created */
+            goto err;
+        }
+
+        if (the_set->rrs_type_h == ns_t_soa) {
+            if (soa_name_n == NULL)
+                soa_name_n = the_set->rrs_name_n;
+            else if (namecmp(soa_name_n, &the_set->rrs_sig->rr_rdata[SIGNBY]) != 0) {
+                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Conflicting SOA names");
+                continue;
+            }
             /*
              * This proof is relevant 
              */
@@ -2806,7 +2991,6 @@ prove_nonexistence(val_context_t * ctx,
                 goto err;
             }
             *proof_res = new_res;
-            soa_name_n = the_set->rrs_name_n;
     
             /* Use the SOA minimum time */
             if (the_set->rrs_data &&
@@ -2820,79 +3004,60 @@ prove_nonexistence(val_context_t * ctx,
             } else {
                 *soa_ttl_x = the_set->rrs_ttl_x;
             }
-            break;
-        }
-    }
-
-    /*
-     * Perform general sanity check of proofs
-     */
-    for (res = w_results; res; res = res->val_rc_next) {
-        struct rrset_rec *the_set;
-
-        if (!res->val_rc_is_proof)
-            continue;
-
-        /*
-         * check if trusted and complete 
-         */
-        if (val_istrusted(res->val_rc_status) &&
-            !val_isvalidated(res->val_rc_status)) {
-
-            /*
-             * use the error code as status 
-             */
-            GET_HEADER_STATUS_CODE(qc_proof, *status);
-            /*
-             * Collect all other proofs 
-             */
-            retval = transform_outstanding_results(ctx, w_results, queries, results, *proof_res,
-                                              *status);
-    
-            return VAL_NO_ERROR;
-        }
-
-        the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
-
-        if ((!the_set) || 
-            (!the_set->rrs_data)) {
-
-            val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - No data exists in proof");
-            *status = VAL_BOGUS_PROOF;
-            return VAL_NO_ERROR;
-        }
-
-        if (the_set->rrs_type_h == ns_t_nsec) {
-            nsec = 1;
+        } else if (the_set->rrs_type_h == ns_t_nsec) {
             if ((!the_set->rrs_sig) ||
                 the_set->rrs_sig->rr_rdata_length < SIGNBY) {
 
                 val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
-                *status = VAL_BOGUS_PROOF;
-                return VAL_NO_ERROR;
+                continue;
             }
             if (soa_name_n == NULL)
                 soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
+            else if (namecmp(soa_name_n, &the_set->rrs_sig->rr_rdata[SIGNBY]) != 0) {
+                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Conflicting SOA names");
+                continue;
+            }
+            nsec = 1;
         }
 #ifdef LIBVAL_NSEC3
         else if (the_set->rrs_type_h == ns_t_nsec3) {
-            nsec3 = 1;
             if ((!the_set->rrs_sig) ||
                 the_set->rrs_sig->rr_rdata_length < SIGNBY) {
 
                 val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
-                *status = VAL_BOGUS_PROOF;
-                return VAL_NO_ERROR;
+                continue;
             }
             if (soa_name_n == NULL)
                 soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
+            else if (namecmp(soa_name_n, &the_set->rrs_sig->rr_rdata[SIGNBY]) != 0) {
+                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Conflicting SOA names");
+                continue;
+            }
+            nsec3 = 1;
         }
 #endif
+    }
+
+    if (skip_validation) {
+        /*
+         * use the error code as status 
+         */
+        GET_HEADER_STATUS_CODE(qc_proof, *status);
+        /*
+         * Collect all other proofs 
+         */
+        retval = transform_outstanding_results(ctx, w_results, queries, results, *proof_res,
+                                              *status);
+        if (retval != VAL_NO_ERROR)
+            goto err;
+
+        return VAL_NO_ERROR;
     }
 
     /*
      * Check if we received NSEC and NSEC3 proofs 
      */
+
 #ifdef LIBVAL_NSEC3
     if (nsec3 && nsec) {
         val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Proof contains NSEC and NSEC3 records");
@@ -2915,37 +3080,20 @@ prove_nonexistence(val_context_t * ctx,
         /*
          * only nsec3 records 
          */
-        ttl_x = 0;
         if (VAL_NO_ERROR !=
             (retval =
              nsec3_proof_chk(ctx, w_results, queries, only_span_chk,
                              proof_res, results, soa_name_n, qname_n,
-                             qtype_h, status, &ttl_x)))
+                             qtype_h, status, qc_proof)))
             goto err;
         
-        if (qc_proof) {
-            SET_MIN_TTL(qc_proof->val_ac_query->qc_ttl_x, ttl_x);
-        }
-        
-        /*
-         * If this is opt-out use the error code as status 
-         */
-        if (*status == VAL_NONEXISTENT_NAME_OPTOUT) {
-            GET_HEADER_STATUS_CODE(qc_proof, *status);
-        }
     }
 #endif
     else {
         val_log(ctx, LOG_INFO, 
                 "prove_nonexistence(): Bogus Proof - No valid proof of non-existence records");
-        *status = VAL_BOGUS_PROOF;
+        *status = VAL_INCOMPLETE_PROOF;
     }
-
-    /*
-     * passed all tests 
-     */
-    if (*status == VAL_DONT_KNOW)
-        *status = VAL_NONEXISTENT_NAME;
 
     return VAL_NO_ERROR;
 
@@ -3060,97 +3208,6 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     val_free_result_chain(results);
     return VAL_NO_ERROR;
 }
-
-#if 0
-/*
- * find the zonecut for this name and type 
- */
-static int
-find_next_zonecut_old(val_context_t * context, struct queries_for_query **queries,
-                  struct rrset_rec *rrset, int *done, u_char ** name_n)
-{
-    u_char       *qname;
-    int             retval;
-    size_t             len;
-
-    if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
-        return VAL_BAD_ARGUMENT;
-
-    *name_n = NULL;
-    qname = NULL;
-    *done = 1;
-
-    if (rrset == NULL) {
-        return VAL_NO_ERROR;
-    }
-
-    qname = rrset->rrs_name_n;
-
-    if ((rrset->rrs_type_h == ns_t_soa)
-        || (rrset->rrs_type_h == ns_t_dnskey)) {
-        len = wire_name_length(rrset->rrs_name_n);
-        *name_n = (u_char *) MALLOC(len * sizeof(u_char));
-        if (*name_n == NULL)
-            return VAL_OUT_OF_MEMORY;
-        memcpy(*name_n, rrset->rrs_name_n, len);
-        return VAL_NO_ERROR;
-    } else if (rrset->rrs_sig != NULL) {
-        /*
-         * the signer name is the zone cut 
-         */
-        u_char       *signby_name_n;
-        signby_name_n = &rrset->rrs_sig->rr_rdata[SIGNBY];
-        len = wire_name_length(signby_name_n);
-        *name_n = (u_char *) MALLOC(len * sizeof(u_char));
-        if (*name_n == NULL)
-            return VAL_OUT_OF_MEMORY;
-        memcpy(*name_n, signby_name_n, len);
-        return VAL_NO_ERROR;
-    } else if (rrset->rrs_type_h == ns_t_ds) {
-        /* advance qname by one label */
-        STRIP_LABEL(rrset->rrs_name_n, qname);
-    }
-
-    if (rrset->rrs_zonecut_n != NULL) {
-        if ((rrset->rrs_type_h == ns_t_ds) &&
-            (!namecmp(rrset->rrs_zonecut_n,
-                      rrset->rrs_name_n))) {
-            /*
-             * for the DS, zonecut cannot be the same as the qname
-             * Obviously some name server returned something bad
-             */
-            FREE(rrset->rrs_zonecut_n);
-            rrset->rrs_zonecut_n = NULL;
-            STRIP_LABEL(rrset->rrs_name_n, qname);
-        } else {
-            len = wire_name_length(rrset->rrs_zonecut_n);
-            *name_n = (u_char *) MALLOC(len * sizeof(u_char));
-            if (*name_n == NULL)
-                return VAL_OUT_OF_MEMORY;
-            memcpy(*name_n, rrset->rrs_zonecut_n, len);
-            return VAL_NO_ERROR;
-        }
-    }
-
-    if ((VAL_NO_ERROR != (retval = find_next_zonecut(context, queries, qname, done, name_n))
-         || (*done && *name_n == NULL))) {
-        return retval;
-    }
-
-    if (rrset->rrs_zonecut_n) {
-        FREE(rrset->rrs_zonecut_n);
-    }
-    rrset->rrs_zonecut_n = *name_n; 
-    len = wire_name_length(*name_n);
-    *name_n = (u_char *) MALLOC(len * sizeof(u_char));
-    if (*name_n == NULL) {
-        return VAL_OUT_OF_MEMORY;
-    }
-    memcpy(*name_n, rrset->rrs_zonecut_n, len);
-
-    return VAL_NO_ERROR;
-}
-#endif
 
 #if 0
 static int
@@ -3293,7 +3350,6 @@ prove_existence(val_context_t * context,
     return retval;
 }
 #endif
-
 
 /*
  * This function does the provably insecure check in a
@@ -5061,50 +5117,30 @@ check_wildcard_sanity(val_context_t * context,
         if ((res->val_rc_status == VAL_SUCCESS) &&
             (res->val_rc_rrset) &&
             (!res->val_rc_consumed) &&
-            (res->val_rc_rrset->val_ac_status == VAL_AC_WCARD_VERIFIED ||
-             /* only rrsigs should have the next state, but adding here 
-              * so that we know that this is also handled
-              */ 
-             res->val_rc_rrset->val_ac_status == VAL_AC_WCARD_VERIFIED_SKEW)) {
+            res->val_rc_rrset->val_ac_status == VAL_AC_WCARD_VERIFIED) {
 
             /*
-             * Any proofs that have been wildcard expanded are bogus 
+             * Move to a fresh result structure 
              */
-            if (res->val_rc_is_proof) {
-                val_log(context, LOG_INFO,
-                        "check_wildcard_sanity(): Wildcard sanity check failed");
-                if (VAL_NO_ERROR !=
-                    (retval =
-                     transform_single_result(context, res, queries, results, 
-                                             target_res, &new_res))) {
-                    goto err;
-                }
-                target_res = new_res;
-                target_res->val_rc_status = VAL_BOGUS_PROOF;
-
-            } else {
-                /*
-                 * Move to a fresh result structure 
-                 */
-                if (VAL_NO_ERROR !=
+            if (VAL_NO_ERROR !=
                     (retval =
                      transform_single_result(context, res, queries, results, NULL,
                                              &new_res))) {
-                    goto err;
-                }
-                target_res = new_res;
+                goto err;
+            }
+            target_res = new_res;
 
-                /*
-                 * we need to prove that the name does not itself exist 
-                 */
-                if ((res->val_rc_rrset->val_ac_rrset.ac_data) &&
+            /*
+             * we need to prove that the name does not itself exist 
+             */
+            if ((res->val_rc_rrset->val_ac_rrset.ac_data) &&
                     ((zonecut_n =
                       res->val_rc_rrset->val_ac_rrset.ac_data->rrs_zonecut_n))) {
-                    /*
-                     * Check if this proves non-existence of name 
-                     */
-                    if (VAL_NO_ERROR !=
-                        (retval =
+                /*
+                 * Check if this proves non-existence of name 
+                 */
+                if (VAL_NO_ERROR != 
+                        (retval = 
                          prove_nonexistence(context, w_results, queries, &target_res,
                                             results, top_q->qc_name_n, top_q->qc_type_h,
                                             top_q->qc_class_h, 1, 
@@ -5115,28 +5151,26 @@ check_wildcard_sanity(val_context_t * context,
                                          rrs_type_h, zonecut_n,
                                          w_results, queries, &target_res, results,
                                          &status, &ttl_x) */
-                        goto err;
+                    goto err;
 
-                    SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
+                SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
 
-                    target_res->val_rc_status = status;
-                    if ((status == VAL_NONEXISTENT_NAME ||
-                         status == VAL_NONEXISTENT_NAME_NOCHAIN)
-                        && (target_res->val_rc_answer)) {
-                        /*
-                         * Change from VAL_AC_WCARD_VERIFIED to VAL_AC_VERIFIED 
-                         */
-                        target_res->val_rc_answer->val_ac_status =
-                            VAL_AC_VERIFIED;
-                    }
-                } else {
+                target_res->val_rc_status = status;
+                if ((status == VAL_NONEXISTENT_NAME ||
+                     status == VAL_NONEXISTENT_NAME_NOCHAIN)
+                     && (target_res->val_rc_answer)) {
                     /*
-                     * Can't prove wildcard 
+                     * Change from VAL_AC_WCARD_VERIFIED to VAL_AC_VERIFIED 
                      */
-                    val_log(context, LOG_INFO,
-                            "check_wildcard_sanity(): Wildcard sanity check failed");
-                    target_res->val_rc_status = VAL_BOGUS;
+                    target_res->val_rc_answer->val_ac_status = VAL_AC_VERIFIED;
                 }
+            } else {
+                /*
+                 * Can't prove wildcard 
+                 */
+                val_log(context, LOG_INFO,
+                            "check_wildcard_sanity(): Wildcard sanity check failed");
+                target_res->val_rc_status = VAL_BOGUS;
             }
         }
     }
@@ -5998,4 +6032,3 @@ val_does_not_exist(val_status_t status)
 
     return 0;
 }
-
