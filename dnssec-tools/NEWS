@@ -3,7 +3,26 @@ ChangeLog file for a complete set of changes and their details
 details.
 
 1.6
- - libval 
+ - New Features:
+    - convertar:    - A new tool to translate a trust-anchor-repository
+                      (TAR) from one format to another.  Supports
+                      itar, xml, csv, bind, and libval TA formats.
+    - rollerd:      - A new -noreload option to rollerd to not call rndc
+    - dtconfchk     - Improved support for checking dnssec-tools.conf
+                      content validity
+    - dtinitconf:   - -genroothints supports fetching root.hints from the web
+    - zonesigner:   - Supports setting the revoke bit
+    - rollmgr:      - Supports Solaris now
+    - lskrf         - Supports output of revoked keys
+    - test suite:   - A new test suite for testing the tools (cd testing;
+                      make test)
+    - binaries:     - Support for producing self-contained
+                      packed-binaries of the tools.  You can download
+                      ones we build from http://www.dnssec-tools.org/download/
+    - dtreqmods:    - A new script to check for DNSSEC-Tools required
+                      perl modules.
+
+ - libval changes:
     - Changed function prototypes and error codes to keep them compliant 
       with the current (-07) Validator API draft 
     - Added initial RFC 5155 NSEC3 support (configure --with-nsec3)
@@ -12,6 +31,8 @@ details.
       and so that it is less aggressive in fetching missing glue. Also 
       allow for glue to be fetched on demand. 
     - Miscellaneous bug fixes 
+
+ - Many miscellaneous small enhancements and bug fixes
 
 1.5
  - New Features:
