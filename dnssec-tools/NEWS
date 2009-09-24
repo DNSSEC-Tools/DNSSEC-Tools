@@ -2,6 +2,16 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+1.6
+ - libval 
+    - Changed function prototypes and error codes to keep them compliant 
+      with the current (-07) Validator API draft 
+    - Added initial RFC 5155 NSEC3 support (configure --with-nsec3)
+    - Optimized the referral processing and glue fetching logic so that 
+      libval does a better job in trying to determine the referral zonecut, 
+      and so that it is less aggressive in fetching missing glue. Also 
+      allow for glue to be fetched on demand. 
+    - Miscellaneous bug fixes 
 
 1.5
  - New Features:
