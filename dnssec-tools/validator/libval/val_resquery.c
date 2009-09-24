@@ -113,21 +113,20 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
             FREE((*ns)->ns_address);
         (*ns)->ns_address = new_addr;
 
-        if (addr_rr->rr_rdata_length == 4) {
+        if (addr_rr->rr_rdata_length == sizeof(struct in_addr)) {
             sock_in = (struct sockaddr_in *)
                 (*ns)->ns_address[(*ns)->ns_number_of_addresses];
-
+            memset(sock_in, 0, sizeof(struct sockaddr_in));
             sock_in->sin_family = AF_INET;
             sock_in->sin_port = htons(DNS_PORT);
-            memset(sock_in->sin_zero, 0, sizeof(sock_in->sin_zero));
-            memcpy(&(sock_in->sin_addr), addr_rr->rr_rdata, sizeof(u_int32_t));
+            memcpy(&(sock_in->sin_addr), addr_rr->rr_rdata, 
+                    sizeof(struct in_addr));
         }
 #ifdef VAL_IPV6
         else if (addr_rr->rr_rdata_length == sizeof(struct in6_addr)) {
             sock_in6 = (struct sockaddr_in6 *)
                 (*ns)->ns_address[(*ns)->ns_number_of_addresses];
-
-            memset(sock_in6, 0, sizeof(sock_in6));
+            memset(sock_in6, 0, sizeof(struct sockaddr_in6));
             sock_in6->sin6_family = AF_INET6;
             sock_in6->sin6_port = htons(DNS_PORT);
             memcpy(&(sock_in6->sin6_addr), addr_rr->rr_rdata,
