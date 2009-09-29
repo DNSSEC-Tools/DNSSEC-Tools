@@ -56,3 +56,105 @@ if ($output_file ne '') {
     return if (!$mod);
     $mod->write($tar, $file);
 }
+
+=pod
+
+=head1 NAME
+
+B<convertar> - Converts trust anchor repositories from one format to another
+
+=head1 CONVENTIONS
+
+B<convertar> operates on input and output files of different Trust
+Anchor Repository (TAR) formats.  B<convertar> decides what type of
+file format is being refered two by a "type:filename" specification.
+See below for a list of different input and ouput formats that
+convertar understands by default.
+
+See the I<Net::DNS::SEC::Tools::TrustAnchor> module and it's
+documentation for writing new plugins to allow convertar to understand
+other TAR formats.
+
+=head1 EXAMPLES
+
+This command will read in an itar.xml file (available from
+https://itar.iana.org/) and convert it to a file that can be read in
+by bind's named application:
+
+  # convertar -i itar:itar.xml -o bind:bind.conf
+
+=head1 FILE FORMATS
+
+The following file formats are known by default to convertar:
+
+=over
+
+=item bind
+
+A I<bind> name server (named) compatible trust anchor configuration file.
+This can be included within a master named.conf file using the
+"include" directive.
+
+=item csv
+
+A comma separated list format.
+
+=item dump
+
+A perl hash I<dump> format.  This should be used mostly for debugging of
+newly developed moudles as it shows the interal hash structure that is
+passed between modules.
+
+=item itar
+
+IANA's <itar> format, which is a XML-based format of trust anchor
+keys.  IANA's file is available from https://itar.iana.org/.
+
+=item libval
+
+The I<libval> format is the configuration file format that that
+DNSSEC-Tool's libval library uses.
+
+=item mf
+
+The master file (I<mf>) format is also available from the I<itar> web
+site.
+
+=back
+
+=head1 OPTIONS
+
+=item  -i STRING
+
+=item  --input-file=STRING
+
+Input file(s) to process.
+
+B<convertar> will read in the specified file(s).  Multiple files can
+be separated by commas.
+
+=item  -o STRING
+
+=item  --output-file=STRING
+
+Output file(s) to write.
+
+B<convertar> will write out these specified file(s) in the requested
+output formats.  Multiple files can be separated by commas.
+
+=item -h
+
+=item --help
+
+=item --help-full
+
+Displays command line help information.
+
+=item --gui
+
+=item --no-gui
+
+Controls the display of the optional GUI.
+
+=cut
+
