@@ -113,12 +113,21 @@ is_type_set(u_char * field, size_t field_len, u_int16_t type)
     /** The type will be present in the following block */
     int             t_block = type/256;
     /** within the bitmap, the type will be present in the following byte */
-    int             t_bm_offset = type/8;
+    int             t_bm_offset = type%8;
 
     int             cnt = 0;
 
     if (type < 1)
         return 0;
+
+    /* check if this is the last bit in the block */
+    if (--t_bm_offset < 0) {
+        if (--t_block < 0) {
+            /* should not happen */
+            return 0;
+        }
+        t_bm_offset = 7;
+    }
 
     block = 0;
 
