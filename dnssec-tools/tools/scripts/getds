@@ -116,14 +116,18 @@ B<getds> takes the following options:
 
 =over 4
 
-=item B<-hash-algorithm algorithm>  (-a)
+=item B<-a>
+
+=item B<--hash-algorithm algorithm>
 
 This option specifies the hash algorithm to use when converting DNSKEYs to DS
 records.  This may be either SHA256 (the default) or SHA1.
 B<-a> is an alias for this option.
 
-=item B<-print-zsks> (-z)
-    
+=item B<-z>
+
+=item B<--print-zsks>
+
 This option causes B<getds> to print ZSK DS records, as well as KSK records.
 B<-z> is an alias for this option.
 
