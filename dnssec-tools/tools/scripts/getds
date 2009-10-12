@@ -13,7 +13,7 @@ use Data::Dumper;
 use Net::DNS::SEC::Tools::QWPrimitives;
 
 my %opts =
-  ( 'a' => 'SHA256'
+  ( 'a' => 'SHA256,SHA1'
   );
 
 DTGetOptions(\%opts,
@@ -32,6 +32,9 @@ my $res  = Net::DNS::Resolver->new;
 my $q = $res->query($ARGV[0], "DNSKEY");
 my @keys = $q->answer;
 
+# Generate a list of all the algorithms to use:
+my @algorithms = split(/,\s*/, uc($opts{'a'}));
+
 #
 # for each of the keys found, print out the DS record
 #
@@ -42,12 +45,14 @@ foreach my $key (@keys) {
     next if (($key->flags & 0x1) == 0);  # KSKs only
     $key->{'name'} = $ARGV[0];
 
-    my $ds = create Net::DNS::RR::DS($key,
-				     digtype => $opts{'a'},
-				    );
-    push @childds, $ds;
-    print make_printing_ds($ds);
-    $childds{make_matching_ds($ds)} = make_printing_ds($ds);
+    foreach my $algorithm (@algorithms) {
+	my $ds = create Net::DNS::RR::DS($key,
+					 digtype => $algorithm,
+					);
+	push @childds, $ds;
+	print make_printing_ds($ds);
+	$childds{make_matching_ds($ds)} = make_printing_ds($ds);
+    }
 }
 
 exit if ($opts{'p'});
@@ -77,7 +82,7 @@ foreach my $ds (keys(%childds)) {
 }
 
 if ($#errors == -1) {
-    print "Errors Found:  NONE\n";
+    print "\nErrors Found:  NONE (everything matches)\n";
     exit 0;
 }
 
@@ -132,20 +137,22 @@ B<getds> takes the following options:
 
 =over 4
 
-=item B<-a>
+=item B<-a ALGORITHMS>
 
-=item B<--hash-algorithm algorithm>
+=item B<--hash-algorithm algorithm ALGORITHMS>
 
-This option specifies the hash algorithm to use when converting DNSKEYs to DS
-records.  This may be either SHA256 (the default) or SHA1.
-B<-a> is an alias for this option.
+This option specifies the hash algorithm to use when converting
+DNSKEYs to DS records.  It may be a comma separated list if multiple
+algorithms are desired.  The algorithms to choose from may be either
+SHA256 or SHA1.
+
+The default is SHA256,SHA1
 
 =item B<-z>
 
 =item B<--print-zsks>
 
 This option causes B<getds> to print ZSK DS records, as well as KSK records.
-B<-z> is an alias for this option.
 
 =item B<-p>
 
