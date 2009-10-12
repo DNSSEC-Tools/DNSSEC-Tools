@@ -46,8 +46,8 @@ foreach my $key (@keys) {
 				     digtype => $opts{'a'},
 				    );
     push @childds, $ds;
-    $ds->print;
-    $childds{$ds->string} = 1;
+    print lc($ds->string);
+    $childds{make_matching_ds($ds->string)} = lc($ds->string);
 }
 
 exit if ($opts{'p'});
@@ -64,10 +64,12 @@ my @errors;
 print "\n--- DS records pulled from the parent of $ARGV[0]:\n";
 foreach my $ds (@dses) {
     $ds->print;
-    if (exists($childds{$ds->string})) {
-	delete $childds{$ds->string};
+    my $parentds = make_matching_ds($ds->string);
+    print "here: $parentds\n";
+    if (exists($childds{$parentds})) {
+	delete $childds{$parentds};
     } else {
-	push @errors, "The following DS record exists in the parent, but no child key matches it:  \n" . $ds->string . "\n";
+	push @errors, "The following DS record exists in the parent, but no child key matches it:  \n" . lc($ds->string) . "\n";
     }
 }
 if ($#$dses == -1) {
@@ -75,7 +77,7 @@ if ($#$dses == -1) {
 }
 
 foreach my $ds (keys(%childds)) {
-    push @errors, "The following DS record exists for a child key which is not in the parent:\n" . "$ds\n";
+    push @errors, "The following DS record for a child key is not published by the parent:\n" . "$ds\n";
 }
 
 if ($#errors == -1) {
@@ -86,6 +88,14 @@ if ($#errors == -1) {
 print "\nERRORS (" . ($#errors+1) . "):\n";
 foreach my $error (@errors) {
     print $error,"\n";
+}
+
+sub make_matching_ds {
+    my $changethis = $_[0];
+    $changethis = lc($changethis);
+    $changethis =~ s/.*\sds\s+//;
+    $changethis =~ s/\;.*//;
+    return $changethis;
 }
 
 exit 1;
