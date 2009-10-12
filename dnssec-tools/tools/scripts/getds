@@ -42,7 +42,7 @@ my @childds;
 my %childds;
 print "--- DS records generated from queried keys of $ARGV[0]:\n";
 foreach my $key (@keys) {
-    next if (($key->flags & 0x1) == 0);  # KSKs only
+    next if (!$opts{'z'} && ($key->flags & 0x1) == 0);  # KSKs only
     $key->{'name'} = $ARGV[0];
 
     foreach my $algorithm (@algorithms) {
