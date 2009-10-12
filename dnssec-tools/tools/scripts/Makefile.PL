@@ -157,6 +157,7 @@ PACKEDCMDS = pack_rollctl pack_rollerd pack_zonesigner pack_trustman
 packer_rollctl	  = rollctl.\`uname -s\`
 packer_rollerd	  = rollerd.\`uname -s\`
 packer_trustman	  = trustman.\`uname -s\`
+packer_getds	  = getds.\`uname -s\`
 packer_zonesigner = zonesigner.\`uname -s\`
 
 packed_commands: newconf \$(PACKEDCMDS) pack_cleaner
@@ -187,6 +188,11 @@ pack_rollerd:		copy_bind
 pack_trustman:		copy_bind
 	\$(RM) -f \$(packer_trustman)
 	\$(PP) -o \$(packer_trustman) \$(MODULES) \$(CONF_DT) \$(RESOLVCONF) \$(ROOTHINTS) trustman
+	\@echo ' '
+
+pack_getds:
+	\$(RM) -f \$(packer_trustman)
+	\$(PP) -o \$(packer_getds) \$(MODULES) \$(CONF_DT) \$(RESOLVCONF) \$(ROOTHINTS) getds
 	\@echo ' '
 
 pack_zonesigner:	copy_bind
