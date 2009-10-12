@@ -87,8 +87,9 @@ if ($#errors == -1) {
 }
 
 print "\nERRORS (" . ($#errors+1) . "):\n";
+my $errorcount = 1;
 foreach my $error (@errors) {
-    print $error,"\n";
+    print $errorcount++, ") ", $error,"\n";
 }
 
 sub make_matching_ds {
