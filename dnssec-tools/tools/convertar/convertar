@@ -63,57 +63,57 @@ if ($output_file ne '') {
 
 B<convertar> - Converts trust anchor repositories from one format to another
 
-=head1 CONVENTIONS
+=head1 DESCRIPTION
 
 B<convertar> operates on input and output files of different Trust
 Anchor Repository (TAR) formats.  B<convertar> decides what type of
-file format is being refered two by a "type:filename" specification.
-See below for a list of different input and ouput formats that
-convertar understands by default.
+file format is being referred to by a "type:filename" specification.
+See below for a list of different input and output formats that
+B<convertar> understands by default.
 
-See the I<Net::DNS::SEC::Tools::TrustAnchor> module and it's
-documentation for writing new plugins to allow convertar to understand
+See the I<Net::DNS::SEC::Tools::TrustAnchor> module and its
+documentation for writing new plugins to allow B<convertar> to understand
 other TAR formats.
 
 =head1 EXAMPLES
 
-This command will read in an itar.xml file (available from
+This command will read in an B<itar.xml> file (available from
 https://itar.iana.org/) and convert it to a file that can be read in
-by bind's named application:
+by BIND's B<named> application:
 
   # convertar -i itar:itar.xml -o bind:bind.conf
 
 =head1 FILE FORMATS
 
-The following file formats are known by default to convertar:
+The following file formats are known by default to B<convertar>:
 
 =over
 
 =item bind
 
-A I<bind> name server (named) compatible trust anchor configuration file.
-This can be included within a master named.conf file using the
+A BIND name server (B<named>) compatible trust anchor configuration file.
+This can be included within a master B<named.conf> file using the
 "include" directive.
 
 =item csv
 
-A comma separated list format.
+A comma-separated list format.
 
 =item dump
 
-A perl hash I<dump> format.  This should be used mostly for debugging of
-newly developed moudles as it shows the interal hash structure that is
+A Perl hash I<dump> format.  This should be used mostly for debugging of
+newly developed modules as it shows the internal hash structure that is
 passed between modules.
 
 =item itar
 
-IANA's <itar> format, which is a XML-based format of trust anchor
+IANA's <itar> format, which is an XML-based format of trust anchor
 keys.  IANA's file is available from https://itar.iana.org/.
 
 =item libval
 
-The I<libval> format is the configuration file format that that
-DNSSEC-Tool's libval library uses.
+The I<libval> format is the configuration file format that
+DNSSEC-Tool's I<libval> library uses.
 
 =item mf
 
@@ -124,37 +124,41 @@ site.
 
 =head1 OPTIONS
 
-=item  -i STRING
+=over
 
-=item  --input-file=STRING
+=item B<-i STRING>
+
+=item B<--input-file=STRING>
 
 Input file(s) to process.
 
 B<convertar> will read in the specified file(s).  Multiple files can
 be separated by commas.
 
-=item  -o STRING
+=item B<-o STRING>
 
-=item  --output-file=STRING
+=item B<--output-file=STRING>
 
 Output file(s) to write.
 
 B<convertar> will write out these specified file(s) in the requested
 output formats.  Multiple files can be separated by commas.
 
-=item -h
+=item B<-h>
 
-=item --help
+=item B<--help>
 
-=item --help-full
+=item B<--help-full>
 
 Displays command line help information.
 
-=item --gui
+=item B<--gui>
 
-=item --no-gui
+=item B<--no-gui>
 
-Controls the display of the optional GUI.
+Controls the use of the optional GUI.
+
+=back
 
 =head1 COPYRIGHT
 
@@ -166,6 +170,8 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 Wes Hardaker < hardaker AT users DOT sourceforge DOT net >
 
 =head1 SEE ALSO
+
+I<Net::DNS::SEC::Tools::TrustAnchor>(3)
 
 =cut
 
