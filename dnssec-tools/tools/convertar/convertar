@@ -138,7 +138,7 @@ passed between modules.
 
 =item itar
 
-IANA's <itar> format, which is an XML-based format of trust anchor
+IANA's I<itar> format, which is an XML-based format of trust anchor
 keys.  IANA's file is available from https://itar.iana.org/.
 
 =item libval
@@ -150,6 +150,20 @@ DNSSEC-Tool's I<libval> library uses.
 
 The master file (I<mf>) format is also available from the I<itar> web
 site.
+
+=item dns
+
+The I<dns> format performs live queries of records attached to a
+domain name to request either DS or DNSKEY records.  By default,
+DNSKEY records will be queried.  The specific type to be queried can
+be specified by preceeding the zone name with a "ds/" or "dnskey/"
+prefix.  Example valid 'dns:' type specifications:
+
+  dns:dnssec-tools.org
+  dns:ds/dnssec-tools.org
+  dns:dnskey/dnssec-tools.org
+
+The DNS type can not print out records.
 
 =back
 
