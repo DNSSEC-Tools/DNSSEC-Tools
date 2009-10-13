@@ -1,10 +1,51 @@
 package Net::DNS::SEC::Tools::TrustAnchor;
 
+=pod
+
+=head1 NAME
+
+Net::DNS::SEC::Tools::TrustAnchor
+
+=head1 SYNOPSIS
+
+This is a base class for multiple types of trustanchor repositories
+that know how to read, write, and modify trust anchor repositories.
+
+This package serves as both a API wrapper around a set of trust
+anchors as well as a base class for packages that need to read/write
+trust anchor sets into different formats.
+
+Trust Anchors may be either DNSKEY records or DS references.
+
+XXX: more documentation needed
+
+=head1 API
+
+Usage API defined by this module or sub-modules.
+
+Note that:
+
+  use Net::DNS::SEC::Tools::TrustAnchor;
+
+is assumed to have imported some of the API routines mentioned below.
+
+=over 4
+
+=cut
+
 use Exporter;
 use IO::File;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(load_module parse_component);
+
+=pod
+
+=item $tar = new Net::DNS::SEC::Tools::TrustAnchor();
+
+Initializes a new collection of trust anchors.
+
+=cut
 
 # note: this new clause is used by most sub-modules too, altering it
 # will alter them.
@@ -22,6 +63,19 @@ sub new {
 sub init_extras {
 }
 
+=pod
+
+=item $module = load_module("type");
+
+Dynamically attemps to load a TrustAnchor reader/writer sub-class of
+Net::DNS::SEC::Tools::TrustAnchor named "Type" and return an instance of it.
+
+All sub-classes are assumed to contain a single letter upper-case
+class name followed by all lower case.  Any modules otherwise named
+will fail to load using this routine.
+
+=cut
+
 sub load_module {
     my ($type) = @_;
 
@@ -38,6 +92,22 @@ sub load_module {
     }
     return $obj;
 }
+
+=pod
+
+=item $module = parse_component("type:file");
+
+This parses a type and file specification consisting of type separated
+by a colon (':') followed by a file-name path.  It will then load the
+type module using the I<load_module()> rotine and return the type, the
+file and extra options.
+
+XXX: option parsing support not yet complete and will likely change
+the type:file format specification; I.E. the type:file formatting
+specification will likely change in the future and should be
+considered alpha-level support.
+
+=cut
 
 sub parse_component {
     my ($file) = @_;
@@ -70,6 +140,18 @@ sub set_options {
     $self->{'options'} = $opts;
 }
 
+=pod
+
+=item $tar = $module->read($location, $options);
+
+Reads in a given TAR from a $location reference and returns a blessed
+copy of the Net::DNS::SEC::Tools::TrustAnchor object containing all
+the data.
+
+This function may be over-ridden by a sub-class.
+
+=cut
+
 sub read {
     my ($self, $location, $options) = @_;
     my $hashedcontent = $self->read_content($location, $options);
@@ -77,6 +159,19 @@ sub read {
     bless $hashedcontent, 'Net::DNS::SEC::Tools::TrustAnchor';
     return $hashedcontent;
 }
+
+=pod
+
+=item $tar = $module->read($location, $options);
+
+Reads in a given TAR from a $location reference and returns an
+unblessed hash the contents.  The read() function merely wraps around
+this and blesses it after being returned.
+
+Sub-modules must over-ride this function (and/or the read() function)
+if they expect the module to support loading.
+
+=cut
 
 sub read_content {
     my ($self, $location, $options) = @_;
@@ -99,9 +194,11 @@ sub write_extra_info {
 }
 
 =pod
+
 =item $tar->merge(@others)
 
-Merges the I<@other> anchors into the $tar object's own trust anchor list.
+Merges the I<@other> array of trust anchors into the $tar object's own
+trust anchor list.
 
 =cut
 sub merge {
@@ -239,18 +336,15 @@ sub parse_extra_info_string {
     return $localinfo;
 }
 
-=pod
-
-=head1 NAME
-
-Net::DNS::SEC::Tools::TrustAnchor
-
-=head1 SYNOPSIS
-
-This is a base class for multiple types of trustanchor repositories
-that know how to read, write, and modify trust anchor repositories.
+=back
 
 =head1 AUTHOR
 
 Wes Hardaker <hardaker ATTA users.sourceforge DOTTTY net>
+
+=head1 SEE ALSO
+
+convertar(1)
+
+=cut
 
