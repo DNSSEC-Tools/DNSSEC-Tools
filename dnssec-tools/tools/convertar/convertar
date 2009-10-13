@@ -163,7 +163,12 @@ prefix.  Example valid 'dns:' type specifications:
   dns:ds/dnssec-tools.org
   dns:dnskey/dnssec-tools.org
 
-The DNS type can not print out records.
+The DNS type can not output records and is only useful for reading in
+information.
+
+WARNING: The keys and data being retrieved are not internally
+validated and thus should not be trusted unless a secured resolver is
+being used.
 
 =back
 
