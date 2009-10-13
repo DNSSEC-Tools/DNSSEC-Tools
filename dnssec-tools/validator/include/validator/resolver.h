@@ -39,7 +39,7 @@
 
 
 #define RES_RETRY 1 /* number of times to retry */
-#define LIBSRES_NS_STAGGER 0.5 /* how far apart should we stagger queries to
+#define LIBSRES_NS_STAGGER 5 /* how far apart should we stagger queries to
                                 different authoritative name servers */
 #ifndef RES_TIMEOUT
 #define RES_TIMEOUT 5 /* min seconds between retries */
