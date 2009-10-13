@@ -119,6 +119,21 @@ different output file formats (the libval format is printed to stdout):
 
   # convertar -i itar:itar.xml,csv:local.csv -o bind:bind.conf,libval:-
 
+=head1 FILE SPECIFICATION CONVENTIONS
+
+Types and files (e.g. for the -i and -o switches) are specificied
+using the following format:
+
+  I<type:/path/to/file>
+
+The I<type> portion of the specification dictates what internal module
+will attempt to read in the file.  The file portion of the
+specification may or may not be required (but the ':' always is) and
+may or may not point to a real file, depending on the module in charge
+of the content.  Some modules may, for exmaple, load content from the
+network.  For types that can read and write to a file, a '-' may be
+specified as a file to print to or read from standard output.
+
 =head1 FILE FORMATS
 
 The following file formats are known by default to B<convertar>:
@@ -184,21 +199,6 @@ validated and thus should not be trusted unless a secured resolver is
 being used.
 
 =back
-
-=head1 FILE SPECIFICATION CONVENTIONS
-
-Types and files (e.g. for the -i and -o switches) are specificied
-using the following format:
-
-  I<type:/path/to/file>
-
-The I<type> portion of the specification dictates what internal module
-will attempt to read in the file.  The file portion of the
-specification may or may not be required (but the ':' always is) and
-may or may not point to a real file, depending on the module in charge
-of the content.  Some modules may, for exmaple, load content from the
-network.  For types that can read and write to a file, a '-' may be
-specified as a file to print to or read from standard output.
 
 =head1 OPTIONS
 
