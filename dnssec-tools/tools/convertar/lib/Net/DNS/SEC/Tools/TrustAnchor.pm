@@ -92,6 +92,35 @@ sub write_extra_info {
 				      $self->{'commentprefix'} || "#"),"\n";
 }
 
+=pod
+=item $tar->merge(@others)
+
+Merges the I<@other> anchors into the $tar object's own trust anchor list.
+
+=cut
+sub merge {
+    my ($self, @others) = @_;
+    foreach my $other (@others) {
+	# for each delegation in the other record
+	foreach my $delegation (keys(%{$other->{'delegation'}})) {
+	    # each delegation contains one or more trust anchor types
+	    foreach my $type (keys(%{$other->{'delegation'}{$delegation}})) {
+		# each type may have multiple content entries
+		foreach my $entry
+		  (@{$other->{'delegation'}{$delegation}{$type}}) {
+		      # XXX: check for duplicates
+		      # (ie, the current TAR may already contain an exact match)
+		      push @{$self->{'delegation'}{$delegation}{$type}},
+			$entry;
+		  }
+	    }
+	}
+    }
+    return $self;
+}
+
+
+######################################################################
 # blank prototypes
 sub write_header {
     my ($self, $fh, $options, $data) = @_;
