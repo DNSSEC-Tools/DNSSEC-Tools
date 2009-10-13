@@ -58,8 +58,6 @@ sub parse_component {
 	$object->set_options({});
 	return ($object, $file, {});
     }
-
-    print STDERR "foo: $file\n";
 }
 
 sub set_file {
@@ -73,6 +71,14 @@ sub set_options {
 }
 
 sub read {
+    my ($self, $location, $options) = @_;
+    my $hashedcontent = $self->read_content($location, $options);
+    return if (!$hashedcontent);
+    bless $hashedcontent, 'Net::DNS::SEC::Tools::TrustAnchor';
+    return $hashedcontent;
+}
+
+sub read_content {
     my ($self, $location, $options) = @_;
     print STDERR "The TrustAnchor module " . ref($self) . " does not support reading\n";
     return 1;

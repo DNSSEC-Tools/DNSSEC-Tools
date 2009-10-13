@@ -15,7 +15,7 @@ sub init_extras {
     $self->{'tailer'} = ";\n";
 }
 
-sub read {
+sub read_content {
     my ($self, $location, $options) = @_;
 
     $location ||= $self->{'file'};

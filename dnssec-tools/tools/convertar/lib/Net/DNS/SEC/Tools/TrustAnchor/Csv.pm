@@ -13,7 +13,7 @@ sub get_extra_info {
     return {VERSION => '0.1'};
 }
 
-sub read {
+sub read_content {
     my ($self, $location, $options) = @_;
 
     $location ||= $self->{'file'};
