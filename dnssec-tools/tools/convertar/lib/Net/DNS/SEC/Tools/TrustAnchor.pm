@@ -120,7 +120,7 @@ sub parse_component {
     }
 
     # type:file
-    if ($file =~ /^([^:]+):([^:]+)$/) {
+    if ($file =~ /^([^:]+):([^:]*)$/) {
 	my ($type, $file) = ($1, $2);
 	my $object = load_module($type);
 	$object->set_file($file);

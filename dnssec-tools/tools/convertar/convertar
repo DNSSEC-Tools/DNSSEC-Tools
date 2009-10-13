@@ -61,6 +61,11 @@ my $alltars;
 foreach $input_file (@input_files) {
     my ($mod, $file, $options) = parse_component($input_file);
 
+    if (! $mod) {
+	print STDERR "Failed to load the $input_file specification.  Skipping.\n";
+	next;
+    }
+
     my $tar = $mod->read();
     die "reading tar from $input_file failed\n" if (!$tar);
 
@@ -140,6 +145,14 @@ passed between modules.
 
 IANA's I<itar> format, which is an XML-based format of trust anchor
 keys.  IANA's file is available from https://itar.iana.org/.
+
+Specifying only 'itar:' line only (or itar:URL), B<convertar> will
+attempt to retrieve the current remote ITAR respository file directly.
+
+WARNING: The PGP signature on the downloaded file is NOT checked.
+
+NOTE: support for downloading the ITAR repository over the network
+requires the LWP::UserAgent module to be installed.
 
 =item libval
 
