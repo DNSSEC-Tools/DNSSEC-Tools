@@ -349,8 +349,12 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                     return retval;
                 } 
                 if (matches) {
+                    char name_p[NS_MAXDNAME];
+                    if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
+                        snprintf(name_p, sizeof(name_p), "unknown/error");
                     val_log(context, LOG_DEBUG, 
-                            "add_to_query_chain(): Found matching proof of non-existence through ANC");
+                            "add_to_query_chain(): Found matching proof of non-existence for {%s %d %d} through ANC",
+                            name_p, class_h, type_h);
                     break;
                 }
             }
@@ -3377,6 +3381,7 @@ verify_provably_insecure(val_context_t * context,
     struct val_result_chain *results = NULL;
     char            name_p[NS_MAXDNAME];
     char            tempname_p[NS_MAXDNAME];
+    char            tempzc_p[NS_MAXDNAME];
 
     u_char       *curzone_n = NULL;
     u_char       *q_zonecut_n = NULL;
@@ -3460,14 +3465,16 @@ verify_provably_insecure(val_context_t * context,
     if (-1 == ns_name_ntop(curzone_n, tempname_p, sizeof(tempname_p))) 
             snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
 
+    if (-1 == ns_name_ntop(q_zonecut_n, tempzc_p, sizeof(tempzc_p))) 
+            snprintf(tempzc_p, sizeof(tempzc_p), "unknown/error");
     if (!q) {
         /* 
          * this is a problem: means that trust point was 
          * not contained within name 
          */
         val_log(context, LOG_INFO, 
-                "verify_provably_insecure(): trust point %s not in name, cannot do a top-down provably-insecure test",
-                tempname_p);
+                "verify_provably_insecure(): trust point %s not in name %s, cannot do a top-down provably-insecure test",
+                tempname_p, tempzc_p);
         goto err;
     }
 
