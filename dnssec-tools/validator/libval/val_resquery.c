@@ -828,12 +828,11 @@ bootstrap_referral(val_context_t *context,
         /*
          * Don't fetch glue if we're already fetching glue 
          */
-        if (matched_q->qc_referral &&
-            (matched_q->qc_referral->cur_pending_glue_ns != NULL ||
-             matched_q->qc_referral->pending_glue_ns != NULL)) { 
-
-            free_name_servers(&pending_glue);
-            free_name_servers(ref_ns_list);
+        if (matched_q->qc_state == Q_WAIT_FOR_GLUE && *ref_ns_list == NULL) {
+            if (&pending_glue)
+                free_name_servers(&pending_glue);
+            if (ref_ns_list)
+                free_name_servers(ref_ns_list);
             *ref_ns_list = NULL;
             val_log(context, LOG_DEBUG, 
                     "bootstrap_referral(): Already fetching glue; not fetching again");
