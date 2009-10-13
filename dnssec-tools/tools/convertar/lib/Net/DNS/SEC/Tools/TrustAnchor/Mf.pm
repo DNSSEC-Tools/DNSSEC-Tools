@@ -15,7 +15,7 @@ sub init_extras {
     $self->{'commentprefix'} = ";";
 }
 
-sub read {
+sub read_content {
     my ($self, $location, $options) = @_;
 
     my $lastname;

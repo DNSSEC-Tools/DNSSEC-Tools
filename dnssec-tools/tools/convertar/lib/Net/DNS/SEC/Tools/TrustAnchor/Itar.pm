@@ -8,7 +8,7 @@ our $VERSION = '0.1';
 
 use XML::Simple;
 
-sub read {
+sub read_content {
     my ($self, $location, $options) = @_;
 
     $location ||= $self->{'file'};
