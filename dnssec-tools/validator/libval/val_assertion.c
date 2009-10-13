@@ -3381,7 +3381,6 @@ verify_provably_insecure(val_context_t * context,
     struct val_result_chain *results = NULL;
     char            name_p[NS_MAXDNAME];
     char            tempname_p[NS_MAXDNAME];
-    char            tempzc_p[NS_MAXDNAME];
 
     u_char       *curzone_n = NULL;
     u_char       *q_zonecut_n = NULL;
@@ -3465,16 +3464,13 @@ verify_provably_insecure(val_context_t * context,
     if (-1 == ns_name_ntop(curzone_n, tempname_p, sizeof(tempname_p))) 
             snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
 
-    if (-1 == ns_name_ntop(q_zonecut_n, tempzc_p, sizeof(tempzc_p))) 
-            snprintf(tempzc_p, sizeof(tempzc_p), "unknown/error");
     if (!q) {
         /* 
          * this is a problem: means that trust point was 
          * not contained within name 
          */
         val_log(context, LOG_INFO, 
-                "verify_provably_insecure(): trust point %s not in name %s, cannot do a top-down provably-insecure test",
-                tempname_p, tempzc_p);
+                "verify_provably_insecure(): trust point %s not in name, cannot do a top-down provably-insecure test", tempname_p);
         goto err;
     }
 
