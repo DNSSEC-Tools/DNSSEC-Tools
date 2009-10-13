@@ -598,7 +598,7 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
      * Call the res_io_check routine 
      */
     if (res_io_debug)
-        printf("\nCalling io_deliver\n");
+        printf("\nCalling io_check\n");
 
     return res_io_check(*transaction_id, &next_event);
 }
