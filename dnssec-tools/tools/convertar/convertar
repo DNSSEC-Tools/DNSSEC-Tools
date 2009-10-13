@@ -43,18 +43,44 @@ DTGetOptions(\%opts,
 	     ["o|output-file=s", "Output file(s)"],
 	    ) || exit 1;
 
+# get the drequested file specifications
 my $input_file = $opts{'i'} || shift @ARGV;
 my $output_file = $opts{'o'} || shift @ARGV;
 
-my ($mod, $file, $options) = parse_component($input_file);
+# split them into multiple comma-separated pieces
+my @input_files = split(/,\s*/, $input_file);
+my @output_files = split(/,\s*/, $output_file);
 
-my $tar = $mod->read();
-die "reading tar from $input_file failed\n" if (!$tar);
+if ($#input_files == -1) {
+    print STDERR "No input files given\n";
+    exit 1;
+}
 
-if ($output_file ne '') {
-    my ($mod, $file, $options) = parse_component($output_file);
-    return if (!$mod);
-    $mod->write($tar, $file);
+# load in each of the input components:
+my $alltars;
+foreach $input_file (@input_files) {
+    my ($mod, $file, $options) = parse_component($input_file);
+
+    my $tar = $mod->read();
+    die "reading tar from $input_file failed\n" if (!$tar);
+
+    if (!$alltars) {
+	$alltars = $tar;
+    } else {
+	$alltars->merge($tar);
+    }
+}
+
+# write out the results to each of the output components:
+if ($#output_files > -1) {
+    foreach $output_file (@output_files) {
+	my ($mod, $file, $options) = parse_component($output_file);
+	return if (!$mod);
+	$mod->write($alltars, $file);
+    }
+} else {
+    print "No output specification(s) were given.  Writing nothing out.\n";
+    print "  (but all files were successfully read in).\n";
 }
 
 =pod
@@ -82,6 +108,11 @@ https://itar.iana.org/) and convert it to a file that can be read in
 by BIND's B<named> application:
 
   # convertar -i itar:itar.xml -o bind:bind.conf
+
+Read in multiple files, merge them together and write them out to two
+different output file formats (the libval format is printed to stdout):
+
+  # convertar -i itar:itar.xml,csv:local.csv -o bind:bind.conf,libval:-
 
 =head1 FILE FORMATS
 
@@ -121,6 +152,21 @@ The master file (I<mf>) format is also available from the I<itar> web
 site.
 
 =back
+
+=head1 FILE SPECIFICATION CONVENTIONS
+
+Types and files (e.g. for the -i and -o switches) are specificied
+using the following format:
+
+  I<type:/path/to/file>
+
+The I<type> portion of the specification dictates what internal module
+will attempt to read in the file.  The file portion of the
+specification may or may not be required (but the ':' always is) and
+may or may not point to a real file, depending on the module in charge
+of the content.  Some modules may, for exmaple, load content from the
+network.  For types that can read and write to a file, a '-' may be
+specified as a file to print to or read from standard output.
 
 =head1 OPTIONS
 
