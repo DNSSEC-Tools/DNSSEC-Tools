@@ -11,7 +11,7 @@ use XML::Simple;
 sub init_extras {
     my $self = shift;
     $self->{'header'} = "trusted-keys {\n";
-    $self->{'tailer'} = "}\n";
+    $self->{'trailer'} = "}\n";
 }
 
 
