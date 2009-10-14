@@ -11,7 +11,7 @@ use XML::Simple;
 sub init_extras {
     my $self = shift;
     # XXX: allow for other contexts besides :
-    $self->{'tailer'} = "; End of file\n";
+    $self->{'trailer'} = "; End of file\n";
     $self->{'commentprefix'} = ";";
 }
 

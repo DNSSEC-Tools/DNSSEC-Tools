@@ -12,7 +12,7 @@ sub init_extras {
     my $self = shift;
     # XXX: allow for other contexts besides :
     $self->{'header'} = ": trust-anchors\n";
-    $self->{'tailer'} = ";\n";
+    $self->{'trailer'} = ";\n";
 }
 
 sub read_content {
