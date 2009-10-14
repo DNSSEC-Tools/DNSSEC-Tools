@@ -114,9 +114,10 @@ sub parse_component {
 
     # no extra options
     if ($file !~ /:/) {
-	# XXX: try file extension
-	print STDERR "Could not determine TAR type for: $file\n";
-	return;
+	if ($file =~ /\.([^\.]+)$/) {
+	    # if this fails, it'll have to handle it
+	    return parse_component($1 . ":" . $file);
+	}
     }
 
     # type:file
