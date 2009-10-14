@@ -80,16 +80,17 @@ my @opts =
 #
 my $alg;				# The encryption algorithm.
 my $endtime;				# Endtime of signature validity.
-my $ksklife;				# Lifespan of the KSK.
+my $kskcnt;				# Count of KSK keys.
 my $ksklen;				# The KSK size.
+my $ksklife;				# Lifespan of the KSK.
 my $random;				# The source of randomness.
 my $usensec3;				# Use nsec3 by default?
 my $nsec3salt;				# The default salt to use
 my $nsec3iter;				# The default iterations to use
 my $nsec3optout;			# Default to NSEC3 optout
 my $zskcnt;				# Count of ZSK keys.
-my $zsklife;				# Lifespan of the ZSK.
 my $zsklen;				# The ZSK size.
+my $zsklife;				# Lifespan of the ZSK.
 
 my $admin;				# Administrator's email address.
 my $entmsg;				# Display entropy message.
@@ -268,11 +269,12 @@ sub optsandargs
 	# Get the option values.  If these weren't given on the command
 	# line, they'll be taken the DNSSEC-Tools defaults.
 	#
-	$ksklen    = $opts{'ksklength'} || dnssec_tools_default("ksklength");
-	$ksklife   = $opts{'ksklife'}   || dnssec_tools_default("ksklife");
-	$zskcnt	   = $opts{'zskcount'}  || dnssec_tools_default("zskcount");
-	$zsklen    = $opts{'zsklength'} || dnssec_tools_default("zsklength");
-	$zsklife   = $opts{'zsklife'}   || dnssec_tools_default("zsklife");
+	$kskcnt    = $opts{'kskcount'}	|| dnssec_tools_default("kskcount");
+	$ksklen    = $opts{'ksklength'}	|| dnssec_tools_default("ksklength");
+	$ksklife   = $opts{'ksklife'}	|| dnssec_tools_default("ksklife");
+	$zskcnt	   = $opts{'zskcount'}	|| dnssec_tools_default("zskcount");
+	$zsklen    = $opts{'zsklength'}	|| dnssec_tools_default("zsklength");
+	$zsklife   = $opts{'zsklife'}	|| dnssec_tools_default("zsklife");
 
 	$alg	   = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
 	$endtime   = $opts{'endtime'}	|| dnssec_tools_default("enddate");
@@ -427,6 +429,7 @@ sub writeconf()
 		print "\tadmin      - \"$admin\"\n";
 		print "\talgorithm  - \"$alg\"\n";
 		print "\trandom     - \"$random\"\n";
+		print "\tkskcount   - \"$kskcnt\"\n\n";
 		print "\tksklen     - \"$ksklen\"\n";
 		print "\tksklife    - \"$ksklife\"\n";
 		print "\tzskcount   - \"$zskcnt\"\n\n";
@@ -547,6 +550,7 @@ zsklife		$zsklife
 archivedir	$keyarch
 entropy_msg	$entmsg
 savekeys	$savekeys
+kskcount	$kskcnt
 zskcount	$zskcnt
 
 #
@@ -763,11 +767,12 @@ sub get_key_opts()
 
 	$alg	 = getval("Encryption Algorithm",$alg);
 	$random	 = getval("Random-number Generator",$random);
+	$kskcnt	 = getval("KSK Count",$kskcnt);
 	$ksklen	 = getval("KSK Length (in bits)",$ksklen);
 	$ksklife = getval("KSK Lifespan (in seconds)",$ksklife);
+	$zskcnt	 = getval("ZSK Count",$zskcnt);
 	$zsklen	 = getval("ZSK Length (in bits)",$zsklen);
 	$zsklife = getval("ZSK Lifespan (in seconds)",$zsklife);
-	$zskcnt	 = getval("ZSK Count",$zskcnt);
 
 	print "\n";
 }
@@ -1069,9 +1074,10 @@ sub usage()
 	print STDERR "\t\t-endtime <endtime>\n";
 	print STDERR "\t\t-random <randomdev>\n\n";
 
+	print STDERR "\t\t-kskcount <KSK-count>\n";
 	print STDERR "\t\t-ksklength <keylen>\n";
 	print STDERR "\t\t-ksklife <lifespan>\n";
-	print STDERR "\t\t-zskcount <ZSK-count>\n\n";
+	print STDERR "\t\t-zskcount <ZSK-count>\n";
 	print STDERR "\t\t-zsklength <keylen>\n";
 	print STDERR "\t\t-zsklife <lifespan>\n\n";
 
@@ -1170,6 +1176,10 @@ encryption keys.
 
 Selects the cryptographic algorithm. The value of algorithm must be one that
 is recognized by B<dnssec-keygen>.
+
+=item B<-kskcount KSK-count>
+
+The default number of KSK keys that will be created for a zone.
 
 =item B<-ksklength keylen>
 
