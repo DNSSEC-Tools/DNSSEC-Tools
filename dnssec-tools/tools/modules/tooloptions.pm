@@ -64,6 +64,7 @@ my @stdopts =
 		["random=s",		"Random number generator device"],
 		["endtime=s",		"End-time for signed zone"],
 		["gends",		"Generate DS records"],
+		["nogends",		"Don't generate DS records"],
 
 	'',
 
