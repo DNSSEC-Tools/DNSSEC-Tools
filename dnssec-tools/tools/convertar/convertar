@@ -134,6 +134,10 @@ of the content.  Some modules may, for exmaple, load content from the
 network.  For types that can read and write to a file, a '-' may be
 specified as a file to print to or read from standard output.
 
+File formats MAY be infered from a trailing suffix, if the trailing
+suffix.  EG, if a referenced file is foo.csv then internally convertar
+will translate this to "csv:foo.csv".
+
 =head1 FILE FORMATS
 
 The following file formats are known by default to B<convertar>:
