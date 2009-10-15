@@ -2485,7 +2485,7 @@ sub getprogs
 	# use the default command names.
 	#
 	$keyarch = $dtconf{'keyarch'}	  || dnssec_tools_default("keyarch");
-	$rndc 	 = $dtconf{'rndc'}	  || dnssec_tools_default("bind_rndc");
+	$rndc 	 = $dtconf{'rndc'}	  || dnssec_tools_default("rndc");
 	$rrchk	 = $dtconf{'rollrec_chk'} || dnssec_tools_default("rollrec_check");
 }
 
