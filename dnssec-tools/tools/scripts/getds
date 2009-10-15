@@ -24,6 +24,7 @@ DTGetOptions(\%opts,
 		['z|print-zsks',     'Print ZSK DS records as well as KSKs'],
 
 	        ['p|dont-check-parent', 'Don\'t check for the parent\'s published DS record'],
+	        ['q|quiet',             'Just display minimal results'],
 		['GUI:otherargs_text',"DOMAIN_NAME"],
 	       ) || exit;
 
@@ -40,7 +41,8 @@ my @algorithms = split(/,\s*/, uc($opts{'a'}));
 #
 my @childds;
 my %childds;
-print "--- DS records generated from queried keys of $ARGV[0]:\n";
+print "--- DS records generated from queried keys of $ARGV[0]:\n"
+  if (!$opts{'q'});
 foreach my $key (@keys) {
     next if (!$opts{'z'} && ($key->flags & 0x1) == 0);  # KSKs only
     $key->{'name'} = $ARGV[0];
@@ -55,7 +57,7 @@ foreach my $key (@keys) {
     }
 }
 
-exit if ($opts{'p'});
+exit if ($opts{'p'} || $opts{'q'});  # exit if we either EITHER Ps or Qs!
 
 # query the DNSKEY from the net
 $q = $res->query($ARGV[0], "DS");
@@ -161,6 +163,15 @@ This option causes B<getds> to print ZSK DS records, as well as KSK records.
 
 Instructs B<getds> to not check the records in the parent for their
 published DS records.
+
+=item B<-q>
+
+=item B<--quiet>
+
+Produces quiet output with no explanitory headers.  I.E. it only
+prints the DS records generated from the DNSKEYs.
+
+Note: Running with -q implies -p.
 
 =back
 
