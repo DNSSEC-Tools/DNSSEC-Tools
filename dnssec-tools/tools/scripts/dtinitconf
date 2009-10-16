@@ -37,6 +37,17 @@ my @COMMON_BINDLOCS =
 	"/usr/sbin",
 );
 
+#
+# The BIND programs we're expecting to find.
+#
+my @BINDPROGS =
+(
+	"dnssec-keygen",
+	"dnssec-signzone",
+	"named-checkzone",
+	"rndc"
+);
+
 my $DEFAULT_EDITOR = "vi";
 
 my $ROOTHINTS = 'http://www.internic.net/zones/named.root';
@@ -123,8 +134,9 @@ my $roothints;				# root.hints file to create.
 # Program paths.
 #
 my $binddir;				# BIND directory.
-my $zonecheck;				# BIND's zone-checking program.
 my $keygen;				# BIND's key-generation program.
+my $rndc;				# BIND's name server control program.
+my $zonecheck;				# BIND's zone-checking program.
 my $zonesign;				# BIND's zone-signing program.
 my $viewimg;				# Image viewer.
 
@@ -308,8 +320,9 @@ sub optsandargs
 	$usegui	   = 0  if(defined($opts{'nousegui'}));
 
 	$admin	   = $opts{'admin'}	|| dnssec_tools_default("admin");
+
 	$binddir   = $opts{'binddir'};
-	$viewimg   = $opts{'viewimage'} || dnssec_tools_default("viewimage");
+	$viewimg   = $opts{'viewimage'}	|| dnssec_tools_default("viewimage");
 
 	$outfile   = $opts{'outfile'}	|| getconffile();
 	$overwrite = $opts{'overwrite'};
@@ -424,7 +437,7 @@ sub writeconf()
 	#
 	if($verbose)
 	{
-		print "writing values to \"$outfile\":\n";
+		print "writing the following values to \"$outfile\":\n";
 
 		print "\tadmin      - \"$admin\"\n";
 		print "\talgorithm  - \"$alg\"\n";
@@ -453,6 +466,7 @@ sub writeconf()
 		print "\troll-sleep            - \"$rsleep\"\n\n";
 
 		print "\tkeygen     - \"$keygen\"\n";
+		print "\trndc       - \"$rndc\"\n";
 		print "\tzonecheck  - \"$zonecheck\"\n";
 		print "\tzonesign   - \"$zonesign\"\n";
 		print "\tviewimage  - \"$viewimg\"\n\n";
@@ -489,6 +503,7 @@ admin-email     $admin
 # Paths to needed programs.  These may need adjusting for individual hosts.
 #
 keygen		$keygen
+rndc		$rndc
 viewimage	$viewimg
 zonecheck	$zonecheck
 zonesign	$zonesign
@@ -618,7 +633,7 @@ sub editconf()
 # Purpose:	This routine gathers path-related data.  The primary task
 #		is to figure out the path for BIND programs.  After digging
 #		up this path, it's used to create paths for named_checkzone,
-#		dnssec_keygen, and dnssec_signzone.
+#		dnssec_keygen, dnssec_signzone, and rndc.
 #
 sub get_paths()
 {
@@ -671,23 +686,37 @@ sub get_paths()
 	#
 	# Build paths for the BIND programs.
 	#
-	$keygen	   = "$binddir/dnssec-keygen";
-	$zonecheck = "$binddir/named-checkzone";
-	$zonesign  = "$binddir/dnssec-signzone";
+	if(($binddir eq "") || ($binddir eq "path"))
+	{
+		$keygen	   = "dnssec-keygen";
+		$rndc	   = "rndc";
+		$zonecheck = "named-checkzone";
+		$zonesign  = "dnssec-signzone";
+	}
+	else
+	{
+		$keygen	   = "$binddir/dnssec-keygen";
+		$rndc	   = "$binddir/rndc";
+		$zonecheck = "$binddir/named-checkzone";
+		$zonesign  = "$binddir/dnssec-signzone";
+
+		#
+		# Check that the paths all valid.
+		#
+		print "\n\tChecking validity of BIND paths:\n";
+		$pcret += pathchk("BIND directory",$binddir);
+		$pcret += pathchk("BIND's rndc",$rndc);
+		$pcret += pathchk("BIND's named_checkzone",$zonecheck);
+		$pcret += pathchk("BIND's dnssec_keygen",$keygen);
+		$pcret += pathchk("BIND's dnssec_signzone",$zonesign);
+		$pcret += pathchk("Image display program",$viewimg);
+	}
 
 	#
 	# Get the path for an image viewer.
 	#
 	$viewimg = getval("Image Display Program",$viewimg);
-
-	#
-	# Check that the paths all valid.
-	#
-	print "\n\tChecking validity of paths:\n";
-	$pcret += pathchk("BIND directory",$binddir);
-	$pcret += pathchk("BIND's named_checkzone",$zonecheck);
-	$pcret += pathchk("BIND's dnssec_keygen",$keygen);
-	$pcret += pathchk("BIND's dnssec_signzone",$zonesign);
+	print "\n\tChecking validity of other paths:\n";
 	$pcret += pathchk("Image display program",$viewimg);
 
 	#
@@ -723,7 +752,7 @@ sub get_paths()
 #		called when -noprompt was given.  The primary task is to figure
 #		out the path for BIND programs.  After digging up this path,
 #		it's used to create paths for named_checkzone, dnssec_keygen,
-#		and dnssec_signzone.
+#		dnssec_signzone, and rndc.
 #
 sub guess_paths()
 {
@@ -750,9 +779,21 @@ sub guess_paths()
 	#
 	# Build paths for the BIND programs.
 	#
-	$keygen	   = "$binddir/dnssec-keygen";
-	$zonecheck = "$binddir/named-checkzone";
-	$zonesign  = "$binddir/dnssec-signzone";
+	if(($binddir eq "") || ($binddir eq "path"))
+	{
+		$keygen	   = "dnssec-keygen";
+		$rndc	   = "rndc";
+		$zonecheck = "named-checkzone";
+		$zonesign  = "dnssec-signzone";
+	}
+	else
+	{
+		$keygen	   = "$binddir/dnssec-keygen";
+		$rndc	   = "$binddir/rndc";
+		$zonecheck = "$binddir/named-checkzone";
+		$zonesign  = "$binddir/dnssec-signzone";
+	}
+
 }
 
 #----------------------------------------------------------------------------
@@ -983,7 +1024,7 @@ sub findbind()
 	# of BIND programs.  Any time we find the program, we'll mark a hash
 	# entry for its directory.
 	#
-	foreach my $bind ("dnssec-keygen", "dnssec-signzone", "named-checkzone")
+	foreach my $bind (@BINDPROGS)
 	{
 		#
 		# Look in our path for the BIND program.
@@ -1013,6 +1054,9 @@ sub findbind()
 	#
 	$pbg = dnssec_tools_default("keygen");
 	$pbg =~ s/\/dnssec-keygen$//;
+	$hfound{$pbg} = 1;
+	$pbg = dnssec_tools_default("rndc");
+	$pbg =~ s/\/rndc$//;
 	$hfound{$pbg} = 1;
 	$pbg = dnssec_tools_default("zonecheck");
 	$pbg =~ s/\/named-checkzone$//;
@@ -1261,6 +1305,18 @@ The temporary directory for the B<trustman> command.
 
 =back
 
+=head2 BIND Options
+
+These options deal specifically with functionality provided by BIND.
+
+=over 4
+
+=item B<-rndc rndc-path>
+
+B<rndc> is the path to BIND's B<rndc> command.
+
+=back
+
 =head2 DNSSEC-Tools Options
 
 These options deal specifically with functionality provided by DNSSEC-Tools.
@@ -1279,7 +1335,10 @@ this directory, but only if they are to be saved and not deleted.
 
 =item B<-binddir directory>
 
-B<directory> is the directory holding the BIND programs.
+B<directory> is the directory holding the BIND programs.  If the reserved
+word "path" is specified, then existence of the BIND programs is not verified
+when B<dtinitconf> is executed.  Rather, the user's PATH directories will be
+searched for the BIND programs when the DNSSEC-Tools are executedm
 
 =item B<-entropy_msg>
 
