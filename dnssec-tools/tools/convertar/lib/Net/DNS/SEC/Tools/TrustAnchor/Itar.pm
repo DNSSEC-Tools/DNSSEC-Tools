@@ -21,23 +21,7 @@ sub read_content {
     my $doc;
 
     if ($location =~ /^(http|ftp)/) {
-	# pull from net
-	my $have_lwp = eval "require LWP::UserAgent;";
-	if (! $have_lwp) {
-	    print STDERR "failed to load the LWP::UserAgent module.\n";
-	    print STDERR "The LWP::UserAgent is required for pulling trust anchors over-the-network.\n";
-	    return;
-	}
-
-	my $ua = LWP::UserAgent->new;
-	my $response = $ua->get($location);
-	if (! $response->is_success) {
-	    print STDERR "Failed to fetch $location\n";
-	    print STDERR $response->status_line;
-	    return;
-	}
-
-	$doc = XMLin($response->decoded_content, ForceArray => 'ds');
+	$doc = XMLin($self->fetch_url($location), ForceArray => 'ds');
     } else {
 	# read from file
 	$doc = XMLin($location, ForceArray => 'ds');
