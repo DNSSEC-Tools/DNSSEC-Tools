@@ -35,6 +35,7 @@ is assumed to have imported some of the API routines mentioned below.
 
 use Exporter;
 use IO::File;
+use strict;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(load_module parse_component);
@@ -334,6 +335,31 @@ sub parse_extra_info_string {
 	$localinfo->{$1} = $2;
     }
     return $localinfo;
+}
+
+#
+# A remote URL fetching utility wrapper
+#
+sub fetch_url {
+    my ($self, $url) = @_;
+
+    # ensure we have the LWP::UserAgent module
+    my $have_lwp = eval "require LWP::UserAgent;";
+    if (! $have_lwp) {
+	print STDERR "failed to load the LWP::UserAgent module.\n";
+	print STDERR "The LWP::UserAgent is required for pulling trust anchors over-the-network.\n";
+	return;
+    }
+
+    my $ua = LWP::UserAgent->new;
+    my $response = $ua->get($url);
+    if (! $response->is_success) {
+	print STDERR "Failed to fetch $url\n";
+	print STDERR $response->status_line;
+	return;
+    }
+
+    return $response->decoded_content;
 }
 
 =back
