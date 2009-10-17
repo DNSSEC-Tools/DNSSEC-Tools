@@ -150,6 +150,14 @@ A BIND name server (B<named>) compatible trust anchor configuration file.
 This can be included within a master B<named.conf> file using the
 "include" directive.
 
+=item secspider
+
+This is merely an alias that fetches the specspider
+(http://secspider.cs.ucla.edu/) bind configuration file and then parse
+it using the bind file format.
+
+WARNING: The PGP signature on the downloaded file is NOT checked.
+
 =item csv
 
 A comma-separated list format.
