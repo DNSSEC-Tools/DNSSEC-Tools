@@ -46,13 +46,15 @@ sub read_content {
 	next if (/^\s*[#;]/);
 	next if (/^\s*\/\//);
 
-	if (/trusted-keys\s+{/) {
+	if (/trusted-keys\s*{*/) {
 	    $intrustanchor = 1;
 	} elsif ($intrustanchor &&
 		 /^\s*(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+\"([^"]*)\"\s*;/) {
+	    next if (/{/); # allow for "trust-anchor\n {"
 	    my ($name, $flags, $alg, $digesttype, $content) =
 	      ($1, $2, $3, $4, $5);
 	    $content =~ s/ //g;
+	    $name =~ s/\"//g;
 	    push @{$doc->{'delegation'}{$name}{'dnskey'}},
 	      {
 	       flags => $flags,
