@@ -5,6 +5,7 @@ use Net::DNS::SEC::Tools::TrustAnchor;
 
 our @ISA = qw(Net::DNS::SEC::Tools::TrustAnchor);
 our $VERSION = '0.1';
+use IO::File;
 
 use XML::Simple;
 
@@ -24,8 +25,18 @@ sub read_content {
     my $doc = { delegation => {}};
 
     my $intrustanchor = 0;
-    open(I, "<", $location);
-    while (<I>) {
+    my $fileh = $location;
+    if (!ref($fileh)) {
+	# it's a string location to a file, so open it
+	$fileh = new IO::File;
+	$fileh->open($location);
+	if (!$fileh) {
+	    print STDERR "failed to open $location\n";
+	    return;
+	}
+    }
+
+    while (<$fileh>) {
 	if (/^\s*# EIVER/) {
 	    my $localinfo =
 	      $self->parse_extra_info_string($_, $doc, "#");
