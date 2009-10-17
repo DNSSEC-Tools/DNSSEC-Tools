@@ -2,7 +2,8 @@ package Net::DNS::SEC::Tools::TrustAnchor::Secspider;
 
 use strict;
 use Net::DNS::SEC::Tools::TrustAnchor::Bind;
-use IO::String;
+use File::Temp qw(tempfile);
+use IO::File;
 
 # we're really just a special form of the Bind module
 our @ISA = qw(Net::DNS::SEC::Tools::TrustAnchor::Bind);
@@ -22,10 +23,21 @@ sub read_content {
     return if (!$text);
 
     # turn it into a file handle
-    my $ioh = IO::String->new($text);
+    my ($fh, $filename) = tempfile();
+    return if (!$fh);
+
+    # print the contents to the file
+    print $fh $text;
+    $fh->close;
+
+    # now open a new handle to it for reading
+    $fh = new IO::File;
+    $fh->open($filename);
 
     # call the normal bind module to process it
-    return $self->SUPER::read_content($ioh, $options);
+    return $self->SUPER::read_content($fh, $options);
+
+    unlink($filename);
 }
 
 sub write_ds {
