@@ -64,6 +64,9 @@ my @opts =
 	"verbose",			# Verbose equivalent.
 	"Version",		        # Display the version number.
 
+	"maxlife=i",			# Maximum key lifespan.
+	"minlife=i",			# Minimum key lifespan.
+
 	"usegui",			# Use option GUI.
 	"noentropy_msg",		# Don't give entropy message.
 	"nosavekeys",			# Don't save old keys.
@@ -94,6 +97,8 @@ my $endtime;				# Endtime of signature validity.
 my $kskcnt;				# Count of KSK keys.
 my $ksklen;				# The KSK size.
 my $ksklife;				# Lifespan of the KSK.
+my $maxlife;				# Maximum lifespan of the keys.
+my $minlife;				# Minimum lifespan of the keys.
 my $random;				# The source of randomness.
 my $usensec3;				# Use nsec3 by default?
 my $nsec3salt;				# The default salt to use
@@ -281,6 +286,8 @@ sub optsandargs
 	# Get the option values.  If these weren't given on the command
 	# line, they'll be taken the DNSSEC-Tools defaults.
 	#
+	$maxlife   = $opts{'maxlife'}	|| dnssec_tools_default("lifespan-max");
+	$minlife   = $opts{'minlife'}	|| dnssec_tools_default("lifespan-min");
 	$kskcnt    = $opts{'kskcount'}	|| dnssec_tools_default("kskcount");
 	$ksklen    = $opts{'ksklength'}	|| dnssec_tools_default("ksklength");
 	$ksklife   = $opts{'ksklife'}	|| dnssec_tools_default("ksklife");
@@ -442,6 +449,8 @@ sub writeconf()
 		print "\tadmin      - \"$admin\"\n";
 		print "\talgorithm  - \"$alg\"\n";
 		print "\trandom     - \"$random\"\n";
+		print "\tmaxlife    - \"$maxlife\"\n";
+		print "\tminlife    - \"$maxlife\"\n";
 		print "\tkskcount   - \"$kskcnt\"\n\n";
 		print "\tksklen     - \"$ksklen\"\n";
 		print "\tksklife    - \"$ksklife\"\n";
@@ -556,6 +565,8 @@ endtime		$endtime		# RRSIGs good for thirty days.
 #	15768000	half-year
 #	31536000	year
 #
+lifespan-max	$maxlife
+lifespan-min	$minlife
 ksklife		$ksklife
 zsklife		$zsklife
 
@@ -808,9 +819,119 @@ sub get_key_opts()
 
 	$alg	 = getval("Encryption Algorithm",$alg);
 	$random	 = getval("Random-number Generator",$random);
+
+	#
+	# Get the maximum key lifespan and ensure it isn't less then the
+	# default minimum lifespan.
+	#
+	while(42)
+	{
+		my $mlife;			# User-specified maximum life.
+
+		$mlife = getval("Maximum Key Lifespan (in seconds)",$maxlife);
+
+		#
+		# Ensure the user's maximum lifespan is greater than the
+		# default minimum lifespan.
+		#
+		if($mlife < $minlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tMaximum key lifespan is less than the minimum allowed lifespan ($maxlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $maxlife;
+		}
+
+		#
+		# Ensure the user's maximum lifespan is greater than the
+		# default maximum lifespan.
+		#
+		if($mlife > $maxlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tMaximum key lifespan is greater than the maximum allowed lifespan ($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $maxlife;
+		}
+
+		#
+		# Save the lifespan limit and drop out of the loop.
+		#
+		$maxlife = $mlife;
+		last;
+	}
+
+	#
+	# Get the minimum key lifespan and ensure it isn't less then the
+	# user-specified maximum lifespan.
+	#
+	while(42)
+	{
+		my $mlife;			# User-specified minimum life.
+
+		$mlife = getval("Minimum Key Lifespan (in seconds)",$minlife);
+
+		#
+		# Ensure the user's minimum lifespan is greater than the
+		# default minimum lifespan.
+		#
+		if($mlife < $minlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tMinimum key lifespan is less than minimum allowed lifespan ($mlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $minlife;
+		}
+
+		#
+		# Ensure the user's minimum lifespan is less than the
+		# user's maximum lifespan.
+		#
+		if($mlife > $maxlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tMinimum key lifespan is greater than the maximum key lifespan ($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $minlife;
+		}
+
+		#
+		# Save the lifespan limit and drop out of the loop.
+		#
+		$minlife = $mlife;
+		last;
+	}
+
+
+
 	$kskcnt	 = getval("KSK Count",$kskcnt);
 	$ksklen	 = getval("KSK Length (in bits)",$ksklen);
 	$ksklife = getval("KSK Lifespan (in seconds)",$ksklife);
+
 	$zskcnt	 = getval("ZSK Count",$zskcnt);
 	$zsklen	 = getval("ZSK Length (in bits)",$zsklen);
 	$zsklife = getval("ZSK Lifespan (in seconds)",$zsklife);
@@ -1233,6 +1354,24 @@ The default KSK key length to be passed to B<dnssec-keygen>.
 
 The default length of time between KSK rollovers.  This is measured in   
 seconds.
+
+This value is B<only> used for key rollover.  Keys do not have a life-time
+in any other sense.
+
+=item B<-maxlife lifespan>
+
+The maximum length of time between key rollovers.  This is measured in   
+seconds.  The B<ksklife> and B<zsklife> values must be not greater than
+this value.
+
+This value is B<only> used for key rollover.  Keys do not have a life-time
+in any other sense.
+
+=item B<-minlife lifespan>
+
+The minimum length of time between key rollovers.  This is measured in   
+seconds.  The B<ksklife> and B<zsklife> values must be not less than
+this value.
 
 This value is B<only> used for key rollover.  Keys do not have a life-time
 in any other sense.
