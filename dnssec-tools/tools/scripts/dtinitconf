@@ -819,6 +819,7 @@ sub get_key_opts()
 
 	$alg	 = getval("Encryption Algorithm",$alg);
 	$random	 = getval("Random-number Generator",$random);
+	print "\n";
 
 	#
 	# Get the maximum key lifespan and ensure it isn't less then the
@@ -838,7 +839,7 @@ sub get_key_opts()
 		{
 			my $again;		# "Try-again" response.
 
-			$again = getval("\n\tMaximum key lifespan is less than the minimum allowed lifespan ($maxlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
+			$again = getval("\n\tMaximum key lifespan is less than the minimum allowed lifespan\n\t($mlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
 			if($again)
 			{
 				print "\n";
@@ -856,7 +857,7 @@ sub get_key_opts()
 		{
 			my $again;		# "Try-again" response.
 
-			$again = getval("\n\tMaximum key lifespan is greater than the maximum allowed lifespan ($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
+			$again = getval("\n\tMaximum key lifespan is greater than the maximum allowed lifespan\n\t($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
 			if($again)
 			{
 				print "\n";
@@ -891,7 +892,7 @@ sub get_key_opts()
 		{
 			my $again;		# "Try-again" response.
 
-			$again = getval("\n\tMinimum key lifespan is less than minimum allowed lifespan ($mlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
+			$again = getval("\n\tMinimum key lifespan is less than the minimum allowed lifespan\n\t($mlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
 			if($again)
 			{
 				print "\n";
@@ -909,7 +910,7 @@ sub get_key_opts()
 		{
 			my $again;		# "Try-again" response.
 
-			$again = getval("\n\tMinimum key lifespan is greater than the maximum key lifespan ($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
+			$again = getval("\n\tMinimum key lifespan is greater than the maximum key lifespan\n\t($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
 			if($again)
 			{
 				print "\n";
@@ -925,16 +926,120 @@ sub get_key_opts()
 		$minlife = $mlife;
 		last;
 	}
-
-
+	print "\n";
 
 	$kskcnt	 = getval("KSK Count",$kskcnt);
 	$ksklen	 = getval("KSK Length (in bits)",$ksklen);
-	$ksklife = getval("KSK Lifespan (in seconds)",$ksklife);
+
+	#
+	# Get the minimum key lifespan and ensure it isn't less then the
+	# user-specified maximum lifespan.
+	#
+	while(42)
+	{
+		my $mlife;			# Minimum key lifespan.
+
+		$mlife = getval("KSK Lifespan (in seconds)",$ksklife);
+
+		#
+		# Ensure the user's KSK lifespan is greater than the
+		# default minimum lifespan.
+		#
+		if($mlife < $minlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tKSK lifespan is less than the minimum allowed key lifespan\n\t($mlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $minlife;
+		}
+
+		#
+		# Ensure the user's KSK lifespan is less than the
+		# default maximum lifespan.
+		#
+		if($mlife > $maxlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tKSK lifespan is greater than the maximum key lifespan\n\t($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $maxlife;
+		}
+
+		#
+		# Save the KSK lifespan and drop out of the loop.
+		#
+		$ksklife = $mlife;
+		last;
+	}
+	print "\n";
 
 	$zskcnt	 = getval("ZSK Count",$zskcnt);
 	$zsklen	 = getval("ZSK Length (in bits)",$zsklen);
-	$zsklife = getval("ZSK Lifespan (in seconds)",$zsklife);
+
+	#
+	# Get the minimum key lifespan and ensure it isn't less then the
+	# user-specified maximum lifespan.
+	#
+	while(42)
+	{
+		my $mlife;			# Minimum key lifespan.
+
+		$mlife = getval("ZSK Lifespan (in seconds)",$zsklife);
+
+		#
+		# Ensure the user's ZSK lifespan is greater than the
+		# default minimum lifespan.
+		#
+		if($mlife < $minlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tZSK lifespan is less than the minimum allowed key lifespan\n\t($mlife < $minlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $minlife;
+		}
+
+		#
+		# Ensure the user's ZSK lifespan is less than the
+		# default maximum lifespan.
+		#
+		if($mlife > $maxlife)
+		{
+			my $again;		# "Try-again" response.
+
+			$again = getval("\n\tZSK lifespan is greater than the maximum key lifespan\n\t($mlife > $maxlife).\n\tWould you like to try again?  ",1,"boolean");
+			if($again)
+			{
+				print "\n";
+				next;
+			}
+
+			$mlife = $maxlife;
+		}
+
+		#
+		# Save the ZSK lifespan and drop out of the loop.
+		#
+		$zsklife = $mlife;
+		last;
+	}
 
 	print "\n";
 }
@@ -1353,12 +1458,13 @@ The default KSK key length to be passed to B<dnssec-keygen>.
 =item B<-ksklife lifespan>
 
 The default length of time between KSK rollovers.  This is measured in   
-seconds.
+seconds.  This value must be within the range of the B<minlife> and
+B<maxlife> values.
 
 This value is B<only> used for key rollover.  Keys do not have a life-time
 in any other sense.
 
-=item B<-maxlife lifespan>
+=item B<-maxlife maxlifespan>
 
 The maximum length of time between key rollovers.  This is measured in   
 seconds.  The B<ksklife> and B<zsklife> values must be not greater than
@@ -1367,7 +1473,7 @@ this value.
 This value is B<only> used for key rollover.  Keys do not have a life-time
 in any other sense.
 
-=item B<-minlife lifespan>
+=item B<-minlife minlifespan>
 
 The minimum length of time between key rollovers.  This is measured in   
 seconds.  The B<ksklife> and B<zsklife> values must be not less than
@@ -1387,7 +1493,8 @@ The default ZSK key length to be passed to B<dnssec-keygen>.
 =item B<-zsklife lifespan>
 
 The default length of time between ZSK rollovers.  This is measured in   
-seconds.
+seconds.  This value must be within the range of the B<minlife> and
+B<maxlife> values.
 
 This value is B<only> used for key rollover.  Keys do not have a life-time
 in any other sense.
@@ -1477,7 +1584,7 @@ this directory, but only if they are to be saved and not deleted.
 B<directory> is the directory holding the BIND programs.  If the reserved
 word "path" is specified, then existence of the BIND programs is not verified
 when B<dtinitconf> is executed.  Rather, the user's PATH directories will be
-searched for the BIND programs when the DNSSEC-Tools are executedm
+searched for the BIND programs when the DNSSEC-Tools are executed.
 
 =item B<-entropy_msg>
 
