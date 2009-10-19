@@ -6,6 +6,8 @@
 # Options are described in the POD at the end of this file
 ######################################################################
 
+use strict;
+
 use IO::Socket::INET;
 use IO::File;
 use Getopt::Long;
@@ -41,6 +43,7 @@ my $logfh;
 my %opts;
 my %loglevels;
 my $image_has_changed;
+my $refresh;
 
 ########################################################
 # Constants
@@ -132,8 +135,8 @@ $gv->add_node($libvalnode);
 
 # check if socket operation is desired
 if($opts{'s'} == 1) {
-	$local_host = $opts{'a'};
-	$local_port = $opts{'p'};
+	my $local_host = $opts{'a'};
+	my $local_port = $opts{'p'};
 	$socket = IO::Socket::INET->new(LocalAddr => $local_host,
                                 LocalPort => $local_port,
                                 Proto    => "udp",
@@ -158,7 +161,7 @@ if($opts{'s'} == 1) {
 if (defined $logfile) {
     $logfh = new IO::File("<$logfile");
 } else {
-    $logfh = STDIN;
+    $logfh = *STDIN;
 }
 
 # Read from file handle
@@ -217,7 +220,7 @@ sub update_gif {
 # update the graph
 #
 sub update_graph {
-
+    my @log;
     my $level;
     my %prop;
     my $newnode;
@@ -227,19 +230,19 @@ sub update_graph {
     $edge_str = $dest ;
     $newnode = "$name, $class, $type";
 
-	# remove duplicates from the array so that 
-	# all edges on the graph are different
-	my %hash = map { $_, 1 } @log;
-	@log = keys %hash;
+    # remove duplicates from the array so that 
+    # all edges on the graph are different
+    my %hash = map { $_, 1 } @log;
+    @log = keys %hash;
 
-	# Check if something new was added 
-	if($count == ($#log + 1)) {
-		return $newnode;
-	}
+    # Check if something new was added 
+    if($count == ($#log + 1)) {
+	return $newnode;
+    }
 
-	$count = $#log + 1;
+    $count = $#log + 1;
 
-	# add the node and an edge from the Validator
+    # add the node and an edge from the Validator
     ($level, %prop) = get_ac_lineattr($status);
     if ($loglevels{$level} == 1) {
         $gv->add_node($newnode);
