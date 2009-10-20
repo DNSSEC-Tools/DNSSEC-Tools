@@ -254,7 +254,7 @@ sub main
 	if($packed)
 	{
 		delete($opts{'rndc'});
-		delete($opts{'rollrec-chk'});
+		delete($opts{'rollchk'});
 		delete($opts{'zonesigner'});
 		$opts{'keyarch'}   = "keyarch";
 		$opts{'keygen'}	   = "dnssec-keygen";
