@@ -79,13 +79,15 @@ sub DTGetOptions {
 	push @_, ["h|help|help-full"], \$optionref;
     }
 
+    # actually run getoptions
     Getopt::Long::Configure(qw(auto_help no_ignore_case));
     my $ret = GetOptions(LocalOptionsMap(@_));
 
     # check to see if they specified -h or --help
     if (($optionref && $optionref->{'h'}) ||
 	(!$hashref && $$optionref)) {
-	print "\nPlease perl's the Getopt::GUI::Long module for help output\n\n";
+	print
+	  "\nPlease perl's the Getopt::GUI::Long module for help output\n\n";
 	exit 1;
     }
 
