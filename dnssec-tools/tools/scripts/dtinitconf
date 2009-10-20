@@ -30,6 +30,7 @@ my $DTVERS = "DNSSEC-Tools Version: 1.4";
 my @DTPROGS =
 (
 	"keyarch",
+	"rollchk",
 	"zonesigner"
 );
 
@@ -163,6 +164,7 @@ my $roothints;				# root.hints file to create.
 #
 my $dtdir;				# DNSSEC-Tools directory.
 my $keyarch;				# keyarch program.
+my $rollchk;				# rollchk program.
 my $zonesigner;				# zonesigner program.
 
 my $binddir;				# BIND directory.
@@ -504,6 +506,7 @@ sub writeconf()
 		print "\troll-sleep            - \"$rsleep\"\n\n";
 
 		print "\tkeyarch    - \"$keyarch\"\n";
+		print "\trollchk    - \"$rollchk\"\n";
 		print "\tzonesigner - \"$zonesigner\"\n";
 		print "\tkeygen     - \"$keygen\"\n";
 		print "\trndc       - \"$rndc\"\n";
@@ -543,6 +546,7 @@ admin-email     $admin
 # Paths to needed programs.  These may need adjusting for individual hosts.
 #
 keyarch		$keyarch
+rollchk		$rollchk
 zonesigner	$zonesigner
 
 keygen		$keygen
@@ -678,7 +682,7 @@ sub editconf()
 # Purpose:	This routine gathers path-related data.  The primary task
 #		is to figure out the paths for DNSSEC-Tools and BIND programs.
 #		After digging up these paths, they're used to create paths for
-#		keyarch, zonesigner, named_checkzone, dnssec_keygen,
+#		keyarch, rollchk, zonesigner, named_checkzone, dnssec_keygen,
 #		dnssec_signzone, and rndc.
 #
 sub get_paths()
@@ -776,6 +780,7 @@ sub get_paths()
 	if(($dtdir eq "") || ($dtdir eq "path"))
 	{
 		$keyarch    = "keyarch";
+		$rollchk    = "rollchk";
 		$zonesigner = "zonesigner";
 	}
 	else
@@ -787,6 +792,7 @@ sub get_paths()
 		print "\tChecking validity of DNSSEC-Tools paths\n";
 		$pcret += pathchk("DNSSEC-Tools directory",$dtdir);
 		$pcret += pathchk("DNSSEC-Tools' keyarch",$keyarch);
+		$pcret += pathchk("DNSSEC-Tools' rollchk",$rollchk);
 		$pcret += pathchk("DNSSEC-Tools' zonesigner",$zonesigner);
 	}
 
@@ -908,11 +914,13 @@ sub guess_paths()
 	if(($dtdir eq "") || ($dtdir eq "path"))
 	{
 		$keyarch    = "keyarch";
+		$rollchk    = "rollchk";
 		$zonesigner = "zonesigner";
 	}
 	else
 	{
 		$keyarch    = "$dtdir/keyarch";
+		$rollchk    = "$dtdir/rollchk";
 		$zonesigner = "$dtdir/zonesigner";
 	}
 
@@ -1482,6 +1490,9 @@ sub finddtdir()
 	$pbg = dnssec_tools_default("keyarch");
 	$pbg =~ s/\/keyarch$//;
 	$hfound{$pbg} = 1;
+	$pbg = dnssec_tools_default("rollchk");
+	$pbg =~ s/\/rollchk$//;
+	$hfound{$pbg} = 1;
 	$pbg = dnssec_tools_default("zonesigner");
 	$pbg =~ s/\/zonesigner$//;
 	$hfound{$pbg} = 1;
@@ -1909,6 +1920,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 B<dnssec-keygen(8)>,
 B<dnssec-signzone(8)>,
 B<named-checkzone(8)>,
+B<keyarch(8)>,
+B<rollckk(8)>,
 B<rollerd(8)>,
 B<zonesigner(8)>
 
