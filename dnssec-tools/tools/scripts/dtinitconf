@@ -173,7 +173,7 @@ my $rndc;				# BIND's name server control program.
 my $zonecheck;				# BIND's zone-checking program.
 my $zonesign;				# BIND's zone-signing program.
 
-my $viewimg;				# Image viewer.
+# my $viewimg;				# Image viewer.
 
 
 
@@ -778,7 +778,7 @@ sub get_paths()
 	#
 	# Get the path for an image viewer.
 	#
-	$viewimg = getval("Image Display Program",$viewimg);
+#	$viewimg = getval("Image Display Program",$viewimg);
 
 	#
 	# Build paths for the DNSSEC-Tools programs.
@@ -828,14 +828,14 @@ sub get_paths()
 		$pcret += pathchk("BIND's named_checkzone",$zonecheck);
 		$pcret += pathchk("BIND's dnssec_keygen",$keygen);
 		$pcret += pathchk("BIND's dnssec_signzone",$zonesign);
-		$pcret += pathchk("Image display program",$viewimg);
+#		$pcret += pathchk("Image display program",$viewimg);
 	}
 
 	#
 	# Check validity of non-DNSSEC-Tools, non-BIND paths.
 	#
-	print "\tChecking validity of other paths\n";
-	$pcret += pathchk("Image display program",$viewimg);
+#	print "\tChecking validity of other paths\n";
+#	$pcret += pathchk("Image display program",$viewimg);
 
 	#
 	# If any of the paths don't exist, then we'll give the user
