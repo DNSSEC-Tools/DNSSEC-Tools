@@ -24,36 +24,43 @@ our $gui_file_slots = 5;
 # Getopt::GUI::Long safe calling in case it doesn't exist on the system
 #
 sub DTGetOptions {
-
-    # read in the default config file
-    my %config = parseconfig();
-
-    my $nogui = 'no';
-    my $have_gui = eval {require Getopt::GUI::Long;};
-
+    my $configfile;
+    my $usegui = 'no';
     my $extraopts = [];
 
+    # A special calling case is allowed: --dtconf configfile
+    if ($ARGV[0] eq '--dtconf') {
+	$configfile = $ARGV[1];
+	@ARGV = () if ($#ARGV == 1); # call the GUI or help if only option
+    }
+
+    # read in the default config file
+    my %config = parseconfig($configfile);
+
+    # see if we CAN even do a gui
+    my $have_gui = eval {require Getopt::GUI::Long;};
+
+    # special config; is this used anywhere?
     if ($_[0] eq 'config') {
 	shift @_;
 	$extraopts = shift @_;
     }
 
     # if the default config says not to use a GUI, mark it not to load.
-    if ($config{'usegui'} eq '0' || $config{'usegui'} =~ /^no*/i) {
-	if ($Getopt::GUI::Long::VERSION >= 0.9) {
-	    $nogui = 'nogui_supported';
-	} else {
-	    $nogui = 'yes';
-	}
+    # (boolconvert defaults nothing=false and we want nothing = true)
+    if (boolconvert($config{'usegui'})) {
+	$usegui = "yes";
     }
 
     # then do the right thing based on if we have the Getopt::GUI::Long package
     # and whether we should use it or not by default.
-    if ($nogui != 1 && $have_gui) {
+    if ($have_gui) {
 	require Getopt::Long;
 	import Getopt::GUI::Long;
 	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
-	if ($nogui == 'nogui_supported') {
+
+	if ($usegui eq 'no' &&
+	    $Getopt::GUI::Long::VERSION >= 0.9) {
 	    # we *can perform* a GUI at this point, but the default is off.
 	    # the user can still override using --gui
 	    Getopt::GUI::Long::Configure(qw(no_gui), @$extraopts);
