@@ -662,11 +662,35 @@ sub check_nsec3
 #
 sub check_files
 {
+
+	#
+	# Check the DNSSEC-Tools commands.
+	#
+	file_check("keyarch","x");
+	file_check("rollchk","x");
+	file_check("zonesigner","x");
+
+	#
+	# Check the some DNSSEC-Tools files and directories.
+	#
+	file_check("roll_logfile","f");
+	file_check("taresolvconf","f");
+	file_check("tatmpdir","d");
+
+	#
+	# Check the BIND commands.
+	#
 	file_check("keygen","x");
-	file_check("random","c");
-	file_check("viewimage","x");
+	file_check("rndc","x");
 	file_check("zonecheck","x");
 	file_check("zonesign","x");
+
+	#
+	# Check the other files.
+	#
+	file_check("random","c");
+
+#	file_check("viewimage","x");
 }
 
 #-----------------------------------------------------------------------------
@@ -791,6 +815,7 @@ sub file_check
 	# Check some data about this file:
 	#
 	#	f - regular file
+	#	d - directory
 	#	x - regular file that must be executable
 	#	c - character device file that must be readable
 	#
@@ -803,6 +828,27 @@ sub file_check
 		else
 		{
 			prt(0,"$field file $fname is not a regular file");
+			$errs++;
+		}
+	}
+	elsif($ftype eq "d")
+	{
+		if(-d $fname)
+		{
+			prt(1,"$field file $fname is a directory");
+		}
+		else
+		{
+			prt(0,"$field file $fname is not a directory");
+			$errs++;
+		}
+		if(-x $fname)
+		{
+			prt(1,"$field file $fname is an executable directory");
+		}
+		else
+		{
+			prt(0,"$field file $fname is not an executable directory");
 			$errs++;
 		}
 	}
@@ -1084,7 +1130,31 @@ artificial limit under which it I<may> not make sense to have an end-time.)
 
 =head2 Path Checks
 
-The following path checks are performed:
+Path checks are performed for several DNSSEC-Tools commands, several BIND
+commands, and a few miscellaneous files.
+
+The following path checks are performed for DNSSEC-Tools commands:
+
+=over 8
+
+=item I<keyarch>
+
+Ensure the I<keyarch> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=item I<rollchk>
+
+Ensure the I<rollchk> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=item I<zonesigner>
+
+Ensure the I<zonesigner> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=back
+
+The following path checks are performed for BIND tools:
 
 =over 8
 
@@ -1093,9 +1163,9 @@ The following path checks are performed:
 Ensure the I<keygen> field is valid.  If the filename starts with a '/',
 the file must be a regular executable file.
 
-=item I<viewimage>
+=item I<rndc>
 
-Ensure the I<viewimage> field is valid.  If the filename starts with a '/',
+Ensure the I<rndc> field is valid.  If the filename starts with a '/',
 the file must be a regular executable file.
 
 =item I<zonecheck>
@@ -1107,6 +1177,29 @@ the file must be a regular executable file.
 
 Ensure the I<zonesign> field is valid.  If the filename starts with a '/',
 the file must be a regular executable file.
+
+=back
+
+The following path checks are performed for miscellaneous files and
+directories:
+
+=over 8
+
+=item I<random>
+
+Ensure the I<random> field is valid.  The file must be a character device file.
+
+=item I<roll_logfile>
+
+Ensure the I<roll_logfile> field is a regular file.
+
+=item I<taresolvconf>
+
+Ensure the I<taresolvconf> field is a regular file.
+
+=item I<tatmpdir>
+
+Ensure the I<tatmpdir> field is a directory.
 
 =back
 
