@@ -28,7 +28,7 @@ sub DTGetOptions {
     # read in the default config file
     my %config = parseconfig();
 
-    my $nogui = 0;
+    my $nogui = 'no';
     my $have_gui = eval {require Getopt::GUI::Long;};
 
     my $extraopts = [];
@@ -41,9 +41,9 @@ sub DTGetOptions {
     # if the default config says not to use a GUI, mark it not to load.
     if ($config{'usegui'} eq '0' || $config{'usegui'} =~ /^no*/i) {
 	if ($Getopt::GUI::Long::VERSION >= 0.9) {
-	    $nogui = 2;
+	    $nogui = 'nogui_supported';
 	} else {
-	    $nogui = 1;
+	    $nogui = 'yes';
 	}
     }
 
@@ -53,7 +53,7 @@ sub DTGetOptions {
 	require Getopt::Long;
 	import Getopt::GUI::Long;
 	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
-	if ($nogui == 2) {
+	if ($nogui == 'nogui_supported') {
 	    # we *can perform* a GUI at this point, but the default is off.
 	    # the user can still override using --gui
 	    Getopt::GUI::Long::Configure(qw(no_gui), @$extraopts);
@@ -65,8 +65,31 @@ sub DTGetOptions {
     # fall back to the normal Getopt::Long support
     require Getopt::Long;
     import Getopt::Long;
+
+    # set up for -h / --help output warning
+    my $hashref = 0;
+    my $optionref;
+    if (ref($_[0]) eq 'HASH') {
+	# hash reference options were passed
+	$optionref = $_[0];
+	$hashref = 1;
+	push @_, ["h|help|help-full"];
+    } else {
+	# variable reference options were passed
+	push @_, ["h|help|help-full"], \$optionref;
+    }
+
     Getopt::Long::Configure(qw(auto_help no_ignore_case));
-    GetOptions(LocalOptionsMap(@_));
+    my $ret = GetOptions(LocalOptionsMap(@_));
+
+    # check to see if they specified -h or --help
+    if (($optionref && $optionref->{'h'}) ||
+	(!$hashref && $$optionref)) {
+	print "\nPlease perl's the Getopt::GUI::Long module for help output\n\n";
+	exit 1;
+    }
+
+    return $ret;
 }
 
 sub LocalOptionsMap {
