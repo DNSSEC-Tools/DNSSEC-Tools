@@ -25,7 +25,7 @@ our $gui_file_slots = 5;
 #
 sub DTGetOptions {
     my $configfile;
-    my $usegui = 'no';
+    my $usegui = 0;
     my $extraopts = [];
 
     # A special calling case is allowed: --dtconf configfile
@@ -48,9 +48,16 @@ sub DTGetOptions {
 
     # if the default config says not to use a GUI, mark it not to load.
     # (boolconvert defaults nothing=false and we want nothing = true)
-    if (boolconvert($config{'usegui'})) {
-	$usegui = "yes";
+    if (exists($config{'usegui'})) {
+	$usegui = boolconvert($config{'usegui'});
     }
+
+    # allow the environmental override
+    if (exists($ENV{'DT_GUI'})) {
+	$usegui = boolconvert($ENV{'DT_GUI'});
+    }
+
+    # XXX: support --dtconf foo.conf --gui
 
     # then do the right thing based on if we have the Getopt::GUI::Long package
     # and whether we should use it or not by default.
@@ -59,7 +66,7 @@ sub DTGetOptions {
 	import Getopt::GUI::Long;
 	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
 
-	if ($usegui eq 'no' &&
+	if (!$usegui &&
 	    $Getopt::GUI::Long::VERSION >= 0.9) {
 	    # we *can perform* a GUI at this point, but the default is off.
 	    # the user can still override using --gui
