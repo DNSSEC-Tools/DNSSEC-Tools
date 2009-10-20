@@ -25,6 +25,28 @@ my $VERS   = "$NAME version: 1.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.4";
 
 #
+# The DNSSEC-Tools programs we're expecting to find.
+#
+my @DTPROGS =
+(
+	"keyarch",
+	"zonesigner"
+);
+
+#
+# Common locations for DNSSEC-Tools.
+#
+my @COMMON_DTLOCS =
+(
+	"/usr/bin",
+	"/usr/local/bin",
+	"/usr/local/sbin",
+	"/usr/sbin",
+	"/opt/local/bin",
+	"/opt/local/sbin",
+);
+
+#
 # Common locations for BIND.  These locations were found on:
 #
 #	FreeBSD 5.4
@@ -74,6 +96,7 @@ my @opts =
 
 	"admin=s",			# Administrator's email address.
 	"binddir=s",			# Path to BIND programs.
+	"dtdir=s",			# Path to DNSSEC-Tools programs.
 	"viewimage=s",			# Path to image viewer.
 
 	"roll-loadzone",		# Turn on rollerd's zone-loading flag.
@@ -110,7 +133,7 @@ my $zsklife;				# Lifespan of the ZSK.
 
 my $admin;				# Administrator's email address.
 my $entmsg;				# Display entropy message.
-my $keyarch;				# Key archive directory.
+my $keyarchdir;				# Key archive directory.
 my $savekeys;				# Save/delete old keys.
 my $usegui;				# Use-GUI flag.
 
@@ -138,11 +161,16 @@ my $roothints;				# root.hints file to create.
 #
 # Program paths.
 #
+my $dtdir;				# DNSSEC-Tools directory.
+my $keyarch;				# keyarch program.
+my $zonesigner;				# zonesigner program.
+
 my $binddir;				# BIND directory.
 my $keygen;				# BIND's key-generation program.
 my $rndc;				# BIND's name server control program.
 my $zonecheck;				# BIND's zone-checking program.
 my $zonesign;				# BIND's zone-signing program.
+
 my $viewimg;				# Image viewer.
 
 
@@ -304,10 +332,10 @@ sub optsandargs
 	$nsec3iter = $opts{'nsec3iter'}	|| dnssec_tools_default("nsec3iter");
 	$nsec3optout = $opts{'nsec3optout'} || dnssec_tools_default("nsec3optout");
 
-	$keyarch   = $opts{'archivedir'};
-	$savekeys  = $opts{'savekeys'}	  || dnssec_tools_default("savekeys");
-	$usegui	   = $opts{'usegui'}	  || dnssec_tools_default("usegui");
-	$entmsg	   = $opts{'entropy_msg'} || dnssec_tools_default("entropy_msg");
+	$keyarchdir = $opts{'archivedir'};
+	$savekeys   = $opts{'savekeys'}	   || dnssec_tools_default("savekeys");
+	$usegui	    = $opts{'usegui'}	   || dnssec_tools_default("usegui");
+	$entmsg	    = $opts{'entropy_msg'} || dnssec_tools_default("entropy_msg");
 
 	$rloadzone = dnssec_tools_default("roll_loadzone");
 	$rloadzone = 0 if(defined($opts{'no-roll-loadzone'}));
@@ -329,6 +357,7 @@ sub optsandargs
 	$admin	   = $opts{'admin'}	|| dnssec_tools_default("admin");
 
 	$binddir   = $opts{'binddir'};
+	$dtdir	   = $opts{'dtdir'};
 	$viewimg   = $opts{'viewimage'}	|| dnssec_tools_default("viewimage");
 
 	$outfile   = $opts{'outfile'}	|| getconffile();
@@ -465,7 +494,7 @@ sub writeconf()
 		print "\tendtime    - \"$endtime\"\n\n";
 
 		print "\tentropy message flag  - \"$entmsg\"\n";
-		print "\told key archive       - \"$keyarch\"\n";
+		print "\told key archive       - \"$keyarchdir\"\n";
 		print "\tsave-old-keys flag    - \"$savekeys\"\n";
 		print "\tuse-gui flag          - \"$usegui\"\n\n";
 
@@ -474,6 +503,8 @@ sub writeconf()
 		print "\troll-loglevel         - \"$rloglevel\"\n";
 		print "\troll-sleep            - \"$rsleep\"\n\n";
 
+		print "\tkeyarch    - \"$keyarch\"\n";
+		print "\tzonesigner - \"$zonesigner\"\n";
 		print "\tkeygen     - \"$keygen\"\n";
 		print "\trndc       - \"$rndc\"\n";
 		print "\tzonecheck  - \"$zonecheck\"\n";
@@ -511,12 +542,15 @@ admin-email     $admin
 #
 # Paths to needed programs.  These may need adjusting for individual hosts.
 #
+keyarch		$keyarch
+zonesigner	$zonesigner
+
 keygen		$keygen
 rndc		$rndc
-viewimage	$viewimg
 zonecheck	$zonecheck
 zonesign	$zonesign
-zonesigner	/usr/bin/zonesigner
+
+viewimage	$viewimg
 ";
 
 	if(($kgopts ne "") || ($zcopts ne "") || ($zsopts ne ""))
@@ -573,7 +607,7 @@ zsklife		$zsklife
 #
 # Settings for zonesigner.
 #
-archivedir	$keyarch
+archivedir	$keyarchdir
 entropy_msg	$entmsg
 savekeys	$savekeys
 kskcount	$kskcnt
@@ -642,15 +676,55 @@ sub editconf()
 # Routine:	get_paths()
 #
 # Purpose:	This routine gathers path-related data.  The primary task
-#		is to figure out the path for BIND programs.  After digging
-#		up this path, it's used to create paths for named_checkzone,
-#		dnssec_keygen, dnssec_signzone, and rndc.
+#		is to figure out the paths for DNSSEC-Tools and BIND programs.
+#		After digging up these paths, they're used to create paths for
+#		keyarch, zonesigner, named_checkzone, dnssec_keygen,
+#		dnssec_signzone, and rndc.
 #
 sub get_paths()
 {
 	my $pcret  = 0;				# pathchk() return value.
 
 	print "Path-related Options:\n";
+
+	#
+	# If the user didn't give -dtdir, we'll go through our internal
+	# collection of possible DNSSEC-Tools directories.
+	#
+	if($dtdir eq "")
+	{
+		my @dtdirs;			# DNSSEC-Tools directories.
+
+		#
+		# Get the directories that contain DNSSEC-Tools programs.
+		#
+		@dtdirs = finddtdir();
+
+		#
+		# If we found any directories with DNSSEC-Tools programs,
+		# we'll list the directories for the user.  If we didn't
+		# find anything, we'll give a message.
+		#
+		if(@dtdirs > 0)
+		{
+			print "\tThese directories contain DNSSEC-Tools programs:\n";
+			foreach $dtdir (sort(@dtdirs))
+			{
+				print "\t\t$dtdir\n";
+			}
+			print "\n";
+		}
+		else
+		{
+			print "\tDNSSEC-Tools may not be installed on your system\n";
+		}
+		$dtdir = getval("DNSSEC-Tools directory",$dtdirs[0]);
+		print "\n";
+	}
+	else
+	{
+		print "\n\tUsing \"$dtdir\" for DNSSEC-Tools directory\n\n";
+	}
 
 	#
 	# If the user didn't give -binddir, we'll go through our internal
@@ -672,9 +746,6 @@ sub get_paths()
 		#
 		if(@binddirs > 0)
 		{
-			#
-			# Print the directories that hold BIND programs.
-			#
 			print "\tThese directories contain BIND programs:\n";
 			foreach $binddir (sort(@binddirs))
 			{
@@ -692,6 +763,31 @@ sub get_paths()
 	else
 	{
 		print "\n\tUsing \"$binddir\" for BIND directory\n\n";
+	}
+
+	#
+	# Get the path for an image viewer.
+	#
+	$viewimg = getval("Image Display Program",$viewimg);
+
+	#
+	# Build paths for the DNSSEC-Tools programs.
+	#
+	if(($dtdir eq "") || ($dtdir eq "path"))
+	{
+		$keyarch    = "keyarch";
+		$zonesigner = "zonesigner";
+	}
+	else
+	{
+		$keyarch    = "$dtdir/keyarch";
+		$zonesigner = "$dtdir/zonesigner";
+
+		print "\n";
+		print "\tChecking validity of DNSSEC-Tools paths\n";
+		$pcret += pathchk("DNSSEC-Tools directory",$dtdir);
+		$pcret += pathchk("DNSSEC-Tools' keyarch",$keyarch);
+		$pcret += pathchk("DNSSEC-Tools' zonesigner",$zonesigner);
 	}
 
 	#
@@ -714,7 +810,7 @@ sub get_paths()
 		#
 		# Check that the paths all valid.
 		#
-		print "\n\tChecking validity of BIND paths:\n";
+		print "\tChecking validity of BIND paths\n";
 		$pcret += pathchk("BIND directory",$binddir);
 		$pcret += pathchk("BIND's rndc",$rndc);
 		$pcret += pathchk("BIND's named_checkzone",$zonecheck);
@@ -724,10 +820,9 @@ sub get_paths()
 	}
 
 	#
-	# Get the path for an image viewer.
+	# Check validity of non-DNSSEC-Tools, non-BIND paths.
 	#
-	$viewimg = getval("Image Display Program",$viewimg);
-	print "\n\tChecking validity of other paths:\n";
+	print "\tChecking validity of other paths\n";
 	$pcret += pathchk("Image display program",$viewimg);
 
 	#
@@ -768,6 +863,26 @@ sub get_paths()
 sub guess_paths()
 {
 	#
+	# If the user didn't give -dtdir, we'll go through our internal
+	# collection of possible DNSSEC-Tools directories.
+	#
+	if($dtdir eq "")
+	{
+		my @dtdirs;			# DNSSEC-Tools directories.
+
+		#
+		# Get the directories that contain DNSSEC-Tools programs.
+		#
+		@dtdirs = finddtdir();
+
+		#
+		# If we found any directories with DNSSEC-Tools programs,
+		# we'll use the first directory.
+		#
+		$dtdir = $dtdirs[0] if(@dtdirs > 0);
+	}
+
+	#
 	# If the user didn't give -binddir, we'll go through our internal
 	# collection of possible BIND directories.
 	#
@@ -785,6 +900,20 @@ sub guess_paths()
 		# the first directory.
 		#
 		$binddir = $binddirs[0] if(@binddirs > 0);
+	}
+
+	#
+	# Build paths for the DNSSEC-Tools programs.
+	#
+	if(($dtdir eq "") || ($dtdir eq "path"))
+	{
+		$keyarch    = "keyarch";
+		$zonesigner = "zonesigner";
+	}
+	else
+	{
+		$keyarch    = "$dtdir/keyarch";
+		$zonesigner = "$dtdir/zonesigner";
 	}
 
 	#
@@ -1089,10 +1218,10 @@ sub get_dt_opts()
 {
 	print "DNSSEC-Tools Options:\n";
 
-	$usegui	  = getval("Use DNSSEC-Tools GUI Interface",$usegui,"boolean");
-	$entmsg	  = getval("Display Entropy Message in Zonesigner",$entmsg,"boolean");
-	$savekeys = getval("Save Old Keys",$savekeys,"boolean");
-	$keyarch  = getval("Key Archive Directory","");
+	$usegui	    = getval("Use DNSSEC-Tools GUI Interface",$usegui,"boolean");
+	$entmsg	    = getval("Display Entropy Message in Zonesigner",$entmsg,"boolean");
+	$savekeys   = getval("Save Old Keys",$savekeys,"boolean");
+	$keyarchdir = getval("Key Archive Directory","");
 
 	print "\n";
 
@@ -1237,7 +1366,6 @@ sub getval()
 #
 sub findbind()
 {
-	my $binddir;				# BIND directory.
 	my $pbg;				# Path to BIND programs.
 
 	my $paths;				# Path environment variable.
@@ -1293,6 +1421,73 @@ sub findbind()
 
 	#
 	# Return the directories we found with BIND programs.
+	#
+	@found = keys(%hfound);
+	return(@found);
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	finddtdir()
+#
+# Purpose:	This routine collects a set of directories that hold the
+#		DNSSEC-Tools programs.  The following sources are checked:
+#			- directories in the path
+#			- directories that commonly are used for DNSSEC-Tools
+#			- DNSSEC-Tools defaults
+#
+#		The list of collected directories are returned to the caller.
+#
+sub finddtdir()
+{
+	my $pbg;			# Path to DNSSEC-Tools programs.
+	my $paths;			# Path environment variable.
+	my @paths;			# Split-out paths.
+	my %hfound = ();		# Directories with DNSSEC-Tools progs.
+	my @found;			# Directories with DNSSEC-Tools progs.
+
+	#
+	# Look in the environment and in some common directories for a set
+	# of DNSSEC-Tools programs.  Any time we find the program, we'll mark
+	# a hash entry for its directory.
+	#
+	foreach my $dtt (@DTPROGS)
+	{
+		#
+		# Look in our path for the DNSSEC-Tools program.
+		#
+		$paths = $ENV{'PATH'};
+		@paths = split /:/, $paths;
+		foreach my $path (@paths)
+		{
+			$pbg = "$path/$dtt";
+			next if(! -e $pbg);
+			$hfound{$path} = 1;
+		}
+
+		#
+		# Look in a set of common locations for the DNSSEC-Tools tools.
+		#
+		foreach my $path (@COMMON_DTLOCS)
+		{
+			$pbg = "$path/$dtt";
+			next if(! -e $pbg);
+			$hfound{$path} = 1;
+		}
+	}
+
+	#
+	# Look for the DNSSEC-Tools tools in our defaults.
+	#
+	$pbg = dnssec_tools_default("keyarch");
+	$pbg =~ s/\/keyarch$//;
+	$hfound{$pbg} = 1;
+	$pbg = dnssec_tools_default("zonesigner");
+	$pbg =~ s/\/zonesigner$//;
+	$hfound{$pbg} = 1;
+
+	#
+	# Return the directories we found with DNSSEC-Tools programs.
 	#
 	@found = keys(%hfound);
 	return(@found);
@@ -1585,6 +1780,14 @@ B<directory> is the directory holding the BIND programs.  If the reserved
 word "path" is specified, then existence of the BIND programs is not verified
 when B<dtinitconf> is executed.  Rather, the user's PATH directories will be
 searched for the BIND programs when the DNSSEC-Tools are executed.
+
+=item B<-dtdir directory>
+
+B<directory> is the directory holding the DNSSEC-Tools programs.  If the
+reserved word "path" is specified, then existence of the DNSSEC-Tools programs
+is not verified when B<dtinitconf> is executed.  Rather, the user's PATH
+directories will be searched for the DNSSEC-Tools programs when those tools
+are executed.
 
 =item B<-entropy_msg>
 
