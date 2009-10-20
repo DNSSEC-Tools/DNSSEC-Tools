@@ -117,23 +117,26 @@ sub parseconfig
 	#
 	# Find the right configuration file to open.
 	#
+	my $conffiletoread = $conffile;
 	if($numargs != 0)
 	{
-		$conffile = shift;
+		$conffiletoread = shift;
+		# allow for an undefined argument to still read the default
+		$conffiletoread = $conffile if (!defined($conffiletoread));
 	}
 
 	#
 	# Make sure the config file actually exists.  If not,
 	# we'll quietly return.
 	#
-	return if(! -e $conffile);
+	return if(! -e $conffiletoread);
 
 	#
 	# Open up the config file.
 	#
-	if(open(CONF,"< $conffile") == 0)
+	if(open(CONF,"< $conffiletoread") == 0)
 	{
-		err("unable to open $conffile\n",-1);
+		err("unable to open $conffiletoread\n",-1);
 		return;
 	}
 
