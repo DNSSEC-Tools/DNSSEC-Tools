@@ -58,7 +58,7 @@ my %defaults =
 	"tasmtpserver"     => "localhost",	# Trustman's SMTP server.
 	"taresolvconf"	   => "/etc/resolv.conf",	# resolv.conf file.
 	"usegui"	   => 0,		# Use GUI for option entry flag.
-	"viewimage"	   => "/usr/X11R6/bin/viewimage",
+#	"viewimage"	   => "/usr/X11R6/bin/viewimage",
 	"zonecheck"	   => getprefixdir() . "/sbin/named-checkzone",
 	"zonecheck-opts"   => "",		# Options for zone checker.
 	"zonesign"	   => getprefixdir() . "/sbin/dnssec-signzone",
@@ -318,10 +318,6 @@ This default specifies the location of B<trustman>'s temporary directory.
 
 This default indicates whether or not the DNSSEC-Tools GUI should be used for
 option entry.
-
-=item B<viewimage>
-
-This default holds the default image viewer.
 
 =item B<zonecheck>
 
