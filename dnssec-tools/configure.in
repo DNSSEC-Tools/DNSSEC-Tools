@@ -61,20 +61,37 @@ AC_ARG_WITH(threads,
 [      --without-threads       Don't use threads.
 ])
 
-
 dnl ----------------------------------------------------------------------
 dnl perl specific arguments
 dnl
+dnl ----------------------------------------------------------------------
+if test "x$prefix" = "xNONE" ; then
+   # if a default prefix is set then don't change perl's install
+   # prefix from what *it* thinks is right, which may not be the
+   # default system prefix
+   prefix=$ac_default_prefix
+else
+   # if a prefix was specificied, install everything into the
+   # specified prefix, including all perl specific scripts and mans
+   # ugh: this likely isn't perfect.
+
+   if test "x$mandir" = "xNONE" ; then
+     mandir="$datadir/man"
+   fi
+
+   if test "x$exec_prefix" = "xNONE" ; then
+     exec_prefix="$prefix"
+   fi
+
+   PERLARGS="$PERLARGS INSTALLSCRIPT=$prefix/bin PREFIX=$prefix INSTALLSITESCRIPT=$prefix/bin INSTALLBIN=$exec_prefix/bin INSTALLSITEBIN=$exec_prefix/bin INSTALLSITEMAN1DIR=$mandir/man1 INSTALLSITEMAN3DIR=$mandir/man3 INSTALLMAN1DIR=$mandir/man1 INSTALLMAN3DIR=$mandir/man3"
+fi
+
 AC_ARG_WITH(perl-build-args,
 [  --with-perl-build-args=ARGS Add ARGS to building perl Makefiles.],
 	PERLARGS="$PERLARGS $withval"
 )
 AC_SUBST(PERLARGS)
 
-dnl ----------------------------------------------------------------------
-if test "x$prefix" = "xNONE" ; then
-   prefix=$ac_default_prefix
-fi
 expanded_sysconfdir=`eval echo $sysconfdir`
 AC_SUBST(expanded_sysconfdir)
 
