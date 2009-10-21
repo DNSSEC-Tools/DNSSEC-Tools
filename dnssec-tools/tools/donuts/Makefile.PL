@@ -31,7 +31,7 @@ installrulefiles:
 	$(INSTALL) rules/*.txt $(RULESDIR)
 
 installfixpaths:
-	$(PERL) -p -i -e "s|/usr/local/share|$(PREFIX)/share|" $(DISTDIR)/$(PREFIX)/bin/donuts
+	$(PERL) -p -i -e "s|/usr/local/share|$(PREFIX)/share|" $(DISTDIR)/$(INSTALLBIN)/donuts
 ';
 }
 
