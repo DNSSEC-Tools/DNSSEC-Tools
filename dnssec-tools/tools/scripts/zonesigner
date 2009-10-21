@@ -2274,7 +2274,7 @@ sub serialincr
 	# Increment the serial number and change it in the file contents.
 	# We'll also save the new serial number in the keyrec.
 	#
-	$file =~ s/(\s+IN\s+SOA\s+[\.\w]+\s+[\.\w]+\s+\(?\s+)(\d+)/$1$serialnew/s;
+	$file =~ s/(\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w]+\s+\(?\s+)(\d+)/$1$serialnew/s;
 	keyrec_setval('zone',$zone,'serial',$serialnew);
 	$opts{'serial'} = $serialnew;
 
