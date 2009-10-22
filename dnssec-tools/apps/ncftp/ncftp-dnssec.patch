@@ -1,7 +1,7 @@
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/configure.in ../ncftp-3.2.0/configure.in
---- /usr/local/src/clean/ncftp-3.2.0/configure.in	2006-08-05 17:47:58.000000000 -0400
-+++ ../ncftp-3.2.0/configure.in	2007-05-01 18:57:45.000000000 -0400
-@@ -79,6 +79,33 @@ dnl if test "$nc_cv_readline" = yes ; th
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/configure.in ncftp-3.2.3/configure.in
+--- clean/ncftp-3.2.3/configure.in	2009-07-28 11:01:25.000000000 -0400
++++ ncftp-3.2.3/configure.in	2009-10-20 22:33:02.000000000 -0400
+@@ -86,6 +86,33 @@ dnl if test "$nc_cv_readline" = yes ; th
  dnl 	wi_LIB_READLINE
  dnl fi
  
@@ -35,10 +35,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  
  
  dnl ---------------------------------------------------------------------------
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/libncftp/ftp.c ../ncftp-3.2.0/libncftp/ftp.c
---- /usr/local/src/clean/ncftp-3.2.0/libncftp/ftp.c	2005-01-01 16:27:07.000000000 -0500
-+++ ../ncftp-3.2.0/libncftp/ftp.c	2007-05-02 12:59:26.000000000 -0400
-@@ -119,7 +119,7 @@ OpenControlConnection(const FTPCIPtr cip
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/libncftp/ftp.c ncftp-3.2.3/libncftp/ftp.c
+--- clean/ncftp-3.2.3/libncftp/ftp.c	2008-10-05 16:02:20.000000000 -0400
++++ ncftp-3.2.3/libncftp/ftp.c	2009-10-20 22:33:02.000000000 -0400
+@@ -146,7 +146,7 @@ OpenControlConnection(const FTPCIPtr cip
  	volatile int sock2fd = -1;
  	ResponsePtr rp = NULL;
  	char **volatile curaddr;
@@ -47,7 +47,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  	struct hostent hp;
  	char *volatile fhost;
  	unsigned int fport;
-@@ -159,11 +159,19 @@ OpenControlConnection(const FTPCIPtr cip
+@@ -186,11 +186,19 @@ OpenControlConnection(const FTPCIPtr cip
  
  	cip->servCtlAddr.sin_port = (unsigned short) fport;
  
@@ -68,10 +68,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  		if (ip_address.s_addr == INADDR_NONE) {
  			FTPLogError(cip, kDontPerror, "%s: unknown host.\n", fhost);
  			cip->errNo = kErrHostUnknown;
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/libncftp/syshdrs.h ../ncftp-3.2.0/libncftp/syshdrs.h
---- /usr/local/src/clean/ncftp-3.2.0/libncftp/syshdrs.h	2006-07-31 14:14:28.000000000 -0400
-+++ ../ncftp-3.2.0/libncftp/syshdrs.h	2007-04-26 12:10:50.000000000 -0400
-@@ -348,4 +348,8 @@ extern ssize_t nsendmsg(int, const struc
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/libncftp/syshdrs.h ncftp-3.2.3/libncftp/syshdrs.h
+--- clean/ncftp-3.2.3/libncftp/syshdrs.h	2008-09-04 20:13:11.000000000 -0400
++++ ncftp-3.2.3/libncftp/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
+@@ -347,4 +347,8 @@ extern ssize_t nsendmsg(int, const struc
  #include "util.h"
  #include "ftp.h"
  
@@ -80,11 +80,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
 +#endif
 +
  /* eof */
-Binary files /usr/local/src/clean/ncftp-3.2.0/libncftp/syshdrs.h.gch and ../ncftp-3.2.0/libncftp/syshdrs.h.gch differ
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/ncftp/cmds.c ../ncftp-3.2.0/ncftp/cmds.c
---- /usr/local/src/clean/ncftp-3.2.0/ncftp/cmds.c	2006-08-02 18:32:04.000000000 -0400
-+++ ../ncftp-3.2.0/ncftp/cmds.c	2007-05-01 19:44:53.000000000 -0400
-@@ -2218,7 +2218,7 @@ LookupCmd(const int argc, char **const a
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/ncftp/cmds.c ncftp-3.2.3/ncftp/cmds.c
+--- clean/ncftp-3.2.3/ncftp/cmds.c	2008-10-05 16:53:13.000000000 -0400
++++ ncftp-3.2.3/ncftp/cmds.c	2009-10-20 22:33:02.000000000 -0400
+@@ -2244,7 +2244,7 @@ LookupCmd(const int argc, char **const a
  	const char *host;
  	char **cpp;
  	struct in_addr ip_address;
@@ -93,7 +92,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  	char ipStr[16];
  	GetoptInfo opt;
  
-@@ -2241,11 +2241,17 @@ LookupCmd(const int argc, char **const a
+@@ -2267,11 +2267,17 @@ LookupCmd(const int argc, char **const a
  
  	for (i=opt.ind; i<argc; i++) {
  		hpok = 0;
@@ -112,7 +111,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  			Trace(-1, "Unable to get information about site %s.\n", host);
  		} else if (shortMode) {
  			MyInetAddr(ipStr, sizeof(ipStr), hp.h_addr_list, 0);
-@@ -2518,6 +2524,13 @@ DoOpen(void)
+@@ -2544,6 +2550,13 @@ DoOpen(void)
  		OpenMsg("Resolving %s...", ohost);
  		if ((gLoadedBm != 0) && (gBm.lastIP[0] != '\0')) {
  			result = MyGetHostByName(ipstr, sizeof(ipstr), ohost, 3);
@@ -126,7 +125,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  			if (result < 0) {
  				(void) STRNCPY(ipstr, gBm.lastIP);
  				result = 0;
-@@ -2529,7 +2542,18 @@ DoOpen(void)
+@@ -2555,7 +2568,18 @@ DoOpen(void)
  		}
  		if (result < 0) {
  			(void) printf("\n");
@@ -145,10 +144,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  			return (-1);
  		}
  		(void) STRNCPY(gConn.host, ipstr);
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/ncftp/syshdrs.h ../ncftp-3.2.0/ncftp/syshdrs.h
---- /usr/local/src/clean/ncftp-3.2.0/ncftp/syshdrs.h	2004-01-06 16:41:11.000000000 -0500
-+++ ../ncftp-3.2.0/ncftp/syshdrs.h	2007-04-26 12:10:42.000000000 -0400
-@@ -280,3 +280,8 @@
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/ncftp/syshdrs.h ncftp-3.2.3/ncftp/syshdrs.h
+--- clean/ncftp-3.2.3/ncftp/syshdrs.h	2008-09-04 20:14:32.000000000 -0400
++++ ncftp-3.2.3/ncftp/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
+@@ -291,3 +291,8 @@
  #include <Strn.h>			/* Library header. */
  #include <sio.h>			/* Library header. */
  #include <ncftp.h>			/* Library header. */
@@ -157,10 +156,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
 +#include <validator/validator.h>
 +#endif
 +
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/ncftp/util.c ../ncftp-3.2.0/ncftp/util.c
---- /usr/local/src/clean/ncftp-3.2.0/ncftp/util.c	2006-08-02 18:31:38.000000000 -0400
-+++ ../ncftp-3.2.0/ncftp/util.c	2007-05-02 12:52:47.000000000 -0400
-@@ -688,6 +688,9 @@ MyGetHostByName(char *const volatile dst
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/ncftp/util.c ncftp-3.2.3/ncftp/util.c
+--- clean/ncftp-3.2.3/ncftp/util.c	2008-07-08 18:04:24.000000000 -0400
++++ ncftp-3.2.3/ncftp/util.c	2009-10-20 22:33:02.000000000 -0400
+@@ -690,6 +690,9 @@ MyGetHostByName(char *const volatile dst
  #ifdef HAVE_INET_ATON
  	struct in_addr ina;
  #endif
@@ -170,7 +169,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  
  #ifdef HAVE_INET_ATON
  	if (inet_aton(hn, &ina) != 0) {
-@@ -726,12 +729,26 @@ MyGetHostByName(char *const volatile dst
+@@ -728,12 +731,26 @@ MyGetHostByName(char *const volatile dst
  		osigalrm = NcSignal(SIGALRM, CancelGetHostByName);
  		if (t > 0)
  			(void) alarm((unsigned int) t);
@@ -197,15 +196,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  		if (hp != NULL) {
  			InetNtoA(dst, ((struct in_addr **) hp->h_addr_list)[0], dsize);
  			return (0);
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/rsconfig ../ncftp-3.2.0/rsconfig
---- /usr/local/src/clean/ncftp-3.2.0/rsconfig	1969-12-31 19:00:00.000000000 -0500
-+++ ../ncftp-3.2.0/rsconfig	2007-05-01 17:37:18.000000000 -0400
-@@ -0,0 +1 @@
-+CFLAGS="-g -O0" ./configure --cache=$HOME/config.cache --with-local-dnssec-validation --disable-shared
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/sh_util/syshdrs.h ../ncftp-3.2.0/sh_util/syshdrs.h
---- /usr/local/src/clean/ncftp-3.2.0/sh_util/syshdrs.h	2002-03-27 05:37:56.000000000 -0500
-+++ ../ncftp-3.2.0/sh_util/syshdrs.h	2007-04-26 12:11:06.000000000 -0400
-@@ -283,3 +283,8 @@
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/sh_util/syshdrs.h ncftp-3.2.3/sh_util/syshdrs.h
+--- clean/ncftp-3.2.3/sh_util/syshdrs.h	2008-09-04 20:14:38.000000000 -0400
++++ ncftp-3.2.3/sh_util/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
+@@ -280,3 +280,8 @@
  #include <Strn.h>			/* Library header. */
  #include <sio.h>			/* Library header. */
  #include <ncftp.h>			/* Library header. */
@@ -214,10 +208,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
 +#include <validator/validator.h>
 +#endif
 +
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/sio/DNSUtil.c ../ncftp-3.2.0/sio/DNSUtil.c
---- /usr/local/src/clean/ncftp-3.2.0/sio/DNSUtil.c	2005-03-24 20:20:00.000000000 -0500
-+++ ../ncftp-3.2.0/sio/DNSUtil.c	2007-05-02 12:54:54.000000000 -0400
-@@ -24,7 +24,31 @@ extern int getdomainname(char *name, get
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/sio/DNSUtil.c ncftp-3.2.3/sio/DNSUtil.c
+--- clean/ncftp-3.2.3/sio/DNSUtil.c	2008-07-13 20:25:54.000000000 -0400
++++ ncftp-3.2.3/sio/DNSUtil.c	2009-10-20 22:33:02.000000000 -0400
+@@ -26,7 +26,31 @@ extern int getdomainname(char *name, get
  int
  GetHostByName(struct hostent *const hp, const char *const name, char *const hpbuf, size_t hpbufsize)
  {
@@ -250,7 +244,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  	struct hostent *h;
  	int h_errno_unused = 0;
  	memset(hpbuf, 0, hpbufsize);
-@@ -110,7 +134,21 @@ GetHostByName(struct hostent *const hp, 
+@@ -114,7 +138,21 @@ GetHostByName(struct hostent *const hp, 
  int
  GetHostByAddr(struct hostent *const hp, void *addr, int asize, int atype, char *const hpbuf, size_t hpbufsize)
  {
@@ -273,7 +267,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  	struct hostent *h;
  	int h_errno_unused = 0;
  	memset(hpbuf, 0, hpbufsize);
-@@ -177,7 +215,7 @@ int
+@@ -182,7 +220,7 @@ int
  GetHostEntry(struct hostent *const hp, const char *const host, struct in_addr *const ip_address, char *const hpbuf, size_t hpbufsize)
  {
  	struct in_addr ip;
@@ -282,7 +276,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  	
  	/* See if the host was given in the dotted IP format, like "36.44.0.2."
  	 * If it was, inet_addr will convert that to a 32-bit binary value;
-@@ -185,7 +223,8 @@ GetHostEntry(struct hostent *const hp, c
+@@ -190,7 +228,8 @@ GetHostEntry(struct hostent *const hp, c
  	 */
  	ip.s_addr = inet_addr(host);
  	if (ip.s_addr != INADDR_NONE) {
@@ -292,7 +286,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  			rc = 0;
  			if (ip_address != NULL)
  				(void) memcpy(&ip_address->s_addr, hp->h_addr_list[0], (size_t) hp->h_length);
-@@ -196,12 +235,19 @@ GetHostEntry(struct hostent *const hp, c
+@@ -201,12 +240,19 @@ GetHostEntry(struct hostent *const hp, c
  		/* No IP address, so it must be a hostname, like ftp.wustl.edu. */
  		if (ip_address != NULL)
  			ip_address->s_addr = INADDR_NONE;
@@ -314,10 +308,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  	return (rc);
  }	/* GetHostEntry */
  
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/sio/StrAddr.c ../ncftp-3.2.0/sio/StrAddr.c
---- /usr/local/src/clean/ncftp-3.2.0/sio/StrAddr.c	2002-10-12 17:07:16.000000000 -0400
-+++ ../ncftp-3.2.0/sio/StrAddr.c	2007-05-02 12:54:17.000000000 -0400
-@@ -265,8 +265,16 @@ AddrStrToAddr(const char * const s, stru
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/sio/StrAddr.c ncftp-3.2.3/sio/StrAddr.c
+--- clean/ncftp-3.2.3/sio/StrAddr.c	2008-07-13 20:26:01.000000000 -0400
++++ ncftp-3.2.3/sio/StrAddr.c	2009-10-20 22:33:02.000000000 -0400
+@@ -268,8 +268,16 @@ AddrStrToAddr(const char * const s, stru
  		sa->sin_family = AF_INET;
  		sa->sin_addr.s_addr = ipnum;
  	} else {
@@ -334,7 +328,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  		if (hp == NULL) {
  			if (errno == 0)
  				errno = ENOENT;
-@@ -297,7 +305,14 @@ AddrToAddrStr(char *const dst, size_t ds
+@@ -305,7 +313,14 @@ AddrToAddrStr(char *const dst, size_t ds
  		InetNtoA(addrName, &saddrp->sin_addr, sizeof(addrName));
  		addrNamePtr = addrName;
  	} else {
@@ -349,10 +343,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
  		if ((hp != NULL) && (hp->h_name != NULL) && (hp->h_name[0] != '\0')) {
  			addrNamePtr = hp->h_name;
  		} else {
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/sio/syshdrs.h ../ncftp-3.2.0/sio/syshdrs.h
---- /usr/local/src/clean/ncftp-3.2.0/sio/syshdrs.h	2005-03-24 20:13:56.000000000 -0500
-+++ ../ncftp-3.2.0/sio/syshdrs.h	2007-04-26 12:09:40.000000000 -0400
-@@ -212,4 +212,8 @@ extern ssize_t nsendmsg(int, const struc
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/sio/syshdrs.h ncftp-3.2.3/sio/syshdrs.h
+--- clean/ncftp-3.2.3/sio/syshdrs.h	2008-07-13 22:13:40.000000000 -0400
++++ ncftp-3.2.3/sio/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
+@@ -215,4 +215,8 @@ extern ssize_t nsendmsg(int, const struc
  #	endif
  #endif	/* SOCKS */
  
@@ -361,11 +355,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
 +#endif
 +
  /* eof */
-Binary files /usr/local/src/clean/ncftp-3.2.0/sio/syshdrs.h.gch and ../ncftp-3.2.0/sio/syshdrs.h.gch differ
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/Strn/syshdrs.h ../ncftp-3.2.0/Strn/syshdrs.h
---- /usr/local/src/clean/ncftp-3.2.0/Strn/syshdrs.h	2004-01-07 01:07:05.000000000 -0500
-+++ ../ncftp-3.2.0/Strn/syshdrs.h	2007-04-26 12:10:52.000000000 -0400
-@@ -57,4 +57,8 @@
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/Strn/syshdrs.h ncftp-3.2.3/Strn/syshdrs.h
+--- clean/ncftp-3.2.3/Strn/syshdrs.h	2008-07-13 22:14:17.000000000 -0400
++++ ncftp-3.2.3/Strn/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
+@@ -63,4 +63,8 @@
  extern char *strdup(const char *const src);
  #endif
  
@@ -374,10 +367,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore
 +#endif
 +
  /* eof */
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rks/.rcfiles/diff-ignore --new-file /usr/local/src/clean/ncftp-3.2.0/vis/syshdrs.h ../ncftp-3.2.0/vis/syshdrs.h
---- /usr/local/src/clean/ncftp-3.2.0/vis/syshdrs.h	2004-01-07 01:07:37.000000000 -0500
-+++ ../ncftp-3.2.0/vis/syshdrs.h	2007-04-26 12:10:45.000000000 -0400
-@@ -348,3 +348,8 @@
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/vis/syshdrs.h ncftp-3.2.3/vis/syshdrs.h
+--- clean/ncftp-3.2.3/vis/syshdrs.h	2008-09-04 20:14:44.000000000 -0400
++++ ncftp-3.2.3/vis/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
+@@ -340,3 +340,8 @@
  #include <Strn.h>			/* Library header. */
  #include <sio.h>			/* Because ../ncftp/util.c needs it. */
  #include <ncftp.h>			/* Mostly for utility routines it has. */
