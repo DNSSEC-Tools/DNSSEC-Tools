@@ -161,7 +161,14 @@ if($opts{'s'} == 1) {
 if (defined $logfile) {
     $logfh = new IO::File("<$logfile");
 } else {
-    $logfh = *STDIN;
+    $logfile = "STDIN";
+    $logfh = new IO::Handle;
+    $logfh->fdopen(fileno(STDIN),"r");
+}
+
+if (! $logfh) {
+    print STDERR "drawvalmap unable to open input file \"$logfile\"\n";
+    exit(1);
 }
 
 # Read from file handle
@@ -415,44 +422,44 @@ generated.
 
 =over
 
-=item <-s>
+=item B<-s>
 
 This changes the mode of operation to read input from a socket.
 The default address and port to which B<drawvalmap> binds are
 127.0.0.1:1053.
 
-=item <-a IP-address>
+=item B<-a IP-address>
 
 This changes the address to which B<drawvalmap> binds itself to
 the specified value. This option takes effect only if the
 I<-s> option is also specified.
 
-=item <-p port>
+=item B<-p port>
 
 This changes the port to which B<drawvalmap> binds itself to
 the specified value. This option takes effect only if the
 I<-s> option is also specified.
 
-=item <-h file.html>
+=item B<-h file.html>
 
 This creates an HTML file with the given name, which contains the GIF image of
 the validation map.
 
-=item <-r refresh-period>
+=item B<-r refresh-period>
 
 This changes the refresh period in the HTML file to the given value. The
 default is 5 seconds.
 
-=item <-g file.gif>
+=item B<-g file.gif>
 
 This changes the name of .gif file to the given value.
 
-=item <-i ignore_pattern_string>
+=item B<-i ignore_pattern_string>
 
 This causes B<drawvalmap> to ignore log records that match the given ignore
 pattern.
 
-=item <-m match_pattern_string>
+=item B<-m match_pattern_string>
 
 This causes B<drawvalmap> to include only log records that match the given
 pattern.  If a given log record matches a pattern given by the I<-m> option
