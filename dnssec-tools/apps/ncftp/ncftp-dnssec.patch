@@ -1,3 +1,15 @@
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/Strn/syshdrs.h ncftp-3.2.3/Strn/syshdrs.h
+--- clean/ncftp-3.2.3/Strn/syshdrs.h	2008-07-13 22:14:17.000000000 -0400
++++ ncftp-3.2.3/Strn/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
+@@ -63,4 +63,8 @@
+ extern char *strdup(const char *const src);
+ #endif
+ 
++#ifdef DNSSEC_LOCAL_VALIDATION
++#include <validator/validator.h>
++#endif
++
+ /* eof */
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/configure.in ncftp-3.2.3/configure.in
 --- clean/ncftp-3.2.3/configure.in	2009-07-28 11:01:25.000000000 -0400
 +++ ncftp-3.2.3/configure.in	2009-10-20 22:33:02.000000000 -0400
@@ -82,7 +94,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  /* eof */
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/ncftp/cmds.c ncftp-3.2.3/ncftp/cmds.c
 --- clean/ncftp-3.2.3/ncftp/cmds.c	2008-10-05 16:53:13.000000000 -0400
-+++ ncftp-3.2.3/ncftp/cmds.c	2009-10-20 22:33:02.000000000 -0400
++++ ncftp-3.2.3/ncftp/cmds.c	2009-10-22 22:13:43.000000000 -0400
 @@ -2244,7 +2244,7 @@ LookupCmd(const int argc, char **const a
  	const char *host;
  	char **cpp;
@@ -111,27 +123,22 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			Trace(-1, "Unable to get information about site %s.\n", host);
  		} else if (shortMode) {
  			MyInetAddr(ipStr, sizeof(ipStr), hp.h_addr_list, 0);
-@@ -2544,6 +2550,13 @@ DoOpen(void)
+@@ -2542,6 +2548,7 @@ DoOpen(void)
+ 	if (gConn.firewallType == kFirewallNotInUse) {
+ 		(void) STRNCPY(ohost, gConn.host);
  		OpenMsg("Resolving %s...", ohost);
++#ifndef DNSSEC_LOCAL_VALIDATION
  		if ((gLoadedBm != 0) && (gBm.lastIP[0] != '\0')) {
  			result = MyGetHostByName(ipstr, sizeof(ipstr), ohost, 3);
-+#ifndef DNSSEC_LOCAL_VALIDATION
-+                        /*
-+                         * I think this code is using a previous answer if DNS
-+                         * fails. So, the question is: should we do the same
-+                         * thing if the result is -2 (untrusted result)?
-+                         */
-+#endif
  			if (result < 0) {
- 				(void) STRNCPY(ipstr, gBm.lastIP);
- 				result = 0;
-@@ -2555,7 +2568,18 @@ DoOpen(void)
- 		}
- 		if (result < 0) {
- 			(void) printf("\n");
-+#ifndef DNSSEC_LOCAL_VALIDATION
+@@ -2558,6 +2565,21 @@ DoOpen(void)
  			(void) printf("Unknown host \"%s\".\n", ohost);
+ 			return (-1);
+ 		}
 +#else
++                result = MyGetHostByName(ipstr, sizeof(ipstr), ohost, 15);
++		if (result < 0) {
++			(void) printf("\n");
 +                        /*
 +                         * It would be nice to print a little more information,
 +                         * but that would mean an API change to MyGetHostByName.
@@ -140,10 +147,12 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +                                      (result == -2) ?
 +                                      "Untrusted DNS response for" : "Unknown",
 +                                      ohost);
++                        return (-1);
++                }
 +#endif
- 			return (-1);
- 		}
  		(void) STRNCPY(gConn.host, ipstr);
+ 		OpenMsg("Connecting to %s...", ipstr);
+ 	} else {
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/ncftp/syshdrs.h ncftp-3.2.3/ncftp/syshdrs.h
 --- clean/ncftp-3.2.3/ncftp/syshdrs.h	2008-09-04 20:14:32.000000000 -0400
 +++ ncftp-3.2.3/ncftp/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
@@ -158,7 +167,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/ncftp/util.c ncftp-3.2.3/ncftp/util.c
 --- clean/ncftp-3.2.3/ncftp/util.c	2008-07-08 18:04:24.000000000 -0400
-+++ ncftp-3.2.3/ncftp/util.c	2009-10-20 22:33:02.000000000 -0400
++++ ncftp-3.2.3/ncftp/util.c	2009-10-22 22:14:00.000000000 -0400
 @@ -690,6 +690,9 @@ MyGetHostByName(char *const volatile dst
  #ifdef HAVE_INET_ATON
  	struct in_addr ina;
@@ -343,24 +352,17 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		if ((hp != NULL) && (hp->h_name != NULL) && (hp->h_name[0] != '\0')) {
  			addrNamePtr = hp->h_name;
  		} else {
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/sio/sio.version ncftp-3.2.3/sio/sio.version
+--- clean/ncftp-3.2.3/sio/sio.version	1969-12-31 19:00:00.000000000 -0500
++++ ncftp-3.2.3/sio/sio.version	2009-10-21 10:43:49.000000000 -0400
+@@ -0,0 +1 @@
++6.2.1
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/sio/syshdrs.h ncftp-3.2.3/sio/syshdrs.h
 --- clean/ncftp-3.2.3/sio/syshdrs.h	2008-07-13 22:13:40.000000000 -0400
 +++ ncftp-3.2.3/sio/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
 @@ -215,4 +215,8 @@ extern ssize_t nsendmsg(int, const struc
  #	endif
  #endif	/* SOCKS */
- 
-+#ifdef DNSSEC_LOCAL_VALIDATION
-+#include <validator/validator.h>
-+#endif
-+
- /* eof */
-diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/ncftp-3.2.3/Strn/syshdrs.h ncftp-3.2.3/Strn/syshdrs.h
---- clean/ncftp-3.2.3/Strn/syshdrs.h	2008-07-13 22:14:17.000000000 -0400
-+++ ncftp-3.2.3/Strn/syshdrs.h	2009-10-20 22:33:02.000000000 -0400
-@@ -63,4 +63,8 @@
- extern char *strdup(const char *const src);
- #endif
  
 +#ifdef DNSSEC_LOCAL_VALIDATION
 +#include <validator/validator.h>
