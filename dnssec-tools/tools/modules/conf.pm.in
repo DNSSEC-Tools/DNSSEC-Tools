@@ -118,7 +118,7 @@ sub parseconfig
 	# Find the right configuration file to open.
 	#
 	my $conffiletoread = $conffile;
-	if($numargs != 0)
+	if($numargs != -1)
 	{
 		$conffiletoread = shift;
 		# allow for an undefined argument to still read the default
