@@ -1,22 +1,43 @@
-Patch to add local validation to ncftp.
+local DNSSEC validation for ncftp
+=================================
 
-This patch has been tested on ncftp-3.2.0 and 3.2.1.
+This patch has been tested on ncftp-3.2.0, 3.2.1 and 3.2.3.
 
 1) Apply patch
 2) run autoheader and autoconf to regenerate several important
-   files. I had to use autoconf version 2.13.  This will likely
-   require:
-   # cd ncftp-3.2.0/autoconf/
-   # cp acconfig.h aclocal.m4 ..
-   before running autoheader and autoconf.
+   files. I had to use autoconf version 2.13.
 3) Configure with: ./configure --with-dnssec-local-validation
 4) make
 5) sudo make install
 
 
-Note: There is a minor validation hole.  Ncftp bookmarks save the IP
-      address.  When bookmarks are used the DNS is not consulted and
-      no DNSSEC validation is done.  In practice, this means that if
-      the IP address for a hostname changes, the bookmark will
-      continue to try and connect to the old address regardless of
-      DNS or validation.
+Testing
+=======
+To verify that the patch is working, you first need to configure dnsval.conf
+to require validation for a domain that is not signed. For example:
+
+    : zone-security-expectation
+                # ignore validation by default
+                . ignore
+
+                # require that dnssec-tools.org validates (it should)
+                dnssec-tools.org validate
+
+                # require that cobham.com validates (it wont)
+                sparta.com validate
+    ;
+
+
+Next, simpy run ncftp with a few domains. This configuration does not require
+validation for any domains except dnssec-tools.org and sparta.com. So:
+
+  $ ncftp mirrors.kernel.org
+  Logged in to mirrors.kernel.org. 
+
+  $ ncftp dnssec-tools.org
+  [Will resolve, but not connect, since there is no ftp server]
+
+  $ ncftp sparta.com
+  NcFTP 3.2.3 (Jul 28, 2009) by Mike Gleason (http://www.NcFTP.com/contact/).
+  Resolving sparta.com...                                                         
+  Untrusted DNS response for host "sparta.com".
