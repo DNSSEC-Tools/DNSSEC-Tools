@@ -1,8 +1,8 @@
-diff -c -r openssh-4.7p1.orig/configure.ac openssh-4.7p1/configure.ac
-*** openssh-4.7p1.orig/configure.ac	Fri Aug 10 00:36:12 2007
---- openssh-4.7p1/configure.ac	Wed Apr 30 10:40:54 2008
+diff -c -r openssh-5.1p1.orig/configure.ac openssh-5.1p1/configure.ac
+*** openssh-5.1p1.orig/configure.ac	Wed Jul  9 07:07:19 2008
+--- openssh-5.1p1/configure.ac	Wed Feb  4 16:03:02 2009
 ***************
-*** 3115,3146 ****
+*** 3213,3244 ****
   	]
   )
   
@@ -35,7 +35,7 @@ diff -c -r openssh-4.7p1.orig/configure.ac openssh-4.7p1/configure.ac
   # Check libraries needed by DNS fingerprint support
   AC_SEARCH_LIBS(getrrsetbyname, resolv,
   	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
---- 3115,3155 ----
+--- 3213,3253 ----
   	]
   )
   
@@ -78,8 +78,8 @@ diff -c -r openssh-4.7p1.orig/configure.ac openssh-4.7p1/configure.ac
   AC_SEARCH_LIBS(getrrsetbyname, resolv,
   	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
 ***************
-*** 3177,3182 ****
---- 3186,3220 ----
+*** 3275,3280 ****
+--- 3284,3318 ----
   			    [Define if HEADER.ad exists in arpa/nameser.h])],,
   			[#include <arpa/nameser.h>])
   	])
@@ -116,8 +116,8 @@ diff -c -r openssh-4.7p1.orig/configure.ac openssh-4.7p1/configure.ac
   AC_MSG_CHECKING(if struct __res_state _res is an extern)
   AC_LINK_IFELSE([
 ***************
-*** 4035,4040 ****
---- 4073,4079 ----
+*** 4140,4145 ****
+--- 4178,4184 ----
   echo "              MD5 password support: $MD5_MSG"
   echo "                   libedit support: $LIBEDIT_MSG"
   echo "  Solaris process contract support: $SPC_MSG"
@@ -125,9 +125,10 @@ diff -c -r openssh-4.7p1.orig/configure.ac openssh-4.7p1/configure.ac
   echo "       IP address in \$DISPLAY hack: $DISPLAY_HACK_MSG"
   echo "           Translate v4 in v6 hack: $IPV4_IN6_HACK_MSG"
   echo "                  BSD Auth support: $BSD_AUTH_MSG"
-diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
-*** openssh-4.7p1.orig/dns.c	Fri Jan  5 00:30:16 2007
---- openssh-4.7p1/dns.c	Wed Apr 30 10:54:27 2008
+Only in openssh-5.1p1: configure.ac.orig
+diff -c -r openssh-5.1p1.orig/dns.c openssh-5.1p1/dns.c
+*** openssh-5.1p1.orig/dns.c	Thu Jun 12 14:46:45 2008
+--- openssh-5.1p1/dns.c	Wed Feb  4 16:03:02 2009
 ***************
 *** 35,40 ****
 --- 35,44 ----
@@ -142,7 +143,7 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   #include "key.h"
   #include "dns.h"
 ***************
-*** 167,179 ****
+*** 176,188 ****
   {
   	u_int counter;
   	int result;
@@ -156,7 +157,7 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   	u_int8_t dnskey_algorithm;
   	u_int8_t dnskey_digest_type;
   	u_char *dnskey_digest;
---- 171,189 ----
+--- 180,198 ----
   {
   	u_int counter;
   	int result;
@@ -177,8 +178,8 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   	u_int8_t dnskey_digest_type;
   	u_char *dnskey_digest;
 ***************
-*** 190,195 ****
---- 200,206 ----
+*** 199,204 ****
+--- 209,215 ----
   		return -1;
   	}
   
@@ -187,7 +188,7 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   	    DNS_RDATATYPE_SSHFP, 0, &fingerprints);
   	if (result) {
 ***************
-*** 198,204 ****
+*** 207,213 ****
   	}
   
   	if (fingerprints->rri_flags & RRSET_VALIDATED) {
@@ -195,7 +196,7 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   		debug("found %d secure fingerprints in DNS",
   		    fingerprints->rri_nrdatas);
   	} else {
---- 209,215 ----
+--- 218,224 ----
   	}
   
   	if (fingerprints->rri_flags & RRSET_VALIDATED) {
@@ -204,8 +205,8 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   		    fingerprints->rri_nrdatas);
   	} else {
 ***************
-*** 246,251 ****
---- 257,350 ----
+*** 255,260 ****
+--- 266,359 ----
   
   	xfree(hostkey_digest); /* from key_fingerprint_raw() */
   	freerrset(fingerprints);
@@ -300,9 +301,10 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   
   	if (*flags & DNS_VERIFY_FOUND)
   		if (*flags & DNS_VERIFY_MATCH)
-diff -c -r openssh-4.7p1.orig/dns.h openssh-4.7p1/dns.h
-*** openssh-4.7p1.orig/dns.h	Fri Aug  4 22:39:40 2006
---- openssh-4.7p1/dns.h	Wed Apr 30 10:40:54 2008
+Only in openssh-5.1p1: dns.c.orig
+diff -c -r openssh-5.1p1.orig/dns.h openssh-5.1p1/dns.h
+*** openssh-5.1p1.orig/dns.h	Fri Aug  4 22:39:40 2006
+--- openssh-5.1p1/dns.h	Wed Feb  4 16:03:02 2009
 ***************
 *** 45,50 ****
 --- 45,51 ----
@@ -313,38 +315,38 @@ diff -c -r openssh-4.7p1.orig/dns.h openssh-4.7p1/dns.h
   
   int	verify_host_key_dns(const char *, struct sockaddr *, const Key *, int *);
   int	export_dns_rr(const char *, const Key *, FILE *, int);
-diff -c -r openssh-4.7p1.orig/readconf.c openssh-4.7p1/readconf.c
-*** openssh-4.7p1.orig/readconf.c	Wed Mar 21 05:46:03 2007
---- openssh-4.7p1/readconf.c	Wed Apr 30 10:40:54 2008
+diff -c -r openssh-5.1p1.orig/readconf.c openssh-5.1p1/readconf.c
+*** openssh-5.1p1.orig/readconf.c	Sun Jun 29 10:04:03 2008
+--- openssh-5.1p1/readconf.c	Wed Feb  4 16:12:34 2009
 ***************
-*** 130,135 ****
---- 130,136 ----
-  	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
+*** 131,136 ****
+--- 131,137 ----
   	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
   	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
-+ 	oStrictDnssecChecking,oAutoAnswerValidatedKeys,
+  	oVisualHostKey,
++     oStrictDnssecChecking,oAutoAnswerValidatedKeys,
   	oDeprecated, oUnsupported
   } OpCodes;
   
 ***************
-*** 226,231 ****
---- 227,239 ----
-  	{ "tunneldevice", oTunnelDevice },
+*** 228,233 ****
+--- 229,241 ----
   	{ "localcommand", oLocalCommand },
   	{ "permitlocalcommand", oPermitLocalCommand },
+  	{ "visualhostkey", oVisualHostKey },
 + #ifdef LOCAL_DNSSEC_VALIDATION
-+ 	{ "strictdnssecchecking", oStrictDnssecChecking },
-+         { "autoanswervalidatedkeys", oAutoAnswerValidatedKeys },
++     { "strictdnssecchecking", oStrictDnssecChecking },
++     { "autoanswervalidatedkeys", oAutoAnswerValidatedKeys },
 + #else
-+ 	{ "strictdnssecchecking", oUnsupported },
-+         { "autoanswervalidatedkeys", oUnsupported },
++     { "strictdnssecchecking", oUnsupported },
++     { "autoanswervalidatedkeys", oUnsupported },
 + #endif
   	{ NULL, oBadOption }
   };
   
 ***************
-*** 477,482 ****
---- 485,498 ----
+*** 480,485 ****
+--- 488,501 ----
   			*intptr = value;
   		break;
   
@@ -360,8 +362,8 @@ diff -c -r openssh-4.7p1.orig/readconf.c openssh-4.7p1/readconf.c
   		intptr = &options->compression;
   		goto parse_flag;
 ***************
-*** 1019,1024 ****
---- 1035,1042 ----
+*** 1025,1030 ****
+--- 1041,1048 ----
   	options->batch_mode = -1;
   	options->check_host_ip = -1;
   	options->strict_host_key_checking = -1;
@@ -371,8 +373,8 @@ diff -c -r openssh-4.7p1.orig/readconf.c openssh-4.7p1/readconf.c
   	options->tcp_keep_alive = -1;
   	options->compression_level = -1;
 ***************
-*** 1115,1120 ****
---- 1133,1142 ----
+*** 1122,1127 ****
+--- 1140,1149 ----
   		options->check_host_ip = 1;
   	if (options->strict_host_key_checking == -1)
   		options->strict_host_key_checking = 2;	/* 2 is default */
@@ -383,14 +385,15 @@ diff -c -r openssh-4.7p1.orig/readconf.c openssh-4.7p1/readconf.c
   	if (options->compression == -1)
   		options->compression = 0;
   	if (options->tcp_keep_alive == -1)
-diff -c -r openssh-4.7p1.orig/readconf.h openssh-4.7p1/readconf.h
-*** openssh-4.7p1.orig/readconf.h	Fri Aug  4 22:39:40 2006
---- openssh-4.7p1/readconf.h	Wed Apr 30 10:40:54 2008
+Only in openssh-5.1p1: readconf.c.orig
+diff -c -r openssh-5.1p1.orig/readconf.h openssh-5.1p1/readconf.h
+*** openssh-5.1p1.orig/readconf.h	Sun Jun 29 10:04:03 2008
+--- openssh-5.1p1/readconf.h	Wed Feb  4 16:03:02 2009
 ***************
-*** 121,126 ****
---- 121,129 ----
-  	char	*local_command;
+*** 122,127 ****
+--- 122,130 ----
   	int	permit_local_command;
+  	int	visual_host_key;
   
 + 	int     strict_dnssec_checking;	/* Strict DNSSEC checking. */
 + 	int     autoanswer_validated_keys;
@@ -398,9 +401,10 @@ diff -c -r openssh-4.7p1.orig/readconf.h openssh-4.7p1/readconf.h
   }       Options;
   
   #define SSHCTL_MASTER_NO	0
-diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
-*** openssh-5.0p1/sshconnect.c.orig	Tue May 27 16:23:00 2008
---- openssh-5.0p1/sshconnect.c	Tue May 27 16:27:04 2008
+Only in openssh-5.1p1: readconf.h.orig
+diff -c -r openssh-5.1p1.orig/sshconnect.c openssh-5.1p1/sshconnect.c
+*** openssh-5.1p1.orig/sshconnect.c	Wed Jul  2 08:34:30 2008
+--- openssh-5.1p1/sshconnect.c	Wed Feb  4 16:08:15 2009
 ***************
 *** 26,31 ****
 --- 26,35 ----
@@ -415,8 +419,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   #include <errno.h>
   #include <netdb.h>
 ***************
-*** 63,68 ****
---- 67,75 ----
+*** 62,67 ****
+--- 66,74 ----
   char *server_version_string = NULL;
   
   static int matching_host_key_dns = 0;
@@ -427,36 +431,51 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   /* import */
   extern Options options;
 ***************
-*** 77,82 ****
---- 84,90 ----
+*** 76,81 ****
+--- 83,89 ----
   
   static int show_other_keys(const char *, Key *);
   static void warn_changed_key(Key *);
 + static int confirm(const char *prompt);
   
-  static void
-  ms_subtract_diff(struct timeval *start, int *ms)
+  /*
+   * Connect to the given ssh server using a proxy command.
 ***************
-*** 225,230 ****
---- 233,239 ----
-  	hints.ai_socktype = ai->ai_socktype;
-  	hints.ai_protocol = ai->ai_protocol;
-  	hints.ai_flags = AI_PASSIVE;
+*** 326,332 ****
+  	int on = 1;
+  	int sock = -1, attempt;
+  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+! 	struct addrinfo hints, *ai, *aitop;
+  
+  	debug2("ssh_connect: needpriv %d", needpriv);
+  
+--- 334,344 ----
+  	int on = 1;
+  	int sock = -1, attempt;
+  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+! 	struct addrinfo hints;
+! 	struct addrinfo *ai, *aitop = NULL;
+! #ifdef LOCAL_DNSSEC_VALIDATION
+! 	val_status_t val_status;
+! #endif
+  
+  	debug2("ssh_connect: needpriv %d", needpriv);
+  
+***************
+*** 340,348 ****
+--- 352,398 ----
+  	hints.ai_family = family;
+  	hints.ai_socktype = SOCK_STREAM;
+  	snprintf(strport, sizeof strport, "%u", port);
 + #ifndef LOCAL_DNSSEC_VALIDATION
-  	gaierr = getaddrinfo(options.bind_address, "0", &hints, &res);
-  	if (gaierr) {
-  		error("getaddrinfo: %s: %s", options.bind_address,
-***************
-*** 232,237 ****
---- 241,283 ----
-  		close(sock);
-  		return -1;
-  	}
+  	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0)
+  		fatal("%s: Could not resolve hostname %.100s: %s", __progname,
+  		    host, ssh_gai_strerror(gaierr));
 + #else
-+         gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
-+                                  &val_status);
-+  	if (gaierr)
-+             fatal("%s: %.100s: %s", __progname, host, gai_strerror(gaierr));
++ 	if ((gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
++ 							 &val_status)) != 0) 
++ 		fatal("%s: Could not resolve hostname %.100s: %s", __progname,
++ 		    host, ssh_gai_strerror(gaierr));
 +  	debug("ValStatus: %s", p_val_status(val_status));
 +  	if (!val_istrusted(val_status)) {
 +             error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -474,8 +493,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
 +                     if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
 +                         continue;
 +                     if (getnameinfo(ai->ai_addr, ai->ai_addrlen,
-+  				    ntop, sizeof(ntop), strport, sizeof(strport),
-+  				    NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
++                             ntop, sizeof(ntop), strport, sizeof(strport),
++                             NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
 +                         error("ssh_connect: getnameinfo failed");
 +                         continue;
 +                     }
@@ -484,38 +503,17 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
 +                 snprintf(msg,sizeof(msg),
 +                          "Are you sure you want to attempt to connect "
 +                          "(yes/no)? ");
-+                 if (!confirm(msg))
++                 if (!confirm(msg)) 
 +                     return (-1);
 +             }
 +  	}
-+ #endif
-  	if (bind(sock, res->ai_addr, res->ai_addrlen) < 0) {
-  		error("bind: %s: %s", options.bind_address, strerror(errno));
-  		close(sock);
++ #endif /* LOCAL_DNSSEC_VALIDATION */
+  
+  	for (attempt = 0; attempt < connection_attempts; attempt++) {
+  		if (attempt > 0) {
 ***************
-*** 345,351 ****
-  	int on = 1;
-  	int sock = -1, attempt;
-  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
-! 	struct addrinfo hints, *ai, *aitop;
-  
-  	debug2("ssh_connect: needpriv %d", needpriv);
-  
---- 391,401 ----
-  	int on = 1;
-  	int sock = -1, attempt;
-  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
-! 	struct addrinfo hints;
-! 	struct addrinfo *ai, *aitop = NULL;
-! #ifdef LOCAL_DNSSEC_VALIDATION
-! 	val_status_t val_status;
-! #endif
-  
-  	debug2("ssh_connect: needpriv %d", needpriv);
-  
-***************
-*** 747,752 ****
---- 797,803 ----
+*** 738,743 ****
+--- 788,794 ----
   		}
   		break;
   	case HOST_NEW:
@@ -524,8 +522,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		    port != SSH_DEFAULT_PORT) {
   			debug("checking without port identifier");
 ***************
-*** 790,795 ****
---- 841,857 ----
+*** 783,788 ****
+--- 834,850 ----
   					    "No matching host key fingerprint"
   					    " found in DNS.\n");
   			}
@@ -544,8 +542,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			    "The authenticity of host '%.200s (%s)' can't be "
   			    "established%s\n"
 ***************
-*** 800,805 ****
---- 862,870 ----
+*** 797,802 ****
+--- 859,867 ----
   			xfree(fp);
   			if (!confirm(msg))
   				goto fail;
@@ -556,8 +554,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		/*
   		 * If not in strict mode, add the key automatically to the
 ***************
-*** 835,840 ****
---- 900,906 ----
+*** 832,837 ****
+--- 897,903 ----
   			    "list of known hosts.", hostp, type);
   		break;
   	case HOST_CHANGED:
@@ -566,8 +564,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			goto fail;
   		if (options.check_host_ip && host_ip_differ) {
 ***************
-*** 845,850 ****
---- 911,918 ----
+*** 842,847 ****
+--- 908,915 ----
   				key_msg = "is unchanged";
   			else
   				key_msg = "has a different value";
@@ -577,8 +575,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			error("@       WARNING: POSSIBLE DNS SPOOFING DETECTED!          @");
   			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 ***************
-*** 853,858 ****
---- 921,939 ----
+*** 850,855 ****
+--- 918,936 ----
   			error("%s. This could either mean that", key_msg);
   			error("DNS SPOOFING is happening or the IP address for the host");
   			error("and its host key have changed at the same time.");
@@ -599,7 +597,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   				error("Offending key for IP in %s:%d", ip_file, ip_line);
   		}
 ***************
-*** 866,877 ****
+*** 863,874 ****
   		 * If strict host key checking is in use, the user will have
   		 * to edit the key manually and we can only abort.
   		 */
@@ -612,7 +610,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		/*
   		 * If strict host key checking has not been requested, allow
   		 * the connection but without MITM-able authentication or
---- 947,1000 ----
+--- 944,997 ----
   		 * If strict host key checking is in use, the user will have
   		 * to edit the key manually and we can only abort.
   		 */
@@ -668,7 +666,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		 * If strict host key checking has not been requested, allow
   		 * the connection but without MITM-able authentication or
 ***************
-*** 919,927 ****
+*** 927,935 ****
   		 * XXX Should permit the user to change to use the new id.
   		 * This could be done by converting the host key to an
   		 * identifying sentence, tell that the host identifies itself
@@ -678,7 +676,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		break;
   	case HOST_FOUND:
   		fatal("internal error");
---- 1042,1051 ----
+--- 1050,1059 ----
   		 * XXX Should permit the user to change to use the new id.
   		 * This could be done by converting the host key to an
   		 * identifying sentence, tell that the host identifies itself
@@ -690,8 +688,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   	case HOST_FOUND:
   		fatal("internal error");
 ***************
-*** 946,955 ****
---- 1070,1088 ----
+*** 954,963 ****
+--- 1078,1096 ----
   			error("Exiting, you have requested strict checking.");
   			goto fail;
   		} else if (options.strict_host_key_checking == 2) {
@@ -712,8 +710,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			logit("%s", msg);
   		}
 ***************
-*** 975,986 ****
---- 1108,1149 ----
+*** 983,994 ****
+--- 1116,1157 ----
   	if (options.verify_host_key_dns &&
   	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
   
@@ -757,8 +755,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			if (flags & DNS_VERIFY_MATCH) {
   				matching_host_key_dns = 1;
 ***************
-*** 1129,1137 ****
---- 1292,1309 ----
+*** 1139,1147 ****
+--- 1302,1319 ----
   	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
   	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");
   	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
