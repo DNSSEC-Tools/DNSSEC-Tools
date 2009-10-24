@@ -210,7 +210,7 @@ diff -c -r openssh-4.7p1.orig/dns.c openssh-4.7p1/dns.c
   	xfree(hostkey_digest); /* from key_fingerprint_raw() */
   	freerrset(fingerprints);
 + #else
-+ 	
++ 
 + 	result = val_resolve_and_check(NULL, hostname, DNS_RDATACLASS_IN,
 + 	    DNS_RDATATYPE_SSHFP, 0, &val_results);
 + 	if (result != VAL_NO_ERROR){
@@ -399,8 +399,8 @@ diff -c -r openssh-4.7p1.orig/readconf.h openssh-4.7p1/readconf.h
   
   #define SSHCTL_MASTER_NO	0
 diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
-*** openssh-4.7p1.orig/sshconnect.c	Mon Oct 23 13:02:24 2006
---- openssh-4.7p1/sshconnect.c	Wed Apr 30 10:40:54 2008
+*** openssh-5.0p1/sshconnect.c.orig	Tue May 27 16:23:00 2008
+--- openssh-5.0p1/sshconnect.c	Tue May 27 16:27:04 2008
 ***************
 *** 26,31 ****
 --- 26,35 ----
@@ -415,8 +415,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   #include <errno.h>
   #include <netdb.h>
 ***************
-*** 62,67 ****
---- 66,74 ----
+*** 63,68 ****
+--- 67,75 ----
   char *server_version_string = NULL;
   
   static int matching_host_key_dns = 0;
@@ -427,17 +427,73 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   /* import */
   extern Options options;
 ***************
-*** 76,81 ****
---- 83,89 ----
+*** 77,82 ****
+--- 84,90 ----
   
   static int show_other_keys(const char *, Key *);
   static void warn_changed_key(Key *);
 + static int confirm(const char *prompt);
   
-  /*
-   * Connect to the given ssh server using a proxy command.
+  static void
+  ms_subtract_diff(struct timeval *start, int *ms)
 ***************
-*** 305,311 ****
+*** 225,230 ****
+--- 233,239 ----
+  	hints.ai_socktype = ai->ai_socktype;
+  	hints.ai_protocol = ai->ai_protocol;
+  	hints.ai_flags = AI_PASSIVE;
++ #ifndef LOCAL_DNSSEC_VALIDATION
+  	gaierr = getaddrinfo(options.bind_address, "0", &hints, &res);
+  	if (gaierr) {
+  		error("getaddrinfo: %s: %s", options.bind_address,
+***************
+*** 232,237 ****
+--- 241,283 ----
+  		close(sock);
+  		return -1;
+  	}
++ #else
++         gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
++                                  &val_status);
++  	if (gaierr)
++             fatal("%s: %.100s: %s", __progname, host, gai_strerror(gaierr));
++  	debug("ValStatus: %s", p_val_status(val_status));
++  	if (!val_istrusted(val_status)) {
++             error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
++             error("@ WARNING: UNTRUSTED DNS RESOLUTION FOR HOST IP ADRRESS! @");
++             error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
++             error("The authenticity of DNS data for the host '%.200s' "
++                   "can't be established.", host);
++             if (options.strict_dnssec_checking == 1) {
++                 fatal("DNS resolution is not trusted (%s) "
++                       "and you have requested strict checking",
++                       p_val_status(val_status));
++             } else if (options.strict_dnssec_checking == 2) {
++                 char msg[1024];
++                 for (ai = aitop; ai; ai = ai->ai_next) {
++                     if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
++                         continue;
++                     if (getnameinfo(ai->ai_addr, ai->ai_addrlen,
++  				    ntop, sizeof(ntop), strport, sizeof(strport),
++  				    NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
++                         error("ssh_connect: getnameinfo failed");
++                         continue;
++                     }
++                     error(" IP address %s port %s", ntop, strport);
++                 }
++                 snprintf(msg,sizeof(msg),
++                          "Are you sure you want to attempt to connect "
++                          "(yes/no)? ");
++                 if (!confirm(msg))
++                     return (-1);
++             }
++  	}
++ #endif
+  	if (bind(sock, res->ai_addr, res->ai_addrlen) < 0) {
+  		error("bind: %s: %s", options.bind_address, strerror(errno));
+  		close(sock);
+***************
+*** 345,351 ****
   	int on = 1;
   	int sock = -1, attempt;
   	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
@@ -445,7 +501,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   
   	debug2("ssh_connect: needpriv %d", needpriv);
   
---- 313,323 ----
+--- 391,401 ----
   	int on = 1;
   	int sock = -1, attempt;
   	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
@@ -458,65 +514,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   	debug2("ssh_connect: needpriv %d", needpriv);
   
 ***************
-*** 319,327 ****
-  	hints.ai_family = family;
-  	hints.ai_socktype = SOCK_STREAM;
-  	snprintf(strport, sizeof strport, "%u", port);
-  	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0)
-! 		fatal("%s: %.100s: %s", __progname, host,
-! 		    gai_strerror(gaierr));
-  
-  	for (attempt = 0; attempt < connection_attempts; attempt++) {
-  		if (attempt > 0) {
---- 331,375 ----
-  	hints.ai_family = family;
-  	hints.ai_socktype = SOCK_STREAM;
-  	snprintf(strport, sizeof strport, "%u", port);
-+ #ifndef LOCAL_DNSSEC_VALIDATION
-  	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0)
-! 		fatal("%s: %.100s: %s", __progname, host, gai_strerror(gaierr));
-! #else
-! 	if ((gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
-!              &val_status)) != 0)
-! 		fatal("%s: %.100s: %s", __progname, host, gai_strerror(gaierr));
-! 	debug("ValStatus: %s", p_val_status(val_status));
-! 	if (!val_istrusted(val_status)) {
-! 		error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-! 		error("@ WARNING: UNTRUSTED DNS RESOLUTION FOR HOST IP ADRRESS! @");
-! 		error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-! 		error("The authenticity of DNS data for the host '%.200s' "
-! 		    "can't be established.", host);
-! 		if (options.strict_dnssec_checking == 1) {
-! 			fatal("DNS resolution is not trusted (%s) "
-! 			    "and you have requested strict checking",
-! 			    p_val_status(val_status));
-! 		} else if (options.strict_dnssec_checking == 2) {
-! 			char msg[1024];
-! 			for (ai = aitop; ai; ai = ai->ai_next) {
-! 				if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
-! 					continue;
-! 				if (getnameinfo(ai->ai_addr, ai->ai_addrlen,
-! 				    ntop, sizeof(ntop), strport, sizeof(strport),
-! 				    NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
-! 					error("ssh_connect: getnameinfo failed");
-! 					continue;
-! 				}
-! 				error(" IP address %s port %s", ntop, strport);
-! 			}
-! 			snprintf(msg,sizeof(msg),
-! 			    "Are you sure you want to attempt to connect "
-! 			    "(yes/no)? ");
-! 			if (!confirm(msg))
-! 				return (-1);
-! 		}
-! 	}
-! #endif /* LOCAL_DNSSEC_VALIDATION */
-  
-  	for (attempt = 0; attempt < connection_attempts; attempt++) {
-  		if (attempt > 0) {
-***************
-*** 677,682 ****
---- 725,731 ----
+*** 747,752 ****
+--- 797,803 ----
   		}
   		break;
   	case HOST_NEW:
@@ -525,8 +524,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		    port != SSH_DEFAULT_PORT) {
   			debug("checking without port identifier");
 ***************
-*** 720,725 ****
---- 769,785 ----
+*** 790,795 ****
+--- 841,857 ----
   					    "No matching host key fingerprint"
   					    " found in DNS.\n");
   			}
@@ -545,8 +544,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			    "The authenticity of host '%.200s (%s)' can't be "
   			    "established%s\n"
 ***************
-*** 730,735 ****
---- 790,798 ----
+*** 800,805 ****
+--- 862,870 ----
   			xfree(fp);
   			if (!confirm(msg))
   				goto fail;
@@ -557,8 +556,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		/*
   		 * If not in strict mode, add the key automatically to the
 ***************
-*** 765,770 ****
---- 828,834 ----
+*** 835,840 ****
+--- 900,906 ----
   			    "list of known hosts.", hostp, type);
   		break;
   	case HOST_CHANGED:
@@ -567,8 +566,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			goto fail;
   		if (options.check_host_ip && host_ip_differ) {
 ***************
-*** 775,780 ****
---- 839,846 ----
+*** 845,850 ****
+--- 911,918 ----
   				key_msg = "is unchanged";
   			else
   				key_msg = "has a different value";
@@ -578,8 +577,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			error("@       WARNING: POSSIBLE DNS SPOOFING DETECTED!          @");
   			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 ***************
-*** 783,788 ****
---- 849,867 ----
+*** 853,858 ****
+--- 921,939 ----
   			error("%s. This could either mean that", key_msg);
   			error("DNS SPOOFING is happening or the IP address for the host");
   			error("and its host key have changed at the same time.");
@@ -600,7 +599,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   				error("Offending key for IP in %s:%d", ip_file, ip_line);
   		}
 ***************
-*** 796,807 ****
+*** 866,877 ****
   		 * If strict host key checking is in use, the user will have
   		 * to edit the key manually and we can only abort.
   		 */
@@ -613,7 +612,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		/*
   		 * If strict host key checking has not been requested, allow
   		 * the connection but without MITM-able authentication or
---- 875,928 ----
+--- 947,1000 ----
   		 * If strict host key checking is in use, the user will have
   		 * to edit the key manually and we can only abort.
   		 */
@@ -669,7 +668,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		 * If strict host key checking has not been requested, allow
   		 * the connection but without MITM-able authentication or
 ***************
-*** 849,857 ****
+*** 919,927 ****
   		 * XXX Should permit the user to change to use the new id.
   		 * This could be done by converting the host key to an
   		 * identifying sentence, tell that the host identifies itself
@@ -679,7 +678,7 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   		break;
   	case HOST_FOUND:
   		fatal("internal error");
---- 970,979 ----
+--- 1042,1051 ----
   		 * XXX Should permit the user to change to use the new id.
   		 * This could be done by converting the host key to an
   		 * identifying sentence, tell that the host identifies itself
@@ -691,8 +690,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   	case HOST_FOUND:
   		fatal("internal error");
 ***************
-*** 876,885 ****
---- 998,1016 ----
+*** 946,955 ****
+--- 1070,1088 ----
   			error("Exiting, you have requested strict checking.");
   			goto fail;
   		} else if (options.strict_host_key_checking == 2) {
@@ -713,8 +712,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			logit("%s", msg);
   		}
 ***************
-*** 905,916 ****
---- 1036,1077 ----
+*** 975,986 ****
+--- 1108,1149 ----
   	if (options.verify_host_key_dns &&
   	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
   
@@ -758,8 +757,8 @@ diff -c -r openssh-4.7p1.orig/sshconnect.c openssh-4.7p1/sshconnect.c
   			if (flags & DNS_VERIFY_MATCH) {
   				matching_host_key_dns = 1;
 ***************
-*** 1059,1067 ****
---- 1220,1237 ----
+*** 1129,1137 ****
+--- 1292,1309 ----
   	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
   	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");
   	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
