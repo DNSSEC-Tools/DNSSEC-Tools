@@ -637,6 +637,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             break;
         }
 
+#ifdef LIBVAL_NSEC3
     case ns_t_nsec3: {
             u_int           algo;
             u_int           flags;
@@ -675,6 +676,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             ADD_BYTES(rdata, (rdata + hashlen));
             goto nxtbitmaps;
         }
+#endif /* LIBVAL_NSEC3 */
 
     case ns_t_nsec: {
             int             c, n;
