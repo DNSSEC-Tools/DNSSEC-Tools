@@ -464,7 +464,7 @@ extern          "C" {
                                          val_dnskey_rdata_t * rdata);
     void            val_log_authentication_chain(const val_context_t * ctx,
                                                  int level,
-                                                 char * name,
+                                                 const char * name,
                                                  int class_h,
                                                  int type_h,
                                                  struct val_result_chain
@@ -505,7 +505,7 @@ extern          "C" {
     void            val_free_result_chain(struct val_result_chain
                                           *results);
     int             val_resolve_and_check(val_context_t * context,
-                                          char * domain_name,
+                                          const char * domain_name,
                                           int qclass,
                                           int qtype,
                                           u_int32_t flags,

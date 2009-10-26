@@ -309,7 +309,7 @@ val_log_assertion(const val_context_t * ctx, int level,
 
 void
 val_log_authentication_chain(const val_context_t * ctx, int level,
-                             char * name_p, int class_h,
+                             const char * name_p, int class_h,
                              int type_h,
                              struct val_result_chain *results)
 {
