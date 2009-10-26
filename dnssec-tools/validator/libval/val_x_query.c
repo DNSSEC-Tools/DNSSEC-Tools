@@ -638,7 +638,7 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
              */
             pos = search;
             while (*pos && *pos != ' ' && *pos != '\t')
-                *pos++;
+                ++pos;
             if (*pos)
                 *pos++ = 0;
             
