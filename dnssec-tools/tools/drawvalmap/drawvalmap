@@ -265,6 +265,7 @@ sub update_graph {
 #############################################################
 # get the edge properties based on the error status passed as 
 # the parameter
+# See <validator/val_errors.h>
 #
 sub get_ac_lineattr {
 
@@ -275,7 +276,6 @@ sub get_ac_lineattr {
 
 	$prop{'dir'} = 'back';
 
-    
     # success
     if (($ac_status eq "VAL_AC_VERIFIED") ||
         ($ac_status eq "VAL_AC_TRUST")) { 
@@ -298,7 +298,7 @@ sub get_ac_lineattr {
     # not trusted 
     elsif (($ac_status eq "VAL_AC_NOT_VERIFIED") ||
             ($ac_status eq "VAL_AC_UNTRUSTED_ZONE") ||
-            ($ac_status eq "VAL_AC_NO_TRUST_ANCHOR")) {
+            ($ac_status eq "VAL_AC_NO_LINK")) {
 
 		$prop{'color'} =  "red";
 		$prop{'fillcolor'} =  "red";
@@ -326,58 +326,6 @@ sub get_ac_lineattr {
 
 	return $level, %prop;
 }
-
-#############################################################
-# get the edge properties based on the error status passed as 
-# the parameter
-#
-sub get_valstatus_lineattr {
-
-	my %prop;
-	my $val_status;
-	$val_status = shift;
-
-	$prop{'dir'} = 'back';
-
-	if (($val_status eq "VAL_SUCCESS") ||
-		($val_status eq "VAL_NONEXISTENT_NAME")||
-		($val_status eq "VAL_NONEXISTENT_TYPE") ||
-		($val_status eq "VAL_VALIDATED_ANSWER")) {
-		$prop{'color'} =  "green";
-		$prop{'fillcolor'} =  "green";
-		$prop{'style'} = 'bold';
-	} 
-    elsif (
-		   ($val_status eq "VAL_NONEXISTENT_NAME_NOCHAIN")||
-		   ($val_status eq "VAL_NONEXISTENT_TYPE_NOCHAIN")||
-           ($val_status eq "VAL_PINSECURE") ||
-           ($val_status eq "VAL_BARE_RRSIG") ||
-		   ($val_status eq "VAL_IGNORE_VALIDATION") ||
-		   ($val_status eq "VAL_TRUSTED_ANSWER") ||
-		   ($val_status eq "VAL_OOB_ANSWER")) {
-		$prop{'color'} =  "yellow";
-		$prop{'fillcolor'} =  "yellow";
-		$prop{'style'} = 'bold';
-    }
-	elsif (($val_status eq "VAL_BOGUS") ||
-		   ($val_status eq "VAL_UNTRUSTED_ANSWER") ||
-		   ($val_status eq "VAL_UNTRUSTED_ZONE") ||
-		   ($val_status eq "VAL_PINSECURE_UNTRUSTED")||
-		   ($val_status eq "VAL_NOTRUST")){
-		$prop{'color'} = "red";
-		$prop{'fillcolor'} =  "red";
-		$prop{'style'} = 'bold';
-	} 
-	else {
-		# errors 
-		$prop{'color'} =  "black";
-		$prop{'fillcolor'} =  "black";
-		$prop{'style'} = 'dashed';
-	}
-
-	return %prop;
-}
-
 
 =head1 NAME
 
