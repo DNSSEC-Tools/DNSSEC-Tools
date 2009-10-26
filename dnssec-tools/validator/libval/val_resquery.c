@@ -793,7 +793,7 @@ bootstrap_referral(val_context_t *context,
      *  If we received a referral for the root, use our 
      *  pre-parsed root.hints information 
      */
-    if (!namecmp(referral_zone_n, (u_char *)"\0")) {
+    if (!namecmp(referral_zone_n, (const u_char *)"\0")) {
         if (context->root_ns == NULL) {
             /*
              * No root hints; should not happen here 
@@ -829,8 +829,7 @@ bootstrap_referral(val_context_t *context,
          * Don't fetch glue if we're already fetching glue 
          */
         if (matched_q->qc_state == Q_WAIT_FOR_GLUE && *ref_ns_list == NULL) {
-            if (&pending_glue)
-                free_name_servers(&pending_glue);
+            free_name_servers(&pending_glue);
             if (ref_ns_list)
                 free_name_servers(ref_ns_list);
             *ref_ns_list = NULL;
@@ -1784,8 +1783,7 @@ digest_response(val_context_t * context,
                 /*
                  * Multiple Zonecuts
                  */
-                if (name_n && 
-                        ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
+                if (ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
                     ret_val =  VAL_BAD_ARGUMENT;
                     goto done;
                 }
