@@ -685,7 +685,10 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             /** Next domain name.  */
             T(addname(msg, msglen, &rdata, origin, &buf, &buflen));
 
+#ifdef LIBVAL_NSEC3
 nxtbitmaps:
+#endif /* LIBVAL_NSEC3 */
+
             /** Type bit map.  */
             while (edata - rdata > 0) {
                 b = *rdata;
