@@ -241,7 +241,29 @@ val_free_result_chain(struct val_result_chain *results)
 }
 
 
+
 static void 
+init_query_chain_node(struct val_query_chain *q) 
+{
+    if (q == NULL)
+        return;
+
+    memcpy(q->qc_name_n, q->qc_original_name, 
+            wire_name_length(q->qc_original_name));
+    q->qc_ttl_x = 0;
+    q->qc_bad = 0;
+    q->qc_state = Q_INIT;
+
+    q->qc_ans = NULL;
+    q->qc_proof = NULL;
+    q->qc_trans_id = -1;
+    q->qc_zonecut_n = NULL;
+    q->qc_ns_list = NULL;
+    q->qc_respondent_server = NULL;
+    q->qc_referral = NULL;
+}
+
+void 
 free_query_chain_structure(struct val_query_chain *queries)
 {
     if (queries->qc_zonecut_n != NULL) {
@@ -264,26 +286,18 @@ free_query_chain_structure(struct val_query_chain *queries)
         free_name_server(&(queries->qc_respondent_server));
         queries->qc_respondent_server = NULL;
     }
-}
 
-static void 
-reset_query_chain_node(struct val_query_chain *q) 
-{
-    if (q == NULL)
-        return;
+    if (queries->qc_ans != NULL) {
+        free_authentication_chain(queries->qc_ans);
+        queries->qc_ans = NULL;
+    }
 
-    memcpy(q->qc_name_n, q->qc_original_name, 
-            wire_name_length(q->qc_original_name));
-    q->qc_ttl_x = 0;
-    q->qc_bad = 0;
-    q->qc_state = Q_INIT;
-    q->qc_ans = NULL;
-    q->qc_proof = NULL;
-    q->qc_trans_id = -1;
-    q->qc_zonecut_n = NULL;
-    q->qc_ns_list = NULL;
-    q->qc_respondent_server = NULL;
-    q->qc_referral = NULL;
+    if (queries->qc_proof != NULL) {
+        free_authentication_chain(queries->qc_proof);
+        queries->qc_proof = NULL;
+    }
+
+    init_query_chain_node(queries);
 }
 
 /*
@@ -386,7 +400,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     temp->qc_class_h = class_h;
     temp->qc_flags = flags;
 
-    reset_query_chain_node(temp);
+    init_query_chain_node(temp);
     
     temp->qc_next = context->q_list;
     context->q_list = temp;
@@ -401,39 +415,6 @@ free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
         res_sq_free_rrset_recs(&(assertions->val_ac_rrset.ac_data));
 }
 
-void
-delete_authentication_chain_element(val_context_t *ctx,
-                                    struct val_digested_auth_chain *as)
-{
-    struct val_digested_auth_chain *t_as, *t_as_prev;
-    
-    if (ctx == NULL)
-        return; 
-
-    if(as == NULL)
-        return; 
-
-    if(as->val_ac_rrset.val_ac_rrset_next) 
-        delete_authentication_chain_element(ctx, as->val_ac_rrset.val_ac_rrset_next); 
-    
-    t_as_prev = NULL;
-    for(t_as=ctx->a_list; t_as; t_as=t_as->val_ac_rrset.val_ac_next) {
-        if (t_as == as) {
-            if (t_as_prev) {
-                t_as_prev->val_ac_rrset.val_ac_next = t_as->val_ac_rrset.val_ac_next;
-            } else {
-                ctx->a_list = t_as->val_ac_rrset.val_ac_next;
-            }
-            t_as->val_ac_rrset.val_ac_next = NULL;
-            free_authentication_chain_structure(t_as);
-            FREE(t_as);
-            return;
-        } 
-        t_as_prev = t_as;
-    }
-    return; 
-}
-
 void requery_with_edns0(val_context_t *context, 
                         struct val_query_chain *matched_q)
 {
@@ -441,8 +422,8 @@ void requery_with_edns0(val_context_t *context,
     if (matched_q == NULL)
         return;
 
-    delete_authentication_chain_element(context, matched_q->qc_ans);
-    delete_authentication_chain_element(context, matched_q->qc_proof);
+    free_authentication_chain(matched_q->qc_ans);
+    free_authentication_chain(matched_q->qc_proof);
     matched_q->qc_ans = NULL;
     matched_q->qc_proof = NULL;
 
@@ -458,17 +439,6 @@ void requery_with_edns0(val_context_t *context,
         ns->ns_options |= RES_USE_DNSSEC;
 }
 
-
-void zap_query(val_context_t *context, struct val_query_chain *added_q) 
-{
-    if(context == NULL || added_q == NULL)
-        return;
-    
-    delete_authentication_chain_element(context, added_q->qc_ans);
-    delete_authentication_chain_element(context, added_q->qc_proof);
-    free_query_chain_structure(added_q);
-    reset_query_chain_node(added_q);
-}
 
 static struct queries_for_query * 
 check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
@@ -563,7 +533,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                         snprintf(name_p, sizeof(name_p), "unknown/error");
                     val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %d %d}", 
                                 name_p, added_q->qc_class_h, added_q->qc_type_h);
-                    zap_query(context, added_q);
+                    free_query_chain_structure(added_q);
                 }
 
                 UNLOCK_QC(added_q);
@@ -1604,7 +1574,7 @@ assimilate_answers(val_context_t * context,
     int             retval;
     u_int16_t       type_h;
     u_int16_t       class_h;
-    struct val_digested_auth_chain **assertions;
+    struct val_digested_auth_chain *assertions;
     struct val_query_chain *matched_q;
 
     if (matched_qfq == NULL) 
@@ -1618,7 +1588,6 @@ assimilate_answers(val_context_t * context,
 
     type_h = response->di_requested_type_h;
     class_h = response->di_requested_class_h;
-    assertions = &context->a_list;
     matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
     
     if ((matched_q->qc_ans != NULL) || (matched_q->qc_proof != NULL)) {
@@ -1640,19 +1609,21 @@ assimilate_answers(val_context_t * context,
      */
 
     if (response->di_answers) {
+        assertions = NULL;
+
         if (VAL_NO_ERROR !=
             (retval =
-             add_to_authentication_chain(assertions,
+             add_to_authentication_chain(&assertions,
                                          matched_q,
                                          response->di_answers)))
             return retval;
         /*
          * Link the assertion to the query
          */
-        matched_q->qc_ans = *assertions;
+        matched_q->qc_ans = assertions;
         if (VAL_NO_ERROR != (retval =
                              try_build_chain(context,
-                                             *assertions,
+                                             assertions,
                                              queries, matched_q,
                                              response->di_qnames,
                                              type_h, class_h, 
@@ -1662,18 +1633,20 @@ assimilate_answers(val_context_t * context,
     }
 
     if (response->di_proofs) {
+        assertions = NULL;
+
         if (VAL_NO_ERROR !=
             (retval =
-             add_to_authentication_chain(assertions, matched_q, response->di_proofs)))
+             add_to_authentication_chain(&assertions, matched_q, response->di_proofs)))
             return retval;
 
         /*
          * Link the assertion to the query
          */
-        matched_q->qc_proof = *assertions;
+        matched_q->qc_proof = assertions;
         if (VAL_NO_ERROR != (retval =
                              try_build_chain(context,
-                                             *assertions,
+                                             assertions,
                                              queries, matched_q,
                                              response->di_qnames,
                                              type_h, class_h, 
@@ -4161,27 +4134,30 @@ set_dlv_branchoff(val_context_t *context,
 
         struct val_query_chain *q = added_qfq->qfq_query;
         struct val_query_chain *copyfrm = tp_qfq->qfq_query;
-         
+        struct val_digested_auth_chain *assertions = NULL;
+
         q->qc_ttl_x = copyfrm->qc_ttl_x;
         q->qc_bad = copyfrm->qc_bad;
         q->qc_state = copyfrm->qc_state;
 
         if (copyfrm->qc_ans) {
+            assertions = NULL;
             if (VAL_NO_ERROR != (retval = 
-                        add_to_authentication_chain(&context->a_list, q, 
+                        add_to_authentication_chain(&assertions, q, 
                                                     copyfrm->qc_ans->val_ac_rrset.ac_data))) 
                 goto done;
-            q->qc_ans = context->a_list;
+            q->qc_ans = assertions;
             q->qc_ans->val_ac_rrset.ac_data->rrs_ans_kind = 
                copyfrm->qc_ans->val_ac_rrset.ac_data->rrs_ans_kind; 
             q->qc_ans->val_ac_status = copyfrm->qc_ans->val_ac_status;
         }
         if (copyfrm->qc_proof) {
+            assertions = NULL;
             if (VAL_NO_ERROR != (retval = 
-                        add_to_authentication_chain(&context->a_list, q, 
+                        add_to_authentication_chain(&assertions, q, 
                                                     copyfrm->qc_proof->val_ac_rrset.ac_data))) 
                 goto done;
-            q->qc_proof = context->a_list;
+            q->qc_proof = assertions;
             q->qc_proof->val_ac_rrset.ac_data->rrs_ans_kind = 
                copyfrm->qc_proof->val_ac_rrset.ac_data->rrs_ans_kind; 
             q->qc_proof->val_ac_status = copyfrm->qc_proof->val_ac_status;
@@ -5722,7 +5698,7 @@ int try_chase_query(val_context_t * context,
  */
 int
 val_resolve_and_check(val_context_t * ctx,
-                      char * domain_name,
+                      const char * domain_name,
                       int qclass,
                       int qtype,
                       u_int32_t flags,

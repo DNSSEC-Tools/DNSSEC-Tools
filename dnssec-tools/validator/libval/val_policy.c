@@ -1823,10 +1823,8 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
      * Re-initialize caches 
      */
     free_query_chain(ctx->q_list);
-    free_authentication_chain(ctx->a_list);
 
     ctx->q_list = NULL;
-    ctx->a_list = NULL;
     ctx->dnsval_l = dnsval_list;
 
     CTX_UNLOCK_VALPOL(ctx);
@@ -2665,7 +2663,7 @@ val_add_valpolicy(val_context_t *context,
         LOCK_QC_EX(q);
         /* Should never fail when holding above locks */
         if (NULL != namename(q->qc_name_n, zone_n)) {
-            zap_query(ctx, q);
+            free_query_chain_structure(q);
             if (pol_entry->exp_ttl > 0)
                 q->qc_ttl_x = pol_entry->exp_ttl;
         }
@@ -2738,7 +2736,7 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
         LOCK_QC_EX(q);
         /* Should never fail when holding above locks */
         if (NULL != namename(q->qc_name_n, p->zone_n)) {
-            zap_query(ctx, q);
+            free_query_chain_structure(q);
         }
         UNLOCK_QC(q);    
     }
