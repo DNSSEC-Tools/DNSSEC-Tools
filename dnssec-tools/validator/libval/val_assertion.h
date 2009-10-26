@@ -60,9 +60,9 @@ int             add_to_qfq_chain(val_context_t *context,
 void            free_authentication_chain(struct val_digested_auth_chain
                                           *assertions);
 void            free_query_chain(struct val_query_chain *queries);
+void            free_query_chain_structure(struct val_query_chain *queries);
 void            requery_with_edns0(val_context_t *context,
                                     struct val_query_chain *matched_q);
-void            zap_query(val_context_t *context, struct val_query_chain *added_q);
 int             get_zse(val_context_t * ctx, u_char * name_n, 
                         u_int32_t flags, u_int16_t *status, u_char ** match_ptr, u_int32_t *ttl_x);
 int             find_trust_point(val_context_t * ctx, u_char * zone_n, 

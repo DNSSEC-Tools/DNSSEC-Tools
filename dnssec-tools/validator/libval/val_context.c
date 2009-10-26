@@ -161,7 +161,6 @@ val_create_context_with_conf(char *label,
      * Read the validator configuration file 
      */
     (*newcontext)->q_list = NULL;
-    (*newcontext)->a_list = NULL;
     base_dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get();
     if (base_dnsval_conf == NULL) {
         val_log(*newcontext, LOG_ERR, "val_create_context_with_conf(): No dnsval.conf file configured");
@@ -268,7 +267,6 @@ val_free_context(val_context_t * context)
     FREE(context->e_pol);
 
     free_query_chain(context->q_list);
-    free_authentication_chain(context->a_list);
 
     FREE(context);
 }

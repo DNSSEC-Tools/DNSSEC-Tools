@@ -105,8 +105,7 @@ extern          "C" {
         global_opt_t *g_opt;
         val_log_t *val_log_targets;
         
-        /* Query and authentication chain caches */
-        struct val_digested_auth_chain *a_list;
+        /* Query cache */
         struct val_query_chain *q_list;
     }; 
 
