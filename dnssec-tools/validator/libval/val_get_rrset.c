@@ -51,7 +51,7 @@ val_get_rrset(val_context_t *context,
     struct val_answer_chain *ans = NULL;
     struct val_answer_chain *last_ans = NULL;
     int retval = VAL_NO_ERROR;
-    char *n = NULL;
+    const char *n = NULL;
     int len;
     char *name_alias = NULL;
     val_context_t *ctx = NULL;
