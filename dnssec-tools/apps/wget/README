@@ -7,7 +7,7 @@ Introduction
 
 This HOWTO describes the installation, configuration and execution
 steps for adding DNSSEC validation to the wget application.  The
-patch in this directory has been tested on the wget-1.10.2 source.
+patch in this directory has been tested on the wget-1.12 source.
 It may also work on similar versions of wget.
 
 Note: Currently, This patch only works on systems that support IPv6.
@@ -18,20 +18,20 @@ function properly.
 
 Installation ============
 
-Download wget-1.10.2.tar.gz from
+Download wget-1.12.tar.gz from
 http://ftp.gnu.org/pub/gnu/wget/
 
 Unzip and untar it by:
 
-   tar -xvzf wget-1.10.2.tar.gz
+   tar -xvzf wget-1.12.tar.gz
 
-Go to the wget-1.10.2 directory:
+Go to the wget-1.12 directory:
 
-   cd wget-1.10.2/
+   cd wget-1.12/
 
-Apply the wget-1.10.2_dnssec_patch.txt in this directory by:
+Apply the wget-dnssec.patch in this directory by:
 
-   patch -p 1 -b -z .orig </path/to/patch/wget-1.10.2_dnssec_patch.txt
+   patch -p 1 -b -z .orig </path/to/patch/wget-dnssec.patch
 
 This will apply the patch and store the original files with a .orig
 suffix.
@@ -90,8 +90,10 @@ to require validation for a domain that is not signed. For example:
    validated and where validation is required.  Verify that the file
    was copied to the local machine properly.
 
+	wget http://dnssec-tools.org
+
 3. Try to pull a file from a host domain whose records cannot be DNSSEC
    validated and where validation is required.  Verify that the wget
    command failed with a DNSEC error.
 
------------------------------------------------------------------------
+	wget http://www.sparta.com
