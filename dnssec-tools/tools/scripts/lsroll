@@ -489,7 +489,16 @@ sub getrollrecs
 		}
 		else
 		{
-			$rollrecs{$rn}{'phases'} = "$rollrecs{$rn}{'kskphase'}/$rollrecs{$rn}{'zskphase'}";
+			my $kskphase = $rollrecs{rn}{'kskphase'};
+			my $zskphase = $rollrecs{rn}{'zskphase'};
+
+			#
+			# Make sure we've got a numeric phase.
+			#
+			$kskphase = 0 if($kskphase eq '');
+			$zskphase = 0 if($zskphase eq '');
+
+			$rollrecs{$rn}{'phases'} = "$kskphase/$zskphase";
 		}
 	}
 
