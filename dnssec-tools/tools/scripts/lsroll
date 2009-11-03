@@ -489,8 +489,8 @@ sub getrollrecs
 		}
 		else
 		{
-			my $kskphase = $rollrecs{rn}{'kskphase'};
-			my $zskphase = $rollrecs{rn}{'zskphase'};
+			my $kskphase = $rollrecs{$rn}{'kskphase'};
+			my $zskphase = $rollrecs{$rn}{'zskphase'};
 
 			#
 			# Make sure we've got a numeric phase.
