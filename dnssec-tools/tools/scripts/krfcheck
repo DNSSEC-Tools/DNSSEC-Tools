@@ -428,7 +428,8 @@ sub getkeyrecs
 		{
 			$sets{$krn} = $kr;
 		}
-		elsif(($type eq 'kskcur') || ($type eq 'kskobs'))
+		elsif(($type eq 'kskcur') || ($type eq 'kskpub') ||
+		      ($type eq 'kskobs') || ($type eq 'kskrev'))
 		{
 			$kskkeys{$krn} = $kr;
 		}
@@ -476,6 +477,20 @@ sub zonesets
 	{
 		qprint("no such key:  KSKCUR set $setname (zone $zonename)\n");
 		$zoneerrs++;
+	}
+
+	#
+	# Ensure that if the zone's Published KSK signing set is present that
+	# it actually exists.
+	#
+	$setname = $zonerec{'kskpub'};
+	if(defined($setname))
+	{
+		if(!defined($sets{$setname}))
+		{
+			qprint("no such key:  KSKPUB set $setname (zone $zonename)\n");
+			$zoneerrs++;
+		}
 	}
 
 	#
@@ -990,9 +1005,11 @@ sub keytypes
 	}
 
 	#
-	# Obsolete keys aren't listed in the zone keyrec.
+	# Obsolete and revoked keys aren't listed in the zone keyrec.
 	#
-	return if(($ktype eq "zskobs") || ($ktype eq "kskobs"));
+	return if(($ktype eq "zskobs") ||
+		  ($ktype eq "kskobs") ||
+		  ($ktype eq "kskrev"));
 
 	#
 	# Register an error if the key isn't in the appropriate signing set.
