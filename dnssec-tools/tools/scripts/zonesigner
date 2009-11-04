@@ -1656,7 +1656,7 @@ sub keydirs
 	# Ensure the KSK key directory exists and is actually a directory.
 	# We'll also move the KSKs into the directory.
 	#
-	if($genksk && ($kskdir ne $cwd))
+	if(($genksk || $pubksk) && ($kskdir ne $cwd))
 	{
 		if(! -e $kskdir)
 		{
@@ -1687,8 +1687,6 @@ sub keydirs
 	#
 	if($genzsk && ($zskdir ne $cwd))
 	{
-		my @newlist;			# New temporary list of ZSKs.
-
 		if(! -e $zskdir)
 		{
 			vprint("creating ZSK directory - $zskdir\n");
@@ -1709,7 +1707,6 @@ sub keydirs
 		{
 			System("$MV $zsk.* $zskdir");
 		}
-		@zskpublist = @newlist;
 	}
 
 	vmed_print("\n");
@@ -2526,7 +2523,6 @@ sub rollksk
 			#
 			# Remove keys from old set and remove set.
 			#
-			keyrec_setval('set', $kskcursetname, 'keys','');
 			setkeytype($kskcursetname, 'kskobs', 0);
 		}
 		else
@@ -2583,7 +2579,7 @@ sub rollksk
 	# Update the keyrecs.
 	#
 	keyrec_setval('zone',$zone,'kskcur',$kskcursetname);
-	keyrec_setval('zone',$zone,'kskpub','');
+	keyrec_delval($zone,'kskpub');
 
 }
 
