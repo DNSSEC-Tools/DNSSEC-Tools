@@ -32,11 +32,12 @@
 #
 #		set "signing-set-42"
 #			zonename	"example.com"
-#			keys		"Kexample.com.+005+87654 Kexample.com.+005+55555
+#			keys		"Kexample.com.+005+26000 Kexample.com.+005+55555
+#			keyrec_type	"zskcur"
 #
 #		key "Kexample.com.+005+26000"
 #			zonename	"example.com"
-#			keyrec_type	"kskcur"
+#			keyrec_type	"zskcur"
 #			algorithm	"rsasha1"
 #			length		"2048"
 #			ksklife		"15768000"
@@ -61,7 +62,8 @@ our $VERSION = "1.4";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk
-		 keyrec_names keyrec_fullrec keyrec_recval keyrec_setval
+		 keyrec_names keyrec_fullrec
+		 keyrec_recval keyrec_setval keyrec_delval
 		 keyrec_settime keyrec_age_revoked
 		 keyrec_add keyrec_del keyrec_newkeyrec keyrec_exists
 		 keyrec_zonefields keyrec_setfields keyrec_keyfields
@@ -345,7 +347,7 @@ sub keyrec_read
 #					into a new kskcur entry.
 #				- keys:
 #					Ensure that each key in the zone is
-#					really pointing to a signing set.  if
+#					really pointing to a signing set.  If
 #					not, a new set is created and the key
 #					inserted in it.
 #
@@ -354,7 +356,8 @@ sub keyrec_read
 #
 #			key keyrecs:
 #				- ksk:
-#					Change to a kskcur, kskpub, kskrev or kskobs.
+#					Change to a kskcur, kskpub, kskrev,
+#					or kskobs.
 #
 sub keyrec_fmtchk()
 {
@@ -416,7 +419,7 @@ sub keyrec_fmtchk()
 		# pointing to a signing set.  If not, create a new
 		# set and move the key there.
 		#
-		foreach my $key (qw /kskcur kskpub kskrev zskcur zskpub zsknew/)
+		foreach my $key (qw /kskcur kskpub kskrev kskobs zskcur zskpub zsknew/)
 		{
 			my $keyname;		# Key's name.
 			my $set;		# Signing set name.
@@ -478,7 +481,7 @@ sub keyrec_fmtchk()
 
 	#
 	# Check key keyrecs for problems:
-	#	- Change ksk type keyrecs to kskcur, kskpub, kskrev or kskobs.
+	#	- Change ksk type keyrecs to kskcur, kskpub, kskrev, or kskobs.
 	#
 	foreach $krn (keyrec_names())
 	{
@@ -517,7 +520,7 @@ sub keyrec_fmtchk()
 			# any of the zone's key sets.
 			#
 			$zone = $krec{'zonename'};
-			foreach my $key (qw /kskcur kskpub kskrev/)
+			foreach my $key (qw /kskcur kskpub kskrev kskobs/)
 			{
 				$set = $keyrecs{$zone}{$key};
 				if(keyrec_signset_haskey($set,$krn))
@@ -560,36 +563,46 @@ sub keyrec_fmtchk()
 #
 # Routine:	keyrec_age_revoked()
 #
-# Purpose: Process all revoked KSKs and obsolete those which have
-# exceeded the 'revperiod'. Aged reoked KSKs will be removed from the
-# 'kskrev' signset and marked 'kskobs'. Return the number of keys
-# aged.
+# Purpose:	Process all revoked KSKs in the specified signing set and mark
+#		as obsolete those which have exceeded the "revperiod".  Aged,
+#		revoked KSKs will be removed from the kskrev signset and marked
+#		kskobs.  The count of keys that have have been aged is returned.
 #
 sub keyrec_age_revoked
 {
-  my $set = shift;
-  my @keys = split / /, keyrec_recval($set,'keys');
-  my @res;
+	my $set = shift;
+	my @keys = split / /, keyrec_recval($set,'keys');
+	my @res;
 
-  foreach my $key (@keys) {
-    my $revtime = keyrec_recval($key, 'revtime');
-    my $revperiod = keyrec_recval($key, 'revperiod');
+	foreach my $key (@keys)
+	{
+		my $revtime = keyrec_recval($key, 'revtime');
+		my $revperiod = keyrec_recval($key, 'revperiod');
 
-    if (defined $revtime and defined $revperiod) {
-      my $now = time();
+		if(defined($revtime) && defined($revperiod))
+		{
+			my $now = time();
 
-      if (($now - $revtime) > $revperiod){
-	keyrec_setval('key', $key, 'keyrec_type', 'kskobs');
-	# XXX - shouldn't these be archived??
-      } else {
-	push(@res, $key);
-      }
-    } else {
-      err("keyrec_age_revoked: $key: undefined revocation data\n", -1);
-    }
+			if(($now - $revtime) > $revperiod)
+			{
+				# XXX - shouldn't these be archived??
+				# XXX+1 - Perhaps so, but that's beyond the
+				# XXX+1 - remit of this layer of code.
 
-  }
-  return @res;
+				keyrec_setval('key', $key, 'keyrec_type', 'kskobs');
+			}
+			else
+			{
+				push(@res, $key);
+			}
+		}
+		else
+		{
+			err("keyrec_age_revoked:  $key: undefined revocation data\n", -1);
+		}
+	}
+
+	return @res;
 }
 
 #--------------------------------------------------------------------------
@@ -635,8 +648,10 @@ sub keyrec_keypaths
 	#
 	# Ensure the keyrec type is valid.
 	#
-	if(($krt ne "kskcur") && ($krt ne "kskpub") && ($krt ne "ksknew") &&
-	   ($krt ne "kskrev") && ($krt ne "zskcur") && ($krt ne "zskpub"))
+	if(($krt ne "kskcur") && ($krt ne "kskpub") &&
+	   ($krt ne "kskrev") && ($krt ne "kskobs") &&
+	   ($krt ne "zskcur") && ($krt ne "zskpub") && ($krt ne "zskpub") &&
+	   ($krt ne "zsknew") && ($krt ne "zskobs"))
 	{
 		return(@paths);
 	}
