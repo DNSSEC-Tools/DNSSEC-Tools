@@ -33,7 +33,8 @@
 #		set "signing-set-42"
 #			zonename	"example.com"
 #			keys		"Kexample.com.+005+26000 Kexample.com.+005+55555
-#			keyrec_type	"zskcur"
+#			keyrec_type	"set"
+#			set_type	"zskcur"
 #
 #		key "Kexample.com.+005+26000"
 #			zonename	"example.com"
@@ -79,7 +80,7 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk
 #
 my @ZONEFIELDS = (
 			'zonefile',
-			'keyrec_type',		# Internal only.  Usually.
+			'keyrec_type',
 			'endtime',
 			'zskdirectory',
 			'kskdirectory',
@@ -107,7 +108,8 @@ my @ZONEFIELDS = (
 # Fields in a set keyrec.
 #
 my @SETFIELDS = (
-			'keyrec_type',		# Internal only.  Usually.
+			'keyrec_type',
+			'set_type',
 			'keys',
 		        'zonename',
 			'keyrec_setsecs',
@@ -144,7 +146,6 @@ my $modified;				# File-modified flag.
 
 
 #--------------------------------------------------------------------------
-#
 # Routine:      keyrec_creat()
 #
 # Purpose:      Create a DNSSEC keyrec file, if it does not exist.  If
@@ -167,7 +168,6 @@ sub keyrec_creat
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      keyrec_open()
 #
 # Purpose:      Opens an existing DNSSEC keyrec file.  If the file can't
@@ -195,7 +195,6 @@ sub keyrec_open
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_read()
 #
 # Purpose:	Read a DNSSEC keyrec file.  The contents are read into the
@@ -334,7 +333,6 @@ sub keyrec_read
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_fmtchk()
 #
 # Purpose:	Ensure the keyrec file is in the current format.
@@ -560,7 +558,6 @@ sub keyrec_fmtchk()
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_age_revoked()
 #
 # Purpose:	Process all revoked KSKs in the specified signing set and mark
@@ -606,7 +603,6 @@ sub keyrec_age_revoked
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_names()
 #
 # Purpose:	Smoosh the keyrec names into an array and return the array.
@@ -625,7 +621,6 @@ sub keyrec_names
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_keypaths()
 #
 # Purpose:	Return an array of the paths of a zone keyrec's keys.
@@ -692,7 +687,6 @@ sub keyrec_keypaths
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_exists()
 #
 # Purpose:	Smoosh the keyrec names into an array and return the array.
@@ -706,7 +700,6 @@ sub keyrec_exists
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_fullrec()
 #
 # Purpose:	Return all entries in a given keyrec.
@@ -720,7 +713,6 @@ sub keyrec_fullrec
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_recval()
 #
 # Purpose:	Return the value of a name/subfield pair.
@@ -735,7 +727,6 @@ sub keyrec_recval
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_setval()
 #
 # Purpose:	Set the value of a name/subfield pair.  The value is saved
@@ -884,7 +875,6 @@ sub keyrec_setval
 	#
 	if($found)
 	{
-#		$keyreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]+)"/"$val"/;
 		$keyreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]*)"/"$val"/;
 	}
 	else
@@ -927,7 +917,6 @@ sub keyrec_setval
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_delval()
 #
 # Purpose:	Delete a name/subfield pair from a keyrec.  The value is
@@ -1050,7 +1039,6 @@ sub keyrec_delval
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_add()
 #
 # Purpose:	Adds a new keyrec and fields to %keyrecs and $keyreclines.
@@ -1203,7 +1191,6 @@ sub keyrec_add
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_del()
 #
 # Purpose:	Deletes a keyrec and fields from %keyrecs and $keyreclines.
@@ -1317,7 +1304,6 @@ sub keyrec_del
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_newkeyrec()
 #
 # Purpose:	Creates a keyrec in %keyrecs.  The name and type fields of
@@ -1343,7 +1329,6 @@ sub keyrec_newkeyrec
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_settime()
 #
 # Purpose:	Set the time value of a keyrec to the current time.  If
@@ -1386,7 +1371,6 @@ sub keyrec_settime
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_zonefields()
 #
 # Purpose:	Return the list of zone fields.
@@ -1397,7 +1381,6 @@ sub keyrec_zonefields
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_setfields()
 #
 # Purpose:	Return the list of set fields.
@@ -1408,7 +1391,6 @@ sub keyrec_setfields
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_keyfields()
 #
 # Purpose:	Return the list of key fields.
@@ -1471,7 +1453,6 @@ sub keyrec_signset_newname
 
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_signset_new()
 #
 # Purpose:	Add a new signing set keyrec.   If the signing set keyrec
@@ -1514,7 +1495,6 @@ sub keyrec_signset_new
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_signset_addkey()
 #
 # Purpose:	Add a key to a Signing Set for the specified keyrec.
@@ -1577,7 +1557,6 @@ sub keyrec_signset_addkey
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_signset_delkey()
 #
 # Purpose:	Delete an entry from a Signing Set for the specified keyrec.
@@ -1640,7 +1619,6 @@ sub keyrec_signset_delkey
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_signset_haskey()
 #
 # Purpose:	Check if a Signing Set contains the specified keyrec.
@@ -1688,7 +1666,6 @@ sub keyrec_signset_haskey
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_signset_clear()
 #
 # Purpose:	Delete all keys for the specified Signing Set.
@@ -1723,7 +1700,6 @@ sub keyrec_signset_clear
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_signsets()
 #
 # Purpose:	Return the names of the Signing Sets in the keyrec file.
@@ -1749,7 +1725,6 @@ sub keyrec_signsets
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_init()
 #
 # Purpose:	Initialize the internal data.
@@ -1763,7 +1738,6 @@ sub keyrec_init
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_defkrf()
 #
 # Purpose:	Get the default keyrec file defined in the DNSSEC-Tools
@@ -1788,7 +1762,6 @@ sub keyrec_defkrf
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_discard()
 #
 # Purpose:	Discard the current keyrec file -- don't save the contents,
@@ -1801,7 +1774,6 @@ sub keyrec_discard
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_close()
 #
 # Purpose:	Save the key record file and close the descriptor.
@@ -1813,7 +1785,6 @@ sub keyrec_close
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_write()
 #
 # Purpose:	Save the key record file and leave the file handle open.
@@ -1852,7 +1823,6 @@ sub keyrec_write
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_saveas()
 #
 # Purpose:	Save the key record file into a user-specified file.  A new
@@ -1885,7 +1855,6 @@ sub keyrec_saveas
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_dump_hash()
 #
 # Purpose:	Dump the parsed keyrec entries.
@@ -1910,7 +1879,6 @@ sub keyrec_dump_hash
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	keyrec_dump_array()
 #
 # Purpose:	Display the contents of @keyreclines.
