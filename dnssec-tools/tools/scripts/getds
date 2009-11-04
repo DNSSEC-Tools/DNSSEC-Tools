@@ -28,13 +28,18 @@ DTGetOptions(\%opts,
 		['GUI:otherargs_text',"DOMAIN_NAME"],
 	       ) || exit;
 
-# query the DNSKEY from the net
-my $res  = Net::DNS::Resolver->new;
-my $q = $res->query($ARGV[0], "DNSKEY");
-my @keys = $q->answer;
-
 # Generate a list of all the algorithms to use:
 my @algorithms = split(/,\s*/, uc($opts{'a'}));
+Exit("no algorithms specified with the -a switch") if ($#algorithms == -1);
+
+# query the DNSKEY from the net
+my $res  = Net::DNS::Resolver->new;
+Exit("Failed to create a Net::DNS::Resolver") if (!$res);
+
+my $q = $res->query($ARGV[0], "DNSKEY");
+Exit("Failed to query '$ARGV[0]' for its DNSKEY records") if (!$q);
+
+my @keys = $q->answer;
 
 #
 # for each of the keys found, print out the DS record
@@ -110,6 +115,13 @@ sub make_printing_ds {
     $changethis =~ s/\;.*//;
     $changethis = "  " . $changethis . "\n";
     return $changethis;
+}
+
+sub Exit {
+    if ($#_ > -1) {
+	print STDERR @_, "\n";
+    }
+    exit 1;
 }
 
 exit 1;
