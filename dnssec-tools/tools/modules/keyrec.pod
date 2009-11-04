@@ -215,6 +215,22 @@ The length of a ZSK key.  This is only included in I<keyrec>s for ZSK keys.
 
 The life of a ZSK key.  This is only included in I<keyrec>s for ZSK keys.
 
+=head2 General Keyrec Fields
+
+ * keyrec_type
+
+The type of the I<keyrec>.
+
+For zone I<keyrec>s, the value of this field will be "zone".
+
+For set I<keyrec>s, the value of this field will be
+"kskcur", "kskpub", "kskrev", "kskobs",
+"zskcur", "zskpub", "zsknew", or "zskobs".
+
+For key I<keyrec>s, the value of this field will be
+"kskcur", "kskpub", "kskrev", "kskobs",
+"zskcur", "zskpub", "zsknew", or "zskobs".
+
 =head1 EXAMPLES
 
 The following is an example of a zone I<keyrec>:
@@ -230,6 +246,7 @@ The following is an example of a zone I<keyrec>:
             zskpub          "signing-set-43"
             zsknew          "signing-set-44"
             lastset         "signing-set-44"
+            keyrec_type     "zone"
             keyrec_signsecs "1123771721"
             keyrec_signdate "Thu Aug 11 14:48:41 2005"
 
@@ -238,6 +255,7 @@ The following is an example of a set I<keyrec>:
     set        "signing-set-42"
             zonename        "example.com"
             keys            "Kexample.com.+005+88888"
+            keyrec_type     "zskcur"
             keyrec_setsecs  "1123771350"
             keyrec_setdate  "Thu Aug 11 14:42:30 2005"
 
@@ -245,7 +263,7 @@ The following is an example of a key I<keyrec>:
 
     key        "Kexample.com.+005+88888"
             zonename        "example.com"
-            keyrec_type     "kskcur"
+            keyrec_type     "zskcur"
             algorithm       "rsasha1"
             random          "/dev/urandom"
             keypath         "./Kexample.com.+005+88888.key"
