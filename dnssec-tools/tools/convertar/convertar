@@ -39,6 +39,8 @@ if (runpacked()) {
 
 
 DTGetOptions(\%opts,
+	     ['GUI:VERSION',"0.9\nDNSSEC-Tools Version: 1.6.1.pre1"],
+
 	     ["i|input-file=s",  "Input file(s)"],
 	     ["o|output-file=s", "Output file(s)"],
 	    ) || exit 1;
