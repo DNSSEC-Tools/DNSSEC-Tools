@@ -78,24 +78,27 @@ my $DAYSWARN = 7;			# Days before an expiration warning.
 #
 # List of valid encryption algorithms and length ranges.
 #
-my @algorithms = ("rsasha1", "rsamd5", "dsa", "dh", "hmac-md5");
+my @algorithms = ("rsasha1", "rsamd5", "dsa", "dh", "hmac-md5", "nsec3rsasha1");
 
 my %length_low =
 (
-	"rsasha1"  => 512,
-	"rsamd5"   => 512,
-	"dsa"	   => 512,
-	"dh"	   => 128,
-	"hmac-md5" => 1
+	"rsasha1"	=> 512,
+	"rsamd5"	=> 512,
+	"dsa"		=> 512,
+	"dh"		=> 128,
+	"hmac-md5"	=> 1,
+	"nsec3rsasha1"	=> 512,
+
 );
 
 my %length_high =
 (
-	"rsasha1"  => 2048,
-	"rsamd5"   => 2048,
-	"dsa"	   => 1024,
-	"dh"	   => 4096,
-	"hmac-md5" => 512
+	"rsasha1"	=> 2048,
+	"rsamd5"  	=> 2048,
+	"dsa"		=> 1024,
+	"dh"		=> 4096,
+	"hmac-md5"	=> 512,
+	"nsec3rsasha1"  => 4096
 );
 
 #######################################################################
