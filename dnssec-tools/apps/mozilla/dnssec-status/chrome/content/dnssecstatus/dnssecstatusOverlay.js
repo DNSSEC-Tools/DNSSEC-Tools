@@ -36,8 +36,8 @@ function get_err_summary() {
 }
 
 function logit(str) {
-    loginfo = loginfo + str + "- spot = " + current_spot + "\n";
-//    dump("******************** " + str + "\n");
+    // loginfo = loginfo + str + "- spot = " + current_spot + "\n";
+    dump("DNSSEC STATUS: " + str + "\n");
 }
 
 function showlog(lastbit) {
