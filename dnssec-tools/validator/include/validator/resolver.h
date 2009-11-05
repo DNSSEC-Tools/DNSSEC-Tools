@@ -27,6 +27,10 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+#ifdef __cplusplus
+extern          "C" {
+#endif
+
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
 #define FREE(p) my_free(p,__FILE__,__LINE__)
@@ -255,4 +259,7 @@ const char     *p_class(int class);
 #define p_type(type) p_sres_type(type)
 const char     *p_sres_type(int type);
 
+#ifdef __cplusplus
+}                               /* extern C */
+#endif
 #endif                          /* RESOLVER_H */
