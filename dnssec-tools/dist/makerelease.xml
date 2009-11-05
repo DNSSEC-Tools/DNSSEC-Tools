@@ -132,13 +132,13 @@
 
     <step type="system" title="svn tag the release">
       <commands>
-	<command>svn copy -m "tag of version {VERSION}" https://dnssec-tools.svn.sourceforge.net/svnroot/dnssec-tools/trunk/dnssec-tools https://dnssec-tools.svn.sourceforge.net/svnroot/dnssec-tools/tags/dnssec-tools-{VERSION}</command>
+	<command>svn copy -m "tag of version {VERSION}" https://www.dnssec-tools/svn/dnssec-tools/trunk/dnssec-tools https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}</command>
       </commands>
     </step>
 
     <step type="system" title="export the release">
       <commands>
-	<command>svn export https://dnssec-tools.svn.sourceforge.net/svnroot/dnssec-tools/tags/dnssec-tools-{VERSION} dnssec-tools-{VERSION}</command>
+	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION} dnssec-tools-{VERSION}</command>
       </commands>
     </step>
 
@@ -150,20 +150,25 @@
 
     <step type="system" title="upload the results to sourceforge" interactive="1">
       <commands>
-	<command>rsync -v dnssec-tools-{VERSION}.tar.gz frs.sourceforge.net:uploads/</command>
+	<command>echo old command for SF:
+	<command>echo rsync -v dnssec-tools-{VERSION}.tar.gz frs.sourceforge.net:uploads/</command>
       </commands>
     </step>
 
     <step type="informational" title="Advertising">
       <text>
-	Update the SF file list
-	Advertise like crazy!
+	Advertise like crazy (freshmeat, etc)!
       </text>
     </step>
     <step type="informational" title="Website Update">
       <text>
 	Update the various aspects of the website, which includes: the
 	CLI help, man pages, ...
+      </text>
+    </step>
+    <step type="informational" title="Website Update">
+      <text>
+	Publish binaries
       </text>
     </step>
   </steps>
