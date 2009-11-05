@@ -28,6 +28,14 @@ extern          "C" {
 #define EAI_NODATA 7
 #endif
 
+/*
+ * define error codes for val_getaddrinfo and val_getnameinfo which
+ * have a DNSSEC validation status.
+ */
+#define VAL_GETADDRINFO_HAS_STATUS(rc) ( \
+	(rc == 0) || (rc == EAI_NONAME) || (rc == EAI_NODATA))
+#define VAL_GETNAMEINFO_HAS_STATUS(rc) VAL_GETADDR_HAS_STATUS(RC)
+
 #if !defined(NS_INT16SZ) && defined(INT16SZ)
 #define NS_INT16SZ INT16SZ
 #define NS_INT32SZ INT32SZ
@@ -421,7 +429,7 @@ extern          "C" {
     typedef void    (*val_log_logger_t) (struct val_log * logp,
                                          const val_context_t * ctx,
                                          int level,
-                                         const char *template, va_list ap);
+                                         const char *format, va_list ap);
     typedef void    (*val_log_cb_t) (struct val_log *logp, int level,
                                      const char *buf);
 
@@ -470,7 +478,7 @@ extern          "C" {
                                                  struct val_result_chain
                                                  *results);
     void            val_log(const val_context_t * ctx, int level,
-                            const char *template, ...);
+                            const char *format, ...);
 
     val_log_t      *val_log_add_cb(val_log_t **log_head, int level, val_log_cb_t func);
     val_log_t      *val_log_add_filep(val_log_t **log_head, int level, FILE * p);
@@ -643,7 +651,7 @@ extern          "C" {
      */
     int val_get_rrset(val_context_t *ctx,
                       const char *name,
-                      int class,
+                      int classid,
                       int type,
                       u_int32_t flags,
                       struct val_answer_chain **answers);
