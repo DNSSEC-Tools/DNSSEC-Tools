@@ -243,15 +243,19 @@ sub setchecks
 		#
 		if(!defined($zones{$zone}))
 		{
-			qprint("warning:  $setname references $zone, but $zone does not exist\n");
+			qprint("warning:  set $setname references $zone, but $zone does not exist\n");
 			$err = 1;
 			$orphsets++;
 		}
 		elsif(($zones{$zone}{'zskcur'} ne $setname)	&&
 		      ($zones{$zone}{'zskpub'} ne $setname)	&&
-		      ($zones{$zone}{'zsknew'} ne $setname))
+		      ($zones{$zone}{'zsknew'} ne $setname)	&&
+		      ($zones{$zone}{'zsknew'} ne $setname)	&&
+		      ($zones{$zone}{'kskcur'} ne $setname)	&&
+		      ($zones{$zone}{'kskpub'} ne $setname)
+		     )
 		{
-			qprint("warning:  $setname references $zone, but is not referenced by $zone\n");
+			qprint("obsolete set:  $setname\n");
 			$orphsets++;
 
 		}
@@ -307,7 +311,9 @@ sub keychecks
 		$kr = $keys{$keyname};
 		%keyrec = %$kr;
 
-		if($keyrec{'keyrec_type'} eq "zskobs")
+		if(($keyrec{'keyrec_type'} eq "zskobs")	||
+		   ($keyrec{'keyrec_type'} eq "kskobs")	||
+		   ($keyrec{'keyrec_type'} eq "kskrev"))
 		{
 			qprint("obsolete key:  $keyname\n");
 			$obsoletes++;
@@ -341,7 +347,7 @@ sub keychecks
 # Routine:	orphankey()
 #
 # Purpose:	This routine checks if a given key is an orphan or if it's
-#		referenced by a zone (KSK) or a signing set (ZSK.)
+#		referenced by a signing set.
 #		The orphan count is incremented when an orphan is found.
 #
 # Return Values:
@@ -353,7 +359,8 @@ sub orphankey
 	my $keyname = shift;			# Keyrec's name.
 	my $kr;					# Keyrec reference.
 	my %keyrec;				# Key's keyrec.
-	my $keyzone;				# Key's zone's name.
+	my @keysets = ();			# Set list.
+	my $found = 0;				# Found flag.
 
 	#
 	# Get the key's keyrec and save the its zone name.
@@ -362,57 +369,28 @@ sub orphankey
 	%keyrec = %$kr;
 
 	#
-	# If the key is a KSK, we'll check in its zone.  Otherwise, we'll
-	# look at the signing sets.
+	# Check the zones to see if one references this key.
 	#
-	if($keyrec{'keyrec_type'} eq 'kskcur')
+	foreach my $setname (sort(keys(%sets)))
 	{
-		my $zone = $keyrec{'zonename'};		# Key's zone.
-
-		if($zones{$zone}{'kskcur'} eq $keyname)
+		if(keyrec_signset_haskey($setname,$keyname))
 		{
-			vprint("referenced key:  KSK $keyname $zone\n");
-			return(0);
-		}
-		else
-		{
-			qprint("orphaned key:  $keyname references $zone, but is not referenced by $zone\n");
+			push @keysets, $setname;
+			$found = 1;
 		}
 	}
-	else
+
+	#
+	# Give an appropriate message.  If the key was found, we'll
+	# report all the sets it belongs to.
+	#
+	if($found)
 	{
-		my $setname;				# Set name.
-		my @keysets = ();			# Set list.
-		my $found = 0;				# Found flag.
+		my $setlist;			# All of key's sets.
 
-		#
-		# Check the zones to see if one references this key.
-		#
-		foreach $setname (sort(keys(%sets)))
-		{
-			if(keyrec_signset_haskey($setname,$keyname))
-			{
-				push @keysets, $setname;
-				$found = 1;
-			}
-		}
-
-		#
-		# Give an appropriate message.  If the key was found, we'll
-		# report all the sets it belongs to.
-		#
-		if($found)
-		{
-			my $setlist;			# All of key's sets.
-
-			$setlist = join ' ', @keysets;
-			vprint("referenced key:  $keyname $setlist\n");
-			return(0);
-		}
-		else
-		{
-			qprint("orphaned key:  $keyname\n");
-		}
+		$setlist = join ' ', @keysets;
+		vprint("referenced key:  $keyname $setlist\n");
+		return(0);
 	}
 
 	#
@@ -530,12 +508,12 @@ cleankrf - Clean a DNSSEC-Tools I<keyrec> files of old data
 =head1 DESCRIPTION
 
 B<cleankrf> cleans old data out of a set of DNSSEC-Tools I<keyrec> files.
-The old data are orphaned signing sets, orphaned keys, and obsolete keys.
+The old data are obsolete signing sets, orphaned keys, and obsolete keys.
 
-Orphaned signing sets are set I<keyrec>s unreferenced by a zone I<keyrec>.
+Obsolete signing sets are set I<keyrec>s unreferenced by a zone I<keyrec>.
+Revoked signing sets are considered obsolete by B<cleankrf>.
 
-Orphaned keys are KSK key I<keyrec>s unreferenced by a zone I<keyrec> and
-ZSK key I<keyrec>s unreferenced by any set I<keyrec>s.
+Orphaned keys are KSK and ZSK key I<keyrec>s unreferenced by a set I<keyrec>.
 
 Obsolete keys are ZSK key I<keyrec>s with a I<keyrec_type> of B<zskobs>.
 
