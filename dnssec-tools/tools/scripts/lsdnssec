@@ -50,7 +50,7 @@ DTGetOptions(config => [qw(allow_zero)],
 		 "Debugging output (show extra processing information)."],
 
 		['GUI:otherargs_text',"[FILES OR DIRECTORIES...]"],
-	       ) || exit;
+	       ) || exit(1);
 
 @ARGV = (getcwd()) if ($#ARGV == -1);
 # XXX: deal with '.' passed in on the command line
@@ -61,6 +61,12 @@ my %zoneinfo;
 
 my $todaystime = time();
 my $gmtime = str2time(scalar gmtime());
+
+# Ensure the requested level of detail is within our acceptable range.
+if (($opts{'d'} < 1) || ($opts{'d'} > 9)) {
+    print STDERR "invalid -d option:  $opts{'d'}\n";
+    exit(1);
+}
 
 # generate the list of files to read in.
 expand_files(@files);
