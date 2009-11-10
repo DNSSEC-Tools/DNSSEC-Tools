@@ -198,7 +198,7 @@ sub main
 #-----------------------------------------------------------------------------
 # Routine:	chkzone()
 #
-# Purpose:	Check this zone's for obsolete signing sets.  If we find
+# Purpose:	Check this zone for obsolete signing sets.  If we find
 #		any of the requested types, its keys will be moved to the
 #		proper archive directory.
 #
@@ -231,7 +231,7 @@ sub chkzone
 	vprint("archive directory: $archdir\t\t($zone)");
 
 	#
-	# Check this zone's for obsolete signing sets.  If we find any of
+	# Check this zone for obsolete signing sets.  If we find any of
 	# the requested types, we'll archive its keys.
 	#
 	foreach my $krn (sort(keyrec_names()))
