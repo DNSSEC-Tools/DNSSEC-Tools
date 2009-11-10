@@ -120,7 +120,7 @@ sub load_files {
 	} else {
 	    # XXX: maybe look at the first line to determine what it is?
 	}
-	# XXX: load .signed files and look for sig expirary times?
+	# XXX: load .signed files and look for sig expiry times?
     }
 }
 
@@ -457,6 +457,8 @@ sub debug {
     print STDERR @_ if ($opts{'v'});
 }
 
+#######################################################################
+
 =pod
 
 =head1 NAME
@@ -465,34 +467,36 @@ lsdnssec - List DNSSEC components of zones from files or directories
 
 =head1 SYNOPSIS
 
-  lsdnssec [-d 1-9] [FILES OR DIRECTIORIES...]
+  lsdnssec [-d 1-9] [FILES OR DIRECTORIES...]
 
 =head1 DESCRIPTION
 
-The lsdnssec program summarizes together information about DNSSEC
-related files given to it, or in files within directories that were
-given to it.  Various levels of detail can be output based on the -d flag.
+The B<lsdnssec> program summarizes information about DNSSEC-related files.
+These files may be specified on the command line or found in directories
+that were given on the command line.  The B<-d> flag controls the amount
+of detail in the B<lsdnssec> output.
 
-Each zone that the tool collects information about has the following
-information shown about it:
+B<lsdnssec> displays the following information about each zone for which it
+collects information:
 
 =over
 
 =item keys
 
-Key information is shown about the keys currently in use.  A bar graph
-is included that shows the age of the key with respect to the
-configured expected key-life time.
+Key information is shown about the keys currently in use.  A bar graph is
+included that shows the age of the key with respect to the configured
+expected key-life time.
 
-This information is collected from any .krf files the tool finds.
+This information is collected from any B<.krf> files B<lsdnssec> finds.
 
 =item rolling status
 
-If any zone keys are being rolled via rollerd, then the status of the
-rolling state is shown (along with the time needed to reach the next
-state).
+If any zone keys are being rolled via B<rollerd>, then the status of the
+rolling state is shown.  The time needed to reach the next state is also
+displayed.
 
-This information is collected from any .rollrec files the tool finds.
+This information is collected from any B<.rollrec> files found by
+B<lsdnssec>.
 
 =back
 
@@ -500,23 +504,23 @@ This information is collected from any .rollrec files the tool finds.
 
 =over
 
-=item -r
+=item B<-r>
 
 Show only rolling information from the rollrec files.  By default both
-rolling and keying information is shown.
+roll-state and key information is shown.
 
-=item -k
+=item B<-k>
 
 Show only keying information from the krf files.  By default both
-rolling and keying information is shown.
+roll-state and key information is shown.
 
-=item -d 1-9
+=item B<-d 1-9>
 
 Controls the amount of information shown in the output.  A level of 9
-shows everything, and a level of 1 shows a minimal amount.  The
+shows everything; a level of 1 shows a minimal amount.  The
 default level is 5.
 
-=item --debug
+=item B<--debug>
 
 Turns on extra debugging information.
 
