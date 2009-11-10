@@ -89,18 +89,14 @@ sub main
 		$kr = keyrec_fullrec($krn);
 
 		#
-		# If this keyrec is a zone, we only have to check the KSK.
+		# Don't do anything if this keyrec is a zone of a set.
 		# If it's a key, we only have to check the keyrec itself.
 		#
-		if($kr->{'keyrec_type'} eq "zone")
-		{
-			print "zone $krn\n" if($verbose);
-			checkkey('zone',$krn,'kskpath',$kr->{'kskpath'});
-		}
-		elsif($kr->{'keyrec_type'} eq "set")
+		if(($kr->{'keyrec_type'} eq "zone")	||
+		   ($kr->{'keyrec_type'} eq "set"))
 		{
 			#
-			# Don't do anything for sets.
+			# Don't do anything for zones or sets.
 			#
 		}
 		else
