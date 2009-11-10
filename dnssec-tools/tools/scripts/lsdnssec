@@ -177,6 +177,8 @@ sub print_key {
     my $keytag = $key->{'keyrec_name'};
     $keytag =~ s/.*\+//;
 
+    return if($keytag eq '');
+
     my $smalltype   = substr($keytype, 0, 3);
     my $smallstatus = substr($keytype, 3, 3);
 
@@ -433,12 +435,20 @@ sub print_zone_information {
 	# print each active key
 	if ($opts{'k'} || !($opts{'k'} || $opts{'r'})) {
 	    foreach my $keytype (qw(kskpub kskcur zskpub zskcur)) {
+		my @keyset = ();
 
 		# for each keytype, look up the set containing the key(s)
 		# print the resulting key.
 		my $set = $krflookup{$krflookup{$zone}{$keytype}};
 		next if (!defined($set));
-		print_key($keytype, $krflookup{$set->{'keys'}});
+
+		# Divide the keyset into its component keys.
+		@keyset = split / /, $set->{'keys'};
+
+		# Print the info for each key in the keyset.
+		foreach my $keyname (sort(@keyset)) {
+		    print_key($keytype, $krflookup{$keyname});
+		}
 	    }
 	}
 
