@@ -149,10 +149,55 @@ exit($ret);
 #
 sub main()
 {
-	my $argc = @ARGV;		# Number of command line arguments.
 	my $errors = 0;			# Total error count.
 
+	#
+	# Parse the command line.
+	#
 	erraction(ERR_EXIT);
+	optsandargs();
+
+	#
+	# Read the keyrec file.
+	#
+	getkeyrecs($ARGV[0]);
+
+	#
+	# Check our watch.
+	#
+	$curtime = time();
+
+	#
+	# Run the zone checks.
+	#
+	zonechecks() if($zonechk);
+
+	#
+	# Run the set checks.
+	#
+	setchecks() if($setchk);
+
+	#
+	# Run the key checks.
+	#
+	keychecks() if($keychk);
+
+	#
+	# Calculate and report the number of errors we found.
+	#
+	$errors = $zoneerrs + $seterrs + $keyerrs;
+	print("$errors errors\n") if($count);
+	return($errors);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	Parse our command line.
+#
+sub optsandargs
+{
+	my $argc = @ARGV;		# Number of command line arguments.
 
 	#
 	# Check our options.
@@ -195,38 +240,6 @@ sub main()
 	# Ensure we were given a keyrec file to check.
 	#
 	usage() if($argc == 0);
-
-	#
-	# Read the keyrec file.
-	#
-	getkeyrecs($ARGV[0]);
-
-	#
-	# Check our watch.
-	#
-	$curtime = time();
-
-	#
-	# Run the zone checks.
-	#
-	zonechecks() if($zonechk);
-
-	#
-	# Run the set checks.
-	#
-	setchecks() if($setchk);
-
-	#
-	# Run the key checks.
-	#
-	keychecks() if($keychk);
-
-	#
-	# Calculate and report the number of errors we found.
-	#
-	$errors = $zoneerrs + $seterrs + $keyerrs;
-	print("$errors errors\n") if($count);
-	return($errors);
 }
 
 #-----------------------------------------------------------------------------
