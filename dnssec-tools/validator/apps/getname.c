@@ -52,11 +52,11 @@ usage(char *progname)
     fprintf(stderr,
             "\t-p, --service=<PORT|SERVICE>    transport-layer port or service name\n");
     fprintf(stderr, 
-            "\t-F                              add the NI_NOFQDN flag"
-            "\t-H                              add the NI_NUMERICHOST flag"
-            "\t-N                              add the NI_NAMEREQD flag"
-            "\t-S                              add the NI_NUMERICSERV flag"
-            "\t-D                              add the NI_DGRAM flag");
+            "\t-F                              add the NI_NOFQDN flag\n"
+            "\t-H                              add the NI_NUMERICHOST flag\n"
+            "\t-N                              add the NI_NAMEREQD flag\n"
+            "\t-S                              add the NI_NUMERICSERV flag\n"
+            "\t-D                              add the NI_DGRAM flag\n");
     fprintf(stderr,
             "\t-o, --output=<debug-level>:<dest-type>[:<dest-options>]\n"
             "\t          <debug-level> is 1-7, corresponding to syslog levels\n"
