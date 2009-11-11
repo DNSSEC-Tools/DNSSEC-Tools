@@ -576,7 +576,7 @@ sub zsk_expired
 {
 	my $rname = shift;			# Name of rollrec rec.
 	my $rrr = shift;			# Reference to rollrec.
-	my $key = shift;			# Key to check.
+	my $keyset = shift;			# Key to check.
 
 	my %rr;					# Rollrec hash.
 
@@ -623,10 +623,10 @@ sub zsk_expired
 	# Get the rollin' key's keyrec for our zone.
 	#
 	$krname = $rr{'keyrec'};
-	$krec = zonekeykr($rname,$krname,$key);
+	$krec = zonekeykr($rname,$krname,$keyset);
 	if($krec == 0)
 	{
-		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$keyset\" is \"$krname\"");
 		return(0);
 	}
 	%set   = %$krec;
@@ -636,7 +636,7 @@ sub zsk_expired
 	#
 	if($set{'keyrec_type'} ne 'set')
 	{
-		rolllog_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
+		rolllog_log(LOG_ERR,$rname,"\"$keyset\"'s keyrec is not a set keyrec");
 		return(0);
 	}
 	if(!defined($set{'keys'}) || ($set{'keys'} eq ""))
@@ -1047,7 +1047,7 @@ sub ksk_expired
 {
 	my $rname = shift;			# Name of rollrec rec.
 	my $rrr = shift;			# Reference to rollrec.
-	my $key = shift;			# Key to check.
+	my $keyset = shift;			# Key to check.
 
 	my %rr;					# Rollrec hash.
 
@@ -1094,10 +1094,10 @@ sub ksk_expired
 	# Get the rollin' key's keyrec for our zone.
 	#
 	$krname = $rr{'keyrec'};
-	$krec = zonekeykr($rname,$krname,$key);
+	$krec = zonekeykr($rname,$krname,$keyset);
 	if($krec == 0)
 	{
-		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$keyset\" is \"$krname\"");
 		return(0);
 	}
 	%set   = %$krec;
@@ -1107,7 +1107,7 @@ sub ksk_expired
 	#
 	if($set{'keyrec_type'} ne 'set')
 	{
-		rolllog_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
+		rolllog_log(LOG_ERR,$rname,"\"$keyset\"'s keyrec is not a set keyrec");
 		return(0);
 	}
 	if(!defined($set{'keys'}) || ($set{'keys'} eq ""))
