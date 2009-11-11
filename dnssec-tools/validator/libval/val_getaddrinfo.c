@@ -1001,10 +1001,10 @@ val_getaddrinfo(val_context_t * context,
          * * XXX: TODO check the order in the ETC_HOST_CONF file
          */
         if (get_addrinfo_from_etc_hosts(ctx, nodename, servname,
-				      cur_hints, res) == EAI_SERVICE) {
-	        retval = EAI_SERVICE;
+                                        cur_hints, res) == EAI_SERVICE) {
+            retval = EAI_SERVICE;
         } else if (*res != NULL) {
-	        retval = 0;
+            retval = 0;
             *val_status = local_ans_status;
         }
 
@@ -1013,7 +1013,7 @@ val_getaddrinfo(val_context_t * context,
          */
         else {
             retval = get_addrinfo_from_dns(ctx, nodename, servname,
-        					cur_hints, res, val_status);
+                                           cur_hints, res, val_status);
         }
     }
 
@@ -1254,7 +1254,7 @@ val_getnameinfo(val_context_t * context,
 
     if ((flags & NI_NUMERICHOST) && !(flags & NI_NAMEREQD)) {
         return 0;
-	}
+    }
 
     val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)\n", flags);
     if (VAL_NO_ERROR != 
@@ -1264,7 +1264,7 @@ val_getnameinfo(val_context_t * context,
                                       ns_t_ptr,  /*const u_int16_t type */
                                       0, /*const u_int32_t flags */
                                       &val_res))) { /* struct val_answer_chain **results */
-	    val_log(ctx, LOG_ERR, 
+        val_log(ctx, LOG_ERR, 
                 "val_getnameinfo(): val_get_rrset failed - %s", 
                 p_val_err(retval));
         *val_status = VAL_UNTRUSTED_ANSWER;
