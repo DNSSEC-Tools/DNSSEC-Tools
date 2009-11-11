@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -87,7 +88,8 @@ main(int argc, char *argv[])
     int            port = 0;
     val_log_t      *logp;
     val_status_t val_status;
-    struct sockaddr_in saddr;
+    struct sockaddr saddr;
+    int sock_size;
     // Parse the command line
     while (1) {
         int             c;
@@ -156,9 +158,19 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    saddr.sin_family = PF_INET;
-    saddr.sin_port = htons(port);
-    saddr.sin_addr.s_addr = inet_addr(node);
+    if (strchr(node,':'))  {
+        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)&saddr;
+        sa6->sin6_port = htons(port);
+       sa6->sin6_family = AF_INET6;
+       inet_pton(AF_INET6,node,&sa6->sin6_addr);
+       sock_size = sizeof(struct sockaddr_in6);
+    } else {
+        struct sockaddr_in *sa = (struct sockaddr_in *)&saddr;
+        sa->sin_port = htons(port);
+       sa->sin_family = PF_INET;
+       sa->sin_addr.s_addr = inet_addr(node);
+       sock_size = sizeof(struct sockaddr_in);
+    }
 
     if (portspecified != 1) {
       serv = NULL;
@@ -169,7 +181,7 @@ main(int argc, char *argv[])
 
       retval = val_getnameinfo(NULL, 
 			       (struct sockaddr*)&saddr, 
-			       sizeof(struct sockaddr_in), 
+			       sock_size,
 			       host, hostlen, serv, servlen, 
 			       flags, &val_status);
 
