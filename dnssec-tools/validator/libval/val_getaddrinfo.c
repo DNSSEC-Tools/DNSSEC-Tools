@@ -1252,9 +1252,9 @@ val_getnameinfo(val_context_t * context,
 
     val_log(ctx, LOG_DEBUG, "val_getnameinfo(): pre-val flags(%d)\n", flags);
 
-    if (!(flags & NI_NUMERICHOST) || (flags & NI_NAMEREQD)) {
+    if ((flags & NI_NUMERICHOST) && !(flags & NI_NAMEREQD)) {
         return 0;
-    }
+	}
 
     val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)\n", flags);
     if (VAL_NO_ERROR != 
@@ -1283,8 +1283,8 @@ val_getnameinfo(val_context_t * context,
         /* set the value of merged trusted and validated status values */
         if (res->val_ans) {
             if (host && (hostlen > 0) 
-                && (hostlen <= res->val_ans->rr_length) 
-                && !(flags && NI_NUMERICHOST))  {
+                && (hostlen >= res->val_ans->rr_length) 
+                && !(flags & NI_NUMERICHOST))  {
                     ns_name_ntop(res->val_ans->rr_data,
                                host, hostlen);
             }
