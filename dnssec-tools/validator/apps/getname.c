@@ -88,7 +88,7 @@ main(int argc, char *argv[])
     int            port = 0;
     val_log_t      *logp;
     val_status_t val_status;
-    struct sockaddr saddr;
+    struct sockaddr_storage saddr;
     int sock_size;
     // Parse the command line
     while (1) {
@@ -207,7 +207,7 @@ main(int argc, char *argv[])
         
     } else {
         retval = getnameinfo((struct sockaddr*)&saddr, 
-			     sizeof(struct sockaddr_in), 
+                               sock_size,
 			       host, (size_t)STRLEN, 
 			       serv, (size_t)STRLEN, 
 			       flags);
