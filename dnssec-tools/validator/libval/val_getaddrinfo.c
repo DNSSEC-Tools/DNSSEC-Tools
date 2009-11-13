@@ -1106,6 +1106,7 @@ address_to_string(const u_char *saddr, int family, char *nadd, int nlen)
         snprintf(nadd, nlen, "%d.%d.%d.%d",
                  *(saddr), *(saddr + 1), *(saddr + 2), *(saddr + 3));
     } else if (AF_INET6 == family) {
+        int shorten = 0;
         if (nlen < 74)
             return (EAI_FAIL);
         snprintf(nadd, nlen,
@@ -1126,6 +1127,13 @@ address_to_string(const u_char *saddr, int family, char *nadd, int nlen)
                  (*(saddr + 13) & 0x0F), (*(saddr + 14) >> 4),
                  (*(saddr + 14) & 0x0F), (*(saddr + 15) >> 4),
                  (*(saddr + 15) & 0x0F));
+        /** replace leading 0000 with :: */
+        while (0 == strncmp("0000:", &nadd[shorten], 5))
+            shorten += 5;
+        if (shorten) {
+            nadd[0] = ':';
+            memmove(&nadd[1],&nadd[shorten-1], strlen(nadd)-shorten+2);
+        }
     } else {
         val_log((val_context_t *) NULL, LOG_INFO,
                 "address_to_string(): Error - unsupported family : \'%d\'",
@@ -1222,8 +1230,9 @@ val_getnameinfo(val_context_t * context,
             0x00, 0x00, 0xff, 0xff };
         theAddress =
             (const u_char *) &((const struct sockaddr_in6 *) sa)->sin6_addr;
-        if (0 == memcmp(&((const struct sockaddr_in6 *) sa)->sin6_addr,
-                        _ipv6_wrapped_ipv4, sizeof(_ipv6_wrapped_ipv4))) {
+        if (!(flags & NI_NUMERICHOST) &&
+            (0 == memcmp(&((const struct sockaddr_in6 *) sa)->sin6_addr,
+                         _ipv6_wrapped_ipv4, sizeof(_ipv6_wrapped_ipv4)))) {
             val_log(ctx, LOG_DEBUG, "val_getnameinfo(): ipv4 wrapped addr\n");
             theAddress += sizeof(_ipv6_wrapped_ipv4);
             theAddressFamily = AF_INET;
