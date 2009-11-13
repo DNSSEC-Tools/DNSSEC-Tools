@@ -1035,16 +1035,15 @@ val_getaddrinfo(val_context_t * context,
  * returns 0 on success, 1 on failure. 
  */
 int
-address_to_reverse_domain(const char *saddr, int family,
+address_to_reverse_domain(const u_char *saddr, int family,
                           char *dadd, int dlen)
 {
 
     if (AF_INET == family) {
-        const u_char *u_saddr = (const u_char*)saddr;
         if (dlen < 30)
             return (EAI_FAIL);
         snprintf(dadd, dlen, "%d.%d.%d.%d.in-addr.arpa.",
-                 *(u_saddr + 3), *(u_saddr + 2), *(u_saddr + 1), *(u_saddr));
+                 *(saddr + 3), *(saddr + 2), *(saddr + 1), *(saddr));
     } else if (AF_INET6 == family) {
         if (dlen < 74)
             return (EAI_FAIL);
@@ -1098,15 +1097,14 @@ address_to_reverse_domain(const char *saddr, int family,
  * returns 0 on success, 1 on failure. 
  */
 int
-address_to_string(const char *saddr, int family, char *nadd, int nlen)
+address_to_string(const u_char *saddr, int family, char *nadd, int nlen)
 {
 
     if (AF_INET == family) {
-        const u_char *u_saddr = (const u_char*)saddr;
         if (nlen < 30)
             return (EAI_FAIL);
         snprintf(nadd, nlen, "%d.%d.%d.%d",
-                 *(u_saddr), *(u_saddr + 1), *(u_saddr + 2), *(u_saddr + 3));
+                 *(saddr), *(saddr + 1), *(saddr + 2), *(saddr + 3));
     } else if (AF_INET6 == family) {
         if (nlen < 74)
             return (EAI_FAIL);
@@ -1154,7 +1152,8 @@ val_getnameinfo(val_context_t * context,
 
     const int       addr_size = 100;
     char            domain_string[addr_size], number_string[addr_size];
-    const char     *theAddress = NULL;
+    const u_char   *theAddress = NULL;
+    int             theAddressFamily;
     int             val_rnc_status = 0, ret_status = 0;
 
     struct val_answer_chain *res;
@@ -1214,11 +1213,24 @@ val_getnameinfo(val_context_t * context,
      */
     if (AF_INET == sa->sa_family && salen >= sizeof(struct sockaddr_in)) {
         theAddress =
-            (const char *) &((const struct sockaddr_in *) sa)->sin_addr;
+            (const u_char *) &((const struct sockaddr_in *) sa)->sin_addr;
+        theAddressFamily = AF_INET;
     } else if (AF_INET6 == sa->sa_family
                && salen >= sizeof(struct sockaddr_in6)) {
+        static const u_char _ipv6_wrapped_ipv4[] = {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0xff, 0xff };
         theAddress =
-            (const char *) &((const struct sockaddr_in6 *) sa)->sin6_addr;
+            (const u_char *) &((const struct sockaddr_in6 *) sa)->sin6_addr;
+        if (0 == memcmp(&((const struct sockaddr_in6 *) sa)->sin6_addr,
+                        _ipv6_wrapped_ipv4, sizeof(_ipv6_wrapped_ipv4))) {
+            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): ipv4 wrapped addr\n");
+            theAddress += sizeof(_ipv6_wrapped_ipv4);
+            theAddressFamily = AF_INET;
+        }
+        else
+            theAddressFamily = AF_INET6;
+            
     } else
         return (EAI_FAMILY);
 
@@ -1230,16 +1242,16 @@ val_getnameinfo(val_context_t * context,
          * get string values: address string, reverse domain string, on
          * the wire reverse domain string 
          */
-        memset(number_string, 0, sizeof(char) * addr_size);
-        memset(domain_string, 0, sizeof(char) * addr_size);
+        memset(number_string, 0, sizeof(number_string));
+        memset(domain_string, 0, sizeof(domain_string));
 
         if ((0 != (ret_status =
-             address_to_string(theAddress, sa->sa_family,
-                number_string, addr_size)))
+             address_to_string(theAddress, theAddressFamily,
+                     number_string, sizeof(number_string))))
               ||
             (0 != (ret_status =
-              address_to_reverse_domain(theAddress, sa->sa_family,
-                domain_string, addr_size)))) {
+              address_to_reverse_domain(theAddress, theAddressFamily,
+                      domain_string, sizeof(domain_string))))) {
             return ret_status;
         }
 
