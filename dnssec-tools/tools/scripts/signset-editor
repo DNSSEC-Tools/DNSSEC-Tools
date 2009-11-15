@@ -1085,7 +1085,7 @@ sub readkrf
 	foreach my $kn (sort(@names))
 	{
 		my $ktype = keyrec_recval($kn,'keyrec_type');
-		push @krnames, $kn if($ktype =~ /^zsk/);
+		push @krnames, $kn if($ktype =~ /^[kz]sk/);
 	}
 
 	#
@@ -1191,10 +1191,11 @@ sub keyrecs
 		my @kss;				# Signing set array.
 
 		#
-		# Get the complete keyrec and skip any non-ZSK keyrecs.
+		# Get the complete keyrec and skip any non-KSK and non-ZSK
+		# keyrecs.
 		#
 		$keytype = keyrec_recval($kr,'keyrec_type');
-		next if($keytype !~ /^zsk/);
+		next if($keytype !~ /^[kz]sk/);
 
 		#
 		# Collect the signing sets that include this key.
