@@ -1,9 +1,28 @@
-Patch to add local validation to proftpd. Tested against:
-  proftpd-1.3.0a
-  proftpd-1.3.1rc2
+Local DNSSEC Validation
+=======================
+This patch adds local DNSSEC validation, along with an option to enable
+it. The is code is only compiled if the configure option
+--dnssec-local-validation is specified. The libraries libval and libsres
+from DNSSEC-Tools are prequisites. Additional options may be needed
+to point configure at the correct directory for these libraries.
+
+DNSSEC validation is done according to the configuration in the
+DNSSEC-tool configuration file dnsval.conf. The current default
+configuration for DNSSEC does not validate any domain besides
+dnssec-tools.org. The dnssec-tools configuration file dnsval.conf
+must be configured correctly to add Trust Anchors and enable
+checkinf for signed domain zones. Please refer to the DNSSEC-Tools
+documentation for more information.
+
+	http://www.dnssec-tools.org/
+
+This patch has been tested with several (1.3 based) versions of proftpd
+and DNSSEC-Tools 1.5 adn 1.6.
+
 
 1) Apply patch
-2) run autoheader and autoconf to regenerate several important files.
+2) run autoconf to regenerate configure
 3) Configure with: ./configure --with-dnssec-local-validation
 4) make
 5) sudo make install
+
