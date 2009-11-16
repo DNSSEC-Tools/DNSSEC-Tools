@@ -22,7 +22,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +dnl
 +# Check whether user wants DNSSEC local validation support
 +AC_ARG_WITH(dnssec-local-validation,
-+        [  --with-dnssec-local-validation Enable local DNSSEC validation using libval (no)], want_dnssec=$enableval, want_dnssec=no)
++        [  --with-dnssec-local-validation Enable local DNSSEC validation using libval (no)], want_dnssec=$withval, want_dnssec=no)
 +if ! test "x-$want_dnssec" = "x-no" ; then
 +    AC_CHECK_HEADERS(validator/validator.h)
 +    if test "$ac_cv_header_validator_validator_h" != yes; then
