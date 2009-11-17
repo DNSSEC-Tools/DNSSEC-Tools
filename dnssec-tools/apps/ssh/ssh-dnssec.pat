@@ -58,7 +58,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +				  LIBVAL_SUFFIX="-threads"],
 +				AC_MSG_ERROR(Can't find libval or libval-threads))
 +			])
-+		AC_DEFINE(LOCAL_DNSSEC_VALIDATION, 1,
++		AC_DEFINE(DNSSEC_LOCAL_VALIDATION, 1,
 +			[Define if you want local DNSSEC validation support])
 +		LIBVAL_MSG="yes, libval${LIBVAL_SUFFIX}"
 +	else
@@ -116,7 +116,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  #include <stdio.h>
  #include <string.h>
  
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +# include <validator/validator.h>
 +#endif
 +
@@ -134,7 +134,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	u_char *hostkey_digest;
  	u_int hostkey_digest_len;
  
-+#ifndef LOCAL_DNSSEC_VALIDATION
++#ifndef DNSSEC_LOCAL_VALIDATION
 +	struct rrsetinfo *fingerprints = NULL;
 +#else
 +	struct val_result_chain *val_res, *val_results = NULL;
@@ -148,7 +148,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		return -1;
  	}
  
-+#ifndef LOCAL_DNSSEC_VALIDATION
++#ifndef DNSSEC_LOCAL_VALIDATION
  	result = getrrsetbyname(hostname, DNS_RDATACLASS_IN,
  	    DNS_RDATATYPE_SSHFP, 0, &fingerprints);
  	if (result) {
@@ -282,7 +282,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  #else
  	{ "zeroknowledgepasswordauthentication", oUnsupported },
  #endif
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +        { "strictdnssecchecking", oStrictDnssecChecking },
 +        { "autoanswervalidatedkeys", oAutoAnswerValidatedKeys },
 +#else
@@ -347,7 +347,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  #include <netinet/in.h>
  #include <arpa/inet.h>
  
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +# include <validator/validator.h>
 +#endif
 +
@@ -358,7 +358,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  char *server_version_string = NULL;
  
  static int matching_host_key_dns = 0;
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +static int validated_host_key_dns = 0;
 +#endif
  
@@ -379,7 +379,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 -	struct addrinfo hints, *ai, *aitop;
 +	struct addrinfo hints;
 +	struct addrinfo *ai, *aitop = NULL;
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +	val_status_t val_status;
 +#endif
  
@@ -389,7 +389,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	hints.ai_family = family;
  	hints.ai_socktype = SOCK_STREAM;
  	snprintf(strport, sizeof strport, "%u", port);
-+#ifndef LOCAL_DNSSEC_VALIDATION
++#ifndef DNSSEC_LOCAL_VALIDATION
  	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0)
  		fatal("%s: Could not resolve hostname %.100s: %s", __progname,
  		    host, ssh_gai_strerror(gaierr));
@@ -429,7 +429,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +                    return (-1);
 +            }
 + 	}
-+#endif /* LOCAL_DNSSEC_VALIDATION */
++#endif /* DNSSEC_LOCAL_VALIDATION */
  
  	for (attempt = 0; attempt < connection_attempts; attempt++) {
  		if (attempt > 0) {
@@ -445,7 +445,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  					    "No matching host key fingerprint"
  					    " found in DNS.\n");
  			}
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +                        if (options.autoanswer_validated_keys &&
 +                            validated_host_key_dns && matching_host_key_dns) {
 +                            snprintf(msg, sizeof(msg),
@@ -463,7 +463,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			xfree(fp);
  			if (!confirm(msg))
  				goto fail;
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +                        }
 +#endif
  		}
@@ -481,7 +481,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  				key_msg = "is unchanged";
  			else
  				key_msg = "has a different value";
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +                        if (!validated_host_key_dns) {
  			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  			error("@       WARNING: POSSIBLE DNS SPOOFING DETECTED!          @");
@@ -500,7 +500,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +			error("and the key for the according IP address %s", ip);
 +			error("%s. The IP address for the host", key_msg);
 +			error("and its host key have changed at the same time.");
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +                        }
 +#endif
  			if (ip_status != HOST_NEW)
@@ -510,7 +510,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		 * If strict host key checking is in use, the user will have
  		 * to edit the key manually and we can only abort.
  		 */
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +		if ((options.strict_host_key_checking == 2) &&
 +                    options.autoanswer_validated_keys &&
 +                    matching_host_key_dns && validated_host_key_dns) {
@@ -578,7 +578,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			error("Exiting, you have requested strict checking.");
  			goto fail;
  		} else if (options.strict_host_key_checking == 2) {
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +                    if (options.autoanswer_validated_keys &&
 +                        matching_host_key_dns && validated_host_key_dns) {
 +			logit("%s", msg);
@@ -588,7 +588,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			    "to continue connecting (yes/no)? ", sizeof(msg));
  			if (!confirm(msg))
  				goto fail;
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +                    }
 +#endif
  		} else {
@@ -598,7 +598,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	if (options.verify_host_key_dns &&
  	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
  
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +		/*
 +		 * local validation can result in a non-secure, but trusted
 +		 * response. For example, in a corporate network the authoritative
@@ -619,7 +619,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			if (options.verify_host_key_dns == 1 &&
  			    flags & DNS_VERIFY_MATCH &&
  			    flags & DNS_VERIFY_SECURE)
-+#ifndef LOCAL_DNSSEC_VALIDATION
++#ifndef DNSSEC_LOCAL_VALIDATION
  				return 0;
 +#else
 +                        {
@@ -641,7 +641,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +        if (matching_host_key_dns && validated_host_key_dns) {
 +            error("Howerver, a matching host key, validated by DNSSEC, was found.");
 +        }
@@ -650,7 +650,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	error("IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!");
  	error("Someone could be eavesdropping on you right now (man-in-the-middle attack)!");
  	error("It is also possible that the %s host key has just been changed.", type);
-+#ifdef LOCAL_DNSSEC_VALIDATION
++#ifdef DNSSEC_LOCAL_VALIDATION
 +        }
 +#endif
  	error("The fingerprint for the %s key sent by the remote host is\n%s.",
