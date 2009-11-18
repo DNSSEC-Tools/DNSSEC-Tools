@@ -1,8 +1,8 @@
-diff -c -r postfix-2.3.3.orig/makedefs postfix-2.3.3/makedefs
-*** postfix-2.3.3.orig/makedefs	2006-07-31 06:03:31.000000000 -0700
---- postfix-2.3.3/makedefs	2007-03-27 12:07:16.000000000 -0700
+diff -r -c postfix-2.3.8.orig/makedefs postfix-2.3.8/makedefs
+*** postfix-2.3.8.orig/makedefs	2006-08-26 08:54:59.000000000 -0700
+--- postfix-2.3.8/makedefs	2007-03-21 09:39:34.000000000 -0700
 ***************
-*** 250,258 ****
+*** 252,260 ****
   		#     GDBM_LIBS=gdbm
   		# fi
   		SYSLIBS="-ldb"
@@ -12,7 +12,7 @@ diff -c -r postfix-2.3.3.orig/makedefs postfix-2.3.3/makedefs
   		    do
   			test -e $lib/lib$name.a -o -e $lib/lib$name.so && {
   			    SYSLIBS="$SYSLIBS -l$name"
---- 250,258 ----
+--- 252,260 ----
   		#     GDBM_LIBS=gdbm
   		# fi
   		SYSLIBS="-ldb"
@@ -22,9 +22,9 @@ diff -c -r postfix-2.3.3.orig/makedefs postfix-2.3.3/makedefs
   		    do
   			test -e $lib/lib$name.a -o -e $lib/lib$name.so && {
   			    SYSLIBS="$SYSLIBS -l$name"
-diff -c -r postfix-2.3.3.orig/src/dns/dns.h postfix-2.3.3/src/dns/dns.h
-*** postfix-2.3.3.orig/src/dns/dns.h	2006-01-04 10:36:14.000000000 -0800
---- postfix-2.3.3/src/dns/dns.h	2007-03-27 12:07:16.000000000 -0700
+diff -r -c postfix-2.3.8.orig/src/dns/dns.h postfix-2.3.8/src/dns/dns.h
+*** postfix-2.3.8.orig/src/dns/dns.h	2006-01-04 10:36:14.000000000 -0800
+--- postfix-2.3.8/src/dns/dns.h	2007-03-21 09:41:43.000000000 -0700
 ***************
 *** 171,176 ****
 --- 171,178 ----
@@ -36,9 +36,9 @@ diff -c -r postfix-2.3.3.orig/src/dns/dns.h postfix-2.3.3/src/dns/dns.h
   #define DNS_INVAL	(-5)		/* query ok, malformed reply */
   #define DNS_FAIL	(-4)		/* query failed, don't retry */
   #define DNS_NOTFOUND	(-3)		/* query ok, data not found */
-diff -c -r postfix-2.3.3.orig/src/dns/dns_lookup.c postfix-2.3.3/src/dns/dns_lookup.c
-*** postfix-2.3.3.orig/src/dns/dns_lookup.c	2006-03-24 11:40:23.000000000 -0800
---- postfix-2.3.3/src/dns/dns_lookup.c	2007-03-27 12:07:16.000000000 -0700
+diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_lookup.c
+*** postfix-2.3.8.orig/src/dns/dns_lookup.c	2006-03-24 11:40:23.000000000 -0800
+--- postfix-2.3.8/src/dns/dns_lookup.c	2007-03-21 15:14:04.000000000 -0700
 ***************
 *** 140,145 ****
 --- 140,146 ----
@@ -107,19 +107,19 @@ diff -c -r postfix-2.3.3.orig/src/dns/dns_lookup.c postfix-2.3.3/src/dns/dns_loo
   
   	reply_header = (HEADER *) reply->buf;
   	if (reply_header->tc == 0 || reply->buf_len >= MAX_DNS_REPLY_SIZE)
-diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.c postfix-2.3.3/src/util/myaddrinfo.c
-*** postfix-2.3.3.orig/src/util/myaddrinfo.c	2005-07-14 12:56:24.000000000 -0700
---- postfix-2.3.3/src/util/myaddrinfo.c	2007-03-27 12:27:51.000000000 -0700
+diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myaddrinfo.c
+*** postfix-2.3.8.orig/src/util/myaddrinfo.c	2006-09-29 16:34:20.000000000 -0700
+--- postfix-2.3.8/src/util/myaddrinfo.c	2008-04-30 16:54:21.000000000 -0700
 ***************
-*** 423,429 ****
+*** 427,433 ****
   	}
   #endif
       }
-!     return (getaddrinfo(hostname, service, &hints, res));
-  #endif
-  }
-  
---- 423,456 ----
+!     err = getaddrinfo(hostname, service, &hints, res);
+  #if defined(BROKEN_AI_NULL_SERVICE)
+      if (service == 0 && err == 0) {
+  	struct addrinfo *r;
+--- 427,457 ----
   	}
   #endif
       }
@@ -130,78 +130,72 @@ diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.c postfix-2.3.3/src/util/myadd
 !      * If the return query is not trusted, return a
 !      * dnssec failure condition. 
 !      */
-!     int err;
 !     val_status_t  vstatus;
 !     if (0 == (err = val_getaddrinfo((val_context_t *)NULL, hostname, 
-!                                     service, &hints, 
-!                                     (struct val_addrinfo **)res,
-!                                     &vstatus))) {
-!  
-!         if (0 == val_istrusted(vstatus))  {
-!             err = DNSSECAI_FAIL;
-!             msg_warn("DNSSEC, hostname information not trusted for host, %s (status: %d:%s, dnssec status %d:%s, val_getaddrinfo)", 
-!                      hostname ? hostname : "NULL",
-!                      err, MAI_STRERROR(err), 
-!                      vstatus, p_val_status(vstatus));
-!         }
+!                                        service, &hints, 
+!                                        res,
+!                                        &vstatus))) {
+! 
+!       if (0 == val_istrusted(vstatus))  {
+!           err = DNSSECAI_FAIL;
+!           msg_warn("DNSSEC, hostname information not trusted for host, %s (status: %d:%s, dnssec status %d:%s, val_getaddrinfo)", 
+!                    hostname ? hostname : "NULL",
+!                    err, MAI_STRERROR(err), 
+!                    vstatus, p_val_status(vstatus));
+!       }
 !     }
 !     else {
-!         msg_warn("failed to get host information for host, %s (status %d:%s, val_getaddrinfo)", 
-!                  hostname ? hostname : "NULL", err, MAI_STRERROR(err));
+!       msg_warn("failed to get host information for host, %s (status %d:%s, val_getaddrinfo)", 
+!                hostname ? hostname : "NULL", err, MAI_STRERROR(err));
 !     }
-! 
-!     return(err);
-  #endif
-  }
-  
+  #if defined(BROKEN_AI_NULL_SERVICE)
+      if (service == 0 && err == 0) {
+  	struct addrinfo *r;
 ***************
-*** 524,530 ****
+*** 543,549 ****
   	}
   #endif
       }
-!     return (getaddrinfo(hostaddr, service, &hints, res));
-  #endif
-  }
-  
---- 551,585 ----
+!     err = getaddrinfo(hostaddr, service, &hints, res);
+  #if defined(BROKEN_AI_NULL_SERVICE)
+      if (service == 0 && err == 0) {
+  	struct addrinfo *r;
+--- 567,598 ----
   	}
   #endif
       }
-!  
+! 
 !     /* 
 !      * Call dnssec aware getaddrinfo.  If it returns a regular
 !      * getaddrinfo error, return with that error.
 !      * If the return query is not trusted, return a 
 !      * dnssec failure condition. 
 !      */
-!     int err;
 !     val_status_t  vstatus;
 !     if (0 == (err = val_getaddrinfo((val_context_t *)NULL, hostaddr, 
-!                                     service, &hints, 
-!                                     (struct val_addrinfo **)res,
-!                                     &vstatus))) {
-!  
-!         if (0 == val_istrusted(vstatus))  {
-!             err = DNSSECAI_FAIL;
-!             msg_warn("DNSSEC, host address information not trusted for host, %s (status %d:%s, dnssec status %d:%s, val_getaddrinfo)",
-!                      hostaddr ? hostaddr : "NULL",
-!                      err, MAI_STRERROR(err),
-!                      vstatus, p_val_status(vstatus));
-!         }
+!                                        service, &hints, 
+!                                        res,
+!                                        &vstatus))) {
+! 
+!       if (0 == val_istrusted(vstatus))  {
+!           err = DNSSECAI_FAIL;
+!           msg_warn("DNSSEC, host address information not trusted for host, %s (status %d:%s, dnssec status %d:%s, val_getaddrinfo)",
+!                    hostaddr ? hostaddr : "NULL",
+!                    err, MAI_STRERROR(err),
+!                    vstatus, p_val_status(vstatus));
+!       }
 !     }
 !     else {
-!         msg_warn("failed to get host information for host, %s (status %d:%s, val_getaddrinfo)", 
-!                  hostaddr ? hostaddr : "NULL",
-!                  err, MAI_STRERROR(err));
+!       msg_warn("failed to get host information for host, %s (status %d:%s, val_getaddrinfo)", 
+!                hostaddr ? hostaddr : "NULL",
+!                err, MAI_STRERROR(err));
 !     }
-! 
-!     return(err);
-  #endif
-  }
-  
+  #if defined(BROKEN_AI_NULL_SERVICE)
+      if (service == 0 && err == 0) {
+  	struct addrinfo *r;
 ***************
-*** 739,744 ****
---- 794,832 ----
+*** 769,774 ****
+--- 818,846 ----
   
   #endif
   
@@ -228,21 +222,11 @@ diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.c postfix-2.3.3/src/util/myadd
 + } /* denssec_strerror */
 + 
 + 
-+ /* 
-+  * free_pf_dnssec_addrinfo - frees struct val_addrinfo.  Does a
-+  *                           pointer conversion to call validator
-+  *                           library free function. 
-+  */
-+ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo){
-+   free_val_addrinfo((struct val_addrinfo *) ainfo);
-+ }
-+ 
-+ 
   #ifdef TEST
   
    /*
 ***************
-*** 764,812 ****
+*** 794,842 ****
   
       inet_proto_init(argv[0], argv[1]);
   
@@ -292,7 +276,7 @@ diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.c postfix-2.3.3/src/util/myadd
   	    } else
   		msg_info("%s -> %s", addr.buf, host.buf);
   	    freeaddrinfo(ip);
---- 852,913 ----
+--- 866,927 ----
   
       inet_proto_init(argv[0], argv[1]);
   
@@ -356,19 +340,19 @@ diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.c postfix-2.3.3/src/util/myadd
   		msg_info("%s -> %s", addr.buf, host.buf);
   	    freeaddrinfo(ip);
 ***************
-*** 815,818 ****
+*** 845,848 ****
       exit(0);
   }
   
 ! #endif
---- 916,919 ----
+--- 930,933 ----
       exit(0);
   }
   
 ! #endif 
-diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.h postfix-2.3.3/src/util/myaddrinfo.h
-*** postfix-2.3.3.orig/src/util/myaddrinfo.h	2005-01-18 17:22:19.000000000 -0800
---- postfix-2.3.3/src/util/myaddrinfo.h	2007-03-27 12:07:16.000000000 -0700
+diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.h postfix-2.3.8/src/util/myaddrinfo.h
+*** postfix-2.3.8.orig/src/util/myaddrinfo.h	2005-01-18 17:22:19.000000000 -0800
+--- postfix-2.3.8/src/util/myaddrinfo.h	2007-03-21 09:39:34.000000000 -0700
 ***************
 *** 21,26 ****
 --- 21,27 ----
@@ -392,7 +376,7 @@ diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.h postfix-2.3.3/src/util/myadd
 --- 33,38 ----
 ***************
 *** 103,108 ****
---- 102,123 ----
+--- 102,117 ----
   
   #endif
   
@@ -400,12 +384,6 @@ diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.h postfix-2.3.3/src/util/myadd
 + /* start dnssec patch additions */
 + 
 + #define DNSSECAI_FAIL   -600  /* sharing number space with netdb.h errors */
-+ 
-+ /* Used for explicit pointer conversion (i.e. gets rid of compiler
-+    warnings). */
-+ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo);
-+ #undef  freeaddrinfo
-+ #define freeaddrinfo	free_pf_dnssec_addrinfo
 + 
 + const char   *dnssec_strerror(int ecode);
 + 
