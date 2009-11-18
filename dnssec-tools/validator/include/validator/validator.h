@@ -32,8 +32,13 @@ extern          "C" {
  * define error codes for val_getaddrinfo and val_getnameinfo which
  * have a DNSSEC validation status.
  */
+#if defined(EAI_NODATA)
 #define VAL_GETADDRINFO_HAS_STATUS(rc) ( \
 	(rc == 0) || (rc == EAI_NONAME) || (rc == EAI_NODATA))
+#else
+#define VAL_GETADDRINFO_HAS_STATUS(rc) ((rc == 0) || (rc == EAI_NONAME))
+#endif
+
 #define VAL_GETNAMEINFO_HAS_STATUS(rc) VAL_GETADDRINFO_HAS_STATUS(rc)
 
 #if !defined(NS_INT16SZ) && defined(INT16SZ)
