@@ -1,8 +1,8 @@
-diff -r -c postfix-2.3.8.orig/makedefs postfix-2.3.8/makedefs
-*** postfix-2.3.8.orig/makedefs	2006-08-26 08:54:59.000000000 -0700
---- postfix-2.3.8/makedefs	2007-03-21 09:39:34.000000000 -0700
+diff -c -r postfix-2.5.1.orig/makedefs postfix-2.5.1/makedefs
+*** postfix-2.5.1.orig/makedefs	2008-01-15 12:20:24.000000000 -0800
+--- postfix-2.5.1/makedefs	2008-05-01 13:01:25.000000000 -0700
 ***************
-*** 252,260 ****
+*** 266,274 ****
   		#     GDBM_LIBS=gdbm
   		# fi
   		SYSLIBS="-ldb"
@@ -12,7 +12,7 @@ diff -r -c postfix-2.3.8.orig/makedefs postfix-2.3.8/makedefs
   		    do
   			test -e $lib/lib$name.a -o -e $lib/lib$name.so && {
   			    SYSLIBS="$SYSLIBS -l$name"
---- 252,260 ----
+--- 266,274 ----
   		#     GDBM_LIBS=gdbm
   		# fi
   		SYSLIBS="-ldb"
@@ -22,9 +22,9 @@ diff -r -c postfix-2.3.8.orig/makedefs postfix-2.3.8/makedefs
   		    do
   			test -e $lib/lib$name.a -o -e $lib/lib$name.so && {
   			    SYSLIBS="$SYSLIBS -l$name"
-diff -r -c postfix-2.3.8.orig/src/dns/dns.h postfix-2.3.8/src/dns/dns.h
-*** postfix-2.3.8.orig/src/dns/dns.h	2006-01-04 10:36:14.000000000 -0800
---- postfix-2.3.8/src/dns/dns.h	2007-03-21 09:41:43.000000000 -0700
+diff -c -r postfix-2.5.1.orig/src/dns/dns.h postfix-2.5.1/src/dns/dns.h
+*** postfix-2.5.1.orig/src/dns/dns.h	2006-01-04 10:36:14.000000000 -0800
+--- postfix-2.5.1/src/dns/dns.h	2008-05-01 13:01:25.000000000 -0700
 ***************
 *** 171,176 ****
 --- 171,178 ----
@@ -36,12 +36,12 @@ diff -r -c postfix-2.3.8.orig/src/dns/dns.h postfix-2.3.8/src/dns/dns.h
   #define DNS_INVAL	(-5)		/* query ok, malformed reply */
   #define DNS_FAIL	(-4)		/* query failed, don't retry */
   #define DNS_NOTFOUND	(-3)		/* query ok, data not found */
-diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_lookup.c
-*** postfix-2.3.8.orig/src/dns/dns_lookup.c	2006-03-24 11:40:23.000000000 -0800
---- postfix-2.3.8/src/dns/dns_lookup.c	2007-03-21 15:14:04.000000000 -0700
+diff -c -r postfix-2.5.1.orig/src/dns/dns_lookup.c postfix-2.5.1/src/dns/dns_lookup.c
+*** postfix-2.5.1.orig/src/dns/dns_lookup.c	2006-12-29 09:15:24.000000000 -0800
+--- postfix-2.5.1/src/dns/dns_lookup.c	2008-05-01 13:01:25.000000000 -0700
 ***************
-*** 140,145 ****
---- 140,146 ----
+*** 146,151 ****
+--- 146,152 ----
   #include <msg.h>
   #include <valid_hostname.h>
   #include <stringops.h>
@@ -50,7 +50,7 @@ diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_loo
   /* DNS library. */
   
 ***************
-*** 209,215 ****
+*** 215,221 ****
       for (;;) {
   	_res.options &= ~saved_options;
   	_res.options |= flags;
@@ -58,7 +58,7 @@ diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_loo
   	_res.options &= ~flags;
   	_res.options |= saved_options;
   	if (len < 0) {
---- 210,224 ----
+--- 216,230 ----
       for (;;) {
   	_res.options &= ~saved_options;
   	_res.options |= flags;
@@ -75,7 +75,7 @@ diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_loo
   	_res.options |= saved_options;
   	if (len < 0) {
 ***************
-*** 230,237 ****
+*** 236,243 ****
   		return (DNS_RETRY);
   	    }
   	}
@@ -84,7 +84,7 @@ diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_loo
   
   	reply_header = (HEADER *) reply->buf;
   	if (reply_header->tc == 0 || reply->buf_len >= MAX_DNS_REPLY_SIZE)
---- 239,260 ----
+--- 245,266 ----
   		return (DNS_RETRY);
   	    }
   	}
@@ -107,9 +107,9 @@ diff -r -c postfix-2.3.8.orig/src/dns/dns_lookup.c postfix-2.3.8/src/dns/dns_loo
   
   	reply_header = (HEADER *) reply->buf;
   	if (reply_header->tc == 0 || reply->buf_len >= MAX_DNS_REPLY_SIZE)
-diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myaddrinfo.c
-*** postfix-2.3.8.orig/src/util/myaddrinfo.c	2006-09-29 16:34:20.000000000 -0700
---- postfix-2.3.8/src/util/myaddrinfo.c	2008-04-30 16:54:21.000000000 -0700
+diff -c -r postfix-2.5.1.orig/src/util/myaddrinfo.c postfix-2.5.1/src/util/myaddrinfo.c
+*** postfix-2.5.1.orig/src/util/myaddrinfo.c	2006-09-29 16:34:20.000000000 -0700
+--- postfix-2.5.1/src/util/myaddrinfo.c	2008-05-01 16:19:40.000000000 -0700
 ***************
 *** 427,433 ****
   	}
@@ -226,11 +226,8 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
   
    /*
 ***************
-*** 794,842 ****
-  
-      inet_proto_init(argv[0], argv[1]);
-  
-!     msg_info("=== hostname %s ===", argv[2]);
+*** 797,842 ****
+      msg_info("=== hostname %s ===", argv[2]);
   
       if ((err = hostname_to_sockaddr(argv[2], (char *) 0, 0, &info)) != 0) {
 ! 	msg_info("hostname_to_sockaddr(%s): %s",
@@ -276,11 +273,8 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
   	    } else
   		msg_info("%s -> %s", addr.buf, host.buf);
   	    freeaddrinfo(ip);
---- 866,927 ----
-  
-      inet_proto_init(argv[0], argv[1]);
-  
-!      msg_info("=== hostname %s ===", argv[2]);
+--- 869,927 ----
+      msg_info("=== hostname %s ===", argv[2]);
   
       if ((err = hostname_to_sockaddr(argv[2], (char *) 0, 0, &info)) != 0) {
 ! 	msg_info("hostname_to_sockaddr(%s): Error: %s",
@@ -339,20 +333,9 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.c postfix-2.3.8/src/util/myadd
   	    } else
   		msg_info("%s -> %s", addr.buf, host.buf);
   	    freeaddrinfo(ip);
-***************
-*** 845,848 ****
-      exit(0);
-  }
-  
-! #endif
---- 930,933 ----
-      exit(0);
-  }
-  
-! #endif 
-diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.h postfix-2.3.8/src/util/myaddrinfo.h
-*** postfix-2.3.8.orig/src/util/myaddrinfo.h	2005-01-18 17:22:19.000000000 -0800
---- postfix-2.3.8/src/util/myaddrinfo.h	2007-03-21 09:39:34.000000000 -0700
+diff -c -r postfix-2.5.1.orig/src/util/myaddrinfo.h postfix-2.5.1/src/util/myaddrinfo.h
+*** postfix-2.5.1.orig/src/util/myaddrinfo.h	2005-01-18 17:22:19.000000000 -0800
+--- postfix-2.5.1/src/util/myaddrinfo.h	2008-05-01 13:01:25.000000000 -0700
 ***************
 *** 21,26 ****
 --- 21,27 ----
@@ -402,7 +385,7 @@ diff -r -c postfix-2.3.8.orig/src/util/myaddrinfo.h postfix-2.3.8/src/util/myadd
   
    /*
     * Macros for the case where we really don't want to be bothered with things
---- 174,181 ----
+--- 168,175 ----
   
   #define MAI_CTL_END	0		/* list terminator */
   
