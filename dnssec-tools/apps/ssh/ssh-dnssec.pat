@@ -1,6 +1,6 @@
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/openssh-5.3p1/configure.ac openssh-5.3p1/configure.ac
 --- clean/openssh-5.3p1/configure.ac	2009-09-11 00:56:08.000000000 -0400
-+++ openssh-5.3p1/configure.ac	2009-10-25 14:52:25.000000000 -0400
++++ openssh-5.3p1/configure.ac	2009-11-17 18:34:44.000000000 -0500
 @@ -3289,32 +3289,41 @@ AC_ARG_WITH(sectok,
  	]
  )
@@ -111,7 +111,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  echo "                  BSD Auth support: $BSD_AUTH_MSG"
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/openssh-5.3p1/dns.c openssh-5.3p1/dns.c
 --- clean/openssh-5.3p1/dns.c	2008-06-12 14:46:45.000000000 -0400
-+++ openssh-5.3p1/dns.c	2009-10-25 14:52:25.000000000 -0400
++++ openssh-5.3p1/dns.c	2009-11-17 18:33:57.000000000 -0500
 @@ -35,6 +35,10 @@
  #include <stdio.h>
  #include <string.h>
@@ -269,7 +269,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  int	export_dns_rr(const char *, const Key *, FILE *, int);
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/openssh-5.3p1/readconf.c openssh-5.3p1/readconf.c
 --- clean/openssh-5.3p1/readconf.c	2009-07-05 17:12:27.000000000 -0400
-+++ openssh-5.3p1/readconf.c	2009-10-25 14:54:32.000000000 -0400
++++ openssh-5.3p1/readconf.c	2009-11-17 18:34:19.000000000 -0500
 @@ -131,6 +131,7 @@ typedef enum {
  	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
  	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
@@ -342,7 +342,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  #define SSHCTL_MASTER_NO	0
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/openssh-5.3p1/sshconnect.c openssh-5.3p1/sshconnect.c
 --- clean/openssh-5.3p1/sshconnect.c	2009-06-21 04:53:53.000000000 -0400
-+++ openssh-5.3p1/sshconnect.c	2009-10-25 14:52:26.000000000 -0400
++++ openssh-5.3p1/sshconnect.c	2009-11-17 18:33:43.000000000 -0500
 @@ -26,6 +26,10 @@
  #include <netinet/in.h>
  #include <arpa/inet.h>
@@ -385,7 +385,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  
  	debug2("ssh_connect: needpriv %d", needpriv);
  
-@@ -337,9 +349,47 @@ ssh_connect(const char *host, struct soc
+@@ -337,9 +349,59 @@ ssh_connect(const char *host, struct soc
  	hints.ai_family = family;
  	hints.ai_socktype = SOCK_STREAM;
  	snprintf(strport, sizeof strport, "%u", port);
@@ -394,11 +394,23 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		fatal("%s: Could not resolve hostname %.100s: %s", __progname,
  		    host, ssh_gai_strerror(gaierr));
 +#else
-+	if ((gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
-+							 &val_status)) != 0) 
++	gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
++                                 &val_status);
++        debug2("ssh_connect: gaierr %d, val_status %d / %s; trusted: %d",
++               gaierr, val_status, p_val_status(val_status),
++               val_istrusted(val_status));
++	if (gaierr != 0) {
++            if (VAL_GETADDRINFO_HAS_STATUS(gaierr) &&
++                !val_istrusted(val_status)) {
++                error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
++                error("@ WARNING: UNTRUSTED ERROR IN DNS RESOLUTION FOR HOST!    @");
++                error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
++                error("The authenticity of DNS response is not trusted (%s).", 
++                      p_val_status(val_status));
++            }
 +		fatal("%s: Could not resolve hostname %.100s: %s", __progname,
 +		    host, ssh_gai_strerror(gaierr));
-+ 	debug("ValStatus: %s", p_val_status(val_status));
++        }
 + 	if (!val_istrusted(val_status)) {
 +            error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 +            error("@ WARNING: UNTRUSTED DNS RESOLUTION FOR HOST IP ADRRESS! @");
@@ -433,7 +445,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  
  	for (attempt = 0; attempt < connection_attempts; attempt++) {
  		if (attempt > 0) {
-@@ -736,6 +786,7 @@ check_host_key(char *hostname, struct so
+@@ -736,6 +798,7 @@ check_host_key(char *hostname, struct so
  		}
  		break;
  	case HOST_NEW:
@@ -441,7 +453,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		if (options.host_key_alias == NULL && port != 0 &&
  		    port != SSH_DEFAULT_PORT) {
  			debug("checking without port identifier");
-@@ -781,6 +832,17 @@ check_host_key(char *hostname, struct so
+@@ -781,6 +844,17 @@ check_host_key(char *hostname, struct so
  					    "No matching host key fingerprint"
  					    " found in DNS.\n");
  			}
@@ -459,7 +471,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			snprintf(msg, sizeof(msg),
  			    "The authenticity of host '%.200s (%s)' can't be "
  			    "established%s\n"
-@@ -795,6 +857,9 @@ check_host_key(char *hostname, struct so
+@@ -795,6 +869,9 @@ check_host_key(char *hostname, struct so
  			xfree(fp);
  			if (!confirm(msg))
  				goto fail;
@@ -469,7 +481,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		}
  		/*
  		 * If not in strict mode, add the key automatically to the
-@@ -830,6 +895,7 @@ check_host_key(char *hostname, struct so
+@@ -830,6 +907,7 @@ check_host_key(char *hostname, struct so
  			    "list of known hosts.", hostp, type);
  		break;
  	case HOST_CHANGED:
@@ -477,7 +489,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		if (readonly == ROQUIET)
  			goto fail;
  		if (options.check_host_ip && host_ip_differ) {
-@@ -840,6 +906,8 @@ check_host_key(char *hostname, struct so
+@@ -840,6 +918,8 @@ check_host_key(char *hostname, struct so
  				key_msg = "is unchanged";
  			else
  				key_msg = "has a different value";
@@ -486,7 +498,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  			error("@       WARNING: POSSIBLE DNS SPOOFING DETECTED!          @");
  			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-@@ -848,6 +916,19 @@ check_host_key(char *hostname, struct so
+@@ -848,6 +928,19 @@ check_host_key(char *hostname, struct so
  			error("%s. This could either mean that", key_msg);
  			error("DNS SPOOFING is happening or the IP address for the host");
  			error("and its host key have changed at the same time.");
@@ -506,7 +518,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			if (ip_status != HOST_NEW)
  				error("Offending key for IP in %s:%d", ip_file, ip_line);
  		}
-@@ -861,12 +942,54 @@ check_host_key(char *hostname, struct so
+@@ -861,12 +954,54 @@ check_host_key(char *hostname, struct so
  		 * If strict host key checking is in use, the user will have
  		 * to edit the key manually and we can only abort.
  		 */
@@ -562,7 +574,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		/*
  		 * If strict host key checking has not been requested, allow
  		 * the connection but without MITM-able authentication or
-@@ -925,9 +1048,10 @@ check_host_key(char *hostname, struct so
+@@ -925,9 +1060,10 @@ check_host_key(char *hostname, struct so
  		 * XXX Should permit the user to change to use the new id.
  		 * This could be done by converting the host key to an
  		 * identifying sentence, tell that the host identifies itself
@@ -574,7 +586,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		break;
  	case HOST_FOUND:
  		fatal("internal error");
-@@ -952,10 +1076,19 @@ check_host_key(char *hostname, struct so
+@@ -952,10 +1088,19 @@ check_host_key(char *hostname, struct so
  			error("Exiting, you have requested strict checking.");
  			goto fail;
  		} else if (options.strict_host_key_checking == 2) {
@@ -594,7 +606,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		} else {
  			logit("%s", msg);
  		}
-@@ -981,12 +1114,42 @@ verify_host_key(char *host, struct socka
+@@ -981,12 +1126,42 @@ verify_host_key(char *host, struct socka
  	if (options.verify_host_key_dns &&
  	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
  
@@ -620,7 +632,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			    flags & DNS_VERIFY_MATCH &&
  			    flags & DNS_VERIFY_SECURE)
 +#ifndef DNSSEC_LOCAL_VALIDATION
- 				return 0;
++				return 0;
 +#else
 +                        {
 +                            if (flags & DNS_VERIFY_MATCH)
@@ -631,13 +643,13 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +                                                      options.user_hostfile,
 +                                                      options.system_hostfile);
 +                            else
-+				return 0;
+ 				return 0;
 +                        }
 +#endif
  
  			if (flags & DNS_VERIFY_MATCH) {
  				matching_host_key_dns = 1;
-@@ -1137,9 +1300,18 @@ warn_changed_key(Key *host_key)
+@@ -1137,9 +1312,18 @@ warn_changed_key(Key *host_key)
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
