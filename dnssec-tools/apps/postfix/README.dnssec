@@ -31,7 +31,7 @@ Go to the postfix-2.5.1 directory:
 Apply the postfix-2.5.1_dnssec_patch.txt patch found in this
 directory by:
 
-   patch -p 1 -b -z .orig </path/to/patch/postfix-2.5.1_dnssec_patch.txt
+   patch -p 1 -b -z .orig </path/to/patch/postfix-dnssec.patch
 
 This will apply the patch and store the original files with a .orig
 suffix.
@@ -52,6 +52,12 @@ beforehand may also be necessary).
 
 Build and install postfix as per the instructions given in the
 INSTALL files within the postfix source code.
+
+NOTE: the postfix install process will attempt to resolve your local
+hostname during the install.  You should ensure that your local hostname
+resolves correctly before intalling postfix.  e.g.
+
+    validate -o 5:stdout mail.example.com
 
 
 Configuration
@@ -86,6 +92,11 @@ To Test
 3. Send email to a user at a domain whose MX records cannot be
    DNSSEC validated and where validation is required.  Verify that
    an SMTP error message is returned back to the sender.
+
+4. If reject_unknown_sender_domain is set for smtpd_sender_restrictions,
+   verify that a client trying to send mail as a user with a domain
+   whose MX records cannot be DNSSEC validated and where validation
+   is required will be rejected.
 
 -----------------------------------------------------------------------
 
