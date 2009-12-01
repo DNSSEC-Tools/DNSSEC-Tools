@@ -4344,22 +4344,21 @@ information.
 
 =head2 KSK Rollover Using the Double Signature Method and RFC5011
 
-RFC5011 describes what remote validating resolvers need to do in order
-to track KSK changes within a zone.  Rollerd supports adding an extra
-long period of time between the point a new KSK is created and
-published and the point where the actual switch to using it takes
-place.  RFC5011 specifies that remote validators should add a
-"hold-down timer" to the rollover process such that the new key is not
-added as a trust-anchor until 30 days have past.  Thus, rollerd will
-wait for 60 days (by default) during phase 3 of the KSK rollover
-process if the "istrustanchor" field of the rollrec definition has
-been set to either 1 or "yes".  To wait for a different length of time
-other than 60 days, use the B<holddowntime> field.
+RFC5011 describes how remote-validating resolvers must track KSK changes
+within a zone.  If configured for RFC5011 behavior, B<rollerd> and
+B<zonesigner> add an extra-long period of time between the point a new KSK is
+created and published and the point where the actual switch to using it takes
+place.  RFC5011 specifies that remote validators should add a "hold-down
+timer" to the rollover process, such that the new key is not added as a
+trust-anchor until 30 days have past.  Thus, B<rollerd> will wait for 60 days
+(by default) during phase 3 of the KSK rollover process if the "istrustanchor"
+field of the I<rollrec> definition has been set to either 1 or "yes".  To wait
+for a different length of time other than 60 days, use the B<holddowntime>
+field.
 
-Note: at this time, the other conventions of RFC5011 aren't being
-followed.  Specifically, its not waiting for a while before removing
-the old key and its not adding the revoke bit to the old key after
-switching either.
+At this time, the other conventions of RFC5011 are not being followed.
+Specifically, it's not waiting for a while before removing the old key
+and it's not adding the revoke bit to the old key after switching.
 
 =head2 Zone Reloading
 
