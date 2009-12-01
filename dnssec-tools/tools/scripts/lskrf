@@ -22,8 +22,9 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lskrf";
-my $VERS   = "$NAME version: 1.1";
+my $VERS   = "$NAME version: 1.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.6.1.pre1";
+
 
 #######################################################################
 
@@ -81,7 +82,20 @@ my @opts =
 
 	"s-keys",			# Show set's keys.
 	"s-lastmod",			# Show set's last modification.
+	"s-type",			# Show set's types.
 	"s-zone",			# Show set's zone.
+
+	"s-ksk",			# List ZSK signing sets.
+		"s-kcur",		# List Current KSK signing sets.
+		"s-kpub",		# List Published KSK signing sets.
+		"s-kobs",		# List obsolete KSK signing sets.
+		"s-krev",		# List revoked KSK signing sets.
+	"s-zsk",			# List ZSK signing sets.
+		"s-zcur",		# List Current ZSK signing sets.
+		"s-zpub",		# List Published ZSK signing sets.
+		"s-znew",		# List New ZSK signing sets.
+		"s-zobs",		# List obsolete ZSK signing sets.
+		"s-zrev",		# List revoked ZSK signing sets.
 
 	"k-algorithm",			# Show encryption algorithm.
 	"k-enddate",			# Show end date.
@@ -185,6 +199,7 @@ my $z_zskpub;				# Print the zone's Published ZSK set.
 my $s_keys;				# Print the set's key list.
 my $s_label = 0;			# Print a leading label for sets.
 my $s_lastmod;				# Print the set's last mod date.
+my $s_type;				# Print the set's type.
 my $s_zone;				# Print the set's zone.
 
 my $k_algorithm	= 0;			# Key's algorithm
@@ -208,6 +223,7 @@ my @krnames;				# List of keyrecs in the file.
 
 my %zones    = ();			# Zone keyrecs.
 my %sets     = ();			# Set keyrecs.
+my %settypes = ();			# Set types to display.
 my %allkeys  = ();			# All key keyrecs.
 my %selkeys  = ();			# Keys selected for output.
 my %kskkeys  = ();			# KSK keyrecs.
@@ -358,6 +374,43 @@ sub doopts
 	$h_zone		= $options{'h-zones'}	|| 0;
 	$h_set		= $options{'h-sets'}	|| 0;
 	$h_key		= $options{'h-keys'}	|| 0;
+
+	#
+	# Set some KSK-related set-display hash fields based on options.
+	#
+	$settypes{'kskcur'} = 1 if(defined($options{'s-kcur'}));
+	$settypes{'kskobs'} = 1 if(defined($options{'s-kobs'}));
+	$settypes{'kskpub'} = 1 if(defined($options{'s-kpub'}));
+	$settypes{'kskrev'} = 1 if(defined($options{'s-krev'}));
+	if(defined($options{'s-ksk'}))
+	{
+		$settypes{'kskcur'} = 1;
+		$settypes{'kskobs'} = 1;
+		$settypes{'kskpub'} = 1;
+		$settypes{'kskrev'} = 1;
+	}
+
+	#
+	# Set some ZSK-related set-display hash fields based on options.
+	#
+	$settypes{'zskcur'} = 1 if(defined($options{'s-zcur'}));
+	$settypes{'zsknew'} = 1 if(defined($options{'s-znew'}));
+	$settypes{'zskobs'} = 1 if(defined($options{'s-zobs'}));
+	$settypes{'zskpub'} = 1 if(defined($options{'s-zpub'}));
+	$settypes{'zskrev'} = 1 if(defined($options{'s-zrev'}));
+	if(defined($options{'s-zsk'}))
+	{
+		$settypes{'zskcur'} = 1;
+		$settypes{'zsknew'} = 1;
+		$settypes{'zskobs'} = 1;
+		$settypes{'zskpub'} = 1;
+		$settypes{'zskrev'} = 1;
+	}
+
+	#
+	# If any set-types flags were given, we'll turn on the show-sets flag.
+	#
+	$setsflag = 1 if(%settypes != 0);
 
 	#
 	# Check for specific help messages.
@@ -648,7 +701,8 @@ sub doopts
 		# Set our defaults.
 		#
 		$s_label   = 1;
-		$s_keys	   = 1;
+		$s_type	   = 1;
+		$s_keys	   = 0;
 		$s_lastmod = 0;
 		$s_zone    = 1;
 
@@ -657,6 +711,7 @@ sub doopts
 		#
 		if($long)
 		{
+			$s_keys	   = 1;
 			$s_lastmod = 1;
 			$s_zone	   = 1;
 		}
@@ -667,11 +722,13 @@ sub doopts
 		if($terse)
 		{
 			$s_label = 0;
+			$s_type	 = 0;
 			$s_keys	 = 0;
 			$s_zone  = 0;
 		}
 
 		$s_label   = 1 if(defined($options{'label'}));
+		$s_type	   = 1 if(defined($options{'s-type'}));
 		$s_keys	   = 1 if(defined($options{'s-keys'}));
 		$s_lastmod = 1 if(defined($options{'s-lastmod'}));
 		$s_zone	   = 1 if(defined($options{'s-zone'}));
@@ -816,14 +873,14 @@ sub getkeyrecs
 			$kpubkeys{$krn}	= $kr;
 			$kskkeys{$krn}	= $kr;
 		}
-		elsif($type eq 'kskobs')
-		{
-			$kobskeys{$krn}	= $kr;
-			$kskkeys{$krn}	= $kr;
-		}
 		elsif($type eq 'kskrev')
 		{
 			$krevkeys{$krn}	= $kr;
+			$kskkeys{$krn}	= $kr;
+		}
+		elsif($type eq 'kskobs')
+		{
+			$kobskeys{$krn}	= $kr;
 			$kskkeys{$krn}	= $kr;
 		}
 		elsif($type eq 'zskcur')
@@ -844,14 +901,14 @@ sub getkeyrecs
 			$zpubkeys{$krn}	= $kr;
 			$zskkeys{$krn}	= $kr;
 		}
-		elsif($type eq 'zskobs')
-		{
-			$zobskeys{$krn}	= $kr;
-			$zskkeys{$krn}	= $kr;
-		}
 		elsif($type eq 'zskrev')
 		{
 			$zrevkeys{$krn}	= $kr;
+			$zskkeys{$krn}	= $kr;
+		}
+		elsif($type eq 'zskobs')
+		{
+			$zobskeys{$krn}	= $kr;
 			$zskkeys{$krn}	= $kr;
 		}
 	}
@@ -1263,10 +1320,12 @@ sub showsets
 	my $out = "";				# Output string to build.
 
 	my $setname;				# Set's name.
+	my $settype;				# Set's type.
 	my $keylist;				# Set's key list.
 	my $moddate;				# Set's creation date.
 	my $zone;				# Set's zonename.
 
+	my $checktypes = 0;			# Flag for checking types.
 	my $endtime;				# Calculated expiration date.
 	my $setsecs;				# Signing date in seconds.
 
@@ -1274,6 +1333,11 @@ sub showsets
 	# Reset our previous key value.
 	#
 	$prevkey = '';
+
+	#
+	# Set our check-types flag.
+	#
+	$checktypes = 1 if(%settypes != 0);
 
 	#
 	# Loop through the set list and give data on the desired sets.
@@ -1311,8 +1375,14 @@ sub showsets
 		# Get a bunch of data from the zone keyrec.
 		#
 		$zone	 = $kr{'zonename'};
+		$settype = $kr{'set_type'};
 		$keylist = $kr{'keys'};
-		$moddate = $kr{'keyrec_setdate'};
+	 	$moddate = $kr{'keyrec_setdate'};
+
+		#
+		# Get a bunch of data from the zone keyrec.
+		#
+		next if($checktypes && !defined($settypes{$settype}));
 
 		#
 		# Bump the matching-records count.
@@ -1333,12 +1403,41 @@ sub showsets
 		$setname = $HEADER_KRN if($setname eq "");
 
 		#
+		# Convert the set's type into a pretty version.
+		#
+		if($settype ne '')
+		{
+			$settype =~ /^([kz]sk)(.+)$/i;
+			my $type1 = uc($1);
+			my $type2 = $2;
+			$settype = "$type1-$type2";
+		}
+		else
+		{
+			$settype = 'Set Type';
+		}
+
+		#
+		# If this is the active "super" set of revoked KSKs, we'll
+		# capitalize the suffix.
+		#
+		if($settype eq 'KSK-rev')
+		{
+			my $zkr = $zones{$zone};
+			if($zkr->{'kskrev'} eq $setname)
+			{
+				$settype = "KSK-REV";
+			}
+		}
+
+		#
 		# Build the output string.
 		#
 		$prevkey = 'first-field';
 		$out  = outstr($SET,$sk,'keyrec_type','set',$s_label,0);
 		$out .= outstr($SET,$sk,'keyrec_name',$setname,1,0);
 		$out .= outstr($SET,$sk,'zonename',$zone,$s_zone,0);
+		$out .= outstr($SET,$sk,'set_type',$settype,$s_type,0);
 		$out .= outstr($SET,$sk,'keyrec_setdate',$moddate,$s_lastmod,1);
 		$out .= outstr($SET,$sk,'keys',$keylist,$s_keys,0);
 
@@ -1397,18 +1496,6 @@ sub showkeys
 	}
 
 	#
-	# Select the information about the obsolete KSK keys.
-	#
-	if($kobsflag)
-	{
-		foreach my $k (sort(keys(%kobskeys)))
-		{
-			$krr = $kobskeys{$k};
-			selkey($k,$krr,"KSK-obs");
-		}
-	}
-
-	#
 	# Select the information about the revoked KSK keys.
 	#
 	if($krevflag)
@@ -1417,6 +1504,18 @@ sub showkeys
 		{
 			$krr = $krevkeys{$k};
 			selkey($k,$krr,"KSK-rev");
+		}
+	}
+
+	#
+	# Select the information about the obsolete KSK keys.
+	#
+	if($kobsflag)
+	{
+		foreach my $k (sort(keys(%kobskeys)))
+		{
+			$krr = $kobskeys{$k};
+			selkey($k,$krr,"KSK-obs");
 		}
 	}
 
@@ -1638,9 +1737,9 @@ sub refdkeyrec
 # Routine:	selkey()
 #
 # Purpose:	This routine selects the keys whose data will be displayed.
-#		It is called for two types of KSKs and three flavors of ZSK.
-#		It handles the referenced-key options, depending on whether
-#		or not the specified key is actually referenced.
+#		It is called for several types of KSKs and of ZSK.  It handles
+#		the referenced-key options, depending on whether or not the
+#		specified key is actually referenced.
 #
 sub selkey
 {
@@ -1787,7 +1886,9 @@ sub writekeys
 	#
 	# Write each of the key types in a nice orderly fashion.
 	#
-	foreach my $kt ('Key Type', 'KSK-cur', 'KSK-pub', 'ZSK-cur', 'ZSK-pub', 'ZSK-new', 'KSK-obs', 'KSK-rev', 'ZSK-obs', 'ZSK-rev')
+	foreach my $kt ('Key Type',
+			'KSK-cur', 'KSK-pub', 'KSK-rev', 'KSK-obs',
+			'ZSK-cur', 'ZSK-pub', 'ZSK-new', 'ZSK-rev', 'ZSK-obs' )
 	{
 		writekeytype($kt);
 	}
@@ -2065,6 +2166,7 @@ sub usage
 		print STDERR "\tset-attribute options:\n";
 		print STDERR "\t\t-s-keys		show set's keys\n";
 		print STDERR "\t\t-s-lastmod	show set's last modification date\n";
+		print STDERR "\t\t-s-type	        show set's type\n";
 		print STDERR "\t\t-s-zone		show set's zone\n";
 	}
 
@@ -2134,8 +2236,8 @@ I<keyrec> fields related to that type.  For example, zone I<keyrec> records
 contain data about all the keys associated with a particular zone; key
 I<keyrec> records contain key lengths and algorithms for each particular key.
 The data to be printed must be specified by selecting some combination of the
-B<-zone>, B<-set>, B<-key>, and  B<-all> options.  There are also options for
-specifying specific types of keys to be printed. 
+B<-zone>, B<-sets>, B<-keys>, and  B<-all> options.  There are also options
+for specifying specific types of keys to be printed.
 
 The three base output formats are the default format, the terse format, and
 the long format.  The B<-terse> option indicates that a minimal amount of
@@ -2176,10 +2278,11 @@ output format.
 
     keyrec field                 default        terse        long
     ------------                 -------        -----        ----
-    keyrec type                    no            no          yes
+    keyrec type                    yes           no          yes
     set name                       yes           yes         yes
     zone name                      yes           no          yes
-    keys                           yes           no          yes
+    type                           yes           no          yes
+    keys                           no            no          yes
     last modification date         no            no          yes
 
 =head2 Key I<keyrec> Output
@@ -2473,7 +2576,22 @@ If this is not defined, then "<unset>" will be given.
 
 These options allow specific set fields to be included in the output.  If
 combined with the B<-terse> option, only those fields specifically desired
-will be printed.  These options must be used with the B<-set> option.
+will be printed.  These options must be used with the B<-sets> option.
+
+If RFC5011 processing is enabled, there is special handling of the zone's set
+I<keyrec> of revoked KSK keys.  The "kskrev" field in the zone's I<keyrec>
+points to a set I<keyrec>, marked as being of type "kskrev".  This set
+I<keyrec>, in turn, points to a number of other set I<keyrec>s, all of which
+are also marked as being of type "kskrev".  The group of all revoked KSK keys
+is found by consulting that subsidiary set of "kskrev" set I<keyrec>s.  When
+the ages of these revoked keys exceeds their revocation periods, they are
+marked as being obsolete ("kskobs").  If this happens as part of normal
+rollover, these revoked key and set I<keyrec>s are all removed from the chain
+of active, revoked I<keyrec>s.  If this happens to a key that's part of a
+larger set of keys, it is removed from that signing set and put in its own
+new signing set.  B<lskrf> displays the type of the "kskrev" set (listed in
+the zone I<keyrec>) as "KSK-REV", and all other revoked KSK I<keyrec>s are
+listed as "KSK-rev".
 
 =over 4
 
@@ -2485,9 +2603,57 @@ Display the set's keys.
 
 Display the set's date of last modification.
 
+=item B<-s-type>
+
+Display the set's type.
+
 =item B<-s-zone>
 
 Display the set's zone name.
+
+=item B<-s-ksk>
+
+Display KSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-kcur>
+
+Display current KSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-kobs>
+
+Display obsolete KSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-kpub>
+
+Display published KSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-krev>
+
+Display revoked KSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-zsk>
+
+Display ZSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-zcur>
+
+Display current ZSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-znew>
+
+Display new ZSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-zobs>
+
+Display obsolete ZSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-zpub>
+
+Display published ZSK signing sets.  This option implies the B<-sets> option.
+
+=item B<-s-zrev>
+
+Display revoked ZSK signing sets.  This option implies the B<-sets> option.
 
 =back
 
