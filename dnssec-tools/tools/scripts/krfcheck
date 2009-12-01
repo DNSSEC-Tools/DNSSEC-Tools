@@ -692,7 +692,7 @@ sub zonedata
 #-----------------------------------------------------------------------------
 # Routine:	setdata()
 #
-# Purpose:	Check the data in the set keyrec.
+# Purpose:	Check the data in a set keyrec.
 #
 sub setdata
 {
@@ -703,6 +703,7 @@ sub setdata
 	my $datestr;					# Date string.
 	my $setsecs;					# Set's seconds count.
 	my $setdate;					# Set's date string.
+	my $settype;					# Set's type.
 	my $zone;					# Set's owner zone.
 
 	#
@@ -721,6 +722,11 @@ sub setdata
 	}
 
 	#
+	# Get the set's type.
+	#
+	$settype = keyrec_recval($setname,'set_type');
+
+	#
 	# Get the set's list of keys.
 	#
 	$keys = keyrec_recval($setname,'keys');
@@ -733,13 +739,29 @@ sub setdata
 	}
 
 	#
-	# Make sure all of the set's keys have a key keyrec.
+	# Make sure all of the set's keys have a key keyrec and are of the
+	# expected type.
 	#
 	foreach my $key (sort(@keys))
 	{
+		my $keytype;				# Key;s type.
+
+		#
+		# Ensure the key exists as a KSK key or a ZSK key.
+		#
 		if(!defined($kskkeys{$key}) && !defined($zskkeys{$key}))
 		{
 			qprint("no such key keyrec:  key $key (set $setname)\n");
+			$seterrs++;
+		}
+
+		#
+		# Compare the key's type to the set's type.
+		#
+		$keytype = keyrec_recval($key,'keyrec_type');
+		if($keytype ne $settype)
+		{
+			qprint("key type (key $key, type $keytype) does not match set's type (set $setname, type $settype)\n");
 			$seterrs++;
 		}
 	}
