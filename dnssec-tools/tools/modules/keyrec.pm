@@ -65,7 +65,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk
 		 keyrec_names keyrec_fullrec
 		 keyrec_recval keyrec_setval keyrec_delval
-		 keyrec_settime keyrec_age_revoked
+		 keyrec_settime keyrec_revoke_check
 		 keyrec_add keyrec_del keyrec_newkeyrec keyrec_exists
 		 keyrec_zonefields keyrec_setfields keyrec_keyfields
 		 keyrec_init keyrec_discard keyrec_close
@@ -558,48 +558,83 @@ sub keyrec_fmtchk()
 }
 
 #--------------------------------------------------------------------------
-# Routine:	keyrec_age_revoked()
+# Routine:	keyrec_revoke_check()
 #
-# Purpose:	Process all revoked KSKs in the specified signing set and mark
-#		as obsolete those which have exceeded the "revperiod".  Aged,
-#		revoked KSKs will be removed from the kskrev signset and marked
-#		kskobs.  The count of keys that have have been aged is returned.
+# Purpose:	Checks if the given KSK is within its revocation period or
+#		if it has fallen out of the revocation period.  The keyrec's
+#		revtime and revperiod are consulted.  If the revoked time
+#		subtracted from the current time exceeds the revocation, then
+#		the key should be moved from the revoked state to the obsolete
+#		state.
 #
-sub keyrec_age_revoked
+#		This routine performs the revocation check only!  It does not
+#		manipulate the key types itself; that must be done as needed
+#		by callers of this routine.
+#
+# Return Values:
+#		1  - returned if the key is outside the revocation period and
+#		     should be marked obsolete.
+#		0  - returned if the key is in the revocation period and
+#		     should be left revoked.
+#		-1 - returned on error
+#
+sub keyrec_revoke_check
 {
-	my $set = shift;
-	my @keys = split / /, keyrec_recval($set,'keys');
-	my @res;
+	my $key = shift;			# Name of key to check.
+	my $keytype;				# Key's type.
+	my $revtime;				# Key's revoke time.
+	my $revperiod;				# Key's revoke period.
+	my $now = time();			# Current time.
 
-	foreach my $key (@keys)
+	#
+	# Get the key's type.
+	#
+	$keytype = keyrec_recval($key, 'keyrec_type');
+
+	#
+	# Ensure we were given a revoked KSK keyrec.
+	#
+	if($keytype ne 'kskrev')
 	{
-		my $revtime = keyrec_recval($key, 'revtime');
-		my $revperiod = keyrec_recval($key, 'revperiod');
-
-		if(defined($revtime) && defined($revperiod))
-		{
-			my $now = time();
-
-			if(($now - $revtime) > $revperiod)
-			{
-				# XXX - shouldn't these be archived??
-				# XXX+1 - Perhaps so, but that's beyond the
-				# XXX+1 - remit of this layer of code.
-
-				keyrec_setval('key', $key, 'keyrec_type', 'kskobs');
-			}
-			else
-			{
-				push(@res, $key);
-			}
-		}
-		else
-		{
-			err("keyrec_age_revoked:  $key: undefined revocation data\n", -1);
-		}
+		err("keyrec_revoke_check:  $key: invalid type \"$keytype\"\n", -1);
+		return(-1);;
 	}
 
-	return @res;
+	#
+	# Get the key's revocation information.
+	#
+	$revtime   = keyrec_recval($key, 'revtime');
+	$revperiod = keyrec_recval($key, 'revperiod');
+
+	#
+	# Ensure the key has the proper revocation data.
+	#
+	if(!defined($revtime))
+	{
+		err("keyrec_revoke_check:  $key: undefined revocation time\n", -1);
+		return(-1);
+	}
+
+	#
+	# Ensure the key has the proper revocation data.
+	#
+	if(!defined($revperiod))
+	{
+		err("keyrec_revoke_check:  $key: undefined revocation period\n", -1);
+		return(-1);
+	}
+
+	#
+	# If the key has exceeded its revocation period, we'll return a flag
+	# indicating that it is obsolete.  If it hasn't, we'll return a flag
+	# indicating it is still in revoked state.
+	#
+	if(($now - $revtime) > $revperiod)
+	{
+		return(1);
+	}
+
+	return(0);
 }
 
 #--------------------------------------------------------------------------
@@ -645,7 +680,7 @@ sub keyrec_keypaths
 	#
 	if(($krt ne "kskcur") && ($krt ne "kskpub") &&
 	   ($krt ne "kskrev") && ($krt ne "kskobs") &&
-	   ($krt ne "zskcur") && ($krt ne "zskpub") && ($krt ne "zskpub") &&
+	   ($krt ne "zskcur") && ($krt ne "zskpub") &&
 	   ($krt ne "zsknew") && ($krt ne "zskobs"))
 	{
 		return(@paths);
@@ -1457,7 +1492,7 @@ sub keyrec_signset_newname
 #
 # Purpose:	Add a new signing set keyrec.   If the signing set keyrec
 #		hasn't yet been added with keyrec_add(), then we'll add it
-#		now.  The second through Nth arguments are concatenated
+#		now.  The third through Nth arguments are concatenated
 #		into a space-separated string and then that string is saved
 #		in both %keyrecs and in @keyreclines.  The $modified file-
 #		modified flag is updated, along with the length $keyreclen.
@@ -1466,6 +1501,7 @@ sub keyrec_signset_new
 {
 	my $zone  = shift;		# Signing Set's zone.
 	my $name  = shift;		# Signing Set name we're creating.
+	my $type  = shift;		# Type of signing Set we're creating.
 
 	my $val;			# New value for the keyrec's subfield.
 	my $ret;			# Return code from keyrec_setval().
@@ -1476,6 +1512,17 @@ sub keyrec_signset_new
 	if(!exists($keyrecs{$name}))
 	{
 		return(-1) if(keyrec_add('set',$name) < 0);
+	}
+
+	#
+	# Ensure the given set type is valid.
+	#
+	if(($type ne "kskcur") && ($type ne "kskpub") &&
+	   ($type ne "kskrev") && ($type ne "kskobs") &&
+	   ($type ne "zskcur") && ($type ne "zskpub") &&
+	   ($type ne "zsknew") && ($type ne "zskobs"))
+	{
+		return(-1);
 	}
 
 	#
@@ -1490,7 +1537,7 @@ sub keyrec_signset_new
 	#
 	$ret = keyrec_setval('set',$name,'zonename',$zone);
 	return($ret) if($ret != 0);
-	$ret = keyrec_setval('set',$name,'keys',$val);
+	$ret = keyrec_setval('set',$name,'set_type',$type);
 	return($ret);
 }
 
@@ -1932,9 +1979,11 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   @kskpaths = keyrec_keypaths("example.com","kskcur");
 
+  $obsflag = keyrec_revoke_check("Kexample.com.+005+12345");
+
   $setname = keyrec_signset_newname("example.com");
 
-  keyrec_signset_new("zone","example-keys");
+  keyrec_signset_new($zone,"example-set-21","zskcur");
 
   keyrec_signset_addkey("example-keys","Kexample.com+005+12345",
  					 "Kexample.com+005+54321");
@@ -2108,6 +2157,18 @@ I<keyrec_name>.
 
 This routine returns a list of the recognized fields for a key I<keyrec>.
 
+=item I<keyrec_keypaths(zonename,keytype)>
+
+I<keyrec_keypaths()> returns a list of paths to a set of key files for a
+given zone.  The zone is specified in I<zonename> and the type of key is
+given in I<keytype>.
+
+I<keytype> must be one of the following:  "kskcur", "kskpub", "kskrev",
+"kskobs"", "zskcur", "zskpub", "zsknew", or "zskobs".
+
+If the given key type is not defined in the given zone's zone I<keyrec>, then
+a null set is returned.
+
 =item I<keyrec_names()>
 
 This routine returns a list of the I<keyrec> names from the file.
@@ -2155,6 +2216,25 @@ The call:
 
 will return the value "db.example.com".
 
+=item I<keyrec_revoke_check(key)>
+
+This interface checks a revoked KSK's I<keyrec> to determine if it is in or
+out of its revocation period.  The key must be a "kskrev" type key, and it
+must have "revtime" and "revperiod" fields defined in the I<keyrec>.
+
+The determination is made by subtracting the revoke time from the current
+time.  If this is greater than the revocation period, the the key has
+exceeded the time in which it must be revoked.  If not, then it must remain
+revoked.
+
+Return values:
+
+     1 specified key is outside the revocation period and should be
+       marked as obsolete
+     0 specified key is in the revocation period and should be left
+       revoked
+    -1 error (invalid key type, missing I<keyrec> data)
+
 =item I<keyrec_saveas(keyrec_file_copy)>
 
 This interface saves the internal version of the I<keyrec> file (opened with
@@ -2179,19 +2259,6 @@ Return values are:
 
     0 if the creation succeeded
     -1 invalid type was given
-
-
-=item I<keyrec_keypaths(zonename,keytype)>
-
-I<keyrec_keypaths()> returns a list of paths to a set of key files for a
-given zone.  The zone is specified in I<zonename> and the type of key is
-given in I<keytype>.
-
-I<keytype> must be one of the following:  "kskcur", "kskpub", "ksknew",
-"zskcur", or "zskpub".
-
-If the given key type is not defined in the given zone's zone I<keyrec>, then
-a null set is returned.
 
 =item I<keyrec_settime(keyrec_type,keyrec_name)>
 
@@ -2248,9 +2315,13 @@ determined:
     signing-88-set-1		  88
     signingset4321		4321
 
-=item I<keyrec_signset_new(signing_set_name)>
+=item I<keyrec_signset_new(zone,signing_set_name,set_type)>
 
-I<keyrec_signset_new()> creates the Signing Set named by I<signing_set_name>.
+I<keyrec_signset_new()> creates the Signing Set named by I<signing_set_name>
+for the zone I<zone>.  It is given the type I<type>, which must be one of the
+following:  "kskcur", "kskpub", "kskrev", "kskobs", "zskcur", "zskpub",
+"zsknew", or "zskobs".
+
 It returns 1 if the call is successful; 0 if it is not.
 
 =item I<keyrec_signset_addkey(signing_set_name,key_list)>
