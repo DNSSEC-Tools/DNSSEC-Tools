@@ -166,6 +166,7 @@ sub main()
 	keyrec_add('set', 'signing-set-1',
 				{
 				   'zonename'		=> $zone,
+				   'set_type'		=> 'kskcur',
 				   'keys'		=> "",
 				   'keyrec_setdate'	=> "",
 				   'keyrec_setsecs'	=> "",
@@ -177,6 +178,7 @@ sub main()
 	keyrec_add('set', 'signing-set-2',
 				{
 				   'zonename'		=> $zone,
+				   'set_type'		=> 'zskcur',
 				   'keys'		=> "",
 				   'keyrec_setdate'	=> "",
 				   'keyrec_setsecs'	=> "",
@@ -188,6 +190,7 @@ sub main()
 	keyrec_add('set', 'signing-set-3',
 				{
 				   'zonename'		=> $zone,
+				   'set_type'		=> 'zskpub',
 				   'keys'		=> "",
 				   'keyrec_setdate'	=> "",
 				   'keyrec_setsecs'	=> "",
@@ -801,7 +804,8 @@ overwritten with new I<keyrec> definitions.
 The I<zone-file> argument is required.  It specifies the name of the zone file
 from which the signed zone file was created.  The optional I<signed-zone-file>
 argument specifies the name of the signed zone file.  If it is not given, then
-it defaults to B<zone-file.signed>.
+it defaults to B<zone-file.signed>.  The signed zone file field is, in effect,
+a dummy field as the zone file is not actually signed.
 
 =head1 OPTIONS
 
