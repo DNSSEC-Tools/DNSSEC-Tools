@@ -1,0 +1,47 @@
+# Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+This directory contains a patch to apply to the mozilla nspr code for
+enabling DNSSEC checking of URL DNS names.  
+
+The current patches are for nspr 4.8.2, though they may work with
+other releases.
+
+
+Needed Files depending on what is being built:
+
+  +-------------------------+--------+-----------+
+  |                         |nspr RPM|nspr source|
+  +-------------------------+--------+-----------+
+  |dnssec-nspr.patch        |X       |X          |
+  |nspr-spec.patch          |X       |           |
+  +-------------------------+--------+-----------+
+
+######################################################################
+# PREREQUISITES
+
+  All of the following instructions assume you have the dnssec-tools
+  package already install (specifically, libval and libsres).
+
+######################################################################
+# nspr RPM
+#
+
+  If you don't already have a rpm build tree, create one with
+  rpmdeb-setuptree.
+
+     cd ~/rpmbuild/SRPMS
+     yumdownloader --source nspr
+     rpm -ivh nspr-*src.rpm
+
+     cd ~/rpmbuild/SPECS
+     patch < ~/dnssec-tools/apps/mozilla/nspr-spec.patch
+     cp ~/dnssec-tools/apps/mozilla/dnssec-nspr.patch ~/rpmbuild/SOURCES/
+     rpmbuild -bb ~/rpmbuild/SPECS/nspr.spec
+     sudo rpm -Uvh ~/rpmbuild/RPMS/i386/nspr-*
+
+
+######################################################################
