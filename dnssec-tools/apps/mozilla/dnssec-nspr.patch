@@ -991,3 +991,14 @@
 +      echo $libdirs @VAL_LIBS@ `pkg-config --variable=os_libs nspr`
  fi      
  
+--- ./mozilla/nsprpub/pr/src/Makefile.in.orig	2009-08-04 14:07:35.000000000 -0400
++++ ./mozilla/nsprpub/pr/src/Makefile.in	2009-12-07 16:14:51.260358923 -0500
+@@ -213,7 +213,7 @@
+ EXTRA_LIBS	= -L$(dist_libdir) -lboehm
+ endif
+ 
+-EXTRA_LIBS += $(OS_LIBS)
++EXTRA_LIBS += $(OS_LIBS) $(VAL_LIBS)
+ 
+ #
+ # Define platform-dependent OBJS
