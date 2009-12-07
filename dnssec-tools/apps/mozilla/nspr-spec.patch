@@ -1,0 +1,41 @@
+--- nspr.spec.orig	2009-12-07 13:20:06.207136383 -0500
++++ nspr.spec	2009-12-07 13:22:37.845798444 -0500
+@@ -1,3 +1,5 @@
++%define dist .1.dnssec
++
+ Summary:        Netscape Portable Runtime
+ Name:           nspr
+ Version:        4.8.2
+@@ -6,6 +8,8 @@
+ URL:            http://www.mozilla.org/projects/nspr/
+ Group:          System Environment/Libraries
+ BuildRoot:      %{_tmppath}/%{name}-%{version}-root
++Requires:       dnssec-tools-libs
++BuildRequires:  dnssec-tools-libs-devel
+ 
+ # Sources available at ftp://ftp.mozilla.org/pub/mozilla.org/nspr/releases/
+ # When CVS tag based snapshots are being used, refer to CVS documentation on
+@@ -15,6 +19,7 @@
+ Source2:        nspr-config-vars.in
+ 
+ Patch1:         nspr-config-pc.patch
++Patch9:		dnssec-nspr.patch
+ 
+ %description
+ NSPR provides platform independence for non-GUI operating system 
+@@ -45,6 +50,15 @@
+ cp ./mozilla/nsprpub/config/nspr-config.in ./mozilla/nsprpub/config/nspr-config-pc.in
+ %patch1 -p0
+ 
++###############################
++# begin dnssec related patches
++%patch9 -p0 -b .dnssec
++
++# rebuild configure(s) due to dnssec patches
++(cd mozilla/nsprpub/; /bin/rm -f ./configure; /usr/bin/autoconf-2.13)
++# end dnssec related patches
++###############################
++
+ cp %{SOURCE2} ./mozilla/nsprpub/config/
+ 
+ %build
