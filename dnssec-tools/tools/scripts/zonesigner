@@ -1219,11 +1219,20 @@ sub genksks
 			$setlist =~ s/^[ ]+//;
 
 			#
-			# Add the set's list of keys to the revlist.
+			# Add the set's list of keys to the revlist.  If the
+			# set list is empty, then we don't have any revoked
+			# keys and we'll need to remove the various keyrec
+			# bits pointing around to the now-obsolete keyrecs.
 			#
 			if($setlist ne '')
 			{
 				keyrec_setval('set', $kskrevsetname, 'keys', $setlist);
+			}
+			else
+			{
+				keyrec_delval($zone,'kskrev');
+				keyrec_setval('set',$kskrevsetname, 'keys', '');
+				updzonerec($UPD_KSKS);
 			}
 		}
 	}
