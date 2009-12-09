@@ -1,0 +1,47 @@
+# Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+This directory contains a patch to apply to the mozilla xulrunner code for
+enabling DNSSEC checking of URL DNS names.  
+
+The current patches are for xulrunner 4.8.2, though they may work with
+other releases.
+
+
+Needed Files depending on what is being built:
+
+  +-------------------------+--------+-----------+
+  |                         |xulrunner RPM|xulrunner source|
+  +-------------------------+--------+-----------+
+  |dnssec-xulrunner.patch   |X       |X          |
+  |xulrunner-spec.patch     |X       |           |
+  +-------------------------+--------+-----------+
+
+######################################################################
+# PREREQUISITES
+
+  All of the following instructions assume you have the dnssec-tools
+  package already install (specifically, libval and libsres).
+
+######################################################################
+# xulrunner RPM
+#
+
+  If you don't already have a rpm build tree, create one with
+  rpmdeb-setuptree.
+
+     cd ~/rpmbuild/SRPMS
+     yumdownloader --source xulrunner
+     rpm -ivh xulrunner-*src.rpm
+
+     cd ~/rpmbuild/SPECS
+     patch < ~/dnssec-tools/apps/mozilla/xulrunner-spec.patch
+     cp ~/dnssec-tools/apps/mozilla/dnssec-both.patch ~/rpmbuild/SOURCES/
+     rpmbuild -bb ~/rpmbuild/SPECS/xulrunner.spec
+     sudo rpm -Uvh ~/rpmbuild/RPMS/i386/xulrunner-*
+
+
+######################################################################
