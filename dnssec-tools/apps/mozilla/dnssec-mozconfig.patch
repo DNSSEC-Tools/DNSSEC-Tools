@@ -1,11 +1,11 @@
---- .mozconfig.orig	2008-12-22 21:13:41.000000000 -0800
-+++ .mozconfig	2008-12-22 21:17:29.000000000 -0800
-@@ -2,8 +2,6 @@
- 
- ac_add_options --prefix="$PREFIX"
- ac_add_options --libdir="$LIBDIR"
--ac_add_options --with-system-nspr
--ac_add_options --with-system-nss
- ac_add_options --with-system-jpeg
- ac_add_options --with-system-zlib
- #ac_add_options --with-system-png
+--- .mozconfig.dnssec	2009-12-04 00:36:33.708905113 -0500
++++ .mozconfig	2009-12-04 00:41:01.457845551 -0500
+@@ -10,7 +10,7 @@
+ ac_add_options --with-pthreads
+ ac_add_options --disable-tests
+ ac_add_options --disable-debug
+-ac_add_options --enable-optimize="$RPM_OPT_FLAGS"
++ac_add_options --enable-optimize="$MOZ_OPT_FLAGS"
+ #ac_add_options --enable-debug
+ #ac_add_options --disable-optimize
+ ac_add_options --disable-installer
