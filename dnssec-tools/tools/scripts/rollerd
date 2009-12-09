@@ -2228,7 +2228,7 @@ sub zonekeykr
 	$krec = keyrec_fullrec($key);
 	if(!defined($krec))
 	{
-		rolllog_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for key");
+		rolllog_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for key \"$key\"");
 		return(0);
 	}
 
