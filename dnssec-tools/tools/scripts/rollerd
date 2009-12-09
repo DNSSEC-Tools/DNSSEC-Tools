@@ -626,7 +626,7 @@ sub zsk_expired
 	$krec = zonekeykr($rname,$krname,$keyset);
 	if($krec == 0)
 	{
-		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$keyset\" in \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for ZSK \"$keyset\" in \"$krname\"");
 		return(0);
 	}
 	%set   = %$krec;
@@ -1097,7 +1097,7 @@ sub ksk_expired
 	$krec = zonekeykr($rname,$krname,$keyset);
 	if($krec == 0)
 	{
-		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$keyset\" is \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a KSK keyrec for \"$keyset\" in \"$krname\"");
 		return(0);
 	}
 	%set   = %$krec;
