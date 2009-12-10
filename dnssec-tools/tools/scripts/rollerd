@@ -999,7 +999,7 @@ sub zsk_phase4
 	$ret = signer($rname,"",$krr);
 	if($ret)
 	{
-		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the current ZSK");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the Current ZSK");
 	}
 
 	#
@@ -1389,7 +1389,7 @@ sub ksk_phase2
 	$ret = signer($rname,"-newpubksk",$krr);
 	if($ret)
 	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published ZSK");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published KSK");
 	}
 
 	#
@@ -1457,7 +1457,7 @@ sub ksk_phase4
 	$ret = signer($rname,"-rollksk",$krr);
 	if($ret)
 	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to sign zone with the Published ZSK");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to roll the Published KSK to the Current KSK");
 	}
 
 	#
