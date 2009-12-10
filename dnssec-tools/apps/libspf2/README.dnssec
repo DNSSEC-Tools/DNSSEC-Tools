@@ -50,13 +50,47 @@ DNSSEC extension to libspf2: Developer Guide
 Additions to libspf2
 --------------------
 
-The SPF_get_spf function can now return an additional error value, if
-DNSSEC validation fails:
+The SPF_dns_lookup function can now return an additional error value:
 
-    SPF_E_DNSSEC_FAILURE
+    DNSSEC_FAILURE
 
-The err_msg field in the output from the SPF_result() function in libspf2
-now contains additional information about DNSSEC validation failure.  The
-application can use this to inform the user of the application about dnssec
-validation failure.
+The error code SPF_E_DNSSEC_FAILURE is added to the list of error
+codes in the response struct when a DNSSEC validation failure occurs
+during SPF processing.
+
+After SPF processing, the SPF_response object/variable is available
+to the application.  The application can check the error codes within
+this variable to see if any of them matches SPF_E_DNSSEC_FAILURE, and
+determine if there was DNSSEC validation failure during SPF processing.
+
+For example, it can do the following:
+
+SPF_request_t *requestp;
+SPF_response_t *responsep;
+
+/* initialize and configure requestp ... */
+
+/* SPF-checks */
+SPF_request_query_mailfrom(requestp, &responsep);
+
+/* Check for DNSSEC validation failure */
+do {
+   int i, num_errs;
+   SPF_error_t *err;
+   SPF_errcode_t errcode;
+   char *errmsg;
+   
+   num_errs = SPF_response_warnings (responsep);
+
+   for (i=0; i<num_errs; i++) {
+       err = SPF_response_message (responsep, i);
+       if (err) {
+	  errcode = SPF_error_code (err);
+	  if (errcode == SPF_E_DNSSEC_FAILURE) {
+	     errmsg = (char *) SPF_error_message (err);
+	     /* Take appropriate action */
+	  }
+       }
+   }  
+} while (0);
 
