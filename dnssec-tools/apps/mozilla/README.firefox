@@ -19,7 +19,7 @@ Needed Files depending on what is being built:
   +-------------------------+-----------+--------------+--------------+
   |dnssec-firefox.patch     |X          |X             |              |
   |dnssec-both.patch        |X          |X             |X             |
-  |firefox.spec             |X          |              |              |
+  |firefox-spec.patch       |X          |              |              |
   +-------------------------+-----------+--------------+--------------+
 
 ######################################################################
@@ -32,19 +32,23 @@ Needed Files depending on what is being built:
 # FIREFOX RPM
 #
 
-  The Fedora RPMs require patches to the xulrunner package and the
-  nspr package.  The dnssec-both.patch can be applied completely to
-  the xulrunner package during its build.  However, 
+  The Fedora RPMs require patched xulrunner and nspr RPMS being
+  installed first.  See README.nspr and README.xulrunner for
+  instructions on rebuilding these RPMs for DNSSEC support.
 
-  To build the firefox linux RPM on Fedora Core (5):
+  If you don't already have a rpm build tree, create one with
+  rpmdeb-setuptree.  To build the firefox linux RPM on Fedora:
 
-  First, get a copy of the firefox source from http://www.mozilla.org/firefox/ 
+    cd ~/rpmbuild/SRPMS
+    yumdownloader --source firefox
+    rpm -ivh firefox-*
 
-    cp firefox.spec /usr/src/redhat/SPECS/
-    cp dnssec-firefox.patch dnssec-both.patch dnssec-mozconfig.patch /usr/src/redhat/SOURCES
-    cp firefox-1.5.0.10-source.tar.bz2 /usr/src/redhat/SOURCES
-    cd /usr/src/redhat/SPECS
-    rpmbuild -ba firefox.spec
+    cd ~/rpmbuild/SPECS/
+    patch < ~/dnssec-tools/apps/mozilla/
+    cd ~/dnssec-tools/apps/mozilla/
+    cp dnssec-firefox.patch dnssec-both.patch dnssec-mozconfig.patch ~/rpmbuild/SOURCES/
+    rpmbuild -bb ~/rpmbuild/SPECS/firefox.spec
+    sudo rpm -Fvh ~/rpmbuild/RPMS/firefox-*
 
 ######################################################################
 # FIREFOX FROM SOURCE
