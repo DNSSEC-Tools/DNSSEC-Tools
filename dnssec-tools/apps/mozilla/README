@@ -12,7 +12,23 @@ Details on the contents of this directory:
     
   Description:
     Contains instructions on how to build DNSSEC capability for firefox
-    and the more generic mozilla suite.
+    and the more generic mozilla suite. Depends on xulrunner being
+    rebuilt first.
+ 
+#######################################################################
+  File:
+    README.xulrunner 
+    
+  Description:
+    Contains instructions on how to build DNSSEC capability for xulrunner.
+    Depends on nspr being rebuilt first.
+ 
+#######################################################################
+  File:
+    README.nspr 
+    
+  Description:
+    Contains instructions on how to build DNSSEC capability for nspr.
  
 #######################################################################
   File:
@@ -82,7 +98,6 @@ Details on the contents of this directory:
   Version:
     This is known to work with thunderbird 1.5.0.10
 
-
 #######################################################################
   File:
     dnssec-mozconfig.patch
@@ -94,4 +109,17 @@ Details on the contents of this directory:
     directly from the source.
  
   Version:
-    This is known to work with firefox 1.5.0.01 and the Fedora Core 5 RPM
+    This is known to work with the Fedora 12 3.5 Firefox RPM
+
+#######################################################################
+  Files:
+    nspr-spec.patch
+    xulrunner-spec.patch
+    firefox-spec.patch
+    
+  Description:
+    This file contains patches that apply to the .spec files used
+    to buidl fedora RPMs.
+ 
+  Version:
+    This is known to work with the Fedora 12 RPMs.
