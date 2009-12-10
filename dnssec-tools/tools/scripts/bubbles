@@ -512,14 +512,54 @@ sub buildmainwind
 sub buildtable
 {
 	my $readflag = shift;			# Rollrec-read flag.
-
 	my $cnt = 0;				# Count of rollrec names added.
 
 	#
 	# Read the list of rollrec names.
 	#
 	readrrf($rrfile,1) if($readflag);
-	return if($numrrnames == 0);
+
+	#
+	# Ask the user what to do if we don't have any rollrec names.
+	# Possible actions:
+	#	- stop execution
+	#	- continue as-is
+	#	- ignore the values of display flags and display data
+	#
+	if($numrrnames == 0)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		#
+		# Ask the user what to do.
+		#
+		$dlg = $wm->Dialog(-title => 'Warning',
+			   -text  => "No rollrec entries have \"display zone\" flag turned on",
+			   -buttons => ["Continue", "Ignore Display", "Quit" ]);
+		$ret = $dlg->Show();
+
+		#
+		# And now we'll take the requested action.
+		#
+		if($ret eq "Quit")
+		{
+			exit(0);
+		}
+		if($ret eq "Continue")
+		{
+			return;
+		}
+		elsif($ret eq "Ignore Display")
+		{
+			#
+			# Set the ignore-display-flag flag and
+			# re-read the list of rollrec names.
+			#
+			$igndisp = 1;
+			readrrf($rrfile,1) if($readflag);
+		}
+	}
 
 	#
 	# Ensure the rollrec name list is sorted.
@@ -785,7 +825,7 @@ sub file_quit
 
 	rollrec_discard();
 
-	print STDERR "exiting...\n";
+#	print STDERR "exiting...\n";
 	exit(0);
 }
 
@@ -1366,7 +1406,8 @@ The following are known issues.  These will be resolved in the fullness of time.
 =item
 
 Segmentation violation on exit.
-This occurs on MacOS X 10.4.9-10.4.11 with Perl 5.8.6.
+This problem occurs on Mac OS X 10.4.9-10.4.11 with Perl 5.8.6;
+however, it does not occur on Mac OS X 10.5.8 with Perl 5.8.8. 
 
 =back
 
