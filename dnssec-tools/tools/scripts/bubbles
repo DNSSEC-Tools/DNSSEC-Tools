@@ -1204,9 +1204,20 @@ sub usage
 {
 	print STDERR "usage:  bubbles [options] <rollrec-file>\n";
 	print STDERR "\toptions:\n";
-	print STDERR "\t\t-no-filter		turn off name filtering\n";
-	print STDERR "\t\t-columns columns	columns in button window\n";
-	print STDERR "\t\t-V			program version\n";
+	print STDERR "\t\t-kskcolor             color for KSK rolling zones\n";
+	print STDERR "\t\t-zskcolor             color for ZSK rolling zones\n";
+	print STDERR "\t\t-noncolor             color for non-rolling zones\n";
+	print STDERR "\n";
+	print STDERR "\t\t-showksk              show KSK-rolling zones\n";
+	print STDERR "\t\t-showzsk              show ZSK-rolling zones\n";
+	print STDERR "\t\t-showrolls            show rolling zones\n";
+	print STDERR "\t\t-shownonrolls         show non-rolling zones\n";
+	print STDERR "\n";
+	print STDERR "\t\t-ignore-display       ignore rollrec display flags\n";
+	print STDERR "\t\t-interval n           interval between file checks\n";
+	print STDERR "\t\t-no-filter            turn off name filtering\n";
+	print STDERR "\t\t-columns columns      columns in button window\n";
+	print STDERR "\t\t-Version              program version\n";
 	exit(0);
 }
 
