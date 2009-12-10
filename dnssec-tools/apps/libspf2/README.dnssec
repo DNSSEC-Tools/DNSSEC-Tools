@@ -6,9 +6,7 @@ Introduction
 
 The DNSSEC extension to libspf2 provides DNSSEC validation to DNS queries in
 libspf2.  This document describes how to install libspf2 with DNSSEC validation
-functionality. The companion libspf2-x_guide.txt documents explain 
-how to use this DNSSEC validation functionality in applications that use
-libspf2.
+functionality. 
 
 libspf2 can be downloaded from http://www.libspf2.org/download.html
 Patches are available for version libspf2-1.2.5 and libspf2-1.0.4. 
@@ -43,3 +41,22 @@ Next, configure with the --enable-dnssec-support option:
 
 Then, compile and install libspf2 as per the instructions given
 in the libspf2 distribution.
+
+
+
+DNSSEC extension to libspf2: Developer Guide
+=============================================
+
+Additions to libspf2
+--------------------
+
+The SPF_get_spf function can now return an additional error value, if
+DNSSEC validation fails:
+
+    SPF_E_DNSSEC_FAILURE
+
+The err_msg field in the output from the SPF_result() function in libspf2
+now contains additional information about DNSSEC validation failure.  The
+application can use this to inform the user of the application about dnssec
+validation failure.
+
