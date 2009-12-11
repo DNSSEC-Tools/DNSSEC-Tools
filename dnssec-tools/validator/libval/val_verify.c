@@ -630,7 +630,7 @@ check_label_count(struct rrset_rec *the_set,
 #define SET_STATUS(savedstatus, rr, newstatus) \
 	do { \
 		rr->rr_status = newstatus; \
-        if (savedstatus == VAL_AC_TRUST_NOCHK ||\
+        if (\
             savedstatus == VAL_AC_TRUST ||\
             savedstatus == VAL_AC_VERIFIED ||\
             savedstatus == VAL_AC_WCARD_VERIFIED ||\
@@ -638,17 +638,18 @@ check_label_count(struct rrset_rec *the_set,
             newstatus == VAL_AC_UNKNOWN_ALGORITHM_LINK)\
             ; /* do nothing */\
         /* Any success is good */\
-        else if (newstatus == VAL_AC_RRSIG_VERIFIED ||\
+        else if (\
+            newstatus == VAL_AC_RRSIG_VERIFIED ||\
             newstatus == VAL_AC_RRSIG_VERIFIED_SKEW) \
             savedstatus = VAL_AC_VERIFIED;\
-        else if (newstatus == VAL_AC_WCARD_VERIFIED ||\
-                 newstatus == VAL_AC_WCARD_VERIFIED_SKEW)\
+        else if (\
+            newstatus == VAL_AC_WCARD_VERIFIED ||\
+            newstatus == VAL_AC_WCARD_VERIFIED_SKEW)\
             savedstatus = VAL_AC_WCARD_VERIFIED;\
         /* we don't already have success and what we receive is bad */ \
         else {\
             savedstatus = VAL_AC_NOT_VERIFIED; \
         }\
-        /* else leave savedstatus untouched */\
 	} while (0)
 
 void
@@ -746,7 +747,7 @@ verify_next_assertion(val_context_t * ctx,
                 continue;
             }
 
-            val_log(ctx, LOG_DEBUG, "verify_next_assertion(): Found matching DNSKEY for RRSIG");
+            val_log(ctx, LOG_DEBUG, "verify_next_assertion(): Found potential matching DNSKEY for RRSIG");
 
             /*
              * check the signature 
@@ -777,7 +778,7 @@ verify_next_assertion(val_context_t * ctx,
         }
 
         if (nextrr == NULL) {
-            val_log(ctx, LOG_INFO, "verify_next_assertion(): No DNSKEY matched for this RRSIG");
+            val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
             SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
             return;
         } 
