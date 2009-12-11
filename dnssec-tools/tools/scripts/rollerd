@@ -537,7 +537,7 @@ sub rollkeys
 			#
 			# Actually do the signing.
 			#
-			my $ret = signer($rname, "-usezskpub", $krr);
+			my $ret = signer($rname, "always-sign", $krr);
 			if($ret)
 			{
 				rolllog_log(LOG_ERR, "signing $rname failed!");
@@ -901,7 +901,7 @@ sub zsk_phase2
 	#
 	# Sign the zone with the Published ZSK.
 	#
-	$ret = signer($rname,"-usezskpub",$krr);
+	$ret = signer($rname,"ZSK phase 2",$krr);
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to sign zone with the Published ZSK");
@@ -987,16 +987,17 @@ sub zsk_phase4
 	#
 	# Adjust ZSKs in the zone's keyrec.
 	#
-	$ret = signer($rname,"-rollzsk",$krr);
+	$ret = signer($rname,"ZSK phase 4a",$krr);
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to adjust ZSK keyrec");
+rolllog_log(LOG_ALWAYS,$rname,"ZSK phase 4.1:  zonesigner bombed with <$ret>");
 	}
 
 	#
 	# Sign the zone with the Current ZSK.
 	#
-	$ret = signer($rname,"",$krr);
+	$ret = signer($rname,"ZSK phase 4b",$krr);
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the Current ZSK");
@@ -1387,7 +1388,7 @@ sub ksk_phase2
 	#
 	# Sign the zone with a new Published KSK.
 	#
-	$ret = signer($rname,"-newpubksk",$krr);
+	$ret = signer($rname,"KSK phase 2",$krr);
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published KSK");
@@ -1455,7 +1456,7 @@ sub ksk_phase4
 	#
 	# Roll the Published KSK to the Current KSK.
 	#
-	$ret = signer($rname,"-rollksk",$krr);
+	$ret = signer($rname,"KSK phase 4",$krr);
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to roll the Published KSK to the Current KSK");
@@ -2145,6 +2146,40 @@ sub signer
 	my $zonefile;				# Zone file from keyrec.
 	my $zonesigned;				# Signed zone file from keyrec.
 	my $cmdstr;				# Command to be executed.
+
+	#
+	# Convert the caller's version of $zsflag into what it actually
+	# means for the zonesigner execution.
+	#
+	if($zsflag eq 'KSK phase 2')
+	{
+		$zsflag = '-newpubksk';
+	}
+	elsif($zsflag eq 'KSK phase 4')
+	{
+		$zsflag = '-rollksk';
+	}
+	elsif($zsflag eq 'ZSK phase 2')
+	{
+		$zsflag = '-usezskpub';
+	}
+	elsif($zsflag eq 'ZSK phase 4a')
+	{
+		$zsflag = '-rollzsk';
+	}
+	elsif($zsflag eq 'ZSK phase 4b')
+	{
+		$zsflag = '';
+	}
+	elsif($zsflag eq 'always-sign')
+	{
+		$zsflag = '-usezskpub';
+	}
+
+if($krr eq '')
+{
+rolllog_log(LOG_ALWAYS,$rname,"---------------->  KRR is NULL\n");
+}
 
 	#
 	# Get the rollrec for this name and check if there are any
