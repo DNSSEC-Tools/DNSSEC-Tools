@@ -1739,6 +1739,9 @@ get_ac_trust(val_context_t *context,
              u_int32_t flags, int proof)
 {
     struct queries_for_query *added_q = NULL;
+    u_int32_t ttl_x;
+    u_char *curzone_n = NULL;
+    u_char *q = NULL;
 
     if (!next_as ||
         !next_as->val_ac_rrset.ac_data) {
@@ -1749,7 +1752,19 @@ get_ac_trust(val_context_t *context,
     if (next_as->val_ac_status >= VAL_AC_DONT_GO_FURTHER &&
         next_as->val_ac_status <= VAL_AC_LAST_STATE)
         return NULL;
-    
+
+    /* Strip off the leading label and  check if there are trust anchors above us */
+    STRIP_LABEL(next_as->val_ac_rrset.ac_data->rrs_name_n, q);
+    if (VAL_NO_ERROR != (find_trust_point(context, q, &curzone_n, &ttl_x))) {
+        curzone_n = NULL;
+    } else {
+        SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
+    }
+    if (curzone_n == NULL) {
+       return NULL; 
+    } 
+    FREE(curzone_n);
+
     /*
      * Then look for  {zonecut, DNSKEY/DS, type} 
      */
