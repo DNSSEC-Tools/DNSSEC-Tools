@@ -631,6 +631,7 @@ check_label_count(struct rrset_rec *the_set,
 	do { \
 		rr->rr_status = newstatus; \
         if (\
+            savedstatus == VAL_AC_TRUST_NOCHK ||\
             savedstatus == VAL_AC_TRUST ||\
             savedstatus == VAL_AC_VERIFIED ||\
             savedstatus == VAL_AC_WCARD_VERIFIED ||\
