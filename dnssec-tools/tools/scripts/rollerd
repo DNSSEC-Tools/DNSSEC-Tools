@@ -994,12 +994,13 @@ sub zsk_phase4
 	}
 
 	#
-	# Sign the zone with the current ZSK.
+	# Sign the zone with the Current ZSK.
 	#
 	$ret = signer($rname,"",$krr);
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the Current ZSK");
+rolllog_log(LOG_ALWAYS,$rname,"ZSK phase 4.2:  zonesigner bombed with <$ret>");
 	}
 
 	#
@@ -1821,7 +1822,7 @@ sub holddownexpire
 	$phstart      = $rr{'phasestart'};
 
 	#
-	# By default, we use a holddowntime of 60 days which is twice what
+	# By default, we use a hold-down time of 60 days which is twice what
 	# is required for validators to use as a add-hold-time (RFC5011).
 	# (Ideally this should be longer and can be set by the user if needed.)
 	#
@@ -1843,7 +1844,7 @@ sub holddownexpire
 	$curtempus = str2time($curtime);
 
 	#
-	# Get the end-time (in seconds) and add the holddown.
+	# Get the end-time (in seconds) and add the hold-down.
 	#
 	$endtempus = str2time($phstart);
 	$endtempus += $holddowntime;
@@ -1858,7 +1859,7 @@ sub holddownexpire
 		$endtime = ctime($endtempus);
 		chomp $endtime;
 
-		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase holddown time check");
+		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase hold-down time check");
 		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase endtime\t$endtime");
 		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase curtime\t$curtime");
 	}
@@ -1872,7 +1873,7 @@ sub holddownexpire
 
 	$timediff = $endtempus - $curtempus;
 	$tdstr = timetrans($timediff);
-	rolllog_log(LOG_INFO,$rname,"$keytype phase $phase ($phasedesc); holddown timer expires in $tdstr");
+	rolllog_log(LOG_INFO,$rname,"$keytype phase $phase ($phasedesc); hold-down timer expires in $tdstr");
 	display("holddown $rname $phase $keytype $timediff");
 
 	return(0)
