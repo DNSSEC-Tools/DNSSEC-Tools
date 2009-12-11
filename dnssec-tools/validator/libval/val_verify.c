@@ -631,25 +631,30 @@ check_label_count(struct rrset_rec *the_set,
 	do { \
 		rr->rr_status = newstatus; \
         if (\
+            savedstatus == VAL_AC_TRUST_NOCHK &&\
+            newstatus == VAL_AC_DNSKEY_NOMATCH) {\
+                savedstatus = VAL_AC_NOT_VERIFIED; \
+        }\
+        else if (\
             savedstatus == VAL_AC_TRUST_NOCHK ||\
             savedstatus == VAL_AC_TRUST ||\
             savedstatus == VAL_AC_VERIFIED ||\
             savedstatus == VAL_AC_WCARD_VERIFIED ||\
             newstatus == VAL_AC_UNSET ||\
             newstatus == VAL_AC_UNKNOWN_ALGORITHM_LINK)\
-            ; /* do nothing */\
+                ; /* do nothing */\
         /* Any success is good */\
         else if (\
             newstatus == VAL_AC_RRSIG_VERIFIED ||\
             newstatus == VAL_AC_RRSIG_VERIFIED_SKEW) \
-            savedstatus = VAL_AC_VERIFIED;\
+                savedstatus = VAL_AC_VERIFIED;\
         else if (\
             newstatus == VAL_AC_WCARD_VERIFIED ||\
             newstatus == VAL_AC_WCARD_VERIFIED_SKEW)\
-            savedstatus = VAL_AC_WCARD_VERIFIED;\
+                savedstatus = VAL_AC_WCARD_VERIFIED;\
         /* we don't already have success and what we receive is bad */ \
         else {\
-            savedstatus = VAL_AC_NOT_VERIFIED; \
+                savedstatus = VAL_AC_NOT_VERIFIED; \
         }\
 	} while (0)
 
