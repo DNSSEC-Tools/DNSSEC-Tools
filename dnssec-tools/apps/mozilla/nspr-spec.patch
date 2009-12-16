@@ -6,29 +6,32 @@
  Summary:        Netscape Portable Runtime
  Name:           nspr
  Version:        4.8.2
-@@ -6,6 +8,8 @@
+@@ -6,6 +8,9 @@
  URL:            http://www.mozilla.org/projects/nspr/
  Group:          System Environment/Libraries
  BuildRoot:      %{_tmppath}/%{name}-%{version}-root
 +Requires:       dnssec-tools-libs
 +BuildRequires:  dnssec-tools-libs-devel
++BuildRequires:  openssl-devel
  
  # Sources available at ftp://ftp.mozilla.org/pub/mozilla.org/nspr/releases/
  # When CVS tag based snapshots are being used, refer to CVS documentation on
-@@ -15,6 +19,7 @@
+@@ -15,6 +20,8 @@
  Source2:        nspr-config-vars.in
  
  Patch1:         nspr-config-pc.patch
-+Patch9:		dnssec-nspr.patch
++Patch8:		dnssec-nspr.patch
++Patch9:		dnssec-pkgconfig.patch
  
  %description
  NSPR provides platform independence for non-GUI operating system 
-@@ -45,6 +50,15 @@
+@@ -45,6 +52,16 @@
  cp ./mozilla/nsprpub/config/nspr-config.in ./mozilla/nsprpub/config/nspr-config-pc.in
  %patch1 -p0
  
 +###############################
 +# begin dnssec related patches
++%patch8 -p0 -b .dnssec
 +%patch9 -p0 -b .dnssec
 +
 +# rebuild configure(s) due to dnssec patches
