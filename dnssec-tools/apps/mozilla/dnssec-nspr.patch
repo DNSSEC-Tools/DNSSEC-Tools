@@ -849,13 +849,15 @@
          PRStatus rv;
  
          /*
-@@ -2040,17 +2348,73 @@
+@@ -2040,17 +2348,75 @@
          hints.ai_socktype = SOCK_STREAM;
  
          rv = GETADDRINFO(hostname, NULL, &hints, &res);
 -        if (rv == 0)
 -            return (PRAddrInfo *) res;
++#ifdef MOZ_DNSSEC
 +        DNSSECDEBUG((stderr, "### DNSSECgetaddrinfo returned: %d, val %d\n", (unsigned int) rv, val_status));
++#endif
 +        if (rv == EAI_AGAIN) {
 +          /* temporary failure...  odd...  try again? */
 +          PR_Sleep(1000);
@@ -926,7 +928,7 @@
  #if defined(_PR_HAVE_GETADDRINFO)
  #if defined(_PR_INET6_PROBE)
      if (!_pr_ipv6_is_present())
-@@ -2061,6 +2425,7 @@
+@@ -2061,6 +2427,7 @@
  #else
      PR_Free((PRAddrInfoFB *) ai);
  #endif
@@ -934,7 +936,7 @@
  }
  
  PR_IMPLEMENT(void *) PR_EnumerateAddrInfo(void             *iterPtr,
-@@ -2068,9 +2433,9 @@
+@@ -2068,9 +2435,9 @@
                                            PRUint16          port,
                                            PRNetAddr        *result)
  {
@@ -946,7 +948,7 @@
      if (!_pr_ipv6_is_present()) {
          /* using PRAddrInfoFB */
          PRIntn iter = (PRIntn)(PRPtrdiff) iterPtr;
-@@ -2082,9 +2447,9 @@
+@@ -2082,9 +2449,9 @@
  #endif
  
      if (iterPtr)
@@ -958,7 +960,7 @@
  
      while (ai && ai->ai_addrlen > sizeof(PRNetAddr))
          ai = ai->ai_next;
-@@ -2140,6 +2505,9 @@
+@@ -2140,6 +2507,9 @@
      int rv;  /* 0 for success, or the error code EAI_xxx */
      PRNetAddr laddr;
      PRStatus status = PR_SUCCESS;
@@ -968,7 +970,7 @@
  
      if (NULL == addr)
      {
-@@ -2189,6 +2557,7 @@
+@@ -2189,6 +2559,7 @@
      PRStatus status = PR_SUCCESS;
      PRIntn rv;
  
@@ -976,7 +978,7 @@
  #if defined(_PR_HAVE_INET_NTOP)
      rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
      if (1 == rv)
-@@ -2200,23 +2569,26 @@
+@@ -2200,23 +2571,26 @@
          PR_ASSERT(0 == rv);
          /* clean up after the failed inet_pton() call */
          memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
@@ -1008,7 +1010,7 @@
      }
      PR_ASSERT(0 == rv);
      /* clean up after the failed StringToV6Addr() call */
-@@ -2234,7 +2606,7 @@
+@@ -2234,7 +2608,7 @@
      }
  #endif /* _PR_HAVE_INET_NTOP */
  
