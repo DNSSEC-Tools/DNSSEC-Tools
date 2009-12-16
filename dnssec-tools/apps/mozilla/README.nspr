@@ -17,6 +17,7 @@ Needed Files depending on what is being built:
   |                         |nspr RPM|nspr source|
   +-------------------------+--------+-----------+
   |dnssec-nspr.patch        |X       |X          |
+  |dnssec-pkgconfig.patch   |X       |           |
   |nspr-spec.patch          |X       |           |
   +-------------------------+--------+-----------+
 
@@ -39,7 +40,8 @@ Needed Files depending on what is being built:
 
      cd ~/rpmbuild/SPECS
      patch < ~/dnssec-tools/apps/mozilla/nspr-spec.patch
-     cp ~/dnssec-tools/apps/mozilla/dnssec-nspr.patch ~/rpmbuild/SOURCES/
+     cd ~/dnssec-tools/apps/mozilla/
+     cp dnssec-nspr.patch dnssec-pkgconfig.patch ~/rpmbuild/SOURCES/
      rpmbuild -bb ~/rpmbuild/SPECS/nspr.spec
      sudo rpm -Uvh ~/rpmbuild/RPMS/i386/nspr-*
 
