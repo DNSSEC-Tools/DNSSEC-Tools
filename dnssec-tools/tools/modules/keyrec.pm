@@ -781,6 +781,11 @@ sub keyrec_setval
 	my $lastfld = 0;		# Last found field in @keyreclines.
 
 	#
+	# Make sure we've got the correct count of keyrec lines.
+	#
+	$keyreclen = @keyreclines;
+
+	#
 	# If a keyrec of the specified name doesn't exist, we'll create a
 	# new one.  If the field is "keyrec_type", then we're creating a new
 	# keyrec.  We'll add it to @keyreclines and %keyrecs.
@@ -973,6 +978,11 @@ sub keyrec_delval
 	return(1) if(!exists($keyrecs{$name}));
 
 	#
+	# Make sure we've got the correct count of keyrec lines.
+	#
+	$keyreclen = @keyreclines;
+
+	#
 	# Find the appropriate entry to delete from @keyreclines.  If
 	# the given field isn't set in $name's keyrec, we'll return.
 	#
@@ -1063,6 +1073,7 @@ sub keyrec_delval
 			splice @keyreclines, $fldind, 1;
 
 			$modified = 1;
+			$keyreclen--;
 			return(1);
 		}
 	}
@@ -1130,6 +1141,11 @@ sub keyrec_add
 		$secsstr = 'keyrec_gensecs';
 		$datestr = 'keyrec_gendate';
 	}
+
+	#
+	# Make sure we've got the correct count of keyrec lines.
+	#
+	$keyreclen = @keyreclines;
 
 	#
 	# Add the new keyrec's first line to the end of the keyrec table.
@@ -1273,6 +1289,11 @@ sub keyrec_del
 	{
 		$krtype = "key";
 	}
+
+	#
+	# Make sure we've got the correct count of keyrec lines.
+	#
+	$keyreclen = @keyreclines;
 
 	#
 	# Find the index of the first line for this keyrec in the
@@ -1456,7 +1477,7 @@ sub keyrec_signset_newname
 	# Get the zone's last signing set.
 	#
 	$setname = $keyrecs{$zone}{'lastset'};
-	$setname = "$zone-signset-0" if(!defined($keyrecs{$zone}{'lastset'}));
+	$setname = "$zone-signset-000" if(!defined($keyrecs{$zone}{'lastset'}));
 
 	#
 	# Get the first number in the set name.  If there isn't a number
@@ -1467,7 +1488,7 @@ sub keyrec_signset_newname
 	
 	if($oldind eq '')
 	{
-		$setname = $setname . "0";
+		$setname = $setname . "000";
 		$oldind = 0;
 	}
 
@@ -1476,6 +1497,11 @@ sub keyrec_signset_newname
 	# The set name in our pile o' options will be changed to the new name.
 	#
 	$newind = int($oldind) + 1;
+	while(length($newind) < 5)
+	{
+		$newind = "0$newind";
+	}
+
 	$setname =~ s/$setprefix$oldind/$setprefix$newind/;
 #	$keyrecs{$zone}{'lastset'} = $setname;
 	keyrec_setval('zone',$zone,'lastset',$setname);
@@ -1494,8 +1520,7 @@ sub keyrec_signset_newname
 #		hasn't yet been added with keyrec_add(), then we'll add it
 #		now.  The third through Nth arguments are concatenated
 #		into a space-separated string and then that string is saved
-#		in both %keyrecs and in @keyreclines.  The $modified file-
-#		modified flag is updated, along with the length $keyreclen.
+#		in both %keyrecs and in @keyreclines.
 #
 sub keyrec_signset_new
 {
@@ -1847,6 +1872,11 @@ sub keyrec_write
 	return if(!$modified);
 
 	#
+	# Make sure we've got the correct count of keyrec lines.
+	#
+	$keyreclen = @keyreclines;
+
+	#
 	# Loop through the array of keyrec lines and concatenate them all.
 	#
 	for(my $ind=0;$ind<$keyreclen;$ind++)
@@ -1879,6 +1909,11 @@ sub keyrec_saveas
 {
 	my $newname = shift;		# Name of new file.
 	my $krc = "";			# Concatenated keyrec file contents.
+
+	#
+	# Make sure we've got the correct count of keyrec lines.
+	#
+	$keyreclen = @keyreclines;
 
 	#
 	# Loop through the array of keyrec lines and concatenate them all.
@@ -1932,6 +1967,11 @@ sub keyrec_dump_hash
 #
 sub keyrec_dump_array
 {
+	#
+	# Make sure we've got the correct count of keyrec lines.
+	#
+	$keyreclen = @keyreclines;
+
 	#
 	# Loop through the array of keyrec lines and print them all.
 	#
