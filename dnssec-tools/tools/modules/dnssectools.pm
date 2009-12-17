@@ -83,6 +83,7 @@ sub dt_adminmail
 	my $mh;					# Mail handler.
 
 	my %dtconf;				# DNSSEC-Tools config file.
+	my @mailargs;
 
 	#
 	# Get the message recipient.  If the caller didn't specify one,
@@ -119,8 +120,15 @@ sub dt_adminmail
 	$msg->subject($subject);
 
 	#
-	# Add the message body.
+	# Open the 'connection' and add the message body.
 	#
+	push @mailargs, $dtconf{'mailer-type'}
+		if (defined($dtconf{'mailer-type'}));
+	push @mailargs, 'smtp'
+		if (!defined($dtconf{'mailer-type'}) &&
+			defined($dtconf{'mailer-server'}));
+	push @mailargs, Server => $dtconf{'mailer-server'}
+		if (defined($dtconf{'mailer-server'}));
 	$mh = $msg->open;
 	print $mh $msgbody . "\n";
 
@@ -278,6 +286,25 @@ Return values:
 	1 - the message was created and sent.
 	0 - an invalid recipient was specified. 
 
+It relies on the the following dnssec-tools.conf configuration parameters:
+
+=over 4
+
+=item I<admin-email>
+
+The email address that the mail should come from.
+
+=item I<mailer-type>
+
+Should be one of: I<sendmail, smtp, qmail>.  This option is not
+required and will default to trying sendmail and qmail to deliever the
+mail.  If I<mailer-server> is set to a defined value but I<mailer-type> is not, then I<mailer-type> will default to 
+
+=item I<mailer-server>
+
+The server, if I<admin-mail> is set to I<smtp>, that the mail should
+be delievered to.
+
 =item I<dt_cmdpath(command)>
 
 This routine returns the path to a specified DNSSEC-Tools command.
@@ -330,3 +357,7 @@ B<Net::DNS::SEC::Tools::conf.pm(3)>
 
 =cut
 
+# Local Variables:
+# tab-width: 4
+# cperl-indent-level: 4
+# End:
