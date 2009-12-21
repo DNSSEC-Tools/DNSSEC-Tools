@@ -913,7 +913,19 @@ sub zsk_phase2
 	# (This *shouldn't* be a problem; further testing will tell...)
 	#
 	keyrec_discard();
-	keyrec_read($krf);
+	$ret = keyrec_read($krf);
+	if($ret < 0)
+	{
+		if($ret == -3)
+		{
+			rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  keyname collision in keyrec \"$krf\"; marking $rname as skipped");
+		}
+		else
+		{
+			rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to read keyrec \"$krf\"; marking $rname as skipped");
+		}
+		skipnow($rname);
+	}
 
 	#
 	# Update the timestamp in the zone's keyrec.
@@ -2176,11 +2188,6 @@ sub signer
 		$zsflag = '-usezskpub';
 	}
 
-if($krr eq '')
-{
-rolllog_log(LOG_ALWAYS,$rname,"---------------->  KRR is NULL\n");
-}
-
 	#
 	# Get the rollrec for this name and check if there are any
 	# user-specified zonesigner arguments.
@@ -2238,13 +2245,26 @@ sub zonekeykr
 	my $krname = shift;			# Name of keyrec.
 	my $key = shift;			# Key to check.
 
+	my $ret;				# Return code.
 	my $krec;				# Keyrec reference.
 	my %kh;					# Keyrec hash.
 
 	#
 	# Read the keyrec file.
 	#
-	keyrec_read($krname);
+	$ret = keyrec_read($krname);
+	if($ret < 0)
+	{
+		if($ret == -3)
+		{
+			rolllog_log(LOG_ERR,$rname,"keyname collision in keyrec \"$krname\"; marking $rname as skipped");
+		}
+		else
+		{
+			rolllog_log(LOG_ERR,$rname,"unable to read keyrec \"$krname\"; marking $rname as skipped");
+		}
+		skipnow($rname);
+	}
 
 	#
 	# Get the zone's keyrec and complain if it doesn't exist.
@@ -4032,14 +4052,14 @@ sub skipnow
 
 	#
 	# Re-read the rollrec file and change the record's type.  We'll
-	# also move the zone to phase 0 of rollover.
+	# also move the zone to phase 0 of both KSK and ZSK rollover.
 	#
 	rollrec_lock();
 	if(rollrec_read($rollrecfile) > 0)
 	{
 		#
 		# A roll record is changed to a skip rollrec and its
-		# phase set to 0.
+		# phases set to 0.
 		#
 		if($rr{'rollrec_type'} eq "roll")
 		{
