@@ -120,7 +120,7 @@ sub main
 	$ftype = dt_filetype($fnarg);
 	if(($ftype eq "mixed") || ($ftype eq "unknown"))
 	{
-		print STDERR "file argument was be either a keyrec file OR a rollrec file\n";
+		print STDERR "file argument must be either a keyrec file OR a rollrec file\n";
 		exit(-2);
 	}
 
