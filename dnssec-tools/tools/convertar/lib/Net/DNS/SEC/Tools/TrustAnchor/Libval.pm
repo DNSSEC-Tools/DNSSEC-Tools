@@ -86,7 +86,7 @@ sub write_dnskey {
 sub write_trailer {
     my ($self, $fh, $options, $data) = @_;
     if ($self->{'options'}{'write_expectations'}) {
-	$fh->printf(";\n");
+	$fh->printf(";\n\n");
 	$fh->printf(": zone-security-expectaion\n");
 	$fh->printf("    %-50.50s ignore\n", ".");
 	foreach my $zone (keys(%{$data->{'delegation'}})) {
