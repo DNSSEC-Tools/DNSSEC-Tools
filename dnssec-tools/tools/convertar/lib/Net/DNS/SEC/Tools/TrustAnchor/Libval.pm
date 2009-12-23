@@ -85,8 +85,6 @@ sub write_dnskey {
 
 sub write_trailer {
     my ($self, $fh, $options, $data) = @_;
-    use Data::Dumper;
-    print Dumper($self);
     if ($self->{'options'}{'write_expectations'}) {
 	$fh->printf(";\n");
 	$fh->printf(": zone-security-expectaion\n");
