@@ -101,8 +101,11 @@ B<convertar> - Converts trust anchor repositories from one format to another
 B<convertar> operates on input and output files of different Trust
 Anchor Repository (TAR) formats.  B<convertar> decides what type of
 file format is being referred to by a "type:filename" specification.
-See below for a list of different input and output formats that
-B<convertar> understands by default.
+Options can be passed to the convertar module by using a '/' delimited
+specifier in the I<type> identifier.  Such as
+"type/option=value/other=othervalue:filename".  See below for a list
+of different input and output formats that B<convertar> understands by
+default and what options they take.
 
 See the I<Net::DNS::SEC::Tools::TrustAnchor> module and its
 documentation for writing new plugins to allow B<convertar> to understand
@@ -187,6 +190,13 @@ requires the LWP::UserAgent module to be installed.
 
 The I<libval> format is the configuration file format that
 DNSSEC-Tool's I<libval> library uses.
+
+The I<libval> option can also take a I</write_expectations=1> flag
+when writing to specify that the default (:)
+zone-security-expectation's should be populated to require validation
+all the imported keys.  All other zones will have a policy set to 'ignore.
+
+E.G. libval/write_expectations=1:dnsval.conf
 
 =item mf
 
