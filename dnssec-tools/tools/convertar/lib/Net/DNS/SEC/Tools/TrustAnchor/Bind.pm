@@ -87,6 +87,21 @@ sub write_dnskey {
     $fh->printf("\t%15s $record->{flags} $record->{algorithm} $record->{digesttype} \"$record->{content}\";$keytag\n", $name);
 }
 
+sub write_trailer {
+    my ($self, $fh, $options, $data) = @_;
+    if ($self->{'options'}{'write_expectations'}) {
+	$fh->printf("};\n\n");
+	$fh->printf("options {\n");
+	$fh->printf("    dnssec-validation yes;\n");
+	$fh->printf("    dnssec-enable yes;\n");
+	foreach my $zone (keys(%{$data->{'delegation'}})) {
+	    $fh->printf("    dnssec-must-be-secure %-45.45s yes;\n",
+			"\"$zone\"");
+	}
+	$fh->printf("};\n");
+    }
+}
+
 =pod
 
 =cut

@@ -155,6 +155,12 @@ A BIND name server (B<named>) compatible trust anchor configuration file.
 This can be included within a master B<named.conf> file using the
 "include" directive.
 
+The I<bind> option can also take a I</write_expectations=1> flag when
+writing to write an options {} section that will turn on dnssec and
+require validation for zones from all the imported data.
+
+E.G. bind/write_expectations=1:named.conf
+
 =item secspider
 
 This is merely an alias that fetches the specspider
@@ -194,7 +200,8 @@ DNSSEC-Tool's I<libval> library uses.
 The I<libval> option can also take a I</write_expectations=1> flag
 when writing to specify that the default (:)
 zone-security-expectation's should be populated to require validation
-all the imported keys.  All other zones will have a policy set to 'ignore.
+of all the zones with imported data.  All other zones will have a
+policy set to 'ignore.
 
 E.G. libval/write_expectations=1:dnsval.conf
 
