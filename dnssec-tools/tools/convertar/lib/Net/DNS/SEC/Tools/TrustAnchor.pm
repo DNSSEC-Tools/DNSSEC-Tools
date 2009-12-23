@@ -60,6 +60,24 @@ sub new {
     return $self;
 }
 
+sub parse_options {
+    my ($self, $options) = @_;
+    return if (!defined($options));
+
+    # format: opt1=value/opt2=value
+    my @options = split(/\/\s*/, $options);
+    foreach my $option (@options) {
+	my ($left, $right) = ($option =~ /([^=]+)=*(.*)/);
+	$self->set_option($left, $right);
+    }
+    return $self;
+}
+
+sub set_option {
+    my ($self, $option, $value) = @_;
+    $self->{'options'}{$option} = $value;
+}
+
 # sub function for child classes to override at init time
 sub init_extras {
 }
@@ -78,7 +96,11 @@ will fail to load using this routine.
 =cut
 
 sub load_module {
-    my ($type) = @_;
+    my ($intype) = @_;
+
+    # parse trailing options off
+    # type/option1=value,option2=value2
+    my ($type, $options) = ($intype =~ /([^\/]+)\/*(.*)/);
 
     # XXX: decide what to do about upper/lower casing
     $type =~ s/(.)(.*)/uc($1) . lc($2)/e;
@@ -91,6 +113,7 @@ sub load_module {
     if (!$obj) {
 	print "failed to create a new $type object:\n  $@\n";
     }
+    $obj->parse_options($options);
     return $obj;
 }
 
@@ -126,7 +149,6 @@ sub parse_component {
 	my ($type, $file) = ($1, $2);
 	my $object = load_module($type);
 	$object->set_file($file);
-	$object->set_options({});
 	return ($object, $file, {});
     }
 }
@@ -134,11 +156,6 @@ sub parse_component {
 sub set_file {
     my ($self, $file) = @_;
     $self->{'file'} = $file;
-}
-
-sub set_options {
-    my ($self, $opts) = @_;
-    $self->{'options'} = $opts;
 }
 
 =pod

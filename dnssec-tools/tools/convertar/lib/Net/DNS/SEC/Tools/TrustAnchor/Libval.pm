@@ -83,6 +83,21 @@ sub write_dnskey {
     $fh->printf("\t%15s \"$record->{flags} $record->{algorithm} $record->{digesttype} $record->{content}\"\n", $name);
 }
 
+sub write_trailer {
+    my ($self, $fh, $options, $data) = @_;
+    use Data::Dumper;
+    print Dumper($self);
+    if ($self->{'options'}{'write_expectations'}) {
+	$fh->printf(";\n");
+	$fh->printf(": zone-security-expectaion\n");
+	$fh->printf("    %-50.50s ignore\n", ".");
+	foreach my $zone (keys(%{$data->{'delegation'}})) {
+	    $fh->printf("    %-50.50s validate\n", $zone);
+	}
+	$fh->printf(";\n");
+    }
+}
+
 =pod
 
 =cut
