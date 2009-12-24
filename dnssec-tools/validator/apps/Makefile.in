@@ -27,6 +27,8 @@ ALL_LOBJ= $(VAL_LOBJ) \
 	getname.lo \
     libval_check_conf.lo
 
+LT_DIR= .libs
+
 VALIDATOR=validate
 GETHOST=gethost
 GETADDR=getaddr
@@ -39,6 +41,7 @@ all: $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHE
 
 clean:
 	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF)
+	$(RM) -rf $(LT_DIR)
 
 $(VALIDATOR): $(VAL_OBJ) $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ $(VAL_OBJ) $(LDFLAGS) $(LIBS)
