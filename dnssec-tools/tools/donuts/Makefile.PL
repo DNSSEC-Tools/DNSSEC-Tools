@@ -96,7 +96,7 @@ CP	= /bin/cp
 RM	= /bin/rm
 PP	= /usr/bin/pp
 FIND	= /usr/bin/find
-GREP	= /usr/bin/grep
+GREP	= /bin/grep
 
 #######
 
