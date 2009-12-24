@@ -1,4 +1,724 @@
 ------------------------------------------------------------------------
+r4947 | hardaker | 2009-12-24 08:54:13 -0800 (Thu, 24 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+fix svn URL
+------------------------------------------------------------------------
+r4946 | hardaker | 2009-12-24 08:53:38 -0800 (Thu, 24 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/Makefile.PL
+
+grep is in /bin on fedora
+------------------------------------------------------------------------
+r4945 | tewok | 2009-12-23 12:25:51 -0800 (Wed, 23 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+
+Changed a print() call to a qprint() call so -quiet would be fully observed.
+
+------------------------------------------------------------------------
+r4944 | hardaker | 2009-12-23 10:41:42 -0800 (Wed, 23 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/convertar
+   M /trunk/dnssec-tools/tools/convertar/lib/Net/DNS/SEC/Tools/TrustAnchor/Bind.pm
+
+make bind support the write_expectations.conf flag
+------------------------------------------------------------------------
+r4943 | hardaker | 2009-12-23 10:41:29 -0800 (Wed, 23 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/lib/Net/DNS/SEC/Tools/TrustAnchor/Libval.pm
+
+white space output changes
+------------------------------------------------------------------------
+r4942 | hardaker | 2009-12-23 10:32:27 -0800 (Wed, 23 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/lib/Net/DNS/SEC/Tools/TrustAnchor/Libval.pm
+
+remove a debugging output statement
+------------------------------------------------------------------------
+r4941 | hardaker | 2009-12-23 10:32:11 -0800 (Wed, 23 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/convertar
+   M /trunk/dnssec-tools/tools/convertar/lib/Net/DNS/SEC/Tools/TrustAnchor/Libval.pm
+   M /trunk/dnssec-tools/tools/convertar/lib/Net/DNS/SEC/Tools/TrustAnchor.pm
+
+added option parsing support; made the libval.conf output include a zone-security-expectation section if requested via the write_expectations=1 option
+------------------------------------------------------------------------
+r4940 | tewok | 2009-12-21 08:21:06 -0800 (Mon, 21 Dec 2009) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+
+Added error checking in case keyrec_read() fails.  Primarily wanted for      
+keyname collisions, but godd for other problems.
+Minor fixes to a couple code comments.
+
+------------------------------------------------------------------------
+r4939 | tewok | 2009-12-21 08:09:34 -0800 (Mon, 21 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+
+Fixed grammar in an error message.
+
+------------------------------------------------------------------------
+r4938 | tewok | 2009-12-17 05:36:35 -0800 (Thu, 17 Dec 2009) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+
+Fixed the setting of $keyreclen so it's always fetched anew whenever a
+routine uses it, instead of the module maintaining the value itself.
+
+Changed the numbering of new signing set names so they are start prefixed
+by three zeroes instead of one.
+
+
+------------------------------------------------------------------------
+r4937 | hardaker | 2009-12-17 05:35:09 -0800 (Thu, 17 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+
+support use of dnssec-tools.conf mailer-type and mailer-server for dt_adminmail; document and set file indentation style for emacs
+------------------------------------------------------------------------
+r4936 | rstory | 2009-12-15 20:08:40 -0800 (Tue, 15 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/README.firefox
+   M /trunk/dnssec-tools/apps/mozilla/README.nspr
+
+tweak readmes
+
+------------------------------------------------------------------------
+r4935 | rstory | 2009-12-15 19:46:01 -0800 (Tue, 15 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-nspr.patch
+
+ifdef dnssec specific code
+------------------------------------------------------------------------
+r4934 | rstory | 2009-12-15 19:38:41 -0800 (Tue, 15 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/nspr-spec.patch
+
+add buildreq on openssl-dev; add pkgconfig patch
+------------------------------------------------------------------------
+r4933 | rstory | 2009-12-15 09:40:03 -0800 (Tue, 15 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-nspr.patch
+   A /trunk/dnssec-tools/apps/mozilla/dnssec-pkgconfig.patch
+
+move linux/fedora/rpm specific patch to its own file; tweak nspr for os x
+
+------------------------------------------------------------------------
+r4932 | hserus | 2009-12-11 10:08:50 -0800 (Fri, 11 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+In get_ac_trust check for trust anchors before trying to query for DS or DNSKEY records
+
+------------------------------------------------------------------------
+r4931 | hserus | 2009-12-11 09:02:53 -0800 (Fri, 11 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Supply better fix for breaking out of loop around trust anchor with expired sigs
+
+------------------------------------------------------------------------
+r4930 | hserus | 2009-12-11 08:48:02 -0800 (Fri, 11 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Revert previous change - breaks other tests
+
+------------------------------------------------------------------------
+r4929 | hserus | 2009-12-11 08:43:44 -0800 (Fri, 11 Dec 2009) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Set the correct status if the unchecked trust anchor fails to validate. Still
+need to fix the extra DS query generation when there is clearly no trust anchor
+above.
+
+------------------------------------------------------------------------
+r4928 | tewok | 2009-12-10 17:12:53 -0800 (Thu, 10 Dec 2009) | 17 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Modified the second argument to signer(), which is what actually executes
+zonesigner.  The old argument was a phase-specific, keytype-specific flag to
+pass to zonesigner.  The new argument is a string indicating the keytype and
+phase.
+
+For example, this call:
+
+	$ret = signer($rname,"-newpubksk",$krr);
+
+was replaced with this call:
+	$ret = signer($rname,"KSK phase 2",$krr);
+
+Strictly speaking, this change isn't necessary.  However, it does gather
+in one code-icular place exactly what the differences are in zonesigner
+executions from phase to phase.
+
+
+------------------------------------------------------------------------
+r4927 | tewok | 2009-12-10 16:18:26 -0800 (Thu, 10 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+A few minor grammatical fixes in comments and log messages.
+
+------------------------------------------------------------------------
+r4926 | rstory | 2009-12-10 08:31:55 -0800 (Thu, 10 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/libspf2/README.dnssec
+   D /trunk/dnssec-tools/apps/libspf2/libspf2-1.2.5_dnssec_guide.txt
+   D /trunk/dnssec-tools/apps/libspf2/libspf2-1.2.5_dnssec_patch.txt
+   M /trunk/dnssec-tools/apps/libspf2/libspf2-dnssec.patch
+
+update to 1.2.5 patch/readme
+------------------------------------------------------------------------
+r4925 | rstory | 2009-12-10 08:28:57 -0800 (Thu, 10 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/libspf2/README.dnssec
+   D /trunk/dnssec-tools/apps/libspf2/libspf2-1.0.4_dnssec_guide.txt
+
+merge 1.0.4 guide into README
+------------------------------------------------------------------------
+r4924 | rstory | 2009-12-10 08:27:07 -0800 (Thu, 10 Dec 2009) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/libspf2/README.dnssec (from /trunk/dnssec-tools/apps/libspf2/libspf2-dnssec-howto.txt:4909)
+   D /trunk/dnssec-tools/apps/libspf2/libspf2-1.0.4_dnssec_patch.txt
+   D /trunk/dnssec-tools/apps/libspf2/libspf2-dnssec-howto.txt
+   A /trunk/dnssec-tools/apps/libspf2/libspf2-dnssec.patch (from /trunk/dnssec-tools/apps/libspf2/libspf2-1.0.4_dnssec_patch.txt:4909)
+
+move away from versioned patch files
+------------------------------------------------------------------------
+r4923 | rstory | 2009-12-09 20:41:03 -0800 (Wed, 09 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/README
+   M /trunk/dnssec-tools/apps/mozilla/README.firefox
+   A /trunk/dnssec-tools/apps/mozilla/firefox-spec.patch
+
+add firefox spec patch, tweak rpm build instructions in readme
+------------------------------------------------------------------------
+r4922 | tewok | 2009-12-09 18:24:27 -0800 (Wed, 09 Dec 2009) | 8 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+
+Modified to ask the user what to do if there no zone names to be displayed.
+The user is prompted for one of the following courses of action:
+	- stop execution
+	- continue as-is
+	- ignore the values of display flags and display data
+
+Updated the "Known Issues" section in the pod.
+
+------------------------------------------------------------------------
+r4921 | tewok | 2009-12-09 16:39:05 -0800 (Wed, 09 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+
+Listed all options in -help message.
+
+------------------------------------------------------------------------
+r4920 | tewok | 2009-12-09 16:22:08 -0800 (Wed, 09 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Clarified and fixed several log messages.
+
+------------------------------------------------------------------------
+r4919 | tewok | 2009-12-09 15:47:51 -0800 (Wed, 09 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Clarified two error messages, and fixed the grammar in one of the two.
+
+------------------------------------------------------------------------
+r4918 | tewok | 2009-12-09 15:44:57 -0800 (Wed, 09 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Fixed the grammar in an error message.
+
+------------------------------------------------------------------------
+r4917 | tewok | 2009-12-09 15:42:16 -0800 (Wed, 09 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Clarified an error message.
+
+------------------------------------------------------------------------
+r4916 | rstory | 2009-12-09 13:30:57 -0800 (Wed, 09 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-both.patch
+
+remove nspr patches; minor tweaks for latest firefox
+------------------------------------------------------------------------
+r4915 | rstory | 2009-12-09 13:25:05 -0800 (Wed, 09 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-mozconfig.patch
+
+dont disable system nspr/nss; use MOZ_OPT_FLAGS instead of RPMs flags
+------------------------------------------------------------------------
+r4913 | rstory | 2009-12-09 12:22:12 -0800 (Wed, 09 Dec 2009) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/README.xulrunner
+   A /trunk/dnssec-tools/apps/mozilla/xulrunner-spec.patch
+
+readme/spec patch for xulrunner
+------------------------------------------------------------------------
+r4912 | tewok | 2009-12-08 10:03:36 -0800 (Tue, 08 Dec 2009) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Fixed so that the KSK-rev keyrec doesn't continue to point to any keyrecs
+when the revoked keys move to being obsolete.
+
+------------------------------------------------------------------------
+r4911 | rstory | 2009-12-07 13:20:58 -0800 (Mon, 07 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-nspr.patch
+
+make sure nspr lib links to val libs
+------------------------------------------------------------------------
+r4910 | rstory | 2009-12-07 11:30:38 -0800 (Mon, 07 Dec 2009) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/README.nspr
+   A /trunk/dnssec-tools/apps/mozilla/dnssec-nspr.patch
+   A /trunk/dnssec-tools/apps/mozilla/nspr-spec.patch
+
+new files for nspr rpm building
+------------------------------------------------------------------------
+r4909 | tewok | 2009-12-01 16:25:57 -0800 (Tue, 01 Dec 2009) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Fixed the regexp in cmd_logmsg() so the user's message will be properly
+parsed.
+
+------------------------------------------------------------------------
+r4908 | tewok | 2009-12-01 16:25:14 -0800 (Tue, 01 Dec 2009) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Fixed the value of $ROLLCMD_LOGMSG to one that will actually work.
+
+
+------------------------------------------------------------------------
+r4907 | tewok | 2009-12-01 13:34:36 -0800 (Tue, 01 Dec 2009) | 2 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/scripts/tests/test-rollzone/log.test
+
+This file shouldn't have been checked in at all.
+
+------------------------------------------------------------------------
+r4906 | tewok | 2009-12-01 12:06:59 -0800 (Tue, 01 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+
+Added display options for set keyrecs.
+
+------------------------------------------------------------------------
+r4905 | tewok | 2009-12-01 12:03:48 -0800 (Tue, 01 Dec 2009) | 13 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Modified revocation keyrecs so there is one active "super" kskrev set keyrec
+whose "keys" field references a number of subsidiary kskrev set keyrecs.  As
+the kskrevs go obsolete, they are individually marked as kskobs.
+
+Added expandrevlist() to get the full set of subsidiary kskrev keys. 
+Modified keyrec_signset_new() to take an additional option that specifies
+the type of the new signing set.
+Moved the bulk of keyrec_age_revoked() from keyrec.pm into age_revoked().
+Moved some common code into newrevset().
+Moved some common code into expandrevlist().
+Clarified several informational and error messages.
+Reworked some pod option descriptions.
+
+------------------------------------------------------------------------
+r4904 | tewok | 2009-12-01 12:03:29 -0800 (Tue, 01 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+
+Added key types to the set keyrecs.
+
+------------------------------------------------------------------------
+r4903 | tewok | 2009-12-01 12:03:19 -0800 (Tue, 01 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Modified pod discussion of RFC5011 to fit formatting conventions.
+
+------------------------------------------------------------------------
+r4902 | tewok | 2009-12-01 12:03:03 -0800 (Tue, 01 Dec 2009) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+
+Validate the set types.
+Fixed a grammo.
+
+------------------------------------------------------------------------
+r4901 | tewok | 2009-12-01 12:02:41 -0800 (Tue, 01 Dec 2009) | 14 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+
+Added a type argument to keyrec_signset_new(), as well as a check to ensure
+the type is valid.
+
+Deleted a duplicate reference to "zskpub" from keyrec_keypaths().
+Moved the keyrec_keypaths() pod description into its proper (alphabetical)
+place.
+
+Renamed keyrec_age_revoked() to keyrec_revoke_check().
+Modified to keyrec_revoke_check() just do the actual revocation-period check;
+the key manipulation was moved into zonesigner.
+Added comments to keyrec_revoke_check()'s header detailing return codes.
+Added a description of keyrec_revoke_check() to the pod.
+ 
+
+------------------------------------------------------------------------
+r4900 | rstory | 2009-11-23 19:47:11 -0800 (Mon, 23 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/postfix/README.dnssec
+   M /trunk/dnssec-tools/apps/postfix/postfix-dnssec.patch
+
+update patch for 2.7; add testcase for sender domain to readme
+
+------------------------------------------------------------------------
+r4899 | rstory | 2009-11-21 06:46:17 -0800 (Sat, 21 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/ssh/README.ssh
+
+update patch name
+------------------------------------------------------------------------
+r4898 | baerm | 2009-11-18 20:23:57 -0800 (Wed, 18 Nov 2009) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+
+
+Added rollchk path
+
+
+------------------------------------------------------------------------
+r4897 | rstory | 2009-11-18 13:35:25 -0800 (Wed, 18 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+
+check for EAI_NODATA before using it
+
+------------------------------------------------------------------------
+r4896 | rstory | 2009-11-18 09:20:56 -0800 (Wed, 18 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/postfix/README.dnssec
+   D /trunk/dnssec-tools/apps/postfix/postfix-2.5.1-dnssec-howto.txt
+   D /trunk/dnssec-tools/apps/postfix/postfix-2.5.1_dnssec_patch.txt
+   M /trunk/dnssec-tools/apps/postfix/postfix-dnssec.patch
+
+update to 2.5.1 patch, remove old files
+
+------------------------------------------------------------------------
+r4895 | rstory | 2009-11-18 09:20:01 -0800 (Wed, 18 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/postfix/README.dnssec
+   D /trunk/dnssec-tools/apps/postfix/postfix-2.3.8_dnssec_patch.txt
+   D /trunk/dnssec-tools/apps/postfix/postfix-2.3.x-dnssec-howto.txt
+   M /trunk/dnssec-tools/apps/postfix/postfix-dnssec.patch
+
+update to 2.3.8 version; remove old files
+
+------------------------------------------------------------------------
+r4894 | rstory | 2009-11-18 09:18:10 -0800 (Wed, 18 Nov 2009) | 1 line
+Changed paths:
+   D /trunk/dnssec-tools/apps/postfix/postfix-2.3.3_dnssec_patch.txt
+   M /trunk/dnssec-tools/apps/postfix/postfix-dnssec.patch
+
+update patch to postfix-2.3.3, remove old file
+------------------------------------------------------------------------
+r4893 | rstory | 2009-11-18 09:17:14 -0800 (Wed, 18 Nov 2009) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/postfix/README.dnssec
+   D /trunk/dnssec-tools/apps/postfix/postfix-2.2.11_dnssec_patch.txt
+   D /trunk/dnssec-tools/apps/postfix/postfix-2.2.x-dnssec-howto.txt
+   A /trunk/dnssec-tools/apps/postfix/postfix-dnssec.patch
+
+move postfix-2.2.* files to non-version-sepcific filenames
+------------------------------------------------------------------------
+r4892 | rstory | 2009-11-17 16:07:44 -0800 (Tue, 17 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/ssh/ssh-dnssec.pat
+
+add error for untrusted no such name
+------------------------------------------------------------------------
+r4891 | rstory | 2009-11-17 10:11:56 -0800 (Tue, 17 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/ssh/ssh-dnssec.pat
+
+change define name to match other patches
+------------------------------------------------------------------------
+r4890 | rstory | 2009-11-16 10:55:33 -0800 (Mon, 16 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/ncftp/ncftp-dnssec.patch
+
+fix var used in configure macro
+------------------------------------------------------------------------
+r4889 | rstory | 2009-11-16 10:49:15 -0800 (Mon, 16 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/lftp/lftp-dnssec.patch
+
+make val_context local; use new macro to decide when to check val_status
+------------------------------------------------------------------------
+r4888 | rstory | 2009-11-15 13:17:33 -0800 (Sun, 15 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/proftpd/README.dnssec
+   M /trunk/dnssec-tools/apps/proftpd/proftpd-dnssec.patch
+
+update patch for what will be proftpd 1.3.3 (cvs trunk)
+------------------------------------------------------------------------
+r4887 | tewok | 2009-11-14 17:49:50 -0800 (Sat, 14 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+
+Handle KSKs in Keyrec Display mode.
+
+------------------------------------------------------------------------
+r4886 | tewok | 2009-11-14 09:36:55 -0800 (Sat, 14 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+
+Fixed a comment.
+
+------------------------------------------------------------------------
+r4885 | tewok | 2009-11-14 09:36:09 -0800 (Sat, 14 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+
+Deleted two unused variables.
+
+------------------------------------------------------------------------
+r4884 | tewok | 2009-11-13 15:08:51 -0800 (Fri, 13 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+
+Fixed a pod error.
+
+------------------------------------------------------------------------
+r4883 | rstory | 2009-11-13 09:25:42 -0800 (Fri, 13 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+don't unwrap ipv4 addrs if NI_NUMERICHOST set; strip leading 0s in ipv6 addrs
+
+------------------------------------------------------------------------
+r4882 | rstory | 2009-11-13 07:23:17 -0800 (Fri, 13 Nov 2009) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+bugfixes: do ipv4 lookup for ipv6 mapped ipv4 addrs; use u_char for addrs;
+code cleanup: use sizeof instead of calculating size of array
+
+------------------------------------------------------------------------
+r4881 | rstory | 2009-11-12 08:40:11 -0800 (Thu, 12 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/getname.c
+
+fixes for getname ipv6 support
+------------------------------------------------------------------------
+r4880 | rstory | 2009-11-11 13:34:30 -0800 (Wed, 11 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/getname.c
+
+add ipv6 support to getname app
+------------------------------------------------------------------------
+r4879 | rstory | 2009-11-11 09:08:21 -0800 (Wed, 11 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+tabs to spaces
+------------------------------------------------------------------------
+r4878 | tewok | 2009-11-10 17:43:13 -0800 (Tue, 10 Nov 2009) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Renamed a variable from "$key" to "$keyset".  This was in ksk_expired() and
+zsk_expired().
+
+------------------------------------------------------------------------
+r4877 | baerm | 2009-11-10 16:49:46 -0800 (Tue, 10 Nov 2009) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/getname.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+
+adjusted flags and some length checks,
+NUMERICHOST and NAMEREQD flags should work correctly
+
+
+------------------------------------------------------------------------
+r4876 | rstory | 2009-11-10 13:57:04 -0800 (Tue, 10 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+
+fix another typo in new macro
+------------------------------------------------------------------------
+r4875 | tewok | 2009-11-10 13:38:41 -0800 (Tue, 10 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+
+Small amount of code reorganization.
+
+------------------------------------------------------------------------
+r4874 | tewok | 2009-11-10 11:06:17 -0800 (Tue, 10 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+
+Fixed to handle multikey keysets properly.
+
+------------------------------------------------------------------------
+r4873 | tewok | 2009-11-10 09:43:56 -0800 (Tue, 10 Nov 2009) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+
+Made all error exits have an error exit code.
+Added option validation for -d.
+
+------------------------------------------------------------------------
+r4872 | tewok | 2009-11-10 09:34:57 -0800 (Tue, 10 Nov 2009) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+
+Fixed some typos and grammos.
+Fixed the pod to use the format other tools use.
+Reworded some pod.
+
+------------------------------------------------------------------------
+r4871 | tewok | 2009-11-10 09:20:26 -0800 (Tue, 10 Nov 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+
+Fixed grammos in code comments.
+
+------------------------------------------------------------------------
+r4870 | tewok | 2009-11-09 19:00:50 -0800 (Mon, 09 Nov 2009) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+
+
+Fixed handling of zone keyrecs to not look for a kskpath field.
+
+--tHis line, and those below, will be ignored--
+
+M    fixkrf
+
+------------------------------------------------------------------------
+r4869 | tewok | 2009-11-09 14:53:07 -0800 (Mon, 09 Nov 2009) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+
+
+Fixed to handle KSK signing sets.
+Fixed a warning message to be a normal message.
+ 
+
+------------------------------------------------------------------------
+r4868 | rstory | 2009-11-09 11:53:54 -0800 (Mon, 09 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+
+fix typo in macro
+------------------------------------------------------------------------
+r4867 | tewok | 2009-11-09 08:56:17 -0800 (Mon, 09 Nov 2009) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+
+
+Added a usage clarification to the pod.
+
+
+------------------------------------------------------------------------
+r4866 | tewok | 2009-11-09 08:22:46 -0800 (Mon, 09 Nov 2009) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+
+
+Fixed a grammo in the pod.
+
+
+------------------------------------------------------------------------
+r4864 | tewok | 2009-11-08 08:30:55 -0800 (Sun, 08 Nov 2009) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+
+
+Added a missing double-quote that hosed program compilation.
+
+
+------------------------------------------------------------------------
+r4862 | hardaker | 2009-11-05 15:49:24 -0800 (Thu, 05 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/ChangeLog
+
+Update for verison 1.6.1.pre1
+------------------------------------------------------------------------
+r4861 | hardaker | 2009-11-05 15:48:32 -0800 (Thu, 05 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/convertar
+
+add version number
+------------------------------------------------------------------------
+r4860 | hardaker | 2009-11-05 15:48:16 -0800 (Thu, 05 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+add convertar
+------------------------------------------------------------------------
+r4859 | hardaker | 2009-11-05 15:47:30 -0800 (Thu, 05 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/dnspktflow/dnspktflow
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+   M /trunk/dnssec-tools/tools/mapper/mapper
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+   M /trunk/dnssec-tools/tools/scripts/dtck
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+   M /trunk/dnssec-tools/tools/scripts/dtdefs
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+   M /trunk/dnssec-tools/tools/scripts/dtreqmods
+   M /trunk/dnssec-tools/tools/scripts/expchk
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+   M /trunk/dnssec-tools/tools/scripts/getdnskeys
+   M /trunk/dnssec-tools/tools/scripts/getds
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+   M /trunk/dnssec-tools/tools/scripts/rolllog
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+   M /trunk/dnssec-tools/tools/scripts/rollset
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+   M /trunk/dnssec-tools/tools/scripts/tachk
+   M /trunk/dnssec-tools/tools/scripts/timetrans
+   M /trunk/dnssec-tools/tools/scripts/trustman
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Update Version Number: 1.6.1.pre1
+------------------------------------------------------------------------
+r4858 | hardaker | 2009-11-05 15:44:34 -0800 (Thu, 05 Nov 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+fix closing command tag
+------------------------------------------------------------------------
 r4857 | rstory | 2009-11-05 13:22:19 -0800 (Thu, 05 Nov 2009) | 1 line
 Changed paths:
    M /trunk/dnssec-tools/validator/include/validator/validator.h
