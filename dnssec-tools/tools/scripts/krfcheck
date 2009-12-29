@@ -744,7 +744,18 @@ sub setdata
 	#
 	foreach my $key (sort(@keys))
 	{
-		my $keytype;				# Key;s type.
+		my $keytype;				# Key's type.
+		my $kstype;				# Key's set type.
+
+		# Get some info about this keyrec.
+		#
+		$keytype = keyrec_recval($key,'keyrec_type');
+		$kstype  = keyrec_recval($key,'set_type');
+
+		#
+		# Subordinate set keyrecs may only be kskrevs.
+		#
+		next if(($keytype eq 'set') && ($kstype eq 'kskrev'));
 
 		#
 		# Ensure the key exists as a KSK key or a ZSK key.
@@ -758,7 +769,6 @@ sub setdata
 		#
 		# Compare the key's type to the set's type.
 		#
-		$keytype = keyrec_recval($key,'keyrec_type');
 		if($keytype ne $settype)
 		{
 			qprint("key type (key $key, type $keytype) does not match set's type (set $setname, type $settype)\n");
