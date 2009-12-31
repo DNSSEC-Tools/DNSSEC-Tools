@@ -1419,7 +1419,8 @@ sub read_dnsval_file {
             while ($_ ne '') {
 		next if (s/^[\n\r]\s*//);
 		next if (s/^\s*#[^\n\r]*[\n\r]*//);
-		last if (! s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//);
+#		last if (! s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//);
+        last if (! s/^\s*(\S+)\s+("+[^"]+"|DS[^\n\r]+)\s*//);
                 my ($zonename, $value) = ($1, $2);
                 $value =~ s/[\n\r]//g;
                 my ($flags, $proto, $algo, $key) = $value =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
