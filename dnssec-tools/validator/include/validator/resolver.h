@@ -259,6 +259,15 @@ const char     *p_class(int class);
 #define p_type(type) p_sres_type(type)
 const char     *p_sres_type(int type);
 
+/*
+ * at one open ns_msg_getflag was a macro on Linux, but now it is a
+ * function in libresolv. redifine to use our internal version.
+ */
+#ifndef ns_msg_getflag
+#define ns_msg_getflag libsres_msg_getflag
+#endif
+
+
 #ifdef __cplusplus
 }                               /* extern C */
 #endif
