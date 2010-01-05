@@ -3034,30 +3034,6 @@ sub cmd_logfile
 		rolllog_log(LOG_INFO,'<command>',"new logfile ($newlog) same as the old logfile");
 		return;
 	}
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	cmd_logfile()
-#
-# Purpose:	Set the logfile to the user's specified file.  Nothing is done
-#		if the user requests the same log file as is currently in use.
-#
-sub cmd_logfile
-{
-	my $newlog = shift;				# New log file.
-	my $oldlog;					# Old log file.
-
-	rolllog_log(LOG_TMI,'<command>',"logfile command received; new log file - \"$newlog\"");
-
-	#
-	# Do nothing if the new logfile is the same as the current logfile.
-	#
-	$oldlog = rolllog_file();
-	if($oldlog eq $newlog)
-	{
-		rolllog_log(LOG_INFO,'<command>',"new logfile ($newlog) same as the old logfile");
-		return;
-	}
 
 	#
 	# Change the logfile and give an appropriate set of log messages.
