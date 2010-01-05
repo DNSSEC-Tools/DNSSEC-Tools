@@ -510,16 +510,17 @@ sub rollkeys
 		#
 		if($alwayssign)
 		{
+			my $krr;		# Ref to keyrec data.
+			my $extraargs = "";	# Phase-dependent argument.
+
 			rolllog_log(LOG_TMI,$rname,
 				    "Signing the zone (-alwayssign specified)");
 
 			#
 			# Check value and file existence, etc.
 			#
-			my $krr = opts_zonekr($rrr->{'keyrec'}, $rname);
+			$krr = opts_zonekr($rrr->{'keyrec'}, $rname);
 
-			my $extraargs = "";
-			
 			#
 			# If we're in phases 2-3, make sure to use the
 			# published zsk.
@@ -968,7 +969,6 @@ sub zsk_phase4
 	my %rr = %$rrr;			# Rollrec hash.
 
 	my $krf;			# Rollrec's keyrec name.
-	my %krf;			# Keyrec hash.
 	my $krr;			# Keyrec reference.
 
 	my $ret;			# Result from command executions.
@@ -994,7 +994,6 @@ sub zsk_phase4
 	#
 	rolllog_log(LOG_TMI,$rname,"keyrec file is $krf");
 	$krr = opts_zonekr($krf,$rname);
-	%krf = %$krr;
 
 	#
 	# Adjust ZSKs in the zone's keyrec.
@@ -1340,8 +1339,7 @@ sub ksk_phasewait
 	# go to the next rollrec entry and return to this later.
 	#
 	return($phase) if(!ttlexpire($rname,$rrr,$phase,'KSK'));
-	return($phase) if(($rrr->{'istrustanchor'} eq '1' ||
-			   $rrr->{'istrustanchor'} =~ /(y|yes)/i) &&
+	return($phase) if((boolconvert($rrr->{'istrustanchor'}) == 1) &&
 			  !holddownexpire($rname,$rrr,$phase));
 
 	#
@@ -1371,7 +1369,6 @@ sub ksk_phase2
 	my %rr = %$rrr;			# Rollrec hash.
 
 	my $krf;			# Rollrec's keyrec name.
-	my %krf;			# Keyrec hash.
 	my $krr;			# Keyrec reference.
 
 	my $ret;			# Result from command executions.
@@ -1395,7 +1392,6 @@ sub ksk_phase2
 	# Get the keyrec.
 	#
 	$krr = opts_zonekr($krf,$rname);
-	%krf = %$krr;
 
 	#
 	# Sign the zone with a new Published KSK.
@@ -1439,7 +1435,6 @@ sub ksk_phase4
 	my %rr = %$rrr;			# Rollrec hash.
 
 	my $krf;			# Rollrec's keyrec name.
-	my %krf;			# Keyrec hash.
 	my $krr;			# Keyrec reference.
 
 	my $ret;			# Result from command executions.
@@ -1463,7 +1458,6 @@ sub ksk_phase4
 	# Get the keyrec.
 	#
 	$krr = opts_zonekr($krf,$rname);
-	%krf = %$krr;
 
 	#
 	# Roll the Published KSK to the Current KSK.
