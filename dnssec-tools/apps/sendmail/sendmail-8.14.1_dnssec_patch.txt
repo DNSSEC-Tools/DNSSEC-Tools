@@ -245,9 +245,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/conf.c sendmail-8.14.1/sendmail/con
 diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/domain.c
 --- sendmail-8.14.1.orig/sendmail/domain.c	2006-12-18 20:15:07.000000000 -0500
 +++ sendmail-8.14.1/sendmail/domain.c	2008-05-12 10:12:42.000000000 -0400
-@@ -22,10 +22,13 @@
- 
- #if NAMED_BIND
+@@ -24,6 +24,9 @@
  
  # include <arpa/inet.h>
  
@@ -257,11 +255,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  
  /*
  **  The standard udp packet size PACKETSZ (512) is not sufficient for some
- **  nameserver answers containing very many resource records. The resolver
- **  may switch to tcp and retry if it detects udp packet overflow.
-@@ -222,11 +225,15 @@
- 	unsigned short pref, type;
- 	unsigned short localpref = 256;
+@@ -224,7 +227,11 @@
  	char *fallbackMX = FallbackMX;
  	bool trycanon = false;
  	unsigned short *prefs;
@@ -273,11 +267,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  	unsigned short prefer[MAXMXHOSTS];
  	int weight[MAXMXHOSTS];
  	int ttl = 0;
- 	extern int res_query(), res_search();
- 
-@@ -264,17 +271,50 @@
- 	*/
- 
+@@ -266,13 +273,47 @@
  	if (!UseNameServer)
  		goto punt;
  	if (HasWildcardMX && ConfigLevel >= 6)
@@ -310,7 +300,8 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
 +			{
 +				if (tTd(8, 1))
 +					sm_dprintf("getmxrr: DNSSEC validation of MX record of %s failed.\n", host);
-+					syserr("Error: DNSSEC validation of MX record of %s failed.\n", host);
++					errno = 0; /* was getting random errno strings after dnssec error */
++					syserr("Error: DNSSEC validation of MX record of %s failed.", host);
 +					h_errno = NO_DATA;
 +					n = -1;
 +			}
@@ -324,11 +315,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  	if (n < 0)
  	{
  		if (tTd(8, 1))
- 			sm_dprintf("getmxrr: res_search(%s) failed (errno=%d, h_errno=%d)\n",
- 				host, errno, h_errno);
-@@ -518,11 +558,11 @@
- 				*rcode = EX_CONFIG;
- 				syserr("MX list for %s points back to %s",
+@@ -520,7 +561,7 @@
  				       host, MyHostName);
  				return -1;
  			}
@@ -337,11 +324,7 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  			freehostent(h);
  			h = NULL;
  # endif /* NETINET6 */
- 		}
- 		if (strlen(host) >= sizeof(MXHostBuf))
-@@ -896,12 +936,60 @@
- # endif /* NETINET6 */
- 				qtype == T_A ? "A" :
+@@ -898,8 +939,56 @@
  				qtype == T_MX ? "MX" :
  				"???");
  		errno = 0;
@@ -398,8 +381,6 @@ diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/domain.c sendmail-8.14.1/sendmail/d
  		if (ret <= 0)
  		{
  			int save_errno = errno;
- 
- 			if (tTd(8, 7))
 diff -U 5 -Nar sendmail-8.14.1.orig/sendmail/sm_resolve.c sendmail-8.14.1/sendmail/sm_resolve.c
 --- sendmail-8.14.1.orig/sendmail/sm_resolve.c	2006-08-15 19:24:58.000000000 -0400
 +++ sendmail-8.14.1/sendmail/sm_resolve.c	2008-05-12 10:15:06.000000000 -0400
