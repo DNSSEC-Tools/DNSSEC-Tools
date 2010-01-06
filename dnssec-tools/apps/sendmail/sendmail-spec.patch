@@ -1,0 +1,39 @@
+--- sendmail.spec.orig	2009-09-16 14:50:54.000000000 -0400
++++ sendmail.spec	2010-01-06 13:40:06.761419435 -0500
+@@ -1,3 +1,5 @@
++%define dist .1.dnssec
++
+ # package options
+ %define with_tls	yes
+ %define with_sasl1	no
+@@ -50,6 +52,7 @@
+ Patch15: sendmail-8.14.1-noversion.patch
+ Patch16: sendmail-8.13.1-localdomain.patch
+ Patch17: sendmail-8.14.3-sharedmilter.patch
++Patch18: sendmail-8.14.1_dnssec_patch.txt
+ Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+ BuildRequires: tcp_wrappers-devel
+ BuildRequires: db4-devel
+@@ -158,6 +161,8 @@
+ cp devtools/M4/UNIX/{,shared}library.m4
+ %patch17 -p1 -b .sharedmilter
+ 
++%patch18 -p1 -b .dnssec
++
+ for f in RELEASE_NOTES; do
+ 	iconv -f iso8859-1 -t utf8 -o ${f}{_,} &&
+ 		touch -r ${f}{,_} && mv -f ${f}{_,}
+@@ -238,6 +243,13 @@
+ EOF
+ %endif
+ 
++# DNSSEC options
++cat >> redhat.config.m4 << EOF
++APPENDDEF(\`confENVDEF', \`-DSUPPORT_DNSSEC=1 -DMILTER')
++APPENDDEF(\`confLIBS', \`-lsres -lval-threads -lcrypto -lpthread')
++EOF
++
++
+ DIRS="libsmutil sendmail mailstats rmail praliases smrsh makemap"
+ 
+ %if "%{with_milter}" == "yes"
