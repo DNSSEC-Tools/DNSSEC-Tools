@@ -1608,7 +1608,7 @@ sub ksk_phase7
 	my $keyarch_cmd = "$keyarch -dtconf $dtcf -zone $rname $krf -quiet";
 
 	rolllog_log(LOG_TMI,$rname,"keyarch:  running <$keyarch_cmd>");
-	$ret = system("$keyarch_cmd");
+	$ret = runner($rname,"$keyarch_cmd",$krf);
 	if($ret < 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
@@ -2221,9 +2221,40 @@ sub signer
 	#
 	# Have zonesigner sign the zone for us.
 	#
-	$ret = system($cmdstr);
+	$ret = runner($rname,$cmdstr,$rrr->{'keyrec'});
 	$ret >>= 8;
 	$rrr->{'signed'} = 1;
+
+	return($ret);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	runner()
+#
+# Purpose:	This routine returns the specified key's keyrec from the
+#
+sub runner
+{
+	my $rname = shift;			# Name of rollrec rec.
+	my $cmd = shift;			# Command to execute.
+	my $krf = shift;			# Zone's keyrec file.
+	my $ret;				# Command's return code.
+
+	#
+	# Close the current keyrec file.
+	#
+	keyrec_close();
+
+	#
+	# Execute the specific command.
+	#
+	rolllog_log(LOG_TMI,$rname,"executing \"$cmd\"");
+	$ret = system($cmd);
+
+	#
+	# Re-read current keyrec file.
+	#
+	keyrec_read($krf);
 
 	return($ret);
 }
