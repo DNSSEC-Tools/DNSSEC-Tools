@@ -3711,6 +3711,7 @@ try_verify_assertion(val_context_t * context,
     struct rrset_rec *pending_rrset;
     struct queries_for_query *pc = NULL;
     struct queries_for_query *added_q = NULL;
+    struct val_digested_auth_chain *the_trust = NULL;
 
     /*
      * Sanity check 
@@ -3853,6 +3854,7 @@ try_verify_assertion(val_context_t * context,
              * trust is useful for verification 
              */
             next_as->val_ac_status = VAL_AC_CAN_VERIFY;
+            the_trust = pc->qfq_query->qc_ans;
 
         } else if (pc->qfq_query->qc_proof) {
             /*
@@ -3872,7 +3874,6 @@ try_verify_assertion(val_context_t * context,
 
     if (next_as->val_ac_status == VAL_AC_CAN_VERIFY ||
             next_as->val_ac_status == VAL_AC_TRUST_NOCHK) {
-        struct val_digested_auth_chain *the_trust;
         char name_p[NS_MAXDNAME];
         
         if (-1 == ns_name_ntop(next_as->val_ac_rrset.ac_data->rrs_name_n, 
@@ -3886,7 +3887,7 @@ try_verify_assertion(val_context_t * context,
 
         if (next_as->val_ac_status == VAL_AC_TRUST_NOCHK) {
             the_trust = next_as;
-        } else {
+        } else if (!the_trust){
             the_trust = get_ac_trust(context, next_as, queries, flags, 0); 
         }
 
