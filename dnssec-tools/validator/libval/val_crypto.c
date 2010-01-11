@@ -127,7 +127,7 @@ dsasha1_sigverify(val_context_t * ctx,
 
     if (DSA_verify
         (NID_sha1, (u_char *) sha1_hash, SHA_DIGEST_LENGTH,
-         rrsig->signature, rrsig->signature_len, dsa)) {
+         rrsig->signature, rrsig->signature_len, dsa)  == 1) {
         val_log(ctx, LOG_INFO, "dsasha1_sigverify(): returned SUCCESS");
         DSA_free(dsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
@@ -277,7 +277,7 @@ rsamd5_sigverify(val_context_t * ctx,
             "rsamd5_sigverify(): verifying RSA signature...");
 
     if (RSA_verify(NID_md5, (u_char *) md5_hash, MD5_DIGEST_LENGTH,
-                   rrsig->signature, rrsig->signature_len, rsa)) {
+                   rrsig->signature, rrsig->signature_len, rsa) == 1) {
         val_log(ctx, LOG_INFO, "rsamd5_sigverify(): returned SUCCESS");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
@@ -385,7 +385,7 @@ rsasha1_sigverify(val_context_t * ctx,
 
     if (RSA_verify
         (NID_sha1, sha1_hash, SHA_DIGEST_LENGTH,
-         rrsig->signature, rrsig->signature_len, rsa)) {
+         rrsig->signature, rrsig->signature_len, rsa) == 1) {
         val_log(ctx, LOG_INFO, "rsasha1_sigverify(): returned SUCCESS");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
