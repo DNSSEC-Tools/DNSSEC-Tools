@@ -1550,7 +1550,7 @@ sub rollmgr_closechan
 #          	for later processing via calls to rollmgr_getcmd().
 #          	It is useful when doing initial startup before full
 #          	processing is to commence.  Commands queued by this
-#          	process take precidence over commands received via the
+#          	process take precedence over commands received via the
 #          	command intervace (ie, via rollmgr_sendcmd()).
 #
 sub rollmgr_queuecmd
