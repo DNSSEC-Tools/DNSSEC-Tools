@@ -1002,7 +1002,6 @@ sub zsk_phase4
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to adjust ZSK keyrec");
-rolllog_log(LOG_ALWAYS,$rname,"ZSK phase 4.1:  zonesigner bombed with <$ret>");
 	}
 
 	#
@@ -1012,7 +1011,6 @@ rolllog_log(LOG_ALWAYS,$rname,"ZSK phase 4.1:  zonesigner bombed with <$ret>");
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the Current ZSK");
-rolllog_log(LOG_ALWAYS,$rname,"ZSK phase 4.2:  zonesigner bombed with <$ret>");
 	}
 
 	#
@@ -1433,7 +1431,6 @@ sub ksk_phase4
 	my $rrr = shift;		# Reference to rollrec.
 
 	my %rr = %$rrr;			# Rollrec hash.
-
 	my $krf;			# Rollrec's keyrec name.
 	my $krr;			# Keyrec reference.
 
@@ -1608,7 +1605,7 @@ sub ksk_phase7
 	my $keyarch_cmd = "$keyarch -dtconf $dtcf -zone $rname $krf -quiet";
 
 	rolllog_log(LOG_TMI,$rname,"keyarch:  running <$keyarch_cmd>");
-	$ret = runner($rname,"$keyarch_cmd",$krf);
+	$ret = runner($rname,"$keyarch_cmd",$krf,0);
 	if($ret < 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
@@ -2213,17 +2210,27 @@ sub signer
 	#
 	# Build the command to execute.
 	#
-	$cmdstr = "$zonesigner -dtconfig $dtcf $zsflag $zonefile $zonesigned > /dev/null 2>&1";
-#	$cmdstr = "$zonesigner -dtconfig $dtcf $zsflag $zonefile $zonesigned";
+	$cmdstr = "$zonesigner -dtconfig $dtcf $zsflag $zonefile $zonesigned";
 
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
 	#
 	# Have zonesigner sign the zone for us.
 	#
-	$ret = runner($rname,$cmdstr,$rrr->{'keyrec'});
+	$ret = runner($rname,$cmdstr,$rrr->{'keyrec'},1);
 	$ret >>= 8;
-	$rrr->{'signed'} = 1;
+
+	#
+	# Mark the zone as skipped if we couldn't sign it.
+	#
+	if($ret != 0)
+	{
+		skipnow($rname);
+	}
+	else
+	{
+		$rrr->{'signed'} = 1;
+	}
 
 	return($ret);
 }
@@ -2238,7 +2245,10 @@ sub runner
 	my $rname = shift;			# Name of rollrec rec.
 	my $cmd = shift;			# Command to execute.
 	my $krf = shift;			# Zone's keyrec file.
+	my $errflag = shift;			# On-error flag.
+
 	my $ret;				# Command's return code.
+	my $out = '';				# Command's output.
 
 	#
 	# Close the current keyrec file.
@@ -2249,7 +2259,33 @@ sub runner
 	# Execute the specific command.
 	#
 	rolllog_log(LOG_TMI,$rname,"executing \"$cmd\"");
-	$ret = system($cmd);
+
+	#
+	# Execute the given command.  We'll save the stdout and stderr
+	# output in case it's needed later.
+	#
+	open(ZS,"$cmd 2>&1 |");
+	while(<ZS>)
+	{
+		$out .= $_;
+	}
+	close(ZS);
+	$ret = $?;
+
+	#
+	# If the error flag is set and the command exitted with an error,
+	# we'll log the output.
+	#
+	if($errflag)
+	{
+		if(($ret >> 8) != 0)
+		{
+			chomp $out;
+
+			rolllog_log(LOG_ERR,$rname,"execution error for command \"$cmd\"");
+			rolllog_log(LOG_ERR,$rname,"error output - \"$out\"");
+		}
+	}
 
 	#
 	# Re-read current keyrec file.
@@ -2275,6 +2311,11 @@ sub zonekeykr
 	my $ret;				# Return code.
 	my $krec;				# Keyrec reference.
 	my %kh;					# Keyrec hash.
+
+	#
+	# Close the open keyrec file.
+	#
+	keyrec_close();
 
 	#
 	# Read the keyrec file.
