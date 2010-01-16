@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # DNSSEC Tools
@@ -15,13 +15,13 @@
 #	the value enclosed in quotes.  Comments may be included by prefacing
 #	them with the '#' or ';' comment characters.
 #
-#	The format and contents of a rollrec file are *very* preliminary.
 #	These entries are grouped by the zone whose key(s) are being rolled
 #	over.
 #
 #	An example rollrec file follows:
 #
 #	    roll "example.com"
+#		zonename	"example.com"
 #		zonefile	"/usr/etc/dnssec-tools/zones/db.example.com"
 #		keyrec		"/usr/etc/dnssec-tools/keyrec/example.keyrec"
 #		zskphase	"2"
@@ -31,6 +31,7 @@
 #		phasestart	"Wed Mar 09 21:49:22 2005"
 #
 #	    roll "example2.com"
+#		zonename	"example2.com"
 #		zonefile	"/usr/etc/dnssec-tools/zone/db.example2.com"
 #		keyrec		"/usr/etc/dnssec-tools/keyrec/example2.keyrec"
 #		kskphase	"1"
@@ -103,6 +104,7 @@ my $LOCKNAME = "rollrec.lock";
 # Valid fields in a rollrec.
 #
 my @ROLLFIELDS = (
+			'zonename',
 			'zonefile',
 			'keyrec',
 			'maxttl',
@@ -1589,7 +1591,7 @@ preserved as given in the I<rollrec> file.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
