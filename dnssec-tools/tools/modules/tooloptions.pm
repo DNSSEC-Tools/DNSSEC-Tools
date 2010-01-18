@@ -337,7 +337,8 @@ sub opts_zonekr
 	$krname = $cmdopts{'zone'}	if(defined($cmdopts{'zone'}));
 
 	#
-	# Initialize and read the keyrec file and the specified zone.
+	# Initialize (maybe) and read the keyrec file and the specified zone,
+	# putting the data into a hash table.
 	#
 	$optionset{'krfile'} = $krfile;
 	if($krfile ne "")
@@ -572,6 +573,7 @@ sub opts_int_zonecopy
 	#
 	# Read the keyrec file.
 	#
+	keyrec_close();
 	keyrec_read($krfile);
 
 # print "\nopts_int_zonecopy:  down in\n";
@@ -624,7 +626,11 @@ sub opts_int_zonecopy
 	#
 	# Return failure if there's no zone keyrec.
 	#
-	return(undef) if(!$found);
+	if(!$found)
+	{
+		keyrec_close();
+		return(undef);
+	}
 
 	#
 	# Get the zone's keyrec values.
@@ -960,6 +966,9 @@ in I<$keyrec_file>.  The I<keyrec> fields from the zone's KSK and ZSK are
 folded in as well, but the key's I<keyrec_> fields are excluded.  This
 call ensures that the named I<keyrec> is a zone I<keyrec>; if it isn't,
 I<undef> is returned.
+
+The I<keyrec> file is reading with I<keyrec_read()>.  To ensure it is
+properly read, I<keyrec_close()> is called first.
 
 The I<$keyrec_file> argument specifies a I<keyrec> file that will be
 consulted.  The I<keyrec> named by the I<$keyrec_name> argument will be
