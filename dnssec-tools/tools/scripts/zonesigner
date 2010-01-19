@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2004-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # DNSSEC-Tools:  zonesigner
@@ -898,7 +898,7 @@ sub genkeys
 	@kskcurlist = split / /, keyrec_recval($kskcursetname,'keys');
 
 	#
-	# Get the Published KSKs..
+	# Get the Published KSKs.
 	#
 	$kskpubsetname = $opts{'kskpub'};
 	@kskpublist = split / /, keyrec_recval($kskpubsetname, 'keys');
@@ -954,9 +954,6 @@ sub genzsks
 	#
 	if($rollzsk)
 	{
-		#
-		# Do the rollover.
-		#
 		rollzsk();
 		vmed_print("\n");
 		return;
@@ -1871,6 +1868,11 @@ sub keydirs
 		}
 
 		foreach my $zsk (@zskpublist)
+		{
+			System("$MV $zsk.* $zskdir");
+		}
+
+		foreach my $zsk (@zsknewlist)
 		{
 			System("$MV $zsk.* $zskdir");
 		}
@@ -4165,7 +4167,7 @@ plans are to allow for more flexible serial number manipulation.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
