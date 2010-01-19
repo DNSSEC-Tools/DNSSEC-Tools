@@ -88,33 +88,36 @@ my $COL3  = 3;			# Column 3.
 my $COL4  = 4;			# Column 4.
 my $COL5  = 5;			# Column 5.
 my $COL6  = 6;			# Column 6.
-my $MAXCOLS = 6;		# Maximum number of columns.
+my $MAXCOLS = 7;		# Maximum number of columns.
 
 #
 # Column constants for infostripe.
 #
-my $RRFCOL	= $COL0;	# rollrec filename.
-my $ROLLCNTCOL	= $COL1;	# rolled zones count.
-my $SKIPCNTCOL	= $COL2;	# skipped zones count.
-my $SLEEPCOL	= $COL3;	# rollerd's sleeptime.
-my $INFO4	= $COL4;	# unused
-my $INFO5	= $COL5;	# unused
+my $RRFCOL	= $COL0;	# Rollrec filename.
+my $INFO1	= $COL1;	# Unused.
+my $ROLLCNTCOL	= $COL2;	# Rolled zones count.
+my $SKIPCNTCOL	= $COL3;	# Skipped zones count.
+my $SLEEPCOL	= $COL4;	# Rollerd's sleeptime.
+my $INFO5	= $COL5;	# Unused.
+my $INFO6	= $COL6;	# Unused.
 
 #
 # Default column constants for zonestripes.
 #
-my $NAMECOL	= $COL0;	# Zone name. 
-my $PHASECOL	= $COL1;	# Rollover phase.
-my $ZSKLBLCOL	= $COL2;	# ZSK label.
-my $ZSKKEYCOL	= $COL3;	# ZSK key/signing set name.
-my $KSKLBLCOL	= $COL4;	# KSK label.
-my $KSKKEYCOL	= $COL5;	# KSK key/signing set name.
+my $NAMECOL	= $COL0;	# Rollrec filename. 
+my $ZONECOL	= $COL1;	# Zone name. 
+my $PHASECOL	= $COL2;	# Rollover phase.
+my $ZSKLBLCOL	= $COL3;	# ZSK label.
+my $ZSKKEYCOL	= $COL4;	# ZSK key/signing set name.
+my $KSKLBLCOL	= $COL5;	# KSK label.
+my $KSKKEYCOL	= $COL6;	# KSK key/signing set name.
 
 my $UNUSED	= -1;		# Unused column.
 
 #
 # Variables holding current column layout data.
 #
+my $phasecol	= $PHASECOL;	# Rollover phase.
 my $zskkeycol	= $ZSKKEYCOL;	# Current ZSK key/signing set name.
 my $zsklblcol	= $ZSKLBLCOL;	# Current ZSK label.
 my $kskkeycol	= $KSKKEYCOL;	# Current KSK key/signing set name.
@@ -359,6 +362,7 @@ my %zones = ();					# Zones we're watching.
 my %zonecolors = ();				# Zone color indices.
 my %zonerows = ();				# Zones' starting-row indices.
 my @zonenames = ();				# Screen-order list of zones.
+my %zonenames = ();				# Rollrec name -> zone name map.
 my $zonecnt = 1;				# Count of zones we're watching.
 my %keyrecs = ();				# Zones' keyrec filenames.
 my %display = ();				# Zones' display flag.
@@ -1515,6 +1519,7 @@ sub readrrf
 	# Initialize some data.
 	#
 	@zonenames = ();
+	%zonenames = ();
 
 	#
 	# Pretty-up the window.
@@ -1540,6 +1545,17 @@ sub readrrf
 		# Read the zone's rollrec record.
 		#
 		$rr = rollrec_fullrec($zone);
+
+		#
+		# Save the *actual* zonename.  $zone is the name of the
+		# rollrec entry; $zonenames{$zone} is the 'zonename' field
+		# in the rollrec.
+		#
+		$zonenames{$zone} = $zone;
+		if(defined($rr->{'zonename'}))
+		{
+			$zonenames{$zone} = $rr->{'zonename'}
+		}
 
 		#
 		# Save the current phase and rollover type.
@@ -1633,6 +1649,10 @@ sub infostripe
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$RRFCOL,$lab);
 
+	$lab = $zonetab->Label(-text => ' ',
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,$INFO1,$lab);
+
 	$lab = $zonetab->Label(-text => $rollcntmsg,
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$ROLLCNTCOL,$lab);
@@ -1671,11 +1691,11 @@ sub infostripe
 
 	$lab = $zonetab->Label(-text => ' ',
 			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$INFO4,$lab);
+	$zonetab->put($INFOROW,$INFO5,$lab);
 
 	$lab = $zonetab->Label(-text => ' ',
 			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$INFO5,$lab);
+	$zonetab->put($INFOROW,$INFO6,$lab);
 
 	painter();
 }
@@ -1689,13 +1709,17 @@ sub headerstripe
 {
 	my $lab;
 
-	$lab = $zonetab->Label(-text => 'Zone Name    ',
+	$lab = $zonetab->Label(-text => 'Rollrec Name ',
 			       -font => $font, -background => 'tan');
 	$zonetab->put($TITLEROW,$NAMECOL,$lab);
 
+	$lab = $zonetab->Label(-text => 'Zone Name    ',
+			       -font => $font, -background => 'tan');
+	$zonetab->put($TITLEROW,$ZONECOL,$lab);
+
 	$lab = $zonetab->Label(-text => 'Status',
 			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,$PHASECOL,$lab);
+	$zonetab->put($TITLEROW,$phasecol,$lab);
 
 	if($showzsksets)
 	{
@@ -1732,6 +1756,8 @@ sub zonestripe
 	my $phase    = shift;				# Zone's rollover phase.
 	my $chronos  = shift || " ";			# Expiration-time data.
 
+	my $krf;					# Zone's keyrec file.
+	my $zonename;					# Actual zonename.
 	my $fgcolor  = $NORMALFG;			# Foreground color.
 	my $bgcolor;					# Background color.
 	my $phasecolor;					# Color of phase column.
@@ -1798,11 +1824,19 @@ sub zonestripe
 	}
 
 	#
+	# Get the keyrec file and actual zone name.
+	#
+	$krf = $keyrecs{$zone};
+	keyrec_read($krf);
+	$zonename = $zonenames{$zone};
+
+	#
 	# Handle skipped zones here.  We won't do anything if skipped zones
 	# shouldn't be displayed.  Otherwise, we'll just put up a single line.
 	#
-	#  column 1    column 2    column 3    column 4     column 5    column 6
-	#  zone name   "skipped"   <blank>     <blank>     <blank>     <blank>
+	#  col 0    col 1    col 2     col 3      col 4      col 5      col 6
+	#  rollrec  zone    "skipped"  <blank>    <blank>    <blank>    <blank>
+	#  name     name
 	#
 	if(($rollers{$zone} == 0) || ($phase == -42))
 	{
@@ -1824,11 +1858,16 @@ sub zonestripe
 				       -background => $bgcolor);
 		$zonetab->put($row0,$NAMECOL,$lab);
 
+		$lab = $zonetab->Label(-text => $zonename, -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+		$zonetab->put($row0,$ZONECOL,$lab);
+
 		$lab = $zonetab->Label(-text => $zlabel,
 				       -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor);
-		$zonetab->put($row0,$PHASECOL,$lab);
+		$zonetab->put($row0,$phasecol,$lab);
 
 		if($showzsksets)
 		{
@@ -1861,7 +1900,7 @@ sub zonestripe
 
 	############################################
 	#
-	# First column:  zone name
+	# First column:  rollrec name
 	#
 	$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
 	$zonetab->put($row0,0,$blank);
@@ -1874,46 +1913,53 @@ sub zonestripe
 				 -background => $bgcolor);
 	$zonetab->put($row2,$NAMECOL,$blank);
 
+	############################################
+	#
+	# Second column:  zone name
+	#
+	$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+	$zonetab->put($row0,$ZONECOL,$blank);
+	$lab = $zonetab->Label(-text => $zonename, -font => $font,
+			       -foreground => $fgcolor,
+			       -background => $bgcolor);
+
+	$zonetab->put($row1,$ZONECOL,$lab);
+	$blank = $zonetab->Label(-text => ' ', -font => $font,
+				 -background => $bgcolor);
+	$zonetab->put($row2,$ZONECOL,$blank);
+
 	###########################################
 	#
-	# Second column:  zone rollover phase
+	# Third column:  zone rollover phase
 	#
 	$phasestr = "$rolltype phase $phase";
 	$phasestr = " " if($phase == 0);
 	$lab = $zonetab->Label(-text => $phasestr, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
-	$zonetab->put($row0,$PHASECOL,$lab);
+	$zonetab->put($row0,$phasecol,$lab);
 	$lab = $zonetab->Label(-text => $phasedescr,
 			       -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
-	$zonetab->put($row1,$PHASECOL,$lab);
+	$zonetab->put($row1,$phasecol,$lab);
 	$lab = $zonetab->Label(-text => $chronos, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
-	$zonetab->put($row2,$PHASECOL,$lab);
+	$zonetab->put($row2,$phasecol,$lab);
 
 	###########################################
 	#
-	# Interlude:  Get the keyrec file.
-	#
-
-	my $krf = $keyrecs{$zone};
-	keyrec_read($krf);
-
-	###########################################
-	#
-	# Third and fourth columns:  ZSKs
+	# Fourth and fifth columns:  ZSKs
 	#
 	if($showzsksets)
 	{
 		#
 		# Get the zone's key names.
 		#
-		$zskcur = keyrec_recval($zone,'zskcur');
-		$zskpub = keyrec_recval($zone,'zskpub');
-		$zsknew = keyrec_recval($zone,'zsknew');
+		$zskcur = keyrec_recval($zonename,'zskcur');
+		$zskpub = keyrec_recval($zonename,'zskpub');
+		$zsknew = keyrec_recval($zonename,'zsknew');
 
 		#
 		# Add some spacing to the fields.
@@ -1958,15 +2004,15 @@ sub zonestripe
 
 	###########################################
 	#
-	# Fifth and sixth columns:  KSKs
+	# Sixth and seventh columns:  KSKs
 	#
 	if($showksksets)
 	{
 		#
 		# Get the zone's key names.
 		#
-		$kskcur = keyrec_recval($zone,'kskcur');
-		$kskpub = keyrec_recval($zone,'kskpub');
+		$kskcur = keyrec_recval($zonename,'kskcur');
+		$kskpub = keyrec_recval($zonename,'kskpub');
 
 		#
 		# Add some spacing to the fields.
@@ -2415,7 +2461,8 @@ sub getcolor
 	my $base = shift;		# Base-color flag.
 
 	my $band;			# Zone's output band.
-	my $color;			# Color to return.
+	my $color;			# Color array we'll use.
+	my $colorname;			# Color to return.
 
 	#
 	# Return this skipped-zone color if this zone isn't rolling.
@@ -2444,8 +2491,25 @@ sub getcolor
 	# Get the background color for this zone in this phase and
 	# return the color.
 	#
-	return($color->[0]) if($base || $noshading);
-	return($color->[$phase]);
+	if($base || $noshading)
+	{
+		$colorname = $color->[0]
+	}
+	else
+	{
+		$colorname = $color->[$phase];
+	}
+
+	#
+	# Get the background color for this zone in this phase and
+	# return the color.
+	#
+	$colorname = $skipcolor if(!defined($colorname));
+
+	#
+	# Return the appropriate color name.
+	#
+	return($colorname);
 }
 
 #---------------------------------------------------------------------------
