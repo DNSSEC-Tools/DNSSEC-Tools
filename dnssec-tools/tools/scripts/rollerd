@@ -519,7 +519,7 @@ sub rollkeys
 			#
 			# Check value and file existence, etc.
 			#
-			$krr = opts_zonekr($rrr->{'keyrec'}, $rname);
+			$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
 
 			#
 			# If we're in phases 2-3, make sure to use the
@@ -624,7 +624,7 @@ sub zsk_expired
 	# Get the rollin' key's keyrec for our zone.
 	#
 	$krname = $rr{'keyrec'};
-	$krec = zonekeykr($rname,$krname,$keyset);
+	$krec = zonekeykr($rname,$rr{'zonename'},$krname,$keyset);
 	if($krec == 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for ZSK \"$keyset\" in \"$krname\"");
@@ -896,7 +896,7 @@ sub zsk_phase2
 	#
 	# Get the keyrec.
 	#
-	$krr = opts_zonekr($krf,$rname);
+	$krr = opts_zonekr($krf,$rr{'zonename'});
 	%krf = %$krr;
 
 	#
@@ -937,7 +937,7 @@ sub zsk_phase2
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,"ZSK phase 2");
+	$ret = loadzone($rndc,$rname,$rr{'zonename'},"ZSK phase 2");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to reload zone, rc - $ret");
@@ -993,7 +993,7 @@ sub zsk_phase4
 	# Get the keyrec.
 	#
 	rolllog_log(LOG_TMI,$rname,"keyrec file is $krf");
-	$krr = opts_zonekr($krf,$rname);
+	$krr = opts_zonekr($krf,$rr{'zonename'});
 
 	#
 	# Adjust ZSKs in the zone's keyrec.
@@ -1016,7 +1016,7 @@ sub zsk_phase4
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,"ZSK phase 4");
+	$ret = loadzone($rndc,$rname,$rr{'zonename'},"ZSK phase 4");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to reload zone, rc - $ret");
@@ -1105,7 +1105,7 @@ sub ksk_expired
 	# Get the rollin' key's keyrec for our zone.
 	#
 	$krname = $rr{'keyrec'};
-	$krec = zonekeykr($rname,$krname,$keyset);
+	$krec = zonekeykr($rname,$rr{'zonename'},$krname,$keyset);
 	if($krec == 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"unable to find a KSK keyrec for \"$keyset\" in \"$krname\"");
@@ -1389,7 +1389,7 @@ sub ksk_phase2
 	#
 	# Get the keyrec.
 	#
-	$krr = opts_zonekr($krf,$rname);
+	$krr = opts_zonekr($krf,$rr{'zonename'});
 
 	#
 	# Sign the zone with a new Published KSK.
@@ -1403,7 +1403,7 @@ sub ksk_phase2
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,"KSK phase 2");
+	$ret = loadzone($rndc,$rname,$rr{'zonename'},"KSK phase 2");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
@@ -1454,7 +1454,7 @@ sub ksk_phase4
 	#
 	# Get the keyrec.
 	#
-	$krr = opts_zonekr($krf,$rname);
+	$krr = opts_zonekr($krf,$rr{'zonename'});
 
 	#
 	# Roll the Published KSK to the Current KSK.
@@ -1575,22 +1575,28 @@ sub ksk_phase6
 # Routine:	ksk_phase7()
 #
 # Purpose:	Perform the phase 7 steps of the KSK rollover.  These are:
+#			- load the zone
+#			- archive keys that need to be archived
+#			- move to phase 0
+#			- save a timestamp for rollover completion
 #
 #
 sub ksk_phase7
 {
-	my $rname = shift;		# Name of rolling zone.
+	my $rname = shift;		# Name of rolling rollrec.
 	my $rrr = shift;		# Reference to zone's rollrec record.
 
 	my %rr = %$rrr;			# Rollrec hash.
 	my $krf;			# Rollrec's keyrec name.
+	my $zname;			# Name of rolling zone.
+	my $keyarch_cmd;		# Keyarch command string.
 
 	my $ret;			# Result from command executions.
 
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,"KSK phase 7");
+	$ret = loadzone($rndc,$rname,$rr{'zonename'},"KSK phase 7");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
@@ -1601,11 +1607,14 @@ sub ksk_phase7
 	#
 	$krf = $rr{'keyrec'};
 
-#	my $keyarch_cmd = "$keyarch -dtconf $dtcf -zone $rname $krf -verbose";
-	my $keyarch_cmd = "$keyarch -dtconf $dtcf -zone $rname $krf -quiet";
+	#
+	# Set up the keyarch command we'll be executing.
+	#
+	$zname = $rr{'zonename'};
+	$keyarch_cmd = "$keyarch -dtconf $dtcf -zone $zname $krf -verbose";
 
 	rolllog_log(LOG_TMI,$rname,"keyarch:  running <$keyarch_cmd>");
-	$ret = runner($rname,"$keyarch_cmd",$krf,0);
+	$ret = runner($rname,"$keyarch_cmd",$krf,1,1);
 	if($ret < 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
@@ -1976,7 +1985,7 @@ sub zskphase
 	# Get the rollin' key's keyrec for our zone.
 	#
 	$krname = $rr{'keyrec'};
-	$setrec = zonekeykr($rname,$krname,"zskcur");
+	$setrec = zonekeykr($rname,$rr{'zonename'},$krname,"zskcur");
 	if($setrec == 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for the zskcur signing set in \"$krname\"");
@@ -2081,7 +2090,7 @@ sub kskphase
 	# Get the rollin' KSK's keyrec for our zone.
 	#
 	$krname = $rr{'keyrec'};
-	$setrec = zonekeykr($rname,$krname,"kskcur");
+	$setrec = zonekeykr($rname,$rr{'zonename'},$krname,"kskcur");
 	if($setrec == 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for the kskcur signing set in \"$krname\"");
@@ -2195,7 +2204,15 @@ sub signer
 	#
 	if($zsflag !~ /-zone/)
 	{
-		$zsflag .= " -zone $rname";
+		$zsflag .= " -zone $rrr->{'zonename'}";
+	}
+
+	#
+	# If the -krf flag wasn't specified, we'll force it in here.
+	#
+	if($zsflag !~ /-krf/)
+	{
+		$zsflag .= " -krf $rrr->{'keyrec'}";
 	}
 
 	#
@@ -2217,12 +2234,9 @@ sub signer
 	#
 	# Have zonesigner sign the zone for us.
 	#
-	$ret = runner($rname,$cmdstr,$rrr->{'keyrec'},1);
+	$ret = runner($rname,$cmdstr,$rrr->{'keyrec'},1,0);
 	$ret >>= 8;
 
-	#
-	# Mark the zone as skipped if we couldn't sign it.
-	#
 	if($ret != 0)
 	{
 		skipnow($rname);
@@ -2246,6 +2260,7 @@ sub runner
 	my $cmd = shift;			# Command to execute.
 	my $krf = shift;			# Zone's keyrec file.
 	my $errflag = shift;			# On-error flag.
+	my $negerrflag = shift;			# Only-negative-error flag.
 
 	my $ret;				# Command's return code.
 	my $out = '';				# Command's output.
@@ -2269,8 +2284,9 @@ sub runner
 	{
 		$out .= $_;
 	}
+	chomp $out;
 	close(ZS);
-	$ret = $?;
+	$ret = $? >> 8;;
 
 	#
 	# If the error flag is set and the command exitted with an error,
@@ -2278,9 +2294,9 @@ sub runner
 	#
 	if($errflag)
 	{
-		if(($ret >> 8) != 0)
+		if((! $negerrflag && ($ret != 0)) ||
+		   (  $negerrflag && ($ret <  0)))
 		{
-			chomp $out;
 
 			rolllog_log(LOG_ERR,$rname,"execution error for command \"$cmd\"");
 			rolllog_log(LOG_ERR,$rname,"error output - \"$out\"");
@@ -2304,7 +2320,8 @@ sub runner
 #
 sub zonekeykr
 {
-	my $rname = shift;			# Name of rollrec rec.
+	my $rname = shift;			# Name of rollrec record.
+	my $zname = shift;			# Name of zone.
 	my $krname = shift;			# Name of keyrec.
 	my $key = shift;			# Key to check.
 
@@ -2337,10 +2354,10 @@ sub zonekeykr
 	#
 	# Get the zone's keyrec and complain if it doesn't exist.
 	#
-	$krec = keyrec_fullrec($rname);
+	$krec = keyrec_fullrec($zname);
 	if(!defined($krec))
 	{
-		rolllog_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for zone \"$rname\"");
+		rolllog_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for zone \"$zname\"");
 		return(0);
 	}
 	%kh   = %$krec;
@@ -2646,10 +2663,24 @@ sub bootmsg
 # Routine:	rrfchk()
 #
 # Purpose:	This routine performs initial checking of the rollrec file.
-#		It checks each roll rollrec to ensure its zonefile and keyrec
-#		file exist.  If one or both don't exist, the rollrec's type
-#		will be changed into a skip rollrec.  This prevents lots of
-#		unnecessary repeated log messages of an invalid rollrec.
+#		Several errors and problems are checked for in each rollrec
+#		marked as a a roll rollrec.
+#
+#		Errors:
+#			The following errors are checked:
+#				- the zonefile exists
+#				- the keyrec file exists
+#
+#			If any of these are violated, the rollrec's type will
+#			be changed to a skip rollrec.  This prevents lots of
+#			unnecessary repeated log messages of an invalid rollrec.
+#
+#		Problems:
+#			The following problems are checked:
+#				- no zonename field exists
+#
+#			If any of these problems are found, they will be fixed.
+#			
 #
 sub rrfchk
 {
@@ -2709,6 +2740,10 @@ sub rrfchk
 		$prefix = $xqtdir;
 		$prefix = $rr{'directory'} if(defined($rr{'directory'}));
 
+		#--------------------------------------------------
+		# Errors...
+		#
+
 		#
 		# Get our important files.
 		#
@@ -2731,6 +2766,29 @@ sub rrfchk
 			rolllog_log(LOG_ERR,$rname,"keyrec \"$keyrec\" does not exist");
 			$errs++;
 		}
+
+		#--------------------------------------------------
+		# Problems...
+		#
+
+		#
+		# Add a zonename field to the file and our rollrec hash
+		# if it isn't already in the hash.
+		#
+		if(!defined($rr{'zonename'}))
+		{
+			rolllog_log(LOG_INFO,$rname,"adding missing zonename field ($rname) to rollrec");
+			$rr{'zonename'} = $rname;
+			rollrec_setval($rname,'zonename',$rname);
+		}
+
+		#
+		# Get our important files.
+		#
+		$zonefile = $rr{'zonefile'};
+		$zonefile = "$prefix/$zonefile" if($zonefile !~ /^\//);
+		$keyrec	  = $rr{'keyrec'};
+		$keyrec	  = "$prefix/$keyrec" if($keyrec !~ /^\//);
 
 		#
 		# Skip this record if the zonefile and keyrec file exist.
@@ -4186,7 +4244,8 @@ sub controllers
 sub loadzone
 {
 	my $rndc = shift;				# Zone-loading program.
-	my $rname = shift;				# Zone to reload.
+	my $rname = shift;				# Rollrec name of zone.
+	my $zonename = shift;				# Zone to reload.
 	my $phase = shift;				# Zone's current phase.
 	my $ret;					# Return code.
 
@@ -4203,7 +4262,7 @@ sub loadzone
 	# Reload the zone for real.
 	#
 	rolllog_log(LOG_INFO,$rname,"reloading zone for $phase\n");
-	$ret = rollmgr_loadzone($rndc,$rname);
+	$ret = rollmgr_loadzone($rndc,$zonename);
 	return($ret);
 }
 
