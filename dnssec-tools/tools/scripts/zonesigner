@@ -78,6 +78,12 @@ my $DEF_REUSEZSK	= 0;			# Re-use ZSKs.
 my $DEF_RFC5011	        = 1;			# RFC5011 Revocation 
 
 #
+# Maximum number of key-creation attempts.
+# (This should probably be a configuration value.)
+#
+my $MAXTRIES = 10;
+
+#
 # Arguments for updzonerec().
 #
 my $UPD_KSKS	= 0x01;				# Only update KSK keyrecs.
@@ -1502,7 +1508,7 @@ sub genksk
 {
 	my $keytype = shift;			# Type of new key.
 
-	my $ksk;				# KSK name.
+	my $ksk;				# Full KSK name.
 	my $cmd;				# Key generation command line.
 	my $cmdopts;				# Options for key generation.
 	my $zskdir;				# ZSK directory for saving.
@@ -1517,16 +1523,15 @@ sub genksk
 	if($showkeycmd)	{ print "\t$cmd\n";	 }
 
 	#
-	# Execute the command to create the new KSK.
+	# Create the new KSK.
 	#
-	$ksk = System_output($cmd);
-	if($? != 0)
+	$ksk = makekey($cmd);
+	if($ksk eq '')
 	{
-		print STDERR "unable to generate KSK key file;\n";
-		print STDERR "$keygen returned $?\n" if($verbose);
+		print STDERR "unable to generate KSK key file\n";
 		exit(1);
 	}
-	chomp $ksk;
+
 	vmed_print("new KSK - $ksk\n\n");
 
 	#
@@ -1603,14 +1608,13 @@ sub genzsk
 	#
 	# Create the new ZSK key.
 	#
-	$zsk = System_output($cmd);
-	if($? != 0)
+	$zsk = makekey($cmd);
+	if($? eq '')
 	{
-		print STDERR "unable to generate $keytype ZSK key file;\n";
-		print STDERR "$keygen returned $?\n" if($verbose > $VERBOSE_LOW);
+		print STDERR "unable to generate $keytype ZSK key file\n";
 		exit(1);
 	}
-	chomp $zsk;
+
 	vmed_print("new \"$keytype\" ZSK - $zsk\n");
 
 	#
@@ -1636,6 +1640,61 @@ sub genzsk
 	delete $opts{'kgopts'} if($kgopts ne "");
 
 	return($zsk);
+}
+
+#----------------------------------------------------------------------
+# Routine:	makekey()
+#
+# Purpose:	Generate a new key with the given command.  We'll try several
+#		times to create a new key.  We'll tolerate a number of name
+#		collisions with an existing keys, but will eventually give
+#		up.  The collisions will actually be with keyrec names.
+#
+# Return Values:
+#		- A key name will be returned on success.
+#		- An empty string will be returned if the key creation failes
+#		  or if there are too many attempts.
+#
+sub makekey
+{
+	my $cmd = shift;			# Command to execute.
+	my $key;				# Generated key name.
+	my $ind;				# Loop index.
+
+	#
+	# Try a bunch of times to create a new key.  If we have a name
+	# collision with an existing key, we'll try again.
+	#
+	for($ind=0; $ind < $MAXTRIES; $ind++)
+	{
+		#
+		# Create a new key.
+		#
+		$key = System_output($cmd);
+		if($? != 0)
+		{
+			print STDERR "$keygen returned $?\n" if($verbose);
+			return('');
+		}
+		chomp $key;
+
+		#
+		# Return success if there isn't a keyrec with this name.
+		#
+		return($key) if(!keyrec_exists($key));
+
+		#
+		# Delete the created keys.
+		#
+		unlink("$key.key");
+		unlink("$key.private");
+	}
+
+	#
+	# Return failure.
+	#
+	print STDERR "too many key name collisions\n";
+	return('');
 }
 
 #----------------------------------------------------------------------
