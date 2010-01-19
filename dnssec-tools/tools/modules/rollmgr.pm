@@ -1621,11 +1621,11 @@ sub rollmgr_getcmd
 	# if we have anything queued up, process those first.
 	#
 	my $cmdandvalue = rollmgr_getqueueitem();
-	return (@$cmdandvalue)
-	  if (defined($cmdandvalue) && ref($cmdandvalue) eq 'ARRAY');
+	return(@$cmdandvalue)
+	    if(defined($cmdandvalue) && (ref($cmdandvalue) eq 'ARRAY'));
 
 	#
-	# set a time limit on how long we'll wait for the connection.
+	# Set a time limit on how long we'll wait for the connection.
 	# Our alarm handler is a dummy, only intended to keep us from
 	# waiting forever.
 	#
