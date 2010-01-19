@@ -1064,13 +1064,13 @@ sub general_cmds
 		#
 		if($selzone ne '')
 		{
-			$args = "$rcmd $selzone";
+			$args = "$rcmd \"$selzone\"";
 		}
 		else
 		{
 			$zone = getzone($rcmd);
 			return if($zone eq "");
-			$args = "$rcmd $zone";
+			$args = "$rcmd \"$zone\"";
 		}
 	}
 
@@ -1096,7 +1096,7 @@ sub general_cmds
 		}
 
 		#
-		# Quiety run the command again.
+		# Quietly run the command again.
 		*
 		$rollcmd = "$rollctl -q $args";
 		system($rollcmd);
@@ -1148,13 +1148,13 @@ sub zskcmds
 		#
 		if($selzone ne '')
 		{
-			$args = "$rcmd $selzone";
+			$args = "$rcmd \"$selzone\"";
 		}
 		else
 		{
 			$zone = getzone($rcmd);
 			return if($zone eq "");
-			$args = "$rcmd $zone";
+			$args = "$rcmd \"$zone\"";
 		}
 	}
 
@@ -1179,7 +1179,7 @@ sub zskcmds
 			exit(1);
 		}
 
-		$rollcmd = "$rollctl -q $args";
+		$rollcmd = "$rollctl -q -$args";
 		system($rollcmd);
 
 		#
@@ -1235,7 +1235,7 @@ sub kskcmds
 		#
 		# Move the selected zone into rollover phase 7.
 		#
-		$ret = system("$rollctl -q -dspub $zone");
+		$ret = system("$rollctl -q -dspub \"$zone\"");
 	}
 	elsif($rcmd eq "dspuball")
 	{
@@ -2109,7 +2109,7 @@ sub rollerdcmd
 	#
 	# Break the line into its pieces.
 	#
-	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-]+)\W+([0-9]+)/;
+	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/ 	]+)\W+([0-9]+)/;
 	$cmd	= $1;
 	$zone	= $2;
 	$phase	= $3;
@@ -3884,7 +3884,7 @@ rebuilds or if B<blinkenlights>' performance slows too much.  Raising the
 number will reduce the screen rebuilds; lowering the number will (may)
 increase performance.
 
-=back 4
+=back
 
 =head1 COPYRIGHT
 
