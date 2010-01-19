@@ -1287,10 +1287,11 @@ A I<rollrec> file is organized in sets of I<rollrec> records.  I<rollrec>s
 describe the state of a rollover operation.  A I<rollrec> consists of a set
 of keyword/value entries.  The following is an example of a I<rollrec>:
 
-    roll "example.com"
-	zonefile		"/usr/etc/dnssec-tools/zones/db.example.com"
-	keyrec			"/usr/etc/dnssec-tools/keyrec/example.keyrec"
-	directory		"/usr/etc/dnssec-tools/dir-example.com"
+    roll "example"
+	zonename		"example.com"
+	zonefile		"/etc/dnssec-tools/zones/db.example.com"
+	keyrec			"/etc/dnssec-tools/keyrec/example.keyrec"
+	directory		"/etc/dnssec-tools/dir-example.com"
 	kskphase		"0"
 	zskphase		"2"
 	maxttl			"86400"
@@ -1304,12 +1305,13 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
         istrustanchor           "yes"
         holddowntime            "8W"
 
-Additionally cmds to be acted upon at start up can be defined using
-the "cmd" token as shown in the following example.  Use this feature
-with caution and only if you understand the internals of the
-application.
+Additionally, commands to be acted upon at start-up can be defined using the
+"cmd" token as shown in the following example.
 
     cmd "rollzsk example.com"
+
+Use this feature with caution and only if you understand the internals of
+B<rollerd> and I<exactly> what will be done by the specified command.
 
 The first step in using this module must be to read the I<rollrec> file.  The
 I<rollrec_read()> interface reads the file and parses it into an internal
