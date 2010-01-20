@@ -1,11 +1,11 @@
-$TTL	1m
+$TTL	30
 
 @	IN	SOA	test.com.	tewok.leodhas.test.com. (
 					2005035548	; serial
 					3h		; refresh
 					30m		; retry
 					5m		; expire
-					1m )		; minimum
+					30 )		; minimum
 
 @		IN  	NS 	leodhas.test.com.
 
