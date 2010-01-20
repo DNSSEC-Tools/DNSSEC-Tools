@@ -1,5 +1,5 @@
 #
-# Copyright 2007-2008 SPARTA, Inc.  All rights reserved.
+# Copyright 2007-2010 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # Makefile for building demo data for the basic rollerd demo.
@@ -19,7 +19,6 @@ basic-long:	long
 
 new-files:
 	cp save-demo.rollrec demo.rollrec
-	cp save-db.cache db.cache
 	cp save-example.com example.com
 	cp save-test.com test.com
 
@@ -28,6 +27,9 @@ new-files:
 zones-short:
 	zonesigner -zsklife 60 -genkeys example.com
 	zonesigner -zsklife 30 -e +25 -genkeys test.com
+
+#	zonesigner -zsklife 60 -kskdirectory /tmp/e-ksk -zskdirectory /tmp/e-zsk -genkeys example.com
+#	zonesigner -zsklife 30 -e +25 -kskdirectory /tmp/t-ksk -zskdirectory /tmp/t-zsk -genkeys test.com
 
 zones-same:
 	zonesigner -zsklife 60 -genkeys example.com
@@ -46,6 +48,7 @@ same:	clean zones-same new-files
 
 clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
-	rm -f example.com test.com db.cache demo.rollrec
+	rm -f example.com test.com demo.rollrec
+	rm -fr SAVE-KEYS*
 	@echo NOT deleting log.demo
 
