@@ -129,7 +129,7 @@ sub dt_adminmail
 			defined($dtconf{'mailer-server'}));
 	push @mailargs, Server => $dtconf{'mailer-server'}
 		if (defined($dtconf{'mailer-server'}));
-	$mh = $msg->open;
+	$mh = $msg->open(@mailargs);
 	print $mh $msgbody . "\n";
 
 	#
