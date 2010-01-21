@@ -1,5 +1,5 @@
 #
-# Copyright 2006-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -32,6 +32,7 @@ my $installdir = getprefixdir() . "/bin"; # DNSSEC-Tools installation directory.
 my %defaults =
 (
 	"admin-email"	   => "root",		# Admin's email address.
+	"archivedir"	   => getconfdir() . "/key-archive",
 	"algorithm"	   => "rsasha1",	# Encryption algorithm.
 	"enddate"	   => "+2592000",	# Zone life, in seconds.
 	"entropy_msg"	   => 1,		# Display entropy message flag.
@@ -203,6 +204,10 @@ The following are the defaults defined for DNSSEC-Tools.
 
 This default holds the default email address for the DNSSEC-Tools
 administrator.
+
+=item B<archivedir>
+
+This default holds the default directory in which keys will be archived.
 
 =item B<algorithm>
 
@@ -470,7 +475,7 @@ This default holds the path to the DNSSEC-Tools B<zonesigner> program.
 
 =head1 COPYRIGHT
 
-Copyright 2006-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
