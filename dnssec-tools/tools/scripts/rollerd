@@ -4491,11 +4491,12 @@ B<rollerd> uses the B<zonesigner> command during KSK rollover phases 2 and 4.
 B<zonesigner> will generate keys as required and sign the zone during these
 two phases.
 
-Currently, steps 5 and 6 are handled manually.  In step 5, B<rollerd> informs
-the administrator that the zone's keyset must be transferred to its parent
-in order for rollover to continue.  In step 6, after the parent has published
-a new DS record, the administrator uses B<rollctl> to inform B<rollerd> that
-the DS record has been published and rollover may continue.
+Currently, step 6 is handled manually.  In step 5, B<rollerd> informs the
+administrator via email that the zone's keyset must be transferred to its
+parent in order for rollover to continue.  In step 6, after the keyset has
+been transferred to the parent and the parent has published a new DS record,
+the administrator uses B<rollctl> to inform B<rollerd> that the DS record has
+been published and rollover may continue.
 
 The Double Signature Method of key rollover is defined in the Step-by-Step
 DNS Security Operator Guidance Document.  See that document for more detailed
@@ -4545,6 +4546,7 @@ data needed by B<rollerd> and some data useful to a user.  Below is a
 sample I<rollrec> entry:
 
 	roll "example.com"
+		zonename        "example.com"
 		zonefile        "example.com.signed"
 		keyrec          "example.com.krf"
 		directory	"dir-example.com"
@@ -4561,9 +4563,11 @@ sample I<rollrec> entry:
 		istrustanchor   "no"
         	holddowntime    "60D"
 
-The first line gives the I<rollrec> entry's name.  The following lines give
-the zone's signed zone file, I<keyrec> file, the current rollover phases, the
-rollover timestamps, and other information.
+The first line gives the I<rollrec> entry's name.  The name distinguishes it
+from other I<rollrec> entries and must be unique.  This may be the zone's
+name, but this is not a requirement.  The following lines give the zone's
+name, the zone's signed zone file, I<keyrec> file, the current rollover
+phases, the rollover timestamps, and other information.
 
 If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
 I<rollrec> will be changed into a "skip" I<rollrec>.  That record will not be
@@ -4587,13 +4591,13 @@ absolute path, it will be used as is.
 
 =head2 Controlling B<rollerd> with B<rollctl>
 
-The B<rollctl> command is used to control the behavior of B<rollerd>.
-A number of commands are available, such as starting or stopping rollover for
-a selected zone or all zones, turning on or off a GUI rollover display, and
-halting B<rollerd> execution.  The communications path between
-B<rollerd> and B<rollctl> is operating system-dependent.  On Unix-like
-systems, it is a Unix pipe that should B<only> be writable by root.
-A more detailed explanation of B<rollctl> may be found in I<rollctl(8)>.
+The B<rollctl> command is used to control the behavior of B<rollerd>.  A
+number of commands are available, such as starting or stopping rollover for a
+selected zone or all zones, turning on or off a GUI rollover display, and
+halting B<rollerd> execution.  The communications path between B<rollerd> and
+B<rollctl> is operating system-dependent.  On Unix-like systems, it is a Unix
+pipe that should B<only> be writable by the user which runs I<rollerd>.  A
+more detailed explanation of B<rollctl> may be found in I<rollctl(8)>.
 
 =head2 A Note About Files and Filenames
 
