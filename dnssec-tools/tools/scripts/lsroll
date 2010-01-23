@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 #
@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lsroll";
-my $VERS   = "$NAME version: 1.1";
+my $VERS   = "$NAME version: 1.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.6.pre2";
 
 #######################################################################
@@ -38,7 +38,8 @@ my @opts =
 
 	# Data to display:
 		"type",			# Record type.
-		"zone",			# Zone files.
+		"zonename",		# Zone names.
+		"zonefile",		# Zone files.
 		"keyrec",		# Keyrec files.
 		"kskphase",		# KSK rollover phases.
 		"zskphase",		# ZSK rollover phases.
@@ -71,7 +72,9 @@ my $rollflag;
 my $skipflag;
 
 my $typeflag;
-my $zoneflag;
+my $nameflag;
+my $zonenameflag;
+my $zonefileflag;
 my $keyrecflag;
 my $kphaseflag;
 my $zphaseflag;
@@ -238,7 +241,9 @@ sub doopts
 	# Set the default flag values.
 	#
 	$typeflag	= 0;
-	$zoneflag	= 1;
+	$nameflag	= 1;
+	$zonenameflag	= 0;
+	$zonefileflag	= 1;
 	$keyrecflag	= 1;
 	$kphaseflag	= 1;
 	$zphaseflag	= 1;
@@ -258,7 +263,9 @@ sub doopts
 	if($skipflag)
 	{
 		$typeflag	= 0;
-		$zoneflag	= 1;
+		$nameflag	= 1;
+		$zonenameflag	= 0;
+		$zonefileflag	= 1;
 		$keyrecflag	= 1;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
@@ -277,7 +284,9 @@ sub doopts
 	if($long)
 	{
 		$typeflag	= 1;
-		$zoneflag	= 1;
+		$nameflag	= 1;
+		$zonenameflag	= 1;
+		$zonefileflag	= 1;
 		$keyrecflag	= 1;
 		$kphaseflag	= 1;
 		$zphaseflag	= 1;
@@ -294,7 +303,9 @@ sub doopts
 	elsif($terse)
 	{
 		$typeflag	= 0;
-		$zoneflag	= 0;
+		$nameflag	= 1;
+		$zonenameflag	= 0;
+		$zonefileflag	= 0;
 		$keyrecflag	= 0;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
@@ -313,7 +324,8 @@ sub doopts
 	# Now fold in the option values...
 	#
 	$typeflag	= 1 if($options{'type'});
-	$zoneflag	= 1 if($options{'zone'});
+	$zonefileflag	= 1 if($options{'zonefile'});
+	$zonenameflag	= 1 if($options{'zonename'});
 	$keyrecflag	= 1 if($options{'keyrec'});
 	$phasesflag	= 1 if($options{'phases'});
 	$dirflag	= 1 if($options{'directory'});
@@ -416,9 +428,8 @@ sub getrollrecs
 	foreach my $rn (sort(keys(%rollrecs)))
 	{
 		#
-		# Add quotes to the timestamps and save the zonename.
+		# Add quotes to the timestamps.
 		#
-		$rollrecs{$rn}{'zonename'} = "$rn";
 		$rollrecs{$rn}{'phasestart'} = "\"$rollrecs{$rn}{'phasestart'}\""; 
 		$rollrecs{$rn}{'ksk_rolldate'} = "\"$rollrecs{$rn}{'ksk_rolldate'}\""; 
 		$rollrecs{$rn}{'zsk_rolldate'} = "\"$rollrecs{$rn}{'zsk_rolldate'}\""; 
@@ -565,10 +576,11 @@ sub makeheader
 	$rr{'kskphase'}		= 'KSK Phase';
 	$rr{'loglevel'}		= 'Log Level';
 	$rr{'maxttl'}		= 'Max-TTL';
+	$rr{'rollrec_name'}	= 'Name';
 	$rr{'phasestart'}	= 'Phase Start';
 	$rr{'phases'}		= 'KSK/ZSK';
 	$rr{'zonefile'}		= 'Zonefile';
-	$rr{'zonename'}		= 'Zone';
+	$rr{'zonename'}		= 'Zonename';
 	$rr{'zsk_rolldate'}	= 'Last ZSK Rollover';
 	$rr{'zskphase'}		= 'ZSK Phase';
 	$rr{'zsargs'}		= 'Zonesigner Arguments';
@@ -595,6 +607,7 @@ sub showrollrecs
 	my $lastksk;				# Timestamp of last KSK roll.
 	my $lastzsk;				# Timestamp of last ZSK roll.
 	my $loglevel;				# Logging level.
+	my $name;				# Rollrec record name.
 	my $phases;				# Current KSK and ZSK phases.
 	my $phstart;				# Phase start in rollrec.
 	my $ttl;				# Maximum TTL in rollrec.
@@ -627,7 +640,8 @@ sub showrollrecs
 		# Set fields from the rollrec.  If this is a skip record,
 		# we won't get the phases, ttl, or phase start.
 		#
-		$type = $rr{'rollrec_type'};
+		$type	  = $rr{'rollrec_type'};
+		$name	  = $rr{'rollrec_name'};
 		$zonename = $rr{'zonename'};
 		$zonefile = $rr{'zonefile'};
 		$keyrec	  = $rr{'keyrec'};
@@ -648,9 +662,10 @@ sub showrollrecs
 		# Build the output string.
 		#
 		$prevkey = 'first-field';
-		$out  = outfld($rrn,'zonename',$zonename,1);
+		$out  = outfld($rrn,'rollrec_name',$name,1);
+		$out .= outfld($rrn,'zonename',$zonename,$zonenameflag);
 		$out .= outfld($rrn,'rollrec_type',$type,$typeflag);
-		$out .= outfld($rrn,'zonefile',$zonefile,$zoneflag);
+		$out .= outfld($rrn,'zonefile',$zonefile,$zonefileflag);
 		$out .= outfld($rrn,'keyrec',$keyrec,$keyrecflag);
 		if($phasesflag)
 		{
@@ -751,7 +766,8 @@ sub usage
 	print STDERR "\t\t-skip		skip records\n";
 	print STDERR "\tattribute-selection options:\n";
 	print STDERR "\t\t-type\t	record type\n";
-	print STDERR "\t\t-zone\t	zonefile\n";
+	print STDERR "\t\t-zonename\t	zonename\n";
+	print STDERR "\t\t-zonefile\t	zonefile\n";
 	print STDERR "\t\t-keyrec\t	keyrec file\n";
 	print STDERR "\t\t-kskphase	KSK rollover phase\n";
 	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
@@ -827,7 +843,8 @@ The table below shows the fields displayed for each output format.
     -------------        -------        -----        ----       ----
     rollrec name           yes           yes         yes        yes
     rollrec type           no            no          yes        no
-    zone name              yes           no          yes        yes
+    zone name              no            no          yes        yes
+    zone file              yes           no          yes        yes
     keyrec file            yes           no          yes        yes
     KSK phase              yes           no          yes        no
     ZSK phase              yes           no          yes        no
@@ -880,7 +897,15 @@ by B<lsroll>.
 Include each I<rollrec> record's type in the output.  The type will be either
 "roll" or "skip".
 
-=item B<-zone>
+=item B<-zonename>
+
+The record's zonename is included in the output.  The zonename is distinct
+from the record's I<rollrec> name, which is always included in the output.
+While these two fields are often the same, they need not be.  In split-zone
+zones, the I<rollrec> names must be different, while the I<zonename> field
+is the same. 
+
+=item B<-zonefile>
 
 The record's zonefile is included in the output.  This field is part
 of the default output.
@@ -1003,7 +1028,7 @@ Displays the version information for B<lsroll> and the DNSSEC-Tools package.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
