@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 #
@@ -22,6 +22,17 @@
 #			- mismatched rollover timestamps
 #		- contemporaneous KSK rollover and ZSK rollover
 #		- empty administrator field
+#		- zone file checks:
+#			- file doesn't exist
+#			- file is not a regular file
+#			- file is zero-length
+#		- keyrec file checks:
+#			- file doesn't exist
+#			- file is not a regular file
+#			- file is zero-length
+#		- zonename checks
+#			- zonename matches the SOA name in the zone file
+#			- zonename's keyrec record is a zone record
 #		- directory checks
 #			- non-existent directory
 #			- non-directory directory
@@ -50,13 +61,16 @@ use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::rolllog;
 use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
+
+use Net::DNS::ZoneFile::Fast;
 
 #
 # Version information.
 #
 my $NAME   = "rollchk";
-my $VERS   = "$NAME version: 0.9";
+my $VERS   = "$NAME version: 1.0";
 my $DTVERS = "DNSSEC-Tools Version: 1.6.pre2";
 
 #######################################################################
@@ -311,6 +325,9 @@ sub runchecks
 #				- file doesn't exist
 #				- file is not a regular file
 #				- file is zero-length
+#			- zonename checks
+#				- zonename matches the SOA name in the zone file
+#				- zonename's keyrec record is a zone record
 #			- directory checks
 #				- empty directory field
 #				- non-existent directory
@@ -335,6 +352,7 @@ sub rollrec_validate
 	my $loglevel;				# Logging level.
 	my $maxttl;				# Maximum TTL.
 	my $zonefile;				# Zonefile.
+	my $zonename;				# Zone name.
 	my $zsargs;				# Zonesigner arguments.
 	my $zskphase;				# Current ZSK phase.
 	my $zskdate;				# ZSK roll date string.
@@ -353,6 +371,7 @@ sub rollrec_validate
 	$loglevel = $rr{'loglevel'};
 	$maxttl	  = $rr{'maxttl'};
 	$zonefile = $rr{'zonefile'};
+	$zonename = $rr{'zonename'};
 	$zsargs	  = $rr{'zsargs'};
 	$zskdate  = $rr{'zsk_rolldate'};
 	$zskphase = $rr{'zskphase'};
@@ -478,6 +497,11 @@ sub rollrec_validate
 	}
 
 	#
+	# Make sure the zonename is the zonefile's SOA.
+	#
+	$errs += chkzone($rrname,$zonename,$zonefile,$krfile);
+
+	#
 	# Make sure we've got a non-empty set of zonesigner arguments.
 	#
 	if(defined($rr{'zsargs'}) && ($zsargs eq ""))
@@ -590,6 +614,107 @@ sub checkfile
 	# Return success.
 	#
 	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	chkzone()
+#
+# Purpose:	Check a zonename for validity.  This is defined as:
+#
+#			- the zonename matches the SOA name in the zone file
+#			- zonename's record in the keyrec file is a zone record
+#
+sub chkzone
+{
+	my $rrname = shift;			# Rollrec name.
+	my $zonename = shift;			# Zonename to check.
+	my $zonefile = shift;			# Rollrec's zone file.
+	my $krfile = shift;			# Rollrec's keyrec file.
+
+	my $soaname;				# SOA name from zone file.
+	my $errs = 0;				# Error count.
+
+	#
+	# If the zone file exists, we'll compare the SOA name to the zone
+	# name from the rollrec.
+	#
+	if(-f $zonefile)
+	{
+		$soaname = getrr($zonefile,'Net::DNS::RR::SOA');
+	   	if($zonename ne $soaname)
+		{
+			qprint("$rrname:  zonename \"$zonename\" not SOA in zonefile\n");
+			$errs++;
+		}
+	}
+
+	#
+	# If the keyrec file exists, we'll compare the zone keyrec's name to
+	# the zone name from the rollrec.
+	#
+	if(-f $krfile)
+	{
+		my $kr;					# Keyrec reference.
+
+		#
+		# Get the zone keyrec from the keyrec file.
+		#
+		keyrec_read($krfile);
+		$kr = keyrec_fullrec($zonename);
+		keyrec_close();
+
+		#
+		# Check the two zonenames.
+		#
+		if($kr->{'keyrec_type'} ne 'zone')
+		{
+			qprint("$rrname:  zonename \"$zonename\" not zone in keyrec file\n");
+			$errs++;
+		}
+
+	}
+
+	#
+	# Return the error count.
+	#
+	return($errs);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getrr()
+#
+# Purpose:	Return the value of a zone's resource record.  The first
+#		value of the specified record is returned.
+#
+sub getrr
+{
+	my $zf = shift;				# Zone file to check.
+	my $name = shift;			# Zone's resource name.
+
+	my $rref;				# Ref to resource records.
+	my @rrs = ();				# Zone's resource records.
+
+	#
+	# Parse the zone for its resource records.
+	#
+	$rref = Net::DNS::ZoneFile::Fast::parse(file => $zf);
+	@rrs = @$rref;
+
+	#
+	# Dig the needed hash out of the resource record array and return
+	# the name.
+	#
+	foreach my $rrr (@rrs)
+	{
+		my %rrh = %$rrr;
+
+		return($rrh{'name'}) if($rrr =~ /$name/);
+	}
+
+	#
+	# Return an error value.
+	#
+	return('');
 }
 
 #-----------------------------------------------------------------------------
@@ -777,6 +902,12 @@ If the file is not an absolute path and the file's I<rollrec> has a
 I<directory> entry, then the directory is prepended to the filename
 prior to performing any checks.
 
+=item * zonename checks
+
+Several checks are made for zonename.  The zonename must maatch the SOA
+name in the zone file, and the zonename's I<keyrec> record in its I<keyrec>
+file must be a zone record.
+
 =item * empty zsargs
 
 A zone has an empty zonesigner-arguments field.  If this field exists, it must
@@ -823,7 +954,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2006-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
@@ -838,6 +969,8 @@ B<rollinit(8)>
 
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
-B<file-rollrec(5)>
+B<file-rollrec(5)>,
+B<keyrec(8)>
+
 
 =cut
