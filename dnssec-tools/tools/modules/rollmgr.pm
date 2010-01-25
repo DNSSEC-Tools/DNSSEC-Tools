@@ -1,5 +1,5 @@
 #
-# Copyright 2005-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -96,7 +96,7 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::rolllog;
 
-our $VERSION = "0.91";
+our $VERSION = "1.0";
 
 our @ISA = qw(Exporter);
 
@@ -408,30 +408,46 @@ my %switchtab = %{$port_archs{$osclass}};
 
 ##############################################################################
 #
-# These are textual descriptions of the rolling phases
+# These are textual descriptions of the rolling phases.
 # 
 my @zsk_roll_phases =
-  ('Not Rolling',
-   'Waiting for the old zone data to expire from caches',
-   'Signing the zone with the KSK and published ZSK',
-   'Waiting for the old zone data to expire from caches',
-   'Adjusting keys in the keyrec and signing the zone with new ZSK',
-  );
+(
+	'Not Rolling',
+	'Waiting for old zone data to expire from caches',
+	'Signing zone with KSK and Published ZSK',
+	'Waiting for old zone data to expire from caches',
+	'Adjusting keys in keyrec and signing zone with New ZSK',
+);
 
 my @ksk_roll_phases =
-  ('Not Rolling',
-   'Waiting for the old zone data to expire from caches',
-   'Generating a new published KSK',
-   'Waiting for cache or holddown timer expiration',
-   'Rolling the KSK(s)',
-   'Transfer the new KSK keyset to the parent',
-   'Waiting for the parent to publish the new DS record',
-   'Reloading the zone',
-  );
+(
+	'Not Rolling',
+	'Waiting for old zone data to expire from caches',
+	'Generating new Published KSK',
+	'Waiting for cache or holddown timer expiration',
+	'Rolling the KSK(s)',
+	'Transfer New KSK keyset to parent',
+	'Waiting for parent to publish new DS record',
+	'Reloading the zone',
+);
+
+my $MAXKSK = 7;					# Maximum KSK phase number.
+my $MAXZSK = 4;					# Maximum ZSK phase number.
 
 my %key_phases = 
-  ( 'KSK' => \@ksk_roll_phases,
-    'ZSK' => \@zsk_roll_phases );
+(
+	'KSK' => \@ksk_roll_phases,
+	'ZSK' => \@zsk_roll_phases
+);
+
+#
+# Description-length values for rollmgr_get_phase().
+#	NOTE:  These should be dealt with as configuration values.
+#	       However, logging will be changing RSN, and we'll wait a bit.
+#
+my $PHASELONG	= 1;				# Use long descriptions.
+my $PHASESHORT	= 0;				# Use short descriptions.
+my $longorshort = $PHASESHORT;			# Description length to use.
 
 ##############################################################################
 ##############################################################################
@@ -1026,7 +1042,7 @@ sub unix_idfile
 #
 sub unix_set_idfile
 {
-    $UNIX_ROLLMGR_PIDFILE = $_[0];
+	$UNIX_ROLLMGR_PIDFILE = $_[0];
 }
 
 #--------------------------------------------------------------------------
@@ -1537,7 +1553,6 @@ sub rollmgr_channel
 #
 sub rollmgr_closechan
 {
-
 # print "rollmgr_closechan:  down in\n";
 	close(CLNTSOCK);
 }
@@ -1546,35 +1561,37 @@ sub rollmgr_closechan
 #
 # Routine:	rollmgr_queuecmd()
 #
-# Purpose:      This routine can be called internally to queue a command
-#          	for later processing via calls to rollmgr_getcmd().
-#          	It is useful when doing initial startup before full
-#          	processing is to commence.  Commands queued by this
-#          	process take precedence over commands received via the
-#          	command intervace (ie, via rollmgr_sendcmd()).
+# Purpose:	This routine can be called internally to queue a command
+#		for later processing via calls to rollmgr_getcmd().
+#		It is useful when doing initial startup before full
+#		processing is to commence.  Commands queued by this
+#		process take precedence over commands received via the
+#		command intervace (ie, via rollmgr_sendcmd()).
 #
 sub rollmgr_queuecmd
 {
-    my ($cmd, $value) = @_;
-    return 0 if (rollmgr_verifycmd($cmd) == 0);
-    push @queuedcmds, [$cmd, $value];
+	my ($cmd, $value) = @_;
+
+	return(0) if (rollmgr_verifycmd($cmd) == 0);
+	push @queuedcmds, [$cmd, $value];
 }
 
 #-----------------------------------------------------------------------------
 #
 # Routine:	rollmgr_getqueueitem()
 #
-# Purpose:      This routine can be called pull a command from the queue
-#               This is intended to process the the item, so it is removed
-#               from the queue.
+# Purpose:	This routine can be called pull a command from the queue
+#		This is intended to process the item, so it is removed
+#		from the queue.
 #
 sub rollmgr_getqueueitem
 {
-    if ($#queuedcmds > -1) {
-	my $cmd = shift @queuedcmds;
-	return $cmd;
-    }
-    return;
+	if($#queuedcmds > -1)
+	{
+		my $cmd = shift @queuedcmds;
+		return($cmd);
+	}
+	return;
 }
 
 
@@ -1582,16 +1599,17 @@ sub rollmgr_getqueueitem
 #
 # Routine:	rollmgr_getallqueuedcmds()
 #
-# Purpose:      This routine returns all the queued commands in the stack
-#               The items are left in place unless an truthful argument
-#               (e.g. "1") is passed in.
+# Purpose:	This routine returns all the queued commands in the stack
+#		The items are left in place unless an truthful argument
+#		(e.g. "1") is passed in.
 #
 sub rollmgr_getallqueuedcmds
 {
-    my $removefromqueue = shift;
-    my @results = @queuedcmds;
-    @queuedcmds = () if ($removefromqueue);
-    return @queuedcmds;
+	my $removefromqueue = shift;
+	my @results = @queuedcmds;
+
+	@queuedcmds = () if ($removefromqueue);
+	return(@queuedcmds);
 }
 
 
@@ -1846,14 +1864,41 @@ sub rollmgr_verifycmd
 # Routine:	rollmgr_get_phase()
 #
 # Purpose:	This routine translates the numerical phases of rolling
-#               keys into textual strings that are better descriptions
-#               for human consumption.
+#		keys into textual strings that are better descriptions
+#		for human consumption.
 #
 sub rollmgr_get_phase
 {
-    my ($keytype, $keyphase) = @_;
-    return '' if ($keyphase !~ /^\d$/); # must be a single digit number
-    return $key_phases{uc($keytype)}[$keyphase];
+	my ($keytype, $keyphase) = @_;
+	my $maxphase = -1;				# Maximum phase value.
+
+	#
+	# Don't return anything if the installer doesn't want long descritions.
+	#	NOTE:  This really should be a config value.
+	#
+	if($longorshort != $PHASELONG)
+	{
+		return('');
+	}
+
+	#
+	# Figure out the maximum phase for this key type.
+	#
+	$maxphase = $MAXKSK if($keytype eq 'KSK');
+	$maxphase = $MAXZSK if($keytype eq 'ZSK');
+
+	#
+	# Ensure the phase is within range and is a single digit.
+	#
+	if(($keyphase < 0) || ($keyphase > $maxphase) || ($keyphase !~ /^\d$/))
+	{
+		return('');
+	}
+
+	#
+	# Return the phase description.
+	#
+	return($key_phases{uc($keytype)}[$keyphase]);
 }
 
 1;
@@ -1895,6 +1940,8 @@ manager.
 
   rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,"example.com");
   ($retcode, $respmsg) = rollmgr_getresp();
+
+  $descr = rollmgr_get_phase('KSK', $phasecnt);
 
 =head1 DESCRIPTION
 
@@ -2084,6 +2131,17 @@ specific to the command sent.
 I<rollmgr_verifycmd()> verifies that I<cmd> is a valid command for B<rollerd>.
 1 is returned for a valid command; 0 is returned for an invalid command.
 
+1 is returned for a valid command; 0 is returned for an invalid command.
+
+=item I<rollmgr_get_phase(phasetype, phasenum)>
+
+I<rollmgr_get_phase()> returns a description of a particular phase for a
+particular type of rollover.  I<phasetype> specifies the type of rollover,
+and may be "KSK" or "ZSK".  I<phasenum> specifies the phase number whose
+description is desired.  This must be an integer between 0 and 7 (KSK) or 0
+and 4 (ZSK).  If an invalid phase type or phase number is specified, an empty
+string is returned. 
+
 =back
 
 =head1 WARNINGS
@@ -2096,7 +2154,7 @@ the file prior to opening it, but we can't do so without it being open.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
