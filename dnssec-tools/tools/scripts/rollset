@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 #
@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollset";
-my $VERS   = "$NAME version: 0.8";
+my $VERS   = "$NAME version: 1.0";
 my $DTVERS = "DNSSEC-Tools Version: 1.6.pre2";
 
 #######################################################################
@@ -36,6 +36,7 @@ my $doall   = 0;			# Edit all rollrec entries flag.
 #
 # Flag variables for options.
 #
+my $name	= "";
 my $zonename	= "";
 my $zonefile	= "";
 my $keyrec	= "";
@@ -51,13 +52,15 @@ my $deladm	= 0;
 my $deldir	= 0;
 my $dellog	= 0;
 my $delzsa	= 0;
+my $rstzn	= 0;
 
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"zone=s",			# Zone to edit.
+	"name=s",			# Rollrec to edit.
 	"roll",				# Make record a roll record.
 	"skip",				# Make record a skip record.
+	"zonename=s",			# New zonename value.
 	"file=s",			# New zonefile value.
 	"keyrec=s",			# New keyrec value.
 	"admin=s",			# New administrator email address.
@@ -70,6 +73,7 @@ my @opts =
 	"del-directory",		# Delete the directory line.
 	"del-loglevel",			# Delete the logging level line.
 	"del-zsargs",			# Delete the zonesigner arguments.
+	"reset-zonename",		# Reset the zonename fields.
 
 	"check",			# Run rollchk after edits.
 	"verbose",			# Give lotsa output.
@@ -127,7 +131,8 @@ sub doopts
 	#
 	# Set some flags based on the command line.
 	#
-	$zonename  = $options{'zone'};
+	$name	   = $options{'name'};
+	$zonename  = $options{'zonename'};
 	$zonefile  = $options{'file'};
 	$keyrec	   = $options{'keyrec'};
 	$admin	   = $options{'admin'};
@@ -142,6 +147,7 @@ sub doopts
 	$deldir	   = $options{'del-directory'};
 	$dellog	   = $options{'del-loglevel'};
 	$delzsa	   = $options{'del-zsargs'};
+	$rstzn	   = $options{'reset-zonename'};
 
 	$check	   = $options{'check'};
 	$verbose   = $options{'verbose'};
@@ -169,6 +175,11 @@ sub doopts
 	if(defined($zsargs) && $delzsa)
 	{
 		print STDERR "-zsargs and -del-zsargs are mutually exclusive\n";
+		exit(1);
+	}
+	if(defined($zonename) && $rstzn)
+	{
+		print STDERR "-zonename and -reset-zonename are mutually exclusive\n";
 		exit(1);
 	}
 
@@ -205,17 +216,17 @@ sub doopts
 
 
 	#
-	# If a zone name wasn't specified, we'll apply the fix to every
+	# If a rollrec name wasn't specified, we'll apply the fix to every
 	# rollrec in the file.
 	#
-	$doall = 1 if(! $zonename);
+	$doall = 1 if(! $name);
 
 
 	#
 	# Delete the non-command options and ensure that we were given
 	# something to do.
 	#
-	delete $options{'zone'};
+	delete $options{'name'};
 	delete $options{'check'};
 	delete $options{'verbose'};
 	delete $options{'Version'};
@@ -291,40 +302,45 @@ sub editrrf
 		exit(-1);
 	}
 
-	foreach my $name (rollrec_names())
+	foreach my $rname (rollrec_names())
 	{
 		#
 		# Go to the next record if we aren't doing everything or if
 		# this isn't the specified record.
 		#
-		next if(!$doall && ($name ne $zonename));
+		next if(!$doall && ($rname ne $name));
 
 		#
 		# Set the rollrec record's type as requested by the user.
 		#
-		typer($roll,$name,'roll');
-		typer($skip,$name,'skip');
+		typer($roll,$rname,'roll');
+		typer($skip,$rname,'skip');
 
 		#
 		# Set the rollrec fields as requested by the user.
 		#
-		changer($zonefile,$name,'zonefile',$zonefile);
-		changer($keyrec,$name,'keyrec',$keyrec);
-		changer($admin,$name,'administrator',$admin);
-		changer($directory,$name,'directory',$directory);
-		changer($zsargs,$name,'zsargs',$zsargs);
-		changer($display,$name,'display',1);
-		changer($nodisplay,$name,'display',0);
-		changer($loglvl,$name,'loglevel',$loglvl)    if($loglvl > -1);
+		changer($zonename,$rname,'zonename',$zonename);
+		changer($zonefile,$rname,'zonefile',$zonefile);
+		changer($keyrec,$rname,'keyrec',$keyrec);
+		changer($admin,$rname,'administrator',$admin);
+		changer($directory,$rname,'directory',$directory);
+		changer($zsargs,$rname,'zsargs',$zsargs);
+		changer($display,$rname,'display',1);
+		changer($nodisplay,$rname,'display',0);
+		changer($loglvl,$rname,'loglevel',$loglvl)    if($loglvl > -1);
 
 		#
 		# Delete some fields.
 		#
-		deleter($deladm,$name,'administrator');
-		deleter($deldir,$name,'directory');
-		deleter($dellog,$name,'loglevel');
-		deleter($delzsa,$name,'zsargs');
+		deleter($deladm,$rname,'administrator');
+		deleter($deldir,$rname,'directory');
+		deleter($dellog,$rname,'loglevel');
+		deleter($delzsa,$rname,'zsargs');
 
+		#
+		# Reset some fields.
+		#
+		changer($rstzn,$rname,'zonename',$rname);
 	}
 
 	#
@@ -342,7 +358,7 @@ sub editrrf
 sub typer
 {
 	my $flag    = shift;				# Flag value.
-	my $name    = shift;				# Zone name.
+	my $rname   = shift;				# Rollrec name.
 	my $rectype = shift;				# New record type.
 
 	#
@@ -353,12 +369,12 @@ sub typer
 	#
 	# If the verbose flag was given, we'll give a message.
 	#
-	print "$name:  changing record type to \"$rectype\"\n" if($verbose);
+	print "$rname:  changing record type to \"$rectype\"\n" if($verbose);
 
 	#
 	# Change the rollrec record's type.
 	#
-	rollrec_rectype($name,$rectype);
+	rollrec_rectype($rname,$rectype);
 }
 
 #----------------------------------------------------------------------
@@ -369,7 +385,7 @@ sub typer
 sub changer
 {
 	my $flag  = shift;				# Flag value.
-	my $name  = shift;				# Zone name.
+	my $rname = shift;				# Rollrec name.
 	my $field = shift;				# Field to change.
 	my $val	  = shift;				# Field's new value.
 
@@ -386,14 +402,14 @@ sub changer
 	{
 		my $oldval;				# Old value.
 
-		$oldval = rollrec_recval($name,$field);
-		print "$name:  changing $field \"$oldval\" to \"$val\"\n";
+		$oldval = rollrec_recval($rname,$field);
+		print "$rname:  changing $field \"$oldval\" to \"$val\"\n";
 	}
 
 	#
 	# Change the rollrec field's value.
 	#
-	rollrec_setval($name,$field,$val);
+	rollrec_setval($rname,$field,$val);
 }
 
 #----------------------------------------------------------------------
@@ -404,7 +420,7 @@ sub changer
 sub deleter
 {
 	my $flag  = shift;				# Flag value.
-	my $name  = shift;				# Zone name.
+	my $rname = shift;				# Rollrec name.
 	my $field = shift;				# Field to delete.
 
 	my $val;					# Value of field.
@@ -417,22 +433,22 @@ sub deleter
 	#
 	# Ensure the field exists for the rollrec.
 	#
-	$val = rollrec_recval($name,$field);
+	$val = rollrec_recval($rname,$field);
 	if(!defined($val))
 	{
-		print "$name does not have a $field field\n" if(!$doall);
+		print "$rname does not have a $field field\n" if(!$doall);
 		return;
 	}
 
 	#
 	# If the verbose flag was given, we'll show the current value.
 	#
-	print "$name:  deleting $field \"$val\"\n" if($verbose);
+	print "$rname:  deleting $field \"$val\"\n" if($verbose);
 
 	#
 	# Delete the rollrec field.
 	#
-	rollrec_delfield($name,$field);
+	rollrec_delfield($rname,$field);
 }
 
 #----------------------------------------------------------------------
@@ -457,9 +473,10 @@ sub usage
 	print STDERR "usage:  rollset [options] <rollrec-file>\n";
 	print STDERR "	options:\n";
 
-	print STDERR "		-zone zonename\n";
+	print STDERR "		-name rollrec-name\n";
 	print STDERR "		-roll\n";
 	print STDERR "		-skip\n";
+	print STDERR "		-zonename zone-name\n";
 	print STDERR "		-file zone-file\n";
 	print STDERR "		-keyrec keyrec-file\n";
 	print STDERR "		-admin admin-email\n";
@@ -472,6 +489,7 @@ sub usage
 	print STDERR "		-del-directory\n";
 	print STDERR "		-del-loglevel\n";
 	print STDERR "		-del-zsargs\n";
+	print STDERR "		-reset-zonename\n";
 
 	print STDERR "		-check\n";
 	print STDERR "		-verbose\n";
@@ -504,17 +522,22 @@ execution.  B<rollset> operates quietly unless it is given the I<-verbose>
 option.
 
 All records in the specified I<rollrec> file will be modified, unless the
-B<-zone> option is given.  In that case, only the named zone will be modified.
+B<-name> option is given.  In that case, only the named zone will be modified.
 
 =head1 OPTIONS
 
 =over 4
 
-=item B<-zone zonename>
+=item B<-name rollrec-name>
 
-The zone I<zonename> is selected as the only zone whose I<rollrec> record
-will be modified.  If this is not given, then all I<rollrec> records will
-be modified.
+The I<rollrec> whose name matches I<zonename> is selected as the only rollrec
+that will be modified.  If this name is not given, then all I<rollrec> records
+will be modified.
+
+=item B<-zonename zone-name>
+
+The zone name in the selected I<rollrec> records is modified to be
+I<zone-name>.
 
 =item B<-file zone-file>
 
@@ -566,6 +589,11 @@ This option is mutually exclusive of the I<-nodisplay> option.
 
 Turn off the GUI display of the zones in the selected I<rollrec>s.
 This option is mutually exclusive of the B<-display> option.
+
+=item B<-reset-zonename>
+
+The I<zonename> field is set to match the name of the I<rollrec> record.
+This option is mutually exclusive of the B<-zonename> option.
 
 =item B<-roll>
 
@@ -626,7 +654,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2006-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
