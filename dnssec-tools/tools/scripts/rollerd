@@ -3877,8 +3877,8 @@ sub cmd_zonestatus
 		#
 		# Add the data to the output buffer and bump our zone count.
 		#
-		$outbuf .= "$rname\t$rtype\t$phase\n";
-		rolllog_log(LOG_ALWAYS,'<command>',"\t$rname\t$rtype\t$phase\n");
+		$outbuf .= "$rname/$rr{'zonename'}\t$rtype\t$phase\n";
+		rolllog_log(LOG_ALWAYS,'<command>',"\t$rname/$rr{'zonename'}\t$rtype\t$phase\n");
 		$cnt++;
 	}
 
