@@ -701,6 +701,12 @@ sub zsk_expired
 		}
 	}
 
+if(!defined($minhr))
+{
+rolllog_log(LOG_ALWAYS,$rname,"--------> zsk_expired:  couldn't find minimum key keyrec");
+return(0);
+}
+
 	#
 	# Get the minimum key's keyrec hash.
 	#
@@ -3848,16 +3854,24 @@ sub cmd_zonestatus
 		#
 		if($rr{'kskphase'} > 0)
 		{
-			$phase = 'KSK ' . $rr{'kskphase'} . ": " .
-			  rollmgr_get_phase('KSK', $rr{'kskphase'});
+			my $pstr;			# Phase string.
+
+			$phase = 'KSK ' . $rr{'kskphase'};
+			$pstr = rollmgr_get_phase('KSK', $rr{'kskphase'});
+
+			$phase = "$phase: $pstr" if($pstr ne '');
 		}
 		else
 		{
-			$phase = 'ZSK ' . $rr{'zskphase'} . ": " .
-			  rollmgr_get_phase('ZSK', $rr{'zskphase'});
-		}
-		$rtype = $rr{'rollrec_type'};
+			my $pstr;			# Phase string.
 
+			$phase = 'ZSK ' . $rr{'zskphase'};
+			$pstr = rollmgr_get_phase('ZSK', $rr{'zskphase'});
+
+			$phase = "$phase: $pstr" if($pstr ne '');
+		}
+
+		$rtype = $rr{'rollrec_type'};
 		$phase = '-' if($rtype eq 'skip');
 
 		#
