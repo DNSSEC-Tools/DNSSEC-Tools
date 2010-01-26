@@ -447,7 +447,7 @@ my %key_phases =
 #
 my $PHASELONG	= 1;				# Use long descriptions.
 my $PHASESHORT	= 0;				# Use short descriptions.
-my $longorshort = $PHASESHORT;			# Description length to use.
+my $longorshort = $PHASELONG;			# Description length to use.
 
 ##############################################################################
 ##############################################################################
