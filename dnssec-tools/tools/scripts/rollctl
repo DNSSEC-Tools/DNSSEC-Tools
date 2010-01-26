@@ -502,7 +502,7 @@ sub main()
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
-			print "$resp";
+			zonestatus("$resp");
 		}
 		else
 		{
@@ -732,6 +732,65 @@ sub doopts
 }
 
 #----------------------------------------------------------------------
+# Routine:	zonestatus()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub zonestatus
+{
+	my $resp = shift;			# Full response from rollerd.
+
+	my @lines;				# Line-split responses.
+	my @rnames = ();			# Rollrec names.
+	my @znames = ();			# Zone names.
+	my @states = ();			# Roll states.
+	my @phases = ();			# Roll phases.
+
+	my $rml = -1;				# Max. length of rollrec names.
+	my $zml = -1;				# Max. length of zone names.
+
+	#
+	# Divide the pieces of the each response line into the data arrays.
+	#
+	@lines = split /\n/, $resp;
+	foreach my $line (@lines)
+	{
+		my $len;
+		my @slices = split /;/, $line;
+
+		#
+		# Save the datoms.
+		#
+		push @rnames, $slices[0];
+		push @znames, $slices[1];
+		push @states, $slices[2];
+		push @phases, $slices[3];
+
+		#
+		# Save the length of the longest rollrec name.
+		#
+		$len = length($slices[0]);
+		$rml = $len if($len > $rml);
+
+		#
+		# Save the length of the longest zone name.
+		#
+		$len = length($slices[1]);
+		$zml = $len if($len > $zml);
+	}
+
+	#
+	# Pretty-print the zone-status data from rollerd.
+	#
+	for(my $ind=0; $ind < @rnames; $ind++)
+	{
+		printf "%-$rml.*s    %-$zml.*s    $states[$ind]  $phases[$ind]\n",
+			$rml, $rnames[$ind],
+			$zml, $znames[$ind],
+	}
+}
+
+#----------------------------------------------------------------------
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -921,7 +980,15 @@ I<rollrec> file.
 
 Has B<rollerd> write the status of zones in the current I<rollrec> file to the
 B<rollerd> log file.  The status is also reported to B<rollctl>, which prints
-it to the screen.
+it to the screen.  B<rollctl> prints it in columnar fashion to enhance
+readability.  The columns, in order, are:  rollrec name, zone name, roll/skip
+state, and rollover phase.
+
+Example:
+    anothersub                      anothersub.example.com  skip  KSK 1
+    example.com                     example.com             roll  KSK 1
+    site1.in.subzone.example.com    subzone.example.com     roll  KSK 3
+    site1.subzone.example.com       subzone.example.com     roll  KSK 3
 
 =item B<-zsargs arglist zones>
 
