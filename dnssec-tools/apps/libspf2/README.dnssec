@@ -9,7 +9,7 @@ libspf2.  This document describes how to install libspf2 with DNSSEC validation
 functionality. 
 
 libspf2 can be downloaded from http://www.libspf2.org/download.html
-Patches are available for version libspf2-1.2.5 and libspf2-1.0.4. 
+This patch was most recently tested with version libspf2-1.2.9.
 
 Unzip and untar the distribution using the following command 
 (replace x by the correct version number):
@@ -18,7 +18,7 @@ Unzip and untar the distribution using the following command
 
 Now apply the patch by (replace x by the correct version number):
 
-	patch -p 0 -b -z .orig </path/to/patch/libspf2-x_dnssec_patch.txt
+	patch -p 0 -b -z .orig </path/to/patch/libspf2-dnssec.patch
 
 This will apply the patch and store the original files with a .orig suffix.
 
