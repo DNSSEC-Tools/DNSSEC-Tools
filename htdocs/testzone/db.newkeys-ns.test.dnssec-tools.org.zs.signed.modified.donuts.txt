@@ -26,7 +26,7 @@ pastdate-aaaa.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-aaaa.newkeys-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature has expired since:
-	       20100121093519
+	       20100128105026
 
 badsign-a.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.newkeys-ns.test.dnssec-tools.org
@@ -49,7 +49,7 @@ futuredate-aaaa.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.newkeys-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20100322104019
+	       after 20100329115526
 
 addedlater-nosig-A.newkeys-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-A.newkeys-ns.test.dnssec-tools.org
@@ -73,11 +73,7 @@ baddata-a.newkeys-ns.test.dnssec-tools.org:
 futuredate-a.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.newkeys-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20100322104019
-
-newkeys-ns.test.dnssec-tools.org:
-  Error:       Can not find a matching DNSKEY for RRSIG #7 for
-	       newkeys-ns.test.dnssec-tools.org
+	       future; after 20100329115525
 
 addedlater-nosig-AAAA.newkeys-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.newkeys-ns.test.dnssec-tools.org
@@ -97,6 +93,6 @@ reverseddates-a.newkeys-ns.test.dnssec-tools.org:
 pastdate-a.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.newkeys-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20100121093519
+	       20100128105026
 
-21 errors found in db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified
+20 errors found in db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified
