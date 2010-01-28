@@ -1,103 +1,10 @@
-diff -U 5 -r libspf2-1.2.5.orig/config.h.in libspf2-1.2.5/config.h.in
---- libspf2-1.2.5.orig/config.h.in	2005-02-23 21:15:21.000000000 -0500
-+++ libspf2-1.2.5/config.h.in	2008-04-25 14:14:38.000000000 -0400
-@@ -44,10 +44,13 @@
- #undef HAVE_INET_NTOA
- 
- /* Define to 1 if you have the <inttypes.h> header file. */
- #undef HAVE_INTTYPES_H
- 
-+/* Define to 1 if you have the `crypto' library (-lcrypto). */
-+#undef HAVE_LIBCRYPTO
-+
- /* Define to 1 if you have the `intl' library (-lintl). */
- #undef HAVE_LIBINTL
- 
- /* Define to 1 if you have the <libintl.h> header file. */
- #undef HAVE_LIBINTL_H
-@@ -59,10 +62,16 @@
- #undef HAVE_LIBPTHREAD
- 
- /* Define to 1 if you have the `socket' library (-lsocket). */
- #undef HAVE_LIBSOCKET
- 
-+/* Define to 1 if you have the `sres' library (-lsres). */
-+#undef HAVE_LIBSRES
-+
-+/* Define to 1 if you have the `val-threads' library (-lval-threads). */
-+#undef HAVE_LIBVAL_THREADS
-+
- /* Define to 1 if you have the <limits.h> header file. */
- #undef HAVE_LIMITS_H
- 
- /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
-    to 0 otherwise. */
-@@ -211,10 +220,13 @@
- #undef HAVE_U_INT32_T
- 
- /* Define to 1 if the system has the type `u_int8_t'. */
- #undef HAVE_U_INT8_T
- 
-+/* Define to 1 if you have the <validator/validator.h> header file. */
-+#undef HAVE_VALIDATOR_VALIDATOR_H
-+
- /* Define to 1 if you have the `vfork' function. */
- #undef HAVE_VFORK
- 
- /* Define to 1 if you have the <vfork.h> header file. */
- #undef HAVE_VFORK_H
-@@ -274,10 +286,13 @@
- #undef SIZEOF_INT
- 
- /* Define to 1 if you have the ANSI C header files. */
- #undef STDC_HEADERS
- 
-+/* Support DNSSEC validation */
-+#undef SUPPORT_DNSSEC
-+
- /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
- #undef TIME_WITH_SYS_TIME
- 
- /* Version number of package */
- #undef VERSION
-diff -U 5 -r libspf2-1.2.5.orig/configure.ac libspf2-1.2.5/configure.ac
---- libspf2-1.2.5.orig/configure.ac	2005-02-23 21:09:34.000000000 -0500
-+++ libspf2-1.2.5/configure.ac	2008-04-25 14:14:38.000000000 -0400
-@@ -90,39 +90,112 @@
- AC_CHECK_HEADER(pthread.h, , [
- 	echo "pthread.h is required to build this program."
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/configure.ac libspf2-1.2.9.dnssec/configure.ac
+--- libspf2-1.2.9/configure.ac	2008-11-04 10:32:10.000000000 -0500
++++ libspf2-1.2.9.dnssec/configure.ac	2009-12-16 14:34:12.144898047 -0500
+@@ -109,6 +109,78 @@ AC_CHECK_HEADER(pthread.h, , [
  	exit 1;
  ])
  
--dnl Moved to after header checks by Shevek
--AC_ARG_WITH(bind,
--        [  --with-bind=DIR  Find BIND resolver in DIR],
--        [AC_CHECK_FILE([$withval/include/bind/resolv.h],
--                [CFLAGS="$CFLAGS -I$withval/include/bind"],
--                [CFLAGS="$CFLAGS -I$withval/include"])
--         LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
--         AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
--                [AC_CHECK_LIB([resolv],
--                        [res_query],
--                        [LIBS="$LIBS -lresolv"],
--                        [echo "cannot find resolver library"; exit 1;])
--                ])
--        ],
--		[dnl Have to include resolv.h as res_query is sometimes defined as a macro
--				AC_MSG_CHECKING([for res_query in -lresolv (with resolv.h if present)])
--				saved_libs="$LIBS"
--				LIBS="-lresolv $LIBS"
--				AC_TRY_LINK([
--						#ifdef HAVE_RESOLV_H
--						#include <resolv.h>
--						#endif],
--						[res_query(0,0,0,0,0)],
--						[AC_MSG_RESULT(yes)
--								have_res_query=yes],
--						[AC_MSG_RESULT(no)
--								LIBS="$saved_libs"])
--        ])
--		
 +AC_MSG_CHECKING(whether we need to support DNSSEC validation)
 +AC_ARG_ENABLE(dnssec-support,
 +[  --enable-dnssec-support Support DNSSEC validation.],
@@ -170,49 +77,23 @@ diff -U 5 -r libspf2-1.2.5.orig/configure.ac libspf2-1.2.5/configure.ac
 +else
 +   AC_MSG_RESULT(no)
 +
-+   dnl Moved to after header checks by Shevek
-+   AC_ARG_WITH(bind,
-+         [  --with-bind=DIR         Find BIND resolver in DIR],
-+         [AC_CHECK_FILE([$withval/include/bind/resolv.h],
-+                 [CFLAGS="$CFLAGS -I$withval/include/bind"],
-+                 [CFLAGS="$CFLAGS -I$withval/include"])
-+          LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
-+          AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
-+                 [AC_CHECK_LIB([resolv],
-+                         [res_query],
-+                         [LIBS="$LIBS -lresolv"],
-+                         [echo "cannot find resolver library"; exit 1;])
-+                 ])
-+         ],
-+ 		[dnl Have to include resolv.h as res_query is sometimes defined as a macro
-+ 				AC_MSG_CHECKING([for res_query in -lresolv (with resolv.h if present)])
-+ 				saved_libs="$LIBS"
-+ 				LIBS="-lresolv $LIBS"
-+ 				AC_TRY_LINK([
-+ 						#ifdef HAVE_RESOLV_H
-+ 						#include <resolv.h>
-+ 						#endif],
-+ 						[res_query(0,0,0,0,0)],
-+ 						[AC_MSG_RESULT(yes)
-+ 								have_res_query=yes],
-+ 						[AC_MSG_RESULT(no)
-+ 								LIBS="$saved_libs"])
-+         ])
-+ 		
+ dnl Moved to after header checks by Shevek
+ AC_ARG_WITH(bind,
+         [  --with-bind=DIR  Find BIND resolver in DIR],
+@@ -138,6 +210,7 @@ AC_ARG_WITH(bind,
+ 								LIBS="$saved_libs"])
+         ])
+ 		
 +fi		
  		
  		
  dnl [AC_CHECK_LIB(resolv, res_query)])
- 
- # Checks for libraries.
-diff -U 5 -r libspf2-1.2.5.orig/src/include/spf_dns.h libspf2-1.2.5/src/include/spf_dns.h
---- libspf2-1.2.5.orig/src/include/spf_dns.h	2004-08-29 10:59:33.000000000 -0400
-+++ libspf2-1.2.5/src/include/spf_dns.h	2008-04-25 14:14:38.000000000 -0400
-@@ -96,10 +96,19 @@
- #define	HOST_NOT_FOUND 	1		/* NXDOMAIN (authoritative answer)*/
- #define	TRY_AGAIN	2		/* SERVFAIL (no authoritative answer)*/
- #define	NO_RECOVERY	3		/* invalid/unimplmeneted query	*/
- #define	NO_DATA		4		/* host found, but no RR of req type*/
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/include/spf_dns.h libspf2-1.2.9.dnssec/src/include/spf_dns.h
+--- libspf2-1.2.9/src/include/spf_dns.h	2008-10-27 12:27:14.000000000 -0400
++++ libspf2-1.2.9.dnssec/src/include/spf_dns.h	2009-12-16 14:36:04.794058930 -0500
+@@ -105,6 +105,15 @@ typedef int	ns_type;
+ #define	NO_RECOVERY		3		/**< invalid/unimplmeneted query	*/
+ #define	NO_DATA			4		/**< host found, but no RR of req type*/
  #endif
 +
 +#ifdef SUPPORT_DNSSEC
@@ -226,17 +107,13 @@ diff -U 5 -r libspf2-1.2.5.orig/src/include/spf_dns.h libspf2-1.2.5/src/include/
  typedef int SPF_dns_stat_t;
  
  typedef struct SPF_dns_server_struct SPF_dns_server_t;
- 
- #include "spf_request.h"
-diff -U 5 -r libspf2-1.2.5.orig/src/include/spf_response.h libspf2-1.2.5/src/include/spf_response.h
---- libspf2-1.2.5.orig/src/include/spf_response.h	2005-02-21 21:33:02.000000000 -0500
-+++ libspf2-1.2.5/src/include/spf_response.h	2008-04-25 14:14:38.000000000 -0400
-@@ -147,10 +147,14 @@
- ,	SPF_E_BAD_HOST_TLD		/* Hostname has a missing or invalid TLD */
- ,	SPF_E_MECH_AFTER_ALL	/* Mechanisms found after the \"all:\"
- 								mechanism will be ignored */
- ,	SPF_E_INCLUDE_RETURNED_NONE	/* If an include recursive query returns none it's a perm error */
- ,	SPF_E_RECURSIVE			/* Recursive include */
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/include/spf_response.h libspf2-1.2.9.dnssec/src/include/spf_response.h
+--- libspf2-1.2.9/src/include/spf_response.h	2008-10-15 20:08:12.000000000 -0400
++++ libspf2-1.2.9.dnssec/src/include/spf_response.h	2009-12-16 14:37:00.585318575 -0500
+@@ -151,6 +151,10 @@ enum SPF_errcode_t {
+ ,	SPF_E_INCLUDE_RETURNED_NONE	/**< If an include recursive query returns none it's a perm error */
+ ,	SPF_E_RECURSIVE			/**< Recursive include */
+ ,	SPF_E_MULTIPLE_RECORDS	/**< Multiple SPF or TXT records found */
 +
 +#ifdef SUPPORT_DNSSEC
 +,	SPF_E_DNSSEC_FAILURE		/* DNSSEC validation failure */
@@ -244,162 +121,96 @@ diff -U 5 -r libspf2-1.2.5.orig/src/include/spf_response.h libspf2-1.2.5/src/inc
  } SPF_errcode_t;
  
  typedef
- struct SPF_error_struct
- {
-diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_dns_resolv.c libspf2-1.2.5/src/libspf2/spf_dns_resolv.c
---- libspf2-1.2.5.orig/src/libspf2/spf_dns_resolv.c	2005-02-18 21:38:12.000000000 -0500
-+++ libspf2-1.2.5/src/libspf2/spf_dns_resolv.c	2008-04-25 15:02:11.000000000 -0400
-@@ -43,10 +43,14 @@
- 
- #ifdef HAVE_PTHREAD_H
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/libspf2/spf_dns_resolv.c libspf2-1.2.9.dnssec/src/libspf2/spf_dns_resolv.c
+--- libspf2-1.2.9/src/libspf2/spf_dns_resolv.c	2008-10-27 12:26:06.000000000 -0400
++++ libspf2-1.2.9.dnssec/src/libspf2/spf_dns_resolv.c	2009-12-30 22:01:24.061360423 -0500
+@@ -58,6 +58,11 @@
  # include <pthread.h>
  #endif
  
 +#ifdef SUPPORT_DNSSEC
++#undef HAVE_DECL_RES_NINIT
 +#include <validator/validator.h>
 +#endif
 +
  #include "spf.h"
  #include "spf_dns.h"
  #include "spf_internal.h"
- #include "spf_dns_internal.h"
- #include "spf_dns_resolv.h"
-@@ -59,20 +63,25 @@
-     struct __res_state	res_state;
- #endif
- } SPF_dns_resolv_config_t;
- #endif
+@@ -79,13 +84,17 @@ static const struct res_sym ns_sects[] =
+ static const int num_ns_sect = sizeof(ns_sects) / sizeof(*ns_sects);
+ 
  
 +#ifdef SUPPORT_DNSSEC
 +# define SPF_h_errno h_errno
 +#else
  #if HAVE_DECL_RES_NINIT
- # if 0
- #  define SPF_h_errno spfhook->res_state.res_h_errno
- # else
- #  define SPF_h_errno res_state->res_h_errno
- # endif
+ # define SPF_h_errno res_state->res_h_errno
  #else
  # define SPF_h_errno h_errno
  #endif
 +#endif
  
-+#ifndef SUPPORT_DNSSEC
+-#if HAVE_DECL_RES_NINIT
++#if HAVE_DECL_RES_NINIT && ! defined(SUPPORT_DNSSEC)
  static pthread_once_t	res_state_control = PTHREAD_ONCE_INIT;
  static pthread_key_t	res_state_key;
  
- static void
- SPF_dns_resolv_thread_term(void *arg)
-@@ -84,11 +93,11 @@
- static void
- SPF_dns_resolv_init_key()
- {
- 	pthread_key_create(&res_state_key, SPF_dns_resolv_thread_term);
- }
--
-+#endif
+@@ -239,14 +248,16 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+ 	size_t	rdlen;
+ 	const u_char	*rdata;
  
- #if 0
- static inline SPF_dns_resolv_config_t *SPF_voidp2spfhook(void *hook)
- 	{ return (SPF_dns_resolv_config_t *)hook; }
- static inline void *SPF_spfhook2voidp(SPF_dns_resolv_config_t *spfhook)
-@@ -99,11 +108,11 @@
- static SPF_dns_rr_t *
- SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
- 				const char *domain, ns_type rr_type, int should_cache)
- {
- #if 0
--    SPF_dns_resolv_config_t	*spfhook;
-+    SPF_dns_resolv_config_t    *spfhook;
- #endif
-     SPF_dns_rr_t			*spfrr;
- 
-     int		err;
-     int		i;
-@@ -128,20 +137,26 @@
-     int		prio;
- 
-     int		rdlen;
-     const u_char	*rdata, *rdata_end;
- 
-+#ifndef SUPPORT_DNSSEC
+-#if HAVE_DECL_RES_NINIT
++#if defined(SUPPORT_DNSSEC)
++	val_status_t dnssec_status = VAL_INTERNAL_ERROR;
++#elif HAVE_DECL_RES_NINIT
  	void				*res_spec;
  	struct __res_state	*res_state;
-+#endif
+ #endif
  
  	SPF_ASSERT_NOTNULL(spf_dns_server);
  
- #if 0
--	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
-+    spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
- 	SPF_ASSERT_NOTNULL(spfhook);
- #endif
-+#ifdef SUPPORT_DNSSEC
-+    val_status_t dnssec_status = VAL_INTERNAL_ERROR;
-+#endif
- 
-+#ifndef SUPPORT_DNSSEC
+-#if HAVE_DECL_RES_NINIT
++#if HAVE_DECL_RES_NINIT && ! defined(SUPPORT_DNSSEC)
+ 	/** Get the thread-local resolver state. */
  	res_spec = pthread_getspecific(res_state_key);
  	if (res_spec == NULL) {
- 		res_state = (struct __res_state *)
- 						malloc(sizeof(struct __res_state));
- 		if (res_ninit(res_state) != 0) {
-@@ -150,21 +165,32 @@
- 		pthread_setspecific(res_state_key, (void *)res_state);
- 	}
- 	else {
- 		res_state = (struct __res_state *)res_spec;
- 	}
-+#endif
+@@ -292,7 +303,14 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+ 	for (;;) {
+ 		int	dns_len;
  
-     /*
-      * try resolving the name
-      */
+-#if HAVE_DECL_RES_NINIT
 +#ifdef SUPPORT_DNSSEC
-+		
 +	dns_len = val_res_query( NULL, domain, ns_c_in, rr_type, 
-+                            response, sizeof(response), &dnssec_status );
++                            responsebuf, responselen, &dnssec_status );
 +	if (dns_len >= 0) {
 +		SPF_debugf( "val_res_query() returned dnssec_status = %s\n", 
 +				    p_val_status( dnssec_status ) );
 +	}
-+#else
- #if HAVE_DECL_RES_NINIT
- 	dns_len = res_nquery(res_state, domain, ns_c_in, rr_type,
- 			 response, sizeof(response));
- #else
-     dns_len = res_query(domain, ns_c_in, rr_type,
- 			 response, sizeof(response));
- #endif
-+#endif
- 
- 	if ( dns_len < 0 ) {
- 		/* This block returns unconditionally. */
- 		if ( spf_dns_server->debug )
- 			SPF_debugf( "query failed: err = %d  %s (%d): %s",
-@@ -173,17 +199,37 @@
- 		if ((SPF_h_errno == HOST_NOT_FOUND) &&
- 				(spf_dns_server->layer_below != NULL)) {
- 			return SPF_dns_lookup(spf_dns_server->layer_below,
- 							domain, rr_type, should_cache);
- 		}
++#elif HAVE_DECL_RES_NINIT
+ 		/* Resolve the name. */
+ 		dns_len = res_nquery(res_state, domain, ns_c_in, rr_type,
+ 				 responsebuf, responselen);
+@@ -314,6 +332,16 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+ 				return SPF_dns_lookup(spf_dns_server->layer_below,
+ 								domain, rr_type, should_cache);
+ 			}
 +#ifdef SUPPORT_DNSSEC
-+		if ( !val_istrusted(dnssec_status) ) {
-+			if ( h_errno == NETDB_SUCCESS ) {
-+				h_errno = DNSSEC_FAILURE;
++			if ( !val_istrusted(dnssec_status) ) {
++				if ( h_errno == NETDB_SUCCESS ) {
++					h_errno = DNSSEC_FAILURE;
++				}
++				return SPF_dns_rr_new_init( spf_dns_server,
++							    domain, rr_type, 0, h_errno );
 +			}
-+			return SPF_dns_rr_new_init( spf_dns_server,
-+						    domain, rr_type, 0, h_errno );
-+		}
-+		else
++			else
 +#endif
- 		return SPF_dns_rr_new_init(spf_dns_server,
- 						domain, rr_type, 0, SPF_h_errno);
- 	}
- 
-     /*
-      * initialize stuff
-      */
+ 			return SPF_dns_rr_new_init(spf_dns_server,
+ 							domain, rr_type, 0, SPF_h_errno);
+ 		}
+@@ -348,6 +376,16 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+ 	/*
+ 	 * initialize stuff
+ 	 */
 +#ifdef SUPPORT_DNSSEC
 +	if ( !val_istrusted(dnssec_status) ) {
 +		if ( h_errno == NETDB_SUCCESS ) {
@@ -412,99 +223,63 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_dns_resolv.c libspf2-1.2.5/src/l
 +#endif
  	spfrr = SPF_dns_rr_new_init(spf_dns_server,
  					domain, rr_type, 0, NETDB_SUCCESS);
- 
-     err = ns_initparse( response, dns_len, &ns_handle );
- 
-@@ -445,19 +491,27 @@
- 	}
- 
-     if ( spfrr->num_rr == 0 )
+ 	if (!spfrr) {
+@@ -596,6 +634,14 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+ 	if (spfrr->num_rr == 0)
  		spfrr->herrno = NO_DATA;
  
 +#ifdef SUPPORT_DNSSEC
-+    if ( !val_istrusted(dnssec_status) ) {
-+	    if ( spfrr->herrno == NETDB_SUCCESS ) {
-+		    spfrr->herrno = DNSSEC_FAILURE;
-+	    }
-+    }
++	if ( !val_istrusted(dnssec_status) ) {
++		if ( spfrr->herrno == NETDB_SUCCESS ) {
++			spfrr->herrno = DNSSEC_FAILURE;
++		}
++	}
 +#endif
 +
-     return spfrr;
+ 	free(responsebuf);
+ 	return spfrr;
  }
- 
- 
- static void
- SPF_dns_resolv_free(SPF_dns_server_t *spf_dns_server)
+@@ -606,7 +652,7 @@ SPF_dns_resolv_free(SPF_dns_server_t *sp
  {
- #if 0
--	SPF_dns_resolv_config_t	*spfhook;
-+	SPF_dns_resolv_config_t *spfhook;
- #endif
- 
  	SPF_ASSERT_NOTNULL(spf_dns_server);
  
- #if 0
-@@ -481,14 +535,16 @@
- SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
- 				const char *name, int debug)
- {
- 	SPF_dns_server_t		*spf_dns_server;
- #if 0
--	SPF_dns_resolv_config_t	*spfhook;
-+	SPF_dns_resolv_config_t *spfhook;
+-#if ! HAVE_DECL_RES_NINIT
++#if ! HAVE_DECL_RES_NINIT && !defined(SUPPORT_DNSSEC)
+ 	res_close();
  #endif
  
-+#ifndef SUPPORT_DNSSEC
- 	pthread_once(&res_state_control, SPF_dns_resolv_init_key);
-+#endif
- 
-     spf_dns_server = malloc(sizeof(SPF_dns_server_t));
-     if ( spf_dns_server == NULL )
- 		return NULL;
- 	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
-diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_dns_rr.c libspf2-1.2.5/src/libspf2/spf_dns_rr.c
---- libspf2-1.2.5.orig/src/libspf2/spf_dns_rr.c	2005-02-21 20:42:34.000000000 -0500
-+++ libspf2-1.2.5/src/libspf2/spf_dns_rr.c	2008-04-25 14:14:38.000000000 -0400
-@@ -43,11 +43,11 @@
- SPF_dns_rr_t *
- SPF_dns_rr_new_nxdomain(SPF_dns_server_t *spf_dns_server,
- 				const char *domain)
+@@ -619,7 +665,9 @@ SPF_dns_resolv_new(SPF_dns_server_t *lay
  {
- 	return SPF_dns_rr_new_init(spf_dns_server,
--					domain, ns_t_any, 0, NXDOMAIN);
-+					domain, ns_t_any, 0, HOST_NOT_FOUND);
- }
+ 	SPF_dns_server_t		*spf_dns_server;
  
- SPF_dns_rr_t *
- SPF_dns_rr_new_init(SPF_dns_server_t *spf_dns_server,
- 				const char *domain,
-diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_get_exp.c libspf2-1.2.5/src/libspf2/spf_get_exp.c
---- libspf2-1.2.5.orig/src/libspf2/spf_get_exp.c	2004-10-19 10:20:17.000000000 -0400
-+++ libspf2-1.2.5/src/libspf2/spf_get_exp.c	2008-04-25 14:14:38.000000000 -0400
-@@ -162,10 +162,17 @@
- 
- 	case TRY_AGAIN:
- 		RETURN_DEFAULT_EXP();
- 		break;
+-#if HAVE_DECL_RES_NINIT
++#if defined(SUPPORT_DNSSEC)
++	;
++#elif HAVE_DECL_RES_NINIT
+ 	pthread_once(&res_state_control, SPF_dns_resolv_init_key);
+ #else
+ 	if (res_init() != 0) {
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/libspf2/spf_get_exp.c libspf2-1.2.9.dnssec/src/libspf2/spf_get_exp.c
+--- libspf2-1.2.9/src/libspf2/spf_get_exp.c	2008-10-02 18:07:42.000000000 -0400
++++ libspf2-1.2.9.dnssec/src/libspf2/spf_get_exp.c	2009-12-17 13:05:30.631935143 -0500
+@@ -173,6 +173,13 @@ SPF_request_get_exp(SPF_server_t *spf_se
+ 			RETURN_DEFAULT_EXP();
+ 			break;
  
 +#ifdef SUPPORT_DNSSEC
-+	case DNSSEC_FAILURE:
-+	        SPF_response_add_warn(spf_response, SPF_E_DNSSEC_FAILURE,
-+				      "DNSSEC validation failed for the SPF (TXT) record of '%s'.",
-+				      *bufp);
-+		break;
++		case DNSSEC_FAILURE:
++		        SPF_response_add_warn(spf_response, SPF_E_DNSSEC_FAILURE,
++					      "DNSSEC validation failed for the SPF (TXT) record of '%s'.",
++					      *bufp);
++			break;
 +#endif
- 	case NETDB_SUCCESS:
- 		break;
+ 		case NETDB_SUCCESS:
+ 			break;
  
- 	default:
- 		SPF_warning("unknown DNS lookup error code");
-diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/libspf2/spf_interpret.c
---- libspf2-1.2.5.orig/src/libspf2/spf_interpret.c	2005-02-21 22:41:27.000000000 -0500
-+++ libspf2-1.2.5/src/libspf2/spf_interpret.c	2008-04-25 14:17:52.000000000 -0400
-@@ -252,10 +252,18 @@
- 	size_t			 buflen = SPF_RECEIVED_SPF_SIZE;
- 	char			*buf_value;
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/libspf2/spf_interpret.c libspf2-1.2.9.dnssec/src/libspf2/spf_interpret.c
+--- libspf2-1.2.9/src/libspf2/spf_interpret.c	2008-10-22 11:47:43.000000000 -0400
++++ libspf2-1.2.9.dnssec/src/libspf2/spf_interpret.c	2009-12-18 10:19:04.607247133 -0500
+@@ -284,6 +284,14 @@ SPF_i_set_received_spf(SPF_response_t *s
  	
  	char			*p, *p_end;
  
@@ -519,13 +294,9 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
  	SPF_ASSERT_NOTNULL(spf_response);
  	spf_request = spf_response->spf_request;
  	SPF_ASSERT_NOTNULL(spf_request);
- 	spf_server = spf_request->spf_server;
- 	SPF_ASSERT_NOTNULL(spf_server);
-@@ -326,10 +334,61 @@
- 			p += snprintf( p, p_end - p, " problem=%s;", c_results.err_msg );
- 			if ( p_end - p <= 0 ) break;
+@@ -358,6 +366,57 @@ SPF_i_set_received_spf(SPF_response_t *s
  		}
- 	#endif
+ #endif
  
 +#ifdef SUPPORT_DNSSEC
 +		/* add in the DNSSEC validation status */
@@ -581,11 +352,7 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
  		/* FIXME  should the explanation string be included in the header? */
  
  		/* FIXME  should the header be reformated to include line breaks? */
- 	} while(0);
- 
-@@ -745,10 +804,19 @@
- 				SPF_dns_rr_free(rr_a);
- 				SPF_FREE_LOOKUP_DATA();
+@@ -787,6 +846,15 @@ SPF_record_interpret(SPF_record_t *spf_r
  				return DONE_TEMPERR(SPF_E_DNS_ERROR); /* REASON_MECH */
  			}
  
@@ -599,13 +366,9 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
 +			}
 +#endif
  			for (i = 0; i < rr_a->num_rr; i++) {
- 				if ( rr_a->rr_type != fetch_ns_type )
- 					continue;
- 
- 				if (spf_request->client_ver == AF_INET) {
-@@ -785,10 +853,18 @@
- 				SPF_dns_rr_free(rr_mx);
- 				SPF_FREE_LOOKUP_DATA();
+ 				/* XXX Should this be hoisted? */
+ 				if (rr_a->rr_type != fetch_ns_type)
+@@ -828,6 +896,15 @@ SPF_record_interpret(SPF_record_t *spf_r
  				return DONE_TEMPERR(SPF_E_DNS_ERROR);
  			}
  
@@ -617,15 +380,12 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
 +						       lookup );	    
 +			}
 +#endif
++
+ 			/* The maximum number of MX records we will inspect. */
  			max_mx = rr_mx->num_rr;
- 			if ( max_mx > spf_server->max_dns_mx )
- 				max_mx = spf_server->max_dns_mx;
- 			if ( max_mx > SPF_MAX_DNS_MX )
- 				max_mx = SPF_MAX_DNS_MX;
-@@ -813,10 +889,24 @@
- 					SPF_dns_rr_free(rr_a);
- 					SPF_FREE_LOOKUP_DATA();
- 					return DONE_TEMPERR( SPF_E_DNS_ERROR );
+ 			max_exceeded = 0;
+@@ -859,6 +936,21 @@ SPF_record_interpret(SPF_record_t *spf_r
+ 					return DONE_TEMPERR(SPF_E_DNS_ERROR);
  				}
  
 +#ifdef SUPPORT_DNSSEC
@@ -642,14 +402,11 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
 +					}
 +				}
 +#endif
- 				for( i = 0; i < rr_a->num_rr; i++ ) {
- 					if ( rr_a->rr_type != fetch_ns_type )
- 						continue;
- 
- 					if ( spf_request->client_ver == AF_INET )
-@@ -888,10 +978,17 @@
- 						SPF_dns_rr_free(rr_a);
- 						SPF_FREE_LOOKUP_DATA();
++
+ 				for (i = 0; i < rr_a->num_rr; i++) {
+ 					/* XXX Should this be hoisted? */
+ 					if (rr_a->rr_type != fetch_ns_type)
+@@ -941,6 +1033,14 @@ SPF_record_interpret(SPF_record_t *spf_r
  						return DONE_TEMPERR( SPF_E_DNS_ERROR );
  					}
  
@@ -660,14 +417,11 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
 +								       rr_ptr->rr[i]->ptr );
 +					}
 +#endif
- 					for( j = 0; j < rr_a->num_rr; j++ ) {
- 						if ( spf_server->debug ) {
- 							INET_NTOP( AF_INET, &rr_a->rr[j]->a.s_addr,
- 											ip4_buf, sizeof(ip4_buf));
- 							SPF_debugf( "%d: %d:  found %s",
-@@ -949,10 +1046,17 @@
- 						SPF_dns_rr_free(rr_aaaa);
- 						SPF_FREE_LOOKUP_DATA();
++
+ 					for (j = 0; j < rr_a->num_rr; j++) {
+ 						/* XXX MX has a 'continue' case here which should be hoisted. */
+ 
+@@ -1012,6 +1112,14 @@ SPF_record_interpret(SPF_record_t *spf_r
  						return DONE_TEMPERR( SPF_E_DNS_ERROR );
  					}
  
@@ -678,14 +432,11 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
 +								       rr_ptr->rr[i]->ptr );
 +					}
 +#endif
++
  					for( j = 0; j < rr_aaaa->num_rr; j++ ) {
+ 						/* XXX MX has a 'continue' case here which should be hoisted. */
  						if ( spf_server->debug ) {
- 							INET_NTOP(AF_INET6, &rr_aaaa->rr[j]->aaaa.s6_addr,
- 											ip6_buf, sizeof(ip6_buf));
- 							SPF_debugf( "%d: %d:  found %s",
-@@ -1067,10 +1171,36 @@
- 				/* Set everything up properly again. */
- 				spf_response_subr = spf_response;
+@@ -1150,6 +1258,32 @@ SPF_record_interpret(SPF_record_t *spf_r
  				spf_response = save_spf_response;
  				save_spf_response = NULL;
  
@@ -718,14 +469,11 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
  				/* Rewrite according to prefix of include */
  				switch (SPF_response_result(spf_response_subr)) {
  					case SPF_RESULT_PASS:
- 						/* Pass */
- 						SPF_FREE_LOOKUP_DATA();
-@@ -1150,10 +1280,17 @@
- 
- 			if( rr_a->herrno == TRY_AGAIN ) {
+@@ -1234,6 +1368,15 @@ SPF_record_interpret(SPF_record_t *spf_r
  				SPF_FREE_LOOKUP_DATA();
  				return DONE_TEMPERR(SPF_E_DNS_ERROR);
  			}
++
 +#ifdef SUPPORT_DNSSEC
 +			if( rr_a->herrno == DNSSEC_FAILURE ) {
 +			        SPF_response_add_warn( spf_response, SPF_E_DNSSEC_FAILURE,
@@ -733,32 +481,15 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_interpret.c libspf2-1.2.5/src/li
 +						       lookup );
 +			}
 +#endif
++
  			if ( rr_a->num_rr > 0 ) {
+ 				SPF_dns_rr_free(rr_a);
  				SPF_FREE_LOOKUP_DATA();
- 				return DONE_MECH(mech->prefix_type);
- 			}
- 
-diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_server.c libspf2-1.2.5/src/libspf2/spf_server.c
---- libspf2-1.2.5.orig/src/libspf2/spf_server.c	2005-02-18 22:52:58.000000000 -0500
-+++ libspf2-1.2.5/src/libspf2/spf_server.c	2008-04-25 14:36:34.000000000 -0400
-@@ -277,12 +277,11 @@
- 	switch( rr_txt->herrno ) {
- 		case HOST_NOT_FOUND:
- 			SPF_dns_rr_free(rr_txt);
- 			spf_response->result = SPF_RESULT_NONE;
- 			spf_response->reason = SPF_REASON_FAILURE;
--			return SPF_response_add_error(spf_response, 
--SPF_E_NOT_SPF,
-+			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
- 					"Host '%s' not found.", domain);
- 			break;
- 
- 		case NO_DATA:
- 			SPF_dns_rr_free(rr_txt);
-@@ -299,10 +298,17 @@
- 			break;
- 
- 		case NETDB_SUCCESS:
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/libspf2/spf_server.c libspf2-1.2.9.dnssec/src/libspf2/spf_server.c
+--- libspf2-1.2.9/src/libspf2/spf_server.c	2008-11-03 19:09:49.000000000 -0500
++++ libspf2-1.2.9.dnssec/src/libspf2/spf_server.c	2009-12-30 14:44:18.995746790 -0500
+@@ -400,6 +400,13 @@ retry:
+ 				SPF_debugf("get_record(%s): NETDB_SUCCESS", domain);
  			break;
  
 +#ifdef SUPPORT_DNSSEC
@@ -769,17 +500,13 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_server.c libspf2-1.2.5/src/libsp
 +			break;
 +#endif
  		default:
- 			SPF_dns_rr_free(rr_txt);
- 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
- 					"Unknown DNS failure for '%s': %d.",
- 					domain, rr_txt->herrno);
-diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_strerror.c libspf2-1.2.5/src/libspf2/spf_strerror.c
---- libspf2-1.2.5.orig/src/libspf2/spf_strerror.c	2005-02-21 21:34:21.000000000 -0500
-+++ libspf2-1.2.5/src/libspf2/spf_strerror.c	2008-04-25 14:14:38.000000000 -0400
-@@ -160,10 +160,15 @@
- 
- 	case SPF_E_RECURSIVE:
- 	return "include: or redirect= caused unlimited recursion";
+ 			if (spf_server->debug > 0)
+ 				SPF_debugf("get_record(%s): UNKNOWN_ERROR", domain);
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/libspf2/spf_strerror.c libspf2-1.2.9.dnssec/src/libspf2/spf_strerror.c
+--- libspf2-1.2.9/src/libspf2/spf_strerror.c	2008-10-06 19:54:08.000000000 -0400
++++ libspf2-1.2.9.dnssec/src/libspf2/spf_strerror.c	2009-12-30 14:45:16.005861646 -0500
+@@ -166,6 +166,12 @@ SPF_strerror( SPF_errcode_t spf_c_err )
+ 	return "Multiple SPF or TXT records for domain.";
  	break;
  
 +#ifdef SUPPORT_DNSSEC
@@ -787,8 +514,7 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_strerror.c libspf2-1.2.5/src/lib
 +	return "DNSSEC Validation of SPF record failed";
 +	break;
 +#endif
++
      default:
  	return "Unknown SPF error code";
  	break;
-     }
- 
