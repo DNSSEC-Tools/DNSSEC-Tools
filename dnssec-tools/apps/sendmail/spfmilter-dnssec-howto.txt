@@ -22,9 +22,13 @@ Go to the spfmilter-x directory:
 
 	cd spfmilter-x
 
+For 0.97, a patch is needed to update it for some changes in libspf2:
+
+	patch -p 1 -b -z .orig </path/to/patch/spfmilter-0.97_libspf2.patch
+
 Apply the spfmilter-x_dnssec_patch.txt patch found in this directory by:
 
-	patch -p 0 -b -z .orig </path/to/patch/spfmilter-x_dnssec_patch.txt
+	patch -p 1 -b -z .orig </path/to/patch/spfmilter-x_dnssec_patch.txt
 
 This will apply the patch and store the original files with a .orig suffix.
 
@@ -32,6 +36,7 @@ Before compiling, run 'autoconf' from the main spfmilter-x directory to
 generate a new 'configure' file.  Then, run configure with the
 --enable-dnssec-support option:
 
+	autoconf
 	./configure --enable-dnssec-support
 
 Finally, compile and install spfmilter as per the instructions given in the
