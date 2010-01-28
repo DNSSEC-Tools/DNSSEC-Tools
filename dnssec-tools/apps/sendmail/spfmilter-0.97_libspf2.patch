@@ -1,0 +1,35 @@
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file spfmilter-0.97.clean/configure.ac spfmilter-0.97/configure.ac
+--- spfmilter-0.97.clean/configure.ac	2005-04-24 17:02:17.000000000 -0400
++++ spfmilter-0.97/configure.ac	2010-01-01 15:29:04.000000000 -0500
+@@ -20,7 +20,7 @@ AC_CHECK_FUNCS([daemon setsid getopt_lon
+ # Check for both SPF libraries.  If both are present, the .c file will
+ # choose one.
+ AC_SEARCH_LIBS([SPF_init],[spf])
+-AC_SEARCH_LIBS([SPF_create_config],[spf2])
++AC_SEARCH_LIBS([SPF_sanitize],[spf2])
+ 
+ # Check for pthread library.  On some systems it's in libc_r and must
+ # be invoked via the special -pthread flag; on other systems it's just
+Binary files spfmilter-0.97.clean/spfmilter and spfmilter-0.97/spfmilter differ
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file spfmilter-0.97.clean/spfmilter.c spfmilter-0.97/spfmilter.c
+--- spfmilter-0.97.clean/spfmilter.c	2005-06-20 21:28:57.000000000 -0400
++++ spfmilter-0.97/spfmilter.c	2010-01-01 15:32:24.000000000 -0500
+@@ -2423,6 +2423,9 @@ free_resolver( int r )
+ 
+ /* New libspf2 API. */
+ 
++#define spf_response_t SPF_response_t
++#define spf_request_t SPF_request_t
++
+ static SPF_server_t* spf_server;
+ 
+ struct lib_fallback_s {
+@@ -2567,7 +2570,7 @@ lib_set_ipv4( lib_data_t* ld, struct in_
+ static int
+ lib_set_ipv6( lib_data_t* ld, struct in6_addr ipv6_addr, char* ipv6_str )
+     {
+-    if ( SPF_request_set_ipv6_str( ld->spf_request, ipv4_str ) )
++    if ( SPF_request_set_ipv6_str( ld->spf_request, ipv6_str ) )
+ 	return 0;
+     return 1;
+     }
