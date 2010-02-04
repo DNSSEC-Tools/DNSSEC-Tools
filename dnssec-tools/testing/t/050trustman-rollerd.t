@@ -350,7 +350,7 @@ close (DTC);
 
 my $named_command = "$named -c ./named.conf";
 
-my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p --hold_time 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir --test_revoke >> $tlogfile 2>&1 ";
+my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p --hold_time 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir >> $tlogfile 2>&1 ";
 
 my $zonesigner_signzone = "perl -I$dt_plibs -I$dt_parch $zonesigner $zsargs -genkeys $domain >> $rlogfile 2>&1 ";
 
