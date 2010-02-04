@@ -52,9 +52,9 @@ my %zonesigner_response = (
 zone signed successfully
 
 example.com:
-     KSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-3)
-     ZSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-1)
-     ZSK (pub) 12345  -b 2048  01/01/01     (example.com-signset-2)
+     KSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-00003)
+     ZSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-00001)
+     ZSK (pub) 12345  -b 2048  01/01/01     (example.com-signset-00002)
 
 zone will expire in 4 weeks, 2 days, 0 seconds
 DO NOT delete the keys until this time has passed.
@@ -76,9 +76,9 @@ DO NOT delete the keys until this time has passed.
 zone signed successfully
 
 nsec3.example.com:
-     KSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-3)
-     ZSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-1)
-     ZSK (pub) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-2)
+     KSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00003)
+     ZSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00001)
+     ZSK (pub) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00002)
 
 zone will expire in 4 weeks, 2 days, 0 seconds
 DO NOT delete the keys until this time has passed.

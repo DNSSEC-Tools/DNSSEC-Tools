@@ -1,5 +1,7 @@
 # misc procedures used in multiple testing scripts
 
+use Text::Diff;
+
 # local variables
 
 $dt_verbose  = 0;
@@ -27,7 +29,7 @@ sub dt_do_bail {
 sub do_is {
   my ($test, $is1, $is2, $istext) = @_;
   if (! $test->is_eq($is1, $is2, $istext) ) {
-    outdiff( $is1, $is2)  if ($dt_verbose);
+    outdiff( $is1, $is2);
     &dt_do_bail($test) if ($dt_bail);
     return(0);
   }
@@ -39,7 +41,7 @@ sub do_ok {
   my ($test, $got, $expected, $outtext) = @_;
   $options{v} =1 ;
   if ( !$test->ok($got eq $expected, $outtext) ) {
-    outdiff( $got, $expected)  if ($dt_verbose);
+    outdiff( $got, $expected);
     &dt_do_bail($test) if ($dt_bail);
     return(0);
   }
@@ -49,10 +51,23 @@ sub do_ok {
 
 sub outdiff {
   my ($got, $expected) = @_;
-  `echo \'$expected\' > ./expected.txt`;
-  `echo \'$got\' > ./got.txt`;
-  my $temp = `diff -E  got.txt expected.txt`;
-  print "the diff got (<) / expected (>) is:\n$temp\n\n";
+
+  my $diff = Text::Diff::diff(\$expected, \$got,);
+  if ($dt_verbose) {
+    print "the diff expected / got is:\n$diff\n";
+  }
+  else {
+    my @diffa = split /^/, $diff;
+
+    print "  Error Output:\n";
+    for (my $i=0;$i<=$#diffa;$i++) {
+      if ( $diffa[$i] =~ /^\+/ ) {
+        print "    $diffa[$i]";
+      }
+    }
+    print "\n";
+  }
+
 }
 
 
@@ -75,7 +90,7 @@ sub summary {
     printf "\n$outtext:\t *** FAILED %d test(s) ***\n",
       ($total - $success), ($planned - $total);
   }
-  print "\n";
+#  print "\n";
 }
 
 

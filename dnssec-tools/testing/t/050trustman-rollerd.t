@@ -25,7 +25,7 @@ getopts("vV",\%options);
 # TEST object
 my $test = Test::Builder->new;
 $test->diag("Testing Trustman interacting with Rollerd");
-$test->plan( tests => 22);
+$test->plan( tests => 24);
 
 #verbose setup for test object and dt_testingtools.
 if (exists $options{v}) { $test->no_diag(0); dt_testingtools_verbose(1); }
@@ -113,8 +113,9 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
+ example.com: adding missing zonename field (example.com) to rollrec
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
- example.com: KSK phase 1
+ example.com: KSK phase 1 (Waiting for old zone data to expire from caches)
  rollover manager shutting down...
 },
 
@@ -128,10 +129,10 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: KSK phase 2 (Generating new Published KSK)
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
- example.com: KSK phase 3
+ example.com: KSK phase 3 (Waiting for cache or holddown timer expiration)
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
 },
@@ -145,11 +146,11 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: KSK phase 5
+ example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
+ example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
+ example.com: KSK phase 6 (Waiting for parent to publish new DS record)
  example.com: KSK phase 6: waiting for parental publication of DS record
 },
     "ksk7" => qq{ rollerd starting ----------------------------------------
@@ -162,13 +163,13 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: KSK phase 5
+ example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
+ example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
+ example.com: KSK phase 6 (Waiting for parent to publish new DS record)
  example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7
+ example.com: KSK phase 7 (Reloading the zone)
 },
     "kskhalt" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
@@ -180,13 +181,13 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: KSK phase 5
+ example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
+ example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
+ example.com: KSK phase 6 (Waiting for parent to publish new DS record)
  example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7
+ example.com: KSK phase 7 (Reloading the zone)
  rollover manager shutting down...
 },
 );
@@ -249,6 +250,25 @@ New key added to $dnsvalfile for zone example.com
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Closed tmp/dnsval-tmp.conf and renamed back to $dnsvalfile
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
+},
+    "revokeoldkeyindnsval" => qq{Reading and parsing trust keys from $dnsvalfile
+ Found a key for example.com
+ Found a key for dnssec-tools.org
+ Found a key for example.com
+ Checking zone keys for validity
+ Checking the live "example.com" key
+ example.com ... refresh_secs=18, refresh_time=12
+Opened ./tmp/tmp/dnsval-tmp.conf to create a replacement for $dnsvalfile
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+The following key has been revoked from zone example.com:
+example.com. "385 3 5 XXX"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Closed tmp/dnsval-tmp.conf and renamed back to $dnsvalfile
+ Checking the live "dnssec-tools.org" key
+ pending key for dnssec-tools.org
+ dnssec-tools.org ... refresh_secs=18, refresh_time=12
+checking new keys for timing
+ hold down timer for dnssec-tools.org still in the future (12 seconds)
 },
 );
 
@@ -330,7 +350,7 @@ close (DTC);
 
 my $named_command = "$named -c ./named.conf";
 
-my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p --hold_time 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir >> $tlogfile 2>&1 ";
+my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p --hold_time 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir --test_revoke >> $tlogfile 2>&1 ";
 
 my $zonesigner_signzone = "perl -I$dt_plibs -I$dt_parch $zonesigner $zsargs -genkeys $domain >> $rlogfile 2>&1 ";
 
@@ -369,11 +389,11 @@ do_is($test, system("$named_command"), 0,
 my $named_pid = `cat ./named.pid`;  chomp $named_pid;
 
 $test->is_eq(system("$trustman_command"), 0,
-	     "trust/roll: trustman: connect to named for \'dnsval.conf\'");
+         "trust/roll: trustman: connect to named for \'dnsval.conf\'");
 
 my $log = &parsetlog;
 if (! do_ok($test, $log, $trustman_response{talktonamed},
-	    "trust/roll: trustman: check connection to named") ) {
+        "trust/roll: trustman: check connection to named") ) {
   print"\tPossible Problems: \n";
   print"\t\tThe DNS used does not support DNSSEC (e.g. ISP, opendns.org).\n";
   print"\t\tThis host has an incorrect date (e.g. 1+ days incorrect).\n";
@@ -387,7 +407,7 @@ if (! do_ok($test, $log, $trustman_response{talktonamed},
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_singlerun"), 0,
-	     "trust/roll: rollerd: rolling \'$domainfile\' KSK phase 1");
+         "trust/roll: rollerd: rolling \'$domainfile\' KSK phase 1");
 
 $log = &parseplog;
 do_is($test, $log, $rollerd_response{ksk1},
@@ -402,7 +422,7 @@ do_is($test, $log, $rollerd_response{ksk1},
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_singlerun"), 0,
-	     "trust/roll: rollerd: rolling \'$domainfile\' KSK phase 2-3");
+         "trust/roll: rollerd: rolling \'$domainfile\' KSK phase 2-3");
 
 $log = &parseplog;
 do_is($test, $log, $rollerd_response{ksk23},
@@ -413,7 +433,7 @@ do_is($test, $log, $rollerd_response{ksk23},
 
 unlink $tlogfile;
 $test->is_eq(system("$trustman_command"), 0,
-	     "trust/roll: trustman: find new key for \'$domain\'");
+         "trust/roll: trustman: find new key for \'$domain\'");
 
 $log = &parsetlog;
 do_ok($test, $log, $trustman_response{findnewkey},
@@ -426,7 +446,7 @@ do_ok($test, $log, $trustman_response{findnewkey},
 
 unlink $tlogfile;
 $test->is_eq(system("$trustman_command"), 0,
-	     "trust/roll: trustman: add the new key to \'dnsval.conf\'");
+         "trust/roll: trustman: add the new key to \'dnsval.conf\'");
 
 $log = &parsetlog;
 do_ok($test, $log, $trustman_response{newkeytodnsval},
@@ -434,13 +454,13 @@ do_ok($test, $log, $trustman_response{newkeytodnsval},
 
 # validates with NO new key
 $test->is_eq(&validate("www.$domain", $resconffile,
-		       $dnsvaloldkey, $roothintsfile),
-	     0, "trust/roll: checking validation with old key in dnsval.conf");
+               $dnsvaloldkey, $roothintsfile),
+         0, "trust/roll: checking validation with old key in dnsval.conf");
 
 # validates with new key
 $test->is_eq(&validate("www.$domain", $resconffile,
-		       $dnsvalfile, $roothintsfile),
-	     0, "trust/roll: checking validation with new key in dnsval.conf");
+               $dnsvalfile, $roothintsfile),
+         0, "trust/roll: checking validation with new key in dnsval.conf");
 
 &waittime(60, 5, "       Waiting on TTL for next key rolling phases");
 
@@ -453,7 +473,7 @@ $test->is_eq(&validate("www.$domain", $resconffile,
 
 unlink "$phaselog";
 $test->is_eq(system("$rollerd_tillstopped"), 0,
-	     "trust/roll: rolling \'$domainfile\' KSK phase 4-6");
+         "trust/roll: rolling \'$domainfile\' KSK phase 4-6");
 
 &waittime(10, 1, "       Waiting for phase 4-6 transition");
 
@@ -475,27 +495,35 @@ do_is($test, system("$rollctl_halt"), 0,
       "rollerd/rollctl: notifying rollerd to shutdown");
 
 # need to reload named again.
-`$rndc -s 127.0.0.1 -p 1953 -k ./rndc.key reload`;
-if ($? != 0) {
-  local_cleanup();
-  die "Error failed to reload named using rndc\n";
-}
+reload_named();
 
 # rollerd shutdown
 $log = &parseplog;
 do_is($test, $log, $rollerd_response{kskhalt}, 
       "rollerd/rollctl: checking shutdown output");
 
-# validates with old key only
-# NOTE: should fail and return 1
-$test->is_eq(&validate("www.$domain", $resconffile,
-		       $dnsvaloldkey, $roothintsfile),
-	     1, "trust/roll: checking validation with old key in dnsval.conf");
 
-# validates with new key
+# revoke old key in dnsval.conf
+unlink $tlogfile;
+$test->is_eq(system("$trustman_command"), 0,
+             "trust/roll: trustman: revoke old key in \'dnsval.conf\'");
+
+$log = &parsetlog;
+do_ok($test, $log, $trustman_response{revokeoldkeyindnsval},
+      "trust/roll: trustman: if old key revoked in \'dnsval.conf\'") ;
+
+# need to reload named again.
+# reload_named();
+
+# should fail to validate with old key only
+$test->is_eq(&validate("www.$domain", $resconffile, 
+                       $dnsvaloldkey, $roothintsfile),
+         1, "trust/roll: checking validation with old key in dnsval.conf");
+
+# should validate with new key
 $test->is_eq(&validate("www.$domain", $resconffile,
-		       $dnsvalfile, $roothintsfile),
-	     0, "trust/roll: checking validation with new key in dnsval.conf");
+               $dnsvalfile, $roothintsfile),
+         0, "trust/roll: checking validation with new key in dnsval.conf");
 
 
 &local_cleanup();
@@ -506,6 +534,14 @@ exit(0);
 
 
 #                   **** PROCEDURES ****
+
+sub reload_named {
+  `$rndc -s 127.0.0.1 -p 1953 -k ./rndc.key reload`;
+  if ($? != 0) {
+    local_cleanup();
+    die "Error failed to reload named using rndc\n";
+  }
+}
 
 
 sub local_cleanup {
@@ -548,12 +584,13 @@ sub parsetlog {
   $logtext =~ s/time=(\d|\.)+/time=12/g;
   $logtext =~ s/\d+ +seconds/12 seconds/g;
   $logtext =~ s/$domain reached \(now = \d+ > \d+\)/$domain reached (now 12 > 11)/g;
-  $logtext =~ s/$domain\. "257 3 5 .*"/$domain. "257 3 5 XXX"/g;
+  $logtext =~ s/$domain\. "(\d+) 3 5 .*"/$domain. "\1 3 5 XXX"/g;
   $logtext =~ s/(Opened|Closed)(.*)dnsval-......\.conf(.*)/\1\2dnsval-tmp.conf\3/g;
 
   print "after:\n$logtext\n"  if (exists $options{V});
   return $logtext;
 }
+
 
 sub parsepstring {
   my $pstring = @_[0];
@@ -571,13 +608,10 @@ sub parsepstring {
 }
 
 
-
 # validate uses the dnssec-tools validator perl plugin to validate a
 # passed in host name far an "IN", "A" type lookup.
 # It returns 0 on success (validated) and 1 on failure (not validate).
 # I left in error output for errors that shouldn't occur.
-# It uses global values for the configuration files that validator
-# should use.
 sub validate {
   my($host, $rcfile, $dvfile, $rhfile) = @_;
 

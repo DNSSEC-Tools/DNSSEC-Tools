@@ -74,8 +74,9 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
+ example.com: adding missing zonename field (example.com) to rollrec
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
- example.com: KSK phase 1
+ example.com: KSK phase 1 (Waiting for old zone data to expire from caches)
  rollover manager shutting down...
 },
 
@@ -89,10 +90,11 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: KSK phase 2 (Generating new Published KSK)
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
- example.com: KSK phase 3
+ example.com: KSK phase 2: unable to reload zone, rc - 127
+ example.com: KSK phase 3 (Waiting for cache or holddown timer expiration)
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
 },
@@ -106,11 +108,11 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: KSK phase 5
+ example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
+ example.com: KSK phase 6 (Waiting for parent to publish new DS record)
  example.com: KSK phase 6: waiting for parental publication of DS record
 },
     "ksk7" => qq{ rollerd starting ----------------------------------------
@@ -123,13 +125,13 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: KSK phase 5
+ example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
+ example.com: KSK phase 6 (Waiting for parent to publish new DS record)
  example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7
+ example.com: KSK phase 7 (Reloading the zone)
 },
     "kskhalt" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
@@ -141,13 +143,13 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: KSK phase 5
+ example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
+ example.com: KSK phase 6 (Waiting for parent to publish new DS record)
  example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7
+ example.com: KSK phase 7 (Reloading the zone)
  rollover manager shutting down...
 },
     "zsk1" => q{ rollerd starting ----------------------------------------
@@ -161,12 +163,13 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: reloading zone for KSK phase 7
+ example.com: KSK phase 7: unable to reload zone, rc - 127
  example.com: KSK phase 7: zone, key files archived
- example.com: KSK phase 0
+ example.com: KSK phase 0 (Not Rolling)
  example.com: KSK expiration in weeks, days, hours, seconds
  example.com: creating new zsk_rollsecs record and forcing ZSK rollover
  example.com: current ZSK has expired
- example.com: ZSK phase 1 (Waiting for the old zone data to expire from caches)
+ example.com: ZSK phase 1 (Waiting for old zone data to expire from caches)
  rollover manager shutting down...
 },
     "zsk23" => qq{ rollerd starting ----------------------------------------
@@ -179,11 +182,12 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: ZSK phase 2 (Signing the zone with the KSK and published ZSK)
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -usezskpub $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: ZSK phase 2 (Signing zone with KSK and Published ZSK)
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -usezskpub $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for ZSK phase 2
- example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches)
- example.com: ZSK phase 3 (Waiting for the old zone data to expire from caches); cache expires in minutes, seconds
+ example.com: ZSK phase 2: unable to reload zone, rc - 127
+ example.com: ZSK phase 3 (Waiting for old zone data to expire from caches)
+ example.com: ZSK phase 3 (Waiting for old zone data to expire from caches); cache expires in minutes, seconds
  rollover manager shutting down...
 },
     "zsk4" => qq{ rollerd starting ----------------------------------------
@@ -196,10 +200,11 @@ my %rollerd_response = (
  zone reload "1"
  sleeptime "15"
  
- example.com: ZSK phase 4 (Adjusting keys in the keyrec and signing the zone with new ZSK)
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollzsk $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf $zsargs_resp example.com example.com.signed > /dev/null 2>&1"
+ example.com: ZSK phase 4 (Adjusting keys in keyrec and signing zone with New ZSK)
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollzsk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for ZSK phase 4
+ example.com: ZSK phase 4: unable to reload zone, rc - 127
  example.com: ZSK phase 0 (Not Rolling)
  example.com: ZSK expiration in weeks, days, hours, seconds
  rollover manager shutting down...
