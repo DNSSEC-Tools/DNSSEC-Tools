@@ -64,16 +64,26 @@ my $zonecheck = `which named-checkzone`;
 my $zonesign  = `which dnssec-signzone`;
 chomp ($keygen, $zonecheck, $zonesign);
 
-my $command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> $logfile 2>&1";
+my $zonesigner_signzone = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> $logfile 2>&1";
 
-$test->is_eq(system("$command"), 0, 
+my $donuts_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $donuts -C -r \'$donutsrules\' $domainfile.signed $domain >> $logfile 2>&1";
+
+if (exists $options{v}) {
+  print "zonesigner_signzone:\n$zonesigner_signzone\n";
+  print "donuts_command:\n$donuts_command\n";
+}
+
+
+# tests
+
+# sign zone
+
+$test->is_eq(system("$zonesigner_signzone"), 0,
 	     "donuts: signing \'$domainfile\' for donuts");
 
-# test donuts
+# run donuts
 
-$command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $donuts -C -r \'$donutsrules\' $domainfile.signed $domain >> $logfile 2>&1";
-
-$test->is_eq(system("$command"), 0, "Checking donuts: donuts checking zone file \'$domainfile\'");
+$test->is_eq(system("$donuts_command"), 0, "Checking donuts: donuts checking zone file \'$domainfile\'");
 
 
 summary($test, "donuts");
