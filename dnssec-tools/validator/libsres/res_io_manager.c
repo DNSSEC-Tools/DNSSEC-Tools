@@ -770,7 +770,7 @@ res_io_read_tcp(struct expected_arrival *arrival)
 int
 res_io_read_udp(struct expected_arrival *arrival)
 {
-    size_t bytes_waiting;
+    size_t bytes_waiting = 0;
     struct sockaddr_storage from;
     socklen_t       from_length = sizeof(from);
     int             ret_val, arr_family;
