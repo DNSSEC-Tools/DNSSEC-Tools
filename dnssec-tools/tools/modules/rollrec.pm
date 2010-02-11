@@ -289,7 +289,7 @@ sub rollrec_read
 		# and a number of punctuation characters.  The value *must*
 		# be enclosed in double quotes.
 		#
-		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
 		$keyword = $1;
 		$value = $2;
 #		print "rollrec_read:  keyword <$keyword>\t\t<$value>\n";
