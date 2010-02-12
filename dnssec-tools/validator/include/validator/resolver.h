@@ -253,7 +253,7 @@ u_int16_t       res_nametotype(const char *buf, int *successp);
 const char     *p_section(int section, int opcode);
 #endif
 
-const char     *p_class(int class);
+const char     *p_class(int pclass);
 
 #undef p_type
 #define p_type(type) p_sres_type(type)
