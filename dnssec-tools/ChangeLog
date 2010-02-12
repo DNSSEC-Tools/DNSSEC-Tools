@@ -1,4 +1,616 @@
 ------------------------------------------------------------------------
+r5017 | hardaker | 2010-02-12 10:57:41 -0800 (Fri, 12 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+
+change parameter from class to pclass to not conflict with C++ terms
+------------------------------------------------------------------------
+r5016 | hardaker | 2010-02-12 10:56:37 -0800 (Fri, 12 Feb 2010) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/convertar
+
+fix documentation bug
+------------------------------------------------------------------------
+r5014 | baerm | 2010-02-11 09:57:50 -0800 (Thu, 11 Feb 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+
+Fixed 64-bit segfault issue.
+
+
+------------------------------------------------------------------------
+r5013 | baerm | 2010-02-11 09:55:20 -0800 (Thu, 11 Feb 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+
+changing parsing to allow email address in rrf files
+
+
+------------------------------------------------------------------------
+r5012 | baerm | 2010-02-04 14:53:27 -0800 (Thu, 04 Feb 2010) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/trustman
+
+
+Fixed key overwrite during revoke, fixed revoke.
+Using the revoke bit is now the default behaviour.
+Added numerous white space changes.
+
+
+------------------------------------------------------------------------
+r5011 | baerm | 2010-02-04 14:51:12 -0800 (Thu, 04 Feb 2010) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/testing/t/050trustman-rollerd.t
+
+Updated test to match new default behavior for revoking keys in trustman
+
+
+------------------------------------------------------------------------
+r5010 | baerm | 2010-02-04 14:04:10 -0800 (Thu, 04 Feb 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/testing/TODO
+   M /trunk/dnssec-tools/testing/t/010zonesigner.t
+   M /trunk/dnssec-tools/testing/t/020donuts.t
+   M /trunk/dnssec-tools/testing/t/040rollerd.t
+   M /trunk/dnssec-tools/testing/t/050trustman-rollerd.t
+   M /trunk/dnssec-tools/testing/t/dt_testingtools.pl
+
+updated testing suite, mostly syntax some processing changes
+
+------------------------------------------------------------------------
+r5009 | rstory | 2010-01-28 11:18:39 -0800 (Thu, 28 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/sendmail/README
+   A /trunk/dnssec-tools/apps/sendmail/spfmilter-0.97_libspf2.patch
+   M /trunk/dnssec-tools/apps/sendmail/spfmilter-dnssec-howto.txt
+
+update for 0.97 and spf2-1.2.9
+
+------------------------------------------------------------------------
+r5007 | rstory | 2010-01-28 09:23:12 -0800 (Thu, 28 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/libspf2/README.dnssec
+   M /trunk/dnssec-tools/apps/libspf2/libspf2-dnssec.patch
+
+update for libspf2 1.2.9
+
+------------------------------------------------------------------------
+r5006 | rstory | 2010-01-28 09:18:25 -0800 (Thu, 28 Jan 2010) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/configure.in
+
+check for rquired perl modules
+------------------------------------------------------------------------
+r5005 | tewok | 2010-01-26 08:11:47 -0800 (Tue, 26 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+
+Modified -zonestatus to give a nice format for its output.
+
+------------------------------------------------------------------------
+r5004 | tewok | 2010-01-25 16:39:05 -0800 (Mon, 25 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Modified to handle long and short phase messages.
+
+------------------------------------------------------------------------
+r5003 | tewok | 2010-01-25 16:35:54 -0800 (Mon, 25 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Default to long phase messages.
+
+------------------------------------------------------------------------
+r5002 | tewok | 2010-01-25 15:50:29 -0800 (Mon, 25 Jan 2010) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Added the zonename to the response to "rollctl -zonestatus".  The zonename was
+added since split-zones may make the zonename and rollrec name be different.
+
+------------------------------------------------------------------------
+r5001 | tewok | 2010-01-25 15:40:41 -0800 (Mon, 25 Jan 2010) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Deleted some old debugging code.
+Modified the response to "rollctl -zonestatus" in case of short phase messages.
+
+------------------------------------------------------------------------
+r5000 | tewok | 2010-01-25 15:17:38 -0800 (Mon, 25 Jan 2010) | 8 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Modified rollmgr_get_phase():
+	- extended checking for invalid phase numbers and phase types
+	- added ability to have long or short messages
+	- added pod to document the routine
+Adjusted copyright date and version number.
+Adjusted formatting and shortened message content for some messages and
+comments.
+
+------------------------------------------------------------------------
+r4999 | tewok | 2010-01-25 11:28:23 -0800 (Mon, 25 Jan 2010) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+
+Adjusted copyright dates and version.
+Added support for new zonename record.
+Added a note to the caveat pod section.
+Fixed some pod errors.
+
+------------------------------------------------------------------------
+r4998 | tewok | 2010-01-25 08:33:33 -0800 (Mon, 25 Jan 2010) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollset
+
+Option changes to accomodate split-views:
+	- renamed -zone option to -name (used to select a specific rollrec)
+	- added -zone to specify a new zone name
+	- added -reset-zonename to copy rollrec name to zonename
+	- modified usage() and pod to reflect these changes
+Adjusted copyright dates and version.
+
+------------------------------------------------------------------------
+r4997 | tewok | 2010-01-24 11:42:28 -0800 (Sun, 24 Jan 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+
+Added checks for the new zonename record.
+Adjusted copyright dates.
+Updates version.
+
+------------------------------------------------------------------------
+r4996 | tewok | 2010-01-24 10:14:06 -0800 (Sun, 24 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Fixed some spelling errors.
+
+------------------------------------------------------------------------
+r4995 | tewok | 2010-01-22 16:16:46 -0800 (Fri, 22 Jan 2010) | 9 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+
+Modifications for split-zones:
+	- added -zonename option
+	- renamed -zone option to -zonefile
+	- rename the "Zone" output column to "Name"
+	- added the "Zonename" column to the output
+	- added pod describing the new behavior
+
+Adjusted copyright dates.
+
+------------------------------------------------------------------------
+r4994 | tewok | 2010-01-21 16:58:17 -0800 (Thu, 21 Jan 2010) | 8 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+
+Added zonename field to newly created rollrecs.
+Adjusted copyright date and tool version.
+Modified pod:
+	- added paragraph about zonename field and record name
+	- added zonename lines to examples
+	- replace "domain" with "zone"
+	- adjusted spacing in a few examples
+
+------------------------------------------------------------------------
+r4993 | hardaker | 2010-01-21 16:30:28 -0800 (Thu, 21 Jan 2010) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+copyright year update
+------------------------------------------------------------------------
+r4992 | hardaker | 2010-01-21 16:30:11 -0800 (Thu, 21 Jan 2010) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/COPYING
+
+copyright year update
+------------------------------------------------------------------------
+r4991 | tewok | 2010-01-21 13:13:52 -0800 (Thu, 21 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+
+Added a default archive directory.
+
+------------------------------------------------------------------------
+r4989 | tewok | 2010-01-21 08:53:01 -0800 (Thu, 21 Jan 2010) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Modified pod:
+	- Clarified paragraph about KSK steps 5 and 6.
+	- Modified discussion of rollrec names to account for split-zone mods.
+	- Modified to not require the rollctl comm pipe to be owned by root,
+	  but by rollerd's user.
+
+------------------------------------------------------------------------
+r4988 | hardaker | 2010-01-20 15:00:31 -0800 (Wed, 20 Jan 2010) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+
+actually pass in the mail arguments
+------------------------------------------------------------------------
+r4987 | tewok | 2010-01-19 17:17:30 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/rundemo
+
+Fixed usage message.
+
+------------------------------------------------------------------------
+r4986 | tewok | 2010-01-19 17:16:59 -0800 (Tue, 19 Jan 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/rundemo
+
+Adjusted copyright date.
+Added -reload option.
+Changed loglevel to phase.
+
+------------------------------------------------------------------------
+r4985 | tewok | 2010-01-19 17:15:32 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/phaser
+
+Adjusted copyright date.
+
+------------------------------------------------------------------------
+r4984 | tewok | 2010-01-19 17:15:10 -0800 (Tue, 19 Jan 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/Makefile
+
+Adjusted the copyright date.
+Removed unnecessary refs to db.cache.
+Added two commented-out zonesigner commands for using key directories.
+
+------------------------------------------------------------------------
+r4983 | tewok | 2010-01-19 17:13:53 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/demos/rollerd-basic/save-db.cache
+
+Deleted because it isn't used.
+
+------------------------------------------------------------------------
+r4982 | tewok | 2010-01-19 17:13:13 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/README
+
+Adjust the copyright date.
+
+------------------------------------------------------------------------
+r4981 | tewok | 2010-01-19 17:11:00 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-demo.rollrec
+
+Make both zones roll.
+
+------------------------------------------------------------------------
+r4980 | tewok | 2010-01-19 17:10:05 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-example.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-test.com
+
+Speed up the test a little.
+
+------------------------------------------------------------------------
+r4979 | tewok | 2010-01-19 15:52:48 -0800 (Tue, 19 Jan 2010) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Added code to put the New ZSKs in the zskdirectory.
+Adjusted the copyright date.
+Fixed a comment typo.
+Deleted an extraneous comment.
+
+------------------------------------------------------------------------
+r4978 | tewok | 2010-01-19 11:32:37 -0800 (Tue, 19 Jan 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+
+Used proper exit code if rollerd isn't running.
+Used proper variable in two error messages.
+Fixed formatting.
+
+------------------------------------------------------------------------
+r4977 | tewok | 2010-01-19 11:29:24 -0800 (Tue, 19 Jan 2010) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Added some parens in an ifcond, for clarity.
+Fixed a comment typo.
+
+------------------------------------------------------------------------
+r4976 | tewok | 2010-01-19 11:26:47 -0800 (Tue, 19 Jan 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+
+Used proper exit code if rollerd isn't running.
+Used proper variable in two error messages.
+Fixed formatting.
+
+------------------------------------------------------------------------
+r4975 | tewok | 2010-01-19 11:09:26 -0800 (Tue, 19 Jan 2010) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added support for the special characters the docs say can be used
+in rollrec names.
+Added quotes around zone arguments sent to rollerd.
+Added a dash to the argument sent to rollctl.
+Fixed a comment typo.
+
+------------------------------------------------------------------------
+r4974 | tewok | 2010-01-19 08:07:38 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Adjusted copyright dates.
+
+------------------------------------------------------------------------
+r4973 | tewok | 2010-01-19 08:06:35 -0800 (Tue, 19 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Adjusted copyright date.
+
+------------------------------------------------------------------------
+r4972 | tewok | 2010-01-19 07:57:30 -0800 (Tue, 19 Jan 2010) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pod
+
+Fixed problem where a roll rollrec was called a zone rollrec.
+Added discussion about rollrec names.
+Added description of zonename field.
+Fixed examples to include zonename fields.
+Adjusted copyright dates.
+
+------------------------------------------------------------------------
+r4971 | tewok | 2010-01-19 07:52:58 -0800 (Tue, 19 Jan 2010) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+Modified pod example:
+	- added zonename field
+	- shortened paths in zonefile, keyrec, and directory fields for
+	  better formatting
+
+Modified paragraph about cmds field for clarity, grammar, and spelling.
+
+------------------------------------------------------------------------
+r4970 | tewok | 2010-01-18 16:35:09 -0800 (Mon, 18 Jan 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Handle key-name collisions better:
+	- add a maximum number of attempts to create the keys
+	- move key creation into makekey()
+
+------------------------------------------------------------------------
+r4969 | tewok | 2010-01-18 16:30:36 -0800 (Mon, 18 Jan 2010) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added support for split zones:
+	- First column is now rollrec name.
+	- New second column is zone name.
+
+If the background color couldn't be found, then the skipped-zone color will
+be used.
+
+------------------------------------------------------------------------
+r4968 | tewok | 2010-01-18 16:26:03 -0800 (Mon, 18 Jan 2010) | 11 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Added support for split zones:
+	- rollrecs now have a zonename field
+	- rollrec names are now an identifier only
+	- explicitly specified the keyrec file for zonesigner to use
+ 
+Expanded ksk_phase7()'s header to describe the steps it'll take.
+Expanded rrfchk()'s header and commands to better describe the things
+being checked.
+If rrfchk() doesn't find a zonename field in a rollrec, it'll add one that
+is the same as the rollrec's name.
+
+------------------------------------------------------------------------
+r4967 | tewok | 2010-01-18 15:50:12 -0800 (Mon, 18 Jan 2010) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/tooloptions.pm
+
+Fixed a comment.
+Added a keyrec_close() before a keyrec_read() to ensure the file pointers are
+properly set.
+Added a keyrec_close() if a zone keyrec wasn't found.
+Added some pod.
+
+------------------------------------------------------------------------
+r4966 | tewok | 2010-01-15 17:07:55 -0800 (Fri, 15 Jan 2010) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+Added zonename as a valid rollrec field.
+Adjusted copyright dates.
+Deleted an obsolete comment.
+
+------------------------------------------------------------------------
+r4965 | tewok | 2010-01-12 10:54:02 -0800 (Tue, 12 Jan 2010) | 10 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Modified runner() to:
+	- log output if the specified command fails
+	- take a report-error flag
+
+Modified signer() to mark a zone as a skip zone if zonesigner fails.
+
+Modified zonekeykr() to close the open keyrec prior to reading a new keyrec.
+
+Deleted a few debugging log messages.
+
+------------------------------------------------------------------------
+r4964 | tewok | 2010-01-11 16:43:05 -0800 (Mon, 11 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Fixed a misspelled word.
+
+------------------------------------------------------------------------
+r4963 | hserus | 2010-01-11 06:28:02 -0800 (Mon, 11 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_crypto.c
+
+Check for proper return value from DSA_verfiy and RSA_verify functions
+
+------------------------------------------------------------------------
+r4962 | hserus | 2010-01-08 12:49:45 -0800 (Fri, 08 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+If we already have a DNSKEY we can use to validate, don't try to look for one again
+
+------------------------------------------------------------------------
+r4961 | rstory | 2010-01-06 10:51:29 -0800 (Wed, 06 Jan 2010) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/sendmail/sendmail-dnssec-howto.txt
+   A /trunk/dnssec-tools/apps/sendmail/sendmail-spec.patch
+
+add patch for RPM spec file; add RPM building to howto file
+
+
+------------------------------------------------------------------------
+r4960 | rstory | 2010-01-06 10:38:49 -0800 (Wed, 06 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/sendmail/sendmail-8.14.1_dnssec_patch.txt
+
+clear errno before calling syserr after validation failure; no \n in err text
+
+------------------------------------------------------------------------
+r4959 | tewok | 2010-01-05 17:23:08 -0800 (Tue, 05 Jan 2010) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Centralized command execution in order to ensure the active keyrec file
+is flushed to disk prior to running the command.
+
+------------------------------------------------------------------------
+r4958 | tewok | 2010-01-05 12:00:47 -0800 (Tue, 05 Jan 2010) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Some minor code clean-up.
+
+------------------------------------------------------------------------
+r4957 | tewok | 2010-01-05 11:41:56 -0800 (Tue, 05 Jan 2010) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Deleted the first instance of cmd_logfile().  This only had the first half of
+the complete function.
+
+------------------------------------------------------------------------
+r4956 | tewok | 2010-01-05 11:39:22 -0800 (Tue, 05 Jan 2010) | 11 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Changed	"<command>"
+to:	'<command>'		(to ensure no interpolation would be performed.
+
+Several uses of	"<command>" had no quotes whatsoever.  These were single-
+quoted.
+
+Fixed some comment grammar.
+Put some safety parens in a return.
+Commented out a debugging print.
+Renamed a variable ($name -> $rname) to match what lots of other routines do.
+
+------------------------------------------------------------------------
+r4955 | baerm | 2009-12-31 10:31:53 -0800 (Thu, 31 Dec 2009) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/trustman
+
+
+Changed parsing of dnsval.conf to allow for the use DS records for
+domain DNSKEYS
+
+
+------------------------------------------------------------------------
+r4954 | rstory | 2009-12-30 19:09:02 -0800 (Wed, 30 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+
+use libsres_msg_getflag iff ns_msg_getflag is not defined
+------------------------------------------------------------------------
+r4953 | tewok | 2009-12-28 17:47:57 -0800 (Mon, 28 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Do better checks of rollctl's exit code.
+
+------------------------------------------------------------------------
+r4952 | tewok | 2009-12-28 16:36:44 -0800 (Mon, 28 Dec 2009) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+
+Added support for subordinate kskrevs.
+
+------------------------------------------------------------------------
+r4951 | hardaker | 2009-12-24 10:09:38 -0800 (Thu, 24 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/Makefile.in
+
+remove the apps/.libs directory on make clean
+------------------------------------------------------------------------
+r4949 | hardaker | 2009-12-24 08:58:10 -0800 (Thu, 24 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/ChangeLog
+
+Update for verison 1.6.pre2
+------------------------------------------------------------------------
+r4948 | hardaker | 2009-12-24 08:57:03 -0800 (Thu, 24 Dec 2009) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/convertar
+   M /trunk/dnssec-tools/tools/dnspktflow/dnspktflow
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+   M /trunk/dnssec-tools/tools/mapper/mapper
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+   M /trunk/dnssec-tools/tools/scripts/dtck
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+   M /trunk/dnssec-tools/tools/scripts/dtdefs
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+   M /trunk/dnssec-tools/tools/scripts/dtreqmods
+   M /trunk/dnssec-tools/tools/scripts/expchk
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+   M /trunk/dnssec-tools/tools/scripts/getdnskeys
+   M /trunk/dnssec-tools/tools/scripts/getds
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+   M /trunk/dnssec-tools/tools/scripts/rolllog
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+   M /trunk/dnssec-tools/tools/scripts/rollset
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+   M /trunk/dnssec-tools/tools/scripts/tachk
+   M /trunk/dnssec-tools/tools/scripts/timetrans
+   M /trunk/dnssec-tools/tools/scripts/trustman
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Update Version Number: 1.6.pre2
+------------------------------------------------------------------------
 r4947 | hardaker | 2009-12-24 08:54:13 -0800 (Thu, 24 Dec 2009) | 1 line
 Changed paths:
    M /trunk/dnssec-tools/dist/makerelease.xml
