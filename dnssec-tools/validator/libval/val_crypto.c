@@ -407,16 +407,25 @@ ds_sha_hash_is_equal(u_char * name_n,
     u_char        ds_digest[SHA_DIGEST_LENGTH];
     size_t        namelen;
     SHA_CTX         c;
+    size_t          l_index;
+    u_char        *qc_name_n;
 
     if (rrdata == NULL || ds_hash_len != SHA_DIGEST_LENGTH)
         return 0;
 
     namelen = wire_name_length(name_n);
+    qc_name_n = (u_char *) MALLOC(namelen * sizeof(u_char));
+    if (qc_name_n == NULL) {
+        return 0;
+    }
+    memcpy(qc_name_n, name_n, namelen);
+    l_index = 0;
+    lower_name(qc_name_n, &l_index);
 
     memset(ds_digest, SHA_DIGEST_LENGTH, 0);
 
     SHA1_Init(&c);
-    SHA1_Update(&c, name_n, namelen);
+    SHA1_Update(&c, qc_name_n, namelen);
     SHA1_Update(&c, rrdata, rrdatalen);
     SHA1_Final(ds_digest, &c);
 
@@ -437,16 +446,25 @@ ds_sha256_hash_is_equal(u_char * name_n,
     u_char        ds_digest[SHA256_DIGEST_LENGTH];
     size_t        namelen;
     SHA256_CTX    c;
+    size_t          l_index;
+    u_char        *qc_name_n;
 
     if (rrdata == NULL || ds_hash_len != SHA256_DIGEST_LENGTH)
         return 0;
 
     namelen = wire_name_length(name_n);
+    qc_name_n = (u_char *) MALLOC(namelen * sizeof(u_char));
+    if (qc_name_n == NULL) {
+        return 0;
+    }
+    memcpy(qc_name_n, name_n, namelen);
+    l_index = 0;
+    lower_name(qc_name_n, &l_index);
 
     memset(ds_digest, SHA256_DIGEST_LENGTH, 0);
 
     SHA256_Init(&c);
-    SHA256_Update(&c, name_n, namelen);
+    SHA256_Update(&c, qc_name_n, namelen);
     SHA256_Update(&c, rrdata, rrdatalen);
     SHA256_Final(ds_digest, &c);
 
@@ -459,7 +477,7 @@ ds_sha256_hash_is_equal(u_char * name_n,
 
 #ifdef LIBVAL_NSEC3
 u_char       *
-nsec3_sha_hash_compute(u_char * qc_name_n, u_char * salt,
+nsec3_sha_hash_compute(u_char * name_n, u_char * salt,
                        size_t saltlen, size_t iter, u_char ** hash,
                        size_t * hashlen)
 {
@@ -468,6 +486,15 @@ nsec3_sha_hash_compute(u_char * qc_name_n, u_char * salt,
      */
     SHA_CTX         c;
     size_t          i;
+    size_t          l_index;
+    int len = wire_name_length(name_n);
+    u_char *qc_name_n = (u_char *) MALLOC(len * sizeof(u_char));
+    if (qc_name_n == NULL) {
+        return NULL;
+    }
+    memcpy(qc_name_n, name_n, len);
+    l_index = 0;
+    lower_name(qc_name_n, &l_index);
 
     *hash = (u_char *) MALLOC(SHA_DIGEST_LENGTH * sizeof(u_char));
     if (*hash == NULL)

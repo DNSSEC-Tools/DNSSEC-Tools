@@ -374,6 +374,8 @@ make_sigfield(u_char ** field,
     if ((index + SIGNBY + signer_length) > *field_length)
         goto err;
     memcpy(&(*field)[index], rr_sig->rr_rdata, SIGNBY + signer_length);
+    l_index = 0;
+    lower_name(&(*field)[index+SIGNBY], &l_index);
     index += SIGNBY + signer_length;
 
     /*
@@ -786,7 +788,6 @@ verify_next_assertion(val_context_t * ctx,
         if (nextrr == NULL) {
             val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
             SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
-            return;
         } 
 
         if (as->val_ac_status == VAL_AC_TRUST ||
