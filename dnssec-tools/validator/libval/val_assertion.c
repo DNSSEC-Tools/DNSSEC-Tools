@@ -2716,8 +2716,10 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
     if (optout) {
         GET_HEADER_STATUS_CODE(qc_proof, *status);
-        /* if type is DS we don't have to check the wildcard proof */
-        if (qtype_h == ns_t_ds) {
+        /* if this is a no data response and type is DS 
+           we don't have to check the wildcard proof */
+        if (*status == VAL_NONEXISTENT_TYPE_NOCHAIN && 
+            qtype_h == ns_t_ds) {
             retval = VAL_NO_ERROR;
             goto done;
         }
@@ -3569,7 +3571,7 @@ verify_provably_insecure(val_context_t * context,
         }
 
         /* If result is not trustworthy, not provably insecure */
-        if (!val_isvalidated(results->val_rc_status)) {
+        if (!val_istrusted(results->val_rc_status)) {
             val_log(context, LOG_INFO, "verify_provably_insecure(): DS record for %s did not validate successfully", tempname_p);
             goto err; 
         }
