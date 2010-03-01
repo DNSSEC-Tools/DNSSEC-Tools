@@ -174,10 +174,9 @@
 
 #define VAL_DNS_ERROR 2 
 
-#define VAL_VERIFIED_CHAIN 3    /* All components were verified */
-#define VAL_NOTRUST VAL_VERIFIED_CHAIN
+#define VAL_NOTRUST 3
 
-#define VAL_SUCCESS                     (VAL_VERIFIED_CHAIN | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_SUCCESS                     VAL_FLAG_CHAIN_COMPLETE
 #define VAL_NONEXISTENT_NAME            ((4) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_NONEXISTENT_TYPE            ((5) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_NONEXISTENT_NAME_NOCHAIN    ((6)  | VAL_FLAG_CHAIN_COMPLETE)
