@@ -1741,7 +1741,6 @@ get_ac_trust(val_context_t *context,
     struct queries_for_query *added_q = NULL;
     u_int32_t ttl_x;
     u_char *curzone_n = NULL;
-    u_char *q = NULL;
 
     if (!next_as ||
         !next_as->val_ac_rrset.ac_data) {
@@ -1753,9 +1752,10 @@ get_ac_trust(val_context_t *context,
         next_as->val_ac_status <= VAL_AC_LAST_STATE)
         return NULL;
 
-    /* Strip off the leading label and  check if there are trust anchors above us */
-    STRIP_LABEL(next_as->val_ac_rrset.ac_data->rrs_name_n, q);
-    if (VAL_NO_ERROR != (find_trust_point(context, q, &curzone_n, &ttl_x))) {
+    /* Check if there are trust anchors above us */
+    if (VAL_NO_ERROR != (find_trust_point(context, 
+                            next_as->val_ac_rrset.ac_data->rrs_name_n, 
+                            &curzone_n, &ttl_x))) {
         curzone_n = NULL;
     } else {
         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
@@ -2456,7 +2456,7 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
                                 rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_soa))) {
 
                            val_log(ctx, LOG_INFO, 
-                                   "nsec3_proof_check(): NSEC3 error - NS can only be set if the SOA bit is not set");
+                                   "prove_nsec3_span(): NSEC3 error - NS can only be set if the SOA bit is not set");
                            FREE(hash);
                            continue;
                        }
@@ -2531,6 +2531,7 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
         /*
          * hash name according to nsec3 parameters 
          */
+        // XXX Try to optimize the number of times this hash will be computed
         if (NULL == compute_nsec3_hash(ctx, s_cp, soa_name_n, n->nd.alg,
                                    n->nd.iterations, n->nd.saltlen, n->nd.salt,
                                    &hashlen, &hash, ttl_x)) {
@@ -2557,7 +2558,7 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
         FREE(hash);
     }
 
-    if (ncn == NULL)
+    if (*ncn == NULL)
         return;
 
     /* last iteration: look for wildcard proof */
@@ -2715,11 +2716,16 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
     if (optout) {
         GET_HEADER_STATUS_CODE(qc_proof, *status);
+        /* if type is DS we don't have to check the wildcard proof */
+        if (qtype_h == ns_t_ds) {
+            retval = VAL_NO_ERROR;
+            goto done;
+        }
     } else {
         *status = VAL_NONEXISTENT_NAME;
     }
     
-    if (only_span_chk || optout) {
+    if (only_span_chk) {
         /* we don't do wildcard checks here */
         retval =  VAL_NO_ERROR;
         goto done;
@@ -3192,11 +3198,9 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     }
 
     if (zonecut_name_n) {
-        /* zonecut cannot be more specific than query name */
-        int len = wire_name_length(zonecut_name_n);
-        if (namename(zonecut_name_n, qname_n) == NULL || 
-            len != wire_name_length(qname_n)) {
-
+        /* zonecut has to be within the query */
+        if (namename(qname_n, zonecut_name_n) != NULL) {
+            int len = wire_name_length(zonecut_name_n);
             *name_n = (u_char *) MALLOC(len * sizeof(u_char));
             if (*name_n == NULL) {
                 return VAL_OUT_OF_MEMORY;
@@ -3410,6 +3414,15 @@ verify_provably_insecure(val_context_t * context,
             /* Need more data */
             goto donefornow;
         }
+    } else {
+        /* copy the known zonecut into our zonecut variable */
+        size_t zclen = wire_name_length(known_zonecut_n);
+        q_zonecut_n = (u_char *) MALLOC (zclen * sizeof(u_char));
+        if (q_zonecut_n == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }   
+        memcpy(q_zonecut_n, known_zonecut_n, zclen);
     }
        
 #ifdef LIBVAL_DLV
@@ -4550,14 +4563,14 @@ verify_and_validate(val_context_t * context,
                     } else if (next_as->val_ac_status ==
                                VAL_AC_NO_LINK) {
                         /*
-                         * verified but no trust 
+                         * No trust
                          */
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): marking authentication chain status for {%s %s %s} as verified without trust",
+                                "verify_and_validate(): marking authentication chain status for {%s %s %s} to indicate no trust",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
-                        res->val_rc_status = VAL_VERIFIED_CHAIN;
+                        res->val_rc_status = VAL_NOTRUST;
                     }
                 } else {
                     /* already processed the final state for this authentication chain before */
