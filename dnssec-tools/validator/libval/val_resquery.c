@@ -1410,6 +1410,7 @@ digest_response(val_context_t * context,
     int             referral_seen = FALSE;
     u_char          referral_zone_n[NS_MAXCDNAME];
     int             proof_seen = 0;
+    int             soa_seen = 0;
     HEADER         *header;
     u_char         *end;
     size_t         qnamelen, tot;
@@ -1634,6 +1635,9 @@ digest_response(val_context_t * context,
                     || (set_type_h == ns_t_soa)) {
 
                 proof_seen = 1;
+                if (set_type_h == ns_t_soa) {
+                    soa_seen = 1;
+                }
 
                 SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
                                 &learned_proofs, name_n, type_h,
@@ -1823,10 +1827,13 @@ digest_response(val_context_t * context,
         if (nothing_other_than_alias) {
             /* XXX Alias target non-existence */
                 
-        } else if (referral_seen) {
+        } else if (referral_seen && header->rcode == ns_r_noerror) {
             /* XXX if this is a no-data response, it is not a referral */
+            if (soa_seen) {
+                referral_seen = FALSE;
+            }
 
-            /* XXX else this is a DS non-existence proof */
+            /* XXX else this is a DS non-existence proof and it is a referral */
 
         } else {
             /* XXX non-existence of queried type */
