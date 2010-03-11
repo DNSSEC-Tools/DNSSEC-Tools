@@ -1513,6 +1513,7 @@ sub getval()
 sub findbind()
 {
 	my $pbg;				# Path to BIND programs.
+	my $bpg;				# Full path location of BIND programs.
 
 	my $paths;				# Path environment variable.
 	my @paths;				# Split-out paths.
@@ -1552,18 +1553,18 @@ sub findbind()
 	#
 	# Look for the BIND tools in our defaults.
 	#
-	$pbg = dnssec_tools_default("keygen");
+	$pbg = $bpg = dnssec_tools_default("keygen");
 	$pbg =~ s/\/dnssec-keygen$//;
-	$hfound{$pbg} = 1;
-	$pbg = dnssec_tools_default("rndc");
+	$hfound{$pbg} = 1 if( -e $bpg);
+	$pbg = $bpg = dnssec_tools_default("rndc");
 	$pbg =~ s/\/rndc$//;
-	$hfound{$pbg} = 1;
-	$pbg = dnssec_tools_default("zonecheck");
+	$hfound{$pbg} = 1 if( -e $bpg);
+	$pbg = $bpg = dnssec_tools_default("zonecheck");
 	$pbg =~ s/\/named-checkzone$//;
-	$hfound{$pbg} = 1;
-	$pbg = dnssec_tools_default("zonesign");
+	$hfound{$pbg} = 1 if( -e $bpg);
+	$pbg = $bpg = dnssec_tools_default("zonesign");
 	$pbg =~ s/\/dnssec-signzone$//;
-	$hfound{$pbg} = 1;
+	$hfound{$pbg} = 1 if( -e $bpg);
 
 	#
 	# Return the directories we found with BIND programs.
