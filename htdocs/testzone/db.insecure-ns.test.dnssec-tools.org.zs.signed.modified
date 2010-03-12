@@ -4,7 +4,7 @@
 ;
 $TTL 1D
 insecure-ns.test.dnssec-tools.org.	600	IN SOA dns.insecure-ns.test.dnssec-tools.org. hardaker.insecure-ns.test.dnssec-tools.org. (
-					1267462795
+					1268413813
 					2H       ; refresh (2 hours)
 					1H       ; retry (1 hour)
 					1W       ; expire (1 week)
@@ -15,31 +15,31 @@ insecure-ns.test.dnssec-tools.org.	600	IN SOA dns.insecure-ns.test.dnssec-tools.
                                NS            dns2.insecure-ns.test.dnssec-tools.org.
 dns1                           1D IN  A      168.150.236.43
 dns2                           1D IN  A      99.65.74.145
-other-a                        1D IN  A      75.119.216.33
-other-aaaa                     1D IN  AAAA   2001:470:1F00:FFFF::1
+other-a                        1D IN  A      127.0.0.1
+other-aaaa                     1D IN  AAAA   ::1
 ;
 ; Main records
 ;
 ;
 ; A records
 ;
-good-a                         1D IN  A      75.119.216.33
-badsign-a                      1D IN  A      75.119.216.33
-nosig-a                        1D IN  A      75.119.216.33
-baddata-a                      1D IN  A      75.119.216.33
-futuredate-a                   1D IN  A      75.119.216.33
-pastdate-a                     1D IN  A      75.119.216.33
-reverseddates-a                1D IN  A      75.119.216.33
+good-a                         1D IN  A      127.0.0.1
+badsign-a                      1D IN  A      127.0.0.1
+nosig-a                        1D IN  A      127.0.0.1
+baddata-a                      1D IN  A      127.0.0.1
+futuredate-a                   1D IN  A      127.0.0.1
+pastdate-a                     1D IN  A      127.0.0.1
+reverseddates-a                1D IN  A      127.0.0.1
 ;
 ; AAAA records
 ;
-good-aaaa                      1D IN  AAAA   2001:470:1F00:FFFF::1
-badsign-aaaa                   1D IN  AAAA   2001:470:1F00:FFFF::1
-nosig-aaaa                     1D IN  AAAA   2001:470:1F00:FFFF::1
-baddata-aaaa                   1D IN  AAAA   2001:470:1F00:FFFF::1
-futuredate-aaaa                1D IN  AAAA   2001:470:1F00:FFFF::1
-pastdate-aaaa                  1D IN  AAAA   2001:470:1F00:FFFF::1
-reverseddates-aaaa             1D IN  AAAA   2001:470:1F00:FFFF::1
+good-aaaa                      1D IN  AAAA   ::1
+badsign-aaaa                   1D IN  AAAA   ::1
+nosig-aaaa                     1D IN  AAAA   ::1
+baddata-aaaa                   1D IN  AAAA   ::1
+futuredate-aaaa                1D IN  AAAA   ::1
+pastdate-aaaa                  1D IN  AAAA   ::1
+reverseddates-aaaa             1D IN  AAAA   ::1
 ;
 ; Other Record Types
 ;
