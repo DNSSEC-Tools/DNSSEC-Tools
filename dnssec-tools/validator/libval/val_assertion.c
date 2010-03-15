@@ -3378,6 +3378,7 @@ verify_provably_insecure(val_context_t * context,
 
     u_char       *curzone_n = NULL;
     u_char       *q_zonecut_n = NULL;
+    u_char       *q_labels = NULL;
     u_char       *zonecut_n = NULL;
     u_char       *nxt_qname = NULL;
     u_char       *name_n = NULL;
@@ -3426,7 +3427,10 @@ verify_provably_insecure(val_context_t * context,
         }   
         memcpy(q_zonecut_n, known_zonecut_n, zclen);
     }
-       
+
+    /* maintain a variable to keep track of query labels */
+    q_labels = q_zonecut_n;
+
 #ifdef LIBVAL_DLV
     if (flags & VAL_QUERY_USING_DLV) {
         size_t len;
@@ -3446,7 +3450,7 @@ verify_provably_insecure(val_context_t * context,
             goto err;
         }
         memcpy(curzone_n, dlv_tp, len);
-        q = namename(q_zonecut_n, dlv_target);
+        q = namename(q_labels, dlv_target);
         
     } else 
 #endif
@@ -3461,7 +3465,7 @@ verify_provably_insecure(val_context_t * context,
             val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find trust anchor for %s", name_p);
             goto err;
         }
-        q = namename(q_zonecut_n, curzone_n);
+        q = namename(q_labels, curzone_n);
     }
 
     if (-1 == ns_name_ntop(curzone_n, tempname_p, sizeof(tempname_p))) 
@@ -3477,7 +3481,7 @@ verify_provably_insecure(val_context_t * context,
         goto err;
     }
 
-    if (!namecmp(q, q_zonecut_n)) {
+    if (!namecmp(q_zonecut_n, q)) {
         /* 
          * if the query zonecut is the same as the 
          * trust point, return
@@ -3487,14 +3491,35 @@ verify_provably_insecure(val_context_t * context,
                 tempname_p);
         goto err;
     }
-    
-    /* remove common labels in q_zonecut_n */
+
+    if (!namecmp(q_zonecut_n, q_name_n) && (q_type_h == ns_t_ds)) {
+        /* 
+         * if the query zonecut is the same as the 
+         * query name and the query type is DS, it means we're having trouble validing the DS 
+         * ignore the leading label for PI checks 
+         */
+        STRIP_LABEL(q_zonecut_n, q_labels);
+        q = namename(q_labels, curzone_n);
+        if (!q) {
+            /*  
+             *  this should not happen -- since q_name_n > trust anchor 
+             *  removing the topmost label should still give us a valid 
+             *  trust anchor for the name
+             */
+            val_log(context, LOG_INFO,
+                    "verify_provably_insecure(): trust point does not exist; but we expected it to be there",
+                    tempname_p);
+            goto err;
+        }
+    } 
+
+    /* remove common labels in q_labels */
     *q = '\0';
 
-    /* q_zonecut_n will only contain leading labels that are not common between the zonecut and the trust point*/
+    /* q_labels will only contain leading labels that are not common between the zonecut and the trust point*/
 
     /* while we've not reached the zonecut for the query */
-    while(*q_zonecut_n != '\0') {
+    while(*q_labels != '\0') {
 
         if (nxt_qname == NULL) {
             size_t len = wire_name_length(curzone_n);
@@ -3507,7 +3532,7 @@ verify_provably_insecure(val_context_t * context,
         }
        
         /* Add another label to curzone_n */
-        CUT_AND_APPEND_LABEL(q_zonecut_n, nxt_qname);
+        CUT_AND_APPEND_LABEL(q_labels, nxt_qname);
         if (nxt_qname == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
