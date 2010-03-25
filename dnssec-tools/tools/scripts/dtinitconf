@@ -361,7 +361,7 @@ sub optsandargs
 	$nsec3iter = $opts{'nsec3iter'}	|| dnssec_tools_default("nsec3iter");
 	$nsec3optout = $opts{'nsec3optout'} || dnssec_tools_default("nsec3optout");
 
-	$keyarchdir = $opts{'archivedir'};
+	$keyarchdir = $opts{'archivedir'} || dnssec_tools_default("archivedir");;
 	$savekeys   = $opts{'savekeys'}	   || dnssec_tools_default("savekeys");
 	$usegui	    = $opts{'usegui'}	   || dnssec_tools_default("usegui");
 	$entmsg	    = $opts{'entropy_msg'} || dnssec_tools_default("entropy_msg");
@@ -1369,7 +1369,7 @@ sub get_dt_opts()
 	$usegui	    = getval("Use DNSSEC-Tools GUI Interface",$usegui,"boolean");
 	$entmsg	    = getval("Display Entropy Message in Zonesigner",$entmsg,"boolean");
 	$savekeys   = getval("Save Old Keys",$savekeys,"boolean");
-	$keyarchdir = getval("Key Archive Directory","");
+	$keyarchdir = getval("Key Archive Directory","$keyarchdir");
 
 	print "\n";
 
