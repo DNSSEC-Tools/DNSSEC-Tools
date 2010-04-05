@@ -716,7 +716,7 @@ sub modify_cname {
     my ($name, $type, $data) = @_;
     Verbose("  modifying data of $name:$type");
 # modifies CNAME
-    $_ =~ s/([-\w]+)(-a+)\.([-\w\.]+)$/other$2.$topdomain./;
+    $_ =~ s/([-\w]+)(-a+)\.([-\w\.]+)$/other$2.$currentdomain./;
     print $fh $_;
     $_ = <I>;
 }
