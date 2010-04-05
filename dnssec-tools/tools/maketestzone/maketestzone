@@ -393,9 +393,18 @@ sub generate_records {
 	    my $savefh = $fh;
 	    generate_zone("${nsprefix}.$domain", 1, 1);
 	    $fh = $savefh;
-	    print_record("${nsprefix}",
-			 "1D IN", "NS",
-			 lc("ns1.${nsprefix}.$domain."));
+	    foreach my $ns (split(",",$opts{'ns'})) {
+		my ($rec,$addr) = split(/=/,$ns);
+
+		# NS record
+		print_record("${nsprefix}",
+			     "1D IN", "NS",
+			     lc("$rec.${nsprefix}.$domain."));
+
+		# glue records
+		print_record(lc("$rec.${nsprefix}.$domain."),
+			     "1D IN", "A", $addr);
+	    }
 	}
     }
 
