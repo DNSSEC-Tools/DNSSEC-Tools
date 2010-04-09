@@ -962,7 +962,8 @@ get_global_options(char **buf_ptr, char *end_ptr,
         }
 
         /* parse the option value based on the type */
-        if (!strcmp(token, GOPT_TRUST_OOB_STR)) {
+        if (!strcmp(token, GOPT_TRUST_OOB_STR) ||
+            !strcmp(token, GOPT_TRUST_LOCAL_STR)) {
             if (VAL_NO_ERROR != 
                     (retval = parse_local_answer_gopt(buf_ptr, end_ptr,
                                                       line_number, &endst, *g_opt))) {

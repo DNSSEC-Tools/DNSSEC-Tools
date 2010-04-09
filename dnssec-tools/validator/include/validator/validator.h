@@ -292,6 +292,12 @@ extern          "C" {
 #define ZONE_SE_DO_VAL_MSG     "validate"
 #define ZONE_SE_UNTRUSTED_MSG  "untrusted"
 
+/* 
+ * The following policies are deprecated. 
+ * They are defined here for backwards compatibility
+ */
+#define GOPT_TRUST_LOCAL_STR "trust-local-answers"
+
     /*
      * Response structures  
      */
