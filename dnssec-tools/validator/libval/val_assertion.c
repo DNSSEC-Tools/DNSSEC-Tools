@@ -1740,7 +1740,6 @@ get_ac_trust(val_context_t *context,
 {
     struct queries_for_query *added_q = NULL;
     u_int32_t ttl_x;
-    u_char *curzone_n = NULL;
 
     if (!next_as ||
         !next_as->val_ac_rrset.ac_data) {
@@ -1753,18 +1752,41 @@ get_ac_trust(val_context_t *context,
         return NULL;
 
     /* Check if there are trust anchors above us */
-    if (VAL_NO_ERROR != (find_trust_point(context, 
-                            next_as->val_ac_rrset.ac_data->rrs_name_n, 
-                            &curzone_n, &ttl_x))) {
-        curzone_n = NULL;
-    } else {
+#ifdef LIBVAL_DLV
+    if (flags & VAL_QUERY_USING_DLV) {
+       u_char *dlv_tp = NULL;
+       u_char *dlv_target = NULL;
+       int has_tp = 0;
+       if (VAL_NO_ERROR != (find_dlv_trust_point(context, 
+                               next_as->val_ac_rrset.ac_data->rrs_name_n, 
+                               &dlv_tp, &dlv_target, &ttl_x))) {
+            return NULL;
+        }
         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
+        if (dlv_tp && dlv_target) {
+            has_tp = 1;
+        }
+        if (dlv_tp != NULL) {
+            FREE(dlv_tp);
+        }
+        if (dlv_target != NULL) {
+            FREE(dlv_target);
+        }
+        if (has_tp == 0) {
+            return NULL;
+        }
+    } else
+#endif
+    {
+        u_char *curzone_n = NULL;
+        if (VAL_NO_ERROR != (find_trust_point(context, 
+                                next_as->val_ac_rrset.ac_data->rrs_name_n, 
+                                &curzone_n, &ttl_x))) {
+            return NULL; 
+        } 
+        SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
+        FREE(curzone_n);
     }
-    if (curzone_n == NULL) {
-       return NULL; 
-    } 
-    FREE(curzone_n);
-
     /*
      * Then look for  {zonecut, DNSKEY/DS, type} 
      */
@@ -4740,7 +4762,8 @@ verify_and_validate(val_context_t * context,
             !(flags & VAL_QUERY_DONT_VALIDATE) &&
             !(flags & VAL_QUERY_NO_DLV) &&
             !(flags & VAL_QUERY_USING_DLV) &&
-            res->val_rc_status == VAL_NOTRUST &&
+            (res->val_rc_status == VAL_NOTRUST ||
+             res->val_rc_status == VAL_DONT_KNOW) &&
             res->val_rc_rrset != NULL) {
 
             int do_dlv;
