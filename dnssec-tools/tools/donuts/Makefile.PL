@@ -92,11 +92,11 @@ $packedmakefilestr = "
 
 TDDIR = $tddir
 
-CP	= /bin/cp
-RM	= /bin/rm
-PP	= /usr/bin/pp
-FIND	= /usr/bin/find
-GREP	= /bin/grep
+CP	= cp
+RM	= rm
+PP	= pp
+FIND	= find
+GREP	= grep
 
 #######
 
