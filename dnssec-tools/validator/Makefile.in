@@ -1,5 +1,6 @@
 TEST_VERBOSITY=4
 SUBDIRS=libsres libval libval_shim apps doc
+BUILD_ARCH = build
 
 INSTALLDIRS=$(prefix) $(exec_prefix) $(sysconfdir)/dnssec-tools $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
 
@@ -81,3 +82,6 @@ subdirclean:
 configclean:
 	$(RM) -f config.cache config.status config.log \
 		Makefile stamp-h *.core
+
+universal: clean
+	make "CC=$(CC) -mmacosx-version-min=10.5 -arch x86_64 -arch i386 -arch ppc -bundle -undefined dynamic_lookup"
