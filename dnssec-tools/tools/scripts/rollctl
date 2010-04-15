@@ -25,8 +25,9 @@ BEGIN
 
 use strict;
 
-use Getopt::Long qw(:config no_ignore_case_always debug);
-$Getopt::Long::debug = 1;
+use Getopt::Long qw(:config no_ignore_case_always);
+# use Getopt::Long qw(:config no_ignore_case_always debug);
+# $Getopt::Long::debug = 1;
 
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::rollmgr;
@@ -180,7 +181,7 @@ sub main()
 	{
 		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$dspubflag))
 		{
-			print STDERR "rollctl:  error sending command DSPUB";
+			print STDERR "rollctl:  error sending command DSPUB\n";
 			exit(1);
 		}
 
