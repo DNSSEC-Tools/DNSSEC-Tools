@@ -1,0 +1,46 @@
+# Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+
+This directory contains a number of tests for the DNSSEC-Tools utilities.
+These tests are run by the make command, passing the targets listed
+below.  Both verbose and (relatively) quiet tests are available.  The
+following utilities are tested:  zonesigner, donuts, donutsd, trustman,
+and rollerd.  There are also tests for trustman/rollerd interaction.
+
+The available test targets are:
+
+	all			Run all tests in quiet mode.  (default)
+
+	verbose			Run all tests in verbose mode.
+
+	zonesigner		Run zonesigner tests quietly.
+
+	zonesignerv		Run verbose zonesigner tests.
+
+	donuts			Run donuts tests quietly.
+
+	donutsv			Run verbose donuts tests.
+
+	donutsd			Run donutsd tests quietly.
+
+	donutsdv		Run verbose donutsd tests.
+
+	trustman		Run trustman tests quietly.
+
+	trustmanv		Run verbose trustman tests.
+
+	rollerd			Run rollerd tests quietly.
+
+	rollerdv		Run verbose rollerd tests.
+
+	trustman-rollerd	Run trustman/rollerd interaction tests quietly.
+
+	trustman-rollerdv	Run verbose trustman/rollerd interaction tests.
+
+	clean			Clean up all test files.
+
