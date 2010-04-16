@@ -8,39 +8,59 @@
 
 This directory contains a number of tests for the DNSSEC-Tools utilities.
 These tests are run by the make command, passing the targets listed
-below.  Both verbose and (relatively) quiet tests are available.  The
-following utilities are tested:  zonesigner, donuts, donutsd, trustman,
+below.  Both verbose and (relatively) quiet tests are available.
+
+The following utilities are tested:  zonesigner, donuts, donutsd, trustman,
 and rollerd.  There are also tests for trustman/rollerd interaction.
 
-The available test targets are:
 
-	all			Run all tests in quiet mode.  (default)
+Running the Tests
 
-	verbose			Run all tests in verbose mode.
+	Typing "make" will run the complete suite of tests.
 
-	zonesigner		Run zonesigner tests quietly.
+	In order to run a subset of tests, run "make" with test appropriate
+	target.  For example, "make rollerd" will run the rollerd tests.
 
-	zonesignerv		Run verbose zonesigner tests.
+	Given the large volume of extra output provided by the verbose tests,
+	it is probably better to start with the quiet tests and only use the
+	verbose tests if a problem was found.  For example, run "make donuts"
+	to run the donuts tests; follow that with "make donutsv" if any of
+	the tests have problems.
 
-	donuts			Run donuts tests quietly.
 
-	donutsv			Run verbose donuts tests.
+Test Targets
 
-	donutsd			Run donutsd tests quietly.
+	The available test targets are:
 
-	donutsdv		Run verbose donutsd tests.
+		all			Run all tests in quiet mode.  (default)
 
-	trustman		Run trustman tests quietly.
+		verbose			Run all tests in verbose mode.
 
-	trustmanv		Run verbose trustman tests.
+		zonesigner		Run zonesigner tests quietly.
 
-	rollerd			Run rollerd tests quietly.
+		zonesignerv		Run verbose zonesigner tests.
 
-	rollerdv		Run verbose rollerd tests.
+		donuts			Run donuts tests quietly.
 
-	trustman-rollerd	Run trustman/rollerd interaction tests quietly.
+		donutsv			Run verbose donuts tests.
 
-	trustman-rollerdv	Run verbose trustman/rollerd interaction tests.
+		donutsd			Run donutsd tests quietly.
 
-	clean			Clean up all test files.
+		donutsdv		Run verbose donutsd tests.
+
+		trustman		Run trustman tests quietly.
+
+		trustmanv		Run verbose trustman tests.
+
+		rollerd			Run rollerd tests quietly.
+
+		rollerdv		Run verbose rollerd tests.
+
+		trustman-rollerd	Run trustman/rollerd interaction tests
+					quietly.
+
+		trustman-rollerdv	Run verbose trustman/rollerd interaction
+					tests.
+
+		clean			Clean up all test files.
 
