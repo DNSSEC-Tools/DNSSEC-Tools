@@ -1098,6 +1098,7 @@ sub unix_psef_dropid
 #		 1 - The pidfile was initialized for this process.
 #		 0 - Another process (not this one) is already acting as
 #		     rollerd.
+#		-1 - An error was encountered.
 #
 sub unix_dropid
 {
@@ -1124,13 +1125,19 @@ sub unix_dropid
 	#
 	# Create the file if it doesn't exist.
 	# If it does exist, we'll make sure the listed process isn't running.
+	# If we can't create it, we'll complain and return a failure code.
 	#
 	if($pfpid < 0)
 	{
 # print "unix_dropid:  opening $UNIX_ROLLMGR_PIDFILE\n";
 
 		unlink("$UNIX_ROLLMGR_PIDFILE");
-		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPID UNABLE TO OPEN \"$UNIX_ROLLMGR_PIDFILE\"\n";
+		if(open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") == 0)
+		{
+			warn "DROPID UNABLE TO OPEN \"$UNIX_ROLLMGR_PIDFILE\"\n";
+			return(-1);
+		}
+
 		flock(PIDFILE,LOCK_EX);
 	}
 	else
@@ -1513,6 +1520,7 @@ sub rollmgr_channel
 		#
 		$unixsock = makelocalstatedir("/dnssec-tools") . $UNIXSOCK;
 # print STDERR "rollmgr_channel:  unixsock - <$unixsock>\n";
+
 		$sockdata = sockaddr_un($unixsock);
 
 		#
@@ -1528,7 +1536,7 @@ sub rollmgr_channel
 
 			unlink($unixsock);
 			bind(SOCK,$sockdata)	|| return(-2);
-			chmod 0600, $unixsock	|| return(-3);
+			chmod 0666, $unixsock	|| return(-3);
 			listen(SOCK,SOMAXCONN)	|| return(-4);
 		}
 		else
@@ -1538,6 +1546,7 @@ sub rollmgr_channel
 			#
 			socket(CLNTSOCK,PF_UNIX,SOCK_STREAM,0)	|| return(-1);
 			connect(CLNTSOCK,$sockdata)		|| return(0);
+
 		}
 	}
 
@@ -1985,6 +1994,7 @@ Return Values:
 
     1 - the id file was successfully created for this process
     0 - another process is already acting as rollerd
+   -1 - unable to create the id file
 
 =item I<rollmgr_rmid()>
 
