@@ -406,7 +406,7 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
  * And, for once, solaris has a better header than the rest, and has const
  * char ptrs in res_sym.
  */
-#if (defined(__p_class_syms) || defined(sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
+#if (defined(__p_class_syms) || defined(sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__CYGWIN__))
 #define RES_SYM_TYPE res_sym
 #else
 #define RES_SYM_TYPE res_sym_const
