@@ -1536,7 +1536,7 @@ sub rollmgr_channel
 
 			unlink($unixsock);
 			bind(SOCK,$sockdata)	|| return(-2);
-			chmod 0666, $unixsock	|| return(-3);
+			chmod 0600, $unixsock	|| return(-3);
 			listen(SOCK,SOMAXCONN)	|| return(-4);
 		}
 		else
