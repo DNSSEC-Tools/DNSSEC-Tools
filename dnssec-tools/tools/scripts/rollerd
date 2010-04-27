@@ -211,7 +211,7 @@ exit($ret);
 sub main
 {
 	my $argc;			# Number of command line arguments.
-	my $errors = 0;			# Total error count.
+	my $olderr;			# Saved error action.
 
 	#
 	# Initialize a few things...
@@ -253,6 +253,19 @@ sub main
 	$dtconfig = getconffile();
 	%dtconf = parseconfig();
 	optsandargs();
+
+	#
+	# Run our configuration checks and make sure any error messages
+	# will be printed.
+	#
+	$olderr = erraction(ERR_MSG);
+	if(dt_confcheck() > 0)
+	{
+		print STDERR "configuration checks failed, rollerd halting\n";
+		rolllog_log(LOG_ALWAYS,"","configuration checks failed");
+		cleanup();
+	}
+	erraction($olderr);
 
 	#
 	# Check our required external commands.

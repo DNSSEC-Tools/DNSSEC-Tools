@@ -129,6 +129,7 @@ sub main()
 	my $rcret = 0;			# Return code for rollctl.
 	my $ret;			# Return code from rollerd.
 	my $resp;			# Response message from rollerd.
+	my $olderr;			# Saved error action.
 
 	#
 	# Use the packed config file if we're running as part of a packed
@@ -144,6 +145,18 @@ sub main()
 	# for shutdown.  We'll save that for last.
 	#
 	doopts($argc);
+
+	#
+	# Run our configuration checks and make sure any error messages
+	# will be printed.
+	#
+	$olderr = erraction(ERR_MSG);
+	if(dt_confcheck() > 0)
+	{
+		print STDERR "configuration checks failed\n";
+		exit(-2);
+	}
+	erraction($olderr);
 
 	#
 	# If rollerd isn't running, we'll give an error message and exit.
