@@ -32,6 +32,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(
 			boolconvert
 			cmdcheck
+			dt_confcheck
 			getconfdir
 			getconffile
 			setconffile
@@ -298,6 +299,47 @@ sub cmdcheck
 
 #######################################################################
 #
+# Routine:	dt_confcheck()
+#
+# Purpose:	Ensure that some required conditions are met by the
+#		DNSSEC-Tools configuration.  A running count of violated
+#		conditions is kept, and that count is the return code.
+#		An err() error message may (or may not) be printed.
+#
+#		Return Values:
+#			  0 - no errors were found
+#			> 0 - some number of configuration checks failed
+#
+sub dt_confcheck
+{
+	my $ret = 0;					# Return code.
+	my $sdir;					# Local state directory.
+
+	#
+	# The local state directory must be shorter than 76 characters to
+	# allow for the rollmgr command socket.
+	#
+	# This only matters for rollerd and rollctl.  They use a Unix domain
+	# socket, which has a hard-coded maximum length of 104 characters.
+	# The local state directory name is appended with
+	# "/dnssec-tools/rollmgr.socket", so the two combined must be no more
+	# than 104 bytes.
+	#
+	$sdir = getlocalstatedir();
+	if(length($sdir) > 76)
+	{
+		err("local state directory name is too long, it must be less than 77 characters\n",1);
+		$ret++;
+	}
+
+	#
+	# Return the count of failed tests.
+	#
+	return($ret);
+}
+
+#######################################################################
+#
 # Routine:	boolconvert()
 #
 # Purpose:	Converts a textual boolean value from the configuration file
@@ -556,6 +598,8 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
 
   cmdcheck(\%options_hashref);
 
+  $conferrs = dt_confcheck();
+
   $prefixdir = getprefixdir();
 
   $confdir = getconfdir();
@@ -620,6 +664,21 @@ for these operations.
 =head1 INTERFACES
 
 =over 4
+
+=item I<dt_confcheck()>
+
+This routine performs a number of configuration checks to ensure the
+environment is sufficient to support the DNSSEC-Tools configuration.
+
+The checks are:
+
+	* The local state directory must be shorter than 76
+	  characters to allow for the rollmgr command socket.
+
+Return Values:
+
+	0	no errors were found
+	>0	some number of configuration checks failed
 
 =item I<parseconfig()>
 
