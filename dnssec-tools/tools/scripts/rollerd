@@ -259,9 +259,9 @@ sub main
 	# will be printed.
 	#
 	$olderr = erraction(ERR_MSG);
-	if(dt_confcheck() > 0)
+	if(dt_confcheck(0) > 0)
 	{
-		print STDERR "configuration checks failed, rollerd halting\n";
+		print STDERR "rollerd:  configuration checks failed, halting\n";
 		rolllog_log(LOG_ALWAYS,"","configuration checks failed");
 		cleanup();
 	}
