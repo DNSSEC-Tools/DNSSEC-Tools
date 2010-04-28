@@ -306,14 +306,90 @@ sub cmdcheck
 #		conditions is kept, and that count is the return code.
 #		An err() error message may (or may not) be printed.
 #
+#		The following tests will be run:
+#
+#			- The dnssec-tools sysconf directory exists.
+#			- The dnssec-tools sysconf directory is a directory.
+#			- The dnssec-tools directory exists.
+#			- The dnssec-tools directory is a directory.
+#			- The dnssec-tools config file exists.
+#			- The dnssec-tools config file is a regular file.
+#			- The dnssec-tools config file isn't empty.
+#			- The local state directory name isn't longer than 75
+#			  characters (to allow for the rollmgr command socket.)
+#			- The local state directory is a directory.
+#			- The local state directory can be created if necessary.
+#			- The local state directory's dnssec-tools subdirectory
+#			  can be created if necessary, or is writable if it
+#			  already exists.
+#			- The local state directory's run subdirectory can be
+#			  created if necessary, or is writable if it already
+#			  exists.
+#
 #		Return Values:
 #			  0 - no errors were found
 #			> 0 - some number of configuration checks failed
 #
 sub dt_confcheck
 {
+	my $errout = shift;				# Error output flag.
+	my $olderr;					# Old error flag.
 	my $ret = 0;					# Return code.
 	my $sdir;					# Local state directory.
+
+	#
+	# Set the error flag according to the $errout argument.
+	#
+	$olderr = $errout ? ERR_MSG : ERR_SILENT;
+	$olderr = erraction($olderr);
+
+	#
+	# Ensure the DNSSEC-Tools system config directory exists and is
+	# a directory.
+	#
+	if(! -e $sysconfdir)
+	{
+		err("$sysconfdir does not exist\n",1);
+		$ret++;
+	}
+	elsif(! -d $sysconfdir)
+	{
+		err("$sysconfdir is not a directory\n",1);
+		$ret++;
+	}
+
+	#
+	# Ensure the DNSSEC-Tools config directory exists and is a directory.
+	#
+	if(! -e "$sysconfdir/dnssec-tools")
+	{
+		err("$sysconfdir/dnssec-tools does not exist\n",1);
+		$ret++;
+	}
+	elsif(! -d "$sysconfdir/dnssec-tools")
+	{
+		err("$sysconfdir/dnssec-tools is not a directory\n",1);
+		$ret++;
+	}
+
+	#
+	# Ensure the DNSSEC-Tools config file exists and is a file.
+	#
+	if(! -e $CONFFILE)
+	{
+		err("$CONFFILE does not exist\n",1);
+		$ret++;
+	}
+	elsif(! -f $CONFFILE)
+	{
+		err("$CONFFILE is not a regular file\n",1);
+		$ret++;
+	}
+	elsif(-z $CONFFILE)
+	{
+		err("$CONFFILE is empty\n",1);
+		$ret++;
+	}
 
 	#
 	# The local state directory must be shorter than 76 characters to
@@ -331,6 +407,95 @@ sub dt_confcheck
 		err("local state directory name is too long, it must be less than 77 characters\n",1);
 		$ret++;
 	}
+
+	#
+	# Run a bunch of checks on the local state directory.  If it doesn't
+	# exist, we'll make sure the parent is writable so that we'll be
+	# able to create it.  If it does exist, we'll make sure that the
+	# directories already exist, may be created if they don't exist, and
+	# are writable if they do exist.
+	#
+	if(-e $sdir)
+	{
+		#
+		# Ensure the local state directory is a directory.
+		#
+		if(! -d "$sdir")
+		{
+			err("\"$sdir\" is not a directory\n",0);
+			$ret++;
+		}
+		else
+		{
+			#
+			# If we can't write the local state directory, we'll
+			# ensure its subdirectories exist and are writable.
+			#
+			if(! -w "$sdir")
+			{
+				if(! -e "$sdir/dnssec-tools")
+				{
+					err("unable to create $sdir/dnssec-tools\n",0);
+					$ret++;
+				}
+				elsif(! -w "$sdir/dnssec-tools")
+				{
+					err("unable to write $sdir/dnssec-tools\n",0);
+					$ret++;
+				}
+				if(! -e "$sdir/run")
+				{
+					err("unable to create $sdir/run\n",0);
+					$ret++;
+				}
+				elsif(! -w "$sdir/run")
+				{
+					err("unable to write $sdir/run\n",0);
+					$ret++;
+				}
+			}
+			else
+			{
+				#
+				# If we can write the local state directory,
+				# we'll be sure its subdirectories are writable
+				# if they already exist.
+				#
+				if((  -e "$sdir/dnssec-tools")	&&
+				   (! -w "$sdir/dnssec-tools"))
+				{
+					err("$sdir/dnssec-tools is not writable\n",0);
+					$ret++;
+				}
+				if((  -e "$sdir/run")	&&
+				   (! -w "$sdir/run"))
+				{
+					err("$sdir/run is not writable\n",0);
+					$ret++;
+				}
+			}
+		}
+	}
+	else
+	{
+		my $pdir = $sdir;		# State directory's parent.
+
+		#
+		# If the local state directory doesn't exist, we'll make
+		# sure we can write its parent.
+		#
+		$pdir =~ s/(\/[^\/]*?)$/\//;
+		if(! -w $pdir)
+		{
+			err("unable to create state directory $sdir\n",0);
+			$ret++;
+		}
+	}
+
+	#
+	# Reset the error flag to its previous value.
+	#
+	erraction($olderr);
 
 	#
 	# Return the count of failed tests.
@@ -475,14 +640,6 @@ sub makelocalstatedir
 	my $errorlist;					# Path creation errors.
 
 	#
-	# If File::Path is unavailable, we'll return an error.
-	#
-	if((eval { require File::Path; }) != 1)
-	{
-		return('');
-	}
-
-	#
 	# Build the path to the caller's subdirectory.
 	#
 	$subpath = "$statedir/$subdir" if(defined($subdir));
@@ -497,6 +654,15 @@ sub makelocalstatedir
 		return('');
 	}
 
+
+	#
+	# If File::Path is unavailable, we'll return an error.
+	#
+	if((eval { require File::Path; }) != 1)
+	{
+		print STDERR "Perl module File::Path is required, but could not be found\n";
+		exit(1);
+	}
 
 	import File::Path;
 
@@ -516,10 +682,10 @@ sub makelocalstatedir
 		foreach my $err (@$errorlist)
 		{
 			my ($file, $msg) = each %$err;
-			print STDERR "  $file:  $msg";
+			print STDERR "  $file:  $msg\n";
 		}
 
-		return('');
+		exit(1);
 	}
 
 	#
@@ -665,15 +831,32 @@ for these operations.
 
 =over 4
 
-=item I<dt_confcheck()>
+=item I<dt_confcheck(errflag)>
 
 This routine performs a number of configuration checks to ensure the
 environment is sufficient to support the DNSSEC-Tools configuration.
+If I<errflag> is 0, then the checks are performed quietly; otherwise,
+error messages will be printed.
 
 The checks are:
 
-	* The local state directory must be shorter than 76
-	  characters to allow for the rollmgr command socket.
+	* The dnssec-tools sysconf directory exists.
+	* The dnssec-tools sysconf directory is a directory.
+	* The dnssec-tools directory exists.
+	* The dnssec-tools directory is a directory.
+	* The dnssec-tools config file exists.
+	* The dnssec-tools config file is a regular file.
+	* The dnssec-tools config file isn't empty.
+	* The local state directory name isn't longer than 75
+	  characters (to allow for the rollmgr command socket.)
+	* The local state directory is a directory.
+	* The local state directory can be created if necessary.
+	* The local state directory's dnssec-tools subdirectory
+	  can be created if necessary, or is writable if it
+	  already exists.
+	* The local state directory's run subdirectory
+	  can be created if necessary, or is writable if it
+	  already exists.
 
 Return Values:
 
