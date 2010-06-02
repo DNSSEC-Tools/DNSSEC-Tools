@@ -2018,14 +2018,14 @@ transform_outstanding_results(val_context_t *context,
                               struct val_internal_result *w_results,
                               struct queries_for_query **queries,
                               struct val_result_chain **results,
-                              struct val_result_chain *proof_res,
+                              struct val_result_chain **proof_res,
                               val_status_t proof_status)
 {
     struct val_internal_result *w_res;
     struct val_result_chain *new_res;
     int             retval;
 
-    if (results == NULL)
+    if (results == NULL || proof_res == NULL)
         return VAL_BAD_ARGUMENT;
 
     w_res = w_results;
@@ -2037,19 +2037,21 @@ transform_outstanding_results(val_context_t *context,
         if (!w_res->val_rc_consumed) {
             if (VAL_NO_ERROR !=
                 (retval =
-                 transform_single_result(context, w_res, queries, results, proof_res,
+                 transform_single_result(context, w_res, queries, results, *proof_res,
                                          &new_res))) {
                 goto err;
             }
 
-            if (w_res->val_rc_is_proof) {
-                proof_res = new_res;
-                proof_res->val_rc_status = proof_status;
-            } else {
+            if (new_res) {
+                if (w_res->val_rc_is_proof) {
+                    new_res->val_rc_status = proof_status;
+                    *proof_res = new_res;
+                } else {
                 /*
                  * Update the result 
                  */
-                new_res->val_rc_status = w_res->val_rc_status;
+                    new_res->val_rc_status = w_res->val_rc_status;
+                }
             }
         }
 
@@ -3076,7 +3078,7 @@ prove_nonexistence(val_context_t * ctx,
         /*
          * Collect all other proofs 
          */
-        retval = transform_outstanding_results(ctx, w_results, queries, results, *proof_res,
+        retval = transform_outstanding_results(ctx, w_results, queries, results, proof_res,
                                               *status);
         if (retval != VAL_NO_ERROR)
             goto err;
@@ -5713,10 +5715,12 @@ construct_authentication_chain(val_context_t * context,
 
         retval = perform_sanity_checks(context, *w_results, queries, results, top_qfq);
 
-        if (retval == VAL_NO_ERROR)
+        if (retval == VAL_NO_ERROR) {
+            struct val_result_chain *proof_res = NULL;
             retval =
-                transform_outstanding_results(context, *w_results, queries, results, NULL,
+                transform_outstanding_results(context, *w_results, queries, results, &proof_res,
                                               VAL_IRRELEVANT_PROOF);
+        }
     }
 
     return VAL_NO_ERROR;
