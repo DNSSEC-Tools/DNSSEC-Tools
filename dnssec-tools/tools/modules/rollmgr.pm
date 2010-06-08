@@ -393,7 +393,7 @@ my %port_archs =
 # Unix-related constants.
 # 
 
-my $UNIX_ROLLMGR_DIR	    = makelocalstatedir("run");
+my $UNIX_ROLLMGR_DIR	  = makelocalstatedir("run");
 our $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/rollmgr.pid");
 
 my $PS = "/bin/ps";
