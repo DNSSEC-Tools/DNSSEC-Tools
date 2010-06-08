@@ -421,6 +421,11 @@ sub main
 	readconfig();
 
 	#
+	# Ensure that rollerd is actually running.
+	#
+	rollerdup();
+
+	#
 	# Build the main window.
 	#
 	buildmainwind();
@@ -2882,6 +2887,33 @@ sub settitle
 	my $name = shift;				# Name to use.
 
 	$title = getnode($name);
+}
+
+#----------------------------------------------------------------------
+# Routine:      rollerdup()
+#
+# Purpose:      Ensures that rollerd is running.
+#
+sub rollerdup
+{
+	my $rollcmd;					# rollctl command.
+	my $ret;					# rollctl return code.
+
+	#
+	# Build and execute the command string.
+	#
+	$rollcmd = "$rollctl -q -status";
+	$ret = system($rollcmd);
+
+	#
+	# If the command failed, we'll give an error and exit.
+	#
+	$ret = $ret >> 8;
+	if(($ret == 254) || ($ret == 255))
+	{
+		print STDERR "blinkenlights:  unable to contact rollerd\n";
+		exit(1);
+	}
 }
 
 ##############################################################################
