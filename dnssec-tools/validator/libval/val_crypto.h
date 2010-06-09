@@ -29,7 +29,7 @@ void            rsamd5_sigverify(val_context_t * ctx,
 
 u_int16_t       rsamd5_keytag(const u_char *pubkey, size_t pubkey_len);
 
-void            rsasha1_sigverify(val_context_t * ctx,
+void            rsasha_sigverify(val_context_t * ctx,
                                   const u_char *data,
                                   size_t data_len,
                                   const val_dnskey_rdata_t * dnskey,

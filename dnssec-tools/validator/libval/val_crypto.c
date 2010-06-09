@@ -293,7 +293,7 @@ rsamd5_sigverify(val_context_t * ctx,
  * Returns VAL_NO_ERROR on success, other values on failure 
  */
 static int
-rsasha1_parse_public_key(const u_char *buf, size_t buflen, RSA * rsa)
+rsa_parse_public_key(const u_char *buf, size_t buflen, RSA * rsa)
 {
     int             index = 0;
     const u_char   *cp;
@@ -344,7 +344,7 @@ rsasha1_parse_public_key(const u_char *buf, size_t buflen, RSA * rsa)
 }
 
 void
-rsasha1_sigverify(val_context_t * ctx,
+rsasha_sigverify(val_context_t * ctx,
                   const u_char *data,
                   size_t data_len,
                   const val_dnskey_rdata_t * dnskey,
@@ -354,48 +354,73 @@ rsasha1_sigverify(val_context_t * ctx,
     char            buf[1028];
     int             buflen = 1024;
     RSA            *rsa = NULL;
-    u_char   sha1_hash[SHA_DIGEST_LENGTH];
+    u_char   sha_hash[SHA256_DIGEST_LENGTH];
+    size_t   hashlen = 0;
+    int nid = 0;
 
     val_log(ctx, LOG_DEBUG,
-            "rsasha1_sigverify(): parsing the public key...");
+            "rsasha_sigverify(): parsing the public key...");
     if ((rsa = RSA_new()) == NULL) {
         val_log(ctx, LOG_INFO,
-                "rsasha1_sigverify(): could not allocate rsa structure.");
+                "rsasha_sigverify(): could not allocate rsa structure.");
         *key_status = VAL_AC_INVALID_KEY;
         return;
     };
 
-    if (rsasha1_parse_public_key
+    if (rsa_parse_public_key
         (dnskey->public_key, (size_t)dnskey->public_key_len,
          rsa) != VAL_NO_ERROR) {
         val_log(ctx, LOG_INFO,
-                "rsasha1_sigverify(): Error in parsing public key.");
+                "rsasha_sigverify(): Error in parsing public key.");
         RSA_free(rsa);
         *key_status = VAL_AC_INVALID_KEY;
         return;
     }
 
-    bzero(sha1_hash, SHA_DIGEST_LENGTH);
-    SHA1(data, data_len, sha1_hash);
-    val_log(ctx, LOG_DEBUG, "rsasha1_sigverify(): SHA-1 hash = %s",
-            get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
+    memset(sha_hash, 0, sizeof(sha_hash));
+    if (rrsig->algorithm == ALG_RSASHA1
+#ifdef LIBVAL_NSEC3
+        || rrsig->algorithm == ALG_NSEC3_RSASHA1
+#endif
+       ) {
+        SHA1(data, data_len, sha_hash);
+        hashlen = SHA_DIGEST_LENGTH; 
+        nid = NID_sha1; 
+    } else if (rrsig->algorithm == ALG_RSASHA256) {
+        SHA256(data, data_len, sha_hash);
+        hashlen = SHA256_DIGEST_LENGTH; 
+        nid = NID_sha256; 
+    } else if (rrsig->algorithm == ALG_RSASHA512) {
+        SHA512(data, data_len, sha_hash);
+        hashlen = SHA512_DIGEST_LENGTH; 
+        nid = NID_sha512; 
+    } else {
+        val_log(ctx, LOG_INFO,
+                "rsasha_sigverify(): Unkown algorithm.");
+        RSA_free(rsa);
+        *key_status = VAL_AC_INVALID_KEY;
+        return;
+    } 
 
+    val_log(ctx, LOG_DEBUG, "rsasha_sigverify(): SHA hash = %s",
+            get_hex_string(sha_hash, hashlen, buf, buflen));
     val_log(ctx, LOG_DEBUG,
-            "rsasha1_sigverify(): verifying RSA signature...");
+            "rsasha_sigverify(): verifying RSA signature...");
 
     if (RSA_verify
-        (NID_sha1, sha1_hash, SHA_DIGEST_LENGTH,
+        (nid, sha_hash, hashlen,
          rrsig->signature, rrsig->signature_len, rsa) == 1) {
-        val_log(ctx, LOG_INFO, "rsasha1_sigverify(): returned SUCCESS");
+        val_log(ctx, LOG_INFO, "rsasha_sigverify(): returned SUCCESS");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
     } else {
-        val_log(ctx, LOG_INFO, "rsasha1_sigverify(): returned FAILURE");
+        val_log(ctx, LOG_INFO, "rsasha_sigverify(): returned FAILURE");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFY_FAILED;
     }
     return;
 }
+
 
 int
 ds_sha_hash_is_equal(u_char * name_n,

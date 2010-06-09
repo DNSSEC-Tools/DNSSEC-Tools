@@ -228,8 +228,8 @@ val_sigverify(val_context_t * ctx,
     switch (rrsig->algorithm) {
 
     case ALG_RSAMD5:
-        rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig, dnskey_status,
-                         sig_status);
+        rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig, 
+                         dnskey_status, sig_status);
         break;
 
 #ifdef LIBVAL_NSEC3
@@ -244,7 +244,9 @@ val_sigverify(val_context_t * ctx,
     case ALG_NSEC3_RSASHA1:
 #endif
     case ALG_RSASHA1:
-        rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig,
+    case ALG_RSASHA256:
+    case ALG_RSASHA512:
+        rsasha_sigverify(ctx, data, data_len, dnskey, rrsig,
                           dnskey_status, sig_status);
         break;
 

@@ -156,6 +156,9 @@ extern          "C" {
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32 
 #endif
+#ifndef SHA512_DIGEST_LENGTH
+#define SHA512_DIGEST_LENGTH 64 
+#endif
 
     /*
      * Algorithm definitions for DS digest 
@@ -181,7 +184,8 @@ extern          "C" {
 #define ALG_NSEC3_DSASHA1 6 
 #define ALG_NSEC3_RSASHA1 7 
 #endif
-
+#define ALG_RSASHA256 8
+#define ALG_RSASHA512 10 
     /*
      * Section values of an RRset 
      */
