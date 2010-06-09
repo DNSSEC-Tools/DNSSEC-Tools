@@ -52,7 +52,7 @@ sub InitMakeParams {
     die "error: unable to determine compile flags (check validator install)" 
 	if $? or not $cflags;
 
-    $Params{'CCFLAGS'} = $cflags;
+    $Params{'CCFLAGS'} = "-I../../../validator/include " . $cflags;
 
     if (defined $opts{topdir}) {
 	$Params{'INC'} = "-I$opts{topdir}/validator/include";
