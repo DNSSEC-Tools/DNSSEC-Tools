@@ -1556,7 +1556,7 @@ static int
 constant_20 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     MAX_GLUE_FETCH_DEPTH SHA256_DIGEST_LENGTH SR_CRED_NONAUTH_AUTH
+     MAX_GLUE_FETCH_DEPTH SHA256_DIGEST_LENGTH SHA512_DIGEST_LENGTH SR_CRED_NONAUTH_AUTH
      SR_DNS_GENERIC_ERROR SR_ZI_STATUS_LEARNED VAL_AC_INVALID_RRSIG
      VAL_AC_RRSIG_EXPIRED VAL_AC_RRSIG_MISSING VAL_AC_VERIFIED_LINK
      VAL_CONF_PARSE_ERROR VAL_INCOMPLETE_PROOF VAL_IRRELEVANT_PROOF
@@ -1622,6 +1622,14 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
     /*                       ^                  */
 #ifdef SHA256_DIGEST_LENGTH
       *iv_return = SHA256_DIGEST_LENGTH;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    } else if (memEQ(name, "SHA512_DIGEST_LENGTH", 20)) {
+    /*                              ^                  */
+#ifdef SHA512_DIGEST_LENGTH
+      *iv_return = SHA512_DIGEST_LENGTH;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2230,7 +2238,7 @@ my @names = (qw(ALG_DH ALG_DSASHA1 ALG_DS_HASH_SHA1 ALG_DS_HASH_SHA256
 	       Q_ANSWERED Q_CONFLICTING_ANSWERS Q_ERROR_BASE Q_INIT
 	       Q_MISSING_GLUE Q_QUERY_ERROR Q_REFERRAL_ERROR Q_RESPONSE_ERROR
 	       Q_SENT Q_WAIT_FOR_GLUE Q_WRONG_ANSWER RRSIGLABEL
-	       SHA256_DIGEST_LENGTH SHA_DIGEST_LENGTH SIGNBY SR_ANS_BARE_RRSIG
+	       SHA256_DIGEST_LENGTH SHA512_DIGEST_LENGTH SHA_DIGEST_LENGTH SIGNBY SR_ANS_BARE_RRSIG
 	       SR_ANS_CNAME SR_ANS_DNAME SR_ANS_NACK SR_ANS_STRAIGHT
 	       SR_ANS_UNSET SR_CALL_ERROR SR_CRED_AUTH_ADD SR_CRED_AUTH_ANS
 	       SR_CRED_AUTH_AUTH SR_CRED_FILE SR_CRED_NONAUTH_ADD
