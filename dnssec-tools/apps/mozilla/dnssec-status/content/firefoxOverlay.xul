@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="chrome://dnssecstatus/skin/overlay.css" type="text/css"?>
+<overlay id="dnssecstatus-overlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  <script src="overlay.js"/>
+  <stringbundleset id="stringbundleset">
+    <stringbundle id="dnssecstatus-strings" src="chrome://dnssecstatus/locale/dnssecstatus.properties"/>
+  </stringbundleset>
+
+  <statusbar id="status-bar">
+    <statusbarpanel id="dnssecstatus-status">
+        <label 
+          id="dnssecstatus-label"
+          value="DNSSEC Untrusted:"
+          style="color: #e49917;"
+          onclick="dnssecstatus.statusbar_action();"/>
+        <label
+          id="dnssecstatus-unum"
+          value="0"
+          style="color: #e49917;"
+          onclick="dnssecstatus.statusbar_action();" />
+    </statusbarpanel>
+  </statusbar>
+</overlay>
