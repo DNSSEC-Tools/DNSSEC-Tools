@@ -4946,11 +4946,9 @@ ask_cache(val_context_t * context,
                     }
                     response->di_qnames = NULL;
 
-                    /* Consume answers if we don't have any */
-                    if (next_q->qfq_query->qc_referral->answers == NULL) {
-                        next_q->qfq_query->qc_referral->answers = response->di_answers;
-                        response->di_answers = NULL;
-                    }
+                    /* Consume answers */
+                    merge_rrset_recs(&next_q->qfq_query->qc_referral->answers, response->di_answers);
+                    response->di_answers = NULL;
                 } else {
                     val_log(context, LOG_INFO,
                             "ask_cache(): received error response for {%s %d %d}, flags=%d: %d",
