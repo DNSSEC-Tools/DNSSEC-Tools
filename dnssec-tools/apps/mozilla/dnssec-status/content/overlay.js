@@ -25,6 +25,7 @@ dnssecstatusUpdater.prototype = {
             this.container = gBrowser.tabContainer;
             this.container.addEventListener("TabClose", this.onTabClose, false);
             this.strings = document.getElementById("dnssecstatus-strings");
+            this.dnssec_enabled = false;
             this.registered = true;
         }
     },
@@ -32,6 +33,13 @@ dnssecstatusUpdater.prototype = {
         if (this.registered == true) {
             this.container.removeEventListener("TabClose", this.onTabClose, false);
             this.registered = false;
+        }
+    },
+    enable_dnssec: function(value) {
+        if (value == 0) {
+            this.dnssec_enabled = true;
+        } else {
+            this.dnssec_enabled = false;
         }
     },
     reset_counts: function(index) {
@@ -75,21 +83,20 @@ dnssecstatusUpdater.prototype = {
           nb.PRIORITY_WARNING_MEDIUM);
     },
     set_statusbar_info: function(index) {
-        if (index == -1) {
-            document.getElementById("dnssecstatus-label").style.color = "#e49917";
-            document.getElementById("dnssecstatus-unum").style.color = "#e49917";
-            document.getElementById("dnssecstatus-unum").value = "???";
+        if ((index == -1) || (this.dnssec_enabled == false)) {
+            //document.getElementById("dnssecstatus-label").style.color = "#e49917";
+            //document.getElementById("dnssecstatus-unum").style.color = "#e49917";
+            //document.getElementById("dnssecstatus-unum").value = "???";
+            document.getElementById("dnssecstatus-label").style.display = "none";
+            document.getElementById("dnssecstatus-unum").style.display = "none";
             document.getElementById("dnssec-enabled-icon").style.display = "none";
             return;
         } 
 
-        // if we have at least one trusted link give our DNSSEC enabled icon
-        var t_cnt = this.statuscts[index][0];
-        if (t_cnt > 0) {
-            document.getElementById("dnssec-enabled-icon").style.display = "inline";
-        } else {
-            document.getElementById("dnssec-enabled-icon").style.display = "none";
-        }
+        // Display the address bar icon that says that we are DNSSEC-capable
+        document.getElementById("dnssecstatus-label").style.display = "inline";
+        document.getElementById("dnssecstatus-unum").style.display = "inline";
+        document.getElementById("dnssec-enabled-icon").style.display = "inline";
 
         var u_cnt = this.statuscts[index][1];
         if (u_cnt > 0) {
@@ -211,6 +218,13 @@ dnssecstatusObserver.prototype = {
        observerService.addObserver(this, "dnssec-status-untrusted", false);
        observerService.addObserver(this, "dnssec-status-error", false);
 
+       var prefService = Components.classes["@mozilla.org/preferences-service;1"]  
+                                       .getService(Components.interfaces.nsIPrefService);
+       dsu.enable_dnssec(prefService.getIntPref("security.dnssec.dnssecBehavior"));
+       this._branch = prefService.getBranch("security.dnssec.dnssecBehavior");
+       this._branch.QueryInterface(Components.interfaces.nsIPrefBranch2);
+       this._branch.addObserver("", this, false);
+
        this.registered = true;
      }
   },
@@ -222,10 +236,18 @@ dnssecstatusObserver.prototype = {
        observerService.removeObserver(this, "dnssec-status-trusted");
        observerService.removeObserver(this, "dnssec-status-untrusted");
        observerService.removeObserver(this, "dnssec-status-error");
+       this._branch.removeObserver("", this);
        this.registered = false;
      }
   },
   observe: function(subject, topic, data) {
+     if (topic == "nsPref:changed") {
+        // update current DNSSEC status
+        var prefService = Components.classes["@mozilla.org/preferences-service;1"]  
+                                       .getService(Components.interfaces.nsIPrefService);
+        dsu.enable_dnssec(prefService.getIntPref("security.dnssec.dnssecBehavior")); 
+        return;
+     }
      var httpChannel = subject.QueryInterface(Components.interfaces.nsIHttpChannel);
      var browser = this.getBrowserFromChannel(subject);
      var channel = subject.QueryInterface(Components.interfaces.nsIChannel);
