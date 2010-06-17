@@ -79,8 +79,17 @@ dnssecstatusUpdater.prototype = {
             document.getElementById("dnssecstatus-label").style.color = "#e49917";
             document.getElementById("dnssecstatus-unum").style.color = "#e49917";
             document.getElementById("dnssecstatus-unum").value = "???";
+            document.getElementById("dnssec-enabled-icon").style.display = "none";
             return;
         } 
+
+        // if we have at least one trusted link give our DNSSEC enabled icon
+        var t_cnt = this.statuscts[index][0];
+        if (t_cnt > 0) {
+            document.getElementById("dnssec-enabled-icon").style.display = "inline";
+        } else {
+            document.getElementById("dnssec-enabled-icon").style.display = "none";
+        }
 
         var u_cnt = this.statuscts[index][1];
         if (u_cnt > 0) {
@@ -333,6 +342,9 @@ var dnssecstatus = {
     //var observerService = Components.classes["@mozilla.org/observer-service;1"]
     //                      .getService(Components.interfaces.nsIObserverService);
     //observerService.notifyObservers(null, "dnssec-status-error", "some data");
+    alert(dsu.getStatusSummary());
+  },
+  urlbar_action: function() {
     alert(dsu.getStatusSummary());
   },
 };

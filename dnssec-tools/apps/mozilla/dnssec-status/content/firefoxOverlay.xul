@@ -7,6 +7,12 @@
     <stringbundle id="dnssecstatus-strings" src="chrome://dnssecstatus/locale/dnssecstatus.properties"/>
   </stringbundleset>
 
+  <hbox id="urlbar-icons">
+      <image id="dnssec-enabled-icon"
+             class="message-icon" 
+             onclick="dnssecstatus.urlbar_action();" />
+  </hbox>
+
   <statusbar id="status-bar">
     <statusbarpanel id="dnssecstatus-status">
         <label 
