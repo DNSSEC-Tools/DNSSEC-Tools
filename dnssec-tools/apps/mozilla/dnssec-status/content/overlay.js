@@ -93,12 +93,23 @@ dnssecstatusUpdater.prototype = {
             return;
         } 
 
+        var t_cnt = this.statuscts[index][0];
+        var u_cnt = this.statuscts[index][1];
+        var e_cnt = this.statuscts[index][2];
+
+        // don't set status if all counts are 0
+        // we could reach this condition if we've just hit an error page 
+        // where counts are reset, followed by the onpageload event that
+        // causes us to refresh the status bar information
+        if ((t_cnt == 0) && (u_cnt == 0) && (e_cnt == 0)) {
+            return;
+        }
+
         // Display the address bar icon that says that we are DNSSEC-capable
         document.getElementById("dnssecstatus-label").style.display = "inline";
         document.getElementById("dnssecstatus-unum").style.display = "inline";
         document.getElementById("dnssec-enabled-icon").style.display = "inline";
 
-        var u_cnt = this.statuscts[index][1];
         if (u_cnt > 0) {
             // color the indicator red
             document.getElementById("dnssecstatus-label").style.color = "#aa0000";
@@ -316,6 +327,10 @@ dnssecprogresslistener.prototype = {
         //          nsIWebProgressListener.STATE_IS_DOCUMENT)) {
         //    dsu.init_statusbar_info();
         //}
+        // Reset status bar information if we had an error loading the page 
+        if (aStatus && (aFlag & nsIWebProgressListener.STATE_STOP)) {
+            dsu.init_statusbar_info();
+        }
     },
     onLocationChange:function(aProgress, aRequest, aURI) {
         //var domWindow = aProgress.DOMWindow;
