@@ -3,6 +3,7 @@ package Net::DNS::SEC::Tools::TrustAnchor::Dns;
 use strict;
 use Net::DNS::SEC::Tools::TrustAnchor;
 use Net::DNS;
+use Net::DNS::RR::DS;
 
 our @ISA = qw(Net::DNS::SEC::Tools::TrustAnchor);
 our $VERSION = '0.1';
@@ -43,13 +44,25 @@ sub read_content {
 	      };
 	} else {
 	    next if (!($rr->flags & 1)); # XXX: ignore non KSK should be option
-	    push @{$doc->{'delegation'}{$zone}{$type}},
-	      {
-	       flags => $rr->flags,
-	       algorithm => $rr->algorithm,
-	       content => $rr->key,
-	       digesttype => $rr->protocol,
-	      };
+
+	    if ($self->{'options'}{'tods'}) {
+		my $ds = create Net::DNS::RR::DS($rr, digtype => 'SHA256');
+		push @{$doc->{'delegation'}{$zone}{'ds'}},
+		  {
+		   keytag => $ds->keytag,
+		   algorithm => $ds->algorithm,
+		   digesttype => $ds->digtype,
+		   content => $ds->digest,
+		  };
+	    } else {
+		push @{$doc->{'delegation'}{$zone}{$type}},
+		  {
+		   flags => $rr->flags,
+		   algorithm => $rr->algorithm,
+		   content => $rr->key,
+		   digesttype => $rr->protocol,
+		  };
+	    }
 	}
     }
 
