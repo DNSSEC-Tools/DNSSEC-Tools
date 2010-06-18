@@ -185,7 +185,7 @@ dnssecstatusUpdater.prototype = {
         this.set_statusbar_info(index);
     },
     onTabClose: function(ev) {
-        var browser = ev.target.linkedBrowser
+        var browser = ev.target.linkedBrowser;
         for (var i = 0; i < dsu.tabcnt; i++) {
             if (dsu.browsertabs[i] == browser) {
                 //alert("onTabClose completed, set browsertab status to 0 for " + i);
