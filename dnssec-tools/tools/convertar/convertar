@@ -222,6 +222,11 @@ prefix.  Example valid 'dns:' type specifications:
   dns:ds/dnssec-tools.org
   dns:dnskey/dnssec-tools.org
 
+Also, if you want to read dnskeys from the network but convert
+them to ds records, you can use the /tods flag:
+
+  dns/tods=1:dnssec-tools.org
+
 The DNS type can not output records and is only useful for reading in
 information.
 
