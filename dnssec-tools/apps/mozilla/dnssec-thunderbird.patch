@@ -1,83 +1,34 @@
-diff -u -r mozilla/layout/base/nsPresContext.cpp mozilla.thunderbird/layout/base/nsPresContext.cpp
---- mozilla/layout/base/nsPresContext.cpp	2006-04-21 19:30:50.000000000 -0400
-+++ mozilla.thunderbird/layout/base/nsPresContext.cpp	2007-08-17 15:29:36.000000000 -0400
-@@ -68,6 +68,7 @@
- #include "nsIWeakReferenceUtils.h"
- #include "nsCSSRendering.h"
- #include "prprf.h"
-+#include "prnetdb.h"
- #include "nsContentPolicyUtils.h"
- #include "nsIScriptGlobalObject.h"
- #include "nsIDOMDocument.h"
-@@ -258,6 +259,14 @@
-   nsContentUtils::UnregisterPrefCallback("image.animation_mode",
-                                          nsPresContext::PrefChangedCallback,
-                                          this);
-+  nsContentUtils::UnregisterPrefCallback("image.animation_mode", 
-+                                         nsPresContext::PrefChangedCallback,
-+                                         this);
-+#ifdef MOZ_DNSSEC
-+  nsContentUtils::UnregisterPrefCallback("security.dnssec.dnssecBehavior",
-+                                         nsPresContext::PrefChangedCallback,
-+                                         this);
-+#endif
- #ifdef IBMBIDI
-   nsContentUtils::UnregisterPrefCallback("bidi.", PrefChangedCallback, this);
- 
-@@ -571,6 +580,10 @@
-   else if (animatePref.Equals("once"))
-     mImageAnimationModePref = imgIContainer::kLoopOnceAnimMode;
- 
-+#ifdef MOZ_DNSSEC
-+  PR_set_dnssec_validate_policy(nsContentUtils::GetIntPref("security.dnssec.dnssecBehavior"));
-+#endif /* MOZ_DNSSEC */
-+
- #ifdef IBMBIDI
-   PRInt32 prefInt =
-     nsContentUtils::GetIntPref("bidi.direction",
-@@ -704,6 +717,11 @@
-   nsContentUtils::RegisterPrefCallback("image.animation_mode",
-                                        nsPresContext::PrefChangedCallback,
-                                        this);
-+#ifdef MOZ_DNSSEC
-+  nsContentUtils::RegisterPrefCallback("security.dnssec.dnssecBehavior",
-+                                       nsPresContext::PrefChangedCallback,
-+                                       this);
-+#endif
- #ifdef IBMBIDI
-   nsContentUtils::RegisterPrefCallback("bidi.", PrefChangedCallback,
-                                        this);
-diff -u -r mozilla/mail/components/preferences/privacy.xul mozilla.thunderbird/mail/components/preferences/privacy.xul
---- mozilla/mail/components/preferences/privacy.xul	2005-10-04 20:12:50.000000000 -0400
-+++ mozilla.thunderbird/mail/components/preferences/privacy.xul	2007-08-23 11:50:57.000000000 -0400
-@@ -88,6 +88,9 @@
+diff -r 386df12e1a80 mail/components/preferences/advanced.xul
+--- a/mail/components/preferences/advanced.xul	Wed Jun 16 16:36:54 2010 -0400
++++ b/mail/components/preferences/advanced.xul	Fri Jun 18 14:07:33 2010 -0400
+@@ -141,6 +141,9 @@
        <preference id="security.disable_button.openDeviceManager"
                    name="security.disable_button.openDeviceManager"
                    type="bool"/>
 +      <preference id="security.dnssec.dnssecBehavior"
 +                  name="security.dnssec.dnssecBehavior"
-+                  type="int"/>                   
++                  type="int"/>
      </preferences>
  
-     <tabbox id="privacyPrefs" flex="1" onselect="gPrivacyPane.tabSelectionChanged();">
-@@ -97,6 +100,7 @@
-         <tab label="&itemAntiVirus.label;"/>
-         <tab label="&itemPasswords.label;"/>
-         <tab label="&itemSecurity.label;"/>
-+        <tab label="&dnssecTab.label;"/>
+ #ifdef HAVE_SHELL_SERVICE
+@@ -155,6 +158,7 @@
+         <tab id="networkingTab" label="&itemNetworking.label;"/>
+         <tab label="&itemUpdate.label;"/>
+         <tab label="&itemCertificates.label;"/>
++        <tab label="&itemDNSSEC.label;"/>
        </tabs>
-       
+ 
        <tabpanels flex="1">
-@@ -188,6 +192,19 @@
-                     preference="security.disable_button.openDeviceManager"/>
-           </description>
+@@ -428,6 +432,19 @@
+           </vbox>
+ #endif
          </tabpanel>
 +        <!-- DNS Security --> 
 +        <tabpanel orient="vertical">
 +          <description>&dnssec.description;</description>
 +          <separator class="thin"/>
 +          <groupbox>
-+            <radiogroup id="networkDnssecBehaviour" preference="security.dnssec.dnssecBehavior">
++            <radiogroup id="dnssecBehaviour" preference="security.dnssec.dnssecBehavior">
 +                <radio value="1" label="&neverDNSSecure.label;"
 +                       accesskey="&neverDNSSecure.accesskey;"/>
 +                <radio value="0" label="&possibleDNSSecure.label;"
@@ -87,25 +38,19 @@ diff -u -r mozilla/mail/components/preferences/privacy.xul mozilla.thunderbird/m
 +        </tabpanel>
        </tabpanels>
      </tabbox>
- 
-diff -u -r mozilla/mail/locales/en-US/chrome/messenger/preferences/privacy.dtd mozilla.thunderbird/mail/locales/en-US/chrome/messenger/preferences/privacy.dtd
---- mozilla/mail/locales/en-US/chrome/messenger/preferences/privacy.dtd	2005-04-05 19:29:32.000000000 -0400
-+++ mozilla.thunderbird/mail/locales/en-US/chrome/messenger/preferences/privacy.dtd	2007-08-23 11:52:45.000000000 -0400
-@@ -40,6 +40,17 @@
+     <separator/>
+diff -r 386df12e1a80 mail/locales/en-US/chrome/messenger/preferences/advanced.dtd
+--- a/mail/locales/en-US/chrome/messenger/preferences/advanced.dtd	Wed Jun 16 16:36:54 2010 -0400
++++ b/mail/locales/en-US/chrome/messenger/preferences/advanced.dtd	Fri Jun 18 14:07:33 2010 -0400
+@@ -106,3 +106,11 @@
+ <!ENTITY validation.accesskey           "V">
  <!ENTITY viewSecurityDevices.label      "Security Devices">
- <!ENTITY viewSecurityDevices.accesskey  "u">
- 
+ <!ENTITY viewSecurityDevices.accesskey  "S">
++
 +<!-- DNS Security -->
-+<!ENTITY dnssecTab.label                "DNS Security">
-+<!ENTITY dnssec.description             "DNS Security Policy is currently set at the system level (/etc/dnsval.conf) and this option allows that policy to be enforced or ignored.">
-+<!ENTITY dnsSecurity.label              "DNS Security Policy">
++<!ENTITY itemDNSSEC.label               "DNS Security">
++<!ENTITY dnssec.description             "Enforce or Ignore System DNS Security Policy.">
 +<!ENTITY neverDNSSecure.label           "Ignore DNS security">
 +<!ENTITY neverDNSSecure.accesskey       "N">
 +<!ENTITY possibleDNSSecure.label        "Enforce DNS Security">
 +<!ENTITY possibleDNSSecure.accesskey    "E">
-+<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
-+<!ENTITY allDNSSecure.accesskey         "A">
-+
- <!-- Anti Virus -->
- <!ENTITY antiVirus.intro      "&brandShortName; can make it easy for anti-virus software to analyze incoming mail messages for viruses before they are stored locally.">
- <!ENTITY antiVirus.label      "Allow anti-virus clients to quarantine individual incoming messages">
