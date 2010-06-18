@@ -11,7 +11,7 @@ use XML::Simple;
 sub init_extras {
     my $self = shift;
     # XXX: allow for other contexts besides :
-    $self->{'header'} = ": trust-anchors\n";
+    $self->{'header'} = ": trust-anchor\n";
     $self->{'trailer'} = ";\n";
 }
 
@@ -87,7 +87,7 @@ sub write_trailer {
     my ($self, $fh, $options, $data) = @_;
     if ($self->{'options'}{'write_expectations'}) {
 	$fh->printf(";\n\n");
-	$fh->printf(": zone-security-expectaion\n");
+	$fh->printf(": zone-security-expectation\n");
 	$fh->printf("    %-50.50s ignore\n", ".");
 	foreach my $zone (keys(%{$data->{'delegation'}})) {
 	    $fh->printf("    %-50.50s validate\n", $zone);
