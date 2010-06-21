@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2004-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 #
@@ -534,6 +534,9 @@ sub check_rollerd
 	my $logfile;				# Logfile for rollerd.
 	my $loglevel;				# Log level for rollerd.
 	my $sleep;				# Sleep time for rollerd.
+	my $username;				# Username for rollerd.
+
+	my $uid;				# Username's uid.
 
 	#
 	# Get rollerd's configuration values.
@@ -542,6 +545,7 @@ sub check_rollerd
 	$logfile  = $dtconf{"roll_logfile"};
 	$loglevel = $dtconf{"roll_loglevel"};
 	$sleep	  = $dtconf{"roll_sleeptime"};
+	$username = $dtconf{"roll_username"};
 
 	#
 	# Ensure rollerd's loadzone flag is an acceptable boolean.
@@ -599,6 +603,32 @@ sub check_rollerd
 	else
 	{
 		prt(1,"rollover sleeptime ($sleep) acceptable");
+	}
+
+	#
+	# If a username for rollerd was specified, verify that it actually
+	# exists.  This will allow for both usernames and uids, but the uids
+	# must translate to known usernames.
+	#
+	if($username ne '')
+	{
+		my $uname = $username;			# Translated username.
+
+		if($username =~ /^[0-9]+$/)
+		{
+			$uname = getpwuid($username);
+		}
+
+		$uid = getpwnam($uname);
+		if($uid eq '')
+		{
+			prt(0,"rollerd username is unknown \"$username\"");
+			$errs++;
+		}
+		else
+		{
+			prt(1,"rollover username ($username) acceptable");
+		}
 	}
 
 }
@@ -1238,6 +1268,12 @@ value to also be displayed.
 Ensure that the B<rollerd>'s sleep-time is reasonable.
 B<rollerd>'s sleep-time must be at least one minute.
 
+=item I<roll_username>
+
+Ensure that the username for B<rollerd> is valid.  If it's a username, it
+must be translatable to a uid; if it's a uid, it must translate to a known
+username.
+
 =back
 
 =head2 NSEC3 Checks
@@ -1340,7 +1376,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
