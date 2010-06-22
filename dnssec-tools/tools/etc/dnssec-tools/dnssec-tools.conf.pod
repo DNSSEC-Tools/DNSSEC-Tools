@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2008 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -139,6 +139,12 @@ and described in I<rollmgr.pm>.
 The number of seconds B<rollerd> must wait at the end of each zone-checking
 cycle.
 
+=item roll_username
+
+The username that B<rollerd> will be run by.  The name will be converted to
+its associated uid, and the effective uid of the B<rollerd> process will be
+set to that uid.  This may be given as a user name or a uid.
+
 =item savekeys
 
 A true/false flag indicating if old keys should be moved to the
@@ -267,7 +273,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
