@@ -62,6 +62,7 @@ use Net::DNS::SEC::Tools::BootStrap;
 use Net::DNS::ZoneFile::Fast;
 
 use POSIX qw(setsid);
+use POSIX qw(setuid);
 
 #
 # Version information.
@@ -110,6 +111,7 @@ my $DT_LOADZONE	= "roll_loadzone";
 my $DT_LOGFILE	= "roll_logfile";
 my $DT_LOGLEVEL	= "roll_loglevel";
 my $DT_SLEEP	= "roll_sleeptime";
+my $DT_USERNAME	= "roll_username";
 
 my $OPT_HELP	   = "help";
 my $OPT_DIR	   = "directory";
@@ -125,6 +127,7 @@ my $OPT_ALWAYSSIGN = "alwayssign";
 my $OPT_PIDFILE    = "pidfile";
 my $OPT_RRFILE	   = "rrfile";
 my $OPT_SLEEP	   = "sleep";
+my $OPT_USERNAME   = "username";
 my $OPT_VERBOSE	   = "verbose";
 my $OPT_VERSION	   = "Version";
 my $OPT_ZONESIGNER = "zonesigner";
@@ -145,6 +148,7 @@ my @opts =
 	"singlerun",			# Single run:  process everything once.
 	"foreground",			# Run in the foreground; don't fork.
 	"alwayssign",			# Always sign when running in singlerun.
+	"username=s",			# User name for which to run as.
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
@@ -167,6 +171,7 @@ my $singlerun = 0;			# Single run only.
 my $sleep_override = 0;			# Sleep-override flag.
 my $sleepcnt;				# Time we've slept so far.
 my $sleeptime;				# Sleep interval in seconds.
+my $username;				# User name we'll change to.
 my $verbose = 0;			# Verbose option.
 
 my $display = 0;			# Do display processing.
@@ -261,8 +266,9 @@ sub main
 	$olderr = erraction(ERR_MSG);
 	if(dt_confcheck(0) > 0)
 	{
-		print STDERR "rollerd:  configuration checks failed, halting\n";
-		rolllog_log(LOG_ALWAYS,"","configuration checks failed");
+		dt_confcheck(1);
+		print STDERR "\nrollerd:  configuration checks failed, halting\n";
+		rolllog_log(LOG_ALWAYS,"","rollerd configuration checks failed");
 		cleanup();
 	}
 	erraction($olderr);
@@ -2332,7 +2338,7 @@ sub runner
 	$ret = $? >> 8;;
 
 	#
-	# If the error flag is set and the command exitted with an error,
+	# If the error flag is set and the command exited with an error,
 	# we'll log the output.
 	#
 	if($errflag)
@@ -2493,6 +2499,7 @@ sub optsandargs
 	$sleeptime  = $opts{$OPT_SLEEP}	     || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 	$dtcf	    = $opts{$OPT_DTCONF}     || getconffile();
 	$display    = $opts{$OPT_DISPLAY}    || 0;
+	$username   = $opts{$OPT_USERNAME}   || $dtconf{$DT_USERNAME} || '';
 	$xqtdir	    = $opts{$OPT_DIR}	     || ".";
 	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
 
@@ -2518,6 +2525,46 @@ sub optsandargs
 	if($rollrecfile !~ /^\//)
 	{
 		$rollrecfile = "$curdir/$rollrecfile";
+	}
+
+	#
+	# Validate and switch to the given username -- if we can.
+	#
+	if($username ne '')
+	{
+		my $uid;			# Uid we're switching to.
+		my $ret;			# Return from setuid().
+
+		#
+		# If the username is really a uid, we'll convert it to a name.
+		#
+		if($username =~ /^[0-9]+$/)
+		{
+			$username = getpwuid($username);
+		}
+
+		#
+		# Convert the name to a uid.
+		#
+		$uid = getpwnam($username);
+		if($uid eq '')
+		{
+			print STDERR "rollerd:  unknown user \"$username\"\n";
+			exit(1);
+		}
+
+		#
+		# Change the uid of the process.
+		#
+		$! = '';
+		$> = $uid;
+#		POSIX::setuid($uid);
+		$ret = $!;
+		if($ret ne '')
+		{
+			print STDERR "rollerd:  unable to switch to user \"$username\" -- $ret\n";
+			exit(1);
+		}
 	}
 
 	#
@@ -2699,6 +2746,12 @@ sub bootmsg
 	rolllog_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
 	rolllog_log(LOG_ALWAYS,"","		zone reload	\"$zoneload\"");
 	rolllog_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
+
+	if($username ne '')
+	{
+		rolllog_log(LOG_ALWAYS,"","		running as	\"$username\"");
+	}
+
 	rolllog_log(LOG_ALWAYS,""," ");
 }
 
@@ -3748,6 +3801,11 @@ sub cmd_status
 	$outbuf .= "zone reload:        $zoneload\n";
 	$outbuf .= "sleeptime:          $sleeptime\n";
 
+	if($username ne '')
+	{
+		$outbuf .= "running as:         $username\n";
+	}
+
 	#
 	# Send the status report to the caller.
 	#
@@ -4475,6 +4533,7 @@ sub usage
 	print STDERR "\t\t-singlerun\n";
 	print STDERR "\t\t-foreground\n";
 	print STDERR "\t\t-alwayssign\n";
+	print STDERR "\t\t-username <username>\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
@@ -4841,6 +4900,25 @@ The I<-singlerun> option implicitly implies I<-foreground> as well.
 Sets B<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
 of time (in seconds) B<rollerd> waits between processing its I<rollrec>-based
 queue.
+
+=item B<-username username>
+
+B<username> is the user for which the B<rollerd> daemon will be executed.
+The B<rollerd> process' effective uid will be set to the uid corresponding
+to B<username>.
+
+If B<username> is a username, it must correspond to a valid uid; if it is
+a uid, it must correspond to a valid username.
+
+If B<rollerd> does not have the appropriate O/S magic (e.g., for Unix,
+installed as I<setuid> program and owned by root) then it will only be able
+to switch to those users to which the executing user has privilege to switch.
+This restriction is dependent on the operating system and the manner by which
+B<rollerd> is installed.
+
+When using this option, the target user must have access to the various
+directories, logs, and data files that B<rollerd> requires to execute.
+Without this access, proper execution cannot occur.
 
 =item B<-Version>
 
