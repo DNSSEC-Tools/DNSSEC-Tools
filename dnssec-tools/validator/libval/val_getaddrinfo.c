@@ -534,7 +534,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
     char           *canonname = NULL;
     int validated;
     int trusted;
-    int retval = 0;
+    int retval = EAI_FAIL;
 
     if (res == NULL)
         return 0;
@@ -546,12 +546,6 @@ get_addrinfo_from_result(const val_context_t * ctx,
     validated = val_isvalidated(*val_status)? 1 : 0;
     trusted = val_istrusted(*val_status)? 1 : 0;
 
-    if (!results) {
-        *val_status = VAL_UNTRUSTED_ANSWER;
-        val_log(ctx, LOG_INFO, "get_addrinfo_from_result(): results is null");
-        return EAI_NONAME;
-    }
-    
     ainfo_head = *res;
     ainfo_tail = ainfo_head;
     if (ainfo_tail) {
@@ -660,7 +654,10 @@ get_addrinfo_from_result(const val_context_t * ctx,
                 rr = rr->rr_next;
             }
         } else if (val_does_not_exist(result->val_ans_status)) {
+            retval = EAI_NONAME;
             break;
+        } else {
+            retval = EAI_FAIL;
         }
     }
 
@@ -671,7 +668,6 @@ get_addrinfo_from_result(const val_context_t * ctx,
         } else {
             *val_status = VAL_UNTRUSTED_ANSWER;
         }
-        retval = EAI_NONAME;
     } else {
         if (validated)
             *val_status = VAL_VALIDATED_ANSWER;
@@ -679,6 +675,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
             *val_status = VAL_TRUSTED_ANSWER;
         else
             *val_status = VAL_UNTRUSTED_ANSWER;
+        // return success if we have at least one answer
         retval = 0;
     }
 
@@ -716,7 +713,7 @@ get_addrinfo_from_dns(val_context_t * ctx,
 {
     struct val_answer_chain *results = NULL;
     struct addrinfo *ainfo = NULL;
-    int             ret = 0;
+    int    ret = EAI_FAIL;
 
     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns() called");
 
@@ -747,6 +744,10 @@ get_addrinfo_from_dns(val_context_t * ctx,
             ret = get_addrinfo_from_result(ctx, results, servname,
                                          hints, &ainfo, val_status);
 
+            val_log(ctx, LOG_DEBUG, 
+                    "get_addrinfo_from_dns(): get_addrinfo_from_result() returned=%d with val_status=%d",
+                    ret, *val_status);
+
             val_free_answer_chain(results);
             results = NULL;
         } 
@@ -766,14 +767,18 @@ get_addrinfo_from_dns(val_context_t * ctx,
             ret = get_addrinfo_from_result(ctx, results, servname,
                                          hints, &ainfo, val_status);
 
+            val_log(ctx, LOG_DEBUG, 
+                    "get_addrinfo_from_dns(): get_addrinfo_from_result() returned=%d with val_status=%d",
+                    ret, *val_status);
+
             val_free_answer_chain(results);
             results = NULL;
         } 
     } 
 
     *res = ainfo;
-
-    return ret;
+    
+    return ret; 
 
 }                               /* get_addrinfo_from_dns() */
 
@@ -831,6 +836,7 @@ val_getaddrinfo(val_context_t * context,
     
     if (context == NULL) {
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            val_log(ctx, LOG_DEBUG, "val_getaddrinfo: context could not be created");
             return EAI_FAIL; 
         } 
     } else {
@@ -1240,8 +1246,10 @@ val_getnameinfo(val_context_t * context,
         else
             theAddressFamily = AF_INET6;
             
-    } else
+    } else {
+        val_log(ctx, LOG_DEBUG, "val_getnameinfo(): Address family %d not known or length %d too small.", sa->sa_family, salen);
         return (EAI_FAMILY);
+    }
 
     /*
      * should the host be looked up 
