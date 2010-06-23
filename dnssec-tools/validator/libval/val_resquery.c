@@ -651,7 +651,6 @@ find_nslist_for_query(val_context_t * context,
     u_int16_t       tzonestatus;
     u_int32_t ttl_x = 0;
     struct name_server *ns;
-    int recurse = 0;
 
     if (next_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -675,7 +674,6 @@ find_nslist_for_query(val_context_t * context,
          *  to that name server
          */
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
-        recurse = 1;
         goto done;
     } 
 
@@ -715,15 +713,6 @@ find_nslist_for_query(val_context_t * context,
     *(next_q->qc_zonecut_n) = (u_char) '\0';
 
 done:
-
-    /* Set recursion only if we need it, else turn it off */
-    if (recurse) {
-        for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
-            ns->ns_options |= RES_RECURSE;
-    } else {
-        for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
-            ns->ns_options ^= RES_RECURSE;
-    }
 
     /*
      * Only set the CD and EDNS0 options if we feel the server 
