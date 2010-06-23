@@ -1,6 +1,7 @@
---- old-mozilla/nsprpub/config/autoconf.mk.in	2006-02-22 15:03:11.000000000 -0800
-+++ mozilla/nsprpub/config/autoconf.mk.in	2006-08-23 19:01:13.000000000 -0700
-@@ -34,6 +34,7 @@
+diff -rwup mozilla-1.9.2.old/nsprpub/config/autoconf.mk.in mozilla-1.9.2/nsprpub/config/autoconf.mk.in
+--- mozilla-1.9.2.old/nsprpub/config/autoconf.mk.in	2010-01-20 22:30:59.000000000 -0500
++++ mozilla-1.9.2/nsprpub/config/autoconf.mk.in	2010-03-26 13:30:00.000000000 -0400
+@@ -34,6 +34,7 @@ MOD_PATCH_VERSION = @MOD_PATCH_VERSION@
  
  LIBNSPR		= @LIBNSPR@
  LIBPLC		= @LIBPLC@
@@ -8,9 +9,10 @@
  
  CROSS_COMPILE	= @CROSS_COMPILE@
  BUILD_OPT	= @MOZ_OPTIMIZE@
---- old-mozilla/nsprpub/config/nspr-config.in	2005-05-10 18:03:44.000000000 -0700
-+++ mozilla/nsprpub/config/nspr-config.in	2006-08-23 19:01:13.000000000 -0700
-@@ -138,6 +138,6 @@
+diff -rwup mozilla-1.9.2.old/nsprpub/config/nspr-config.in mozilla-1.9.2/nsprpub/config/nspr-config.in
+--- mozilla-1.9.2.old/nsprpub/config/nspr-config.in	2010-01-20 22:30:59.000000000 -0500
++++ mozilla-1.9.2/nsprpub/config/nspr-config.in	2010-03-26 13:30:00.000000000 -0400
+@@ -138,6 +138,6 @@ if test "$echo_libs" = "yes"; then
  	  libdirs="$libdirs $i"
          fi
        done
@@ -18,9 +20,10 @@
 +      echo $libdirs @VAL_LIBS@ @OS_LIBS@
  fi      
  
---- old-mozilla/nsprpub/configure.in	2006-02-22 15:03:11.000000000 -0800
-+++ mozilla/nsprpub/configure.in	2006-08-23 19:01:13.000000000 -0700
-@@ -2138,6 +2138,52 @@
+diff -rwup mozilla-1.9.2.old/nsprpub/configure.in mozilla-1.9.2/nsprpub/configure.in
+--- mozilla-1.9.2.old/nsprpub/configure.in	2010-04-02 12:02:55.000000000 -0400
++++ mozilla-1.9.2/nsprpub/configure.in	2010-06-15 14:44:26.000000000 -0400
+@@ -2276,6 +2276,45 @@ dnl AC_CHECK_LIB(svld, main)
  dnl AC_CHECK_LIB(thread, main)
  dnl AC_CHECK_LIB(vms_jackets, main)
  
@@ -41,10 +44,6 @@
 +                          Use system openssl libraries [installed at prefix PFX]],
 +    OPENSSL_DIR=$withval)
 +
-+_SAVE_CFLAGS=$CFLAGS
-+_SAVE_LDFLAGS=$LDFLAGS
-+_SAVE_LIBS=$LIBS
-+
 +if test -n "${OPENSSL_DIR}"; then
 +    CFLAGS="-I${OPENSSL_DIR}/include $CFLAGS"
 +    LDFLAGS="-L${OPENSSL_DIR}/lib $LDFLAGS"
@@ -57,33 +56,42 @@
 +    CFLAGS="-I${SRES_DIR}/include $CFLAGS"
 +    LDFLAGS="-L${SRES_DIR}/lib $LDFLAGS"
 +fi
++VAL_LIBS=""
 +AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto", OPENSSL_LIBS="")
-+AC_CHECK_LIB(sres, __res_init, SRES_LIBS=" -lpthread -lsres", SRES_LIBS="",
++AC_CHECK_LIB(sres, response_recv, SRES_LIBS="-lsres -lpthread", SRES_LIBS="",
 +             $OPENSSL_LIBS -lpthread)
 +AC_CHECK_LIB(val-threads, val_gethostbyname,
-+             [SYSTEM_VAL=1
-+              VAL_LIBS="-lval-threads $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
-+              NSPR_LIBS="$NSPR_LIBS $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
-+              AC_DEFINE(MOZ_DNSSEC)], SYSTEM_VAL=,
-+             $SRES_LIBS $OPENSSL_LIBS)
-+
-+CFLAGS=$_SAVE_CFLAGS
-+LDFLAGS=$_SAVE_LDFLAGS
-+LIBS=$_SAVE_LIBS
++             [VAL_LIBS="-lval-threads $SRES_LIBS $OPENSSL_LIBS"
++              AC_DEFINE(MOZ_DNSSEC)], , $SRES_LIBS $OPENSSL_LIBS)
++NSPR_LIBS="$NSPR_LIBS $VAL_LIBS"
++AC_SUBST(VAL_LIBS)
++AC_SUBST(MOZ_DNSSEC)
  
  dnl We don't want anything to link with libdl even if it's present on OS X, 
  dnl since it's not used and not part of the default installation.
-@@ -2677,6 +2723,7 @@
- AC_SUBST(OBJECT_MODE)
- AC_SUBST(GC_LEAK_DETECTOR)
- AC_SUBST(ENABLE_STRIP)
-+AC_SUBST(VAL_LIBS)
+diff -rwup mozilla-1.9.2.old/nsprpub/pr/include/prerr.h mozilla-1.9.2/nsprpub/pr/include/prerr.h
+--- mozilla-1.9.2.old/nsprpub/pr/include/prerr.h	2010-04-02 12:02:56.000000000 -0400
++++ mozilla-1.9.2/nsprpub/pr/include/prerr.h	2010-06-15 16:11:47.000000000 -0400
+@@ -272,8 +272,14 @@
+ /* The one-time function was previously called and failed. Its error code is no longer available */
+ #define PR_CALL_ONCE_ERROR                       (-5925L)
  
- AC_SUBST(USE_PTHREADS)
- AC_SUBST(USE_BTHREADS)
---- old-mozilla/nsprpub/pr/include/prnetdb.h.orig	2008-05-08 14:04:48.000000000 -0700
-+++ mozilla/nsprpub/pr/include/prnetdb.h	2008-01-09 09:25:07.000000000 -0800
-@@ -85,6 +85,13 @@
++/* The DNS record failed DNSSEC validation */
++#define PR_DNSSEC_VALIDATION_ERROR               (-5924L)
++
++/* The DNS record failed DNSSEC validation */
++#define PR_DNSSEC_DNE_ERROR                      (-5923L)
++
+ /* Placeholder for the end of the list */
+-#define PR_MAX_ERROR                             (-5924L)
++#define PR_MAX_ERROR                             (-5922L)
+ 
+ extern void nspr_InitializePRErrorTable(void);
+ #define ERROR_TABLE_BASE_nspr (-6000L)
+diff -rwup mozilla-1.9.2.old/nsprpub/pr/include/prnetdb.h mozilla-1.9.2/nsprpub/pr/include/prnetdb.h
+--- mozilla-1.9.2.old/nsprpub/pr/include/prnetdb.h	2010-01-20 22:30:59.000000000 -0500
++++ mozilla-1.9.2/nsprpub/pr/include/prnetdb.h	2010-04-30 14:10:08.000000000 -0400
+@@ -85,6 +85,14 @@ typedef struct PRHostEnt {
  #define PR_NETDB_BUF_SIZE 1024
  #endif
  
@@ -91,13 +99,14 @@
 +{
 +  PR_DNSSEC_NO_FLAGS = 0,
 +  PR_DNSSEC_IS_TRUSTED = 1 << 0,
-+  PR_DNSSEC_IS_VALIDATED = 1 << 1
++  PR_DNSSEC_IS_VALIDATED = 1 << 1,
++  PR_DNSSEC_IS_UNTRUSTED = 1 << 2
 +};
 +
  /***********************************************************************
  ** FUNCTION:	
  ** DESCRIPTION:	PR_GetHostByName()
-@@ -111,6 +118,33 @@
+@@ -111,6 +119,33 @@ NSPR_API(PRStatus) PR_GetHostByName(
  
  /***********************************************************************
  ** FUNCTION:	
@@ -131,7 +140,7 @@
  ** DESCRIPTION:	PR_GetIPNodeByName()
  ** Lookup a host by name. Equivalent to getipnodebyname(AI_DEFAULT)
  ** of RFC 2553.
-@@ -153,6 +187,44 @@
+@@ -153,6 +188,44 @@ NSPR_API(PRStatus) PR_GetIPNodeByName(
  
  /***********************************************************************
  ** FUNCTION:	
@@ -176,7 +185,7 @@
  ** DESCRIPTION:	PR_GetHostByAddr()
  ** Lookup a host entry by its network address.
  **
-@@ -417,6 +489,33 @@
+@@ -417,6 +490,33 @@ NSPR_API(PRAddrInfo*) PR_GetAddrInfoByNa
  
  /***********************************************************************
  ** FUNCTION:
@@ -210,7 +219,7 @@
  ** DESCRIPTION: PR_FreeAddrInfo()
  **  Destroy the PRAddrInfo handle allocated by PR_GetAddrInfoByName().
  **
-@@ -494,6 +593,15 @@
+@@ -494,6 +594,15 @@ NSPR_API(PRUint16) PR_htons(PRUint16);
  NSPR_API(PRUint32) PR_htonl(PRUint32);
  NSPR_API(PRUint64) PR_htonll(PRUint64);
  
@@ -226,9 +235,22 @@
  PR_END_EXTERN_C
  
  #endif /* prnetdb_h___ */
---- old-mozilla/nsprpub/pr/src/misc/prerr.c.orig	2008-05-20 13:22:26.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.c	2008-05-20 15:17:01.000000000 -0700
-@@ -118,11 +118,13 @@
+diff -rwup mozilla-1.9.2.old/nsprpub/pr/src/Makefile.in mozilla-1.9.2/nsprpub/pr/src/Makefile.in
+--- mozilla-1.9.2.old/nsprpub/pr/src/Makefile.in	2010-01-20 22:30:59.000000000 -0500
++++ mozilla-1.9.2/nsprpub/pr/src/Makefile.in	2010-04-05 10:18:21.000000000 -0400
+@@ -213,7 +213,7 @@ ifdef GC_LEAK_DETECTOR
+ EXTRA_LIBS	= -L$(dist_libdir) -lboehm
+ endif
+ 
+-EXTRA_LIBS += $(OS_LIBS)
++EXTRA_LIBS += $(OS_LIBS) $(VAL_LIBS)
+ 
+ #
+ # Define platform-dependent OBJS
+diff -rwup mozilla-1.9.2.old/nsprpub/pr/src/misc/prerr.c mozilla-1.9.2/nsprpub/pr/src/misc/prerr.c
+--- mozilla-1.9.2.old/nsprpub/pr/src/misc/prerr.c	2010-01-20 22:31:00.000000000 -0500
++++ mozilla-1.9.2/nsprpub/pr/src/misc/prerr.c	2010-03-26 13:30:03.000000000 -0400
+@@ -118,11 +118,13 @@ static const struct PRErrorMessage text[
  	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
  	{"PR_LIBRARY_NOT_LOADED_ERROR",    "The library is not loaded"},
  	{"PR_CALL_ONCE_ERROR",    "The one-time function was previously called and failed. Its error code is no longer available"},
@@ -243,27 +265,10 @@
  
  void nspr_InitializePRErrorTable(void) {
      PR_ErrorInstallTable(&et);
---- old-mozilla/nsprpub/pr/include/prerr.h.orig	2008-05-20 13:22:26.000000000 -0700
-+++ mozilla/nsprpub/pr/include/prerr.h	2008-05-20 15:17:31.000000000 -0700
-@@ -272,8 +272,14 @@
- /* The one-time function was previously called and failed. Its error code is no longer available */
- #define PR_CALL_ONCE_ERROR                       (-5925L)
-
-+/* The DNS record failed DNSSEC validation */
-+#define PR_DNSSEC_VALIDATION_ERROR               (-5924L)
-+
-+/* The DNS record failed DNSSEC validation */
-+#define PR_DNSSEC_DNE_ERROR                      (-5923L)
-+
- /* Placeholder for the end of the list */
--#define PR_MAX_ERROR                             (-5924L)
-+#define PR_MAX_ERROR                             (-5923L)
-
- extern void nspr_InitializePRErrorTable(void);
- #define ERROR_TABLE_BASE_nspr (-6000L)
---- old-mozilla/nsprpub/pr/src/misc/prerr.et.orig	2008-05-20 13:22:26.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.et	2008-05-20 15:17:55.000000000 -0700
-@@ -134,6 +134,8 @@
+diff -rwup mozilla-1.9.2.old/nsprpub/pr/src/misc/prerr.et mozilla-1.9.2/nsprpub/pr/src/misc/prerr.et
+--- mozilla-1.9.2.old/nsprpub/pr/src/misc/prerr.et	2010-01-20 22:31:00.000000000 -0500
++++ mozilla-1.9.2/nsprpub/pr/src/misc/prerr.et	2010-03-26 13:30:03.000000000 -0400
+@@ -134,6 +134,8 @@ ec PR_CONNECT_ABORTED_ERROR,    "Connect
  ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
  ec PR_LIBRARY_NOT_LOADED_ERROR, "The library is not loaded"
  ec PR_CALL_ONCE_ERROR, "The one-time function was previously called and failed. Its error code is no longer available"
@@ -272,17 +277,19 @@
  
  ec PR_MAX_ERROR,                "Placeholder for the end of the list"
  
---- old-mozilla/nsprpub/pr/src/misc/prerr.properties.orig	2008-05-20 13:22:26.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.properties	2008-05-20 15:18:17.000000000 -0700
-@@ -114,4 +114,6 @@
+diff -rwup mozilla-1.9.2.old/nsprpub/pr/src/misc/prerr.properties mozilla-1.9.2/nsprpub/pr/src/misc/prerr.properties
+--- mozilla-1.9.2.old/nsprpub/pr/src/misc/prerr.properties	2010-01-20 22:31:00.000000000 -0500
++++ mozilla-1.9.2/nsprpub/pr/src/misc/prerr.properties	2010-03-26 13:30:03.000000000 -0400
+@@ -114,4 +114,6 @@ PR_CONNECT_ABORTED_ERROR=Connection abor
  PR_HOST_UNREACHABLE_ERROR=Host is unreachable
  PR_LIBRARY_NOT_LOADED_ERROR=The library is not loaded
  PR_CALL_ONCE_ERROR=The one-time function was previously called and failed. Its error code is no longer available
 +PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
 +PR_DNSSEC_DNE_ERROR=The DNS record does not exist
  PR_MAX_ERROR=Placeholder for the end of the list
---- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2008-05-02 01:18:14.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2009-02-20 09:41:06.000000000 -0800
+diff -rwup mozilla-1.9.2.old/nsprpub/pr/src/misc/prnetdb.c mozilla-1.9.2/nsprpub/pr/src/misc/prnetdb.c
+--- mozilla-1.9.2.old/nsprpub/pr/src/misc/prnetdb.c	2010-04-02 12:02:56.000000000 -0400
++++ mozilla-1.9.2/nsprpub/pr/src/misc/prnetdb.c	2010-06-17 13:41:22.000000000 -0400
 @@ -39,6 +39,10 @@
  
  #include <string.h>
@@ -294,7 +301,7 @@
  /*
   * On Unix, the error code for gethostbyname() and gethostbyaddr()
   * is returned in the global variable h_errno, instead of the usual
-@@ -66,8 +70,8 @@
+@@ -66,8 +70,8 @@ extern int h_errno;
   * - _PR_HAVE_GETHOST_R_POINTER: the gethostbyXXX_r functions return
   *   a struct hostent* pointer.  For example, Solaris and IRIX.
   */
@@ -305,7 +312,7 @@
  #define _PR_NO_DNS_LOCK
  #endif
  
-@@ -655,6 +659,218 @@
+@@ -655,6 +659,211 @@ static PRStatus CopyProtoent(
  }
  #endif /* !defined(_PR_HAVE_GETPROTO_R) */
  
@@ -430,13 +437,6 @@
 +  DNSSECFUNDEBUG((stderr, "input: policy=%d, status=%d = %s\n", policytype, val_status, p_val_error(val_status)));
 +
 +  /*
-+   * POLICY: if val_status == VAL_AC_UNSET then return SUCCESS (unknown host)
-+   *   (this is already an error)
-+   */
-+  if (val_status == VAL_AC_UNSET)
-+      DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+
-+  /*
 +   * POLICY: ignore errors
 +   */
 +  if (policytype == DNSSEC_POLICY_IGNORE)
@@ -524,7 +524,7 @@
  /*
   * #################################################################
   * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -690,12 +906,52 @@
+@@ -690,12 +899,52 @@ static PRStatus CopyProtoent(
  
  #endif  /* definition of GETHOSTBYXXX */
  
@@ -579,7 +579,7 @@
      char localbuf[PR_NETDB_BUF_SIZE];
      char *tmpbuf;
      struct hostent tmphe;
-@@ -703,8 +959,9 @@
+@@ -703,8 +952,9 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
  #endif
  
      if (!_pr_initialized) _PR_ImplicitInitialization();
@@ -590,7 +590,7 @@
      tmpbuf = localbuf;
      if (bufsize > sizeof(localbuf))
      {
-@@ -712,7 +969,7 @@
+@@ -712,7 +962,7 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -599,17 +599,15 @@
          }
      }
  #endif
-@@ -721,23 +978,38 @@
+@@ -721,23 +971,38 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
  
  	h = GETHOSTBYNAME(name);
      
--	if (NULL == h)
--	{
 +
 +    /* XXX */
 +    DNSSECDEBUG((stderr, "DNSSECgethostbyname results: host=%s h_errno=%d\n", name, h_errno));
-+    if (NULL == h)
-+  	{
+ 	if (NULL == h)
+ 	{
 +        DNSSECDEBUG((stderr, "********** Status = LOOKUP_ERROR\n"));
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_GETHOST_ERRNO());
  	}
@@ -642,7 +640,7 @@
  }
  
  #if !defined(_PR_INET6) && \
-@@ -822,13 +1094,13 @@
+@@ -822,13 +1087,13 @@ static PRStatus AppendV4AddrsToHostent(
  }
  #endif
  
@@ -658,7 +656,7 @@
      char localbuf[PR_NETDB_BUF_SIZE];
      char *tmpbuf;
      struct hostent tmphe;
-@@ -843,11 +1115,12 @@
+@@ -843,11 +1108,12 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByNam
      PRBool did_af_inet = PR_FALSE;
  #endif
  
@@ -672,7 +670,7 @@
      }
  
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
-@@ -882,7 +1155,7 @@
+@@ -882,7 +1148,7 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByNam
      	md_af = af;
  #endif
  
@@ -681,7 +679,7 @@
      tmpbuf = localbuf;
      if (bufsize > sizeof(localbuf))
      {
-@@ -890,11 +1163,13 @@
+@@ -890,11 +1156,13 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByNam
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -696,7 +694,7 @@
      /* Do not need to lock the DNS lock if getipnodebyname() is called */
  #ifdef _PR_INET6
  #ifdef _PR_HAVE_GETHOSTBYNAME2
-@@ -948,6 +1223,7 @@
+@@ -948,6 +1216,7 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByNam
      
  	if (NULL == h)
  	{
@@ -704,7 +702,7 @@
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
  #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
-@@ -1001,12 +1277,23 @@
+@@ -1001,12 +1270,23 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByNam
      UNLOCK_DNS();
  #endif /* _PR_INET6 */
  
@@ -730,7 +728,7 @@
  }
  
  PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
-@@ -1028,6 +1315,7 @@
+@@ -1028,6 +1308,7 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
  	int error_num;
  #endif
  
@@ -738,7 +736,7 @@
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1166,7 +1454,7 @@
+@@ -1166,7 +1447,7 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
          PR_Free(tmpbuf);
  #endif
  
@@ -747,7 +745,7 @@
  }
  
  /******************************************************************************/
-@@ -1852,11 +2140,20 @@
+@@ -1852,11 +2133,20 @@ PR_IMPLEMENT(PRUint64) PR_htonll(PRUint6
   * provide getaddrinfo in all versions that NSPR cares to support.
   */
  
@@ -769,7 +767,7 @@
  #define GETADDRINFO getaddrinfo
  #define FREEADDRINFO freeaddrinfo
  #define GETNAMEINFO getnameinfo
-@@ -1951,8 +2248,6 @@
+@@ -1951,8 +2241,6 @@ _pr_find_getaddrinfo(void)
  #endif
  }
  
@@ -778,7 +776,7 @@
  #define GETNAMEINFO (*_pr_getnameinfo)
  
  #endif /* _PR_INET6 */
-@@ -1978,46 +2273,59 @@
+@@ -1978,46 +2266,59 @@ pr_GetAddrInfoByNameFB(const char  *host
  {
      PRStatus rv;
      PRAddrInfoFB *ai;
@@ -805,14 +803,12 @@
  #endif /* !_PR_HAVE_GETADDRINFO || _PR_INET6_PROBE */
  
 -PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
--                                                PRUint16     af,
--                                                PRIntn       flags)
--{
 +PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByNameExtended(const char  *hostname,
-+                                                        PRUint16     af,
-+                                                        PRIntn       flags,
-+                                                        PRUint16     *security_flags)
-+{
+                                                 PRUint16     af,
+-                                                PRIntn       flags)
++                                                PRIntn       flags,
++                                                PRUint16     *security_flags)
+ {
 +#ifdef MOZ_DNSSEC
 +  val_status_t val_status;
 +#endif
@@ -849,7 +845,7 @@
          PRStatus rv;
  
          /*
-@@ -2040,17 +2348,75 @@
+@@ -2040,17 +2341,80 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInf
          hints.ai_socktype = SOCK_STREAM;
  
          rv = GETADDRINFO(hostname, NULL, &hints, &res);
@@ -867,33 +863,38 @@
 +        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo returned: %d\n", (unsigned int) res));
 +
 +#ifdef MOZ_DNSSEC
-+        if (dnssec_check_policy(val_status, global_policy) != DNSSEC_SUCCESS) {
-+          /* DNSsec validation failed */
-+          PR_SetErrorText(0, "Host DNSsec validation failed");
-+          PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
-+          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning failure line:%d %s => val_status:%d\n", __LINE__, hostname, val_status));
-+          if(res)
++        if (VAL_GETADDRINFO_HAS_STATUS(rv)) {
++          /* set the security flags to how the results were achieved */
++          if (security_flags) {
++            if (val_isvalidated(val_status))
++              *security_flags = PR_DNSSEC_IS_VALIDATED;
++            else if (val_istrusted(val_status))
++              *security_flags = PR_DNSSEC_IS_TRUSTED;
++            else
++              *security_flags = PR_DNSSEC_IS_UNTRUSTED;
++          }
++
++          if (dnssec_check_policy(val_status, global_policy) != DNSSEC_SUCCESS) {
++            /* DNSsec validation failed */
++            PR_SetErrorText(0, "Host DNSsec validation failed");
++            PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
++            DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning failure line:%d %s => val_status:%d\n", 
++                        __LINE__, hostname, val_status));
++            if(res)
 +              FREEADDRINFO(res);
-+          DNSSECFUNRETURN(NULL);
-+        }
++            DNSSECFUNRETURN(NULL);
++          }
 +
-+        if (!res && val_isvalidated(val_status)) {
-+          /* DNSSEC has proven that the record does not exist; we
-+             return a different error message to show that the lookup
-+             succeeded and there is officially no results */
-+          PR_SetErrorText(0, "Address does not exist");
-+          PR_SetError(PR_DNSSEC_DNE_ERROR, 0);
-+          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning DNE failure:%d %s => val_status:%d\n", __LINE__, hostname, val_status));
-+          DNSSECFUNRETURN(NULL);
-+        }
-+
-+        /* set the security flags to how the results were achieved */
-+        if (security_flags) {
-+          if (val_isvalidated(val_status))
-+              *security_flags |= PR_DNSSEC_IS_VALIDATED;
-+          
-+          if (val_istrusted(val_status))
-+              *security_flags |= PR_DNSSEC_IS_TRUSTED;
++          if (!res && val_does_not_exist(val_status)) {
++            /* DNSSEC has proven that the record does not exist; we
++               return a different error message to show that the lookup
++               succeeded and there is officially no results */
++            PR_SetErrorText(0, "Address does not exist");
++            PR_SetError(PR_DNSSEC_DNE_ERROR, 0);
++            DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning DNE failure:%d %s => val_status:%d\n", 
++                        __LINE__, hostname, val_status));
++            DNSSECFUNRETURN(NULL);
++          }
 +        }
 +#endif
 +
@@ -928,7 +929,7 @@
  #if defined(_PR_HAVE_GETADDRINFO)
  #if defined(_PR_INET6_PROBE)
      if (!_pr_ipv6_is_present())
-@@ -2061,6 +2427,7 @@
+@@ -2061,6 +2425,7 @@ PR_IMPLEMENT(void) PR_FreeAddrInfo(PRAdd
  #else
      PR_Free((PRAddrInfoFB *) ai);
  #endif
@@ -936,7 +937,7 @@
  }
  
  PR_IMPLEMENT(void *) PR_EnumerateAddrInfo(void             *iterPtr,
-@@ -2068,9 +2435,9 @@
+@@ -2068,9 +2433,9 @@ PR_IMPLEMENT(void *) PR_EnumerateAddrInf
                                            PRUint16          port,
                                            PRNetAddr        *result)
  {
@@ -948,7 +949,7 @@
      if (!_pr_ipv6_is_present()) {
          /* using PRAddrInfoFB */
          PRIntn iter = (PRIntn)(PRPtrdiff) iterPtr;
-@@ -2082,9 +2449,9 @@
+@@ -2082,9 +2447,9 @@ PR_IMPLEMENT(void *) PR_EnumerateAddrInf
  #endif
  
      if (iterPtr)
@@ -960,7 +961,7 @@
  
      while (ai && ai->ai_addrlen > sizeof(PRNetAddr))
          ai = ai->ai_next;
-@@ -2140,6 +2507,9 @@
+@@ -2140,6 +2505,9 @@ static PRStatus pr_StringToNetAddrGAI(co
      int rv;  /* 0 for success, or the error code EAI_xxx */
      PRNetAddr laddr;
      PRStatus status = PR_SUCCESS;
@@ -970,7 +971,7 @@
  
      if (NULL == addr)
      {
-@@ -2189,6 +2559,7 @@
+@@ -2189,6 +2557,7 @@ static PRStatus pr_StringToNetAddrFB(con
      PRStatus status = PR_SUCCESS;
      PRIntn rv;
  
@@ -978,7 +979,7 @@
  #if defined(_PR_HAVE_INET_NTOP)
      rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
      if (1 == rv)
-@@ -2200,23 +2571,26 @@
+@@ -2200,6 +2569,8 @@ static PRStatus pr_StringToNetAddrFB(con
          PR_ASSERT(0 == rv);
          /* clean up after the failed inet_pton() call */
          memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
@@ -987,17 +988,9 @@
          rv = inet_pton(AF_INET, string, &addr->inet.ip);
          if (1 == rv)
          {
--            addr->raw.family = AF_INET;
-+          addr->raw.family = AF_INET;
-         }
-         else
-         {
--            PR_ASSERT(0 == rv);
--            PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
--            status = PR_FAILURE;
-+          PR_ASSERT(0 == rv);
-+          PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
-+          status = PR_FAILURE;
+@@ -2211,12 +2582,13 @@ static PRStatus pr_StringToNetAddrFB(con
+             PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+             status = PR_FAILURE;
          }
 +        UNLOCK_DNS();
      }
@@ -1010,7 +1003,7 @@
      }
      PR_ASSERT(0 == rv);
      /* clean up after the failed StringToV6Addr() call */
-@@ -2234,7 +2608,7 @@
+@@ -2234,7 +2606,7 @@ static PRStatus pr_StringToNetAddrFB(con
      }
  #endif /* _PR_HAVE_INET_NTOP */
  
@@ -1019,14 +1012,3 @@
  }
  #endif /* !_PR_HAVE_GETADDRINFO || _PR_INET6_PROBE || DARWIN */
  
---- mozilla/nsprpub/pr/src/Makefile.in.orig	2009-08-04 14:07:35.000000000 -0400
-+++ mozilla/nsprpub/pr/src/Makefile.in	2009-12-07 16:14:51.260358923 -0500
-@@ -213,7 +213,7 @@
- EXTRA_LIBS	= -L$(dist_libdir) -lboehm
- endif
- 
--EXTRA_LIBS += $(OS_LIBS)
-+EXTRA_LIBS += $(OS_LIBS) $(VAL_LIBS)
- 
- #
- # Define platform-dependent OBJS
