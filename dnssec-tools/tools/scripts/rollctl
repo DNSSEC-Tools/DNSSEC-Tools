@@ -63,7 +63,7 @@ my @opts =
 	"runqueue",			# Run the queue.
 	"shutdown",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
-	"skipzone=s",			# Stop the named zone from rolling.
+	"skipzone",			# Stop the named zone(s) from rolling.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
 	"zonelog=s",			# Set a zone's logging level.
@@ -442,21 +442,30 @@ sub main()
 	}
 	elsif($skipzoneflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$skipzoneflag))
+		if(@ARGV == 0)
 		{
-			print STDERR "rollctl:  error sending command SKIPZONE\n";
+			print STDERR "rollctl: -skipzone missing zone argument\n";
 			exit(1);
 		}
 
-		($ret, $resp) = rollmgr_getresp();
-		if($ret == ROLLCMD_RC_OKAY)
+		foreach my $zone (@ARGV)
 		{
-			print "rollover stopped for zone $skipzoneflag\n";
-		}
-		else
-		{
-			print STDERR "unable to stop rollover for zone $skipzoneflag:  \"$resp\"\n";
-			$rcret++;
+			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$zone))
+			{
+				print STDERR "rollctl:  error sending command SKIPZONE($zone)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "rollover stopped for zone $zone\n";
+			}
+			else
+			{
+				print STDERR "unable to stop rollover for zone $zone:  \"$resp\"\n";
+				$rcret++;
+			}
 		}
 	}
 	elsif($sleeptimeflag)
@@ -1019,6 +1028,12 @@ Stops rollover for all zones in the current I<rollrec> file.
 =item B<-skipzone zone>
 
 Stops rollover for the zone named by I<zone>.
+
+Multiple zones can be specified on the command line.
+For instance, this command will send the I<skipzone> command to B<rollerd>
+for three zones.
+
+    $ rollctl -rollzsk example1.com example2.com example3.com
 
 =item B<-sleeptime seconds>
 
