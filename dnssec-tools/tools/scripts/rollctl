@@ -57,9 +57,9 @@ my @opts =
 	"loglevel:s",			# Set rollerd's logging level.
 	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollallzsks",			# ZSK-roll all our zones.
-	"rollksk",			# Roll the specified zone(s).
+	"rollksk",			# KSK roll the specified zone(s).
 	"rollrec=s",			# Change the rollrec file.
-	"rollzsk=s",			# ZSK roll the specified zone.
+	"rollzsk",			# ZSK roll the specified zone(s).
 	"runqueue",			# Run the queue.
 	"shutdown",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
@@ -373,21 +373,30 @@ sub main()
 	}
 	elsif($rollzskflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$rollzskflag))
+		if(@ARGV == 0)
 		{
-			print STDERR "rollctl:  error sending command ROLLZSK\n";
+			print STDERR "rollctl: -rollzsk missing zone argument\n";
 			exit(1);
 		}
 
-		($ret, $resp) = rollmgr_getresp();
-		if($ret == ROLLCMD_RC_OKAY)
+		foreach my $zone (@ARGV)
 		{
-			print "$resp\n";
-		}
-		else
-		{
-			print STDERR "unable to force ZSK rollover process for $rollzskflag:  $resp\n";
-			$rcret++;
+			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$zone))
+			{
+				print STDERR "rollctl:  error sending command ROLLZSK($zone)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "$resp\n";
+			}
+			else
+			{
+				print STDERR "unable to force ZSK rollover process for $zone:  $resp\n";
+				$rcret++;
+			}
 		}
 	}
 	elsif($runqueueflag)
@@ -988,6 +997,12 @@ Sets the I<rollrec> file to be processed by B<rollerd> to I<rollrec_file>.
 =item B<-rollzsk zone>
 
 Initiates rollover for the zone named by I<zone>.
+
+Multiple zones can be specified on the command line.
+For instance, this command will send the I<rollzsk> command to B<rollerd>
+for three zones.
+
+    $ rollctl -rollzsk example1.com example2.com example3.com
 
 =item B<-runqueue>
 
