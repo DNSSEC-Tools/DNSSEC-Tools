@@ -213,8 +213,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "rollerd not informed that parent has published DS record for zone $zone\n";
-				print STDERR "response - $resp\n";
+				print STDERR "$resp\n";
 				$rcret++;
 			}
 		}
@@ -235,8 +234,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollerd not informed that parents have published DS record for all zones in KSK rollover phase 6\n";
-			print STDERR "response - $resp\n";
+			print STDERR "$resp\n";
 			$rcret++;
 		}
 	}
