@@ -192,23 +192,31 @@ sub main()
 	}
 	elsif($dspubflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$dspubflag))
+		my @zones = ();				# Zones to dspub.
+
+		@zones = split /,/, $dspubflag;
+
+		foreach my $zone (@zones)
 		{
-			print STDERR "rollctl:  error sending command DSPUB\n";
-			exit(1);
+			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$zone))
+			{
+				print STDERR "rollctl:  error sending command DSPUB($zone)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "rollerd informed that parent has published DS record for zone $zone\n";
+			}
+			else
+			{
+				print STDERR "rollerd not informed that parent has published DS record for zone $zone\n";
+				print STDERR "response - $resp\n";
+				$rcret++;
+			}
 		}
 
-		($ret, $resp) = rollmgr_getresp();
-		if($ret == ROLLCMD_RC_OKAY)
-		{
-			print "rollerd informed that parent has published DS record for zone $dspubflag\n";
-		}
-		else
-		{
-			print STDERR "rollerd not informed that parent has published DS record for zone $dspubflag\n";
-			print STDERR "response - $resp\n";
-			$rcret++;
-		}
 	}
 	elsif($dspuballflag)
 	{
@@ -912,6 +920,12 @@ Starts the rollover status GUI.
 =item B<-dspub zone>
 
 Indicates that I<zone>'s parent has published a new DS record for I<zone>.
+Multiple zones can be specified by separating them with commas.
+For instance, this command will send the I<dspub> command B<rollerd> for
+three zones.
+
+    $ rollctl -dspub example1.com,example2.com,example3.com
+
 
 =item B<-dspuball>
 
