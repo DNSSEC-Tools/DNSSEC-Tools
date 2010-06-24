@@ -66,7 +66,7 @@ my @opts =
 	"skipzone",			# Stop the named zone(s) from rolling.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
-	"zonelog=s",			# Set a zone's logging level.
+	"zonelog",			# Set a zone's/zones' logging level.
 	"zonestatus",			# Get status of zones.
 	"zsargs",			# Set zonesigner args for some zones.
 	"pidfile=s",			# pid storage file.
@@ -526,21 +526,36 @@ sub main()
 	}
 	elsif($zonelogflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONELOG,$zonelogflag))
+		if(@ARGV == 0)
 		{
-			print STDERR "rollctl:  error sending command ZONELOG\n";
+			print STDERR "rollctl: -zonelog missing zone:loglevel argument\n";
 			exit(1);
 		}
 
-		($ret, $resp) = rollmgr_getresp();
-		if($ret == ROLLCMD_RC_OKAY)
+		foreach my $zone (@ARGV)
 		{
-			print "rollerd logging changed for $zonelogflag\n";
-		}
-		else
-		{
-			print STDERR "zonelog failed:  $resp\n";
-			$rcret++;
+			if($zone !~ /.+\:.+/)
+			{
+				print STDERR "rollctl:  improperly formed zone:loglevel pair\n";
+				next;
+			}
+
+			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONELOG,$zone))
+			{
+				print STDERR "rollctl:  error sending command ZONELOG($zone)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "rollerd logging changed for $zone\n";
+			}
+			else
+			{
+				print STDERR "zonelog failed:  $resp\n";
+				$rcret++;
+			}
 		}
 	}
 	elsif($zonestatflag)
@@ -1051,6 +1066,12 @@ screen.
 Set the logging level for the specified zone.  The new logging level is only
 for the current execution of B<rollerd> and is not saved to the active
 I<rollrec> file.
+
+The arguments for this command must be in the format "zone:loglevel".
+For example, this command will send the I<zonelog> command to B<rollerd>
+for three zones.
+
+    $ rollctl -zonelog example1.com:info example2.com:6 example3.com:err
 
 =item B<-zonestatus>
 
