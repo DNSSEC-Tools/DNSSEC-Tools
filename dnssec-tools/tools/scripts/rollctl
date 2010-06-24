@@ -57,7 +57,7 @@ my @opts =
 	"loglevel:s",			# Set rollerd's logging level.
 	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollallzsks",			# ZSK-roll all our zones.
-	"rollksk=s",			# Roll the specified zone.
+	"rollksk",			# Roll the specified zone(s).
 	"rollrec=s",			# Change the rollrec file.
 	"rollzsk=s",			# ZSK roll the specified zone.
 	"runqueue",			# Run the queue.
@@ -345,21 +345,30 @@ sub main()
 	}
 	elsif($rollkskflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$rollkskflag) )
+		if(@ARGV == 0)
 		{
-			print STDERR "rollctl:  error sending command ROLLKSK\n";
+			print STDERR "rollctl: -rollksk missing zone argument\n";
 			exit(1);
 		}
 
-		($ret, $resp) = rollmgr_getresp();
-		if($ret == ROLLCMD_RC_OKAY)
+		foreach my $zone (@ARGV)
 		{
-			print "$resp\n";
-		}
-		else
-		{
-			print STDERR "unable to force KSK rollover process for $rollkskflag:  $resp\n";
-			$rcret++;
+			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$zone))
+			{
+				print STDERR "rollctl:  error sending command ROLLKSK($zone)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "$resp\n";
+			}
+			else
+			{
+				print STDERR "unable to force KSK rollover process for $zone:  $resp\n";
+				$rcret++;
+			}
 		}
 	}
 	elsif($rollzskflag)
@@ -924,11 +933,10 @@ Starts the rollover status GUI.
 Indicates that I<zone>'s parent has published a new DS record for I<zone>.
 
 Multiple zones can be specified on the command line.
-For instance, this command will send the I<dspub> command B<rollerd> for
-three zones.
+For instance, this command will send the I<dspub> command to B<rollerd>
+for three zones.
 
     $ rollctl -dspub example1.com example2.com example3.com
-
 
 =item B<-dspuball>
 
@@ -966,6 +974,12 @@ Initiates ZSK rollover for all the zones defined in the current I<rollrec> file.
 =item B<-rollksk zone>
 
 Initiates KSK rollover for the zone named by I<zone>.
+
+Multiple zones can be specified on the command line.
+For instance, this command will send the I<rollksk> command to B<rollerd>
+for three zones.
+
+    $ rollctl -rollksk example1.com example2.com example3.com
 
 =item B<-rollrec rollrec_file>
 
