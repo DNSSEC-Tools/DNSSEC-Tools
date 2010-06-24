@@ -38,7 +38,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollctl";
-my $VERS   = "$NAME version: 0.9.8";
+my $VERS   = "$NAME version: 1.0";
 my $DTVERS = "DNSSEC-Tools Version: 1.6";
 
 #######################################################################
@@ -51,7 +51,7 @@ my @opts =
 (
 	"halt",				# Shutdown rollerd.
 	"display",			# Turn on rollerd's graphical display.
-	"dspub=s",			# Parent has published a DS record.
+	"dspub",			# Parent has published a DS record.
 	"dspuball",			# Parents have published DS records.
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel:s",			# Set rollerd's logging level.
@@ -192,11 +192,13 @@ sub main()
 	}
 	elsif($dspubflag)
 	{
-		my @zones = ();				# Zones to dspub.
+		if(@ARGV == 0)
+		{
+			print STDERR "rollctl: -dspub missing zone argument\n";
+			exit(1);
+		}
 
-		@zones = split /,/, $dspubflag;
-
-		foreach my $zone (@zones)
+		foreach my $zone (@ARGV)
 		{
 			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$zone))
 			{
@@ -920,11 +922,12 @@ Starts the rollover status GUI.
 =item B<-dspub zone>
 
 Indicates that I<zone>'s parent has published a new DS record for I<zone>.
-Multiple zones can be specified by separating them with commas.
+
+Multiple zones can be specified on the command line.
 For instance, this command will send the I<dspub> command B<rollerd> for
 three zones.
 
-    $ rollctl -dspub example1.com,example2.com,example3.com
+    $ rollctl -dspub example1.com example2.com example3.com
 
 
 =item B<-dspuball>
