@@ -3165,6 +3165,17 @@ sub cmd_dspub
 	rolllog_log(LOG_TMI,'<command>',"dspub command received; zone - \"$zone\"");
 
 	#
+	# Get the zone's rollrec.
+	#
+	$rrr = rollrec_fullrec($zone);
+	if(!defined($rrr))
+	{
+		rolllog_log(LOG_ERR,'<command>',"no rollrec defined for zone $zone");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+		return;
+	}
+
+	#
 	# Ensure we're in the proper KSK-rollover phase to do this command.
 	#
 	$phase = rollrec_recval($zone,'kskphase');
@@ -3172,15 +3183,6 @@ sub cmd_dspub
 	{
 		rolllog_log(LOG_INFO,'<command>',"zone not in KSK-rollover phase 6");
 		return;
-	}
-
-	#
-	# Get the rollrec for this name.
-	#
-	$rrr = rollrec_fullrec($zone);
-	if(!defined($rrr))
-	{
-		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
 	}
 
 	#
@@ -3495,6 +3497,7 @@ sub cmd_rollnow
 	{
 		rolllog_log(LOG_ERR,'<command>',"no rollrec defined for zone $zone");
 		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+		return(0);
 	}
 	%rr = %$rrr;
 
