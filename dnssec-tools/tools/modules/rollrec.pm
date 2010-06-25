@@ -62,7 +62,7 @@ use Fcntl qw(:DEFAULT :flock);
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::rollmgr;
 
-our $VERSION = "0.9";
+our $VERSION = "1.5";
 
 our @ISA = qw(Exporter);
 

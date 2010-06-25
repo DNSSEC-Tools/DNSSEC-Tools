@@ -25,7 +25,7 @@ our @EXPORT = qw(
 		   dnssec_tools_defnames
 		);
 
-our $VERSION = "1.0";
+our $VERSION = "1.5";
 
 my $installdir = getprefixdir() . "/bin"; # DNSSEC-Tools installation directory.
 
