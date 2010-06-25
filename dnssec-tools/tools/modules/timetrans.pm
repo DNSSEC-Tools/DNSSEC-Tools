@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -20,6 +20,9 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(timetrans fuzzytimetrans);
+
+our $VERSION = "1.5";
+
 
 #######################################################################
 #
@@ -334,7 +337,7 @@ I<fuzzytimetrans(720000)> returns 1.2 weeks
 
 =head1 COPYRIGHT
 
-Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
