@@ -1,5 +1,5 @@
 #
-# Copyright 2006-2009 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -22,7 +22,7 @@ use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 
-our $VERSION = "0.9";
+our $VERSION = "1.5";
 
 our @ISA = qw(Exporter);
 
@@ -343,7 +343,7 @@ Return values:
 
 =head1 COPYRIGHT
 
-Copyright 2006-2009 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
