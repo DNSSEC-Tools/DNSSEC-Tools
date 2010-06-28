@@ -4,12 +4,12 @@
 
     <h3>So you told me, but why?</h3>
 
-    <p>Because the bumper image actually is loaded from a domain name
-    which is insecure.  It actually has dnssec data for the A record
+    <p>Because the bumper image is loaded from a domain name
+    which is insecure.  It has dnssec data for the A record
     for the web server, but the A record actually contains a bad
     signature.  A browser that was properly protected, either within
     the browser itself or because your site's recursive validating
-    resolver was secured, it would prevent you from retrieving this
+    resolver was secured, would prevent you from retrieving this
     image since the zone date for the web server was known to be bad.
     For a list of our test records, see our <a
     href="http://www.dnssec-tools.org/testzone/">Test Zone</a> page.
@@ -20,10 +20,9 @@
       <div class="centered">
       <img border=4 src="images/firefox-secured.png" />
       </div>
-      <p>Additionally, the firefox extension bundled with dnssec-tools
-      1.2 will provide the ability to see how many DNS lookups were
-      done for a given page, and which ones were validated, simply trusted,
-      and which were broken:</p>
+      <p>The firefox extension bundled with dnssec-tools
+      enables you to see how many links were untrusted after 
+      DNSSEC processing:</p>
 
       <div class="centered">
       <img border=4 src="images/firefox-extension.png" />
