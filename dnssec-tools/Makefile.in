@@ -35,7 +35,7 @@ install: all makedirectories perlinstall subdirinstall maninstall nextstepinstru
 
 clean: perlclean subdirclean
 
-distclean: clean configclean
+distclean: subdirdistclean clean configclean 
 
 nextstepinstructions: subdirinstall
 	$(QUIET)echo ""
@@ -87,6 +87,13 @@ subdirclean:
 	$(QUIET)if test "x$(SUBDIRS)" != "xnone" ; then \
 	  for i in $(SUBDIRS) ; do \
 	    (cd $$i ; make clean ) ; \
+          done \
+	fi
+
+subdirdistclean:
+	$(QUIET)if test "x$(SUBDIRS)" != "xnone" ; then \
+	  for i in $(SUBDIRS) ; do \
+	    (cd $$i ; make distclean ) ; \
           done \
 	fi
 
