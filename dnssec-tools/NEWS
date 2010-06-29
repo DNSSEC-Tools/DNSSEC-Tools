@@ -2,6 +2,38 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+1.7
+ - New Features:
+    - zonesigner:   - Added support for split-views. 
+    - rollerd:      - supports the ability to run as a given (non-root) 
+                      user-id.
+                    - Refined the status messages generated for various 
+                      rollover phases.
+                    - logging  more information when an error is returned 
+                      by various rollerd functions and sub-processes.
+    - libval:       - Added support for RSA/SHA256-512 validation 
+    - test suite:   - Added new test cases for trustman, and many other
+                      refinements. 
+    - applications: - Most application patches updated so that they apply 
+                      to the current upstream release version.
+
+ - Bug Fixes
+    - libval:       - Fixed a number of issues in the validator library 
+                      for NSEC3 validation, execution on 64-bit
+                      machines, and in the treatment of NODATA and 
+                      referral conditions. 
+                    - Fixed an issue in the where it was not correctly 
+                      down-casing the names prior to validating DNSSEC
+                      signatures. 
+    - trustman:     - Fixed trustman’s operation when revoking and 
+                      replacing keys during a RFC 5011 revoke
+                      operation.
+    - rollerd:      - Fixed a problem where the path exceeded the maximum 
+                      length for Unix socket names. 
+                    - Modified the rollerd GUI so that it did not print out 
+                      error messages when it was invoked when rollerd wasn’t running.
+                    - fixed rollerd support for nsec3 zones
+
 1.6
  - New Features:
     - convertar:    - A new tool to translate a trust-anchor-repository
@@ -22,17 +54,20 @@ details.
     - dtreqmods:    - A new script to check for DNSSEC-Tools required
                       perl modules.
 
- - libval changes:
-    - Changed function prototypes and error codes to keep them compliant 
-      with the current (-07) Validator API draft 
-    - Added initial RFC 5155 NSEC3 support (configure --with-nsec3)
-    - Optimized the referral processing and glue fetching logic so that 
-      libval does a better job in trying to determine the referral zonecut, 
-      and so that it is less aggressive in fetching missing glue. Also 
-      allow for glue to be fetched on demand. 
-    - Miscellaneous bug fixes 
+    - libval changes:
+                     - Changed function prototypes and error codes to keep 
+                       them compliant with the current (-07) Validator API 
+                       draft 
+                     - Added initial RFC 5155 NSEC3 support 
+                       (configure --with-nsec3)
+                     - Optimized the referral processing and glue fetching 
+                       logic so that libval does a better job in trying to 
+                       determine the referral zonecut, and so that it is less 
+                       aggressive in fetching missing glue. Also allow for glue 
+                       to be fetched on demand. 
+                     - Miscellaneous bug fixes 
 
- - Many miscellaneous small enhancements and bug fixes
+    - Many miscellaneous small enhancements and bug fixes
 
 1.5
  - New Features:
