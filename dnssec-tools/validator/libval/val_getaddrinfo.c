@@ -842,6 +842,11 @@ val_getaddrinfo(val_context_t * context,
     } else {
         ctx = context;
     }
+    val_log(ctx, LOG_DEBUG,
+            "val_getaddrinfo called with nodename = %s, servname = %s",
+            nodename == NULL ? "(null)" : nodename,
+            servname == NULL ? "(null)" : servname);
+
 
     if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
         if (trusted) {
@@ -853,11 +858,6 @@ val_getaddrinfo(val_context_t * context,
 
     *res = NULL;
     *val_status = VAL_UNTRUSTED_ANSWER;
-
-    val_log(ctx, LOG_DEBUG,
-            "val_getaddrinfo called with nodename = %s, servname = %s",
-            nodename == NULL ? "(null)" : nodename,
-            servname == NULL ? "(null)" : servname);
 
     /*
      * use a default hints structure if one is not available.
@@ -1175,6 +1175,19 @@ val_getnameinfo(val_context_t * context,
     int retval;
     val_context_t *ctx = NULL;
     
+    if (context == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            return EAI_FAIL; 
+        } 
+    } else {
+        ctx = context;
+    }
+    val_log(ctx, LOG_DEBUG,
+            "val_getnameinfo called with host = %s, serv = %s",
+            host == NULL ? "(null)" : host,
+            serv == NULL ? "(null)" : serv);
+
+
     /*
      * check misc parameters, there should be at least one of host or
      * server, check if flags indicate host is required 
@@ -1187,14 +1200,6 @@ val_getnameinfo(val_context_t * context,
     if (!host && !serv) 
       return EAI_NONAME;
     
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            return EAI_FAIL; 
-        } 
-    } else {
-        ctx = context;
-    }
-
     /*
      * should the services be looked up 
      */
