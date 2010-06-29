@@ -1,7 +1,7 @@
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/configure.ac libspf2-1.2.9.dnssec/configure.ac
 --- libspf2-1.2.9/configure.ac	2008-11-04 10:32:10.000000000 -0500
-+++ libspf2-1.2.9.dnssec/configure.ac	2009-12-16 14:34:12.144898047 -0500
-@@ -109,6 +109,78 @@ AC_CHECK_HEADER(pthread.h, , [
++++ libspf2-1.2.9.dnssec/configure.ac	2010-06-03 10:20:17.000000000 -0400
+@@ -109,6 +109,84 @@ AC_CHECK_HEADER(pthread.h, , [
  	exit 1;
  ])
  
@@ -38,11 +38,14 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +   AC_ARG_WITH(libsres,
 +	[  --with-libsres=PATH     Look for the libsres library in PATH],
 +	if test "x$withval" != "xyes"; then
-+	  if test "x$withval" != x -a -d $withval; then
-+	      LDFLAGS="-L$withval $LDFLAGS"
++	  if test "x$withval" != x -a -d $withval/lib; then
++	      LDFLAGS="-L$withval/lib $LDFLAGS"
 +	      AC_MSG_CHECKING(libsres)
 +	      AC_MSG_RESULT("$withval")
 +	  fi
++      if test "x$withval" != x -a -d $withval/include; then
++          CPPFLAGS="-I$withval/include $CPPFLAGS"
++      fi
 +	fi
 +   )
 +
@@ -57,11 +60,14 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +   AC_ARG_WITH(libval-threads,
 +	[  --with-libval=PATH      Look for the libval library in PATH],
 +	if test "x$withval" != "xyes"; then
-+	  if test "x$withval" != x -a -d $withval; then
-+	      LDFLAGS="-L$withval $LDFLAGS"
++	  if test "x$withval" != x -a -d $withval/lib; then
++	      LDFLAGS="-L$withval/lib $LDFLAGS"
 +	      AC_MSG_CHECKING(libval)
 +	      AC_MSG_RESULT("$withval")
 +	  fi
++      if test "x$withval" != x -a -d $withval/include; then
++          CPPFLAGS="-I$withval/include $CPPFLAGS"
++      fi
 +	fi
 +   )
 +
@@ -80,7 +86,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  dnl Moved to after header checks by Shevek
  AC_ARG_WITH(bind,
          [  --with-bind=DIR  Find BIND resolver in DIR],
-@@ -138,6 +210,7 @@ AC_ARG_WITH(bind,
+@@ -138,6 +216,7 @@ AC_ARG_WITH(bind,
  								LIBS="$saved_libs"])
          ])
  		
@@ -123,7 +129,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  typedef
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file libspf2-1.2.9/src/libspf2/spf_dns_resolv.c libspf2-1.2.9.dnssec/src/libspf2/spf_dns_resolv.c
 --- libspf2-1.2.9/src/libspf2/spf_dns_resolv.c	2008-10-27 12:26:06.000000000 -0400
-+++ libspf2-1.2.9.dnssec/src/libspf2/spf_dns_resolv.c	2009-12-30 22:01:24.061360423 -0500
++++ libspf2-1.2.9.dnssec/src/libspf2/spf_dns_resolv.c	2010-06-03 11:18:10.000000000 -0400
 @@ -58,6 +58,11 @@
  # include <pthread.h>
  #endif
@@ -131,7 +137,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +#ifdef SUPPORT_DNSSEC
 +#undef HAVE_DECL_RES_NINIT
 +#include <validator/validator.h>
-+#endif
++#endif /* SUPPORT_DNSSEC */
 +
  #include "spf.h"
  #include "spf_dns.h"
@@ -224,7 +230,23 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	spfrr = SPF_dns_rr_new_init(spf_dns_server,
  					domain, rr_type, 0, NETDB_SUCCESS);
  	if (!spfrr) {
-@@ -596,6 +634,14 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+@@ -369,6 +407,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+ 	}
+ 
+ 
++#ifndef SUPPORT_DNSSEC
+ 	if (spf_dns_server->debug > 1) {
+ 		SPF_debugf("msg id:             %d", ns_msg_id(ns_handle));
+ 		SPF_debugf("ns_f_qr quest/resp: %d", ns_msg_getflag(ns_handle, ns_f_qr));
+@@ -379,6 +418,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
+ 		SPF_debugf("ns_f_ra rec avail:  %d", ns_msg_getflag(ns_handle, ns_f_ra));
+ 		SPF_debugf("ns_f_rcode:         %d", ns_msg_getflag(ns_handle, ns_f_rcode));
+ 	}
++#endif
+ 
+ 
+ 	/* FIXME  the error handling from here on is suspect at best */
+@@ -596,6 +636,14 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *
  	if (spfrr->num_rr == 0)
  		spfrr->herrno = NO_DATA;
  
@@ -239,7 +261,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	free(responsebuf);
  	return spfrr;
  }
-@@ -606,7 +652,7 @@ SPF_dns_resolv_free(SPF_dns_server_t *sp
+@@ -606,7 +654,7 @@ SPF_dns_resolv_free(SPF_dns_server_t *sp
  {
  	SPF_ASSERT_NOTNULL(spf_dns_server);
  
@@ -248,7 +270,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	res_close();
  #endif
  
-@@ -619,7 +665,9 @@ SPF_dns_resolv_new(SPF_dns_server_t *lay
+@@ -619,7 +667,9 @@ SPF_dns_resolv_new(SPF_dns_server_t *lay
  {
  	SPF_dns_server_t		*spf_dns_server;
  
