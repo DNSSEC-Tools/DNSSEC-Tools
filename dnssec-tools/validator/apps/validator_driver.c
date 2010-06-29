@@ -514,7 +514,7 @@ endless_loop(void)
 
     val_free_context(context);
 
-    free_validator_state();
+    val_free_validator_state();
 }
 
 void 
@@ -841,7 +841,7 @@ main(int argc, char *argv[])
 done:
     if (context)
         val_free_context(context);
-    free_validator_state();
+    val_free_validator_state();
 
     return rc;
 }

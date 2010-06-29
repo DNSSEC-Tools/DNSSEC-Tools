@@ -68,6 +68,6 @@ void            val_free_context(val_context_t * context);
 int             val_refresh_resolver_policy(val_context_t * context);
 int             val_refresh_validator_policy(val_context_t * context);
 int             val_refresh_root_hints(val_context_t * context);
-int             free_validator_state(void);
+int             val_free_validator_state(void);
 
 #endif

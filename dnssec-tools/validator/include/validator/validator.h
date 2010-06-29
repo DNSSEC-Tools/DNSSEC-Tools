@@ -547,7 +547,7 @@ extern          "C" {
     int             val_create_context(char *label,
                                        val_context_t ** newcontext);
     void            val_free_context(val_context_t * context);
-    int             free_validator_state(void);
+    int             val_free_validator_state(void);
 
     /*
      * from val_policy.h 

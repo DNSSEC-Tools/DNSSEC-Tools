@@ -276,7 +276,7 @@ val_free_context(val_context_t * context)
  * Only used when testing if we have memory leaks
  */
 int
-free_validator_state(void)
+val_free_validator_state()
 {
     val_context_t * saved_ctx = NULL;
 
