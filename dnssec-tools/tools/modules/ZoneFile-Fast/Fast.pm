@@ -811,6 +811,7 @@ sub parse_line
 	      # single line
 	      $ds->{'digest'} .= $1;
 	      $ds->{'digest'} = lc($ds->{'digest'});
+	      $ds->{'digest'} =~ s/\s//g;
 	      $ds->{'digestbin'} = pack("H*", $ds->{'digest'});
 	      push @zone, $ds;
 	      $ds = undef;
