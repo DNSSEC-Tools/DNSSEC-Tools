@@ -5,17 +5,17 @@ details.
 1.7
  - New Features:
     - zonesigner:   - Added support for split-views. 
-    - rollerd:      - supports the ability to run as a given (non-root) 
-                      user-id.
+    - rollerd:      - supports the ability to run as a given (non-root) user-id.
                     - Refined the status messages generated for various 
                       rollover phases.
                     - logging  more information when an error is returned 
                       by various rollerd functions and sub-processes.
     - libval:       - Added support for RSA/SHA256-512 validation 
-    - test suite:   - Added new test cases for trustman, and many other
-                      refinements. 
+    - test suite:   - Added new test cases for trustman
+                    - Many other refinements. 
     - applications: - Most application patches updated so that they apply 
                       to the current upstream release version.
+    - convertar:    - added a --tods flag for converting keys to DS records
 
  - Bug Fixes
     - libval:       - Fixed a number of issues in the validator library 
@@ -30,8 +30,9 @@ details.
                       operation.
     - rollerd:      - Fixed a problem where the path exceeded the maximum 
                       length for Unix socket names. 
-                    - Modified the rollerd GUI so that it did not print out 
-                      error messages when it was invoked when rollerd wasn’t running.
+                    - Modified the rollerd GUI so that it did not
+                      print out error messages when it was invoked
+                      when rollerd wasn’t running.
                     - fixed rollerd support for nsec3 zones
 
 1.6
