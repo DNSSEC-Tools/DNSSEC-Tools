@@ -1,12 +1,13 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.3dev
-Release: 1%{?dist}
-License: BSD-like
+Version: 1.6
+Release: 4%{?dist}
+License: BSD
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
 Source0: http://downloads.sourceforge.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
 Source1: dnssec-tools-dnsval.conf
+Source2: libval-config
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 # Require note: the auto-detection for perl-Net-DNS-SEC will not work since
 # the tools do run time tests for their existence.  But most of the tools
@@ -17,7 +18,6 @@ BuildRequires: openssl-devel
 BuildRequires: perl(Test) perl(ExtUtils::MakeMaker)
 
 Patch4: dnssec-tools-linux-conf-paths-1.2.patch
-Patch6: dnssec-tools-donuts-rules-paths.patch
 
 %description
 
@@ -28,6 +28,7 @@ help ease the deployment of DNSSEC-related technologies.
 %package perlmods
 Group: System Environment/Libraries
 Summary: Perl modules supporting DNSSEC (needed by the dnssec-tools)
+Requires: perl(Net::DNS), perl(Net::DNS::SEC)
 
 %description perlmods
 
@@ -55,10 +56,9 @@ C-based libraries useful for developing dnssec aware tools.
 %setup -q
 
 %patch4 -p0
-%patch6 -p0
 
 %build
-%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf
+%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf --disable-static
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' validator/libtool
@@ -80,6 +80,13 @@ find %{buildroot} -depth -type d -exec rmdir {} 2>/dev/null ';'
 chmod -R u+w %{buildroot}/*
 rm -f %{buildroot}%{_libdir}/*.la
 
+# Move the architecture dependent config file to its own place
+# (this allows multiple architecture rpms to be installed at the same time)
+mv ${RPM_BUILD_ROOT}/%{_bindir}/libval-config ${RPM_BUILD_ROOT}/%{_bindir}/libval-config-${basearch}
+# Add a new wrapper script that calls the right file at run time
+install -m 755 %SOURCE2 ${RPM_BUILD_ROOT}/%{_bindir}/libval-config
+
+
 %post libs -p /sbin/ldconfig
 
 %postun libs -p /sbin/ldconfig
@@ -91,8 +98,9 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %doc README INSTALL COPYING
 
-%config(noreplace) /etc/dnssec-tools/dnssec-tools.conf
-%config(noreplace) /etc/dnssec-tools/dnsval.conf
+%dir %{_sysconfdir}/dnssec-tools/
+%config(noreplace) %{_sysconfdir}/dnssec-tools/dnssec-tools.conf
+%config(noreplace) %{_sysconfdir}/dnssec-tools/dnsval.conf
 
 %{_bindir}/dnspktflow
 %{_bindir}/donuts
@@ -101,14 +109,20 @@ rm -rf %{buildroot}
 %{_bindir}/expchk
 %{_bindir}/genkrf
 %{_bindir}/getdnskeys
+%{_bindir}/getds
 %{_bindir}/lskrf
 %{_bindir}/maketestzone
 %{_bindir}/mapper
 %{_bindir}/zonesigner
 # this doesn't use %{_datadir} because patch6 above uses this exact path
-/usr/share/dnssec-tools/donuts/rules/*
+/usr/share/dnssec-tools
+#/usr/share/dnssec-tools/donuts
+#/usr/share/dnssec-tools/donuts/rules
+#/usr/share/dnssec-tools/donuts/rules/*
 
+%{_bindir}/dtck
 %{_bindir}/dtconfchk
+%{_bindir}/dtconf
 %{_bindir}/dtdefs
 %{_bindir}/dtinitconf
 %{_bindir}/fixkrf
@@ -124,11 +138,15 @@ rm -rf %{buildroot}
 %{_bindir}/keyarch
 %{_bindir}/cleanarch
 
+%{_bindir}/libval_check_conf
 %{_bindir}/validate
 # configure above 
-%{_datadir}/dnssec-tools/validator-testcases
+#%{_datadir}/dnssec-tools/validator-testcases
 %{_bindir}/getaddr
 %{_bindir}/gethost
+%{_bindir}/getname
+%{_bindir}/getquery
+%{_bindir}/getrrset
 
 %{_bindir}/trustman
 %{_bindir}/blinkenlights
@@ -136,8 +154,14 @@ rm -rf %{buildroot}
 %{_bindir}/krfcheck
 %{_bindir}/rolllog
 %{_bindir}/signset-editor
+%{_bindir}/rollrec-editor
 
+%{_bindir}/lsdnssec
 
+%{_bindir}/bubbles
+%{_bindir}/convertar
+
+%{_mandir}/man1/dnssec-tools.1.gz
 %{_mandir}/man1/dnspktflow.1.gz
 %{_mandir}/man1/donuts.1.gz
 %{_mandir}/man1/donutsd.1.gz
@@ -145,6 +169,7 @@ rm -rf %{buildroot}
 %{_mandir}/man1/expchk.1.gz
 %{_mandir}/man1/genkrf.1.gz
 %{_mandir}/man1/getdnskeys.1.gz
+%{_mandir}/man1/getds.1.gz
 %{_mandir}/man1/lskrf.1.gz
 %{_mandir}/man1/keyarch.1.gz
 %{_mandir}/man1/maketestzone.1.gz
@@ -152,6 +177,9 @@ rm -rf %{buildroot}
 %{_mandir}/man1/validate.1.gz
 %{_mandir}/man1/getaddr.1.gz
 %{_mandir}/man1/gethost.1.gz
+%{_mandir}/man1/getname.1.gz
+%{_mandir}/man1/getquery.1.gz
+%{_mandir}/man1/getrrset.1.gz
 %{_mandir}/man1/zonesigner.1.gz
 
 %{_mandir}/man1/dtconfchk.1.gz
@@ -161,12 +189,16 @@ rm -rf %{buildroot}
 %{_mandir}/man1/tachk.1.gz
 %{_mandir}/man1/timetrans.1.gz
 
+%{_mandir}/man1/bubbles.1.gz
+%{_mandir}/man1/convertar.1.gz
+
 %{_mandir}/man1/lsroll.1.gz
 %{_mandir}/man1/rollchk.1.gz
 %{_mandir}/man1/rollctl.1.gz
 %{_mandir}/man1/rollerd.1.gz
 %{_mandir}/man1/rollinit.1.gz
 %{_mandir}/man1/rollset.1.gz
+%{_mandir}/man1/lsdnssec.1.gz
 %{_mandir}/man1/cleanarch.1.gz
 %{_mandir}/man1/blinkenlights.1.gz
 %{_mandir}/man1/cleankrf.1.gz
@@ -174,19 +206,27 @@ rm -rf %{buildroot}
 %{_mandir}/man1/rolllog.1.gz
 %{_mandir}/man1/signset-editor.1.gz
 %{_mandir}/man1/trustman.1.gz
-
+%{_mandir}/man1/dtck.1.gz
+%{_mandir}/man1/dtconf.1.gz
+%{_mandir}/man1/libval_check_conf.1.gz
+%{_mandir}/man1/rollrec-editor.1.gz
 %{_mandir}/man3/p_ac_status.3.gz
 %{_mandir}/man3/p_val_status.3.gz
 
 %files perlmods
 %defattr(-,root,root)
 
+# perl-Net-DNS-SEC is noarch and cannot own this directory:
+%dir %{perl_vendorarch}/Net/DNS/SEC
+
+%{perl_vendorarch}/Net/DNS/SEC/Tools
 %{perl_vendorarch}/Net/addrinfo*
-%{perl_vendorarch}/Net/DNS/SEC/*
+%{perl_vendorarch}/Net/DNS/SEC/*.pm
+%{perl_vendorarch}/Net/DNS/SEC/*.pl
 %{perl_vendorarch}/auto/Net/DNS/SEC/Validator
 %{perl_vendorarch}/auto/Net/addrinfo/
 %{perl_vendorarch}/Net/DNS/ZoneFile/
-%{perl_vendorlib}/Net/DNS/SEC/Tools/Donuts/
+%{perl_vendorlib}/Net/DNS/SEC/Tools/
 
 %{_mandir}/man3/Net::DNS::SEC::Tools::QWPrimitives.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::BootStrap.3pm.gz
@@ -202,6 +242,17 @@ rm -rf %{buildroot}
 %{_mandir}/man3/Net::addrinfo.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::Donuts::Rule.3pm.gz
 %{_mandir}/man3/Net::DNS::ZoneFile::Fast.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::rolllog.3pm.gz
+
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Bind.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Csv.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Dns.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Dump.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Itar.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Libval.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Mf.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor::Secspider.3pm.gz
 
 %files libs
 %defattr(-,root,root)
@@ -210,15 +261,16 @@ rm -rf %{buildroot}
 %files libs-devel
 %defattr(-,root,root)
 %{_includedir}/validator
-%{_libdir}/*.a
 %{_libdir}/*.so
 
-%{_bindir}/libval-config
+%{_bindir}/libval-config*
 
 %{_mandir}/man3/libval.3.gz
+%{_mandir}/man3/libval_shim.3.gz
+%{_mandir}/man3/val_free_answer_chain.3.gz
+%{_mandir}/man3/val_get_rrset.3.gz
 %{_mandir}/man3/val_getaddrinfo.3.gz
 %{_mandir}/man3/val_gethostbyname.3.gz
-%{_mandir}/man3/val_query.3.gz
 %{_mandir}/man3/dnsval.conf.3.gz
 %{_mandir}/man3/dnsval_conf_get.3.gz
 %{_mandir}/man3/dnsval_conf_set.3.gz
@@ -249,6 +301,102 @@ rm -rf %{buildroot}
 %{_mandir}/man3/val_freeaddrinfo.3.gz
 
 %changelog
+* Tue Jun 01 2010 Marcela Maslanova <mmaslano@redhat.com> - 1.6-4
+- Mass rebuild with perl-5.12.0
+
+* Fri May 21 2010 Tom "spot" Callaway <tcallawa@redhat.com> - 1.6-3
+- disable static libs
+- cleanup filelist to avoid duplication
+
+* Mon Apr  5 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.6-2
+- version bump
+
+* Mon Apr  5 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.6-1
+- Updated to 1.6
+
+* Fri Aug 21 2009 Tomas Mraz <tmraz@redhat.com> - 1.5-4
+- rebuilt with new openssl
+
+* Fri Jul 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.5-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
+* Wed Apr  1 2009 Michael Schwendt <mschwendt@fedoraproject.org> - 1.5-2
+- Fix unowned directories (#483339).
+
+* Fri Mar  6 2009 Wes Hardaker <wjhns174@hardakers.net> - 1.5-1
+- Update to 1.5
+
+* Tue Feb 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.1-7
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
+
+* Wed Feb  4 2009 Wes Hardaker <wjhns174@hardakers.net> - 1.4.1-6
+- make the perlmods module directly require the needed perl mods
+  mainly for directory ownership.
+
+* Mon Jan 26 2009 Wes Hardaker <wjhns174@hardakers.net> - 1.4.1-5
+- Fixed arpa header compile conflict
+
+* Thu Jan 15 2009 Tomas Mraz <tmraz@redhat.com> - 1.4.1-4
+- rebuild with new openssl
+
+* Mon Dec  1 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.4.1-3
+- Added package directories we own, left out ones we don't.
+
+* Tue Jul 22 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.4.1-2
+- Added missing log message for security release
+
+* Tue Jul 22 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.4.1-1
+- Update to upstream 1.4.1 which fixes the random port issue being
+  broadcast about every resolver known to man including this one; note
+  that DNSSEC itself will actually protect against the attack but
+  libval is vulnerable to non-DNSSEC-protected zones without this fix.
+
+* Tue May 27 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.4.rc1-1
+- Update to upstream 1.4
+
+* Thu Mar 06 2008 Tom "spot" Callaway <tcallawa@redhat.com> - 1.3.2-2
+Rebuild for new perl
+
+* Fri Feb 15 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.3.2-1
+- Jump to upstream to grab latest identical fixes
+
+* Fri Feb 15 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.3.1-2
+- Fix top level makefile for bulid dirs
+
+* Fri Feb 15 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.3.1-1
+- Update to 1.3.1 to fix:
+- A security bug in parent surrounding trust anchor checking in the
+  libval library.
+- Small fixes with donuts
+- Small fixes with the ZoneFile::Fast parser
+
+* Mon Jan  7 2008 Wes Hardaker <wjhns174@hardakers.net> - 1.3-7
+- Fix donuts hard-coded rules path
+
+* Fri Dec 07 2007 Release Engineering <rel-eng at fedoraproject dot org> - 1.3-6
+- Rebuild for deps
+
+* Tue Nov 27 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.3-5
+- Added a libval-config wrapper to get around a multi-arch issue
+
+* Mon Nov 19 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.3-4
+- Bogus release bump to fix fedora tag issue
+
+* Mon Nov 19 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.3-3
+- dnsval.conf syntax fix
+
+* Mon Nov 19 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.3-2
+- New dnssec-tools.org dnskey
+
+* Wed Oct 31 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.3-1
+- Update to 1.3
+
+* Wed Aug  8 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-6
+- Actually apply the patch (sigh).
+
+* Wed Aug  8 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-5
+- Fix make -jN support for the top level makefile
+
 * Thu Jul 12 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-4
 - patch to fix a donuts rule for newer perl-Net::DNS update
 - patch for maketestzone to work around a bug in Net::DNS::RR::DS
