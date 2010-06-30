@@ -101,7 +101,7 @@ sub DTGetOptions {
     if (($optionref && $optionref->{'h'}) ||
 	(!$hashref && $$optionref)) {
 	print
-	  "\nPlease perl's the Getopt::GUI::Long module for help output\n\n";
+	  "\nPlease install perl's Getopt::GUI::Long module for help output\n\n";
 	exit 1;
     }
 
