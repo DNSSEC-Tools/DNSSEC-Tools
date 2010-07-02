@@ -5,13 +5,13 @@
 Package: dnssec-tools
 Conflicts: %N
 Replaces: %N
-Version: 1.1.1
+Version: 1.7
 Revision: 1
-Source: mirror:sourceforge:%n/%n-%v.tar.gz
+Source: http://www.dnssec-tools.org/download/%n-%v.tar.gz
 Maintainer: DNSSEC Tools team <sparta-dnssec@tislabs.com>
 HomePage: http://%n.sourceforge.net
 License: BSD
-Source-MD5: d2a762bbb090585f4ba8128ad6834d7a
+Source-MD5: f3dfe18ae50cf65594936e1684d469d0
 Description: Tools for DNSSEC
 DescDetail: <<
  Detailed description of DNSSEC Tools goes here
@@ -31,7 +31,7 @@ PatchScript: sed 's|@PREFIX@|%p|g' <%a/%n.patch | patch -p0
 #------------------------------------------------------------
 # Building the package
 #
-ConfigureParams: --sysconfdir='${prefix}/etc' --mandir='${prefix}/share/man' --datadir='${prefix}/share/doc/%n' --with-ipv6
+ConfigureParams: --sysconfdir='${prefix}/etc' --mandir='${prefix}/share/man' --datadir='${prefix}/share/doc/%n' --with-ipv6 --with-resolv-conf=%p/etc/dnssec-tools/resolv.conf --with-root-hints=/var/named/named.ca
 CompileScript: <<
   #!/bin/bash -ev
   ./configure %c
@@ -46,7 +46,7 @@ ConfFiles: %p/etc/%n/dnsval.conf %p/etc/%n/resolv.conf %p/etc/%n/root.hints
 #
 InstallScript: <<
 #! /bin/sh -ev
-  make -C validator install prefix=%i mandir=%i/share/man datadir=%i/share/doc/%n
+  make -C validator install DESTDIR=%d mandir=%p/share/man datadir=%p/share/doc/%n
   mkdir -p %i/etc/%n/
   install -m 644 validator/etc/resolv.conf %i/etc/%n/resolv.conf
   install -m 644 validator/etc/dnsval.conf %i/etc/%n/dnsval.conf
@@ -56,20 +56,20 @@ InstallScript: <<
 #------------------------------------------------------------
 # Sub-packages
 #
-SplitOff1: <<
-  Package: dnssectool3-shlibs
+SplitOff: <<
+  Package: dnssectool-shlibs
   Description: DNSSEC Tools - libsres shared libraries
   Conflicts: %N
   Replaces: %N
-  DocFiles: validator/docs/
-  Files: lib/lib*.3*.dylib
+  DocFiles: validator/doc/
+  Files: lib/lib*.8*.dylib
   Shlibs: <<
-    %p/lib/libsres.3.dylib 3.0.0 %n (>= 1.1.1-1)
-    %p/lib/libval-threads.3.dylib 3.0.0 %n (>= 1.1.1-1)
+    %p/lib/libsres.8.dylib 8.0.0 %n (>= 1.7-1)
+    %p/lib/libval-threads.8.dylib 8.0.0 %n (>= 1.7-1)
   <<
 <<
 SplitOff2: <<
-  Package: dnssec-tools3-dev
+  Package: dnssec-tools-dev
   Description: DNSSEC Tools - libval-threads dev
   Conflicts: %N
   Replaces: %N
@@ -82,8 +82,8 @@ SplitOff2: <<
     include
   <<
   Shlibs: <<
-    %p/lib/libsres.dylib 3.0.0 %n (>= 1.1.1-1)
-    %p/lib/libval-threads.dylib 3.0.0 %n (>= 1.1.1-1)
+    %p/lib/libsres.dylib 8.0.0 %n (>= 1.7-1)
+    %p/lib/libval-threads.dylib 8.0.0 %n (>= 1.7-1)
   <<
 <<
 #------------------------------------------------------------
