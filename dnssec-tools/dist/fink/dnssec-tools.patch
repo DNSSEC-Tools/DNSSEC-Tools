@@ -1,15 +1,12 @@
---- validator/include/validator/validator.h.orig	2007-05-22 17:05:13.000000000 -0400
-+++ validator/include/validator/validator.h	2007-05-22 17:05:35.000000000 -0400
-@@ -56,9 +56,9 @@
- #endif
+Index: validator/libval_shim/Makefile.in
+===================================================================
+--- validator/libval_shim/Makefile.in	(revision 5149)
++++ validator/libval_shim/Makefile.in	(working copy)
+@@ -1,6 +1,6 @@
  
- #define DNS_PORT                53
--#define VAL_CONFIGURATION_FILE  "/etc/dnsval.conf"
--#define RESOLV_CONF             "/etc/resolv.conf"
--#define ROOT_HINTS              "/etc/root.hints"
-+#define VAL_CONFIGURATION_FILE  "@PREFIX@/etc/dnssec-tools/dnsval.conf"
-+#define RESOLV_CONF             "@PREFIX@/etc/dnssec-tools/resolv.conf"
-+#define ROOT_HINTS              "@PREFIX@/etc/dnssec-tools/root.hints"
- #define VAL_LOG_OPTIONS LOG_PID
+ INCL= ../include
+-EXTRA_LIBS= -L../libsres/.libs -lsres -L../libval/.libs -lval$(LIBVAL_SUFFIX) -lpthread @LDFLAGS@ -lcrypto
++EXTRA_LIBS=../libsres/libsres.la ../libval/libval$(LIBVAL_SUFFIX).la -lpthread @LDFLAGS@ -lcrypto
+ CFLAGS_EX=-I$(INCL) -I. -I../libsres -I../libval -D_GNU_SOURCE 
  
- #define VALIDATOR_LOG_PORT 1053
+ SRC=  	libval_shim.c 
