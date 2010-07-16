@@ -1370,6 +1370,14 @@ build_pending_query(val_context_t *context,
         as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
     }
 
+#if 0
+    // Disable queries for RRSIGs for now 
+    // XXX ideally this should be a configuration setting (try harder)
+    // Asking for RRSIGs leads to a number of useless queries in pinsecure zones 
+    // before we actually check for pinsecure status. 
+    // querying for rrsigs is only useful to get past certain middle boxes.
+    // with the signed root there are more pinsecure zones than there is a need to
+    // get around broken middle boxes. 
     if (as->val_ac_rrset.ac_data->rrs_sig == NULL) {
         as->val_ac_status = VAL_AC_WAIT_FOR_RRSIG;
         /*
@@ -1390,6 +1398,7 @@ build_pending_query(val_context_t *context,
 
         return VAL_NO_ERROR;
     }
+#endif
     
     cur_rr = as->val_ac_rrset.ac_data->rrs_sig;
     while (cur_rr) {
