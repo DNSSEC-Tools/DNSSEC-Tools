@@ -724,7 +724,8 @@ done:
         /* if query is for some DNSSEC meta data then we always turn on EDNS0 */
         if (DNSSEC_METADATA_QTYPE(next_q->qc_type_h)) {
             edns0 = 1;
-        } else if (!(next_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
+        } else if (!(next_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE) &&
+                   !(next_qfq->qfq_flags & VAL_QUERY_NO_EDNS0)) {
             if (next_q->qc_zonecut_n != NULL)
                 test_n = next_q->qc_zonecut_n;
             else
@@ -1056,8 +1057,10 @@ follow_referral_or_alias_link(val_context_t * context,
         return VAL_NO_ERROR;
     }
 
-    if (matched_q->qc_zonecut_n && !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
-            u_char *tp = NULL;
+    if (matched_q->qc_zonecut_n && 
+        !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
+
+        u_char *tp = NULL;
 
         if (VAL_NO_ERROR != (ret_val =
                 get_zse(context, matched_q->qc_zonecut_n, matched_qfq->qfq_flags, 
@@ -1493,24 +1496,27 @@ digest_response(val_context_t * context,
          * We got a response with no records 
          * Check if EDNS was not used when it should have
          */
-        if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, query_name_n, matched_qfq->qfq_flags, 
+        if (!(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE) &&
+            !(matched_qfq->qfq_flags & VAL_QUERY_NO_EDNS0)) {
+
+            if (VAL_NO_ERROR != (ret_val =
+                    get_zse(context, query_name_n, matched_qfq->qfq_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
-            return ret_val;
-        }
-        SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
-        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST && 
-            !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
-           
-            if (matched_q->qc_respondent_server && 
-                !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
-
-                requery_with_edns0(context, matched_q);
-                goto done; 
+                return ret_val;
             }
+            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
+            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
+           
+                if (matched_q->qc_respondent_server && 
+                    !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
 
-            matched_q->qc_state = Q_RESPONSE_ERROR; 
-            goto done;
+                    requery_with_edns0(context, matched_q);
+                    goto done; 
+                }
+
+                matched_q->qc_state = Q_RESPONSE_ERROR; 
+                goto done;
+            }
         }
         /*
          * Else this is a non-existence result
@@ -1817,12 +1823,16 @@ digest_response(val_context_t * context,
             /* XXX Alias target non-existence */
                 
         } else if (referral_seen && header->rcode == ns_r_noerror) {
-            /* XXX if this is a no-data response, it is not a referral */
             if (soa_seen) {
+                /* XXX if this is a no-data response, it is not a referral */
                 referral_seen = FALSE;
+            } else {
+                /* XXX else this is a DS non-existence proof and it is a referral */
+                /* Don't enable EDNS0 below this level */
+                val_log(context, LOG_DEBUG, "digest_response(): Disabling further EDNS0 for {%s %d %d}",
+                        query_name_p, query_class_h, query_type_h); 
+                matched_qfq->qfq_flags |= VAL_QUERY_NO_EDNS0;
             }
-
-            /* XXX else this is a DS non-existence proof and it is a referral */
 
         } else {
             /* XXX non-existence of queried type */
