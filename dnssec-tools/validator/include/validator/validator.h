@@ -210,8 +210,9 @@ extern          "C" {
      * Internal query state in the upper byte 
      */
 #define VAL_QUERY_GLUE_REQUEST (0x01000000 | VAL_QUERY_DONT_VALIDATE) 
+#define VAL_QUERY_NO_EDNS0 0x02000000
 #ifdef LIBVAL_DLV
-#define VAL_QUERY_USING_DLV 0x02000000 
+#define VAL_QUERY_USING_DLV 0x04000000 
 #endif
 
 /* 
