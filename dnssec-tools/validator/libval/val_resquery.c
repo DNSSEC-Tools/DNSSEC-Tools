@@ -1077,6 +1077,18 @@ follow_referral_or_alias_link(val_context_t * context,
         }
         SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
 
+        /* 
+         *  if we're at a trust point, ensure that EDNS0 is not disabled 
+         *  because we previously encountered a DS pne
+         */
+        if (tp && referral_zone_n && 
+            !namecmp(tp, referral_zone_n) && 
+            (matched_qfq->qfq_flags | VAL_QUERY_NO_EDNS0)) {
+                val_log(context, LOG_DEBUG, 
+                        "follow_referral_or_alias_link(): Re-enabling EDNS0 where previously disabled");
+                matched_qfq->qfq_flags ^= VAL_QUERY_NO_EDNS0;
+        }
+
         if (tp && tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
             
             /*
