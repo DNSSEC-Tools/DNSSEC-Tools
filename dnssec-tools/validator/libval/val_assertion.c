@@ -4546,7 +4546,7 @@ verify_and_validate(val_context_t * context,
                         ttl_x = 0;
                         if (is_pinsecure) {
                             val_log(context, LOG_INFO, 
-                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
                                     name_p, 
                                     p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                     p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
@@ -4603,7 +4603,7 @@ verify_and_validate(val_context_t * context,
                                VAL_AC_PINSECURE) {
                         ttl_x = 0;
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
@@ -4667,7 +4667,7 @@ verify_and_validate(val_context_t * context,
                     ttl_x = 0;
                     if (is_pinsecure) {
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
@@ -4734,7 +4734,7 @@ verify_and_validate(val_context_t * context,
                         ttl_x = 0;
                         if (is_pinsecure) {
                             val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
@@ -5933,8 +5933,9 @@ val_resolve_and_check(val_context_t * ctx,
          * XXX by-pass this functionality through flags if needed 
          */
         if (VAL_NO_ERROR !=
-            (retval = ask_resolver(context, &queries, &pending_desc, &closest_event,
-                                   &data_received, &data_missing)))
+            (retval = ask_resolver(context, &queries, &pending_desc, 
+                                   &closest_event, &data_received, 
+                                   &data_missing)))
             goto err;
 
 
