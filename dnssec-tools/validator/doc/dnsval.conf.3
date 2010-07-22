@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2010-04-09" "perl v5.8.9" "Programmer's Manual"
+.TH dnsval.conf 3 "2010-07-22" "perl v5.8.9" "Programmer's Manual"
 .SH "NAME"
 dnsval.conf, resolv.conf, root.hints \- Configuration policy for the DNSSEC validator library libval(3).
 val_add_valpolicy \- Dynamically add a new policy to the validator context
@@ -415,10 +415,10 @@ val_add_log_optarg (see \fB\f(BIlibval\fB\|(3)\fR).
 .RE
 .RS 4
 .Sp
-An example global-policy construct is given below:
+An example global-options construct is given below:
 .Sp
 .Vb 7
-\&    global-policy
+\&    global-options
 \&        trust-oob-answers yes
 \&        edns0-size 4096
 \&        env-policy enable
