@@ -12,6 +12,7 @@ use Net::DNS::SEC::Validator;
 
 require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
 
+my $buildloc = dt_strip_dots("$ENV{BUILDDIR}");
 
 #SIGNAL CATCHING
 $SIG{INT}  = sub { &local_cleanup(); exit; };
@@ -21,6 +22,8 @@ $SIG{TERM} = sub { &local_cleanup(); exit; };
 use Getopt::Std;
 my %options = ();
 getopts("vV",\%options);
+
+# $options{V} =1;  # extra local verbosity
 
 # TEST object
 my $test = Test::Builder->new;
@@ -34,7 +37,7 @@ dt_testingtools_bail(1,\&local_cleanup);
 
 # Variables
 
-my $testdir    = "$ENV{'BUILDDIR'}/testing/trustman-rollerd";
+my $testdir    = "$buildloc/testing/trustman-rollerd";
 
 # Note: $statedir uses a relative path because socket names get
 # truncated if the path is too long (rollctl can not communicate to
@@ -44,12 +47,12 @@ my $statedir   = "./tmp";
 
 # rollerd variables
 
-my $zonesigner = "$ENV{'BUILDDIR'}/tools/scripts/zonesigner";
-my $rollerd    = "$ENV{'BUILDDIR'}/tools/scripts/rollerd";
-my $rollctl    = "$ENV{'BUILDDIR'}/tools/scripts/rollctl";
+my $zonesigner = "$buildloc/tools/scripts/zonesigner";
+my $rollerd    = "$buildloc/tools/scripts/rollerd";
+my $rollctl    = "$buildloc/tools/scripts/rollctl";
 
-my $dt_plibs   = "$ENV{'BUILDDIR'}/tools/modules/blib/lib";
-my $dt_parch   = "$ENV{'BUILDDIR'}/tools/modules/blib/arch";
+my $dt_plibs   = "$buildloc/tools/modules/blib/lib";
+my $dt_parch   = "$buildloc/tools/modules/blib/arch";
 
 my $rlogfile   = "$testdir/rollerd.log";
 my $phaselog   = "$testdir/phase.log";
@@ -64,14 +67,14 @@ $ENV{'PERL5LIB'} = "$dt_plibs:$dt_parch";
 
 # trustman variables
 
-my $trustman    = "$ENV{'BUILDDIR'}/tools/scripts/trustman";
-my $etcfiles    = "$ENV{'BUILDDIR'}/validator/etc";
+my $trustman    = "$buildloc/tools/scripts/trustman";
+my $etcfiles    = "$buildloc/validator/etc";
 
 my $tlogfile    = "$testdir/trustman.log";
 my $anchor_data = "$testdir/anchor_data";
 
-my $libvalpath  = "$ENV{'BUILDDIR'}/validator/libval/.libs";
-my $libsrespath = "$ENV{'BUILDDIR'}/validator/libsres/.libs";
+my $libvalpath  = "$buildloc/validator/libval/.libs";
+my $libsrespath = "$buildloc/validator/libsres/.libs";
 
 $ENV{'LD_LIBRARY_PATH'} = "$libvalpath:$libsrespath";
 
@@ -90,15 +93,15 @@ my $zonecheck = `which named-checkzone`;
 my $zonesign  = `which dnssec-signzone`;
 my $named     = `which named`;
 my $rndc      = `which rndc`;
-chomp ($keygen, $zonecheck, $zonesign, $named, $rndc);
+chomp ($keygen, $zonecheck, $zonesign, $named, $named, $rndc);
 
 if (!( -x $keygen && -x $zonecheck && -x $zonesign &&
        -x $named && -x $rndc )) {
-  die "Unable to execute/find one or more of: named, dnssec-keygen, named-checkzone, dnssec-signzone or rndc\n\n\tA Bind installation is required for this test.";
+  die "Unable to execute/find 1+ of: $keygen, $zonecheck, $zonesign, $named, or $rndc\n\n\tA Bind installation is required for this test.\n";
 }
 
 
-my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir";
+my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir -szopts -P";
 my $zsargs_resp   = parsepstring($zsargs);
 
 
@@ -130,8 +133,9 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 2 (Generating new Published KSK)
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
+ example.com: KSK phase 2: unable to reload zone, rc - 1
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration)
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -147,7 +151,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4 (Rolling the KSK(s))
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6 (Waiting for parent to publish new DS record)
@@ -164,7 +168,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4 (Rolling the KSK(s))
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6 (Waiting for parent to publish new DS record)
@@ -182,7 +186,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: KSK phase 4 (Rolling the KSK(s))
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /usr/sbin/dnssec-keygen -zonecheck /usr/sbin/named-checkzone -zonesign /usr/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5 (Transfer New KSK keyset to parent)
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6 (Waiting for parent to publish new DS record)
@@ -337,12 +341,12 @@ close (ROLLREC);
 open(DTC, ">./dnssec-tools.conf") || 
   die "Unable to create ./dnssec-tools.conf ";
 print DTC "admin-email\n\n";
-print DTC "keyarch\t$ENV{'BUILDDIR'}/tools/scripts/keyarch\n";
+print DTC "keyarch\t$buildloc/tools/scripts/keyarch\n";
 print DTC "zonecheck\t\"$zonecheck\"\n";
 print DTC "zonesign\t\"$zonesign\"\n";
 print DTC "zonesigner\t\"$zonesign\"\n";
 print DTC "archivedir\t\"$archivedir\"\n";
-print DTC "rndc \t$rndc -p 1953 -k ./rndc.key\n";
+# print DTC "rndc \t$rndc -p 1953 -k ./rndc.key\n";
 close (DTC);
 
 
@@ -350,7 +354,7 @@ close (DTC);
 
 my $named_command = "$named -c ./named.conf";
 
-my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p --hold_time 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir >> $tlogfile 2>&1 ";
+my $trustman_command = "perl -I$buildloc/tools/modules/blib/lib -I$buildloc/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p --hold_time 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir >> $tlogfile 2>&1 ";
 
 my $zonesigner_signzone = "perl -I$dt_plibs -I$dt_parch $zonesigner $zsargs -genkeys $domain >> $rlogfile 2>&1 ";
 
@@ -363,6 +367,7 @@ my $rollctl_dspub = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -d
 my $rollctl_halt = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -halt >> $rlogfile 2>&1 ";
 
 if (exists $options{v}) {
+  print "named command :\n$named_command\n";
   print "trustmand command :\n$trustman_command\n";
   print "zonesigner_signzone:\n$zonesigner_signzone\n";
   print "rollerd_singlerun:\n$rollerd_singlerun\n";
@@ -428,6 +433,7 @@ $log = &parseplog;
 do_is($test, $log, $rollerd_response{ksk23},
       "trust/roll: rollerd: checking KSK phase 2-3 output");
 
+reload_named();
 
 # trustman should find the newly published key
 
@@ -480,6 +486,8 @@ $test->is_eq(system("$rollerd_tillstopped"), 0,
 $log = &parseplog;
 do_is($test, $log, $rollerd_response{ksk46},
       "trust/roll: checking KSK phase 4-6 output");
+
+reload_named();
 
 # rollctl and rollerd PHASE 7 KSK
 # Phase 7: Notified of parent DS publication
@@ -578,7 +586,7 @@ sub parsetlog {
   my $logtext = `cat $tlogfile`;
   print "before:\n$logtext\n"  if (exists $options{V});
 
-  $logtext =~ s/$ENV{'BUILDDIR'}/..\/../g;
+  $logtext =~ s/$buildloc/..\/../g;
   $logtext =~ s/[ \t]+/ /g;
   $logtext =~ s/secs=(\d|\.)+,/secs=18,/g;
   $logtext =~ s/time=(\d|\.)+/time=12/g;
@@ -602,7 +610,8 @@ sub parsepstring {
   $pstring =~ s/expiration in \d+.*/expiration in weeks, days, hours, seconds/g;
   $pstring =~ s/admin must transfer/admin notified to transfer/g;
   $pstring =~ s/.*invalid admin; unable to notify.*\n//g;
-  $pstring =~ s/$ENV{'BUILDDIR'}/..\/../g;
+  $pstring =~ s/$buildloc/..\/../g;
+  $pstring =~ s/example.com: KSK phase (\d+): unable to reload zone, rc - \d+/example.com: KSK phase \1: unable to reload zone, rc - 1/g;
 
   return $pstring;
 }

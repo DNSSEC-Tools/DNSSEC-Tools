@@ -8,6 +8,8 @@ use File::Path;
 
 require "$ENV{'BUILDDIR'}/testing/t/dt_testingtools.pl";
 
+my $buildloc = dt_strip_dots("$ENV{BUILDDIR}");
+
 #SIGNAL CATCHING
 $SIG{INT}  = sub { &local_cleanup(); exit; };
 $SIG{TERM} = sub { &local_cleanup(); exit; };
@@ -29,21 +31,23 @@ dt_testingtools_bail(1, \&local_cleanup);
 
 # Variables
 
-my $zonesigner = "$ENV{'BUILDDIR'}/tools/scripts/zonesigner";
-my $rollerd    = "$ENV{'BUILDDIR'}/tools/scripts/rollerd";
-my $rollctl    = "$ENV{'BUILDDIR'}/tools/scripts/rollctl";
+my $zonesigner = "$buildloc/tools/scripts/zonesigner";
+my $rollerd    = "$buildloc/tools/scripts/rollerd";
+my $rollctl    = "$buildloc/tools/scripts/rollctl";
 
-my $dt_plibs   = "$ENV{'BUILDDIR'}/tools/modules/blib/lib";
-my $dt_parch   = "$ENV{'BUILDDIR'}/tools/modules/blib/arch";
+my $dt_plibs   = "$buildloc/tools/modules/blib/lib";
+my $dt_parch   = "$buildloc/tools/modules/blib/arch";
+# my $dt_plibs   = "$buildloc/tools/blib/lib";
+# my $dt_parch   = "$buildloc/tools/blib/arch";
 
-my $testdir    = "$ENV{'BUILDDIR'}/testing/rollerd";
+my $testdir    = "$buildloc/testing/rollerd";
 my $logfile    = "$testdir/rollerd.log";
 my $phaselog   = "$testdir/phase.log";
 
 my $domain     = "example.com";
 my $domainfile = $domain;
 
-my $statedir   = "$testdir/tmp";
+my $statedir   = "./tmp";
 my $pidfile    = "$testdir/rollmgr.pid";
 my $archivedir = "$testdir/keyarchive";
 
@@ -51,15 +55,17 @@ my $archivedir = "$testdir/keyarchive";
 my $keygen    = `which dnssec-keygen`;
 my $zonecheck = `which named-checkzone`;
 my $zonesign  = `which dnssec-signzone`;
-chomp ($keygen, $zonecheck, $zonesign);
+my $rndc      = `which rndc`;
+chomp ($keygen, $zonecheck, $zonesign, $rndc);
 
-if (!( -x $keygen && -x $zonecheck && -x $zonesign )) {
-  die "Unable to execute/find 1+ of $keygen, $zonecheck, or $zonesign\n";
+if (!( -x $keygen && -x $zonecheck && -x $zonesign && -x $rndc)) {
+  die "Unable to execute/find 1+ of $keygen, $zonecheck, or $zonesign\n\n\tA Bind installation is required for this test.\n";
 }
 
 $ENV{'PERL5LIB'} = "$dt_plibs:$dt_parch";
 
-my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir";
+my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir -szopts -P";
+# my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir -szopts -P";
 my $zsargs_resp   = parsestring($zsargs);
 
 
@@ -93,7 +99,7 @@ my %rollerd_response = (
  example.com: KSK phase 2 (Generating new Published KSK)
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
- example.com: KSK phase 2: unable to reload zone, rc - 127
+ example.com: KSK phase 2: unable to reload zone, rc - 1
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration)
  example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -163,7 +169,7 @@ my %rollerd_response = (
  sleeptime "15"
  
  example.com: reloading zone for KSK phase 7
- example.com: KSK phase 7: unable to reload zone, rc - 127
+ example.com: KSK phase 7: unable to reload zone, rc - 1
  example.com: KSK phase 7: zone, key files archived
  example.com: KSK phase 0 (Not Rolling)
  example.com: KSK expiration in weeks, days, hours, seconds
@@ -185,7 +191,7 @@ my %rollerd_response = (
  example.com: ZSK phase 2 (Signing zone with KSK and Published ZSK)
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -usezskpub $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for ZSK phase 2
- example.com: ZSK phase 2: unable to reload zone, rc - 127
+ example.com: ZSK phase 2: unable to reload zone, rc - 1
  example.com: ZSK phase 3 (Waiting for old zone data to expire from caches)
  example.com: ZSK phase 3 (Waiting for old zone data to expire from caches); cache expires in minutes, seconds
  rollover manager shutting down...
@@ -204,7 +210,7 @@ my %rollerd_response = (
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollzsk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for ZSK phase 4
- example.com: ZSK phase 4: unable to reload zone, rc - 127
+ example.com: ZSK phase 4: unable to reload zone, rc - 1
  example.com: ZSK phase 0 (Not Rolling)
  example.com: ZSK expiration in weeks, days, hours, seconds
  rollover manager shutting down...
@@ -220,6 +226,9 @@ my %rollerd_response = (
 rmtree("$testdir",);
 die "Unable to remove \'$testdir\' directory: $!\n" if ( -e "$testdir");
 
+mkpath("$testdir",) or die "Unable to make \'$testdir\' directory: $!\n";
+chdir "$testdir" or die "unable to change to \'$testdir\' directory: $!\n";
+# $statedir is a relative path, must change to $testdir first.
 mkpath("$statedir",) or die "Unable to make \'$statedir\' directory: $!\n";
 chdir "$testdir" or die "unable to change to \'$testdir\' directory: $!\n";
 mkpath("$archivedir",) or die "Unable to make \'$archivedir\' directory: $!\n";
@@ -233,6 +242,10 @@ copy ("../rollerd-example.com","example.com") or
 copy ("../saved-example.rollrec","example.rollrec") or
   die "Unable to copy saved-example.rollrec to example.rollrec: $!\n";
 
+# rndc setup files
+copy ("../saved-rndc.key","rndc.key") or
+  die "Unable to copy ../saved-rndc.key to rndc.key : $!\n";
+
 open(ROLLREC, ">>./example.rollrec") || 
   die "Unable to open ./example.rollrec to add arguments";
 print ROLLREC "\tkeygen\t\"$keygen\"\n";
@@ -245,12 +258,14 @@ close (ROLLREC);
 open(DTC, ">./dnssec-tools.conf") || 
   die "Unable to create ./dnssec-tools.conf ";
 print DTC "admin-email\n\n";
-print DTC "keyarch\t$ENV{'BUILDDIR'}/tools/scripts/keyarch\n";
+print DTC "keyarch\t$buildloc/tools/scripts/keyarch\n";
 print DTC "zonecheck\t\"$zonecheck\"\n";
-print DTC "zonesign\t\"$zonesign\"\n";
-print DTC "zonesigner\t\"$zonesign\"\n";
+print DTC "zonesign\t$zonesign\n";
+print DTC "zonesigner\t$zonesign\n";
 print DTC "archivedir\t\"$archivedir\"\n";
+print DTC "rndc \t$rndc\n";
 close (DTC);
+
 
 # Create Commands
 
@@ -265,6 +280,7 @@ my $rollctl_dspub = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -d
 my $rollctl_halt = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -halt >> $logfile 2>&1 ";
 
 if (exists $options{v}) {
+  print "builddir \'$buildloc\'\n";
   print "zonesigner_signzone:\n$zonesigner_signzone\n";
   print "rollerd_singlerun:\n$rollerd_singlerun\n";
   print "rollerd_tillstopped:\n$rollerd_tillstopped\n";
@@ -277,7 +293,7 @@ if (exists $options{v}) {
 
 # prepare by signing zone
 do_is($test, system("$zonesigner_signzone"), 0,
-      "rollerd: signing \'$domainfile\'");
+	  "rollerd: signing \'$domainfile\'");
 
 
 # rollerd PHASE 1 KSK,
@@ -295,16 +311,17 @@ do_is($test, $log, $rollerd_response{ksk1},
 
 &waittime(125, 5, "       Waiting on TTL for next key rolling phase");
 
+
 # rollerd PHASE 2-3 KSK
 # Phase 2: create new published ksk
 # Phase 3: wait TTL for pub ksk distribution
 
 unlink "$phaselog";
-$test->is_eq(system("$rollerd_singlerun"), 0, 
+$test->is_eq(system("$rollerd_singlerun"), 0,
 	     "rollerd: rolling \'$domainfile\' KSK phase 2-3");
 
 $log = &parselog;
-do_is($test, $log, $rollerd_response{ksk23}, 
+do_is($test, $log, $rollerd_response{ksk23},
       "rollerd: checking KSK phase 2-3 output");
 
 &waittime(125, 5, "       Waiting on TTL for next key rolling phase");
@@ -324,9 +341,9 @@ $test->is_eq(system("$rollerd_tillstopped"), 0,
 &waittime(10, 1, "       Waiting for phase 4-6 transition");
 
 $log = &parselog;
-do_is($test, $log, $rollerd_response{ksk46}, 
-      "rollerd: checking KSK phase 4-6 output");
-
+#$test->is_eq(1, 1, "Skipping: rollerd: checking KSK phase 4-6 output");
+do_is($test, $log, $rollerd_response{ksk46},
+	  "rollerd: checking KSK phase 4-6 output");
 
 # rollctl and rollerd PHASE 7 KSK
 # Phase 7: Notified of parent DS publication
@@ -394,6 +411,8 @@ exit(0);
 
 #                   **** PROCEDURES ****
 
+
+
 sub local_cleanup {
 
   if ( -r "$pidfile" ) {
@@ -427,7 +446,8 @@ sub parsestring {
   $pstring =~ s/expiration in \d+.*/expiration in weeks, days, hours, seconds/g;
   $pstring =~ s/admin must transfer/admin notified to transfer/g;
   $pstring =~ s/.*invalid admin; unable to notify.*\n//g;
-  $pstring =~ s/$ENV{'BUILDDIR'}/..\/../g;
+  $pstring =~ s/$buildloc/..\/../g;
+  $pstring =~ s/example.com: KSK phase (\d+): unable to reload zone, rc - \d+/example.com: KSK phase \1: unable to reload zone, rc - 1/g;
 
   return $pstring;
 }

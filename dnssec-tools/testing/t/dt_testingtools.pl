@@ -8,13 +8,33 @@ $dt_verbose  = 0;
 $dt_bail     = 0;
 $dt_bail_sub = 0;
 
+sub dt_strip_dots {
+  my($bt) = @_;
+  my @buildarr = split '/', $bt;
+
+  my $count = 0;
+  while ($count <= $#buildarr) {
+	if ($buildarr[$count] =~/^\.$/) {
+	  splice @buildarr, $count, 1;
+	}
+  elsif  ($buildarr[$count] =~/^\.\.$/) {
+	$count--;
+	splice @buildarr, ($count), 2;
+  }
+	else {
+	  $count++;
+	}
+  }
+  return (join '/', @buildarr);
+}
+
 sub dt_testingtools_verbose {
   my($v) = @_;
   $dt_verbose = $v;
 }
 
 sub dt_testingtools_bail {
-  my($v,$subcall) = @_;
+  my($v,$subcall) = @_ ;
   $dt_bail        = $v;
   $dt_bail_sub    = $subcall;
 }
