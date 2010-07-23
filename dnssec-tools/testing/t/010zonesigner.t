@@ -47,6 +47,9 @@ my %zonesigner_response = (
     generating key files
     adding key includes to zone file
     signing zone
+Verifying the zone using the following algorithms: RSASHA1.
+Zone signing complete:
+Algorithm: RSASHA1: ZSKs: 2, KSKs: 1 active, 0 revoked, 0 stand-by
     checking zone
 
 zone signed successfully
@@ -71,6 +74,9 @@ DO NOT delete the keys until this time has passed.
     generating key files
     adding key includes to zone file
     signing zone
+Verifying the zone using the following algorithms: NSEC3RSASHA1.
+Zone signing complete:
+Algorithm: NSEC3RSASHA1: ZSKs: 2, KSKs: 1 active, 0 revoked, 0 stand-by
     checking zone
 
 zone signed successfully
