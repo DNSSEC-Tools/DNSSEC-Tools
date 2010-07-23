@@ -68,6 +68,7 @@ my @zone;
 my $soa;
 my $rrsig;
 my $sshfp;
+my $key;
 my $dnskey;
 my $ds;
 my $on_error;
@@ -730,6 +731,35 @@ sub parse_line
 	  } else {
 	      error("bad SRV data");
 	  }
+      } elsif (/\G(key)[ \t]+/igc) {
+	  if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	      error("bad KEY data 1");
+	  }
+	  $dnskey = {
+		     first     => 1,
+		     Line      => $ln,
+		     name      => $domain,
+		     ttl       => $ttl,
+		     class     => "IN",
+		     type      => "KEY",
+		     flags     => $1,
+		     protocol  => $2,
+		     algorithm => $3
+		    };
+	  if (/\G\(\s*$/gc) {
+	      # multi-line
+	      $parse = \&parse_dnskey;
+	  } elsif (/\G(.*\S)\s*$/) {
+	      # single-line
+	      $dnskey->{'key'} .= $1;
+	      $dnskey->{'key'} =~ s/\s//g;
+	      $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
+	      push @zone, $dnskey;
+	      $dnskey = undef;
+	  } else {
+	      error("bad KEY data 2");
+	  }
+
       } elsif (/\G(rrsig)[ \t]+/igc) {
 	  if (!/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
 	      error("bad RRSIG data 1");
