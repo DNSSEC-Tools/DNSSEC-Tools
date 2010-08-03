@@ -48,6 +48,8 @@ my @opts =
 my @algorithms =
 (
 	"rsasha1",
+	"rsasha256",
+	"rsasha512",
 	"rsamd5",
 	"dsa",
 	"dh",
@@ -58,6 +60,8 @@ my @algorithms =
 my %length_low =
 (
 	"rsasha1"	=> 512,
+	"rsasha256"	=> 512,
+	"rsasha512"	=> 1024,
 	"nsec3rsasha1"	=> 512,
 	"rsamd5"	=> 512,
 	"dsa"		=> 512,
@@ -68,6 +72,8 @@ my %length_low =
 my %length_high =
 (
 	"rsasha1"	=> 4096,
+	"rsasha256"	=> 4096,
+	"rsasha512"	=> 4096,
 	"nsec3rsasha1"	=> 4096,
 	"rsamd5"	=> 4096,
 	"dsa"		=> 1024,
