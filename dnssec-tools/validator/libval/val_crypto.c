@@ -354,7 +354,7 @@ rsasha_sigverify(val_context_t * ctx,
     char            buf[1028];
     int             buflen = 1024;
     RSA            *rsa = NULL;
-    u_char   sha_hash[SHA256_DIGEST_LENGTH];
+    u_char   sha_hash[MAX_DIGEST_LENGTH];
     size_t   hashlen = 0;
     int nid = 0;
 
