@@ -159,6 +159,7 @@ extern          "C" {
 #ifndef SHA512_DIGEST_LENGTH
 #define SHA512_DIGEST_LENGTH 64 
 #endif
+#define MAX_DIGEST_LENGTH 64
 
     /*
      * Algorithm definitions for DS digest 
