@@ -97,6 +97,7 @@ dsasha1_sigverify(val_context_t * ctx,
     size_t          buflen = 1024;
     DSA            *dsa = NULL;
     u_char   sha1_hash[SHA_DIGEST_LENGTH];
+    u_char   sig_asn1[2+2*(3+SHA_DIGEST_LENGTH)];
 
     val_log(ctx, LOG_DEBUG,
             "dsasha1_sigverify(): parsing the public key...");
@@ -125,9 +126,32 @@ dsasha1_sigverify(val_context_t * ctx,
     val_log(ctx, LOG_DEBUG,
             "dsasha1_sigverify(): verifying DSA signature...");
 
+    /*
+     * Fix: courtesy tom.fowler
+     * First convert the signature into its DER representation
+     *  0x30, 0x2E,       -  ASN1 sequence 
+     *   0x02, 0x15,      - ASN integer, length 21 bytes
+     *   0x00, <R bytes>  - 1 + 20 bytes per 2536 
+     *   0x02, 0x15,      - ASN integer 
+     *   0x00, <S bytes>  - 1 + 20 bytes per 2536
+     */
+    if (rrsig->signature_len < (1 + 2*SHA_DIGEST_LENGTH)) {
+        /* dont have enough data */
+        val_log(ctx, LOG_INFO,
+                "dsasha1_sigverify(): Error parsing DSA rrsig.");
+        DSA_free(dsa);
+        *sig_status = VAL_AC_INVALID_RRSIG;
+        return;
+    }
+    memcpy(sig_asn1, "\x30\x2E\x02\x15\x00", 5);
+    memcpy(sig_asn1+5, rrsig->signature+1, SHA_DIGEST_LENGTH);
+    memcpy(sig_asn1+5+SHA_DIGEST_LENGTH, "\x02\x15\x00", 3);
+    memcpy(sig_asn1+5+SHA_DIGEST_LENGTH+3,
+           rrsig->signature+1+SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH);
+
     if (DSA_verify
         (NID_sha1, (u_char *) sha1_hash, SHA_DIGEST_LENGTH,
-         rrsig->signature, rrsig->signature_len, dsa)  == 1) {
+         sig_asn1, sizeof(sig_asn1), dsa)  == 1) {
         val_log(ctx, LOG_INFO, "dsasha1_sigverify(): returned SUCCESS");
         DSA_free(dsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
