@@ -2346,6 +2346,8 @@ sub runner
 		if((! $negerrflag && ($ret != 0)) ||
 		   (  $negerrflag && ($ret <  0)))
 		{
+			$out =~ s/^	if zonesigner appears hung, .*\n$//ms;
+			$out =~ s/^	\(see the \"Entropy\" section .*\n$//ms;
 
 			rolllog_log(LOG_ERR,$rname,"execution error for command \"$cmd\"");
 			rolllog_log(LOG_ERR,$rname,"error output - \"$out\"");
