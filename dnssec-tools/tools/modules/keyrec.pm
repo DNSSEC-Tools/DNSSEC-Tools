@@ -2235,7 +2235,7 @@ file.
 
 Failure return values:
 
-    -1 specified I<keyrec> file doesn't exit
+    -1 specified I<keyrec> file doesn't exist
     -2 unable to open I<keyrec> file
     -3 duplicate I<keyrec> names in file
 
