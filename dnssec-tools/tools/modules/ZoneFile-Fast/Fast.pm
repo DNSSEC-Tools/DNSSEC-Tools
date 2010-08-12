@@ -810,7 +810,7 @@ sub parse_line
 	  if (/\G\(\s*$/gc) {
 	      # multi-line
 	      $parse = \&parse_dnskey;
-	  } elsif (/\G(.*\S)\s*$/) {
+	  } elsif (/\G([\sA-Za-z0-9\+\/=]+).*$/) {
 	      # single-line
 	      $dnskey->{'key'} .= $1;
 	      $dnskey->{'key'} =~ s/\s//g;
