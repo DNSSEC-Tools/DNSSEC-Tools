@@ -996,21 +996,24 @@ follow_referral_or_alias_link(val_context_t * context,
     merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
     *answers = NULL;
 
-    /*
-     * Consume proofs
-     */
-    merge_rrset_recs(&matched_q->qc_referral->proofs, *proofs);
-    *proofs = NULL;
-
     matched_q->qc_state = Q_INIT;
 
     if (alias_chain) {
+        /*
+         * Consume proofs only if they pertain to cname/dname chains
+         */
+        merge_rrset_recs(&matched_q->qc_referral->proofs, *proofs);
+        *proofs = NULL;
+
         /* don't believe any of the cname hints that were provided */
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
         return VAL_NO_ERROR;
 
     } 
+
+    res_sq_free_rrset_recs(proofs);
+    *proofs = NULL;
 
     if (referral_zone_n) {
         char            debug_name1[NS_MAXDNAME];
