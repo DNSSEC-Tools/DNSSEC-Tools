@@ -5217,7 +5217,7 @@ check_wildcard_sanity(val_context_t * context,
                 if (VAL_NO_ERROR != 
                         (retval = 
                          prove_nonexistence(context, w_results, queries, &target_res,
-                                            results, top_q->qc_name_n, top_q->qc_type_h,
+                                            results, top_q->qc_original_name, top_q->qc_type_h,
                                             top_q->qc_class_h, 1, 
                                             top_q->qc_proof, &status,
                                             &ttl_x)))
@@ -5230,13 +5230,20 @@ check_wildcard_sanity(val_context_t * context,
 
                 SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
 
-                target_res->val_rc_status = status;
                 if (status == VAL_NONEXISTENT_NAME 
                      && target_res->val_rc_answer) {
+                    target_res->val_rc_status = VAL_SUCCESS;
                     /*
                      * Change from VAL_AC_WCARD_VERIFIED to VAL_AC_VERIFIED 
                      */
                     target_res->val_rc_answer->val_ac_status = VAL_AC_VERIFIED;
+                } else if (status == VAL_NONEXISTENT_TYPE) {
+                    /* 
+                     * If the type is missing, status remains as is
+                     */
+
+                } else {
+                    target_res->val_rc_status = VAL_BOGUS;
                 }
             } else {
                 /*
@@ -5311,6 +5318,26 @@ check_alias_sanity(val_context_t * context,
             if (!res->val_rc_rrset || !res->val_rc_rrset->val_ac_rrset.ac_data)
                 continue;
 
+            if (res->val_rc_consumed) {
+                char qname[NS_MAXDNAME];
+                /*
+                 * search for existing result structure 
+                 */
+                if (ns_name_ntop (qname_n, qname, sizeof(qname)) < 0) {
+                    retval = VAL_BAD_ARGUMENT;
+                    goto err;
+                }
+                for (new_res = *results; new_res;
+                     new_res = new_res->val_rc_next) {
+                    if (new_res->val_rc_rrset) {
+                        if (!strcmp(qname, 
+                                    new_res->val_rc_rrset->val_rrset_name)) {
+                            break;
+                        }
+                    }
+                }
+            }
+
             is_same_name =
                 (0 ==
                  namecmp(qname_n,
@@ -5384,30 +5411,8 @@ check_alias_sanity(val_context_t * context,
                 continue;
             }
 
-            if (res->val_rc_consumed) {
-                char qname[NS_MAXDNAME];
-                /*
-                 * search for existing result structure 
-                 */
-                if (ns_name_ntop (qname_n, qname, sizeof(qname)) < 0) {
-                    retval = VAL_BAD_ARGUMENT;
-                    goto err;
-                }
-                for (new_res = *results; new_res;
-                     new_res = new_res->val_rc_next) {
-                    if (new_res->val_rc_answer
-                        && new_res->val_rc_answer->val_ac_rrset) {
-                        if (!strcmp(qname, 
-                                    new_res->val_rc_answer->
-                                    val_ac_rrset->val_rrset_name)) {
-                            break;
-                        }
-                    }
-                }
-            }
-
             /*
-             * or create a new one 
+             * create a new result structure if one does not exist 
              */
             if (new_res == NULL) {
                 if (VAL_NO_ERROR !=
@@ -5415,6 +5420,7 @@ check_alias_sanity(val_context_t * context,
                                                       NULL, &new_res))) {
                     goto err;
                 }
+                new_res->val_rc_status = res->val_rc_status;
             }
 
             if (qname_n && !done) {
@@ -5434,8 +5440,6 @@ check_alias_sanity(val_context_t * context,
                 strcpy(new_res->val_rc_alias, qname);
             }
             
-            new_res->val_rc_status = res->val_rc_status;
-
             break;
         }
     }

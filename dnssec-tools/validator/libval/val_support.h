@@ -42,6 +42,7 @@
 			return VAL_OUT_OF_MEMORY; \
 		ref->queries = NULL; \
 		ref->answers = NULL; \
+		ref->proofs = NULL; \
 		ref->qnames = NULL; \
 		ref->pending_glue_ns = NULL; \
 		ref->cur_pending_glue_ns = NULL; \

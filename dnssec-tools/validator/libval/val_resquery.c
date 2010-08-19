@@ -899,6 +899,10 @@ free_referral_members(struct delegation_info *del)
         res_sq_free_rrset_recs(&del->answers);
         del->answers = NULL;
     }
+    if (del->proofs != NULL) {
+        res_sq_free_rrset_recs(&del->proofs);
+        del->proofs = NULL;
+    }
     if (del->qnames) {
         free_qname_chain(&del->qnames);
         del->qnames = NULL;
@@ -935,7 +939,8 @@ follow_referral_or_alias_link(val_context_t * context,
                               struct rrset_rec **learned_zones,
                               struct qname_chain **qnames,
                               struct queries_for_query **queries,
-                              struct rrset_rec **answers)
+                              struct rrset_rec **answers,
+                              struct rrset_rec **proofs)
 {
     int             ret_val;
     struct name_server *ref_ns_list;
@@ -947,7 +952,8 @@ follow_referral_or_alias_link(val_context_t * context,
     u_int32_t       ttl_x = 0;
 
     if ((matched_qfq == NULL)  || (qnames == NULL) ||
-        (learned_zones == NULL) || (queries == NULL) || (answers == NULL))
+        (learned_zones == NULL) || (queries == NULL) || (answers == NULL) ||
+        (proofs == NULL))
         return VAL_BAD_ARGUMENT;
     
     ref_ns_list = NULL;
@@ -989,6 +995,12 @@ follow_referral_or_alias_link(val_context_t * context,
      */
     merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
     *answers = NULL;
+
+    /*
+     * Consume proofs
+     */
+    merge_rrset_recs(&matched_q->qc_referral->proofs, *proofs);
+    *proofs = NULL;
 
     matched_q->qc_state = Q_INIT;
 
@@ -1841,13 +1853,28 @@ digest_response(val_context_t * context,
     
     /*
      * Identify proofs of non-existence 
+     * XXX This needs to be rethought, reviewed and fixed
      */
     if (proof_seen) {
     
         if (nothing_other_than_alias) {
-            /* XXX Alias target non-existence */
+            /*
+             * If we just have an alias in the answer, this is an 
+             * NXDOMAIN or NODATA proof for the target
+             */
                 
+        } else if (answer > 0) {
+            /*
+             * If we have an answer this is a supporting proof for
+             * that answer - e.g. a wildcard proof.
+             */
+            
+            
         } else if (referral_seen && header->rcode == ns_r_noerror) {
+            /* 
+             * If we see an NS record in the authority section, this
+             * _could_ be a referral
+             */
             if (soa_seen) {
                 /* XXX if this is a no-data response, it is not a referral */
                 referral_seen = FALSE;
@@ -1860,24 +1887,28 @@ digest_response(val_context_t * context,
             }
 
         } else {
-            /* XXX non-existence of queried type */
+            /* XXX non-existence of queried name or type */
         }
     } 
 
     if (referral_seen || nothing_other_than_alias) {
-        struct rrset_rec *cloned_answers;
+        struct rrset_rec *cloned_answers, *cloned_proofs;
         cloned_answers = copy_rrset_rec_list(learned_answers);
+        cloned_proofs = copy_rrset_rec_list(learned_proofs);
 
         if (VAL_NO_ERROR != (ret_val =
             follow_referral_or_alias_link(context,
                                           nothing_other_than_alias,
                                           referral_zone_n, matched_qfq,
                                           &learned_zones, qnames,
-                                          queries, &cloned_answers))) {
+                                          queries, &cloned_answers, 
+                                          &cloned_proofs))) {
             res_sq_free_rrset_recs(&cloned_answers);
+            res_sq_free_rrset_recs(&cloned_proofs);
             goto done;
         }
         cloned_answers = NULL; /* consumed */
+        cloned_proofs = NULL; /* consumed */
         learned_zones = NULL; /* consumed */
 
     } else {
@@ -1921,6 +1952,13 @@ digest_response(val_context_t * context,
             merge_rrset_recs(&matched_q->qc_referral->answers, di_response->di_answers);
             di_response->di_answers = matched_q->qc_referral->answers;
             matched_q->qc_referral->answers = NULL;
+
+            /*
+             * Consume proofs
+             */
+            merge_rrset_recs(&matched_q->qc_referral->proofs, di_response->di_proofs);
+            di_response->di_proofs = matched_q->qc_referral->proofs;
+            matched_q->qc_referral->proofs = NULL;
 
             /*
              * Consume qnames
