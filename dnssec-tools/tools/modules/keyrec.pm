@@ -1184,7 +1184,7 @@ sub keyrec_add
 			if($fields{'keyrec_type'} !~ /^ksk/)
 			{
 				if(($fn eq 'ksklength')	|| ($fn eq 'ksklife') ||
-				    ($fn eq 'revperiod') || ($fn eq 'revtime'))
+				   ($fn eq 'revperiod') || ($fn eq 'revtime'))
 				{
 					next;
 				}
