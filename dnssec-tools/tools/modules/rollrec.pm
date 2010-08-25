@@ -187,7 +187,7 @@ sub rollrec_unlock
 # print "rollrec_unlock:  down in\n";
 
 	#
-	# Lock the lock file.
+	# Unlock the lock file.
 	#
 	return(flock(RRLOCK,LOCK_UN));
 }
