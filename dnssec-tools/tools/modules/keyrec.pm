@@ -57,8 +57,9 @@ require Exporter;
 
 use strict;
 use Net::DNS::SEC::Tools::conf;
+use Fcntl qw(:DEFAULT :flock);
 
-our $VERSION = "1.5";
+our $VERSION = "1.7";
 
 our @ISA = qw(Exporter);
 
@@ -1860,11 +1861,19 @@ sub keyrec_close
 # Routine:	keyrec_write()
 #
 # Purpose:	Save the key record file and leave the file handle open.
+#		We'll get an exclusive lock on the keyrec file in order
+#		to (try to) ensure we're the only ones writing the file.
+#
+#		We'll make a (hopefully atomic) copy of the in-core keyrec
+#		lines prior to trying to write.  This is an attempt to
+#		keep the data from being mucked with while we're using it.
 #
 sub keyrec_write
 {
 	my $krc = "";			# Concatenated keyrec file contents.
 	my $ofh;			# Old file handle.
+	my @krlines = @keyreclines;	# Copy of The Keyrec.
+	my $krlen;			# Number of lines in The Keyrec.
 
 	#
 	# If the file hasn't changed, we'll skip writing.
@@ -1874,15 +1883,26 @@ sub keyrec_write
 	#
 	# Make sure we've got the correct count of keyrec lines.
 	#
-	$keyreclen = @keyreclines;
+	$krlen = @krlines;
 
 	#
 	# Loop through the array of keyrec lines and concatenate them all.
 	#
-	for(my $ind=0;$ind<$keyreclen;$ind++)
+	for(my $ind = 0; $ind < $krlen; $ind++)
 	{
-		$krc .= $keyreclines[$ind];
+		$krc .= $krlines[$ind];
 	}
+
+	#
+	# Lock the keyrec file.
+	#
+	flock(KEYREC,LOCK_EX);
+
+	#
+	# Force immediate writes of KEYREC.
+	#
+	$ofh = select KEYREC;
+	$| = 1;
 
 	#
 	# Zap the keyrec file and write out the new one.
@@ -1892,11 +1912,14 @@ sub keyrec_write
 	print KEYREC $krc;
 
 	#
-	# Flush the KEYREC buffer.
+	# Reset KEYREC buffering to original state.
 	#
-	$ofh = select KEYREC;
-	$| = 1;
 	select $ofh;
+
+	#
+	# Unlock the keyrec file.
+	#
+	return(flock(KEYREC,LOCK_UN));
 }
 
 #--------------------------------------------------------------------------
@@ -2314,6 +2337,8 @@ I<keyrec_creat()>, I<keyrec_open()> or I<keyrec_read()>).  It does not close
 the file handle.  As an efficiency measure, an internal modification flag is
 checked prior to writing the file.  If the program has not modified the
 contents of the I<keyrec> file, it is not rewritten.
+
+I<keyrec_write()> gets an exclusive lock on the I<keyrec> file while writing.
 
 =item I<keyrec_zonefields()>
 
