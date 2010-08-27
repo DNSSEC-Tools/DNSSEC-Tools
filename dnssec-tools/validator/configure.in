@@ -713,7 +713,9 @@ if test "x$defaults" != "xyes" ; then
       done
    done
 fi
-AC_PROMPT_USER(VAL_ROOT_HINTS,[
+# use NO_DEFINE prompt variant becaue we need to inspect and possibly
+# modify any answer
+AC_PROMPT_USER_NO_DEFINE(VAL_ROOT_HINTS,[
 
 *** Root hints location:
 
@@ -728,6 +730,7 @@ if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
    ac_cv_user_prompt_VAL_ROOT_HINTS="$val_sysconfdir/dnssec-tools/root.hints"
 fi
 VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
+AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS")
 AC_SUBST(VAL_ROOT_HINTS)
 AC_MSG_CACHE_ADD(libval root hints              : $VAL_ROOT_HINTS)
   
