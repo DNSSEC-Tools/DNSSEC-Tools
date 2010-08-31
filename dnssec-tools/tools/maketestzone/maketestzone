@@ -756,6 +756,7 @@ sub make_new_date {
     my $inrec = 0;
     my $slurp = 0;
     my ($keyid, $keyname);
+    my @records;
     while (<I>) {
 	last if /^\w/;
 	if ($type eq 'DS' && /\d+\s+DS\s+\d+/) {
@@ -776,7 +777,12 @@ sub make_new_date {
 	    $inrec = 1;
 	}
 	print $fh $_ if (!$inrec && !$slurp);
-	$inrec = $slurp = 0 if (/\)/);
+	if (/\)/) {
+	    if ($slurp) {
+		push @records, Net::DNS::RR->new($currentrr);
+	    }
+	    $inrec = $slurp = 0;
+	}
     }
 
     #
@@ -786,9 +792,9 @@ sub make_new_date {
     # save the current line since Net::DNS::RR::* messes with it
     my $currentline = $_;
 
-    # the current RRset
-    my $rec = Net::DNS::RR->new($currentrr);
+    push @records, Net::DNS::RR->new($currentrr) if ($#records == -1);
 
+    # the current RRset
     croak "can't read one of keyid ($keyid) or keyname ($keyname) from input RRSIG\n" if (!$keyid || !$keyname);
 
     my $keypath;
@@ -801,11 +807,15 @@ sub make_new_date {
     $keypaths{$currentdomain} = $keypath;
 
     # create the new record
-    print $fh $rec->string,"\n" if ($type eq 'DS');
-    my $sigrr = Net::DNS::RR::RRSIG->create([$rec], $keypath,
+    if ($type eq 'DS') {
+	foreach my $rec (@records) {
+	    print $fh $rec->string,"\n" ;
+	}
+    }
+    my $sigrr = Net::DNS::RR::RRSIG->create(\@records, $keypath,
 					    sigin => make_date($sigin_mod),
 					    sigex => make_date($sigex_mod),
-					    ttl => $rec->ttl);
+					    ttl => $records[0]->ttl);
 
     # print it
     print $fh $sigrr->string,"\n";
