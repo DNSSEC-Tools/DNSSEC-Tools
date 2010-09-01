@@ -61,7 +61,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "krfcheck";
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 1.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.7";
 
 #######################################################################
@@ -424,14 +424,16 @@ sub getkeyrecs
 	{
 		my $kr;				# Reference to keyrec.
 		my $type;			# Keyrec's type.
+		my $stype;			# Keyrec's set type.
 
 		next if(!$krn);
 
 		#
-		# Get the keyrec and its type.
+		# Get the keyrec, its type, and its set type.
 		#
-		$kr = keyrec_fullrec($krn);
-		$type = keyrec_recval($krn,'keyrec_type');
+		$kr	= keyrec_fullrec($krn);
+		$type	= keyrec_recval($krn,'keyrec_type');
+		$stype	= keyrec_recval($krn,'set_type');
 
 		#
 		# Add the keyrec to the appropriate hash.
@@ -440,7 +442,8 @@ sub getkeyrecs
 		{
 			$zones{$krn} = $kr;
 		}
-		elsif($type eq 'set')
+		elsif(($type eq 'set') ||
+		      (($stype eq 'kskobs') || ($stype eq 'kskrev')))
 		{
 			$sets{$krn} = $kr;
 		}
@@ -753,9 +756,12 @@ sub setdata
 		$kstype  = keyrec_recval($key,'set_type');
 
 		#
-		# Subordinate set keyrecs may only be kskrevs.
+		# Subordinate set keyrecs may only be kskrevs and kskobses.
 		#
 		next if(($keytype eq 'set') && ($kstype eq 'kskrev'));
+		next if(($keytype eq 'set') && ($kstype eq 'kskobs'));
+		next if(defined($kstype) &&
+			(($keytype eq 'kskrev') || ($keytype eq 'kskobs')));
 
 		#
 		# Ensure the key exists as a KSK key or a ZSK key.
@@ -763,6 +769,7 @@ sub setdata
 		if(!defined($kskkeys{$key}) && !defined($zskkeys{$key}))
 		{
 			qprint("no such key keyrec:  key $key (set $setname)\n");
+#			qprint("\t\t(keytype $keytype) (kstype $kstype)\n");
 			$seterrs++;
 		}
 
@@ -1003,11 +1010,54 @@ sub orphankeys
 	}
 
 	#
+	# Go through our signing sets to see if one holds the key.
+	#
+	foreach my $set (keyrec_signsets())
+	{
+		my $kt;				# Keyrec's type.
+		my $keys;			# Keyrec's key string.
+		my @keys;			# Keyrec's key array.
+
+		last if($found);
+
+		$kt	= keyrec_recval($set,'keyrec_type');
+		$keys	= keyrec_recval($set,'keys');
+
+		#
+		# Return failure if it it's a zone or set keyrec.
+		#
+		next if(($kt eq 'zone') || ($kt eq 'set'));
+
+		#
+		# Return failure if it's a zone or set keyrec.
+		#
+		next if($keys eq '');
+
+		#
+		# Put the keyrec's keys into an array of names.
+		#
+		@keys = split / /, $keys;
+
+		#
+		# Check the keys to see if one holds the key.
+		#
+		for(my $ind = 0;$ind < @keys; $ind++)
+		{
+			if($keys[$ind] eq $keyname)
+			{
+				$found = 1;
+				last;
+			}
+		}
+	}
+
+	#
 	# Register an error if no signing set holds the key.
 	#
 	if(!$found)
 	{
-		qprint("orphaned key:  $keytype key $keyname\n");
+		my $tstr = keyrec_recval($keyname,'keyrec_type');
+		qprint("orphaned key:  $keytype key $keyname\t($tstr)\n");
 		$keyerrs++;
 		return;
 	}
