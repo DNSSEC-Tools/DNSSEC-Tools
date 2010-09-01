@@ -245,7 +245,7 @@ sub chkzone
 		#
 		# Skip non-obsolete and non-revoked keys.
 		#
-		next if(($keytype !~ /obs/) && ($keytype !~ /rev/));
+		next if($keytype !~ /obs/);
 
 		#
 		# Skip KSKs if we're only archiving ZSKs.
