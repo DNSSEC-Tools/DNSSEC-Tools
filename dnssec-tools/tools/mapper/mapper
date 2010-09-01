@@ -34,7 +34,9 @@ if(runpacked()) {
 # detect basic needed module requirements
 #
 dnssec_tools_load_mods('GraphViz'    => "",
-		       'Date::Parse' => "");
+		       'Date::Parse' => "",
+		       'GraphViz::Small' => "noerror",
+		       'GraphViz::No'    => "noerror");
 
 my %nodes;
 my %nodesonce;
@@ -63,6 +65,7 @@ DTGetOptions(\%opts,
 		 question => { type => 'menu',
 			       values => [qw(dot neato twopi circo fdp)] }],
 		['L|legend','Add a legend to the map'],
+	        ['node-size=s', "Reduce node size to 'small' or 'none'"],
 		['GUI:guionly', { type => 'checkbox',
 				  values => [1,0],
 				  default => 0,
@@ -239,12 +242,28 @@ if ($opts{'t'}) {
 my @graphopts;
 push @graphopts, 'width', ($opts{'x'}/96) if ($opts{'x'});
 push @graphopts, 'height', ($opts{'y'}/96) if ($opts{'y'});
-my $g = GraphViz->new(layout => $opts{'l'},
-		      node => {'fontsize' => $opts{'f'}},
-		      edge => {'fontsize' => $opts{'f'}},
-		      overlap => ($opts{'a'})?'true':'false',
-		      @graphopts
-		     );
+my @fulloptions = (layout => $opts{'l'},
+		   node => {'fontsize' => $opts{'f'}},
+		   edge => {'fontsize' => $opts{'f'}},
+		   overlap => ($opts{'a'})?'true':'false',
+		   @graphopts);
+my $g;
+if (exists($opts{'node-size'})) {
+    # newer graphviz modules have 'small' and 'no' node styles
+    if ($opts{'node-size'} eq 'small') {
+	require GraphViz::Small;
+	$g = GraphViz::Small->new(@fulloptions);
+    } elsif ($opts{'node-size'} eq 'none') {
+	require GraphViz::Small;
+	$g = GraphViz::No->new(@fulloptions);
+    } else {
+	print STDERR "The graphviz --node-style $opts{'node-size'} is not legal.\n";
+	print STDERR "  please use option values of 'no' or 'small' instead.\n";
+	exit 1;
+    }
+} else {
+    $g = GraphViz->new(@fulloptions);
+}
 
 #
 # Loop through each file and zone name and collect information
@@ -550,6 +569,14 @@ Adds a legend to the map.
 Selects a layout format.  The default is I<neato>, which is circular in
 pattern.  See the documentation on the B<GraphViz> package and the
 B<GraphViz> Perl module for further details.
+
+=item --node-size=(none|small)
+
+If the map size is too large, it is possible to either greatly reduce
+the node size (and the text) using I<--node-size=small> or eliminate
+the circles entirely, leaving only the arrows using
+I<--node-size=none>.  This can make for better visual diagrams of very
+complex node sets, although all labeling is lost.
 
 =item -a
 
