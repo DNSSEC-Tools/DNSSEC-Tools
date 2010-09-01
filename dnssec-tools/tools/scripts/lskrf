@@ -22,7 +22,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lskrf";
-my $VERS   = "$NAME version: 1.2";
+my $VERS   = "$NAME version: 1.3";
 my $DTVERS = "DNSSEC-Tools Version: 1.7";
 
 
@@ -833,6 +833,7 @@ sub getkeyrecs
 		my $kr;				# Reference to keyrec.
 		my %keyrec;			# Keyrec.
 		my $type;			# Keyrec's type.
+		my $name;			# Key for set hash entry.
 
 		$kr = keyrec_fullrec($krn);
 		%keyrec = %$kr;
@@ -856,8 +857,6 @@ sub getkeyrecs
 		}
 		elsif($type eq 'set')
 		{
-			my $name;		# Key for hash entry.
-
 			$name = "$krn($kr->{'zonename'})";
 			$sets{$name} = $kr;
 		}
@@ -880,8 +879,16 @@ sub getkeyrecs
 		}
 		elsif($type eq 'kskobs')
 		{
-			$kobskeys{$krn}	= $kr;
-			$kskkeys{$krn}	= $kr;
+			if(defined($kr->{'set_type'}))
+			{
+				$name = "$krn($kr->{'zonename'})";
+				$sets{$name} = $kr;
+			}
+			else
+			{
+				$kobskeys{$krn}	= $kr;
+				$kskkeys{$krn}	= $kr;
+			}
 		}
 		elsif($type eq 'zskcur')
 		{
@@ -908,8 +915,16 @@ sub getkeyrecs
 		}
 		elsif($type eq 'zskobs')
 		{
-			$zobskeys{$krn}	= $kr;
-			$zskkeys{$krn}	= $kr;
+			if(defined($kr->{'set_type'}))
+			{
+				$name = "$krn($kr->{'zonename'})";
+				$sets{$name} = $kr;
+			}
+			else
+			{
+				$zobskeys{$krn}	= $kr;
+				$zskkeys{$krn}	= $kr;
+			}
 		}
 	}
 }
@@ -1414,7 +1429,14 @@ sub showsets
 		}
 		else
 		{
-			$settype = 'Set Type';
+			if($setname eq $HEADER_KRN)
+			{
+				$settype = 'Set Type';
+			}
+			else
+			{
+				$settype = '(unknown set type)';
+			}
 		}
 
 		#
@@ -2232,9 +2254,13 @@ section.
 
 I<keyrec> files hold three types of I<keyrec> records:  zone records, signing
 set records, and key records.  Each type of I<keyrec> record contains
-I<keyrec> fields related to that type.  For example, zone I<keyrec> records
-contain data about all the keys associated with a particular zone; key
+I<keyrec> fields related to that type.  Zone I<keyrec> records contain data
+about all the keys associated with a particular zone; set I<keyrec> records
+contain data about all the keys associated with a particular signing set; key
 I<keyrec> records contain key lengths and algorithms for each particular key.
+(There is the case of subordinate revoked and obsolete signing sets.  These
+are stored in key I<keyrec> records, but they contain the I<set_type> entry
+which key I<keyrec>s do not.)
 The data to be printed must be specified by selecting some combination of the
 B<-zone>, B<-sets>, B<-keys>, and  B<-all> options.  There are also options
 for specifying specific types of keys to be printed.
