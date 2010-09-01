@@ -1125,12 +1125,21 @@ sub rollrec_close
 # Routine:	rollrec_write()
 #
 # Purpose:	Save the roll record file and leave the file handle open.
+#		We'll get an exclusive lock on the rollrec file in order
+#		to (try to) ensure we're the only ones writing the file.
+#
+#		We'll make a (hopefully atomic) copy of the in-core rollrec
+#		lines prior to trying to write.  This is an attempt to
+#		keep the data from being mucked with while we're using it.
 #
 sub rollrec_write
 {
 	my $writecmds = shift;  # write out the stored commands too
 	my $rrc = "";		# Concatenated rollrec file contents.
 	my $ofh;		# Old file handle.
+
+	my @rrlines = @rollreclines;	# Copy of The Rollrec.
+	my $rrlen;			# Number of lines in The Rollrec.
 
 # print STDERR "rollrec_write:  down in\n";
 
@@ -1139,26 +1148,44 @@ sub rollrec_write
 	#
 	# If the file hasn't changed, we'll skip writing.
 	#
-	return if(!$modified && $#currentcmds == -1);
+	return if(!$modified && ($#currentcmds == -1));
+
+	#
+	# Make sure we've got the correct count of rollrec lines.
+	#
+	$rrlen = @rrlines;
 
 	#
 	# Loop through the array of rollrec lines and concatenate them all.
 	#
-	for(my $ind=0;$ind<$rollreclen;$ind++)
+	for(my $ind = 0; $ind < $rrlen; $ind++)
 	{
-		$rrc .= $rollreclines[$ind];
+		$rrc .= $rrlines[$ind];
 	}
 
 	#
-	# remember any unprocessed queue commands
+	# Remember any unprocessed queue commands.
 	#
-	if ($writecmds) {
-	    foreach my $cmdandvalue (rollmgr_getallqueuedcmds()) {
-		my ($cmd, $value) = @$cmdandvalue;
-		$cmd =~ s/^rollcmd_//;
-		$rrc .= "cmd \"$cmd $value\"\n";
-	    }
+	if($writecmds)
+	{
+		foreach my $cmdandvalue (rollmgr_getallqueuedcmds())
+		{
+			my ($cmd, $value) = @$cmdandvalue;
+			$cmd =~ s/^rollcmd_//;
+			$rrc .= "cmd \"$cmd $value\"\n";
+		}
 	}
+
+	#
+	# Lock the rollrec file.
+	#
+	flock(ROLLREC,LOCK_EX);
+
+	#
+	# Force immediate writes of ROLLREC.
+	#
+	$ofh = select ROLLREC;
+	$| = 1;
 
 	#
 	# Zap the rollrec file and write out the new one.
@@ -1168,12 +1195,14 @@ sub rollrec_write
 	print ROLLREC $rrc;
 
 	#
-	# Flush the ROLLREC buffer.
+	# Reset ROLLREC buffering to original state.
 	#
-	$ofh = select ROLLREC;
-	$| = 1;
-
 	select $ofh;
+
+	#
+	# Unlock the rollrec file.
+	#
+	return(flock(ROLLREC,LOCK_UN));
 }
 
 #--------------------------------------------------------------------------
@@ -1532,6 +1561,8 @@ I<rollrec_read()>).  It does not close the file handle.  As an efficiency
 measure, an internal modification flag is checked prior to writing the file.
 If the program has not modified the contents of the I<rollrec> file, it is not
 rewritten.
+
+I<rollrec_write()> gets an exclusive lock on the I<rollrec> file while writing.
 
 =back
 
