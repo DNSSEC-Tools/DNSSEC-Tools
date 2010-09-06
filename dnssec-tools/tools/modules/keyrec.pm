@@ -71,7 +71,8 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk
 		 keyrec_zonefields keyrec_setfields keyrec_keyfields
 		 keyrec_init keyrec_discard keyrec_close
 		 keyrec_write keyrec_saveas keyrec_keypaths
-		 keyrec_defkrf keyrec_dump_hash keyrec_dump_array
+		 keyrec_curkrf keyrec_defkrf
+		 keyrec_dump_hash keyrec_dump_array
 		 keyrec_signset_newname keyrec_signset_new
 		 keyrec_signset_addkey keyrec_signset_delkey
 		 keyrec_signset_haskey keyrec_signset_clear keyrec_signsets );
@@ -137,6 +138,7 @@ my @KEYFIELDS = (
 		        'zonename',
 		 );
 
+my $curkrfname;				# Name of open keyrec file.
 
 my @keyreclines;			# Keyrec lines.
 my $keyreclen;				# Number of keyrec lines.
@@ -165,7 +167,12 @@ sub keyrec_creat
 	#
 	open(KEYREC,"+> $krf") || return 0;
 
-	return 1;
+	#
+	# Save the keyrec's name.
+	#
+	$curkrfname = $krf;
+
+	return(1);
 }
 
 #--------------------------------------------------------------------------
@@ -191,6 +198,11 @@ sub keyrec_open
 	{
 		open(KEYREC,"< $krf") || return(0);
 	}
+
+	#
+	# Save the keyrec's name.
+	#
+	$curkrfname = $krf;
 
 	return(1);
 }
@@ -336,7 +348,9 @@ sub keyrec_read
 #--------------------------------------------------------------------------
 # Routine:	keyrec_fmtchk()
 #
-# Purpose:	Ensure the keyrec file is in the current format.
+# Purpose:	Ensure the keyrec file is in the current format.  This
+#		function only ensure the current format, it does not do
+#		a sanity check on the keyrec file.
 #
 #			zone keyrecs:
 #				- kskkey:
@@ -345,10 +359,10 @@ sub keyrec_read
 #					exist, the kskkey key will be moved
 #					into a new kskcur entry.
 #				- keys:
-#					Ensure that each key in the zone is
-#					really pointing to a signing set.  If
-#					not, a new set is created and the key
-#					inserted in it.
+#					Ensure that each of the named keys in
+#					the zone is really pointing to a signing
+#					set.  If not, a new set is created and
+#					the key inserted in it.
 #
 #			set keyrecs:
 #				Nothing.
@@ -388,23 +402,34 @@ sub keyrec_fmtchk()
 		next if($krec{'keyrec_type'} ne 'zone');
 
 		#
-		# Check for the old 'kskkey' keyrec field.  If we find
-		# one, we'll make it the new 'kskcur' field if there's
-		# no 'kskcur'.  In either case, we'll delete the field.
+		# Check for the old 'kskkey' keyrec field.  If we find one,
+		# we'll make it the new kskcur field if there's no 'kskcur'.
+		# In either case, we'll delete the 'kskkey' field.
 		#
 		if(exists($krec{'kskkey'}))
 		{
-			#
-			# Create a signing set for the new kskcur.
-			#
-			if(!exists($krec{'kskcur'}))
-			{
-				my $set;	# Signing set name.
+			my $set;		# Signing set name.
+			my $newtype;		# Type for new signing set.
 
-				$set = keyrec_signset_newname($krn);
-				keyrec_setval('zone',$krn,'kskcur',$set);
-				keyrec_signset_addkey($set,$krec{'kskkey'});
+			#
+			# Figure out the type for the new signing set.
+			#
+			if(exists($krec{'kskcur'}))
+			{
+				$newtype = 'kskobs';
 			}
+			else
+			{
+				$newtype = 'kskcur';
+			}
+
+			#
+			# Create a signing set for the old key.
+			#
+			$set = keyrec_signset_newname($krn);
+			keyrec_signset_new($krn,$set,$newtype);
+			keyrec_setval('zone',$krn,$newtype,$set);
+			keyrec_signset_addkey($set,$krec{'kskkey'});
 
 			#
 			# Delete the old kskkey keyrec.
@@ -414,68 +439,73 @@ sub keyrec_fmtchk()
 		}
 
 		#
-		# Ensure that each of the valid key types is actually
-		# pointing to a signing set.  If not, create a new
-		# set and move the key there.
+		# Ensure that each of the zone's key set types is actually
+		# pointing to a signing set.  If it is pointing to a key,
+		# create a new set, move the key there, and reference the set.
 		#
-		foreach my $key (qw /kskcur kskpub kskrev kskobs zskcur zskpub zsknew/)
+		foreach my $kst (qw /kskcur kskpub kskrev kskobs zskcur zskpub zsknew/)
 		{
 			my $keyname;		# Key's name.
-			my $set;		# Signing set name.
+			my $set;		# Name of new signing set.
 			my $skr;		# Sub-keyrec.
 
 			#
-			# Skip the key if it isn't in the keyrec.
+			# Skip this set type if it isn't in the keyrec.
 			#
-			next if(!exists($krec{$key}));
+			next if(!exists($krec{$kst}));
 
 			#
-			# Get the keyrec type of this key's keyrec.
+			# Get the type of this key's keyrec.  Delete and
+			# skip empty entries.
 			#
-			$keyname = $krec{$key};
+			$keyname = $krec{$kst};
+			if($keyname eq '')
+			{
+				keyrec_delval($krn,$kst);
+				$changes++;
+				next;
+			}
+
+			#
+			# Skip this set type if it's already a signing set.
+			#
 			$skr = $keyrecs{$keyname}{'keyrec_type'};
-
-			#
-			# Skip the key if it's already a signing set.
-			#
 			next if($skr eq 'set');
-
-			#
-			# Skip the key if it's empty.
-			#
-			next if($krec{$key} eq '');
+			next if(exists($keyrecs{$keyname}{'set_type'}));
 
 			#
 			# Make a new signing set for this key.
 			#
 			$set = keyrec_signset_newname($krn);
-			keyrec_setval('zone',$krn,$key,$set);
+			keyrec_signset_new($krn,$set,$kst);
+			keyrec_setval('zone',$krn,$kst,$set);
 			keyrec_signset_addkey($set,$keyname);
 			$changes++;
 		}
 	}
 
 	#
-	# Check set keyrecs for problems:
+	# This is scaffolding in case we need to add set checks in the future.
 	#
-	#	- Nothing to check in set keyrecs.
-	#
-	foreach $krn (keyrec_names())
+	if(0)
 	{
-		#
-		# Get the keyrec hash.
-		#
-		$krec = $keyrecs{$krn};
-		%krec = %$krec;
+		foreach $krn (keyrec_names())
+		{
+			#
+			# Get the keyrec hash.
+			#
+			$krec = $keyrecs{$krn};
+			%krec = %$krec;
 
-		#
-		# Only look at sets right now...
-		#
-		next if($krec{'keyrec_type'} ne 'set');
+			#
+			# Only look at sets right now...
+			#
+			next if($krec{'keyrec_type'} ne 'set');
 
-		#
-		# ... but we have nothing in sets to update.
-		#
+			#
+			# ... but we have nothing in sets to update.
+			#
+		}
 	}
 
 	#
@@ -484,8 +514,7 @@ sub keyrec_fmtchk()
 	#
 	foreach $krn (keyrec_names())
 	{
-		my $zone;			# Key's owner zone.
-		my $krt;			# Keyrec's type.
+		my $krt;				# Keyrec's type.
 
 		#
 		# Get the keyrec hash.
@@ -494,29 +523,30 @@ sub keyrec_fmtchk()
 		%krec = %$krec;
 
 		#
-		# Only look at keys right now.
-		#
-		next if(($krec{'keyrec_type'} eq 'zone')	||
-			($krec{'keyrec_type'} eq 'set'));
-
-		#
 		# Get the keyrec's type.
 		#
 		$krt = $krec{'keyrec_type'};
 
 		#
-		# Convert a ksk keyrec into either a kskcur, kskpub,
+		# Only look at keys right now.
+		#
+		next if(($krec{$krt} eq 'zone')	|| ($krec{$krt} eq 'set'));
+		next if(exists($krec{'set_type'}));
+
+		#
+		# Convert a KSK keyrec into either a kskcur, kskpub, kskrev,
 		# or kskobs keyrec.
 		#
 		if($krt eq 'ksk')
 		{
-			my $key;		# Key type.
-			my $set;		# Key's signing set.
-			my $found = "";		# Found-key flag.
+			my $zone;			# Key's owner zone.
+			my $key;			# Key type.
+			my $set;			# Key's signing set.
+			my $found = "";			# Found-key flag.
 
 			#
-			# Check the key's zone to find if it's used in
-			# any of the zone's key sets.
+			# Check the key's zone to find if it's used in any of
+			# the zone's key sets.
 			#
 			$zone = $krec{'zonename'};
 			foreach my $key (qw /kskcur kskpub kskrev kskobs/)
@@ -530,18 +560,17 @@ sub keyrec_fmtchk()
 			}
 
 			#
-			# If this key is used in the zone, we'll set its
-			# type appropriately.  If not, we'll set it to
-			# being an obsolete key.
+			# If this key is used in the zone, we'll set its type
+			# appropriately.  If not, we'll set it to being an
+			# obsolete key.
 			#
 			if($found ne "")
 			{
-			  keyrec_setval('key',$krn,'keyrec_type',$found);
+				keyrec_setval('key',$krn,'keyrec_type',$found);
 			}
 			else
 			{
-			  keyrec_setval('key',$krn,'keyrec_type','kskobs');
-			  # XXX - shouldn't these be archived??
+				keyrec_setval('key',$krn,'keyrec_type','kskobs');
 			}
 			$changes++;
 		}
@@ -608,7 +637,7 @@ sub keyrec_revoke_check
 	$revperiod = keyrec_recval($key, 'revperiod');
 
 	#
-	# Ensure the key has the proper revocation data.
+	# Ensure the key has a revocation date.
 	#
 	if(!defined($revtime))
 	{
@@ -626,9 +655,9 @@ sub keyrec_revoke_check
 	}
 
 	#
-	# If the key has exceeded its revocation period, we'll return a flag
-	# indicating that it is obsolete.  If it hasn't, we'll return a flag
-	# indicating it is still in revoked state.
+	# We'll return a flag indicating whether or not the key has exceeded
+	# its revocation period.  If it has, the key is obsolete; if not, it
+	# will stay in the revoked state.
 	#
 	if(($now - $revtime) > $revperiod)
 	{
@@ -700,7 +729,7 @@ sub keyrec_keypaths
 	$keylist = $keyrecs{$sset}{'keys'};
 
 	#
-	# Get the key's paths and add 'em to the path array.
+	# Get the keys' paths and add 'em to the path array.
 	#
 	foreach my $kn (split /[\s,]/, $keylist)
 	{
@@ -1105,18 +1134,19 @@ sub keyrec_add
 	my @getfields;			# Hash fields to retrieve.
 
 	#
+	# Ensure we've got the minimum required arguments.
+	# (We're checking for a set name here; type is checked below.)
+	#
+	if(!defined($krtype) || !defined($krname) || ($krname eq ''))
+	{
+		return(-1);
+	}
+
+	#
 	# Get the timestamp.
 	#
 	$chronosecs = time();
 	$chronostr  = gmtime($chronosecs);
-
-	#
-	# Create the basic keyrec info.
-	#
-	if(keyrec_newkeyrec($krname,$krtype) < 0)
-	{
-		return(-1);
-	}
 
 	#
 	# Set the fields, by type, that we'll grab from the caller's hash.
@@ -1142,6 +1172,18 @@ sub keyrec_add
 		$secsstr = 'keyrec_gensecs';
 		$datestr = 'keyrec_gendate';
 	}
+	else
+	{
+		return(-1);
+	}
+
+	#
+	# Create the basic keyrec info.
+	#
+	if(keyrec_newkeyrec($krname,$krtype) < 0)
+	{
+		return(-1);
+	}
 
 	#
 	# Make sure we've got the correct count of keyrec lines.
@@ -1151,6 +1193,8 @@ sub keyrec_add
 	#
 	# Add the new keyrec's first line to the end of the keyrec table.
 	#
+	$keyreclines[$keyreclen] = "\n";
+	$keyreclen++;
 	$keyreclines[$keyreclen] = "$krtype\t\"$krname\"\n";
 	$keyreclen++;
 
@@ -1517,28 +1561,16 @@ sub keyrec_signset_newname
 #--------------------------------------------------------------------------
 # Routine:	keyrec_signset_new()
 #
-# Purpose:	Add a new signing set keyrec.   If the signing set keyrec
-#		hasn't yet been added with keyrec_add(), then we'll add it
-#		now.  The third through Nth arguments are concatenated
-#		into a space-separated string and then that string is saved
-#		in both %keyrecs and in @keyreclines.
+# Purpose:	Add a new signing set keyrec.  If the signing set keyrec hasn't
+#		yet been added with keyrec_add(), then we'll add it now.
 #
 sub keyrec_signset_new
 {
-	my $zone  = shift;		# Signing Set's zone.
-	my $name  = shift;		# Signing Set name we're creating.
+	my $zone  = shift;		# Signing set's zone.
+	my $name  = shift;		# Signing set name we're creating.
 	my $type  = shift;		# Type of signing Set we're creating.
 
-	my $val;			# New value for the keyrec's subfield.
 	my $ret;			# Return code from keyrec_setval().
-
-	#
-	# Create a new keyrec for the given name if it doesn't exist.
-	#
-	if(!exists($keyrecs{$name}))
-	{
-		return(-1) if(keyrec_add('set',$name) < 0);
-	}
 
 	#
 	# Ensure the given set type is valid.
@@ -1552,14 +1584,15 @@ sub keyrec_signset_new
 	}
 
 	#
-	# Bloodge together the remaining arguments into a single string.
-	# We'll use this for the signing set's set of keys.
+	# Create a new keyrec for the given name if it doesn't exist.
 	#
-	$val = join ' ', sort @_;
-	$val =~ s/^ //g;
+	if(!exists($keyrecs{$name}))
+	{
+		return(-1) if(keyrec_add('set',$name) < 0);
+	}
 
 	#
-	# Add the set of keys and away we go!
+	# Set the type and a zone connection, and we're done.
 	#
 	$ret = keyrec_setval('set',$name,'zonename',$zone);
 	return($ret) if($ret != 0);
@@ -1570,7 +1603,7 @@ sub keyrec_signset_new
 #--------------------------------------------------------------------------
 # Routine:	keyrec_signset_addkey()
 #
-# Purpose:	Add a key to a Signing Set for the specified keyrec.
+# Purpose:	Add a key to a signing set for the specified keyrec.
 #
 sub keyrec_signset_addkey
 {
@@ -1590,7 +1623,7 @@ sub keyrec_signset_addkey
 	}
 
 	#
-	# Return failure if it isn't a Signing Set keyrec.
+	# Return failure if it isn't a signing set keyrec.
 	#
 	if($keyrecs{$name}{'keyrec_type'} ne 'set')
 	{
@@ -1598,7 +1631,7 @@ sub keyrec_signset_addkey
 	}
 
 	#
-	# Get the keyrec's signing set and add the new key.
+	# Blob the listed keys together.
 	#
 	$newkeys = join ' ', @_;
 
@@ -1632,12 +1665,12 @@ sub keyrec_signset_addkey
 #--------------------------------------------------------------------------
 # Routine:	keyrec_signset_delkey()
 #
-# Purpose:	Delete an entry from a Signing Set for the specified keyrec.
+# Purpose:	Delete an entry from a signing set for the specified keyrec.
 #
 sub keyrec_signset_delkey
 {
 	my $name = shift;		# Keyrec to modify.
-	my $key = shift;		# Signing Set name to delete.
+	my $key = shift;		# Signing set name to delete.
 
 	my $keys;			# Keyrec's signing set as a string.
 	my @keys;			# Keyrec's signing set as an array.
@@ -1652,7 +1685,7 @@ sub keyrec_signset_delkey
 	}
 
 	#
-	# Return failure if it isn't a Signing Set keyrec.
+	# Return failure if it isn't a signing set keyrec.
 	#
 	if($keyrecs{$name}{'keyrec_type'} ne 'set')
 	{
@@ -1660,7 +1693,7 @@ sub keyrec_signset_delkey
 	}
 
 	#
-	# Get the keyrec's Signing Set into an array of names.
+	# Get the keyrec's signing set into an array of names.
 	#
 	$keys = $keyrecs{$name}{'keys'};
 	@keys = split / /, $keys;
@@ -1694,7 +1727,7 @@ sub keyrec_signset_delkey
 #--------------------------------------------------------------------------
 # Routine:	keyrec_signset_haskey()
 #
-# Purpose:	Check if a Signing Set contains the specified keyrec.
+# Purpose:	Check if a signing set contains the specified keyrec.
 #
 #		Returns 1 if the set holds the key.
 #		Returns 0 if the set doesn't hold the key.
@@ -1702,7 +1735,7 @@ sub keyrec_signset_delkey
 sub keyrec_signset_haskey
 {
 	my $name = shift;		# Keyrec to check.
-	my $key = shift;		# Signing Set name to delete.
+	my $key = shift;		# Signing set name to delete.
 
 	my $keys;			# Keyrec's signing set as a string.
 	my @keys;			# Keyrec's signing set as an array.
@@ -1714,7 +1747,7 @@ sub keyrec_signset_haskey
 	return(0) if(!exists($keyrecs{$name}));
 
 	#
-	# Return failure if it isn't a Signing Set keyrec.
+	# Return failure if it isn't a signing set keyrec.
 	#
 	if($keyrecs{$name}{'keyrec_type'} ne 'set')
 	{
@@ -1722,7 +1755,7 @@ sub keyrec_signset_haskey
 	}
 
 	#
-	# Get the keyrec's Signing Set into an array of names.
+	# Get the keyrec's signing set into an array of names.
 	#
 	$keys = $keyrecs{$name}{'keys'};
 	@keys = split / /, $keys;
@@ -1741,7 +1774,7 @@ sub keyrec_signset_haskey
 #--------------------------------------------------------------------------
 # Routine:	keyrec_signset_clear()
 #
-# Purpose:	Delete all keys for the specified Signing Set.
+# Purpose:	Delete all keys for the specified signing set.
 #
 sub keyrec_signset_clear
 {
@@ -1758,7 +1791,7 @@ sub keyrec_signset_clear
 	}
 
 	#
-	# Return failure if it isn't a Signing Set keyrec.
+	# Return failure if it isn't a signing set keyrec.
 	#
 	if($keyrecs{$name}{'keyrec_type'} ne 'set')
 	{
@@ -1775,7 +1808,7 @@ sub keyrec_signset_clear
 #--------------------------------------------------------------------------
 # Routine:	keyrec_signsets()
 #
-# Purpose:	Return the names of the Signing Sets in the keyrec file.
+# Purpose:	Return the names of the signing sets in the keyrec file.
 #
 sub keyrec_signsets
 {
@@ -1784,11 +1817,20 @@ sub keyrec_signsets
 	my $ret;			# Return code from keyrec_setval().
 
 	#
-	# Build a list of signing set names.
+	# Get the names of the signing sets that are listed as being sets.
 	#
 	foreach my $kr (keys(%keyrecs))
 	{
 		push @signset, $kr if($keyrecs{$kr}{'keyrec_type'} eq 'set');
+	}
+
+	#
+	# Get the names of the signing sets that are revoked or obsolete.
+	# These kinda look like they're key keyrecs, but they really aren't.
+	#
+	foreach my $kr (keys(%keyrecs))
+	{
+		push @signset, $kr   if(defined($keyrecs{$kr}{'set_type'}));
 	}
 
 	#
@@ -1808,6 +1850,16 @@ sub keyrec_init
 	@keyreclines = ();
 	$keyreclen   = 0;
 	$modified    = 0;
+}
+
+#--------------------------------------------------------------------------
+# Routine:	keyrec_curkrf()
+#
+# Purpose:	Get the current keyrec file.
+#
+sub keyrec_curkrf
+{
+	return($curkrfname);
 }
 
 #--------------------------------------------------------------------------
@@ -1855,6 +1907,11 @@ sub keyrec_close
 {
 	keyrec_write();
 	close(KEYREC);
+
+	#
+	# Reset the keyrec's name.
+	#
+	$curkrfname = '';
 }
 
 #--------------------------------------------------------------------------
@@ -1887,39 +1944,40 @@ sub keyrec_write
 
 	#
 	# Loop through the array of keyrec lines and concatenate them all.
+	# We'll also squish multiple consecutive newlines into one.
 	#
 	for(my $ind = 0; $ind < $krlen; $ind++)
 	{
 		$krc .= $krlines[$ind];
 	}
+	$krc =~ s/\n\n+/\n\n/mg;
 
 	#
-	# Lock the keyrec file.
+	# Close the keyrec file.
 	#
-	flock(KEYREC,LOCK_EX);
+	close(KEYREC);
 
 	#
-	# Force immediate writes of KEYREC.
+	# Open, lock, and truncate the keyrec file.
 	#
-	$ofh = select KEYREC;
-	$| = 1;
+	#	(On some systems, these could be rolled into the sysopen().
+	#	That may not be portable, so we'll use the separate calls.)
+	#
+	sysopen(SOKEYREC, $curkrfname, O_WRONLY | O_CREAT);
+	flock(SOKEYREC, LOCK_EX);
+	sysseek(KEYREC,0,0);
+	truncate(SOKEYREC, 0);
 
 	#
-	# Zap the keyrec file and write out the new one.
+	# Write the keyrec contents to the file.
 	#
-	seek(KEYREC,0,0);
-	truncate(KEYREC,0);
-	print KEYREC $krc;
+	syswrite SOKEYREC, $krc;
 
 	#
-	# Reset KEYREC buffering to original state.
+	# Unlock and close the keyrec file.
 	#
-	select $ofh;
-
-	#
-	# Unlock the keyrec file.
-	#
-	return(flock(KEYREC,LOCK_UN));
+	flock(SOKEYREC,LOCK_UN);
+	close(SOKEYREC);
 }
 
 #--------------------------------------------------------------------------
@@ -2072,6 +2130,7 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   keyrec_close();
   keyrec_discard();
 
+  $current_krf = keyrec_curkrf();
   $default_krf = keyrec_defkrf();
 
 =head1 DESCRIPTION
@@ -2179,6 +2238,12 @@ the file if it already exists.  It leaves the file in the open state.
 
 I<keyrec_creat()> returns 1 if the file was created successfully.
 It returns 0 if there was an error in creating the file.
+
+=item I<keyrec_curkrf()>
+
+This routine returns the name of the I<keyrec> file that is currently in use.
+This value is the filename passed to keyrec_creat() or keyrec_open(); it is
+not guaranteed to be either an absolute or relative filename.
 
 =item I<keyrec_defkrf()>
 
@@ -2348,28 +2413,28 @@ This routine returns a list of the recognized fields for a zone I<keyrec>.
 
 =head1 KEYREC SIGNING-SET INTERFACES
 
-Signing Sets are collections of encryption keys, defined by inclusion in a
+Signing sets are collections of encryption keys, defined by inclusion in a
 particular "set" I<keyrec>.  The names of the keys are in the I<keyrec>'s
 I<keys> record, which contains the names of the key I<keyrec>s.  Due to the
-way key names are handled, the names in a Signing Set must not contain spaces.
+way key names are handled, the names in a signing set must not contain spaces.
 
-The Signing-Set-specific interfaces are given below.
+The signing-set-specific interfaces are given below.
 
 =over 4
 
 =item I<keyrec_signset_newname(zone_name)>
 
-I<keyrec_signset_newname()> creates a name for a new Signing Set.  The name
+I<keyrec_signset_newname()> creates a name for a new signing set.  The name
 will be generated by referencing the I<lastset> field in the I<keyrec> for
 zone I<zone_name>, if the I<keyrec> has such a field.  The set index number
 (described below) will be incremented and the I<lastset> with the new index
-number will be returned as the new Signing Set name.  If the zone I<keyrec>
+number will be returned as the new signing set name.  If the zone I<keyrec>
 does not have a I<lastset> field, then the default set name of
 I<signing-set-0> will be used.
 
 The set index number is the first number found in the I<lastset> field.  It
 doesn't matter where in the field it is found, the first number will be
-considered to be the Signing Set index.  The examples below show how this is
+considered to be the signing set index.  The examples below show how this is
 determined:
 
     lastset field		index
@@ -2382,7 +2447,7 @@ determined:
 
 =item I<keyrec_signset_new(zone,signing_set_name,set_type)>
 
-I<keyrec_signset_new()> creates the Signing Set named by I<signing_set_name>
+I<keyrec_signset_new()> creates the signing set named by I<signing_set_name>
 for the zone I<zone>.  It is given the type I<type>, which must be one of the
 following:  "kskcur", "kskpub", "kskrev", "kskobs", "zskcur", "zskpub",
 "zsknew", or "zskobs".
@@ -2391,8 +2456,8 @@ It returns 1 if the call is successful; 0 if it is not.
 
 =item I<keyrec_signset_addkey(signing_set_name,key_list)>
 
-I<keyrec_signset_addkey()> adds the keys listed in I<key_list> to the Signing
-Set named by I<signing_set_name>.  I<key_list> may either be an array or a set
+I<keyrec_signset_addkey()> adds the keys listed in I<key_list> to the signing
+set named by I<signing_set_name>.  I<key_list> may either be an array or a set
 or arguments to the routine.  The I<keyrec> is created if it does not already
 exist.
 It returns 1 if the call is successful; 0 if it is not.
@@ -2400,13 +2465,13 @@ It returns 1 if the call is successful; 0 if it is not.
 =item I<keyrec_signset_delkey(signing_set_name,key_name)>
 
 I<keyrec_signset_delkey()> deletes the key given in I<key_name> to the
-Signing Set named by I<signing_set_name>.
+signing set named by I<signing_set_name>.
 It returns 1 if the call is successful; 0 if it is not.
 
 =item I<keyrec_signset_haskey(signing_set_name,key_name)>
 
 I<keyrec_signset_haskey()> returns a flag indicating if the key specified
-in I<key_name> is one of the keys in the Signing Set named by
+in I<key_name> is one of the keys in the signing set named by
 I<signing_set_name>.
 It returns 1 if the signing set has the key; 0 if it does not.
 
