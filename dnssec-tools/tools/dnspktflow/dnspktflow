@@ -58,6 +58,7 @@ DTGetOptions(\%opts,
 	        ['layout-style=s','Layout style',
 		 question => { type => 'menu',
 			       values => [qw(dot neato twopi circo fdp)] }],
+	        ['node-size=s', "Reduce node size to 'small' or 'none'"],
 		['L|last-line-labels-only',
 		 "Only show data on the last line drawn."],
 		['z|most-lines=i', "Only show at most INTEGER connections."],
@@ -236,10 +237,25 @@ my $gv;
 # either display everything at once, or if multiple files are
 # requested: save a series of cascading images to create an animation
 # with each new packet adding to the previous screen's data.
+my @graphArgs = (rankdir => 1,
+		 layout => $opts{'layout-style'},
+		 edge => { fontsize => $opts{'fontsize'}});
 for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
-    $gv = GraphViz->new(rankdir => 1,
-			layout => $opts{'layout-style'},
-			edge => { fontsize => $opts{'fontsize'}});
+    if (exists($opts{'node-size'})) {
+	if ($opts{'node-size'} eq 'small') {
+	    require GraphViz::Small;
+	    $gv = GraphViz::Small->new(@graphArgs);
+	} elsif ($opts{'node-size'} eq 'none') {
+	    require GraphViz::No;
+	    $gv = GraphViz::No->new(@graphArgs);
+	} else {
+	    print STDERR "The graphviz --node-style $opts{'node-size'} is not legal.\n";
+	    print STDERR "  please use option values of 'no' or 'small' instead.\n";
+	    exit 1;
+	}
+    } else {
+	$gv = GraphViz->new(@graphArgs);
+    }
     for (my $i = ($opts{'z'} ? ($m > $opts{'z'} ? ($m - $opts{'z'}) : 0) : 0);
 		  $i <= (($opts{'m'}) ? $m : $#dnspkts); $i++) {
 	my $pkt = $dnspkts[$i];
