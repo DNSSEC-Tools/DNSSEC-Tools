@@ -35,6 +35,7 @@ DTGetOptions(\%opts,
 		['i|ignore-hosts=s',"A regular expression of host names to ignore in the query/response fields"],
 		['r|only-hosts=s',"A regular expression of host names to analyze in the query/response fields"],
 		['f|show-frame-num',"Display the packet frame numbers"],
+	        ['Q|no-query-num',  "Don't show the query number"],
 		['b|begin-frame=i',"Begin at packet frame NUMBER"],
 
 		["GUI:screen", "Output File Options:"],
@@ -132,7 +133,7 @@ foreach my $file (@ARGV) {
     open(I, $file);
     while (<I>) {
 
-	# If it's a new fram, it's a brand new packet
+	# If it's a new frame, it's a brand new packet
 	if (/^Frame (\d+)/) {
 	    $data = { Frame => $1 };
 	}
@@ -357,7 +358,7 @@ sub get_edge_properties {
 #    $lab .= "$num / " . $pkt->{'Frame'};
     $num++;
 
-    $lab .= $num;
+    $lab .= $num if (!$opts{'Q'});
     $lab .= "/frame=" . $pkt->{'Frame'} if ($opts{'f'});
     $lab .= "/trunc" if ($pkt->{'truncated'});
     $lab .= "/udp=$pkt->{udpsize}" if ($pkt->{'udpsize'});
