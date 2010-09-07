@@ -384,10 +384,14 @@ sub get_edge_properties {
 
     # figure out the color code for the line
     my $edgecolor;
-    if ($pkt->{'truncated'}) {
+    if (exists($pkt->{'dns'}{'Authoritative'}) &&
+	$pkt->{'dns'}{'Authoritative'}[$#{$pkt->{'dns'}{'Authoritative'}}]{'type'} eq 'RRSIG') {
+	$edgecolor = 'green';
+    }
+    elsif ($pkt->{'truncated'}) {
 	$edgecolor = 'red';
     } elsif ($pkt->{'type'} eq 'response') {
-	$edgecolor = 'green';
+	$edgecolor = 'orange';
     } else {
 	$edgecolor = 'blue';
     }
