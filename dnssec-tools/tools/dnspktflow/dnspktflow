@@ -237,9 +237,11 @@ my $gv;
 # either display everything at once, or if multiple files are
 # requested: save a series of cascading images to create an animation
 # with each new packet adding to the previous screen's data.
-my @graphArgs = (rankdir => 1,
-		 layout => $opts{'layout-style'},
+my @graphArgs = (layout => $opts{'layout-style'},
 		 edge => { fontsize => $opts{'fontsize'}});
+if ($opts{'layout-style'} eq 'dot') {
+    push @graphArgs, rankdir => 1;
+}
 for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
     if (exists($opts{'node-size'})) {
 	if ($opts{'node-size'} eq 'small') {
