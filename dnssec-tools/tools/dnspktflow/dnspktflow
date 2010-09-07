@@ -382,10 +382,19 @@ sub get_edge_properties {
 	$lab .= add_breakdown($pkt, 'Additional', '+');
     }
 
+    # figure out the color code for the line
+    my $edgecolor;
+    if ($pkt->{'truncated'}) {
+	$edgecolor = 'red';
+    } elsif ($pkt->{'type'} eq 'response') {
+	$edgecolor = 'green';
+    } else {
+	$edgecolor = 'blue';
+    }
+
     return (label => ((!$opts{'L'} || $num == $mnum+1) ? $lab : "$num"),
 	    style => (($pkt->{'tcp'}) ? 'bold' : 'solid'),
-	    color => ($pkt->{'type'} eq 'response' ? 
-		      ($pkt->{'truncated'} ? 'red' : 'blue') : 'green')
+	    color => $edgecolor
 	   );
 }
 
