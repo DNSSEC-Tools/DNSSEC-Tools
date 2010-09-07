@@ -23,6 +23,7 @@ my $mapinwindow;
 	  b => 1,
 	  l => 0,
 	  fontsize => 9,
+	  'layout-style' => 'dot',
 	);
 
 use QWizard;
@@ -54,6 +55,9 @@ DTGetOptions(\%opts,
 		 "Saves a Magic Point presentation for the output"],
 
 		["GUI:screen", "Output Visualization Options:"],
+	        ['layout-style=s','Layout style',
+		 question => { type => 'menu',
+			       values => [qw(dot neato twopi circo fdp)] }],
 		['L|last-line-labels-only',
 		 "Only show data on the last line drawn."],
 		['z|most-lines=i', "Only show at most INTEGER connections."],
@@ -234,6 +238,7 @@ my $gv;
 # with each new packet adding to the previous screen's data.
 for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
     $gv = GraphViz->new(rankdir => 1,
+			layout => $opts{'layout-style'},
 			edge => { fontsize => $opts{'fontsize'}});
     for (my $i = ($opts{'z'} ? ($m > $opts{'z'} ? ($m - $opts{'z'}) : 0) : 0);
 		  $i <= (($opts{'m'}) ? $m : $#dnspkts); $i++) {
