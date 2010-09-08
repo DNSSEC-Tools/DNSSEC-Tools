@@ -1002,7 +1002,7 @@ sub genzsks
 		if($opts{'zskcur'} eq "")
 		{
 			print STDERR "\n$curstr does not exist; unable to re-use non-existent cur ZSK\n";
-			print STDERR "Maybe you want to run $0 with -genkeys, -genksk and/or -genzsk?\n";
+			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 			exit(1);
 		}
 
@@ -1018,7 +1018,7 @@ sub genzsks
 		if($opts{'zskcur'} eq "")
 		{
 			print STDERR "\npub ZSK does not exist; unable to re-use non-existent pub ZSK\n";
-			print STDERR "Maybe you want to run $0 with -genkeys, -genksk and/or -genzsk?\n";
+			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 			exit(1);
 		}
 
@@ -1450,7 +1450,7 @@ sub genksks
 		if(!keyrec_exists($kskcursetname))
 		{
 			print STDERR "\nCurrent KSK signing set \"$kskcursetname\" does not exist; unable to re-use non-existent KSKs\n";
-			print STDERR "Maybe you want to run $0 with -genkeys, -genksk and/or -genzsk?\n";
+			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 			exit(1);
 		}
 
@@ -1473,7 +1473,7 @@ sub genksks
 			if(!keyrec_exists($kskpubsetname))
 			{
 				print STDERR "\nPublished KSK signing set \"$kskpubsetname\" does not exist; unable to re-use non-existent KSKs\n";
-				print STDERR "Maybe you want to run $0 with -genkeys, -genksk and/or -genzsk?\n";
+				print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 				exit(1);
 			}
 
@@ -1588,7 +1588,7 @@ sub genzsk
 		if(keyrec_fullrec($opts{$zskkey}) eq "")
 		{
 			print STDERR "\n$keytype ZSK keyrec does not exist; unable to re-use non-existent $keytype ZSK\n";
-			print STDERR "Maybe you want to run $0 with -genkeys, -genksk and/or -genzsk?\n";
+			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 			exit(1);
 		}
 
