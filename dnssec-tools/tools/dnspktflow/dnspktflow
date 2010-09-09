@@ -324,6 +324,8 @@ if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
 #
 sub save_now {
     my ($gv,$file) = @_;
+
+
     if ($opts{'fig'}) {
 	$gv->as_fig($file);
     } elsif ($opts{'svg'}) {
@@ -384,16 +386,18 @@ sub get_edge_properties {
 
     # figure out the color code for the line
     my $edgecolor;
-    if (exists($pkt->{'dns'}{'Authoritative'}) &&
-	$pkt->{'dns'}{'Authoritative'}[$#{$pkt->{'dns'}{'Authoritative'}}]{'type'} eq 'RRSIG') {
-	$edgecolor = 'green';
+    if ((exists($pkt->{'dns'}{'Authoritative'}) &&
+	 $pkt->{'dns'}{'Authoritative'}[$#{$pkt->{'dns'}{'Authoritative'}}]{'type'} =~ /(RRSIG|DNSKEY|NSEC)/) ||
+	(exists($pkt->{'dns'}{'Queries'}) &&
+	 $pkt->{'dns'}{'Queries'}[$#{$pkt->{'dns'}{'Authoritative'}}]{'type'} =~ /(RRSIG|DNSKEY|NSEC)/)) {
+	$edgecolor = 'darkgreen';
     }
     elsif ($pkt->{'truncated'}) {
 	$edgecolor = 'red';
     } elsif ($pkt->{'type'} eq 'response') {
-	$edgecolor = 'orange';
+	$edgecolor = 'blue4';
     } else {
-	$edgecolor = 'blue';
+	$edgecolor = 'orange';
     }
 
     return (label => ((!$opts{'L'} || $num == $mnum+1) ? $lab : "$num"),
