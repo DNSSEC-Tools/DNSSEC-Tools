@@ -1095,7 +1095,7 @@ sub general_cmds
 		#
 		# Exit if rollerd isn't running.
 		#
-		if($ret == 255)
+		if(($ret == 255) || ($ret == -1))
 		{
 			exit(1);
 		}
@@ -1179,7 +1179,7 @@ sub zskcmds
 		#
 		# Exit if rollerd isn't running.
 		#
-		if($ret == 255)
+		if(($ret == 255) || ($ret == -1))
 		{
 			exit(1);
 		}
@@ -1253,7 +1253,8 @@ sub kskcmds
 	#
 	# Exit if rollerd isn't running.
 	#
-	if(($ret >> 8) == 255)
+	$ret = $ret >> 8;
+	if(($ret == 255) || ($ret == -1))
 	{
 		exit(1);
 	}
@@ -1676,6 +1677,14 @@ sub infostripe
 		$line = $_;
 		chomp($line);
 
+		#
+		# If rollerd has gone away, so will we.
+		#
+		if($line eq "rollerd is not running")
+		{
+			exit(0);
+		}
+
 		$line =~ /^(.*?):\W*(.*)$/;
 		$key = $1;
 		$value = $2;
@@ -2062,7 +2071,7 @@ sub zonestripe
 	#
 	# Update the display.
 	#
-	keyrec_close();
+	keyrec_discard();
 	$zonetab->update();
 }
 
@@ -2909,7 +2918,7 @@ sub rollerdup
 	# If the command failed, we'll give an error and exit.
 	#
 	$ret = $ret >> 8;
-	if(($ret == 254) || ($ret == 255))
+	if(($ret == 254) || ($ret == 255) || ($ret == -1))
 	{
 		print STDERR "blinkenlights:  unable to contact rollerd\n";
 		exit(1);
