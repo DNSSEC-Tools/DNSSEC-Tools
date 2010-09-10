@@ -264,10 +264,10 @@ for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
 	my $pkt = $dnspkts[$i];
 	next if ($pkt->{'Frame'} < $opts{'b'});
 	$gv->add_node($pkt->{'src'},
-		      label => get_host_label($pkt->{'src'}),
+		      label => get_host_label_plus($pkt->{'src'}),
 		      fontsize => $opts{'fontsize'});
 	$gv->add_node($pkt->{'dst'},
-		      label => get_host_label($pkt->{'dst'}),
+		      label => get_host_label_plus($pkt->{'dst'}),
 		      fontsize => $opts{'fontsize'});
 	my $edge =
 	  $gv->add_edge($pkt->{'src'} => $pkt->{'dst'},
@@ -347,6 +347,17 @@ sub get_host_label {
 	$lab .= "\nauth:" . join("\nauth:",keys(%{$authdata{$lab}}));
     }
     return $lab;
+}
+
+sub get_host_label_plus {
+    my $addr = shift;
+    my @ret;
+    push @ret, (exists($ipdata{$addr}) ? $ipdata{$addr} : $addr);
+    if (exists($authdata{$ret[0]})) {
+	my $str = keys(%{$authdata{$ret[0]}});
+	push @ret, 'cluster', join("\n",keys(%{$authdata{$ret[0]}}));
+    }
+    return @ret;
 }
 
 #
