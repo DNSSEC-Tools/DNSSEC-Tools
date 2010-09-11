@@ -60,6 +60,7 @@ my %defaults =
 	"taresolvconf"	   => "/etc/resolv.conf",	# resolv.conf file.
 	"usegui"	   => 0,		# Use GUI for option entry flag.
 #	"viewimage"	   => "/usr/X11R6/bin/viewimage",
+	"zone_errors"	   => 5,
 	"zonecheck"	   => getprefixdir() . "/sbin/named-checkzone",
 	"zonecheck-opts"   => "",		# Options for zone checker.
 	"zonesign"	   => getprefixdir() . "/sbin/dnssec-signzone",
@@ -323,6 +324,11 @@ This default specifies the location of B<trustman>'s temporary directory.
 
 This default indicates whether or not the DNSSEC-Tools GUI should be used for
 option entry.
+
+=item B<zone_errors>
+
+This default holds the maximum number of consecutive errors a particular zone
+may have before it is changed to be a I<skip> zone.
 
 =item B<zonecheck>
 

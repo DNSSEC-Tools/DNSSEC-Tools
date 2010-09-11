@@ -122,6 +122,7 @@ my @stdopts =
 		["roll_logfile=s",	"Roll-over manager's log filename"],
 		["roll_loglevel=s",	"Roll-over manager's logging level"],
 		["roll_sleeptime=i",	"Sleep-time for Roll-over manager"],
+		["zone_errors=i",	"Maximum consecutive errors for a zone"],
 
 	'',
 
