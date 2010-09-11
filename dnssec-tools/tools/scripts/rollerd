@@ -1184,6 +1184,11 @@ sub ksk_expired
 		# Get the key's keyrec hash.
 		#
 		$khr = keyrec_fullrec($keyname);
+		if($khr == 0)
+		{
+			rolllog_log(LOG_ERR,$rname,"unable to find key \"$keyname\" in keyrec; this should not have happened");
+			return(0);
+		}
 		%kh = %$khr;
 
 		#
@@ -2301,7 +2306,7 @@ sub signer
 #-----------------------------------------------------------------------------
 # Routine:	runner()
 #
-# Purpose:	This routine returns the specified key's keyrec from the
+# Purpose:	This routine executes another command.
 #
 sub runner
 {
@@ -2317,7 +2322,7 @@ sub runner
 	#
 	# Close the current keyrec file.
 	#
-	keyrec_close();
+	keyrec_discard();
 
 	#
 	# Execute the specific command.
@@ -2383,7 +2388,7 @@ sub zonekeykr
 	#
 	# Close the open keyrec file.
 	#
-	keyrec_close();
+	keyrec_discard();
 
 	#
 	# Read the keyrec file.
