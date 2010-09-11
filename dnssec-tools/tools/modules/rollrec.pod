@@ -56,6 +56,11 @@ The fields in a I<rollrec> record are:
 This is the email address for the zone's administrative user.  If it is not
 set, the default from the DNSSEC-Tools configuration file will be used.
 
+ * curerrors
+
+The count of consecutive errors for the zone.  This count is set to zero upon
+successful completion of a KSK or ZSK rollover.
+
  * directory
 
 This field contains the name of the directory in which B<rollerd> will
@@ -91,6 +96,13 @@ to derive the I<ksk_rolldate> field.
  * loglevel
 
 The B<rollerd> logging level for this zone.
+
+ * maxerrors
+
+The maximum number of consecutive errors for the zone.  After this count has
+been exceeded, the zone will be changed to be a I<skip> zone.  If a zone
+doesn't have this field set, the I<zone_errors> configuration value will be
+used instead.
 
  * maxttl
 

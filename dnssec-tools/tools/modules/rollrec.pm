@@ -27,6 +27,7 @@
 #		zskphase	"2"
 #		kskphase	"0"
 #		maxttl		"86400"
+#		curerrors	"0"
 #		display		"0"
 #		phasestart	"Wed Mar 09 21:49:22 2005"
 #
@@ -39,6 +40,8 @@
 #		maxttl		"100000"
 #		display		"1"
 #		loglevel	"info"
+#		curerrors	"0"
+#		maxerrors	"5"
 #		phasestart	"Sun Jan 01 16:00:00 2005"
 #
 #
@@ -116,6 +119,8 @@ my @ROLLFIELDS = (
 			'kskphase',
 			'zskphase',
 			'zsargs',
+			'curerrors',
+			'maxerrors',
 			'ksk_rollsecs',
 			'ksk_rolldate',
 			'zsk_rollsecs',
@@ -1329,6 +1334,8 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 	loglevel		"info"
 	rollrec_rollsecs	"1115923362"
 	rollrec_rolldate	"Tue Mar 09 19:12:54 2005"
+	curerrors		0
+	maxerrors		5
         # optional records:
         istrustanchor           "yes"
         holddowntime            "8W"
