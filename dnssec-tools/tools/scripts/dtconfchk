@@ -541,6 +541,7 @@ sub check_rollerd
 	my $loglevel;				# Log level for rollerd.
 	my $sleep;				# Sleep time for rollerd.
 	my $username;				# Username for rollerd.
+	my $zoneerrs;				# Maximum zone error count.
 
 	my $uid;				# Username's uid.
 
@@ -552,6 +553,7 @@ sub check_rollerd
 	$loglevel = $dtconf{"roll_loglevel"};
 	$sleep	  = $dtconf{"roll_sleeptime"};
 	$username = $dtconf{"roll_username"};
+	$zoneerrs = $dtconf{"zone_errors"};
 
 	#
 	# Ensure rollerd's loadzone flag is an acceptable boolean.
@@ -634,6 +636,39 @@ sub check_rollerd
 		else
 		{
 			prt(1,"rollover username ($username) acceptable");
+		}
+	}
+
+	#
+	# Give the appropriate message, depending on if rollerd's zone_errors
+	# count is acceptable or not.
+	#
+	if(defined($zoneerrs))
+	{
+		if($zoneerrs eq '')
+		{
+			prt(0,"rollover zone-error count is empty");
+			$errs++;
+		}
+		elsif($zoneerrs < 0)
+		{
+			prt(0,"rollover zone-error count ($zoneerrs) < 0");
+			$errs++;
+		}
+		else
+		{
+			my $ze = $zoneerrs;	# Copy of zone error count.
+
+			$ze =~ s/[0-9]//g;
+			if($ze eq '')
+			{
+				prt(1,"rollover zone-error count ($zoneerrs) acceptable");
+			}
+			else
+			{
+				prt(0,"rollover zone-error count ($zoneerrs) must be numeric and 0 or greater");
+				$errs++;
+			}
 		}
 	}
 
@@ -1279,6 +1314,10 @@ B<rollerd>'s sleep-time must be at least one minute.
 Ensure that the username for B<rollerd> is valid.  If it's a username, it
 must be translatable to a uid; if it's a uid, it must translate to a known
 username.
+
+=item I<zone_errors>
+
+Ensure that the zone error count is numeric and 0 or greater.
 
 =back
 
