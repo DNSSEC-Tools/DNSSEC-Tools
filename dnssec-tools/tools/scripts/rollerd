@@ -1061,7 +1061,7 @@ sub zsk_phase4
 	# Set a timestamp for the completion of the ZSK roll.
 	#
 	rollstamp($rname,'zsk');
-	clearzoneerr($rname);
+	clearzoneerr($rname,$rrr);
 	return(0);
 }
 
@@ -1669,7 +1669,7 @@ sub ksk_phase7
 	else
 	{
 		rolllog_log(LOG_INFO,$rname,"KSK phase 7:  zone, key files archived");
-		clearzoneerr($rname);
+		clearzoneerr($rname,$rrr);
 	}
 
 	#
@@ -2966,9 +2966,20 @@ sub rrfokay
 sub clearzoneerr
 {
 	my $rname = shift;			# Name of rollrec rec.
+	my $rrr = shift;			# Reference to rollrec.
+	my %rr;					# Rollrec hash.
 
-	rollrec_setval($rname,'curerrors',0);
-	rolllog_log(LOG_ALWAYS,$rname,"resetting the error count");
+	#
+	# Get the rollrec's hash.
+	#
+	%rr = %$rrr;
+
+	if($rr{'curerrors'} != 0)
+	{
+		rollrec_setval($rname,'curerrors',0);
+
+		rolllog_log(LOG_TMI,$rname,"resetting the error count");
+	}
 }
 
 #-----------------------------------------------------------------------------
