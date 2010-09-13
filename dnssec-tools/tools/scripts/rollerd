@@ -1061,6 +1061,7 @@ sub zsk_phase4
 	# Set a timestamp for the completion of the ZSK roll.
 	#
 	rollstamp($rname,'zsk');
+	clearzoneerr($rname);
 	return(0);
 }
 
@@ -1159,6 +1160,7 @@ sub ksk_expired
 	if(!defined($set{'keys'}) || ($set{'keys'} eq ""))
 	{
 		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		zoneerr($rname,$rrr);
 		return(0);
 	}
 
@@ -1169,6 +1171,7 @@ sub ksk_expired
 	if(@signset == 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		zoneerr($rname,$rrr);
 		return(0);
 	}
 
@@ -1187,6 +1190,7 @@ sub ksk_expired
 		if($khr == 0)
 		{
 			rolllog_log(LOG_ERR,$rname,"unable to find key \"$keyname\" in keyrec; this should not have happened");
+			zoneerr($rname,$rrr);
 			return(0);
 		}
 		%kh = %$khr;
@@ -1197,6 +1201,7 @@ sub ksk_expired
 		if(!defined($kh{"ksklife"}))
 		{
 			rolllog_log(LOG_ERR,$rname,"keyrec does not contain a ksklife record");
+			zoneerr($rname,$rrr);
 			return(0);
 		}
 
@@ -1658,10 +1663,13 @@ sub ksk_phase7
 	if($ret < 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
+
+		zoneerr($rname,$rrr);
 	}
 	else
 	{
 		rolllog_log(LOG_INFO,$rname,"KSK phase 7:  zone, key files archived");
+		clearzoneerr($rname);
 	}
 
 	#
@@ -2294,6 +2302,7 @@ sub signer
 	if($ret != 0)
 	{
 		skipnow($rname);
+		zoneerr($rname,$rrr);
 	}
 	else
 	{
@@ -2947,6 +2956,77 @@ sub rrfokay
 		return(0);
 	}
 	return(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	clearzoneerr()
+#
+# Purpose:	Reset a zone's error count.
+#
+sub clearzoneerr
+{
+	my $rname = shift;			# Name of rollrec rec.
+
+	rollrec_setval($rname,'curerrors',0);
+	rolllog_log(LOG_ALWAYS,$rname,"resetting the error count");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	zoneerr()
+#
+# Purpose:	Increment a zone's error count.  If the count of maximum
+#		consecutive errors is exceeded, the zone is changed to
+#		be a roll zone.
+#
+sub zoneerr
+{
+	my $rname = shift;			# Name of rollrec rec.
+	my $rrr = shift;			# Reference to rollrec.
+
+	my %rr;					# Rollrec hash.
+	my $curerrs = 0;			# Zone's current error count.
+	my $maxerrs;				# Zone's maximum error count.
+
+	#
+	# Get the rollrec's hash.
+	#
+	%rr = %$rrr;
+
+	#
+	# Get the zone's maximum error count.
+	#
+	$maxerrs = $rr{'maxerrors'};
+	$maxerrs = $dtconf{'zone_errors'}	if(! exists($rr{'maxerrors'}));
+
+	#
+	# If there's a maximum error count set for this zone, we'll increase
+	# the count and see if we need to stop worrying about this zone.
+	#
+	if($maxerrs > 0)
+	{
+		#
+		# Increment the zone's maximum error count.
+		#
+		$curerrs = $rr{'curerrors'} + 1;
+
+		#
+		# Save the new value.
+		#
+		$rr{'curerrors'} = $curerrs;
+		rollrec_setval($rname,'curerrors',$curerrs);
+		rollrec_write();
+
+		#
+		# If we've exceeded the maximum error count, change the zone
+		# to a skip zone.
+		#
+		if($curerrs > $maxerrs)
+		{
+			rolllog_log(LOG_INFO,$rname,"too many errors, zone will now be skipped");
+			skipnow($rname);
+		}
+	}
+
 }
 
 #-----------------------------------------------------------------------------
