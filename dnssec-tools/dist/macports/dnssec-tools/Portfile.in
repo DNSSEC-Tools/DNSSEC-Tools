@@ -1,0 +1,104 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id:$
+
+PortSystem              1.0
+
+name                    dnssec-tools
+# TODO: update version number
+version                 1.XXX
+revision                1
+categories              net
+platforms               darwin
+maintainers             rstory openmaintainer
+homepage                http://dnssec-tools.org
+master_sites            http://www.dnssec-tools.org/download/
+
+description             Tools for managing DNSSEC
+
+long_description        This is dnssec-tools, a collection of tools for \
+			The goal of the DNSSEC-Tools project is to create \
+			a set of tools, patches, applications, wrappers, \
+			extensions, and plugins that will help ease the \
+			deployment of DNSSEC-related technologies.
+
+# TODO: for each algoritm, run 'openssl ALG dnssec-tools-1.XXX.tar.gz' and
+# add the hash value here
+checksums   dnssec-tools-1.XXX.tar.gz \
+			md5     MD5MD5MD5 \
+            sha1    SHA1SHA1SHA1 \
+			rmd160	RMD160RMD160
+
+depends_lib port:openssl port:bind9 \
+			port:p5-extutils-makemaker port:p5-net-dns-sec \
+			port:p5-mailtools port:p5-timedate port:p5-text-diff \
+			port:p5-crypt-openssl-random port:p5-test-simple \
+			port:p5-xml-simple \
+            path:bin/perl:perl5
+# ugh.. p5-graphviz pulls in a ton of dependencies, including X11. That's
+# a bit much for sometthing that should often be run on a remote machine,
+# so we'll leave it out. Probably should make a variant that includes
+# it, at some point.
+#			port:p5-graphviz
+
+use_parallel_build      yes
+
+configure.env-append    PERLPROG=${prefix}/bin/perl
+
+configure.args          --with-defaults \
+                        --with-nsec3 \
+                        --mandir=${prefix}/share/man \
+                        --infodir=${prefix}/share/info \
+                        --with-logfile=${prefix}/var/log \
+                        --with-openssl=${prefix} \
+                        --with-install-prefix=${destroot}
+
+variant no_threads description {Without threads support} {
+    depends_lib-delete port:pthreads
+    configure.args-append --without-threads
+}
+
+post-build {
+    if {[variant_isset universal]} {
+        set my_archflags ${configure.universal_cflags}
+    } else {
+        set my_archflags ${configure.cc_archflags}
+    }
+    reinplace "s|${my_archflags}||g" ${worksrcpath}/validator/libval-config
+}
+
+post-destroot {
+    # never delete dnssec-tools conf dir, even if empty
+    destroot.keepdirs ${destroot}${prefix}/etc/dnssec-tools
+
+    # rename a conf files to file.dist, so install won't overwrite
+    # any previous version
+    foreach f { dnsval.conf resolv.conf root.hints } {
+        file rename ${worksrcpath}/validator/etc/${f} ${destroot}${prefix}/etc/dnssec-tools/${f}.dist
+    }
+    file rename ${destroot}${prefix}/etc/dnssec-tools/validator-testcases ${destroot}${prefix}/etc/dnssec-tools/validator-testcases.dist
+    file rename ${destroot}${prefix}/etc/dnssec-tools/dnssec-tools.conf ${destroot}${prefix}/etc/dnssec-tools/dnssec-tools.conf.dist
+
+    foreach packlist [exec find ${destroot} -name .packlist] {
+        ui_info "Fixing packlist ${packlist}"
+        reinplace "s|${destroot}||" ${packlist}
+    }
+
+    foreach badfile [exec find ${destroot} -name perllocal.pod] {
+        ui_info "Removing ${badfile}"
+        file delete ${badfile}
+    }
+}
+
+post-activate {
+    # Make sure initial conf files are present and setup correctly
+    foreach f { dnssec-tools.conf dnsval.conf resolv.conf root.hints validator-testcases } {
+        if {![file exists ${prefix}/etc/dnssec-tools/${f}]} {
+            ui_msg "Installing ${f} as ${prefix}/etc/dnssec-tools/${f}"
+            file copy ${prefix}/etc/dnssec-tools/${f}.dist \
+                ${prefix}/etc/dnssec-tools/${f}
+        } else {
+            ui_msg "Installing ${f} as ${prefix}/etc/dnssec-tools/${f}.dist"
+            ui_msg "*** Changes to ${f} must be merged manually ***"
+        }
+    }
+}
