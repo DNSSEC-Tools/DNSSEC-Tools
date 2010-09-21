@@ -142,6 +142,8 @@ long            res_timeout(struct name_server *ns);
 /*
  * Early abort of a query attempt. Perform additional retries if desired
  */
-int             res_skipns(int transaction_id, struct timeval *closest_event);
+int             res_nsfallback(int transaction_id, struct timeval *closest_event,
+                               const char *name, const u_int16_t class_h,
+                               const u_int16_t type_h, int *edns0);
 
 #endif
