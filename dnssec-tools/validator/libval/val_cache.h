@@ -6,11 +6,11 @@
 #define VAL_CACHE_H
 
 
-int             stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q);
-int             stow_key_info(struct rrset_rec *new_info, struct val_query_chain *matched_q);
-int             stow_ds_info(struct rrset_rec *new_info, struct val_query_chain *matched_q);
-int             stow_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q);
-int             stow_negative_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q);
+int             stow_zone_info(struct rrset_rec **new_info, struct val_query_chain *matched_q);
+int             stow_key_info(struct rrset_rec **new_info, struct val_query_chain *matched_q);
+int             stow_ds_info(struct rrset_rec **new_info, struct val_query_chain *matched_q);
+int             stow_answers(struct rrset_rec **new_info, struct val_query_chain *matched_q);
+int             stow_negative_answers(struct rrset_rec **new_info, struct val_query_chain *matched_q);
 int             get_cached_rrset(struct val_query_chain *matched_q, struct domain_info **response);
 int             free_validator_cache(void);
 int             store_ns_for_zone(u_char * zonecut_n,
