@@ -74,14 +74,14 @@
  * create a name_server struct from the given address rdata
  */
 static int
-extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
+extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server *ns)
 {
     struct sockaddr_in *sock_in;
 #ifdef VAL_IPV6
     struct sockaddr_in6 *sock_in6;
 #endif
 
-    if ((ns == NULL) || (*ns == NULL))
+    if (ns == NULL) 
         return VAL_BAD_ARGUMENT;
 
     while (addr_rr) {
@@ -99,23 +99,23 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
             continue;
         }
 
-        CREATE_NSADDR_ARRAY(new_addr, (*ns)->ns_number_of_addresses + 1);
+        CREATE_NSADDR_ARRAY(new_addr, ns->ns_number_of_addresses + 1);
         if (new_addr == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
 
-        for (i = 0; i < (*ns)->ns_number_of_addresses; i++) {
-            memcpy(new_addr[i], (*ns)->ns_address[i],
+        for (i = 0; i < ns->ns_number_of_addresses; i++) {
+            memcpy(new_addr[i], ns->ns_address[i],
                    sizeof(struct sockaddr_storage));
-            FREE((*ns)->ns_address[i]);
+            FREE(ns->ns_address[i]);
         }
-        if ((*ns)->ns_address)
-            FREE((*ns)->ns_address);
-        (*ns)->ns_address = new_addr;
+        if (ns->ns_address)
+            FREE(ns->ns_address);
+        ns->ns_address = new_addr;
 
         if (addr_rr->rr_rdata_length == sizeof(struct in_addr)) {
             sock_in = (struct sockaddr_in *)
-                (*ns)->ns_address[(*ns)->ns_number_of_addresses];
+                ns->ns_address[ns->ns_number_of_addresses];
             memset(sock_in, 0, sizeof(struct sockaddr_in));
             sock_in->sin_family = AF_INET;
             sock_in->sin_port = htons(DNS_PORT);
@@ -125,7 +125,7 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
 #ifdef VAL_IPV6
         else if (addr_rr->rr_rdata_length == sizeof(struct in6_addr)) {
             sock_in6 = (struct sockaddr_in6 *)
-                (*ns)->ns_address[(*ns)->ns_number_of_addresses];
+                ns->ns_address[ns->ns_number_of_addresses];
             memset(sock_in6, 0, sizeof(struct sockaddr_in6));
             sock_in6->sin6_family = AF_INET6;
             sock_in6->sin6_port = htons(DNS_PORT);
@@ -133,7 +133,7 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server **ns)
                    sizeof(struct in6_addr));
         }
 #endif
-        (*ns)->ns_number_of_addresses++;
+        ns->ns_number_of_addresses++;
         addr_rr = addr_rr->rr_next;
 
     }
@@ -210,13 +210,14 @@ merge_glue_in_referral(val_context_t *context,
                 glueptr->qc_state != Q_ANSWERED ||
                 VAL_NO_ERROR != (retval = 
                     extract_glue_from_rdata(as->val_ac_rrset.ac_data->rrs_data, 
-                                            &pending_ns))) { 
+                                            pending_ns))) { 
 
                 val_log(context, LOG_DEBUG, 
                         "merge_glue_in_referral(): Could not fetch glue for %s", 
                         name_p);
                 /* free this name server */
                 free_name_server(&pending_ns);
+                pending_ns = NULL;
                 pc->qc_referral->cur_pending_glue_ns = NULL;
                 pc->qc_state = Q_MISSING_GLUE;
 
@@ -230,7 +231,7 @@ merge_glue_in_referral(val_context_t *context,
             
                 /* save learned zone information */
                 if (VAL_NO_ERROR != (retval = 
-                        stow_zone_info(pc->qc_referral->learned_zones, pc))) {
+                        stow_zone_info(&pc->qc_referral->learned_zones, pc))) {
                     return retval;
                 }
                 pc->qc_referral->learned_zones = NULL;
@@ -435,7 +436,6 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                           struct name_server **pending_glue)
 {
     struct rrset_rec *unchecked_set;
-    struct rrset_rec *trailer;
     struct val_rr_rec  *ns_rr;
     struct name_server *temp_ns;
     struct name_server *ns;
@@ -450,7 +450,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
         return VAL_BAD_ARGUMENT;
 
     *ns_list = NULL;
-    trailer = NULL;
+    *pending_glue = NULL;
 
     /*
      * Look through the unchecked_zone stuff for NS records 
@@ -460,7 +460,6 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
         if (unchecked_set->rrs_type_h == ns_t_ns &&
             (namecmp(zone_name, unchecked_set->rrs_name_n) == 0))
         {
-            if ((*ns_list == NULL) || (trailer == NULL)) {
                 ns_rr = unchecked_set->rrs_data;
                 while (ns_rr) {
                     /*
@@ -473,7 +472,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                          * Since we're in trouble, free up just in case 
                          */
                         free_name_servers(ns_list);
-                        ns_list = NULL;
+                        *ns_list = NULL;
                         return VAL_OUT_OF_MEMORY;
                     }
 
@@ -483,7 +482,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                     name_len = wire_name_length(ns_rr->rr_rdata);
                     if (name_len > sizeof(temp_ns->ns_name_n)) {
                         free_name_servers(ns_list);
-                        ns_list = NULL;
+                        *ns_list = NULL;
                         return VAL_OUT_OF_MEMORY;
                     }
                     memcpy(temp_ns->ns_name_n, ns_rr->rr_rdata, name_len);
@@ -501,6 +500,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                     /* Ensure that recursion is disabled by default */
                     if (temp_ns->ns_options & RES_RECURSE)
                         temp_ns->ns_options ^= RES_RECURSE;
+                    temp_ns->ns_edns0_size = RES_EDNS0_DEFAULT;
 
                     temp_ns->ns_next = NULL;
                     temp_ns->ns_address = NULL;
@@ -521,9 +521,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                     }
                     ns_rr = ns_rr->rr_next;
                 }
-            }
         }
-        trailer = unchecked_set;
         unchecked_set = unchecked_set->rrs_next;
     }
 
@@ -549,25 +547,15 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                 if (namecmp
                     (unchecked_set->rrs_name_n,
                      ns->ns_name_n) == 0) {
-                    struct name_server *old_ns = ns;
                     /*
                      * Found that address set is for an NS 
                      */
                     if (VAL_NO_ERROR !=
                         (retval =
                          extract_glue_from_rdata(unchecked_set->
-                                                 rrs_data, &ns)))
+                                                 rrs_data, ns)))
                         return retval;
-                    if (old_ns != ns) {
-                        /*
-                         * ns was realloc'd 
-                         */
-                        if (trail_ns)
-                            trail_ns->ns_next = ns;
-                        else
-                            *ns_list = ns;
-                    }
-                    ns = NULL;  /* Force dropping out from the loop */
+                    break;
                 } else {
                     trail_ns = ns;
                     ns = ns->ns_next;
@@ -659,7 +647,7 @@ find_nslist_for_query(val_context_t * context,
 
     ref_ns_list = NULL;
 
-    /* forget existing name server information */
+    /* reuse existing name server information */
     if (next_q->qc_ns_list != NULL) {
         goto done;
     }
@@ -724,8 +712,7 @@ done:
         /* if query is for some DNSSEC meta data then we always turn on EDNS0 */
         if (DNSSEC_METADATA_QTYPE(next_q->qc_type_h)) {
             edns0 = 1;
-        } else if (!(next_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE) &&
-                   !(next_qfq->qfq_flags & VAL_QUERY_NO_EDNS0)) {
+        } else if (!(next_q->qc_flags & VAL_QUERY_NO_EDNS0)) { 
             if (next_q->qc_zonecut_n != NULL)
                 test_n = next_q->qc_zonecut_n;
             else
@@ -747,8 +734,11 @@ done:
             val_log(context, LOG_DEBUG,
                     " find_nslist_for_query(): Setting D0 bit and using EDNS0");
 
-            for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
-                    ns->ns_options |= RES_USE_DNSSEC;
+            for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
+                ns->ns_edns0_size = (context && context->g_opt)? 
+                    context->g_opt->edns0_size : RES_EDNS0_DEFAULT;
+                ns->ns_options |= RES_USE_DNSSEC;
+            }
         }
     }
     return VAL_NO_ERROR;
@@ -761,7 +751,7 @@ done:
 int
 bootstrap_referral(val_context_t *context,
                    u_char * referral_zone_n,
-                   struct rrset_rec **learned_zones,
+                   struct rrset_rec *learned_zones,
                    struct queries_for_query *matched_qfq,
                    struct queries_for_query **queries,
                    struct name_server **ref_ns_list)
@@ -772,7 +762,7 @@ bootstrap_referral(val_context_t *context,
     struct val_query_chain *matched_q;
     u_int32_t flags;
 
-    if ((context == NULL) || (learned_zones == NULL) || (matched_qfq == NULL) ||
+    if ((context == NULL) || (matched_qfq == NULL) ||
         (queries == NULL) || (ref_ns_list == NULL))
         return VAL_BAD_ARGUMENT;
 
@@ -795,23 +785,14 @@ bootstrap_referral(val_context_t *context,
         }
         clone_ns_list(ref_ns_list, context->root_ns);
         matched_q->qc_state = Q_INIT;
-        /*
-         * forget about learned zones 
-         */
-        res_sq_free_rrset_recs(learned_zones);
-        *learned_zones = NULL;
         return VAL_NO_ERROR;
     }
     
     if ((ret_val =
          res_zi_unverified_ns_list(ref_ns_list, referral_zone_n,
-                                   *learned_zones, &pending_glue))
+                                   learned_zones, &pending_glue))
         != VAL_NO_ERROR) {
-        /*
-         * Get an NS list for the referral zone 
-         */
-        if (ret_val == VAL_OUT_OF_MEMORY)
-            return ret_val;
+        return ret_val;
     }
 
     if (pending_glue != NULL) {
@@ -820,9 +801,6 @@ bootstrap_referral(val_context_t *context,
          */
         if (matched_q->qc_state == Q_WAIT_FOR_GLUE && *ref_ns_list == NULL) {
             free_name_servers(&pending_glue);
-            if (ref_ns_list)
-                free_name_servers(ref_ns_list);
-            *ref_ns_list = NULL;
             val_log(context, LOG_DEBUG, 
                     "bootstrap_referral(): Already fetching glue; not fetching again");
             matched_q->qc_state = Q_REFERRAL_ERROR;
@@ -1049,7 +1027,7 @@ follow_referral_or_alias_link(val_context_t * context,
 
     if (VAL_NO_ERROR != (ret_val = bootstrap_referral(context,
                                                     referral_zone_n,
-                                                    learned_zones,
+                                                    *learned_zones,
                                                     matched_qfq,
                                                     queries,
                                                     &ref_ns_list))) 
@@ -1057,8 +1035,9 @@ follow_referral_or_alias_link(val_context_t * context,
 
     if (matched_q->qc_state == Q_WAIT_FOR_GLUE) {
         matched_q->qc_referral->learned_zones = *learned_zones;        
-    } else if (VAL_NO_ERROR != (ret_val = stow_zone_info(*learned_zones, matched_q))) {
+    } else if (VAL_NO_ERROR != (ret_val = stow_zone_info(learned_zones, matched_q))) {
         res_sq_free_rrset_recs(learned_zones);
+        *learned_zones = NULL;
         return ret_val;
     }
     *learned_zones = NULL; /* consumed */
@@ -1073,7 +1052,7 @@ follow_referral_or_alias_link(val_context_t * context,
     }
 
     if (matched_q->qc_zonecut_n && 
-        !(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE)) {
+        !(matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE)) {
 
         u_char *tp = NULL;
 
@@ -1097,7 +1076,7 @@ follow_referral_or_alias_link(val_context_t * context,
          * is different from the zone we're at
          * ensure that we reset the VAL_QUERY_NO_EDNS0 status
          */
-        if (tp && matched_qfq->qfq_flags & VAL_QUERY_NO_EDNS0) {
+        if (tp && (matched_qfq->qfq_flags & VAL_QUERY_NO_EDNS0)) {
             u_char *tp_ref = NULL;
             if (VAL_NO_ERROR != (ret_val = 
                 find_trust_point(context, referral_zone_n, 
@@ -1536,28 +1515,24 @@ digest_response(val_context_t * context,
          * We got a response with no records 
          * Check if EDNS was not used when it should have
          */
-        if (!(matched_qfq->qfq_flags & VAL_QUERY_DONT_VALIDATE) &&
-            !(matched_qfq->qfq_flags & VAL_QUERY_NO_EDNS0)) {
-
+        if (!matched_q->qc_respondent_server) {
+            matched_q->qc_state = Q_RESPONSE_ERROR; 
+            goto done;
+        }
+        if (!(matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
+            !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
             if (VAL_NO_ERROR != (ret_val =
-                    get_zse(context, query_name_n, matched_qfq->qfq_flags, 
+                get_zse(context, query_name_n, matched_qfq->qfq_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
                 return ret_val;
             }
             SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
             if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
-           
-                if (matched_q->qc_respondent_server && 
-                    !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
-
-                    requery_with_edns0(context, matched_q);
-                    goto done; 
-                }
-
-                matched_q->qc_state = Q_RESPONSE_ERROR; 
-                goto done;
+                requery_with_edns0(context, matched_q);
+                goto done; 
             }
         }
+
         /*
          * Else this is a non-existence result
          * Type is decided by the rcode, which we will check later
@@ -1886,7 +1861,7 @@ digest_response(val_context_t * context,
                 /* Don't enable EDNS0 below this level */
                 val_log(context, LOG_DEBUG, "digest_response(): Disabling further EDNS0 for {%s %d %d}",
                         query_name_p, query_class_h, query_type_h); 
-                matched_qfq->qfq_flags |= VAL_QUERY_NO_EDNS0;
+                matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
             }
 
         } else {
@@ -1920,7 +1895,7 @@ digest_response(val_context_t * context,
         /* save only if we did not request recursion */
         if (header->ra == 0) {
             if (VAL_NO_ERROR != (ret_val = 
-                    stow_zone_info(learned_zones, matched_q))) {
+                    stow_zone_info(&learned_zones, matched_q))) {
                 goto done;
             }
         }
@@ -1990,18 +1965,18 @@ digest_response(val_context_t * context,
         if ((matched_qfq->qfq_flags & VAL_QUERY_GLUE_REQUEST) && (answer != 0) 
                 && !proof_seen && !nothing_other_than_alias) {
             struct rrset_rec *gluedata = copy_rrset_rec(learned_answers);
-            if (VAL_NO_ERROR != (ret_val = stow_zone_info(gluedata, matched_q))) {
+            if (VAL_NO_ERROR != (ret_val = stow_zone_info(&gluedata, matched_q))) {
                 res_sq_free_rrset_recs(&gluedata);
                 goto done;
             }
         }
     }
 
-    if (VAL_NO_ERROR != (ret_val = stow_answers(learned_answers, matched_q))) {
+    if (VAL_NO_ERROR != (ret_val = stow_answers(&learned_answers, matched_q))) {
         goto done;
     }
 
-    if (VAL_NO_ERROR != (ret_val = stow_negative_answers(learned_proofs, matched_q))) {
+    if (VAL_NO_ERROR != (ret_val = stow_negative_answers(&learned_proofs, matched_q))) {
         goto done;
     }
 
@@ -2036,8 +2011,6 @@ val_resquery_send(val_context_t * context,
      * in context to create the nslist
      */
     struct name_server *nslist;
-    int ends0_size;
-
     if ((matched_qfq == NULL) || 
             (matched_qfq->qfq_query->qc_ns_list == NULL)) {
         return VAL_BAD_ARGUMENT;
@@ -2057,10 +2030,9 @@ val_resquery_send(val_context_t * context,
                                   name_buf, sizeof(name_buf)));
     }
 
-    ends0_size = (context && context->g_opt)? context->g_opt->edns0_size : EDNS_UDP_SIZE;
     if ((ret_val =
          query_send(name_p, matched_q->qc_type_h, matched_q->qc_class_h,
-                    nslist, ends0_size, &(matched_q->qc_trans_id))) == SR_UNSET)
+                    nslist, &(matched_q->qc_trans_id))) == SR_UNSET)
         return VAL_NO_ERROR;
 
     /*
@@ -2102,18 +2074,30 @@ val_resquery_rcv(val_context_t * context,
 
     matched_q->qc_respondent_server = server;
 
-    if (ret_val == SR_NO_ANSWER) {
-        if (-1 == res_skipns(matched_q->qc_trans_id, closest_event)) {
-            /* give up */
-            res_cancel(&(matched_q->qc_trans_id));
-            matched_q->qc_state = Q_RESPONSE_ERROR;
-        }
+    if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
+        matched_q->qc_state = Q_RESPONSE_ERROR;
         if (response_data)
             FREE(response_data);
         return VAL_NO_ERROR;
     }
-    if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
-        matched_q->qc_state = Q_RESPONSE_ERROR;
+    if (ret_val == SR_NO_ANSWER) {
+        int edns0;
+        if (-1 == res_nsfallback(matched_q->qc_trans_id, closest_event,
+                                 name_p, matched_q->qc_class_h, 
+                                 matched_q->qc_type_h, &edns0)) {
+            /* give up */
+            res_cancel(&(matched_q->qc_trans_id));
+            matched_q->qc_state = Q_RESPONSE_ERROR;
+        }
+        if (edns0) {
+            /* reset the flag if enabled */
+            if(matched_q->qc_flags & VAL_QUERY_NO_EDNS0)
+                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+        } else {
+            /* set the flag if disabled */
+            if (!(matched_q->qc_flags & VAL_QUERY_NO_EDNS0))
+                matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
+        }
         if (response_data)
             FREE(response_data);
         return VAL_NO_ERROR;
@@ -2157,14 +2141,27 @@ val_resquery_rcv(val_context_t * context,
 
     if (matched_q->qc_state > Q_ERROR_BASE) {
         /* try a different NS if possible */
+        int edns0;
         free_domain_info_ptrs(*response);
         FREE(*response);
         *response = NULL;
-        if (-1 == res_skipns(matched_q->qc_trans_id, closest_event)) {
+        if (-1 == res_nsfallback(matched_q->qc_trans_id, closest_event,
+                                 name_p, matched_q->qc_class_h, 
+                                 matched_q->qc_type_h, &edns0)) {
             res_cancel(&(matched_q->qc_trans_id));
             matched_q->qc_state = Q_RESPONSE_ERROR;
-        } else
+        } else {
+            if (edns0) {
+                /* reset the flag if enabled */
+                if(matched_q->qc_flags & VAL_QUERY_NO_EDNS0)
+                    matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+            } else {
+                /* set the flag if disabled */
+                if (!(matched_q->qc_flags & VAL_QUERY_NO_EDNS0))
+                    matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
+            }
             matched_q->qc_state = Q_SENT;
+        }
     }
     else {
         /* we're good to go, cancel pending query transactions */

@@ -24,7 +24,7 @@ int             find_nslist_for_query(val_context_t * context,
                                       struct queries_for_query **queries);
 int             bootstrap_referral(val_context_t *context,
                                    u_char * referral_zone_n,
-                                   struct rrset_rec **learned_zones,
+                                   struct rrset_rec *learned_zones,
                                    struct queries_for_query *matched_qfq,
                                    struct queries_for_query **queries,
                                    struct name_server **ref_ns_list);
