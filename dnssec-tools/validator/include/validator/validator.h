@@ -84,7 +84,6 @@ extern          "C" {
 #define VAL_LOG_OPTIONS LOG_PID
 #define VALIDATOR_LOG_PORT 1053
 #define VALIDATOR_LOG_SERVER "127.0.0.1"
-#define EDNS_UDP_SIZE 4096
 #define VAL_DEFAULT_RESOLV_CONF "/etc/resolv.conf"
 #define VAL_CONTEXT_LABEL "VAL_CONTEXT_LABEL"
 #define VAL_LOG_TARGET "VAL_LOG_TARGET"
@@ -197,30 +196,23 @@ extern          "C" {
 #define VAL_FROM_QUERY            4
 
     /*
-     * query flags in the lower nibble
+     * user query flags in the lower two bytes 
      */
 #define VAL_QFLAGS_ANY 0xffffffff
-#define VAL_QFLAGS_USERMASK 0x00ffffff
+#define VAL_QFLAGS_USERMASK 0x0000ffff
+#define VAL_QFLAGS_STATE 0xffff0000
+#define VAL_QFLAGS_CACHE_MASK   VAL_QFLAGS_USERMASK
+
 #define VAL_QUERY_NO_AC_DETAIL 0x00000001
-#define VAL_QUERY_DONT_VALIDATE 0x00000002
-#ifdef LIBVAL_DLV
-#define VAL_QUERY_NO_DLV 0x00000008 
-#endif
+#define VAL_QUERY_NO_EDNS0 0x00000002
+#define VAL_QUERY_DONT_VALIDATE 0x00000004 
 
     /*  
-     * Internal query state in the upper byte 
+     * Internal query state in the upper two bytes 
      */
-#define VAL_QUERY_GLUE_REQUEST (0x01000000 | VAL_QUERY_DONT_VALIDATE) 
-#define VAL_QUERY_NO_EDNS0 0x02000000
-#ifdef LIBVAL_DLV
-#define VAL_QUERY_USING_DLV 0x04000000 
-#endif
-
-/* 
- * if any of the internal query state flags or the VAL_QUERY_DONT_VALIDATE 
- * flag is set, we need exact flags to match in a cached record
- */ 
-#define VAL_Q_ONLY_MATCHING_FLAGS (0xff000000 | VAL_QUERY_DONT_VALIDATE) 
+#define VAL_QUERY_GLUE_REQUEST (0x00010000 | VAL_QUERY_DONT_VALIDATE)
+#define VAL_QUERY_USING_DLV 0x00020000 
+#define VAL_QUERY_NO_DLV 0x00040000 
 
 
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
