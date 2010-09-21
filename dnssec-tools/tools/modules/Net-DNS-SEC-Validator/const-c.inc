@@ -922,7 +922,7 @@ constant_16 (pTHX_ const char *name, IV *iv_return) {
      here.  However, subsequent manual editing may have added or removed some.
      ALG_DS_HASH_SHA1 Q_REFERRAL_ERROR Q_RESPONSE_ERROR SR_CRED_AUTH_ADD
      SR_CRED_AUTH_ANS SR_NO_ANSWER_YET VAL_AC_DNS_ERROR VAL_AC_FAIL_BASE
-     VAL_BAD_ARGUMENT VAL_QUERY_NO_DLV VAL_AC_PINSECURE 
+     VAL_BAD_ARGUMENT VAL_QUERY_NO_DLV VAL_QFLAGS_STATE VAL_AC_PINSECURE
      ZONE_USE_NOTHING */
   /* Offset 4 gives the best switch position.  */
   switch (name[4]) {
@@ -1008,7 +1008,15 @@ constant_16 (pTHX_ const char *name, IV *iv_return) {
 #else
       return PERL_constant_NOTDEF;
 #endif
-    }
+    } else if (memEQ(name, "VAL_QFLAGS_STATE", 16)) {
+    /*                          ^                  */
+#ifdef VAL_QFLAGS_STATE
+      *iv_return = VAL_QFLAGS_STATE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    } 
     break;
   case 'R':
     if (memEQ(name, "SR_CRED_AUTH_ADD", 16)) {
@@ -1254,7 +1262,7 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
      VAL_AC_INVALID_KEY VAL_AC_SIGNING_KEY VAL_AC_TRUST_NOCHK
      VAL_AC_TRUST_POINT VAL_BARE_TRUST_KEY VAL_BOGUS_PROVABLE
      VAL_CONF_NOT_FOUND VAL_FROM_AUTHORITY VAL_INTERNAL_ERROR
-     VAL_TRUSTED_ANSWER VAL_UNTRUSTED_ZONE */
+     VAL_TRUSTED_ANSWER VAL_UNTRUSTED_ZONE VAL_QUERY_NO_EDNS0*/
   /* Offset 13 gives the best switch position.  */
   switch (name[13]) {
   case 'D':
@@ -1273,6 +1281,14 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
     /*                            ^           */
 #ifdef VAL_INTERNAL_ERROR
       *iv_return = VAL_INTERNAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    } else (memEQ(name, "VAL_QUERY_NO_EDNS0", 18)) {
+    /*                                ^           */
+#ifdef VAL_QUERY_NO_EDNS0
+      *iv_return = VAL_QUERY_NO_EDNS0;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1761,9 +1777,22 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
      SR_RCV_INTERNAL_ERROR SR_UNSUPP_EDNS0_LABEL VAL_AC_DNSKEY_MISSING
      VAL_AC_DNSKEY_NOMATCH VAL_AC_NEGATIVE_PROOF VAL_AC_RRSIG_VERIFIED
      VAL_AC_UNTRUSTED_ZONE VAL_AC_WAIT_FOR_RRSIG VAL_AC_WAIT_FOR_TRUST
-     VAL_AC_WCARD_VERIFIED VAL_IGNORE_VALIDATION VAL_POL_GOPT_OVERRIDE */
+     VAL_AC_WCARD_VERIFIED VAL_IGNORE_VALIDATION VAL_POL_GOPT_OVERRIDE 
+     VAL_QFLAGS_CACHE_MASK */
   /* Offset 11 gives the best switch position.  */
   switch (name[11]) {
+  case 'C':
+    if (memEQ(name, "VAL_QFLAGS_CACHE_MASK", 21)) {
+    /*                          ^                */
+#ifdef VAL_QFLAGS_CACHE_MASK
+      *iv_return = VAL_QFLAGS_CACHE_MASK;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+
   case 'D':
     if (memEQ(name, "SR_UNSUPP_EDNS0_LABEL", 21)) {
     /*                          ^                */
@@ -2061,8 +2090,7 @@ constant_25 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      QUERY_BAD_CACHE_THRESHOLD SR_MKQUERY_INTERNAL_ERROR
-     SR_NAME_EXPANSION_FAILURE VAL_AC_RRSIG_NOTYETACTIVE
-     VAL_Q_ONLY_MATCHING_FLAGS */
+     SR_NAME_EXPANSION_FAILURE VAL_AC_RRSIG_NOTYETACTIVE */
   /* Offset 18 gives the best switch position.  */
   switch (name[18]) {
   case 'F':
@@ -2070,17 +2098,6 @@ constant_25 (pTHX_ const char *name, IV *iv_return) {
     /*                                 ^             */
 #ifdef SR_NAME_EXPANSION_FAILURE
       *iv_return = SR_NAME_EXPANSION_FAILURE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'G':
-    if (memEQ(name, "VAL_Q_ONLY_MATCHING_FLAGS", 25)) {
-    /*                                 ^             */
-#ifdef VAL_Q_ONLY_MATCHING_FLAGS
-      *iv_return = VAL_Q_ONLY_MATCHING_FLAGS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2286,7 +2303,7 @@ my @names = (qw(ALG_DH ALG_DSASHA1 ALG_DS_HASH_SHA1 ALG_DS_HASH_SHA256
 	       VAL_POL_GOPT_OVERRIDE VAL_PINSECURE VAL_QFLAGS_ANY
 	       VAL_QFLAGS_USERMASK VAL_QUERY_DONT_VALIDATE
 	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_AC_DETAIL VAL_QUERY_NO_DLV
-	       VAL_QUERY_USING_DLV VAL_Q_ONLY_MATCHING_FLAGS
+	       VAL_QFLAGS_STATE VAL_QUERY_USING_DLV 
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
 	       VAL_UNTRUSTED_ANSWER VAL_UNTRUSTED_ZONE
 	       VAL_VALIDATED_ANSWER ZONE_USE_NOTHING
