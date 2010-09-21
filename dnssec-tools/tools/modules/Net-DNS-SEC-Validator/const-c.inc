@@ -1285,8 +1285,8 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
 #else
       return PERL_constant_NOTDEF;
 #endif
-    } else (memEQ(name, "VAL_QUERY_NO_EDNS0", 18)) {
-    /*                                ^           */
+    } else if (memEQ(name, "VAL_QUERY_NO_EDNS0", 18)) {
+    /*                                   ^           */
 #ifdef VAL_QUERY_NO_EDNS0
       *iv_return = VAL_QUERY_NO_EDNS0;
       return PERL_constant_ISIV;
