@@ -289,6 +289,7 @@ clone_ns(struct name_server **cloned_ns, struct name_server *ns)
     (*cloned_ns)->ns_status = ns->ns_status;
 
     (*cloned_ns)->ns_options = ns->ns_options;
+    (*cloned_ns)->ns_edns0_size = ns->ns_edns0_size;
     (*cloned_ns)->ns_retrans = ns->ns_retrans;
     (*cloned_ns)->ns_retry = ns->ns_retry;
 
@@ -360,17 +361,14 @@ clone_ns_list(struct name_server **ns_list,
 }
 
 
+
 int
 query_send(const char *name,
            const u_int16_t type_h,
            const u_int16_t class_h,
            struct name_server *pref_ns, 
-           int edns0_size,
            int *trans_id)
 {
-    u_char          query[12 + NS_MAXDNAME + 4];
-    size_t          query_limit = 12 + NS_MAXDNAME + 4;
-    size_t          query_length = 0;
     int             ret_val;
 
     u_char         *signed_query;
@@ -402,34 +400,10 @@ query_send(const char *name,
         /*
          * Form the query with res_val_nmkquery_n 
          */
-        ret_val =
-            res_val_nmkquery(ns, ns_o_query, name, class_h, type_h, NULL,
-                             0, NULL, query, query_limit, &query_length);
-        if (ret_val==  -1)
-            return SR_MKQUERY_INTERNAL_ERROR;
-
-        if (ns->ns_options & RES_USE_DNSSEC) {
-            ret_val =
-                res_val_nopt(ns, query, query_limit,
-                             edns0_size, &query_length);
-            /** Set the CD flag */
-            ((HEADER *) query)->cd = 1;
-        }
-        if (ret_val == -1)
-            return SR_MKQUERY_INTERNAL_ERROR;
-        if (ns->ns_options & RES_RECURSE) {
-            ((HEADER *)query)->rd = 1;
-        } else {
-            /* don't ask for recursion */
-            ((HEADER *)query)->rd = 0;
-        }
-
-        if ((ret_val = res_tsig_sign(query, query_length, ns,
-                                     &signed_query,
-                                     &signed_length)) != SR_TS_OK) {
+        if ((ret_val = res_create_query_payload(ns, name, class_h, type_h, 
+                        &signed_query, &signed_length)) < 0) {
             continue;
         }
-
         if ((ret_val = res_io_deliver(trans_id, signed_query,
                                       signed_length, ns, delay)) < 0) {
             continue;
@@ -500,7 +474,6 @@ get(const char *name,
     const u_int16_t type_h,
     const u_int16_t class_h,
     struct name_server *nslist,
-    int edns0_size,
     struct name_server **server,
     u_char ** response, size_t * response_length)
 {
@@ -508,7 +481,7 @@ get(const char *name,
     int             trans_id;
     struct timeval closest_event;
     fd_set pending_desc;
-    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, edns0_size, &trans_id))) {
+    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
 
         do {
             FD_ZERO(&pending_desc);
