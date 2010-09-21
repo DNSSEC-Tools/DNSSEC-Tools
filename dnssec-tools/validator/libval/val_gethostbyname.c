@@ -676,11 +676,12 @@ val_gethostbyname2_r(val_context_t * context,
 
     } else {
 
-        if (af == AF_INET6) {
+#ifdef VAL_IPV6
+        if (af == AF_INET6) 
             type = ns_t_aaaa;
-        } else {
+        else 
+#endif
             type = ns_t_a;
-        }
 
         /*
          * Query the validator 
