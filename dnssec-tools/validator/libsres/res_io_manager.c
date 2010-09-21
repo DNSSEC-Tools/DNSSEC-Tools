@@ -37,6 +37,7 @@
 #endif
 #include "validator/resolver.h"
 #include "res_support.h"
+#include "res_mkquery.h"
 #include "res_io_manager.h"
 
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
@@ -334,12 +335,18 @@ res_io_send(struct expected_arrival *shipit)
 }
 
 int 
-res_skipns(int transaction_id, struct timeval *closest_event)
+res_nsfallback(int transaction_id, struct timeval *closest_event, 
+               const char *name, const u_int16_t class_h, 
+               const u_int16_t type_h, int *edns0)
 {
     struct expected_arrival *temp, *t;
     int i;
     long delay = 0;
+
+    const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
    
+    *edns0 = 0;
+
     if (res_io_debug) {
         printf("Aborting current attempt for transaction %d\n", transaction_id);
     }
@@ -350,6 +357,38 @@ res_skipns(int transaction_id, struct timeval *closest_event)
         
         pthread_mutex_unlock(&mutex);
         return -1;  
+    }
+
+    if ((temp->ea_ns->ns_options & RES_USE_DNSSEC) && 
+        (temp->ea_ns->ns_edns0_size > 0)) {
+        *edns0 = 1;
+        for (i = 0; i < sizeof(edns0_fallback); i++) {
+            if (temp->ea_ns->ns_edns0_size > edns0_fallback[i]) {
+                /* try using a lower edns0 value */
+                temp->ea_ns->ns_edns0_size = edns0_fallback[i];
+                if (edns0_fallback[i] == 0) {
+                    /* try without EDNS0 */
+                    temp->ea_ns->ns_options ^= RES_USE_DNSSEC;
+                    *edns0 = 0;
+                    if (temp->ea_signed)
+                        FREE(temp->ea_signed);
+                    temp->ea_signed = NULL;
+                    temp->ea_signed_length = 0;
+
+                    if (res_create_query_payload(temp->ea_ns,
+                                    name, class_h, type_h,
+                                    &temp->ea_signed,
+                                    &temp->ea_signed_length) < 0)
+                        break;
+                }
+                temp->ea_remaining_attempts++;
+                if (temp->ea_socket)
+                    close(temp->ea_socket);
+                temp->ea_socket = -1;
+
+                break;
+            }
+        }
     }
 
     if (temp->ea_remaining_attempts == 0) {
