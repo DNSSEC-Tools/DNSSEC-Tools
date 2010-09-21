@@ -938,7 +938,7 @@ get_global_options(char **buf_ptr, char *end_ptr,
     if (*g_opt == NULL)
         return VAL_OUT_OF_MEMORY;
     (*g_opt)->local_is_trusted = 0;
-    (*g_opt)->edns0_size = EDNS_UDP_SIZE;
+    (*g_opt)->edns0_size = RES_EDNS0_DEFAULT;
     (*g_opt)->env_policy = VAL_POL_GOPT_DISABLE;
     (*g_opt)->app_policy = VAL_POL_GOPT_DISABLE;
     (*g_opt)->log_target = NULL;
@@ -1899,6 +1899,7 @@ parse_name_server(char *cp, struct name_server **ns)
     (*ns)->ns_retrans = RES_TIMEOUT;
     (*ns)->ns_retry = RES_RETRY;
     (*ns)->ns_options = RES_DEFAULT | RES_RECURSE | RES_DEBUG;
+    (*ns)->ns_edns0_size = RES_EDNS0_DEFAULT;
 
     (*ns)->ns_next = NULL;
     (*ns)->ns_number_of_addresses = 0;
