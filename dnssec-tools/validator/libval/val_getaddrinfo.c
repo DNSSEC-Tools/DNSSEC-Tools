@@ -753,6 +753,7 @@ get_addrinfo_from_dns(val_context_t * ctx,
         } 
     } 
 
+#ifdef VAL_IPV6
     /*
      * Check if we need to return IPv6 addresses based on the hints 
      */
@@ -775,6 +776,7 @@ get_addrinfo_from_dns(val_context_t * ctx,
             results = NULL;
         } 
     } 
+#endif
 
     *res = ainfo;
     
