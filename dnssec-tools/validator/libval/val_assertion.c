@@ -418,7 +418,6 @@ free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
 void requery_with_edns0(val_context_t *context, 
                         struct val_query_chain *matched_q)
 {
-    struct name_server *ns = NULL;
     if (matched_q == NULL)
         return;
 
@@ -435,8 +434,9 @@ void requery_with_edns0(val_context_t *context,
     matched_q->qc_state = Q_INIT;
     val_log(context, LOG_DEBUG,
             "requery_with_edns0(): EDNS0 was not used; re-issuing query");
-    for (ns = matched_q->qc_ns_list; ns; ns = ns->ns_next)
-        ns->ns_options |= RES_USE_DNSSEC;
+    if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
+        matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+    } 
 }
 
 
@@ -497,7 +497,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if (VAL_NO_ERROR !=
                 (retval =
                     add_to_query_chain(context, name_n, type_h, class_h,
-                                    flags & VAL_Q_ONLY_MATCHING_FLAGS, 
+                                    flags & VAL_QFLAGS_CACHE_MASK, 
                                     &added_q)))
             return retval;
 
@@ -3187,14 +3187,22 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         
         zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
         *done = 1;
-    } else if (VAL_NO_ERROR !=
-            (retval = try_chase_query(context, qname_n, ns_c_in,
-                                      ns_t_soa, VAL_QUERY_DONT_VALIDATE,
+    } else {
+
+      u_char *cur_q = qname_n;  
+      do {
+        if (VAL_NO_ERROR !=
+            (retval = try_chase_query(context, cur_q, ns_c_in,
+                                      ns_t_soa, 
+                                      VAL_QUERY_DONT_VALIDATE|VAL_QUERY_NO_EDNS0,
                                       queries, &results, done))) {
-        return retval;
-    } else if (*done) {
+            return retval;
+        } else if (!(*done)) {
+            goto end; 
+        }
 
         struct val_result_chain *res;
+
         for (res = results; res; res = res->val_rc_next) {
             int             i;
             if ((res->val_rc_answer == NULL)
@@ -3230,6 +3238,14 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                 break;
             }
         }
+
+        if (res != NULL)
+            break;
+
+        /* retry after stripping off left most label */
+        STRIP_LABEL(cur_q, cur_q);
+
+      } while (*cur_q != '\0');
     }
 
     if (zonecut_name_n) {
@@ -3244,6 +3260,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         }
     }
 
+end:
     val_free_result_chain(results);
     return VAL_NO_ERROR;
 }
@@ -4648,7 +4665,8 @@ verify_and_validate(val_context_t * context,
             /*
              * Check error conditions 
              */
-            else if (next_as->val_ac_status <= VAL_AC_LAST_ERROR) {
+            else if (next_as->val_ac_status <= VAL_AC_LAST_ERROR || 
+                    (next_as->val_ac_status == VAL_AC_DATA_MISSING && is_proof)) {
                 int is_pinsecure;
                 ttl_x = 0;
                 if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
@@ -4774,6 +4792,8 @@ verify_and_validate(val_context_t * context,
             !(flags & VAL_QUERY_NO_DLV) &&
             !(flags & VAL_QUERY_USING_DLV) &&
             (res->val_rc_status == VAL_NOTRUST ||
+             res->val_rc_status == VAL_PINSECURE ||
+             res->val_rc_status == VAL_PINSECURE_UNTRUSTED ||
              res->val_rc_status == VAL_DONT_KNOW) &&
             res->val_rc_rrset != NULL) {
 
@@ -4812,7 +4832,6 @@ verify_and_validate(val_context_t * context,
                      */
                     requery_with_edns0(context, top_q);
                     top_qfq->qfq_flags |= VAL_QUERY_USING_DLV; 
-                    top_q->qc_flags |= VAL_QUERY_USING_DLV; 
 
                     /* free up all results */
                     res = *results;
