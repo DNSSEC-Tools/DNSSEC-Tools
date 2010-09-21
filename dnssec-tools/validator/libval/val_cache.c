@@ -42,6 +42,12 @@
 #include "val_resquery.h"
 #include "val_cache.h"
 
+struct zone_ns_map_t {
+    u_char        zone_n[NS_MAXCDNAME];
+    struct name_server *nslist;
+    struct zone_ns_map_t *next;
+};
+
 /*
  * we have caches for DNSKEY, DS, NS/glue, answers, and proofs
  * XXX negative cache functionality is currently unimplemented
@@ -50,11 +56,6 @@ static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 static struct rrset_rec *unchecked_proofs = NULL;
 
-struct zone_ns_map_t {
-    u_char        zone_n[NS_MAXCDNAME];
-    struct name_server *nslist;
-    struct zone_ns_map_t *next;
-};
 /*
  * Also maintain mapping between zone and name server, 
  */
@@ -115,49 +116,29 @@ static int map_rwlock_init = -1;
  * NOTE: This assumes a read lock is alread held by the caller.
  */
 static int
-stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct val_query_chain *matched_q)
+stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct val_query_chain *matched_q)
 {
-    struct rrset_rec *new_rr, *prev;
-    struct rrset_rec *old;
-    struct rrset_rec *trail_new;
-    struct val_rr_rec  *rr_exchange;
+    struct rrset_rec *new_rr;
+    struct rrset_rec *old, *prev, *trail_new;
+    int delete_newrr = 0;
 
-    if (new_info == NULL)
+    if (new_info == NULL || unchecked_info == NULL)
         return VAL_NO_ERROR;
 
-    /*
-     * Tie the two together 
-     */
+    trail_new = NULL;
     prev = NULL;
-    old = *unchecked_info;
-    while (old) {
-
-        /*
-         * Look for duplicates 
-         */
-        new_rr = new_info;
-        trail_new = NULL;
-        while (new_rr) {
-
-            if (!IN_BAILIWICK(new_rr->rrs_name_n, matched_q)) {
-                /*
-                 * delete new 
-                 */
-                if (trail_new == NULL) {
-                    new_info = new_rr->rrs_next;
-                    if (new_info == NULL) {
-                        res_sq_free_rrset_recs(&new_rr);
-                        return VAL_NO_ERROR;
-                    }
-                } else
-                    trail_new->rrs_next = new_rr->rrs_next;
-                new_rr->rrs_next = NULL;
-                res_sq_free_rrset_recs(&new_rr);
-                break;
-
-            } else if (old->rrs_type_h == new_rr->rrs_type_h
-                && old->rrs_class_h ==
-                new_rr->rrs_class_h
+    while (*new_info) {
+        new_rr = *new_info;
+        delete_newrr = 0;
+        if (!IN_BAILIWICK(new_rr->rrs_name_n, matched_q)) {
+            delete_newrr = 1;
+        } else {
+          old = *unchecked_info;
+          prev = NULL;
+          while (old) {
+            if (
+                old->rrs_type_h == new_rr->rrs_type_h
+                && old->rrs_class_h == new_rr->rrs_class_h
                 && namecmp(old->rrs_name_n,
                            new_rr->rrs_name_n) == 0) {
 
@@ -166,16 +147,16 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
                  */
                 if (!(old->rrs_cred < new_rr->rrs_cred ||
                       (old->rrs_cred == new_rr->rrs_cred &&
-                       old->rrs_section <=
-                       new_rr->rrs_section))) {
+                       old->rrs_section <= new_rr->rrs_section))) {
                     /*
                      * exchange the two -
                      * copy from new to old: cred, status, section, ans_kind
                      * exchange: data, sig
                      */
+                    struct val_rr_rec  *rr_exchange;
+
                     old->rrs_cred = new_rr->rrs_cred;
-                    old->rrs_section =
-                        new_rr->rrs_section;
+                    old->rrs_section = new_rr->rrs_section;
                     old->rrs_ans_kind = new_rr->rrs_ans_kind;
                     rr_exchange = old->rrs_data;
                     old->rrs_data = new_rr->rrs_data;
@@ -185,36 +166,30 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
                     new_rr->rrs_sig = rr_exchange;
                 }
 
-                /*
-                 * delete new 
-                 */
-                if (trail_new == NULL) {
-                    new_info = new_rr->rrs_next;
-                    if (new_info == NULL) {
-                        res_sq_free_rrset_recs(&new_rr);
-                        return VAL_NO_ERROR;
-                    }
-                } else
-                    trail_new->rrs_next = new_rr->rrs_next;
-                new_rr->rrs_next = NULL;
-                res_sq_free_rrset_recs(&new_rr);
-
-
+                delete_newrr = 1;
                 break;
-            } else {
-                trail_new = new_rr;
-                new_rr = new_rr->rrs_next;
-            }
+            } 
+
+            /* look at the next cached record */
+            prev = old;
+            old = old->rrs_next;
+          }
         }
 
-        prev = old;
-        old = old->rrs_next;
-    }
-    if (prev == NULL)
-        *unchecked_info = new_info;
-    else
-        prev->rrs_next = new_info;
+        *new_info = new_rr->rrs_next;
+        new_rr->rrs_next = NULL;
 
+        if (delete_newrr) {
+            res_sq_free_rrset_recs(&new_rr);
+        } else {
+            /* add new data to the end of our cache */
+            if (prev) {
+                prev->rrs_next = new_rr;
+            } else {
+                *unchecked_info = new_rr;
+            }
+        }
+    }
     return VAL_NO_ERROR;
 }
 
@@ -225,7 +200,8 @@ int
 get_cached_rrset(struct val_query_chain *matched_q, 
                  struct domain_info **response)
 {
-    struct rrset_rec **answer_head, *next_answer, *prev, *new_answer;
+    struct rrset_rec **answer_head, *next_answer, *prev;
+    struct rrset_rec *new_answer;
     struct timeval  tv;
     pthread_rwlock_t *lk;
 
@@ -274,20 +250,20 @@ get_cached_rrset(struct val_query_chain *matched_q,
         if (tv.tv_sec >= next_answer->rrs_ttl_x) {
             // TTL expiry reached
             struct rrset_rec *temp;
-            if (prev) {
-                prev->rrs_next = next_answer->rrs_next;
-            } 
             temp = next_answer;
             next_answer = temp->rrs_next;
             temp->rrs_next = NULL;
-            if (temp == *answer_head) {
+            if (prev) {
+                prev->rrs_next = next_answer;
+            } else { 
                 *answer_head = next_answer;
             }
             res_sq_free_rrset_recs(&temp);
             continue;
         }
 
-        if (next_answer->rrs_class_h == class_h) {
+        if (
+            next_answer->rrs_class_h == class_h) {
 
                 /* if matching type or cname indirection */
             if (((next_answer->rrs_type_h == type_h ||
@@ -372,14 +348,14 @@ get_cached_rrset(struct val_query_chain *matched_q,
 }
 
 int
-stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
+stow_zone_info(struct rrset_rec **new_info, struct val_query_chain *matched_q)
 {
     int             rc;
     struct rrset_rec *r;
     int in_bailiwick = 1;
     
     /* Check if all records are in bailiwick */
-    r = new_info;
+    r = *new_info;
     while (r) {
         if (!IN_BAILIWICK(r->rrs_name_n, matched_q)) {
             in_bailiwick = 0;
@@ -390,11 +366,11 @@ stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
     
     /* If not, free the list (save all or nothing) */
     if (!in_bailiwick) {
-        while(new_info) {
-            r = new_info->rrs_next;
-            new_info->rrs_next = NULL;
-            res_sq_free_rrset_recs(&new_info);
-            new_info = r;
+        while(*new_info) {
+            r = (*new_info)->rrs_next;
+            (*new_info)->rrs_next = NULL;
+            res_sq_free_rrset_recs(new_info);
+            *new_info = r;
         }
         return VAL_NO_ERROR;
     }
@@ -408,7 +384,7 @@ stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 }
 
 int
-stow_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q)
+stow_answers(struct rrset_rec **new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
@@ -421,7 +397,7 @@ stow_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 }
 
 int
-stow_negative_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q)
+stow_negative_answers(struct rrset_rec **new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
@@ -582,21 +558,22 @@ get_nslist_from_cache(val_context_t *ctx,
 
         if (tv.tv_sec >= nsrrset->rrs_ttl_x) {
             /* TTL expiry reached */
-            struct rrset_rec *temp = nsrrset;
+            struct rrset_rec *temp;
+            temp = nsrrset;
             nsrrset = temp->rrs_next;
             temp->rrs_next = NULL;
-            res_sq_free_rrset_recs(&temp);
             if (prev) {
                 prev->rrs_next = nsrrset;
-            } else {
+            } else { 
                 unchecked_ns_info = nsrrset;
-            } 
+            }
+            res_sq_free_rrset_recs(&temp);
             continue;
         }
 
-        prev = nsrrset;
+        if (
+            nsrrset->rrs_type_h == ns_t_ns) {
 
-        if (nsrrset->rrs_type_h == ns_t_ns) {
             tname_n = nsrrset->rrs_name_n;
 
             /*
@@ -623,10 +600,17 @@ get_nslist_from_cache(val_context_t *ctx,
                 }
             }
         }
+        prev = nsrrset;
         nsrrset = nsrrset->rrs_next;
     }
 
-    if (ref_ns_list && tmp_zonecut_n) {
+    if (name_n) {
+        /* only ask for complete name server lists - don't want to fetch glue here */
+        bootstrap_referral(ctx, name_n, unchecked_ns_info, matched_qfq, queries,
+                       ref_ns_list);
+    }
+
+    if (*ref_ns_list && tmp_zonecut_n) {
         *zonecut_n = (u_char *) MALLOC (wire_name_length(tmp_zonecut_n) *
                 sizeof (u_char));
         if (*zonecut_n == NULL) {
@@ -634,12 +618,6 @@ get_nslist_from_cache(val_context_t *ctx,
             return VAL_OUT_OF_MEMORY;
         } 
         memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
-    }
-
-    if (name_n) {
-        /* only ask for complete name server lists - don't want to fetch glue here */
-        bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_qfq, queries,
-                       ref_ns_list);
     }
     
     UNLOCK(&ns_rwlock);
