@@ -53,6 +53,8 @@ extern          "C" {
 #define RES_USE_DNSSEC  0x00200000
 #endif
 
+#define RES_EDNS0_DEFAULT 4096
+
 #if 0
 #ifndef MAXDNAME
 #define MAXDNAME    256
@@ -177,6 +179,7 @@ struct name_server {
     u_int32_t       ns_security_options;
     u_int32_t       ns_status;
     u_long          ns_options;
+    int             ns_edns0_size;
     int             ns_retrans;
     int             ns_retry;
 
@@ -200,7 +203,6 @@ int             query_send(const char *name,
                            const u_int16_t type_h,
                            const u_int16_t class_h,
                            struct name_server *nslist, 
-                           int edns0_size,
                            int *trans_id);
 int             response_recv(int *trans_id,
                               fd_set *pending_desc,
@@ -208,7 +210,9 @@ int             response_recv(int *trans_id,
                               struct name_server **respondent,
                               u_char ** answer, size_t * answer_length);
 void            res_cancel(int *transaction_id);
-int             res_skipns(int transaction_id, struct timeval *closest_event);
+int             res_nsfallback(int transaction_id, struct timeval *closest_event,
+                               const char *name, const u_int16_t class_h,
+                               const u_int16_t type_h, int *edns0);
 
 void            wait_for_res_data(fd_set * pending_desc, 
                                   struct timeval *closest_event);
@@ -216,7 +220,6 @@ int             get(const char *name_n,
                     const u_int16_t type_h,
                     const u_int16_t class_h,
                     struct name_server *nslist,
-                    int edns0_size,
                     struct name_server **server,
                     u_char ** response, size_t * response_length);
 void            print_response(u_char * ans, size_t resplen);
