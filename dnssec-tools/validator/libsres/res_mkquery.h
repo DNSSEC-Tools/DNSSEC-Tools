@@ -34,11 +34,17 @@ int
                                  size_t buflen,
                                  size_t *query_length);   /* size of buffer */
 
+int             res_create_query_payload(struct name_server *ns,
+                         const char *name,
+                         const u_int16_t class_h,
+                         const u_int16_t type_h,
+                         u_char **signed_query,
+                         size_t *signed_length);
+
 int
                 res_val_nopt(struct name_server *pref_ns, 
                              u_char * buf,      /* buffer to put query */
                              size_t buflen,        /* size of buffer */
-                             int edns0_size,
                              size_t * query_length);       /* UDP answer buffer size */
 
 

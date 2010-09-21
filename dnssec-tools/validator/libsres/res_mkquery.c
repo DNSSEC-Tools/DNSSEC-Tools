@@ -84,6 +84,7 @@
 
 #include "validator/resolver.h"
 #include "res_mkquery.h"
+#include "res_tsig.h"
 #include "res_support.h"
 
 /*
@@ -211,6 +212,49 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
     return 0;
 }
 
+int
+res_create_query_payload(struct name_server *ns,
+                         const char *name,
+                         const u_int16_t class_h,
+                         const u_int16_t type_h,
+                         u_char **signed_query,
+                         size_t *signed_length)
+{
+    u_char          query[12 + NS_MAXDNAME + 4];
+    size_t          query_limit = 12 + NS_MAXDNAME + 4;
+    size_t          query_length = 0;
+    int ret_val;
+
+    ret_val = res_val_nmkquery(ns, ns_o_query, name, class_h, type_h, NULL,
+                             0, NULL, query, query_limit, &query_length);
+    if (ret_val==  -1)
+        return SR_MKQUERY_INTERNAL_ERROR;
+
+    if (ns->ns_options & RES_USE_DNSSEC) {
+        ret_val = res_val_nopt(ns, query, query_limit,
+                             &query_length);
+        /** Set the CD flag */
+        ((HEADER *) query)->cd = 1;
+    }
+    if (ret_val == -1)
+        return SR_MKQUERY_INTERNAL_ERROR;
+    if (ns->ns_options & RES_RECURSE) {
+        ((HEADER *)query)->rd = 1;
+    } else {
+        /* don't ask for recursion */
+        ((HEADER *)query)->rd = 0;
+    }
+
+    if ((ret_val = res_tsig_sign(query, query_length, ns,
+                                 signed_query,
+                                 signed_length)) != SR_TS_OK) {
+        return SR_MKQUERY_INTERNAL_ERROR; 
+    }
+    return 0;
+}
+
+
+
 #ifdef RES_USE_EDNS0
 /*
  * attach OPT pseudo-RR, as documented in RFC2671 (EDNS0). 
@@ -220,7 +264,6 @@ int
 res_val_nopt(struct name_server *pref_ns, 
              u_char * buf,      /* buffer to put query */
              size_t buflen,        /* size of buffer */
-             int edns0_size, 
              size_t *query_length)
 {                               /* UDP answer buffer size */
     register HEADER *hp;
@@ -246,7 +289,7 @@ res_val_nopt(struct name_server *pref_ns,
     *cp++ = 0;                  /* "." */
 
     RES_PUT16(ns_t_opt, cp);     /* TYPE */
-    RES_PUT16(edns0_size & 0xffff, cp);      /* CLASS = UDP payload size */
+    RES_PUT16(pref_ns->ns_edns0_size & 0xffff, cp);      /* CLASS = UDP payload size */
     *cp++ = ns_r_noerror;       /* extended RCODE */
     *cp++ = 0;                  /* EDNS version */
 #ifdef DEBUG
