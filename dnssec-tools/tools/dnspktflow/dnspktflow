@@ -73,6 +73,7 @@ DTGetOptions(\%opts,
 		['A|show-authoritative',"Shows authoritative information in result image"],
 		['x|show-additional',"Shows additional information in result image"],
 		['l|show-label-lines','Shows lines attaching labels to lines'],
+	        ['C|dont-cluster-auth', "Don't group the authoritative addresses"],
 		["fontsize=i","Font Size"],
 
 		["GUI:separator", "Debugging:"],
@@ -352,7 +353,13 @@ sub get_host_label {
 sub get_host_label_plus {
     my $addr = shift;
     my @ret;
+    if ($opts{'C'}) {
+	return get_host_label($addr);
+    }
+    # return the host label
     push @ret, (exists($ipdata{$addr}) ? $ipdata{$addr} : $addr);
+
+    # see if the node should be clustered with other nodes
     if (exists($authdata{$ret[0]})) {
 	my $str = keys(%{$authdata{$ret[0]}});
 	push @ret, 'cluster', join("\n",keys(%{$authdata{$ret[0]}}));
