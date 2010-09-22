@@ -36,11 +36,13 @@ Needed Files depending on what is being built:
      cd ~/rpmbuild/SRPMS
      yumdownloader --source xulrunner
      rpm -ivh xulrunner-*src.rpm
+     # or fedpkg co xulrunner && cd xulrunner && fedpkg switch-branch f13
 
      cd ~/rpmbuild/SPECS
      patch < ~/dnssec-tools/apps/mozilla/xulrunner-spec.patch
-     cp ~/dnssec-tools/apps/mozilla/dnssec-both.patch ~/rpmbuild/SOURCES/
+     cp ~/dnssec-tools/apps/mozilla/dnssec-both.patch ~/dnssec-tools/apps/mozilla/dnssec-firefox.patch ~/rpmbuild/SOURCES/
      rpmbuild -bb ~/rpmbuild/SPECS/xulrunner.spec
+     # or: fedpkg local
      sudo rpm -Uvh ~/rpmbuild/RPMS/i386/xulrunner-*
 
 
