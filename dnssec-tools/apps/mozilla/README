@@ -14,6 +14,15 @@ Details on the contents of this directory:
     Contains instructions on how to build DNSSEC capability for firefox
     and the more generic mozilla suite. Depends on xulrunner being
     rebuilt first.
+
+    To build all of the firefox rpm components, do it in the following
+    order:
+    1. nspr
+    2. [rebuild nss-util]
+    2. [rebuild nss-softokn]
+    2. [rebuild nss]
+    2. xulrunner
+    3. firefox
  
 #######################################################################
   File:
@@ -22,6 +31,12 @@ Details on the contents of this directory:
   Description:
     Contains instructions on how to build DNSSEC capability for xulrunner.
     Depends on nspr being rebuilt first.
+
+    This package may require you update the following other packages
+    first:
+    1. nss-util
+    2. nss-softokn
+    3. nss
  
 #######################################################################
   File:

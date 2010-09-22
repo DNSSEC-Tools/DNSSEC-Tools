@@ -37,13 +37,21 @@ Needed Files depending on what is being built:
      cd ~/rpmbuild/SRPMS
      yumdownloader --source nspr
      rpm -ivh nspr-*src.rpm
+     # or: fedpkg co nspr && cd nspr && fedpkg switch-branch f13
 
      cd ~/rpmbuild/SPECS
      patch < ~/dnssec-tools/apps/mozilla/nspr-spec.patch
      cd ~/dnssec-tools/apps/mozilla/
      cp dnssec-nspr.patch dnssec-pkgconfig.patch ~/rpmbuild/SOURCES/
      rpmbuild -bb ~/rpmbuild/SPECS/nspr.spec
+     # or: fedpkg local
      sudo rpm -Uvh ~/rpmbuild/RPMS/i386/nspr-*
+
+######################################################################
+# alternate nspr RPM via fedpkg
+#
+fedpkg co nspr
+
 
 
 ######################################################################
