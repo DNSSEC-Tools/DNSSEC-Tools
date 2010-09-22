@@ -42,13 +42,15 @@ Needed Files depending on what is being built:
 
     cd ~/rpmbuild/SRPMS
     yumdownloader --source firefox
+    # or: fedpkg co firefox && cd firefox && fedpkg switch-branch f13
     rpm -ivh firefox-*
 
     cd ~/rpmbuild/SPECS/
-    patch < ~/dnssec-tools/apps/mozilla/
+    patch < ~/dnssec-tools/apps/mozilla/firefox-spec.patch
     cd ~/dnssec-tools/apps/mozilla/
     cp dnssec-firefox.patch dnssec-both.patch dnssec-mozconfig.patch ~/rpmbuild/SOURCES/
     rpmbuild -bb ~/rpmbuild/SPECS/firefox.spec
+    # or: fedpkg local
     sudo rpm -Fvh ~/rpmbuild/RPMS/firefox-*
 
 ######################################################################
