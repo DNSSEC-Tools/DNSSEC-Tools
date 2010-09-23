@@ -521,8 +521,7 @@ val_parse_nsec3_rdata(u_char * rr_rdata, size_t rdatalen,
     cp += 1;
     nd->flags = *cp;
     cp += 1;
-    memcpy(&nd->iterations, cp, sizeof(u_int16_t));
-    cp += sizeof(u_int16_t);
+    VAL_GET16(nd->iterations, cp);
     nd->saltlen = *cp;
     cp += 1;
     if ((cp - rr_rdata) >= rdatalen)
