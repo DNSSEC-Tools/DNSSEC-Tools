@@ -2,12 +2,12 @@
 # Copyright 2005-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
-# DNSSEC Tools
+# DNSSEC-Tools
 #
 #	Keyrec file routines.
 #
-#	The routines in this module manipulate a keyrec file for the DNSSEC
-#	tools.  The keyrec file contains information about the values used
+#	The routines in this module manipulate a keyrec file for the DNSSEC-
+#	Tools.  The keyrec file contains information about the values used
 #	to generate a key or to sign a zone.
 #
 #	Entries in the configuration file are of the "key value" format, with
@@ -63,8 +63,8 @@ our $VERSION = "1.7";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk
-		 keyrec_names keyrec_fullrec
+our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read
+		 keyrec_filestat keyrec_names keyrec_fullrec
 		 keyrec_recval keyrec_setval keyrec_delval
 		 keyrec_settime keyrec_revoke_check
 		 keyrec_add keyrec_del keyrec_newkeyrec keyrec_exists
@@ -147,28 +147,27 @@ my %keyrecs;				# Keyrec hash table (keywords/values.)
 
 my $modified;				# File-modified flag.
 
-
 #--------------------------------------------------------------------------
 # Routine:      keyrec_creat()
 #
-# Purpose:      Create a DNSSEC keyrec file, if it does not exist.  If
+# Purpose:      Create a DNSSEC-Tools keyrec file, if it does not exist.  If
 #               the file already exists, this function truncates the file.
 #
 #		Returns 1 if the file was created successfully and 0 if
-#               there was an error in file creation.  Upon successful return,
-#               this function leaves the file in an 'open' read-write state.
+#               there was an error in file creation.
 #
 sub keyrec_creat
 {
 	my $krf = shift;		# Key record file.
 
 	#
-	# Create a new keyrec file, or truncate existing one
+	# Create a new keyrec file, or truncate an existing one.
 	#
 	open(KEYREC,"+> $krf") || return 0;
+	close(KEYREC);
 
 	#
-	# Save the keyrec's name.
+	# Save the name of the new keyrec file.
 	#
 	$curkrfname = $krf;
 
@@ -176,43 +175,107 @@ sub keyrec_creat
 }
 
 #--------------------------------------------------------------------------
-# Routine:      keyrec_open()
+# Routine:      keyrec_open()			DEPRECATED
 #
-# Purpose:      Opens an existing DNSSEC keyrec file.  If the file can't
-#		be opened for reading and writing, an attempt is made to
-#		open it read-only.
+# Purpose:      This routine used to open an existing DNSSEC-Tools keyrec file.
+#		However, this was an unnecessary operation since keyrec_read()
+#		would open the file if it wasn't open.
 #
-#		Returns 1 if the file was opened successfully and 0 if
-#               there was an error in opening file (for example, if the
-#               file did not exist).  Upon successful return, this function
-#               leaves the file in an 'open' read-write or read-only state.
+#		This call will eventually be removed.  For now, it calls
+#		keyrec_filestat() to check the existence of the specified
+#		keyrec file.  It also saves the keyrec file's name to the
+#		$curkrfname global.
+#
+# Return Values:
+#		1 - if the file passed all keyrec_filestat()'s checks
+#		0 - if any of keyrec_filestat()'s checks failed
+#
+#		The success/failure meaning of these values matches the
+#		success/failure meaning of keyrec_open()'s original returns.
 #
 sub keyrec_open
 {
-	my $krf = shift;		# Key record file.
+	my $krf = shift;				# Keyrec file.
+	my $ret;					# Return value.
+
+	$ret = keyrec_filestat($krf);
+
+	$curkrfname = $krf;
+
+	return(! $ret);
+}
+
+#--------------------------------------------------------------------------
+# Routine:      keyrec_filestat()
+#
+# Purpose:      Checks that a given file might be a reasonable candidate for
+#		a DNSSEC-Tools keyrec file.  The checks to be performed may
+#		be gleaned from the list of return values.
+#
+# Return Values:
+#			0 - returned if the tests are all true
+#			1 - an actual name wasn't given
+#			2 - the file does not exist
+#			3 - the file is not a regular file
+#			4 - the file is not readable
+#			5 - the file is empty
+#
+sub keyrec_filestat
+{
+	my $krf = shift;				# Keyrec file.
 
 	#
-	# Open an existing keyrec file
+	# Ensure that we were given a name.
 	#
-	if(open(KEYREC,"+< $krf") == 0)
+	if(!defined($krf) || ($krf eq ''))
 	{
-		open(KEYREC,"< $krf") || return(0);
+		return(1);
 	}
 
 	#
-	# Save the keyrec's name.
+	# Ensure the name is actually a file.
 	#
-	$curkrfname = $krf;
+	if(! -e $krf)
+	{
+		return(2);
+	}
 
-	return(1);
+	#
+	# Ensure the name is actually a *file*.
+	#
+	if(! -f $krf)
+	{
+		return(3);
+	}
+
+	#
+	# Ensure the name is a readable file.
+	#
+	if(! -r $krf)
+	{
+		return(4);
+	}
+
+	#
+	# Ensure the name is actually a readable non-empty file.
+	#
+	if(! -z $krf)
+	{
+		return(5);
+	}
+
+	#
+	# It is!  It is a readable non-empty file!
+	#
+	return(0);
 }
 
 #--------------------------------------------------------------------------
 # Routine:	keyrec_read()
 #
-# Purpose:	Read a DNSSEC keyrec file.  The contents are read into the
-#		@keyreclines array and the keyrecs are broken out into the
-#		%keyrecs hash table.
+# Purpose:	Open and read a DNSSEC-Tools keyrec file.  The contents are
+#		read into the @keyreclines array and the keyrecs are broken
+#		out into the %keyrecs hash table.
 #
 sub keyrec_read
 {
@@ -252,11 +315,12 @@ sub keyrec_read
 	#
 	# Open up the keyrec file.
 	#
-	if(keyrec_open($krf) == 0)
+	if(open(KEYREC,"< $krf") == 0)
 	{
 		err("unable to open $krf\n",-1);
 		return(-2);
 	}
+	$curkrfname = $krf;
 
 	#
 	# Initialize some data.
@@ -334,257 +398,10 @@ sub keyrec_read
 	}
 
 	#
-	# Ensure the keyrec file is in the current format.
-	#
-	keyrec_fmtchk($krf);
-
-	#
 	# Return the number of keyrecs we found.
 	#
 	$krcnt = keys(%keyrecs);
 	return($krcnt);
-}
-
-#--------------------------------------------------------------------------
-# Routine:	keyrec_fmtchk()
-#
-# Purpose:	Ensure the keyrec file is in the current format.  This
-#		function only ensure the current format, it does not do
-#		a sanity check on the keyrec file.
-#
-#			zone keyrecs:
-#				- kskkey:
-#					Delete the entry if a kskcur entry
-#					exists.  If a kskcur entry doesn't
-#					exist, the kskkey key will be moved
-#					into a new kskcur entry.
-#				- keys:
-#					Ensure that each of the named keys in
-#					the zone is really pointing to a signing
-#					set.  If not, a new set is created and
-#					the key inserted in it.
-#
-#			set keyrecs:
-#				Nothing.
-#
-#			key keyrecs:
-#				- ksk:
-#					Change to a kskcur, kskpub, kskrev,
-#					or kskobs.
-#
-sub keyrec_fmtchk()
-{
-	my $krf = shift;			# Name of keyrec file.
-	my $krn;				# Name of keyrec.
-	my $krec;				# Ref to the keyrec's hash.
-	my %krec;				# The keyrec's hash.
-
-	my $changes = 0;			# Count of changes made.
-
-# print "keyrec_fmtchk:  down in\n";
-
-	#
-	# Check zone keyrecs for problems:
-	#	- existence of kskkey fields
-	#	- key fields that don't point to set keyrecs
-	#
-	foreach $krn (keyrec_names())
-	{
-		#
-		# Get the keyrec hash.
-		#
-		$krec = $keyrecs{$krn};
-		%krec = %$krec;
-
-		#
-		# Only look at zones right now.
-		#
-		next if($krec{'keyrec_type'} ne 'zone');
-
-		#
-		# Check for the old 'kskkey' keyrec field.  If we find one,
-		# we'll make it the new kskcur field if there's no 'kskcur'.
-		# In either case, we'll delete the 'kskkey' field.
-		#
-		if(exists($krec{'kskkey'}))
-		{
-			my $set;		# Signing set name.
-			my $newtype;		# Type for new signing set.
-
-			#
-			# Figure out the type for the new signing set.
-			#
-			if(exists($krec{'kskcur'}))
-			{
-				$newtype = 'kskobs';
-			}
-			else
-			{
-				$newtype = 'kskcur';
-			}
-
-			#
-			# Create a signing set for the old key.
-			#
-			$set = keyrec_signset_newname($krn);
-			keyrec_signset_new($krn,$set,$newtype);
-			keyrec_setval('zone',$krn,$newtype,$set);
-			keyrec_signset_addkey($set,$krec{'kskkey'});
-
-			#
-			# Delete the old kskkey keyrec.
-			#
-			keyrec_delval($krn,'kskkey');
-			$changes++;
-		}
-
-		#
-		# Ensure that each of the zone's key set types is actually
-		# pointing to a signing set.  If it is pointing to a key,
-		# create a new set, move the key there, and reference the set.
-		#
-		foreach my $kst (qw /kskcur kskpub kskrev kskobs zskcur zskpub zsknew/)
-		{
-			my $keyname;		# Key's name.
-			my $set;		# Name of new signing set.
-			my $skr;		# Sub-keyrec.
-
-			#
-			# Skip this set type if it isn't in the keyrec.
-			#
-			next if(!exists($krec{$kst}));
-
-			#
-			# Get the type of this key's keyrec.  Delete and
-			# skip empty entries.
-			#
-			$keyname = $krec{$kst};
-			if($keyname eq '')
-			{
-				keyrec_delval($krn,$kst);
-				$changes++;
-				next;
-			}
-
-			#
-			# Skip this set type if it's already a signing set.
-			#
-			$skr = $keyrecs{$keyname}{'keyrec_type'};
-			next if($skr eq 'set');
-			next if(exists($keyrecs{$keyname}{'set_type'}));
-
-			#
-			# Make a new signing set for this key.
-			#
-			$set = keyrec_signset_newname($krn);
-			keyrec_signset_new($krn,$set,$kst);
-			keyrec_setval('zone',$krn,$kst,$set);
-			keyrec_signset_addkey($set,$keyname);
-			$changes++;
-		}
-	}
-
-	#
-	# This is scaffolding in case we need to add set checks in the future.
-	#
-	if(0)
-	{
-		foreach $krn (keyrec_names())
-		{
-			#
-			# Get the keyrec hash.
-			#
-			$krec = $keyrecs{$krn};
-			%krec = %$krec;
-
-			#
-			# Only look at sets right now...
-			#
-			next if($krec{'keyrec_type'} ne 'set');
-
-			#
-			# ... but we have nothing in sets to update.
-			#
-		}
-	}
-
-	#
-	# Check key keyrecs for problems:
-	#	- Change ksk type keyrecs to kskcur, kskpub, kskrev, or kskobs.
-	#
-	foreach $krn (keyrec_names())
-	{
-		my $krt;				# Keyrec's type.
-
-		#
-		# Get the keyrec hash.
-		#
-		$krec = $keyrecs{$krn};
-		%krec = %$krec;
-
-		#
-		# Get the keyrec's type.
-		#
-		$krt = $krec{'keyrec_type'};
-
-		#
-		# Only look at keys right now.
-		#
-		next if(($krec{$krt} eq 'zone')	|| ($krec{$krt} eq 'set'));
-		next if(exists($krec{'set_type'}));
-
-		#
-		# Convert a KSK keyrec into either a kskcur, kskpub, kskrev,
-		# or kskobs keyrec.
-		#
-		if($krt eq 'ksk')
-		{
-			my $zone;			# Key's owner zone.
-			my $key;			# Key type.
-			my $set;			# Key's signing set.
-			my $found = "";			# Found-key flag.
-
-			#
-			# Check the key's zone to find if it's used in any of
-			# the zone's key sets.
-			#
-			$zone = $krec{'zonename'};
-			foreach my $key (qw /kskcur kskpub kskrev kskobs/)
-			{
-				$set = $keyrecs{$zone}{$key};
-				if(keyrec_signset_haskey($set,$krn))
-				{
-					$found = $key;
-					last;
-				}
-			}
-
-			#
-			# If this key is used in the zone, we'll set its type
-			# appropriately.  If not, we'll set it to being an
-			# obsolete key.
-			#
-			if($found ne "")
-			{
-				keyrec_setval('key',$krn,'keyrec_type',$found);
-			}
-			else
-			{
-				keyrec_setval('key',$krn,'keyrec_type','kskobs');
-			}
-			$changes++;
-		}
-	}
-
-	#
-	# If any problems were found and fixed, write and re-read the file.
-	#
-	if($changes)
-	{
-		keyrec_write();
-		keyrec_close();
-		keyrec_read($krf);
-	}
 }
 
 #--------------------------------------------------------------------------
@@ -969,13 +786,13 @@ sub keyrec_setval
 		# of the keyrec.
 		#
 		my @endarr = splice(@keyreclines,$krind+1);
-		push(@keyreclines,$newline);
-		push(@keyreclines,@endarr);
+		push @keyreclines, $newline;
+		push @keyreclines, @endarr;
 
 		#
-		# Bump the array length counter.
+		# Update the array length counter.
 		#
-		$keyreclen++;
+		$keyreclen = @keyreclines;
 	}
 
 	#
@@ -1005,7 +822,7 @@ sub keyrec_delval
 	#
 	# Return if a keyrec of the specified name doesn't exist.
 	#
-	return(1) if(!exists($keyrecs{$name}));
+	return(-1) if(!exists($keyrecs{$name}));
 
 	#
 	# Make sure we've got the correct count of keyrec lines.
@@ -1100,7 +917,7 @@ sub keyrec_delval
 			# Delete the field from %keyrecs and @keyreclines.
 			#
 			delete $keyrecs{$name}{$field};
-			splice @keyreclines, $fldind, 1;
+			splice(@keyreclines, $fldind, 1);
 
 			$modified = 1;
 			$keyreclen--;
@@ -1130,6 +947,8 @@ sub keyrec_add
 	my $secsstr;			# Hash key for time in seconds.
 	my $datestr;			# Hash key for time string.
 
+	my @krlines;			# Copy of @keyreclines.
+	my $krlen;			# Length of @krlines.
 	my %fields;			# Keyrec fields.
 	my @getfields;			# Hash fields to retrieve.
 
@@ -1188,15 +1007,16 @@ sub keyrec_add
 	#
 	# Make sure we've got the correct count of keyrec lines.
 	#
-	$keyreclen = @keyreclines;
+	@krlines = @keyreclines;
+	$krlen = @krlines;
 
 	#
 	# Add the new keyrec's first line to the end of the keyrec table.
 	#
-	$keyreclines[$keyreclen] = "\n";
-	$keyreclen++;
-	$keyreclines[$keyreclen] = "$krtype\t\"$krname\"\n";
-	$keyreclen++;
+	$krlines[$krlen] = "\n";
+	$krlen++;
+	$krlines[$krlen] = "$krtype\t\"$krname\"\n";
+	$krlen++;
 
 	#
 	# Fill the new keyrec with the caller's hash fields and add it to
@@ -1258,8 +1078,8 @@ sub keyrec_add
 			# file contents array.
 			#
 			$keyrecs{$krname}{$fn} = $fields{$fn};
-			$keyreclines[$keyreclen] = "\t$fn$spacing\"$fields{$fn}\"\n";
-			$keyreclen++;
+			$krlines[$krlen] = "\t$fn$spacing\"$fields{$fn}\"\n";
+			$krlen++;
 		}
 	}
 
@@ -1268,20 +1088,22 @@ sub keyrec_add
 	#
 	$keyrecs{$krname}{$secsstr} = $chronosecs;
 	$keyrecs{$krname}{$datestr} = $chronostr;
-	$keyreclines[$keyreclen] = "\t$secsstr\t\"$chronosecs\"\n";
-	$keyreclen++;
-	$keyreclines[$keyreclen] = "\t$datestr\t\"$chronostr\"\n";
-	$keyreclen++;
+	$krlines[$krlen] = "\t$secsstr\t\"$chronosecs\"\n";
+	$krlen++;
+	$krlines[$krlen] = "\t$datestr\t\"$chronostr\"\n";
+	$krlen++;
 
 	#
 	# Put a blank line after the final line of the keyrec.
 	#
-	$keyreclines[$keyreclen] = "\n";
-	$keyreclen++;
+	$krlines[$krlen] = "\n";
+	$krlen++;
 
 	#
-	# Sync the keyrec file.
+	# Save the new keyrec array and mark the keyrec file as modified.
 	#
+	@keyreclines = @krlines;
+	$keyreclen = $krlen;
 	$modified = 1;
 	return(0);
 }
@@ -1408,7 +1230,8 @@ sub keyrec_del
 # Routine:	keyrec_newkeyrec()
 #
 # Purpose:	Creates a keyrec in %keyrecs.  The name and type fields of
-#		the keyrec are set.
+#		the keyrec are set.  This does not add the keyrec to the
+#		file or @keyreclines.
 #
 sub keyrec_newkeyrec
 {
@@ -1548,7 +1371,6 @@ sub keyrec_signset_newname
 	}
 
 	$setname =~ s/$setprefix$oldind/$setprefix$newind/;
-#	$keyrecs{$zone}{'lastset'} = $setname;
 	keyrec_setval('zone',$zone,'lastset',$setname);
 
 	#
@@ -1575,10 +1397,10 @@ sub keyrec_signset_new
 	#
 	# Ensure the given set type is valid.
 	#
-	if(($type ne "kskcur") && ($type ne "kskpub") &&
-	   ($type ne "kskrev") && ($type ne "kskobs") &&
-	   ($type ne "zskcur") && ($type ne "zskpub") &&
-	   ($type ne "zsknew") && ($type ne "zskobs"))
+	if(($type ne "kskcur") && ($type ne "zskcur") &&
+	   ($type ne "kskpub") && ($type ne "zskpub") &&
+	   ($type ne "kskrev") && ($type ne "zsknew") &&
+	   ($type ne "kskobs") && ($type ne "zskobs"))
 	{
 		return(-1);
 	}
@@ -1588,7 +1410,10 @@ sub keyrec_signset_new
 	#
 	if(!exists($keyrecs{$name}))
 	{
-		return(-1) if(keyrec_add('set',$name) < 0);
+		if(keyrec_add('set',$name) < 0)
+		{
+			return(-1);
+		}
 	}
 
 	#
@@ -1705,7 +1530,7 @@ sub keyrec_signset_delkey
 	{
 		if($keys[$ind] eq $key)
 		{
-			splice @keys, $ind, 1;
+			splice(@keys, $ind, 1);
 		}
 	}
 
@@ -2077,7 +1902,8 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   use Net::DNS::SEC::Tools::keyrec;
 
   keyrec_creat("localzone.keyrec");
-  keyrec_open("localzone.keyrec");
+  keyrec_open("localzone.keyrec");  (DEPRECATED)
+  $okfile = keyrec_filestat("localzone.keyrec");
   keyrec_read("localzone.keyrec");
 
   @krnames = keyrec_names();
@@ -2094,9 +1920,10 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   keyrec_add("key","Kexample.com.+005+12345",\%keydata);
 
   keyrec_del("example.com");
-  keyrec_del("Kexample.com.+005+12345");
 
   keyrec_setval("zone","example.com","zonefile","db.example.com");
+
+  keyrec_delval("example.com","kskrev");
 
   @kskpaths = keyrec_keypaths("example.com","kskcur");
 
@@ -2159,14 +1986,15 @@ following is an example of a key I<keyrec>:
           keyrec_gensecs  "1101183727"
           keyrec_gendate  "Tue Nov 23 04:22:07 2004"
 
-The first step in using this module B<must> be to create a new I<keyrec>
-file or open and read an existing one.  The I<keyrec_creat()> interface creates
-a I<keyrec> file if it does not exist and opens it.  The I<keyrec_open()>
-interface opens an existing I<keyrec> file.  The I<keyrec_read()> interface
-reads the file and parses it into an internal format. The file's
-records are copied into a hash table (for easy reference by the
-B<Net::DNS::SEC::Tools::keyrec> routines) and in an array (for
-preserving formatting and comments.)
+The first step in using this module B<must> be to create a new I<keyrec> file
+or open and read an existing one.  The I<keyrec_creat()> interface creates a
+I<keyrec> file if it does not exist.  The I<keyrec_read()> interface opens
+and reads the file, then parses it into an internal format.  The file's
+records are copied into a hash table (for easy and fast reference by the
+B<Net::DNS::SEC::Tools::keyrec> routines) and in an array (for preserving
+formatting and comments.) The I<keyrec_filestat()> interface may be used
+check that the given file may be a I<keyrec> file, though it doesn't check
+the file's contents.
 
 After the file has been read, the contents are referenced using
 I<keyrec_fullrec()> and I<keyrec_recval()>.  The I<keyrec> contents are
@@ -2228,13 +2056,12 @@ Return values are:
 =item I<keyrec_close()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-I<keyrec_creat()>, I<keyrec_open()> or I<keyrec_read()>) and closes the file
-handle.
+I<keyrec_read()>) and closes the file handle.
 
 =item I<keyrec_creat(keyrec_file)>
 
 This interface creates a I<keyrec> file if it does not exist, and truncates
-the file if it already exists.  It leaves the file in the open state.
+the file if it already exists.
 
 I<keyrec_creat()> returns 1 if the file was created successfully.
 It returns 0 if there was an error in creating the file.
@@ -2242,8 +2069,8 @@ It returns 0 if there was an error in creating the file.
 =item I<keyrec_curkrf()>
 
 This routine returns the name of the I<keyrec> file that is currently in use.
-This value is the filename passed to keyrec_creat() or keyrec_open(); it is
-not guaranteed to be either an absolute or relative filename.
+This value is the filename passed to I<keyrec_read()> or I<keyrec_creat()>;
+it is not guaranteed to be either an absolute or relative filename.
 
 =item I<keyrec_defkrf()>
 
@@ -2261,8 +2088,20 @@ and blank lines surrounding it are left intact.
 
 Return values are:
 
-    0 successful I<keyrec> deletion
-    -1 invalid I<krtype> (empty string or unknown name)
+     0 successful keyrec deletion
+    -1 invalid krtype (empty string or unknown name)
+
+=item I<keyrec_delval(keyrec_name, field)>
+
+This routine deletes the I<field> from the I<keyrec> named by I<keyrec_name>.
+The I<keyrec> is deleted from both the I<%keyrecs> hash table and the
+I<@keyreclines> array.
+
+Return values are:
+
+    -1 keyrec_name not the name of an existing keyrec
+     0 field not found in keyrec
+     1 field deleted from keyrec
 
 =item I<keyrec_discard()>
 
@@ -2275,6 +2114,20 @@ and new data will be lost.
 
 I<keyrec_exists()> returns a boolean indicating if a I<keyrec> exists that
 has the specified I<keyrec_name>.
+
+=item I<keyrec_filestat(keyrec_name)>
+
+I<keyrec_filestat()> checks that a given file might be a reasonable candidate
+for a DNSSEC-Tools I<keyrec> file.  The checks to be performed may be gleaned
+from the list of return values.
+
+Return values are:
+    0 - returned if the tests are all succeed
+    1 - an actual name wasn't given
+    2 - the file does not exist
+    3 - the file is not a regular file
+    4 - the file is not readable
+    5 - the file is empty
 
 =item I<keyrec_fullrec(keyrec_name)>
 
@@ -2301,14 +2154,22 @@ a null set is returned.
 
 This routine returns a list of the I<keyrec> names from the file.
 
-=item I<keyrec_open(keyrec_file)>
+=item I<keyrec_open(keyrec_file)> B<DEPRECATED>
 
-This interface opens an existing I<keyrec> file.  It first attempts to open
-the I<keyrec> file for reading and writing.  If this fails, then it attempts
-to open it read-only.
+This routine used to open an existing DNSSEC-Tools I<keyrec> file.  However,
+this was an unnecessary operation since I<keyrec_read()> would open the file
+if it wasn't already open.
 
-I<keyrec_open()> returns 1 if the file was opened successfully.  It returns 0
-if the file does not exists or if there was an error in opening the file.
+This call will eventually be removed.  For now, it calls I<keyrec_filestat()>
+to check the validity of the specified I<keyrec> file.
+
+Return values:
+
+    1 is the file passes all of keyrec_filestat()'s tests
+    0 is the file fails any of keyrec_filestat()'s tests
+
+For backwards compatibility, the success/failure meaning of the return values
+matches the success/failure meaning of I<keyrec_open()>'s original returns.
 
 =item I<keyrec_read(keyrec_file)>
 
@@ -2366,10 +2227,9 @@ Return values:
 =item I<keyrec_saveas(keyrec_file_copy)>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-I<keyrec_creat()>, I<keyrec_open()> or I<keyrec_read()>) to the file named in
-the I<keyrec_file_copy> parameter.  The new file's file handle is closed, 
-but the original file and the file handle to the original file are not
-affected.
+or I<keyrec_read()>) to the file named in the I<keyrec_file_copy> parameter.
+The new file's file handle is closed, but the original file and the file
+handle to the original file are not affected.
 
 =item I<keyrec_setval(keyrec_type,keyrec_name,field,value)>
 
@@ -2398,10 +2258,10 @@ I<keyrec_signdate> and I<keyrec_signsecs> fields are modified.
 =item I<keyrec_write()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-I<keyrec_creat()>, I<keyrec_open()> or I<keyrec_read()>).  It does not close
-the file handle.  As an efficiency measure, an internal modification flag is
-checked prior to writing the file.  If the program has not modified the
-contents of the I<keyrec> file, it is not rewritten.
+or I<keyrec_read()>).  It does not close the file handle.  As an efficiency
+measure, an internal modification flag is checked prior to writing the file.
+If the program has not modified the contents of the I<keyrec> file, it is not
+rewritten.
 
 I<keyrec_write()> gets an exclusive lock on the I<keyrec> file while writing.
 
