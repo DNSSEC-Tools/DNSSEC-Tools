@@ -3183,6 +3183,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     } else if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, 
                             qname_n, ns_t_ds, ns_c_in, VAL_QFLAGS_ANY)) &&
             temp_qfq->qfq_query->qc_state == Q_ANSWERED &&
+            temp_qfq->qfq_query->qc_ans != NULL && /* the zonecut of the proof would be the parent ! */
             temp_qfq->qfq_query->qc_zonecut_n != NULL) {
         
         zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
