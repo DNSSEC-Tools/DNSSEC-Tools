@@ -1510,9 +1510,10 @@ digest_response(val_context_t * context,
 
     rrs_to_go = answer + authority + additional;
 
-    if (rrs_to_go == 0) {
+    if (rrs_to_go == 0 || (rrs_to_go == additional)) {
         /*
          * We got a response with no records 
+         * or we got only additional section data (e.g. EDNS0 opt records)
          * Check if EDNS was not used when it should have
          */
         if (!matched_q->qc_respondent_server) {
@@ -1718,10 +1719,10 @@ digest_response(val_context_t * context,
             matched_q->qc_state = Q_REFERRAL_ERROR;
             ret_val = VAL_NO_ERROR;
             goto done;
-         }
+        }
 
-         /* make sure that our new zonecut is closer */
-         if (fix_zonecut &&
+        /* make sure that our new zonecut is closer */
+        if (fix_zonecut &&
               (rrs_zonecut_n == NULL 
                || NULL != namename(name_n, rrs_zonecut_n))) {
 
