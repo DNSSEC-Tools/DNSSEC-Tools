@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+#
+# Copyright 2008-2010 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
 
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::TrustAnchor;
@@ -39,7 +43,7 @@ if (runpacked()) {
 
 
 DTGetOptions(\%opts,
-	     ['GUI:VERSION',"1.0\nDNSSEC-Tools Version: 1.8"],
+	     ['GUI:VERSION',"1.1\nDNSSEC-Tools Version: 1.8"],
 
 	     ["i|input-file=s",  "Input file(s)"],
 	     ["o|output-file=s", "Output file(s)"],
