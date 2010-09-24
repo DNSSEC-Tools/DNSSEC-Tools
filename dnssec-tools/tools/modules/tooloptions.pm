@@ -27,7 +27,7 @@ use strict;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 
-our $VERSION = "1.5";
+our $VERSION = "1.8";
 
 our @ISA = qw(Exporter);
 

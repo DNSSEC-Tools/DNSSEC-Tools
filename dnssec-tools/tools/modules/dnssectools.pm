@@ -22,7 +22,7 @@ use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 
-our $VERSION = "1.5";
+our $VERSION = "1.8";
 
 our @ISA = qw(Exporter);
 
