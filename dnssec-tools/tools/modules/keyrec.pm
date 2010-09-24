@@ -259,7 +259,7 @@ sub keyrec_filestat
 	#
 	# Ensure the name is actually a readable non-empty file.
 	#
-	if(! -z $krf)
+	if(-z $krf)
 	{
 		return(5);
 	}
