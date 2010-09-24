@@ -1,0 +1,305 @@
+#!/usr/bin/perl
+#
+# Copyright 2010 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# DNSSEC-Tools:  dtupdkrf
+#
+#	This script updates an existing DNSSEC-Tools keyrec file to the
+#	format.  The command is used in this way:
+#
+#		dtupdkrf <krf-file>
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::keyrec;
+
+#
+# Version information.
+#
+my $NAME   = "dtupdkrf";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.8";
+
+########################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"count",			# Give a count of keyrecs in file.
+	"verbose",			# Give verbose output.
+	"quiet",			# Don't give much output.
+
+	"help",				# Display help and exit.
+	"Version",			# Display versions and exit.
+);
+
+my $count    = 0;			# Keyrec-count flag.
+my $verbose  = 0;			# Verbose-output flag.
+my $quiet    = 0;			# No-output flag.
+
+#------------------------------------------------------------------------
+
+my $ret;					# Count of errors found.
+
+
+$ret = main();
+exit($ret);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Do Everything.
+#
+sub main
+{
+	my $mod;				# Module name.
+	my $errcnt = 0;				# Error count.
+
+	#
+	# Check options.
+	#
+	opts();
+
+	foreach my $krf (@ARGV)
+	{
+		$errcnt += checkkrf($krf);
+	}
+
+	return($errcnt);
+}
+
+#------------------------------------------------------------------------
+# Routine:	opts()
+#
+# Purpose:	Parse the command line and perform option verification.
+#
+sub opts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(1)  if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$count	 = $options{'count'};
+	$verbose = $options{'verbose'};
+	$quiet	 = $options{'quiet'};
+
+	#
+	# Ensure that exclusive options actually are.
+	#
+	if($verbose && $quiet)
+	{
+		print STDERR "-verbose and -quiet are mutually exclusive\n";
+		exit(0);
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	checkkrf()
+#
+# Purpose:	
+#
+sub checkkrf
+{
+	my $krffile = shift;		# Name of keyrec file to check.
+	my $cnt;			# Number of keyrecs in file.
+
+	#
+	# Ensure that the file looks like it might be a keyrec file.
+	#
+	if(keyrec_filestat($krffile) != 0)
+	{
+		my @errs = (
+				"dummy message",
+				"no keyrec file given",
+				"$krffile:  keyrec file does not exist",
+				"$krffile:  keyrec file is not a regular file",
+				"$krffile:  keyrec file is not readable",
+				"$krffile:  keyrec file is empty"
+			   );
+
+		$ret = keyrec_filestat($krffile);
+
+		print STDERR "$errs[$ret]\n";
+		exit(1);
+	}
+
+	#
+	# Read the contents of the keyrec file.
+	#
+	$cnt = keyrec_read($krffile);
+	if($cnt < 0)
+	{
+		print STDERR "$krffile:  unable to read keyrec file\n";
+		exit(1);
+	}
+	vprint("$cnt keyrecs in $krffile\n") if($count);
+
+	#
+	# Check the keyrec format.
+	#
+	$cnt = keyrec_fmtchk($krffile);
+	if($cnt == 0)
+	{
+		vprint("$krffile is in current format\n");
+	}
+	else
+	{
+		qprint("$krffile is in old format; $cnt changes made\n");
+	}
+
+	#
+	# Close the keyrec file.
+	#
+	keyrec_close();
+	return($cnt);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	qprint()
+#
+# Purpose:	Print a line of text iff the -quiet option wasn't given.
+#
+sub qprint
+{
+	my $line = shift;
+
+	print $line if(!$quiet);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	vprint()
+#
+# Purpose:	Print a line of text iff the -quiet option wasn't given and
+#		the -verbose option was.
+#
+sub vprint
+{
+	my $line = shift;
+
+	qprint($line) if($verbose);
+}
+
+
+#----------------------------------------------------------------------  
+#
+# Routine:      version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage:  dtupdkrf [options] <keyrec files>\n";
+	print "\tcount        display count of keyrecs in keyrec file\n";
+	print "\tverbose      give verbose output\n";
+	print "\tquiet        check keyrec file without printing results\n";
+	print "\tVersion      display version and exit\n";
+	print "\thelp         display help and exit\n";
+
+	exit(0);
+
+}
+
+1;   
+
+##############################################################################
+#
+
+=pod     
+
+=head1 NAME
+
+dtupdkrf - Ensures that a keyrec file is in the current format
+
+=head1 SYNOPSIS
+
+  dtupdkrf [options] <keyrec files>
+
+=head1 DESCRIPTION
+
+B<dtupdkrf> ensures that a I<keyrec> file is in the current format.  If the
+I<keyrec> file has an old format, it is converted to the current format.
+
+The format of I<keyrec> files does not change very often.  Therefore,
+B<dtupdkrf> should be run when installing new versions of the DNSSEC-Tools
+software.  It does not have to be run very often otherwise.
+
+The number of error fixed in the given I<keyrec> files will be given as
+B<dtupdkrf>'s exit code.
+
+B<WARNING:  dtupdkrf should NOT be run on keyrec files that are in active use
+by other DNSSEC-Tools programs.  You MUST stop rollerd, zonesigner, or any
+other DNSSEC-Tools programs BEFORE running dtupdkrf on active files.>
+
+
+=head1 OPTIONS
+
+B<dtupdkrf> supports several types of options.  These options are detailed
+below.
+
+=over 4
+
+=item B<-count>
+
+Display the count of I<keyrec>s in each I<keyrec> file.
+
+=item B<-quiet>
+
+Display no information.
+B<-quiet> and B<-verbose> are mutually exclusive.
+
+=item B<-verbose>
+
+Display verbose information.
+B<-verbose> and B<-quiet> are mutually exclusive.
+
+=item B<-Version>
+
+Display B<dtupdkrf>' version information and exit.
+
+=item B<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2010 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<keyrec(5)>
+
+=cut
+
