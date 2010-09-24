@@ -24,9 +24,10 @@ details.
     - dnspktflow:   - added two new options:
                       --layout-style for selecting the layout style to use
                       --node-size for mapping complex zones.
-                    - Add new option to cluster authoritative nodes together 
-                      to help better understand the relationships between 
-                      traffic patterns and name server/zone arrangement.
+                    - Add new (default) option to cluster
+                      authoritative nodes together to help better
+                      understand the relationships between traffic
+                      patterns and authoritative name server/zone arrangement.
     - libval:	    - Now distributed with the Root TA.
                     - Added stricter checks for openssl SHA-256 support in 
                       configure. 
@@ -42,8 +43,10 @@ details.
                       referrals and alias chains.
                     - Fixed support for RSADSA and RSASHA-512 signature 
                       validation.
-    - many other miscellaneous bug fixes and improvements.
+    - Mac OSX: 	    - Added a Ports file for mac ports
+     		    - updated the fink build spec
 
+ - many other miscellaneous bug fixes and improvements.
 
 1.7
  - New Features:
