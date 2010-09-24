@@ -75,7 +75,9 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read
 		 keyrec_dump_hash keyrec_dump_array
 		 keyrec_signset_newname keyrec_signset_new
 		 keyrec_signset_addkey keyrec_signset_delkey
-		 keyrec_signset_haskey keyrec_signset_clear keyrec_signsets );
+		 keyrec_signset_haskey keyrec_signset_clear keyrec_signsets
+		 keyrec_fmtchk
+	      );
 
 #
 # Fields in a zone keyrec.
@@ -1840,6 +1842,274 @@ sub keyrec_saveas
 	# Return success.
 	#
 	return(1);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	keyrec_fmtchk()
+#
+# Purpose:	Ensure the keyrec file is in the current format.  This
+#		function only ensure the current format, it does not do
+#		a sanity check on the keyrec file.
+#
+#		Generally speaking, this function should not be called
+#		by anyone except dtupdkrf.  It absolutely should NOT be
+#		called on a keyrec file that is in active use.  If you
+#		ignore this warning, you deserve what you get.
+#
+#			zone keyrecs:
+#				- kskkey:
+#					Delete the entry if a kskcur entry
+#					exists.  If a kskcur entry doesn't
+#					exist, the kskkey key will be moved
+#					into a new kskcur entry.
+#				- keys:
+#					Ensure that each of the named keys in
+#					the zone is really pointing to a signing
+#					set.  If not, a new set is created and
+#					the key inserted in it.
+#
+#			set keyrecs:
+#				Nothing.
+#
+#			key keyrecs:
+#				- ksk:
+#					Change to a kskcur, kskpub, kskrev,
+#					or kskobs.
+#
+#		Return Values:
+#			The number of changes made to the keyrec file
+#			is returned.
+#
+#
+
+sub keyrec_fmtchk
+{
+	my $krf = shift;			# Name of keyrec file.
+	my $krn;				# Name of keyrec.
+	my $krec;				# Ref to the keyrec's hash.
+	my %krec;				# The keyrec's hash.
+
+	my $changes = 0;			# Count of changes made.
+
+# print "keyrec_fmtchk:  down in\n";
+
+	#
+	# Check zone keyrecs for problems:
+	#	- existence of kskkey fields
+	#	- key fields that don't point to set keyrecs
+	#
+	foreach $krn (keyrec_names())
+	{
+		#
+		# Get the keyrec hash.
+		#
+		$krec = $keyrecs{$krn};
+		%krec = %$krec;
+
+		#
+		# Only look at zones right now.
+		#
+		next if($krec{'keyrec_type'} ne 'zone');
+
+		#
+		# Check for the old 'kskkey' keyrec field.  If we find one,
+		# we'll make it the new kskcur field if there's no 'kskcur'.
+		# In either case, we'll delete the 'kskkey' field.
+		#
+		if(exists($krec{'kskkey'}))
+		{
+			my $set;		# Signing set name.
+			my $newtype;		# Type for new signing set.
+
+			#
+			# Figure out the type for the new signing set.
+			#
+			if(exists($krec{'kskcur'}))
+			{
+				$newtype = 'kskobs';
+			}
+			else
+			{
+				$newtype = 'kskcur';
+			}
+
+			#
+			# Create a signing set for the old key.
+			#
+			$set = keyrec_signset_newname($krn);
+			keyrec_signset_new($krn,$set,$newtype);
+			keyrec_setval('zone',$krn,$newtype,$set);
+			keyrec_signset_addkey($set,$krec{'kskkey'});
+
+			#
+			# Delete the old kskkey keyrec.
+			#
+			keyrec_delval($krn,'kskkey',20);
+			$changes++;
+		}
+
+		#
+		# Ensure that each of the zone's key set types is actually
+		# pointing to a signing set.  If it is pointing to a key,
+		# create a new set, move the key there, and reference the set.
+		#
+		foreach my $kst (qw /kskcur kskpub kskrev kskobs zskcur zskpub zsknew/)
+		{
+			my $keyname;		# Key's name.
+			my $set;		# Name of new signing set.
+			my $skr;		# Sub-keyrec.
+
+			#
+			# Skip this set type if it isn't in the keyrec.
+			#
+			next if(!exists($krec{$kst}));
+
+			#
+			# Get the type of this key's keyrec.  Delete and
+			# skip empty entries.
+			#
+			$keyname = $krec{$kst};
+			if($keyname eq '')
+			{
+				keyrec_delval($krn,$kst,21);
+				$changes++;
+				next;
+			}
+
+			#
+			# Skip this set type if it's already a signing set.
+			#
+			$skr = $keyrecs{$keyname}{'keyrec_type'};
+			next if($skr eq 'set');
+			next if(exists($keyrecs{$keyname}{'set_type'}));
+
+			#
+			# Make a new signing set for this key.
+			#
+
+# There is apparently a problem in this next small block of code.  When
+# called as a standard part of keyrec_read() (old behavior), bad things
+# would happen when rollerd, zonesigner, and company were running.  The
+# keyrec file would eventually get corrupted.
+#
+# This "if(0)" seemed to stop the file corruption.  Now that keyrec_fmtchk()
+# is not called by every invocation of keyrec_read(), and is only called by
+# the dtupdkrf command, the "if(0)" may not be necessary.
+#
+# Further testing is needed...
+#
+# if(0)
+# {
+			$set = keyrec_signset_newname($krn);
+			keyrec_signset_new($krn,$set,$kst);
+			keyrec_setval('zone',$krn,$kst,$set);
+			keyrec_signset_addkey($set,$keyname);
+			$changes++;
+# }
+		}
+	}
+
+	#
+	# This is scaffolding in case we need to add set checks in the future.
+	#
+	if(0)
+	{
+		foreach $krn (keyrec_names())
+		{
+			#
+			# Get the keyrec hash.
+			#
+			$krec = $keyrecs{$krn};
+			%krec = %$krec;
+
+			#
+			# Only look at sets right now...
+			#
+			next if($krec{'keyrec_type'} ne 'set');
+
+			#
+			# ... but we have nothing in sets to update.
+			#
+		}
+	}
+
+	#
+	# Check key keyrecs for problems:
+	#	- Change ksk type keyrecs to kskcur, kskpub, kskrev, or kskobs.
+	#
+	foreach $krn (keyrec_names())
+	{
+		my $krt;				# Keyrec's type.
+
+		#
+		# Get the keyrec hash.
+		#
+		$krec = $keyrecs{$krn};
+		%krec = %$krec;
+
+		#
+		# Get the keyrec's type.
+		#
+		$krt = $krec{'keyrec_type'};
+
+		#
+		# Only look at keys right now.
+		#
+		next if(($krec{$krt} eq 'zone')	|| ($krec{$krt} eq 'set'));
+		next if(exists($krec{'set_type'}));
+
+		#
+		# Convert a KSK keyrec into either a kskcur, kskpub, kskrev,
+		# or kskobs keyrec.
+		#
+		if($krt eq 'ksk')
+		{
+			my $zone;			# Key's owner zone.
+			my $key;			# Key type.
+			my $set;			# Key's signing set.
+			my $found = "";			# Found-key flag.
+
+			#
+			# Check the key's zone to find if it's used in any of
+			# the zone's key sets.
+			#
+			$zone = $krec{'zonename'};
+			foreach my $key (qw /kskcur kskpub kskrev kskobs/)
+			{
+				$set = $keyrecs{$zone}{$key};
+				if(keyrec_signset_haskey($set,$krn))
+				{
+					$found = $key;
+					last;
+				}
+			}
+
+			#
+			# If this key is used in the zone, we'll set its type
+			# appropriately.  If not, we'll set it to being an
+			# obsolete key.
+			#
+			if($found ne "")
+			{
+				keyrec_setval('key',$krn,'keyrec_type',$found);
+			}
+			else
+			{
+				keyrec_setval('key',$krn,'keyrec_type','kskobs');
+			}
+			$changes++;
+		}
+	}
+
+	#
+	# If any problems were found and fixed, write the file.
+	#
+	keyrec_write() if($changes);
+
+	#
+	# Return the number of changes made.
+	#
+	return($changes);
 }
 
 #--------------------------------------------------------------------------
