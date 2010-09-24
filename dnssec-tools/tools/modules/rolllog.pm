@@ -20,7 +20,7 @@ use Socket;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 
-our $VERSION = "1.5";
+our $VERSION = "1.8";
 
 our @ISA = qw(Exporter);
 

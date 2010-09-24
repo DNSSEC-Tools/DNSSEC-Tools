@@ -21,7 +21,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(timetrans fuzzytimetrans);
 
-our $VERSION = "1.5";
+our $VERSION = "1.8";
 
 
 #######################################################################
