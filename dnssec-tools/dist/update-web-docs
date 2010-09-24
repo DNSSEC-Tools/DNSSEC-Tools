@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# a simple script to take the existing tools and update the man pages
+# for the web page;
+
+# assumes you're in the dist directory from a complete checkout of the
+# entire SVN tree
+
+cd ../tools/scripts
+
+for i in * ../convertar/convertar ../dnspktflow/dnspktflow ../donuts/donuts \
+           ../drawvalmap/drawvalmap ../maketestzone/maketestzone            \
+           ../mapper/mapper ; do
+    if test -f $i -a $i != "update-web-docs" ; then
+	if grep =pod $i > /dev/null ; then
+	    pod2html $i > ../../../htdocs/docs/tool-description/`basename $i`.html
+	    echo `basename $i`
+	fi
+    fi 
+done
