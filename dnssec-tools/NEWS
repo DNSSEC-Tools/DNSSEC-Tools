@@ -7,11 +7,18 @@ details.
     - zonesigner, rollerd
                     - Made changes so that these tools are more compatible 
                       with recent versions of Bind
-                    - Made changes to properly lock keyrec files before 
-                      writing to them.
+		    - The zone_errors configuration parameter allows a zone-
+		      specific maximum to be set.  Once exceeded, that zone
+		      will be skipped rather than allowing rollover to continue.
+    - blinkenlights
+		    - Recognizes when rollerd abruptly quits, so error messages
+		      aren't spewed interminably.
     - ZonFile::Fast - Fixed parsing of DS records containing spaces and 
                       parsing of mname and rname SOA fields
                     - Added support for parsing KEY records
+    - keyrec.pm	    - Made changes to properly lock keyrec files before 
+                      writing to them.
+		    - Begun process of deprecating keyrec_open().
     - mapper:  	    - added a new option: --node-size for mapping
                       complex zones.
     - dnspktflow:   - added two new options:
