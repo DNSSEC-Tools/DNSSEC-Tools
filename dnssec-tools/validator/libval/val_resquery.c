@@ -1215,6 +1215,7 @@ process_cname_dname_responses(u_char *name_n,
     
     if (type_h == ns_t_cname &&
         matched_q->qc_type_h != ns_t_cname &&
+        matched_q->qc_type_h != ns_t_soa &&
         matched_q->qc_type_h != ns_t_rrsig &&
         matched_q->qc_type_h != ns_t_any &&
         namecmp((*qnames)->qnc_name_n, name_n) == 0) {
@@ -1245,6 +1246,7 @@ process_cname_dname_responses(u_char *name_n,
     u_char  *qname_n = (*qnames)->qnc_name_n;
     if (type_h == ns_t_dname &&
         matched_q->qc_type_h != ns_t_dname &&
+        matched_q->qc_type_h != ns_t_soa &&
         ((matched_q->qc_type_h != ns_t_any &&
          matched_q->qc_type_h != ns_t_rrsig)||
         namecmp(qname_n, name_n) != 0) &&
