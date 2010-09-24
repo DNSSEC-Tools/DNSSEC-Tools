@@ -2,15 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>lsroll - List the I&lt;rollrec&gt;s in a DNSSEC-Tools I&lt;rollrec&gt; file.</title>
+<title>lsroll - List the I&lt;rollrec&gt;s in a DNSSEC-Tools I&lt;rollrec&gt; file</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -21,23 +23,25 @@
 	<li><a href="#options">OPTIONS</a></li>
 	<ul>
 
-		<li><a href="#recordselection_options">Record-selection Options</a></li>
-		<li><a href="#attributeselection_options">Attribute-selection Options</a></li>
-		<li><a href="#outputformat_options">Output-format Options</a></li>
+		<li><a href="#record_selection_options">Record-selection Options</a></li>
+		<li><a href="#attribute_selection_options">Attribute-selection Options</a></li>
+		<li><a href="#output_format_options">Output-format Options</a></li>
 	</ul>
 
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>lsroll - List the <em>rollrec</em>s in a DNSSEC-Tools <em>rollrec</em> file.</p>
+<p>lsroll - List the <em>rollrec</em>s in a DNSSEC-Tools <em>rollrec</em> file</p>
 <p>
 </p>
 <hr />
@@ -60,17 +64,17 @@ displayed.</p>
 <p>The output displayed for each zone in a <em>rollrec</em> file depends on the
 selected records, the selected attributes, and the selected output format.
 Each option in these option groups is described in detail in the next section.
-The three base output formats, along with the default <em>-skip</em> format, are
+The three base output formats, along with the default <strong>-skip</strong> format, are
 described here.</p>
-<p>The <em>-terse</em> option indicates that a minimal amount of output is desired;
-the <em>-long</em> option indicates that a great deal of output is desired.  The
+<p>The <strong>-terse</strong> option indicates that a minimal amount of output is desired;
+the <strong>-long</strong> option indicates that a great deal of output is desired.  The
 record-selection and attribute-selection options may be used in conjunction
-with <em>-terse</em> to display exactly the set of <em>rollrec</em> fields needed.</p>
-<p>The default output format is that used when neither <em>-terse</em> nor &lt;-long&gt;
+with <strong>-terse</strong> to display exactly the set of <em>rollrec</em> fields needed.</p>
+<p>The default output format is that used when neither <strong>-terse</strong> nor <strong>-long</strong>
 is given, and is a middle ground between terse and long output.</p>
-<p>If the <em>-skip</em> option is given, then the default output format is a little
+<p>If the <strong>-skip</strong> option is given, then the default output format is a little
 more restricted than the normal default.  Some <em>rollrec</em> fields don't make
-sense in the context of a skip records, and so are given as ``---''.  These
+sense in the context of a skip records, and so are given as &quot;---&quot;.  These
 fields are the KSK rollover phase, the ZSK rollover phase, the TTL value, and
 the phase start.</p>
 <p>The table below shows the fields displayed for each output format.</p>
@@ -79,7 +83,8 @@ the phase start.</p>
     -------------        -------        -----        ----       ----
     rollrec name           yes           yes         yes        yes
     rollrec type           no            no          yes        no
-    zone name              yes           no          yes        yes
+    zone name              no            no          yes        yes
+    zone file              yes           no          yes        yes
     keyrec file            yes           no          yes        yes
     KSK phase              yes           no          yes        no
     ZSK phase              yes           no          yes        no
@@ -90,7 +95,8 @@ the phase start.</p>
     display flag           no            no          yes        no
     phase start            no            no          yes        no
     last KSK rollover      no            no          yes        no
-    last ZSK rollover      no            no          yes        no</pre>
+    last ZSK rollover      no            no          yes        no
+    zonesigner arguments   no            no          yes        no</pre>
 <p>
 </p>
 <hr />
@@ -100,192 +106,187 @@ options, attribute-selection options, and output-format options.  Each type
 is described in the subsections below.</p>
 <p>
 </p>
-<h2><a name="recordselection_options">Record-selection Options</a></h2>
+<h2><a name="record_selection_options">Record-selection Options</a></h2>
 <p>These options select the records that will be displayed by <strong>lsroll</strong>.
 By default, all records will be displayed; selecting one or the other of
 these options will restrict the records shown.</p>
 <p>In order to simplify the <strong>lsroll</strong> code and keep it easily understandable,
 these options are mutually exclusive.</p>
 <dl>
-<dt><strong><a name="item__2droll"><em>-roll</em></a></strong>
+<dt><strong><a name="roll" class="item"><strong>-roll</strong></a></strong></dt>
 
 <dd>
-<p>List all ``roll'' records in the <em>rollrec</em> file.</p>
+<p>List all &quot;roll&quot; records in the <em>rollrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dskip"><em>-skip</em></a></strong>
+<dt><strong><a name="skip" class="item"><strong>-skip</strong></a></strong></dt>
 
 <dd>
-<p>List all ``skip'' records in the <em>rollrec</em> file.</p>
+<p>List all &quot;skip&quot; records in the <em>rollrec</em> file.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
-<h2><a name="attributeselection_options">Attribute-selection Options</a></h2>
+<h2><a name="attribute_selection_options">Attribute-selection Options</a></h2>
 <p>These options select the attributes of the records that will be displayed
 by <strong>lsroll</strong>.</p>
 <dl>
-<dt><strong><a name="item__2dtype"><em>-type</em></a></strong>
+<dt><strong><a name="type" class="item"><strong>-type</strong></a></strong></dt>
 
 <dd>
 <p>Include each <em>rollrec</em> record's type in the output.  The type will be either
-``roll'' or ``skip''.</p>
+&quot;roll&quot; or &quot;skip&quot;.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dzone"><em>-zone</em></a></strong>
+<dt><strong><a name="zonename" class="item"><strong>-zonename</strong></a></strong></dt>
+
+<dd>
+<p>The record's zonename is included in the output.  The zonename is distinct
+from the record's <em>rollrec</em> name, which is always included in the output.
+While these two fields are often the same, they need not be.  In split-zone
+zones, the <em>rollrec</em> names must be different, while the <em>zonename</em> field
+is the same.</p>
+</dd>
+<dt><strong><a name="zonefile" class="item"><strong>-zonefile</strong></a></strong></dt>
 
 <dd>
 <p>The record's zonefile is included in the output.  This field is part
 of the default output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkeyrec"><em>-keyrec</em></a></strong>
+<dt><strong><a name="keyrec" class="item"><strong>-keyrec</strong></a></strong></dt>
 
 <dd>
 <p>The record's <em>keyrec</em> file is included in the output.
 This field is part of the default output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkskphase"><em>-kskphase</em></a></strong>
+<dt><strong><a name="kskphase" class="item"><strong>-kskphase</strong></a></strong></dt>
 
 <dd>
 <p>The record's KSK rollover phase are included in the output.
-If this option is given with the <em>-zskphase</em> option, then the output will
-follow the format described for the <em>-phases</em> option.
+If this option is given with the <strong>-zskphase</strong> option, then the output will
+follow the format described for the <strong>-phases</strong> option.
 This field is part of the default output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dzskphase"><em>-zskphase</em></a></strong>
+<dt><strong><a name="zskphase" class="item"><strong>-zskphase</strong></a></strong></dt>
 
 <dd>
 <p>The record's ZSK rollover phase are included in the output.
-If this option is given with the <em>-kskphase</em> option, then the output will
-follow the format described for the <em>-phases</em> option.
+If this option is given with the <strong>-kskphase</strong> option, then the output will
+follow the format described for the <strong>-phases</strong> option.
 This field is part of the default output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dphases"><em>-phases</em></a></strong>
+<dt><strong><a name="phases" class="item"><strong>-phases</strong></a></strong></dt>
 
 <dd>
 <p>The record's KSK and ZSK rollover phases are included in the output.
 The listing is given with the KSK phase first, followed by the ZSK phase.</p>
-</dd>
-<dd>
 <p>Examples of output from this option are:</p>
-</dd>
-<dd>
 <pre>
     KSK phase   ZSK phase       output
         0           0            0/0
         3           0            3/0
         0           5            0/5</pre>
 </dd>
-</li>
-<dt><strong><a name="item__2dadmin"><em>-admin</em></a></strong>
+<dt><strong><a name="admin" class="item"><strong>-admin</strong></a></strong></dt>
 
 <dd>
 <p>The record's administrator value is included in the output.
 If an administrator value is not included in a <em>rollrec</em>, then the value
-``(defadmin)'' will be given.</p>
+&quot;(defadmin)&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2ddirectory"><em>-directory</em></a></strong>
+<dt><strong><a name="directory" class="item"><strong>-directory</strong></a></strong></dt>
 
 <dd>
 <p>The name of the directory that holds the zone's files is included in the
 output.  If a zone directory is not included in a <em>rollrec</em>, then the value
-``(defdir)'' will be given.</p>
+&quot;(defdir)&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dloglevel"><em>-loglevel</em></a></strong>
+<dt><strong><a name="loglevel" class="item"><strong>-loglevel</strong></a></strong></dt>
 
 <dd>
 <p>The <strong>rollerd</strong> logging level for this zone.  This value may be given in
 the <em>rollrec</em> file in either the textual or numeric form.  The textual form
 of the logging level will be displayed, not the numeric.
 If a logging level value is not included in a <em>rollrec</em>, then the value
-``(deflog)'' will be given.
+&quot;(deflog)&quot; will be given.
 If an undefined logging level value is included in a <em>rollrec</em>, then the
-value ``(unknownlog)'' will be given.</p>
+value &quot;(unknownlog)&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dttl"><em>-ttl</em></a></strong>
+<dt><strong><a name="ttl" class="item"><strong>-ttl</strong></a></strong></dt>
 
 <dd>
 <p>The record's TTL value is included in the output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2ddisplay"><em>-display</em></a></strong>
+<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
 
 <dd>
 <p>The record's display flag, used by <strong>blinkenlights</strong>, is included in the output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dphstart"><em>-phstart</em></a></strong>
+<dt><strong><a name="phstart" class="item"><strong>-phstart</strong></a></strong></dt>
 
 <dd>
 <p>The record's rollover phase is included in the output.
 If no rollover has yet been performed for this zone, an empty date is given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dlastksk"><em>-lastksk</em></a></strong>
+<dt><strong><a name="lastksk" class="item"><strong>-lastksk</strong></a></strong></dt>
 
 <dd>
 <p>The record's last KSK rollover date is included in the output.
 If no KSK rollover has yet been performed for this zone, an empty date is given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dlastzsk"><em>-lastzsk</em></a></strong>
+<dt><strong><a name="lastzsk" class="item"><strong>-lastzsk</strong></a></strong></dt>
 
 <dd>
 <p>The record's last ZSK rollover date is included in the output.
 If no ZSK rollover has yet been performed for this zone, an empty date is given.</p>
 </dd>
-</li>
+<dt><strong><a name="zsargs" class="item"><strong>-zsargs</strong></a></strong></dt>
+
+<dd>
+<p>The record's user-defined <strong>zonesigner</strong> arguments are included in the output.
+If no arguments have been set for this zone, then the value &quot;(none)&quot; is given.</p>
+</dd>
 </dl>
 <p>
 </p>
-<h2><a name="outputformat_options">Output-format Options</a></h2>
+<h2><a name="output_format_options">Output-format Options</a></h2>
 <p>These options select the type of output that will be given by <em>lsroll</em>.</p>
 <dl>
-<dt><strong><a name="item__2dcount"><em>-count</em></a></strong>
+<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
 
 <dd>
 <p>Only a count of matching keyrecs in the <em>rollrec</em> file is given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dheaders"><em>-headers</em></a></strong>
+<dt><strong><a name="headers" class="item"><strong>-headers</strong></a></strong></dt>
 
 <dd>
 <p>Display explanatory column headers.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dterse"><em>-terse</em></a></strong>
+<dt><strong><a name="terse" class="item"><strong>-terse</strong></a></strong></dt>
 
 <dd>
 <p>Terse output is given.  Only the record name and any other fields specifically
 selected are included in the output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dlong"><em>-long</em></a></strong>
+<dt><strong><a name="long" class="item"><strong>-long</strong></a></strong></dt>
 
 <dd>
 <p>Long output is given.  All record fields are included.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp">-help</a></strong>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message.</p>
 </dd>
-</li>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>lsroll</strong> and the DNSSEC-Tools package.</p>
+</dd>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -301,7 +302,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <strong>rollinit(8)</strong>,
 <strong>rollerd(8)</strong></p>
 <p><strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::file-rollrec(5)</strong></p>
+<p><strong>file-rollrec(5)</strong></p>
 
 </body>
 

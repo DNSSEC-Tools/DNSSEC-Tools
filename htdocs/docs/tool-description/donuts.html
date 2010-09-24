@@ -9,8 +9,10 @@
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -18,13 +20,25 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#options">OPTIONS</a></li>
+	<ul>
+
+		<li><a href="#rule_set_configuration_">Rule Set Configuration:</a></li>
+		<li><a href="#configuration_file_options_">Configuration File Options:</a></li>
+		<li><a href="#extra_live_query_options_">Extra Live Query Options:</a></li>
+		<li><a href="#help_options">Help Options</a></li>
+		<li><a href="#obsolete_options">Obsolete Options</a></li>
+	</ul>
+
+	<li><a href="#examples">EXAMPLES</a></li>
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -35,57 +49,50 @@
 <hr />
 <h1><a name="synopsis">SYNOPSIS</a></h1>
 <pre>
-  donuts [-h] [-H] [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
-         [-C] [-c configfile] ZONEFILE DOMAINNAME...</pre>
+  donuts [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
+         [-C] [-c configfile] [-h] [-H] ZONEFILE DOMAINNAME...</pre>
 <p>
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>donuts</strong> is a DNS Lint application that examines DNS zone files looking
-for particular problems.  This is especially important for zones
-making use of DNSSEC security records, since many subtle problems can
-occur.</p>
+<p><strong>donuts</strong> is a DNS lint application that examines DNS zone files
+looking for particular problems.  This is especially important for
+zones making use of DNSSEC security records, since many subtle
+problems can occur.  The default mode of operation assumes you want to
+check for DNSSEC-related issues; to turn off the invocation of the
+DNSSEC-related rules run <strong>donuts</strong> with &quot;-i DNSSEC&quot;.</p>
 <p>If the <strong>Text::Wrap</strong> Perl module is installed, <strong>donuts</strong> will give better
 output formatting.</p>
 <p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
+<p>
+</p>
+<h2><a name="rule_set_configuration_">Rule Set Configuration:</a></h2>
 <dl>
-<dt><strong><a name="item__2dh">-h</a></strong>
+<dt><strong><a name="l_level" class="item">-l <em>LEVEL</em></a></strong></dt>
 
-<dd>
-<p>Displays a help message.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dv">-v</a></strong>
-
-<dd>
-<p>Turns on more verbose output.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dq">-q</a></strong>
-
-<dd>
-<p>Turns on more quiet output.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dl_level">-l <em>LEVEL</em></a></strong>
+<dt><strong><a name="level_level" class="item">--level=<em>LEVEL</em></a></strong></dt>
 
 <dd>
 <p>Sets the level of errors to be displayed.  The default is level 5.
 The maximum value is level 9, which displays many debugging results.
 You probably want to run no higher than level 8.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dr_rulefiles">-r <em>RULEFILES</em></a></strong>
+<dt><strong><a name="r_rulefiles" class="item">-r <em>RULEFILES</em></a></strong></dt>
+
+<dt><strong><a name="rules_rulefiles" class="item">--rules=<em>RULEFILES</em></a></strong></dt>
 
 <dd>
 <p>A comma-separated list of rule files to load.  The strings will be
 passed to <em>glob()</em> so * wildcards can be used to specify multiple files.</p>
+<p>Defaults to <strong>/usr/local/share/dnssec-tools/donuts/rules/*.txt</strong> and
+<strong>$HOME/.dnssec-tools/donuts/rules/*.txt</strong>.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2di_ignorelist">-i <em>IGNORELIST</em></a></strong>
+<dt><strong><a name="i_ignorelist" class="item">-i <em>IGNORELIST</em></a></strong></dt>
+
+<dt><strong><a name="ignore_ignorelist" class="item">--ignore=<em>IGNORELIST</em></a></strong></dt>
 
 <dd>
 <p>A comma-separated list of regex patterns which are checked against
@@ -93,125 +100,21 @@ rule names to determine if some should be ignored.  Run with <em>-v</em> to
 figure out rule names if you're not sure which rule is generating
 errors you don't wish to see.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dl">-L</a></strong>
+<dt><strong><a name="f_list" class="item">-f LIST</a></strong></dt>
+
+<dt><strong><a name="features_list" class="item">--features=LIST</a></strong></dt>
 
 <dd>
-<p>Include rules that require live queries of data.  Generally, these
-rules concentrate on pulling remote DNS data to test;
-for example, parent/child zone relationships.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dc_configfile">-c <em>CONFIGFILE</em></a></strong>
-
-<dd>
-<p>Parse a configuration file to change constraints specified by rules.
-This defaults to <strong>$HOME/.donuts.conf</strong>.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dc">-C</a></strong>
-
-<dd>
-<p>Don't read user configuration files at all, such as those specified by
-the <em>-c</em> option or the <strong>$HOME/.donuts.conf</strong> file.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dt_interface">-t <em>INTERFACE</em></a></strong>
-
-<dd>
-<p>Specifies that <em>tcpdump</em> should be started on <em>INTERFACE</em> (e.g.,
-``eth0'') just before donuts begins its run of rules for each domain
-and will stop it just after it has processed the rules.  This is
-useful when you wish to capture the traffic generated by the <em>live</em>
-feature, described above.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dt_filter">-T <em>FILTER</em></a></strong>
-
-<dd>
-<p>When <em>tcpdump</em> is run, this <em>FILTER</em> is passed to it for purposes of
-filtering traffic.  By default, this is set to <em>port 53 || ip[6:2] &amp;
-0x1fff != 0</em>, which limits the traffic to traffic destined to port 53
-(DNS) or fragmented packets.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2do_file">-o <em>FILE</em></a></strong>
-
-<dd>
-<p>Saves the <em>tcpdump</em> captured packets to <em>FILE</em>.  The following
-special fields can be used to help generate unique file names:</p>
-</dd>
-<dl>
-<dt><strong><a name="item__d">%d</a></strong>
-
-<dd>
-<p>This is replaced with the current domain name being analyzed (e.g.,
-``example.com'').</p>
-</dd>
-</li>
-<dt><strong><a name="item__t">%t</a></strong>
-
-<dd>
-<p>This is replaced with the current epoch time (i.e., the number of
-seconds since Jan 1, 1970).</p>
-</dd>
-</li>
-</dl>
-<p>This field defaults to <em>%d.%t.pcap</em>.</p>
-<dt><strong><a name="item__2dh">-H</a></strong>
-
-<dd>
-<p>Displays the personal configuration file rules and tokens that are
-acceptable in a configuration file.  The output will
-consist of a rule name, a token, and a description of its meaning.</p>
-</dd>
-<dd>
-<p>Your configuration file (e.g., <strong>$HOME/.donuts.conf</strong>) may have lines in it
-that look like this:</p>
-</dd>
-<dd>
-<pre>
-  # change the default minimum number of legal NS records from 2 to 1
-  name: DNS_MULTIPLE_NS
-  minnsrecords: 1</pre>
-</dd>
-<dd>
-<pre>
-  # change the level of the following rule from 8 to 5
-  name: DNS_REASONABLE_TTLS
-  level: 5</pre>
-</dd>
-<dd>
-<p>This allows you to override certain aspects of how rules are executed.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dr">-R</a></strong>
-
-<dd>
-<p>Displays a list of all known rules along with their description (if
-available).</p>
-</dd>
-</li>
-<dt><strong><a name="item__2df_list">-F LIST</a></strong>
-
-<dt><strong><a name="item__2d_2dfeatures_3dlist">--features=LIST</a></strong>
-
-<dd>
-<p>The --features option specifies additional rule features that should
+<p>The <em>--features</em> option specifies additional rule features that should
 be executed.  Some rules are turned off by default because they are
 more intensive or require a live network connection, for instance.
-Use the --features flag to turn them on.  The LIST argument should be
-a comma separated list.  Example usage:</p>
-</dd>
-<dd>
+Use the <em>--features</em> flag to turn them on.  The LIST argument should be
+a comma-separated list.  Example usage:</p>
 <pre>
-  --features live,data_check</pre>
-</dd>
-<dd>
-<p>Features available in the default rule set:</p>
-</dd>
+  --features live,nsec_check</pre>
+<p>Features available in the default rule set distributed with <strong>donuts</strong>:</p>
 <dl>
-<dt><strong><a name="item_live">live</a></strong>
+<dt><strong><a name="live" class="item">live</a></strong></dt>
 
 <dd>
 <p>The <em>live</em> feature allows rules that need to perform live DNS queries
@@ -223,32 +126,195 @@ feature will let a rule run which checks to see if the child is
 actually publishing the DNSKEY that corresponds to the test zone's DS
 record.</p>
 </dd>
-</li>
+<dt><strong><a name="nsec_check" class="item">nsec_check</a></strong></dt>
+
+<dd>
+<p>This checks all the NSEC or NSEC3 records (as appropriate for the
+zone) to ensure the chain is complete and that no-overlaps exist.  It
+is fairly memory- and cpu-intensive in large zones.</p>
+</dd>
 </dl>
-<dt><strong><a name="item__2d_2dshow_2dgui">--show-gui</a></strong>
+</dd>
+</dl>
+<p>
+</p>
+<h2><a name="configuration_file_options_">Configuration File Options:</a></h2>
+<dl>
+<dt><strong><a name="c_configfile" class="item">-c <em>CONFIGFILE</em></a></strong></dt>
+
+<dt><strong><a name="config_file_configfile" class="item">--config-file=<em>CONFIGFILE</em></a></strong></dt>
+
+<dd>
+<p>Parse a configuration file to change constraints specified by rules.
+This defaults to <strong>$HOME/.donuts.conf</strong>.</p>
+</dd>
+<dt><strong><a name="c" class="item">-C</a></strong></dt>
+
+<dt><strong><a name="no_config" class="item">--no-config</a></strong></dt>
+
+<dd>
+<p>Don't read user configuration files at all, such as those specified by
+the <em>-c</em> option or the <strong>$HOME/.donuts.conf</strong> file.</p>
+</dd>
+</dl>
+<p>
+</p>
+<h2><a name="extra_live_query_options_">Extra Live Query Options:</a></h2>
+<p>Live Queries are enabled through the use of the <em>-f live</em> arguments.
+These options are only useful if that feature has been enabled.</p>
+<dl>
+<dt><strong><a name="t_interface" class="item">-t <em>INTERFACE</em></a></strong></dt>
+
+<dt><strong><a name="tcpdump_capture_interface" class="item">--tcpdump-capture=<em>INTERFACE</em></a></strong></dt>
+
+<dd>
+<p>Specifies that <strong>tcpdump</strong> should be started on <em>INTERFACE</em> (e.g.,
+&quot;eth0&quot;) just before <strong>donuts</strong> begins its run of rules for each domain
+and will stop it just after it has processed the rules.  This is
+useful when you wish to capture the traffic generated by the <em>live</em>
+feature, described above.</p>
+</dd>
+<dt><strong><a name="t_filter" class="item">-T <em>FILTER</em></a></strong></dt>
+
+<dt><strong><a name="tcpdump_filter_filter" class="item">--tcpdump-filter=<em>FILTER</em></a></strong></dt>
+
+<dd>
+<p>When <strong>tcpdump</strong> is run, this <em>FILTER</em> is passed to it for purposes of
+filtering traffic.  By default, this is set to <em>port 53 || ip[6:2] &amp;
+0x1fff != 0</em>, which limits the traffic to traffic destined to port 53
+(DNS) or fragmented packets.</p>
+</dd>
+<dt><strong><a name="o_file" class="item">-o <em>FILE</em></a></strong></dt>
+
+<dt><strong><a name="tcpdump_output_file_file" class="item">--tcpdump-output-file=<em>FILE</em></a></strong></dt>
+
+<dd>
+<p>Saves the <strong>tcpdump</strong>-captured packets to <em>FILE</em>.  The following
+special fields can be used to help generate unique file names:</p>
+<dl>
+<dt><strong><a name="_d" class="item">%d</a></strong></dt>
+
+<dd>
+<p>This is replaced with the current domain name being analyzed (e.g.,
+&quot;example.com&quot;).</p>
+</dd>
+<dt><strong><a name="_t" class="item">%t</a></strong></dt>
+
+<dd>
+<p>This is replaced with the current epoch time (i.e., the number of
+seconds since Jan 1, 1970).</p>
+</dd>
+</dl>
+<p>This field defaults to <em>%d.%t.pcap</em>.</p>
+</dd>
+<dt><strong><a name="show_gui" class="item">--show-gui</a></strong></dt>
 
 <dd>
 <p>[alpha code]</p>
-</dd>
-<dd>
-<p>Displays a browsable GUI screen showing the results of the donuts tests.</p>
-</dd>
-<dd>
+<p>Displays a browsable GUI screen showing the results of the <strong>donuts</strong> tests.</p>
 <p>The <strong>QWizard</strong> and <strong>Gtk2</strong> Perl modules must be installed for this to work.</p>
 </dd>
+</dl>
+<p>
+</p>
+<h2><a name="help_options">Help Options</a></h2>
+<dl>
+<dt><strong><a name="h" class="item">-H</a></strong></dt>
+
+<dd>
+<p>Displays the personal configuration file rules and tokens that are
+acceptable in a configuration file.  The output will
+consist of a rule name, a token, and a description of its meaning.</p>
+<p>Your configuration file (e.g., <strong>$HOME/.donuts.conf</strong>) may have lines in it
+that look like this:</p>
+<pre>
+  # change the default minimum number of legal NS records from 2 to 1
+  name: DNS_MULTIPLE_NS
+  minnsrecords: 1</pre>
+<pre>
+  # change the level of the following rule from 8 to 5
+  name: DNS_REASONABLE_TTLS
+  level: 5</pre>
+<p>This allows you to override certain aspects of how rules are executed.</p>
+</dd>
+<dt><strong><a name="r" class="item">-R</a></strong></dt>
+
+<dd>
+<p>Displays a list of all known rules along with their description (if
+available).</p>
+</dd>
+<dt><strong><a name="h" class="item">-h</a></strong></dt>
+
+<dd>
+<p>Displays a help message.</p>
+</dd>
+<dt><strong><a name="help" class="item">--help</a></strong></dt>
+
+<dd>
+<p>Displays a help message more tailored to people who prefer long-style
+options.</p>
+</dd>
+<dt><strong><a name="q" class="item">-q</a></strong></dt>
+
+<dd>
+<p>Turns on a quieter output mode.  This only affects one case: if no
+errors are found, it will not print out &quot;0 errors found&quot;.</p>
+<p>-q is ignored if a -v argument is present.</p>
+</dd>
+<dt><strong><a name="v" class="item">-v</a></strong></dt>
+
+<dd>
+<p>Turns on more verbose output.  Multiple <em>-v</em>'s will turn on increasing
+amounts of output.  The number of -v's will dictate output:</p>
+<ol>
+<li>
+<p>Describes which rules are being loaded and extra detail for rules that found errors (rule Level and extra text detail)</p>
 </li>
-<dt><strong><a name="item__2d_2dlive">--live</a></strong>
+<li>
+<p>Even more detail about rules that found errors: file name, file line
+number, rule type.</p>
+</li>
+<li>
+<p>Shows extra detail on the record text being analyzed (the detail is
+not always available, however).</p>
+</li>
+<li>
+<p>Even more detail about rules that found errors: dumps the rule code itself.</p>
+</li>
+<li>
+<p>Even more detail about rules that found errors: dumps the internal
+rule structure.</p>
+</li>
+</ol>
+</dd>
+</dl>
+<p>
+</p>
+<h2><a name="obsolete_options">Obsolete Options</a></h2>
+<dl>
+<dt><strong><a name="l" class="item">-L</a></strong></dt>
 
 <dd>
 <p>Obsolete command line option.  Please use <em>--features live</em> instead.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
+<h1><a name="examples">EXAMPLES</a></h1>
+<p>Run <strong>donuts</strong> in its default mode on the <em>example.com</em> zone which is
+contained in the <strong>db.example.com</strong> file:</p>
+<pre>
+  % donuts db.example.com example.com</pre>
+<p>Run <strong>donuts</strong> with significantly more output, both in terms of verbosity
+and in terms of the number of rules that are run to analyze the file:</p>
+<pre>
+  % donuts -v -v --level 9 db.example.com example.com</pre>
+<p>
+</p>
+<hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -259,15 +325,15 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p>For writing rules that can be loaded by donuts:</p>
+<p>For more information on the dnssec-tools project:</p>
+<pre>
+  <a href="http://www.dnssec-tools.org/">http://www.dnssec-tools.org/</a></pre>
+<p>For writing rules that can be loaded by <strong>donuts</strong>:</p>
 <pre>
   B&lt;Net::DNS::SEC::Tools::Donuts::Rule&gt;,</pre>
 <p>General DNS and DNSSEC usage:</p>
 <pre>
   B&lt;Net::DNS&gt;, B&lt;Net::DNS::SEC&gt;</pre>
-<p><strong>Gtk2.pm(3)</strong>,
-<strong>QWizard.pm(3)</strong></p>
-<p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
 
 </body>
 

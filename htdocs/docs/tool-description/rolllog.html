@@ -3,15 +3,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>rolllog - DNSSEC-Tools utility to write messages to the DNSSEC rollover
-log file.</title>
+log file</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -23,15 +25,17 @@ log file.</title>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
 <p>rolllog - DNSSEC-Tools utility to write messages to the DNSSEC rollover
-log file.</p>
+log file</p>
 <p>
 </p>
 <hr />
@@ -42,9 +46,9 @@ log file.</p>
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <em>rolllog</em> program writes log messages to the DNSSEC rollover log file.
-<em>rolllog</em> does not actually write the messages itself; rather, it sends them
-to the <em>rollerd</em> rollover daemon to write the messages.  <em>rollerd</em> keeps
+<p>The <strong>rolllog</strong> program writes log messages to the DNSSEC rollover log file.
+<strong>rolllog</strong> does not actually write the messages itself; rather, it sends them
+to the <strong>rollerd</strong> rollover daemon to write the messages.  <strong>rollerd</strong> keeps
 track of a logging level, and only messages of that level or higher are
 written to the log file.</p>
 <p>
@@ -53,31 +57,28 @@ written to the log file.</p>
 <h1><a name="options">OPTIONS</a></h1>
 <p>The following options are recognized:</p>
 <dl>
-<dt><strong><a name="item__2dloglevel_level"><em>-loglevel level</em></a></strong>
+<dt><strong><a name="loglevel_level" class="item"><strong>-loglevel level</strong></a></strong></dt>
 
 <dd>
 <p>Logging level of this message.  The valid levels are defined in
 <strong>rollmgr.pm</strong>(3).   This option is required.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp">-help</a></strong>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dversion">-Version</a></strong>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
 <dd>
-<p>Display a version message.</p>
+<p>Displays the version information for <strong>rolllog</strong> and the DNSSEC-Tools package.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

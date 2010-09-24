@@ -2,15 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>rollctl - Send commands to the DNSSEC-Tools rollover daemon.</title>
+<title>rollctl - Send commands to the DNSSEC-Tools rollover daemon</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -23,14 +25,16 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>rollctl - Send commands to the DNSSEC-Tools rollover daemon.</p>
+<p>rollctl - Send commands to the DNSSEC-Tools rollover daemon</p>
 <p>
 </p>
 <hr />
@@ -42,43 +46,45 @@
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
 <p>The <strong>rollctl</strong> command sends commands to the DNSSEC-Tools rollover daemon,
-<strong>rollerd</strong>.  Multiple options may be specified on a single command line and
-they will be executed in <em>alphabetical</em> order.  The exception to this
-ordering is that the <em>-shutdown</em> command will always be executed last.</p>
+<strong>rollerd</strong>.  Only one option may be specified on a command line.</p>
 <p>In most cases, <strong>rollerd</strong> will send a response to <strong>rollctl</strong>.  <strong>rollctl</strong> will
 print a success or failure message, as appropriate.</p>
+<p>If <strong>rollctl</strong> is run as a PAR-packed command, it will use its own local copy
+of the <strong>dnssec-tools.conf</strong> file.  This file will be found in the package
+directory.</p>
 <p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <p>The following options are handled by <strong>rollctl</strong>.</p>
 <dl>
-<dt><strong><a name="item__2ddisplay"><em>-display</em></a></strong>
+<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
 
 <dd>
 <p>Starts the rollover status GUI.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2ddspub_zone"><em>-dspub zone</em></a></strong>
+<dt><strong><a name="dspub_zone" class="item"><strong>-dspub zone</strong></a></strong></dt>
 
 <dd>
 <p>Indicates that <em>zone</em>'s parent has published a new DS record for <em>zone</em>.</p>
+<p>Multiple zones can be specified on the command line.
+For instance, this command will send the <em>dspub</em> command to <strong>rollerd</strong>
+for three zones.</p>
+<pre>
+    $ rollctl -dspub example1.com example2.com example3.com</pre>
 </dd>
-</li>
-<dt><strong><a name="item__2ddspuball"><em>-dspuball</em></a></strong>
+<dt><strong><a name="dspuball" class="item"><strong>-dspuball</strong></a></strong></dt>
 
 <dd>
 <p>Indicates that DS records have been published for all zones in phase 6 of
 KSK rollover.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhalt"><em>-halt</em></a></strong>
+<dt><strong><a name="halt" class="item"><strong>-halt</strong></a></strong></dt>
 
 <dd>
 <p>Cleanly halts <strong>rollerd</strong> execution.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dlogfile_logfile"><em>-logfile logfile</em></a></strong>
+<dt><strong><a name="logfile_logfile" class="item"><strong>-logfile logfile</strong></a></strong></dt>
 
 <dd>
 <p>Sets the <strong>rollerd</strong> log file to <em>logfile</em>.
@@ -86,106 +92,160 @@ This must be a valid logging file, meaning that if <em>logfile</em> already
 exists, it must be a regular file.  The only exceptions to this are if
 <em>logfile</em> is <strong>/dev/stdout</strong> or <strong>/dev/tty</strong>.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dloglevel_loglevel"><em>-loglevel loglevel</em></a></strong>
+<dt><strong><a name="loglevel_loglevel" class="item"><strong>-loglevel loglevel</strong></a></strong></dt>
 
 <dd>
 <p>Sets the <strong>rollerd</strong> logging level to <em>loglevel</em>.
 This must be one of the valid logging levels defined in <strong>rollmgr.pm(3)</strong>.</p>
+<p>If a logging level is not specified, then the list of valid levels will be
+printed and <strong>rollctl</strong> will exit.  The list is given in both text and numeric
+forms.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dnodisplay"><em>-nodisplay</em></a></strong>
+<dt><strong><a name="nodisplay" class="item"><strong>-nodisplay</strong></a></strong></dt>
 
 <dd>
 <p>Stops the rollover status GUI.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2drollall"><em>-rollall</em></a></strong>
+<dt><strong><a name="rollallzsks" class="item"><strong>-rollallzsks</strong></a></strong></dt>
 
 <dd>
-<p>Initiates rollover for all the zones defined in the current <em>rollrec</em> file.</p>
+<p>Initiates ZSK rollover for all the zones defined in the current <em>rollrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2drollrec_rollrec_file"><em>-rollrec rollrec_file</em></a></strong>
+<dt><strong><a name="rollksk_zone" class="item"><strong>-rollksk zone</strong></a></strong></dt>
+
+<dd>
+<p>Initiates KSK rollover for the zone named by <em>zone</em>.</p>
+<p>Multiple zones can be specified on the command line.
+For instance, this command will send the <em>rollksk</em> command to <strong>rollerd</strong>
+for three zones.</p>
+<pre>
+    $ rollctl -rollksk example1.com example2.com example3.com</pre>
+</dd>
+<dt><strong><a name="rollrec_rollrec_file" class="item"><strong>-rollrec rollrec_file</strong></a></strong></dt>
 
 <dd>
 <p>Sets the <em>rollrec</em> file to be processed by <strong>rollerd</strong> to <em>rollrec_file</em>.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2drollzone_zone"><em>-rollzone zone</em></a></strong>
+<dt><strong><a name="rollzsk_zone" class="item"><strong>-rollzsk zone</strong></a></strong></dt>
 
 <dd>
 <p>Initiates rollover for the zone named by <em>zone</em>.</p>
+<p>Multiple zones can be specified on the command line.
+For instance, this command will send the <em>rollzsk</em> command to <strong>rollerd</strong>
+for three zones.</p>
+<pre>
+    $ rollctl -rollzsk example1.com example2.com example3.com</pre>
 </dd>
-</li>
-<dt><strong><a name="item__2drunqueue"><em>-runqueue</em></a></strong>
+<dt><strong><a name="runqueue" class="item"><strong>-runqueue</strong></a></strong></dt>
 
 <dd>
 <p>Wakes up <strong>rollerd</strong> and has it run its queue of <em>rollrec</em> entries.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dshutdown"><em>-shutdown</em></a></strong>
+<dt><strong><a name="shutdown" class="item"><strong>-shutdown</strong></a></strong></dt>
 
 <dd>
-<p>Synonym for <em>-halt</em>.</p>
+<p>Synonym for <strong>-halt</strong>.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dskipall"><em>-skipall</em></a></strong>
+<dt><strong><a name="skipall" class="item"><strong>-skipall</strong></a></strong></dt>
 
 <dd>
 <p>Stops rollover for all zones in the current <em>rollrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dskipzone_zone"><em>-skipzone zone</em></a></strong>
+<dt><strong><a name="skipzone_zone" class="item"><strong>-skipzone zone</strong></a></strong></dt>
 
 <dd>
 <p>Stops rollover for the zone named by <em>zone</em>.</p>
+<p>Multiple zones can be specified on the command line.
+For instance, this command will send the <em>skipzone</em> command to <strong>rollerd</strong>
+for three zones.</p>
+<pre>
+    $ rollctl -rollzsk example1.com example2.com example3.com</pre>
 </dd>
-</li>
-<dt><strong><a name="item__2dsleeptime_sleeptime"><em>-sleeptime sleeptime</em></a></strong>
+<dt><strong><a name="sleeptime_seconds" class="item"><strong>-sleeptime seconds</strong></a></strong></dt>
 
 <dd>
-<p>Sets <strong>rollerd</strong>'s sleep time to <em>sleeptime</em>.  <em>sleeptime</em> must be an integer
-at least as large as the <strong>$MIN_SLEEP</strong> value in <strong>rollerd</strong>.</p>
+<p>Sets <strong>rollerd</strong>'s sleep time to <em>seconds</em> seconds.  <em>sleeptime</em> must be an
+integer at least as large as the <strong>$MIN_SLEEP</strong> value in <strong>rollerd</strong>.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dstatus"><em>-status</em></a></strong>
+<dt><strong><a name="status" class="item"><strong>-status</strong></a></strong></dt>
 
 <dd>
 <p>Has <strong>rollerd</strong> write several of its operational parameters to its log file.
 The parameters are also reported to <strong>rollctl</strong>, which prints them to the
 screen.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dzonelog"><em>-zonelog</em></a></strong>
+<dt><strong><a name="zonelog" class="item"><strong>-zonelog</strong></a></strong></dt>
 
 <dd>
 <p>Set the logging level for the specified zone.  The new logging level is only
 for the current execution of <strong>rollerd</strong> and is not saved to the active
 <em>rollrec</em> file.</p>
+<p>The arguments for this command must be in the format &quot;zone:loglevel&quot;.
+For example, this command will send the <em>zonelog</em> command to <strong>rollerd</strong>
+for three zones.</p>
+<pre>
+    $ rollctl -zonelog example1.com:info example2.com:6 example3.com:err</pre>
 </dd>
-</li>
-<dt><strong><a name="item__2dzonestatus"><em>-zonestatus</em></a></strong>
+<dt><strong><a name="zonestatus" class="item"><strong>-zonestatus</strong></a></strong></dt>
 
 <dd>
-<p>Has <strong>rollerd</strong> give the status of zones in the current <em>rollrec</em> file to the
+<p>Has <strong>rollerd</strong> write the status of zones in the current <em>rollrec</em> file to the
 <strong>rollerd</strong> log file.  The status is also reported to <strong>rollctl</strong>, which prints
-it to the screen.</p>
+it to the screen.  <strong>rollctl</strong> prints it in columnar fashion to enhance
+readability.  The columns, in order, are:  rollrec name, zone name, roll/skip
+state, and rollover phase.</p>
+<p>Example:
+    anothersub                      anothersub.example.com  skip  KSK 1
+    example.com                     example.com             roll  KSK 1
+    site1.in.subzone.example.com    subzone.example.com     roll  KSK 3
+    site1.subzone.example.com       subzone.example.com     roll  KSK 3</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dquiet"><em>-quiet</em></a></strong>
+<dt><strong><a name="zsargs_arglist_zones" class="item"><strong>-zsargs arglist zones</strong></a></strong></dt>
+
+<dd>
+<p>Provides additional <strong>zonesigner</strong> arguments for a given set of zones.  These
+arguments will override the arguments in the DNSSEC-Tools defaults file, the
+DNSSEC-Tools configuration file, and the zones' <em>keyrec</em> files.</p>
+<p>The <strong>zonesigner</strong> argument list is given in <em>arglist</em>.  Given the <strong>rollctl</strong>
+argument processing, the new arguments for <strong>zonesigner</strong> cannot be specified
+as expected.  Instead, the arguments should be given in the following manner.
+The leading dash should be replaced with an equals sign.  If the option takes
+an argument, the space that would separate the option from the option's
+argument should also be replaced by an equals sign.  <strong>rollerd</strong> translates
+these arguments to the appropriate format for <strong>zonesigner</strong>.  These examples
+should clarify the modifications:</p>
+<pre>
+    normal zonesigner option            -zsargs options
+    ------------------------            ---------------
+        -nokrfile                          =nokrfile
+        -zskcount 5                        =zskcount=5</pre>
+<p>The <em>zones</em> list is a space-separated list of zones.  <strong>All</strong> the new
+<strong>zonesigner</strong> arguments will be applied to <strong>all</strong> the listed zones.</p>
+<p>The &quot;=clear&quot; argument is special.  <strong>rollerd</strong> translates it to &quot;-clear&quot;,
+which is not a normal <strong>zonesigner</strong> option.  Instead, <strong>rollerd</strong> recognizes
+&quot;-clear&quot; as an indicator that it should remove the <em>zsargs</em> field from the
+<em>rollrec</em> records for the specified zones.</p>
+<p>The following are valid uses of <strong>-zsargs</strong>:</p>
+<pre>
+    # rollctl -zsargs =ksklength=2048 example.com
+    # rollctl -zsargs =ksklen=2048 =zsklen=2048 example.com test.com</pre>
+</dd>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>rollctl</strong> and the DNSSEC-Tools package.</p>
+</dd>
+<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
 
 <dd>
 <p>Prevents output from being given.  Both error and non-error output is
 stopped.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp"><em>-help</em></a></strong>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Displays a usage message.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
@@ -193,19 +253,18 @@ stopped.</p>
 <h1><a name="future">FUTURE</a></h1>
 <p>The following modifications may be made in the future:</p>
 <dl>
-<dt><strong><a name="item_command_execution_order">command execution order</a></strong>
+<dt><strong><a name="command_execution_order" class="item">command execution order</a></strong></dt>
 
 <dd>
 <p>The commands will be executed in the order given on the command line rather
 than in alphabetical order.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

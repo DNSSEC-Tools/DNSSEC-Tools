@@ -9,8 +9,10 @@
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -22,26 +24,28 @@
 	<li><a href="#examples">EXAMPLES</a></li>
 	<ul>
 
-		<li><a href="#example_1__one_domain__no_options">Example 1.  One domain, no options</a></li>
-		<li><a href="#example_2__one_domain__zone_option">Example 2.  One domain, -zone option</a></li>
-		<li><a href="#example_3__one_domain__keyrec_option">Example 3.  One domain, -keyrec option</a></li>
-		<li><a href="#example_4__one_domain__zone_and_keyrec_options">Example 4.  One domain, -zone and -keyrec options</a></li>
-		<li><a href="#example_5__one_domain__skip_option">Example 5.  One domain, -skip option</a></li>
-		<li><a href="#example_6__multiple_domains__no_options">Example 6.  Multiple domains, no options</a></li>
-		<li><a href="#example_7__multiple_domains__zone_option">Example 7.  Multiple domains, -zone option</a></li>
-		<li><a href="#example_8__multiple_domains__keyrec_option">Example 8.  Multiple domains, -keyrec option</a></li>
-		<li><a href="#example_9__multiple_domains__zone_and_keyrec_options">Example 9.  Multiple domains, -zone and -keyrec options</a></li>
-		<li><a href="#example_10__single_domain__zone_and_keyrec_options_with_template">Example 10.  Single domain, -zone and -keyrec options with template</a></li>
-		<li><a href="#example_11__multiple_domains__zone_and_keyrec_options_without_template">Example 11.  Multiple domains, -zone and -keyrec options without template</a></li>
+		<li><a href="#example_1__one_zone__no_options">Example 1.  One zone, no options</a></li>
+		<li><a href="#example_2__one_zone___zonefile_option">Example 2.  One zone, -zonefile option</a></li>
+		<li><a href="#example_3__one_zone___keyrec_option">Example 3.  One zone, -keyrec option</a></li>
+		<li><a href="#example_4__one_zone___zonefile_and__keyrec_options">Example 4.  One zone, -zonefile and -keyrec options</a></li>
+		<li><a href="#example_5__one_zone___skip_option">Example 5.  One zone, -skip option</a></li>
+		<li><a href="#example_6__multiple_zones__no_options">Example 6.  Multiple zones, no options</a></li>
+		<li><a href="#example_7__multiple_zones___zonefile_option">Example 7.  Multiple zones, -zonefile option</a></li>
+		<li><a href="#example_8__multiple_zones___keyrec_option">Example 8.  Multiple zones, -keyrec option</a></li>
+		<li><a href="#example_9__multiple_zones___zonefile_and__keyrec_options">Example 9.  Multiple zones, -zonefile and -keyrec options</a></li>
+		<li><a href="#example_10__single_zone___zonefile_and__keyrec_options_with_template">Example 10.  Single zone, -zonefile and -keyrec options with template</a></li>
+		<li><a href="#example_11__multiple_zones___zonefile_and__keyrec_options_without_template">Example 11.  Multiple zones, -zonefile and -keyrec options without template</a></li>
 	</ul>
 
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -59,10 +63,11 @@
 <h1><a name="description">DESCRIPTION</a></h1>
 <p><strong>rollinit</strong> creates new <em>rollrec</em> entries for a <em>rollrec</em> file.  This
 <em>rollrec</em> file will be used by <strong>rollerd</strong> to manage key rollover for
-the named domains.</p>
+the named zones.</p>
 <p>A <em>rollrec</em> entry has this format:</p>
 <pre>
     roll &quot;example.com&quot;
+        zonename        &quot;example.com&quot;
         zonefile        &quot;example.com.signed&quot;
         keyrec          &quot;example.com.krf&quot;
         kskphase        &quot;0&quot;
@@ -76,18 +81,25 @@ the named domains.</p>
         zsk_rollsecs    &quot;0&quot;
         maxttl          &quot;604800&quot;
         display         &quot;1&quot;
-        phasestart      &quot;Mon Jan 9 16:00:00 2006&quot;</pre>
+        phasestart      &quot;Mon Jan 9 16:00:00 2006&quot;
+        # optional records for RFC5011 rolling:
+        istrustanchor   &quot;no&quot;
+        holddowntime    &quot;60D&quot;</pre>
+<p>The <em>roll</em> line has a name which is used to distinguish it from all other
+<em>rollrec</em> entries in the file.  The <em>zonename</em> field is set to the name
+of the zone.  These two data are often the same, but this is not required.
+<strong>rollinit</strong> will set them to the same value.</p>
 <p>The <em>zonefile</em> and <em>keyrec</em> fields are set according to command-line options
 and arguments.  The manner of generating the <em>rollrec</em>'s actual values is a
 little complex and is described in the ZONEFILE And KEYREC FIELDS section
 below.</p>
-<p>The <em>administrator</em> field is set to <a href="mailto:``bob@bobhost.example.com''">``bob@bobhost.example.com''</a> to indicate
+<p>The <em>administrator</em> field is set to <a href="mailto:"bob@bobhost.example.com"">"bob@bobhost.example.com"</a> to indicate
 that the email messages to the zone's administrator should be sent to
-<a href="mailto:``bob@bobhost.example.com''.">``bob@bobhost.example.com''.</a></p>
-<p>The <em>directory</em> field is set to ``/var/dns/zones/example.com'' to indicate
-that the files for this zone (zone file, signed zone file, <em>keyrec</em> file,
-etc.) should be found in <strong>/var/dns/zones/example.com</strong>.</p>
-<p>The <em>loglevel</em> field is set to ``phase'' to indicate that <strong>rollerd</strong> should
+<a href="mailto:"bob@bobhost.example.com".">"bob@bobhost.example.com".</a></p>
+<p>The <em>directory</em> field is set to &quot;/var/dns/zones/example.com&quot; to indicate
+that the files for this zone should be found in <strong>/var/dns/zones/example.com</strong>.
+This includes the zone file, the signed zone file, and the <em>keyrec</em> file.</p>
+<p>The <em>loglevel</em> field is set to &quot;phase&quot; to indicate that <strong>rollerd</strong> should
 only log phase-level (and greater) log messages for this zone.</p>
 <p>The <em>kskphase</em> field is set to 0 to indicate that the zone is in
 normal operation (non-rollover) for KSK keys.
@@ -99,33 +111,44 @@ zone has not yet undergone KSK rollover.</p>
 zone has not yet undergone ZSK rollover.</p>
 <p>The <em>display</em> field is set to indicate that <strong>blinkenlights</strong> should display
 the record.  The <em>maxttl</em> and <em>phasestart</em> fields are set to dummy values.</p>
+<p><em>rollrec</em> files also have the <em>zsargs</em> field that holds user-specified
+options for <strong>zonesigner</strong>.  This field is set during <strong>rollerd</strong> execution
+when the administrator determines that some zone fields should be modified.
+It is not an initial <em>rollrec</em> field and consequently cannot be specified
+by <strong>rollinit</strong>.</p>
+<p>The <strong>istrustanchor</strong> field specifies whether to roll the KSK keys in a
+manner compilant with any remote validating resolver using the KSK as
+a trust-anchor.  If set to &quot;yes&quot; then 60 days will be the minimum wait
+time during phase 3 of KSK rolling to ensure remote validators can
+properly follow the steps needed as specified by <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a>.  The 60-day
+default can be changed via the <strong>holddowntime</strong> field.</p>
 <p>The keywords <strong>roll</strong> and <strong>skip</strong> indicate whether <strong>rollerd</strong> should process
 or ignore a particular <em>rollrec</em> entry.  <strong>roll</strong> records are created by
-default; <strong>skip</strong> entries are created if the <em>-skip</em> option is specified.</p>
+default; <strong>skip</strong> entries are created if the <strong>-skip</strong> option is specified.</p>
 <p>The newly generated <em>rollrec</em> entries are written to standard output,
-unless the <em>-out</em> option is specified.</p>
+unless the <strong>-out</strong> option is specified.</p>
 <p>
 </p>
 <hr />
 <h1><a name="zonefile_and_keyrec_fields">ZONEFILE and KEYREC FIELDS</a></h1>
-<p>The <em>zonefile</em> and <em>keyrec</em> fields may be given by using the <em>-zone</em>
-and <em>-keyrec</em> options, or default values may be used.</p>
+<p>The <em>zonefile</em> and <em>keyrec</em> fields may be given by using the <strong>-zonefile</strong>
+and <strong>-keyrec</strong> options, or default values may be used.</p>
 <p>The default values use the <em>rollrec</em>'s zone name, taken from the command
-line, as a base.  <strong>.signed</strong> is appended to the domain name for the zone file;
-<strong>.krf</strong> is appended to the domain name for the <em>keyrec</em> file.</p>
-<p>If <em>-zone</em> or <em>-keyrec</em> are specified, then the options values are
+line, as a base.  <strong>.signed</strong> is appended to the zone name for the zone file;
+<strong>.krf</strong> is appended to the zone name for the <em>keyrec</em> file.</p>
+<p>If <strong>-zonefile</strong> or <strong>-keyrec</strong> are specified, then the options values are
 used in one of two ways:</p>
 <ol>
-<li><strong><a name="item_a_single_domain_name_is_given_on_the_command_line_">A single domain name is given on the command line.</a></strong>
+<li><strong><a name="a_single_zone_name_is_given_on_the_command_line" class="item">A single zone name is given on the command line.</a></strong>
 
-<p>The option values for <em>-zone</em> and/or <em>-keyrec</em> are used for the actual
+<p>The option values for <strong>-zonefile</strong> and/or <strong>-keyrec</strong> are used for the actual
 <em>rollrec</em> fields.</p>
 </li>
-<li><strong><a name="item_multiple_domain_names_are_given_on_the_command_lin">Multiple domain names are given on the command line.</a></strong>
+<li><strong><a name="multiple_zone_names_are_given_on_the_command_line" class="item">Multiple zone names are given on the command line.</a></strong>
 
-<p>The option values for <em>-zone</em> and/or <em>-keyrec</em> are used as templates
+<p>The option values for <strong>-zonefile</strong> and/or <strong>-keyrec</strong> are used as templates
 for the actual <em>rollrec</em> fields.  The option values must contain 
-the string <strong>=</strong>.  This string is replaced by the domain whose <em>rollrec</em>
+the string <strong>=</strong>.  This string is replaced by the zone whose <em>rollrec</em>
 is being created.</p>
 </li>
 </ol>
@@ -136,65 +159,60 @@ is being created.</p>
 <h1><a name="options">OPTIONS</a></h1>
 <p><strong>rollinit</strong> may be given the following options:</p>
 <dl>
-<dt><strong><a name="item__2dzone_zonefile"><em>-zone zonefile</em></a></strong>
+<dt><strong><a name="zonefile_zonefile" class="item"><strong>-zonefile zonefile</strong></a></strong></dt>
 
 <dd>
 <p>This specifies the value of the <em>zonefile</em> field.
 See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkeyrec_keyrec_2dfile"><em>-keyrec keyrec-file</em></a></strong>
+<dt><strong><a name="keyrec_keyrec_file" class="item"><strong>-keyrec keyrec-file</strong></a></strong></dt>
 
 <dd>
 <p>This specifies the value of the <em>keyrec</em> field.
 See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dadmin"><em>-admin</em></a></strong>
+<dt><strong><a name="admin" class="item"><strong>-admin</strong></a></strong></dt>
 
 <dd>
 <p>This specifies the value of the <em>administrator</em> field.  If it is not given,
 an <em>administrator</em> field will not be included for the record.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2ddirectory"><em>-directory</em></a></strong>
+<dt><strong><a name="directory" class="item"><strong>-directory</strong></a></strong></dt>
 
 <dd>
 <p>This specifies the value of the <em>directory</em> field.  If it is not given,
 a <em>directory</em> field will not be included for the record.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dloglevel"><em>-loglevel</em></a></strong>
+<dt><strong><a name="loglevel" class="item"><strong>-loglevel</strong></a></strong></dt>
 
 <dd>
 <p>This specifies the value of the <em>loglevel</em> field.  If it is not given, a
 <em>loglevel</em> field will not be included for the record.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dskip"><em>-skip</em></a></strong>
+<dt><strong><a name="skip" class="item"><strong>-skip</strong></a></strong></dt>
 
 <dd>
 <p>By default, <strong>roll</strong> records are generated.  If this option is given, then
 <strong>skip</strong> records will be generated instead.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dout_output_2dfile"><em>-out output-file</em></a></strong>
+<dt><strong><a name="out_output_file" class="item"><strong>-out output-file</strong></a></strong></dt>
 
 <dd>
 <p>The new <em>rollrec</em> entries will be appended to <em>output-file</em>.
 The file will be created if it does not exist.</p>
-</dd>
-<dd>
 <p>If this option is not given, the new <em>rollrec</em> entries will be written
 to standard output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp"><em>-help</em></a></strong>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message.</p>
 </dd>
-</li>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Display version information for <strong>rollinit</strong> and DNSSEC-Tools.</p>
+</dd>
 </dl>
 <p>
 </p>
@@ -206,12 +224,13 @@ For the sake of brevity, the remaining examples will only show the newly
 created <em>zonefile</em> and <em>keyrec</em> records.</p>
 <p>
 </p>
-<h2><a name="example_1__one_domain__no_options">Example 1.  One domain, no options</a></h2>
+<h2><a name="example_1__one_zone__no_options">Example 1.  One zone, no options</a></h2>
 <p>This example shows the <em>rollrec</em> generated by giving <strong>rollinit</strong> a single
-domain, without any options.</p>
+zone, without any options.</p>
 <pre>
     $ rollinit example.com
         roll    &quot;example.com&quot;
+            zonename        &quot;example.com&quot;
             zonefile        &quot;example.com.signed&quot;
             keyrec          &quot;example.com.krf&quot;
             kskphase        &quot;0&quot;
@@ -225,135 +244,150 @@ domain, without any options.</p>
             phasestart      &quot;new&quot;</pre>
 <p>
 </p>
-<h2><a name="example_2__one_domain__zone_option">Example 2.  One domain, -zone option</a></h2>
+<h2><a name="example_2__one_zone___zonefile_option">Example 2.  One zone, -zonefile option</a></h2>
 <p>This example shows the <em>rollrec</em> generated by giving <strong>rollinit</strong> a single
-domain, with the <em>-zone</em> option.</p>
+zone, with the <em>-zonefile</em> option.</p>
 <pre>
-    $ rollinit -zone signed-example example.com
+    $ rollinit -zonefile signed-example example.com
         roll    &quot;example.com&quot;
+            zonename        &quot;example.com&quot;
             zonefile        &quot;signed-example&quot;
             keyrec          &quot;example.com.krf&quot;</pre>
 <p>
 </p>
-<h2><a name="example_3__one_domain__keyrec_option">Example 3.  One domain, -keyrec option</a></h2>
+<h2><a name="example_3__one_zone___keyrec_option">Example 3.  One zone, -keyrec option</a></h2>
 <p>This example shows the <em>rollrec</em> generated by giving <strong>rollinit</strong> a single
-domain, with the <em>-keyrec</em> option.</p>
+zone, with the <strong>-keyrec</strong> option.</p>
 <pre>
     $ rollinit -keyrec x-rrf example.com
         roll    &quot;example.com&quot;
+            zonename        &quot;example.com&quot;
             zonefile        &quot;example.com.signed&quot;
             keyrec          &quot;x-rrf&quot;</pre>
 <p>
 </p>
-<h2><a name="example_4__one_domain__zone_and_keyrec_options">Example 4.  One domain, -zone and -keyrec options</a></h2>
+<h2><a name="example_4__one_zone___zonefile_and__keyrec_options">Example 4.  One zone, -zonefile and -keyrec options</a></h2>
 <p>This example shows the <em>rollrec</em> generated by giving <strong>rollinit</strong> a single
-domain, with the <em>-zone</em> and <em>-keyrec</em> options.</p>
+zone, with the <strong>-zonefile</strong> and <strong>-keyrec</strong> options.</p>
 <pre>
-    $ rollinit -zone signed-example -keyrec example.rrf example.com
+    $ rollinit -zonefile signed-example -keyrec example.rrf example.com
         roll    &quot;example.com&quot;
+            zonename        &quot;example.com&quot;
             zonefile        &quot;signed-example&quot;
-            keyrec          &quot;xkrf&quot;</pre>
+            keyrec          &quot;example.rrf&quot;</pre>
 <p>
 </p>
-<h2><a name="example_5__one_domain__skip_option">Example 5.  One domain, -skip option</a></h2>
+<h2><a name="example_5__one_zone___skip_option">Example 5.  One zone, -skip option</a></h2>
 <p>This example shows the <em>rollrec</em> generated by giving <strong>rollinit</strong> a single
-domain, with the <em>-zone</em> and <em>-keyrec</em> options.</p>
+zone, with the <strong>-zonefile</strong> and <strong>-keyrec</strong> options.</p>
 <pre>
     $ rollinit -skip example.com
         skip    &quot;example.com&quot;
+            zonename        &quot;example.com&quot;
             zonefile        &quot;example.com.signed&quot;
             keyrec          &quot;example.com.krf&quot;</pre>
 <p>
 </p>
-<h2><a name="example_6__multiple_domains__no_options">Example 6.  Multiple domains, no options</a></h2>
+<h2><a name="example_6__multiple_zones__no_options">Example 6.  Multiple zones, no options</a></h2>
 <p>This example shows the <em>rollrec</em>s generated by giving <strong>rollinit</strong> several
-domains, without any options.</p>
+zones, without any options.</p>
 <pre>
     $ rollinit example1.com example2.com
         roll    &quot;example1.com&quot;
-                zonefile        &quot;example1.com.signed&quot;
-                keyrec          &quot;example1.com.krf&quot;</pre>
+            zonename        &quot;example1.com&quot;
+            zonefile        &quot;example1.com.signed&quot;
+            keyrec          &quot;example1.com.krf&quot;</pre>
 <pre>
         roll    &quot;example2.com&quot;
-                zonefile        &quot;example2.com.signed&quot;
-                keyrec          &quot;example2.com.krf&quot;</pre>
+            zonename        &quot;example2.com&quot;
+            zonefile        &quot;example2.com.signed&quot;
+            keyrec          &quot;example2.com.krf&quot;</pre>
 <p>
 </p>
-<h2><a name="example_7__multiple_domains__zone_option">Example 7.  Multiple domains, -zone option</a></h2>
+<h2><a name="example_7__multiple_zones___zonefile_option">Example 7.  Multiple zones, -zonefile option</a></h2>
 <p>This example shows the <em>rollrec</em>s generated by giving <strong>rollinit</strong> several
-domains, with the <em>-zone</em> option.</p>
+zones, with the <strong>-zonefile</strong> option.</p>
 <pre>
-    $ rollinit -zone =-signed example1.com example2.com
+    $ rollinit -zonefile =-signed example1.com example2.com
         roll    &quot;example1.com&quot;
-                zonefile        &quot;example1.com-signed&quot;
-                keyrec          &quot;example1.com.krf&quot;</pre>
+            zonename        &quot;example1.com&quot;
+            zonefile        &quot;example1.com-signed&quot;
+            keyrec          &quot;example1.com.krf&quot;</pre>
 <pre>
         roll    &quot;example2.com&quot;
-                zonefile        &quot;example2.com-signed&quot;
-                keyrec          &quot;example2.com.krf&quot;</pre>
+            zonename        &quot;example2.com&quot;
+            zonefile        &quot;example2.com-signed&quot;
+            keyrec          &quot;example2.com.krf&quot;</pre>
 <p>
 </p>
-<h2><a name="example_8__multiple_domains__keyrec_option">Example 8.  Multiple domains, -keyrec option</a></h2>
+<h2><a name="example_8__multiple_zones___keyrec_option">Example 8.  Multiple zones, -keyrec option</a></h2>
 <p>This example shows the <em>rollrec</em>s generated by giving <strong>rollinit</strong> several
-domains, with the <em>-keyrec</em> option.</p>
+zones, with the <strong>-keyrec</strong> option.</p>
 <pre>
     $ rollinit -keyrec zone-=-keyrec example1.com example2.com
         roll    &quot;example1.com&quot;
-                zonefile        &quot;example1.com.signed&quot;
-                keyrec          &quot;zone-example1.com-keyrec&quot;</pre>
+            zonename        &quot;example1.com&quot;
+            zonefile        &quot;example1.com.signed&quot;
+            keyrec          &quot;zone-example1.com-keyrec&quot;</pre>
 <pre>
         roll    &quot;example2.com&quot;
-                zonefile        &quot;example2.com.signed&quot;
-                keyrec          &quot;zone-example2.com-keyrec&quot;</pre>
+            zonename        &quot;example2.com&quot;
+            zonefile        &quot;example2.com.signed&quot;
+            keyrec          &quot;zone-example2.com-keyrec&quot;</pre>
 <p>
 </p>
-<h2><a name="example_9__multiple_domains__zone_and_keyrec_options">Example 9.  Multiple domains, -zone and -keyrec options</a></h2>
+<h2><a name="example_9__multiple_zones___zonefile_and__keyrec_options">Example 9.  Multiple zones, -zonefile and -keyrec options</a></h2>
 <p>This example shows the <em>rollrec</em>s generated by giving <strong>rollinit</strong> several
-domains, with the <em>-zone</em> and <em>-keyrec</em> options.</p>
+zones, with the <strong>-zonefile</strong> and <strong>-keyrec</strong> options.</p>
 <pre>
-    $ rollinit -zone Z-= -keyrec =K example1.com example2.com
+    $ rollinit -zonefile Z-= -keyrec =K example1.com example2.com
         roll    &quot;example1.com&quot;
-                zonefile        &quot;Z-example1.com&quot;
-                keyrec          &quot;example1.comK&quot;</pre>
+            zonename        &quot;example1.com&quot;
+            zonefile        &quot;Z-example1.com&quot;
+            keyrec          &quot;example1.comK&quot;</pre>
 <pre>
         roll    &quot;example2.com&quot;
-                zonefile        &quot;Z-example2.com&quot;
-                keyrec          &quot;example2.comK&quot;</pre>
+            zonename        &quot;example2.com&quot;
+            zonefile        &quot;Z-example2.com&quot;
+            keyrec          &quot;example2.comK&quot;</pre>
 <p>
 </p>
-<h2><a name="example_10__single_domain__zone_and_keyrec_options_with_template">Example 10.  Single domain, -zone and -keyrec options with template</a></h2>
+<h2><a name="example_10__single_zone___zonefile_and__keyrec_options_with_template">Example 10.  Single zone, -zonefile and -keyrec options with template</a></h2>
 <p>This example shows the <em>rollrec</em> generated by giving <strong>rollinit</strong> a single
-domain, with the <em>-zone</em> and <em>-keyrec</em> options.  The options use the
-multi-domain <strong>=</strong> template.</p>
+zone, with the <strong>-zonefile</strong> and <strong>-keyrec</strong> options.  The options use the
+multi-zone <strong>=</strong> template.</p>
 <pre>
-    $ rollinit -zone Z-= -keyrec =.K example.com
+    $ rollinit -zonefile Z-= -keyrec =.K example.com
         roll    &quot;example.com&quot;
-                zonefile        &quot;Z-=&quot;
-                keyrec          &quot;=.K&quot;</pre>
+            zonename        &quot;example.com&quot;
+            zonefile        &quot;Z-=&quot;
+            keyrec          &quot;=.K&quot;</pre>
 <p>This is probably not what is wanted, since it results in the <em>zonefile</em> and
 <em>keyrec</em> field values containing the <strong>=</strong>.</p>
 <p>
 </p>
-<h2><a name="example_11__multiple_domains__zone_and_keyrec_options_without_template">Example 11.  Multiple domains, -zone and -keyrec options without template</a></h2>
-<p>This example shows the <em>rollrec</em>s generated by giving <strong>rollinit</strong> several
-domains, with the <em>-zone</em> and <em>-keyrec</em> options.  The options do not use the
-multi-domain <strong>=</strong> template.</p>
+<h2><a name="example_11__multiple_zones___zonefile_and__keyrec_options_without_template">Example 11.  Multiple zones, -zonefile and -keyrec options without template</a></h2>
+<p>This example shows the <em>rollrec</em>s generated by giving <strong>rollinit</strong>
+several zones, with the <strong>-zonefile</strong> and <strong>-keyrec</strong> options.  The
+options do not use the multi-zone <strong>=</strong> template.</p>
 <pre>
-    $ rollinit -zone ex.zone -keyrec ex.krf example1.com example2.com
+    $ rollinit -zonefile ex.zone -keyrec ex.krf example1.com example2.com
         roll    &quot;example1.com&quot;
-                zonefile        &quot;ex.zone&quot;
-                keyrec          &quot;ex.krf&quot;</pre>
+            zonename        &quot;example1.com&quot;
+            zonefile        &quot;ex.zone&quot;
+            keyrec          &quot;ex.krf&quot;</pre>
 <pre>
         roll    &quot;example2.com&quot;
-                zonefile        &quot;ex.zone&quot;
-                keyrec          &quot;ex.krf&quot;</pre>
+            zonename        &quot;example2.com&quot;
+            zonefile        &quot;ex.zone&quot;
+            keyrec          &quot;ex.krf&quot;</pre>
 <p>This may not be what is wanted, since it results in the same <em>zonefile</em>
 and <em>keyrec</em> fields values for each <em>rollrec</em>.</p>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -370,8 +404,8 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <strong>zonesigner(8)</strong></p>
 <p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::file-keyrec.pm(5)</strong>,
-<strong>Net::DNS::SEC::Tools::file-rollrec.pm(5)</strong></p>
+<p><strong>file-keyrec.pm(5)</strong>,
+<strong>file-rollrec.pm(5)</strong></p>
 
 </body>
 

@@ -2,15 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>lskrf - List the I&lt;keyrec&gt;s in a DNSSEC-Tools I&lt;keyrec&gt; file.</title>
+<title>lskrf - List the I&lt;keyrec&gt;s in a DNSSEC-Tools I&lt;keyrec&gt; file</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -28,26 +30,28 @@
 	<li><a href="#options">OPTIONS</a></li>
 	<ul>
 
-		<li><a href="#recordselection_options">Record-Selection Options</a></li>
-		<li><a href="#recordattribute_options">Record-Attribute Options</a></li>
-		<li><a href="#zoneattribute_options">Zone-Attribute Options</a></li>
-		<li><a href="#setattribute_options">Set-Attribute Options</a></li>
-		<li><a href="#keyattribute_options">Key-Attribute Options</a></li>
-		<li><a href="#outputformat_options">Output-Format Options</a></li>
+		<li><a href="#record_selection_options">Record-Selection Options</a></li>
+		<li><a href="#record_attribute_options">Record-Attribute Options</a></li>
+		<li><a href="#zone_attribute_options">Zone-Attribute Options</a></li>
+		<li><a href="#set_attribute_options">Set-Attribute Options</a></li>
+		<li><a href="#key_attribute_options">Key-Attribute Options</a></li>
+		<li><a href="#output_format_options">Output-Format Options</a></li>
 	</ul>
 
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>lskrf - List the <em>keyrec</em>s in a DNSSEC-Tools <em>keyrec</em> file.</p>
+<p>lskrf - List the <em>keyrec</em>s in a DNSSEC-Tools <em>keyrec</em> file</p>
 <p>
 </p>
 <hr />
@@ -64,8 +68,8 @@ have duplicated names, whether within one file or across multiple files, the
 later <em>keyrec</em> will be the one whose data are displayed.</p>
 <p><strong>lskrf</strong> has three base output formats.  In ascending levels of detail, these
 formats are terse output, default format, and long format.  Terse output is
-given when the <em>-terse</em> option is specified; long output is given when the
-<em>-long</em> option is specified.</p>
+given when the <strong>-terse</strong> option is specified; long output is given when the
+<strong>-long</strong> option is specified.</p>
 <p>The output displayed for each record in a <em>keyrec</em> file depends on the
 selected records, the selected attributes, and the selected output format.
 Each option in these option groups is described in detail in the OPTIONS
@@ -77,19 +81,23 @@ section.</p>
 <h1><a name="output_formats">OUTPUT FORMATS</a></h1>
 <p><em>keyrec</em> files hold three types of <em>keyrec</em> records:  zone records, signing
 set records, and key records.  Each type of <em>keyrec</em> record contains
-<em>keyrec</em> fields related to that type.  For example, zone <em>keyrec</em> records
-contain data about all the keys associated with a particular zone; key
+<em>keyrec</em> fields related to that type.  Zone <em>keyrec</em> records contain data
+about all the keys associated with a particular zone; set <em>keyrec</em> records
+contain data about all the keys associated with a particular signing set; key
 <em>keyrec</em> records contain key lengths and algorithms for each particular key.
+(There is the case of subordinate revoked and obsolete signing sets.  These
+are stored in key <em>keyrec</em> records, but they contain the <em>set_type</em> entry
+which key <em>keyrec</em>s do not.)
 The data to be printed must be specified by selecting some combination of the
-<em>-zone</em>, <em>-set</em>, <em>-key</em>, and  <em>-all</em> options.  There are also options for
-specifying specific types of keys to be printed.</p>
+<strong>-zone</strong>, <strong>-sets</strong>, <strong>-keys</strong>, and  <strong>-all</strong> options.  There are also options
+for specifying specific types of keys to be printed.</p>
 <p>The three base output formats are the default format, the terse format, and
-the long format.  The <em>-terse</em> option indicates that a minimal amount of
-output is desired; the <em>-long</em> option indicates that a great deal of output
+the long format.  The <strong>-terse</strong> option indicates that a minimal amount of
+output is desired; the <strong>-long</strong> option indicates that a great deal of output
 is desired.  The record-selection and attribute-selection options may be used
-in conjunction with <em>-terse</em> to display exactly the set of <em>keyrec</em> fields
+in conjunction with <strong>-terse</strong> to display exactly the set of <em>keyrec</em> fields
 needed.  The default output format is a middle ground between terse and long
-output and is that used when neither <em>-terse</em> nor &lt;-long&gt; is given.</p>
+output and is that used when neither <strong>-terse</strong> nor <strong>-long</strong> is given.</p>
 <p>
 </p>
 <h2><a name="zone_keyrec_output">Zone <em>keyrec</em> Output</a></h2>
@@ -122,10 +130,11 @@ output format.</p>
 <pre>
     keyrec field                 default        terse        long
     ------------                 -------        -----        ----
-    keyrec type                    no            no          yes
+    keyrec type                    yes           no          yes
     set name                       yes           yes         yes
     zone name                      yes           no          yes
-    keys                           yes           no          yes
+    type                           yes           no          yes
+    keys                           no            no          yes
     last modification date         no            no          yes</pre>
 <p>
 </p>
@@ -155,499 +164,519 @@ record-attribute options, and output-style options.  These option
 sets are detailed below.</p>
 <p>Record-selection options are required options; at least one record-selection
 option <strong>must</strong> be selected.  Record-attribute options and output-style options
-are optional options; any number of these option <strong>may</strong> be selected.</p>
+are optional options; any number of these option <em>may</em> be selected.</p>
 <p>
 </p>
-<h2><a name="recordselection_options">Record-Selection Options</a></h2>
+<h2><a name="record_selection_options">Record-Selection Options</a></h2>
 <p>These options select the types of <em>keyrec</em> that will be displayed.</p>
 <dl>
-<dt><strong><a name="item__2dall">-all</a></strong>
+<dt><strong><a name="all" class="item"><strong>-all</strong></a></strong></dt>
 
 <dd>
 <p>This option displays all the records in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dzones">-zones</a></strong>
+<dt><strong><a name="zones" class="item"><strong>-zones</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the zones in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dsets">-sets</a></strong>
+<dt><strong><a name="sets" class="item"><strong>-sets</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the signing sets in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkeys">-keys</a></strong>
+<dt><strong><a name="keys" class="item"><strong>-keys</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the keys in a <em>keyrec</em> file.</p>
-</dd>
-<dd>
 <p>The key data are sorted by key type in the following order:  Current KSKs,
 Published KSKs, Current ZSKs, Published ZSKs, New ZSKs, Obsolete KSKs, and
 Obsolete ZSKs.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dksk">-ksk</a></strong>
+<dt><strong><a name="ksk" class="item"><strong>-ksk</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the KSK keys in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkcur">-kcur</a></strong>
+<dt><strong><a name="kcur" class="item"><strong>-kcur</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the Current KSK keys in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkpub">-kpub</a></strong>
+<dt><strong><a name="kpub" class="item"><strong>-kpub</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the Published KSK keys in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkobs">-kobs</a></strong>
+<dt><strong><a name="kobs" class="item"><strong>-kobs</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the obsolete KSK keys in a <em>keyrec</em> file.  This option
 must be give if obsolete KSK keys are to be displayed.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dzsk">-zsk</a></strong>
+<dt><strong><a name="krev" class="item"><strong>-krev</strong></a></strong></dt>
+
+<dd>
+<p>This option displays the revoked KSK keys in a <em>keyrec</em> file.  This option
+must be give if revoked KSK keys are to be displayed.</p>
+</dd>
+<dt><strong><a name="zsk" class="item"><strong>-zsk</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the ZSK keys in a <em>keyrec</em> file.  It does not include
-obsolete ZSK keys; the <em>-obs</em> option must be specified to display obsolete
+obsolete ZSK keys; the <strong>-obs</strong> option must be specified to display obsolete
 keys.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dcur">-cur</a></strong>
+<dt><strong><a name="cur" class="item"><strong>-cur</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the Current ZSK keys in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dnew">-new</a></strong>
+<dt><strong><a name="new" class="item"><strong>-new</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the New ZSK keys in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dpub">-pub</a></strong>
+<dt><strong><a name="pub" class="item"><strong>-pub</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the Published ZSK keys in a <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dzobs">-zobs</a></strong>
+<dt><strong><a name="zobs" class="item"><strong>-zobs</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the obsolete ZSK keys in a <em>keyrec</em> file.  This option
 must be give if obsolete ZSK keys are to be displayed.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dobs">-obs</a></strong>
+<dt><strong><a name="zrev" class="item"><strong>-zrev</strong></a></strong></dt>
+
+<dd>
+<p>This option displays the revoked ZSK keys in a <em>keyrec</em> file.  This option
+must be give if revoked ZSK keys are to be displayed.</p>
+</dd>
+<dt><strong><a name="obs" class="item"><strong>-obs</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the obsolete KSK and ZSK keys in a <em>keyrec</em> file.
-This option is a shorthand method specifying the <em>-kobs</em> and <em>-zobs</em> options.</p>
+This option is a shorthand method specifying the <strong>-kobs</strong> and <strong>-zobs</strong> options.</p>
 </dd>
-</li>
+<dt><strong><a name="rev" class="item"><strong>-rev</strong></a></strong></dt>
+
+<dd>
+<p>This option displays the revoked KSK and ZSK keys in a <em>keyrec</em> file.
+This option is a shorthand method specifying the <strong>-krev</strong> and <strong>-zrev</strong> options.</p>
+</dd>
+<dt><strong><a name="invalid" class="item"><strong>-invalid</strong></a></strong></dt>
+
+<dd>
+<p>This option displays the obsolete and revoked KSK and ZSK keys in a <em>keyrec</em>
+file.  This option is a shorthand method specifying the <strong>-obs</strong> and <strong>-rev</strong>
+options.</p>
+</dd>
 </dl>
 <p>
 </p>
-<h2><a name="recordattribute_options">Record-Attribute Options</a></h2>
+<h2><a name="record_attribute_options">Record-Attribute Options</a></h2>
 <p>These options select subsets of the <em>keyrec</em>s chosen by the
 record-selection options.</p>
 <dl>
-<dt><strong><a name="item__2dvalid">-valid</a></strong>
+<dt><strong><a name="valid" class="item"><strong>-valid</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the valid zones in a <em>keyrec</em> file.
-It implies the <em>-zones</em> option.</p>
+It implies the <strong>-zones</strong> option.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dexpired">-expired</a></strong>
+<dt><strong><a name="expired" class="item"><strong>-expired</strong>&gt;</a></strong></dt>
 
 <dd>
 <p>This option displays the expired zones in a <em>keyrec</em> file.
-It implies the <em>-zones</em> option.</p>
+It implies the <strong>-zones</strong> option.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dref">-ref</a></strong>
+<dt><strong><a name="ref" class="item"><strong>-ref</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the referenced signing set <em>keyrec</em>s and the referenced
 key <em>keyrec</em>s in a <em>keyrec</em> file, depending upon other selected options.</p>
-</dd>
-<dd>
 <p>Referenced state depends on the following:</p>
-</dd>
-<dd>
 <pre>
   * Signing sets are considered to be referenced if they
     are listed in a zone keyrec.</pre>
-</dd>
-<dd>
 <pre>
   * KSKs are considered to be referenced if they are listed
     in a signing set keyrec that is listed in a zone keyrec.</pre>
-</dd>
-<dd>
 <pre>
   * ZSKs are considered to be referenced if they are listed
     in a signing set keyrec that is listed in a zone keyrec.</pre>
-</dd>
-<dd>
-<p>This option may be used with either the <em>-sets</em> or <em>-keys</em> options.  If it
+<p>This option may be used with either the <strong>-sets</strong> or <strong>-keys</strong> options.  If it
 isn't used with any record-selection options, then it is assumed that both
-<em>-sets</em> and <em>-keys</em> have been specified.</p>
+<strong>-sets</strong> and <strong>-keys</strong> have been specified.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dunref">-unref</a></strong>
+<dt><strong><a name="unref" class="item"><strong>-unref</strong></a></strong></dt>
 
 <dd>
 <p>This option displays the unreferenced signing set <em>keyrec</em>s or the
 unreferenced key <em>keyrec</em>s in a <em>keyrec</em> file, depending upon other
 selected options.</p>
-</dd>
-<dd>
 <p>Unreferenced state depends on the following:</p>
-</dd>
-<dd>
 <pre>
   * Signing sets are considered to be unreferenced if they
     are not listed in a zone keyrec.</pre>
-</dd>
-<dd>
 <pre>
   * KSKs are considered to be unreferenced if they are not listed
     in a signing set keyrec that is listed in a zone keyrec.</pre>
-</dd>
-<dd>
 <pre>
   * ZSKs are considered to be unreferenced if they are not listed
     in a signing set keyrec that is listed in a zone keyrec.</pre>
-</dd>
-<dd>
 <pre>
   * Obsolete ZSKs are checked, whether or not the -obs flag
     was specified.</pre>
-</dd>
-<dd>
-<p>This option may be used with either the <em>-sets</em> or <em>-keys</em> options.  If it
+<p>This option may be used with either the <strong>-sets</strong> or <strong>-keys</strong> options.  If it
 isn't used with any record-selection options, then it is assumed that both
-<em>-sets</em> and <em>-keys</em> have been specified.</p>
+<strong>-sets</strong> and <strong>-keys</strong> have been specified.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
-<h2><a name="zoneattribute_options">Zone-Attribute Options</a></h2>
+<h2><a name="zone_attribute_options">Zone-Attribute Options</a></h2>
 <p>These options allow specific zone fields to be included in the output.  If
-combined with the <em>-terse</em> option, only those fields specifically desired
-will be printed.  These options must be used with the <em>-zone</em> option.</p>
+combined with the <strong>-terse</strong> option, only those fields specifically desired
+will be printed.  These options must be used with the <strong>-zone</strong> option.</p>
 <dl>
-<dt><strong><a name="item_z_2darchdir">z-archdir</a></strong>
+<dt><strong><a name="z_archdir" class="item"><strong>-z-archdir</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's archive directory.  If an archive directory is not
 explicitly set for the zone, the default directory will be listed.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2ddates">z-dates</a></strong>
+<dt><strong><a name="z_dates" class="item"><strong>-z-dates</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's time-stamps.  These are the signing date and the
 expiration date.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2ddirs">z-dirs</a></strong>
+<dt><strong><a name="z_dirs" class="item"><strong>-z-dirs</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's directories.  These directories are the KSK directory,
 the ZSK directory, and the key archive directory.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dexpdate">z-expdate</a></strong>
+<dt><strong><a name="z_expdate" class="item"><strong>-z-expdate</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's expiration date.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dksk">z-ksk</a></strong>
+<dt><strong><a name="z_ksk" class="item"><strong>-z-ksk</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's KSK data.  This is the equivalent of specifying the
-<em>-z-kskcount</em>, <em>-z-kskcur</em>, <em>-z-kskdir</em>, and <em>-z-kskpub</em> options.</p>
+<strong>-z-kskcount</strong>, <strong>-z-kskcur</strong>, <strong>-z-kskdir</strong>, and <strong>-z-kskpub</strong> options.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dkskcount">z-kskcount</a></strong>
+<dt><strong><a name="z_kskcount" class="item"><strong>-z-kskcount</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's KSK count.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dkskcur">z-kskcur</a></strong>
+<dt><strong><a name="z_kskcur" class="item"><strong>-z-kskcur</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's Current KSK signing set.
-If this is not defined, then ``&lt;unset&gt;'' will be given.</p>
+If this is not defined, then &quot;&lt;unset&gt;&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dkskdir">z-kskdir</a></strong>
+<dt><strong><a name="z_kskdir" class="item"><strong>-z-kskdir</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's KSK directory.
-If this is not defined, then ``.'' will be given.</p>
+If this is not defined, then &quot;.&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dkskpub">z-kskpub</a></strong>
+<dt><strong><a name="z_kskpub" class="item"><strong>-z-kskpub</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's Published KSK signing set.
-If this is not defined, then ``&lt;unset&gt;'' will be given.</p>
+If this is not defined, then &quot;&lt;unset&gt;&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dsets">z-sets</a></strong>
+<dt><strong><a name="z_sets" class="item"><strong>-z-sets</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's signing sets.  This is the equivalent of specifying the
-<em>-z-kskcur</em>, <em>-z-kskpub</em>, <em>-z-zskcur</em>, <em>-z-zsknew</em>, and <em>-z-zskpub</em>
+<strong>-z-kskcur</strong>, <strong>-z-kskpub</strong>, <strong>-z-zskcur</strong>, <strong>-z-zsknew</strong>, and <strong>-z-zskpub</strong>
 options.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dsigndate">z-signdate</a></strong>
+<dt><strong><a name="z_signdate" class="item"><strong>-z-signdate</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's signing date.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dsignfile">z-signfile</a></strong>
+<dt><strong><a name="z_signfile" class="item"><strong>-z-signfile</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's signed zonefile.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dzonefile">z-zonefile</a></strong>
+<dt><strong><a name="z_zonefile" class="item"><strong>-z-zonefile</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's zonefile.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dzsk">z-zsk</a></strong>
+<dt><strong><a name="z_zsk" class="item"><strong>-z-zsk</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's ZSK data.  This is the equivalent of specifying the
-<em>-z-zskcount</em>, <em>-z-zskcur</em>, <em>-z-zskdir</em>, <em>-z-zsknew</em>, and <em>-z-zskpub</em>
+<strong>-z-zskcount</strong>, <strong>-z-zskcur</strong>, <strong>-z-zskdir</strong>, <strong>-z-zsknew</strong>, and <strong>-z-zskpub</strong>
 options.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dzskcount">z-zskcount</a></strong>
+<dt><strong><a name="z_zskcount" class="item"><strong>-z-zskcount</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's ZSK count.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dzskcur">z-zskcur</a></strong>
+<dt><strong><a name="z_zskcur" class="item"><strong>-z-zskcur</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's Current ZSK signing set.
-If this is not defined, then ``&lt;unset&gt;'' will be given.</p>
+If this is not defined, then &quot;&lt;unset&gt;&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dzskdir">z-zskdir</a></strong>
+<dt><strong><a name="z_zskdir" class="item"><strong>-z-zskdir</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's ZSK directory.
-If this is not defined, then ``.'' will be given.</p>
+If this is not defined, then &quot;.&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dzsknew">z-zsknew</a></strong>
+<dt><strong><a name="z_zsknew" class="item"><strong>-z-zsknew</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's New ZSK signing set.
-If this is not defined, then ``&lt;unset&gt;'' will be given.</p>
+If this is not defined, then &quot;&lt;unset&gt;&quot; will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item_z_2dzskpub">z-zskpub</a></strong>
+<dt><strong><a name="z_zskpub" class="item"><strong>-z-zskpub</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone's Published ZSK signing set.
-If this is not defined, then ``&lt;unset&gt;'' will be given.</p>
+If this is not defined, then &quot;&lt;unset&gt;&quot; will be given.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
-<h2><a name="setattribute_options">Set-Attribute Options</a></h2>
+<h2><a name="set_attribute_options">Set-Attribute Options</a></h2>
 <p>These options allow specific set fields to be included in the output.  If
-combined with the <em>-terse</em> option, only those fields specifically desired
-will be printed.  These options must be used with the <em>-set</em> option.</p>
+combined with the <strong>-terse</strong> option, only those fields specifically desired
+will be printed.  These options must be used with the <strong>-sets</strong> option.</p>
+<p>If <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> processing is enabled, there is special handling of the zone's set
+<em>keyrec</em> of revoked KSK keys.  The &quot;kskrev&quot; field in the zone's <em>keyrec</em>
+points to a set <em>keyrec</em>, marked as being of type &quot;kskrev&quot;.  This set
+<em>keyrec</em>, in turn, points to a number of other set <em>keyrec</em>s, all of which
+are also marked as being of type &quot;kskrev&quot;.  The group of all revoked KSK keys
+is found by consulting that subsidiary set of &quot;kskrev&quot; set <em>keyrec</em>s.  When
+the ages of these revoked keys exceeds their revocation periods, they are
+marked as being obsolete (&quot;kskobs&quot;).  If this happens as part of normal
+rollover, these revoked key and set <em>keyrec</em>s are all removed from the chain
+of active, revoked <em>keyrec</em>s.  If this happens to a key that's part of a
+larger set of keys, it is removed from that signing set and put in its own
+new signing set.  <strong>lskrf</strong> displays the type of the &quot;kskrev&quot; set (listed in
+the zone <em>keyrec</em>) as &quot;KSK-REV&quot;, and all other revoked KSK <em>keyrec</em>s are
+listed as &quot;KSK-rev&quot;.</p>
 <dl>
-<dt><strong><a name="item__2ds_2dkeys">-s-keys</a></strong>
+<dt><strong><a name="s_keys" class="item"><strong>-s-keys</strong></a></strong></dt>
 
 <dd>
 <p>Display the set's keys.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2ds_2dlastmod">-s-lastmod</a></strong>
+<dt><strong><a name="s_lastmod" class="item"><strong>-s-lastmod</strong></a></strong></dt>
 
 <dd>
 <p>Display the set's date of last modification.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2ds_2dzone">-s-zone</a></strong>
+<dt><strong><a name="s_type" class="item"><strong>-s-type</strong></a></strong></dt>
+
+<dd>
+<p>Display the set's type.</p>
+</dd>
+<dt><strong><a name="s_zone" class="item"><strong>-s-zone</strong></a></strong></dt>
 
 <dd>
 <p>Display the set's zone name.</p>
 </dd>
-</li>
+<dt><strong><a name="s_ksk" class="item"><strong>-s-ksk</strong></a></strong></dt>
+
+<dd>
+<p>Display KSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_kcur" class="item"><strong>-s-kcur</strong></a></strong></dt>
+
+<dd>
+<p>Display current KSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_kobs" class="item"><strong>-s-kobs</strong></a></strong></dt>
+
+<dd>
+<p>Display obsolete KSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_kpub" class="item"><strong>-s-kpub</strong></a></strong></dt>
+
+<dd>
+<p>Display published KSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_krev" class="item"><strong>-s-krev</strong></a></strong></dt>
+
+<dd>
+<p>Display revoked KSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_zsk" class="item"><strong>-s-zsk</strong></a></strong></dt>
+
+<dd>
+<p>Display ZSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_zcur" class="item"><strong>-s-zcur</strong></a></strong></dt>
+
+<dd>
+<p>Display current ZSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_znew" class="item"><strong>-s-znew</strong></a></strong></dt>
+
+<dd>
+<p>Display new ZSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_zobs" class="item"><strong>-s-zobs</strong></a></strong></dt>
+
+<dd>
+<p>Display obsolete ZSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_zpub" class="item"><strong>-s-zpub</strong></a></strong></dt>
+
+<dd>
+<p>Display published ZSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
+<dt><strong><a name="s_zrev" class="item"><strong>-s-zrev</strong></a></strong></dt>
+
+<dd>
+<p>Display revoked ZSK signing sets.  This option implies the <strong>-sets</strong> option.</p>
+</dd>
 </dl>
 <p>
 </p>
-<h2><a name="keyattribute_options">Key-Attribute Options</a></h2>
+<h2><a name="key_attribute_options">Key-Attribute Options</a></h2>
 <p>These options allow specific key fields to be included in the output.  If
-combined with the <em>-terse</em> option, only those fields specifically desired
-will be printed.  These options must be used with the <em>-key</em> option.</p>
+combined with the <strong>-terse</strong> option, only those fields specifically desired
+will be printed.  These options must be used with the <strong>-key</strong> option.</p>
 <dl>
-<dt><strong><a name="item__2dk_2dalgorithm">-k-algorithm</a></strong>
+<dt><strong><a name="k_algorithm" class="item"><strong>-k-algorithm</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's encryption algorithm.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk_2denddate">-k-enddate</a></strong>
+<dt><strong><a name="k_enddate" class="item"><strong>-k-enddate</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's end-date, calculated by adding the key's lifespan to its
 signing date.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk_2dlength">-k-length</a></strong>
+<dt><strong><a name="k_length" class="item"><strong>-k-length</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's length.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk_2dlifespan">-k-lifespan</a></strong>
+<dt><strong><a name="k_lifespan" class="item"><strong>-k-lifespan</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's lifespan (in seconds.) This lifespan is <strong>only</strong> related to
-the time between key roll-over.  There is no other lifespan associated with a
+the time between key rollover.  There is no other lifespan associated with a
 key.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk_2dpath">-k-path</a></strong>
+<dt><strong><a name="k_path" class="item"><strong>-k-path</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's path.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk_2drandom">-k-random</a></strong>
+<dt><strong><a name="k_random" class="item"><strong>-k-random</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's random number generator.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk_2dsigndate">-k-signdate</a></strong>
+<dt><strong><a name="k_signdate" class="item"><strong>-k-signdate</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's signing date.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk_2dzone">-k-zone</a></strong>
+<dt><strong><a name="k_zone" class="item"><strong>-k-zone</strong></a></strong></dt>
 
 <dd>
 <p>Display the key's zonefile.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
-<h2><a name="outputformat_options">Output-Format Options</a></h2>
+<h2><a name="output_format_options">Output-Format Options</a></h2>
 <p>These options define how the <em>keyrec</em> information will be displayed.</p>
 <p>Without any of these options, the zone name, zone file, zone-signing date,
 and a label will be displayed for zones.  For types, the key name, the key's
 zone, the key's generation date, and a label will be displayed if these
 options aren't given.</p>
 <dl>
-<dt><strong><a name="item__2dcount">-count</a></strong>
+<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
 
 <dd>
 <p>The count of matching records will be displayed, but the matching records
 will not be.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dnodate">-nodate</a></strong>
+<dt><strong><a name="nodate" class="item"><strong>-nodate</strong></a></strong></dt>
 
 <dd>
 <p>The key's generation date will not be printed if this flag is given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dheaders">-headers</a></strong>
+<dt><strong><a name="headers" class="item"><strong>-headers</strong></a></strong></dt>
 
 <dd>
 <p>Display explanatory column headers.  If this flag is given, then entry labels
-will not be printed unless explicitly requested by use of the <em>-label</em>
+will not be printed unless explicitly requested by use of the <strong>-label</strong>
 option.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dlabel">-label</a></strong>
+<dt><strong><a name="label" class="item"><strong>-label</strong></a></strong></dt>
 
 <dd>
 <p>A label for the <em>keyrec</em>'s type will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dlong">-long</a></strong>
+<dt><strong><a name="long" class="item"><strong>-long</strong></a></strong></dt>
 
 <dd>
 <p>The long form of output will be given.  See the OUTPUT FORMATS section for
 details on data printed for each type of <em>keyrec</em> record.</p>
-</dd>
-<dd>
 <p>Long zone output can get <em>very</em> wide, depending on the data.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dterse">-terse</a></strong>
+<dt><strong><a name="terse" class="item"><strong>-terse</strong></a></strong></dt>
 
 <dd>
 <p>This options displays only the name of the zones or keys selected by other
 options.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp">-help</a></strong>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>lskrf</strong> and the DNSSEC-Tools package.</p>
+</dd>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message and exit.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dh_2dzones">-h-zones</a></strong>
+<dt><strong><a name="h_zones" class="item"><strong>-h-zones</strong></a></strong></dt>
 
 <dd>
 <p>Display the zone-attribute options and exit.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dh_2dsets">-h-sets</a></strong>
+<dt><strong><a name="h_sets" class="item"><strong>-h-sets</strong></a></strong></dt>
 
 <dd>
 <p>Display the set-attribute options and exit.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dh_2dkeys">-h-keys</a></strong>
+<dt><strong><a name="h_keys" class="item"><strong>-h-keys</strong></a></strong></dt>
 
 <dd>
 <p>Display the key-attribute options and exit.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

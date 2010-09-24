@@ -2,15 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys.</title>
+<title>keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -23,14 +25,16 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys.</p>
+<p>keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys</p>
 <p>
 </p>
 <hr />
@@ -41,15 +45,16 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>keyarch</strong> program archives old KSK and ZSK keys.  Keys are considered
-old if they are obsolete and are marked as either <em>kskobs</em> or <em>zskobs</em>.
+<p>The <strong>keyarch</strong> program archives old KSK and ZSK keys.  Keys are considered old
+if they are revoked or obsolete.  Keys marked as either <em>kskrev</em> or <em>zskrev</em>
+are revoked; keys marked as either <em>kskobs</em> or <em>zskobs</em> are obsolete.
 Archived keys are prefixed with the seconds-since-epoch as a means of
 distinguishing a zone's keys that have the same five digit number.</p>
 <p>If the required file argument is a <em>keyrec</em> file, then expired keys listed
 in that file are archived.  If the file argument is a <em>rollrec</em> file, the
 <em>keyrec</em> files of the zones in that file are checked for expired keys.</p>
-<p>If the <em>-zone</em> option is given, then only obsolete keys belonging to the
-specified zone will be archived.</p>
+<p>If the <strong>-zone</strong> option is given, then only revoked and obsolete keys belonging
+to the specified zone will be archived.</p>
 <p>The archive directory is either zone-specific (listed in the zone's <em>keyrec</em>
 record in the zone's <em>keyrec</em> file) or the default archive directory given
 in the DNSSEC-Tools configuration file.</p>
@@ -61,49 +66,50 @@ codes are negative.</p>
 <h1><a name="options">OPTIONS</a></h1>
 <p>The following options are recognized:</p>
 <dl>
-<dt><strong><a name="item__2dzone_zone_file"><em>-zone zone_file</em></a></strong>
+<dt><strong><a name="zone_zone_file" class="item"><strong>-zone zone_file</strong></a></strong></dt>
 
 <dd>
 <p>Name of the zone whose KSKs will be archived.  If this is not given, then
 all the zones defined in the <em>rollrec</em> file will be checked.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkskonly">-kskonly</a></strong>
+<dt><strong><a name="kskonly" class="item"><strong>-kskonly</strong></a></strong></dt>
 
 <dd>
 <p>Only archive KSK keys.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dzskonly">-zskonly</a></strong>
+<dt><strong><a name="zskonly" class="item"><strong>-zskonly</strong></a></strong></dt>
 
 <dd>
 <p>Only archive ZSK keys.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dquiet">-quiet</a></strong>
+<dt><strong><a name="dtconfig_config_file" class="item"><strong>-dtconfig config_file</strong></a></strong></dt>
+
+<dd>
+<p>Name of an alternate DNSSEC-Tools configuration file to be processed.
+If specified, this configuration file is used <em>in place</em> of the normal
+DNSSEC-Tools configuration file <strong>not</strong> in addition to it.  Also, it will be
+handled prior to <em>keyrec</em> files, <em>rollrec</em> files, and command-line options.</p>
+</dd>
+<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
 
 <dd>
 <p>No output will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
 <dd>
 <p>Verbose output will be given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp">-help</a></strong>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dversion">-Version</a></strong>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
 <dd>
-<p>Display the program versions.</p>
+<p>Displays the version information for <strong>keyarch</strong> and the DNSSEC-Tools package.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
@@ -116,7 +122,7 @@ all the zones defined in the <em>rollrec</em> file will be checked.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2007-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
