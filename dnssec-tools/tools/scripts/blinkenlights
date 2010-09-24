@@ -1682,6 +1682,7 @@ sub infostripe
 		#
 		if($line eq "rollerd is not running")
 		{
+			print STDERR "rollerd has gone away; blinkenlights following\n";
 			exit(0);
 		}
 
