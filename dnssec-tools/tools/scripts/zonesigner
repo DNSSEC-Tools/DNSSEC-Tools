@@ -20,7 +20,7 @@
 #			signed-zonefile	 - The name of the signed zone file,
 #					   with keys included.
 #
-#	Options are described in the POD at the end of this file.
+#	The vast amount of options are described in the POD.
 #
 
 #
@@ -128,8 +128,9 @@ my $ksize;				# Size of KSKs.
 my $genksk;				# Generate new KSKs.
 my $ksignset;				# KSK signing set.
 
-my $rfc5011;                            # RFC5011 compliant KSK revocation
-my $droprevoked;                        # Explicitly drop existing revoked set
+my $rfc5011;				# RFC5011 compliant KSK revocation.
+my $droprevoked = 0;			# Explicitly drop existing revoked set.
+my $nodroprevoked = 0;			# Don't drop existing revoked set.
 
 my $zskcur;				# Current ZSK.
 my $zskdir;				# Directory to hold ZSK.
@@ -167,7 +168,6 @@ my @zonestat;				# stat() buffer for zone file.
 #
 # Some path variables to be set from the config file.
 #
-my $keyarch;
 my $keygen;
 my $zonecheck;
 my $zonesign;
@@ -186,15 +186,15 @@ my @zsopts = ( '',
 	       ["keydirectory=s",	'Directory for KSK and ZSK keys.'],
 	       ["norfc5011",		'Disable rfc5011 revocation.'],
 	       ["droprevoked",		'Obsolete existing revoked keys.'],
+	       ["nodroprevoked",	'Don\'t obsolete existing revoked keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
 	       ["usezskpub",		'Use Published ZSK for signing.'],
-	       ["usensec3",             'Use NSEC3 when signing zones.'],
-	       ["nsec3optout",          'Use NSEC3 Opt-Out for insecurely delegated subzones.'],
+	       ["usensec3",		'Use NSEC3 when signing zones.'],
+	       ["nsec3optout",		'Use NSEC3 Opt-Out for insecurely delegated subzones.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	       ["nosave",		'Do not save old keys.'],
 	       ["showsigncmd",		'Show the zone-signing command.'],
 	       ["showkeycmd",		'Show the key-generation command.'],
-	       ["keyarch=s",		'Location of keyarch.'],
 	       ["keygen=s",		'Location of dnssec-keygen.'],
 	       ["zonecheck=s",		'Location of named-checkzone.'],
 	       ["zonesign=s",		'Location of dnssec-signzone.'],
@@ -262,7 +262,6 @@ sub main
 		delete($opts{'rndc'});
 		delete($opts{'rollchk'});
 		delete($opts{'zonesigner'});
-		$opts{'keyarch'}   = "keyarch";
 		$opts{'keygen'}	   = "dnssec-keygen";
 		$opts{'zonesign'}  = "dnssec-signzone";
 		$opts{'zonecheck'} = "named-checkzone";
@@ -361,7 +360,8 @@ sub optsandargs
 	$pubksk	  = $opts{'newpubksk'}	  || 0;
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
-	$droprevoked = $opts{'droprevoked'} || 0;
+	$droprevoked	= $opts{'droprevoked'};
+	$nodroprevoked	= $opts{'nodroprevoked'};
 	$useboth  = $opts{'useboth'}	  || 0;
 	$usezskpub = $opts{'usezskpub'}	  || 0;
 
@@ -380,6 +380,20 @@ sub optsandargs
 	{
 		print STDERR "-rfc5011 and -norfc5011 are mutually exclusive\n";
 		exit(1);
+	}
+
+	#
+	# Ensure that only one of -droprevoked and -nodroprevoked were given.
+	# If neither was given, we'll default to turning -droprevoked on.
+	#
+	if($droprevoked && $nodroprevoked)
+	{
+		print STDERR "-droprevoked and -nodroprevoked are mutually exclusive\n";
+		exit(1);
+	}
+	if(($droprevoked == 0) && ($nodroprevoked == 0))
+	{
+		$droprevoked = 1;
 	}
 
 	#
@@ -683,7 +697,6 @@ sub optsandargs
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$keyarch   = $opts{'keyarch'}	|| dnssec_tools_default("keyarch");
 	$keygen	   = $opts{'keygen'}    || dnssec_tools_default("keygen");
 	$zonecheck = $opts{'zonecheck'} || dnssec_tools_default("zonecheck");
 	$zonesign  = $opts{'zonesign'}  || dnssec_tools_default("zonesign");
@@ -1002,7 +1015,6 @@ sub genzsks
 		if($opts{'zskcur'} eq "")
 		{
 			print STDERR "\n$curstr does not exist; unable to re-use non-existent cur ZSK\n";
-			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 			exit(1);
 		}
 
@@ -1018,7 +1030,6 @@ sub genzsks
 		if($opts{'zskcur'} eq "")
 		{
 			print STDERR "\npub ZSK does not exist; unable to re-use non-existent pub ZSK\n";
-			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 			exit(1);
 		}
 
@@ -1066,7 +1077,7 @@ sub genzsks
 		#
 		if(length($zskcursetname))
 		{
-			setkeytype($zskcursetname,'zskobs',1);
+			ssetkeytype($zskcursetname,'zskobs',1);
 			@zskcurlist = ();
 		}
 
@@ -1077,7 +1088,7 @@ sub genzsks
 		#
 		if(length($zskpubsetname))
 		{
-			setkeytype($zskpubsetname,'zskobs',1);
+			ssetkeytype($zskpubsetname,'zskobs',1);
 			@zskpublist = ();
 		}
 
@@ -1128,7 +1139,6 @@ sub genksks
 	my $setname;				# Name of signing set.
 	my $keyset;				# Keys in signing set.
 	my $setlist = '';			# Keys in revoked list.
-	my $subsets;				# Subsidiary revoked sets.
 
 	#
 	# Check to see if any existing revoked keys must be marked as being
@@ -1146,17 +1156,31 @@ sub genksks
 		#	- zap the kskrev entry in the zone keyrec,
 		#	- zap our internal revoked-key data.
 		#
-		if($opts{'droprevoked'})
+		if($droprevoked)
 		{
 			my $revset = keyrec_recval($kskrevsetname,'keys');
 			my @revset = split / /, $revset;
 
 			#
-			# Mark the revoked signing sets keys as obsolete.
+			# Mark the revoked signing set's keys as obsolete.
 			#
-			foreach my $kr (@revset)
+			foreach my $krs (@revset)
 			{
-				setkeytype($kr, 'kskobs', 1);
+				my $sets;
+				my @skl;
+
+				#
+				# Get the set's keys.
+				#
+				$sets = keyrec_recval($krs, 'keys');
+				@skl = split / /, $sets;
+
+				#
+				# Set the set's type to kskobs. 
+				#
+				ssetkeytype($krs, 'kskobs', 1);
+				keyrec_setval('set', $krs, 'keyrec_type', 'kskobs');
+				keyrec_setval('set', $kskrevsetname, 'set_type', 'kskobs');
 			}
 
 			#
@@ -1169,6 +1193,7 @@ sub genksks
 			#
 			$kskrevsetname = '';
 			@kskrevlist = ();
+			delete $opts{'kskrev'};
 		}
 		else
 		{
@@ -1194,8 +1219,9 @@ sub genksks
 			{
 				if(age_revoked($kr) == 1)
 				{
-					my $sks;	# Set's keys string.
-					my @ska;	# Set's keys array.
+					my $sks;	 # Set's keys string.
+					my @ska;	 # Set's keys array.
+					my %revset = (); # Revoked set.
 
 					#
 					# Add the set to the set list.
@@ -1213,7 +1239,12 @@ sub genksks
 					#
 					while(@ska)
 					{
-						push @kskrevlist, pop @ska;
+						my $key = pop @ska;
+
+						next if($revset{$key} > 0);
+
+						push @kskrevlist, $key;
+						$revset{$key}++;
 					}
 				}
 			}
@@ -1248,50 +1279,10 @@ sub genksks
 	if($pubksk)
 	{
 		#
-		# RFC5011:  If we already have a set of Published KSKs, they
-		#	    will be moved into the set of revoked KSKs.  If
-		#	    there isn't an active set of revoked KSKs, a new
-		#	    signing set will be created to hold the Published
-		#	    KSKs.
+		# Move the Published KSKs to the revoked list (RFC5011) or
+		# to the obsolete list (non-RFC5011.)
 		#
-		# Non-RFC5011:  Existing Published KSKs are marked as obsolete.
-		#
-		if(length($kskpubsetname))
-		{
-			if($rfc5011)
-			{
-				#
-				# If there isn't currently a set of revoked
-				# KSKs, we'll create a signing set for them.
-				#
-				newrevset();
-
-				#
-				# Convert the Published KSKs into revoked KSKs.
-				#
-				setkeytype($kskpubsetname, 'kskrev', 0);
-
-				#
-				# Add Published KSK setname to the revoked list.
-				#
-				$subsets = keyrec_recval($kskrevsetname,'keys');
-				$subsets .= " $kskpubsetname";
-				$subsets =~ s/^ //;
-				keyrec_setval('set', $kskrevsetname, 'keys', $subsets);
-
-				#
-				# Add the Published KSKs to our revoked list.
-				#
-				while(@kskpublist)
-				{
-					push @kskrevlist, pop @kskpublist;
-				}
-			}
-			else
-			{
-				setkeytype($kskpubsetname, 'kskobs', 1);
-			}
-		}
+		revkeys($kskpubsetname,\@kskpublist);
 
 		#
 		# Make a new Published KSK signing set.
@@ -1335,43 +1326,10 @@ sub genksks
 	if($genksk)
 	{
 		#
-		# Obsolete or Revoke any Current KSKs we have.
+		# Move the Current KSKs to the revoked list (RFC5011) or
+		# to the obsolete list (non-RFC5011.)
 		#
-		if(length($opts{'kskcur'}))
-		{
-			if($rfc5011)
-			{
-				#
-				# If there isn't currently a set of revoked
-				# KSKs, we'll create a signing set for them.
-				#
-				newrevset();
-
-				#
-				# Convert the Current KSKs into revoked KSKs.
-				#
-				setkeytype($kskcursetname, 'kskrev', 0);
-
-				#
-				# Add Current KSK setname to the revoked list.
-				#
-				$subsets = keyrec_recval($kskrevsetname,'keys');
-				$subsets .= " $kskcursetname";
-				keyrec_setval('set', $kskrevsetname, 'keys', $subsets);
-
-				#
-				# Add the Current KSKs to our revoked list.
-				#
-				while(@kskcurlist)
-				{
-					push @kskrevlist, pop @kskcurlist;
-				}
-			}
-			else
-			{
-				setkeytype($opts{'kskcur'}, 'kskobs', 1);
-			}
-		}
+		revkeys($opts{'kskcur'},\@kskcurlist);
 
 		#
 		# Get the name of the KSK set -- either from the -ksignset
@@ -1423,81 +1381,68 @@ sub genksks
 	# If we get here, then we're reusing the KSKs.  We'll ensure we have
 	# some KSKs and grab the key lists.
 	#
-	if($genksk == 0)
+
+	#
+	# Ensure that we've got a Current KSK signing set.
+	#
+	if($opts{'kskcur'} eq "")
 	{
-		my $keyset;			# Keys in signing set.
-		my $setname;			# Name of signing set.
-
-		#
-		# Ensure that we've got a Current KSK signing set.
-		#
-		if($opts{'kskcur'} eq "")
+		$kskcursetname = keyrec_recval($zone,'kskcur');
+		if($kskcursetname eq "")
 		{
-			$kskcursetname = keyrec_recval($zone,'kskcur');
-			if($kskcursetname eq "")
-			{
-				print STDERR "\nKSKs do not exist; unable to re-use non-existent KSKs\n";
-				exit(1);
-			}
-
-			$opts{'kskcur'} = $kskcursetname;
-		}
-
-		#
-		# Get the Current KSK signing set name.
-		#
-		$kskcursetname = $opts{'kskcur'};
-		if(!keyrec_exists($kskcursetname))
-		{
-			print STDERR "\nCurrent KSK signing set \"$kskcursetname\" does not exist; unable to re-use non-existent KSKs\n";
-			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
+			print STDERR "\nKSKs do not exist; unable to re-use non-existent KSKs\n";
 			exit(1);
 		}
 
-		vprint("reusing existing Current KSK set - $kskcursetname\n");
-
-		#
-		# Get the KSKs.
-		#
-		$keyset  = keyrec_recval($kskcursetname,'keys');
-		@kskcurlist = split / /, $keyset;
-
-		#
-		# Get the Published KSK signing set name -- if it exists.
-		#
-		$kskpubsetname = "";
-		@kskpublist = ();
-		if(defined($opts{'kskpub'}))
-		{
-			$kskpubsetname = $opts{'kskpub'};
-			if(!keyrec_exists($kskpubsetname))
-			{
-				print STDERR "\nPublished KSK signing set \"$kskpubsetname\" does not exist; unable to re-use non-existent KSKs\n";
-				print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
-				exit(1);
-			}
-
-			vprint("reusing existing Published KSK set - $kskpubsetname\n");
-
-			#
-			# Get the KSKs.
-			#
-			$keyset  = keyrec_recval($kskpubsetname,'keys');
-			@kskpublist = split / /, $keyset;
-		}
-
-		#
-		# Get the Revoked KSK list once again; they may have changed.
-		#
-		$kskrevsetname = $opts{'kskrev'};
-		@kskrevlist = expandrevlist($kskrevsetname);
-
-		return;
+		$opts{'kskcur'} = $kskcursetname;
 	}
 
 	#
-	# Should never get here...
+	# Get the Current KSK signing set name.
 	#
+	$kskcursetname = $opts{'kskcur'};
+	if(!keyrec_exists($kskcursetname))
+	{
+		print STDERR "\nCurrent KSK signing set \"$kskcursetname\" does not exist; unable to re-use non-existent KSKs\n";
+		exit(1);
+	}
+
+	vprint("reusing existing Current KSK set - $kskcursetname\n");
+
+	#
+	# Get the Current KSKs.
+	#
+	$keyset  = keyrec_recval($kskcursetname,'keys');
+	@kskcurlist = split / /, $keyset;
+
+	#
+	# Get the Published KSK signing set name -- if it exists.
+	#
+	$kskpubsetname = "";
+	@kskpublist = ();
+	if(defined($opts{'kskpub'}))
+	{
+		$kskpubsetname = $opts{'kskpub'};
+		if(!keyrec_exists($kskpubsetname))
+		{
+			print STDERR "\nPublished KSK signing set \"$kskpubsetname\" does not exist; unable to re-use non-existent KSKs\n";
+			exit(1);
+		}
+
+		vprint("reusing existing Published KSK set - $kskpubsetname\n");
+
+		#
+		# Get the Publisehd KSKs.
+		#
+		$keyset  = keyrec_recval($kskpubsetname,'keys');
+		@kskpublist = split / /, $keyset;
+	}
+
+	#
+	# Get the Revoked KSK list once again; they may have changed.
+	#
+	$kskrevsetname = $opts{'kskrev'};
+	@kskrevlist = expandrevlist($kskrevsetname);
 }
 
 #----------------------------------------------------------------------
@@ -1588,7 +1533,6 @@ sub genzsk
 		if(keyrec_fullrec($opts{$zskkey}) eq "")
 		{
 			print STDERR "\n$keytype ZSK keyrec does not exist; unable to re-use non-existent $keytype ZSK\n";
-			print STDERR "Maybe you want to run zonesigner with -genkeys, -genksk and/or -genzsk?\n";
 			exit(1);
 		}
 
@@ -1700,11 +1644,11 @@ sub makekey
 }
 
 #----------------------------------------------------------------------
-# Routine:	setkeytype()
+# Routine:	ssetkeytype()
 #
 # Purpose:	Set the key type of the keys in a signing set to a given value.
 #
-sub setkeytype
+sub ssetkeytype
 {
 	my $signset = shift;			# Signing set name.
 	my $newtype = shift;			# New key type.
@@ -1764,6 +1708,14 @@ sub setkeytype
 	return if(!$savekeys);
 
 	#
+	# Also, we'll only archive obsolete keys.
+	#
+	if(($newtype ne 'kskobs') && ($newtype ne 'zskobs'))
+	{
+		return;
+	}
+
+	#
 	# Make sure the archive directory exists and is actually a directory.
 	# If we can't create an archive directory, we'll exit.
 	#
@@ -1807,6 +1759,71 @@ sub setkeytype
 		}
 	}
 
+}
+
+#----------------------------------------------------------------------
+# Routine:	revkeys()
+#
+# Purpose:	Mark a given set of KSKs as revoked.  The set's keys will be
+#		moved from the appropriate key array to the revoked array.
+#
+sub revkeys
+{
+	my $kset  = shift;		# Set name to examine.
+	my $klist = shift;		# List of KSKs to revoke.
+
+	my $subsets;			# Subsidiary revoked sets.
+	my %revset = ();		# Key tracking for list addition.
+
+	#
+	# Don't do anything if this set of KSKs is empty.
+	#
+	return if(length($kset) == 0);
+
+	#
+	# If we aren't doing RFC 5011 processing, we'll mark the set
+	# as obsolete and return.
+	#
+	if(!$rfc5011)
+	{
+		ssetkeytype($kset, 'kskobs', 1);
+		return;
+	}
+
+	#
+	# If there isn't currently a set of revoked
+	# KSKs, we'll create a signing set for them.
+	#
+	newrevset();
+
+	#
+	# Convert the specified KSKs into revoked KSKs.
+	#
+	ssetkeytype($kset, 'kskrev', 0);
+
+	#
+	# Add the specified KSK setname to the revoked list.
+	#
+	$subsets = keyrec_recval($kskrevsetname,'keys');
+	$subsets .= " $kset";
+	$subsets =~ s/^ //;
+	keyrec_setval('set', $kskrevsetname, 'keys', $subsets);
+
+	#
+	# Add the specified KSKs to our revoked list.
+	#
+	while(@$klist)
+	{
+		my $key = pop @$klist;			# Key to move.
+
+		#
+		# Only add the key once.
+		#
+		next if($revset{$key} > 0);
+		$revset{$key}++;
+
+		push @kskrevlist, $key;
+	}
 }
 
 #----------------------------------------------------------------------
@@ -2041,6 +2058,7 @@ sub zonesign
 	my $keytag;			# Tag value from keys.
 	my $szone;			# Result from zone-signing command.
 	my $ksks;			# KSKs to use in zone-signing.
+	my @revarr = ();		# List of paths to revoked KSKs.
 	my @usekeys;			# Keys to use in zone-signing.
 	my $cmdopts;			# Options for dnssec-signzone.
 	my $status;			# Execution return code.
@@ -2048,19 +2066,40 @@ sub zonesign
 	my $zcq = '-q';			# Quiet option for zone checker.
 
 	#
-	# Build the collection of KSKs.
+	# Get the most recent revoked keys if we're rolling KSKs or if
+	# we're doing RFC 5011 processing.
+	#
+	if($rfc5011 || $rollksk)
+	{
+		my %ksks = ();
+		foreach my $krkey (@kskrevlist)
+		{
+			next if($ksks{$krkey} > 0);
+
+			push @revarr, keyrec_recval($krkey,'keypath');
+			$ksks{$krkey} = 1;
+		}
+	}
+
+	#
+	# Pull together all the relevant KSKs and build a command-line
+	# argument for them.
 	#
 	$ksks = join (' -k ',
 		      keyrec_keypaths($zone,'kskcur'),
 		      keyrec_keypaths($zone,'kskpub'),
-		      ($rfc5011 ?  keyrec_keypaths($zone,'kskrev') : ()));
+		      @revarr);
+	if($ksks ne '')
+	{
+		$ksks = "-k $ksks";
+	}
 
 	#
 	# Build a set of options for dnssec-signzone.  This isn't strictly
 	# necessary, but it does keep the dnssec-signzone execution a bit
 	# cleaner than it would be otherwise.
 	#
-	$cmdopts = "$szopts $nsec3opts $gends $ksdir -k $ksks -o $zone $enddate -f $zoneout";
+	$cmdopts = "$szopts $nsec3opts $gends $ksdir $ksks -o $zone $enddate -f $zoneout";
 
 	#
 	# Normally, we'll use the Current ZSKs; however, we'll use the
@@ -2465,7 +2504,7 @@ sub serialincr
 #
 # Purpose:	If we have a new keyrec file, we'll add a new keyrec
 #		for the specified zone.  We'll set a few basic keyrec
-#		files in the entry.
+#		fields in the entry.
 #
 #		Condition order is important!  Don't re-arrange or condense
 #		unless you know what you're doing!
@@ -2527,6 +2566,11 @@ sub chkkrf
 	}
 
 	#
+	# Read the keyrec file.
+	#
+	keyrec_read($krfile);
+
+	#
 	# If the keyrec file is of non-zero length, we'll check if there's
 	# a zone keyrec for this zone.  If so, we'll return now.
 	#
@@ -2550,7 +2594,6 @@ sub chkkrf
 	#
 	# Write the new zone keyrec into the keyrec file.
 	#
-	keyrec_open($krfile);
 	keyrec_add('zone',$zone,\%zoneopts);
 	keyrec_write();
 	keyrec_close();
@@ -2629,6 +2672,7 @@ sub expandrevlist
 	{
 		my $sublist;			# Subsidiary set's key list.
 		my @sublist;			# Subsidiary set's key list.
+		my %revset = ();		# Saved subsidiary keys.
 
 		#
 		# Get the subsidiary set's key list.
@@ -2641,7 +2685,10 @@ sub expandrevlist
 		#
 		foreach my $key (@sublist)
 		{
+			next if($revset{$key} > 0);
+
 			push @revlist, pop @sublist;
+			$revset{$key}++;
 		}
 	}
 
@@ -2672,7 +2719,6 @@ sub expandrevlist
 sub age_revoked
 {
 	my $set = shift;			# Set name to revoke.
-	my $now = time();			# Current time.
 	my @revset = ();			# Still-active revoked keys.
 	my @obsset = ();			# Inactive revoked keys.
 	my @keys;				# Keys in specified set.
@@ -2732,7 +2778,7 @@ sub age_revoked
 	}
 	elsif(@revset == 0)	# all keys outside of revocation period
 	{
-		setkeytype($set, 'kskobs', 1);
+		ssetkeytype($set, 'kskobs', 1);
 		return(0);
 	}
 	else			# some keys w/in revocation period, some not
@@ -2757,7 +2803,7 @@ sub age_revoked
 		#
 		$keylist = join(' ', @obsset);
 		keyrec_setval('set', $newset, 'keys', $keylist);
-		setkeytype($set, 'kskobs', 1);
+		ssetkeytype($set, 'kskobs', 1);
 
 		#
 		# Reset the set's key list to the remaining active revoked keys.
@@ -2809,7 +2855,6 @@ EOF
 	# Add the Published KSKs.
 	#
 	$incstr .= "\n;; Published KSKs\n";
-
 	foreach my $ksk (sort(@kskpublist))
 	{
 		my $path = keyrec_recval($ksk,'keypath');
@@ -2864,7 +2909,8 @@ EOF
 # Routine:	rollksk()
 #
 # Purpose:	Force a rollover of the KSK keys.  The Current KSKs are marked
-#		as obsolete and the Published KSKs are marked as Current.
+#		as revoked and the Published KSKs are marked as Current.
+#		New Published KSKs will be created, as well.
 #
 #		This should only be used if you know what you're doing.
 #
@@ -2887,50 +2933,15 @@ sub rollksk
 	}
 
 	#
-	# Render the Current KSKs obsolete or revoked.  Their keyrecs
-	# will be marked as kskobs or kskrev and the keys may be moved
-	# to the archive directory.
+	# Move the Current KSKs to the revoked list (RFC5011) or
+	# to the obsolete list (non-RFC5011.)
 	#
-	if($rfc5011)
-	{
-		my $subsets;			# Subsidiary revoked sets.
-
-		#
-		# Create a new signing set for the revoked Current keys, iff
-		# one doesn't already exist.
-		#
-		newrevset();
-
-		#
-		# Remove keys from old set and remove set.
-		#
-		setkeytype($kskcursetname, 'kskrev', 0);
-
-		#
-		# Add Current KSK setname to the revoked list.
-		#
-		$subsets = keyrec_recval($kskrevsetname,'keys');
-		$subsets .= " $kskcursetname";
-		$subsets =~ s/^ //;
-		keyrec_setval('set', $kskrevsetname, 'keys', $subsets);
-
-		#
-		# Add Current KSKs to revoked list.
-		#
-		while(@kskcurlist)
-		{
-			push @kskrevlist, pop @kskcurlist;
-		}
-	}
-	else
-	{
-		setkeytype($opts{'kskcur'}, 'kskobs', 1);
-	}
+	revkeys($kskcursetname,\@kskcurlist);
 
 	#
 	# Transmogrify the Published KSKs into being the Current KSKs.
 	#
-	setkeytype($kskpubsetname,'kskcur',0);
+	ssetkeytype($kskpubsetname,'kskcur',0);
 
 	#
 	# Copy the Published KSK data into the Current KSK data.
@@ -2956,7 +2967,6 @@ sub rollksk
 	#
 	keyrec_setval('zone',$zone,'kskcur',$kskcursetname);
 	keyrec_delval($zone,'kskpub');
-
 }
 
 #----------------------------------------------------------------------
@@ -2973,7 +2983,6 @@ sub rollksk
 sub rollzsk
 {
 	my $krref;				# Reference to key's keyrec.
-	my $zoneref;				# Reference to zone's keyrec.
 	my $publife = $zsklife;			# Published ZSK's lifespan.
 	my $setlist;				# List of key names.
 
@@ -2989,28 +2998,28 @@ sub rollzsk
 	}
 
 	#
+	# Get an updated copy of the keyrec file.
+	#
+	keyrec_close();
+	keyrec_read($krfile);
+
+	#
 	# We're rolling ZSKs, so make sure they'll be generated.
 	#
 	$genzsk = 1;
 
 	#
-	# Get the zone's keyrec.
+	# Render the Current ZSKs obsolete.  Their keyrecs will be marked as
+	# zskobs and the keys will (may) be moved to the archive directory.
 	#
-	$zoneref = keyrec_fullrec($zone);
-
-	#
-	# Render the Current ZSKs obsolete.  Their keyrecs will be
-	# marked as zskobs and the keys will (may) be moved to the
-	# archive directory.
-	#
-	setkeytype($zskcursetname,'zskobs',1);
+	ssetkeytype($zskcursetname,'zskobs',1);
 	@zskcurlist = ();
 
 	#
 	# Convert the Published ZSKs into Current ZSKs.  We'll also save the
-	# key to the list of Current ZSKs.
+	# keys to the list of Current ZSKs.
 	#
-	setkeytype($zskpubsetname,'zskcur',0);
+	ssetkeytype($zskpubsetname,'zskcur',0);
 	foreach my $k (@zskpublist)
 	{
 		push @zskcurlist, $k;
@@ -3021,16 +3030,15 @@ sub rollzsk
 	# Generate and save a new signing set name.
 	#
 	$zskcursetname = $zskpubsetname;
-	keyrec_signset_new($zone,$zskcursetname,'zskcur');
 	$opts{'zskcur'} = $zskcursetname;
 	keyrec_setval('zone',$zone,'zskcur',$zskcursetname);
 
 	#
-	# Save the current ZSK list in the signing sets and zap the
+	# Save the current ZSK list in its signing set and zap the
 	# Published ZSK list.
 	#
 	$setlist = join ' ', @zskcurlist;
-	keyrec_setval('set',$zskcursetname,"keys",$setlist);
+	keyrec_setval('set',$zskcursetname,'keys',$setlist);
 	@zskpublist = ();
 
 	#
@@ -3045,7 +3053,7 @@ sub rollzsk
 		# Mark the New ZSKs as Published.
 		#
 		$zsknewsetname = $opts{'zsknew'};
-		setkeytype($zsknewsetname,'zskpub',0);
+		ssetkeytype($zsknewsetname,'zskpub',0);
 
 		#
 		# Build the new Published ZSK list.
@@ -3085,7 +3093,7 @@ sub rollzsk
 			# Set the new key's lifetime.
 			#
 			$krref = keyrec_fullrec($zskpub);
-			keyrec_setval("key",$zskpub,"zsklife",$publife);
+			keyrec_setval('key',$zskpub,'zsklife',$publife);
 			$opts{'zsklife'} = $publife;
 
 			vmed_print("Published ZSK ($zskpub) created\n");
@@ -3112,8 +3120,8 @@ sub rollzsk
 		my $zsknew = genzsk("new");
 		push @zsknewlist, $zsknew;
 
-		keyrec_setval("key",$zsknew,"zonename",$zone);
-		keyrec_setval("key",$zsknew,"zsklife",$publife);
+		keyrec_setval('key',$zsknew,'zonename',$zone);
+		keyrec_setval('key',$zsknew,'zsklife',$publife);
 		$opts{'zsklife'} = $publife;
 
 		vmed_print("New ZSK ($zsknew) created\n");
@@ -3259,6 +3267,7 @@ sub printopts
 	print "\t\tsignset		- <$signset>\n";
 	print "\t\trfc5011          - <$rfc5011>\n";
 	print "\t\tdroprevoked          - <$droprevoked>\n";
+	print "\t\tnodroprevoked        - <$nodroprevoked>\n";
 	print "\t\tuseboth	        - <$useboth>\n";
 	print "\t\tusezskpub        - <$usezskpub>\n";
 	print "\t\tzsize		- <$zsize>\n";
@@ -3279,7 +3288,6 @@ sub printopts
 	print "\n";
 
 	print "\texternal commands:\n";
-	print "\t\tkeyarch		- <$keyarch>\n";
 	print "\t\tkeygen		- <$keygen>\n";
 	print "\t\tzonecheck		- <$zonecheck>\n";
 	print "\t\tzonesign		- <$zonesign>\n";
@@ -3400,6 +3408,7 @@ sub usage
 	print STDERR "\t\t\t-rollzsk\n";
 	print STDERR "\t\t\t-norfc5011\n";
 	print STDERR "\t\t\t-droprevoked\n";
+	print STDERR "\t\t\t-nodroprevoked\n";
 	print STDERR "\t\t\t-useboth\n";
 	print STDERR "\t\t\t-usezskpub\n";
 	print STDERR "\t\t\t-usensec3\n";
@@ -3688,8 +3697,18 @@ file.
 
 =item B<-droprevoked>
 
-Explicitly obsolete currently revoked KSKs and remove them from the
-signing set before resigning.
+Explicitly obsolete currently revoked KSKs and remove them from the signing
+set before resigning.  This is mutually exclusive from B<-nodroprevoked>.
+If neither B<-droprevoked> nor B<-nodroprevoked> are given, then
+B<-droprevoked> functionality is assumed..
+
+=item B<-nodroprevoked>
+
+Explicitly turn off obsoleting currently revoked KSKs and remove them
+from the signing set before resigning.  This is mutually exclusive from
+B<-droprevoked>.
+If neither B<-droprevoked> nor B<-nodroprevoked> are given, then
+B<-droprevoked> functionality is assumed..
 
 =item B<-useboth>
 
