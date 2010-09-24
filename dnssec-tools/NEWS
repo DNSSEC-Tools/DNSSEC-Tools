@@ -4,12 +4,39 @@ details.
 
 1.8
  - New Features:
-   - mapper:  	   - added a new option: --node-size for mapping
-                     complex zones.
-   - dnspktflow:   - added two new options:
-                     --layout-style for selecting the layout style to use
-                     --node-size for mapping complex zones.
-   - libval:	   - Significant new work in a number of areas
+    - zonesigner, rollerd
+                    - Made changes so that these tools are more compatible 
+                      with recent versions of Bind
+                    - Made changes to properly lock keyrec files before 
+                      writing to them.
+    - ZonFile::Fast - Fixed parsing of DS records containing spaces and 
+                      parsing of mname and rname SOA fields
+                    - Added support for parsing KEY records
+    - mapper:  	    - added a new option: --node-size for mapping
+                      complex zones.
+    - dnspktflow:   - added two new options:
+                      --layout-style for selecting the layout style to use
+                      --node-size for mapping complex zones.
+                    - Add new option to cluster authoritative nodes together 
+                      to help better understand the relationships between 
+                      traffic patterns and name server/zone arrangement.
+    - libval:	    - Now distributed with the Root TA.
+                    - Added stricter checks for openssl SHA-256 support in 
+                      configure. 
+                    - Added several improvements that allow the validator to 
+                      lookup information within provably insecure zones that 
+                      do not handle EDNS0 requests nicely. This includes 
+                      adding support for turning off EDNS0 when traversing a 
+                      name hierarchy that leads to a provably insecure zone, 
+                      EDNS0 fallback support, and additional checks to check 
+                      the sanity of response data.
+                    - Fixed certain bugs in CNAME handling and in the 
+                      validation of proofs accompanying wildcard responses, 
+                      referrals and alias chains.
+                    - Fixed support for RSADSA and RSASHA-512 signature 
+                      validation.
+    - many other miscellaneous bug fixes and improvements.
+
 
 1.7
  - New Features:
