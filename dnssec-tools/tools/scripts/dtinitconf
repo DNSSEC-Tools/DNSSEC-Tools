@@ -156,6 +156,7 @@ my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 my $rusername;				# Username for rollerd.
+my $zoneerrs;				# Maximum error count for zones.
 
 my $tacontact;				# trustman's email contact.
 my $taresolvconf;			# Location of resolv.conf file.
@@ -375,6 +376,7 @@ sub optsandargs
 	$rloglevel = $opts{'roll-loglevel'}  || dnssec_tools_default("roll_loglevel");
 	$rsleep	   = $opts{'roll-sleeptime'} || dnssec_tools_default("roll_sleeptime");
 	$rusername = $opts{'roll-username'} || '';
+	$zoneerrs  = $opts{'zoneerrs'} || dnssec_tools_default("zone_errors");
 
 	$tacontact    = $opts{'ta-contact'}    || dnssec_tools_default("tacontact");
 	$taresolvconf = $opts{'ta-resolvconf'} || dnssec_tools_default("taresolvconf");
@@ -532,6 +534,7 @@ sub writeconf()
 		print "\troll-logfile          - \"$rlogfile\"\n";
 		print "\troll-loglevel         - \"$rloglevel\"\n";
 		print "\troll-sleep            - \"$rsleep\"\n\n";
+		print "\tzoneerrs              - \"$zoneerrs\"\n\n";
 
 		print "\tkeyarch    - \"$keyarch\"\n";
 		print "\trollchk    - \"$rollchk\"\n";
@@ -658,6 +661,7 @@ roll_loadzone   $rloadzone
 roll_logfile    $rlogfile
 roll_loglevel   $rloglevel
 roll_sleeptime  $rsleep
+zone_errors	$zoneerrs
 ";
 	if($rusername ne '')
 	{
@@ -779,6 +783,7 @@ sub writetemplate()
 # roll_logfile    $rlogfile
 # roll_loglevel   $rloglevel
 # roll_sleeptime  $rsleep
+# zone_errors	  $zoneerrs
 # roll_username   some-user
 
 #
@@ -1388,11 +1393,12 @@ sub get_dt_opts()
 	$zsopts = getval("Zone-Signing Options","");
 	print "\n";
 
-	$rloadzone = getval("Rollover Manager's Zone-loading Flag",$rloadzone,"boolean");
-	$rlogfile  = getval("Rollover Manager's Logfile",$rlogfile,"");
-	$rloglevel = getval("Rollover Manager's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
-	$rsleep	   = getval("Rollover Manager's Sleep-time",$rsleep,"");
+	$rloadzone = getval("Rollerd's Zone-loading Flag",$rloadzone,"boolean");
+	$rlogfile  = getval("Rollerd's Logfile",$rlogfile,"");
+	$rloglevel = getval("Rollerd's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
+	$rsleep	   = getval("Rollerd's Sleep-time",$rsleep,"");
 	$rusername = getval("Rollerd's Username",$rusername,"");
+	$zoneerrs  = getval("Rollerd's Maximum Error Count for Zones",$zoneerrs,"");
 
 	print "\n";
 
@@ -1984,6 +1990,11 @@ B<sleep-time> is the sleep-time for the B<rollerd> daemon.
 B<username> is the user for which the B<rollerd> daemon will be executed.  If
 this is a username, it must correspond to a valid uid; if it is a uid, it
 must correspond to a valid username.
+
+=item B<-zoneerrs error-count>
+
+B<error-count> is the maximum error count for zones used by the B<rollerd>
+daemon.
 
 =item B<-savekeys>
 
