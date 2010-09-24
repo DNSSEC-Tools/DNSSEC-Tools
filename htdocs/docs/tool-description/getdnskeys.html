@@ -2,15 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>getdnskeys - Manage lists of DNSKEYs from DNS zones.</title>
+<title>getdnskeys - Manage lists of DNSKEYs from DNS zones</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -21,14 +23,16 @@
 	<li><a href="#examples">EXAMPLES</a></li>
 	<li><a href="#security_issues">SECURITY ISSUES</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>getdnskeys - Manage lists of DNSKEYs from DNS zones.</p>
+<p>getdnskeys - Manage lists of DNSKEYs from DNS zones</p>
 <p>
 </p>
 <hr />
@@ -46,61 +50,60 @@ included (directly or indirectly) in a <strong>named.conf</strong> file.</p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
+<p><strong>getdnskeys</strong> takes the following options:</p>
 <dl>
-<dt><strong><a name="item__2dh">-h</a></strong>
+<dt><strong><a name="i_path" class="item"><strong>-i path</strong></a></strong></dt>
 
 <dd>
-<p>Gives a help message.</p>
+<p>Reads <em>path</em> as a <strong>named.conf</strong> with which to compare key lists.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2di_path">-i path</a></strong>
+<dt><strong><a name="k" class="item"><strong>-k</strong></a></strong></dt>
 
 <dd>
-<p>Reads {\it path} as a \path{named.conf} with which to compare key lists.</p>
+<p>Only looks for Key Signing Keys (KSKs); all other keys are ignored.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dk">-k</a></strong>
+<dt><strong><a name="o_file" class="item"><strong>-o file</strong></a></strong></dt>
 
 <dd>
-<p>Only looks for Key Signing Keys (KSK); all other keys are ignored.</p>
+<p>Writes the results to <em>file</em>.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2do_file">-o file</a></strong>
+<dt><strong><a name="t" class="item"><strong>-T</strong></a></strong></dt>
 
 <dd>
-<p>Writes the results to {\it file}.</p>
+<p>Checks the current trusted key list from <strong>named.conf</strong>.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dt">-T</a></strong>
+<dt><strong><a name="t" class="item"><strong>-t</strong></a></strong></dt>
 
 <dd>
-<p>Checks the current trusted key list from \path{named.conf}.</p>
+<p>Encloses output in needed <strong>named.conf</strong> syntax markers.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dt">-t</a></strong>
-
-<dd>
-<p>Encloses output in needed \path{named.conf} syntax markers.</p>
-</dd>
-</li>
-<dt><strong><a name="item__2dv">-v</a></strong>
+<dt><strong><a name="v" class="item"><strong>-v</strong></a></strong></dt>
 
 <dd>
 <p>Turns on verbose mode for additional output.</p>
 </dd>
-</li>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>getdnskeys</strong> and the DNSSEC-Tools package.</p>
+</dd>
+<dt><strong><a name="h" class="item"><strong>-h</strong></a></strong></dt>
+
+<dd>
+<p>Gives a help message.</p>
+</dd>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="examples">EXAMPLES</a></h1>
-<p>This \cmd{getdnskeys} will retrieve the KSK for example.com:</p>
+<p>This <strong>getdnskeys</strong> will retrieve the KSK for example.com:</p>
 <pre>
     getdnskeys -o /etc/named.trustkeys.conf -k -v -t example.com</pre>
-<p>This \cmd{getdnskeys} will check saved keys against a live set of keys:</p>
+<p>This <strong>getdnskeys</strong> will check saved keys against a live set of keys:</p>
 <pre>
     getdnskeys -i /etc/named.trustkeys.conf -T -k -v -t</pre>
-<p>This \cmd{getdnskeys} will automatically update a set of saved keys:</p>
+<p>This <strong>getdnskeys</strong> will automatically update a set of saved keys:</p>
 <pre>
     getdnskeys -i /etc/named.trustkeys.conf -k -t -T -v
                -o /etc/named.trustkeys.conf</pre>

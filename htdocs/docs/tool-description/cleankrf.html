@@ -2,15 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>cleankrf - Clean a DNSSEC-Tools I&lt;keyrec&gt; files of old data.</title>
+<title>cleankrf - Clean a DNSSEC-Tools I&lt;keyrec&gt; files of old data</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -22,14 +24,16 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>cleankrf - Clean a DNSSEC-Tools <em>keyrec</em> files of old data.</p>
+<p>cleankrf - Clean a DNSSEC-Tools <em>keyrec</em> files of old data</p>
 <p>
 </p>
 <hr />
@@ -41,63 +45,62 @@
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
 <p><strong>cleankrf</strong> cleans old data out of a set of DNSSEC-Tools <em>keyrec</em> files.
-The old data are orphaned signing sets, orphaned keys, and obsolete keys.</p>
-<p>Orphaned signing sets are set <em>keyrec</em>s unreferenced by a zone <em>keyrec</em>.</p>
-<p>Orphaned keys are KSK key <em>keyrec</em>s unreferenced by a zone <em>keyrec</em> and
-ZSK key <em>keyrec</em>s unreferenced by any set <em>keyrec</em>s.</p>
+The old data are obsolete signing sets, orphaned keys, and obsolete keys.</p>
+<p>Obsolete signing sets are set <em>keyrec</em>s unreferenced by a zone <em>keyrec</em>.
+Revoked signing sets are considered obsolete by <strong>cleankrf</strong>.</p>
+<p>Orphaned keys are KSK and ZSK key <em>keyrec</em>s unreferenced by a set <em>keyrec</em>.</p>
 <p>Obsolete keys are ZSK key <em>keyrec</em>s with a <em>keyrec_type</em> of <strong>zskobs</strong>.</p>
-<p><em>cleankrf</em>'s exit code is the count of orphaned and obsolete <em>keyrec</em>s
+<p><strong>cleankrf</strong>'s exit code is the count of orphaned and obsolete <em>keyrec</em>s
 found.</p>
 <p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item__2dcount">-count</a></strong>
+<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
 
 <dd>
 <p>Display a final count of old <em>keyrec</em>s found in the <em>keyrec</em> files.  This
-option allows the count to be displayed even if the <em>-quiet</em> option is given.</p>
+option allows the count to be displayed even if the <strong>-quiet</strong> option is given.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dlist">-list</a></strong>
+<dt><strong><a name="list" class="item"><strong>-list</strong></a></strong></dt>
 
 <dd>
 <p>The key <em>keyrec</em>s are checked for old <em>keyrec</em>s, but they are not removed
 from the <em>keyrec</em> file.  The names of the old <em>keyrec</em>s are displayed.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2drm">-rm</a></strong>
+<dt><strong><a name="rm" class="item"><strong>-rm</strong></a></strong></dt>
 
 <dd>
 <p>Delete the key files, both <strong>.key</strong> and <strong>.private</strong>, from orphaned and
 expired <em>keyrec</em>s.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dquiet">-quiet</a></strong>
+<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
 
 <dd>
 <p>Display no output.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
 <dd>
 <p>Display output about referenced keys and unreferenced keys.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp">-help</a></strong>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>cleankrf</strong> and the DNSSEC-Tools package.</p>
+</dd>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

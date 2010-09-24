@@ -3,15 +3,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>fixkrf - Fixes DNSSEC-Tools I&lt;keyrec&gt; files whose encryption key files have
-been moved.</title>
+been moved</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -23,15 +25,17 @@ been moved.</title>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
 <p>fixkrf - Fixes DNSSEC-Tools <em>keyrec</em> files whose encryption key files have
-been moved.</p>
+been moved</p>
 <p>
 </p>
 <hr />
@@ -44,7 +48,7 @@ been moved.</p>
 <h1><a name="description">DESCRIPTION</a></h1>
 <p><strong>fixkrf</strong> checks a specified <em>keyrec</em> file to ensure that the referenced
 encryption key files exist where listed.  If a key is not where the <em>keyrec</em>
-specifies it should be, then <em>fixkrf</em> will search the given directories for
+specifies it should be, then <strong>fixkrf</strong> will search the given directories for
 those keys and adjust the <em>keyrec</em> to match reality.  If a key of a
 particular filename is found in multiple places, a warning will be printed
 and the <em>keyrec</em> file will not be changed for that key.</p>
@@ -53,30 +57,34 @@ and the <em>keyrec</em> file will not be changed for that key.</p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item__2dlist">-list</a></strong>
+<dt><strong><a name="list" class="item"><strong>-list</strong></a></strong></dt>
 
 <dd>
 <p>Display output about missing keys, but don't fix the <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
 <dd>
 <p>Display output about found keys as well as missing keys.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp">-help</a></strong>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<pre>
+
+Display version information for B&lt;fixkrf&gt; and DNSSEC-Tools.</pre>
+</dd>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

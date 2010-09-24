@@ -9,8 +9,10 @@
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -22,6 +24,7 @@
 		<li><a href="#undoing_modifications">UNDOING MODIFICATIONS</a></li>
 	</ul>
 
+	<li><a href="#options">OPTIONS</a></li>
 	<li><a href="#commands">COMMANDS</a></li>
 	<li><a href="#keyboard_accelerators">KEYBOARD ACCELERATORS</a></li>
 	<li><a href="#requirements">REQUIREMENTS</a></li>
@@ -29,9 +32,11 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -48,7 +53,7 @@
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
 <p><strong>signset-editor</strong> provides the capability for easy management of signing sets
-in a GUI.  A signing set contains zero or more names of key <em>keyrec</em>.  These
+in a GUI.  A signing set contains zero or more names of key <em>keyrec</em>s.  These
 sets are used by other DNSSEC-Tools utilities for signing zones.  The signing
 sets found in the given <em>keyrec</em> file are displayed in a new window.  New
 signing sets may be created and existing signing sets may be modified or
@@ -80,147 +85,136 @@ made during a particular execution of <strong>signset-editor</strong>; modificat
 during a previous execution may not be undone.</p>
 <p>When undoing modifications, <strong>signset-editor</strong> does not necessarily restore
 name-ordering within a <em>keyrec</em>'s <strong>signing_set</strong> field.  However, the
-signing-set data are maintained.  This means that an ``undone'' <em>keyrec</em> file
+signing-set data are maintained.  This means that an &quot;undone&quot; <em>keyrec</em> file
 may not be exactly the same, byte-for-byte, as the original file, but the
 proper meaning of the data is kept.</p>
-<p>After a ``Save'' operation, the data required for reversing modifications are
-deleted.  This is not the case for the ``Save As'' operation.</p>
+<p>After a &quot;Save&quot; operation, the data required for reversing modifications are
+deleted.  This is not the case for the &quot;Save As&quot; operation.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<p><strong>signset-editor</strong> takes the following options:</p>
+<dl>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>signset-editor</strong> and the DNSSEC-Tools
+package.</p>
+</dd>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
+
+<dd>
+<p>Displays a usage message.</p>
+</dd>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="commands">COMMANDS</a></h1>
 <p><strong>signset-editor</strong> provides the following commands, organized by menus:</p>
 <dl>
-<dt><strong><a name="item_open"><strong>Open</strong> (File menu)</a></strong>
+<dt><strong><a name="open" class="item"><strong>Open</strong> (File menu)</a></strong></dt>
 
 <dd>
 <p>Open a new <em>keyrec</em> file.  If the specified file does not exist, the user
-will be prompted for the action to take.  If the user chooses the ``Continue''
+will be prompted for the action to take.  If the user chooses the &quot;Continue&quot;
 action, then <strong>signset-editor</strong> will continue editing the current <em>keyrec</em>
-file.  If the ``Quit'' action is selected, then <strong>signset-editor</strong> will exit.</p>
+file.  If the &quot;Quit&quot; action is selected, then <strong>signset-editor</strong> will exit.</p>
 </dd>
-</li>
-<dt><strong><a name="item_save"><strong>Save</strong> (File menu)</a></strong>
+<dt><strong><a name="save" class="item"><strong>Save</strong> (File menu)</a></strong></dt>
 
 <dd>
-<p>Save the current <em>keyrec</em> file.  The data for the ``Undo Changes'' command are
+<p>Save the current <em>keyrec</em> file.  The data for the &quot;Undo Changes&quot; command are
 purged, so this file will appear to be unmodified.</p>
-</dd>
-<dd>
 <p>Nothing will happen if no changes have been made.</p>
 </dd>
-</li>
-<dt><strong><a name="item_as"><strong>Save As</strong> (File menu)</a></strong>
+<dt><strong><a name="as" class="item"><strong>Save As</strong> (File menu)</a></strong></dt>
 
 <dd>
 <p>Save the current <em>keyrec</em> file to a name selected by the user.</p>
 </dd>
-</li>
-<dt><strong><a name="item_quit"><strong>Quit</strong> (File menu)</a></strong>
+<dt><strong><a name="quit" class="item"><strong>Quit</strong> (File menu)</a></strong></dt>
 
 <dd>
 <p>Exit <strong>signset-editor</strong>.</p>
 </dd>
-</li>
-<dt><strong><a name="item_changes"><strong>Undo Changes</strong> (Edit menu)</a></strong>
+<dt><strong><a name="changes" class="item"><strong>Undo Changes</strong> (Edit menu)</a></strong></dt>
 
 <dd>
 <p>Reverse modifications made to the signing sets and keyrecs.  This is <strong>only</strong>
 for the in-memory version of the <em>keyrec</em> file.</p>
 </dd>
-</li>
-<dt><strong><a name="item_set"><strong>New Signing Set</strong> (Commands menu)</a></strong>
+<dt><strong><a name="set" class="item"><strong>New Signing Set</strong> (Commands menu)</a></strong></dt>
 
 <dd>
 <p>Create a new signing set.   The user is given the option of adding key
 <em>keyrec</em>s to the new set.</p>
-</dd>
-<dd>
 <p>This command is available from both viewing modes.</p>
 </dd>
-</li>
-<dt><strong><a name="item_key"><strong>Delete Signing Set/Key</strong> (Commands menu)</a></strong>
+<dt><strong><a name="key" class="item"><strong>Delete Signing Set/Key</strong> (Commands menu)</a></strong></dt>
 
 <dd>
 <p>Delete the selected signing set or key.</p>
-</dd>
-<dd>
 <p>This command is available from both viewing modes.  If used from the Signing
 Set Display mode, then all the keys in the selected signing set will be
 removed from that set.  If used from the Keyrec Display mode, then the
 selected key will no longer be part of any signing set.</p>
 </dd>
-</li>
-<dt><strong><strong>Modify Signing Set/Key</strong> (Commands menu)</strong>
+<dt><strong><strong>Modify Signing Set/Key</strong> (Commands menu)</strong></dt>
 
 <dd>
 <p>Modify the selected signing set or key.</p>
-</dd>
-<dd>
 <p>This command is available from both viewing modes.  If used from the Signing
 Set Display mode, then the selected signing set may be modified by adding keys
 to that set or deleting them from that set.  If used from the Keyrec Display
 mode, then the selected key may be added to or deleted from any of the defined
 signing sets.</p>
 </dd>
-</li>
-<dt><strong><a name="item_sets"><strong>View Signing Sets</strong> (Display menu)</a></strong>
+<dt><strong><a name="sets" class="item"><strong>View Signing Sets</strong> (Display menu)</a></strong></dt>
 
 <dd>
 <p>The main window will display the <em>keyrec</em> file's signing sets.  If Extended
 Data are to be displayed, then each key <em>keyrec</em> in the signing set will also
 be shown.  If Extended data are not to be displayed, then only the signing set
 names will be shown.</p>
-</dd>
-<dd>
 <p>This command is a toggle that switches between View Signing Sets mode and
 View Keyrecs mode.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrecs"><strong>View Keyrecs</strong> (Display menu)</a></strong>
+<dt><strong><a name="keyrecs" class="item"><strong>View Keyrecs</strong> (Display menu)</a></strong></dt>
 
 <dd>
 <p>The main window will display the names of the <em>keyrec</em> file's key <em>keyrec</em>s.
 If Extended Data are to be displayed, then the name of each signing set of the
 <em>keyrec</em> will also be shown.  If Extended data are not to be shown, then only
 the <em>keyrec</em> names will be displayed.</p>
-</dd>
-<dd>
 <p>This command is a toggle that switches between View Keyrecs mode and View
 Signing Sets mode.</p>
 </dd>
-</li>
-<dt><strong><a name="item_data"><strong>Display Extended Data</strong> (Display menu)</a></strong>
+<dt><strong><a name="data" class="item"><strong>Display Extended Data</strong> (Display menu)</a></strong></dt>
 
 <dd>
 <p>Additional data will be shown in the main window.  For Signing Sets Display
 mode, the names of the signing set and their constituent key <em>keyrec</em>s will
 be displayed.  For Keyrec Display mode, the names of the key <em>keyrec</em>s and
 the Signing Sets it is in will be displayed.</p>
-</dd>
-<dd>
 <p>This command is a toggle that switches between Extended Data display and
 No Extended Data display.</p>
 </dd>
-</li>
-<dt><strong><strong>Do Not Display Extended Data</strong> (Display menu)</strong>
+<dt><strong><strong>Do Not Display Extended Data</strong> (Display menu)</strong></dt>
 
 <dd>
 <p>No additional data will be shown in the main window.  For Signing Sets Display
 mode, only the names of the Signing Sets will be displayed.  For Keyrec Display
 mode, only the names of the <em>keyrec</em>s will be displayed.</p>
-</dd>
-<dd>
 <p>This command is a toggle that switches between No Extended Data display and
 Extended Data display.</p>
 </dd>
-</li>
-<dt><strong><a name="item_help"><strong>Help</strong> (Help menu)</a></strong>
+<dt><strong><a name="help" class="item"><strong>Help</strong> (Help menu)</a></strong></dt>
 
 <dd>
 <p>Display a help window.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
@@ -260,7 +254,7 @@ installed on your system.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -278,9 +272,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <strong>lskrf(1)</strong>,
 <strong>zonesigner(8)</strong></p>
 <p><strong>Net::DNS::SEC::Tools::keyrec(3)</strong></p>
-<p><strong>file-keyrec(5)</strong>
-
-</p>
+<p><strong>file-keyrec(5)</strong></p>
 
 </body>
 

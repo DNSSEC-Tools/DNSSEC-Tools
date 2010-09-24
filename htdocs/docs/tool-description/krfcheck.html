@@ -3,15 +3,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>krfcheck - Check a DNSSEC-Tools I&lt;keyrec&gt; file for problems and
-inconsistencies.</title>
+inconsistencies</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -23,15 +25,17 @@ inconsistencies.</title>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
 <p>krfcheck - Check a DNSSEC-Tools <em>keyrec</em> file for problems and
-inconsistencies.</p>
+inconsistencies</p>
 <p>
 </p>
 <hr />
@@ -47,47 +51,47 @@ inconsistencies.</p>
 and inconsistencies.</p>
 <p>Recognized problems include:</p>
 <ul>
-<li><strong><a name="item_no_zones_defined">no zones defined</a></strong>
+<li><strong><a name="no_zones_defined" class="item">no zones defined</a></strong>
 
 <p>The <em>keyrec</em> file does not contain any zone <em>keyrec</em>s.</p>
 </li>
-<li><strong><a name="item_no_sets_defined">no sets defined</a></strong>
+<li><strong><a name="no_sets_defined" class="item">no sets defined</a></strong>
 
 <p>The <em>keyrec</em> file does not contain any set <em>keyrec</em>s.</p>
 </li>
-<li><strong><a name="item_no_keys_defined">no keys defined</a></strong>
+<li><strong><a name="no_keys_defined" class="item">no keys defined</a></strong>
 
 <p>The <em>keyrec</em> file does not contain any key <em>keyrec</em>s.</p>
 </li>
-<li><strong><a name="item_unknown_zone_keyrecs">unknown zone <em>keyrec</em>s</a></strong>
+<li><strong><a name="unknown_zone_keyrecs" class="item">unknown zone <em>keyrec</em>s</a></strong>
 
 <p>A set <em>keyrec</em> or a key <em>keyrec</em> references a non-existent zone <em>keyrec</em>.</p>
 </li>
-<li><strong><a name="item_missing_key_from_zone_keyrec">missing key from zone <em>keyrec</em></a></strong>
+<li><strong><a name="missing_key_from_zone_keyrec" class="item">missing key from zone <em>keyrec</em></a></strong>
 
 <p>A zone <em>keyrec</em> does not have both a KSK key and a ZSK key.</p>
 </li>
-<li><strong><a name="item_missing_key_from_set_keyrec">missing key from set <em>keyrec</em></a></strong>
+<li><strong><a name="missing_key_from_set_keyrec" class="item">missing key from set <em>keyrec</em></a></strong>
 
 <p>A key listed in a set <em>keyrec</em> does not have a key <em>keyrec</em>.</p>
 </li>
-<li><strong><a name="item_expired_zone_keyrecs">expired zone <em>keyrec</em>s</a></strong>
+<li><strong><a name="expired_zone_keyrecs" class="item">expired zone <em>keyrec</em>s</a></strong>
 
 <p>A zone has expired.</p>
 </li>
-<li><strong><a name="item_mislabeled_key">mislabeled key</a></strong>
+<li><strong><a name="mislabeled_key" class="item">mislabeled key</a></strong>
 
 <p>A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
 opposite.</p>
 </li>
-<li><strong><a name="item_invalid_zone_data_values">invalid zone data values</a></strong>
+<li><strong><a name="invalid_zone_data_values" class="item">invalid zone data values</a></strong>
 
 <p>A zone's <em>keyrec</em> data are checked to ensure that they are valid.  The
 following conditions are checked:  existence of the zone file, existence of
 the KSK file, existence of the KSK and ZSK directories, the end-time is
 greater than one day, and the seconds-count and date string match.</p>
 </li>
-<li><strong><a name="item_invalid_key_data_values">invalid key data values</a></strong>
+<li><strong><a name="invalid_key_data_values" class="item">invalid key data values</a></strong>
 
 <p>A key's <em>keyrec</em> data are checked to ensure that they are valid.  The
 following conditions are checked:  valid encryption algorithm, key length
@@ -97,19 +101,19 @@ seconds-count and date string match.</p>
 </ul>
 <p>Recognized potential problems include:</p>
 <ul>
-<li><strong><a name="item_imminent_zone_expiration">imminent zone expiration</a></strong>
+<li><strong><a name="imminent_zone_expiration" class="item">imminent zone expiration</a></strong>
 
 <p>A zone will expire within one week.</p>
 </li>
-<li><strong><a name="item_odd_zone_2dsigning_date">odd zone-signing date</a></strong>
+<li><strong><a name="odd_zone_signing_date" class="item">odd zone-signing date</a></strong>
 
 <p>A zone's recorded signing date is later than the current system clock.</p>
 </li>
-<li><strong><a name="item_orphaned_keys">orphaned keys</a></strong>
+<li><strong><a name="orphaned_keys" class="item">orphaned keys</a></strong>
 
 <p>A key <em>keyrec</em> is unreferenced by any set <em>keyrec</em>.</p>
 </li>
-<li><strong><a name="item_missing_key_directories">missing key directories</a></strong>
+<li><strong><a name="missing_key_directories" class="item">missing key directories</a></strong>
 
 <p>A zone <em>keyrec</em>'s key directories (<em>kskdirectory</em> or <em>zskdirectory</em>) does
 not exist.</p>
@@ -117,25 +121,25 @@ not exist.</p>
 </ul>
 <p>Recognized inconsistencies include:</p>
 <ul>
-<li><strong><a name="item_key_2dspecific_fields_in_a_zone_keyrec">key-specific fields in a zone <em>keyrec</em></a></strong>
+<li><strong><a name="key_specific_fields_in_a_zone_keyrec" class="item">key-specific fields in a zone <em>keyrec</em></a></strong>
 
 <p>A zone <em>keyrec</em> contains key-specific entries.  To allow for site-specific
 extensibility, <strong>krfcheck</strong> does not check for undefined <em>keyrec</em> fields.</p>
 </li>
-<li><strong><a name="item_zone_2dspecific_fields_in_a_key_keyrec">zone-specific fields in a key <em>keyrec</em></a></strong>
+<li><strong><a name="zone_specific_fields_in_a_key_keyrec" class="item">zone-specific fields in a key <em>keyrec</em></a></strong>
 
 <p>A key <em>keyrec</em> contains zone-specific entries.  To allow for site-specific
 extensibility, <strong>krfcheck</strong> does not check for undefined <em>keyrec</em> fields.</p>
 </li>
-<li><strong><a name="item_mismatched_zone_timestamp">mismatched zone timestamp</a></strong>
+<li><strong><a name="mismatched_zone_timestamp" class="item">mismatched zone timestamp</a></strong>
 
 <p>A zone's seconds-count timestamp does not match its textual timestamp.</p>
 </li>
-<li><strong><a name="item_mismatched_set_timestamp">mismatched set timestamp</a></strong>
+<li><strong><a name="mismatched_set_timestamp" class="item">mismatched set timestamp</a></strong>
 
 <p>A set's seconds-count timestamp does not match its textual timestamp.</p>
 </li>
-<li><strong><a name="item_mismatched_key_timestamp">mismatched key timestamp</a></strong>
+<li><strong><a name="mismatched_key_timestamp" class="item">mismatched key timestamp</a></strong>
 
 <p>A key's seconds-count timestamp does not match its textual timestamp.</p>
 </li>
@@ -145,64 +149,56 @@ extensibility, <strong>krfcheck</strong> does not check for undefined <em>keyrec
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item__2dzone">-zone</a></strong>
+<dt><strong><a name="zone" class="item"><strong>-zone</strong></a></strong></dt>
 
 <dd>
 <p>Only perform checks of zone <em>keyrec</em>s.  This option may not be combined with
 the <strong>-set</strong> or <strong>-key</strong> options.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dset">-set</a></strong>
+<dt><strong><a name="set" class="item"><strong>-set</strong></a></strong></dt>
 
 <dd>
 <p>Only perform checks of set <em>keyrec</em>s.  This option may not be combined with
 the <strong>-zone</strong> or <strong>-key</strong> options.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dkey">-key</a></strong>
+<dt><strong><a name="key" class="item"><strong>-key</strong></a></strong></dt>
 
 <dd>
 <p>Only perform checks of key <em>keyrec</em>s.  This option may not be combined with
 the <strong>-set</strong> or <strong>-zone</strong> options.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dcount">-count</a></strong>
+<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
 
 <dd>
 <p>Display a final count of errors.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dquiet">-quiet</a></strong>
+<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
 
 <dd>
-<p>Do not display messages.  This option supersedes the setting of the <em>-v</em>
+<p>Do not display messages.  This option supersedes the setting of the <strong>-verbose</strong>
 option.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
 <dd>
-<p>Display many messages.  This option is subordinate to the <em>-q</em> option.</p>
+<p>Display many messages.  This option is subordinate to the <strong>-quiet</strong> option.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dversion">-Version</a></strong>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
 <dd>
-<p>Display the <strong>krfcheck</strong> version number and exit.</p>
+<p>Displays the version information for <strong>krfcheck</strong> and the DNSSEC-Tools package.</p>
 </dd>
-</li>
-<dt><strong><a name="item__2dhelp">-help</a></strong>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
 <p>Display a usage message.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
