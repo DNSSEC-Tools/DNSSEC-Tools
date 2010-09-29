@@ -7,19 +7,19 @@ details.
     - zonesigner, rollerd
                     - Made changes so that these tools are more compatible 
                       with recent versions of Bind
-		    - The zone_errors configuration parameter allows a zone-
-		      specific maximum to be set.  Once exceeded, that zone
-		      will be skipped rather than allowing rollover to continue.
+                    - The zone_errors configuration parameter allows a zone-
+                      specific maximum to be set.  Once exceeded, that zone
+                      will be skipped rather than allowing rollover to continue.
     - blinkenlights
-		    - Recognizes when rollerd abruptly quits, so error messages
-		      aren't spewed interminably.
+                    - Recognizes when rollerd abruptly quits, so error messages
+                      aren't spewed interminably.
     - ZonFile::Fast - Fixed parsing of DS records containing spaces and 
                       parsing of mname and rname SOA fields
                     - Added support for parsing KEY records
-    - keyrec.pm	    - Made changes to properly lock keyrec files before 
+    - keyrec.pm     - Made changes to properly lock keyrec files before 
                       writing to them.
-		    - Begun process of deprecating keyrec_open().
-    - mapper:  	    - added a new option: --node-size for mapping
+                    - Begun process of deprecating keyrec_open().
+    - mapper:       - added a new option: --node-size for mapping
                       complex zones.
     - dnspktflow:   - added two new options:
                       --layout-style for selecting the layout style to use
@@ -28,7 +28,7 @@ details.
                       authoritative nodes together to help better
                       understand the relationships between traffic
                       patterns and authoritative name server/zone arrangement.
-    - libval:	    - Now distributed with the Root TA.
+    - libval:       - Now distributed with the Root TA.
                     - Added stricter checks for openssl SHA-256 support in 
                       configure. 
                     - Added several improvements that allow the validator to 
@@ -43,8 +43,8 @@ details.
                       referrals and alias chains.
                     - Fixed support for RSADSA and RSASHA-512 signature 
                       validation.
-    - Mac OSX: 	    - Added a Ports file for mac ports
-     		    - updated the fink build spec
+    - Mac OSX:      - Added a Ports file for mac ports
+                    - updated the fink build spec
 
  - many other miscellaneous bug fixes and improvements.
 
@@ -120,22 +120,22 @@ details.
  - New Features:
    - zonesigner:   - NSEC3 support: --usensec3     (requires bind 9.6)
    - donuts:       - NSEC3 support
-   - rollerd: 	   - Added a -pidfile option
-              	   - Added a -singlerun option
-              	   - Added a -foreground option
+   - rollerd:      - Added a -pidfile option
+                   - Added a -singlerun option
+                   - Added a -foreground option
                    - Added a -alwayssign flag
                    - New rollrec fields to partial-support RFC5011 rolling:
                      'istrustanchor' and 'holddowntime'
    - lsdnssec:     - A new tool to display DNSSEC keying/rolling status
-   - mapper:  	   - added two new options: --edge-style and --node-style
+   - mapper:       - added two new options: --edge-style and --node-style
    - getds:        - a new tool to calculate a DS record from a key lookup
                      (also checks the parent for proper publication)
    - dnspktflow:   - Added output options for svg, svgz, and postscript
 
  - Bug fixes
-   - libval:  	   - should compile better on more OSes
-   - rollerd: 	   - Fixed the -zsargs option in most rollerd related tools
-              	   - Other minor fixes
+   - libval:       - should compile better on more OSes
+   - rollerd:      - Fixed the -zsargs option in most rollerd related tools
+                   - Other minor fixes
    - zonesigner:   - fixed serial number auto-incrementing
             
 
