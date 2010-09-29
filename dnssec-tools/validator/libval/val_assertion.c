@@ -950,8 +950,10 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
 
             val_log(ctx, LOG_INFO,
                     "is_trusted_key(): Existing trust anchor did not match at this level: %s", zp);
-            //*status = VAL_AC_NO_LINK;
-            //return VAL_NO_ERROR;
+            if (ctx->g_opt && ctx->g_opt->closest_ta_only) {
+                *status = VAL_AC_NO_LINK;
+                return VAL_NO_ERROR;
+            }
 
             /* we will continue as long as there is a trust anchor above this level */
         }
