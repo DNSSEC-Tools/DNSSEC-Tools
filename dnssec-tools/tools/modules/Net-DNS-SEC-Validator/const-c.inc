@@ -922,7 +922,7 @@ constant_16 (pTHX_ const char *name, IV *iv_return) {
      here.  However, subsequent manual editing may have added or removed some.
      ALG_DS_HASH_SHA1 Q_REFERRAL_ERROR Q_RESPONSE_ERROR SR_CRED_AUTH_ADD
      SR_CRED_AUTH_ANS SR_NO_ANSWER_YET VAL_AC_DNS_ERROR VAL_AC_FAIL_BASE
-     VAL_BAD_ARGUMENT VAL_QUERY_NO_DLV VAL_QFLAGS_STATE VAL_AC_PINSECURE
+     VAL_BAD_ARGUMENT VAL_QUERY_NO_DLV VAL_AC_PINSECURE
      ZONE_USE_NOTHING */
   /* Offset 4 gives the best switch position.  */
   switch (name[4]) {
@@ -1004,14 +1004,6 @@ constant_16 (pTHX_ const char *name, IV *iv_return) {
     /*                   ^                  */
 #ifdef VAL_QUERY_NO_DLV
       *iv_return = VAL_QUERY_NO_DLV;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    } else if (memEQ(name, "VAL_QFLAGS_STATE", 16)) {
-    /*                          ^                  */
-#ifdef VAL_QFLAGS_STATE
-      *iv_return = VAL_QFLAGS_STATE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2045,9 +2037,21 @@ constant_24 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_IGNORE_VALIDATION VAL_AC_WRONG_LABEL_COUNT
-     VAL_RESOURCE_UNAVAILABLE */
+     VAL_RESOURCE_UNAVAILABLE VAL_QUERY_REFRESH_QCACHE */
   /* Offset 22 gives the best switch position.  */
   switch (name[22]) {
+  case 'H':
+    if (memEQ(name, "VAL_QUERY_REFRESH_QCACHE", 24)) {
+    /*                                     ^        */
+#ifdef VAL_QUERY_REFRESH_QCACHE
+      *iv_return = VAL_QUERY_REFRESH_QCACHE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+
   case 'L':
     if (memEQ(name, "VAL_RESOURCE_UNAVAILABLE", 24)) {
     /*                                     ^        */
@@ -2303,7 +2307,7 @@ my @names = (qw(ALG_DH ALG_DSASHA1 ALG_DS_HASH_SHA1 ALG_DS_HASH_SHA256
 	       VAL_POL_GOPT_OVERRIDE VAL_PINSECURE VAL_QFLAGS_ANY
 	       VAL_QFLAGS_USERMASK VAL_QUERY_DONT_VALIDATE
 	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_AC_DETAIL VAL_QUERY_NO_DLV
-	       VAL_QFLAGS_STATE VAL_QUERY_USING_DLV 
+	       VAL_QUERY_USING_DLV 
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
 	       VAL_UNTRUSTED_ANSWER VAL_UNTRUSTED_ZONE
 	       VAL_VALIDATED_ANSWER ZONE_USE_NOTHING
