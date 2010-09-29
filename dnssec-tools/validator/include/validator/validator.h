@@ -232,6 +232,7 @@ extern          "C" {
         int env_policy;
         int app_policy;
         char *log_target;
+        int closest_ta_only;
     } global_opt_t;
 
     typedef struct {
@@ -264,14 +265,15 @@ extern          "C" {
 
 #define GOPT_TRUST_OOB_STR "trust-oob-answers"
 #define GOPT_EDNS0_SIZE_STR "edns0-size"
-#define TRUST_OOB_GOPT_YES_STR "yes"
-#define TRUST_OOB_GOPT_NO_STR "no"
+#define GOPT_YES_STR "yes"
+#define GOPT_NO_STR "no"
 #define GOPT_ENV_POL_STR "env-policy"
 #define GOPT_APP_POL_STR "app-policy"
 #define GOPT_ENABLE_STR "enable"
 #define GOPT_DISBLE_STR "disable"
 #define GOPT_OVERRIDE_STR "override"
 #define GOPT_LOGTARGET_STR "log"
+#define GOPT_CLOSEST_TA_ONLY_STR "closest-ta-only"
 
 #define VAL_POL_GOPT_DISABLE 0 
 #define VAL_POL_GOPT_ENABLE 1

@@ -820,9 +820,9 @@ parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number,
         return VAL_CONF_PARSE_ERROR;
     }
 
-    if (!strcmp(token, TRUST_OOB_GOPT_YES_STR))
+    if (!strcmp(token, GOPT_YES_STR))
         g_opt->local_is_trusted = 1;
-    else if (!strcmp(token, TRUST_OOB_GOPT_NO_STR))
+    else if (!strcmp(token, GOPT_NO_STR))
         g_opt->local_is_trusted = 0;
     else
         return VAL_CONF_PARSE_ERROR;
@@ -923,6 +923,39 @@ parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 }
 
 static int
+parse_closest_ta_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
+                      int *endst, global_opt_t *g_opt)
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /* read the next token */
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    if (!strncmp(token, GOPT_YES_STR, strlen(GOPT_YES_STR))) {
+        g_opt->closest_ta_only = 1;
+    } else if (!strncmp(token, GOPT_NO_STR, strlen(GOPT_NO_STR))) {
+        g_opt->closest_ta_only = 0;
+    } else {
+        return VAL_CONF_PARSE_ERROR;
+    }
+    return VAL_NO_ERROR;
+}
+
+static int
 get_global_options(char **buf_ptr, char *end_ptr, 
                    int *line_number, global_opt_t **g_opt) 
 {
@@ -942,6 +975,7 @@ get_global_options(char **buf_ptr, char *end_ptr,
     (*g_opt)->env_policy = VAL_POL_GOPT_DISABLE;
     (*g_opt)->app_policy = VAL_POL_GOPT_DISABLE;
     (*g_opt)->log_target = NULL;
+    (*g_opt)->closest_ta_only = 0;
     
     while (!endst) {
         /*
@@ -993,6 +1027,13 @@ get_global_options(char **buf_ptr, char *end_ptr,
                                                     line_number, &endst, *g_opt))) {
                 goto err;
             }
+        } else if (!strcmp(token, GOPT_CLOSEST_TA_ONLY_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_closest_ta_target_gopt(buf_ptr, end_ptr, 
+                                                    line_number, &endst, *g_opt))) {
+                goto err;
+            }
+
         } else {
             retval = VAL_CONF_PARSE_ERROR;
             goto err;
