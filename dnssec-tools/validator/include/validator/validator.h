@@ -195,25 +195,19 @@ extern          "C" {
 #define VAL_FROM_ADDITIONAL       3
 #define VAL_FROM_QUERY            4
 
-    /*
-     * user query flags in the lower two bytes 
-     */
-#define VAL_QFLAGS_ANY 0xffffffff
-#define VAL_QFLAGS_USERMASK 0x0000ffff
-#define VAL_QFLAGS_STATE 0xffff0000
-#define VAL_QFLAGS_CACHE_MASK   VAL_QFLAGS_USERMASK
+#define VAL_QFLAGS_ANY          0xffffffff
+#define VAL_QFLAGS_CACHE_MASK   0x00ffffff
+#define VAL_QFLAGS_USERMASK     0x0000ffff
 
-#define VAL_QUERY_NO_AC_DETAIL 0x00000001
-#define VAL_QUERY_NO_EDNS0 0x00000002
-#define VAL_QUERY_DONT_VALIDATE 0x00000004 
+#define VAL_QUERY_NO_AC_DETAIL  0x00000001
+#define VAL_QUERY_DONT_VALIDATE 0x00000002 
+#define VAL_QUERY_NO_DLV        0x00000004 
+#define VAL_QUERY_REFRESH_CACHE 0x00000008
 
-    /*  
-     * Internal query state in the upper two bytes 
-     */
-#define VAL_QUERY_GLUE_REQUEST (0x00010000 | VAL_QUERY_DONT_VALIDATE)
-#define VAL_QUERY_USING_DLV 0x00020000 
-#define VAL_QUERY_NO_DLV 0x00040000 
+#define VAL_QUERY_NO_EDNS0      0x00010000
+#define VAL_QUERY_USING_DLV     0x00020000 
 
+#define VAL_QUERY_GLUE_REQUEST (0x01000000 | VAL_QUERY_DONT_VALIDATE)
 
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
 #define MAX_GLUE_FETCH_DEPTH 10         /* max length of glue dependency chain */
