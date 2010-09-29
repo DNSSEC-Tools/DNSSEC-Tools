@@ -125,6 +125,10 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
     if (new_info == NULL || unchecked_info == NULL)
         return VAL_NO_ERROR;
 
+    if (matched_q->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
+        matched_q->qc_flags ^= VAL_QUERY_REFRESH_QCACHE;
+    }
+
     trail_new = NULL;
     prev = NULL;
     while (*new_info) {

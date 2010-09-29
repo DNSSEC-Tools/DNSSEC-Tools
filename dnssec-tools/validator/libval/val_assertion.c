@@ -437,6 +437,7 @@ void requery_with_edns0(val_context_t *context,
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
         matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
     } 
+    matched_q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
 }
 
 
@@ -1316,28 +1317,6 @@ build_pending_query(val_context_t *context,
         return VAL_NO_ERROR;
     }
 
-    /*
-     * Check if this zone is locally trusted/untrusted 
-     */
-    if (VAL_NO_ERROR != (retval = 
-        get_zse(context, as->val_ac_rrset.ac_data->rrs_name_n, 
-                flags, &tzonestatus, NULL, &ttl_x))) {
-        return retval;
-    }
-    SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
-
-    if (tzonestatus != VAL_AC_WAIT_FOR_TRUST 
-#ifdef LIBVAL_DLV
-            /* 
-             * continue to build the authentication chain if
-             * we're doing DLV
-             */
-            && !(flags & VAL_QUERY_USING_DLV)
-#endif
-        ) {
-        as->val_ac_status = tzonestatus;
-        return VAL_NO_ERROR;
-    }
 
     if (as->val_ac_rrset.ac_data->rrs_data == NULL) {
         as->val_ac_status = VAL_AC_DATA_MISSING;
@@ -1368,6 +1347,30 @@ build_pending_query(val_context_t *context,
         }
 
         as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
+    }
+
+    /*
+     * Check if this zone is locally trusted/untrusted 
+     */
+    if (VAL_NO_ERROR != (retval = 
+        get_zse(context, as->val_ac_rrset.ac_data->rrs_name_n, 
+                flags, &tzonestatus, NULL, &ttl_x))) {
+        return retval;
+    }
+    SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
+
+    if (status != VAL_AC_TRUST_NOCHK && /* not already a trustpoint */
+        tzonestatus != VAL_AC_WAIT_FOR_TRUST 
+#ifdef LIBVAL_DLV
+            /* 
+             * continue to build the authentication chain if
+             * we're doing DLV
+             */
+            && !(flags & VAL_QUERY_USING_DLV)
+#endif
+        ) {
+        as->val_ac_status = tzonestatus;
+        return VAL_NO_ERROR;
     }
 
 #if 0
@@ -1756,10 +1759,6 @@ get_ac_trust(val_context_t *context,
         return NULL;
     }
 
-    if (next_as->val_ac_status >= VAL_AC_DONT_GO_FURTHER &&
-        next_as->val_ac_status <= VAL_AC_LAST_STATE)
-        return NULL;
-
     /* Check if there are trust anchors above us */
 #ifdef LIBVAL_DLV
     if (flags & VAL_QUERY_USING_DLV) {
@@ -1786,7 +1785,11 @@ get_ac_trust(val_context_t *context,
         }
     } else
 #endif
-    {
+    if (next_as->val_ac_status >= VAL_AC_DONT_GO_FURTHER &&
+        next_as->val_ac_status <= VAL_AC_LAST_STATE) {
+        return NULL;
+    }
+    else {
         u_char *curzone_n = NULL;
         if (VAL_NO_ERROR != (find_trust_point(context, 
                                 next_as->val_ac_rrset.ac_data->rrs_name_n, 
@@ -4162,6 +4165,18 @@ set_dlv_branchoff(val_context_t *context,
     *do_dlv = 0;
     retval = VAL_NO_ERROR;
 
+    ttl_x = 0;
+    if (VAL_NO_ERROR != (retval = 
+                get_zse(context, name_n, flags, 
+                        &tzonestatus, &tp, &ttl_x))) {
+        goto done;
+    }
+    SET_MIN_TTL(*q_ttl_x, ttl_x);
+    /* Only do DLV processing if we have a ZSE of validate */
+    if (tzonestatus != VAL_AC_WAIT_FOR_TRUST) {
+        goto done;
+    }
+
     if (VAL_NO_ERROR != (retval = 
                 find_dlv_trust_point(context, name_n, &dlv_tp, &dlv_target, &ttl_x))) {
         val_log(context, LOG_INFO, "set_dlv_branchoff(): Cannot find DLV trust point for %s", name_p);
@@ -4795,6 +4810,7 @@ verify_and_validate(val_context_t * context,
             (res->val_rc_status == VAL_NOTRUST ||
              res->val_rc_status == VAL_PINSECURE ||
              res->val_rc_status == VAL_PINSECURE_UNTRUSTED ||
+             res->val_rc_status == VAL_IGNORE_VALIDATION ||
              res->val_rc_status == VAL_DONT_KNOW) &&
             res->val_rc_rrset != NULL) {
 
@@ -4899,6 +4915,10 @@ ask_cache(val_context_t * context,
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
         if (next_q->qfq_query->qc_state < Q_ANSWERED) {
             *data_missing = 1;
+        }
+        if (next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
+            /* don't look at the cache for this query */
+            continue;
         }
         if (next_q->qfq_query->qc_state == Q_INIT) {
 
