@@ -4850,7 +4850,7 @@ verify_and_validate(val_context_t * context,
                      *  sending with CD and D0 bits set
                      */
                     requery_with_edns0(context, top_q);
-                    top_qfq->qfq_flags |= VAL_QUERY_USING_DLV; 
+                    top_q->qc_flags |= VAL_QUERY_USING_DLV; 
 
                     /* free up all results */
                     res = *results;
