@@ -3907,6 +3907,10 @@ sub cmd_status
 		$outbuf .= "running as:         $username\n";
 	}
 
+	$outbuf	.= "\n";
+	$outbuf	.= "$VERS\n";
+	$outbuf	.= "$DTVERS\n";
+
 	#
 	# Send the status report to the caller.
 	#
