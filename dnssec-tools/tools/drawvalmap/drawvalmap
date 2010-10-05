@@ -32,7 +32,6 @@ my $status;
 my $dest;
 my $i;
 my $socket;
-my $count;
 my $edge_str;
 my $giffile;
 my $htmlfile;
@@ -44,6 +43,7 @@ my %opts;
 my %loglevels;
 my $image_has_changed;
 my $refresh;
+my @log = ();
 
 ########################################################
 # Constants
@@ -95,7 +95,6 @@ my %dtconf = parseconfig();
 my $libvalnode = "libval";
 my $curnode = $libvalnode; 
 
-$count = 0;
 $giffile = $opts{'g'};
 $htmlfile = $opts{'h'};
 $refresh = $opts{'r'};
@@ -197,6 +196,7 @@ sub matches_logreq {
     my $ignorestr = $opts{'i'};
     my $requirestr = $opts{'m'};
     if ($line =~ /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
+        print "MATCHES: $line\n";
         ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
         if (($ignorestr && ($line =~ /$ignorestr/)) || 
             ($requirestr && !($line =~ /$requirestr/))) {
@@ -204,6 +204,7 @@ sub matches_logreq {
         }
         return 1;
     }
+    print "DOES NOT MATCH: $line\n";
     return 0;
 }
 
@@ -226,15 +227,16 @@ sub update_gif {
 # update the graph
 #
 sub update_graph {
-    my @log;
+    my $count;
     my $level;
     my %prop;
     my $newnode;
     my $prevnode = shift; 
 
-    $log[$count] =  "$name $class $type $prevnode $dest $status";
     $edge_str = $dest ;
     $newnode = "$name, $class, $type";
+    $count = $#log + 1;
+    push(@log, "$name $class $type $prevnode $dest $status");
 
     # remove duplicates from the array so that 
     # all edges on the graph are different
@@ -245,8 +247,6 @@ sub update_graph {
     if($count == ($#log + 1)) {
 	return $newnode;
     }
-
-    $count = $#log + 1;
 
     # add the node and an edge from the Validator
     ($level, %prop) = get_ac_lineattr($status);
