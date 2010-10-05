@@ -1,47 +1,25 @@
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/openssh-5.3p1/configure.ac openssh-5.3p1/configure.ac
 --- clean/openssh-5.3p1/configure.ac	2009-09-11 00:56:08.000000000 -0400
 +++ openssh-5.3p1/configure.ac	2009-11-17 18:34:44.000000000 -0500
-@@ -3289,32 +3289,41 @@ AC_ARG_WITH(sectok,
- 	]
- )
+@@ -3433,6 +3433,41 @@
+ 	AC_DEFINE(HAVE_SYS_NERR, 1, [Define if your system defines sys_nerr])
+ fi
  
--# Check whether user wants OpenSC support
--OPENSC_CONFIG="no"
--AC_ARG_WITH(opensc,
--	[  --with-opensc[[=PFX]]     Enable smartcard support using OpenSC (optionally in PATH)],
--	[
--	    if test "x$withval" != "xno" ; then
 +LIBVAL_MSG="no"
 +# Check whether user wants DNSSEC local validation support
 +AC_ARG_WITH(local-dnssec-validation,
 +	[  --with-local-dnssec-validation Enable local DNSSEC validation using libval],
 +	[ if test "x$withval" != "xno" ; then
- 		if test "x$withval" != "xyes" ; then
--  			OPENSC_CONFIG=$withval/bin/opensc-config
--		else
--  			AC_PATH_PROG(OPENSC_CONFIG, opensc-config, no)
++ 		if test "x$withval" != "xyes" ; then
 +			CPPFLAGS="$CPPFLAGS -I${withval}"
 +			LDFLAGS="$LDFLAGS -L${withval}"
 +			if test ! -z "$need_dash_r" ; then
 +				LDFLAGS="$LDFLAGS -R${withval}"
- 		fi
--		if test "$OPENSC_CONFIG" != "no"; then
--			LIBOPENSC_CFLAGS=`$OPENSC_CONFIG --cflags`
--			LIBOPENSC_LIBS=`$OPENSC_CONFIG --libs`
--			CPPFLAGS="$CPPFLAGS $LIBOPENSC_CFLAGS"
--			LIBS="$LIBS $LIBOPENSC_LIBS"
--			AC_DEFINE(SMARTCARD)
--			AC_DEFINE(USE_OPENSC, 1,
--				[Define if you want smartcard support
--				using OpenSC])
--			SCARD_MSG="yes, using OpenSC"
++ 		fi
 +			if test ! -z "$blibpath" ; then
 +				blibpath="$blibpath:${withval}"
- 		fi
- 	    fi
--	]
--)
--
++ 		fi
++ 	    fi
 +		AC_CHECK_HEADERS(validator/validator.h)
 +		if test "$ac_cv_header_validator_validator_h" != yes; then
 +			AC_MSG_ERROR(Can't find validator.h)
@@ -65,43 +43,16 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  # Check libraries needed by DNS fingerprint support
  AC_SEARCH_LIBS(getrrsetbyname, resolv,
  	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
-@@ -3368,6 +3377,35 @@ int main()
+@@ -3486,6 +3521,8 @@
  			    [Define if HEADER.ad exists in arpa/nameser.h])],,
  			[#include <arpa/nameser.h>])
  	])
 +	 fi]
 +)
-+
-+# Check whether user wants OpenSC support
-+OPENSC_CONFIG="no"
-+AC_ARG_WITH(opensc,
-+	[  --with-opensc[[=PFX]]     Enable smartcard support using OpenSC (optionally in PATH)],
-+	[
-+	    if test "x$withval" != "xno" ; then
-+		if test "x$withval" != "xyes" ; then
-+  			OPENSC_CONFIG=$withval/bin/opensc-config
-+		else
-+  			AC_PATH_PROG(OPENSC_CONFIG, opensc-config, no)
-+		fi
-+		if test "$OPENSC_CONFIG" != "no"; then
-+			LIBOPENSC_CFLAGS=`$OPENSC_CONFIG --cflags`
-+			LIBOPENSC_LIBS=`$OPENSC_CONFIG --libs`
-+			CPPFLAGS="$CPPFLAGS $LIBOPENSC_CFLAGS"
-+			LIBS="$LIBS $LIBOPENSC_LIBS"
-+			AC_DEFINE(SMARTCARD)
-+			AC_DEFINE(USE_OPENSC, 1,
-+				[Define if you want smartcard support
-+				using OpenSC])
-+			SCARD_MSG="yes, using OpenSC"
-+		fi
-+	    fi
-+	]
-+)
-+
  
  AC_MSG_CHECKING(if struct __res_state _res is an extern)
  AC_LINK_IFELSE([
-@@ -4232,6 +4270,7 @@ echo "              TCP Wrappers support
+@@ -4351,6 +4388,7 @@
  echo "              MD5 password support: $MD5_MSG"
  echo "                   libedit support: $LIBEDIT_MSG"
  echo "  Solaris process contract support: $SPC_MSG"
@@ -123,10 +74,10 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  #include "xmalloc.h"
  #include "key.h"
  #include "dns.h"
-@@ -176,13 +180,19 @@ verify_host_key_dns(const char *hostname
- {
+@@ -177,13 +181,19 @@
  	u_int counter;
  	int result;
+ 	unsigned int rrset_flags = 0;
 -	struct rrsetinfo *fingerprints = NULL;
  
  	u_int8_t hostkey_algorithm;
@@ -144,15 +95,15 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	u_int8_t dnskey_algorithm;
  	u_int8_t dnskey_digest_type;
  	u_char *dnskey_digest;
-@@ -199,6 +209,7 @@ verify_host_key_dns(const char *hostname
- 		return -1;
- 	}
- 
+@@ -210,6 +220,7 @@
+ #ifndef HAVE_GETRRSETBYNAME
+ 	rrset_flags |= RRSET_FORCE_EDNS0;
+ #endif
 +#ifndef DNSSEC_LOCAL_VALIDATION
  	result = getrrsetbyname(hostname, DNS_RDATACLASS_IN,
- 	    DNS_RDATATYPE_SSHFP, 0, &fingerprints);
- 	if (result) {
-@@ -207,7 +218,7 @@ verify_host_key_dns(const char *hostname
+ 	    DNS_RDATATYPE_SSHFP, rrset_flags, &fingerprints);
+ 
+@@ -219,7 +230,7 @@
  	}
  
  	if (fingerprints->rri_flags & RRSET_VALIDATED) {
@@ -161,7 +112,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		debug("found %d secure fingerprints in DNS",
  		    fingerprints->rri_nrdatas);
  	} else {
-@@ -255,6 +266,94 @@ verify_host_key_dns(const char *hostname
+@@ -267,6 +278,94 @@
  
  	xfree(hostkey_digest); /* from key_fingerprint_raw() */
  	freerrset(fingerprints);
@@ -259,26 +210,26 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/openssh-5.3p1/dns.h openssh-5.3p1/dns.h
 --- clean/openssh-5.3p1/dns.h	2006-08-04 22:39:40.000000000 -0400
 +++ openssh-5.3p1/dns.h	2009-10-25 14:52:25.000000000 -0400
-@@ -45,6 +45,7 @@ enum sshfp_hashes {
+@@ -45,6 +45,7 @@
  #define DNS_VERIFY_FOUND	0x00000001
  #define DNS_VERIFY_MATCH	0x00000002
  #define DNS_VERIFY_SECURE	0x00000004
 +#define DNS_VERIFY_TRUSTED	0x00000008
  
- int	verify_host_key_dns(const char *, struct sockaddr *, const Key *, int *);
- int	export_dns_rr(const char *, const Key *, FILE *, int);
+ int	verify_host_key_dns(const char *, struct sockaddr *, Key *, int *);
+ int	export_dns_rr(const char *, Key *, FILE *, int);
 diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore --new-file clean/openssh-5.3p1/readconf.c openssh-5.3p1/readconf.c
 --- clean/openssh-5.3p1/readconf.c	2009-07-05 17:12:27.000000000 -0400
 +++ openssh-5.3p1/readconf.c	2009-11-17 18:34:19.000000000 -0500
-@@ -131,6 +131,7 @@ typedef enum {
- 	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
+@@ -133,6 +133,7 @@
+ 	oHashKnownHosts,
  	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
  	oVisualHostKey, oUseRoaming, oZeroKnowledgePasswordAuthentication,
-+        oStrictDnssecChecking,oAutoAnswerValidatedKeys,
++        oStrictDnssecChecking, oAutoAnswerValidatedKeys,
  	oDeprecated, oUnsupported
  } OpCodes;
  
-@@ -235,6 +236,13 @@ static struct {
+@@ -249,6 +250,13 @@
  #else
  	{ "zeroknowledgepasswordauthentication", oUnsupported },
  #endif
@@ -292,7 +243,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  
  	{ NULL, oBadOption }
  };
-@@ -490,6 +498,14 @@ parse_yesnoask:
+@@ -535,6 +543,14 @@
  			*intptr = value;
  		break;
  
@@ -307,7 +258,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	case oCompression:
  		intptr = &options->compression;
  		goto parse_flag;
-@@ -1022,6 +1038,8 @@ initialize_options(Options * options)
+@@ -1096,6 +1112,8 @@
  	options->batch_mode = -1;
  	options->check_host_ip = -1;
  	options->strict_host_key_checking = -1;
@@ -316,7 +267,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  	options->compression = -1;
  	options->tcp_keep_alive = -1;
  	options->compression_level = -1;
-@@ -1121,6 +1139,10 @@ fill_default_options(Options * options)
+@@ -1207,6 +1225,10 @@
  		options->check_host_ip = 1;
  	if (options->strict_host_key_checking == -1)
  		options->strict_host_key_checking = 2;	/* 2 is default */
@@ -353,8 +304,8 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +
  #include <ctype.h>
  #include <errno.h>
- #include <netdb.h>
-@@ -63,6 +67,9 @@ char *client_version_string = NULL;
+ #include <fcntl.h>
+@@ -67,6 +71,9 @@
  char *server_version_string = NULL;
  
  static int matching_host_key_dns = 0;
@@ -364,7 +315,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  
  /* import */
  extern Options options;
-@@ -73,6 +80,7 @@ extern pid_t proxy_command_pid;
+@@ -77,6 +84,7 @@
  
  static int show_other_keys(const char *, Key *);
  static void warn_changed_key(Key *);
@@ -372,7 +323,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  
  /*
   * Connect to the given ssh server using a proxy command.
-@@ -323,7 +331,11 @@ ssh_connect(const char *host, struct soc
+@@ -330,7 +338,11 @@
  	int on = 1;
  	int sock = -1, attempt;
  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
@@ -385,7 +336,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  
  	debug2("ssh_connect: needpriv %d", needpriv);
  
-@@ -337,9 +349,59 @@ ssh_connect(const char *host, struct soc
+@@ -344,9 +356,59 @@
  	hints.ai_family = family;
  	hints.ai_socktype = SOCK_STREAM;
  	snprintf(strport, sizeof strport, "%u", port);
@@ -445,7 +396,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  
  	for (attempt = 0; attempt < connection_attempts; attempt++) {
  		if (attempt > 0) {
-@@ -736,6 +798,7 @@ check_host_key(char *hostname, struct so
+@@ -768,6 +830,7 @@
  		}
  		break;
  	case HOST_NEW:
@@ -453,7 +404,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		if (options.host_key_alias == NULL && port != 0 &&
  		    port != SSH_DEFAULT_PORT) {
  			debug("checking without port identifier");
-@@ -781,6 +844,17 @@ check_host_key(char *hostname, struct so
+@@ -814,6 +877,17 @@
  					    "No matching host key fingerprint"
  					    " found in DNS.\n");
  			}
@@ -471,7 +422,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			snprintf(msg, sizeof(msg),
  			    "The authenticity of host '%.200s (%s)' can't be "
  			    "established%s\n"
-@@ -795,6 +869,9 @@ check_host_key(char *hostname, struct so
+@@ -828,6 +902,9 @@
  			xfree(fp);
  			if (!confirm(msg))
  				goto fail;
@@ -481,15 +432,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		}
  		/*
  		 * If not in strict mode, add the key automatically to the
-@@ -830,6 +907,7 @@ check_host_key(char *hostname, struct so
- 			    "list of known hosts.", hostp, type);
- 		break;
- 	case HOST_CHANGED:
-+		debug("Host '%.200s' changed.", host);
- 		if (readonly == ROQUIET)
- 			goto fail;
- 		if (options.check_host_ip && host_ip_differ) {
-@@ -840,6 +918,8 @@ check_host_key(char *hostname, struct so
+@@ -903,6 +980,8 @@
  				key_msg = "is unchanged";
  			else
  				key_msg = "has a different value";
@@ -498,7 +441,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  			error("@       WARNING: POSSIBLE DNS SPOOFING DETECTED!          @");
  			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-@@ -848,6 +928,19 @@ check_host_key(char *hostname, struct so
+@@ -911,6 +990,19 @@
  			error("%s. This could either mean that", key_msg);
  			error("DNS SPOOFING is happening or the IP address for the host");
  			error("and its host key have changed at the same time.");
@@ -518,7 +461,7 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			if (ip_status != HOST_NEW)
  				error("Offending key for IP in %s:%d", ip_file, ip_line);
  		}
-@@ -861,12 +954,54 @@ check_host_key(char *hostname, struct so
+@@ -924,11 +1016,53 @@
  		 * If strict host key checking is in use, the user will have
  		 * to edit the key manually and we can only abort.
  		 */
@@ -568,25 +511,20 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  			error("%s host key for %.200s has changed and you have "
  			    "requested strict checking.", type, host);
  			goto fail;
- 		}
--
-+                else {
+-		}
++		} else {
+ 
+  continue_unsafe:
  		/*
- 		 * If strict host key checking has not been requested, allow
- 		 * the connection but without MITM-able authentication or
-@@ -925,9 +1060,10 @@ check_host_key(char *hostname, struct so
- 		 * XXX Should permit the user to change to use the new id.
- 		 * This could be done by converting the host key to an
- 		 * identifying sentence, tell that the host identifies itself
--		 * by that sentence, and ask the user if he/she whishes to
-+		 * by that sentence, and ask the user if he/she wishes to
+@@ -992,6 +1126,7 @@
+ 		 * by that sentence, and ask the user if he/she wishes to
  		 * accept the authentication.
  		 */
 +                }
  		break;
  	case HOST_FOUND:
  		fatal("internal error");
-@@ -952,10 +1088,19 @@ check_host_key(char *hostname, struct so
+@@ -1016,10 +1151,19 @@
  			error("Exiting, you have requested strict checking.");
  			goto fail;
  		} else if (options.strict_host_key_checking == 2) {
@@ -606,8 +544,8 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
  		} else {
  			logit("%s", msg);
  		}
-@@ -981,12 +1126,42 @@ verify_host_key(char *host, struct socka
- 	if (options.verify_host_key_dns &&
+@@ -1060,12 +1204,43 @@
+ 	if (!key_is_cert(host_key) && options.verify_host_key_dns &&
  	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
  
 +#ifdef DNSSEC_LOCAL_VALIDATION
@@ -626,13 +564,14 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +                if (flags & DNS_VERIFY_SECURE)
 +                    validated_host_key_dns = 1;
 +#endif
++
  		if (flags & DNS_VERIFY_FOUND) {
  
  			if (options.verify_host_key_dns == 1 &&
  			    flags & DNS_VERIFY_MATCH &&
  			    flags & DNS_VERIFY_SECURE)
 +#ifndef DNSSEC_LOCAL_VALIDATION
-+				return 0;
+ 				return 0;
 +#else
 +                        {
 +                            if (flags & DNS_VERIFY_MATCH)
@@ -643,13 +582,13 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +                                                      options.user_hostfile,
 +                                                      options.system_hostfile);
 +                            else
- 				return 0;
++				return 0;
 +                        }
 +#endif
  
  			if (flags & DNS_VERIFY_MATCH) {
  				matching_host_key_dns = 1;
-@@ -1137,9 +1312,18 @@ warn_changed_key(Key *host_key)
+@@ -1218,9 +1393,18 @@
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -665,6 +604,6 @@ diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ign
 +#ifdef DNSSEC_LOCAL_VALIDATION
 +        }
 +#endif
- 	error("The fingerprint for the %s key sent by the remote host is\n%s.",
- 	    type, fp);
+ 	error("The %sfingerprint for the %s key sent by the remote host is\n%s.",
+ 	    fips_on ? "SHA1 ":"", type, fp);
  	error("Please contact your system administrator.");
