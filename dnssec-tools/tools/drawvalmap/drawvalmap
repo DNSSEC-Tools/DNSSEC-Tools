@@ -196,7 +196,6 @@ sub matches_logreq {
     my $ignorestr = $opts{'i'};
     my $requirestr = $opts{'m'};
     if ($line =~ /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
-        print "MATCHES: $line\n";
         ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
         if (($ignorestr && ($line =~ /$ignorestr/)) || 
             ($requirestr && !($line =~ /$requirestr/))) {
@@ -204,7 +203,6 @@ sub matches_logreq {
         }
         return 1;
     }
-    print "DOES NOT MATCH: $line\n";
     return 0;
 }
 
