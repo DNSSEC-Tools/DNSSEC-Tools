@@ -14,7 +14,7 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::BootStrap;
 
-our $VERSION = "0.9";
+our $VERSION = "1.0";
 
 ######################################################################
 # detect needed GraphViz requirement
@@ -33,40 +33,50 @@ my $dest;
 my $i;
 my $socket;
 my $edge_str;
-my $giffile;
 my $htmlfile;
 my $htmlfh;
-my $giftmp;
 my $logfile;
 my $logfh;
 my %opts;
+my $loglevelstr;
 my %loglevels;
 my $image_has_changed;
 my $refresh;
+my $local_host;
+my $local_port;
 my @log = ();
+my $usesock;
+my $ignorestr;
+my $requirestr;
+my $imgfile;
+my $imgfileext = "png";
 
 ########################################################
 # Constants
 
-my $SUCCESS = 1;
-my $BOGUS = 2;
-my $DATA_MISSING = 3;
-my $ERROR = 4;
-my $IGNORED = 5;
+my $SUCCESS = "SUCCESS";
+my $BOGUS = "BOGUS";
+my $DATA_MISSING = "DATA_MISSING";
+my $ERROR = "ERROR";
+my $IGNORED = "IGNORED";
 
 ########################################################
 # Defaults
 
 %opts = (
-	s => 0,
 	a => "127.0.0.1",
-	p => "1053",
-	g => "val_log_map.gif",
-	r => 5,
+    f => "val_log_map.png",
+	g => "",
+    h => "",
     i => "",
     m => "",
+	p => "1053",
+	r => 5,
+	s => 0,
 );
 
+# This indicates which types of log messages will be 
+# displayed by default
 %loglevels = (
     $SUCCESS => 1,
     $BOGUS => 1,
@@ -81,7 +91,7 @@ $image_has_changed = 0;
 # main
 
 # Parse command-line options
-GetOptions(\%opts, "s", "a=s", "p=s", "h=s", "r=i", "g=s", "l=s", "i=s", "m=s",
+GetOptions(\%opts, "a=s", "g=s", "h=s", "i=s", "l=s", "m=s", "p=s", "r=i", "s", 
 	   "version");
 
 if ($opts{'version'}) {
@@ -95,13 +105,23 @@ my %dtconf = parseconfig();
 my $libvalnode = "libval";
 my $curnode = $libvalnode; 
 
-$giffile = $opts{'g'};
+$local_host = $opts{'a'};
+$imgfile = $opts{'f'};
 $htmlfile = $opts{'h'};
+$ignorestr = $opts{'i'};
+$loglevelstr = $opts{'l'};
+$requirestr = $opts{'m'};
+$local_port = $opts{'p'};
 $refresh = $opts{'r'};
+$usesock = $opts{'s'};
 $logfile = shift;
 
+# determine output file extension
+if ($imgfile =~ /.*\.([a-zA-Z]+)$/) {
+    $imgfileext = lc $1;
+} 
+
 # add log levels into our map
-my $loglevelstr = $opts{'l'};
 if (defined $loglevelstr) {
     my @tmplevels;
     %loglevels = ();
@@ -117,13 +137,13 @@ if (defined $loglevelstr) {
 
 # create an HTML file with the image and 
 # with auto refresh set to desired value 
-if (defined $htmlfile) {
+if ($htmlfile ne "") {
     $htmlfh = new IO::File(">$htmlfile");
     print $htmlfh "<html>\n<head>\n".
 	    "<title>Validator Results</title>\n".
 	    "<meta http-equiv=\"refresh\" content=\"$refresh\">\n".
 	    "</head>\n".
-	    "<body> <img src=\"$giffile\" alt=\"Validator Status\"> </body>\n".
+	    "<body> <img src=\"$imgfile\" alt=\"Validator Status\"> </body>\n".
 	    "</html>";
     $htmlfh->close;
 }
@@ -132,9 +152,7 @@ $gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
 $gv->add_node($libvalnode);
 
 # check if socket operation is desired
-if($opts{'s'} == 1) {
-	my $local_host = $opts{'a'};
-	my $local_port = $opts{'p'};
+if($usesock == 1) {
 	$socket = IO::Socket::INET->new(LocalAddr => $local_host,
                                 LocalPort => $local_port,
                                 Proto    => "udp",
@@ -148,7 +166,7 @@ if($opts{'s'} == 1) {
         }
 		$curnode = update_graph($curnode);
         if ($image_has_changed) {
-            update_gif();
+            update_image();
         }
 	}
 
@@ -178,7 +196,7 @@ while ($_=<$logfh>) {
 	$curnode = update_graph($curnode);
 }
 
-update_gif();
+update_image();
 
 exit(0);
 
@@ -193,8 +211,6 @@ exit(0);
 #
 sub matches_logreq {
     my $line = shift;
-    my $ignorestr = $opts{'i'};
-    my $requirestr = $opts{'m'};
     if ($line =~ /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
         ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
         if (($ignorestr && ($line =~ /$ignorestr/)) || 
@@ -209,14 +225,23 @@ sub matches_logreq {
 
 ########################################################
 # 
-# store graph as gif 
+# export graph as an image 
 #
-sub update_gif {
+sub update_image {
     # update the image only when something has changed
-    $giftmp = $giffile . "tmp"; 
-    # generate the gif file
-    $gv->as_gif($giftmp);
-    rename($giftmp, $giffile);
+    my $imgtmp = $imgfile . "tmp"; 
+    if ($imgfileext eq "gif") {
+        $gv->as_gif($imgtmp);
+    } elsif ($imgfileext eq "jpeg") {
+        $gv->as_jpeg($imgtmp);
+    } elsif ($imgfileext eq "png") {
+        $gv->as_png($imgtmp);
+    } elsif ($imgfileext eq "ps") {
+        $gv->as_ps($imgtmp);
+    } else {
+        die "Unknown image file extension: $imgfileext\n";
+    }
+    rename($imgtmp, $imgfile);
     $image_has_changed = 0;
 }
 
@@ -339,12 +364,12 @@ drawvalmap
 
 B<drawvalmap> is a simple utility that can be used to display the validator
 status values in a graphical format.  The input to this script is a set of log
-messages that can be read either from file or from a socket.  The output is a
-GIF file containing an image of the various validator authentication chain
+messages that can be read either from file or from a socket.  The output is an
+image file containing an image of the various validator authentication chain
 status values.
 
 B<drawvalmap> reads data from STDIN if the logfile and the socket option are
-both unspecified.  If the I<-f> option is given, the output GIF file is
+both unspecified.  If the I<-f> option is given, the output image file is
 embedded in an HTML file with the given name.  The HTML file auto-refreshes
 according to the refresh time supplied by the I<-r> option, allowing changes
 to the validator graph to be constantly tracked.
@@ -359,7 +384,7 @@ script in the manner shown below.
 
     # validate -o6:stdout secure.example.com. | drawvalmap -f val_log_map.html
 
-In each case the script generates the results in a B<val_log_map.gif> file.
+In each case the script generates the results in a B<val_log_map.png> file.
 In the second case, an HTML file with the name B<val_log_map.html> is also
 generated.
 
@@ -367,42 +392,36 @@ generated.
 
 =over
 
-=item B<-s>
-
-This changes the mode of operation to read input from a socket.
-The default address and port to which B<drawvalmap> binds are
-127.0.0.1:1053.
-
 =item B<-a IP-address>
 
 This changes the address to which B<drawvalmap> binds itself to
 the specified value. This option takes effect only if the
 I<-s> option is also specified.
 
-=item B<-p port>
+=item B<-f file.ext>
 
-This changes the port to which B<drawvalmap> binds itself to
-the specified value. This option takes effect only if the
-I<-s> option is also specified.
+This creates an image of the type determined by the file extension 
+
+=item B<-g xxxx> (deprecated)
+
+Use -f instead.
 
 =item B<-h file.html>
 
-This creates an HTML file with the given name, which contains the GIF image of
+This creates an HTML file with the given name, which contains the image of
 the validation map.
-
-=item B<-r refresh-period>
-
-This changes the refresh period in the HTML file to the given value. The
-default is 5 seconds.
-
-=item B<-g file.gif>
-
-This changes the name of .gif file to the given value.
 
 =item B<-i ignore_pattern_string>
 
 This causes B<drawvalmap> to ignore log records that match the given ignore
 pattern.
+
+=item B<-l log_event1,log_event2>
+
+This causes B<drawvalmap> to enable display of events for the given list of  
+log types. The following log event types are defined with their default enabled 
+status indicated in parenthesis: SUCCESS(1), BOGUS(1), DATA_MISSING(1), 
+ERROR(1), and IGNORED(0).
 
 =item B<-m match_pattern_string>
 
@@ -410,6 +429,23 @@ This causes B<drawvalmap> to include only log records that match the given
 pattern.  If a given log record matches a pattern given by the I<-m> option
 and also matches the pattern given by the I<-i> option the effective result
 is that of ignoring the record.
+
+=item B<-p port>
+
+This changes the port to which B<drawvalmap> binds itself to
+the specified value. This option takes effect only if the
+I<-s> option is also specified.
+
+=item B<-r refresh-period>
+
+This changes the refresh period in the HTML file to the given value. The
+default is 5 seconds.
+
+=item B<-s>
+
+This changes the mode of operation to read input from a socket.
+The default address and port to which B<drawvalmap> binds are
+127.0.0.1:1053.
 
 =back
   
