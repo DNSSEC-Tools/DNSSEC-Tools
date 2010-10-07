@@ -251,22 +251,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
     
     while (next_answer) {
 
-        if (tv.tv_sec >= next_answer->rrs_ttl_x) {
-            // TTL expiry reached
-            struct rrset_rec *temp;
-            temp = next_answer;
-            next_answer = temp->rrs_next;
-            temp->rrs_next = NULL;
-            if (prev) {
-                prev->rrs_next = next_answer;
-            } else { 
-                *answer_head = next_answer;
-            }
-            res_sq_free_rrset_recs(&temp);
-            continue;
-        }
-
-        if (
+        if (tv.tv_sec < next_answer->rrs_ttl_x &&
             next_answer->rrs_class_h == class_h) {
 
                 /* if matching type or cname indirection */
@@ -560,22 +545,7 @@ get_nslist_from_cache(val_context_t *ctx,
     nsrrset = unchecked_ns_info;
     while (nsrrset) {
 
-        if (tv.tv_sec >= nsrrset->rrs_ttl_x) {
-            /* TTL expiry reached */
-            struct rrset_rec *temp;
-            temp = nsrrset;
-            nsrrset = temp->rrs_next;
-            temp->rrs_next = NULL;
-            if (prev) {
-                prev->rrs_next = nsrrset;
-            } else { 
-                unchecked_ns_info = nsrrset;
-            }
-            res_sq_free_rrset_recs(&temp);
-            continue;
-        }
-
-        if (
+        if (tv.tv_sec < nsrrset->rrs_ttl_x &&
             nsrrset->rrs_type_h == ns_t_ns) {
 
             tname_n = nsrrset->rrs_name_n;
