@@ -672,7 +672,7 @@ res_io_collect_sockets(fd_set * read_descriptors,
     }
 }
 
-int
+static int
 res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
 {
     /*
@@ -1049,34 +1049,37 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
         /** select call failed */
         return SR_IO_SOCKET_ERROR;
 
+    pthread_mutex_lock(&mutex);
+
+    if (transactions[transaction_id] == NULL) {
+        pthread_mutex_unlock(&mutex);
+        return SR_IO_NO_ANSWER;
+    }
+
     if (ret_val == 0) { 
         /** There are sources, but none are talking (yet) */
 
         /* save descriptors that we are waiting on */
-        pthread_mutex_lock(&mutex);
         res_io_collect_sockets(pending_desc, 
                                transactions[transaction_id]);
-        pthread_mutex_unlock(&mutex);
 
         /* check if next_event is closer than closest_event */
         if (closest_event->tv_sec == 0 ||
             LTEQ(next_event, (*closest_event))) {
             closest_event->tv_sec = next_event.tv_sec;
         }
+        pthread_mutex_unlock(&mutex);
         return SR_IO_NO_ANSWER_YET;
     }
 
     /*
      * React to the active desciptors.
      */
-    pthread_mutex_lock(&mutex);
     res_io_read(&read_descriptors, transactions[transaction_id]);
-    pthread_mutex_unlock(&mutex);
 
     /*
      * Pluck the answer and return it to the caller.
      */
-    pthread_mutex_lock(&mutex);
     ret_val = res_io_get_a_response(transactions[transaction_id],
                                     answer, answer_length, respondent);
     pthread_mutex_unlock(&mutex);
@@ -1102,6 +1105,7 @@ res_cancel(int *transaction_id)
             transactions[*transaction_id]->ea_next;
         res_sq_free_expected_arrival(&ea);
     }
+    transactions[*transaction_id] = NULL;
     pthread_mutex_unlock(&mutex);
 
     *transaction_id = -1;
