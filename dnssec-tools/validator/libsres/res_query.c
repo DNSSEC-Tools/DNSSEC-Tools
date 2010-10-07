@@ -371,8 +371,8 @@ query_send(const char *name,
 {
     int             ret_val;
 
-    u_char         *signed_query;
-    size_t          signed_length;
+    u_char         *signed_query = NULL;
+    size_t          signed_length = 0;
 
     struct name_server *ns_list = NULL;
     struct name_server *ns;
