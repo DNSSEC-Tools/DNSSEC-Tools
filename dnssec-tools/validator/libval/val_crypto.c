@@ -477,6 +477,7 @@ ds_sha_hash_is_equal(u_char * name_n,
     SHA1_Update(&c, qc_name_n, namelen);
     SHA1_Update(&c, rrdata, rrdatalen);
     SHA1_Final(ds_digest, &c);
+    FREE(qc_name_n);
 
     if (!memcmp(ds_digest, ds_hash, SHA_DIGEST_LENGTH))
         return 1;
@@ -516,6 +517,7 @@ ds_sha256_hash_is_equal(u_char * name_n,
     SHA256_Update(&c, qc_name_n, namelen);
     SHA256_Update(&c, rrdata, rrdatalen);
     SHA256_Final(ds_digest, &c);
+    FREE(qc_name_n);
 
     if (!memcmp(ds_digest, ds_hash, SHA256_DIGEST_LENGTH))
         return 1;
