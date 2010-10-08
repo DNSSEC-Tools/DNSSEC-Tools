@@ -1,0 +1,24 @@
+
+roll "subdom inside"
+	zonename	"subdom.example.com"
+	zonefile	"subdom.in.example.com.signed"
+	keyrec		"subdom.in.example.com.krf"
+	maxttl		"60"
+	display		"1"
+	phasestart1
+
+roll "subdom.example.com"
+	zonename	"subdom.example.com"
+	zonefile	"subdom.example.com.signed"
+	keyrec		"subdom.example.com.krf"
+	maxttl		"60"
+	display		"1"
+	phasestart2
+
+roll "test"
+	zonename	"test.com"
+	zonefile	"test.com.signed"
+	keyrec		"test.com.krf"
+	maxttl		"60"
+	display		"1"
+	phasestart3
