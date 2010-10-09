@@ -5,35 +5,6 @@
 #ifndef VAL_ASSERTION_H
 #define VAL_ASSERTION_H
 
-#ifndef VAL_NO_THREADS
- 
-#define LOCK_QC_SH(qc) do { \
-    if (0 != pthread_rwlock_rdlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-
-#define LOCK_QC_TRY_EX(qc) \
-    (0 == pthread_rwlock_trywrlock(&qc->qc_rwlock))
-
-#define LOCK_QC_EX(qc) do { \
-    if (0 != pthread_rwlock_wrlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-
-#define UNLOCK_QC(qc) do { \
-    if (0 != pthread_rwlock_unlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-
-#else
-
-#define LOCK_QC_SH(qc) 
-#define LOCK_QC_TRY_EX(qc)
-#define LOCK_QC_EX(qc)
-#define UNLOCK_QC(qc)
-
-#endif /*VAL_NO_THREADS*/
-
 
 struct nsecprooflist {
     struct rrset_rec *the_set;
@@ -59,7 +30,6 @@ int             add_to_qfq_chain(val_context_t *context,
                                  struct queries_for_query **added_qfq);
 void            free_authentication_chain(struct val_digested_auth_chain
                                           *assertions);
-void            free_query_chain(struct val_query_chain *queries);
 void            free_query_chain_structure(struct val_query_chain *queries);
 void            requery_with_edns0(val_context_t *context,
                                     struct val_query_chain *matched_q);
