@@ -94,17 +94,17 @@ my $MAXCOLS = 7;		# Maximum number of columns.
 # Column constants for infostripe.
 #
 my $RRFCOL	= $COL0;	# Rollrec filename.
-my $INFO1	= $COL1;	# Unused.
-my $ROLLCNTCOL	= $COL2;	# Rolled zones count.
-my $SKIPCNTCOL	= $COL3;	# Skipped zones count.
-my $SLEEPCOL	= $COL4;	# Rollerd's sleeptime.
+my $ROLLCNTCOL	= $COL1;	# Rolled zones count.
+my $SKIPCNTCOL	= $COL2;	# Skipped zones count.
+my $SLEEPCOL	= $COL3;	# Rollerd's sleeptime.
+my $INFO4	= $COL4;	# Unused.
 my $INFO5	= $COL5;	# Unused.
 my $INFO6	= $COL6;	# Unused.
 
 #
 # Default column constants for zonestripes.
 #
-my $NAMECOL	= $COL0;	# Rollrec filename. 
+my $NAMECOL	= $COL0;	# Rollrec name. 
 my $ZONECOL	= $COL1;	# Zone name. 
 my $PHASECOL	= $COL2;	# Rollover phase.
 my $ZSKLBLCOL	= $COL3;	# ZSK label.
@@ -117,14 +117,18 @@ my $UNUSED	= -1;		# Unused column.
 #
 # Variables holding current column layout data.
 #
+my $namecol	= $NAMECOL;	# Rollrec-name column.
+my $zonecol	= $ZONECOL;	# Zone-name column.
 my $phasecol	= $PHASECOL;	# Rollover phase.
-my $zskkeycol	= $ZSKKEYCOL;	# Current ZSK key/signing set name.
 my $zsklblcol	= $ZSKLBLCOL;	# Current ZSK label.
-my $kskkeycol	= $KSKKEYCOL;	# Current KSK key/signing set name.
+my $zskkeycol	= $ZSKKEYCOL;	# Current ZSK key/signing set name.
 my $ksklblcol	= $KSKLBLCOL;	# Current KSK label.
+my $kskkeycol	= $KSKKEYCOL;	# Current KSK key/signing set name.
 
-my $showksksets	= 1;		# Flag indicating if KSK signing sets are shown.
-my $showzsksets	= 1;		# Flag indicating if ZSK signing sets are shown.
+my $showrrnames	  = 1;		# Flag indicating if rollrec names are shown.
+my $showzonenames = 1;		# Flag indicating if zonenames are shown.
+my $showksksets	  = 1;		# Flag indicating if KSK signing sets are shown.
+my $showzsksets	  = 1;		# Flag indicating if ZSK signing sets are shown.
 
 my $numcols	= $MAXCOLS;	# Number of columns in use.
 
@@ -277,30 +281,32 @@ my @zphasedescr =
 #
 # The main window and its frames.
 #
-my $wm;							# Main window.
-my $mbar;						# Menubar frame.
-my $helpwin;						# Help window.
-my $body;						# Window body frame.
-my $zonetab;						# Zone data table.
-my $null;						# Empty frame.
+my $wm;						# Main window.
+my $mbar;					# Menubar frame.
+my $helpwin;					# Help window.
+my $body;					# Window body frame.
+my $zonetab;					# Zone data table.
+my $null;					# Empty frame.
 
-my $file;						# File menu.
-my $disp;						# Edit menu.
-my $cmdg;						# General Commands menu.
-my $cmdz;						# ZSK Commands menu.
-my $cmdk;						# KSK Commands menu.
-my $zdsp;						# Display menu.
-my $help;						# Help menu.
+my $file;					# File menu.
+my $disp;					# Edit menu.
+my $cmdg;					# General Commands menu.
+my $cmdz;					# ZSK Commands menu.
+my $cmdk;					# KSK Commands menu.
+my $dspl;					# Display menu.
+my $help;					# Help menu.
 
 #
 # Menu item widgets.
 #
-my $op_clrs;						# Colors item.
-my $op_mdfy;						# Modify toggle.
-my $op_shad;						# Shading toggle.
-my $op_skip;						# Skip toggle.
-my $zd_ksk;						# KSK set display toggle
-my $zd_zsk;						# ZSK set display toggle
+my $op_clrs;					# Colors item.
+my $op_mdfy;					# Modify toggle.
+my $op_shad;					# Shading toggle.
+my $op_skip;					# Skip toggle.
+my $dm_rrn;					# Rollrec name display toggle
+my $dm_znm;					# Zonename display toggle
+my $dm_ksk;					# KSK set display toggle
+my $dm_zsk;					# ZSK set display toggle
 
 #
 # Messages for the Display menu.
@@ -318,12 +324,19 @@ my $SHOWSKIP	 = "Display Skipped Zones";
 my $NOSKIP	 = "Hide Skipped Zones";
 
 #
-# Messages for the Zone menu.
+# Messages for the Display menu.
 #
-my $NOKSKSETS = 'Hide KSK Sets';
-my $KSKSETS   = 'Show KSK Sets';
-my $NOZSKSETS = 'Hide ZSK Sets';
-my $ZSKSETS   = 'Show ZSK Sets';
+my $NORRNAME	= 'Hide Rollrec Name';
+my $RRNAME	= 'Show Rollrec Name';
+
+my $NOZONENAME	= 'Hide Zone Name';
+my $ZONENAME	= 'Show Zone Name';
+
+my $NOKSKSETS	= 'Hide KSK Sets';
+my $KSKSETS	= 'Show KSK Sets';
+
+my $NOZSKSETS	= 'Hide ZSK Sets';
+my $ZSKSETS	= 'Show ZSK Sets';
 
 
 #
@@ -335,6 +348,8 @@ my $noshading;				# Shading/not shading zone stripes flag.
 my $noskip;				# Show/don't show skipped zones flag.
 
 my $shademsg;				# Message about shading.
+my $namesetmsg;				# Message about rollrec name display.
+my $zonesetmsg;				# Message about zone name display.
 my $ksksetmsg;				# Message about KSK signing set display.
 my $zsksetmsg;				# Message about ZSK signing set display.
 
@@ -555,7 +570,7 @@ sub buildmainwind
 	$cmdk = $mbar->Menubutton(-text	     => 'KSK Control',
 				  -tearoff   => 1,
 				  -underline => 0);
-	$zdsp = $mbar->Menubutton(-text	     => 'Zone Display',
+	$dspl = $mbar->Menubutton(-text	     => 'Display',
 				  -tearoff   => 1,
 				  -underline => 5);
 	$help = $mbar->Menubutton(-text      => 'Help',
@@ -682,32 +697,55 @@ sub buildmainwind
 	#
 	# Add the Zone Display menu entries.
 	#
-	$zdsp->command(-label	=> 'Zone Selection...',
+	$dspl->command(-label	=> 'Zone Selection...',
 		       -command => \&zdisp_select);
-	$zdsp->command(-label	=> 'Display All Zones',
+	$dspl->command(-label	=> 'Display All Zones',
 		       -command => [\&zdisp_setter, 1]);
-	$zdsp->command(-label	=> 'Hide All Zones',
+	$dspl->command(-label	=> 'Hide All Zones',
 		       -command => [\&zdisp_setter, 0]);
-	$zdsp->separator();
-	$disp->pack(-side => 'left');
+	$dspl->separator();
+	$dspl->pack(-side => 'left');
+
+	###############
+
+	$namesetmsg = $NORRNAME;
+	$dm_rrn = $dspl->command(-label   => $namesetmsg,
+				  -command => [\&disp_menus, 'RRNAME'],
+				  -state   => 'normal');
+
+	$zonesetmsg = $NOZONENAME;
+	$dm_znm = $dspl->command(-label   => $zonesetmsg,
+				  -command => [\&disp_menus, 'ZONENAME'],
+				  -state   => 'normal');
+
+	$dspl->separator();
+	$dspl->pack(-side => 'left');
+
+	###############
 
 	$ksksetmsg = $NOKSKSETS;
-	$zd_ksk = $zdsp->command(-label   => $ksksetmsg,
-				  -command => [\&disp_sets, 'KSK'],
-				  -state   => 'normal');
+	$dm_ksk = $dspl->command(-label   => $ksksetmsg,
+				 -command => [\&disp_menus, 'KSK'],
+				 -state   => 'normal');
 
 	$zsksetmsg = $NOZSKSETS;
-	$zd_zsk = $zdsp->command(-label   => $zsksetmsg,
-				  -command => [\&disp_sets, 'ZSK'],
+	$dm_zsk = $dspl->command(-label   => $zsksetmsg,
+				 -command => [\&disp_menus, 'ZSK'],
+				 -state   => 'normal');
+
+	$dspl->separator();
+	$dspl->pack(-side => 'left');
+
+	###############
+
+	$dspl->command(-label   => 'Hide All Keysets',
+				  -command => [\&disp_menus, 'HIDE ALL'],
 				  -state   => 'normal');
-	$zdsp->command(-label   => 'Hide All Keysets',
-				  -command => [\&disp_sets, 'HIDE ALL'],
-				  -state   => 'normal');
-	$zdsp->command(-label   => 'Show All Keysets',
-				  -command => [\&disp_sets, 'SHOW ALL'],
+	$dspl->command(-label   => 'Show All Keysets',
+				  -command => [\&disp_menus, 'SHOW ALL'],
 				  -state   => 'normal');
 
-	$zdsp->pack(-side => 'left');
+	$dspl->pack(-side => 'left');
 
 	##################################################
 	#
@@ -867,34 +905,131 @@ sub disp_skip
 }
 
 #---------------------------------------------------------------------------
-# Routine:	disp_sets()
+# Routine:	disp_menus()
 #
-# Purpose:	Handle the KSK/ZSK signing sets display menu toggle.
-#		When handling a menu execution, the following actions are
-#		taken, regardless of whether it's to show or not-show KSK
-#		or ZSK signing sets.  
+# Purpose:	Handle the display menu toggles.  When handling a menu
+#		execution, the following actions are taken, regardless
+#		of what is being shown or not shown.  
 #
 #			- Toggle the menu label.
 #			- Flip the appropriate display flag.
 #			- The appropriate key and label column variables
 #			  will be set.
 #			- The display table's column count will be adjusted
-#			  by 2.
+#			  by 2 for KSK and ZSK sets; it will be adjusted by
+#			  1 for all others.
 #
-#		The meaning of "appropriate" depends on which of the four
-#		possible reasons for calling the routine:  enable KSK display,
-#		disable KSK display, enable ZSK display, disable ZSK display.
+#		The meaning of "appropriate" depends on why this routine
+#		was called.
 #
-sub disp_sets
+sub disp_menus
 {
-	my $menucmd = shift;			# Triggering menu command.
+	my $menucmd = shift;		# Triggering menu command.
 
-	my $lbl;				# New menu label.
+	my $lbl;			# New menu label.
+	my $incr;			# Increment to apply.
+	my $newstate;			# New state for rrname menu item.
 
 	#
-	# Handle a KSK enable or disable command.
+	# Handle an RRNAME enable or disable command.
 	#
-	if($menucmd eq 'KSK')
+	if($menucmd eq 'RRNAME')
+	{
+		#
+		# If we're currently displaying rollrec names, we'll stop.
+		# If we aren't currently displaying rollrec names, we'll start.
+		#
+		if($showrrnames)
+		{
+			$namecol     = $UNUSED;
+			$lbl	     = $RRNAME;
+			$incr	     = -1;
+			$newstate    = 'disabled';
+			$showrrnames = 0;
+		}
+		else
+		{
+			$namecol     = $NAMECOL;
+			$lbl	     = $NORRNAME;
+			$incr	     = 1;
+			$newstate    = 'normal';
+			$showrrnames = 1;
+		}
+
+		$numcols += $incr;
+
+		#
+		# Adjust the right columns.
+		#
+		$zonecol  += $incr;
+		$phasecol += $incr;
+		if($showksksets)
+		{
+			$kskkeycol += $incr;
+			$ksklblcol += $incr;
+		}
+		if($showzsksets)
+		{
+			$zskkeycol += $incr;
+			$zsklblcol += $incr;
+		}
+
+		#
+		# Set the labels on a few menu items.
+		#
+		$dm_znm->configure(-state => $newstate);
+		$dm_rrn->configure(-label => $lbl);
+	}
+	elsif($menucmd eq 'ZONENAME')
+	{
+		#
+		# If we're currently displaying zonenames, we'll stop.
+		# If we aren't currently displaying zonenames, we'll start.
+		#
+		if($showzonenames)
+		{
+			$zonecol       = $UNUSED;
+			$lbl	       = $ZONENAME;
+			$incr	       = -1;
+			$newstate      = 'disabled';
+			$showzonenames = 0;
+		}
+		else
+		{
+			#
+			# Set up for showing the zonename.
+			#
+			$zonecol       = $ZONECOL;
+			$lbl	       = $NOZONENAME;
+			$incr	       = 1;
+			$newstate      = 'normal';
+			$showzonenames = 1;
+		}
+
+		$numcols += $incr;
+
+		#
+		# Adjust the right columns.
+		#
+		$phasecol += $incr;
+		if($showksksets)
+		{
+			$kskkeycol += $incr;
+			$ksklblcol += $incr;
+		}
+		if($showzsksets)
+		{
+			$zskkeycol += $incr;
+			$zsklblcol += $incr;
+		}
+
+		#
+		# Set the labels on a few menu items.
+		#
+		$dm_rrn->configure(-state => $newstate);
+		$dm_znm->configure(-label => $lbl);
+	}
+	elsif($menucmd eq 'KSK')
 	{
 		#
 		# If we're currently displaying KSK sets, we'll stop.
@@ -916,23 +1051,23 @@ sub disp_sets
 			$numcols += 2;
 
 			#
-			# Assume we're putting the KSKs in their default
-			# location.  If ZSKs aren't being displayed, we'll
-			# slide the KSKs over into the ZSKs' columns.
+			# Calculate the proper location of the KSK columns.
 			#
-			$kskkeycol = $KSKKEYCOL;
-			$ksklblcol = $KSKLBLCOL;
-			if(!$showzsksets)
+			if($showzsksets)
 			{
-				$kskkeycol = $ZSKKEYCOL;
-				$ksklblcol = $ZSKLBLCOL;
+				$ksklblcol = $zskkeycol + 1;
 			}
+			else
+			{
+				$ksklblcol = $showrrnames + $showzonenames + 1;
+			}
+			$kskkeycol = $ksklblcol + 1;
 		}
 
 		#
 		# Set the menu item's new label.
 		#
-		$zd_ksk->configure(-label => $lbl);
+		$dm_ksk->configure(-label => $lbl);
 	}
 	elsif($menucmd eq 'ZSK')
 	{
@@ -942,55 +1077,54 @@ sub disp_sets
 		#
 		if($showzsksets)
 		{
-			$lbl = $ZSKSETS;
-			$showzsksets = 0;
-			$numcols -= 2;
+			$lbl	      = $ZSKSETS;
+			$showzsksets  = 0;
+			$numcols     -= 2;
 
 			#
 			# We're halting display of the ZSKs.  If KSKs are
-			# being displayed, we'll slide them over into the
-			# ZSKs' normal columns.
+			# being displayed, we'll slide them over 2 columns.
 			#
 			$zskkeycol = $UNUSED;
 			$zsklblcol = $UNUSED;
 			if($showksksets)
 			{
-				$kskkeycol = $ZSKKEYCOL;
-				$ksklblcol = $ZSKLBLCOL;
+				$kskkeycol -= 2;
+				$ksklblcol -= 2;
 			}
 		}
 		else
 		{
-			$lbl = $NOZSKSETS;
-			$showzsksets = 1;
-			$numcols += 2;
+			$lbl	      = $NOZSKSETS;
+			$showzsksets  = 1;
+			$numcols     += 2;
 
 			#
-			# We're putting the ZSKs in their default location.
-			# If KSKs are being displayed, we'll slide them over
-			# into their normal columns.
+			# Calculate the proper location of the KSK and ZSK
+			# columns.
 			#
-			$zskkeycol = $ZSKKEYCOL;
-			$zsklblcol = $ZSKLBLCOL;
+			$zsklblcol = $showrrnames + $showzonenames + 1;
+			$zskkeycol = $zsklblcol + 1;
+
 			if($showksksets)
 			{
-				$kskkeycol = $KSKKEYCOL;
-				$ksklblcol = $KSKLBLCOL;
+				$ksklblcol = $zskkeycol + 1;
+				$kskkeycol = $ksklblcol + 1;
 			}
 		}
 
 		#
 		# Set the menu item's new label.
 		#
-		$zd_zsk->configure(-label => $lbl);
+		$dm_zsk->configure(-label => $lbl);
 	}
 	elsif($menucmd eq 'HIDE ALL')
 	{
 		#
 		# Hide all the signing sets.
 		#
-		disp_sets('KSK') if($showksksets);
-		disp_sets('ZSK') if($showzsksets);
+		disp_menus('KSK') if($showksksets);
+		disp_menus('ZSK') if($showzsksets);
 		return;
 	}
 	elsif($menucmd eq 'SHOW ALL')
@@ -998,8 +1132,8 @@ sub disp_sets
 		#
 		# Hide all the signing sets.
 		#
-		disp_sets('KSK') if(!$showksksets);
-		disp_sets('ZSK') if(!$showzsksets);
+		disp_menus('KSK') if(!$showksksets);
+		disp_menus('ZSK') if(!$showzsksets);
 		return;
 	}
 
@@ -1655,10 +1789,6 @@ sub infostripe
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$RRFCOL,$lab);
 
-	$lab = $zonetab->Label(-text => ' ',
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$INFO1,$lab);
-
 	$lab = $zonetab->Label(-text => $rollcntmsg,
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$ROLLCNTCOL,$lab);
@@ -1706,6 +1836,10 @@ sub infostripe
 
 	$lab = $zonetab->Label(-text => ' ',
 			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,$INFO4,$lab);
+
+	$lab = $zonetab->Label(-text => ' ',
+			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$INFO5,$lab);
 
 	$lab = $zonetab->Label(-text => ' ',
@@ -1724,13 +1858,19 @@ sub headerstripe
 {
 	my $lab;
 
-	$lab = $zonetab->Label(-text => 'Rollrec Name ',
-			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,$NAMECOL,$lab);
+	if($showrrnames)
+	{
+		$lab = $zonetab->Label(-text => 'Rollrec Name ',
+				       -font => $font, -background => 'tan');
+		$zonetab->put($TITLEROW,$namecol,$lab);
+	}
 
-	$lab = $zonetab->Label(-text => 'Zone Name    ',
-			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,$ZONECOL,$lab);
+	if($showzonenames)
+	{
+		$lab = $zonetab->Label(-text => 'Zone Name    ',
+				       -font => $font, -background => 'tan');
+		$zonetab->put($TITLEROW,$zonecol,$lab);
+	}
 
 	$lab = $zonetab->Label(-text => 'Status',
 			       -font => $font, -background => 'tan');
@@ -1868,15 +2008,23 @@ sub zonestripe
 			$bgcolor = $ERRORBG;
 		}
 
-		$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
-				       -foreground => $fgcolor,
-				       -background => $bgcolor);
-		$zonetab->put($row0,$NAMECOL,$lab);
+		if($showrrnames)
+		{
+			$lab = $zonetab->Label(-text => $zonetxt,
+					       -font => $font,
+					       -foreground => $fgcolor,
+					       -background => $bgcolor);
+			$zonetab->put($row0,$namecol,$lab);
+		}
 
-		$lab = $zonetab->Label(-text => $zonename, -font => $font,
-				       -foreground => $fgcolor,
-				       -background => $bgcolor);
-		$zonetab->put($row0,$ZONECOL,$lab);
+		if($showrrnames)
+		{
+			$lab = $zonetab->Label(-text => $zonename,
+					       -font => $font,
+					       -foreground => $fgcolor,
+					       -background => $bgcolor);
+			$zonetab->put($row0,$zonecol,$lab);
+		}
 
 		$lab = $zonetab->Label(-text => $zlabel,
 				       -font => $font,
@@ -1917,31 +2065,37 @@ sub zonestripe
 	#
 	# First column:  rollrec name
 	#
-	$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-	$zonetab->put($row0,0,$blank);
-	$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
-			       -foreground => $fgcolor,
-			       -background => $bgcolor);
+	if($showrrnames)
+	{
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row0,0,$blank);
+		$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
 
-	$zonetab->put($row1,$NAMECOL,$lab);
-	$blank = $zonetab->Label(-text => ' ', -font => $font,
-				 -background => $bgcolor);
-	$zonetab->put($row2,$NAMECOL,$blank);
+		$zonetab->put($row1,$namecol,$lab);
+		$blank = $zonetab->Label(-text => ' ', -font => $font,
+					 -background => $bgcolor);
+		$zonetab->put($row2,$namecol,$blank);
+	}
 
 	############################################
 	#
 	# Second column:  zone name
 	#
-	$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-	$zonetab->put($row0,$ZONECOL,$blank);
-	$lab = $zonetab->Label(-text => $zonename, -font => $font,
-			       -foreground => $fgcolor,
-			       -background => $bgcolor);
+	if($showzonenames)
+	{
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row0,$zonecol,$blank);
+		$lab = $zonetab->Label(-text => $zonename, -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
 
-	$zonetab->put($row1,$ZONECOL,$lab);
-	$blank = $zonetab->Label(-text => ' ', -font => $font,
-				 -background => $bgcolor);
-	$zonetab->put($row2,$ZONECOL,$blank);
+		$zonetab->put($row1,$zonecol,$lab);
+		$blank = $zonetab->Label(-text => ' ', -font => $font,
+					 -background => $bgcolor);
+		$zonetab->put($row2,$zonecol,$blank);
+	}
 
 	###########################################
 	#
@@ -3765,12 +3919,16 @@ phase 6 to phase 7 of KSK rollover.
 
 =back
 
-=head2 Zone Display Menu
+=head2 Display Menu
 
-The commands in this menu are GUI interfaces parts of the zone display.  There
-are commands for displaying and hiding both zone stripes and key columns.  The
-commands allow all, some, or none of the zone stripes and key columns to be
-displayed.  Undisplayed rolling zones will continue to roll, but they will do
+The commands in this menu are provide control over what is being displayed.
+There are commands for displaying and hiding both zone stripes, columns of
+key sets, rollrec names, and zone names.  The commands allow all, some, or
+none of the zone stripes and key-set columns to be displayed.  Either the
+rollrec name column or the zone name column may be hidden, but at least one
+of them must be visible.
+
+Undisplayed rolling zones will continue to roll, but they will do
 so without the B<blinkenlights> window indicating this.
 
 =over 4
@@ -3795,6 +3953,30 @@ All zones will be displayed in the B<blinkenlights> window.
 Hide All Zones
 
 No zones will be displayed in the B<blinkenlights> window.
+
+=item *
+
+Rollrec Name (toggle)
+
+This menu item is a toggle to turn on or off the display of rollrec names.
+If display is turned off, the column holding the rollrec names will be removed
+from the display and the display window will shrink.  If display is turned on,
+the column holding the rollrec names will be restored to the display and the
+display window will be expanded.
+
+When displayed, the rollrec names will always be the left-most columns.
+
+=item *
+
+Zone Name (toggle)
+
+This menu item is a toggle to turn on or off the display of rollrec names.
+If display is turned off, the column holding the rollrec names will be removed
+from the display and the display window will shrink.  If display is turned on,
+the column holding the rollrec names will be restored to the display and the
+display window will be expanded.
+
+When displayed, the rollrec names will always be the left-most columns.
 
 =item *
 
