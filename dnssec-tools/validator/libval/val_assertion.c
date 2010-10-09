@@ -197,6 +197,7 @@ val_free_result_chain(struct val_result_chain *results)
          */
         if (!prev->val_rc_answer && prev->val_rc_rrset) {
             free_val_rrset_members(prev->val_rc_rrset);
+            FREE(prev->val_rc_rrset);
         }
         prev->val_rc_rrset = NULL;
 
@@ -300,21 +301,6 @@ free_query_chain_structure(struct val_query_chain *queries)
     init_query_chain_node(queries);
 }
 
-/*
- * Free up the query chain.
- */
-void
-free_query_chain(struct val_query_chain *queries)
-{
-    if (queries == NULL)
-        return;
-
-    if (queries->qc_next)
-        free_query_chain(queries->qc_next);
-
-    free_query_chain_structure(queries);
-    FREE(queries);
-}
 
 /*
  * Add {domain_name, type, class} to the list of queries currently active
@@ -514,7 +500,6 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
             (added_q->qc_ttl_x > 0 && 
             tv.tv_sec > added_q->qc_ttl_x)) {
             /* try to get an exclusive lock on this query */
-            if(LOCK_QC_TRY_EX(added_q)) {
                 if (added_q->qc_bad > 0 && 
                         !(flags & VAL_QUERY_DONT_VALIDATE)) {
                     /* Invoke bad-cache logic only if validation is requested */
@@ -537,11 +522,8 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                     free_query_chain_structure(added_q);
                 }
 
-                UNLOCK_QC(added_q);
-            }
         }
                 
-        LOCK_QC_SH(added_q);
         *queries = new_qfq;
     } 
     
@@ -559,7 +541,6 @@ free_qfq_chain(struct queries_for_query *queries)
     if (queries->qfq_next)
         free_qfq_chain(queries->qfq_next);
 
-    UNLOCK_QC(queries->qfq_query);
     FREE(queries);
     /* 
      * The val_query_chain that this qfq element points to 
@@ -798,10 +779,11 @@ find_trust_point(val_context_t * ctx, u_char * zone_n,
     /*
      * This function should never be called with a NULL zone_n, but still... 
      */
-    if ((zone_n == NULL) || (matched_zone == NULL))
+    if ((zone_n == NULL) || (matched_zone == NULL) || (ttl_x == NULL))
         return VAL_BAD_ARGUMENT;
 
     *matched_zone = NULL;
+    *ttl_x = 0;
 
     name_len = wire_name_length(zp);
     ep = zp + name_len;
@@ -3042,11 +3024,10 @@ prove_nonexistence(val_context_t * ctx,
             if (the_set->rrs_data &&
                 the_set->rrs_data->rr_rdata &&
                 the_set->rrs_data->rr_rdata_length > sizeof(u_int32_t)) { 
-                u_int32_t t_ttl;
                 int offset = the_set->rrs_data->rr_rdata_length -
                                     sizeof(u_int32_t);
-                memcpy(&t_ttl, &the_set->rrs_data[offset], sizeof(u_int32_t));
-                *soa_ttl_x = ntohl(t_ttl); 
+                u_char *cp = the_set->rrs_data->rr_rdata + offset;
+                VAL_GET32((*soa_ttl_x), cp);
             } else {
                 *soa_ttl_x = the_set->rrs_ttl_x;
             }
