@@ -232,6 +232,8 @@ unlink_if_default_context(val_context_t *context)
 void
 val_free_context(val_context_t * context)
 {
+    struct val_query_chain *q;
+
     if (context == NULL)
         return;
 
@@ -266,7 +268,11 @@ val_free_context(val_context_t * context)
     destroy_valpol(context);
     FREE(context->e_pol);
 
-    free_query_chain(context->q_list);
+    while (NULL != (q = context->q_list)) {
+        context->q_list = q->qc_next;
+        free_query_chain_structure(q);
+        FREE(q);
+    }
 
     FREE(context);
 }
