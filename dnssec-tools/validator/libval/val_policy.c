@@ -356,6 +356,8 @@ free_trust_anchor(policy_entry_t * pol_entry)
                 FREE(ta_pol->publickey->public_key);
             FREE(ta_pol->publickey);
         } else if (ta_pol->ds) {
+            if (ta_pol->ds->d_hash)
+                FREE(ta_pol->ds->d_hash);
             FREE(ta_pol->ds);
         }
         FREE(ta_pol);
@@ -1736,6 +1738,7 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     int             retval;
     char *label;
     char *newctxlab;
+    struct val_query_chain *q;
    
     if (ctx == NULL || is_override == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1864,9 +1867,10 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     /* 
      * Re-initialize caches 
      */
-    free_query_chain(ctx->q_list);
+    for(q = ctx->q_list; q; q=q->qc_next) {
+        free_query_chain_structure(q);
+    }
 
-    ctx->q_list = NULL;
     ctx->dnsval_l = dnsval_list;
 
     CTX_UNLOCK_VALPOL(ctx);
@@ -2703,14 +2707,12 @@ val_add_valpolicy(val_context_t *context,
 
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
-        LOCK_QC_EX(q);
         /* Should never fail when holding above locks */
         if (NULL != namename(q->qc_name_n, zone_n)) {
             free_query_chain_structure(q);
             if (pol_entry->exp_ttl > 0)
                 q->qc_ttl_x = pol_entry->exp_ttl;
         }
-        UNLOCK_QC(q);    
     }
     *pol = (val_policy_handle_t *) MALLOC (sizeof(val_policy_handle_t));
     if (*pol == NULL) {
@@ -2776,12 +2778,10 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
 
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
-        LOCK_QC_EX(q);
         /* Should never fail when holding above locks */
         if (NULL != namename(q->qc_name_n, p->zone_n)) {
             free_query_chain_structure(q);
         }
-        UNLOCK_QC(q);    
     }
     
     /* free the policy */
