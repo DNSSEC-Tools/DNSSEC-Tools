@@ -3407,11 +3407,20 @@ and to send commands to rollerd.  These commands are discusses in this section.
 
 	Display Menu
 
-		The commands in this menu are GUI interfaces for displaying or
-		hiding zone stripes.  The commands allow all, some, or none of
-		the zone stripes to be displayed.  Undisplayed rolling zones
-		will continue to roll, but they will do so without the
-		blinkenlights window indicating this.
+		The commands in this menu provide control over what is being
+		displayed.  There are commands for displaying and hiding both
+		zone stripes, columns of key sets, columns of rollrec names,
+		and columns of zonenames.
+
+		The zonestripe commands allow all, some, or none of the zone
+		stripes to be displayed.  Undisplayed rolling zones will
+		continue to roll, but they will do so without the blinkenlights
+		window indicating this.
+
+		The data column commands allow individual columns of data to
+		be hidden or displayed.  The zone status column may not be
+		hidden.  Only one of the rollrec name and zonename columns may
+		be hidden at a time.
 
 		* Zone Selection
 
@@ -3428,6 +3437,65 @@ and to send commands to rollerd.  These commands are discusses in this section.
 		* Hide All Zones
 
 		  No zones will be displayed in the blinkenlights window.
+
+		* Rollrec Name (toggle)
+
+		  This menu item is a toggle to turn on or off the display of
+		  rollrec names.  If display is turned off, the column holding
+		  the rollrec names will be removed from the display and the
+		  display window will shrink.  If display is turned on, the
+		  column holding the rollrec names will be restored to the
+		  display and the display window will be expanded.
+
+		  When displayed, the rollrec names will always be the
+		  left-most columns.
+
+		* Zone Name (toggle)
+
+		  This menu item is a toggle to turn on or off the display of
+		  rollrec names.  If display is turned off, the column holding
+		  the rollrec names will be removed from the display and the
+		  display window will shrink.  If display is turned on, the
+		  column holding the rollrec names will be restored to the
+		  display and the display window will be expanded.
+
+		  When displayed, the rollrec names will always be the
+		  left-most columns.
+
+		* KSK Sets (toggle)
+
+		  This menu item is a toggle to turn on or off the display of
+		  KSK signing set names.  If display is turned off, the
+		  columns holding the KSK signing set names and labels will be
+		  removed from the display and the display window will shrink.
+		  If display is turned on, the columns holding the KSK signing
+		  set names and labels will be restored to the display and the
+		  display window will be expanded.
+
+		  When displayed, KSK signing sets will always be the
+		  right-most columns.
+
+		* ZSK Sets (toggle)
+
+		  This menu item is a toggle to turn on or off the display of
+		  ZSK signing set names.  If display is turned off, the
+		  columns holding the ZSK signing set names and labels will be
+		  removed from the display and the display window will shrink.
+		  If display is turned on, the columns holding the ZSK signing
+		  set names and labels will be restored to the display and the
+		  display window will be expanded.
+
+		  When displayed, ZSK signing sets will always be immediately
+		  to the right of the zone status column.
+
+		* Hide All Keysets
+
+		  Turns off display of the KSK and ZSK signing set names.
+
+		* Show All Keysets
+
+		  Turns on display of the KSK and ZSK signing set names.
+
 
 	Help Menu
 
@@ -3541,13 +3609,13 @@ SEE ALSO
 	# Create a new dialog box to hold our help info.
 	#
 	$helpwin = $wm->Dialog(-title => "Help!",
-			   -default_button => "Okay",
-			   -buttons => ["Okay"]);
+			       -default_button => "Okay",
+			       -buttons => ["Okay"]);
 
 	#
 	# Create a scrolled text widget for the help message itself.
 	# 
-	$helpwij = $helpwin->Scrolled("Text",
+	$helpwij = $helpwin->Scrolled('Text',
 				      -scrollbars => 'e',
 				      -state => 'normal');
 	$helpwij->insert('1.0',$helpstr);
@@ -3985,15 +4053,17 @@ phase 6 to phase 7 of KSK rollover.
 
 =head2 Display Menu
 
-The commands in this menu are provide control over what is being displayed.
-There are commands for displaying and hiding both zone stripes, columns of
-key sets, rollrec names, and zone names.  The commands allow all, some, or
-none of the zone stripes and key-set columns to be displayed.  Either the
-rollrec name column or the zone name column may be hidden, but at least one
-of them must be visible.
+The commands in this menu provide control over what is being displayed.  There
+are commands for displaying and hiding both zone stripes, columns of key sets,
+columns of rollrec names, and columns of zonenames.
 
-Undisplayed rolling zones will continue to roll, but they will do
+The zonestripe commands allow all, some, or none of the zone stripes to be
+displayed.  Undisplayed rolling zones will continue to roll, but they will do
 so without the B<blinkenlights> window indicating this.
+
+The data column commands allow individual columns of data to be hidden or
+displayed.  The zone status column may not be hidden.  Only one of the
+I<rollrec> name and I<zonename> columns may be hidden at a time.
 
 =over 4
 
