@@ -163,7 +163,7 @@ my $SELECTEDFG	= 'white';			# Selected foreground color.
 my $NUMCOLORS = 3;				# Maximum number of colors.
 my $INFOBG    = "white";			# Color for the info row.
 
-my $colorind = 0;				# Current color index.
+my $colorind  = 0;				# Current color index.
 my $skipcolor = "grey";				# Color for skip zones.
 my $ERRORBG   = "yellow";			# Color for error rows.
 
@@ -350,8 +350,8 @@ my $noskip;				# Show/don't show skipped zones flag.
 my $shademsg;				# Message about shading.
 my $namesetmsg;				# Message about rollrec name display.
 my $zonesetmsg;				# Message about zone name display.
-my $ksksetmsg;				# Message about KSK signing set display.
-my $zsksetmsg;				# Message about ZSK signing set display.
+my $ksksetmsg = '';			# Message about KSK signing set display.
+my $zsksetmsg = '';			# Message about ZSK signing set display.
 
 #######################################################################
 #
@@ -695,7 +695,7 @@ sub buildmainwind
 
 	##################################################
 	#
-	# Add the Zone Display menu entries.
+	# Add the Display menu entries.
 	#
 	$dspl->command(-label	=> 'Zone Selection...',
 		       -command => \&zdisp_select);
@@ -708,27 +708,40 @@ sub buildmainwind
 
 	###############
 
-	$namesetmsg = $NORRNAME;
+	$namesetmsg = $showrrnames ? $NORRNAME : $RRNAME;
 	$dm_rrn = $dspl->command(-label   => $namesetmsg,
 				  -command => [\&disp_menus, 'RRNAME'],
 				  -state   => 'normal');
 
-	$zonesetmsg = $NOZONENAME;
+	$zonesetmsg = $showzonenames ? $NOZONENAME : $ZONENAME;
 	$dm_znm = $dspl->command(-label   => $zonesetmsg,
 				  -command => [\&disp_menus, 'ZONENAME'],
 				  -state   => 'normal');
+
+	#
+	# If we're only displaying either the rollrec name column or the
+	# zonename column, then we'll do the appropriate menu disabling.
+	#
+	if($showrrnames && ! $showzonenames)
+	{
+		$dm_rrn->configure(-state => 'disabled');
+	}
+	elsif(! $showrrnames && $showzonenames)
+	{
+		$dm_znm->configure(-state => 'disabled');
+	}
 
 	$dspl->separator();
 	$dspl->pack(-side => 'left');
 
 	###############
 
-	$ksksetmsg = $NOKSKSETS;
+	$ksksetmsg = $showksksets ? $NOKSKSETS : $KSKSETS;
 	$dm_ksk = $dspl->command(-label   => $ksksetmsg,
 				 -command => [\&disp_menus, 'KSK'],
 				 -state   => 'normal');
 
-	$zsksetmsg = $NOZSKSETS;
+	$zsksetmsg = $showzsksets ? $NOZSKSETS : $ZSKSETS;
 	$dm_zsk = $dspl->command(-label   => $zsksetmsg,
 				 -command => [\&disp_menus, 'ZSK'],
 				 -state   => 'normal');
@@ -927,7 +940,6 @@ sub disp_menus
 	my $menucmd = shift;		# Triggering menu command.
 
 	my $lbl;			# New menu label.
-	my $incr;			# Increment to apply.
 	my $newstate;			# New state for rrname menu item.
 
 	#
@@ -943,35 +955,17 @@ sub disp_menus
 		{
 			$namecol     = $UNUSED;
 			$lbl	     = $RRNAME;
-			$incr	     = -1;
 			$newstate    = 'disabled';
 			$showrrnames = 0;
+			$zonecol--;
 		}
 		else
 		{
 			$namecol     = $NAMECOL;
 			$lbl	     = $NORRNAME;
-			$incr	     = 1;
 			$newstate    = 'normal';
 			$showrrnames = 1;
-		}
-
-		$numcols += $incr;
-
-		#
-		# Adjust the right columns.
-		#
-		$zonecol  += $incr;
-		$phasecol += $incr;
-		if($showksksets)
-		{
-			$kskkeycol += $incr;
-			$ksklblcol += $incr;
-		}
-		if($showzsksets)
-		{
-			$zskkeycol += $incr;
-			$zsklblcol += $incr;
+			$zonecol++;
 		}
 
 		#
@@ -988,9 +982,8 @@ sub disp_menus
 		#
 		if($showzonenames)
 		{
-			$zonecol       = $UNUSED;
-			$lbl	       = $ZONENAME;
-			$incr	       = -1;
+			$zonecol        = $UNUSED;
+			$lbl	        = $ZONENAME;
 			$newstate      = 'disabled';
 			$showzonenames = 0;
 		}
@@ -1001,26 +994,8 @@ sub disp_menus
 			#
 			$zonecol       = $ZONECOL;
 			$lbl	       = $NOZONENAME;
-			$incr	       = 1;
 			$newstate      = 'normal';
 			$showzonenames = 1;
-		}
-
-		$numcols += $incr;
-
-		#
-		# Adjust the right columns.
-		#
-		$phasecol += $incr;
-		if($showksksets)
-		{
-			$kskkeycol += $incr;
-			$ksklblcol += $incr;
-		}
-		if($showzsksets)
-		{
-			$zskkeycol += $incr;
-			$zsklblcol += $incr;
 		}
 
 		#
@@ -1039,29 +1014,11 @@ sub disp_menus
 		{
 			$lbl = $KSKSETS;
 			$showksksets = 0;
-			$numcols -= 2;
-
-			$kskkeycol = $UNUSED;
-			$ksklblcol = $UNUSED;
 		}
 		else
 		{
 			$lbl = $NOKSKSETS;
 			$showksksets = 1;
-			$numcols += 2;
-
-			#
-			# Calculate the proper location of the KSK columns.
-			#
-			if($showzsksets)
-			{
-				$ksklblcol = $zskkeycol + 1;
-			}
-			else
-			{
-				$ksklblcol = $showrrnames + $showzonenames + 1;
-			}
-			$kskkeycol = $ksklblcol + 1;
 		}
 
 		#
@@ -1079,38 +1036,11 @@ sub disp_menus
 		{
 			$lbl	      = $ZSKSETS;
 			$showzsksets  = 0;
-			$numcols     -= 2;
-
-			#
-			# We're halting display of the ZSKs.  If KSKs are
-			# being displayed, we'll slide them over 2 columns.
-			#
-			$zskkeycol = $UNUSED;
-			$zsklblcol = $UNUSED;
-			if($showksksets)
-			{
-				$kskkeycol -= 2;
-				$ksklblcol -= 2;
-			}
 		}
 		else
 		{
 			$lbl	      = $NOZSKSETS;
 			$showzsksets  = 1;
-			$numcols     += 2;
-
-			#
-			# Calculate the proper location of the KSK and ZSK
-			# columns.
-			#
-			$zsklblcol = $showrrnames + $showzonenames + 1;
-			$zskkeycol = $zsklblcol + 1;
-
-			if($showksksets)
-			{
-				$ksklblcol = $zskkeycol + 1;
-				$kskkeycol = $ksklblcol + 1;
-			}
 		}
 
 		#
@@ -1591,10 +1521,25 @@ sub painter
 #---------------------------------------------------------------------------
 # Routine:	maketable()
 #
-# Purpose:	Create the zone status table.
+# Purpose:	Create the zone status table.  As part of this, we'll also
+#		calculate the column indices for the each column.
+#
+#		The column indices do not have to be calculated here, and
+#		don't need to be calculated every time the table is created.
+#		However, this is a nice central location in which to do it
+#		and this routine is only called occasionally, so we're
+#		assuming this is a reasonable trade-off.
 #
 sub maketable
 {
+	#
+	# Calculate the positions of each column in the table.
+	#
+	calccols();
+
+	#
+	# Create the table.
+	#
 	$zonetab = $body->Table(-rows		=> 12,
 				-columns	=> $numcols,
 				-scrollbars	=> 'e',
@@ -1639,6 +1584,86 @@ sub buildtable
 	#
 	$zonetab->pack(-fill => 'both', -expand => 1);
 	$body->pack(-fill => 'both', -expand => 1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	calccols()
+#
+# Purpose:	Calculate the column positions of each column.  Each column's
+#		position will depend on the display state of the columns to
+#		its left.
+#
+sub calccols
+{
+	#
+	# Calculate the position of the rollrec names column.
+	#
+	if($showrrnames)
+	{
+		$namecol = $NAMECOL;
+	}
+	else
+	{
+		$zskkeycol = $UNUSED;
+	}
+
+	#
+	# Calculate the position of the zonenames column.
+	#
+	if($showzonenames)
+	{
+		if($showrrnames)
+		{
+			$zonecol = $ZONECOL;
+		}
+		else
+		{
+			$zonecol = $NAMECOL;
+		}
+	}
+	else
+	{
+		$zonecol = $UNUSED;
+	}
+
+	#
+	# Calculate the position of the phase column.
+	#
+	$phasecol = $showrrnames + $showzonenames;
+
+	#
+	# Calculate the position of the ZSK data columns.
+	#
+	if($showzsksets)
+	{
+		$zsklblcol = $showrrnames + $showzonenames + 1;
+		$zskkeycol = $zsklblcol + 1;
+	}
+	else
+	{
+		$zskkeycol = $UNUSED;
+		$zsklblcol = $UNUSED;
+	}
+
+	#
+	# Calculate the position of the KSK data columns.
+	#
+	if($showksksets)
+	{
+		$ksklblcol = $showrrnames + $showzonenames + 1 + ($showzsksets * 2);
+		$kskkeycol = $ksklblcol + 1;
+	}
+	else
+	{
+		$kskkeycol = $UNUSED;
+		$ksklblcol = $UNUSED;
+	}
+
+	#
+	# Calculate the number of columns.
+	#
+	$numcols = $showrrnames + $showzonenames + 1 +
+		   ($showksksets * 2) + ($showzsksets * 2);
 }
 
 #---------------------------------------------------------------------------
@@ -2903,7 +2928,14 @@ sub setopt
 	#
 	# Handle the field values appropriately.
 	#
-	if($field eq "fontsize")
+	if($field eq "colors")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $nocolors = 0; }
+		else	 { $nocolors = 1; }
+	}
+	elsif($field eq "fontsize")
 	{
 		if($value =~ /[a-zA-Z\_\-]/)
 		{
@@ -2920,12 +2952,34 @@ sub setopt
 		if($ret) { $nomodify = 0; }
 		else	 { $nomodify = 1; }
 	}
-	elsif($field eq "colors")
+	elsif($field eq "noshow")
 	{
-		my $ret = flagval($value);
-
-		if($ret) { $nocolors = 0; }
-		else	 { $nocolors = 1; }
+		if   ($value =~ /kskset/i)	{ $showksksets	 = 0;	}
+		elsif($value =~ /zskset/i)	{ $showzsksets	 = 0;	}
+		elsif($value =~ /zonenames/i)
+		{
+			if($showrrnames == 0)
+			{
+				print STDERR "config file error:  rollrec display has already been turned off\n";
+				print STDERR "config file error:  ignoring \"noshow zonenames\"\n";
+			}
+			else
+			{
+				$showzonenames = 0;
+			}
+		}
+		elsif($value =~ /rollrecs/i)
+		{
+			if($showzonenames == 0)
+			{
+				print STDERR "config file error:  zonenames display has already been turned off\n";
+				print STDERR "config file error:  ignoring \"noshow rrnames\"\n";
+			}
+			else
+			{
+				$showrrnames = 0;
+			}
+		}
 	}
 	elsif($field eq "shading")
 	{
@@ -3351,7 +3405,7 @@ and to send commands to rollerd.  These commands are discusses in this section.
 		  rollerd's execution is halted.  As a result, blinkenlights'
 		  execution will also be halted.
 
-	Zone Display Menu
+	Display Menu
 
 		The commands in this menu are GUI interfaces for displaying or
 		hiding zone stripes.  The commands allow all, some, or none of
@@ -3395,12 +3449,12 @@ blinkenlights is executed is used.
 
 The following are the available configuration values:
 
-    colors	Turn on/off use of colors on zone stripes
-    fontsize	The size of the font in the output window
-    modify	Turn on/off execution of rollerd modification commands
-    shading	Turn on/off shading of the status columns
-    showskip	Turn on/off display of skipped zones
-    skipcolor	The background color used for skipped zones
+    colors	Turn on/off use of colors on zone stripes.
+    fontsize	The size of the font in the output window.
+    modify	Turn on/off execution of rollerd modification commands.
+    shading	Turn on/off shading of the status columns.
+    showskip	Turn on/off display of skipped zones.
+    skipcolor	The background color used for skipped zones.
 
 The rc.blinkenlights file is only searched for in the directory in which
 blinkenlights is executed.  The potential problems inherent in this may cause
@@ -3417,6 +3471,16 @@ Spaces are not allowed in the configuration values.
 
 Choose your skipcolors carefully.  The only foreground color used is black, so
 your background colors must work well with black.
+
+The \"noshow\" command controls display of the various data columns.  The
+command valid values are:
+
+    rollrecs	Turn off display of the rollrec names column.
+		This value may not be used with \"noshow zonenames\".
+    zonenames	Turn off display of the zonenames column.
+		This value may not be used with \"noshow rollrecs\".
+    kskset	Turn off display of the KSK signing set columns.
+    zskset	Turn off display of the ZSK signing set columns.
 
 WARNINGS
 
@@ -4045,12 +4109,13 @@ B<blinkenlights> is executed is used.
 
 The following are the available configuration values:
 
-    colors	Turn on/off use of colors on zone stripes
-    fontsize	The size of the font in the output window
-    modify	Turn on/off execution of rollerd modification commands
-    shading	Turn on/off shading of the status columns
-    showskip	Turn on/off display of skipped zones
-    skipcolor	The background color used for skipped zones
+    colors	Turn on/off use of colors on zone stripes.
+    fontsize	The size of the font in the output window.
+    modify	Turn on/off execution of rollerd modification commands.
+    noshow	Turn off display of particular columns.
+    shading	Turn on/off shading of the status columns.
+    showskip	Turn on/off display of skipped zones.
+    skipcolor	The background color used for skipped zones.
 
 The B<rc.blinkenlights> file is B<only> searched for in the directory in
 which B<blinkenlights> is executed.  The potential problems inherent in
@@ -4068,6 +4133,16 @@ Spaces are not allowed in the configuration values.
 
 Choose your skipcolors carefully.  The only foreground color used is black, so
 your background colors must work well with black.
+
+The I<noshow> command controls display of the various data columns.  The
+command valid values are:
+
+    rollrecs	Turn off display of the rollrec names column.
+		This value may not be used with "noshow zonenames".
+    zonenames	Turn off display of the zonenames column.
+		This value may not be used with "noshow rollrecs".
+    kskset	Turn off display of the KSK signing set columns.
+    zskset	Turn off display of the ZSK signing set columns.
 
 =head1 REQUIREMENTS
 
