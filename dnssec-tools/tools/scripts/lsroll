@@ -429,6 +429,11 @@ sub getrollrecs
 	foreach my $rn (sort(keys(%rollrecs)))
 	{
 		#
+		# Add quotes to the rollrec name.
+		#
+		$rollrecs{$rn}{'rollrec_name'} = "\"$rollrecs{$rn}{'rollrec_name'}\""; 
+
+		#
 		# Add quotes to the timestamps.
 		#
 		$rollrecs{$rn}{'phasestart'} = "\"$rollrecs{$rn}{'phasestart'}\""; 
@@ -577,7 +582,7 @@ sub makeheader
 	$rr{'kskphase'}		= 'KSK Phase';
 	$rr{'loglevel'}		= 'Log Level';
 	$rr{'maxttl'}		= 'Max-TTL';
-	$rr{'rollrec_name'}	= 'Name';
+	$rr{'rollrec_name'}	= 'Rollrec Name';
 	$rr{'phasestart'}	= 'Phase Start';
 	$rr{'phases'}		= 'KSK/ZSK';
 	$rr{'zonefile'}		= 'Zonefile';
@@ -766,9 +771,9 @@ sub usage
 	print STDERR "\t\t-roll		roll records\n";
 	print STDERR "\t\t-skip		skip records\n";
 	print STDERR "\tattribute-selection options:\n";
-	print STDERR "\t\t-type\t	record type\n";
-	print STDERR "\t\t-zonename\t	zonename\n";
-	print STDERR "\t\t-zonefile\t	zonefile\n";
+	print STDERR "\t\t-type          	record type\n";
+	print STDERR "\t\t-zonename  	zonename\n";
+	print STDERR "\t\t-zonefile  	zonefile\n";
 	print STDERR "\t\t-keyrec\t	keyrec file\n";
 	print STDERR "\t\t-kskphase	KSK rollover phase\n";
 	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
@@ -844,7 +849,7 @@ The table below shows the fields displayed for each output format.
     -------------        -------        -----        ----       ----
     rollrec name           yes           yes         yes        yes
     rollrec type           no            no          yes        no
-    zone name              no            no          yes        yes
+    zonename               no            no          yes        yes
     zone file              yes           no          yes        yes
     keyrec file            yes           no          yes        yes
     KSK phase              yes           no          yes        no
@@ -858,6 +863,12 @@ The table below shows the fields displayed for each output format.
     last KSK rollover      no            no          yes        no
     last ZSK rollover      no            no          yes        no
     zonesigner arguments   no            no          yes        no
+
+The I<rollrec> name field is often the same as its zonename, but this is not
+necessarily the case.  The I<rollrec> name can contain spaces, while the
+zonename can't.  For this reason, B<lsroll> displays the I<rollrec> name in
+quotes, even if the name contains no spaces.  This is intended to allow for
+easier parsing by other programs.
 
 =head1 OPTIONS
 
