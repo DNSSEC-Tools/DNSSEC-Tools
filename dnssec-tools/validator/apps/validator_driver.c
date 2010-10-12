@@ -522,6 +522,7 @@ one_test(val_context_t *context, char *name, int class_h,
         int type_h, u_int32_t flags, int retvals[], int doprint)
 {
     struct val_response resp;
+    memset(&resp, 0, sizeof(struct val_response));
     sendquery(context, "Result", name, class_h, type_h, flags, retvals, 1, &resp);
     fprintf(stderr, "\n");
 
