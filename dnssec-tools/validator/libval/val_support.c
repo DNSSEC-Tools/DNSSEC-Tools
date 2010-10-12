@@ -872,8 +872,9 @@ decompress(u_char ** rdata,
     size_t        other_name_length = 0;
     size_t        name_length = 0;
     size_t        insert_index = 0;
-    size_t        working_increment;
+    int           working_increment;
     size_t        expansion = 0;
+    size_t        len = 0;
 
     if ((rdata == NULL) || (response == NULL) || (rdata_len_h == NULL))
         return VAL_BAD_ARGUMENT;
@@ -907,7 +908,9 @@ decompress(u_char ** rdata,
         if (*rdata == NULL)
             return VAL_OUT_OF_MEMORY;
 
-        memcpy(&(*rdata)[insert_index], &response[rdata_index], new_size);
+        if (response + working_index + new_size > end)
+            return VAL_BAD_ARGUMENT;
+        memcpy(&(*rdata)[insert_index], &response[working_index], new_size);
         *rdata_len_h = *rdata_len_h;    /* No change */
         break;
 
@@ -980,8 +983,10 @@ decompress(u_char ** rdata,
          * Copy any remaining data 
          */
 
-        memcpy(&(*rdata)[insert_index], &response[working_index],
-               *rdata_len_h + expansion - other_name_length - name_length);
+        len = *rdata_len_h + expansion - other_name_length - name_length;
+        if (response + working_index + len  > end)
+            return VAL_BAD_ARGUMENT;
+        memcpy(&(*rdata)[insert_index], &response[working_index], len);
 
         *rdata_len_h += expansion;
 
@@ -992,6 +997,8 @@ decompress(u_char ** rdata,
          */
     case ns_t_srv:
 
+        if (response + working_index + (2 * sizeof(u_int16_t)) > end)
+            return VAL_BAD_ARGUMENT;
         memcpy(&prefix[p_index], &response[working_index],
                2 * sizeof(u_int16_t));
         working_index += 2 * sizeof(u_int16_t);
@@ -1006,6 +1013,8 @@ decompress(u_char ** rdata,
     case ns_t_kx:
     case ns_t_px:
 
+        if (response + working_index + sizeof(u_int16_t) > end)
+            return VAL_BAD_ARGUMENT;
         memcpy(&prefix[p_index], &response[working_index],
                sizeof(u_int16_t));
         working_index += sizeof(u_int16_t);
@@ -1093,6 +1102,8 @@ decompress(u_char ** rdata,
         if (*rdata == NULL)
             return VAL_OUT_OF_MEMORY;
 
+        if (response + working_index + SIGNBY > end)
+            return VAL_BAD_ARGUMENT;
         memcpy(&(*rdata)[insert_index], &response[working_index], SIGNBY);
         insert_index += SIGNBY;
         working_index += SIGNBY;
@@ -1101,8 +1112,10 @@ decompress(u_char ** rdata,
         insert_index += name_length;
         working_index += working_increment;
 
-        memcpy(&(*rdata)[insert_index], &response[working_index],
-               *rdata_len_h - working_increment - SIGNBY);
+        len = *rdata_len_h - working_increment - SIGNBY;
+        if (response + working_index + len > end)
+            return VAL_BAD_ARGUMENT;
+        memcpy(&(*rdata)[insert_index], &response[working_index], len);
 
         *rdata_len_h += expansion;
     }
@@ -1140,6 +1153,15 @@ extract_from_rr(u_char * response,
         return VAL_BAD_ARGUMENT;
 
     *response_index += ret_val;
+
+    /* check if we have enough data to read the envelope */
+    if (response + *response_index + 
+        sizeof(u_int16_t) + 
+        sizeof(u_int16_t) + 
+        sizeof(u_int32_t) + 
+        sizeof(u_int16_t) > end) {
+            return VAL_BAD_ARGUMENT;
+    }
 
     /*
      * Extract the type, and save it in host format 
@@ -1184,6 +1206,8 @@ extract_from_rr(u_char * response,
         /*
          * Extract the set type, and save it in host format 
          */
+        if (response + *response_index + sizeof(u_int16_t) > end)
+            return VAL_BAD_ARGUMENT;
         memcpy(&net_short, &response[*response_index], sizeof(u_int16_t));
         *set_type_h = ntohs(net_short);
     } else
