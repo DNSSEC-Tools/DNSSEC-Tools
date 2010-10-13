@@ -8,7 +8,14 @@
 #
 #	This script checks a rollrec file for problems and inconsistencies.
 #
-#	Problems include:
+#	File problems include:
+#		- file doesn't exist
+#		- file isn't a regular file
+#
+#	Raw problems include:
+#		- rollrec name used multiple times
+#
+#	Cooked problems include:
 #		- non-existent zone file
 #		- non-existent keyrec file
 #		- non-positive maxttl
@@ -152,6 +159,16 @@ sub main()
 	usage() if($argc == 0);
 
 	#
+	# Make sure the rollrec file is.
+	#
+	filechecks($ARGV[0]);
+
+	#
+	# Run checks on the raw rollrec file.
+	#
+	rawchecks($ARGV[0]);
+
+	#
 	# Read the rollrec file.
 	#
 	getrollrecs($ARGV[0]);
@@ -174,14 +191,12 @@ sub main()
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	getrollrecs()
+# Routine:	filechecks()
 #
-# Purpose:	This routine reads a rollrec file and copies the rollrec
-#		records into either the roll hash or the skip hash,
-#		depending on each record's type.  Any unrecognized rollrec
-#		entries are reported. 
+# Purpose:	This routine does some basic checks on a file before
+#		proceeding to the internal exam.
 #
-sub getrollrecs
+sub filechecks
 {
 	my $rrfile = shift;			# Rollrec filename.
 	my $ret;				# rollrec_read() return.
@@ -199,6 +214,109 @@ sub getrollrecs
 		print STDERR "rollrec file \"$rrfile\" is not a regular file\n";
 		exit(-1);
 	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	rawchecks()
+#
+# Purpose:	This routine runs a checks on the raw rollrec file.  It
+#		reads the file itself, without relying on the rollrec_
+#		interfaces.
+#
+sub rawchecks
+{
+	my $rrfile = shift;			# Rollrec filename.
+
+	my @rrlines = ();			# Lines from rollrec file.
+	my %names   = ();			# All name values.
+	my %rolls   = ();			# "roll" values.
+	my %skips   = ();			# "skip" values.
+
+	#
+	# Read the rollrec file and save the rollrec names.
+	#
+	open(RRF,"< $rrfile");
+	@rrlines = <RRF>;
+	close(RRF);
+
+	#
+	# Put the record-starting "roll" and "skip" lines in the appropriate
+	# hashes.
+	#
+	foreach my $line (@rrlines)
+	{
+		my $key;				# Line's key.
+		my $val;				# Line's value.
+
+		#
+		# Get the key/value fields of the line.
+		#
+		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
+                $key = $1;
+		$val = $2;
+
+		#
+		# Skip lines that don't start a new record.
+		#
+		next if(($key !~ /^roll$/i) && ($key !~ /^skip$/i));
+
+		#
+		# Add the record's rollrec name to the all-names hash.
+		#
+		$names{$val}++;
+
+		#
+		# Add the record's rollrec name to the type-specific hash.
+		#
+		if($key =~ /^roll$/i)
+		{
+			$rolls{$val}++;
+		}
+		elsif($key =~ /^skip$/i)
+		{
+			$skips{$val}++;
+		}
+	}
+
+	#
+	# Ensure that no rollrec name is used more than once.
+	#
+	foreach my $key (sort(keys(%names)))
+	{
+		if($names{$key} > 1)
+		{
+			$errs++;
+			qprint("$key:  multiple rollrecs ($names{$key}) using this as the rollrec name\n");
+		}
+	}
+
+	#
+	# If any rollrec name is used more than once, we'll give an error
+	# and exit.
+	#
+	if($errs)
+	{
+		qprint("errors found in the raw file; not continuing with further checks\n");
+		exit($errs);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getrollrecs()
+#
+# Purpose:	This routine reads a rollrec file and copies the rollrec
+#		records into either the roll hash or the skip hash,
+#		depending on each record's type.  Any unrecognized rollrec
+#		entries are reported. 
+#
+sub getrollrecs
+{
+	my $rrfile = shift;			# Rollrec filename.
+	my $ret;				# rollrec_read() return.
+
+	#
+	# Make sure this looks like a rollrec file.
+	#
 	if(dt_filetype($rrfile) ne 'rollrec')
 	{
 		print STDERR "\"$rrfile\" is not a rollrec file\n";
@@ -823,13 +941,48 @@ inconsistencies.
 This script checks the I<rollrec> file specified by I<rollrec-file> for
 problems and inconsistencies.
 
-Recognized problems include:
+=head1 TYPES OF CHECKS
+
+There are three types of checks performed by B<rollchk>:  file checks,
+"raw" file checks, and I<rollrec> checks.  The checks are performed in that
+order, and if any of the group checks fail then B<rollchk> exits.
+
+=head2 File Checks
+
+These checks determine basic information about the I<rollrec> file itself.
+Recognized problems are:
 
 =over 4
 
 =item * non-existent rollrec file
 
 The specified I<rollrec> file does not exist.
+
+=item * non-regular rollrec file
+
+The specified I<rollrec> file is not a regular file.
+
+=back
+
+=head2 Raw File Checks
+
+These checks are performed directly on the file contents, rather than by
+using the I<rollrec.pm> interfaces.  Recognized problems are:
+
+=over 4
+
+=item * duplicated rollrec names
+
+A I<rollrec> name is not unique. 
+
+=back
+
+=head2 Rollrec Checks
+
+These checks are performed after referencing the file contents with the
+the I<rollrec.pm> interfaces.  Recognized problems are:
+
+=over 4
 
 =item * no zones defined
 
