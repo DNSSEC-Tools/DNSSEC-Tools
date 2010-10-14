@@ -198,22 +198,22 @@ val_free_result_chain(struct val_result_chain *results)
         if (!prev->val_rc_answer && prev->val_rc_rrset) {
             free_val_rrset_members(prev->val_rc_rrset);
             FREE(prev->val_rc_rrset);
-        }
-        prev->val_rc_rrset = NULL;
+        } else {
 
-        /*
-         * free the chain of trust 
-         */
-        while (NULL != (trust = prev->val_rc_answer)) {
+            /*
+             * free the chain of trust 
+             */
+            while (NULL != (trust = prev->val_rc_answer)) {
 
-            prev->val_rc_answer = trust->val_ac_trust;
+                prev->val_rc_answer = trust->val_ac_trust;
 
-            if (trust->val_ac_rrset != NULL) {
-                free_val_rrset_members(trust->val_ac_rrset);
-                FREE(trust->val_ac_rrset);
+                if (trust->val_ac_rrset != NULL) {
+                    free_val_rrset_members(trust->val_ac_rrset);
+                    FREE(trust->val_ac_rrset);
+                }
+
+                FREE(trust);
             }
-
-            FREE(trust);
         }
 
         /* free the alias name if any */
@@ -339,26 +339,6 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
             if (namecmp(temp->qc_original_name, name_n) == 0)
                 break;
 
-#ifdef LIBVAL_DLV
-            if (type_h == ns_t_dlv) {
-                int retval;
-                int matches;
-                /* check for aggressive negative caching */
-                if (VAL_NO_ERROR != (retval = 
-                            check_anc_proof(context, temp, flags, name_n, &matches))) {
-                    return retval;
-                } 
-                if (matches) {
-                    char name_p[NS_MAXDNAME];
-                    if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
-                        snprintf(name_p, sizeof(name_p), "unknown/error");
-                    val_log(context, LOG_DEBUG, 
-                            "add_to_query_chain(): Found matching proof of non-existence for {%s %d %d} through ANC",
-                            name_p, class_h, type_h);
-                    break;
-                }
-            }
-#endif
         }
         prev = temp;
         temp = temp->qc_next;
@@ -426,7 +406,6 @@ void requery_with_edns0(val_context_t *context,
     matched_q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
 }
 
-
 static struct queries_for_query * 
 check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
                  u_char * name_n, const u_int16_t type_h, const u_int16_t class_h, 
@@ -445,8 +424,27 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
             && (temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
             && ((flags == VAL_QFLAGS_ANY) ||
-                (temp->qfq_flags == flags)))
+                (temp->qfq_flags == flags))) {
+#ifdef LIBVAL_DLV
+            if (type_h == ns_t_dlv) {
+                int matches = 0;
+                /* check for aggressive negative caching */
+                if (VAL_NO_ERROR == 
+                        check_anc_proof(context, temp->qfq_query, flags, name_n, &matches) &&
+                    matches) {
+
+                    char name_p[NS_MAXDNAME];
+                    if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
+                        snprintf(name_p, sizeof(name_p), "unknown/error");
+                    val_log(context, LOG_DEBUG, 
+                            "add_to_query_chain(): Found matching proof of non-existence for {%s %d %d} through ANC",
+                            name_p, class_h, type_h);
+                    break;
+                }
+            }
+#endif
             break;
+        }
         prev = temp;
         temp = temp->qfq_next;
     }
@@ -2789,6 +2787,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
 }
 #endif
+
 
 #ifdef LIBVAL_DLV
 int 
