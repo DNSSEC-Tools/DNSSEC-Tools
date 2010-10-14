@@ -88,6 +88,7 @@ our @EXPORT = qw(
 			rollrec_read
 			rollrec_rectype
 			rollrec_recval
+			rollrec_rename
 			rollrec_settime
 			rollrec_setval
 			rollrec_unlock
@@ -137,7 +138,6 @@ my %rollrecs;				# Rollrec hash table (keywords/values.)
 my $modified;				# File-modified flag.
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_lock()
 #
 # Purpose:	Lock rollrec processing so that only one process reads a
@@ -181,7 +181,6 @@ sub rollrec_lock
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_unlock()
 #
 # Purpose:	Unlock rollrec processing so that other processes may read
@@ -198,7 +197,6 @@ sub rollrec_unlock
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_read()
 #
 # Purpose:	Read a DNSSEC-Tools rollrec file.  The contents are read into
@@ -216,7 +214,7 @@ sub rollrec_read
 # print "rollrec_read:  down in\n";
 
 	#
-	# if we already have cmds loaded, don't reload them
+	# If we already have commands loaded, don't reload them.
 	#
 	my @currentcmds = rollmgr_getallqueuedcmds();
 	$havecmdsalready = 1 if ($#currentcmds > -1);
@@ -322,30 +320,35 @@ sub rollrec_read
 			next;
 		}
 
-		if ($keyword =~ /^cmd$/i) {
-		    #
-		    # The line is used to issue a specific command to run
-		    # We queue it for later processing
-		    #
+		if($keyword =~ /^cmd$/i)
+		{
+			#
+			# The line is used to issue a specific command to run
+			# We queue it for later processing.
+			#
+print STDERR "processing command: $value / $havecmdsalready\n";
+			next if($havecmdsalready);
 
-		    print STDERR "processing command: $value / $havecmdsalready\n";
-		    next if ($havecmdsalready);
+			my $cmdtoload = $value;
+			my ($cmd, $arg) = ($cmdtoload =~ /^\s*(\w+)\s*(.*)$/);
+			$cmd = "rollcmd_" . $cmd;
 
-		    my $commandtoload = $value;
-		    my ($cmdname, $argument) =
-		      ($commandtoload =~ /^\s*(\w+)\s*(.*)$/);
-		    $cmdname = "rollcmd_" . $cmdname;
-		    if (rollmgr_verifycmd($cmdname) == 0) {
-			err("rollrec_read: invalid command $commandtoload\n", -1);
+			if(rollmgr_verifycmd($cmd) == 0)
+			{
+				err("rollrec_read: invalid command $cmdtoload\n", -1);
+				next;
+			}
+
+			#
+			# Save the command in our queue to process.
+			#
+			rollmgr_queuecmd($cmd, $arg);
+
+			#
+			# Remove the line from the file to write back out.
+			#
+			pop @rollreclines;
 			next;
-		    }
-
-		    # save the command in our queue to process
-		    rollmgr_queuecmd($cmdname, $argument);
-
-		    # remove the line from the file to write back out
-		    pop @rollreclines;
-		    next;
 		}
 
 		#
@@ -362,7 +365,6 @@ sub rollrec_read
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_names()
 #
 # Purpose:	Smoosh the rollrec names into an array and return the array.
@@ -383,7 +385,6 @@ sub rollrec_names
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_exists()
 #
 # Purpose:	Return a flag indicating if the given rollrec exists.
@@ -398,7 +399,6 @@ sub rollrec_exists
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_fullrec()
 #
 # Purpose:	Return all entries in a given rollrec.
@@ -414,7 +414,6 @@ sub rollrec_fullrec
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_recval()
 #
 # Purpose:	Return the value of a name/subfield pair.
@@ -431,14 +430,12 @@ sub rollrec_recval
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_rectype()
 #
 # Purpose:	Change the value of a rollrec.  The new value may only be
 #		"roll" or "skip".
 #
 # Return Values:
-#
 #		1 - success
 #		0 - failure (invalid record type or rollrec not found)
 #
@@ -494,7 +491,6 @@ sub rollrec_rectype
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_setval()
 #
 # Purpose:	Set the value of a name/subfield pair.  The value is saved
@@ -664,7 +660,6 @@ sub rollrec_setval
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_delfield()
 #
 # Purpose:	Delete a name/subfield pair.  The value is deleted from
@@ -789,7 +784,6 @@ sub rollrec_delfield
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_add()
 #
 # Purpose:	Adds a new rollrec and fields to %rollrecs and $rollreclines.
@@ -896,7 +890,6 @@ sub rollrec_add
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_del()
 #
 # Purpose:	Deletes a rollrec and fields from %rollrecs and $rollreclines.
@@ -992,7 +985,129 @@ sub rollrec_del
 }
 
 #--------------------------------------------------------------------------
+# Routine:	rollrec_rename()
 #
+# Purpose:	Renames a rollrec.
+#
+sub rollrec_rename
+{
+	my $oldname = shift;		# Name of rollrec we're renaming.
+	my $newname = shift;		# New name of rollrec.
+
+	my %rollrec;			# Rollrec to be deleted.
+	my $rrr;			# Rollrec reference.
+
+	my $ind;			# Index into rollreclines.
+	my $rrind;			# Index to rollrec's first line.
+	my $line;			# Rollrec line from @rollreclines.
+	my $lkey;			# Rollrec line's key.
+	my $lval;			# Rollrec line's value.
+	my $len;			# Length of array slice to delete.
+
+# print "rollrec_rename:  down in\n";
+
+	#
+	# Don't allow empty rollrec names.
+	#
+	return(-1) if($oldname eq '');
+	return(-2) if($newname eq '');
+
+	#
+	# The old rollrec must exist.
+	#
+	return(-3) if(! exists($rollrecs{$oldname}));
+
+	#
+	# Don't allow renames to existing rollrec names.
+	#
+	return(-4) if(exists($rollrecs{$newname}));
+
+	#
+	# Get a copy of the old rollrec.
+	#
+	$rollrecs{$newname} = $rollrecs{$oldname};
+
+	#
+	# Change the name field in the new rollrec.
+	#
+	$rollrecs{$newname}{'rollrec_name'} = $newname;
+	$rrr = $rollrecs{$newname};
+	%rollrec = %$rrr;
+
+	#
+	# Find the index of the first line for this rollrec in the
+	# list of file lines.
+	#
+	$rollreclen = @rollreclines;
+	for($rrind = 0;$rrind < $rollreclen; $rrind++)
+	{
+		$line = $rollreclines[$rrind];
+
+		$line =~ /\s*(\S+)\s+(\S+)/;
+		$lkey = $1;
+		$lval = $2;
+
+		$lval =~ s/"//g;
+
+		last if($lval eq $oldname);
+	}
+
+	#
+	# If we didn't find a rollrec with this name, return failure.
+	#
+	return(-5) if($rrind == $rollreclen);
+
+	#
+	# Find the beginning of the next rollrec.
+	#
+	for($ind = $rrind+1;$ind < $rollreclen; $ind++)
+	{
+		$line = $rollreclines[$ind];
+
+		$line =~ /\s*(\S+)\s+(\S+)/;
+		$lkey = $1;
+		$lval = $2;
+
+		last if($lkey eq "roll");
+	}
+	$ind--;
+
+	#
+	# Find the end of the previous rollrec (the one to be deleted.)
+	#
+	while($ind > $rrind)
+	{
+		last if($rollreclines[$ind] ne "\n");
+		$ind--;
+	}
+
+	#
+	# Find the rollrec's roll or skip line and change the name.
+	#
+	for(my $i=$rrind; $i <= $ind; $i++)
+	{
+		$rollreclines[$i] =~ /(\s*(\S+)\s+)(\S+)/;
+		$lkey = $2;
+
+		if(($lkey eq 'roll') || ($lkey eq 'skip'))
+		{
+			$rollreclines[$i] =~ s/(\s*(\S+)\s+)(\S+)/$1"$newname"/;
+		}
+	}
+
+	#
+	# Delete the old rollrec.
+	#
+	delete $rollrecs{$oldname};
+
+	#
+	# Mark that the file has been modified.
+	#
+	$modified = 1;
+	return(0);
+}
+
+#--------------------------------------------------------------------------
 # Routine:	rollrec_settime()
 #
 # Purpose:	Sets the phase-start time in the rollrec.
@@ -1021,7 +1136,6 @@ sub rollrec_settime
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_newrec()
 #
 # Purpose:	Creates a rollrec in %rollrecs.  The name and type fields
@@ -1041,7 +1155,6 @@ sub rollrec_newrec
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_fields()
 #
 # Purpose:	Return the list of rollrec fields.
@@ -1054,7 +1167,6 @@ sub rollrec_fields
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_default()
 #
 # Purpose:	Return the default rollrec file.
@@ -1081,7 +1193,6 @@ sub rollrec_default
 
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_init()
 #
 # Purpose:	Initialize the internal data.
@@ -1097,7 +1208,6 @@ sub rollrec_init
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_discard()
 #
 # Purpose:	Discard the current rollrec file -- don't save the contents,
@@ -1112,7 +1222,6 @@ sub rollrec_discard
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_close()
 #
 # Purpose:	Save the roll record file and close the descriptor.
@@ -1126,7 +1235,6 @@ sub rollrec_close
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_write()
 #
 # Purpose:	Save the roll record file and leave the file handle open.
@@ -1211,7 +1319,6 @@ sub rollrec_write
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_dump_hash()
 #
 # Purpose:	Dump the parsed rollrec entries.
@@ -1238,7 +1345,6 @@ sub rollrec_dump_hash
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	rollrec_dump_array()
 #
 # Purpose:	Display the contents of @rollreclines.
@@ -1287,6 +1393,8 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   rollrec_add("skip","example.com",\%rollfields);
 
   rollrec_del("example.com");
+
+  rollrec_rename("example.com","subdom.example.com");
 
   rollrec_type("example.com","roll");
   rollrec_type("example.com","skip");
@@ -1536,6 +1644,27 @@ The call:
     rollrec_recval("example.com","zonefile")
 
 will return the value "db.example.com".
+
+=item I<rollrec_rename(old_rollrec_name,new_rollrec_name)>
+
+This routine renames the I<rollrec> named by I<old_rollrec_name> to
+I<new_rollrec_name>.  The actual effect is to change the name in the I<roll>
+or I<skip> line is changed to I<new_rollrec_name>.  The name is changed in
+the internal version of the the I<rollrec> file only.  The file itself is
+not changed, but must be saved by calling either I<rollrec_write()>,
+I<rollrec_save()>, or I<rollrec_saveas()>.
+
+I<old_rollrec_name> must be the name of an existing I<rollrec>.  Conversely,
+I<new_rollrec_name> must not name an existing I<rollrec>.
+
+Return values:
+
+     0 - success
+    -1 - old_rollrec_name was null or empty
+    -2 - new_rollrec_name was null or empty
+    -3 - old_rollrec_name is not an existing rollrec
+    -4 - new_rollrec_name is already a rollrec
+    -5 - internal error that should never happen
 
 =item I<rollrec_settime(rollrec_name,val)>
 
