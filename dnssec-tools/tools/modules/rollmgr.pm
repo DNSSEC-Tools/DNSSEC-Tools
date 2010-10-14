@@ -460,7 +460,6 @@ my $longorshort = $PHASELONG;			# Description length to use.
 #
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_prepdep()
 #
 # Purpose:	This routine prepares for device-dependent calls.  A global
@@ -507,7 +506,6 @@ sub rollmgr_prepdep
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_dir()
 #
 # Purpose:	Front-end to the O/S-specific "get rollerd's
@@ -525,7 +523,6 @@ sub rollmgr_dir
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_dropid()
 #
 # Purpose:	Front-end to the O/S-specific "save rollerd's
@@ -543,7 +540,6 @@ sub rollmgr_dropid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_getid()
 #
 # Purpose:	Front-end to the O/S-specific "get rollerd's
@@ -561,7 +557,6 @@ sub rollmgr_getid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_halt()
 #
 # Purpose:	Front-end to the O/S-specific "halt rollerd"
@@ -579,7 +574,6 @@ sub rollmgr_halt
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_idfile()
 #
 # Purpose:	Front-end to the O/S-specific "get rollerd's
@@ -597,7 +591,6 @@ sub rollmgr_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_set_idfile()
 #
 # Purpose:	Front-end to the O/S-specific "set rollerd's
@@ -615,7 +608,6 @@ sub rollmgr_set_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_loadzone()
 #
 # Purpose:	Front-end to the O/S-specific "load the zone" function.
@@ -632,7 +624,6 @@ sub rollmgr_loadzone
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_cmdint()
 #
 # Purpose:	Front-end to the O/S-specific "rollerd has a
@@ -650,7 +641,6 @@ sub rollmgr_cmdint
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_rmid()
 #
 # Purpose:	Front-end to the O/S-specific "remove rollerd's
@@ -668,7 +658,6 @@ sub rollmgr_rmid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_running()
 #
 # Purpose:	Front-end to the O/S-specific "is rollerd running?" function.
@@ -685,7 +674,6 @@ sub rollmgr_running
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      rollmgr_saveid()
 #
 # Purpose:	Front-end to the O/S-specific "save rollerd's
@@ -717,7 +705,6 @@ sub rollmgr_saveid
 #	call the proper O/S-dependent interface.
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_dir()
 #
 # Purpose:	Switch for uninitialized "get dir" command.
@@ -733,7 +720,6 @@ sub uninit_dir
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_dropid()
 #
 # Purpose:	Switch for uninitialized "drop id" command.
@@ -749,7 +735,6 @@ sub uninit_dropid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_getid()
 #
 # Purpose:	Switch for uninitialized "get id" command.
@@ -765,7 +750,6 @@ sub uninit_getid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_halt()
 #
 # Purpose:	Switch for uninitialized "halt" command.
@@ -781,7 +765,6 @@ sub uninit_halt
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_idfile()
 #
 # Purpose:	Switch for uninitialized "get id file" command.
@@ -797,7 +780,6 @@ sub uninit_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_idfile()
 #
 # Purpose:	Switch for uninitialized "get id file" command.
@@ -813,7 +795,6 @@ sub uninit_set_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_loadzone()
 #
 # Purpose:	Switch for uninitialized "load the zone" command.
@@ -829,7 +810,6 @@ sub uninit_loadzone
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_cmdint()
 #
 # Purpose:	Switch for uninitialized "force queue" command.
@@ -845,7 +825,6 @@ sub uninit_cmdint
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_rmid()
 #
 # Purpose:	Switch for uninitialized "remove id file" command.
@@ -861,7 +840,6 @@ sub uninit_rmid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_running()
 #
 # Purpose:	Switch for uninitialized "is rollerd running?" command.
@@ -877,7 +855,6 @@ sub uninit_running
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      uninit_saveid()
 #
 # Purpose:	Switch for uninitialized "save id file" command.
@@ -905,7 +882,6 @@ sub uninit_saveid
 #
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_action()
 #
 sub unknown_action
@@ -914,7 +890,6 @@ sub unknown_action
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_dir()
 #
 sub unknown_dir
@@ -923,7 +898,6 @@ sub unknown_dir
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_getid()
 #
 sub unknown_getid
@@ -932,7 +906,6 @@ sub unknown_getid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_halt()
 #
 sub unknown_halt
@@ -941,7 +914,6 @@ sub unknown_halt
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_idfile()
 #
 sub unknown_idfile
@@ -950,7 +922,6 @@ sub unknown_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_set_idfile()
 #
 sub unknown_set_idfile
@@ -959,7 +930,6 @@ sub unknown_set_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_loadzone()
 #
 sub unknown_loadzone
@@ -968,7 +938,6 @@ sub unknown_loadzone
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_cmdint()
 #
 sub unknown_cmdint
@@ -977,7 +946,6 @@ sub unknown_cmdint
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_rmid()
 #
 sub unknown_rmid
@@ -986,7 +954,6 @@ sub unknown_rmid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_running()
 #
 sub unknown_running
@@ -995,7 +962,6 @@ sub unknown_running
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unknown_saveid()
 #
 sub unknown_saveid
@@ -1015,7 +981,6 @@ sub unknown_saveid
 #
 
 #--------------------------------------------------------------------------
-#
 # Routine:      unix_dir()
 #
 sub unix_dir
@@ -1024,7 +989,6 @@ sub unix_dir
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_idfile()
 #
 # Purpose:	Return rollerd's id file.
@@ -1035,7 +999,6 @@ sub unix_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_set_idfile()
 #
 # Purpose:	Sets rollerd's id file to a particular value
@@ -1046,7 +1009,6 @@ sub unix_set_idfile
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_loadzone()
 #
 # Purpose:	Kick the name server so it'll load the given zone.
@@ -1075,7 +1037,6 @@ sub unix_loadzone
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_psef_dropid()
 #
 # Purpose:      Replaces unix_dropid on ps -ef based systems
@@ -1086,7 +1047,6 @@ sub unix_psef_dropid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_dropid()
 #
 # Purpose:	Ensures that another instance of rollerd is not running and
@@ -1219,7 +1179,6 @@ sub unix_dropid
 
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_rmid()
 #
 # Purpose:	Delete rollerd's pidfile.  This is done as part of the
@@ -1281,7 +1240,6 @@ sub unix_rmid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_running()
 #
 # Purpose:	Determine if rollerd is running and return a boolean
@@ -1329,7 +1287,6 @@ sub unix_running
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_getpid()
 #
 # Purpose:	Return rollerd, as recorded in its pidfile.
@@ -1393,7 +1350,6 @@ sub unix_getpid
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_cmdint()
 #
 # Purpose:	Kick rollerd to let it know it should re-read the rollrec
@@ -1421,7 +1377,6 @@ sub unix_cmdint
 }
 
 #--------------------------------------------------------------------------
-#
 # Routine:	unix_halt()
 #
 # Purpose:	Tell rollerd to shut down.
@@ -1452,7 +1407,6 @@ sub unix_halt
 #############################################################################
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_channel()
 #
 # Purpose:	This routine initializes a socket to use for rollerd
@@ -1554,7 +1508,6 @@ sub rollmgr_channel
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_closechan()
 #
 # Purpose:	This routine closes down the communications channel to
@@ -1567,7 +1520,6 @@ sub rollmgr_closechan
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_queuecmd()
 #
 # Purpose:	This routine can be called internally to queue a command
@@ -1575,7 +1527,7 @@ sub rollmgr_closechan
 #		It is useful when doing initial startup before full
 #		processing is to commence.  Commands queued by this
 #		process take precedence over commands received via the
-#		command intervace (ie, via rollmgr_sendcmd()).
+#		command interface (ie, via rollmgr_sendcmd()).
 #
 sub rollmgr_queuecmd
 {
@@ -1586,7 +1538,6 @@ sub rollmgr_queuecmd
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_getqueueitem()
 #
 # Purpose:	This routine can be called pull a command from the queue
@@ -1600,16 +1551,13 @@ sub rollmgr_getqueueitem
 		my $cmd = shift @queuedcmds;
 		return($cmd);
 	}
-	return;
 }
 
-
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_getallqueuedcmds()
 #
 # Purpose:	This routine returns all the queued commands in the stack
-#		The items are left in place unless an truthful argument
+#		The items are left in place unless a truthful argument
 #		(e.g. "1") is passed in.
 #
 sub rollmgr_getallqueuedcmds
@@ -1621,10 +1569,7 @@ sub rollmgr_getallqueuedcmds
 	return(@queuedcmds);
 }
 
-
-
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_getcmd()
 #
 # Purpose:	This routine is called by the server to fetch a command and
@@ -1714,7 +1659,6 @@ sub rollmgr_getcmd
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_sendcmd()
 #
 # Purpose:	This routine allows a client to send a message to the server.
@@ -1770,7 +1714,6 @@ sub rollmgr_sendcmd
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_sendresp()
 #
 # Purpose:	This routine allows rollerd to send a message to a client.
@@ -1803,7 +1746,6 @@ sub rollmgr_sendresp
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_getresp()
 #
 # Purpose:	This routine allows a client to wait for a message response
@@ -1848,7 +1790,6 @@ sub rollmgr_getresp
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_verifycmd()
 #
 # Purpose:	This routine returns a boolean indicating if the specified
@@ -1869,7 +1810,6 @@ sub rollmgr_verifycmd
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_get_phase()
 #
 # Purpose:	This routine translates the numerical phases of rolling
