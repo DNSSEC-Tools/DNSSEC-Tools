@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollset";
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 1.8.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.8";
 
 #######################################################################
@@ -36,11 +36,12 @@ my $doall   = 0;			# Edit all rollrec entries flag.
 #
 # Flag variables for options.
 #
-my $name	= "";
-my $zonename	= "";
-my $zonefile	= "";
-my $keyrec	= "";
-my $zsargs	= "";
+my $name	= '';
+my $newname	= '';
+my $zonename	= '';
+my $zonefile	= '';
+my $keyrec	= '';
+my $zsargs	= '';
 my $roll	= 0;
 my $skip	= 0;
 my $display	= 0;
@@ -60,6 +61,7 @@ my @opts =
 	"name=s",			# Rollrec to edit.
 	"roll",				# Make record a roll record.
 	"skip",				# Make record a skip record.
+	"newname=s",			# New rollrec name.
 	"zonename=s",			# New zonename value.
 	"file=s",			# New zonefile value.
 	"keyrec=s",			# New keyrec value.
@@ -132,6 +134,7 @@ sub doopts
 	# Set some flags based on the command line.
 	#
 	$name	   = $options{'name'};
+	$newname   = $options{'newname'};
 	$zonename  = $options{'zonename'};
 	$zonefile  = $options{'file'};
 	$keyrec	   = $options{'keyrec'};
@@ -221,6 +224,15 @@ sub doopts
 	#
 	$doall = 1 if(! $name);
 
+	#
+	# Ensure that -rename was will be applied to a specific zone.
+	#
+	if($newname && $doall)
+	{
+		print STDERR "-rename may only be used with a single zone\n";
+		exit(5);
+	}
+
 
 	#
 	# Delete the non-command options and ensure that we were given
@@ -302,6 +314,38 @@ sub editrrf
 		exit(-1);
 	}
 
+	#
+	# Change the rollrec name, if so requested.
+	#
+	if($newname)
+	{
+		my $ret;				# Rename return code.
+
+		$ret = rollrec_rename($name,$newname);
+		if($ret == 0)
+		{
+			if($verbose)
+			{
+				print "name:  rollrec name changed to \"$newname\"\n";
+			}
+		}
+		elsif($ret == -3)
+		{
+			print STDERR "unable to rename \"$name\"; $name is not a valid rollrec name\n";
+		}
+		elsif($ret == -4)
+		{
+			print STDERR "unable to rename \"$name\"; $newname is already a rollrec name\n";
+		}
+		elsif($ret == -5)
+		{
+			print STDERR "unable to rename \"$name\"\n";
+		}
+	}
+
+	#
+	# Go through the rollrecs and apply the needed changes.
+	#
 	foreach my $rname (rollrec_names())
 	{
 		#
@@ -476,6 +520,7 @@ sub usage
 	print STDERR "		-name rollrec-name\n";
 	print STDERR "		-roll\n";
 	print STDERR "		-skip\n";
+	print STDERR "		-newname new-zone-name\n";
 	print STDERR "		-zonename zone-name\n";
 	print STDERR "		-file zone-file\n";
 	print STDERR "		-keyrec keyrec-file\n";
@@ -589,6 +634,12 @@ This option is mutually exclusive of the I<-nodisplay> option.
 
 Turn off the GUI display of the zones in the selected I<rollrec>s.
 This option is mutually exclusive of the B<-display> option.
+
+=item B<-rename>
+
+The I<rollrec>'s name is changed to match the specified name.
+The new name cannot be the name of an existing I<rollrec> in the file.
+This option is must be used in conjunction with the B<-name> option.
 
 =item B<-reset-zonename>
 
