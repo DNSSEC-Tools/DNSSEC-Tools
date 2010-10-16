@@ -65,7 +65,7 @@ use Fcntl qw(:DEFAULT :flock);
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::rollmgr;
 
-our $MODULE_VERSION = "1.8.1";
+our $MODULE_VERSION = "1.8.2";
 our $VERSION = "1.8";
 
 our @ISA = qw(Exporter);
@@ -1044,7 +1044,7 @@ sub rollrec_rename
 	{
 		$line = $rollreclines[$rrind];
 
-		$line =~ /\s*(\S+)\s+(\S+)/;
+		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
 		$lkey = $1;
 		$lval = $2;
 
@@ -1065,7 +1065,7 @@ sub rollrec_rename
 	{
 		$line = $rollreclines[$ind];
 
-		$line =~ /\s*(\S+)\s+(\S+)/;
+		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
 		$lkey = $1;
 		$lval = $2;
 
@@ -1087,12 +1087,16 @@ sub rollrec_rename
 	#
 	for(my $i=$rrind; $i <= $ind; $i++)
 	{
-		$rollreclines[$i] =~ /(\s*(\S+)\s+)(\S+)/;
+		my $chunk;			# Key and spacing from line.
+
+		$rollreclines[$i] =~ /^(\s*([a-zA-Z_]+)\s+)"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
+		$chunk = $1;
 		$lkey = $2;
 
 		if(($lkey eq 'roll') || ($lkey eq 'skip'))
 		{
-			$rollreclines[$i] =~ s/(\s*(\S+)\s+)(\S+)/$1"$newname"/;
+			$rollreclines[$i] = "$chunk\"$newname\"\n";
+			last;
 		}
 	}
 
