@@ -60,7 +60,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "rollrec-editor";
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 1.8.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.8";
 
 #######################################################################
@@ -218,16 +218,16 @@ my $RRTAB_SEL	= 'blue';
 my $COL_FIELD	 = 0;				# Edit table's label column.
 my $COL_DATA	 = 1;				# Edit table's data column.
 
-my $ROW_TYPE	 = 0;				# Edit table's type row.
-my $ROW_ZONENAME = 1;				# Edit table's zonefile row.
-my $ROW_ZONEFILE = 2;				# Edit table's zonefile row.
-my $ROW_KEYREC	 = 3;				# Edit table's keyrec row.
-my $ROW_ADMIN	 = 4;				# Edit table's admin. row.
-my $ROW_DIR	 = 5;				# Edit table's directory row.
-my $ROW_DISPLAY	 = 6;				# Edit table's display row.
-my $ROW_LOG	 = 7;				# Edit table's loglevel col.
-my $ROW_MAXTTL	 = 8;				# Edit table's maxttl row.
-my $ROW_ZSARGS	 = 9;				# Edit table's zsargs row.
+my $ROW_TYPE	 = 0;				# Type row.
+my $ROW_ZONENAME = 1;				# Zonename row.
+my $ROW_ZONEFILE = 2;				# Zonefile row.
+my $ROW_KEYREC	 = 3;				# Keyrec row.
+my $ROW_ADMIN	 = 4;				# Administrator's email row.
+my $ROW_DIR	 = 5;				# Directory row.
+my $ROW_DISPLAY	 = 6;				# Display row.
+my $ROW_LOG	 = 7;				# Loglevel col.
+my $ROW_MAXTTL	 = 8;				# Maxttl row.
+my $ROW_ZSARGS	 = 9;				# Zsargs row.
 
 my $ROW_FIRST	 = $ROW_TYPE;			# Edit table's first row.
 my $ROW_LAST	 = $ROW_ZSARGS;			# Edit table's last row.
@@ -2304,6 +2304,7 @@ sub readrrf
 	# Zap the old data.
 	#
 	@rrnames = ();
+	@rollrecs = ();
 
 	#
 	# Get data from the rollrec file.
@@ -3829,10 +3830,16 @@ buttons undisplayed.
 
 =item
 
-Segmentation violation on exit.  Should not affect anything as file has
-already been saved.  Occurs on Mac OS X 10.4.9-10.4.11 with Perl 5.8.6;
-does not occur on Linux FC5 with Perl 5.8.8 or Mac OS X 10.5.8 with Perl
-5.8.8.
+Segmentation violation on exit.  This should not affect anything as file has
+already been saved.
+
+Occurs on:
+    - Mac OS X 10.4.9-10.4.11 with Perl 5.8.6
+    - Mac OS X 10.6.4 with Perl 5.10.0
+
+Does not occur on:
+    - Linux FC5 with Perl 5.8.8
+    - Mac OS X 10.5.8 with Perl 5.8.8
 
 =item
 
