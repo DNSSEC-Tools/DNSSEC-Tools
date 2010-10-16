@@ -11,7 +11,6 @@
 #	fields may be modified by rollrec-editor.
 #
 #
-#
 #	TODO:
 #		- undo command
 #
@@ -60,7 +59,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "rollrec-editor";
-my $VERS   = "$NAME version: 1.8.1";
+my $VERS   = "$NAME version: 1.8.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.8";
 
 #######################################################################
@@ -159,6 +158,7 @@ my $cm_create;					# Create a rollrec.
 my $cm_delete;					# Delete selected rollrecs.
 my $cm_modify;					# Modify selected rollrecs.
 my $cm_merger;					# Merge two rollrec files.
+my $cm_rename;					# Rename selected rollrec.
 my $cm_verify;					# Verify a rollrec file.
 
 my $vw_selall;					# Select all rollrecs set item.
@@ -281,6 +281,8 @@ my $rrnametab;					# Rollrec name table widget.
 
 my %editwinds;					# Rollrec edit windows.
 my %edittabs = ();				# Edit-area tables.
+my %renwinds = ();				# Rollrec rename windows.
+my %rentabs  = ();				# Rename something or another.
 
 my %editrbs;			# Type radiobutton values for edit windows.
 my %editdfs;			# Display flag radiobutton vals for edit winds.
@@ -492,6 +494,16 @@ sub buildmainwind
 				    -accelerator => 'Ctrl+E',
 				    -underline	 => 0);
 	$cmds->separator();
+
+	###################
+
+	$cm_rename = $cmds->command(-label	 => 'Rename Selected Rollrec...',
+				    -command	 => \&cmds_rename,
+				    -underline	 => 0);
+
+	$cmds->separator();
+
+	###################
 
 	$cm_merger = $cmds->command(-label	 => 'Merge Rollrec Files...',
 				    -command	 => \&cmds_merger,
@@ -1683,6 +1695,77 @@ sub cmds_merger
 }
 
 #---------------------------------------------------------------------------
+# Routine:	cmds_rename()
+#
+# Purpose:	This routine creates the rename rollrec window for the
+#		selected rollrec.
+#
+sub cmds_rename
+{
+	my @selected = ();			# Selected rollrec names.
+	my $numsel;				# Number of selected rollrecs.
+	my $rrind;				# Index of selected rollrec.
+	my $dbx;				# Error dialog box.
+
+# print STDERR "cmds_rename:  down in Rename Selected Rollrec\n";
+
+	#
+	# Get the list of selected rollrec names.
+	#
+	@selected = selected_rrnames();
+	$numsel = @selected;
+
+	#
+	# Complain if there wasn't a selected rollrec.
+	#
+	if($numsel == 0)
+	{
+		$dbx = $wm->Dialog(-title   => 'Rename Selected Rollrec',
+				   -text    => "One rollrec must be selected to use the Rename Rollrec command",
+				   -buttons => ["Okay"]);
+		$dbx->Show();
+		return;
+	}
+
+	#
+	# Complain if there was more than one selected rollrec.
+	#
+	if($numsel > 1)
+	{
+		$dbx = $wm->Dialog(-title   => 'Rename Selected Rollrec',
+				   -text    => "A single rollrec must be selected to use the Rename Rollrec command",
+				   -buttons => ["Okay"]);
+		$dbx->Show();
+		return;
+	}
+
+	#
+	# Let user know that modified rollrecs must be saved prior to the
+	# rollrec rename.  If the user is okay with this, we'll save the
+	# contents of the rollrec.
+	#
+	if($modified)
+	{
+		my $dret;			# Return value from dialog.
+
+		$dbx = $wm->Dialog(-title   => 'Rename Selected Rollrec',
+				   -text    => "The rollrec file has been modified.  In order to rename the selected rollrec, the changes will be saved to the rollrec file",
+				   -buttons => ["Okay", "Cancel"]);
+
+		$dret = $dbx->Show();
+		return if($dret eq 'Cancel');
+
+		file_save();
+	}
+
+	#
+	# Create the rename-rollrec window.
+	#
+	$rrind = $selected[0];
+	renamewindow($rrnames[$rrind]);
+}
+
+#---------------------------------------------------------------------------
 # Routine:	cmds_verify()
 #
 # Purpose:	This routine verifies a rollrec file.  If the summary flag
@@ -2244,6 +2327,122 @@ sub editwindow
 }
 
 #---------------------------------------------------------------------------
+# Routine:	renamewindow()
+#
+# Purpose:	This routine creates a new rollrec-rename window.
+#
+sub renamewindow
+{
+	my $rrn = shift;			# Name of rollrec to rename.
+	my $dbx;				# Error dialog box.
+
+	my $renwin;				# Rename window.
+
+	##########
+
+	my $rframe;				# Rename frame.
+	my $rentab;				# Rename table.
+
+	my $frm;				# Frame widget.
+	my $lab;				# Label widget.
+	my $ent;				# Entry widget.
+	my $btn;				# Button widget.
+
+# print STDERR "renamewindow:  down in Rename Rollrec\n";
+
+	#
+	# If there's a rename window for this rollrec, we'll give an error
+	# and return.
+	#
+	if(defined($renwinds{$rrn}))
+	{
+		$dbx = $wm->Dialog(-title   => 'Rename Selected Rollrec',
+				   -text    => "This rollrec is already being renamed",
+				   -buttons => ["Okay"]);
+		$dbx->Show();
+		return;
+	}
+
+	#
+	# If there's an edit window for this rollrec, we'll give an error
+	# and return.
+	#
+	if(defined($editwinds{$rrn}))
+	{
+		$dbx = $wm->Dialog(-title   => 'Rename Selected Rollrec',
+				   -text    => "Unable to rename a rollrec while it is being edited",
+				   -buttons => ["Okay"]);
+		$dbx->Show();
+		return;
+	}
+
+	#
+	# Create a new window to hold our rename session.  Bind up some
+	# key accelerators, too.
+	#
+	$renwin = MainWindow->new(-relief	=> 'raised',
+				   -title	=> "Rename $rrn",
+				   -borderwidth => 1);
+
+	$renwin->bind('<Control-Key-q>', \&file_quit);
+	$renwin->bind('<Control-Key-w>', [\&renamebegone, $rrn]);
+
+	#
+	# Now make the containers for the window.
+	#
+	$rframe = $renwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$rframe->pack(-fill => 'x');
+
+	#
+	# Create a table to hold the rollrec data.
+	#
+	$rentab = $rframe->Table(-rows		=> 2,
+				 -columns	=> 2,
+				 -relief	=> 'raised',
+				 -scrollbars	=> '',
+				 -borderwidth	=> 1,
+				 -fixedrows	=> 0,
+				 -takefocus	=> 1,
+			        );
+
+	#
+	# Add the label column.
+	#
+	$lab = $rframe->Label(-text => 'New rollrec name',-anchor => 'w');
+	$lab->pack(-fill => 'x', -side => 'top');
+	$rentab->put(0,0,$lab);
+
+	#
+	# Add the empty field for the rollrec's new name.
+	#
+	$rollrecs{$rrn}{'newname'} = '';
+	$ent = $rframe->Entry(-textvariable => \$rollrecs{$rrn}{'newname'});
+	$ent->pack(-fill => 'x', -side => 'top');
+	$rentab->put(0,1,$ent);
+
+	#
+	# Done adding our data.  Do another pack, just for kicks.
+	#
+	$rentab->pack(-side => 'top');
+
+	#
+	# Add a button to dismiss the window.
+	#
+	$btn = $rframe->Button(-text	 => 'Rename',
+			       -command => [\&renamesaver, $rrn]);
+	$btn->pack(-side => 'left', -fill => 'x', -expand => 1);
+	$btn = $rframe->Button(-text	 => 'Cancel',
+			       -command => [\&renamebegone, $rrn]);
+	$btn->pack(-side => 'left', -fill => 'x', -expand => 1);
+
+	#
+	# Save the new rename window in the hash table of rename windows.
+	#
+	$renwinds{$rrn} = $renwin;
+	$rentabs{$rrn}  = $rentab;
+}
+
+#---------------------------------------------------------------------------
 # Routine:	setloglvl()
 #
 # Purpose:	Set the logging level label in an edit window's menu button.
@@ -2424,6 +2623,64 @@ sub editsaver
 		saverollrec($rrn);
 	}
 
+}
+
+#---------------------------------------------------------------------------
+# Routine:	renamesaver()
+#
+# Purpose:	Save a rollrec and get rid of its rename window.
+#
+sub renamesaver
+{
+	my $rrn = shift;			# Name of rollrec to save.
+	my $newname;				# New rollrec name.
+	my $newname2;				# Copy of new rollrec name.
+
+# print STDERR "renamesaver:  rename rollrec edits for $rrn\n";
+
+	$newname = $rollrecs{$rrn}{'newname'};
+
+	#
+	# Ensure a new name was given.
+	#
+	if($newname eq '')
+	{
+		errorbox("A new rollrec name must be given");
+		delete $renwinds{$rrn};
+		delete $rentabs{$rrn};
+		return;
+	}
+
+	#
+	# Ensure a *valid* new name was given.
+	#
+	$newname2 = $newname;
+	$newname2 =~ s/[a-zA-Z0-9\/\-+_.,: \@\t]//g;
+	if(length($newname2) > 0)
+	{
+		errorbox("\"$newname\" is an invalid rollrec name");
+		delete $renwinds{$rrn};
+		delete $rentabs{$rrn};
+		return;
+	}
+
+	#
+	# Rename the rollrec.
+	#
+	rollrec_rename($rrn,$newname);
+	$modified = 1;
+
+	#
+	# Write the rollrec file contents and rebuild our rollrec list.
+	#
+	rollrec_close();
+	buildtable(1);
+
+	#
+	# Get rid of the rename window.
+	#
+	renamebegone($rrn,$newname);
+	$modified = 0;
 }
 
 #-----------------------------------------------------------------------------
@@ -3173,6 +3430,49 @@ sub editbegone
 }
 
 #---------------------------------------------------------------------------
+# Routine:	renamebegone()
+#
+# Purpose:	Destroy a rename window.  In addition to deleting the window
+#		itself, the rollrec is removed from several tables.  These
+#		tables are the list of rename windows (%renwinds).
+#
+#		In some cases, this routine will be passed the rename window
+#		widget instead of the rollrec name.  If we couldn't find
+#		the argument in the rename-window hash, we'll look up the
+#		widget itself and recurse with the associated name.
+#
+sub renamebegone
+{
+	my $oldname = shift;				# Old name of rollrec.
+	my $newname = shift;				# New name of rollrec.
+
+# print STDERR "renamebegone:  destroying rename window for $oldname\n";
+
+	#
+	# Don't do anything for a null name.
+	#
+	return if($oldname eq '');
+	return if($newname eq '');
+
+	#
+	# Destroy the old name's rename window and remove it from our
+	# rename-window list.
+	#
+	if(exists($renwinds{$oldname}))
+	{
+		$renwinds{$oldname}->destroy();
+		delete($renwinds{$oldname});
+		delete($rentabs{$oldname});
+	}
+
+	#
+	# Remove the new name from our rename-window list.
+	#
+	delete($renwinds{$newname});
+	delete($rentabs{$newname});
+}
+
+#---------------------------------------------------------------------------
 # Routine:	helpbegone()
 #
 # Purpose:	Destroy a help window.
@@ -3664,6 +3964,16 @@ Potentially erroneous conditions will be reported to the user at save time.
 If the I<ignore-warnings> flag has been turned on, then these warnings will
 not be reported.  Errors (e.g., invalid log conditions) will always be
 reported.
+
+=item B<Rename Selected Rollrec>
+
+Rename the selected I<rollrec> record.   The name in the I<rollrec>'s "roll"
+or "skip" line will be changed to the new name.  Only one I<rollrec> may be
+renamed at a time, and it may not be edited while the rename is taking place.
+
+If the I<rollrec> has been modified, the new contents B<must> be written to
+disk prior to the rename happening.  The user will be prompted to ensure that
+this the user wishes to continue.
 
 =item B<Merge Rollrec Files>
 
