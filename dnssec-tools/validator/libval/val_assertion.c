@@ -1952,9 +1952,9 @@ transform_single_result(val_context_t *context,
     if (w_res && w_res->val_rc_is_proof) {
         if (proof_res) {
             /* if we're given a proof_res, work with that */
+            *mod_res = proof_res;
             if (proof_res->val_rc_proof_count == MAX_PROOFS) {
                 proof_res->val_rc_status = VAL_BOGUS_PROOF;
-                *mod_res = proof_res;
                 return VAL_NO_ERROR;
             } else {
                 aptr =
@@ -1963,18 +1963,16 @@ transform_single_result(val_context_t *context,
             }
         } else {
             /* create a new one */
-            CREATE_RESULT_BLOCK(proof_res, prev_res, *results);
-            aptr = &proof_res->val_rc_proofs[0];
+            CREATE_RESULT_BLOCK((*mod_res), prev_res, *results);
+            aptr = &((*mod_res)->val_rc_proofs[0]);
         }
         if (!(w_res->val_rc_flags & VAL_QUERY_NO_AC_DETAIL))
-            proof_res->val_rc_proof_count++;
-        *mod_res = proof_res;
+            (*mod_res)->val_rc_proof_count++;
     } else {
         /* no data or not a proof */
         /* if proof_res was provided, add to that, else create a new element */
-        CREATE_RESULT_BLOCK(proof_res, prev_res, *results);
-        aptr = &proof_res->val_rc_answer;
-        *mod_res = proof_res;
+        CREATE_RESULT_BLOCK((*mod_res), prev_res, *results);
+        aptr = &((*mod_res)->val_rc_answer);
     }
     *aptr = NULL;
     if (w_res) {
@@ -3129,6 +3127,7 @@ prove_nonexistence(val_context_t * ctx,
      */
     val_free_result_chain(*results);
     *results = NULL;
+    val_free_result_chain(*proof_res);
     *proof_res = NULL;
     return retval;
 }
@@ -3680,6 +3679,10 @@ verify_provably_insecure(val_context_t * context,
         }
         curzone_n = zonecut_n;
         zonecut_n = NULL;
+        if (results != NULL) {
+            val_free_result_chain(results);
+            results = NULL;
+        }
     }
     
 err:
