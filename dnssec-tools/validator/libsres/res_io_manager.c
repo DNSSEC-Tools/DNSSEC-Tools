@@ -732,6 +732,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                       struct name_server **respondent)
 {
     int             retval;
+    int             i;
 
     while (ea_list) {
         if (ea_list->ea_response) {
@@ -740,10 +741,14 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             if (SR_UNSET !=
                 (retval = clone_ns(respondent, ea_list->ea_ns)))
                 return retval;
-            if ((*respondent)->ns_number_of_addresses > 0) {
+            if ((*respondent)->ns_number_of_addresses > 1) {
                 /*
                  * fix the actual server 
                  */
+                for (i = 1; i < (*respondent)->ns_number_of_addresses; i++) {
+                    FREE((*respondent)->ns_address[i]);
+                    (*respondent)->ns_address[i] = NULL;
+                }
                 (*respondent)->ns_number_of_addresses = 1;
                 memcpy(((*respondent)->ns_address[0]),
                        ea_list->ea_ns->ns_address[ea_list->
