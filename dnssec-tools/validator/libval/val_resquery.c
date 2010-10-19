@@ -1150,6 +1150,7 @@ follow_referral_or_alias_link(val_context_t * context,
     do {                                                                \
         struct rrset_rec *rr_set;                                       \
         int ret_val;                                                    \
+        u_char *r;                                                      \
         rr_set = find_rr_set (respondent_server, listtype, name_n, type_h, \
                               set_type_h, class_h, ttl_h, hptr, rdata,  \
                               from_section, authoritive, zonecut_n);    \
@@ -1158,11 +1159,23 @@ follow_referral_or_alias_link(val_context_t * context,
         }                                                               \
         else {                                                          \
             if (type_h != ns_t_rrsig) {                                 \
-                /* Add this record to its chain of val_rr_rec's. */         \
+                /* Add this record to its chain of val_rr_rec's. */     \
                 ret_val = add_to_set(rr_set,rdata_len_h,rdata);         \
-            } else  {                                                   \
-                /* Add this record to the sig of rrset_rec. */          \
-                ret_val = add_as_sig(rr_set,rdata_len_h,rdata);         \
+            } else if (VAL_NO_ERROR ==                                  \
+                    (ret_val = add_as_sig(rr_set,rdata_len_h,rdata))) { \
+                /* Add this record to the sig of rrset_rec (above). */  \
+                /* and override the zonecut using the rrsig info */     \
+                if (rr_set->rrs_zonecut_n) {                            \
+                    FREE(rr_set->rrs_zonecut_n);                        \
+                    rr_set->rrs_zonecut_n = NULL;                       \
+                }                                                       \
+                if ((rdata_len_h > SIGNBY) &&                           \
+                     NULL != (r = namename(name_n, &rdata[SIGNBY]))) {  \
+                    rr_set->rrs_zonecut_n =                             \
+                        (u_char *) MALLOC (sizeof(u_char) *             \
+                                wire_name_length(r));                    \
+                    memcpy(rr_set->rrs_zonecut_n, r, wire_name_length(r));\
+                }                                                       \
             }                                                           \
         }                                                               \
         if (ret_val != VAL_NO_ERROR) {                                  \
@@ -1759,43 +1772,48 @@ digest_response(val_context_t * context,
                if (!n1 || !n2 || namename(n1, n2))
                    fix_zonecut = 0;
             } 
-
             if (fix_zonecut && !zonecut_was_modified) {
 
                 zonecut_was_modified = 1;
-                /* update the zonecut information */
-                if (matched_q->qc_zonecut_n)
-                    FREE(matched_q->qc_zonecut_n);
-                len = wire_name_length(name_n);
-                matched_q->qc_zonecut_n = 
-                    (u_char *) MALLOC (len * sizeof(u_char));
-                if (matched_q->qc_zonecut_n == NULL)
-                    goto done;    
-                memcpy (matched_q->qc_zonecut_n, name_n, len);
-                rrs_zonecut_n = matched_q->qc_zonecut_n;
-    
-                if (rrs_zonecut_n && 
-                        ns_name_ntop(rrs_zonecut_n, rrs_zonecut_p, sizeof(rrs_zonecut_p)) == -1) {
-                    ret_val =  VAL_BAD_ARGUMENT;
-                    goto done;
-                }
 
-                val_log(context, LOG_DEBUG, 
+                /* don't do anything if our existing zonecut matches the new one  */
+                if (!matched_q->qc_zonecut_n ||
+                    namecmp(matched_q->qc_zonecut_n, name_n)) {
+
+                    /* update the zonecut information */
+                    if (matched_q->qc_zonecut_n) 
+                        FREE(matched_q->qc_zonecut_n);
+                    len = wire_name_length(name_n);
+                    matched_q->qc_zonecut_n = 
+                        (u_char *) MALLOC (len * sizeof(u_char));
+                    if (matched_q->qc_zonecut_n == NULL)
+                        goto done;    
+                    memcpy (matched_q->qc_zonecut_n, name_n, len);
+                    rrs_zonecut_n = matched_q->qc_zonecut_n;
+    
+                    if (rrs_zonecut_n && 
+                            ns_name_ntop(rrs_zonecut_n, rrs_zonecut_p, sizeof(rrs_zonecut_p)) == -1) {
+                        ret_val =  VAL_BAD_ARGUMENT;
+                        goto done;
+                    }
+
+                    val_log(context, LOG_DEBUG, 
                         "digest_response(): Setting zonecut for {%s %d %d} query responses to %s",
                         query_name_p, query_class_h, query_type_h, rrs_zonecut_p);
-                /*
-                 * go back to all the rrsets that we created 
-                 * and fix the zonecut info 
-                 */
-                FIX_ZONECUT(learned_answers, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR)
-                    goto done;
-                FIX_ZONECUT(learned_proofs, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR)
-                    goto done;
-                FIX_ZONECUT(learned_zones, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR)
-                    goto done;
+                    /*
+                     * go back to all the rrsets that we created 
+                     * and fix the zonecut info 
+                     */
+                    FIX_ZONECUT(learned_answers, rrs_zonecut_n, ret_val);
+                    if (ret_val != VAL_NO_ERROR)
+                        goto done;
+                    FIX_ZONECUT(learned_proofs, rrs_zonecut_n, ret_val);
+                    if (ret_val != VAL_NO_ERROR)
+                        goto done;
+                    FIX_ZONECUT(learned_zones, rrs_zonecut_n, ret_val);
+                    if (ret_val != VAL_NO_ERROR)
+                        goto done;
+                }
             } else if (fix_zonecut && namecmp(rrs_zonecut_n, name_n)) {
                 /*
                  * Multiple Zonecuts
