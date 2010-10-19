@@ -468,6 +468,8 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
 
     if (NULL == suite)
         return 1;
+
+    memset(&resp, 0, sizeof(resp));
     
     /*
      * Count the number of testcase entries 
