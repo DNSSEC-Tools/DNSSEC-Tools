@@ -1,11 +1,11 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.6
-Release: 4%{?dist}
+Version: 1.8
+Release: 3%{?dist}
 License: BSD
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
-Source0: http://downloads.sourceforge.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
+Source0: https://www.dnssec-tools.org/downloads/%{name}-%{version}.tar.gz
 Source1: dnssec-tools-dnsval.conf
 Source2: libval-config
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -17,7 +17,7 @@ Requires:  perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 BuildRequires: openssl-devel
 BuildRequires: perl(Test) perl(ExtUtils::MakeMaker)
 
-Patch4: dnssec-tools-linux-conf-paths-1.2.patch
+Patch4: dnssec-tools-linux-conf-paths-1.7.patch
 
 %description
 
@@ -58,7 +58,7 @@ C-based libraries useful for developing dnssec aware tools.
 %patch4 -p0
 
 %build
-%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf --disable-static
+%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf --disable-static --with-nsec3 --with-ipv6 --with-dlv
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' validator/libtool
@@ -301,6 +301,18 @@ rm -rf %{buildroot}
 %{_mandir}/man3/val_freeaddrinfo.3.gz
 
 %changelog
+* Tue Oct  5 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.8-3
+- Added the . trust anchor and set default policy
+
+* Tue Oct  5 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.8-2
+- Added nsec3 option
+
+* Fri Sep 24 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.8-1
+- Update to the upstream 1.8 release
+
+* Thu Jul  1 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.7-1
+- Update to upstream version 1.7
+
 * Tue Jun 01 2010 Marcela Maslanova <mmaslano@redhat.com> - 1.6-4
 - Mass rebuild with perl-5.12.0
 
