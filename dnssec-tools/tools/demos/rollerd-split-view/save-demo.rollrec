@@ -1,16 +1,18 @@
 
-roll "subdom inside"
-	zonename	"subdom.example.com"
-	zonefile	"subdom.in.example.com.signed"
-	keyrec		"subdom.in.example.com.krf"
+roll "inside example"
+	zonename	"example.com"
+	zonefile	"inside.example.com.signed"
+	keyrec		"inside.example.com.krf"
+	directory	"dir-example-in"
 	maxttl		"60"
 	display		"1"
 	phasestart1
 
-roll "subdom.example.com"
-	zonename	"subdom.example.com"
-	zonefile	"subdom.example.com.signed"
-	keyrec		"subdom.example.com.krf"
+roll "example.com"
+	zonename	"example.com"
+	zonefile	"example.com.signed"
+	keyrec		"example.com.krf"
+	directory	"dir-example-out"
 	maxttl		"60"
 	display		"1"
 	phasestart2
