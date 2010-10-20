@@ -106,7 +106,7 @@ AC_ARG_WITH(perl-build-args,
 AC_SUBST(PERLARGS)
 
 missing=""
-for module in ExtUtils::MakeMaker Net::DNS Net::DNS::SEC GraphViz XML::Simple
+for module in ExtUtils::MakeMaker Net::DNS Net::DNS::SEC Date::Parse
 do
    AC_MSG_CHECKING(for perl module $module)
 
@@ -119,7 +119,24 @@ do
    fi
 done
 if test -n "$missing" ; then
-   AC_MSG_ERROR([Missing perl modules: $missing])
+   AC_MSG_ERROR([Missing required perl modules: $missing])
+fi
+
+missing=""
+for module in GraphViz Mail::Mailer::sendmail XML::Simple
+do
+   AC_MSG_CHECKING(for recommended perl module $module)
+
+   $PERLPROG -e "require $module" > /dev/null 2>&1
+   if test $? -ne 0; then
+      AC_MSG_RESULT(no);
+      missing="$missing $module"
+   else
+      AC_MSG_RESULT(ok);
+   fi
+done
+if test -n "$missing" ; then
+   AC_MSG_WARN([Missing recommended perl modules: $missing])
 fi
 
 expanded_sysconfdir=`eval echo $sysconfdir`
