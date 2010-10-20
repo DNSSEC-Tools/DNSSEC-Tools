@@ -420,11 +420,11 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     prev = temp;
 
     while (temp) {
-        if ((namecmp(temp->qfq_query->qc_original_name, name_n) == 0)
-            && (temp->qfq_query->qc_type_h == type_h)
+        if ((temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
             && ((flags == VAL_QFLAGS_ANY) ||
-                (temp->qfq_flags == flags))) {
+                (temp->qfq_flags == flags))
+            && (namecmp(temp->qfq_query->qc_original_name, name_n) == 0)) {
 #ifdef LIBVAL_DLV
             if (type_h == ns_t_dlv) {
                 int matches = 0;
