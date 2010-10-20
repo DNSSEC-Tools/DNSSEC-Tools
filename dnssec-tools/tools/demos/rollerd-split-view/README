@@ -12,8 +12,9 @@ rollerd-split-view demo
 	DNSSEC-Tools rollover daemon.
 
 	This demo shows the the operation of rollerd as it controls a
-	split-view zone.  There are  two views to the subdom.example.com
-	zone:  subdom.example.com and subdom.in.example.com.
+	split-view zone.  There are  two views to the example.com zone:
+	example.com and inside.example.com.  The views' files will be
+	stored in dir.example.out and dir.example.in, respectively.
 
 To run the demo:
 
@@ -51,11 +52,11 @@ To stop the demo:
 
 Demo Operation:
 
-subdom.example.com and subdom.in.example.com.
+example.com and inside.example.com.
 
 	- The demo follows the rollover operation of two views of the zone
-	  subdom.example.com.  The views are subdom.example.com and
-	  subdom.in.example.com.  This is a very simple demo -- the rollover
+	  example.com.  The views are example.com and
+	  inside.example.com.  This is a very simple demo -- the rollover
 	  phase and key names are what visibly change.
 
 	- The colors of the blocks in the "Rollover Phase" column change to
@@ -149,11 +150,15 @@ Files:
 	rc.blinkenlights		Variables used by blinkenlights.
 	rundemo				Executes demo.
 	save-demo.rollrec		Pristine copy of demo's rollrec file.
-	save-subdom.example.com		Pristine copy of one view's zone file.
-	save-subdom.in.example.com	Pristine copy of one view's zone file.
-	subdom.example.com		Active copy of one view's zone file.
-	subdom.example.com.krf		Keyrec file for one view's zone.
-	subdom.example.com.signed	One view's signed zone.
-	subdom.in.example.com		Active copy of one view's zone file.
-	subdom.in.example.com.krf	Keyrec file for one view's zone.
-	subdom.in.example.com.signed	One view's signed zone.
+	save-example.com		Pristine copy of one view's zone file.
+	save-inside.example.com		Pristine copy of one view's zone file.
+
+	dir.example.out/
+		example.com		Active copy of one view's zone file.
+		example.com.krf		Keyrec file for one view's zone.
+		example.com.signed	One view's signed zone.
+		inside.example.com	Active copy of one view's zone file.
+
+	dir.example.in/
+		inside.example.com.krf		Keyrec file for one view's zone.
+		inside.example.com.signed	One view's signed zone.
