@@ -931,6 +931,16 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
             val_log(ctx, LOG_INFO,
                     "is_trusted_key(): Existing trust anchor did not match at this level: %s", zp);
             if (ctx->g_opt && ctx->g_opt->closest_ta_only) {
+#ifdef LIBVAL_DLV
+                if (flags & VAL_QUERY_USING_DLV) {
+                /* 
+                 * we could have only reached this state in DLV
+                 * if there was some trust anchor above 
+                 */
+                    *status = VAL_AC_WAIT_FOR_TRUST;
+                    return VAL_NO_ERROR;
+                }
+#endif
                 *status = VAL_AC_NO_LINK;
                 return VAL_NO_ERROR;
             }
