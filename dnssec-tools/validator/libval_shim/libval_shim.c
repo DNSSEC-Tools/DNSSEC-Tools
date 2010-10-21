@@ -209,22 +209,31 @@ getnameinfo(const struct sockaddr * sa, socklen_t salen, char * host,
 #endif
 {
   val_status_t          val_status;
-  char *addr;
+  char addrbuf[INET6_ADDRSTRLEN + 1];
+  const char *addr;
   int ret;
 
   if (libval_shim_init())
     return EAI_FAIL;
 
-  addr = inet_ntoa(((const struct sockaddr_in*)sa)->sin_addr);
-  val_log(NULL, LOG_DEBUG, "libval_shim: getnameinfo(%s,%d) called: wrapper\n", 
-	  addr, ntohs(((const struct sockaddr_in*)sa)->sin_port));
+  if (sa->sa_family == AF_INET) {
+    addr = inet_ntop(AF_INET, &((const struct sockaddr_in*)sa)->sin_addr, 
+                                addrbuf, sizeof(addrbuf)); 
+  } else if (sa->sa_family == AF_INET6) {
+    addr = inet_ntop(AF_INET6, &((const struct sockaddr_in6*)sa)->sin6_addr, 
+                                addrbuf, sizeof(addrbuf)); 
+  } else {
+    return EAI_FAMILY;
+  } 
+  val_log(NULL, LOG_DEBUG, "libval_shim: getnameinfo(%s) called: wrapper\n", 
+          addr);
 
   ret = val_getnameinfo(libval_shim_ctx, sa, salen, host, hostlen, 
-			serv, servlen, flags,
-			&val_status);
+			            serv, servlen, flags,
+			            &val_status);
 
-  val_log(NULL,LOG_DEBUG,"libval_shim: getnameinfo(%s,%d) = (%s:%s) ret = %d\n",
-	  addr, ntohs(((const struct sockaddr_in*)sa)->sin_port), host, serv, ret);
+  val_log(NULL,LOG_DEBUG,"libval_shim: getnameinfo(%s) = (%s:%s) ret = %d\n",
+	      addr, host, serv, ret);
 
   if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
       return ret;
