@@ -1207,7 +1207,15 @@ val_getnameinfo(val_context_t * context,
      */
     if (serv && servlen > 0) {
         struct servent *sent;
-        int port = ((const struct sockaddr_in*)sa)->sin_port;
+        int port;
+        if (sa->sa_family == AF_INET) {
+            port = ((const struct sockaddr_in*)sa)->sin_port;
+        } else if (sa->sa_family == AF_INET6) {
+            port = ((const struct sockaddr_in6*)sa)->sin6_port;
+        } else {
+            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): Address family %d not known.", sa->sa_family);
+            return EAI_FAMILY;
+        }
 
         val_log(ctx, LOG_DEBUG, 
             "val_getnameinfo(): get service for port(%d)",ntohs(port));
