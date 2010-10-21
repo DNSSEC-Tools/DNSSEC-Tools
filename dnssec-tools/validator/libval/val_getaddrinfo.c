@@ -1190,14 +1190,14 @@ val_getnameinfo(val_context_t * context,
             serv == NULL ? "(null)" : serv);
 
 
+    *val_status = VAL_UNTRUSTED_ANSWER;
+
     /*
      * check misc parameters, there should be at least one of host or
      * server, check if flags indicate host is required 
      */
     if (!val_status || !sa)
       return EAI_FAIL;
-
-    *val_status = VAL_UNTRUSTED_ANSWER;
 
     if (!host && !serv) 
       return EAI_NONAME;
@@ -1210,7 +1210,7 @@ val_getnameinfo(val_context_t * context,
         int port = ((const struct sockaddr_in*)sa)->sin_port;
 
         val_log(ctx, LOG_DEBUG, 
-            "val_getnameinfo(): get service for port(%d)\n",ntohs(port));
+            "val_getnameinfo(): get service for port(%d)",ntohs(port));
         if (flags & NI_DGRAM)
             sent = getservbyport(port, "udp");
         else
@@ -1220,13 +1220,21 @@ val_getnameinfo(val_context_t * context,
             return EAI_FAIL;
 
         if (flags & NI_NUMERICSERV) {
-            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICSERV\n");
+            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICSERV");
             snprintf(serv, servlen, "%d", ntohs(sent->s_port));
         } else {
             strncpy(serv, sent->s_name, servlen);
         }
         val_log(ctx, LOG_DEBUG, "val_getnameinfo(): service is %s : %s ",
                 serv, sent->s_proto);
+    }
+
+    /*
+     * should the host be looked up 
+     */
+    if (!host || hostlen == 0) {
+        *val_status = VAL_TRUSTED_ANSWER;
+        return 0;
     }
 
     /*
@@ -1259,36 +1267,31 @@ val_getnameinfo(val_context_t * context,
     }
 
     /*
-     * should the host be looked up 
+     * get string values: address string, reverse domain string, on
+     * the wire reverse domain string 
      */
-    if (host && hostlen > 0) {
-        /*
-         * get string values: address string, reverse domain string, on
-         * the wire reverse domain string 
-         */
-        memset(number_string, 0, sizeof(number_string));
-        memset(domain_string, 0, sizeof(domain_string));
+    memset(number_string, 0, sizeof(number_string));
+    memset(domain_string, 0, sizeof(domain_string));
 
-        if ((0 != (ret_status =
+    if ((0 != (ret_status =
              address_to_string(theAddress, theAddressFamily,
                      number_string, sizeof(number_string))))
-              ||
-            (0 != (ret_status =
-              address_to_reverse_domain(theAddress, theAddressFamily,
+         ||
+        (0 != (ret_status =
+             address_to_reverse_domain(theAddress, theAddressFamily,
                       domain_string, sizeof(domain_string))))) {
             return ret_status;
-        }
-
-        /*
-         * set numeric value initially for either NI_NUMERICHOST or failed lookup
-         */
-        strncpy(host, number_string, hostlen);
-        *val_status = VAL_TRUSTED_ANSWER;
     }
+
+    /*
+     * set numeric value initially for either NI_NUMERICHOST or failed lookup
+     */
+    strncpy(host, number_string, hostlen);
 
     val_log(ctx, LOG_DEBUG, "val_getnameinfo(): pre-val flags(%d)\n", flags);
 
     if ((flags & NI_NUMERICHOST) && !(flags & NI_NAMEREQD)) {
+        *val_status = VAL_TRUSTED_ANSWER;
         return 0;
     }
 
@@ -1341,18 +1344,14 @@ val_getnameinfo(val_context_t * context,
             break;
         } 
     }
+    val_free_answer_chain(val_res);
 
-    if (res == NULL) {
-        *val_status = VAL_UNTRUSTED_ANSWER;
-    }
-                    
     val_log(ctx, LOG_DEBUG,
           "val_getnameinfo(): val_get_rrset for host %s, returned %s with lookup status %d and validator status %d : %s",
           domain_string, host,
           val_rnc_status, 
           *val_status, p_val_status(*val_status));
 
-    val_free_answer_chain(val_res);
 
     return val_rnc_status;
 
