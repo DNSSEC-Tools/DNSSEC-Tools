@@ -1166,8 +1166,7 @@ val_getnameinfo(val_context_t * context,
                 size_t servlen, int flags, val_status_t * val_status)
 {
 
-    const int       addr_size = 100;
-    char            domain_string[addr_size], number_string[addr_size];
+    char            domain_string[NS_MAXDNAME], number_string[NS_MAXDNAME];
     const u_char   *theAddress = NULL;
     int             theAddressFamily;
     int             val_rnc_status = 0, ret_status = 0;
@@ -1207,7 +1206,7 @@ val_getnameinfo(val_context_t * context,
      */
     if (serv && servlen > 0) {
         struct servent *sent;
-        int port;
+        u_int16_t port;
         if (sa->sa_family == AF_INET) {
             port = ((const struct sockaddr_in*)sa)->sin_port;
         } else if (sa->sa_family == AF_INET6) {
@@ -1224,17 +1223,18 @@ val_getnameinfo(val_context_t * context,
         else
             sent = getservbyport(port, NULL);
 
-        if (!sent)
-            return EAI_FAIL;
-
-        if (flags & NI_NUMERICSERV) {
-            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICSERV");
-            snprintf(serv, servlen, "%d", ntohs(sent->s_port));
-        } else {
-            strncpy(serv, sent->s_name, servlen);
-        }
-        val_log(ctx, LOG_DEBUG, "val_getnameinfo(): service is %s : %s ",
+        if (sent) {
+            if (flags & NI_NUMERICSERV) {
+                val_log(ctx, LOG_DEBUG, "val_getnameinfo(): NI_NUMERICSERV");
+                snprintf(serv, servlen, "%d", ntohs(sent->s_port));
+            } else {
+                strncpy(serv, sent->s_name, servlen);
+            }
+            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): service is %s : %s ",
                 serv, sent->s_proto);
+        } else {
+            strncpy(serv, "", servlen);
+        }
     }
 
     /*
@@ -1262,7 +1262,7 @@ val_getnameinfo(val_context_t * context,
         if (!(flags & NI_NUMERICHOST) &&
             (0 == memcmp(&((const struct sockaddr_in6 *) sa)->sin6_addr,
                          _ipv6_wrapped_ipv4, sizeof(_ipv6_wrapped_ipv4)))) {
-            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): ipv4 wrapped addr\n");
+            val_log(ctx, LOG_DEBUG, "val_getnameinfo(): ipv4 wrapped addr");
             theAddress += sizeof(_ipv6_wrapped_ipv4);
             theAddressFamily = AF_INET;
         }
@@ -1296,14 +1296,15 @@ val_getnameinfo(val_context_t * context,
      */
     strncpy(host, number_string, hostlen);
 
-    val_log(ctx, LOG_DEBUG, "val_getnameinfo(): pre-val flags(%d)\n", flags);
+    val_log(ctx, LOG_DEBUG, "val_getnameinfo(): pre-val flags(%d)", flags);
 
     if ((flags & NI_NUMERICHOST) && !(flags & NI_NAMEREQD)) {
         *val_status = VAL_TRUSTED_ANSWER;
+        val_log(ctx, LOG_DEBUG, "val_getnameinfo(): returning host (%s)", host);
         return 0;
     }
 
-    val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)\n", flags);
+    val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)", flags);
     if (VAL_NO_ERROR != 
               (retval = val_get_rrset(ctx,       /*val_context_t*  */
                                       domain_string, /*u_char *wire_domain_name */
@@ -1319,7 +1320,7 @@ val_getnameinfo(val_context_t * context,
     }
 
     if (!val_res) {
-        val_log(ctx, LOG_ERR, "val_getnameinfo(): EAI_MEMORY\n");
+        val_log(ctx, LOG_ERR, "val_getnameinfo(): EAI_MEMORY");
         *val_status = VAL_UNTRUSTED_ANSWER;
         return EAI_MEMORY;
     }
