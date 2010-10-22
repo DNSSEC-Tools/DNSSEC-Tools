@@ -1698,6 +1698,19 @@ digest_response(val_context_t * context,
         }
 
         /*
+         * If we're asking for a DS and have got an SOA with the same name
+         * the name server likely does not understand DNSSEC
+         */
+        if ( query_type_h == ns_t_ds &&
+             set_type_h == ns_t_soa &&
+             !namecmp(name_n, query_name_n)) {
+            val_log(context, LOG_DEBUG, "digest_response(): bad response for DS record. NS probably not DNSSEC-capable.");
+            matched_q->qc_state = Q_WRONG_ANSWER;
+            ret_val = VAL_NO_ERROR;
+            goto done;
+        }
+
+        /*
          * if we have an SOA in the ans/auth section
          *  or if we have a DNSKEY in the ans section
          *  or if we have an NS in the ans/auth section with answer > 0 or a noerror error code
@@ -1748,6 +1761,10 @@ digest_response(val_context_t * context,
             if (query_type_h == ns_t_ds &&
                 NULL != namename (name_n, query_name_n)) {
                 fix_zonecut = 0;
+                val_log(context, LOG_DEBUG, "digest_response(): bad response for DS record. NS probably not DNSSEC-capable.");
+                matched_q->qc_state = Q_WRONG_ANSWER;
+                ret_val = VAL_NO_ERROR;
+                goto done;
             } else if (nothing_other_than_alias) {
                 /* 
                  * make sure that the NS is closer to the alias than the target; 
@@ -2160,7 +2177,7 @@ val_resquery_rcv(val_context_t * context,
         return ret_val;
     }
 
-    if (matched_q->qc_state > Q_ERROR_BASE) {
+    if (matched_q->qc_state == Q_RESPONSE_ERROR) {
         /* try a different NS if possible */
         int edns0;
         free_domain_info_ptrs(*response);
