@@ -854,8 +854,7 @@ val_gethostbyaddr_r(val_context_t * context,
                     int *h_errnop, val_status_t * val_status)
 {
 
-    const int       addr_size = 100;
-    char            domain_string[addr_size];
+    char            domain_string[NS_MAXDNAME];
     int             ret_status = 0, bufused = 0;
     struct val_answer_chain *val_res = NULL;
     struct val_answer_chain *res;
@@ -905,11 +904,11 @@ val_gethostbyaddr_r(val_context_t * context,
         return (NO_RECOVERY);
     }
 
-    memset(domain_string, 0, sizeof(char) * addr_size);
+    memset(domain_string, 0, sizeof(domain_string));
 
     if (0 !=
         (ret_status = address_to_reverse_domain(addr, type,
-                                                domain_string, addr_size))
+                                                domain_string, sizeof(domain_string)))
         ) {
         *h_errnop = ret_status;
         return ret_status;
