@@ -27,9 +27,9 @@ AC_PATH_PROG(BIND_DNSSEC_SIGNZONE, dnssec-signzone)
 if test -z "$BIND_DNSSEC_SIGNZONE"; then
   AC_ERROR([Could not locate dnssec-signzone. Please install BIND utilities.])
 fi
-AC_PATH_PROG(BIND_DNSSEC_CHECKZONE, dnssec-checkzone)
+AC_PATH_PROG(BIND_DNSSEC_CHECKZONE, named-checkzone)
 if test -z "$BIND_DNSSEC_CHECKZONE"; then
-  AC_ERROR([Could not locate dnssec-checkzone. Please install BIND utilities.])
+  AC_ERROR([Could not locate named-checkzone. Please install BIND utilities.])
 fi
 # ? rndc
 
