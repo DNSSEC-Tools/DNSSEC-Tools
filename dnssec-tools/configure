@@ -1739,8 +1739,8 @@ if test -z "$BIND_DNSSEC_SIGNZONE"; then
 echo "$as_me: error: Could not locate dnssec-signzone. Please install BIND utilities." >&2;}
    { (exit 1); exit 1; }; }
 fi
-# Extract the first word of "dnssec-checkzone", so it can be a program name with args.
-set dummy dnssec-checkzone; ac_word=$2
+# Extract the first word of "named-checkzone", so it can be a program name with args.
+set dummy named-checkzone; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
 if test "${ac_cv_path_BIND_DNSSEC_CHECKZONE+set}" = set; then
@@ -1779,8 +1779,8 @@ echo "${ECHO_T}no" >&6
 fi
 
 if test -z "$BIND_DNSSEC_CHECKZONE"; then
-  { { echo "$as_me:$LINENO: error: Could not locate dnssec-checkzone. Please install BIND utilities." >&5
-echo "$as_me: error: Could not locate dnssec-checkzone. Please install BIND utilities." >&2;}
+  { { echo "$as_me:$LINENO: error: Could not locate named-checkzone. Please install BIND utilities." >&5
+echo "$as_me: error: Could not locate named-checkzone. Please install BIND utilities." >&2;}
    { (exit 1); exit 1; }; }
 fi
 # ? rndc
