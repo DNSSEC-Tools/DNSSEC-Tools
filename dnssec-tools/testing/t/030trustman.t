@@ -87,7 +87,7 @@ copy ("$etcfiles/resolv.conf","resolv.conf") or
 
 my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
 
-print "trustmand command :\n$trustman_command\n" if (exists $options{v});
+print "trustman command :\n$trustman_command\n" if (exists $options{v});
 
 
 # Tests
