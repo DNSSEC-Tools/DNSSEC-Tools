@@ -794,8 +794,7 @@ verify_next_assertion(val_context_t * ctx,
 
         if (as->val_ac_status == VAL_AC_TRUST ||
             (is_verified && 
-                    (as->val_ac_status == VAL_AC_TRUST_NOCHK || 
-                     nextrr->rr_status == VAL_AC_TRUST_POINT))) {
+                     nextrr->rr_status == VAL_AC_TRUST_POINT)) {
             /* we've verified a trust anchor */
 
             as->val_ac_status = VAL_AC_TRUST; 
@@ -808,6 +807,7 @@ verify_next_assertion(val_context_t * ctx,
             
         /* else check if we're trying to verify some key in the authentication chain */
         } else if ( the_set->rrs_type_h == ns_t_dnskey && 
+                    as != the_trust &&
                     as->val_ac_status != VAL_AC_TRUST &&
                      (is_verified || the_sig->rr_status == VAL_AC_ALGORITHM_NOT_SUPPORTED)) {
 
