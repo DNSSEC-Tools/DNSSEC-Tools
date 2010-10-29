@@ -368,7 +368,7 @@ my $rollctl_halt = "perl -I$dt_plibs -I$dt_parch  $rollctl -pidfile $pidfile -ha
 
 if (exists $options{v}) {
   print "named command :\n$named_command\n";
-  print "trustmand command :\n$trustman_command\n";
+  print "trustman command :\n$trustman_command\n";
   print "zonesigner_signzone:\n$zonesigner_signzone\n";
   print "rollerd_singlerun:\n$rollerd_singlerun\n";
   print "rollerd_tillstopped:\n$rollerd_tillstopped\n";
