@@ -878,13 +878,15 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
      * for the remaining nodes, if the length of the zones are 
      * the same, look for an exact match 
      */
+    int ta_specified = 0;
+    int found = 0;
     for (; ta_cur &&
          (wire_name_length(ta_cur->zone_n) == name_len);
          ta_cur = ta_cur->next) {
 
         if (!namecmp(ta_cur->zone_n, zp)) {
 
-            int found = 0;
+            ta_specified = 1;
             for (curkey = key; curkey; curkey = curkey->rr_next) {
                 /*
                  * parse key and compare
@@ -923,29 +925,31 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
                     dnskey.public_key = NULL;
                 }
             }
-            if (found) {
-                *status = VAL_AC_TRUST_NOCHK;
-                return VAL_NO_ERROR;
-            }
+            /* we will continue as long as there is a trust anchor above this level */
+        }
+    }
 
-            val_log(ctx, LOG_INFO,
-                    "is_trusted_key(): Existing trust anchor did not match at this level: %s", zp);
-            if (ctx->g_opt && ctx->g_opt->closest_ta_only) {
+    if (ta_specified) {
+        if (found) {
+            *status = VAL_AC_TRUST_NOCHK;
+            return VAL_NO_ERROR;
+        }
+
+        val_log(ctx, LOG_INFO,
+                "is_trusted_key(): Existing trust anchor did not match at this level: %s", zp);
+        if (ctx->g_opt && ctx->g_opt->closest_ta_only) {
 #ifdef LIBVAL_DLV
-                if (flags & VAL_QUERY_USING_DLV) {
+            if (flags & VAL_QUERY_USING_DLV) {
                 /* 
                  * we could have only reached this state in DLV
                  * if there was some trust anchor above 
                  */
-                    *status = VAL_AC_WAIT_FOR_TRUST;
-                    return VAL_NO_ERROR;
-                }
-#endif
-                *status = VAL_AC_NO_LINK;
+                *status = VAL_AC_WAIT_FOR_TRUST;
                 return VAL_NO_ERROR;
             }
-
-            /* we will continue as long as there is a trust anchor above this level */
+#endif
+            *status = VAL_AC_NO_LINK;
+            return VAL_NO_ERROR;
         }
     }
 
