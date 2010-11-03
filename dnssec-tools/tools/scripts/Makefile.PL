@@ -29,6 +29,7 @@ use ExtUtils::MakeMaker;
 			    getds
 			    keyarch
 			    krfcheck
+			    lights
 			    lskrf
 			    lsroll
 			    lsdnssec
@@ -110,7 +111,7 @@ BINDDIR = $binddir
 
 CP	= /bin/cp
 RM	= /bin/rm
-PP	= /usr/bin/pp
+PP	= /usr/local/bin/pp
 
 
 DTCONFFILE = dnssec-tools.conf.PAR
