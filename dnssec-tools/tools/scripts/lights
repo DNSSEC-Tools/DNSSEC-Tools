@@ -1,0 +1,1035 @@
+#!/usr/bin/perl
+#
+# Copyright 2010 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# DNSSEC-Tools:  lights
+#
+#	lights provides a very simple overview of the rollover state
+#	of a set of zones.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::BootStrap;
+
+#
+# Version information.
+#
+my $NAME   = "lights";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.8";
+
+#######################################################################
+#
+#			program (non-GUI) data
+#
+
+#
+# Variables for command options.
+#
+my %options = ();				# Filled option array.
+my @opts =
+(
+	"interval=s",			# Interval between zone checks.
+	"labels",			# Give labels in GUI.
+	"verbose",			# Give a verbose output.
+
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+my $interval = 10;				# Time to wait between checks.
+my $labels   = 0;				# Give labels in GUI.
+my $verbose  = 0;				# Verbose flag.
+
+######################################################################
+#
+
+my $DEFAULT_INTERVAL = 60;			# Default interval in seconds.
+my $SMALL_INT	     = 10;			# Smallest interval.
+my $naptime	     = $DEFAULT_INTERVAL;	# Interval between zone checks.
+
+my $cmd = "rollctl -zonestatus";	# Command to get zone status.
+
+######################################################################
+#
+# Data for zones.
+#
+
+my $ored	= -1;		# Old count of KSK-6 rolling zones.
+my $oyellow	= -1;		# Old count of non-KSK-6 rolling zones.
+my $ogreen	= -1;		# Old count of non-rolling zones.
+
+my $okyellow	= -1;		# Old count of KSK non-KSK-6 rolling zones.
+my $ozyellow	= -1;		# Old count of ZSK rolling zones.
+
+my $skipcnt = 0;		# Number of skipped zones.
+
+my $red	   = 0;			# Number of KSK-6 rolling zones.
+my $yellow = 0;			# Number of non-KSK-6 rolling zones.
+my $green  = 0;			# Number of non-rolling zones.
+
+my $kyellow = 0;		# Number of KSK non-KSK-6 rolling zones.
+my $zyellow = 0;		# Number of ZSK rolling zones.
+
+my @greenzones = ();		# Zones in normal state.
+my @kyellowzones = ();		# Zones in KSK rollover state.
+my @zyellowzones = ();		# Zones in ZSK rollover state.
+my @redzones = ();		# Zones in KSK rollover phase 6.
+
+######################################################################
+#
+# Detect required Perl modules.
+#
+dnssec_tools_load_mods(
+			'Tk'			=> "",
+			'Tk::Dialog'		=> "",
+			'Tk::DialogBox'		=> "",
+			'Tk::FileSelect'	=> "",
+			'Tk::Pane'		=> "",
+			'Tk::Table'		=> "",
+		      );
+
+
+###########################################################################
+#
+#			Tk GUI data
+#
+
+########################################################
+#
+# Main window data.
+#
+my $MAINTITLE	= "DNSSEC-Tools Rollover Overview";
+
+#
+# The main window and help window.
+#
+my $wm;						# Main window.
+my $helpwin;					# Help window.
+my $inhelpwind	 = 0;				# Showing help window flag.
+
+#
+# The contents of the main window and its frames.
+#
+my $mbar;					# Menubar frame.
+my $body;					# Window body frame.
+
+my $skipframe;					# Frame for skip counts.
+
+my $lights;					# Lights table.
+
+########################################################
+#
+# Menubar and menu data.
+#
+
+#
+# Menu item widgets.
+#
+my $fm_open;					# Open keyrec file item.
+my $fm_quit;					# Quit file item.
+
+my $hm_help;					# Help item.
+
+#
+# Font data for text in button window.
+#
+my $fontsize    = 18;
+my $font        = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+
+########################################################
+#
+# Data about the rows to be displayed.
+#
+
+my $numrows = 3;				# Number of rows to display.
+
+#
+# Rows for specific colors.
+#
+my $REDROW	= 0;
+my $YELLOWROW	= 1;
+my $GREENROW	= 2;
+
+#
+# Colors used as backgrounds in the GUI.
+#
+my $COLOR_RED = 'red';
+my $COLOR_DARKRED = 'DarkRed';
+my $COLOR_GREEN = 'green';
+my $COLOR_DARKGREEN = 'DarkGreen';
+my $COLOR_YELLOW = 'yellow';
+my $COLOR_DARKYELLOW = 'goldenrod';
+
+###########################################################################
+
+main();
+exit(0);
+
+#---------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $argc = @ARGV;
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Build the main window.
+	#
+	buildmainwind();
+
+	#
+	# Start the whole shebang rollin'.
+	#
+	MainLoop();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine gets the options from the command line.
+#
+sub doopts
+{
+	my $tmpival  = '';		# Temporary interval value.
+
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or help info if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Set some flags based on the command line.
+	#
+	$tmpival = $options{'interval'} if(defined($options{'interval'}));
+	$verbose = $options{'verbose'};
+	$labels	 = $options{'labels'};
+
+	#
+	# Parse the interval argument.  If a time unit isn't given, we'll 
+	# assume we're dealing in minutes.
+	#
+	if($tmpival ne '')
+	{
+		my $nums;				# Number of time units.
+		my $unit;				# Time unit.
+		my $mult;				# Time-unit multiplier.
+
+		#
+		# Pull the number/units tuple out of the argument.
+		#
+		if(! ($tmpival =~ /^([0-9]+)([smh])$/))
+		{
+			if(! ($tmpival =~ /^([0-9]+)$/))
+			{
+				print STDERR "invalid interval\n";
+				usage();
+			}
+
+			$nums = $tmpival;
+			$unit = 'm';
+		}
+		else
+		{
+			$nums = $1;
+			$unit = $2;
+		}
+
+		#
+		# Get the unit multiplier.
+		#
+		if($unit eq 's')
+		{
+			$mult = 1;
+		}
+		elsif($unit eq 'm')
+		{
+			$mult = 60;
+		}
+		elsif($unit eq 'h')
+		{
+			$mult = 60 * 60;
+		}
+
+		#
+		# Calculate the number of seconds in our interval.
+		#
+		$interval = $nums * $mult;
+
+		print "checking status every $interval seconds\n";
+	}
+
+	#
+	# Ensure the file-check interval isn't too small, then bump it up
+	# into the realm of milliseconds.
+	#
+	if($interval < $SMALL_INT)
+	{
+		print STDERR "smallest interval is $SMALL_INT seconds\n";
+		exit(1);
+	}
+	$interval = $interval * 1000;
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildmainwind()
+#
+# Purpose:	Create and initialize the main window.
+#
+sub buildmainwind
+{
+	my $file;					# File menu.
+	my $view;					# View menu.
+	my $opts;					# Options menu.
+	my $help;					# Help menu.
+
+	my $curfile;					# Current keyrec.
+	my $keyrecs;					# Keyrec listbox.
+	my $nulline;					# Empty line.
+
+	#
+	# Create the main window and set its size.
+	#
+	$wm = MainWindow->new(-title => $MAINTITLE);
+
+	#
+	# Create the frames we'll need.
+	#
+	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$mbar->pack(-fill => 'x');
+	$body->pack(-fill => 'x');
+
+	#
+	# Create our menus.
+	#
+	$file = $mbar->Menubutton(-text => 'File',
+				  -tearoff => 0,
+				  -underline => 0);
+	$opts = $mbar->Menubutton(-text => 'Options',
+				  -tearoff => 0,
+				  -underline => 0);
+	$help = $mbar->Menubutton(-text => 'Help',
+				  -tearoff => 0,
+				  -underline => 0);
+
+	##################################################
+	#
+	# Add the File menu entries.
+	#
+	$fm_quit = $file->command(-label => 'Quit',
+			          -command => \&file_quit,
+			          -accelerator => 'Ctrl+Q',
+			          -underline => 0);
+	$file->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-q>',\&file_quit);
+
+	##################################################
+	#
+	# Add the Options menu entries.
+	#
+#	$opts->command(-label => 'Set Update Interval Window',
+#		       -command => [\&set_interval, 0],
+#		       -underline => 0);
+#	$opts->pack(-side => 'left');
+
+
+	##################################################
+	#
+	# Add the Help menu entries.
+	#
+	$hm_help = $help->command(-label => 'Help',
+			          -command => \&help_help,
+			          -accelerator => 'Ctrl+H',
+			          -underline => 0);
+	$help->pack(-side => 'right');
+
+	$wm->bind('<Control-Key-h>',\&help_help);
+
+	##################################################
+	#
+	# Create a listbox to hold the light table and give it an
+	# initial population.
+	#
+	maketable();
+	setlights();
+
+	#
+	# Arrange to have the light table rebuilt in a bit.
+	#
+	$wm->repeat($interval, \&setlights);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	setlights()
+#
+# Purpose:	
+#
+sub setlights
+{
+	my $lab;				# Label to add to light table.
+	my $clr;				# Color for zone slots.
+
+	#
+	# Figure out what to put in each light.
+	#
+	zonecnts();
+
+	#
+	# Create a brand new light table.
+	#
+	maketable();
+
+	#
+	# Add info on the "red" zones.
+	#
+	$clr = ($red > 0) ? $COLOR_RED : $COLOR_DARKRED; 
+	$lab = $lights->Button( -text		  => "$red",
+				-font		  => $font,
+				-anchor		  => 'center',
+				-state 		  => 'normal',
+				-command	  => [\&showzones, 'red'],
+				-activebackground => $clr,
+				-background	  => $clr);
+	$lights->put($REDROW,0,$lab);
+
+	#
+	# Add a label on the "red" zones.
+	#
+	if($labels)
+	{
+		$lab = $lights->Button( -text		  => "need attention",
+					-font		  => $font,
+					-anchor		  => 'w',
+					-state 		  => 'normal',
+					-command	=> [\&showzones, 'red'],
+					-activebackground => $clr,
+					-background	  => $clr);
+		$lights->put($REDROW,1,$lab);
+	}
+
+	#
+	# Add info on the "yellow" zones.
+	#
+	$clr = ($yellow > 0) ? $COLOR_YELLOW : $COLOR_DARKYELLOW; 
+	$lab = $lights->Button( -text		  => "$kyellow / $zyellow",
+				-font		  => $font,
+				-anchor		  => 'center',
+				-state 		  => 'normal',
+				-command	  => [\&showzones, 'yellow'],
+				-activebackground => $clr,
+				-background	  => $clr);
+	$lights->put($YELLOWROW,0,$lab);
+
+	#
+	# Add a label on the "yellow" zones.
+	#
+	if($labels)
+	{
+		$lab = $lights->Button( -text		  => "rollover",
+					-font		  => $font,
+					-anchor		  => 'center',
+					-state 		  => 'normal',
+					-command     => [\&showzones, 'yellow'],
+					-activebackground => $clr,
+					-background	  => $clr);
+		$lights->put($YELLOWROW,1,$lab);
+	}
+
+	#
+	# Add info on the "green" zones.
+	#
+	$clr = ($green > 0) ? $COLOR_GREEN : $COLOR_DARKGREEN; 
+	$lab = $lights->Button( -text		  => "$green",
+				-font		  => $font,
+				-anchor		  => 'center',
+				-state 		  => 'normal',
+				-command	  => [\&showzones, 'green'],
+				-activebackground => $clr,
+				-background	  => $clr);
+	$lights->put($GREENROW,0,$lab);
+
+	#
+	# Add a label on the "green" zones.
+	#
+	if($labels)
+	{
+		$lab = $lights->Button( -text		  => "normal operation",
+					-font		  => $font,
+					-anchor		  => 'e',
+					-state 		  => 'normal',
+					-command      => [\&showzones, 'green'],
+					-activebackground => $clr,
+					-background	  => $clr);
+		$lights->put($GREENROW,1,$lab);
+	}
+
+	#
+	# Pack it all up.
+	#
+	$lights->update();
+	$lights->pack(-fill => 'both', -expand => 1);
+	$body->pack(-fill => 'both', -expand => 1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      maketable()
+#
+# Purpose:      Create the rollrec name table.
+#
+sub maketable
+{
+	my $numcols;				# Number of columns in table.
+
+	#
+	# Get the number of columns.
+	#
+	$numcols = ($labels == 0) ? 1 : 2;
+
+	#
+	# Destroy the rollrec-name table's widgets.
+	#
+	if($lights)
+	{
+		$lights->clear;
+		$lights->destroy;
+	}
+
+	#
+	# Create the new button table.
+	#
+	$lights = $body->Table(	-rows		=> $numrows,
+				-columns	=> $numcols,
+				-scrollbars	=> 'e',
+				-relief		=> 'raised',
+				-borderwidth	=> 1,
+				-fixedrows	=> 0,
+				-takefocus	=> 1,
+			      );
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	zonecnts()
+#
+# Purpose:      Figure out the counts of zones in various states.
+#
+sub zonecnts
+{
+	#
+	# Reset the counters.
+	#
+	$green	 = 0;
+	$kyellow = 0;
+	$zyellow = 0;
+	$red	 = 0;
+
+	#
+	# Reset the zone lists.
+	#
+	@greenzones = ();
+	@kyellowzones = ();
+	@zyellowzones = ();
+	@redzones = ();
+
+	#
+	# Get the rollover status of all the zones.
+	#
+	open(ZS,"$cmd |");
+
+	#
+	# Set a bunch of counters based on output from the zone status.
+	#
+	while(<ZS>)
+	{
+		my $line = $_;
+		my $zone;			# Zone name.
+		my $state;			# Roll/skip state.
+		my $roll;			# KSK/ZSK phase.
+		my $num;			# Rollover phase number.
+
+		#
+		# Atomize the line.
+		#
+		chomp $line;
+		$line =~ /^(.+)\/(.+)\W+(\w+)\W+([KZ]SK) (\d):/;
+		$zone = $1;
+		$state = $3;
+		$roll = $4;
+		$num = $5;
+
+		#
+		# If the number atom is 0, we're not rolling.
+		#
+		if($num == 0)
+		{
+			$green++;
+			push @greenzones, $zone;
+		}
+		elsif($roll eq 'KSK')
+		{
+			#
+			# If we're waiting for DS-publishing, then we'll
+			# bump our danger count.
+			# Otherwise, we'll increment our KSK-rollover count.
+			#
+			if($num == 6)
+			{
+				$red++;
+				push @redzones, $zone;
+			}
+			else
+			{
+				$kyellow++;
+				push @kyellowzones, $zone;
+			}
+		}
+		elsif($roll eq 'ZSK')
+		{
+			#
+			# Bump our ZSK-rollover count.
+			#
+			$zyellow++;
+			push @zyellowzones, $zone;
+		}
+
+	}
+
+	#
+	# Clean up the status check command.
+	#
+	close(ZS);
+
+	#
+	# Calculate the overall rollover count.
+	#
+	$yellow = $kyellow + $zyellow;
+
+	#
+	# If the counts have changed since our last check and the user
+	# wants them, we'll print the latest counts to the screen.
+	#
+	if((($red     != $ored)		||
+	    ($kyellow != $okyellow)	||
+	    ($zyellow != $ozyellow)	||
+	    ($green   != $ogreen))		&& $verbose)
+	{
+		print "red\t$red\n";
+		print "yellow\t$yellow\t$kyellow\t$zyellow\n";
+		print "green\t$green\n";
+		print "\n";
+
+		$ored	  = $red;
+		$okyellow = $kyellow;
+		$ozyellow = $zyellow;
+		$ogreen	  = $green;
+	}
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	showzones()
+#
+sub showzones
+{
+	my $color = shift;			# Zone color to display.
+	my $dlg;				# Dialog widget.
+	my $lab;				# Label for dialog box.
+
+	my @zones;				# Sorted list of zones.
+	my $state = 'unknown';			# Text rollover state.
+
+	#
+	# Get the appropriate zone array and state label.
+	#
+	if($color eq 'green')
+	{
+		@zones = sort @greenzones;
+		$state = 'normal operation';
+	}
+	elsif($color eq 'yellow')
+	{
+		@zones = sort @kyellowzones;
+		$state = 'KSK rollover';
+	}
+	elsif($color eq 'red')
+	{
+		@zones = sort @redzones;
+		$state = 'need of attention';
+	}
+
+
+	#
+	# Make the dialog box.
+	#
+	$dlg = $wm->DialogBox(-title	=> "$NAME:  $color Zones",
+			      -buttons	=> ["Okay"]);
+
+	#
+	# Add a label describing what we'll be showing.
+	#
+	$lab = $dlg->Label(-text   => "Zones in $state:",
+			   -anchor => 'w');
+	$lab->pack(-side => 'top');
+
+	#
+	# Fake a zone if we don't have any for this state.
+	#
+	push @zones, '(none)' if(@zones == 0);
+
+	#
+	# Add all the state's zones to the dialog box.
+	#
+	foreach my $zone (@zones)
+	{
+		$lab = $dlg->Label(-text => "$zone", -anchor => 'w');
+		$lab->pack(-side => 'top');
+	}
+
+	#
+	# If we're looking at the zones in rollover state, we'll have to add
+	# lines for the ZSK-rolling zones.  We only added the KSK-rolling
+	# zones above.
+	#
+	if($color eq 'yellow')
+	{
+		#
+		# Get the ZSK zones.
+		#
+		@zones = sort @zyellowzones;
+		$state = 'ZSK rollover';
+
+		#
+		# Add a blank line and a label.
+		#
+		$lab = $dlg->Label(-text => " ");
+		$lab->pack(-side => 'top');
+		$lab = $dlg->Label(-text => "Zones in $state:",
+						-anchor => 'w');
+		$lab->pack(-side => 'top');
+
+		#
+		# Maybe add a fake, empty zone name.
+		#
+		push @zones, '(none)' if(@zones == 0);
+
+		#
+		# Add entries to the dialog for all the ZSK zones.
+		#
+		foreach my $zone (@zones)
+		{
+			$lab = $dlg->Label(-text => "$zone", -anchor => 'w');
+			$lab->pack(-side => 'top');
+		}
+	}
+
+	#
+	# Show the dialog box.
+	#
+	$dlg->Show();
+}
+
+##############################################################################
+#
+# Menu widget interface routines.
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	file_quit()
+#
+sub file_quit
+{
+	#
+	# Destroy the rollrec name table's widgets.
+	#
+	if($lights)
+	{
+		$lights->clear;
+		$lights->destroy;
+	}
+
+#	print STDERR "exiting...\n";
+	exit(0);
+}
+
+##############################################################################
+#
+# Utility routines
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	helpbegone()
+#
+# Purpose:	Destroy a help window.
+#
+sub helpbegone
+{
+	$helpwin->destroy();
+	$inhelpwind = 0;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	errorbox()
+#
+# Purpose:	Display an error dialog box.
+#
+sub errorbox
+{
+	my $msg  = shift;			# Warning message.
+	my $dlg;				# Warning dialog widget.
+
+	$dlg = $wm->Dialog(-title => "$NAME Error",
+			   -text  => $msg,
+			   -default_button => "Okay",
+			   -buttons => ["Okay"]);
+	$dlg->Show();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	help_help()
+#
+# Purpose:	Display a help window.
+#
+sub help_help
+{
+	my $hframe;					# Help frame.
+	my $wdgt;					# General widget.
+
+	my $helpstr;
+
+	$helpstr = "
+
+lights - DNSSEC-Tools Rollover Overview GUI Display
+         
+SYNOPSIS
+         
+    lights [options]
+
+DESCRIPTION
+
+lights gives a very simple overview of the roll status of a set of zones.
+The rollover status is retrieved from rollerd, and then status counts are
+given in a \"traffic light\" display.  In contrast, blinkenlights gives a
+detailed display of the roll status of a set of zones.
+
+A window is created that has three colored sections - green, yellow, and
+red.  The green section displays a count of those zones that are in \"normal\"
+status; that is, they are not in rollover.  The yellow section displays a
+count of those zones that are in rollover.  The red section displays a count
+of those zones that are in need of attention.  A common cause for this last
+state is because a zone is in phase 6 of KSK rollover and is waiting for its
+parent zone to publish the child's new DS record.
+
+Clicking on the color rows in the main window will bring up a dialog box that
+lists the zones in that state.  This list will not automatically update as
+zones change rollover state.
+
+More information may be found in lights' man page.
+
+";
+
+	#
+	# If we've already got another help window, we'll give an error and
+	# return.  Otherwise, we'll turn on our in-helpwindow flag.
+	#
+	if($inhelpwind)
+	{
+		errorbox("Multiple help windows cannot be created\n");
+		return;
+	}
+	$inhelpwind = 1;
+
+	#
+	# Create a new window to hold our help info.  Bind up some
+	# key accelerators, too.
+	#
+	$helpwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Help!',
+				  -borderwidth => 1);
+	$helpwin->bind('<Control-Key-q>',\&file_quit);
+	$helpwin->bind('<Control-Key-w>',\&helpbegone);
+
+	#
+	# Now make the containers for the window.
+	#
+	$hframe = $helpwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$hframe->pack(-fill => 'x');
+
+	#
+	# Add the help data to the frame.
+	#
+	$wdgt = $hframe->Label(-text => $helpstr,
+			       -justify => 'left');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Add a button to dismiss the window.
+	#
+	$wdgt = $hframe->Button(-text => 'Done',
+				-command => \&helpbegone);
+	$wdgt->pack(-side => 'top');
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:      Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  lights [options] <rollrec-file>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-interval n           interval between file checks\n";
+	print STDERR "\t\t-labels               give labels in GUI\n";
+	print STDERR "\t\t-verbose              give verbose output\n";
+	print STDERR "\t\t-Version              program version\n";
+	print STDERR "\t\t-help                 display a help message\n";
+	exit(0);
+}
+
+1;
+
+#############################################################################
+
+=pod
+
+=head1 NAME
+
+lights - DNSSEC-Tools Rollover Overview GUI Display
+
+=head1 SYNOPSIS
+
+  lights [options]
+
+=head1 DESCRIPTION
+
+B<lights> gives a very simple overview of the rollover status of a set of
+zones.  The rollover status is retrieved from B<rollerd>, and then status
+counts are given in a "traffic light" display.  In contrast, B<blinkenlights>
+gives a detailed display of the roll status of a set of zones.
+
+A window is created that has three colored sections - green, yellow, and red.
+The green section displays a count of those zones that are in "normal" status;
+that is, they are not in rollover.  The yellow section displays a count of
+those zones that are in rollover.  The red section displays a count of those
+zones that are in need of attention.  A common cause for this last state is
+because a zone is in phase 6 of KSK rollover and is waiting for its parent
+zone to publish the child's new DS record.
+
+Clicking on the color rows in the main window will bring up a dialog box that
+lists the zones in that state.  This list will not automatically update as
+zones change rollover state.
+
+=head1 OPTIONS
+
+B<lights> supports the following options.
+
+=over 4
+
+=item B<-interval wait-time>
+
+Interval between checks of zone rollover status  By default, I<wait-time> is
+given in minutes.  This can be adjusted by specifying one of the following
+time-unit suffixes.
+
+* s - seconds
+
+* m - minutes
+
+* h - hours
+
+Examples:
+
+* I<-interval 24> - 24 minutes
+
+* I<-interval 24s> - 24 seconds
+
+* I<-interval 24m> - 24 minutes
+
+* I<-interval 24h> - 24 hours
+
+=item B<-labels>
+
+Labels will be given for each color field in the GUI.
+
+=item B<-verbose>
+
+Give verbose output.
+
+=item B<-help>
+
+Give a usage message and exit.
+
+=item B<-Version>
+
+Displays the version information for B<lights> and the DNSSEC-Tools
+package.
+
+=back
+
+=head1 REQUIREMENTS
+
+B<lights> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+installed on your system.
+
+=head1 KNOWN ISSUES
+
+The following are known issues.  These will be resolved in the fullness of time.
+
+=over 4
+
+=item
+
+Segmentation violation on exit.
+This problem occurs on Mac OS X 10.4.9-10.4.11 with Perl 5.8.6;
+however, it does not occur on Mac OS X 10.5.8 with Perl 5.8.8. 
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2010 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<blinkenlights(8)>,
+B<bubbles(8)>,
+B<rollerd(8)>
+
+=cut
+
