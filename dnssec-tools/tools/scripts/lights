@@ -763,8 +763,11 @@ sub file_quit
 		$lights->destroy;
 	}
 
-#	print STDERR "exiting...\n";
-	exit(0);
+	#
+	# Destroy the main window.  This will cause MainLoop() to return,
+	# leading to the program exiting.
+	#
+	$wm->destroy;
 }
 
 ##############################################################################
@@ -1010,9 +1013,9 @@ The following are known issues.  These will be resolved in the fullness of time.
 
 =item
 
-Segmentation violation on exit.
-This problem occurs on Mac OS X 10.4.9-10.4.11 with Perl 5.8.6;
-however, it does not occur on Mac OS X 10.5.8 with Perl 5.8.8. 
+Resizing the window leaves the color blobs in their original size.
+This is an issue with the Tk widget used to display the color stripes.
+Other display methods are being investigated...
 
 =back
 
