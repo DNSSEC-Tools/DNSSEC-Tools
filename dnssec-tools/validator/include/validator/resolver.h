@@ -275,6 +275,25 @@ const char     *p_sres_type(int type);
 #define ns_msg_getflag libsres_msg_getflag
 #endif
 
+/*
+ * asynchronous interface to the resolver
+ */
+
+/** foward declare of opaque structure used by async routines */
+struct expected_arrival;
+
+struct expected_arrival *
+res_async_query_send(const char *name, const u_int16_t type_h,
+                     const u_int16_t class_h, struct name_server *pref_ns);
+
+void
+res_async_query_select_info(struct expected_arrival *ea, int *nfds,
+                            fd_set *fds, struct timeval *timeout);
+int
+res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds);
+
+int
+res_io_is_finished(struct expected_arrival *ea);
 
 #ifdef __cplusplus
 }                               /* extern C */
