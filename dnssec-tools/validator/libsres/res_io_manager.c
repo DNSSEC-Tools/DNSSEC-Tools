@@ -571,7 +571,7 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
                size_t signed_length, struct name_server *ns, long delay)
 {
     int             try_index;
-    struct expected_arrival *temp;
+    struct expected_arrival *temp, *new_ea;
     struct timeval  next_event;
 
     /*
@@ -605,17 +605,17 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
     /*
      * Register this request 
      */
+    new_ea = res_ea_init(signed_query, signed_length, ns, delay);
+    if (new_ea == NULL) {
+        /** We can't add this */
+        pthread_mutex_unlock(&mutex);
+        return SR_IO_MEMORY_ERROR;
+    }
     if (transactions[*transaction_id] == NULL) {
         /*
          * Add this as the first request 
          */
-        if ((transactions[*transaction_id] =
-             res_ea_init(signed_query, signed_length, ns,
-                         delay)) == NULL) {
-            /** We can't add this */
-            pthread_mutex_unlock(&mutex);
-            return SR_IO_MEMORY_ERROR;
-        }
+        transactions[*transaction_id] = new_ea;
     } else {
         /*
          * Retaining order is important 
@@ -623,12 +623,7 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
         temp = transactions[*transaction_id];
         while (temp->ea_next)
             temp = temp->ea_next;
-        if ((temp->ea_next =
-             res_ea_init(signed_query, signed_length, ns,
-                         delay)) == NULL) {
-            pthread_mutex_unlock(&mutex);
-            return SR_IO_MEMORY_ERROR;
-        }
+        temp->ea_next = new_ea;
     }
 
     pthread_mutex_unlock(&mutex);
