@@ -496,6 +496,7 @@ get(const char *name,
                 wait_for_res_data(&pending_desc, &closest_event);
             }
         } while (ret_val == SR_NO_ANSWER_YET);
+        res_cancel(&trans_id); /* cleanup transaction */
     }
 
     return ret_val;
