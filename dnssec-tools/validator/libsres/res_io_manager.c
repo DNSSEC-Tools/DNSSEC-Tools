@@ -1353,7 +1353,7 @@ res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds)
 void
 res_async_query_free(struct expected_arrival *ea)
 {
-
+    res_free_ea_list(ea);
 }
 
 void

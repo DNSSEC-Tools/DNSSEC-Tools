@@ -295,6 +295,9 @@ res_async_query_select_info(struct expected_arrival *ea, int *nfds,
 int
 res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds);
 
+void
+res_async_query_free(struct expected_arrival *ea);
+
 int
 res_io_is_finished(struct expected_arrival *ea);
 

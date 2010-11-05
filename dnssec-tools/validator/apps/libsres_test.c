@@ -152,7 +152,7 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
                 rc = res_io_check_one(ea[i], NULL, &now);
                 in_flight += rc;
                 if (rc < 0 && res_io_is_finished(ea[i])) {
-                    res_free_ea_list(ea[i]);
+                    res_async_query_free(ea[i]);
                     ea[i] = NULL;
                 }
                 printf("rc %d for %d (%d in flight)\n", rc, i, in_flight);
@@ -174,7 +174,7 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
                 printf("%sanswer for %d (%d in flight)\n",
                        (SR_NO_ANSWER == rc) ? "no " : "", i, in_flight);
                 // dump_response(answer, answer_length);
-                res_free_ea_list(ea[i]);
+                res_async_query_free(ea[i]);
                 ea[i] = NULL;
                 ++answered;
             }
