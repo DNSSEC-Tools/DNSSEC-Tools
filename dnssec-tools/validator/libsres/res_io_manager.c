@@ -1228,3 +1228,115 @@ res_io_stall(void)
 
     sleep(100 - (tv.tv_sec % 100));
 }
+
+struct expected_arrival *
+res_async_query_send(const char *name, const u_int16_t type_h,
+                     const u_int16_t class_h, struct name_server *pref_ns)
+{
+    int                 ret_val = SR_UNSET;
+    u_char             *signed_query = NULL;
+    size_t              signed_length = 0;
+    struct name_server *ns_list = NULL;
+    struct name_server *ns;
+    struct expected_arrival *head = NULL, *new_ea, *temp_ea;
+    long                delay = 0;
+
+    if ((name == NULL) || (pref_ns == NULL))
+        return NULL;
+
+    /*
+     * clone nameservers and store to ns_list
+     */
+    if ((ret_val = clone_ns_list(&ns_list, pref_ns)) != SR_UNSET)
+        return NULL;
+
+    /*
+     * Loop through the list of destinations, form the query and send it
+     */
+    for (ns = ns_list; ns; ns = ns->ns_next) {
+
+        /** create payload */
+        ret_val = res_create_query_payload(ns, name, class_h, type_h,
+                                           &signed_query, &signed_length);
+        if (ret_val < 0)
+            break; /* fatal, bail */
+
+        /** create expected arrival struct */
+        new_ea = res_ea_init(signed_query, signed_length, ns, delay);
+        if (NULL == new_ea) {
+            FREE(signed_query);
+            ret_val = SR_IO_MEMORY_ERROR;
+            break; /* fatal, bail */
+        }
+
+        /** add to list */
+        if (NULL != head) {
+            temp_ea = head;
+            while(temp_ea->ea_next)
+                temp_ea = temp_ea->ea_next;
+            temp_ea->ea_next = new_ea;
+        } else
+            head = new_ea;
+
+        delay += LIBSRES_NS_STAGGER;
+    }
+
+    /** if bad ret_val, clear list, else send query */
+    if (ret_val != SR_UNSET) {
+        res_free_ea_list(head);
+        head = NULL;
+    }
+    else
+        ret_val = res_io_check_one(head,NULL,NULL);
+
+    return head;
+}
+
+void
+res_async_query_select_info(struct expected_arrival *ea, int *nfds,
+                            fd_set *fds, struct timeval *timeout)
+{
+    if (!ea || (!nfds && !fds && !timeout))
+        return;
+
+    res_io_select_info(ea, nfds, fds, timeout);
+}
+
+int
+res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds)
+{
+    int ret_val = SR_NO_ANSWER;
+
+    if (!ea || !handled || !fds)
+        return SR_INTERNAL_ERROR;
+
+    /*
+     * React to any active desciptors and see if we got a response, or
+     * if we at least still have an open socket (i.e. potential response).
+     */
+    *handled = res_io_read(fds, ea);
+    for( ; ea; ea = ea->ea_next) {
+        if (ea->ea_remaining_attempts == -1)
+            continue;
+        else if (ea->ea_response) {
+            ret_val = SR_UNSET;
+            break;
+        }
+        else if (ea->ea_socket)
+            ret_val = SR_NO_ANSWER_YET;
+    }
+
+    return ret_val;
+}
+
+void
+res_async_query_free(struct expected_arrival *ea)
+{
+
+}
+
+void
+res_async_query_cancel(struct expected_arrival *ea)
+{
+
+}
