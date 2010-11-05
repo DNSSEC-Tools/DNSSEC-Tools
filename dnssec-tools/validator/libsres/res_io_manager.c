@@ -240,9 +240,13 @@ res_io_send(struct expected_arrival *shipit)
     int             socket_type;
     size_t          socket_size;
     size_t          bytes_sent;
+    long            delay;
 
     if (shipit == NULL)
         return SR_IO_INTERNAL_ERROR;
+
+    if (res_io_debug)
+        printf("SENDING\n");
 
     socket_type = shipit->ea_using_stream ? SOCK_STREAM : SOCK_DGRAM;
 
@@ -330,6 +334,12 @@ res_io_send(struct expected_arrival *shipit)
         shipit->ea_socket = -1;
         return SR_IO_SOCKET_ERROR;
     }
+
+    delay = shipit->ea_ns->ns_retrans
+        << (shipit->ea_ns->ns_retry + 1 - shipit->ea_remaining_attempts--);
+    set_alarm(&shipit->ea_next_try, delay);
+    if (res_io_debug)
+        res_print_ea(shipit);
 
     return SR_IO_UNSET;
 }
@@ -481,8 +491,6 @@ res_io_check(int transaction_id, struct timeval *next_evt)
             do {
                 if (LTEQ(temp1->ea_next_try, tv)
                     && temp1->ea_remaining_attempts) {
-                    if (res_io_debug)
-                        printf("SENDING\n");
                     if (res_io_send(temp1) == SR_IO_SOCKET_ERROR) {
                         /*
                          * If there is another address, move to it
@@ -514,12 +522,6 @@ res_io_check(int transaction_id, struct timeval *next_evt)
                     } else {
                         if (i == transaction_id)
                             total++;
-                        delay = temp1->ea_ns->ns_retrans
-                            << (temp1->ea_ns->ns_retry + 1 -
-                                temp1->ea_remaining_attempts--);
-                        set_alarm(&temp1->ea_next_try, delay);
-                        if (res_io_debug)
-                            res_print_ea(temp1);
                     }
                 } else if (i == transaction_id)
                     total++;
