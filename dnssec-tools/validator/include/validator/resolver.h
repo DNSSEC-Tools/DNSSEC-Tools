@@ -235,6 +235,9 @@ int             clone_ns_list(struct name_server **ns_list,
 void            free_name_server(struct name_server **ns);
 void            free_name_servers(struct name_server **ns);
 
+void            res_io_set_debug(int val);
+int             res_io_get_debug(void);
+
 #ifndef HAVE_DECL_NS_NTOP
 int             ns_name_ntop(const u_char * src, char *dst, size_t dstsiz);
 #endif

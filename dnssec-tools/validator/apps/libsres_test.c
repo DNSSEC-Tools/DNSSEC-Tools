@@ -213,5 +213,8 @@ main(int argc, char** argv)
     int burst = atoi(argv[2]);
     int flight = atoi(argv[3]);
     int numq = atoi(argv[4]);
+
+    res_io_set_debug(1);
+
     query_async_test(async, burst, flight, numq);
 }
