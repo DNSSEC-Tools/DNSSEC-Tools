@@ -254,16 +254,23 @@ get_cached_rrset(struct val_query_chain *matched_q,
         if (tv.tv_sec < next_answer->rrs_ttl_x &&
             next_answer->rrs_class_h == class_h) {
 
+            /* don't match cnames/dnames for following types */
+            int do_alias_match = (type_h != ns_t_any && 
+                                  type_h != ns_t_soa &&
+                                  type_h != ns_t_rrsig && 
+                                  type_h != ns_t_dnskey && 
+                                  type_h != ns_t_ds) ? 1 : 0;
+
                 /* if matching type or cname indirection */
             if (((next_answer->rrs_type_h == type_h ||
                  (next_answer->rrs_type_h == ns_t_cname &&
-                  type_h != ns_t_any && type_h != ns_t_rrsig)) &&
+                  do_alias_match)) &&
                 /* and name is an exact match */
                 (namecmp(next_answer->rrs_name_n, name_n) == 0)) ||
                 /* OR */
                 /* DNAME indirection */
                 ((next_answer->rrs_type_h == ns_t_dname &&
-                  type_h != ns_t_any && type_h != ns_t_rrsig) &&
+                  do_alias_match) &&
                 /* and name applies */
                  (NULL != (u_char *) namename(name_n, 
                                     next_answer->rrs_name_n)))) {
