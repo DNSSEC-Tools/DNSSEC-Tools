@@ -69,17 +69,6 @@ static const int res_io_debug = FALSE;
 #define UPDATE(a,b) \
         if (a->tv_sec==0 || !LTEQ((*a),b)) memcpy (a, &b, sizeof(struct timeval))
 
-#define MOVE_TO_NEXT_ADDRESS(t) \
-    if (t->ea_socket != -1) close (t->ea_socket); \
-    t->ea_socket = -1; \
-    t->ea_which_address++; \
-    t->ea_remaining_attempts = t->ea_ns->ns_retry+1; \
-    set_alarm(&(t->ea_next_try), 0); \
-    set_alarm(&(t->ea_cancel_time),res_get_timeout(t->ea_ns));
-
-#define MORE_ADDRESSES(ea) \
-    ea->ea_which_address < (ea->ea_ns->ns_number_of_addresses-1)
-
 struct expected_arrival {
     int             ea_socket;
     struct name_server *ea_ns;
@@ -230,6 +219,22 @@ res_ea_init(u_char * signed_query, size_t signed_length,
     return temp;
 }
 
+void
+res_io_cancel_remaining_attempts(struct expected_arrival *ea)
+{
+    if (ea->ea_socket != -1) {
+        close(ea->ea_socket);
+        ea->ea_socket = -1;
+    }
+    ea->ea_remaining_attempts = -1;
+}
+
+int
+res_io_is_finished(struct expected_arrival *ea)
+{
+    return ea->ea_remaining_attempts == -1;
+}
+
 int
 res_io_send(struct expected_arrival *shipit)
 {
@@ -365,7 +370,11 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
     }
     
     pthread_mutex_lock(&mutex);
-    if ((temp = transactions[transaction_id]) == NULL) {
+    for (temp = transactions[transaction_id];
+         temp && temp->ea_remaining_attempts == -1;
+         temp = temp->ea_next)
+         ;
+    if (temp == NULL) {
         pthread_mutex_unlock(&mutex);
         return -1;  
     }
@@ -432,14 +441,106 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
 }
 
 static int
+res_io_next_address(struct expected_arrival *ea,
+                    const char *more_prefix, const char *no_more_str)
+{
+    /*
+     * If there is another address, move to it else cancel it 
+     */
+    if (ea->ea_which_address < (ea->ea_ns->ns_number_of_addresses-1)) {
+        /*
+         * Start over with new address 
+         */
+        if (ea->ea_socket != -1) {
+            close (ea->ea_socket);
+            ea->ea_socket = -1;
+        }
+        ea->ea_which_address++;
+        ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
+        set_alarm(&(ea->ea_next_try), 0);
+        set_alarm(&(ea->ea_cancel_time),res_get_timeout(ea->ea_ns));
+        if (res_io_debug) {
+            printf("%s - SWITCHING TO NEW ADDRESS\n", more_prefix);
+            res_print_ea(ea);
+        }
+    } else {
+        /*
+         * cancel this source 
+         */
+        res_io_cancel_remaining_attempts(ea);
+        if (res_io_debug) {
+            printf("%s\n", no_more_str);
+            res_print_ea(ea);
+        }
+    }
+}
+
+int
+res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
+                 struct timeval *now)
+{
+    int             total = 0, canceled = 0, sent = 0;
+    struct timeval  local_now;
+    
+    /*
+     * if caller didn't pass us current time, get it
+     */
+    if (NULL == now) {
+        now = &local_now;
+        gettimeofday(&local_now, NULL);
+        local_now.tv_usec = 0;
+    }
+
+    for ( ; ea; ea = ea->ea_next ) {
+        if (ea->ea_remaining_attempts == -1)
+            continue;
+
+        /*
+         * check for timeouts. If there is another address, move to it
+         */
+        if ( LTEQ(ea->ea_cancel_time, (*now))) {
+            if (res_io_debug)
+                printf("res_io_check Socket=%d\n", ea->ea_socket);
+            res_io_next_address(ea, "TIMEOUTS", "TIMEOUT - CANCELING");
+            --total;
+        }
+
+        /*
+         * send next try. on error, if there is another address, move to it
+         */
+        else if (LTEQ(ea->ea_next_try, (*now))) {
+            int needed_new_socket = (ea->ea_socket == -1);
+            while (ea->ea_remaining_attempts != -1) {
+                if (res_io_send(ea) == SR_IO_SOCKET_ERROR) {
+                    res_io_next_address(ea, "ERROR",
+                                        "CANCELING DUE TO SENDING ERROR");
+                }
+                else {
+                    if (needed_new_socket)
+                        ++total;
+                    break; /* from while remaining attempts */
+                }
+            } /* while */
+        }
+
+        /*
+         * update next event
+         */
+        if (next_evt && ea->ea_remaining_attempts != -1) {
+            UPDATE(next_evt, ea->ea_cancel_time);
+            UPDATE(next_evt, ea->ea_next_try);
+        }
+    }
+
+    return total;
+}
+
+static int
 res_io_check(int transaction_id, struct timeval *next_evt)
 {
     int             i;
-    int             total = 0;
     struct timeval  tv;
-    struct expected_arrival *temp1;
-    struct expected_arrival *temp2;
-    long            delay;
+    struct expected_arrival *ea;
 
     gettimeofday(&tv, NULL);
     tv.tv_usec = 0;
@@ -454,119 +555,24 @@ res_io_check(int transaction_id, struct timeval *next_evt)
 
     pthread_mutex_lock(&mutex);
 
-    for (i = 0; i < MAX_TRANSACTIONS; i++) {
-        while (transactions[i]
-               && LTEQ(transactions[i]->ea_cancel_time, tv)) {
-            if (res_io_debug) {
-                printf("res_io_check trans_id=%d\n", i);
-            }
-            /*
-             * If there is another address, move to it else cancel it 
-             */
-            if (MORE_ADDRESSES(transactions[i])) {
-                /*
-                 * Start over with new address 
-                 */
-                MOVE_TO_NEXT_ADDRESS(transactions[i]);
-                if (res_io_debug) {
-                    printf("TIMEOUTS - SWITCHING TO NEW ADDRESS (*)\n");
-                    res_print_ea(transactions[i]);
-                }
-            } else {
-                /*
-                 * Retire this source 
-                 */
-                temp1 = transactions[i];
-                transactions[i] = transactions[i]->ea_next;
-                if (res_io_debug) {
-                    printf("TIMEOUT - CANCELING (*)\n");
-                    res_print_ea(temp1);
-                }
-                res_sq_free_expected_arrival(&temp1);
-            }
-        }
+    for (i = 0; i < MAX_TRANSACTIONS; i++)
+        if (transactions[i])
+            res_io_check_one(transactions[i], next_evt, &tv);
 
-        if (transactions[i]) {
-            temp1 = transactions[i];
-
-            do {
-                if (LTEQ(temp1->ea_next_try, tv)
-                    && temp1->ea_remaining_attempts) {
-                    if (res_io_send(temp1) == SR_IO_SOCKET_ERROR) {
-                        /*
-                         * If there is another address, move to it
-                         * else cancel it 
-                         */
-                        if (MORE_ADDRESSES(temp1)) {
-                            /*
-                             * Start over with new address 
-                             */
-                            MOVE_TO_NEXT_ADDRESS(temp1);
-                            if (res_io_debug) {
-                                printf
-                                    ("ERROR - SWITCHING TO NEW ADDRESS\n");
-                                res_print_ea(temp1);
-                            }
-                        } else {
-                            if (res_io_debug) {
-                                res_print_ea(temp1);
-                                printf("CANCELING DUE TO SENDING ERROR\n");
-                            }
-                            /*
-                             * Cancel this particular source 
-                             */
-                            temp1->ea_remaining_attempts = 0;
-                            gettimeofday(&temp1->ea_cancel_time, NULL);
-                            if (res_io_debug)
-                                res_print_ea(temp1);
-                        }
-                    } else {
-                        if (i == transaction_id)
-                            total++;
-                    }
-                } else if (i == transaction_id)
-                    total++;
-
-                UPDATE(next_evt, temp1->ea_cancel_time);
-                UPDATE(next_evt, temp1->ea_next_try);
-
-                while (temp1->ea_next &&
-                       LTEQ(temp1->ea_next->ea_cancel_time, tv)) {
-                    /*
-                     * Same logic as before, if there are more
-                     * addresses for this source try them, else
-                     * cancel the source.
-                     */
-                    if (MORE_ADDRESSES(temp1->ea_next)) {
-                        /*
-                         * Start over with new address 
-                         */
-                        MOVE_TO_NEXT_ADDRESS(temp1->ea_next);
-                        if (res_io_debug) {
-                            printf("TIMEOUT - SWITCHING TO NEW ADDRESS\n");
-                            res_print_ea(temp1->ea_next);
-                        }
-                    } else {
-                        if (res_io_debug) {
-                            printf("TIMEOUT - CANCELING\n");
-                            res_print_ea(temp1->ea_next);
-                        }
-                        temp2 = temp1->ea_next;
-                        temp1->ea_next = temp1->ea_next->ea_next;
-                        res_sq_free_expected_arrival(&temp2);
-                    }
-                }
-
-                temp1 = temp1->ea_next;
-            } while (temp1);
-        }
-    }
-
+    ea = transactions[transaction_id];
     pthread_mutex_unlock(&mutex);
 
     if (res_io_debug)
         printf("Next event is at %ld\n", next_evt->tv_sec);
-    return total;
+
+    /*
+     * check for remaining attempts for this transaction
+     */
+    for (; ea; ea = ea->ea_next)
+        if (ea->ea_remaining_attempts != -1)
+            return 1;
+
+    return 0; /* no events for this transaction */
 }
 
 int
@@ -794,16 +800,13 @@ res_io_read_tcp(struct expected_arrival *arrival)
 
     if (complete_read(arrival->ea_socket, arrival->ea_response, len_h) !=
         len_h) {
-        close(arrival->ea_socket);
-        arrival->ea_socket = -1;
         FREE(arrival->ea_response);
         arrival->ea_response = NULL;
         arrival->ea_response_length = 0;
         /*
          * Cancel this source 
          */
-        arrival->ea_remaining_attempts = 0;
-        gettimeofday(&arrival->ea_cancel_time, NULL);
+        res_io_cancel_remaining_attempts(arrival);
         return SR_IO_SOCKET_ERROR;
     }
     return SR_IO_UNSET;
@@ -870,18 +873,15 @@ res_io_read_udp(struct expected_arrival *arrival)
     return SR_IO_UNSET;
 
   error:
-    close(arrival->ea_socket);
     if (res_io_debug)
         printf("Closing socket %d, read_udp failed\n", arrival->ea_socket);
-    arrival->ea_socket = -1;
     FREE(arrival->ea_response);
     arrival->ea_response = NULL;
     arrival->ea_response_length = 0;
     /*
      * Cancel this source 
      */
-    arrival->ea_remaining_attempts = 0;
-    gettimeofday(&arrival->ea_cancel_time, NULL);
+    res_io_cancel_remaining_attempts(arrival);
     return SR_IO_SOCKET_ERROR;
 }
 
