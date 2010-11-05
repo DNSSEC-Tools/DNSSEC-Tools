@@ -736,24 +736,38 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                       struct name_server **respondent)
 {
     int             retval;
-    int             i;
+    int             i, save_count = -1;
 
-    while (ea_list) {
-        if (ea_list->ea_response) {
+    for( ; ea_list; ea_list = ea_list->ea_next) {
+        if (ea_list->ea_remaining_attempts == -1)
+            continue;
+
+        if (!ea_list->ea_response)
+            continue;
+
+        { /** dummy block to preserve indentation; reformat later */
             *answer = ea_list->ea_response;
             *answer_length = ea_list->ea_response_length;
+            if (res_io_debug)
+                printf("get_response got %d bytes on socket %d\n",
+                       *answer_length, ea_list->ea_socket);
+
+            /*
+             * don't clone all when we just need one. temporarily set
+             * number of nameservers to 1 before cloning.
+             */
+            if (ea_list->ea_ns->ns_number_of_addresses > 1) {
+                save_count = ea_list->ea_ns->ns_number_of_addresses;
+                ea_list->ea_ns->ns_number_of_addresses = 1;
+            }
             if (SR_UNSET !=
                 (retval = clone_ns(respondent, ea_list->ea_ns)))
                 return retval;
-            if ((*respondent)->ns_number_of_addresses > 1) {
-                /*
-                 * fix the actual server 
-                 */
-                for (i = 1; i < (*respondent)->ns_number_of_addresses; i++) {
-                    FREE((*respondent)->ns_address[i]);
-                    (*respondent)->ns_address[i] = NULL;
-                }
-                (*respondent)->ns_number_of_addresses = 1;
+            if (save_count > 0) /* restore original count */
+                ea_list->ea_ns->ns_number_of_addresses = save_count;
+
+            /** if response wasn't from first address, fixup respondent */
+            if (ea_list->ea_which_address != 0) {
                 memcpy(((*respondent)->ns_address[0]),
                        ea_list->ea_ns->ns_address[ea_list->
                                                   ea_which_address],
@@ -763,7 +777,6 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             ea_list->ea_response_length = 0;
             return SR_IO_GOT_ANSWER;
         }
-        ea_list = ea_list->ea_next;
     }
     return SR_IO_UNSET;
 }
