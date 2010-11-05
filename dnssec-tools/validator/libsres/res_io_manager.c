@@ -824,9 +824,9 @@ res_io_read_udp(struct expected_arrival *arrival)
         return SR_IO_INTERNAL_ERROR;
 
     if (ioctl(arrival->ea_socket, FIONREAD, &bytes_waiting) == -1) {
-        close(arrival->ea_socket);
         if (res_io_debug)
             printf("Closing socket %d, FIONREAD failed\n", arrival->ea_socket);
+        close(arrival->ea_socket);
         arrival->ea_socket = -1;
         return SR_IO_SOCKET_ERROR;
     }
@@ -903,40 +903,36 @@ res_switch_to_tcp(struct expected_arrival *ea)
      * Use the same "ea_which_address," since it already got a rise. 
      */
     ea->ea_using_stream = TRUE;
-    ea->ea_socket = -1;
+    if (ea->ea_socket != -1) {
+        close(ea->ea_socket);
+        ea->ea_socket = -1;
+    }
     ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
     set_alarm(&ea->ea_next_try, 0);
 
     set_alarm(&ea->ea_cancel_time, res_get_timeout(ea->ea_ns));
 }
 
-void
+int
 res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 {
-    int             sock, i;
+    int             handled = 0, i;
     struct expected_arrival *arrival;
 
-    i = getdtablesize(); 
-    if (i > FD_SETSIZE)
-        i = FD_SETSIZE;
-    for (sock = 0; sock < i; ++sock)
-        if (FD_ISSET(sock, read_descriptors)) {
-            if (res_io_debug)
-                printf("ACTIVITY on %d\n", sock);
-            /*
-             * This socket is ready for reading 
-             */
-            arrival = ea_list;
-            while (arrival && arrival->ea_socket != sock)
-                arrival = arrival->ea_next;
+    for (; ea_list; ea_list = ea_list->ea_next) {
+        /*
+         * skip canceled/expired attempts, or sockets without data
+         */
+        if ((ea_list->ea_remaining_attempts == -1) ||
+            ! FD_ISSET(ea_list->ea_socket, read_descriptors))
+            continue;
 
-            if (arrival == NULL) {
-                if (res_io_debug)
-                    printf
-                        ("Ummm, we lost the record that this socket belongs to.\nSorry.\n");
-                close(sock);
-                continue;
-            }
+        { /* dummy block to preserve indentation; remove later */
+
+            if (res_io_debug)
+                printf("ACTIVITY on %d\n", ea_list->ea_socket);
+            ++handled;
+            arrival = ea_list;
             if (res_io_debug)
                 res_print_ea(arrival);
 
@@ -944,17 +940,14 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 /** Use TCP */
                 if (res_io_read_tcp(arrival) == SR_IO_SOCKET_ERROR)
                     continue;
-
-                if (res_io_debug)
-                    printf("Read via TCP\n");
             } else {
                 /** Use UDP */
                 if (res_io_read_udp(arrival) == SR_IO_SOCKET_ERROR)
                     continue;
-
-                if (res_io_debug)
-                    printf("Read via UDP\n");
             }
+            if (res_io_debug)
+                printf("Read %d byptes via %s\n", arrival->ea_response_length,
+                       arrival->ea_using_stream ? "TCP" : "UDP");
 
             /*
              * Make sure this is the query we want (buffer id's match).
@@ -990,7 +983,8 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 && ((HEADER *) arrival->ea_response)->tc)
                 res_switch_to_tcp(arrival);
         }
-    return;
+    }
+    return handled;
 }
 
 int
