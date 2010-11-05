@@ -77,9 +77,10 @@ res_io_get_debug(void)
  * microseconds, just like res_send().
  */
 #define LTEQ(a,b)           (a.tv_sec<=b.tv_sec)
-#define MAX_TRANSACTIONS    128
-#define UPDATE(a,b) \
-        if (a->tv_sec==0 || !LTEQ((*a),b)) memcpy (a, &b, sizeof(struct timeval))
+#define UPDATE(a,b) do {                                                \
+    if (a->tv_sec==0 || !LTEQ((*a),b))                                  \
+        memcpy (a, &b, sizeof(struct timeval));                         \
+    } while(0)
 
 struct expected_arrival {
     int             ea_socket;
@@ -96,6 +97,7 @@ struct expected_arrival {
     struct expected_arrival *ea_next;
 };
 
+#define MAX_TRANSACTIONS    128
 static struct expected_arrival *transactions[MAX_TRANSACTIONS] = {
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -195,6 +197,18 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
 }
 
 void
+res_free_ea_list(struct expected_arrival *head)
+{
+    struct expected_arrival *ea;
+
+    while (head) {
+        ea = head;
+        head = head->ea_next;
+        res_sq_free_expected_arrival(&ea);
+    }
+}
+
+void
 set_alarm(struct timeval *tv, long delay)
 {
     gettimeofday(tv, NULL);
@@ -215,6 +229,7 @@ res_ea_init(u_char * signed_query, size_t signed_length,
         /** We're out of memory */
         return NULL;
 
+    memset(temp, 0x0, sizeof(struct expected_arrival));
     temp->ea_socket = -1;
     temp->ea_ns = ns;
     temp->ea_which_address = 0;
@@ -1076,7 +1091,6 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
         pthread_mutex_unlock(&mutex);
         return SR_IO_GOT_ANSWER;
     }
-    pthread_mutex_unlock(&mutex);
 
     /*
      * Decision time: does this call only look at the sockets used by
@@ -1084,7 +1098,6 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
      * 
      * Answer for now -> just the sockets we are interested in.
      */
-    pthread_mutex_lock(&mutex);
     res_io_collect_sockets(&read_descriptors, 
                            transactions[transaction_id]);
     pthread_mutex_unlock(&mutex);
@@ -1145,14 +1158,11 @@ res_cancel(int *transaction_id)
         return;
 
     pthread_mutex_lock(&mutex);
-    while (transactions[*transaction_id]) {
-        ea = transactions[*transaction_id];
-        transactions[*transaction_id] =
-            transactions[*transaction_id]->ea_next;
-        res_sq_free_expected_arrival(&ea);
-    }
+    ea = transactions[*transaction_id];
     transactions[*transaction_id] = NULL;
     pthread_mutex_unlock(&mutex);
+
+    res_free_ea_list(ea);
 
     *transaction_id = -1;
 }
