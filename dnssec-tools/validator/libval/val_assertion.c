@@ -1670,6 +1670,7 @@ clone_val_rrset(struct rrset_rec *old_rrset,
                 struct val_rrset_rec **new_rrset)
 {
     int             retval;
+    struct timeval  now;
 
     if (new_rrset == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1707,7 +1708,6 @@ clone_val_rrset(struct rrset_rec *old_rrset,
 
         (*new_rrset)->val_rrset_class = (int)old_rrset->rrs_class_h;
         (*new_rrset)->val_rrset_type = (int)old_rrset->rrs_type_h;
-        (*new_rrset)->val_rrset_ttl = (long)old_rrset->rrs_ttl_h;
         (*new_rrset)->val_rrset_section = (int)old_rrset->rrs_section;
         (*new_rrset)->val_rrset_data =
             copy_rr_rec_list((*new_rrset)->val_rrset_type,
@@ -1716,6 +1716,10 @@ clone_val_rrset(struct rrset_rec *old_rrset,
             copy_rr_rec_list((*new_rrset)->val_rrset_type,
                              old_rrset->rrs_sig, 0);
 
+        /* Adjust the TTL */
+        gettimeofday(&now, NULL);
+        (*new_rrset)->val_rrset_ttl = (now.tv_sec >= old_rrset->rrs_ttl_x) ? 0 :
+                                        (long) (old_rrset->rrs_ttl_x - now.tv_sec);
         if (old_rrset->rrs_server) {
             (*new_rrset)->val_rrset_server =
                 (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
@@ -1726,6 +1730,7 @@ clone_val_rrset(struct rrset_rec *old_rrset,
             memcpy((*new_rrset)->val_rrset_server,
                    old_rrset->rrs_server,
                    sizeof(struct sockaddr_storage));
+
         } else {
             (*new_rrset)->val_rrset_server = NULL;
         }

@@ -270,6 +270,10 @@ get_cached_rrset(struct val_query_chain *matched_q,
 
                 if (next_answer->rrs_data != NULL) {
                     new_answer = copy_rrset_rec(next_answer);
+                    if (new_answer) {
+                        /* Adjust the TTL */
+                        new_answer->rrs_ttl_h = next_answer->rrs_ttl_x - tv.tv_sec; 
+                    }
                     break;
                 }
             } 
