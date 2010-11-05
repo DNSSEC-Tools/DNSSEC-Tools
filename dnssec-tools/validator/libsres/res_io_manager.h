@@ -146,4 +146,11 @@ int             res_nsfallback(int transaction_id, struct timeval *closest_event
                                const char *name, const u_int16_t class_h,
                                const u_int16_t type_h, int *edns0);
 
+/*
+ * for a given ea, update data structures needed by select
+ */
+void
+res_io_select_info(struct expected_arrival *ea_list, int *nfds,
+                   fd_set * read_descriptors, struct timeval *timeout);
+
 #endif

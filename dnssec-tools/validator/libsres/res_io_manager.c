@@ -662,17 +662,39 @@ void
 res_io_collect_sockets(fd_set * read_descriptors,
                        struct expected_arrival *ea_list)
 {
+    res_io_select_info(ea_list, NULL, read_descriptors, NULL);
+}
+
+void
+res_io_select_info(struct expected_arrival *ea_list, int *nfds,
+                   fd_set * read_descriptors, struct timeval *timeout)
+{
+    struct timeval now;
+
+    if (timeout) {
+        gettimeofday(&now, NULL);
+        now.tv_usec = 0;
+    }
     /*
      * Find all sockets in use for a particular transaction chain of
      * expected arrivals
      */
-    //FD_ZERO(read_descriptors);
+    for ( ; ea_list; ea_list = ea_list->ea_next) {
+        if (ea_list->ea_remaining_attempts == -1) {
+            if (ea_list->ea_socket != -1 && res_io_debug)
+                printf("ea with 0 attempts but active socket!\n");
+            continue;
+        }
 
-    while (ea_list) {
-        if (ea_list->ea_socket != -1)
+        if (read_descriptors)
             FD_SET(ea_list->ea_socket, read_descriptors);
+        if (nfds && (ea_list->ea_socket >= *nfds))
+            *nfds = ea_list->ea_socket + 1;
 
-        ea_list = ea_list->ea_next;
+        if (timeout) {
+            UPDATE(timeout, ea_list->ea_cancel_time);
+            UPDATE(timeout, ea_list->ea_next_try);
+        }
     }
 }
 
@@ -702,6 +724,8 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
     timeout_ts.tv_sec = timeout->tv_sec;
     timeout_ts.tv_nsec = 0;
 
+    if (res_io_debug)
+        fflush(stdout);
 #ifdef HAVE_PSELECT
     return pselect(max_sock + 1, read_descriptors, NULL, NULL, &timeout_ts, NULL);
 #else
