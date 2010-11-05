@@ -354,7 +354,10 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
     long delay = 0;
 
     const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
-   
+
+    if (transaction_id == -1 )
+        return -1;  
+
     *edns0 = 0;
 
     if (res_io_debug) {
@@ -362,9 +365,7 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
     }
     
     pthread_mutex_lock(&mutex);
-    if (transaction_id == -1 || 
-        (temp = transactions[transaction_id]) == NULL) {
-        
+    if ((temp = transactions[transaction_id]) == NULL) {
         pthread_mutex_unlock(&mutex);
         return -1;  
     }
