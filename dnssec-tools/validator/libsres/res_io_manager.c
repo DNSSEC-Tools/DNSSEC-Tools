@@ -467,7 +467,7 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
     return 0;
 }
 
-static int
+static void
 res_io_next_address(struct expected_arrival *ea,
                     const char *more_prefix, const char *no_more_str)
 {
@@ -506,7 +506,7 @@ int
 res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
                  struct timeval *now)
 {
-    int             total = 0, canceled = 0, sent = 0;
+    int             total = 0;
     struct timeval  local_now;
     
     /*
@@ -707,11 +707,9 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
      * expected arrivals
      */
     for ( ; ea_list; ea_list = ea_list->ea_next) {
-        if (ea_list->ea_remaining_attempts == -1) {
-            if (ea_list->ea_socket != -1 && res_io_debug)
-                printf("ea with 0 attempts but active socket!\n");
+        if ((ea_list->ea_remaining_attempts == -1) ||
+            (ea_list->ea_socket == -1))
             continue;
-        }
 
         if (read_descriptors)
             FD_SET(ea_list->ea_socket, read_descriptors);
@@ -787,7 +785,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                       struct name_server **respondent)
 {
     int             retval;
-    int             i, save_count = -1;
+    int             save_count = -1;
 
     for( ; ea_list; ea_list = ea_list->ea_next) {
         if (ea_list->ea_remaining_attempts == -1)
@@ -980,7 +978,7 @@ res_switch_to_tcp(struct expected_arrival *ea)
 int
 res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 {
-    int             handled = 0, i;
+    int             handled = 0;
     struct expected_arrival *arrival;
 
     for (; ea_list; ea_list = ea_list->ea_next) {
@@ -988,6 +986,7 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
          * skip canceled/expired attempts, or sockets without data
          */
         if ((ea_list->ea_remaining_attempts == -1) ||
+            (ea_list->ea_socket == -1) ||
             ! FD_ISSET(ea_list->ea_socket, read_descriptors))
             continue;
 
@@ -1344,7 +1343,7 @@ res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds)
             ret_val = SR_UNSET;
             break;
         }
-        else if (ea->ea_socket)
+        else if (ea->ea_socket != -1)
             ret_val = SR_NO_ANSWER_YET;
     }
 

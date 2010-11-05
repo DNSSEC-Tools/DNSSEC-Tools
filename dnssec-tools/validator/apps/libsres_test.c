@@ -111,7 +111,7 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
             timeout.tv_sec = 0;
             timeout.tv_usec = 500;
         }
-        printf("select @ %d, %d fds, timeout %d, %d in flight, %d unsent\n", 
+        printf("select @ %d, %d fds, timeout %ld, %d in flight, %d unsent\n", 
                now.tv_sec, nfds, timeout.tv_sec, in_flight, unsent);
         if ((nfds <= 0) /*|| (timeout.tv_sec == 0)*/) {
             printf("no nfds but %d in flight??\n", in_flight);
@@ -134,7 +134,7 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
         fflush(stdout);
         ready = select(nfds, &activefds, NULL, NULL, &timeout);
         gettimeofday(&now, NULL);
-        printf("%d fds @ %d\n", ready, now.tv_sec);
+        printf("%d fds @ %ld\n", ready, now.tv_sec);
         if (ready < 0 && errno == EINTR)
             continue;
 
