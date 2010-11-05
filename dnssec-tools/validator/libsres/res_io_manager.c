@@ -522,12 +522,13 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
         if (ea->ea_remaining_attempts == -1)
             continue;
 
+        if (res_io_debug)
+            printf("res_io_check_one socket=%d\n", ea->ea_socket);
+
         /*
          * check for timeouts. If there is another address, move to it
          */
         if ( LTEQ(ea->ea_cancel_time, (*now))) {
-            if (res_io_debug)
-                printf("res_io_check Socket=%d\n", ea->ea_socket);
             res_io_next_address(ea, "TIMEOUTS", "TIMEOUT - CANCELING");
             --total;
         }
