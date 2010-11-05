@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <openssl/rand.h>
 
+#include <resolv.h>
 #include <arpa/nameser.h>
 
 #include "validator/resolver.h"
@@ -162,6 +163,130 @@ complete_read(int sock, void *field, size_t length)
         bytes_read += bytes;
     } while (bytes_read < length);
     return length;
+}
+
+struct sockaddr_storage **
+create_nsaddr_array(int num_addrs)
+{
+    int i, j;
+
+    struct sockaddr_storage **ns_address = (struct sockaddr_storage **)
+        MALLOC (num_addrs * sizeof(struct sockaddr_storage *));
+    if(ns_address == NULL)
+        return NULL;
+
+    for(i=0; i< num_addrs; i++) {
+        ns_address[i] = (struct sockaddr_storage *)
+            MALLOC (sizeof(struct sockaddr_storage));
+        if (ns_address[i] == NULL) {
+            for(j=0; j<i; j++)
+                FREE(ns_address[i]);
+            FREE(ns_address);
+            return NULL;
+        }
+    }
+    return ns_address;
+}
+
+struct name_server *
+parse_name_server(const char *cp, const char *name_n)
+{
+    short port_num = NS_DEFAULTPORT;
+    const char *cpt;
+    char addr[IPADDR_STRING_MAX];
+    struct name_server *ns;
+
+    struct sockaddr_storage serv_addr;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&serv_addr;
+#endif
+    union {
+        struct in_addr   v4;
+#ifdef VAL_IPV6
+        struct in6_addr  v6;
+#endif
+    } address;
+
+    if (cp ==  NULL)
+        return NULL;
+
+    ns = (struct name_server *) MALLOC(sizeof(struct name_server));
+    if (ns == NULL)
+        return NULL;
+
+    if (NULL == name_n)
+        name_n = "."; /* root zone */
+    if (ns_name_pton(name_n, ns->ns_name_n,
+                     sizeof(ns->ns_name_n)) == -1) {
+        FREE(ns);
+        return NULL;
+    }
+
+    /*
+     * Initialize the rest of the fields
+     */
+    ns->ns_tsig = NULL;
+    ns->ns_security_options = ZONE_USE_NOTHING;
+    ns->ns_status = 0;
+
+    ns->ns_retrans = RES_TIMEOUT;
+    ns->ns_retry = RES_RETRY;
+    ns->ns_options = RES_DEFAULT | RES_RECURSE | RES_DEBUG;
+    ns->ns_edns0_size = RES_EDNS0_DEFAULT;
+
+    ns->ns_next = NULL;
+    ns->ns_number_of_addresses = 0;
+
+    /*
+     * Look for port number in address string
+     * syntax of '[address]:port'
+     */
+    cpt = cp;
+    if ( (*cpt == '[') && (cpt = strchr(cpt,']')) ) {
+        if ( sizeof(addr) < (cpt - cp) )
+            goto err;
+        bzero(addr, sizeof(addr));
+        strncpy(addr, (cp + 1), (cpt - cp - 1));
+        cp = addr;
+        if ( (*(++cpt) == ':') && (0 == (port_num = atoi(++cpt))) )
+            goto err;
+    }
+
+    /*
+     * convert address string
+     */
+    bzero(&serv_addr, sizeof(serv_addr));
+    if (inet_pton(AF_INET, cp, &address.v4) > 0) {
+        sin->sin_family = AF_INET;     // host byte order
+        sin->sin_addr = address.v4;
+        sin->sin_port = htons(port_num);       // short, network byte order
+    }
+    else {
+#ifdef VAL_IPV6
+        if (inet_pton(AF_INET6, cp, &address.v6) != 1)
+            goto err;
+
+        sin6->sin6_family = AF_INET6;     // host byte order
+        memcpy(&sin6->sin6_addr, &address.v6, sizeof(address.v6));
+        sin6->sin6_port = htons(port_num);       // short, network byte order
+#else
+        goto err;
+#endif
+    }
+
+    ns->ns_address = create_nsaddr_array(1);
+    if(ns->ns_address == NULL)
+        goto err;
+
+    memcpy(ns->ns_address[0], &serv_addr,
+           sizeof(serv_addr));
+    ns->ns_number_of_addresses = 1;
+    return ns;
+
+  err:
+    FREE(ns);
+    return NULL;
 }
 
 void

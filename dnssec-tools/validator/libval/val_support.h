@@ -51,26 +51,6 @@
 } while(0)
 
 
-#define CREATE_NSADDR_ARRAY(ns_address, len) do {\
-    int i, j;\
-    ns_address = (struct sockaddr_storage **) \
-        MALLOC (len * sizeof(struct sockaddr_storage *));\
-    if(ns_address == NULL) {\
-        return SR_MEMORY_ERROR;\
-    }\
-    for(i=0; i< len; i++) {\
-        ns_address[i] = (struct sockaddr_storage *) MALLOC (sizeof(struct sockaddr_storage));\
-        if (ns_address[i] == NULL) {\
-            for(j=0; j<i; j++) {\
-                FREE(ns_address[i]);\
-            }\
-            FREE(ns_address);\
-            ns_address = NULL;\
-            break; \
-        }\
-    }\
-}while(0)
-
 #define ITS_BEEN_DONE   0
 #define IT_HASNT        1
 #define IT_WONT         (-1)
