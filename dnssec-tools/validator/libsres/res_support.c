@@ -31,6 +31,7 @@
 
 #include <resolv.h>
 #include <arpa/nameser.h>
+#include <arpa/inet.h>
 
 #include "validator/resolver.h"
 
