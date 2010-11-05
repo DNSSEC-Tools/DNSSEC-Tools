@@ -75,7 +75,7 @@ static const int res_io_debug = FALSE;
     t->ea_which_address++; \
     t->ea_remaining_attempts = t->ea_ns->ns_retry+1; \
     set_alarm(&(t->ea_next_try), 0); \
-    set_alarm(&(t->ea_cancel_time),res_timeout(t->ea_ns));
+    set_alarm(&(t->ea_cancel_time),res_get_timeout(t->ea_ns));
 
 #define MORE_ADDRESSES(ea) \
     ea->ea_which_address < (ea->ea_ns->ns_number_of_addresses-1)
@@ -159,7 +159,7 @@ bind_to_random_source(int s)
 }
 
 long
-res_timeout(struct name_server *ns)
+res_get_timeout(struct name_server *ns)
 {
     int             i;
     long            cancel_delay = 0;
@@ -224,7 +224,7 @@ res_ea_init(u_char * signed_query, size_t signed_length,
     temp->ea_response_length = 0;
     temp->ea_remaining_attempts = ns->ns_retry+1;
     set_alarm(&temp->ea_next_try, delay);
-    set_alarm(&temp->ea_cancel_time, delay + res_timeout(ns));
+    set_alarm(&temp->ea_cancel_time, delay + res_get_timeout(ns));
     temp->ea_next = NULL;
 
     return temp;
@@ -906,7 +906,7 @@ res_switch_to_tcp(struct expected_arrival *ea)
     ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
     set_alarm(&ea->ea_next_try, 0);
 
-    set_alarm(&ea->ea_cancel_time, res_timeout(ea->ea_ns));
+    set_alarm(&ea->ea_cancel_time, res_get_timeout(ea->ea_ns));
 }
 
 void
