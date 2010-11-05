@@ -1902,112 +1902,6 @@ destroy_respol(val_context_t * ctx)
     }
 }
 
-static int
-parse_name_server(char *cp, struct name_server **ns)
-{ 
-    short port_num = DNS_PORT;
-    char *cpt, addr[IPADDR_STRING_MAX];
-
-    struct sockaddr_storage serv_addr;
-    struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
-#ifdef VAL_IPV6
-    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&serv_addr;
-#endif
-    union {
-        struct in_addr   v4;
-#ifdef VAL_IPV6
-        struct in6_addr  v6;
-#endif
-    } address;
-
-    if (cp ==  NULL || ns == NULL)
-        return VAL_BAD_ARGUMENT;
-
-    *ns = (struct name_server *) MALLOC(sizeof(struct name_server));
-    if (*ns == NULL)
-        return VAL_OUT_OF_MEMORY; 
-
-    if (ns_name_pton(DEFAULT_ZONE, (*ns)->ns_name_n, 
-                sizeof((*ns)->ns_name_n)) == -1) {
-        FREE(*ns);
-        *ns = NULL;
-        return VAL_CONF_PARSE_ERROR; 
-    }
-
-    /*
-     * Initialize the rest of the fields 
-     */
-    (*ns)->ns_tsig = NULL;
-    (*ns)->ns_security_options = ZONE_USE_NOTHING;
-    (*ns)->ns_status = 0;
-
-    (*ns)->ns_retrans = RES_TIMEOUT;
-    (*ns)->ns_retry = RES_RETRY;
-    (*ns)->ns_options = RES_DEFAULT | RES_RECURSE | RES_DEBUG;
-    (*ns)->ns_edns0_size = RES_EDNS0_DEFAULT;
-
-    (*ns)->ns_next = NULL;
-    (*ns)->ns_number_of_addresses = 0;
-
-    /*
-     * Look for port number in address string
-     * syntax of '[address]:port'
-     */
-    cpt = cp;
-    if ( (*cpt == '[') && (cpt = strchr(cpt,']')) ) {
-      if ( IPADDR_STRING_MAX < (cpt - cp) ) {
-	goto parse_err;
-      }
-      bzero(addr, IPADDR_STRING_MAX);
-      strncpy(addr, (cp + 1), (cpt - cp - 1));
-      cp = addr;
-      if ( (*(++cpt) = ':') && (0 == (port_num = atoi(++cpt))) ) {
-	  goto parse_err;
-      }
-    }
-
-    /*
-     * convert address string
-     */
-    bzero(&serv_addr, sizeof(serv_addr));
-    if (inet_pton(AF_INET, cp, &address.v4) > 0) {
-        sin->sin_family = AF_INET;     // host byte order
-        sin->sin_addr = address.v4;
-        sin->sin_port = htons(port_num);       // short, network byte order
-    }
-    else {
-#ifdef VAL_IPV6
-        if (inet_pton(AF_INET6, cp, &address.v6) != 1)
-            goto parse_err;
-
-        sin6->sin6_family = AF_INET6;     // host byte order
-        memcpy(&sin6->sin6_addr, &address.v6, sizeof(address.v6));
-        sin6->sin6_port = htons(port_num);       // short, network byte order
-#else
-        goto parse_err;
-#endif
-    }
-
-    (*ns)->ns_address = NULL;
-    CREATE_NSADDR_ARRAY((*ns)->ns_address, 1);
-    if ((*ns)->ns_address == NULL) {
-        FREE(*ns);
-        *ns = NULL;
-        return VAL_OUT_OF_MEMORY;
-    }
-    (*ns)->ns_number_of_addresses = 1;
-
-    memcpy((*ns)->ns_address[0], &serv_addr,
-           sizeof(serv_addr));
-    (*ns)->ns_number_of_addresses = 1;
-    return VAL_NO_ERROR;
-
-  parse_err:
-    FREE(*ns);
-    *ns = NULL;
-    return VAL_CONF_PARSE_ERROR;
-}
-
 int
 read_res_config_file(val_context_t * ctx)
 {
@@ -2112,8 +2006,7 @@ read_res_config_file(val_context_t * ctx)
 			"read_res_config_file(): error getting nameserver token!");
                 goto err;
             }
-            ns = NULL;
-            if (VAL_NO_ERROR != parse_name_server(token, &ns)) {
+            if ((ns = parse_name_server(token, DEFAULT_ZONE)) == NULL) {
                 val_log(ctx, LOG_WARNING,
 			"read_res_config_file(): error parsing nameserver token!");
                 goto err;
@@ -2141,8 +2034,7 @@ read_res_config_file(val_context_t * ctx)
                            ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
-            ns = NULL;
-            if (VAL_NO_ERROR != parse_name_server(token, &ns))
+            if ((ns = parse_name_server(token, DEFAULT_ZONE)) == NULL)
                 goto err;
             /* zone next */
             if (VAL_NO_ERROR !=

@@ -99,10 +99,9 @@ extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server *ns)
             continue;
         }
 
-        CREATE_NSADDR_ARRAY(new_addr, (ns->ns_number_of_addresses + 1));
-        if (new_addr == NULL) {
+        new_addr = create_nsaddr_array(ns->ns_number_of_addresses + 1);
+        if (new_addr == NULL)
             return VAL_OUT_OF_MEMORY;
-        }
 
         for (i = 0; i < ns->ns_number_of_addresses; i++) {
             memcpy(new_addr[i], ns->ns_address[i],

@@ -41,6 +41,7 @@ extern          "C" {
 #define STRDUP(p) strdup(p)
 #endif
 
+#define IPADDR_STRING_MAX 128
 
 #define RES_RETRY 1 /* number of times to retry */
 #define LIBSRES_NS_STAGGER 5 /* how far apart should we stagger queries to
@@ -223,6 +224,10 @@ int             get(const char *name_n,
                     struct name_server **server,
                     u_char ** response, size_t * response_length);
 void            print_response(u_char * ans, size_t resplen);
+
+struct sockaddr_storage **create_nsaddr_array(int num_addrs);
+struct name_server *parse_name_server(const char *cp,
+                                      const char *name_n);
 int             clone_ns(struct name_server **cloned_ns,
                          struct name_server *ns);
 int             clone_ns_list(struct name_server **ns_list,
