@@ -779,8 +779,23 @@ sub optsandargs
 	#
 	if(!defined($opts{'zone'}))
 	{
-		$zone = $zonefile;
-		$opts{'zone'} = $zonefile;
+		#
+		# If the zone filename isn't a simple filename, we'll
+		# use the final element of the filename for the zone.
+		#
+		if($zonefile =~ /\//)
+		{
+			my @elts;			# Path elements.
+
+			@elts = split /\//, $zonefile;
+			$zone = pop @elts;
+		}
+		else
+		{
+			$zone = $zonefile;
+		}
+
+		$opts{'zone'} = $zone;
 	}
 
 	#
@@ -1433,7 +1448,7 @@ sub genksks
 		vprint("reusing existing Published KSK set - $kskpubsetname\n");
 
 		#
-		# Get the Publisehd KSKs.
+		# Get the Published KSKs.
 		#
 		$keyset  = keyrec_recval($kskpubsetname,'keys');
 		@kskpublist = split / /, $keyset;
@@ -1599,7 +1614,7 @@ sub genzsk
 #
 # Return Values:
 #		- A key name will be returned on success.
-#		- An empty string will be returned if the key creation failes
+#		- An empty string will be returned if the key creation fails
 #		  or if there are too many attempts.
 #
 sub makekey
@@ -3693,7 +3708,7 @@ be marked as obsolete.
 
 Disable RFC5011 KSK revocation when rolling or replacing existing KSK key
 sets.  By default, B<zonesigner> performs RFC5011 KSK revocation and this
-option supercedes this behavior and any option setting within the I<keyrec>
+option supersedes this behavior and any option setting within the I<keyrec>
 file.
 
 =item B<-droprevoked>
@@ -3887,7 +3902,9 @@ this file and then the key names appended.
 =item B<-zone>
 
 Name of the zone that will be signed.  This zone name may be given with this
-option or as the first non-option command line argument.
+option or as the first non-option command line argument.  In the second case,
+if the argument contains directory separators, then final element of the path
+will be used for the zone name.
 
 =item B<-help>
 
