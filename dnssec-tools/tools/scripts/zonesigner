@@ -262,6 +262,7 @@ sub main
 		delete($opts{'rndc'});
 		delete($opts{'rollchk'});
 		delete($opts{'zonesigner'});
+		$opts{'keyarch'}   = "keyarch";
 		$opts{'keygen'}	   = "dnssec-keygen";
 		$opts{'zonesign'}  = "dnssec-signzone";
 		$opts{'zonecheck'} = "named-checkzone";
