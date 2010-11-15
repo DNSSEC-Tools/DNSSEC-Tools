@@ -113,21 +113,14 @@ is_type_set(u_char * field, size_t field_len, u_int16_t type)
     /** The type will be present in the following block */
     int             t_block = type/256;
     /** within the bitmap, the type will be present in the following byte */
+    int             t_byte_offset = type/8;
+    /** within the bitmap, the type will be present in the following bit */
     int             t_bm_offset = type%8;
 
     int             cnt = 0;
 
     if (type < 1)
         return 0;
-
-    /* check if this is the last bit in the block */
-    if (--t_bm_offset < 0) {
-        if (--t_block < 0) {
-            /* should not happen */
-            return 0;
-        }
-        t_bm_offset = 7;
-    }
 
     block = 0;
 
@@ -141,14 +134,12 @@ is_type_set(u_char * field, size_t field_len, u_int16_t type)
         cnt += 2;
 
         if (block == t_block) {
-            /*
-             * see if we have space 
-             */
-            if ((t_bm_offset < blen) && (field_len >= cnt + blen)) {
+            if (blen > t_byte_offset &&  
+                field_len > (cnt + t_byte_offset)) {
                 /*
                  * see if the bit is set 
                  */
-                if (field[cnt + t_bm_offset] & (1 << (7 - (type % 8))))
+                if (field[cnt + t_byte_offset] & (1 << (7 - t_bm_offset)))
                     return 1;
             }
             return 0;
