@@ -1068,7 +1068,7 @@ set_ans_kind(u_char * qname_n,
 
     if (the_set->rrs_type_h == ns_t_cname) {
         if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
-            (q_type_h == ns_t_any || q_type_h == ns_t_cname))
+            (!ALIAS_MATCH_TYPE(q_type_h) || q_type_h == ns_t_cname))
             /*
              * We asked for it 
              */
@@ -1085,7 +1085,7 @@ set_ans_kind(u_char * qname_n,
 
     if (the_set->rrs_type_h == ns_t_dname) {
         if (namecmp(the_set->rrs_name_n, qname_n) == 0 &&
-            (q_type_h == ns_t_any || q_type_h == ns_t_dname))
+            (!ALIAS_MATCH_TYPE(q_type_h) || q_type_h == ns_t_dname))
             /*
              * We asked for it 
              */
