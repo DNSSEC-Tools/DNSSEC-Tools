@@ -1227,9 +1227,6 @@ process_cname_dname_responses(u_char *name_n,
     
     if (type_h == ns_t_cname &&
         matched_q->qc_type_h != ns_t_cname &&
-        matched_q->qc_type_h != ns_t_soa &&
-        matched_q->qc_type_h != ns_t_rrsig &&
-        matched_q->qc_type_h != ns_t_any &&
         namecmp((*qnames)->qnc_name_n, name_n) == 0) {
         
         /*
@@ -1258,10 +1255,7 @@ process_cname_dname_responses(u_char *name_n,
     u_char  *qname_n = (*qnames)->qnc_name_n;
     if (type_h == ns_t_dname &&
         matched_q->qc_type_h != ns_t_dname &&
-        matched_q->qc_type_h != ns_t_soa &&
-        ((matched_q->qc_type_h != ns_t_any &&
-         matched_q->qc_type_h != ns_t_rrsig)||
-        namecmp(qname_n, name_n) != 0) &&
+        namecmp(qname_n, name_n) != 0 &&
         NULL != (p = namename(qname_n, name_n)) &&
         p > qname_n) {
 
@@ -1382,6 +1376,47 @@ prepare_empty_nonexistence(struct rrset_rec **answers,
     (*answers)->rrs_next = NULL;
 
     return VAL_NO_ERROR;
+}
+
+static void consume_referral_data(struct delegation_info **qc_referral, 
+                                  struct domain_info *di_response,
+                                  struct qname_chain **qnames) {
+
+    if (di_response == NULL || qc_referral == NULL || 
+            *qc_referral == NULL || qnames == NULL)
+        return;
+
+    /*
+     * Consume answers
+     */
+    merge_rrset_recs(&((*qc_referral)->answers), di_response->di_answers);
+    di_response->di_answers = (*qc_referral)->answers;
+    (*qc_referral)->answers = NULL;
+
+    /*
+     * Consume proofs
+     */
+    merge_rrset_recs(&((*qc_referral)->proofs), di_response->di_proofs);
+    di_response->di_proofs = (*qc_referral)->proofs;
+    (*qc_referral)->proofs = NULL;
+
+    /*
+     * Consume qnames
+     */
+    if (*qnames == NULL)
+        *qnames = (*qc_referral)->qnames;
+    else if ((*qc_referral)->qnames) {
+        struct qname_chain *t_q;
+        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next);
+            t_q->qnc_next = (*qc_referral)->qnames;
+    }
+    (*qc_referral)->qnames = NULL;
+
+    /*
+     * Note that we don't free qc_referral here 
+     */
+    free_referral_members(*qc_referral);
+    qc_referral = NULL;
 }
 
 /*
@@ -1556,6 +1591,13 @@ digest_response(val_context_t * context,
         ret_val = prepare_empty_nonexistence(&di_response->di_proofs, 
                         matched_q->qc_respondent_server,
                         query_name_n, query_type_h, query_class_h, hptr);
+        /*
+         * copy any answers that may be present in the referral structure
+         * E.g. if this response was returned after following a CNAME/DNAME
+         */
+        if (matched_q->qc_referral != NULL) {
+            consume_referral_data(&matched_q->qc_referral, di_response, qnames);
+        } 
         goto done; 
     }
 
@@ -1615,6 +1657,20 @@ digest_response(val_context_t * context,
                 (query_type_h == ns_t_rrsig)) {
 
                 nothing_other_than_alias = 0;
+            } else if (ALIAS_MATCH_TYPE(query_type_h)){
+                int referral_error = 0;
+                /* process CNAMEs or DNAMEs if they exist */
+                if ((VAL_NO_ERROR != (ret_val = 
+                        process_cname_dname_responses(name_n, type_h, rdata, 
+                                                  matched_q, qnames, 
+                                                  &referral_error))) || 
+                        (referral_error)) {
+                    if (referral_error) 
+                        val_log(context, LOG_DEBUG, "digest_response(): CNAME/DNAME error or loop encountered");
+                    goto done;
+                }
+            } else {
+                nothing_other_than_alias = 0;
             }
         }
 
@@ -1631,20 +1687,6 @@ digest_response(val_context_t * context,
          * If it is from the additional section it may contain some DNSSEC meta-data or it may be glue
          */
         if (from_section == VAL_FROM_ANSWER) {
-            int referral_error = 0;
-
-            /* process CNAMEs or DNAMEs if they exist */
-            if ((VAL_NO_ERROR != (ret_val = 
-                    process_cname_dname_responses(name_n, type_h, rdata, 
-                                                  matched_q, qnames, 
-                                                  &referral_error))) || 
-                    (referral_error)) {
-                if (referral_error) 
-                    val_log(context, LOG_DEBUG, "digest_response(): CNAME/DNAME error or loop encountered");
-
-                goto done;
-            }
-
             SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
                             &learned_answers, name_n, type_h,
                             set_type_h, class_h, ttl_h, hptr, rdata,
@@ -1704,6 +1746,19 @@ digest_response(val_context_t * context,
              set_type_h == ns_t_soa &&
              !namecmp(name_n, query_name_n)) {
             val_log(context, LOG_DEBUG, "digest_response(): bad response for DS record. NS probably not DNSSEC-capable.");
+            matched_q->qc_state = Q_WRONG_ANSWER;
+            ret_val = VAL_NO_ERROR;
+            goto done;
+        }
+        /*
+         * If we've received a CNAME/DNAME response for a type that cannot be followed using cnames/dnames
+         * we're not going to follow it
+         */
+        if ((set_type_h == ns_t_cname || set_type_h == ns_t_dname) &&
+             !ALIAS_MATCH_TYPE(query_type_h)) {
+            val_log(context, LOG_DEBUG, 
+                    "digest_response(): Won't follow alias for type %d.", 
+                    query_type_h);
             matched_q->qc_state = Q_WRONG_ANSWER;
             ret_val = VAL_NO_ERROR;
             goto done;
@@ -1960,37 +2015,7 @@ digest_response(val_context_t * context,
          * Check if this is the response to a referral request 
          */
         if (matched_q->qc_referral != NULL) {
-
-            /*
-             * Consume answers
-             */
-            merge_rrset_recs(&matched_q->qc_referral->answers, di_response->di_answers);
-            di_response->di_answers = matched_q->qc_referral->answers;
-            matched_q->qc_referral->answers = NULL;
-
-            /*
-             * Consume proofs
-             */
-            merge_rrset_recs(&matched_q->qc_referral->proofs, di_response->di_proofs);
-            di_response->di_proofs = matched_q->qc_referral->proofs;
-            matched_q->qc_referral->proofs = NULL;
-
-            /*
-             * Consume qnames
-             */
-            if (*qnames == NULL)
-                *qnames = matched_q->qc_referral->qnames;
-            else if (matched_q->qc_referral->qnames) {
-                struct qname_chain *t_q;
-                for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next);
-                t_q->qnc_next = matched_q->qc_referral->qnames;
-            }
-            matched_q->qc_referral->qnames = NULL;
-
-            /*
-             * Note that we don't free qc_referral here 
-             */
-            free_referral_members(matched_q->qc_referral);
+            consume_referral_data(&matched_q->qc_referral, di_response, qnames);
         } 
 
         matched_q->qc_state = Q_ANSWERED;

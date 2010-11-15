@@ -5,6 +5,12 @@
 #ifndef VAL_RESQUERY_H
 #define VAL_RESQUERY_H
 
+/* alias cannot match the following types */
+#define ALIAS_MATCH_TYPE(type_h) ((type_h != ns_t_any &&    \
+                                   type_h != ns_t_rrsig &&  \
+                                   type_h != ns_t_dnskey && \
+                                   type_h != ns_t_ds) ? 1 : 0)
+
 struct glue_fetch_bucket {
     struct queries_for_query *qfq[MAX_GLUE_FETCH_DEPTH];
     int qfq_count;
