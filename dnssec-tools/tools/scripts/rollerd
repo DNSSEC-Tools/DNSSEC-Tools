@@ -188,6 +188,7 @@ my $xqtdir;				# Execution directory.
 #######################################################################
 
 my $ret;				# Return code from main().
+my $runerr;				# Execution error -- used in runner().
 
 #
 # Detect required Perl modules.
@@ -255,8 +256,6 @@ sub main
 	#
 	# Check our options and arguments.
 	#
-	$dtconfig = getconffile();
-	%dtconf = parseconfig();
 	optsandargs();
 
 	#
@@ -2342,14 +2341,15 @@ sub runner
 	# Execute the given command.  We'll save the stdout and stderr
 	# output in case it's needed later.
 	#
-	open(ZS,"$cmd 2>&1 |");
+	$runerr = 0;
+	open(ZS,"$cmd 2>&1 |") || runerr();
 	while(<ZS>)
 	{
 		$out .= $_;
 	}
 	chomp $out;
 	close(ZS);
-	$ret = $? >> 8;;
+	$ret = $? >> 8;
 
 	#
 	# If the error flag is set and the command exited with an error,
@@ -2357,8 +2357,8 @@ sub runner
 	#
 	if($errflag)
 	{
-		if((! $negerrflag && ($ret != 0)) ||
-		   (  $negerrflag && ($ret <  0)))
+		if((! $negerrflag && ($runerr != 0)) ||
+		   (  $negerrflag && ($runerr <  0)))
 		{
 			$out =~ s/^	if zonesigner appears hung, .*\n$//ms;
 			$out =~ s/^	\(see the \"Entropy\" section .*\n$//ms;
@@ -2373,7 +2373,18 @@ sub runner
 	#
 	keyrec_read($krf);
 
-	return($ret);
+	return($runerr);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	runerr()
+#
+# Purpose:	This routine sets a global flag indicating an error has
+#		been encountered when running an external command.
+#
+sub runerr
+{
+	$runerr = 1;
 }
 
 #-----------------------------------------------------------------------------
@@ -2501,6 +2512,12 @@ sub optsandargs
 	my $argc = @ARGV;				# Number of arguments.
 
 	#
+	# Get the base values.
+	#
+	$dtconfig = getconffile();
+	%dtconf = parseconfig();
+
+	#
 	# Check our options.
 	#
 	opts_onerr(0);
@@ -2517,7 +2534,7 @@ sub optsandargs
 	$display    = $opts{$OPT_DISPLAY}    || 0;
 	$username   = $opts{$OPT_USERNAME}   || $dtconf{$DT_USERNAME} || '';
 	$xqtdir	    = $opts{$OPT_DIR}	     || ".";
-	$zonesigner = $opts{$OPT_ZONESIGNER} || '';
+	$zonesigner = $opts{$OPT_ZONESIGNER} || $dtconf{$OPT_ZONESIGNER} || '';
 
 	#
 	# Determine whether or not we'll load zones.
@@ -4029,7 +4046,7 @@ sub cmd_zonestatus
 		return;
 	}
 
-	rolllog_log(LOG_ALWAYS,'<command>',"zone status:");
+#	rolllog_log(LOG_ALWAYS,'<command>',"zone status:");
 
 	#
 	# Add the status of each zone in the rollrec file to our output buffer.
@@ -4078,7 +4095,7 @@ sub cmd_zonestatus
 		# Add the data to the output buffer and bump our zone count.
 		#
 		$outbuf .= "$rname/$rr{'zonename'}\t$rtype\t$phase\n";
-		rolllog_log(LOG_ALWAYS,'<command>',"\t$rname/$rr{'zonename'}\t$rtype\t$phase\n");
+#		rolllog_log(LOG_ALWAYS,'<command>',"\t$rname/$rr{'zonename'}\t$rtype\t$phase\n");
 		$cnt++;
 	}
 
