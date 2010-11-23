@@ -1023,6 +1023,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
 
+  --disable-bind-checks   Disable checks for bind dnssec utilities
   --enable-shared[=PKGS]
                           build shared libraries [default=yes]
   --enable-static[=PKGS]
@@ -1651,7 +1652,15 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
-# Extract the first word of "dnssec-keygen", so it can be a program name with args.
+
+# allow user to disable bind checks
+# Check whether --enable-bind-checks or --disable-bind-checks was given.
+if test "${enable_bind_checks+set}" = set; then
+  enableval="$enable_bind_checks"
+
+fi;
+if test "x$enable_bind_checks" != "xno"; then
+   # Extract the first word of "dnssec-keygen", so it can be a program name with args.
 set dummy dnssec-keygen; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
@@ -1690,12 +1699,12 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
-if test -z "$BIND_DNSSEC_KEYGEN"; then
-  { { echo "$as_me:$LINENO: error: Could not locate dnssec-keygen. Please install BIND utilities." >&5
+   if test -z "$BIND_DNSSEC_KEYGEN"; then
+     { { echo "$as_me:$LINENO: error: Could not locate dnssec-keygen. Please install BIND utilities." >&5
 echo "$as_me: error: Could not locate dnssec-keygen. Please install BIND utilities." >&2;}
    { (exit 1); exit 1; }; }
-fi
-# Extract the first word of "dnssec-signzone", so it can be a program name with args.
+   fi
+   # Extract the first word of "dnssec-signzone", so it can be a program name with args.
 set dummy dnssec-signzone; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
@@ -1734,12 +1743,12 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
-if test -z "$BIND_DNSSEC_SIGNZONE"; then
-  { { echo "$as_me:$LINENO: error: Could not locate dnssec-signzone. Please install BIND utilities." >&5
+   if test -z "$BIND_DNSSEC_SIGNZONE"; then
+     { { echo "$as_me:$LINENO: error: Could not locate dnssec-signzone. Please install BIND utilities." >&5
 echo "$as_me: error: Could not locate dnssec-signzone. Please install BIND utilities." >&2;}
    { (exit 1); exit 1; }; }
-fi
-# Extract the first word of "named-checkzone", so it can be a program name with args.
+   fi
+   # Extract the first word of "named-checkzone", so it can be a program name with args.
 set dummy named-checkzone; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
@@ -1778,10 +1787,11 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
-if test -z "$BIND_DNSSEC_CHECKZONE"; then
-  { { echo "$as_me:$LINENO: error: Could not locate named-checkzone. Please install BIND utilities." >&5
+   if test -z "$BIND_DNSSEC_CHECKZONE"; then
+     { { echo "$as_me:$LINENO: error: Could not locate named-checkzone. Please install BIND utilities." >&5
 echo "$as_me: error: Could not locate named-checkzone. Please install BIND utilities." >&2;}
    { (exit 1); exit 1; }; }
+   fi
 fi
 # ? rndc
 
@@ -3363,7 +3373,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 3366 "configure"' > conftest.$ac_ext
+  echo '#line 3376 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -4853,7 +4863,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:4856:" \
+echo "$as_me:4866:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -5916,11 +5926,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:5919: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:5929: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:5923: \$? = $ac_status" >&5
+   echo "$as_me:5933: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6184,11 +6194,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6187: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6197: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6191: \$? = $ac_status" >&5
+   echo "$as_me:6201: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6288,11 +6298,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6291: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6301: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:6295: \$? = $ac_status" >&5
+   echo "$as_me:6305: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7757,7 +7767,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 7760 "configure"' > conftest.$ac_ext
+    echo '#line 7770 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8654,7 +8664,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8657 "configure"
+#line 8667 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8754,7 +8764,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8757 "configure"
+#line 8767 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11097,11 +11107,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11100: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11110: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:11104: \$? = $ac_status" >&5
+   echo "$as_me:11114: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11201,11 +11211,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11204: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11214: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11208: \$? = $ac_status" >&5
+   echo "$as_me:11218: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11737,7 +11747,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 11740 "configure"' > conftest.$ac_ext
+    echo '#line 11750 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -12795,11 +12805,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12798: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12808: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12802: \$? = $ac_status" >&5
+   echo "$as_me:12812: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12899,11 +12909,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12902: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12912: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12906: \$? = $ac_status" >&5
+   echo "$as_me:12916: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14348,7 +14358,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 14351 "configure"' > conftest.$ac_ext
+    echo '#line 14361 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -15126,11 +15136,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15129: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15139: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15133: \$? = $ac_status" >&5
+   echo "$as_me:15143: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15394,11 +15404,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15397: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15407: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15401: \$? = $ac_status" >&5
+   echo "$as_me:15411: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15498,11 +15508,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15501: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15511: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15505: \$? = $ac_status" >&5
+   echo "$as_me:15515: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16967,7 +16977,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 16970 "configure"' > conftest.$ac_ext
+    echo '#line 16980 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
