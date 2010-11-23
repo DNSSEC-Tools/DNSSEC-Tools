@@ -19,17 +19,23 @@ dnl
 AC_PATH_PROG([PERLPROG],perl)
 AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(RM, rm)
-AC_PATH_PROG(BIND_DNSSEC_KEYGEN, dnssec-keygen)
-if test -z "$BIND_DNSSEC_KEYGEN"; then
-  AC_ERROR([Could not locate dnssec-keygen. Please install BIND utilities.])
-fi
-AC_PATH_PROG(BIND_DNSSEC_SIGNZONE, dnssec-signzone)
-if test -z "$BIND_DNSSEC_SIGNZONE"; then
-  AC_ERROR([Could not locate dnssec-signzone. Please install BIND utilities.])
-fi
-AC_PATH_PROG(BIND_DNSSEC_CHECKZONE, named-checkzone)
-if test -z "$BIND_DNSSEC_CHECKZONE"; then
-  AC_ERROR([Could not locate named-checkzone. Please install BIND utilities.])
+
+# allow user to disable bind checks
+AC_ARG_ENABLE(bind-checks,
+[  --disable-bind-checks   Disable checks for bind dnssec utilities])
+if test "x$enable_bind_checks" != "xno"; then
+   AC_PATH_PROG(BIND_DNSSEC_KEYGEN, dnssec-keygen)
+   if test -z "$BIND_DNSSEC_KEYGEN"; then
+     AC_ERROR([Could not locate dnssec-keygen. Please install BIND utilities.])
+   fi
+   AC_PATH_PROG(BIND_DNSSEC_SIGNZONE, dnssec-signzone)
+   if test -z "$BIND_DNSSEC_SIGNZONE"; then
+     AC_ERROR([Could not locate dnssec-signzone. Please install BIND utilities.])
+   fi
+   AC_PATH_PROG(BIND_DNSSEC_CHECKZONE, named-checkzone)
+   if test -z "$BIND_DNSSEC_CHECKZONE"; then
+     AC_ERROR([Could not locate named-checkzone. Please install BIND utilities.])
+   fi
 fi
 # ? rndc
 
