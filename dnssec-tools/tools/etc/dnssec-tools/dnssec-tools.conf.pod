@@ -134,6 +134,21 @@ The log file used by B<rollerd>.
 The default logging level used by B<rollerd>.  The valid levels are defined
 and described in I<rollmgr.pm>.
 
+
+=item roll_phasemsg	long
+
+The default length of phase-related log messages used by B<rollerd>.  The
+valid levels are "long" and "short", with "long" being the default value.
+
+The long message length means that a phase description will be included with
+some log messages.  For example, the long form of a message about ZSK rollover
+phase 3 will look like this:  "ZSK phase 3 (Waiting for old zone data to
+expire from caches)".
+
+The short message length means that a phase description will not be included
+with some log messages.  For example, the short form of a message about ZSK
+rollover phase 3 will look like this:  "ZSK phase 3".
+
 =item roll_sleeptime
 
 The number of seconds B<rollerd> must wait at the end of each zone-checking
