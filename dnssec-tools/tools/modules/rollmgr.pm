@@ -110,6 +110,7 @@ our @EXPORT = qw(
 		 rollmgr_idfile
 		 rollmgr_set_idfile
 		 rollmgr_loadzone
+		 rollmgr_phasemsg
 		 rollmgr_rmid
 		 rollmgr_running
 		 rollmgr_saveid
@@ -133,6 +134,7 @@ our @EXPORT = qw(
 			 ROLLCMD_LOGFILE
 			 ROLLCMD_LOGLEVEL
 			 ROLLCMD_LOGMSG
+			 ROLLCMD_PHASEMSG
 			 ROLLCMD_ROLLALL
 			 ROLLCMD_ROLLKSK
 			 ROLLCMD_ROLLREC
@@ -232,6 +234,7 @@ my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
 my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
+my $ROLLCMD_PHASEMSG	= "rollcmd_phasemsg";
 my $ROLLCMD_ROLLALL	= "rollcmd_rollallzsks";
 my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
 my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
@@ -253,6 +256,7 @@ sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
 sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
 sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
 sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
+sub ROLLCMD_PHASEMSG		{ return($ROLLCMD_PHASEMSG);	};
 sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
 sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	};
 sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
@@ -277,6 +281,7 @@ my %roll_commands =
 	rollcmd_loglevel	=> 1,
 	rollcmd_logmsg		=> 1,
 	rollcmd_nodisplay	=> 1,
+	rollcmd_phasemsg	=> 1,
 	rollcmd_rollallzsks	=> 1,
 	rollcmd_rollksk		=> 1,
 	rollcmd_rollrec		=> 1,
@@ -448,7 +453,8 @@ my %key_phases =
 #
 my $PHASELONG	= 1;				# Use long descriptions.
 my $PHASESHORT	= 0;				# Use short descriptions.
-my $longorshort = $PHASELONG;			# Description length to use.
+# my $longorshort = $PHASELONG;			# Description length to use.
+my $longorshort = $PHASESHORT;			# Description length to use.
 
 ##############################################################################
 ##############################################################################
@@ -622,6 +628,33 @@ sub rollmgr_loadzone
 
 	$func = $switchtab{$LOADZONE};
 	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+# Routine:      rollmgr_phasemsg()
+#
+# Purpose:	Set the phase-message length.  Valid values are "long" 
+#		and "short".
+#		This is generic and not O/S-specific.
+#
+sub rollmgr_phasemsg
+{
+	my $pval = shift;			# The new message length.
+
+# print "rollmgr_phasemsg\n";
+
+	if($pval =~ /long/i)
+	{
+		$longorshort = $PHASELONG; 
+		return(1);
+	}
+	elsif($pval =~ /short/i)
+	{
+		$longorshort = $PHASESHORT; 
+		return(1);
+	}
+
+	return(0);
 }
 
 #--------------------------------------------------------------------------
@@ -1823,7 +1856,7 @@ sub rollmgr_get_phase
 	my $maxphase = -1;				# Maximum phase value.
 
 	#
-	# Don't return anything if the installer doesn't want long descritions.
+	# Don't return anything if the installer doesn't want long descriptions.
 	#	NOTE:  This really should be a config value.
 	#
 	if($longorshort != $PHASELONG)
@@ -1881,6 +1914,8 @@ manager.
   $runflag = rollmgr_running();
 
   rollmgr_halt();
+
+  rollmgr_phasemsg('long');
 
   rollmgr_channel(1);
   ($cmd,$data) = rollmgr_getcmd();
@@ -1984,6 +2019,26 @@ returned.
     signaled.
     (This should only ever be 1.)
 
+=item I<rollmgr_phasemsg()>
+
+This routine sets the phase-message length.  of phase-related log messages
+used by B<rollerd>.  The valid levels are "long" and "short", with "long"
+being the default value.
+
+The long message length means that a phase description will be included with
+some log messages.  For example, the long form of a message about ZSK rollover
+phase 3 will look like this:  "ZSK phase 3 (Waiting for old zone data to
+expire from caches)".
+
+The short message length means that a phase description will not be included
+with some log messages.  For example, the short form of a message about ZSK
+rollover phase 3 will look like this:  "ZSK phase 3".
+
+Return Values:
+
+     1 - the phase-message length was set
+     0 - an invalid phase-message length was specified
+
 =back
 
 =head1 ROLLERD COMMUNICATIONS INTERFACES
@@ -2037,6 +2092,7 @@ The available commands and their required data are:
    ROLLCMD_LOGFILE	log filename	change the log file
    ROLLCMD_LOGLEVEL	log level	set a new logging level
    ROLLCMD_LOGMSG	log message	add a message to the log
+   ROLLCMD_PHASEMSG	long/short	set long or short phase messages
    ROLLCMD_ROLLALL	none		force all zones to start
 					ZSK rollover
    ROLLCMD_ROLLKSK	zone-name	force a zone to start
