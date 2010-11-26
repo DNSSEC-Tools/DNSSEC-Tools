@@ -55,6 +55,7 @@ my @opts =
 	"dspuball",			# Parents have published DS records.
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel:s",			# Set rollerd's logging level.
+	"phasemsg=s",			# Set rollerd's phase-message length.
 	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollallzsks",			# ZSK-roll all our zones.
 	"rollksk",			# KSK roll the specified zone(s).
@@ -86,6 +87,7 @@ my $dspubflag	  = 0;
 my $dspuballflag  = 0;
 my $logfileflag	  = 0;
 my $loglevelflag  = 0;
+my $logphasemsg	  = '';
 my $nodispflag	  = 0;
 my $zrollallflag  = 0;
 my $rollkskflag	  = 0;
@@ -267,10 +269,10 @@ sub main()
 		else
 		{
 			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag))
-		{
-			print STDERR "rollctl:  error sending command LOGLEVEL\n";
-			exit(1);
-		}
+			{
+				print STDERR "rollctl:  error sending command LOGLEVEL\n";
+				exit(1);
+			}
 
 			($ret, $resp) = rollmgr_getresp();
 			if($ret == ROLLCMD_RC_OKAY)
@@ -280,6 +282,33 @@ sub main()
 			else
 			{
 				print STDERR "log-level set failed:  $resp\n";
+				$rcret++;
+			}
+		}
+	}
+	elsif($logphasemsg)
+	{
+		if(($logphasemsg !~ /long/i) && ($logphasemsg !~ /short/i))
+		{
+			print STDERR "invalid rollerd phase-message length: $logphasemsg\n";
+			$rcret++;
+		}
+		else
+		{
+			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_PHASEMSG,$logphasemsg))
+			{
+				print STDERR "rollctl:  error sending command PHASEMSG\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "rollerd phasemsg to $logphasemsg\n";
+			}
+			else
+			{
+				print STDERR "phasemsg set failed:  $resp\n";
 				$rcret++;
 			}
 		}
@@ -652,6 +681,11 @@ sub doopts
 		$loglevelflag = $options{'loglevel'};
 		$commandcount++;
 	}		
+	if(exists($options{'phasemsg'}))
+	{
+		$logphasemsg = $options{'phasemsg'};
+		$commandcount++;
+	}		
 	if(exists($options{'display'}))
 	{
 		$dispflag = $options{'display'};
@@ -902,6 +936,7 @@ sub usage
 	print STDERR "\t-dspuball		parents have published DS records for zones\n";
 	print STDERR "\t-logfile <logfile>	set log file\n";
 	print STDERR "\t-loglevel <loglevel>	set logging level\n";
+	print STDERR "\t-phasemsg <length>	set phase-message length\n";
 	print STDERR "\t-nodisplay		stop graphical display\n";
 	print STDERR "\t-rollallzsks		roll all zones\n";
 	print STDERR "\t-rollksk <zone>		roll specified zone's KSK\n";
@@ -997,6 +1032,22 @@ forms.
 =item B<-nodisplay>
 
 Stops the rollover status GUI.
+
+=item B<-phasemsg length>
+
+B<length> is the default length of phase-related log messages used by
+B<rollerd>.  The valid levels are "long" and "short", with "long" being
+the default value.
+
+The long message length means that a phase description will be included with
+some log messages.  For example, the long form of a message about ZSK
+rollover
+phase 3 will look like this:  "ZSK phase 3 (Waiting for old zone data to  
+expire from caches)".
+
+The short message length means that a phase description will not be included
+with some log messages.  For example, the short form of a message about ZSK
+rollover phase 3 will look like this:  "ZSK phase 3".
 
 =item B<-rollallzsks>
 
