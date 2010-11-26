@@ -629,7 +629,6 @@ sub zsk_expired
 	if($rr{'kskphase'} > 0)
 	{
 		my $pstr;				# Phase string.
-
 		$pstr = ": " . rollmgr_get_phase('KSK', $rr{'kskphase'});
 		$pstr = '' if($pstr eq ": ");
 
@@ -3154,6 +3153,10 @@ sub commander
 		{
 			cmd_logmsg($data);
 		}
+		elsif($cmd eq ROLLCMD_PHASEMSG())
+		{
+			cmd_phasemsg($data);
+		}
 		elsif($cmd eq ROLLCMD_ROLLALL())
 		{
 			cmd_rollallzsks();
@@ -3470,6 +3473,33 @@ sub cmd_logmsg
 	$goodlvl = rolllog_level($oldlvl,0);
 	rolllog_log($goodlvl,"<user msg>",$logmsg);
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"message written to log");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_phasemsg()
+#
+# Purpose:	Set the phase-message length for log messages.
+#
+sub cmd_phasemsg
+{
+	my $pmsg = shift;			# Phase-message length.
+
+	rolllog_log(LOG_TMI,'<command>',"phasemsg command received");
+
+	#
+	# Set our phase-message legnth.
+	#
+	if(rollmgr_phasemsg($pmsg) == 1)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,'phase-message length set');
+		return;
+	}
+
+	#
+	# If it fails, return the failure to the calledr.
+	#
+	rolllog_log(LOG_INFO,'<command>',"invalid phase-message ($pmsg)");
+	rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid phase-message length \"$pmsg\"");
 }
 
 #-----------------------------------------------------------------------------
@@ -4057,6 +4087,8 @@ sub cmd_zonestatus
 		my %rr;			# Rollrec hash.
 
 		my $phase;		# Rollrec's phase.
+		my $pstr;		# Phase string.
+
 		my $rtype;		# Rollrec's record type.
 
 		#
@@ -4071,23 +4103,16 @@ sub cmd_zonestatus
 		#
 		if($rr{'kskphase'} > 0)
 		{
-			my $pstr;			# Phase string.
-
 			$phase = 'KSK ' . $rr{'kskphase'};
 			$pstr = rollmgr_get_phase('KSK', $rr{'kskphase'});
-
-			$phase = "$phase: $pstr" if($pstr ne '');
 		}
 		else
 		{
-			my $pstr;			# Phase string.
-
 			$phase = 'ZSK ' . $rr{'zskphase'};
 			$pstr = rollmgr_get_phase('ZSK', $rr{'zskphase'});
-
-			$phase = "$phase: $pstr" if($pstr ne '');
 		}
 
+		$phase = "$phase: $pstr" if($pstr ne '');
 		$rtype = $rr{'rollrec_type'};
 		$phase = '-' if($rtype eq 'skip');
 
