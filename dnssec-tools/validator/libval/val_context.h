@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2009 SPARTA, Inc.  All rights reserved.
+ * Copyright 2006-2011 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 #ifndef VAL_CONTEXT_H

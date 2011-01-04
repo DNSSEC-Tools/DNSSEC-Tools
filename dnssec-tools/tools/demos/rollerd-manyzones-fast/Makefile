@@ -1,5 +1,5 @@
 #
-# Copyright 2010 SPARTA, Inc.  All rights reserved.
+# Copyright 2010-2011 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # Makefile for building demo data for the many-zones-fast rollerd demo.

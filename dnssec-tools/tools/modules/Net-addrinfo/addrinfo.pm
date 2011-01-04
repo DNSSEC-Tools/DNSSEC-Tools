@@ -5,7 +5,7 @@
 #
 #    Copyright (c) 2006-2009 G. S. Marzot. All rights reserved.
 #
-#    Copyright (c) 2006-2009 SPARTA, Inc.  All rights reserved.
+#    Copyright (c) 2006-2011 SPARTA, Inc.  All rights reserved.
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the same terms as Perl itself.

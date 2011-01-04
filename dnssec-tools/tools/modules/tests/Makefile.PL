@@ -4,7 +4,7 @@ open(MF,"> Makefile");
 
 print MF <<EOF;
 #
-# Copyright 2004-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2011 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # This is a makefile for the test directory of the DNSSEC-Tools perl modules.
