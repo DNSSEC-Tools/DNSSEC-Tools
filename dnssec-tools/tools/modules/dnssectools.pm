@@ -1,5 +1,5 @@
 #
-# Copyright 2006-2010 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2011 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -343,7 +343,7 @@ Return values:
 
 =head1 COPYRIGHT
 
-Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2011 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR

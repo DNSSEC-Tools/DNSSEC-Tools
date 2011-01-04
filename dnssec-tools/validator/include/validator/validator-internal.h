@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2009 SPARTA, Inc.  All rights reserved.
+ * Copyright 2007-2011 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 #ifndef VALIDATOR_INTERNALS_H
