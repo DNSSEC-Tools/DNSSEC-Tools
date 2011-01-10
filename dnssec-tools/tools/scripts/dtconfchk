@@ -539,6 +539,7 @@ sub check_rollerd
 	my $loadzone;				# Loadzone flag for rollerd.
 	my $logfile;				# Logfile for rollerd.
 	my $loglevel;				# Log level for rollerd.
+	my $phasemsg;				# Phase message length.
 	my $sleep;				# Sleep time for rollerd.
 	my $username;				# Username for rollerd.
 	my $zoneerrs;				# Maximum zone error count.
@@ -551,6 +552,7 @@ sub check_rollerd
 	$loadzone = $dtconf{"roll_loadzone"};
 	$logfile  = $dtconf{"roll_logfile"};
 	$loglevel = $dtconf{"roll_loglevel"};
+	$phasemsg = $dtconf{"roll_phasemsg"};
 	$sleep	  = $dtconf{"roll_sleeptime"};
 	$username = $dtconf{"roll_username"};
 	$zoneerrs = $dtconf{"zone_errors"};
@@ -596,6 +598,20 @@ sub check_rollerd
 	else
 	{
 		prt(0,"invalid rollover loglevel ($loglevel)");
+		$errs++;
+	}
+
+	#
+	# Ensure the phase-message length value is acceptable.
+	#
+	if(($phasemsg =~ /^long$/i) ||
+	   ($phasemsg =~ /^short$/i))
+	{
+		prt(1,"rollover phasemsg ($phasemsg) acceptable");
+	}
+	else
+	{
+		prt(0,"invalid rollover phasemsg ($phasemsg)");
 		$errs++;
 	}
 
