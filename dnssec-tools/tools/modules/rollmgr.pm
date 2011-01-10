@@ -508,7 +508,7 @@ sub rollmgr_prepdep
 	# Get the appropriate switch table for this O/S class and save
 	# it for later reference.
 	#
-	my $swtab = $port_archs{$osclass};
+	$swtab = $port_archs{$osclass};
 	%switchtab = %$swtab;
 }
 
