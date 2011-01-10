@@ -105,6 +105,7 @@ my @opts =
 	"no-roll-loadzone",		# Turn off rollerd's zone-loading flag.
 	"roll-logfile=s",		# Logfile for rollerd.
 	"roll-loglevel=s",		# Logging level for rollerd.
+	"roll-phasemsg=s",		# Phase-message length for rollerd.
 	"roll-sleeptime=i",		# Sleep-time for rollerd.
 	"roll-username=s",		# Username for rollerd.
 
@@ -154,6 +155,7 @@ my $zsopts;				# Options for zone-signing program.
 my $rloadzone;				# rollerd's zone-loading flag.
 my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
+my $rphasemsg;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 my $rusername;				# Username for rollerd.
 my $zoneerrs;				# Maximum error count for zones.
@@ -374,6 +376,7 @@ sub optsandargs
 	$rloadzone = 1 if(defined($opts{'roll-loadzone'}));
 	$rlogfile  = $opts{'roll-logfile'}   || dnssec_tools_default("roll_logfile");
 	$rloglevel = $opts{'roll-loglevel'}  || dnssec_tools_default("roll_loglevel");
+	$rphasemsg = $opts{'roll-phasemsg'}  || dnssec_tools_default("roll_phasemsg");
 	$rsleep	   = $opts{'roll-sleeptime'} || dnssec_tools_default("roll_sleeptime");
 	$rusername = $opts{'roll-username'} || '';
 	$zoneerrs  = $opts{'zoneerrs'} || dnssec_tools_default("zone_errors");
@@ -533,6 +536,7 @@ sub writeconf()
 		print "\troll-loadzone         - \"$rloadzone\"\n";
 		print "\troll-logfile          - \"$rlogfile\"\n";
 		print "\troll-loglevel         - \"$rloglevel\"\n";
+		print "\troll-phasemsg         - \"$rphasemsg\"\n";
 		print "\troll-sleep            - \"$rsleep\"\n\n";
 		print "\tzoneerrs              - \"$zoneerrs\"\n\n";
 
@@ -660,6 +664,7 @@ zskcount	$zskcnt
 roll_loadzone   $rloadzone
 roll_logfile    $rlogfile
 roll_loglevel   $rloglevel
+roll_phasemsg   $rphasemsg
 roll_sleeptime  $rsleep
 zone_errors	$zoneerrs
 ";
@@ -782,6 +787,7 @@ sub writetemplate()
 # roll_loadzone   $rloadzone
 # roll_logfile    $rlogfile
 # roll_loglevel   $rloglevel
+# roll_phasemsg   $rphasemsg
 # roll_sleeptime  $rsleep
 # zone_errors	  $zoneerrs
 # roll_username   some-user
@@ -1396,6 +1402,7 @@ sub get_dt_opts()
 	$rloadzone = getval("Rollerd's Zone-loading Flag",$rloadzone,"boolean");
 	$rlogfile  = getval("Rollerd's Logfile",$rlogfile,"");
 	$rloglevel = getval("Rollerd's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
+	$rphasemsg = getval("Rollerd's Phase-Message Length",$rphasemsg,"", "(valid values:  long, short)");
 	$rsleep	   = getval("Rollerd's Sleep-time",$rsleep,"");
 	$rusername = getval("Rollerd's Username",$rusername,"");
 	$zoneerrs  = getval("Rollerd's Maximum Error Count for Zones",$zoneerrs,"");
@@ -1805,7 +1812,7 @@ encryption keys.
 =item B<-algorithm algorithm>
 
 Selects the cryptographic algorithm. The value of algorithm must be one that
-is recognized by B<dnssec-keygen>.
+is recognized by the installed version of B<dnssec-keygen>.
 
 =item B<-kskcount KSK-count>
 
@@ -1980,6 +1987,21 @@ B<logfile> is the logfile for the B<rollerd> daemon.
 =item B<-roll-loglevel loglevel>
 
 B<loglevel> is the logging level for the B<rollerd> daemon.
+
+=item B<-roll-phasemsg length>
+
+B<length> is the default length of phase-related log messages used by
+B<rollerd>.  The valid levels are "long" and "short", with "long" being
+the default value.
+
+The long message length means that a phase description will be included with
+some log messages.  For example, the long form of a message about ZSK rollover
+phase 3 will look like this:  "ZSK phase 3 (Waiting for old zone data to
+expire from caches)".
+
+The short message length means that a phase description will not be included
+with some log messages.  For example, the short form of a message about ZSK
+rollover phase 3 will look like this:  "ZSK phase 3".
 
 =item B<-roll-sleeptime sleep-time>
 
