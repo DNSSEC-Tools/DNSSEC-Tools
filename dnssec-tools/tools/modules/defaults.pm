@@ -49,6 +49,7 @@ my %defaults =
 	"roll_loadzone"	   => 1,		# Zone-reloading flag.
 	"roll_logfile"	   => makelocalstatedir() . "/log.rollerd",
 	"roll_loglevel"	   => "phase",		# Rollerd's logging level.
+	"roll_phasemsg"	   => "long",		# Rollerd's phase logmsg length.
 	"roll_sleeptime"   => 3600,		# Rollerd's sleep time.
 	"savekeys"	   => 1,		# Save/delete old keys flag.
 	"tacontact" 	   => "",
