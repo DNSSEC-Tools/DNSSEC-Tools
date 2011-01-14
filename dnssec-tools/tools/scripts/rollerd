@@ -110,6 +110,7 @@ my %dtconf;				# DNSSEC-Tools config file.
 my $DT_LOADZONE	= "roll_loadzone";
 my $DT_LOGFILE	= "roll_logfile";
 my $DT_LOGLEVEL	= "roll_loglevel";
+my $DT_LOGTZ	= "log_tz";
 my $DT_SLEEP	= "roll_sleeptime";
 my $DT_USERNAME	= "roll_username";
 
@@ -119,6 +120,7 @@ my $OPT_DISPLAY	   = "display";
 my $OPT_DTCONF	   = "dtconfig";
 my $OPT_LOGFILE	   = "logfile";
 my $OPT_LOGLEVEL   = "loglevel";
+my $OPT_LOGTZ	   = "logtz";
 my $OPT_NORELOAD   = "noreload";
 my $OPT_PARAMS	   = "parameters";
 my $OPT_SINGLERUN  = "singlerun";
@@ -140,6 +142,7 @@ my @opts =
 	"display",			# Use output GUI.
 	"logfile=s",			# Log file.
 	"loglevel=s",			# Logging level.
+	"logtz=s",			# Logging timezone.
 	"noreload",			# Don't reload zone files.
 	"pidfile=s",			# pid storage file.
 	"dtconfig=s",			# dnssec-tools config file to use.
@@ -165,6 +168,7 @@ my $foreground = 0;			# Run in the foreground.
 my $logfile;				# Log file.
 my $loglevel;				# Logging level.
 my $loglevel_save;			# Saved logging level.
+my $logtz;				# Logging timestamp.
 my $zoneload = 1;			# Zone-reload flag.
 my $pidfile;				# Pid storage file.
 my $singlerun = 0;			# Single run only.
@@ -2508,7 +2512,8 @@ sub getkrval
 #
 sub optsandargs
 {
-	my $argc = @ARGV;				# Number of arguments.
+	my $argc = @ARGV;		# Number of arguments.
+	my $opterrs = 0;		# Count of option-related errors.
 
 	#
 	# Get the base values.
@@ -2528,6 +2533,7 @@ sub optsandargs
 	$verbose    = $opts{$OPT_VERBOSE};
 	$logfile    = $opts{$OPT_LOGFILE}    || $dtconf{$DT_LOGFILE};
 	$loglevel   = $opts{$OPT_LOGLEVEL}   || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
+	$logtz	    = $opts{$OPT_LOGTZ}	     || $dtconf{$DT_LOGTZ};
 	$sleeptime  = $opts{$OPT_SLEEP}	     || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 	$dtcf	    = $opts{$OPT_DTCONF}     || getconffile();
 	$display    = $opts{$OPT_DISPLAY}    || 0;
@@ -2582,7 +2588,7 @@ sub optsandargs
 		if($uid eq '')
 		{
 			print STDERR "rollerd:  unknown user \"$username\"\n";
-			exit(1);
+			$opterrs++;
 		}
 
 		#
@@ -2595,7 +2601,7 @@ sub optsandargs
 		if($ret ne '')
 		{
 			print STDERR "rollerd:  unable to switch to user \"$username\" -- $ret\n";
-			exit(1);
+			$opterrs++;
 		}
 	}
 
@@ -2610,17 +2616,17 @@ sub optsandargs
 	if(!defined($xqtdir))
 	{
 		print STDERR "rollerd:  no execution directory defined\n";
-		exit(1);
+		$opterrs++;
 	}
 	if(! -e $xqtdir)
 	{
 		print STDERR "rollerd:  execution directory \"$xqtdir\" does not exist\n";
-		exit(1);
+		$opterrs++;
 	}
 	if(! -d $xqtdir)
 	{
 		print STDERR "rollerd:  execution directory \"$xqtdir\" is not a directory\n";
-		exit(1);
+		$opterrs++;
 	}
 
 	#
@@ -2634,6 +2640,7 @@ sub optsandargs
 		print "\tconfig file    \"$dtconfig\"\n";
 		print "\tlogfile        \"$logfile\"\n";
 		print "\tloglevel       \"$loglevel\"\n";
+		print "\tlogtz          \"$logtz\"\n";
 		print "\tzone reload    \"$zoneload\"\n";
 		print "\tsleeptime      \"$sleeptime\"\n";
 		exit(0)
@@ -2645,7 +2652,7 @@ sub optsandargs
 	if(! -e $rollrecfile)
 	{
 		print STDERR "rollerd:  rollrec file \"$rollrecfile\" does not exist\n";
-		exit(1);
+		$opterrs++;
 	}
 
 	#
@@ -2659,7 +2666,7 @@ sub optsandargs
 	if(!defined($logfile))
 	{
 		print STDERR "rollerd:  no logfile specified on command line or in dnssec-tools.conf\n";
-		exit(1);
+		$opterrs++;
 	}
 
 	#
@@ -2684,7 +2691,7 @@ sub optsandargs
 		if(! -e $logdir)
 		{
 			print STDERR "rollerd:  logfile's directory \"$logdir\" does not exist\n";
-			exit(1);
+			$opterrs++;
 		}
 	}
 
@@ -2702,6 +2709,20 @@ sub optsandargs
 	$loglevel_save = $loglevel;
 	rolllog_level($loglevel,1);
 	rolllog_file($logfile,1);
+
+	#
+	# Set the logging timezone.
+	#
+	if(rolllog_settz($logtz) eq '')
+	{
+		print STDERR "rollerd:  invalid log timezone \"$logtz\"\n";
+		$opterrs++;
+	}
+
+	#
+	# Exit if there were any option-related errors.
+	#
+	exit(1) if($opterrs > 0);
 
 	#
 	# Start up our display program if -display was given.
@@ -2776,6 +2797,7 @@ sub bootmsg
 	rolllog_log(LOG_ALWAYS,"","		config file	\"$dtconfig\"");
 	rolllog_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
 	rolllog_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
+	rolllog_log(LOG_ALWAYS,"","		logtz		\"$logtz\"");
 	rolllog_log(LOG_ALWAYS,"","		zone reload	\"$zoneload\"");
 	rolllog_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
 
@@ -3153,6 +3175,10 @@ sub commander
 		{
 			cmd_logmsg($data);
 		}
+		elsif($cmd eq ROLLCMD_LOGTZ())
+		{
+			cmd_logtz($data);
+		}
 		elsif($cmd eq ROLLCMD_PHASEMSG())
 		{
 			cmd_phasemsg($data);
@@ -3473,6 +3499,38 @@ sub cmd_logmsg
 	$goodlvl = rolllog_level($oldlvl,0);
 	rolllog_log($goodlvl,"<user msg>",$logmsg);
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"message written to log");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_logtz()
+#
+# Purpose:	Set the timezone for log messages' timestamps.
+#
+sub cmd_logtz
+{
+	my $newtz = shift;			# New logging timezone.
+
+	my $oldtz;				# Current logging timezone.
+
+	rolllog_log(LOG_TMI,'<command>',"logtz command received");
+
+	#
+	# Set the new timezone for log messages.  If it's invalid, we'll
+	# return a failure and then return.
+	#
+	$oldtz = rolllog_settz($newtz);
+	if($oldtz eq '')
+	{
+		rolllog_log(LOG_INFO,'<command>',"invalid timezone ($newtz) specified for logtz command");
+		rollmgr_sendresp(ROLLCMD_RC_BADTZ,"invalid logtz \"$newtz\"");
+		return;
+	}
+
+	#
+	# Let the user know all's well.
+	#
+	rolllog_log(LOG_INFO,"<command>","logging timezone set to $newtz");
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"new logging timezone set");
 }
 
 #-----------------------------------------------------------------------------
@@ -3928,6 +3986,7 @@ sub cmd_status
 	my $lfile;					# Log file.
 	my $lvl;					# Logging level.
 	my $lvlstr;					# Logging level string.
+	my $tz;						# Logging timezone.
 	my $outbuf = "";				# Response buffer.
 
 	#
@@ -3936,6 +3995,7 @@ sub cmd_status
 	$lfile	= rolllog_file();
 	$lvl	= rolllog_level();
 	$lvlstr	= rolllog_str($lvl);
+	$tz     = rolllog_gettz();
 
 	#
 	# Build status report.
@@ -3946,6 +4006,7 @@ sub cmd_status
 	$outbuf .= "config file:        $dtconfig\n";
 	$outbuf .= "logfile:            $lfile\n";
 	$outbuf .= "loglevel:           $lvl\n";
+	$outbuf .= "logtz:              $tz\n";
 	$outbuf .= "zone reload:        $zoneload\n";
 	$outbuf .= "sleeptime:          $sleeptime\n";
 
