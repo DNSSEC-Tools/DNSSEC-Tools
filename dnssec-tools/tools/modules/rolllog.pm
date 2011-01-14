@@ -32,6 +32,8 @@ our @EXPORT = qw(
 		 rolllog_level
 		 rolllog_levels
 		 rolllog_num
+		 rolllog_gettz
+		 rolllog_settz
 		 rolllog_str
 			 LOG_NEVER
 			 LOG_TMI
@@ -91,6 +93,9 @@ my @logstrs =					# Valid strings for levels.
 );
 
 my $logfile;					# rollerd's log file.
+
+my $DEFAULT_LOGTZ = 'gmt';			# Default timezone.
+my $usetz = $DEFAULT_LOGTZ;			# Timezone selector to use.
 
 
 
@@ -206,6 +211,59 @@ sub rolllog_levels
 	}
 	
 	return(@levels);
+}
+
+##############################################################################
+#
+# Routine:	rolllog_gettz()
+#
+# Purpose:	Return the timezone function used for timestamps in log
+#		messages.  'local' and 'gmt' are the acceptable values.
+#
+sub rolllog_gettz
+{
+	#
+	# If the logging timezone hasn't been set yet, we'll set it to
+	# the default value
+	#
+	if($usetz eq '')
+	{
+		$usetz = $DEFAULT_LOGTZ;
+	}
+
+	return($usetz);
+}
+
+##############################################################################
+#
+# Routine:	rolllog_settz()
+#
+# Purpose:	Set the timezone selector to use for timestamps in log
+#		messages.  'local' and 'gmt' are the acceptable values.
+#
+sub rolllog_settz
+{
+	my $newtz = shift;				# New timezone.
+	my $oldtz = $usetz;				# Old timezone.
+
+	#
+	# Ensure a valid timezone selector was given.  If no selector
+	# was given, then we'll use the default.
+	#
+	if($newtz ne '')
+	{
+		return('') if(($newtz !~ /^gmt$/i) && ($newtz !~ /^local$/i));
+	}
+	else
+	{
+		$newtz = dnssec_tools_default('log_tz');
+	}
+
+	#
+	# Set the timezone selector and return the old selector.
+	#
+	$usetz = lc $newtz;
+	return($oldtz);
 }
 
 ##############################################################################
@@ -410,7 +468,14 @@ sub rolllog_log
 	#
 	# Get the timestamp.
 	#
-	$kronos = gmtime();
+	if($usetz eq 'local')
+	{
+		$kronos = localtime();
+	}
+	else
+	{
+		$kronos = gmtime();
+	}
 	$kronos =~ s/^....//;
 
 	#
@@ -457,6 +522,9 @@ Net::DNS::SEC::Tools::rolllog - DNSSEC-Tools rollover logging interfaces.
 
   $bool = rolllog_validlevel($newlevel);
   $bool = rolllog_validlevel(8);
+
+  $curtz = rolllog_gettz();
+  $oldtz = rolllog_settz('local');
 
   rolllog_log(LOG_INFO,"example.com","zone is valid");
 
@@ -527,6 +595,23 @@ This routine translates a text log level (given in I<loglevel>) into the
 associated numeric log level.  The numeric log level is returned to the caller.
 
 If I<loglevel> is an invalid log level, -1 is returned.
+
+=item I<rolllog_gettz()>
+
+This routine returns the timezone selector currently in use.  This value may
+be either 'gmt' (for Greenwich Mean Time) or 'local' (for the host's local
+time.)
+
+=item I<rolllog_settz(tzsel)>
+
+This routine sets the timezone to be used for timestamps in messages written
+to the log.  This I<tzsel> value may be either 'gmt' (Greenwich Mean Time)
+or 'local' (for the host's local time.)  I<tzsel> may be uppercase or
+lowercase; the value will be converted to lowercase.  If no value is passed,
+then the default will be used.
+
+The current timezone selector is returned.  If an invalid selector is given,
+then an undefined value is returned.
 
 =item I<rolllog_str(loglevel)>
 
