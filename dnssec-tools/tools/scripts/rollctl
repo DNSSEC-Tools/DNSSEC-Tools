@@ -55,6 +55,7 @@ my @opts =
 	"dspuball",			# Parents have published DS records.
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel:s",			# Set rollerd's logging level.
+	"logtz=s",			# Set rollerd's logging timezone.
 	"phasemsg=s",			# Set rollerd's phase-message length.
 	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollallzsks",			# ZSK-roll all our zones.
@@ -87,6 +88,7 @@ my $dspubflag	  = 0;
 my $dspuballflag  = 0;
 my $logfileflag	  = 0;
 my $loglevelflag  = 0;
+my $logtzflag	  = 0;
 my $logphasemsg	  = '';
 my $nodispflag	  = 0;
 my $zrollallflag  = 0;
@@ -284,6 +286,25 @@ sub main()
 				print STDERR "log-level set failed:  $resp\n";
 				$rcret++;
 			}
+		}
+	}
+	elsif($logtzflag)
+	{
+		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGTZ,$logtzflag))
+		{
+			print STDERR "rollctl:  error sending command LOGTZ\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd log timezone set to $logtzflag\n";
+		}
+		else
+		{
+			print STDERR "log-tz set failed:  $resp\n";
+			$rcret++;
 		}
 	}
 	elsif($logphasemsg)
@@ -681,6 +702,11 @@ sub doopts
 		$loglevelflag = $options{'loglevel'};
 		$commandcount++;
 	}		
+	if(exists($options{'logtz'}))
+	{
+		$logtzflag = $options{'logtz'};
+		$commandcount++;
+	}		
 	if(exists($options{'phasemsg'}))
 	{
 		$logphasemsg = $options{'phasemsg'};
@@ -858,7 +884,7 @@ sub zonestatus
 		my @slices = split /;/, $line;
 
 		#
-		# Save the datoms.
+		# Save the atoms.
 		#
 		push @rnames, $slices[0];
 		push @znames, $slices[1];
@@ -936,6 +962,7 @@ sub usage
 	print STDERR "\t-dspuball		parents have published DS records for zones\n";
 	print STDERR "\t-logfile <logfile>	set log file\n";
 	print STDERR "\t-loglevel <loglevel>	set logging level\n";
+	print STDERR "\t-logtz <log-timezone>	set logging timezone\n";
 	print STDERR "\t-phasemsg <length>	set phase-message length\n";
 	print STDERR "\t-nodisplay		stop graphical display\n";
 	print STDERR "\t-rollallzsks		roll all zones\n";
@@ -1028,6 +1055,11 @@ This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
 If a logging level is not specified, then the list of valid levels will be
 printed and B<rollctl> will exit.  The list is given in both text and numeric
 forms.
+
+=item B<-logtz logtz>
+
+Sets the B<rollerd> logging timezone to I<loglevel>.  This must be either
+I<gmt> (for Greenwich Mean Time or I<local> (for the host's local time.)
 
 =item B<-nodisplay>
 
