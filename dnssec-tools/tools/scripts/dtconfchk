@@ -539,6 +539,7 @@ sub check_rollerd
 	my $loadzone;				# Loadzone flag for rollerd.
 	my $logfile;				# Logfile for rollerd.
 	my $loglevel;				# Log level for rollerd.
+	my $logtz;				# Log timezone for rollerd.
 	my $phasemsg;				# Phase message length.
 	my $sleep;				# Sleep time for rollerd.
 	my $username;				# Username for rollerd.
@@ -552,6 +553,7 @@ sub check_rollerd
 	$loadzone = $dtconf{"roll_loadzone"};
 	$logfile  = $dtconf{"roll_logfile"};
 	$loglevel = $dtconf{"roll_loglevel"};
+	$logtz	  = $dtconf{"log_tz"};
 	$phasemsg = $dtconf{"roll_phasemsg"};
 	$sleep	  = $dtconf{"roll_sleeptime"};
 	$username = $dtconf{"roll_username"};
@@ -598,6 +600,19 @@ sub check_rollerd
 	else
 	{
 		prt(0,"invalid rollover loglevel ($loglevel)");
+		$errs++;
+	}
+
+	#
+	# Ensure the log timezone is acceptable.
+	#
+	if(($logtz =~ /^gmt$/i)	|| ($logtz =~ /^local$/i))
+	{
+		prt(1,"rollover logtz ($logtz) acceptable");
+	}
+	else
+	{
+		prt(0,"invalid rollover logtz ($logtz); must be either 'gmt' or 'local'");
 		$errs++;
 	}
 
@@ -1330,6 +1345,10 @@ B<rollerd>'s sleep-time must be at least one minute.
 Ensure that the username for B<rollerd> is valid.  If it's a username, it
 must be translatable to a uid; if it's a uid, it must translate to a known
 username.
+
+=item I<log_tz>
+
+Ensure the I<log_tz> field is either 'gmt' or 'local'.
 
 =item I<zone_errors>
 
