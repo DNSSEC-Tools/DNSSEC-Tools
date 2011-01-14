@@ -121,6 +121,7 @@ my @stdopts =
 	['GUI:separator',	'Roll-over Options:'],
 		["roll_logfile=s",	"Roll-over manager's log filename"],
 		["roll_loglevel=s",	"Roll-over manager's logging level"],
+		["logtz=s",		"Roll-over manager's logging timezone"],
 		["roll_sleeptime=i",	"Sleep-time for Roll-over manager"],
 		["zone_errors=i",	"Maximum consecutive errors for a zone"],
 
