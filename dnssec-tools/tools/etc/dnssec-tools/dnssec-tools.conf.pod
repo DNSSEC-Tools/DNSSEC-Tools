@@ -113,6 +113,11 @@ This is measured in seconds.
 The minimum length of time a key should be in use before it is rolled over.
 This is measured in seconds.
 
+=item log_tz
+
+The timezone to be used in log messages.  The value may be either 'gmt' (for
+Greenwich Mean Time) or 'local' (for the host's local time.)
+
 =item random
 
 The random device generator to be passed to B<dnssec-keygen>.
@@ -289,6 +294,8 @@ The following is an example B<dnssec-tools.conf> configuration file.
     roll_loglevel   info
     roll_sleeptime  60
     zone_errors     3
+
+    log_tz		local
 
     #
     # GUI-usage flag.
