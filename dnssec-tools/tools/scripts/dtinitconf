@@ -108,6 +108,7 @@ my @opts =
 	"roll-phasemsg=s",		# Phase-message length for rollerd.
 	"roll-sleeptime=i",		# Sleep-time for rollerd.
 	"roll-username=s",		# Username for rollerd.
+	"roll-logtz=s",			# Timezone for rollerd's logfile.
 
 	"ta-contact=s",			# trustman's email contact.
 	"ta-resolvconf=s",		# Location of resolv.conf file.
@@ -155,6 +156,7 @@ my $zsopts;				# Options for zone-signing program.
 my $rloadzone;				# rollerd's zone-loading flag.
 my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
+my $rlogtz;				# Timezone for rollerd's logfile.
 my $rphasemsg;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 my $rusername;				# Username for rollerd.
@@ -366,7 +368,7 @@ sub optsandargs
 	$nsec3iter = $opts{'nsec3iter'}	|| dnssec_tools_default("nsec3iter");
 	$nsec3optout = $opts{'nsec3optout'} || dnssec_tools_default("nsec3optout");
 
-	$keyarchdir = $opts{'archivedir'} || dnssec_tools_default("archivedir");;
+	$keyarchdir = $opts{'archivedir'} || dnssec_tools_default("archivedir");
 	$savekeys   = $opts{'savekeys'}	   || dnssec_tools_default("savekeys");
 	$usegui	    = $opts{'usegui'}	   || dnssec_tools_default("usegui");
 	$entmsg	    = $opts{'entropy_msg'} || dnssec_tools_default("entropy_msg");
@@ -376,9 +378,10 @@ sub optsandargs
 	$rloadzone = 1 if(defined($opts{'roll-loadzone'}));
 	$rlogfile  = $opts{'roll-logfile'}   || dnssec_tools_default("roll_logfile");
 	$rloglevel = $opts{'roll-loglevel'}  || dnssec_tools_default("roll_loglevel");
+	$rlogtz	   = $opts{'roll-logtz'}     || dnssec_tools_default("log_tz");
 	$rphasemsg = $opts{'roll-phasemsg'}  || dnssec_tools_default("roll_phasemsg");
 	$rsleep	   = $opts{'roll-sleeptime'} || dnssec_tools_default("roll_sleeptime");
-	$rusername = $opts{'roll-username'} || '';
+	$rusername = $opts{'roll-username'}  || '';
 	$zoneerrs  = $opts{'zoneerrs'} || dnssec_tools_default("zone_errors");
 
 	$tacontact    = $opts{'ta-contact'}    || dnssec_tools_default("tacontact");
@@ -538,6 +541,7 @@ sub writeconf()
 		print "\troll-loglevel         - \"$rloglevel\"\n";
 		print "\troll-phasemsg         - \"$rphasemsg\"\n";
 		print "\troll-sleep            - \"$rsleep\"\n\n";
+		print "\troll-logtz            - \"$rlogtz\"\n";
 		print "\tzoneerrs              - \"$zoneerrs\"\n\n";
 
 		print "\tkeyarch    - \"$keyarch\"\n";
@@ -667,6 +671,8 @@ roll_loglevel   $rloglevel
 roll_phasemsg   $rphasemsg
 roll_sleeptime  $rsleep
 zone_errors	$zoneerrs
+
+log_tz		$rlogtz
 ";
 	if($rusername ne '')
 	{
@@ -791,6 +797,8 @@ sub writetemplate()
 # roll_sleeptime  $rsleep
 # zone_errors	  $zoneerrs
 # roll_username   some-user
+#
+# log_tz	  $rlogtz
 
 #
 # Settings for trustman
@@ -1402,6 +1410,7 @@ sub get_dt_opts()
 	$rloadzone = getval("Rollerd's Zone-loading Flag",$rloadzone,"boolean");
 	$rlogfile  = getval("Rollerd's Logfile",$rlogfile,"");
 	$rloglevel = getval("Rollerd's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
+	$rlogtz	   = getval("Rollerd's Logging Timezone",$rlogtz,"", "(valid values:  gmt, local)");
 	$rphasemsg = getval("Rollerd's Phase-Message Length",$rphasemsg,"", "(valid values:  long, short)");
 	$rsleep	   = getval("Rollerd's Sleep-time",$rsleep,"");
 	$rusername = getval("Rollerd's Username",$rusername,"");
@@ -1732,6 +1741,7 @@ sub usage()
 	print STDERR "\t\t-roll-loglevel <loglevel>\n";
 	print STDERR "\t\t-roll-sleeptime <sleep-time>\n";
 	print STDERR "\t\t-roll-username <username>\n\n";
+	print STDERR "\t\t-roll-logtz <logtz>\n";
 
 	print STDERR "\t\t-ta-contact <contact email>\n";
 	print STDERR "\t\t-ta-resolvconf <resolv.conf file>\n";
@@ -2012,6 +2022,10 @@ B<sleep-time> is the sleep-time for the B<rollerd> daemon.
 B<username> is the user for which the B<rollerd> daemon will be executed.  If
 this is a username, it must correspond to a valid uid; if it is a uid, it
 must correspond to a valid username.
+
+=item B<-roll-logtz logtz>
+
+B<loglevel> is the timezone of the message timestamp for B<rollerd>'s logfile.
 
 =item B<-zoneerrs error-count>
 
