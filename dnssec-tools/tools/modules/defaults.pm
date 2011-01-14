@@ -51,6 +51,7 @@ my %defaults =
 	"roll_loglevel"	   => "phase",		# Rollerd's logging level.
 	"roll_phasemsg"	   => "long",		# Rollerd's phase logmsg length.
 	"roll_sleeptime"   => 3600,		# Rollerd's sleep time.
+	"log_tz"	   => "gmt",		# Log message timezone.
 	"savekeys"	   => 1,		# Save/delete old keys flag.
 	"tacontact" 	   => "",
 	"tatmpdir" 	   => "/tmp/dnssec-tools/trustman",
@@ -70,7 +71,7 @@ my %defaults =
 	"zsklength"	   => 1024,		# Length of ZSK key.
 	"zsklife"	   => 604800,		# Lifespan of ZSK key.
 	"usensec3"         => "no",             # Use NSEC3 by default
-	"nsec3iter"	   => 100,              # default NSEC3 iteratations
+	"nsec3iter"	   => 100,              # default NSEC3 iterations
 	"nsec3salt"	   => "random:64",      # default NSEC3 salt
 	"nsec3optout"	   => "no",             # NSEC3 opt-out default
 	"blinkenlights"	   => "$installdir/blinkenlights",
@@ -248,7 +249,7 @@ concept of a lifespan.  This is measured in seconds.
 
 =item B<revperiod>
 
-This default holds the default revocation periodof a KSK key. This is
+This default holds the default revocation period of a KSK key. This is
 the minimum period of time a revoked KSK is required to remain in the
 signing set so that it is properly observed by resolvers.  This is
 measured in seconds.
@@ -260,6 +261,10 @@ This default is the maximum lifespan of a key.
 =item B<lifespan-min>
 
 This default is the minimum lifespan of a key.
+
+=item B<log_tz>
+
+This default is the timezone to be used in log-message timestamps.
 
 =item B<random>
 
