@@ -134,6 +134,7 @@ our @EXPORT = qw(
 			 ROLLCMD_LOGFILE
 			 ROLLCMD_LOGLEVEL
 			 ROLLCMD_LOGMSG
+			 ROLLCMD_LOGTZ
 			 ROLLCMD_PHASEMSG
 			 ROLLCMD_ROLLALL
 			 ROLLCMD_ROLLKSK
@@ -154,6 +155,7 @@ our @EXPORT = qw(
 			 ROLLCMD_RC_BADFILE
 			 ROLLCMD_RC_BADSLEEP
 			 ROLLCMD_RC_BADROLLREC
+			 ROLLCMD_RC_BADTZ
 			 ROLLCMD_RC_DISPLAY
 			 ROLLCMD_RC_RRFOPEN
 			 ROLLCMD_RC_NOZONES
@@ -200,20 +202,22 @@ my $ROLLCMD_RC_BADLEVEL		= 1;
 my $ROLLCMD_RC_BADFILE		= 2;
 my $ROLLCMD_RC_BADSLEEP	 	= 3;
 my $ROLLCMD_RC_BADROLLREC	= 4;
-my $ROLLCMD_RC_RRFOPEN		= 5;
-my $ROLLCMD_RC_NOZONES		= 6;
-my $ROLLCMD_RC_BADZONE		= 7;
-my $ROLLCMD_RC_BADZONEDATA	= 8;
-my $ROLLCMD_RC_DISPLAY		= 9;
-my $ROLLCMD_RC_KSKROLL		= 10;
-my $ROLLCMD_RC_ZSKROLL		= 11;
-my $ROLLCMD_RC_NOARGS		= 12;
+my $ROLLCMD_RC_BADTZ		= 5;
+my $ROLLCMD_RC_RRFOPEN		= 6;
+my $ROLLCMD_RC_NOZONES		= 7;
+my $ROLLCMD_RC_BADZONE		= 8;
+my $ROLLCMD_RC_BADZONEDATA	= 9;
+my $ROLLCMD_RC_DISPLAY		= 10;
+my $ROLLCMD_RC_KSKROLL		= 11;
+my $ROLLCMD_RC_ZSKROLL		= 12;
+my $ROLLCMD_RC_NOARGS		= 13;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);		};
 sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);		};
 sub ROLLCMD_RC_BADFILE		{ return($ROLLCMD_RC_BADFILE);		};
 sub ROLLCMD_RC_BADSLEEP		{ return($ROLLCMD_RC_BADSLEEP);		};
 sub ROLLCMD_RC_BADROLLREC	{ return($ROLLCMD_RC_BADROLLREC);	};
+sub ROLLCMD_RC_BADTZ		{ return($ROLLCMD_RC_BADTZ);		};
 sub ROLLCMD_RC_RRFOPEN		{ return($ROLLCMD_RC_RRFOPEN);		};
 sub ROLLCMD_RC_NOZONES		{ return($ROLLCMD_RC_NOZONES);		};
 sub ROLLCMD_RC_BADZONE		{ return($ROLLCMD_RC_BADZONE);		};
@@ -234,6 +238,7 @@ my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
 my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
+my $ROLLCMD_LOGTZ	= "rollcmd_logtz";
 my $ROLLCMD_PHASEMSG	= "rollcmd_phasemsg";
 my $ROLLCMD_ROLLALL	= "rollcmd_rollallzsks";
 my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
@@ -256,6 +261,7 @@ sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
 sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
 sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
 sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
+sub ROLLCMD_LOGTZ		{ return($ROLLCMD_LOGTZ);	};
 sub ROLLCMD_PHASEMSG		{ return($ROLLCMD_PHASEMSG);	};
 sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
 sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	};
@@ -280,6 +286,7 @@ my %roll_commands =
 	rollcmd_logfile		=> 1,
 	rollcmd_loglevel	=> 1,
 	rollcmd_logmsg		=> 1,
+	rollcmd_logtz		=> 1,
 	rollcmd_nodisplay	=> 1,
 	rollcmd_phasemsg	=> 1,
 	rollcmd_rollallzsks	=> 1,
@@ -2092,6 +2099,7 @@ The available commands and their required data are:
    ROLLCMD_LOGFILE	log filename	change the log file
    ROLLCMD_LOGLEVEL	log level	set a new logging level
    ROLLCMD_LOGMSG	log message	add a message to the log
+   ROLLCMD_LOGTZ	timezone	set timezone for log messages
    ROLLCMD_PHASEMSG	long/short	set long or short phase messages
    ROLLCMD_ROLLALL	none		force all zones to start
 					ZSK rollover
