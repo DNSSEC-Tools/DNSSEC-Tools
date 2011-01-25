@@ -281,7 +281,7 @@ sub parse_line
 	  				$offset ||= 0;
 	  				$width  ||= 0;
 	  				$base   ||= 'd';
-	  				sprintf "%$width$base", $offset + $from;
+	  				sprintf "%0$width$base", $offset + $from;
 	  			}xge;
 	  		$parse->();
 	  		$from++;
