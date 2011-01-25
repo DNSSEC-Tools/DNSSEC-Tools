@@ -657,8 +657,11 @@ val_log_insert(val_log_t **log_head, val_log_t * logp)
 {
     val_log_t      *tmp_log;
 
-    if (NULL == logp || NULL == log_head)
+    if (NULL == logp)
         return;
+
+    if (log_head == NULL)
+        log_head = &default_log_head;
 
     for (tmp_log = *log_head; tmp_log && tmp_log->next;
          tmp_log = tmp_log->next);
