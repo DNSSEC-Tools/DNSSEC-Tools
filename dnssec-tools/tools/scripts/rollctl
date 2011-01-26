@@ -58,9 +58,11 @@ my @opts =
 	"logtz=s",			# Set rollerd's logging timezone.
 	"phasemsg=s",			# Set rollerd's phase-message length.
 	"nodisplay",			# Turn off rollerd's graphical display.
+	"rollall",			# Resume all suspended zones.
 	"rollallzsks",			# ZSK-roll all our zones.
 	"rollksk",			# KSK roll the specified zone(s).
 	"rollrec=s",			# Change the rollrec file.
+	"rollzone",			# Restart the suspended, named zone(s).
 	"rollzsk",			# ZSK roll the specified zone(s).
 	"runqueue",			# Run the queue.
 	"shutdown",			# Shutdown rollerd.
@@ -91,9 +93,10 @@ my $loglevelflag  = 0;
 my $logtzflag	  = 0;
 my $logphasemsg	  = '';
 my $nodispflag	  = 0;
-my $zrollallflag  = 0;
+my $rollallflag	  = 0;
 my $rollkskflag	  = 0;
 my $rollrecflag	  = 0;
+my $rollzoneflag  = 0;
 my $rollzskflag	  = 0;
 my $runqueueflag  = 0;
 my $shutdownflag  = 0;
@@ -103,6 +106,7 @@ my $sleeptimeflag = 0;
 my $statusflag	  = 0;
 my $zonelogflag	  = 0;
 my $zonestatflag  = 0;
+my $zrollallflag  = 0;
 my $zsargsflag	  = 0;
 my $pidfile	  = '';
 
@@ -353,7 +357,7 @@ sub main()
 			$rcret++;
 		}
 	}
-	elsif($zrollallflag)
+	elsif($rollallflag)
 	{
 		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALL))
 		{
@@ -364,7 +368,26 @@ sub main()
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
-			print "all zones now in rollover:  $resp\n";
+			print "all suspended zones now resumed:  $resp\n";
+		}
+		else
+		{
+			print STDERR "$resp";
+			$rcret++;
+		}
+	}
+	elsif($zrollallflag)
+	{
+		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALLZSKS))
+		{
+			print STDERR "rollctl:  error sending command ROLLALLZSKS\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "all zones now in ZSK rollover:  $resp\n";
 		}
 		else
 		{
@@ -415,6 +438,34 @@ sub main()
 			else
 			{
 				print STDERR "unable to force KSK rollover process for $zone:  $resp\n";
+				$rcret++;
+			}
+		}
+	}
+	elsif($rollzoneflag)
+	{
+		if(@ARGV == 0)
+		{
+			print STDERR "rollctl: -rollzone missing zone argument\n";
+			exit(1);
+		}
+
+		foreach my $zone (@ARGV)
+		{
+			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZONE,$zone))
+			{
+				print STDERR "rollctl:  error sending command ROLLZONE($zone)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "rollover restarted for zone $zone\n";
+			}
+			else
+			{
+				print STDERR "unable to restart rollover for zone $zone:  \"$resp\"\n";
 				$rcret++;
 			}
 		}
@@ -732,6 +783,11 @@ sub doopts
 		$dspuballflag = $options{'dspuball'};
 		$commandcount++;
 	}
+	if(exists($options{'rollall'}))
+	{
+		$rollallflag = $options{'rollall'};
+		$commandcount++;
+	}
 	if(exists($options{'rollallzsks'}))
 	{
 		$zrollallflag = $options{'rollallzsks'};
@@ -745,6 +801,11 @@ sub doopts
 	if(exists($options{'rollrec'}))
 	{
 		$rollrecflag = $options{'rollrec'};
+		$commandcount++;
+	}
+	if(exists($options{'rollzone'}))
+	{
+		$rollzoneflag = $options{'rollzone'};
 		$commandcount++;
 	}
 	if(exists($options{'rollzsk'}))
@@ -965,8 +1026,10 @@ sub usage
 	print STDERR "\t-logtz <log-timezone>	set logging timezone\n";
 	print STDERR "\t-phasemsg <length>	set phase-message length\n";
 	print STDERR "\t-nodisplay		stop graphical display\n";
+	print STDERR "\t-rollall		restart all suspended zones\n";
 	print STDERR "\t-rollallzsks		roll all zones\n";
 	print STDERR "\t-rollksk <zone>		roll specified zone's KSK\n";
+	print STDERR "\t-rollzone <zone>	restart named suspended zone\n";
 	print STDERR "\t-rollzsk <zone>		roll named zone\n";
 	print STDERR "\t-rollrec <rollrec>	set rollrec file\n";
 	print STDERR "\t-runqueue		run queue\n";
@@ -1081,6 +1144,11 @@ The short message length means that a phase description will not be included
 with some log messages.  For example, the short form of a message about ZSK
 rollover phase 3 will look like this:  "ZSK phase 3".
 
+=item B<-rollall>
+
+Resumes rollover for all zones in the current I<rollrec> file that have been
+suspended.  ("skip" zones are suspended.)
+
 =item B<-rollallzsks>
 
 Initiates ZSK rollover for all the zones defined in the current I<rollrec> file.
@@ -1098,6 +1166,16 @@ for three zones.
 =item B<-rollrec rollrec_file>
 
 Sets the I<rollrec> file to be processed by B<rollerd> to I<rollrec_file>.
+
+=item B<-rollzone zone>
+
+Resumes rollover for the suspended zone named by I<zone>.
+
+Multiple zones can be specified on the command line.
+For instance, this command will send the I<rollzone> command to B<rollerd>
+for three zones.
+
+    $ rollctl -rollzone example1.com example2.com example3.com
 
 =item B<-rollzsk zone>
 
@@ -1119,17 +1197,17 @@ Synonym for B<-halt>.
 
 =item B<-skipall>
 
-Stops rollover for all zones in the current I<rollrec> file.
+Suspends rollover for all zones in the current I<rollrec> file.
 
 =item B<-skipzone zone>
 
-Stops rollover for the zone named by I<zone>.
+Suspends rollover for the zone named by I<zone>.
 
 Multiple zones can be specified on the command line.
 For instance, this command will send the I<skipzone> command to B<rollerd>
 for three zones.
 
-    $ rollctl -rollzsk example1.com example2.com example3.com
+    $ rollctl -skipzone example1.com example2.com example3.com
 
 =item B<-sleeptime seconds>
 
