@@ -3185,6 +3185,10 @@ sub commander
 		}
 		elsif($cmd eq ROLLCMD_ROLLALL())
 		{
+			cmd_rollall();
+		}
+		elsif($cmd eq ROLLCMD_ROLLALLZSKS())
+		{
 			cmd_rollallzsks();
 		}
 		elsif($cmd eq ROLLCMD_ROLLREC())
@@ -3197,6 +3201,10 @@ sub commander
 		elsif($cmd eq ROLLCMD_ROLLKSK())
 		{
 			cmd_rollnow($data,'KSK');
+		}
+		elsif($cmd eq ROLLCMD_ROLLZONE())
+		{
+			cmd_rollzone($data);
 		}
 		elsif($cmd eq ROLLCMD_ROLLZSK())
 		{
@@ -3561,6 +3569,88 @@ sub cmd_phasemsg
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	cmd_rollall()
+#
+# Purpose:	This command resumes rollover for all suspended zones in the
+#		rollrec file.  The zones' rollrec records are marked as being
+#		"roll" records, which will cause rollerd to start working on
+#		them.  This change is reflected in the rollrec file.  rollnow()
+#		is called for each suspended zone, in order to rsume rollover.
+#		We'll also keep track of the suspended zones we were and weren't
+#		able to stop and report them to the caller.
+#
+sub cmd_rollall
+{
+	my $good = "";					# Resumed zones.
+	my $bad	 = "";					# Unresumed zones.
+
+	my $cnt	 = 0;					# Total count.
+	my $gcnt = 0;					# Resumed count.
+	my $bcnt = 0;					# Unresumed count.
+
+	rolllog_log(LOG_TMI,'<command>',"rollall command received");
+
+	#
+	# Each suspended zone in the rollrec file will be returned to the
+	# rollover process.  We'll keep track of the suspended zones that were
+	# resumed and those that weren't in order to provide an appropriate
+	# response message.
+	#
+	foreach my $zone (rollrec_names())
+	{
+		$cnt++;
+
+		#
+		# If the resume worked, increment the good count and add
+		# the domain name to the list of good zones.  If it didn't
+		# work, do the same for the bad count and bad-zone list.
+		#
+		if(rollnow($zone,'restart') == 1)
+		{
+			$gcnt++;
+			$good .= "$zone ";
+		}
+		else
+		{
+			$bcnt++;
+			$bad .= "$zone ";
+		}
+	}
+
+	#
+	# Get rid of trailing whitespace.
+	#
+	chomp $good;
+	chomp $bad;
+
+	#
+	# Send a response message to the caller.
+	#
+	if($gcnt == $cnt)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,$good);
+	}
+	else
+	{
+		my $resp;				# Response message.
+
+		$resp = "unable to resume roll process for zones:  $bad\n";
+
+		#
+		# If there were any zones that were resumed, we'll add them
+		# to the message as well.
+		#
+		if($gcnt > 0)
+		{
+			$resp .= "zones now resumed:  $good\n";
+		}
+
+		chomp $resp;
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,$resp);
+	}
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	cmd_rollallzsks()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
@@ -3741,6 +3831,27 @@ sub cmd_rollnow
 	{
 		rolllog_log(LOG_ERR,'<command>',"$zone has bad values in rollrec file $rollrecfile");
 		rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"$zone has bad values in rollrec file $rollrecfile");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_rollzone()
+#
+# Purpose:	This command restores a skipped zone to rollover processing. 
+#
+sub cmd_rollzone
+{
+	my $zone = shift;				# Command's data.
+
+	rolllog_log(LOG_TMI,'<command>',"rollzone command received; zone - \"$zone\"");
+
+	if(rollnow($zone,'restart') == 1)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover started");
+	}
+	else
+	{
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
 	}
 }
 
@@ -4348,8 +4459,9 @@ sub cmd_zsargs
 #
 sub rollnow
 {
-	my $zone = shift;				# Zone to roll.
-	my $rolltype = shift;				# Type of roll to start.
+	my $zone = shift;			# Zone to roll.
+	my $rolltype = shift;			# Type of roll to start.
+	my $rollstr;				# String of roll type.
 
 	#
 	# Re-read the rollrec file and change the record's type.  We'll
@@ -4379,7 +4491,7 @@ sub rollnow
 		%rr = %$rrr;
 
 		#
-		# Do a few *very* simple validation checks.
+		# Do a few very simple validation checks.
 		#
 		$dir = '.';
 		$krf = $rr{'keyrec'};
@@ -4400,7 +4512,7 @@ sub rollnow
 		#
 		# A skip record is changed to a regular rollrec.
 		#
-		if($rr{'rollrec_type'} eq "skip")
+		if($rr{'rollrec_type'} eq 'skip')
 		{
 			rolllog_log(LOG_INFO,'<command>',"$zone skip rollrec changed to a roll rollrec");
 			rollrec_rectype($zone,"roll");
@@ -4419,10 +4531,17 @@ sub rollnow
 		if($rolltype eq 'KSK')
 		{
 			kskphase($zone,$rrr,1);
+			$rollstr = 'KSK rollover';
 		}
 		elsif($rolltype eq 'ZSK')
 		{
 			zskphase($zone,$rrr,1);
+			$rollstr = 'ZSK rollover';
+		}
+		elsif($rolltype eq 'restart')
+		{
+			# Do nothing, just move from skip to roll.
+			$rollstr = 'restart';
 		}
 
 		#
@@ -4441,7 +4560,11 @@ sub rollnow
 	# Set the sleep values such that the queue will be run.
 	#
 	sleeper_awake();
-	rolllog_log(LOG_INFO,'<command>',"forcing a $rolltype rollover for zone $zone");
+	rolllog_log(LOG_INFO,'<command>',"forcing a $rollstr for zone $zone");
+
+	#
+	# This is probably not the right thing to do.
+	#
 	display("startroll $zone 0");
 	return(1);
 }
@@ -4491,8 +4614,8 @@ sub skipnow
 		#
 		# Set the zone's KSK and ZSK rollover phases to 0.
 		#
-		rollrec_setval($zone,"kskphase",0);
-		rollrec_setval($zone,"zskphase",0);
+#		rollrec_setval($zone,"kskphase",0);
+#		rollrec_setval($zone,"zskphase",0);
 
 		#
 		# Write the rollrec file.
