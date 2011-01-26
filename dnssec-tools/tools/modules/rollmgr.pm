@@ -137,8 +137,10 @@ our @EXPORT = qw(
 			 ROLLCMD_LOGTZ
 			 ROLLCMD_PHASEMSG
 			 ROLLCMD_ROLLALL
+			 ROLLCMD_ROLLALLZSKS
 			 ROLLCMD_ROLLKSK
 			 ROLLCMD_ROLLREC
+			 ROLLCMD_ROLLZONE
 			 ROLLCMD_ROLLZSK
 			 ROLLCMD_RUNQUEUE
 			 ROLLCMD_SHUTDOWN
@@ -240,9 +242,11 @@ my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
 my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
 my $ROLLCMD_LOGTZ	= "rollcmd_logtz";
 my $ROLLCMD_PHASEMSG	= "rollcmd_phasemsg";
-my $ROLLCMD_ROLLALL	= "rollcmd_rollallzsks";
+my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
+my $ROLLCMD_ROLLALLZSKS	= "rollcmd_rollallzsks";
 my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
 my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
+my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
 my $ROLLCMD_ROLLZSK	= "rollcmd_rollzsk";
 my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
 my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
@@ -264,8 +268,10 @@ sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
 sub ROLLCMD_LOGTZ		{ return($ROLLCMD_LOGTZ);	};
 sub ROLLCMD_PHASEMSG		{ return($ROLLCMD_PHASEMSG);	};
 sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
+sub ROLLCMD_ROLLALLZSKS		{ return($ROLLCMD_ROLLALLZSKS);	};
 sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	};
 sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
+sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
 sub ROLLCMD_ROLLZSK		{ return($ROLLCMD_ROLLZSK);	};
 sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
 sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
@@ -289,9 +295,11 @@ my %roll_commands =
 	rollcmd_logtz		=> 1,
 	rollcmd_nodisplay	=> 1,
 	rollcmd_phasemsg	=> 1,
+	rollcmd_rollall		=> 1,
 	rollcmd_rollallzsks	=> 1,
 	rollcmd_rollksk		=> 1,
 	rollcmd_rollrec		=> 1,
+	rollcmd_rollzone	=> 1,
 	rollcmd_rollzsk		=> 1,
 	rollcmd_runqueue	=> 1,
 	rollcmd_shutdown	=> 1,
@@ -1565,7 +1573,7 @@ sub rollmgr_closechan
 #
 # Purpose:	This routine can be called internally to queue a command
 #		for later processing via calls to rollmgr_getcmd().
-#		It is useful when doing initial startup before full
+#		It is useful when doing initial start-up before full
 #		processing is to commence.  Commands queued by this
 #		process take precedence over commands received via the
 #		command interface (ie, via rollmgr_sendcmd()).
@@ -2100,19 +2108,25 @@ The available commands and their required data are:
    ROLLCMD_LOGLEVEL	log level	set a new logging level
    ROLLCMD_LOGMSG	log message	add a message to the log
    ROLLCMD_LOGTZ	timezone	set timezone for log messages
-   ROLLCMD_PHASEMSG	long/short	set long or short phase messages
-   ROLLCMD_ROLLALL	none		force all zones to start
+   ROLLCMD_PHASEMSG	long/short	set long or short phase
+					messages
+   ROLLCMD_ROLLALL	none		resume rollover for all
+					suspended zones
+   ROLLCMD_ROLLALLZSKS	none		force all zones to start
 					ZSK rollover
    ROLLCMD_ROLLKSK	zone-name	force a zone to start
 					KSK rollover
    ROLLCMD_ROLLREC	rollrec-name	change rollerd's rollrec file
+   ROLLCMD_ROLLZONE	zone name	restart rollover for a
+					suspended zone
    ROLLCMD_ROLLZSK	zone-name	force a zone to start
 					ZSK rollover
    ROLLCMD_RUNQUEUE	none		rollerd runs through
 					its queue
    ROLLCMD_SHUTDOWN	none		stop rollerd
    ROLLCMD_SKIPALL	none		suspend all rollovers
-   ROLLCMD_SKIPZONE	zone name	suspend rollover for a zone
+   ROLLCMD_SKIPZONE	zone name	suspend rollover for a
+					rolling zone
    ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
    ROLLCMD_STATUS	none		get status of rollerd
    ROLLCMD_ZONELOG	zone name	set the logging level for
