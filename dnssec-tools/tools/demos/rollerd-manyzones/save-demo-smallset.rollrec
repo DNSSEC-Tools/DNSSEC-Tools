@@ -1,18 +1,21 @@
 
 roll "dummy.com"
 	zonefile	"dummy.com.signed"
+	zonename	"dummy.com"
 	keyrec		"dummy.com.krf"
 	maxttl		"60"
 	phasestart1
 
 roll "test.com"
 	zonefile	"test.com.signed"
+	zonename	"test.com"
 	keyrec		"test.com.krf"
 	maxttl		"60"
 	phasestart2
 
 roll "zero.com"
 	zonefile	"zero.com.signed"
+	zonename	"zero.com"
 	keyrec		"zero.com.krf"
 	maxttl		"240000"
 	phasestart3
