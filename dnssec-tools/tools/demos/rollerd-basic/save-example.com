@@ -1,11 +1,11 @@
-$TTL	30
+$TTL	30s
 
 @	IN	SOA	example.com.	tewok.leodhas.example.com. (
-					2005033761	; serial
+					0	; serial
 					3h		; refresh
-					30m		; retry
+					30s		; retry
 					1m		; expire
-					30 )		; minimum
+					30s )		; minimum
 
 @		IN  	NS 	leodhas.example.com.
 

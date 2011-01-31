@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006-2008 SPARTA, Inc.  All rights reserved.
+# Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # rundemo
@@ -17,6 +17,7 @@ my %options = ();				# Filled option array.
 my @opts =
 (
 	"autods",				# Auto-pub DS records.
+	"reload",				# Reload zones.
 	"loglevel=n",				# Logging level.
 	"help",					# Display help message.
 );
@@ -30,7 +31,8 @@ my $slp;					# Sleep-time argument.
 
 my $curdir    = ".";
 my $logfile   = "log.demo";
-my $loglvl    = "info";
+my $loglvl    = "phase";
+my $noload    = "-noreload";
 my $sleeptime = "15";
 my $rrfile    = "demo.rollrec";
 
@@ -63,7 +65,7 @@ sub main
 	#
 	# Build our demo command.
 	#
-	$cmd = "rollerd $dir $log $lvl $slp $rrf -display";
+	$cmd = "rollerd $dir $log $lvl $noload $slp $rrf -display";
 
 	#
 	# Ensure rollerd is not running and zap the demo log file.
@@ -94,6 +96,8 @@ sub opts
 	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
 
 	$autods = defined($options{'autods'});
+
+	$noload = "" if(defined($options{'reload'}));
 }
 
 #------------------------------------------------------------------------------
@@ -143,6 +147,6 @@ sub autods
 #
 sub usage
 {
-	print STDERR "usage:  rundemo [-autods | -loglevel lvl]\n";
+	print STDERR "usage:  rundemo [-autods | -loglevel lvl | -reload]\n";
 	exit(0);
 }
