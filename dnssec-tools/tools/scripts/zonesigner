@@ -183,6 +183,7 @@ my @zsopts = ( '',
 	       ["newpubksk",		'Create a set of Published KSK keys.'],
 	       ["rollksk",		'Force the rollover of KSK keys.'],
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
+	       ["phase=s",		'Phase-specific rollover processing.'],
 	       ["keydirectory=s",	'Directory for KSK and ZSK keys.'],
 	       ["norfc5011",		'Disable rfc5011 revocation.'],
 	       ["droprevoked",		'Obsolete existing revoked keys.'],
@@ -358,13 +359,11 @@ sub optsandargs
 	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_default("zsklife");
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
-	$pubksk	  = $opts{'newpubksk'}	  || 0;
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
 	$droprevoked	= $opts{'droprevoked'};
 	$nodroprevoked	= $opts{'nodroprevoked'};
 	$useboth  = $opts{'useboth'}	  || 0;
-	$usezskpub = $opts{'usezskpub'}	  || 0;
 
 	if(defined($opts{'kskcount'}))	{ $kskcnt = $opts{'kskcount'}; }
 	else				{ $kskcnt = 1; }
@@ -481,16 +480,49 @@ sub optsandargs
 	}
 
 	#
-	# Check for the KSK rollover flag.
+	# Ensure the -phase option is valid.
 	#
-	$rollksk = 0;
-	$rollksk = 1 if(defined($opts{'rollksk'}));
+	if(defined($opts{'phase'}))
+	{
+		my $phase;			# The type of rollover.
+
+		$opts{'phase'} = lc($opts{'phase'});
+		$phase = $opts{'phase'};
+
+		if(($phase ne 'ksk2')	&&
+		   ($phase ne 'ksk4')	&&
+		   ($phase ne 'zsk2')	&&
+		   ($phase ne 'zsk4a')	&&
+		   ($phase ne 'zsk4b'))
+		{
+			usage(6);
+		}
+	}
+	else
+	{
+		$opts{'phase'} = '';
+	}
 
 	#
-	# Check for the ZSK rollover flag.
+	# Check for the KSK rollover flags.
+	#
+	$rollksk = 0;
+	$rollksk = 1 if(defined($opts{'rollksk'}) ||
+			($opts{'phase'} eq 'ksk4'));
+	$pubksk = 0;
+	$pubksk = 1 if(defined($opts{'newpubksk'}) ||
+			($opts{'phase'} eq 'ksk2'));
+
+	#
+	# Check for the ZSK rollover flags.
 	#
 	$rollzsk = 0;
-	$rollzsk = 1 if(defined($opts{'rollzsk'}));
+	$rollzsk = 1 if(defined($opts{'rollzsk'}) ||
+			($opts{'phase'} eq 'zsk4a'));
+
+	$usezskpub = 0;
+	$usezskpub = 1 if(defined($opts{'usezskpub'}) ||
+			  ($opts{'phase'} eq 'zsk2'));
 
 	#
 	# Set up options and values, saving to global scalars and also
@@ -2448,7 +2480,7 @@ sub hasincludes
 #
 # Purpose:	This routine increments the serial number of an SOA record in
 #		a zone file.  The serial number is found in both the multi-
-#		line parenthesize form and the single line unparenthesize form.
+#		line parenthesized form and the single line unparenthesize form.
 #
 #		On success, the new serial number is returned.
 #		On failure, -1 is returned.
@@ -3420,6 +3452,7 @@ sub usage
 	print STDERR "\t\t\t-genksk\n";
 	print STDERR "\t\t\t-newpubksk\n";
 	print STDERR "\t\t\t-genzsk\n";
+	print STDERR "\t\t\t-phase rollphase\n";
 	print STDERR "\t\t\t-rollksk\n";
 	print STDERR "\t\t\t-rollzsk\n";
 	print STDERR "\t\t\t-norfc5011\n";
@@ -3893,6 +3926,26 @@ B<Warning>:  The timing of key-rolling is critical.  Great care must be taken
 when using this option.  B<rollerd> automates the rollover process and may be
 used to safely take care of this aspect of DNSSEC management.  Using the
 B<-rollzsk> option should only be used if you know what you're doing.
+
+=item B<-phase>
+
+Specify an rollover option based on the rollover phase, as opposed to using
+the option naming the specific action to be performed.  The purpose of this
+option is to bring clarity and greater understanding to how B<zonesigner> is
+used in the rollover process.
+
+The following are the mappings between the B<-phase> options and the action
+options.
+
+    Phase Option             Action-based Option
+    -phase ksk2              -newpubksk
+    -phase ksk4              -rollksk
+    -phase zsk2              -usezskpub
+    -phase zsk4b             -rollzsk
+    -phase zsk4b             (no option)
+
+B<Warning>:  The B<-phase> option should only be used if you know
+what you're doing.
 
 =item B<-intermediate>
 
