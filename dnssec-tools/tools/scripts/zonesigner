@@ -199,6 +199,7 @@ my @zsopts = ( '',
 	       ["keygen=s",		'Location of dnssec-keygen.'],
 	       ["zonecheck=s",		'Location of named-checkzone.'],
 	       ["zonesign=s",		'Location of dnssec-signzone.'],
+	       ["exitcode=i",		'Display message for an exit code.'],
 	     );
 
 my $pubksk	= 0;			# Create-Published-KSKs flag.
@@ -211,6 +212,59 @@ my $nsec3	= 0;			# Use-Published-ZSK flag.
 my $showsigncmd	= 0;			# Show-zone-sign-command flag.
 my $showkeycmd	= 0;			# Show-key-generation-command flag.
 my $packed	= 0;			# Running-packed flag.
+
+#
+# Error messages, indexed by zonesigner exit codes.
+#
+my @exitcodes =
+(
+	"successful execution",
+	"-rfc5011 and -norfc5011 may not be specified together",
+	"-droprevoked and -nodroprevoked may not be specified together",
+	"-keydirectory and -kskdirectory may not be specified together",
+	"-keydirectory and -zskdirectory may not be specified together",
+	"KSK count must be positive",
+	"ZSK count must be positive",
+	"no key archive directory was specified",
+	"key archive directory is not a directory",
+	"key archive directory must not be /",
+	"-savekeys and -nosave may not be specified together",
+	"either a KSK or a ZSK directory was incorrectly specified",
+	"either a specified KSK or ZSK directory is not a directory",
+	"neither the KSK nor the ZSK directory may be the root directory",
+	"zone file, output file, and intermediate file must all have distinct names",
+	"zone file does not exist",
+	"zone file is empty",
+	"zone file already signed",
+	"specified signing set does not exist",
+	"specified Current ZSK signing set does not exist",
+	"specified Published ZSK signing set does not exist",
+	"specified new signing-set name already exists",
+	"specified KSK signing set already exists",
+	"no KSK signing set was specified",
+	"specified Current KSK signing set does not exist",
+	"specified Published KSK signing set does not exist",
+	"unable to generate KSK key file",
+	"ZSK keyrec does not exist in keyrec file",
+	"unable to generate ZSK key file",
+	"unable to archive keys because key archive directory is not a directory",
+	"KSK repository is not a directory",
+	"ZSK repository is not a directory",
+	"unable to update serial number in zonefile",
+	"zone file's modified contents are empty",
+	"unable to sign zone",
+	"no Published KSKs have been created",
+	"zone has no Published ZSKs to rollover to Current ZSKs",
+	"no keys defined for a particular signing set for zone",
+	"no keyrec exists for required signing set",
+	"error in keyrec file -- a particular signing set keyrec is not a set keyrec",
+	"specified signing set does not contain any keys",
+	"no key keyrec exists for a particular key",
+	"keyrec of specified key has an unexpected type",
+	"usage message printed",
+	"invalid exit code given to -exitcode",
+	"named-checkzone returned an error",
+);
 
 #
 # Do our work.
@@ -349,6 +403,7 @@ sub optsandargs
 	# Set the option hash to the returned reference.
 	#
 	%opts = %$ropts    if($ropts != undef);
+	showexitcode() if(defined($opts{'exitcode'}));
 
 	#
 	# Get the KSK- and ZSK-related arguments.
@@ -389,7 +444,7 @@ sub optsandargs
 	if($droprevoked && $nodroprevoked)
 	{
 		print STDERR "-droprevoked and -nodroprevoked are mutually exclusive\n";
-		exit(1);
+		exit(2);
 	}
 	if(($droprevoked == 0) && ($nodroprevoked == 0))
 	{
@@ -441,7 +496,7 @@ sub optsandargs
 		if($kskdir ne '.')
 		{
 			print STDERR "-keydirectory and -kskdirectory are mutually exclusive\n";
-			exit(1);
+			exit(3);
 		}
 
 		#
@@ -450,7 +505,7 @@ sub optsandargs
 		if($zskdir ne '.')
 		{
 			print STDERR "-keydirectory and -zskdirectory are mutually exclusive\n";
-			exit(1);
+			exit(4);
 		}
 
 		#
@@ -543,14 +598,14 @@ sub optsandargs
 	if($kskcnt < 1)
 	{
 		print STDERR "KSK count ($kskcnt) must be positive\n";
-		exit(1);
+		exit(5);
 	}
 	$opts{'kskcount'} = $kskcnt;
 
 	if($zskcnt < 1)
 	{
 		print STDERR "ZSK count ($zskcnt) must be positive\n";
-		exit(1);
+		exit(6);
 	}
 	$opts{'zskcount'} = $zskcnt;
 
@@ -661,18 +716,18 @@ sub optsandargs
 		if($archdir eq "")
 		{
 			print STDERR "no key archive directory specified\n";
-			exit(1);
+			exit(7);
 		}
 
 		if((-e $archdir) && (! -d $archdir))
 		{
 			print STDERR "key archive directory $archdir is not a directory\n";
-			exit(1);
+			exit(8);
 		}
 		if($archdir eq '/')
 		{
 			print STDERR "key archive directory must not be /\n";
-			exit(1);
+			exit(9);
 		}
 	}
 
@@ -682,7 +737,7 @@ sub optsandargs
 	if(defined($opts{'nosave'}) && defined($opts{'savekeys'}))
 	{
 		print STDERR "-savekeys and -nosave are mutually exclusive\n";
-		exit(1);
+		exit(10);
 	}
 
 	#
@@ -698,18 +753,18 @@ sub optsandargs
 		if($dir eq "")
 		{
 			print STDERR "no $lbl directory specified\n";
-			exit(1);
+			exit(11);
 		}
 
 		if((-e $dir) && (! -d $dir))
 		{
 			print STDERR "$lbl key directory $dir is not a directory\n";
-			exit(1);
+			exit(12);
 		}
 		if($dir eq '/')
 		{
 			print STDERR "$lbl key directory must not be /\n";
-			exit(1);
+			exit(13);
 		}
 	}
 
@@ -802,7 +857,7 @@ sub optsandargs
 		print STDERR "\tzone file	  -	$zonefile\n";
 		print STDERR "\toutput file	  -	$zoneout\n";
 		print STDERR "\tintermediate file -	$zoneftmp\n";
-		exit(8);
+		exit(14);
 	}
 
 	#
@@ -859,7 +914,7 @@ sub optsandargs
 # Routine:	verify_zonefile()
 #
 # Purpose:	Ensure that the specified zone file is valid.  The BIND
-#		dnssec-checkzone program is run to verify it, the length and
+#		named-checkzone program is run to verify it, the length and
 #		non-nullity are checked, and then a check is made to ensure
 #		it hasn't been signed already.
 #		If this routine returns, the zone file is fine.
@@ -874,7 +929,7 @@ sub verify_zonefile
 	if(! -f $zonefile)
 	{
 		print STDERR "zone file \"$zonefile\" does not exist\n";
-		exit(1);
+		exit(15);
 	}
 
 	vprint("initial zone verification\n");
@@ -894,7 +949,7 @@ sub verify_zonefile
 	if($statlen == 0)
 	{
 		print STDERR "zone file $zonefile is empty\n";
-		exit(1);
+		exit(16);
 	}
 	open(ZF,"+< $zonefile") or die "unable to open zone file $zonefile";
 
@@ -904,7 +959,7 @@ sub verify_zonefile
 	if(presigned())
 	{
 		print STDERR "zone file $zonefile already signed\n";
-		exit(1);
+		exit(17);
 	}
 }
 
@@ -1041,7 +1096,7 @@ sub genzsks
 			if(!keyrec_exists($signset))
 			{
 				print STDERR "signing set \"$signset\" does not exist\n";
-				exit(2);
+				exit(18);
 			}
 
 			$zskcursetname	 = $signset;
@@ -1063,7 +1118,7 @@ sub genzsks
 		if($opts{'zskcur'} eq "")
 		{
 			print STDERR "\n$curstr does not exist; unable to re-use non-existent cur ZSK\n";
-			exit(1);
+			exit(19);
 		}
 
 		#
@@ -1075,10 +1130,10 @@ sub genzsks
 		#
 		# Ensure that we've got a Current ZSK set.
 		#
-		if($opts{'zskcur'} eq "")
+		if($opts{'zskpub'} eq "")
 		{
 			print STDERR "\npub ZSK does not exist; unable to re-use non-existent pub ZSK\n";
-			exit(1);
+			exit(20);
 		}
 
 		#
@@ -1110,7 +1165,7 @@ sub genzsks
 		if(keyrec_fullrec($signset) ne "")
 		{
 			print STDERR "\nSigning set named \"$signset\" already exists\n";
-			exit(1);
+			exit(21);
 		}
 
 		$zskpubsetname = $signset;
@@ -1389,7 +1444,7 @@ sub genksks
 			if(keyrec_exists($kskcursetname))
 			{
 				print STDERR "\nKSK signing set \"$kskcursetname\" already exists; unable to assign new KSKs to an existing set name\n";
-				exit(1);
+				exit(22);
 			}
 		}
 		else
@@ -1438,8 +1493,8 @@ sub genksks
 		$kskcursetname = keyrec_recval($zone,'kskcur');
 		if($kskcursetname eq "")
 		{
-			print STDERR "\nKSKs do not exist; unable to re-use non-existent KSKs\n";
-			exit(1);
+			print STDERR "\nno Current KSK signing set was specified\n";
+			exit(23);
 		}
 
 		$opts{'kskcur'} = $kskcursetname;
@@ -1452,7 +1507,7 @@ sub genksks
 	if(!keyrec_exists($kskcursetname))
 	{
 		print STDERR "\nCurrent KSK signing set \"$kskcursetname\" does not exist; unable to re-use non-existent KSKs\n";
-		exit(1);
+		exit(24);
 	}
 
 	vprint("reusing existing Current KSK set - $kskcursetname\n");
@@ -1474,7 +1529,7 @@ sub genksks
 		if(!keyrec_exists($kskpubsetname))
 		{
 			print STDERR "\nPublished KSK signing set \"$kskpubsetname\" does not exist; unable to re-use non-existent KSKs\n";
-			exit(1);
+			exit(25);
 		}
 
 		vprint("reusing existing Published KSK set - $kskpubsetname\n");
@@ -1523,7 +1578,7 @@ sub genksk
 	if($ksk eq '')
 	{
 		print STDERR "unable to generate KSK key file\n";
-		exit(1);
+		exit(26);
 	}
 
 	vmed_print("new KSK - $ksk\n\n");
@@ -1581,7 +1636,7 @@ sub genzsk
 		if(keyrec_fullrec($opts{$zskkey}) eq "")
 		{
 			print STDERR "\n$keytype ZSK keyrec does not exist; unable to re-use non-existent $keytype ZSK\n";
-			exit(1);
+			exit(27);
 		}
 
 		$zsk = $opts{$zskkey};
@@ -1606,7 +1661,7 @@ sub genzsk
 	if($? eq '')
 	{
 		print STDERR "unable to generate $keytype ZSK key file\n";
-		exit(1);
+		exit(28);
 	}
 
 	vmed_print("new \"$keytype\" ZSK - $zsk\n");
@@ -1777,7 +1832,7 @@ sub ssetkeytype
 		if(! -d $archdir)
 		{
 			print STDERR "key archive directory $archdir is not a directory; not archiving obsolete keys\n";
-			exit(8);
+			exit(29);
 		}
 	}
 
@@ -1900,7 +1955,7 @@ sub keydirs
 		elsif(! -d $kskdir)
 		{
 			print STDERR "KSK repository ($kskdir) is not a directory\n";
-			exit(3);
+			exit(30);
 		}
 
 		foreach my $ksk (@kskcurlist)
@@ -1929,7 +1984,7 @@ sub keydirs
 		elsif(! -d $zskdir)
 		{
 			print STDERR "ZSK repository ($zskdir) is not a directory\n";
-			exit(3);
+			exit(31);
 		}
 
 		foreach my $zsk (@zskcurlist)
@@ -1972,7 +2027,7 @@ sub zoneincludes
 	if($newserial == -1)
 	{
 		print STDERR "unable to update serial number in $zonefile\n";
-		exit(3);
+		exit(32);
 	}
 	vmed_print("$zone\'s new serial number - $newserial\n\n");
 
@@ -2052,7 +2107,7 @@ sub zoneincludes
 		if(length($newfile) == 0)
 		{
 			print STDERR "strange error -- the massaged zone file ($newfile) has a length of zero; stopping\n";
-			exit(1);
+			exit(33);
 		}
 
 		#
@@ -2172,7 +2227,7 @@ sub zonesign
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
-		exit(1);
+		exit(34);
 	}
 
 	#
@@ -2977,7 +3032,7 @@ sub rollksk
 	if(!defined($opts{'kskpub'}))
 	{
 		print STDERR "unable to roll KSKs since no Published KSKs have been created\n";
-		exit(1);
+		exit(35);
 	}
 
 	#
@@ -3042,7 +3097,7 @@ sub rollzsk
 	if($opts{'zskpub'} eq "")
 	{
 		print STDERR "zone $zone has no Published ZSK to rollover to a Current ZSK\n";
-		exit(1);
+		exit(36);
 	}
 
 	#
@@ -3216,7 +3271,7 @@ sub chksset
 	if(!defined($opts{$kf}))
 	{
 		print STDERR "no $keyphase $keytype defined for zone $zone; unable to roll $keytype\n";
-		exit(1);
+		exit(37);
 	}
 
 	#
@@ -3226,7 +3281,7 @@ sub chksset
 	if(!keyrec_exists($setname))
 	{
 		print STDERR "no keyrec exists for the signing set \"$setname\"; unable to roll KSKs\n";
-		exit(1);
+		exit(38);
 	}
 
 	#
@@ -3236,7 +3291,7 @@ sub chksset
 	if(keyrec_recval($setname,'keyrec_type') ne 'set')
 	{
 		print STDERR "error in keyrec file -- $keyphase $keytype $setname keyrec is not a set keyrec; unable to roll KSKs\n";
-		exit(1);
+		exit(39);
 	}
 
 	#
@@ -3246,7 +3301,7 @@ sub chksset
 	if($keylist eq '')
 	{
 		print STDERR "$keyphase $keytype $setname does not contain any keys; unable to roll KSKs\n";
-		exit(1);
+		exit(40);
 	}
 
 	#
@@ -3260,13 +3315,13 @@ sub chksset
 		if(!keyrec_exists($key))
 		{
 			print STDERR "no keyrec exists for the key \"$key\"; unable to roll KSKs\n";
-			exit(1);
+			exit(41);
 		}
 
 		if(keyrec_recval($key,'keyrec_type') ne $kf)
 		{
 			print STDERR "key $key is not a $kf key; unable to roll KSKs\n";
-			exit(1);
+			exit(42);
 		}
 
 	}
@@ -3422,6 +3477,25 @@ sub System_output
 }
 
 #----------------------------------------------------------------------
+# Routine:	showexitcode()
+#
+# Purpose:	Print the message associated with an exit code.
+#
+sub showexitcode
+{
+	my $exitnum = $opts{'exitcode'};	# Error code to display.
+
+	if(($exitnum < 0) || ($exitnum > @exitcodes))
+	{
+		print "invalid zonesigner exit code - $exitnum\n";
+		exit(44);
+	}
+
+	print "$exitnum - $exitcodes[$exitnum]\n";
+	exit(43);
+}
+
+#----------------------------------------------------------------------
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -3430,7 +3504,7 @@ sub version
 {
 	print STDERR "$VERS\n";
 	print STDERR "$DTVERS\n";
-	exit(1);
+	exit(43);
 }
 
 #----------------------------------------------------------------------
@@ -3474,6 +3548,7 @@ sub usage
 	print STDERR "\t\t\t-signset ZSK-set-name\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
+	print STDERR "\t\t\t-exitcode exitnum\n";
 	print STDERR "\t\t\t-help\n";
 	print STDERR "\t\t\t-Version\n";
 	print STDERR "\t\t\t-verbose\n";
@@ -3506,7 +3581,7 @@ sub usage
 	#
 #	print "\ncalled from $whence\n" if($verbose && ($whence > 0));
 
-	exit(1);
+	exit(43);
 }
 
 1;
@@ -3958,6 +4033,112 @@ Name of the zone that will be signed.  This zone name may be given with this
 option or as the first non-option command line argument.  In the second case,
 if the argument contains directory separators, then final element of the path
 will be used for the zone name.
+
+=item B<-exitcode>
+
+Display a message associated with a B<zonesigner> exit value.  This option is
+intended for use by those programs who wish for B<zonesigner> to run silently,
+but need a description for why B<zonesigner> has exited with an error.
+
+The following are the exit codes and their associated messages.
+
+=over 4
+
+=item 0 - successful execution
+
+=item 1 - -rfc5011 and -norfc5011 may not be specified together
+
+=item 2 - -droprevoked and -nodroprevoked may not be specified together
+
+=item 3 - -keydirectory and -kskdirectory may not be specified together
+
+=item 4 - -keydirectory and -zskdirectory may not be specified together
+
+=item 5 - KSK count must be positive
+
+=item 6 - ZSK count must be positive
+
+=item 7 - no key archive directory was specified
+
+=item 8 - key archive directory is not a directory
+
+=item 9 - key archive directory must not be /
+
+=item 10 - -savekeys and -nosave may not be specified together
+
+=item 11 - either a KSK or a ZSK directory was incorrectly specified
+
+=item 12 - either a specified KSK or a specified ZSK directory is not a directory
+
+=item 13 - neither the KSK nor the ZSK directory may be the root directory
+
+=item 14 - zone file, output file, and intermediate file must all have distinct
+names
+
+=item 15 - zone file does not exist
+
+=item 16 - zone file is empty
+
+=item 17 - zone file already signed
+
+=item 18 - specified signing set does not exist
+
+=item 19 - specified Current ZSK signing set does not exist
+
+=item 20 - specified Published ZSK signing set does not exist
+
+=item 21 - specified new signing-set name already exists
+
+=item 22 - specified KSK signing set already exists
+
+=item 23 - no KSK signing set was specified
+
+=item 24 - specified Current KSK signing set does not exist
+
+=item 25 - specified Published KSK signing set does not exist
+
+=item 26 - unable to generate KSK key file
+
+=item 27 - ZSK keyrec does not exist in keyrec file
+
+=item 28 - unable to generate ZSK key file
+
+=item 29 - unable to archive keys because key archive directory is not a
+directory
+
+=item 30 - KSK repository is not a directory
+
+=item 31 - ZSK repository is not a directory
+
+=item 32 - unable to update serial number in zonefile
+
+=item 33 - zone file's modified contents are empty
+
+=item 34 - unable to sign zone
+
+=item 35 - no Published KSKs have been created
+
+=item 36 - zone has no Published ZSKs to rollover to Current ZSKs
+
+=item 37 - no keys defined for a particular signing set for zone
+
+=item 38 - no keyrec exists for required signing set
+
+=item 39 - error in keyrec file -- a particular signing set keyrec is not a set keyrec
+
+=item 40 - specified signing set does not contain any keys
+
+=item 41 - no key keyrec exists for a particular key
+
+=item 42 - keyrec of specified key has an unexpected type
+
+=item 43 - usage message printed
+
+=item 44 - invalid exit code given to -exitcode
+
+=item 45 - named-checkzone returned an error
+
+=back
 
 =item B<-help>
 
