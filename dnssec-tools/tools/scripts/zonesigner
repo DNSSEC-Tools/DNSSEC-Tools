@@ -2569,7 +2569,7 @@ sub serialincr
 	# We'll use the larger serial number of the one in the zone file
 	# and in the keyrec file.
 	#
-	$serialnew = $serialnum + 1;
+	$serialnew = $serialnum;
 	if(defined($opts{'serial'}))
 	{
 		my $serial = $opts{'serial'};
@@ -2578,8 +2578,13 @@ sub serialincr
 	}
 
 	#
-	# Increment the serial number and change it in the file contents.
-	# We'll also save the new serial number in the keyrec.
+	# Increment the serial number.
+	#
+	$serialnew++;
+
+	#
+	# Change the serial number in the file contents.  We'll also
+	# save the new serial number in the keyrec.
 	#
 	$file =~ s/(\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w]+\s+\(?\s+)(\d+)/$1$serialnew/s;
 	keyrec_setval('zone',$zone,'serial',$serialnew);
@@ -4140,7 +4145,7 @@ directory
 
 =back
 
-An error message will be printed if an invalid exit code is given. 
+An error message will be printed if an invalid exit code is given.
 
 =item B<-help>
 
