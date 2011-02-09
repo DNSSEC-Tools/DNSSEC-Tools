@@ -199,7 +199,7 @@ my @zsopts = ( '',
 	       ["keygen=s",		'Location of dnssec-keygen.'],
 	       ["zonecheck=s",		'Location of named-checkzone.'],
 	       ["zonesign=s",		'Location of dnssec-signzone.'],
-	       ["exitcode=i",		'Display message for an exit code.'],
+	       ["xc=i",			'Display message for an exit code.'],
 	     );
 
 my $pubksk	= 0;			# Create-Published-KSKs flag.
@@ -262,7 +262,7 @@ my @exitcodes =
 	"no key keyrec exists for a particular key",
 	"keyrec of specified key has an unexpected type",
 	"usage message printed",
-	"invalid exit code given to -exitcode",
+	"invalid exit code given to -xc",
 	"named-checkzone returned an error",
 );
 
@@ -403,7 +403,7 @@ sub optsandargs
 	# Set the option hash to the returned reference.
 	#
 	%opts = %$ropts    if($ropts != undef);
-	showexitcode() if(defined($opts{'exitcode'}));
+	showexitcode() if(defined($opts{'xc'}));
 
 	#
 	# Get the KSK- and ZSK-related arguments.
@@ -3488,7 +3488,7 @@ sub System_output
 #
 sub showexitcode
 {
-	my $exitnum = $opts{'exitcode'};	# Error code to display.
+	my $exitnum = $opts{'xc'};	# Error code to display.
 
 	if(($exitnum < 0) || ($exitnum > @exitcodes))
 	{
@@ -3553,7 +3553,7 @@ sub usage
 	print STDERR "\t\t\t-signset ZSK-set-name\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
-	print STDERR "\t\t\t-exitcode exitnum\n";
+	print STDERR "\t\t\t-xc exitnum\n";
 	print STDERR "\t\t\t-help\n";
 	print STDERR "\t\t\t-Version\n";
 	print STDERR "\t\t\t-verbose\n";
@@ -4039,7 +4039,7 @@ option or as the first non-option command line argument.  In the second case,
 if the argument contains directory separators, then final element of the path
 will be used for the zone name.
 
-=item B<-exitcode>
+=item B<-xc>
 
 Display a message associated with a B<zonesigner> exit value.  This option is
 intended for use by those programs who wish for B<zonesigner> to run silently,
@@ -4139,7 +4139,7 @@ directory
 
 =item 43 - usage message printed
 
-=item 44 - invalid exit code given to -exitcode
+=item 44 - invalid exit code given to -xc
 
 =item 45 - named-checkzone returned an error
 
