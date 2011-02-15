@@ -619,7 +619,7 @@ sub parse_line
 			fptype => $2,
 		       };
 	      $parse = \&parse_sshfp;
-	  } elsif (/\G(\d+)\s+(\d+)\s+(.*)$pat_skip$/gc) {
+	  } elsif (/\G(\d+)\s+(\d+)\s+([a-zA-Z0-9]+)$pat_skip$/gc) {
 	      push @zone, {
 			   Line    => $ln,
 			   name    => $domain,
@@ -849,7 +849,7 @@ sub parse_line
 	      error("bad DS data");
 	  }
       } elsif (/\G(nsec)[ \t]+/igc) {
-	  if (/\G\s*($pat_maybefullnameorroot)\s+(.*)$pat_skip$/gc) {
+	  if (/\G\s*($pat_maybefullnameorroot)\s+(.*?)$pat_skip$/gc) {
 	      # XXX: set the typebm field ourselves?
 	      my ($nxtdname, $typelist) = ($1, $2);
 	      $typelist = join(" ",sort split(/\s+/,$typelist));
@@ -871,7 +871,7 @@ sub parse_line
       } elsif (/\G(nsec3)[ \t]+/igc) {
 	  error ("You are missing required modules for NSEC3 support")
 	    if (!$nsec3capable);
-	  if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
+	  if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*?)$pat_skip$/gc) {
 	      # XXX: set the typebm field ourselves?
 	      my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
 		($1, $2, $3, $4, $5, $6);
