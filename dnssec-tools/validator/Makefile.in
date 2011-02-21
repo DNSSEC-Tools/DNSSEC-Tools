@@ -85,3 +85,6 @@ configclean:
 
 universal: clean
 	make "CC=$(CC) -mmacosx-version-min=10.5 -arch x86_64 -arch i386 -arch ppc -bundle -undefined dynamic_lookup"
+
+TAGS:
+	find . -name '*.[ch]' -print | etags -
