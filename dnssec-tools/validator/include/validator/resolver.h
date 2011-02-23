@@ -301,6 +301,12 @@ res_async_query_free(struct expected_arrival *ea);
 int
 res_io_is_finished(struct expected_arrival *ea);
 
+int
+res_async_ea_is_using_stream(struct expected_arrival *ea);
+
+int
+res_async_ea_isset(struct expected_arrival *ea, fd_set *fds);
+
 #ifdef __cplusplus
 }                               /* extern C */
 #endif
