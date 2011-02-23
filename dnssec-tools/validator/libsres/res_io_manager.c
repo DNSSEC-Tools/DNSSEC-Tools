@@ -256,10 +256,31 @@ res_io_cancel_remaining_attempts(struct expected_arrival *ea)
     ea->ea_remaining_attempts = -1;
 }
 
+void
+res_io_cancel_all_remaining_attempts(struct expected_arrival *ea)
+{
+    for ( ; ea; ea = ea->ea_next) {
+        if (ea->ea_socket != -1) {
+            close(ea->ea_socket);
+            ea->ea_socket = -1;
+        }
+        ea->ea_remaining_attempts = -1;
+    }
+}
+
 int
 res_io_is_finished(struct expected_arrival *ea)
 {
     return ea->ea_remaining_attempts == -1;
+}
+
+int
+res_io_are_all_finished(struct expected_arrival *ea)
+{
+    for ( ; ea; ea = ea->ea_next) 
+        if (ea->ea_remaining_attempts != -1)
+            return FALSE;
+    return TRUE;
 }
 
 int
