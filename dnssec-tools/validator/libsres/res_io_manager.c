@@ -402,30 +402,41 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
                const char *name, const u_int16_t class_h, 
                const u_int16_t type_h, int *edns0)
 {
-    struct expected_arrival *temp, *t;
-    int i;
-    long delay = 0;
-
-    const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
+    struct expected_arrival *temp;
+    int ret_val = -1;
 
     if (transaction_id == -1 )
         return -1;  
 
-    *edns0 = 0;
-
-    if (res_io_debug) {
-        printf("Aborting current attempt for transaction %d\n", transaction_id);
-    }
-    
     pthread_mutex_lock(&mutex);
     for (temp = transactions[transaction_id];
          temp && temp->ea_remaining_attempts == -1;
          temp = temp->ea_next)
          ;
-    if (temp == NULL) {
-        pthread_mutex_unlock(&mutex);
-        return -1;  
+    if (temp != NULL) {
+        if (res_io_debug)
+            printf("Aborting current attempt for transaction %d\n",
+                   transaction_id);
+        ret_val = res_nsfallback_ea(temp, closest_event, name, class_h, type_h,
+                                    edns0);
     }
+    else
+        *edns0 = 0;
+
+    pthread_mutex_unlock(&mutex);
+    return ret_val;
+}
+
+int 
+res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event, 
+                  const char *name, const u_int16_t class_h, 
+                  const u_int16_t type_h, int *edns0)
+{
+    const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
+    long             delay = 0, i;
+
+    if (!temp && !name)
+        return -1;
 
     if ((temp->ea_ns->ns_options & RES_USE_DNSSEC) && 
         (temp->ea_ns->ns_edns0_size > 0)) {
@@ -450,7 +461,7 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
                         break;
                 }
                 temp->ea_remaining_attempts++;
-                if (temp->ea_socket)
+                if (temp->ea_socket != -1)
                     close(temp->ea_socket);
                 temp->ea_socket = -1;
 
@@ -458,11 +469,11 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
             }
         }
     }
+    else
+        *edns0 = 0;
 
-    if (temp->ea_remaining_attempts == 0) {
-        pthread_mutex_unlock(&mutex);
+    if (temp->ea_remaining_attempts == 0)
         return -1;
-    }
 
     gettimeofday(&temp->ea_next_try, NULL);
     for (i = 0; i < temp->ea_remaining_attempts; i++)
@@ -475,6 +486,7 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
      *  offset it to the current time 
      */
     if (temp->ea_next) {
+        struct expected_arrival *t;
         long offset = temp->ea_next->ea_next_try.tv_sec - 
                             temp->ea_next_try.tv_sec;
         if (offset > 0) {
@@ -484,7 +496,6 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
             } 
         }
     }
-    pthread_mutex_unlock(&mutex);
     return 0;
 }
 
