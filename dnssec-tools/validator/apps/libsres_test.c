@@ -204,6 +204,8 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
     }
   }
     printf("sent %d, answered %d\n", sent, answered);
+
+    return 0;
 }
 
 int
@@ -217,4 +219,6 @@ main(int argc, char** argv)
     res_io_set_debug(1);
 
     query_async_test(async, burst, flight, numq);
+
+    return 0;
 }
