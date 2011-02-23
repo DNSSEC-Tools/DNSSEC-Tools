@@ -1362,3 +1362,21 @@ res_async_query_cancel(struct expected_arrival *ea)
 {
 
 }
+
+int
+res_async_ea_is_using_stream(struct expected_arrival *ea)
+{
+    if (NULL == ea)
+        return 0;
+
+    return ea->ea_using_stream;
+}
+
+int
+res_async_ea_isset(struct expected_arrival *ea, fd_set *fds)
+{
+    if (NULL == ea || NULL == fds)
+        return 0;
+
+    return FD_ISSET(ea->ea_socket, fds);
+}
