@@ -916,21 +916,13 @@ res_io_read_tcp(struct expected_arrival *arrival)
 int
 res_io_read_udp(struct expected_arrival *arrival)
 {
-    size_t bytes_waiting = 0;
+    size_t bytes_waiting = 8192;
     struct sockaddr_storage from;
     socklen_t       from_length = sizeof(from);
     int             ret_val, arr_family;
 
     if (NULL == arrival)
         return SR_IO_INTERNAL_ERROR;
-
-    if (ioctl(arrival->ea_socket, FIONREAD, &bytes_waiting) == -1) {
-        if (res_io_debug)
-            printf("Closing socket %d, FIONREAD failed\n", arrival->ea_socket);
-        close(arrival->ea_socket);
-        arrival->ea_socket = -1;
-        return SR_IO_SOCKET_ERROR;
-    }
 
     arrival->ea_response = (u_char *) MALLOC(bytes_waiting * sizeof(u_char));
     if (NULL == arrival->ea_response)
@@ -939,6 +931,17 @@ res_io_read_udp(struct expected_arrival *arrival)
     ret_val =
         recvfrom(arrival->ea_socket, arrival->ea_response, bytes_waiting,
                  0, (struct sockaddr*)&from, &from_length);
+
+    if (0 == ret_val) { /* what does 0 bytes mean from udp socket? */
+        // xxx-rks: allow other attempt, or goto error?
+        if (res_io_debug)
+            printf("0 bytes on socket %d, read_udp failed\n",
+                   arrival->ea_socket);
+        FREE(arrival->ea_response);
+        arrival->ea_response = NULL;
+        arrival->ea_response_length = 0;
+        return SR_IO_SOCKET_ERROR;
+    }
 
     arr_family = arrival->ea_ns->ns_address[arrival->ea_which_address]->ss_family;
     if ((ret_val < 0) || (from.ss_family != arr_family))
