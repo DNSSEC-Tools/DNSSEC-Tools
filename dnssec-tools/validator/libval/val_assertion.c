@@ -3169,7 +3169,8 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname_n, 
                                ns_t_dnskey, ns_c_in, VAL_QFLAGS_ANY)) &&
             temp_qfq->qfq_query->qc_state == Q_ANSWERED &&
-            temp_qfq->qfq_query->qc_zonecut_n != NULL) {
+            temp_qfq->qfq_query->qc_zonecut_n != NULL &&
+            namename(qname_n, temp_qfq->qfq_query->qc_zonecut_n)) {
 
         zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
         *done = 1;
@@ -3178,7 +3179,8 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                             qname_n, ns_t_ds, ns_c_in, VAL_QFLAGS_ANY)) &&
             temp_qfq->qfq_query->qc_state == Q_ANSWERED &&
             temp_qfq->qfq_query->qc_ans != NULL && /* the zonecut of the proof would be the parent ! */
-            temp_qfq->qfq_query->qc_zonecut_n != NULL) {
+            temp_qfq->qfq_query->qc_zonecut_n != NULL &&
+            namename(qname_n, temp_qfq->qfq_query->qc_zonecut_n)) {
         
         zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
         *done = 1;
@@ -3229,13 +3231,19 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                     *name_n = NULL;
                     return VAL_NO_ERROR;
                 }
-                zonecut_name_n = tname_n;
-                break;
+                if (namename(qname_n, tname_n) != NULL) {
+                    /* zonecut has to be within the query */
+                    zonecut_name_n = tname_n;
+                    break;
+                }
             }
         }
 
-        if (res != NULL)
+        if (zonecut_name_n != NULL)
             break;
+
+        val_free_result_chain(results);
+        results = NULL;
 
         /* retry after stripping off left most label */
         STRIP_LABEL(cur_q, cur_q);
@@ -5054,7 +5062,7 @@ ask_resolver(val_context_t * context,
 
             if (next_q->qfq_query->qc_referral) {
                 val_log(context, LOG_INFO,
-                    "ask_resolver(): sending query for {%s %d %d}, flags=%d (referral)",
+                    "ask_resolver(): sending query for {%s %d %d}, flags=%d (referral/alias)",
                     name_p, next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h, 
                     next_q->qfq_flags);
             } else {
