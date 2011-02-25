@@ -213,6 +213,9 @@ get_cached_rrset(struct val_query_chain *matched_q,
     u_int16_t class_h;
     u_char *name_n;
 
+    int look_for_negative;
+    int done;
+
     if (!matched_q || !response)
         return VAL_BAD_ARGUMENT;
 
@@ -222,68 +225,81 @@ get_cached_rrset(struct val_query_chain *matched_q,
     type_h = matched_q->qc_type_h;
     class_h = matched_q->qc_class_h;
 
-
     gettimeofday(&tv, NULL);
 
-    switch (type_h) {
+    look_for_negative = 0;
+    done = 0;
 
-    case ns_t_ns:
-        lk = &ns_rwlock;
-        LOCK_INIT(lk, ns_rwlock_init);
-        LOCK_SH(lk);
-        answer_head = &unchecked_ns_info;
-        break;
+    while (!done) {
 
-    default:
-        lk = &ans_rwlock;
-        LOCK_INIT(lk, ans_rwlock_init);
-        LOCK_SH(lk);
-        answer_head = &unchecked_answers;
-        break;
-    }
-
-    prev = NULL;
-    new_answer = NULL;
-    if (answer_head) 
-        next_answer = *answer_head;
-    else
-        next_answer = NULL;
-    
-    while (next_answer) {
-
-        if (tv.tv_sec < next_answer->rrs_ttl_x &&
-            next_answer->rrs_class_h == class_h) {
-
-                /* if matching type or cname indirection */
-            if (((next_answer->rrs_type_h == type_h ||
-                 (next_answer->rrs_type_h == ns_t_cname &&
-                  ALIAS_MATCH_TYPE(type_h))) &&
-                /* and name is an exact match */
-                (namecmp(next_answer->rrs_name_n, name_n) == 0)) ||
-                /* OR */
-                /* DNAME indirection */
-                ((next_answer->rrs_type_h == ns_t_dname &&
-                  ALIAS_MATCH_TYPE(type_h)) &&
-                /* and name applies */
-                 (NULL != (u_char *) namename(name_n, 
-                                    next_answer->rrs_name_n)))) {
-
-                if (next_answer->rrs_data != NULL) {
-                    new_answer = copy_rrset_rec(next_answer);
-                    if (new_answer) {
-                        /* Adjust the TTL */
-                        new_answer->rrs_ttl_h = next_answer->rrs_ttl_x - tv.tv_sec; 
-                    }
-                    break;
-                }
-            } 
+        if (look_for_negative) {
+            lk = &ns_rwlock;
+            LOCK_INIT(lk, ns_rwlock_init);
+            LOCK_SH(lk);
+            answer_head = &unchecked_proofs;
+        } else if (type_h == ns_t_ns) {
+            lk = &ns_rwlock;
+            LOCK_INIT(lk, ns_rwlock_init);
+            LOCK_SH(lk);
+            answer_head = &unchecked_ns_info;
+        } else {
+            lk = &ans_rwlock;
+            LOCK_INIT(lk, ans_rwlock_init);
+            LOCK_SH(lk);
+            answer_head = &unchecked_answers;
         }
 
-        prev = next_answer;
-        next_answer = next_answer->rrs_next;
-    }
+        prev = NULL;
+        new_answer = NULL;
+        if (answer_head) 
+            next_answer = *answer_head;
+        else
+            next_answer = NULL;
+    
+        while (next_answer) {
 
-    UNLOCK(lk);
+            if (tv.tv_sec < next_answer->rrs_ttl_x &&
+                next_answer->rrs_class_h == class_h) {
+
+                /* if matching type or cname indirection */
+                if (((next_answer->rrs_type_h == type_h ||
+                    (next_answer->rrs_type_h == ns_t_cname &&
+                    ALIAS_MATCH_TYPE(type_h))) &&
+                    /* and name is an exact match */
+                    (namecmp(next_answer->rrs_name_n, name_n) == 0)) ||
+                    /* OR */
+                    /* DNAME indirection */
+                    ((next_answer->rrs_type_h == ns_t_dname &&
+                    ALIAS_MATCH_TYPE(type_h)) &&
+                    /* and name applies */
+                    (NULL != (u_char *) namename(name_n, 
+                                    next_answer->rrs_name_n)))) {
+
+                    if (next_answer->rrs_data != NULL) {
+                        new_answer = copy_rrset_rec(next_answer);
+                        if (new_answer) {
+                            /* Adjust the TTL */
+                            new_answer->rrs_ttl_h = next_answer->rrs_ttl_x - tv.tv_sec; 
+                        }
+                        break;
+                    }
+                } 
+            }
+
+            prev = next_answer;
+            next_answer = next_answer->rrs_next;
+        }
+
+        UNLOCK(lk);
+
+        if (!new_answer && type_h == ns_t_soa && !look_for_negative) {
+            /* look for soa in negative cache */
+            done = 0;
+            look_for_negative = 1;
+        } else {
+            done = 1;
+        }
+    }
 
     /* Construct the response */
     if (new_answer) {
