@@ -112,11 +112,11 @@ dnl ----------------------------------------------------------------------
 dnl
 AH_TEMPLATE([LIBVAL_NSEC3], [Define if NSEC3 is required.])
 AC_ARG_WITH(nsec3,
-[  --with-nsec3            Enable nsec3 support.],
-   nsec3="$withval", nsec3="no")
+[  --without-nsec3         Disable nsec3 support.],
+   nsec3="$withval", nsec3="yes")
 AC_ARG_ENABLE(nsec3,,
         AC_MSG_ERROR([ Invalid option. Use --with-nsec3/--without-nsec3 instead ]) )
-if test "$nsec3" = "yes"; then
+if test "$nsec3" != "no"; then
     AC_DEFINE(LIBVAL_NSEC3, 1)
     AC_MSG_CACHE_ADD(NSEC3 support                  : Yes)
 else
