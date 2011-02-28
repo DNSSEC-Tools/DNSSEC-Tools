@@ -677,6 +677,7 @@ verify_next_assertion(val_context_t * ctx,
     struct val_rr_rec  *keyrr;
     u_int16_t       tag_h;
     int             is_verified = 0;
+    char            name_p[NS_MAXDNAME];
 
     if ((as == NULL) || (as->val_ac_rrset.ac_data == NULL) || (the_trust == NULL)) {
         val_log(ctx, LOG_INFO, "verify_next_assertion(): Cannot verify assertion - no data");
@@ -685,6 +686,10 @@ verify_next_assertion(val_context_t * ctx,
 
     the_set = as->val_ac_rrset.ac_data;
     dnskey.public_key = NULL;
+
+
+    if (-1 == ns_name_ntop(the_set->rrs_name_n, name_p, sizeof(name_p)))
+        snprintf(name_p, sizeof(name_p), "unknown/error");
 
     if (the_set->rrs_sig == NULL) {
         val_log(ctx, LOG_INFO, "verify_next_assertion(): RRSIG is missing");
@@ -778,6 +783,9 @@ verify_next_assertion(val_context_t * ctx,
 
             // if success, break
             if (is_verified) {
+                val_log(ctx, LOG_INFO, "verify_next_assertion(): Verified a RRSIG for %s (%s) using a DNSKEY (%d)",
+                        name_p, p_type(the_set->rrs_type_h),
+                        dnskey.key_tag);
                 break;
             }
 
