@@ -233,8 +233,8 @@ get_cached_rrset(struct val_query_chain *matched_q,
     while (!done) {
 
         if (look_for_negative) {
-            lk = &ns_rwlock;
-            LOCK_INIT(lk, ns_rwlock_init);
+            lk = &proof_rwlock;
+            LOCK_INIT(lk, proof_rwlock_init);
             LOCK_SH(lk);
             answer_head = &unchecked_proofs;
         } else if (type_h == ns_t_ns) {
