@@ -1049,9 +1049,9 @@ Optional Packages:
 Miscellaneous:
   --with-defaults         Use defaults for prompted values.
   --with-cflags=CFLAGS    use CFLAGS as compile time arguments.
-  --with-nsec3            Enable nsec3 support.
-  --with-dlv            Enable DLV support.
-  --with-ipv6             Enable IPv6 support.
+  --without-nsec3         Disable nsec3 support.
+  --without-dlv            Disable DLV support.
+  --without-ipv6             Disable IPv6 support.
   --with-perl-perl-args=ARGS           Add ARGS to building perl Makefiles.
   --with-openssl=PATH     Look for openssl in PATH/{lib,include}.
 
@@ -18378,7 +18378,7 @@ if test "${with_nsec3+set}" = set; then
   withval="$with_nsec3"
   nsec3="$withval"
 else
-  nsec3="no"
+  nsec3="yes"
 fi;
 # Check whether --enable-nsec3 or --disable-nsec3 was given.
 if test "${enable_nsec3+set}" = set; then
@@ -18387,7 +18387,7 @@ if test "${enable_nsec3+set}" = set; then
 echo "$as_me: error:  Invalid option. Use --with-nsec3/--without-nsec3 instead " >&2;}
    { (exit 1); exit 1; }; }
 fi;
-if test "$nsec3" = "yes"; then
+if test "$nsec3" != "no"; then
     cat >>confdefs.h <<\_ACEOF
 #define LIBVAL_NSEC3 1
 _ACEOF
@@ -18413,7 +18413,7 @@ if test "${with_dlv+set}" = set; then
   withval="$with_dlv"
   dlv="$withval"
 else
-  dlv="no"
+  dlv="yes"
 fi;
 # Check whether --enable-dlv or --disable-dlv was given.
 if test "${enable_dlv+set}" = set; then
@@ -18422,7 +18422,7 @@ if test "${enable_dlv+set}" = set; then
 echo "$as_me: error:  Invalid option. Use --with-dlv/--without-dlv instead " >&2;}
    { (exit 1); exit 1; }; }
 fi;
-if test "$dlv" = "yes"; then
+if test "$dlv" != "no"; then
     cat >>confdefs.h <<\_ACEOF
 #define LIBVAL_DLV 1
 _ACEOF
@@ -18448,7 +18448,7 @@ if test "${with_ipv6+set}" = set; then
   withval="$with_ipv6"
   ipv6="$withval"
 else
-  ipv6="no"
+  ipv6="yes"
 fi;
 # Check whether --enable-ipv6 or --disable-ipv6 was given.
 if test "${enable_ipv6+set}" = set; then
@@ -18457,7 +18457,7 @@ if test "${enable_ipv6+set}" = set; then
 echo "$as_me: error:  Invalid option. Use --with-ipv6/--without-ipv6 instead " >&2;}
    { (exit 1); exit 1; }; }
 fi;
-if test "$ipv6" = "yes"; then
+if test "$ipv6" != "no"; then
     cat >>confdefs.h <<\_ACEOF
 #define VAL_IPV6 1
 _ACEOF
@@ -23900,24 +23900,8 @@ if test "x$defaults" != "xyes" ; then
       done
    done
 fi
-
-MSG_CHECK=`echo "
-
-*** Root hints location:
-
-    Enter the location of the root hints file, or 'none' to install
-and use the copy provided with DNSSEC-Tool (see validator/etc/root.hints).
-
-    Providing a file via the --with-root-hints argument to configure will
-avoid this prompt.
-
-Location to read root hints configuration" | tail -1`
-echo "$as_me:$LINENO: checking $MSG_CHECK" >&5
-echo $ECHO_N "checking $MSG_CHECK... $ECHO_C" >&6
-if test "${ac_cv_user_prompt_VAL_ROOT_HINTS+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  echo "" >&6
+# use NO_DEFINE prompt variant becaue we need to inspect and possibly
+# modify any answer
 
 if test "x$defaults" = "xno"; then
 echo $ECHO_N "
@@ -23942,30 +23926,14 @@ eval VAL_ROOT_HINTS=\"$tmpinput\"
 fi
 
 
-eval ac_cv_user_prompt_VAL_ROOT_HINTS=\$VAL_ROOT_HINTS
-echo $ECHO_N "setting $MSG_CHECK to...  $ECHO_C" >&6
-
-fi
-echo "$as_me:$LINENO: result: $ac_cv_user_prompt_VAL_ROOT_HINTS" >&5
-echo "${ECHO_T}$ac_cv_user_prompt_VAL_ROOT_HINTS" >&6
-if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" != "none"; then
-  if test "xquoted" = "xquoted" -o "xquoted" = "xQUOTED"; then
-    cat >>confdefs.h <<_ACEOF
-#define VAL_ROOT_HINTS "$ac_cv_user_prompt_VAL_ROOT_HINTS"
-_ACEOF
-
-  else
-    cat >>confdefs.h <<_ACEOF
-#define VAL_ROOT_HINTS $ac_cv_user_prompt_VAL_ROOT_HINTS
-_ACEOF
-
-  fi
-fi
-
 if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
    ac_cv_user_prompt_VAL_ROOT_HINTS="$val_sysconfdir/dnssec-tools/root.hints"
 fi
 VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
+cat >>confdefs.h <<_ACEOF
+#define VAL_ROOT_HINTS "$VAL_ROOT_HINTS"
+_ACEOF
+
 
 
   cat >> configure-summary << EOF
