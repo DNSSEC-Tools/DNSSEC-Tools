@@ -127,11 +127,11 @@ dnl ----------------------------------------------------------------------
 dnl
 AH_TEMPLATE([LIBVAL_DLV], [Define if DLV is required.])
 AC_ARG_WITH(dlv,
-[  --with-dlv            Enable DLV support.],
-   dlv="$withval", dlv="no")
+[  --without-dlv            Disable DLV support.],
+   dlv="$withval", dlv="yes")
 AC_ARG_ENABLE(dlv,,
         AC_MSG_ERROR([ Invalid option. Use --with-dlv/--without-dlv instead ]) )
-if test "$dlv" = "yes"; then
+if test "$dlv" != "no"; then
     AC_DEFINE(LIBVAL_DLV, 1)
     AC_MSG_CACHE_ADD(DLV support                    : Yes)
 else 
@@ -140,13 +140,13 @@ fi
 
 dnl ----------------------------------------------------------------------
 dnl
-AH_TEMPLATE([VAL_IPV6], [Define if IPV6 is available.])
+AH_TEMPLATE([VAL_IPV6], [Define if IPV6 is required.])
 AC_ARG_WITH(ipv6,
-[  --with-ipv6             Enable IPv6 support.],
-   ipv6="$withval", ipv6="no")
+[  --without-ipv6             Disable IPv6 support.],
+   ipv6="$withval", ipv6="yes")
 AC_ARG_ENABLE(ipv6,,
         AC_MSG_ERROR([ Invalid option. Use --with-ipv6/--without-ipv6 instead ]) )
-if test "$ipv6" = "yes"; then
+if test "$ipv6" != "no"; then
     AC_DEFINE(VAL_IPV6, 1)
     AC_MSG_CACHE_ADD(IPv6 support                   : Yes)
 else
