@@ -1117,7 +1117,7 @@ sub genzsks
 		#
 		if($opts{'zskcur'} eq "")
 		{
-			print STDERR "\n$curstr does not exist; unable to re-use non-existent cur ZSK\n";
+			print STDERR "\n$curstr does not exist; unable to re-use non-existent Current ZSK\n";
 			exit(19);
 		}
 
@@ -1132,7 +1132,7 @@ sub genzsks
 		#
 		if($opts{'zskpub'} eq "")
 		{
-			print STDERR "\npub ZSK does not exist; unable to re-use non-existent pub ZSK\n";
+			print STDERR "\nPublished ZSK does not exist; unable to re-use non-existent Published ZSK\n";
 			exit(20);
 		}
 
@@ -1140,7 +1140,7 @@ sub genzsks
 		# Get the Published ZSK set name.
 		#
 		$zskpubsetname = $opts{'zskpub'};
-		vprint("reusing existing pub ZSK set - $zskpubsetname\n");
+		vprint("reusing existing Published ZSK set - $zskpubsetname\n");
 
 		#
 		# Get the Published ZSKs.
