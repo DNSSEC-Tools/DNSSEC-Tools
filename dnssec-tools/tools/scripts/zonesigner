@@ -2636,23 +2636,23 @@ sub chkkrf
 	#
 	if($krfile eq "")
 	{
-		my $defkrf;			# Default keyrec file.
+		my $krf;			# Keyrec file.
 
 		#
 		# Get the default keyrec file.  If there isn't one,
-		# we'll use the zone name.
+		# we'll use the zone name with ".krf" appended.
 		#
-		$defkrf = keyrec_defkrf();
-		if($defkrf eq "")
+		$krf = keyrec_defkrf();
+		if($krf eq "")
 		{
-			$defkrf = $zone . ".krf";
+			$krf = $zone . ".krf";
 
 			#
 			# Eliminate any double-dotting where the suffix starts.
 			#
-			if($defkrf =~ /\.\.krf$/)
+			if($krf =~ /\.\.krf$/)
 			{
-				$defkrf =~ s/\.\.krf$/.krf/;
+				$krf =~ s/\.\.krf$/.krf/;
 			}
 		}
 
@@ -2661,9 +2661,9 @@ sub chkkrf
 		# and redo the argument checking.
 		#
 		@ARGV = @saveargs;
-		unshift(@ARGV,$defkrf);
+		unshift(@ARGV,$krf);
 		unshift(@ARGV,"-krfile");
-		vprint("using default keyrec file $defkrf\n");
+		vprint("using default keyrec file $krf\n");
 
 		#
 		# Rescan our arguments.
