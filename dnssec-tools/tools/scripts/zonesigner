@@ -2682,6 +2682,8 @@ sub chkkrf
 	# If the keyrec file is of non-zero length, we'll check if there's
 	# a zone keyrec for this zone.  If so, we'll return now.
 	#
+	# If the keyrec file is empty, we'll pretend the user used -genkeys.
+	#
 	if(-s $krfile)
 	{
 		my $kr;					# Keyrec.
@@ -2691,6 +2693,14 @@ sub chkkrf
 		{
 			return;
 		}
+	}
+	else
+	{
+		print "unable to find keyrec file or keys; it appears zone has not been signed yet\n";
+		print "continuing as if -genkeys was given\n";
+
+		$genksk = 1;
+		$genzsk = 1;
 	}
 
 	#
