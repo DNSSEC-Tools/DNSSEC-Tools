@@ -308,6 +308,7 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     int validated = 1;
     int trusted = 1;
     struct val_rrset_rec *rrset;
+    char *alias_target = NULL;
 
     /*
      * Check parameter sanity 
@@ -387,7 +388,6 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
      */
     for (res = results; res != NULL; res = res->val_rc_next) {
 
-        char *alias_target = NULL;
         rrset = res->val_rc_rrset;
 
         if (!(validated && val_isvalidated(res->val_rc_status))) 
@@ -463,19 +463,16 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
                     rr = rr->rr_next;
                 }
             }
-
-        } else {
-            /* pick up official name from the alias target */
-            if (!ret->h_name) {
-                ret->h_name = (char *) bufalloc(buf, buflen, offset,
-                                              (strlen(rrset->val_rrset_name) +
-                                               1) * sizeof(char));
-                if (ret->h_name == NULL) {
-                    goto err;
-                }
-                memcpy(ret->h_name, rrset->val_rrset_name, strlen(rrset->val_rrset_name) + 1);
-            }
         }
+    }
+    /* pick up official name from the alias target */
+    if (!ret->h_name && alias_target) {
+        ret->h_name = (char *) bufalloc(buf, buflen, offset,
+                          (strlen(alias_target) + 1) * sizeof(char));
+        if (ret->h_name == NULL) {
+            goto err;
+        }
+        memcpy(ret->h_name, alias_target, strlen(alias_target) + 1);
     }
 
     if (addr_count > 0) {
@@ -689,7 +686,7 @@ val_gethostbyname2_r(val_context_t * context,
         if (VAL_NO_ERROR ==
                 (retval =
                  val_resolve_and_check(ctx, name, ns_c_in, type,
-                                       VAL_QUERY_NO_AC_DETAIL,
+                                       0,
                                        &results))) {
 
             /*
