@@ -530,7 +530,11 @@ sub file_quit
 		keyrec_close() if($ret eq "Save");
 	}
 
-	exit(0);
+	#
+	# Destroy the main window.  This will cause MainLoop() to return,
+	# leading to the program exiting.
+	#
+	$wm->destroy;
 }
 
 #---------------------------------------------------------------------------
