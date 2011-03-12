@@ -1046,8 +1046,11 @@ sub file_quit
 		rollrec_discard();
 	}
 
-#	print STDERR "exiting...\n";
-	exit(0);
+	#
+	# Destroy the main window.  This will cause MainLoop() to return,
+	# leading to the program exiting.
+	#
+	$wm->destroy;
 }
 
 #---------------------------------------------------------------------------
