@@ -809,7 +809,11 @@ sub buildmainwind
 #
 sub file_quit
 {
-	exit(0);
+	#
+	# Destroy the main window.  This will cause MainLoop() to return,
+	# leading to the program exiting.
+	#
+	$wm->destroy;
 }
 
 #---------------------------------------------------------------------------
