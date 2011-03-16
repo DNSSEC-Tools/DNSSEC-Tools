@@ -2478,7 +2478,7 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
                        if (qtype_h == ns_t_ds && 
                                 (is_type_set((&(n->the_set->rrs_data->
                                 rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_ns)) &&
-                           (!is_type_set((&(n->the_set->rrs_data->
+                           (is_type_set((&(n->the_set->rrs_data->
                                 rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_soa))) {
 
                            val_log(ctx, LOG_INFO, 
