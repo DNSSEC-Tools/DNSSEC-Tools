@@ -3151,7 +3151,6 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
 {
     int             retval;
     struct val_result_chain *results = NULL;
-    struct val_rrset_rec *soa_rrset = NULL;
     u_char *zonecut_name_n = NULL;
     struct queries_for_query *temp_qfq = NULL;
     u_char tname_n[NS_MAXCDNAME];
@@ -3202,6 +3201,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
 
         for (res = results; res; res = res->val_rc_next) {
             int             i;
+            struct val_rrset_rec *soa_rrset = NULL;
             if ((res->val_rc_answer == NULL)
                 || (res->val_rc_answer->val_ac_rrset == NULL)) {
                 if (res->val_rc_proof_count == 0)
