@@ -70,6 +70,18 @@
 	}\
 } while (0)
 
+void val_res_cancel(struct val_query_chain *matched_q);
+void val_res_nsfallback(struct val_query_chain *matched_q, const char *name_p,
+                        struct timeval *closest_event);
+int _process_rcvd_response(val_context_t * context,
+                           struct queries_for_query *matched_qfq,
+                           struct domain_info **response,
+                           struct queries_for_query **queries,
+                           struct timeval *closest_event,
+                           const char *name_p,
+                           struct name_server *server,
+                           u_char *response_data, size_t response_length);
+
 /*
  * create a name_server struct from the given address rdata
  */
@@ -2134,23 +2146,63 @@ val_resquery_rcv(val_context_t * context,
     if (ret_val == SR_NO_ANSWER_YET)
         return VAL_NO_ERROR;
 
-    matched_q->qc_respondent_server = server;
-
+    /** convert name to printable string */
     if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
         matched_q->qc_state = Q_RESPONSE_ERROR;
         if (response_data)
             FREE(response_data);
         return VAL_NO_ERROR;
     }
+
+    /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
-        int edns0;
-        if (-1 == res_nsfallback(matched_q->qc_trans_id, closest_event,
+        val_res_nsfallback(matched_q, name_p, closest_event);
+        if (response_data)
+            FREE(response_data);
+        return VAL_NO_ERROR;
+    }
+
+    ret_val = _process_rcvd_response(context, matched_qfq, response, queries,
+                                     closest_event, name_p, server,
+                                     response_data, response_length);
+
+    return ret_val;
+}
+
+void
+val_res_cancel(struct val_query_chain *matched_q)
+{
+#ifndef VAL_NO_ASYNC
+    if (matched_q->qc_ea) {
+        res_async_query_free(matched_q->qc_ea);
+        matched_q->qc_ea = NULL;
+    }
+    else
+#endif
+        res_cancel(&(matched_q->qc_trans_id));
+}
+
+void
+val_res_nsfallback(struct val_query_chain *matched_q, const char *name_p,
+                   struct timeval *closest_event)
+{
+    int edns0, ret_val;
+
+#ifndef VAL_NO_ASYNC
+    if (matched_q->qc_ea)
+        ret_val = res_nsfallback_ea(matched_q->qc_ea, closest_event,
+                                    name_p, matched_q->qc_class_h, 
+                                    matched_q->qc_type_h, &edns0);
+    else
+#endif
+        ret_val = res_nsfallback(matched_q->qc_trans_id, closest_event,
                                  name_p, matched_q->qc_class_h, 
-                                 matched_q->qc_type_h, &edns0)) {
-            /* give up */
-            res_cancel(&(matched_q->qc_trans_id));
-            matched_q->qc_state = Q_RESPONSE_ERROR;
-        }
+                                 matched_q->qc_type_h, &edns0);
+    if (-1 == ret_val) {
+        matched_q->qc_state = Q_RESPONSE_ERROR;
+        val_res_cancel(matched_q);
+    }
+    else {
         if (edns0) {
             /* reset the flag if enabled */
             if(matched_q->qc_flags & VAL_QUERY_NO_EDNS0)
@@ -2160,10 +2212,23 @@ val_resquery_rcv(val_context_t * context,
             if (!(matched_q->qc_flags & VAL_QUERY_NO_EDNS0))
                 matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
         }
-        if (response_data)
-            FREE(response_data);
-        return VAL_NO_ERROR;
     }
+}
+
+int
+_process_rcvd_response(val_context_t * context,
+                       struct queries_for_query *matched_qfq,
+                       struct domain_info **response,
+                       struct queries_for_query **queries,
+                       struct timeval *closest_event,
+                       const char *name_p,
+                       struct name_server *server,
+                       u_char *response_data, size_t response_length)
+{
+    struct val_query_chain *matched_q = matched_qfq->qfq_query;
+    int ret_val;
+
+    matched_q->qc_respondent_server = server;
 
     *response = (struct domain_info *) MALLOC(sizeof(struct domain_info));
     if (*response == NULL) {
@@ -2207,27 +2272,13 @@ val_resquery_rcv(val_context_t * context,
         free_domain_info_ptrs(*response);
         FREE(*response);
         *response = NULL;
-        if (-1 == res_nsfallback(matched_q->qc_trans_id, closest_event,
-                                 name_p, matched_q->qc_class_h, 
-                                 matched_q->qc_type_h, &edns0)) {
-            res_cancel(&(matched_q->qc_trans_id));
-            matched_q->qc_state = Q_RESPONSE_ERROR;
-        } else {
-            if (edns0) {
-                /* reset the flag if enabled */
-                if(matched_q->qc_flags & VAL_QUERY_NO_EDNS0)
-                    matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
-            } else {
-                /* set the flag if disabled */
-                if (!(matched_q->qc_flags & VAL_QUERY_NO_EDNS0))
-                    matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
-            }
+        val_res_nsfallback(matched_q, name_p, closest_event);
+        if (matched_q->qc_state != Q_RESPONSE_ERROR)
             matched_q->qc_state = Q_SENT;
-        }
     }
     else {
         /* we're good to go, cancel pending query transactions */
-        res_cancel(&(matched_q->qc_trans_id));
+        val_res_cancel(matched_q);
         (*response)->di_res_error = SR_UNSET;
     }
 
@@ -2235,11 +2286,145 @@ val_resquery_rcv(val_context_t * context,
 
     /*
      * What happens when an empty NXDOMAIN is returned? 
-     */
-    /*
      * What happens when an empty NOERROR is returned? 
      */
 
     return VAL_NO_ERROR;
 }
 
+/*****************************************************************************
+ *
+ *
+ * Asynchronous API
+ *
+ *
+ ****************************************************************************/
+#ifndef VAL_NO_ASYNC
+
+
+/*
+ * This is the interface between libval and libsres for sending queries
+ * Get a (set of) answer(s) from the default NS's.
+ */
+int
+val_resquery_async_send(val_context_t * context,
+                        struct queries_for_query *matched_qfq)
+{
+    char            name_p[NS_MAXDNAME];
+    char            name_buf[INET6_ADDRSTRLEN + 1];
+    struct val_query_chain *matched_q;
+
+    if ((matched_qfq == NULL) || (matched_qfq->qfq_query->qc_ns_list == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /** Can never be NULL if matched_qfq is not NULL */
+    matched_q = matched_qfq->qfq_query;
+
+    if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1)
+        return VAL_BAD_ARGUMENT;
+
+    if (val_log_debug_level() >= LOG_DEBUG ) {
+        struct name_server *tempns;
+        struct name_server *nslist = matched_q->qc_ns_list;
+
+        val_log(context, LOG_DEBUG,
+                "val_resquery_async_send(): Sending query for {%s %d %d} to:", 
+                name_p, matched_q->qc_class_h, matched_q->qc_type_h);
+        for (tempns = nslist; tempns; tempns = tempns->ns_next) {
+            val_log(context, LOG_DEBUG, "    %s",
+                    val_get_ns_string((struct sockaddr *)tempns->ns_address[0],
+                                      name_buf, sizeof(name_buf)));
+        }
+    }
+
+    matched_q->qc_ea = res_async_query_send(name_p, matched_q->qc_type_h,
+                                            matched_q->qc_class_h, 
+                                            matched_q->qc_ns_list);
+    if (!matched_q->qc_ea)
+        matched_q->qc_state = Q_QUERY_ERROR;
+
+    return VAL_NO_ERROR;
+}
+
+/*
+ * This is the interface between libval and libsres for receiving responses 
+ */
+int
+val_resquery_async_rcv(val_context_t * context,
+                       struct queries_for_query *matched_qfq,
+                       struct domain_info **response,
+                       struct queries_for_query **queries,
+                       fd_set *pending_desc,
+                       struct timeval *closest_event)
+{
+    struct name_server *server = NULL;
+    u_char       *response_data = NULL;
+    size_t       response_length = 0;
+    char         name_p[NS_MAXDNAME], stream;
+    struct val_query_chain *matched_q;
+    int             ret_val, handled;
+
+    if ((matched_qfq == NULL) || (response == NULL) || (queries == NULL) ||
+        (pending_desc == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    matched_q = matched_qfq->qfq_query; /* ! NULL if matched_qfq ! NULL */
+    *response = NULL;
+    stream = res_async_ea_is_using_stream(matched_q->qc_ea);
+
+    /** check for a response */
+    ret_val = res_async_query_handle(matched_q->qc_ea, &handled, pending_desc);
+    if (ret_val == SR_NO_ANSWER_YET)
+        return VAL_NO_ERROR;
+
+    /** get the response, if any */
+    ret_val = res_io_get_a_response(matched_q->qc_ea, &response_data,
+                                    &response_length, &server);
+
+    /** convert name to printable string */
+    if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
+        matched_q->qc_state = Q_RESPONSE_ERROR;
+        if (response_data)
+            FREE(response_data);
+        return VAL_NO_ERROR;
+    }
+
+    /** if there was no answer, try smaller edns0 size */
+    if (ret_val == SR_NO_ANSWER) {
+        if (stream || !res_async_ea_is_using_stream(matched_q->qc_ea))
+            val_res_nsfallback(matched_q, name_p, closest_event);
+        if (response_data)
+            FREE(response_data);
+        return VAL_NO_ERROR;
+    }
+
+    ret_val = _process_rcvd_response(context, matched_qfq, response, queries,
+                                     closest_event, name_p, server,
+                                     response_data, response_length);
+
+    return ret_val;
+ }
+ 
+int
+val_async_select_info(val_context_t *context, fd_set *activefds,
+                      int *nfds, struct timeval *timeout)
+{
+    val_async_status *as;
+    struct queries_for_query *qfq;
+
+    if (NULL == context)
+        return VAL_BAD_ARGUMENT;
+
+    for (as = context->as_list; as; as = as->val_as_next)
+        for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {
+            if (!qfq->qfq_query->qc_ea)
+                continue;
+            res_async_query_select_info(qfq->qfq_query->qc_ea, nfds, activefds,
+                                        timeout);
+        }
+
+    return VAL_NO_ERROR;
+}
+
+
+#endif /* VAL_NO_ASYNC */

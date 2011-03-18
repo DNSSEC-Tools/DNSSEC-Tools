@@ -429,6 +429,41 @@ extern          "C" {
 #endif
 
     /*
+     * asynchronous status
+     */
+#define VAL_AS_CTX_USER_SUPPLIED     0x00000001 /* i.e. don't delete it! */
+#define VAL_AS_IGNORE_CACHE          0x00000002
+//#define VAL_AS_NO_NEW_QUERIES        0x00000004
+#define VAL_AS_DONE                  0x00000008 /* have results/answers */
+#define VAL_AS_CB_COMPLETED          0x00000010 /* called user callbacks */
+#define VAL_AS_NO_ANSWERS            0x00000020 /* don't care about answers */
+#define VAL_AS_NO_CALLBACKS          0x00000040 /* don't call callbacks */
+
+    typedef struct val_async_status_s val_async_status;
+    typedef int (*val_cb_results)(val_async_status *as);
+
+    struct val_async_status_s {
+        val_context_t                 *val_as_ctx;
+        u_int32_t                      val_as_flags;
+
+        u_char                         val_as_inflight;
+        struct queries_for_query      *val_as_queries;
+
+        u_char                         val_as_domain_name_n[NS_MAXCDNAME];
+        int                            val_as_class;
+        int                            val_as_type;
+
+        struct val_result_chain       *val_as_results;
+        struct val_answer_chain       *val_as_answers;
+
+        val_cb_results                 val_as_result_cb;
+        void                          *val_as_cb_user_ctx;
+
+        struct val_async_status_s     *val_as_next;
+    };
+
+
+    /*
      * Logging-related definitions 
      */
     typedef void    (*val_log_logger_t) (struct val_log * logp,
@@ -662,6 +697,15 @@ extern          "C" {
                       struct val_answer_chain **answers);
 
     void val_free_answer_chain(struct val_answer_chain *answers);
+
+
+    /*
+     * async functions from val_resquery.c
+     */
+    int val_async_select_info(val_context_t *context,
+                              fd_set *fds,
+                              int *num_fds,
+                              struct timeval *timeout);
 
 
     /*
