@@ -783,6 +783,10 @@ main(int argc, char *argv[])
     context = NULL;
 #endif
 
+    /* returned level is 0 based;, > 6 means 8 or higher; e.g. -o 8:stdout */
+    if (val_log_highest_debug_level() > 6)
+        res_io_set_debug(1);
+
     rc = 0;
 
     // optind is a global variable.  See man page for getopt_long(3)
