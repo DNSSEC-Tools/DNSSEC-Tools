@@ -5899,19 +5899,6 @@ create_error_result(struct val_query_chain *top_q,
     return VAL_NO_ERROR;
 }
 
-#define GET_LATEST_TIMESTAMP(ctx, file, cur_ts, new_ts) do { \
-    memset(&new_ts, 0, sizeof(struct stat));\
-    if (!file) {\
-        if (cur_ts != 0) {\
-            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s missing; trying to operate without it.", file);\
-        }\
-    } else {\
-        if(0 != stat(file, &new_ts)) {\
-            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s missing; trying to operate without it.", file);\
-        }\
-    }\
-}while (0)
-
 static int 
 construct_authentication_chain(val_context_t * context,
                                struct queries_for_query *top_qfq,
@@ -6085,66 +6072,14 @@ val_resolve_and_check(val_context_t * ctx,
     }
     
     /*
-     * Create a default context if one does not exist 
+     * refresh context config, or create a new context if one does not exist 
      */
-    if (ctx == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
-            return retval;
-        CTX_LOCK_RESPOL_SH(context);
-        CTX_LOCK_VALPOL_SH(context);
-    } else {
-        /* Check if the configuration file has changed since the last time we read it */
-        struct stat rsb, vsb, hsb;
-        struct dnsval_list *dnsval_l;
-        
-        context = (val_context_t *) ctx;
-
-        CTX_LOCK_RESPOL_SH(context);
-
-        GET_LATEST_TIMESTAMP(context, context->resolv_conf, context->r_timestamp, rsb);
-        if (rsb.st_mtime != 0 && 
-                rsb.st_mtime != context->r_timestamp) {
-
-            CTX_UNLOCK_RESPOL(context);
-
-            if (VAL_NO_ERROR != (retval = val_refresh_resolver_policy(context)))
-                return retval; 
-            CTX_LOCK_RESPOL_SH(context);
-        }
-
-        GET_LATEST_TIMESTAMP(context, context->root_conf, context->h_timestamp, hsb);
-        if (hsb.st_mtime != 0 && 
-                hsb.st_mtime != context->h_timestamp){
-
-            CTX_UNLOCK_RESPOL(context);
-
-            if (VAL_NO_ERROR != (retval = val_refresh_root_hints(context)))
-                return retval; 
-            CTX_LOCK_RESPOL_SH(context);
-        }
-
-        CTX_LOCK_VALPOL_SH(context);
-        /* dnsval.conf can point to a list of files */
-        for (dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next) {
-
-            GET_LATEST_TIMESTAMP(context, 
-                                 dnsval_l->dnsval_conf, 
-                                 dnsval_l->v_timestamp, 
-                                 vsb);
-
-            if (vsb.st_mtime != 0 && 
-                vsb.st_mtime != dnsval_l->v_timestamp) {
-
-                CTX_UNLOCK_VALPOL(context);
-
-                if (VAL_NO_ERROR != (retval = val_refresh_validator_policy(context)))
-                    return retval; 
-                CTX_LOCK_VALPOL_SH(context);
-                break;
-            }
-        }
-    }
+    context = val_create_or_refresh_context(ctx);
+    if (context == NULL)
+        return VAL_INTERNAL_ERROR;
   
+    CTX_LOCK_RESPOL_SH(context);
+    CTX_LOCK_VALPOL_SH(context);
     CTX_LOCK_ACACHE(context);
     
     if (VAL_NO_ERROR != (retval =
@@ -6283,6 +6218,12 @@ val_resolve_and_check(val_context_t * ctx,
         w_res = w_results;
     }
     free_qfq_chain(queries);
+
+    /*
+     * if we allocated new context, free it
+     */
+    if (ctx != context)
+        val_free_context(context);
 
     return retval;
 }
