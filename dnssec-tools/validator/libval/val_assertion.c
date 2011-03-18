@@ -100,6 +100,10 @@
     }\
 }while (0)
 
+static int _ask_cache_one(val_context_t * context,
+                          struct queries_for_query **queries,
+                          struct queries_for_query *next_q, int *data_received,
+                          int *data_missing, int *more_data);
 
 /*
  * Identify if the type is present in the bitmap
@@ -4991,7 +4995,9 @@ verify_and_validate(val_context_t * context,
     return VAL_NO_ERROR;
 }
 
-
+/*
+ * check cache for answer to queries
+ */
 static int
 ask_cache(val_context_t * context, 
           struct queries_for_query **queries,
@@ -5001,119 +5007,23 @@ ask_cache(val_context_t * context,
     struct queries_for_query *next_q, *top_q;
     int    retval;
     char   name_p[NS_MAXDNAME];
-    struct domain_info *response = NULL;
     int more_data = 0;
 
-    if (context == NULL || queries == NULL || data_received == NULL || data_missing == NULL)
+    if (context == NULL || queries == NULL || data_received == NULL ||
+        data_missing == NULL)
         return VAL_BAD_ARGUMENT;
 
     if (*data_missing == 0)
         return VAL_NO_ERROR;
-    
+
     top_q = *queries;
 
     *data_missing = 0;
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
-        if (next_q->qfq_query->qc_state < Q_ANSWERED) {
-            *data_missing = 1;
-        }
-        if (next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
-            /* don't look at the cache for this query */
-            continue;
-        }
-        if (next_q->qfq_query->qc_state == Q_INIT) {
-
-            if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
-                snprintf(name_p, sizeof(name_p), "unknown/error");
-
-            val_log(context, LOG_DEBUG,
-                    "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%d", name_p,
-                    p_class(next_q->qfq_query->qc_class_h), next_q->qfq_query->qc_class_h,
-                    p_type(next_q->qfq_query->qc_type_h), next_q->qfq_query->qc_type_h,
-                    next_q->qfq_flags);
-
-            if (VAL_NO_ERROR !=
-                (retval = get_cached_rrset(next_q->qfq_query, &response)))
-                return retval;
-
-            if (response) {
-                if (next_q->qfq_query->qc_state == Q_ANSWERED) {
-
-                    val_log(context, LOG_INFO,
-                        "ask_cache(): found matching ack/nack response for {%s %d %d}, flags=%d", name_p,
-                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h, next_q->qfq_flags);
-
-                    /* merge any answer from the referral (alias) portion */
-                    if (next_q->qfq_query->qc_referral) {
-                        merge_rrset_recs(&next_q->qfq_query->qc_referral->answers, response->di_answers);
-                        response->di_answers = next_q->qfq_query->qc_referral->answers;
-                        next_q->qfq_query->qc_referral->answers = NULL;
-
-                        /*
-                         * Consume qnames
-                         */
-                        if (response->di_qnames == NULL)
-                            response->di_qnames = next_q->qfq_query->qc_referral->qnames;
-                        else if (next_q->qfq_query->qc_referral->qnames) {
-                            struct qname_chain *t_q;
-                            for (t_q = response->di_qnames; t_q->qnc_next; t_q = t_q->qnc_next);
-                            t_q->qnc_next = next_q->qfq_query->qc_referral->qnames;
-                        }
-                        next_q->qfq_query->qc_referral->qnames = NULL;
-        
-                        /*
-                         * Note that we don't free qc_referral here 
-                         */
-                        free_referral_members(next_q->qfq_query->qc_referral);
-                    }
-
-                    if (VAL_NO_ERROR != (retval = assimilate_answers(context, queries,
-                                                response, next_q))) {
-
-                        free_domain_info_ptrs(response);
-                        FREE(response);
-                        return retval;
-                    }
-
-                } else if (next_q->qfq_query->qc_state < Q_ERROR_BASE) {
-                    /* got some response, but need to get more info (cname/dname) */
-                    more_data = 1;
-                    *data_missing = 1;
-
-                    if (next_q->qfq_query->qc_referral == NULL) {
-                        ALLOCATE_REFERRAL_BLOCK(next_q->qfq_query->qc_referral);
-                    }
-                    /*
-                     * Consume qnames 
-                     */
-                    if (next_q->qfq_query->qc_referral->qnames == NULL)
-                        next_q->qfq_query->qc_referral->qnames = response->di_qnames;
-                    else if (response->di_qnames) {
-                        struct qname_chain *t_q;
-                        for (t_q = response->di_qnames; t_q->qnc_next; t_q = t_q->qnc_next);
-                        t_q->qnc_next = next_q->qfq_query->qc_referral->qnames;
-                        next_q->qfq_query->qc_referral->qnames = response->di_qnames;
-                    }
-                    response->di_qnames = NULL;
-
-                    /* Consume answers */
-                    merge_rrset_recs(&next_q->qfq_query->qc_referral->answers, response->di_answers);
-                    response->di_answers = NULL;
-                } else {
-                    val_log(context, LOG_INFO,
-                            "ask_cache(): received error response for {%s %d %d}, flags=%d: %d",
-                            name_p, next_q->qfq_query->qc_class_h,
-                            next_q->qfq_query->qc_type_h, next_q->qfq_flags,
-                            next_q->qfq_query->qc_state);
-                }
-
-                free_domain_info_ptrs(response);
-                FREE(response);
-            }
-
-            if (next_q->qfq_query->qc_state > Q_SENT) 
-                *data_received = 1;
-        }
+        retval = _ask_cache_one(context, queries, next_q, data_received,
+                                data_missing, &more_data);
+        if (VAL_NO_ERROR != retval)
+            return retval;
     }
 
     if ((top_q != *queries) || more_data)
@@ -5239,6 +5149,135 @@ ask_resolver(val_context_t * context,
     } else {
        *data_missing = 0;
     } 
+
+    return VAL_NO_ERROR;
+}
+
+/*
+ * check cache for answer to a query
+ */
+static int
+_ask_cache_one(val_context_t * context, struct queries_for_query **queries,
+               struct queries_for_query *next_q, int *data_received,
+               int *data_missing, int *more_data)
+{
+    struct domain_info *response = NULL;
+    char                name_p[NS_MAXDNAME];
+    int                 retval;
+
+    if (next_q->qfq_query->qc_state < Q_ANSWERED)
+        *data_missing = 1;
+
+    if (next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE)
+        /* don't look at the cache for this query */
+        return VAL_NO_ERROR;
+ 
+    if (next_q->qfq_query->qc_state != Q_INIT)
+        return VAL_NO_ERROR;
+
+    if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
+        snprintf(name_p, sizeof(name_p), "unknown/error");
+
+    val_log(context, LOG_DEBUG,
+            "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%d", name_p,
+            p_class(next_q->qfq_query->qc_class_h),
+            next_q->qfq_query->qc_class_h, p_type(next_q->qfq_query->qc_type_h),
+            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+
+    if (VAL_NO_ERROR !=
+        (retval = get_cached_rrset(next_q->qfq_query, &response)))
+        return retval;
+
+    if (!response) {
+        if (next_q->qfq_query->qc_state > Q_SENT)
+            *data_received = 1;
+        return VAL_NO_ERROR;
+    }
+
+    if (next_q->qfq_query->qc_state == Q_ANSWERED) {
+
+        val_log(context, LOG_INFO,
+                "ask_cache(): found matching ack/nack response for {%s %d %d}, flags=%d",
+                name_p, next_q->qfq_query->qc_class_h,
+                next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+
+        /* merge any answer from the referral (alias) portion */
+        if (next_q->qfq_query->qc_referral) {
+            merge_rrset_recs(&next_q->qfq_query->qc_referral->answers,
+                             response->di_answers);
+            response->di_answers = next_q->qfq_query->qc_referral->answers;
+            next_q->qfq_query->qc_referral->answers = NULL;
+
+            /*
+             * Consume qnames
+             */
+            if (response->di_qnames == NULL)
+                response->di_qnames = next_q->qfq_query->qc_referral->qnames;
+            else if (next_q->qfq_query->qc_referral->qnames) {
+                struct qname_chain *t_q  = response->di_qnames;
+                for (; t_q->qnc_next; t_q = t_q->qnc_next)
+                    ;
+                t_q->qnc_next = next_q->qfq_query->qc_referral->qnames;
+            }
+            next_q->qfq_query->qc_referral->qnames = NULL;
+
+            /*
+             * Note that we don't free qc_referral here
+             */
+            free_referral_members(next_q->qfq_query->qc_referral);
+        }
+
+        if (VAL_NO_ERROR != (retval = assimilate_answers(context, queries,
+                                                         response, next_q))) {
+            free_domain_info_ptrs(response);
+            FREE(response);
+            return retval;
+        }
+    } else if (next_q->qfq_query->qc_state < Q_ERROR_BASE) {
+        /* got some response, but need to get more info (cname/dname) */
+        *more_data = 1;
+        *data_missing = 1;
+
+        if (next_q->qfq_query->qc_referral == NULL) {
+            ALLOCATE_REFERRAL_BLOCK(next_q->qfq_query->qc_referral);
+        }
+        /*
+         * Consume qnames
+         */
+        if (next_q->qfq_query->qc_referral->qnames == NULL)
+            next_q->qfq_query->qc_referral->qnames = response->di_qnames;
+        else if (response->di_qnames) {
+            struct qname_chain *t_q;
+            for (t_q = response->di_qnames; t_q->qnc_next; t_q = t_q->qnc_next)
+                ;
+            t_q->qnc_next = next_q->qfq_query->qc_referral->qnames;
+            next_q->qfq_query->qc_referral->qnames = response->di_qnames;
+        }
+        response->di_qnames = NULL;
+
+        /* Consume answers */
+        merge_rrset_recs(&next_q->qfq_query->qc_referral->answers,
+                         response->di_answers);
+        response->di_answers = NULL;
+    } else {
+        val_log(context, LOG_INFO,
+                "ask_cache(): received error response for {%s %d %d}, flags=%d: %d",
+                name_p, next_q->qfq_query->qc_class_h,
+                next_q->qfq_query->qc_type_h, next_q->qfq_flags,
+                next_q->qfq_query->qc_state);
+    }
+
+    free_domain_info_ptrs(response);
+    FREE(response);
+
+    if (next_q->qfq_query->qc_state > Q_SENT)
+        *data_received = 1;
+
+    // xxx-rks : can we do anything here for more_data case? full ask_cache
+    //           will call itself again... don't know if that would work here,
+    //           but i don't want processing to stop because we aren't doing
+    //           something we should....  maybe calling ourselves would work?
+    //           test with cname??
 
     return VAL_NO_ERROR;
 }
