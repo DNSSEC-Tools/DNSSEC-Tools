@@ -533,6 +533,7 @@ extern          "C" {
 
     int             val_log_debug_level(void);
     void            val_log_set_debug_level(int);
+    int             val_log_highest_debug_level(void);
     const char     *val_get_ns_string(struct sockaddr *serv, char *dst,
                                       size_t size);
 
