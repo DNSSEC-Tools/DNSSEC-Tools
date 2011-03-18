@@ -12,7 +12,8 @@ int sendquery(val_context_t * context, const char *desc, char * name,
               struct val_response *resp);
 
 int self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
-              const char *tests, const char *suites, int doprint);
+              const char *tests, const char *suites, int doprint,
+              int max_in_flight);
 
 
 

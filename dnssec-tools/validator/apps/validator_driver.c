@@ -74,6 +74,7 @@ static struct option prog_options[] = {
     {"dnsval-conf", 1, 0, 'v'},
     {"root-hints", 1, 0, 'i'},
     {"wait", 1, 0, 'w'},
+    {"inflight", 1, 0, 'I'},
     {0, 0, 0, 0}
 };
 #endif
@@ -255,6 +256,7 @@ usage(char *progname)
     printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
     printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
     printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
+    printf("        -I, --inflight=<number> Maximum number of simultaneous queries\n");
     printf("        -w, --wait=<secs> Run tests in a loop, sleeping for specifed seconds between runs\n");
     printf("        -l, --label=<label-string> Specifies the policy to use during validation\n");
     printf("        -o, --output=<debug-level>:<dest-type>[:<dest-options>]\n");
@@ -450,8 +452,8 @@ process_packet(val_context_t *context)
 
     response_size = sizeof(response);
     
-    get_results(context, "test", &query[sizeof(HEADER)], (int)q_class, (int)q_type,
-                response, &response_size, 0);
+    get_results(context, "test", (char *)&query[sizeof(HEADER)], (int)q_class,
+                (int)q_type, response, &response_size, 0);
 
     /*
      * check to see if we need a dummy response
@@ -546,6 +548,7 @@ struct thread_params_st {
     char *suite;
     int doprint;
     int wait;
+    int max_in_flight;
 };
 
 struct thread_params_ot {
@@ -567,7 +570,7 @@ void *firethread_st(void *param) {
             (unsigned int)threadparams->context);
     do {
         self_test(threadparams->context, threadparams->tcs, threadparams->tce, threadparams->flags, 
-                  threadparams->testcase_config, threadparams->suite, threadparams->doprint);
+                  threadparams->testcase_config, threadparams->suite, threadparams->doprint, threadparams->max_in_flight);
         if (threadparams->wait)
             sleep(threadparams->wait);
     }while (threadparams->wait);
@@ -614,12 +617,13 @@ main(int argc, char *argv[])
     // Parse the command line for a query and resolve+validate it
     int             c;
     char           *domain_name = NULL;
-    const char     *args = "c:dF:hi:l:w:o:pr:S:st:T:v:";
+    const char     *args = "c:dF:hi:I:l:w:o:pr:S:st:T:v:";
     int            class_h = ns_c_in;
     int            type_h = ns_t_a;
     int             success = 0;
     int             doprint = 0;
     int             selftest = 0;
+    int             max_in_flight = 1;
     int             daemon = 0;
     u_int32_t       flags = 0;
     int             retvals[] = { 0 };
@@ -714,6 +718,10 @@ main(int argc, char *argv[])
             break;
 
 
+        case 'I':
+            max_in_flight = strtol(optarg, &nextarg, 10);
+            break;
+
         case 'v':
             dnsval_conf_set(optarg);
             break;
@@ -803,7 +811,7 @@ main(int argc, char *argv[])
 #else
             do { /* endless loop */ 
                 rc = self_test(context, tcs, tce, flags, testcase_config, suite,
-                               doprint);
+                               doprint, max_in_flight);
                 if (wait)
                     sleep(wait);
             } while (wait && !rc);
