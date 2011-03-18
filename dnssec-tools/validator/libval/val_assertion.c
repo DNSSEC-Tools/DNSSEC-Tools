@@ -117,6 +117,22 @@ static int _resolver_rcv_one(val_context_t * context,
                              struct timeval *closest_event,
                              int *data_received);
 
+static void
+_free_w_results(struct val_internal_result *w_results)
+{
+    struct val_internal_result *w_res = w_results;
+    /*
+     *  The val_internal_result structure only has a reference to 
+     *  the authentication chain. The actual authentication chain
+     *  is still present in the validator context.
+     */
+    while (w_res) {
+        w_results = w_res->val_rc_next;
+        FREE(w_res);
+        w_res = w_results;
+    }
+}
+
 /*
  * Identify if the type is present in the bitmap
  * The encoding of the bitmap is a sequence of <block#, len, bitmap> tuples
@@ -6007,17 +6023,7 @@ int try_chase_query(val_context_t * context,
                                                    done)))
         return retval;
 
-    /*
-     *  The val_internal_result structure only has a reference to 
-     *  the authentication chain. The actual authentication chain
-     *  is still present in the validator context.
-     */
-    w_res = w_results;
-    while (w_res) {
-        w_results = w_res->val_rc_next;
-        FREE(w_res);
-        w_res = w_results;
-    }
+    _free_w_results(w_results);
 
     return VAL_NO_ERROR;
 }
@@ -6206,17 +6212,7 @@ val_resolve_and_check(val_context_t * ctx,
     CTX_UNLOCK_RESPOL(context);
     CTX_UNLOCK_VALPOL(context);
 
-    /*
-     *  The val_internal_result structure only has a reference to 
-     *  the authentication chain. The actual authentication chain
-     *  is still present in the validator context.
-     */
-    w_res = w_results;
-    while (w_res) {
-        w_results = w_res->val_rc_next;
-        FREE(w_res);
-        w_res = w_results;
-    }
+    _free_w_results(w_results);
     free_qfq_chain(queries);
 
     /*
