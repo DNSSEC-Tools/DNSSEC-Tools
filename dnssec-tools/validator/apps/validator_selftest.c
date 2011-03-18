@@ -38,12 +38,16 @@ typedef struct testcase_st {
     int                 qc;
     int                 qt;
     int                 qr[MAX_TEST_RESULTS];
+    val_async_status   *as;
+    struct val_response resp;
     struct testcase_st *next;
 } testcase;
 
 typedef struct testsuite_st {
     char                *name;
     testcase            *head;
+    int                 in_flight;
+    int                 remaining;
     struct testsuite_st *next;
 } testsuite;
 
@@ -459,45 +463,19 @@ err:
 }
 
 int
-run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsuite *suite,
-               int doprint)
+run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
+          u_int32_t flags, int *failed, int doprint)
 {
-    int             rc, failed = 0, run_cnt = 0, i, tc_count;
+    int i, rc, run = 0;
     struct val_response resp;
-    testcase        *curr_test;
-
-    if (NULL == suite)
-        return 1;
 
     memset(&resp, 0, sizeof(resp));
-    
-    /*
-     * Count the number of testcase entries 
-     */
-    tc_count = 0;
-    curr_test = suite->head;
-    for (i = 0; curr_test != NULL; i++, curr_test = curr_test->next)
-        tc_count++;
-    curr_test = suite->head;
 
-    if (-1 == tce)
-        tce = tc_count - 1;
-
-    if ((tce >= tc_count) || (tcs >= tc_count)) {
-        fprintf(stderr,
-                "Invalid test case number (must be 0-%d)\n", tc_count);
-        return 1;
-    }
-
-    /* Find the start test case */
-    for (i = 0; curr_test != NULL && i < tcs; i++, curr_test = curr_test->next);
-
-    fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
     for (i = tcs;
          curr_test != NULL && curr_test->desc != NULL && i <= tce;
          curr_test = curr_test->next) {
 
-        ++run_cnt;
+        ++run;
         fprintf(stderr, "%d: ", ++i);
         rc = sendquery(context, curr_test->desc,
                        curr_test->qn, curr_test->qc,
@@ -511,18 +489,204 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags, testsu
             FREE(resp.vr_response);
 
         if (rc)
-            ++failed;
+            ++(*failed);
         fprintf(stderr, "\n");
+    }
+
+    return run;
+}
+
+int
+suite_async_callback(val_async_status *as)
+{
+    testsuite *suite;
+    if (NULL == as || NULL == as->val_as_cb_user_ctx) {
+        val_log(as->val_as_ctx, LOG_ERR, "bad parameter for callback\n");
+        return VAL_BAD_ARGUMENT;
+    }
+
+    suite = (testsuite *)as->val_as_cb_user_ctx;
+
+    --suite->in_flight;
+    --suite->remaining;
+
+    val_log(as->val_as_ctx, LOG_INFO,
+            "query completed; %d in flight, %d remaining\n",
+            suite->in_flight, suite->remaining);
+    return VAL_NO_ERROR;
+}
+
+int
+run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
+                int tcs, int tce, u_int32_t flags, int *failed, int doprint,
+                int max_in_flight)
+{
+    int i, j, rc, run = 0, burst = 5, nfds, unsent, ready;
+    fd_set             activefds;
+    struct timeval     timeout, now;
+    testcase          *curr_test = start_test;
+
+    if (!curr_test || !suite)
+        return 0;
+
+    i = tcs;
+    suite->remaining = tce - tcs + 1;
+    suite->in_flight = 0;
+
+    while (suite->remaining || suite->in_flight) {
+        /** send up to burst queries */
+        for (j = 0;
+             suite->in_flight <= max_in_flight &&
+                 i <= tce &&
+                 j < burst &&
+                 curr_test;
+             ++i, ++j, curr_test = curr_test->next) {
+            fprintf(stderr, "%d: ", i+1);
+            rc = val_async_submit(context, curr_test->qn, curr_test->qc,
+                                  curr_test->qt, flags, &curr_test->as);
+            if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
+                val_log(context, LOG_ERR, "error sending %i %s\n", i,
+                        curr_test->desc);
+                continue;
+            }
+            memset(&curr_test->resp, 0, sizeof(curr_test->resp));
+            curr_test->as->val_as_result_cb = &suite_async_callback;
+            curr_test->as->val_as_cb_user_ctx = suite;
+            ++run;
+            ++suite->in_flight;
+        }
+        unsent = tce - i + 1;
+
+        /** set up fdset/timeout for select */
+        FD_ZERO(&activefds);
+        nfds = 0;
+        timeout.tv_sec = LONG_MAX;
+        val_async_select_info(context, &activefds, &nfds, &timeout);
+        if (0 == nfds) {
+            val_log(context, LOG_DEBUG,
+                    "no file decsriptors set for requests\n");
+            rc = val_async_check(context, &activefds, &nfds, 0);
+            val_async_select_info(context, &activefds, &nfds, &timeout);
+        }
+        /** adjust libsres absolute timeout to select relative timeout */
+        if (timeout.tv_sec == LONG_MAX)
+            timeout.tv_sec = 1;
+        else {
+            gettimeofday(&now, NULL);
+            if (timeout.tv_sec > now.tv_sec)
+                timeout.tv_sec -= now.tv_sec;
+            else
+                timeout.tv_sec = 0;
+        }
+
+        /** don't sleep too long if more queries are waiting to be sent */
+        if (unsent && suite->in_flight < max_in_flight && timeout.tv_sec > 0) {
+            val_log(context, LOG_DEBUG,
+                    "reducing timeout so we can send more requests\n");
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 500;
+        }
+        val_log(context, LOG_DEBUG,
+                "select @ %d, %d fds, timeout %ld, %d in flight, %d unsent\n",
+               now.tv_sec, nfds, timeout.tv_sec, suite->in_flight, unsent);
+        if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG)) {
+            val_log(context, LOG_DEBUG, "activefds: ");
+            i = getdtablesize();
+            if (i > FD_SETSIZE)
+                i = FD_SETSIZE;
+            for (--i; i >= 0; --i)
+                if (FD_ISSET(i, &activefds)) {
+                    val_log(context, LOG_DEBUG, "%d ", i);
+                }
+            val_log(context, LOG_DEBUG, "\n");
+        }
+
+        fflush(stdout);
+        ready = select(nfds, &activefds, NULL, NULL, &timeout);
+        gettimeofday(&now, NULL);
+        val_log(context, LOG_DEBUG, "%d fds @ %d\n", ready, now.tv_sec);
+        if (ready < 0 && errno == EINTR)
+            continue;
+
+        /** no ready fd; check for timeouts/retries */
+        if (ready == 0) {
+            gettimeofday(&now, NULL);
+            now.tv_usec = 0;
+            val_log(context, LOG_DEBUG, "timeout @ %ld\n", now.tv_sec);
+        }
+
+        rc = val_async_check(context, &activefds, &nfds, 0);
+
+    } /* while(remaining) */
+
+    return run;
+}
+
+int
+run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
+               testsuite *suite, int doprint, int max_in_flight)
+{
+    int             failed = 0, run_cnt = 0, i, tc_count, s, us;
+    testcase        *curr_test, *start_test = NULL;
+    struct timeval     now, start;
+
+    if (NULL == suite)
+        return 1;
+
+    /*
+     * Count the number of testcase entries
+     */
+    tc_count = 0;
+    curr_test = suite->head;
+    for (i = 0; curr_test != NULL; curr_test = curr_test->next) {
+        if (++i == tcs)
+            start_test = curr_test;
+        ++tc_count;
+    }
+    if (!start_test)
+        start_test = suite->head;
+
+    if (-1 == tce)
+        tce = tc_count - 1;
+
+    if ((tce >= tc_count) || (tcs >= tc_count)) {
+        fprintf(stderr,
+                "Invalid test case number (must be 0-%d)\n", tc_count);
+        return 1;
+    }
+    tc_count = tce - tcs + 1;
+
+    fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
+
+    gettimeofday(&start, NULL);
+    if (max_in_flight > 1)
+        run_cnt = run_suite_async(context, suite, start_test, tcs, tce, flags,
+                                  &failed, doprint, max_in_flight);
+    else
+        run_cnt = run_suite(context, start_test, tcs, tce, flags, &failed,
+                            doprint);
+
+    gettimeofday(&now, NULL);
+
+    now.tv_sec--;
+    now.tv_usec += 1000000L;
+    s = now.tv_sec - start.tv_sec;
+    us = now.tv_usec - start.tv_usec;
+    if (us > 1000000L){
+        us -= 1000000L;
+        s++;
     }
     fprintf(stderr, "Suite '%s': Final results: %d/%d succeeded (%d failed)\n",
             suite->name, run_cnt - failed, run_cnt, failed);
+    fprintf(stderr, "   runtime was %d.%d seconds\n", s, us);
 
     return 0;
 }
 
 int
-self_test(val_context_t *context, int tcs, int tce, u_int32_t flags, const char *tests_file,
-          const char *suites, int doprint)
+self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
+          const char *tests_file, const char *suites, int doprint,
+          int max_in_flight)
 {
     testsuite *suite;
     int rc;
@@ -539,7 +703,8 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags, const char 
     if (NULL == suites) {
 
         while(NULL != suite) {
-            rc = run_test_suite(context, tcs, tce, flags, suite, doprint);
+            rc = run_test_suite(context, tcs, tce, flags, suite, doprint,
+                                max_in_flight);
             /** does rc mean anything? */
             suite = suite->next;
         }
@@ -558,7 +723,8 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags, const char 
             if (NULL == suite)
                 fprintf(stderr, "unknown suite %s\n", name);
             else {
-                rc = run_test_suite(context, tcs, tce, flags, suite, doprint);
+                rc = run_test_suite(context, tcs, tce, flags, suite, doprint,
+                                    max_in_flight);
                 /** does rc mean anything? */
             }
             
