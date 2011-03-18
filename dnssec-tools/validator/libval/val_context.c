@@ -288,8 +288,52 @@ val_free_context(val_context_t * context)
         FREE(q);
     }
 
+#ifndef VAL_NO_ASYNC
+    {
+        val_async_status  *as;
+        while (NULL != context->as_list) {
+            as = context->as_list;
+            context->as_list = as->val_as_next;
+            as->val_as_next = NULL;
+            as->val_as_ctx = NULL;
+            val_async_status_free(as);
+        }
+    }
+#endif
+
     FREE(context);
 }
+
+#ifndef VAL_NO_ASYNC
+/* remove asynchronous status from context async queries list */
+int
+val_context_as_remove(val_context_t *context, val_async_status *as)
+{
+    if ((NULL == context) || (NULL == as) ||
+        (as->val_as_ctx && (as->val_as_ctx != context)))
+        return VAL_BAD_ARGUMENT;
+
+    if (NULL == context->as_list)
+        return VAL_NO_ERROR;
+
+    if (as == context->as_list)
+        context->as_list = as->val_as_next;
+    else {
+        val_async_status *prev, *curr;
+
+        prev = context->as_list;
+        curr = prev->val_as_next;
+        for (; curr; prev = curr, curr = curr->val_as_next) {
+            if (curr != as)
+                continue;
+            prev->val_as_next = curr->val_as_next;
+            break;
+        } /* for */
+    } /* as->val_as_ctx */
+
+    return VAL_NO_ERROR;
+}
+#endif
 
 /*
  * Free all internal state associated with the validator
