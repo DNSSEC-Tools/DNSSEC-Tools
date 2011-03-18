@@ -6340,7 +6340,7 @@ val_async_status_free(val_async_status *as)
     if (NULL == as)
         return VAL_BAD_ARGUMENT;
 
-    val_log(as->val_as_ctx, LOG_ERR, "releasing as %p", as);
+    val_log(as->val_as_ctx, LOG_DEBUG, "releasing as %p", as);
 
     /* remove all pending queries from context list */
     for (q = as->val_as_queries; q; q = q->qfq_next)
@@ -6394,7 +6394,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     as = (val_async_status *)calloc(1, sizeof(val_async_status));
     if (NULL == as)
         return VAL_OUT_OF_MEMORY;
-    val_log(NULL, LOG_ERR, "allocated as %p", as);
+    val_log(NULL, LOG_DEBUG, "allocated as %p", as);
 
     if ((retval = ns_name_pton(domain_name,
                                as->val_as_domain_name_n,
@@ -6489,7 +6489,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
         val_async_status_free(as);
     else {
         /* put in context async queries list */
-        val_log(context, LOG_ERR, "adding %s to context as_list", domain_name);
+        val_log(context, LOG_DEBUG, "adding %s to context as_list", domain_name);
         as->val_as_next = context->as_list;
         context->as_list = as;
     }
