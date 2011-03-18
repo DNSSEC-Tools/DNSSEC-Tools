@@ -104,6 +104,18 @@ static int _ask_cache_one(val_context_t * context,
                           struct queries_for_query **queries,
                           struct queries_for_query *next_q, int *data_received,
                           int *data_missing, int *more_data);
+static int _resolver_submit_one(val_context_t * context,
+                                struct queries_for_query **queries,
+                                struct queries_for_query *query);
+static int _resolver_submit(val_context_t * context,
+                            struct queries_for_query **queries,
+                            int *data_received, int *data_missing);
+static int _resolver_rcv_one(val_context_t * context,
+                             struct queries_for_query **queries,
+                             struct queries_for_query *next_q,
+                             fd_set * pending_desc,
+                             struct timeval *closest_event,
+                             int *data_received);
 
 /*
  * Identify if the type is present in the bitmap
@@ -5046,111 +5058,35 @@ ask_resolver(val_context_t * context,
              
 {
     struct queries_for_query *next_q;
-    struct domain_info *response;
-    int             retval;
-    int             need_data = 0;
-    char            name_p[NS_MAXDNAME];
+    int             retval = VAL_NO_ERROR;
 
-    if ((context == NULL) || (queries == NULL) || (data_received == NULL) || (data_missing == NULL)) 
+    if ((context == NULL) || (queries == NULL) || (data_received == NULL) ||
+        (data_missing == NULL)) 
         return VAL_BAD_ARGUMENT;
 
+    /** nothing to do if no data missing */
     if (*data_missing == 0)
         return VAL_NO_ERROR;
 
-    response = NULL;
+    /** check queries and submit any unsent queries */
+    retval = _resolver_submit(context, queries, data_received, data_missing);
+    if (retval != VAL_NO_ERROR)
+        return retval;
 
+    /** if nothing was submitted to the resolver, we're done. */
+    if (*data_missing == 0)
+       return VAL_NO_ERROR;
+
+    /** check for a response */
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
-        if (next_q->qfq_query->qc_state == Q_INIT) {
 
-            need_data = 1;
-            if (-1 ==
-                ns_name_ntop(next_q->qfq_query->qc_name_n, name_p,
-                             sizeof(name_p)))
-                snprintf(name_p, sizeof(name_p), "unknown/error");
-
-            if (next_q->qfq_query->qc_referral) {
-                val_log(context, LOG_INFO,
-                    "ask_resolver(): sending query for {%s %d %d}, flags=%d (referral/alias)",
-                    name_p, next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h, 
-                    next_q->qfq_flags);
-            } else {
-                val_log(context, LOG_INFO,
-                    "ask_resolver(): sending query for {%s %d %d}, flags=%d",
-                    name_p, next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h,
-                    next_q->qfq_flags);
-            }
-
-            if (VAL_NO_ERROR != 
-                    (retval = find_nslist_for_query(context, next_q, queries))) {
-                return retval;
-            }
-
-            /* find_nslist_for_query() could have modified the state */ 
-            if (next_q->qfq_query->qc_state == Q_INIT) {
-                if ((retval =
-                     val_resquery_send(context, next_q)) != VAL_NO_ERROR)
-                    return retval;
-                next_q->qfq_query->qc_state = Q_SENT;
-            } 
-        } else if (next_q->qfq_query->qc_state < Q_ANSWERED)
-            need_data = 1;
+        retval = _resolver_rcv_one(context, queries, next_q, pending_desc,
+                                   closest_event, data_received);
+        if (retval != VAL_NO_ERROR)
+            break;
     }
 
-    if (need_data) {
-        for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
-            if (next_q->qfq_query->qc_state == Q_SENT) {
-                if ((retval =
-                     val_resquery_rcv(context, next_q, &response,
-                                      queries, pending_desc, 
-                                      closest_event)) != VAL_NO_ERROR)
-                    return retval;
-
-                if ((next_q->qfq_query->qc_state == Q_ANSWERED)
-                    && (response != NULL)) {
-                    if (-1 ==
-                        ns_name_ntop(next_q->qfq_query->qc_name_n, name_p,
-                                     sizeof(name_p)))
-                        snprintf(name_p, sizeof(name_p),
-                                 "unknown/error");
-                    val_log(context, LOG_INFO,
-                            "ask_resolver(): found matching ack/nack response for {%s %d %d}, flags=%d",
-                            name_p, next_q->qfq_query->qc_class_h,
-                            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
-                    if (VAL_NO_ERROR !=
-                        (retval =
-                         assimilate_answers(context, queries, response,
-                                            next_q))) {
-                        free_domain_info_ptrs(response);
-                        FREE(response);
-                        return retval;
-                    }
-                } else if (next_q->qfq_query->qc_state > Q_ERROR_BASE) {
-                    if (-1 ==
-                        ns_name_ntop(next_q->qfq_query->qc_name_n, name_p,
-                                     sizeof(name_p)))
-                        snprintf(name_p, sizeof(name_p),
-                                 "unknown/error");
-                    val_log(context, LOG_INFO,
-                            "ask_resolver(): received error response for {%s %d %d}, flags=%d: %d",
-                            name_p, next_q->qfq_query->qc_class_h,
-                            next_q->qfq_query->qc_type_h, next_q->qfq_flags,
-                            next_q->qfq_query->qc_state);
-                }
-                
-                if (response != NULL) {
-                    free_domain_info_ptrs(response);
-                    FREE(response);
-                }
-
-                if (next_q->qfq_query->qc_state > Q_SENT) 
-                    *data_received = 1;
-            }
-        }
-    } else {
-       *data_missing = 0;
-    } 
-
-    return VAL_NO_ERROR;
+    return retval;
 }
 
 /*
@@ -5278,6 +5214,141 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     //           but i don't want processing to stop because we aren't doing
     //           something we should....  maybe calling ourselves would work?
     //           test with cname??
+
+    return VAL_NO_ERROR;
+}
+
+static int
+_resolver_submit_one(val_context_t * context, struct queries_for_query **queries,
+                     struct queries_for_query *query)
+{
+    int   retval = VAL_NO_ERROR;
+    char  name_p[NS_MAXDNAME];
+
+    if ((context == NULL) || (queries == NULL) || (query == NULL) ||
+        (query->qfq_query->qc_state != Q_INIT))
+        return VAL_BAD_ARGUMENT;
+
+    if (-1 == ns_name_ntop(query->qfq_query->qc_name_n, name_p,
+                           sizeof(name_p)))
+        snprintf(name_p, sizeof(name_p), "unknown/error");
+
+    val_log(context, LOG_INFO,
+            "ask_resolver(): sending query for {%s %d %d}, flags=%d%s",
+            name_p, query->qfq_query->qc_class_h, query->qfq_query->qc_type_h,
+            query->qfq_flags,
+            query->qfq_query->qc_referral ? " (referral/alias)" : "");
+
+    retval = find_nslist_for_query(context, query, queries);
+    if (VAL_NO_ERROR != retval)
+        return retval;
+
+    /* find_nslist_for_query() could have modified the state */
+    if (query->qfq_query->qc_state == Q_INIT)
+        if ((retval = val_resquery_send(context, query)) == VAL_NO_ERROR)
+            query->qfq_query->qc_state = Q_SENT;
+
+    return retval;
+}
+
+static int
+_resolver_submit(val_context_t * context, struct queries_for_query **queries,
+                 int *data_received, int *data_missing)
+{
+    struct queries_for_query *next_q;
+    int                       need_data = 0;
+    int                       retval = VAL_NO_ERROR;
+
+    if ((context == NULL) || (queries == NULL) || (data_received == NULL) ||
+        (data_missing == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /** nothing to do if no data missing */
+    if (*data_missing == 0)
+        return VAL_NO_ERROR;
+
+    for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
+
+        /*
+         * we only need to process Q_INIT, but anything else that hasn't
+         * been answered means we still need data.
+         */
+        if (next_q->qfq_query->qc_state != Q_INIT) {
+            if (next_q->qfq_query->qc_state < Q_ANSWERED)
+                need_data = 1;
+            continue;
+        }
+
+        /*
+         * process Q_INIT
+         */
+        need_data = 1;
+
+        retval = _resolver_submit_one(context, queries, next_q);
+        if (VAL_NO_ERROR != retval)
+            break;
+    }
+
+    /* if no data needed, tell caller no data is missing */
+    if (!need_data)
+        *data_missing = 0;
+
+    return retval;
+}
+
+static int
+_resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
+                  struct queries_for_query *next_q,
+                  fd_set * pending_desc, struct timeval *closest_event,
+                  int *data_received)
+{
+    struct domain_info       *response = NULL;
+    char                      name_p[NS_MAXDNAME];
+    int                       retval;
+
+    /** only care about quereies that were just sent */
+    if (next_q->qfq_query->qc_state != Q_SENT)
+        return VAL_NO_ERROR;
+
+    /* try an read answer */
+    retval = val_resquery_rcv(context, next_q, &response, queries,
+                              pending_desc, closest_event);
+    if (retval != VAL_NO_ERROR)
+        return retval;
+
+    if ((next_q->qfq_query->qc_state == Q_ANSWERED) && (response != NULL)) {
+        if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p,
+                               sizeof(name_p)))
+            snprintf(name_p, sizeof(name_p), "unknown/error");
+        val_log(context, LOG_INFO,
+                "ask_resolver(): found matching ack/nack response for {%s %d %d}, flags=%d",
+                name_p, next_q->qfq_query->qc_class_h,
+                next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+        if (VAL_NO_ERROR !=
+            (retval = assimilate_answers(context, queries, response,
+                                         next_q))) {
+            free_domain_info_ptrs(response);
+            FREE(response);
+            return retval;
+        }
+    } else if (next_q->qfq_query->qc_state > Q_ERROR_BASE) {
+        if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p,
+                               sizeof(name_p)))
+            snprintf(name_p, sizeof(name_p), "unknown/error");
+        val_log(context, LOG_INFO,
+                "ask_resolver(): received error response for {%s %d %d}, flags=%d: %d",
+                name_p, next_q->qfq_query->qc_class_h,
+                next_q->qfq_query->qc_type_h, next_q->qfq_flags,
+                next_q->qfq_query->qc_state);
+    }
+
+    if (response != NULL) {
+        free_domain_info_ptrs(response);
+        FREE(response);
+    }
+
+    if (next_q->qfq_query->qc_state > Q_SENT)
+        *data_received = 1;
 
     return VAL_NO_ERROR;
 }
