@@ -541,7 +541,6 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                  j < burst &&
                  curr_test;
              ++i, ++j, curr_test = curr_test->next) {
-            fprintf(stderr, "%d: ", i+1);
             rc = val_async_submit(context, curr_test->qn, curr_test->qc,
                                   curr_test->qt, flags, &curr_test->as);
             if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
