@@ -249,6 +249,7 @@ init_query_chain_node(struct val_query_chain *q)
     q->qc_ans = NULL;
     q->qc_proof = NULL;
     q->qc_trans_id = -1;
+    q->qc_ea = NULL;
     q->qc_zonecut_n = NULL;
     q->qc_ns_list = NULL;
     q->qc_respondent_server = NULL;
@@ -287,6 +288,11 @@ free_query_chain_structure(struct val_query_chain *queries)
     if (queries->qc_proof != NULL) {
         free_authentication_chain(queries->qc_proof);
         queries->qc_proof = NULL;
+    }
+
+    if (queries->qc_ea != NULL) {
+        res_async_query_free(queries->qc_ea);
+        queries->qc_ea = NULL;
     }
 
     init_query_chain_node(queries);
@@ -365,6 +371,51 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
 
     return VAL_NO_ERROR;
 }
+
+static int
+remove_and_free_query_chain(val_context_t *context,
+                            struct val_query_chain *added_q)
+{
+    struct val_query_chain *temp, *prev;
+
+    /*
+     * sanity checks
+     */
+    if ((NULL == context) || (added_q == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    if (added_q->qc_next)
+        remove_and_free_query_chain(context, added_q->qc_next);
+
+    /*
+     * Check if query exists in context q_list
+     */
+    temp = context->q_list;
+    prev = temp;
+    while (temp) {
+        if (added_q == temp)
+            break;
+
+        prev = temp;
+        temp = temp->qc_next;
+    }
+    if (temp == NULL) { /* found it. now remove it */
+        if (context->q_list == temp)
+            context->q_list = temp->qc_next;
+        else
+            prev->qc_next = temp->qc_next;
+        temp->qc_next = NULL;
+    }
+
+#ifndef VAL_NO_THREADS
+    pthread_rwlock_destroy(&temp->qc_rwlock);
+#endif
+
+    free_query_chain_structure(temp);
+
+    return VAL_NO_ERROR;
+}
+
 void
 free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
 {
@@ -403,7 +454,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                  const u_int32_t flags)
 {
     /*
-     * sanity checks performed in calling function 
+     * sanity checks performed in calling function
      */
 
     struct queries_for_query *temp, *prev;
@@ -442,6 +493,33 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     return temp;
 }
 
+static int
+remove_from_qfq_chain(struct queries_for_query **queries,
+                      struct queries_for_query *added_q,
+                      const u_int32_t flags)
+{
+    /*
+     * sanity checks performed in calling function 
+     */
+
+    struct queries_for_query *temp, *prev;
+    temp = *queries;
+    prev = temp;
+
+    while (temp) {
+        if (temp == added_q) {
+            if (temp == *queries)
+                *queries = temp->qfq_next;
+            else
+                prev->qfq_next = temp->qfq_next;
+            temp->qfq_next = NULL;
+            return VAL_NO_ERROR;
+        }
+        prev = temp;
+        temp = temp->qfq_next;
+    }
+    return VAL_BAD_ARGUMENT;
+}
 
 int
 add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
@@ -519,6 +597,26 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     *added_qfq = new_qfq;
        
     return VAL_NO_ERROR; 
+}
+
+/*
+ * internal free routine use on error during insert. this version also frees
+ * the val_query_chain (after removing it from the context query list).
+ */
+static int
+_free_qfq_chain(val_context_t *context, struct queries_for_query *queries)
+{
+    if (queries == NULL)
+        return VAL_NO_ERROR;
+
+    if (queries->qfq_next)
+        _free_qfq_chain(context, queries->qfq_next);
+
+    if (queries->qfq_query)
+        remove_and_free_query_chain(context, queries->qfq_query);
+
+    FREE(queries);
+    return VAL_NO_ERROR;
 }
 
 int 
