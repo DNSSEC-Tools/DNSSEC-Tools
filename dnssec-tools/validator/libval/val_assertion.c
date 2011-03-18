@@ -355,6 +355,12 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
 
     *added_q = NULL;
 
+#ifdef DEBUG_ASYNC_ONLY
+    /**************************************************************/
+    if (!(flags & VAL_QUERY_ASYNC)) /******************************/
+        return VAL_BAD_ARGUMENT; /*********************************/
+    /**************************************************************/
+#endif
     /*
      * Check if query already exists 
      */
@@ -5260,9 +5266,16 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
         return retval;
 
     /* find_nslist_for_query() could have modified the state */
-    if (query->qfq_query->qc_state == Q_INIT)
-        if ((retval = val_resquery_send(context, query)) == VAL_NO_ERROR)
+    if (query->qfq_query->qc_state == Q_INIT) {
+#ifndef VAL_NO_ASYNC
+        if (query->qfq_flags & VAL_QUERY_ASYNC)
+            retval = val_resquery_async_send(context, query);
+        else
+#endif
+            retval = val_resquery_send(context, query);
+        if (retval == VAL_NO_ERROR)
             query->qfq_query->qc_state = Q_SENT;
+    }
 
     return retval;
 }
@@ -5327,8 +5340,14 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
         return VAL_NO_ERROR;
 
     /* try an read answer */
-    retval = val_resquery_rcv(context, next_q, &response, queries,
-                              pending_desc, closest_event);
+#ifndef VAL_NO_ASYNC
+    if (next_q->qfq_flags & VAL_QUERY_ASYNC)
+        retval = val_resquery_async_rcv(context, next_q, &response, queries,
+                                  pending_desc, closest_event);
+    else
+#endif
+        retval = val_resquery_rcv(context, next_q, &response, queries,
+                                  pending_desc, closest_event);
     if (retval != VAL_NO_ERROR)
         return retval;
 
@@ -6003,15 +6022,19 @@ int try_chase_query(val_context_t * context,
     struct queries_for_query *top_q = NULL;
     struct val_internal_result *w_res = NULL;
     struct val_internal_result *w_results = NULL;
-    int retval;
+    int retval, flags_l = flags;;
 
     if (context == NULL || queries == NULL || results == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
 
+#ifndef VAL_NO_ASYNC
+    if (queries && (*queries)->qfq_flags & VAL_QUERY_ASYNC)
+        flags_l |= VAL_QUERY_ASYNC;
+#endif
     if (VAL_NO_ERROR !=
         (retval =
          add_to_qfq_chain(context, queries, domain_name_n, type,
-                          q_class, flags, &top_q))) {
+                          q_class, flags_l, &top_q))) {
         return retval;
     }
     if (VAL_NO_ERROR != (retval = 
