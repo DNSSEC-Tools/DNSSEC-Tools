@@ -203,6 +203,7 @@ extern          "C" {
 #define VAL_QUERY_DONT_VALIDATE 0x00000002 
 #define VAL_QUERY_NO_DLV        0x00000004 
 #define VAL_QUERY_REFRESH_QCACHE 0x00000008
+#define VAL_QUERY_ASYNC         0x00000010
 
 #define VAL_QUERY_NO_EDNS0      0x00010000
 #define VAL_QUERY_USING_DLV     0x00020000 
@@ -428,12 +429,13 @@ extern          "C" {
 
 #endif
 
+#ifndef VAL_NO_ASYNC
     /*
      * asynchronous status
      */
 #define VAL_AS_CTX_USER_SUPPLIED     0x00000001 /* i.e. don't delete it! */
 #define VAL_AS_IGNORE_CACHE          0x00000002
-//#define VAL_AS_NO_NEW_QUERIES        0x00000004
+#define VAL_AS_NO_NEW_QUERIES        0x00000004
 #define VAL_AS_DONE                  0x00000008 /* have results/answers */
 #define VAL_AS_CB_COMPLETED          0x00000010 /* called user callbacks */
 #define VAL_AS_NO_ANSWERS            0x00000020 /* don't care about answers */
@@ -461,7 +463,7 @@ extern          "C" {
 
         struct val_async_status_s     *val_as_next;
     };
-
+#endif /* VAL_NO_ASYNC */
 
     /*
      * Logging-related definitions 
