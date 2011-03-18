@@ -44,6 +44,18 @@ val_log_set_debug_level(int level)
     debug_level = level;
 }
 
+int
+val_log_highest_debug_level(void)
+{
+    val_log_t      *tmp_log;
+    int             level = 0;
+
+    for (tmp_log = default_log_head; tmp_log; tmp_log = tmp_log->next)
+        if (tmp_log->level > level)
+            level = tmp_log->level;
+
+    return level;
+}
 
 char           *
 get_hex_string(const u_char *data, size_t datalen, char *buf,
