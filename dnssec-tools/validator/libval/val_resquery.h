@@ -50,4 +50,16 @@ int             val_resquery_rcv(val_context_t * context,
                                  fd_set *pending_desc,
                                  struct timeval *closest_event);
 
+#ifndef VAL_NO_ASYNC
+
+int             val_resquery_async_send(val_context_t * context,
+                                        struct queries_for_query *matched_qfq);
+int             val_resquery_async_rcv(val_context_t * context,
+                                       struct queries_for_query *matched_qfq,
+                                       struct domain_info **response,
+                                       struct queries_for_query **queries,
+                                       fd_set *pending_desc,
+                                       struct timeval *closest_event);
+#endif /* VAL_NO_ASYNC */
+
 #endif                          /* VAL_RESQUERY_H */

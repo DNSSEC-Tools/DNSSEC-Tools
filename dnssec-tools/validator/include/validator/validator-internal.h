@@ -55,7 +55,9 @@ extern          "C" {
         struct delegation_info *qc_referral;
         struct name_server *qc_ns_list;
         struct name_server *qc_respondent_server;
-        int    qc_trans_id;
+
+        int    qc_trans_id;             //  synchronous queries only
+        struct expected_arrival *qc_ea; // asynchronous queries only
 
         struct val_digested_auth_chain *qc_ans;
         struct val_digested_auth_chain *qc_proof;
@@ -108,6 +110,11 @@ extern          "C" {
         
         /* Query cache */
         struct val_query_chain *q_list;
+
+        /* in flight async queries */
+        val_async_status       *as_list;
+
+        u_int32_t ctx_flags;
     }; 
 
     struct val_rrset_digested {
