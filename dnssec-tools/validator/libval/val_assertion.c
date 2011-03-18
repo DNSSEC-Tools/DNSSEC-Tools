@@ -356,11 +356,10 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     *added_q = NULL;
 
 #ifdef DEBUG_ASYNC_ONLY
-    /**************************************************************/
-    if (!(flags & VAL_QUERY_ASYNC)) /******************************/
-        return VAL_BAD_ARGUMENT; /*********************************/
-    /**************************************************************/
+    if (!(flags & VAL_QUERY_ASYNC))
+        return VAL_BAD_ARGUMENT;
 #endif
+
     /*
      * Check if query already exists 
      */
@@ -6022,19 +6021,19 @@ int try_chase_query(val_context_t * context,
     struct queries_for_query *top_q = NULL;
     struct val_internal_result *w_res = NULL;
     struct val_internal_result *w_results = NULL;
-    int retval, flags_l = flags;;
+    int retval, flags_copy = flags;
 
     if (context == NULL || queries == NULL || results == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
 
 #ifndef VAL_NO_ASYNC
     if (queries && (*queries)->qfq_flags & VAL_QUERY_ASYNC)
-        flags_l |= VAL_QUERY_ASYNC;
+        flags_copy |= VAL_QUERY_ASYNC;
 #endif
     if (VAL_NO_ERROR !=
         (retval =
          add_to_qfq_chain(context, queries, domain_name_n, type,
-                          q_class, flags_l, &top_q))) {
+                          q_class, flags_copy, &top_q))) {
         return retval;
     }
     if (VAL_NO_ERROR != (retval = 
@@ -6324,3 +6323,355 @@ val_does_not_exist(val_status_t status)
 
     return 0;
 }
+
+/*****************************************************************************
+ *
+ *
+ * Asynchronous API
+ *
+ *
+ ****************************************************************************/
+#ifndef VAL_NO_ASYNC
+int
+val_async_status_free(val_async_status *as)
+{
+    struct queries_for_query *q;
+
+    if (NULL == as)
+        return VAL_BAD_ARGUMENT;
+
+    val_log(as->val_as_ctx, LOG_ERR, "releasing as %p", as);
+
+    /* remove all pending queries from context list */
+    for (q = as->val_as_queries; q; q = q->qfq_next)
+        _free_qfq_chain(as->val_as_ctx, q);
+
+    if (as->val_as_results)
+        val_free_result_chain(as->val_as_results);
+
+    if (as->val_as_answers)
+        val_free_answer_chain(as->val_as_answers);
+
+    val_context_as_remove(as->val_as_ctx, as);
+
+    if (! as->val_as_flags & VAL_AS_CTX_USER_SUPPLIED)
+        val_free_context(as->val_as_ctx);
+
+    FREE(as);
+
+    return VAL_NO_ERROR;
+}
+
+/*
+ * Look inside the cache, ask the resolver for missing data.
+ */
+int
+val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
+                 int qtype, u_int32_t flags, val_async_status **async_status)
+{
+
+    int             retval;
+    struct queries_for_query *top_q = NULL;
+    struct queries_for_query *added_q = NULL;
+    struct queries_for_query *queries = NULL;
+    val_async_status         *as;
+    val_context_t            *context;
+    int data_received = 0;
+    int data_missing = 1;
+
+    if ((domain_name == NULL) || (async_status == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /*
+     * Sanity check the values of class and type
+     * Should not be larger than sizeof u_int16_t
+     */
+    if (qclass < 0 || qtype < 0 ||
+        qtype > ns_t_max || qclass > ns_c_max) {
+        return VAL_BAD_ARGUMENT;
+    }
+
+    as = (val_async_status *)calloc(1, sizeof(val_async_status));
+    if (NULL == as)
+        return VAL_OUT_OF_MEMORY;
+    val_log(NULL, LOG_ERR, "allocated as %p", as);
+
+    if ((retval = ns_name_pton(domain_name,
+                               as->val_as_domain_name_n,
+                               sizeof(as->val_as_domain_name_n))) == -1) {
+        val_log(ctx, LOG_INFO, "val_resolve_and_check(): Cannot parse name %s",
+                domain_name);
+        FREE(as);
+        return VAL_BAD_ARGUMENT;
+    }
+    as->val_as_class = (u_int16_t) qclass;
+    as->val_as_type = (u_int16_t) qtype;
+
+    /*
+     * get context, if needed
+     */
+    context = val_create_or_refresh_context(ctx);
+    if (NULL == context) {
+        val_async_status_free(as);
+        return retval;
+    }
+    if (context == ctx) {
+        as->val_as_ctx = context;
+        as->val_as_flags |= VAL_AS_CTX_USER_SUPPLIED;
+    } else {
+        as->val_as_ctx = context;
+        as->val_as_flags &= (~VAL_AS_CTX_USER_SUPPLIED);
+    }
+
+    flags |= VAL_QUERY_ASYNC;
+
+    CTX_LOCK_RESPOL_SH(context);
+    CTX_LOCK_VALPOL_SH(context);
+    CTX_LOCK_ACACHE(context);
+
+    retval = add_to_qfq_chain(context, &as->val_as_queries,
+                              as->val_as_domain_name_n, as->val_as_type,
+                              as->val_as_class, flags & VAL_QFLAGS_USERMASK,
+                              &added_q);
+    if (VAL_NO_ERROR == retval) {
+        /*
+         * Data might already be present in the cache
+         */
+        /** XXX by-pass this functionality through flags if needed */
+        retval = ask_cache(context, &as->val_as_queries,
+                           &data_received, &data_missing);
+        // xxx-rks did we get answer? if so, return results?
+        if ((VAL_NO_ERROR == retval) &&
+            (added_q->qfq_query->qc_state == Q_ANSWERED)) {
+            int data_missing = 1; /* assume yes */
+
+            if (VAL_NO_ERROR == retval)
+                retval = fix_glue(context, &queries, &data_missing);
+
+
+
+
+            // xxx-rks construct_authentication_chain (see resolve_and_check)
+            if (!data_missing) {
+                val_log(context, LOG_WARNING, "*** ! data_missing in submit");
+#if 0
+                retval = construct_authentication_chain(context, added_q,
+                                                        &as->val_as_queries,
+                                                        &w_results, results,
+                                                        &done);
+                if (VAL_NO_ERROR == retval) {
+                    data_missing = 1;
+                    data_received = 0;
+                }
+#endif
+            }
+
+
+
+
+        }
+    }
+
+    /*
+     * Send un-sent queries
+     */
+    /** XXX by-pass this functionality through flags if needed */
+    if ((VAL_NO_ERROR == retval) &&
+        (added_q->qfq_query->qc_state == Q_INIT)) {
+
+        retval = _resolver_submit_one(context, &as->val_as_queries,
+                                      added_q);
+        if (NULL == added_q->qfq_query->qc_ea)
+            retval = VAL_INTERNAL_ERROR;
+    }
+
+    if ((VAL_NO_ERROR != retval) && (NULL != added_q))
+        val_async_status_free(as);
+    else {
+        /* put in context async queries list */
+        val_log(context, LOG_ERR, "adding %s to context as_list", domain_name);
+        as->val_as_next = context->as_list;
+        context->as_list = as;
+    }
+
+    CTX_UNLOCK_ACACHE(context);
+    CTX_UNLOCK_VALPOL(context);
+    CTX_UNLOCK_RESPOL(context);
+
+    *async_status = as;
+
+    return retval;
+}
+
+
+/*
+ * Look inside the cache, ask the resolver for missing data.
+ * Then try and validate what ever is possible.
+ */
+static int
+_async_check_one(val_async_status *as, fd_set *pending_desc,
+                     int *nfds, u_int32_t flags)
+{
+    struct queries_for_query   *qfq = NULL, *top_q;
+    val_context_t              *context;
+    struct timeval             closest_event, now;
+    int retval, data_received, data_missing, done;
+
+    if ((NULL == as) || (as->val_as_ctx == NULL) ||
+        (pending_desc == NULL) || (NULL == nfds))
+        return VAL_BAD_ARGUMENT;
+
+    context = as->val_as_ctx;
+
+  try_again:
+    top_q = qfq = as->val_as_queries;
+
+    data_missing = 1; // result->val_as_flags |= VAL_RC_DATA_MISSING
+    data_received = 0;
+
+    /*
+     * run through all queries, checking for responses/retries
+     */
+    gettimeofday(&now, NULL);
+    for (; qfq; qfq = qfq->qfq_next) {
+
+        if (NULL == qfq->qfq_query->qc_ea)
+            continue;
+
+        if (res_async_ea_isset(qfq->qfq_query->qc_ea, pending_desc))
+            retval = _resolver_rcv_one(as->val_as_ctx, &as->val_as_queries, qfq,
+                                       pending_desc, &closest_event,
+                                       &data_received);
+        else
+            retval = res_io_check_one(qfq->qfq_query->qc_ea, &closest_event,
+                                      &now);
+
+        if (retval < 0 && res_io_are_all_finished(qfq->qfq_query->qc_ea))
+            val_res_cancel(qfq->qfq_query);
+
+    } /* qfq loop */
+
+    /*
+     * check for answers in the cache
+     */
+    if (!(as->val_as_flags & VAL_AS_IGNORE_CACHE)) {
+        retval = ask_cache(context, &as->val_as_queries,
+                           &data_received, &data_missing);
+        if (VAL_NO_ERROR != retval)
+            return retval;
+    }
+
+    /*
+     * Send un-sent new queries
+     */
+    if (!(as->val_as_flags & VAL_AS_NO_NEW_QUERIES)) {
+        retval = _resolver_submit(context, &as->val_as_queries,
+                                  &data_received, &data_missing);
+        if (VAL_NO_ERROR != retval)
+            return retval;
+    }
+
+    if (VAL_NO_ERROR !=
+        (retval = fix_glue(context, &as->val_as_queries,
+                           &data_missing)))
+        return retval;
+
+    if (data_received || !data_missing) {
+        struct val_internal_result *w_results = NULL;
+
+        retval = construct_authentication_chain(context, top_q,
+                                                &as->val_as_queries,
+                                                &w_results, &as->val_as_results,
+                                                &done);
+        if (done)
+            as->val_as_flags |= VAL_AS_DONE;
+
+        _free_w_results(w_results);
+
+        if (VAL_NO_ERROR != retval)
+            return retval;
+
+        data_missing = 1;
+        data_received = 0;
+    }
+
+    if ((VAL_NO_ERROR == retval) && (as->val_as_results)) {
+        val_log_authentication_chain(context, LOG_NOTICE,
+                                     as->val_as_domain_name_n, as->val_as_class,
+                                     as->val_as_type, as->val_as_results);
+    }
+
+    /* check if more queries have been added */
+    if (top_q != as->val_as_queries)
+        goto try_again;
+
+    if ((VAL_NO_ERROR == retval) && (NULL != as->val_as_results)) {
+        free_qfq_chain(as->val_as_queries);
+        as->val_as_queries = NULL;
+    }
+
+    return retval;
+}
+
+/*
+ * Look inside the cache, ask the resolver for missing data.
+ * Then try and validate what ever is possible.
+ */
+int
+val_async_check(val_context_t *context, fd_set *pending_desc,
+                int *nfds, u_int32_t flags)
+{
+    val_async_status           *as, *completed = NULL;
+    struct queries_for_query   *qfq = NULL, *top_q;
+    int retval, data_received, data_missing;
+
+    if ((NULL == context) || (pending_desc == NULL) || (NULL == nfds))
+        return VAL_BAD_ARGUMENT;
+
+    if (NULL == context->as_list)
+        return VAL_NO_ERROR;
+
+    CTX_LOCK_RESPOL_SH(context);
+    CTX_LOCK_VALPOL_SH(context);
+    CTX_LOCK_ACACHE(context);
+
+    for (as = context->as_list; as; as = as->val_as_next) {
+
+        if (as->val_as_flags & VAL_AS_DONE)
+            continue;
+
+        retval = _async_check_one(as, pending_desc, nfds, flags);
+        if (VAL_NO_ERROR != retval)
+            continue; /* keep trying other requests */
+
+        if (as->val_as_flags & VAL_AS_DONE) {
+            /*
+             * if done, remove from context and add to list of
+             * user callbacks
+             */
+            val_context_as_remove(context, as);
+            as->val_as_next = completed;
+            completed = as;
+        }
+    }
+
+    CTX_UNLOCK_ACACHE(context);
+    CTX_UNLOCK_RESPOL(context);
+    CTX_UNLOCK_VALPOL(context);
+
+    /*
+     * call callback for completed queries
+     */
+    while (completed) {
+        as = completed;
+        completed = completed->val_as_next;
+        if (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
+            (NULL != as->val_as_result_cb)) {
+            (*as->val_as_result_cb)(as);
+            val_async_status_free(as);
+        }
+    }
+
+    return retval;
+}
+#endif /* VAL_NO_ASYNC */

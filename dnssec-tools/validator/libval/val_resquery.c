@@ -2086,8 +2086,11 @@ val_resquery_send(val_context_t * context,
      */
     struct name_server *nslist;
     if ((matched_qfq == NULL) || 
-        (matched_qfq->qfq_query->qc_ns_list == NULL) ||
-        (matched_qfq->qfq_flags & VAL_QUERY_ASYNC)) {
+        (matched_qfq->qfq_query->qc_ns_list == NULL)
+#ifndef VAL_NO_ASYNC
+        || (matched_qfq->qfq_flags & VAL_QUERY_ASYNC)
+#endif
+        ) {
         return VAL_BAD_ARGUMENT;
     }
     matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
@@ -2137,7 +2140,11 @@ val_resquery_rcv(val_context_t * context,
     int             ret_val;
 
     if ((matched_qfq == NULL) || (response == NULL) || (queries == NULL) ||
-        (pending_desc == NULL) || (matched_qfq->qfq_flags & VAL_QUERY_ASYNC))
+        (pending_desc == NULL)
+#ifndef VAL_NO_ASYNC
+        || (matched_qfq->qfq_flags & VAL_QUERY_ASYNC)
+#endif
+        )
         return VAL_BAD_ARGUMENT;
 
     matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
