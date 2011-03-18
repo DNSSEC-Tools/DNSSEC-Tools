@@ -246,7 +246,7 @@ usage(char *progname)
     printf("Primary Options:\n");
     printf("        -h, --help             Display this help and exit\n");
     printf("        -p, --print            Print the answer and validation result\n");
-    printf("        -s, --selftest         Run all internal sefltest suite(s)\n");
+    printf("        -s, --selftest         Run all internal selftest suite(s)\n");
     printf("        -S, --test-suite=<suite>[:<suite>] Run specified internal sefltest suite(s)\n");
     printf("        -T, --testcase=<number>[:<number>\n");
     printf("                               Specifies the test case number/range \n");
