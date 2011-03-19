@@ -188,17 +188,20 @@ sub getkeyrecs
 		my $kr;				# Reference to keyrec.
 		my %keyrec;			# Keyrec.
 		my $type;			# Keyrec's type.
+		my $styp;			# Keyrec's set type.
 
 		$kr = keyrec_fullrec($krn);
 		%keyrec = %$kr;
 
 		$type = $keyrec{'keyrec_type'};
+		$styp = $keyrec{'set_type'};
 
 		if($type eq 'zone')
 		{
 			$zones{$krn} = $kr;
 		}
-		elsif($type eq 'set')
+		elsif(($type eq 'set') ||
+		      (($type eq 'kskobs') && ($styp eq 'kskobs')))
 		{
 			$sets{$krn} = $kr;
 		}
@@ -234,7 +237,6 @@ sub setchecks
 	foreach my $setname (sort(keys(%sets)))
 	{
 		my $zone = $sets{$setname}{'zonename'};		# Set's zone.
-		my $err = 0;					# Set error.
 
 		#
 		# Handle two error conditions:
@@ -244,7 +246,6 @@ sub setchecks
 		if(!defined($zones{$zone}))
 		{
 			qprint("warning:  set $setname references $zone, but $zone does not exist\n");
-			$err = 1;
 			$orphsets++;
 		}
 		elsif(($zones{$zone}{'zskcur'} ne $setname)	&&
@@ -258,17 +259,23 @@ sub setchecks
 			qprint("obsolete set:  $setname\n");
 			$orphsets++;
 
+			#
+			# Resetting the keyrec_type to ensure that obsolete
+			# KSK sets will actually be deleted.
+			#
+			keyrec_setval('set',$setname,'keyrec_type','set');
 		}
 		else
 		{
 			vprint("referenced set:  $setname  ($zone)\n");
+			next;
 		}
 
 		#
 		# Go to the next set if we're just listing or if this
 		# one is okay.
 		#
-		next if(($list) || !$err);
+		next if($list);
 
 		#
 		# Delete the set.
@@ -515,7 +522,8 @@ Revoked signing sets are considered obsolete by B<cleankrf>.
 
 Orphaned keys are KSK and ZSK key I<keyrec>s unreferenced by a set I<keyrec>.
 
-Obsolete keys are ZSK key I<keyrec>s with a I<keyrec_type> of B<zskobs>.
+Obsolete keys are key I<keyrec>s with a I<keyrec_type> of B<kskobs> or
+B<zskobs>.
 
 B<cleankrf>'s exit code is the count of orphaned and obsolete I<keyrec>s
 found.
