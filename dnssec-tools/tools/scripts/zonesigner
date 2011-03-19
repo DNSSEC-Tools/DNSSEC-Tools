@@ -2696,11 +2696,14 @@ sub chkkrf
 	}
 	else
 	{
-		print "unable to find keyrec file or keys; it appears zone has not been signed yet\n";
-		print "continuing as if -genkeys was given\n";
+		if(!defined($opts{'genkeys'}))
+		{
+			print "unable to find keyrec file or keys; it appears zone has not been signed yet\n";
+			print "continuing as if -genkeys was given\n";
 
-		$genksk = 1;
-		$genzsk = 1;
+			$genksk = 1;
+			$genzsk = 1;
+		}
 	}
 
 	#
