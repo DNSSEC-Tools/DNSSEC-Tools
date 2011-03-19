@@ -120,22 +120,23 @@ sub dt_adminmail
 	$msg->subject($subject);
 
 	#
-	# Open the 'connection' and add the message body.
+	# Open the "connection" and add the message body.
 	#
 	push @mailargs, $dtconf{'mailer-type'}
-		if (defined($dtconf{'mailer-type'}));
+		if(defined($dtconf{'mailer-type'}));
 	push @mailargs, 'smtp'
-		if (!defined($dtconf{'mailer-type'}) &&
-			defined($dtconf{'mailer-server'}));
+		if(!defined($dtconf{'mailer-type'}) &&
+		    defined($dtconf{'mailer-server'}));
 	push @mailargs, Server => $dtconf{'mailer-server'}
-		if (defined($dtconf{'mailer-server'}));
-	$mh = $msg->open(@mailargs);
+		if(defined($dtconf{'mailer-server'}));
+
+	eval { $mh = $msg->open(@mailargs); }; return(0) if $@;
 	print $mh $msgbody . "\n";
 
 	#
 	# Complete the message and send it.
 	#
-	$mh->close;
+	eval { $mh->close; }; return(0) if $@;
 	return(1);
 }
 
