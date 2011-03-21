@@ -1163,7 +1163,7 @@ sub general_cmds
 		#
 		# Exit if rollerd isn't running.
 		#
-		if(($ret == 255) || ($ret == -1))
+		if($ret == 200)
 		{
 			exit(1);
 		}
@@ -1247,7 +1247,7 @@ sub zskcmds
 		#
 		# Exit if rollerd isn't running.
 		#
-		if(($ret == 255) || ($ret == -1))
+		if($ret == 200)
 		{
 			exit(1);
 		}
@@ -1322,7 +1322,7 @@ sub kskcmds
 	# Exit if rollerd isn't running.
 	#
 	$ret = $ret >> 8;
-	if(($ret == 255) || ($ret == -1))
+	if($ret == 200)
 	{
 		exit(1);
 	}
@@ -3131,7 +3131,7 @@ sub rollerdup
 	# If the command failed, we'll give an error and exit.
 	#
 	$ret = $ret >> 8;
-	if(($ret == 254) || ($ret == 255) || ($ret == -1))
+	if(($ret == 200) || ($ret == 201))
 	{
 		print STDERR "blinkenlights:  unable to contact rollerd\n";
 		exit(1);
