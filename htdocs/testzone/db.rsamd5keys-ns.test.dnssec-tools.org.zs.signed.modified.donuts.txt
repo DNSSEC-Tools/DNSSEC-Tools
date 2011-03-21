@@ -1,10 +1,10 @@
 pastdate-a.rsamd5keys-ns.test.dnssec-tools.org:
-  Location:    db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified:329
+  Location:    db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified:376
   Error:       RRSIG record for
 	       pastdate-a.rsamd5keys-ns.test.dnssec-tools.org has expired
 
 pastdate-aaaa.rsamd5keys-ns.test.dnssec-tools.org:
-  Location:    db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified:392
+  Location:    db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified:407
   Error:       RRSIG record for
 	       pastdate-aaaa.rsamd5keys-ns.test.dnssec-tools.org has
 	       expired
@@ -13,7 +13,7 @@ futuredate-aaaa.rsamd5keys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.rsamd5keys-ns.test.dnssec-tools.org type:
 	       AAAA failed to verify: Signature may only be used in the
-	       future; after 20110503124838
+	       future; after 20110519202146
 
 reverseddates-aaaa.rsamd5keys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -47,16 +47,16 @@ baddata-aaaa.rsamd5keys-ns.test.dnssec-tools.org:
 	       baddata-aaaa.rsamd5keys-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: RSA Verification failed
 
-badsign-aaaa.rsamd5keys-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       badsign-aaaa.rsamd5keys-ns.test.dnssec-tools.org type: AAAA
-	       failed to verify: RSA Verification failed
-
 pastdate-a.rsamd5keys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-a.rsamd5keys-ns.test.dnssec-tools.org type: A
 	       failed to verify: Signature has expired since:
-	       20110304114338
+	       20110320201646
+
+badsign-aaaa.rsamd5keys-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       badsign-aaaa.rsamd5keys-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
 
 badsign-a.rsamd5keys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.rsamd5keys-ns.test.dnssec-tools.org
@@ -68,16 +68,16 @@ addedlater-withsig-A.rsamd5keys-ns.test.dnssec-tools.org:
 	       does not have an NSEC record, which is required for secure
 	       domains.
 
-futuredate-a.rsamd5keys-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       futuredate-a.rsamd5keys-ns.test.dnssec-tools.org type: A
-	       failed to verify: Signature may only be used in the future;
-	       after 20110503124838
-
 reverseddates-a.rsamd5keys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       reverseddates-a.rsamd5keys-ns.test.dnssec-tools.org type: A
 	       failed to verify: RSA Verification failed
+
+futuredate-a.rsamd5keys-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-a.rsamd5keys-ns.test.dnssec-tools.org type: A
+	       failed to verify: Signature may only be used in the future;
+	       after 20110519202146
 
 addedlater-nosig-A.rsamd5keys-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-A.rsamd5keys-ns.test.dnssec-tools.org
@@ -93,6 +93,6 @@ pastdate-aaaa.rsamd5keys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-aaaa.rsamd5keys-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature has expired since:
-	       20110304114338
+	       20110320201646
 
 18 errors found in db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified
