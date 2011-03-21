@@ -518,7 +518,7 @@ is_tail(u_char * full, u_char * tail)
 
     if (f_len == t_len) {
         if (f_len)
-            return memcmp(full, tail, f_len) == 0;
+            return namecmp(full, tail) == 0;
         else
             return 0;
     }
@@ -526,7 +526,7 @@ is_tail(u_char * full, u_char * tail)
     if (t_len > f_len)
         return FALSE;
 
-    if (memcmp(&full[f_len - t_len], tail, t_len) == 0) {
+    if (namecmp(&full[f_len - t_len], tail) == 0) {
         size_t        index = 0;
 
         while (index < (f_len - t_len)) {
@@ -732,7 +732,7 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
         (s != ns_t_nsec &&                    /* If the type is not nxt: */    \
         a->rrs_type_h == s &&                    /* does type match */        \
         a->rrs_class_h == c &&                   /* does class match */       \
-        memcmp (a->rrs_name_n,n,l)==0            /* does name match */        \
+        namecmp (a->rrs_name_n,n)==0            /* does name match */        \
         )                                                                     \
         ||                                   /* or */                         \
         (s == ns_t_nsec &&														\
@@ -740,7 +740,7 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
         a->rrs_data!=NULL &&                     /* is there data here */     \
         a->rrs_class_h == c &&                   /* does class match */       \
 		a->rrs_type_h == ns_t_nsec &&													\
-        memcmp (a->rrs_name_n,n,l)==0 &&         /* does name match */        \
+        namecmp (a->rrs_name_n,n)==0 &&         /* does name match */        \
         is_tail(a->rrs_data->rr_rdata,&r[SIGNBY])                               \
                                                  /* does sig match nxt */     \
         )                                                                     \
@@ -750,7 +750,7 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
         a->rrs_sig!=NULL &&                      /* is there a sig here */    \
         a->rrs_class_h == c &&                   /* does class match */       \
 		a->rrs_type_h == ns_t_nsec &&													\
-        memcmp (a->rrs_name_n,n,l)==0 &&         /* does name match */        \
+        namecmp (a->rrs_name_n,n)==0 &&         /* does name match */        \
         is_tail(r,&a->rrs_sig->rr_rdata[SIGNBY])                                \
                                                  /* does sig match nxt */     \
         )                                                                     \
@@ -1273,6 +1273,7 @@ lower(u_int16_t type_h, u_char * rdata, size_t len)
     case ns_t_a6: 
     case ns_t_naptr:
     case ns_t_nsec: 
+    case ns_t_rrsig: 
     default:
 
         return;
@@ -1339,18 +1340,11 @@ lower(u_int16_t type_h, u_char * rdata, size_t len)
          * The last case is RR's with names in the middle. 
          */
         /*
-         * Note: this code is never used as SIG's are the only record in
-         * this case.  SIG's are not signed, so they never are run through
-         * this code.  This is left here in case other RR's are defined in
+         * Note: this code is never used, since there are currently no 
+         * record types in this category. 
+         * This is left here in case RR's are defined in
          * this unfortunate (for them) manner.
          */
-    case ns_t_rrsig:
-
-        index = SIGNBY;
-
-        lower_name(rdata, &index);
-
-        return;
     }
 }
 
