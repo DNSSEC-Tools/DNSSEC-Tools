@@ -41,6 +41,11 @@
 #include <validator/validator.h>
 #include "validator_driver.h"
 
+#define	NAME	"validate"
+#define	VERS	"version: 1.0"
+#define	DTVERS	 "DNSSEC-Tools Version: 1.8"
+
+
 #define NO_OF_THREADS 0
 
 #if NO_OF_THREADS
@@ -75,6 +80,7 @@ static struct option prog_options[] = {
     {"root-hints", 1, 0, 'i'},
     {"wait", 1, 0, 'w'},
     {"inflight", 1, 0, 'I'},
+    {"Version", 1, 0, 'V'},
     {0, 0, 0, 0}
 };
 #endif
@@ -266,11 +272,19 @@ usage(char *progname)
     printf("                  file:<file-name>   (opened in append mode)\n");
     printf("                  net[:<host-name>:<host-port>] (127.0.0.1:1053\n");
     printf("                  syslog[:facility] (0-23 (default 1 USER))\n");
+    printf("        -V, --Version          Display version and exit\n");
     printf("Advanced Options:\n");
     printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
     printf("The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.\n");
     printf("If no arguments are given, this program runs a set of predefined test queries.\n");
     /* *INDENT-ON* */
+}
+
+void
+version(void)
+{
+    fprintf(stderr, "%s: %s\n",NAME,VERS);
+    fprintf(stderr, "%s\n",DTVERS);
 }
 
 /*============================================================================
@@ -617,7 +631,7 @@ main(int argc, char *argv[])
     // Parse the command line for a query and resolve+validate it
     int             c;
     char           *domain_name = NULL;
-    const char     *args = "c:dF:hi:I:l:w:o:pr:S:st:T:v:";
+    const char     *args = "c:dF:hi:I:l:w:o:pr:S:st:T:v:V";
     int            class_h = ns_c_in;
     int            type_h = ns_t_a;
     int             success = 0;
@@ -758,6 +772,10 @@ main(int argc, char *argv[])
         case 'l':
             label_str = optarg;
             break;
+
+        case 'V':
+            version();
+            return 0;
 
         default:
             fprintf(stderr, "Unknown option %s (c = %d [%c])\n",
