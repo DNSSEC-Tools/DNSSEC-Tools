@@ -415,7 +415,7 @@ fix_glue(val_context_t * context,
             if (next_q->qfq_query->qc_state != Q_INIT &&
                        next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
                 val_log(context, LOG_DEBUG,
-                        "fix_glue(): {%s %d %d} referral failed (%d)", name_p,
+                        "fix_glue(): {%s %d %d} referral/alias processing failed (%d)", name_p,
                         next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h,
                         next_q->qfq_query->qc_state);
             }
