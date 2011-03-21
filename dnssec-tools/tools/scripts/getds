@@ -131,7 +131,7 @@ getds - Create a DS record from DNSKEYing information
 
 =head1 SYNOPSIS
 
-getds <domain>
+  getds <domain>
 
 =head1 DESCRIPTION
 
@@ -156,7 +156,7 @@ B<getds> takes the following options:
 =item B<--hash-algorithm algorithm ALGORITHMS>
 
 This option specifies the hash algorithm to use when converting
-DNSKEYs to DS records.  It may be a comma separated list if multiple
+DNSKEYs to DS records.  It may be a comma-separated list if multiple
 algorithms are desired.  The algorithms to choose from may be either
 SHA256 or SHA1.
 
@@ -179,7 +179,7 @@ published DS records.
 
 =item B<--quiet>
 
-Produces quiet output with no explanitory headers.  I.E. it only
+Produces quiet output with no explanatory headers.  In other words, it only
 prints the DS records generated from the DNSKEYs.
 
 Note: Running with -q implies -p.
@@ -188,7 +188,7 @@ Note: Running with -q implies -p.
 
 =head1 SECURITY CONSIDERATIONS
 
-By default, getds pulls data from the live DNS.  If your DNS resolver
+By default, B<getds> pulls data from the live DNS.  If your DNS resolver
 isn't configured so that this is pulled securely, then the results
 can't be trusted.
 
