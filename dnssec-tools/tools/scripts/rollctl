@@ -162,7 +162,7 @@ sub main()
 	if(dt_confcheck(0) > 0)
 	{
 		print STDERR "rollctl:  configuration checks failed, can't send commands\n";
-		exit(-2);
+		exit(201);
 	}
 	erraction($olderr);
 
@@ -173,7 +173,7 @@ sub main()
 	if(rollmgr_running() != 1)
 	{
 		print STDERR "rollerd is not running\n";
-		exit(-1);
+		exit(200);
 	}
 
 	#
@@ -419,7 +419,7 @@ sub main()
 		if(@ARGV == 0)
 		{
 			print STDERR "rollctl: -rollksk missing zone argument\n";
-			exit(1);
+			exit(2);
 		}
 
 		foreach my $zone (@ARGV)
@@ -447,7 +447,7 @@ sub main()
 		if(@ARGV == 0)
 		{
 			print STDERR "rollctl: -rollzone missing zone argument\n";
-			exit(1);
+			exit(2);
 		}
 
 		foreach my $zone (@ARGV)
@@ -475,7 +475,7 @@ sub main()
 		if(@ARGV == 0)
 		{
 			print STDERR "rollctl: -rollzsk missing zone argument\n";
-			exit(1);
+			exit(2);
 		}
 
 		foreach my $zone (@ARGV)
@@ -544,7 +544,7 @@ sub main()
 		if(@ARGV == 0)
 		{
 			print STDERR "rollctl: -skipzone missing zone argument\n";
-			exit(1);
+			exit(2);
 		}
 
 		foreach my $zone (@ARGV)
@@ -628,7 +628,7 @@ sub main()
 		if(@ARGV == 0)
 		{
 			print STDERR "rollctl: -zonelog missing zone:loglevel argument\n";
-			exit(1);
+			exit(2);
 		}
 
 		foreach my $zone (@ARGV)
@@ -681,7 +681,7 @@ sub main()
 		if(@ARGV == 0)
 		{
 			print STDERR "zoneargs failed:  arguments are required\n";
-			$rcret++;
+			exit(2);
 		}
 		else
 		{
@@ -877,7 +877,7 @@ sub doopts
 	if($commandcount > 1)
 	{
 		print STDERR "only one command argument may be specified per execution\n";
-		exit(1);
+		exit(3);
 	}
 
 	#
@@ -986,7 +986,7 @@ sub version
 	print STDERR "$VERS\n";
 	print STDERR "$DTVERS\n";
 
-	exit(1);
+	exit(0);
 }
 
 #----------------------------------------------------------------------
@@ -1008,7 +1008,7 @@ sub showloglevels
 		print "\t$level\t\t($lnum)\n";
 	}
 
-	exit(1);
+	exit(0);
 }
 
 #-----------------------------------------------------------------------------
@@ -1291,6 +1291,26 @@ stopped.
 =item B<-help>
 
 Displays a usage message.
+
+=back
+
+=head1 EXIT CODES
+
+B<rollctl> may give the following exit codes:
+
+=over 4
+
+=item 0 - Successful execution
+
+=item 1 - Error sending the command to B<rollerd>.
+
+=item 2 - Missing argument.
+
+=item 3 - Too many commands specified.
+
+=item 200 - Rollerd is not running.
+
+=item 201 - Configuration file checks failed.
 
 =back
 
