@@ -21,6 +21,10 @@
 
 #include <arpa/inet.h>
 
+#define	NAME	"gethost"
+#define	VERS	"version: 1.0"
+#define	DTVERS	"DNSSEC-Tools Version: 1.8"
+
 #ifdef HAVE_GETOPT_LONG
 // Program options
 static struct option prog_options[] = {
@@ -29,6 +33,7 @@ static struct option prog_options[] = {
     {"family", 0, 0, 'f'},
     {"reentrant", 0, 0, 'r'},
     {"output", 0, 0, 'o'},
+    {"Version", 0, 0, 'V'},
     {0, 0, 0, 0}
 };
 #endif
@@ -56,6 +61,14 @@ usage(char *progname)
             "\t              net[:<host-name>:<host-port>] (127.0.0.1:1053\n" 
             "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
     /* *INDENT-ON* */
+    fprintf(stderr, "\t-V, --Version                   display version and exit\n");
+}
+
+void
+version(void)
+{
+    fprintf(stderr, "%s: %s\n", NAME,VERS);
+    fprintf(stderr, "%s\n", DTVERS);
 }
 
 int
@@ -87,13 +100,13 @@ main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "hrnf:o:",
+        c = getopt_long_only(argc, argv, "hrnf:o:V",
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "hrnf:o:", prog_options, &opt_index);
+        c = getopt_long(argc, argv, "hrnf:o:V", prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "hrnf:o:");
+        c = getopt(argc, argv, "hrnf:o:V");
 #endif
 
         if (c == -1) {
@@ -129,6 +142,9 @@ main(int argc, char *argv[])
                 return -1;
             }
             break;
+        case 'V':
+            version();
+            return 0;
 
         default:
             fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);

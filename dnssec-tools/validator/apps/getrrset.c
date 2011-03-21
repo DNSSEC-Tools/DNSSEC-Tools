@@ -25,12 +25,17 @@
 #include <validator/resolver.h>
 #include <validator/validator.h>
 
+#define	NAME	"getrrset"
+#define	VERS	"version: 1.0"
+#define	DTVERS	"DNSSEC-Tools Version: 1.8"
+
 #ifdef HAVE_GETOPT_LONG
 // Program options
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
     {"type", 0, 0, 't'},
     {"output", 0, 0, 'o'},
+    {"Version", 0, 0, 'V'},
     {0, 0, 0, 0}
 };
 #endif
@@ -54,6 +59,15 @@ usage(char *progname)
             "\t              file:<file-name>   (opened in append mode)\n" 
             "\t              net[:<host-name>:<host-port>] (127.0.0.1:1053\n" 
             "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
+    fprintf(stderr,
+            "\t-V, --Version       display version and exit\n");
+}
+
+void
+version(void)
+{
+    fprintf(stderr, "%s: %s\n", NAME, VERS);
+    fprintf(stderr, "%s\n", DTVERS);
 }
 
 
@@ -127,13 +141,13 @@ main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "ho:t:",
+        c = getopt_long_only(argc, argv, "ho:t:V",
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "ho:t:", prog_options, &opt_index);
+        c = getopt_long(argc, argv, "ho:t:V", prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "ho:t:");
+        c = getopt(argc, argv, "ho:t:V");
 #endif
 
         if (c == -1) {
@@ -160,6 +174,9 @@ main(int argc, char *argv[])
                 return -1;
             }
             break;
+        case 'V':
+            version();
+            return 0;
 
         default:
             fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);
