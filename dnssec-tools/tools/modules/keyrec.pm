@@ -59,7 +59,8 @@ use strict;
 use Net::DNS::SEC::Tools::conf;
 use Fcntl qw(:DEFAULT :flock);
 
-our $VERSION = "1.8";
+our $VERSION = "1.9";
+our $MODULE_VERSION = "1.9.0";
 
 our @ISA = qw(Exporter);
 
