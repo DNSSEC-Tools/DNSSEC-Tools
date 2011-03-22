@@ -566,11 +566,11 @@ sub zonecnts
 		# Atomize the line.
 		#
 		chomp $line;
-		$line =~ /^(.+)\/(.+)\W+(\w+)\W+([KZ]SK) (\d):/;
-		$zone = $1;
-		$state = $3;
-		$roll = $4;
-		$num = $5;
+		$line =~ /^((.+)\/(.+))\s+(\S+)\s+([KZ]SK) (\d)/;
+		$zone  = $1;
+		$state = $4;
+		$roll  = $5;
+		$num   = $6;
 
 		#
 		# If the number atom is 0, we're not rolling.
