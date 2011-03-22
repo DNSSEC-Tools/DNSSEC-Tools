@@ -1,0 +1,56 @@
+diff -r 30a246100173 mail/components/preferences/advanced.xul
+--- a/mail/components/preferences/advanced.xul	Tue Mar 22 10:00:04 2011 +0000
++++ b/mail/components/preferences/advanced.xul	Tue Mar 22 09:30:18 2011 -0400
+@@ -141,6 +141,9 @@
+       <preference id="security.disable_button.openDeviceManager"
+                   name="security.disable_button.openDeviceManager"
+                   type="bool"/>
++      <preference id="security.dnssec.dnssecBehavior"
++                  name="security.dnssec.dnssecBehavior"
++                  type="int"/>
+     </preferences>
+ 
+ #ifdef HAVE_SHELL_SERVICE
+@@ -155,6 +158,7 @@
+         <tab id="networkingTab" label="&itemNetworking.label;"/>
+         <tab label="&itemUpdate.label;"/>
+         <tab label="&itemCertificates.label;"/>
++        <tab label="&itemDNSSEC.label;"/>
+       </tabs>
+ 
+       <tabpanels flex="1">
+@@ -428,6 +432,19 @@
+           </vbox>
+ #endif
+         </tabpanel>
++        <!-- DNS Security --> 
++        <tabpanel orient="vertical">
++          <description>&dnssec.description;</description>
++          <separator class="thin"/>
++          <groupbox>
++            <radiogroup id="dnssecBehaviour" preference="security.dnssec.dnssecBehavior">
++                <radio value="1" label="&neverDNSSecure.label;"
++                       accesskey="&neverDNSSecure.accesskey;"/>
++                <radio value="0" label="&possibleDNSSecure.label;"
++                       accesskey="&possibleDNSSecure.accesskey;"/>
++            </radiogroup>
++          </groupbox>
++        </tabpanel>
+       </tabpanels>
+     </tabbox>
+     <separator/>
+diff -r 30a246100173 mail/locales/en-US/chrome/messenger/preferences/advanced.dtd
+--- a/mail/locales/en-US/chrome/messenger/preferences/advanced.dtd	Tue Mar 22 10:00:04 2011 +0000
++++ b/mail/locales/en-US/chrome/messenger/preferences/advanced.dtd	Tue Mar 22 09:30:18 2011 -0400
+@@ -106,3 +106,11 @@
+ <!ENTITY validation.accesskey           "V">
+ <!ENTITY viewSecurityDevices.label      "Security Devices">
+ <!ENTITY viewSecurityDevices.accesskey  "S">
++
++<!-- DNS Security -->
++<!ENTITY itemDNSSEC.label               "DNS Security">
++<!ENTITY dnssec.description             "Enforce or Ignore System DNS Security Policy.">
++<!ENTITY neverDNSSecure.label           "Ignore DNS security">
++<!ENTITY neverDNSSecure.accesskey       "N">
++<!ENTITY possibleDNSSecure.label        "Enforce DNS Security">
++<!ENTITY possibleDNSSecure.accesskey    "E">
