@@ -4,6 +4,7 @@
 # file distributed with this software for details
 #
 #
+
 package Net::DNS::SEC::Tools::QWPrimitives;
 
 use strict;
@@ -12,7 +13,8 @@ require Exporter;
 use Net::DNS::SEC::Tools::conf;
 
 
-our $VERSION = "1.2";
+our $VERSION = "1.9";
+our $MODULE_VERSION = "1.9.0";
 
 our @ISA = qw(Exporter);
 
