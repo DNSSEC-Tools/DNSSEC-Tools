@@ -29,6 +29,13 @@ use Net::DNS::SEC::Tools::BootStrap;
 
 use Getopt::Long qw(:config no_ignore_case_always);
 
+#
+# Version information.
+#
+my $NAME   = "rollrec-editor";
+my $VERS   = "$NAME version: 1.9.2";
+my $DTVERS = "DNSSEC-Tools Version: 1.9";
+
 ######################################################################
 #
 # DESTROY THESE DATA!!!
@@ -54,13 +61,6 @@ dnssec_tools_load_mods(
 			'Tk::Pane'		=> "",
 			'Tk::Table'		=> "",
 		      );
-
-#
-# Version information.
-#
-my $NAME   = "rollrec-editor";
-my $VERS   = "$NAME version: 1.8.2";
-my $DTVERS = "DNSSEC-Tools Version: 1.8";
 
 #######################################################################
 #

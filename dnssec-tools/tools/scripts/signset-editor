@@ -50,6 +50,13 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::BootStrap;
 
+#
+# Version information.
+#
+my $NAME   = "signset-editor";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.9";
+
 ######################################################################
 #
 # Detect required Perl modules.
@@ -60,13 +67,6 @@ dnssec_tools_load_mods(
 			'Tk::Pane'	=> "",
 			'Tk::Table'	=> "",
 		      );
-
-#
-# Version information.
-#
-my $NAME   = "signset-editor";
-my $VERS   = "$NAME version: 1.0";
-my $DTVERS = "DNSSEC-Tools Version: 1.8";
 
 
 #

@@ -19,6 +19,13 @@ use Net::DNS::SEC::Tools::BootStrap;
 
 use Getopt::Long qw(:config no_ignore_case_always);
 
+#
+# Version information.
+#
+my $NAME   = "bubbles";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.9";
+
 my %key_lists;
 my @ssnames;
 my @krnames;
@@ -35,13 +42,6 @@ dnssec_tools_load_mods(
 			'Tk::Pane'		=> "",
 			'Tk::Table'		=> "",
 		      );
-
-#
-# Version information.
-#
-my $NAME   = "bubbles";
-my $VERS   = "$NAME version: 1.0";
-my $DTVERS = "DNSSEC-Tools Version: 1.8";
 
 #######################################################################
 #
