@@ -1,4 +1,11 @@
 #!/usr/bin/perl
+#
+# Copyright 2008-2011 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# getdnskeys
+#
 
 use strict;
 use Net::DNS;
@@ -11,7 +18,7 @@ use Net::DNS::SEC::Tools::QWPrimitives;
 #
 my $NAME   = "getdnskeys";
 my $VERS   = "$NAME version: 0.9.2";
-my $DTVERS = "DNSSEC-Tools Version: 1.8";
+my $DTVERS = "DNSSEC-Tools Version: 1.9";
 
 ######################################################################
 # detect needed perl module requirements
@@ -22,7 +29,7 @@ my %opts;
 my @origargs = @ARGV;
 
 DTGetOptions(\%opts,
-		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 1.8"],
+		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 1.9"],
 		['GUI:separator',"DNS Configuration:"],
 		['k','Only look for key signing keys (KSK) and ignore others'],
 
