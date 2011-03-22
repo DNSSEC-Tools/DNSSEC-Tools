@@ -9,7 +9,8 @@ package Net::DNS::SEC::Tools::BootStrap;
 use strict;
 require Exporter;
 
-our $VERSION = "1.0";
+our $VERSION = "1.9";
+our $MODULE_VERSION = "1.9.0";
 
 our @ISA = qw(Exporter);
 
