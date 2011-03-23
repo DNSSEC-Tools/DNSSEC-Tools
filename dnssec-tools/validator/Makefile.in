@@ -69,7 +69,7 @@ subdirinstall:
 
 localinstall:
 	$(INSTALL) libval-config $(DESTDIR)$(bindir)
-	$(INSTALL) include/validator-config.h $(includedir)
+	$(INSTALL) include/validator-config.h $(DESTDIR)$(includedir)
 
 subdirclean:
 	@for i in $(SUBDIRS) ; do \
