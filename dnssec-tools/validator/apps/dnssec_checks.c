@@ -23,7 +23,17 @@
         return CHECK_FAILED;                               \
     } while(0);
 
+#define RETURN_SUCCESS_BUF(msg, buffer, buffer_len)          \
+    do {                                                   \
+        strncpy(buffer, msg, buffer_len-1);                \
+        buffer[buffer_len-1] = '\0';                       \
+        return CHECK_SUCCEEDED;                               \
+    } while(0);
+
 #define RETURN_ERROR(msg)                        \
+    RETURN_ERROR_BUF(msg, buf, buf_len);
+
+#define RETURN_SUCCESS(msg)                        \
     RETURN_ERROR_BUF(msg, buf, buf_len);
 
 int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
@@ -110,8 +120,6 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
             if ((ttl & RES_USE_DNSSEC) == RES_USE_DNSSEC)
                 RETURN_ERROR("The EDNS0 flag failed to include the expected DO bit");
 
-            printf("do bit returned\n");
-
             /* edns0 size = int(ns_rr_class(rr)) */
             break;
         }
@@ -143,7 +151,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
         RETURN_ERROR("failed to find an expected RRSIG in a DNSSEC valid query");
 
     free_name_server(&ns);
-    return rc;
+    RETURN_SUCCESS("SUCCEEDED: Query with DO bit worked as expected");
 }
 
 int main(int argc, char *argv[]) {
