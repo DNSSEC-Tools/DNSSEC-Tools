@@ -51,7 +51,7 @@ extern          "C" {
 #endif
 
 #ifndef RES_USE_DNSSEC
-#define RES_USE_DNSSEC  0x00200000
+#define RES_USE_DNSSEC  0x00800000
 #endif
 
 #define RES_EDNS0_DEFAULT 4096
