@@ -6403,13 +6403,12 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
 {
 
     int             retval;
-    struct queries_for_query *top_q = NULL;
     struct queries_for_query *added_q = NULL;
     struct queries_for_query *queries = NULL;
     val_async_status         *as;
     val_context_t            *context;
     int data_received = 0;
-    int data_missing = 1;
+    int data_missing = 1, more_data;
 
     if ((domain_name == NULL) || (async_status == NULL))
         return VAL_BAD_ARGUMENT;
@@ -6466,12 +6465,14 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
                               as->val_as_class, flags & VAL_QFLAGS_USERMASK,
                               &added_q);
     if (VAL_NO_ERROR == retval) {
+        as->val_as_top_q = added_q;
+
         /*
          * Data might already be present in the cache
          */
         /** XXX by-pass this functionality through flags if needed */
-        retval = ask_cache(context, &as->val_as_queries,
-                           &data_received, &data_missing);
+        retval = _ask_cache_one(context, &as->val_as_queries, added_q,
+                                &data_received, &data_missing, &more_data);
         // xxx-rks did we get answer? if so, return results?
         if ((VAL_NO_ERROR == retval) &&
             (added_q->qfq_query->qc_state == Q_ANSWERED)) {
@@ -6544,7 +6545,7 @@ static int
 _async_check_one(val_async_status *as, fd_set *pending_desc,
                      int *nfds, u_int32_t flags)
 {
-    struct queries_for_query   *qfq = NULL, *top_q;
+    struct queries_for_query   *qfq, *initial_q;
     val_context_t              *context;
     struct timeval             closest_event, now;
     int retval, data_received, data_missing, done;
@@ -6554,9 +6555,10 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         return VAL_BAD_ARGUMENT;
 
     context = as->val_as_ctx;
+    val_log(context,LOG_DEBUG,"as %p %5d _async_check_one", as, memdebug++);
 
   try_again:
-    top_q = qfq = as->val_as_queries;
+    initial_q = qfq = as->val_as_queries;
 
     data_missing = 1; // result->val_as_flags |= VAL_RC_DATA_MISSING
     data_received = 0;
@@ -6611,7 +6613,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     if (data_received || !data_missing) {
         struct val_internal_result *w_results = NULL;
 
-        retval = construct_authentication_chain(context, top_q,
+        retval = construct_authentication_chain(context, as->val_as_top_q,
                                                 &as->val_as_queries,
                                                 &w_results, &as->val_as_results,
                                                 &done);
@@ -6642,7 +6644,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     }
 
     /* check if more queries have been added */
-    if (top_q != as->val_as_queries)
+    if (initial_q != as->val_as_queries)
         goto try_again;
 
     if ((VAL_NO_ERROR == retval) && (NULL != as->val_as_results)) {
