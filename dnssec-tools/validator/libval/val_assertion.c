@@ -6343,8 +6343,8 @@ val_async_status_free(val_async_status *as)
     val_log(as->val_as_ctx, LOG_DEBUG, "releasing as %p", as);
 
     /* remove all pending queries from context list */
-    for (q = as->val_as_queries; q; q = q->qfq_next)
-        _free_qfq_chain(as->val_as_ctx, q);
+    _free_qfq_chain(as->val_as_ctx, as->val_as_queries);
+    as->val_as_queries = NULL;
 
     if (as->val_as_results)
         val_free_result_chain(as->val_as_results);
