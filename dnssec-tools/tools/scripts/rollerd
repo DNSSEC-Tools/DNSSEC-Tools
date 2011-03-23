@@ -5177,6 +5177,10 @@ signed after every sleep, which may be expensive computationally.
 Note:  The zone files are not updated or installed at this time.
 Manual copying and installation is still needed.
 
+Note: During ZSK and KSK rolling phases 1 and 3 the zone will not be
+signed since it is critical to wait for cache timeouts during this
+phase of rolling keys.
+
 =item B<-directory dir>
 
 Sets the B<rollerd> execution directory.  This must be a valid directory.
