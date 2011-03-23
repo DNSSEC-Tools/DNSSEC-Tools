@@ -40,6 +40,7 @@ DTGetOptions(config => [qw(allow_zero)],
 #		['o|obsolete', 'Show obsolete keys/etc as well as current'],
 
 		['z|zone=s',   'Show information only about zone1,zone2,...'],
+		['p|phase=i',  'Show only zones in rollerd phase N (0 = any rolling phase)'],
 
 	        ['k|key-data',    'Show keying data (default = everything)'],
 	        ['r|roll-status', 'Show rolling status (default = everything)'],
@@ -65,6 +66,8 @@ my %zoneinfo;
 
 my $todaystime = time();
 my $gmtime = str2time(scalar gmtime());
+
+my @rolltypes = qw(roll);  # keywords for how rollrec data is stored.
 
 # Ensure the requested level of detail is within our acceptable range.
 if (($opts{'d'} < 1) || ($opts{'d'} > 9)) {
@@ -465,12 +468,34 @@ sub print_roll {
     return $type;
 }
 
+sub find_zone_phases {
+    my ($phaseNeeded) = @_;
+    my @zones;
+
+    foreach my $zone (%rrdata) {
+	foreach my $rolltype (@rolltypes) {
+	    if ($phaseNeeded > 0) {
+		if ($rrdata{$zone}{$rolltype}[0]{'zskphase'} eq $phaseNeeded ||
+		    $rrdata{$zone}{$rolltype}[0]{'kskphase'} eq $phaseNeeded) {
+		    push @zones, $zone;
+	        }
+	    } elsif ($rrdata{$zone}{$rolltype}[0]{'zskphase'} > 0 ||
+		     $rrdata{$zone}{$rolltype}[0]{'kskphase'} > 0) {
+		push @zones, $zone;
+	    }
+	}
+    }
+    return @zones;
+}
+
 sub print_zone_information {
     my $zonelineformat = "%-30s\n";
 
     my @zones;
     if ($opts{'z'}) {
 	@zones = split(/\s*,\s*/, $opts{'z'});
+    } if (exists($opts{'p'})) {
+	@zones = find_zone_phases($opts{'p'});
     } else {
 	@zones = keys(%krfzones);
     }
@@ -503,7 +528,7 @@ sub print_zone_information {
 	# print each roller roll
 	my $being_rolled;
 	if ($opts{'r'} || !($opts{'k'} || $opts{'r'})) {
-	    foreach my $rolltype (qw(roll)) {
+	    foreach my $rolltype (@rolltypes) {
 		foreach my $roll (@{$rrdata{$zone}{$rolltype}}) {
 		    $being_rolled = print_roll($rolltype, $rrlookup{$roll->{'rollrec_name'}});
 		}
