@@ -1868,7 +1868,7 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
      * Re-initialize caches 
      */
     for(q = ctx->q_list; q; q=q->qc_next) {
-        free_query_chain_structure(q);
+        clear_query_chain_structure(q);
     }
 
     ctx->dnsval_l = dlist;
@@ -2604,7 +2604,7 @@ val_add_valpolicy(val_context_t *context,
     for(q=ctx->q_list; q; q=q->qc_next) {
         /* Should never fail when holding above locks */
         if (NULL != namename(q->qc_name_n, zone_n)) {
-            free_query_chain_structure(q);
+            clear_query_chain_structure(q);
             if (pol_entry->exp_ttl > 0)
                 q->qc_ttl_x = pol_entry->exp_ttl;
         }
@@ -2675,7 +2675,7 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
     for(q=ctx->q_list; q; q=q->qc_next) {
         /* Should never fail when holding above locks */
         if (NULL != namename(q->qc_name_n, p->zone_n)) {
-            free_query_chain_structure(q);
+            clear_query_chain_structure(q);
         }
     }
     

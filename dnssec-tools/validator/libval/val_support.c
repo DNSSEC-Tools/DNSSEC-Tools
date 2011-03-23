@@ -557,7 +557,7 @@ add_to_set(struct rrset_rec *rr_set, size_t rdata_len_h,
 
     rr->rr_rdata = (u_char *) MALLOC(rdata_len_h * sizeof(u_char));
     if (rr->rr_rdata == NULL) {
-        free(rr);
+        FREE(rr);
         return VAL_OUT_OF_MEMORY;
     }
 
@@ -604,7 +604,7 @@ add_as_sig(struct rrset_rec *rr_set, size_t rdata_len_h,
 
     rr->rr_rdata = (u_char *) MALLOC(rdata_len_h * sizeof(u_char));
     if (rr->rr_rdata == NULL) {
-        free(rr);
+        FREE(rr);
         return VAL_OUT_OF_MEMORY;
     }
 
@@ -1455,8 +1455,10 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
             /*
              * cr is a copy of an existing record, forget it... 
              */
-            FREE(cr->rr_rdata);
-            FREE(cr);
+            if (cr->rr_next) { // old code was freeing w/out checking
+                cr->rr_next = NULL;
+            }
+            res_sq_free_rr_recs(&cr);
             return DUPLICATE;
         } else if (ret_val > 0
                    || (ret_val == 0 && length == cr->rr_rdata_length)) {
@@ -1485,8 +1487,10 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
                     /*
                      * cr is a copy of an existing record, forget it... 
                      */
-                    FREE(cr->rr_rdata);
-                    FREE(cr);
+                    if (cr->rr_next) { // old code was freeing w/out checking
+                        cr->rr_next = NULL;
+                    }
+                    res_sq_free_rr_recs(&cr);
                     return DUPLICATE;
                 } else if (ret_val > 0
                            || (ret_val == 0

@@ -199,6 +199,36 @@ free_val_rrset_members(struct val_rrset_rec *r)
             
 }
 
+void
+free_val_rrset(struct val_rrset_rec *r)
+{
+    if (r == NULL)
+        return;
+
+    free_val_rrset_members(r);
+    FREE(r);
+}
+
+static void
+val_free_authentication_chain_structure(struct val_authentication_chain *trust)
+{
+    if (NULL == trust)
+        return;
+
+    if (NULL != trust->val_ac_rrset) {
+        free_val_rrset(trust->val_ac_rrset);
+        trust->val_ac_rrset = NULL;
+    }
+
+    if (NULL != trust->val_ac_trust) {
+        // this ptr should be copied somewhere and cleared by the
+        // caller to avoid this message.
+        val_log(NULL,LOG_WARNING,
+                "ac_trust not cleared in free_authentication_chain_structure");
+    }
+    FREE(trust);
+}
+
 /*
  * Create a "result" list whose elements point to assertions and also have their
  * validated result 
@@ -211,6 +241,8 @@ val_free_result_chain(struct val_result_chain *results)
     struct val_authentication_chain *trust;
     int             i;
 
+    if (NULL == results)
+        return;
     while (NULL != (prev = results)) {
         results = results->val_rc_next;
 
@@ -219,8 +251,8 @@ val_free_result_chain(struct val_result_chain *results)
          * we had a raw rrset, free the latter 
          */
         if (!prev->val_rc_answer && prev->val_rc_rrset) {
-            free_val_rrset_members(prev->val_rc_rrset);
-            FREE(prev->val_rc_rrset);
+            free_val_rrset(prev->val_rc_rrset);
+            prev->val_rc_rrset = NULL;
         } else {
 
             /*
@@ -229,13 +261,8 @@ val_free_result_chain(struct val_result_chain *results)
             while (NULL != (trust = prev->val_rc_answer)) {
 
                 prev->val_rc_answer = trust->val_ac_trust;
-
-                if (trust->val_ac_rrset != NULL) {
-                    free_val_rrset_members(trust->val_ac_rrset);
-                    FREE(trust->val_ac_rrset);
-                }
-
-                FREE(trust);
+                trust->val_ac_trust = NULL;
+                val_free_authentication_chain_structure(trust);
             }
         }
 
@@ -252,11 +279,8 @@ val_free_result_chain(struct val_result_chain *results)
 
             while (NULL != (trust = prev->val_rc_proofs[i])) {
                 prev->val_rc_proofs[i] = trust->val_ac_trust;
-                if (trust->val_ac_rrset != NULL) {
-                    free_val_rrset_members(trust->val_ac_rrset);
-                    FREE(trust->val_ac_rrset);
-                }
-                FREE(trust);
+                trust->val_ac_trust = NULL;
+                val_free_authentication_chain_structure(trust);
             }
         }
 
@@ -288,9 +312,11 @@ init_query_chain_node(struct val_query_chain *q)
     q->qc_referral = NULL;
 }
 
-void 
-free_query_chain_structure(struct val_query_chain *queries)
+static void 
+_release_query_chain_structure(struct val_query_chain *queries)
 {
+    val_res_cancel(queries);
+
     if (queries->qc_zonecut_n != NULL) {
         FREE(queries->qc_zonecut_n);
         queries->qc_zonecut_n = NULL;
@@ -326,7 +352,25 @@ free_query_chain_structure(struct val_query_chain *queries)
         res_async_query_free(queries->qc_ea);
         queries->qc_ea = NULL;
     }
+}
 
+void
+free_query_chain_structure(struct val_query_chain *queries)
+{
+    if (NULL == queries)
+       return;
+
+    _release_query_chain_structure(queries);
+    FREE(queries);
+}
+
+void 
+clear_query_chain_structure(struct val_query_chain *queries)
+{
+    if (NULL == queries)
+       return;
+
+    _release_query_chain_structure(queries);
     init_query_chain_node(queries);
 }
 
@@ -623,7 +667,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                         snprintf(name_p, sizeof(name_p), "unknown/error");
                     val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %d %d}", 
                                 name_p, added_q->qc_class_h, added_q->qc_type_h);
-                    free_query_chain_structure(added_q);
+                    clear_query_chain_structure(added_q);
                 }
 
         }
@@ -1362,6 +1406,7 @@ add_to_authentication_chain(struct val_digested_auth_chain **assertions,
 
         new_as = (struct val_digested_auth_chain *)
             MALLOC(sizeof(struct val_digested_auth_chain));
+        // XXX TODO handle out of memory?
 
         new_as->val_ac_rrset.ac_data = copy_rrset_rec(next_rr);
 
@@ -1865,8 +1910,7 @@ clone_val_rrset(struct rrset_rec *old_rrset,
     return VAL_NO_ERROR;
 
   err:
-    free_val_rrset_members(*new_rrset);
-    FREE(*new_rrset);
+    free_val_rrset(*new_rrset);
     *new_rrset = NULL;
     return retval;
 }
@@ -2005,7 +2049,7 @@ transform_authentication_chain(val_context_t *context,
             (retval =
              clone_val_rrset(o_ac->val_ac_rrset.ac_data, 
                              &n_ac->val_ac_rrset))) {
-            FREE(n_ac);
+            val_free_authentication_chain_structure(n_ac);
             goto err;
         }
 
@@ -2034,11 +2078,8 @@ transform_authentication_chain(val_context_t *context,
     while (*a_chain) {
         n_ac = *a_chain;
         *a_chain = (*a_chain)->val_ac_trust;
-        if (n_ac->val_ac_rrset) {
-            free_val_rrset_members(n_ac->val_ac_rrset);
-            FREE(n_ac->val_ac_rrset);
-        }
-        FREE(n_ac);
+        n_ac->val_ac_trust = NULL;
+        val_free_authentication_chain_structure(n_ac);
     }
     return retval;
 
@@ -4516,12 +4557,7 @@ verify_and_validate(val_context_t * context,
                 /*
                  * free the result list 
                  */
-                cur_res = *results;
-                while (cur_res) {
-                    temp_res = cur_res->val_rc_next;
-                    FREE(cur_res);
-                    cur_res = temp_res;
-                }
+                _free_w_results(*results);
                 *results = NULL;
                 return VAL_OUT_OF_MEMORY;
             }
@@ -4989,12 +5025,8 @@ verify_and_validate(val_context_t * context,
                     top_q->qc_flags |= VAL_QUERY_USING_DLV; 
 
                     /* free up all results */
-                    res = *results;
-                    while (res) {
-                        *results = res->val_rc_next;
-                        FREE(res);
-                        res = *results;
-                    }
+                    _free_w_results(*results);
+                    *results = NULL;
                     *done = 0;
                     return VAL_NO_ERROR;
                 }
@@ -6583,8 +6615,13 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
                                                 &as->val_as_queries,
                                                 &w_results, &as->val_as_results,
                                                 &done);
-        if (done)
+        if (done) {
             as->val_as_flags |= VAL_AS_DONE;
+            val_log(context, LOG_DEBUG, "as %p _async_check_one/DONE", as);
+        } else {
+            val_free_result_chain(as->val_as_results);
+            as->val_as_results = NULL;
+        }
 
         _free_w_results(w_results);
 
@@ -6596,8 +6633,11 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     }
 
     if ((VAL_NO_ERROR == retval) && (as->val_as_results)) {
+        char name_p[NS_MAXDNAME];
+        if (-1 == ns_name_ntop(as->val_as_domain_name_n, name_p, sizeof(name_p)))
+            snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log_authentication_chain(context, LOG_NOTICE,
-                                     as->val_as_domain_name_n, as->val_as_class,
+                                     name_p, as->val_as_class,
                                      as->val_as_type, as->val_as_results);
     }
 
@@ -6621,8 +6661,8 @@ int
 val_async_check(val_context_t *context, fd_set *pending_desc,
                 int *nfds, u_int32_t flags)
 {
-    val_async_status           *as, *completed = NULL;
-    struct queries_for_query   *qfq = NULL, *top_q;
+    val_async_status           *as, *next, *completed = NULL;
+    struct queries_for_query   *qfq = NULL;
     int retval, data_received, data_missing;
 
     if ((NULL == context) || (pending_desc == NULL) || (NULL == nfds))
@@ -6635,8 +6675,8 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
     CTX_LOCK_VALPOL_SH(context);
     CTX_LOCK_ACACHE(context);
 
-    for (as = context->as_list; as; as = as->val_as_next) {
-
+    for (as = context->as_list; as; as = next) {
+        next = as->val_as_next;
         if (as->val_as_flags & VAL_AS_DONE)
             continue;
 
@@ -6645,11 +6685,11 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
             continue; /* keep trying other requests */
 
         if (as->val_as_flags & VAL_AS_DONE) {
-            /*
-             * if done, remove from context and add to list of
-             * user callbacks
-             */
+            /** if done, remove from context */
+            val_log(context, LOG_DEBUG, "as %p completed", as);
             val_context_as_remove(context, as);
+
+            /** add to completed list for callbacks */
             as->val_as_next = completed;
             completed = as;
         }
