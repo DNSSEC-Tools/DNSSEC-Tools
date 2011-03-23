@@ -83,16 +83,33 @@ print_zone_information();
 #
 
 my %krfdata;
-my %krflookup;
+my %krfkeys;
+my %krfzones;
+my %krfsets;
 
 sub remember_keyrecs {
     my @krnames = keyrec_names();
     foreach my $krn (@krnames) {
 	debug("looking up: $krn\n");
 	my $krf = keyrec_fullrec($krn);
-	if ($krf->{'keyrec_type'}) {
-	    push @{$krfdata{$krf->{'zonename'}}{$krf->{'keyrec_type'}}}, $krf;
-	    $krflookup{$krf->{'keyrec_name'}} = $krf;
+
+	# err....  If it doesn't know what it is, then we certainly won't.
+	next if (!defined($krf->{'keyrec_type'}));
+
+	# generically store it
+	push @{$krfdata{$krf->{'zonename'}}{$krf->{'keyrec_type'}}}, {%$krf};
+
+	# store by type
+
+	if ($krf->{'keyrec_type'} eq 'zone') {
+	    # zones
+	    $krfzones{$krf->{'keyrec_name'}}, $krf;
+	} elsif ($krf->{'keyrec_type'} eq 'set') {
+	    # sets 
+	    $krfsets{$krf->{'zonename'}}{$krf->{'set_type'}} = {%$krf};
+	} else {
+	    # keys
+	    $krfkeys{$krf->{'zonename'}}{$krf->{'keyrec_name'}} = {%$krf};
 	}
     }
 }
@@ -425,7 +442,7 @@ sub print_zone_information {
     if ($opts{'z'}) {
 	@zones = split(/\s*,\s*/, $opts{'z'});
     } else {
-	@zones = keys(%krfdata);
+	@zones = keys(%krfzones);
     }
     foreach my $zone (@zones) {
 	next if ($zone eq '');
@@ -435,19 +452,8 @@ sub print_zone_information {
 	# print each active key
 	if ($opts{'k'} || !($opts{'k'} || $opts{'r'})) {
 	    foreach my $keytype (qw(kskpub kskcur zskpub zskcur)) {
-		my @keyset = ();
-
-		# for each keytype, look up the set containing the key(s)
-		# print the resulting key.
-		my $set = $krflookup{$krflookup{$zone}{$keytype}};
-		next if (!defined($set));
-
-		# Divide the keyset into its component keys.
-		@keyset = split / /, $set->{'keys'};
-
-		# Print the info for each key in the keyset.
-		foreach my $keyname (sort(@keyset)) {
-		    print_key($keytype, $krflookup{$keyname});
+		foreach my $keyname (split(/ /, $krfsets{$zone}{$keytype}{'keys'})) {
+		    print_key($keytype, $krfkeys{$zone}{$keyname});
 		}
 	    }
 	}
