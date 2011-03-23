@@ -1544,6 +1544,11 @@ sub ksk_phase5
 		rolllog_log(LOG_ERR,$rname,"KSK phase 5:  automatic keyset transfer not yet supported");
 		return;
 	}
+	elsif(($dtconf{'admin-email'}  eq 'nomail') ||
+	      ($rrr->{'administrator'} eq 'nomail'))
+	{
+		rolllog_log(LOG_INFO,$rname,"KSK phase 5:  admin must transfer keyset");
+	}
 	else
 	{
 		my $subject;			# Subject for email to admin.
@@ -2709,6 +2714,15 @@ sub optsandargs
 	$loglevel_save = $loglevel;
 	rolllog_level($loglevel,1);
 	rolllog_file($logfile,1);
+
+	#
+	# Set a dummy value to turn off KSK phase 5 mail, iff no recipient
+	# has been set.
+	#
+	if(!exists($dtconf{'admin-email'}))
+	{
+		$dtconf{'admin-email'} = 'nomail';
+	}
 
 	#
 	# Set the logging timezone.
