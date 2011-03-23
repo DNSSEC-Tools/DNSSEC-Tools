@@ -103,7 +103,7 @@ sub remember_keyrecs {
 
 	if ($krf->{'keyrec_type'} eq 'zone') {
 	    # zones
-	    $krfzones{$krf->{'keyrec_name'}}, $krf;
+	    $krfzones{$krf->{'keyrec_name'}} = $krf;
 	} elsif ($krf->{'keyrec_type'} eq 'set') {
 	    # sets 
 	    $krfsets{$krf->{'zonename'}}{$krf->{'set_type'}} = {%$krf};
@@ -444,6 +444,7 @@ sub print_zone_information {
     } else {
 	@zones = keys(%krfzones);
     }
+
     foreach my $zone (@zones) {
 	next if ($zone eq '');
 	
