@@ -34,6 +34,8 @@
 #else
 #include "arpa/header.h"
 #endif
+#else
+#include <arpa/header.h>
 #endif                          /* NAMESER_HAS_HEADER */
 
 #include <validator/resolver.h>
