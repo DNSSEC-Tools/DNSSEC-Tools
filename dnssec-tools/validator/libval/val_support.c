@@ -904,6 +904,9 @@ decompress(u_char ** rdata,
     case ns_t_nsec:
     default:
         new_size = (size_t) * rdata_len_h;
+        if (new_size == 0)
+            return VAL_NO_ERROR;
+
         *rdata = (u_char *) MALLOC(new_size * sizeof(u_char));
         if (*rdata == NULL)
             return VAL_OUT_OF_MEMORY;
