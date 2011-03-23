@@ -285,7 +285,6 @@ val_free_context(val_context_t * context)
     while (NULL != (q = context->q_list)) {
         context->q_list = q->qc_next;
         free_query_chain_structure(q);
-        FREE(q);
     }
 
 #ifndef VAL_NO_ASYNC
@@ -331,6 +330,10 @@ val_context_as_remove(val_context_t *context, val_async_status *as)
         } /* for */
     } /* as->val_as_ctx */
 
+    if (curr) {
+        curr->val_as_next = NULL;
+        curr->val_as_ctx = NULL;
+    }
     return VAL_NO_ERROR;
 }
 #endif
