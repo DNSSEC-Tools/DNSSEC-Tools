@@ -15,7 +15,7 @@ extern          "C" {
 #include <stdarg.h>
 #include <validator/val_errors.h>
 
-// #include <arpa/nameser.h>
+#include <arpa/nameser.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/stat.h>
