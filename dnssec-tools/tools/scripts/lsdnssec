@@ -634,17 +634,55 @@ B<lsdnssec>.
 
 =over
 
+=item B<-z ZONENAME1[,ZONENAME2]>
+
+=item B<--zone=ZONENAME1[,ZONENAME2]>
+
+Only prints information about the named zone(s).
+
+=item B<-p NUMBER>
+
+=item B<--phase=NUMBER>
+
+Only prints information about zones currently being rolled by B<rollerd>
+and where either a zsk or a ksk rollover is taking place and is in
+phase NUMBER.
+
+If the phase NUMBER is specified as 0, then any zone in any rolling
+phase will be printed (but not zones that aren't being rolled at all).
+
+This flag is especially useful to find all of your zones that are
+currently in KSK rolling phase 6, which requires operator intervention
+to propegate the new DS records into the parent zone.
+
 =item B<-r>
+
+=item B<--roll-status>
 
 Show only rolling information from the rollrec files.  By default both
 roll-state and key information is shown.
 
 =item B<-k>
 
+=item B<--key-data>
+
 Show only keying information from the krf files.  By default both
 roll-state and key information is shown.
 
+=item B<-K>
+
+=item B<--key-gen-time>
+
+Normally B<rollerd> calculates the age of a key based on the last time a
+key was rolled.  However, it's also possible to calculate the age of a
+key based on the different between now and when it was created (which
+was typically before the rolling began).  The I<-K> flag switches to
+this second mode of key age calculation (which will not match how
+B<rollerd> actually performs).
+
 =item B<-d 1-9>
+
+=item B<--detail 1-9>
 
 Controls the amount of information shown in the output.  A level of 9
 shows everything; a level of 1 shows a minimal amount.  The
