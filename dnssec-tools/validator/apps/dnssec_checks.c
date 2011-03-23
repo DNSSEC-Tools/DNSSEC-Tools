@@ -16,7 +16,6 @@
 #define CHECK_SUCCEEDED 0
 #define CHECK_FAILED    1
 
-
 #define RETURN_ERROR_BUF(msg, buffer, buffer_len)          \
     do {                                                   \
         strncpy(buffer, msg, buffer_len-1);                \
