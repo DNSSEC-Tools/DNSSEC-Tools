@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <strings.h>
+#include <arpa/nameser.h>
 #include <validator/validator.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
