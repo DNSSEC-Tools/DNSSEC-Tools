@@ -136,7 +136,7 @@ bind_to_random_source(int s)
     struct sockaddr_in *sa = (struct sockaddr_in *) &ea_source;
     u_int16_t next_port, start_port;
 
-    memset(sa, 0, sizeof(struct sockaddr_in));
+    memset(sa, 0, sizeof(ea_source));
     sa->sin_family = AF_INET;
     sa->sin_addr.s_addr = htonl(INADDR_ANY);
     start_port = (libsres_random() % 64512) + 1024;
