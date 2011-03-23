@@ -449,6 +449,7 @@ extern          "C" {
         u_int32_t                      val_as_flags;
 
         u_char                         val_as_inflight;
+        struct queries_for_query      *val_as_top_q;
         struct queries_for_query      *val_as_queries;
 
         u_char                         val_as_domain_name_n[NS_MAXCDNAME];
