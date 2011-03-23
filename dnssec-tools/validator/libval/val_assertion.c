@@ -436,7 +436,7 @@ remove_and_free_query_chain(val_context_t *context,
         prev = temp;
         temp = temp->qc_next;
     }
-    if (temp == NULL) { /* found it. now remove it */
+    if (temp != NULL) { /* found it. now remove it */
         if (context->q_list == temp)
             context->q_list = temp->qc_next;
         else
