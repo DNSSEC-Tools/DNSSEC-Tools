@@ -471,6 +471,14 @@ sub print_zone_information {
 	    }
 	}
 
+	if ($opts{'d'} > 7) {
+	    print "  Keys: ";
+	    foreach my $type (keys(%{$krfdata{$zone}})) {
+		next if ($type eq 'set');
+		print "$type=" . $#{$krfdata{$zone}{$type}} . " ";
+	    }
+	}
+
 	print "\n";
     }
 }
