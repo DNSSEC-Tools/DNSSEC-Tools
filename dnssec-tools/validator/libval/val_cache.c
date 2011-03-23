@@ -35,6 +35,7 @@
 #include <pthread.h>
 #endif
 
+#include <arpa/nameser.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
 #include <validator/validator-internal.h>

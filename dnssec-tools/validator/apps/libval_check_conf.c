@@ -15,6 +15,7 @@
 #endif
 #include <libgen.h>
 
+#include <arpa/nameser.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
 

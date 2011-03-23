@@ -23,6 +23,7 @@
 #include <strings.h>
 #include <errno.h>
 
+#include <arpa/nameser.h>
 #include <validator/validator.h>
 #include <validator/resolver.h>
 #include "val_policy.h"
