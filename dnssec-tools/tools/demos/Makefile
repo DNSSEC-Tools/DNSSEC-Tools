@@ -8,7 +8,9 @@
 SUBDIRS =	rollerd-basic		\
 		rollerd-manyzones	\
 		rollerd-manyzones-fast	\
-		rollerd-subdirs
+		rollerd-split-view	\
+		rollerd-subdirs		\
+		rollerd-vastzones
 
 all:
 	@for i in $(SUBDIRS);		\
