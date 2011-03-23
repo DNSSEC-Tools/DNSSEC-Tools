@@ -536,7 +536,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
     while (suite->remaining || suite->in_flight) {
         /** send up to burst queries */
         for (j = 0;
-             suite->in_flight <= max_in_flight &&
+             suite->in_flight < max_in_flight &&
                  i <= tce &&
                  j < burst &&
                  curr_test;
@@ -585,7 +585,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             timeout.tv_sec = 0;
             timeout.tv_usec = 500;
         }
-        val_log(context, LOG_DEBUG,
+        val_log(context, LOG_INFO,
                 "select @ %d, %d fds, timeout %ld, %d in flight, %d unsent\n",
                now.tv_sec, nfds, timeout.tv_sec, suite->in_flight, unsent);
         if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG)) {
