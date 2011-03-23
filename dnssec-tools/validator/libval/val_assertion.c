@@ -6555,7 +6555,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         return VAL_BAD_ARGUMENT;
 
     context = as->val_as_ctx;
-    val_log(context,LOG_DEBUG,"as %p %5d _async_check_one", as, memdebug++);
+    val_log(context,LOG_DEBUG,"as %p _async_check_one", as);
 
   try_again:
     initial_q = qfq = as->val_as_queries;
