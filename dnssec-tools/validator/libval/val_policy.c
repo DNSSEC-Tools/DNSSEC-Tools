@@ -1960,6 +1960,8 @@ read_res_config_file(val_context_t * ctx)
         retval = VAL_CONF_NOT_FOUND;
         goto err;
     } 
+    if (0 == sb.st_size)
+        goto empty;
 
     buf = (char *) MALLOC (sb.st_size * sizeof(char));
     if (buf == NULL) {
@@ -2068,6 +2070,7 @@ read_res_config_file(val_context_t * ctx)
     }
 
     FREE(buf);
+  empty:
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
     close(fd);
