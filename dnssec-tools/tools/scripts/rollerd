@@ -535,38 +535,49 @@ sub rollkeys
 			my $krr;		# Ref to keyrec data.
 			my $extraargs = "";	# Phase-dependent argument.
 
-			rolllog_log(LOG_TMI,$rname,
-				    "Signing the zone (-alwayssign specified)");
+			# this is only safe to do if we're not waiting
+			# for caches to expire.
+			if ($rrr->{'zskphase'} != 1 &&
+			    $rrr->{'zskphase'} != 3 &&
+			    $rrr->{'kskphase'} != 1 &&
+			    $rrr->{'kskphase'} != 3) {
+			    
 
-			#
-			# Check value and file existence, etc.
-			#
-			$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
+				rolllog_log(LOG_TMI,$rname,
+						"Signing the zone $rrr->{'zonename'} (-alwayssign specified)");
 
-			#
-			# If we're in phases 2-3, make sure to use the
-			# published zsk.
-			#
-			if(($rrr->{'zskphase'} >= 2) &&
-			   ($rrr->{'zskphase'} <= 3))
-			{
-				$extraargs = "-usezskpub";
-			}
+				#
+				# Check value and file existence, etc.
+				#
+				$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
 
-			# KSK signing uses double-signature so nothing
-			# is needed since zonesigner always uses all
-			# available keys.
+				#
+				# If we're in phases 2-3, make sure to use the
+				# published zsk.
+				#
+				if(($rrr->{'zskphase'} >= 2) &&
+				   ($rrr->{'zskphase'} <= 3))
+				{
+					$extraargs = "-usezskpub";
+				}
 
-			#
-			# Actually do the signing.
-			#
-			my $ret = signer($rname, "always-sign", $krr);
-			if($ret)
-			{
-				rolllog_log(LOG_ERR, "signing $rname failed!");
+				# KSK signing uses double-signature so nothing
+				# is needed since zonesigner always uses all
+				# available keys.
+
+				#
+				# Actually do the signing.
+				#
+				my $ret = signer($rname, "always-sign", $krr);
+				if($ret)
+				{
+					rolllog_log(LOG_ERR, "signing $rname failed!");
+				}
+			} else {
+				rolllog_log(LOG_TMI,$rname,
+						"Not signing the zone $rrr->{'zonename'} (-alwayssign was specified but we're awaiting cache timeouts so we can't sign now)");
 			}
 		}
-
 	}
 
 	#
