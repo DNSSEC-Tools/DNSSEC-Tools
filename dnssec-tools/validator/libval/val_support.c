@@ -28,15 +28,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#ifndef NAMESER_HAS_HEADER
+#include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
 #else
 #include "arpa/header.h"
 #endif
-#else
-#include <arpa/header.h>
-#endif                          /* NAMESER_HAS_HEADER */
 
 #include <validator/resolver.h>
 #include <validator/validator.h>
