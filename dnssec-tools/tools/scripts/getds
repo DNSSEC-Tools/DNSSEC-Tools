@@ -13,14 +13,14 @@ use Data::Dumper;
 use Net::DNS::SEC::Tools::QWPrimitives;
 
 my %opts =
-  ( 'a' => 'SHA256,SHA1'
+  ( 'a' => 'SHA256'
   );
 
 DTGetOptions(\%opts,
 		['GUI:VERSION',"0.1\nDNSSEC-Tools Version: 1.9"],
 
 		['a|hash-algorithm=s',
-		 'Hash algorithm to use (SHA256 or SHA1)'],
+		 'Comma separated hash algorithm to use (eg, SHA256,SHA1)'],
 		['z|print-zsks',     'Print ZSK DS records as well as KSKs'],
 
 	        ['p|dont-check-parent', 'Don\'t check for the parent\'s published DS record'],
@@ -160,7 +160,7 @@ DNSKEYs to DS records.  It may be a comma-separated list if multiple
 algorithms are desired.  The algorithms to choose from may be either
 SHA256 or SHA1.
 
-The default is SHA256,SHA1
+The default is only SHA256
 
 =item B<-z>
 
