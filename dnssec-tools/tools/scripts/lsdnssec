@@ -30,7 +30,8 @@ dnssec_tools_load_mods('Date::Parse'	=> "",
 
 our $VERSION = "0.1";
 
-my %opts = (d => '5');
+my %opts = (d => '5',
+	    t => 'kskpub,kskcur,zskpub,zskcur');
 
 DTGetOptions(config => [qw(allow_zero)],
 	     \%opts,
@@ -42,6 +43,8 @@ DTGetOptions(config => [qw(allow_zero)],
 
 	        ['k|key-data',    'Show keying data (default = everything)'],
 	        ['r|roll-status', 'Show rolling status (default = everything)'],
+
+	        ['t|key-types=s', "Show these keys (default = $opts{t})"],
 
 		['d|detail=i', 'Details level (1-9, 5 = default)',
 		 values => [1..9], type => 'menu', default => 5],
@@ -452,7 +455,7 @@ sub print_zone_information {
 
 	# print each active key
 	if ($opts{'k'} || !($opts{'k'} || $opts{'r'})) {
-	    foreach my $keytype (qw(kskpub kskcur zskpub zskcur)) {
+	    foreach my $keytype (split(/,\s*/, $opts{'t'})) {
 		foreach my $keyname (split(/ /, $krfsets{$zone}{$keytype}{'keys'})) {
 		    print_key($keytype, $krfkeys{$zone}{$keyname});
 		}
