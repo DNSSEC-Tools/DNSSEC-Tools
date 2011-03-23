@@ -1,0 +1,86 @@
+# Copyright 2011 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+
+rollerd-vastzones demo
+
+	This directory contains tools and data for demonstrating the
+	DNSSEC-Tools rollover daemon using a very large number of zones.
+
+	This demo shows the basic operation of rollerd as it controls zone
+	rollover for a large number of zones.  The makefile has three pre-
+	defined settings for different numbers of zones:  10, 50, and 200.
+	A graphical window will appear for the "lights" GUI.  It will give
+	an short summary of the rollover status for the zones being managed
+	in the demo.  As rollover proceeds, the counts of the zones in the
+	various rollover phases will change.
+
+To run the demo:
+
+	- Run the demo with these commands:
+
+		# make
+		# rundemo
+
+	  The first command will build and sign the 50 zones and initialize
+	  various state data.
+
+	  The second command starts the demo running.
+
+	- This demo uses *very* short zone lifetimes -- 30 to 60 seconds.
+	  These lifetimes are impractically short and are only used for
+	  the sake of this demo.  The makefile has these demo targets:
+
+		target		zone count
+		ten		10 zones
+		fifty		50 zones	(default setting)
+		two-hundred	200 zones
+
+	  The "makezones" command can be used to create as many demo
+	  zones as desired.
+
+	- Giving the -autods option to rundemo *may* automatically
+	  move zones from KSK phase 6 to KSK phase 7 without requiring
+	  user input.  However, sometimes this doesn't work.
+
+	- Another way to automatically move from zones from KSK phase 6
+	  to KSK phase 7 is to use the autods command.  This command can
+	  be run in another window.
+
+To stop the demo:
+
+	- Run this command:
+
+		# rollctl -halt
+
+	  Stopping rollerd will not stop the lights graphical program.
+
+Demo Operation:
+
+	- As of now, blinkenlights does not work well with a large number
+	  of zones.  bubbles works somewhat, but not completely.  It is
+	  hoped that this will be fixed soon.
+
+	- Consult the man page for lights to decipher the gui display.
+	  Basically though, it means:
+
+		red	count of zones in KSK phase 6
+		yellow	count of zones in KSK non-phase 6 rollover /
+			count of zones in ZSK
+		green	count of zones not in rollover
+
+WARNINGS:
+
+	- This demo requires the DNSSEC-Tools scripts and modules, BIND, Perl,
+	  and Perl/Tk.
+
+Files:
+	Makefile		Makefile to control demo execution.
+	README			This file.
+	makezones		Creates a large set of zones.
+	rundemo			Executes demo.
+	save-example.com	Template copy of example.com's zone file.
