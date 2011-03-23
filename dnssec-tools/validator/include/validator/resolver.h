@@ -54,6 +54,10 @@ extern          "C" {
 #define RES_USE_DNSSEC  0x00800000
 #endif
 
+#ifndef RES_USE_EDNS0
+#define RES_USE_EDNS0   0x00100000
+#endif
+
 #define RES_EDNS0_DEFAULT 4096
 
 #if 0
@@ -271,14 +275,6 @@ const char     *p_class(int pclass);
 const char     *p_sres_type(int type);
 
 /*
- * at one open ns_msg_getflag was a macro on Linux, but now it is a
- * function in libresolv. redifine to use our internal version.
- */
-#ifndef ns_msg_getflag
-#define ns_msg_getflag libsres_msg_getflag
-#endif
-
-/*
  * asynchronous interface to the resolver
  */
 
@@ -315,6 +311,17 @@ res_async_ea_is_using_stream(struct expected_arrival *ea);
 
 int
 res_async_ea_isset(struct expected_arrival *ea, fd_set *fds);
+
+int
+libsres_msg_getflag(ns_msg han, int flag);
+
+/*
+ * at one open ns_msg_getflag was a macro on Linux, but now it is a
+ * function in libresolv. redifine to use our internal version.
+ */
+#ifndef ns_msg_getflag
+#define ns_msg_getflag libsres_msg_getflag
+#endif
 
 #ifdef __cplusplus
 }                               /* extern C */
