@@ -33,7 +33,7 @@ my $installdir = getprefixdir() . "/bin"; # DNSSEC-Tools installation directory.
 my %defaults =
 (
 	"admin-email"	   => "root",		# Admin's email address.
-	"archivedir"	   => getconfdir() . "/key-archive",
+	"archivedir"	   => getprefixdir() . "/var/key-archive",
 	"algorithm"	   => "rsasha1",	# Encryption algorithm.
 	"enddate"	   => "+2592000",	# Zone life, in seconds.
 	"entropy_msg"	   => 1,		# Display entropy message flag.
