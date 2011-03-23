@@ -110,6 +110,11 @@ sub dt_adminmail
 	return(0) if($sendto eq "");
 
 	#
+	# If things are configured to not send email, we'll return success.
+	#
+	return(1) if($sendto eq "nomail");
+
+	#
 	# Create the message object.
 	#
 	$msg = new Mail::Send;
@@ -282,6 +287,8 @@ The I<msgbody> parameter is the body of the mail message.
 A third parameter, I<recipient>, may be given to specify the message's
 recipient.  If this is not given, then the recipient will be taken from
 the I<admin-email> record of the DNSSEC-Tools configuration file.
+If I<recipient> is "nomail", then no message will be sent and success
+will be returned.
 
 Return values:
 
