@@ -305,7 +305,7 @@ mail.  If I<mailer-server> is set to a defined value but I<mailer-type> is not, 
 =item I<mailer-server>
 
 The server, if I<admin-mail> is set to I<smtp>, that the mail should
-be delievered to.
+be delivered to.
 
 =item I<dt_cmdpath(command)>
 
