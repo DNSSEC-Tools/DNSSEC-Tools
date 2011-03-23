@@ -45,6 +45,7 @@ DTGetOptions(config => [qw(allow_zero)],
 	        ['r|roll-status', 'Show rolling status (default = everything)'],
 
 	        ['t|key-types=s', "Show these keys (default = $opts{t})"],
+	        ['K|key-gen-time', "Calculate age based on key generation time not roll time"],
 
 		['d|detail=i', 'Details level (1-9, 5 = default)',
 		 values => [1..9], type => 'menu', default => 5],
@@ -190,9 +191,24 @@ sub get_ksk_phase3_length {
     return $length;
 }
 
+sub print_life_graph {
+    my ($percent, $word) = @_;
+
+    $word ||= "life";
+
+    my $spaces = " " x (4-length($word));
+
+    print "  $word:$spaces |";
+    print "=" x int(65*($percent/100));
+    print "O";
+    print "-" x (65-int(65*($percent/100)));
+    print ($percent < 100 ? "|" : "X");
+    print "\n";
+}
 
 sub print_key {
     my ($keytype, $key) = @_;
+    my $keymaintype = substr($keytype, 0, 3);
 
     my $keytag = $key->{'keyrec_name'};
     $keytag =~ s/.*\+//;
@@ -203,8 +219,18 @@ sub print_key {
     my $smallstatus = substr($keytype, 3, 3);
 
     my $life = $key->{$smalltype . 'life'};
-    my $created = $key->{'keyrec_gensecs'};
-    my $age = $todaystime - $created;
+
+    my $keystarttime;
+    if ($opts{'K'}) {
+	# the age of the key is based on the actual generation date
+	$keystarttime = $key->{'keyrec_gensecs'};
+    } else {
+	# pull the date from the rollrec file:
+	#   - this is the end of the last roll time, rather than key age
+	$keystarttime = $rrdata{$key->{'zonename'}}{'roll'}[0]{'zsk_rollsecs'};
+    }
+	
+    my $age = $todaystime - $keystarttime;
     my $percent;
 
     if ($age > $life) {
@@ -222,26 +248,25 @@ sub print_key {
 	printf("  file: %s\n", $key->{'keypath'});
     }
 
-    if ($opts{'d'} > 4) {
-	print "  life: |";
-	print "=" x int(65*($percent/100));
-	print "O";
-	print "-" x (65-int(65*($percent/100)));
-	print ($percent < 100 ? "|" : "X");
-	print "\n";
+    if ($opts{'K'}) {
+	if ($opts{'d'} > 4) {
+	    print_life_graph($percent);
+	}
+
+	if ($percent == 100 && $opts{'d'} > 1) {
+	    print "  WARN:       *** key has passed its expected lifetime ***\n";
+	} elsif ($opts{'d'} > 6) {
+	    print "        (" . fuzzytimetrans($life-$age) . " remaining)\n";
+	}
     }
 
-    if ($percent == 100 && $opts{'d'} > 1) {
-	print "  WARN:       *** key has passed its expected lifetime ***\n";
-    } elsif ($opts{'d'} > 6) {
-	print "        (" . fuzzytimetrans($life-$age) . " remaining)\n";
-    }
+    print "\n" if ($opts{'K'} && $opts{'d'} > 2);
 
-    print "\n" if ($opts{'d'} > 2);
+    return [$keymaintype, $percent, ($percent == 100 ? 0 : $life - $age), $life];
 }
 
 sub print_roll {
-    my ($rolltype, $rollrec) = @_;
+    my ($rolltype, $rollrec, $keylives) = @_;
 
     my $type;
 
@@ -436,6 +461,8 @@ sub print_roll {
     if ($opts{'d'} > 2) {
 	printf("\n");
     }
+
+    return $type;
 }
 
 sub print_zone_information {
@@ -449,6 +476,9 @@ sub print_zone_information {
     }
 
     foreach my $zone (@zones) {
+	my %keylives;
+	my %keyremaining;
+	my %keylifetimes;
 	next if ($zone eq '');
 	
 	print "Zone: $zone\n";
@@ -457,16 +487,47 @@ sub print_zone_information {
 	if ($opts{'k'} || !($opts{'k'} || $opts{'r'})) {
 	    foreach my $keytype (split(/,\s*/, $opts{'t'})) {
 		foreach my $keyname (split(/ /, $krfsets{$zone}{$keytype}{'keys'})) {
-		    print_key($keytype, $krfkeys{$zone}{$keyname});
+		    my $keydata = print_key($keytype, $krfkeys{$zone}{$keyname});
+		    $keylives{$keydata->[0]} = 
+			max($keydata->[1], $keylives{$keydata->[0]});
+		    $keyremaining{$keydata->[0]} = 
+			max($keydata->[2], $keyremaining{$keydata->[0]});
+		    $keylifetimes{$keydata->[0]} = 
+			max($keydata->[3], $keylifetimes{$keydata->[0]});
 		}
 	    }
 	}
 
+	print "\n" if ($opts{'d'} > 2);
+
 	# print each roller roll
+	my $being_rolled;
 	if ($opts{'r'} || !($opts{'k'} || $opts{'r'})) {
 	    foreach my $rolltype (qw(roll)) {
 		foreach my $roll (@{$rrdata{$zone}{$rolltype}}) {
-		    print_roll($rolltype, $rrlookup{$roll->{'rollrec_name'}});
+		    $being_rolled = print_roll($rolltype, $rrlookup{$roll->{'rollrec_name'}});
+		}
+	    }
+	}
+
+	print "\n" if ($opts{'d'} > 2 && !$opts{'K'} && !defined($being_rolled));
+
+	if (!$opts{'K'}) {
+	    # we print expiry times for the entire zsk/ksk collection instead of
+	    # per key in this case.
+	    foreach my $keytype (keys(%keylives)) {
+		if ($keytype eq $being_rolled) {
+		    next;
+		}
+		print_life_graph($keylives{$keytype}, $keytype);
+		if ($keyremaining{$keytype} == 0) {
+		    printf("  life:  None left!  Key should be rolled soon.\n");
+		} else {
+		    printf("  life:  " .
+			   fuzzytimetrans($keyremaining{$keytype})
+			   . " left (out of " .
+			   fuzzytimetrans($keylifetimes{$keytype})
+			   . ")\n");
 		}
 	    }
 	}
@@ -477,12 +538,22 @@ sub print_zone_information {
 		next if ($type eq 'set');
 		print "$type=" . $#{$krfdata{$zone}{$type}} . " ";
 	    }
+	    print "\n";
 	}
 
 	print "\n";
     }
 }
 
+sub max {
+    return $_[0] if (!defined($_[1]));
+    return $_[1] if (!defined($_[0]));
+    return ($_[0] > $_[1] ? $_[0] : $_[1]);
+}
+
+sub min {
+    return ($_[0] < $_[1] ? $_[0] : $_[1]);
+}
 
 #######################################################################
 # debugging output
