@@ -308,6 +308,8 @@ val_free_context(val_context_t * context)
 int
 val_context_as_remove(val_context_t *context, val_async_status *as)
 {
+    val_async_status *prev, *curr = NULL;
+
     if ((NULL == context) || (NULL == as) ||
         (as->val_as_ctx && (as->val_as_ctx != context)))
         return VAL_BAD_ARGUMENT;
@@ -315,11 +317,10 @@ val_context_as_remove(val_context_t *context, val_async_status *as)
     if (NULL == context->as_list)
         return VAL_NO_ERROR;
 
-    if (as == context->as_list)
+    if (as == context->as_list) {
+        curr = context->as_list;
         context->as_list = as->val_as_next;
-    else {
-        val_async_status *prev, *curr;
-
+    } else {
         prev = context->as_list;
         curr = prev->val_as_next;
         for (; curr; prev = curr, curr = curr->val_as_next) {
