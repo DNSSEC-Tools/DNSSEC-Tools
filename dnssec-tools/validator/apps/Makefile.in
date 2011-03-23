@@ -70,6 +70,9 @@ $(CHECK_CONF): libval_check_conf.lo $(LOCALLIBS)
 $(SRES_TEST): libsres_test.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ libsres_test.lo $(LDFLAGS) $(LIBS)
 
+dnssec_checks: dnssec_checks.lo  $(LOCALLIBS)
+	$(LIBTOOLLD) -o $@ dnssec_checks.lo $(LDFLAGS) $(LIBS)
+
 install:
 	$(MKPATH) $(DESTDIR)/$(bindir)
 	$(LIBTOOLIN) $(VALIDATOR) $(DESTDIR)/$(bindir)	
