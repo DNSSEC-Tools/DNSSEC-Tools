@@ -4,7 +4,31 @@ details.
 
 1.9
  - New Features:
-    - libval:       - NSEC3 is enabled by default
+    - lsdnssec:     - Added a new flag (-p) to show only zones in a
+                      particular rollerd phase.
+                    - fixed bugs to align timing output with rollerd.
+    - rollerd:      - Added a -logtz flag for logging timezones
+                    - fixed bugs related to the -alwayssign flag.
+    - rollctl:      - Added -rollall and -rollzone options.
+    - zonesigner:   - Assumes keys need to be generated for new zones
+                    - exits with unique exit codes if a failure occurs.
+                      ("zonesigner -xc CODE" can lookup a description for it.")
+    - lights:       - A simple GUI to check the status of rollover states
+
+    - libsres
+      & libval:     - New beta support for issuing asynchronous requests.
+                      This can speed up queries by up to 4 times if used.
+                      (see example code in validator/apps/validator_selftest.c)
+                    - NSEC3, DLV and IPv6 are enabled by default.
+                    - improved logging and logging-callback support.
+    - drawvalmap    - Can output PNG files now
+
+ - Packaging:
+                    - Our download page now allows you to download
+                      the C validator libraries independently of the
+                      full DNNSEC-Tools tool-suite.
+
+ - Many bugs were also fixed.
 
 1.8
  - New Features:
