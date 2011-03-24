@@ -9,11 +9,20 @@ details.
                     - fixed bugs to align timing output with rollerd.
     - rollerd:      - Added a -logtz flag for logging timezones
                     - fixed bugs related to the -alwayssign flag.
+		    - zonesigner's path is taken from the config file.
     - rollctl:      - Added -rollall and -rollzone options.
     - zonesigner:   - Assumes keys need to be generated for new zones
-                    - exits with unique exit codes if a failure occurs.
+		      (Assumes -genkeys option was given if a keyrec file
+		      can't be found.)
+                    - Exits with unique exit codes if a failure occurs.
                       ("zonesigner -xc CODE" can lookup a description for it.")
+		    - Added the -phase option so rollover options could be
+		      more easily specified.
     - lights:       - A simple GUI to check the status of rollover states
+    - blinkenlights:- Added hide/show commands for rollrec names and zone
+		      names, for split-zone support
+    - cleankrf:	    - Fixed deletion of obsolete set keyrecs.
+    - GUI commands: - Fixed how the Exit command works so they don't coredump.
 
     - libsres
       & libval:     - New beta support for issuing asynchronous requests.
