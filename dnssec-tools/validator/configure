@@ -20368,8 +20368,24 @@ if test "x$defaults" != "xyes" ; then
       done
    done
 fi
-# use NO_DEFINE prompt variant becaue we need to inspect and possibly
-# modify any answer
+
+MSG_CHECK=`echo "
+
+*** Root hints location:
+
+    Enter the location of the root hints file, or 'none' to install
+and use the copy provided with DNSSEC-Tool (see validator/etc/root.hints).
+
+    Providing a file via the --with-root-hints argument to configure will
+avoid this prompt.
+
+Location to read root hints configuration" | tail -1`
+echo "$as_me:$LINENO: checking $MSG_CHECK" >&5
+echo $ECHO_N "checking $MSG_CHECK... $ECHO_C" >&6
+if test "${ac_cv_user_prompt_VAL_ROOT_HINTS+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  echo "" >&6
 
 if test "x$defaults" = "xno"; then
 echo $ECHO_N "
@@ -20382,26 +20398,40 @@ and use the copy provided with DNSSEC-Tool (see validator/etc/root.hints).
     Providing a file via the --with-root-hints argument to configure will
 avoid this prompt.
 
-Location to read root hints configuration ($default_hints): $ECHO_C"
+Location to read root hints configuration ($val_sysconfdir/dnssec-tools/root.hints): $ECHO_C"
 read tmpinput
-if test "$tmpinput" = "" -a "$default_hints" != ""; then
-  tmpinput="$default_hints"
+if test "$tmpinput" = "" -a "$val_sysconfdir/dnssec-tools/root.hints" != ""; then
+  tmpinput="$val_sysconfdir/dnssec-tools/root.hints"
 fi
 eval VAL_ROOT_HINTS=\"$tmpinput\"
 else
-tmpinput="$default_hints"
+tmpinput="$val_sysconfdir/dnssec-tools/root.hints"
 eval VAL_ROOT_HINTS=\"$tmpinput\"
 fi
 
 
-if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
-   ac_cv_user_prompt_VAL_ROOT_HINTS="$val_sysconfdir/dnssec-tools/root.hints"
+eval ac_cv_user_prompt_VAL_ROOT_HINTS=\$VAL_ROOT_HINTS
+echo $ECHO_N "setting $MSG_CHECK to...  $ECHO_C" >&6
+
 fi
-VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
-cat >>confdefs.h <<_ACEOF
-#define VAL_ROOT_HINTS "$VAL_ROOT_HINTS"
+echo "$as_me:$LINENO: result: $ac_cv_user_prompt_VAL_ROOT_HINTS" >&5
+echo "${ECHO_T}$ac_cv_user_prompt_VAL_ROOT_HINTS" >&6
+if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" != "none"; then
+  if test "xquoted" = "xquoted" -o "xquoted" = "xQUOTED"; then
+    cat >>confdefs.h <<_ACEOF
+#define VAL_ROOT_HINTS "$ac_cv_user_prompt_VAL_ROOT_HINTS"
 _ACEOF
 
+  else
+    cat >>confdefs.h <<_ACEOF
+#define VAL_ROOT_HINTS $ac_cv_user_prompt_VAL_ROOT_HINTS
+_ACEOF
+
+  fi
+fi
+
+VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
+#AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS")
 
 
   cat >> configure-summary << EOF
