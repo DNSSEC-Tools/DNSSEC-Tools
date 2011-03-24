@@ -28,6 +28,38 @@
       </steps>
     </step>
 
+    <step type="section" name="changelog" title="Create the ChangeLog"
+	  pause="1" mandatory="0" prompt="yes">
+      <text>
+	We'll create the ChangeLog file from the svn log.
+      </text>
+      <steps>
+	<step type="command" name="changelog:create-file" title="Create the ChangeLog File"
+	      pause="0" mandatory="0">
+	  <text>
+	    Create the change log file from 'svn log'
+	  </text>
+	  <commands>
+	    <command>svn log > ChangeLog</command>
+	  </commands>
+	</step>
+
+	<step type="command" name="changelog:commit" title="Commit the ChangeLog to the repository"
+	      pause="0" mandatory="0">
+	  <text>
+	    We'll now commit the changelog to the repository.
+	  </text>
+	  <commands>
+	    <command>svn commit -m "updated the validator ChangeLog" ChangeLog</command>
+	    
+	  </commands>
+	</step>
+
+
+      </steps>
+    </step>
+
+
     <step type="section" name="tagandtar" title="Tag and tar the sources"
 	  pause="0" mandatory="0" prompt="yes">
       <text>
