@@ -1,0 +1,120 @@
+<!-- this is a makerelease script: http://github.com/hardaker/makerelease -->
+<makerelease>
+  <steps>
+    <step type="section" name="setup" title="Initial release setup"
+	  pause="0" mandatory="1" prompt="no">
+      <text>
+	These steps bootstap the validator release setup.
+      </text>
+      <steps>
+
+	<step type="prompt" name="VersionNumber" title="Select a Version Number"
+	      mandatory="1"
+	      parameter="VERSION"
+	      prompt="Enter the version number for the release:">
+	  <text>
+	    Select a version number to use for the release.
+	  </text>
+	</step>
+
+	<step type="Informational" name="setup:check" title="Check these results"
+	      pause="1" mandatory="1">
+	  <text>
+	    Check that these settings are correct:
+
+               Version Number:  {VERSION}
+	  </text>
+	</step>
+      </steps>
+    </step>
+
+    <step type="section" name="tagandtar" title="Tag and tar the sources"
+	  pause="0" mandatory="0" prompt="yes">
+      <text>
+	These next steps tag and tar the release together.
+      </text>
+      <steps>
+	
+	<step type="command" name="tagandtar:tag" title="Tag it"
+	      pause="0" mandatory="0">
+	  <text>
+	    tags the release in svn
+	  </text>
+	  <commands>
+	    <command>svn copy -m "tag of version dnsval-{VERSION}" https://www.dnssec-tools.org/svn/dnssec-tools/trunk/dnssec-tools/validator https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnsval-{VERSION}</command>
+	  </commands>
+	</step>
+
+	<step type="command" name="tarandtag:export" title="Export the results into a directory"
+	      pause="0" mandatory="0">
+	  <text>
+	    SVN Export the newly tag release
+	  </text>
+	  <commands>
+	    <command>svn export  https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnsval-{VERSION} dnsval-{VERSION}</command>
+	  </commands>
+	</step>
+
+	<step type="command" name="tagandtar:createSources" title="Create the tar and zip files"
+	      pause="0" mandatory="0">
+	  <text>
+	    Create the tar and zip files
+	  </text>
+	  <commands>
+	    <command>tar czf dnsval-{VERSION}.tar.gz dnsval-{VERSION}</command>
+	    <command>zip -r dnsval-{VERSION}.zip dnsval-{VERSION}</command>
+	  </commands>
+	</step>
+
+	<step type="Informational" name="tagandtar:upload" title="Upload the source"
+	      pause="1" mandatory="0">
+	  <text>
+	    The following files need to be copied to the download folder on
+            the website:
+
+	        dnsval-{VERSION}.tar.gz
+
+	        dnsval-{VERSION}.zip
+	  </text>
+	</step>
+      </steps>
+    </step>
+
+    <step type="section" name="advertise" title="Advertise the results"
+	  pause="0" mandatory="0" prompt="no">
+      <text>
+	Advertise the results in various places
+      </text>
+      <steps>
+
+	<step type="Informational" name="advertise:download" title="Update the download list"
+	      pause="1" mandatory="0">
+	  <text>
+	    Update the download list if it's not updated automatically.
+	  </text>
+	</step>
+
+
+	<step type="Informational" name="advertise:users" title="Send a note to dnssec-tools-users"
+	      pause="1" mandatory="0">
+	  <text>
+	    Send a note announcing the release to dnssec-tools-users.
+	  </text>
+	</step>
+
+	<step type="command" name="advertise:freshmeat" title="Update freshmeat"
+	      pause="1" mandatory="0">
+	  <text>
+	    Update the freshmeat entry for the project
+	  </text>
+	  <commands>
+	    <command>firefox http://www.freshmeat.net/</command>
+	  </commands>
+	</step>
+
+	
+      </steps>
+    </step>
+
+  </steps>
+</makerelease>
