@@ -38,7 +38,9 @@ typedef struct testcase_st {
     int                 qc;
     int                 qt;
     int                 qr[MAX_TEST_RESULTS];
+#ifndef VAL_NO_ASYNC
     val_async_status   *as;
+#endif
     struct val_response resp;
     struct testcase_st *next;
 } testcase;
@@ -496,6 +498,7 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
     return run;
 }
 
+#ifndef VAL_NO_ASYNC
 int
 suite_async_callback(val_async_status *as)
 {
@@ -620,6 +623,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
 
     return run;
 }
+#endif /* ndef VAL_NO_ASYNC */
 
 int
 run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
@@ -658,10 +662,12 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
     fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
 
     gettimeofday(&start, NULL);
+#ifndef VAL_NO_ASYNC
     if (max_in_flight > 1)
         run_cnt = run_suite_async(context, suite, start_test, tcs, tce, flags,
                                   &failed, doprint, max_in_flight);
     else
+#endif /* ndef VAL_NO_ASYNC */
         run_cnt = run_suite(context, start_test, tcs, tce, flags, &failed,
                             doprint);
 
