@@ -733,7 +733,12 @@ main(int argc, char *argv[])
 
 
         case 'I':
+#ifndef VAL_NO_ASYNC
             max_in_flight = strtol(optarg, &nextarg, 10);
+#else
+            fprintf(stderr, "libval was built without asynchronous support\n");
+            fprintf(stderr, "ignoring -I parameter\n");
+#endif /* ndef VAL_NO_ASYNC */
             break;
 
         case 'v':

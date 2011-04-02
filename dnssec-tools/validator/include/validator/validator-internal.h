@@ -111,8 +111,10 @@ extern          "C" {
         /* Query cache */
         struct val_query_chain *q_list;
 
+#ifndef VAL_NO_ASYNC
         /* in flight async queries */
         val_async_status       *as_list;
+#endif
 
         u_int32_t ctx_flags;
     }; 
