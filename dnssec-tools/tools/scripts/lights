@@ -836,7 +836,7 @@ sub file_halt
 	#
 	# Wait a short bit then call are quitting routine.
 	#
-	sleep(5);
+	sleep(2);
 	file_quit();
 }
 
@@ -1030,7 +1030,9 @@ lights - DNSSEC-Tools Rollover Overview GUI Display
 B<lights> gives a very simple overview of the rollover status of a set of
 zones.  The rollover status counts are given in a "traffic light" display.
 In contrast, B<blinkenlights> gives a detailed display of the roll status
-of a set of zones.
+of a set of zones.  B<lights> gives very little control over B<rollerd>,
+the way B<blinkenlights> does.  B<lights> can halt B<rollerd>'s execution
+only.
 
 The rollover status is retrieved in one of two ways.  By default, B<rollerd>
 is contacted via the B<rollctl> command.  Alternately, if the B<-rrf> option
@@ -1053,9 +1055,6 @@ zone to publish the child's new DS record.
 Clicking on the color rows in the main window will bring up a dialog box that
 lists the zones in that state.  This list will not automatically update as
 zones change rollover state.
-
-B<lights> gives very little control over B<rollerd>, the way B<blinkenlights>
-does.  B<lights> can halt B<rollerd>'s execution only.
 
 =head1 OPTIONS
 
