@@ -494,7 +494,7 @@ sub optsandargs
 	#
 	if(($argc == 0) || defined($options{'display'}))
 	{
-		exec "$rollctl -q -display" || print STDERR "unable to execute $rollctl -display\n";
+		exec "$rollctl -quiet -display" || print STDERR "unable to execute $rollctl -display\n";
 		exit(1);
 	}
 
@@ -1150,7 +1150,7 @@ sub general_cmds
 	#
 	# Build and execute the command string.
 	#
-	$rollcmd = "$rollctl -q -$args";
+	$rollcmd = "$rollctl -quiet -$args";
 	$ret = system($rollcmd);
 
 	#
@@ -1171,7 +1171,7 @@ sub general_cmds
 		#
 		# Quietly run the command again.
 		*
-		$rollcmd = "$rollctl -q $args";
+		$rollcmd = "$rollctl -quiet $args";
 		system($rollcmd);
 
 		#
@@ -1234,7 +1234,7 @@ sub zskcmds
 	#
 	# Build and execute the command string.
 	#
-	$rollcmd = "$rollctl -q -$args";
+	$rollcmd = "$rollctl -quiet -$args";
 	$ret = system($rollcmd);
 
 	#
@@ -1252,7 +1252,7 @@ sub zskcmds
 			exit(1);
 		}
 
-		$rollcmd = "$rollctl -q -$args";
+		$rollcmd = "$rollctl -quiet -$args";
 		system($rollcmd);
 
 		#
@@ -1308,14 +1308,14 @@ sub kskcmds
 		#
 		# Move the selected zone into rollover phase 7.
 		#
-		$ret = system("$rollctl -q -dspub \"$zone\"");
+		$ret = system("$rollctl -quiet -dspub \"$zone\"");
 	}
 	elsif($rcmd eq "dspuball")
 	{
 		#
 		# Move this zone into rollover phase 7.
 		#
-		$ret = system("$rollctl -q -dspuball");
+		$ret = system("$rollctl -quiet -dspuball");
 	}
 
 	#
@@ -1340,7 +1340,7 @@ sub commander
 	#
 	# Build and execute the command string.
 	#
-	$rcmd = "$rollctl -q -$rcmd";
+	$rcmd = "$rollctl -quiet -$rcmd";
 	system($rcmd);
 
 	#
@@ -3124,7 +3124,7 @@ sub rollerdup
 	#
 	# Build and execute the command string.
 	#
-	$rollcmd = "$rollctl -q -status";
+	$rollcmd = "$rollctl -quiet -status";
 	$ret = system($rollcmd);
 
 	#
