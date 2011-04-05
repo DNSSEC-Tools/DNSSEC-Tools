@@ -132,9 +132,6 @@ my $lights;					# Lights table.
 #
 # Menu item widgets.
 #
-my $fm_open;					# Open keyrec file item.
-my $fm_quit;					# Quit file item.
-
 my $hm_help;					# Help item.
 
 #
@@ -334,12 +331,16 @@ sub buildmainwind
 	#
 	# Add the File menu entries.
 	#
-	$fm_quit = $file->command(-label => 'Quit',
-			          -command => \&file_quit,
-			          -accelerator => 'Ctrl+Q',
-			          -underline => 0);
+	$file->command(-label => 'Halt Rollerd',
+		       -command => \&file_halt);
+	$file->separator();
+	$file->command(-label => 'Quit',
+		       -command => \&file_quit,
+		       -accelerator => 'Ctrl+Q',
+		       -underline => 0);
 	$file->pack(-side => 'left');
 
+	$wm->bind('<Control-Key-Q>',\&file_quit);
 	$wm->bind('<Control-Key-q>',\&file_quit);
 
 	##################################################
@@ -823,6 +824,23 @@ sub showzones
 ##############################################################################
 
 #---------------------------------------------------------------------------
+# Routine:	file_halt()
+#
+sub file_halt
+{
+	#
+	# Destroy the rollrec name table's widgets.
+	#
+	system("rollctl -quiet -halt");
+
+	#
+	# Wait a short bit then call are quitting routine.
+	#
+	sleep(5);
+	file_quit();
+}
+
+#---------------------------------------------------------------------------
 # Routine:	file_quit()
 #
 sub file_quit
@@ -1035,6 +1053,9 @@ zone to publish the child's new DS record.
 Clicking on the color rows in the main window will bring up a dialog box that
 lists the zones in that state.  This list will not automatically update as
 zones change rollover state.
+
+B<lights> gives very little control over B<rollerd>, the way B<blinkenlights>
+does.  B<lights> can halt B<rollerd>'s execution only.
 
 =head1 OPTIONS
 
