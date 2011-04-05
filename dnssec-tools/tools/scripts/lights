@@ -13,6 +13,7 @@ use strict;
 
 use Getopt::Long qw(:config no_ignore_case_always);
 use Net::DNS::SEC::Tools::BootStrap;
+use Net::DNS::SEC::Tools::rollrec;
 
 #
 # Version information.
@@ -33,6 +34,7 @@ my %options = ();				# Filled option array.
 my @opts =
 (
 	"interval=s",			# Interval between zone checks.
+	"rrf=s",			# Rollrec file to read.
 	"labels",			# Give labels in GUI.
 	"verbose",			# Give a verbose output.
 
@@ -42,6 +44,7 @@ my @opts =
 
 my $interval = 10;				# Time to wait between checks.
 my $labels   = 0;				# Give labels in GUI.
+my $rrf	     = '';				# Rollrec file to read.
 my $verbose  = 0;				# Verbose flag.
 
 ######################################################################
@@ -212,7 +215,8 @@ sub doopts
 	#
 	# Set some flags based on the command line.
 	#
-	$tmpival = $options{'interval'} if(defined($options{'interval'}));
+	$rrf	 = $options{'rrf'}	if(defined($options{'rrf'}));
+	$tmpival = $options{'interval'}	if(defined($options{'interval'}));
 	$verbose = $options{'verbose'};
 	$labels	 = $options{'labels'};
 
@@ -377,7 +381,12 @@ sub buildmainwind
 #---------------------------------------------------------------------------
 # Routine:	setlights()
 #
-# Purpose:	
+# Purpose:	Build the display window.  The window holds three buttons,
+#		red, yellow, green.  The red button holds the count of zones
+#		needing attention (KSK phase 6).  The yellow button holds
+#		the count of zones that are in rollover.  The green button
+#		holds the count of zones not in rollover.  Clicking on each
+#		button gives a list of the relevant zones.
 #
 sub setlights
 {
@@ -489,7 +498,7 @@ sub setlights
 #---------------------------------------------------------------------------
 # Routine:      maketable()
 #
-# Purpose:      Create the rollrec name table.
+# Purpose:      Create the table to hold the display buttons.
 #
 sub maketable
 {
@@ -547,72 +556,136 @@ sub zonecnts
 	@redzones = ();
 
 	#
-	# Get the rollover status of all the zones.
+	# Get the rollover status of all the zones.  There are two ways this
+	# is done, depending on if the user specified a rollrec file on the
+	# command line.  If so, then the zone data are read directly from the
+	# rollrec file.  If not, then the zone data are gotten from rollerd
+	# by using "rollctl -zonestatus".
 	#
-	open(ZS,"$cmd |");
-
-	#
-	# Set a bunch of counters based on output from the zone status.
-	#
-	while(<ZS>)
+	if($rrf ne '')
 	{
-		my $line = $_;
-		my $zone;			# Zone name.
-		my $state;			# Roll/skip state.
-		my $roll;			# KSK/ZSK phase.
-		my $num;			# Rollover phase number.
+		#
+		# Read the rollrec file.
+		#
+		rollrec_read($rrf);
 
 		#
-		# Atomize the line.
+		# Get the relevant data from the rollrec records.
 		#
-		chomp $line;
-		$line =~ /^((.+)\/(.+))\s+(\S+)\s+([KZ]SK) (\d)/;
-		$zone  = $1;
-		$state = $4;
-		$roll  = $5;
-		$num   = $6;
+		foreach my $rrn (sort(rollrec_names()))
+		{
+			my $rrr;			# Rollrec reference.
+			my $zone;			# Zone name.
 
-		#
-		# If the number atom is 0, we're not rolling.
-		#
-		if($num == 0)
-		{
-			$green++;
-			push @greenzones, $zone;
-		}
-		elsif($roll eq 'KSK')
-		{
-			#
-			# If we're waiting for DS-publishing, then we'll
-			# bump our danger count.
-			# Otherwise, we'll increment our KSK-rollover count.
-			#
-			if($num == 6)
+			$rrr = rollrec_fullrec($rrn);
+			$zone = "$rrn/$rrr->{zonename}";
+
+			if($rrr->{'kskphase'} > 0)
 			{
-				$red++;
-				push @redzones, $zone;
+				#
+				# If we're waiting for DS-publishing, then
+				# we'll bump our danger count.  Otherwise,
+				# we'll increment our KSK-rollover count.
+				#
+				if($rrr->{'kskphase'} == 6)
+				{
+					$red++;
+					push @redzones, $zone;
+				}
+				else
+				{
+					$kyellow++;
+					push @kyellowzones, $zone;
+				}
+			}
+			elsif($rrr->{'zskphase'} > 0)
+			{
+				#
+				# Bump our ZSK-rollover count.
+				#
+				$zyellow++;
+				push @zyellowzones, $zone;
 			}
 			else
 			{
-				$kyellow++;
-				push @kyellowzones, $zone;
+				#
+				# If neither of the phase values are non-zero,
+				# we're not rolling.
+				#
+				$green++;
+				push @greenzones, $zone;
+			}
+
+		}
+
+		rollrec_close();
+	}
+	else
+	{
+		open(ZS,"$cmd |");
+
+		#
+		# Set a bunch of counters based on output from the zone status.
+		#
+		while(<ZS>)
+		{
+			my $line = $_;
+			my $zone;			# Zone name.
+			my $state;			# Roll/skip state.
+			my $roll;			# KSK/ZSK phase.
+			my $num;			# Rollover phase number.
+
+			#
+			# Atomize the line.
+			#
+			chomp $line;
+			$line =~ /^((.+)\/(.+))\s+(\S+)\s+([KZ]SK) (\d)/;
+			$zone  = $1;
+			$state = $4;
+			$roll  = $5;
+			$num   = $6;
+
+			#
+			# If the number atom is 0, we're not rolling.
+			#
+			if($num == 0)
+			{
+				$green++;
+				push @greenzones, $zone;
+			}
+			elsif($roll eq 'KSK')
+			{
+				#
+				# If we're waiting for DS-publishing, then
+				# we'll bump our danger count.  Otherwise,
+				# we'll increment our KSK-rollover count.
+				#
+				if($num == 6)
+				{
+					$red++;
+					push @redzones, $zone;
+				}
+				else
+				{
+					$kyellow++;
+					push @kyellowzones, $zone;
+				}
+			}
+			elsif($roll eq 'ZSK')
+			{
+				#
+				# Bump our ZSK-rollover count.
+				#
+				$zyellow++;
+				push @zyellowzones, $zone;
 			}
 		}
-		elsif($roll eq 'ZSK')
-		{
-			#
-			# Bump our ZSK-rollover count.
-			#
-			$zyellow++;
-			push @zyellowzones, $zone;
-		}
 
+		#
+		# Clean up the status check command.
+		#
+		close(ZS);
 	}
-
-	#
-	# Clean up the status check command.
-	#
-	close(ZS);
 
 	#
 	# Calculate the overall rollover count.
@@ -937,9 +1010,19 @@ lights - DNSSEC-Tools Rollover Overview GUI Display
 =head1 DESCRIPTION
 
 B<lights> gives a very simple overview of the rollover status of a set of
-zones.  The rollover status is retrieved from B<rollerd>, and then status
-counts are given in a "traffic light" display.  In contrast, B<blinkenlights>
-gives a detailed display of the roll status of a set of zones.
+zones.  The rollover status counts are given in a "traffic light" display.
+In contrast, B<blinkenlights> gives a detailed display of the roll status
+of a set of zones.
+
+The rollover status is retrieved in one of two ways.  By default, B<rollerd>
+is contacted via the B<rollctl> command.  Alternately, if the B<-rrf> option
+is given, then zone status is read directly from a B<rollrec> file.  The
+default method gets the status directly from B<rollerd> and the user need
+not know the location of the relevant B<rollrec> file.  However, that method
+will not get zone status until B<rollerd> is available to respond to the
+information request.  Consequently, the alternate method allows B<lights>
+to bypass communicating with B<rollerd> and not having to wait for B<rollerd>
+to be available.
 
 A window is created that has three colored sections - green, yellow, and red.
 The green section displays a count of those zones that are in "normal" status;
@@ -980,6 +1063,10 @@ Examples:
 * I<-interval 24m> - 24 minutes
 
 * I<-interval 24h> - 24 hours
+
+=item B<-rrf rollrec-file>
+
+A B<rollrec> file to be read for zone status.
 
 =item B<-labels>
 
@@ -1033,6 +1120,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 B<blinkenlights(8)>,
 B<bubbles(8)>,
 B<rollerd(8)>
+
+B<rollrec(5)
 
 =cut
 
