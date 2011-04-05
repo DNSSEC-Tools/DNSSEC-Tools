@@ -148,8 +148,6 @@ my $null;					# Empty frame.
 #
 # Menu item widgets.
 #
-my $fm_open;					# Open keyrec file item.
-my $fm_quit;					# Quit file item.
 
 my $tog_namefilt = 1;				# Use-name-filter toggle.
 
@@ -436,18 +434,23 @@ sub buildmainwind
 	#
 	# Add the File menu entries.
 	#
-	$fm_open = $file->command(-label => 'Open...',
-			          -command => \&file_open,
-			          -accelerator => 'Ctrl+O',
-			          -underline => 0);
+	$file->command(-label => 'Open...',
+		       -command => \&file_open,
+		       -accelerator => 'Ctrl+O',
+		       -underline => 0);
+	$file->command(-label => 'Halt Rollerd',
+		       -command => \&file_halt,
+		       -underline => 0);
 	$file->separator();
-	$fm_quit = $file->command(-label => 'Quit',
+	$file->command(-label => 'Quit',
 			          -command => \&file_quit,
 			          -accelerator => 'Ctrl+Q',
 			          -underline => 0);
 	$file->pack(-side => 'left');
 
+	$wm->bind('<Control-Key-O>',\&file_open);
 	$wm->bind('<Control-Key-o>',\&file_open);
+	$wm->bind('<Control-Key-Q>',\&file_quit);
 	$wm->bind('<Control-Key-q>',\&file_quit);
 
 	##################################################
@@ -807,6 +810,23 @@ sub file_open
 	{
 		buildtable(0);
 	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_halt()
+#
+sub file_halt
+{
+	#
+	# Destroy the rollrec name table's widgets.
+	#
+	system("rollctl -quiet -halt");
+
+	#
+	# Pause for a moment and then shut outself down.
+	#
+	sleep(2);
+	file_quit();
 }
 
 #---------------------------------------------------------------------------
@@ -1282,7 +1302,9 @@ bubbles - DNSSEC-Tools Rollrec Simple GUI Display
 
 B<bubbles> gives a simple display of the roll status of a set of zones
 listed in a I<rollrec> file.  In contrast, B<blinkenlights> gives a detailed
-display of the roll status of a set of zones.
+display of the roll status of a set of zones.  B<lights> gives very little
+control over B<rollerd>, the way B<blinkenlights> does.  B<lights> can halt
+B<rollerd>'s execution only.
 
 A B<rollrec> file contains one or more I<rollrec> records.  These records are
 used by the DNSSEC-Tools rollover utilities (B<rollerd>, etc.) to describe
