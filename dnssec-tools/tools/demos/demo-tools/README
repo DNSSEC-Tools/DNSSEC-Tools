@@ -8,13 +8,16 @@
 This directory contains tools used for demonstrating the DNSSEC-Tools
 programs.  The tools are described below.
 
+autods
+	This script watches rollerd status and simulates the publication
+	of a zone's DS record whenever that zone reaches phase 6 of KSK
+	rollover.
 
 makezones
-
 	This script creates a complete demo environment for DNSSEC-Tools.
-	A set of zones are created and signed.
-	A rollrec file is created to control rollover of those zones.  
-	A demo script is created to run the demo.
-	A log file for makezones is created that shows the command line
-	and parameters used to create the demo environment.
+		- A set of zones are created and signed.
+		- A rollrec file is created to control rollover of those zones.
+		- A demo script is created to run the demo.
+		- A log file for makezones is created that shows the command
+		  line and parameters used to create the demo environment.
 

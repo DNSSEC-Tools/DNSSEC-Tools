@@ -1,0 +1,157 @@
+#!/usr/bin/perl
+#
+# Copyright 2006-2011 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# autods
+#
+#	This script performs automatic DS acknowledgments when it sees a
+#	zone has entered phase 6 of KSK rollover.
+#
+#	This is intended for development and demo purposes ONLY.
+#	It is NOT intended for use in a live system.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::rollrec;
+
+my @opts =
+(
+	"sleep=n",				# Length of sleep cycle.
+	"rrf=s",				# Rollrec file.
+	"help",					# Display help message.
+);
+
+my $nap	   = "15";
+my $rrfile = "demo.rollrec";
+
+
+main();
+exit();
+
+#------------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	#
+	# Check the command-line options.
+	#
+	opts();
+
+	#
+	# Look on the command line for a rollrec file.
+	#
+	$rrfile = $ARGV[0] if(@ARGV > 0);
+
+	if(! -e $rrfile)
+	{
+		print "autods:  rollrec \"$rrfile\" does not exist\n";
+		exit(1);
+	}
+
+	print "\nstarting auto-DS checking of rollrec $rrfile, sleeping $nap seconds\n\n";
+
+	#
+	# Whenever a zone hits KSK rollover phase 6, tell rollerd that
+	# the parent has published the new DS record.
+	#
+	while(42)
+	{
+		rollrec_read($rrfile);
+		foreach my $zone (sort(rollrec_names()))
+		{
+			my $kphase = rollrec_recval($zone,'kskphase');
+
+			next if($kphase != 6);
+
+			print "forcing dspub for zone $zone\n";
+			system("rollctl -dspub \"$zone\" > /dev/null");
+		}
+		rollrec_close();
+
+		sleep($nap);
+	}
+
+}
+
+#------------------------------------------------------------------------------
+# Routine:	opts()
+#
+sub opts
+{
+	my %options = ();				# Filled option array.
+
+	GetOptions(\%options,@opts) || usage();
+	usage() if($options{'help'});
+
+	$nap	= $options{'sleep'} if(defined($options{'sleep'}));
+	$rrfile	= $options{'rrf'} if(defined($options{'rrf'}));
+}
+
+#------------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  autods [-sleep secs] <rollrec>\n";
+	exit(1);
+}
+
+#############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+autods - Automatic DS notifications in phase 6 of KSK rollover
+
+=head1 SYNOPSIS
+
+  autods [-sleep seconds] <rollrec-file>
+
+=head1 DESCRIPTION
+
+B<autods> watches B<rollerd> status and simulates the publication of a zone's
+DS record whenever that zone reaches phase 6 of KSK rollover.
+
+If a I<rollrec> file is not specified on the command line, I<demo.rollrec>
+will be used.
+
+B<This program is intended for development and demo purposes ONLY.
+It is not intended for use in a live system.>
+
+=head1 OPTIONS
+
+B<autods> takes the following options:
+
+=over 4
+
+=item B<-sleep seconds>
+
+The number of seconds to sleep between checking the rollover state of
+I<rollrec>'s zones. 
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2009-2011 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<rollctl(8)>,
+B<rollerd(8)>
+
+B<file-rollrec(5)>
+
+=cut
+
