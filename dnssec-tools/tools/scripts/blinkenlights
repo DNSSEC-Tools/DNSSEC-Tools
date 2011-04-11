@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.3";
+my $VERS   = "$NAME version: 1.9.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.9";
 
 #######################################################################
@@ -50,12 +50,14 @@ my $DTVERS = "DNSSEC-Tools Version: 1.9";
 my %options = ();			# Filled option array.
 my @opts =
 (
+	"maxzones=i",			# Maximum number of zones.
 	"Version",			# Display the version number.
 	"display",			# Tell rollerd to execute us.
 	"help",				# Give a usage message and exit.
 );
 
-my $version	= 0;			# Display the version number.
+my $DEFAULT_MAXZONES = 20;		# Default maximum number of zones.
+my $maxzones = $DEFAULT_MAXZONES;	# Maximum number of zones.
 
 #######################################################################
 
@@ -97,7 +99,10 @@ my $RRFCOL	= $COL0;	# Rollrec filename.
 my $ROLLCNTCOL	= $COL1;	# Rolled zones count.
 my $SKIPCNTCOL	= $COL2;	# Skipped zones count.
 my $SLEEPCOL	= $COL3;	# Rollerd's sleeptime.
-my $INFO4	= $COL4;	# Unused.
+# my $INFO4	= $COL4;	# Unused.
+# my $INFO5	= $COL5;	# Unused.
+# my $DISPLAYCOL	= $COL6;	# Count of displayed zones.
+my $DISPLAYCOL	= $COL4;	# Count of displayed zones.
 my $INFO5	= $COL5;	# Unused.
 my $INFO6	= $COL6;	# Unused.
 
@@ -137,8 +142,11 @@ my $numcols	= $MAXCOLS;	# Number of columns in use.
 # Data involved with display.
 #
 
-my $PAINTMAX	= 100;		# Maximum screen paints before screen rebuild.
+my $DEFPAINTMAX	= 100;		# Maximum screen paints before screen rebuild.
+my $paintmax	= $DEFPAINTMAX;	# Maximum screen paints before screen rebuild.
 my $paintcount	= -1;		# Count of screen paints.
+
+my $rczc = 0;			# Count of zone commands from rollerd.
 
 my $DLGHEIGHT = 10;		# Height of the dialog box.
 
@@ -286,7 +294,6 @@ my $mbar;					# Menubar frame.
 my $helpwin;					# Help window.
 my $body;					# Window body frame.
 my $zonetab;					# Zone data table.
-my $null;					# Empty frame.
 
 my $file;					# File menu.
 my $disp;					# Edit menu.
@@ -470,14 +477,15 @@ sub optsandargs
 	GetOptions(\%options,@opts) || usage();
 
 	#
-	# Show the version number if requested
+	# Look for the immediate options.
 	#
 	version() if(defined($options{'Version'}));
+	usage()	  if(defined($options{'help'}));
 
 	#
-	# Give a usage flag if asked.
+	# Check for setting the maximum number of zones to display.
 	#
-	usage() if(defined($options{'help'}));
+	setmaxzones(0, $options{'maxzones'} || $DEFAULT_MAXZONES );
 
 	#
 	# Get the path for the rollctl command.
@@ -529,7 +537,6 @@ sub optsandargs
 sub buildmainwind
 {
 	my $curfile;					# Current keyrec.
-	my $nulline;					# Empty line.
 
 	my $colormsg;					# Color menu message.
 	my $modmsg;					# Modify menu message.
@@ -546,11 +553,9 @@ sub buildmainwind
 	#
 	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
 	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
-	$null = $wm->Frame(-relief => 'raised', -borderwidth => 1);
 
 	$mbar->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
 	$body->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
-	$null->pack(-expand => 1,   -fill => 'x');
 
 	#
 	# Create our menus.
@@ -635,6 +640,10 @@ sub buildmainwind
 				      -variable => \$fontsize,
 				      -command	=> \&disp_font);
 	}
+	$disp->pack(-side => 'left');
+
+	$disp->command(-label	=> 'Zones to Display...',
+		       -command => \&disp_zonecount);
 	$disp->pack(-side => 'left');
 
 	##################################################
@@ -849,7 +858,7 @@ sub disp_color
 sub disp_font
 {
 	setfont();
-	painter($PAINTMAX+1);
+	painter($paintmax+1);
 }
 
 #---------------------------------------------------------------------------
@@ -1074,7 +1083,7 @@ sub disp_menus
 	#
 	# Recreate the display table.
 	#
-	$paintcount = $PAINTMAX + 1;
+	$paintcount = $paintmax + 1;
 	painter();
 
 	#
@@ -1082,6 +1091,111 @@ sub disp_menus
 	#
 	calcrows();
 	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_zonecount()
+#
+# Purpose:	Handle the Zones to Display menu command.
+#
+sub disp_zonecount
+{
+	my $dlg;					# Dialog box.
+	my $lab;					# Label widget.
+	my $ent;					# Entry widget.
+	my $ret;					# Dialog box return.
+
+	my $zcnt;					# New zone count.
+
+	#
+	# Create a new dialog box to get the name of the new rollrec entry.
+	#
+	$dlg = $wm->DialogBox(-title => 'Zones to Display',
+			      -buttons => ["Okay", "Cancel" ]);
+
+	#
+	# Add a description...
+	#
+	$lab = $dlg->add('Label', -text => 'Enter new count of zones to display:  ');
+	$lab->pack(-side => 'left');
+
+	#
+	# ... and a text entry slot, focus on the entry ...
+	#
+	$ent = $dlg->add('Entry');
+	$ent->pack(-side => 'left');
+	$dlg->configure(-focus => $ent);
+
+	#
+	# ... mix, stir, and *voila*!  We've got a dialog box.
+	#
+	$ret = $dlg->Show();
+
+	#
+	# Drop out if the user changed their mind.
+	#
+	return if($ret eq "Cancel");
+
+	#
+	# Get the user's requested name.
+	#
+	$zcnt = $ent->get();
+	$zcnt =~ s/^\s*(.+)\s*/$1/;
+
+	#
+	# Give a warning if the count is entirely numeric. 
+	#
+	if($zcnt !~ /^[0-9]+$/)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "Zone count must be entirely numeric",
+				   -buttons => ["Re-enter Count", "Cancel" ]);
+		$ret = $dlg->Show();
+
+		#
+		# Drop out if the user changed their mind.
+		#
+		return if($ret eq "Cancel");
+
+		#
+		# Let the user try again.
+		#
+		disp_zonecount();
+		return;
+	}
+
+	#
+	# Give a warning if the count isn't greater than zero.
+	#
+	if($zcnt < 1)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "Zone count must be greater than zero",
+				   -buttons => ["Re-enter Count", "Cancel" ]);
+		$ret = $dlg->Show();
+
+		#
+		# Drop out if the user changed their mind.
+		#
+		return if($ret eq "Cancel");
+
+		#
+		# Let the user try again.
+		#
+		disp_zonecount();
+		return;
+	}
+
+	#
+	# Set the maximum-zone count.
+	#
+	setmaxzones(1,$zcnt);
 }
 
 #---------------------------------------------------------------------------
@@ -1348,7 +1462,7 @@ sub commander
 	#
 	if($rcmd eq "halt")
 	{
-		sleep(5);
+		sleep(2);
 		exit(0);
 	}
 }
@@ -1498,6 +1612,8 @@ sub zdisp_select
 #
 sub painter
 {
+	return if($zonetab == undef);
+
 	#
 	# Set the paint-count to a user-specified value, or increment
 	# the current value if one wasn't given.
@@ -1515,7 +1631,7 @@ sub painter
 	# If we've exceeded our maximum, reset the paint-count and rebuild
 	# the zone's table.
 	#
-	if($paintcount > $PAINTMAX)
+	if($paintcount > $paintmax)
 	{
 		$paintcount = 0;
 		buildtable();
@@ -1536,6 +1652,8 @@ sub painter
 #
 sub maketable
 {
+	return if($body == undef);
+
 	#
 	# Calculate the positions of each column in the table.
 	#
@@ -1681,6 +1799,7 @@ sub readrrf
 	my $timeflag = shift;			# Flag for using current time.
 
 	my $rr;					# Rollrec reference.
+	my $zcount = 0;				# Count of displayed zones.
 
 # print "readrrf:  down in\n";
 
@@ -1775,6 +1894,13 @@ sub readrrf
 		next if($display{$zone} == 0);
 
 		#
+		# Skip this zone if we've already displayed the maximum
+		# number of zones.
+		#
+		next if($zcount == $maxzones);
+		$zcount++;
+
+		#
 		# Figure out where each zone's stripe starts.
 		#
 		calcrows();
@@ -1810,7 +1936,10 @@ sub infostripe
 	my $lab;
 	my $rollmsg;				# Message about rolled zones.
 	my $skipmsg;				# Message about skipped zones.
-	my $timestr;				# rollerd's sleep time.
+	my $dispstr = '';			# Count of displayed zones.
+	my $timestr = '';			# rollerd's sleep time.
+	my $numzones;				# Number of zones in rollrec.
+	my $zcnt;				# Count of zones being shown.
 
 	setcounts();
 
@@ -1853,19 +1982,23 @@ sub infostripe
 		{
 			$timestr = fuzzytimetrans($value);
 			$timestr =~ s/\.0//;
-			$timestr = "sleep-time:  $timestr";
+			$timestr = "Query Interval:  $timestr";
 			last;
 		}
 	}
 	close(RINFO);
 
+	$numzones = keys(%rollers);
+	$zcnt = ($numzones > $maxzones) ? $maxzones : $numzones;
+	$dispstr = "Displaying $zcnt of $numzones zones";
+
 	$lab = $zonetab->Label(-text => $timestr,
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$SLEEPCOL,$lab);
 
-	$lab = $zonetab->Label(-text => ' ',
+	$lab = $zonetab->Label(-text => $dispstr,
 			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$INFO4,$lab);
+	$zonetab->put($INFOROW,$DISPLAYCOL,$lab);
 
 	$lab = $zonetab->Label(-text => ' ',
 			       -font => $font, -background => $INFOBG);
@@ -2266,12 +2399,21 @@ sub zonestripe
 #
 sub repaint
 {
+	my $zcount = 0;				# Count of displayed zones.
+
 	foreach my $zn (sort(@zonenames))
 	{
 		#
 		# Don't account for this zone if it shouldn't be displayed.
 		#
 		next if($display{$zn} == 0);
+
+		#
+		# Skip this zone if we've already displayed the maximum
+		# number of zones.
+		#
+		last if($zcount == $maxzones);
+		$zcount++;
 
 		#
 		# Add in a stripe for this zone.
@@ -2329,13 +2471,15 @@ sub rollerdcmd
 		$zoneroll{$zone} = 'ZSK';
 		goodzone($zone);
 
-		zonestripe($zone,'ZSK',$phase);
+		$rczc++;
+		zonestripe($zone,'ZSK',$phase) if($rczc < $maxzones);
 	}
 	if($cmd eq "kskphase")
 	{
 		$zoneroll{$zone} = 'KSK';
 		goodzone($zone);
-		zonestripe($zone,'KSK',$phase);
+		$rczc++;
+		zonestripe($zone,'KSK',$phase) if($rczc < $maxzones);
 	}
 	elsif($cmd eq "halt")
 	{
@@ -2343,13 +2487,22 @@ sub rollerdcmd
 	}
 	elsif($cmd eq "startroll")
 	{
+
+		$rczc = 0;
+		return;
+
+		#
+		# The rest of this block is causing problems.
+		# We're going to bypass it for now.
+		#
+		return if($zone eq '<all>');
+
 		rollrec_read($rrfile);
 		$phase = rollrec_recval($zone,'zskphase');
 		rollrec_close();
 
 		$rollers{$zone} = 1;
 		calcrows();
-
 		infostripe();
 
 		$zonephase{$zone} = $phase;
@@ -2382,7 +2535,8 @@ sub rollerdcmd
 
 		goodzone($zone);
 		$timestr = "starting roll in $timestr" if($phase == 0);
-		zonestripe($zone,$rolltype,$phase,$timestr);
+		$rczc++;
+		zonestripe($zone,$rolltype,$phase,$timestr) if($rczc < $maxzones);
 		$zoneroll{$zone} = '';
 	}
 	elsif($cmd eq "rollrec")
@@ -2399,7 +2553,8 @@ sub rollerdcmd
 	elsif($cmd eq "badzone")
 	{
 		$badzones{$zone} = 1;
-		zonestripe($zone,'KSK',0);
+		$rczc++;
+		zonestripe($zone,'KSK',0) if($rczc < $maxzones);
 		return;
 	}
 	elsif($cmd eq "nop")
@@ -2919,6 +3074,7 @@ sub readconfig
 #		The following fields are recognized:
 #			colors		use different colors for stripes
 #			fontsize	size of demo output font
+#			maxzones	maximum number of zones to display
 #			modify		allow modification commands
 #			shading		shade the status columns
 #			showskip	show skipped zones
@@ -2948,6 +3104,10 @@ sub setopt
 		}
 		$fontsize = $value;
 		setfont();
+	}
+	elsif($field eq "maxzones")
+	{
+		setmaxzones(0,$value);
 	}
 	elsif($field eq "modify")
 	{
@@ -3112,6 +3272,36 @@ sub settitle
 }
 
 #----------------------------------------------------------------------
+# Routine:      setmaxzones()
+#
+# Purpose:      Set the max zones count.  We'll also adjust the paintmax
+#		count if the new max zones count exceeds it.
+#
+#		If the maxzones count rises above our normal repaint mark
+#		and then later drops below it, we'll reset the the repaint
+#		mark back to the default.
+#
+sub setmaxzones
+{
+	my $build = shift;				# Rebuild flag.
+	my $mz = shift;					# New maxzones value.
+
+	if($mz > 0)
+	{
+		$maxzones = $mz;
+		$paintmax = ($maxzones + 1) if($maxzones > $paintmax);
+
+		$paintmax = $DEFPAINTMAX if($maxzones < $DEFPAINTMAX);
+
+		if($build)
+		{
+			$paintcount = $paintmax;
+			buildtable();
+		}
+	}
+}
+
+#----------------------------------------------------------------------
 # Routine:      rollerdup()
 #
 # Purpose:      Ensures that rollerd is running.
@@ -3217,11 +3407,12 @@ zone stripes.
 
 	* rollerd information stripe
 
-	  The information stripe contains four pieces of information:
+	  The information stripe contains five pieces of information:
 	  rollerd's current rollrec file, the count of rolling zones, the
-	  count of skipped zones, and the amount of time rollerd waits between
-	  processing its queue.  Coincidentally, that last datum is also the
-	  amount of time between blinkenlights screen updates.
+	  count of skipped zones, the count of zones to be displayed, and
+	  the amount of time rollerd waits between processing its queue,
+	  Coincidentally, that last datum is also the amount of time between
+	  blinkenlights screen updates.
 
 	* column headers stripe
 
@@ -3366,6 +3557,11 @@ and to send commands to rollerd.  These commands are discusses in this section.
 		  size to be greater than will fit on the screen.  If the font
 		  size is subsequently reduced, the window size does not
 		  shrink in response.
+
+		* Zones to Display
+
+		  This menu item allows selection of the number of zones to
+		  be displayed in the main window.
 
 	Zone Control Menu
 
@@ -3523,6 +3719,7 @@ The following are the available configuration values:
 
     colors	Turn on/off use of colors on zone stripes.
     fontsize	The size of the font in the output window.
+    maxzones	The number of zones to display.
     modify	Turn on/off execution of rollerd modification commands.
     shading	Turn on/off shading of the status columns.
     showskip	Turn on/off display of skipped zones.
@@ -3561,9 +3758,10 @@ blinkenlights has several potential problems that must be taken into account:
 	* development environment
 
 	  blinkenlights was developed and tested on a single-user system
-	  running X11.  While it works fine in this environment, it has not
-	  been run on a system with many users or in a situation where the
-	  system console hasn't been in use by the blinkenlights user.
+	  running X11 using a relatively small number of zones.  While it
+	  works fine in this environment, it has not been run on a system
+	  with many users or in a situation where the system console hasn't
+	  been in use by the blinkenlights user.
 
 	* long-term performance issues
 
@@ -3581,7 +3779,7 @@ blinkenlights has several potential problems that must be taken into account:
 	  complete rebuild of the screen.  blinkenlights keeps track of the
 	  number of screen updates it makes and rebuilds the screen when this
 	  count exceeds a threshold.  The threshold is built into blinkenlights
-	  and stored in the $PAINTMAX variable.  This threshold may be adjusted
+	  and stored in the $paintmax variable.  This threshold may be adjusted
 	  if there are too many screen rebuilds or if blinkenlights' performance
 	  slows too much.  Raising the number will reduce the screen rebuilds;
 	  lowering the number will (may) increase performance.
@@ -3616,12 +3814,21 @@ SEE ALSO
 			       -default_button => "Okay",
 			       -buttons => ["Okay"]);
 
+open(T,">>/tmp/t");
+print T "help_help:  0\n";
+close(T);
+
 	#
 	# Create a scrolled text widget for the help message itself.
 	# 
 	$helpwij = $helpwin->Scrolled('Text',
 				      -scrollbars => 'e',
 				      -state => 'normal');
+
+open(T,">>/tmp/t");
+print T "help_help:  1\n";
+close(T);
+
 	$helpwij->insert('1.0',$helpstr);
 	$helpwij->configure(-state => 'disabled');
 	$helpwij->pack(-side => 'top');
@@ -3720,6 +3927,10 @@ B<blinkenlights> takes the following options:
 
 Tells B<rollerd> to execute B<blinkenlights> as a child process.
 
+=item B<-maxzones>
+
+Tells B<blinkenlights> how many zones to display.
+
 =item B<-Version>
 
 Displays the version information for B<blinkenlights> and the DNSSEC-Tools
@@ -3749,9 +3960,9 @@ B<rollerd> information stripe
 
 The information stripe contains four pieces of information:  B<rollerd>'s
 current I<rollrec> file, the count of rolling zones, the count of skipped
-zones, and the amount of time B<rollerd> waits between processing its queue.
-Coincidentally, that last datum is also the amount of time between
-B<blinkenlights> screen updates.
+zones, the count of zones to be displayed, and the amount of time B<rollerd>
+waits between processing its queue,  Coincidentally, that last datum is also
+the amount of time between B<blinkenlights> screen updates.
 
 =item *
 
@@ -3963,6 +4174,13 @@ required.  However, on Mac OS X there seems to be a problem when the size
 selected increases the window size to be greater than will fit on the screen.
 If the font size is subsequently reduced, the window size does not shrink in
 response.
+
+=item *
+
+Zones to Display
+
+This menu item allows selection of the number of zones to be displayed in
+the main window.
 
 =back
 
@@ -4185,6 +4403,7 @@ The following are the available configuration values:
 
     colors	Turn on/off use of colors on zone stripes.
     fontsize	The size of the font in the output window.
+    maxzones	The number of zones to display.
     modify	Turn on/off execution of rollerd modification commands.
     noshow	Turn off display of particular columns.
     shading	Turn on/off shading of the status columns.
@@ -4232,10 +4451,10 @@ account.
 
 =item development environment
 
-B<blinkenlights> was developed and tested on a single-user system running X11.
-While it works fine in this environment, it has not been run on a system with
-many users or in a situation where the system console hasn't been in use by
-the B<blinkenlights> user.
+B<blinkenlights> was developed and tested on a single-user system running X11
+using a relatively small number of zones.  While it works fine in this
+environment, it has not been run on a system with many users or in a situation
+where the system console hasn't been in use by the B<blinkenlights> user.
 
 =item long-term performance issues
 
@@ -4251,11 +4470,19 @@ possibility of B<blinkenlights>' performance degrading.
 This appears to have been resolved by periodically performing a complete
 rebuild of the screen.  B<blinkenlights> keeps track of the number of screen
 updates it makes and rebuilds the screen when this count exceeds a threshold.
-The threshold is built into B<blinkenlights> and stored in the B<$PAINTMAX>
+The threshold is built into B<blinkenlights> and stored in the B<$paintmax>
 variable.  This threshold may be adjusted if there are too many screen
 rebuilds or if B<blinkenlights>' performance slows too much.  Raising the
 number will reduce the screen rebuilds; lowering the number will (may)
 increase performance.
+
+=item display irregularities
+
+If the user to modifies the number of zones to be displayed, then sometimes
+the B<blinkenlights> window is left in an irregular state.  The requested
+number of zones are displayed, but there is a large grey void above and below
+the zone display.  This is an occasional problem and will be fixed as time
+allows.
 
 =back
 
