@@ -403,6 +403,15 @@ sub rollkeys
 {
 	my @rrfstats;			# Stats for rollrec file.
 
+	#
+	# Let the display program know we're starting a roll cycle.
+	#
+	display("startroll <all> 0");
+
+	#
+	# Check the zones in the rollrec file to see if they're ready
+	# to roll.
+	#
 	foreach my $rname (rollrec_names())
 	{
 		my $rrr;		# Reference to rollrec.
@@ -535,16 +544,16 @@ sub rollkeys
 			my $krr;		# Ref to keyrec data.
 			my $extraargs = "";	# Phase-dependent argument.
 
-			# this is only safe to do if we're not waiting
+			#
+			# This is only safe to do if we're not waiting
 			# for caches to expire.
-			if ($rrr->{'zskphase'} != 1 &&
-			    $rrr->{'zskphase'} != 3 &&
-			    $rrr->{'kskphase'} != 1 &&
-			    $rrr->{'kskphase'} != 3) {
-			    
-
-				rolllog_log(LOG_TMI,$rname,
-						"Signing the zone $rrr->{'zonename'} (-alwayssign specified)");
+			#
+			if(($rrr->{'zskphase'} != 1) &&
+			   ($rrr->{'zskphase'} != 3) &&
+			   ($rrr->{'kskphase'} != 1) &&
+			   ($rrr->{'kskphase'} != 3))
+			{
+				rolllog_log(LOG_TMI,$rname, "Signing the zone $rrr->{'zonename'} (-alwayssign specified)");
 
 				#
 				# Check value and file existence, etc.
@@ -573,9 +582,10 @@ sub rollkeys
 				{
 					rolllog_log(LOG_ERR, "signing $rname failed!");
 				}
-			} else {
-				rolllog_log(LOG_TMI,$rname,
-						"Not signing the zone $rrr->{'zonename'} (-alwayssign was specified but we're awaiting cache timeouts so we can't sign now)");
+			}
+			else
+			{
+				rolllog_log(LOG_TMI,$rname, "Not signing the zone $rrr->{'zonename'} (-alwayssign was specified but we're awaiting cache timeouts so we can't sign now)");
 			}
 		}
 	}
