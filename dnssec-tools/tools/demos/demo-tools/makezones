@@ -28,7 +28,11 @@ my $MINNUM = 5;				# Number of minutes to vary zones by.
 my $DEFAULT_MINLIFE = 600;		# Min. number of seconds for key life.
 my $DEFAULT_MAXLIFE = 1800;		# Added to minlife for max key life.
 
-my $DEFAULT_TTL = "ttl";		# Default TTL for zones.
+my $DEFAULT_TTL	    = "ttl";		# Default TTL for zones.
+
+my $DEFAULT_DISPLAY = "system(\"lights -int 15s -rrf DEMOFILE \&\");";
+					# Default display script.
+
 
 #######################################################################
 #
@@ -48,6 +52,11 @@ my @opts =
 
 	"rrf=s",			# Rollrec file to be created.
 	"demo=s",			# Demo script to be created.
+
+	"blinkenlights",		# Use the blinkenlights display script.
+	"bubbles",			# Use the bubbles display script.
+	"lights",			# Use the lights display script.
+	"nodisplay",			# Use the lights display script.
 
 	"Version",			# Display the version number.
 	"verbose",			# Verbose output.
@@ -77,6 +86,7 @@ my $MZLOG = "makezones.log";		# Name of the makezone logfile.
 my $rrffile;				# Rollrec file option value.
 my $tmplate;				# Name of zone template.
 my $demoscript;				# Name of demo script.
+my $dispscript = '';			# Name of display script.
 
 #######################################################################
 
@@ -163,6 +173,8 @@ files in the most recent makezones execution.
 #
 sub optsandargs
 {
+	my $dispcnt = 0;			# Count of display options.
+
 	#
 	# Force the user to give some arguments.
 	#
@@ -253,6 +265,48 @@ sub optsandargs
 	}
 
 	#
+	# Check for the display-script options.
+	#
+	if(defined($options{'blinkenlights'}))
+	{
+		$dispscript = "system(\"rollctl -display \& \");";
+		$dispcnt++;
+	}
+	if(defined($options{'bubbles'}))
+	{
+		$dispscript = "system(\"bubbles -int 15s DEMOFILE \& \");";
+		$dispcnt++;
+	}
+	if(defined($options{'lights'}))
+	{
+		$dispscript = "system(\"lights -int 15s -rrf DEMOFILE \& \");";
+		$dispcnt++;
+	}
+	if(defined($options{'nodisplay'}))
+	{
+		$dispscript = ' ';
+		if($dispcnt > 0)
+		{
+			print STDERR "-nodisplay may not be used with -blinkenlights, -bubbles, or -lights\n";
+			exit(1);
+		}
+	}
+
+	#
+	# Check for the display-script options.  If none was given, we'll
+	# use the default.
+	#
+	if($dispcnt > 1)
+	{
+		print STDERR "only one of -blinkenlights, -bubbles, and -lights may be used\n";
+		exit(1);
+	}
+	if($dispscript eq '')
+	{
+		$dispscript =  $DEFAULT_DISPLAY;
+	}
+
+	#
 	# Verbose option shows the various parameters.
 	#
 	if(defined($options{'verbose'}))
@@ -265,6 +319,7 @@ sub optsandargs
 		print "maxlife            - $maxlife seconds\n";
 		print "zone TTL           - $ttl\n";
 		print "zonesigner args    - $zsargs\n";
+		print "display script     - $dispscript\n";
 		print "\n";
 	}
 
@@ -275,6 +330,7 @@ sub optsandargs
 	print LOG "maxlife            - $maxlife seconds\n";
 	print LOG "zone TTL           - $ttl\n";
 	print LOG "zonesigner args    - $zsargs\n";
+	print LOG "display script     - $dispscript\n";
 	print LOG "\n";
 
 }
@@ -342,8 +398,9 @@ sub makescript
 	$script = join('', @lines);
 
 	#
-	# Build the script contents.
+	# Build the script contents.  (Order is important here.)
 	#
+	$script =~ s/DISPLAYCMD/$dispscript/g;
 	$script =~ s/DEMOFILE/$rrffile/g;
 	$script =~ s/DEMOSCRIPT/$demoscript/g;
 
@@ -519,18 +576,22 @@ sub version
 sub usage
 {
 	print STDERR "usage:  makezones [options]\n";
-	print STDERR "\t-start		starting index of zones to generate\n";
-	print STDERR "\t-count		count of zones to generate\n";
-	print STDERR "\t-init		initial rollover state\n";
-	print STDERR "\t-max		added to minlife for max key life\n";
-	print STDERR "\t-min		minimum seconds for key life\n";
-	print STDERR "\t-ttl		TTL for zones\n";
-	print STDERR "\t-zs		options for zonesigner\n";
-	print STDERR "\t-demo		demo script to be created\n";
-	print STDERR "\t-rrf		rollrec file to be created\n";
-	print STDERR "\t-verbose	give verbose output\n";
-	print STDERR "\t-Version	display version number\n";
-	print STDERR "\t-help		help message \n";
+	print STDERR "\t-start          starting index of zones to generate\n";
+	print STDERR "\t-count          count of zones to generate\n";
+	print STDERR "\t-init           initial rollover state\n";
+	print STDERR "\t-max            added to minlife for max key life\n";
+	print STDERR "\t-min            minimum seconds for key life\n";
+	print STDERR "\t-ttl            TTL for zones\n";
+	print STDERR "\t-zs             options for zonesigner\n";
+	print STDERR "\t-demo           demo script to be created\n";
+	print STDERR "\t-rrf            rollrec file to be created\n";
+	print STDERR "\t-blinkenlights  start blinkenlights GUI\n";
+	print STDERR "\t-bubbles        start bubbles GUI\n";
+	print STDERR "\t-lights         start lights GUI\n";
+	print STDERR "\t-nodisplay      do not start a GUI\n";
+	print STDERR "\t-verbose        give verbose output\n";
+        print STDERR "\t-Version        display version number\n";
+	print STDERR "\t-help           help message \n";
 	exit(0);
 }
 
@@ -642,6 +703,33 @@ specified, then B<rundemo> will be used.
 This specifies the name of the I<rollrec> file.  The file will be created if
 it does not exist, and it will be truncated if it does exist.  If this isn't
 specified, then B<demo.rollrec> will be used.
+
+=item B<-blinkenlights>
+
+This specifies that B<rundemo> should start the B<blinkenlights> GUI to
+monitor the demo.
+This option may not be used with the B<-bubbles>, B<-lights>, and
+B<-nodisplay> options.
+
+=item B<-bubbles>
+
+This specifies that B<rundemo> should start the B<bubbles> GUI to
+monitor the demo.
+This option may not be used with the B<-blinkenlights>, B<-lights>, and
+B<-nodisplay> options.
+
+=item B<-lights>
+
+This specifies that B<rundemo> should start the B<lights> GUI to
+monitor the demo.
+This option may not be used with the B<-blinkenlights>, B<-bubbles>,
+and B<-nodisplay> options.
+
+=item B<-nodisplay>
+
+This specifies that B<rundemo> should not start a GUI monitor.
+This option may not be used with the B<-blinkenlights>, B<-bubbles>,
+and B<-lights> options.
 
 =item B<-Version>
 
@@ -766,13 +854,10 @@ sub main
 #	system("tail -f $logfile");
 
 	#
-	# Start a GUI to keep track of # what's happening.
+	# Start a GUI to keep track of what's happening.
 	#
 	sleep(2);
-	system("rollctl -display");			# start blinkenlights
-#	system("bubbles -int 15s $rrf &");		# start bubbles
-#	system("lights -int 15s -rrf $rrf &");		# start lights
-
+	DISPLAYCMD
 }
 
 #------------------------------------------------------------------------------
