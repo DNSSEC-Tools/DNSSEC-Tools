@@ -324,6 +324,24 @@ sub main
 	# check its zones -- rolling 'em if need be -- and saving its state.
 	# We'll always check for user commands and then sleep a bit.
 	#
+	full_list_event_loop();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	full_list_event_loop()
+#
+# Purpose:	Rollover event handler -- full queue.
+#
+#		Every $sleeptime seconds, it checks the entire set of rollrecs
+#		to see if any rollover actions must be taken.
+#
+#		This method works fine for small numbers of zones; it gets
+#		unwieldy as the number of managed zones increases.
+#
+#		This is the original event-loop code.
+#
+sub full_list_event_loop
+{
 	while(42)
 	{
 # rolllog_log(LOG_ALWAYS,"","looping ------------------------------------------");
@@ -379,14 +397,17 @@ sub main
 		commander();
 
 		#
-		# Turn on our signal handlers and then take a nap.
+		# We'll stop now if we're only running the queue once.
 		#
 		if($singlerun)
 		{
 			halt_handler();
 			exit(0);
 		}
-		
+
+		#
+		# Turn on our signal handlers and then take a nap.
+		#
 		controllers(1);
 		sleeper($sleeptime);
 
