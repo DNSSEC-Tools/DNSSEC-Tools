@@ -1850,8 +1850,8 @@ sub ttlexpire
 	$curtempus = str2time($curtime);
 
 	#
-	# Get the phase's start time (in seconds) and add the TTL, giving
-	# the end time.
+	# Get the phase's end time by adding its start time (in seconds)
+	# to the TTL.
 	#
 	$endtempus = str2time($phstart);
 	$endtempus += $maxttl;
@@ -1950,10 +1950,8 @@ sub holddownexpire
 	# Default to 60 days.
 	# lsdnssec should change too if this default is changed.
 	#
-	$holddowntime ||= 2*30*24*60*60;
+	$holddowntime ||= 2 * 30 * 24 * 60 * 60;
 
-#	print "here: $rr{'holddowntime'} $holddowntime\n";
-	
 	#
 	# Get the current time in seconds.
 	#
@@ -1961,7 +1959,8 @@ sub holddownexpire
 	$curtempus = str2time($curtime);
 
 	#
-	# Get the end-time (in seconds) and add the hold-down.
+	# Get the phase's end time by adding its start time (in seconds)
+	# to the TTL.
 	#
 	$endtempus = str2time($phstart);
 	$endtempus += $holddowntime;
