@@ -1850,7 +1850,8 @@ sub ttlexpire
 	$curtempus = str2time($curtime);
 
 	#
-	# Get the end-time (in seconds) and add the TTL.
+	# Get the phase's start time (in seconds) and add the TTL, giving
+	# the end time.
 	#
 	$endtempus = str2time($phstart);
 	$endtempus += $maxttl;
