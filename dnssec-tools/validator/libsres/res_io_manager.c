@@ -837,7 +837,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             *answer = ea_list->ea_response;
             *answer_length = ea_list->ea_response_length;
             if (res_io_debug)
-                printf("get_response got %d bytes on socket %d\n",
+                printf("get_response got %zd bytes on socket %d\n",
                        *answer_length, ea_list->ea_socket);
 
             /*
@@ -1051,7 +1051,7 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                     continue;
             }
             if (res_io_debug)
-                printf("Read %d byptes via %s\n", arrival->ea_response_length,
+                printf("Read %zd bytes via %s\n", arrival->ea_response_length,
                        arrival->ea_using_stream ? "TCP" : "UDP");
 
             /*
