@@ -773,7 +773,7 @@ find_rr_set(struct name_server *respondent_server,
     struct rrset_rec *tryit;
     struct rrset_rec *last;
     struct rrset_rec *new_one;
-    size_t             name_len = wire_name_length(name_n);
+    size_t             name_len;
 
     if ((the_list == NULL) || (name_n == NULL))
         return NULL;
@@ -783,6 +783,7 @@ find_rr_set(struct name_server *respondent_server,
      */
     tryit = *the_list;
     last = NULL;
+    name_len = wire_name_length(name_n);
 
     while (tryit) {
         /*

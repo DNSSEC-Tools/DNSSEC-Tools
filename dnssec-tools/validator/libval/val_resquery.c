@@ -70,17 +70,14 @@
 	}\
 } while (0)
 
-void val_res_cancel(struct val_query_chain *matched_q);
-void val_res_nsfallback(struct val_query_chain *matched_q, const char *name_p,
-                        struct timeval *closest_event);
-int _process_rcvd_response(val_context_t * context,
-                           struct queries_for_query *matched_qfq,
-                           struct domain_info **response,
-                           struct queries_for_query **queries,
-                           struct timeval *closest_event,
-                           const char *name_p,
-                           struct name_server *server,
-                           u_char *response_data, size_t response_length);
+static int _process_rcvd_response(val_context_t * context,
+                                  struct queries_for_query *matched_qfq,
+                                  struct domain_info **response,
+                                  struct queries_for_query **queries,
+                                  struct timeval *closest_event,
+                                  const char *name_p,
+                                  struct name_server *server,
+                                  u_char *response_data, size_t response_length);
 
 /*
  * create a name_server struct from the given address rdata
@@ -2224,7 +2221,7 @@ val_res_nsfallback(struct val_query_chain *matched_q, const char *name_p,
     }
 }
 
-int
+static int
 _process_rcvd_response(val_context_t * context,
                        struct queries_for_query *matched_qfq,
                        struct domain_info **response,

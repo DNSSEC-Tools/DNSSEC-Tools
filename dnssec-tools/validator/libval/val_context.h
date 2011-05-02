@@ -72,4 +72,10 @@ int             val_refresh_root_hints(val_context_t * context);
 int             val_refresh_context(val_context_t *context);
 int             val_free_validator_state(void);
 
+#ifndef VAL_NO_ASYNC
+/* remove asynchronous status from context async queries list */
+int             val_context_as_remove(val_context_t *context,
+                                      val_async_status *as);
+#endif
+
 #endif

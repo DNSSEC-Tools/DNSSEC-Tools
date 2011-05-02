@@ -31,6 +31,7 @@ int             add_to_qfq_chain(val_context_t *context,
 void            free_authentication_chain(struct val_digested_auth_chain
                                           *assertions);
 void            free_query_chain_structure(struct val_query_chain *queries);
+void            clear_query_chain_structure(struct val_query_chain *queries);
 void            requery_with_edns0(val_context_t *context,
                                     struct val_query_chain *matched_q);
 int             get_zse(val_context_t * ctx, u_char * name_n, 
@@ -52,5 +53,9 @@ int             try_chase_query(val_context_t * context,
                                 struct queries_for_query **queries,
                                 struct val_result_chain **results,
                                 int *done);
+
+#ifndef VAL_NO_ASYNC
+int             val_async_status_free(val_async_status *as);
+#endif
 
 #endif

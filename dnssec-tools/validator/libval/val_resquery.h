@@ -49,6 +49,10 @@ int             val_resquery_rcv(val_context_t * context,
                                  struct queries_for_query **queries,
                                  fd_set *pending_desc,
                                  struct timeval *closest_event);
+void            val_res_cancel(struct val_query_chain *matched_q);
+void            val_res_nsfallback(struct val_query_chain *matched_q,
+                                   const char *name_p,
+                                   struct timeval *closest_event);
 
 #ifndef VAL_NO_ASYNC
 

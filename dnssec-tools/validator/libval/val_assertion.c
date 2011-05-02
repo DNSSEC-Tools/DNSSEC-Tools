@@ -574,7 +574,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     return temp;
 }
 
-static int
+int
 remove_from_qfq_chain(struct queries_for_query **queries,
                       struct queries_for_query *added_q,
                       const u_int32_t flags)
@@ -1010,7 +1010,7 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
     policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
     size_t       name_len;
     u_char       *ep; 
-    val_dnskey_rdata_t dnskey;
+    val_dnskey_rdata_t dnskey, *dnskey_p = &dnskey;
     struct val_rr_rec  *curkey;
     u_char       *zp;
 
@@ -1074,7 +1074,7 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
                     val_astatus_t tmp_status;
                         /* check if the given dnskey matches the configured dnskey */
                     if ((pol->publickey &&
-                            DNSKEY_MATCHES_DNSKEY(&dnskey, pol->publickey)) ||
+                            DNSKEY_MATCHES_DNSKEY(dnskey_p, pol->publickey)) ||
                         /* check if the given dnskey matches the configured ds */
                         (pol->ds &&
                             DNSKEY_MATCHES_DS(ctx, &dnskey, pol->ds,
@@ -4498,7 +4498,7 @@ verify_and_validate(val_context_t * context,
     struct val_digested_auth_chain *as_more;
     struct val_digested_auth_chain *top_as;
     struct val_internal_result *res;
-    struct val_internal_result *cur_res, *tail_res, *temp_res;
+    struct val_internal_result *tail_res;
     struct queries_for_query *added_q = NULL;
     struct val_query_chain *top_q;
     u_int32_t ttl_x = 0;
@@ -5071,7 +5071,6 @@ ask_cache(val_context_t * context,
 {
     struct queries_for_query *next_q, *top_q;
     int    retval;
-    char   name_p[NS_MAXDNAME];
     int more_data = 0;
 
     if (context == NULL || queries == NULL || data_received == NULL ||
@@ -6051,7 +6050,6 @@ int try_chase_query(val_context_t * context,
                     int *done)
 {
     struct queries_for_query *top_q = NULL;
-    struct val_internal_result *w_res = NULL;
     struct val_internal_result *w_results = NULL;
     int retval, flags_copy = flags;
 
@@ -6100,7 +6098,6 @@ val_resolve_and_check(val_context_t * ctx,
     int             retval;
     struct queries_for_query *top_q = NULL;
     struct queries_for_query *added_q = NULL;
-    struct val_internal_result *w_res = NULL;
     struct val_internal_result *w_results = NULL;
     struct queries_for_query *queries = NULL;
     int done = 0;
@@ -6367,8 +6364,6 @@ val_does_not_exist(val_status_t status)
 int
 val_async_status_free(val_async_status *as)
 {
-    struct queries_for_query *q;
-
     if (NULL == as)
         return VAL_BAD_ARGUMENT;
 
@@ -6664,8 +6659,7 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
                 int *nfds, u_int32_t flags)
 {
     val_async_status           *as, *next, *completed = NULL;
-    struct queries_for_query   *qfq = NULL;
-    int retval, data_received, data_missing;
+    int retval = VAL_NO_ERROR;
 
     if ((NULL == context) || (pending_desc == NULL) || (NULL == nfds))
         return VAL_BAD_ARGUMENT;

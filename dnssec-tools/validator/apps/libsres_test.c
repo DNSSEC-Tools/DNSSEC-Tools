@@ -194,10 +194,10 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
         ++sent;
         if ((rc >= 0) || (SR_NO_ANSWER == rc)) {
             ++answered;
-            printf("sent %d %s, got %d bytes\n", count, names[count], len);
+            printf("sent %zd %s, got %d bytes\n", count, names[count], len);
         }
         else {
-            printf("bad rc %d/%d bytes from get(%s) @ count %d\n", rc, len,
+            printf("bad rc %d/%zd bytes from get(%s) @ count %d\n", rc, len,
                    names[count], count);
         }
     }
