@@ -564,6 +564,17 @@ extern          "C" {
                                           struct val_result_chain
                                           **results);
 
+#ifndef VAL_NO_ASYNC
+    int             val_async_submit(val_context_t * ctx,
+                                     const char * domain_name, int qclass,
+                                     int qtype, u_int32_t flags,
+                                     val_async_status **async_status);
+    int             val_async_check(val_context_t *context,
+                                    fd_set *pending_desc, int *nfds,
+                                    u_int32_t flags);
+#endif
+
+
 
     /*
      * from val_context.h 

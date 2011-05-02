@@ -241,6 +241,8 @@ void            free_name_servers(struct name_server **ns);
 
 void            res_io_set_debug(int val);
 int             res_io_get_debug(void);
+void            res_io_view(void);
+
 
 #ifndef HAVE_DECL_NS_NTOP
 int             ns_name_ntop(const u_char * src, char *dst, size_t dstsiz);
@@ -298,6 +300,10 @@ res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds);
 
 void
 res_async_query_free(struct expected_arrival *ea);
+
+int
+res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
+                 struct timeval *now);
 
 int
 res_io_get_a_response(struct expected_arrival *ea_list, u_char **answer,
