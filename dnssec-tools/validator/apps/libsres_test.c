@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
@@ -47,8 +48,6 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
     struct name_server *ns;
     struct timeval     timeout, now;
     fd_set             activefds;
-    size_t             answer_length;
-    u_char            *answer;
 
     ns = parse_name_server("192.168.1.7", NULL);
 
@@ -111,7 +110,7 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
             timeout.tv_sec = 0;
             timeout.tv_usec = 500;
         }
-        printf("select @ %d, %d fds, timeout %ld, %d in flight, %d unsent\n", 
+        printf("select @ %ld, %d fds, timeout %ld, %d in flight, %d unsent\n", 
                now.tv_sec, nfds, timeout.tv_sec, in_flight, unsent);
         if ((nfds <= 0) /*|| (timeout.tv_sec == 0)*/) {
             printf("no nfds but %d in flight??\n", in_flight);
