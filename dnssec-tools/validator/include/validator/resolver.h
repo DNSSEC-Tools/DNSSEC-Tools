@@ -281,6 +281,11 @@ const char     *p_sres_type(int type);
 /** foward declare of opaque structure used by async routines */
 struct expected_arrival;
 
+int             res_nsfallback_ea(struct expected_arrival *temp,
+                                  struct timeval *closest_event,
+                                  const char *name, const u_int16_t class_h,
+                                  const u_int16_t type_h, int *edns0);
+
 struct expected_arrival *
 res_async_query_send(const char *name, const u_int16_t type_h,
                      const u_int16_t class_h, struct name_server *pref_ns);
@@ -293,6 +298,10 @@ res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds);
 
 void
 res_async_query_free(struct expected_arrival *ea);
+
+int
+res_io_get_a_response(struct expected_arrival *ea_list, u_char **answer,
+                      size_t *answer_length, struct name_server **respondent);
 
 void
 res_io_cancel_remaining_attempts(struct expected_arrival *ea);

@@ -2277,7 +2277,6 @@ _process_rcvd_response(val_context_t * context,
 
     if (matched_q->qc_state == Q_RESPONSE_ERROR) {
         /* try a different NS if possible */
-        int edns0;
         free_domain_info_ptrs(*response);
         FREE(*response);
         *response = NULL;
