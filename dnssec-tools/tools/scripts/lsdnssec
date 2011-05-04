@@ -224,13 +224,20 @@ sub print_key {
     my $life = $key->{$smalltype . 'life'};
 
     my $keystarttime;
-    if ($opts{'K'}) {
+    # pull the date from the rollrec file:
+    #   - this is the end of the last roll time, rather than key age
+    if (exists($rrdata{$key->{'zonename'}}) &&
+	exists($rrdata{$key->{'zonename'}}{'roll'}) &&
+	exists($rrdata{$key->{'zonename'}}{'roll'}[0]) &&
+	exists($rrdata{$key->{'zonename'}}{'roll'}[0]{'zsk_rollsecs'})) {
+	$keystarttime = $rrdata{$key->{'zonename'}}{'roll'}[0]{'zsk_rollsecs'};
+    }
+
+    my $useGenLife = $opts{'K'};
+    if ($useGenLife || !defined($keystarttime)) {
 	# the age of the key is based on the actual generation date
 	$keystarttime = $key->{'keyrec_gensecs'};
-    } else {
-	# pull the date from the rollrec file:
-	#   - this is the end of the last roll time, rather than key age
-	$keystarttime = $rrdata{$key->{'zonename'}}{'roll'}[0]{'zsk_rollsecs'};
+	$useGenLife = 1;
     }
 	
     my $age = $todaystime - $keystarttime;
@@ -251,7 +258,7 @@ sub print_key {
 	printf("  file: %s\n", $key->{'keypath'});
     }
 
-    if ($opts{'K'}) {
+    if ($useGenLife) {
 	if ($opts{'d'} > 4) {
 	    print_life_graph($percent);
 	}
@@ -263,7 +270,7 @@ sub print_key {
 	}
     }
 
-    print "\n" if ($opts{'K'} && $opts{'d'} > 2);
+    print "\n" if ($useGenLife && $opts{'d'} > 2);
 
     return [$keymaintype, $percent, ($percent == 100 ? 0 : $life - $age), $life];
 }
@@ -494,7 +501,7 @@ sub print_zone_information {
     my @zones;
     if ($opts{'z'}) {
 	@zones = split(/\s*,\s*/, $opts{'z'});
-    } if (exists($opts{'p'})) {
+    } elsif (exists($opts{'p'})) {
 	@zones = find_zone_phases($opts{'p'});
     } else {
 	@zones = keys(%krfzones);
