@@ -11,9 +11,6 @@
 #ifndef VAL_PARSE_H
 #define VAL_PARSE_H
 
-#include <validator/resolver.h>
-
-
 /*
  * Parse a domain name 
  */

@@ -40,18 +40,7 @@
  * IF IBM IS APPRISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 #include "validator-config.h"
-
-#include <sys/types.h>
-#include <sys/param.h>
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <netinet/in.h>
-#include <resolv.h>
-
-#include "validator/resolver.h"
+#include "validator-internal.h"
 
 #define Assert(Cond) if (!(Cond)) abort()
 
@@ -197,10 +186,7 @@ b64_ntop(u_char const *src, size_t srclength, char *target,
  */
 
 int
-b64_pton(src, target, targsize)
-     char const     *src;
-     u_char         *target;
-     size_t          targsize;
+b64_pton(const char *src, u_char *target, size_t targsize)
 {
     int             tarindex, state, ch;
     char           *pos;

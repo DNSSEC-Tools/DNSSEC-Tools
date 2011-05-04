@@ -8,16 +8,15 @@
  *
  */
 #include "validator-config.h"
+#include <validator/validator.h>
 
-#include <stdio.h>
+#ifdef HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
+
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-#include <libgen.h>
-
-#include <arpa/nameser.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
 
 #ifdef HAVE_GETOPT_LONG
 static struct option prog_options[] = {

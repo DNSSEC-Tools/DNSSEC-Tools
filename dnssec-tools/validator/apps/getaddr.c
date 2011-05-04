@@ -7,25 +7,11 @@
  * A command-line tool for testing the val_getaddrinfo() function.
  */
 #include "validator-config.h"
+#include <validator/validator.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <strings.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <resolv.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-
-#include <arpa/nameser.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
 
 #define	NAME	"getaddr"
 #define	VERS	"version: 1.0"
@@ -35,7 +21,6 @@
 // Program options
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
-    {"novalidate", 0, 0, 'n'},
     {"canonname", 0, 0, 'c'},
     {"service", 0, 0, 's'},
     {"Version", 0, 0, 'V'},
@@ -53,8 +38,6 @@ usage(char *progname)
     fprintf(stderr,
             "\t-h, --help                      display usage and exit\n");
     fprintf(stderr,
-            "\t-n, --novalidate                do not use the validator\n");
-    fprintf(stderr,
             "\t-c, --canonname                 use the AI_CANONNAME flag\n");
     fprintf(stderr,
             "\t-s, --service=<PORT|SERVICE>    transport-layer port or service name\n");
@@ -68,16 +51,15 @@ usage(char *progname)
             "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
     fprintf(stderr,
             "\t-V, --Version                   display version and exit\n");
+
 }
 
 void
 version(void)
 {
-    fprintf(stderr, "%s %s\n", NAME, VERS);
-    fprintf(stderr, "%s\n", DTVERS);
+     fprintf(stderr, "%s %s\n", NAME, VERS);
+     fprintf(stderr, "%s\n", DTVERS);
 }
-
-static int      validate = 0;
 
 #define ADDRINFO_TYPE     0
 #define VAL_ADDRINFO_TYPE 1
@@ -89,6 +71,7 @@ print_addrinfo(int type, void *ainfo)
     struct sockaddr_in6 *s_in6addr = NULL;
     struct addrinfo *a = (struct addrinfo *) ainfo;
     char            buf[INET6_ADDRSTRLEN];
+    size_t          buflen = INET6_ADDRSTRLEN;
 
     while (a != NULL) {
         printf("{\n");
@@ -129,19 +112,18 @@ print_addrinfo(int type, void *ainfo)
         printf("\tAddrLen:   %d\n", a->ai_addrlen);
 
         if (a->ai_addr != NULL) {
+            const char *addr = NULL;
             printf("\tAddrPtr:   %p\n", a->ai_addr);
             if (a->ai_family == AF_INET) {
                 s_inaddr = (struct sockaddr_in *) (a->ai_addr);
-                printf("\tAddr:      %s\n",
-                       inet_ntop(AF_INET,
-                                 &(s_inaddr->sin_addr),
-                                 buf, INET6_ADDRSTRLEN));
+                INET_NTOP(AF_INET, ((struct sockaddr *)s_inaddr), sizeof(s_inaddr),
+                          buf, buflen, addr);
+                printf("\tAddr:      %s\n", addr);
             } else if (a->ai_family == AF_INET6) {
                 s_in6addr = (struct sockaddr_in6 *) (a->ai_addr);
-                printf("\tAddr:      %s\n",
-                       inet_ntop(AF_INET6,
-                                 &(s_in6addr->sin6_addr),
-                                 buf, INET6_ADDRSTRLEN));
+                INET_NTOP(AF_INET6, ((struct sockaddr *)s_in6addr), sizeof(s_in6addr),
+                          buf, buflen, addr);
+                printf("\tAddr:      %s\n", addr);
             } else
                 printf
                     ("\tAddr:      Cannot parse address. Unknown protocol family\n");
@@ -167,7 +149,6 @@ main(int argc, char *argv[])
     char           *service = NULL;
     struct addrinfo hints;
     struct addrinfo *val_ainfo = NULL;
-    struct addrinfo *ainfo = NULL;
     int             retval;
     int             getcanonname = 0;
     int             portspecified = 0;
@@ -175,19 +156,18 @@ main(int argc, char *argv[])
     val_status_t val_status;
 
     // Parse the command line
-    validate = 1;
     while (1) {
         int             c;
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "hcno:s:V",
+        c = getopt_long_only(argc, argv, "hco:s:V",
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "hcno:s:V", prog_options, &opt_index);
+        c = getopt_long(argc, argv, "hco:s:V", prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "hcno:s:V");
+        c = getopt(argc, argv, "hco:s:V");
 #endif
 
         if (c == -1) {
@@ -198,9 +178,6 @@ main(int argc, char *argv[])
         case 'h':
             usage(argv[0]);
             return -1;
-        case 'n':
-            validate = 0;
-            break;
         case 'o':
             logp = val_log_add_optarg(optarg, 1);
             if (NULL == logp) { /* err msg already logged */
@@ -234,19 +211,23 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    bzero(&hints, sizeof(struct addrinfo));
+    memset(&hints, 0, sizeof(struct addrinfo));
     if (getcanonname) {
         hints.ai_flags |= AI_CANONNAME;
     }
 
-    if (validate) {
+    {
         retval = val_getaddrinfo(NULL, node, service, &hints, &val_ainfo, &val_status);
         printf("Return code = %d\n", retval);
         printf("Validator status code = %d (%s)\n", val_status, p_val_status(val_status));
 
         if (retval != 0) {
+#ifdef HAVE_GAI_STRERROR
             printf("Error in val_getaddrinfo(): %s\n",
                    gai_strerror(retval));
+#else
+            printf("Error in val_getaddrinfo(): %d\n", retval);
+#endif
             return -1;
         } else {
             print_addrinfo(VAL_ADDRINFO_TYPE, val_ainfo);
@@ -263,15 +244,6 @@ main(int argc, char *argv[])
             return 1; 
         } 
         
-    } else {
-        retval = getaddrinfo(node, service, &hints, &ainfo);
-        printf("Return code = %d\n", retval);
-        if (retval != 0) {
-            printf("Error in getaddrinfo(): %s\n", gai_strerror(retval));
-            return -1;
-        } else {
-            print_addrinfo(ADDRINFO_TYPE, ainfo);
-        }
-    }
+    } 
     return 0;
 }

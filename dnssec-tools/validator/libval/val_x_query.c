@@ -11,28 +11,7 @@
  */
 
 #include "validator-config.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <strings.h>
-#include <ctype.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include <errno.h>
-#include <sys/types.h>
-
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
-#ifndef NAMESER_HAS_HEADER
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#else
-#include "arpa/header.h"
-#endif
-#endif                          /* NAMESER_HAS_HEADER */
+#include "validator-internal.h"
 
 #include "val_cache.h"
 #include "val_support.h"
@@ -40,9 +19,6 @@
 
 #define OUTER_HEADER_LEN (sizeof(HEADER) + wire_name_length(name_n) + sizeof(u_int16_t) + sizeof(u_int16_t))
 
-#ifndef h_errno                 /* can be a macro */
-extern int      h_errno;
-#endif
 
 /*
  * Calculate rrset length 
@@ -278,6 +254,7 @@ compose_answer(const char * name,
     int             retval;
     u_char name_n[NS_MAXCDNAME];
     u_int16_t class_n, type_n;
+    SET_LAST_ERR(0);
 
     struct val_rrset_rec *rrset;
     int validated = 1;
@@ -299,8 +276,8 @@ compose_answer(const char * name,
     resp_len = 0;
 
     retval = VAL_NO_ERROR;
-    //h_errno = NETDB_INTERNAL;
-    h_errno = NO_RECOVERY;
+    //SET_LAST_ERR(NETDB_INTERNAL);
+    SET_LAST_ERR(NO_RECOVERY);
     
     if ((f_resp == NULL) || (name == NULL))
         return VAL_BAD_ARGUMENT;
@@ -355,7 +332,7 @@ compose_answer(const char * name,
      */
     rp = f_resp->vr_response;
     hp = (HEADER *) rp;
-    bzero(hp, sizeof(HEADER));
+    memset(hp, 0, sizeof(HEADER));
     rp += sizeof(HEADER);
 
     /*
@@ -421,28 +398,28 @@ compose_answer(const char * name,
             case VAL_NONEXISTENT_TYPE:
             case VAL_NONEXISTENT_TYPE_NOCHAIN: 
                 hp->rcode = ns_r_noerror;
-                h_errno = NO_DATA;
+		        SET_LAST_ERR(NO_DATA);
                 break;
 
             case VAL_NONEXISTENT_NAME:
             case VAL_NONEXISTENT_NAME_NOCHAIN: 
                 hp->rcode = ns_r_nxdomain;
-                h_errno = HOST_NOT_FOUND;
+                SET_LAST_ERR(HOST_NOT_FOUND);
                 break;
 
             case VAL_DNS_ERROR: 
                 hp->rcode = ns_r_servfail;
-                h_errno = TRY_AGAIN;
+                SET_LAST_ERR(TRY_AGAIN);
                 break;
                 
             default:
                 if (hp->ancount > 0) {
                     hp->rcode = ns_r_noerror;
-                    h_errno = NETDB_SUCCESS;
+                    SET_LAST_ERR(NETDB_SUCCESS);
                 }
                 else {
                     hp->rcode = ns_r_nxdomain;
-                    h_errno = NO_DATA;
+                    SET_LAST_ERR(NO_DATA);
                 }
                 break;
         }
@@ -581,8 +558,8 @@ val_res_query(val_context_t * context,
 err:
     val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
             dname, p_class(class_h), p_type(type), p_val_err(retval));
-    //h_errno = NETDB_INTERNAL;
-    h_errno = NO_RECOVERY;
+    //SET_LAST_ERR(NETDB_INTERNAL);
+    SET_LAST_ERR(NO_RECOVERY);
     errno = EINVAL;
     return -1;
 }
@@ -599,8 +576,8 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     char           *dot, *search, *pos;
     char            buf[NS_MAXDNAME];
     val_context_t *ctx = NULL;
-    h_errno = NO_RECOVERY;
-    //h_errno = NETDB_INTERNAL;
+    SET_LAST_ERR(NO_RECOVERY);
+    //SET_LAST_ERR(NETDB_INTERNAL);
     
     if (context == NULL) {
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
@@ -646,7 +623,7 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
             retval = val_res_query(ctx, buf, class_h, type, answer, anslen,
                                    val_status);
             if ((retval >0) ||
-                ((retval == -1) && (h_errno != HOST_NOT_FOUND))) {
+                ((retval == -1) && (GET_LAST_ERR() != HOST_NOT_FOUND))) {
                 if (save)
                     free(save);
                 return retval;

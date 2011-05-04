@@ -73,7 +73,6 @@ void            print_response(u_char * ans, size_t resplen);
 void            print_hex_field(u_char field[], size_t length, size_t width,
                                 char *pref);
 void            print_hex(u_char field[], size_t length);
-int             complete_read(int sock, void *field, size_t length);
 void            dump_response(const u_char * ans, size_t resplen);
 u_int16_t       retrieve_type(const u_char * rr);
 u_int16_t       libsres_random(void);

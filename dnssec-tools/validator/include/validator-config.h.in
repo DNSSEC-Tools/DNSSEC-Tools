@@ -18,6 +18,9 @@
 /* Define if getnameinfo expects a socklen_t and a unsigned int */
 #undef GETNAMEINFO_USES_SOCKLEN_AND_UINT
 
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#undef HAVE_ARPA_INET_H
+
 /* Define to 1 if you have the <arpa/nameser_compat.h> header file. */
 #undef HAVE_ARPA_NAMESER_COMPAT_H
 
@@ -26,6 +29,9 @@
 
 /* Define to 1 if you have the <crypto/sha2.h> header file. */
 #undef HAVE_CRYPTO_SHA2_H
+
+/* Define to 1 if you have the <ctype.h> header file. */
+#undef HAVE_CTYPE_H
 
 /* Define to 1 if you have the declaration of `getopt_long', and to 0 if you
    don't. */
@@ -75,20 +81,42 @@
    don't. */
 #undef HAVE_DECL_P_SECTION
 
+/* Define to 1 if you have the declaration of `struct addrinfo', and to 0 if
+   you don't. */
+#undef HAVE_DECL_STRUCT_ADDRINFO
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <endian.h> header file. */
+#undef HAVE_ENDIAN_H
+
+/* Define to 1 if you have the <errno.h> header file. */
+#undef HAVE_ERRNO_H
+
+/* Define to 1 if you have the `flock' function. */
+#undef HAVE_FLOCK
 
 /* Define to 1 if you have the `freeaddrinfo' function. */
 #undef HAVE_FREEADDRINFO
 
-/* Define if libc contains gethostbyname2. */
+/* Define to 1 if you have the `gethostbyname2' function. */
 #undef HAVE_GETHOSTBYNAME2
 
 /* Define to 1 if you have the <getopt.h> header file. */
 #undef HAVE_GETOPT_H
 
-/* Define if libc contains hstrerror. */
+/* Define to 1 if you have the `gettimeofday' function. */
+#undef HAVE_GETTIMEOFDAY
+
+/* Define to 1 if you have the `gmtime_r' function. */
+#undef HAVE_GMTIME_R
+
+/* Define to 1 if you have the `hstrerror' function. */
 #undef HAVE_HSTRERROR
+
+/* Define to 1 if you have the `inet_nsap_ntoa' function. */
+#undef HAVE_INET_NSAP_NTOA
 
 /* Define to 1 if the system has the type `int16_t'. */
 #undef HAVE_INT16_T
@@ -102,8 +130,8 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `crypto' library (-lcrypto). */
-#undef HAVE_LIBCRYPTO
+/* Define to 1 if you have the <libgen.h> header file. */
+#undef HAVE_LIBGEN_H
 
 /* Define to 1 if you have the `nsl' library (-lnsl). */
 #undef HAVE_LIBNSL
@@ -111,29 +139,35 @@
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
 
+/* Define to 1 if you have the <limits.h> header file. */
+#undef HAVE_LIMITS_H
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <netdb.h> header file. */
+#undef HAVE_NETDB_H
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
-/* Define if libc contains inet_nsap_ntoa. */
-#undef HAVE_NSAP_ADDR
-
 /* Define to 1 if the system has the type `ns_cert_types'. */
 #undef HAVE_NS_CERT_TYPES
-
-/* Define to 1 if you have the <openssl/bio.h> header file. */
-#undef HAVE_OPENSSL_BIO_H
-
-/* Define to 1 if you have the <openssl/evp.h> header file. */
-#undef HAVE_OPENSSL_EVP_H
 
 /* Define to 1 if you have the `pselect' function. */
 #undef HAVE_PSELECT
 
+/* Define to 1 if you have the <pthread.h> header file. */
+#undef HAVE_PTHREAD_H
+
+/* Define to 1 if you have the <resolv.h> header file. */
+#undef HAVE_RESOLV_H
+
 /* Define if libcrypto implements SHA-256. */
 #undef HAVE_SHA_256
+
+/* Define to 1 if you have the `snprintf' function. */
+#undef HAVE_SNPRINTF
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -150,11 +184,38 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the `strncasecmp' function. */
+#undef HAVE_STRNCASECMP
+
+/* Define to 1 if you have the `strtok_r' function. */
+#undef HAVE_STRTOK_R
+
+/* Define to 1 if you have the <syslog.h> header file. */
+#undef HAVE_SYSLOG_H
+
+/* Define to 1 if you have the <sys/fcntl.h> header file. */
+#undef HAVE_SYS_FCNTL_H
+
+/* Define to 1 if you have the <sys/file.h> header file. */
+#undef HAVE_SYS_FILE_H
+
 /* Define to 1 if you have the <sys/filio.h> header file. */
 #undef HAVE_SYS_FILIO_H
 
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#undef HAVE_SYS_IOCTL_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
@@ -171,6 +232,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if the system has the type `u_char'. */
+#undef HAVE_U_CHAR
+
 /* Define to 1 if the system has the type `u_int16_t'. */
 #undef HAVE_U_INT16_T
 
@@ -179,6 +243,12 @@
 
 /* Define to 1 if the system has the type `u_int8_t'. */
 #undef HAVE_U_INT8_T
+
+/* Define to 1 if the system has the type `u_long'. */
+#undef HAVE_U_LONG
+
+/* Define to 1 if the system has the type `u_short'. */
+#undef HAVE_U_SHORT
 
 /* Configure options */
 #undef LIBVAL_CONFIGURE_OPTIONS
@@ -237,7 +307,7 @@
 /* dnsval configuration file */
 #undef VAL_CONFIGURATION_FILE
 
-/* Define if IPV6 is available. */
+/* Define if IPV6 is required. */
 #undef VAL_IPV6
 
 /* Define if you do not want to use threads. */
@@ -250,81 +320,5 @@
 #undef VAL_ROOT_HINTS
 
 
-/*
- * OpenBSD has t_*, but not ns_t_*
- */
-#if ! HAVE_DECL_NS_T_A
-#include "val_ns_types.h"
-#endif
+#include "validator-compat.h"
 
-/*
- * FreeBSD is missing ns_t_kx, ns_t_cert, ns_t_a6, ns_t_dname, ns_t_sink, ns_t_tsig, ns_t_zxfr
- * for now, assume if the first is missing, the rest are too. If we hit system that has some
- * but not others, tweak accordingly.
- */
-#if defined HAVE_DECL_NS_T_KX && !HAVE_DECL_NS_T_KX
-#define ns_t_kx      36  /* Key Exchange */
-#define ns_t_cert    37  /* Certification record */
-#define ns_t_a6      38  /* IPv6 address (deprecates AAAA) */
-#define ns_t_dname   39  /* Non-terminal DNAME (for IPv6) */
-#define ns_t_sink    40  /* Kitchen sink (experimentatl) */
-#define ns_t_tsig    250 /* Transaction signature. */
-#define ns_t_zxfr    256 /* BIND-specific, nonstandard. */
-#endif /* HAVE_NS_T_KX */
-
-/*
- * FreeBSD is missing ns_r_badsig, ns_r_badkey, ns_r_badtime
- * for now, assume if the first is missing, the rest are too. If we hit system that has some
- * but not others, tweak accordingly.
- */
-#if defined HAVE_DECL_NS_R_BADSIG && !HAVE_DECL_NS_R_BADSIG
-#define ns_r_badsig      16
-#define ns_r_badkey      17
-#define ns_r_badtime     18
-#endif /* HAVE_NS_R_BADSIG */
-
-
-
-#define MAX_TEST_RESULTS 10
-
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-/* define u_int32_t if not available */
-#ifndef HAVE_U_INT32_T
-#ifdef HAVE_UINT32_T
-typedef uint32_t        u_int32_t;
-#else
-#ifdef INT32_T
-typedef unsigned INT32_T u_int32_t;
-#else
-typedef unsigned int     u_int32_t;
-#endif
-#endif
-#endif /* !HAVE_U_INT32_T */
-
-/* define u_int16_t if not available */
-#ifndef HAVE_U_INT16_T
-#ifdef HAVE_UINT16_T
-typedef uint16_t        u_int16_t;
-#else
-#ifdef INT16_T
-typedef unsigned INT16_T u_int16_t;
-#else
-typedef unsigned short     u_int16_t;
-#endif
-#endif
-#endif /* !HAVE_U_INT16_T */
-
-/* define u_int8_t if not available */
-#ifndef HAVE_U_INT8_T
-#ifdef HAVE_UINT8_T
-typedef uint8_t        u_int8_t;
-#else
-#ifdef INT8_T
-typedef unsigned INT8_T u_int8_t;
-#else
-typedef unsigned short     u_int8_t;
-#endif
-#endif
-#endif /* !HAVE_U_INT8_T */

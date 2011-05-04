@@ -1,21 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <dlfcn.h>
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <string.h>
-#include <errno.h>
-
-
-#include <arpa/nameser.h>
-#include <validator-config.h>
-#include <validator/resolver.h>
+#include "validator-config.h"
 #include <validator/validator.h>
+#include <validator/resolver.h>
+
+#include <dlfcn.h>
 
 #ifdef __linux__
 #define getprogname() program_invocation_short_name 

@@ -20,24 +20,8 @@
  * See the COPYING file distributed with this software for details.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <sys/time.h>
-#include <sys/types.h>
-
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#else
-#include "arpa/header.h"
-#endif
-
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
 #include "val_support.h"
 
 int
@@ -372,29 +356,6 @@ wire_name_labels(const u_char * field)
         return l;
 }
 
-size_t
-wire_name_length(const u_char * field)
-{
-    /*
-     * Calculates the number of bytes in a DNS wire format name 
-     */
-    size_t j;
-    if (field == NULL)
-        return 0;
-
-    for (j = 0; field[j] && !(0xc0 & field[j]) && j < NS_MAXCDNAME;
-         j += field[j] + 1);
-    if (field[j])
-        j++;
-    j++;
-
-    if (j > NS_MAXCDNAME)
-        return 0;
-    else
-        return j;
-}
-
-
 void
 res_sq_free_rr_recs(struct val_rr_rec **rr)
 {
@@ -529,7 +490,7 @@ is_tail(u_char * full, u_char * tail)
         size_t        index = 0;
 
         while (index < (f_len - t_len)) {
-            index += (full[index]) + (u_int8_t) 1;
+            index += (full[index]) + (u_char) 1;
             if (index == f_len - t_len)
                 return TRUE;
         }
@@ -1425,8 +1386,6 @@ copy_rr_rec_list(u_int16_t type_h, struct val_rr_rec *o_rr, int dolower)
     return n_head;
 }
 
-#define INSERTED    1
-#define DUPLICATE   -1
 int
 link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
 {
@@ -1443,7 +1402,7 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
 
     if (*cs == NULL) {
         *cs = cr;
-        return INSERTED;
+        return 1;
     } else {
         length = (*cs)->rr_rdata_length < cr->rr_rdata_length ?
             (*cs)->rr_rdata_length : cr->rr_rdata_length;
@@ -1459,19 +1418,19 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
                 cr->rr_next = NULL;
             }
             res_sq_free_rr_recs(&cr);
-            return DUPLICATE;
+            return -1;
         } else if (ret_val > 0
                    || (ret_val == 0 && length == cr->rr_rdata_length)) {
             cr->rr_next = *cs;
             *cs = cr;
-            return INSERTED;
+            return 1;
         } else {
             temp_rr = *cs;
 
             if (temp_rr->rr_next == NULL) {
                 temp_rr->rr_next = cr;
                 cr->rr_next = NULL;
-                return INSERTED;
+                return 1;
             }
             while (temp_rr->rr_next) {
                 length = temp_rr->rr_next->rr_rdata_length <
@@ -1491,7 +1450,7 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
                         cr->rr_next = NULL;
                     }
                     res_sq_free_rr_recs(&cr);
-                    return DUPLICATE;
+                    return -1;
                 } else if (ret_val > 0
                            || (ret_val == 0
                                && length == cr->rr_rdata_length)) {
@@ -1500,7 +1459,7 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
                      */
                     cr->rr_next = temp_rr->rr_next;
                     temp_rr->rr_next = cr;
-                    return INSERTED;
+                    return 1;
                 }
                 temp_rr = temp_rr->rr_next;
             }
@@ -1511,7 +1470,7 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
 
             temp_rr->rr_next = cr;
             cr->rr_next = NULL;
-            return INSERTED;
+            return 1;
         }
     }
 }

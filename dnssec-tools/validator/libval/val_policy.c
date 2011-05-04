@@ -8,37 +8,16 @@
  * files and update the validator context.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <regex.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <ctype.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/file.h>
-#include <resolv.h>
-#include <errno.h>
-#ifndef VAL_NO_THREADS
-#include <pthread.h>
-#endif
-
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
 #include "val_policy.h"
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_resquery.h"
 #include "val_context.h"
 #include "val_assertion.h"
+#include "val_parse.h"
+
 
 #define READ_POL_FOR_ZONE(buf_ptr, end_ptr, line_number, endst, retval, err, token)  do {\
     /*\
@@ -1392,6 +1371,9 @@ destroy_valpol(val_context_t * ctx)
 #ifdef solaris2
 #define getprogname() getexecname()
 #endif
+#ifdef WIN32
+#define getprogname() NULL
+#endif
 static int
 read_next_val_config_file(val_context_t *ctx, 
                           char **label, 
@@ -1402,7 +1384,9 @@ read_next_val_config_file(val_context_t *ctx,
                           global_opt_t **g_opt)
 {
     int    fd = -1;
+#ifdef HAVE_FLOCK
     struct flock    fl;
+#endif
     struct stat sb;
     char token[TOKEN_MAX];
     int endst = 0;
@@ -1443,9 +1427,11 @@ read_next_val_config_file(val_context_t *ctx,
             return VAL_NO_ERROR;
         }
     }
+#ifdef HAVE_FLOCK
     memset(&fl, 0, sizeof(fl));
     fl.l_type = F_RDLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
 
     if (0 != fstat(fd, &sb)) {
         val_log(ctx, LOG_ERR, 
@@ -1698,8 +1684,10 @@ read_next_val_config_file(val_context_t *ctx,
     *label = next_label;
     FREE(buf);
     buf = NULL;
+#ifdef HAVE_FLOCK
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
     close(fd);
     fd = -1;
     return VAL_NO_ERROR;
@@ -1715,8 +1703,10 @@ err:
         FREE(buf);
     }
     if (fd != -1) {
+#ifdef HAVE_FLOCK
         fl.l_type = F_UNLCK;
         fcntl(fd, F_SETLKW, &fl);
+#endif
         close(fd);
     }
     return retval;
@@ -1907,7 +1897,9 @@ read_res_config_file(val_context_t * ctx)
 {
     char           *resolv_config;
     int             fd;
+#ifdef HAVE_FLOCK
     struct flock    fl;
+#endif
     char            token[TOKEN_MAX];
     int             line_number = 0;
     int             endst = 0;
@@ -1953,8 +1945,10 @@ read_res_config_file(val_context_t * ctx)
         }
         return VAL_CONF_NOT_FOUND;
     }
+#ifdef HAVE_FLOCK
     fl.l_type = F_RDLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
 
     if (0 != fstat(fd, &sb)) {
         retval = VAL_CONF_NOT_FOUND;
@@ -2071,8 +2065,10 @@ read_res_config_file(val_context_t * ctx)
 
     FREE(buf);
   empty:
+#ifdef HAVE_FLOCK
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
     close(fd);
 
     /*
@@ -2105,8 +2101,10 @@ read_res_config_file(val_context_t * ctx)
         FREE(buf);
 
     if (fd != -1) {
+#ifdef HAVE_FLOCK
         fl.l_type = F_UNLCK;
         fcntl(fd, F_SETLKW, &fl);
+#endif
         close(fd);
     }
 
@@ -2121,7 +2119,9 @@ read_root_hints_file(val_context_t * ctx)
 {
     struct rrset_rec *root_info = NULL;
     int             fd;
+#ifdef HAVE_FLOCK
     struct flock    fl;
+#endif
     char            token[TOKEN_MAX];
     char           *root_hints;
     u_char          zone_n[NS_MAXCDNAME];
@@ -2164,8 +2164,10 @@ read_root_hints_file(val_context_t * ctx)
                 root_hints);
         return VAL_NO_ERROR;
     }
+#ifdef HAVE_FLOCK
     fl.l_type = F_RDLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
 
     if (0 != fstat(fd, &sb)) { 
         retval = VAL_CONF_NOT_FOUND;
@@ -2288,13 +2290,14 @@ read_root_hints_file(val_context_t * ctx)
             goto err;
         }
         if (type_h == ns_t_a) {
-            struct in_addr  address;
-            if (inet_pton(AF_INET, token, &address) != 1) {
+            struct sockaddr_in sa;
+            size_t addrlen4 = sizeof(struct sockaddr_in);
+            if (INET_PTON(AF_INET, token, ((struct sockaddr *)&sa), &addrlen4) != 1) {
                 retval = VAL_CONF_PARSE_ERROR;
                 goto err;
             }
             rdata_len_h = sizeof(struct in_addr);
-            memcpy(rdata_n, &address, rdata_len_h);
+            memcpy(rdata_n, &sa.sin_addr, rdata_len_h);
         } else if (type_h == ns_t_ns) {
             if (ns_name_pton(token, rdata_n, sizeof(rdata_n)) == -1) {
                 retval = VAL_CONF_PARSE_ERROR;
@@ -2365,8 +2368,10 @@ read_root_hints_file(val_context_t * ctx)
 
     val_log(ctx, LOG_DEBUG, "read_root_hints_file(): Done reading root hints");
     FREE(buf);
+#ifdef HAVE_FLOCK
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
     close(fd);
 
     return VAL_NO_ERROR;
@@ -2375,8 +2380,10 @@ read_root_hints_file(val_context_t * ctx)
 
     if (buf)
         FREE(buf);
+#ifdef HAVE_FLOCK
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
     close(fd);
     res_sq_free_rrset_recs(&root_info);
     val_log(ctx, LOG_ERR, "read_root_hints_file(): Error encountered while reading file %s - %s", 
@@ -2406,7 +2413,9 @@ parse_etc_hosts(const char *name)
     }
 
     while (fgets(line, MAX_LINE_SIZE, fp) != NULL) {
+#ifdef HAVE_STRTOK_R
         char           *buf = NULL;
+#endif
         char           *cp = NULL;
         char            addr_buf[INET6_ADDRSTRLEN];
         char           *domain_name = NULL;
@@ -2422,7 +2431,11 @@ parse_etc_hosts(const char *name)
         /*
          * ignore characters after # 
          */
+#ifdef HAVE_STRTOK_R
         cp = (char *) strtok_r(line, "#", &buf);
+#else
+	    cp = (char *) strtok(line, "#");
+#endif
 
         if (!cp)
             continue;
@@ -2433,7 +2446,11 @@ parse_etc_hosts(const char *name)
         /*
          * read the ip address 
          */
+#ifdef HAVE_STRTOK_R
         cp = (char *) strtok_r(fileentry, white, &buf);
+#else
+        cp = (char *) strtok(fileentry, white);
+#endif
         if (!cp)
             continue;
 
@@ -2443,13 +2460,17 @@ parse_etc_hosts(const char *name)
         /*
          * read the full domain name 
          */
+#ifdef HAVE_STRTOK_R
         cp = (char *) strtok_r(NULL, white, &buf);
+#else
+        cp = (char *) strtok(NULL, white);
+#endif
         if (!cp)
             continue;
 
         domain_name = cp;
 
-        if (strcasecmp(cp, name) == 0) {
+        if (strncasecmp(name, cp, strlen(cp)) == 0) {
             matchfound = 1;
         }
 
@@ -2458,9 +2479,13 @@ parse_etc_hosts(const char *name)
          */
         memset(alias_list, 0, MAX_ALIAS_COUNT);
         alias_index = 0;
+#ifdef HAVE_STRTOK_R
         while ((cp = (char *) strtok_r(NULL, white, &buf)) != NULL) {
+#else
+        while ((cp = (char *) strtok(NULL, white)) != NULL) {
+#endif
             alias_list[alias_index++] = cp;
-            if ((!matchfound) && (strcasecmp(cp, name) == 0)) {
+            if ((!matchfound) && (strncasecmp(name, cp, strlen(cp)) == 0)) {
                 matchfound = 1;
             }
         }
@@ -2475,7 +2500,7 @@ parse_etc_hosts(const char *name)
         if (hentry == NULL)
             break;              /* return results so far */
 
-        bzero(hentry, sizeof(struct hosts));
+        memset(hentry, 0, sizeof(struct hosts));
         hentry->address = (char *) strdup(addr_buf);
         hentry->canonical_hostname = (char *) strdup(domain_name);
         hentry->aliases =

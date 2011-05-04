@@ -1,5 +1,6 @@
 TEST_VERBOSITY=4
 SUBDIRS=libsres libval libval_shim apps doc
+WINSUBDIRS=libsres libval apps 
 BUILD_ARCH = build
 
 INSTALLDIRS=$(prefix) $(exec_prefix) $(sysconfdir)/dnssec-tools $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
@@ -69,7 +70,7 @@ subdirinstall:
 
 localinstall:
 	$(INSTALL) libval-config $(DESTDIR)$(bindir)
-	$(INSTALL) include/validator-config.h $(DESTDIR)$(includedir)
+	$(INSTALL) $(DESTDIR)$(includedir)
 
 subdirclean:
 	@for i in $(SUBDIRS) ; do \
@@ -86,6 +87,14 @@ configclean:
 
 universal: clean
 	make "CC=$(CC) -mmacosx-version-min=10.5 -arch x86_64 -arch i386 -arch ppc -bundle -undefined dynamic_lookup"
+
+windows:
+	@for i in $(WINSUBDIRS) ; do \
+	  (cd $$i ; make ) ; \
+	  if test $$? != 0 ; then \
+	     exit 1 ; \
+	  fi  \
+         done
 
 TAGS:
 	find . -name '*.[ch]' -print | etags -

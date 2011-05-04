@@ -15,24 +15,19 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <sys/types.h>
-
-#include <errno.h>
-#include <string.h>
-#include <arpa/nameser.h>
-#include <netinet/in.h>
-#include <resolv.h>
-
-#include "validator/resolver.h"
 #include "res_support.h"
+#include "res_comp.h"
 
+#if HAVE_ARPA_NAMESER_H
 #ifndef STRUCT___NS_MSG_HAS__MSG_PTR
 #   ifdef STRUCT___NS_MSG_HAS__PTR
 #      define _msg_ptr _ptr
 #   else
 #      error "unknown msg ptr member in struct __ns_msg"
 #   endif
+#endif
 #endif
 
 /*

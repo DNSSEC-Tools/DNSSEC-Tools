@@ -15,12 +15,8 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <arpa/nameser.h>
-#include "validator/resolver.h"
 #include "res_tsig.h"
 #include "res_support.h"
 

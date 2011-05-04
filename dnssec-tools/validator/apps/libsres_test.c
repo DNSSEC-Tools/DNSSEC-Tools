@@ -18,24 +18,10 @@
  * Copyright 2005-2011 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
+
 #include "validator-config.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <sys/types.h>
-
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#elif ! defined( HAVE_ARPA_NAMESER_H )
-#include "arpa/header.h"
-#endif
-
-#include "validator/resolver.h"
+#include <validator/validator.h>
+#include <validator/resolver.h>
 
 int
 query_async_test(int async, int burst_max, int inflight_max, int numq)

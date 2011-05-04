@@ -15,13 +15,7 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
-
-#include <sys/types.h>
-#include <errno.h>
-#include <string.h>
-#include <arpa/nameser.h>
-
-#include "validator/resolver.h"
+#include "validator-internal.h"
 
 /*
  * int
@@ -150,16 +144,6 @@ ns_samedomain(const char *a, const char *b)
     return (strncasecmp(cp, b, lb) == 0);
 }
 
-/*
- * int
- * ns_subdomain(a, b)
- *      is "a" a subdomain of "b"?
- */
-int
-ns_subdomain(const char *a, const char *b)
-{
-    return (ns_samename(a, b) != 1 && ns_samedomain(a, b));
-}
 
 /*
  * int
@@ -212,8 +196,19 @@ ns_samename(const char *a, const char *b)
     if (ns_makecanon(a, ta, sizeof(ta)) < 0 ||
         ns_makecanon(b, tb, sizeof(tb)) < 0)
         return (-1);
-    if (strcasecmp(ta, tb) == 0)
+    if (strncasecmp(ta, tb, NS_MAXDNAME) == 0)
         return (1);
     else
         return (0);
+}
+
+/*
+ * int
+ * ns_subdomain(a, b)
+ *      is "a" a subdomain of "b"?
+ */
+int
+ns_subdomain(const char *a, const char *b)
+{
+    return (ns_samename(a, b) != 1 && ns_samedomain(a, b));
 }

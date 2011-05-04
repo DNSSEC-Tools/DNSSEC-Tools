@@ -5,6 +5,8 @@
 #ifndef VALIDATOR_DRIVER_H
 #define VALIDATOR_DRIVER_H
 
+#define MAX_TEST_RESULTS 10
+
 void print_val_response(struct val_response *resp);
 int sendquery(val_context_t * context, const char *desc, char * name,
               int class, int type, u_int32_t flags,

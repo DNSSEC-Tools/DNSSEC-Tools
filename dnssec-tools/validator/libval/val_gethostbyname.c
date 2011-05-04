@@ -12,21 +12,10 @@
  * Applications should be able to use this with minimal change.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <strings.h>
-#include <errno.h>
-
-#include <arpa/nameser.h>
-#include <validator/validator.h>
-#include <validator/resolver.h>
 #include "val_policy.h"
+#include "val_parse.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"
@@ -34,9 +23,6 @@
 #define MAX_ALIAS_COUNT 2048
 #define AUX_BUFLEN 16384
 
-#ifndef h_errno                 /* can be a macro */
-extern int      h_errno;
-#endif
 static struct hostent g_hentry;
 static char     g_auxbuf[AUX_BUFLEN];
 
@@ -124,34 +110,44 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
     hs = parse_etc_hosts(name);
 
     orig_offset = *offset;
-    bzero(ret, sizeof(struct hostent));
+    memset(ret, 0, sizeof(struct hostent));
 
     /*
      * XXX: todo -- can hs have more than one element ? 
      */
     while (hs) {
-        struct in_addr  ip4_addr;
-        struct in6_addr ip6_addr;
+        struct sockaddr_in sa;
+        size_t addrlen4 = sizeof(struct sockaddr_in);
+#ifdef VAL_IPV6
+        struct sockaddr_in6 sa6;
+        size_t addrlen6 = sizeof(struct sockaddr_in6);
+#endif
         char            addr_buf[INET6_ADDRSTRLEN];
         int             i, alias_count;
         int             len = 0;
-
-        bzero(&ip4_addr, sizeof(struct in_addr));
-        bzero(&ip6_addr, sizeof(struct in6_addr));
+        const char *addr = NULL;
+        size_t buflen = INET6_ADDRSTRLEN;
 
         if ((af == AF_INET)
-            && (inet_pton(AF_INET, hs->address, &ip4_addr) > 0)) {
+            && (INET_PTON(AF_INET, hs->address, ((struct sockaddr *)&sa), &addrlen4) > 0)) {
+            INET_NTOP(AF_INET, (&sa), sizeof(sa), addr_buf, buflen, addr);
             val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): type of address is IPv4");
             val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): Address is: %s",
-                    inet_ntop(AF_INET, &ip4_addr, addr_buf,
-                              INET_ADDRSTRLEN));
-        } else if ((af == AF_INET6)
-                   && (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0)) {
+                    addr
+		);
+        } 
+#ifdef VAL_IPV6
+	else if ((af == AF_INET6)
+                   && (INET_PTON(AF_INET6, hs->address, ((struct sockaddr *)&sa6), &addrlen6) > 0)) {
+	    
+            INET_NTOP(AF_INET6, (&sa6), sizeof(sa6), addr_buf, buflen, addr);
             val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): type of address is IPv6");
             val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): Address is: %s",
-                    inet_ntop(AF_INET, &ip6_addr, addr_buf,
-                              INET6_ADDRSTRLEN));
-        } else {
+                    addr
+                  );
+        } 
+#endif
+	else {
             /*
              * not a valid address ... skip this line 
              */
@@ -225,9 +221,11 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
             if (ret->h_addr_list[0] == NULL) {
                 goto err;
             }
-            memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+            memcpy(ret->h_addr_list[0], &sa.sin_addr, sizeof(struct in_addr));
             ret->h_addr_list[1] = 0;
-        } else if (af == AF_INET6) {
+        } 
+#ifdef VAL_IPV6
+        else if (af == AF_INET6) {
             ret->h_addrtype = AF_INET6;
             ret->h_length = sizeof(struct in6_addr);
             ret->h_addr_list[0] =
@@ -236,10 +234,11 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
             if (ret->h_addr_list[0] == NULL) {
                 goto err;
             }
-            memcpy(ret->h_addr_list[0], &ip6_addr,
+            memcpy(ret->h_addr_list[0], &sa6.sin6_addr,
                    sizeof(struct in6_addr));
             ret->h_addr_list[1] = 0;
         }
+#endif
 
         /*
          * clean up host list 
@@ -322,7 +321,7 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     *h_errnop = 0;
     
     orig_offset = *offset;
-    bzero(ret, sizeof(struct hostent));
+    memset(ret, 0, sizeof(struct hostent));
 
     /*
      * Count the number of aliases and addresses in the result 
@@ -543,8 +542,12 @@ val_gethostbyname2_r(val_context_t * context,
                      struct hostent **result,
                      int *h_errnop, val_status_t * val_status)
 {
-    struct in_addr  ip4_addr;
-    struct in6_addr ip6_addr;
+    struct sockaddr_in  sa;
+    size_t addrlen4 = sizeof(struct sockaddr_in);
+#ifdef VAL_IPV6
+    struct sockaddr_in6 sa6;
+    size_t addrlen6 = sizeof(struct sockaddr_in6);
+#endif
     int             offset = 0;
     val_status_t local_ans_status = VAL_OOB_ANSWER;
     int trusted = 0;
@@ -573,14 +576,11 @@ val_gethostbyname2_r(val_context_t * context,
         }
     }
 
-    bzero(&ip4_addr, sizeof(struct in_addr));
-    bzero(&ip6_addr, sizeof(struct in6_addr));
-
     /*
      * Check if the address-family is AF_INET and the address is an IPv4 address 
      */
-    if ((af == AF_INET) && (inet_pton(AF_INET, name, &ip4_addr) > 0)) {
-        bzero(ret, sizeof(struct hostent));
+    if ((af == AF_INET) && (INET_PTON(AF_INET, name, ((struct sockaddr *)&sa), &addrlen4) > 0)) {
+        memset(ret, 0, sizeof(struct hostent));
 
         // Name
         ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
@@ -611,7 +611,7 @@ val_gethostbyname2_r(val_context_t * context,
         if (ret->h_addr_list[0] == NULL) {
             goto err;      
         }
-        memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+        memcpy(ret->h_addr_list[0], &sa.sin_addr, sizeof(struct in_addr));
         ret->h_addr_list[1] = 0;
 
         *val_status = VAL_TRUSTED_ANSWER;
@@ -619,12 +619,13 @@ val_gethostbyname2_r(val_context_t * context,
         *result = ret;
     }
 
+#ifdef VAL_IPV6
     /*
      * Check if the address-family is AF_INET6 and the address is an IPv6 address 
      */
     else if ((af == AF_INET6)
-             && (inet_pton(AF_INET6, name, &ip6_addr) > 0)) {
-        bzero(ret, sizeof(struct hostent));
+             && (INET_PTON(AF_INET6, name, ((struct sockaddr *)&sa6), &addrlen6) > 0)) {
+        memset(ret, 0, sizeof(struct hostent));
 
         // Name
         ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
@@ -655,14 +656,16 @@ val_gethostbyname2_r(val_context_t * context,
         if (ret->h_addr_list[0] == NULL) {
             goto err;   
         }
-        memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
+        memcpy(ret->h_addr_list[0], &sa6.sin6_addr, sizeof(struct in6_addr));
         ret->h_addr_list[1] = 0;
 
         *val_status = VAL_TRUSTED_ANSWER;
         *h_errnop = NETDB_SUCCESS;
         *result = ret;
 
-    } else if (NULL != 
+    } 
+#endif
+    else if (NULL != 
                 (*result = get_hostent_from_etc_hosts(ctx, name, af, 
                                                       ret, buf, buflen, &offset))) {
         /*
@@ -755,8 +758,10 @@ val_gethostbyname2(val_context_t * ctx,
                    const char *name, int af, val_status_t * val_status)
 {
     struct hostent *result = NULL;
+    int last_err = 0;
     val_gethostbyname2_r(ctx, name, af, &g_hentry, g_auxbuf,
-                         AUX_BUFLEN, &result, &h_errno, val_status);
+                         AUX_BUFLEN, &result, &last_err, val_status);
+    SET_LAST_ERR(last_err);
     return result;
 
 }                               /* val_gethostbyname2() */
@@ -894,10 +899,14 @@ val_gethostbyaddr_r(val_context_t * context,
     if (AF_INET == type && len >= sizeof(struct in_addr)) {
         ret->h_addrtype = type;
         ret->h_length = sizeof(struct in_addr);
-    } else if (AF_INET6 == type && len >= sizeof(struct in6_addr)) {
+    } 
+#ifdef VAL_IPV6
+    else if (AF_INET6 == type && len >= sizeof(struct in6_addr)) {
         ret->h_addrtype = type;
         ret->h_length = sizeof(struct in6_addr);
-    } else {
+    } 
+#endif
+    else {
         *h_errnop = NO_RECOVERY;
         return (NO_RECOVERY);
     }
@@ -1079,7 +1088,7 @@ val_gethostbyaddr(val_context_t * context,
     
     if (context == NULL) {
         if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
-            h_errno = NO_RECOVERY;
+            SET_LAST_ERR(NO_RECOVERY);
             return NULL;
         } 
     } else {
@@ -1105,20 +1114,20 @@ val_gethostbyaddr(val_context_t * context,
                                                    val_status);
 
     if (response != 0) {
-        h_errno = response;
+        SET_LAST_ERR(response);
         return NULL;
     }
     /*
      * should have succeeded, if memory doesn't match, fail. 
      */
     else if (&ret_hostent != result_hostent) {
-        h_errno = NO_RECOVERY;
+        SET_LAST_ERR(NO_RECOVERY);
         return NULL;
     }
 
     /*
      * success 
      */
-    h_errno = 0;
+    SET_LAST_ERR(NETDB_SUCCESS);
     return &ret_hostent;
 }                               /* val_gethostbyaddr */

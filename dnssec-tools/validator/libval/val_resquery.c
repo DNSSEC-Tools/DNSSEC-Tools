@@ -23,34 +23,7 @@
  * Contains resolver functionality in libval 
  */
 #include "validator-config.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <ctype.h>
-#include <netinet/in.h>
-
-#include <resolv.h>
-
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
-#ifndef NAMESER_HAS_HEADER
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#else
-#include "arpa/header.h"
-#endif
-#endif                          /* NAMESER_HAS_HEADER */
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#ifndef VAL_NO_THREADS
-#include <pthread.h>
-#endif
+#include "validator-internal.h"
 
 #include "val_resquery.h"
 #include "val_support.h"
@@ -1833,8 +1806,8 @@ digest_response(val_context_t * context,
                  * make sure that the NS is closer to the alias than the target; 
                  * if not don't fix the zonecut
                  */
-                u_int8_t *n1 = NULL;
-                u_int8_t *n2 = NULL;
+                u_char *n1 = NULL;
+                u_char *n2 = NULL;
 
                 if (*qnames) {
                     struct qname_chain *q = *qnames;

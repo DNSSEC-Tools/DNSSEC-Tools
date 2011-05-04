@@ -22,140 +22,25 @@
 #ifndef RESOLVER_H
 #define RESOLVER_H
 
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/time.h>
-
 #ifdef __cplusplus
 extern          "C" {
 #endif
 
-#ifdef MEMORY_DEBUGGING
-#define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
-#define FREE(p) my_free(p,__FILE__,__LINE__)
-#define STRDUP(p) my_strdup(p,__FILE__,__LINE__)
-#else
-#define MALLOC(s) malloc(s)
-#define FREE(p) free(p)
-#define STRDUP(p) strdup(p)
-#endif
 
-#define IPADDR_STRING_MAX 128
-
-#define RES_RETRY 1 /* number of times to retry */
 #define LIBSRES_NS_STAGGER 5 /* how far apart should we stagger queries to
                                 different authoritative name servers */
-#ifndef RES_TIMEOUT
-#define RES_TIMEOUT 5 /* min seconds between retries */
-#endif
 
-#ifndef RES_USE_DNSSEC
-#define RES_USE_DNSSEC  0x00800000
-#endif
-
-#ifndef RES_USE_EDNS0
-#define RES_USE_EDNS0   0x00100000
-#endif
-
-#define RES_EDNS0_DEFAULT 4096
-
-#if 0
-#ifndef MAXDNAME
-#define MAXDNAME    256
-#endif
-#endif
-
-#ifndef NS_MAXDNAME
-#define NS_MAXDNAME 1025        /* maximum domain name */
-#endif
-#ifndef NS_MAXCDNAME
-#define NS_MAXCDNAME    255     /* maximum compressed domain name */
-#endif
-
-/** START:some missing macros on OpenBSD 3.9 */
-#ifndef NS_CMPRSFLGS
-#define NS_CMPRSFLGS   0xc0
-#endif
-#if !defined(NS_MAXCDNAME) && defined (MAXCDNAME)
-#define NS_MAXCDNAME MAXCDNAME
-#endif
-#if !defined(NS_INT16SZ) && defined(INT16SZ)
-#define NS_INT16SZ INT16SZ
-#define NS_INT32SZ INT32SZ
-#endif
-/** END:some missing macros on OpenBSD 3.9 */
 
 #define ZONE_USE_NOTHING        0x00000000
 #define ZONE_USE_TSIG           0x00000001
-
-
 #define SR_ZI_STATUS_UNSET      0
 #define SR_ZI_STATUS_PERMANENT      1
 #define SR_ZI_STATUS_LEARNED        2
-
-
-#define DNAME_MAX     1024
-
-#ifndef ns_t_dnskey
-#define ns_t_dnskey   48
-#endif
-#ifndef ns_t_rrsig
-#define ns_t_rrsig    46
-#endif
-#ifndef ns_t_nsec
-#define ns_t_nsec     47
-#endif
-
-#ifdef LIBVAL_NSEC3
-#ifndef ns_t_nsec3
-#define ns_t_nsec3   50
-#endif
-#endif
-
-#ifdef LIBVAL_DLV
-#ifndef ns_t_dlv
-#define ns_t_dlv 32769
-#endif
-#endif
-
-#ifndef ns_t_ds
-#define ns_t_ds       43
-#endif
-
-/* Keep the following consistent with validator.h */
-/* 
- *  we are duplicating the following since there's no reason
- *  for files in libsres that need these definitions to include
- *  the complete validator.h file
- */
-#ifndef SHA_DIGEST_LENGTH
-#define SHA_DIGEST_LENGTH   20
-#endif
-#ifndef SHA256_DIGEST_LENGTH
-#define SHA256_DIGEST_LENGTH 32
-#endif
-#ifndef ALG_DS_HASH_SHA1
-#define ALG_DS_HASH_SHA1 1
-#endif
-#ifndef ALG_DS_HASH_SHA256
-#define ALG_DS_HASH_SHA256 2
-#endif
-
-/* query types for which edns0 is required */
-#ifdef LIBVAL_DLV
-#define DNSSEC_METADATA_QTYPE(type) \
-    ((type == ns_t_rrsig || type == ns_t_dnskey || type == ns_t_ds || type == ns_t_dlv))
-#else
-#define DNSSEC_METADATA_QTYPE(type) \
-    ((type == ns_t_rrsig || type == ns_t_dnskey || type == ns_t_ds))
-#endif
 
 /*
  * Resolver errors 
  */
 #define SR_UNSET    0
-
 #define SR_INTERNAL_ERROR         1
 #define SR_CALL_ERROR             SR_INTERNAL_ERROR
 #define SR_MEMORY_ERROR           SR_INTERNAL_ERROR
@@ -179,12 +64,12 @@ extern          "C" {
 #define SR_REFUSED                14    /*RCODE set to REFUSED */
 
 struct name_server {
-    u_char          ns_name_n[NS_MAXCDNAME];
+    unsigned char  ns_name_n[NS_MAXCDNAME];
     void           *ns_tsig;
-    u_int32_t       ns_security_options;
-    u_int32_t       ns_status;
-    u_long          ns_options;
-    int             ns_edns0_size;
+    unsigned int   ns_security_options;
+    unsigned int   ns_status;
+    unsigned long  ns_options;
+    int            ns_edns0_size;
     int             ns_retrans;
     int             ns_retry;
 
@@ -200,34 +85,34 @@ struct name_server {
      */
 };
 
-
 /*
  * Interfaces to the resolver 
  */
+size_t          wire_name_length(const unsigned char *field);
 int             query_send(const char *name,
-                           const u_int16_t type_h,
-                           const u_int16_t class_h,
-                           struct name_server *nslist, 
+                           const unsigned short type_h,
+                           const unsigned short class_h,
+                           struct name_server *nslist,
                            int *trans_id);
 int             response_recv(int *trans_id,
                               fd_set *pending_desc,
                               struct timeval *closest_event,
                               struct name_server **respondent,
-                              u_char ** answer, size_t * answer_length);
+                              unsigned char ** answer, size_t * answer_length);
 void            res_cancel(int *transaction_id);
 int             res_nsfallback(int transaction_id, struct timeval *closest_event,
-                               const char *name, const u_int16_t class_h,
-                               const u_int16_t type_h, int *edns0);
+                               const char *name, const unsigned short class_h,
+                               const unsigned short type_h, int *edns0);
 
-void            wait_for_res_data(fd_set * pending_desc, 
+void            wait_for_res_data(fd_set * pending_desc,
                                   struct timeval *closest_event);
 int             get(const char *name_n,
-                    const u_int16_t type_h,
-                    const u_int16_t class_h,
+                    const unsigned short type_h,
+                    const unsigned short class_h,
                     struct name_server *nslist,
                     struct name_server **server,
-                    u_char ** response, size_t * response_length);
-void            print_response(u_char * ans, size_t resplen);
+                    unsigned char ** response, size_t * response_length);
+void            print_response(unsigned char * ans, size_t resplen);
 
 struct sockaddr_storage **create_nsaddr_array(int num_addrs);
 struct name_server *parse_name_server(const char *cp,
@@ -243,54 +128,29 @@ void            res_io_set_debug(int val);
 int             res_io_get_debug(void);
 void            res_io_view(void);
 
+unsigned short       res_nametoclass(const char *buf, int *successp);
+unsigned short       res_nametotype(const char *buf, int *successp);
 
-#ifndef HAVE_DECL_NS_NTOP
-int             ns_name_ntop(const u_char * src, char *dst, size_t dstsiz);
-#endif
-#ifndef HAVE_DECL_NS_NAME_UNPACK
-int             ns_name_unpack(const u_char * msg, const u_char * eom,
-                               const u_char * src, u_char * dst,
-                               size_t dstsiz);
-#endif
-#ifndef HAVE_DECL_NS_SAMENAME
-int             ns_samename(const char *a, const char *b);
-int             ns_samedomain(const char *a, const char *b);
-#endif
-#ifndef HAVE_DECL_NS_NAME_PTON
-int             ns_name_pton(const char *src, u_char * dst, size_t dstsiz);
-#endif
-#ifndef HAVE_DECL_NS_PARSE_TTL
-int             ns_parse_ttl(const char *src, u_long * dst);
-#endif
+/** foward declare of opaque structure used by async routines */
+struct expected_arrival;
 
-u_int16_t       res_nametoclass(const char *buf, int *successp);
-u_int16_t       res_nametotype(const char *buf, int *successp);
 
-#ifndef HAVE_DECL_P_SECTION
-const char     *p_section(int section, int opcode);
-#endif
-
-const char     *p_class(int pclass);
-
-#undef p_type
-#define p_type(type) p_sres_type(type)
-const char     *p_sres_type(int type);
+void res_io_view(void);
+int res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
+                     struct timeval *now);
 
 /*
  * asynchronous interface to the resolver
  */
 
-/** foward declare of opaque structure used by async routines */
-struct expected_arrival;
-
-int             res_nsfallback_ea(struct expected_arrival *temp,
-                                  struct timeval *closest_event,
-                                  const char *name, const u_int16_t class_h,
-                                  const u_int16_t type_h, int *edns0);
+int res_nsfallback_ea(struct expected_arrival *temp,
+                      struct timeval *closest_event,
+                      const char *name, const unsigned short class_h,
+                      const unsigned short type_h, int *edns0);
 
 struct expected_arrival *
-res_async_query_send(const char *name, const u_int16_t type_h,
-                     const u_int16_t class_h, struct name_server *pref_ns);
+res_async_query_send(const char *name, const unsigned short type_h,
+                     const unsigned short class_h, struct name_server *pref_ns);
 
 void
 res_async_query_select_info(struct expected_arrival *ea, int *nfds,
@@ -306,7 +166,7 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
                  struct timeval *now);
 
 int
-res_io_get_a_response(struct expected_arrival *ea_list, u_char **answer,
+res_io_get_a_response(struct expected_arrival *ea_list, unsigned char **answer,
                       size_t *answer_length, struct name_server **respondent);
 
 void

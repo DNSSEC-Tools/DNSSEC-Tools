@@ -3,33 +3,8 @@
  * See the COPYING file distributed with this software for details.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <strings.h>
-#include <ctype.h>
-#include <unistd.h>
-#ifndef VAL_NO_THREADS
-#include <pthread.h>
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#elif ! defined( HAVE_ARPA_NAMESER_H )
-#include "arpa/header.h"
-#endif
-
-#include <netinet/in.h>
-#include <resolv.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"
@@ -38,6 +13,7 @@
 #include "val_crypto.h"
 #include "val_context.h"
 #include "val_assertion.h"
+#include "val_parse.h"
 
 #define STRIP_LABEL(name, newname) do {\
     int label_len;\
@@ -80,7 +56,7 @@
             ((label_bytes_cmp(range2, range2len, hash, hashlen) != 0) &&\
                 ((label_bytes_cmp(range2, range2len, range1, range1len) > 0)?\
                     ((label_bytes_cmp(hash, hashlen, range1, range1len) > 0) && \
-					(label_bytes_cmp(hash, hashlen, range2, range2len) < 0)) :\
+                    (label_bytes_cmp(hash, hashlen, range2, range2len) < 0)) :\
                     ((label_bytes_cmp(hash, hashlen, range2, range2len) < 0)||\
                      (label_bytes_cmp(hash, hashlen, range1, range1len) > 0))))
 #endif
@@ -671,7 +647,6 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                 }
 
         }
-                
         *queries = new_qfq;
     } 
     
@@ -1656,7 +1631,7 @@ try_build_chain(val_context_t * context,
                 u_int16_t type_h, u_int16_t class_h, u_int32_t flags)
 {
     int             retval;
-    u_int8_t        kind = SR_ANS_UNSET;
+    u_char        kind = SR_ANS_UNSET;
     struct queries_for_query *added_q = NULL;
 
     /*
@@ -2503,8 +2478,8 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 #ifdef LIBVAL_NSEC3
 u_char *
 compute_nsec3_hash(val_context_t * ctx, u_char * qname_n,
-                   u_char * soa_name_n, u_int8_t alg, u_int16_t iter,
-                   u_int8_t saltlen, u_char * salt,
+                   u_char * soa_name_n, u_char alg, u_int16_t iter,
+                   u_char saltlen, u_char * salt,
                    size_t * b32_hashlen, u_char ** b32_hash, u_int32_t *ttl_x)
 {
     int             name_len;
