@@ -15,11 +15,8 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <sys/types.h>
-#include <arpa/nameser.h>
-
-#include "validator/resolver.h"
 #include "res_support.h"
 
 /*

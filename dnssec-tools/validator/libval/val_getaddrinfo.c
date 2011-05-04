@@ -13,23 +13,12 @@
  * Contains implementation of val_getaddrinfo() and friends
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <strings.h>
-#include <resolv.h>
-
-#include <validator/validator.h>
-#include <validator/resolver.h>
 #include "val_policy.h"
-#include <errno.h>
+#include "val_parse.h"
 
-#ifndef HAVE_FREEADDRINFO
+#if !HAVE_FREEADDRINFO
 
 /* 
  * define this freeaddrinfo if we don't have it already available
@@ -189,9 +178,12 @@ val_setport(struct sockaddr *saddr, const char *serv, const char *proto)
      */
     if (PF_INET == saddr->sa_family) {
         ((struct sockaddr_in *) saddr)->sin_port = portnum;
-    } else if (PF_INET6 == saddr->sa_family) {
+    } 
+#ifdef VAL_IPV6
+    else if (PF_INET6 == saddr->sa_family) {
         ((struct sockaddr_in6 *) saddr)->sin6_port = portnum;
     }
+#endif
 }                               /* val_setport */
 
 
@@ -388,8 +380,12 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
 
     while (hs) {
         int             alias_index = 0;
-        struct in_addr  ip4_addr;
-        struct in6_addr ip6_addr;
+        struct sockaddr_in  sa;
+        size_t addrlen4 = sizeof(struct sockaddr_in);
+#ifdef VAL_IPV6
+        struct sockaddr_in6 sa6;
+        size_t addrlen6 = sizeof(struct sockaddr_in6);
+#endif
         struct hosts   *h_prev = hs;
         struct addrinfo *ainfo;
 
@@ -415,13 +411,11 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         //val_log(ctx, LOG_DEBUG, "}");
 
         memset(ainfo, 0, sizeof(struct addrinfo));
-        memset(&ip4_addr, 0, sizeof(struct in_addr));
-        memset(&ip6_addr, 0, sizeof(struct in6_addr));
 
         /*
          * Check if the address is an IPv4 address 
          */
-        if (inet_pton(AF_INET, hs->address, &ip4_addr) > 0) {
+        if (INET_PTON(AF_INET, hs->address, ((struct sockaddr *)&sa), &addrlen4) > 0) {
             struct sockaddr_in *saddr4 =
                 (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
             if (saddr4 == NULL) {
@@ -434,14 +428,15 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
             ainfo->ai_family = AF_INET;
             saddr4->sin_family = AF_INET;
             ainfo->ai_addrlen = sizeof(struct sockaddr_in);
-            memcpy(&(saddr4->sin_addr), &ip4_addr, sizeof(struct in_addr));
+            memcpy(&(saddr4->sin_addr), &sa.sin_addr, sizeof(struct in_addr));
             ainfo->ai_addr = (struct sockaddr *) saddr4;
             ainfo->ai_canonname = NULL;
         }
+#ifdef VAL_IPV6
         /*
          * Check if the address is an IPv6 address 
          */
-        else if (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0) {
+        else if (INET_PTON(AF_INET6, hs->address, ((struct sockaddr *)&sa6), &addrlen6) > 0) {
             struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)
                 malloc(sizeof(struct sockaddr_in6));
             if (saddr6 == NULL) {
@@ -454,13 +449,15 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
             ainfo->ai_family = AF_INET6;
             saddr6->sin6_family = AF_INET6;
             ainfo->ai_addrlen = sizeof(struct sockaddr_in6);
-            memcpy(&(saddr6->sin6_addr), &ip6_addr,
+            memcpy(&(saddr6->sin6_addr), &sa6.sin6_addr,
                    sizeof(struct in6_addr));
             ainfo->ai_addr = (struct sockaddr *) saddr6;
             ainfo->ai_canonname = NULL;
-        } else {
+        } 
+#endif
+        else {
             val_log(ctx, LOG_WARNING, 
-                    "get_addrinfo_from_etc_hosts(): Host is nether an A nor an AAAA address");
+                    "get_addrinfo_from_etc_hosts(): Unkown address type");
             freeaddrinfo(ainfo);
             continue;
         }
@@ -603,6 +600,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                 /*
                  * Check if the record-type is AAAA 
                  */
+#ifdef VAL_IPV6
                 else if (result->val_ans_type == ns_t_aaaa) {
                     struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)
                         malloc(sizeof(struct sockaddr_in6));
@@ -617,7 +615,9 @@ get_addrinfo_from_result(const val_context_t * ctx,
                     memcpy(&(saddr6->sin6_addr.s6_addr), rr->rr_data,
                            rr->rr_length);
                     ainfo->ai_addr = (struct sockaddr *) saddr6;
-                } else {
+                } 
+#endif
+                else {
                     freeaddrinfo(ainfo);
                     rr = rr->rr_next;
                     continue;
@@ -820,12 +820,14 @@ val_getaddrinfo(val_context_t * context,
                 const struct addrinfo *hints, struct addrinfo **res,
                 val_status_t *val_status)
 {
-    struct in_addr  ip4_addr;
-    struct in6_addr ip6_addr;
+    struct sockaddr_in  sa;
     struct addrinfo *ainfo4 = NULL;
+    size_t addrlen4 = sizeof(struct sockaddr_in);
+#ifdef VAL_IPV6
+    struct sockaddr_in6 sa6;
     struct addrinfo *ainfo6 = NULL;
-    int             is_ip4 = 0;
-    int             is_ip6 = 0;
+    size_t addrlen6 = sizeof(struct sockaddr_in6);
+#endif
     int             retval = 0;
     const char     *localhost4 = "127.0.0.1";
     const char     *localhost6 = "::1";
@@ -878,9 +880,6 @@ val_getaddrinfo(val_context_t * context,
         return EAI_NONAME;
     }
 
-    memset(&ip4_addr, 0, sizeof(struct in_addr));
-    memset(&ip6_addr, 0, sizeof(struct in6_addr));
-
     /*
      * if nodename is blank or hints includes ipv4 or unspecified,
      * use IPv4 localhost 
@@ -895,7 +894,7 @@ val_getaddrinfo(val_context_t * context,
     /*
      * check for IPv4 addresses 
      */
-    if (NULL != nname && inet_pton(AF_INET, nname, &ip4_addr) > 0) {
+    if (NULL != nname && INET_PTON(AF_INET, nname, ((struct sockaddr *)&sa), &addrlen4) > 0) {
 
         struct sockaddr_in *saddr4 =
             (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
@@ -909,14 +908,12 @@ val_getaddrinfo(val_context_t * context,
             return EAI_MEMORY;
         }
 
-        is_ip4 = 1;
-
         memset(ainfo4, 0, sizeof(struct addrinfo));
         memset(saddr4, 0, sizeof(struct sockaddr_in));
 
         saddr4->sin_family = AF_INET;
         ainfo4->ai_family = AF_INET;
-        memcpy(&(saddr4->sin_addr), &ip4_addr, sizeof(struct in_addr));
+        memcpy(&(saddr4->sin_addr), &sa.sin_addr, sizeof(struct in_addr));
         ainfo4->ai_addr = (struct sockaddr *) saddr4;
         saddr4 = NULL;
         ainfo4->ai_addrlen = sizeof(struct sockaddr_in);
@@ -945,10 +942,11 @@ val_getaddrinfo(val_context_t * context,
         nname = localhost6;
     }
 
+#ifdef VAL_IPV6
     /*
      * Check for IPv6 address 
      */
-    if (nname != NULL && inet_pton(AF_INET6, nname, &ip6_addr) > 0) {
+    if (nname != NULL && INET_PTON(AF_INET6, nname, ((struct sockaddr *)&sa6), &addrlen6) > 0) {
 
         struct sockaddr_in6 *saddr6 =
             (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
@@ -962,14 +960,12 @@ val_getaddrinfo(val_context_t * context,
             return EAI_MEMORY;
         }
 
-        is_ip6 = 1;
-
         memset(ainfo6, 0, sizeof(struct addrinfo));
         memset(saddr6, 0, sizeof(struct sockaddr_in6));
 
         saddr6->sin6_family = AF_INET6;
         ainfo6->ai_family = AF_INET6;
-        memcpy(&(saddr6->sin6_addr), &ip6_addr, sizeof(struct in6_addr));
+        memcpy(&(saddr6->sin6_addr), &sa6.sin6_addr, sizeof(struct in6_addr));
         ainfo6->ai_addr = (struct sockaddr *) saddr6;
         saddr6 = NULL;
         ainfo6->ai_addrlen = sizeof(struct sockaddr_in6);
@@ -990,6 +986,7 @@ val_getaddrinfo(val_context_t * context,
         }
         retval = 0;
     }
+#endif
 
     if (*res) {
         *val_status = VAL_TRUSTED_ANSWER;
@@ -1209,9 +1206,13 @@ val_getnameinfo(val_context_t * context,
         u_int16_t port;
         if (sa->sa_family == AF_INET) {
             port = ((const struct sockaddr_in*)sa)->sin_port;
-        } else if (sa->sa_family == AF_INET6) {
+        } 
+#ifdef VAL_IPV6
+        else if (sa->sa_family == AF_INET6) {
             port = ((const struct sockaddr_in6*)sa)->sin6_port;
-        } else {
+        } 
+#endif
+        else {
             val_log(ctx, LOG_DEBUG, "val_getnameinfo(): Address family %d not known.", sa->sa_family);
             return EAI_FAMILY;
         }
@@ -1252,7 +1253,9 @@ val_getnameinfo(val_context_t * context,
         theAddress =
             (const u_char *) &((const struct sockaddr_in *) sa)->sin_addr;
         theAddressFamily = AF_INET;
-    } else if (AF_INET6 == sa->sa_family
+    } 
+#ifdef VAL_IPV6
+    else if (AF_INET6 == sa->sa_family
                && salen >= sizeof(struct sockaddr_in6)) {
         static const u_char _ipv6_wrapped_ipv4[] = {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1269,7 +1272,9 @@ val_getnameinfo(val_context_t * context,
         else
             theAddressFamily = AF_INET6;
             
-    } else {
+    } 
+#endif
+    else {
         val_log(ctx, LOG_DEBUG, "val_getnameinfo(): Address family %d not known or length %d too small.", sa->sa_family, salen);
         return (EAI_FAMILY);
     }

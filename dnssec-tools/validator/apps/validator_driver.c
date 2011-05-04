@@ -14,32 +14,14 @@
  * drawvalmap.pl script.  This output is written to stderr.
  */
 #include "validator-config.h"
+#include <validator/validator.h>
+#include <validator/resolver.h>
 
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <errno.h>
+#include "validator_driver.h"
+
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-#include <sys/types.h>
-
-#include <sys/socket.h>
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#else
-#include "arpa/header.h"
-#endif
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <resolv.h>
-
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include "validator_driver.h"
 
 #define	NAME	"validate"
 #define	VERS	"version: 1.0"
@@ -47,10 +29,6 @@
 
 
 #define NO_OF_THREADS 0
-
-#if NO_OF_THREADS
-#include <pthread.h>
-#endif
 
 #define BUFLEN 16000
 

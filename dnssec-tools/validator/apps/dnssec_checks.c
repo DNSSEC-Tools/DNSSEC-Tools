@@ -1,17 +1,6 @@
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-
 #include "validator-config.h"
-#include "validator/resolver.h"
-#include "resolv.h"
-
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#elif ! defined( HAVE_ARPA_NAMESER_H )
-#include "arpa/header.h"
-#endif
+#include <validator/validator.h>
+#include <validator/resolver.h>
 
 #define CHECK_SUCCEEDED 0
 #define CHECK_FAILED    1

@@ -20,7 +20,7 @@ typedef int     val_result_t;
  * Check if DS hash matches the DNSKEY  
  */
 int             ds_hash_is_equal(val_context_t *ctx,
-                    u_int8_t ds_hashtype, u_char * ds_hash,
+                    u_char ds_hashtype, u_char * ds_hash,
                     size_t ds_hash_len, u_char * name_n,
                     struct val_rr_rec *dnskey, val_astatus_t * ds_status);
 

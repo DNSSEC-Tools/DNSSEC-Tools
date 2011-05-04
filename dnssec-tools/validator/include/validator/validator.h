@@ -6,186 +6,38 @@
 #ifndef VALIDATOR_H
 #define VALIDATOR_H
 
+#include <stdio.h>
+#include <stdarg.h>
+#include <stddef.h>
+
+#include <validator/val_errors.h>
+
 #ifdef __cplusplus
 extern          "C" {
 #endif
 
-#include <stdio.h>
-#include <syslog.h>
-#include <stdarg.h>
-#include <validator/val_errors.h>
-
-#include <arpa/nameser.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-/* 
- * XXX FreeBSD no longer defines EAI_NODATA. Need to figure out why 
- * this is so. Following is a temporary fix.
+/*
+ * define various addrinfo related defines for older winsock32
  */
-#if !defined(EAI_NODATA) && (EAI_NONAME == 8)
-#define EAI_NODATA 7
-#endif
 
 /*
  * define error codes for val_getaddrinfo and val_getnameinfo which
  * have a DNSSEC validation status.
  */
-#if defined(EAI_NODATA)
+#if defined(EAI_NODATA) && defined(EAI_NONAME)
 #define VAL_GETADDRINFO_HAS_STATUS(rc) ( \
 	(rc == 0) || (rc == EAI_NONAME) || (rc == EAI_NODATA))
-#else
+#elif defined(EAI_NONAME)
 #define VAL_GETADDRINFO_HAS_STATUS(rc) ((rc == 0) || (rc == EAI_NONAME))
+#elif defined(WSAHOST_NOT_FOUND) && defined(WSANO_DATA) 
+#define VAL_GETADDRINFO_HAS_STATUS(rc) ( \
+	(rc == 0) || (rc == WSAHOST_NOT_FOUND) || (rc == WSANO_DATA))
+#else
+#define VAL_GETADDRINFO_HAS_STATUS(rc) ((rc == 0))
 #endif
 
 #define VAL_GETNAMEINFO_HAS_STATUS(rc) VAL_GETADDRINFO_HAS_STATUS(rc)
 
-#if !defined(NS_INT16SZ) && defined(INT16SZ)
-#define NS_INT16SZ INT16SZ
-#define NS_INT32SZ INT32SZ
-#endif
-
-#define VAL_GET16(s, cp) do { \
-        register const u_char *t_cp = (const u_char *)(cp); \
-        (s) = ((u_int16_t)t_cp[0] << 8) \
-            | ((u_int16_t)t_cp[1]) \
-            ; \
-        (cp) += NS_INT16SZ; \
-} while (0)
-
-#define VAL_GET32(l, cp) do { \
-        register const u_char *t_cp = (const u_char *)(cp); \
-        (l) = ((u_int32_t)t_cp[0] << 24) \
-            | ((u_int32_t)t_cp[1] << 16) \
-            | ((u_int32_t)t_cp[2] << 8) \
-            | ((u_int32_t)t_cp[3]) \
-            ; \
-        (cp) += NS_INT32SZ; \
-} while (0)
-
-#if !defined(NS_PUT16) && defined(PUTSHORT)
-#define NS_PUT16 PUTSHORT
-#define NS_PUT32 PUTLONG
-#endif
-
-#ifdef MEMORY_DEBUGGING
-#define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
-#define FREE(p) my_free(p,__FILE__,__LINE__)
-#define STRDUP(p) my_strdup(p,__FILE__,__LINE__)
-#else
-#define MALLOC(s) malloc(s)
-#define FREE(p) free(p)
-#define STRDUP(p) strdup(p)
-#endif
-
-/* various constants */
-#define DNS_PORT                53
-#define VAL_LOG_OPTIONS LOG_PID
-#define VALIDATOR_LOG_PORT 1053
-#define VALIDATOR_LOG_SERVER "127.0.0.1"
-#define VAL_DEFAULT_RESOLV_CONF "/etc/resolv.conf"
-#define VAL_CONTEXT_LABEL "VAL_CONTEXT_LABEL"
-#define VAL_LOG_TARGET "VAL_LOG_TARGET"
-
-    /*
-     * Query states 
-     */
-#define Q_INIT          1
-#define Q_SENT          2
-#define Q_WAIT_FOR_GLUE 3
-#define Q_ANSWERED      4
-#define Q_ERROR_BASE    5
-#define Q_QUERY_ERROR (Q_ERROR_BASE + 0) 
-#define Q_RESPONSE_ERROR (Q_ERROR_BASE + 1) 
-#define Q_WRONG_ANSWER (Q_ERROR_BASE + 2) 
-#define Q_REFERRAL_ERROR (Q_ERROR_BASE + 3) 
-#define Q_MISSING_GLUE (Q_ERROR_BASE + 4) 
-#define Q_CONFLICTING_ANSWERS (Q_ERROR_BASE + 5) 
-
-
-#define QUERY_BAD_CACHE_THRESHOLD 5
-#define QUERY_BAD_CACHE_TTL 60
-
-    /*
-     * Credibility values of an RRset - from DNSIND-Clarify 
-     */
-#define SR_CRED_UNSET            0
-#define SR_CRED_FILE             1      /* From locally trusted file */
-    /*
-     * Data is from an authoritative server 
-     */
-#define SR_CRED_AUTH_ANS         3
-#define SR_CRED_AUTH_AUTH        4
-    /*
-     * Data is from a cache somewhere, or was at best an after thought 
-     */
-#define SR_CRED_NONAUTH_ANS      6
-#define SR_CRED_AUTH_ADD         7
-#define SR_CRED_NONAUTH_AUTH     7
-#define SR_CRED_NONAUTH_ADD      7
-
-    /*
-     * Kinds of answers 
-     */
-#define SR_ANS_UNSET             0
-#define SR_ANS_STRAIGHT          1
-#define SR_ANS_CNAME             2
-#define SR_ANS_DNAME             3
-#define SR_ANS_NACK              4
-#define SR_ANS_BARE_RRSIG        5
-
-
-    /*
-     * Policies associated with Keys 
-     */
-#define CANNOT_BE_USED                  0x00
-#define CAN_SIGN_KEY                    0x01
-#define CAN_SIGN_ZONE                   0x02
-#define CAN_SIGN_ZONE_AND_KEY   CAN_SIGN_KEY|CAN_SIGN_ZONE
-
-#define SIGNBY              18
-#define ENVELOPE            10
-#define RRSIGLABEL           3
-#define TTL                  4
-#define VAL_CTX_IDLEN       20
-#ifndef SHA_DIGEST_LENGTH
-#define SHA_DIGEST_LENGTH 20
-#endif
-#ifndef SHA256_DIGEST_LENGTH
-#define SHA256_DIGEST_LENGTH 32 
-#endif
-#ifndef SHA512_DIGEST_LENGTH
-#define SHA512_DIGEST_LENGTH 64 
-#endif
-#define MAX_DIGEST_LENGTH 64
-
-    /*
-     * Algorithm definitions for DS digest 
-     */
-#define ALG_DS_HASH_SHA1 1
-#define ALG_DS_HASH_SHA256 2
-
-    /*
-     * Algorithm definitions for NSEC3 digest 
-     */
-#ifdef LIBVAL_NSEC3
-#define ALG_NSEC3_HASH_SHA1 1
-#endif
-
-    /*
-     * DNSSEC Algorithm definitions 
-     */
-#define ALG_RSAMD5  1
-#define ALG_DH      2
-#define ALG_DSASHA1 3
-#define ALG_RSASHA1 5
-#ifdef LIBVAL_NSEC3
-#define ALG_NSEC3_DSASHA1 6 
-#define ALG_NSEC3_RSASHA1 7 
-#endif
-#define ALG_RSASHA256 8
-#define ALG_RSASHA512 10 
     /*
      * Section values of an RRset 
      */
@@ -210,60 +62,37 @@ extern          "C" {
 
 #define VAL_QUERY_GLUE_REQUEST (0x01000000 | VAL_QUERY_DONT_VALIDATE)
 
-#define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
-#define MAX_GLUE_FETCH_DEPTH 10         /* max length of glue dependency chain */
+#ifndef LOG_EMERG
+#define LOG_EMERG 0
+#define LOG_ALERT 1
+#define LOG_CRIT 2
+#define LOG_ERR 3
+#define LOG_WARNING 4
+#define LOG_NOTICE 5
+#define LOG_INFO 6
+#define LOG_DEBUG 7
+#endif
 
-    typedef u_int8_t val_status_t;
-    typedef u_int16_t val_astatus_t;
+typedef unsigned char val_status_t;
+typedef unsigned short val_astatus_t;
 
-    struct val_log;             /* forward declaration */
-    struct val_context;         /* forward declaration */
-    typedef struct val_context val_context_t;
+/* opaque types */
+struct val_context;
+typedef struct val_context val_context_t;
+struct val_policy_handle;
+typedef struct val_policy_handle val_policy_handle_t;
+struct val_log;
+typedef struct val_log val_log_t;
 
-    typedef struct policy_entry {
-        u_char        zone_n[NS_MAXCDNAME];
-        long            exp_ttl;
-        void *          pol;
-        struct policy_entry *next;
-    } policy_entry_t;
-  
-    typedef struct global_opt {
-        int local_is_trusted;
-        long edns0_size;    
-        int env_policy;
-        int app_policy;
-        char *log_target;
-        int closest_ta_only;
-    } global_opt_t;
-
-    typedef struct {
-        policy_entry_t *pe;
-        int index;
-    }  val_policy_handle_t;
-
-    typedef struct {
-        char *keyword;
-        char *zone;
-        char *value;
-        long ttl;
-    } libval_policy_definition_t;
-
-    /*
-     * The above is a generic data type for a policy entry
-     * typecasted to one of the types defined in val_policy.h: 
-     * Policies can be one of the following
-     */
+/*
+ * Validator policies can be one of the following
+ */
 #define POL_TRUST_ANCHOR_STR "trust-anchor"
 #define POL_CLOCK_SKEW_STR "clock-skew"
 #define POL_PROV_INSEC_STR "provably-insecure-status"
 #define POL_ZONE_SE_STR "zone-security-expectation"
-#ifdef LIBVAL_DLV
 #define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
-#endif
-#ifdef LIBVAL_NSEC3
 #define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
-#endif
-
 #define GOPT_TRUST_OOB_STR "trust-oob-answers"
 #define GOPT_EDNS0_SIZE_STR "edns0-size"
 #define GOPT_YES_STR "yes"
@@ -293,12 +122,13 @@ extern          "C" {
  */
 #define GOPT_TRUST_LOCAL_STR "trust-local-answers"
 
+
     /*
      * Response structures  
      */
     struct val_rr_rec {
         size_t rr_rdata_length;      /* RDATA length */
-        u_char *rr_rdata;       /* Raw RDATA */
+        unsigned char *rr_rdata;       /* Raw RDATA */
         struct val_rr_rec  *rr_next;
         val_astatus_t   rr_status;
     };
@@ -315,36 +145,8 @@ extern          "C" {
         struct val_rr_rec  *val_rrset_sig;  /* All signatures */
     };
 
-    struct policy_list {
-        int             index;
-        policy_entry_t  *pol;
-        struct policy_list *next;
-    };
-
-    struct dnsval_list {
-        char   *dnsval_conf;
-        time_t v_timestamp;
-        struct dnsval_list *next;
-    };
-        
-    /*
-     * This list is ordered from general to more specific --
-     * so "mozilla" < "sendmail" < "browser:mozilla"
-     */
-    struct policy_overrides {
-        char           *label;
-        int             label_count;
-        struct policy_list *plist;
-        struct policy_overrides *next;
-    };
-
-    struct qname_chain {
-        u_char        qnc_name_n[NS_MAXCDNAME];
-        struct qname_chain *qnc_next;
-    };
-
     struct val_response {
-        u_char  *vr_response;
+        unsigned char  *vr_response;
         size_t  vr_length;
         val_status_t    vr_val_status;
     };
@@ -357,7 +159,7 @@ extern          "C" {
 
     struct rr_rec {
         size_t rr_length;
-        u_char *rr_data;
+        unsigned char *rr_data;
         struct rr_rec *rr_next;
     };
 
@@ -382,130 +184,58 @@ extern          "C" {
     };
 
     typedef struct val_dnskey_rdata {
-        u_int16_t       flags;
-        u_int8_t        protocol;
-        u_int8_t        algorithm;
-        u_int32_t       public_key_len; /* in bytes */
-        u_char         *public_key;
-        u_int16_t       key_tag;
+        unsigned short flags;
+        unsigned char  protocol;
+        unsigned char  algorithm;
+        unsigned int   public_key_len; /* in bytes */
+        unsigned char  *public_key;
+        unsigned short key_tag;
         struct val_dnskey_rdata *next;
     } val_dnskey_rdata_t;
 
     typedef struct val_rrsig_rdata {
-        u_int16_t       type_covered;
-        u_int8_t        algorithm;
-        u_int8_t        labels;
-        u_int32_t       orig_ttl;
-        u_int32_t       sig_expr;
-        u_int32_t       sig_incp;
-        u_int16_t       key_tag;
-        u_char          signer_name[256];       /* null terminated */
-        u_int32_t       signature_len;  /* in bytes */
-        u_char         *signature;
+        unsigned short type_covered;
+        unsigned char  algorithm;
+        unsigned char  labels;
+        unsigned int   orig_ttl;
+        unsigned int   sig_expr;
+        unsigned int   sig_incp;
+        unsigned short key_tag;
+        unsigned char  signer_name[256];       /* null terminated */
+        unsigned int   signature_len;  /* in bytes */
+        unsigned char  *signature;
         struct val_rrsig_rdata *next;
     } val_rrsig_rdata_t;
 
     typedef struct val_ds_rdata {
-        u_int16_t       d_keytag;
-        u_int8_t        d_algo;
-        u_int8_t        d_type;
-        u_char         *d_hash;
-        u_int32_t       d_hash_len;
+        unsigned short d_keytag;
+        unsigned char  d_algo;
+        unsigned char  d_type;
+        unsigned char  *d_hash;
+        unsigned int   d_hash_len;
     } val_ds_rdata_t;
 
-#ifdef LIBVAL_NSEC3
     typedef struct val_nsec3_rdata {
-        u_int8_t        alg;
-        u_int8_t        flags;
-        u_int16_t       iterations;
-        u_int8_t        saltlen;
-        u_char         *salt;
-        u_int8_t        nexthashlen;
-        u_char         *nexthash;
-        u_int16_t       bit_field;
+        unsigned char  alg;
+        unsigned char  flags;
+        unsigned short iterations;
+        unsigned char  saltlen;
+        unsigned char  *salt;
+        unsigned char  nexthashlen;
+        unsigned char  *nexthash;
+        unsigned short bit_field;
     } val_nsec3_rdata_t;
 
-#define NSEC3_FLAG_OPTOUT 0x01
-
-#endif
-
-#ifndef VAL_NO_ASYNC
-    /*
-     * asynchronous status
-     */
-#define VAL_AS_CTX_USER_SUPPLIED     0x00000001 /* i.e. don't delete it! */
-#define VAL_AS_IGNORE_CACHE          0x00000002
-#define VAL_AS_NO_NEW_QUERIES        0x00000004
-#define VAL_AS_DONE                  0x00000008 /* have results/answers */
-#define VAL_AS_CB_COMPLETED          0x00000010 /* called user callbacks */
-#define VAL_AS_NO_ANSWERS            0x00000020 /* don't care about answers */
-#define VAL_AS_NO_CALLBACKS          0x00000040 /* don't call callbacks */
-
-    typedef struct val_async_status_s val_async_status;
-    typedef int (*val_cb_results)(val_async_status *as);
-
-    struct val_async_status_s {
-        val_context_t                 *val_as_ctx;
-        u_int32_t                      val_as_flags;
-
-        u_char                         val_as_inflight;
-        struct queries_for_query      *val_as_top_q;
-        struct queries_for_query      *val_as_queries;
-
-        u_char                         val_as_domain_name_n[NS_MAXCDNAME];
-        int                            val_as_class;
-        int                            val_as_type;
-
-        struct val_result_chain       *val_as_results;
-        struct val_answer_chain       *val_as_answers;
-
-        val_cb_results                 val_as_result_cb;
-        void                          *val_as_cb_user_ctx;
-
-        struct val_async_status_s     *val_as_next;
-    };
-#endif /* VAL_NO_ASYNC */
-
-    /*
-     * Logging-related definitions 
-     */
     typedef void    (*val_log_logger_t) (struct val_log * logp,
                                          const val_context_t * ctx,
                                          int level,
                                          const char *format, va_list ap);
+
     typedef void    (*val_log_cb_t) (struct val_log *logp, int level,
-                                     const char *buf);
+                                                     const char *buf);
 
-    typedef struct val_log {
-        val_log_logger_t logf;  /* log function ptr */
-        u_char   level;  /* 0 - 9, corresponds w/sylog severities */
-        u_char   lflags; /* generic log flags */
 
-        void           *a_void; /* logger dependent */
-
-        union {
-            struct {
-                int             sock;
-                struct sockaddr_in server;
-            } udp;
-            struct {
-                char           *name;
-                FILE           *fp;
-            } file;
-            struct {
-                int             facility;
-            } syslog;
-            struct {
-                val_log_cb_t    func;
-            } cb;
-            struct {
-                void           *my_ptr;
-            } user;
-        } opt;
-        struct val_log *next;
-    } val_log_t;
-
-    char           *get_hex_string(const u_char *data, size_t datalen,
+    char           *get_hex_string(const unsigned char *data, size_t datalen,
                                    char *buf, size_t buflen);
     void            val_log_rrsig_rdata(const val_context_t * ctx,
                                         int level, const char *prefix,
@@ -543,6 +273,43 @@ extern          "C" {
     const char     *p_val_status(val_status_t err);
     const char     *p_val_err(int err);
 
+#ifndef VAL_NO_ASYNC
+    /*
+     * asynchronous status
+     */
+#define VAL_AS_CTX_USER_SUPPLIED     0x00000001 /* i.e. don't delete it! */
+#define VAL_AS_IGNORE_CACHE          0x00000002
+#define VAL_AS_NO_NEW_QUERIES        0x00000004
+#define VAL_AS_DONE                  0x00000008 /* have results/answers */
+#define VAL_AS_CB_COMPLETED          0x00000010 /* called user callbacks */
+#define VAL_AS_NO_ANSWERS            0x00000020 /* don't care about answers */
+#define VAL_AS_NO_CALLBACKS          0x00000040 /* don't call callbacks */
+
+    typedef struct val_async_status_s val_async_status;
+    typedef int (*val_cb_results)(val_async_status *as);
+
+    struct val_async_status_s {
+        val_context_t                 *val_as_ctx;
+        unsigned int                  val_as_flags;
+
+        unsigned char                 val_as_inflight;
+        struct queries_for_query      *val_as_top_q;
+        struct queries_for_query      *val_as_queries;
+
+        unsigned char                 val_as_domain_name_n[NS_MAXCDNAME];
+        int                           val_as_class;
+        int                           val_as_type;
+
+        struct val_result_chain       *val_as_results;
+        struct val_answer_chain       *val_as_answers;
+
+        val_cb_results                val_as_result_cb;
+        void                          *val_as_cb_user_ctx;
+
+        struct val_async_status_s     *val_as_next;
+    };
+#endif /* VAL_NO_ASYNC */
+
     /*
      *******************************************
      * Other functions exported by the validator
@@ -560,18 +327,18 @@ extern          "C" {
                                           const char * domain_name,
                                           int qclass,
                                           int qtype,
-                                          u_int32_t flags,
+                                          unsigned int flags,
                                           struct val_result_chain
                                           **results);
 
 #ifndef VAL_NO_ASYNC
     int             val_async_submit(val_context_t * ctx,
                                      const char * domain_name, int qclass,
-                                     int qtype, u_int32_t flags,
+                                     int qtype, unsigned int flags,
                                      val_async_status **async_status);
     int             val_async_check(val_context_t *context,
                                     fd_set *pending_desc, int *nfds,
-                                    u_int32_t flags);
+                                    unsigned int flags);
 #endif
 
 
@@ -604,18 +371,13 @@ extern          "C" {
     int             val_remove_valpolicy(val_context_t *context, 
                                       val_policy_handle_t *pol);
     /*
-     * from val_support.h 
-     */
-    size_t       wire_name_length(const u_char * field);
-
-    /*
      * from val_x_query.c 
      */
     int             val_res_query(val_context_t * ctx, const char *dname,
-                                  int q_class, int type, u_char * answer,
+                                  int q_class, int type, unsigned char * answer,
                                   int anslen, val_status_t * val_status);
     int             val_res_search(val_context_t * ctx, const char *dname,
-                                   int class_h, int type, u_char * answer,
+                                   int class_h, int type, unsigned char * answer,
                                    int anslen, val_status_t * val_status);
     int             compose_answer(const char * name,
                                    int type_h,
@@ -625,9 +387,6 @@ extern          "C" {
     /*
      * from val_gethostbyname.c 
      */
-#ifndef h_errno                 /* on linux, netdb.h defines this as a macro */
-    extern int      h_errno;
-#endif
     struct hostent *val_gethostbyname(val_context_t * ctx,
                                       const char *name,
                                       val_status_t * val_status);
@@ -664,9 +423,6 @@ extern          "C" {
                                     const struct addrinfo *hints,
                                     struct addrinfo **res,
                                     val_status_t * val_status);
-#ifndef HAVE_FREEADDRINFO
-    void            freeaddrinfo(struct addrinfo *ainfo);
-#endif
 
     int             val_getnameinfo(val_context_t * ctx,
                                     const struct sockaddr *sa,
@@ -708,7 +464,7 @@ extern          "C" {
                       const char *name,
                       int classid,
                       int type,
-                      u_int32_t flags,
+                      unsigned int flags,
                       struct val_answer_chain **answers);
 
     void val_free_answer_chain(struct val_answer_chain *answers);

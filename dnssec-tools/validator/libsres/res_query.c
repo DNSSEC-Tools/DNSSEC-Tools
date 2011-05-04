@@ -20,20 +20,8 @@
  * See the COPYING file distributed with this software for details.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#elif ! defined( HAVE_ARPA_NAMESER_H )
-#include "arpa/header.h"
-#endif
-
-#include "validator/resolver.h"
 #include "res_mkquery.h"
 #include "res_support.h"
 #include "res_tsig.h"
@@ -46,7 +34,7 @@
 #define ENVELOPE   10
 #define EMSG_MAX   2048
 
-static          size_t
+size_t
 wire_name_length(const u_char * field)
 {
     /*

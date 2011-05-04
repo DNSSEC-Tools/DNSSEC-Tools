@@ -6,21 +6,13 @@
  *
  * A command-line tool for testing the val_gethostbyname*() functions.
  */
-#include "validator-config.h"
 
-#include <stdio.h>
-#include <unistd.h>
-#include <strings.h>
-#include <arpa/nameser.h>
+#include "validator-config.h"
 #include <validator/validator.h>
+
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-#include <netdb.h>
-#include <sys/socket.h>
-#include <string.h>
-
-#include <arpa/inet.h>
 
 #define	NAME	"gethost"
 #define	VERS	"version: 1.0"
@@ -88,11 +80,12 @@ main(int argc, char *argv[])
     char           *name;
     int             af = AF_INET;
     char            buf[INET6_ADDRSTRLEN];
+    size_t          buflen = INET6_ADDRSTRLEN;
     int             retval = 0;
     val_log_t  *logp;
 
-    bzero(&hentry, sizeof(struct hostent));
-    bzero(auxbuf, AUX_BUFLEN);
+    memset(&hentry, 0, sizeof(struct hostent));
+    memset(auxbuf, 0, AUX_BUFLEN);
 
     // Parse the command line
 
@@ -123,9 +116,9 @@ main(int argc, char *argv[])
             break;
         case 'f':
             familyspecified = 1;
-            if (strcasecmp(optarg, "AF_INET") == 0) {
+            if (strncasecmp(optarg, "AF_INET", strlen("AF_INET")) == 0) {
                 af = AF_INET;
-            } else if (strcasecmp(optarg, "AF_INET6") == 0) {
+            } else if (strncasecmp(optarg, "AF_INET6", strlen("AF_INET6")) == 0) {
                 af = AF_INET6;
             } else {
                 fprintf(stderr, "Invalid family %s\n", optarg);
@@ -205,6 +198,8 @@ main(int argc, char *argv[])
     }
 
     if (result != NULL) {
+        const char *addr = NULL;
+
         printf("\n\th_name = %s\n", result->h_name);
         if (result->h_aliases) {
             printf("\th_aliases = \n");
@@ -213,21 +208,36 @@ main(int argc, char *argv[])
             }
         } else
             printf("\th_aliases = NULL\n");
-        if (result->h_addrtype == AF_INET) {
-            printf("\th_addrtype = AF_INET\n");
-        } else if (result->h_addrtype == AF_INET6) {
-            printf("\th_addrtype = AF_INET6\n");
-        } else {
-            printf("\th_addrtype = %d\n", result->h_addrtype);
-        }
         printf("\th_length = %d\n", result->h_length);
         printf("\th_addr_list = \n");
-        for (i = 0; result->h_addr_list[i] != 0; i++) {
-            bzero(buf, INET6_ADDRSTRLEN);
-            printf("\t\t[%d] = %s\n", i,
-                   inet_ntop(result->h_addrtype,
-                             result->h_addr_list[i],
-                             buf, INET6_ADDRSTRLEN));
+        if (result->h_addrtype == AF_INET) {
+            struct sockaddr_in sa;
+            printf("\th_addrtype = AF_INET\n");
+            for (i = 0; result->h_addr_list[i] != 0; i++) {
+                memset(buf, 0, buflen);
+                memcpy(&sa.sin_addr, result->h_addr_list[i],
+                       sizeof(sa.sin_addr));
+                INET_NTOP(AF_INET, ((struct sockaddr *)&sa), sizeof(sa), 
+                    buf, buflen, addr);
+                printf("\t\t[%d] = %s\n", i, addr);
+            }
+        } 
+#ifdef VAL_IPV6
+        else if (result->h_addrtype == AF_INET6) {
+            struct sockaddr_in6 sa6;
+            printf("\th_addrtype = AF_INET6\n");
+            for (i = 0; result->h_addr_list[i] != 0; i++) {
+                memset(buf, 0, buflen);
+                memcpy(&sa6.sin6_addr, result->h_addr_list[i],
+                       sizeof(sa6.sin6_addr));
+                INET_NTOP(AF_INET6, ((struct sockaddr *)&sa6), sizeof(sa6), 
+                    buf, buflen, addr);
+                printf("\t\t[%d] = %s\n", i, addr);
+            }
+        } 
+#endif
+        else {
+            printf("\th_addrtype = %d\n", result->h_addrtype);
         }
     } else {
         printf("result is NULL\n");

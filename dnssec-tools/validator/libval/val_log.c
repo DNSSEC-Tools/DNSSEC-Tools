@@ -8,22 +8,8 @@
  * Contains the implementation for the logging functionality in libval
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <resolv.h>
-#include <time.h>
-
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
 #include "val_cache.h"
 #include "val_support.h"
 #include "val_parse.h"
@@ -126,7 +112,7 @@ val_log_val_rrset_pfx(const val_context_t * ctx, int level,
 }
 
 static const char *
-get_algorithm_string(u_int8_t algo)
+get_algorithm_string(u_char algo)
 {
 
     switch (algo) {
@@ -177,15 +163,8 @@ val_log_rrsig_rdata(const val_context_t * ctx, int level,
                 prefix, rdata->algorithm,
                 get_algorithm_string(rdata->algorithm), rdata->labels,
                 rdata->orig_ttl,
-#ifndef sun
-                ctime_r((const time_t *) (&(rdata->sig_expr)), ctime_buf1),
-                ctime_r((const time_t *) (&(rdata->sig_incp)), ctime_buf2),
-#else
-                ctime_r((const time_t *) (&(rdata->sig_expr)), ctime_buf1,
-                        sizeof(ctime_buf1)),
-                ctime_r((const time_t *) (&(rdata->sig_incp)), ctime_buf2,
-                        sizeof(ctime_buf2)),
-#endif
+                GET_TIME_BUF((const time_t *) (&(rdata->sig_expr)), ctime_buf1),
+                GET_TIME_BUF((const time_t *) (&(rdata->sig_incp)), ctime_buf2),
                 rdata->key_tag, rdata->key_tag, rdata->signer_name,
                 get_base64_string(rdata->signature, rdata->signature_len,
                                   buf, 1024));
@@ -218,6 +197,7 @@ val_get_ns_string(struct sockaddr *serv, char *dst, size_t size)
     struct sockaddr_in6 *sin6;
 #endif
     struct sockaddr_storage *server;
+    const char *addr = NULL;
 
     if ((serv == NULL) || (dst == NULL))
         return NULL;
@@ -227,11 +207,15 @@ val_get_ns_string(struct sockaddr *serv, char *dst, size_t size)
     switch (server->ss_family) {
     case AF_INET:
         sin = (struct sockaddr_in *) server;
-        return inet_ntop(AF_INET, &sin->sin_addr, dst, size);
+        INET_NTOP(AF_INET, ((struct sockaddr *)sin), 
+            sizeof(struct sockaddr_in), dst, size, addr);
+        return addr;
 #ifdef VAL_IPV6
     case AF_INET6:
         sin6 = (struct sockaddr_in6 *) server;
-        return inet_ntop(AF_INET6, &sin6->sin6_addr, dst, size);
+        INET_NTOP(AF_INET6, ((struct sockaddr *)sin6), 
+            sizeof(struct sockaddr_in), dst, size, addr);
+        return addr;
 #endif
     }
     return NULL;
@@ -768,6 +752,7 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
     fflush(logp->opt.file.fp);
 }
 
+#ifdef HAVE_SYSLOG_H
 void
 val_log_syslog(val_log_t * logp, const val_context_t * ctx, int level,
                const char *template, va_list ap)
@@ -790,6 +775,7 @@ val_log_syslog(val_log_t * logp, const val_context_t * ctx, int level,
 
     vsyslog(logp->opt.syslog.facility | level, template, ap);
 }
+#endif
 
 val_log_t      *
 val_log_create_logp(int level)
@@ -825,7 +811,7 @@ val_log_add_udp(val_log_t **log_head, int level, char *host, int port)
 
     if (-1 == logp->opt.udp.sock) {
         logp->opt.udp.sock = socket(AF_INET, SOCK_DGRAM, 0);
-        if (logp->opt.udp.sock < 0) {
+        if (logp->opt.udp.sock == INVALID_SOCKET) {
             FREE(logp);
             return NULL;
         }
@@ -833,8 +819,9 @@ val_log_add_udp(val_log_t **log_head, int level, char *host, int port)
 
     logp->opt.udp.server.sin_family = AF_INET;
     logp->opt.udp.server.sin_port = htons(port);
-    if (inet_pton(AF_INET, host, &logp->opt.udp.server.sin_addr) <= 0) {
-        close(logp->opt.udp.sock);
+    if (INET_PTON(AF_INET, host, ((struct sockaddr *)(&logp->opt.udp.server)), 
+                sizeof(logp->opt.udp.server)) <= 0) {
+        CLOSESOCK(logp->opt.udp.sock);
         FREE(logp);
         logp = NULL;
     }
@@ -905,6 +892,7 @@ val_log_add_file(val_log_t **log_head, int level, const char *filen)
     return logp;
 }
 
+#ifdef HAVE_SYSLOG_H
 val_log_t      *
 val_log_add_syslog(val_log_t **log_head, int level, int facility)
 {
@@ -921,6 +909,7 @@ val_log_add_syslog(val_log_t **log_head, int level, int facility)
 
     return logp;
 }
+#endif
 
 /* Add log target to system list */
 val_log_t      *
@@ -968,6 +957,7 @@ val_log_add_optarg_to_list(val_log_t **log_head, const char *str_in, int use_std
             logp = val_log_add_filep(log_head, level, stderr);
         else if (0 == strcmp(str, "stdout"))
             logp = val_log_add_filep(log_head, level, stdout);
+#ifdef HAVE_SYSLOG_H
         else if (0 == strcmp(str, "syslog")) {
             int             facility;
             l = strchr(str, ':');
@@ -977,7 +967,13 @@ val_log_add_optarg_to_list(val_log_t **log_head, const char *str_in, int use_std
             } else
                 facility = LOG_USER;
             logp = val_log_add_syslog(log_head, level, facility);
-        } else {
+        }
+#else
+        else if (0 == strcmp(str, "syslog")) {
+            fprintf(stderr, "syslog not supported on system.\n");
+        }
+#endif
+        else {
             if (use_stderr)
                 fprintf(stderr, "unknown output format string\n");
             goto err;

@@ -68,24 +68,12 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <sys/types.h>
-#include <sys/param.h>
-#include <unistd.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#elif ! defined( HAVE_ARPA_NAMESER_H )
-#include "arpa/header.h"
-#endif
-
-#include "validator/resolver.h"
 #include "res_mkquery.h"
 #include "res_tsig.h"
 #include "res_support.h"
+#include "res_comp.h"
 
 /*
  * Uncomment the following line to turn on debugging for this file 

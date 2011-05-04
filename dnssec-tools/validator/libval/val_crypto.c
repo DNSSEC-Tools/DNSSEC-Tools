@@ -15,6 +15,7 @@
  * See RFC 2537, RFC 3110, RFC 4034 Appendix B.1, RFC 2536
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
@@ -28,15 +29,7 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/objects.h>    /* For NID_sha1 */
-#include <strings.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
 
-#include <arpa/nameser.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
 #include "val_crypto.h"
 #include "val_support.h"
 
@@ -47,7 +40,7 @@
 static int
 dsasha1_parse_public_key(const u_char *buf, size_t buflen, DSA * dsa)
 {
-    u_int8_t        T;
+    u_char        T;
     int             index = 0;
     BIGNUM         *bn_p, *bn_q, *bn_g, *bn_y;
 
@@ -55,7 +48,7 @@ dsasha1_parse_public_key(const u_char *buf, size_t buflen, DSA * dsa)
         return VAL_BAD_ARGUMENT;
     }
 
-    T = (u_int8_t) (buf[index]);
+    T = (u_char) (buf[index]);
     index++;
     
     if (index+20 > buflen)
@@ -119,7 +112,7 @@ dsasha1_sigverify(val_context_t * ctx,
         return;
     }
 
-    bzero(sha1_hash, SHA_DIGEST_LENGTH);
+    memset(sha1_hash, 0, SHA_DIGEST_LENGTH);
     SHA1(data, data_len, sha1_hash);
     val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): SHA-1 hash = %s",
             get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
@@ -293,7 +286,7 @@ rsamd5_sigverify(val_context_t * ctx,
         return;
     }
 
-    bzero(md5_hash, MD5_DIGEST_LENGTH);
+    memset(md5_hash, 0, MD5_DIGEST_LENGTH);
     MD5(data, data_len, (u_char *) md5_hash);
     val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): MD5 hash = %s",
             get_hex_string(md5_hash, MD5_DIGEST_LENGTH, buf, buflen));

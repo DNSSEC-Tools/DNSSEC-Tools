@@ -6,8 +6,9 @@
 #ifndef VAL_ERRORS_H
 #define VAL_ERRORS_H
 
-#include <validator/resolver.h>
-#include <validator/validator.h>
+#ifdef __cplusplus
+extern          "C" {
+#endif
 
 #define VAL_FLAG_CHAIN_COMPLETE 0x80
 #define VAL_MASKED_FLAG_CHAIN_COMPLETE 0x7f
@@ -192,5 +193,8 @@
 #define VAL_VALIDATED_ANSWER            ((15) | VAL_FLAG_CHAIN_COMPLETE)
 #define VAL_UNTRUSTED_ANSWER            ((16) | VAL_FLAG_CHAIN_COMPLETE)
 
+#ifdef __cplusplus
+}                               /* extern "C" */
+#endif
 
 #endif                          /* VAL_ERRORS_H */

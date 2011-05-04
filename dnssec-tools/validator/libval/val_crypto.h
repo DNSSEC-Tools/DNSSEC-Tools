@@ -9,7 +9,6 @@
 #ifndef VAL_CRYPTO_H
 #define VAL_CRYPTO_H
 
-#include <val_parse.h>
 
 void            dsasha1_sigverify(val_context_t * ctx,
                                   const u_char *data,

@@ -17,9 +17,6 @@
 #ifndef __RES_TSIG_H__
 #define __RES_TSIG_H__
 
-#include <sys/types.h>
-#include "validator/resolver.h"
-
 #define SR_TS_UNSET             0
 #define SR_TS_OK                1
 #define SR_TS_FAIL              -2

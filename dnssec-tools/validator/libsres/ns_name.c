@@ -15,24 +15,7 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
-
-#include <sys/types.h>
-#include <errno.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <stdio.h>
-
-#include <arpa/nameser.h>
-
-#include "validator/resolver.h"
-
-#ifdef SPRINTF_CHAR
-# define SPRINTF(x) strlen(sprintf/**/x)
-#else
-# define SPRINTF(x) ((size_t)sprintf x)
-#endif
+#include "validator-internal.h"
 
 #define NS_TYPE_ELT			0x40    /* EDNS0 extended label type */
 #define DNS_LABELTYPE_BITSTRING		0x41

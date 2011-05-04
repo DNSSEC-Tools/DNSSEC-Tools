@@ -16,11 +16,9 @@
  */
 
 #include "validator-config.h"
-#include <ctype.h>
-#include <sys/types.h>
-#include <ctype.h>
+#include "validator-internal.h"
 
-#ifndef HAVE_NSAP_ADDR
+#ifndef HAVE_INET_NSAP_NTOA
 static char
 xtob(int c)
 {
@@ -95,7 +93,7 @@ inet_nsap_ntoa(int binlen, const u_char * binary, char *ascii)
     *ascii = '\0';
     return (start);
 }
-#endif                          /*HAVE_NSAP_ADDR */
+#endif                          /*HAVE_INET_NSAP_NTOA */
 
 /*
  * ! \file 

@@ -16,39 +16,11 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <arpa/nameser.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#include <unistd.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
-#endif
-#include <errno.h>
-#ifndef VAL_NO_THREADS
-#include <pthread.h>
-#endif
-#include "validator/resolver.h"
 #include "res_support.h"
 #include "res_mkquery.h"
 #include "res_io_manager.h"
-
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#elif ! defined( HAVE_ARPA_NAMESER_H )
-#include "arpa/header.h"
-#endif
-
-#ifndef NULL
-#define NULL (void*)0
-#endif
 
 #ifndef TRUE
 #define TRUE 1
@@ -83,7 +55,7 @@ res_io_get_debug(void)
     } while(0)
 
 struct expected_arrival {
-    int             ea_socket;
+    SOCKET          ea_socket;
     struct name_server *ea_ns;
     int             ea_which_address;
     int             ea_using_stream;
@@ -126,7 +98,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
  * Find a port in the range 1024 - 65535 
  */
 static int
-bind_to_random_source(int s)
+bind_to_random_source(SOCKET s)
 {   
     /* XXX This is not IPv6 ready yet. Probably need to have
      * XXX a config statement in dnsval.conf that allows the
@@ -139,12 +111,13 @@ bind_to_random_source(int s)
     memset(sa, 0, sizeof(ea_source));
     sa->sin_family = AF_INET;
     sa->sin_addr.s_addr = htonl(INADDR_ANY);
+
     start_port = (libsres_random() % 64512) + 1024;
     next_port = start_port;
 
     do {
         sa->sin_port = htons(next_port);
-        if (!bind(s, (const struct sockaddr *)sa, 
+        if (0 == bind(s, (const struct sockaddr *)sa, 
                     sizeof(struct sockaddr_in))) {
             return 0; /* success */
         } else  {
@@ -185,8 +158,8 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
         return;
     if ((*ea)->ea_ns != NULL)
         free_name_server(&((*ea)->ea_ns));
-    if ((*ea)->ea_socket != -1)
-        close((*ea)->ea_socket);
+    if ((*ea)->ea_socket != INVALID_SOCKET)
+        CLOSESOCK((*ea)->ea_socket);
     if ((*ea)->ea_signed)
         FREE((*ea)->ea_signed);
     if ((*ea)->ea_response)
@@ -230,7 +203,7 @@ res_ea_init(u_char * signed_query, size_t signed_length,
         return NULL;
 
     memset(temp, 0x0, sizeof(struct expected_arrival));
-    temp->ea_socket = -1;
+    temp->ea_socket = INVALID_SOCKET;
     temp->ea_ns = ns;
     temp->ea_which_address = 0;
     temp->ea_using_stream = FALSE;
@@ -249,9 +222,9 @@ res_ea_init(u_char * signed_query, size_t signed_length,
 void
 res_io_cancel_remaining_attempts(struct expected_arrival *ea)
 {
-    if (ea->ea_socket != -1) {
-        close(ea->ea_socket);
-        ea->ea_socket = -1;
+    if (ea->ea_socket != INVALID_SOCKET) {
+        CLOSESOCK(ea->ea_socket);
+        ea->ea_socket = INVALID_SOCKET;
     }
     ea->ea_remaining_attempts = -1;
 }
@@ -260,9 +233,9 @@ void
 res_io_cancel_all_remaining_attempts(struct expected_arrival *ea)
 {
     for ( ; ea; ea = ea->ea_next) {
-        if (ea->ea_socket != -1) {
-            close(ea->ea_socket);
-            ea->ea_socket = -1;
+        if (ea->ea_socket != INVALID_SOCKET) {
+            CLOSESOCK(ea->ea_socket);
+            ea->ea_socket = INVALID_SOCKET;
         }
         ea->ea_remaining_attempts = -1;
     }
@@ -291,6 +264,7 @@ res_io_send(struct expected_arrival *shipit)
      * socket and whether or not the length of the query is sent first.
      */
     int             socket_type;
+    int             socket_proto;
     size_t          socket_size;
     size_t          bytes_sent;
     long            delay;
@@ -298,27 +272,27 @@ res_io_send(struct expected_arrival *shipit)
     if (shipit == NULL)
         return SR_IO_INTERNAL_ERROR;
 
+    socket_type = (shipit->ea_using_stream == 1) ? SOCK_STREAM : SOCK_DGRAM;
+    socket_proto = (socket_type == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP;
     if (res_io_debug)
         printf("SENDING\n");
 
-    socket_type = shipit->ea_using_stream ? SOCK_STREAM : SOCK_DGRAM;
-
     /*
      * If no socket exists for the transfer, create and connect it (TCP
-     * or UDP).  If for some reason this fails, return a -1 which causes
-     * the source to be cancelled next go-round.
+     * or UDP).  If for some reason this fails, return a INVALID_SOCKET 
+     * which causes the source to be cancelled next go-round.
      */
-    if (shipit->ea_socket == -1) {
+    if (shipit->ea_socket == INVALID_SOCKET) {
         int             i = shipit->ea_which_address;
 
         if ((shipit->ea_socket = socket( shipit->ea_ns->ns_address[i]->ss_family,
-                                        socket_type, 0)) == -1)
+                                        socket_type, socket_proto)) == INVALID_SOCKET)
             return SR_IO_SOCKET_ERROR;
 
         /* Set the source port */
-        if (bind_to_random_source(shipit->ea_socket)) {
+        if (0 != bind_to_random_source(shipit->ea_socket)) {
             /* error */
-            close(shipit->ea_socket);
+            CLOSESOCK(shipit->ea_socket);
             return SR_IO_SOCKET_ERROR;
         }
          
@@ -327,18 +301,18 @@ res_io_send(struct expected_arrival *shipit)
          * while Linux is happy with sockaddr_storage. Might need
          * to fix this for sockaddr_in6 too...
          */
-        socket_size = shipit->ea_ns->ns_address[i]->ss_family == PF_INET ?
+        socket_size = shipit->ea_ns->ns_address[i]->ss_family == AF_INET ?
                       sizeof(struct sockaddr_in) : sizeof(struct sockaddr_storage);
         if (connect
             (shipit->ea_socket,
              (struct sockaddr *) shipit->ea_ns->ns_address[i],
-             socket_size) == -1) {
+             socket_size) == SOCKET_ERROR) {
             if (res_io_debug) {
                 printf("Closing socket %d, connect errno = %d\n",
                        shipit->ea_socket, errno);
             }
-            close(shipit->ea_socket);
-            shipit->ea_socket = -1;
+            CLOSESOCK(shipit->ea_socket);
+            shipit->ea_socket = INVALID_SOCKET;
             return SR_IO_SOCKET_ERROR;
         }
     }
@@ -349,32 +323,35 @@ res_io_send(struct expected_arrival *shipit)
      * cause the source to be cancelled.
      */
     if (shipit->ea_using_stream) {
-        u_int16_t length_n =
-            htons(shipit->ea_signed_length);
+
+        u_int16_t length_n;
+        length_n = htons(shipit->ea_signed_length);
+
 
         if ((bytes_sent =
-             send(shipit->ea_socket, &length_n, sizeof(u_int16_t), 0))
-            == -1) {
-            close(shipit->ea_socket);
-            shipit->ea_socket = -1;
+             send(shipit->ea_socket, (const char *)&length_n, sizeof(length_n), 0))
+            == SOCKET_ERROR) {
+            CLOSESOCK(shipit->ea_socket);
+            shipit->ea_socket = INVALID_SOCKET;
             return SR_IO_SOCKET_ERROR;
         }
 
-        if (bytes_sent != sizeof(u_int16_t)) {
-            close(shipit->ea_socket);
-            shipit->ea_socket = -1;
+
+        if (bytes_sent != sizeof(length_n)) {
+            CLOSESOCK(shipit->ea_socket);
+            shipit->ea_socket = INVALID_SOCKET;
             return SR_IO_SOCKET_ERROR;
         }
     }
 
-    if ((bytes_sent = send(shipit->ea_socket, shipit->ea_signed,
-                           shipit->ea_signed_length, 0)) == -1) {
-        close(shipit->ea_socket);
+    if ((bytes_sent = send(shipit->ea_socket, (const char *)shipit->ea_signed,
+                           shipit->ea_signed_length, 0)) == SOCKET_ERROR) {
+        CLOSESOCK(shipit->ea_socket);
         if (res_io_debug) {
             printf("Closing socket %d, sent != len\n",
                    shipit->ea_socket);
         }
-        shipit->ea_socket = -1;
+        shipit->ea_socket = INVALID_SOCKET;
         return SR_IO_SOCKET_ERROR;
     }
 
@@ -383,8 +360,8 @@ res_io_send(struct expected_arrival *shipit)
             printf("Closing socket %d, sent != signed len\n",
                    shipit->ea_socket);
         }
-        close(shipit->ea_socket);
-        shipit->ea_socket = -1;
+        CLOSESOCK(shipit->ea_socket);
+        shipit->ea_socket = INVALID_SOCKET;
         return SR_IO_SOCKET_ERROR;
     }
 
@@ -461,9 +438,9 @@ res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event,
                         break;
                 }
                 temp->ea_remaining_attempts++;
-                if (temp->ea_socket != -1)
-                    close(temp->ea_socket);
-                temp->ea_socket = -1;
+                if (temp->ea_socket != INVALID_SOCKET)
+                    CLOSESOCK(temp->ea_socket);
+                temp->ea_socket = INVALID_SOCKET;
 
                 break;
             }
@@ -510,9 +487,9 @@ res_io_next_address(struct expected_arrival *ea,
         /*
          * Start over with new address 
          */
-        if (ea->ea_socket != -1) {
-            close (ea->ea_socket);
-            ea->ea_socket = -1;
+        if (ea->ea_socket != INVALID_SOCKET) {
+            CLOSESOCK (ea->ea_socket);
+            ea->ea_socket = INVALID_SOCKET;
         }
         ea->ea_which_address++;
         ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
@@ -569,7 +546,7 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
          * send next try. on error, if there is another address, move to it
          */
         else if (LTEQ(ea->ea_next_try, (*now))) {
-            int needed_new_socket = (ea->ea_socket == -1);
+            int needed_new_socket = (ea->ea_socket == INVALID_SOCKET);
             while (ea->ea_remaining_attempts != -1) {
                 if (res_io_send(ea) == SR_IO_SOCKET_ERROR) {
                     res_io_next_address(ea, "ERROR",
@@ -741,7 +718,7 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
      */
     for ( ; ea_list; ea_list = ea_list->ea_next) {
         if ((ea_list->ea_remaining_attempts == -1) ||
-            (ea_list->ea_socket == -1))
+            (ea_list->ea_socket == INVALID_SOCKET))
             continue;
 
         if (read_descriptors)
@@ -762,22 +739,13 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
     /*
      * Perform the select call 
      */
-    int             i, max_sock;
-    struct timespec timeout_ts;
+    int i,max_sock;
 
-    max_sock = -1;
-
-    i = getdtablesize(); 
-    if (i > FD_SETSIZE)
-        i = FD_SETSIZE;
-    for (--i; i >= 0; --i)
-        if (FD_ISSET(i, read_descriptors)) {
-            max_sock = i;
-            break;
-        }
-
-    if (max_sock == -1)
+    max_sock = getdtablesize(); 
+    if (max_sock < 0)
         return 0; /* nothing to read */
+    if (max_sock > FD_SETSIZE)
+        max_sock = FD_SETSIZE;
 
     if (res_io_debug) {
         printf("select on %d fds, timeout %ld sec\n", max_sock + 1,
@@ -785,6 +753,7 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
         fflush(stdout);
     }
 #ifdef HAVE_PSELECT
+    struct timespec timeout_ts;
     timeout_ts.tv_sec = timeout->tv_sec;
     timeout_ts.tv_nsec = 0;
     i = pselect(max_sock + 1, read_descriptors, NULL, NULL, &timeout_ts, NULL);
@@ -814,6 +783,7 @@ wait_for_res_data(fd_set * pending_desc, struct timeval *closest_event)
      */
     res_io_set_timeout(&timeout, closest_event);
     res_io_select_sockets(pending_desc, &timeout); 
+	
     // ignore return value from previous function, 
     // will catch this condition when we actually read data
 }
@@ -837,7 +807,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             *answer = ea_list->ea_response;
             *answer_length = ea_list->ea_response_length;
             if (res_io_debug)
-                printf("get_response got %zd bytes on socket %d\n",
+                printf("get_response got %d bytes on socket %d\n",
                        *answer_length, ea_list->ea_socket);
 
             /*
@@ -869,19 +839,38 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
     return SR_IO_UNSET;
 }
 
+size_t
+complete_read(SOCKET sock, u_char *field, size_t length)
+{
+    size_t             bytes;
+    size_t             bytes_read = 0;
+    memset(field, '\0', length);
+
+    do {
+        bytes = recv(sock, field + bytes_read, length - bytes_read, 0);
+        if (bytes == SOCKET_ERROR) {
+            bytes_read = -1;
+            break;
+        }
+        bytes_read += bytes;
+    } while (bytes_read < length);
+
+    return bytes_read;
+}
+
 int
 res_io_read_tcp(struct expected_arrival *arrival)
 {
-    u_int16_t    len_n;
+    u_int16_t len_n;
     size_t       len_h;
 
     /*
      * Read length 
      */
-    if (complete_read(arrival->ea_socket, &len_n, sizeof(u_int16_t))
-        != sizeof(u_int16_t)) {
-        close(arrival->ea_socket);
-        arrival->ea_socket = -1;
+    if (complete_read(arrival->ea_socket, (u_char *)&len_n, sizeof(len_n))
+        != sizeof(len_n)) {
+        CLOSESOCK(arrival->ea_socket);
+        arrival->ea_socket = INVALID_SOCKET;
         return SR_IO_SOCKET_ERROR;
     }
 
@@ -892,14 +881,14 @@ res_io_read_tcp(struct expected_arrival *arrival)
      */
     arrival->ea_response = (u_char *) MALLOC(len_h * sizeof(u_char));
     if (arrival->ea_response == NULL) {
-        close(arrival->ea_socket);
-        arrival->ea_socket = -1;
+        CLOSESOCK(arrival->ea_socket);
+        arrival->ea_socket = INVALID_SOCKET;
         return SR_IO_MEMORY_ERROR;
     }
 
     arrival->ea_response_length = len_h;
 
-    if (complete_read(arrival->ea_socket, arrival->ea_response, len_h) !=
+    if (complete_read(arrival->ea_socket, (u_char *)arrival->ea_response, len_h) !=
         len_h) {
         FREE(arrival->ea_response);
         arrival->ea_response = NULL;
@@ -929,7 +918,7 @@ res_io_read_udp(struct expected_arrival *arrival)
         return SR_IO_MEMORY_ERROR;
 
     ret_val =
-        recvfrom(arrival->ea_socket, arrival->ea_response, bytes_waiting,
+        recvfrom(arrival->ea_socket, (char *)arrival->ea_response, bytes_waiting,
                  0, (struct sockaddr*)&from, &from_length);
 
     if (0 == ret_val) { /* what does 0 bytes mean from udp socket? */
@@ -947,7 +936,7 @@ res_io_read_udp(struct expected_arrival *arrival)
     if ((ret_val < 0) || (from.ss_family != arr_family))
         goto error;
     
-    if (PF_INET == from.ss_family) {
+    if (AF_INET == from.ss_family) {
         struct sockaddr_in *arr_in = (struct sockaddr_in *)
             arrival->ea_ns->ns_address[arrival->ea_which_address];
         struct sockaddr_in *from_in = (struct sockaddr_in *) &from;
@@ -958,13 +947,13 @@ res_io_read_udp(struct expected_arrival *arrival)
         /* XXX Wait for actual response */ 
     }
 #ifdef VAL_IPV6
-    else if (PF_INET6 == from.ss_family) {
+    else if (AF_INET6 == from.ss_family) {
         struct sockaddr_in6 *arr_in = (struct sockaddr_in6 *)
             arrival->ea_ns->ns_address[arrival->ea_which_address];
         struct sockaddr_in6 *from_in = (struct sockaddr_in6 *) &from;
         if ((from_in->sin6_port != arr_in->sin6_port) ||
-            memcmp(&from_in->sin6_addr, &arr_in->sin6_addr,
-                   sizeof(struct in6_addr)))
+            (memcmp(&from_in->sin6_addr, &arr_in->sin6_addr,
+                   sizeof(struct in6_addr))))
             goto error;
         /* XXX Wait for actual response */ 
     }
@@ -1007,9 +996,9 @@ res_switch_to_tcp(struct expected_arrival *ea)
      * Use the same "ea_which_address," since it already got a rise. 
      */
     ea->ea_using_stream = TRUE;
-    if (ea->ea_socket != -1) {
-        close(ea->ea_socket);
-        ea->ea_socket = -1;
+    if (ea->ea_socket != INVALID_SOCKET) {
+        CLOSESOCK(ea->ea_socket);
+        ea->ea_socket = INVALID_SOCKET;
     }
     ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
     set_alarm(&ea->ea_next_try, 0);
@@ -1028,7 +1017,7 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
          * skip canceled/expired attempts, or sockets without data
          */
         if ((ea_list->ea_remaining_attempts == -1) ||
-            (ea_list->ea_socket == -1) ||
+            (ea_list->ea_socket == INVALID_SOCKET) ||
             ! FD_ISSET(ea_list->ea_socket, read_descriptors))
             continue;
 
@@ -1051,7 +1040,7 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                     continue;
             }
             if (res_io_debug)
-                printf("Read %zd bytes via %s\n", arrival->ea_response_length,
+                printf("Read %d bytes via %s\n", arrival->ea_response_length,
                        arrival->ea_using_stream ? "TCP" : "UDP");
 
             /*
@@ -1145,7 +1134,7 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
 
     ret_val = res_io_select_sockets(&read_descriptors, &zero_time);
 
-    if (ret_val == -1)
+    if (ret_val == SOCKET_ERROR)
         /** select call failed */
         return SR_IO_SOCKET_ERROR;
 
@@ -1224,6 +1213,7 @@ res_print_ea(struct expected_arrival *ea)
     int             i = ea->ea_which_address, port = 0;
     char            buf[INET6_ADDRSTRLEN + 1];
     const char     *addr = NULL;
+    size_t	    buflen = sizeof(buf);
 
     if (res_io_debug) {
         struct sockaddr_in *s =
@@ -1231,15 +1221,15 @@ res_print_ea(struct expected_arrival *ea)
 #ifdef VAL_IPV6
         struct sockaddr_in6 *s6 =
             (struct sockaddr_in6 *) ((ea->ea_ns->ns_address[i]));
-        if (PF_INET6 == ea->ea_ns->ns_address[i]->ss_family) {
-            addr = inet_ntop(PF_INET6, &s6->sin6_addr,
-                             buf, sizeof(buf));
+        if (AF_INET6 == ea->ea_ns->ns_address[i]->ss_family) {
+	        INET_NTOP(AF_INET6, (struct sockaddr *)s6, sizeof(s6), buf, buflen, addr);
             port = s6->sin6_port;
         }
 #endif
-        if (PF_INET == ea->ea_ns->ns_address[i]->ss_family) {
-            addr = inet_ntop(PF_INET, &s->sin_addr,
-                             buf, sizeof(buf));
+
+
+        if (AF_INET == ea->ea_ns->ns_address[i]->ss_family) {
+	        INET_NTOP(AF_INET, (struct sockaddr *)s, sizeof(s), buf, buflen, addr);
             port = s->sin_port;
         }
 
@@ -1385,7 +1375,7 @@ res_async_query_handle(struct expected_arrival *ea, int *handled, fd_set *fds)
             ret_val = SR_UNSET;
             break;
         }
-        else if (ea->ea_socket != -1)
+        else if (ea->ea_socket != INVALID_SOCKET)
             ret_val = SR_NO_ANSWER_YET;
     }
 

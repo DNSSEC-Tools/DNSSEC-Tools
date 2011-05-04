@@ -15,28 +15,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
-
-#include <sys/types.h>
-#include <arpa/nameser.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-
-#include <errno.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
+#include "validator-internal.h"
 
 #include "nsap_addr.h"
-#include "validator/resolver.h"
 #include "res_support.h"
-
-#ifdef SPRINTF_CHAR
-# define SPRINTF(x) strlen(sprintf/**/x)
-#else
-# define SPRINTF(x) ((size_t)sprintf x)
-#endif
+#include "res_comp.h"
+#include "ns_samedomain.h"
+#include "base64.h"
+#include "res_debug.h"
 
 #ifndef MIN
 #define MIN(a, b)       ((a) < (b) ? (a) : (b))
@@ -148,9 +134,14 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
              const char *name_ctx, const char *origin,
              char *buf, size_t buflen)
 {
+    const char *addr = NULL;
     const char     *obuf = buf;
     const u_char   *edata = rdata + rdlen;
     int             spaced = 0;
+    struct sockaddr_in sa;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 sa6;
+#endif
 
     const char     *comment;
     char            tmp[100];
@@ -201,7 +192,8 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
     case ns_t_a:
         if (rdlen != (size_t) NS_INADDRSZ)
             goto formerr;
-        (void) inet_ntop(AF_INET, rdata, buf, buflen);
+	    memcpy(&sa.sin_addr, rdata, NS_INADDRSZ);
+        INET_NTOP(AF_INET, ((struct sockaddr *)&sa), sizeof(sa), buf, buflen, addr);
         addlen(strlen(buf), &buf, &buflen);
         break;
 
@@ -368,12 +360,15 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             break;
         }
 
+#ifdef VAL_IPV6
     case ns_t_aaaa:
         if (rdlen != (size_t) NS_IN6ADDRSZ)
             goto formerr;
-        (void) inet_ntop(AF_INET6, rdata, buf, buflen);
+	    memcpy(&sa6.sin6_addr, rdata, NS_IN6ADDRSZ);
+	    INET_NTOP(AF_INET6, ((struct sockaddr *)&sa6), sizeof(sa6), buf, buflen, addr);
         addlen(strlen(buf), &buf, &buflen);
         break;
+#endif
 
     case ns_t_loc:{
             char            t[255];
@@ -461,8 +456,12 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
             if (rdlen < 1U + NS_INT32SZ)
                 goto formerr;
 
+            if (rdlen != (size_t) NS_INADDRSZ)
+		        goto formerr;
+
             /** Address.  */
-            (void) inet_ntop(AF_INET, rdata, buf, buflen);
+	        memcpy(&sa.sin_addr, rdata, NS_INADDRSZ);
+	        INET_NTOP(AF_INET, ((struct sockaddr *)&sa), sizeof(sa), buf, buflen, addr);
             addlen(strlen(buf), &buf, &buflen);
             rdata += NS_INADDRSZ;
 
@@ -762,11 +761,12 @@ nxtbitmaps:
             rdata += n;         /* sig */
             RES_GET16(n, rdata);
             RES_GET16(n, rdata);
-            sprintf(buf, "%d", n);
+            SPRINTF((buf, "%d", n));
             addlen(strlen(buf), &buf, &buflen);
             break;
         }
 
+#ifdef VAL_IPV6
     case ns_t_a6:{
             struct in6_addr a;
             int             pbyte, pbit;
@@ -788,7 +788,8 @@ nxtbitmaps:
                     goto formerr;
                 memset(&a, 0, sizeof(a));
                 memcpy(&a.s6_addr[pbyte], rdata, sizeof(a) - pbyte);
-                (void) inet_ntop(AF_INET6, &a, buf, buflen);
+	            memcpy(&sa6.sin6_addr, &a, NS_IN6ADDRSZ);
+	 	        INET_NTOP(AF_INET6, ((struct sockaddr *)&sa6), sizeof(sa6), buf, buflen, addr);
                 addlen(strlen(buf), &buf, &buflen);
                 rdata += sizeof(a) - pbyte;
             }
@@ -803,6 +804,7 @@ nxtbitmaps:
 
             break;
         }
+#endif
 
     case ns_t_opt:{
             len = SPRINTF((tmp, "%u bytes", class));

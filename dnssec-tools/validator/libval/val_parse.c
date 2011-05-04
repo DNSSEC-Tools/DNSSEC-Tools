@@ -7,18 +7,8 @@
  * Parsing functions for some useful RR types
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <sys/types.h>
-
-#include <arpa/nameser.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
 #include "val_parse.h"
 #include "val_support.h"
 #include "val_crypto.h"
@@ -66,7 +56,7 @@ val_parse_dname(const u_char *buf, size_t buflen, size_t offset,
         return VAL_BAD_ARGUMENT;
 
     newoffset = offset;
-    bzero(dname, sizeof(dname));
+    memset(dname, 0, sizeof(dname));
     *dlen = 0;
 
     while ((newoffset < buflen) && (buf[newoffset] != 0)) {
@@ -125,10 +115,10 @@ val_parse_dnskey_rdata(const u_char *buf, size_t buflen,
     VAL_GET16(rdata->flags, cp);
     index += 2;
 
-    rdata->protocol = (u_int8_t) (buf[index]);
+    rdata->protocol = (u_char) (buf[index]);
     index += 1;
 
-    rdata->algorithm = (u_int8_t) (buf[index]);
+    rdata->algorithm = (u_char) (buf[index]);
     index += 1;
 
     rdata->public_key_len = (buflen > index) ? (buflen - index) : 0;
@@ -344,8 +334,8 @@ val_parse_dnskey_string(char *keystr, size_t keystrlen,
      * complete DNSKEY RDATA in wire format
      */
     buflen = (*dnskey_rdata)->public_key_len + sizeof(u_int16_t) +      /* flags */
-        sizeof(u_int8_t) +      /* proto */
-        sizeof(u_int8_t);       /*algo */
+        sizeof(u_char) +      /* proto */
+        sizeof(u_char);       /*algo */
     buf = (u_char *) MALLOC(buflen * sizeof(u_char));
     if (buf == NULL) {
         FREE((*dnskey_rdata)->public_key);
@@ -405,10 +395,10 @@ val_parse_rrsig_rdata(const u_char *buf, size_t buflen,
     VAL_GET16(rdata->type_covered, cp);
     index += 2;
 
-    rdata->algorithm = (u_int8_t) (buf[index]);
+    rdata->algorithm = (u_char) (buf[index]);
     index += 1;
 
-    rdata->labels = (u_int8_t) (buf[index]);
+    rdata->labels = (u_char) (buf[index]);
     index += 1;
 
     cp = (buf + index);
@@ -466,10 +456,10 @@ val_parse_ds_rdata(const u_char *buf, size_t buflen,
     VAL_GET16(rdata->d_keytag, cp);
     index += 2;
 
-    rdata->d_algo = (u_int8_t) (buf[index]);
+    rdata->d_algo = (u_char) (buf[index]);
     index += 1;
 
-    rdata->d_type = (u_int8_t) (buf[index]);
+    rdata->d_type = (u_char) (buf[index]);
     index += 1;
 
     /*
@@ -546,7 +536,7 @@ val_parse_nsec3_rdata(u_char * rr_rdata, size_t rdatalen,
 
     base32hex_encode(nexthash, nexthashlen, &(nd->nexthash),
                      &retlen);
-    nd->nexthashlen = (u_int8_t)retlen;
+    nd->nexthashlen = (u_char)retlen;
     if (retlen > nd->nexthashlen)
         return NULL;
 

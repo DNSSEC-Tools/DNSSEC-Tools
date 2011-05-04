@@ -7,21 +7,8 @@
  * Contains routines for context creation/deletion
  */ 
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#ifndef VAL_NO_THREADS
-#include <pthread.h>
-#endif
-
-#include <arpa/nameser.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
-#include <validator/validator-internal.h>
 #include "val_support.h"
 #include "val_policy.h"
 #include "val_cache.h"
@@ -43,6 +30,11 @@
 
 
 static val_context_t *the_default_context = NULL;
+
+#ifdef WIN32
+static int wsaInitialized = 0;
+WSADATA wsaData;
+#endif
 
 #ifndef VAL_NO_THREADS
 
@@ -75,6 +67,16 @@ val_create_context_with_conf(char *label,
     int             retval;
     char *base_dnsval_conf = NULL;
     int is_override = 0;
+
+#ifdef WIN32 
+    if (!wsaInitialized) {
+        wsaInitialized = 1;
+        if (0 != WSAStartup(0x202, &wsaData)) {
+            return VAL_INTERNAL_ERROR;
+        }
+    }
+#endif
+
 
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
@@ -129,6 +131,7 @@ val_create_context_with_conf(char *label,
         return VAL_INTERNAL_ERROR;
     }
 #endif
+
         
     if (snprintf
         ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u",
@@ -209,6 +212,7 @@ val_create_context_with_conf(char *label,
         the_default_context = *newcontext;
     }
     
+
     UNLOCK_DEFAULT_CONTEXT();
     
     return VAL_NO_ERROR;
@@ -364,6 +368,10 @@ val_free_validator_state()
 
     if (saved_ctx)
         val_free_context(saved_ctx);
+
+#ifdef WIN32
+    WSACleanup();
+#endif
 
     return VAL_NO_ERROR;
 }

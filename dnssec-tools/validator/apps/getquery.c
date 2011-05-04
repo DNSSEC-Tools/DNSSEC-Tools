@@ -4,26 +4,14 @@
  *
  * A command-line tool for testing the val_res_query() function.
  */
-#include "validator-config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <strings.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <resolv.h>
+#include "validator-config.h"
+#include <validator/validator.h>
+#include <validator/resolver.h>
+
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-
-#include <arpa/nameser.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
 
 #define	NAME	"getquery"
 #define	VERS	"version: 1.0"

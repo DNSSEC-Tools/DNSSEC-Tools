@@ -20,20 +20,10 @@
  * See the COPYING file distributed with this software for details.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
 #include <openssl/rand.h>
 
-#include <resolv.h>
-#include <arpa/nameser.h>
-#include <arpa/inet.h>
-
-#include "validator/resolver.h"
 
 extern void     libsres_pquery(const u_char * msg, size_t len, FILE * file);
 
@@ -41,6 +31,29 @@ extern void     libsres_pquery(const u_char * msg, size_t len, FILE * file);
 static int      seq_number = 0;
 FILE           *logfile = NULL;
 #define MEM_LOGFILE "memory_logfile"
+
+#ifndef HAVE_GETTIMEOFDAY
+/*
+   Implementation as per:
+   The Open Group Base Specifications, Issue 6
+   IEEE Std 1003.1, 2004 Edition
+
+   The timezone pointer arg is ignored.  Errors are ignored.
+*/
+
+int gettimeofday(struct timeval* p, void* tz /* IGNORED */)
+{
+    union {
+        long long ns100; /*time since 1 Jan 1601 in 100ns units */
+        FILETIME ft;
+    } now;
+
+    GetSystemTimeAsFileTime( &(now.ft) );
+    p->tv_usec=(long)((now.ns100 / 10LL) % 1000000LL );
+    p->tv_sec= (long)((now.ns100-(116444736000000000LL))/10000000LL);
+    return 0;
+}
+#endif
 
 void
 my_free(void *p, char *filename, int lineno)
@@ -148,23 +161,6 @@ print_hex(u_char field[], size_t length)
     } while (start < length);
 }
 
-int
-complete_read(int sock, void *field, size_t length)
-{
-    size_t             bytes;
-    size_t             bytes_read = 0;
-    memset(field, '\0', length);
-
-    do {
-        bytes = read(sock, field + bytes_read, length - bytes_read);
-        if (bytes == -1)
-            return -1;
-        if (bytes == 0)
-            return -1;
-        bytes_read += bytes;
-    } while (bytes_read < length);
-    return length;
-}
 
 struct sockaddr_storage **
 create_nsaddr_array(int num_addrs)
@@ -201,13 +197,9 @@ parse_name_server(const char *cp, const char *name_n)
     struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
 #ifdef VAL_IPV6
     struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&serv_addr;
+    size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
-    union {
-        struct in_addr   v4;
-#ifdef VAL_IPV6
-        struct in6_addr  v6;
-#endif
-    } address;
+    size_t addrlen4 = sizeof(struct sockaddr_in);
 
     if (cp ==  NULL)
         return NULL;
@@ -247,7 +239,7 @@ parse_name_server(const char *cp, const char *name_n)
     if ( (*cpt == '[') && (cpt = strchr(cpt,']')) ) {
         if ( sizeof(addr) < (cpt - cp) )
             goto err;
-        bzero(addr, sizeof(addr));
+        memset(addr, 0, sizeof(addr));
         strncpy(addr, (cp + 1), (cpt - cp - 1));
         cp = addr;
         if ( (*(++cpt) == ':') && (0 == (port_num = atoi(++cpt))) )
@@ -257,19 +249,17 @@ parse_name_server(const char *cp, const char *name_n)
     /*
      * convert address string
      */
-    bzero(&serv_addr, sizeof(serv_addr));
-    if (inet_pton(AF_INET, cp, &address.v4) > 0) {
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    if (INET_PTON(AF_INET, cp, ((struct sockaddr *)sin), &addrlen4) > 0) {
         sin->sin_family = AF_INET;     // host byte order
-        sin->sin_addr = address.v4;
         sin->sin_port = htons(port_num);       // short, network byte order
     }
     else {
 #ifdef VAL_IPV6
-        if (inet_pton(AF_INET6, cp, &address.v6) != 1)
+        if (INET_PTON(AF_INET6, cp, ((struct sockaddr *)sin6), &addrlen6) != 1)
             goto err;
 
         sin6->sin6_family = AF_INET6;     // host byte order
-        memcpy(&sin6->sin6_addr, &address.v6, sizeof(address.v6));
         sin6->sin6_port = htons(port_num);       // short, network byte order
 #else
         goto err;

@@ -93,23 +93,11 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
+#include "validator-internal.h"
 
-
-#include <sys/types.h>
-#include <sys/param.h>
-
-#include <ctype.h>
-#include <errno.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <arpa/nameser.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include "validator/resolver.h"
 #include "res_support.h"
+#include "res_comp.h"
+#include "res_debug.h"
 
 const char     *_libsres_opcodes[] = {
     "QUERY",
@@ -131,16 +119,6 @@ const char     *_libsres_opcodes[] = {
 };
 
 
-/*
- * some system prototypes don't match up
- */
-#ifdef sun
-#define P_OPTION_ARG_TYPE uint_t
-#define P_SECSTODATE_ARG_TYPE  uint_t
-#else
-#define P_OPTION_ARG_TYPE u_long
-#define P_SECSTODATE_ARG_TYPE  u_long
-#endif
 
 /*
  * some system headers are outdated
@@ -252,82 +230,6 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
         FREE(buf);
 }
 
-/*
- * Print the contents of a query.
- * This is intended to be primarily a debugging routine.
- */
-void
-libsres_pquery(const u_char * msg, size_t len, FILE * file)
-{
-    ns_msg          handle;
-    int             qdcount, ancount, nscount, arcount;
-    u_int           opcode, rcode, id;
-#ifdef HAVE_STRERROR_R
-    char            err_buf[ERRBUFLEN + 1];
-#endif
-
-    if (ns_initparse(msg, len, &handle) < 0) {
-#ifdef HAVE_STRERROR_R
-        if (!strerror_r(errno, err_buf, ERRBUFLEN))
-            fprintf(file, ";; ns_initparse: %s\n", err_buf);
-        else
-            fprintf(file, ";; ns_initparse: Error\n");
-#else
-        fprintf(file, ";; ns_initparse: %s\n", strerror(errno));
-#endif
-
-        return;
-    }
-    opcode = libsres_msg_getflag(handle, ns_f_opcode);
-    rcode = libsres_msg_getflag(handle, ns_f_rcode);
-    id = ns_msg_id(handle);
-    qdcount = ns_msg_count(handle, ns_s_qd);
-    ancount = ns_msg_count(handle, ns_s_an);
-    nscount = ns_msg_count(handle, ns_s_ns);
-    arcount = ns_msg_count(handle, ns_s_ar);
-
-    /*
-     * Print header fields.
-     */
-    fprintf(file,
-            ";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n",
-            _libsres_opcodes[opcode], p_rcode(rcode), id);
-    putc(';', file);
-    fprintf(file, "; flags:");
-    if (libsres_msg_getflag(handle, ns_f_qr))
-        fprintf(file, " qr");
-    if (libsres_msg_getflag(handle, ns_f_aa))
-        fprintf(file, " aa");
-    if (libsres_msg_getflag(handle, ns_f_tc))
-        fprintf(file, " tc");
-    if (libsres_msg_getflag(handle, ns_f_rd))
-        fprintf(file, " rd");
-    if (libsres_msg_getflag(handle, ns_f_ra))
-        fprintf(file, " ra");
-    if (libsres_msg_getflag(handle, ns_f_z))
-        fprintf(file, " ??");
-    if (libsres_msg_getflag(handle, ns_f_ad))
-        fprintf(file, " ad");
-    if (libsres_msg_getflag(handle, ns_f_cd))
-        fprintf(file, " cd");
-
-    fprintf(file, "; %s: %d", p_section(ns_s_qd, opcode), qdcount);
-    fprintf(file, ", %s: %d", p_section(ns_s_an, opcode), ancount);
-    fprintf(file, ", %s: %d", p_section(ns_s_ns, opcode), nscount);
-    fprintf(file, ", %s: %d", p_section(ns_s_ar, opcode), arcount);
-
-    putc('\n', file);
-
-    /*
-     * Print the various sections.
-     */
-    do_section(&handle, ns_s_qd, RES_PRF_QUES, file);
-    do_section(&handle, ns_s_an, RES_PRF_ANS, file);
-    do_section(&handle, ns_s_ns, RES_PRF_AUTH, file);
-    do_section(&handle, ns_s_ar, RES_PRF_ADD, file);
-    if (qdcount == 0 && ancount == 0 && nscount == 0 && arcount == 0)
-        putc('\n', file);
-}
 
 
 const u_char   *
@@ -357,11 +259,7 @@ p_cdname(const u_char * cp, const u_char * msg, FILE * file)
  */
 
 const u_char   *
-p_fqnname(cp, msg, msglen, name, namelen)
-     const u_char   *cp, *msg;
-     int             msglen;
-     char           *name;
-     int             namelen;
+p_fqnname(const u_char *cp, const u_char *msg, int msglen, char *name, int namelen) 
 {
     int             n, newlen;
 
@@ -409,12 +307,12 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
 #if (defined(__p_class_syms) || defined(sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__CYGWIN__))
 #define RES_SYM_TYPE res_sym
 #else
-#define RES_SYM_TYPE res_sym_const
 struct res_sym_const {
     int             number;     /* Identifying number, like T_MX */
     const char     *name;       /* Its symbolic name, like "MX" */
     const char     *humanname;  /* Its fun name, like "mail exchanger" */
 };
+#define RES_SYM_TYPE res_sym_const
 #endif
 
 /*
@@ -562,10 +460,15 @@ const struct RES_SYM_TYPE __p_rcode_syms[] = {
 };
 
 int
-sym_ston(const struct res_sym *syms, const char *name, int *success)
+sym_ston(const struct RES_SYM_TYPE *syms, const char *name, int *success)
 {
+    size_t namelen = 0;
+    if (name)
+        namelen = strlen(name);
+
     for ((void) NULL; syms->name != 0; syms++) {
-        if (strcasecmp(name, syms->name) == 0) {
+        if ((namelen == strlen(syms->name)) &&
+            strncasecmp(name, syms->name, namelen) == 0) {
             if (success)
                 *success = 1;
             return (syms->number);
@@ -577,7 +480,7 @@ sym_ston(const struct res_sym *syms, const char *name, int *success)
 }
 
 const char     *
-sym_ntos(const struct res_sym *syms, int number, int *success)
+sym_ntos(const struct RES_SYM_TYPE *syms, int number, int *success)
 {
     static char     unname[20];
     
@@ -598,7 +501,7 @@ sym_ntos(const struct res_sym *syms, int number, int *success)
 }
 
 const char     *
-sym_ntop(const struct res_sym *syms, int number, int *success)
+sym_ntop(const struct RES_SYM_TYPE *syms, int number, int *success)
 {
     static char     unname[20];
 
@@ -626,7 +529,7 @@ p_sres_type(int type)
     static char     typebuf[20];
 
     result =
-        sym_ntos((const struct res_sym *) __p_type_sres_syms, type, &success);
+        sym_ntos((const struct RES_SYM_TYPE *) __p_type_sres_syms, type, &success);
 
     if (success)
         return (result);
@@ -642,14 +545,14 @@ p_sres_type(int type)
 const char     *
 p_section(int section, int opcode)
 {
-    const struct res_sym *symbols;
+    const struct RES_SYM_TYPE *symbols;
 
     switch (opcode) {
     case ns_o_update:
-        symbols = (const struct res_sym *) __p_update_section_syms;
+        symbols = (const struct RES_SYM_TYPE *) __p_update_section_syms;
         break;
     default:
-        symbols = (const struct res_sym *) __p_default_section_syms;
+        symbols = (const struct RES_SYM_TYPE *) __p_default_section_syms;
         break;
     }
     return (sym_ntos(symbols, section, (int *) 0));
@@ -666,7 +569,7 @@ p_class(int class)
     static char     classbuf[20];
 
     result =
-        sym_ntos((const struct res_sym *) __p_class_syms, class, &success);
+        sym_ntos((const struct RES_SYM_TYPE *) __p_class_syms, class, &success);
     if (success)
         return (result);
     if (class < 0 || class > 0xfff)
@@ -761,7 +664,7 @@ const char     *
 p_rcode(int rcode)
 {
     return (sym_ntos
-            ((const struct res_sym *) __p_rcode_syms, rcode, (int *) 0));
+            ((const struct RES_SYM_TYPE *) __p_rcode_syms, rcode, (int *) 0));
 }
 
 /*
@@ -808,7 +711,7 @@ static const unsigned int poweroften[10] =
  * takes an XeY precision/size value, returns a string representation. 
  */
 static const char *
-precsize_ntoa(u_int8_t prec)
+precsize_ntoa(u_char prec)
 {
     static char     retbuf[sizeof("90000000.00")];      /* XXX nonreentrant */
     unsigned long   val;
@@ -827,11 +730,11 @@ precsize_ntoa(u_int8_t prec)
 /*
  * converts ascii size/precision X * 10**Y(cm) to 0xXY.  moves pointer. 
  */
-static          u_int8_t
+static          u_char
 precsize_aton(const char **strptr)
 {
     unsigned int    mval = 0, cmval = 0;
-    u_int8_t        retval = 0;
+    u_char        retval = 0;
     const char     *cp;
     int             exponent;
     int             mantissa;
@@ -978,9 +881,7 @@ latlon2ul(const char **latlonstrptr, int *which)
  * * representation. 
  */
 int
-loc_aton(ascii, binary)
-     const char     *ascii;
-     u_char         *binary;
+loc_aton(const char *ascii, u_char *binary)
 {
     const char     *cp, *maxcp;
     u_char         *bcp;
@@ -988,9 +889,9 @@ loc_aton(ascii, binary)
     u_int32_t       latit = 0, longit = 0, alt = 0;
     u_int32_t       lltemp1 = 0, lltemp2 = 0;
     int             altmeters = 0, altfrac = 0, altsign = 1;
-    u_int8_t        hp = 0x16;  /* default = 1e6 cm = 10000.00m = 10km */
-    u_int8_t        vp = 0x13;  /* default = 1e3 cm = 10.00m */
-    u_int8_t        siz = 0x12; /* default = 1e2 cm = 1.00m */
+    u_char          hp = 0x16;  /* default = 1e6 cm = 10000.00m = 10km */
+    u_char          vp = 0x13;  /* default = 1e3 cm = 10.00m */
+    u_char          siz = 0x12; /* default = 1e2 cm = 1.00m */
     int             which1 = 0, which2 = 0;
 
     cp = ascii;
@@ -1078,7 +979,7 @@ loc_aton(ascii, binary)
   defaults:
 
     bcp = binary;
-    *bcp++ = (u_int8_t) 0;      /* version byte */
+    *bcp++ = (u_char) 0;      /* version byte */
     *bcp++ = siz;
     *bcp++ = hp;
     *bcp++ = vp;
@@ -1093,9 +994,7 @@ loc_aton(ascii, binary)
  * takes an on-the-wire LOC RR and formats it in a human readable format. 
  */
 const char     *
-loc_ntoa(binary, ascii)
-     const u_char   *binary;
-     char           *ascii;
+loc_ntoa(const u_char *binary, char *ascii)
 {
     static const char *error = "?";
     static char     tmpbuf[sizeof
@@ -1110,9 +1009,9 @@ loc_ntoa(binary, ascii)
 
     const u_int32_t referencealt = 100000 * 100;
 
-    int32_t         latval, longval, altval;
+    u_int32_t       latval, longval, altval;
     u_int32_t       templ;
-    u_int8_t        sizeval, hpval, vpval, versionval;
+    u_char          sizeval, hpval, vpval, versionval;
 
     char           *sizestr, *hpstr, *vpstr;
 
@@ -1122,7 +1021,7 @@ loc_ntoa(binary, ascii)
         ascii = tmpbuf;
 
     if (versionval) {
-        (void) sprintf(ascii, "; error: unknown LOC RR version");
+        (void) SPRINTF((ascii, "; error: unknown LOC RR version"));
         return (ascii);
     }
 
@@ -1181,14 +1080,14 @@ loc_ntoa(binary, ascii)
     hpstr = strdup(precsize_ntoa(hpval));
     vpstr = strdup(precsize_ntoa(vpval));
 
-    sprintf(ascii,
+    SPRINTF((ascii,
             "%d %.2d %.2d.%.3d %c %d %.2d %.2d.%.3d %c %s%d.%.2dm %sm %sm %sm",
             latdeg, latmin, latsec, latsecfrac, northsouth,
             longdeg, longmin, longsec, longsecfrac, eastwest,
             altsign, altmeters, altfrac,
             (sizestr != NULL) ? sizestr : error,
             (hpstr != NULL) ? hpstr : error,
-            (vpstr != NULL) ? vpstr : error);
+            (vpstr != NULL) ? vpstr : error));
 
     if (sizestr != NULL)
         FREE(sizestr);
@@ -1248,9 +1147,13 @@ p_secstodate(P_SECSTODATE_ARG_TYPE secs)
     static char     output[15]; /* YYYYMMDDHHMMSS and null */
     time_t          clock = secs;
     struct tm      *time;
-    struct tm       res;
 
+#ifdef HAVE_GMTIME_R
+    struct tm       res;
     time = gmtime_r(&clock, &res);
+#else
+    time = gmtime(&clock);
+#endif
     time->tm_year += 1900;
     time->tm_mon += 1;
     snprintf(output, sizeof(output), "%04d%02d%02d%02d%02d%02d",
@@ -1267,7 +1170,7 @@ res_nametoclass(const char *buf, int *successp)
     int             success;
 
     result =
-        sym_ston((const struct res_sym *) __p_class_syms, buf, &success);
+        sym_ston((const struct RES_SYM_TYPE *) __p_class_syms, buf, &success);
     if (success)
         goto done;
 
@@ -1292,7 +1195,7 @@ res_nametotype(const char *buf, int *successp)
     int             success;
 
     result =
-        sym_ston((const struct res_sym *) __p_type_sres_syms, buf, &success);
+        sym_ston((const struct RES_SYM_TYPE *) __p_type_sres_syms, buf, &success);
     if (success)
         goto done;
 
@@ -1307,4 +1210,80 @@ res_nametotype(const char *buf, int *successp)
     if (successp)
         *successp = success;
     return (result);
+}
+/*
+ * Print the contents of a query.
+ * This is intended to be primarily a debugging routine.
+ */
+void
+libsres_pquery(const u_char * msg, size_t len, FILE * file)
+{
+    ns_msg          handle;
+    int             qdcount, ancount, nscount, arcount;
+    u_int           opcode, rcode, id;
+#ifdef HAVE_STRERROR_R
+    char            err_buf[ERRBUFLEN + 1];
+#endif
+
+    if (ns_initparse(msg, len, &handle) < 0) {
+#ifdef HAVE_STRERROR_R
+        if (!strerror_r(errno, err_buf, ERRBUFLEN))
+            fprintf(file, ";; ns_initparse: %s\n", err_buf);
+        else
+            fprintf(file, ";; ns_initparse: Error\n");
+#else
+        fprintf(file, ";; ns_initparse: %s\n", strerror(errno));
+#endif
+
+        return;
+    }
+    opcode = libsres_msg_getflag(handle, ns_f_opcode);
+    rcode = libsres_msg_getflag(handle, ns_f_rcode);
+    id = ns_msg_id(handle);
+    qdcount = ns_msg_count(handle, ns_s_qd);
+    ancount = ns_msg_count(handle, ns_s_an);
+    nscount = ns_msg_count(handle, ns_s_ns);
+    arcount = ns_msg_count(handle, ns_s_ar);
+
+    /*
+     * Print header fields.
+     */
+    fprintf(file,
+            ";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n",
+            _libsres_opcodes[opcode], p_rcode(rcode), id);
+    putc(';', file);
+    fprintf(file, "; flags:");
+    if (libsres_msg_getflag(handle, ns_f_qr))
+        fprintf(file, " qr");
+    if (libsres_msg_getflag(handle, ns_f_aa))
+        fprintf(file, " aa");
+    if (libsres_msg_getflag(handle, ns_f_tc))
+        fprintf(file, " tc");
+    if (libsres_msg_getflag(handle, ns_f_rd))
+        fprintf(file, " rd");
+    if (libsres_msg_getflag(handle, ns_f_ra))
+        fprintf(file, " ra");
+    if (libsres_msg_getflag(handle, ns_f_z))
+        fprintf(file, " ??");
+    if (libsres_msg_getflag(handle, ns_f_ad))
+        fprintf(file, " ad");
+    if (libsres_msg_getflag(handle, ns_f_cd))
+        fprintf(file, " cd");
+
+    fprintf(file, "; %s: %d", p_section(ns_s_qd, opcode), qdcount);
+    fprintf(file, ", %s: %d", p_section(ns_s_an, opcode), ancount);
+    fprintf(file, ", %s: %d", p_section(ns_s_ns, opcode), nscount);
+    fprintf(file, ", %s: %d", p_section(ns_s_ar, opcode), arcount);
+
+    putc('\n', file);
+
+    /*
+     * Print the various sections.
+     */
+    do_section(&handle, ns_s_qd, RES_PRF_QUES, file);
+    do_section(&handle, ns_s_an, RES_PRF_ANS, file);
+    do_section(&handle, ns_s_ns, RES_PRF_AUTH, file);
+    do_section(&handle, ns_s_ar, RES_PRF_ADD, file);
+    if (qdcount == 0 && ancount == 0 && nscount == 0 && arcount == 0)
+        putc('\n', file);
 }

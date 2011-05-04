@@ -1,8 +1,6 @@
 #ifndef VAL_POLICY_H
 #define VAL_POLICY_H
 
-#include "val_parse.h"
-
 #define CONF_COMMENT "#"
 #define ZONE_COMMENT ";"
 #define ALL_COMMENTS ";#"

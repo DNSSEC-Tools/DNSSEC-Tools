@@ -5,7 +5,6 @@
 #ifndef RES_MKQUERY_H
 #define RES_MKQUERY_H
 
-#include <resolv.h>
 
 /*
  * should be in resolv.h; define it if not. this value is from

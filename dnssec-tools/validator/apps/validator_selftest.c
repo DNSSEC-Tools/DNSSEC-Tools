@@ -12,24 +12,8 @@
 */
 
 #include "validator-config.h"
-
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <strings.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <ctype.h>
-#include <sys/file.h>
-#include <sys/fcntl.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <resolv.h>
-
+#include <validator/validator.h>
 #include <validator/resolver.h>
-#include <validator/val_errors.h>
 #include "validator_driver.h"
 
 typedef struct testcase_st {
@@ -210,7 +194,7 @@ vtc_parse_result(const char *result)
         result += 4;
 
     for (i = 0; rm[i].name; ++ i)
-        if (0 == strcasecmp(result, rm[i].name))
+        if (0 == strncasecmp(result, rm[i].name, strlen(rm[i].name)))
             return rm[i].val;
 
     return 0;
@@ -235,7 +219,9 @@ int
 read_val_testcase_file(const char *filename)
 {
     int             fd;
+#ifdef HAVE_FLOCK
     struct flock    fl;
+#endif
     int             retval = VAL_NO_ERROR, endst = 0;
     char            token[1025];
     int             line_number = 1;
@@ -249,9 +235,11 @@ read_val_testcase_file(const char *filename)
     if (fd == -1) {
         return VAL_CONF_NOT_FOUND;
     }
+#ifdef HAVE_FLOCK
     memset(&fl, 0, sizeof(fl));
     fl.l_type = F_RDLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
 
     if (0 != fstat(fd, &sb)) {
         retval = VAL_CONF_NOT_FOUND;
@@ -449,8 +437,10 @@ read_val_testcase_file(const char *filename)
 #endif
 
 err:
+#ifdef HAVE_FLOCK
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
+#endif
     close(fd);
     if (buf)
         free(buf);

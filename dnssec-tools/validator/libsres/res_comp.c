@@ -68,17 +68,7 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include "validator-config.h"
-
-#include <sys/types.h>
-#include <sys/param.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/nameser.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include "validator/resolver.h"
+#include "validator-internal.h"
 
 /*
  * Expand compressed domain name 'src' to full domain name.

@@ -7,26 +7,11 @@
  * A command-line tool for testing the val_getnameinfo() function.
  */
 #include "validator-config.h"
+#include <validator/validator.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <strings.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <resolv.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
-
-#include <arpa/nameser.h>
-#include <validator/resolver.h>
-#include <validator/validator.h>
 
 #define	NAME	"getname"
 #define	VERS	"version: 1.0"
@@ -36,7 +21,6 @@
 // Program options
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
-    {"novalidate", 0, 0, 'n'},
     {"port", 0, 0, 'p'},
     {"output", 0, 0, 'o'},
     {"Version", 0, 0, 'V'},
@@ -53,8 +37,6 @@ usage(char *progname)
     fprintf(stderr, "Options:\n");
     fprintf(stderr,
             "\t-h, --help                      display usage and exit\n");
-    fprintf(stderr,
-            "\t-n, --novalidate                do not use the validator\n");
     fprintf(stderr,
             "\t-p, --service=<PORT|SERVICE>    transport-layer port or service name\n");
     fprintf(stderr, 
@@ -73,6 +55,7 @@ usage(char *progname)
             "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
     fprintf(stderr,
             "\t-V, --Version                   display version and exit\n");
+
 }
 
 void
@@ -82,7 +65,6 @@ version(void)
     fprintf(stderr, "%s\n",DTVERS);
 }
 
-static int      validate = 1;
 static int      flags = 0;
 static int      portspecified = 0;
 
@@ -103,20 +85,20 @@ main(int argc, char *argv[])
     val_log_t      *logp;
     val_status_t val_status;
     struct sockaddr_storage saddr;
-    int sock_size;
+    size_t sock_size;
     // Parse the command line
     while (1) {
         int             c;
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "hno:p:FHNSDV",
+        c = getopt_long_only(argc, argv, "ho:p:FHNSDV",
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "hno:p:FHNSDV", prog_options, &opt_index);
+        c = getopt_long(argc, argv, "ho:p:FHNSDV", prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "hno:p:FHNSDV");
+        c = getopt(argc, argv, "ho:p:FHNSDV");
 #endif
 
         if (c == -1) {
@@ -127,9 +109,6 @@ main(int argc, char *argv[])
         case 'h':
             usage(argv[0]);
             return -1;
-        case 'n':
-            validate = 0;
-            break;
         case 'o':
             logp = val_log_add_optarg(optarg, 1);
             if (NULL == logp) { /* err msg already logged */
@@ -175,26 +154,29 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    if (strchr(node,':'))  {
-        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)&saddr;
-        sa6->sin6_port = htons(port);
-       sa6->sin6_family = AF_INET6;
-       inet_pton(AF_INET6,node,&sa6->sin6_addr);
-       sock_size = sizeof(struct sockaddr_in6);
-    } else {
-        struct sockaddr_in *sa = (struct sockaddr_in *)&saddr;
-        sa->sin_port = htons(port);
-       sa->sin_family = PF_INET;
-       sa->sin_addr.s_addr = inet_addr(node);
+    if (!strchr(node,':'))  {
+       struct sockaddr_in *sa = (struct sockaddr_in *)&saddr;
+       sa->sin_port = htons(port);
+       sa->sin_family = AF_INET;
        sock_size = sizeof(struct sockaddr_in);
+       INET_PTON(AF_INET, node, ((struct sockaddr *)&sa), &sock_size);
+    } 
+#ifdef VAL_IPV6
+    else {
+       struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)&saddr;
+       sock_size = sizeof(struct sockaddr_in6);
+       sa6->sin6_port = htons(port);
+       sa6->sin6_family = AF_INET6;
+       INET_PTON(AF_INET6, node, ((struct sockaddr *)&sa6), &sock_size);
     }
+#endif
 
     if (portspecified != 1) {
       serv = NULL;
       servlen = 0;
     }
 
-    if (validate) {
+    {
 
       retval = val_getnameinfo(NULL, 
 			       (struct sockaddr*)&saddr, 
@@ -207,8 +189,12 @@ main(int argc, char *argv[])
 	printf("Host: %s\nServ: %s\n", host, serv);
 
         if (retval != 0) {
+#ifdef HAVE_GAI_STRERROR
             printf("Error in val_getnameinfo(): %s\n",
                    gai_strerror(retval));
+#else
+            printf("Error in val_getnameinfo(): %d\n", retval);
+#endif
             return -1;
         } 
 
@@ -222,19 +208,6 @@ main(int argc, char *argv[])
             return 1; 
         }
         
-    } else {
-        retval = getnameinfo((struct sockaddr*)&saddr, 
-                               sock_size,
-			       host, (size_t)STRLEN, 
-			       serv, (size_t)STRLEN, 
-			       flags);
-        printf("Return code = %d\n", retval);
-        if (retval != 0) {
-            printf("Error in getaddrinfo(): %s\n", gai_strerror(retval));
-            return -1;
-        } else {	  
-	  printf("Host: %s\nServ: %s\n", host, serv);
-        }
-    }
+    } 
     return 0;
 }
