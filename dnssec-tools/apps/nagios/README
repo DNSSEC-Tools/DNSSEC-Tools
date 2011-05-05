@@ -1,0 +1,108 @@
+# Copyright 2011 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			  DNSSEC-Tools
+		     Is your domain secure?
+
+Nagios is an open-source system for monitoring networks and computers.
+It has been enhanced to monitor zone rollover controlled by DNSSEC-Tools.
+The modifications were made to Nagios Core version 3.2.3.
+
+The DNSSEC-Tools additions to Nagios provide a monitoring service called
+"Zone Rollover".  This service shows most zones in an okay -- green --
+state.  If a zone is in need of administrative intervention, then the
+zone's state is the warning -- yellow -- state.  
+
+These additions work just like other additions to Nagios.  A plugin
+retrieves the appropriate data and provides it to Nagios, which performs
+the data display.  The required Nagios objects (hosts, commands, and
+services) must be created, and the plugin put in the plugin directory.
+
+An optional modification to a base Nagios file is provided as well.  This
+modified file tunes a small amount of Nagios display data specifically for
+DNSSEC-Tools monitoring.  The output is a little nicer, but monitoring is
+not hindered if the option is not installed.
+
+
+Caveat:  When using these modifications with Nagios, you must be aware
+	 of the frequency of zone rollover actions and the frequency of
+	 Nagios service checks.  It is almost certain that there will be
+	 some amount of latency between actual zone rollover status and 
+	 the rollover status displayed by Nagios.  This is the nature of
+	 the system and it should be expected.  This is only a problem if
+	 your zones are fast-rolling zones.  If a zone has a TTL of just
+	 a few minutes, then the Nagios display will lag far behind reality.
+
+
+
+Files
+-----
+
+This directory contains files for use in Nagios monitoring of zone rollover
+controlled by DNSSEC-Tools.  Brief descriptions of these files are given
+below.
+
+
+	status.c
+		This file is a standard part of the Nagios distribution.
+		It is a CGI that builds many of the Nagios status pages.
+		It has been modified to provide DNSSEC-Tools-specific
+		results in the "Status" column of services output.
+
+		This modification is optional, but it provides
+		nicer output for zone rollover monitoring.
+
+		The file is located in the source hierarchy for Nagios.
+		.../nagios-3.2.3/cgi/status.c
+
+
+	dtnagobj
+		This Perl script builds a file containing the Nagios
+		objects required to display zone rollover status.  It
+		is given the DNSSEC-Tools rollrec file used to manage a
+		set of zones and it builds everything required to easily
+		slide into a Nagios environment.
+
+		The resulting objects file is *not* a stand-alone Nagios
+		environment!  It must be added to a Nagios configuration.
+		The objects file must be included by nagios.cfg, the main
+		Nagios configuration file, in order for zone monitoring
+		to occur.
+
+		This should be run in the directory that contains the
+		rollrec file.  Otherwise, the resulting object file will
+		need to be executed in order to adjust the pathname for
+		the rollrec file.
+
+		"perldoc dtnagobj" will give additional information.
+
+	dt_zonestat
+		This Perl script is a Nagios plugin that determines
+		the status of a zone.  It is referenced as part of the
+		service objects created by dtnagobj.
+
+		dt_zonestat must be installed in the standard Nagios
+		plugin directory.
+
+		"perldoc dt_zonestat" will give additional information.
+
+
+	sample.dnssec-tools.cfg
+		This is a sample file containing the Nagios objects
+		for monitoring three zones whose rollover is managed
+		by DNSSEC-Tools.  The three zones are "test.com" and
+		a split-view "example.com" having two views ("example.com"
+		and "inside example".)
+
+		This file was built by dtnagobj using sample.rollrec
+		as its input.
+
+	sample.rollrec
+		This is a sample DNSSEC-Tools rollrec file, which was
+		used as input to dtnagobj in order to create the
+		sample-dnssec-tools.cfg file.  This file was taken from
+		the Split-View Demo directory, which is part of the
+		DNSSEC-Tools release.
+
+

@@ -1,0 +1,570 @@
+#!/usr/bin/perl
+#
+# Copyright 2011 Cobham Analytic Solutions.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# dt_zonestat
+#
+#	This script retrieves the DNSSEC rollover phase for a specified
+#	zone.  The phase is retrieved in one of two ways:
+#		- from the rollerd daemon using the rollctl command
+#		- from rollerd's rollrec file using the lsroll command
+#
+#	This was written for DNSSEC-Tools.
+#
+# Revision History
+#	1.9.1	Original version: 3/2011		(1.0)
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::dnssectools;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "dt_zonestat";
+my $VERS   = "$NAME version: 1.9.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.9";
+
+######################################################################r
+#
+# Data required for command line options.
+#
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"rrf=s",			# Rollrec file (for lsroll.)
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+my $rrf = '';				# Rollrec file.
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+#######################################################################
+#
+# Exit codes for rollover phases.
+#
+
+my $normal_op	   = $RC_NORMAL;		# Normal operation.
+my $ksk_other	   = $RC_NORMAL;		# KSK phases 1-5, and 7.
+my $ksk_6	   = $RC_WARNING;		# KSK phase 6.
+my $zsk_allphases  = $RC_NORMAL;		# ZSK all phases.
+
+#######################################################################
+
+my $svzone;				# Split-view version of zone name.
+
+my $OUTFILE = "/tmp/z.zonestats";	# Debugging output file.
+
+#
+# Run shtuff.
+#
+main();
+exit($RC_UNKNOWN);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for uem-dnsresp.
+#
+sub main
+{
+	my $zone;				# Zone to check.
+
+	$| = 0;
+
+# out("dt_zonestat:  running");
+
+	#
+	# Check our options.
+	#
+	$zone = doopts();
+# out("\tzone - <$zone>");
+
+	#
+	# Build the split-view zone name.
+	#
+	$svzone = $zone;
+	$svzone = "$zone/$zone" if($zone !~ /\//);
+# out("\tsvzone - <$svzone>");
+# out(" ");
+
+	#
+	# Get the statistics for this zone.
+	#
+	if($rrf ne '')
+	{
+# out("\tcalling zonestats_lsroll($zone)");
+		zonestats_lsroll($zone);
+	}
+	else
+	{
+# out("\tcalling zonestats_rollctl($zone)");
+		zonestats_rollctl($zone);
+	}
+
+	#
+	# Exit with the command's return code		(Shouldn't get here.)
+	#
+	print "dt_zonestat should not get here\n";
+	exit($RC_UNKNOWN);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Check a few options.
+	#
+	$rrf = $options{'rrf'}  if(defined($options{'rrf'}));
+
+	#
+	# Ensure a zone was specified.
+	#
+	if(@ARGV != 1)
+	{
+		print "dt_zonestat:  no zone specified\n";
+		return($RC_CRITICAL);
+	}
+
+	#
+	# Return the zone name.
+	#
+	return($ARGV[0]);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	zonestats_lsroll()
+#
+sub zonestats_lsroll
+{
+	my $zone = shift;			# Zone to check.
+	my $out;				# Command's output.
+	my @out;				# Output lines array.
+
+	#
+	# Get the zone status.
+	#
+	$out = runner("lsroll -terse -type -zonename -phases $zone $rrf");
+	@out = split /\n/, $out;
+
+	#
+	# Check each line of the lsroll output.  If we find a line whose
+	# zone name matches the one we're looking for, we'll deal with
+	# its rollover phases and exit accordingly.
+	#
+	# We'll also take into account whether this is a full, split-view
+	# zone name or just the bare zone name.
+	#
+	foreach my $line (@out)
+	{
+		my $lnzone;			# Zone from line.
+		my $rollflag;			# Rollover flag.
+		my $kskphase;			# Rollover KSK phase.
+		my $zskphase;			# Rollover ZSK phase.
+
+		$line =~ /"([\w. -]+)"\W+([\w.-]+)\W+(\w+)\W+(\d)\/(\d)/;
+		$lnzone	  = "$1/$2";
+		$rollflag = $3;
+		$kskphase = $4;
+		$zskphase = $5;
+
+		#
+		# This isn't the droid we're looking for if the line's zone
+		# name doesn't match either the split-view zone name or the
+		# bare zone name.
+		#
+		if(($lnzone ne $svzone) &&
+		   ($lnzone ne $zone))
+#		   (($lnzone ne $zone) && ($lnzone !~ /\//)))
+		{
+			next;
+		}
+
+		#
+		# Handle skipped zones.
+		#
+		if($rollflag eq 'skip')
+		{
+			print "$svzone is not rolling\n";
+			exit($RC_UNKNOWN);
+		}
+
+		#
+		# Deal with the zone's rollover phases, exiting appropriately.
+		#
+		if(($kskphase == 0) && ($zskphase == 0))
+		{
+			print "Normal Operation\n";
+# out("$zone:  normal operation\n");
+			exit($normal_op);
+		}
+
+		if($kskphase == 6)
+		{
+# out("$zone:  KSK phase 6\n");
+			print "KSK Rollover Phase 6: ATTENTION NEEDED\n";
+			exit($ksk_6);
+		}
+
+		if($kskphase > 0)
+		{
+# out("$zone:  KSK phase $kskphase\n");
+			print "KSK Rollover Phase $kskphase\n";
+			exit($ksk_other);
+		}
+
+		if($zskphase > 0)
+		{
+# out("$zone:  ZSK Phase $zskphase\n");
+			print "ZSK Rollover Phase $zskphase\n";
+			exit($zsk_allphases);
+		}
+	}
+
+	print "unknown zone \"$svzone\"\n";
+	exit($RC_UNKNOWN);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	zonestats_rollctl()
+#
+sub zonestats_rollctl
+{
+	my $zone = shift;			# Zone to check.
+	my $out;				# Command's output.
+	my @out;				# Output lines array.
+	my $svzone;				# Split-view version of name.
+
+	#
+	# Get the zone status.
+	#
+	$out = runner("rollctl -zonestatus");
+	@out = split /\n/, $out;
+
+	#
+	# Build the split-view zone name.
+	#
+	$svzone = $zone;
+	$svzone = "$zone/$zone" if($zone !~ /\//);
+
+	#
+	# Check each line of the rollctl output.  If we find a line whose
+	# zone name matches the one we're looking for, we'll deal with
+	# its rollover phases and exit accordingly.
+	#
+	# We'll also take into account whether this is a full, split-view
+	# zone name or just the bare zone name.
+	#
+	foreach my $line (@out)
+	{
+		my $lnzone;			# Zone from line.
+		my $rolltype;			# Rollover type.
+		my $rollphase;			# Rollover phase.
+
+		$line =~ /(\w+)\W+\w+\W+(\w+)\W+(\w+)/;
+		$lnzone	   = $1;
+		$rolltype  = $2;
+		$rollphase = $3;
+
+		#
+		# Skip this zone if the line's zone name doesn't match
+		# either the split-view zone name or the bare zone name.
+		#
+		if(($lnzone ne $svzone) &&
+		   (($lnzone eq $zone) && ($lnzone !~ /\//)))
+		{
+			next;
+		}
+
+		#
+		# Handle a non-rolling zone.
+		#
+		if($rolltype eq 'skip')
+		{
+			print "$svzone is not rolling\n";
+			exit($RC_UNKNOWN);
+		}
+
+		#
+		# Handle a zone in regular operation.
+		#
+		if($rollphase == 0)
+		{
+			print "$svzone in normal operation.\n";
+			exit($normal_op);
+		}
+
+		#
+		# Handle a ZSK rolling zone.
+		#
+		if($rolltype eq 'ZSK')
+		{
+			print "$svzone in ZSK phase $rollphase.\n";
+			exit($zsk_allphases);
+		}
+
+		#
+		# Handle a KSK rolling zone.
+		#
+		if($rollphase != 6)
+		{
+			print "$svzone in KSK phase $rollphase.\n";
+			exit($ksk_other);
+		}
+
+		print "ATTENTION NEEDED:  $svzone in KSK phase $rollphase\n";
+		exit($ksk_6);
+
+	}
+
+	print "unknown zone \"$svzone\"\n";
+	exit($RC_UNKNOWN);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	runner()
+#
+sub runner
+{
+	my $cmd = shift;			# Command to execute.
+	my $out;				# Command's output.
+	my $ret;				# Command's return code.
+
+	#
+	# Run the command.
+	#
+	$out = `$cmd`;
+	$ret = $? >> 8;
+
+	#
+	# Return the command output if it succeeded.
+	#
+	return($out) if($ret == 0);
+
+	#
+	# Handle failed commands...
+	#
+
+	#
+	# Exit if rollerd isn't running.
+	#
+	if($ret == 200)
+	{
+		print "rollerd is not running\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Exit if the config file has problems.
+	#
+	if($ret == 201)
+	{
+		print "DNSSEC-Tools config file has problems - <$out> $ret\n";
+		exit($RC_UNKNOWN);
+	}
+
+	print "Unknown error\n";
+	exit($RC_UNKNOWN);
+}
+
+
+
+#-----------------------------------------------------------------------------
+# Routine:	out()
+#
+# Purpose:	Temporary output routine.
+#
+sub out
+{
+	my $str = shift;
+
+	open(OUT,">>$OUTFILE");
+	print OUT "$str\n";
+	close(OUT);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	exit($RC_WARNING);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+Copyright 2011 Cobham Analytic Solutions.  All rights reserved.
+
+This script retrieves the DNSSEC rollover phase for a specified zone.
+The phase is retrieved from the rollerd daemon or the active rollrec file.
+
+
+usage:  dt_zonestat [options] <zone>
+	options:
+		-rrf		rollrec file to consult
+		-Version	display program version
+		-help		display this message
+
+";
+
+	exit($RC_WARNING);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+dt_zonestat - Nagios plugin to retrieve a zone's rollover status from DNSSEC_Tools
+
+=head1 SYNOPSIS
+
+  dt_zonestat [options] <zone-name>
+
+=head1 DESCRIPTION
+
+B<dt_zonestat> is a Nagios plugin to retrieve a zone's rollover status
+from DNSSEC_Tools.  Zone status is retrieved either by requesting the
+status from B<rollerd> or by checking a specified B<rollrec> file.
+
+By default, B<dt_zonestat> will use B<rollctl> to retrieve zone status
+information from B<rollerd>.  If the B<-rrf> option is specified, then
+zone status information is found by running the the B<rollctl> command
+with the specified B<rollrec> file.
+
+Given uids of B<rollerd> and web servers, and the file permissions and
+ownerships of their related files, it is probably safest to use the
+B<-rrf> method of execution.
+
+In looking for the zone's rollover status, B<dt_zonestat> will take into
+account whether the zone was specified as a full, split-view zone name or
+given only as the zone name.
+
+=head1 NAGIOS USE
+
+This is run from a Nagios I<command> object.  These are examples of how the
+objects should be defined:
+
+
+  define command {
+      command_name    dt_zonestatus
+      command_line    $USER1$/dt_zonestat -rrf $ARG2$ $ARG1$
+  }
+
+  define service {
+      service_description   zone rollover
+      check_command         dt_zonestatus!"foo/foo.com"!/dtnag/test.rrf
+      host_name             test/test.com
+      active_checks_enabled 1
+      use                   dnssec-tools-service
+  }
+
+The B<dtnagobj> program will automatically create all DNSSEC-Tools-related
+Nagios objects.
+
+=head1 OPTIONS
+
+The following options are recognized by B<uem-dnsresp>:
+
+=over 4
+
+=item I<-rrf>
+
+The name of the B<rollrec> file to consult (with B<lsroll>.)
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 EXIT CODES
+
+As a Nagios plugin, B<dt_zonestat> must satisfy several requirements for its
+exit codes.  The expected exit codes are used by Nagios in determining how to
+display plugin output.  Plugins may also provide a single line of
+output that will be included in the Nagios display.
+
+The following table shows the exit codes and output for a zone's rollover
+state:
+
+
+   Zone Status        Exit Code   Output Line
+   zone not rolling       0       Normal Operation
+   all ZSK phases         0       ZSK Rollover Phase <phase>
+   KSK phase 6            1       KSK Rollover Phase 6: ATTENTION NEEDED
+   KSK other phases       0       KSK Rollover Phase <phase>
+
+0 is the "okay" value; 1 is the "warning" value; 2 is the "critical" value;
+3 is the "unknown" value.  These codes were selected for these rollover phases
+to show that KSK phase 6 must be attended to, and all other phases were all
+operating normally.
+
+B<dt_zonestat> uses these for the following errors: 
+
+    Exit Code    Output Line
+        2        No zone specified
+        3        Rollerd is not running
+        3        DNSSEC-Tools configuration file has problems
+        3        Zone is not in rollrec file
+        3        Zone is not rolling
+
+=head1 COPYRIGHT
+
+Copyright 2011 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+lsroll(8),
+rollctl(8),
+rollerd(8)
+
+rollrec(5)
+
+=cut
