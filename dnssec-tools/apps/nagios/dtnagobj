@@ -1,0 +1,908 @@
+#!/usr/bin/perl
+#
+# Copyright 2011 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# dtnagobj
+#
+#	This script builds Nagios host and service objects from a rollerd
+#	rollrec file.  These objects let Nagios monitor the rollover state
+#	of the zones in the rollrec.
+#
+
+use strict;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "dtnagobj";
+my $VERS   = "$NAME version: 1.9.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.9";
+
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"contact=s@",			# Contact email.
+
+	"outfile=s",			# Output file.
+	"overwrite",			# File-overwrite flag.
+
+	"Version",			# Display the version number.
+	"verbose",			# Verbose flag.
+	"help",				# Give a full usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $defcontact	= "root\@localhost";		# Default contact email.
+my @contacts	= ();				# Contact lists.
+my $outfile	= '';				# Output file.
+my $verbose	= 0;				# Verbose flag.
+
+#########################################
+#
+# Data for building output.
+#
+
+my @rrfs = ();				# List of rollrec files.
+my @zoneinfo = ();			# Rollrec and zone name info.
+
+my @hosts = ();				# List of hosts.
+
+my $ret;				# Return code from main().
+
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Run everything.
+#
+sub main()
+{
+	my $argc;			# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+
+	erraction(ERR_EXIT);
+
+	#
+	# Check our options.
+	#
+	$argc = doopts();
+
+	#
+	# Read the rollrec files given on the command line.
+	#
+	while($argc > 0)
+	{
+		my $rrf = $ARGV[0];			# Rollrec file.
+
+		if($rrf !~ /^\//)
+		{
+			$rrf = getcwd() . "/$rrf";
+		}
+
+		getrollrecs($rrf);
+		push @rrfs, $rrf;
+
+		shift @ARGV;
+		$argc = @ARGV;
+	}
+
+	#
+	#	CURRENTLY ONLY HANDLING A SINGLE ROLLREC FILE!!!
+	#
+
+	#
+	# Write header.
+	#
+	header();
+
+	#
+	# Write contacts objects.
+	#
+	contacts();
+
+	#
+	# Write command template and objects.
+	#
+	commands();
+
+	#
+	# Write host template and objects.
+	#
+	hosts();
+
+	#
+	# Write service template and objects.
+	#
+	services($rrfs[0]);
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine parses our command line options.
+#
+sub doopts
+{
+	my %dtconf;				# DNSSEC-Tools config values.
+	my $overwrite = 0;			# File-overwrite flag.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(1)  if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$overwrite = $options{'overwrite'};
+	$verbose   = $options{'verbose'};
+
+	#
+	# Build the contacts array -- either with the user-specified
+	# addresses, the administrative email contact from the DNSSEC-Tools
+	# config file, or the default contact.
+	#
+	if(defined($options{'contact'}))
+	{
+		my $contacts;				# Contacts array ref.
+		my %contacts = ();			# Contacts hash.
+
+		#
+		# Get the contacts array.
+		#
+		$contacts = $options{'contact'};
+		@contacts = @$contacts;
+
+		#
+		# Get a unique set of names.
+		#
+		foreach my $contact (@contacts)
+		{
+			$contacts{$contact} = 1;
+		}
+
+		#
+		# Rebuild the contacts array, but without duplicates.
+		#
+		@contacts = ();
+		foreach my $contact (sort(keys(%contacts)))
+		{
+			push @contacts, $contact;
+		}
+	}
+	else
+	{
+		my %dtconf;		# Contents of DNSSEC-Tools config file.
+
+		#
+		# Read the DNSSEC-Tools config file.
+		#
+		%dtconf = parseconfig();
+
+		#
+		# If the config file has an administrative contact defined,
+		# we'll use that for the contact address.  If not, we'll
+		# use the default.
+		#
+		if(defined($dtconf{'admin-email'}))
+		{
+			push @contacts, $dtconf{'admin-email'};
+		}
+		else
+		{
+			push @contacts, $defcontact;
+		}
+	}
+
+	#
+	# Set up an output file, if needed.
+	#
+	if(defined($options{'outfile'}))
+	{
+		$outfile = $options{'outfile'};
+
+		#
+		# Maybe let 'em know what we're doing.
+		#
+		if($verbose)
+		{
+			print "writing objects to \"$outfile\"\n";
+		}
+
+		#
+		# If the file exists and we aren't supposed to overwrite
+		# it, complain and exit.
+		#
+		if((-e $outfile) && !$overwrite)
+		{
+			print STDERR "output file \"$outfile\" exists, use -overwrite to overwrite it\n";
+			exit(2);
+		}
+
+		#
+		# Point stdout to the requested file.
+		#
+		close(STDOUT);
+		if(open(STDOUT,"> $outfile") == undef)
+		{
+			print STDERR "unable to open output file \"$outfile\"\n";
+			exit(3);
+		}
+	}
+
+	#
+	# Make sure a rollrec file was given.
+	#
+	usage(2) if(@ARGV == 0);
+
+	return(@ARGV);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getrollrecs()
+#
+# Purpose:	This routine reads the specified rollrec file and puts the
+#		rollrec name and zone name into an array for later use.
+#
+sub getrollrecs
+{
+	my $rrf = shift;			# Rollrec file.
+	my @rrnames;				# Rollrec names from file.
+
+	#
+	# Get the names of the file's rollrec entries.
+	#
+	rollrec_read($rrf);
+	@rrnames = rollrec_names();
+
+	#
+	# Add a split-view-ified zonename to the list.  
+	#
+	foreach my $rrn (sort(@rrnames))
+	{
+		my $rr;				# Reference to keyrec.
+		my %rrec;			# Rollrec.
+		my $zname;			# Rollrec's zonename.
+
+		#
+		# Get the rollrec entry for this name.
+		#
+		$rr = rollrec_fullrec($rrn);
+		%rrec = %$rr;
+
+		#
+		# The zonename is either taken from the zonename field
+		# of the rollrec or it's the name of the rollrec entry
+		#
+		$zname = $rrec{'zonename'} || $rrn;
+
+		#
+		# Add the entry to our big ol' list.
+		#
+		push @zoneinfo, "$rrn/$zname";
+
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	header()
+#
+# Purpose:	Write an explanatory header.
+#
+sub header
+{
+	my $kronos = localtime(time());			# Timestamp.
+
+	chomp $kronos;
+
+	print '#' x 72 . "\n";
+	print "#
+#  Nagios objects required for monitoring DNS data for DNSSEC-Tools.
+#
+#             Created:  $kronos by $VERS.
+#
+";
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	contacts()
+#
+# Purpose:	Create the necessary contact objects.
+#
+sub contacts
+{
+	my $members;				# Members list.
+	my @dtnames;				# Contact objects names list.
+
+	print "#\n";
+	print '#' x 80 . "\n";
+	print "#
+# Basic contacts for DNSSEC-Tools hosts.
+#
+";
+
+	foreach my $contact (@contacts)
+	{
+		my $name = "dt-admin-$contact";
+
+		push @dtnames, $name;
+
+		print " define contact {
+	contact_name    $name
+	use		generic-contact
+	alias           DNSSEC-Tools Admin
+	email           $contact
+}
+
+";
+
+	}
+
+	$members = join(', ', @dtnames);
+
+	print "define contactgroup {
+	contactgroup_name       dt-admin-group
+	alias                   DNSSEC-Tools Administrators
+	members                 $members
+}
+
+";
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	commands()
+#
+# Purpose:	Create the necessary command objects.
+#
+sub commands
+{
+	print '
+###############################################################################
+#
+# Basic commands for DNSSEC-Tools hosts.
+#
+
+define command {
+	command_name	dt_zonestatus
+	command_line	$USER1$/dt_zonestat -rrf $ARG2$ $ARG1$
+}
+
+define command {
+	command_name	dt_hostcheck
+	command_line	$USER1$/check_dummy 0
+}
+
+';
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	hosts()
+#
+# Purpose:	Create the necessary host objects:  a host template,
+#		a number of host objects, and a number of hostgroups.
+#
+sub hosts
+{
+	hosttmpl();
+	hostobjs();
+	hostgrps();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	hosttmpl()
+#
+# Purpose:	Create the host template object.
+#
+sub hosttmpl()
+{
+	print "
+###############################################################################
+#
+# Basic template for DNSSEC-Tools hosts.
+#
+
+define host {
+	name				dnssec-tools-host
+	check_command			dt_hostcheck
+	check_interval			1
+	contact_groups			dt-admin-group
+	event_handler_enabled		1
+	failure_prediction_enabled	1
+	flap_detection_enabled		0
+	max_check_attempts		10
+	notification_period		24x7
+	notifications_enabled		1
+	process_perf_data		1
+	retain_nonstatus_information	0
+	retain_status_information	0
+	register			0
+}
+";
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	hostobjs()
+#
+# Purpose:	Create the host objects.
+#
+sub hostobjs()
+{
+	print "
+###########################################################
+#
+# Objects for DNSSEC-Tools hosts.
+#
+
+";
+
+	foreach my $zi (@zoneinfo)
+	{
+		my $alias;				# Host's alias.
+		my $addr;				# Host's address.
+
+		$zi =~ /^(.+)\/(.+)$/;
+		$alias = $1;
+		$addr  = $2;
+
+		push @hosts, $zi;
+
+		print "define host {
+	host_name	$zi
+	alias		$alias
+	address		$addr
+	use		dnssec-tools-host
+}
+
+";
+
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	hostgrps()
+#
+# Purpose:	Create the hostgroups objects.
+#
+sub hostgrps()
+{
+	my $hosts;					# Hosts list.
+
+	$hosts = join(', ', @hosts);
+
+	print "
+###########################################################
+#
+# Objects for DNSSEC-Tools hostgroups.
+#
+
+define hostgroup {
+	hostgroup_name	dt-hosts
+	alias		DNSSEC-Tools Hosts
+	members		$hosts
+}
+
+";
+
+}
+
+
+#-----------------------------------------------------------------------------
+# Routine:	services()
+#
+# Purpose:	Create the necessary service objects: a service template,
+#		a number of service objects, and a number of servicegroups.
+#
+sub services
+{
+	my $rrf = shift;				# Current rollrec file.
+
+	svctmpl();
+	svcobjs($rrf);
+	svcgrps($rrf);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	svctmpl()
+#
+# Purpose:	Create the service template object.
+#
+sub svctmpl()
+{
+	print "
+###############################################################################
+#
+# Template for DNSSEC-Tools-related services.
+#
+
+#
+#	normal_check_interval is 5.
+#
+
+define service {
+	name				dnssec-tools-service
+	active_checks_enabled		1
+	check_freshness		        0
+	check_period			24x7
+	contact_groups			dt-admin-group
+	event_handler_enabled		1
+	failure_prediction_enabled	1
+	flap_detection_enabled		0
+	is_volatile			0
+	max_check_attempts		3
+	normal_check_interval		1
+	notification_interval		60
+	notification_period		24x7
+	notification_options		
+	notifications_enabled		1
+	obsess_over_service		1
+	parallelize_check		1
+	passive_checks_enabled		1
+	process_perf_data		1
+	retain_nonstatus_information	0
+	retain_status_information	0
+	retry_check_interval		1
+	register			0
+}
+
+";
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	svcobjs()
+#
+# Purpose:	Create the service objects.
+#
+sub svcobjs()
+{
+	my $rrf = shift;				# Current rollrec file.
+
+	print "
+###########################################################
+#
+# Objects for DNSSEC-Tools services.
+#
+
+";
+
+	foreach my $zi (@zoneinfo)
+	{
+		my $alias;				# Host's alias.
+		my $addr;				# Host's address.
+
+		$zi =~ /^(.+)\/(.+)$/;
+		$alias = $1;
+		$addr  = $2;
+
+
+		print "define service {
+	service_description	Zone Rollover
+	check_command		dt_zonestatus!\"$zi\"!$rrf
+	host_name		$zi
+	active_checks_enabled	1
+	use			dnssec-tools-service
+}
+
+";
+
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	svcgrps()
+#
+# Purpose:	Create the servicegroups objects.
+#
+sub svcgrps()
+{
+	my @members = ();				# Group members list.
+	my $members;					# Group members string.
+
+	for(my $ind=0; $ind < @hosts; $ind++)
+	{
+		push @members, $hosts[$ind];
+		push @members, "Zone Rollover";
+	}
+
+	$members = join(', ', @members);
+
+	print "
+###########################################################
+#
+# Objects for DNSSEC-Tools servicegroups.
+#
+
+define servicegroup {
+	servicegroup_name	Zone Rollovers
+	alias			DNSSEC-Tools Zone Rollovers
+	members			$members
+}
+
+";
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(1);
+}
+
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  dtnagobj [options] <rollrec-file>\n";
+	print STDERR "\t-contact	specify email contact\n";
+	print STDERR "\t-outfile	specify output file\n";
+	print STDERR "\t-overwrite	overwrite existing output file\n";
+	print STDERR "\t-verbose	give verbose output\n";
+	print STDERR "\t-Version	show version information\n";
+	print STDERR "\t-help		full help message\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 dtnagobj
+
+=head1 NAME
+
+dtnagobj - Create Nagios objects for monitoring DNSSEC-Tools rollovers
+
+=head1 SYNOPSIS
+
+  dtnagobj [options] <rollrec-file>
+
+=head1 DESCRIPTION
+
+B<dtnagobj> creates Nagios objects for monitoring DNSSEC-Tools rollovers.
+These Nagios objects will allow easy monitoring of zone rollovers managed
+by DNSSEC-Tools.  Details about the objects are given in the "CREATED NAGIOS
+OBJECTS" section.
+
+Zone rollover in DNSSEC-Tools is managed by the B<rollerd> daemon.  Rollover
+information is centralized in a B<rollrec> file, which contains data for each
+managed zone such as the zone name, the rollover phase, and the zone file.
+
+B<dtnagobj> gathers information about the managed zones from the B<rollrec>
+file given on the command line.  It builds the necessary Nagios objects,
+with required interrelations, and writes them either to I<stdout> or to a
+user-specified file.  The new object file should be edited as needed for
+each installation.
+
+These objects must be included in the main Nagios configuration file,
+B<nagios.cfg> in order for them to be included in Nagios processing.
+Assuming the objects have been saved to
+B</usr/local/nagios/object/dnssec-tools.cfg>, the following line must
+be added B<nagios.cfg> file:
+
+  cfg_file=/usr/local/nagios/objects/dnssec-tools.cfg
+
+=head1 NAGIOS NOTES
+
+The following are Nagios-specific notes:
+
+=over 4
+
+=item * It is assumed that the user has some amount of familiarity with Nagios.
+
+=item * B<dtnagobj> does B<not> create a stand-alone Nagios environment.
+The Nagios objects created by B<dtnagobj> must be included in an existing
+Nagios installation.  This can be a newly installed Nagios, but the framework
+must be on the monitoring host.
+
+=item * Zone rollover may be the only services monitored by Nagios.  These
+services may also be included with other services. 
+
+=item * B<dtnagobj> has been tested with Nagios 3.2.3.
+
+=back
+
+=head1 OPTIONS
+
+B<dtnagobj> recognizes the following options:
+
+=over 4
+
+=item B<-contact>
+
+The email address to which Nagios will send notification messages about the
+DNSSEC-Tools-related services.  Multiple B<-contact> options may be given on
+the command line.  If this option is not given at all, the default address
+of I<root@localhost> will be used..
+
+=item B<-outfile>
+
+Specify an output file for the newly created Nagios objects.  If this is not
+given, the objects will be written to stdout.
+
+=item B<-overwrite>
+
+If a specified output file already exists, this option allows the file to be
+overwritten.  Without this option, B<dtnagobj> will not modify an existing
+file.
+
+=item B<-verbose>
+
+Displays verbose information.
+
+=item B<-Version>
+
+Displays the version information for B<dtnagobj> and the DNSSEC-Tools package.
+
+=item B<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 CREATED NAGIOS OBJECTS
+
+B<dtnagobj> entire purpose is to create a collection of Nagios objects.
+These objects are described below, in the order they are created:
+
+=over 4
+
+=item I<contact>
+
+This object designates a contact used to build a I<contactgroup> object.
+A set of I<contact> objects will be created, depending on the command line
+options and the DNSSEC-Tools configuration file.
+
+If any B<-contact> options were given on the command line, then a I<contact>
+object will be built for each value.
+
+If no B<-contact> options were given on the command line, then the
+DNSSEC-Tools configuration file will be consulted.  If that file has an
+B<admin-email> value defined, then a I<contact> object will be created for
+that email address.  If there isn't an B<admin-email> value defined, then
+a I<contact> object will be built for the default, I<root@localhost>.
+
+The I<contact> objects reference the standard Nagios I<generic-contact>
+template object.
+
+=item I<contactgroup>
+
+This object designates a group of contact to whom Nagios will send
+notification email.  This group members are the collection of I<contact>
+objects.
+
+B<dtnagobj> creates a single I<contactgroup> -- B<dt-admin-group> -- for
+DNSSEC-Tools use.  This group is a list of DNSSEC-Tools administrators,
+and its members are the I<contact> objects.
+
+=item I<command>
+
+This object defines a command that, when paired with a I<host> object,
+creates a Nagios I<service>.  B<dtnagobj> creates two I<command> objects.
+
+I<dt_zonestatus> executes the B<dt_zonestat> Nagios plugin to determine the
+rollover status of the specified zone. 
+
+I<dt_hostcheck> executes the standard Nagios B<check_dummy> plugin to
+determine the status of the specified host.  This is a dummy I<command> and
+always gives a successful return.
+
+=item I<host>
+
+This object defines a host that, when paired with a I<command> object,
+creates a Nagios I<service>.  B<dtnagobj> creates a I<host> for each zone
+in the specified B<rollrec> file, as well as a I<host> template, which is
+sused by all other I<host> objects.
+
+The I<host_name> field of each I<host> object is formed from the B<rollrec>
+name and the zone name, as taken from the B<rollrec> file.
+
+The I<check_command> field of each I<host> object is set to B<dt_hostcheck>.
+Since zones aren't quite hosts, in the real sense of the word, there isn't
+anything that can really be checked.
+
+B<dtnagobj> creates a I<host> template called B<dnssec-tools-host>.  Any
+I<host> fields that should be used by all DNSSEC-Tools I<host> objects
+should be set in this template.
+
+=item I<hostgroup>
+
+This object creates a group of hosts from the I<host> objects created from
+the B<rollrec> file.
+
+B<dtnagobj> creates a single I<hostgroup> -- B<dt-hosts> -- for DNSSEC-Tools
+use.
+
+=item I<service>
+
+This object links a Nagios I<host> object and a I<command> object.
+B<dtnagobj> creates a I<service> for each zone in the specified B<rollrec>
+file, pairing the I<host> objects with the B<dt_zonestatus> I<command>
+object.
+
+The I<service_description> field of each I<service> object is set to
+"Zone Rollover".  This may be changed by editing the object definitions,
+but this will disable some of the DNSSEC-Tools modifications to Nagios.
+
+The I<host_name> field of each I<service> object is formed from the B<rollrec>
+name and the zone name, as taken from the B<rollrec> file.
+
+B<dtnagobj> creates a I<service> template called B<dnssec-tools-service>.
+Any I<service> fields that should be used by all DNSSEC-Tools I<service>
+objects should be set in this template.
+
+=item I<servicegroup>
+
+This object creates a group of services from the newly created I<service>
+objects.
+
+B<dtnagobj> creates a single I<servicegroup> -- B<Zone Status>
+-- for DNSSEC-Tools use.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2011 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<rollerd(8)>
+
+B<dt_hostcheck(1)>, B<dt_zonestatus(1)>
+
+B<file-rollrec(5)>
+
+=cut
+
