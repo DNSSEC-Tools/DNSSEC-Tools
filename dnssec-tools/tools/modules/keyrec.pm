@@ -60,7 +60,7 @@ use Net::DNS::SEC::Tools::conf;
 use Fcntl qw(:DEFAULT :flock);
 
 our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.0";
+our $MODULE_VERSION = "1.9.1";
 
 our @ISA = qw(Exporter);
 
@@ -74,7 +74,7 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read
 		 keyrec_write keyrec_saveas keyrec_keypaths
 		 keyrec_curkrf keyrec_defkrf
 		 keyrec_dump_hash keyrec_dump_array
-		 keyrec_signset_newname keyrec_signset_new
+		 keyrec_signset_newname keyrec_signset_new keyrec_signset_keys
 		 keyrec_signset_addkey keyrec_signset_delkey
 		 keyrec_signset_haskey keyrec_signset_clear keyrec_signsets
 		 keyrec_fmtchk
@@ -1668,6 +1668,56 @@ sub keyrec_signsets
 }
 
 #--------------------------------------------------------------------------
+# Routine:	keyrec_signsets_keys()
+#
+# Purpose:	Return the names of the keys in a specified signing set.
+#
+sub keyrec_signset_keys
+{
+	my $krname = shift;		# Keyrec name to examine.
+	my $sstype = shift;		# Signing set type to expand.
+	my $error  = '';		# Error return.
+
+	#
+	# Ensure the named keyrec exists.
+	#
+	return(undef) if(!defined($keyrecs{$krname}));
+
+	#
+	# If the named keyrec is a zone keyrec, we'll get the signing
+	# set keyrec specified in the second argument.
+	#
+	if($keyrecs{$krname}{'keyrec_type'} eq 'zone')
+	{
+		#
+		# Ensure we were given a proper signing set type.
+		#
+		if(($sstype ne 'kskcur') && ($sstype ne 'kskpub') &&
+		   ($sstype ne 'kskrev') && ($sstype ne 'kskobs') &&
+		   ($sstype ne 'zskcur') && ($sstype ne 'zskpub') &&
+		   ($sstype ne 'zsknew') && ($sstype ne 'zskobs'))
+		{
+			return(undef);
+		}
+
+		#
+		# Use the signing set name instead of the zone name.
+		#
+		$krname = $keyrecs{$krname}{$sstype};
+	}
+
+	#
+	# Ensure the supposed signing set is actually a signing set.
+	#
+	return(undef) if($keyrecs{$krname}{'keyrec_type'} ne 'set');
+
+	#
+	# Return the signing set's key names.
+	#
+	return($keyrecs{$krname}{'keys'});
+}
+
+#--------------------------------------------------------------------------
 # Routine:	keyrec_init()
 #
 # Purpose:	Initialize the internal data.
@@ -2616,6 +2666,31 @@ It returns 1 if the call is successful; 0 if it is not.
 
 I<keyrec_signsets()> returns the names of the signing sets in the I<keyrec>
 file.  These names are returned in an array.
+
+=item I<keyrec_signset_keys(keyrec_name,signset_type)>
+
+I<keyrec_signset_keys()> returns the names of the keys that are members of
+a given signing set in the I<keyrec> file.  The keys are returned in a
+space-separated string.
+
+There are two ways of calling I<keyrec_signset_keys()>.   The first method
+specifies a zone I<keyrec> name and a signing set type.  The signing set name
+is found by referencing the set field in the zone I<keyrec>, then the I<keys>
+field of that signing set is returned.
+
+The second method specifies the signing set directly, and its I<keys> field
+is returned.
+
+Valid signing set types are: 
+
+    kskcur        kskpub        kskrev        kskobs
+    zskcur        zskpub        zsknew        zskobs
+
+The following errors are recognized, resulting in an undefined return:
+
+    keyrec_name is not a defined keyrec
+    signset_type is an invalid signing set type
+    the signing set keyrec is not a set keyrec
 
 =back
 
