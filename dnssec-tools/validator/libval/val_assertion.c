@@ -175,7 +175,7 @@ free_val_rrset_members(struct val_rrset_rec *r)
             
 }
 
-void
+static void
 free_val_rrset(struct val_rrset_rec *r)
 {
     if (r == NULL)
@@ -239,6 +239,7 @@ val_free_result_chain(struct val_result_chain *results)
                 prev->val_rc_answer = trust->val_ac_trust;
                 trust->val_ac_trust = NULL;
                 val_free_authentication_chain_structure(trust);
+                trust = NULL;
             }
         }
 
@@ -257,6 +258,7 @@ val_free_result_chain(struct val_result_chain *results)
                 prev->val_rc_proofs[i] = trust->val_ac_trust;
                 trust->val_ac_trust = NULL;
                 val_free_authentication_chain_structure(trust);
+                trust = NULL;
             }
         }
 
@@ -469,6 +471,7 @@ remove_and_free_query_chain(val_context_t *context,
 #endif
 
     free_query_chain_structure(temp);
+    temp = NULL;
 
     return VAL_NO_ERROR;
 }
@@ -2025,6 +2028,7 @@ transform_authentication_chain(val_context_t *context,
              clone_val_rrset(o_ac->val_ac_rrset.ac_data, 
                              &n_ac->val_ac_rrset))) {
             val_free_authentication_chain_structure(n_ac);
+            n_ac = NULL;
             goto err;
         }
 
@@ -2055,6 +2059,7 @@ transform_authentication_chain(val_context_t *context,
         *a_chain = (*a_chain)->val_ac_trust;
         n_ac->val_ac_trust = NULL;
         val_free_authentication_chain_structure(n_ac);
+        n_ac = NULL;
     }
     return retval;
 
@@ -3416,6 +3421,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
 
 end:
     val_free_result_chain(results);
+    results = NULL;
     return VAL_NO_ERROR;
 }
 
@@ -3568,9 +3574,7 @@ prove_existence(val_context_t * context,
 static int
 verify_provably_insecure(val_context_t * context,
                          struct queries_for_query **queries,
-                         u_char *known_zonecut_n,
-                         u_char *q_name_n, 
-                         u_int16_t q_type_h,
+                         struct val_digested_auth_chain *next_as,
                          u_int32_t flags,
                          int *done,
                          int *is_pinsecure,
@@ -3585,7 +3589,6 @@ verify_provably_insecure(val_context_t * context,
     u_char       *q_labels = NULL;
     u_char       *zonecut_n = NULL;
     u_char       *nxt_qname = NULL;
-    u_char       *name_n = NULL;
     u_char       *q = NULL;
 
     int             retval;
@@ -3595,23 +3598,33 @@ verify_provably_insecure(val_context_t * context,
     u_char *dlv_target = NULL;
 #endif
 
-    if ((q_name_n == NULL) || (queries == NULL) || (done == NULL) || (is_pinsecure == NULL)) {
+    u_char *known_zonecut_n;
+    u_char *q_name_n;
+    u_int16_t q_type_h;
+
+    if ((queries == NULL) || (next_as == NULL) || (done == NULL) || (is_pinsecure == NULL)) {
         return VAL_BAD_ARGUMENT;
     }
 
+    q_name_n = next_as->val_ac_rrset.ac_data->rrs_name_n;
+    known_zonecut_n = next_as->val_ac_rrset.ac_data->rrs_zonecut_n;
+    q_type_h = next_as->val_ac_rrset.ac_data->rrs_type_h; 
+
+    if (q_name_n == NULL) {
+        return VAL_BAD_ARGUMENT;
+    }
     *is_pinsecure = 0;
     *done = 1;
     retval = VAL_NO_ERROR;
-    name_n = q_name_n;
     
-    if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
+    if (-1 == ns_name_ntop(q_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
     val_log(context, LOG_INFO, "verify_provably_insecure(): Checking PI status for %s", name_p);
 
     /* find the zonecut for the query */
     if (known_zonecut_n == NULL) {
-        if (VAL_NO_ERROR != find_next_zonecut(context, queries, name_n, done, &q_zonecut_n)
+        if (VAL_NO_ERROR != find_next_zonecut(context, queries, q_name_n, done, &q_zonecut_n)
              || (*done && q_zonecut_n == NULL)) {
 
             val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
@@ -3638,7 +3651,7 @@ verify_provably_insecure(val_context_t * context,
 #ifdef LIBVAL_DLV
     if (flags & VAL_QUERY_USING_DLV) {
         size_t len;
-        if (VAL_NO_ERROR != (find_dlv_trust_point(context, name_n, 
+        if (VAL_NO_ERROR != (find_dlv_trust_point(context, q_name_n, 
                                               &dlv_tp, &dlv_target, ttl_x))) {
             val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find trust anchor for %s", name_p);
             goto err;
@@ -3659,7 +3672,7 @@ verify_provably_insecure(val_context_t * context,
     } else 
 #endif
     {
-        if (VAL_NO_ERROR != (find_trust_point(context, name_n, 
+        if (VAL_NO_ERROR != (find_trust_point(context, q_name_n, 
                                           &curzone_n, ttl_x))) {
             val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find trust anchor for %s", name_p);
             goto err;
@@ -4714,9 +4727,7 @@ verify_and_validate(val_context_t * context,
                     if (VAL_NO_ERROR != 
                                 (retval = verify_provably_insecure(context, 
                                                 queries, 
-                                                next_as->val_ac_rrset.ac_data->rrs_zonecut_n,
-                                                next_as->val_ac_rrset.ac_data->rrs_name_n, 
-                                                next_as->val_ac_rrset.ac_data->rrs_type_h, 
+                                                as_more,
                                                 flags,
                                                 &pu_done,
                                                 &is_pinsecure,
@@ -4836,9 +4847,7 @@ verify_and_validate(val_context_t * context,
                 ttl_x = 0;
                 if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
                                                     queries, 
-                                                    next_as->val_ac_rrset.ac_data->rrs_zonecut_n,
-                                                    next_as->val_ac_rrset.ac_data->rrs_name_n, 
-                                                    next_as->val_ac_rrset.ac_data->rrs_type_h, 
+                                                    as_more,
                                                     flags,
                                                     &pu_done,
                                                     &is_pinsecure,
@@ -4903,9 +4912,7 @@ verify_and_validate(val_context_t * context,
                     ttl_x = 0;
                     if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
                                                         queries, 
-                                                        next_as->val_ac_rrset.ac_data->rrs_zonecut_n,
-                                                        next_as->val_ac_rrset.ac_data->rrs_name_n, 
-                                                        next_as->val_ac_rrset.ac_data->rrs_type_h, 
+                                                        as_more,
                                                         flags,
                                                         &pu_done,
                                                         &is_pinsecure,
@@ -6051,6 +6058,7 @@ int try_chase_query(val_context_t * context,
         return retval;
 
     _free_w_results(w_results);
+    w_results = NULL;
 
     return VAL_NO_ERROR;
 }
@@ -6239,6 +6247,7 @@ val_resolve_and_check(val_context_t * ctx,
     CTX_UNLOCK_VALPOL(context);
 
     _free_w_results(w_results);
+    w_results = NULL;
     free_qfq_chain(queries);
 
     /*
@@ -6348,11 +6357,15 @@ val_async_status_free(val_async_status *as)
     _free_qfq_chain(as->val_as_ctx, as->val_as_queries);
     as->val_as_queries = NULL;
 
-    if (as->val_as_results)
+    if (as->val_as_results) {
         val_free_result_chain(as->val_as_results);
+        as->val_as_results = NULL;
+    }
 
-    if (as->val_as_answers)
+    if (as->val_as_answers) {
         val_free_answer_chain(as->val_as_answers);
+        as->val_as_answers = NULL;
+    }
 
     val_context_as_remove(as->val_as_ctx, as);
 
@@ -6596,6 +6609,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         }
 
         _free_w_results(w_results);
+        w_results = NULL;
 
         if (VAL_NO_ERROR != retval)
             return retval;
