@@ -2006,8 +2006,9 @@ read_res_config_file(val_context_t * ctx)
                 val_log(ctx, LOG_WARNING,
 			"read_res_config_file(): error parsing nameserver token!");
                 goto err;
-	    }
+	        }
             if (ns != NULL) {
+                ns->ns_options |= RES_RECURSE;
                 if (ns_tail == NULL) {
                     ns_head = ns;
                     ns_tail = ns;

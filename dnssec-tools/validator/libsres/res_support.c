@@ -225,7 +225,7 @@ parse_name_server(const char *cp, const char *name_n)
 
     ns->ns_retrans = RES_TIMEOUT;
     ns->ns_retry = RES_RETRY;
-    ns->ns_options = RES_DEFAULT | RES_RECURSE | RES_DEBUG;
+    ns->ns_options = RES_DEFAULT | RES_DEBUG;
     ns->ns_edns0_size = RES_EDNS0_DEFAULT;
 
     ns->ns_next = NULL;
