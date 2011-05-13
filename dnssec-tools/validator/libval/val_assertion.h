@@ -32,8 +32,6 @@ void            free_authentication_chain(struct val_digested_auth_chain
                                           *assertions);
 void            free_query_chain_structure(struct val_query_chain *queries);
 void            clear_query_chain_structure(struct val_query_chain *queries);
-void            requery_with_edns0(val_context_t *context,
-                                    struct val_query_chain *matched_q);
 int             get_zse(val_context_t * ctx, u_char * name_n, 
                         u_int32_t flags, u_int16_t *status, u_char ** match_ptr, u_int32_t *ttl_x);
 int             find_trust_point(val_context_t * ctx, u_char * zone_n, 

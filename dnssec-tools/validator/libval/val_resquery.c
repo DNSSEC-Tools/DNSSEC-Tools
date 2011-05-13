@@ -187,22 +187,11 @@ merge_glue_in_referral(val_context_t *context,
                     break;
             }
        
-            if (!as || 
-                glueptr->qc_state != Q_ANSWERED ||
-                VAL_NO_ERROR != (retval = 
-                    extract_glue_from_rdata(as->val_ac_rrset.ac_data->rrs_data, 
-                                            pending_ns))) { 
-
-                val_log(context, LOG_DEBUG, 
-                        "merge_glue_in_referral(): Could not fetch glue for %s", 
-                        name_p);
-                /* free this name server */
-                free_name_server(&pending_ns);
-                pending_ns = NULL;
-                pc->qc_referral->cur_pending_glue_ns = NULL;
-                pc->qc_state = Q_MISSING_GLUE;
-
-            } else  {
+            if (as &&
+                glueptr->qc_state == Q_ANSWERED &&
+                VAL_NO_ERROR == (retval =
+                    extract_glue_from_rdata(as->val_ac_rrset.ac_data->rrs_data,
+                                            pending_ns))) {
                 
                 /* continue referral using the fetched glue records */
 
@@ -247,7 +236,13 @@ merge_glue_in_referral(val_context_t *context,
 
                 pc->qc_state = Q_INIT;
                 return VAL_NO_ERROR;            
-            }
+            } else {
+                /* error condition */
+                val_log(context, LOG_DEBUG, 
+                        "merge_glue_in_referral(): Could not fetch glue for %s", 
+                        name_p);
+                glueptr->qc_state = Q_REFERRAL_ERROR;
+            } 
         } else {
 
             /* check if we have a loop */
@@ -276,10 +271,18 @@ merge_glue_in_referral(val_context_t *context,
                 }
             }
         }
+
+        if (glueptr->qc_state >= Q_ERROR_BASE) {
+            /* free this name server */
+            free_name_server(&pending_ns);
+            pending_ns = NULL;
+            pc->qc_referral->cur_pending_glue_ns = NULL;
+            pc->qc_state = Q_MISSING_GLUE;
+        }
     } 
     
-   if (pc->qc_state >= Q_ERROR_BASE &&
-       pc->qc_referral->pending_glue_ns != NULL) {
+    if (pc->qc_state >= Q_ERROR_BASE &&
+        pc->qc_referral->pending_glue_ns != NULL) {
 
         /* there is more glue to fetch */
         u_int32_t flags;
@@ -381,11 +384,9 @@ fix_glue(val_context_t * context,
                                                queries))) {
                 goto err;
             }
-
-            if (next_q->qfq_query->qc_state != Q_INIT &&
-                       next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
+            if (next_q->qfq_query->qc_state >= Q_ERROR_BASE) {
                 val_log(context, LOG_DEBUG,
-                        "fix_glue(): {%s %d %d} referral/alias processing failed (%d)", name_p,
+                        "fix_glue(): Error fetching {%s %d %d} and no pending glue (state: %d)", name_p,
                         next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h,
                         next_q->qfq_query->qc_state);
             }
@@ -478,9 +479,14 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                     temp_ns->ns_retrans = RES_TIMEOUT;
                     temp_ns->ns_retry = RES_RETRY;
                     temp_ns->ns_options = RES_DEFAULT;
-                    /* Ensure that recursion is disabled by default */
+                    /* 
+                     * Depending on where we got the definition for RES_DEFAULT
+                     * RES_RECURSE may or may not be set.
+                     * Ensure that recursion is disabled by default 
+                     */
                     if (temp_ns->ns_options & RES_RECURSE)
                         temp_ns->ns_options ^= RES_RECURSE;
+
                     temp_ns->ns_edns0_size = RES_EDNS0_DEFAULT;
 
                     temp_ns->ns_next = NULL;
@@ -714,6 +720,10 @@ done:
         if (edns0) {
             val_log(context, LOG_DEBUG,
                     " find_nslist_for_query(): Setting D0 bit and using EDNS0");
+
+            if (next_q->qc_flags & VAL_QUERY_NO_EDNS0) {
+                next_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+            }
 
             for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
                 ns->ns_edns0_size = (context && context->g_opt)? 
@@ -967,8 +977,24 @@ follow_referral_or_alias_link(val_context_t * context,
         /* don't believe any of the cname hints that were provided */
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
-        return VAL_NO_ERROR;
 
+#if 0
+        /* set EDNS0 if we believe the name can be validated */
+        if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
+            if (VAL_NO_ERROR != (ret_val =
+                get_zse(context, matched_q->qc_name_n, matched_qfq->qfq_flags, 
+                        &tzonestatus, NULL, &ttl_x))) { 
+                return ret_val;
+            }
+            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
+            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
+                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+                matched_q->qc_state = Q_INIT;
+            }
+        }
+#endif
+
+        return VAL_NO_ERROR;
     } 
 
     res_sq_free_rrset_recs(proofs);
@@ -1132,9 +1158,16 @@ follow_referral_or_alias_link(val_context_t * context,
         struct rrset_rec *rr_set;                                       \
         int ret_val;                                                    \
         u_char *r;                                                      \
-        rr_set = find_rr_set (respondent_server, listtype, name_n, type_h, \
-                              set_type_h, class_h, ttl_h, hptr, rdata,  \
-                              from_section, authoritive, zonecut_n);    \
+        if (authoritive)                                                \
+            rr_set = find_rr_set (respondent_server, listtype, name_n,  \
+                              type_h, set_type_h, class_h, ttl_h, hptr, \
+                              rdata, from_section, authoritive,         \
+                              zonecut_n);                               \
+        else                                                            \
+            rr_set = find_rr_set (respondent_server, listtype, name_n,  \
+                              type_h, set_type_h, class_h, ttl_h, hptr, \
+                              rdata, from_section, authoritive,         \
+                              NULL);                                    \
         if (rr_set==NULL) {                                             \
             ret_val = VAL_OUT_OF_MEMORY;                                \
         }                                                               \
@@ -1542,17 +1575,16 @@ digest_response(val_context_t * context,
     rrs_to_go = answer + authority + additional;
 
     if (rrs_to_go == 0 || (rrs_to_go == additional)) {
+        if (!matched_q->qc_respondent_server) {
+            matched_q->qc_state = Q_RESPONSE_ERROR; 
+            goto done;
+        }
         /*
          * We got a response with no records 
          * or we got only additional section data (e.g. EDNS0 opt records)
          * Check if EDNS was not used when it should have
          */
-        if (!matched_q->qc_respondent_server) {
-            matched_q->qc_state = Q_RESPONSE_ERROR; 
-            goto done;
-        }
-        if (!(matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
-            !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+        if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) { 
             if (VAL_NO_ERROR != (ret_val =
                 get_zse(context, query_name_n, matched_qfq->qfq_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
@@ -1560,8 +1592,10 @@ digest_response(val_context_t * context,
             }
             SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
             if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
-                requery_with_edns0(context, matched_q);
-                goto done; 
+                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+                matched_q->qc_state = Q_INIT;
+                ret_val = VAL_NO_ERROR;
+                goto done;
             }
         }
 
@@ -1626,37 +1660,6 @@ digest_response(val_context_t * context,
         }
 
         /*
-         * Check if the only RRsets in the answer section are CNAMEs/DNAMEs
-         */
-        if (nothing_other_than_alias && (i < answer)) {
-            /*
-             * check if we received a non-alias or had explicitly asked for this alias 
-             */
-            if ((set_type_h != ns_t_cname && set_type_h != ns_t_dname) ||
-                ((query_type_h == ns_t_cname) && (set_type_h == ns_t_cname)) ||
-                ((query_type_h == ns_t_dname) && (set_type_h == ns_t_dname)) ||
-                (query_type_h == ns_t_any) ||
-                (query_type_h == ns_t_rrsig)) {
-
-                nothing_other_than_alias = 0;
-            } else if (ALIAS_MATCH_TYPE(query_type_h)){
-                int referral_error = 0;
-                /* process CNAMEs or DNAMEs if they exist */
-                if ((VAL_NO_ERROR != (ret_val = 
-                        process_cname_dname_responses(name_n, type_h, rdata, 
-                                                  matched_q, qnames, 
-                                                  &referral_error))) || 
-                        (referral_error)) {
-                    if (referral_error) 
-                        val_log(context, LOG_DEBUG, "digest_response(): CNAME/DNAME error or loop encountered");
-                    goto done;
-                }
-            } else {
-                nothing_other_than_alias = 0;
-            }
-        }
-
-        /*
          * we're only authoritative for the first name in the
          * CNAME chain
          */
@@ -1668,14 +1671,39 @@ digest_response(val_context_t * context,
          * If it is from the authority section, it may be a proof or a referral 
          * If it is from the additional section it may contain some DNSSEC meta-data or it may be glue
          */
-        if (from_section == VAL_FROM_ANSWER) {
+        if (from_section == VAL_FROM_ANSWER && (authoritive || (header->rd && header->ra))) {
+            if (nothing_other_than_alias) {
+                /*
+                 * check if we received a non-alias or had explicitly asked for this alias 
+                 */
+                if ((set_type_h != ns_t_cname && set_type_h != ns_t_dname) ||
+                    ((query_type_h == ns_t_cname) && (set_type_h == ns_t_cname)) ||
+                    ((query_type_h == ns_t_dname) && (set_type_h == ns_t_dname)) ||
+                    (query_type_h == ns_t_any) ||
+                    (query_type_h == ns_t_rrsig)) {
+
+                    nothing_other_than_alias = 0;
+                } else if (ALIAS_MATCH_TYPE(query_type_h)){
+                    int referral_error = 0;
+                    /* process CNAMEs or DNAMEs if they exist */
+                    if ((VAL_NO_ERROR != (ret_val = 
+                        process_cname_dname_responses(name_n, type_h, rdata, 
+                                                  matched_q, qnames, 
+                                                  &referral_error))) || 
+                            (referral_error)) {
+                        if (referral_error) 
+                            val_log(context, LOG_DEBUG, "digest_response(): CNAME/DNAME error or loop encountered");
+                        goto done;
+                    }
+                } else {
+                    nothing_other_than_alias = 0;
+                }
+            }
             SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
                             &learned_answers, name_n, type_h,
                             set_type_h, class_h, ttl_h, hptr, rdata,
                             rdata_len_h, from_section, authoritive,
                             rrs_zonecut_n);
-
-
         } else if (from_section == VAL_FROM_AUTHORITY) {
             if ((set_type_h == ns_t_nsec)
 #ifdef LIBVAL_NSEC3
@@ -1965,16 +1993,6 @@ digest_response(val_context_t * context,
 
     } else {
 
-        /* save any zones we've learned along the way */
-        /* save only if we did not request recursion */
-        if (header->ra == 0) {
-            if (VAL_NO_ERROR != (ret_val = 
-                    stow_zone_info(&learned_zones, matched_q))) {
-                goto done;
-            }
-        }
-        learned_zones = NULL; /* consumed */
-
         /*
          * if we hadn't enabled EDNS0 but we got a response for a zone 
          * where DNSSEC is enabled, we should retry with EDNS0 enabled
@@ -1982,16 +2000,28 @@ digest_response(val_context_t * context,
          * authoritative for the parent zone as well as the 
          * child zone, or if one of the name servers reached while 
          * following referrals is also recursive)
-         * 
-         * However, we don't do this, because process_cname_dname_responses
-         * may have changed matched_q sufficiently that we cannot safely
-         * do a rollback of this query. 
-         * 
-         * Thus in this scenario, we must look for the RRSIG
          */
+        if (zonecut_was_modified && 
+            (matched_q->qc_flags & VAL_QUERY_NO_EDNS0)) {
+            if (VAL_NO_ERROR != (ret_val =
+                get_zse(context, query_name_n, matched_qfq->qfq_flags, 
+                        &tzonestatus, NULL, &ttl_x))) { 
+                return ret_val;
+            }
+            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
+            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
+                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+                matched_q->qc_state = Q_INIT;
+                ret_val = VAL_NO_ERROR;
+                goto done;
+            }
+        }
         
         di_response->di_answers = copy_rrset_rec_list(learned_answers);
         di_response->di_proofs = copy_rrset_rec_list(learned_proofs);
+        /* the learned zone information may be incomplete, don't save it */
+        res_sq_free_rrset_recs(&learned_zones);
+        learned_zones = NULL; /* consumed */
         
         /*
          * Check if this is the response to a referral request 
