@@ -465,7 +465,7 @@ ds_sha_hash_is_equal(u_char * name_n,
     l_index = 0;
     lower_name(qc_name_n, &l_index);
 
-    memset(ds_digest, SHA_DIGEST_LENGTH, 0);
+    memset(ds_digest, 0, SHA_DIGEST_LENGTH);
 
     SHA1_Init(&c);
     SHA1_Update(&c, qc_name_n, namelen);
@@ -505,7 +505,7 @@ ds_sha256_hash_is_equal(u_char * name_n,
     l_index = 0;
     lower_name(qc_name_n, &l_index);
 
-    memset(ds_digest, SHA256_DIGEST_LENGTH, 0);
+    memset(ds_digest, 0, SHA256_DIGEST_LENGTH);
 
     SHA256_Init(&c);
     SHA256_Update(&c, qc_name_n, namelen);
