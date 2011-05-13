@@ -483,7 +483,7 @@ free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
         res_sq_free_rrset_recs(&(assertions->val_ac_rrset.ac_data));
 }
 
-void requery_with_edns0(val_context_t *context, 
+static void requery_with_edns0(val_context_t *context, 
                         struct val_query_chain *matched_q)
 {
     if (matched_q == NULL)
