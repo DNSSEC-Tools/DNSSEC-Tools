@@ -810,9 +810,6 @@ int             ns_samedomain(const char *a, const char *b);
 #if !HAVE_DECL_P_SECTION
 const char     *p_section(int section, int opcode);
 #endif
-#undef p_type
-#define p_type(type) p_sres_type(type)
-const char     *p_sres_type(int type);
 #if !HAVE_DECL_P_CLASS
 const char     *p_class(int pclass);
 #endif
