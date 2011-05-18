@@ -569,32 +569,6 @@ typedef enum __ns_rcode {
 #define ns_r_badtime     18
 #endif /* HAVE_NS_R_BADSIG */
 
-#ifndef ns_t_ds
-#define ns_t_ds       43
-#endif
-
-#ifndef ns_t_dnskey
-#define ns_t_dnskey   48
-#endif
-#ifndef ns_t_rrsig
-#define ns_t_rrsig    46
-#endif
-#ifndef ns_t_nsec
-#define ns_t_nsec     47
-#endif
-
-#ifdef LIBVAL_NSEC3
-#ifndef ns_t_nsec3
-#define ns_t_nsec3   50
-#endif
-#endif
-
-#ifdef LIBVAL_DLV
-#ifndef ns_t_dlv
-#define ns_t_dlv 32769
-#endif
-#endif
-
 #ifndef HAVE_ARPA_NAMESER_H
 /*
  * Define constants based on RFC 883, RFC 1034, RFC 1035

@@ -352,7 +352,7 @@ AC_CHECK_TYPES([ns_cert_types],,,[
 ])
 
 dnl check for varios ns_* decls (record types or functions)
-AC_CHECK_DECLS([ns_t_a,ns_t_kx,ns_r_badsig,ns_parse_ttl,ns_name_pton,ns_name_unpack,ns_name_ntop,ns_samename],,,[
+AC_CHECK_DECLS([ns_t_a,ns_t_kx,ns_r_badsig,ns_parse_ttl,ns_name_pton,ns_name_unpack,ns_name_ntop,ns_samename,ns_t_aaaa,ns_t_dnskey,ns_t_rrsig,ns_t_nsec,ns_t_nsec3,ns_t_dlv,ns_t_ds],,,[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif

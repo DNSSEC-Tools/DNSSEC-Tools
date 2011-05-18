@@ -202,6 +202,32 @@ libsres_msg_getflag(ns_msg han, int flag);
 #define p_type(type) p_sres_type(type)
 const char     *p_sres_type(int type);
 
+#ifndef HAVE_DECL_NS_T_DS
+#define ns_t_ds       43
+#endif
+
+#ifndef HAVE_DECL_NS_T_DNSKEY
+#define ns_t_dnskey   48
+#endif
+#ifndef HAVE_DECL_NS_T_RRSIG
+#define ns_t_rrsig    46
+#endif
+#ifndef HAVE_DECL_NS_T_NSEC
+#define ns_t_nsec     47
+#endif
+
+#ifdef LIBVAL_NSEC3
+#ifndef HAVE_DECL_NS_T_NSEC3
+#define ns_t_nsec3   50
+#endif
+#endif
+
+#ifdef LIBVAL_DLV
+#ifndef HAVE_DECL_NS_T_DLV
+#define ns_t_dlv 32769
+#endif
+#endif
+
 #ifdef __cplusplus
 }                               /* extern C */
 #endif
