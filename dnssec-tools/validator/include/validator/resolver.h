@@ -198,6 +198,10 @@ libsres_msg_getflag(ns_msg han, int flag);
 #define ns_msg_getflag libsres_msg_getflag
 #endif
 
+#undef p_type
+#define p_type(type) p_sres_type(type)
+const char     *p_sres_type(int type);
+
 #ifdef __cplusplus
 }                               /* extern C */
 #endif
