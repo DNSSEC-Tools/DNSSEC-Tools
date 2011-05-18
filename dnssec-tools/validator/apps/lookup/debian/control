@@ -1,0 +1,128 @@
+Source: lookup
+Section: user/network
+Priority: extra
+Maintainer: Wes Hardaker <wjhns177@hardakers.net>
+Build-Depends: debhelper (>= 5), libqt4-dev, libval-threads-dev, libsres-dev, libssl-dev
+Standards-Version: 3.7.2
+XSBC-Bugtracker: mailto:wjhns177@hardakers.net
+XB-Maemo-Icon-26: 
+ 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
+ ====
+
+Package: lookup
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libval-threads
+Description: A graphical DNS lookup utility that supports DNSSEC.
+ The lookup utility is capable of performing a DNS lookup and
+ graphically displaying the results.  The resulting output is color
+ coded based on whether it was successfully validated via DNSSEC
+ (green), trusted as unvalidated data (yellow) or was proven to be
+ invalid according to DNSSEC validation (red).  Test records to lookup
+ include www.dnssec-tools.org (green), www.cnn.com (yellow), and
+ badsign-a.test.dnssec-tools.org (red).
+XSBC-Bugtracker: mailto:wjhns177@hardakers.net
+XB-Maemo-Icon-26: 
+ iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABGdBTUEAALGP
+ C/xhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUw
+ AADqYAAAOpgAABdwnLpRPAAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAAO
+ wwAADsMBx2+oZAAAAAl2cEFnAAAAMAAAADAAzu6MVwAACAFJREFUaN7tml1o
+ G9kVx3+y1l7VY8mN15h8NmHskBBIK4xN4oR4bK/spxIvBBwaUJZ9iqq+RJBS
+ bROI2WWzSZbkpbXVLWYXaj+lmLZPJjaurZe2YUMwDQUTWyJpnpwoKpKlunak
+ OX3QjKpPr+TESaH9g5kZzf34/++5594z5xr+j7cLyyvWrwGaAQdww7hWgjjw
+ M+MaAfS3Id4J+IAVg4RU+Rcx6vqMtraErVhABc4DbuM+D263m9bW1pIVQ6EQ
+ 4+PjpV6FgXHgN8b9tgiwAdeAXnPEampqaG5uxu/3c/ToUQCOHTuG3W4v2cDq
+ 6ir37t0D4OHDh1y/fp1IJIKuZ2fQAjAH/Bz41xYGt6zIbiAApDGmgNPpFJ/P
+ JysrK5JOp6VapNNpWVlZEZ/PJ06nM3dqpY2+uqsc4LLwAAmzA1VVZXh4WEKh
+ UNWkyyEUCsnw8LCoqporJGH0vWVYjQZigNhsNmlra5NgMFhEIBaLydTUlIyM
+ jEgkEilLNJVKycrKily+fFkWFxdlbW0t730wGJS2tjax2WymiJjBwVot+Trg
+ J8AaIA6HQwKBQElyjx8/lt7eXvnegQNy6MgRUVW1pEhd12VkZESamprk++3t
+ 0tLSIh6PR2KxWF65SCQigUBAHA6HKWLN4FJXjYAWMkucKIoigUCgrOk1TZN6
+ u11+femSzF+9KurBg6KqqszPz+eVDQQCUl9fL5qmyV8/+0y8brcA4vF4JJlM
+ FrUdCAREURRTxIrBqSIowC+BdUVRZGRkRHRdL+mEd+7cEZvNJr/4+GN51t0t
+ L1pbZebTT2Xnrl3i8/lkfX1dREQSiYQc7+qSUydPyt/8fons3i1PPvxQLrjd
+ 8t0dO+TRo0dlLWaIWDc4KZUI8AEpQHw+n6RSqZKj//z5c9m3b5/89NIl+cfQ
+ kBwBaQH50+HD8ocvvxSloSFrhZs3b8p7O3fK37/6Sm43NEgLyFBtrfzzk0/k
+ ZG+vnD59uqzP+Hw+0wopg1seagqeVWAQsKqqyuDgIFZraf/RdZ1YLIaiKFiS
+ SZ4Dz4D1eJzGhgaSySQbGxsAJBIJUqkUje++SzyZ5BkQffmS76TT1NbWEovF
+ SvZhtVoZHBxEVVXIOPIgBZtnTcF9O6DZ7XbGxsbQNG1TU1ksFkQEBfgtMAP8
+ wGIhlfM+97pBZvueIRM4YQztZtA0jbGxMXNz1AyOWd65AuzA5wCdnZ10dHRU
+ Mt0AeCeVQgNcwI6XL9GlNC1d11FFcBksSKcrar+jo4POzk7z8XODa5GAHwG7
+ Afx+f9lwoIQZ4OxZUAz/OnsWi6NEUJpOw6FD0NubeVZVeP/9ikTY7Xb8fr/5
+ uNvgmhm8nHJDQL2iKNTVVbXkwkcfQWsrbGzAsWPwzTdQaAVdz5T5+mtYWoLm
+ ZnA6YXi4oi7q6upQFIVkMllvcP1VrgVUoBHA6/XS1dVVnQCA7m5wucBuLz+q
+ qRTs358p53RW1XxXVxder9d8bDQ4ZwW4MabllixQgG9zzEKYTr4ZTAsYaDc4
+ Z3EVkPb29oqDtPX1dfniiy/kwIEDMjc3l/396dOncuLECTl37py8ePFCRESW
+ l5fF6XTKhQsXsvFPOp2W0dFR2bVrl8zMzFTUZygUkvb2dnNfuFokYGBgoKKG
+ TCwsLMjevXtlz549Mjk5KTMzM6JpmjQ0NMjExEReWZ/PJ1arVTwej8zMzMjt
+ 27eltrZWNE2T1dXVivscGBgoL8DlclUlQERkbm4uLwyur68vGTslEgnxeDx5
+ n5WaplUdlrtcrjwB75D50qpwzSxGT08Pk5OTRCKR7Fw9depUUTlFUbhx4wZn
+ zpzJ/nbw4EH279+/1a4xBRwG+l+lEWeFK4rD4cDlcr0S4ULUkPkO/d1rbfUN
+ wlxGq135/muQF43W1NRstZ03R7iAY97T8vIy8/Pzb5tjWczPz7O8vFxSQBLY
+ CIfDb11APB7fVEA4HIZMZJ6E/wRzAeCHgBYOh4lGozQ1NW0LwSdPnrC0tFTy
+ XTQa5e7du4yNjRWFF9Fo1CQP8GeDc1ZA0lDF+Pg458+f3/Jyl0wmGR0dJZlM
+ lh3FYDBYtr7L5SoZGz148CA3LVlkAYDrwHHAHo/H0XW9yGF0XWd2dpZr164h
+ ZT5aUqkUi4uLpFKpku+Hhoa4cuVKWQGlLK/reu7UWjW4AvmpOzvwe6Cvra2N
+ +/fv09jYmNdQPB7n4sWLuaYsQmNjI7du3cLhKJ1pdzgc2Gw2qkEsFqOjo8N0
+ 4D8CHxhCitDPJvGMiJRMsWw3zJwSmf1q06ihCZjAyMYVRpRvAxMTE7lZugmD
+ YxaFO1cUmMrMljhTU1ObLmvbjQIOcYNbtJK6HjJeLh6PRxKJxBsf+YLwO0mV
+ mepGYBkQi8UiXq+3KJO8nVhbWxOv1ysWi8UUsGxwqhg1QA/wGMh+SQWDwW11
+ Yl3XJRgMisfjEavVapJ/bHDZUqDWA4SMhjbNVL8OFGSkxei7Z6s+ZKIbWCLn
+ rKC/v19mZ2eLcvtbQSwWk9nZWenv7y88E1gy+n4teI+ME8XN0XE4HNLX1yfT
+ 09MSj8erJh6Px2V6elr6+vpyiYvRh8fo81tR7SGam8xGkpeTcbvdqK2tWMx7
+ VS1ZORwOMz4+jgDh0keu42RyvyXPYl+HAMiEHMcBP9BBwem80+mkubm5ZMVI
+ JMLCwkLhz3HgPpn45i+UCRG2Aw6gD5gGglR/Uh806vZR+b8oFOG1nMOSOfr5
+ MRUeAZHZmALG9X8b/wYBdk6nFchVFQAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAx
+ MC0wNi0xMVQxNDo1NDowNi0wNzowMMM/Z0gAAAAldEVYdGRhdGU6bW9kaWZ5
+ ADIwMTAtMDYtMTFUMTQ6NTE6MTEtMDc6MDBdRiqgAAAAAElFTkSuQmCC
+ ====
