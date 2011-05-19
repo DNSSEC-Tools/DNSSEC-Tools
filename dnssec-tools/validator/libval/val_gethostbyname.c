@@ -117,10 +117,14 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
      */
     while (hs) {
         struct sockaddr_in sa;
+#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
         size_t addrlen4 = sizeof(struct sockaddr_in);
+#endif
 #ifdef VAL_IPV6
         struct sockaddr_in6 sa6;
+#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
         size_t addrlen6 = sizeof(struct sockaddr_in6);
+#endif
 #endif
         char            addr_buf[INET6_ADDRSTRLEN];
         int             i, alias_count;
@@ -543,10 +547,14 @@ val_gethostbyname2_r(val_context_t * context,
                      int *h_errnop, val_status_t * val_status)
 {
     struct sockaddr_in  sa;
+#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
     size_t addrlen4 = sizeof(struct sockaddr_in);
+#endif
 #ifdef VAL_IPV6
     struct sockaddr_in6 sa6;
+#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
     size_t addrlen6 = sizeof(struct sockaddr_in6);
+#endif
 #endif
     int             offset = 0;
     val_status_t local_ans_status = VAL_OOB_ANSWER;

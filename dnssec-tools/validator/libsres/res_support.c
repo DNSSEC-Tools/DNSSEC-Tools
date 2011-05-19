@@ -197,9 +197,13 @@ parse_name_server(const char *cp, const char *name_n)
     struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
 #ifdef VAL_IPV6
     struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&serv_addr;
+#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
     size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
+#endif
+#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
     size_t addrlen4 = sizeof(struct sockaddr_in);
+#endif
 
     if (cp ==  NULL)
         return NULL;
