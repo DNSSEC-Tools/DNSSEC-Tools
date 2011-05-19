@@ -165,7 +165,7 @@ foreach my $file (@ARGV) {
 	}
 
 	# collect queries and answers and ...
-	$state = $1 if (/^\s*(Queries|Additional|Authoritative)/);
+	$state = $1 if (/^\s*(Queries|Answers|Additional|Authoritative)/);
 
 	# start a new record on a Name: field
 	if (/^\s*Name: ($nameexp)/) {
