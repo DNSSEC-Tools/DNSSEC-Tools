@@ -19,6 +19,7 @@ QStatusLight::QStatusLight(QWidget *parent, CheckFunction *check_function, const
 
 void QStatusLight::paintEvent(QPaintEvent *e)
 {
+    Q_UNUSED(e);
     QPainter painter(this);
     int dropShadowSize = 4;
     int maxSize = qMin(width(), height()) -1 - dropShadowSize;  // -1 to fit and -2 to allow for dropshadow and border space

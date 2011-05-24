@@ -129,22 +129,26 @@ void MainWindow::addAddress(QString server, int row) {
 }
 
 void MainWindow::setupMenus() {
-    QMenuBar *bar = menuBar();
     QAction *about;
     QAction *results;
+    QAction *submitResults;
 
 #ifdef SMALL_DEVICE
-    about = bar->addAction(tr("About"));
+    QMenuBar *bar = menuBar();
     results = bar->addAction(tr("Detailed results"));
+    submitResults = bar->addAction(tr("Submit Results"));
+    about = bar->addAction(tr("About"));
 #else
     QMenu *nameMenu = menuBar()->addMenu(tr("File"));
     QMenu *helpMenu = menuBar()->addMenu(tr("Help"));
     results = nameMenu->addAction(tr("Detailed results"));
+    submitResults = nameMenu->addAction(tr("Submit Results"));
     about = helpMenu->addAction(tr("About"));
 #endif
 
     connect(about, SIGNAL(triggered()), this, SLOT(showAbout()));
     connect(results, SIGNAL(triggered()), this, SLOT(showResultDetails()));
+    connect(submitResults, SIGNAL(triggered()), this, SLOT(submitResults()));
 }
 
 void MainWindow::setOrientation(Orientation orientation)
@@ -310,4 +314,9 @@ void MainWindow::showResultDetails()
     message.setText(results);
     message.setIcon(QMessageBox::Information);
     message.exec();
+}
+
+void MainWindow::submitResults()
+{
+    qDebug() << "got to submitting results";
 }

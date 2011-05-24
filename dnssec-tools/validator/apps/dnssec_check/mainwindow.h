@@ -53,6 +53,7 @@ public slots:
     void getSubAnswers();
     void showAbout();
     void showResultDetails();
+    void submitResults();
     void addLineAddress();
 
 private:
