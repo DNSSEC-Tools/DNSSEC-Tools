@@ -261,7 +261,8 @@ Lookup::init_libval() {
 
     // create a validator context
     val_create_context("lookup", &val_ctx);
-    val_log_add_optarg(QString("7:file:" + m_logLocation).toAscii().data(), 0);
+    if (m_logLocation.length() > 0)
+        val_log_add_optarg(QString("7:file:" + m_logLocation).toAscii().data(), 0);
 
     // capture our own log messages
     val_log_add_cb(NULL, 99, &val_collect_logs);
