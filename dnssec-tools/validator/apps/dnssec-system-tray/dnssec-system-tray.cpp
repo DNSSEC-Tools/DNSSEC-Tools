@@ -46,7 +46,8 @@
 #include "DnssecSystemTrayPrefs.h"
 
 Window::Window()
-    : m_icon(":/images/justlock.png"), m_logFile(0), m_fileWatcher(0), m_logStream(0), m_maxRows(5), m_rowCount(0)
+    : m_icon(":/images/justlock.png"), m_logFile(0), m_fileWatcher(0), m_logStream(0),
+      m_maxRows(5), m_rowCount(0), m_warningIcon(":/images/trianglewarning.png")
 {
     loadPreferences(true);
     createLogWidgets();
@@ -79,6 +80,7 @@ void Window::loadPreferences(bool seekToEnd) {
     QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
     m_fileName = settings.value("logFile", "").toString();
     m_maxRows = settings.value("logNumber", 5).toInt();
+    m_showStillRunningWarning = settings.value("stillRunningWarning", true).toBool();
     openLogFile(seekToEnd);
 }
 
@@ -92,11 +94,12 @@ void Window::setVisible(bool visible)
 void Window::closeEvent(QCloseEvent *event)
 {
     if (trayIcon->isVisible()) {
-        QMessageBox::information(this, tr("Systray"),
-                                 tr("The program will keep running in the "
-                                    "system tray. To terminate the program, "
-                                    "choose <b>Quit</b> in the context menu "
-                                    "of the system tray entry."));
+        if (m_showStillRunningWarning)
+            QMessageBox::information(this, tr("Systray"),
+                                     tr("The program will keep running in the "
+                                        "system tray. To terminate the program, "
+                                        "choose <b>Quit</b> in the context menu "
+                                        "of the system tray entry."));
         hide();
         event->ignore();
     }
@@ -242,7 +245,7 @@ void Window::parseLogMessage(const QString logMessage) {
                 }
             }
         }
-        m_log->setItem(m_rowCount, 0, new QTableWidgetItem(QIcon(":/images/trianglewarning.png"), ""));
+        m_log->setItem(m_rowCount, 0, new QTableWidgetItem(m_warningIcon, ""));
         m_log->setItem(m_rowCount, 1, new QTableWidgetItem(m_bogusRegexp.cap(1)));
         m_log->setItem(m_rowCount, 2,
                        new QTableWidgetItem(QDateTime::currentDateTime().toString()));
