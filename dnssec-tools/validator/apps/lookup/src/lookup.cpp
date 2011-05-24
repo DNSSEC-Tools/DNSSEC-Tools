@@ -55,6 +55,20 @@ Lookup::Lookup(QWidget *parent)
 {
     //labels = new QLabel[fields];
 
+    createMainWidgets();
+    init_libval();
+
+    // start by doing an initial lookup of the starting record
+    QTimer::singleShot(200, this, SLOT(dolookup()));
+
+    setLayout(vlayout);
+    resize(QSize(800,400));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+}
+
+void
+Lookup::createMainWidgets() {
     //
     // Input widget bar
     //
@@ -84,8 +98,6 @@ Lookup::Lookup(QWidget *parent)
     connect(lookupline, SIGNAL(textEdited(QString)), this, SLOT(entryTextChanged(QString)));
     connect(lookupline, SIGNAL(returnPressed()), this, SLOT(dolookup()));
 
-    QTimer::singleShot(200, this, SLOT(dolookup()));
-
     //
     // Create the vertical answer sheet
     //
@@ -97,12 +109,6 @@ Lookup::Lookup(QWidget *parent)
     m_answerView->setModel(m_answers);
 
     vlayout->addWidget(m_answerView);
-
-    setLayout(vlayout);
-    resize(QSize(800,400));
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    init_libval();
 }
 
 void
