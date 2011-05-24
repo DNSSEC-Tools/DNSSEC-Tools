@@ -40,11 +40,11 @@
 
 #include <QtGui>
 
-#include "window.h"
+#include "dnssec-system-tray.h"
 
 int main(int argc, char *argv[])
 {
-    Q_INIT_RESOURCE(systray);
+    Q_INIT_RESOURCE(dnssec_system_tray);
 
     QApplication app(argc, argv);
 

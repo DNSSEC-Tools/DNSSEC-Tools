@@ -42,7 +42,7 @@
 
 #include <qdebug.h>
 
-#include "window.h"
+#include "dnssec-system-tray.h"
 
 Window::Window()
     : m_icon(":/images/justlock.png"), m_fileName("/tmp/validator.log")
