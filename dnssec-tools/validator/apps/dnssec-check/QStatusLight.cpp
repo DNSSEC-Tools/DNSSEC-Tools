@@ -6,8 +6,9 @@
 #include <QMessageBox>
 #include <qdebug.h>
 
-QStatusLight::QStatusLight(QWidget *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName) :
-    QPushButton(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName)
+QStatusLight::QStatusLight(QWidget *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName, int rowNumber) :
+    QPushButton(parent), m_status(UNKNOWN), m_checkFunction(check_function),
+    m_serverAddress(0), m_checkName(checkName), m_statusStrings(), m_rowNumber(rowNumber)
 {
     if (serverAddress)
         m_serverAddress = strdup(serverAddress);
@@ -15,6 +16,11 @@ QStatusLight::QStatusLight(QWidget *parent, CheckFunction *check_function, const
     m_msgBuffer[sizeof(m_msgBuffer)-1] = 0;
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(this, SIGNAL(clicked()), this, SLOT(showError()));
+
+    m_statusStrings.insert(UNKNOWN, "unknown");
+    m_statusStrings.insert(GOOD, "good");
+    m_statusStrings.insert(BAD, "bad");
+    m_statusStrings.insert(WARNING, "warning");
 }
 
 void QStatusLight::paintEvent(QPaintEvent *e)
@@ -139,4 +145,19 @@ const QString QStatusLight::message() const
 const QString QStatusLight::serverAddress() const
 {
     return QString(m_serverAddress);
+}
+
+const QString QStatusLight::name() const
+{
+    return m_checkName;
+}
+
+QString QStatusLight::statusString()
+{
+    return m_statusStrings[m_status];
+}
+
+int QStatusLight::rowNumber() const
+{
+    return m_rowNumber;
 }
