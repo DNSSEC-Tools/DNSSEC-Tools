@@ -23,6 +23,10 @@ DnssecSystemTrayPrefs::setupWindow() {
     m_logNumber->setRange(1, 1000);
     m_logNumber->setValue(settings.value("logNumber", 5).toInt());
 
+    m_formLayout->addRow(tr("Show still-running warning on close:"),
+                         m_stillRunningWarning = new QCheckBox());
+    m_stillRunningWarning->setChecked(settings.value("stillRunningWarning", true).toBool());
+
     QDialogButtonBox *buttonBox;
     buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                      QDialogButtonBox::Cancel,
@@ -39,5 +43,6 @@ DnssecSystemTrayPrefs::savePrefs() {
     QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
     settings.setValue("logFile", m_logFile->text());
     settings.setValue("logNumber", m_logNumber->value());
+    settings.setValue("stillRunningWarning", m_stillRunningWarning->isChecked());
     accept();
 }

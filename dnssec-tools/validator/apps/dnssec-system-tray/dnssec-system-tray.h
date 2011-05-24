@@ -51,6 +51,7 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QRegExp>
 #include <QtCore/QFileSystemWatcher>
+#include <QtGui/QIcon>
 
 class Window : public QDialog
 {
@@ -104,6 +105,8 @@ private:
 
     QRegExp    m_bogusRegexp;
     int        m_maxRows, m_rowCount;
+    bool       m_showStillRunningWarning;
+    QIcon      m_warningIcon;
 };
 
 #endif
