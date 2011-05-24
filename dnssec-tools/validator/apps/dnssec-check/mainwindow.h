@@ -78,9 +78,9 @@ private:
     QStatusLight *m_testResult;
     QLineEdit    *m_lineEdit;
 
+    int m_rows;
     QNetworkAccessManager *m_manager;
 
-    int m_rows;
 };
 
 #endif // MAINWINDOW_H

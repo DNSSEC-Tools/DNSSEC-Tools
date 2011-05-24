@@ -109,28 +109,28 @@ void MainWindow::addAddress(QString server, int row) {
     label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 #endif
 
-    m_results->addWidget(light = new QStatusLight(0, &check_basic_dns, server.toAscii().data(), "DNS"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_basic_dns, server.toAscii().data(), "DNS", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_do_bit, server.toAscii().data(), "DO"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_do_bit, server.toAscii().data(), "DO", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_do_has_rrsigs, server.toAscii().data(), "RRSIG"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_do_has_rrsigs, server.toAscii().data(), "RRSIG", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_small_edns0, server.toAscii().data(), "EDNS0"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_small_edns0, server.toAscii().data(), "EDNS0", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec, server.toAscii().data(), "NSEC"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec, server.toAscii().data(), "NSEC", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec3, server.toAscii().data(), "NSEC3"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec3, server.toAscii().data(), "NSEC3", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_dnskey, server.toAscii().data(), "DNSKEY"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_dnskey, server.toAscii().data(), "DNSKEY", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_ds, server.toAscii().data(), "DS"), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_ds, server.toAscii().data(), "DS", row), row, column++);
     m_tests.push_back(light);
 }
 
@@ -337,7 +337,15 @@ void MainWindow::maybeSubmitResults()
 void MainWindow::submitResults()
 {
     QString accessURL = resultServerBaseURL + "?";
-    accessURL += "dataVersion=1&foo=bar";
+    accessURL += "dataVersion=1";
+    int count=0;
+    foreach(QString serverAddress, m_serverAddresses) {
+        accessURL += "&server" + QString::number(count++) + "=" + serverAddress;
+    }
+
+    foreach(QStatusLight *light, m_tests) {
+        accessURL += "&" + light->name() + QString::number(light->rowNumber()) + "=" + light->statusString();
+    }
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();
