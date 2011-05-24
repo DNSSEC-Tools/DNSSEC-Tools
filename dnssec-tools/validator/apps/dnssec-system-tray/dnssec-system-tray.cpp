@@ -46,7 +46,7 @@
 #include "DnssecSystemTrayPrefs.h"
 
 Window::Window()
-    : m_icon(":/images/justlock.png"), m_logFile(0), m_fileWatcher(0), m_logStream(0)
+    : m_icon(":/images/justlock.png"), m_logFile(0), m_fileWatcher(0), m_logStream(0), m_maxRows(5), m_rowCount(0)
 {
     loadPreferences(true);
     createLogWidgets();
@@ -131,8 +131,10 @@ void Window::createLogWidgets()
 {
     m_topLayout = new QVBoxLayout();
     m_topLayout->addWidget(m_topTitle = new QLabel("DNSSEC Log Messages"));
-    m_topLayout->addWidget(m_log = new QTableWidget());
-    m_log->setItem(2,1,new QTableWidgetItem("test"));
+    m_topLayout->addWidget(m_log = new QTableWidget(m_maxRows, 3));
+    m_log->resizeRowsToContents();
+    m_log->resizeColumnsToContents();
+    m_log->setShowGrid(false);
 }
 
 
@@ -229,5 +231,24 @@ void Window::parseTillEnd()
 void Window::parseLogMessage(const QString logMessage) {
     if (m_bogusRegexp.indexIn(logMessage) > -1) {
         showMessage(QString("DNSSEC Validation Failure on %1").arg(m_bogusRegexp.cap(1)));
+        if (m_rowCount+1 >= m_maxRows) {
+            // XXX
+            for(int i = 0; i < m_maxRows; i++) {
+                for(int j = 0; j < 3; j++) {
+                    m_log->setItem(i, j, m_log->takeItem(i+1, j));
+                }
+            }
+        }
+        m_log->setItem(m_rowCount, 1, new QTableWidgetItem(m_bogusRegexp.cap(1)));
+        m_log->setItem(m_rowCount, 2,
+                       new QTableWidgetItem(QDateTime::currentDateTime().toString()));
+        m_log->resizeColumnsToContents();
+        m_log->resizeRowsToContents();
+        if (m_rowCount+1 < m_maxRows)
+            m_rowCount++;
     }
+}
+
+QSize Window::sizeHint() const {
+    return QSize(800, 420); // should fit most modern devices.
 }

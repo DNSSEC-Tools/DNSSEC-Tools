@@ -62,6 +62,8 @@ public:
     void setVisible(bool visible);
 
     void openLogFile(bool seekToEnd = false);
+    QSize sizeHint() const;
+
 protected:
     void closeEvent(QCloseEvent *event);
 
@@ -101,6 +103,7 @@ private:
     QTextStream *m_logStream;
 
     QRegExp    m_bogusRegexp;
+    int        m_maxRows, m_rowCount;
 };
 
 #endif
