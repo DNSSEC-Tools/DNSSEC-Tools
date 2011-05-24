@@ -33,6 +33,7 @@ public:
     Lookup(QWidget *parent = 0);
     ~Lookup();
 
+    void createMainWidgets();
     void createQueryMenu();
     void init_libval();
 
@@ -62,7 +63,6 @@ private:
     // Icons
     QPixmap             m_validated, m_trusted, m_bad, m_unknown;
 
-public:
     static const int  fields = 4;
     QLabel           *labels[fields];
     QLabel           *values[fields];
