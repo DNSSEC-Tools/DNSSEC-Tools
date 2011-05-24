@@ -43,6 +43,7 @@
 #include <qdebug.h>
 
 #include "dnssec-system-tray.h"
+#include "DnssecSystemTrayPrefs.h"
 
 Window::Window()
     : m_icon(":/images/justlock.png"), m_fileName("/tmp/validator.log")
@@ -139,6 +140,14 @@ void Window::createActions()
 
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
+
+    prefsAction = new QAction(tr("&Preferences"), this);
+    connect(prefsAction, SIGNAL(triggered()), this, SLOT(showPreferences()));
+}
+
+void Window::showPreferences() {
+    DnssecSystemTrayPrefs prefs;
+    prefs.exec();
 }
 
 void Window::createTrayIcon()
@@ -146,6 +155,7 @@ void Window::createTrayIcon()
     trayIconMenu = new QMenu(this);
     trayIconMenu->addAction(hideAction);
     trayIconMenu->addAction(showAction);
+    trayIconMenu->addAction(prefsAction);
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(quitAction);
 

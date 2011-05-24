@@ -1,8 +1,10 @@
 TARGET=dnssec-system-tray
 
-HEADERS       = dnssec-system-tray.h
+HEADERS       = dnssec-system-tray.h \
+    DnssecSystemTrayPrefs.h
 SOURCES       = main.cpp \
-                dnssec-system-tray.cpp
+                dnssec-system-tray.cpp \
+    DnssecSystemTrayPrefs.cpp
 RESOURCES     = dnssec-system-tray.qrc
 QT           += xml svg
 

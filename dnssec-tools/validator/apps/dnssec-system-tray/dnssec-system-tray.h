@@ -70,6 +70,7 @@ private slots:
     void showMessage(const QString &message);
     void messageClicked();
     void parseTillEnd();
+    void showPreferences();
 
 private:
     void createLogWidgets();
@@ -88,6 +89,7 @@ private:
     QAction *hideAction;
     QAction *showAction;
     QAction *quitAction;
+    QAction *prefsAction;
 
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
