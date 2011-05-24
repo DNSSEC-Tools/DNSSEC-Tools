@@ -20,11 +20,13 @@
 #include <QtGui/QMenu>
 #include <QtGui/QMenuBar>
 #include <QtGui/QMessageBox>
+#include <QtCore/QSettings>
 #include <QDebug>
 
 #include "lookup.h"
 
 #include "QDNSItemModel.h"
+#include "LookupPrefs.h"
 
 void
 Lookup::setQueryType(int type)
@@ -54,14 +56,14 @@ void val_collect_logs(struct val_log *logp, int level, const char *buf)
 
 
 Lookup::Lookup(QWidget *parent)
-    : QMainWindow(parent), found(false), m_queryType(ns_t_a)
+    : QMainWindow(parent), found(false), m_queryType(ns_t_a), val_ctx(0)
 {
     QWidget *widget = new QWidget();
     //labels = new QLabel[fields];
 
+    loadPreferences();
     createMainWidgets();
     createMenus();
-    init_libval();
 
     // start by doing an initial lookup of the starting record
     QTimer::singleShot(200, this, SLOT(dolookup()));
@@ -231,25 +233,37 @@ Lookup::createMenus() {
     QAction *results;
     QAction *submitResults;
     QAction *exitAction;
+    QAction *preferences;
 
 #ifdef SMALL_DEVICE
     QMenuBar *bar = menuBar();
-    about = bar->addAction(tr("About"));
+    preferences = bar->addAction(tr("&Preferences"));
+    about = bar->addAction(tr("&About"));
 #else
     QMenu *nameMenu = menuBar()->addMenu(tr("&File"));
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
 
-    about = helpMenu->addAction(tr("About"));
+    about = helpMenu->addAction(tr("&About"));
+    preferences = nameMenu->addAction(tr("&Preferences"));
     exitAction = nameMenu->addAction(tr("&Quit"));
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 #endif
 
     connect(about, SIGNAL(triggered()), this, SLOT(showAbout()));
+    connect(preferences, SIGNAL(triggered()), this, SLOT(showPreferences()));
 }
 
 void
 Lookup::init_libval() {
     //val_log_add_cb(NULL, 99, &val_qdebug);
+    if (val_ctx)
+        val_free_context(val_ctx);
+
+    // create a validator context
+    val_create_context("lookup", &val_ctx);
+    val_log_add_optarg(QString("7:file:" + m_logLocation).toAscii().data(), 0);
+
+    // capture our own log messages
     val_log_add_cb(NULL, 99, &val_collect_logs);
 }
 
@@ -284,7 +298,7 @@ Lookup::dolookup()
 
     // perform the lookup
     start = QTime::currentTime();
-    ret = val_res_query(NULL, lookupline->text().toUtf8(), ns_c_in,
+    ret = val_res_query(val_ctx, lookupline->text().toUtf8(), ns_c_in,
                         m_queryType, buf, sizeof(buf), &val_status);
     stop = QTime::currentTime();
 
@@ -547,4 +561,18 @@ void Lookup::showAbout()
                     );
     message.setIcon(QMessageBox::Information);
     message.exec();
+}
+
+void Lookup::showPreferences()
+{
+    LookupPrefs prefs;
+    connect(&prefs, SIGNAL(accepted()), this, SLOT(loadPreferences()));
+    prefs.exec();
+}
+
+void Lookup::loadPreferences()
+{
+    QSettings settings("DNSSEC-Tools", "Lookup");
+    m_logLocation = settings.value("logPath", "").toString();
+    init_libval();
 }
