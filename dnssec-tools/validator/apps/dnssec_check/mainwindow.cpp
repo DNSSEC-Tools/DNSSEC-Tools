@@ -321,6 +321,9 @@ void MainWindow::submitResults()
 {
     SubmitDialog dialog(0);
     qDebug() << "got to submitting results";
-    dialog.exec();
-    qDebug() << "done";
+    if (dialog.exec() == QDialog::Accepted) {
+        qDebug() << "done; will send";
+    } else {
+        qDebug() << "denied";
+    }
 }
