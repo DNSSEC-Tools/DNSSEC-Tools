@@ -17,6 +17,9 @@
 #include <QtCore/QVector>
 #include <QtCore/QTimer>
 #include <QtCore/QTime>
+#include <QtGui/QMenu>
+#include <QtGui/QMenuBar>
+#include <QtGui/QMessageBox>
 #include <QDebug>
 
 #include "lookup.h"
@@ -51,20 +54,22 @@ void val_collect_logs(struct val_log *logp, int level, const char *buf)
 
 
 Lookup::Lookup(QWidget *parent)
-    : QWidget(parent), found(false), m_queryType(ns_t_a)
+    : QMainWindow(parent), found(false), m_queryType(ns_t_a)
 {
+    QWidget *widget = new QWidget();
     //labels = new QLabel[fields];
 
     createMainWidgets();
+    createMenus();
     init_libval();
 
     // start by doing an initial lookup of the starting record
     QTimer::singleShot(200, this, SLOT(dolookup()));
 
-    setLayout(vlayout);
+    setCentralWidget(widget);
+    widget->setLayout(vlayout);
     resize(QSize(800,400));
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
 }
 
 void
@@ -218,6 +223,28 @@ Lookup::createQueryMenu() {
     connect(m_signalMapper, SIGNAL(mapped(int)), this, SLOT(setQueryType(int)));
     connect(m_signalMapper, SIGNAL(mapped(const QString &)),
             this, SLOT(setTypeText(const QString &)));
+}
+
+void
+Lookup::createMenus() {
+    QAction *about;
+    QAction *results;
+    QAction *submitResults;
+    QAction *exitAction;
+
+#ifdef SMALL_DEVICE
+    QMenuBar *bar = menuBar();
+    about = bar->addAction(tr("About"));
+#else
+    QMenu *nameMenu = menuBar()->addMenu(tr("&File"));
+    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+
+    about = helpMenu->addAction(tr("About"));
+    exitAction = nameMenu->addAction(tr("&Quit"));
+    connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
+#endif
+
+    connect(about, SIGNAL(triggered()), this, SLOT(showAbout()));
 }
 
 void
@@ -507,4 +534,17 @@ void Lookup::entryTextChanged(const QString &newtext) {
     m_answerView->setStyleSheet("QTreeView { background-color: #ffffff; }");
 #endif
     m_resultsIcon->setPixmap(m_unknown);
+}
+
+void Lookup::showAbout()
+{
+    QMessageBox message;
+    message.setText("<p><b>Lookup</b><br /><p>Lookup is a simple graphical utility that can be used to query a network for domain name records.  "
+                    "The tool understands DNSSEC and color-codes the results based on whether the record has been securely validated (green), is a "
+                    "'trusted' answer but not validated (yellow), or fails DNSSEC validation (red)."
+                    "<p>For example records to test the coloring try these three:"
+                    "<ul><li>www.dnssec-tools.org</li><li>www.cnn.com</li><li>badsign-a.test.dnssec-tools.org</li></ul>"
+                    );
+    message.setIcon(QMessageBox::Information);
+    message.exec();
 }

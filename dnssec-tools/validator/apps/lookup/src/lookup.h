@@ -12,6 +12,7 @@
 #include <QtGui/QPushButton>
 #include <QtCore/QSize>
 #include <QtCore/QSignalMapper>
+#include <QtGui/QMainWindow>
 
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
@@ -25,7 +26,7 @@
 
 #include "QDNSItemModel.h"
 
-class Lookup : public QWidget
+class Lookup : public QMainWindow
 {
     Q_OBJECT
 
@@ -35,11 +36,13 @@ public:
 
     void createMainWidgets();
     void createQueryMenu();
+    void createMenus();
     void init_libval();
 
 public slots:
     void unbusy();
     void busy();
+    void showAbout();
 
 protected slots:
     void dolookup();
