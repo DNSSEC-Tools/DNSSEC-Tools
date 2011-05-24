@@ -43,6 +43,8 @@ public slots:
     void unbusy();
     void busy();
     void showAbout();
+    void showPreferences();
+    void loadPreferences();
 
 protected slots:
     void dolookup();
@@ -75,6 +77,11 @@ private:
     int               m_queryType;
     QSignalMapper     *m_signalMapper;
 
+    // Settings
+    QString            m_logLocation;
+
+    // libval settings
+    val_context_t *val_ctx;
 };
 
 #endif
