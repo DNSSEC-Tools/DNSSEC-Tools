@@ -42,7 +42,6 @@
 
 #include "window.h"
 
-//! [0]
 Window::Window()
 {
     createIconGroupBox();
@@ -73,9 +72,7 @@ Window::Window()
     setWindowTitle(tr("Systray"));
     resize(400, 300);
 }
-//! [0]
 
-//! [1]
 void Window::setVisible(bool visible)
 {
     minimizeAction->setEnabled(visible);
@@ -83,9 +80,7 @@ void Window::setVisible(bool visible)
     restoreAction->setEnabled(isMaximized() || !visible);
     QDialog::setVisible(visible);
 }
-//! [1]
 
-//! [2]
 void Window::closeEvent(QCloseEvent *event)
 {
     if (trayIcon->isVisible()) {
@@ -98,9 +93,7 @@ void Window::closeEvent(QCloseEvent *event)
         event->ignore();
     }
 }
-//! [2]
 
-//! [3]
 void Window::setIcon(int index)
 {
     QIcon icon = iconComboBox->itemIcon(index);
@@ -109,9 +102,7 @@ void Window::setIcon(int index)
 
     trayIcon->setToolTip(iconComboBox->itemText(index));
 }
-//! [3]
 
-//! [4]
 void Window::iconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     switch (reason) {
@@ -127,9 +118,7 @@ void Window::iconActivated(QSystemTrayIcon::ActivationReason reason)
         ;
     }
 }
-//! [4]
 
-//! [5]
 void Window::showMessage()
 {
     QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::MessageIcon(
@@ -137,16 +126,13 @@ void Window::showMessage()
     trayIcon->showMessage(titleEdit->text(), bodyEdit->toPlainText(), icon,
                           durationSpinBox->value() * 1000);
 }
-//! [5]
 
-//! [6]
 void Window::messageClicked()
 {
     QMessageBox::information(0, tr("Systray"),
                              tr("Sorry, I already gave what help I could.\n"
                                 "Maybe you should try asking a human?"));
 }
-//! [6]
 
 void Window::createIconGroupBox()
 {
