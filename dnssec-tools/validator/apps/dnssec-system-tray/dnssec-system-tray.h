@@ -61,7 +61,7 @@ public:
 
     void setVisible(bool visible);
 
-    void openLogFile();
+    void openLogFile(bool seekToEnd = false);
 protected:
     void closeEvent(QCloseEvent *event);
 
@@ -71,6 +71,7 @@ private slots:
     void messageClicked();
     void parseTillEnd();
     void showPreferences();
+    void loadPreferences(bool seekToEnd = false);
 
 private:
     void createLogWidgets();

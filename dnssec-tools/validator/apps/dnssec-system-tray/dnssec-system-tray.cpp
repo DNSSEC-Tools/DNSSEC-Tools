@@ -46,8 +46,9 @@
 #include "DnssecSystemTrayPrefs.h"
 
 Window::Window()
-    : m_icon(":/images/justlock.png"), m_fileName("/tmp/validator.log")
+    : m_icon(":/images/justlock.png"), m_logFile(0), m_fileWatcher(0), m_logStream(0)
 {
+    loadPreferences(true);
     createLogWidgets();
     createActions();
     createTrayIcon();
@@ -68,9 +69,16 @@ Window::Window()
     trayIcon->show();
 
     setWindowTitle(tr("DNSSEC Log Messages"));
+}
 
-    openLogFile();
-    parseTillEnd();
+void Window::loadPreferences(bool seekToEnd) {
+    if (!m_fileWatcher) {
+        delete m_fileWatcher;
+        m_fileWatcher = 0;
+    }
+    QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
+    m_fileName = settings.value("logFile", "").toString();
+    openLogFile(seekToEnd);
 }
 
 void Window::setVisible(bool visible)
@@ -116,9 +124,7 @@ void Window::showMessage(const QString &message)
 
 void Window::messageClicked()
 {
-    QMessageBox::information(0, tr("Systray"),
-                             tr("Sorry, I already gave what help I could.\n"
-                                "Maybe you should try asking a human?"));
+    showNormal();
 }
 
 void Window::createLogWidgets()
@@ -147,6 +153,7 @@ void Window::createActions()
 
 void Window::showPreferences() {
     DnssecSystemTrayPrefs prefs;
+    connect(&prefs, SIGNAL(accepted()), this, SLOT(loadPreferences()));
     prefs.exec();
 }
 
@@ -167,21 +174,52 @@ void Window::createRegexps() {
     m_bogusRegexp = QRegExp("Validation result for \\{([^,]+),.*BOGUS");
 }
 
-void Window::openLogFile()
+void Window::openLogFile(bool seekToEnd)
 {
+    if (m_logFile) {
+        delete m_logFile;
+        m_logFile = 0;
+    }
+
+    if (m_logStream) {
+        delete m_logStream;
+        m_logStream = 0;
+    }
+
+    // first watch this file if need be for changes (including creation)
+    if (!m_fileWatcher) {
+        m_fileWatcher = new QFileSystemWatcher();
+        m_fileWatcher->addPath(m_fileName);
+        connect(m_fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(parseTillEnd()));
+    }
+
+    // open the file if possible
     m_logFile = new QFile(m_fileName);
-    if (!m_logFile->open(QIODevice::ReadOnly | QIODevice::Text))
+    if (!m_logFile->exists())
         return;
 
-    m_logStream = new QTextStream(m_logFile);
+    if (!m_logFile->open(QIODevice::ReadOnly | QIODevice::Text)) {
+        delete m_logFile;
+        m_logFile = 0;
+        return;
+    }
 
-    m_fileWatcher = new QFileSystemWatcher();
-    m_fileWatcher->addPath(m_fileName);
-    connect(m_fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(parseTillEnd()));
+    // jump to the end; we only look for new things.
+    if (seekToEnd)
+        m_logFile->seek(m_logFile->size());
+
+    // create the log stream
+    m_logStream = new QTextStream(m_logFile);
+    qDebug() << "succeeded in opening " << m_fileName;
 }
 
 void Window::parseTillEnd()
 {
+    if (!m_logStream) {
+        openLogFile();
+        if (!m_logStream)
+            return;
+    }
     while (!m_logStream->atEnd()) {
         QString line = m_logStream->readLine();
         parseLogMessage(line);
