@@ -552,7 +552,17 @@ void GraphWidget::toggleLockedNodes() {
 }
 
 void GraphWidget::openLogFile() {
-    m_libValDebugLog = QFileDialog::getOpenFileName(this, tr("Open Log File"));
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    QString defaultFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
+
+    QFileDialog dialog;
+    dialog.selectFile(defaultFile);
+    dialog.setFileMode(QFileDialog::AnyFile);
+    if (!dialog.exec())
+        return;
+
+    m_libValDebugLog = dialog.selectedFiles()[0];
+    settings.setValue("logFile", m_libValDebugLog);
     if (m_libValDebugLog.length() > 0) {
         parseLogFile(m_libValDebugLog);
     }
