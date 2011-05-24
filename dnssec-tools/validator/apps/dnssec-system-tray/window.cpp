@@ -40,10 +40,12 @@
 
 #include <QtGui>
 
+#include <qdebug.h>
+
 #include "window.h"
 
 Window::Window()
-    : m_icon(":/images/justlock.png"), m_fileName("/tmp/libval.log")
+    : m_icon(":/images/justlock.png"), m_fileName("/tmp/validator.log")
 {
     createLogWidgets();
     createActions();
@@ -65,6 +67,9 @@ Window::Window()
     trayIcon->show();
 
     setWindowTitle(tr("DNSSEC Log Messages"));
+
+    openLogFile();
+    parseTillEnd();
 }
 
 void Window::setVisible(bool visible)
@@ -96,16 +101,16 @@ void Window::iconActivated(QSystemTrayIcon::ActivationReason reason)
         //                              % iconComboBox->count());
         break;
     case QSystemTrayIcon::MiddleClick:
-        showMessage();
+        showNormal();
         break;
     default:
         ;
     }
 }
 
-void Window::showMessage()
+void Window::showMessage(const QString &message)
 {
-    trayIcon->showMessage("foo", "bar", QSystemTrayIcon::Information, 5 * 1000);
+    trayIcon->showMessage("DNSSEC Validation", message, QSystemTrayIcon::Information, 5 * 1000);
 }
 
 void Window::messageClicked()
@@ -159,6 +164,10 @@ void Window::openLogFile()
         return;
 
     m_logStream = new QTextStream(m_logFile);
+
+    m_fileWatcher = new QFileSystemWatcher();
+    m_fileWatcher->addPath(m_fileName);
+    connect(m_fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(parseTillEnd()));
 }
 
 void Window::parseTillEnd()
@@ -171,6 +180,6 @@ void Window::parseTillEnd()
 
 void Window::parseLogMessage(const QString logMessage) {
     if (m_bogusRegexp.indexIn(logMessage) > -1) {
-        // set message
+        showMessage(QString("DNSSEC Validation Failure on %1").arg(m_bogusRegexp.cap(1)));
     }
 }
