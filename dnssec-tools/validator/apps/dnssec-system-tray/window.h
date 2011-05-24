@@ -47,6 +47,9 @@
 #include <QtGui/QLabel>
 #include <QtGui/QIcon>
 #include <QtGui/QTableWidget>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
+#include <QtCore/QRegExp>
 
 //! [0]
 class Window : public QDialog
@@ -58,6 +61,7 @@ public:
 
     void setVisible(bool visible);
 
+    void openLogFile();
 protected:
     void closeEvent(QCloseEvent *event);
 
@@ -65,12 +69,15 @@ private slots:
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
     void showMessage();
     void messageClicked();
+    void parseTillEnd();
 
 private:
     void createLogWidgets();
     void createMessageGroupBox();
     void createActions();
     void createTrayIcon();
+    void createRegexps();
+    void parseLogMessage(const QString logMessage);
 
     QVBoxLayout *m_topLayout;
     QLabel *m_topTitle;
@@ -84,7 +91,12 @@ private:
 
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
+
+    QString      m_fileName;
+    QFile       *m_logFile;
+    QTextStream *m_logStream;
+
+    QRegExp    m_bogusRegexp;
 };
-//! [0]
 
 #endif
