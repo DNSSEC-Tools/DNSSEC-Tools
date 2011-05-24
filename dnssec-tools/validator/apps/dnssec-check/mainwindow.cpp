@@ -24,7 +24,7 @@
 #include <aknappui.h>
 #endif // Q_OS_SYMBIAN && ORIENTATIONLOCK
 
-static const QString resultServerBaseURL = "http://www.hardakers.net/cgi-bin/dnssec-check-results.pl";
+static const QString resultServerBaseURL = "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), m_rows(0), m_manager(0)
