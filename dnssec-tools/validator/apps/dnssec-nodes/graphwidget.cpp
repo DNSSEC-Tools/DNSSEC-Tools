@@ -51,6 +51,9 @@
 #include <arpa/nameser.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include <QTimer>
 
@@ -398,16 +401,13 @@ void GraphWidget::doActualLookup(const QString &lookupString)
     val_status_t val_status;
     struct addrinfo *aitop = NULL;
     int ret;
-    struct timeval start, stop;
     u_char buf[4096];
 
     busy();
 
     // perform the lookup
-    gettimeofday(&start, NULL);
     ret = val_res_query(NULL, lookupString.toUtf8(), ns_c_in,
                         ns_t_a, buf, sizeof(buf), &val_status);
-    gettimeofday(&stop, NULL);
 
     // do something with the results
     if (ret <= 0) {
@@ -494,22 +494,36 @@ void GraphWidget::parseLogFile(const QString &fileToOpen) {
     if (fileName.length() == 0)
         return;
 
-    m_logFile = new QFile(fileName);
-    if (!m_logFile->open(QIODevice::ReadOnly | QIODevice::Text))
-        return;
+    // qDebug() << "Trying to open: " << fileName;
 
-    m_logStream = new QTextStream(m_logFile);
-
-    parseTillEnd();
-
+    // start the timer to keep reading/trying the log file
     if (!m_timer) {
         m_timer = new QTimer(this);
         connect(m_timer, SIGNAL(timeout()), this, SLOT(parseTillEnd()));
         m_timer->start(1000);
     }
+
+    m_logFile = new QFile(fileName);
+    if (!m_logFile->exists() || !m_logFile->open(QIODevice::ReadOnly | QIODevice::Text)) {
+        delete m_logFile;
+        m_logFile = 0;
+        return;
+    }
+
+    m_logStream = new QTextStream(m_logFile);
+
+    // qDebug() << "Opened: " << fileName;
+
+    parseTillEnd();
 }
 
 void GraphWidget::parseTillEnd() {
+    if (!m_logStream) {
+        parseLogFile();
+        if (!m_logStream)
+            return;
+    }
+
     while (!m_logStream->atEnd()) {
         QString line = m_logStream->readLine();
         parseLogMessage(line);
@@ -538,10 +552,9 @@ void GraphWidget::toggleLockedNodes() {
 }
 
 void GraphWidget::openLogFile() {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Log File"));
-    if (fileName.length() > 0) {
-        m_libValDebugLog = fileName;
-        parseLogFile(fileName);
+    m_libValDebugLog = QFileDialog::getOpenFileName(this, tr("Open Log File"));
+    if (m_libValDebugLog.length() > 0) {
+        parseLogFile(m_libValDebugLog);
     }
 }
 
@@ -549,7 +562,11 @@ void GraphWidget::reReadLogFile() {
     if (m_logFile) {
         m_logFile->close();
         delete m_logFile;
+        m_logFile = 0;
+    }
+    if (m_logStream) {
         delete m_logStream;
+        m_logStream = 0;
     }
     parseLogFile();
 }
