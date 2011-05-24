@@ -138,6 +138,7 @@ void MainWindow::setupMenus() {
     QAction *about;
     QAction *results;
     QAction *submitResults;
+    QAction *exitAction;
 
 #ifdef SMALL_DEVICE
     QMenuBar *bar = menuBar();
@@ -145,11 +146,14 @@ void MainWindow::setupMenus() {
     submitResults = bar->addAction(tr("Submit Results"));
     about = bar->addAction(tr("About"));
 #else
-    QMenu *nameMenu = menuBar()->addMenu(tr("File"));
-    QMenu *helpMenu = menuBar()->addMenu(tr("Help"));
-    results = nameMenu->addAction(tr("Detailed results"));
-    submitResults = nameMenu->addAction(tr("Submit Results"));
+    QMenu *nameMenu = menuBar()->addMenu(tr("&File"));
+    QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+    results = nameMenu->addAction(tr("&Detailed results"));
+    submitResults = nameMenu->addAction(tr("&Submit Results"));
     about = helpMenu->addAction(tr("About"));
+    nameMenu->addSeparator();
+    exitAction = nameMenu->addAction(tr("&Quit"));
+    connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
 #endif
 
     connect(about, SIGNAL(triggered()), this, SLOT(showAbout()));
