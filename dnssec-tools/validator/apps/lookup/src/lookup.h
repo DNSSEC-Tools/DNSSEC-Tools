@@ -29,11 +29,18 @@ class Lookup : public QWidget
 {
     Q_OBJECT
 
-  public:
+public:
     Lookup(QWidget *parent = 0);
     ~Lookup();
 
-    protected slots:
+    void createQueryMenu();
+    void init_libval();
+
+public slots:
+    void unbusy();
+    void busy();
+
+protected slots:
     void dolookup();
     void setQueryType(int type);
     void setTypeText(const QString &label);
@@ -42,9 +49,7 @@ class Lookup : public QWidget
 
     void setSecurityStatus(int val_status);
 
-
-
-  private:
+private:
     QLineEdit          *lookupline;
     QPushButton        *gobutton;
     QGridLayout        *gridLayout;
@@ -57,7 +62,7 @@ class Lookup : public QWidget
     // Icons
     QPixmap             m_validated, m_trusted, m_bad, m_unknown;
 
-  public:
+public:
     static const int  fields = 4;
     QLabel           *labels[fields];
     QLabel           *values[fields];
@@ -66,9 +71,7 @@ class Lookup : public QWidget
     QPushButton       *m_queryButton;
     int               m_queryType;
     QSignalMapper     *m_signalMapper;
-public slots:
-    void unbusy();
-    void busy();
+
 };
 
 #endif

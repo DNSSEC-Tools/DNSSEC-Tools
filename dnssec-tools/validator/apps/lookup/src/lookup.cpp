@@ -76,6 +76,37 @@ Lookup::Lookup(QWidget *parent)
     m_resultsIcon->setPixmap(m_unknown);
     hlayout->addWidget(m_resultsIcon);
 
+    createQueryMenu();
+
+    gobutton = new QPushButton("Go");
+    hlayout->addWidget(gobutton);
+    connect(gobutton, SIGNAL(clicked()), this, SLOT(dolookup()));
+    connect(lookupline, SIGNAL(textEdited(QString)), this, SLOT(entryTextChanged(QString)));
+    connect(lookupline, SIGNAL(returnPressed()), this, SLOT(dolookup()));
+
+    QTimer::singleShot(200, this, SLOT(dolookup()));
+
+    //
+    // Create the vertical answer sheet
+    //
+    vlayout = new QVBoxLayout();
+    vlayout->addLayout(hlayout);
+
+    m_answerView = new QTreeView(this);
+    m_answers = new QDNSItemModel(this);
+    m_answerView->setModel(m_answers);
+
+    vlayout->addWidget(m_answerView);
+
+    setLayout(vlayout);
+    resize(QSize(800,400));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    init_libval();
+}
+
+void
+Lookup::createQueryMenu() {
     //
     // create the QUERY TYPE menu
     //
@@ -85,7 +116,7 @@ Lookup::Lookup(QWidget *parent)
     m_signalMapper = new QSignalMapper(this);
 
     QMap<int, QString> valuemap, dnssecmap, othermap;
-    
+
     valuemap[1] = "A";
     valuemap[2] = "NS";
     valuemap[5] = "CNAME";
@@ -149,7 +180,7 @@ Lookup::Lookup(QWidget *parent)
     for(QMap<int, QString>::iterator iter = valuemap.begin();
         iter != valuemap.end();
         iter++) {
-        
+
         action = submenu->addAction(iter.value());
         connect(action, SIGNAL(triggered()), m_signalMapper, SLOT(map()));
         m_signalMapper->setMapping(action, iter.key());
@@ -160,7 +191,7 @@ Lookup::Lookup(QWidget *parent)
     for(QMap<int, QString>::iterator iter = dnssecmap.begin();
         iter != dnssecmap.end();
         iter++) {
-        
+
         action = submenu->addAction(iter.value());
         connect(action, SIGNAL(triggered()), m_signalMapper, SLOT(map()));
         m_signalMapper->setMapping(action, iter.key());
@@ -171,7 +202,7 @@ Lookup::Lookup(QWidget *parent)
     for(QMap<int, QString>::iterator iter = othermap.begin();
         iter != othermap.end();
         iter++) {
-        
+
         action = submenu->addAction(iter.value());
         connect(action, SIGNAL(triggered()), m_signalMapper, SLOT(map()));
         m_signalMapper->setMapping(action, iter.key());
@@ -181,31 +212,10 @@ Lookup::Lookup(QWidget *parent)
     connect(m_signalMapper, SIGNAL(mapped(int)), this, SLOT(setQueryType(int)));
     connect(m_signalMapper, SIGNAL(mapped(const QString &)),
             this, SLOT(setTypeText(const QString &)));
+}
 
-    gobutton = new QPushButton("Go");
-    hlayout->addWidget(gobutton);
-    connect(gobutton, SIGNAL(clicked()), this, SLOT(dolookup()));
-    connect(lookupline, SIGNAL(textEdited(QString)), this, SLOT(entryTextChanged(QString)));
-    connect(lookupline, SIGNAL(returnPressed()), this, SLOT(dolookup()));
-
-    QTimer::singleShot(200, this, SLOT(dolookup()));
-
-    //
-    // Create the vertical answer sheet
-    //
-    vlayout = new QVBoxLayout();
-    vlayout->addLayout(hlayout);
-
-    m_answerView = new QTreeView(this);
-    m_answers = new QDNSItemModel(this);
-    m_answerView->setModel(m_answers);
-
-    vlayout->addWidget(m_answerView);
-
-    setLayout(vlayout);
-    resize(QSize(800,400));
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
+void
+Lookup::init_libval() {
     //val_log_add_cb(NULL, 99, &val_qdebug);
     val_log_add_cb(NULL, 99, &val_collect_logs);
 }
