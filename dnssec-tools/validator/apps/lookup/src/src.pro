@@ -1,6 +1,8 @@
 TARGET      = lookup
-HEADERS     +=  lookup.h QDNSItemModel.h
-SOURCES     +=  qtmain.cpp lookup.cpp QDNSItemModel.cpp
+HEADERS     +=  lookup.h QDNSItemModel.h \
+    LookupPrefs.h
+SOURCES     +=  qtmain.cpp lookup.cpp QDNSItemModel.cpp \
+    LookupPrefs.cpp
 FORMS       += 
 LEXSOURCES  += #LEXS#
 YACCSOURCES += #YACCS#
