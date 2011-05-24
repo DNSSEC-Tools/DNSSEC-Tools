@@ -50,8 +50,8 @@
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
 #include <QtCore/QRegExp>
+#include <QtCore/QFileSystemWatcher>
 
-//! [0]
 class Window : public QDialog
 {
     Q_OBJECT
@@ -67,7 +67,7 @@ protected:
 
 private slots:
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
-    void showMessage();
+    void showMessage(const QString &message);
     void messageClicked();
     void parseTillEnd();
 
@@ -94,6 +94,7 @@ private:
 
     QString      m_fileName;
     QFile       *m_logFile;
+    QFileSystemWatcher *m_fileWatcher;
     QTextStream *m_logStream;
 
     QRegExp    m_bogusRegexp;
