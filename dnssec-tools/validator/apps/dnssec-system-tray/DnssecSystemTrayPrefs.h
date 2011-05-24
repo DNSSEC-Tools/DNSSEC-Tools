@@ -5,6 +5,7 @@
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QFormLayout>
 #include <QtGui/QLineEdit>
+#include <QtGui/QSpinBox>
 
 class DnssecSystemTrayPrefs : public QDialog
 {
@@ -22,6 +23,7 @@ private:
     QVBoxLayout     *m_topLayout;
     QFormLayout     *m_formLayout;
     QLineEdit       *m_logFile;
+    QSpinBox        *m_logNumber;
 };
 
 #endif // DNSSECSYSTEMTRAYPREFS_H

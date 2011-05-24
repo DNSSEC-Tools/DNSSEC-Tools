@@ -19,6 +19,10 @@ DnssecSystemTrayPrefs::setupWindow() {
     m_formLayout->addRow(tr("Log File to Watch"), m_logFile = new QLineEdit());
     m_logFile->setText(settings.value("logFile", QString("")).toString());
 
+    m_formLayout->addRow(tr("Number of Log Messages to Keep"), m_logNumber = new QSpinBox());
+    m_logNumber->setRange(1, 1000);
+    m_logNumber->setValue(settings.value("logNumber", 5).toInt());
+
     QDialogButtonBox *buttonBox;
     buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                      QDialogButtonBox::Cancel,
@@ -34,5 +38,6 @@ void
 DnssecSystemTrayPrefs::savePrefs() {
     QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
     settings.setValue("logFile", m_logFile->text());
+    settings.setValue("logNumber", m_logNumber->value());
     accept();
 }

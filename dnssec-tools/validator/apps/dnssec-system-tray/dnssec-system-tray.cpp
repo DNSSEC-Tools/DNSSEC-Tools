@@ -78,6 +78,7 @@ void Window::loadPreferences(bool seekToEnd) {
     }
     QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
     m_fileName = settings.value("logFile", "").toString();
+    m_maxRows = settings.value("logNumber", 5).toInt();
     openLogFile(seekToEnd);
 }
 
@@ -231,6 +232,8 @@ void Window::parseTillEnd()
 void Window::parseLogMessage(const QString logMessage) {
     if (m_bogusRegexp.indexIn(logMessage) > -1) {
         showMessage(QString("DNSSEC Validation Failure on %1").arg(m_bogusRegexp.cap(1)));
+        if (m_log->rowCount() != m_maxRows)
+            m_log->setRowCount(m_maxRows);
         if (m_rowCount+1 >= m_maxRows) {
             // XXX
             for(int i = 0; i < m_maxRows; i++) {
