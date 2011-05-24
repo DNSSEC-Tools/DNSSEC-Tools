@@ -242,6 +242,7 @@ void Window::parseLogMessage(const QString logMessage) {
                 }
             }
         }
+        m_log->setItem(m_rowCount, 0, new QTableWidgetItem(QIcon(":/images/trianglewarning.png"), ""));
         m_log->setItem(m_rowCount, 1, new QTableWidgetItem(m_bogusRegexp.cap(1)));
         m_log->setItem(m_rowCount, 2,
                        new QTableWidgetItem(QDateTime::currentDateTime().toString()));
