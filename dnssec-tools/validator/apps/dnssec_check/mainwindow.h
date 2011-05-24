@@ -19,6 +19,8 @@
 #include <QtGui/QPushButton>
 #include <QtGui/QLineEdit>
 
+#include <QtNetwork/QNetworkAccessManager>
+
 #include "QStatusLight.h"
 
 #if (defined(Q_WS_MAEMO_5) || defined(MAEMO_CHANGES))
@@ -53,8 +55,10 @@ public slots:
     void getSubAnswers();
     void showAbout();
     void showResultDetails();
+    void maybeSubmitResults();
     void submitResults();
     void addLineAddress();
+    void respnonseReceived(QNetworkReply *response);
 
 private:
     QStringList  m_serverAddresses;
@@ -73,6 +77,8 @@ private:
 
     QStatusLight *m_testResult;
     QLineEdit    *m_lineEdit;
+
+    QNetworkAccessManager *m_manager;
 
     int m_rows;
 };

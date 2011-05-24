@@ -10,7 +10,10 @@
 
 #include <QtGui/QMenuBar>
 #include <QtGui/QMenu>
+#include <QtGui/QMessageBox>
 #include <QMessageBox>
+#include <QtNetwork/QNetworkRequest>
+#include <QtNetwork/QNetworkReply>
 
 #include <qdebug.h>
 
@@ -21,8 +24,10 @@
 #include <aknappui.h>
 #endif // Q_OS_SYMBIAN && ORIENTATIONLOCK
 
+static const QString resultServerBaseURL = "http://www.hardakers.net/cgi-bin/dnssec-check-results.pl";
+
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), m_rows(0)
+    : QMainWindow(parent), m_rows(0), m_manager(0)
 {
     loadResolvConf();
     setupWidgets();
@@ -317,13 +322,37 @@ void MainWindow::showResultDetails()
     message.exec();
 }
 
-void MainWindow::submitResults()
+void MainWindow::maybeSubmitResults()
 {
     SubmitDialog dialog(0);
     qDebug() << "got to submitting results";
     if (dialog.exec() == QDialog::Accepted) {
         qDebug() << "done; will send";
+        submitResults();
     } else {
         qDebug() << "denied";
     }
 }
+
+void MainWindow::submitResults()
+{
+    QString accessURL = resultServerBaseURL + "?";
+    accessURL += "dataVersion=1&foo=bar";
+
+    if (!m_manager) {
+        m_manager = new QNetworkAccessManager();
+        connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(respnonseReceived(QNetworkReply*)));
+    }
+    m_manager->get(QNetworkRequest(QUrl(accessURL)));
+}
+
+void MainWindow::respnonseReceived(QNetworkReply *response)
+{
+    QMessageBox msg;
+    if (response->error() == QNetworkReply::NoError)
+        msg.setText("We've successfully recevied your test results.  Thank you for your help!");
+    else
+        msg.setText("Unfortunately we failed to send your test results to the collection server.");
+    msg.exec();
+}
+

@@ -13,6 +13,7 @@ INCLUDEPATH += /home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator
 INCLUDEPATH += /opt/maemo/usr/include/
 LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
 
+QT += network
 
 symbian:TARGET.UID3 = 0xECD7BC68
 
