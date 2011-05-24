@@ -1,0 +1,131 @@
+<!-- this is a makerelease script: http://github.com/hardaker/makerelease/ -->
+<makerelease>
+  <steps>
+
+    <step type="command" name="currenttags" title="list existing tags"
+	  pause="0" mandatory="0">
+      <text>
+	Existing tags in the project:
+      </text>
+      <commands>
+	<command>git tag</command>
+	
+	<!-- <comand>...</command> ; use mr-command1 -->
+      </commands>
+    </step>
+
+    <step type="prompt" prompt="Enter the new version number:"
+      title="Pick A Version Number"
+      parameter="VERSION" values="^[\.\d]+$"
+      />
+
+    <step type="Informational" title="Release Parameter Information" pause="1">
+      <text>
+	Here is the configured information we'll be using:
+
+	VERSION:                 {VERSION}
+
+      </text>
+    </step>
+
+    <step type="section" name="tagandtar" title="Tag and Tar"
+	  pause="1" mandatory="0" prompt="yes">
+      <text>
+	Tag and tar up the release (into ..)
+      </text>
+      <steps>
+	
+	<step type="command" name="tagandtar:tag" title="Tag it"
+	      pause="0" mandatory="0">
+	  <text>
+	    Tag the release
+	  </text>
+	  <commands>
+	    <command>git tag {VERSION}</command>
+	  </commands>
+	</step>
+
+	<step type="command" name="tagandtar:export" title="Export it to .."
+	      pause="0" mandatory="0">
+	  <text>
+	    Create a snapshot in ..
+	  </text>
+	  <commands>
+	    <command>cd .. &amp;&amp; git clone dnssec-nodes dnssec-nodes-{VERSION}</command>
+	    <command>rm -rf ../dnssec-nodes-{VERSION}/.git</command>
+
+	  </commands>
+	</step>
+
+	<step type="command" name="tagandtar:tar" title="Tar it up"
+	      pause="0" mandatory="0">
+	  <text>
+	    tar the results
+	  </text>
+	  <commands>
+	    <command>cd .. &amp;&amp; tar czf dnssec-nodes-{VERSION}.tar.gz dnssec-nodes-{VERSION}</command>
+	    <command>cd .. &amp;&amp; tar czf dnssec-nodes_{VERSION}.orig.tar.gz dnssec-nodes-{VERSION}</command>
+	    
+	    <!-- <comand>...</command> ; use mr-command1 -->
+	  </commands>
+	</step>
+      </steps>
+    </step>
+
+    <step type="section" name="ubuntu" title="Ubuntu"
+	  pause="1" mandatory="0" prompt="yes">
+      <text>
+	Copy and build in ubuntu?
+      </text>
+      <steps>
+	
+	<step type="command" name="scpit" title="scp it over"
+	      pause="0" mandatory="0">
+	  <text>
+	    scp it into ubuntu
+	  </text>
+	  <commands>
+	    <command>scp ../dnssec-nodes_{VERSION}.orig.tar.gz ubuntu:scratchome/</command>
+	  </commands>
+	</step>
+
+	<step type="command" name="extract it" title="extract it in ubuntu"
+	      pause="0" mandatory="0">
+	  <text>
+	    extract it in the remote ubuntu build
+	  </text>
+	  <commands>
+	    <command>ssh ubuntu 'cd scratchome ; tar xzf dnssec-nodes_{VERSION}.orig.tar.gz'</command>
+	    
+	    <!-- <comand>...</command> ; use mr-command1 -->
+	  </commands>
+	</step>
+
+	<step type="Informational" name="build it" title="Build it"
+	      pause="1" mandatory="0">
+	  <text>
+	    Please run:
+
+	        ssh ubuntu
+
+                /scratchbox/login
+
+                cd dnssec-nodes-{VERSION}
+
+                dpkg-buildpackage -rfakeroot
+
+                cd ..
+
+                scpit 1 {VERSION} dnssec-nodes
+
+	  </text>
+	</step>
+
+
+
+      </steps>
+    </step>
+
+    
+  </steps>
+</makerelease>
