@@ -5,6 +5,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QRegExp>
 #include "QStatusLight.h"
+#include "SubmitDialog.h"
 #include "dnssec_checks.h"
 
 #include <QtGui/QMenuBar>
@@ -318,5 +319,8 @@ void MainWindow::showResultDetails()
 
 void MainWindow::submitResults()
 {
+    SubmitDialog dialog(0);
     qDebug() << "got to submitting results";
+    dialog.exec();
+    qDebug() << "done";
 }

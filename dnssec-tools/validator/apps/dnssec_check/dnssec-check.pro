@@ -24,10 +24,12 @@ symbian:TARGET.UID3 = 0xECD7BC68
 
 SOURCES += main.cpp mainwindow.cpp \
     dnssec_checks.cpp \
-    QStatusLight.cpp
+    QStatusLight.cpp \
+    SubmitDialog.cpp
 HEADERS += mainwindow.h \
     QStatusLight.h \
-    dnssec_checks.h
+    dnssec_checks.h \
+    SubmitDialog.h
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
