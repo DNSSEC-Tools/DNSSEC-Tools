@@ -43,12 +43,14 @@
 #include "window.h"
 
 Window::Window()
-    : m_icon(":/images/justlock.png")
+    : m_icon(":/images/justlock.png"), m_fileName("/tmp/libval.log")
 {
     createLogWidgets();
     createActions();
     createTrayIcon();
     setLayout(m_topLayout);
+
+    createRegexps();
 
     // setup the tray icon
     trayIcon->setToolTip(tr("Shows the status of DNSSEC Requests on the system"));
@@ -144,4 +146,31 @@ void Window::createTrayIcon()
 
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setContextMenu(trayIconMenu);
+}
+
+void Window::createRegexps() {
+    m_bogusRegexp = QRegExp("Validation result for \\{([^,]+),.*BOGUS");
+}
+
+void Window::openLogFile()
+{
+    m_logFile = new QFile(m_fileName);
+    if (!m_logFile->open(QIODevice::ReadOnly | QIODevice::Text))
+        return;
+
+    m_logStream = new QTextStream(m_logFile);
+}
+
+void Window::parseTillEnd()
+{
+    while (!m_logStream->atEnd()) {
+        QString line = m_logStream->readLine();
+        parseLogMessage(line);
+    }
+}
+
+void Window::parseLogMessage(const QString logMessage) {
+    if (m_bogusRegexp.indexIn(logMessage) > -1) {
+        // set message
+    }
 }
