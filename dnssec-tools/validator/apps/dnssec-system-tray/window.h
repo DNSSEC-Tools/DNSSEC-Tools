@@ -43,19 +43,10 @@
 
 #include <QSystemTrayIcon>
 #include <QDialog>
-
-QT_BEGIN_NAMESPACE
-class QAction;
-class QCheckBox;
-class QComboBox;
-class QGroupBox;
-class QLabel;
-class QLineEdit;
-class QMenu;
-class QPushButton;
-class QSpinBox;
-class QTextEdit;
-QT_END_NAMESPACE
+#include <QtGui/QVBoxLayout>
+#include <QtGui/QLabel>
+#include <QtGui/QIcon>
+#include <QtGui/QTableWidget>
 
 //! [0]
 class Window : public QDialog
@@ -71,37 +62,24 @@ protected:
     void closeEvent(QCloseEvent *event);
 
 private slots:
-    void setIcon(int index);
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
     void showMessage();
     void messageClicked();
 
 private:
-    void createIconGroupBox();
+    void createLogWidgets();
     void createMessageGroupBox();
     void createActions();
     void createTrayIcon();
 
-    QGroupBox *iconGroupBox;
-    QLabel *iconLabel;
-    QComboBox *iconComboBox;
-    QCheckBox *showIconCheckBox;
+    QVBoxLayout *m_topLayout;
+    QLabel *m_topTitle;
+    QTableWidget *m_log;
 
-    QGroupBox *messageGroupBox;
-    QLabel *typeLabel;
-    QLabel *durationLabel;
-    QLabel *durationWarningLabel;
-    QLabel *titleLabel;
-    QLabel *bodyLabel;
-    QComboBox *typeComboBox;
-    QSpinBox *durationSpinBox;
-    QLineEdit *titleEdit;
-    QTextEdit *bodyEdit;
-    QPushButton *showMessageButton;
+    QIcon m_icon;
 
-    QAction *minimizeAction;
-    QAction *maximizeAction;
-    QAction *restoreAction;
+    QAction *hideAction;
+    QAction *showAction;
     QAction *quitAction;
 
     QSystemTrayIcon *trayIcon;
