@@ -13,17 +13,17 @@
              onclick="dnssecstatus.urlbar_action();" />
   </hbox>
 
-  <statusbar id="status-bar">
+  <statusbar class="chromeclass-status" id="status-bar">
     <statusbarpanel id="dnssecstatus-status">
         <label 
           id="dnssecstatus-label"
           value="DNSSEC Untrusted:"
-          style="color: #e49917; display: none"
+          style="color: #e49917; display: inline"
           onclick="dnssecstatus.statusbar_action();"/>
         <label
           id="dnssecstatus-unum"
           value="0"
-          style="color: #e49917; display: none"
+          style="color: #e49917; display: inline"
           onclick="dnssecstatus.statusbar_action();" />
     </statusbarpanel>
   </statusbar>
