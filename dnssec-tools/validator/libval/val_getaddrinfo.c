@@ -1164,7 +1164,7 @@ address_to_string(const u_char *saddr, int family, char *nadd, int nlen)
 int
 val_getnameinfo(val_context_t * context,
                 const struct sockaddr *sa,
-                socklen_t salen,
+                size_t salen,
                 char *host,
                 size_t hostlen,
                 char *serv,
@@ -1378,3 +1378,20 @@ val_getnameinfo(val_context_t * context,
     return val_rnc_status;
 
 }                               // val_getnameinfo
+
+/*
+ * define error codes for val_getaddrinfo and val_getnameinfo which
+ * have a DNSSEC validation status.
+ */
+int val_getaddrinfo_has_status(int rc) {
+#if defined(EAI_NODATA) && defined(EAI_NONAME)
+    return ((rc == 0) || (rc == EAI_NONAME) || (rc == EAI_NODATA));
+#elif defined(EAI_NONAME)
+    return ((rc == 0) || (rc == EAI_NONAME));
+#elif defined(WSAHOST_NOT_FOUND) && defined(WSANO_DATA) 
+	return ((rc == 0) || (rc == WSAHOST_NOT_FOUND) || (rc == WSANO_DATA));
+#else
+    return (rc == 0);
+#endif
+}
+
