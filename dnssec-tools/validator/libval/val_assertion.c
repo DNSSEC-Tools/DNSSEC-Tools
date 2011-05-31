@@ -6372,6 +6372,7 @@ val_async_status_free(val_async_status *as)
     if (! as->val_as_flags & VAL_AS_CTX_USER_SUPPLIED)
         val_free_context(as->val_as_ctx);
 
+    FREE(as->val_as_domain_name_n);
     FREE(as);
 
     return VAL_NO_ERROR;
@@ -6408,13 +6409,21 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     as = (val_async_status *)calloc(1, sizeof(val_async_status));
     if (NULL == as)
         return VAL_OUT_OF_MEMORY;
+
+    as->val_as_domain_name_n = (u_char *)MALLOC(NS_MAXCDNAME * sizeof(u_char));
+    if (as->val_as_domain_name_n == NULL) {
+        FREE(as);
+        return VAL_OUT_OF_MEMORY;
+    }
+
     val_log(NULL, LOG_DEBUG, "allocated as %p", as);
 
     if ((retval = ns_name_pton(domain_name,
                                as->val_as_domain_name_n,
-                               sizeof(as->val_as_domain_name_n))) == -1) {
+                               NS_MAXCDNAME)) == -1) {
         val_log(ctx, LOG_INFO, "val_resolve_and_check(): Cannot parse name %s",
                 domain_name);
+        FREE(as->val_as_domain_name_n);
         FREE(as);
         return VAL_BAD_ARGUMENT;
     }
