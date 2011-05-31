@@ -17,30 +17,8 @@ extern          "C" {
 #endif
 
 /*
- * define various addrinfo related defines for older winsock32
+ * Section values of an RRset 
  */
-
-/*
- * define error codes for val_getaddrinfo and val_getnameinfo which
- * have a DNSSEC validation status.
- */
-#if defined(EAI_NODATA) && defined(EAI_NONAME)
-#define VAL_GETADDRINFO_HAS_STATUS(rc) ( \
-	(rc == 0) || (rc == EAI_NONAME) || (rc == EAI_NODATA))
-#elif defined(EAI_NONAME)
-#define VAL_GETADDRINFO_HAS_STATUS(rc) ((rc == 0) || (rc == EAI_NONAME))
-#elif defined(WSAHOST_NOT_FOUND) && defined(WSANO_DATA) 
-#define VAL_GETADDRINFO_HAS_STATUS(rc) ( \
-	(rc == 0) || (rc == WSAHOST_NOT_FOUND) || (rc == WSANO_DATA))
-#else
-#define VAL_GETADDRINFO_HAS_STATUS(rc) ((rc == 0))
-#endif
-
-#define VAL_GETNAMEINFO_HAS_STATUS(rc) VAL_GETADDRINFO_HAS_STATUS(rc)
-
-    /*
-     * Section values of an RRset 
-     */
 #define VAL_FROM_UNSET            0
 #define VAL_FROM_ANSWER           1
 #define VAL_FROM_AUTHORITY        2
@@ -57,8 +35,9 @@ extern          "C" {
 #define VAL_QUERY_REFRESH_QCACHE 0x00000008
 #define VAL_QUERY_ASYNC         0x00000010
 
-#define VAL_QUERY_NO_EDNS0      0x00010000
-#define VAL_QUERY_USING_DLV     0x00020000 
+#define VAL_QUERY_NO_EDNS0          0x00010000
+#define VAL_QUERY_USING_DLV         0x00020000 
+#define VAL_QUERY_EDNS0_FALLBACK    0x00040000 
 
 #define VAL_QUERY_GLUE_REQUEST (0x01000000 | VAL_QUERY_DONT_VALIDATE)
 
@@ -73,6 +52,14 @@ extern          "C" {
 #define LOG_DEBUG 7
 #endif
 
+/* Application MUST define these types */
+struct hostent;
+struct addrinfo;
+struct sockaddr;
+struct timeval;
+struct fd_set;
+
+/* validator return types */
 typedef unsigned char val_status_t;
 typedef unsigned short val_astatus_t;
 
@@ -83,6 +70,7 @@ struct val_policy_handle;
 typedef struct val_policy_handle val_policy_handle_t;
 struct val_log;
 typedef struct val_log val_log_t;
+struct queries_for_query;
 
 /*
  * Validator policies can be one of the following
@@ -296,7 +284,7 @@ typedef struct val_log val_log_t;
         struct queries_for_query      *val_as_top_q;
         struct queries_for_query      *val_as_queries;
 
-        unsigned char                 val_as_domain_name_n[NS_MAXCDNAME];
+        unsigned char                 *val_as_domain_name_n;
         int                           val_as_class;
         int                           val_as_type;
 
@@ -308,6 +296,18 @@ typedef struct val_log val_log_t;
 
         struct val_async_status_s     *val_as_next;
     };
+
+    int             val_async_submit(val_context_t * ctx,
+                                     const char * domain_name, int qclass,
+                                     int qtype, unsigned int flags,
+                                     val_async_status **async_status);
+    int             val_async_check(val_context_t *context,
+                                    struct fd_set *pending_desc, int *nfds,
+                                    unsigned int flags);
+    int             val_async_select_info(val_context_t *context,
+                                    struct fd_set *fds,
+                                    int *num_fds,
+                                    struct timeval *timeout);
 #endif /* VAL_NO_ASYNC */
 
     /*
@@ -330,17 +330,6 @@ typedef struct val_log val_log_t;
                                           unsigned int flags,
                                           struct val_result_chain
                                           **results);
-
-#ifndef VAL_NO_ASYNC
-    int             val_async_submit(val_context_t * ctx,
-                                     const char * domain_name, int qclass,
-                                     int qtype, unsigned int flags,
-                                     val_async_status **async_status);
-    int             val_async_check(val_context_t *context,
-                                    fd_set *pending_desc, int *nfds,
-                                    unsigned int flags);
-#endif
-
 
 
     /*
@@ -417,6 +406,7 @@ typedef struct val_log val_log_t;
     /*
      * from val_getaddrinfo.c 
      */
+
     int             val_getaddrinfo(val_context_t * ctx,
                                     const char *nodename,
                                     const char *servname,
@@ -426,12 +416,17 @@ typedef struct val_log val_log_t;
 
     int             val_getnameinfo(val_context_t * ctx,
                                     const struct sockaddr *sa,
-                                    socklen_t salen,
+                                    size_t salen,
                                     char *host,
                                     size_t hostlen,
                                     char *serv,
                                     size_t servlen,
                                     int flags, val_status_t * val_status);
+
+    int             val_getaddrinfo_has_status(int rc);
+
+#define VAL_GETADDRINFO_HAS_STATUS val_getaddrinfo_has_status 
+#define VAL_GETNAMEINFO_HAS_STATUS val_getaddrinfo_has_status 
 
     /*
      * A thread-safe, re-entrant version of val_gethostbyaddr 
@@ -469,14 +464,6 @@ typedef struct val_log val_log_t;
 
     void val_free_answer_chain(struct val_answer_chain *answers);
 
-
-    /*
-     * async functions from val_resquery.c
-     */
-    int val_async_select_info(val_context_t *context,
-                              fd_set *fds,
-                              int *num_fds,
-                              struct timeval *timeout);
 
 
     /*
