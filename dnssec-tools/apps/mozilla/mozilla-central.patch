@@ -1,6 +1,6 @@
-diff -r a7346f028fd6 browser/components/preferences/advanced.xul
---- a/browser/components/preferences/advanced.xul	Mon Mar 21 17:27:43 2011 +0100
-+++ b/browser/components/preferences/advanced.xul	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 browser/components/preferences/advanced.xul
+--- a/browser/components/preferences/advanced.xul	Tue May 31 12:17:48 2011 +0200
++++ b/browser/components/preferences/advanced.xul	Tue May 31 11:08:56 2011 -0400
 @@ -127,6 +127,9 @@
        <preference id="security.disable_button.openDeviceManager"
                    name="security.disable_button.openDeviceManager"
@@ -8,10 +8,10 @@ diff -r a7346f028fd6 browser/components/preferences/advanced.xul
 +      <preference id="security.dnssec.dnssecBehavior"
 +                  name="security.dnssec.dnssecBehavior"
 +                  type="int"/>
-       <preference id="privacy.donottrackheader.enabled"
-                   name="privacy.donottrackheader.enabled"
-                   type="bool"/>
-@@ -147,6 +150,7 @@
+     </preferences>
+     
+ #ifdef HAVE_SHELL_SERVICE
+@@ -144,6 +147,7 @@
          <tab id="networkTab" label="&networkTab.label;" helpTopic="prefs-advanced-network"/>
          <tab id="updateTab" label="&updateTab.label;"  helpTopic="prefs-advanced-update"/>
          <tab id="encryptionTab" label="&encryptionTab.label;" helpTopic="prefs-advanced-encryption"/>
@@ -19,7 +19,7 @@ diff -r a7346f028fd6 browser/components/preferences/advanced.xul
        </tabs>
  
        <tabpanels flex="1">
-@@ -428,6 +432,20 @@
+@@ -421,6 +425,20 @@
            </groupbox>
          </tabpanel>
  
@@ -40,10 +40,10 @@ diff -r a7346f028fd6 browser/components/preferences/advanced.xul
        </tabpanels>
      </tabbox>
    </prefpane>
-diff -r a7346f028fd6 browser/locales/en-US/chrome/browser/preferences/advanced.dtd
---- a/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Mon Mar 21 17:27:43 2011 +0100
-+++ b/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Tue Mar 22 09:31:05 2011 -0400
-@@ -107,3 +107,13 @@
+diff -r 630b62652f17 browser/locales/en-US/chrome/browser/preferences/advanced.dtd
+--- a/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Tue May 31 12:17:48 2011 +0200
++++ b/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Tue May 31 11:08:56 2011 -0400
+@@ -105,3 +105,13 @@
  <!ENTITY verify2.accesskey               "V">
  <!ENTITY viewSecurityDevices.label       "Security Devices">
  <!ENTITY viewSecurityDevices.accesskey   "y">
@@ -57,9 +57,9 @@ diff -r a7346f028fd6 browser/locales/en-US/chrome/browser/preferences/advanced.d
 +<!ENTITY possibleDNSSecure.accesskey    "E">
 +<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
 +<!ENTITY allDNSSecure.accesskey         "A">
-diff -r a7346f028fd6 browser/locales/en-US/chrome/overrides/appstrings.properties
---- a/browser/locales/en-US/chrome/overrides/appstrings.properties	Mon Mar 21 17:27:43 2011 +0100
-+++ b/browser/locales/en-US/chrome/overrides/appstrings.properties	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 browser/locales/en-US/chrome/overrides/appstrings.properties
+--- a/browser/locales/en-US/chrome/overrides/appstrings.properties	Tue May 31 12:17:48 2011 +0200
++++ b/browser/locales/en-US/chrome/overrides/appstrings.properties	Tue May 31 11:08:56 2011 -0400
 @@ -37,6 +37,8 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=Firefox can't find the file at %S.
@@ -69,9 +69,9 @@ diff -r a7346f028fd6 browser/locales/en-US/chrome/overrides/appstrings.propertie
  protocolNotFound=Firefox doesn't know how to open this address, because the protocol (%S) isn't associated with any program.
  connectionFailure=Firefox can't establish a connection to the server at %S.
  netInterrupt=The connection to %S was interrupted while the page was loading.
-diff -r a7346f028fd6 browser/locales/en-US/chrome/overrides/netError.dtd
---- a/browser/locales/en-US/chrome/overrides/netError.dtd	Mon Mar 21 17:27:43 2011 +0100
-+++ b/browser/locales/en-US/chrome/overrides/netError.dtd	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 browser/locales/en-US/chrome/overrides/netError.dtd
+--- a/browser/locales/en-US/chrome/overrides/netError.dtd	Tue May 31 12:17:48 2011 +0200
++++ b/browser/locales/en-US/chrome/overrides/netError.dtd	Tue May 31 11:08:56 2011 -0400
 @@ -25,6 +25,12 @@
  </ul>
  ">
@@ -85,10 +85,10 @@ diff -r a7346f028fd6 browser/locales/en-US/chrome/overrides/netError.dtd
  <!ENTITY fileNotFound.title "File not found">
  <!ENTITY fileNotFound.longDesc "
  <ul>
-diff -r a7346f028fd6 config/autoconf.mk.in
---- a/config/autoconf.mk.in	Mon Mar 21 17:27:43 2011 +0100
-+++ b/config/autoconf.mk.in	Tue Mar 22 09:31:05 2011 -0400
-@@ -312,7 +312,7 @@
+diff -r 630b62652f17 config/autoconf.mk.in
+--- a/config/autoconf.mk.in	Tue May 31 12:17:48 2011 +0200
++++ b/config/autoconf.mk.in	Tue May 31 11:08:56 2011 -0400
+@@ -307,7 +307,7 @@
  OS_COMPILE_CXXFLAGS = $(OS_CPPFLAGS) @COMPILE_CXXFLAGS@
  
  OS_INCLUDES	= $(NSPR_CFLAGS) $(NSS_CFLAGS) $(JPEG_CFLAGS) $(PNG_CFLAGS) $(ZLIB_CFLAGS)
@@ -97,15 +97,13 @@ diff -r a7346f028fd6 config/autoconf.mk.in
  ACDEFINES	= @MOZ_DEFINES@
  
  WARNINGS_AS_ERRORS = @WARNINGS_AS_ERRORS@
-diff -r a7346f028fd6 configure.in
---- a/configure.in	Mon Mar 21 17:27:43 2011 +0100
-+++ b/configure.in	Tue Mar 22 09:31:05 2011 -0400
-@@ -9033,6 +9033,49 @@
-   AC_DEFINE_UNQUOTED(MOZ_APP_COMPONENT_INCLUDE, "$MOZ_APP_COMPONENT_INCLUDE")
+diff -r 630b62652f17 configure.in
+--- a/configure.in	Tue May 31 12:17:48 2011 +0200
++++ b/configure.in	Tue May 31 11:08:56 2011 -0400
+@@ -8723,6 +8723,47 @@
  fi
  
-+
-+dnl ========================================================
+ dnl ========================================================
 +dnl = Add DNSSEC support 
 +dnl ========================================================
 +
@@ -146,14 +144,14 @@ diff -r a7346f028fd6 configure.in
 +AC_SUBST(VAL_LIBS)
 +AC_SUBST(MOZ_DNSSEC)
 +
-+
- dnl ========================================================
++dnl ========================================================
  dnl =
  dnl = Maintainer debug option (no --enable equivalent)
-diff -r a7346f028fd6 docshell/base/nsDocShell.cpp
---- a/docshell/base/nsDocShell.cpp	Mon Mar 21 17:27:43 2011 +0100
-+++ b/docshell/base/nsDocShell.cpp	Tue Mar 22 09:31:05 2011 -0400
-@@ -3783,6 +3783,26 @@
+ dnl =
+diff -r 630b62652f17 docshell/base/nsDocShell.cpp
+--- a/docshell/base/nsDocShell.cpp	Tue May 31 12:17:48 2011 +0200
++++ b/docshell/base/nsDocShell.cpp	Tue May 31 11:08:56 2011 -0400
+@@ -3787,6 +3787,26 @@
          formatStrCount = 1;
          error.AssignLiteral("dnsNotFound");
      }
@@ -180,7 +178,7 @@ diff -r a7346f028fd6 docshell/base/nsDocShell.cpp
      else if(NS_ERROR_CONNECTION_REFUSED == aError) {
          NS_ENSURE_ARG_POINTER(aURI);
          addHostPort = PR_TRUE;
-@@ -6277,6 +6297,8 @@
+@@ -6261,6 +6281,8 @@
  
          // Errors to be shown only on top-level frames
          if ((aStatus == NS_ERROR_UNKNOWN_HOST || 
@@ -189,9 +187,9 @@ diff -r a7346f028fd6 docshell/base/nsDocShell.cpp
               aStatus == NS_ERROR_CONNECTION_REFUSED ||
               aStatus == NS_ERROR_UNKNOWN_PROXY_HOST || 
               aStatus == NS_ERROR_PROXY_CONNECTION_REFUSED) &&
-diff -r a7346f028fd6 docshell/resources/content/netError.xhtml
---- a/docshell/resources/content/netError.xhtml	Mon Mar 21 17:27:43 2011 +0100
-+++ b/docshell/resources/content/netError.xhtml	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 docshell/resources/content/netError.xhtml
+--- a/docshell/resources/content/netError.xhtml	Tue May 31 12:17:48 2011 +0200
++++ b/docshell/resources/content/netError.xhtml	Tue May 31 11:08:56 2011 -0400
 @@ -308,6 +308,8 @@
      <div id="errorContainer">
        <div id="errorTitlesContainer">
@@ -210,9 +208,9 @@ diff -r a7346f028fd6 docshell/resources/content/netError.xhtml
          <div id="ed_fileNotFound">&fileNotFound.longDesc;</div>
          <div id="ed_malformedURI">&malformedURI.longDesc;</div>
          <div id="ed_protocolNotFound">&protocolNotFound.longDesc;</div>
-diff -r a7346f028fd6 dom/locales/en-US/chrome/appstrings.properties
---- a/dom/locales/en-US/chrome/appstrings.properties	Mon Mar 21 17:27:43 2011 +0100
-+++ b/dom/locales/en-US/chrome/appstrings.properties	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 dom/locales/en-US/chrome/appstrings.properties
+--- a/dom/locales/en-US/chrome/appstrings.properties	Tue May 31 12:17:48 2011 +0200
++++ b/dom/locales/en-US/chrome/appstrings.properties	Tue May 31 11:08:56 2011 -0400
 @@ -37,6 +37,8 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=The file %S cannot be found. Please check the location and try again.
@@ -222,9 +220,9 @@ diff -r a7346f028fd6 dom/locales/en-US/chrome/appstrings.properties
  protocolNotFound=%S is not a registered protocol.
  connectionFailure=The connection was refused when attempting to contact %S.
  netInterrupt=The connection to %S has terminated unexpectedly. Some data may have been transferred.
-diff -r a7346f028fd6 dom/locales/en-US/chrome/netError.dtd
---- a/dom/locales/en-US/chrome/netError.dtd	Mon Mar 21 17:27:43 2011 +0100
-+++ b/dom/locales/en-US/chrome/netError.dtd	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 dom/locales/en-US/chrome/netError.dtd
+--- a/dom/locales/en-US/chrome/netError.dtd	Tue May 31 12:17:48 2011 +0200
++++ b/dom/locales/en-US/chrome/netError.dtd	Tue May 31 11:08:56 2011 -0400
 @@ -12,6 +12,12 @@
  <!ENTITY dnsNotFound.title "Address Not Found">
  <!ENTITY dnsNotFound.longDesc "<p>The browser could not find the host server for the provided address.</p><ul><li>Did you make a mistake when typing the domain? (e.g. <q><strong>ww</strong>.mozilla.org</q> instead of <q><strong>www</strong>.mozilla.org</q>)</li><li>Are you certain this domain address exists?  Its registration may have expired.</li><li>Are you unable to browse other sites?  Check your network connection and DNS server settings.</li><li>Is your computer or network protected by a firewall or proxy?  Incorrect settings can interfere with Web browsing.</li></ul>">
@@ -238,10 +236,10 @@ diff -r a7346f028fd6 dom/locales/en-US/chrome/netError.dtd
  <!ENTITY fileNotFound.title "File Not Found">
  <!ENTITY fileNotFound.longDesc "<ul><li>Could the item have been renamed, removed, or relocated?</li><li>Is there a spelling, capitalization, or other typographical error in the address?</li><li>Do you have sufficient access permissions to the requested item?</li></ul>">
  
-diff -r a7346f028fd6 layout/base/nsPresContext.cpp
---- a/layout/base/nsPresContext.cpp	Mon Mar 21 17:27:43 2011 +0100
-+++ b/layout/base/nsPresContext.cpp	Tue Mar 22 09:31:05 2011 -0400
-@@ -70,6 +70,7 @@
+diff -r 630b62652f17 layout/base/nsPresContext.cpp
+--- a/layout/base/nsPresContext.cpp	Tue May 31 12:17:48 2011 +0200
++++ b/layout/base/nsPresContext.cpp	Tue May 31 11:08:56 2011 -0400
+@@ -69,6 +69,7 @@
  #include "nsIWeakReferenceUtils.h"
  #include "nsCSSRendering.h"
  #include "prprf.h"
@@ -249,44 +247,44 @@ diff -r a7346f028fd6 layout/base/nsPresContext.cpp
  #include "nsContentPolicyUtils.h"
  #include "nsIDOMDocument.h"
  #include "nsAutoPtr.h"
-@@ -301,6 +302,11 @@
-   nsContentUtils::UnregisterPrefCallback("image.animation_mode",
-                                          nsPresContext::PrefChangedCallback,
-                                          this);
+@@ -310,6 +311,11 @@
+   Preferences::UnregisterCallback(nsPresContext::PrefChangedCallback,
+                                   "image.animation_mode",
+                                   this);
 +#ifdef MOZ_DNSSEC
-+  nsContentUtils::UnregisterPrefCallback("security.dnssec.dnssecBehavior",
-+                                         nsPresContext::PrefChangedCallback,
-+                                         this);
++  Preferences::UnregisterCallback(nsPresContext::PrefChangedCallback,
++                                  "security.dnssec.dnssecBehavior",
++                                  this);
 +#endif
  #ifdef IBMBIDI
-   nsContentUtils::UnregisterPrefCallback("bidi.", PrefChangedCallback, this);
- #endif // IBMBIDI
+   Preferences::UnregisterCallback(nsPresContext::PrefChangedCallback,
+                                   "bidi.",
 @@ -737,6 +743,10 @@
    else // dynamic change to invalid value should act like it does initially
      mImageAnimationModePref = imgIContainer::kNormalAnimMode;
  
 +#ifdef MOZ_DNSSEC
-+  PR_set_dnssec_validate_policy(nsContentUtils::GetIntPref("security.dnssec.dnssecBehavior"));
++  PR_set_dnssec_validate_policy(Preferences::GetInt("security.dnssec.dnssecBehavior"));
 +#endif /* MOZ_DNSSEC */
 +
    PRUint32 bidiOptions = GetBidi();
  
    PRInt32 prefInt =
-@@ -960,6 +970,11 @@
-   nsContentUtils::RegisterPrefCallback("image.animation_mode",
-                                        nsPresContext::PrefChangedCallback,
-                                        this);
+@@ -978,6 +988,11 @@
+   Preferences::RegisterCallback(nsPresContext::PrefChangedCallback,
+                                 "image.animation_mode",
+                                 this);
 +#ifdef MOZ_DNSSEC
-+  nsContentUtils::RegisterPrefCallback("security.dnssec.dnssecBehavior",
-+                                       nsPresContext::PrefChangedCallback,
-+                                       this);
++  Preferences::RegisterCallback(nsPresContext::PrefChangedCallback,
++                                 "security.dnssec.dnssecBehavior",
++                                 this);
 +#endif
  #ifdef IBMBIDI
-   nsContentUtils::RegisterPrefCallback("bidi.", PrefChangedCallback,
-                                        this);
-diff -r a7346f028fd6 netwerk/base/public/nsNetError.h
---- a/netwerk/base/public/nsNetError.h	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/base/public/nsNetError.h	Tue Mar 22 09:31:05 2011 -0400
+   Preferences::RegisterCallback(nsPresContext::PrefChangedCallback,
+                                 "bidi.",
+diff -r 630b62652f17 netwerk/base/public/nsNetError.h
+--- a/netwerk/base/public/nsNetError.h	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/base/public/nsNetError.h	Tue May 31 11:08:56 2011 -0400
 @@ -273,6 +273,12 @@
   * DNS specific error codes:
   */
@@ -300,10 +298,10 @@ diff -r a7346f028fd6 netwerk/base/public/nsNetError.h
  /**
   * The lookup of a hostname failed.  This generally refers to the hostname
   * from the URL being loaded.
-diff -r a7346f028fd6 netwerk/base/src/nsSocketTransport2.cpp
---- a/netwerk/base/src/nsSocketTransport2.cpp	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/base/src/nsSocketTransport2.cpp	Tue Mar 22 09:31:05 2011 -0400
-@@ -70,6 +70,8 @@
+diff -r 630b62652f17 netwerk/base/src/nsSocketTransport2.cpp
+--- a/netwerk/base/src/nsSocketTransport2.cpp	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/base/src/nsSocketTransport2.cpp	Tue May 31 11:08:56 2011 -0400
+@@ -68,6 +68,8 @@
  #include "nsIPipe.h"
  #include "nsIProgrammingLanguage.h"
  #include "nsIClassInfoImpl.h"
@@ -312,7 +310,7 @@ diff -r a7346f028fd6 netwerk/base/src/nsSocketTransport2.cpp
  
  #if defined(XP_WIN) || defined(MOZ_PLATFORM_MAEMO)
  #include "nsNativeConnectionHelper.h"
-@@ -1444,11 +1446,28 @@
+@@ -1453,11 +1455,28 @@
              // For SOCKS proxies (mProxyTransparent == true), the socket 
              // transport resolves the real host here, so there's no fixup 
              // (see bug 226943).
@@ -342,9 +340,9 @@ diff -r a7346f028fd6 netwerk/base/src/nsSocketTransport2.cpp
          }
          else if (mState == STATE_RESOLVING)
              mCondition = InitiateSocket();
-diff -r a7346f028fd6 netwerk/cache/nsCacheService.cpp
---- a/netwerk/cache/nsCacheService.cpp	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/cache/nsCacheService.cpp	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 netwerk/cache/nsCacheService.cpp
+--- a/netwerk/cache/nsCacheService.cpp	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/cache/nsCacheService.cpp	Tue May 31 11:08:56 2011 -0400
 @@ -41,6 +41,11 @@
   *
   * ***** END LICENSE BLOCK ***** */
@@ -357,7 +355,7 @@ diff -r a7346f028fd6 netwerk/cache/nsCacheService.cpp
  #include "necko-config.h"
  
  #include "nsCache.h"
-@@ -1239,6 +1244,10 @@
+@@ -1211,6 +1216,10 @@
          }
      }
  
@@ -368,10 +366,10 @@ diff -r a7346f028fd6 netwerk/cache/nsCacheService.cpp
      return res;
  }
  
-diff -r a7346f028fd6 netwerk/dns/nsDNSService2.cpp
---- a/netwerk/dns/nsDNSService2.cpp	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/dns/nsDNSService2.cpp	Tue Mar 22 09:31:05 2011 -0400
-@@ -147,6 +147,7 @@
+diff -r 630b62652f17 netwerk/dns/nsDNSService2.cpp
+--- a/netwerk/dns/nsDNSService2.cpp	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/dns/nsDNSService2.cpp	Tue May 31 11:08:56 2011 -0400
+@@ -149,6 +149,7 @@
              // Both mHostRecord->addr_info and mHostRecord->addr are null.
              // This can happen if mHostRecord->addr_info expired and the
              // attempt to reresolve it failed.
@@ -379,7 +377,7 @@ diff -r a7346f028fd6 netwerk/dns/nsDNSService2.cpp
              return NS_ERROR_NOT_AVAILABLE;
          }
          memcpy(addr, mHostRecord->addr, sizeof(PRNetAddr));
-@@ -243,13 +244,11 @@
+@@ -245,13 +246,11 @@
      // the caller to be able to addref/release multiple times without
      // destroying the record prematurely.
      nsCOMPtr<nsIDNSRecord> rec;
@@ -395,17 +393,17 @@ diff -r a7346f028fd6 netwerk/dns/nsDNSService2.cpp
      mListener->OnLookupComplete(this, rec, status);
      mListener = nsnull;
  
-diff -r a7346f028fd6 netwerk/dns/nsHostResolver.cpp
---- a/netwerk/dns/nsHostResolver.cpp	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/dns/nsHostResolver.cpp	Tue Mar 22 09:31:05 2011 -0400
-@@ -58,6 +58,7 @@
+diff -r 630b62652f17 netwerk/dns/nsHostResolver.cpp
+--- a/netwerk/dns/nsHostResolver.cpp	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/dns/nsHostResolver.cpp	Tue May 31 11:08:56 2011 -0400
+@@ -57,6 +57,7 @@
  #include "pratom.h"
  #include "prthread.h"
  #include "prerror.h"
 +#include "prerr.h"
- #include "prcvar.h"
  #include "prtime.h"
  #include "prlong.h"
+ #include "prlog.h"
 @@ -176,7 +177,7 @@
  // this macro filters out any flags that are not used when constructing the
  // host key.  the significant flags are those that would affect the resulting
@@ -415,7 +413,7 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.cpp
  
  nsresult
  nsHostRecord::Create(const nsHostKey *key, nsHostRecord **result)
-@@ -212,6 +213,8 @@
+@@ -204,6 +205,8 @@
      PR_INIT_CLIST(&rec->callbacks);
      rec->negative = PR_FALSE;
      memcpy((char *) rec->host, key->host, hostLen);
@@ -424,7 +422,7 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.cpp
  
      *result = rec;
      return NS_OK;
-@@ -507,6 +510,8 @@
+@@ -482,6 +485,8 @@
      if (!net_IsValidHostName(nsDependentCString(host)))
          return NS_ERROR_UNKNOWN_HOST;
  
@@ -433,7 +431,7 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.cpp
      // if result is set inside the lock, then we need to issue the
      // callback before returning.
      nsRefPtr<nsHostRecord> result;
-@@ -545,12 +550,13 @@
+@@ -520,12 +525,13 @@
                  // put reference to host record on stack...
                  result = he->rec;
                  if (he->rec->negative) {
@@ -448,7 +446,7 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.cpp
              }
              // if the host name is an IP address literal and has been parsed,
              // go ahead and use it.
-@@ -827,6 +833,7 @@
+@@ -803,6 +809,7 @@
              rec->expiration += 1;                 /* one minute for negative cache */
              rec->negative = PR_TRUE;
          }
@@ -456,7 +454,7 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.cpp
          rec->resolving = PR_FALSE;
          
          if (rec->usingAnyThread) {
-@@ -885,14 +892,44 @@
+@@ -861,14 +868,44 @@
          if (!(rec->flags & RES_CANON_NAME))
              flags |= PR_AI_NOCANONNAME;
  
@@ -502,10 +500,10 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.cpp
          resolver->OnLookupComplete(rec, status, ai);
          LOG(("lookup complete for %s ...\n", rec->host));
      }
-diff -r a7346f028fd6 netwerk/dns/nsHostResolver.h
---- a/netwerk/dns/nsHostResolver.h	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/dns/nsHostResolver.h	Tue Mar 22 09:31:05 2011 -0400
-@@ -116,10 +116,12 @@
+diff -r 630b62652f17 netwerk/dns/nsHostResolver.h
+--- a/netwerk/dns/nsHostResolver.h	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/dns/nsHostResolver.h	Tue May 31 11:08:56 2011 -0400
+@@ -119,10 +119,12 @@
                                  Negative cache entries are valid just like any other
                                  (though never for more than 60 seconds), but a use
                                  of that negative entry forces an asynchronous refresh. */
@@ -519,7 +517,7 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.h
  
  private:
      friend class nsHostResolver;
-@@ -226,7 +228,8 @@
+@@ -232,7 +234,8 @@
          RES_CANON_NAME   = 1 << 1,
          RES_PRIORITY_MEDIUM   = 1 << 2,
          RES_PRIORITY_LOW  = 1 << 3,
@@ -529,21 +527,21 @@ diff -r a7346f028fd6 netwerk/dns/nsHostResolver.h
      };
  
  private:
-diff -r a7346f028fd6 netwerk/protocol/http/nsHttpChannel.cpp
---- a/netwerk/protocol/http/nsHttpChannel.cpp	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/protocol/http/nsHttpChannel.cpp	Tue Mar 22 09:31:05 2011 -0400
-@@ -69,6 +69,7 @@
+diff -r 630b62652f17 netwerk/protocol/http/nsHttpChannel.cpp
+--- a/netwerk/protocol/http/nsHttpChannel.cpp	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/protocol/http/nsHttpChannel.cpp	Tue May 31 11:08:56 2011 -0400
+@@ -68,6 +68,7 @@
  #include "nsIOService.h"
  #include "nsICacheService.h"
  #include "nsDNSPrefetch.h"
 +#include "nsIDNSService.h"
  #include "nsChannelClassifier.h"
  #include "nsIRedirectResultListener.h"
- 
-@@ -3943,6 +3944,14 @@
-     LOG(("nsHttpChannel::OnStopRequest [this=%p request=%p status=%x]\n",
-         this, request, status));
- 
+ #include "mozilla/TimeStamp.h"
+@@ -4135,6 +4136,13 @@
+     if (mTimingEnabled && request == mCachePump) {
+         mCacheReadEnd = mozilla::TimeStamp::Now();
+     }
 +    if (mStatus == NS_ERROR_DNSSEC_VALIDATION_ERROR) {
 +        gHttpHandler->OnDNSSECResponseUntrusted(this);
 +    } else if (NS_FAILED(mStatus)) {
@@ -551,14 +549,13 @@ diff -r a7346f028fd6 netwerk/protocol/http/nsHttpChannel.cpp
 +    } else { 
 +        gHttpHandler->OnDNSSECResponseTrusted(this);
 +    }
-+
-     // honor the cancelation status even if the underlying transaction completed.
-     if (mCanceled || NS_FAILED(mStatus))
-         status = mStatus;
-diff -r a7346f028fd6 netwerk/protocol/http/nsHttpHandler.h
---- a/netwerk/protocol/http/nsHttpHandler.h	Mon Mar 21 17:27:43 2011 +0100
-+++ b/netwerk/protocol/http/nsHttpHandler.h	Tue Mar 22 09:31:05 2011 -0400
-@@ -199,6 +199,19 @@
+ 
+      // allow content to be cached if it was loaded successfully (bug #482935)
+      PRBool contentComplete = NS_SUCCEEDED(status);
+diff -r 630b62652f17 netwerk/protocol/http/nsHttpHandler.h
+--- a/netwerk/protocol/http/nsHttpHandler.h	Tue May 31 12:17:48 2011 +0200
++++ b/netwerk/protocol/http/nsHttpHandler.h	Tue May 31 11:08:56 2011 -0400
+@@ -200,6 +200,19 @@
          NotifyObservers(chan, NS_HTTP_ON_EXAMINE_MERGED_RESPONSE_TOPIC);
      }
  
@@ -578,9 +575,9 @@ diff -r a7346f028fd6 netwerk/protocol/http/nsHttpHandler.h
      // Called by channels before a redirect happens. This notifies both the
      // channel's and the global redirect observers.
      nsresult AsyncOnChannelRedirect(nsIChannel* oldChan, nsIChannel* newChan,
-diff -r a7346f028fd6 nsprpub/config/autoconf.mk.in
---- a/nsprpub/config/autoconf.mk.in	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/config/autoconf.mk.in	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/config/autoconf.mk.in
+--- a/nsprpub/config/autoconf.mk.in	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/config/autoconf.mk.in	Tue May 31 11:08:56 2011 -0400
 @@ -34,6 +34,7 @@
  
  LIBNSPR		= @LIBNSPR@
@@ -589,9 +586,9 @@ diff -r a7346f028fd6 nsprpub/config/autoconf.mk.in
  
  CROSS_COMPILE	= @CROSS_COMPILE@
  MOZ_OPTIMIZE	= @MOZ_OPTIMIZE@
-diff -r a7346f028fd6 nsprpub/config/nspr-config.in
---- a/nsprpub/config/nspr-config.in	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/config/nspr-config.in	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/config/nspr-config.in
+--- a/nsprpub/config/nspr-config.in	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/config/nspr-config.in	Tue May 31 11:08:56 2011 -0400
 @@ -138,6 +138,6 @@
  	  libdirs="$libdirs $i"
          fi
@@ -600,9 +597,9 @@ diff -r a7346f028fd6 nsprpub/config/nspr-config.in
 +      echo $libdirs @VAL_LIBS@ @OS_LIBS@
  fi      
  
-diff -r a7346f028fd6 nsprpub/configure
---- a/nsprpub/configure	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/configure	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/configure
+--- a/nsprpub/configure	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/configure	Tue May 31 11:08:56 2011 -0400
 @@ -91,6 +91,12 @@
    --enable-wrap-malloc    Wrap malloc calls (gnu linker only)"
  ac_help="$ac_help
@@ -652,677 +649,677 @@ diff -r a7346f028fd6 nsprpub/configure
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1182,7 +1188,7 @@
+@@ -1196,7 +1202,7 @@
      # Extract the first word of "$WHOAMI whoami", so it can be a program name with args.
  set dummy $WHOAMI whoami; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1186: checking for $ac_word" >&5
-+echo "configure:1192: checking for $ac_word" >&5
+-echo "configure:1200: checking for $ac_word" >&5
++echo "configure:1206: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_WHOAMI'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1253,13 +1259,13 @@
+@@ -1267,13 +1273,13 @@
      _SAVE_LDFLAGS="$LDFLAGS"
  
      echo $ac_n "checking for $host compiler""... $ac_c" 1>&6
--echo "configure:1257: checking for $host compiler" >&5
-+echo "configure:1263: checking for $host compiler" >&5
+-echo "configure:1271: checking for $host compiler" >&5
++echo "configure:1277: checking for $host compiler" >&5
      for ac_prog in $HOST_CC gcc cc /usr/ucb/cc
  do
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1263: checking for $ac_word" >&5
-+echo "configure:1269: checking for $ac_word" >&5
+-echo "configure:1277: checking for $ac_word" >&5
++echo "configure:1283: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_HOST_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1305,16 +1311,16 @@
+@@ -1319,16 +1325,16 @@
      LDFLAGS="$HOST_LDFLAGS"
  
      echo $ac_n "checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:1309: checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works" >&5
-+echo "configure:1315: checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works" >&5
+-echo "configure:1323: checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works" >&5
++echo "configure:1329: checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works" >&5
      cat > conftest.$ac_ext <<EOF
--#line 1311 "configure"
-+#line 1317 "configure"
+-#line 1325 "configure"
++#line 1331 "configure"
  #include "confdefs.h"
  
  int main() {
  return(0);
  ; return 0; }
  EOF
--if { (eval echo configure:1318: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:1324: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+-if { (eval echo configure:1332: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:1338: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
    rm -rf conftest*
    ac_cv_prog_host_cc_works=1 echo "$ac_t""yes" 1>&6
  else
-@@ -1343,7 +1349,7 @@
+@@ -1357,7 +1363,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1347: checking for $ac_word" >&5
-+echo "configure:1353: checking for $ac_word" >&5
+-echo "configure:1361: checking for $ac_word" >&5
++echo "configure:1367: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1377,7 +1383,7 @@
+@@ -1391,7 +1397,7 @@
      # Extract the first word of "gcc", so it can be a program name with args.
  set dummy gcc; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1381: checking for $ac_word" >&5
-+echo "configure:1387: checking for $ac_word" >&5
+-echo "configure:1395: checking for $ac_word" >&5
++echo "configure:1401: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1407,7 +1413,7 @@
+@@ -1421,7 +1427,7 @@
    # Extract the first word of "cc", so it can be a program name with args.
  set dummy cc; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1411: checking for $ac_word" >&5
-+echo "configure:1417: checking for $ac_word" >&5
+-echo "configure:1425: checking for $ac_word" >&5
++echo "configure:1431: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1458,7 +1464,7 @@
+@@ -1472,7 +1478,7 @@
        # Extract the first word of "cl", so it can be a program name with args.
  set dummy cl; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1462: checking for $ac_word" >&5
-+echo "configure:1468: checking for $ac_word" >&5
+-echo "configure:1476: checking for $ac_word" >&5
++echo "configure:1482: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1490,7 +1496,7 @@
+@@ -1504,7 +1510,7 @@
  fi
  
  echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:1494: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
-+echo "configure:1500: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
+-echo "configure:1508: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
++echo "configure:1514: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
  
  ac_ext=c
  # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -1501,12 +1507,12 @@
+@@ -1515,12 +1521,12 @@
  
  cat > conftest.$ac_ext << EOF
  
--#line 1505 "configure"
-+#line 1511 "configure"
+-#line 1519 "configure"
++#line 1525 "configure"
  #include "confdefs.h"
  
  main(){return(0);}
  EOF
--if { (eval echo configure:1510: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:1516: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+-if { (eval echo configure:1524: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:1530: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    ac_cv_prog_cc_works=yes
    # If we can't run a trivial program, we are probably using a cross compiler.
    if (./conftest; exit) 2>/dev/null; then
-@@ -1532,12 +1538,12 @@
+@@ -1546,12 +1552,12 @@
    { echo "configure: error: installation or configuration problem: C compiler cannot create executables." 1>&2; exit 1; }
  fi
  echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:1536: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:1542: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
+-echo "configure:1550: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
++echo "configure:1556: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
  echo "$ac_t""$ac_cv_prog_cc_cross" 1>&6
  cross_compiling=$ac_cv_prog_cc_cross
  
  echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&6
--echo "configure:1541: checking whether we are using GNU C" >&5
-+echo "configure:1547: checking whether we are using GNU C" >&5
+-echo "configure:1555: checking whether we are using GNU C" >&5
++echo "configure:1561: checking whether we are using GNU C" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_gcc'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1546,7 +1552,7 @@
+@@ -1560,7 +1566,7 @@
    yes;
  #endif
  EOF
--if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1550: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1556: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
+-if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1564: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
++if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1570: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
    ac_cv_prog_gcc=yes
  else
    ac_cv_prog_gcc=no
-@@ -1565,7 +1571,7 @@
+@@ -1579,7 +1585,7 @@
  ac_save_CFLAGS="$CFLAGS"
  CFLAGS=
  echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&6
--echo "configure:1569: checking whether ${CC-cc} accepts -g" >&5
-+echo "configure:1575: checking whether ${CC-cc} accepts -g" >&5
+-echo "configure:1583: checking whether ${CC-cc} accepts -g" >&5
++echo "configure:1589: checking whether ${CC-cc} accepts -g" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_cc_g'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1602,7 +1608,7 @@
+@@ -1616,7 +1622,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1606: checking for $ac_word" >&5
-+echo "configure:1612: checking for $ac_word" >&5
+-echo "configure:1620: checking for $ac_word" >&5
++echo "configure:1626: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CXX'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1638,7 +1644,7 @@
+@@ -1652,7 +1658,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1642: checking for $ac_word" >&5
-+echo "configure:1648: checking for $ac_word" >&5
+-echo "configure:1656: checking for $ac_word" >&5
++echo "configure:1662: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CXX'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1670,7 +1676,7 @@
+@@ -1684,7 +1690,7 @@
  
  
  echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:1674: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
-+echo "configure:1680: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
+-echo "configure:1688: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
++echo "configure:1694: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
  
  ac_ext=C
  # CXXFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -1681,12 +1687,12 @@
+@@ -1695,12 +1701,12 @@
  
  cat > conftest.$ac_ext << EOF
  
--#line 1685 "configure"
-+#line 1691 "configure"
+-#line 1699 "configure"
++#line 1705 "configure"
  #include "confdefs.h"
  
  int main(){return(0);}
  EOF
--if { (eval echo configure:1690: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:1696: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+-if { (eval echo configure:1704: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:1710: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    ac_cv_prog_cxx_works=yes
    # If we can't run a trivial program, we are probably using a cross compiler.
    if (./conftest; exit) 2>/dev/null; then
-@@ -1712,12 +1718,12 @@
+@@ -1726,12 +1732,12 @@
    { echo "configure: error: installation or configuration problem: C++ compiler cannot create executables." 1>&2; exit 1; }
  fi
  echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:1716: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:1722: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
+-echo "configure:1730: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
++echo "configure:1736: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
  echo "$ac_t""$ac_cv_prog_cxx_cross" 1>&6
  cross_compiling=$ac_cv_prog_cxx_cross
  
  echo $ac_n "checking whether we are using GNU C++""... $ac_c" 1>&6
--echo "configure:1721: checking whether we are using GNU C++" >&5
-+echo "configure:1727: checking whether we are using GNU C++" >&5
+-echo "configure:1735: checking whether we are using GNU C++" >&5
++echo "configure:1741: checking whether we are using GNU C++" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_gxx'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1726,7 +1732,7 @@
+@@ -1740,7 +1746,7 @@
    yes;
  #endif
  EOF
--if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:1730: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:1736: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
+-if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:1744: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
++if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:1750: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
    ac_cv_prog_gxx=yes
  else
    ac_cv_prog_gxx=no
-@@ -1745,7 +1751,7 @@
+@@ -1759,7 +1765,7 @@
  ac_save_CXXFLAGS="$CXXFLAGS"
  CXXFLAGS=
  echo $ac_n "checking whether ${CXX-g++} accepts -g""... $ac_c" 1>&6
--echo "configure:1749: checking whether ${CXX-g++} accepts -g" >&5
-+echo "configure:1755: checking whether ${CXX-g++} accepts -g" >&5
+-echo "configure:1763: checking whether ${CXX-g++} accepts -g" >&5
++echo "configure:1769: checking whether ${CXX-g++} accepts -g" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_cxx_g'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1790,7 +1796,7 @@
+@@ -1804,7 +1810,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1794: checking for $ac_word" >&5
-+echo "configure:1800: checking for $ac_word" >&5
+-echo "configure:1808: checking for $ac_word" >&5
++echo "configure:1814: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1825,7 +1831,7 @@
+@@ -1839,7 +1845,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1829: checking for $ac_word" >&5
-+echo "configure:1835: checking for $ac_word" >&5
+-echo "configure:1843: checking for $ac_word" >&5
++echo "configure:1849: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_AR'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1860,7 +1866,7 @@
+@@ -1874,7 +1880,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1864: checking for $ac_word" >&5
-+echo "configure:1870: checking for $ac_word" >&5
+-echo "configure:1878: checking for $ac_word" >&5
++echo "configure:1884: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_AS'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1895,7 +1901,7 @@
+@@ -1909,7 +1915,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1899: checking for $ac_word" >&5
-+echo "configure:1905: checking for $ac_word" >&5
+-echo "configure:1913: checking for $ac_word" >&5
++echo "configure:1919: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_LD'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1930,7 +1936,7 @@
+@@ -1944,7 +1950,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1934: checking for $ac_word" >&5
-+echo "configure:1940: checking for $ac_word" >&5
+-echo "configure:1948: checking for $ac_word" >&5
++echo "configure:1954: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_STRIP'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -1965,7 +1971,7 @@
+@@ -1979,7 +1985,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1969: checking for $ac_word" >&5
-+echo "configure:1975: checking for $ac_word" >&5
+-echo "configure:1983: checking for $ac_word" >&5
++echo "configure:1989: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_WINDRES'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2000,7 +2006,7 @@
+@@ -2014,7 +2020,7 @@
      # Extract the first word of "gcc", so it can be a program name with args.
  set dummy gcc; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2004: checking for $ac_word" >&5
-+echo "configure:2010: checking for $ac_word" >&5
+-echo "configure:2018: checking for $ac_word" >&5
++echo "configure:2024: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2030,7 +2036,7 @@
+@@ -2044,7 +2050,7 @@
    # Extract the first word of "cc", so it can be a program name with args.
  set dummy cc; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2034: checking for $ac_word" >&5
-+echo "configure:2040: checking for $ac_word" >&5
+-echo "configure:2048: checking for $ac_word" >&5
++echo "configure:2054: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2081,7 +2087,7 @@
+@@ -2095,7 +2101,7 @@
        # Extract the first word of "cl", so it can be a program name with args.
  set dummy cl; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2085: checking for $ac_word" >&5
-+echo "configure:2091: checking for $ac_word" >&5
+-echo "configure:2099: checking for $ac_word" >&5
++echo "configure:2105: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2113,7 +2119,7 @@
+@@ -2127,7 +2133,7 @@
  fi
  
  echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:2117: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
-+echo "configure:2123: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
+-echo "configure:2131: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
++echo "configure:2137: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
  
  ac_ext=c
  # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -2124,12 +2130,12 @@
+@@ -2138,12 +2144,12 @@
  
  cat > conftest.$ac_ext << EOF
  
--#line 2128 "configure"
-+#line 2134 "configure"
+-#line 2142 "configure"
++#line 2148 "configure"
  #include "confdefs.h"
  
  main(){return(0);}
  EOF
--if { (eval echo configure:2133: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:2139: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+-if { (eval echo configure:2147: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2153: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    ac_cv_prog_cc_works=yes
    # If we can't run a trivial program, we are probably using a cross compiler.
    if (./conftest; exit) 2>/dev/null; then
-@@ -2155,12 +2161,12 @@
+@@ -2169,12 +2175,12 @@
    { echo "configure: error: installation or configuration problem: C compiler cannot create executables." 1>&2; exit 1; }
  fi
  echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:2159: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:2165: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
+-echo "configure:2173: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
++echo "configure:2179: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
  echo "$ac_t""$ac_cv_prog_cc_cross" 1>&6
  cross_compiling=$ac_cv_prog_cc_cross
  
  echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&6
--echo "configure:2164: checking whether we are using GNU C" >&5
-+echo "configure:2170: checking whether we are using GNU C" >&5
+-echo "configure:2178: checking whether we are using GNU C" >&5
++echo "configure:2184: checking whether we are using GNU C" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_gcc'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2169,7 +2175,7 @@
+@@ -2183,7 +2189,7 @@
    yes;
  #endif
  EOF
--if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:2173: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:2179: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
+-if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:2187: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
++if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:2193: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
    ac_cv_prog_gcc=yes
  else
    ac_cv_prog_gcc=no
-@@ -2188,7 +2194,7 @@
+@@ -2202,7 +2208,7 @@
  ac_save_CFLAGS="$CFLAGS"
  CFLAGS=
  echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&6
--echo "configure:2192: checking whether ${CC-cc} accepts -g" >&5
-+echo "configure:2198: checking whether ${CC-cc} accepts -g" >&5
+-echo "configure:2206: checking whether ${CC-cc} accepts -g" >&5
++echo "configure:2212: checking whether ${CC-cc} accepts -g" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_cc_g'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2228,7 +2234,7 @@
+@@ -2242,7 +2248,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2232: checking for $ac_word" >&5
-+echo "configure:2238: checking for $ac_word" >&5
+-echo "configure:2246: checking for $ac_word" >&5
++echo "configure:2252: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_CXX'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2260,7 +2266,7 @@
+@@ -2274,7 +2280,7 @@
  
  
  echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:2264: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
-+echo "configure:2270: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
+-echo "configure:2278: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
++echo "configure:2284: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
  
  ac_ext=C
  # CXXFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -2271,12 +2277,12 @@
+@@ -2285,12 +2291,12 @@
  
  cat > conftest.$ac_ext << EOF
  
--#line 2275 "configure"
-+#line 2281 "configure"
+-#line 2289 "configure"
++#line 2295 "configure"
  #include "confdefs.h"
  
  int main(){return(0);}
  EOF
--if { (eval echo configure:2280: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:2286: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+-if { (eval echo configure:2294: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2300: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    ac_cv_prog_cxx_works=yes
    # If we can't run a trivial program, we are probably using a cross compiler.
    if (./conftest; exit) 2>/dev/null; then
-@@ -2302,12 +2308,12 @@
+@@ -2316,12 +2322,12 @@
    { echo "configure: error: installation or configuration problem: C++ compiler cannot create executables." 1>&2; exit 1; }
  fi
  echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:2306: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:2312: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
+-echo "configure:2320: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
++echo "configure:2326: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
  echo "$ac_t""$ac_cv_prog_cxx_cross" 1>&6
  cross_compiling=$ac_cv_prog_cxx_cross
  
  echo $ac_n "checking whether we are using GNU C++""... $ac_c" 1>&6
--echo "configure:2311: checking whether we are using GNU C++" >&5
-+echo "configure:2317: checking whether we are using GNU C++" >&5
+-echo "configure:2325: checking whether we are using GNU C++" >&5
++echo "configure:2331: checking whether we are using GNU C++" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_gxx'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2316,7 +2322,7 @@
+@@ -2330,7 +2336,7 @@
    yes;
  #endif
  EOF
--if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:2320: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:2326: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
+-if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:2334: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
++if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:2340: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
    ac_cv_prog_gxx=yes
  else
    ac_cv_prog_gxx=no
-@@ -2335,7 +2341,7 @@
+@@ -2349,7 +2355,7 @@
  ac_save_CXXFLAGS="$CXXFLAGS"
  CXXFLAGS=
  echo $ac_n "checking whether ${CXX-g++} accepts -g""... $ac_c" 1>&6
--echo "configure:2339: checking whether ${CXX-g++} accepts -g" >&5
-+echo "configure:2345: checking whether ${CXX-g++} accepts -g" >&5
+-echo "configure:2353: checking whether ${CXX-g++} accepts -g" >&5
++echo "configure:2359: checking whether ${CXX-g++} accepts -g" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_cxx_g'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2369,7 +2375,7 @@
+@@ -2383,7 +2389,7 @@
          fi
      fi
      echo $ac_n "checking how to run the C preprocessor""... $ac_c" 1>&6
--echo "configure:2373: checking how to run the C preprocessor" >&5
-+echo "configure:2379: checking how to run the C preprocessor" >&5
+-echo "configure:2387: checking how to run the C preprocessor" >&5
++echo "configure:2393: checking how to run the C preprocessor" >&5
  # On Suns, sometimes $CPP names a directory.
  if test -n "$CPP" && test -d "$CPP"; then
    CPP=
-@@ -2384,13 +2390,13 @@
+@@ -2398,13 +2404,13 @@
    # On the NeXT, cc -E runs the code through the compiler's parser,
    # not just through cpp.
    cat > conftest.$ac_ext <<EOF
--#line 2388 "configure"
-+#line 2394 "configure"
+-#line 2402 "configure"
++#line 2408 "configure"
  #include "confdefs.h"
  #include <assert.h>
  Syntax Error
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:2394: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:2400: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+-{ (eval echo configure:2408: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2414: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    :
-@@ -2401,13 +2407,13 @@
+@@ -2415,13 +2421,13 @@
    rm -rf conftest*
    CPP="${CC-cc} -E -traditional-cpp"
    cat > conftest.$ac_ext <<EOF
--#line 2405 "configure"
-+#line 2411 "configure"
+-#line 2419 "configure"
++#line 2425 "configure"
  #include "confdefs.h"
  #include <assert.h>
  Syntax Error
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:2411: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:2417: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+-{ (eval echo configure:2425: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2431: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    :
-@@ -2418,13 +2424,13 @@
+@@ -2432,13 +2438,13 @@
    rm -rf conftest*
    CPP="${CC-cc} -nologo -E"
    cat > conftest.$ac_ext <<EOF
--#line 2422 "configure"
-+#line 2428 "configure"
+-#line 2436 "configure"
++#line 2442 "configure"
  #include "confdefs.h"
  #include <assert.h>
  Syntax Error
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:2428: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:2434: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+-{ (eval echo configure:2442: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2448: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    :
-@@ -2451,7 +2457,7 @@
+@@ -2465,7 +2471,7 @@
      # Extract the first word of "ranlib", so it can be a program name with args.
  set dummy ranlib; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2455: checking for $ac_word" >&5
-+echo "configure:2461: checking for $ac_word" >&5
+-echo "configure:2469: checking for $ac_word" >&5
++echo "configure:2475: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2483,7 +2489,7 @@
+@@ -2497,7 +2503,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2487: checking for $ac_word" >&5
-+echo "configure:2493: checking for $ac_word" >&5
+-echo "configure:2501: checking for $ac_word" >&5
++echo "configure:2507: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_AS'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2524,7 +2530,7 @@
+@@ -2538,7 +2544,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2528: checking for $ac_word" >&5
-+echo "configure:2534: checking for $ac_word" >&5
+-echo "configure:2542: checking for $ac_word" >&5
++echo "configure:2548: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_AR'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2565,7 +2571,7 @@
+@@ -2579,7 +2585,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2569: checking for $ac_word" >&5
-+echo "configure:2575: checking for $ac_word" >&5
+-echo "configure:2583: checking for $ac_word" >&5
++echo "configure:2589: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_LD'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2606,7 +2612,7 @@
+@@ -2620,7 +2626,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2610: checking for $ac_word" >&5
-+echo "configure:2616: checking for $ac_word" >&5
+-echo "configure:2624: checking for $ac_word" >&5
++echo "configure:2630: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_STRIP'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2647,7 +2653,7 @@
+@@ -2661,7 +2667,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2651: checking for $ac_word" >&5
-+echo "configure:2657: checking for $ac_word" >&5
+-echo "configure:2665: checking for $ac_word" >&5
++echo "configure:2671: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_WINDRES'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2715,7 +2721,7 @@
+@@ -2729,7 +2735,7 @@
  fi
  
  echo $ac_n "checking for gcc -pipe support""... $ac_c" 1>&6
--echo "configure:2719: checking for gcc -pipe support" >&5
-+echo "configure:2725: checking for gcc -pipe support" >&5
+-echo "configure:2733: checking for gcc -pipe support" >&5
++echo "configure:2739: checking for gcc -pipe support" >&5
  if test -n "$GNU_CC" && test -n "$GNU_CXX" && test -n "$GNU_AS"; then
      echo '#include <stdio.h>' > dummy-hello.c
      echo 'int main() { printf("Hello World\n"); return 0; }' >> dummy-hello.c
-@@ -2730,14 +2736,14 @@
+@@ -2744,14 +2750,14 @@
          _SAVE_CFLAGS=$CFLAGS
          CFLAGS="$CFLAGS -pipe"
          cat > conftest.$ac_ext <<EOF
--#line 2734 "configure"
-+#line 2740 "configure"
+-#line 2748 "configure"
++#line 2754 "configure"
  #include "confdefs.h"
   #include <stdio.h> 
  int main() {
  printf("Hello World\n");
  ; return 0; }
  EOF
--if { (eval echo configure:2741: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:2747: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+-if { (eval echo configure:2755: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:2761: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
    rm -rf conftest*
    _res_gcc_pipe="yes"
  else
-@@ -2767,16 +2773,16 @@
+@@ -2781,16 +2787,16 @@
  CFLAGS="$CFLAGS -fprofile-generate -fprofile-correction"
  
  echo $ac_n "checking whether C compiler supports -fprofile-generate""... $ac_c" 1>&6
--echo "configure:2771: checking whether C compiler supports -fprofile-generate" >&5
-+echo "configure:2777: checking whether C compiler supports -fprofile-generate" >&5
+-echo "configure:2785: checking whether C compiler supports -fprofile-generate" >&5
++echo "configure:2791: checking whether C compiler supports -fprofile-generate" >&5
  cat > conftest.$ac_ext <<EOF
--#line 2773 "configure"
-+#line 2779 "configure"
+-#line 2787 "configure"
++#line 2793 "configure"
  #include "confdefs.h"
  
  int main() {
  return 0;
  ; return 0; }
  EOF
--if { (eval echo configure:2780: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:2786: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+-if { (eval echo configure:2794: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:2800: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
    rm -rf conftest*
     PROFILE_GEN_CFLAGS="-fprofile-generate"
                   result="yes" 
-@@ -2799,7 +2805,7 @@
+@@ -2813,7 +2819,7 @@
  
  if test "$GNU_CC"; then
      echo $ac_n "checking for visibility(hidden) attribute""... $ac_c" 1>&6
--echo "configure:2803: checking for visibility(hidden) attribute" >&5
-+echo "configure:2809: checking for visibility(hidden) attribute" >&5
+-echo "configure:2817: checking for visibility(hidden) attribute" >&5
++echo "configure:2823: checking for visibility(hidden) attribute" >&5
  if eval "test \"`echo '$''{'ac_cv_visibility_hidden'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2823,7 +2829,7 @@
+@@ -2837,7 +2843,7 @@
  EOF
  
          echo $ac_n "checking for visibility pragma support""... $ac_c" 1>&6
--echo "configure:2827: checking for visibility pragma support" >&5
-+echo "configure:2833: checking for visibility pragma support" >&5
+-echo "configure:2841: checking for visibility pragma support" >&5
++echo "configure:2847: checking for visibility pragma support" >&5
  if eval "test \"`echo '$''{'ac_cv_visibility_pragma'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -2876,7 +2882,7 @@
+@@ -2890,7 +2896,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2880: checking for $ac_word" >&5
-+echo "configure:2886: checking for $ac_word" >&5
+-echo "configure:2894: checking for $ac_word" >&5
++echo "configure:2900: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_PERL'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -3162,17 +3168,17 @@
+@@ -3176,17 +3182,17 @@
      DSO_LDOPTS='-brtl -bnortllib -bM:SRE -bnoentry -bexpall -blibpath:/usr/lib:/lib'
      ac_safe=`echo "sys/atomic_op.h" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for sys/atomic_op.h""... $ac_c" 1>&6
--echo "configure:3166: checking for sys/atomic_op.h" >&5
-+echo "configure:3172: checking for sys/atomic_op.h" >&5
+-echo "configure:3180: checking for sys/atomic_op.h" >&5
++echo "configure:3186: checking for sys/atomic_op.h" >&5
  if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
--#line 3171 "configure"
-+#line 3177 "configure"
+-#line 3185 "configure"
++#line 3191 "configure"
  #include "confdefs.h"
  #include <sys/atomic_op.h>
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:3176: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:3182: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+-{ (eval echo configure:3190: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:3196: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -3329,7 +3335,7 @@
+@@ -3382,7 +3388,7 @@
          _DEBUG_FLAGS='-gdwarf-2 -O0'
          MKSHLIB='$(CCC) $(DSO_LDOPTS) -o $@'
          echo $ac_n "checking for gethostbyaddr in -lbind""... $ac_c" 1>&6
--echo "configure:3333: checking for gethostbyaddr in -lbind" >&5
-+echo "configure:3339: checking for gethostbyaddr in -lbind" >&5
+-echo "configure:3386: checking for gethostbyaddr in -lbind" >&5
++echo "configure:3392: checking for gethostbyaddr in -lbind" >&5
  ac_lib_var=`echo bind'_'gethostbyaddr | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -3337,7 +3343,7 @@
+@@ -3390,7 +3396,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lbind  $LIBS"
  cat > conftest.$ac_ext <<EOF
--#line 3341 "configure"
-+#line 3347 "configure"
+-#line 3394 "configure"
++#line 3400 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -3348,7 +3354,7 @@
+@@ -3401,7 +3407,7 @@
  gethostbyaddr()
  ; return 0; }
  EOF
--if { (eval echo configure:3352: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:3358: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+-if { (eval echo configure:3405: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3411: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4739,17 +4745,17 @@
+@@ -4753,17 +4759,17 @@
          _OPTIMIZE_FLAGS="$_OPTIMIZE_FLAGS -Olimit 4000"
          ac_safe=`echo "machine/builtins.h" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for machine/builtins.h""... $ac_c" 1>&6
--echo "configure:4743: checking for machine/builtins.h" >&5
-+echo "configure:4749: checking for machine/builtins.h" >&5
+-echo "configure:4757: checking for machine/builtins.h" >&5
++echo "configure:4763: checking for machine/builtins.h" >&5
  if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
--#line 4748 "configure"
-+#line 4754 "configure"
+-#line 4762 "configure"
++#line 4768 "configure"
  #include "confdefs.h"
  #include <machine/builtins.h>
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:4753: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:4759: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+-{ (eval echo configure:4767: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:4773: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -5392,13 +5398,12 @@
+@@ -5406,13 +5412,12 @@
  if test -z "$SKIP_LIBRARY_CHECKS"; then
  
  
@@ -1332,172 +1329,172 @@ diff -r a7346f028fd6 nsprpub/configure
      ;;
  *)
      echo $ac_n "checking for dlopen in -ldl""... $ac_c" 1>&6
--echo "configure:5402: checking for dlopen in -ldl" >&5
-+echo "configure:5407: checking for dlopen in -ldl" >&5
+-echo "configure:5416: checking for dlopen in -ldl" >&5
++echo "configure:5421: checking for dlopen in -ldl" >&5
  ac_lib_var=`echo dl'_'dlopen | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -5406,7 +5411,7 @@
+@@ -5420,7 +5425,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-ldl  $LIBS"
  cat > conftest.$ac_ext <<EOF
--#line 5410 "configure"
-+#line 5415 "configure"
+-#line 5424 "configure"
++#line 5429 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -5417,7 +5422,7 @@
+@@ -5431,7 +5436,7 @@
  dlopen()
  ; return 0; }
  EOF
--if { (eval echo configure:5421: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:5426: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+-if { (eval echo configure:5435: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:5440: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -5434,17 +5439,17 @@
+@@ -5448,17 +5453,17 @@
    echo "$ac_t""yes" 1>&6
    ac_safe=`echo "dlfcn.h" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for dlfcn.h""... $ac_c" 1>&6
--echo "configure:5438: checking for dlfcn.h" >&5
-+echo "configure:5443: checking for dlfcn.h" >&5
+-echo "configure:5452: checking for dlfcn.h" >&5
++echo "configure:5457: checking for dlfcn.h" >&5
  if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
--#line 5443 "configure"
-+#line 5448 "configure"
+-#line 5457 "configure"
++#line 5462 "configure"
  #include "confdefs.h"
  #include <dlfcn.h>
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:5448: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:5453: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+-{ (eval echo configure:5462: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:5467: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -5477,13 +5482,13 @@
+@@ -5491,13 +5496,13 @@
  
  if test $ac_cv_prog_gcc = yes; then
      echo $ac_n "checking whether ${CC-cc} needs -traditional""... $ac_c" 1>&6
--echo "configure:5481: checking whether ${CC-cc} needs -traditional" >&5
-+echo "configure:5486: checking whether ${CC-cc} needs -traditional" >&5
+-echo "configure:5495: checking whether ${CC-cc} needs -traditional" >&5
++echo "configure:5500: checking whether ${CC-cc} needs -traditional" >&5
  if eval "test \"`echo '$''{'ac_cv_prog_gcc_traditional'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
      ac_pattern="Autoconf.*'x'"
    cat > conftest.$ac_ext <<EOF
--#line 5487 "configure"
-+#line 5492 "configure"
+-#line 5501 "configure"
++#line 5506 "configure"
  #include "confdefs.h"
  #include <sgtty.h>
  Autoconf TIOCGETP
-@@ -5501,7 +5506,7 @@
+@@ -5515,7 +5520,7 @@
  
    if test $ac_cv_prog_gcc_traditional = no; then
      cat > conftest.$ac_ext <<EOF
--#line 5505 "configure"
-+#line 5510 "configure"
+-#line 5519 "configure"
++#line 5524 "configure"
  #include "confdefs.h"
  #include <termio.h>
  Autoconf TCGETA
-@@ -5525,12 +5530,12 @@
+@@ -5539,12 +5544,12 @@
  for ac_func in lchown strerror
  do
  echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
--echo "configure:5529: checking for $ac_func" >&5
-+echo "configure:5534: checking for $ac_func" >&5
+-echo "configure:5543: checking for $ac_func" >&5
++echo "configure:5548: checking for $ac_func" >&5
  if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
--#line 5534 "configure"
-+#line 5539 "configure"
+-#line 5548 "configure"
++#line 5553 "configure"
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char $ac_func(); below.  */
-@@ -5553,7 +5558,7 @@
+@@ -5567,7 +5572,7 @@
  
  ; return 0; }
  EOF
--if { (eval echo configure:5557: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:5562: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+-if { (eval echo configure:5571: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:5576: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_func_$ac_func=yes"
  else
-@@ -5604,7 +5609,7 @@
+@@ -5618,7 +5623,7 @@
  # Extract the first word of "$ac_prog", so it can be a program name with args.
  set dummy $ac_prog; ac_word=$2
  echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:5608: checking for $ac_word" >&5
-+echo "configure:5613: checking for $ac_word" >&5
+-echo "configure:5622: checking for $ac_word" >&5
++echo "configure:5627: checking for $ac_word" >&5
  if eval "test \"`echo '$''{'ac_cv_path_CCACHE'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -5663,7 +5668,7 @@
+@@ -5677,7 +5682,7 @@
  if test -z "$GNU_CC"; then
  
      echo $ac_n "checking for +Olit support""... $ac_c" 1>&6
--echo "configure:5667: checking for +Olit support" >&5
-+echo "configure:5672: checking for +Olit support" >&5
+-echo "configure:5681: checking for +Olit support" >&5
++echo "configure:5686: checking for +Olit support" >&5
  if eval "test \"`echo '$''{'ac_cv_hpux_usable_olit_option'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -5705,7 +5710,7 @@
+@@ -5719,7 +5724,7 @@
  *)
      
  echo $ac_n "checking for pthread_create in -lpthreads""... $ac_c" 1>&6
--echo "configure:5709: checking for pthread_create in -lpthreads" >&5
-+echo "configure:5714: checking for pthread_create in -lpthreads" >&5
+-echo "configure:5723: checking for pthread_create in -lpthreads" >&5
++echo "configure:5728: checking for pthread_create in -lpthreads" >&5
  echo "
      #include <pthread.h> 
      void *foo(void *v) { return v; } 
-@@ -5727,7 +5732,7 @@
+@@ -5741,7 +5746,7 @@
          echo "$ac_t""no" 1>&6
          
  echo $ac_n "checking for pthread_create in -lpthread""... $ac_c" 1>&6
--echo "configure:5731: checking for pthread_create in -lpthread" >&5
-+echo "configure:5736: checking for pthread_create in -lpthread" >&5
+-echo "configure:5745: checking for pthread_create in -lpthread" >&5
++echo "configure:5750: checking for pthread_create in -lpthread" >&5
  echo "
      #include <pthread.h> 
      void *foo(void *v) { return v; } 
-@@ -5749,7 +5754,7 @@
+@@ -5763,7 +5768,7 @@
          echo "$ac_t""no" 1>&6
          
  echo $ac_n "checking for pthread_create in -lc_r""... $ac_c" 1>&6
--echo "configure:5753: checking for pthread_create in -lc_r" >&5
-+echo "configure:5758: checking for pthread_create in -lc_r" >&5
+-echo "configure:5767: checking for pthread_create in -lc_r" >&5
++echo "configure:5772: checking for pthread_create in -lc_r" >&5
  echo "
      #include <pthread.h> 
      void *foo(void *v) { return v; } 
-@@ -5771,7 +5776,7 @@
+@@ -5785,7 +5790,7 @@
          echo "$ac_t""no" 1>&6
          
  echo $ac_n "checking for pthread_create in -lc""... $ac_c" 1>&6
--echo "configure:5775: checking for pthread_create in -lc" >&5
-+echo "configure:5780: checking for pthread_create in -lc" >&5
+-echo "configure:5789: checking for pthread_create in -lc" >&5
++echo "configure:5794: checking for pthread_create in -lc" >&5
  echo "
      #include <pthread.h> 
      void *foo(void *v) { return v; } 
-@@ -5889,7 +5894,7 @@
+@@ -5903,7 +5908,7 @@
        rm -f conftest*
     ac_cv_have_dash_pthread=no
     echo $ac_n "checking whether ${CC-cc} accepts -pthread""... $ac_c" 1>&6
--echo "configure:5893: checking whether ${CC-cc} accepts -pthread" >&5
-+echo "configure:5898: checking whether ${CC-cc} accepts -pthread" >&5
+-echo "configure:5907: checking whether ${CC-cc} accepts -pthread" >&5
++echo "configure:5912: checking whether ${CC-cc} accepts -pthread" >&5
     echo 'int main() { return 0; }' | cat > conftest.c
     ${CC-cc} -pthread -o conftest conftest.c > conftest.out 2>&1
     if test $? -eq 0; then
-@@ -5912,7 +5917,7 @@
+@@ -5926,7 +5931,7 @@
  			    ac_cv_have_dash_pthreads=no
      if test "$ac_cv_have_dash_pthread" = "no"; then
  	    echo $ac_n "checking whether ${CC-cc} accepts -pthreads""... $ac_c" 1>&6
--echo "configure:5916: checking whether ${CC-cc} accepts -pthreads" >&5
-+echo "configure:5921: checking whether ${CC-cc} accepts -pthreads" >&5
+-echo "configure:5930: checking whether ${CC-cc} accepts -pthreads" >&5
++echo "configure:5935: checking whether ${CC-cc} accepts -pthreads" >&5
      	echo 'int main() { return 0; }' | cat > conftest.c
  	    ${CC-cc} -pthreads -o conftest conftest.c > conftest.out 2>&1
      	if test $? -eq 0; then
-@@ -6251,6 +6256,136 @@
+@@ -6265,6 +6270,136 @@
  
  
  
@@ -1540,7 +1537,7 @@ diff -r a7346f028fd6 nsprpub/configure
 +        fi
 +    fi
 +    echo $ac_n "checking for EVP_md5 in -lcrypto""... $ac_c" 1>&6
-+echo "configure:6299: checking for EVP_md5 in -lcrypto" >&5
++echo "configure:6313: checking for EVP_md5 in -lcrypto" >&5
 +ac_lib_var=`echo crypto'_'EVP_md5 | sed 'y%./+-%__p_%'`
 +if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
 +  echo $ac_n "(cached) $ac_c" 1>&6
@@ -1548,7 +1545,7 @@ diff -r a7346f028fd6 nsprpub/configure
 +  ac_save_LIBS="$LIBS"
 +LIBS="-lcrypto  $LIBS"
 +cat > conftest.$ac_ext <<EOF
-+#line 6307 "configure"
++#line 6321 "configure"
 +#include "confdefs.h"
 +/* Override any gcc2 internal prototype to avoid an error.  */
 +/* We use char because int might match the return type of a gcc2
@@ -1559,7 +1556,7 @@ diff -r a7346f028fd6 nsprpub/configure
 +EVP_md5()
 +; return 0; }
 +EOF
-+if { (eval echo configure:6318: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:6332: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
 +  rm -rf conftest*
 +  eval "ac_cv_lib_$ac_lib_var=yes"
 +else
@@ -1580,7 +1577,7 @@ diff -r a7346f028fd6 nsprpub/configure
 +fi
 +
 +    echo $ac_n "checking for val_gethostbyname in -lval-threads""... $ac_c" 1>&6
-+echo "configure:6339: checking for val_gethostbyname in -lval-threads" >&5
++echo "configure:6353: checking for val_gethostbyname in -lval-threads" >&5
 +ac_lib_var=`echo val-threads'_'val_gethostbyname | sed 'y%./+-%__p_%'`
 +if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
 +  echo $ac_n "(cached) $ac_c" 1>&6
@@ -1588,7 +1585,7 @@ diff -r a7346f028fd6 nsprpub/configure
 +  ac_save_LIBS="$LIBS"
 +LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} $LIBS"
 +cat > conftest.$ac_ext <<EOF
-+#line 6347 "configure"
++#line 6361 "configure"
 +#include "confdefs.h"
 +/* Override any gcc2 internal prototype to avoid an error.  */
 +/* We use char because int might match the return type of a gcc2
@@ -1599,7 +1596,7 @@ diff -r a7346f028fd6 nsprpub/configure
 +val_gethostbyname()
 +; return 0; }
 +EOF
-+if { (eval echo configure:6358: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:6372: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
 +  rm -rf conftest*
 +  eval "ac_cv_lib_$ac_lib_var=yes"
 +else
@@ -1634,7 +1631,7 @@ diff -r a7346f028fd6 nsprpub/configure
  
  
  
-@@ -6479,7 +6614,7 @@
+@@ -6493,7 +6628,7 @@
  s%\]%\\&%g
  s%\$%$$%g
  EOF
@@ -1643,7 +1640,7 @@ diff -r a7346f028fd6 nsprpub/configure
  rm -f conftest.defs
  
  
-@@ -6584,6 +6719,8 @@
+@@ -6598,6 +6733,8 @@
  s%@CPP@%$CPP%g
  s%@PERL@%$PERL%g
  s%@CCACHE@%$CCACHE%g
@@ -1652,10 +1649,10 @@ diff -r a7346f028fd6 nsprpub/configure
  s%@SHELL_OVERRIDE@%$SHELL_OVERRIDE%g
  s%@MOZILLA_CLIENT@%$MOZILLA_CLIENT%g
  s%@HOST_CFLAGS@%$HOST_CFLAGS%g
-diff -r a7346f028fd6 nsprpub/configure.in
---- a/nsprpub/configure.in	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/configure.in	Tue Mar 22 09:31:05 2011 -0400
-@@ -2468,7 +2468,6 @@
+diff -r 630b62652f17 nsprpub/configure.in
+--- a/nsprpub/configure.in	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/configure.in	Tue May 31 11:08:56 2011 -0400
+@@ -2482,7 +2482,6 @@
  dnl AC_CHECK_LIB(thread, main)
  dnl AC_CHECK_LIB(vms_jackets, main)
  
@@ -1663,7 +1660,7 @@ diff -r a7346f028fd6 nsprpub/configure.in
  dnl We don't want anything to link with libdl even if it's present on OS X, 
  dnl since it's not used and not part of the default installation.
  dnl The same goes for BeOS.
-@@ -3006,6 +3005,51 @@
+@@ -3020,6 +3019,51 @@
      WRAP_MALLOC_LIB=$withval)
  
  dnl ========================================================
@@ -1715,9 +1712,9 @@ diff -r a7346f028fd6 nsprpub/configure.in
  dnl Substitution of found variables.
  dnl ========================================================
  AC_SUBST(SHELL_OVERRIDE)
-diff -r a7346f028fd6 nsprpub/pr/include/prerr.h
---- a/nsprpub/pr/include/prerr.h	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/pr/include/prerr.h	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/pr/include/prerr.h
+--- a/nsprpub/pr/include/prerr.h	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/pr/include/prerr.h	Tue May 31 11:08:56 2011 -0400
 @@ -272,8 +272,14 @@
  /* The one-time function was previously called and failed. Its error code is no longer available */
  #define PR_CALL_ONCE_ERROR                       (-5925L)
@@ -1734,9 +1731,9 @@ diff -r a7346f028fd6 nsprpub/pr/include/prerr.h
  
  extern void nspr_InitializePRErrorTable(void);
  #define ERROR_TABLE_BASE_nspr (-6000L)
-diff -r a7346f028fd6 nsprpub/pr/include/prnetdb.h
---- a/nsprpub/pr/include/prnetdb.h	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/pr/include/prnetdb.h	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/pr/include/prnetdb.h
+--- a/nsprpub/pr/include/prnetdb.h	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/pr/include/prnetdb.h	Tue May 31 11:08:56 2011 -0400
 @@ -85,6 +85,14 @@
  #define PR_NETDB_BUF_SIZE 1024
  #endif
@@ -1882,9 +1879,9 @@ diff -r a7346f028fd6 nsprpub/pr/include/prnetdb.h
  PR_END_EXTERN_C
  
  #endif /* prnetdb_h___ */
-diff -r a7346f028fd6 nsprpub/pr/src/Makefile.in
---- a/nsprpub/pr/src/Makefile.in	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/pr/src/Makefile.in	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/pr/src/Makefile.in
+--- a/nsprpub/pr/src/Makefile.in	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/pr/src/Makefile.in	Tue May 31 11:08:56 2011 -0400
 @@ -213,7 +213,7 @@
  OS_LIBS		= -framework CoreServices -framework CoreFoundation
  endif
@@ -1894,9 +1891,9 @@ diff -r a7346f028fd6 nsprpub/pr/src/Makefile.in
  
  #
  # Define platform-dependent OBJS
-diff -r a7346f028fd6 nsprpub/pr/src/misc/prerr.c
---- a/nsprpub/pr/src/misc/prerr.c	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/pr/src/misc/prerr.c	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/pr/src/misc/prerr.c
+--- a/nsprpub/pr/src/misc/prerr.c	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/pr/src/misc/prerr.c	Tue May 31 11:08:56 2011 -0400
 @@ -118,11 +118,13 @@
  	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
  	{"PR_LIBRARY_NOT_LOADED_ERROR",    "The library is not loaded"},
@@ -1912,9 +1909,9 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prerr.c
  
  void nspr_InitializePRErrorTable(void) {
      PR_ErrorInstallTable(&et);
-diff -r a7346f028fd6 nsprpub/pr/src/misc/prerr.et
---- a/nsprpub/pr/src/misc/prerr.et	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/pr/src/misc/prerr.et	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/pr/src/misc/prerr.et
+--- a/nsprpub/pr/src/misc/prerr.et	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/pr/src/misc/prerr.et	Tue May 31 11:08:56 2011 -0400
 @@ -134,6 +134,8 @@
  ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
  ec PR_LIBRARY_NOT_LOADED_ERROR, "The library is not loaded"
@@ -1924,9 +1921,9 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prerr.et
  
  ec PR_MAX_ERROR,                "Placeholder for the end of the list"
  
-diff -r a7346f028fd6 nsprpub/pr/src/misc/prerr.properties
---- a/nsprpub/pr/src/misc/prerr.properties	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/pr/src/misc/prerr.properties	Tue Mar 22 09:31:05 2011 -0400
+diff -r 630b62652f17 nsprpub/pr/src/misc/prerr.properties
+--- a/nsprpub/pr/src/misc/prerr.properties	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/pr/src/misc/prerr.properties	Tue May 31 11:08:56 2011 -0400
 @@ -114,4 +114,6 @@
  PR_HOST_UNREACHABLE_ERROR=Host is unreachable
  PR_LIBRARY_NOT_LOADED_ERROR=The library is not loaded
@@ -1934,10 +1931,10 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prerr.properties
 +PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
 +PR_DNSSEC_DNE_ERROR=The DNS record does not exist
  PR_MAX_ERROR=Placeholder for the end of the list
-diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
---- a/nsprpub/pr/src/misc/prnetdb.c	Mon Mar 21 17:27:43 2011 +0100
-+++ b/nsprpub/pr/src/misc/prnetdb.c	Tue Mar 22 09:31:05 2011 -0400
-@@ -35,6 +35,17 @@
+diff -r 630b62652f17 nsprpub/pr/src/misc/prnetdb.c
+--- a/nsprpub/pr/src/misc/prnetdb.c	Tue May 31 12:17:48 2011 +0200
++++ b/nsprpub/pr/src/misc/prnetdb.c	Tue May 31 11:08:56 2011 -0400
+@@ -35,6 +35,18 @@
   *
   * ***** END LICENSE BLOCK ***** */
  
@@ -1949,13 +1946,14 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
 +#include <winsock2.h>
 +#include <ws2tcpip.h>
 +#endif
++//#include <netdb.h>
 +#include <validator/validator.h>
 +#endif
 +
  #include "primpl.h"
  
  #include <string.h>
-@@ -656,6 +667,214 @@
+@@ -656,6 +668,226 @@
  }
  #endif /* !defined(_PR_HAVE_GETPROTO_R) */
  
@@ -1987,11 +1985,23 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
 +    DNSSECFUNEXIT();                                                    \
 +    return retval;                                                      \
 +  }
++#define DNSSECFUNPTRRETURN(retval)    \
++  {                                             \
++    if (retval == NULL) {                                \
++      DNSSECDEBUG((stderr, "  returning (NULL)"));                      \
++    } else {                                                            \
++      DNSSECDEBUG((stderr, "  returning (non-NULL)"));                  \
++    }                                                                   \
++    DNSSECDEBUG((stderr, "\n"));					            	    \
++    DNSSECFUNEXIT();                                                    \
++    return retval;                                                      \
++  }
 +#else
 +#define DNSSECDEBUG(x) 
 +#define DNSSECFUNDEBUG(x) 
 +#define DNSSECFUNEXIT()
 +#define DNSSECFUNRETURN(retval) return retval;
++#define DNSSECFUNPTRRETURN(retval) return retval;
 +#endif
 +/* END DNSSEC INTERNAL */
 +
@@ -2170,7 +2180,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  /*
   * #################################################################
   * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -691,21 +910,70 @@
+@@ -691,21 +923,70 @@
  
  #endif  /* definition of GETHOSTBYXXX */
  
@@ -2246,7 +2256,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      tmpbuf = localbuf;
      if (bufsize > sizeof(localbuf))
      {
-@@ -713,7 +981,7 @@
+@@ -713,7 +994,7 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -2255,7 +2265,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
          }
      }
  #endif
-@@ -721,24 +989,71 @@
+@@ -721,24 +1002,71 @@
  	LOCK_DNS();
  
  	h = GETHOSTBYNAME(name);
@@ -2331,7 +2341,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  }
  
  #if !defined(_PR_INET6) && \
-@@ -823,17 +1138,18 @@
+@@ -823,17 +1151,18 @@
  }
  #endif
  
@@ -2353,7 +2363,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  #endif
  #if defined(_PR_HAVE_GETIPNODEBYNAME)
  	PRUint16 md_af = af;
-@@ -844,11 +1160,12 @@
+@@ -844,11 +1173,12 @@
      PRBool did_af_inet = PR_FALSE;
  #endif
  
@@ -2367,7 +2377,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      }
  
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
-@@ -883,7 +1200,7 @@
+@@ -883,7 +1213,7 @@
      	md_af = af;
  #endif
  
@@ -2376,7 +2386,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      tmpbuf = localbuf;
      if (bufsize > sizeof(localbuf))
      {
-@@ -891,11 +1208,13 @@
+@@ -891,11 +1221,13 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -2391,7 +2401,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      /* Do not need to lock the DNS lock if getipnodebyname() is called */
  #ifdef _PR_INET6
  #ifdef _PR_HAVE_GETHOSTBYNAME2
-@@ -949,6 +1268,7 @@
+@@ -949,6 +1281,7 @@
      
  	if (NULL == h)
  	{
@@ -2399,7 +2409,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
  #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
-@@ -1002,12 +1322,23 @@
+@@ -1002,12 +1335,23 @@
      UNLOCK_DNS();
  #endif /* _PR_INET6 */
  
@@ -2425,7 +2435,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  }
  
  PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
-@@ -1029,6 +1360,7 @@
+@@ -1029,6 +1373,7 @@
  	int error_num;
  #endif
  
@@ -2433,7 +2443,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1167,7 +1499,7 @@
+@@ -1167,7 +1512,7 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -2442,7 +2452,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  }
  
  /******************************************************************************/
-@@ -1864,9 +2196,11 @@
+@@ -1864,9 +2209,11 @@
   * provide getaddrinfo in all versions that NSPR cares to support.
   */
  
@@ -2455,7 +2465,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  
  typedef struct addrinfo PRADDRINFO;
  #define GETADDRINFO getaddrinfo
-@@ -1883,11 +2217,22 @@
+@@ -1883,11 +2230,22 @@
  #else
  #define FUNC_MODIFIER
  #endif
@@ -2478,7 +2488,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  typedef int (FUNC_MODIFIER * FN_FREEADDRINFO)
      (PRADDRINFO *ai);
  typedef int (FUNC_MODIFIER * FN_GETNAMEINFO)
-@@ -1900,7 +2245,12 @@
+@@ -1900,7 +2258,12 @@
  static FN_FREEADDRINFO  _pr_freeaddrinfo  = NULL;
  static FN_GETNAMEINFO   _pr_getnameinfo   = NULL;
  
@@ -2491,7 +2501,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  #define FREEADDRINFO_SYMBOL "freeaddrinfo"
  #define GETNAMEINFO_SYMBOL "getnameinfo"
  
-@@ -1963,11 +2313,23 @@
+@@ -1963,11 +2326,23 @@
  #endif
  }
  
@@ -2516,7 +2526,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  
  #endif /* _PR_HAVE_GETADDRINFO */
  
-@@ -1990,46 +2352,64 @@
+@@ -1990,46 +2365,64 @@
  {
      PRStatus rv;
      PRAddrInfoFB *ai;
@@ -2534,7 +2544,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      if (rv == PR_FAILURE) {
          PR_Free(ai);
 -        return NULL;
-+        DNSSECFUNRETURN(NULL);
++        DNSSECFUNPTRRETURN(NULL);
      }
      ai->has_cname = !(flags & PR_AI_NOCANONNAME);
  
@@ -2564,19 +2574,19 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
          (flags & ~ PR_AI_NOCANONNAME) != PR_AI_ADDRCONFIG) {
          PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
 -        return NULL;
-+        DNSSECFUNRETURN(NULL);
++        DNSSECFUNPTRRETURN(NULL);
      }
  
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  #if !defined(_PR_HAVE_GETADDRINFO)
 -    return pr_GetAddrInfoByNameFB(hostname, af, flags);
-+    DNSSECFUNRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
++    DNSSECFUNPTRRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
  #else
  #if defined(_PR_INET6_PROBE)
      if (!_pr_ipv6_is_present()) {
 -        return pr_GetAddrInfoByNameFB(hostname, af, flags);
-+      DNSSECFUNRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
++      DNSSECFUNPTRRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
      }
  #endif
      {
@@ -2590,12 +2600,13 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
          PRStatus rv;
  
          /*
-@@ -2077,15 +2457,69 @@
-         hints.ai_socktype = SOCK_STREAM;
- 
-         rv = GETADDRINFO(hostname, NULL, &hints, &res);
+@@ -2083,15 +2476,69 @@
+             rv = GETADDRINFO(hostname, NULL, &hints, &res);
+         }
+ #endif
 -        if (rv == 0)
 -            return (PRAddrInfo *) res;
++
 +#ifdef MOZ_DNSSEC
 +        DNSSECDEBUG((stderr, "### DNSSECgetaddrinfo returned: %d, val %d\n", (unsigned int) rv, val_status));
 +        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo returned: %d\n", (unsigned int) res));
@@ -2621,7 +2632,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
 +                        __LINE__, hostname, val_status));
 +            if(res)
 +              FREEADDRINFO(res);
-+            DNSSECFUNRETURN(NULL);
++            DNSSECFUNPTRRETURN(NULL);
 +          }
 +
 +          if (!res && val_does_not_exist(val_status)) {
@@ -2632,20 +2643,19 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
 +            PR_SetError(PR_DNSSEC_DNE_ERROR, 0);
 +            DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning DNE failure:%d %s => val_status:%d\n", 
 +                        __LINE__, hostname, val_status));
-+            DNSSECFUNRETURN(NULL);
++            DNSSECFUNPTRRETURN(NULL);
 +          }
 +        }
 +#endif
-+
 +        if (rv == 0) {
-+          DNSSECFUNRETURN((PRAddrInfo *) res);
++          DNSSECFUNPTRRETURN((PRAddrInfo *) res);
 +        }
  
          PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
      }
 -    return NULL;
 -#endif
-+    DNSSECFUNRETURN(NULL);
++    DNSSECFUNPTRRETURN(NULL);
 +#endif /*_PR_HAVE_GETADDRINFO*/
  }
  
@@ -2657,14 +2667,14 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
 +  DNSSECFUNDEBUG((stderr, "input=%s\n", hostname));
 +  result = PR_GetAddrInfoByNameExtended(hostname, af, flags, NULL);
 +  simplify_return_value();
-+  DNSSECFUNRETURN(result);
++  DNSSECFUNPTRRETURN(result);
 +}
 +
 +
  PR_IMPLEMENT(void) PR_FreeAddrInfo(PRAddrInfo *ai)
  {
  #if defined(_PR_HAVE_GETADDRINFO)
-@@ -2094,7 +2528,11 @@
+@@ -2100,7 +2547,11 @@
          PR_Free((PRAddrInfoFB *) ai);
      else
  #endif
@@ -2676,7 +2686,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  #else
      PR_Free((PRAddrInfoFB *) ai);
  #endif
-@@ -2107,7 +2545,7 @@
+@@ -2113,7 +2564,7 @@
  {
  #if defined(_PR_HAVE_GETADDRINFO)
      PRADDRINFO *ai;
@@ -2685,7 +2695,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      if (!_pr_ipv6_is_present()) {
          /* using PRAddrInfoFB */
          PRIntn iter = (PRIntn)(PRPtrdiff) iterPtr;
-@@ -2118,10 +2556,17 @@
+@@ -2124,10 +2575,17 @@
      }
  #endif
  
@@ -2703,7 +2713,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  
      while (ai && ai->ai_addrlen > sizeof(PRNetAddr))
          ai = ai->ai_next;
-@@ -2156,7 +2601,7 @@
+@@ -2162,7 +2620,7 @@
  
  PR_IMPLEMENT(const char *) PR_GetCanonNameFromAddrInfo(const PRAddrInfo *ai)
  {
@@ -2712,7 +2722,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  #if defined(_PR_INET6_PROBE)
      if (!_pr_ipv6_is_present()) {
          const PRAddrInfoFB *fb = (const PRAddrInfoFB *) ai;
-@@ -2177,6 +2622,9 @@
+@@ -2183,6 +2641,9 @@
      int rv;  /* 0 for success, or the error code EAI_xxx */
      PRNetAddr laddr;
      PRStatus status = PR_SUCCESS;
@@ -2722,7 +2732,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  
      memset(&hints, 0, sizeof(hints));
      hints.ai_flags = AI_NUMERICHOST;
-@@ -2218,11 +2666,12 @@
+@@ -2224,11 +2685,12 @@
  {
      PRIntn rv;
  
@@ -2736,7 +2746,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
      }
  
      PR_ASSERT(0 == rv);
-@@ -2233,12 +2682,12 @@
+@@ -2239,12 +2701,12 @@
      if (1 == rv)
      {
          addr->raw.family = PR_AF_INET6;
@@ -2751,7 +2761,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  }
  
  PR_IMPLEMENT(PRStatus) PR_StringToNetAddr(const char *string, PRNetAddr *addr)
-@@ -2282,6 +2731,9 @@
+@@ -2288,6 +2750,9 @@
      PRNetAddr addrcopy;
  #endif
      int rv;  /* 0 for success, or the error code EAI_xxx */
@@ -2761,7 +2771,7 @@ diff -r a7346f028fd6 nsprpub/pr/src/misc/prnetdb.c
  
  #ifdef _PR_INET6
      if (addr->raw.family == PR_AF_INET6)
-@@ -2303,7 +2755,7 @@
+@@ -2309,7 +2774,7 @@
      addrp = &addrcopy;
  #endif
      rv = GETNAMEINFO((const struct sockaddr *)addrp, addrlen,
