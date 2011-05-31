@@ -193,10 +193,6 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
 #define CLOSESOCK closesocket
 #endif /* WIN32 */
 
-#ifndef SOCKET
-#define SOCKET int
-#endif
-
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
 #endif

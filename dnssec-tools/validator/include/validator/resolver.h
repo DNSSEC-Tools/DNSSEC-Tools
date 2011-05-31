@@ -63,6 +63,14 @@ extern          "C" {
 #define SR_NOTIMPL                13    /*RCODE set to NOTIMPL */
 #define SR_REFUSED                14    /*RCODE set to REFUSED */
 
+/* Application MUST define these types */
+struct sockaddr_storage;
+struct timeval;
+
+#ifndef SOCKET
+#define SOCKET int
+#endif
+
 struct name_server {
     unsigned char  ns_name_n[NS_MAXCDNAME];
     void           *ns_tsig;
@@ -83,6 +91,21 @@ struct name_server {
     /*
      * DO NOT ADD MEMBERS BELOW ns_addresses
      */
+};
+
+struct expected_arrival {
+    SOCKET          ea_socket;
+    struct name_server *ea_ns;
+    int             ea_which_address;
+    int             ea_using_stream;
+    unsigned char   *ea_signed;
+    size_t          ea_signed_length;
+    unsigned char   *ea_response;
+    size_t          ea_response_length;
+    int             ea_remaining_attempts;
+    struct timeval  ea_next_try;
+    struct timeval  ea_cancel_time;
+    struct expected_arrival *ea_next;
 };
 
 /*
@@ -130,10 +153,6 @@ void            res_io_view(void);
 
 unsigned short       res_nametoclass(const char *buf, int *successp);
 unsigned short       res_nametotype(const char *buf, int *successp);
-
-/** foward declare of opaque structure used by async routines */
-struct expected_arrival;
-
 
 void res_io_view(void);
 int res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
@@ -202,28 +221,27 @@ libsres_msg_getflag(ns_msg han, int flag);
 #define p_type(type) p_sres_type(type)
 const char     *p_sres_type(int type);
 
-#ifndef HAVE_DECL_NS_T_DS
+#if !HAVE_DECL_NS_T_DS
 #define ns_t_ds       43
 #endif
-
-#ifndef HAVE_DECL_NS_T_DNSKEY
+#if !HAVE_DECL_NS_T_DNSKEY
 #define ns_t_dnskey   48
 #endif
-#ifndef HAVE_DECL_NS_T_RRSIG
+#if !HAVE_DECL_NS_T_RRSIG
 #define ns_t_rrsig    46
 #endif
-#ifndef HAVE_DECL_NS_T_NSEC
+#if !HAVE_DECL_NS_T_NSEC
 #define ns_t_nsec     47
 #endif
 
 #ifdef LIBVAL_NSEC3
-#ifndef HAVE_DECL_NS_T_NSEC3
+#if !HAVE_DECL_NS_T_NSEC3
 #define ns_t_nsec3   50
 #endif
 #endif
 
 #ifdef LIBVAL_DLV
-#ifndef HAVE_DECL_NS_T_DLV
+#if !HAVE_DECL_NS_T_DLV
 #define ns_t_dlv 32769
 #endif
 #endif
