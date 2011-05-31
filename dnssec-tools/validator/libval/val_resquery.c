@@ -1584,7 +1584,8 @@ digest_response(val_context_t * context,
          * or we got only additional section data (e.g. EDNS0 opt records)
          * Check if EDNS was not used when it should have
          */
-        if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) { 
+        if ((matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
+            !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) { 
             if (VAL_NO_ERROR != (ret_val =
                 get_zse(context, query_name_n, matched_qfq->qfq_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
@@ -1989,7 +1990,6 @@ digest_response(val_context_t * context,
         }
         cloned_answers = NULL; /* consumed */
         cloned_proofs = NULL; /* consumed */
-        learned_zones = NULL; /* consumed */
 
     } else {
 
@@ -2002,7 +2002,8 @@ digest_response(val_context_t * context,
          * following referrals is also recursive)
          */
         if (zonecut_was_modified && 
-            (matched_q->qc_flags & VAL_QUERY_NO_EDNS0)) {
+            (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
+            !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) {
             if (VAL_NO_ERROR != (ret_val =
                 get_zse(context, query_name_n, matched_qfq->qfq_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
@@ -2019,9 +2020,6 @@ digest_response(val_context_t * context,
         
         di_response->di_answers = copy_rrset_rec_list(learned_answers);
         di_response->di_proofs = copy_rrset_rec_list(learned_proofs);
-        /* the learned zone information may be incomplete, don't save it */
-        res_sq_free_rrset_recs(&learned_zones);
-        learned_zones = NULL; /* consumed */
         
         /*
          * Check if this is the response to a referral request 
@@ -2045,6 +2043,10 @@ digest_response(val_context_t * context,
             }
         }
     }
+
+    /* the learned zone information may be incomplete, don't save it */
+    res_sq_free_rrset_recs(&learned_zones);
+    learned_zones = NULL; 
 
     if (VAL_NO_ERROR != (ret_val = stow_answers(&learned_answers, matched_q))) {
         goto done;
@@ -2074,6 +2076,7 @@ val_resquery_send(val_context_t * context,
                   struct queries_for_query *matched_qfq)
 {
     char            name_p[NS_MAXDNAME];
+    char            zone_p[NS_MAXDNAME];
     char            name_buf[INET6_ADDRSTRLEN + 1];
     int             ret_val;
     struct name_server *tempns;
@@ -2099,9 +2102,13 @@ val_resquery_send(val_context_t * context,
     if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
         return VAL_BAD_ARGUMENT;
     }
+    if (matched_q->qc_zonecut_n == NULL || 
+        ns_name_ntop(matched_q->qc_zonecut_n, zone_p, sizeof(zone_p)) == -1) {
+        strncpy(zone_p, "", sizeof(zone_p)-1); 
+    }
 
-    val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for {%s %d %d} to:", 
-            name_p, matched_q->qc_class_h, matched_q->qc_type_h);
+    val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for {%s %d %d} to: %s", 
+            name_p, matched_q->qc_class_h, matched_q->qc_type_h, zone_p);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
         val_log(context, LOG_DEBUG, "    %s",
                 val_get_ns_string((struct sockaddr *)tempns->ns_address[0],
@@ -2212,6 +2219,7 @@ val_res_nsfallback(struct val_query_chain *matched_q, const char *name_p,
         val_res_cancel(matched_q);
     }
     else {
+        matched_q->qc_flags |= VAL_QUERY_EDNS0_FALLBACK;
         if (edns0) {
             /* reset the flag if enabled */
             if(matched_q->qc_flags & VAL_QUERY_NO_EDNS0)
