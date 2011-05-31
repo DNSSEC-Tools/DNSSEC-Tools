@@ -580,7 +580,7 @@ get_nslist_from_cache(val_context_t *ctx,
                          * New name is longer than old name 
                          */
                         name_n = tname_n;
-                        tmp_zonecut_n = nsrrset->rrs_zonecut_n;
+                        tmp_zonecut_n = nsrrset->rrs_name_n;
                     }
                 }
             }
