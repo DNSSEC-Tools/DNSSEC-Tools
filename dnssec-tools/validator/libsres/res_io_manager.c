@@ -54,20 +54,6 @@ res_io_get_debug(void)
         memcpy (a, &b, sizeof(struct timeval));                         \
     } while(0)
 
-struct expected_arrival {
-    SOCKET          ea_socket;
-    struct name_server *ea_ns;
-    int             ea_which_address;
-    int             ea_using_stream;
-    u_char         *ea_signed;
-    size_t          ea_signed_length;
-    u_char         *ea_response;
-    size_t          ea_response_length;
-    int             ea_remaining_attempts;
-    struct timeval  ea_next_try;
-    struct timeval  ea_cancel_time;
-    struct expected_arrival *ea_next;
-};
 
 #define MAX_TRANSACTIONS    128
 static struct expected_arrival *transactions[MAX_TRANSACTIONS] = {
