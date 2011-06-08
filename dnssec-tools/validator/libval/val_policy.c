@@ -2599,7 +2599,7 @@ val_add_valpolicy(val_context_t *context,
         gettimeofday(&tv, NULL);
         ttl_x = libval_pol->ttl + tv.tv_sec;
     } else
-        ttl_x = -1;
+        ttl_x = 0;
         
     buf_ptr = libval_pol->value;
     end_ptr = libval_pol->value+strlen(libval_pol->value);
