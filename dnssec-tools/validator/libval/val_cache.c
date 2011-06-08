@@ -114,10 +114,6 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
     if (new_info == NULL || unchecked_info == NULL)
         return VAL_NO_ERROR;
 
-    if (matched_q->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
-        matched_q->qc_flags ^= VAL_QUERY_REFRESH_QCACHE;
-    }
-
     trail_new = NULL;
     prev = NULL;
     while (*new_info) {
@@ -329,9 +325,11 @@ get_cached_rrset(struct val_query_chain *matched_q,
             *response = NULL;
             return VAL_NO_ERROR;
         }
+
         (*response)->di_requested_type_h = matched_q->qc_type_h;
         (*response)->di_requested_class_h = matched_q->qc_class_h;
         (*response)->di_res_error = SR_UNSET;
+
         matched_q->qc_state = Q_ANSWERED;
 
         return process_cname_dname_responses( 
