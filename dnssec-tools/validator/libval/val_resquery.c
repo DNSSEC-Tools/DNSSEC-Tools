@@ -785,6 +785,7 @@ bootstrap_referral(val_context_t *context,
         }
         clone_ns_list(ref_ns_list, context->root_ns);
         matched_q->qc_state = Q_INIT;
+        matched_q->qc_flags |= VAL_QUERY_RECURSE;
         return VAL_NO_ERROR;
     }
     
