@@ -194,7 +194,8 @@ vtc_parse_result(const char *result)
         result += 4;
 
     for (i = 0; rm[i].name; ++ i)
-        if (0 == strncasecmp(result, rm[i].name, strlen(rm[i].name)))
+        if (strlen(result) == strlen(rm[i].name) &&
+            0 == strncasecmp(result, rm[i].name, strlen(rm[i].name)))
             return rm[i].val;
 
     return 0;
