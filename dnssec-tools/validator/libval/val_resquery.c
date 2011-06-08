@@ -161,8 +161,8 @@ merge_glue_in_referral(val_context_t *context,
         /*
          * Identify the query in the query chain 
          */
-        flags = qfq_pc->qfq_flags | 
-                VAL_QUERY_GLUE_REQUEST;
+        flags = pc->qc_flags | 
+                (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
 
         if (VAL_NO_ERROR != (retval = 
                     add_to_qfq_chain(context,
@@ -209,6 +209,7 @@ merge_glue_in_referral(val_context_t *context,
                 if (pc->qc_respondent_server) {
                     free_name_server(&pc->qc_respondent_server);
                     pc->qc_respondent_server = NULL;
+                    pc->qc_respondent_server_options = 0;
                 }
                 if (pc->qc_ns_list) {
                     free_name_servers(&pc->qc_ns_list);
@@ -296,7 +297,8 @@ merge_glue_in_referral(val_context_t *context,
         /*
          * Create a query for glue for pending_ns 
          */
-        flags = qfq_pc->qfq_flags | VAL_QUERY_GLUE_REQUEST;
+        flags = pc->qc_flags | 
+                (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
 
         if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
                                        queries, pending_ns->ns_name_n, ns_t_a,
@@ -643,12 +645,18 @@ find_nslist_for_query(val_context_t * context,
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
 
-    if (context->nslist != NULL) {
+    if (!(next_q->qc_flags & VAL_QUERY_RECURSE) &&
+         context->nslist != NULL) {
         /* 
          * if we have a default name server in our resolv.conf file, send
-         *  to that name server
+         * to that name server, but only if we are not forcing recursion
          */
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+
+        /*
+         * Never trigger edns0 fallback for the default name server
+         */
+        next_q->qc_flags |= VAL_QUERY_NO_EDNS0_FALLBACK;
         goto done;
     } 
 
@@ -680,6 +688,7 @@ find_nslist_for_query(val_context_t * context,
                 "find_nslist_for_query(): Trying to answer query recursively, but no root hints file found.");
         return VAL_CONF_NOT_FOUND;
     }
+    next_q->qc_flags |= VAL_QUERY_RECURSE;
     clone_ns_list(&next_q->qc_ns_list, context->root_ns);
     next_q->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
     if (next_q->qc_zonecut_n == NULL) {
@@ -707,7 +716,7 @@ done:
                     
             /* check if the zone has a security expectation of validate */
             if (VAL_NO_ERROR != (ret_val = 
-                    get_zse(context, test_n, next_qfq->qfq_flags, 
+                    get_zse(context, test_n, next_q->qc_flags, 
                             &tzonestatus, NULL, &ttl_x))) {
                     return ret_val;
             }
@@ -835,7 +844,8 @@ bootstrap_referral(val_context_t *context,
             /*
              * Create a query for glue for pending_ns 
             */
-            flags = matched_qfq->qfq_flags | VAL_QUERY_GLUE_REQUEST;
+            flags = matched_q->qc_flags | 
+                        (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
 
             if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
                                        queries, pending_glue->ns_name_n, ns_t_a,
@@ -932,6 +942,7 @@ follow_referral_or_alias_link(val_context_t * context,
     if (matched_q->qc_respondent_server) {
         free_name_server(&matched_q->qc_respondent_server);
         matched_q->qc_respondent_server = NULL;
+        matched_q->qc_respondent_server_options = 0;
     }
     if (matched_q->qc_ns_list) {
         free_name_servers(&matched_q->qc_ns_list);
@@ -982,7 +993,7 @@ follow_referral_or_alias_link(val_context_t * context,
         /* set EDNS0 if we believe the name can be validated */
         if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
             if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, matched_q->qc_name_n, matched_qfq->qfq_flags, 
+                get_zse(context, matched_q->qc_name_n, matched_q->qc_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
                 return ret_val;
             }
@@ -996,6 +1007,8 @@ follow_referral_or_alias_link(val_context_t * context,
 
         return VAL_NO_ERROR;
     } 
+
+    matched_q->qc_flags |= VAL_QUERY_RECURSE;
 
     res_sq_free_rrset_recs(proofs);
     *proofs = NULL;
@@ -1064,7 +1077,7 @@ follow_referral_or_alias_link(val_context_t * context,
         u_char *tp = NULL;
 
         if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, matched_q->qc_zonecut_n, matched_qfq->qfq_flags, 
+                get_zse(context, matched_q->qc_zonecut_n, matched_q->qc_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
             return ret_val;
         }
@@ -1383,8 +1396,10 @@ prepare_empty_nonexistence(struct rrset_rec **answers,
         memcpy((*answers)->rrs_server,
                respondent_server->ns_address[0],
                sizeof(struct sockaddr_storage));
+        (*answers)->rrs_ns_options = respondent_server->ns_options;
     } else {
         (*answers)->rrs_server = NULL;
+        (*answers)->rrs_ns_options = 0;
     }
     (*answers)->rrs_data = NULL;
     (*answers)->rrs_sig = NULL;
@@ -1427,11 +1442,9 @@ static void consume_referral_data(struct delegation_info **qc_referral,
     }
     (*qc_referral)->qnames = NULL;
 
-    /*
-     * Note that we don't free qc_referral here 
-     */
     free_referral_members(*qc_referral);
-    qc_referral = NULL;
+    FREE(*qc_referral);
+    *qc_referral = NULL;
 }
 
 /*
@@ -1498,6 +1511,8 @@ digest_response(val_context_t * context,
     char query_name_p[NS_MAXDNAME];
     char rrs_zonecut_p[NS_MAXDNAME];
     char name_p[NS_MAXDNAME];
+    struct name_server *resp_ns = NULL;
+    int top_name;
 
     if ((matched_qfq == NULL) || (queries == NULL) ||
         (di_response == NULL) || (response_data == NULL))
@@ -1523,7 +1538,27 @@ digest_response(val_context_t * context,
     authority = ntohs(header->nscount);
     additional = ntohs(header->arcount);
 
-    if (answer == 0)
+    resp_ns = matched_q->qc_respondent_server;
+    /*
+     * If our response header does not have the CD bit
+     * reset RES_USE_DNSSEC flag in the respondent name server
+     * XXX This means that we're using the CD bit in the response
+     * XXX to determine if the name server is DNSSEC capable or not.
+     * XXX This is a simplistic approach.
+     * XXX depending on the response below, we need to infer the name server's 
+     * XXX capability, recognizing the possibility that the name server may lie
+     * XXX occassionally, such as when there is a man in the middle spoofing attack. 
+     * XXX We should recurse from root whenever we feel that the name server
+     * XXX has not returned a good response. 
+     */
+    if ((header->cd != 1) && 
+        resp_ns && (resp_ns->ns_options & RES_USE_DNSSEC)) {
+        resp_ns->ns_options ^= RES_USE_DNSSEC;
+    }
+    val_log(context, LOG_DEBUG, "digest_response(): server options set to: %u", 
+                                resp_ns->ns_options);
+
+    if (answer == 0) 
         nothing_other_than_alias = 0;
     else
         nothing_other_than_alias = 1;
@@ -1574,8 +1609,9 @@ digest_response(val_context_t * context,
 
     rrs_to_go = answer + authority + additional;
 
+
     if (rrs_to_go == 0 || (rrs_to_go == additional)) {
-        if (!matched_q->qc_respondent_server) {
+        if (!resp_ns) {
             matched_q->qc_state = Q_RESPONSE_ERROR; 
             goto done;
         }
@@ -1587,7 +1623,7 @@ digest_response(val_context_t * context,
         if ((matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
             !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) { 
             if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, query_name_n, matched_qfq->qfq_flags, 
+                get_zse(context, query_name_n, matched_q->qc_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
                 return ret_val;
             }
@@ -1606,7 +1642,7 @@ digest_response(val_context_t * context,
          */
         matched_q->qc_state = Q_ANSWERED;
         ret_val = prepare_empty_nonexistence(&di_response->di_proofs, 
-                        matched_q->qc_respondent_server,
+                        resp_ns,
                         query_name_n, query_type_h, query_class_h, hptr);
         /*
          * copy any answers that may be present in the referral structure
@@ -1664,15 +1700,27 @@ digest_response(val_context_t * context,
          * we're only authoritative for the first name in the
          * CNAME chain
          */
-        authoritive = (header->aa == 1)
-            && qname_chain_first_name(*qnames, name_n);
+        top_name = qname_chain_first_name(*qnames, name_n);
+
+        authoritive = (matched_q->qc_flags & VAL_QUERY_RECURSE) &&
+                      (header->aa == 1);
 
         /*
          * If it is from the answer section, it may be an alias 
          * If it is from the authority section, it may be a proof or a referral 
          * If it is from the additional section it may contain some DNSSEC meta-data or it may be glue
          */
-        if (from_section == VAL_FROM_ANSWER && (authoritive || (header->rd && header->ra))) {
+
+        if (from_section == VAL_FROM_ANSWER && 
+            /* 
+             * do not do this processing for CNAME targets in the answer section, 
+             * unless we were asking a recursive nameserver using DNSSEC or we're 
+             * not doing validation 
+             */
+            (top_name || 
+             (resp_ns->ns_options & RES_USE_DNSSEC) || 
+             (matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE))) {
+
             if (nothing_other_than_alias) {
                 /*
                  * check if we received a non-alias or had explicitly asked for this alias 
@@ -1700,7 +1748,7 @@ digest_response(val_context_t * context,
                     nothing_other_than_alias = 0;
                 }
             }
-            SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+            SAVE_RR_TO_LIST(resp_ns, 
                             &learned_answers, name_n, type_h,
                             set_type_h, class_h, ttl_h, hptr, rdata,
                             rdata_len_h, from_section, authoritive,
@@ -1717,7 +1765,7 @@ digest_response(val_context_t * context,
                     soa_seen = 1;
                 }
 
-                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                SAVE_RR_TO_LIST(resp_ns, 
                                 &learned_proofs, name_n, type_h,
                                 set_type_h, class_h, ttl_h, hptr, rdata,
                                 rdata_len_h, from_section, authoritive,
@@ -1727,7 +1775,7 @@ digest_response(val_context_t * context,
                  * The zonecut information for name servers is 
                  * their respective owner name 
                  */
-                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                SAVE_RR_TO_LIST(resp_ns, 
                                 &learned_zones, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
@@ -1735,13 +1783,13 @@ digest_response(val_context_t * context,
             }
         } else if (from_section == VAL_FROM_ADDITIONAL) {
             if (set_type_h == ns_t_dnskey || set_type_h == ns_t_ds) {
-                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                SAVE_RR_TO_LIST(resp_ns,
                                 &learned_answers, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
                                 authoritive, rrs_zonecut_n);
             } else if (set_type_h == ns_t_a || set_type_h == ns_t_aaaa) {
-                SAVE_RR_TO_LIST(matched_q->qc_respondent_server, 
+                SAVE_RR_TO_LIST(resp_ns,
                                 &learned_zones, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
@@ -1788,7 +1836,7 @@ digest_response(val_context_t * context,
          * be saved because of the anti-pollution rules.
          */
         int fix_zonecut = 0;
-        if (header->aa == 1 &&
+        if (authoritive &&
             i < (answer + authority) &&
             (set_type_h == ns_t_soa || 
              (set_type_h == ns_t_dnskey && i < answer) ||
@@ -1913,6 +1961,19 @@ digest_response(val_context_t * context,
             }
         } else if (set_type_h == ns_t_ns && from_section == VAL_FROM_AUTHORITY && answer == 0) {
             if (referral_seen == FALSE) {
+
+                /*
+                 * If we're querying a DS and we see a referral zone of the
+                 * same name, this is a sign of a broken resolver
+                 */
+                if (query_type_h == ns_t_ds &&
+                    !namecmp(name_n, query_name_n)) {
+                    val_log(context, LOG_DEBUG, "digest_response(): bad referral for DS record. NS probably not DNSSEC-capable.");
+                    matched_q->qc_state = Q_WRONG_ANSWER;
+                    ret_val = VAL_NO_ERROR;
+                    goto done;
+                }
+
                 memcpy(referral_zone_n, name_n,
                        wire_name_length(name_n));
                 referral_seen = TRUE;
@@ -1931,7 +1992,11 @@ digest_response(val_context_t * context,
         rdata = NULL;
 
     } 
-    
+   
+    if (learned_answers == NULL) {
+        nothing_other_than_alias = 0;
+    }
+
     /*
      * Identify proofs of non-existence 
      * XXX This needs to be rethought, reviewed and fixed
@@ -1944,7 +2009,7 @@ digest_response(val_context_t * context,
              * NXDOMAIN or NODATA proof for the target
              */
                 
-        } else if (answer > 0) {
+        } else if (learned_answers) {
             /*
              * If we have an answer this is a supporting proof for
              * that answer - e.g. a wildcard proof.
@@ -2005,7 +2070,7 @@ digest_response(val_context_t * context,
             (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
             !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) {
             if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, query_name_n, matched_qfq->qfq_flags, 
+                get_zse(context, query_name_n, matched_q->qc_flags, 
                         &tzonestatus, NULL, &ttl_x))) { 
                 return ret_val;
             }
@@ -2034,8 +2099,8 @@ digest_response(val_context_t * context,
         /*
          * if we were fetching glue here, save a copy as zone info 
          */
-        if ((matched_qfq->qfq_flags & VAL_QUERY_GLUE_REQUEST) && (answer != 0) 
-                && !proof_seen && !nothing_other_than_alias) {
+        if ((matched_q->qc_flags & (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE)) && 
+            (learned_answers) && !proof_seen && !nothing_other_than_alias) {
             struct rrset_rec *gluedata = copy_rrset_rec(learned_answers);
             if (VAL_NO_ERROR != (ret_val = stow_zone_info(&gluedata, matched_q))) {
                 res_sq_free_rrset_recs(&gluedata);
@@ -2172,7 +2237,7 @@ val_resquery_rcv(val_context_t * context,
 
     /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
-        val_res_nsfallback(matched_q, name_p, closest_event);
+        val_res_nsfallback(context, matched_q, name_p, closest_event);
         if (response_data)
             FREE(response_data);
         return VAL_NO_ERROR;
@@ -2199,10 +2264,21 @@ val_res_cancel(struct val_query_chain *matched_q)
 }
 
 void
-val_res_nsfallback(struct val_query_chain *matched_q, const char *name_p,
+val_res_nsfallback(val_context_t *context,
+                   struct val_query_chain *matched_q, const char *name_p,
                    struct timeval *closest_event)
 {
     int edns0, ret_val;
+
+
+    /*
+     * If we don't want to fallback just return the error
+     */
+    if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0_FALLBACK) {
+        matched_q->qc_state = Q_RESPONSE_ERROR;
+        val_res_cancel(matched_q);
+        return;
+    }
 
 #ifndef VAL_NO_ASYNC
     if (matched_q->qc_ea)
@@ -2219,6 +2295,8 @@ val_res_nsfallback(struct val_query_chain *matched_q, const char *name_p,
         val_res_cancel(matched_q);
     }
     else {
+        val_log(context, LOG_DEBUG,
+                "val_res_nsfallback(): Doing EDNS0 fallback"); 
         matched_q->qc_flags |= VAL_QUERY_EDNS0_FALLBACK;
         if (edns0) {
             /* reset the flag if enabled */
@@ -2288,7 +2366,7 @@ _process_rcvd_response(val_context_t * context,
         free_domain_info_ptrs(*response);
         FREE(*response);
         *response = NULL;
-        val_res_nsfallback(matched_q, name_p, closest_event);
+        val_res_nsfallback(context, matched_q, name_p, closest_event);
         if (matched_q->qc_state != Q_RESPONSE_ERROR)
             matched_q->qc_state = Q_SENT;
     }
@@ -2408,7 +2486,7 @@ val_resquery_async_rcv(val_context_t * context,
     /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
         if (stream || !res_async_ea_is_using_stream(matched_q->qc_ea))
-            val_res_nsfallback(matched_q, name_p, closest_event);
+            val_res_nsfallback(context, matched_q, name_p, closest_event);
         if (response_data)
             FREE(response_data);
         return VAL_NO_ERROR;

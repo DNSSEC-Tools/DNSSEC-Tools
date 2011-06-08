@@ -267,7 +267,14 @@ val_free_result_chain(struct val_result_chain *results)
 }
 
 
-
+/*
+ * Initialize the query structure. 
+ * qc_original_name MUST be set before calling this function
+ * certain val_query_chain members are left untouched. These are:
+ *  qc_flags
+ *  qc_type
+ *  qc_class
+ */
 static void 
 init_query_chain_node(struct val_query_chain *q) 
 {
@@ -287,6 +294,7 @@ init_query_chain_node(struct val_query_chain *q)
     q->qc_zonecut_n = NULL;
     q->qc_ns_list = NULL;
     q->qc_respondent_server = NULL;
+    q->qc_respondent_server_options = 0;
     q->qc_referral = NULL;
 }
 
@@ -390,7 +398,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     while (temp) {
         if ((temp->qc_type_h == type_h)
             && (temp->qc_class_h == class_h)
-            && (temp->qc_flags == flags)) {
+            && ((temp->qc_flags & VAL_QFLAGS_CACHE_MASK) == (flags & VAL_QFLAGS_CACHE_MASK))) {
 
             if (namecmp(temp->qc_original_name, name_n) == 0)
                 break;
@@ -400,6 +408,12 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
         temp = temp->qc_next;
     }
     if (temp != NULL) {
+        /* 
+         * reset the query if VAL_QUERY_REFRESH_QCACHE is set 
+         */
+        if (temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
+            clear_query_chain_structure(temp);
+        }
         *added_q = temp;
         return VAL_NO_ERROR;
     }
@@ -416,7 +430,6 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     } 
 #endif
 
-    memcpy(temp->qc_name_n, name_n, wire_name_length(name_n));
     memcpy(temp->qc_original_name, name_n, wire_name_length(name_n));
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
@@ -483,29 +496,28 @@ free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
         res_sq_free_rrset_recs(&(assertions->val_ac_rrset.ac_data));
 }
 
-static void requery_with_edns0(val_context_t *context, 
+static int requery_with_edns0(val_context_t *context, 
                         struct val_query_chain *matched_q)
 {
     if (matched_q == NULL)
-        return;
+        return 0;
 
-    free_authentication_chain(matched_q->qc_ans);
-    free_authentication_chain(matched_q->qc_proof);
-    matched_q->qc_ans = NULL;
-    matched_q->qc_proof = NULL;
+    /* If we were already using EDNS0 don't redo */
+    if ((matched_q->qc_respondent_server_options & RES_USE_DNSSEC) ||
+        (matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK))
+        return 0;
 
-    if (matched_q->qc_respondent_server)
-       free_name_server(&matched_q->qc_respondent_server);
-    matched_q->qc_respondent_server = NULL;
+    clear_query_chain_structure(matched_q);
 
-    matched_q->qc_trans_id = -1;
-    matched_q->qc_state = Q_INIT;
-    val_log(context, LOG_DEBUG,
-            "requery_with_edns0(): EDNS0 was not used; re-issuing query");
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
         matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
     } 
     matched_q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+
+    val_log(context, LOG_DEBUG,
+            "requery_with_edns0(): EDNS0 was not used; re-issuing query");
+
+    return 1;
 }
 
 static struct queries_for_query * 
@@ -611,8 +623,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if (VAL_NO_ERROR !=
                 (retval =
                     add_to_query_chain(context, name_n, type_h, class_h,
-                                    flags & VAL_QFLAGS_CACHE_MASK, 
-                                    &added_q)))
+                                    flags, &added_q)))
             return retval;
 
         new_qfq = (struct queries_for_query *) MALLOC (sizeof(struct queries_for_query));
@@ -1637,6 +1648,7 @@ try_build_chain(val_context_t * context,
     u_char        kind = SR_ANS_UNSET;
     struct queries_for_query *added_q = NULL;
 
+    matched_q->qc_respondent_server_options = 0;
     /*
      * Identify the state for each of the assertions obtained 
      */
@@ -1709,6 +1721,14 @@ try_build_chain(val_context_t * context,
                 (retval = build_pending_query(context, queries, as, &added_q, flags)))
                 return retval;
         }
+
+        /* Adjust the respondent server options to match that of the name server */
+        if (matched_q->qc_respondent_server_options == 0)
+            matched_q->qc_respondent_server_options = 
+                as->val_ac_rrset.ac_data->rrs_ns_options;
+        else
+            matched_q->qc_respondent_server_options &= 
+                as->val_ac_rrset.ac_data->rrs_ns_options;  
     }
     return VAL_NO_ERROR;
 }
@@ -3311,7 +3331,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     struct queries_for_query *temp_qfq = NULL;
     u_char tname_n[NS_MAXCDNAME];
 
-    if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
+    if (context == NULL || queries == NULL || *queries == NULL || name_n == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
 
     *name_n = NULL;
@@ -3346,7 +3366,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         if (VAL_NO_ERROR !=
             (retval = try_chase_query(context, cur_q, ns_c_in,
                                       ns_t_soa, 
-                                      VAL_QUERY_DONT_VALIDATE|VAL_QUERY_NO_EDNS0,
+                                      (*queries)->qfq_flags|VAL_QUERY_DONT_VALIDATE,
                                       queries, &results, done))) {
             return retval;
         } else if (!(*done)) {
@@ -4471,6 +4491,50 @@ done:
 #endif
 
 /*
+ * Begin iteratively querying for this answer starting from root
+ */ 
+static int switch_to_root(val_context_t * context, 
+                          struct val_query_chain *matched_q)
+{
+    char   name_p[NS_MAXDNAME];
+
+    if (!context || !matched_q)
+        return 0;
+
+    if (-1 == ns_name_ntop(matched_q->qc_name_n,
+                           name_p, sizeof(name_p))) {
+        snprintf(name_p, sizeof(name_p), "unknown/error");
+    }
+
+    if ((matched_q->qc_flags & VAL_QUERY_RECURSE) ||
+        (context->root_ns == NULL)) {
+        /*
+         * No root hints configured or we were already recursing 
+         */
+        val_log(context, LOG_WARNING, 
+                "switch_to_root(): nothing to do; no root.hints configured or already doing recursion");
+        return 0;
+    } 
+
+    clear_query_chain_structure(matched_q);
+
+    if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
+        matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+    }
+    matched_q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+    matched_q->qc_flags |= VAL_QUERY_RECURSE;
+
+    val_log(context, LOG_INFO,
+            "verify_and_validate(): Re-initiating query from root for {%s %s %s}",
+            name_p,
+            p_class(matched_q->qc_class_h),
+            p_type(matched_q->qc_type_h));
+
+    return 1;
+
+}
+
+/*
  * Try and verify each assertion. Update results as and when they are available.
  * Do not try and validate assertions that have already been validated.
  */
@@ -4487,11 +4551,11 @@ verify_and_validate(val_context_t * context,
     struct val_digested_auth_chain *top_as;
     struct val_internal_result *res;
     struct val_internal_result *tail_res;
-    struct queries_for_query *added_q = NULL;
     struct val_query_chain *top_q;
     u_int32_t ttl_x = 0;
     u_int32_t flags;
-    int             retval = VAL_NO_ERROR;
+    int    retval = VAL_NO_ERROR;
+    char   name_p[NS_MAXDNAME];
 
     if ((top_qfq == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
@@ -4503,6 +4567,38 @@ verify_and_validate(val_context_t * context,
 
     *done = 1;
     
+    if (top_q->qc_state > Q_ERROR_BASE) {
+        /*
+         * For error conditions Try getting this answer iteratively from 
+         * root if we aren't doing so already
+         */
+        if (-1 == ns_name_ntop(top_q->qc_name_n, 
+                               name_p, sizeof(name_p))) {
+            snprintf(name_p, sizeof(name_p), "unknown/error");
+        }
+        if (switch_to_root(context, top_q)) {
+            /*
+             * Recurse from root for all additional queries sent in
+             * in relation to this query; e.g. queries for DNSKEYs, DS etc 
+             */
+            top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
+            goto query_reset;
+        }
+        /* create a dummy result */
+        *results = (struct val_internal_result *)
+                MALLOC(sizeof(struct val_internal_result));
+        if ((*results) == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        (*results)->val_rc_rrset = NULL;
+        (*results)->val_rc_is_proof = 0;
+        (*results)->val_rc_consumed = 0;
+        (*results)->val_rc_flags = flags;
+        (*results)->val_rc_status = VAL_DNS_ERROR;
+        (*results)->val_rc_next = NULL;
+        return VAL_NO_ERROR;
+    }
+
     if (is_proof) {
         top_as = top_q->qc_proof;
     } else {
@@ -4576,7 +4672,6 @@ verify_and_validate(val_context_t * context,
          */
         next_as = as_more;
         while (next_as) {
-            char   name_p[NS_MAXDNAME];
             if (-1 == ns_name_ntop(next_as->val_ac_rrset.ac_data->rrs_name_n, 
                                        name_p, sizeof(name_p))) {
                 snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -4609,6 +4704,7 @@ verify_and_validate(val_context_t * context,
                         p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                         p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                 next_as->val_ac_status = VAL_AC_DNSKEY_MISSING;
+                res->val_rc_status = VAL_BOGUS;
                 break;
             }
 
@@ -4668,59 +4764,8 @@ verify_and_validate(val_context_t * context,
                 }
 
                 if (asked_the_child) {
-                    /*
-                     * We could only be asking the child if our default name server is 
-                     * the child, so ty again starting from root; state will be WAIT_FOR_TRUST 
-                     */
-                    if (context->root_ns == NULL || context->nslist != NULL) {
-                        /*
-                         * No root hints configured or we had configured a 
-                         * particular name server to use 
-                         */
-                        res->val_rc_status = VAL_BOGUS_PROOF;
-                        val_log(context, LOG_WARNING, 
-                                "verify_and_validate(): response for {%s %s %s} received from child zone;\
-                                no root.hints configured; or local recursive name server specified",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
-                        break;
-                    } 
-                        
-                    /*
-                     * else:
-                     * send query to root 
-                     */
-                    next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
-                    if (VAL_NO_ERROR !=
-                        (retval =
-                             build_pending_query(context, queries, next_as, &added_q, flags)))
-                        return retval;
-                    if (added_q->qfq_query->qc_referral != NULL) {
-                        /*
-                         * If some nameserver actually sends a referral for the DS record
-                         * to the child (faulty/malicious NS) we'll keep recursing from root
-                         */
-                        val_log(context, LOG_INFO, 
-                                "verify_and_validate(): response for {%s %s %s} received from child zone;\
-                                bailing out",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
-                        res->val_rc_status = VAL_BOGUS_PROOF;
-                        break;
-                    }
-                    clone_ns_list(&added_q->qfq_query->qc_ns_list,
-                                  context->root_ns);
-                    if (added_q->qfq_query->qc_zonecut_n)
-                        FREE(added_q->qfq_query->qc_zonecut_n);
-                    added_q->qfq_query->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
-                    if (added_q->qfq_query->qc_zonecut_n == NULL) {
-                        return VAL_OUT_OF_MEMORY;
-                    }
-                    *(added_q->qfq_query->qc_zonecut_n) = (u_char) '\0';
-                    thisdone = 0;
-
+                    res->val_rc_status = VAL_BOGUS_PROOF;
+                    break;
                 } else {
                     /* either this is a DS or we have asked the parent */
                     int is_pinsecure;
@@ -4840,9 +4885,10 @@ verify_and_validate(val_context_t * context,
 
             /*
              * Check error conditions 
+             * First check if the answer is provably insecure
+             * If not, then see if we find the answer for the failed query by recursing from root
              */
-            else if (next_as->val_ac_status <= VAL_AC_LAST_ERROR || 
-                    (next_as->val_ac_status == VAL_AC_DATA_MISSING && is_proof)) {
+            else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
                 int is_pinsecure;
                 ttl_x = 0;
                 if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
@@ -4871,72 +4917,29 @@ verify_and_validate(val_context_t * context,
                             res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else {
-                        val_log(context, LOG_INFO, 
+                        /*
+                         * try recursing from root if we aren't already
+                         */
+                        if (switch_to_root(context, next_as->val_ac_query)) {
+                            res->val_rc_rrset = NULL;
+                            goto query_reset;
+                        }
+                        if (next_as->val_ac_status <= VAL_AC_LAST_ERROR || 
+                            (next_as->val_ac_status == VAL_AC_DATA_MISSING && is_proof)) {
+                            val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
-                        res->val_rc_status = VAL_BOGUS;
-                    }
-                    break;
-                } else
-                    thisdone = 0;
-            } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
-                val_log(context, LOG_INFO, 
-                        "verify_and_validate(): marking authentication chain status for {%s %s %s} as bad",
-                        name_p, 
-                        p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                        p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
-
-                res->val_rc_status = VAL_DNS_ERROR;
-                break;
-
-            } else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
-                /*
-                 * double failures are unprovable 
-                 */
-                if (CHECK_MASKED_STATUS
-                    (res->val_rc_status, VAL_BOGUS)) {
-
-                    val_log(context, LOG_INFO, 
-                        "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
-                        name_p, 
-                        p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                        p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
-                    SET_MASKED_STATUS(res->val_rc_status,
-                                      VAL_BOGUS);
-
-                } else {
-
-                    int is_pinsecure;
-                    ttl_x = 0;
-                    if (VAL_NO_ERROR != (retval = verify_provably_insecure(context, 
-                                                        queries, 
-                                                        as_more,
-                                                        flags,
-                                                        &pu_done,
-                                                        &is_pinsecure,
-                                                        &ttl_x)))
-                        return retval;
-
-                    if (pu_done) {
-                        SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
-                        ttl_x = 0;
-                        if (is_pinsecure) {
+                            res->val_rc_status = VAL_BOGUS;
+                        } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
                             val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
+                                "verify_and_validate(): marking authentication chain status for {%s %s %s} as bad",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
-                            next_as->val_ac_status = VAL_AC_PINSECURE;
-                            if (is_pu_trusted(context, 
-                                            next_as->val_ac_rrset.ac_data->rrs_name_n, 
-                                            &ttl_x))
-                                res->val_rc_status = VAL_PINSECURE;
-                            else
-                                res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
-                            SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
-                        } else {
+                            res->val_rc_status = VAL_DNS_ERROR;
+                        } else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
                             val_log(context, LOG_INFO, 
                                 "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
                                 name_p, 
@@ -4944,13 +4947,15 @@ verify_and_validate(val_context_t * context,
                                 p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
                             res->val_rc_status = VAL_BOGUS;
                         }
-                        break;
-                    } else
-                        thisdone = 0;
-                } 
-            }
+                    }
+                    break;
+                } else
+                    thisdone = 0;
+            } 
+            
             next_as = as_trust; 
         }
+
         if (thisdone) {
             /*
              * Fix validation results 
@@ -4958,6 +4963,24 @@ verify_and_validate(val_context_t * context,
             fix_validation_result(context, res, queries, flags);
 
         }
+
+        if (res->val_rc_status == VAL_BOGUS ||
+            res->val_rc_status == VAL_DNS_ERROR) {
+            /*
+             * For error conditions Try getting this answer iteratively from
+             * root if we aren't doing so already
+             */
+            if (switch_to_root(context, top_q)) {
+                /*
+                 * Recurse from root for all additional queries sent in
+                 * in relation to this query; e.g. queries for DNSKEYs, DS etc 
+                 */
+                res->val_rc_rrset = NULL;
+                top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
+                goto query_reset;
+            }
+        }
+
 #ifdef LIBVAL_DLV
         if (thisdone &&
             !(flags & VAL_QUERY_DONT_VALIDATE) &&
@@ -4991,26 +5014,15 @@ verify_and_validate(val_context_t * context,
 
                 val_log(context, LOG_INFO,
                         "verify_and_validate(): Attempting DLV validation");
+
                 /* 
                  * If we did not use EDNS earlier we wont have the DNSSEC
                  * meta-data to prove non-existence. So retry with EDNS0 in this case
                  */
-                if (
-                    //is_proof && 
-                    top_q->qc_respondent_server &&
-                        !(top_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
-                    /* 
-                     *  have to start all over again, this time by 
-                     *  sending with CD and D0 bits set
-                     */
-                    requery_with_edns0(context, top_q);
-                    top_q->qc_flags |= VAL_QUERY_USING_DLV; 
-
-                    /* free up all results */
-                    _free_w_results(*results);
-                    *results = NULL;
-                    *done = 0;
-                    return VAL_NO_ERROR;
+                top_q->qc_flags |= VAL_QUERY_USING_DLV; 
+                if (requery_with_edns0(context, top_q)) {
+                    res->val_rc_rrset = NULL;
+                    goto query_reset;
                 }
                 
                 /* set the DLV flag */
@@ -5039,6 +5051,13 @@ verify_and_validate(val_context_t * context,
         }
     }
 
+    return VAL_NO_ERROR;
+
+query_reset:
+    /* free up all results */
+    _free_w_results(*results);
+    *results = NULL;
+    *done = 0;
     return VAL_NO_ERROR;
 }
 
@@ -5138,21 +5157,21 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (next_q->qfq_query->qc_state < Q_ANSWERED)
         *data_missing = 1;
 
-    if (next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE)
-        /* don't look at the cache for this query */
-        return VAL_NO_ERROR;
- 
     if (next_q->qfq_query->qc_state != Q_INIT)
         return VAL_NO_ERROR;
 
     if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
+    if (next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE)
+        /* don't look at the cache for this query */
+        return VAL_NO_ERROR;
+ 
     val_log(context, LOG_DEBUG,
             "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%d", name_p,
             p_class(next_q->qfq_query->qc_class_h),
             next_q->qfq_query->qc_class_h, p_type(next_q->qfq_query->qc_type_h),
-            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+            next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
 
     if (VAL_NO_ERROR !=
         (retval = get_cached_rrset(next_q->qfq_query, &response)))
@@ -5169,7 +5188,7 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         val_log(context, LOG_INFO,
                 "ask_cache(): found matching ack/nack response for {%s %d %d}, flags=%d",
                 name_p, next_q->qfq_query->qc_class_h,
-                next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
 
         /* merge any answer from the referral (alias) portion */
         if (next_q->qfq_query->qc_referral) {
@@ -5191,10 +5210,9 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
             }
             next_q->qfq_query->qc_referral->qnames = NULL;
 
-            /*
-             * Note that we don't free qc_referral here
-             */
             free_referral_members(next_q->qfq_query->qc_referral);
+            FREE(next_q->qfq_query->qc_referral);
+            next_q->qfq_query->qc_referral = NULL;
         }
 
         if (VAL_NO_ERROR != (retval = assimilate_answers(context, queries,
@@ -5233,7 +5251,7 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         val_log(context, LOG_INFO,
                 "ask_cache(): received error response for {%s %d %d}, flags=%d: %d",
                 name_p, next_q->qfq_query->qc_class_h,
-                next_q->qfq_query->qc_type_h, next_q->qfq_flags,
+                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags,
                 next_q->qfq_query->qc_state);
     }
 
@@ -5270,7 +5288,7 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
     val_log(context, LOG_INFO,
             "ask_resolver(): sending query for {%s %d %d}, flags=%d%s",
             name_p, query->qfq_query->qc_class_h, query->qfq_query->qc_type_h,
-            query->qfq_flags,
+            query->qfq_query->qc_flags,
             query->qfq_query->qc_referral ? " (referral/alias)" : "");
 
     retval = find_nslist_for_query(context, query, queries);
@@ -5280,13 +5298,19 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
     /* find_nslist_for_query() could have modified the state */
     if (query->qfq_query->qc_state == Q_INIT) {
 #ifndef VAL_NO_ASYNC
-        if (query->qfq_flags & VAL_QUERY_ASYNC)
+        if (query->qfq_query->qc_flags & VAL_QUERY_ASYNC)
             retval = val_resquery_async_send(context, query);
         else
 #endif
             retval = val_resquery_send(context, query);
         if (retval == VAL_NO_ERROR)
             query->qfq_query->qc_state = Q_SENT;
+        /* 
+         * reset the VAL_QUERY_REFRESH_QCACHE flag
+         */
+        if (query->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
+            query->qfq_query->qc_flags ^= VAL_QUERY_REFRESH_QCACHE;
+        }
     }
 
     return retval;
@@ -5353,7 +5377,7 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
 
     /* try an read answer */
 #ifndef VAL_NO_ASYNC
-    if (next_q->qfq_flags & VAL_QUERY_ASYNC)
+    if (next_q->qfq_query->qc_flags & VAL_QUERY_ASYNC)
         retval = val_resquery_async_rcv(context, next_q, &response, queries,
                                   pending_desc, closest_event);
     else
@@ -5370,7 +5394,7 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
         val_log(context, LOG_INFO,
                 "ask_resolver(): found matching ack/nack response for {%s %d %d}, flags=%d",
                 name_p, next_q->qfq_query->qc_class_h,
-                next_q->qfq_query->qc_type_h, next_q->qfq_flags);
+                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
         if (VAL_NO_ERROR !=
             (retval = assimilate_answers(context, queries, response,
                                          next_q))) {
@@ -5385,7 +5409,7 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
         val_log(context, LOG_INFO,
                 "ask_resolver(): received error response for {%s %d %d}, flags=%d: %d",
                 name_p, next_q->qfq_query->qc_class_h,
-                next_q->qfq_query->qc_type_h, next_q->qfq_flags,
+                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags,
                 next_q->qfq_query->qc_state);
     }
 
@@ -5886,66 +5910,6 @@ perform_sanity_checks(val_context_t * context,
     return VAL_NO_ERROR;
 }
 
-static int
-create_error_result(struct val_query_chain *top_q,
-                    u_int32_t flags,
-                    struct val_internal_result **w_results)
-{
-    struct val_internal_result *w_temp;
-    
-    if (top_q == NULL)
-        return VAL_BAD_ARGUMENT;
-
-    
-    *w_results = NULL;
-    if (top_q->qc_ans) {
-        w_temp = (struct val_internal_result *)
-            MALLOC(sizeof(struct val_internal_result));
-        if (w_temp == NULL) {
-            return VAL_OUT_OF_MEMORY;
-        }
-        w_temp->val_rc_rrset = top_q->qc_ans;
-        w_temp->val_rc_is_proof = 0;
-        w_temp->val_rc_consumed = 0;
-        w_temp->val_rc_flags = flags;
-        w_temp->val_rc_status = VAL_DNS_ERROR;
-        w_temp->val_rc_next = NULL;
-        *w_results = w_temp;
-    }
-    if (top_q->qc_proof) {
-        w_temp = (struct val_internal_result *)
-            MALLOC(sizeof(struct val_internal_result));
-        if (w_temp == NULL) {
-            return VAL_OUT_OF_MEMORY;
-        }
-        w_temp->val_rc_rrset = top_q->qc_proof;
-        w_temp->val_rc_is_proof = 1;
-        w_temp->val_rc_consumed = 0;
-        w_temp->val_rc_flags = flags;
-        w_temp->val_rc_status = VAL_DNS_ERROR;
-        w_temp->val_rc_next = NULL;
-        if (*w_results == NULL)
-            *w_results = w_temp;
-        else
-            (*w_results)->val_rc_next = w_temp;
-    }
-    if (*w_results == NULL) {
-        *w_results = (struct val_internal_result *)
-            MALLOC(sizeof(struct val_internal_result));
-        if ((*w_results) == NULL) {
-            return VAL_OUT_OF_MEMORY;
-        }
-        (*w_results)->val_rc_rrset = NULL;
-        (*w_results)->val_rc_is_proof = 0;
-        (*w_results)->val_rc_consumed = 0;
-        (*w_results)->val_rc_flags = flags;
-        (*w_results)->val_rc_status = VAL_DNS_ERROR;
-        (*w_results)->val_rc_next = NULL;
-    }
-
-    return VAL_NO_ERROR;
-}
-
 static int 
 construct_authentication_chain(val_context_t * context,
                                struct queries_for_query *top_qfq,
@@ -5967,18 +5931,7 @@ construct_authentication_chain(val_context_t * context,
     *done = 0;
     *results = NULL;
     
-    if (top_q->qc_state > Q_ERROR_BASE) {
-
-        /*
-         * No point going ahead if our original query had error conditions 
-         */
-        if (VAL_NO_ERROR != (retval = 
-                    create_error_result(top_q, top_qfq->qfq_flags, w_results)))
-            return retval;    
-
-        ans_done = 1;
-        proof_done = 1;
-    } else if (top_q->qc_state > Q_SENT) {
+    if (top_q->qc_state > Q_SENT) {
 
         /*
          * validate what ever is possible. 
@@ -6033,19 +5986,15 @@ int try_chase_query(val_context_t * context,
 {
     struct queries_for_query *top_q = NULL;
     struct val_internal_result *w_results = NULL;
-    int retval, flags_copy = flags;
+    int retval;
 
     if (context == NULL || queries == NULL || results == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
 
-#ifndef VAL_NO_ASYNC
-    if (queries && (*queries)->qfq_flags & VAL_QUERY_ASYNC)
-        flags_copy |= VAL_QUERY_ASYNC;
-#endif
     if (VAL_NO_ERROR !=
         (retval =
          add_to_qfq_chain(context, queries, domain_name_n, type,
-                          q_class, flags_copy, &top_q))) {
+                          q_class, flags, &top_q))) {
         return retval;
     }
     if (VAL_NO_ERROR != (retval = 
@@ -6056,12 +6005,12 @@ int try_chase_query(val_context_t * context,
                                                    results, 
                                                    done)))
         return retval;
-
     _free_w_results(w_results);
     w_results = NULL;
 
     return VAL_NO_ERROR;
 }
+
 
 /*
  * Look inside the cache, ask the resolver for missing data.
