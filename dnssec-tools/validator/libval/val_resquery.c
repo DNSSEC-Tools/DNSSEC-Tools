@@ -429,6 +429,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
     struct name_server *tail_ns;
     size_t          name_len;
     int             retval;
+    u_char ns_cred = SR_CRED_UNSET;
 
     if ((ns_list == NULL) || (pending_glue == NULL))
         return VAL_BAD_ARGUMENT;
@@ -445,6 +446,14 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
             (namecmp(zone_name, unchecked_set->rrs_name_n) == 0))
         {
                 ns_rr = unchecked_set->rrs_data;
+                /* 
+                 * find the ns with the best credibility
+                 */
+                if (ns_cred == SR_CRED_UNSET ||
+                        unchecked_set->rrs_cred < ns_cred) {
+                    ns_cred = unchecked_set->rrs_cred;
+                }
+
                 while (ns_rr) {
                     /*
                      * Create the structure for the name server 
@@ -533,9 +542,16 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
             trail_ns = NULL;
             ns = *ns_list;
             while (ns) {
-                if (namecmp
-                    (unchecked_set->rrs_name_n,
-                     ns->ns_name_n) == 0) {
+                int matching_cred = 1;
+                /*
+                 * credibility of A/AAAA should match that of the NS
+                 */
+                if (ns_cred < SR_CRED_NONAUTH &&
+                    unchecked_set->rrs_cred > SR_CRED_NONAUTH) {
+                    matching_cred = 0;
+                }
+                if (matching_cred &&
+                    namecmp(unchecked_set->rrs_name_n, ns->ns_name_n) == 0) {
                     /*
                      * Found that address set is for an NS 
                      */
@@ -628,6 +644,7 @@ find_nslist_for_query(val_context_t * context,
     u_int16_t       tzonestatus;
     u_int32_t ttl_x = 0;
     struct name_server *ns;
+    u_char ns_cred = SR_CRED_UNSET;
 
     if (next_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -660,7 +677,13 @@ find_nslist_for_query(val_context_t * context,
         goto done;
     } 
 
-    ret_val = get_nslist_from_cache(context, next_qfq, queries, &ref_ns_list, &next_q->qc_zonecut_n);
+    /*
+     * Allow EDNS0 fallback
+     */
+    if (next_q->qc_flags & VAL_QUERY_NO_EDNS0_FALLBACK)
+        next_q->qc_flags ^= VAL_QUERY_NO_EDNS0_FALLBACK;
+
+    ret_val = get_nslist_from_cache(context, next_qfq, queries, &ref_ns_list, &next_q->qc_zonecut_n, &ns_cred);
     
     if (ret_val == VAL_NO_ERROR) {
         /* if any one is NULL, get rid of both */
@@ -673,6 +696,14 @@ find_nslist_for_query(val_context_t * context,
             next_q->qc_zonecut_n = NULL;
         } else {
             next_q->qc_ns_list = ref_ns_list;
+            val_log(context, LOG_DEBUG, 
+                "find_nslist_for_query(): Found cached ns_list with cred = %d.", ns_cred);
+            /* 
+             * If our answer was from an authoritative server, we
+             * also set the flag to denote that we are doing recursion
+             */
+            if (ns_cred < SR_CRED_NONAUTH)
+                next_q->qc_flags |= VAL_QUERY_RECURSE;
             goto done; 
         } 
     } 
@@ -1167,7 +1198,8 @@ follow_referral_or_alias_link(val_context_t * context,
 
 #define SAVE_RR_TO_LIST(respondent_server, listtype, name_n, type_h,    \
                         set_type_h, class_h, ttl_h, hptr, rdata,        \
-                        rdata_len_h, from_section, authoritive, zonecut_n) \
+                        rdata_len_h, from_section, authoritive, iterative, \
+                        zonecut_n)                                      \
     do {                                                                \
         struct rrset_rec *rr_set;                                       \
         int ret_val;                                                    \
@@ -1176,12 +1208,12 @@ follow_referral_or_alias_link(val_context_t * context,
             rr_set = find_rr_set (respondent_server, listtype, name_n,  \
                               type_h, set_type_h, class_h, ttl_h, hptr, \
                               rdata, from_section, authoritive,         \
-                              zonecut_n);                               \
+                              iterative, zonecut_n);                    \
         else                                                            \
             rr_set = find_rr_set (respondent_server, listtype, name_n,  \
                               type_h, set_type_h, class_h, ttl_h, hptr, \
                               rdata, from_section, authoritive,         \
-                              NULL);                                    \
+                              iterative, NULL);                         \
         if (rr_set==NULL) {                                             \
             ret_val = VAL_OUT_OF_MEMORY;                                \
         }                                                               \
@@ -1483,6 +1515,7 @@ digest_response(val_context_t * context,
     size_t          rdata_len_h;
     size_t          rdata_index;
     int             authoritive = 0;
+    int             iterative = 0;
     u_char         *rdata;
     u_char         *hptr;
     int             ret_val;
@@ -1706,6 +1739,7 @@ digest_response(val_context_t * context,
         authoritive = (matched_q->qc_flags & VAL_QUERY_RECURSE) &&
                       (header->aa == 1);
 
+        iterative = matched_q->qc_flags & VAL_QUERY_RECURSE;
         /*
          * If it is from the answer section, it may be an alias 
          * If it is from the authority section, it may be a proof or a referral 
@@ -1753,7 +1787,7 @@ digest_response(val_context_t * context,
                             &learned_answers, name_n, type_h,
                             set_type_h, class_h, ttl_h, hptr, rdata,
                             rdata_len_h, from_section, authoritive,
-                            rrs_zonecut_n);
+                            iterative, rrs_zonecut_n);
         } else if (from_section == VAL_FROM_AUTHORITY) {
             if ((set_type_h == ns_t_nsec)
 #ifdef LIBVAL_NSEC3
@@ -1770,7 +1804,7 @@ digest_response(val_context_t * context,
                                 &learned_proofs, name_n, type_h,
                                 set_type_h, class_h, ttl_h, hptr, rdata,
                                 rdata_len_h, from_section, authoritive,
-                                rrs_zonecut_n);
+                                iterative, rrs_zonecut_n);
             } else if (set_type_h == ns_t_ns) {
                 /* 
                  * The zonecut information for name servers is 
@@ -1780,7 +1814,7 @@ digest_response(val_context_t * context,
                                 &learned_zones, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
-                                authoritive, name_n);
+                                authoritive, iterative, name_n);
             }
         } else if (from_section == VAL_FROM_ADDITIONAL) {
             if (set_type_h == ns_t_dnskey || set_type_h == ns_t_ds) {
@@ -1788,13 +1822,13 @@ digest_response(val_context_t * context,
                                 &learned_answers, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
-                                authoritive, rrs_zonecut_n);
+                                authoritive, iterative, rrs_zonecut_n);
             } else if (set_type_h == ns_t_a || set_type_h == ns_t_aaaa) {
                 SAVE_RR_TO_LIST(resp_ns,
                                 &learned_zones, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
-                                authoritive, name_n);
+                                authoritive, iterative, name_n);
             }
         }
 

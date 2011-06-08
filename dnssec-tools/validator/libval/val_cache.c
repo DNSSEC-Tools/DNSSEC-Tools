@@ -483,7 +483,8 @@ get_nslist_from_cache(val_context_t *ctx,
                       struct queries_for_query *matched_qfq,
                       struct queries_for_query **queries,
                       struct name_server **ref_ns_list,
-                      u_char **zonecut_n)
+                      u_char **zonecut_n,
+                      u_char *ns_cred)
 {
     /*
      * find closest matching name zone_n 
@@ -498,10 +499,11 @@ get_nslist_from_cache(val_context_t *ctx,
     u_char       *tmp_zonecut_n = NULL;
     struct timeval  tv;
 
-    if (matched_qfq == NULL || queries == NULL || ref_ns_list == NULL)
+    if (matched_qfq == NULL || queries == NULL || ref_ns_list == NULL || ns_cred == NULL)
         return VAL_BAD_ARGUMENT;
 
     *ref_ns_list = NULL;
+    *ns_cred = SR_CRED_UNSET;
     
     /* matched_qfq->qfq_query cannot be NULL */
     qname_n = matched_qfq->qfq_query->qc_name_n;
@@ -560,14 +562,14 @@ get_nslist_from_cache(val_context_t *ctx,
             tname_n = nsrrset->rrs_name_n;
 
             /*
-             * Check if tname_n is within qname_n 
+             * Find the closest name with the best credibility
              */
-            if (NULL !=
-                (p = namename(qname_n, tname_n))) {
+            if ((*ns_cred == SR_CRED_UNSET || nsrrset->rrs_cred <= *ns_cred) &&
+                    NULL != (p = namename(qname_n, tname_n))) {
 
-                if ((!name_n) ||
-                    (wire_name_length(tname_n) >
-                     wire_name_length(name_n))) {
+                if (!name_n ||
+                    nsrrset->rrs_cred < *ns_cred ||
+                    (wire_name_length(tname_n) > wire_name_length(name_n))) {
 
                     /*
                      * If type is DS, you don't want an exact match
@@ -578,6 +580,7 @@ get_nslist_from_cache(val_context_t *ctx,
                          * New name is longer than old name 
                          */
                         name_n = tname_n;
+                        *ns_cred = nsrrset->rrs_cred;
                         tmp_zonecut_n = nsrrset->rrs_name_n;
                     }
                 }
@@ -590,7 +593,7 @@ get_nslist_from_cache(val_context_t *ctx,
     if (name_n) {
         /* only ask for complete name server lists - don't want to fetch glue here */
         bootstrap_referral(ctx, name_n, unchecked_ns_info, matched_qfq, queries,
-                       ref_ns_list);
+                           ref_ns_list);
     }
 
     if (*ref_ns_list && tmp_zonecut_n) {

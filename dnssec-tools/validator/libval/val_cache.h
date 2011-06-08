@@ -19,6 +19,7 @@ int             get_nslist_from_cache(val_context_t *ctx,
                                       struct queries_for_query *matched_qfq,
                                       struct queries_for_query **queries,
                                       struct name_server **ref_ns_list,
-                                      u_char **zonecut_n);
+                                      u_char **zonecut_n,
+                                      u_char *ns_cred);
 
 #endif

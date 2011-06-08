@@ -2314,7 +2314,7 @@ read_root_hints_file(val_context_t * ctx)
         //                        zone_n);
         rr_set = find_rr_set(NULL, &root_info, zone_n, type_h, type_h,
                              ns_c_in, (u_int32_t)ttl_h, NULL, rdata_n, VAL_FROM_UNSET,
-                             0, zone_n);
+                             0, 0, zone_n);
         if (rr_set == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
