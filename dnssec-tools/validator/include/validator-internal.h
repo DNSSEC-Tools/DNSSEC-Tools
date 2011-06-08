@@ -53,11 +53,18 @@ extern          "C" {
  */
 #define SR_CRED_AUTH_ANS         3
 #define SR_CRED_AUTH_AUTH        4
+#define SR_CRED_AUTH_ADD         5
+/*
+ * Data was not authoritive, but was recieved iteratively 
+ */
+#define SR_CRED_ITER_ANS         6
+#define SR_CRED_ITER_AUTH        6
+#define SR_CRED_ITER_ADD         6
 /*
  * Data is from a cache somewhere, or was at best an after thought 
  */
-#define SR_CRED_NONAUTH_ANS      6
-#define SR_CRED_AUTH_ADD         7
+#define SR_CRED_NONAUTH          7
+#define SR_CRED_NONAUTH_ANS      7
 #define SR_CRED_NONAUTH_AUTH     7
 #define SR_CRED_NONAUTH_ADD      7
 /*

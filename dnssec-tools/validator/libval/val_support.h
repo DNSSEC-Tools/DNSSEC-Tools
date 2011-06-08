@@ -91,7 +91,7 @@ int             init_rr_set(struct rrset_rec *new_set, u_char * name_n,
                             u_int16_t type_h, u_int16_t set_type_h,
                             u_int16_t class_h, u_int32_t ttl_h,
                             u_char * hptr, int from_section,
-                            int authoritive_answer,
+                            int authoritive_answer, int iterative_answer,
                             struct name_server *respondent_server);
 
 struct rrset_rec *find_rr_set(struct name_server *respondent_server,
@@ -105,6 +105,7 @@ struct rrset_rec *find_rr_set(struct name_server *respondent_server,
                               u_char * rdata_n,
                               int from_section,
                               int authoritive_answer,
+                              int iterative_answer,
                               u_char * zonecut_n);
 
 int             decompress(u_char ** rdata,

@@ -598,7 +598,8 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
             u_int16_t type_h, u_int16_t set_type_h,
             u_int16_t class_h, u_int32_t ttl_h,
             u_char * hptr, int from_section,
-            int authoritive_answer, struct name_server *respondent_server)
+            int authoritive_answer, int iterative_answer,
+            struct name_server *respondent_server)
 {
     size_t name_len = wire_name_length(name_n);
     struct timeval  tv;
@@ -662,13 +663,16 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
      */
     if (from_section == VAL_FROM_ANSWER)
         new_set->rrs_cred = authoritive_answer ?
-            SR_CRED_AUTH_ANS : SR_CRED_NONAUTH_ANS;
+            SR_CRED_AUTH_ANS : 
+                (iterative_answer ? SR_CRED_ITER_ANS : SR_CRED_NONAUTH_ANS);
     else if (from_section == VAL_FROM_AUTHORITY)
         new_set->rrs_cred = authoritive_answer ?
-            SR_CRED_AUTH_AUTH : SR_CRED_NONAUTH_AUTH;
+            SR_CRED_AUTH_AUTH : 
+                (iterative_answer ? SR_CRED_ITER_AUTH : SR_CRED_NONAUTH_AUTH);
     else if (from_section == VAL_FROM_ADDITIONAL)
         new_set->rrs_cred = authoritive_answer ?
-            SR_CRED_AUTH_ADD : SR_CRED_NONAUTH_ADD;
+            SR_CRED_AUTH_ADD : 
+                (iterative_answer ? SR_CRED_ITER_ADD : SR_CRED_NONAUTH_ADD);
     else
         new_set->rrs_cred = SR_CRED_UNSET;
 
@@ -731,6 +735,7 @@ find_rr_set(struct name_server *respondent_server,
             u_char * rdata_n,
             int from_section, 
             int authoritive_answer, 
+            int iterative_answer, 
             u_char * zonecut_n)
 {
     struct rrset_rec *tryit;
@@ -798,7 +803,8 @@ find_rr_set(struct name_server *respondent_server,
 
         if ((init_rr_set(new_one, name_n, type_h, set_type_h,
                          class_h, ttl_h, hptr, from_section,
-                         authoritive_answer, respondent_server))
+                         authoritive_answer, iterative_answer, 
+                         respondent_server))
             != VAL_NO_ERROR) {
             res_sq_free_rrset_recs(the_list);
             return NULL;
