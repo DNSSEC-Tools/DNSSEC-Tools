@@ -226,6 +226,7 @@ extern          "C" {
         struct delegation_info *qc_referral;
         struct name_server *qc_ns_list;
         struct name_server *qc_respondent_server;
+        unsigned long qc_respondent_server_options;
         int    qc_trans_id;             //  synchronous queries only
         struct expected_arrival *qc_ea; // asynchronous queries only
 
@@ -387,6 +388,7 @@ extern          "C" {
         u_int32_t rrs_ttl_x;        /* ttl expire time */
         u_char  rrs_section;      /* VAL_FROM_... */
         struct sockaddr *rrs_server;      /* respondent server */
+        unsigned long rrs_ns_options;
         struct val_rr_rec  *rrs_data; /* All data RR's */
         struct val_rr_rec  *rrs_sig;  /* All signatures */
         u_char *rrs_zonecut_n;
