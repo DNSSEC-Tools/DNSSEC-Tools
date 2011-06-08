@@ -649,8 +649,10 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
         memcpy(new_set->rrs_server,
                respondent_server->ns_address[0],
                sizeof(struct sockaddr_storage));
+        new_set->rrs_ns_options = respondent_server->ns_options;
     } else {
         new_set->rrs_server = NULL;
+        new_set->rrs_ns_options = 0;
     }
 
     new_set->rrs_next = NULL;
@@ -1585,8 +1587,10 @@ copy_rrset_rec(struct rrset_rec *rr_set)
         }
         memcpy(copy_set->rrs_server, rr_set->rrs_server,
                sizeof(struct sockaddr_storage));
+        copy_set->rrs_ns_options = rr_set->rrs_ns_options;
     } else {
         copy_set->rrs_server = NULL;
+        copy_set->rrs_ns_options = 0;
     }
 
     return copy_set;
