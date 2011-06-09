@@ -35,15 +35,16 @@
  * 
  * Parameters
  * 
- * transaction_id is initialized to -1 by caller, then unchanged
- * for the rest of the transaction.
+ * transaction_id is either the id for an existing transaction to which the
+ * query should be added, or -1 to begin a new transaction. The new
+ * transaction id will be set before returning.
  * 
  * signed_query is a pointer to a query which becomes "owned" by the
  * io manger. signed_length is the length of the query.  The
  * query is sent as it is passed, i.e., it should be TSIG'd
  * before hand.
  * 
- * ns is a structure indicating which name server to use.
+ * ns is a structure indicating which name server(s) to use.
  * 
  * Return values
  * 
@@ -141,23 +142,6 @@ int             res_io_check_one(struct expected_arrival *ea,
                                  struct timeval *now);
 
 /*
- * res_io_check_one_tid
- *
- *  Checks one transaction for sends, resends, timeouts and cancellations.
- *
- * Parameters
- *
- *  see res_io_check_one()
- *
- * Return value
- *
- *  returns 1 if there are still queries with remaining attempts.
- *  returns 0 if all queries have timed out or been canceled.
- */
-int             res_io_check_one_tid(int tid, struct timeval *next_evt,
-                                     struct timeval *now);
-
-/*
  * res_io_check_ea_list
  *
  *  Checks one transaction for sends, resends, timeouts and cancellations.
@@ -191,6 +175,23 @@ int             res_io_check_ea_list(struct expected_arrival *ea,
                                      struct timeval *next_evt,
                                      struct timeval *now, int *net_change,
                                      int *active);
+
+/*
+ * res_io_check_one_tid
+ *
+ *  Checks one transaction for sends, resends, timeouts and cancellations.
+ *
+ * Parameters
+ *
+ *  see res_io_check_one()
+ *
+ * Return value
+ *
+ *  returns 1 if there are still queries with remaining attempts.
+ *  returns 0 if all queries have timed out or been canceled.
+ */
+int             res_io_check_one_tid(int tid, struct timeval *next_evt,
+                                     struct timeval *now);
 
 /*
  * res_cancel
