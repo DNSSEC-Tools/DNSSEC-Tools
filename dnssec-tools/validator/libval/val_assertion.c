@@ -6518,8 +6518,8 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
                                        pending_desc, &closest_event,
                                        &data_received);
         else
-            retval = res_io_check_one(qfq->qfq_query->qc_ea, &closest_event,
-                                      &now);
+            retval = res_io_check_ea_list(qfq->qfq_query->qc_ea, &closest_event,
+                                          &now);
 
         if (retval < 0 && res_io_are_all_finished(qfq->qfq_query->qc_ea))
             val_res_cancel(qfq->qfq_query);

@@ -95,6 +95,104 @@ int             res_io_accept(int transaction_id,
                               struct name_server **respondent);
 
 /*
+ * res_io_check
+ *
+ *  Checks all transactions for sends, resends, timeouts and cancellations.
+ *
+ * Parameters
+ *
+ *  transaction_id is checked last, and the return code specifies whether
+ *  or not this transaction has any queries with remaining attempts.
+ *
+ *  next_evt is cleared and then set to the earliest retry/cancellation time.
+ *
+ * Return value
+ *
+ *   1 if there are still queries with remaining attempts for transaction_id
+ *   0 if all queries have timed out or been canceled for transaction_id
+ */
+int             res_io_check(int transaction_id, struct timeval *next_evt);
+
+/*
+ * res_io_check_one
+ *
+ *  Checks one expected arrival for sends, resends, timeouts and cancellations.
+ *
+ * Parameters
+ *
+ *  ea is the expected arrival list for the query.
+ *
+ *  next_evt is updated with any event time that is earlier than the current
+ *  value. Caller is responsible for setting an appropriate value for
+ *  next_evt, as this function does not clear it as some other functions do.
+ *
+ *  now is an (optional) pointer to the current time. If not supplied,
+ *  gettimeofday will be used as needed.  If you are calling this function
+ *  in a loop, you should probably pass a now pointer.
+ *
+ * Return value
+ *
+ *  returns the change in the number of active sockets. A negative value means
+ *  more sockets were closed than opened. A zero value can mean no change, or
+ *  an equal number of sockets were opened as were closed.
+ */
+int             res_io_check_one(struct expected_arrival *ea,
+                                 struct timeval *next_evt,
+                                 struct timeval *now);
+
+/*
+ * res_io_check_one_tid
+ *
+ *  Checks one transaction for sends, resends, timeouts and cancellations.
+ *
+ * Parameters
+ *
+ *  see res_io_check_one()
+ *
+ * Return value
+ *
+ *  returns 1 if there are still queries with remaining attempts.
+ *  returns 0 if all queries have timed out or been canceled.
+ */
+int             res_io_check_one_tid(int tid, struct timeval *next_evt,
+                                     struct timeval *now);
+
+/*
+ * res_io_check_ea_list
+ *
+ *  Checks one transaction for sends, resends, timeouts and cancellations.
+ *
+ * Parameters
+ *
+ *  ea is the expected arrival list for the query.
+ *
+ *  next_evt is updated with any event time that is earlier than the current
+ *  value. Caller is responsible for setting an appropriate value for
+ *  next_evt, as this function does not clear it as some other functions do.
+ *
+ *  now is an (optional) pointer to the current time. If not supplied,
+ *  gettimeofday will be used as needed.  If you are calling this function
+ *  in a loop, you should probably pass a now pointer.
+ *
+ *  net_change, if provided, will be set to the change in the number of
+ *  active entries. A negative number means that more were closed than
+ *  opened, a positive number means more were opened than closed and 0
+ *  means there was no change or and equal number were open as closed.
+ *
+ *  active, if provided, will be set to the number of active expected
+ *  arrivals in the list.
+ *
+ * Return value
+ *
+ *  returns 1 if there are still queries with remaining attempts.
+ *  returns 0 if all queries have timed out or been canceled.
+ */
+int             res_io_check_ea_list(struct expected_arrival *ea,
+                                     struct timeval *next_evt,
+                                     struct timeval *now, int *net_change,
+                                     int *active);
+
+/*
  * res_cancel
  * 
  * Cancels all outstanding requests remaining for a transaction.
