@@ -276,7 +276,7 @@ res_io_send(struct expected_arrival *shipit)
 
     socket_type = (shipit->ea_using_stream == 1) ? SOCK_STREAM : SOCK_DGRAM;
     socket_proto = (socket_type == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP;
-    val_log(NULL, LOG_DEBUG, "libsres: ""SENDING");
+    val_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING", shipit);
 
     /*
      * If no socket exists for the transfer, create and connect it (TCP
@@ -343,18 +343,12 @@ res_io_send(struct expected_arrival *shipit)
         }
     }
 
-    if ((bytes_sent = send(shipit->ea_socket, (const char *)shipit->ea_signed,
-                           shipit->ea_signed_length, 0)) == SOCKET_ERROR) {
-        CLOSESOCK(shipit->ea_socket);
-        val_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, sent != len",
-               shipit->ea_socket);
-        shipit->ea_socket = INVALID_SOCKET;
-        return SR_IO_SOCKET_ERROR;
-    }
-
+    bytes_sent = send(shipit->ea_socket, (const char*)shipit->ea_signed,
+                      shipit->ea_signed_length, 0);
     if (bytes_sent != shipit->ea_signed_length) {
-        val_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, sent != signed len",
-                shipit->ea_socket);
+        val_log(NULL, LOG_ERR, "libsres: "
+                "Closing socket %d, sending %d bytes failed (rc %d)",
+                shipit->ea_socket, shipit->ea_signed_length, bytes_sent);
         CLOSESOCK(shipit->ea_socket);
         shipit->ea_socket = INVALID_SOCKET;
         return SR_IO_SOCKET_ERROR;
@@ -516,8 +510,12 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
     }
 
     for ( ; ea; ea = ea->ea_next ) {
-        if (ea->ea_remaining_attempts == -1)
+        if (ea->ea_remaining_attempts == -1) {
+            val_log(NULL, LOG_DEBUG, "libsres: "
+                    " res_io_check_one skipping %p (sock %d, rem %d)",
+                    ea, ea->ea_socket, ea->ea_remaining_attempts);
             continue;
+        }
 
         val_log(NULL, LOG_DEBUG, "libsres: ""res_io_check_one socket=%d", ea->ea_socket);
 
@@ -567,9 +565,9 @@ res_io_check(int transaction_id, struct timeval *next_evt)
     struct expected_arrival *ea;
 
     gettimeofday(&tv, NULL);
+    val_log(NULL, LOG_DEBUG, "libsres: ""Checking at %ld.%ld", tv.tv_sec,
+            tv.tv_usec);
     tv.tv_usec = 0;
-
-    val_log(NULL, LOG_DEBUG, "libsres: ""Checking at %ld", tv.tv_sec);
 
     /*
      * Start "next event" at 0.0 seconds 
@@ -585,7 +583,8 @@ res_io_check(int transaction_id, struct timeval *next_evt)
     ea = transactions[transaction_id];
     pthread_mutex_unlock(&mutex);
 
-    val_log(NULL, LOG_DEBUG, "libsres: ""Next event is at %ld", next_evt->tv_sec);
+    val_log(NULL, LOG_DEBUG,
+            "libsres: "" Next event is at %ld", next_evt->tv_sec);
 
     /*
      * check for remaining attempts for this transaction
@@ -786,7 +785,8 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
         { /** dummy block to preserve indentation; reformat later */
             *answer = ea_list->ea_response;
             *answer_length = ea_list->ea_response_length;
-            val_log(NULL, LOG_DEBUG, "libsres: ""get_response got %zd bytes on socket %d",
+            val_log(NULL, LOG_DEBUG,
+                    "libsres: ""get_response got %zd bytes on socket %d",
                     *answer_length, ea_list->ea_socket);
 
             /*
@@ -902,7 +902,8 @@ res_io_read_udp(struct expected_arrival *arrival)
 
     if (0 == ret_val) { /* what does 0 bytes mean from udp socket? */
         // xxx-rks: allow other attempt, or goto error?
-        val_log(NULL, LOG_INFO, "libsres: ""0 bytes on socket %d, read_udp failed",
+        val_log(NULL, LOG_INFO,
+                "libsres: ""0 bytes on socket %d, read_udp failed",
                 arrival->ea_socket);
         FREE(arrival->ea_response);
         arrival->ea_response = NULL;
@@ -944,7 +945,8 @@ res_io_read_udp(struct expected_arrival *arrival)
     return SR_IO_UNSET;
 
   error:
-    val_log(NULL, LOG_INFO, "libsres: ""Closing socket %d, read_udp failed", arrival->ea_socket);
+    val_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, read_udp failed",
+            arrival->ea_socket);
     FREE(arrival->ea_response);
     arrival->ea_response = NULL;
     arrival->ea_response_length = 0;
@@ -999,7 +1001,8 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 
         { /* dummy block to preserve indentation; remove later */
 
-            val_log(NULL, LOG_DEBUG, "libsres: ""ACTIVITY on %d", ea_list->ea_socket);
+            val_log(NULL, LOG_DEBUG, "libsres: ""ACTIVITY on %d",
+                    ea_list->ea_socket);
             ++handled;
             arrival = ea_list;
             res_print_ea(arrival);
@@ -1013,8 +1016,9 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 if (res_io_read_udp(arrival) == SR_IO_SOCKET_ERROR)
                     continue;
             }
-            val_log(NULL, LOG_DEBUG, "libsres: ""Read %zd byptes via %s", arrival->ea_response_length,
-                    arrival->ea_using_stream ? "TCP" : "UDP");
+            val_log(NULL, LOG_DEBUG, "libsres: ""Read %zd byptes via %s",
+                    arrival->ea_response_length,
+                       arrival->ea_using_stream ? "TCP" : "UDP");
 
             /*
              * Make sure this is the query we want (buffer id's match).
@@ -1032,8 +1036,8 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 /*
                  * The the query and response ID's/query lines don't match 
                  */
-                val_log(NULL, LOG_WARNING, "libsres: "
-                        "The the query and response ID's or q_fields don't match");
+                val_log(NULL, LOG_ERR, "libsres: ""dropping response: "
+                        "query and response ID's or q_fields don't match");
                 FREE(arrival->ea_response);
                 arrival->ea_response = NULL;
                 arrival->ea_response_length = 0;
@@ -1068,8 +1072,7 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
     zero_time.tv_usec = 0;
 
     FD_ZERO(&read_descriptors);
-
-    val_log(NULL, LOG_DEBUG, "libsres: ""\nCalling io_accept");
+    val_log(NULL, LOG_DEBUG, "libsres: ""Calling io_accept");
 
     /*
      * See what needs to be sent.  A return code of 0 means that there
@@ -1203,14 +1206,14 @@ res_print_ea(struct expected_arrival *ea)
             port = s->sin_port;
         }
 
-        val_log(NULL, LOG_DEBUG, "libsres: ""Socket: %d ", ea->ea_socket);
-        val_log(NULL, LOG_DEBUG, "libsres: ""Stream: %d ", ea->ea_using_stream);
-        val_log(NULL, LOG_DEBUG, "libsres: ""Nameserver: %s/(%d)", addr ? addr : "",
-               ntohs(port));
-
-        val_log(NULL, LOG_DEBUG, "libsres: ""Remaining retries: %d ", ea->ea_remaining_attempts);
-        val_log(NULL, LOG_DEBUG, "libsres: ""Next try %ld, Cancel at %ld", ea->ea_next_try.tv_sec,
-               ea->ea_cancel_time.tv_sec);
+        val_log(NULL, LOG_DEBUG, "libsres: "
+                "  Socket: %d, Stream: %d, Nameserver: %s/(%d)",
+                ea->ea_socket, ea->ea_using_stream, addr ? addr : "",
+                ntohs(port));
+        val_log(NULL, LOG_DEBUG, "libsres: "
+                "  Remaining retries: %d, Next try %ld, Cancel at %ld",
+                ea->ea_remaining_attempts, ea->ea_next_try.tv_sec,
+                ea->ea_cancel_time.tv_sec);
 }
 
 void
