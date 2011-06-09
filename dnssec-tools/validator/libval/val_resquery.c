@@ -2537,6 +2537,13 @@ val_async_select_info(val_context_t *context, fd_set *activefds,
 
     for (as = context->as_list; as; as = as->val_as_next)
         for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {
+
+            char         name_p[NS_MAXDNAME];
+            if (-1 == ns_name_ntop(qfq->qfq_query->qc_name_n, name_p, sizeof(name_p)))
+                snprintf(name_p, sizeof(name_p), "unknown/error");
+            val_log(NULL, LOG_DEBUG, " as %p query %p {%s %d %d} ea %p", as, qfq,
+                    name_p, qfq->qfq_query->qc_class_h,
+                    qfq->qfq_query->qc_type_h, qfq->qfq_query->qc_ea);
             if (!qfq->qfq_query->qc_ea)
                 continue;
             res_async_query_select_info(qfq->qfq_query->qc_ea, nfds, activefds,
