@@ -134,7 +134,7 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
             for (i = 0; i < numq; ++i) {
                 if (!ea[i])
                     continue;
-                rc = res_io_check_one(ea[i], NULL, &now);
+                rc = res_io_check_ea_list(ea[i], NULL, &now);
                 in_flight += rc;
                 if (rc < 0 && res_io_is_finished(ea[i])) {
                     res_async_query_free(ea[i]);

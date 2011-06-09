@@ -499,10 +499,9 @@ res_io_next_address(struct expected_arrival *ea,
 }
 
 int
-res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
-                 struct timeval *now)
+res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
+                     struct timeval *now, int *net_change, int *active)
 {
-    int             total = 0, checked = 0;
     struct timeval  local_now;
     struct expected_arrival *orig_ea = ea;
             struct name_server *tempns;
@@ -517,35 +516,33 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
         gettimeofday(&local_now, NULL);
         local_now.tv_usec = 0;
     }
+    if (net_change)
+        *net_change = 0;
+    if (active)
+        *active = 0;
 
-    val_log(NULL, LOG_DEBUG, "libsres: ""res_io_check_one");
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+    if (next_evt)
+        val_log(NULL, LOG_DEBUG, "libsres: ""  Initial next event %ld.%ld",
+                next_evt->tv_sec, next_evt->tv_usec);
 
     for ( ; ea; ea = ea->ea_next ) {
         if (ea->ea_remaining_attempts == -1) {
             val_log(NULL, LOG_DEBUG, "libsres: "
-                    " res_io_check_one skipping %p (sock %d, rem %d)",
+                    " skipping %p (sock %d, rem %d)",
                     ea, ea->ea_socket, ea->ea_remaining_attempts);
             continue;
         }
-        if (ea->ea_socket != -1 ) {
-            val_log(NULL, LOG_DEBUG, "libsres: "
-                    " ea %p/%p socket=%d, rem %d, ns %d/%d, next try %d, cancel %d",
-                    orig_ea, ea, ea->ea_socket, ea->ea_remaining_attempts,
-                    ea->ea_which_address, ea->ea_ns->ns_number_of_addresses,
-                    ea->ea_next_try, ea->ea_cancel_time);
-            for(i=0,tempns = ea->ea_ns ; i<tempns->ns_number_of_addresses; ++i)
-                val_log(NULL, LOG_DEBUG+1, "    %d:%s", i,
-                        val_get_ns_string((struct sockaddr *)
-                                          tempns->ns_address[i],
-                                          name_buf, sizeof(name_buf)));
-        }
+        if (ea->ea_socket != -1 )
+            res_print_ea(ea);
 
         /*
          * check for timeouts. If there is another address, move to it
          */
         if ( LTEQ(ea->ea_cancel_time, (*now))) {
             res_io_next_address(ea, "TIMEOUTS", "TIMEOUT - CANCELING");
-            --total;
+            if (net_change)
+                --(*net_change);
         }
 
         /*
@@ -560,49 +557,110 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
                                         "CANCELING DUE TO SENDING ERROR");
                 }
                 else {
-                    if (needed_new_socket)
-                        ++total;
+                    if (needed_new_socket) {
+                        if (net_change)
+                            ++(*net_change);
+                        res_print_ea(ea);
+                    }
                     break; /* from while remaining attempts */
                 }
             } /* while */
         }
         else if (ea->ea_socket == -1) {
             struct expected_arrival *tmp_ea = ea;
-            int count = 1;
-            for (ea = ea->ea_next; ea; ea = ea->ea_next )
 #if 0 
-                val_log(NULL, LOG_DEBUG, "libsres: "" skipping"
-                        " ea %p/%p socket=%d, rem %d, ns %d/%d, "
-                        "next try %d, cancel %d",
-                        orig_ea, ea, ea->ea_socket, ea->ea_remaining_attempts,
-                        ea->ea_which_address, ea->ea_ns->ns_number_of_addresses,
-                        ea->ea_next_try, ea->ea_cancel_time);
+            for (tmp_ea = ea->ea_next; tmp_ea; tmp_ea = tmp_ea->ea_next ) {
+                val_log(NULL, LOG_DEBUG, "libsres: "" skipping ea");
+                res_print_ea(ea);
+            }
 #else
+            int count = 1;
+            for (tmp_ea = ea->ea_next; tmp_ea; tmp_ea = tmp_ea->ea_next )
                 ++count;
             val_log(NULL, LOG_DEBUG, "libsres: "" skipping remaining %d ns list",
                     count);
 #endif
             break;
         }
-        else
-            ++checked;
 
         /*
          * update next event
          */
-        if (next_evt && ea->ea_remaining_attempts != -1) {
-            UPDATE(next_evt, ea->ea_cancel_time);
-            UPDATE(next_evt, ea->ea_next_try);
+        if (ea->ea_remaining_attempts != -1) {
+            if (next_evt) {
+                UPDATE(next_evt, ea->ea_cancel_time);
+                UPDATE(next_evt, ea->ea_next_try);
+            }
+            if (active)
+                ++(*active);
         }
     }
+    if (next_evt)
+        val_log(NULL, LOG_DEBUG, "libsres: ""  Next event %ld.%ld",
+                next_evt->tv_sec, next_evt->tv_usec);
 
-    return total;
+    return SR_IO_UNSET;
 }
 
+int
+res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
+                 struct timeval *now)
+{
+    val_log(NULL, LOG_INFO,
+            "res_io_check_one deprecated, use res_io_check_ea_list instead");
+    return res_io_check_ea_list(ea, next_evt, now, NULL, NULL);
+}
+
+/** static version that assume caller has mutex lock... */
 static int
+_check_one_tid(int tid, struct timeval *next_evt, struct timeval *now)
+{
+    int                      active = 0;
+    struct expected_arrival *ea;
+
+    /** assume caller has mutex lock */
+
+    ea = transactions[tid];
+    if (ea)
+        res_io_check_ea_list(ea, next_evt, now, NULL, &active);
+
+    return (active > 0); /* have active queries */
+}
+
+/*
+ * this version does not clear next_evt. now parameter is optional but
+ * suggested if calling this function in a loop.
+ */
+int
+res_io_check_one_tid(int tid, struct timeval *next_evt, struct timeval *now)
+{
+    int ret_val;
+
+    if ((NULL == next_evt) || (tid < 0) || (tid >= MAX_TRANSACTIONS))
+        return 0; /* i.e. no transactions for this tid */
+
+    pthread_mutex_lock(&mutex);
+
+    ret_val = _check_one_tid(tid, next_evt, now);
+
+    pthread_mutex_unlock(&mutex);
+
+    val_log(NULL, LOG_DEBUG, "libsres: "" tid %d next event is at %ld", tid,
+            next_evt->tv_sec);
+
+    return ret_val;
+}
+
+/*
+ * for backwards compatability, this checks all transactions.
+ * I'd like to have it call res_io_check_one_tid, but that'd
+ * involve a mutex lock/unlock for each active transaction, which
+ * seems wasteful...
+ */
+int
 res_io_check(int transaction_id, struct timeval *next_evt)
 {
-    int             i;
+    int             i, ret_val;
     struct timeval  tv;
     struct expected_arrival *ea;
 
@@ -615,27 +673,24 @@ res_io_check(int transaction_id, struct timeval *next_evt)
      * Start "next event" at 0.0 seconds 
      */
     memset(next_evt, 0, sizeof(struct timeval));
+    ret_val = 0; /* no active queries */
 
     pthread_mutex_lock(&mutex);
 
+    /** check all except specified transaction_id, ignore return */
     for (i = 0; i < MAX_TRANSACTIONS; i++)
-        if (transactions[i])
-            res_io_check_one(transactions[i], next_evt, &tv);
+        if ((i != transaction_id) && transactions[i])
+            _check_one_tid(i, next_evt, &tv);
 
-    ea = transactions[transaction_id];
+    /** check for remaining attempts for specified transaction */
+    ret_val = _check_one_tid(transaction_id, next_evt, &tv);
+
     pthread_mutex_unlock(&mutex);
 
     val_log(NULL, LOG_DEBUG,
-            "libsres: "" Next event is at %ld", next_evt->tv_sec);
+            "libsres: "" next global event is at %ld", next_evt->tv_sec);
 
-    /*
-     * check for remaining attempts for this transaction
-     */
-    for (; ea; ea = ea->ea_next)
-        if (ea->ea_remaining_attempts != -1)
-            return 1;
-
-    return 0; /* no events for this transaction */
+    return ret_val;
 }
 
 int
@@ -713,6 +768,26 @@ res_io_set_timeout(struct timeval *timeout, struct timeval *next_event)
         timeout->tv_sec = next_event->tv_sec - timeout->tv_sec;
     else
         memset(timeout, 0, sizeof(struct timeval));
+}
+
+void
+res_io_select_info_tid(int tid, int *nfds,
+                       fd_set * read_descriptors,struct timeval *next_evt)
+{
+    int             i, ret_val;
+    struct timeval  tv;
+    struct expected_arrival *ea;
+
+    if ((tid < 0) || (tid >= MAX_TRANSACTIONS))
+        return;
+
+    pthread_mutex_lock(&mutex);
+
+    ea = transactions[tid];
+    if (ea)
+        res_io_select_info(ea, nfds, read_descriptors, next_evt);
+
+    pthread_mutex_unlock(&mutex);
 }
 
 void
@@ -1406,7 +1481,7 @@ res_async_query_send(const char *name, const u_int16_t type_h,
         head = NULL;
     }
     else
-        ret_val = res_io_check_one(head,NULL,NULL);
+        ret_val = res_io_check_ea_list(head,NULL,NULL,NULL,NULL);
 
     return head;
 }
