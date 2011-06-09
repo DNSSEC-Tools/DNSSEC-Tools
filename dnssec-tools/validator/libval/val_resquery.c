@@ -2285,6 +2285,7 @@ val_res_cancel(struct val_query_chain *matched_q)
     }
     else
 #endif
+    if (matched_q->qc_trans_id != -1)
         res_cancel(&(matched_q->qc_trans_id));
 }
 
