@@ -437,9 +437,9 @@ response_recv(int *trans_id,
     if (ret_val == SR_IO_GOT_ANSWER) {
         if ((*respondent != NULL) && 
             (res_tsig_verifies(*respondent, 
-                *answer, *answer_length) == SR_TS_OK) && 
+                               *answer, *answer_length) == SR_TS_OK) && 
             (theres_something_wrong_with_header(*answer, 
-                *answer_length) == SR_UNSET)) {
+                                                *answer_length) == SR_UNSET)) {
 #if 0
             printf("The Response: ");
             printf(":\n");
@@ -448,20 +448,19 @@ response_recv(int *trans_id,
             return SR_UNSET;
 
         } else {
+            val_log(NULL,LOG_ERR,"libsres: ""error in response; dropping");
             FREE(*answer);
             *answer = NULL;
             *answer_length = 0;
-            if (*respondent != NULL)  {
+            if (*respondent != NULL)
                 free_name_server(respondent);
-            }
             *respondent = NULL;
             return SR_NO_ANSWER; 
         }
     } 
-        
+
     return SR_NO_ANSWER_YET;
 }
-
 
 int
 get(const char *name,
