@@ -504,10 +504,6 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                      struct timeval *now, int *net_change, int *active)
 {
     struct timeval  local_now;
-    struct expected_arrival *orig_ea = ea;
-            struct name_server *tempns;
-            char            name_buf[INET6_ADDRSTRLEN + 1];
-            int i = 0;
     
     /*
      * if caller didn't pass us current time, get it
@@ -663,7 +659,6 @@ res_io_check(int transaction_id, struct timeval *next_evt)
 {
     int             i, ret_val;
     struct timeval  tv;
-    struct expected_arrival *ea;
 
     if ((NULL == next_evt) || (transaction_id < 0) ||
         (transaction_id >= MAX_TRANSACTIONS))
@@ -793,8 +788,6 @@ void
 res_io_select_info_tid(int tid, int *nfds,
                        fd_set * read_descriptors,struct timeval *next_evt)
 {
-    int             i, ret_val;
-    struct timeval  tv;
     struct expected_arrival *ea;
 
     if ((tid < 0) || (tid >= MAX_TRANSACTIONS))
@@ -931,7 +924,7 @@ wait_for_res_data(fd_set * pending_desc, struct timeval *closest_event)
     val_log(NULL, LOG_DEBUG, "libsres: "" wait for closest event %ld,%ld",
             closest_event->tv_sec, closest_event->tv_usec);
     res_io_set_timeout(&timeout, closest_event);
-    res_io_select_sockets(pending_desc, &timeout); 
+    ready = res_io_select_sockets(pending_desc, &timeout); 
 	
     // ignore return value from previous function, 
     // will catch this condition when we actually read data
@@ -1602,7 +1595,6 @@ res_async_ea_isset(struct expected_arrival *ea, fd_set *fds)
 int
 res_async_tid_isset(int tid, fd_set *fds)
 {
-    struct expected_arrival *ea;
     int retval = 0;
 
     if (tid < 0 || tid >= MAX_TRANSACTIONS || NULL == fds)
