@@ -1149,6 +1149,45 @@ res_switch_to_tcp(struct expected_arrival *ea)
     set_alarm(&ea->ea_cancel_time, res_get_timeout(ea->ea_ns));
 }
 
+/*
+ * switch all ea entries in the chain to tcp.
+ *
+ * unline res_switch_to_tcp, which is used during processing, this
+ * function is intended to be called BEFORE processing starts. Thus
+ * the retry count and next/cancel timers are not touched.
+ */
+void
+res_switch_all_to_tcp(struct expected_arrival *ea)
+{
+    val_log(NULL, LOG_INFO, "libsres: ""Switching all to TCP");
+
+    for (; ea; ea = ea->ea_next) {
+
+        FREE(ea->ea_response);
+        ea->ea_response = NULL;
+        ea->ea_response_length = 0;
+
+        ea->ea_using_stream = TRUE;
+        if (ea->ea_socket != INVALID_SOCKET) {
+            CLOSESOCK(ea->ea_socket);
+            ea->ea_socket = INVALID_SOCKET;
+        }
+    }
+}
+
+void
+res_switch_all_to_tcp_tid(int tid)
+{
+    struct expected_arrival *ea;
+
+    if ((tid < 0) || (tid >= MAX_TRANSACTIONS))
+        return;
+
+    ea = transactions[tid];
+    if (ea)
+        res_switch_all_to_tcp(ea);
+}
+
 int
 res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 {
@@ -1461,6 +1500,21 @@ struct expected_arrival *
 res_async_query_send(const char *name, const u_int16_t type_h,
                      const u_int16_t class_h, struct name_server *pref_ns)
 {
+    int                      ret_val;
+    struct expected_arrival *head = 
+        res_async_query_create(name, type_h, class_h, pref_ns, 0);
+
+    if (NULL != head)
+        ret_val = res_io_check_ea_list(head,NULL,NULL,NULL,NULL);
+
+    return head;
+}
+
+struct expected_arrival *
+res_async_query_create(const char *name, const u_int16_t type_h,
+                       const u_int16_t class_h, struct name_server *pref_ns,
+                       u_int flags)
+{
     int                 ret_val = SR_UNSET;
     u_char             *signed_query = NULL;
     size_t              signed_length = 0;
@@ -1514,8 +1568,6 @@ res_async_query_send(const char *name, const u_int16_t type_h,
         res_free_ea_list(head);
         head = NULL;
     }
-    else
-        ret_val = res_io_check_ea_list(head,NULL,NULL,NULL,NULL);
 
     return head;
 }

@@ -358,11 +358,36 @@ query_send(const char *name,
            int *trans_id)
 {
     int             ret_val;
+    struct timeval      dummy;
+
+    ret_val = query_queue(name, type_h, class_h, pref_ns, trans_id);
+    if (SR_UNSET != ret_val)
+        return ret_val;
+
+    dummy.tv_sec = dummy.tv_usec = 0;
+    res_io_check_one_tid(*trans_id, &dummy, NULL);
+
+    return SR_UNSET;
+}
+
+/*
+ * create payloads and queue them in the transaction array, but do not
+ * start sending them.
+ *
+ * this is usefull if you want to change something about the transaction
+ * first (e.g. set it to default to tcp instead of udp). To start
+ * transaction processing, call res_io_check_one_tid(), and then
+ * response_recv() in a loop.
+ */
+int
+query_queue(const char *name, const u_int16_t type_h, const u_int16_t class_h,
+            struct name_server *pref_ns, int *trans_id)
+{
+    int             ret_val;
 
     u_char         *signed_query = NULL;
     size_t          signed_length = 0;
 
-    struct timeval      dummy;
     struct name_server *ns_list = NULL;
     struct name_server *ns;
     long   delay = 0;
@@ -400,9 +425,6 @@ query_send(const char *name,
 
         delay += LIBSRES_NS_STAGGER;
     }
-
-    dummy.tv_sec = dummy.tv_usec = 0;
-    res_io_check_one_tid(*trans_id, &dummy, NULL);
 
     return SR_UNSET;
 }
@@ -495,6 +517,43 @@ get(const char *name,
         } while (ret_val == SR_NO_ANSWER_YET);
         res_cancel(&trans_id); /* cleanup transaction */
     }
+
+    return ret_val;
+}
+
+int
+get_tcp(const char *name, u_int16_t type_h, u_int16_t class_h,
+        struct name_server *nslist,
+        struct name_server **server,
+        u_char ** response, size_t * response_length)
+{
+    int             ret_val;
+    int             trans_id;
+    struct timeval closest_event;
+    fd_set pending_desc;
+
+    ret_val = query_queue(name, type_h, class_h, nslist, &trans_id);
+    if (SR_UNSET != ret_val)
+        return ret_val;
+
+    res_switch_all_to_tcp_tid(trans_id);
+
+    val_log(NULL,LOG_DEBUG,"libsres: ""get_tcp %s", name);
+    do {
+        FD_ZERO(&pending_desc);
+        closest_event.tv_sec = 0;
+        closest_event.tv_usec = 0;
+
+        ret_val = response_recv(&trans_id, &pending_desc, &closest_event,
+                                server, response, response_length);
+
+        if (ret_val == SR_NO_ANSWER_YET) {
+            /* wait for some data to become available */
+            wait_for_res_data(&pending_desc, &closest_event);
+        }
+    } while (ret_val == SR_NO_ANSWER_YET);
+
+    res_cancel(&trans_id); /* cleanup transaction */
 
     return ret_val;
 }
