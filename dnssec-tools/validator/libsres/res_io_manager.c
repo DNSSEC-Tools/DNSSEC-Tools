@@ -276,8 +276,7 @@ res_io_send(struct expected_arrival *shipit)
 
     socket_type = (shipit->ea_using_stream == 1) ? SOCK_STREAM : SOCK_DGRAM;
     socket_proto = (socket_type == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP;
-    if (res_io_debug)
-        printf("SENDING\n");
+    val_log(NULL, LOG_DEBUG, "libsres: ""SENDING");
 
     /*
      * If no socket exists for the transfer, create and connect it (TCP
@@ -309,10 +308,8 @@ res_io_send(struct expected_arrival *shipit)
             (shipit->ea_socket,
              (struct sockaddr *) shipit->ea_ns->ns_address[i],
              socket_size) == SOCKET_ERROR) {
-            if (res_io_debug) {
-                printf("Closing socket %d, connect errno = %d\n",
-                       shipit->ea_socket, errno);
-            }
+            val_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, connect errno = %d",
+                   shipit->ea_socket, errno);
             CLOSESOCK(shipit->ea_socket);
             shipit->ea_socket = INVALID_SOCKET;
             return SR_IO_SOCKET_ERROR;
@@ -349,19 +346,15 @@ res_io_send(struct expected_arrival *shipit)
     if ((bytes_sent = send(shipit->ea_socket, (const char *)shipit->ea_signed,
                            shipit->ea_signed_length, 0)) == SOCKET_ERROR) {
         CLOSESOCK(shipit->ea_socket);
-        if (res_io_debug) {
-            printf("Closing socket %d, sent != len\n",
-                   shipit->ea_socket);
-        }
+        val_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, sent != len",
+               shipit->ea_socket);
         shipit->ea_socket = INVALID_SOCKET;
         return SR_IO_SOCKET_ERROR;
     }
 
     if (bytes_sent != shipit->ea_signed_length) {
-        if (res_io_debug) {
-            printf("Closing socket %d, sent != signed len\n",
-                   shipit->ea_socket);
-        }
+        val_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, sent != signed len",
+                shipit->ea_socket);
         CLOSESOCK(shipit->ea_socket);
         shipit->ea_socket = INVALID_SOCKET;
         return SR_IO_SOCKET_ERROR;
@@ -370,8 +363,7 @@ res_io_send(struct expected_arrival *shipit)
     delay = shipit->ea_ns->ns_retrans
         << (shipit->ea_ns->ns_retry + 1 - shipit->ea_remaining_attempts--);
     set_alarm(&shipit->ea_next_try, delay);
-    if (res_io_debug)
-        res_print_ea(shipit);
+    res_print_ea(shipit);
 
     return SR_IO_UNSET;
 }
@@ -393,9 +385,8 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
          temp = temp->ea_next)
          ;
     if (temp != NULL) {
-        if (res_io_debug)
-            printf("Aborting current attempt for transaction %d\n",
-                   transaction_id);
+        val_log(NULL, LOG_ERR, "libsres: ""Aborting current attempt for transaction %d",
+                transaction_id);
         ret_val = res_nsfallback_ea(temp, closest_event, name, class_h, type_h,
                                     edns0);
     }
@@ -497,20 +488,15 @@ res_io_next_address(struct expected_arrival *ea,
         ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
         set_alarm(&(ea->ea_next_try), 0);
         set_alarm(&(ea->ea_cancel_time),res_get_timeout(ea->ea_ns));
-        if (res_io_debug) {
-            printf("%s - SWITCHING TO NEW ADDRESS\n", more_prefix);
-            res_print_ea(ea);
-        }
+        val_log(NULL, LOG_DEBUG, "libsres: ""%s - SWITCHING TO NEW ADDRESS", more_prefix);
     } else {
         /*
          * cancel this source 
          */
         res_io_cancel_remaining_attempts(ea);
-        if (res_io_debug) {
-            printf("%s\n", no_more_str);
-            res_print_ea(ea);
-        }
+        val_log(NULL, LOG_DEBUG, "libsres: ""%s", no_more_str);
     }
+    res_print_ea(ea);
 }
 
 int
@@ -533,8 +519,7 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
         if (ea->ea_remaining_attempts == -1)
             continue;
 
-        if (res_io_debug)
-            printf("res_io_check_one socket=%d\n", ea->ea_socket);
+        val_log(NULL, LOG_DEBUG, "libsres: ""res_io_check_one socket=%d", ea->ea_socket);
 
         /*
          * check for timeouts. If there is another address, move to it
@@ -584,8 +569,7 @@ res_io_check(int transaction_id, struct timeval *next_evt)
     gettimeofday(&tv, NULL);
     tv.tv_usec = 0;
 
-    if (res_io_debug)
-        printf("Checking at %ld\n", tv.tv_sec);
+    val_log(NULL, LOG_DEBUG, "libsres: ""Checking at %ld", tv.tv_sec);
 
     /*
      * Start "next event" at 0.0 seconds 
@@ -601,8 +585,7 @@ res_io_check(int transaction_id, struct timeval *next_evt)
     ea = transactions[transaction_id];
     pthread_mutex_unlock(&mutex);
 
-    if (res_io_debug)
-        printf("Next event is at %ld\n", next_evt->tv_sec);
+    val_log(NULL, LOG_DEBUG, "libsres: ""Next event is at %ld", next_evt->tv_sec);
 
     /*
      * check for remaining attempts for this transaction
@@ -679,8 +662,7 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
     /*
      * Call the res_io_check routine 
      */
-    if (res_io_debug)
-        printf("\nCalling io_check\n");
+    val_log(NULL, LOG_DEBUG, "libsres: ""Calling io_check");
 
     return res_io_check(*transaction_id, &next_event);
 }
@@ -749,11 +731,8 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
     if (max_sock > FD_SETSIZE)
         max_sock = FD_SETSIZE;
 
-    if (res_io_debug) {
-        printf("select on %d fds, timeout %ld sec\n", max_sock + 1,
-               timeout->tv_sec);
-        fflush(stdout);
-    }
+    val_log(NULL, LOG_DEBUG, "libsres: ""select, max %d fds, timeout %ld sec", max_sock + 1,
+            timeout->tv_sec);
 #ifdef HAVE_PSELECT
     struct timespec timeout_ts;
     timeout_ts.tv_sec = timeout->tv_sec;
@@ -762,8 +741,7 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
 #else
     i = select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
 #endif
-    if (res_io_debug)
-        printf("got %d fds\n", i);
+    val_log(NULL, LOG_DEBUG, "libsres: ""got %d fds", i);
 
     return i;
 }
@@ -808,9 +786,8 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
         { /** dummy block to preserve indentation; reformat later */
             *answer = ea_list->ea_response;
             *answer_length = ea_list->ea_response_length;
-            if (res_io_debug)
-                printf("get_response got %d bytes on socket %d\n",
-                       *answer_length, ea_list->ea_socket);
+            val_log(NULL, LOG_DEBUG, "libsres: ""get_response got %zd bytes on socket %d",
+                    *answer_length, ea_list->ea_socket);
 
             /*
              * don't clone all when we just need one. temporarily set
@@ -925,9 +902,8 @@ res_io_read_udp(struct expected_arrival *arrival)
 
     if (0 == ret_val) { /* what does 0 bytes mean from udp socket? */
         // xxx-rks: allow other attempt, or goto error?
-        if (res_io_debug)
-            printf("0 bytes on socket %d, read_udp failed\n",
-                   arrival->ea_socket);
+        val_log(NULL, LOG_INFO, "libsres: ""0 bytes on socket %d, read_udp failed",
+                arrival->ea_socket);
         FREE(arrival->ea_response);
         arrival->ea_response = NULL;
         arrival->ea_response_length = 0;
@@ -968,8 +944,7 @@ res_io_read_udp(struct expected_arrival *arrival)
     return SR_IO_UNSET;
 
   error:
-    if (res_io_debug)
-        printf("Closing socket %d, read_udp failed\n", arrival->ea_socket);
+    val_log(NULL, LOG_INFO, "libsres: ""Closing socket %d, read_udp failed", arrival->ea_socket);
     FREE(arrival->ea_response);
     arrival->ea_response = NULL;
     arrival->ea_response_length = 0;
@@ -984,8 +959,7 @@ res_io_read_udp(struct expected_arrival *arrival)
 void
 res_switch_to_tcp(struct expected_arrival *ea)
 {
-    if (res_io_debug)
-        printf("Switching to TCP\n");
+    val_log(NULL, LOG_INFO, "libsres: ""Switching to TCP");
 
     if (NULL == ea)
         return;
@@ -1025,12 +999,10 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 
         { /* dummy block to preserve indentation; remove later */
 
-            if (res_io_debug)
-                printf("ACTIVITY on %d\n", ea_list->ea_socket);
+            val_log(NULL, LOG_DEBUG, "libsres: ""ACTIVITY on %d", ea_list->ea_socket);
             ++handled;
             arrival = ea_list;
-            if (res_io_debug)
-                res_print_ea(arrival);
+            res_print_ea(arrival);
 
             if (arrival->ea_using_stream) {
                 /** Use TCP */
@@ -1041,9 +1013,8 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 if (res_io_read_udp(arrival) == SR_IO_SOCKET_ERROR)
                     continue;
             }
-            if (res_io_debug)
-                printf("Read %d bytes via %s\n", arrival->ea_response_length,
-                       arrival->ea_using_stream ? "TCP" : "UDP");
+            val_log(NULL, LOG_DEBUG, "libsres: ""Read %zd byptes via %s", arrival->ea_response_length,
+                    arrival->ea_using_stream ? "TCP" : "UDP");
 
             /*
              * Make sure this is the query we want (buffer id's match).
@@ -1061,9 +1032,8 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 /*
                  * The the query and response ID's/query lines don't match 
                  */
-                if (res_io_debug)
-                    printf
-                        ("The the query and response ID's or q_fields don't match\n");
+                val_log(NULL, LOG_WARNING, "libsres: "
+                        "The the query and response ID's or q_fields don't match");
                 FREE(arrival->ea_response);
                 arrival->ea_response = NULL;
                 arrival->ea_response_length = 0;
@@ -1099,8 +1069,7 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
 
     FD_ZERO(&read_descriptors);
 
-    if (res_io_debug)
-        printf("\nCalling io_accept\n");
+    val_log(NULL, LOG_DEBUG, "libsres: ""\nCalling io_accept");
 
     /*
      * See what needs to be sent.  A return code of 0 means that there
@@ -1217,7 +1186,6 @@ res_print_ea(struct expected_arrival *ea)
     const char     *addr = NULL;
     size_t	    buflen = sizeof(buf);
 
-    if (res_io_debug) {
         struct sockaddr_in *s =
             (struct sockaddr_in *) ((ea->ea_ns->ns_address[i]));
 #ifdef VAL_IPV6
@@ -1235,15 +1203,14 @@ res_print_ea(struct expected_arrival *ea)
             port = s->sin_port;
         }
 
-        printf("Socket: %d ", ea->ea_socket);
-        printf("Stream: %d ", ea->ea_using_stream);
-        printf("Nameserver: %s/(%d)\n", addr ? addr : "",
+        val_log(NULL, LOG_DEBUG, "libsres: ""Socket: %d ", ea->ea_socket);
+        val_log(NULL, LOG_DEBUG, "libsres: ""Stream: %d ", ea->ea_using_stream);
+        val_log(NULL, LOG_DEBUG, "libsres: ""Nameserver: %s/(%d)", addr ? addr : "",
                ntohs(port));
 
-        printf("Remaining retries: %d ", ea->ea_remaining_attempts);
-        printf("Next try %ld, Cancel at %ld\n", ea->ea_next_try.tv_sec,
+        val_log(NULL, LOG_DEBUG, "libsres: ""Remaining retries: %d ", ea->ea_remaining_attempts);
+        val_log(NULL, LOG_DEBUG, "libsres: ""Next try %ld, Cancel at %ld", ea->ea_next_try.tv_sec,
                ea->ea_cancel_time.tv_sec);
-    }
 }
 
 void
@@ -1256,15 +1223,14 @@ res_io_view(void)
 
     gettimeofday(&tv, NULL);
     tv.tv_usec = 0;
-    if (res_io_debug)
-        printf("Current time is %ld\n", tv.tv_sec);
+    val_log(NULL, LOG_DEBUG, "libsres: ""Current time is %ld", tv.tv_sec);
 
     pthread_mutex_lock(&mutex);
     for (i = 0; i < MAX_TRANSACTIONS; i++)
         if (transactions[i]) {
-            printf("Transaction id: %3d\n", i);
+            val_log(NULL, LOG_DEBUG, "libsres: ""Transaction id: %3d", i);
             for (ea = transactions[i], j = 0; ea; ea = ea->ea_next, j++) {
-                printf("Source #%d\n", j);
+                val_log(NULL, LOG_DEBUG, "libsres: ""Source #%d", j);
                 res_print_ea(ea);
             }
         }
