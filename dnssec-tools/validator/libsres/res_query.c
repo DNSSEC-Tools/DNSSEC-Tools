@@ -412,6 +412,12 @@ response_recv(int *trans_id,
 {
     int             ret_val;
 
+    if ((NULL == trans_id) || (NULL == pending_desc) || (NULL == closest_event) ||
+        (NULL == respondent) || (NULL == answer) || (NULL == answer_length))
+        return SR_INTERNAL_ERROR;
+
+    val_log(NULL, LOG_DEBUG, "libsres: ""response_recv tid %d", *trans_id);
+
     /*
      * Prepare the default response 
      */
@@ -470,7 +476,7 @@ get(const char *name,
     struct timeval closest_event;
     fd_set pending_desc;
     if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
-
+        val_log(NULL,LOG_DEBUG,"libsres: ""get %s", name);
         do {
             FD_ZERO(&pending_desc);
             closest_event.tv_sec = 0;
