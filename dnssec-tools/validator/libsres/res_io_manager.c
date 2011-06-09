@@ -1589,7 +1589,31 @@ res_async_ea_isset(struct expected_arrival *ea, fd_set *fds)
     if (NULL == ea || NULL == fds)
         return 0;
 
-    return FD_ISSET(ea->ea_socket, fds);
+    for (; ea; ea = ea->ea_next) {
+        if (FD_ISSET(ea->ea_socket, fds))
+            return 1;
+    }
+
+    return 0;
+}
+
+int
+res_async_tid_isset(int tid, fd_set *fds)
+{
+    struct expected_arrival *ea;
+    int retval = 0;
+
+    if (tid < 0 || tid >= MAX_TRANSACTIONS || NULL == fds)
+        return 0;
+
+    pthread_mutex_lock(&mutex);
+
+    if (transactions[tid])
+        retval = res_async_ea_isset(transactions[tid],fds);
+
+    pthread_mutex_unlock(&mutex);
+
+    return retval;
 }
 
 int
