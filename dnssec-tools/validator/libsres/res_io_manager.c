@@ -216,6 +216,22 @@ res_io_cancel_remaining_attempts(struct expected_arrival *ea)
 }
 
 void
+res_io_cancel_source(struct expected_arrival *ea)
+{
+    /* close socket */
+    if (ea->ea_socket != -1) {
+        close(ea->ea_socket);
+        ea->ea_socket = -1;
+    }
+
+    /* no more retries */
+    ea->ea_remaining_attempts = 0;
+
+    /* bump cancel time to current time */
+    gettimeofday(&ea->ea_cancel_time, NULL);
+}
+
+void
 res_io_cancel_all_remaining_attempts(struct expected_arrival *ea)
 {
     for ( ; ea; ea = ea->ea_next) {
@@ -960,7 +976,7 @@ res_io_read_udp(struct expected_arrival *arrival)
     /*
      * Cancel this source 
      */
-    res_io_cancel_remaining_attempts(arrival);
+    res_io_cancel_source(arrival);
     return SR_IO_SOCKET_ERROR;
 }
 
