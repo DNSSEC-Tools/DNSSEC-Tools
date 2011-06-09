@@ -255,4 +255,14 @@ void
 res_io_select_info(struct expected_arrival *ea_list, int *nfds,
                    fd_set * read_descriptors, struct timeval *timeout);
 
+/*
+ * count the number of descriptors set in the given fdset.
+ *
+ * the max_fd argument is optional and specifies the highest number fd that
+ * may be set (i.e. like the nfds param to select()). If it is less than or
+ * equal to zero, every fd is checked.
+ */
+int
+res_io_count_ready(fd_set *read_desc, int max_fd);
+
 #endif
