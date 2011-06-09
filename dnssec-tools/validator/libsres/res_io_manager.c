@@ -1178,6 +1178,8 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
             val_log(NULL, LOG_DEBUG, "libsres: ""ACTIVITY on %d",
                     ea_list->ea_socket);
             ++handled;
+            FD_CLR(ea_list->ea_socket, read_descriptors);
+
             arrival = ea_list;
             res_print_ea(arrival);
 
