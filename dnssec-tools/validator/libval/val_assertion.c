@@ -6646,8 +6646,7 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
             continue;
 
         retval = _async_check_one(as, pending_desc, nfds, flags);
-        if (VAL_NO_ERROR != retval)
-            continue; /* keep trying other requests */
+        /* ignore errors, keep trying other requests */
 
         if (as->val_as_flags & VAL_AS_DONE) {
             /** if done, remove from context */
