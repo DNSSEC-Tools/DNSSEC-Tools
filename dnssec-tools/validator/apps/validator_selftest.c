@@ -495,7 +495,7 @@ suite_async_callback(val_async_status *as)
 {
     testsuite *suite;
     if (NULL == as || NULL == as->val_as_cb_user_ctx) {
-        val_log(as->val_as_ctx, LOG_ERR, "bad parameter for callback\n");
+        val_log(as->val_as_ctx, LOG_ERR, "bad parameter for callback");
         return VAL_BAD_ARGUMENT;
     }
 
@@ -505,7 +505,7 @@ suite_async_callback(val_async_status *as)
     --suite->remaining;
 
     val_log(as->val_as_ctx, LOG_INFO,
-            "query completed; %d in flight, %d remaining\n",
+            "query completed; %d in flight, %d remaining",
             suite->in_flight, suite->remaining);
     return VAL_NO_ERROR;
 }
@@ -559,7 +559,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         val_async_select_info(context, &activefds, &nfds, &timeout);
         if (0 == nfds) {
             val_log(context, LOG_DEBUG,
-                    "no file decsriptors set for requests\n");
+                    "no file decsriptors set for requests");
             rc = val_async_check(context, &activefds, &nfds, 0);
             val_async_select_info(context, &activefds, &nfds, &timeout);
         }
@@ -600,7 +600,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         if (ready == 0) {
             gettimeofday(&now, NULL);
             now.tv_usec = 0;
-            val_log(context, LOG_DEBUG, "timeout @ %ld\n", now.tv_sec);
+            val_log(context, LOG_DEBUG, "timeout @ %ld", now.tv_sec);
         }
 
         rc = val_async_check(context, &activefds, &nfds, 0);
