@@ -1942,8 +1942,8 @@ read_res_config_file(val_context_t * ctx)
         if (fd == -1) {
             val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open default resolver conf file for reading: %s",
                     resolv_conf);
+            return VAL_CONF_NOT_FOUND;
         }
-        return VAL_CONF_NOT_FOUND;
     }
 #ifdef HAVE_FLOCK
     fl.l_type = F_RDLCK;
