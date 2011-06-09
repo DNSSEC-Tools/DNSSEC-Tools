@@ -702,9 +702,23 @@ int
 res_io_deliver(int *transaction_id, u_char * signed_query,
                size_t signed_length, struct name_server *ns, long delay)
 {
+    struct timeval  next_event;
+    int             rc;
+
+    rc = res_io_queue(transaction_id, signed_query, signed_length, ns, delay);
+
+    /*
+     * Call the res_io_check routine 
+     */
+    return res_io_check(*transaction_id, &next_event);
+}
+
+int
+res_io_queue(int *transaction_id, u_char * signed_query,
+             size_t signed_length, struct name_server *ns, long delay)
+{
     int             try_index;
     struct expected_arrival *temp, *new_ea;
-    struct timeval  next_event;
 
     /*
      * Determine (new) transaction location 
@@ -760,7 +774,7 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
 
     pthread_mutex_unlock(&mutex);
 
-    return res_io_check(*transaction_id, &next_event);
+    return SR_IO_UNSET;
 }
 
 void
