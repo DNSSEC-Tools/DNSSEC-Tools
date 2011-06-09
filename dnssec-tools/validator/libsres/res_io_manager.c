@@ -1114,7 +1114,7 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 /*
                  * The the query and response ID's/query lines don't match 
                  */
-                val_log(NULL, LOG_ERR, "libsres: ""dropping response: "
+                val_log(NULL, LOG_WARNING, "libsres: ""dropping response: "
                         "query and response ID's or q_fields don't match");
                 FREE(arrival->ea_response);
                 arrival->ea_response = NULL;
