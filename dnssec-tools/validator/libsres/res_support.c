@@ -70,10 +70,17 @@ my_free(void *p, char *filename, int lineno)
 void           *
 my_malloc(size_t t, char *filename, int lineno)
 {
-    void           *p = malloc(t);
+    void           *p;
 
     if (logfile == NULL)
         logfile = fopen(MEM_LOGFILE, "w");
+
+    if (t == 0) {
+        val_log(NULL,LOG_DEBUG, "0 byte alloc from %-20s %5d", filename, lineno);
+        p = NULL;
+    }
+    else
+        p = malloc(t);
 
     fprintf(logfile, "0x%08lx %5d aMALL %-20s %5d size=%6d\n", (u_long) p,
             seq_number++, filename, lineno, (u_int) t);
