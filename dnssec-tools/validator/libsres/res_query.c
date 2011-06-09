@@ -362,6 +362,7 @@ query_send(const char *name,
     u_char         *signed_query = NULL;
     size_t          signed_length = 0;
 
+    struct timeval      dummy;
     struct name_server *ns_list = NULL;
     struct name_server *ns;
     long   delay = 0;
@@ -392,13 +393,16 @@ query_send(const char *name,
                         &signed_query, &signed_length)) < 0) {
             continue;
         }
-        if ((ret_val = res_io_deliver(trans_id, signed_query,
-                                      signed_length, ns, delay)) < 0) {
+        if ((ret_val = res_io_queue(trans_id, signed_query,
+                                    signed_length, ns, delay)) < 0) {
             continue;
         }
 
         delay += LIBSRES_NS_STAGGER;
     }
+
+    dummy.tv_sec = dummy.tv_usec = 0;
+    res_io_check_one_tid(*trans_id, &dummy, NULL);
 
     return SR_UNSET;
 }
