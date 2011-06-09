@@ -1929,7 +1929,8 @@ get_ac_trust(val_context_t *context,
              u_int32_t flags, int proof)
 {
     struct queries_for_query *added_q = NULL;
-    u_int32_t ttl_x;
+    u_int32_t ttl_x, type;
+    u_char *name_n;
 
     if (!next_as ||
         !next_as->val_ac_rrset.ac_data) {
@@ -1981,32 +1982,28 @@ get_ac_trust(val_context_t *context,
      * Then look for  {zonecut, DNSKEY/DS, type} 
      */
     if (next_as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey) {
-
-        /*
-         * Create a query for missing data 
-         */
-        if (VAL_NO_ERROR !=
-             add_to_qfq_chain(context, queries, 
-                              next_as->val_ac_rrset.ac_data->rrs_name_n, 
-                              ns_t_ds,
-                              next_as->val_ac_rrset.ac_data->rrs_class_h, 
-                              flags, &added_q))
-            return NULL;
-
+        type = ns_t_ds;
+        name_n = next_as->val_ac_rrset.ac_data->rrs_name_n;
     } else {
         
         if (!next_as->val_ac_rrset.ac_data->rrs_zonecut_n)
             return NULL;
 
-        /*
-         * look for DNSKEY records 
-         */
+        type = ns_t_dnskey;
+        name_n = next_as->val_ac_rrset.ac_data->rrs_zonecut_n;
+    }
+
+    /** see if query already submitted */
+    added_q = check_in_qfq_chain(context, queries, name_n, type,
+                                 next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                 flags);
+    if (NULL == added_q) {
+
+        /** Create a query for missing data */
         if (VAL_NO_ERROR !=
-             add_to_qfq_chain(context, queries, 
-                              next_as->val_ac_rrset.ac_data->rrs_zonecut_n, 
-                              ns_t_dnskey,
-                              next_as->val_ac_rrset.ac_data->rrs_class_h, 
-                              flags, &added_q))
+            add_to_qfq_chain(context, queries, name_n, type,
+                             next_as->val_ac_rrset.ac_data->rrs_class_h, 
+                             flags, &added_q))
             return NULL;
     }
 
