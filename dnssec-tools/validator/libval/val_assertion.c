@@ -6529,6 +6529,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     /*
      * run through all queries, checking for responses/retries
      */
+    closest_event.tv_sec = closest_event.tv_usec = 0;
     gettimeofday(&now, NULL);
     for (; qfq; qfq = qfq->qfq_next) {
 
