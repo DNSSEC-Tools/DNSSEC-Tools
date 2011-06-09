@@ -2172,6 +2172,7 @@ val_resquery_send(val_context_t * context,
     struct name_server *tempns;
     struct val_query_chain *matched_q;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
     /*
      * Get a (set of) answer(s) from the default NS's.
      * If nslist is NULL, read the cached zones and name servers
@@ -2236,6 +2237,8 @@ val_resquery_rcv(val_context_t * context,
 
     int             ret_val;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     if ((matched_qfq == NULL) || (response == NULL) || (queries == NULL) ||
         (pending_desc == NULL)
 #ifndef VAL_NO_ASYNC
@@ -2278,6 +2281,8 @@ val_resquery_rcv(val_context_t * context,
 void
 val_res_cancel(struct val_query_chain *matched_q)
 {
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
 #ifndef VAL_NO_ASYNC
     if (matched_q->qc_ea) {
         res_async_query_free(matched_q->qc_ea);
@@ -2295,6 +2300,8 @@ val_res_nsfallback(val_context_t *context,
                    struct timeval *closest_event)
 {
     int edns0, ret_val;
+
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
 
     /*
@@ -2348,6 +2355,8 @@ _process_rcvd_response(val_context_t * context,
 {
     struct val_query_chain *matched_q = matched_qfq->qfq_query;
     int ret_val;
+
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
     matched_q->qc_respondent_server = server;
 
@@ -2437,6 +2446,8 @@ val_resquery_async_send(val_context_t * context,
     if ((matched_qfq == NULL) || (matched_qfq->qfq_query->qc_ns_list == NULL))
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     /** Can never be NULL if matched_qfq is not NULL */
     matched_q = matched_qfq->qfq_query;
 
@@ -2488,6 +2499,8 @@ val_resquery_async_rcv(val_context_t * context,
         (pending_desc == NULL))
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     matched_q = matched_qfq->qfq_query; /* ! NULL if matched_qfq ! NULL */
     *response = NULL;
     stream = res_async_ea_is_using_stream(matched_q->qc_ea);
@@ -2534,6 +2547,8 @@ val_async_select_info(val_context_t *context, fd_set *activefds,
 
     if (NULL == context)
         return VAL_BAD_ARGUMENT;
+
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
     for (as = context->as_list; as; as = as->val_as_next)
         for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {

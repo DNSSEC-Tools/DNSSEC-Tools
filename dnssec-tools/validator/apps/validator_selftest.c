@@ -535,6 +535,8 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                  j < burst &&
                  curr_test;
              ++i, ++j, curr_test = curr_test->next) {
+            val_log(context, LOG_DEBUG, "starting test %i (max %d) %s", i, tce,
+                    curr_test->desc);
             rc = val_async_submit(context, curr_test->qn, curr_test->qc,
                                   curr_test->qt, flags, &curr_test->as);
             if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
@@ -580,7 +582,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             timeout.tv_usec = 500;
         }
         val_log(context, LOG_INFO,
-                "select @ %d, %d fds, timeout %ld, %d in flight, %d unsent\n",
+                "select @ %d, max fd %d, timeout %ld, %d in flight, %d unsent",
                now.tv_sec, nfds, timeout.tv_sec, suite->in_flight, unsent);
         if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG))
             res_io_count_ready(&activefds, nfds); // debug

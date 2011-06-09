@@ -219,6 +219,9 @@ val_free_result_chain(struct val_result_chain *results)
 
     if (NULL == results)
         return;
+
+    val_log(NULL, LOG_DEBUG, "rc %p free", results);
+
     while (NULL != (prev = results)) {
         results = results->val_rc_next;
 
@@ -301,6 +304,8 @@ init_query_chain_node(struct val_query_chain *q)
 static void 
 _release_query_chain_structure(struct val_query_chain *queries)
 {
+    val_log(NULL, LOG_DEBUG, "qc %p release", queries);
+
     val_res_cancel(queries);
 
     if (queries->qc_zonecut_n != NULL) {
@@ -345,6 +350,8 @@ free_query_chain_structure(struct val_query_chain *queries)
 {
     if (NULL == queries)
        return;
+
+    val_log(NULL, LOG_DEBUG, "qc %p free", queries);
 
     _release_query_chain_structure(queries);
     FREE(queries);
@@ -455,6 +462,8 @@ remove_and_free_query_chain(val_context_t *context,
      */
     if ((NULL == context) || (added_q == NULL))
         return VAL_BAD_ARGUMENT;
+
+    val_log(context, LOG_DEBUG, "qc %p remove/free", added_q);
 
     if (added_q->qc_next)
         remove_and_free_query_chain(context, added_q->qc_next);
@@ -5078,6 +5087,8 @@ ask_cache(val_context_t * context,
         data_missing == NULL)
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     if (*data_missing == 0)
         return VAL_NO_ERROR;
 
@@ -5112,6 +5123,8 @@ ask_resolver(val_context_t * context,
 {
     struct queries_for_query *next_q;
     int             retval = VAL_NO_ERROR;
+
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
     if ((context == NULL) || (queries == NULL) || (data_received == NULL) ||
         (data_missing == NULL)) 
@@ -5281,6 +5294,8 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
         (query->qfq_query->qc_state != Q_INIT))
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     if (-1 == ns_name_ntop(query->qfq_query->qc_name_n, name_p,
                            sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -5328,6 +5343,8 @@ _resolver_submit(val_context_t * context, struct queries_for_query **queries,
         (data_missing == NULL))
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     /** nothing to do if no data missing */
     if (*data_missing == 0)
         return VAL_NO_ERROR;
@@ -5363,13 +5380,14 @@ _resolver_submit(val_context_t * context, struct queries_for_query **queries,
 
 static int
 _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
-                  struct queries_for_query *next_q,
-                  fd_set * pending_desc, struct timeval *closest_event,
-                  int *data_received)
+                  struct queries_for_query *next_q, fd_set *pending_desc,
+                  struct timeval *closest_event, int *data_received)
 {
     struct domain_info       *response = NULL;
     char                      name_p[NS_MAXDNAME];
     int                       retval;
+
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
     /** only care about quereies that were just sent */
     if (next_q->qfq_query->qc_state != Q_SENT)
@@ -5991,6 +6009,8 @@ int try_chase_query(val_context_t * context,
     if (context == NULL || queries == NULL || results == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     if (VAL_NO_ERROR !=
         (retval =
          add_to_qfq_chain(context, queries, domain_name_n, type,
@@ -6005,12 +6025,12 @@ int try_chase_query(val_context_t * context,
                                                    results, 
                                                    done)))
         return retval;
+
     _free_w_results(w_results);
     w_results = NULL;
 
     return VAL_NO_ERROR;
 }
-
 
 /*
  * Look inside the cache, ask the resolver for missing data.
@@ -6042,6 +6062,7 @@ val_resolve_and_check(val_context_t * ctx,
     if ((results == NULL) || (domain_name == NULL))
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
     /* 
      * Sanity check the values of class and type 
      * Should not be larger than sizeof u_int16_t
@@ -6086,6 +6107,8 @@ val_resolve_and_check(val_context_t * ctx,
         fd_set pending_desc;
         struct timeval closest_event;
     
+        val_log(NULL,LOG_DEBUG,"libsres: ");
+        val_log(NULL,LOG_DEBUG,"libsres: ""val_resolve_and_check !done");
         FD_ZERO(&pending_desc);
         closest_event.tv_sec = 0;
         closest_event.tv_usec = 0;
@@ -6157,7 +6180,7 @@ val_resolve_and_check(val_context_t * ctx,
             struct timeval temp_t;
             gettimeofday(&temp_t, NULL);
             val_log(context, LOG_DEBUG, 
-                    "zzzzzzzzzzzzz pselect(): (Thread %u) Waiting for %d seconds", 
+                    "zzzzzzzzzz pselect(): (Thread %u) Waiting for %d seconds", 
                     (unsigned int)pthread_self(),
                     (closest_event.tv_sec >temp_t.tv_sec)? 
                         closest_event.tv_sec - temp_t.tv_sec : 0); 
@@ -6300,7 +6323,7 @@ val_async_status_free(val_async_status *as)
     if (NULL == as)
         return VAL_BAD_ARGUMENT;
 
-    val_log(as->val_as_ctx, LOG_DEBUG, "releasing as %p", as);
+    val_log(as->val_as_ctx, LOG_DEBUG, "as %p releasing", as);
 
     /* remove all pending queries from context list */
     _free_qfq_chain(as->val_as_ctx, as->val_as_queries);
@@ -6346,6 +6369,8 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     if ((domain_name == NULL) || (async_status == NULL))
         return VAL_BAD_ARGUMENT;
 
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
     /*
      * Sanity check the values of class and type
      * Should not be larger than sizeof u_int16_t
@@ -6365,7 +6390,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
         return VAL_OUT_OF_MEMORY;
     }
 
-    val_log(NULL, LOG_DEBUG, "allocated as %p", as);
+    val_log(NULL, LOG_DEBUG, "as %p allocated", as);
 
     if ((retval = ns_name_pton(domain_name,
                                as->val_as_domain_name_n,
