@@ -382,7 +382,8 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
          temp = temp->ea_next)
          ;
     if (temp != NULL) {
-        val_log(NULL, LOG_ERR, "libsres: ""Aborting current attempt for transaction %d",
+        val_log(NULL, LOG_WARNING, "libsres: "
+                "Aborting current attempt for transaction %d",
                 transaction_id);
         ret_val = res_nsfallback_ea(temp, closest_event, name, class_h, type_h,
                                     edns0);
