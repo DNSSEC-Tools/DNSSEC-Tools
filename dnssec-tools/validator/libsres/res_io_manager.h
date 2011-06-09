@@ -226,6 +226,12 @@ int             res_io_check_one_tid(int tid, struct timeval *next_evt,
                                      struct timeval *now);
 
 /*
+ * switch a newly created/queued es chain to default to TCP
+ */
+void            res_switch_all_to_tcp(struct expected_arrival *ea);
+void            res_switch_all_to_tcp_tid(int tid);
+
+/*
  * res_cancel
  * 
  * Cancels all outstanding requests remaining for a transaction.
