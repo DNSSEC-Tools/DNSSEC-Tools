@@ -670,18 +670,8 @@ find_nslist_for_query(val_context_t * context,
          */
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
 
-        /*
-         * Never trigger edns0 fallback for the default name server
-         */
-        next_q->qc_flags |= VAL_QUERY_NO_EDNS0_FALLBACK;
         goto done;
     } 
-
-    /*
-     * Allow EDNS0 fallback
-     */
-    if (next_q->qc_flags & VAL_QUERY_NO_EDNS0_FALLBACK)
-        next_q->qc_flags ^= VAL_QUERY_NO_EDNS0_FALLBACK;
 
     ret_val = get_nslist_from_cache(context, next_qfq, queries, &ref_ns_list, &next_q->qc_zonecut_n, &ns_cred);
     
