@@ -200,6 +200,16 @@ res_io_is_finished(struct expected_arrival *ea);
 int
 res_io_are_all_finished(struct expected_arrival *ea);
 
+/*
+ * count the number of descriptors set in the given fdset.
+ *
+ * the max_fd argument is optional and specifies the highest number fd that
+ * may be set (i.e. like the nfds param to select()). If it is less than or
+ * equal to zero, every fd is checked.
+ */
+int
+res_io_count_ready(fd_set *read_desc, int max_fd);
+
 int
 res_async_ea_is_using_stream(struct expected_arrival *ea);
 

@@ -538,7 +538,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             rc = val_async_submit(context, curr_test->qn, curr_test->qc,
                                   curr_test->qt, flags, &curr_test->as);
             if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
-                val_log(context, LOG_ERR, "error sending %i %s\n", i,
+                val_log(context, LOG_ERR, "error sending %i %s", i,
                         curr_test->desc);
                 continue;
             }
@@ -575,29 +575,22 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         /** don't sleep too long if more queries are waiting to be sent */
         if (unsent && suite->in_flight < max_in_flight && timeout.tv_sec > 0) {
             val_log(context, LOG_DEBUG,
-                    "reducing timeout so we can send more requests\n");
+                    "reducing timeout so we can send more requests");
             timeout.tv_sec = 0;
             timeout.tv_usec = 500;
         }
         val_log(context, LOG_INFO,
                 "select @ %d, %d fds, timeout %ld, %d in flight, %d unsent\n",
                now.tv_sec, nfds, timeout.tv_sec, suite->in_flight, unsent);
-        if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG)) {
-            val_log(context, LOG_DEBUG, "activefds: ");
-            i = getdtablesize();
-            if (i > FD_SETSIZE)
-                i = FD_SETSIZE;
-            for (--i; i >= 0; --i)
-                if (FD_ISSET(i, &activefds)) {
-                    val_log(context, LOG_DEBUG, "%d ", i);
-                }
-            val_log(context, LOG_DEBUG, "\n");
-        }
+        if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG))
+            res_io_count_ready(&activefds, nfds); // debug
 
         fflush(stdout);
         ready = select(nfds, &activefds, NULL, NULL, &timeout);
         gettimeofday(&now, NULL);
-        val_log(context, LOG_DEBUG, "%d fds @ %d\n", ready, now.tv_sec);
+        val_log(context, LOG_DEBUG, "%d fds ready @ %d", ready, now.tv_sec);
+        if ((ready > 0) && (val_log_debug_level() >= LOG_DEBUG))
+            res_io_count_ready(&activefds, nfds); // debug
         if (ready < 0 && errno == EINTR)
             continue;
 

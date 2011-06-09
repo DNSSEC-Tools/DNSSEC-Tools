@@ -31,7 +31,6 @@
 #endif
 
 static int res_io_debug = FALSE;
-int res_io_count_ready(fd_set *read_desc);
 
 void
 res_io_set_debug(int val)
@@ -874,11 +873,7 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
     if (max_sock > FD_SETSIZE)
         max_sock = FD_SETSIZE;
 
-    for (count=i=0; i <= max_sock; ++i)
-        if (FD_ISSET(i, read_descriptors)) {
-            ++count;
-            val_log(NULL,LOG_DEBUG, "libsres: ""  fd %d set", i);
-        }
+    count = res_io_count_ready(read_descriptors, max_sock + 1);
     gettimeofday(&in, NULL);
     val_log(NULL, LOG_DEBUG,
             "libsres: ""SELECT on %d fds, max %d, timeout %ld.%ld @ %ld.%ld",
@@ -894,10 +889,9 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
 #endif
     gettimeofday(&out, NULL);
     val_log(NULL, LOG_DEBUG, "libsres: "" %d ready fds @ %ld.%ld",
-            i,out.tv_sec,out.tv_usec);
-    for (i=0; i <= max_sock; ++i)
-        if (FD_ISSET(i, read_descriptors))
-            val_log(NULL,LOG_DEBUG, "libsres: ""  fd %d ready", i);
+            ready,out.tv_sec,out.tv_usec);
+    if (ready > 0)
+        res_io_count_ready(read_descriptors, max_sock + 1);
 
     return ready;
 }
@@ -1428,25 +1422,29 @@ res_io_stall(void)
 }
 
 int
-res_io_count_ready(fd_set *read_desc)
+res_io_count_ready(fd_set *read_desc, int num_fds)
 {
     int i, count, max;
 
     if (NULL == read_desc) {
-        val_log(NULL,LOG_DEBUG, "libsres: "" no fds ready (NULL fd_set)");
+        val_log(NULL,LOG_DEBUG, "libsres: "" count: no fds set (NULL fd_set)");
         return 0;
     }
 
-    max = getdtablesize(); 
+    if (num_fds > 0)
+        max = num_fds;
+    else
+        max = getdtablesize(); 
+
     if (max > FD_SETSIZE)
         max = FD_SETSIZE;
     for (count=i=0; i < max; ++i)
         if (FD_ISSET(i, read_desc)) {
-            val_log(NULL,LOG_DEBUG, "libsres: "" fd %d ready", i);
+            val_log(NULL,LOG_DEBUG, "libsres: "" count: fd %d set", i);
             ++count;
         }
     if (0 == count)
-        val_log(NULL,LOG_DEBUG, "libsres: "" no fds ready");
+        val_log(NULL,LOG_DEBUG, "libsres: "" count: no fds set");
     return count;
 }
 
