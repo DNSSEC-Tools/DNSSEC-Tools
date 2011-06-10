@@ -64,7 +64,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
     int             qdcount, ancount, nscount, arcount;
     u_int           opcode, rcode, id;
     ns_rr           rr;
-    int             n, rrnum;
+    int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
     ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
@@ -98,7 +98,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
         }
         if (ns_rr_type(rr) == ns_t_opt) {
             u_int32_t       ttl = ns_rr_ttl(rr);
-            u_int32_t     flags = ttl & 0xffff;
+            /* u_int32_t     flags = ttl & 0xffff; */
 
             found_edns0 = 1;
 
@@ -158,6 +158,8 @@ int main(int argc, char *argv[]) {
     memset(buf, 0, sizeof(buf));
     rc = check_do_bit(nameservertouse, buf, sizeof(buf));
     printf("do_bit:     %d %s\n", rc, buf);
+
+    return 0;
 }
 
     
