@@ -321,10 +321,10 @@ struct queries_for_query;
                                      int qtype, unsigned int flags,
                                      val_async_status **async_status);
     int             val_async_check(val_context_t *context,
-                                    struct fd_set *pending_desc, int *nfds,
+                                    fd_set *pending_desc, int *nfds,
                                     unsigned int flags);
     int             val_async_select_info(val_context_t *context,
-                                    struct fd_set *fds,
+                                    fd_set *fds,
                                     int *num_fds,
                                     struct timeval *timeout);
 #endif /* VAL_NO_ASYNC */

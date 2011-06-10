@@ -199,6 +199,10 @@ res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
                  struct timeval *now);
 
 int
+res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
+                     struct timeval *now, int *net_change, int *active);
+
+int
 res_io_get_a_response(struct expected_arrival *ea_list, unsigned char **answer,
                       size_t *answer_length, struct name_server **respondent);
 
