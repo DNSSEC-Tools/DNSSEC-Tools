@@ -1002,7 +1002,7 @@ complete_read(SOCKET sock, u_char *field, size_t length)
     return bytes_read;
 }
 
-int
+static int
 res_io_read_tcp(struct expected_arrival *arrival)
 {
     u_int16_t    len_n;
@@ -1046,7 +1046,7 @@ res_io_read_tcp(struct expected_arrival *arrival)
     return SR_IO_UNSET;
 }
 
-int
+static int
 res_io_read_udp(struct expected_arrival *arrival)
 {
     size_t bytes_waiting = 8192;
