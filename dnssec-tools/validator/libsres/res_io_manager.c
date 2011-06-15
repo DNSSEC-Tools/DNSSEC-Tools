@@ -278,7 +278,9 @@ res_io_send(struct expected_arrival *shipit)
 
     socket_type = (shipit->ea_using_stream == 1) ? SOCK_STREAM : SOCK_DGRAM;
     socket_proto = (socket_type == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP;
-    val_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING", shipit);
+    val_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING type %d %s", shipit,
+            shipit->ea_ns->ns_address[shipit->ea_which_address]->ss_family,
+            shipit->ea_using_stream ? "stream" : "dgram");
 
     /*
      * If no socket exists for the transfer, create and connect it (TCP
@@ -288,9 +290,13 @@ res_io_send(struct expected_arrival *shipit)
     if (shipit->ea_socket == INVALID_SOCKET) {
         int             i = shipit->ea_which_address;
 
-        if ((shipit->ea_socket = socket( shipit->ea_ns->ns_address[i]->ss_family,
-                                        socket_type, socket_proto)) == INVALID_SOCKET)
+        shipit->ea_socket = socket(shipit->ea_ns->ns_address[i]->ss_family,
+                                   socket_type, 0);
+        if (shipit->ea_socket == INVALID_SOCKET) {
+            val_log(NULL,LOG_ERR,"libsres: ""socket() failed, errno = %d",
+                errno);
             return SR_IO_SOCKET_ERROR;
+        }
 
         /* Set the source port */
         if (0 != bind_to_random_source(shipit->ea_socket)) {
@@ -848,9 +854,8 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
         }
     }
     if (timeout) {
-        val_log(NULL, LOG_DEBUG,
-                "libsres: "" ea %p select/timeout info. final timeout %ld,%ld",
-                orig_ea_list, timeout->tv_sec, timeout->tv_usec);
+        val_log(NULL, LOG_DEBUG, "libsres: ""    final timeout %ld,%ld",
+                timeout->tv_sec, timeout->tv_usec);
     }
 }
 
@@ -875,8 +880,10 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
             max_sock = i;
             break;
         }
-    if (max_sock < 0)
+    if (max_sock < 0) {
+        val_log(NULL,LOG_DEBUG,"libsres: "" no fds set");
         return 0; /* nothing to read */
+    }
     if (max_sock > FD_SETSIZE)
         max_sock = FD_SETSIZE;
 
