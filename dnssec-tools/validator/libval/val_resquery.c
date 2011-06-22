@@ -1886,7 +1886,7 @@ digest_response(val_context_t * context,
             /* old zonecut is closer more specific than the new zonecut */
             (namename(rrs_zonecut_n, name_n) != NULL)) { 
 
-            val_log(context, LOG_DEBUG, "digest_response(): {%s %s(d) %s(%d)} appears to lead to a lame server",
+            val_log(context, LOG_DEBUG, "digest_response(): {%s %s(%d) %s(%d)} appears to lead to a lame server",
                     query_name_p, p_class(query_class_h), query_class_h,
                     p_type(query_type_h), query_type_h);
             matched_q->qc_state = Q_REFERRAL_ERROR;
@@ -1960,7 +1960,7 @@ digest_response(val_context_t * context,
                     }
 
                     val_log(context, LOG_DEBUG, 
-                        "digest_response(): Setting zonecut for {%s %s(d) %s(%d)} query responses to %s",
+                        "digest_response(): Setting zonecut for {%s %s(%d) %s(%d)} query responses to %s",
                         query_name_p, p_class(query_class_h), query_class_h,
                     p_type(query_type_h), query_type_h, rrs_zonecut_p);
                     /*
