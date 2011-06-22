@@ -365,7 +365,7 @@ res_io_send(struct expected_arrival *shipit)
 
     delay = shipit->ea_ns->ns_retrans
         << (shipit->ea_ns->ns_retry + 1 - shipit->ea_remaining_attempts--);
-    res_log(NULL, LOG_ERR, "libsres: ""next try delay %d", delay);
+    res_log(NULL, LOG_DEBUG, "libsres: ""next try delay %d", delay);
     set_alarm(&shipit->ea_next_try, delay);
     res_print_ea(shipit);
 
@@ -820,7 +820,6 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
                    fd_set * read_descriptors, struct timeval *timeout)
 {
     struct timeval now;
-    struct expected_arrival *orig_ea_list = ea_list;
 
     if (timeout) {
         res_log(NULL, LOG_DEBUG,
