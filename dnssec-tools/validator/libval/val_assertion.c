@@ -5178,7 +5178,8 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
-    if (next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE)
+    if ((next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) ||
+        (next_q->qfq_query->qc_flags & VAL_QUERY_RECURSE))
         /* don't look at the cache for this query */
         return VAL_NO_ERROR;
  
