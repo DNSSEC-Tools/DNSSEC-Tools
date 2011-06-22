@@ -526,7 +526,7 @@ val_res_query(val_context_t * context,
     if (VAL_NO_ERROR ==
         (retval =
          val_resolve_and_check(ctx, dname, class_h, type, 
-                        VAL_QUERY_NO_AC_DETAIL, &results))) {
+                        0, &results))) {
         /*
          * Construct the answer response in resp 
          */
@@ -534,6 +534,7 @@ val_res_query(val_context_t * context,
             compose_answer(dname, type, class_h, results, &resp);
 
         val_free_result_chain(results);
+        results = NULL;
     }
 
 

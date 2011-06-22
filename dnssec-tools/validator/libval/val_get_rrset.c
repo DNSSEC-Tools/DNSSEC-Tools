@@ -69,7 +69,7 @@ val_get_rrset(val_context_t *context,
    
 
     if ((retval = val_resolve_and_check(ctx, name, class, type, 
-                                       flags | VAL_QUERY_NO_AC_DETAIL,
+                                       flags,
                                        &results)) != VAL_NO_ERROR) {
         val_log(ctx, LOG_INFO,
                 "get_addrinfo_from_dns(): val_resolve_and_check failed - %s",
@@ -194,11 +194,13 @@ val_get_rrset(val_context_t *context,
     } 
 
     val_free_result_chain(results);
+    results = NULL;
     return VAL_NO_ERROR;
 
 err:
     val_free_answer_chain(*answers);
     *answers = NULL;
     val_free_result_chain(results);
+    results = NULL;
     return retval;
 } 
