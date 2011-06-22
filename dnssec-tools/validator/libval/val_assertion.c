@@ -5463,8 +5463,6 @@ check_proof_sanity(val_context_t * context,
         /*
          * If we've asked for a DS and the soa has the same 
          * name, we've actually asked the child zone
-         * Don't re-try from the root because we then will have the
-         * possibility of an infinite loop
          */
         for (res = w_results; res; res = res->val_rc_next) {
             if (NULL == (as = res->val_rc_rrset))
@@ -5937,6 +5935,7 @@ construct_authentication_chain(val_context_t * context,
     int             proof_done = 0;
     int             retval;
     struct val_query_chain *top_q;
+    struct val_result_chain *res;
     
     if (context == NULL || top_qfq == NULL || 
         queries == NULL || results == NULL || done == NULL)
@@ -5974,7 +5973,7 @@ construct_authentication_chain(val_context_t * context,
     }
 
     if (ans_done && proof_done && *w_results) { 
-        
+
         *done = 1;
 
         retval = perform_sanity_checks(context, *w_results, queries, results, top_qfq);
@@ -5984,6 +5983,25 @@ construct_authentication_chain(val_context_t * context,
             retval =
                 transform_outstanding_results(context, *w_results, queries, results, &proof_res,
                                               VAL_IRRELEVANT_PROOF);
+        }
+
+        /* if any of the results are bad try re-querying from root */
+        for (res=*results; res; res=res->val_rc_next) {
+            if (res->val_rc_status == VAL_BOGUS) {
+                if (switch_to_root(context, top_q)) { 
+
+                    val_log(context, LOG_DEBUG, "Trying to work around bogus respose. Re-querying from root.");
+
+                    _free_w_results(*w_results);
+                    val_free_result_chain(*results);
+                    *w_results = NULL;
+                    *results = NULL;
+
+                    top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
+                    *done = 0;
+                }
+                return VAL_NO_ERROR;
+            }
         }
     }
 
