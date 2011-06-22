@@ -388,8 +388,11 @@ fix_glue(val_context_t * context,
             }
             if (next_q->qfq_query->qc_state >= Q_ERROR_BASE) {
                 val_log(context, LOG_DEBUG,
-                        "fix_glue(): Error fetching {%s %d %d} and no pending glue (state: %d)", name_p,
-                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h,
+                        "fix_glue(): Error fetching {%s %s(%d) %s(%d)} and no pending glue (state: %d)", name_p,
+                        p_class(next_q->qfq_query->qc_class_h),
+                        next_q->qfq_query->qc_class_h,
+                        p_type(next_q->qfq_query->qc_type_h),
+                        next_q->qfq_query->qc_type_h,
                         next_q->qfq_query->qc_state);
             }
         }
@@ -1050,8 +1053,10 @@ follow_referral_or_alias_link(val_context_t * context,
         }
             
         val_log(context, LOG_DEBUG, 
-                "follow_referral_or_alias_link(): Processing referral to %s for query {%s %d %d})", 
-                debug_name2, debug_name1, matched_q->qc_class_h, matched_q->qc_type_h);
+                "follow_referral_or_alias_link(): Processing referral to %s for query {%s %s(%d) %s(%d)})", 
+                debug_name2, debug_name1, p_class(matched_q->qc_class_h),
+                matched_q->qc_class_h, p_type(matched_q->qc_type_h),
+                matched_q->qc_type_h);
     }
 
     /*
@@ -1613,8 +1618,9 @@ digest_response(val_context_t * context,
     }
 
     val_log(context, LOG_DEBUG, 
-            "digest_response(): Processing response for {%s %d %d} from zonecut: %s",
-            query_name_p, query_class_h, query_type_h, rrs_zonecut_p); 
+            "digest_response(): Processing response for {%s %s(%d) %s(%d)} from zonecut: %s",
+            query_name_p, p_class(query_class_h), query_class_h,
+            p_type(query_type_h), query_type_h, rrs_zonecut_p); 
 
     /*
      *  Skip question section 
@@ -1880,8 +1886,9 @@ digest_response(val_context_t * context,
             /* old zonecut is closer more specific than the new zonecut */
             (namename(rrs_zonecut_n, name_n) != NULL)) { 
 
-            val_log(context, LOG_DEBUG, "digest_response(): {%s %d %d} appears to lead to a lame server",
-                    query_name_p, query_class_h, query_type_h);
+            val_log(context, LOG_DEBUG, "digest_response(): {%s %s(d) %s(%d)} appears to lead to a lame server",
+                    query_name_p, p_class(query_class_h), query_class_h,
+                    p_type(query_type_h), query_type_h);
             matched_q->qc_state = Q_REFERRAL_ERROR;
             ret_val = VAL_NO_ERROR;
             goto done;
@@ -1953,8 +1960,9 @@ digest_response(val_context_t * context,
                     }
 
                     val_log(context, LOG_DEBUG, 
-                        "digest_response(): Setting zonecut for {%s %d %d} query responses to %s",
-                        query_name_p, query_class_h, query_type_h, rrs_zonecut_p);
+                        "digest_response(): Setting zonecut for {%s %s(d) %s(%d)} query responses to %s",
+                        query_name_p, p_class(query_class_h), query_class_h,
+                    p_type(query_type_h), query_type_h, rrs_zonecut_p);
                     /*
                      * go back to all the rrsets that we created 
                      * and fix the zonecut info 
@@ -1978,8 +1986,9 @@ digest_response(val_context_t * context,
                     goto done;
                 }
                 val_log(context, LOG_DEBUG, 
-                        "digest_response(): Ambiguous zonecut for {%s %d %d} query responses -- %s versus %s", 
-                        query_name_p, query_class_h, query_type_h, rrs_zonecut_p, name_p);
+                        "digest_response(): Ambiguous zonecut for {%s %s(%d) %s(%d)} query responses -- %s versus %s", 
+                        query_name_p, p_class(query_class_h), query_class_h,
+                    p_type(query_type_h), query_type_h, rrs_zonecut_p, name_p);
                 matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 ret_val = VAL_NO_ERROR;
                 goto done;
@@ -2052,8 +2061,9 @@ digest_response(val_context_t * context,
             } else {
                 /* XXX else this is a DS non-existence proof and it is a referral */
                 /* Don't enable EDNS0 below this level */
-                val_log(context, LOG_DEBUG, "digest_response(): Disabling further EDNS0 for {%s %d %d}",
-                        query_name_p, query_class_h, query_type_h); 
+                val_log(context, LOG_DEBUG, "digest_response(): Disabling further EDNS0 for {%s %s(%d) %s(%d)}",
+                        query_name_p, p_class(query_class_h), query_class_h,
+                        p_type(query_type_h), query_type_h); 
                 matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
             }
 
@@ -2198,8 +2208,9 @@ val_resquery_send(val_context_t * context,
         strncpy(zone_p, "", sizeof(zone_p)-1); 
     }
 
-    val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for {%s %d %d} to: %s", 
-            name_p, matched_q->qc_class_h, matched_q->qc_type_h, zone_p);
+    val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for {%s %s(%d) %s(%d)} to: %s", 
+            name_p, p_class(matched_q->qc_class_h), matched_q->qc_class_h,
+            p_type(matched_q->qc_type_h), matched_q->qc_type_h, zone_p);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
         val_log(context, LOG_DEBUG, "    %s",
                 val_get_ns_string((struct sockaddr *)tempns->ns_address[0],
@@ -2459,8 +2470,9 @@ val_resquery_async_send(val_context_t * context,
         struct name_server *nslist = matched_q->qc_ns_list;
 
         val_log(context, LOG_DEBUG,
-                "val_resquery_async_send(): Sending query for {%s %d %d} to:", 
-                name_p, matched_q->qc_class_h, matched_q->qc_type_h);
+                "val_resquery_async_send(): Sending query for {%s %s(%d) %s(%d)} to:", 
+                name_p, p_class(matched_q->qc_class_h), matched_q->qc_class_h,
+                p_type(matched_q->qc_type_h), matched_q->qc_type_h);
         for (tempns = nslist; tempns; tempns = tempns->ns_next) {
             val_log(context, LOG_DEBUG, "    %s",
                     val_get_ns_string((struct sockaddr *)tempns->ns_address[0],
@@ -2556,8 +2568,10 @@ val_async_select_info(val_context_t *context, fd_set *activefds,
             char         name_p[NS_MAXDNAME];
             if (-1 == ns_name_ntop(qfq->qfq_query->qc_name_n, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-            val_log(NULL, LOG_DEBUG, " as %p query %p {%s %d %d} ea %p", as, qfq,
-                    name_p, qfq->qfq_query->qc_class_h,
+            val_log(NULL, LOG_DEBUG, " as %p query %p {%s %s(%d) %s(%d)} ea %p", as, qfq,
+                    name_p, p_class(qfq->qfq_query->qc_class_h),
+                    qfq->qfq_query->qc_class_h,
+                    p_type(qfq->qfq_query->qc_type_h),
                     qfq->qfq_query->qc_type_h, qfq->qfq_query->qc_ea);
             if (!qfq->qfq_query->qc_ea)
                 continue;

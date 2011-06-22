@@ -560,8 +560,9 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                     if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
                         snprintf(name_p, sizeof(name_p), "unknown/error");
                     val_log(context, LOG_DEBUG, 
-                            "add_to_query_chain(): Found matching proof of non-existence for {%s %d %d} through ANC",
-                            name_p, class_h, type_h);
+                            "add_to_query_chain(): Found matching proof of non-existence for {%s %s(%d) %s(%d)} through ANC",
+                            name_p, p_class(class_h), class_h, p_type(type_h),
+                            type_h);
                     break;
                 }
             }
@@ -664,8 +665,10 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                     char name_p[NS_MAXDNAME];
                     if (-1 == ns_name_ntop(added_q->qc_original_name, name_p, sizeof(name_p)))
                         snprintf(name_p, sizeof(name_p), "unknown/error");
-                    val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %d %d}", 
-                                name_p, added_q->qc_class_h, added_q->qc_type_h);
+                    val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
+                            name_p, p_class(added_q->qc_class_h),
+                            added_q->qc_class_h, p_type(added_q->qc_type_h),
+                            added_q->qc_type_h);
                     clear_query_chain_structure(added_q);
                 }
 
@@ -3157,8 +3160,8 @@ prove_nonexistence(val_context_t * ctx,
 
     if (-1 == ns_name_ntop(qname_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
-    val_log(ctx, LOG_DEBUG, "prove_nonexistence(): proving non-existence for {%s, %d, %d}",
-            name_p, qc_class_h, qtype_h);
+    val_log(ctx, LOG_DEBUG, "prove_nonexistence(): proving non-existence for {%s, %s(%d), %s(%d)}",
+            name_p, p_class(qc_class_h), qc_class_h, p_type(qtype_h), qtype_h);
 
     /*
      * Check if this is the whole proof and nothing but the proof
@@ -4167,9 +4170,11 @@ try_verify_assertion(val_context_t * context,
                                name_p, sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO, 
-                "try_verify_assertion(): verifying next assertion: {%s, %d, %d}",
+                "try_verify_assertion(): verifying next assertion: {%s, %s(%d), %s(%d)}",
                 name_p, 
+                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
                 next_as->val_ac_rrset.ac_data->rrs_class_h, 
+                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
                 next_as->val_ac_rrset.ac_data->rrs_type_h);
 
         if (next_as->val_ac_status == VAL_AC_TRUST_NOCHK) {
@@ -5196,8 +5201,10 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (next_q->qfq_query->qc_state == Q_ANSWERED) {
 
         val_log(context, LOG_INFO,
-                "ask_cache(): found matching ack/nack response for {%s %d %d}, flags=%d",
-                name_p, next_q->qfq_query->qc_class_h,
+                "ask_cache(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%d",
+                name_p, p_class(next_q->qfq_query->qc_class_h),
+                next_q->qfq_query->qc_class_h,
+                p_type(next_q->qfq_query->qc_type_h),
                 next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
 
         /* merge any answer from the referral (alias) portion */
@@ -5259,9 +5266,12 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         response->di_answers = NULL;
     } else {
         val_log(context, LOG_INFO,
-                "ask_cache(): received error response for {%s %d %d}, flags=%d: %d",
-                name_p, next_q->qfq_query->qc_class_h,
-                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags,
+                "ask_cache(): received error response for {%s %s(%d) %s(%d)}, flags=%d: %d",
+                name_p, p_class(next_q->qfq_query->qc_class_h),
+                next_q->qfq_query->qc_class_h,
+                p_type(next_q->qfq_query->qc_type_h),
+                next_q->qfq_query->qc_type_h,
+                next_q->qfq_query->qc_flags,
                 next_q->qfq_query->qc_state);
     }
 
@@ -5298,9 +5308,10 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
     val_log(context, LOG_INFO,
-            "ask_resolver(): sending query for {%s %d %d}, flags=%d%s",
-            name_p, query->qfq_query->qc_class_h, query->qfq_query->qc_type_h,
-            query->qfq_query->qc_flags,
+            "ask_resolver(): sending query for {%s %s(%d) %s(%d)}, flags=%d%s",
+            name_p, p_class(query->qfq_query->qc_class_h),
+            query->qfq_query->qc_class_h, p_type(query->qfq_query->qc_type_h),
+            query->qfq_query->qc_type_h, query->qfq_query->qc_flags,
             query->qfq_query->qc_referral ? " (referral/alias)" : "");
 
     retval = find_nslist_for_query(context, query, queries);
@@ -5407,8 +5418,10 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
                                sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO,
-                "ask_resolver(): found matching ack/nack response for {%s %d %d}, flags=%d",
-                name_p, next_q->qfq_query->qc_class_h,
+                "ask_resolver(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%d",
+                name_p, p_class(next_q->qfq_query->qc_class_h),
+                next_q->qfq_query->qc_class_h,
+                p_type(next_q->qfq_query->qc_type_h),
                 next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
         if (VAL_NO_ERROR !=
             (retval = assimilate_answers(context, queries, response,
@@ -5422,9 +5435,12 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
                                sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO,
-                "ask_resolver(): received error response for {%s %d %d}, flags=%d: %d",
-                name_p, next_q->qfq_query->qc_class_h,
-                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags,
+                "ask_resolver(): received error response for {%s %s(%d) %s(%d)}, flags=%d: %d",
+                name_p, p_class(next_q->qfq_query->qc_class_h),
+                next_q->qfq_query->qc_class_h,
+                p_type(next_q->qfq_query->qc_type_h),
+                next_q->qfq_query->qc_type_h,
+                next_q->qfq_query->qc_flags,
                 next_q->qfq_query->qc_state);
     }
 
