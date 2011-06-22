@@ -4604,7 +4604,7 @@ verify_and_validate(val_context_t * context,
         (*results)->val_rc_rrset = NULL;
         (*results)->val_rc_is_proof = 0;
         (*results)->val_rc_consumed = 0;
-        (*results)->val_rc_flags = flags;
+        (*results)->val_rc_flags = top_qfq->qfq_flags;
         (*results)->val_rc_status = VAL_DNS_ERROR;
         (*results)->val_rc_next = NULL;
         return VAL_NO_ERROR;
