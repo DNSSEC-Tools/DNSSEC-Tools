@@ -24,6 +24,7 @@
 
 #include <openssl/rand.h>
 
+#include "res_support.h"
 
 extern void     libsres_pquery(const u_char * msg, size_t len, FILE * file);
 
@@ -76,7 +77,7 @@ my_malloc(size_t t, char *filename, int lineno)
         logfile = fopen(MEM_LOGFILE, "w");
 
     if (t == 0) {
-        val_log(NULL,LOG_DEBUG, "0 byte alloc from %-20s %5d", filename, lineno);
+        res_log(NULL,LOG_DEBUG, "0 byte alloc from %-20s %5d", filename, lineno);
         p = NULL;
     }
     else
@@ -338,3 +339,59 @@ u_int16_t libsres_random(void)
 
     return rnd;
 }
+
+/*
+ * using val_log for logging introduces a circular dependency. Default to
+ * using stderr for logging unless USE_LIBVAL_LOGGING is defined.
+ */
+#ifndef USE_LIBVAL_LOGGING
+
+static int sres_level = LOG_WARNING;
+
+void
+res_log(void *dont_care, int level, const char *template, ...)
+{
+    char            buf[1028];
+    struct timeval  tv;
+    struct tm       *tm;
+    va_list         ap;
+
+    if (NULL == template)
+        return;
+
+    /** check individual level */
+    if (level > sres_level)
+        return;
+
+    gettimeofday(&tv, NULL);
+    tm = localtime(&tv.tv_sec);
+
+    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+            tm->tm_hour, tm->tm_min, tm->tm_sec);
+    va_start(ap, template);
+    vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
+
+    fprintf(stderr, buf);
+    fprintf(stderr, "\n");
+    fflush(stderr);
+    va_end(ap);
+}
+
+#else /* ifdef USE_LIBVAL_LOGGING */
+
+/** pass messages on to val_log... */
+void
+res_log(void *dont_care, int level, const char *template, ...)
+{
+    va_list         ap;
+
+    if (NULL == template)
+        return;
+
+    va_start(ap, template);
+    val_log((val_context_t*)dont_care, level, template, ap);
+    va_end(ap);
+}
+
+#endif /* ifdef USE_LIBVAL_LOGGING */

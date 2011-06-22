@@ -442,7 +442,7 @@ response_recv(int *trans_id,
         (NULL == respondent) || (NULL == answer) || (NULL == answer_length))
         return SR_INTERNAL_ERROR;
 
-    val_log(NULL, LOG_DEBUG, "libsres: ""response_recv tid %d", *trans_id);
+    res_log(NULL, LOG_DEBUG, "libsres: ""response_recv tid %d", *trans_id);
 
     /*
      * Prepare the default response 
@@ -474,7 +474,7 @@ response_recv(int *trans_id,
             return SR_UNSET;
 
         } else {
-            val_log(NULL,LOG_ERR,"libsres: ""error in response; dropping");
+            res_log(NULL,LOG_ERR,"libsres: ""error in response; dropping");
             FREE(*answer);
             *answer = NULL;
             *answer_length = 0;
@@ -501,7 +501,7 @@ get(const char *name,
     struct timeval closest_event;
     fd_set pending_desc;
     if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
-        val_log(NULL,LOG_DEBUG,"libsres: ""get %s", name);
+        res_log(NULL,LOG_DEBUG,"libsres: ""get %s", name);
         do {
             FD_ZERO(&pending_desc);
             closest_event.tv_sec = 0;
@@ -538,7 +538,7 @@ get_tcp(const char *name, u_int16_t type_h, u_int16_t class_h,
 
     res_switch_all_to_tcp_tid(trans_id);
 
-    val_log(NULL,LOG_DEBUG,"libsres: ""get_tcp %s", name);
+    res_log(NULL,LOG_DEBUG,"libsres: ""get_tcp %s", name);
     do {
         FD_ZERO(&pending_desc);
         closest_event.tv_sec = 0;
