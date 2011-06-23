@@ -20,29 +20,29 @@ futuredate-ds.test.dnssec-tools.org:
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
 pastdate-a.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:305
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:304
   Error:       RRSIG record for
 	       pastdate-a.futuredate-ds.test.dnssec-tools.org has expired
 
-reverseddates-a.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:327
-  Error:       RRSIG is nearing its expiration time
-
-reverseddates-aaaa.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:343
-  Error:       RRSIG is nearing its expiration time
-
 pastdate-aaaa.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:367
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:319
   Error:       RRSIG record for
 	       pastdate-aaaa.futuredate-ds.test.dnssec-tools.org has
 	       expired
+
+reverseddates-a.futuredate-ds.test.dnssec-tools.org:
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:326
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.futuredate-ds.test.dnssec-tools.org:
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:374
+  Error:       RRSIG is nearing its expiration time
 
 futuredate-aaaa.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.futuredate-ds.test.dnssec-tools.org type:
 	       AAAA failed to verify: Signature may only be used in the
-	       future; after 20110727191533
+	       future; after 20110822095910
 
 badsign-a.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.futuredate-ds.test.dnssec-tools.org
@@ -52,13 +52,13 @@ pastdate-aaaa.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature has expired since:
-	       20110528191033
+	       20110623095410
 
 futuredate-a.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-a.futuredate-ds.test.dnssec-tools.org type: A
 	       failed to verify: Signature may only be used in the future;
-	       after 20110727191533
+	       after 20110822095910
 
 addedlater-withsig-A.futuredate-ds.test.dnssec-tools.org:
   Error:       name
@@ -90,21 +90,21 @@ baddata-aaaa.futuredate-ds.test.dnssec-tools.org:
 	       baddata-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
 	       failed to verify: RSA Verification failed
 
-reverseddates-a.futuredate-ds.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       reverseddates-a.futuredate-ds.test.dnssec-tools.org type: A
-	       failed to verify: RSA Verification failed
-
 badsign-aaaa.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       badsign-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
+reverseddates-a.futuredate-ds.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.futuredate-ds.test.dnssec-tools.org type: A
 	       failed to verify: RSA Verification failed
 
 pastdate-a.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-a.futuredate-ds.test.dnssec-tools.org type: A
 	       failed to verify: Signature has expired since:
-	       20110528191033
+	       20110623095410
 
 addedlater-nosig-AAAA.futuredate-ds.test.dnssec-tools.org:
   Error:       name
