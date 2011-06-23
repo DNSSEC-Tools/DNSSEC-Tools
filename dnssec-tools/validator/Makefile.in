@@ -1,5 +1,6 @@
 TEST_VERBOSITY=4
-SUBDIRS=libsres libval libval_shim apps doc
+SUBDIRS=libsres libval apps doc libval_shim
+LIBSUBDIRS=libsres libval libval_shim
 WINSUBDIRS=libsres libval apps 
 BUILD_ARCH = build
 
@@ -7,7 +8,7 @@ INSTALLDIRS=$(prefix) $(exec_prefix) $(sysconfdir)/dnssec-tools $(bindir) $(sbin
 
 all: subdirmake
 
-libs: subdirmake
+libs: libsubdirmake
 
 help:
 	@echo ""
@@ -60,6 +61,15 @@ subdirmake:
 	  fi  \
          done
 
+libsubdirmake:
+	@for i in $(LIBSUBDIRS) ; do \
+		(cd $$i ; make ) ; \
+		if test $$? != 0 ; then \
+			exit 1 ; \
+		fi  \
+	done
+
+
 subdirinstall:
 	@for i in $(SUBDIRS) ; do \
 	  (cd $$i ; make install DESTDIR=$(DESTDIR) ) ; \
@@ -70,7 +80,6 @@ subdirinstall:
 
 localinstall:
 	$(INSTALL) libval-config $(DESTDIR)$(bindir)
-	$(INSTALL) $(DESTDIR)$(includedir)
 
 subdirclean:
 	@for i in $(SUBDIRS) ; do \
