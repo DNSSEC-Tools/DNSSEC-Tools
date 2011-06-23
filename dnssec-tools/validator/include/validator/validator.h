@@ -35,7 +35,7 @@ extern          "C" {
  * a matching record in the query cache 
  */
 #define VAL_QFLAGS_CACHE_MASK   0x0000ffff
-#define VAL_QUERY_NO_AC_DETAIL  0x00000001
+#define VAL_QUERY_AC_DETAIL     0x00000001
 #define VAL_QUERY_DONT_VALIDATE 0x00000002 
 #define VAL_QUERY_NO_DLV        0x00000004 
 #define VAL_QUERY_USING_DLV     0x00000008 
@@ -52,7 +52,7 @@ extern          "C" {
 #define VAL_QUERY_RECURSE           0x00100000
 #define VAL_QUERY_REFRESH_QCACHE    0x00200000
 
-#define VAL_QFLAGS_USERMASK (VAL_QUERY_NO_AC_DETAIL |\
+#define VAL_QFLAGS_USERMASK (VAL_QUERY_AC_DETAIL |\
                              VAL_QUERY_DONT_VALIDATE |\
                              VAL_QUERY_NO_DLV |\
                              VAL_QUERY_ASYNC |\

@@ -344,7 +344,7 @@ get_results(val_context_t * context, const char *desc, char *name,
      * Query the validator
      */
     ret_val = val_resolve_and_check(context, name, class_h, type_h, 
-                                VAL_QUERY_NO_AC_DETAIL, &results);
+                                    VAL_QUERY_AC_DETAIL, &results);
 
     if (ret_val == VAL_NO_ERROR) {
 
@@ -617,7 +617,7 @@ main(int argc, char *argv[])
     int             selftest = 0;
     int             max_in_flight = 1;
     int             daemon = 0;
-    u_int32_t       flags = 0;
+    u_int32_t       flags = VAL_QUERY_AC_DETAIL;
     int             retvals[] = { 0 };
     int             tcs = 0, tce = -1;
     int             wait = 0;
