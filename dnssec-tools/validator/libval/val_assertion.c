@@ -2161,7 +2161,7 @@ transform_single_result(val_context_t *context,
             CREATE_RESULT_BLOCK((*mod_res), prev_res, *results);
             aptr = &((*mod_res)->val_rc_proofs[0]);
         }
-        if (!(w_res->val_rc_flags & VAL_QUERY_NO_AC_DETAIL))
+        if (w_res->val_rc_flags & VAL_QUERY_AC_DETAIL)
             (*mod_res)->val_rc_proof_count++;
     } else {
         /* no data or not a proof */
@@ -2172,7 +2172,7 @@ transform_single_result(val_context_t *context,
     *aptr = NULL;
     if (w_res) {
         w_res->val_rc_consumed = 1;
-        if (!(w_res->val_rc_flags & VAL_QUERY_NO_AC_DETAIL)) {
+        if (w_res->val_rc_flags & VAL_QUERY_AC_DETAIL) {
             int retval;
             if (VAL_NO_ERROR == 
                     (retval = transform_authentication_chain(context, 
@@ -3375,7 +3375,9 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         if (VAL_NO_ERROR !=
             (retval = try_chase_query(context, cur_q, ns_c_in,
                                       ns_t_soa, 
-                                      (*queries)->qfq_flags|VAL_QUERY_DONT_VALIDATE,
+                                      (*queries)->qfq_flags|\
+                                        VAL_QUERY_DONT_VALIDATE|\
+                                        VAL_QUERY_AC_DETAIL,
                                       queries, &results, done))) {
             return retval;
         } else if (!(*done)) {
