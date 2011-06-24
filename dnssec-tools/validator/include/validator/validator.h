@@ -10,11 +10,27 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+/*
+ * XXX fd_set cannot be forward declared
+ */
+#if defined(POSIX)
+#include <sys/select.h>
+#endif
+
 #include <validator/val_errors.h>
 
 #ifdef __cplusplus
 extern          "C" {
 #endif
+
+/* 
+ * Application is responsible for pointing to the definitions of these types 
+ * if it plans on using them 
+ */
+struct hostent;
+struct addrinfo;
+struct sockaddr;
+struct timeval;
 
 /*
  * Section values of an RRset 
@@ -70,13 +86,6 @@ extern          "C" {
 #define LOG_INFO 6
 #define LOG_DEBUG 7
 #endif
-
-/* Application MUST define these types */
-struct hostent;
-struct addrinfo;
-struct sockaddr;
-struct timeval;
-struct fd_set;
 
 /* validator return types */
 typedef unsigned char val_status_t;
