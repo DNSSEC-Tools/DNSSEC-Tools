@@ -13,7 +13,7 @@
 /*
  * XXX fd_set cannot be forward declared
  */
-#if defined(POSIX)
+#ifndef WIN32
 #include <sys/select.h>
 #endif
 

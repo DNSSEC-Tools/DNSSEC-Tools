@@ -239,45 +239,6 @@ res_async_ea_is_using_stream(struct expected_arrival *ea);
 int
 res_async_ea_isset(struct expected_arrival *ea, fd_set *fds);
 
-int
-libsres_msg_getflag(ns_msg han, int flag);
-/*
- * at one open ns_msg_getflag was a macro on Linux, but now it is a
- * function in libresolv. redifine to use our internal version.
- */
-#ifndef ns_msg_getflag
-#define ns_msg_getflag libsres_msg_getflag
-#endif
-
-const char     *p_sres_type(int type);
-#undef p_type
-#define p_type(type) p_sres_type(type)
-
-#if !HAVE_DECL_NS_T_DS
-#define ns_t_ds       43
-#endif
-#if !HAVE_DECL_NS_T_DNSKEY
-#define ns_t_dnskey   48
-#endif
-#if !HAVE_DECL_NS_T_RRSIG
-#define ns_t_rrsig    46
-#endif
-#if !HAVE_DECL_NS_T_NSEC
-#define ns_t_nsec     47
-#endif
-
-#ifdef LIBVAL_NSEC3
-#if !HAVE_DECL_NS_T_NSEC3
-#define ns_t_nsec3   50
-#endif
-#endif
-
-#ifdef LIBVAL_DLV
-#if !HAVE_DECL_NS_T_DLV
-#define ns_t_dlv 32769
-#endif
-#endif
-
 #ifdef __cplusplus
 }                               /* extern C */
 #endif
