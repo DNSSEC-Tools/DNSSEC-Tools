@@ -26,6 +26,16 @@
 extern          "C" {
 #endif
 
+/* 
+ * Application is responsible for pointing to the definitions of these types 
+ * if it plans on using them 
+ */
+struct sockaddr_storage;
+struct timeval;
+
+#ifndef SOCKET
+#define SOCKET int
+#endif
 
 #define LIBSRES_NS_STAGGER 5 /* how far apart should we stagger queries to
                                 different authoritative name servers */
@@ -63,14 +73,9 @@ extern          "C" {
 #define SR_NOTIMPL                13    /*RCODE set to NOTIMPL */
 #define SR_REFUSED                14    /*RCODE set to REFUSED */
 
-/* Application MUST define these types */
-struct sockaddr_storage;
-struct timeval;
-
-#ifndef SOCKET
-#define SOCKET int
+#ifndef NS_MAXCDNAME
+#define NS_MAXCDNAME    255     /* maximum compressed domain name */
 #endif
-
 struct name_server {
     unsigned char  ns_name_n[NS_MAXCDNAME];
     void           *ns_tsig;
@@ -236,7 +241,6 @@ res_async_ea_isset(struct expected_arrival *ea, fd_set *fds);
 
 int
 libsres_msg_getflag(ns_msg han, int flag);
-
 /*
  * at one open ns_msg_getflag was a macro on Linux, but now it is a
  * function in libresolv. redifine to use our internal version.
@@ -245,9 +249,9 @@ libsres_msg_getflag(ns_msg han, int flag);
 #define ns_msg_getflag libsres_msg_getflag
 #endif
 
+const char     *p_sres_type(int type);
 #undef p_type
 #define p_type(type) p_sres_type(type)
-const char     *p_sres_type(int type);
 
 #if !HAVE_DECL_NS_T_DS
 #define ns_t_ds       43
