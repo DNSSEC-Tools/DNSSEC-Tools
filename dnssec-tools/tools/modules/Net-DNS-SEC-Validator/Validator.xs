@@ -472,12 +472,12 @@ pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 			      &ainfo_ptr, &val_status);
 
 	if (res == 0) {
-	  RETVAL = ainfo_c2sv(ainfo_ptr);
-	} else {
       if (val_getaddrinfo_has_status(res)) {
 	    sv_setiv(*val_status_svp, val_status);
 	    sv_setpv(*val_status_str_svp, p_val_status(val_status));
       }
+	  RETVAL = ainfo_c2sv(ainfo_ptr);
+	} else {
 	  sv_setiv(*error_svp, res);
 	  sv_setpv(*error_str_svp, gai_strerror(res));
 	  RETVAL = &PL_sv_undef;
@@ -528,15 +528,14 @@ pval_gethostbyname(self,name,af=AF_INET)
 	res = val_gethostbyname2_r(ctx, name, af, &hentry, buf, PVAL_BUFSIZE,
 				  &result, &herrno, &val_status);
 
+	sv_setiv(*val_status_svp, val_status);
+	sv_setpv(*val_status_str_svp, p_val_status(val_status));
+
 	if (res) {
 	   RETVAL = &PL_sv_undef;
 	   sv_setiv(*error_svp, herrno);
 	   sv_setpv(*error_str_svp, hstrerror(herrno));
 	} else {
-      if (val_getnameinfo_has_status(res)) {
-	    sv_setiv(*val_status_svp, val_status);
-	    sv_setpv(*val_status_str_svp, p_val_status(val_status));
-      }
 	   RETVAL = hostent_c2sv(result);
 	}
 	}
