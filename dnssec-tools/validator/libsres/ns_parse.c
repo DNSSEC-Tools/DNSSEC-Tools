@@ -73,7 +73,7 @@ struct _ns_flagdata _ns_flagdata_flags[16] = {
  * both use defines of the function to map to other function
  * names.
  *
- * We completely rename the function for internal usage just to independent
+ * We rename this function for internal usage
  */
 int
 libsres_msg_getflag(ns_msg han, int flag)
