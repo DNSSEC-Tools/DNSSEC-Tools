@@ -4,7 +4,7 @@
 <?rfc toc="yes"?>
 
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
-<rfc ipr="trust200811" docName="draft-hayatnagarkar-dnsext-validator-api-08">
+<rfc ipr="trust200902" docName="draft-hayatnagarkar-dnsext-validator-api-09">
   <front>
     <title> DNSSEC Validator API </title>
 
@@ -36,7 +36,7 @@
       </address>
     </author>
 
-    <date month="January" year="2009" />
+    <date month="July" year="2011" />
     <workgroup> DNS Extensions </workgroup>
     <keyword>Internet-Draft</keyword>
 
@@ -782,14 +782,223 @@ in struct val_authentication_chain to a string representation. </t>
 
     const char *p_ac_status(val_astatus_t status);
 </artwork>
-</figure>
 <postamble>
 The value returned MAY be the string conversion for the corresponding val_astatus_t identifier. For example, 
 the return value from p_ac_status(VAL_AC_VERIFIED) MAY be "VAL_AC_VERIFIED". 
 </postamble> 
+</figure>
     </section>
 
   </section> <!-- Low-level API -->
+
+  <section title="Low-level Asynchronous DNSSEC Validator API" anchor="val-async">
+  <!-- X.         ####################### -->
+
+  <t> The low-level Asynchronous DNSSEC validator API allows an
+  application to submit multiple requests which can be processed
+  in parallel. In most cases, this will result in validation
+  completing much sooner than a series of synchronous requests.</t>
+
+  <t> When submitting an asynchronous request, an application may
+  specify a callback function to be called when the request completes.
+  Alternatively, the application may periodically poll to see if a
+  request has completed.</t>
+
+  <t> Since DNSSEC validation of a domain name involves multiple queries,
+  applications must periodically give time to the API for processing
+  responses and sending additional queries.</t>
+
+  <t> The functions and data structures defined in the low-level
+  Asynchronous DNSSEC validator API are summarized below.</t>
+
+  <section title="Asynchronous Status" anchor="async_status"> <!-- X.1 -->
+
+    <section title="Overview" anchor="async_status_overview"> <!-- X.1.1 -->
+      <t>   An application which submits asynchronous requests needs a way to
+      refer to each request for future operations. This asynchronous
+      status object is an implementation specific opaque object which
+      the API can use to uniquely identify a particular request.</t>
+
+      <t> When an asynchronous request is submitted, the API MUST create an
+      asynchronous status object to return to the caller. The size of the
+      object SHOULD be at least as large as the native pointer type.</t>
+    </section> <!-- x.1.1 overview -->
+
+    <section title="Operations on asynchronous status objects" anchor="async_status_operations">
+      <!-- x.1.2 -->
+      <t> The API supports the following operations to manipulate
+      asynchronous requests:</t>
+      <t>
+        <list style="symbols">
+          <t> checking for completion of request</t>
+          <t> releasing resources allocated for the request</t>
+          <t> cancelation of request</t>
+        </list>
+      </t>
+      <section title="val_async_status" anchor="val_async_status">
+        <!-- x.1.2.1 -->
+        <figure>
+          <artwork>
+#include &lt;validator/validator.h&gt;
+
+int val_async_status ( val_async_status *async_status);
+          </artwork>
+          <postamble>The return value will be zero (0) for requests which have
+            not yet completed, otherwise the return value will be the final
+            val_status value for the request.
+          </postamble>
+        </figure>
+      </section> <!-- x.1.2.1 val_async_status -->
+
+      <section title="val_async_release">  <!-- x.1.2.2 -->
+        <figure>
+          <artwork>
+#include &lt;validator/validator.h&gt;
+
+int val_async_release( val_async_status *async_status);
+          </artwork>
+          <postamble>
+            This function will release resources allocated for an
+            asynchronous request. If the request has not completed, all
+            outstanding queries and any pending queries will be canceled.
+          </postamble>
+        </figure>
+      </section> <!-- x.1.2.2 -->
+
+      <section title="val_async_cancel"> <!-- x.1.2.3 -->
+        <figure>
+          <artwork>
+#include &lt;validator/validator.h&gt;
+
+int val_async_cancel( val_async_status *async_status);
+          </artwork>
+          <postamble>
+            This function will cancel an outstanding asynchronous request.
+            All resources used for the request SHOULD be released as if
+            val_async_release() had been called.
+          </postamble>
+        </figure>
+      </section>  <!-- x.1.2.3 -->
+    </section> <!-- x.1.2 operations on asyncronous status -->
+  </section> <!-- x.1 asyncronous status -->
+
+  <section title="Asynchronous Callbacks" anchor="async_callbacks">
+    <!-- x.1.2 -->
+    <figure>
+      <artwork>
+#include &lt;validator/validator.h&gt;
+
+typedef int (*val_cb_results)( val_async_status *as);
+      </artwork>
+      <postamble>
+        When an asynchronous request is submitted, a callback function may
+        be provided by the caller. This callback function is called when
+        the validation process has completed. Since there are multiple
+        formats for returning the results for a query, the only parameter
+        to the callback is the asynchronous status object. The application
+        can use this object to get results in the desired format.
+      </postamble>
+    </figure>
+
+    <t>After the callback function has completed, the implementation SHOULD
+    release all resources allocated for the request.</t>
+
+    <t>[TBD: significance of return code?]</t>
+  </section> <!-- x.2 asynchronous callbacks -->
+
+  <section title="Asynchronous Requests" anchor="async_requests">
+    <!-- x.3 -->
+    <section title="val_async_submit" anchor="val_async_submit">
+      <!-- x.3.1 -->
+      <figure>
+        <artwork>
+#include &lt;validator/validator.h&gt;
+
+int val_async_submit(val_context_t *ctx, const char *domain_name,
+                     int class, int type, u_int32_t flags,
+                     val_async_status **async_status);
+        </artwork>
+        <postamble>
+          The val_async_submit() function submits a request for
+          asynchronous processing of DNS queries for the data associated with
+          the given domain name, class and type.
+        </postamble>
+      </figure>
+
+      <t>The val_async_submit() function MUST return VAL_NO_ERROR on success
+      and return a pointer to a newly allocated async_status object via the
+      async_status parameter.</t>
+
+      <t>On failure, the return code will be one of VAL_RESOURCE_UNAVAILABLE,
+      VAL_BAD_ARGUMENT or VAL_INTERNAL_ERROR. The function MUST release
+      any allocated data, and MUST NOT return a value vai the async_status
+      parameter. An implementation MAY set the async_status pointer to
+      the NULL value.</t>
+
+      <t>The following flags may be set for the request:</t>
+      <t>
+      <list style="symbols">
+        <t>VAL_AS_IGNORE_CACHE      /* don't use cache */</t>
+        <t>VAL_AS_NO_NEW_QUERIES    /* only use answers in cache */</t>
+        <t>VAL_AS_NO_ANSWERS        /* don't care about answers */</t>
+        <t>VAL_AS_NO_RR_CALLBACKS   /* no individual record callbacks */</t>
+        <t>VAL_AS_NO_CALLBACKS      /* don't call callbacks */</t>
+      </list></t>
+    </section>  <!-- x.3.1. -->
+
+    <section title="val_async_select_info" anchor="val_async_select_info">
+      <!-- x.3.2 -->
+      <figure>
+        <artwork>
+#include &lt;validator/validator.h&gt;
+
+int val_async_select_info(val_context_t *context,
+                          fd_set *fds, int *max_fd,
+                          struct timeval *timeout);
+        </artwork>
+        <postamble>
+          The val_async_select_info() function is called set the standard
+          parameters for a select() call based on outstanding asynchronous
+          requests within the given context.
+        </postamble>
+      </figure>
+
+      <t>The file descriptor for each socket awating a response MUST be set
+      in the fds parameter. The function MUST NOT initialize the fd_set,
+      as the application may have already set its own file descriptors.</t>
+
+      <t>The integer value pointed to by max_fd MUST be set to the highest
+      file descriptor number of any pending asynchronous request, unless
+      that value is less than the current vaule of max_fd. In that case,
+      the max_fd value MUST NOT be changed.</t>
+
+      <t>The timeout structure MUST be set to the lowest timeout value of
+      any pending asynchronous query timeout which is less than the
+      current value in timeout.</t>
+    </section> <!-- x.3.2 val_ -->
+
+    <section title="val_async_check"> <!-- x.1.3.3 -->
+      <figure>
+        <artwork>
+#include &lt;validator/validator.h&gt;
+
+int val_async_check(val_context_t *context, fd_set *fds, int *nfds,
+                    u_int32_t flags);
+        </artwork>
+        <postamble>
+          The val_async_check() function is called to handle timeouts or
+          process DNS responses to outstanding queries.
+        </postamble>
+      </figure>
+
+      <t>The parameters returned by select() (fds, nfds) MUST be passed to
+      the function. If there are responses, the implementation SHOULD
+      clear the appropriate file descriptor in fds and decrement nfds.
+      </t>
+    </section>  <!-- x.3.3 val_async_check -->
+  </section>  <!-- x.3. -->
+</section> <!-- X. Low-level async API -->
+
 
   <section title="DNSSEC Validator Context API" anchor="val-context">
   <!--            ####################### -->
@@ -1430,6 +1639,58 @@ the default EDNS0 size to be advertized in queries sent out by the validator.  <
 
         </section>
 
+        <section title="Asynchronous API Example Code">
+          <figure>
+            <preamble>
+              The general flow for asynchronous request processing can be
+              described with the following pseudo-code:
+            </preamble>
+            <artwork>
+#include &lt;validator/validator.h&gt;
+
+int done = 0;
+
+int my_callback(val_async_status *async_status) {
+   fprintf("final status: %d\n", val_async_status(async_status));
+   done = 1;
+   return 0;
+}
+
+main() {
+   val_async_status *async_status;
+   struct timeval    timeout;
+   fd_set            fds;
+   int               nfds, ready;
+   val_context      *ctx;
+
+   /* submit request */
+   rc = val_async_submit(my_ctx, "www.example.com", ns_c_in,
+                         ns_t_a, 0, &async_status);
+
+   while (!done) {
+      FD_ZERO(&fds);       /* clear fd_set */
+      nfds = 0;            /* no FDs yet */
+      timeout.usec = 0;
+      timeout.sec = 10; /* maximum timeout 10 sec */
+      val_async_select_info(&ctx, &fds, &numfds, &timeout); /* async FDs */
+
+      /* application should set its own FDs here */
+
+      ready = select(numfds+1, &fds, NULL, NULL, &timeout);
+      if ( ready < 0 ) {
+         break; /* or continue... */
+      } else if ( ready == 0 ) {
+         /* application timeout processing */
+      } else {
+         /* application FD processing */
+      }
+      /* handle asynx FDs/timeouts */
+      val_async_check(&ctx, &fds, &numfds, flags);
+   }
+}
+            </artwork>
+          </figure>
+        </section> <!-- async example code -->
 
         </section>
   </back>
