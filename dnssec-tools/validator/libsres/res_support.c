@@ -371,11 +371,11 @@ res_log(void *dont_care, int level, const char *template, ...)
             tm->tm_hour, tm->tm_min, tm->tm_sec);
     va_start(ap, template);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
+    va_end(ap);
 
     fprintf(stderr, buf);
     fprintf(stderr, "\n");
     fflush(stderr);
-    va_end(ap);
 }
 
 #else /* ifdef USE_LIBVAL_LOGGING */
@@ -390,7 +390,7 @@ res_log(void *dont_care, int level, const char *template, ...)
         return;
 
     va_start(ap, template);
-    val_log((val_context_t*)dont_care, level, template, ap);
+    val_log_ap((val_context_t*)dont_care, level, template, ap);
     va_end(ap);
 }
 

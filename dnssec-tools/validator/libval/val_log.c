@@ -1015,6 +1015,44 @@ err:
 
 }
 
+
+void
+val_log_ap(const val_context_t * ctx, int level, const char *template,
+           va_list ap)
+{
+    va_list         aq;
+    val_log_t      *logp = default_log_head;
+
+    if (NULL == template)
+        return;
+
+    for (; NULL != logp; logp = logp->next) {
+
+        /** check individual level */
+        if ((level > logp->level) || (NULL == logp->logf))
+            continue;
+
+        va_copy(aq, ap);
+        (*logp->logf) (logp, ctx, level, template, aq);
+        va_end(aq);
+    }
+
+    if (NULL == ctx)
+        return;
+
+    logp = ctx->val_log_targets;
+    for (; NULL != logp; logp = logp->next) {
+
+        /** check individual level */
+        if ((level > logp->level) || (NULL == logp->logf))
+            continue;
+
+        va_copy(aq, ap);
+        (*logp->logf) (logp, ctx, level, template, aq);
+        va_end(aq);
+    }
+}
+
 void
 val_log(const val_context_t * ctx, int level, const char *template, ...)
 {
