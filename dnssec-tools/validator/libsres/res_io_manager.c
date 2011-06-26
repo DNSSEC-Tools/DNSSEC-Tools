@@ -388,13 +388,9 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
          temp && temp->ea_remaining_attempts == -1;
          temp = temp->ea_next)
          ;
-    if (temp != NULL) {
-        res_log(NULL, LOG_WARNING, "libsres: "
-                "Aborting current attempt for transaction %d",
-                transaction_id);
+    if (temp != NULL)
         ret_val = res_nsfallback_ea(temp, closest_event, name, class_h, type_h,
                                     edns0);
-    }
     else
         *edns0 = 0;
 
@@ -447,8 +443,16 @@ res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event,
     else
         *edns0 = 0;
 
-    if (temp->ea_remaining_attempts == 0)
+    res_log(NULL, LOG_INFO, "libsres: "
+            "ns fallback for {%s %s(%d) %s(%d)}, edns0: %d/%d",
+            name, p_class(class_h), class_h, p_type(type_h), type_h,
+            *edns0, temp->ea_ns->ns_edns0_size);
+
+
+    if (temp->ea_remaining_attempts == 0) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""no remaining attempts");
         return -1;
+    }
 
     gettimeofday(&temp->ea_next_try, NULL);
     for (i = 0; i < temp->ea_remaining_attempts; i++)

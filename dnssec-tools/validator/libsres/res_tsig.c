@@ -55,6 +55,8 @@ res_tsig_verifies(struct name_server *respondent,
 {
     if (!(respondent->ns_security_options & ZONE_USE_TSIG))
         return SR_TS_OK;
-    else
+    else {
+        res_log(NULL, LOG_ERR, "libsres: ""tsig failure!");
         return SR_TS_FAIL;
+    }
 }
