@@ -515,7 +515,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                 int tcs, int tce, u_int32_t flags, int *failed, int doprint,
                 int max_in_flight)
 {
-    int i, j, rc, run = 0, burst = 5, nfds, unsent, ready;
+    int i, j, rc, run = 0, burst = max_in_flight, nfds, unsent, ready;
     fd_set             activefds;
     struct timeval     timeout, now;
     testcase          *curr_test = start_test;
