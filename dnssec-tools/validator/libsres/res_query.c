@@ -163,14 +163,18 @@ theres_something_wrong_with_header(u_char * response,
     /*
      * Check to see if this is supposed to be a real response 
      */
-    if (header->qr == 1 && header->opcode != ns_o_query)
+    if (header->qr == 1 && header->opcode != ns_o_query) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: not a query!");
         return SR_HEADER_ERROR;
+    }
 
     /*
      * Check the length and count of the records 
      */
-    if (right_sized(response, response_length) == FALSE)
+    if (right_sized(response, response_length) == FALSE) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: not right sized!");
         return SR_HEADER_ERROR;
+    }
 
     /*
      * Check the RCODE value.
@@ -222,23 +226,29 @@ theres_something_wrong_with_header(u_char * response,
             }
         }
 
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: nxdomain!");
         return SR_NXDOMAIN;
     }
 
     switch (header->rcode) {
     case ns_r_formerr:
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: formerr!");
         return SR_FORMERR;
 
     case ns_r_servfail:
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: servfail!");
         return SR_SERVFAIL;
 
     case ns_r_notimpl:
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: notimpl!");
         return SR_NOTIMPL;
 
     case ns_r_refused:
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: refused!");
         return SR_REFUSED;
 
     default:
+        res_log(NULL, LOG_DEBUG, "libsres: ""header: genericerr!");
         return SR_DNS_GENERIC_ERROR;
     }
 
@@ -461,20 +471,16 @@ response_recv(int *trans_id,
         return SR_NO_ANSWER;
 
     if (ret_val == SR_IO_GOT_ANSWER) {
+        print_response(*answer, *answer_length);
         if ((*respondent != NULL) && 
             (res_tsig_verifies(*respondent, 
                                *answer, *answer_length) == SR_TS_OK) && 
             (theres_something_wrong_with_header(*answer, 
                                                 *answer_length) == SR_UNSET)) {
-#if 0
-            printf("The Response: ");
-            printf(":\n");
-            print_response(*answer, *answer_length);
-#endif
             return SR_UNSET;
 
         } else {
-            res_log(NULL,LOG_ERR,"libsres: ""error in response; dropping");
+            res_log(NULL,LOG_DEBUG,"libsres: ""error in response; dropping");
             FREE(*answer);
             *answer = NULL;
             *answer_length = 0;

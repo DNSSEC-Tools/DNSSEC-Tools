@@ -165,7 +165,7 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
 
     buf = MALLOC(buflen);
     if (buf == NULL) {
-        fprintf(file, ";; memory allocation failure\n");
+        res_log(NULL,LOG_DEBUG, ";; memory allocation failure\n");
         return;
     }
 
@@ -176,22 +176,22 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
             if (errno != ENODEV) {
 #ifdef HAVE_STRERROR_R
                 if (!strerror_r(errno, err_buf, ERRBUFLEN))
-                    fprintf(file, ";; ns_parserr: %s\n", err_buf);
+                    res_log(NULL,LOG_DEBUG, ";; ns_parserr: %s\n", err_buf);
                 else
-                    fprintf(file, ";; ns_parserr: Error\n");
+                    res_log(NULL,LOG_DEBUG, ";; ns_parserr: Error\n");
 #else
-                fprintf(file, ";; ns_parserr: %s\n", strerror(errno));
+                res_log(NULL,LOG_DEBUG, ";; ns_parserr: %s\n", strerror(errno));
 #endif
             }
             goto cleanup;
         }
         if (section == ns_s_qd)
-            fprintf(file, ";;\t%s, type = %s, class = %s\n",
+            res_log(NULL,LOG_DEBUG, ";;\t%s, type = %s, class = %s\n",
                     ns_rr_name(rr),
                     p_type(ns_rr_type(rr)), p_class(ns_rr_class(rr)));
         else if (section == ns_s_ar && ns_rr_type(rr) == ns_t_opt) {
             u_int32_t       ttl = ns_rr_ttl(rr);
-            fprintf(file,
+            res_log(NULL,LOG_DEBUG,
                     "; EDNS: version: %u, udp=%u, flags=%04x\n",
                     (ttl >> 16) & 0xff, ns_rr_class(rr), ttl & 0xffff);
         } else {
@@ -205,23 +205,22 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
                         buf = MALLOC(buflen += 1024);
 #endif
                     if (buf == NULL) {
-                        fprintf(file, ";; memory allocation failure\n");
+                        res_log(NULL,LOG_DEBUG, ";; memory allocation failure\n");
                         return;
                     }
                     continue;
                 }
 #ifdef HAVE_STRERROR_R
                 if (!strerror_r(errno, err_buf, ERRBUFLEN))
-                    fprintf(file, ";; ns_sprintrr: %s\n", err_buf);
+                    res_log(NULL,LOG_DEBUG, ";; ns_sprintrr: %s\n", err_buf);
                 else
-                    fprintf(file, ";; ns_sprintrr: Error\n");
+                    res_log(NULL,LOG_DEBUG, ";; ns_sprintrr: Error\n");
 #else
-                fprintf(file, ";; ns_sprintrr: %s\n", strerror(errno));
+                res_log(NULL,LOG_DEBUG, ";; ns_sprintrr: %s\n", strerror(errno));
 #endif
                 goto cleanup;
             }
-            fputs(buf, file);
-            fputc('\n', file);
+            res_log(NULL,LOG_DEBUG, "%s", buf);
         }
         rrnum++;
     }
@@ -241,9 +240,9 @@ p_cdnname(const u_char * cp, const u_char * msg, int len, FILE * file)
     if ((n = dn_expand(msg, msg + len, cp, name, sizeof(name))) < 0)
         return (NULL);
     if (name[0] == '\0')
-        putc('.', file);
+        res_log(NULL,LOG_DEBUG, "%c", '.');
     else
-        fputs(name, file);
+        res_log(NULL,LOG_DEBUG, "%s", name);
     return (cp + n);
 }
 
@@ -288,7 +287,7 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
     n = p_fqnname(cp, msg, NS_MAXCDNAME, name, sizeof(name));
     if (n == NULL)
         return (NULL);
-    fputs(name, file);
+    res_log(NULL,LOG_DEBUG, "%s", name);
     return (n);
 }
 
@@ -1224,15 +1223,16 @@ libsres_pquery(const u_char * msg, size_t len, FILE * file)
 #ifdef HAVE_STRERROR_R
     char            err_buf[ERRBUFLEN + 1];
 #endif
+    char            buf[128];
 
     if (ns_initparse(msg, len, &handle) < 0) {
 #ifdef HAVE_STRERROR_R
         if (!strerror_r(errno, err_buf, ERRBUFLEN))
-            fprintf(file, ";; ns_initparse: %s\n", err_buf);
+            res_log(NULL,LOG_DEBUG, ";; ns_initparse: %s\n", err_buf);
         else
-            fprintf(file, ";; ns_initparse: Error\n");
+            res_log(NULL,LOG_DEBUG, ";; ns_initparse: Error\n");
 #else
-        fprintf(file, ";; ns_initparse: %s\n", strerror(errno));
+        res_log(NULL,LOG_DEBUG, ";; ns_initparse: %s\n", strerror(errno));
 #endif
 
         return;
@@ -1248,42 +1248,35 @@ libsres_pquery(const u_char * msg, size_t len, FILE * file)
     /*
      * Print header fields.
      */
-    fprintf(file,
+    res_log(NULL,LOG_DEBUG,
             ";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n",
             _libsres_opcodes[opcode], p_rcode(rcode), id);
-    putc(';', file);
-    fprintf(file, "; flags:");
+
+    strcpy(buf, "; flags:");
     if (libsres_msg_getflag(handle, ns_f_qr))
-        fprintf(file, " qr");
+        strcat(buf, " qr");
     if (libsres_msg_getflag(handle, ns_f_aa))
-        fprintf(file, " aa");
+        strcat(buf, " aa");
     if (libsres_msg_getflag(handle, ns_f_tc))
-        fprintf(file, " tc");
+        strcat(buf, " tc");
     if (libsres_msg_getflag(handle, ns_f_rd))
-        fprintf(file, " rd");
+        strcat(buf, " rd");
     if (libsres_msg_getflag(handle, ns_f_ra))
-        fprintf(file, " ra");
+        strcat(buf, " ra");
     if (libsres_msg_getflag(handle, ns_f_z))
-        fprintf(file, " ??");
+        strcat(buf, " ??");
     if (libsres_msg_getflag(handle, ns_f_ad))
-        fprintf(file, " ad");
+        strcat(buf, " ad");
     if (libsres_msg_getflag(handle, ns_f_cd))
-        fprintf(file, " cd");
+        strcat(buf, " cd");
+    res_log(NULL,LOG_DEBUG, "%s", buf);
 
-    fprintf(file, "; %s: %d", p_section(ns_s_qd, opcode), qdcount);
-    fprintf(file, ", %s: %d", p_section(ns_s_an, opcode), ancount);
-    fprintf(file, ", %s: %d", p_section(ns_s_ns, opcode), nscount);
-    fprintf(file, ", %s: %d", p_section(ns_s_ar, opcode), arcount);
-
-    putc('\n', file);
-
-    /*
-     * Print the various sections.
-     */
+    res_log(NULL,LOG_DEBUG, "; %s: %d", p_section(ns_s_qd, opcode), qdcount);
     do_section(&handle, ns_s_qd, RES_PRF_QUES, file);
+    res_log(NULL,LOG_DEBUG, ", %s: %d", p_section(ns_s_an, opcode), ancount);
     do_section(&handle, ns_s_an, RES_PRF_ANS, file);
+    res_log(NULL,LOG_DEBUG, ", %s: %d", p_section(ns_s_ns, opcode), nscount);
     do_section(&handle, ns_s_ns, RES_PRF_AUTH, file);
+    res_log(NULL,LOG_DEBUG, ", %s: %d", p_section(ns_s_ar, opcode), arcount);
     do_section(&handle, ns_s_ar, RES_PRF_ADD, file);
-    if (qdcount == 0 && ancount == 0 && nscount == 0 && arcount == 0)
-        putc('\n', file);
 }

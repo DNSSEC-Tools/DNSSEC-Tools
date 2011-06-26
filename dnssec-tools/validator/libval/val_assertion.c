@@ -4524,7 +4524,7 @@ static int switch_to_root(val_context_t * context,
         /*
          * No root hints configured or we were already recursing 
          */
-        val_log(context, LOG_WARNING, 
+        val_log(context, LOG_DEBUG, 
                 "switch_to_root(): nothing to do; no root.hints configured or already doing recursion");
         return 0;
     } 
