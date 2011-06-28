@@ -74,7 +74,7 @@ extern          "C" {
 #define VAL_AC_PINSECURE            (VAL_AC_DONT_GO_FURTHER+2)
 #define VAL_AC_BARE_RRSIG           (VAL_AC_DONT_GO_FURTHER+3) 
 #define VAL_AC_NO_LINK              (VAL_AC_DONT_GO_FURTHER+4)
-#define VAL_AC_TRUST_ANCHOR         VAL_AC_NO_LINK 
+#define VAL_AC_TRUST_ANCHOR         VAL_AC_NO_LINK  /* backwards compatibility */
 #define VAL_AC_TRUST                (VAL_AC_DONT_GO_FURTHER+5) 
 #define VAL_AC_LAST_STATE           VAL_AC_TRUST
 
