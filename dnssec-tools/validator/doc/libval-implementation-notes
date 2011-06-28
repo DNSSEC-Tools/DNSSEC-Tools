@@ -1,4 +1,4 @@
-# Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2011 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 
 
@@ -213,6 +213,42 @@ not required (through the provably insecure condition), we only look at the
 closest matching trust anchor.
 
 
+7. Fallback and recovery
+
+During the initial years of DNSSEC deployment there are expected to be various
+cases where a DNSSEc validator will encounter a response returned from a
+DNSSEC-unaware name server. While the DNSSEC specifications state the 
+"clear-path" requirement where there is an expectation that all name servers
+along the validation path must be DNSSEC-aware, from a user-experience perspective, 
+it behooves the validator to do some sort of fallback in order to route around 
+such (temporarily broken or badly behaving) middle boxes. libval has the 
+following fallback and recovery strategy:
+
+a) Resolver fallback
+
+libval (via libsres) will send queries in parallel to all name servers
+listed in the NSset, staggering the queries every five seconds. Thus 
+it will only return a DNS error if all name servers fail to answer the query.
+See libsres-implementation-notes for additional details.
+
+b) EDNS0 fallback
+
+In querying various name servers, libsres will also attempt multiple EDNS0 
+sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set).
+The following EDNS0 sizes are tried by default: 4096, 1492, 512
+The "edns0-size" policy knob in dnsval.conf can be used to change the 
+largest EDNS0 size that is attempted.
+
+c) Validation error fallback
+
+If the  validator encounters a validation failure it will re-attempt the 
+lookup, but this time recursing from root (unless it is already recursively
+looking up the name in which case this fallback is not attempted). This 
+gives libval the opportunity to recover from failure scenarios where the recursive 
+name server is lying or is broken DNSSEC-wise, but also allows libval to use
+the caching properties of the recursive name server to the extent possible.
+
+
 Validator Algorithm
 -------------------
 
@@ -369,6 +405,50 @@ Q_INIT ----------> Q_SENT --------> (Q_ERROR_BASE + <error_condition>)
    +<----------- Q_WAIT_FOR_GLUE ---------+
 
 
+
+
+Query Flags
+-----------
+
+Cached assertions for a given validator context are accessed through
+the handle from the corresponding val_query_chain structure. The 
+add_to_query_chain() functions provides the mechanism to locate the 
+particular val_query_chain object (if it exists in the context cache)
+to the corresponds to a give name,type,class tuple. 
+
+Applications, however, can be multi-threaded and can issue parallel 
+lookup operations from multiple threads using the same validator 
+context. In order to ensure that the correct locking semantics are 
+preserved for all auxillary queries issued as part of validating 
+the primary name, the validator tracks this information through 
+the queries_for_query linked list. This list is merely a linked 
+list of handles to the various val_query_chain objects associated 
+with the query. If a query_for_query_chain object exists, a 
+corresponding val_query_chain object MUST exist.
+
+The query behaviour for a particular lookup operation is guided by
+the query flags set for that query.  The queries_for_structure contains 
+the qfq_flags member while the val_query_chain structure contains the 
+qc_flags member. While the values that can be saved in these variables
+are the same there is a subtle difference in the usage of these flags.
+
+All query flags specified by the user are stored in the qfq_flags 
+member. libval uses the VAL_QFLAGS_USERMASK mask to ensure that the
+flags specified by the user are acceptible. libval then uses these flags
+to look for cached val_query_chain structures in the context cache
+and sets and resets other internal flags as necessary while resolving 
+this name. Not all flags are matched while checking for cached 
+val_query_chain structures -- the VAL_QFLAGS_CACHE_MASK obscures 
+those flags that are not relevant for caching. Hence, not all
+val_query_chain objects referenced with a query_for_query list
+will match the qfq_flags value.
+
+A useful rule-of-thumb while deciding whether to use qfq_flags 
+or qc_flags in a partular line of code is the following -- While 
+setting the flags for any query use qfq_flags; When testing for 
+a particular flag use qc_flags.
+
+
 ===============================================================================================
 
    
@@ -497,26 +577,30 @@ The consolidated dnssec validation results obtained in the results array
 are derived from the authentication chain states in the following manner:
 (Note: see val_errors.h for values of *_BASE and *_LAST)
 
+VAL_OOB_ANSWER is returned if an answer is returned from some non-DNS database
+such as /etc/hosts.
+
+
 any auth.chain.elem    result  
 status                 status             
 ====================================================
 
-> FAIL_BASE,            VAL_BOGUS
+> FAIL_BASE,                VAL_BOGUS
 <=LAST_FAILURE   
 
-VAL_AC_DNS_ERROR        VAL_DNS_ERROR 
-VAL_AC_DATA_MISSING     VAL_DNS_ERROR 
+VAL_AC_DNS_ERROR            VAL_DNS_ERROR 
+VAL_AC_DATA_MISSING         VAL_DNS_ERROR 
 
-> VAL_AC_DONT_GO_FURTHER  equivalent "termination" 
-<= VAL_AC_LAST_STATE      status
+VAL_AC_BARE_RRSIG           VAL_BARE_RRSIG
+VAL_AC_IGNORE_VALIDATION    VAL_IGNORE_VALIDATION
+VAL_AC_UNTRUSTED_ZONE       VAL_UNTRUSTED_ZONE
 
 
-trust    every auth.chain.elem   final result status
-anchor   status  (if present)   
+top-as          every          final result status
+status          status  
 ============================================================================
-
- YES    VERIFIED                  VAL_SUCCESS
- NO     VERIFIED                  VAL_NOTRUST
+VAL_AC_TRUST    VERIFIED        VAL_SUCCESS
+VAL_AC_NO_LINK  VERIFIED        VAL_NOTRUST
 
 
 The following status values are defined for results of negative proof checks for
@@ -540,39 +624,12 @@ For negative proofs in the middle of the authentication chain, if
 the check for provably insecure condition could not be performed, the
 status is set to VAL_BOGUS_PROOF.
 
-
-For the provably non-existence condition, the following values exist:
+For the VAL_AC_PINSECURE condition, the following values exist:
 
 Provably insecure trust status      final result
 ==========================================================================
 Trusted                             VAL_PINSECURE
 Untrusted                           VAL_PINSECURE_UNTRUSTED
-
-
-Current status of libval
-------------------------
-
-A number of feature improvements are possible for the validator library:
-
-1. Support for passive-mode operation 
-The validator can be modified to allow both active and passive modes of operation.
-In the first mode, the validator library actively looks for answers by sending
-out queries needed to build the chain of trust. In the second mode of operation
-the validator would only use the local cache while trying to build the chain-
-of-trust 
-
-2. Support for negative caches
-
-3. Support for credibility level of data in the cache
-
-4. Better handling of EDNS0 in provably insecure delegations 
-   and EDNS0 failure handling. 
-
-5. More robustness in the querying process -- falling back to other name servers 
-when some error is encountered.
-
-6. Improved support for a validator daemon: ability to specify ACLs for clients, 
-   correctly setting the AD bit in the response.
 
 
 Acknowledgements
