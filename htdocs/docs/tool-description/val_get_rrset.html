@@ -5,13 +5,15 @@
 <title>I&lt;val_get_rrset&gt; - get DNSSEC-validated resource record
 information</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:suresh@localhost.localdomain" />
+<link rev="made" href="mailto:suresh@suresh-laptop.nonet" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -23,9 +25,11 @@ information</title>
 	<li><a href="#authors">AUTHORS</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -42,23 +46,23 @@ information</p>
   struct val_answer_chain {
       val_status_t   val_ans_status;
       char          *val_ans_name;
-      u_int16_t      val_ans_class;
-      u_int16_t      val_ans_type;
+      int            val_ans_class;
+      int            val_ans_type;
       struct rr_rec *val_ans;
       struct val_answer_chain *val_ans_next;
   };</pre>
 <pre>
   struct rr_rec {
-      u_int16_t     rr_length;
-      u_int8_t      *rr_data;
+      size_t         rr_length;
+      unsigned char *rr_data;
       struct rr_rec *rr_next;
   };</pre>
 <pre>
   int val_get_rrset(val_context_t *ctx,
                     const char *name,
-                    u_int16_t class,
-                    u_int16_t type,
-                    u_int32_t flags,
+                    int class,
+                    int type,
+                    unsigned int flags,
                     struct val_answer_chain **answers);
       
   void val_free_answer_chain(struct val_answer_chain *answers);</pre>
@@ -67,28 +71,32 @@ information</p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
 <p><em>val_get_rrset()</em> performs DNSSEC validation for the given DNS
-name, class and type. They return the DNSSEC validation status
-for the returned resource record set, but do not return any 
-authentication chain details.</p>
+name, class and type. It returns the DNSSEC validation status
+for the resource record set, but does not return any 
+authentication chain details. If the authentication chain details are
+required, the <em>val_resolve_and_check()</em> function must be used instead.</p>
 <p><em>val_get_rrset()</em> returns its results in the val_answer_chain structure. The
 memory for this structure is allocated by val_get_rrset; the user must
 release this memory after use using the <em>val_free_answer_chain()</em> function.</p>
 <p>The RRsets in the response are returned in the val_answer_chain structure.
 The val_ans_name member contains the DNS name of the actual resource 
 record set returned.  This value may differ from the value passed as the 
-argument to <code>val_get_rrset()</code> if the resource record was returned after 
+<em>name</em> argument to <code>val_get_rrset()</code> if the resource record was returned after 
 following a CNAME or DNAME alias. val_ans_name and val_ans_type
 contains the actual class and type for the returned resource record. These
 values may differ from the values passed as arguments to <code>val_get_rrset()</code> if 
 the query type or class has the value 255 (ANY). The resource record set is 
-returned as a linked list of rr_length and rr_data tuples, for data returned in each resource record of the resource record set.</p>
+returned in <em>val_ans</em>as a linked list of rr_length and rr_data tuples, 
+for data returned in each resource record of the resource record set. 
+<em>val_ans</em> may be NULL if the name is non-existant.</p>
 <p><em>val_ans_status</em> gives the combined validation status value for the 
 the given RRset.  <em>val_istrusted()</em> and
 <em>val_isvalidated()</em> can be used to determine the trustworthiness of data and
 <em>p_val_status()</em> can be used to display the status value to the user in ASCII
 format (See <em>libval(3)</em> more for information).</p>
 <p>The <em>ctx</em> parameter specifies the validation context, which can be set to NULL
-for default values (see <em>libval(3)</em> and <em>dnsval.conf</em> for more details on validation contexts and validation policy).</p>
+for default values (see <em>libval(3)</em> and <em>dnsval.conf</em> for more details on 
+validation contexts and validation policy).</p>
 <p>
 </p>
 <hr />
@@ -99,7 +107,7 @@ defined in <code>libval(3)</code> on failure.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2011 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

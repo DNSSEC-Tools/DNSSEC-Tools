@@ -1,242 +1,200 @@
-<HTML><HEAD><TITLE>Manpage of LIBSRES</TITLE>
-</HEAD><BODY>
-<H1>LIBSRES</H1>
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>I&lt;get&gt; - 
+send queries and receive responses from a DNS name server.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:suresh@suresh-laptop.nonet" />
+</head>
 
-<A NAME="lbAB">&nbsp;</A>
-<H2>NAME</H2>
-
-<I>query_send()</I>, <I>response_rcv()</I>, <I>get()</I> - 
-send queries and receive responses from a DNS name server.
-<P>
-
-<I>clone_ns()</I>, <I>clone_ns_list()</I>, <I>free_name_server()</I>,
-<I>free_name_servers()</I> - manage name server lists
-<P>
-
-<I>print_response()</I> - display answers returned from the name server
-<A NAME="lbAC">&nbsp;</A>
-<H2>SYNOPSIS</H2>
-
-<A NAME="ixAAC"></A>
+<body style="background-color: white">
 
 
-<PRE>
-  #include &lt;<A HREF="file:/usr/include/resolver.h">resolver.h</A>&gt;
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
-</PRE>
+<ul>
 
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#other_symbols_exported">OTHER SYMBOLS EXPORTED</a></li>
+	<li><a href="#return_values">RETURN VALUES</a></li>
+	<li><a href="#current_status">CURRENT STATUS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
 
-<P>
+<hr name="index" />
+</div>
+<!-- INDEX END -->
 
-
-
-<PRE>
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p><em>query_send()</em>, <em>response_rcv()</em>, <em>get()</em> - 
+send queries and receive responses from a DNS name server.</p>
+<p><em>clone_ns()</em>, <em>clone_ns_list()</em>, <em>free_name_server()</em>,
+<em>free_name_servers()</em> - manage name server lists</p>
+<p><em>print_response()</em> - display answers returned from the name server</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  #include &lt;resolver.h&gt;</pre>
+<pre>
   int query_send(const char    *name,
-            const u_int16_t     type,
-            const u_int16_t     class,
+            const unsigned short type,
+            const unsigned short class,
             struct name_server  *nslist,
             int                 edns0_size,
-            int                 *trans_id);
-
-</PRE>
-
-
-<P>
-
-
-
-<PRE>
+            int                 *trans_id);</pre>
+<pre>
   int response_recv(int         *trans_id,
+            fd_set              *pending_desc,
+            struct timeval      *closest_event,
             struct name_server  **respondent,
-            u_int8_t            **response,
-            u_int32_t           *response_length);
-
-</PRE>
-
-
-<P>
-
-
-
-<PRE>
+            unsigned char       **response,
+            size_t              *response_length);</pre>
+<pre>
   int get(const char          *name_n,
-          const u_int16_t     type_h,
-          const u_int16_t     class_h,
+          const unsigned short type_h,
+          const unsigned short class_h,
           struct name_server  *nslist,
-          int                 edns0_size,
           struct name_server  **respondent,
-          u_int8_t            **response,
-          u_int32_t           *response_length);
-
-</PRE>
-
-
-<P>
-
-
-
-<PRE>
-  int clone_ns(struct name_server **cloned_ns, struct name_server *ns);
-
-</PRE>
-
-
-<P>
-
-
-
-<PRE>
+          unsigned char       **response,
+          size_t              *response_length);</pre>
+<pre>
+  int clone_ns(struct name_server **cloned_ns, 
+          struct name_server *ns);</pre>
+<pre>
   int clone_ns_list(struct name_server **ns_list,
-                    struct name_server *orig_ns_list);
-
-</PRE>
-
-
-<P>
-
-
-
-<PRE>
-  void free_name_server(struct name_server **ns);
-
-</PRE>
-
-
-<P>
-
-
-
-<PRE>
-  void free_name_servers(struct name_server **ns);
-
-</PRE>
-
-
-<P>
-
-
-
-<PRE>
-  void print_response(u_int8_t *response, int response_length);
-
-</PRE>
-
-
-<A NAME="lbAD">&nbsp;</A>
-<H2>DESCRIPTION</H2>
-
-<A NAME="ixAAD"></A>
-The <I>query_send()</I> function sends a query to the name servers specified in
-<I>nslist</I>.  The query is comprised of the &lt;<I>name, class, type</I>&gt; tuple and
-<I>trans_id</I> provides a handle to this transaction within the <I>libsres</I> library. 
-The buffer size advertised in the <FONT SIZE="-1">EDNS0</FONT> option can be set using the <I>ends0_size</I>
-argument.
-<P>
-
-The <I>response_recv()</I> function returns the answers, if available, from the
-name server that responds for the query identified by <I>trans_id</I>.
-The response is available in <I>response</I> and the responding name server is
-returned in <I>respondent</I>.  The length of the response in bytes is returned
-in <I>response_length</I>.
-<P>
-
-The <I>get()</I> function provides a wrapper around the <I>query_send()</I> and
-<I>response_recv()</I> functions.  After sending a request, it blocks until
+                    struct name_server *orig_ns_list);</pre>
+<pre>
+  void free_name_server(struct name_server **ns);</pre>
+<pre>
+  void free_name_servers(struct name_server **ns);</pre>
+<pre>
+  void print_response(unsigned char *response, 
+            size_t response_length);</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <em>query_send()</em> function sends a query to the name servers specified in
+<em>nslist</em>.  The query is comprised of the &lt;<em>name, class, type</em>&gt; tuple and
+<em>trans_id</em> provides a handle to this transaction within the <em>libsres</em> library. 
+The buffer size advertised in the EDNS0 option can be set using the <em>ends0_size</em>
+argument.</p>
+<p>The <em>response_recv()</em> function returns the answers, if available, from the
+name server that responds for the query identified by <em>trans_id</em>.
+The response is available in <em>response</em> and the responding name server is
+returned in <em>respondent</em>.  The length of the response in bytes is returned
+in <em>response_length</em>.</p>
+<p>The <em>get()</em> function provides a wrapper around the <em>query_send()</em> and
+<em>response_recv()</em> functions.  After sending a request, it blocks until
 a response is received from some name server or until the request times out.
-The <I>libsres</I> library does not automatically follow referrals; responses
-containing referrals are treated as valid responses.
-<P>
-
-The memory pointed to by <I>*respondent</I> is internally allocated by the
-<I>libsres</I> library and must be freed by the invoker using
-<I>free_name_server()</I>.  An entire list of name servers can be freed using
-<I>free_name_servers()</I>.  A copy of the name server can be created using
-<I>clone_ns()</I> and a copy of a name server list can be made using
-<I>clone_ns_list()</I>.
-<P>
-
-<I>print_response()</I> provides a convenient way to display answers returned
-in <I>response</I> by the name server.
-<P>
-
-The <I>name_server</I> structure is defined in <B>resolver.h</B> as follows:
-<P>
-
-
-
-<PRE>
+The <em>libsres</em> library does not automatically follow referrals; responses
+containing referrals are treated as valid responses.</p>
+<p>The memory pointed to by <em>*respondent</em> is internally allocated by the
+<em>libsres</em> library and must be freed by the invoker using
+<em>free_name_server()</em>.  An entire list of name servers can be freed using
+<em>free_name_servers()</em>.  A copy of the name server can be created using
+<em>clone_ns()</em> and a copy of a name server list can be made using
+<em>clone_ns_list()</em>.</p>
+<p><em>print_response()</em> provides a convenient way to display answers returned
+in <em>response</em> by the name server.</p>
+<p>The <em>name_server</em> structure is defined in <strong>resolver.h</strong> as follows:</p>
+<pre>
+    #define NS_MAXCDNAME    255
     struct name_server
     {
-        u_int8_t ns_name_n[NS_MAXCDNAME];
+        unsigned char ns_name_n[NS_MAXCDNAME];
         void *ns_tsig;
-        u_int32_t ns_security_options;
-        u_int32_t ns_status;
-        u_long  ns_options;
+        unsigned int ns_security_options;
+        unsigned int ns_status;
+        unsigned long ns_options;
         int ns_retry;
         int ns_retrans;
         struct name_server *ns_next;
         int ns_number_of_addresses;
         struct sockaddr_storage **ns_address;
-    };
+    };</pre>
+<dl>
+<dt><strong><a name="ns_name_n" class="item"><em>ns_name_n</em></a></strong></dt>
 
-</PRE>
+<dd>
+<p>The name of the zone for which this name server is authoritative.</p>
+</dd>
+<dt><strong><a name="ns_tsig" class="item"><em>ns_tsig</em></a></strong></dt>
 
+<dd>
+<p>The <em>tsig</em> key that should be used to protect messages sent to this name
+server. This field is currently unused and must be set to NULL.</p>
+</dd>
+<dt><strong><a name="ns_security_options" class="item"><em>ns_security_options</em></a></strong></dt>
 
-<DL COMPACT>
-<DT><I>ns_name_n</I><DD>
-<A NAME="ixAAE"></A>
-The name of the zone for which this name server is authoritative.  
-<DT><I>ns_tsig</I><DD>
-<A NAME="ixAAF"></A>
-The <I>tsig</I> key that should be used to protect messages sent to this name
-server.  This field is currently unused and must be set to <FONT SIZE="-1">NULL</FONT>.
-<DT><I>ns_security_options</I><DD>
-<A NAME="ixAAG"></A>
-The security options for the zone.  This field is currently unused and must be
-set to <B></B><FONT SIZE="-1"><B>ZONE_USE_NOTHING</B></FONT><B></B>.
-<DT><I>ns_status</I><DD>
-<A NAME="ixAAH"></A>
-The status of the zone.  This field indicates how the zone information was
-obtained.  The invoker must set this value to <B></B><FONT SIZE="-1"><B>SR_ZI_STATUS_UNSET</B></FONT><B></B>. Zone
+<dd>
+<p>The security options for the zone.  This field is currently unused and must be
+set to <strong>ZONE_USE_NOTHING</strong>.</p>
+</dd>
+<dt><strong><a name="ns_status" class="item"><em>ns_status</em></a></strong></dt>
+
+<dd>
+<p>The status of the zone.  This field indicates how the zone information was
+obtained. The invoker must set this value to <strong>SR_ZI_STATUS_UNSET</strong>. Zone
 information obtained through referrals have a value of
-<B></B><FONT SIZE="-1"><B>SR_ZI_STATUS_LEARNED</B></FONT><B></B> for this field.
-<DT><I>ns_options</I><DD>
-<A NAME="ixAAI"></A>
-Specifies additional resolver flags.  Currently defined flags are
-<B></B><FONT SIZE="-1"><B>RES_RECURSE</B></FONT><B></B>, which sets the ``Recursion Desired'' flag; <B></B><FONT SIZE="-1"><B>RES_USE_DNSSEC</B></FONT><B></B>,
-which sets the ``<FONT SIZE="-1">DNSSEC</FONT> <FONT SIZE="-1">OK</FONT>'' bit in the <FONT SIZE="-1">EDNS0</FONT> header; and <B></B><FONT SIZE="-1"><B>RES_DEBUG</B></FONT><B></B>, which
-enables debugging.
-<DT><I>ns_retry</I><DD>
-<A NAME="ixAAJ"></A>
-Specifies the maximum number of attempts that must be made to obtain a name
-from an unresponsive name server before giving up.
-<DT><I>ns_retrans</I><DD>
-<A NAME="ixAAK"></A>
-Specifies the retransmission interval in seconds for queries sent to
-unresponsive name servers.
-<DT><I>ns_next</I><DD>
-<A NAME="ixAAL"></A>
-The address of the next name server in the list.
-<DT><I>ns_number_of_addresses</I><DD>
-<A NAME="ixAAM"></A>
-The number of elements in the array <I>ns_addresses</I>.  This field is
-currently unused.
-<DT><I>ns_addresses</I><DD>
-<A NAME="ixAAN"></A>
-The <FONT SIZE="-1">IP</FONT> address of the name server.  
-</DL>
-<A NAME="lbAE">&nbsp;</A>
-<H2>OTHER SYMBOLS EXPORTED</H2>
+<strong>SR_ZI_STATUS_LEARNED</strong> for this field.</p>
+</dd>
+<dt><strong><a name="ns_options" class="item"><em>ns_options</em></a></strong></dt>
 
-<A NAME="ixAAO"></A>
-The <I>libsres</I> library also exports the following <FONT SIZE="-1">BIND</FONT> functions,
-documentation for which can be found in the <FONT SIZE="-1">BIND</FONT> sources and documentation
-manuals:
-<P>
+<dd>
+<p>Specifies additional resolver flags.  Currently defined flags are
+<strong>RES_RECURSE</strong>, which sets the &quot;Recursion Desired&quot; flag; <strong>RES_USE_DNSSEC</strong>,
+which sets the &quot;DNSSEC OK&quot; bit in the EDNS0 header; and <strong>RES_DEBUG</strong>, which
+enables debugging.</p>
+</dd>
+<dt><strong><a name="ns_retry" class="item"><em>ns_retry</em></a></strong></dt>
 
+<dd>
+<p>Specifies the maximum number of attempts that must be made to obtain a name
+from an unresponsive name server before giving up.</p>
+</dd>
+<dt><strong><a name="ns_retrans" class="item"><em>ns_retrans</em></a></strong></dt>
 
+<dd>
+<p>Specifies the retransmission interval in seconds for queries sent to
+unresponsive name servers.</p>
+</dd>
+<dt><strong><a name="ns_next" class="item"><em>ns_next</em></a></strong></dt>
 
-<PRE>
+<dd>
+<p>The address of the next name server in the list.</p>
+</dd>
+<dt><strong><a name="ns_number_of_addresses" class="item"><em>ns_number_of_addresses</em></a></strong></dt>
+
+<dd>
+<p>The number of elements in the array <em>ns_addresses</em>.  This field is
+currently unused.</p>
+</dd>
+<dt><strong><a name="ns_addresses" class="item"><em>ns_addresses</em></a></strong></dt>
+
+<dd>
+<p>The IP address of the name server.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="other_symbols_exported">OTHER SYMBOLS EXPORTED</a></h1>
+<p>The <em>libsres</em> library also exports the following BIND functions,
+documentation for which can be found in the BIND sources and documentation
+manuals:</p>
+<pre>
   res_nametoclass
   res_nametotype
   ns_name_ntop
@@ -245,105 +203,114 @@ manuals:
   ns_parse_ttl
   p_class
   p_section
-  p_type
+  p_type</pre>
+<p>The <em>p_type()</em> function exported from <em>libsres</em> has been augmented such that 
+it recognizes the various DNSSEC type codes such DNSKEY, RRSIG, NSEC, 
+NSEC3 and DLV.</p>
+<p>
+</p>
+<hr />
+<h1><a name="return_values">RETURN VALUES</a></h1>
+<dl>
+<dt><strong><a name="sr_unset" class="item"><strong>SR_UNSET</strong></a></strong></dt>
 
-</PRE>
+<dd>
+<p>No error.</p>
+</dd>
+<dt><strong><a name="sr_call_error" class="item"><strong>SR_CALL_ERROR</strong></a></strong></dt>
 
+<dd>
+<p>An invalid parameter was passed to <em>get()</em>, <em>query_send()</em>, or
+<em>response_recv()</em>.</p>
+</dd>
+<dt><strong><a name="sr_internal_error" class="item"><strong>SR_INTERNAL_ERROR</strong></a></strong></dt>
 
-<P>
+<dd>
+<p>The resolver encountered some internal error.</p>
+</dd>
+<dt><strong><a name="sr_tsig_error" class="item"><strong>SR_TSIG_ERROR</strong></a></strong></dt>
 
-The <I>p_type()</I> function exported from <I>libsres</I> has been augmented such that 
-it recognizes the various <FONT SIZE="-1">DNSSEC</FONT> type codes such <FONT SIZE="-1">DNSKEY</FONT>, <FONT SIZE="-1">RRSIG</FONT>, <FONT SIZE="-1">NSEC</FONT>, 
-<FONT SIZE="-1">NSEC3</FONT> and <FONT SIZE="-1">DLV</FONT>.
-<A NAME="lbAF">&nbsp;</A>
-<H2>RETURN VALUES</H2>
+<dd>
+<p>The resolver encountered some TSIG-related error.  This is currently
+not implemented.</p>
+</dd>
+<dt><strong><a name="sr_no_answer" class="item"><strong>SR_NO_ANSWER</strong></a></strong></dt>
 
-<A NAME="ixAAP"></A>
-<DL COMPACT>
-<DT><B></B><FONT SIZE="-1"><B>SR_UNSET</B></FONT><B></B><DD>
-<A NAME="ixAAQ"></A>
-No error.
-<DT><B></B><FONT SIZE="-1"><B>SR_CALL_ERROR</B></FONT><B></B><DD>
-<A NAME="ixAAR"></A>
-An invalid parameter was passed to <I>get()</I>, <I>query_send()</I>, or
-<I>response_recv()</I>.
-<DT><B></B><FONT SIZE="-1"><B>SR_INTERNAL_ERROR</B></FONT><B></B><DD>
-<A NAME="ixAAS"></A>
-The resolver encountered some internal error.
-<DT><B></B><FONT SIZE="-1"><B>SR_TSIG_ERROR</B></FONT><B></B><DD>
-<A NAME="ixAAT"></A>
-The resolver encountered some TSIG-related error.  This is currently
-not implemented.
-<DT><B></B><FONT SIZE="-1"><B>SR_NO_ANSWER</B></FONT><B></B><DD>
-<A NAME="ixAAU"></A>
-No answers were received from any name server.
-<DT><B></B><FONT SIZE="-1"><B>SR_NO_ANSWER_YET</B></FONT><B></B><DD>
-<A NAME="ixAAV"></A>
-No answer currently available; the query is still active.
-<DT><B></B><FONT SIZE="-1"><B>SR_HEADER_ERROR</B></FONT><B></B><DD>
-<A NAME="ixAAW"></A>
-The length and count of records in the header were incorrect.
-<DT><B></B><FONT SIZE="-1"><B>SR_NXDOMAIN</B></FONT><B></B><DD>
-<A NAME="ixAAX"></A>
-The queried name did not exist.
-<DT><B></B><FONT SIZE="-1"><B>SR_FORMERR</B></FONT><B></B><DD>
-<A NAME="ixAAY"></A>
-The name server was not able to parse the query message.
-<DT><B></B><FONT SIZE="-1"><B>SR_SERVFAIL</B></FONT><B></B><DD>
-<A NAME="ixAAZ"></A>
-The name server was not reachable.
-<DT><B></B><FONT SIZE="-1"><B>SR_NOTIMPL</B></FONT><B></B><DD>
-<A NAME="ixABA"></A>
-A particular functionality is not yet implemented.
-<DT><B></B><FONT SIZE="-1"><B>SR_REFUSED</B></FONT><B></B><DD>
-<A NAME="ixABB"></A>
-The name server refused to answer this query.
-<DT><B></B><FONT SIZE="-1"><B>SR_DNS_GENERIC_FAILURE</B></FONT><B></B><DD>
-<A NAME="ixABC"></A>
-Other failure returned by the name server and reflected in the
-returned message <B></B><FONT SIZE="-1"><B>RCODE</B></FONT><B></B>.
-<DT><B></B><FONT SIZE="-1"><B>SR_EDNS_VERSION_ERROR</B></FONT><B></B><DD>
-<A NAME="ixABD"></A>
-The <FONT SIZE="-1">EDNS</FONT> version was not recognized
-<DT><B></B><FONT SIZE="-1"><B>SR_NAME_EXPANSION_FAILURE</B></FONT><B></B><DD>
-<A NAME="ixABE"></A>
-A failure was encountered while trying to expand a compressed domain name.
-</DL>
-<A NAME="lbAG">&nbsp;</A>
-<H2>CURRENT STATUS</H2>
+<dd>
+<p>No answers were received from any name server.</p>
+</dd>
+<dt><strong><a name="sr_no_answer_yet" class="item"><strong>SR_NO_ANSWER_YET</strong></a></strong></dt>
 
-<A NAME="ixABF"></A>
-There is currently no support for IPv6.
-<P>
+<dd>
+<p>No answer currently available; the query is still active.</p>
+</dd>
+<dt><strong><a name="sr_header_error" class="item"><strong>SR_HEADER_ERROR</strong></a></strong></dt>
 
-There is limited support for specifying resolver policy; members of the
-<I>struct name_server</I> are still subject to change.
-<A NAME="lbAH">&nbsp;</A>
-<H2>COPYRIGHT</H2>
+<dd>
+<p>The length and count of records in the header were incorrect.</p>
+</dd>
+<dt><strong><a name="sr_nxdomain" class="item"><strong>SR_NXDOMAIN</strong></a></strong></dt>
 
-<A NAME="ixABG"></A>
-Copyright 2004-2007 <FONT SIZE="-1">SPARTA</FONT>, Inc.  All rights reserved.
-See the <FONT SIZE="-1">COPYING</FONT> file included with the dnssec-tools package for details.
-<A NAME="lbAI">&nbsp;</A>
-<H2>SEE ALSO</H2>
+<dd>
+<p>The queried name did not exist.</p>
+</dd>
+<dt><strong><a name="sr_formerr" class="item"><strong>SR_FORMERR</strong></a></strong></dt>
 
-<A NAME="ixABH"></A>
+<dd>
+<p>The name server was not able to parse the query message.</p>
+</dd>
+<dt><strong><a name="sr_servfail" class="item"><strong>SR_SERVFAIL</strong></a></strong></dt>
 
-<A HREF="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</A>
-<P>
+<dd>
+<p>The name server was not reachable.</p>
+</dd>
+<dt><strong><a name="sr_notimpl" class="item"><strong>SR_NOTIMPL</strong></a></strong></dt>
 
-<HR>
-<A NAME="index">&nbsp;</A><H2>Index</H2>
-<DL>
-<DT><A HREF="#lbAB">NAME</A><DD>
-<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
-<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
-<DT><A HREF="#lbAE">OTHER SYMBOLS EXPORTED</A><DD>
-<DT><A HREF="#lbAF">RETURN VALUES</A><DD>
-<DT><A HREF="#lbAG">CURRENT STATUS</A><DD>
-<DT><A HREF="#lbAH">COPYRIGHT</A><DD>
-<DT><A HREF="#lbAI">SEE ALSO</A><DD>
-</DL>
-<HR>
-</BODY>
-</HTML>
+<dd>
+<p>A particular functionality is not yet implemented.</p>
+</dd>
+<dt><strong><a name="sr_refused" class="item"><strong>SR_REFUSED</strong></a></strong></dt>
+
+<dd>
+<p>The name server refused to answer this query.</p>
+</dd>
+<dt><strong><a name="sr_dns_generic_failure" class="item"><strong>SR_DNS_GENERIC_FAILURE</strong></a></strong></dt>
+
+<dd>
+<p>Other failure returned by the name server and reflected in the
+returned message <strong>RCODE</strong>.</p>
+</dd>
+<dt><strong><a name="sr_edns_version_error" class="item"><strong>SR_EDNS_VERSION_ERROR</strong></a></strong></dt>
+
+<dd>
+<p>The EDNS version was not recognized</p>
+</dd>
+<dt><strong><a name="sr_name_expansion_failure" class="item"><strong>SR_NAME_EXPANSION_FAILURE</strong></a></strong></dt>
+
+<dd>
+<p>A failure was encountered while trying to expand a compressed domain name.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="current_status">CURRENT STATUS</a></h1>
+<p>There is currently no support for IPv6.</p>
+<p>There is limited support for specifying resolver policy; members of the
+<em>struct name_server</em> are still subject to change.</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2011 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><em>libval(3)</em></p>
+<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
+
+</body>
+
+</html>

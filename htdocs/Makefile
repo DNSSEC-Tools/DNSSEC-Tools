@@ -1,7 +1,7 @@
 TOOLSDIR=../dnssec-tools
 
 FIXBOT=perl -p -i fixhtml
-all: tools modules 
+all: tools modules libs
 # stepbystep
 
 # (perl specific for manual extraction)
@@ -51,6 +51,23 @@ MODS=\
 	modules/timetrans \
 	modules/tooloptions
 
+LIBS=\
+	validator/doc/dnsval.conf\
+	validator/doc/getaddr\
+	validator/doc/gethost\
+	validator/doc/getname\
+	validator/doc/getquery\
+	validator/doc/getrrset\
+	validator/doc/libsres\
+	validator/doc/libval\
+	validator/doc/libval_check_conf\
+	validator/doc/libval_shim\
+	validator/doc/val_get_rrset\
+	validator/doc/val_getaddrinfo\
+	validator/doc/val_gethostbyname\
+	validator/doc/val_res_query\
+	validator/doc/validate
+
 tools:
 	for i in $(TOOLS) ; do \
 		ibase=`basename $$i` ; \
@@ -64,6 +81,14 @@ modules:
 		ibase=`basename $$i` ; \
 		echo creating docs/tool-description/$$ibase.html ; \
 		pod2html $(TOOLSDIR)/tools/$$i.pm > docs/tool-description/$$ibase.html ; \
+		$(FIXBOT) docs/$$ibase.html ; \
+	done
+
+libs:
+	for i in $(LIBS) ; do \
+		ibase=`basename $$i` ; \
+		echo creating docs/tool-description/$$ibase.html ; \
+		pod2html $(TOOLSDIR)/$$i.pod > docs/tool-description/$$ibase.html ; \
 		$(FIXBOT) docs/$$ibase.html ; \
 	done
 
