@@ -6,8 +6,6 @@ validate - Query the Domain Name System and display results of the DNSSEC valida
 
 =head1 SYNOPSIS
 
-  validate
-
   validate [options] DOMAIN_NAME
 
 =head1 DESCRIPTION
@@ -18,13 +16,6 @@ It outputs the series of responses that were received from the DNS and the
 DNSSEC validation results for each domain name.  An examination of the queries
 and validation results can help an administrator uncover errors in DNSSEC
 configuration of DNS zones.
-
-If no options are specified and no I<DOMAIN_NAME> argument is given,
-B<validate> will perform a series of pre-defined test queries against
-the I<test.dnssec-tools.org> zone.  This serves as a
-test-suite for the validator.  If any options are specified (e.g.,
-configuration file locations), I<-s> or I<--selftest> must be specified
-to run the test-suite.
 
 =head1 OPTIONS
 
@@ -77,11 +68,8 @@ for the internal tests.
 
 =item -s, --selftest
 
-This option can be used to specify that the application should perform its
-test-suite against the I<dnssec-tools.org> test domain.  If the name servers
-configured in the system B<resolv.conf> do not support DNSSEC, use the I<-r>
-and I<-i> options to enable B<validate> to use its own internal recursive
-resolver.
+This option can be used to specify that the application should perform its 
+self tests using names from the configured test-suite.
 
 =item -T I<number>[:I<number>], --testcase=I<number>[:I<number>]
 
@@ -119,7 +107,7 @@ B<libval>
 
 =head1 COPYRIGHT
 
-Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2011 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHORS

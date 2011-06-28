@@ -113,28 +113,31 @@ The following keywords are defined for B<dnsval.conf>:
 =item trust-anchor
 
 For the "trust-anchor" attribute additional-data is a sequence of
-ordered pairs, each consisting of the zone name and a quoted
-string containing the RDATA portion for the
-trust anchor's DNSKEY. An example is given below.
+ordered pairs, each consisting of the zone name and 
+the RDATA portion for the trust anchor with an optional prefix. 
+Trust anchors may be either DNSKEY or DS records, the prefix in 
+the RDATA is use to indicate what type of record it is. 
+DNSKEY is assumed if no prefix is specified.
+
+An example is given below.
 
     browser trust-anchor
-        example.com   "257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf1Pf9\
+        .   DS  19036  8  2  \
+            49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE\
+            1CDDE32F24E8FB5
+        example.com   257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf1Pf9\
             AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2 XEm6mp6 mit4tzp\
             B/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6 /Ha0 Ef GPNSqn\
             Y 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVy QPeEVHk oDNCA\
-            lr qOA3lw=="
-        example.org   "257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf1Pf9\
-            AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2 XEm6mp6 mit4tzp\
-            B/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6 /Ha0 Ef GPNSqn\
-            Y 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVy QPeEVHk oDNCA\
-            lr qOA3lw=="
+            lr qOA3lw==
     ;
 
 =item zone-security-expectation
 
 For the "zone-security-expectation" attribute additional-data
-is a sequence of  &lt;domain name,value&gt; tuples representing the
-security expectation for names in that domain, where value can be one of the following:
+is a sequence of  &lt;domain name,value&gt; tuples representing 
+the security expectation for names in that domain, where value 
+can be one of the following:
 
 =over 4
 
@@ -152,20 +155,23 @@ Reject all answers received for names under this domain.
 
 =back
 
-This zone-security-expectation DNSSEC validator policy construct makes it possible to define
-various islands of trust for DNSSEC-enabled zones and to
-ignore or validate data from selected zones. The default zone
-security expectation for a domain is "validate".
-In the following example, for DNSSEC validator contexts created with a DNSSEC validator policy label of "browser",
-the DNSSEC validation is only performed for names
-under the example.com domain; names under the somebogus.org domain are always
-considered to be untrusted and DNSSEC validation for all other domain names is ignored.
+This zone-security-expectation DNSSEC validator policy construct 
+makes it possible to define various islands of trust for 
+DNSSEC-enabled zones and to ignore or validate data from selected 
+zones. The default zone security expectation for a domain is 
+"validate".  In the following example, for DNSSEC validator 
+contexts created with a DNSSEC validator policy label of "browser",
+the DNSSEC validation is only performed for names under the 
+example.com domain; names under the somebogus.org domain are always
+considered to be untrusted and DNSSEC validation for all other 
+domain names is ignored.
 
     browser zone-security-expectation   
         example.com  validate      
         somebogusname.org untrusted
         . ignore
     ;
+
 
 =item provably-insecure-status
 
@@ -219,17 +225,23 @@ the number of iterations.  This is also the default setting for a zone.
 
 Specifies the DLV tree for the target zone. In the following example, libval will use
 the DLV registry defined at dlv.isc.org. for all queries under the root that do not
-give us a trustworthy answer using the normal DNSSEC mechanism, and are not 
-marked as trusted or untrusted zones in the dnsval.conf zone-security-expectation statement.
+give us a trustworthy answer using the normal DNSSEC mechanism, and have a 
+zone-security-expectation of B<validate>.
 
     dlv dlv-trust-points
         .   dlv.isc.org.
     ;
 
-In order for DLV to be used in the above example, there must be a 
-trust-anchor policy defined for the dlv.isc.org zone, with the
-zone-security-expectation policy for dlv.isc.org set to validate.
-    
+In order for DLV to be used in the above example, there must also be a 
+trust-anchor policy defined for the dlv registry, with the
+zone-security-expectation policy for registry set to validate.
+   
+    dlv trust-anchor
+        dlv.isc.org DS  19297  5  2  \
+                    A11D16F6733983E159EDF8053B2FB57B479D81A309A5\
+                    0EAA79A81AF48A47C617
+    ;
+
 =back
 
 Apart from zone-specific configuration options, it is also possible to
@@ -262,7 +274,11 @@ is greater than one.
 
 =item edns0-size
 
-This option can be used for specifying the EDNS0 window size.
+In querying various name servers, libsres will also attempt multiple EDNS0
+sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set).
+The following EDNS0 sizes are tried by default: 4096, 1492, 512
+The "edns0-size" policy knob can be used to change the
+largest EDNS0 size that is attempted.
 
 =item env-policy
 
@@ -277,6 +293,18 @@ This option allows the administrator of the dnsval.conf file to control
 whether libval will automatically look for a validation policy with a label
 equal to the application name in B<dnsval.conf>. See the section below on 
 overriding dnsval.conf policies for additional details on this option.
+
+=item closest-ta-only
+
+The default validation behavior is to look for any authentication chain that
+validates successfully. Thus if there are trust anchors for example.com and
+test.example.com the validator will return success if the authentication chain
+can be anchored to the example.com trust anchor, even if the trust anchor for
+test.example.com does not match. In cases where this is not desirable, the
+closest-ta-only option can be used.
+
+If this option is set to B<yes> then the validation algorithm terminates at
+the closest matching TA.
 
 =item log
 
@@ -420,7 +448,7 @@ dnsval.conf
 
 =head1 COPYRIGHT
 
-Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2011 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO

@@ -15,8 +15,8 @@ I<print_response()> - display answers returned from the name server
   #include <resolver.h>
 
   int query_send(const char    *name,
-            const u_int16_t     type,
-            const u_int16_t     class,
+            const unsigned short type,
+            const unsigned short class,
             struct name_server  *nslist,
             int                 edns0_size,
             int                 *trans_id);
@@ -25,18 +25,19 @@ I<print_response()> - display answers returned from the name server
             fd_set              *pending_desc,
             struct timeval      *closest_event,
             struct name_server  **respondent,
-            u_char              **response,
+            unsigned char       **response,
             size_t              *response_length);
 
   int get(const char          *name_n,
-          const u_int16_t     type_h,
-          const u_int16_t     class_h,
+          const unsigned short type_h,
+          const unsigned short class_h,
           struct name_server  *nslist,
           struct name_server  **respondent,
-          u_char              **response,
+          unsigned char       **response,
           size_t              *response_length);
 
-  int clone_ns(struct name_server **cloned_ns, struct name_server *ns);
+  int clone_ns(struct name_server **cloned_ns, 
+          struct name_server *ns);
 
   int clone_ns_list(struct name_server **ns_list,
 		    struct name_server *orig_ns_list);
@@ -45,7 +46,8 @@ I<print_response()> - display answers returned from the name server
 
   void free_name_servers(struct name_server **ns);
 
-  void print_response(u_char *response, size_t response_length);
+  void print_response(unsigned char *response, 
+            size_t response_length);
 
 =head1 DESCRIPTION
 
@@ -79,13 +81,14 @@ in I<response> by the name server.
 
 The I<name_server> structure is defined in B<resolver.h> as follows:
 
+    #define NS_MAXCDNAME    255
     struct name_server
     {
-        u_int8_t ns_name_n[NS_MAXCDNAME];
+        unsigned char ns_name_n[NS_MAXCDNAME];
         void *ns_tsig;
-        u_int32_t ns_security_options;
-        u_int32_t ns_status;
-        u_long  ns_options;
+        unsigned int ns_security_options;
+        unsigned int ns_status;
+        unsigned long ns_options;
         int ns_retry;
         int ns_retrans;
         struct name_server *ns_next;
@@ -102,7 +105,7 @@ The name of the zone for which this name server is authoritative.
 =item I<ns_tsig>
 
 The I<tsig> key that should be used to protect messages sent to this name
-server.  This field is currently unused and must be set to NULL.
+server. This field is currently unused and must be set to NULL.
 
 =item I<ns_security_options>
 
@@ -112,7 +115,7 @@ set to B<ZONE_USE_NOTHING>.
 =item I<ns_status>
 
 The status of the zone.  This field indicates how the zone information was
-obtained.  The invoker must set this value to B<SR_ZI_STATUS_UNSET>. Zone
+obtained. The invoker must set this value to B<SR_ZI_STATUS_UNSET>. Zone
 information obtained through referrals have a value of
 B<SR_ZI_STATUS_LEARNED> for this field.
 
@@ -246,7 +249,7 @@ I<struct name_server> are still subject to change.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2011 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO
