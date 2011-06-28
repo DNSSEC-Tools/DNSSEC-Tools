@@ -4,7 +4,7 @@
 <?rfc toc="yes"?>
 
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
-<rfc ipr="trust200902" docName="draft-hayatnagarkar-dnsext-validator-api-09">
+<rfc ipr="trust200902" docName="draft-hayatnagarkar-dnsext-validator-api-08">
   <front>
     <title> DNSSEC Validator API </title>
 
@@ -22,18 +22,12 @@
         <email>suresh AT sparta.com</email>
       </address>
     </author>
+    <author initials="R." surname="Story"
+            fullname="Robert Story"> 
+      <organization> SPARTA, Inc. </organization>
+    </author>
     <author initials="A." surname="Hayatnagarkar"
             fullname="Abhijit Hayatnagarkar"> 
-      <organization> SPARTA, Inc. </organization>
-      <address>
-        <postal>
-          <street>7110 Samuel Morse Dr.</street>
-          <city>Columbia</city>
-          <region>MD</region>
-          <code>21046</code>
-          <country>US</country>
-        </postal>
-      </address>
     </author>
 
     <date month="July" year="2011" />
@@ -304,7 +298,7 @@ int val_res_query(val_context_t *ctx,
                   const char    *domain_name, 
                   int            class, 
                   int            type,
-                  u_char        *answer, 
+                  unsigned char *answer, 
                   int            anslen, 
                   val_status_t  *val_status);
 
@@ -361,7 +355,7 @@ int val_get_rrset(val_context_t            *ctx,
                   const char               *name,
                   int                       class,
                   int                       type,
-                  u_int32_t                 flags,
+                  unsigned int              flags,
                   struct val_answer_chain **answers);
 
 void val_free_answer_chain(struct val_answer_chain *answers);
@@ -392,7 +386,7 @@ struct val_answer_chain {
 
 struct rr_rec {
       size_t         rr_length;
-      u_char        *rr_data;
+      unsigned char *rr_data;
       struct rr_rec *rr_next;
 };
       </artwork>
@@ -437,13 +431,13 @@ DNSSEC validator API are summarized below. </t>
 #include &lt;validator/validator.h&gt;
 
 int val_resolve_and_check( val_context_t               *ctx, 
-                           char                        *domain_name,
+                           const char                  *domain_name,
                            int                          class,
                            int                          type, 
-                           u_int32_t                    flags,
+                           unsigned int                 flags,
                            struct val_result_chain    **results);
 
-void val_free_result_chain( struct val_result_chain *results);
+void val_free_result_chain(struct val_result_chain *results);
 
       </artwork>
       <postamble>
@@ -452,16 +446,46 @@ for the &lt;domain_name, class, type&gt; tuple and then performs the
 DNSSEC validation operation for the responses received. </t> 
 
 <t> The flags argument specifies a list of options to the validation process, 
-logically OR'd to each other. Only one flag is currently defined: 
-<figure>
-      <artwork>
-#define VAL_QUERY_NO_AC_DETAIL 0x00000001
-      </artwork>
-      <postamble>
-<t> If this flag is specified, details of the authentication chain MUST NOT be returned in the returned results. </t> 
-      </postamble>
-</figure> 
-</t> 
+logically OR'd to each other. The following flags are defined; their 
+values are implementation-specific: </t> 
+
+<t> <list style="hanging">
+<t hangText="VAL_QUERY_AC_DETAIL">
+   If this flag is specified, the complete authentication chain MUST be 
+   returned for each answer within the val_result_chain structure. If
+   this flag is not set then only the rrset information corresponding 
+   to the answer or proof of non-existence for the queried name, domain_name
+   SHOULD be returned within the val_result_chain structure. </t> 
+
+<t hangText="VAL_QUERY_DONT_VALIDATE">
+   If this flag is specified, validation processing MUST be ignored
+   for the given name. Any resulting answer will have a validation
+   status value of VAL_IGNORE_VALIDATION. </t> 
+
+<t hangText="VAL_QUERY_NO_DLV">
+   If this flag is specified, Dynamic Look-aside Validation (DLV) 
+   <xref target="refs.DLV"/> processing for this name MUST NOT be 
+   performed. </t> 
+
+<t hangText="VAL_QUERY_ASYNC">
+   If this flag is specified, this name MUST be resolved through
+   the asynchronous lookup process (<xref target="val-async"/>). </t>
+
+<t hangText="VAL_QUERY_RECURSE">
+   If this flag is specified, the name MUST be looked up by 
+   directly querying the authoritative name server for that name (which may
+   involve iteratively querying various name servers in the delegation hierarchy)
+   instead of requesting this information from any caching name server that may be 
+   specified as configuration data. </t> 
+
+<t hangText="VAL_QUERY_REFRESH_QCACHE">
+   If this flag is specified, any locally cached information for the 
+   name being looked up MUST be ignored. </t>
+
+<t hangText="VAL_QUERY_NO_EDNS0_FALLBACK">
+   If this flag is specified, re-trying the query with smaller EDNS0 advertised window
+   sizes MUST NOT be attempted as a fallback strategy. </t> 
+</list></t> 
 
 <t> val_resolve_and_check() MUST return 0 on success and an error code from 
 <xref target="val-return-values"/> on failure.  
@@ -496,12 +520,12 @@ through the list of all results returned by the DNSSEC validator.
 For all val_result_chain elements that 
 represent a name alias, val_rc_alias MUST point to the target name referenced by that alias. </t> 
 
-<t>val_rc_answer MUST point to a resource record in the answer portion; all 
+<t>val_rc_answer SHOULD point to a resource record in the answer portion; all 
 associated proofs of non-existence (either in support of the answer in val_rc_answer 
-or to prove the non-existence of a record) MUST be returned in val_rc_proofs. 
+or to prove the non-existence of a record) SHOULD be returned in val_rc_proofs. 
 val_rc_proof_count MUST be set to the number of proof elements that are available.
- val_rc_answer and val_rc_proofs MUST both point to NULL if the 
- VAL_QUERY_NO_AC_DETAIL flag is specified in the flags argument for
+ val_rc_answer and val_rc_proofs SHOULD be NULL if the 
+ VAL_QUERY_AC_DETAIL flag is not specified in the flags argument for
  val_resolve_and_check().  </t> 
 
 <t> 
@@ -604,7 +628,7 @@ DNSSEC validation status for each resource-record within the resource record set
 <artwork>
 struct val_rr_rec {
     size_t               rr_rdata_length; 
-    u_char              *rr_rdata;  
+    unsigned char       *rr_rdata;  
     struct val_rr_rec   *rr_next;
     val_astatus_t        rr_status;      
 };
@@ -628,7 +652,8 @@ val_astatus_t type and is further described in <xref target="val-astatus"/>.  </
         <list style="hanging">
 <t> </t>
 <t hangText="VAL_AC_UNSET:">
-DNSSEC validation for the given resource record set was not attempted. </t>
+The DNSSEC validation status for resource record set could not be 
+determined. </t>
 <t> </t>
 <t hangText="VAL_AC_IGNORE_VALIDATION:">
 DNSSEC validation for the given resource record set was ignored on
@@ -811,7 +836,7 @@ the return value from p_ac_status(VAL_AC_VERIFIED) MAY be "VAL_AC_VERIFIED".
   <t> The functions and data structures defined in the low-level
   Asynchronous DNSSEC validator API are summarized below.</t>
 
-  <section title="Asynchronous Status" anchor="async_status"> <!-- X.1 -->
+  <section title="Asynchronous Status" anchor="async_status_main"> <!-- X.1 -->
 
     <section title="Overview" anchor="async_status_overview"> <!-- X.1.1 -->
       <t>   An application which submits asynchronous requests needs a way to
@@ -1323,8 +1348,8 @@ MUST be equal to 0 for other status codes. </t>
  particular cached data as untrustworthy. </t>
 
  <t> It is recommended that applications MUST NOT cache DNS data in a manner 
- that would violate the TTL limits placed on DNS records. The proper behavior for applications 
- is to delegate the function of caching DNS data to a stub resolver or 
+ that would violate the TTL limits placed on DNS records. Applications must, instead 
+ delegate the function of caching DNS data to a stub resolver or 
  a local recursive resolver library, and to only use DNS API functions to request answers 
  whenever necessary. The stub or recursive resolver libraries should, in turn, determine 
  from the resource record TTLs if a cached answer is available or if a fresh DNS query 
@@ -1359,7 +1384,8 @@ able to detect the integrity of DNS data for such zones. </t>
 the current Internet environment where not all DNS name servers are
 expected to be DNSSEC-aware.  If the name server pointed to by the system configuration 
 is not DNSSEC-aware (i.e. it does not return DNSSEC records), DNSSEC validation will not 
-work as expected. </t>
+work as expected, unless the validator has certain fallback mechanims in place to 
+try and route around such broken behavior. </t>
 
 <t> The DNSSEC validator configuration information needs to be protected 
 so that it cannot be overwritten by unauthorized users or processes. 
@@ -1432,6 +1458,14 @@ this draft draws on the results from that effort.</t>
                 <date month="March" year="2005" />
               </front>
               <seriesInfo name="RFC" value="4035" />
+            </reference>
+            <reference anchor="refs.DLV">
+              <front>
+                <title>DNSSEC Lookaside Validation (DLV)</title>
+                <author initials="S." surname="Weiler" fullname="Sam Weiler" />
+                <date month="November" year="2007" />
+              </front>
+              <seriesInfo name="RFC" value="5074" />
             </reference>
         </references>
         <references title="Informative References">
@@ -1508,23 +1542,21 @@ would depend on the type of attribute specified.  </t>
 
 <t><list style="symbols">
 <t>For the "trust-anchor" attribute additional-data could be a sequence of 
-ordered pairs, each consisting of the zone name and a quoted
+ordered pairs, each consisting of the zone name and a 
 string containing the resource record data for the 
-trust anchor's DNSKEY. An example is given below. 
+trust anchor's DNSKEY or DS record. An example is given below. 
     <figure>
     <artwork>
     browser trust-anchor 
-        example.com   "257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf1Pf9\
-            AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2 XEm6mp6 mit4tzp\
-            B/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6 /Ha0 Ef GPNSqn\
-            Y 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVy QPeEVHk oDNCA\
-            lr qOA3lw==" 
-        example.org   "257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf1Pf9\
-            AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2 XEm6mp6 mit4tzp\
-            B/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6 /Ha0 Ef GPNSqn\
-            Y 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVy QPeEVHk oDNCA\
-            lr qOA3lw==" 
-        ;
+      .   DS  19036  8  2  \
+          49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE\
+          1CDDE32F24E8FB5
+      example.org DNSKEY 257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf\
+          1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2 XEm6mp6 mit\
+          4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6 /Ha0 Ef GP\
+          NSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVy QPeEVHk o\
+          DNCA lr qOA3lw== 
+    ;
     </artwork>
     <postamble>
     </postamble>
@@ -1665,19 +1697,19 @@ main() {
 
    /* submit request */
    rc = val_async_submit(my_ctx, "www.example.com", ns_c_in,
-                         ns_t_a, 0, &async_status);
+                         ns_t_a, 0, &amp;async_status);
 
    while (!done) {
-      FD_ZERO(&fds);       /* clear fd_set */
+      FD_ZERO(&amp;fds);       /* clear fd_set */
       nfds = 0;            /* no FDs yet */
       timeout.usec = 0;
       timeout.sec = 10; /* maximum timeout 10 sec */
-      val_async_select_info(&ctx, &fds, &numfds, &timeout); /* async FDs */
+      val_async_select_info(ctx, &amp;fds, &amp;numfds, &amp;timeout); /* async FDs */
 
       /* application should set its own FDs here */
 
-      ready = select(numfds+1, &fds, NULL, NULL, &timeout);
-      if ( ready < 0 ) {
+      ready = select(numfds+1, &amp;fds, NULL, NULL, &amp;timeout);
+      if ( ready &lt; 0 ) {
          break; /* or continue... */
       } else if ( ready == 0 ) {
          /* application timeout processing */
@@ -1685,7 +1717,7 @@ main() {
          /* application FD processing */
       }
       /* handle asynx FDs/timeouts */
-      val_async_check(&ctx, &fds, &numfds, flags);
+      val_async_check(&amp;ctx, &amp;fds, &amp;numfds, flags);
    }
 }
             </artwork>
