@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     retval = val_create_context_with_conf(NULL, dnsval_conf, resolv_conf, root_hints, &context);
 
     if (retval != VAL_NO_ERROR) {
-        fprintf(stdout, "Result: FAILED. \n"); 
+        fprintf(stdout, "Result: FAILED. %s \n", p_val_err(retval)); 
         return (-1);
     }
 
