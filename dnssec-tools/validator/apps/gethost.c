@@ -22,7 +22,6 @@
 // Program options
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
-    {"novalidate", 0, 0, 'n'},
     {"family", 0, 0, 'f'},
     {"reentrant", 0, 0, 'r'},
     {"output", 0, 0, 'o'},
@@ -40,7 +39,6 @@ usage(char *progname)
     fprintf(stderr, "Usage: %s [options] name\n", progname);
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "\t-h, --help                      display usage and exit\n");
-    fprintf(stderr, "\t-n, --novalidate                do not use the validator\n");
     fprintf(stderr, "\t-r, --reentrant                 use reentrant versions of functions\n");
     fprintf(stderr, "\t-f, --family=[AF_INET|AF_INET6] address family\n");
     fprintf(stderr, "\t                                AF_INET for IPv4 addresses,\n");
@@ -74,7 +72,6 @@ main(int argc, char *argv[])
     int             i;
     val_status_t    val_status;
     int             herrno = 0;
-    int             dovalidate = 1;
     int             familyspecified = 0;
     int             usereentrant = 0;
     char           *name;
@@ -94,13 +91,13 @@ main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "hrnf:o:V",
+        c = getopt_long_only(argc, argv, "hrf:o:V",
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "hrnf:o:V", prog_options, &opt_index);
+        c = getopt_long(argc, argv, "hrf:o:V", prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "hrnf:o:V");
+        c = getopt(argc, argv, "hrf:o:V");
 #endif
 
         if (c == -1) {
@@ -111,9 +108,6 @@ main(int argc, char *argv[])
         case 'h':
             usage(argv[0]);
             return -1;
-        case 'n':
-            dovalidate = 0;
-            break;
         case 'f':
             familyspecified = 1;
             if (strncasecmp(optarg, "AF_INET", strlen("AF_INET")) == 0) {
@@ -156,8 +150,7 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    if (dovalidate) {
-        if (usereentrant) {
+    if (usereentrant) {
 #ifdef HAVE_GETHOSTBYNAME2
             if (familyspecified)
                 retval =
@@ -170,31 +163,11 @@ main(int argc, char *argv[])
                     val_gethostbyname_r(NULL, name, &hentry, auxbuf,
                                         AUX_BUFLEN, &result, &herrno,
                                         &val_status);
-        } else {
+    } else {
             if (familyspecified)
                 result = val_gethostbyname2(NULL, name, af, &val_status);
             else
                 result = val_gethostbyname(NULL, name, &val_status);
-        }
-    } else {
-        if (usereentrant) {
-#if 0
-            if (familyspecified)
-                retval =
-                    gethostbyname2_r(name, af, &hentry, auxbuf, AUX_BUFLEN,
-                                     &result, &herrno);
-            else
-                retval = gethostbyname_r(name, &hentry, auxbuf, AUX_BUFLEN,
-                                         &result, &herrno);
-#endif
-        } else {
-#ifdef HAVE_GETHOSTBYNAME2
-            if (familyspecified)
-                result = gethostbyname2(name, af);
-            else
-#endif
-                result = gethostbyname(name);
-        }
     }
 
     if (result != NULL) {
@@ -242,9 +215,7 @@ main(int argc, char *argv[])
     } else {
         printf("result is NULL\n");
     }
-    if (dovalidate) {
-        printf("Validation status = %s\n", p_val_error(val_status));
-    }
+    printf("Validation status = %s\n", p_val_error(val_status));
     if (usereentrant) {
 #ifdef HAVE_HSTRERROR
         printf("h_errno = %s\n", hstrerror(herrno));
@@ -259,12 +230,10 @@ main(int argc, char *argv[])
 #endif
     }
 
-    if (dovalidate) {
-        if (val_isvalidated(val_status))
-            return 2;
-        if (val_istrusted(val_status))
-            return 1;
-    }
+    if (val_isvalidated(val_status))
+        return 2;
+    if (val_istrusted(val_status))
+        return 1;
 
     return 0;
 }
