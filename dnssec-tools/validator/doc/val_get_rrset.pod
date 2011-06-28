@@ -20,7 +20,7 @@ information
 
   struct rr_rec {
       size_t         rr_length;
-      u_char        *rr_data;
+      unsigned char *rr_data;
       struct rr_rec *rr_next;
   };
 
@@ -28,7 +28,7 @@ information
                     const char *name,
                     int class,
                     int type,
-                    u_int32_t flags,
+                    unsigned int flags,
                     struct val_answer_chain **answers);
       
   void val_free_answer_chain(struct val_answer_chain *answers); 
@@ -36,9 +36,10 @@ information
 =head1 DESCRIPTION
 
 I<val_get_rrset()> performs DNSSEC validation for the given DNS
-name, class and type. They return the DNSSEC validation status
-for the returned resource record set, but do not return any 
-authentication chain details.
+name, class and type. It returns the DNSSEC validation status
+for the resource record set, but does not return any 
+authentication chain details. If the authentication chain details are
+required, the I<val_resolve_and_check()> function must be used instead.
 
 I<val_get_rrset()> returns its results in the val_answer_chain structure. The
 memory for this structure is allocated by val_get_rrset; the user must
@@ -47,12 +48,14 @@ release this memory after use using the I<val_free_answer_chain()> function.
 The RRsets in the response are returned in the val_answer_chain structure.
 The val_ans_name member contains the DNS name of the actual resource 
 record set returned.  This value may differ from the value passed as the 
-argument to val_get_rrset() if the resource record was returned after 
+I<name> argument to val_get_rrset() if the resource record was returned after 
 following a CNAME or DNAME alias. val_ans_name and val_ans_type
 contains the actual class and type for the returned resource record. These
 values may differ from the values passed as arguments to val_get_rrset() if 
 the query type or class has the value 255 (ANY). The resource record set is 
-returned as a linked list of rr_length and rr_data tuples, for data returned in each resource record of the resource record set.
+returned in I<val_ans>as a linked list of rr_length and rr_data tuples, 
+for data returned in each resource record of the resource record set. 
+I<val_ans> may be NULL if the name is non-existant.
 
 I<val_ans_status> gives the combined validation status value for the 
 the given RRset.  I<val_istrusted()> and
@@ -61,7 +64,8 @@ I<p_val_status()> can be used to display the status value to the user in ASCII
 format (See I<libval(3)> more for information).
 
 The I<ctx> parameter specifies the validation context, which can be set to NULL
-for default values (see I<libval(3)> and I<dnsval.conf> for more details on validation contexts and validation policy).
+for default values (see I<libval(3)> and I<dnsval.conf> for more details on 
+validation contexts and validation policy).
 
 =head1 RETURN VALUES
 
@@ -70,7 +74,7 @@ defined in libval(3) on failure.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2011 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHORS
