@@ -364,13 +364,14 @@ void val_free_answer_chain(struct val_answer_chain *answers);
       </figure>
     
 <t> The val_get_rrset() function queries the DNS for the data associated with
-the given domain name, class and type. The flags argument is currently unused
-and SHOULD be set to 0. val_get_rrset() MUST return 0 on success and an error code from
-<xref target="val-return-values"/> on failure. </t>
+the given domain name, class and type. The flags argument specifies a list of options
+to the validation process, logically OR'd to each other. This possible flags are defined in 
+<xref target="func-val-resolve-and-check"/>. val_get_rrset() MUST return 0 on success and an 
+error code from <xref target="val-return-values"/> on failure. </t>
 
 <t> val_get_rrset() MUST return its results in the val_answer_chain structure after 
-allocating sufficient memory for this structure. This memory MUST be released when 
-applications invoke the val_free_answer_chain() function. </t>
+allocating sufficient memory for this structure. Applications MUST release this 
+memory after use by invoking the val_free_answer_chain() function. </t>
  
 <t> The val_answer_chain structure is defined below. </t>
       <figure>
@@ -425,7 +426,7 @@ val_ans_status. </t>
 into the DNSSEC validation process. The functions and data structures defined in the low-level 
 DNSSEC validator API are summarized below. </t>
 
-    <section title="val_resolve_and_check, val_free_result_chain">
+    <section title="val_resolve_and_check, val_free_result_chain" anchor="func-val-resolve-and-check">
       <figure>
       <artwork>
 #include &lt;validator/validator.h&gt;
@@ -529,11 +530,9 @@ val_rc_proof_count MUST be set to the number of proof elements that are availabl
  val_resolve_and_check().  </t> 
 
 <t> 
-val_rc_rrset MUST point to resource record set information corresponding 
-to the current element in the val_result_chain linked list. 
-If val_rc_answer is not NULL, val_rc_rrset MUST point to the 
-val_rrset_rec structure within the first element of the authentication 
-chain pointed to by val_rc_answer. If no answers are returned (or a proof of
+val_rc_rrset MUST point to resource record set information for 
+the current element in the val_result_chain linked list. 
+If no answers are returned (or a proof of
 non-existence is returned) in response to the query, val_rc_rrset MUST be set to NULL.
 </t>
 
@@ -594,8 +593,7 @@ struct val_rrset_rec {
 </figure>
 
 <t> The information stored in the val_rrset_rec structure 
-MUST be obtained from the actual DNS response and includes 
-the DNS response error code 
+includes the DNS response error code 
 in the val_rrset_rcode field, and the DNS response "envelope"
 comprising of the name, class, type and time-to-live tuple in the 
 val_rrset_name, val_rrset_class, val_rrset_type and val_rrset_ttl 
@@ -652,7 +650,7 @@ val_astatus_t type and is further described in <xref target="val-astatus"/>.  </
         <list style="hanging">
 <t> </t>
 <t hangText="VAL_AC_UNSET:">
-The DNSSEC validation status for resource record set could not be 
+The DNSSEC validation status for resource the record set could not be 
 determined. </t>
 <t> </t>
 <t hangText="VAL_AC_IGNORE_VALIDATION:">
@@ -1402,7 +1400,7 @@ the response should really have been flagged as bogus.  Any subversion of the DN
   <t>A number of individuals have provided
 valuable feedback and suggestions for improving this document including the 
 following: Lindy Foster, Wayne Morrison, Russ Mundy, Bill Sommerfeld, 
-Robert Story, Wes Hardaker, Giovanni Marzot and Alfred Hoenes.  
+Wes Hardaker, Giovanni Marzot and Alfred Hoenes.  
 The list of authentication status codes in <xref target="val-astatus"/> was 
 generated through multiple brainstorming sessions at various IETF meetings; 
 this draft draws on the results from that effort.</t>
