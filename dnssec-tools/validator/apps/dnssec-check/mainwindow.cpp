@@ -112,6 +112,9 @@ void MainWindow::addAddress(QString server, int row) {
     m_results->addWidget(light = new QStatusLight(0, &check_basic_dns, server.toAscii().data(), "DNS", row), row, column++);
     m_tests.push_back(light);
 
+    m_results->addWidget(light = new QStatusLight(0, &check_basic_tcp, server.toAscii().data(), "TCP", row), row, column++);
+    m_tests.push_back(light);
+
     m_results->addWidget(light = new QStatusLight(0, &check_do_bit, server.toAscii().data(), "DO", row), row, column++);
     m_tests.push_back(light);
 
