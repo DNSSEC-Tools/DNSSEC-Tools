@@ -11,7 +11,6 @@ SOURCES += \
 
 DEFINES += NETWORKACCESS
 
-INCLUDEPATH += /home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/include
 LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
 
 TARGET.EPOCHEAPSIZE = 0x200000 0xA00000

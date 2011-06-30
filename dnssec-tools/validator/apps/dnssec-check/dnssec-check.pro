@@ -9,7 +9,6 @@ DEPLOYMENTFOLDERS = # file1 dir1
 
 # Needs to be defined for Symbian
 DEFINES += NETWORKACCESS
-INCLUDEPATH += /home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/include
 INCLUDEPATH += /opt/maemo/usr/include/
 LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
 
