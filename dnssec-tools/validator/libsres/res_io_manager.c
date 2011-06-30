@@ -307,8 +307,8 @@ res_io_send(struct expected_arrival *shipit)
          
         /*
          * OS X wants the socket size to be sockaddr_in for INET,
-         * while Linux is happy with sockaddr_storage. Might need
-         * to fix this for sockaddr_in6 too...
+         * while Linux is happy with sockaddr_storage. 
+         * XXX Might need to fix this for sockaddr_in6 too...
          */
         socket_size = shipit->ea_ns->ns_address[i]->ss_family == AF_INET ?
                       sizeof(struct sockaddr_in) : sizeof(struct sockaddr_storage);
