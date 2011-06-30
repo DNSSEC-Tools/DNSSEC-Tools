@@ -92,6 +92,62 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len) {
     RETURN_SUCCESS("An A record was retrieved");
 }
 
+int check_basic_tcp(char *ns_name, char *buf, size_t buf_len) {
+    int rc;
+    struct name_server *ns;
+    struct name_server *server;
+    u_char *response;
+    size_t len;
+    int found_a = 0;
+
+    ns_msg          handle;
+    int             qdcount, ancount, nscount, arcount;
+    u_int           opcode, rcode, id;
+    ns_rr           rr;
+    int             rrnum;
+
+    ns = parse_name_server(ns_name, NULL);
+
+    rc = get_tcp("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
+                 &server, &response, &len);
+
+    if (rc != SR_UNSET)
+        RETURN_ERROR("query failed entirely");
+
+    if (ns_initparse(response, len, &handle) < 0)
+        RETURN_ERROR("failed to init parser");
+
+    opcode = libsres_msg_getflag(handle, ns_f_opcode);
+    rcode = libsres_msg_getflag(handle, ns_f_rcode);
+    id = ns_msg_id(handle);
+    qdcount = ns_msg_count(handle, ns_s_qd);
+    ancount = ns_msg_count(handle, ns_s_an);
+    nscount = ns_msg_count(handle, ns_s_ns);
+    arcount = ns_msg_count(handle, ns_s_ar);
+
+    /* check the answer records for the DO bit in the response */
+    rrnum = 0;
+    for (;;) {
+        if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
+            if (errno != ENODEV) {
+                /* parse error */
+                RETURN_ERROR("failed to parse a returned additional RRSET");
+            }
+            break; /* out of data */
+        }
+        if (ns_rr_type(rr) == ns_t_a) {
+            found_a = 1;
+            break;
+        }
+        rrnum++;
+    }
+
+    if (!found_a)
+        RETURN_ERROR("No A record found in the basic DNS test.");
+
+    RETURN_SUCCESS("An A record was retrieved");
+}
+
 int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
     int rc;
     struct name_server *ns;
