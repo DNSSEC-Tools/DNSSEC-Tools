@@ -51,6 +51,7 @@ public:
     void addAddress(QString address, int row = -1);
 
 public slots:
+    void startGetAnswers();
     void getAnswers();
     void getSubAnswers();
     void showAbout();
