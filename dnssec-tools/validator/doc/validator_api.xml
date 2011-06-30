@@ -903,6 +903,56 @@ int val_async_cancel( val_async_status *async_status);
         </figure>
       </section>  <!-- x.1.2.3 -->
     </section> <!-- x.1.2 operations on asyncronous status -->
+
+
+    <section title="Extracting data from asynchronous status objects" anchor="async_status_data">
+      <!-- x.1.3 -->
+      <t> The API supports the following operations to extract data from
+      an asynchronous request object.</t>
+
+      <section title="val_async_get_answer, val_async_get_chain">
+        <!-- x.1.3.1 -->
+        <figure>
+          <artwork>
+#include &lt;validator/validator.h&gt;
+
+int val_async_get_answer( val_async_status *async_status,
+                          struct rr_rec **answer);
+
+int val_async_get_chain( val_async_status *async_status,
+                         struct val_result_chain **results,
+                         u_int32_t flags);
+          </artwork>
+          <postamble>
+            val_async_get_answer returns the record(s) returned for the
+            original request. val_async_get_chain returns the entire
+            result chain for the original request. Details about the
+            rr_rec struct, val_result_chain struct and the flags for
+            val_async_get_chain are described in
+            <xref target="func-val-resolve-and-check"/>, which describes
+            the val_resolve_and_check function.
+          </postamble>
+        </figure>
+
+        <t>These functions return pointers to data stored internally
+        in the async status object. Applications MUST copy the data
+        if they wish to have access to it after the async status object
+        has been released. For example, these callbacks will often be
+        used in asynchronous callbacks. After the final callback,
+        the asynchronous callback object will be released. Alternatively,
+        the application can specify the VAL_AS_SAVE_STATUS flag when
+        submitting the request. See <xref target="val_async_submit"/>
+        for further information about this flag.</t>
+      </section>  <!-- x.1.3.1 -->
+
+
+
+
+
+
+
+    </section> <!-- x.1.3 operations on asyncronous status -->
+
   </section> <!-- x.1 asyncronous status -->
 
   <section title="Asynchronous Callbacks" anchor="async_callbacks">
@@ -961,7 +1011,7 @@ int val_async_submit(val_context_t *ctx, const char *domain_name,
       parameter. An implementation MAY set async_status to NULL.</t>
 
       <t>The following flags may be set for the request. The numerical
-      values for the flags implementation-specific.</t>
+      values for the flags are implementation-specific.</t>
       <t>
       <list style="hanging">
         <t> </t>
@@ -976,6 +1026,11 @@ int val_async_submit(val_context_t *ctx, const char *domain_name,
         <t hangText="VAL_AS_ONE_CALLBACK:">Don't call the callback
         function with interim results. The callback function will only be
         called when all validation results are ready.</t>
+        <t> </t>
+        <t hangText="VAL_AS_SAVE_STATUS:">Don't release the async status
+        object after validation has completed and all callbacks have been
+        called. The caller assumes responsibility for calling
+        val_async_release when the object is no longer needed.</t>
       </list>
       </t>
     </section>  <!-- x.3.1. -->
@@ -1707,15 +1762,16 @@ main() {
    char             *domain = "www.example.com";
 
    /* submit request */
-   rc = val_async_submit(my_ctx, domain, ns_c_in, ns_t_a, 0,
-                         my_callback, (void*)domain, &amp;async_status);
-
+   rc = val_async_submit(my_ctx, domain, ns_c_in, ns_t_a,
+                         VAL_AS_ONE_CALLBACK, my_callback,
+                         (void*)domain, &amp;async_status);
    while (!done) {
       FD_ZERO(&amp;fds);       /* clear fd_set */
       nfds = 0;            /* no FDs yet */
       tv.usec = 0;
       tv.sec = 10;         /* maximum timeout 10 sec */
       val_async_select_info(&amp;ctx, &amp;fds, &amp;numfds, &amp;tv); /* async FDs */
+
       /* application should set its own FDs here */
       ready = select(numfds+1, &amp;fds, NULL, NULL, &amp;tv);
       if ( ready < 0 ) {
