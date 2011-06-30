@@ -4,6 +4,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QFile>
 #include <QtCore/QRegExp>
+#include <QtCore/QTimer>
 #include "QStatusLight.h"
 #include "SubmitDialog.h"
 #include "dnssec_checks.h"
@@ -82,7 +83,7 @@ void MainWindow::setupWidgets()
     connect(m_lineEdit, SIGNAL(returnPressed()), this, SLOT(addLineAddress()));
 
     m_mainLayout->addWidget(m_testButton = new QPushButton(tr("Test")));
-    connect(m_testButton, SIGNAL(clicked()), this, SLOT(getAnswers()));
+    connect(m_testButton, SIGNAL(clicked()), this, SLOT(startGetAnswers()));
 }
 
 void MainWindow::addLineAddress() {
@@ -200,6 +201,18 @@ void MainWindow::setOrientation(Orientation orientation)
     Q_UNUSED(orientation);
 #endif // Q_OS_SYMBIAN
 }
+
+void MainWindow::startGetAnswers()
+{
+    foreach(QStatusLight *light, m_tests) {
+        light->setStatus(QStatusLight::UNKNOWN);
+    }
+    m_resolverResult->setStatus(QStatusLight::UNKNOWN);
+    m_bypassResult->setStatus(QStatusLight::UNKNOWN);
+
+    QTimer::singleShot(0, this, SLOT(getAnswers()));
+}
+
 
 void MainWindow::getAnswers()
 {
