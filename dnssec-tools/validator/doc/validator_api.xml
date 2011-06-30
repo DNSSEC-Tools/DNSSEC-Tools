@@ -911,15 +911,15 @@ int val_async_cancel( val_async_status *async_status);
       <artwork>
 #include &lt;validator/validator.h&gt;
 
-typedef int (*val_cb_results)( val_async_status *as);
+typedef int (*val_cb_results)(val_async_status *as, void *user_ctx);
       </artwork>
       <postamble>
-        When an asynchronous request is submitted, a callback function may
-        be provided by the caller. This callback function is called when
-        the validation process has completed. Since there are multiple
-        formats for returning the results for a query, the only parameter
-        to the callback is the asynchronous status object. The application
-        can use this object to get results in the desired format.
+        When an asynchronous request is submitted, a callback function and
+        user context may be provided by the caller. This callback function
+        is called when validation results are available. The user_ctx
+        parameter MUST be the value given by the caller when the request
+        was submitted. The functions val_get_answer() and val_get_results()
+        can be used to examine the results in the async status object.
       </postamble>
     </figure>
 
@@ -939,12 +939,15 @@ typedef int (*val_cb_results)( val_async_status *as);
 
 int val_async_submit(val_context_t *ctx, const char *domain_name,
                      int class, int type, u_int32_t flags,
+                     val_cb_results *callback, void *user_context,
                      val_async_status **async_status);
         </artwork>
         <postamble>
           The val_async_submit() function submits a request for
           asynchronous processing of DNS queries for the data associated with
-          the given domain name, class and type.
+          the given domain name, class and type. If specified, the given
+          callback function will be called as results become available. The
+          specified user context will also be passed to the callback function.
         </postamble>
       </figure>
 
@@ -954,19 +957,27 @@ int val_async_submit(val_context_t *ctx, const char *domain_name,
 
       <t>On failure, the return code will be one of VAL_RESOURCE_UNAVAILABLE,
       VAL_BAD_ARGUMENT or VAL_INTERNAL_ERROR. The function MUST release
-      any allocated data, and MUST NOT return a value vai the async_status
-      parameter. An implementation MAY set the async_status pointer to
-      the NULL value.</t>
+      any allocated data, and MUST NOT return a value via the async_status
+      parameter. An implementation MAY set async_status to NULL.</t>
 
-      <t>The following flags may be set for the request:</t>
+      <t>The following flags may be set for the request. The numerical
+      values for the flags implementation-specific.</t>
       <t>
-      <list style="symbols">
-        <t>VAL_AS_IGNORE_CACHE      /* don't use cache */</t>
-        <t>VAL_AS_NO_NEW_QUERIES    /* only use answers in cache */</t>
-        <t>VAL_AS_NO_ANSWERS        /* don't care about answers */</t>
-        <t>VAL_AS_NO_RR_CALLBACKS   /* no individual record callbacks */</t>
-        <t>VAL_AS_NO_CALLBACKS      /* don't call callbacks */</t>
-      </list></t>
+      <list style="hanging">
+        <t> </t>
+        <t hangText="VAL_AS_IGNORE_CACHE:">Don't use any internal
+        cache for answers to this query. Answers MUST be from fresh responses
+        to all queries. These new answers MAY be stored in the internal cache
+        for use with future queries.</t>
+        <t> </t>
+        <t hangText="VAL_AS_NO_NEW_QUERIES:">Don't send any new
+        queries. Answers MUST come from the internal cache.</t>
+        <t> </t>
+        <t hangText="VAL_AS_ONE_CALLBACK:">Don't call the callback
+        function with interim results. The callback function will only be
+        called when all validation results are ready.</t>
+      </list>
+      </t>
     </section>  <!-- x.3.1. -->
 
     <section title="val_async_select_info" anchor="val_async_select_info">
@@ -1672,42 +1683,42 @@ the default EDNS0 size to be advertized in queries sent out by the validator.  <
         <section title="Asynchronous API Example Code">
           <figure>
             <preamble>
-              The general flow for asynchronous request processing can be
-              described with the following pseudo-code:
+              The general flow for asynchronous request processing can
+              be described with the following pseudo-code:
             </preamble>
             <artwork>
 #include &lt;validator/validator.h&gt;
 
 int done = 0;
 
-int my_callback(val_async_status *async_status) {
-   fprintf("final status: %d\n", val_async_status(async_status));
+int my_callback(val_async_status *async_status, void *user_ctx) {
+   fprintf("final status for %s: %d\n", (char*)user_ctx,
+           val_async_status(async_status));
    done = 1;
    return 0;
 }
 
 main() {
    val_async_status *async_status;
-   struct timeval    timeout;
+   struct timeval    tv;
    fd_set            fds;
    int               nfds, ready;
    val_context      *ctx;
+   char             *domain = "www.example.com";
 
    /* submit request */
-   rc = val_async_submit(my_ctx, "www.example.com", ns_c_in,
-                         ns_t_a, 0, &amp;async_status);
+   rc = val_async_submit(my_ctx, domain, ns_c_in, ns_t_a, 0,
+                         my_callback, (void*)domain, &amp;async_status);
 
    while (!done) {
       FD_ZERO(&amp;fds);       /* clear fd_set */
       nfds = 0;            /* no FDs yet */
-      timeout.usec = 0;
-      timeout.sec = 10; /* maximum timeout 10 sec */
-      val_async_select_info(ctx, &amp;fds, &amp;numfds, &amp;timeout); /* async FDs */
-
+      tv.usec = 0;
+      tv.sec = 10;         /* maximum timeout 10 sec */
+      val_async_select_info(&amp;ctx, &amp;fds, &amp;numfds, &amp;tv); /* async FDs */
       /* application should set its own FDs here */
-
-      ready = select(numfds+1, &amp;fds, NULL, NULL, &amp;timeout);
-      if ( ready &lt; 0 ) {
+      ready = select(numfds+1, &amp;fds, NULL, NULL, &amp;tv);
+      if ( ready < 0 ) {
          break; /* or continue... */
       } else if ( ready == 0 ) {
          /* application timeout processing */
