@@ -221,9 +221,9 @@ void
 res_io_cancel_source(struct expected_arrival *ea)
 {
     /* close socket */
-    if (ea->ea_socket != -1) {
-        close(ea->ea_socket);
-        ea->ea_socket = -1;
+    if (ea->ea_socket != INVALID_SOCKET) {
+        CLOSESOCK(ea->ea_socket);
+        ea->ea_socket = INVALID_SOCKET;
     }
 
     /* no more retries */
@@ -540,7 +540,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                     ea, ea->ea_socket, ea->ea_remaining_attempts);
             continue;
         }
-        if (ea->ea_socket != -1 )
+        if (ea->ea_socket != INVALID_SOCKET )
             res_print_ea(ea);
 
         /*
@@ -573,7 +573,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                 }
             } /* while */
         }
-        else if (ea->ea_socket == -1) {
+        else if (ea->ea_socket == INVALID_SOCKET) {
             struct expected_arrival *tmp_ea = ea;
 #if 0 
             for (tmp_ea = ea->ea_next; tmp_ea; tmp_ea = tmp_ea->ea_next ) {
@@ -875,6 +875,7 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
 
     max_sock = -1;
 
+#ifndef WIN32 
     i = getdtablesize(); 
     if (i > FD_SETSIZE)
         i = FD_SETSIZE;
@@ -887,8 +888,10 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
         res_log(NULL,LOG_DEBUG,"libsres: "" no fds set");
         return 0; /* nothing to read */
     }
+
     if (max_sock > FD_SETSIZE)
         max_sock = FD_SETSIZE;
+#endif
 
     count = res_io_count_ready(read_descriptors, max_sock + 1);
     gettimeofday(&in, NULL);
@@ -1479,6 +1482,7 @@ res_io_stall(void)
     sleep(100 - (tv.tv_sec % 100));
 }
 
+#ifndef WIN32
 int
 res_io_count_ready(fd_set *read_desc, int num_fds)
 {
@@ -1505,6 +1509,13 @@ res_io_count_ready(fd_set *read_desc, int num_fds)
         res_log(NULL,LOG_DEBUG, "libsres: "" count: no fds set");
     return count;
 }
+#else
+int
+res_io_count_ready(fd_set *read_desc, int num_fds)
+{
+    return 0;
+}
+#endif /* ! WIN32 */
 
 struct expected_arrival *
 res_async_query_send(const char *name, const u_int16_t type_h,
@@ -1678,7 +1689,7 @@ res_async_ea_count_active(struct expected_arrival *ea)
     int count = 0;
 
     for ( ; ea; ea = ea->ea_next ) {
-        if ((ea->ea_remaining_attempts == -1) || (ea->ea_socket == -1))
+        if ((ea->ea_remaining_attempts == -1) || (ea->ea_socket == INVALID_SOCKET))
             continue;
         ++count;
     }
