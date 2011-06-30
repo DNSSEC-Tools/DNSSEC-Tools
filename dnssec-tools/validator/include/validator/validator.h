@@ -269,7 +269,7 @@ struct queries_for_query;
     void            val_log(const val_context_t * ctx, int level,
                             const char *format, ...);
     void            val_log_ap(const val_context_t * ctx, int level,
-                               const char *template, va_list ap);
+                               const char *log_template, va_list ap);
 
     val_log_t      *val_log_add_cb(val_log_t **log_head, int level, val_log_cb_t func);
     val_log_t      *val_log_add_filep(val_log_t **log_head, int level, FILE * p);

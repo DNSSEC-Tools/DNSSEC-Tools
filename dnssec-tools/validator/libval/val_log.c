@@ -1017,13 +1017,13 @@ err:
 
 
 void
-val_log_ap(const val_context_t * ctx, int level, const char *template,
+val_log_ap(const val_context_t * ctx, int level, const char *log_template,
            va_list ap)
 {
     va_list         aq;
     val_log_t      *logp = default_log_head;
 
-    if (NULL == template)
+    if (NULL == log_template)
         return;
 
     for (; NULL != logp; logp = logp->next) {
@@ -1033,7 +1033,7 @@ val_log_ap(const val_context_t * ctx, int level, const char *template,
             continue;
 
         va_copy(aq, ap);
-        (*logp->logf) (logp, ctx, level, template, aq);
+        (*logp->logf) (logp, ctx, level, log_template, aq);
         va_end(aq);
     }
 
@@ -1048,18 +1048,18 @@ val_log_ap(const val_context_t * ctx, int level, const char *template,
             continue;
 
         va_copy(aq, ap);
-        (*logp->logf) (logp, ctx, level, template, aq);
+        (*logp->logf) (logp, ctx, level, log_template, aq);
         va_end(aq);
     }
 }
 
 void
-val_log(const val_context_t * ctx, int level, const char *template, ...)
+val_log(const val_context_t * ctx, int level, const char *format, ...)
 {
     va_list         ap;
     val_log_t      *logp = default_log_head;
 
-    if (NULL == template)
+    if (NULL == format)
         return;
 
     for (; NULL != logp; logp = logp->next) {
@@ -1068,8 +1068,8 @@ val_log(const val_context_t * ctx, int level, const char *template, ...)
         if ((level > logp->level) || (NULL == logp->logf))
             continue;
 
-        va_start(ap, template);
-        (*logp->logf) (logp, ctx, level, template, ap);
+        va_start(ap, format);
+        (*logp->logf) (logp, ctx, level, format, ap);
         va_end(ap);
     }
 
@@ -1083,8 +1083,8 @@ val_log(const val_context_t * ctx, int level, const char *template, ...)
         if ((level > logp->level) || (NULL == logp->logf))
             continue;
 
-        va_start(ap, template);
-        (*logp->logf) (logp, ctx, level, template, ap);
+        va_start(ap, format);
+        (*logp->logf) (logp, ctx, level, format, ap);
         va_end(ap);
     }
 }
