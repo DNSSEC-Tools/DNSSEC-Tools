@@ -50,7 +50,7 @@
 #include "graphwidget.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, int depth)
-    : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_depth(depth), m_color(QColor(128,128,128))
+    : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_depth(depth), m_color(QColor(128,128,128)), m_additionalInfo("")
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -266,4 +266,14 @@ void Node::addLogMessage(const QString logMessage)
 QStringList Node::logMessages()
 {
     return m_logMessages;
+}
+
+void Node::setAdditionalInfo(const QString &info)
+{
+    m_additionalInfo = info;
+}
+
+QString Node::additionalInfo() const
+{
+    return m_additionalInfo;
 }
