@@ -151,6 +151,8 @@ private:
     QRegExp    m_bogusRegexp;
     QRegExp    m_trustedRegexp;
     QRegExp    m_pinsecureRegexp;
+    QRegExp    m_dneRegexp;
+    QRegExp    m_maybeDneRegexp;
 
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;

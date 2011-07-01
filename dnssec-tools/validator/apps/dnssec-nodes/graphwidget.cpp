@@ -75,6 +75,8 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_bogusRegexp("Validation result for \\{([^,]+),.*BOGUS"),
       m_trustedRegexp("Validation result for \\{([^,]+),.*: (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
       m_pinsecureRegexp("Setting proof status for ([^ ]+) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
+      m_dneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME:"),
+      m_maybeDneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME_NOCHAIN:"),
       m_infoBox(infoBox)
 {
     myScene = new QGraphicsScene(this);
@@ -477,6 +479,14 @@ void GraphWidget::parseLogMessage(QString logMessage) {
         nodeName = m_pinsecureRegexp.cap(1);
         logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 is provably insecure </font></b>");
         color = Qt::yellow;
+    } else if (m_dneRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_dneRegexp.cap(1);
+        logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 provably does not exist </font></b>");
+        color = Qt::blue;
+    } else if (m_maybeDneRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_maybeDneRegexp.cap(1);
+        logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 does not exist, but can't be proven' </font></b>");
+        color = Qt::cyan;
     } else {
         return;
     }
