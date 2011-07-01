@@ -1658,7 +1658,8 @@ res_async_ea_isset(struct expected_arrival *ea, fd_set *fds)
         return 0;
 
     for (; ea; ea = ea->ea_next) {
-        if (FD_ISSET(ea->ea_socket, fds))
+        if (ea->ea_socket != INVALID_SOCKET &&
+                FD_ISSET(ea->ea_socket, fds))
             return 1;
     }
 
