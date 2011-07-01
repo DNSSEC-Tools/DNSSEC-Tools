@@ -202,6 +202,11 @@ val_create_context_with_conf(char *label,
         goto err;
     }
 
+    (*newcontext)->default_qflags = 0; 
+    if ((*newcontext)->val_log_targets != NULL) {
+        (*newcontext)->default_qflags |= VAL_QUERY_AC_DETAIL;
+    }
+
     val_log(*newcontext, LOG_DEBUG, 
             "val_create_context_with_conf(): Context created with %s %s %s", 
             (*newcontext)->dnsval_l->dnsval_conf,
@@ -290,6 +295,7 @@ val_free_context(val_context_t * context)
     while (NULL != (q = context->q_list)) {
         context->q_list = q->qc_next;
         free_query_chain_structure(q);
+        q = NULL;
     }
 
 #ifndef VAL_NO_ASYNC
