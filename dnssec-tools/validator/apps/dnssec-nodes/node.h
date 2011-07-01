@@ -81,6 +81,8 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
     void setColor(const QColor &color);
+    void setAdditionalInfo(const QString &info);
+    QString additionalInfo() const;
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
@@ -98,6 +100,7 @@ private:
     int          m_depth;
     QColor       m_color;
     QStringList  m_logMessages;
+    QString      m_additionalInfo;
 };
 //! [0]
 
