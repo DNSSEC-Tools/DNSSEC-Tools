@@ -377,7 +377,7 @@ extern          "C" {
         val_async_status       *as_list;
 #endif
 
-        u_int32_t ctx_flags;
+        u_int32_t default_qflags;
     } ; 
 
     struct val_rrset_digested {

@@ -3314,6 +3314,9 @@ prove_nonexistence(val_context_t * ctx,
         *status = VAL_INCOMPLETE_PROOF;
     }
 
+    val_log(ctx, LOG_DEBUG, 
+            "prove_nonexistence(): Setting proof status to: %s", p_val_status(*status));
+
     return VAL_NO_ERROR;
 
   err:
@@ -6125,10 +6128,11 @@ val_resolve_and_check(val_context_t * ctx,
     CTX_LOCK_RESPOL_SH(context);
     CTX_LOCK_VALPOL_SH(context);
     CTX_LOCK_ACACHE(context);
-    
+   
     if (VAL_NO_ERROR != (retval =
                 add_to_qfq_chain(context, &queries, domain_name_n, q_type,
-                                 q_class, flags & VAL_QFLAGS_USERMASK, 
+                                 q_class, 
+                                 (flags | context->default_qflags) & VAL_QFLAGS_USERMASK, 
                                  &added_q))) {
         goto err;
     }
