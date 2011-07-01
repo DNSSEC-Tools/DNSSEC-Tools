@@ -74,7 +74,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_lookingUpRegexp("looking for \\{([^ ]+) "),
       m_bogusRegexp("Validation result for \\{([^,]+),.*BOGUS"),
       m_trustedRegexp("Validation result for \\{([^,]+),.*: (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
-      m_pinsecureRegexp(": ([^ ]+) is provably insecure"),
+      m_pinsecureRegexp("Setting proof status for ([^ ]+) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
       m_infoBox(infoBox)
 {
     myScene = new QGraphicsScene(this);
@@ -453,6 +453,8 @@ void GraphWidget::setShowNSEC3Records(bool newVal) {
 void GraphWidget::parseLogMessage(QString logMessage) {
     QColor color;
     QString nodeName;
+
+    qDebug() << logMessage;
 
     if (m_lookingUpRegexp.indexIn(logMessage) > -1) {
         nodeName = m_lookingUpRegexp.cap(1);
