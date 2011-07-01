@@ -295,15 +295,16 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
  * the original res_sym struct used regular, non-const, char* pointers.
  * this causes a slew of warning about initialization discarding qualifiers,
  * so this is the same structure but with const char* pointers.
+ * On BSD, the definition from resolv.h cannot be included safely with the current
+ * configure script, so we use this internal type.
  *
  * Unfortuantely, on OS X, __p_class_sym is a macro, and exported with the
- * original res_sym type. And on FreeBSD/NetBSD, the extern declares in the header
- * conflict with the redefinition. So in these cases, we don't use this hack.
+ * original res_sym type. So in this case, we don't use this hack.
  *
  * And, for once, solaris has a better header than the rest, and has const
  * char ptrs in res_sym.
  */
-#if (defined(__p_class_syms) || defined(sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__CYGWIN__) || defined(linux))
+#if (defined(__p_class_syms) || defined(sun) || defined(__CYGWIN__) || defined(linux))
 #define RES_SYM_TYPE res_sym
 #else
 struct res_sym_const {
