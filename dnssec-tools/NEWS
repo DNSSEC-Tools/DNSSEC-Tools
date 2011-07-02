@@ -12,6 +12,9 @@ details.
                     - dnssec-system-tray: displays pop-up
      		      notifications when a libval-enabled application
 		      triggers a DNSSEC error
+                    - lookup: a graphical DNS lookup utility that
+		      displays the results in a hierarchical tree and
+		      color codes the window according to DNSSEC status
 
     - libval:       - Added support for building on Windows.
                     - added support for falling back to recursion when
@@ -19,6 +22,13 @@ details.
                       support DNSSEC. This also works as a mechanism
                       to work around poisoned or misbehaving cache. 
                     - Significant improvements to the the asynchronous support. 
+    - lsdnssec:     - Improvements to lsdnssec to display different
+                      output depending on whether a zone is a
+                      stand-alone zone or under control of rollerd.
+    - nagios:       - Plugins for the nagios monitoring system which
+                      enable monitoring of zone rollerover states.
+    - firefox:      - Improved patches that work with the most recent firefox
+
 
 1.9
  - New Features:
