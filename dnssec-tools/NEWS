@@ -5,12 +5,20 @@ details.
 
 1.10
  - New Features:
+    - New Apps:     (see the validator/apps directory for details)
+                    - dnssec-check: check dnssec support from your ISP
+                    - dnssec-nodes: graphically displays a DNS
+		      hierarchy, color coded by each node's DNSSEC status
+                    - dnssec-system-tray: displays pop-up
+     		      notifications when a libval-enabled application
+		      triggers a DNSSEC error
+
     - libval:       - Added support for building on Windows.
                     - added support for falling back to recursion when
                       the caching name server does not appear to 
                       support DNSSEC. This also works as a mechanism
                       to work around poisoned or misbehaving cache. 
-                    - Improved async support. 
+                    - Significant improvements to the the asynchronous support. 
 
 1.9
  - New Features:
