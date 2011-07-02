@@ -16,7 +16,8 @@ require Net::hostent; # return type from gethost*
 use Net::DNS; # to interpret DNS classes and types
 use Carp;
 
-our $VERSION = '1.50';   # current release version number
+our $VERSION = '1.10';   # current release version number
+our $DNSSECTOOLSVERSION = "DNSSEC-Tools Version: 1.9";
 
 use Exporter;
 use DynaLoader;
