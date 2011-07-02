@@ -2,6 +2,16 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+
+1.10
+ - New Features:
+    - libval:       - Added support for building on Windows.
+                    - added support for falling back to recursion when
+                      the caching name server does not appear to 
+                      support DNSSEC. This also works as a mechanism
+                      to work around poisoned or misbehaving cache. 
+                    - Improved async support. 
+
 1.9
  - New Features:
     - lsdnssec:     - Added a new flag (-p) to show only zones in a
