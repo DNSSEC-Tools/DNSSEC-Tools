@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.9";
+my $VERS   = "$NAME version: 1.9.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.9";
 
 #######################################################################
@@ -126,6 +126,7 @@ my $OPT_PARAMS	   = "parameters";
 my $OPT_SINGLERUN  = "singlerun";
 my $OPT_FOREGROUND = "foreground";
 my $OPT_ALWAYSSIGN = "alwayssign";
+my $OPT_CRITICALSIGN = "criticalsign";
 my $OPT_PIDFILE    = "pidfile";
 my $OPT_RRFILE	   = "rrfile";
 my $OPT_SLEEP	   = "sleep";
@@ -151,6 +152,7 @@ my @opts =
 	"singlerun",			# Single run:  process everything once.
 	"foreground",			# Run in the foreground; don't fork.
 	"alwayssign",			# Always sign when running in singlerun.
+	"criticalsign",			# Sign even if the zone is in p1/p3
 	"username=s",			# User name for which to run as.
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
@@ -163,6 +165,7 @@ my @opts =
 # be obvious.
 #
 my $alwayssign = 0;			# Always sign the zone in -singlerun.
+my $criticalsign = 0;			# Sign even if the zone is in p1/p3
 my $dtcf;				# DNSSEC-Tools configuration file.
 my $foreground = 0;			# Run in the foreground.
 my $logfile;				# Log file.
@@ -569,11 +572,10 @@ sub rollkeys
 			# This is only safe to do if we're not waiting
 			# for caches to expire.
 			#
-			if(($rrr->{'zskphase'} != 1) &&
-			   ($rrr->{'zskphase'} != 3) &&
-			   ($rrr->{'kskphase'} != 1) &&
-			   ($rrr->{'kskphase'} != 3))
-			{
+			if (($rrr->{'zskphase'} != 1 &&
+			     $rrr->{'zskphase'} != 3 &&
+			     $rrr->{'kskphase'} != 1 &&
+			     $rrr->{'kskphase'} != 3) || $criticalsign) {
 				rolllog_log(LOG_TMI,$rname, "Signing the zone $rrr->{'zonename'} (-alwayssign specified)");
 
 				#
@@ -2576,6 +2578,7 @@ sub optsandargs
 	$singlerun  = $opts{$OPT_SINGLERUN};
 	$foreground = $opts{$OPT_FOREGROUND};
 	$alwayssign = $opts{$OPT_ALWAYSSIGN};
+	$criticalsign = $opts{$OPT_CRITICALSIGN};
 	$pidfile    = $opts{$OPT_PIDFILE};
 	$verbose    = $opts{$OPT_VERBOSE};
 	$logfile    = $opts{$OPT_LOGFILE}    || $dtconf{$DT_LOGFILE};
@@ -4920,6 +4923,7 @@ sub usage
 	print STDERR "\t\t-singlerun\n";
 	print STDERR "\t\t-foreground\n";
 	print STDERR "\t\t-alwayssign\n";
+	print STDERR "\t\t-criticalsign\n";
 	print STDERR "\t\t-username <username>\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
@@ -5210,7 +5214,14 @@ Manual copying and installation is still needed.
 
 Note: During ZSK and KSK rolling phases 1 and 3 the zone will not be
 signed since it is critical to wait for cache timeouts during this
-phase of rolling keys.
+phase of rolling keys.  See -criticalsign if you are desparate during
+these phases.
+
+=item B<-criticalsign>
+
+Sometimes you need to restart from scratch during phase 1 or 3 because
+critical data changed and you simply can't wait.  This option will let
+you sign the zone anyway (assuming -alwayssign is alse specified).
 
 =item B<-directory dir>
 

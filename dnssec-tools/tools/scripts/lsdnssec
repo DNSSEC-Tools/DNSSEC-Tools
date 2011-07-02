@@ -28,14 +28,12 @@ use Data::Dumper;
 dnssec_tools_load_mods('Date::Parse'	=> "",
 		       'Date::Format'	=> "",);
 
-our $VERSION = "0.1";
-
 my %opts = (d => '5',
 	    t => 'kskpub,kskcur,zskpub,zskcur');
 
 DTGetOptions(config => [qw(allow_zero)],
 	     \%opts,
-		['GUI:VERSION',"0.1\nDNSSEC-Tools Version: 1.9"],
+		['GUI:VERSION',"DNSSEC-Tools Version: 1.9"],
 
 #		['o|obsolete', 'Show obsolete keys/etc as well as current'],
 
