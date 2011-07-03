@@ -24,34 +24,12 @@ static int
 constant_8 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     LOG_CRIT LOG_INFO SR_UNSET ns_t_dlv */
-  /* Offset 5 gives the best switch position.  */
-  switch (name[5]) {
-  case 'N':
-    if (memEQ(name, "LOG_INFO", 8)) {
-    /*                    ^        */
-#ifdef LOG_INFO
-      *iv_return = LOG_INFO;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'R':
-    if (memEQ(name, "LOG_CRIT", 8)) {
-    /*                    ^        */
-#ifdef LOG_CRIT
-      *iv_return = LOG_CRIT;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'S':
+     LOG_CRIT LOG_INFO SR_UNSET */
+  /* Offset 6 gives the best switch position.  */
+  switch (name[6]) {
+  case 'E':
     if (memEQ(name, "SR_UNSET", 8)) {
-    /*                    ^        */
+    /*                     ^       */
 #ifdef SR_UNSET
       *iv_return = SR_UNSET;
       return PERL_constant_ISIV;
@@ -60,11 +38,22 @@ constant_8 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'd':
-    if (memEQ(name, "ns_t_dlv", 8)) {
-    /*                    ^        */
-#ifdef ns_t_dlv
-      *iv_return = ns_t_dlv;
+  case 'F':
+    if (memEQ(name, "LOG_INFO", 8)) {
+    /*                     ^       */
+#ifdef LOG_INFO
+      *iv_return = LOG_INFO;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'I':
+    if (memEQ(name, "LOG_CRIT", 8)) {
+    /*                     ^       */
+#ifdef LOG_CRIT
+      *iv_return = LOG_CRIT;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -79,7 +68,7 @@ static int
 constant_9 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     LOG_ALERT LOG_DEBUG LOG_EMERG VAL_BOGUS ns_t_nsec */
+     LOG_ALERT LOG_DEBUG LOG_EMERG VAL_BOGUS */
   /* Offset 4 gives the best switch position.  */
   switch (name[4]) {
   case 'A':
@@ -126,17 +115,6 @@ constant_9 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case '_':
-    if (memEQ(name, "ns_t_nsec", 9)) {
-    /*                   ^          */
-#ifdef ns_t_nsec
-      *iv_return = ns_t_nsec;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
   }
   return PERL_constant_NOTFOUND;
 }
@@ -146,7 +124,7 @@ constant_10 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      LOG_NOTICE MAX_PROOFS SR_FORMERR SR_NOTIMPL SR_REFUSED VAL_EINVAL
-     VAL_ENOENT VAL_ENOMEM VAL_ENOSYS ns_t_nsec3 ns_t_rrsig */
+     VAL_ENOENT VAL_ENOMEM VAL_ENOSYS p_as_error */
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
   case 'A':
@@ -246,22 +224,11 @@ constant_10 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'c':
-    if (memEQ(name, "ns_t_nsec3", 10)) {
+  case 'o':
+    if (memEQ(name, "p_as_error", 10)) {
     /*                       ^        */
-#ifdef ns_t_nsec3
-      *iv_return = ns_t_nsec3;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'i':
-    if (memEQ(name, "ns_t_rrsig", 10)) {
-    /*                       ^        */
-#ifdef ns_t_rrsig
-      *iv_return = ns_t_rrsig;
+#ifdef p_as_error
+      *iv_return = p_as_error;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -277,7 +244,7 @@ constant_11 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      LOG_WARNING SR_NXDOMAIN SR_SERVFAIL VAL_AC_INIT VAL_AS_DONE VAL_EACCESS
-     VAL_NOTRUST VAL_SUCCESS ns_t_dnskey */
+     VAL_NOTRUST VAL_SUCCESS p_val_error */
   /* Offset 5 gives the best switch position.  */
   switch (name[5]) {
   case 'A':
@@ -366,11 +333,11 @@ constant_11 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'd':
-    if (memEQ(name, "ns_t_dnskey", 11)) {
+  case '_':
+    if (memEQ(name, "p_val_error", 11)) {
     /*                    ^            */
-#ifdef ns_t_dnskey
-      *iv_return = ns_t_dnskey;
+#ifdef p_val_error
+      *iv_return = p_val_error;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -385,12 +352,23 @@ static int
 constant_12 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     SR_NO_ANSWER VAL_AC_TRUST VAL_AC_UNSET VAL_NO_ERROR */
-  /* Offset 9 gives the best switch position.  */
-  switch (name[9]) {
-  case 'R':
+     NS_MAXCDNAME SR_NO_ANSWER VAL_AC_TRUST VAL_AC_UNSET VAL_NO_ERROR */
+  /* Offset 7 gives the best switch position.  */
+  switch (name[7]) {
+  case 'D':
+    if (memEQ(name, "NS_MAXCDNAME", 12)) {
+    /*                      ^           */
+#ifdef NS_MAXCDNAME
+      *iv_return = NS_MAXCDNAME;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'E':
     if (memEQ(name, "VAL_NO_ERROR", 12)) {
-    /*                        ^         */
+    /*                      ^           */
 #ifdef VAL_NO_ERROR
       *iv_return = VAL_NO_ERROR;
       return PERL_constant_ISIV;
@@ -399,20 +377,20 @@ constant_12 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'S':
-    if (memEQ(name, "VAL_AC_UNSET", 12)) {
-    /*                        ^         */
-#ifdef VAL_AC_UNSET
-      *iv_return = VAL_AC_UNSET;
+  case 'N':
+    if (memEQ(name, "SR_NO_ANSWER", 12)) {
+    /*                      ^           */
+#ifdef SR_NO_ANSWER
+      *iv_return = SR_NO_ANSWER;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'U':
+  case 'T':
     if (memEQ(name, "VAL_AC_TRUST", 12)) {
-    /*                        ^         */
+    /*                      ^           */
 #ifdef VAL_AC_TRUST
       *iv_return = VAL_AC_TRUST;
       return PERL_constant_ISIV;
@@ -421,11 +399,11 @@ constant_12 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'W':
-    if (memEQ(name, "SR_NO_ANSWER", 12)) {
-    /*                        ^         */
-#ifdef SR_NO_ANSWER
-      *iv_return = SR_NO_ANSWER;
+  case 'U':
+    if (memEQ(name, "VAL_AC_UNSET", 12)) {
+    /*                      ^           */
+#ifdef VAL_AC_UNSET
+      *iv_return = VAL_AC_UNSET;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -529,24 +507,24 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_NO_LINK VAL_BARE_RRSIG VAL_FROM_QUERY VAL_FROM_UNSET VAL_OOB_ANSWER
      VAL_QFLAGS_ANY */
-  /* Offset 10 gives the best switch position.  */
-  switch (name[10]) {
-  case 'L':
-    if (memEQ(name, "VAL_AC_NO_LINK", 14)) {
-    /*                         ^          */
-#ifdef VAL_AC_NO_LINK
-      *iv_return = VAL_AC_NO_LINK;
+  /* Offset 9 gives the best switch position.  */
+  switch (name[9]) {
+  case 'N':
+    if (memEQ(name, "VAL_OOB_ANSWER", 14)) {
+    /*                        ^           */
+#ifdef VAL_OOB_ANSWER
+      *iv_return = VAL_OOB_ANSWER;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'N':
-    if (memEQ(name, "VAL_FROM_UNSET", 14)) {
-    /*                         ^          */
-#ifdef VAL_FROM_UNSET
-      *iv_return = VAL_FROM_UNSET;
+  case 'Q':
+    if (memEQ(name, "VAL_FROM_QUERY", 14)) {
+    /*                        ^           */
+#ifdef VAL_FROM_QUERY
+      *iv_return = VAL_FROM_QUERY;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -555,7 +533,7 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
     break;
   case 'R':
     if (memEQ(name, "VAL_BARE_RRSIG", 14)) {
-    /*                         ^          */
+    /*                        ^           */
 #ifdef VAL_BARE_RRSIG
       *iv_return = VAL_BARE_RRSIG;
       return PERL_constant_ISIV;
@@ -565,10 +543,10 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
     }
     break;
   case 'S':
-    if (memEQ(name, "VAL_OOB_ANSWER", 14)) {
-    /*                         ^          */
-#ifdef VAL_OOB_ANSWER
-      *iv_return = VAL_OOB_ANSWER;
+    if (memEQ(name, "VAL_QFLAGS_ANY", 14)) {
+    /*                        ^           */
+#ifdef VAL_QFLAGS_ANY
+      *iv_return = VAL_QFLAGS_ANY;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -576,10 +554,10 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
     }
     break;
   case 'U':
-    if (memEQ(name, "VAL_FROM_QUERY", 14)) {
-    /*                         ^          */
-#ifdef VAL_FROM_QUERY
-      *iv_return = VAL_FROM_QUERY;
+    if (memEQ(name, "VAL_FROM_UNSET", 14)) {
+    /*                        ^           */
+#ifdef VAL_FROM_UNSET
+      *iv_return = VAL_FROM_UNSET;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -587,10 +565,10 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
     }
     break;
   case '_':
-    if (memEQ(name, "VAL_QFLAGS_ANY", 14)) {
-    /*                         ^          */
-#ifdef VAL_QFLAGS_ANY
-      *iv_return = VAL_QFLAGS_ANY;
+    if (memEQ(name, "VAL_AC_NO_LINK", 14)) {
+    /*                        ^           */
+#ifdef VAL_AC_NO_LINK
+      *iv_return = VAL_AC_NO_LINK;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1845,14 +1823,37 @@ constant_26 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_RRSIG_VERIFIED_SKEW VAL_AC_RRSIG_VERIFY_FAILED
-     VAL_AC_WCARD_VERIFIED_SKEW */
+     VAL_AC_WCARD_VERIFIED_SKEW VAL_GETADDRINFO_HAS_STATUS
+     VAL_GETNAMEINFO_HAS_STATUS */
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
+  case 'A':
+    if (memEQ(name, "VAL_GETNAMEINFO_HAS_STATUS", 26)) {
+    /*                       ^                        */
+#ifdef VAL_GETNAMEINFO_HAS_STATUS
+      *iv_return = VAL_GETNAMEINFO_HAS_STATUS;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'C':
     if (memEQ(name, "VAL_AC_WCARD_VERIFIED_SKEW", 26)) {
     /*                       ^                        */
 #ifdef VAL_AC_WCARD_VERIFIED_SKEW
       *iv_return = VAL_AC_WCARD_VERIFIED_SKEW;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'D':
+    if (memEQ(name, "VAL_GETADDRINFO_HAS_STATUS", 26)) {
+    /*                       ^                        */
+#ifdef VAL_GETADDRINFO_HAS_STATUS
+      *iv_return = VAL_GETADDRINFO_HAS_STATUS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1946,8 +1947,8 @@ use ExtUtils::Constant qw (constant_types C_constant XS_constant);
 
 my $types = {map {($_, 1)} qw(IV)};
 my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
-	       LOG_ERR LOG_INFO LOG_NOTICE LOG_WARNING MAX_PROOFS 
-	       SR_CALL_ERROR SR_DNS_GENERIC_ERROR SR_EDNS_VERSION_ERROR
+	       LOG_ERR LOG_INFO LOG_NOTICE LOG_WARNING MAX_PROOFS NS_MAXCDNAME
+	       SOCKET SR_CALL_ERROR SR_DNS_GENERIC_ERROR SR_EDNS_VERSION_ERROR
 	       SR_FORMERR SR_HEADER_ERROR SR_INTERNAL_ERROR SR_MEMORY_ERROR
 	       SR_MKQUERY_INTERNAL_ERROR SR_NAME_EXPANSION_FAILURE SR_NOTIMPL
 	       SR_NO_ANSWER SR_NO_ANSWER_YET SR_NXDOMAIN SR_RCV_INTERNAL_ERROR
@@ -1981,6 +1982,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_EINVAL VAL_ENOENT VAL_ENOMEM VAL_ENOSYS
 	       VAL_FLAG_CHAIN_COMPLETE VAL_FROM_ADDITIONAL VAL_FROM_ANSWER
 	       VAL_FROM_AUTHORITY VAL_FROM_QUERY VAL_FROM_UNSET
+	       VAL_GETADDRINFO_HAS_STATUS VAL_GETNAMEINFO_HAS_STATUS
 	       VAL_IGNORE_VALIDATION VAL_INCOMPLETE_PROOF VAL_INTERNAL_ERROR
 	       VAL_IRRELEVANT_PROOF VAL_MASKED_FLAG_CHAIN_COMPLETE
 	       VAL_NONEXISTENT_NAME VAL_NONEXISTENT_NAME_NOCHAIN
@@ -1996,46 +1998,26 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_QUERY_REFRESH_QCACHE VAL_QUERY_USING_DLV
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
 	       VAL_UNTRUSTED_ANSWER VAL_UNTRUSTED_ZONE VAL_VALIDATED_ANSWER
-	       ZONE_USE_NOTHING ZONE_USE_TSIG ns_t_dlv
-	       ns_t_dnskey ns_t_ds ns_t_nsec ns_t_nsec3 ns_t_rrsig));
+	       ZONE_USE_NOTHING ZONE_USE_TSIG p_as_error p_val_error));
 
 print constant_types(), "\n"; # macro defs
-foreach (C_constant ("Net-DNS-SEC-Validator", 'constant', 'IV', $types, undef, 3, @names) ) {
+foreach (C_constant ("Net-DNS-Sec-Validator", 'constant', 'IV', $types, undef, 3, @names) ) {
     print $_, "\n"; # C constant subs
 }
 print "\n#### XS Section:\n";
-print XS_constant ("Net-DNS-SEC-Validator", $types);
+print XS_constant ("Net-DNS-Sec-Validator", $types);
 __END__
    */
 
   switch (len) {
   case 7:
-    /* Names all of length 7.  */
-    /* LOG_ERR ns_t_ds */
-    /* Offset 5 gives the best switch position.  */
-    switch (name[5]) {
-    case 'R':
-      if (memEQ(name, "LOG_ERR", 7)) {
-      /*                    ^       */
+    if (memEQ(name, "LOG_ERR", 7)) {
 #ifdef LOG_ERR
-        *iv_return = LOG_ERR;
-        return PERL_constant_ISIV;
+      *iv_return = LOG_ERR;
+      return PERL_constant_ISIV;
 #else
-        return PERL_constant_NOTDEF;
+      return PERL_constant_NOTDEF;
 #endif
-      }
-      break;
-    case 'd':
-      if (memEQ(name, "ns_t_ds", 7)) {
-      /*                    ^       */
-#ifdef ns_t_ds
-        *iv_return = ns_t_ds;
-        return PERL_constant_ISIV;
-#else
-        return PERL_constant_NOTDEF;
-#endif
-      }
-      break;
     }
     break;
   case 8:
