@@ -8,6 +8,7 @@ Contents:
    Release Notes:
    Installation:
    Operational Description:
+   Upgrading:
    Copyright:
 
 Introduction:
@@ -53,9 +54,11 @@ Release Notes:
    Only high level API functions are provided. Lower level API
    functions will be provided in a future release.
 
-KNOWN BUGS:
+Known Bugs:
 
-   No *known* bugs.
+   See the DNSSEC-Tools Bug Database:
+
+      http://www.dnssec-tools.org/trac/
 
 Installation:
 
@@ -220,6 +223,16 @@ dnssec-tools-users@lists.sourceforge.net.
 
 Please give sufficient information to analyze the problem (OS type,
 versions for OS/perl/compiler, complete error output, etc.)
+
+Updating:
+
+   The latest copy of the module was produced via h2xs in the
+   validator/include/validator directory as follows:
+
+     h2xs -b 5.6.0 -n Net-DNS-Sec-Validator *.h
+
+   Then manually updating previous versions of the Validator.xs file
+   as needed.
 
 Copyright:
 
