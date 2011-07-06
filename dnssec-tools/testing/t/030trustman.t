@@ -39,18 +39,17 @@ $ENV{'LD_LIBRARY_PATH'} = "$libvalpath:$libsrespath";
 
 my %trustman_response = (
     "firsttest" =>   q{Reading and parsing trust keys from ./dnsval.conf
- Found a key for dnssec-tools.org
+ Found a key for 
  Checking zone keys for validity
- Checking the live "dnssec-tools.org" key
-  dnssec-tools.org ...  refresh_secs=18, refresh_time=12
-  adding holddown for new key in dnssec-tools.org (12 seconds from now)
+ Checking the live "" key
+  adding holddown for new key in  (13 seconds from now)
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-A new key has been received for zone dnssec-tools.org.
+A new key has been received for zone .
    It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Writing new keys to
 checking new keys for timing
- hold down timer for dnssec-tools.org still in the future (25 seconds)
+ hold down timer for  still in the future (25 seconds)
 }
 );
 
@@ -99,7 +98,7 @@ my $log = &parselog;
 if (! do_ok($test, $log, $trustman_response{firsttest},
 	    "trustman: output from examining \'dnsval.conf\'") ) {
   print"\tPossible Problems: \n";
-  print"\t\tThe DNS used does not support DNSSEC (e.g. ISP, opendns.org).\n";
+  print"\t\tThe DNS used does not support DNSSEC (e.g. ISP).\n";
   print"\t\tThis host has an incorrect date (e.g. 1+ days incorrect).\n";
   outdiff($log, $trustman_response{firsttest}) if (exists $options{V});
 }

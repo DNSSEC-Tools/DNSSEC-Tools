@@ -101,7 +101,7 @@ if (!( -x $keygen && -x $zonecheck && -x $zonesign &&
 }
 
 
-my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir -szopts -P";
+my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir -szopts -P -zskcount 1 -kskcount 1";
 my $zsargs_resp   = parsepstring($zsargs);
 
 
@@ -113,12 +113,13 @@ my %rollerd_response = (
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
+ logtz ""
  zone reload "1"
  sleeptime "15"
  
  example.com: adding missing zonename field (example.com) to rollrec
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
- example.com: KSK phase 1 (Waiting for old zone data to expire from caches)
+ example.com: KSK phase 1
  rollover manager shutting down...
 },
 
@@ -129,15 +130,16 @@ my %rollerd_response = (
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
+ logtz ""
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 2 (Generating new Published KSK)
+ example.com: KSK phase 2
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
  example.com: KSK phase 2: unable to reload zone, rc - 1
- example.com: KSK phase 3 (Waiting for cache or holddown timer expiration)
- example.com: KSK phase 3 (Waiting for cache or holddown timer expiration); cache expires in minutes, seconds
+ example.com: KSK phase 3
+ example.com: KSK phase 3; cache expires in minutes, seconds
  rollover manager shutting down...
 },
     "ksk46" => qq{ rollerd starting ----------------------------------------
@@ -147,14 +149,15 @@ my %rollerd_response = (
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
+ logtz ""
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: KSK phase 4
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
- example.com: KSK phase 5 (Transfer New KSK keyset to parent)
+ example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6 (Waiting for parent to publish new DS record)
+ example.com: KSK phase 6
  example.com: KSK phase 6: waiting for parental publication of DS record
 },
     "ksk7" => qq{ rollerd starting ----------------------------------------
@@ -164,16 +167,17 @@ my %rollerd_response = (
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
+ logtz ""
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: KSK phase 4
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
- example.com: KSK phase 5 (Transfer New KSK keyset to parent)
+ example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6 (Waiting for parent to publish new DS record)
+ example.com: KSK phase 6
  example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7 (Reloading the zone)
+ example.com: KSK phase 7
 },
     "kskhalt" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
@@ -182,16 +186,17 @@ my %rollerd_response = (
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
+ logtz ""
  zone reload "1"
  sleeptime "15"
  
- example.com: KSK phase 4 (Rolling the KSK(s))
+ example.com: KSK phase 4
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
- example.com: KSK phase 5 (Transfer New KSK keyset to parent)
+ example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6 (Waiting for parent to publish new DS record)
+ example.com: KSK phase 6
  example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7 (Reloading the zone)
+ example.com: KSK phase 7
  rollover manager shutting down...
 },
 );
@@ -199,80 +204,72 @@ my %rollerd_response = (
 my %trustman_response = (
     "talktonamed" => qq{Reading and parsing trust keys from $dnsvalfile
  Found a key for example.com
- Found a key for dnssec-tools.org
+ Found a key for 
  Checking zone keys for validity
- Checking the live "example.com" key
- example.com ... refresh_secs=18, refresh_time=12
- Checking the live "dnssec-tools.org" key
- dnssec-tools.org ... refresh_secs=18, refresh_time=12
- adding holddown for new key in dnssec-tools.org (12 seconds from now)
+ Checking the live "" key
+ adding holddown for new key in (12 seconds from now)
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-A new key has been received for zone dnssec-tools.org.
+A new key has been received for zone .
  It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
+ Checking the live "example.com" key
 checking new keys for timing
- hold down timer for dnssec-tools.org still in the future (12 seconds)
+ hold down timer for still in the future (12 seconds)
 },
     "findnewkey" => qq{Reading and parsing trust keys from $dnsvalfile
  Found a key for example.com
- Found a key for dnssec-tools.org
+ Found a key for 
  Checking zone keys for validity
+ Checking the live "" key
+ pending key for 
  Checking the live "example.com" key
- example.com ... refresh_secs=18, refresh_time=12
  adding holddown for new key in example.com (12 seconds from now)
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 A new key has been received for zone example.com.
  It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
- Checking the live "dnssec-tools.org" key
- pending key for dnssec-tools.org
- dnssec-tools.org ... refresh_secs=18, refresh_time=12
 checking new keys for timing
+ hold down timer for still in the future (12 seconds)
  hold down timer for example.com still in the future (12 seconds)
- hold down timer for dnssec-tools.org still in the future (12 seconds)
 },
     "newkeytodnsval" => qq{Reading and parsing trust keys from $dnsvalfile
  Found a key for example.com
- Found a key for dnssec-tools.org
+ Found a key for 
  Checking zone keys for validity
+ Checking the live "" key
+ pending key for 
  Checking the live "example.com" key
  pending key for example.com
- example.com ... refresh_secs=18, refresh_time=12
- Checking the live "dnssec-tools.org" key
- pending key for dnssec-tools.org
- dnssec-tools.org ... refresh_secs=18, refresh_time=12
 checking new keys for timing
+ hold down timer for still in the future (12 seconds)
  hold down timer for example.com reached (now 12 > 11)
- hold down timer for dnssec-tools.org still in the future (12 seconds)
-Opened ./tmp/tmp/dnsval-tmp.conf to create a replacement for $dnsvalfile
-Adding the following key to $dnsvalfile:
+Opened ./tmp/tmp/dnsval-tmp.conf to create a replacement for ./dnsval.conf
+Adding the following key to ./dnsval.conf:
 example.com. "257 3 5 XXX"
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-New key added to $dnsvalfile for zone example.com
+New key added to ./dnsval.conf for zone example.com
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Closed tmp/dnsval-tmp.conf and renamed back to $dnsvalfile
+Closed tmp/dnsval-tmp.conf and renamed back to ./dnsval.conf
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
 },
     "revokeoldkeyindnsval" => qq{Reading and parsing trust keys from $dnsvalfile
  Found a key for example.com
- Found a key for dnssec-tools.org
+ Found a key for 
  Found a key for example.com
  Checking zone keys for validity
+ Checking the live "" key
+ pending key for 
  Checking the live "example.com" key
- example.com ... refresh_secs=18, refresh_time=12
-Opened ./tmp/tmp/dnsval-tmp.conf to create a replacement for $dnsvalfile
+Opened ./tmp/tmp/dnsval-tmp.conf to create a replacement for ./dnsval.conf
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 The following key has been revoked from zone example.com:
 example.com. "385 3 5 XXX"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Closed tmp/dnsval-tmp.conf and renamed back to $dnsvalfile
- Checking the live "dnssec-tools.org" key
- pending key for dnssec-tools.org
- dnssec-tools.org ... refresh_secs=18, refresh_time=12
+Closed tmp/dnsval-tmp.conf and renamed back to ./dnsval.conf
 checking new keys for timing
- hold down timer for dnssec-tools.org still in the future (12 seconds)
+ hold down timer for still in the future (12 seconds)
 },
 );
 
@@ -354,7 +351,7 @@ close (DTC);
 
 my $named_command = "$named -c ./named.conf";
 
-my $trustman_command = "perl -I$buildloc/tools/modules/blib/lib -I$buildloc/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p --hold_time 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir >> $tlogfile 2>&1 ";
+my $trustman_command = "perl -I$buildloc/tools/modules/blib/lib -I$buildloc/tools/modules/blib/arch $trustman -k $dnsvalfile -S -f -v -p -w 5 --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf $resconffile -o $roothintsfile --tmp_dir $statedir >> $tlogfile 2>&1 ";
 
 my $zonesigner_signzone = "perl -I$dt_plibs -I$dt_parch $zonesigner $zsargs -genkeys $domain >> $rlogfile 2>&1 ";
 
@@ -400,7 +397,7 @@ my $log = &parsetlog;
 if (! do_ok($test, $log, $trustman_response{talktonamed},
         "trust/roll: trustman: check connection to named") ) {
   print"\tPossible Problems: \n";
-  print"\t\tThe DNS used does not support DNSSEC (e.g. ISP, opendns.org).\n";
+  print"\t\tThe DNS used does not support DNSSEC (e.g. ISP).\n";
   print"\t\tThis host has an incorrect date (e.g. 1+ days incorrect).\n";
 }
 
@@ -446,7 +443,6 @@ do_ok($test, $log, $trustman_response{findnewkey},
       "trust/roll: trustman: if new key found for \'$domain\'");
 
 &waittime(65, 5, "       Waiting on trustman's new key hold down time");
-
 
 # trustman should add the new key to dnsval.conf
 
@@ -676,7 +672,7 @@ sub insert_newksk_dnsval {
   my $line = `cat Kexample.com.+005+$ksknum.key`;
   chomp $line;
 
-  if ( $line =~ /([^ ]+) +IN +DNSKEY +(257.*)/ ){
+  if ( $line =~ /(\S+) IN DNSKEY (257.*)/ ){
     $zone   = $1;
     $keyval = $2;
     $zone   =~ s/\.$//g;
