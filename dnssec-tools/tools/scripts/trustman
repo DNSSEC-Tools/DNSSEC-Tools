@@ -493,7 +493,7 @@ sub checkkeys {
         $zone_retry_times{$z} = $retryobj;
         my ($refresh_secs,$refresh_time) = 
           compute_sleepsecs($origttl, $sigexp);
-        Verbose("  $z ...  refresh_secs=$refresh_secs, refresh_time=$refresh_time\n");
+        #Verbose("  $z ...  refresh_secs=$refresh_secs, refresh_time=$refresh_time\n");
         $sleeptimes{$z} =  $refresh_secs;
         $active_refresh_times{$z} = $refresh_time;
         last;                   # only need one sleep time per zone
