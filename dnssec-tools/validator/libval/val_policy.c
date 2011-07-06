@@ -1416,6 +1416,9 @@ destroy_valpol(val_context_t * ctx)
 #ifdef WIN32
 #define getprogname() NULL
 #endif
+#ifdef __OpenBSD__
+#define getprogname() NULL
+#endif
 static int
 read_next_val_config_file(val_context_t *ctx, 
                           char **label, 
