@@ -306,6 +306,13 @@ closest-ta-only option can be used.
 If this option is set to B<yes> then the validation algorithm terminates at
 the closest matching TA.
 
+=item rec-fallback 
+
+This option is used to control whether libval will attempt to fall back to 
+a recursive lookup of the name if the response from the caching name server 
+returned an error. By default this options is set to B<yes>; it can be turned
+off by setting this option to B<no>.
+
 =item log
 
 This option controls the level of logging and the log target for libval. 
