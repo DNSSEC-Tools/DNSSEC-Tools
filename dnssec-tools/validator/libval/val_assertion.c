@@ -4517,6 +4517,11 @@ static int switch_to_root(val_context_t * context,
     if (!context || !matched_q)
         return 0;
 
+    /* Don't perform this logic if we're configured not to */
+    if (context->g_opt && context->g_opt->rec_fallback == 0) {
+        return 0;
+    }
+
     if (-1 == ns_name_ntop(matched_q->qc_name_n,
                            name_p, sizeof(name_p))) {
         snprintf(name_p, sizeof(name_p), "unknown/error");
