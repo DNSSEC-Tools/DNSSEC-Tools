@@ -120,6 +120,7 @@ struct queries_for_query;
 #define GOPT_OVERRIDE_STR "override"
 #define GOPT_LOGTARGET_STR "log"
 #define GOPT_CLOSEST_TA_ONLY_STR "closest-ta-only"
+#define GOPT_REC_FALLBACK "rec-fallback"
 
 #define VAL_POL_GOPT_DISABLE 0 
 #define VAL_POL_GOPT_ENABLE 1

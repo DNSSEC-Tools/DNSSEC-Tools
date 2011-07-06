@@ -133,49 +133,6 @@ extern          "C" {
 #define ALG_RSASHA256 8
 #define ALG_RSASHA512 10 
 
-/*
- * Policies can be one of the following
- */
-#define POL_TRUST_ANCHOR_STR "trust-anchor"
-#define POL_CLOCK_SKEW_STR "clock-skew"
-#define POL_PROV_INSEC_STR "provably-insecure-status"
-#define POL_ZONE_SE_STR "zone-security-expectation"
-#ifdef LIBVAL_DLV
-#define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
-#endif
-#ifdef LIBVAL_NSEC3
-#define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
-#endif
-
-#define GOPT_TRUST_OOB_STR "trust-oob-answers"
-#define GOPT_EDNS0_SIZE_STR "edns0-size"
-#define GOPT_YES_STR "yes"
-#define GOPT_NO_STR "no"
-#define GOPT_ENV_POL_STR "env-policy"
-#define GOPT_APP_POL_STR "app-policy"
-#define GOPT_ENABLE_STR "enable"
-#define GOPT_DISBLE_STR "disable"
-#define GOPT_OVERRIDE_STR "override"
-#define GOPT_LOGTARGET_STR "log"
-#define GOPT_CLOSEST_TA_ONLY_STR "closest-ta-only"
-
-#define VAL_POL_GOPT_DISABLE 0 
-#define VAL_POL_GOPT_ENABLE 1
-#define VAL_POL_GOPT_OVERRIDE 2
-
-
-#define ZONE_PU_TRUSTED_MSG "trusted"
-#define ZONE_PU_UNTRUSTED_MSG "untrusted"
-#define ZONE_SE_IGNORE_MSG     "ignore"
-#define ZONE_SE_DO_VAL_MSG     "validate"
-#define ZONE_SE_UNTRUSTED_MSG  "untrusted"
-
-/*  
- * The following policies are deprecated. 
- * They are defined here for backwards compatibility
- */
-#define GOPT_TRUST_LOCAL_STR "trust-local-answers"
-
 /* query types for which edns0 is required */
 #ifdef LIBVAL_DLV
 #define DNSSEC_METADATA_QTYPE(type) \
@@ -263,6 +220,7 @@ extern          "C" {
         int app_policy;
         char *log_target;
         int closest_ta_only;
+        int rec_fallback;
     } global_opt_t;
 
 
