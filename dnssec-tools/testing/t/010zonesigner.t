@@ -35,22 +35,14 @@ my $statedir   = "$testdir/tmp";
 my $bindnsec3version = "9.6";
 
 my %zonesigner_response = (
-    "gentest" =>   q{    using default keyrec file example.com.krf
-    checking options and arguments
-    using keyrec file example.com.krf
-    check existence of zone file
-    initial zone verification
-
+    "gentest" =>   q{
      if zonesigner appears hung, strike keys until the program completes
      (see the "Entropy" section in the man page for details)
 
-    generating key files
-    adding key includes to zone file
-    signing zone
 Verifying the zone using the following algorithms: RSASHA1.
 Zone signing complete:
-Algorithm: RSASHA1: ZSKs: 2, KSKs: 1 active, 0 revoked, 0 stand-by
-    checking zone
+Algorithm: RSASHA1: KSKs: 1 active, 0 stand-by, 0 revoked
+                    ZSKs: 1 active, 1 stand-by, 0 revoked
 
 zone signed successfully
 
@@ -62,22 +54,14 @@ example.com:
 zone will expire in 4 weeks, 2 days, 0 seconds
 DO NOT delete the keys until this time has passed.
 },
-    "nsec3test" =>   q{    using default keyrec file nsec3.example.com.krf
-    checking options and arguments
-    using keyrec file nsec3.example.com.krf
-    check existence of zone file
-    initial zone verification
-
+    "nsec3test" =>   q{
      if zonesigner appears hung, strike keys until the program completes
      (see the "Entropy" section in the man page for details)
 
-    generating key files
-    adding key includes to zone file
-    signing zone
 Verifying the zone using the following algorithms: NSEC3RSASHA1.
 Zone signing complete:
-Algorithm: NSEC3RSASHA1: ZSKs: 2, KSKs: 1 active, 0 revoked, 0 stand-by
-    checking zone
+Algorithm: NSEC3RSASHA1: KSKs: 1 active, 0 stand-by, 0 revoked
+                         ZSKs: 1 active, 1 stand-by, 0 revoked
 
 zone signed successfully
 
@@ -123,10 +107,10 @@ my $zonecheck = `which named-checkzone`;
 my $zonesign  = `which dnssec-signzone`;
 chomp ($keygen, $zonecheck, $zonesign);
 
-my $gencommand = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keyarch $keyarch -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> $logfile 2>&1";
+my $gencommand = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -keygen $keygen -kgopts -q -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain -zskcount 1 -kskcount 1 >> $logfile 2>&1";
 
 # generate new keys in order to support nsec3
-my $nsec3command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keyarch $keyarch -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -algorithm nsec3rsasha1 -genkeys -usensec3 nsec3.$domain >> $logfile 2>&1";
+my $nsec3command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -keygen $keygen -kgopts -q -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -algorithm nsec3rsasha1 -genkeys -usensec3 nsec3.$domain -zskcount 1 -kskcount 1 >> $logfile 2>&1";
 
 if (exists $options{v}) {
   print "general command:\n$gencommand\n";
