@@ -304,7 +304,7 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
  * And, for once, solaris has a better header than the rest, and has const
  * char ptrs in res_sym.
  */
-#if (defined(__p_class_syms) || defined(sun) || defined(__CYGWIN__) || defined(linux))
+#if (defined(__APPLE__) || defined(sun) || defined(__CYGWIN__) || defined(linux))
 #define RES_SYM_TYPE res_sym
 #else
 struct res_sym_const {
@@ -320,7 +320,7 @@ struct res_sym_const {
  * that ns_c_any is a qclass but not a class.  (You can ask for records of class
  * ns_c_any, but you can't have any records of that class in the database.)
  */
-const struct RES_SYM_TYPE __p_class_syms[] = {
+const struct RES_SYM_TYPE __p_res_class_syms[] = {
     {ns_c_in, "IN", (char *) 0},
     {ns_c_chaos, "CH", (char *) 0},
     {ns_c_chaos, "CHAOS", (char *) 0},
@@ -569,7 +569,7 @@ p_class(int class)
     static char     classbuf[20];
 
     result =
-        sym_ntos((const struct RES_SYM_TYPE *) __p_class_syms, class, &success);
+        sym_ntos((const struct RES_SYM_TYPE *) __p_res_class_syms, class, &success);
     if (success)
         return (result);
     if (class < 0 || class > 0xfff)
@@ -1170,7 +1170,7 @@ res_nametoclass(const char *buf, int *successp)
     int             success;
 
     result =
-        sym_ston((const struct RES_SYM_TYPE *) __p_class_syms, buf, &success);
+        sym_ston((const struct RES_SYM_TYPE *) __p_res_class_syms, buf, &success);
     if (success)
         goto done;
 
