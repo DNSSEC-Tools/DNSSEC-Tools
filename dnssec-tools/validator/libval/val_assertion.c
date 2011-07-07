@@ -2422,7 +2422,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     /* save all proofs to a list */
     for (res = w_results; res; res = res->val_rc_next) {
 
-        if (!res->val_rc_is_proof || !res->val_rc_rrset)
+        if (!res->val_rc_is_proof || !res->val_rc_rrset || !val_istrusted(res->val_rc_status))
             continue;
 
         the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
@@ -2848,7 +2848,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
      */
     for (res = w_results; res; res = res->val_rc_next) {
 
-        if (!res->val_rc_is_proof || !res->val_rc_rrset)
+        if (!res->val_rc_is_proof || !res->val_rc_rrset || !val_istrusted(res->val_rc_status))
             continue;
 
         the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
@@ -5911,7 +5911,7 @@ perform_sanity_checks(val_context_t * context,
     if (negative_proof) {
         if (partially_wrong) {
             /*
-             * mark all answers as bogus - 
+             * bail out early -- mark all answers as bogus - 
              * all answers are related in the proof 
              */
             val_log(context, LOG_INFO, "perform_sanity_checks(): Not all proofs were validated");
