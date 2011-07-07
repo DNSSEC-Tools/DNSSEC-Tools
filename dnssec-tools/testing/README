@@ -27,6 +27,14 @@ Running the Tests
 	to run the donuts tests; follow that with "make donutsv" if any of
 	the tests have problems.
 
+    For the testman tests, validator configuration information is read
+    from the $dnssec-tools/validator/etc/dnsval.conf file. The 
+    rec-fallback global policy in this file MUST be set to 'no' for the 
+    trustman tests to succeed:
+        global-options
+          ... 
+          rec-fallback no
+        ; 
 
 Test Targets
 
