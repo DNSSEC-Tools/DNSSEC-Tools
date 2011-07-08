@@ -33,6 +33,10 @@
 #ifndef _VALIDATOR_COMPAT_H
 #define _VALIDATOR_COMPAT_H
 
+#ifdef __cplusplus
+extern          "C" {
+#endif
+
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
@@ -128,10 +132,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
-#endif
-
-#ifdef __cplusplus
-extern          "C" {
 #endif
 
 /* define u_int32_t if not available */
