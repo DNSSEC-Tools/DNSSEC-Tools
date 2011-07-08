@@ -122,8 +122,8 @@ int             query_send(const char *name,
                            const unsigned short class_h,
                            struct name_server *nslist,
                            int *trans_id);
-int             query_queue(const char *name, const u_int16_t type_h,
-                            const u_int16_t class_h,
+int             query_queue(const char *name, const unsigned short type_h,
+                            const unsigned short class_h,
                             struct name_server *pref_ns, int *trans_id);
 int             response_recv(int *trans_id,
                               fd_set *pending_desc,
@@ -182,9 +182,9 @@ int res_nsfallback_ea(struct expected_arrival *temp,
                       const unsigned short type_h, int *edns0);
 
 struct expected_arrival *
-res_async_query_create(const char *name, const u_int16_t type_h,
-                       const u_int16_t class_h, struct name_server *pref_ns,
-                       u_int flags);
+res_async_query_create(const char *name, const unsigned short type_h,
+                       const unsigned short class_h, struct name_server *pref_ns,
+                       unsigned int flags);
 
 struct expected_arrival *
 res_async_query_send(const char *name, const unsigned short type_h,
