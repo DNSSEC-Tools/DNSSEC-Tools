@@ -6,6 +6,36 @@
 #define VAL_ASSERTION_H
 
 
+#ifndef VAL_NO_THREADS
+ 
+#define LOCK_QC_SH(qc) do { \
+    if (0 != pthread_rwlock_rdlock(&qc->qc_rwlock))\
+        return VAL_INTERNAL_ERROR;\
+} while (0)
+
+#define TRY_LOCK_QC_EX(qc) \
+   (0 == pthread_rwlock_trywrlock(&qc->qc_rwlock)) 
+
+#define LOCK_QC_EX(qc) do { \
+    if (0 != pthread_rwlock_wrlock(&qc->qc_rwlock))\
+        return VAL_INTERNAL_ERROR;\
+} while (0)
+
+#define UNLOCK_QC(qc) do { \
+    if (0 != pthread_rwlock_unlock(&qc->qc_rwlock))\
+        return VAL_INTERNAL_ERROR;\
+} while (0)
+
+#else
+
+#define LOCK_QC_SH(qc) 
+#define TRY_LOCK_QC_EX(qc) (1 == 1)
+#define LOCK_QC_EX(qc)
+#define UNLOCK_QC(qc)
+
+#endif /*VAL_NO_THREADS*/
+
+
 struct nsecprooflist {
     struct rrset_rec *the_set;
     struct val_internal_result *res;
@@ -31,7 +61,6 @@ int             add_to_qfq_chain(val_context_t *context,
 void            free_authentication_chain(struct val_digested_auth_chain
                                           *assertions);
 void            free_query_chain_structure(struct val_query_chain *queries);
-void            clear_query_chain_structure(struct val_query_chain *queries);
 int             get_zse(val_context_t * ctx, u_char * name_n, 
                         u_int32_t flags, u_int16_t *status, u_char ** match_ptr, u_int32_t *ttl_x);
 int             find_trust_point(val_context_t * ctx, u_char * zone_n, 
