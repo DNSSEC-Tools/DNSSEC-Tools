@@ -58,6 +58,7 @@ int             add_to_qfq_chain(val_context_t *context,
                                  const u_int16_t class_h, 
                                  const u_int32_t flags,
                                  struct queries_for_query **added_qfq);
+int             free_qfq_chain(val_context_t *context, struct queries_for_query *queries);
 void            free_authentication_chain(struct val_digested_auth_chain
                                           *assertions);
 void            free_query_chain_structure(struct val_query_chain *queries);
