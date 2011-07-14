@@ -244,6 +244,7 @@ val_free_result_chain(struct val_result_chain *results)
                 val_free_authentication_chain_structure(trust);
                 trust = NULL;
             }
+            prev->val_rc_rrset = NULL;
         }
 
         /* free the alias name if any */
@@ -353,18 +354,56 @@ free_query_chain_structure(struct val_query_chain *queries)
 
     val_log(NULL, LOG_DEBUG, "qc %p free", queries);
 
+#ifndef VAL_NO_THREADS
+    pthread_rwlock_destroy(&queries->qc_rwlock);
+#endif
+
     _release_query_chain_structure(queries);
     FREE(queries);
 }
 
-void 
-clear_query_chain_structure(struct val_query_chain *queries)
+static int 
+clear_query_chain_structure(val_context_t *context, 
+                            struct val_query_chain *query, 
+                            int block)
 {
-    if (NULL == queries)
-       return;
 
-    _release_query_chain_structure(queries);
-    init_query_chain_node(queries);
+    if (NULL == query)
+       return VAL_NO_ERROR;
+
+    /* 
+     * release existing shared lock on the query 
+     * and try to grab an exclusive lock 
+     */
+    UNLOCK_QC(query);
+    //val_log(context, LOG_DEBUG, "releasing lock for %x", query); 
+    //val_log(context, LOG_DEBUG, "acquiring exclusive lock for %x", query); 
+
+    /* Try to acquire the exclusive log if we can */
+    if (!TRY_LOCK_QC_EX(query)) {
+        /* If we're required to block do so */
+        if (block)
+            LOCK_QC_EX(query);
+        else {
+            //val_log(context, LOG_DEBUG, "could not acquire exclusive lock for %x", query); 
+            //val_log(context, LOG_DEBUG, "acquiring shared lock for %x", query); 
+            LOCK_QC_SH(query);
+            return VAL_NO_ERROR;
+        }
+    }
+
+    /* we should be holding an exclusive lock at this point */
+
+    _release_query_chain_structure(query);
+    init_query_chain_node(query);
+
+    /* release exclusive and get the shared lock instead */
+    UNLOCK_QC(query);
+    //val_log(context, LOG_DEBUG, "releasing lock for %x", query); 
+    //val_log(context, LOG_DEBUG, "acquiring shared lock for %x", query); 
+    LOCK_QC_SH(query);
+
+    return VAL_NO_ERROR;
 }
 
 
@@ -383,6 +422,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                    const u_int32_t flags, struct val_query_chain **added_q)
 {
     struct val_query_chain *temp, *prev;
+    int retval;
     
     /*
      * sanity checks 
@@ -405,7 +445,8 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     while (temp) {
         if ((temp->qc_type_h == type_h)
             && (temp->qc_class_h == class_h)
-            && ((temp->qc_flags & VAL_QFLAGS_CACHE_MASK) == (flags & VAL_QFLAGS_CACHE_MASK))) {
+            && ((flags == VAL_QFLAGS_ANY) ||
+                 ((temp->qc_flags & VAL_QFLAGS_CACHE_MASK) == (flags & VAL_QFLAGS_CACHE_MASK)))) {
 
             if (namecmp(temp->qc_original_name, name_n) == 0)
                 break;
@@ -419,7 +460,8 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
          * reset the query if VAL_QUERY_REFRESH_QCACHE is set 
          */
         if (temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
-            clear_query_chain_structure(temp);
+            if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, temp, 1)))
+                return retval;
         }
         *added_q = temp;
         return VAL_NO_ERROR;
@@ -488,10 +530,6 @@ remove_and_free_query_chain(val_context_t *context,
         temp->qc_next = NULL;
     }
 
-#ifndef VAL_NO_THREADS
-    pthread_rwlock_destroy(&temp->qc_rwlock);
-#endif
-
     free_query_chain_structure(temp);
     temp = NULL;
 
@@ -506,17 +544,25 @@ free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
 }
 
 static int requery_with_edns0(val_context_t *context, 
-                        struct val_query_chain *matched_q)
+                        struct val_query_chain *matched_q,
+                        int *reqd)
 {
-    if (matched_q == NULL)
-        return 0;
+    int retval;
+
+    if (matched_q == NULL || reqd == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *reqd = 0;
 
     /* If we were already using EDNS0 don't redo */
     if ((matched_q->qc_respondent_server_options & RES_USE_DNSSEC) ||
-        (matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK))
-        return 0;
+        (matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) {
+        return VAL_NO_ERROR;
+    }
 
-    clear_query_chain_structure(matched_q);
+    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, matched_q, 1))) {
+        return retval;    
+    }
 
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
         matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
@@ -526,8 +572,10 @@ static int requery_with_edns0(val_context_t *context,
     val_log(context, LOG_DEBUG,
             "requery_with_edns0(): EDNS0 was not used; re-issuing query");
 
-    return 1;
+    *reqd = 1;
+    return VAL_NO_ERROR;
 }
+
 
 static struct queries_for_query * 
 check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
@@ -640,9 +688,15 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if (new_qfq == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
+
+        /* grab a shared lock on the query */
+        //val_log(context, LOG_DEBUG, "acquiring shared lock for %x: %s %d %d %u", 
+        //        added_q, name_n, class_h, type_h, flags); 
+        LOCK_QC_SH(added_q);
+
         new_qfq->qfq_query = added_q;
         new_qfq->qfq_flags = flags;
-        new_qfq->qfq_next = *queries;
+        new_qfq->qfq_next = NULL;
         gettimeofday(&tv, NULL);
         if (added_q->qc_bad > 0 || 
             (added_q->qc_ttl_x > 0 && 
@@ -669,10 +723,16 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                             name_p, p_class(added_q->qc_class_h),
                             added_q->qc_class_h, p_type(added_q->qc_type_h),
                             added_q->qc_type_h);
-                    clear_query_chain_structure(added_q);
+
+                    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, added_q, 0))) {
+                        free_qfq_chain(context, new_qfq);
+                        return retval;
+                    }
+
                 }
 
         }
+        new_qfq->qfq_next = *queries;
         *queries = new_qfq;
     } 
     
@@ -694,21 +754,28 @@ _free_qfq_chain(val_context_t *context, struct queries_for_query *queries)
     if (queries->qfq_next)
         _free_qfq_chain(context, queries->qfq_next);
 
-    if (queries->qfq_query)
-        remove_and_free_query_chain(context, queries->qfq_query);
+    /* release our lock on the val_query_chain element */
+    //val_log(context, LOG_DEBUG, "releasing lock for %x", queries->qfq_query); 
+    UNLOCK_QC(queries->qfq_query);
+
+    remove_and_free_query_chain(context, queries->qfq_query);
 
     FREE(queries);
     return VAL_NO_ERROR;
 }
 
 int 
-free_qfq_chain(struct queries_for_query *queries)
+free_qfq_chain(val_context_t *context, struct queries_for_query *queries)
 {
     if (queries == NULL)
         return VAL_NO_ERROR; 
 
     if (queries->qfq_next)
-        free_qfq_chain(queries->qfq_next);
+        free_qfq_chain(context, queries->qfq_next);
+
+    /* release our lock on the val_query_chain element */
+    //val_log(context, LOG_DEBUG, "releasing lock for %x", queries->qfq_query); 
+    UNLOCK_QC(queries->qfq_query);
 
     FREE(queries);
     /* 
@@ -718,7 +785,6 @@ free_qfq_chain(struct queries_for_query *queries)
      */
     return VAL_NO_ERROR;
 }
-
 
 #ifdef LIBVAL_DLV
 static int
@@ -4510,16 +4576,20 @@ done:
  * Begin iteratively querying for this answer starting from root
  */ 
 static int switch_to_root(val_context_t * context, 
-                          struct val_query_chain *matched_q)
+                          struct val_query_chain *matched_q,
+                          int *switched)
 {
     char   name_p[NS_MAXDNAME];
+    int retval;
 
-    if (!context || !matched_q)
-        return 0;
+    if (!context || !matched_q || !switched)
+        return VAL_BAD_ARGUMENT;
+
+    *switched = 0;
 
     /* Don't perform this logic if we're configured not to */
     if (context->g_opt && context->g_opt->rec_fallback == 0) {
-        return 0;
+        return VAL_NO_ERROR;
     }
 
     if (-1 == ns_name_ntop(matched_q->qc_name_n,
@@ -4534,10 +4604,12 @@ static int switch_to_root(val_context_t * context,
          */
         val_log(context, LOG_DEBUG, 
                 "switch_to_root(): nothing to do; no root.hints configured or already doing recursion");
-        return 0;
+        return VAL_NO_ERROR;
     } 
 
-    clear_query_chain_structure(matched_q);
+    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, matched_q, 1))) {
+        return retval;
+    }
 
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
         matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
@@ -4546,12 +4618,13 @@ static int switch_to_root(val_context_t * context,
     matched_q->qc_flags |= VAL_QUERY_RECURSE;
 
     val_log(context, LOG_INFO,
-            "verify_and_validate(): Re-initiating query from root for {%s %s %s}",
+            "switch_to_root(): Re-initiating query from root for {%s %s %s}",
             name_p,
             p_class(matched_q->qc_class_h),
             p_type(matched_q->qc_type_h));
 
-    return 1;
+    *switched = 1;
+    return VAL_NO_ERROR;
 
 }
 
@@ -4577,6 +4650,7 @@ verify_and_validate(val_context_t * context,
     u_int32_t flags;
     int    retval = VAL_NO_ERROR;
     char   name_p[NS_MAXDNAME];
+    int switched = 0;
 
     if ((top_qfq == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
@@ -4597,7 +4671,10 @@ verify_and_validate(val_context_t * context,
                                name_p, sizeof(name_p))) {
             snprintf(name_p, sizeof(name_p), "unknown/error");
         }
-        if (switch_to_root(context, top_q)) {
+        if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) {
+            return retval;
+        }
+        if (switched) {
             /*
              * Recurse from root for all additional queries sent in
              * in relation to this query; e.g. queries for DNSKEYs, DS etc 
@@ -4941,7 +5018,10 @@ verify_and_validate(val_context_t * context,
                         /*
                          * try recursing from root if we aren't already
                          */
-                        if (switch_to_root(context, next_as->val_ac_query)) {
+                        if (VAL_NO_ERROR != (retval = switch_to_root(context, next_as->val_ac_query, &switched))) {
+                            return retval;
+                        }
+                        if (switched) {
                             res->val_rc_rrset = NULL;
                             goto query_reset;
                         }
@@ -4991,7 +5071,10 @@ verify_and_validate(val_context_t * context,
              * For error conditions Try getting this answer iteratively from
              * root if we aren't doing so already
              */
-            if (switch_to_root(context, top_q)) {
+            if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) {
+                return retval;
+            }
+            if (switched) {
                 /*
                  * Recurse from root for all additional queries sent in
                  * in relation to this query; e.g. queries for DNSKEYs, DS etc 
@@ -5032,6 +5115,7 @@ verify_and_validate(val_context_t * context,
 
             if (do_dlv) {
                 struct queries_for_query *added_q;
+                int requery = 0;
 
                 val_log(context, LOG_INFO,
                         "verify_and_validate(): Attempting DLV validation");
@@ -5041,7 +5125,10 @@ verify_and_validate(val_context_t * context,
                  * meta-data to prove non-existence. So retry with EDNS0 in this case
                  */
                 top_q->qc_flags |= VAL_QUERY_USING_DLV; 
-                if (requery_with_edns0(context, top_q)) {
+                if (VAL_NO_ERROR != (retval = requery_with_edns0(context, top_q, &requery))) {
+                    return retval;
+                }
+                if (requery) {
                     res->val_rc_rrset = NULL;
                     goto query_reset;
                 }
@@ -5963,6 +6050,7 @@ construct_authentication_chain(val_context_t * context,
     int             retval;
     struct val_query_chain *top_q;
     struct val_result_chain *res;
+    int switched = 0;
     
     if (context == NULL || top_qfq == NULL || 
         queries == NULL || results == NULL || done == NULL)
@@ -6015,8 +6103,11 @@ construct_authentication_chain(val_context_t * context,
         /* if any of the results are bad try re-querying from root */
         for (res=*results; res; res=res->val_rc_next) {
             if (res->val_rc_status == VAL_BOGUS) {
-                if (switch_to_root(context, top_q)) { 
+                if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) { 
+                    return retval;
+                }
 
+                if (switched) {
                     val_log(context, LOG_DEBUG, "Trying to work around bogus respose. Re-querying from root.");
 
                     _free_w_results(*w_results);
@@ -6027,6 +6118,7 @@ construct_authentication_chain(val_context_t * context,
                     top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
                     *done = 0;
                 }
+
                 return VAL_NO_ERROR;
             }
         }
@@ -6263,7 +6355,7 @@ val_resolve_and_check(val_context_t * ctx,
 
     _free_w_results(w_results);
     w_results = NULL;
-    free_qfq_chain(queries);
+    free_qfq_chain(context, queries);
 
     /*
      * if we allocated new context, free it
@@ -6369,7 +6461,7 @@ val_async_status_free(val_async_status *as)
     val_log(as->val_as_ctx, LOG_DEBUG, "as %p releasing", as);
 
     /* remove all pending queries from context list */
-    _free_qfq_chain(as->val_as_ctx, as->val_as_queries);
+    free_qfq_chain(as->val_as_ctx, as->val_as_queries);
     as->val_as_queries = NULL;
 
     if (as->val_as_results) {
@@ -6659,7 +6751,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         goto try_again;
 
     if ((VAL_NO_ERROR == retval) && (NULL != as->val_as_results)) {
-        free_qfq_chain(as->val_as_queries);
+        free_qfq_chain(context, as->val_as_queries);
         as->val_as_queries = NULL;
     }
 
