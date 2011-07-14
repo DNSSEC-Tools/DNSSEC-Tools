@@ -2324,7 +2324,6 @@ transform_outstanding_results(val_context_t *context,
 
 static void
 prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist, 
-                u_char *soa_name_n, 
                 u_char * qname_n, u_int16_t qtype_h, 
                 struct nsecprooflist **span_proof, 
                 struct nsecprooflist **wcard_proof,
@@ -2334,9 +2333,10 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
     struct nsecprooflist *n;
     u_char   wc_n[NS_MAXCDNAME];
     u_char       *ce = NULL;
+    u_char *soa_name_n;
 
-    if (ctx == NULL || nlist == NULL || soa_name_n == NULL || qname_n == NULL || 
-            span_proof == NULL || wcard_proof == NULL || notype == NULL) {
+    if (ctx == NULL || nlist == NULL || qname_n == NULL || 
+        span_proof == NULL || wcard_proof == NULL || notype == NULL) {
         return;
     }
 
@@ -2349,10 +2349,7 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
         u_char  *nxtname;
         int cmp;
 
-        if (!n->the_set || !n->the_set->rrs_name_n || 
-            !n->the_set->rrs_data || !n->the_set->rrs_data->rr_rdata)
-            continue;
-
+        soa_name_n = &(n->the_set->rrs_sig->rr_rdata[SIGNBY]);
         nxtname = n->the_set->rrs_data->rr_rdata;
 
         cmp = namecmp(qname_n, n->the_set->rrs_name_n);
@@ -2401,7 +2398,6 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
              * check if query name comes before the next name 
              * or if the next name wraps around 
              */
-
             if (namecmp(qname_n, nxtname) <= 0 ||
                 !namecmp(nxtname, soa_name_n)) {
 
@@ -2442,10 +2438,6 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
         u_char  *nxtname;
         int cmp;
 
-        if (!n->the_set || !n->the_set->rrs_name_n || 
-            !n->the_set->rrs_data || !n->the_set->rrs_data->rr_rdata)
-            continue;
-
         nxtname = n->the_set->rrs_data->rr_rdata;
         cmp = namecmp(wc_n, n->the_set->rrs_name_n);
 
@@ -2462,17 +2454,17 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                int only_span_chk,
                struct val_result_chain **proof_res,
                struct val_result_chain **results,
-               u_char *soa_name_n,
                u_char * qname_n, u_int16_t qtype_h,
                val_status_t * status)
 {
-    struct val_internal_result *res;
+    struct val_internal_result *res, *soa_set;
     struct val_result_chain *new_res;
     struct nsecprooflist *nlist, *n;
     struct rrset_rec *the_set;
     struct nsecprooflist *span, *wcard;
     int notype;
     int             retval;
+    u_char *soa_name_n = NULL;
 
     if (ctx == NULL || queries == NULL || proof_res == NULL ||
         results == NULL || qname_n == NULL || status == NULL) {
@@ -2485,6 +2477,8 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     wcard = NULL;
     notype = 0;
 
+    soa_set = NULL;
+
     /* save all proofs to a list */
     for (res = w_results; res; res = res->val_rc_next) {
 
@@ -2492,7 +2486,20 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             continue;
 
         the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
-        if (the_set == NULL || the_set->rrs_type_h != ns_t_nsec)
+
+        if (!the_set || !the_set->rrs_name_n || 
+            !the_set->rrs_data || !the_set->rrs_data->rr_rdata ||
+            !the_set->rrs_sig || !the_set->rrs_sig->rr_rdata)
+            continue;
+
+        /* Find any soa record that goes with this proof */
+        if (the_set->rrs_type_h == ns_t_soa) {
+            soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
+            soa_set = res;
+            continue;
+        }
+
+        if (the_set->rrs_type_h != ns_t_nsec)
             continue;
 
         n = (struct nsecprooflist *) MALLOC (sizeof(struct nsecprooflist));
@@ -2506,13 +2513,23 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         nlist = n; 
     }
 
-    prove_nsec_span(ctx, nlist, soa_name_n, qname_n,
+    prove_nsec_span(ctx, nlist, qname_n,
                     qtype_h, &span, &wcard, &notype);
     if (!span) {
         val_log(ctx, LOG_INFO, "nsec_proof_chk() : Incomplete Proof - Proof does not cover span");
         *status = VAL_INCOMPLETE_PROOF;
         retval = VAL_NO_ERROR;
         goto done;
+    }
+
+    if (soa_set && !soa_set->val_rc_consumed &&
+        soa_name_n && !namecmp(soa_name_n, &span->res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig->rr_rdata[SIGNBY])) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, soa_set, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
     }
 
     if (notype) {
@@ -2553,8 +2570,8 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                                                   *proof_res, &new_res))) {
             goto err;
         }
+        *proof_res = new_res;
     }
-    *proof_res = new_res;
     goto done;
 
   err:
@@ -2660,7 +2677,7 @@ compute_nsec3_hash(val_context_t * ctx, u_char * qname_n,
 
 static void
 prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist, 
-                 u_char *soa_name_n, u_char * qname_n, 
+                 u_char * qname_n, 
                  u_int16_t qtype_h, u_int32_t *ttl_x, 
                  struct nsec3prooflist **ncn, 
                  struct nsec3prooflist **cpe, 
@@ -2674,8 +2691,9 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
     u_char       *hash = NULL;
     u_char   wc_n[NS_MAXCDNAME];
     struct nsec3prooflist *n;
+    u_char *soa_name_n;
 
-    if (ctx == NULL || nlist == NULL || soa_name_n == NULL || 
+    if (ctx == NULL || nlist == NULL || 
             qname_n == NULL || ttl_x == NULL || ncn == NULL || 
             cpe == NULL || wcp == NULL || notype == NULL || optout == NULL)
         return;
@@ -2686,7 +2704,9 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
     *wcp = NULL;
     *notype = 0;
     *optout = 0;
-   
+
+    soa_name_n = cp;
+
     while (namecmp(cp, soa_name_n) >= 0) {
 
         for (n = nlist; n; n=n->next) {
@@ -2694,9 +2714,7 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
             hash = NULL;
             hashlen = 0;
 
-            if (!n->the_set || !n->the_set->rrs_data || 
-                    !n->the_set->rrs_data->rr_rdata)
-                continue;
+            soa_name_n = &(n->the_set->rrs_sig->rr_rdata[SIGNBY]);
 
             /*
              * hash name according to nsec3 parameters 
@@ -2805,6 +2823,9 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
 
     /* Check range of s_cp */
     for (n = nlist; n; n=n->next) {
+
+        soa_name_n = &(n->the_set->rrs_sig->rr_rdata[SIGNBY]);
+
         /*
          * hash name according to nsec3 parameters 
          */
@@ -2850,6 +2871,9 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
     memcpy(&wc_n[2], cp, wire_name_length(cp));
 
     for (n = nlist; n; n=n->next) {
+
+        soa_name_n = &(n->the_set->rrs_sig->rr_rdata[SIGNBY]);
+
         /*
          * hash name according to nsec3 parameters 
          */
@@ -2883,7 +2907,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 int only_span_chk,
                 struct val_result_chain **proof_res,
                 struct val_result_chain **results,
-                u_char *soa_name_n,
                 u_char * qname_n, u_int16_t qtype_h, 
                 val_status_t * status, 
                 struct val_digested_auth_chain *qc_proof)
@@ -2894,12 +2917,13 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     struct nsec3prooflist  *cpe = NULL;
     struct nsec3prooflist  *wcp = NULL;
     struct val_result_chain *new_res;
-    struct val_internal_result *res;
+    struct val_internal_result *res, *soa_set;
     int optout = 0;
     u_int32_t ttl_x = 0;
     struct nsec3prooflist *nlist, *n;
     struct rrset_rec *the_set;
     int notype;
+    u_char *soa_name_n = NULL;
 
     if (ctx == NULL || queries == NULL || proof_res == NULL || results == NULL ||
         qname_n == NULL || status == NULL || qc_proof == NULL) {
@@ -2909,6 +2933,9 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
     nlist = NULL;
     notype = 0;
+
+    soa_set = NULL;
+
     /*
      * First save all the NSEC3 hashes in a list
      */
@@ -2918,9 +2945,21 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             continue;
 
         the_set = res->val_rc_rrset->val_ac_rrset.ac_data;
-        if (the_set == NULL || the_set->rrs_type_h != ns_t_nsec3 || the_set->rrs_data == NULL)
+        if (!the_set || !the_set->rrs_name_n || 
+            !the_set->rrs_data || !the_set->rrs_data->rr_rdata ||
+            !the_set->rrs_sig || !the_set->rrs_sig->rr_rdata)
             continue;
-        
+
+        /* Find any soa record that goes with this proof */
+        if (the_set->rrs_type_h == ns_t_soa) {
+            soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
+            soa_set = res;
+            continue;
+        }
+
+        if (the_set->rrs_type_h != ns_t_nsec3)
+            continue;
+
         n = (struct nsec3prooflist *) MALLOC (sizeof(struct nsec3prooflist));
         if (n == NULL) {
             retval = VAL_OUT_OF_MEMORY;
@@ -2943,7 +2982,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         nlist = n; 
     }
 
-    prove_nsec3_span(ctx, nlist, soa_name_n, qname_n, qtype_h, 
+    prove_nsec3_span(ctx, nlist, qname_n, qtype_h, 
             &ttl_x, &ncn, &cpe, &wcp, &notype, &optout);
 
     if (qc_proof) {
@@ -2962,6 +3001,16 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *status = VAL_INCOMPLETE_PROOF;
         retval = VAL_NO_ERROR;
         goto done;
+    }
+
+    if (soa_set && !soa_set->val_rc_consumed &&
+        soa_name_n && !namecmp(soa_name_n, &cpe->res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig->rr_rdata[SIGNBY])) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, soa_set, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
     }
 
     if (notype) {
@@ -3022,8 +3071,8 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                                                   *proof_res, &new_res))) {
             goto err;
         }
+        *proof_res = new_res;
     }
-    *proof_res = new_res;
     goto done;
 
   err:
@@ -3150,7 +3199,7 @@ check_anc_proof(val_context_t *context,
     if (nsec && nsec3) {
         *matches = 0;
     } else if (nsec3) {
-        prove_nsec3_span(context, nsec3list, soa_name_n, name_n, q->qc_type_h, 
+        prove_nsec3_span(context, nsec3list, name_n, q->qc_type_h, 
                 &ttl_x, &ncn, &cpe, &wcp3, &notype, &optout);
         if (ncn && cpe && (optout || wcp)) {
             SET_MIN_TTL(q->qc_ttl_x, ttl_x);
@@ -3159,7 +3208,7 @@ check_anc_proof(val_context_t *context,
     } else
 #endif
     if (nsec) {
-        prove_nsec_span(context, nseclist, soa_name_n, name_n, 
+        prove_nsec_span(context, nseclist, name_n, 
                         q->qc_type_h, &span, &wcp, &notype);
 
         /* check if span check exists */
@@ -3207,14 +3256,12 @@ prove_nonexistence(val_context_t * ctx,
                    val_status_t * status,
                    u_int32_t *soa_ttl_x)
 {
-    struct val_result_chain *new_res;
     struct val_internal_result *res;
     char   name_p[NS_MAXDNAME];
     int    retval;
     int    skip_validation = 0;
 
     int             nsec = 0;
-    u_char          *soa_name_n = NULL;
 #ifdef LIBVAL_NSEC3
     int             nsec3 = 0;
 #endif
@@ -3262,22 +3309,6 @@ prove_nonexistence(val_context_t * ctx,
         }
 
         if (the_set->rrs_type_h == ns_t_soa) {
-            if (soa_name_n == NULL)
-                soa_name_n = the_set->rrs_name_n;
-            else if (namecmp(soa_name_n, &the_set->rrs_sig->rr_rdata[SIGNBY]) != 0) {
-                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Conflicting SOA names");
-                continue;
-            }
-            /*
-             * This proof is relevant 
-             */
-            if (VAL_NO_ERROR != (retval =
-                                 transform_single_result(ctx, res, queries, results,
-                                                         *proof_res, &new_res))) {
-                goto err;
-            }
-            *proof_res = new_res;
-    
             /* Use the SOA minimum time */
             if (the_set->rrs_data &&
                 the_set->rrs_data->rr_rdata &&
@@ -3296,12 +3327,6 @@ prove_nonexistence(val_context_t * ctx,
                 val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
                 continue;
             }
-            if (soa_name_n == NULL)
-                soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
-            else if (namecmp(soa_name_n, &the_set->rrs_sig->rr_rdata[SIGNBY]) != 0) {
-                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Conflicting SOA names");
-                continue;
-            }
             nsec = 1;
         }
 #ifdef LIBVAL_NSEC3
@@ -3310,12 +3335,6 @@ prove_nonexistence(val_context_t * ctx,
                 the_set->rrs_sig->rr_rdata_length < SIGNBY) {
 
                 val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
-                continue;
-            }
-            if (soa_name_n == NULL)
-                soa_name_n = &the_set->rrs_sig->rr_rdata[SIGNBY];
-            else if (namecmp(soa_name_n, &the_set->rrs_sig->rr_rdata[SIGNBY]) != 0) {
-                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Conflicting SOA names");
                 continue;
             }
             nsec3 = 1;
@@ -3356,7 +3375,7 @@ prove_nonexistence(val_context_t * ctx,
         if (VAL_NO_ERROR !=
             (retval =
              nsec_proof_chk(ctx, w_results, queries, only_span_chk, 
-                            proof_res, results, soa_name_n, qname_n,
+                            proof_res, results, qname_n,
                             qtype_h, status)))
             goto err;
     }
@@ -3368,7 +3387,7 @@ prove_nonexistence(val_context_t * ctx,
         if (VAL_NO_ERROR !=
             (retval =
              nsec3_proof_chk(ctx, w_results, queries, only_span_chk,
-                             proof_res, results, soa_name_n, qname_n,
+                             proof_res, results, qname_n,
                              qtype_h, status, qc_proof)))
             goto err;
         
@@ -3548,6 +3567,7 @@ prove_existence(val_context_t * context,
     u_char       *nsec3_hash = NULL;
 #endif
     int             retval;
+    struct val_result_chain *new_res;
 
     for (res = w_results; res; res = res->val_rc_next) {
         if (!res->val_rc_is_proof)
@@ -3638,7 +3658,6 @@ prove_existence(val_context_t * context,
 
     if (res) {
 
-        struct val_result_chain *new_res;
         /*
          * This proof is relevant 
          */
