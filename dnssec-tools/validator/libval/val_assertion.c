@@ -365,11 +365,16 @@ free_query_chain_structure(struct val_query_chain *queries)
 static int 
 clear_query_chain_structure(val_context_t *context, 
                             struct val_query_chain *query, 
-                            int block)
+                            int *cleared)
 {
+
+    if (cleared == NULL || context == NULL)
+        return VAL_BAD_ARGUMENT;
 
     if (NULL == query)
        return VAL_NO_ERROR;
+
+    *cleared = 0;
 
     /* 
      * release existing shared lock on the query 
@@ -381,19 +386,15 @@ clear_query_chain_structure(val_context_t *context,
 
     /* Try to acquire the exclusive log if we can */
     if (!TRY_LOCK_QC_EX(query)) {
-        /* If we're required to block do so */
-        if (block)
-            LOCK_QC_EX(query);
-        else {
-            //val_log(context, LOG_DEBUG, "could not acquire exclusive lock for %x", query); 
-            //val_log(context, LOG_DEBUG, "acquiring shared lock for %x", query); 
-            LOCK_QC_SH(query);
-            return VAL_NO_ERROR;
-        }
+        //val_log(context, LOG_DEBUG, "could not acquire exclusive lock for %x", query); 
+        //val_log(context, LOG_DEBUG, "acquiring shared lock for %x", query); 
+        LOCK_QC_SH(query);
+        return VAL_NO_ERROR;
     }
 
     /* we should be holding an exclusive lock at this point */
 
+    *cleared = 1;
     _release_query_chain_structure(query);
     init_query_chain_node(query);
 
@@ -456,11 +457,12 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
         temp = temp->qc_next;
     }
     if (temp != NULL) {
+        int cleared = 0;
         /* 
          * reset the query if VAL_QUERY_REFRESH_QCACHE is set 
          */
         if (temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
-            if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, temp, 1)))
+            if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, temp, &cleared)))
                 return retval;
         }
         *added_q = temp;
@@ -548,6 +550,7 @@ static int requery_with_edns0(val_context_t *context,
                         int *reqd)
 {
     int retval;
+    int cleared = 0;
 
     if (matched_q == NULL || reqd == NULL)
         return VAL_BAD_ARGUMENT;
@@ -560,8 +563,11 @@ static int requery_with_edns0(val_context_t *context,
         return VAL_NO_ERROR;
     }
 
-    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, matched_q, 1))) {
+    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, matched_q, &cleared))) {
         return retval;    
+    }
+    if (!cleared) {
+        return VAL_NO_ERROR;
     }
 
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
@@ -594,7 +600,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if ((temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
             && ((flags == VAL_QFLAGS_ANY) ||
-                (temp->qfq_flags == flags))
+                ((temp->qfq_query->qc_flags & VAL_QFLAGS_CACHE_MASK) == (flags & VAL_QFLAGS_CACHE_MASK)))
             && (namecmp(temp->qfq_query->qc_original_name, name_n) == 0)) {
 #ifdef LIBVAL_DLV
             if (type_h == ns_t_dlv) {
@@ -717,6 +723,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                 if (tv.tv_sec > added_q->qc_ttl_x) { 
                     /* flush data for this query and start again */
                     char name_p[NS_MAXDNAME];
+                    int cleared = 0;
                     if (-1 == ns_name_ntop(added_q->qc_original_name, name_p, sizeof(name_p)))
                         snprintf(name_p, sizeof(name_p), "unknown/error");
                     val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
@@ -724,7 +731,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                             added_q->qc_class_h, p_type(added_q->qc_type_h),
                             added_q->qc_type_h);
 
-                    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, added_q, 0))) {
+                    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, added_q, &cleared))) {
                         free_qfq_chain(context, new_qfq);
                         return retval;
                     }
@@ -4600,6 +4607,7 @@ static int switch_to_root(val_context_t * context,
 {
     char   name_p[NS_MAXDNAME];
     int retval;
+    int cleared = 0;
 
     if (!context || !matched_q || !switched)
         return VAL_BAD_ARGUMENT;
@@ -4626,8 +4634,12 @@ static int switch_to_root(val_context_t * context,
         return VAL_NO_ERROR;
     } 
 
-    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, matched_q, 1))) {
+    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, matched_q, &cleared))) {
         return retval;
+    }
+
+    if (!cleared) {
+        return VAL_NO_ERROR;
     }
 
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
