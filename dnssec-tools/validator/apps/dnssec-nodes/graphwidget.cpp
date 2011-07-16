@@ -465,6 +465,8 @@ void GraphWidget::parseLogMessage(QString logMessage) {
     } else if (m_validatedRegexp.indexIn(logMessage) > -1) {
         if (!m_shownsec3 && m_validatedRegexp.cap(2) == "NSEC3")
             return;
+        if (m_validatedRegexp.cap(2) == "NSEC")
+            return; // never show 'good' for something missing
         nodeName = m_validatedRegexp.cap(1);
         logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
