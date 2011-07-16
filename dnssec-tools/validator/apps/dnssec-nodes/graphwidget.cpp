@@ -75,7 +75,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_bogusRegexp("Validation result for \\{([^,]+),.*BOGUS"),
       m_trustedRegexp("Validation result for \\{([^,]+),.*: (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
       m_pinsecureRegexp("Setting proof status for ([^ ]+) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
-      m_dneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME:"),
+      m_dneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_(NAME|TYPE):"),
       m_maybeDneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME_NOCHAIN:"),
       m_infoBox(infoBox)
 {
