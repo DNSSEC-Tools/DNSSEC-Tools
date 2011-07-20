@@ -54,6 +54,8 @@ my %defaults =
 	"roll_sleeptime"   => 3600,		# Rollerd's sleep time.
 	"log_tz"	   => "gmt",		# Log message timezone.
 	"savekeys"	   => 1,		# Save/delete old keys flag.
+	"mailer-server"    => "localhost",	# Mail server.
+	"mailer-type"      => "smtp",		# Mail type.
 	"tacontact" 	   => "",
 	"tatmpdir" 	   => "/tmp/dnssec-tools/trustman",
 	"tadnsvalconffile" => getconfdir() . "/dnsval.conf",
@@ -247,6 +249,17 @@ This default holds the default length of a KSK key.
 This default holds the default lifespan of a KSK key.  This is only used
 for determining when to rollover the KSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
+
+=item B<mailer-server>
+
+The mail server that will be contacted by I<dt_adminmail()>.  This is
+passed to I<Mail::Send>.
+
+=item B<mailer-type>
+
+The type of mailer that will be contacted by I<dt_adminmail()>.  This is
+passed to I<Mail::Mailer> (by way of I<Mail::Send>.)  Any values recognized
+by I<Mail::Mailer> may be used here.
 
 =item B<revperiod>
 
