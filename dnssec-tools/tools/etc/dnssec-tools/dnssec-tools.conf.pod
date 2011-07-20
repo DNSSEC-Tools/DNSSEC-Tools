@@ -118,6 +118,17 @@ This is measured in seconds.
 The timezone to be used in log messages.  The value may be either 'gmt' (for
 Greenwich Mean Time) or 'local' (for the host's local time.)
 
+=item mailer-server
+
+The mail server that will be contacted by I<dt_adminmail()>.  This is
+passed to I<Mail::Send>.  The default value is B<localhost>.
+
+=item mailer-type
+
+The type of mailer that will be contacted by I<dt_adminmail()>.  This is
+passed to I<Mail::Mailer> (by way of I<Mail::Send>.)  Any values recognized
+by I<Mail::Mailer> may be used here.  The default value is B<stmp>.
+
 =item random
 
 The random device generator to be passed to B<dnssec-keygen>.
