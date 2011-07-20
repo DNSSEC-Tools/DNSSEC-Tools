@@ -110,6 +110,9 @@ my @opts =
 	"roll-username=s",		# Username for rollerd.
 	"roll-logtz=s",			# Timezone for rollerd's logfile.
 
+	"mailer-server=s",		# Mail server.
+	"mailer-type=s",		# Mail type.
+
 	"ta-contact=s",			# trustman's email contact.
 	"ta-resolvconf=s",		# Location of resolv.conf file.
 	"ta-smtpserver=s",		# trustman's SMTP server.
@@ -161,6 +164,9 @@ my $rphasemsg;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
 my $rusername;				# Username for rollerd.
 my $zoneerrs;				# Maximum error count for zones.
+
+my $mailertype;				# Type of mailer.
+my $mailerserver;			# Mail server.
 
 my $tacontact;				# trustman's email contact.
 my $taresolvconf;			# Location of resolv.conf file.
@@ -285,6 +291,10 @@ sub main
 		$rollchk	= "rollchk";
 		$roothints	= "/etc/root.hints";
 		$tacontact	= "root";
+
+		$mailertype	= "smtp";
+		$mailerserver	= "localhost";
+
 		$zcopts		= "";
 		$zonecheck	= "named-checkzone";
 		$zonesign	= "dnssec-signzone";
@@ -383,6 +393,9 @@ sub optsandargs
 	$rsleep	   = $opts{'roll-sleeptime'} || dnssec_tools_default("roll_sleeptime");
 	$rusername = $opts{'roll-username'}  || '';
 	$zoneerrs  = $opts{'zoneerrs'} || dnssec_tools_default("zone_errors");
+
+	$mailerserver = $opts{'mailer-server'} || dnssec_tools_default("mailer-server");
+	$mailertype   = $opts{'mailer-type'} || dnssec_tools_default("mailer-type");
 
 	$tacontact    = $opts{'ta-contact'}    || dnssec_tools_default("tacontact");
 	$taresolvconf = $opts{'ta-resolvconf'} || dnssec_tools_default("taresolvconf");
@@ -557,6 +570,9 @@ sub writeconf()
 		print "\tzonecheck options  - \"$zcopts\"\n";
 		print "\tzonesign  options  - \"$zsopts\"\n\n";
 
+		print "\tmailer-server - \"$mailerserver\"\n";
+		print "\tmailer-type   - \"$mailertype\"\n\n";
+
 		print "\tta-contact    - \"$tacontact\"\n";
 		print "\tta-resolvconf - \"$taresolvconf\"\n";
 		print "\tta-smtpserver - \"$tasmtpserver\"\n";
@@ -580,6 +596,8 @@ sub writeconf()
 # Settings for DNSSEC-Tools administration.
 #
 admin-email     $admin
+mailer-server	$mailerserver
+mailer-type	$mailertype
 
 #
 # Paths to needed programs.  These may need adjusting for individual hosts.
@@ -681,7 +699,7 @@ log_tz		$rlogtz
 
 	print DTCONF "
 #
-# Settings for trustman
+# Settings for trustman.
 #
 tacontact	$tacontact
 tasmtpserver	$tasmtpserver
@@ -723,6 +741,8 @@ sub writetemplate()
 # Settings for DNSSEC-Tools administration.
 #
 # admin-email     $admin
+# mailer-server   $mailertype
+# mailer-type     $mailerserver
 
 #
 # Paths to needed programs.  These may need adjusting for individual hosts.
@@ -1418,7 +1438,12 @@ sub get_dt_opts()
 
 	print "\n";
 
-	$tacontact = getval("trustman's contact address",$tacontact,"");
+	$mailerserver = getval("mail server",$mailerserver,"");
+	$mailertype   = getval("mail type",$mailertype,"");
+
+	print "\n";
+
+	$tacontact    = getval("trustman's contact address",$tacontact,"");
 	$tasmtpserver = getval("trustman's SMTP server",$tasmtpserver,"");
 	$tatmpdir     = getval("trustman's temporary directory",$tatmpdir,"");
 	$taresolvconf = getval("trustman's resolv.conf file",$tasmtpserver,"");
@@ -1976,6 +2001,18 @@ are executed.
 A flag indicating that B<zonesigner> should display a message about entropy
 generation.  This is primarily dependent on the implementation of a system's
 random number generation.
+
+=item B<-mailer-server host>
+
+The mail server that will be contacted by I<dt_adminmail()>.
+This is passed to I<Mail::Send>.
+
+=item B<-mailer-server mailtype>
+
+The mail type that will be contacted by I<dt_adminmail()>.
+This is passed to I<Mail::Mailer> (by way of I<Mail::Send>.)
+Any values recognized by I<Mail::Mailer> may be used here.
+
 
 =item B<-noentropy_msg>
 
