@@ -194,6 +194,58 @@ my $xqtdir;				# Execution directory.
 
 #######################################################################
 
+my $EVT_FULLLIST   = 1;		# Full list is run every N seconds.
+my $EVT_QUEUE_SOON = 2;		# Queues, with "soon" events.
+
+#
+# "full list" queue processing is the classic rollerd method of handling its
+# queue.  Every N seconds, the entire queue of zones is scanned to see if any
+# rollover events must be handled.
+#
+# "soon" queue processing is experimental.  When finished, it will maintain
+# a sub-queue of the rollover events that must be handled soon.  Rather than
+# processing the full queue of managed zones every N seconds, the "soon queue"
+# will be handled as the events occur.
+#
+# "soon" processing is still being tested and should *not* be considered
+# reliable!  (yet...)
+#
+
+my $eventmaster = $EVT_FULLLIST;
+# my $eventmaster = $EVT_QUEUE_SOON;
+
+my @event_methods =
+(
+	"dummy",
+	"Full List",
+	"Soon Queue",
+);
+
+#######################################################################
+#
+# Queue-soon data.
+#
+
+my $QUEUE_ERRTIME = 60;			# Time to sleep on rollrec error.
+
+my $QUEUE_SOONLIMIT = 100;
+my $QUEUE_RUNSCAN = '<<< run full scan >>>';	# Fake rollrec name to trigger
+						# a full scan.
+
+my %queue_eventtimes = ();
+my %queue_maxttls    = ();
+my %queue_signtimes  = ();
+my @queue_allzones   = ();
+my @queue_sooners    = ();
+
+my $queue_firstsoon;			# Index of first unprocessed soon entry.
+my $queue_lastscan;			# GMT of last full scan.
+my $queue_scantime;			# Time taken for last full scan.
+my $queue_scanskips;			# Count of zones skipped in scan.
+my $queue_soonend;			# End of current "soon" period.
+
+#######################################################################
+
 my $ret;				# Return code from main().
 my $runerr;				# Execution error -- used in runner().
 
@@ -327,7 +379,26 @@ sub main
 	# check its zones -- rolling 'em if need be -- and saving its state.
 	# We'll always check for user commands and then sleep a bit.
 	#
-	full_list_event_loop();
+	if($eventmaster == $EVT_FULLLIST)
+	{
+		rolllog_log(LOG_ALWAYS,""," ");
+		rolllog_log(LOG_ALWAYS,"","Using the full_list_event_loop() processor!!!");
+
+		full_list_event_loop();
+	}
+	if($eventmaster == $EVT_QUEUE_SOON)
+	{
+		rolllog_log(LOG_ALWAYS,""," ");
+		rolllog_log(LOG_ALWAYS,"","Using the queue_soon_event_loop() processor!!!");
+		queue_soon_event_loop();
+	}
+	else
+	{
+		rolllog_log(LOG_FATAL,"","invalid event handler specified; cannot continue");
+		print STDERR "rollerd:  invalid event handler specified; cannot continue\n";
+		exit(1);
+	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -347,7 +418,7 @@ sub full_list_event_loop
 {
 	while(42)
 	{
-# rolllog_log(LOG_ALWAYS,"","looping ------------------------------------------");
+# rolllog_log(LOG_ALWAYS,"","looping ----------------------------------------");
 
 		#
 		# Turn off signal handlers so they don't interrupt us
@@ -404,6 +475,7 @@ sub full_list_event_loop
 		#
 		if($singlerun)
 		{
+			rolllog_log(LOG_INFO,"","rollover manager shutting down at end of single-run execution");
 			halt_handler();
 			exit(0);
 		}
@@ -513,7 +585,7 @@ sub rollkeys
 		}
 
 		#
-		# Ensure the record has the KSK and ZSK phases.
+		# Ensure the record has the KSK and ZSK phase fields.
 		#
 		if($rr{'kskphase'} == -1)
 		{
@@ -559,9 +631,9 @@ sub rollkeys
 		#
 
 		#
-		# XXX: this could double sign if some of the above steps
-		# already signed the zone.  We should only sign if nothing
-		# was done above.
+		# XXX:  This could double sign if some of the above steps
+		#	already signed the zone.  We should only sign if
+		#	nothing was done above.
 		#
 		if($alwayssign)
 		{
@@ -622,6 +694,930 @@ sub rollkeys
 	$loglevel = $loglevel_save;
 	rolllog_level($loglevel,0);
 }
+
+#=============================================================================
+#=============================================================================
+#=============================================================================
+#=============================================================================
+#=============================================================================
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_soon_event_loop()
+#
+# Purpose:	Rollover event handler -- timed event queue with "soon" queue.
+#
+#		Periodically, the entire set of rollrecs is scanned to find
+#		the set of events that will occur "soon".  ("soon" may be
+#		defined as within the next 12 hours, 24 hours, etc.)
+#		These rollrecs are added to a queue in chronological order.
+#
+#		rollerd will sleep until the next event occurs, then handle
+#		those events that have triggered.  The next event-expiration
+#		times are recalculated for the list of "soon" events as well
+#		as the events which have just been handled.  If the just-
+#		handled events fall within the "soon" timeframe, they are
+#		reinserted in the "soon" queue.
+#
+#		Rescanning of the full set of rollrecs must occur periodically
+#		in order to keep the "soon" queue populated.
+#
+#		The definition of "soon" and the rescan time period are not
+#		universally definite numbers.  They will almost certainly
+#		depend on the numbers of zones managed by each installation,
+#		plus the key lifespans for those zones.
+#
+#		This event loop was added in Spring, 2011.
+#
+sub queue_soon_event_loop
+{
+rolllog_log(LOG_ALWAYS,""," ");
+rolllog_log(LOG_ALWAYS,"","   not worrying about signal handlers at the moment!");
+rolllog_log(LOG_ALWAYS,"","   what should happen with -singlerun?");
+rolllog_log(LOG_ALWAYS,""," ");
+rolllog_log(LOG_INFO,"","           QUEUE_SOONLIMIT - $QUEUE_SOONLIMIT");
+rolllog_log(LOG_ALWAYS,""," ");
+
+	#
+	# Time for the Main Event*!
+	#
+	# * loop
+	#
+	while(42)
+	{
+# rolllog_log(LOG_ALWAYS,"","looping full -----------------------------------");
+
+		#
+		# Turn off signal handlers while we're reading the rollrec file.
+		#
+		controllers(0);
+
+		#
+		# If we have a valid rollrec file, we'll read its contents
+		# and handle for expired KSKs and ZSKs.
+		#
+		if(rrfchk($rollrecfile) == 0)
+		{
+			rolllog_log(LOG_ERR,"","rrfchk($rollrecfile) failed");
+			sleeper($QUEUE_ERRTIME);
+			next;
+		}
+
+		#
+		# Read the rollrec file.
+		#
+		# WARNING:  We're only locking the file while we're reading
+		#	    it!  This may not be the safest way to do this,
+		#	    but the full queue scan can take rather a long
+		#	    time.
+		#
+		rollrec_lock();
+		rollrec_read($rollrecfile);
+		rollrec_close();
+		rollrec_unlock();
+
+		#
+		# Turn on signal handlers while we're scanning the full queue.
+		#
+		controllers(1);
+
+		#
+		# Calculate event times for each rollrec entry.
+		#
+		queue_scanall();
+
+#		queue_prteventtimes();
+
+		#
+		# Check all the events that will be happening "soon".
+		#
+		while(42)
+		{
+			my $nextrrn;		# Next rollrec to handle.
+			my $naptime;		# Time until next event.
+			my $now;		# Current time.
+			my $ind;		# Loop index.
+			my @savenames = ();	# Rollrecs to return to soonlist
+			my $kronos1;		# Start time for soon loop.
+			my $kronos2;		# End time for soon loop.
+			my $kronos;		# Time taken in soon loop.
+
+# rolllog_log(LOG_ALWAYS,"","looping soon -----------------------");
+			#
+			# Rescan the entire list of zones if the soon list
+			# is empty.
+			#
+			# This should never happen.  There should always be,
+			# at the very least, an entry that schedules the next
+			# full scan.
+			#
+			if(@queue_sooners == 0)
+			{
+				rolllog_log(LOG_ERR,"","DANGER!!!  soonlist is empty and shouldn't be!");
+				goto endsooners;
+			}
+
+# queue_prteventtimes();
+
+			#
+			# Get the time until the next event.
+			#
+			$nextrrn = $queue_sooners[0];
+			$naptime = $queue_eventtimes{$nextrrn};
+
+			#
+			# Turn on our signal handlers and then take a nap.
+			#
+			controllers(1);
+
+#			$naptime = 60 if($naptime <= 0);
+			$sleeptime = $naptime;
+# queue_prtsooners();
+# rolllog_log(LOG_ALWAYS,"","queue_sooners (" . @queue_sooners . " entries)");
+			sleeper($naptime) if($naptime > 0);
+
+			#
+			# Turn off signal handlers so they don't interrupt us
+			# while we're scanning the soon queue.
+			#
+			controllers(0);
+			$sleep_override = 0;
+
+			#
+			# Get this iteration's idea of the current time.
+			#
+			$now = gmtime(time);
+			$now = str2time($now);
+
+			#
+			# Calculate the next-event time for each of the zones
+			# in the @queue_sooners list.
+			#
+			rolllog_log(LOG_TMI,"","starting scan of soon queue");
+			$kronos1 = time;
+			queue_scansooners($now);
+			$kronos2 = time;
+			$kronos = $kronos2 - $kronos1;
+			$kronos = timetrans($kronos);
+# rolllog_log(LOG_ALWAYS,"","scanned soon queue (" . @queue_sooners . " zones) in $kronos");
+
+			#
+			# Get the rollrec file.
+			#
+			rollrec_lock();
+			if(rollrec_read($rollrecfile) <= 0)
+			{
+				rolllog_log(LOG_ALWAYS,"","DANGER!!!  rollrec_read($rollrecfile) failed");
+				last;
+			}
+
+			#
+			# Reset the index for the next imminent soon event.
+			#
+			$queue_firstsoon = 0;
+
+			#
+			# Turn on signal handlers so the user can query the
+			# queue while we're running the queue.
+			#
+			controllers(1);
+
+			#
+			# Run through our queue of soon-to-happen rollover
+			# events.
+			#
+			$kronos1 = time;
+			for($ind=0; $ind < @queue_sooners; $ind++)
+			{
+				my $rrn = $queue_sooners[$ind];
+				my $rrr;
+				my $nxt;
+
+				#
+				# Check for user commands.
+				#
+				commander();
+
+				#
+				# Rescan the entire list of zones if we've hit
+				# the run-scan fake rollrec name.
+				#
+				#
+#				goto endsooners if($rrn eq $QUEUE_RUNSCAN);
+				if($rrn eq $QUEUE_RUNSCAN)
+				{
+					rolllog_log(LOG_TMI,"","RUNSCAN hit!   stopping soon-loop");
+					goto endsooners;
+				}
+
+				$rrr = rollrec_fullrec($rrn);
+
+				#
+				# Skip this zone if this is a skip zone.
+				#
+				next if($rrr->{'rollrec_type'} eq 'skip');
+
+				#
+				# Proceed to the next zone if the zone is in a
+				# state that requires administrative attention.
+				#
+				next if($rrr->{'kskphase'} == 6);
+
+				if($queue_eventtimes{$rrn} > 0)
+				{
+					rollrec_unlock();
+					last;
+				}
+
+				#
+				# Handle the rollover event.
+				#
+				queue_rollevent($rrn);
+				$queue_firstsoon++;
+
+				#
+				# Add this zone to our savelist if it has its
+				# next rollover event soon.
+				#
+				$nxt = queue_scanone($rrn,$now);
+				if(($nxt < $queue_eventtimes{$QUEUE_RUNSCAN}) &&
+				   (! $singlerun))
+				{
+					push @savenames, $rrn;
+				}
+
+			}
+			$kronos2 = time;
+
+			#
+			# Save the current rollrec file state and get the
+			# time stats.
+			#
+			rollrec_close();
+			rollrec_unlock();
+			$kronos = $kronos2 - $kronos1;
+			$kronos = timetrans($kronos);
+
+			#
+			# Check for user commands.
+			#
+			commander();
+
+			#
+			# We'll stop now if we're only running the queue once.
+			#
+			if($singlerun)
+			{
+				rolllog_log(LOG_INFO,"","rollover manager shutting down at end of single-run execution");
+				halt_handler();
+				exit(0);
+			}
+
+			#
+			# Remove the zones we've just handled from the sooners
+			# list.  Also, add in the zones that we just handled
+			# that are still within the "soon" time.
+			#
+			splice @queue_sooners, 0, $ind;
+			$queue_firstsoon = 0;
+			push @queue_sooners, @savenames;
+
+			#
+			# Sort the sooners list.  The sorting is done based on
+			# the amount of time before each zone's next event.
+			#
+			@queue_sooners  = sort { $queue_eventtimes{$a} <=> $queue_eventtimes {$b} } @queue_sooners;
+
+		}
+
+  endsooners:
+			rollrec_unlock();
+
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_scanall()
+#
+# Purpose:	Calculate the next-event time for each of the zones in the
+#		rollrec file.  Zones that fall within our "soon" limit, will
+#		be added to the @queue_sooners list.
+#
+sub queue_scanall
+{
+	my $cronus;					# Current time.
+	my $kronos1;					# Scan start time.
+	my $kronos2;					# Scan end time.
+
+	my $lasttime;			# Last rollrec's event time.
+
+# rolllog_log(LOG_ALWAYS,"","queue_scanall:  running a full scan");
+
+	#
+	# Reset all our queuing lists.
+	#
+	%queue_eventtimes = ();
+	@queue_allzones   = ();
+	@queue_sooners    = ();
+	$queue_scanskips  = 0;
+
+	#
+	# Get the base time.
+	#
+	$kronos1 = time;
+	$cronus = gmtime($kronos1);
+	$cronus = str2time($cronus);
+
+	#
+	# Recalculate the next-event time for every zone in the rollrec file.
+	# If the zone falls within the soon limit, it'll be added to
+	# @queue_sooners. All zones will be added to @queue_allzones.
+	#
+	foreach my $rrn (rollrec_names())
+	{
+		my $next;
+
+		$next = queue_scanone($rrn,$cronus);
+
+		push @queue_allzones, $rrn;
+		push @queue_sooners, $rrn if($next < $QUEUE_SOONLIMIT);
+	}
+
+	#
+	# Sort the zone lists we'll use for queuing.  The sorting is done
+	# based on the amount of time before each zone's next event.
+	#
+	@queue_allzones = sort { $queue_eventtimes{$a} <=> $queue_eventtimes {$b} } @queue_allzones;
+	@queue_sooners  = sort { $queue_eventtimes{$a} <=> $queue_eventtimes {$b} } @queue_sooners;
+
+	#
+	# Figure out how long the scan took.
+	#
+	$queue_lastscan = time;
+	$kronos2 = time;
+	$queue_scantime = $kronos2 - $kronos1;
+	$queue_soonend = $cronus + $QUEUE_SOONLIMIT;
+
+	#
+	# Arrange for the next full scan.
+	#
+	$queue_eventtimes{$QUEUE_RUNSCAN} = $QUEUE_SOONLIMIT;
+	push @queue_sooners, $QUEUE_RUNSCAN;
+
+	#
+	# If no zones fall within the "soon" timeframe, we'll schedule
+	# another scan for shortly before the next zone needs to be handled.
+	#
+	if(@queue_sooners == 0)
+	{
+		my $rrn;				# Rollrec name.
+		my $nevt;				# Next event time.
+
+		$rrn = @queue_allzones[0];
+		$nevt = $queue_eventtimes{$rrn};
+
+		$sleeptime = $nevt - $queue_scantime - 60;
+	}
+
+# queue_prteventtimes();
+# queue_prtsooners();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_scansooners()
+#
+# Purpose:	Calculate the next-event time for each of the zones in the
+#		@queue_sooners list.  If the zone still falls within our
+#		"soon" limit, it'll be kept in the @queue_sooners list.
+#
+sub queue_scansooners
+{
+	my $cronus = shift;	# Current time.
+	my @newsooners = ();	# Temporary list of new sooners.
+	my $nextscan;		# Time of next full scan.
+	my $tdiff;		# Time difference between now and last scan.
+
+# rolllog_log(LOG_INFO,"","queue_scansooners:  down in");
+
+	#
+	# Figure out when the next full scan will take place.
+	#
+	$tdiff = time - $queue_lastscan;
+	$nextscan = $QUEUE_SOONLIMIT - $tdiff;
+	$queue_eventtimes{$QUEUE_RUNSCAN} = $nextscan;
+
+	#
+	# Recalculate the next-event time for each zone in the @queue_sooners
+	# list.  If the zone is still within the soon limit, it'll be kept in
+	# @queue_sooners.
+	#
+	foreach my $rrn (@queue_sooners)
+	{
+		my $nxt;
+
+		next if($rrn eq $QUEUE_RUNSCAN);
+
+		$nxt = queue_scanone($rrn,$cronus);
+		push @newsooners, $rrn if($nxt < $nextscan);
+	}
+
+	#
+	# Schedule the next full scan.
+	#
+	push @newsooners, $QUEUE_RUNSCAN;
+
+	#
+	# Sort the new list of soon zones.  The sorting is done based
+	# on the amount of time before each zone's next event.
+	#
+	@newsooners = sort { $queue_eventtimes{$a} <=> $queue_eventtimes {$b} } @newsooners;
+
+	#
+	# Replace our soon list.
+	#
+	@queue_sooners = @newsooners;
+
+# queue_prtsooners();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_scanone()
+#
+# Purpose:	Find the number of seconds until the given zone's next event.
+#		The event time will be saved in the Big List o' Event Times.
+#
+sub queue_scanone
+{
+	my $rrn = shift;			# Rollrec name.
+	my $cronus = shift;			# Time to check.
+
+	my $next;				# Rollrec's next event time.
+
+	#
+	# Get the zone's next-event time.
+	#
+	$next = queue_evttime($rrn,$cronus);
+
+	#
+	# Set the zone's time data and return the value to our caller.
+	#
+	$queue_eventtimes{$rrn}	= $next;
+	return($next);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_evttime()
+#
+# Purpose:	Find the number of seconds until the given zone's next event.
+#		An event is either when a zone moves into key rollover or when
+#		a zone already in rollover moves to the next rollover phase.
+#
+#		If a zone is not in rollover, the event time is calculated by
+		
+#		We'll calculate this time based on the maximum TTL in the
+#		zone's signed zonefile.  However, if If the signed zonefile
+#		hasn't been modified since we last checked, we'll use the
+#		maximum TTL we saved the last time we noticed it had been
+#		updated.
+#
+sub queue_evttime
+{
+	my $rrn	   = shift;			# Name of rollrec to check.
+	my $cronus = shift;			# Time to calculate from.
+
+	my %rr;					# Rollrec hash.
+	my $rrr;				# Reference to rollrec.
+
+	my $zonefile;				# Zone file.
+	my @szstat;				# stat() info for signed zone.
+	my $maxttl;				# Zone's maximum TTL value.
+	my $phstart;				# Start of zone's phase.
+
+	my $endtime;				# End-date in seconds.
+	my $timediff;				# Time until expiration.
+
+	#
+	# Get the zone's rollrec.
+	#
+	$rrr = rollrec_fullrec($rrn);
+	%rr  = %$rrr;
+
+	#
+	# Get a few fields from the rollrec.
+	#
+	$zonefile = $rrr->{'zonefile'};
+	$phstart  = $rrr->{'phasestart'};
+
+	#
+	# If we're not in rollover, the event time is calculated based
+	# on key lifetime.
+	# If we are in rollover, the event time is calculated based on
+	# the maximum TTL of the zone's resource records.
+	#
+	if(($rr{'kskphase'} == 0) && ($rr{'zskphase'} == 0))
+	{
+		my $krf;			# Zone's keyrec filename.
+		my $krr;			# Zone's keyrec reference.
+		my @keys;			# Zone's key lists.
+		my $kwait;			# Time until KSK rollover.
+		my $zwait;			# Time until ZSK rollover.
+		my $kmin = -1;			# Minimum KSK lifetime.
+		my $zmin = -1;			# Minimum ZSK lifetime.
+
+		#
+		# Get the zone's keyrec.
+		#
+		$krf = $rrr->{'keyrec'};
+		keyrec_read($krf);
+		keyrec_close();
+
+		$krr = keyrec_fullrec($rrr->{'zonename'});
+
+		#
+		# Find the minimum key lifespan for the keys in the zone's
+		# Current KSK set.
+		#
+		@keys = split / /, keyrec_signset_keys($rrr->{'zonename'}, 'kskcur');
+		foreach my $key (@keys)
+		{
+			my $life = keyrec_recval($key,'ksklife');
+
+			$kmin = $life if($kmin == -1);
+			$kmin = $life if($life < $kmin);
+		}
+
+		#
+		# Find the minimum key lifespan for the keys in the zone's
+		# Current ZSK set.
+		#
+		@keys = split / /, keyrec_signset_keys($rrr->{'zonename'}, 'zskcur');
+		foreach my $key (@keys)
+		{
+			my $life = keyrec_recval($key,'zsklife');
+
+			$zmin = $life if($zmin == -1);
+			$zmin = $life if($life < $zmin);
+		}
+
+		#
+		# Figure out how long we have until the next rollover.
+		#
+		$kwait = ($rrr->{'ksk_rollsecs'} + $kmin) - $cronus;
+		$zwait = ($rrr->{'zsk_rollsecs'} + $zmin) - $cronus;
+
+		#
+		# Return the minimum time-until-rollover.
+		#
+		$timediff = ($kwait < $zwait) ? $kwait : $zwait;
+		return($timediff);
+	}
+
+	#
+	# If the signed zonefile hasn't been modified since we last
+	# checked, we'll use the maximum TTL we saved the last time
+	# we noticed it had been updated.
+	#
+	@szstat = stat($zonefile);
+	if($szstat[8] > $queue_signtimes{$rrn})
+	{
+		#
+		# Get the signed zonefile's maximum TTL and double it.
+		#
+		$maxttl	 = queue_maxttl($zonefile);
+		$maxttl	*= 2;
+
+		#
+		# Squirrel away some values we'll use later.
+		#
+		$queue_maxttls{$rrn}	= $maxttl;
+		$queue_signtimes{$rrn}	= $szstat[8];
+	}
+	else
+	{
+		$maxttl = $queue_maxttls{$rrn};
+		$queue_scanskips++;
+	}
+
+	#
+	# Get the zone's "next event" time by adding the start of its
+	# last phase-change to twice the maximum TTL.
+	#
+	$endtime  = str2time($phstart);
+	$endtime += $maxttl;
+
+	#
+	# Find the difference between the next-event time and now.
+	#
+	$timediff = $endtime - $cronus;
+
+	return($timediff)
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_maxttl()
+#
+# Purpose:	Determine the maximum TTL for the resource records in the zone
+#		we were given.  The max TTL will be returned to the caller.
+#
+sub queue_maxttl
+{
+	my $signdb = shift;		# Signed zone's db filename.
+
+	my $rrsref;			# Reference to zone's resource records.
+	my @rrs;			# Zone's resource records.
+	my $numrrs;			# Number of resource records in zone.
+	my $rrref;			# Reference to a resource record.
+	my %rr;				# A resource record to examine.
+	my $maxttl = -1;		# Zone's maximum time-to-live value.
+	my $ttl;			# Time-to-live value from a record.
+
+	#
+	# Ensure the zone file exists and is readable.
+	#
+	if((! -e $signdb) || (! -r $signdb))
+	{
+		return(-1);
+	}
+
+	#
+	# Get the zone's resource record collection.
+	#
+	$rrsref = Net::DNS::ZoneFile::Fast::parse(file => $signdb);
+
+	#
+	# Get the number of resource records in the zone.
+	#
+	@rrs = @$rrsref;
+	$numrrs = @rrs;
+
+	#
+	# Look at each resource record and save the largest value.
+	#
+	for(my $ind=0;$ind<$numrrs;$ind++)
+	{
+		$rrref = $rrs[$ind];
+		%rr = %$rrref;
+
+		$ttl = $rr{'ttl'};
+		$maxttl = $ttl if($ttl > $maxttl);
+	}
+
+	#
+	# Return the zone's maximum TTL value to our caller.
+	#
+	return($maxttl);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_prteventtimes()
+#
+sub queue_prteventtimes
+{
+	foreach my $rrn (@queue_allzones)
+	{
+		my $rrr;
+		my $kpflag;
+		my $zpflag;
+
+		$rrr = rollrec_fullrec($rrn);
+
+		$kpflag = $rrr->{'kskphase'};
+		$zpflag = $rrr->{'zskphase'};
+		if($kpflag)
+		{
+			rolllog_log(LOG_ALWAYS,"","\t$rrn\t$queue_eventtimes{$rrn}\tksk expired\n");
+		}
+		elsif($zpflag)
+		{
+			rolllog_log(LOG_ALWAYS,"","\t$rrn\t$queue_eventtimes{$rrn}\tzsk expired\n");
+		}
+		else
+		{
+			rolllog_log(LOG_ALWAYS,"","\t$rrn\t$queue_eventtimes{$rrn}\tnormal\n");
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	queue_prtsooners()
+#
+sub queue_prtsooners
+{
+	my $maxind;					# Last index to check.
+	my $rrn;					# Zone name.
+
+	rolllog_log(LOG_ALWAYS,"","queue_sooners (" . @queue_sooners . " entries):\n");
+
+	$maxind = (@queue_sooners < 30) ? @queue_sooners : 30;
+
+	for(my $ind=0; $ind < $maxind; $ind++)
+	{
+		$rrn = $queue_sooners[$ind];
+		rolllog_log(LOG_ALWAYS,"","    <$rrn>      $queue_eventtimes{$rrn} seconds until event\n");
+	}
+
+	$rrn = "$QUEUE_RUNSCAN";
+	rolllog_log(LOG_ALWAYS,"","    <$rrn>      $queue_eventtimes{$rrn} seconds until event\n");
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      queue_rolleve()
+#
+# Purpose	Handle the rollover event for a single rollrec entry.
+#
+sub queue_rollevent
+{
+	my $rname = shift;		# Rollrec to handle.
+	my $rrr;			# Reference to rollrec.
+	my %rr;				# Rollrec hash.
+
+	rolllog_log(LOG_TMI,$rname,"queue_rollevent:  rolling $rname");
+
+	#
+	# Return to our execution directory.
+	#
+#	rolllog_log(LOG_TMI,$rname,"execution directory:  chdir($xqtdir)");
+	chdir($xqtdir);
+
+	#
+	# Ensure the logging level is set correctly.
+	#
+	$loglevel = $loglevel_save;
+
+	#
+	# Get the rollrec for this name.  If it doesn't have one, whinge and
+	# continue to the next rollrec.
+	# (This should never happen, but...)
+	#
+	$rrr = rollrec_fullrec($rname);
+	if(!defined($rrr))
+	{
+		rolllog_log(LOG_ERR,$rname,"no rollrec defined for zone");
+		return;
+	}
+	%rr = %$rrr;
+
+	#
+	# Don't do anything with skip records.
+	#
+	if($rrr->{'rollrec_type'} eq "skip")
+	{
+		rolllog_log(LOG_TMI,$rname,"is a skip rollrec");
+		return;
+	}
+
+	#
+	# Set the logging level to the rollrec entry's level (if it has one)
+	# for the duration of processing this zone.
+	#
+	$loglevel_save = $loglevel;
+	if(defined($rr{'loglevel'}))
+	{
+		my $llev;			# Logging level.
+
+		$llev = rolllog_num($rr{'loglevel'});
+		if($llev != -1)
+		{
+			$loglevel = $llev;
+			rolllog_level($loglevel,0);
+		}
+		else
+		{
+			rolllog_log(LOG_ERR,$rname,"invalid rollrec logging level \"$rr{'loglevel'}\"");
+		}
+	}
+
+	#
+	# If this rollrec has a directory record, we'll move into that directory
+	# for execution.  If the chdir() fails, we'll skip this rollrec.
+	#
+	if(exists($rr{'directory'}))
+	{
+		my $rrdir = $rr{'directory'};
+
+		if(chdir($rrdir) == 0)
+		{
+			rolllog_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
+			return;
+		}
+		rolllog_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
+	}
+
+	#
+	# Ensure the record has the KSK and ZSK phase fields.
+	#
+	if($rr{'kskphase'} == -1)
+	{
+		rolllog_log(LOG_TMI,$rname,"new kskphase entry");
+		kskphase($rname,$rrr,0)
+	}
+	if($rr{'zskphase'} == -1)
+	{
+		rolllog_log(LOG_TMI,$rname,"new zskphase entry");
+		zskphase($rname,$rrr,0)
+	}
+
+	#
+	# If this zone's current KSK has expired, we'll get it rolling.
+	# 
+	if(ksk_expired($rname,$rrr,"kskcur"))
+	{
+		rolllog_log(LOG_TMI,$rname,"current KSK has expired\n") if($rr{'zskphase'} == 0);
+
+		ksk_phaser($rname,$rrr);
+	}
+	else
+	{
+		rolllog_log(LOG_TMI,$rname,"current KSK still valid");
+	}
+
+	#
+	# If this zone's current ZSK has expired, we'll get it rolling.
+	# 
+	if(zsk_expired($rname,$rrr,"zskcur"))
+	{
+		rolllog_log(LOG_INFO,$rname,"current ZSK has expired\n") if($rr{'zskphase'} == 0);
+		zsk_phaser($rname,$rrr);
+	}
+	else
+	{
+		rolllog_log(LOG_TMI,$rname,"current ZSK still valid");
+	}
+
+	#
+	# If -alwayssign was specified, always sign the zone, even if we
+	# didn't need to for this period.
+	#
+
+	#
+	# XXX:  This could double sign if some of the above steps already
+	#	signed the zone.  We should only sign if nothing was done above.
+	#
+	if($alwayssign)
+	{
+		my $krr;		# Ref to keyrec data.
+		my $extraargs = "";	# Phase-dependent argument.
+
+		#
+		# This is only safe to do if we're not waiting for caches
+		# to expire.
+		#
+		if(($rrr->{'zskphase'} != 1) &&
+		   ($rrr->{'zskphase'} != 3) &&
+		   ($rrr->{'kskphase'} != 1) &&
+		   ($rrr->{'kskphase'} != 3))
+		{
+			rolllog_log(LOG_TMI,$rname, "Signing the zone $rrr->{'zonename'} (-alwayssign specified)");
+
+			#
+			# Check value and file existence, etc.
+			#
+			$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
+
+			#
+			# If we're in phases 2-3, make sure to use the
+			# Published ZSK.
+			#
+			if(($rrr->{'zskphase'} >= 2) &&
+			   ($rrr->{'zskphase'} <= 3))
+			{
+				$extraargs = "-usezskpub";
+			}
+
+			#
+			# KSK signing uses double-signature so nothing is needed
+			# since zonesigner always uses all available keys.
+			#
+
+			#
+			# Actually do the signing.
+			#
+			my $ret = signer($rname, "always-sign", $krr);
+			if($ret)
+			{
+				rolllog_log(LOG_ERR, "signing $rname failed!");
+			}
+		}
+		else
+		{
+			rolllog_log(LOG_TMI,$rname, "Not signing the zone $rrr->{'zonename'} (-alwayssign was specified but we're awaiting cache timeouts so we can't sign now)");
+		}
+	}
+
+	#
+	# Reset the logging level is set correctly.
+	#
+	$loglevel = $loglevel_save;
+	rolllog_level($loglevel,0);
+}
+
+#=============================================================================
+#=============================================================================
+#=============================================================================
+#=============================================================================
+#=============================================================================
+
 
 ###############################################################################
 
@@ -837,6 +1833,9 @@ return(0);
 	# Get the current time.
 	#
 	$cronus	 = time;
+
+$cronus = gmtime(time);
+$cronus = str2time($cronus);
 
 	#
 	# Figure out the log message we should give.
@@ -1332,6 +2331,9 @@ sub ksk_expired
 	# Get the current time.
 	#
 	$cronus	 = time;
+
+$cronus = gmtime(time);
+$cronus = str2time($cronus);
 
 	#
 	# Figure out the log message we should give.
@@ -1964,8 +2966,7 @@ sub holddownexpire
 	$curtempus = str2time($curtime);
 
 	#
-	# Get the phase's end time by adding its start time (in seconds)
-	# to the TTL.
+	# Get the phase's end time (in seconds) and add the hold-down.
 	#
 	$endtempus = str2time($phstart);
 	$endtempus += $holddowntime;
@@ -2032,6 +3033,9 @@ sub rollstamp
 	#
 	$timesecs = time();
 	$timestr  = gmtime($timesecs);
+
+$timestr = gmtime(time);
+$timesecs = str2time($timestr);
 
 	#
 	# Set the rollrec records to now and write the file.
@@ -2141,7 +3145,8 @@ sub zskphase
 	#
 	# Reset the phasestart field.
 	#
-	rollrec_settime($rname,0);
+#	rollrec_settime($rname,0);
+rollrec_settime($rname);
 	rollrec_write();
 	rollrec_close();
 	rollrec_read($rollrecfile);
@@ -2249,7 +3254,8 @@ sub kskphase
 	#
 	# Reset the phasestart field.
 	#
-	rollrec_settime($rname,0);
+#	rollrec_settime($rname,0);
+rollrec_settime($rname);
 	rollrec_write();
 	rollrec_close();
 	rollrec_read($rollrecfile);
@@ -2854,14 +3860,19 @@ sub bootmsg
 	}
 
 	rolllog_log(LOG_ALWAYS,"","$ME parameters:");
-	rolllog_log(LOG_ALWAYS,"","		rollrec file	\"$rollrecfile\"");
-	rolllog_log(LOG_ALWAYS,"","		directory	\"$xqtdir\"");
-	rolllog_log(LOG_ALWAYS,"","		config file	\"$dtconfig\"");
-	rolllog_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
-	rolllog_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
-	rolllog_log(LOG_ALWAYS,"","		logtz		\"$logtz\"");
-	rolllog_log(LOG_ALWAYS,"","		zone reload	\"$zoneload\"");
-	rolllog_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
+	rolllog_log(LOG_ALWAYS,"","	rollrec file	\"$rollrecfile\"");
+	rolllog_log(LOG_ALWAYS,"","	directory	\"$xqtdir\"");
+	rolllog_log(LOG_ALWAYS,"","	config file	\"$dtconfig\"");
+	rolllog_log(LOG_ALWAYS,"","	logfile		\"$logfile\"");
+	rolllog_log(LOG_ALWAYS,"","	loglevel	\"$loglevel\"");
+	rolllog_log(LOG_ALWAYS,"","	logtz		\"$logtz\"");
+	rolllog_log(LOG_ALWAYS,"","	single-run	\"$singlerun\"");
+	if($event_methods[$eventmaster] == $EVT_FULLLIST)
+	{
+		rolllog_log(LOG_ALWAYS,"","	sleeptime	\"$sleeptime\"");
+	}
+	rolllog_log(LOG_ALWAYS,"","	zone reload	\"$zoneload\"");
+	rolllog_log(LOG_ALWAYS,"","	event method	\"$event_methods[$eventmaster]\"");
 
 	if($username ne '')
 	{
@@ -3179,8 +4190,7 @@ sub sleeper_awake
 #-----------------------------------------------------------------------------
 # Routine:	sleeper_override()
 #
-# Purpose:	This routine forces rollerd to run its queue.  It does this
-#		by setting the elapsed-sleep-time equal to the time-to-sleep.
+# Purpose:	This routine sets the sleep-override flag.
 #
 sub sleeper_override
 {
@@ -3275,6 +4285,14 @@ sub commander
 		elsif($cmd eq ROLLCMD_RUNQUEUE())
 		{
 			cmd_runqueue($data);
+		}
+		elsif($cmd eq ROLLCMD_QUEUELIST())
+		{
+			cmd_queuelist($data);
+		}
+		elsif($cmd eq ROLLCMD_QUEUESTATUS())
+		{
+			cmd_queuestatus($data);
 		}
 		elsif($cmd eq ROLLCMD_SHUTDOWN())
 		{
@@ -3999,6 +5017,107 @@ sub cmd_runqueue
 	rolllog_log(LOG_INFO,'<command>',"checking rollrec queue");
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd checking rollrec queue");
 	sleeper_awake();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_queuelist()
+#
+# Purpose:	This command returns the soon queue.  The zones and times
+#		until their next events are returned.
+#
+sub cmd_queuelist
+{
+	my $zncnt;				# Number of zones we'll report.
+	my $outstr = '';			# Response to caller.
+
+	rolllog_log(LOG_TMI,'<command>',"queuelist command received");
+
+	#
+	# Ensure that this command makes sense to respond to.
+	#
+	if($eventmaster != $EVT_QUEUE_SOON)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_BADEVENT,"rollerd not running the queue-soon event handler");
+		return;
+	}
+
+	$zncnt = @queue_sooners - $queue_firstsoon;
+
+	$outstr = "Soon-Queue List  ($zncnt zones)\n";
+
+	for(my $ind = $queue_firstsoon; $ind < @queue_sooners; $ind++)
+	{
+		my $zn = $queue_sooners[$ind];
+		$outstr .= "    $zn    " . timetrans($queue_eventtimes{$zn}) . " until next event\n";
+	}
+
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outstr);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_queuestatus()
+#
+# Purpose:	This command returns the status of the queuing system.
+#
+sub cmd_queuestatus
+{
+	my $allcnt;			# Count of all zones we're managing.
+	my $sooncnt;			# Count of zones that will roll soon.
+	my $scantime;			# Time until next full scan.
+	my $nexttime;			# Time until next rollover event.
+	my $fprdtime;			# Time between full scans.
+	my $soonend;			# End of current soon period.
+
+	my $nextzone;			# Zone with next rollover event.
+	my $outstr;			# Response to caller.
+
+	rolllog_log(LOG_TMI,'<command>',"queuestatus command received");
+
+	#
+	# Ensure that this command makes sense to respond to.
+	#
+	if($eventmaster != $EVT_QUEUE_SOON)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_BADEVENT,"rollerd not running the queue-soon event handler");
+		return;
+	}
+
+	#
+	# Get the data we'll need...
+	#
+	$allcnt	  = @queue_allzones;
+	$sooncnt  = @queue_sooners;
+	$soonend  = time + $queue_eventtimes{$QUEUE_RUNSCAN};
+	$soonend  = localtime($soonend);
+
+	$scantime = timetrans($queue_eventtimes{$QUEUE_RUNSCAN});
+	$nextzone = $queue_sooners[$queue_firstsoon];
+
+	$nexttime = $queue_eventtimes{$nextzone};
+	if($nexttime <= 0)
+	{
+		$nexttime = "happening now";
+	}
+	else
+	{
+		$nexttime = "in " . timetrans($nexttime);
+	}
+
+	$fprdtime = timetrans($QUEUE_SOONLIMIT);
+
+	#
+	# ... and build a response.
+	#
+	$outstr  = "$event_methods[$eventmaster] queuing method\n";
+	$outstr  = "$fprdtime between FULL scans\n";
+	$outstr .= "$allcnt zones managed\n";
+	$outstr .= "$sooncnt zones with SOON rollover events\n";
+	$outstr .= "\n";
+	$outstr .= "next FULL zone scan in $scantime\n";
+	$outstr .= "end of current SOON scan period $soonend (local)\n";
+	$outstr .= "next rollover event $nexttime  ($nextzone)\n";
+
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outstr);
 }
 
 #-----------------------------------------------------------------------------
