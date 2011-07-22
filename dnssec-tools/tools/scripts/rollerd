@@ -572,10 +572,11 @@ sub rollkeys
 			# This is only safe to do if we're not waiting
 			# for caches to expire.
 			#
-			if (($rrr->{'zskphase'} != 1 &&
-			     $rrr->{'zskphase'} != 3 &&
-			     $rrr->{'kskphase'} != 1 &&
-			     $rrr->{'kskphase'} != 3) || $criticalsign) {
+			if((($rrr->{'zskphase'} != 1) &&
+			    ($rrr->{'zskphase'} != 3) &&
+			    ($rrr->{'kskphase'} != 1) &&
+			    ($rrr->{'kskphase'} != 3)) || $criticalsign)
+			{
 				rolllog_log(LOG_TMI,$rname, "Signing the zone $rrr->{'zonename'} (-alwayssign specified)");
 
 				#
@@ -593,9 +594,11 @@ sub rollkeys
 					$extraargs = "-usezskpub";
 				}
 
+				#
 				# KSK signing uses double-signature so nothing
 				# is needed since zonesigner always uses all
 				# available keys.
+				#
 
 				#
 				# Actually do the signing.
