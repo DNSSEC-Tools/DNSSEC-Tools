@@ -585,6 +585,16 @@ sub rollkeys
 		}
 
 		#
+		# If the zone's keyrec file doesn't exist, we'll try to
+		# create it with a simple zonesigner call.
+		#
+		if(! -e $rrr->{'keyrec'})
+		{
+			rolllog_log(LOG_ERR,$rname,"keyrec \"$rrr->{'keyrec'}\" does not exist; running initial zonesigner");
+			signer($rname, "initial", 0);
+		}
+
+		#
 		# Ensure the record has the KSK and ZSK phase fields.
 		#
 		if($rr{'kskphase'} == -1)
@@ -2766,7 +2776,7 @@ sub maxttl
 	#
 	if(! -e $signdb)
 	{
-		rolllog_log(LOG_ERR,$signdb,"zone file does not exist");
+		rolllog_log(LOG_ERR,$signdb,"zone file \"$signdb\" does not exist");
 		return(-1);
 	}
 
@@ -3282,6 +3292,7 @@ sub signer
 	my $zonefile;				# Zone file from keyrec.
 	my $zonesigned;				# Signed zone file from keyrec.
 	my $cmdstr;				# Command to be executed.
+	my $initial = 0;			# Initial-signing flag.
 
 	#
 	# Convert the caller's version of $zsflag into what it actually
@@ -3311,6 +3322,11 @@ sub signer
 	{
 		$zsflag = '-usezskpub';
 	}
+	elsif($zsflag eq 'initial')
+	{
+		$zsflag	 = '-genkeys';
+		$initial = 1;
+	}
 
 	#
 	# Get the rollrec for this name and check if there are any
@@ -3338,13 +3354,26 @@ sub signer
 	}
 
 	#
-	# Dig a few data out of the zone's keyrec file.
+	# Set up a few data for the zonesigner command.  Normally, these
+	# will be taken from the keyrec file.  In the unusual(?) case of
+	# needing an initial signing, these will be generated.
 	#
-	$zonefile = getkrval($rname,$krr,"zonefile");
-	return("") if($zonefile eq "");
+	if($initial)
+	{
+		$zonefile   = $rrr->{'zonename'};
+		$zonesigned = '';
+	}
+	else
+	{
+		#
+		# Dig a few data out of the zone's keyrec file.
+		#
+		$zonefile = getkrval($rname,$krr,"zonefile");
+		return("") if($zonefile eq "");
 
-	$zonesigned = getkrval($rname,$krr,"signedzone");
-	return("") if($zonesigned eq "");
+		$zonesigned = getkrval($rname,$krr,"signedzone");
+		return("") if($zonesigned eq "");
+	}
 
 	#
 	# Build the command to execute.
@@ -3981,8 +4010,12 @@ sub rrfchk
 		#
 		if(! -e $zonefile)
 		{
-			rolllog_log(LOG_ERR,$rname,"zonefile \"$zonefile\" does not exist");
-			$errs++;
+			rolllog_log(LOG_ERR,$rname,"keyrec \"$rrr->{'keyrec'}\" does not exist; running initial zonesigner");
+			if(signer($rname, "initial", 0) != 0)
+			{
+				rolllog_log(LOG_ERR,$rname,"unable to do an initial signing of zone");
+				$errs++;
+			}
 		}
 		if(! -e $keyrec)
 		{
@@ -6257,6 +6290,14 @@ The zones to be managed by B<rollerd> must be signed.  Use B<zonesigner> to
 create the signed zone files and the I<keyrec> files needed by B<rollerd>.
 The I<rollrec> file created in the next step B<must> use the I<keyrec> file
 names and the signed zone file names created here.
+
+This step is optional.  If it is bypassed, then (in step 4 and later)
+B<rollerd> will perform the initial key creation and zone signing of your
+zones using the defaults found in the DNSSEC-Tools configuration file.
+B<rollerd> determines if it must perform these initial operations by whether
+it can find the I<keyrec> file for a zone (as specified in the I<rollrec>
+file.  If it can't, it performs the initial operations; if it can, it assumes
+the zone's initial operations have been performed.
 
 =item 1. create I<rollrec> file
 
