@@ -5,34 +5,34 @@ newzsk-ns.test.dnssec-tools.org:
 	       See this web page for details: 
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
+pastdate-a.newzsk-ns.test.dnssec-tools.org:
+  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:288
+  Error:       RRSIG record for pastdate-a.newzsk-ns.test.dnssec-tools.org
+	       has expired
+
 pastdate-aaaa.newzsk-ns.test.dnssec-tools.org:
-  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:320
+  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:303
   Error:       RRSIG record for
 	       pastdate-aaaa.newzsk-ns.test.dnssec-tools.org has expired
 
-reverseddates-a.newzsk-ns.test.dnssec-tools.org:
-  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:327
-  Error:       RRSIG is nearing its expiration time
-
 reverseddates-aaaa.newzsk-ns.test.dnssec-tools.org:
-  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:343
+  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:358
   Error:       RRSIG is nearing its expiration time
 
-pastdate-a.newzsk-ns.test.dnssec-tools.org:
-  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:383
-  Error:       RRSIG record for pastdate-a.newzsk-ns.test.dnssec-tools.org
-	       has expired
+reverseddates-a.newzsk-ns.test.dnssec-tools.org:
+  Location:    db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified:374
+  Error:       RRSIG is nearing its expiration time
 
 futuredate-a.newzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.newzsk-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20110911130305
+	       future; after 20110926124306
 
 futuredate-aaaa.newzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.newzsk-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20110911130305
+	       after 20110926124306
 
 reverseddates-aaaa.newzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -60,7 +60,7 @@ addedlater-nosig-AAAA.newzsk-ns.test.dnssec-tools.org:
 pastdate-a.newzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.newzsk-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20110713125805
+	       20110728123806
 
 baddata-aaaa.newzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: baddata-aaaa.newzsk-ns.test.dnssec-tools.org
@@ -98,6 +98,6 @@ reverseddates-a.newzsk-ns.test.dnssec-tools.org:
 pastdate-aaaa.newzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-aaaa.newzsk-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature has expired since:
-	       20110713125805
+	       20110728123806
 
 21 errors found in db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified

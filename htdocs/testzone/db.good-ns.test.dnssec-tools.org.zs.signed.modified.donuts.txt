@@ -19,9 +19,9 @@ good-ns.test.dnssec-tools.org:
 	       See this web page for details: 
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
-pastdate-aaaa.good-ns.test.dnssec-tools.org:
+pastdate-a.good-ns.test.dnssec-tools.org:
   Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:320
-  Error:       RRSIG record for pastdate-aaaa.good-ns.test.dnssec-tools.org
+  Error:       RRSIG record for pastdate-a.good-ns.test.dnssec-tools.org
 	       has expired
 
 reverseddates-a.good-ns.test.dnssec-tools.org:
@@ -32,9 +32,9 @@ reverseddates-aaaa.good-ns.test.dnssec-tools.org:
   Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:343
   Error:       RRSIG is nearing its expiration time
 
-pastdate-a.good-ns.test.dnssec-tools.org:
+pastdate-aaaa.good-ns.test.dnssec-tools.org:
   Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:367
-  Error:       RRSIG record for pastdate-a.good-ns.test.dnssec-tools.org
+  Error:       RRSIG record for pastdate-aaaa.good-ns.test.dnssec-tools.org
 	       has expired
 
 addedlater-withsig-AAAA.good-ns.test.dnssec-tools.org:
@@ -54,7 +54,7 @@ badsign-a.good-ns.test.dnssec-tools.org:
 futuredate-aaaa.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-aaaa.good-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature may only be used in
-	       the future; after 20110911130255
+	       the future; after 20110926124301
 
 reverseddates-aaaa.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -68,7 +68,7 @@ reverseddates-a.good-ns.test.dnssec-tools.org:
 futuredate-a.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.good-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20110911130255
+	       future; after 20110926124301
 
 addedlater-nosig-AAAA.good-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.good-ns.test.dnssec-tools.org
@@ -87,7 +87,7 @@ badsign-aaaa.good-ns.test.dnssec-tools.org:
 pastdate-aaaa.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-aaaa.good-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature has expired since:
-	       20110713125755
+	       20110728123801
 
 addedlater-nosig-A.good-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-A.good-ns.test.dnssec-tools.org does
@@ -102,7 +102,7 @@ addedlater-nosig-A.good-ns.test.dnssec-tools.org:
 pastdate-a.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.good-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20110713125755
+	       20110728123801
 
 baddata-a.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: baddata-a.good-ns.test.dnssec-tools.org type:
