@@ -802,7 +802,7 @@ main(int argc, char *argv[])
 #if NO_OF_THREADS
             pthread_t tids[NO_OF_THREADS];
             struct thread_params_st 
-                threadparams = {context, tcs, tce, flags, testcase_config, suite, doprint, wait};
+                threadparams = {context, tcs, tce, flags, testcase_config, suite, doprint, wait, max_in_flight};
             int j;
                 
             for (j=0; j < NO_OF_THREADS; j++) {
