@@ -324,7 +324,7 @@ sub rollrec_read
 		if($keyword =~ /^cmd$/i)
 		{
 			#
-			# The line is used to issue a specific command to run
+			# The line is used to issue a specific command to run.
 			# We queue it for later processing.
 			#
 print STDERR "processing command: $value / $havecmdsalready\n";
@@ -332,7 +332,8 @@ print STDERR "processing command: $value / $havecmdsalready\n";
 
 			my $cmdtoload = $value;
 			my ($cmd, $arg) = ($cmdtoload =~ /^\s*(\w+)\s*(.*)$/);
-			$cmd = "rollcmd_" . $cmd;
+			$cmd = "rollcmd_" . $cmd if($cmd !~ /^rollcmd_/);
+ 
 
 			if(rollmgr_verifycmd($cmd) == 0)
 			{
