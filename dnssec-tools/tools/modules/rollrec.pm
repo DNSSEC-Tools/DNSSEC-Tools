@@ -84,9 +84,11 @@ our @EXPORT = qw(
 			rollrec_fullrec
 			rollrec_init
 			rollrec_lock
+			rollrec_merge
 			rollrec_names
 			rollrec_newrec
 			rollrec_read
+			rollrec_readfiles
 			rollrec_rectype
 			rollrec_recval
 			rollrec_rename
@@ -207,18 +209,10 @@ sub rollrec_unlock
 sub rollrec_read
 {
 	my $rrf = shift;		# Rollover record file.
-	my $name;			# Name of the rollrec.
 	my $rrcnt;			# Number of rollrecs we found.
 	my @sbuf;			# Buffer for stat().
-	my $havecmdsalready = 0;
 
 # print "rollrec_read:  down in\n";
-
-	#
-	# If we already have commands loaded, don't reload them.
-	#
-	my @currentcmds = rollmgr_getallqueuedcmds();
-	$havecmdsalready = 1 if ($#currentcmds > -1);
 
 	#
 	# Use the default rollrec file, unless the caller specified
@@ -261,10 +255,186 @@ sub rollrec_read
 	rollrec_init();
 
 	#
+	# Read the contents of the specified rollrec file.
+	#
+	rollrec_readfile(*ROLLREC);
+
+	#
+	# Return the number of rollrecs we found.
+	#
+	$rrcnt = keys(%rollrecs);
+	return($rrcnt);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_merge()
+#
+# Purpose:	Merge a set of DNSSEC-Tools rollrec files.  The contents are
+#		read into the @rollreclines array and the rollrecs are broken
+#		out into the %rollrecs hash table.
+#
+sub rollrec_merge
+{
+	my $firstrrf = shift;		# First rollrec file in list.
+	my @rrflist = @_;		# Set of rollover files.
+
+	my %allrrfs = ();		# All rollrec filenames to be merged.
+	my $errs = 0;			# Count of non-fatal errors.
+	my $rrcnt;			# Number of rollrecs we found.
+
+# print "rollrec_merge:  down in\n";
+
+	#
+	# Make sure a set of rollrec files was specified.
+	#
+	if((! defined($firstrrf)) || (@rrflist == 0))
+	{
+		err("no rollrec files given to merge\n",1);
+		return(-1);
+	}
+
+	#
+	# Build a hash of the rollrec file names and the number of times
+	# each is specified.
+	#
+	foreach my $fn ($firstrrf, @rrflist)
+	{
+		$allrrfs{$fn}++;
+	}
+
+	#
+	# Bump the error count if a file was listed multiple times.
+	#
+	foreach my $fn (keys(%allrrfs))
+	{
+		$errs++ if($allrrfs{$fn} > 1);
+	}
+
+	#
+	# If any file was listed multiple times, given an error and return.
+	#
+	if($errs)
+	{
+		err("unable to merge rollrec files since some rollrec files were given multiple times\n",1);
+		return(-5);
+	}
+
+	#
+	# Create a target file if the first rollrec file doesn't exist.
+	#
+	if(! -e $firstrrf)
+	{
+		if(open(TMP,"> $firstrrf") == 0)
+		{
+			err("rollrec_merge:  unable to create target rollrec file \"$firstrrf\"\n",1);
+			return(-2);
+		}
+		close(TMP);
+	}
+
+	#
+	# Read the first rollrec file.  This will also zap all our current
+	# internal data.
+	#
+	$allrrfs{$firstrrf}++;
+	if(rollrec_read($firstrrf) < 0)
+	{
+		return(-3);
+	}
+
+	#
+	# Read each remaining rollrec file and add it to our internal
+	# rollrec collection.
+	#
+	foreach my $rrf (@rrflist)
+	{
+		#
+		# Make sure the rollrec file exists.
+		#
+		if(! -e $rrf)
+		{
+			err("rollrec file \"$rrf\" does not exist\n",1);
+			$errs++;
+			next;
+		}
+
+		#
+		# Close the needed file handle.
+		#
+		close(ROLLREC_MERGE);
+
+		#
+		# Open up the rollrec file.
+		#
+		if(open(ROLLREC_MERGE,"< $rrf") == 0)
+		{
+			err("unable to open $rrf\n",1);
+			$errs++;
+			next;
+		}
+
+		#
+		# Read the contents of the specified rollrec file.
+		#
+		if(rollrec_readfile(*ROLLREC_MERGE) < 0)
+		{
+			$errs++;
+		}
+	}
+
+	#
+	# Close the file handle.
+	#
+	close(ROLLREC_MERGE);
+
+	#
+	# If we encountered errors while merging the files, we'll give
+	# an error and reset ourself.
+	#
+	if($errs)
+	{
+		err("unable to merge rollrec files due to errors\n",1);
+		rollrec_init();
+		return(-4);
+	}
+
+	#
+	# Write the new rollrec file.
+	#
+	$modified = 1;
+	rollrec_write();
+
+	#
+	# Return the number of rollrecs we found.
+	#
+	$rrcnt = keys(%rollrecs);
+	return($rrcnt);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_readfile()
+#
+# Purpose:	Read the specified rollrec file.  The contents are read into
+#		the @rollreclines array and the rollrecs are broken out into
+#		the %rollrecs hash table.
+#
+sub rollrec_readfile
+{
+	my $rfh = shift;			# File handle for rollrec file.
+	my $name;				# Name of the rollrec entry.
+	my $havecmdsalready = 0;
+
+	#
+	# If we already have commands loaded, don't reload them.
+	#
+	my @currentcmds = rollmgr_getallqueuedcmds();
+	$havecmdsalready = 1 if ($#currentcmds > -1);
+
+	#
 	# Grab the lines and pop 'em into the rollreclines array.  We'll also
 	# save each rollrec into a hash table for easy reference.
 	#
-	while(<ROLLREC>)
+	while(<$rfh>)
 	{
 		my $line;		# Line from the rollrec file.
 		my $keyword = "";	# Keyword from the line.
@@ -295,7 +465,7 @@ sub rollrec_read
 		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
 		$keyword = $1;
 		$value = $2;
-#		print "rollrec_read:  keyword <$keyword>\t\t<$value>\n";
+#		print "rollrec_readfile:  keyword <$keyword>\t\t<$value>\n";
 
 		#
 		# If the keyword is "roll", then we're starting a new record.
@@ -314,8 +484,8 @@ sub rollrec_read
 			if(exists($rollrecs{$name}))
 			{
 				rollrec_discard();
-				err("rollrec_read:  duplicate record name; aborting...\n",-1);
-				return(-3);
+				err("rollrec_readfile:  duplicate record name; aborting...\n",-1);
+				return(-1);
 			}
 			rollrec_newrec($keyword,$name);
 			next;
@@ -327,7 +497,8 @@ sub rollrec_read
 			# The line is used to issue a specific command to run.
 			# We queue it for later processing.
 			#
-print STDERR "processing command: $value / $havecmdsalready\n";
+print STDERR "rollrec_readfile:  processing command: $value / $havecmdsalready\n";
+
 			next if($havecmdsalready);
 
 			my $cmdtoload = $value;
@@ -337,7 +508,7 @@ print STDERR "processing command: $value / $havecmdsalready\n";
 
 			if(rollmgr_verifycmd($cmd) == 0)
 			{
-				err("rollrec_read: invalid command $cmdtoload\n", -1);
+				err("rollrec_readfile: invalid command $cmdtoload\n", -1);
 				next;
 			}
 
@@ -359,11 +530,7 @@ print STDERR "processing command: $value / $havecmdsalready\n";
 		$rollrecs{$name}{$keyword} = $value;
 	}
 
-	#
-	# Return the number of rollrecs we found.
-	#
-	$rrcnt = keys(%rollrecs);
-	return($rrcnt);
+	return(0);
 }
 
 #--------------------------------------------------------------------------
@@ -1253,7 +1420,7 @@ sub rollrec_close
 #
 sub rollrec_write
 {
-	my $writecmds = shift;  # write out the stored commands too
+	my $writecmds = shift;	# Boolean for saving unexecuted commands.
 	my $rrc = "";		# Concatenated rollrec file contents.
 	my $ofh;		# Old file handle.
 
@@ -1415,6 +1582,8 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   @rollrecfields = rollrec_fields();
 
   $default_file = rollrec_default();
+
+  $count = rollrec_merge("primary.rrf", "new0.rrf", "new1".rrf");
 
   rollrec_write();
   rollrec_close();
@@ -1593,6 +1762,34 @@ I<rollrec> synchronization file does not exist, it will be created.  If the
 process can't create the synchronization file, an error will be returned.
 Success or failure is returned.
 
+=item I<rollrec_merge(target_rollrec_file,rollrec_file2, ... rollrec_fileN)>
+
+This interface merges the specified I<rollrec> files.  It reads each file
+and parses them into a I<rollrec> hash table and a file-contents array.  The
+resulting merge is written to the file named by I<target_rollrec_file>.
+If another I<rollrec> is already open, it is saved and closed prior to
+opening the new I<rollrec>.
+
+If I<target_rollrec_file> is an existing I<rollrec> file, its contents will
+be merged with the other files passed to I<rollrec_merge()>.  If the file
+does not exist, I<rollrec_merge()> will create it and merge the remaining
+files into it.
+
+Upon success, I<rollrec_read()> returns the number of I<rollrec>s read from
+the file.
+
+Failure return values:
+
+    -1 no rollrec files were given to rollrec_merge
+
+    -2 unable to create target rollrec file
+
+    -3 unable to read first rollrec file
+
+    -4 an error occurred while reading the rollrec names
+
+    -5 rollrec files were duplicated in the list of rollrec files
+
 =item I<rollrec_names()>
 
 This routine returns a list of the I<rollrec> names from the file.
@@ -1600,13 +1797,16 @@ This routine returns a list of the I<rollrec> names from the file.
 =item I<rollrec_read(rollrec_file)>
 
 This interface reads the specified I<rollrec> file and parses it into a
-I<rollrec> hash table and a file contents array.  I<rollrec_read()> B<must> be
-called prior to any of the other B<rollrec.pm> calls.  If
-another I<rollrec> is already open, then it is saved and closed prior to
-opening the new I<rollrec>.
+I<rollrec> hash table and a file-contents array.  I<rollrec_read()> B<must> be
+called prior to any of the other B<rollrec.pm> calls.  If another I<rollrec>
+is already open, it is saved and closed prior to opening the new I<rollrec>.
 
 I<rollrec_read()> attempts to open the I<rollrec> file for reading and
 writing.  If this fails, then it attempts to open the file for reading only.
+
+I<rollrec_read()> is a front-end for I<rollrec_readfile()>.  It sets up the
+module's saved data in preparation for reading a new I<rollrec> file.  These
+house-keeping actions are not performed by I<rollrec_readfile()>.
 
 Upon success, I<rollrec_read()> returns the number of I<rollrec>s read from
 the file.
@@ -1618,6 +1818,19 @@ Failure return values:
     -2 unable to open rollrec file
 
     -3 duplicate rollrec names in file
+
+=item I<rollrec_readfile(rollrec_file_handle)>
+
+This interface reads the specified file handle to a I<rollrec> file and
+parses the file contents into a I<rollrec> hash table and a file-contents
+array.  The hash table and file-contents array are B<not> cleared prior
+to adding data to them.
+
+Upon success, I<rollrec_read()> returns zero.
+
+Failure return values:
+
+    -1 duplicate rollrec names in file
 
 =item I<rollrec_rectype(rollrec_name,rectype)>
 
