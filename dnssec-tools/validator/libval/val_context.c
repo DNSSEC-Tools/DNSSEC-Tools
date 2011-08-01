@@ -416,7 +416,6 @@ val_free_context(val_context_t * context)
      */
     LOCK_DEFAULT_CONTEXT();
     if (ctx == the_default_context) {
-        CTX_UNLOCK_POL(ctx);
         ctx = NULL;
     }
     UNLOCK_DEFAULT_CONTEXT();
@@ -425,7 +424,6 @@ val_free_context(val_context_t * context)
         return;
 
 #ifndef VAL_NO_THREADS
-    CTX_UNLOCK_POL(context);
     CTX_LOCK_POL_EX(context);
     pthread_rwlock_destroy(&context->pol_rwlock);
     pthread_mutex_destroy(&context->ac_lock);
