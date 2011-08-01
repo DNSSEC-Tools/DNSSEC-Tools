@@ -376,33 +376,24 @@ clear_query_chain_structure(val_context_t *context,
 
     *cleared = 0;
 
-    /* 
-     * release existing shared lock on the query 
-     * and try to grab an exclusive lock 
-     */
-    UNLOCK_QC(query);
-    //val_log(context, LOG_DEBUG, "releasing lock for %x", query); 
+    /* Try to upgrade to an exclusive lock if we can */
     //val_log(context, LOG_DEBUG, "acquiring exclusive lock for %x", query); 
-
-    /* Try to acquire the exclusive log if we can */
+    UNLOCK_QC(query);
     if (!TRY_LOCK_QC_EX(query)) {
         //val_log(context, LOG_DEBUG, "could not acquire exclusive lock for %x", query); 
-        //val_log(context, LOG_DEBUG, "acquiring shared lock for %x", query); 
         LOCK_QC_SH(query);
         return VAL_NO_ERROR;
     }
 
     /* we should be holding an exclusive lock at this point */
-
     *cleared = 1;
     _release_query_chain_structure(query);
     init_query_chain_node(query);
 
-    /* release exclusive and get the shared lock instead */
+    /* release exclusive lock */
     UNLOCK_QC(query);
-    //val_log(context, LOG_DEBUG, "releasing lock for %x", query); 
-    //val_log(context, LOG_DEBUG, "acquiring shared lock for %x", query); 
     LOCK_QC_SH(query);
+    //val_log(context, LOG_DEBUG, "releasing lock for %x", query); 
 
     return VAL_NO_ERROR;
 }
@@ -6253,8 +6244,6 @@ val_resolve_and_check(val_context_t * ctx,
     if (context == NULL)
         return VAL_INTERNAL_ERROR;
   
-    CTX_LOCK_RESPOL_SH(context);
-    CTX_LOCK_VALPOL_SH(context);
     CTX_LOCK_ACACHE(context);
    
     if (VAL_NO_ERROR != (retval =
@@ -6265,6 +6254,8 @@ val_resolve_and_check(val_context_t * ctx,
         goto err;
     }
     top_q = added_q;
+
+    /* XXX if this query is already active we should wait till it finishes */
         
     data_missing = 1;
     data_received = 0;
@@ -6381,18 +6372,11 @@ val_resolve_and_check(val_context_t * ctx,
 
   err:
     CTX_UNLOCK_ACACHE(context);
-    CTX_UNLOCK_RESPOL(context);
-    CTX_UNLOCK_VALPOL(context);
+    CTX_UNLOCK_POL(context);
 
     _free_w_results(w_results);
     w_results = NULL;
     free_qfq_chain(context, queries);
-
-    /*
-     * if we allocated new context, free it
-     */
-    if (ctx != context)
-        val_free_context(context);
 
     return retval;
 }
@@ -6588,8 +6572,6 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
 
     flags |= VAL_QUERY_ASYNC;
 
-    CTX_LOCK_RESPOL_SH(context);
-    CTX_LOCK_VALPOL_SH(context);
     CTX_LOCK_ACACHE(context);
 
     retval = add_to_qfq_chain(context, &as->val_as_queries,
@@ -6660,8 +6642,6 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     }
 
     CTX_UNLOCK_ACACHE(context);
-    CTX_UNLOCK_VALPOL(context);
-    CTX_UNLOCK_RESPOL(context);
 
     *async_status = as;
 
@@ -6806,8 +6786,6 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
     if (NULL == context->as_list)
         return VAL_NO_ERROR;
 
-    CTX_LOCK_RESPOL_SH(context);
-    CTX_LOCK_VALPOL_SH(context);
     CTX_LOCK_ACACHE(context);
 
     for (as = context->as_list; as; as = next) {
@@ -6830,13 +6808,12 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
     }
 
     CTX_UNLOCK_ACACHE(context);
-    CTX_UNLOCK_RESPOL(context);
-    CTX_UNLOCK_VALPOL(context);
 
     /*
      * call callback for completed queries
      */
     while (completed) {
+        CTX_UNLOCK_POL(context);
         as = completed;
         completed = completed->val_as_next;
         if (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&

@@ -7,54 +7,32 @@
 
 #ifndef VAL_NO_THREADS
 
-#define CTX_LOCK_RESPOL_SH(ctx) do { \
-    if (0 != pthread_rwlock_rdlock(&ctx->respol_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-#define CTX_LOCK_RESPOL_EX(ctx) do { \
-    if (0 != pthread_rwlock_wrlock(&ctx->respol_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-#define CTX_UNLOCK_RESPOL(ctx) do { \
-    if (0 != pthread_rwlock_unlock(&ctx->respol_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-#define CTX_LOCK_VALPOL_SH(ctx) do { \
-    if (0 != pthread_rwlock_rdlock(&ctx->valpol_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-#define CTX_LOCK_VALPOL_EX(ctx) do { \
-    if (0 != pthread_rwlock_wrlock(&ctx->valpol_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-#define CTX_UNLOCK_VALPOL(ctx) do { \
-    if (0 != pthread_rwlock_unlock(&ctx->valpol_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-
-#define CTX_LOCK_ACACHE(ctx) do {\
-    if (0 != pthread_mutex_lock(&ctx->ac_lock))\
-        return VAL_INTERNAL_ERROR;\
-} while(0);
-
-#define CTX_UNLOCK_ACACHE(ctx) do {\
-    if (0 != pthread_mutex_unlock(&ctx->ac_lock))\
-        return VAL_INTERNAL_ERROR;\
-} while(0);
+#define CTX_LOCK_POL_SH(ctx) \
+    do {\
+        pthread_rwlock_rdlock(&ctx->pol_rwlock);\
+    } while (0)
+#define CTX_LOCK_POL_EX(ctx) \
+    do {\
+        pthread_rwlock_wrlock(&ctx->pol_rwlock);\
+    } while (0)
+#define CTX_UNLOCK_POL(ctx) \
+    do {\
+        pthread_rwlock_unlock(&ctx->pol_rwlock);\
+    } while (0)
+#define CTX_LOCK_ACACHE(ctx)\
+    pthread_mutex_lock(&ctx->ac_lock)
+#define CTX_UNLOCK_ACACHE(ctx)\
+    pthread_mutex_unlock(&ctx->ac_lock)
 
 #else
 
-#define CTX_LOCK_RESPOL_SH(ctx) 
-#define CTX_LOCK_RESPOL_EX(ctx)
-#define CTX_UNLOCK_RESPOL(ctx)
-#define CTX_LOCK_VALPOL_SH(ctx)
-#define CTX_LOCK_VALPOL_EX(ctx)
-#define CTX_UNLOCK_VALPOL(ctx)
+#define CTX_LOCK_POL_SH(ctx) 
+#define CTX_LOCK_POL_EX(ctx)
+#define CTX_UNLOCK_POL(ctx) 
 #define CTX_LOCK_ACACHE(ctx) 
-#define CTX_UNLOCK_ACACHE(ctx) 
+#define CTX_UNLOCK_ACACHE(ctx)
 
 #endif /*VAL_NO_THREADS*/
-
 
 
 int             val_create_context_with_conf(char *label,
@@ -66,10 +44,6 @@ int             val_create_context(char *label,
                                    val_context_t ** newcontext);
 val_context_t * val_create_or_refresh_context(val_context_t *ctx);
 void            val_free_context(val_context_t * context);
-int             val_refresh_resolver_policy(val_context_t * context);
-int             val_refresh_validator_policy(val_context_t * context);
-int             val_refresh_root_hints(val_context_t * context);
-int             val_refresh_context(val_context_t *context);
 int             val_free_validator_state(void);
 
 #ifndef VAL_NO_ASYNC

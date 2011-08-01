@@ -17,6 +17,7 @@
 
 #include "val_policy.h"
 #include "val_parse.h"
+#include "val_context.h"
 
 #if !HAVE_FREEADDRINFO
 
@@ -846,14 +847,10 @@ val_getaddrinfo(val_context_t * context,
     int trusted = 0;
     val_context_t *ctx = NULL;
     
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            val_log(ctx, LOG_DEBUG, "val_getaddrinfo: context could not be created");
-            return EAI_FAIL; 
-        } 
-    } else {
-        ctx = context;
-    }
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL) 
+        return EAI_FAIL;
+
     val_log(ctx, LOG_DEBUG,
             "val_getaddrinfo called with nodename = %s, servname = %s",
             nodename == NULL ? "(null)" : nodename,
@@ -865,8 +862,10 @@ val_getaddrinfo(val_context_t * context,
             local_ans_status = VAL_TRUSTED_ANSWER;
         }
     }
-    if (res == NULL || val_status == NULL)
-        return 0;
+    if (res == NULL || val_status == NULL) {
+        retval = 0;
+        goto done;
+    }
 
     *res = NULL;
     *val_status = VAL_UNTRUSTED_ANSWER;
@@ -885,7 +884,8 @@ val_getaddrinfo(val_context_t * context,
      * Check that at least one of nodename or servname is non-NULL
      */
     if (NULL == nodename && NULL == servname) {
-        return EAI_NONAME;
+        retval = EAI_NONAME;
+        goto done;
     }
 
     /*
@@ -907,13 +907,15 @@ val_getaddrinfo(val_context_t * context,
         struct sockaddr_in *saddr4 =
             (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
         if (saddr4 == NULL) {
-            return EAI_MEMORY;
+            retval = EAI_MEMORY;
+            goto done;
         }
         ainfo4 =
             (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (ainfo4 == NULL) {
             free(saddr4);
-            return EAI_MEMORY;
+            retval = EAI_MEMORY;
+            goto done;
         }
 
         memset(ainfo4, 0, sizeof(struct addrinfo));
@@ -932,7 +934,7 @@ val_getaddrinfo(val_context_t * context,
             freeaddrinfo(ainfo4);
             val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
-            return retval;
+            goto done;
         }
 
         *res = ainfo4;
@@ -959,13 +961,15 @@ val_getaddrinfo(val_context_t * context,
         struct sockaddr_in6 *saddr6 =
             (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
         if (saddr6 == NULL) {
-            return EAI_MEMORY;
+            retval = EAI_MEMORY;
+            goto done;
         }
         ainfo6 =
             (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (ainfo6 == NULL) {
             free(saddr6);
-            return EAI_MEMORY;
+            retval = EAI_MEMORY;
+            goto done;
         }
 
         memset(ainfo6, 0, sizeof(struct addrinfo));
@@ -984,7 +988,7 @@ val_getaddrinfo(val_context_t * context,
             freeaddrinfo(ainfo6);
             val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
-            return retval;
+            goto done;
         }
 
         if (NULL != *res) {
@@ -998,7 +1002,7 @@ val_getaddrinfo(val_context_t * context,
 
     if (*res) {
         *val_status = VAL_TRUSTED_ANSWER;
-        return retval;
+        goto done;
     } 
     if (nodename) {
 
@@ -1007,8 +1011,10 @@ val_getaddrinfo(val_context_t * context,
          * address, get its information from local store or from dns
          * or return error if AI_NUMERICHOST specified
          */
-        if (cur_hints->ai_flags & AI_NUMERICHOST)
-            return EAI_NONAME;
+        if (cur_hints->ai_flags & AI_NUMERICHOST) {
+            retval = EAI_NONAME;
+            goto done;
+        }
         /*
          * First check ETC_HOSTS file
          * * XXX: TODO check the order in the ETC_HOST_CONF file
@@ -1030,6 +1036,8 @@ val_getaddrinfo(val_context_t * context,
         }
     }
 
+done:
+    CTX_UNLOCK_POL(ctx);
     return retval;
 
 }                               /* val_getaddrinfo() */
@@ -1174,20 +1182,16 @@ val_getnameinfo(val_context_t * context,
     char            domain_string[NS_MAXDNAME], number_string[NS_MAXDNAME];
     const u_char   *theAddress = NULL;
     int             theAddressFamily;
-    int             val_rnc_status = 0, ret_status = 0;
+    int             retval = 0, ret_status = 0;
 
     struct val_answer_chain *res;
     struct val_answer_chain *val_res = NULL;
-    int retval;
     val_context_t *ctx = NULL;
     
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            return EAI_FAIL; 
-        } 
-    } else {
-        ctx = context;
-    }
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL)
+        return EAI_FAIL;;
+
     val_log(ctx, LOG_DEBUG,
             "val_getnameinfo called with host = %s, serv = %s",
             host == NULL ? "(null)" : host,
@@ -1200,11 +1204,15 @@ val_getnameinfo(val_context_t * context,
      * check misc parameters, there should be at least one of host or
      * server, check if flags indicate host is required 
      */
-    if (!val_status || !sa)
-      return EAI_FAIL;
+    if (!val_status || !sa) {
+      retval = EAI_FAIL;
+      goto done;
+    }
 
-    if (!host && !serv) 
-      return EAI_NONAME;
+    if (!host && !serv) {
+      retval = EAI_NONAME;
+      goto done;
+    }
     
     /*
      * should the services be looked up 
@@ -1222,7 +1230,8 @@ val_getnameinfo(val_context_t * context,
 #endif
         else {
             val_log(ctx, LOG_DEBUG, "val_getnameinfo(): Address family %d not known.", sa->sa_family);
-            return EAI_FAMILY;
+            retval = EAI_FAMILY;
+            goto done;
         }
 
         val_log(ctx, LOG_DEBUG, 
@@ -1251,7 +1260,8 @@ val_getnameinfo(val_context_t * context,
      */
     if (!host || hostlen == 0) {
         *val_status = VAL_TRUSTED_ANSWER;
-        return 0;
+        retval = 0;
+        goto done;
     }
 
     /*
@@ -1284,7 +1294,8 @@ val_getnameinfo(val_context_t * context,
 #endif
     else {
         val_log(ctx, LOG_DEBUG, "val_getnameinfo(): Address family %d not known or length %d too small.", sa->sa_family, salen);
-        return (EAI_FAMILY);
+        retval = EAI_FAMILY;
+        goto done;
     }
 
     /*
@@ -1301,7 +1312,8 @@ val_getnameinfo(val_context_t * context,
         (0 != (ret_status =
              address_to_reverse_domain(theAddress, theAddressFamily,
                       domain_string, sizeof(domain_string))))) {
-            return ret_status;
+            retval = ret_status;
+            goto done;
     }
 
     /*
@@ -1314,7 +1326,8 @@ val_getnameinfo(val_context_t * context,
     if ((flags & NI_NUMERICHOST) && !(flags & NI_NAMEREQD)) {
         *val_status = VAL_TRUSTED_ANSWER;
         val_log(ctx, LOG_DEBUG, "val_getnameinfo(): returning host (%s)", host);
-        return 0;
+        retval = 0;
+        goto done;
     }
 
     val_log(ctx, LOG_DEBUG, "val_getnameinfo(): val_get_rrset host flags(%d)", flags);
@@ -1329,16 +1342,18 @@ val_getnameinfo(val_context_t * context,
                 "val_getnameinfo(): val_get_rrset failed - %s", 
                 p_val_err(retval));
         *val_status = VAL_UNTRUSTED_ANSWER;
-        return EAI_FAIL;
+        retval = EAI_FAIL;
+        goto done;
     }
 
     if (!val_res) {
         val_log(ctx, LOG_ERR, "val_getnameinfo(): EAI_MEMORY");
         *val_status = VAL_UNTRUSTED_ANSWER;
-        return EAI_MEMORY;
+        retval = EAI_MEMORY;
+        goto done;
     }
 
-    val_rnc_status = 0;
+    retval = 0;
 
     for (res = val_res; res; res=res->val_ans_next) {
         /* set the value of merged trusted and validated status values */
@@ -1359,9 +1374,9 @@ val_getnameinfo(val_context_t * context,
         } else if (val_does_not_exist(res->val_ans_status)) {
             if ((res->val_ans_status == VAL_NONEXISTENT_TYPE) ||
                     (res->val_ans_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
-                val_rnc_status = EAI_NODATA;
+                retval = EAI_NODATA;
             } else { 
-                val_rnc_status = EAI_NONAME;
+                retval = EAI_NONAME;
             }
             break;
         } 
@@ -1371,11 +1386,12 @@ val_getnameinfo(val_context_t * context,
     val_log(ctx, LOG_DEBUG,
           "val_getnameinfo(): val_get_rrset for host %s, returned %s with lookup status %d and validator status %d : %s",
           domain_string, host,
-          val_rnc_status, 
+          retval, 
           *val_status, p_val_status(*val_status));
 
-
-    return val_rnc_status;
+done:
+    CTX_UNLOCK_POL(ctx);
+    return retval;
 
 }                               // val_getnameinfo
 

@@ -291,8 +291,7 @@ extern          "C" {
          * policy is modified only when there is no
          * "active" val_resolve_and_check() call
          */
-        pthread_rwlock_t respol_rwlock;
-        pthread_rwlock_t valpol_rwlock;
+        pthread_rwlock_t pol_rwlock;
         /*
          * The mutex lock ensures that changes to the 
          * context cache can only be made by one thread
