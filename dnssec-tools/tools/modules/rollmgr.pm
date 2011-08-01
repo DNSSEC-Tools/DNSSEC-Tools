@@ -143,6 +143,8 @@ our @EXPORT = qw(
 			 ROLLCMD_ROLLZONE
 			 ROLLCMD_ROLLZSK
 			 ROLLCMD_RUNQUEUE
+			 ROLLCMD_QUEUELIST
+			 ROLLCMD_QUEUESTATUS
 			 ROLLCMD_SHUTDOWN
 			 ROLLCMD_SKIPALL
 			 ROLLCMD_SKIPZONE
@@ -163,6 +165,7 @@ our @EXPORT = qw(
 			 ROLLCMD_RC_NOZONES
 			 ROLLCMD_RC_BADZONE
 			 ROLLCMD_RC_BADZONEDATA
+			 ROLLCMD_RC_BADEVENT
 			 ROLLCMD_RC_KSKROLL
 			 ROLLCMD_RC_ZSKROLL
 			 ROLLCMD_RC_NOARGS
@@ -213,21 +216,23 @@ my $ROLLCMD_RC_DISPLAY		= 10;
 my $ROLLCMD_RC_KSKROLL		= 11;
 my $ROLLCMD_RC_ZSKROLL		= 12;
 my $ROLLCMD_RC_NOARGS		= 13;
+my $ROLLCMD_RC_BADEVENT		= 14;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);		};
-sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);		};
+sub ROLLCMD_RC_BADEVENT		{ return($ROLLCMD_RC_BADEVENT);		};
 sub ROLLCMD_RC_BADFILE		{ return($ROLLCMD_RC_BADFILE);		};
-sub ROLLCMD_RC_BADSLEEP		{ return($ROLLCMD_RC_BADSLEEP);		};
+sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);		};
 sub ROLLCMD_RC_BADROLLREC	{ return($ROLLCMD_RC_BADROLLREC);	};
+sub ROLLCMD_RC_BADSLEEP		{ return($ROLLCMD_RC_BADSLEEP);		};
 sub ROLLCMD_RC_BADTZ		{ return($ROLLCMD_RC_BADTZ);		};
-sub ROLLCMD_RC_RRFOPEN		{ return($ROLLCMD_RC_RRFOPEN);		};
-sub ROLLCMD_RC_NOZONES		{ return($ROLLCMD_RC_NOZONES);		};
 sub ROLLCMD_RC_BADZONE		{ return($ROLLCMD_RC_BADZONE);		};
 sub ROLLCMD_RC_BADZONEDATA	{ return($ROLLCMD_RC_BADZONEDATA);	};
 sub ROLLCMD_RC_DISPLAY		{ return($ROLLCMD_RC_DISPLAY);		};
 sub ROLLCMD_RC_KSKROLL		{ return($ROLLCMD_RC_KSKROLL);		};
-sub ROLLCMD_RC_ZSKROLL		{ return($ROLLCMD_RC_ZSKROLL);		};
 sub ROLLCMD_RC_NOARGS		{ return($ROLLCMD_RC_NOARGS);		};
+sub ROLLCMD_RC_NOZONES		{ return($ROLLCMD_RC_NOZONES);		};
+sub ROLLCMD_RC_RRFOPEN		{ return($ROLLCMD_RC_RRFOPEN);		};
+sub ROLLCMD_RC_ZSKROLL		{ return($ROLLCMD_RC_ZSKROLL);		};
 
 #
 # The remaining ROLLCMD_ entities are the rollmgr_sendcmd() commands
@@ -249,6 +254,8 @@ my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
 my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
 my $ROLLCMD_ROLLZSK	= "rollcmd_rollzsk";
 my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
+my $ROLLCMD_QUEUELIST	= "rollcmd_queuelist";
+my $ROLLCMD_QUEUESTATUS	= "rollcmd_queuestatus";
 my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
 my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
 my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
@@ -274,6 +281,8 @@ sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
 sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
 sub ROLLCMD_ROLLZSK		{ return($ROLLCMD_ROLLZSK);	};
 sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
+sub ROLLCMD_QUEUELIST		{ return($ROLLCMD_QUEUELIST);	};
+sub ROLLCMD_QUEUESTATUS		{ return($ROLLCMD_QUEUESTATUS);	};
 sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
 sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
 sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
@@ -302,6 +311,8 @@ my %roll_commands =
 	rollcmd_rollzone	=> 1,
 	rollcmd_rollzsk		=> 1,
 	rollcmd_runqueue	=> 1,
+	rollcmd_queuelist	=> 1,
+	rollcmd_queuestatus	=> 1,
 	rollcmd_shutdown	=> 1,
 	rollcmd_skipall		=> 1,
 	rollcmd_skipzone	=> 1,
