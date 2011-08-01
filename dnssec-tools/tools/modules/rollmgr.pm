@@ -2121,6 +2121,14 @@ The available commands and their required data are:
    ROLLCMD_LOGTZ	timezone	set timezone for log messages
    ROLLCMD_PHASEMSG	long/short	set long or short phase
 					messages
+   ROLLCMD_QUEUELIST	none		returns the names and next
+					event time of zones in the
+					"soon queue
+					(experimental)
+   ROLLCMD_QUEUESTATUS	none		returns information about
+  					the state of soon-queue
+  					processing
+					(experimental)
    ROLLCMD_ROLLALL	none		resume rollover for all
 					suspended zones
    ROLLCMD_ROLLALLZSKS	none		force all zones to start
