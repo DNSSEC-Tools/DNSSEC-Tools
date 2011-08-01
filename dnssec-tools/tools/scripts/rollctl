@@ -65,6 +65,8 @@ my @opts =
 	"rollzone",			# Restart the suspended, named zone(s).
 	"rollzsk",			# ZSK roll the specified zone(s).
 	"runqueue",			# Run the queue.
+	"queuelist",			# Get list of zones in the soon queue.
+	"queuestatus",			# Status of queue-soon event handler.
 	"shutdown",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
 	"skipzone",			# Stop the named zone(s) from rolling.
@@ -83,35 +85,37 @@ my @opts =
 #
 # Flags for the options.  Variable/option mapping should obvious.
 #
-my $commandcount  = 0;
+my $commandcount    = 0;
 
-my $dispflag	  = 0;
-my $dspubflag	  = 0;
-my $dspuballflag  = 0;
-my $logfileflag	  = 0;
-my $loglevelflag  = 0;
-my $logtzflag	  = 0;
-my $logphasemsg	  = '';
-my $nodispflag	  = 0;
-my $rollallflag	  = 0;
-my $rollkskflag	  = 0;
-my $rollrecflag	  = 0;
-my $rollzoneflag  = 0;
-my $rollzskflag	  = 0;
-my $runqueueflag  = 0;
-my $shutdownflag  = 0;
-my $skipallflag	  = 0;
-my $skipzoneflag  = 0;
-my $sleeptimeflag = 0;
-my $statusflag	  = 0;
-my $zonelogflag	  = 0;
-my $zonestatflag  = 0;
-my $zrollallflag  = 0;
-my $zsargsflag	  = 0;
-my $pidfile	  = '';
+my $dispflag	    = 0;
+my $dspubflag	    = 0;
+my $dspuballflag    = 0;
+my $logfileflag	    = 0;
+my $loglevelflag    = 0;
+my $logtzflag	    = 0;
+my $logphasemsg	    = '';
+my $nodispflag	    = 0;
+my $rollallflag	    = 0;
+my $rollkskflag	    = 0;
+my $rollrecflag	    = 0;
+my $rollzoneflag    = 0;
+my $rollzskflag	    = 0;
+my $runqueueflag    = 0;
+my $queuelistflag   = 0;
+my $queuestatusflag = 0;
+my $shutdownflag    = 0;
+my $skipallflag	    = 0;
+my $skipzoneflag    = 0;
+my $sleeptimeflag   = 0;
+my $statusflag	    = 0;
+my $zonelogflag	    = 0;
+my $zonestatflag    = 0;
+my $zrollallflag    = 0;
+my $zsargsflag	    = 0;
+my $pidfile	    = '';
 
-my $quiet	  = 0;
-my $version	  = 0;			# Display the version number.
+my $quiet	    = 0;
+my $version	    = 0;		# Display the version number.
 
 #######################################################################
 
@@ -502,7 +506,7 @@ sub main()
 	{
 		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_RUNQUEUE))
 		{
-			print STDERR "rollctl:  error sending command RUNQQUEUE\n";
+			print STDERR "rollctl:  error sending command RUNQUEUE\n";
 			exit(1);
 		}
 
@@ -517,6 +521,44 @@ sub main()
 			# Shouldn't ever get here...
 			#
 			print STDERR "couldn't force the rollrec queue:  $resp\n";
+			$rcret++;
+		}
+	}
+	elsif($queuelistflag)
+	{
+		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_QUEUELIST))
+		{
+			print STDERR "rollctl:  error sending command QUEUELIST\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp";
+		}
+		else
+		{
+			print STDERR "rollerd error response:  <$resp>\n";
+			$rcret++;
+		}
+	}
+	elsif($queuestatusflag)
+	{
+		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_QUEUESTATUS))
+		{
+			print STDERR "rollctl:  error sending command QUEUESTATUS\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp";
+		}
+		else
+		{
+			print STDERR "rollerd error response:  <$resp>\n";
 			$rcret++;
 		}
 	}
@@ -816,6 +858,16 @@ sub doopts
 	if(exists($options{'runqueue'}))
 	{
 		$runqueueflag = $options{'runqueue'};
+		$commandcount++;
+	}
+	if(exists($options{'queuelist'}))
+	{
+		$queuelistflag = $options{'queuelist'};
+		$commandcount++;
+	}
+	if(exists($options{'queuestatus'}))
+	{
+		$queuestatusflag = $options{'queuestatus'};
 		$commandcount++;
 	}
 	if(exists($options{'shutdown'}) || exists($options{'halt'}))
