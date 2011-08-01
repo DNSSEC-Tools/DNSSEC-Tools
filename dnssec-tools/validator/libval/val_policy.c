@@ -1778,10 +1778,8 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     if (ctx == NULL || is_override == NULL)
         return VAL_BAD_ARGUMENT;
     
-    CTX_LOCK_VALPOL_SH(ctx);
     if (ctx->dnsval_l && ctx->dnsval_l->dnsval_conf)
         base_dnsval_conf = strdup(ctx->dnsval_l->dnsval_conf);
-    CTX_UNLOCK_VALPOL(ctx);
     
     if (base_dnsval_conf == NULL) 
         return VAL_OUT_OF_MEMORY;
@@ -1845,20 +1843,20 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
             destroy_valpolovr(&overrides->next);
     } else { 
         /* clone the label */
-        newctxlab = (char *) MALLOC (strlen(label) + 1);
+        newctxlab = strdup(label); 
         if (newctxlab == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
-        strcpy(newctxlab, label);
     }
 
     if (label != scope) {
         /* check if the pointer has changed */
         *is_override = 1;
     }
-        
-    CTX_LOCK_VALPOL_EX(ctx);
+
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_EX(ctx);
 
     if (ctx->label)
         FREE(ctx->label);
@@ -1908,7 +1906,8 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
 
     ctx->dnsval_l = dlist;
 
-    CTX_UNLOCK_VALPOL(ctx);
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_SH(ctx);
 
     val_log(ctx, LOG_DEBUG, "read_val_config_file(): Done reading validator configuration");
 
@@ -2128,11 +2127,13 @@ read_res_config_file(val_context_t * ctx)
         }
     } 
 
-    CTX_LOCK_RESPOL_EX(ctx);
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_EX(ctx);
     destroy_respol(ctx);
     ctx->nslist = ns_head;
     ctx->r_timestamp = sb.st_mtime;
-    CTX_UNLOCK_RESPOL(ctx);
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_SH(ctx);
 
     val_log(ctx, LOG_DEBUG, 
             "read_res_config_file(): Done reading resolver configuration");
@@ -2403,12 +2404,14 @@ read_root_hints_file(val_context_t * ctx)
     }
 #endif
 
-    CTX_LOCK_RESPOL_EX(ctx);
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_EX(ctx);
     if (ctx->root_ns)
         free_name_servers(&ctx->root_ns);
     ctx->root_ns = ns_list;
     ctx->h_timestamp = sb.st_mtime;
-    CTX_UNLOCK_RESPOL(ctx);
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_SH(ctx);
 
     res_sq_free_rrset_recs(&root_info);
 
@@ -2603,7 +2606,6 @@ val_add_valpolicy(val_context_t *context,
     struct val_query_chain *q;
     policy_entry_t *pol_entry;
     val_context_t *ctx = NULL;
-    int retval;
 
     libval_policy_definition_t *libval_pol;
 
@@ -2617,15 +2619,8 @@ val_add_valpolicy(val_context_t *context,
         libval_pol->value == NULL)
         return VAL_BAD_ARGUMENT;
 
-    if (context == NULL) {
-        /* Set the policy for the default context */
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx)))
-            return retval;
-    } else
-        ctx = (val_context_t *) context;
-   
     *pol = NULL;
-    
+
     /* find the policy according to the keyword */
     for (index = 0; index < MAX_POL_TOKEN; index++) {
         if (!strcmp(libval_pol->keyword, conf_elem_array[index].keyword)) {
@@ -2653,7 +2648,6 @@ val_add_valpolicy(val_context_t *context,
     if (pol_entry == NULL) {
         return VAL_OUT_OF_MEMORY;
     }
-
     memcpy(pol_entry->zone_n, zone_n, wire_name_length(zone_n));
     pol_entry->exp_ttl = ttl_x;
     pol_entry->next = NULL;
@@ -2667,9 +2661,23 @@ val_add_valpolicy(val_context_t *context,
         return VAL_BAD_ARGUMENT;
     }
 
-    /* Lock appropriately */
-    CTX_LOCK_VALPOL_EX(ctx);
-    CTX_LOCK_ACACHE(ctx);
+    *pol = (val_policy_handle_t *) MALLOC (sizeof(val_policy_handle_t));
+    if (*pol == NULL) {
+        FREE(pol_entry);
+        return VAL_OUT_OF_MEMORY;
+    }
+
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL) { 
+        FREE(pol_entry);
+        FREE(*pol);
+        *pol = NULL;
+        return VAL_OUT_OF_MEMORY;
+    }
+   
+    /* Lock exclusively */
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_EX(ctx);
 
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
@@ -2680,23 +2688,15 @@ val_add_valpolicy(val_context_t *context,
                 q->qc_ttl_x = pol_entry->exp_ttl;
         }
     }
-    *pol = (val_policy_handle_t *) MALLOC (sizeof(val_policy_handle_t));
-    if (*pol == NULL) {
-        retval = VAL_OUT_OF_MEMORY;
-        goto err;
-    }
     (*pol)->pe = pol_entry;
     (*pol)->index = index;
 
     /* Merge this policy into the context */
     STORE_POLICY_ENTRY_IN_LIST(pol_entry, ctx->e_pol[index]);
-    retval = VAL_NO_ERROR;
     
-err:
-    CTX_UNLOCK_ACACHE(ctx);
-    CTX_UNLOCK_VALPOL(ctx);
-    
-    return retval;
+    CTX_UNLOCK_POL(ctx);
+
+    return VAL_NO_ERROR;
 }  
 
 int 
@@ -2710,16 +2710,13 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
     if (pol == NULL || pol->pe == NULL|| pol->index >= MAX_POL_TOKEN)
        return VAL_BAD_ARGUMENT; 
 
-    if (context == NULL) {
-        /* Get the policy for the default context */
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx)))
-            return retval;
-    } else
-        ctx = (val_context_t *) context;
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL)
+        return VAL_INTERNAL_ERROR;
     
-    /* Lock appropriately */
-    CTX_LOCK_VALPOL_EX(ctx);
-    CTX_LOCK_ACACHE(ctx);
+    /* Lock exclusively */
+    CTX_UNLOCK_POL(ctx);
+    CTX_LOCK_POL_EX(ctx);
 
     /* find this policy in the context */
     prev = NULL;
@@ -2758,8 +2755,7 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
     retval = VAL_NO_ERROR;
 
 err:
-    CTX_UNLOCK_ACACHE(ctx);
-    CTX_UNLOCK_VALPOL(ctx);
+    CTX_UNLOCK_POL(ctx);
     
     return retval;
 }
@@ -2768,24 +2764,20 @@ int
 val_is_local_trusted(val_context_t *context, int *trusted)
 {
     val_context_t *ctx = NULL;
-    int retval;
 
     if (trusted == NULL)
         return VAL_BAD_ARGUMENT;
 
-    if (context == NULL) {
-        /* Get the policy for the default context */
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx)))
-            return retval;
-    } else
-        ctx = (val_context_t *) context;
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL)
+        return VAL_INTERNAL_ERROR;
 
-    CTX_LOCK_VALPOL_SH(ctx);
     if (ctx && ctx->g_opt && ctx->g_opt->local_is_trusted)
         *trusted = 1;
     else
         *trusted = 0;
-    CTX_UNLOCK_VALPOL(ctx);
+
+    CTX_UNLOCK_POL(ctx);
 
     return VAL_NO_ERROR;    
 }

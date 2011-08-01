@@ -8,30 +8,24 @@
 
 #ifndef VAL_NO_THREADS
  
-#define LOCK_QC_SH(qc) do { \
-    if (0 != pthread_rwlock_rdlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
+#define LOCK_QC_SH(qc) \
+    pthread_rwlock_rdlock(&qc->qc_rwlock)
 
 #define TRY_LOCK_QC_EX(qc) \
    (0 == pthread_rwlock_trywrlock(&qc->qc_rwlock)) 
 
-#define LOCK_QC_EX(qc) do { \
-    if (0 != pthread_rwlock_wrlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
+#define LOCK_QC_EX(qc) \
+    pthread_rwlock_wrlock(&qc->qc_rwlock)
 
-#define UNLOCK_QC(qc) do { \
-    if (0 != pthread_rwlock_unlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
+#define UNLOCK_QC(qc) \
+    pthread_rwlock_unlock(&qc->qc_rwlock)
 
 #else
 
 #define LOCK_QC_SH(qc) 
 #define TRY_LOCK_QC_EX(qc) (1 == 1)
-#define LOCK_QC_EX(qc)
-#define UNLOCK_QC(qc)
+#define LOCK_QC_EX(qc) 
+#define UNLOCK_QC(qc) 
 
 #endif /*VAL_NO_THREADS*/
 

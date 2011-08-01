@@ -16,6 +16,7 @@
 
 #include "val_policy.h"
 #include "val_parse.h"
+#include "val_context.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"
@@ -570,13 +571,9 @@ val_gethostbyname2_r(val_context_t * context,
         goto err;
     }
 
-    if (context == NULL) {
-        if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
-            goto err; 
-        } 
-    } else {
-        ctx = context;
-    }
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL)
+        goto err; 
 
     if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
         if (trusted) {
@@ -717,6 +714,7 @@ val_gethostbyname2_r(val_context_t * context,
             goto err;
         } else {
             val_free_result_chain(results);
+            results = NULL;
             *h_errnop = NETDB_SUCCESS;
         }
 
@@ -731,8 +729,12 @@ err:
     }
     if (h_errnop) 
         *h_errnop = NO_RECOVERY;
-    val_log(ctx, LOG_DEBUG, "val_gethostbyname2_r returned failure, herrno = %d, val_status = %s", 
+
+    if (ctx) {
+        val_log(ctx, LOG_DEBUG, "val_gethostbyname2_r returned failure, herrno = %d, val_status = %s", 
                 *h_errnop, val_status? p_val_status(*val_status) : NULL); 
+        CTX_UNLOCK_POL(ctx);
+    }
     return (NO_RECOVERY);
 }
 
@@ -882,15 +884,6 @@ val_gethostbyaddr_r(val_context_t * context,
         return (NO_RECOVERY);
     }
 
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            *h_errnop = NO_RECOVERY;
-            return (NO_RECOVERY);
-        } 
-    } else {
-        ctx = context;
-    }
-    
     /*
      * default the input parameters 
      */
@@ -945,18 +938,26 @@ val_gethostbyaddr_r(val_context_t * context,
         return (NO_RECOVERY);
     }
 
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL) {
+        *h_errnop = NO_RECOVERY;
+        return (NO_RECOVERY);
+    }
+
     if (VAL_NO_ERROR != (retval = val_get_rrset(ctx,   /* val_context_t *  */
                                                 domain_string, /* domain name */ 
                                                 ns_c_in,   /* const u_int16_t q_class */
                                                 ns_t_ptr,  /* const u_int16_t type */
                                                 0,
                                                 &val_res))) { /* struct val_answer_chain **results */
-
         val_log(ctx, LOG_ERR, 
                 "val_gethostbyaddr_r(): val_get_rrset failed - %s", p_val_err(retval));
+        CTX_UNLOCK_POL(ctx);
         *h_errnop = NO_RECOVERY;
         return NO_RECOVERY;
     }
+
+    CTX_UNLOCK_POL(ctx);
 
     if (!val_res) {
         *h_errnop = NO_RECOVERY;
@@ -1092,17 +1093,7 @@ val_gethostbyaddr(val_context_t * context,
 
     struct hostent *result_hostent = NULL;
     int             errnum = 0;
-    val_context_t *ctx = NULL;
     
-    if (context == NULL) {
-        if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
-            SET_LAST_ERR(NO_RECOVERY);
-            return NULL;
-        } 
-    } else {
-        ctx = context;
-    }
-
     /*
      * set defaults for static values 
      */
@@ -1113,7 +1104,7 @@ val_gethostbyaddr(val_context_t * context,
     ret_hostent.h_length = 0;
     ret_hostent.h_addr_list = NULL;
 
-    int             response = val_gethostbyaddr_r(ctx,
+    int             response = val_gethostbyaddr_r(context,
                                                    addr, len, type,
                                                    &ret_hostent,
                                                    buffer, buflen,

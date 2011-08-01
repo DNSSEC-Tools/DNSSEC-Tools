@@ -16,6 +16,7 @@
 #include "val_cache.h"
 #include "val_support.h"
 #include "val_assertion.h"
+#include "val_context.h"
 
 #define OUTER_HEADER_LEN (sizeof(HEADER) + wire_name_length(name_n) + sizeof(u_int16_t) + sizeof(u_int16_t))
 
@@ -508,13 +509,9 @@ val_res_query(val_context_t * context,
         goto err;
     }
         
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            goto err;
-        } 
-    } else {
-        ctx = context;
-    }
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL)
+        goto err;
     
     val_log(ctx, LOG_DEBUG,
             "val_res_query(): called with dname=%s, class=%s, type=%s",
@@ -537,6 +534,7 @@ val_res_query(val_context_t * context,
         results = NULL;
     }
 
+    CTX_UNLOCK_POL(ctx);
 
     if (retval != VAL_NO_ERROR) {
         goto err;
@@ -580,13 +578,10 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     SET_LAST_ERR(NO_RECOVERY);
     //SET_LAST_ERR(NETDB_INTERNAL);
     
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            errno = EINVAL;
-            return -1;
-        } 
-    } else {
-        ctx = context;
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL) {
+        errno = EINVAL;
+        return -1;
     }
 
     val_log(ctx, LOG_DEBUG,
@@ -597,7 +592,8 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
         val_log(ctx, LOG_ERR, "val_res_search(%s, %d, %d): Error - %s", 
             dname, p_class(class_h), p_type(type), p_val_err(VAL_BAD_ARGUMENT));
         errno = EINVAL;
-        return -1;
+        retval = -1;
+        goto err;
     }
 
     /*
@@ -627,7 +623,7 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
                 ((retval == -1) && (GET_LAST_ERR() != HOST_NOT_FOUND))) {
                 if (save)
                     free(save);
-                return retval;
+                goto err;
             }
 
             if (*pos)
@@ -642,6 +638,9 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     /** try dname as-is */
     retval = val_res_query(ctx, dname, class_h, type, answer, anslen,
                            val_status);
+
+err:
+    CTX_UNLOCK_POL(ctx);
 
     return retval;
 }

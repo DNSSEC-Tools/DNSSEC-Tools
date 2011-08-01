@@ -11,6 +11,7 @@
 #include "validator-internal.h"
 
 #include "val_support.h"
+#include "val_context.h"
 
 void
 val_free_answer_chain(struct val_answer_chain *answers)
@@ -49,16 +50,8 @@ val_get_rrset(val_context_t *context,
     const char *n = NULL;
     int len;
     char *name_alias = NULL;
-    val_context_t *ctx = NULL;
     int trusted, validated;
-    
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            return retval;
-        } 
-    } else {
-        ctx = context;
-    }
+    val_context_t *ctx = NULL;
     
     if (name == NULL || answers == NULL) {
         return VAL_BAD_ARGUMENT;
@@ -67,6 +60,9 @@ val_get_rrset(val_context_t *context,
     *answers = NULL;
     last_ans = NULL;
    
+    ctx = val_create_or_refresh_context(context);
+    if (ctx == NULL)
+        return VAL_INTERNAL_ERROR;
 
     if ((retval = val_resolve_and_check(ctx, name, class, type, 
                                        flags,
@@ -74,10 +70,12 @@ val_get_rrset(val_context_t *context,
         val_log(ctx, LOG_INFO,
                 "get_addrinfo_from_dns(): val_resolve_and_check failed - %s",
                 p_val_err(retval));
+        CTX_UNLOCK_POL(ctx); 
+        return retval;
     }
+    CTX_UNLOCK_POL(ctx); 
 
     if (results == NULL) {
-        val_log(ctx, LOG_INFO, "val_get_rrset(): returned NULL result");
         /* Construct a single val_answer_chain with the untrusted status */
         ans = (struct val_answer_chain *) MALLOC (sizeof(struct val_answer_chain));
         if (ans == NULL) {

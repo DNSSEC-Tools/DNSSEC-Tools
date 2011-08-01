@@ -39,20 +39,144 @@ WSADATA wsaData;
 #ifndef VAL_NO_THREADS
 
 pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
+#define LOCK_DEFAULT_CONTEXT() \
+    pthread_mutex_lock(&ctx_default)
+#define UNLOCK_DEFAULT_CONTEXT() \
+    pthread_mutex_unlock(&ctx_default)
 
-#define LOCK_DEFAULT_CONTEXT() do {\
-    if (0 != pthread_mutex_lock(&ctx_default))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
-
-#define UNLOCK_DEFAULT_CONTEXT() do {\
-    if (0 != pthread_mutex_unlock(&ctx_default))\
-        return VAL_INTERNAL_ERROR;\
-} while (0)
 #else
 #define LOCK_DEFAULT_CONTEXT()
 #define UNLOCK_DEFAULT_CONTEXT()
 #endif
+
+/*
+ * re-read resolver policy into the context
+ */
+static int 
+val_refresh_resolver_policy(val_context_t * context)
+{
+    if (context == NULL) 
+        return VAL_NO_ERROR;
+
+    if (read_res_config_file(context) != VAL_NO_ERROR) {
+        context->r_timestamp = -1;
+        val_log(context, LOG_WARNING, 
+                "val_refresh_resolver_policy(): Resolver configuration could not be read; using older values");
+    }
+    return VAL_NO_ERROR; 
+}
+
+
+/*
+ * re-read validator policy into the context
+ */
+static int 
+val_refresh_validator_policy(val_context_t * context)
+{
+    struct dnsval_list *dnsval_l;
+    int is_override = 0;
+    val_context_t *old_default_context = NULL;
+    if (context == NULL) 
+        return VAL_NO_ERROR;
+
+    if (read_val_config_file(context, context->label, &is_override) != VAL_NO_ERROR) {
+        for(dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next)
+            dnsval_l->v_timestamp = -1;
+        val_log(context, LOG_WARNING, 
+                "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
+    }
+
+    LOCK_DEFAULT_CONTEXT();
+    if (is_override && (the_default_context != context)) {
+        old_default_context = the_default_context;
+        the_default_context = context;
+    }
+    UNLOCK_DEFAULT_CONTEXT();
+    
+    /* we've changed the default context, free the old one */
+    if (old_default_context) {
+        val_free_context(old_default_context);
+    }
+
+    return VAL_NO_ERROR; 
+}
+
+/*
+ * re-read root.hints policy into the context
+ */
+static int 
+val_refresh_root_hints(val_context_t * context)
+{
+    if (context == NULL)
+        return VAL_NO_ERROR;
+
+    if (read_root_hints_file(context) != VAL_NO_ERROR) {
+        context->h_timestamp = -1;
+        val_log(context, LOG_WARNING, 
+                "val_refresh_root_hints(): Root Hints could not be read; using older values");
+    }
+
+    return VAL_NO_ERROR;
+}
+/*
+ * Function: val_refresh_context
+ *
+ * Purpose:   set up context for a query
+ *
+ * Parameter: results -- results for query
+ *            ctx -- user supplied context, if any
+ *
+ * Returns:   VAL_NO_ERROR or error code to return to user
+ *
+ */
+static int
+val_refresh_context(val_context_t *context)
+{
+    struct stat rsb, vsb, hsb;
+    struct dnsval_list *dnsval_l;
+    int retval;
+
+    if (NULL == context)
+        return VAL_BAD_ARGUMENT;
+
+    CTX_LOCK_POL_SH(context);
+
+    GET_LATEST_TIMESTAMP(context, context->resolv_conf, context->r_timestamp,
+                         rsb);
+    if (rsb.st_mtime != 0 &&  rsb.st_mtime != context->r_timestamp) {
+        if (VAL_NO_ERROR != (retval = val_refresh_resolver_policy(context))) {
+            goto err;
+        }
+    }    
+    GET_LATEST_TIMESTAMP(context, context->root_conf, context->h_timestamp, hsb);
+    if (hsb.st_mtime != 0 &&  hsb.st_mtime != context->h_timestamp){
+        if (VAL_NO_ERROR != (retval = val_refresh_root_hints(context))) {
+            return retval;
+        }
+    }
+
+    /* dnsval.conf can point to a list of files */
+    for (dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next) {
+        GET_LATEST_TIMESTAMP(context,  dnsval_l->dnsval_conf, 
+                             dnsval_l->v_timestamp, vsb);
+        if (vsb.st_mtime != 0 &&  vsb.st_mtime != dnsval_l->v_timestamp) {
+            retval = val_refresh_validator_policy(context);
+            if (VAL_NO_ERROR != retval) {
+                goto err;
+            }
+            break;
+        }
+    }
+
+    CTX_UNLOCK_POL(context); 
+
+    return VAL_NO_ERROR;
+
+err:
+    CTX_UNLOCK_POL(context); 
+    return retval;
+
+}
 
 /*
  * Create a context with given configuration files
@@ -67,6 +191,7 @@ val_create_context_with_conf(char *label,
     int             retval;
     char *base_dnsval_conf = NULL;
     int is_override = 0;
+    val_context_t *old_default_context = NULL;
 
 #ifdef WIN32 
     if (!wsaInitialized) {
@@ -93,50 +218,46 @@ val_create_context_with_conf(char *label,
          (the_default_context->g_opt && 
           (the_default_context->g_opt->env_policy == VAL_POL_GOPT_OVERRIDE || 
            the_default_context->g_opt->app_policy == VAL_POL_GOPT_OVERRIDE)))) {
+
         *newcontext = the_default_context;
         UNLOCK_DEFAULT_CONTEXT();
-        val_log(*newcontext, LOG_INFO, "reusing default context");
-        return VAL_NO_ERROR;
-    }
 
-    /* we could be constructing a new default context, so hold on to the context lock */
+        /* have configuration files changed? */
+        if (VAL_NO_ERROR != (retval = val_refresh_context(*newcontext))) {
+            return retval;
+        }
+
+        val_log(*newcontext, LOG_INFO, "reusing default context");
+        return retval;
+    }
+    UNLOCK_DEFAULT_CONTEXT();
 
     *newcontext = (val_context_t *) MALLOC(sizeof(val_context_t));
     if (*newcontext == NULL) {
-        UNLOCK_DEFAULT_CONTEXT();
         return VAL_OUT_OF_MEMORY;
     }
     memset(*newcontext, 0, sizeof(val_context_t));
 
 #ifndef VAL_NO_THREADS
-    if (0 != pthread_rwlock_init(&(*newcontext)->respol_rwlock, NULL)) {
+    if (0 != pthread_rwlock_init(&(*newcontext)->pol_rwlock, NULL)) {
         FREE(*newcontext);
         *newcontext = NULL;
-        UNLOCK_DEFAULT_CONTEXT();
-        return VAL_INTERNAL_ERROR;
-    }
-    if (0 != pthread_rwlock_init(&(*newcontext)->valpol_rwlock, NULL)) {
-        pthread_rwlock_destroy(&(*newcontext)->respol_rwlock);
-        FREE(*newcontext);
-        *newcontext = NULL;
-        UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
     if (0 != pthread_mutex_init(&(*newcontext)->ac_lock, NULL)) {
-        pthread_rwlock_destroy(&(*newcontext)->respol_rwlock);
-        pthread_rwlock_destroy(&(*newcontext)->valpol_rwlock);
+        pthread_rwlock_destroy(&(*newcontext)->pol_rwlock);
         FREE(*newcontext);
         *newcontext = NULL;
-        UNLOCK_DEFAULT_CONTEXT();
         return VAL_INTERNAL_ERROR;
     }
 #endif
 
-        
     if (snprintf
         ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u",
          (unsigned) (*newcontext)) < 0)
         strcpy((*newcontext)->id, "libval");
+
+    CTX_LOCK_POL_SH((*newcontext));
 
     /* 
      * Set default configuration files 
@@ -207,23 +328,28 @@ val_create_context_with_conf(char *label,
         (*newcontext)->default_qflags |= VAL_QUERY_AC_DETAIL;
     }
 
+    CTX_UNLOCK_POL((*newcontext));
+
     val_log(*newcontext, LOG_DEBUG, 
             "val_create_context_with_conf(): Context created with %s %s %s", 
             (*newcontext)->dnsval_l->dnsval_conf,
             (*newcontext)->resolv_conf,
             (*newcontext)->root_conf);
 
+    LOCK_DEFAULT_CONTEXT();
     if (label == NULL || is_override) {
+        old_default_context = the_default_context;
         the_default_context = *newcontext;
     }
-    
-
     UNLOCK_DEFAULT_CONTEXT();
     
+    if (old_default_context) {
+        val_free_context(old_default_context);
+    }
     return VAL_NO_ERROR;
 
 err:
-    UNLOCK_DEFAULT_CONTEXT();
+    CTX_UNLOCK_POL((*newcontext));
     val_free_context(*newcontext);
     *newcontext = NULL;
     return retval;
@@ -239,15 +365,41 @@ val_create_context(char *label,
     return val_create_context_with_conf(label, NULL, NULL, NULL, newcontext);
 }
 
-static int 
-unlink_if_default_context(val_context_t *context)
+/*
+ * Function: val_create_or_refresh_context
+ *
+ * Purpose:   set up context for a query
+ *
+ * Parameter: results -- results for query
+ *            ctx -- user supplied context, if any
+ *
+ * Returns:   VAL_NO_ERROR or error code to return to user
+ *
+ */
+val_context_t *
+val_create_or_refresh_context(val_context_t *ctx)
 {
-    LOCK_DEFAULT_CONTEXT();
-    if (context == the_default_context)
-        the_default_context = NULL;
-    UNLOCK_DEFAULT_CONTEXT();
+    val_context_t *context = NULL;
+    int retval;
 
-    return VAL_NO_ERROR;
+    /*
+     * Create a default context if one does not exist
+     */
+    if (ctx == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
+            return NULL;
+    } else {
+        /* have configuration files changed? */
+        context = ctx;
+        if (VAL_NO_ERROR != (retval = val_refresh_context(context))) {
+            return NULL;
+        }
+    }
+
+    if (context)
+        CTX_LOCK_POL_SH(context);
+
+    return context;
 }
 
 /*
@@ -257,19 +409,25 @@ void
 val_free_context(val_context_t * context)
 {
     struct val_query_chain *q;
+    val_context_t *ctx = context;
 
-    if (context == NULL)
+    /*
+     * Never free the default context 
+     */
+    LOCK_DEFAULT_CONTEXT();
+    if (ctx == the_default_context) {
+        CTX_UNLOCK_POL(ctx);
+        ctx = NULL;
+    }
+    UNLOCK_DEFAULT_CONTEXT();
+
+    if (ctx == NULL)
         return;
 
-    unlink_if_default_context(context);
-    
-    /*
-     * Forget the NULL context if we are going to be freeing it shortly
-     */
-
 #ifndef VAL_NO_THREADS
-    pthread_rwlock_destroy(&context->respol_rwlock);
-    pthread_rwlock_destroy(&context->valpol_rwlock);
+    CTX_UNLOCK_POL(context);
+    CTX_LOCK_POL_EX(context);
+    pthread_rwlock_destroy(&context->pol_rwlock);
     pthread_mutex_destroy(&context->ac_lock);
 #endif
 
@@ -352,6 +510,8 @@ val_context_as_remove(val_context_t *context, val_async_status *as)
 
 /*
  * Free all internal state associated with the validator
+ * There should be no active contexts when this function
+ * is invoked.
  * Only used when testing if we have memory leaks
  */
 int
@@ -382,166 +542,3 @@ val_free_validator_state()
     return VAL_NO_ERROR;
 }
 
-/*
- * re-read resolver policy into the context
- */
-int 
-val_refresh_resolver_policy(val_context_t * context)
-{
-    if (context == NULL) 
-        return VAL_NO_ERROR;
-
-    if (read_res_config_file(context) != VAL_NO_ERROR) {
-        CTX_LOCK_RESPOL_EX(context);
-        context->r_timestamp = -1;
-        CTX_UNLOCK_RESPOL(context); 
-        val_log(context, LOG_WARNING, 
-                "val_refresh_resolver_policy(): Resolver configuration could not be read; using older values");
-    }
-    return VAL_NO_ERROR; 
-}
-
-
-/*
- * re-read validator policy into the context
- */
-int 
-val_refresh_validator_policy(val_context_t * context)
-{
-    struct dnsval_list *dnsval_l;
-    int is_override = 0;
-    if (context == NULL) 
-        return VAL_NO_ERROR;
-
-    if (read_val_config_file(context, context->label, &is_override) != VAL_NO_ERROR) {
-        CTX_LOCK_VALPOL_EX(context);
-        for(dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next)
-            dnsval_l->v_timestamp = -1;
-        CTX_UNLOCK_VALPOL(context); 
-        val_log(context, LOG_WARNING, 
-                "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
-    }
-
-    if (is_override) {
-        LOCK_DEFAULT_CONTEXT();
-        the_default_context = context;
-        UNLOCK_DEFAULT_CONTEXT();
-    }
-    
-    return VAL_NO_ERROR; 
-}
-
-/*
- * re-read root.hints policy into the context
- */
-int 
-val_refresh_root_hints(val_context_t * context)
-{
-    if (context == NULL)
-        return VAL_NO_ERROR;
-
-    if (read_root_hints_file(context) != VAL_NO_ERROR) {
-        CTX_LOCK_RESPOL_EX(context);
-        context->h_timestamp = -1;
-        CTX_UNLOCK_RESPOL(context); 
-        val_log(context, LOG_WARNING, 
-                "val_refresh_root_hints(): Root Hints could not be read; using older values");
-    }
-
-    return VAL_NO_ERROR;
-}
-
-/*
- * Function: val_refresh_context
- *
- * Purpose:   set up context for a query
- *
- * Parameter: results -- results for query
- *            ctx -- user supplied context, if any
- *
- * Returns:   VAL_NO_ERROR or error code to return to user
- *
- */
-int
-val_refresh_context(val_context_t *context)
-{
-    struct stat rsb, vsb, hsb;
-    struct dnsval_list *dnsval_l;
-    int retval;
-
-    if (NULL == context)
-        return VAL_BAD_ARGUMENT;
-
-    CTX_LOCK_RESPOL_SH(context);
-
-    GET_LATEST_TIMESTAMP(context, context->resolv_conf, context->r_timestamp,
-                         rsb);
-    if (rsb.st_mtime != 0 &&  rsb.st_mtime != context->r_timestamp) {
-        CTX_UNLOCK_RESPOL(context);
-        if (VAL_NO_ERROR != (retval = val_refresh_resolver_policy(context)))
-            return retval;
-        CTX_LOCK_RESPOL_SH(context);
-    }
-
-    GET_LATEST_TIMESTAMP(context, context->root_conf, context->h_timestamp, hsb);
-    if (hsb.st_mtime != 0 &&  hsb.st_mtime != context->h_timestamp){
-        CTX_UNLOCK_RESPOL(context);
-        if (VAL_NO_ERROR != (retval = val_refresh_root_hints(context)))
-            return retval;
-        CTX_LOCK_RESPOL_SH(context);
-    }
-
-    CTX_LOCK_VALPOL_SH(context);
-    /* dnsval.conf can point to a list of files */
-    for (dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next) {
-        GET_LATEST_TIMESTAMP(context,  dnsval_l->dnsval_conf, 
-                             dnsval_l->v_timestamp, vsb);
-        if (vsb.st_mtime != 0 &&  vsb.st_mtime != dnsval_l->v_timestamp) {
-            CTX_UNLOCK_VALPOL(context);
-            retval = val_refresh_validator_policy(context);
-            if (VAL_NO_ERROR != retval) {
-                CTX_UNLOCK_RESPOL(context);
-                return retval;
-            }
-            CTX_LOCK_VALPOL_SH(context);
-            break;
-        }
-    }
-    CTX_UNLOCK_VALPOL(context);
-    CTX_UNLOCK_RESPOL(context);
-
-    return VAL_NO_ERROR;
-}
-
-/*
- * Function: val_async_setup_context
- *
- * Purpose:   set up context for a query
- *
- * Parameter: results -- results for query
- *            ctx -- user supplied context, if any
- *
- * Returns:   VAL_NO_ERROR or error code to return to user
- *
- */
-val_context_t *
-val_create_or_refresh_context(val_context_t *ctx)
-{
-    val_context_t *context;
-    int retval;
-
-    /*
-     * Create a default context if one does not exist
-     */
-    if (ctx == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
-            return NULL;
-    } else {
-        /* have configuration files changed? */
-        context = ctx;
-        if (VAL_NO_ERROR != (retval = val_refresh_context(context)))
-            return NULL;
-    }
-
-    return context;
-}
