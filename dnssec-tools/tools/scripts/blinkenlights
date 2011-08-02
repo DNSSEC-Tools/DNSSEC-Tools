@@ -2454,6 +2454,8 @@ sub rollerdcmd
 	$zone	= $2;
 	$phase	= $3;
 
+# print "\nrollerdcmd:  cmd - <$cmd>\tzone - <$zone>\tphase - <$zone>\n\n";
+
 	#
 	# Handle the commands from rollerd:
 	#
@@ -2465,6 +2467,7 @@ sub rollerdcmd
 	#	startroll	start a zone in rollover
 	#	stoproll	stop a zone's rollover
 	#	badzone		mark zone as having problems
+	#	readrrd		force a re-read of the rollrec file
 	#
 	if($cmd eq "zskphase")
 	{
@@ -2556,6 +2559,10 @@ sub rollerdcmd
 		$rczc++;
 		zonestripe($zone,'KSK',0) if($rczc < $maxzones);
 		return;
+	}
+	elsif($cmd eq "readrrf")
+	{
+		painter($paintmax+1);
 	}
 	elsif($cmd eq "nop")
 	{
@@ -4478,7 +4485,7 @@ increase performance.
 
 =item display irregularities
 
-If the user to modifies the number of zones to be displayed, then sometimes
+If the user modifies the number of zones to be displayed, then sometimes
 the B<blinkenlights> window is left in an irregular state.  The requested
 number of zones are displayed, but there is a large grey void above and below
 the zone display.  This is an occasional problem and will be fixed as time
