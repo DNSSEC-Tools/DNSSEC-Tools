@@ -4284,6 +4284,10 @@ sub commander
 		{
 			cmd_logtz($data);
 		}
+		elsif($cmd eq ROLLCMD_MERGERRFS())
+		{
+			cmd_mergerrfs($data);
+		}
 		elsif($cmd eq ROLLCMD_PHASEMSG())
 		{
 			cmd_phasemsg($data);
@@ -4652,6 +4656,44 @@ sub cmd_logtz
 	#
 	rolllog_log(LOG_INFO,"<command>","logging timezone set to $newtz");
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"new logging timezone set");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_mergerrfs()
+#
+# Purpose:	Merge a set of rollrec files into the current rollrec and
+#		start rollover for those zones.
+#
+sub cmd_mergerrfs
+{
+	my $rrfs = shift;			# New rollrec files.
+	my @rrfs;				# List of rollrec files.
+
+	rolllog_log(LOG_TMI,'<command>',"mergerrfs command received");
+
+rolllog_log(LOG_ALWAYS,'<command>',"rollrecs to merge:  <$rrfs>");
+
+	#
+	# Divide the string of rollrec files into a list.
+	#
+	@rrfs = split ':', $rrfs;
+
+	#
+	# Merge the new rollrecs with the current one.
+	#
+	if(rollrec_merge($rollrecfile,@rrfs) < 0)
+	{
+		rolllog_log(LOG_INFO,'<command>',"unable to merge rollrecs ($rrfs) with current rollrec file");
+		rollmgr_sendresp(ROLLCMD_RC_BADFILE,"unable to  merge rollrecs \"$rrfs\"");
+		return;
+	}
+
+	#
+	# Let the user know all's well.
+	#
+	rolllog_log(LOG_INFO,"<command>","zone files merged");
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zonefiles merged");
+	display("readrrf dummy 0");
 }
 
 #-----------------------------------------------------------------------------
