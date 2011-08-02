@@ -135,6 +135,7 @@ our @EXPORT = qw(
 			 ROLLCMD_LOGLEVEL
 			 ROLLCMD_LOGMSG
 			 ROLLCMD_LOGTZ
+			 ROLLCMD_MERGERRFS
 			 ROLLCMD_PHASEMSG
 			 ROLLCMD_ROLLALL
 			 ROLLCMD_ROLLALLZSKS
@@ -149,6 +150,7 @@ our @EXPORT = qw(
 			 ROLLCMD_SKIPALL
 			 ROLLCMD_SKIPZONE
 			 ROLLCMD_SLEEPTIME
+			 ROLLCMD_SPLITRRFS
 			 ROLLCMD_STATUS
 			 ROLLCMD_ZONELOG
 			 ROLLCMD_ZONESTATUS
@@ -246,6 +248,7 @@ my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
 my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
 my $ROLLCMD_LOGTZ	= "rollcmd_logtz";
+my $ROLLCMD_MERGERRFS	= "rollcmd_mergerrfs";
 my $ROLLCMD_PHASEMSG	= "rollcmd_phasemsg";
 my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
 my $ROLLCMD_ROLLALLZSKS	= "rollcmd_rollallzsks";
@@ -260,6 +263,7 @@ my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
 my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
 my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
+my $ROLLCMD_SPLITRRFS	= "rollcmd_splitrrfs";
 my $ROLLCMD_STATUS	= "rollcmd_status";
 my $ROLLCMD_ZONELOG	= "rollcmd_zonelog";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
@@ -273,6 +277,7 @@ sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
 sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
 sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
 sub ROLLCMD_LOGTZ		{ return($ROLLCMD_LOGTZ);	};
+sub ROLLCMD_MERGERRFS		{ return($ROLLCMD_MERGERRFS);	};
 sub ROLLCMD_PHASEMSG		{ return($ROLLCMD_PHASEMSG);	};
 sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
 sub ROLLCMD_ROLLALLZSKS		{ return($ROLLCMD_ROLLALLZSKS);	};
@@ -287,6 +292,7 @@ sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
 sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
 sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
+sub ROLLCMD_SPLITRRFS		{ return($ROLLCMD_SPLITRRFS);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 sub ROLLCMD_ZONELOG		{ return($ROLLCMD_ZONELOG);	};
 sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
@@ -302,6 +308,7 @@ my %roll_commands =
 	rollcmd_loglevel	=> 1,
 	rollcmd_logmsg		=> 1,
 	rollcmd_logtz		=> 1,
+	rollcmd_mergerrfs	=> 1,
 	rollcmd_nodisplay	=> 1,
 	rollcmd_phasemsg	=> 1,
 	rollcmd_rollall		=> 1,
@@ -317,6 +324,7 @@ my %roll_commands =
 	rollcmd_skipall		=> 1,
 	rollcmd_skipzone	=> 1,
 	rollcmd_sleeptime	=> 1,
+	rollcmd_splitrrfs	=> 1,
 	rollcmd_status		=> 1,
 	rollcmd_zonelog		=> 1,
 	rollcmd_zonestatus	=> 1,
@@ -2119,6 +2127,8 @@ The available commands and their required data are:
    ROLLCMD_LOGLEVEL	log level	set a new logging level
    ROLLCMD_LOGMSG	log message	add a message to the log
    ROLLCMD_LOGTZ	timezone	set timezone for log messages
+   ROLLCMD_MERGERRFS	rollrec files	merge rollrec files with the
+					current rollrec file
    ROLLCMD_PHASEMSG	long/short	set long or short phase
 					messages
    ROLLCMD_QUEUELIST	none		returns the names and next
@@ -2147,6 +2157,9 @@ The available commands and their required data are:
    ROLLCMD_SKIPZONE	zone name	suspend rollover for a
 					rolling zone
    ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
+   ROLLCMD_SPLITRRFS	rollrec-name,	move a set of zones from the
+			oee names	current rollrec file into a
+					new rollrec file
    ROLLCMD_STATUS	none		get status of rollerd
    ROLLCMD_ZONELOG	zone name	set the logging level for
 			logging level	a particular zone
