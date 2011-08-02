@@ -56,7 +56,9 @@ my @opts =
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel:s",			# Set rollerd's logging level.
 	"logtz=s",			# Set rollerd's logging timezone.
+	"mergerrfs",			# Merge a set of rollrec files.
 	"phasemsg=s",			# Set rollerd's phase-message length.
+	"pidfile=s",			# pid storage file.
 	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollall",			# Resume all suspended zones.
 	"rollallzsks",			# ZSK-roll all our zones.
@@ -75,7 +77,6 @@ my @opts =
 	"zonelog",			# Set a zone's/zones' logging level.
 	"zonestatus",			# Get status of zones.
 	"zsargs",			# Set zonesigner args for some zones.
-	"pidfile=s",			# pid storage file.
 
 	"Version",			# Display the version number.
 	"quiet",			# Don't print anything.
@@ -94,6 +95,7 @@ my $logfileflag	    = 0;
 my $loglevelflag    = 0;
 my $logtzflag	    = 0;
 my $logphasemsg	    = '';
+my $mergerrfsflag   = 0;
 my $nodispflag	    = 0;
 my $rollallflag	    = 0;
 my $rollkskflag	    = 0;
@@ -185,7 +187,7 @@ sub main()
 	#
 	if($dispflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,1)) 
+		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,1))
 		{
 			print STDERR "rollctl:  error sending command DISPLAY\n";
 			exit(1);
@@ -340,6 +342,27 @@ sub main()
 				print STDERR "phasemsg set failed:  $resp\n";
 				$rcret++;
 			}
+		}
+	}
+	elsif($mergerrfsflag)
+	{
+		my $rrfs = join(':', @ARGV);
+
+		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_MERGERRFS,$rrfs))
+		{
+			print STDERR "rollctl:  error sending command MERGERRFS\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd merged the rollrec files\n";
+		}
+		else
+		{
+			print STDERR "rollerd did not merge the rollrec files\n";
+			$rcret++;
 		}
 	}
 	elsif($nodispflag)
@@ -706,7 +729,7 @@ sub main()
 			print STDERR "rollctl:  error sending command ZONESTATUS\n";
 			exit(1);
 		}
-			
+
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
@@ -785,34 +808,10 @@ sub doopts
 	#
 	# Command Options
 	#
-	if(exists($options{'logfile'}))
-	{
-		$logfileflag = $options{'logfile'};
-		$commandcount++;
-	}
-	if(exists($options{'loglevel'}))
-	{
-		$loglevelflag = $options{'loglevel'};
-		$commandcount++;
-	}		
-	if(exists($options{'logtz'}))
-	{
-		$logtzflag = $options{'logtz'};
-		$commandcount++;
-	}		
-	if(exists($options{'phasemsg'}))
-	{
-		$logphasemsg = $options{'phasemsg'};
-		$commandcount++;
-	}		
+
 	if(exists($options{'display'}))
 	{
 		$dispflag = $options{'display'};
-		$commandcount++;
-	}
-	if(exists($options{'nodisplay'}))
-	{
-		$nodispflag = $options{'nodisplay'};
 		$commandcount++;
 	}
 	if(exists($options{'dspub'}))
@@ -823,6 +822,52 @@ sub doopts
 	if(exists($options{'dspuball'}))
 	{
 		$dspuballflag = $options{'dspuball'};
+		$commandcount++;
+	}
+	if(exists($options{'logfile'}))
+	{
+		$logfileflag = $options{'logfile'};
+		$commandcount++;
+	}
+	if(exists($options{'loglevel'}))
+	{
+		$loglevelflag = $options{'loglevel'};
+		$commandcount++;
+	}
+	if(exists($options{'logtz'}))
+	{
+		$logtzflag = $options{'logtz'};
+		$commandcount++;
+	}
+	if(exists($options{'mergerrfs'}))
+	{
+$mergerrfsflag = $options{'mergerrfs'};
+		$mergerrfsflag = 1;
+		$commandcount++;
+	}
+	if(exists($options{'nodisplay'}))
+	{
+		$nodispflag = $options{'nodisplay'};
+		$commandcount++;
+	}
+	if(exists($options{'phasemsg'}))
+	{
+		$logphasemsg = $options{'phasemsg'};
+		$commandcount++;
+	}
+	if(exists($options{'pidfile'}))
+	{
+		$pidfile = $options{'pidfile'};
+		rollmgr_set_idfile($pidfile) if($pidfile ne '');
+	}
+	if(exists($options{'queuelist'}))
+	{
+		$queuelistflag = $options{'queuelist'};
+		$commandcount++;
+	}
+	if(exists($options{'queuestatus'}))
+	{
+		$queuestatusflag = $options{'queuestatus'};
 		$commandcount++;
 	}
 	if(exists($options{'rollall'}))
@@ -858,16 +903,6 @@ sub doopts
 	if(exists($options{'runqueue'}))
 	{
 		$runqueueflag = $options{'runqueue'};
-		$commandcount++;
-	}
-	if(exists($options{'queuelist'}))
-	{
-		$queuelistflag = $options{'queuelist'};
-		$commandcount++;
-	}
-	if(exists($options{'queuestatus'}))
-	{
-		$queuestatusflag = $options{'queuestatus'};
 		$commandcount++;
 	}
 	if(exists($options{'shutdown'}) || exists($options{'halt'}))
@@ -909,11 +944,6 @@ sub doopts
 	{
 		$zsargsflag = $options{'zsargs'};
 		$commandcount++;
-	}
-	if(exists($options{'pidfile'}))
-	{
-		$pidfile = $options{'pidfile'};
-		rollmgr_set_idfile($pidfile) if($pidfile ne '');
 	}
 	if(exists($options{'Version'}))
 	{
@@ -1077,6 +1107,7 @@ sub usage
 	print STDERR "\t-loglevel <loglevel>	set logging level\n";
 	print STDERR "\t-logtz <log-timezone>	set logging timezone\n";
 	print STDERR "\t-phasemsg <length>	set phase-message length\n";
+	print STDERR "\t-pidfile <pidfile>	set phase-message length\n";
 	print STDERR "\t-nodisplay		stop graphical display\n";
 	print STDERR "\t-rollall		restart all suspended zones\n";
 	print STDERR "\t-rollallzsks		roll all zones\n";
@@ -1176,6 +1207,11 @@ forms.
 Sets the B<rollerd> logging timezone to I<loglevel>.  This must be either
 I<gmt> (for Greenwich Mean Time or I<local> (for the host's local time.)
 
+=item B<-mergerrfs rollrec0 ... rollrecN>
+
+Tells B<rollerd> to merge the specified I<rollrec> files with its active
+I<rollrec> file.  The names of the I<rollrec> files must not contain colons.
+
 =item B<-nodisplay>
 
 Stops the rollover status GUI.
@@ -1189,7 +1225,7 @@ the default value.
 The long message length means that a phase description will be included with
 some log messages.  For example, the long form of a message about ZSK
 rollover
-phase 3 will look like this:  "ZSK phase 3 (Waiting for old zone data to  
+phase 3 will look like this:  "ZSK phase 3 (Waiting for old zone data to
 expire from caches)".
 
 The short message length means that a phase description will not be included
