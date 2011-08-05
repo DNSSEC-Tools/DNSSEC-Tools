@@ -94,6 +94,7 @@ our @EXPORT = qw(
 			rollrec_rename
 			rollrec_settime
 			rollrec_setval
+			rollrec_split
 			rollrec_unlock
 			rollrec_write
 		);
@@ -133,12 +134,12 @@ my @ROLLFIELDS = (
 
 #--------------------------------------------------------------------------
 
-my @rollreclines;			# Rollrec lines.
-my $rollreclen;				# Number of rollrec lines.
+my @rollreclines;		# Rollrec lines.
+my $rollreclen;			# Number of rollrec lines.
 
-my %rollrecs;				# Rollrec hash table (keywords/values.)
+my %rollrecs;			# Rollrec hash table (keywords/values.)
 
-my $modified;				# File-modified flag.
+my $modified;			# File-modified flag.
 
 #--------------------------------------------------------------------------
 # Routine:	rollrec_lock()
@@ -276,7 +277,7 @@ sub rollrec_read
 sub rollrec_merge
 {
 	my $firstrrf = shift;		# First rollrec file in list.
-	my @rrflist = @_;		# Set of rollover files.
+	my @rrflist = @_;		# Set of rollrec files.
 
 	my %allrrfs = ();		# All rollrec filenames to be merged.
 	my $errs = 0;			# Count of non-fatal errors.
@@ -408,6 +409,180 @@ sub rollrec_merge
 	# Return the number of rollrecs we found.
 	#
 	$rrcnt = keys(%rollrecs);
+	return($rrcnt);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_split()
+#
+# Purpose:	Split a rollrec file in two.  A list of rollrec entries will
+#		be removed from the current rollrec file and appended to
+#		another file.  The rollrec entries will be removed from
+#		@rollreclines and %rollrecs.
+#
+#		The rollrecs will be appended to the destination file.
+#
+sub rollrec_split
+{
+	my $newrrf = shift;		# New rollrec file.
+	my @rrlist = @_;		# Set of rollrec names.
+
+	my $valid = 0;			# Count of valid names.
+	my @badnames = ();		# List of invalid names.
+	my $rrcnt = 0;			# Number of rollrecs we split.
+
+# print "rollrec_split:  down in\n";
+
+	#
+	# Make sure a set of rollrec files was specified.
+	#
+	if((! defined($newrrf)) || ($newrrf eq ''))
+	{
+		err("no target rollrec file given for split\n",1);
+		return(-1);
+	}
+
+	#
+	# Make sure a set of rollrec files was specified.
+	#
+	if(@rrlist == 0)
+	{
+		err("no rollrec names given for split\n",1);
+		return(-2);
+	}
+
+	#
+	# Count the valid rollrec names in the name list.
+	#
+	foreach my $rrn (@rrlist)
+	{
+		$valid++ if(defined($rollrecs{$rrn}));
+	}
+
+	#
+	# Ensure that at least one of the rollrec names in the name list
+	# is valid.
+	#
+	if($valid == 0)
+	{
+		err("no rollrec names given for split are existing rollrecs\n",1);
+		return(-3);
+	}
+
+	#
+	# Open the target rollrec file for appending.
+	#
+	if(open(ROLLREC_SPLIT,">> $newrrf") == 0)
+	{
+		err("unable to open \"$newrrf\" for split\n",1);
+		return(-4);
+	}
+
+	#
+	# Read each remaining rollrec file and add it to our internal
+	# rollrec collection.
+	#
+	foreach my $rrn (@rrlist)
+	{
+		my $rrind;			# Index to rollrec's first line.
+
+		#
+		# If this name isn't the name of an existing rollrec, we'll
+		# save the name and go to the next.
+		#
+		if(! exists($rollrecs{$rrn}))
+		{
+			push @badnames,$rrn;
+			next;
+		}
+
+		#
+		# Find this rollrec in @rollreclines.
+		#
+		for($rrind=0;$rrind<$rollreclen;$rrind++)
+		{
+			my $ln = $rollreclines[$rrind];	# Line in rollrec file.
+			my $rrname;			# Rollrec name.
+
+			#
+			# Dig out the line's keyword and value.
+			#
+			$ln =~ /^\s*(roll|skip)\s+"([a-z0-9\/\-+_.,: \t]+)"/i;
+			$rrname = $2;
+
+			#
+			# If this line has the rollrec's name and is the start
+			# of a new rollrec, then we've found our man.
+			#
+			#
+			last if(lc($rrname) eq lc($rrn));
+		}
+
+		#
+		# Bump our count of split rollrecs.
+		#
+		$rrcnt++;
+
+		#
+		# Find the specified field's entry in the rollrec's lines in
+		# @rollreclines.  We'll skip over lines that don't have a
+		# keyword and dquotes-enclosed value.
+		#
+		print ROLLREC_SPLIT "$rollreclines[$rrind]";
+		for($rrind++; $rrind<$rollreclen; $rrind++)
+		{
+			my $ln = $rollreclines[$rrind];	# Line in rollrec file.
+			my $lkw;			# Line's keyword.
+
+			#
+			# Get the line's keyword and value.
+			#
+			$ln =~ /^\s*([a-z_]+)\s+"([a-z0-9\/\-+_.,: \t]*)"/i;
+			$lkw = $1;
+
+			#
+			# If we hit the beginning of the next rollrec or a
+			# blank line, we'll write a blank line and, drop out.
+			#
+			if(($lkw =~ /^(roll|skip)$/i) || ($ln eq "\n"))
+			{
+				print ROLLREC_SPLIT "\n";
+				last;
+			}
+
+			print ROLLREC_SPLIT "$ln";
+		}
+
+		#
+		# Delete the named rollrec.
+		#
+		rollrec_del($rrn);
+	}
+
+	#
+	# Close the file handle.
+	#
+	close(ROLLREC_SPLIT);
+
+	#
+	# If we found some names that aren't in the original rollrec file,
+	# we'll give an error and return the list of bad names.
+	#
+	if(@badnames > 0)
+	{
+		err("invalid rollrec names (@badnames) in split\n",1);
+		return(-5, @badnames);
+	}
+
+	#
+	# Write the updated rollrec file.
+	#
+	$modified = 1;
+	rollrec_write();
+
+	#
+	# Return the number of rollrecs we split into a new rollrec file.
+	#
 	return($rrcnt);
 }
 
@@ -1065,7 +1240,7 @@ sub rollrec_add
 #
 sub rollrec_del
 {
-	my $rrname = shift;		# Name of rollrec we're creating.
+	my $rrname = shift;		# Name of rollrec we're deleting.
 
 	my %rollrec;			# Rollrec to be deleted.
 	my $rrr;			# Rollrec reference.
@@ -1584,6 +1759,7 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   $default_file = rollrec_default();
 
   $count = rollrec_merge("primary.rrf", "new0.rrf", "new1".rrf");
+  @retvals = rollrec_split("new-rollrec.rrf", @rollrec_list);
 
   rollrec_write();
   rollrec_close();
@@ -1716,8 +1892,7 @@ modified.
 
 Return values are:
 
-    0 successful rollrec deletion
-
+     0 successful rollrec deletion
     -1 unknown name
 
 =item I<rollrec_close()>
@@ -1781,13 +1956,9 @@ the file.
 Failure return values:
 
     -1 no rollrec files were given to rollrec_merge
-
     -2 unable to create target rollrec file
-
     -3 unable to read first rollrec file
-
     -4 an error occurred while reading the rollrec names
-
     -5 rollrec files were duplicated in the list of rollrec files
 
 =item I<rollrec_names()>
@@ -1814,9 +1985,7 @@ the file.
 Failure return values:
 
     -1 specified rollrec file doesn't exit
-
     -2 unable to open rollrec file
-
     -3 duplicate rollrec names in file
 
 =item I<rollrec_readfile(rollrec_file_handle)>
@@ -1905,6 +2074,32 @@ I<rollrec>.
 I<field> is the I<rollrec> field which will be modified.
 I<value> is the new value for the field.
 
+=item I<rollrec_split(new_rollrec_file,rollrec_names)>
+
+Move a set of I<rollrec> entries from the current I<rollrec> file to a new
+file.  The moved I<rollrec> entries are removed both from the current file
+and from the internal module data representing that file.
+
+The I<new_rollrec_file> parameter holds the name of the new I<rollrec> file.
+If this file doesn't exist, it will be created.  If it does exist, the
+I<rollrec> entries will be appended to that file.
+
+I<rollrec_names> is a list of I<rollrec> entries that will be moved from the
+current file to the file named in I<new_rollrec_file>.  If some of the given
+I<rollrec> names are invalid, the valid names will be moved to the new file
+and the invalid names will be returned in a list to the caller.
+
+On success, the count of moved I<rollrec> entries is returned.  Error returns
+are given below.
+
+Failure return values:
+    -1 - no target rollrec file given in new_rollrec_file
+    -2 - no rollrec names given in rollrec_names
+    -3 - none of the rollrec names given are existing rollrecs
+    -4 - unable to open new_rollrec_file
+    -5 - invalid rollrec names were specified in rollrec_names,
+         followed by the list of bad names.
+
 =item I<rollrec_unlock()>
 
 I<rollrec_unlock()> unlocks the I<rollrec> synchronization file.
@@ -1923,12 +2118,12 @@ I<rollrec_write()> gets an exclusive lock on the I<rollrec> file while writing.
 
 =head1 ROLLREC INTERNAL INTERFACES
 
-=over 4
-
 The interfaces described in this section are intended for internal use by the
-B<rollrec.pm> module.  However, there are situations where
-external entities may have need of them.  Use with caution, as misuse may
-result in damaged or lost I<rollrec> files.
+B<rollrec.pm> module.  However, there are situations where external entities
+may have need of them.  Use with caution, as misuse may result in damaged or
+lost I<rollrec> files.
+
+=over 4
 
 =item I<rollrec_init()>
 
@@ -1951,11 +2146,11 @@ This routine returns the name of the default I<rollrec> file.
 
 =head1 ROLLREC DEBUGGING INTERFACES
 
-=over 4
-
 The following interfaces display information about the currently parsed
 I<rollrec> file.  They are intended to be used for debugging and testing, but
 may be useful at other times.
+
+=over 4
 
 =item I<rollrec_dump_hash()>
 
