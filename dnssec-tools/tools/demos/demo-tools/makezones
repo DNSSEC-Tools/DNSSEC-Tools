@@ -195,7 +195,6 @@ sub optsandargs
 	# Set our option variables based on the parsed options.
 	#
 	$zonecnt    = $options{'count'}	|| $DEFAULT_ZONECOUNT;
-	$startind   = $options{'start'}	|| 1;
 	$initstate  = $options{'init'}	|| 'normal';
 	$maxlife    = $options{'max'}	|| $DEFAULT_MAXLIFE;
 	$minlife    = $options{'min'}	|| $DEFAULT_MINLIFE;
@@ -203,6 +202,15 @@ sub optsandargs
 	$zsargs	    = $options{'zs'}	|| "-genkeys";
 	$rrffile    = $options{'rrf'}	|| $DEFAULT_ROLLREC;
 	$demoscript = $options{'demo'}	|| $DEFAULT_DEMOSCR;
+
+	if(! defined($options{'start'}))
+	{
+		$startind = 1;
+	}
+	else
+	{
+		$startind   = $options{'start'};
+	}
 
 	#
 	# Set our option variables based on the parsed options.
