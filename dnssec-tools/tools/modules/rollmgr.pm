@@ -150,7 +150,7 @@ our @EXPORT = qw(
 			 ROLLCMD_SKIPALL
 			 ROLLCMD_SKIPZONE
 			 ROLLCMD_SLEEPTIME
-			 ROLLCMD_SPLITRRFS
+			 ROLLCMD_SPLITRRF
 			 ROLLCMD_STATUS
 			 ROLLCMD_ZONELOG
 			 ROLLCMD_ZONESTATUS
@@ -263,7 +263,7 @@ my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
 my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
 my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
-my $ROLLCMD_SPLITRRFS	= "rollcmd_splitrrfs";
+my $ROLLCMD_SPLITRRF	= "rollcmd_splitrrf";
 my $ROLLCMD_STATUS	= "rollcmd_status";
 my $ROLLCMD_ZONELOG	= "rollcmd_zonelog";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
@@ -292,7 +292,7 @@ sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
 sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
 sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
-sub ROLLCMD_SPLITRRFS		{ return($ROLLCMD_SPLITRRFS);	};
+sub ROLLCMD_SPLITRRF		{ return($ROLLCMD_SPLITRRF);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 sub ROLLCMD_ZONELOG		{ return($ROLLCMD_ZONELOG);	};
 sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
@@ -324,7 +324,7 @@ my %roll_commands =
 	rollcmd_skipall		=> 1,
 	rollcmd_skipzone	=> 1,
 	rollcmd_sleeptime	=> 1,
-	rollcmd_splitrrfs	=> 1,
+	rollcmd_splitrrf	=> 1,
 	rollcmd_status		=> 1,
 	rollcmd_zonelog		=> 1,
 	rollcmd_zonestatus	=> 1,
@@ -2157,8 +2157,8 @@ The available commands and their required data are:
    ROLLCMD_SKIPZONE	zone name	suspend rollover for a
 					rolling zone
    ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
-   ROLLCMD_SPLITRRFS	rollrec-name,	move a set of zones from the
-			oee names	current rollrec file into a
+   ROLLCMD_SPLITRRF	rollrec-name,	move a set of zones from the
+			zone names	current rollrec file into a
 					new rollrec file
    ROLLCMD_STATUS	none		get status of rollerd
    ROLLCMD_ZONELOG	zone name	set the logging level for
