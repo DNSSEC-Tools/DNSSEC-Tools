@@ -4347,6 +4347,10 @@ sub commander
 		{
 			cmd_sleeptime($data);
 		}
+		elsif($cmd eq ROLLCMD_SPLITRRF())
+		{
+			cmd_splitrrf($data);
+		}
 		elsif($cmd eq ROLLCMD_STATUS())
 		{
 			cmd_status($data);
@@ -4671,8 +4675,6 @@ sub cmd_mergerrfs
 
 	rolllog_log(LOG_TMI,'<command>',"mergerrfs command received");
 
-rolllog_log(LOG_ALWAYS,'<command>',"rollrecs to merge:  <$rrfs>");
-
 	#
 	# Divide the string of rollrec files into a list.
 	#
@@ -4684,7 +4686,7 @@ rolllog_log(LOG_ALWAYS,'<command>',"rollrecs to merge:  <$rrfs>");
 	if(rollrec_merge($rollrecfile,@rrfs) < 0)
 	{
 		rolllog_log(LOG_INFO,'<command>',"unable to merge rollrecs ($rrfs) with current rollrec file");
-		rollmgr_sendresp(ROLLCMD_RC_BADFILE,"unable to  merge rollrecs \"$rrfs\"");
+		rollmgr_sendresp(ROLLCMD_RC_BADFILE,"unable to merge rollrecs \"$rrfs\"");
 		return;
 	}
 
@@ -5339,6 +5341,61 @@ sub cmd_sleeptime
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"sleep-time set to $newnap");
 		display("sleeptime all $sleeptime");
 	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_splitrrf()
+#
+# Purpose:	Split the current rollrec file in two.  The specified rollrec
+#		entries are moved into a new file.
+#
+sub cmd_splitrrf
+{
+	my $args = shift;			# New rollrec file and rollrecs.
+	my $newrrf;				# New rollrec file.
+	my @rrfs;				# Rollrec entries to move.
+
+	rolllog_log(LOG_TMI,'<command>',"splitrrf command received");
+
+	#
+	# Divide the string of arguments into a list.
+	#
+	@rrfs = split ':', $args;
+
+	#
+	# Get the new rollrec file name from the front of the list.
+	#
+	$newrrf = shift @rrfs;
+
+	#
+	# Lock the file so others can't use it.  We'll also read the file
+	# to make sure we have the current version.
+	#
+	rollrec_lock();
+	rollrec_close();
+	rollrec_read($rollrecfile);
+
+	#
+	# Split the rollrecs into the new file.
+	#
+	if(rollrec_split($newrrf,@rrfs) < 0)
+	{
+		rolllog_log(LOG_INFO,'<command>',"unable to split rollrec from current rollrec file to \"$newrrf\"");
+		rollmgr_sendresp(ROLLCMD_RC_BADFILE,"unable to split current rollrec to \"$newrrf\"");
+		return;
+	}
+
+	#
+	# Unlock the file so others can use it.
+	#
+	rollrec_unlock();
+
+	#
+	# Let the user know all's well.
+	#
+	rolllog_log(LOG_INFO,"<command>","current rollrec split to \"$newrrf\"");
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zonefiles split");
+	display("readrrf dummy 0");
 }
 
 #-----------------------------------------------------------------------------
