@@ -1,6 +1,6 @@
-diff -r b7c8af20e400 browser/components/preferences/advanced.xul
---- a/browser/components/preferences/advanced.xul	Mon Aug 22 07:39:22 2011 -0400
-+++ b/browser/components/preferences/advanced.xul	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 browser/components/preferences/advanced.xul
+--- a/browser/components/preferences/advanced.xul	Fri Aug 26 09:43:56 2011 +0200
++++ b/browser/components/preferences/advanced.xul	Fri Aug 26 10:33:41 2011 -0400
 @@ -134,6 +134,9 @@
        <preference id="security.disable_button.openDeviceManager"
                    name="security.disable_button.openDeviceManager"
@@ -40,9 +40,9 @@ diff -r b7c8af20e400 browser/components/preferences/advanced.xul
        </tabpanels>
      </tabbox>
    </prefpane>
-diff -r b7c8af20e400 browser/locales/en-US/chrome/browser/preferences/advanced.dtd
---- a/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Mon Aug 22 07:39:22 2011 -0400
-+++ b/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 browser/locales/en-US/chrome/browser/preferences/advanced.dtd
+--- a/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Fri Aug 26 09:43:56 2011 +0200
++++ b/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	Fri Aug 26 10:33:41 2011 -0400
 @@ -107,3 +107,13 @@
  <!ENTITY verify2.accesskey               "V">
  <!ENTITY viewSecurityDevices.label       "Security Devices">
@@ -57,9 +57,9 @@ diff -r b7c8af20e400 browser/locales/en-US/chrome/browser/preferences/advanced.d
 +<!ENTITY possibleDNSSecure.accesskey    "E">
 +<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
 +<!ENTITY allDNSSecure.accesskey         "A">
-diff -r b7c8af20e400 browser/locales/en-US/chrome/overrides/appstrings.properties
---- a/browser/locales/en-US/chrome/overrides/appstrings.properties	Mon Aug 22 07:39:22 2011 -0400
-+++ b/browser/locales/en-US/chrome/overrides/appstrings.properties	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 browser/locales/en-US/chrome/overrides/appstrings.properties
+--- a/browser/locales/en-US/chrome/overrides/appstrings.properties	Fri Aug 26 09:43:56 2011 +0200
++++ b/browser/locales/en-US/chrome/overrides/appstrings.properties	Fri Aug 26 10:33:41 2011 -0400
 @@ -37,6 +37,8 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=Firefox can't find the file at %S.
@@ -69,9 +69,9 @@ diff -r b7c8af20e400 browser/locales/en-US/chrome/overrides/appstrings.propertie
  protocolNotFound=Firefox doesn't know how to open this address, because the protocol (%S) isn't associated with any program.
  connectionFailure=Firefox can't establish a connection to the server at %S.
  netInterrupt=The connection to %S was interrupted while the page was loading.
-diff -r b7c8af20e400 browser/locales/en-US/chrome/overrides/netError.dtd
---- a/browser/locales/en-US/chrome/overrides/netError.dtd	Mon Aug 22 07:39:22 2011 -0400
-+++ b/browser/locales/en-US/chrome/overrides/netError.dtd	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 browser/locales/en-US/chrome/overrides/netError.dtd
+--- a/browser/locales/en-US/chrome/overrides/netError.dtd	Fri Aug 26 09:43:56 2011 +0200
++++ b/browser/locales/en-US/chrome/overrides/netError.dtd	Fri Aug 26 10:33:41 2011 -0400
 @@ -25,6 +25,12 @@
  </ul>
  ">
@@ -85,10 +85,10 @@ diff -r b7c8af20e400 browser/locales/en-US/chrome/overrides/netError.dtd
  <!ENTITY fileNotFound.title "File not found">
  <!ENTITY fileNotFound.longDesc "
  <ul>
-diff -r b7c8af20e400 config/autoconf.mk.in
---- a/config/autoconf.mk.in	Mon Aug 22 07:39:22 2011 -0400
-+++ b/config/autoconf.mk.in	Mon Aug 22 10:20:58 2011 -0400
-@@ -299,7 +299,7 @@
+diff -r cc1e08803869 config/autoconf.mk.in
+--- a/config/autoconf.mk.in	Fri Aug 26 09:43:56 2011 +0200
++++ b/config/autoconf.mk.in	Fri Aug 26 10:33:41 2011 -0400
+@@ -298,7 +298,7 @@
  OS_COMPILE_CXXFLAGS = $(OS_CPPFLAGS) @COMPILE_CXXFLAGS@
  
  OS_INCLUDES	= $(NSPR_CFLAGS) $(NSS_CFLAGS) $(JPEG_CFLAGS) $(PNG_CFLAGS) $(ZLIB_CFLAGS)
@@ -97,10 +97,10 @@ diff -r b7c8af20e400 config/autoconf.mk.in
  ACDEFINES	= @MOZ_DEFINES@
  
  WARNINGS_AS_ERRORS = @WARNINGS_AS_ERRORS@
-diff -r b7c8af20e400 configure.in
---- a/configure.in	Mon Aug 22 07:39:22 2011 -0400
-+++ b/configure.in	Mon Aug 22 10:20:58 2011 -0400
-@@ -8809,6 +8809,47 @@
+diff -r cc1e08803869 configure.in
+--- a/configure.in	Fri Aug 26 09:43:56 2011 +0200
++++ b/configure.in	Fri Aug 26 10:33:41 2011 -0400
+@@ -8791,6 +8791,47 @@
  fi
  
  dnl ========================================================
@@ -148,9 +148,9 @@ diff -r b7c8af20e400 configure.in
  dnl =
  dnl = Maintainer debug option (no --enable equivalent)
  dnl =
-diff -r b7c8af20e400 docshell/base/nsDocShell.cpp
---- a/docshell/base/nsDocShell.cpp	Mon Aug 22 07:39:22 2011 -0400
-+++ b/docshell/base/nsDocShell.cpp	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 docshell/base/nsDocShell.cpp
+--- a/docshell/base/nsDocShell.cpp	Fri Aug 26 09:43:56 2011 +0200
++++ b/docshell/base/nsDocShell.cpp	Fri Aug 26 10:33:41 2011 -0400
 @@ -3853,6 +3853,26 @@
          formatStrCount = 1;
          error.AssignLiteral("dnsNotFound");
@@ -187,9 +187,9 @@ diff -r b7c8af20e400 docshell/base/nsDocShell.cpp
               aStatus == NS_ERROR_CONNECTION_REFUSED ||
               aStatus == NS_ERROR_UNKNOWN_PROXY_HOST || 
               aStatus == NS_ERROR_PROXY_CONNECTION_REFUSED) &&
-diff -r b7c8af20e400 docshell/resources/content/netError.xhtml
---- a/docshell/resources/content/netError.xhtml	Mon Aug 22 07:39:22 2011 -0400
-+++ b/docshell/resources/content/netError.xhtml	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 docshell/resources/content/netError.xhtml
+--- a/docshell/resources/content/netError.xhtml	Fri Aug 26 09:43:56 2011 +0200
++++ b/docshell/resources/content/netError.xhtml	Fri Aug 26 10:33:41 2011 -0400
 @@ -314,6 +314,8 @@
      <div id="errorContainer">
        <div id="errorTitlesContainer">
@@ -208,9 +208,9 @@ diff -r b7c8af20e400 docshell/resources/content/netError.xhtml
          <div id="ed_fileNotFound">&fileNotFound.longDesc;</div>
          <div id="ed_malformedURI">&malformedURI.longDesc;</div>
          <div id="ed_protocolNotFound">&protocolNotFound.longDesc;</div>
-diff -r b7c8af20e400 dom/locales/en-US/chrome/appstrings.properties
---- a/dom/locales/en-US/chrome/appstrings.properties	Mon Aug 22 07:39:22 2011 -0400
-+++ b/dom/locales/en-US/chrome/appstrings.properties	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 dom/locales/en-US/chrome/appstrings.properties
+--- a/dom/locales/en-US/chrome/appstrings.properties	Fri Aug 26 09:43:56 2011 +0200
++++ b/dom/locales/en-US/chrome/appstrings.properties	Fri Aug 26 10:33:41 2011 -0400
 @@ -37,6 +37,8 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=The file %S cannot be found. Please check the location and try again.
@@ -220,9 +220,9 @@ diff -r b7c8af20e400 dom/locales/en-US/chrome/appstrings.properties
  protocolNotFound=%S is not a registered protocol.
  connectionFailure=The connection was refused when attempting to contact %S.
  netInterrupt=The connection to %S has terminated unexpectedly. Some data may have been transferred.
-diff -r b7c8af20e400 dom/locales/en-US/chrome/netError.dtd
---- a/dom/locales/en-US/chrome/netError.dtd	Mon Aug 22 07:39:22 2011 -0400
-+++ b/dom/locales/en-US/chrome/netError.dtd	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 dom/locales/en-US/chrome/netError.dtd
+--- a/dom/locales/en-US/chrome/netError.dtd	Fri Aug 26 09:43:56 2011 +0200
++++ b/dom/locales/en-US/chrome/netError.dtd	Fri Aug 26 10:33:41 2011 -0400
 @@ -12,6 +12,12 @@
  <!ENTITY dnsNotFound.title "Address Not Found">
  <!ENTITY dnsNotFound.longDesc "<p>The browser could not find the host server for the provided address.</p><ul><li>Did you make a mistake when typing the domain? (e.g. <q><strong>ww</strong>.mozilla.org</q> instead of <q><strong>www</strong>.mozilla.org</q>)</li><li>Are you certain this domain address exists?  Its registration may have expired.</li><li>Are you unable to browse other sites?  Check your network connection and DNS server settings.</li><li>Is your computer or network protected by a firewall or proxy?  Incorrect settings can interfere with Web browsing.</li></ul>">
@@ -236,9 +236,9 @@ diff -r b7c8af20e400 dom/locales/en-US/chrome/netError.dtd
  <!ENTITY fileNotFound.title "File Not Found">
  <!ENTITY fileNotFound.longDesc "<ul><li>Could the item have been renamed, removed, or relocated?</li><li>Is there a spelling, capitalization, or other typographical error in the address?</li><li>Do you have sufficient access permissions to the requested item?</li></ul>">
  
-diff -r b7c8af20e400 layout/base/nsPresContext.cpp
---- a/layout/base/nsPresContext.cpp	Mon Aug 22 07:39:22 2011 -0400
-+++ b/layout/base/nsPresContext.cpp	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 layout/base/nsPresContext.cpp
+--- a/layout/base/nsPresContext.cpp	Fri Aug 26 09:43:56 2011 +0200
++++ b/layout/base/nsPresContext.cpp	Fri Aug 26 10:33:41 2011 -0400
 @@ -69,6 +69,7 @@
  #include "nsIWeakReferenceUtils.h"
  #include "nsCSSRendering.h"
@@ -282,9 +282,9 @@ diff -r b7c8af20e400 layout/base/nsPresContext.cpp
  #ifdef IBMBIDI
    Preferences::RegisterCallback(nsPresContext::PrefChangedCallback,
                                  "bidi.",
-diff -r b7c8af20e400 netwerk/base/public/nsNetError.h
---- a/netwerk/base/public/nsNetError.h	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/base/public/nsNetError.h	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/base/public/nsNetError.h
+--- a/netwerk/base/public/nsNetError.h	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/base/public/nsNetError.h	Fri Aug 26 10:33:41 2011 -0400
 @@ -281,6 +281,12 @@
   * DNS specific error codes:
   */
@@ -298,9 +298,9 @@ diff -r b7c8af20e400 netwerk/base/public/nsNetError.h
  /**
   * The lookup of a hostname failed.  This generally refers to the hostname
   * from the URL being loaded.
-diff -r b7c8af20e400 netwerk/base/src/nsSocketTransport2.cpp
---- a/netwerk/base/src/nsSocketTransport2.cpp	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/base/src/nsSocketTransport2.cpp	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/base/src/nsSocketTransport2.cpp
+--- a/netwerk/base/src/nsSocketTransport2.cpp	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/base/src/nsSocketTransport2.cpp	Fri Aug 26 10:33:41 2011 -0400
 @@ -67,6 +67,8 @@
  #include "nsIPipe.h"
  #include "nsIProgrammingLanguage.h"
@@ -340,9 +340,9 @@ diff -r b7c8af20e400 netwerk/base/src/nsSocketTransport2.cpp
          }
          else if (mState == STATE_RESOLVING)
              mCondition = InitiateSocket();
-diff -r b7c8af20e400 netwerk/cache/nsCacheService.cpp
---- a/netwerk/cache/nsCacheService.cpp	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/cache/nsCacheService.cpp	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/cache/nsCacheService.cpp
+--- a/netwerk/cache/nsCacheService.cpp	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/cache/nsCacheService.cpp	Fri Aug 26 10:33:41 2011 -0400
 @@ -41,6 +41,11 @@
   *
   * ***** END LICENSE BLOCK ***** */
@@ -366,9 +366,9 @@ diff -r b7c8af20e400 netwerk/cache/nsCacheService.cpp
      return res;
  }
  
-diff -r b7c8af20e400 netwerk/dns/nsDNSService2.cpp
---- a/netwerk/dns/nsDNSService2.cpp	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/dns/nsDNSService2.cpp	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/dns/nsDNSService2.cpp
+--- a/netwerk/dns/nsDNSService2.cpp	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/dns/nsDNSService2.cpp	Fri Aug 26 10:33:41 2011 -0400
 @@ -172,6 +172,7 @@
              // Both mHostRecord->addr_info and mHostRecord->addr are null.
              // This can happen if mHostRecord->addr_info expired and the
@@ -393,9 +393,9 @@ diff -r b7c8af20e400 netwerk/dns/nsDNSService2.cpp
      mListener->OnLookupComplete(this, rec, status);
      mListener = nsnull;
  
-diff -r b7c8af20e400 netwerk/dns/nsHostResolver.cpp
---- a/netwerk/dns/nsHostResolver.cpp	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/dns/nsHostResolver.cpp	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/dns/nsHostResolver.cpp
+--- a/netwerk/dns/nsHostResolver.cpp	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/dns/nsHostResolver.cpp	Fri Aug 26 10:33:41 2011 -0400
 @@ -57,6 +57,7 @@
  #include "pratom.h"
  #include "prthread.h"
@@ -454,7 +454,7 @@ diff -r b7c8af20e400 netwerk/dns/nsHostResolver.cpp
          rec->resolving = PR_FALSE;
          
          if (rec->usingAnyThread) {
-@@ -912,14 +919,44 @@
+@@ -912,14 +919,45 @@
          if (!(rec->flags & RES_CANON_NAME))
              flags |= PR_AI_NOCANONNAME;
  
@@ -463,7 +463,8 @@ diff -r b7c8af20e400 netwerk/dns/nsHostResolver.cpp
 +                                              &(rec->security_status_flags));
 +#if defined(RES_RETRY_ON_FAILURE)
 +            if (!ai && rs.Reset())
-+                ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
++                ai = PR_GetAddrInfoByNameExtended(rec->host, rec->af, flags,
++                                              &(rec->security_status_flags));
 +#endif
 +        } else {
          ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
@@ -500,9 +501,9 @@ diff -r b7c8af20e400 netwerk/dns/nsHostResolver.cpp
          resolver->OnLookupComplete(rec, status, ai);
          LOG(("lookup complete for %s ...\n", rec->host));
      }
-diff -r b7c8af20e400 netwerk/dns/nsHostResolver.h
---- a/netwerk/dns/nsHostResolver.h	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/dns/nsHostResolver.h	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/dns/nsHostResolver.h
+--- a/netwerk/dns/nsHostResolver.h	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/dns/nsHostResolver.h	Fri Aug 26 10:33:41 2011 -0400
 @@ -121,10 +121,12 @@
                                  Negative cache entries are valid just like any other
                                  (though never for more than 60 seconds), but a use
@@ -527,9 +528,9 @@ diff -r b7c8af20e400 netwerk/dns/nsHostResolver.h
      };
  
  private:
-diff -r b7c8af20e400 netwerk/protocol/http/nsHttpChannel.cpp
---- a/netwerk/protocol/http/nsHttpChannel.cpp	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/protocol/http/nsHttpChannel.cpp	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/protocol/http/nsHttpChannel.cpp
+--- a/netwerk/protocol/http/nsHttpChannel.cpp	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/protocol/http/nsHttpChannel.cpp	Fri Aug 26 10:33:41 2011 -0400
 @@ -63,6 +63,7 @@
  #include "nsIOService.h"
  #include "nsICacheService.h"
@@ -552,9 +553,9 @@ diff -r b7c8af20e400 netwerk/protocol/http/nsHttpChannel.cpp
  
       // allow content to be cached if it was loaded successfully (bug #482935)
       PRBool contentComplete = NS_SUCCEEDED(status);
-diff -r b7c8af20e400 netwerk/protocol/http/nsHttpHandler.h
---- a/netwerk/protocol/http/nsHttpHandler.h	Mon Aug 22 07:39:22 2011 -0400
-+++ b/netwerk/protocol/http/nsHttpHandler.h	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 netwerk/protocol/http/nsHttpHandler.h
+--- a/netwerk/protocol/http/nsHttpHandler.h	Fri Aug 26 09:43:56 2011 +0200
++++ b/netwerk/protocol/http/nsHttpHandler.h	Fri Aug 26 10:33:41 2011 -0400
 @@ -199,6 +199,19 @@
          NotifyObservers(chan, NS_HTTP_ON_EXAMINE_MERGED_RESPONSE_TOPIC);
      }
@@ -575,9 +576,9 @@ diff -r b7c8af20e400 netwerk/protocol/http/nsHttpHandler.h
      // Called by channels before a redirect happens. This notifies both the
      // channel's and the global redirect observers.
      nsresult AsyncOnChannelRedirect(nsIChannel* oldChan, nsIChannel* newChan,
-diff -r b7c8af20e400 nsprpub/config/autoconf.mk.in
---- a/nsprpub/config/autoconf.mk.in	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/config/autoconf.mk.in	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/config/autoconf.mk.in
+--- a/nsprpub/config/autoconf.mk.in	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/config/autoconf.mk.in	Fri Aug 26 10:33:41 2011 -0400
 @@ -34,6 +34,7 @@
  
  LIBNSPR		= @LIBNSPR@
@@ -586,9 +587,9 @@ diff -r b7c8af20e400 nsprpub/config/autoconf.mk.in
  
  CROSS_COMPILE	= @CROSS_COMPILE@
  MOZ_OPTIMIZE	= @MOZ_OPTIMIZE@
-diff -r b7c8af20e400 nsprpub/config/nspr-config.in
---- a/nsprpub/config/nspr-config.in	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/config/nspr-config.in	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/config/nspr-config.in
+--- a/nsprpub/config/nspr-config.in	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/config/nspr-config.in	Fri Aug 26 10:33:41 2011 -0400
 @@ -138,6 +138,6 @@
  	  libdirs="$libdirs $i"
          fi
@@ -597,9 +598,9 @@ diff -r b7c8af20e400 nsprpub/config/nspr-config.in
 +      echo $libdirs @VAL_LIBS@ @OS_LIBS@
  fi      
  
-diff -r b7c8af20e400 nsprpub/configure
---- a/nsprpub/configure	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/configure	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/configure
+--- a/nsprpub/configure	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/configure	Fri Aug 26 10:33:41 2011 -0400
 @@ -109,6 +109,12 @@
    --enable-wrap-malloc    Wrap malloc calls (gnu linker only)"
  ac_help="$ac_help
@@ -1723,9 +1724,9 @@ diff -r b7c8af20e400 nsprpub/configure
  s%@SHELL_OVERRIDE@%$SHELL_OVERRIDE%g
  s%@MOZILLA_CLIENT@%$MOZILLA_CLIENT%g
  s%@HOST_CFLAGS@%$HOST_CFLAGS%g
-diff -r b7c8af20e400 nsprpub/configure.in
---- a/nsprpub/configure.in	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/configure.in	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/configure.in
+--- a/nsprpub/configure.in	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/configure.in	Fri Aug 26 10:33:41 2011 -0400
 @@ -2656,7 +2656,6 @@
  dnl AC_CHECK_LIB(thread, main)
  dnl AC_CHECK_LIB(vms_jackets, main)
@@ -1784,9 +1785,9 @@ diff -r b7c8af20e400 nsprpub/configure.in
  dnl Substitution of found variables.
  dnl ========================================================
  AC_SUBST(SHELL_OVERRIDE)
-diff -r b7c8af20e400 nsprpub/pr/include/prerr.h
---- a/nsprpub/pr/include/prerr.h	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/pr/include/prerr.h	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/pr/include/prerr.h
+--- a/nsprpub/pr/include/prerr.h	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/pr/include/prerr.h	Fri Aug 26 10:33:41 2011 -0400
 @@ -272,8 +272,14 @@
  /* The one-time function was previously called and failed. Its error code is no longer available */
  #define PR_CALL_ONCE_ERROR                       (-5925L)
@@ -1803,9 +1804,9 @@ diff -r b7c8af20e400 nsprpub/pr/include/prerr.h
  
  extern void nspr_InitializePRErrorTable(void);
  #define ERROR_TABLE_BASE_nspr (-6000L)
-diff -r b7c8af20e400 nsprpub/pr/include/prnetdb.h
---- a/nsprpub/pr/include/prnetdb.h	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/pr/include/prnetdb.h	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/pr/include/prnetdb.h
+--- a/nsprpub/pr/include/prnetdb.h	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/pr/include/prnetdb.h	Fri Aug 26 10:33:41 2011 -0400
 @@ -85,6 +85,14 @@
  #define PR_NETDB_BUF_SIZE 1024
  #endif
@@ -1951,9 +1952,9 @@ diff -r b7c8af20e400 nsprpub/pr/include/prnetdb.h
  PR_END_EXTERN_C
  
  #endif /* prnetdb_h___ */
-diff -r b7c8af20e400 nsprpub/pr/src/Makefile.in
---- a/nsprpub/pr/src/Makefile.in	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/pr/src/Makefile.in	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/pr/src/Makefile.in
+--- a/nsprpub/pr/src/Makefile.in	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/pr/src/Makefile.in	Fri Aug 26 10:33:41 2011 -0400
 @@ -213,7 +213,7 @@
  OS_LIBS		= -framework CoreServices -framework CoreFoundation
  endif
@@ -1963,9 +1964,9 @@ diff -r b7c8af20e400 nsprpub/pr/src/Makefile.in
  
  #
  # Define platform-dependent OBJS
-diff -r b7c8af20e400 nsprpub/pr/src/misc/prerr.c
---- a/nsprpub/pr/src/misc/prerr.c	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/pr/src/misc/prerr.c	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/pr/src/misc/prerr.c
+--- a/nsprpub/pr/src/misc/prerr.c	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/pr/src/misc/prerr.c	Fri Aug 26 10:33:41 2011 -0400
 @@ -118,11 +118,13 @@
  	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
  	{"PR_LIBRARY_NOT_LOADED_ERROR",    "The library is not loaded"},
@@ -1981,9 +1982,9 @@ diff -r b7c8af20e400 nsprpub/pr/src/misc/prerr.c
  
  void nspr_InitializePRErrorTable(void) {
      PR_ErrorInstallTable(&et);
-diff -r b7c8af20e400 nsprpub/pr/src/misc/prerr.et
---- a/nsprpub/pr/src/misc/prerr.et	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/pr/src/misc/prerr.et	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/pr/src/misc/prerr.et
+--- a/nsprpub/pr/src/misc/prerr.et	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/pr/src/misc/prerr.et	Fri Aug 26 10:33:41 2011 -0400
 @@ -134,6 +134,8 @@
  ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
  ec PR_LIBRARY_NOT_LOADED_ERROR, "The library is not loaded"
@@ -1993,9 +1994,9 @@ diff -r b7c8af20e400 nsprpub/pr/src/misc/prerr.et
  
  ec PR_MAX_ERROR,                "Placeholder for the end of the list"
  
-diff -r b7c8af20e400 nsprpub/pr/src/misc/prerr.properties
---- a/nsprpub/pr/src/misc/prerr.properties	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/pr/src/misc/prerr.properties	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/pr/src/misc/prerr.properties
+--- a/nsprpub/pr/src/misc/prerr.properties	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/pr/src/misc/prerr.properties	Fri Aug 26 10:33:41 2011 -0400
 @@ -114,4 +114,6 @@
  PR_HOST_UNREACHABLE_ERROR=Host is unreachable
  PR_LIBRARY_NOT_LOADED_ERROR=The library is not loaded
@@ -2003,9 +2004,9 @@ diff -r b7c8af20e400 nsprpub/pr/src/misc/prerr.properties
 +PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
 +PR_DNSSEC_DNE_ERROR=The DNS record does not exist
  PR_MAX_ERROR=Placeholder for the end of the list
-diff -r b7c8af20e400 nsprpub/pr/src/misc/prnetdb.c
---- a/nsprpub/pr/src/misc/prnetdb.c	Mon Aug 22 07:39:22 2011 -0400
-+++ b/nsprpub/pr/src/misc/prnetdb.c	Mon Aug 22 10:20:58 2011 -0400
+diff -r cc1e08803869 nsprpub/pr/src/misc/prnetdb.c
+--- a/nsprpub/pr/src/misc/prnetdb.c	Fri Aug 26 09:43:56 2011 +0200
++++ b/nsprpub/pr/src/misc/prnetdb.c	Fri Aug 26 10:33:41 2011 -0400
 @@ -35,6 +35,18 @@
   *
   * ***** END LICENSE BLOCK ***** */
