@@ -132,17 +132,28 @@ The following design choices were made for the validator:
     - "hold" the queries in this chain till such time that validate 
       does not complete  
     - Locking strategy
-        - big lock for each "run" of the validator
-        - sleep(0) between multiple runs to allow other threads to execute
-        - add a read lock for each query touched
+        - CTX_LOCK_ACACHE : Mutex to ensure that only one thread can modify
+            the context answer cache at a given point in time.
+        - VAL_CACHE_LOCK : R/W lock to ensure that the context-independent
+            resolver cache is only modified when no other thread is reading 
+            data from it. 
+        - LOCK_QC : R/W lock to ensure that the query structure is 
+            not modified while it is being used to support
+            resolution/validation of another query.
+        - CTX_LOCK_POL : R/W lock to ensure that the context policy is
+            not modified while the context is being used in another query. 
+        - LOCK_DEFAULT_CONTEXT : Mutex to ensure that the default context is
+            not modified while it is being accessed in another thread.
         - data times out only through the query pointer
         - queries can be deleted only if no lock is held on them
+    - Description of Locks 
 
-This impacts the resolver logic in that libsres should never block 
-(but we were already moving in that direction). The above design choices 
-also imply that we are not able to log query-related information since 
-this is unreliable after a call to the validator functions (queries may 
-time out).
+
+//This impacts the resolver logic in that libsres should never block 
+//(but we were already moving in that direction). The above design choices 
+//also imply that we are not able to log query-related information since 
+//this is unreliable after a call to the validator functions (queries may 
+//time out).
 
 
 4. NULL contexts 
