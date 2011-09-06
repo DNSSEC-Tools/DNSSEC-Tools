@@ -151,7 +151,7 @@ val_refresh_context(val_context_t *context)
     GET_LATEST_TIMESTAMP(context, context->root_conf, context->h_timestamp, hsb);
     if (hsb.st_mtime != 0 &&  hsb.st_mtime != context->h_timestamp){
         if (VAL_NO_ERROR != (retval = val_refresh_root_hints(context))) {
-            return retval;
+            goto err;
         }
     }
 
