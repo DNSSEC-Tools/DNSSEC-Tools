@@ -790,40 +790,17 @@ get_addrinfo_from_dns(val_context_t * ctx,
 }                               /* get_addrinfo_from_dns() */
 
 /**
- * val_getaddrinfo: A validating getaddrinfo function.
- *                  Based on getaddrinfo() as defined in RFC3493.
- *
- * Parameters:
- *     Note: All the parameters, except the val_status parameter,
- *     ----  are similar to the getaddrinfo function.
- *
- *     [IN]  ctx: The validation context. Can be NULL for default value.
- *     [IN]  nodename: Specifies either a numerical network address (dotted-
- *                decimal format for IPv4, hexadecimal format for IPv6)
- *                or a network hostname, whose network addresses are
- *                looked up and resolved.
- *                node or service parameter, but not both, may be NULL.
- *     [IN]  servname: Used to set the port number in the network address
- *                of each socket structure returned.  If service is NULL
- *                the  port  number will be left uninitialized.
- *     [IN]  hints: Specifies  the  preferred socket type, or protocol.
- *                A NULL hints specifies that any network address or
- *                protocol is acceptable.
- *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
- *                structures. The caller must free this return value
- *                using freeaddrinfo().
- *
- *     Note that at least one of nodename or servname must be a non-NULL value.
+ * _getaddrinfo_local: helper function for val_getaddrinfo and
+ *    val_getaddrinfo async. Checks local resources.
  *
  * Return value: This function returns 0 if it succeeds, or one of the
- *               non-zero error codes if it fails.  See man getaddrinfo(3)
- *               for more details.
+ *               non-zero error codes if it fails.  The error code
+ *               EAI_AGAIN indicates that the caller should try DNS next.
  */
-int
-val_getaddrinfo(val_context_t * context,
-                const char *nodename, const char *servname,
-                const struct addrinfo *hints, struct addrinfo **res,
-                val_status_t *val_status)
+static int
+_getaddrinfo_local(val_context_t * context, const char *nodename,
+                   const char *servname, const struct addrinfo *hints,
+                   struct addrinfo **res, val_status_t *val_status);
 {
     struct sockaddr_in  sa;
     struct addrinfo *ainfo4 = NULL;
@@ -847,10 +824,6 @@ val_getaddrinfo(val_context_t * context,
     int trusted = 0;
     val_context_t *ctx = NULL;
     
-    ctx = val_create_or_refresh_context(context);
-    if (ctx == NULL) 
-        return EAI_FAIL;
-
     val_log(ctx, LOG_DEBUG,
             "val_getaddrinfo called with nodename = %s, servname = %s",
             nodename == NULL ? "(null)" : nodename,
@@ -1031,15 +1004,72 @@ val_getaddrinfo(val_context_t * context,
          * Try DNS
          */
         else {
-            retval = get_addrinfo_from_dns(ctx, nodename, servname,
-                                           cur_hints, res, val_status);
+            /*
+             * should never get EAI_AGAIN for local resources, so use it
+             * to singal the user to try DNS.
+             */
+            retval = EAI_AGAIN;
         }
     }
 
 done:
-    CTX_UNLOCK_POL(ctx);
     return retval;
+}
 
+/**
+ * val_getaddrinfo: A validating getaddrinfo function.
+ *                  Based on getaddrinfo() as defined in RFC3493.
+ *
+ * Parameters:
+ *     Note: All the parameters, except the val_status parameter,
+ *     ----  are similar to the getaddrinfo function.
+ *
+ *     [IN]  ctx: The validation context. Can be NULL for default value.
+ *     [IN]  nodename: Specifies either a numerical network address (dotted-
+ *                decimal format for IPv4, hexadecimal format for IPv6)
+ *                or a network hostname, whose network addresses are
+ *                looked up and resolved.
+ *                node or service parameter, but not both, may be NULL.
+ *     [IN]  servname: Used to set the port number in the network address
+ *                of each socket structure returned.  If service is NULL
+ *                the  port  number will be left uninitialized.
+ *     [IN]  hints: Specifies  the  preferred socket type, or protocol.
+ *                A NULL hints specifies that any network address or
+ *                protocol is acceptable.
+ *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
+ *                structures. The caller must free this return value
+ *                using freeaddrinfo().
+ *
+ *     Note that at least one of nodename or servname must be a non-NULL value.
+ *
+ * Return value: This function returns 0 if it succeeds, or one of the
+ *               non-zero error codes if it fails.  See man getaddrinfo(3)
+ *               for more details.
+ */
+int
+val_getaddrinfo(val_context_t * context,
+                const char *nodename, const char *servname,
+                const struct addrinfo *hints, struct addrinfo **res,
+                val_status_t *val_status)
+{
+    int         retval;
+
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL) 
+        return EAI_FAIL;
+
+    /** try local sources first */
+    retval = _val_getaddrinfo_local(context, nodename, servname, hints, res,
+                                    val_status);
+
+    if (EAI_AGAIN == retval) { /* EAI_AGAIN from local means try DNS */
+
+        retval = get_addrinfo_from_dns(ctx, nodename, servname,
+                                       cur_hints, res, val_status);
+    }
+
+    CTX_UNLOCK_POL(ctx); /* when was it locked? */
+    return retval;
 }                               /* val_getaddrinfo() */
 
 
