@@ -712,17 +712,29 @@ static int
 get_addrinfo_from_dns(val_context_t * ctx,
                       const char *nodename,
                       const char *servname,
-                      const struct addrinfo *hints,
+                      const struct addrinfo *hints_param,
                       struct addrinfo **res,
                       val_status_t *val_status)
 {
     struct val_answer_chain *results = NULL;
     struct addrinfo *ainfo = NULL;
+    const struct addrinfo *hints;
+    struct addrinfo default_hints;
     int    ret = EAI_FAIL;
 
     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns() called");
 
     *val_status = VAL_VALIDATED_ANSWER;
+
+    /*
+     * use a default hints structure if one is not available.
+     */
+    if (hints_param == NULL) {
+        memset(&default_hints, 0, sizeof(default_hints));
+        hints = &default_hints;
+    } else {
+        hints = hints_param;
+    }
 
     if (res == NULL ||
         (hints != NULL && 
@@ -798,9 +810,9 @@ get_addrinfo_from_dns(val_context_t * ctx,
  *               EAI_AGAIN indicates that the caller should try DNS next.
  */
 static int
-_getaddrinfo_local(val_context_t * context, const char *nodename,
+_getaddrinfo_local(val_context_t * ctx, const char *nodename,
                    const char *servname, const struct addrinfo *hints,
-                   struct addrinfo **res, val_status_t *val_status);
+                   struct addrinfo **res, val_status_t *val_status)
 {
     struct sockaddr_in  sa;
     struct addrinfo *ainfo4 = NULL;
@@ -818,11 +830,10 @@ _getaddrinfo_local(val_context_t * context, const char *nodename,
     const char     *localhost4 = "127.0.0.1";
     const char     *localhost6 = "::1";
     const char     *nname = nodename;
-    struct addrinfo default_hints;
     const struct addrinfo *cur_hints;
+    struct addrinfo default_hints;
     val_status_t local_ans_status = VAL_OOB_ANSWER;
     int trusted = 0;
-    val_context_t *ctx = NULL;
     
     val_log(ctx, LOG_DEBUG,
             "val_getaddrinfo called with nodename = %s, servname = %s",
@@ -1014,7 +1025,7 @@ _getaddrinfo_local(val_context_t * context, const char *nodename,
 
 done:
     return retval;
-}
+}                               /* _getaddrinfo_local */
 
 /**
  * val_getaddrinfo: A validating getaddrinfo function.
@@ -1052,20 +1063,21 @@ val_getaddrinfo(val_context_t * context,
                 const struct addrinfo *hints, struct addrinfo **res,
                 val_status_t *val_status)
 {
-    int         retval;
+    val_context_t *ctx = NULL;
+    int            retval;
 
     ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) 
         return EAI_FAIL;
 
     /** try local sources first */
-    retval = _val_getaddrinfo_local(context, nodename, servname, hints, res,
-                                    val_status);
+    retval = _getaddrinfo_local(context, nodename, servname, hints, res,
+                                val_status);
 
     if (EAI_AGAIN == retval) { /* EAI_AGAIN from local means try DNS */
 
         retval = get_addrinfo_from_dns(ctx, nodename, servname,
-                                       cur_hints, res, val_status);
+                                       hints, res, val_status);
     }
 
     CTX_UNLOCK_POL(ctx); /* when was it locked? */
