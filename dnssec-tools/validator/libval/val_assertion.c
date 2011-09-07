@@ -6240,7 +6240,7 @@ val_resolve_and_check(val_context_t * ctx,
     /*
      * refresh context config, or create a new context if one does not exist 
      */
-    context = val_create_or_refresh_context(ctx);
+    context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (context == NULL)
         return VAL_INTERNAL_ERROR;
   

@@ -1188,7 +1188,7 @@ val_getnameinfo(val_context_t * context,
     struct val_answer_chain *val_res = NULL;
     val_context_t *ctx = NULL;
     
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         return EAI_FAIL;;
 

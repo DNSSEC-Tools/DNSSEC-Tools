@@ -370,6 +370,8 @@ val_create_context(char *label,
  *
  * Purpose:   set up context for a query
  *
+ * NOTE: This function obtains a shared lock on the context's policy.
+ *
  * Parameter: results -- results for query
  *            ctx -- user supplied context, if any
  *
