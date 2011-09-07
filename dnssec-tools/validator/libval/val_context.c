@@ -86,12 +86,14 @@ val_refresh_validator_policy(val_context_t * context)
                 "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
     }
 
-    LOCK_DEFAULT_CONTEXT();
-    if (is_override && (the_default_context != context)) {
-        old_default_context = the_default_context;
-        the_default_context = context;
+    if (is_override) {
+        LOCK_DEFAULT_CONTEXT();
+        if (the_default_context != context) {
+            old_default_context = the_default_context;
+            the_default_context = context;
+        }
+        UNLOCK_DEFAULT_CONTEXT();
     }
-    UNLOCK_DEFAULT_CONTEXT();
     
     /* we've changed the default context, free the old one */
     if (old_default_context) {
@@ -336,12 +338,12 @@ val_create_context_with_conf(char *label,
             (*newcontext)->resolv_conf,
             (*newcontext)->root_conf);
 
-    LOCK_DEFAULT_CONTEXT();
     if (label == NULL || is_override) {
+        LOCK_DEFAULT_CONTEXT();
         old_default_context = the_default_context;
         the_default_context = *newcontext;
+        UNLOCK_DEFAULT_CONTEXT();
     }
-    UNLOCK_DEFAULT_CONTEXT();
     
     if (old_default_context) {
         val_free_context(old_default_context);
