@@ -722,7 +722,7 @@ diff -rwup mozilla-1.9.2.old/nsprpub/pr/src/misc/prnetdb.c mozilla-1.9.2/nsprpub
 +{
 +  PRStatus ret;
 +  DNSSECFUNDEBUG((stderr, "input=%s\n", name));
-+  ret = PR_GetIPNodeByName(name, af, flags, buf, bufsize, hp);
++  ret = PR_GetIPNodeByNameExtended(name, af, flags, buf, bufsize, hp);
 +  simplify_return_value();
 +  return ret;
  }
