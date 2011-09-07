@@ -57,6 +57,9 @@ my $rdataSuccess;
 my $markingAsSecure;
 my $nonExtProof;
 my $noValidSig;
+my $noDS;
+my $insecureResponse;
+my $mustBeSecure;
 
 while (defined(my $ThisLine = <STDIN>)) {
    if ($ThisLine =~ /validation failed/) {
@@ -81,6 +84,16 @@ while (defined(my $ThisLine = <STDIN>)) {
       $nonExtProof++;
    } elsif ($ThisLine =~ /no valid signature found/) {
       $noValidSig++;
+   } elsif ($ThisLine =~ /no DS record/) {
+      $noDS++;
+   } elsif ($ThisLine =~ /got insecure response/) {
+      $insecureResponse++;
+   } elsif ($ThisLine =~ /must be secure failure/) {
+      $mustBeSecure++;
+   } elsif ($ThisLine =~ /bad cache hit/) {
+      ; # ignore
+   } else {
+       print "No hits for: $ThisLine";
    }
 }
 
@@ -120,6 +133,15 @@ if ($detail >= 5) {
    }
    if ($nonExtProof > 0) {
       $msgHash{"Nonexistence proof found"} = $nonExtProof;
+   }
+   if ($noDS > 0) {
+      $msgHash{"No DS record"} = $noDS;
+   }
+   if ($insecureResponse > 0) {
+      $msgHash{"Insecure response"} = $insecureResponse;
+   }
+   if ($mustBeSecure > 0) {
+      $msgHash{"Must be secure failure"} = $insecureResponse;
    }
 
 # sort all the non-zero message types and print them in descending order
