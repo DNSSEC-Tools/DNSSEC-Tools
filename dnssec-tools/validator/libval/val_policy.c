@@ -2667,7 +2667,7 @@ val_add_valpolicy(val_context_t *context,
         return VAL_OUT_OF_MEMORY;
     }
 
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) { 
         FREE(pol_entry);
         FREE(*pol);
@@ -2710,7 +2710,7 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
     if (pol == NULL || pol->pe == NULL|| pol->index >= MAX_POL_TOKEN)
        return VAL_BAD_ARGUMENT; 
 
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         return VAL_INTERNAL_ERROR;
     
@@ -2768,7 +2768,7 @@ val_is_local_trusted(val_context_t *context, int *trusted)
     if (trusted == NULL)
         return VAL_BAD_ARGUMENT;
 
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         return VAL_INTERNAL_ERROR;
 

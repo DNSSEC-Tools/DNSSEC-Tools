@@ -60,7 +60,7 @@ val_get_rrset(val_context_t *context,
     *answers = NULL;
     last_ans = NULL;
    
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context);/* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         return VAL_INTERNAL_ERROR;
 

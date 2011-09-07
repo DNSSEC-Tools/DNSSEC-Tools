@@ -571,7 +571,7 @@ val_gethostbyname2_r(val_context_t * context,
         goto err;
     }
 
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         goto err; 
 
@@ -938,7 +938,7 @@ val_gethostbyaddr_r(val_context_t * context,
         return (NO_RECOVERY);
     }
 
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) {
         *h_errnop = NO_RECOVERY;
         return (NO_RECOVERY);

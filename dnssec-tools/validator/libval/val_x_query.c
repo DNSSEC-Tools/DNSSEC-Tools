@@ -509,7 +509,7 @@ val_res_query(val_context_t * context,
         goto err;
     }
         
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         goto err;
     
@@ -578,7 +578,7 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     SET_LAST_ERR(NO_RECOVERY);
     //SET_LAST_ERR(NETDB_INTERNAL);
     
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) {
         errno = EINVAL;
         return -1;
