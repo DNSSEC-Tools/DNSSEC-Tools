@@ -13,7 +13,9 @@ public:
 
 
     void setRecordType(QString recordType) { m_recordType = recordType; }
+    QString recordType() const { return m_recordType; }
     void setDNSSECStatus(Status DNSSECStatus) { m_DNSSECStatus = DNSSECStatus; }
+    Status DNSSECStatus() const { return m_DNSSECStatus; }
 
 private:
     QString m_recordType;

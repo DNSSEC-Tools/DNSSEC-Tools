@@ -87,6 +87,7 @@ public:
     QString additionalInfo() const;
 
     void addSubData(const DNSData &data);
+    QString getSubData();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);

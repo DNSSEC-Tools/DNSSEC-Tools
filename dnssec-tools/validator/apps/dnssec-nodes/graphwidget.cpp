@@ -72,9 +72,9 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_logFile(0), m_logStream(0), m_timer(0),
       m_layoutType(springyLayout), m_childSize(30),
       m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
-      m_lookingUpRegexp("looking for \\{([^ ]+) "),
-      m_bogusRegexp("Validation result for \\{([^,]+),.*BOGUS"),
-      m_trustedRegexp("Validation result for \\{([^,]+),.*: (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
+      m_lookingUpRegexp("looking for \\{([^ ]+) .* ([^\\(]+)\\([0-9]+\\)\\}"),
+      m_bogusRegexp("Validation result for \\{([^,]+),.*BOGUS"),                                     // XXX: type not listed; fix in libval
+      m_trustedRegexp("Validation result for \\{([^,]+),.*: (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"), // XXX: type not listed; fix in libval
       m_pinsecureRegexp("Setting proof status for ([^ ]+) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
       m_dneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_(NAME|TYPE):"),
       m_maybeDneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME_NOCHAIN:"),
@@ -277,7 +277,7 @@ Node *GraphWidget::addNodes(const QString &nodeName) {
         if (! m_nodes.contains(*node + "." + completeString)) {
             qDebug() << "    " << (*node + "." + completeString) << " DNE!";
             returnNode = addNode(*node, completeString, count);
-        } else if (returnNode == 0) {
+        } else {
             returnNode = m_nodes[*node + "." + completeString];
         }
         completeString = *node + "." + completeString;
@@ -468,6 +468,7 @@ void GraphWidget::parseLogMessage(QString logMessage) {
 
     if (m_lookingUpRegexp.indexIn(logMessage) > -1) {
         nodeName = m_lookingUpRegexp.cap(1);
+        dnsDataNodes.push_back(DNSData(m_lookingUpRegexp.cap(2), DNSData::UNKNOWN));
         logMessage.replace(m_lookingUpRegexp, "<b>looking up \\1</b>  ");
     } else if (m_validatedRegexp.indexIn(logMessage) > -1) {
         if (!m_shownsec3 && m_validatedRegexp.cap(2) == "NSEC3")
@@ -512,6 +513,7 @@ void GraphWidget::parseLogMessage(QString logMessage) {
     thenode = addNodes(nodeName);
     if (thenode && !dnsDataNodes.isEmpty()) {
         foreach(DNSData data, dnsDataNodes) {
+            qDebug() << "here: " << nodeName << "=" << data.recordType();
             thenode->addSubData(data);
         }
     }
@@ -638,6 +640,7 @@ void GraphWidget::setInfo(Node *node) {
     if (node->additionalInfo().length() > 0) {
         buildString += " (" + node->additionalInfo() + ")";
     }
+    buildString += + "[" + node->getSubData() + "]";
     setInfo(buildString);
 }
 
