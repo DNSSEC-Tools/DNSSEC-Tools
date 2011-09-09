@@ -28,7 +28,7 @@
 #			zonefile	"db.example.com"
 #			zskcur		"signing-set-42"
 #			zskpub		"signing-set-43"
-#			endtime		"+2592000"   # Zone expires in 30 days.
+#			endtime		"+2764800"   # Zone expires in 32 days.
 #
 #		set "signing-set-42"
 #			zonename	"example.com"
