@@ -4255,7 +4255,7 @@ requirements of extremely large zones with lots of unsigned children.
 
 Time that the zone expires, measured in seconds.  See the man page for
 B<dnssec-signzone> for the valid format of this field.
-The default value is 2592000 seconds (30 days.)
+The default value is 2764800 seconds (32 days.)
 
 =item B<-gends>
 
@@ -4384,7 +4384,7 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
     zone	"example.com"
 	zonefile	"example.com"
 	signedzone	"db.example.com"
-	endtime		"+2592000"
+	endtime		"+2764800"
 	kskcur		"example.com.signset-24"
 	kskdirectory	"."
 	zskcur		"example.com.signset-42"
