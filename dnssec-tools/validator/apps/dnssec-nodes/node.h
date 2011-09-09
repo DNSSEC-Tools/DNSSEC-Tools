@@ -44,6 +44,8 @@
 #include <QGraphicsItem>
 #include <QList>
 
+#include "DNSData.h"
+
 class Edge;
 class GraphWidget;
 QT_BEGIN_NAMESPACE
@@ -84,6 +86,8 @@ public:
     void setAdditionalInfo(const QString &info);
     QString additionalInfo() const;
 
+    void addSubData(const DNSData &data);
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
@@ -101,6 +105,7 @@ private:
     QColor       m_color;
     QStringList  m_logMessages;
     QString      m_additionalInfo;
+    QList<DNSData> m_subData;
 };
 //! [0]
 

@@ -41,6 +41,7 @@
 #include "graphwidget.h"
 #include "edge.h"
 #include "node.h"
+#include "DNSData.h"
 
 #include <QtGui>
 #include <qdebug.h>
@@ -261,8 +262,9 @@ Node *GraphWidget::node(const QString &nodeName) {
     return m_nodes[nodeName];
 }
 
-void GraphWidget::addNodes(const QString &nodeName) {
+Node *GraphWidget::addNodes(const QString &nodeName) {
     int count = 1;
+    Node *returnNode = 0, *tmpNode = 0;
 
     QStringList nodeNameList = nodeName.split(".");
     QString completeString = QString("");
@@ -274,11 +276,14 @@ void GraphWidget::addNodes(const QString &nodeName) {
         //qDebug() << "  doing node (" << nodeName << "): " << *node << "/" << completeString << " at " << count;
         if (! m_nodes.contains(*node + "." + completeString)) {
             qDebug() << "    " << (*node + "." + completeString) << " DNE!";
-            addNode(*node, completeString, count);
+            returnNode = addNode(*node, completeString, count);
+        } else if (returnNode == 0) {
+            returnNode = m_nodes[*node + "." + completeString];
         }
         completeString = *node + "." + completeString;
         count++;
     } while(node != firstItem);
+    return returnNode;
 }
 
 Node *GraphWidget::addNode(const QString &nodeName, const QString &parentName, int depth) {
@@ -456,6 +461,8 @@ void GraphWidget::parseLogMessage(QString logMessage) {
     QColor color;
     QString nodeName;
     QString additionalInfo = "";
+    QList<DNSData> dnsDataNodes;
+    Node *thenode;
 
     // qDebug() << logMessage;
 
@@ -470,6 +477,7 @@ void GraphWidget::parseLogMessage(QString logMessage) {
         nodeName = m_validatedRegexp.cap(1);
         logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
+        dnsDataNodes.push_back(DNSData(m_validatedRegexp.cap(2), DNSData::VALIDATED));
         color = Qt::green;
     } else if (m_bogusRegexp.indexIn(logMessage) > -1) {
         nodeName = m_bogusRegexp.cap(1);
@@ -501,7 +509,12 @@ void GraphWidget::parseLogMessage(QString logMessage) {
     }
     if (nodeName == ".")
         return;
-    addNodes(nodeName);
+    thenode = addNodes(nodeName);
+    if (thenode && !dnsDataNodes.isEmpty()) {
+        foreach(DNSData data, dnsDataNodes) {
+            thenode->addSubData(data);
+        }
+    }
     if (color.isValid())
         node(nodeName + ".")->setColor(color);
     if (additionalInfo.length() > 0)
