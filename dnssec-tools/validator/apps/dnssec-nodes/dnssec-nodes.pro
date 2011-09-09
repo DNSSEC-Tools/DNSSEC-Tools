@@ -1,13 +1,15 @@
 HEADERS += \
         edge.h \
         node.h \
-        graphwidget.h
+        graphwidget.h \
+    DNSData.h
 
 SOURCES += \
         edge.cpp \
         main.cpp \
         node.cpp \
-        graphwidget.cpp
+        graphwidget.cpp \
+    DNSData.cpp
 
 DEFINES += NETWORKACCESS
 

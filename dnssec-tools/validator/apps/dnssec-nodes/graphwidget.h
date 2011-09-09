@@ -75,7 +75,7 @@ public:
     void doActualLookup(const QString &lookupString);
 
     Node * node(const QString &nodeName);
-    void addNodes(const QString &nodeName);
+    Node *addNodes(const QString &nodeName);
 
     void parseLogMessage(QString logMessage);
     void parseLogFile(const QString &file = "");
