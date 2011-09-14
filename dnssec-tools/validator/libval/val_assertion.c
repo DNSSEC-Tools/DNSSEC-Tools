@@ -6467,8 +6467,44 @@ val_does_not_exist(val_status_t status)
  *
  ****************************************************************************/
 #ifndef VAL_NO_ASYNC
-int
-val_async_status_free(val_async_status *as)
+/*
+ * remove asynchronous status from context async queries list.
+ * caller must have CTX_LOCK_ACACHE.
+ */
+static void
+_context_as_remove(val_context_t *context, val_async_status *as)
+{
+    val_async_status *prev, *curr = NULL;
+
+    if ((NULL == context) || (NULL == as) ||
+        (as->val_as_ctx && (as->val_as_ctx != context)))
+        return;
+
+    if (NULL == context->as_list)
+        return;
+
+    if (as == context->as_list) {
+        curr = context->as_list;
+        context->as_list = as->val_as_next;
+    } else {
+        prev = context->as_list;
+        curr = prev->val_as_next;
+        for (; curr; prev = curr, curr = curr->val_as_next) {
+            if (curr != as)
+                continue;
+            prev->val_as_next = curr->val_as_next;
+            break;
+        } /* for */
+    } /* as->val_as_ctx */
+
+    if (curr) {
+        curr->val_as_next = NULL;
+        curr->val_as_ctx = NULL;
+    }
+}
+
+static int
+_async_status_free(val_async_status *as)
 {
     if (NULL == as)
         return VAL_BAD_ARGUMENT;
@@ -6489,7 +6525,7 @@ val_async_status_free(val_async_status *as)
         as->val_as_answers = NULL;
     }
 
-    val_context_as_remove(as->val_as_ctx, as);
+    _context_as_remove(as->val_as_ctx, as);
 
     if (! as->val_as_flags & VAL_AS_CTX_USER_SUPPLIED)
         val_free_context(as->val_as_ctx);
@@ -6559,16 +6595,15 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
      */
     context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context) {
-        val_async_status_free(as);
+        _async_status_free(as); /* no context, so no lock needed */
         return retval;
     }
-    if (context == ctx) {
-        as->val_as_ctx = context;
+    if (context == ctx)
         as->val_as_flags |= VAL_AS_CTX_USER_SUPPLIED;
-    } else {
-        as->val_as_ctx = context;
+    else
         as->val_as_flags &= (~VAL_AS_CTX_USER_SUPPLIED);
-    }
+
+    as->val_as_ctx = context;
 
     flags |= VAL_QUERY_ASYNC;
 
@@ -6632,17 +6667,18 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
             retval = VAL_INTERNAL_ERROR;
     }
 
+    CTX_UNLOCK_POL(context);
+
     if ((VAL_NO_ERROR != retval) && (NULL != added_q))
-        val_async_status_free(as);
+        _async_status_free(as);
     else {
         /* put in context async queries list */
-        val_log(context, LOG_DEBUG, "adding %s to context as_list", domain_name);
+        val_log(context,
+                LOG_DEBUG, "adding %s to context as_list", domain_name);
         as->val_as_next = context->as_list;
         context->as_list = as;
     }
-
     CTX_UNLOCK_ACACHE(context);
-    CTX_UNLOCK_POL_SH(context);
 
     *async_status = as;
 
@@ -6778,7 +6814,7 @@ int
 val_async_check(val_context_t *context, fd_set *pending_desc,
                 int *nfds, u_int32_t flags)
 {
-    val_async_status           *as, *next, *completed = NULL;
+    val_async_status           *as, *next, *last, *completed = NULL;
     int retval = VAL_NO_ERROR;
 
     if ((NULL == context) || (pending_desc == NULL) || (NULL == nfds))
@@ -6791,26 +6827,31 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
     CTX_LOCK_POL_SH(context);
 
     for (as = context->as_list; as; as = next) {
-        next = as->val_as_next;
-        if (as->val_as_flags & VAL_AS_DONE)
-            continue;
+        next = as->val_as_next; /* save next in case we remove as */
 
-        retval = _async_check_one(as, pending_desc, nfds, flags);
-        /* ignore errors, keep trying other requests */
+        if (! (as->val_as_flags & VAL_AS_DONE)) {
+            retval = _async_check_one(as, pending_desc, nfds, flags);
+            /* ignore errors, keep trying other requests */
+        }
 
         if (as->val_as_flags & VAL_AS_DONE) {
             /** if done, remove from context */
             val_log(context, LOG_DEBUG, "as %p completed", as);
-            val_context_as_remove(context, as);
+            if (context->as_list == as)
+                context->as_list = as->val_as_next;
+            else
+                last->val_as_next = as->val_as_next;
 
             /** add to completed list for callbacks */
             as->val_as_next = completed;
             completed = as;
         }
+        else
+            last = as;
     }
 
     CTX_UNLOCK_ACACHE(context);
-    CTX_UNLOCK_POL_SH(context);
+    CTX_UNLOCK_POL(context);
 
     /*
      * call callback for completed queries
@@ -6821,10 +6862,80 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
         if (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
             (NULL != as->val_as_result_cb)) {
             (*as->val_as_result_cb)(as);
-            val_async_status_free(as);
+            as->val_as_ctx = NULL; /* we've already removed ourselves */
+            _async_status_free(as); /* no ctx, so no lock needed */
         }
     }
 
     return retval;
 }
+
+/*
+ * user flags defined in validator.h
+ * upper byte reserved for internal use
+ */
+#define VAL_ASYNC_CANCEL_REMOVED   0x01000000 /* already removed from ctx */
+
+/** caller has lock, if needed */
+static void
+_async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
+{
+    if (NULL == context || NULL == as)
+        return ;
+
+
+    /** call callback if done */
+    if ((as->val_as_flags & VAL_AS_DONE) &&
+        (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
+         (!(flags & VAL_ASYNC_CANCEL_NO_CALLBACKS)) &&
+         (NULL != as->val_as_result_cb)))
+        (*as->val_as_result_cb)(as);
+
+    val_log(context, LOG_DEBUG, "as %p cancelled", as);
+
+    if (! (flags & VAL_ASYNC_CANCEL_REMOVED))
+        _context_as_remove(context, as);
+
+    _async_status_free(as);
+}
+
+int
+val_async_cancel(val_context_t *context, val_async_status *as, u_int flags)
+{
+    if (NULL == context || NULL == as)
+        return VAL_BAD_ARGUMENT;
+
+    flags &= VAL_ASYNC_CANCEL_RESERVED_MASK; /* mask off reserved bits */
+
+    CTX_LOCK_ACACHE(context);
+
+    _async_cancel_one(context, as, flags);
+
+    CTX_UNLOCK_ACACHE(context);
+
+    return VAL_NO_ERROR;
+}
+
+int
+val_async_cancel_all(val_context_t *context, u_int flags)
+{
+    val_async_status *as;
+
+    if (NULL == context)
+        return VAL_BAD_ARGUMENT;
+
+    flags &= VAL_ASYNC_CANCEL_RESERVED_MASK; /* mask off reserved bits */
+
+    CTX_LOCK_ACACHE(context);
+
+    for (as = context->as_list; as; as = as->val_as_next)
+        _async_cancel_one(context, as, flags | VAL_ASYNC_CANCEL_REMOVED);
+
+    context->as_list = NULL;
+
+    CTX_UNLOCK_ACACHE(context);
+
+    return VAL_NO_ERROR;
+}
+
 #endif /* VAL_NO_ASYNC */

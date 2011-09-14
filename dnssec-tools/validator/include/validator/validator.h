@@ -339,6 +339,17 @@ struct queries_for_query;
                                     fd_set *fds,
                                     int *num_fds,
                                     struct timeval *timeout);
+
+    /*
+     * cancellation flags
+     */
+#define VAL_ASYNC_CANCEL_NO_CALLBACKS     0x00000001 /* no cb if req completed */
+#define VAL_ASYNC_CANCEL_RESERVED_MASK    0xFF000000 /* one byte internal use */
+
+    int             val_async_cancel(val_context_t *context,
+                                     val_async_status *as,
+                                     u_int flags);
+    int             val_async_cancel_all(val_context_t *context, u_int flags);
 #endif /* VAL_NO_ASYNC */
 
     /*
