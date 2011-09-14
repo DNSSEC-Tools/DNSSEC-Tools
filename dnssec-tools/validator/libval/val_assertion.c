@@ -6557,7 +6557,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     /*
      * get context, if needed
      */
-    context = val_create_or_refresh_context(ctx);
+    context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context) {
         val_async_status_free(as);
         return retval;
@@ -6642,6 +6642,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     }
 
     CTX_UNLOCK_ACACHE(context);
+    CTX_UNLOCK_POL_SH(context);
 
     *async_status = as;
 
@@ -6787,6 +6788,7 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
         return VAL_NO_ERROR;
 
     CTX_LOCK_ACACHE(context);
+    CTX_LOCK_POL_SH(context);
 
     for (as = context->as_list; as; as = next) {
         next = as->val_as_next;
@@ -6808,12 +6810,12 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
     }
 
     CTX_UNLOCK_ACACHE(context);
+    CTX_UNLOCK_POL_SH(context);
 
     /*
      * call callback for completed queries
      */
     while (completed) {
-        CTX_UNLOCK_POL(context);
         as = completed;
         completed = completed->val_as_next;
         if (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
