@@ -5298,9 +5298,17 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
     if ((next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) ||
-        (next_q->qfq_query->qc_flags & VAL_QUERY_RECURSE))
+        (next_q->qfq_query->qc_flags & VAL_QUERY_RECURSE) ||
+        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
         /* don't look at the cache for this query */
+        val_log(context, LOG_DEBUG,
+                "ask_cache(): skipping cache for {%s %s(%d) %s(%d)}, flags=%d",
+                name_p, p_class(next_q->qfq_query->qc_class_h),
+                next_q->qfq_query->qc_class_h,
+                p_type(next_q->qfq_query->qc_type_h),
+                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
         return VAL_NO_ERROR;
+    }
  
     val_log(context, LOG_DEBUG,
             "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%d", name_p,
@@ -5426,6 +5434,17 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
     if (-1 == ns_name_ntop(query->qfq_query->qc_name_n, name_p,
                            sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
+
+    if (query->qfq_query->qc_flags & VAL_QUERY_SKIP_RESOLVER) {
+        val_log(context, LOG_INFO,
+                "ask_resolver(): skipping query {%s %s(%d) %s(%d)}, flags=%d%s",
+                name_p, p_class(query->qfq_query->qc_class_h),
+                query->qfq_query->qc_class_h,
+                p_type(query->qfq_query->qc_type_h),
+                query->qfq_query->qc_type_h, query->qfq_query->qc_flags,
+                query->qfq_query->qc_referral ? " (referral/alias)" : "");
+        return VAL_NO_ERROR;
+    }
 
     val_log(context, LOG_INFO,
             "ask_resolver(): sending query for {%s %s(%d) %s(%d)}, flags=%d%s",
@@ -6619,7 +6638,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
         /*
          * Data might already be present in the cache
          */
-        /** XXX by-pass this functionality through flags if needed */
+        /** cache skip/by-pass check is performed lower down */
         retval = _ask_cache_one(context, &as->val_as_queries, added_q,
                                 &data_received, &data_missing, &more_data);
         // xxx-rks did we get answer? if so, return results?
@@ -6657,9 +6676,9 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     /*
      * Send un-sent queries
      */
-    /** XXX by-pass this functionality through flags if needed */
     if ((VAL_NO_ERROR == retval) &&
-        (added_q->qfq_query->qc_state == Q_INIT)) {
+        (added_q->qfq_query->qc_state == Q_INIT) &&
+        (! (flags & VAL_QUERY_SKIP_RESOLVER))) {
 
         retval = _resolver_submit_one(context, &as->val_as_queries,
                                       added_q);
