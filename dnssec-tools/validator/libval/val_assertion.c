@@ -6286,8 +6286,7 @@ val_resolve_and_check(val_context_t * ctx,
         val_log(NULL,LOG_DEBUG,"libsres: ");
         val_log(NULL,LOG_DEBUG,"libsres: ""val_resolve_and_check !done");
         FD_ZERO(&pending_desc);
-        closest_event.tv_sec = 0;
-        closest_event.tv_usec = 0;
+        timerclear(&closest_event);
 
         /*
          * keep track of the last entry added to the query chain 
@@ -6734,7 +6733,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     /*
      * run through all queries, checking for responses/retries
      */
-    closest_event.tv_sec = closest_event.tv_usec = 0;
+    timerclear(&closest_event);
     gettimeofday(&now, NULL);
     for (; qfq; qfq = qfq->qfq_next) {
 
