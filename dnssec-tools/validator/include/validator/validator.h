@@ -67,12 +67,16 @@ struct timeval;
 #define VAL_QUERY_GLUE_REQUEST      0x00080000
 #define VAL_QUERY_RECURSE           0x00100000
 #define VAL_QUERY_REFRESH_QCACHE    0x00200000
+#define VAL_QUERY_SKIP_CACHE        0x00400000
+#define VAL_QUERY_SKIP_RESOLVER     0x00800000
 
 #define VAL_QFLAGS_USERMASK (VAL_QUERY_AC_DETAIL |\
                              VAL_QUERY_DONT_VALIDATE |\
                              VAL_QUERY_NO_DLV |\
                              VAL_QUERY_ASYNC |\
                              VAL_QUERY_NO_EDNS0_FALLBACK |\
+                             VAL_QUERY_SKIP_CACHE |\
+                             VAL_QUERY_SKIP_RESOLVER |\
                              VAL_QUERY_RECURSE |\
                              VAL_QUERY_REFRESH_QCACHE)
 
