@@ -45,13 +45,21 @@ res_io_get_debug(void)
 }
 
 /*
- * Less than or equal comparison for timeval structures, ignoring
- * microseconds, just like res_send().
+ * Less than or equal comparison for timeval structures
+ * note: timercmp doesn't handle <= or >=
+ * For reference:
+ * # define timercmp(a, b, CMP)   \
+ *            (((a)->tv_sec == (b)->tv_sec) ?  \
+ *             ((a)->tv_usec CMP (b)->tv_usec) :         \
+ *             ((a)->tv_sec CMP (b)->tv_sec))
  */
-#define LTEQ(a,b)           (a.tv_sec<=b.tv_sec)
+#define LTEQ(a,b)  (                                                    \
+        ((a.tv_sec == b.tv_sec) ?                                       \
+         ((a.tv_usec < b.tv_usec) || (a.tv_usec == b.tv_usec)) :        \
+         (a.tv_sec < b.tv_sec)) )
 #define UPDATE(a,b) do {                                                \
-    if (a->tv_sec==0 || !LTEQ((*a),b))                                  \
-        memcpy (a, &b, sizeof(struct timeval));                         \
+        if (!timerisset(a) || timercmp(a, &b, > ))                      \
+            memcpy (a, &b, sizeof(struct timeval));                     \
     } while(0)
 
 
@@ -521,7 +529,6 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
     if (NULL == now) {
         now = &local_now;
         gettimeofday(&local_now, NULL);
-        local_now.tv_usec = 0;
     }
     if (net_change)
         *net_change = 0;
@@ -652,8 +659,8 @@ res_io_check_one_tid(int tid, struct timeval *next_evt, struct timeval *now)
 
     pthread_mutex_unlock(&mutex);
 
-    res_log(NULL, LOG_DEBUG, "libsres: "" tid %d next event is at %ld", tid,
-            next_evt->tv_sec);
+    res_log(NULL, LOG_DEBUG, "libsres: "" tid %d next event is at %ld.%ld",
+            tid, next_evt->tv_sec, next_evt->tv_usec);
 
     return ret_val;
 }
@@ -677,7 +684,6 @@ res_io_check(int transaction_id, struct timeval *next_evt)
     gettimeofday(&tv, NULL);
     res_log(NULL, LOG_DEBUG, "libsres: ""Checking tids at %ld.%ld", tv.tv_sec,
             tv.tv_usec);
-    tv.tv_usec = 0;
 
     /*
      * Start "next event" at 0.0 seconds 
@@ -697,8 +703,8 @@ res_io_check(int transaction_id, struct timeval *next_evt)
 
     pthread_mutex_unlock(&mutex);
 
-    res_log(NULL, LOG_DEBUG,
-            "libsres: "" next global event is at %ld", next_evt->tv_sec);
+    res_log(NULL, LOG_DEBUG, "libsres: "" next global event is at %ld.%ld",
+            next_evt->tv_sec, next_evt->tv_usec);
 
     return ret_val;
 }
@@ -786,10 +792,9 @@ void
 res_io_set_timeout(struct timeval *timeout, struct timeval *next_event)
 {
     gettimeofday(timeout, NULL);
-    timeout->tv_usec = 0;
  
     if (LTEQ((*timeout), (*next_event)))
-        timeout->tv_sec = next_event->tv_sec - timeout->tv_sec;
+        timersub(next_event, timeout, timeout);
     else
         memset(timeout, 0, sizeof(struct timeval));
 }
@@ -831,7 +836,6 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
         res_log(NULL, LOG_DEBUG+1, "libsres: ""    orig timeout %ld,%ld",
                 timeout->tv_sec, timeout->tv_usec);
         gettimeofday(&now, NULL);
-        now.tv_usec = 0;
     }
     else
         res_log(NULL, LOG_DEBUG, "libsres: "" ea %p select info",
@@ -902,7 +906,7 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
 #ifdef HAVE_PSELECT
     struct timespec timeout_ts;
     timeout_ts.tv_sec = timeout->tv_sec;
-    timeout_ts.tv_nsec = 0;
+    timeout_ts.tv_nsec = timeout->tv_usec;
     ready = pselect(max_sock + 1, read_descriptors, NULL, NULL, &timeout_ts, NULL);
 #else
     ready = select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
@@ -1290,8 +1294,8 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
     struct timeval  next_event;
     struct timeval zero_time;
     fd_set read_descriptors;
-    zero_time.tv_sec = 0;
-    zero_time.tv_usec = 0;
+
+    timerclear(&zero_time);
 
     FD_ZERO(&read_descriptors);
 
@@ -1354,10 +1358,8 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
                                transactions[transaction_id]);
 
         /* check if next_event is closer than closest_event */
-        if (closest_event->tv_sec == 0 ||
-            LTEQ(next_event, (*closest_event))) {
-            closest_event->tv_sec = next_event.tv_sec;
-        }
+        UPDATE(closest_event, next_event);
+
         pthread_mutex_unlock(&mutex);
         return SR_IO_NO_ANSWER_YET;
     }
@@ -1440,9 +1442,10 @@ res_print_ea(struct expected_arrival *ea)
                 ea, ea->ea_socket, ea->ea_using_stream, addr ? addr : "",
                 ntohs(port));
         res_log(NULL, LOG_DEBUG, "libsres: "
-                "  Remaining retries: %d, Next try %ld, Cancel at %ld",
+                "  Remaining retries: %d, Next try %ld.%ld, Cancel at %ld.%ld",
                 ea->ea_remaining_attempts, ea->ea_next_try.tv_sec,
-                ea->ea_cancel_time.tv_sec);
+                ea->ea_next_try.tv_usec, ea->ea_cancel_time.tv_sec,
+                ea->ea_cancel_time.tv_usec);
 }
 
 void
@@ -1454,7 +1457,6 @@ res_io_view(void)
     struct timeval  tv;
 
     gettimeofday(&tv, NULL);
-    tv.tv_usec = 0;
     res_log(NULL, LOG_DEBUG, "libsres: ""Current time is %ld", tv.tv_sec);
 
     pthread_mutex_lock(&mutex);

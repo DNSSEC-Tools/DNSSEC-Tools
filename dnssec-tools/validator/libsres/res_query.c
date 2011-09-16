@@ -374,7 +374,7 @@ query_send(const char *name,
     if (SR_UNSET != ret_val)
         return ret_val;
 
-    dummy.tv_sec = dummy.tv_usec = 0;
+    timerclear(&dummy);
     res_io_check_one_tid(*trans_id, &dummy, NULL);
 
     return SR_UNSET;
@@ -510,8 +510,7 @@ get(const char *name,
         res_log(NULL,LOG_DEBUG,"libsres: ""get %s", name);
         do {
             FD_ZERO(&pending_desc);
-            closest_event.tv_sec = 0;
-            closest_event.tv_usec = 0;
+            timerclear(&closest_event);
 
             ret_val = response_recv(&trans_id, &pending_desc, &closest_event, server, response,
                                     response_length);
@@ -547,8 +546,7 @@ get_tcp(const char *name, u_int16_t type_h, u_int16_t class_h,
     res_log(NULL,LOG_DEBUG,"libsres: ""get_tcp %s", name);
     do {
         FD_ZERO(&pending_desc);
-        closest_event.tv_sec = 0;
-        closest_event.tv_usec = 0;
+        timerclear(&closest_event);
 
         ret_val = response_recv(&trans_id, &pending_desc, &closest_event,
                                 server, response, response_length);

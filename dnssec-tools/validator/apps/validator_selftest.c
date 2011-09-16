@@ -582,15 +582,17 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             timeout.tv_usec = 500;
         }
         val_log(context, LOG_INFO,
-                "select @ %d, max fd %d, timeout %ld, %d in flight, %d unsent",
-               now.tv_sec, nfds, timeout.tv_sec, suite->in_flight, unsent);
+                "select @ %d, max fd %d, timeout %ld.%ld, %d in flight, %d unsent",
+                now.tv_sec, nfds, timeout.tv_sec, now.tv_usec,
+                suite->in_flight, unsent);
         if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG))
             res_io_count_ready(&activefds, nfds); // debug
 
         fflush(stdout);
         ready = select(nfds, &activefds, NULL, NULL, &timeout);
         gettimeofday(&now, NULL);
-        val_log(context, LOG_DEBUG, "%d fds ready @ %d", ready, now.tv_sec);
+        val_log(context, LOG_DEBUG, "%d fds ready @ %ld.%ld", ready,
+                now.tv_sec, now.tv_usec);
         if ((ready > 0) && (val_log_debug_level() >= LOG_DEBUG))
             res_io_count_ready(&activefds, nfds); // debug
         if (ready < 0 && errno == EINTR)
@@ -599,8 +601,8 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         /** no ready fd; check for timeouts/retries */
         if (ready == 0) {
             gettimeofday(&now, NULL);
-            now.tv_usec = 0;
-            val_log(context, LOG_DEBUG, "timeout @ %ld", now.tv_sec);
+            val_log(context, LOG_DEBUG, "timeout @ %ld.%ld", now.tv_sec,
+                    now.tv_usec);
         }
 
         rc = val_async_check(context, &activefds, &nfds, 0);
