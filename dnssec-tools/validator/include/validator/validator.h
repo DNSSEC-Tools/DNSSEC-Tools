@@ -523,6 +523,15 @@ struct queries_for_query;
     void val_free_answer_chain(struct val_answer_chain *answers);
 
 
+    /*
+     * utility functions. mostly used internal to libval.
+     */
+    int val_get_answer_from_result(val_context_t *context, const char *name,
+                                   int class, int type,
+                                   struct val_result_chain **results,
+                                   struct val_answer_chain **answers,
+                                   u_int32_t vgafr_flags);
+
 
     /*
      * for backwards compatibility
