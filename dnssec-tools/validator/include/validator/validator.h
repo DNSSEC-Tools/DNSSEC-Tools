@@ -486,6 +486,19 @@ struct queries_for_query;
 #define VAL_GETADDRINFO_HAS_STATUS val_getaddrinfo_has_status 
 #define VAL_GETNAMEINFO_HAS_STATUS val_getaddrinfo_has_status 
 
+    typedef struct vgai_status_s vgai_status;
+    typedef int (*vgai_callback)(void *callback_data, int eai_retval,
+                             struct addrinfo *res, val_status_t val_status);
+
+    int             val_getaddrinfo_submit(val_context_t * context,
+                                           const char *nodename,
+                                           const char *servname,
+                                           const struct addrinfo *hints_in,
+                                           vgai_callback *callback,
+                                           void *callback_data,
+                                           u_int vgai_flags,
+                                           vgai_status **status);
+
     /*
      * A thread-safe, re-entrant version of val_gethostbyaddr 
      */
