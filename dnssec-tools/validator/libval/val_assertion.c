@@ -6555,6 +6555,60 @@ _async_status_free(val_async_status *as)
 }
 
 /*
+ * call callbacks for completed requests
+ */
+static void
+_handle_completed(val_context_t *context)
+
+{
+    val_async_status           *as, *next, *last, *completed = NULL;
+
+    if ((NULL == context) || (NULL == context->as_list))
+        return;
+
+    CTX_LOCK_ACACHE(context);
+
+    /** find any completed requests and deal with them. */
+    for (as = context->as_list; as; as = next) {
+
+        next = as->val_as_next; /* save next in case we remove as */
+
+        if (! (as->val_as_flags & VAL_AS_DONE)) {
+            last = as;
+            continue;
+        }
+
+        /** remove from context */
+        val_log(context, LOG_DEBUG, "as %p completed", as);
+        if (context->as_list == as)
+            context->as_list = as->val_as_next;
+        else
+            last->val_as_next = as->val_as_next;
+
+        /** add to completed list for callbacks */
+        as->val_as_next = completed;
+        completed = as;
+    }
+
+    CTX_UNLOCK_ACACHE(context);
+
+    /*
+     * call callback for completed queries
+     */
+    while (completed) {
+        as = completed;
+        completed = completed->val_as_next;
+        if (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
+            (NULL != as->val_as_result_cb)) {
+            (*as->val_as_result_cb)(as);
+            as->val_as_ctx = NULL; /* we've already removed ourselves */
+            _async_status_free(as); /* no ctx, so no lock needed */
+        }
+    }
+
+}
+
+/*
  * Look inside the cache, ask the resolver for missing data.
  */
 int
@@ -6825,67 +6879,152 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
 }
 
 /*
- * Look inside the cache, ask the resolver for missing data.
- * Then try and validate what ever is possible.
+ * Function: val_async_select
+ *
+ * Purpose:  call select after updating parameters for async requests.
+ *
+ * Parameters: context  -- context for pending async requests
+ *             pending_desc -- fd_set, optionally including application
+ *                             file descriptors. May be NULL, in which
+ *                             case only pending async request FDs will be used.
+ *             nfds -- highest FD in pending_desc + 1. May be NULL, in which
+ *                     case value will be set based on pending async requests.
+ *             timeout -- maximum time application wants to wait for data.
+ *                        May be NULL, in which case a timeout will be set
+ *                        based on the closest event for pending async requests.
+ *             flags -- flags affecting operation of this function.
+ *                      None defined yet.
+ *
+ * Returns:  number of FDs with pending data, or 0 for a timeout, or -1
+ *           for an error.
  */
 int
-val_async_check(val_context_t *context, fd_set *pending_desc,
-                int *nfds, u_int32_t flags)
+val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
+                 struct timeval *timeout, u_int32_t flags)
 {
-    val_async_status           *as, *next, *last, *completed = NULL;
+    int              waiting, retval;
+    fd_set           local_fdset;
+    int              local_nfds;
+    struct timeval   now, tv;
+
+    if ((NULL == pending_desc) || (NULL == nfds)) {
+        pending_desc = &local_fdset;
+        nfds = &local_nfds;
+        FD_ZERO(pending_desc);
+        local_nfds = 0;
+    }
+
+    /** need to adjust relative timeout to absolute time used by libval */
+    if (timeout) {
+        memcpy(&tv, timeout, sizeof(tv)); /* save original tv */
+        gettimeofday(&now, NULL);
+        timeradd(&now, &tv, timeout); /* add current time to delay */
+    }
+    CTX_LOCK_ACACHE(context);
+    retval = val_async_select_info(context, pending_desc, nfds, timeout);
+    CTX_UNLOCK_ACACHE(context);
+
+    if (VAL_NO_ERROR != retval)
+        return -1;
+
+    /** convert absolute time to relative timeout */
+    if (timeout) {
+        val_log(context, LOG_DEBUG,
+                "val_async_select: next event at %ld.%ld seconds", 
+                timeout->tv_sec, timeout->tv_usec);
+        timersub(timeout, &now, timeout);
+        val_log(context, LOG_DEBUG,
+                "val_async_select: Waiting for %ld.%ld seconds", 
+                timeout->tv_sec, timeout->tv_usec);
+    }
+    waiting = select(*nfds, pending_desc, NULL, NULL, timeout);
+    val_log(context, LOG_DEBUG, "val_async_select: %d FDs ready", waiting);
+    return waiting;
+}
+
+/*
+ * Function: val_async_check_wait
+ *
+ * Purpose:
+ * Look inside the cache, ask the resolver for missing data.
+ * Then try and validate what ever is possible.
+ *
+ * Note that this can result in callbacks being called.
+ *
+ * Parameters: context  -- context for pending async requests
+ *             pending_desc -- fd_set, optionally including application
+ *                             file descriptors. May be NULL, in which
+ *                             case only pending async request FDs will be used.
+ *             nfds -- highest FD in pending_desc + 1. May be NULL, in which
+ *                     case value will be set based on pending async requests.
+ *             tv -- maximum time application wants to wait for data. May be
+ *                   NULL, in which case a timeout will be set based on the
+ *                   closest event for pending async requests.
+ *             flags -- flags affecting operation of this function.
+ *                      None defined yet.
+ */
+int
+val_async_check_wait(val_context_t *context, fd_set *pending_desc,
+                     int *nfds, struct timeval *tv, u_int32_t flags)
+{
+    val_async_status           *as;
     int retval = VAL_NO_ERROR;
 
-    if ((NULL == context) || (pending_desc == NULL) || (NULL == nfds))
+    if (NULL == context)
         return VAL_BAD_ARGUMENT;
 
     if (NULL == context->as_list)
         return VAL_NO_ERROR;
 
+    /** handle any completed requests */
+    _handle_completed(context);
+
+    /** might not be anything left to check now */
+    if (NULL == context->as_list)
+        return VAL_NO_ERROR;
+
+    /** if caller didn't call select, do it for them */
+    if ((pending_desc == NULL) || (NULL == nfds)) {
+        fd_set local_fdset;
+        int    local_nfds = 0;
+        int    waiting;
+
+        FD_ZERO(&local_fdset);
+        pending_desc = &local_fdset;
+        nfds = &local_nfds;
+
+        waiting = val_async_select(context, pending_desc, nfds, tv, 0);
+        if (waiting <= 0 )
+            return VAL_NO_ERROR; /* nothing to check */
+    }
+
     CTX_LOCK_ACACHE(context);
     CTX_LOCK_POL_SH(context);
 
-    for (as = context->as_list; as; as = next) {
-        next = as->val_as_next; /* save next in case we remove as */
+    for (as = context->as_list; as; as = as->val_as_next) {
 
-        if (! (as->val_as_flags & VAL_AS_DONE)) {
-            retval = _async_check_one(as, pending_desc, nfds, flags);
-            /* ignore errors, keep trying other requests */
-        }
+        if (as->val_as_flags & VAL_AS_DONE)
+            continue; /* we'll deal with these later */
 
-        if (as->val_as_flags & VAL_AS_DONE) {
-            /** if done, remove from context */
-            val_log(context, LOG_DEBUG, "as %p completed", as);
-            if (context->as_list == as)
-                context->as_list = as->val_as_next;
-            else
-                last->val_as_next = as->val_as_next;
-
-            /** add to completed list for callbacks */
-            as->val_as_next = completed;
-            completed = as;
-        }
-        else
-            last = as;
+        /* ignore errors, keep trying other requests */
+        _async_check_one(as, pending_desc, nfds, flags);
     }
 
-    CTX_UNLOCK_ACACHE(context);
     CTX_UNLOCK_POL(context);
+    CTX_UNLOCK_ACACHE(context);
 
-    /*
-     * call callback for completed queries
-     */
-    while (completed) {
-        as = completed;
-        completed = completed->val_as_next;
-        if (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
-            (NULL != as->val_as_result_cb)) {
-            (*as->val_as_result_cb)(as);
-            as->val_as_ctx = NULL; /* we've already removed ourselves */
-            _async_status_free(as); /* no ctx, so no lock needed */
-        }
-    }
+    /** if we checked requests, some might have completed */
+    _handle_completed(context);
 
     return retval;
+}
+
+/** for backwards compatibility. see val_async_check_wait */
+int
+val_async_check(val_context_t *context, fd_set *pending_desc,
+                int *nfds, u_int32_t flags)
+{
+    return val_async_check_wait(context, pending_desc, nfds, NULL, flags);
 }
 
 /*

@@ -336,9 +336,12 @@ struct queries_for_query;
                                      const char * domain_name, int qclass,
                                      int qtype, unsigned int flags,
                                      val_async_status **async_status);
-    int             val_async_check(val_context_t *context,
-                                    fd_set *pending_desc, int *nfds,
-                                    unsigned int flags);
+    int             val_async_check_wait(val_context_t *context,
+                                         fd_set *pending_desc, int *nfds,
+                                         struct timeval *tv, unsigned int flags);
+    int             val_async_select(val_context_t *context, fd_set *pending,
+                                     int *nfds, struct timeval *timeout,
+                                     u_int32_t flags);
     int             val_async_select_info(val_context_t *context,
                                     fd_set *fds,
                                     int *num_fds,
@@ -354,6 +357,15 @@ struct queries_for_query;
                                      val_async_status *as,
                                      u_int flags);
     int             val_async_cancel_all(val_context_t *context, u_int flags);
+
+    /*
+     * backwards compatibility
+     */
+    /** val_async_check: use val_async_check_wait instead */
+    int             val_async_check(val_context_t *context,
+                                    fd_set *pending_desc, int *nfds,
+                                    unsigned int flags);
+
 #endif /* VAL_NO_ASYNC */
 
     /*
