@@ -145,6 +145,7 @@ print_addrinfo(int type, void *ainfo)
 int
 main(int argc, char *argv[])
 {
+    const char     *allowed_args = "hco:s:Vv:r:i:";
     char           *node = NULL;
     char           *service = NULL;
     struct addrinfo hints;
@@ -161,13 +162,13 @@ main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_LONG
         int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-        c = getopt_long_only(argc, argv, "hco:s:V",
+        c = getopt_long_only(argc, argv, allowed_args,
                              prog_options, &opt_index);
 #else
-        c = getopt_long(argc, argv, "hco:s:V", prog_options, &opt_index);
+        c = getopt_long(argc, argv, allowed_args, prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-        c = getopt(argc, argv, "hco:s:V");
+        c = getopt(argc, argv, allowed_args);
 #endif
 
         if (c == -1) {
@@ -193,6 +194,19 @@ main(int argc, char *argv[])
         case 'c':
             getcanonname = 1;
             break;
+
+        case 'v':
+            dnsval_conf_set(optarg);
+            break;
+
+        case 'i':
+            root_hints_set(optarg);
+            break;
+
+        case 'r':
+            resolv_conf_set(optarg);
+            break;
+
         case 'V':
             version();
             return 0;
