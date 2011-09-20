@@ -6556,7 +6556,28 @@ _async_status_free(val_async_status *as)
 
 /*
  * call callbacks for completed requests
+ *
+ * returns 1 if callback called, 0 otherwise
  */
+static int
+_call_callbacks(val_async_status *as)
+{
+    if ((NULL == as) || (NULL == as->val_as_result_cb))
+        return 0;
+
+    if ((as->val_as_flags & VAL_AS_DONE) &&
+        !(as->val_as_flags & VAL_AS_NO_CALLBACKS)) {
+        /*
+         * one callback per customer, please (otherwise caller might
+         * call async cancel, which will call callbacks = instant loop!)
+         */
+        as->val_as_flags |= VAL_AS_NO_CALLBACKS;
+        (*as->val_as_result_cb)(as);
+        return 1;
+    }
+    return 0;
+}
+
 static void
 _handle_completed(val_context_t *context)
 
@@ -6598,14 +6619,10 @@ _handle_completed(val_context_t *context)
     while (completed) {
         as = completed;
         completed = completed->val_as_next;
-        if (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
-            (NULL != as->val_as_result_cb)) {
-            (*as->val_as_result_cb)(as);
-            as->val_as_ctx = NULL; /* we've already removed ourselves */
-            _async_status_free(as); /* no ctx, so no lock needed */
-        }
+        _call_callbacks(as);
+        as->val_as_ctx = NULL; /* we've already removed ourselves */
+        _async_status_free(as); /* no ctx, so no lock needed */
     }
-
 }
 
 /*
@@ -7042,11 +7059,8 @@ _async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
 
 
     /** call callback if done */
-    if ((as->val_as_flags & VAL_AS_DONE) &&
-        (!(as->val_as_flags & VAL_AS_NO_CALLBACKS) &&
-         (!(flags & VAL_ASYNC_CANCEL_NO_CALLBACKS)) &&
-         (NULL != as->val_as_result_cb)))
-        (*as->val_as_result_cb)(as);
+    if (!(flags & VAL_ASYNC_CANCEL_NO_CALLBACKS))
+        _call_callbacks(as);
 
     val_log(context, LOG_DEBUG, "as %p cancelled", as);
 
