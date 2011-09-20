@@ -726,6 +726,10 @@ get_addrinfo_from_dns(val_context_t * ctx,
 
     *val_status = VAL_VALIDATED_ANSWER;
 
+    if (NULL == nodename && NULL == servname) {
+        return EAI_NONAME;
+    }
+
     /*
      * use a default hints structure if one is not available.
      */
@@ -737,8 +741,7 @@ get_addrinfo_from_dns(val_context_t * ctx,
     }
 
     if (res == NULL ||
-        (hints != NULL && 
-         hints->ai_family != AF_UNSPEC &&
+        (hints->ai_family != AF_UNSPEC &&
          hints->ai_family != AF_INET &&
          hints->ai_family != AF_INET6)) {
 
@@ -749,8 +752,7 @@ get_addrinfo_from_dns(val_context_t * ctx,
     /*
      * Check if we need to return IPv4 addresses based on the hints 
      */
-    if (hints == NULL || hints->ai_family == AF_UNSPEC
-        || hints->ai_family == AF_INET) {
+    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
 
         val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for A records");
 
@@ -774,8 +776,7 @@ get_addrinfo_from_dns(val_context_t * ctx,
     /*
      * Check if we need to return IPv6 addresses based on the hints 
      */
-    if (hints == NULL || hints->ai_family == AF_UNSPEC
-        || hints->ai_family == AF_INET6) {
+    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET6) {
 
         val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for AAAA records");
         
@@ -873,7 +874,7 @@ _getaddrinfo_local(val_context_t * ctx, const char *nodename,
     }
 
     /*
-     * if nodename is blank or hints includes ipv4 or unspecified,
+     * if nodename is blank and hints includes ipv4 or unspecified,
      * use IPv4 localhost 
      */
     if (NULL == nodename &&
