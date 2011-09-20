@@ -141,11 +141,37 @@ print_addrinfo(int type, void *ainfo)
     }
 }
 
+#ifndef VAL_NO_ASYNC
+
+struct getaddr_s {
+    int              *retval;
+    struct addrinfo **ainfo;
+    val_status_t     *vstatus;
+    int               done;
+};
+
+static int 
+_callback(void *callback_data, int eai_retval, struct addrinfo *res,
+          val_status_t val_status)
+{
+    struct getaddr_s *gas = (struct getaddr_s*)callback_data;
+
+    *gas->retval = eai_retval;
+    *gas->ainfo = res;
+    *gas->vstatus = val_status;
+    gas->done = 1;
+
+    printf("_callback %p %d %p %d\n", callback_data, eai_retval, res,
+           val_status);
+
+    return 0; /* OK */
+}
+#endif
 
 int
 main(int argc, char *argv[])
 {
-    const char     *allowed_args = "hco:s:Vv:r:i:";
+    const char     *allowed_args = "ahco:s:Vv:r:i:";
     char           *node = NULL;
     char           *service = NULL;
     struct addrinfo hints;
@@ -153,6 +179,7 @@ main(int argc, char *argv[])
     int             retval;
     int             getcanonname = 0;
     int             portspecified = 0;
+    int             async = 0;
     val_log_t      *logp;
     val_status_t val_status;
 
@@ -195,6 +222,10 @@ main(int argc, char *argv[])
             getcanonname = 1;
             break;
 
+        case 'a':
+            async = 1;
+            break;
+
         case 'v':
             dnsval_conf_set(optarg);
             break;
@@ -230,34 +261,65 @@ main(int argc, char *argv[])
         hints.ai_flags |= AI_CANONNAME;
     }
 
-    {
+    if (!async) {
         retval = val_getaddrinfo(NULL, node, service, &hints, &val_ainfo, &val_status);
-        printf("Return code = %d\n", retval);
-        printf("Validator status code = %d (%s)\n", val_status, p_val_status(val_status));
-
-        if (retval != 0) {
-#ifdef HAVE_GAI_STRERROR
-            printf("Error in val_getaddrinfo(): %s\n",
-                   gai_strerror(retval));
+    }
+    else {
+#ifdef VAL_NO_ASYNC
+        fprintf(stderr, "async support not available\n");
 #else
-            printf("Error in val_getaddrinfo(): %d\n", retval);
-#endif
-            return -1;
-        } else {
-            print_addrinfo(VAL_ADDRINFO_TYPE, val_ainfo);
-        }
-
+        struct getaddr_s cb_data = { &retval, &val_ainfo, &val_status, 0 };
+        vgai_callback my_cb = &_callback;
+        vgai_status *status = NULL;
+        struct timeval tv;
+        val_context_t *context;
         /*
-         * cleanup 
+         * create a new context
          */
-        freeaddrinfo(val_ainfo);
-        if (val_isvalidated(val_status)) {
-            return 2; 
-        } 
-        if (val_istrusted(val_status)) {
-            return 1; 
-        } 
-        
+        val_create_context("getaddr", &context);
+        if (context == NULL)
+            return -1;
+        /*
+         * submit request
+         */
+        retval = val_getaddrinfo_submit(context, node, service, &hints,
+                                        &my_cb, &cb_data, 0, &status);
+        /*
+         * wait for it to complete
+         */
+        while(0 == cb_data.done) {
+            tv.tv_sec = 4;
+            tv.tv_usec = 567;
+            val_async_check_wait(context, NULL, NULL, &tv, 0);
+        }
+#endif
+    }
+
+    printf("Return code = %d\n", retval);
+    printf("Validator status code = %d (%s)\n", val_status,
+           p_val_status(val_status));
+
+    if (retval != 0) {
+#ifdef HAVE_GAI_STRERROR
+        printf("Error in val_getaddrinfo(): %s\n", gai_strerror(retval));
+#else
+        printf("Error in val_getaddrinfo(): %d\n", retval);
+#endif
+        return -1;
+    }
+
+    print_addrinfo(VAL_ADDRINFO_TYPE, val_ainfo);
+
+    /*
+     * cleanup 
+     */
+    freeaddrinfo(val_ainfo);
+    if (val_isvalidated(val_status)) {
+        return 2; 
     } 
+    if (val_istrusted(val_status)) {
+        return 1; 
+    } 
+
     return 0;
 }
