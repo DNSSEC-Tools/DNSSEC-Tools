@@ -2568,13 +2568,19 @@ val_async_select_info(val_context_t *context, fd_set *activefds,
             char         name_p[NS_MAXDNAME];
             if (-1 == ns_name_ntop(qfq->qfq_query->qc_name_n, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
+            if (!qfq->qfq_query->qc_ea) {
+                val_log(NULL, LOG_DEBUG+1, " as %p query %p {%s %s(%d) %s(%d)} ea %p", as, qfq,
+                        name_p, p_class(qfq->qfq_query->qc_class_h),
+                        qfq->qfq_query->qc_class_h,
+                        p_type(qfq->qfq_query->qc_type_h),
+                        qfq->qfq_query->qc_type_h, qfq->qfq_query->qc_ea);
+                continue;
+            }
             val_log(NULL, LOG_DEBUG, " as %p query %p {%s %s(%d) %s(%d)} ea %p", as, qfq,
                     name_p, p_class(qfq->qfq_query->qc_class_h),
                     qfq->qfq_query->qc_class_h,
                     p_type(qfq->qfq_query->qc_type_h),
                     qfq->qfq_query->qc_type_h, qfq->qfq_query->qc_ea);
-            if (!qfq->qfq_query->qc_ea)
-                continue;
             res_async_query_select_info(qfq->qfq_query->qc_ea, nfds, activefds,
                                         timeout);
         }
