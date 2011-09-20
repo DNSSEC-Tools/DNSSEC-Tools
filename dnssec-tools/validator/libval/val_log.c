@@ -332,18 +332,21 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
         }
 
         if (val_isvalidated(next_result->val_rc_status)) {
-            val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Validated)",
-                    name_p, real_class_h, real_type_h,
+            val_log(ctx, level, "Validation result for {%s, %s(%d), %s(%d)}: %s:%d (Validated)",
+                    name_p, p_class(real_class_h), real_class_h,
+                    p_type(real_type_h), real_type_h,
                     p_val_status(next_result->val_rc_status),
                     next_result->val_rc_status);
         } else if (val_istrusted(next_result->val_rc_status)) {
-            val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Trusted but not Validated)",
-                    name_p, real_class_h, real_type_h,
+            val_log(ctx, level, "Validation result for {%s, %s(%d), %s(%d)}: %s:%d (Trusted but not Validated)",
+                    name_p, p_class(real_class_h), real_class_h,
+                    p_type(real_type_h), real_type_h,
                     p_val_status(next_result->val_rc_status),
                     next_result->val_rc_status);
         } else {
-            val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Untrusted)",
-                    name_p, real_class_h, real_type_h,
+            val_log(ctx, level, "Validation result for {%s, %s(%d), %s(%d)}: %s:%d (Untrusted)",
+                    name_p, p_class(real_class_h), real_class_h,
+                    p_type(real_type_h), real_type_h,
                     p_val_status(next_result->val_rc_status),
                     next_result->val_rc_status);
         }
