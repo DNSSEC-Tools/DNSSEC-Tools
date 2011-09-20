@@ -1454,3 +1454,311 @@ int val_getaddrinfo_has_status(int rc) {
 #endif
 }
 
+/** ====================================================================== **/
+/** ====================================================================== **/
+/** ====================================================================== **/
+/** ====================================================================== **/
+/** ====================================================================== **/
+
+#ifndef VAL_NO_ASYNC
+
+#define VGAI_DONE         0x0001
+#define VGAI_FREE_CONTEXT 0x0002
+
+struct vgai_status_s {
+    char             *nodename;
+    char             *servname;
+    struct addrinfo  *hints;
+
+    val_context_t    *context;
+    struct addrinfo  *res;
+    val_status_t      val_status;
+    val_async_status *inet_status;
+    val_async_status *inet6_status;
+
+    u_int             flags;
+    vgai_callback    *callback;
+    void             *callback_data;
+};
+
+static void
+_free_vgai( vgai_status *vgai )
+{
+    if (NULL == vgai)
+        return;
+
+    if (NULL != vgai->inet_status) {
+        val_async_cancel(vgai->context, vgai->inet_status, 
+                         VAL_ASYNC_CANCEL_NO_CALLBACKS);
+        vgai->inet_status = NULL;
+    }
+
+    if (NULL != vgai->inet6_status) {
+        val_async_cancel(vgai->context, vgai->inet6_status,
+                         VAL_ASYNC_CANCEL_NO_CALLBACKS);
+        vgai->inet6_status = NULL;
+    }
+
+    if (NULL != vgai->nodename) {
+        free(vgai->nodename);
+        vgai->nodename = NULL;
+    }
+
+    if (NULL != vgai->servname) {
+        free(vgai->servname);
+        vgai->servname = NULL;
+    }
+
+    if (NULL != vgai->res) {
+        freeaddrinfo(vgai->res);
+        vgai->res = NULL;
+    }
+
+    if (vgai->flags & VGAI_FREE_CONTEXT) {
+        val_free_context(vgai->context);
+        vgai->context = NULL;
+    }
+
+    free(vgai);
+}
+
+/*
+ * our internal callback for request completion, which in turns calls
+ * original caller vgai_callback.
+ */
+static int
+_vgai_async_callback(val_async_status *as)
+{
+    int                rc;
+    vgai_status       *vgai;
+
+    val_log(as->val_as_ctx, LOG_DEBUG,
+            "val_getaddrinfo async callback for %p", as);
+
+    if (NULL == as)
+        return VAL_BAD_ARGUMENT;
+
+    vgai = (vgai_status *)as->val_as_cb_user_ctx;
+    if (NULL == vgai) {
+        val_log(as->val_as_ctx, LOG_DEBUG,
+                "val_getaddrinfo async callback for %p", as);
+        return VAL_NO_ERROR;
+    }
+
+    if (0 == vgai->val_status) /* recently created */
+        vgai->val_status = VAL_VALIDATED_ANSWER;
+
+    /*
+     * get answer_chain from result_chain
+     */
+    rc = val_get_answer_from_result(as->val_as_ctx, vgai->nodename,
+                                    as->val_as_class, as->val_as_type,
+                                    &as->val_as_results, &as->val_as_answers,
+                                    0);
+    if (VAL_NO_ERROR != rc) {
+        val_log(as->val_as_ctx, LOG_DEBUG,
+                "vgai_callback: val_get_answer_from_result() returned=%d", rc);
+    }
+    else {
+        /*
+         * get addrinfo from results
+         */
+        rc = get_addrinfo_from_result(as->val_as_ctx, as->val_as_answers,
+                                      vgai->servname, vgai->hints, &vgai->res,
+                                      &vgai->val_status);
+        if (VAL_NO_ERROR == rc) {
+            val_log(as->val_as_ctx, LOG_DEBUG,
+                    "vgai_callback get_addrinfo_from_result() returned=%d with val_status=%d",
+                    rc, vgai->val_status);
+        }
+    }
+
+    /*
+     * clear async_status ptr, as it will be freed after this callback 
+     * completes.
+     */
+    if (as == vgai->inet_status) {
+        vgai->inet_status = NULL;
+        if (rc != VAL_NO_ERROR) {
+            if (vgai->inet6_status) {
+                val_async_cancel(vgai->context, vgai->inet6_status,
+                                 VAL_ASYNC_CANCEL_NO_CALLBACKS);
+                vgai->inet6_status = NULL;
+            }
+        }
+    }
+    else if (as == vgai->inet6_status) {
+        vgai->inet6_status = NULL;
+        if (rc != VAL_NO_ERROR) {
+            if (vgai->inet_status) {
+                val_async_cancel(vgai->context, vgai->inet_status,
+                                 VAL_ASYNC_CANCEL_NO_CALLBACKS);
+                vgai->inet_status = NULL;
+            }
+        }
+    }
+
+    /*
+     * if both async_status ptr are NULL, we're done and should call
+     * our callback.
+     */
+    if (NULL != vgai->inet6_status || NULL != vgai->inet_status)
+        return VAL_NO_ERROR;
+
+    if (NULL == vgai->callback) {
+        val_log(as->val_as_ctx, LOG_DEBUG,
+                "val_getaddrinfo async NULL callback!");
+    } else {
+        (*vgai->callback)(vgai->callback_data, rc, vgai->res, vgai->val_status);
+        /** let caller keep res structure */
+        vgai->res = NULL;
+    }
+
+    _free_vgai(vgai);
+
+    return VAL_NO_ERROR;
+}
+
+/*
+ * Function: val_getaddrinfo_submit
+ *
+ * Purpose: submit asynchronous request for getaddrinfo style resoloution
+ *
+ * Parameters: context -- context for request. May be NULL, in which case
+ *                        the default context will be used.
+ *             nodename, servname, hints_in -- see getaddrinfo man page
+ *             callback -- vgai_callback function which will be called when
+ *                         the request completes
+ *             callback_data -- optional void pointer which will also be
+ *                              passed to the callback. Not used internally,
+ *                              strictly for caller to pass context to callback.
+ *             vgai_flags -- flags affecting function operation
+ *             status -- opaque vgai_status object which caller can use to
+ *                       cancel request
+ *
+ * Returns: VAL_NO_ERROR -- successful submission
+ *          VAL_BAD_ARGUMENT -- need callback and nodename or servname
+ *
+ *          May return other validator errors from internal function calls
+ *
+ * Note: caller assumes responsibility for the memory for the addrinfo
+ *       linked list passed to the callback function.
+ */
+int
+val_getaddrinfo_submit(val_context_t * context, const char *nodename,
+                       const char *servname, const struct addrinfo *hints_in,
+                       vgai_callback *callback, void *callback_data,
+                       u_int vgai_flags, vgai_status **status)
+{
+    vgai_status           *vgai = NULL;
+    int                    vretval = VAL_NO_ERROR, rc;
+    struct addrinfo       *res = NULL;
+    const struct addrinfo *hints;
+    struct addrinfo        default_hints;
+    val_context_t         *ctx;
+    val_status_t           val_status;
+
+    if (((NULL == nodename) && (NULL == servname)) || (NULL == callback))
+        return VAL_BAD_ARGUMENT;
+
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL)
+        return VAL_INTERNAL_ERROR;
+    else if (ctx != context) /* we allocated our own context */
+        vgai_flags |= VGAI_FREE_CONTEXT;
+
+    /*
+     * use a default hints structure if one is not available.
+     */
+    if (hints_in == NULL) {
+        memset(&default_hints, 0, sizeof(default_hints));
+        hints = &default_hints;
+    } else {
+        hints = hints_in;
+    }
+
+    /** check we have a supported family */
+    if (hints->ai_family != AF_UNSPEC &&
+        hints->ai_family != AF_INET && hints->ai_family != AF_INET6) {
+
+        (*callback)(callback_data, EAI_NONAME, NULL, VAL_UNTRUSTED_ANSWER);
+        goto done;
+    }
+
+    /** try local sources first */
+    rc = _getaddrinfo_local(ctx, nodename, servname, hints, &res, &val_status);
+    if (EAI_AGAIN != rc) {
+        /** _getaddrinfo_local returns eai rc, not libval */
+        (*callback)(callback_data, rc, res, val_status);
+        goto done;
+    }
+
+    vgai = (vgai_status *)calloc(1, sizeof(vgai_status));
+    if (NULL == vgai) {
+        vretval = VAL_ENOMEM;
+        goto done;
+    }
+
+    vgai->context = ctx;
+    vgai->flags = vgai_flags;
+    vgai->callback = callback;
+    vgai->callback_data = callback_data;
+    if (servname)
+        vgai->servname = (char *)strdup(servname);
+    if (nodename)
+        vgai->nodename = (char *)strdup(nodename);
+
+    /*
+     * Check if we need to return IPv4 addresses based on the hints
+     */
+    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
+
+        val_log(ctx, LOG_DEBUG,
+                "val_getaddrinfo_submit(): checking for A records");
+
+        rc = val_async_submit(ctx, nodename, ns_c_in, ns_t_a, 0,
+                              &vgai->inet_status) ;
+        if (VAL_NO_ERROR != rc) {
+            vgai->flags |= VGAI_DONE;
+            vretval = rc;
+            goto done;
+        }
+        vgai->inet_status->val_as_result_cb = &_vgai_async_callback;
+        vgai->inet_status->val_as_cb_user_ctx = vgai;
+    }
+
+#ifdef VAL_IPV6
+    /*
+     * Check if we need to return IPv6 addresses based on the hints
+     */
+    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET6) {
+
+        val_log(ctx, LOG_DEBUG,
+                "val_getaddrinfo_submit(): checking for AAAA records");
+
+        rc = val_async_submit(ctx, nodename, ns_c_in, ns_t_aaaa, 0,
+                              &vgai->inet6_status) ;
+        if (VAL_NO_ERROR != rc) {
+            vgai->flags |= VGAI_DONE;
+            vretval = rc;
+            val_async_cancel(ctx, vgai->inet_status,
+                             VAL_ASYNC_CANCEL_NO_CALLBACKS);
+            goto done;
+        }
+        vgai->inet6_status->val_as_result_cb = &_vgai_async_callback;
+        vgai->inet6_status->val_as_cb_user_ctx = vgai;
+    }
+#endif
+
+done:
+    CTX_UNLOCK_POL(ctx);
+
+    if (VAL_NO_ERROR == vretval)
+        *status = vgai;
+    else
+        _free_vgai( vgai );
+
+    return vretval;
+}                               /* val_getaddrinfo_submit() */
+
+#endif /* VAL_NO_ASYNC */
