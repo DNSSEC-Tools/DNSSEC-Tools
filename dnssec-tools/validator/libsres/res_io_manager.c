@@ -149,8 +149,12 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
 {
     if ((ea == NULL) || (*ea == NULL))
         return;
-    res_log(NULL, LOG_DEBUG, "libsres: ""ea %p, fd %d free",
-            *ea, (*ea)->ea_socket);
+    if ((*ea)->ea_socket != INVALID_SOCKET)
+        res_log(NULL, LOG_DEBUG, "libsres: ""ea %p, fd %d free",
+                *ea, (*ea)->ea_socket);
+    else
+        res_log(NULL, LOG_DEBUG+1, "libsres: ""ea %p, fd %d free",
+                *ea, (*ea)->ea_socket);
     if ((*ea)->ea_ns != NULL)
         free_name_server(&((*ea)->ea_ns));
     if ((*ea)->ea_socket != INVALID_SOCKET)
