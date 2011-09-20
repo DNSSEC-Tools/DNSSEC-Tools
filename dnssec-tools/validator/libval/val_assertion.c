@@ -7076,7 +7076,7 @@ val_async_cancel(val_context_t *context, val_async_status *as, u_int flags)
 int
 val_async_cancel_all(val_context_t *context, u_int flags)
 {
-    val_async_status *as;
+    val_async_status *as, *next;
 
     if (NULL == context)
         return VAL_BAD_ARGUMENT;
@@ -7085,8 +7085,10 @@ val_async_cancel_all(val_context_t *context, u_int flags)
 
     CTX_LOCK_ACACHE(context);
 
-    for (as = context->as_list; as; as = as->val_as_next)
+    for (as = context->as_list; as; as = next) {
+        next = as->val_as_next;
         _async_cancel_one(context, as, flags | VAL_ASYNC_CANCEL_REMOVED);
+    }
 
     context->as_list = NULL;
 
