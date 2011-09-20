@@ -35,14 +35,11 @@ val_free_answer_chain(struct val_answer_chain *answers)
 }
 
 int
-val_get_rrset(val_context_t *context,
-              const char *name,
-              int class,
-              int type,
-              u_int32_t flags,
-              struct val_answer_chain **answers) 
+val_get_answer_from_result(val_context_t *context, const char *name, int class,
+                           int type, struct val_result_chain **results,
+                           struct val_answer_chain **answers,
+                           u_int32_t vgafr_flags)
 {
-    struct val_result_chain *results = NULL;
     struct val_result_chain *res = NULL;
     struct val_answer_chain *ans = NULL;
     struct val_answer_chain *last_ans = NULL;
@@ -51,31 +48,15 @@ val_get_rrset(val_context_t *context,
     int len;
     char *name_alias = NULL;
     int trusted, validated;
-    val_context_t *ctx = NULL;
     
-    if (name == NULL || answers == NULL) {
+    if (name == NULL || answers == NULL || results == NULL || answers == NULL) {
         return VAL_BAD_ARGUMENT;
     }
 
     *answers = NULL;
     last_ans = NULL;
    
-    ctx = val_create_or_refresh_context(context);/* does CTX_LOCK_POL_SH */
-    if (ctx == NULL)
-        return VAL_INTERNAL_ERROR;
-
-    if ((retval = val_resolve_and_check(ctx, name, class, type, 
-                                       flags,
-                                       &results)) != VAL_NO_ERROR) {
-        val_log(ctx, LOG_INFO,
-                "get_addrinfo_from_dns(): val_resolve_and_check failed - %s",
-                p_val_err(retval));
-        CTX_UNLOCK_POL(ctx); 
-        return retval;
-    }
-    CTX_UNLOCK_POL(ctx); 
-
-    if (results == NULL) {
+    if (*results == NULL) {
         /* Construct a single val_answer_chain with the untrusted status */
         ans = (struct val_answer_chain *) MALLOC (sizeof(struct val_answer_chain));
         if (ans == NULL) {
@@ -100,7 +81,7 @@ val_get_rrset(val_context_t *context,
     validated = 1;
 
     /* Construct the val_answer_chain linked list for returned results */
-    for (res = results; res; res=res->val_rc_next) {
+    for (res = *results; res; res=res->val_rc_next) {
 
         if (!validated || !val_isvalidated(res->val_rc_status))
             validated = 0;
@@ -191,14 +172,50 @@ val_get_rrset(val_context_t *context,
         trusted = 1;
     } 
 
-    val_free_result_chain(results);
-    results = NULL;
+    val_free_result_chain(*results);
+    *results = NULL;
     return VAL_NO_ERROR;
 
 err:
     val_free_answer_chain(*answers);
     *answers = NULL;
-    val_free_result_chain(results);
-    results = NULL;
+    val_free_result_chain(*results);
+    *results = NULL;
+    return retval;
+} 
+
+int
+val_get_rrset(val_context_t *context,
+              const char *name,
+              int class,
+              int type,
+              u_int32_t flags,
+              struct val_answer_chain **answers) 
+{
+    struct val_result_chain *results = NULL;
+    int retval = VAL_NO_ERROR;
+    val_context_t *ctx = NULL;
+    
+    if (name == NULL || answers == NULL) {
+        return VAL_BAD_ARGUMENT;
+    }
+
+    ctx = val_create_or_refresh_context(context);/* does CTX_LOCK_POL_SH */
+    if (ctx == NULL)
+        return VAL_INTERNAL_ERROR;
+
+    if ((retval = val_resolve_and_check(ctx, name, class, type, 
+                                       flags,
+                                       &results)) != VAL_NO_ERROR) {
+        val_log(ctx, LOG_INFO,
+                "get_addrinfo_from_dns(): val_resolve_and_check failed - %s",
+                p_val_err(retval));
+        CTX_UNLOCK_POL(ctx); 
+        return retval;
+    }
+    CTX_UNLOCK_POL(ctx); 
+
+    retval = val_get_answer_from_result(ctx, name, class, type, &results,
+                                        answers, 0);
     return retval;
 } 
