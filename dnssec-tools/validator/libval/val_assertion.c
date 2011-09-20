@@ -7056,6 +7056,15 @@ _async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
     _async_status_free(as);
 }
 
+/*
+ * Function: val_async_cancel
+ *
+ * Purpose: cancel a pending async request
+ *
+ * Parameter: context -- context for pending request
+ *            as -- val_async_status for pending request.
+ *            flags -- see VAL_ASYNC_CANCEL_* flags in validator.h
+ */
 int
 val_async_cancel(val_context_t *context, val_async_status *as, u_int flags)
 {
@@ -7073,6 +7082,14 @@ val_async_cancel(val_context_t *context, val_async_status *as, u_int flags)
     return VAL_NO_ERROR;
 }
 
+/*
+ * Function: val_async_cancel_all
+ *
+ * Purpose: cancel all pending async requests for given context
+ *
+ * Parameter: context -- context for pending request
+ *            flags -- see VAL_ASYNC_CANCEL_* flags in validator.h
+ */
 int
 val_async_cancel_all(val_context_t *context, u_int flags)
 {
