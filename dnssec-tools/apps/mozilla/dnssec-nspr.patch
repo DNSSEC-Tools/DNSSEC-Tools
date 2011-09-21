@@ -337,7 +337,7 @@ diff -rwup mozilla-1.9.2.old/nsprpub/pr/src/misc/prnetdb.c mozilla-1.9.2/nsprpub
 +    DNSSECDEBUG((stderr, "  returning: %x", (unsigned int) retval));    \
 +    if ((int) retval == DNSSEC_SUCCESS) {                                \
 +      DNSSECDEBUG((stderr, "  (success)"));                             \
-+    } else if ((int) retval == DNSSEC_SUCCESS || (int) retval == -1) {   \
++    } else if ((int) retval == DNSSEC_FAILURE || (int) retval == -1) {   \
 +      DNSSECDEBUG((stderr, "  (FAIL)"));                                \
 +    }                                                                   \
 +    DNSSECDEBUG((stderr, "\n"));						    \
