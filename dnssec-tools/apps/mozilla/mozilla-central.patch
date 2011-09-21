@@ -2051,7 +2051,7 @@ diff -r cc1e08803869 nsprpub/pr/src/misc/prnetdb.c
 +    DNSSECDEBUG((stderr, "  returning: %x", (unsigned int) retval));    \
 +    if ((int) retval == DNSSEC_SUCCESS) {                                \
 +      DNSSECDEBUG((stderr, "  (success)"));                             \
-+    } else if ((int) retval == DNSSEC_SUCCESS || (int) retval == -1) {   \
++    } else if ((int) retval == DNSSEC_FAILURE || (int) retval == -1) {   \
 +      DNSSECDEBUG((stderr, "  (FAIL)"));                                \
 +    }                                                                   \
 +    DNSSECDEBUG((stderr, "\n"));						    \
