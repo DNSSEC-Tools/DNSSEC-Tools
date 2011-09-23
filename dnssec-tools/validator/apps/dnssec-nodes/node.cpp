@@ -49,9 +49,9 @@
 #include "node.h"
 #include "graphwidget.h"
 
-Node::Node(GraphWidget *graphWidget, const QString &nodeName, int depth)
-    : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_depth(depth), m_color(QColor(128,128,128)), m_additionalInfo(""),
-      m_subData()
+Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
+    : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_fqdn(fqdn), m_depth(depth), m_color(QColor(128,128,128)), m_additionalInfo(""),
+      m_subData(), m_accessCount(0)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -252,6 +252,10 @@ QSet<Node *> Node::children() {
 
 bool Node::hasChildren() {
     return ! m_children.isEmpty();
+}
+
+void Node::removeChild(Node *child) {
+    m_children.remove(child);
 }
 
 void Node::addParent(Node *parent)

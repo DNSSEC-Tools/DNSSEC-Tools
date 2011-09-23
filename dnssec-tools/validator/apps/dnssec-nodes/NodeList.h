@@ -2,6 +2,7 @@
 #define NODELIST_H
 
 #include <QObject>
+#include <QtCore/QTimer>
 #include "node.h"
 #include "edge.h"
 #include "graphwidget.h"
@@ -29,10 +30,12 @@ public:
     int    maxNodes() { return m_maxNodes; }
     void   setMaxNodes(int max) { m_maxNodes = max; }
 
+    void limitChildren(Node *node);
 signals:
 
 public slots:
     void clear();
+    void limit();
 
 private:
     GraphWidget                          *m_graphWidget;
@@ -40,7 +43,11 @@ private:
     QMap<QString, Node *>                 m_nodes;
     QMap<QPair<QString, QString>, Edge *> m_edges;
 
+    QTimer                                m_timer;
+
     int                                   m_maxNodes;
+    int                                   m_accessCounter;
+    int                                   m_accessDropOlderThan;
 };
 
 #endif // NODELIST_H
