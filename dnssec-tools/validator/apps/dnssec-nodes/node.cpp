@@ -250,6 +250,10 @@ QSet<Node *> Node::children() {
     return m_children;
 }
 
+bool Node::hasChildren() {
+    return ! m_children.isEmpty();
+}
+
 void Node::addParent(Node *parent)
 {
     m_parent = parent;
