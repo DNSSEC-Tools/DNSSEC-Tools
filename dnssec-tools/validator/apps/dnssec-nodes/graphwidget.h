@@ -53,8 +53,11 @@
 #include <QtCore/QFile>
 #include <QtCore/QList>
 
+#include "LogWatcher.h"
+
 class Node;
 class Edge;
+class LogWatcher;
 
 //! [0]
 class GraphWidget : public QGraphicsView
@@ -93,6 +96,8 @@ public:
     void setInfo(const QString &text);
     void setInfo(Node *node);
 
+    LogWatcher *logWatcher() { return m_logWatcher; }
+
 public slots:
     void shuffle();
     void zoomIn();
@@ -110,15 +115,14 @@ public slots:
     void scaleWindow();
     void resizeEvent(QResizeEvent *event);
     void openLogFile();
-    void reReadLogFile();
-
-    void parseTillEnd();
 
     void toggleLockedNodes();
     void setLockedNodes(bool newVal);
     void setShowNSEC3Records(bool newVal);
 
     void clear();
+
+    bool showNsec3() { return m_shownsec3; }
 
 protected:
     void keyPressEvent(QKeyEvent *event);
@@ -141,23 +145,14 @@ private:
     bool         m_localScale;
     bool         m_lockNodes;
     bool         m_shownsec3;
-    QStringList  m_logFileNames;
-    QList<QFile *>       m_logFiles;
-    QList<QTextStream *> m_logStreams;
     QTimer      *m_timer;
     LayoutType   m_layoutType;
     int          m_childSize;
 
-    QRegExp    m_validatedRegexp;
-    QRegExp    m_lookingUpRegexp;
-    QRegExp    m_bogusRegexp;
-    QRegExp    m_trustedRegexp;
-    QRegExp    m_pinsecureRegexp;
-    QRegExp    m_dneRegexp;
-    QRegExp    m_maybeDneRegexp;
-
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;
+
+    LogWatcher  *m_logWatcher;
 };
 //! [0]
 
