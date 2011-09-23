@@ -86,10 +86,10 @@ int main(int argc, char **argv)
 
     menu->addSeparator();
 
-    action = menu->addAction("&Watch Log File");
+    action = menu->addAction("&Open and Watch A Log File");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(openLogFile()));
 
-    action = menu->addAction("&ReRead Log File");
+    action = menu->addAction("&ReRead All Log Files");
     action->connect(action, SIGNAL(triggered()), graphWidget->logWatcher(), SLOT(reReadLogFile()));
 
     menu->addSeparator();
