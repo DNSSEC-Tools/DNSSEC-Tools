@@ -87,8 +87,8 @@ labelcmp(const u_char * name1, const u_char * name2, size_t label_cnt)
     size_t offset2 = 0;
     size_t i;
     
-    length1 = (int) name1 ? name1[0] : 0;
-    length2 = (int) name2 ? name2[0] : 0;
+    length1 = (int) (name1 ? name1[0] : 0);
+    length2 = (int) (name2 ? name2[0] : 0);
 
     if (length1 == 0 || length2 == 0)
         return length1 - length2;
