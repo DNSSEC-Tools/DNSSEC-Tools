@@ -486,7 +486,7 @@ void GraphWidget::openLogFile() {
 void GraphWidget::showPrefs()
 {
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
-    NodesPreferences prefs(settings);
+    NodesPreferences prefs(&settings);
     prefs.exec();
     if (prefs.result() == QDialog::Accepted) {
         setPrefs();
