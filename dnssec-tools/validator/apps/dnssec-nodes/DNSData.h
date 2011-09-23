@@ -7,30 +7,36 @@
 class DNSData
 {
 public:
-    enum Status { UNKNOWN, PROVABLY_INSECURE, VALIDATED, DNE, FAILED };
+    enum Status { UNKNOWN = 1, PROVABLY_INSECURE = 2, VALIDATED = 4, DNE = 8, FAILED = 16 };
 
     DNSData();
     DNSData(QString recordType, Status DNSSECStatus);
 
-    void setRecordType(QString recordType) { m_recordType = recordType; }
-    QString recordType() const             { return m_recordType; }
+    void setRecordType(QString recordType)    { m_recordType = recordType; }
+    QString recordType() const                { return m_recordType; }
 
     void setDNSSECStatus(Status DNSSECStatus) { m_DNSSECStatus = DNSSECStatus; }
-    Status DNSSECStatus() const               { return m_DNSSECStatus; }
+    int  DNSSECStatus() const                 { return m_DNSSECStatus; }
+
+    void addDNSSECStatus(int additionalStatus) {
+        if (m_DNSSECStatus & UNKNOWN) // we now should known something
+            m_DNSSECStatus ^= UNKNOWN;
+        m_DNSSECStatus |= additionalStatus;
+    }
 
 private:
     QString m_recordType;
-    Status m_DNSSECStatus;
+    int m_DNSSECStatus;
 };
 
 inline bool operator==(const DNSData &a, const DNSData &b)
 {
-    return(a.recordType() == b.recordType() && a.DNSSECStatus() == b.DNSSECStatus());
+    return(a.recordType() == b.recordType());
 }
 
 inline uint qHash(const DNSData &key)
 {
-    return qHash(key.recordType()) + key.DNSSECStatus();
+    return qHash(key.recordType());
 }
 
 #endif // DNSDATA_H

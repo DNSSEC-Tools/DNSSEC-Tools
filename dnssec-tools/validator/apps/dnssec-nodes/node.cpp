@@ -294,12 +294,11 @@ QString Node::additionalInfo() const
 
 void Node::addSubData(const DNSData &data)
 {
-    if (!m_subData.contains(data)) {
-        m_subData.insert(DNSData(data));
-
-        // if unknown data of this type existed before, delete it now
-        if (m_subData.contains(DNSData(data.recordType(), DNSData::UNKNOWN)))
-            m_subData.remove(DNSData(data.recordType(), DNSData::UNKNOWN));
+    if (!m_subData.contains(data.recordType())) {
+        m_subData.insert(data.recordType(), data);
+    } else {
+        // merge in the other data with ours (internally this drops UNKNOWNS
+        m_subData[data.recordType()].addDNSSECStatus(data.DNSSECStatus());
     }
 }
 
