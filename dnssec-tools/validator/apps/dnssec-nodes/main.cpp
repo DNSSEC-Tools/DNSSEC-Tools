@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     menu->addSeparator();
 
     QAction *action = menu->addAction("&Clear Nodes");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(clear()));
+    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(clear()));
 
     menu->addSeparator();
 

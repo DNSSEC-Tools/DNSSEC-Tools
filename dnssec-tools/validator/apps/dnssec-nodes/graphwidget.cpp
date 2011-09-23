@@ -71,7 +71,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
       m_layoutType(springyLayout), m_childSize(30),
-      m_infoBox(infoBox), m_logWatcher(new LogWatcher(this))
+      m_infoBox(infoBox), m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this))
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -96,6 +96,10 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     connect(m_editor, SIGNAL(returnPressed()), this, SLOT(doLookupFromLineEdit()));
 
     val_log_add_cb(NULL, 99, &val_collect_logs);
+}
+
+void GraphWidget::addItem(QGraphicsItem *newItem) {
+    myScene->addItem(newItem);
 }
 
 void GraphWidget::resizeEvent(QResizeEvent *event) {
@@ -135,6 +139,8 @@ void GraphWidget::itemMoved()
 
 void GraphWidget::keyPressEvent(QKeyEvent *event)
 {
+    Node *centerNode = m_nodeList->centerNode();
+
     switch (event->key()) {
     case Qt::Key_Up:
         centerNode->moveBy(0, -20);
@@ -249,57 +255,6 @@ void GraphWidget::zoomOut()
     scaleView(1 / qreal(1.2));
 }
 
-Node *GraphWidget::node(const QString &nodeName) {
-    if (! m_nodes.contains(nodeName))
-        m_nodes[nodeName] = new Node(this, nodeName);
-    return m_nodes[nodeName];
-}
-
-Node *GraphWidget::addNodes(const QString &nodeName) {
-    int count = 1;
-    Node *returnNode = 0, *tmpNode = 0;
-
-    QStringList nodeNameList = nodeName.split(".");
-    QString completeString = QString("");
-
-    QStringList::iterator node = nodeNameList.end();
-    QStringList::iterator firstItem = nodeNameList.begin();
-    do {
-        node--;
-        //qDebug() << "  doing node (" << nodeName << "): " << *node << "/" << completeString << " at " << count;
-        if (! m_nodes.contains(*node + "." + completeString)) {
-            qDebug() << "    " << (*node + "." + completeString) << " DNE!";
-            returnNode = addNode(*node, completeString, count);
-        } else {
-            returnNode = m_nodes[*node + "." + completeString];
-        }
-        completeString = *node + "." + completeString;
-        count++;
-    } while(node != firstItem);
-    return returnNode;
-}
-
-Node *GraphWidget::addNode(const QString &nodeName, const QString &parentName, int depth) {
-    Edge *edge;
-    QString parentString("<root>");
-    QString suffixString(".");
-
-    if (parentName.length() != 0) {
-        parentString = parentName;
-        suffixString = "." + parentName;
-    }
-
-    Node *newNode = m_nodes[nodeName + suffixString] = new Node(this, nodeName, depth);
-    Node *parent = node(parentString);
-    newNode->setPos(parent->pos() + QPointF(50 - qrand() % 101, 50 - qrand() % 101));
-    myScene->addItem(newNode);
-    myScene->addItem(edge = new Edge(newNode, parent));
-    m_edges[QPair<QString, QString>(parentName, nodeName)] = edge;
-    parent->addChild(newNode);
-    newNode->addParent(parent);
-    return newNode;
-}
-
 void GraphWidget::reLayout() {
     if (m_lockNodes)
         return;
@@ -329,7 +284,7 @@ void GraphWidget::switchToCircles() {
 void GraphWidget::layoutInTree() {
     m_layoutType = treeLayout;
     QRectF rect = myScene->sceneRect();
-    int farRightX = layoutTreeNode(node("<root>"), rect.left() + m_childSize, rect.top() + m_childSize);
+    int farRightX = layoutTreeNode(m_nodeList->node("<root>"), rect.left() + m_childSize, rect.top() + m_childSize);
 
     if (farRightX > myScene->sceneRect().right()) {
         myScene->setSceneRect(rect.left(), rect.top(), farRightX - rect.left(), rect.height());
@@ -358,7 +313,7 @@ int GraphWidget::layoutTreeNode(Node *node, int minX, int minY) {
 void GraphWidget::layoutInCircles() {
     m_layoutType = circleLayout;
     QRectF rect;
-    layoutCircleNode(node("<root>"), qreal(rect.left() + (rect.right() - rect.left())/2), qreal(rect.top() + (rect.top() - rect.bottom())/2), 0, 2*3.1415);
+    layoutCircleNode(m_nodeList->node("<root>"), qreal(rect.left() + (rect.right() - rect.left())/2), qreal(rect.top() + (rect.top() - rect.bottom())/2), 0, 2*3.1415);
 
     // XXX: test growth size into borders
 }
@@ -423,7 +378,7 @@ void GraphWidget::doActualLookup(const QString &lookupString)
         //setSecurityStatus(val_status);
     } else {
         QColor color;
-        addNodes(lookupString);
+        m_nodeList->addNodes(lookupString);
         if (val_isvalidated(val_status)) {
             color = Qt::green;
         } else if (val_istrusted(val_status)) {
@@ -431,7 +386,7 @@ void GraphWidget::doActualLookup(const QString &lookupString)
         } else {
             color = Qt::red;
         }
-        node(lookupString + ".")->setColor(color);
+        m_nodeList->node(lookupString + ".")->setColor(color);
         //setSecurityStatus(val_status);
     }
 
@@ -495,28 +450,12 @@ void GraphWidget::setInfo(Node *node) {
     setInfo(buildString);
 }
 
-void GraphWidget::clear()
-{
-    foreach(Node *aNode, m_nodes) {
-        delete aNode;
-    }
-
-    foreach(Edge *anEdge, m_edges) {
-        delete anEdge;
-    }
-
-    m_nodes.clear();
-    m_edges.clear();
-
-    // add back in the starting node
-    createStartingNode();
-}
-
 void GraphWidget::createStartingNode()
 {
-    m_nodes["<root>"] = new Node(this, "<root>", 0);
-    scene()->addItem(m_nodes["<root>"]);
-    m_nodes["<root>"]->setColor(QColor(Qt::green));
+    Node *centerNode = new Node(this, "<root>", 0);
+    m_nodeList->setCenterNode(centerNode);
+    scene()->addItem(centerNode);
+    centerNode->setColor(QColor(Qt::green));
 }
 
 void GraphWidget::openLogFile() {

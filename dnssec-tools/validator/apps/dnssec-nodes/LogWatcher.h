@@ -8,8 +8,10 @@
 #include <QtCore/QTimer>
 
 #include "graphwidget.h"
+#include "NodeList.h"
 
 class GraphWidget;
+class NodeList;
 
 class LogWatcher : public QObject
 {
@@ -29,6 +31,7 @@ public slots:
 
 private:
     GraphWidget         *m_graphWidget;
+    NodeList            *m_nodeList;
 
     QStringList          m_logFileNames;
     QList<QFile *>       m_logFiles;

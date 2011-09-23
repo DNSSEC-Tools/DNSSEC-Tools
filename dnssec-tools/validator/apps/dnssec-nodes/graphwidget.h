@@ -54,10 +54,12 @@
 #include <QtCore/QList>
 
 #include "LogWatcher.h"
+#include "NodeList.h"
 
 class Node;
 class Edge;
 class LogWatcher;
+class NodeList;
 
 //! [0]
 class GraphWidget : public QGraphicsView
@@ -78,8 +80,7 @@ public:
     void unbusy();
     void doActualLookup(const QString &lookupString);
 
-    Node * node(const QString &nodeName);
-    Node *addNodes(const QString &nodeName);
+    void addItem(QGraphicsItem *newItem);
 
     void parseLogMessage(QString logMessage);
     void parseLogFile(const QString &file = "");
@@ -97,6 +98,7 @@ public:
     void setInfo(Node *node);
 
     LogWatcher *logWatcher() { return m_logWatcher; }
+    NodeList   *nodeList() { return m_nodeList; }
 
 public slots:
     void shuffle();
@@ -120,8 +122,6 @@ public slots:
     void setLockedNodes(bool newVal);
     void setShowNSEC3Records(bool newVal);
 
-    void clear();
-
     bool showNsec3() { return m_shownsec3; }
 
 protected:
@@ -134,9 +134,6 @@ protected:
 
 private:
     int timerId;
-    Node *centerNode;
-    QMap<QString, Node *> m_nodes;
-    QMap<QPair<QString, QString>, Edge *> m_edges;
 
     QGraphicsScene *myScene;
     QLineEdit   *m_editor;
@@ -152,6 +149,8 @@ private:
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;
 
+    // NodeList *MUST* come before LogWatcher in init calls
+    NodeList    *m_nodeList;
     LogWatcher  *m_logWatcher;
 };
 //! [0]
