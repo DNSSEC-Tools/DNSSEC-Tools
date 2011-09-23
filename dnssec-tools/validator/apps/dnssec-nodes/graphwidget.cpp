@@ -105,6 +105,11 @@ void GraphWidget::addItem(QGraphicsItem *newItem) {
     myScene->addItem(newItem);
 }
 
+void GraphWidget::removeItem(QGraphicsItem *removeThis)
+{
+    myScene->removeItem(removeThis);
+}
+
 void GraphWidget::resizeEvent(QResizeEvent *event) {
     Q_UNUSED(event);
     scaleWindow();
@@ -493,3 +498,4 @@ void GraphWidget::setPrefs()
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
     m_nodeList->setMaxNodes(settings.value("maxNodes", 0).toInt());
 }
+

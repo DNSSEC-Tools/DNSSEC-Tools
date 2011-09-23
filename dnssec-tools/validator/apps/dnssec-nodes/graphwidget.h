@@ -81,6 +81,7 @@ public:
     void doActualLookup(const QString &lookupString);
 
     void addItem(QGraphicsItem *newItem);
+    void removeItem(QGraphicsItem *removeThis);
 
     void parseLogMessage(QString logMessage);
     void parseLogFile(const QString &file = "");

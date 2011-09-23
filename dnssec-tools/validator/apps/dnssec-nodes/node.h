@@ -57,7 +57,7 @@ QT_END_NAMESPACE
 class Node : public QGraphicsItem
 {
 public:
-    Node(GraphWidget *graphWidget, const QString &nodeName = "", int depth = 0);
+    Node(GraphWidget *graphWidget, const QString &nodeName = "", const QString &fqdn = "", int depth = 0);
 
     void addEdge(Edge *edge);
     QSet<Edge *> edges() const;
@@ -65,6 +65,7 @@ public:
     void addChild(Node *child);
     QSet<Node *> children();
     bool hasChildren();
+    void removeChild(Node *child);
 
     void addParent(Node *parent);
     Node *parent();
@@ -75,6 +76,7 @@ public:
     enum { Type = UserType + 1 };
     int type() const { return Type; }
     QString nodeName() { return m_nodeName; }
+    QString fqdn() { return m_fqdn; }
 
     void setNewPos(QPointF pos);
     void calculateForces();
@@ -91,6 +93,9 @@ public:
     void addSubData(const DNSData &data);
     QString getSubData();
 
+    int accessCount() { return m_accessCount; }
+    void setAccessCount(int accessCount) { m_accessCount = accessCount; }
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
@@ -104,11 +109,13 @@ private:
     QPointF newPos;
     GraphWidget *graph;
     QString      m_nodeName;
+    QString      m_fqdn;
     int          m_depth;
     QColor       m_color;
     QStringList  m_logMessages;
     QString      m_additionalInfo;
     QList<DNSData> m_subData;
+    int            m_accessCount;
 };
 //! [0]
 
