@@ -294,8 +294,13 @@ QString Node::additionalInfo() const
 
 void Node::addSubData(const DNSData &data)
 {
-    if (!m_subData.contains(data))
+    if (!m_subData.contains(data)) {
         m_subData.insert(DNSData(data));
+
+        // if unknown data of this type existed before, delete it now
+        if (m_subData.contains(DNSData(data.recordType(), DNSData::UNKNOWN)))
+            m_subData.remove(DNSData(data.recordType(), DNSData::UNKNOWN));
+    }
 }
 
 QString Node::getSubData()
