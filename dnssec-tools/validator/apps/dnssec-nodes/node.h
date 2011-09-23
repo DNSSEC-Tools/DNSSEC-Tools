@@ -61,6 +61,7 @@ public:
 
     void addEdge(Edge *edge);
     QSet<Edge *> edges() const;
+    void removeEdge(Edge *edge);
 
     void addChild(Node *child);
     QSet<Node *> children();
