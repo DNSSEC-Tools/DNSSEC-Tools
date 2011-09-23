@@ -42,6 +42,7 @@
 #include "edge.h"
 #include "node.h"
 #include "DNSData.h"
+#include "NodesPreferences.h"
 
 #include <QtGui>
 #include <qdebug.h>
@@ -473,4 +474,11 @@ void GraphWidget::openLogFile() {
     if (chosenFile.length() > 0) {
         m_logWatcher->parseLogFile(chosenFile);
     }
+}
+
+void GraphWidget::showPrefs()
+{
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    NodesPreferences prefs(settings);
+    prefs.exec();
 }

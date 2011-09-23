@@ -20,6 +20,7 @@ NodesPreferences::NodesPreferences(QSettings &settings, QWidget *parent) :
     m_vbox->addWidget(buttonBox);
 
     connect(buttonBox, SIGNAL(accepted()), this, SLOT(ok()));
+    connect(buttonBox, SIGNAL(rejected()), this, SLOT(close()));
 }
 
 void NodesPreferences::ok() {
