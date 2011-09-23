@@ -496,6 +496,10 @@ void GraphWidget::showPrefs()
 void GraphWidget::setPrefs()
 {
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
-    m_nodeList->setMaxNodes(settings.value("maxNodes", 0).toInt());
+    m_nodeList->setMaxNodes(settings.value("maxNodes", 1).toInt());
+    m_nodeList->setEnableMaxNodes(settings.value("enableTimeNodes", false).toBool());
+
+    m_nodeList->setMaxTime(settings.value("maxTime", 1).toInt());
+    m_nodeList->setEnableMaxTime(settings.value("enableMaxNodes", false).toBool());
 }
 
