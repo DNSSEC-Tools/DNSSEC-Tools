@@ -100,6 +100,8 @@ public:
     LogWatcher *logWatcher() { return m_logWatcher; }
     NodeList   *nodeList() { return m_nodeList; }
 
+    void setPrefs();
+
 public slots:
     void shuffle();
     void zoomIn();

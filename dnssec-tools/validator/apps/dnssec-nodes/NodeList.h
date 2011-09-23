@@ -26,6 +26,9 @@ public:
     int    edgeCount();
     int    nodeCount();
 
+    int    maxNodes() { return m_maxNodes; }
+    void   setMaxNodes(int max) { m_maxNodes = max; }
+
 signals:
 
 public slots:
@@ -36,6 +39,8 @@ private:
     Node                                 *m_centerNode;
     QMap<QString, Node *>                 m_nodes;
     QMap<QPair<QString, QString>, Edge *> m_edges;
+
+    int                                   m_maxNodes;
 };
 
 #endif // NODELIST_H

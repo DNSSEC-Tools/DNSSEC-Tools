@@ -97,6 +97,8 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     connect(m_editor, SIGNAL(returnPressed()), this, SLOT(doLookupFromLineEdit()));
 
     val_log_add_cb(NULL, 99, &val_collect_logs);
+
+    setPrefs();
 }
 
 void GraphWidget::addItem(QGraphicsItem *newItem) {
@@ -481,4 +483,13 @@ void GraphWidget::showPrefs()
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
     NodesPreferences prefs(settings);
     prefs.exec();
+    if (prefs.result() == QDialog::Accepted) {
+        setPrefs();
+    }
+}
+
+void GraphWidget::setPrefs()
+{
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    m_nodeList->setMaxNodes(settings.value("maxNodes", 0).toInt());
 }
