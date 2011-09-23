@@ -29,9 +29,11 @@ public:
 
     int    maxNodes() { return m_maxNodes; }
     void   setMaxNodes(int max) { m_maxNodes = max; }
+    void   setEnableMaxNodes(bool enabled) { m_enableMaxNodes = enabled; }
 
     int    maxTime() { return m_maxTime; }
     void   setMaxTime(int max) { m_maxTime = max; }
+    void   setEnableMaxTime(bool enabled) { m_enableMaxTime = enabled; }
 
     void limitChildren(Node *node);
 signals:
@@ -48,9 +50,12 @@ private:
 
     QTimer                                m_timer;
 
+    bool                                  m_enableMaxNodes;
     int                                   m_maxNodes;
     int                                   m_accessCounter;
     int                                   m_accessDropOlderThan;
+
+    bool                                  m_enableMaxTime;
     int                                   m_maxTime;
     time_t                                m_timeDropOlderThan;
 };

@@ -76,6 +76,7 @@ Node *NodeList::addNode(const QString &nodeName, const QString &parentName, int 
 
     // define the access counts
     newNode->setAccessCount(m_accessCounter++);
+    newNode->setAccessTime(time(NULL));
 
     return newNode;
 }
@@ -114,9 +115,12 @@ void NodeList::limit()
         return;
 
     m_accessDropOlderThan = m_accessCounter - m_maxNodes;
+    m_timeDropOlderThan = time(NULL) - m_maxTime;
 
     // walk through our list of nodes and drop everything "older"
     limitChildren(m_centerNode);
+
+    qDebug() << "Done limiting using maxNodes(" << m_enableMaxNodes << ")=" << m_maxNodes << ", maxTime(" << m_enableMaxTime << ")=" << m_maxTime;
 }
 
 void NodeList::limitChildren(Node *node) {
@@ -124,8 +128,9 @@ void NodeList::limitChildren(Node *node) {
         limitChildren(child);
     }
 
-    if (node->children().count() == 0) {
-        if (node->accessCount() < m_accessDropOlderThan) {
+    if (node->children().count() == 0 && node->nodeName() != ROOT_NODE_NAME) {
+        if ((m_enableMaxNodes && node->accessCount() < m_accessDropOlderThan) ||
+            (m_enableMaxTime && node->accessTime() < m_timeDropOlderThan)) {
             // drop this node because it has no children left and is safe to remove
             qDebug() << "removing: " << node->fqdn() << " #" << node->accessCount() << " / " << m_accessDropOlderThan;
 
@@ -134,14 +139,17 @@ void NodeList::limitChildren(Node *node) {
             m_nodes.remove(node->fqdn());
 
             // remove the edge too
-            QPair<QString, QString> edgeNames(node->fqdn(), node->parent()->fqdn());
-            Edge *edge = m_edges[edgeNames];
-            m_graphWidget->removeItem(edge);
-            m_edges.remove(edgeNames);
-            // XXX: delete the edge (later)
+            if (node && node->parent()) {
+                QPair<QString, QString> edgeNames(node->fqdn(), node->parent()->fqdn());
+                Edge *edge = m_edges[edgeNames];
+                m_graphWidget->removeItem(edge);
+                m_edges.remove(edgeNames);
+                // XXX: delete the edge (later)
+            }
 
             // delete the relationship
-            node->parent()->removeChild(node);
+            if (node->parent())
+                node->parent()->removeChild(node);
 
             // XXX delete node; // (because of the parent loop, we need to delete this later)
         }
