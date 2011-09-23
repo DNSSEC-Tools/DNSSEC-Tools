@@ -30,6 +30,9 @@ public:
     int    maxNodes() { return m_maxNodes; }
     void   setMaxNodes(int max) { m_maxNodes = max; }
 
+    int    maxTime() { return m_maxTime; }
+    void   setMaxTime(int max) { m_maxTime = max; }
+
     void limitChildren(Node *node);
 signals:
 
@@ -48,6 +51,8 @@ private:
     int                                   m_maxNodes;
     int                                   m_accessCounter;
     int                                   m_accessDropOlderThan;
+    int                                   m_maxTime;
+    time_t                                m_timeDropOlderThan;
 };
 
 #endif // NODELIST_H
