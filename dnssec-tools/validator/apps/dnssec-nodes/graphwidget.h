@@ -124,6 +124,8 @@ public slots:
 
     bool showNsec3() { return m_shownsec3; }
 
+    void showPrefs();
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void timerEvent(QTimerEvent *event);

@@ -113,6 +113,9 @@ int main(int argc, char **argv)
     action = layoutMenu->addAction("circle");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToCircles()));
 
+    action = menu->addAction("Preferences");
+    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(showPrefs()));
+
 #if defined(Q_OS_SYMBIAN) || defined(Q_WS_MAEMO_5)
     mainWindow.menuBar()->addAction("Shuffle", graphWidget, SLOT(shuffle()));
     mainWindow.menuBar()->addAction("Zoom In", graphWidget, SLOT(zoomIn()));
