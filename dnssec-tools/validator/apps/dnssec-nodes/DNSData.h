@@ -2,6 +2,7 @@
 #define DNSDATA_H
 
 #include <QtCore/QString>
+#include <QHash>
 
 class DNSData
 {
@@ -10,7 +11,6 @@ public:
 
     DNSData();
     DNSData(QString recordType, Status DNSSECStatus);
-
 
     void setRecordType(QString recordType) { m_recordType = recordType; }
     QString recordType() const             { return m_recordType; }
@@ -22,5 +22,15 @@ private:
     QString m_recordType;
     Status m_DNSSECStatus;
 };
+
+inline bool operator==(const DNSData &a, const DNSData &b)
+{
+    return(a.recordType() == b.recordType() && a.DNSSECStatus() == b.DNSSECStatus());
+}
+
+inline uint qHash(const DNSData &key)
+{
+    return qHash(key.recordType()) + key.DNSSECStatus();
+}
 
 #endif // DNSDATA_H

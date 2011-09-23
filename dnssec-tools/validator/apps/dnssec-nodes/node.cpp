@@ -294,14 +294,15 @@ QString Node::additionalInfo() const
 
 void Node::addSubData(const DNSData &data)
 {
-    m_subData.push_back(DNSData(data));
+    if (!m_subData.contains(data))
+        m_subData.insert(DNSData(data));
 }
 
 QString Node::getSubData()
 {
     QString description;
     foreach(DNSData data, m_subData) {
-        description += data.recordType() + ", ";
+        description += data.recordType() + "(" + QString::number(int(data.DNSSECStatus())) + "), ";
     }
     return description;
 }

@@ -11,3 +11,4 @@ DNSData::DNSData(QString recordType, Status DNSSECStatus)
 {
 
 }
+
