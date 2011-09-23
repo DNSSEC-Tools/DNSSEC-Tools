@@ -48,6 +48,7 @@
 #include "edge.h"
 #include "node.h"
 #include "graphwidget.h"
+#include "LogViewer.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_fqdn(fqdn), m_depth(depth), m_color(QColor(128,128,128)), m_additionalInfo(""),
@@ -231,9 +232,8 @@ void Node::mousePressEvent(QGraphicsSceneMouseEvent *event)
         event->setButton(Qt::LeftButton);
         QGraphicsItem::mousePressEvent(event);
     } else if (event->button() == Qt::RightButton) {
-        QMessageBox box;
-        box.setText("<ul><li>" + m_logMessages.join("</li>\n<li>") + "</ul>");
-        box.exec();
+        LogViewer lv(this);
+        lv.exec();
     } else {
         // everything else selects
         graph->setInfo(this);
