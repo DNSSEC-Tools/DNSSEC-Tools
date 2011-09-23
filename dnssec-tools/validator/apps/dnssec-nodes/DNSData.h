@@ -7,7 +7,7 @@
 class DNSData
 {
 public:
-    enum Status { UNKNOWN, VALIDATED, DNE, FAILED };
+    enum Status { UNKNOWN, PROVABLY_INSECURE, VALIDATED, DNE, FAILED };
 
     DNSData();
     DNSData(QString recordType, Status DNSSECStatus);
