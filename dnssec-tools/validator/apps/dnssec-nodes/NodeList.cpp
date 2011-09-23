@@ -118,14 +118,20 @@ void NodeList::limit()
     m_timeDropOlderThan = time(NULL) - m_maxTime;
 
     // walk through our list of nodes and drop everything "older"
-    limitChildren(m_centerNode);
+    bool haveLimited = limitChildren(m_centerNode);
 
-    qDebug() << "Done limiting using maxNodes(" << m_enableMaxNodes << ")=" << m_maxNodes << ", maxTime(" << m_enableMaxTime << ")=" << m_maxTime;
+    qDebug() << "Done limiting (" << haveLimited << ") using maxNodes(" << m_enableMaxNodes << ")=" << m_maxNodes << ", maxTime(" << m_enableMaxTime << ")=" << m_maxTime;
+
+    if (haveLimited)
+        emit dataChanged();
 }
 
-void NodeList::limitChildren(Node *node) {
+bool NodeList::limitChildren(Node *node) {
+    bool haveLimited = false;
+
     foreach (Node *child, node->children()) {
-        limitChildren(child);
+        if (limitChildren(child))
+            haveLimited = true;
     }
 
     if (node->children().count() == 0 && node->nodeName() != ROOT_NODE_NAME) {
@@ -151,9 +157,12 @@ void NodeList::limitChildren(Node *node) {
             if (node->parent())
                 node->parent()->removeChild(node);
 
+            haveLimited = true;
+
             // XXX delete node; // (because of the parent loop, we need to delete this later)
         }
     }
+    return haveLimited;
 }
 
 void  NodeList::setCenterNode(Node *newCenter) {

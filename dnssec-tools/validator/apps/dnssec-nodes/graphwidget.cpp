@@ -95,6 +95,8 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     setLayoutType(circleLayout);
 
     connect(m_editor, SIGNAL(returnPressed()), this, SLOT(doLookupFromLineEdit()));
+    connect(m_logWatcher, SIGNAL(dataChanged()), this, SLOT(reLayout()));
+    connect(m_nodeList, SIGNAL(dataChanged()), this, SLOT(reLayout()));
 
     val_log_add_cb(NULL, 99, &val_collect_logs);
 
@@ -266,6 +268,7 @@ void GraphWidget::zoomOut()
 void GraphWidget::reLayout() {
     if (m_lockNodes)
         return;
+
     switch(m_layoutType) {
     case treeLayout:
         layoutInTree();
@@ -276,6 +279,8 @@ void GraphWidget::reLayout() {
     default:
         break;
     }
+
+    itemMoved();
 }
 
 void GraphWidget::switchToTree() {
@@ -321,7 +326,7 @@ int GraphWidget::layoutTreeNode(Node *node, int minX, int minY) {
 void GraphWidget::layoutInCircles() {
     m_layoutType = circleLayout;
     QRectF rect;
-    layoutCircleNode(m_nodeList->node("<root>"), qreal(rect.left() + (rect.right() - rect.left())/2), qreal(rect.top() + (rect.top() - rect.bottom())/2), 0, 2*3.1415);
+    layoutCircleNode(m_nodeList->node(ROOT_NODE_NAME), qreal(rect.left() + (rect.right() - rect.left())/2), qreal(rect.top() + (rect.top() - rect.bottom())/2), 0, 2*3.1415);
 
     // XXX: test growth size into borders
 }

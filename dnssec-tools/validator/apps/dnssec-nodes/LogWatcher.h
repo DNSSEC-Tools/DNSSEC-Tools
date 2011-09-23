@@ -21,13 +21,16 @@ public:
     LogWatcher(GraphWidget *parent = 0);
 
     void parseLogFile(const QString &fileToOpen);
-    void parseLogMessage(QString logMessage);
+    bool parseLogMessage(QString logMessage);
 
     void openLogFile();
 
 public slots:
     void parseTillEnd();
     void reReadLogFile();
+
+signals:
+    void dataChanged();
 
 private:
     GraphWidget         *m_graphWidget;
