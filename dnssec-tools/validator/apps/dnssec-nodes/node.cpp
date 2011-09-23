@@ -51,17 +51,13 @@
 #include "LogViewer.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
-    : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_fqdn(fqdn), m_depth(depth), m_color(QColor(128,128,128)), m_additionalInfo(""),
-      m_subData(), m_accessCount(0), m_accessTime(0)
+    : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_fqdn(fqdn), m_depth(depth), m_additionalInfo(""),
+      m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
-}
-
-void Node::setColor(const QColor &color) {
-    m_color = color;
 }
 
 void Node::addEdge(Edge *edge)
@@ -186,15 +182,29 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     painter->setBrush(Qt::darkGray);
     painter->drawEllipse(-7, -7, 20, 20);
 
+    QColor color;
+    if (m_resultCache & DNSData::FAILED)
+        color = Qt::red;
+    else if ((m_resultCache & (DNSData::DNE | DNSData::VALIDATED)) == (DNSData::DNE | DNSData::VALIDATED))
+        color = Qt::blue;
+    else if (m_resultCache & DNSData::DNE)
+        color = Qt::cyan;
+    else if (m_resultCache & DNSData::VALIDATED)
+        color = Qt::green;
+    else if (m_resultCache & DNSData::TRUSTED)
+        color = Qt::yellow;
+    else
+        color = QColor(128,128,128);
+
     QRadialGradient gradient(-3, -3, 10);
     if (option->state & QStyle::State_Sunken) {
         gradient.setCenter(3, 3);
         gradient.setFocalPoint(3, 3);
-        gradient.setColorAt(1, QColor(m_color).light(120));
+        gradient.setColorAt(1, QColor(color).light(120));
         gradient.setColorAt(0, QColor(Qt::white).light(120));
     } else {
         gradient.setColorAt(0, QColor(Qt::white));
-        gradient.setColorAt(1, QColor(m_color));
+        gradient.setColorAt(1, QColor(color));
     }
     painter->setBrush(gradient);
 
@@ -300,6 +310,7 @@ void Node::addSubData(const DNSData &data)
         // merge in the other data with ours (internally this drops UNKNOWNS
         m_subData[data.recordType()].addDNSSECStatus(data.DNSSECStatus());
     }
+    cacheDNSDataValidity();;
 }
 
 QString Node::getSubData()
@@ -309,4 +320,12 @@ QString Node::getSubData()
         description += data.recordType() + "(" + QString::number(int(data.DNSSECStatus())) + "), ";
     }
     return description;
+}
+
+void Node::cacheDNSDataValidity()
+{
+    m_resultCache = 0;
+    foreach(DNSData data, m_subData) {
+        m_resultCache |= data.DNSSECStatus();
+    }
 }
