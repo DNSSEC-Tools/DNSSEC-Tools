@@ -22,6 +22,10 @@ public:
 
     Node * centerNode() { return m_centerNode; }
     void   setCenterNode(Node *newCenter);
+
+    int    edgeCount();
+    int    nodeCount();
+
 signals:
 
 public slots:

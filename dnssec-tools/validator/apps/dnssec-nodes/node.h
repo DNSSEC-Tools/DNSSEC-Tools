@@ -64,6 +64,7 @@ public:
 
     void addChild(Node *child);
     QSet<Node *> children();
+    bool hasChildren();
 
     void addParent(Node *parent);
     Node *parent();

@@ -59,6 +59,15 @@ Node *NodeList::addNode(const QString &nodeName, const QString &parentName, int 
     return newNode;
 }
 
+int NodeList::nodeCount() {
+    return m_nodes.count();
+}
+
+int NodeList::edgeCount() {
+    return m_edges.count();
+}
+
+
 void NodeList::clear()
 {
     foreach(Node *aNode, m_nodes) {
