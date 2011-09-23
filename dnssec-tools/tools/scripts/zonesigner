@@ -2561,7 +2561,7 @@ sub serialincr
 	# Find the SOA line and components.
 	#
 	($serialnum) = 
-	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w]+\s+\(?\s*(\d+)/si);
+	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w\\]+\s+\(?\s*(\d+)/si);
 
 	return(-1) if(!defined($serialnum) || $serialnum eq '');
 
@@ -2586,7 +2586,7 @@ sub serialincr
 	# Change the serial number in the file contents.  We'll also
 	# save the new serial number in the keyrec.
 	#
-	$file =~ s/(\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w]+\s+\(?\s+)(\d+)/$1$serialnew/s;
+	$file =~ s/(\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w\\]+\s+\(?\s+)(\d+)/$1$serialnew/s;
 	keyrec_setval('zone',$zone,'serial',$serialnew);
 	$opts{'serial'} = $serialnew;
 
