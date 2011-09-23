@@ -67,9 +67,9 @@ void val_collect_logs(struct val_log *logp, int level, const char *buf)
 }
 
 GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &fileName, QHBoxLayout *infoBox)
-    : QGraphicsView(parent), timerId(0), m_editor(editor), m_libValDebugLog(fileName),
+    : QGraphicsView(parent), timerId(0), m_editor(editor),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
-      m_logFile(0), m_logStream(0), m_timer(0),
+      m_logFiles(), m_logStreams(), m_timer(0),
       m_layoutType(springyLayout), m_childSize(30),
       m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
       m_lookingUpRegexp("looking for \\{([^ ]+) .* ([^\\(]+)\\([0-9]+\\)\\}"),
@@ -526,8 +526,8 @@ void GraphWidget::parseLogMessage(QString logMessage) {
 
 void GraphWidget::parseLogFile(const QString &fileToOpen) {
     QString fileName = fileToOpen;
-    if (fileName.length() == 0)
-        fileName = m_libValDebugLog;
+    QFile       *logFile;
+    QTextStream *logStream;
 
     if (fileName.length() == 0)
         return;
@@ -541,14 +541,18 @@ void GraphWidget::parseLogFile(const QString &fileToOpen) {
         m_timer->start(1000);
     }
 
-    m_logFile = new QFile(fileName);
-    if (!m_logFile->exists() || !m_logFile->open(QIODevice::ReadOnly | QIODevice::Text)) {
-        delete m_logFile;
-        m_logFile = 0;
+    logFile = new QFile(fileName);
+    if (!logFile->exists() || !logFile->open(QIODevice::ReadOnly | QIODevice::Text)) {
+        delete logFile;
+        logFile = 0;
         return;
     }
 
-    m_logStream = new QTextStream(m_logFile);
+    logStream = new QTextStream(logFile);
+
+    m_logFileNames.push_back(fileToOpen);
+    m_logFiles.push_back(logFile);
+    m_logStreams.push_back(logStream);
 
     // qDebug() << "Opened: " << fileName;
 
@@ -556,15 +560,11 @@ void GraphWidget::parseLogFile(const QString &fileToOpen) {
 }
 
 void GraphWidget::parseTillEnd() {
-    if (!m_logStream) {
-        parseLogFile();
-        if (!m_logStream)
-            return;
-    }
-
-    while (!m_logStream->atEnd()) {
-        QString line = m_logStream->readLine();
-        parseLogMessage(line);
+    foreach(QTextStream *logStream, m_logStreams) {
+        while (!logStream->atEnd()) {
+            QString line = logStream->readLine();
+            parseLogMessage(line);
+        }
     }
     reLayout();
 }
@@ -591,32 +591,35 @@ void GraphWidget::toggleLockedNodes() {
 
 void GraphWidget::openLogFile() {
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
-    QString defaultFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
+    QString chosenFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
 
     QFileDialog dialog;
-    dialog.selectFile(defaultFile);
+    dialog.selectFile(chosenFile);
     dialog.setFileMode(QFileDialog::AnyFile);
     if (!dialog.exec())
         return;
 
-    m_libValDebugLog = dialog.selectedFiles()[0];
-    settings.setValue("logFile", m_libValDebugLog);
-    if (m_libValDebugLog.length() > 0) {
-        parseLogFile(m_libValDebugLog);
+    chosenFile = dialog.selectedFiles()[0];
+    settings.setValue("logFile", chosenFile);
+    if (chosenFile.length() > 0) {
+        parseLogFile(chosenFile);
     }
 }
 
 void GraphWidget::reReadLogFile() {
-    if (m_logFile) {
-        m_logFile->close();
-        delete m_logFile;
-        m_logFile = 0;
+    while (!m_logStreams.isEmpty())
+        delete m_logStreams.takeFirst();
+
+    while (!m_logFiles.isEmpty())
+        delete m_logFiles.takeFirst();
+
+    // Restart from the top
+    QStringList listCopy = m_logFileNames;
+    m_logFileNames.clear();
+
+    foreach (QString fileName, listCopy) {
+        parseLogFile(fileName);
     }
-    if (m_logStream) {
-        delete m_logStream;
-        m_logStream = 0;
-    }
-    parseLogFile();
 }
 
 void GraphWidget::setLayoutType(LayoutType layoutType)

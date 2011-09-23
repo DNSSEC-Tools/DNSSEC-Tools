@@ -51,6 +51,7 @@
 #include <QtCore/QPair>
 #include <QtCore/QTextStream>
 #include <QtCore/QFile>
+#include <QtCore/QList>
 
 class Node;
 class Edge;
@@ -140,8 +141,9 @@ private:
     bool         m_localScale;
     bool         m_lockNodes;
     bool         m_shownsec3;
-    QFile       *m_logFile;
-    QTextStream *m_logStream;
+    QStringList  m_logFileNames;
+    QList<QFile *>       m_logFiles;
+    QList<QTextStream *> m_logStreams;
     QTimer      *m_timer;
     LayoutType   m_layoutType;
     int          m_childSize;
