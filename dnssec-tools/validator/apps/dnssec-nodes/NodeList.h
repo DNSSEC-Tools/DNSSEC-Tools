@@ -35,8 +35,10 @@ public:
     void   setMaxTime(int max) { m_maxTime = max; }
     void   setEnableMaxTime(bool enabled) { m_enableMaxTime = enabled; }
 
-    void limitChildren(Node *node);
+    bool   limitChildren(Node *node);
+
 signals:
+    void   dataChanged();
 
 public slots:
     void clear();

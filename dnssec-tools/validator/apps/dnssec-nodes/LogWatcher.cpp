@@ -20,7 +20,7 @@ LogWatcher::LogWatcher(GraphWidget *parent)
 }
 
 
-void LogWatcher::parseLogMessage(QString logMessage) {
+bool LogWatcher::parseLogMessage(QString logMessage) {
     QColor color;
     QString nodeName;
     QString additionalInfo = "";
@@ -35,9 +35,9 @@ void LogWatcher::parseLogMessage(QString logMessage) {
         logMessage.replace(m_lookingUpRegexp, "<b>looking up \\1</b>  ");
     } else if (m_validatedRegexp.indexIn(logMessage) > -1) {
         if (m_graphWidget && !m_graphWidget->showNsec3() && m_validatedRegexp.cap(2) == "NSEC3")
-            return;
+            return false;
         if (m_validatedRegexp.cap(2) == "NSEC")
-            return; // never show 'good' for something missing
+            return false; // never show 'good' for something missing
         nodeName = m_validatedRegexp.cap(1);
         logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
@@ -69,10 +69,10 @@ void LogWatcher::parseLogMessage(QString logMessage) {
         logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> \\1 does not exist, but can't be proven' </font></b>");
         color = Qt::cyan;
     } else {
-        return;
+        return false;
     }
     if (nodeName == ".")
-        return;
+        return false;
     thenode = m_nodeList->addNodes(nodeName);
     if (thenode && !dnsDataNodes.isEmpty()) {
         foreach(DNSData data, dnsDataNodes) {
@@ -84,6 +84,7 @@ void LogWatcher::parseLogMessage(QString logMessage) {
     if (additionalInfo.length() > 0)
         m_nodeList->node(nodeName+ ".")->setAdditionalInfo(additionalInfo);
     m_nodeList->node(nodeName + ".")->addLogMessage(logMessage);
+    return true;
 }
 
 void LogWatcher::parseLogFile(const QString &fileToOpen) {
@@ -125,13 +126,17 @@ void LogWatcher::parseLogFile(const QString &fileToOpen) {
 }
 
 void LogWatcher::parseTillEnd() {
+    bool newData = false;
+
     foreach(QTextStream *logStream, m_logStreams) {
         while (!logStream->atEnd()) {
             QString line = logStream->readLine();
-            parseLogMessage(line);
+            if (parseLogMessage(line))
+                newData = true;
         }
     }
-    m_graphWidget->reLayout();
+    if (newData)
+        emit dataChanged();
 }
 
 void LogWatcher::reReadLogFile() {
