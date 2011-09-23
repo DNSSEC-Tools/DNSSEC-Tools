@@ -297,7 +297,7 @@ int GraphWidget::layoutTreeNode(Node *node, int minX, int minY) {
         return minX;
     }
 
-    QList<Node *> childNodes = node->children();
+    QSet<Node *> childNodes = node->children();
     int runningMinX = minX;
 
     foreach(Node *child, childNodes) {
@@ -319,7 +319,7 @@ void GraphWidget::layoutInCircles() {
 }
 
 void GraphWidget::layoutCircleNode(Node *node, qreal startX, qreal startY, qreal startingDegrees, qreal maxDegrees) {
-    QList<Node *> childNodes = node->children();
+    QSet<Node *> childNodes = node->children();
     const int childSize = 30;
     int numChildren = childNodes.count();
 
