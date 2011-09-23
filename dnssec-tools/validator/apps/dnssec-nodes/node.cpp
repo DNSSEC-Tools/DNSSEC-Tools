@@ -69,7 +69,7 @@ void Node::addEdge(Edge *edge)
     edge->adjust();
 }
 
-QList<Edge *> Node::edges() const
+QSet<Edge *> Node::edges() const
 {
     return edgeList;
 }
@@ -243,10 +243,10 @@ void Node::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void Node::addChild(Node *child)
 {
-    m_children.push_back(child);
+    m_children.insert(child);
 }
 
-QList<Node *> Node::children() {
+QSet<Node *> Node::children() {
     return m_children;
 }
 

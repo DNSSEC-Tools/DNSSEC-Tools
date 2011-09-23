@@ -41,8 +41,9 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <QGraphicsItem>
-#include <QList>
+#include <QtGui/QGraphicsItem>
+#include <QtCore/QList>
+#include <QtCore/QSet>
 
 #include "DNSData.h"
 
@@ -59,10 +60,10 @@ public:
     Node(GraphWidget *graphWidget, const QString &nodeName = "", int depth = 0);
 
     void addEdge(Edge *edge);
-    QList<Edge *> edges() const;
+    QSet<Edge *> edges() const;
 
     void addChild(Node *child);
-    QList<Node *> children();
+    QSet<Node *> children();
 
     void addParent(Node *parent);
     Node *parent();
@@ -96,8 +97,8 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     
 private:
-    QList<Edge *> edgeList;
-    QList<Node *> m_children;
+    QSet<Edge *> edgeList;
+    QSet<Node *> m_children;
     Node         *m_parent;
     QPointF newPos;
     GraphWidget *graph;
