@@ -6,7 +6,8 @@ HEADERS += \
     LogWatcher.h \
     NodeList.h \
     NodesPreferences.h \
-    DelayedDelete.h
+    DelayedDelete.h \
+    LogViewer.h
 
 SOURCES += \
         edge.cpp \
@@ -16,7 +17,8 @@ SOURCES += \
     DNSData.cpp \
     LogWatcher.cpp \
     NodeList.cpp \
-    NodesPreferences.cpp
+    NodesPreferences.cpp \
+    LogViewer.cpp
 
 DEFINES += NETWORKACCESS
 
@@ -49,6 +51,8 @@ OTHER_FILES += \
     qtc_packaging/debian_harmattan/control \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog
+
+
 
 
 
