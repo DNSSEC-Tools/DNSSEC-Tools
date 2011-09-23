@@ -7,7 +7,7 @@
 class DNSData
 {
 public:
-    enum Status { UNKNOWN = 1, PROVABLY_INSECURE = 2, VALIDATED = 4, DNE = 8, FAILED = 16 };
+    enum Status { UNKNOWN = 1, TRUSTED = 2, VALIDATED = 4, DNE = 8, FAILED = 16 };
 
     DNSData();
     DNSData(QString recordType, Status DNSSECStatus);
@@ -15,7 +15,7 @@ public:
     void setRecordType(QString recordType)    { m_recordType = recordType; }
     QString recordType() const                { return m_recordType; }
 
-    void setDNSSECStatus(Status DNSSECStatus) { m_DNSSECStatus = DNSSECStatus; }
+    void setDNSSECStatus(int DNSSECStatus)    { m_DNSSECStatus = DNSSECStatus; }
     int  DNSSECStatus() const                 { return m_DNSSECStatus; }
 
     void addDNSSECStatus(int additionalStatus) {

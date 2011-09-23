@@ -391,16 +391,17 @@ void GraphWidget::doActualLookup(const QString &lookupString)
         //setSecurityStatus(val_status);
     } else {
         QColor color;
-        m_nodeList->addNodes(lookupString);
+        Node *node = m_nodeList->node(lookupString);
+        DNSData::Status result;
+
         if (val_isvalidated(val_status)) {
-            color = Qt::green;
+            result = DNSData::VALIDATED;
         } else if (val_istrusted(val_status)) {
-            color = Qt::yellow;
+            result = DNSData::TRUSTED;
         } else {
-            color = Qt::red;
+            result = DNSData::FAILED;
         }
-        m_nodeList->node(lookupString + ".")->setColor(color);
-        //setSecurityStatus(val_status);
+        node->addSubData(DNSData("A", result));
     }
 
     QString lastInterestingString;
@@ -468,7 +469,7 @@ void GraphWidget::createStartingNode()
     Node *centerNode = new Node(this, "<root>", 0);
     m_nodeList->setCenterNode(centerNode);
     scene()->addItem(centerNode);
-    centerNode->setColor(QColor(Qt::green));
+    centerNode->addSubData(DNSData("DNSKEY", DNSData::TRUSTED));
 }
 
 void GraphWidget::openLogFile() {

@@ -87,7 +87,6 @@ public:
     QPainterPath shape() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
-    void setColor(const QColor &color);
     void setAdditionalInfo(const QString &info);
     QString additionalInfo() const;
 
@@ -99,6 +98,8 @@ public:
 
     time_t accessTime() { return m_accessTime; }
     void setAccessTime(time_t newTime) { m_accessTime = newTime; }
+
+    void cacheDNSDataValidity();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
@@ -115,12 +116,12 @@ private:
     QString      m_nodeName;
     QString      m_fqdn;
     int          m_depth;
-    QColor       m_color;
     QStringList  m_logMessages;
     QString      m_additionalInfo;
     QMap<QString, DNSData>  m_subData;
     int            m_accessCount;
     time_t         m_accessTime;
+    int            m_resultCache;
 };
 //! [0]
 
