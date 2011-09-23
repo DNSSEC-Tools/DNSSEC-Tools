@@ -13,7 +13,7 @@ NodesPreferences::NodesPreferences(QSettings &settings, QWidget *parent) :
     m_maxNodes = new QSpinBox();
     m_layout->addRow("Max Nodes: ", m_maxNodes);
     m_maxNodes->setMaximum(0xffff);
-    m_maxNodes->setMinimum(1);
+    m_maxNodes->setMinimum(0);
     m_maxNodes->setValue(m_settings.value("maxNodes", 0).toInt());
 
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
