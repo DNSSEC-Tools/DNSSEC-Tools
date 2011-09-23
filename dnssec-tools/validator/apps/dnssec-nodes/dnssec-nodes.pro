@@ -3,7 +3,8 @@ HEADERS += \
         node.h \
         graphwidget.h \
     DNSData.h \
-    LogWatcher.h
+    LogWatcher.h \
+    NodeList.h
 
 SOURCES += \
         edge.cpp \
@@ -11,7 +12,8 @@ SOURCES += \
         node.cpp \
         graphwidget.cpp \
     DNSData.cpp \
-    LogWatcher.cpp
+    LogWatcher.cpp \
+    NodeList.cpp
 
 DEFINES += NETWORKACCESS
 
@@ -44,6 +46,8 @@ OTHER_FILES += \
     qtc_packaging/debian_harmattan/control \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog
+
+
 
 
 

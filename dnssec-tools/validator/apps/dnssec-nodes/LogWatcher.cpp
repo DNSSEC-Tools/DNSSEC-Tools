@@ -16,6 +16,7 @@ LogWatcher::LogWatcher(GraphWidget *parent)
     m_dneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_(NAME|TYPE):"),
     m_maybeDneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME_NOCHAIN:")
 {
+    m_nodeList = m_graphWidget->nodeList();
 }
 
 
@@ -72,18 +73,17 @@ void LogWatcher::parseLogMessage(QString logMessage) {
     }
     if (nodeName == ".")
         return;
-    thenode = m_graphWidget->addNodes(nodeName);
+    thenode = m_nodeList->addNodes(nodeName);
     if (thenode && !dnsDataNodes.isEmpty()) {
         foreach(DNSData data, dnsDataNodes) {
-            qDebug() << "here: " << nodeName << "=" << data.recordType();
             thenode->addSubData(data);
         }
     }
     if (color.isValid())
-        m_graphWidget->node(nodeName + ".")->setColor(color);
+        m_nodeList->node(nodeName + ".")->setColor(color);
     if (additionalInfo.length() > 0)
-        m_graphWidget->node(nodeName+ ".")->setAdditionalInfo(additionalInfo);
-    m_graphWidget->node(nodeName + ".")->addLogMessage(logMessage);
+        m_nodeList->node(nodeName+ ".")->setAdditionalInfo(additionalInfo);
+    m_nodeList->node(nodeName + ".")->addLogMessage(logMessage);
 }
 
 void LogWatcher::parseLogFile(const QString &fileToOpen) {

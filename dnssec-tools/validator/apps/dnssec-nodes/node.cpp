@@ -282,7 +282,6 @@ QString Node::additionalInfo() const
 void Node::addSubData(const DNSData &data)
 {
     m_subData.push_back(DNSData(data));
-    qDebug() << "here: =" << data.recordType() << m_subData.count();
 }
 
 QString Node::getSubData()
