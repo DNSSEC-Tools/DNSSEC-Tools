@@ -118,7 +118,7 @@ private:
     QColor       m_color;
     QStringList  m_logMessages;
     QString      m_additionalInfo;
-    QList<DNSData> m_subData;
+    QSet<DNSData>  m_subData;
     int            m_accessCount;
     time_t         m_accessTime;
 };
