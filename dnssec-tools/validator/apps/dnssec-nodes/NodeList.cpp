@@ -1,4 +1,5 @@
 #include "NodeList.h"
+#include "DelayedDelete.h"
 
 #include <qdebug.h>
 
@@ -140,25 +141,32 @@ bool NodeList::limitChildren(Node *node) {
             // drop this node because it has no children left and is safe to remove
             qDebug() << "removing: " << node->fqdn() << " #" << node->accessCount() << " / " << m_accessDropOlderThan;
 
+            Node *parent = node->parent();
+
             // remove it from various lists
             m_graphWidget->removeItem(node);
             m_nodes.remove(node->fqdn());
 
             // remove the edge too
-            if (node && node->parent()) {
-                QPair<QString, QString> edgeNames(node->fqdn(), node->parent()->fqdn());
+            if (node && parent) {
+                QPair<QString, QString> edgeNames(node->fqdn(), parent->fqdn());
                 Edge *edge = m_edges[edgeNames];
                 m_graphWidget->removeItem(edge);
                 m_edges.remove(edgeNames);
-                // XXX: delete the edge (later)
+
+                if (parent)
+                    parent->removeEdge(edge);
+                // XXX
+                new DelayedDelete<Edge>(edge);
             }
 
             // delete the relationship
-            if (node->parent())
-                node->parent()->removeChild(node);
+            if (parent)
+                parent->removeChild(node);
 
             haveLimited = true;
 
+            new DelayedDelete<Node>(node);
             // XXX delete node; // (because of the parent loop, we need to delete this later)
         }
     }

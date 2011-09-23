@@ -74,6 +74,11 @@ QSet<Edge *> Node::edges() const
     return edgeList;
 }
 
+void Node::removeEdge(Edge *edge)
+{
+    edgeList.remove(edge);
+}
+
 void Node::calculateForces()
 {
     if (!scene() || scene()->mouseGrabberItem() == this) {
