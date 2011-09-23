@@ -13,9 +13,7 @@ NodeList::NodeList(GraphWidget *parent) :
 
 Node *NodeList::node(const QString &nodeName) {
     if (! m_nodes.contains(nodeName)) {
-        Node *newNode = new Node(m_graphWidget, nodeName);
-        m_nodes[nodeName] = newNode;
-        newNode->setAccessCount(m_accessCounter++);
+        return addNodes(nodeName);
     }
 
     return m_nodes[nodeName];
@@ -156,7 +154,6 @@ bool NodeList::limitChildren(Node *node) {
 
                 if (parent)
                     parent->removeEdge(edge);
-                // XXX
                 new DelayedDelete<Edge>(edge);
             }
 
@@ -167,7 +164,6 @@ bool NodeList::limitChildren(Node *node) {
             haveLimited = true;
 
             new DelayedDelete<Node>(node);
-            // XXX delete node; // (because of the parent loop, we need to delete this later)
         }
     }
     return haveLimited;
