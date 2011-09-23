@@ -96,6 +96,9 @@ public:
     int accessCount() { return m_accessCount; }
     void setAccessCount(int accessCount) { m_accessCount = accessCount; }
 
+    time_t accessTime() { return m_accessTime; }
+    void setAccessTime(time_t newTime) { m_accessTime = newTime; }
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
@@ -116,6 +119,7 @@ private:
     QString      m_additionalInfo;
     QList<DNSData> m_subData;
     int            m_accessCount;
+    time_t         m_accessTime;
 };
 //! [0]
 
