@@ -69,16 +69,9 @@ void val_collect_logs(struct val_log *logp, int level, const char *buf)
 GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &fileName, QHBoxLayout *infoBox)
     : QGraphicsView(parent), timerId(0), m_editor(editor),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
-      m_logFiles(), m_logStreams(), m_timer(0),
+      m_timer(0),
       m_layoutType(springyLayout), m_childSize(30),
-      m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
-      m_lookingUpRegexp("looking for \\{([^ ]+) .* ([^\\(]+)\\([0-9]+\\)\\}"),
-      m_bogusRegexp("Validation result for \\{([^,]+),.*BOGUS"),                                     // XXX: type not listed; fix in libval
-      m_trustedRegexp("Validation result for \\{([^,]+),.*: (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"), // XXX: type not listed; fix in libval
-      m_pinsecureRegexp("Setting proof status for ([^ ]+) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
-      m_dneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_(NAME|TYPE):"),
-      m_maybeDneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME_NOCHAIN:"),
-      m_infoBox(infoBox)
+      m_infoBox(infoBox), m_logWatcher(new LogWatcher(this))
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -96,7 +89,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
 
     m_infoBox->addWidget(m_infoLabel = new QLabel(""));
 
-    parseLogFile();
+    // m_logWatcher->parseLogFile();
 
     setLayoutType(circleLayout);
 
@@ -445,7 +438,7 @@ void GraphWidget::doActualLookup(const QString &lookupString)
     QString lastInterestingString;
 
     foreach(QString logMessage, val_log_strings) {
-        parseLogMessage(logMessage);
+        m_logWatcher->parseLogMessage(logMessage);
     }
     val_log_strings.clear();
 
@@ -455,118 +448,6 @@ void GraphWidget::doActualLookup(const QString &lookupString)
 
 void GraphWidget::setShowNSEC3Records(bool newVal) {
     m_shownsec3 = newVal;
-}
-
-void GraphWidget::parseLogMessage(QString logMessage) {
-    QColor color;
-    QString nodeName;
-    QString additionalInfo = "";
-    QList<DNSData> dnsDataNodes;
-    Node *thenode;
-
-    // qDebug() << logMessage;
-
-    if (m_lookingUpRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_lookingUpRegexp.cap(1);
-        dnsDataNodes.push_back(DNSData(m_lookingUpRegexp.cap(2), DNSData::UNKNOWN));
-        logMessage.replace(m_lookingUpRegexp, "<b>looking up \\1</b>  ");
-    } else if (m_validatedRegexp.indexIn(logMessage) > -1) {
-        if (!m_shownsec3 && m_validatedRegexp.cap(2) == "NSEC3")
-            return;
-        if (m_validatedRegexp.cap(2) == "NSEC")
-            return; // never show 'good' for something missing
-        nodeName = m_validatedRegexp.cap(1);
-        logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-        additionalInfo = "The data for this node has been Validated";
-        dnsDataNodes.push_back(DNSData(m_validatedRegexp.cap(2), DNSData::VALIDATED));
-        color = Qt::green;
-    } else if (m_bogusRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bogusRegexp.cap(1);
-        logMessage.replace(m_bogusRegexp, "<b><font color=\"red\">BOGUS Record found for \\1 </font></b>");
-        additionalInfo = "DNSSEC Security for this Node Failed";
-        color = Qt::red;
-    } else if (m_trustedRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_trustedRegexp.cap(1);
-        logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\1 </font></b>");
-        additionalInfo = "Data is trusted, but not proven to be secure";
-        color = Qt::yellow;
-    } else if (m_pinsecureRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_pinsecureRegexp.cap(1);
-        logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 is provably insecure </font></b>");
-        additionalInfo = "This node has been proven to be <b>not</b> DNSEC protected";
-        color = Qt::yellow;
-    } else if (m_dneRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_dneRegexp.cap(1);
-        logMessage.replace(m_dneRegexp, ":<b><font color=\"brown\"> \\1 provably does not exist </font></b>");
-        additionalInfo = "This node has been proven to not exist in the DNS";
-        color = Qt::blue;
-    } else if (m_maybeDneRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_maybeDneRegexp.cap(1);
-        additionalInfo = "This node supposedly doesn't exist, but its non-existence can't be proven.";
-        logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> \\1 does not exist, but can't be proven' </font></b>");
-        color = Qt::cyan;
-    } else {
-        return;
-    }
-    if (nodeName == ".")
-        return;
-    thenode = addNodes(nodeName);
-    if (thenode && !dnsDataNodes.isEmpty()) {
-        foreach(DNSData data, dnsDataNodes) {
-            qDebug() << "here: " << nodeName << "=" << data.recordType();
-            thenode->addSubData(data);
-        }
-    }
-    if (color.isValid())
-        node(nodeName + ".")->setColor(color);
-    if (additionalInfo.length() > 0)
-        node(nodeName+ ".")->setAdditionalInfo(additionalInfo);
-    node(nodeName + ".")->addLogMessage(logMessage);
-}
-
-void GraphWidget::parseLogFile(const QString &fileToOpen) {
-    QString fileName = fileToOpen;
-    QFile       *logFile;
-    QTextStream *logStream;
-
-    if (fileName.length() == 0)
-        return;
-
-    // qDebug() << "Trying to open: " << fileName;
-
-    // start the timer to keep reading/trying the log file
-    if (!m_timer) {
-        m_timer = new QTimer(this);
-        connect(m_timer, SIGNAL(timeout()), this, SLOT(parseTillEnd()));
-        m_timer->start(1000);
-    }
-
-    logFile = new QFile(fileName);
-    if (!logFile->exists() || !logFile->open(QIODevice::ReadOnly | QIODevice::Text)) {
-        delete logFile;
-        logFile = 0;
-        return;
-    }
-
-    logStream = new QTextStream(logFile);
-
-    m_logFileNames.push_back(fileToOpen);
-    m_logFiles.push_back(logFile);
-    m_logStreams.push_back(logStream);
-
-    // qDebug() << "Opened: " << fileName;
-
-    parseTillEnd();
-}
-
-void GraphWidget::parseTillEnd() {
-    foreach(QTextStream *logStream, m_logStreams) {
-        while (!logStream->atEnd()) {
-            QString line = logStream->readLine();
-            parseLogMessage(line);
-        }
-    }
-    reLayout();
 }
 
 void GraphWidget::unbusy() {
@@ -587,39 +468,6 @@ void GraphWidget::toggleLockedNodes() {
     m_lockNodes = !m_lockNodes;
     if (!m_lockNodes)
         itemMoved();
-}
-
-void GraphWidget::openLogFile() {
-    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
-    QString chosenFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
-
-    QFileDialog dialog;
-    dialog.selectFile(chosenFile);
-    dialog.setFileMode(QFileDialog::AnyFile);
-    if (!dialog.exec())
-        return;
-
-    chosenFile = dialog.selectedFiles()[0];
-    settings.setValue("logFile", chosenFile);
-    if (chosenFile.length() > 0) {
-        parseLogFile(chosenFile);
-    }
-}
-
-void GraphWidget::reReadLogFile() {
-    while (!m_logStreams.isEmpty())
-        delete m_logStreams.takeFirst();
-
-    while (!m_logFiles.isEmpty())
-        delete m_logFiles.takeFirst();
-
-    // Restart from the top
-    QStringList listCopy = m_logFileNames;
-    m_logFileNames.clear();
-
-    foreach (QString fileName, listCopy) {
-        parseLogFile(fileName);
-    }
 }
 
 void GraphWidget::setLayoutType(LayoutType layoutType)
@@ -669,4 +517,21 @@ void GraphWidget::createStartingNode()
     m_nodes["<root>"] = new Node(this, "<root>", 0);
     scene()->addItem(m_nodes["<root>"]);
     m_nodes["<root>"]->setColor(QColor(Qt::green));
+}
+
+void GraphWidget::openLogFile() {
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    QString chosenFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
+
+    QFileDialog dialog;
+    dialog.selectFile(chosenFile);
+    dialog.setFileMode(QFileDialog::AnyFile);
+    if (!dialog.exec())
+        return;
+
+    chosenFile = dialog.selectedFiles()[0];
+    settings.setValue("logFile", chosenFile);
+    if (chosenFile.length() > 0) {
+        m_logWatcher->parseLogFile(chosenFile);
+    }
 }

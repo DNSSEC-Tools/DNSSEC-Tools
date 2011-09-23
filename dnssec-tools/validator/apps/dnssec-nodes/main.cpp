@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(openLogFile()));
 
     action = menu->addAction("&ReRead Log File");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(reReadLogFile()));
+    action->connect(action, SIGNAL(triggered()), graphWidget->logWatcher(), SLOT(reReadLogFile()));
 
     menu->addSeparator();
 
