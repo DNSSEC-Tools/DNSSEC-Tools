@@ -18,7 +18,7 @@ LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
 TARGET.EPOCHEAPSIZE = 0x200000 0xA00000
 
 include(deployment.pri)
-//qtcAddDeployment()
+qtcAddDeployment()
 
 RESOURCES += dnssec-nodes.qrc
 
@@ -35,4 +35,11 @@ OTHER_FILES += \
     qtc_packaging/debian_fremantle/copyright \
     qtc_packaging/debian_fremantle/control \
     qtc_packaging/debian_fremantle/compat \
-    qtc_packaging/debian_fremantle/changelog
+    qtc_packaging/debian_fremantle/changelog \
+    qtc_packaging/debian_harmattan/rules \
+    qtc_packaging/debian_harmattan/README \
+    qtc_packaging/debian_harmattan/copyright \
+    qtc_packaging/debian_harmattan/control \
+    qtc_packaging/debian_harmattan/compat \
+    qtc_packaging/debian_harmattan/changelog
+
