@@ -193,6 +193,7 @@ void NodeList::applyFilter() {
     // Reset the current Z values first
     foreach (Node *node, m_nodes) {
         node->setZValue(-1);
+        node->setAlpha(255);
     }
 
     if (m_filterType != NONE) {
