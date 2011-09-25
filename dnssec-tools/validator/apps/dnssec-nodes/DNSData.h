@@ -2,6 +2,7 @@
 #define DNSDATA_H
 
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 #include <QHash>
 
 class DNSData
@@ -17,6 +18,8 @@ public:
 
     void setDNSSECStatus(int DNSSECStatus)    { m_DNSSECStatus = DNSSECStatus; }
     int  DNSSECStatus() const                 { return m_DNSSECStatus; }
+    QString     DNSSECStatusForEnum(Status status) const;
+    QStringList DNSSECStringStatuses() const;
 
     void addDNSSECStatus(int additionalStatus) {
         if (m_DNSSECStatus & UNKNOWN) // we now should known something

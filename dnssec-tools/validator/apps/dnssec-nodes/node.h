@@ -92,6 +92,7 @@ public:
 
     void addSubData(const DNSData &data);
     QString getSubData();
+    QMap<QString, DNSData> getAllSubData();
 
     int accessCount() { return m_accessCount; }
     void setAccessCount(int accessCount) { m_accessCount = accessCount; }
