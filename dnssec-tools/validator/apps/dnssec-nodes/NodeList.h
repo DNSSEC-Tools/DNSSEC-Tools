@@ -45,6 +45,9 @@ public:
     void   filterNode(Node *node);
     void   setFilterWidget(QWidget *filterBox);
 
+    void   setSelectedNode(Node *node);
+    Node  *selectedNode();
+
 
 signals:
     void   dataChanged();
@@ -80,6 +83,8 @@ private:
     FilterType                            m_filterType;
     QRegExp                               m_nameRegexp;
     QWidget                              *m_filterBox;
+
+    Node                                 *m_selectedNode;
 };
 
 #endif // NODELIST_H

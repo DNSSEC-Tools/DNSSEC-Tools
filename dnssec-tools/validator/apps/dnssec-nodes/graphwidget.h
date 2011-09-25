@@ -52,6 +52,7 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QFile>
 #include <QtCore/QList>
+#include <QtGui/QPushButton>
 
 #include "LogWatcher.h"
 #include "NodeList.h"
@@ -128,6 +129,7 @@ public slots:
     bool showNsec3() { return m_shownsec3; }
 
     void showPrefs();
+    void moreInfoButton();
 
 protected:
     void keyPressEvent(QKeyEvent *event);
@@ -153,6 +155,8 @@ private:
 
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;
+    QPushButton *m_infoMoreButton;
+    QLabel      *m_nodeInfoLabel;
 
     // NodeList *MUST* come before LogWatcher in init calls
     NodeList    *m_nodeList;
