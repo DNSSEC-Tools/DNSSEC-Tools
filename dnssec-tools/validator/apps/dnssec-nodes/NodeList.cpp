@@ -77,6 +77,8 @@ Node *NodeList::addNode(const QString &nodeName, const QString &parentName, int 
     newNode->setAccessCount(m_accessCounter++);
     newNode->setAccessTime(time(NULL));
 
+    filterNode(newNode);
+
     return newNode;
 }
 
@@ -181,3 +183,36 @@ void  NodeList::setCenterNode(Node *newCenter) {
     m_nodes[ROOT_NODE_NAME] = newCenter;
     qDebug() << "here after: " << m_nodes.count();
 }
+
+void NodeList::setFilter(FilterType filterType) {
+    m_filterType = filterType;
+    applyFilter();
+}
+
+void NodeList::applyFilter() {
+    // Reset the current Z values first
+    foreach (Node *node, m_nodes) {
+        node->setZValue(-1);
+    }
+
+    if (m_filterType != NONE) {
+        // Apply the selected filter
+        foreach (Node *node, m_nodes) {
+            filterNode(node);
+        }
+    }
+}
+
+inline void NodeList::filterNode(Node *node) {
+    switch(m_filterType) {
+    case TOPBAD:
+        if (node->DNSSECValidity() & DNSData::FAILED) {
+            node->setZValue(1);
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+

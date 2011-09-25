@@ -113,6 +113,15 @@ int main(int argc, char **argv)
     action = layoutMenu->addAction("circle");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToCircles()));
 
+    QMenu *filterMenu = menu->addMenu("Filter");
+    action = filterMenu->addAction("Remove Filters");
+    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterNone()));
+    filterMenu->addSeparator();
+
+    action = filterMenu->addAction("Failed nodes to the top");
+    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterBadToTop()));
+    menu->addSeparator();
+
     action = menu->addAction("Preferences");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(showPrefs()));
 

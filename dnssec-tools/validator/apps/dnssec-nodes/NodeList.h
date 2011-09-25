@@ -17,6 +17,8 @@ class NodeList : public QObject
 public:
     explicit NodeList(GraphWidget *parent = 0);
 
+    enum FilterType { NONE, TOPBAD };
+
     Node * node(const QString &nodeName);
     Node * addNodes(const QString &nodeName);
     Node * addNode(const QString &nodeName, const QString &parentName, int depth);
@@ -37,12 +39,19 @@ public:
 
     bool   limitChildren(Node *node);
 
+    void   setFilter(FilterType filterType);
+    void   filterNode(Node *node);
 signals:
     void   dataChanged();
 
 public slots:
     void clear();
     void limit();
+
+    void applyFilter();
+
+    void filterBadToTop() { setFilter(TOPBAD); }
+    void filterNone() { setFilter(NONE); }
 
 private:
     GraphWidget                          *m_graphWidget;
@@ -60,6 +69,8 @@ private:
     bool                                  m_enableMaxTime;
     int                                   m_maxTime;
     time_t                                m_timeDropOlderThan;
+
+    FilterType                            m_filterType;
 };
 
 #endif // NODELIST_H
