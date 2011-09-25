@@ -19,6 +19,7 @@ LogWatcher::LogWatcher(GraphWidget *parent)
     m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
     m_trustedRegexp("Validation result for " QUERY_MATCH ": (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
       m_pinsecureRegexp("Setting proof status for (.*) to: VAL_NONEXISTENT_TYPE"),
+      m_pinsecure2Regexp("Setting authentication chain status for " QUERY_MATCH " to Provably Insecure"),
     m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
     m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:")
 {
@@ -63,6 +64,13 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setDNSSECStatus(DNSData::TRUSTED);
         logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\1 </font></b>");
         additionalInfo = "Data is trusted, but not proven to be secure";
+    } else if (m_pinsecure2Regexp.indexIn(logMessage) > -1) {
+        nodeName = m_pinsecure2Regexp.cap(1);
+        result.setDNSSECStatus(DNSData::TRUSTED);
+        // XXX: need the query type
+        //result.setRecordType(m_validatedRegexp.cap(2));
+        logMessage.replace(m_pinsecure2Regexp, ":<b><font color=\"brown\"> \\1 (\\2) is provably insecure </font></b>");
+        additionalInfo = "This node has been proven to be <b>not</b> DNSEC protected";
     } else if (m_pinsecureRegexp.indexIn(logMessage) > -1) {
         nodeName = m_pinsecureRegexp.cap(1);
         result.setDNSSECStatus(DNSData::TRUSTED);
