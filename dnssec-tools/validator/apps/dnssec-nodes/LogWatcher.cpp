@@ -18,7 +18,7 @@ LogWatcher::LogWatcher(GraphWidget *parent)
     m_lookingUpRegexp("looking for " QUERY_MATCH),
     m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
     m_trustedRegexp("Validation result for " QUERY_MATCH ": (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
-      m_pinsecureRegexp("Setting proof status for (.*) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
+      m_pinsecureRegexp("Setting proof status for (.*) to: VAL_NONEXISTENT_TYPE"),
     m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
     m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:")
 {
@@ -47,7 +47,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         if (m_validatedRegexp.cap(2) == "NSEC")
             return false; // never show 'good' for something missing
         nodeName = m_validatedRegexp.cap(1);
-        result.setRecordType("RRSIG");
+        result.setRecordType(m_validatedRegexp.cap(2));
         result.setDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
