@@ -58,6 +58,7 @@ Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqd
     setFlag(ItemSendsGeometryChanges);
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
+    setToolTip(fqdn);
 }
 
 void Node::addEdge(Edge *edge)
