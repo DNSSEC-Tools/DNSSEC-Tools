@@ -123,6 +123,7 @@ private:
     int            m_accessCount;
     time_t         m_accessTime;
     int            m_resultCache;
+    int            m_colorAlpha;
 };
 //! [0]
 

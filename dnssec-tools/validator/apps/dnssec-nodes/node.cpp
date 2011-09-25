@@ -52,7 +52,7 @@
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_fqdn(fqdn), m_depth(depth), m_additionalInfo(""),
-      m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0)
+      m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -197,6 +197,8 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     else
         color = QColor(128,128,128);
 
+    color.setAlpha(m_colorAlpha);
+
     QRadialGradient gradient(-3, -3, 10);
     if (option->state & QStyle::State_Sunken) {
         gradient.setCenter(3, 3);
@@ -334,4 +336,8 @@ void Node::cacheDNSDataValidity()
 int Node::DNSSECValidity()
 {
     return m_resultCache;
+}
+
+void Node::setAlpha(int alpha) {
+    m_colorAlpha = alpha;
 }
