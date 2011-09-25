@@ -341,3 +341,8 @@ int Node::DNSSECValidity()
 void Node::setAlpha(int alpha) {
     m_colorAlpha = alpha;
 }
+
+QMap<QString, DNSData>Node::getAllSubData()
+{
+    return m_subData;
+}
