@@ -152,6 +152,21 @@ extern const char *_res_sectioncodes[];
 #define ERRBUFLEN 80
 
 static void
+_print_or_log(void *file, int level, const char *template, ...)
+{
+    va_list         ap;
+
+    va_start(ap, template);
+
+    if (NULL == file)
+        val_log_ap((val_context_t*)NULL, level, template, ap);
+    else
+        vfprintf(file, template, ap);
+
+    va_end(ap);
+}
+
+static void
 do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
 {
     int             n, rrnum;
@@ -176,22 +191,22 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
             if (errno != ENODEV) {
 #ifdef HAVE_STRERROR_R
                 if (!strerror_r(errno, err_buf, ERRBUFLEN))
-                    res_log(NULL,LOG_DEBUG, ";; ns_parserr: %s\n", err_buf);
+                    _print_or_log(file, LOG_DEBUG, ";; ns_parserr: %s\n", err_buf);
                 else
-                    res_log(NULL,LOG_DEBUG, ";; ns_parserr: Error\n");
+                    _print_or_log(file, LOG_DEBUG, ";; ns_parserr: Error\n");
 #else
-                res_log(NULL,LOG_DEBUG, ";; ns_parserr: %s\n", strerror(errno));
+                _print_or_log(file, LOG_DEBUG, ";; ns_parserr: %s\n", strerror(errno));
 #endif
             }
             goto cleanup;
         }
         if (section == ns_s_qd)
-            res_log(NULL,LOG_DEBUG, ";;\t%s, type = %s, class = %s\n",
+            _print_or_log(file, LOG_DEBUG, ";;\t%s, type = %s, class = %s\n",
                     ns_rr_name(rr),
                     p_type(ns_rr_type(rr)), p_class(ns_rr_class(rr)));
         else if (section == ns_s_ar && ns_rr_type(rr) == ns_t_opt) {
             u_int32_t       ttl = ns_rr_ttl(rr);
-            res_log(NULL,LOG_DEBUG,
+            _print_or_log(file, LOG_DEBUG,
                     "; EDNS: version: %u, udp=%u, flags=%04x\n",
                     (ttl >> 16) & 0xff, ns_rr_class(rr), ttl & 0xffff);
         } else {
@@ -205,22 +220,22 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
                         buf = MALLOC(buflen += 1024);
 #endif
                     if (buf == NULL) {
-                        res_log(NULL,LOG_DEBUG, ";; memory allocation failure\n");
+                        _print_or_log(file, LOG_DEBUG, ";; memory allocation failure\n");
                         return;
                     }
                     continue;
                 }
 #ifdef HAVE_STRERROR_R
                 if (!strerror_r(errno, err_buf, ERRBUFLEN))
-                    res_log(NULL,LOG_DEBUG, ";; ns_sprintrr: %s\n", err_buf);
+                    _print_or_log(file, LOG_DEBUG, ";; ns_sprintrr: %s\n", err_buf);
                 else
-                    res_log(NULL,LOG_DEBUG, ";; ns_sprintrr: Error\n");
+                    _print_or_log(file, LOG_DEBUG, ";; ns_sprintrr: Error\n");
 #else
-                res_log(NULL,LOG_DEBUG, ";; ns_sprintrr: %s\n", strerror(errno));
+                _print_or_log(file, LOG_DEBUG, ";; ns_sprintrr: %s\n", strerror(errno));
 #endif
                 goto cleanup;
             }
-            res_log(NULL,LOG_DEBUG, "%s", buf);
+            _print_or_log(file, LOG_DEBUG, "%s", buf);
         }
         rrnum++;
     }
@@ -240,9 +255,9 @@ p_cdnname(const u_char * cp, const u_char * msg, int len, FILE * file)
     if ((n = dn_expand(msg, msg + len, cp, name, sizeof(name))) < 0)
         return (NULL);
     if (name[0] == '\0')
-        res_log(NULL,LOG_DEBUG, "%c", '.');
+        _print_or_log(file, LOG_DEBUG, "%c", '.');
     else
-        res_log(NULL,LOG_DEBUG, "%s", name);
+        _print_or_log(file, LOG_DEBUG, "%s", name);
     return (cp + n);
 }
 
@@ -287,7 +302,7 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
     n = p_fqnname(cp, msg, NS_MAXCDNAME, name, sizeof(name));
     if (n == NULL)
         return (NULL);
-    res_log(NULL,LOG_DEBUG, "%s", name);
+    _print_or_log(file, LOG_DEBUG, "%s", name);
     return (n);
 }
 
@@ -1211,6 +1226,7 @@ res_nametotype(const char *buf, int *successp)
         *successp = success;
     return (result);
 }
+
 /*
  * Print the contents of a query.
  * This is intended to be primarily a debugging routine.
@@ -1229,11 +1245,11 @@ libsres_pquery(const u_char * msg, size_t len, FILE * file)
     if (ns_initparse(msg, len, &handle) < 0) {
 #ifdef HAVE_STRERROR_R
         if (!strerror_r(errno, err_buf, ERRBUFLEN))
-            res_log(NULL,LOG_DEBUG, ";; ns_initparse: %s\n", err_buf);
+            _print_or_log(file, LOG_DEBUG, ";; ns_initparse: %s\n", err_buf);
         else
-            res_log(NULL,LOG_DEBUG, ";; ns_initparse: Error\n");
+            _print_or_log(file, LOG_DEBUG, ";; ns_initparse: Error\n");
 #else
-        res_log(NULL,LOG_DEBUG, ";; ns_initparse: %s\n", strerror(errno));
+        _print_or_log(file, LOG_DEBUG, ";; ns_initparse: %s\n", strerror(errno));
 #endif
 
         return;
@@ -1249,7 +1265,7 @@ libsres_pquery(const u_char * msg, size_t len, FILE * file)
     /*
      * Print header fields.
      */
-    res_log(NULL,LOG_DEBUG,
+    _print_or_log(file, LOG_DEBUG,
             ";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n",
             _libsres_opcodes[opcode], p_rcode(rcode), id);
 
@@ -1270,14 +1286,18 @@ libsres_pquery(const u_char * msg, size_t len, FILE * file)
         strcat(buf, " ad");
     if (libsres_msg_getflag(handle, ns_f_cd))
         strcat(buf, " cd");
-    res_log(NULL,LOG_DEBUG, "%s", buf);
+    _print_or_log(file, LOG_DEBUG, "%s", buf);
 
-    res_log(NULL,LOG_DEBUG, "; %s: %d", p_section(ns_s_qd, opcode), qdcount);
+    _print_or_log(file, LOG_DEBUG, "; %s: %d", p_section(ns_s_qd, opcode),
+                  qdcount);
     do_section(&handle, ns_s_qd, RES_PRF_QUES, file);
-    res_log(NULL,LOG_DEBUG, ", %s: %d", p_section(ns_s_an, opcode), ancount);
+    _print_or_log(file, LOG_DEBUG, ", %s: %d", p_section(ns_s_an, opcode),
+                  ancount);
     do_section(&handle, ns_s_an, RES_PRF_ANS, file);
-    res_log(NULL,LOG_DEBUG, ", %s: %d", p_section(ns_s_ns, opcode), nscount);
+    _print_or_log(file, LOG_DEBUG, ", %s: %d", p_section(ns_s_ns, opcode),
+                  nscount);
     do_section(&handle, ns_s_ns, RES_PRF_AUTH, file);
-    res_log(NULL,LOG_DEBUG, ", %s: %d", p_section(ns_s_ar, opcode), arcount);
+    _print_or_log(file, LOG_DEBUG, ", %s: %d", p_section(ns_s_ar, opcode),
+                  arcount);
     do_section(&handle, ns_s_ar, RES_PRF_ADD, file);
 }

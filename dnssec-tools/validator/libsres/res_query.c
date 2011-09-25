@@ -471,7 +471,7 @@ response_recv(int *trans_id,
         return SR_NO_ANSWER;
 
     if (ret_val == SR_IO_GOT_ANSWER) {
-        print_response(*answer, *answer_length);
+        log_response(*answer, *answer_length);
         if ((*respondent != NULL) && 
             (res_tsig_verifies(*respondent, 
                                *answer, *answer_length) == SR_TS_OK) && 

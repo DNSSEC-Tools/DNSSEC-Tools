@@ -107,14 +107,15 @@ my_strdup(const char *str, char *filename, int lineno)
 void
 print_response(u_char * ans, size_t resplen)
 {
-    /*
-     * fp_nquery is a resolver debug routine (I think), the rest
-     * would dump the response in byte form, formatted to match
-     * the query's structure 
-     */
-    //fp_nquery(ans, resplen, stdout);
     if (ans && (resplen > 0))
         libsres_pquery(ans, resplen, stdout);
+}
+
+void
+log_response(u_char * ans, size_t resplen)
+{
+    if (ans && (resplen > 0))
+        libsres_pquery(ans, resplen, NULL);
 }
 
 void
