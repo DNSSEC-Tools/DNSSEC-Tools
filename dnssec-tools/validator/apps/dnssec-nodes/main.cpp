@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     QWidget *filterWidget = new QWidget();
     QHBoxLayout *filterBox = new QHBoxLayout();
     filterWidget->setLayout(filterBox);
-    QLabel *filterLabel = new QLabel("Filter by Name:");
+    QLabel *filterLabel = new QLabel("Filter by RegExp:");
     filterBox->addWidget(filterLabel);
     QLineEdit *filterEditBox = new QLineEdit();
     filterBox->addWidget(filterEditBox);
