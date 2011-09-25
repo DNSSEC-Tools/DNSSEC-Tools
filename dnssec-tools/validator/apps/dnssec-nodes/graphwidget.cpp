@@ -457,7 +457,15 @@ void GraphWidget::setInfo(const QString &text)
 {
     m_nodeInfoLabel->show();
     m_infoMoreButton->show();
+    m_infoMoreButton->setEnabled(true);
     m_infoLabel->setText(text);
+}
+
+void GraphWidget::hideInfo()
+{
+    m_nodeInfoLabel->hide();
+    m_infoLabel->setText("");
+    m_infoMoreButton->setEnabled(false);
 }
 
 void GraphWidget::setInfo(Node *node) {
