@@ -46,7 +46,7 @@ private:
     QRegExp    m_lookingUpRegexp;
     QRegExp    m_bogusRegexp;
     QRegExp    m_trustedRegexp;
-    QRegExp    m_pinsecureRegexp;
+    QRegExp    m_pinsecureRegexp, m_pinsecure2Regexp;
     QRegExp    m_dneRegexp;
     QRegExp    m_maybeDneRegexp;
 };
