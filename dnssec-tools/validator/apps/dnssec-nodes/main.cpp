@@ -132,16 +132,24 @@ int main(int argc, char **argv)
     //
     // Filter menu
     //
+    QActionGroup *filterActions = new QActionGroup(&app);
     QMenu *filterMenu = menu->addMenu("Filter");
-    action = filterMenu->addAction("Remove Filters");
+    action = filterMenu->addAction("No Filters");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterNone()));
+    action->setCheckable(true);
+    action->setChecked(true);
+    action->setActionGroup(filterActions);
     filterMenu->addSeparator();
 
     action = filterMenu->addAction("Failed nodes to the top");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterBadToTop()));
+    action->setCheckable(true);
+    action->setActionGroup(filterActions);
 
     action = filterMenu->addAction("Filter by Name");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterByName()));
+    action->setCheckable(true);
+    action->setActionGroup(filterActions);
     graphWidget->nodeList()->setFilterWidget(filterWidget);
     filterEditBox->connect(filterEditBox, SIGNAL(textChanged(QString)), graphWidget->nodeList(), SLOT(setFilterFQDNExpression(QString)));
     filterWidget->hide();
