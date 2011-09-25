@@ -4904,10 +4904,12 @@ verify_and_validate(val_context_t * context,
                         ttl_x = 0;
                         if (is_pinsecure) {
                             val_log(context, LOG_INFO, 
-                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
+                                    "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Provably Insecure",
                                     name_p, 
-                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_type_h);
                             next_as->val_ac_status = VAL_AC_PINSECURE;
                             if (is_pu_trusted(context, 
                                     next_as->val_ac_rrset.ac_data->rrs_name_n, &ttl_x))
@@ -4917,10 +4919,12 @@ verify_and_validate(val_context_t * context,
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
                             val_log(context, LOG_INFO, 
-                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
+                                    "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Bogus",
                                     name_p, 
-                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_type_h);
                             res->val_rc_status = VAL_BOGUS_PROOF;
                         }
                         break;
@@ -4937,34 +4941,42 @@ verify_and_validate(val_context_t * context,
 
                     if (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) {
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Ignore Validation",
+                                "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Ignore Validation",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                next_as->val_ac_rrset.ac_data->rrs_type_h);
                         res->val_rc_status = VAL_IGNORE_VALIDATION;
                     } else if (next_as->val_ac_status == VAL_AC_TRUST) {
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): ending authentication chain at {%s %s %s}",
+                                "verify_and_validate(): Ending authentication chain at {%s %s(%d) %s(%d)}",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                next_as->val_ac_rrset.ac_data->rrs_type_h);
                         SET_CHAIN_COMPLETE(res->val_rc_status);
                     } else if (next_as->val_ac_status ==
                                VAL_AC_UNTRUSTED_ZONE) {
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Untrusted Zone",
+                                "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Untrusted Zone",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                next_as->val_ac_rrset.ac_data->rrs_type_h);
                         res->val_rc_status = VAL_UNTRUSTED_ZONE;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_PINSECURE) {
                         ttl_x = 0;
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
+                                "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Provably Insecure",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                next_as->val_ac_rrset.ac_data->rrs_type_h);
                         if (is_pu_trusted(context, 
                                     next_as->val_ac_rrset.ac_data->rrs_name_n, &ttl_x))
                             res->val_rc_status = VAL_PINSECURE;
@@ -4973,10 +4985,12 @@ verify_and_validate(val_context_t * context,
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bare RRSIG",
+                                "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Bare RRSIG",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                next_as->val_ac_rrset.ac_data->rrs_type_h);
                         res->val_rc_status = VAL_BARE_RRSIG;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_NO_LINK) {
@@ -4984,19 +4998,23 @@ verify_and_validate(val_context_t * context,
                          * No trust
                          */
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): marking authentication chain status for {%s %s %s} to indicate no trust",
+                                "verify_and_validate(): Marking authentication chain status for {%s %s(%d) %s(%d)} to indicate no trust",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                next_as->val_ac_rrset.ac_data->rrs_type_h);
                         res->val_rc_status = VAL_NOTRUST;
                     }
                 } else {
                     /* already processed the final state for this authentication chain before */
                     val_log(context, LOG_INFO, 
-                                "verify_and_validate(): ending authentication chain at {%s %s %s}",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                            "verify_and_validate(): Ending authentication chain at {%s %s(%d) %s(%d)}",
+                            name_p, 
+                            p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                            next_as->val_ac_rrset.ac_data->rrs_class_h,
+                            p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                            next_as->val_ac_rrset.ac_data->rrs_type_h);
                     SET_CHAIN_COMPLETE(res->val_rc_status);
                 }
 
@@ -5025,10 +5043,12 @@ verify_and_validate(val_context_t * context,
                     ttl_x = 0;
                     if (is_pinsecure) {
                         val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Insecure",
+                                "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Provably Insecure",
                                 name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                next_as->val_ac_rrset.ac_data->rrs_type_h);
                         next_as->val_ac_status = VAL_AC_PINSECURE;
                         if (is_pu_trusted(context, 
                                 next_as->val_ac_rrset.ac_data->rrs_name_n, &ttl_x))
@@ -5050,24 +5070,30 @@ verify_and_validate(val_context_t * context,
                         if (next_as->val_ac_status <= VAL_AC_LAST_ERROR || 
                             (next_as->val_ac_status == VAL_AC_DATA_MISSING && is_proof)) {
                             val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                    "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Bogus",
+                                    name_p, 
+                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_type_h);
                             res->val_rc_status = VAL_BOGUS;
                         } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
                             val_log(context, LOG_INFO, 
-                                "verify_and_validate(): marking authentication chain status for {%s %s %s} as bad",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                    "verify_and_validate(): Marking authentication chain status for {%s %s(%d) %s(%d)} as bad",
+                                    name_p, 
+                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_type_h);
                             res->val_rc_status = VAL_DNS_ERROR;
                         } else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
                             val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
-                                p_type(next_as->val_ac_rrset.ac_data->rrs_type_h));
+                                    "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Bogus",
+                                    name_p,
+                                    p_class(next_as->val_ac_rrset.ac_data->rrs_class_h), 
+                                    next_as->val_ac_rrset.ac_data->rrs_class_h,
+                                    p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
+                                    next_as->val_ac_rrset.ac_data->rrs_type_h);
                             res->val_rc_status = VAL_BOGUS;
                         }
                     }
