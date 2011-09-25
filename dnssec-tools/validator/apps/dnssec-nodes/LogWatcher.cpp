@@ -6,15 +6,21 @@
 
 #include <qdebug.h>
 
+// This matches strings like {www.dnssec-tools.org, IN(1), AAAA(28)}
+// Also the same without commas: {www.dnssec-tools.org IN(1) AAAA(28)}
+// and match #1 is the name, and match #2 is the type (eg AAAA)
+
+#define QUERY_MATCH "\\{([^, ]+).*[, ]([A-Z0-9]*)\\([0-9]+\\)\\}"
+
 LogWatcher::LogWatcher(GraphWidget *parent)
     : m_graphWidget(parent), m_timer(0),
     m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
-    m_lookingUpRegexp("looking for \\{([^ ]+) .* ([^\\(]+)\\([0-9]+\\)\\}"),
-    m_bogusRegexp("Validation result for \\{([^,]+),.*BOGUS"),                                     // XXX: type not listed; fix in libval
-    m_trustedRegexp("Validation result for \\{([^,]+),.*: (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"), // XXX: type not listed; fix in libval
-    m_pinsecureRegexp("Setting proof status for ([^ ]+) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
-    m_dneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_(NAME|TYPE):"),
-    m_maybeDneRegexp("Validation result for \\{([^,]+),.*VAL_NONEXISTENT_NAME_NOCHAIN:")
+    m_lookingUpRegexp("looking for " QUERY_MATCH),
+    m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
+    m_trustedRegexp("Validation result for " QUERY_MATCH ": (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
+      m_pinsecureRegexp("Setting proof status for (.*) to: VAL_NONEXISTENT_TYPE_NOCHAIN"),
+    m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
+    m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:")
 {
     m_nodeList = m_graphWidget->nodeList();
 }
@@ -33,6 +39,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
     if (m_lookingUpRegexp.indexIn(logMessage) > -1) {
         nodeName = m_lookingUpRegexp.cap(1);
         result.setRecordType(m_lookingUpRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::UNKNOWN);
         logMessage.replace(m_lookingUpRegexp, "<b>looking up \\1</b>  ");
     } else if (m_validatedRegexp.indexIn(logMessage) > -1) {
         if (m_graphWidget && !m_graphWidget->showNsec3() && m_validatedRegexp.cap(2) == "NSEC3")
@@ -40,33 +47,38 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         if (m_validatedRegexp.cap(2) == "NSEC")
             return false; // never show 'good' for something missing
         nodeName = m_validatedRegexp.cap(1);
-        result.setRecordType(m_validatedRegexp.cap(2));
+        result.setRecordType("RRSIG");
         result.setDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
     } else if (m_bogusRegexp.indexIn(logMessage) > -1) {
         nodeName = m_bogusRegexp.cap(1);
-        //result.setRecordType(m_validatedRegexp.cap(2)); // XXX: Need to modify the log message to find the type
+        result.setRecordType(m_bogusRegexp.cap(2));
         result.setDNSSECStatus(DNSData::FAILED);
-        logMessage.replace(m_bogusRegexp, "<b><font color=\"red\">BOGUS Record found for \\1 </font></b>");
+        logMessage.replace(m_bogusRegexp, "<b><font color=\"red\">BOGUS Record found for \\1 \\2</font></b>");
         additionalInfo = "DNSSEC Security for this Node Failed";
     } else if (m_trustedRegexp.indexIn(logMessage) > -1) {
         nodeName = m_trustedRegexp.cap(1);
+        result.setRecordType(m_trustedRegexp.cap(2));
         result.setDNSSECStatus(DNSData::TRUSTED);
         logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\1 </font></b>");
         additionalInfo = "Data is trusted, but not proven to be secure";
     } else if (m_pinsecureRegexp.indexIn(logMessage) > -1) {
         nodeName = m_pinsecureRegexp.cap(1);
         result.setDNSSECStatus(DNSData::TRUSTED);
+        // XXX: need the query type
+        //result.setRecordType(m_validatedRegexp.cap(2));
         logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 is provably insecure </font></b>");
         additionalInfo = "This node has been proven to be <b>not</b> DNSEC protected";
     } else if (m_dneRegexp.indexIn(logMessage) > -1) {
         nodeName = m_dneRegexp.cap(1);
+        result.setRecordType(m_dneRegexp.cap(2));
         result.setDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
         logMessage.replace(m_dneRegexp, ":<b><font color=\"brown\"> \\1 provably does not exist </font></b>");
         additionalInfo = "This node has been proven to not exist in the DNS";
     } else if (m_maybeDneRegexp.indexIn(logMessage) > -1) {
         nodeName = m_maybeDneRegexp.cap(1);
+        result.setRecordType(m_maybeDneRegexp.cap(2));
         result.setDNSSECStatus(DNSData::DNE);
         additionalInfo = "This node supposedly doesn't exist, but its non-existence can't be proven.";
         logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> \\1 does not exist, but can't be proven' </font></b>");
