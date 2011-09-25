@@ -11,6 +11,7 @@
 DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     QDialog(parent), m_node(node)
 {
+    QWidget *widget;
 
     m_layout = new QVBoxLayout();
     setLayout(m_layout);
@@ -30,22 +31,6 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     m_layout->addWidget(tabs);
 
     //
-    // Log Message Viewer
-    //
-    QWidget *widget = new QWidget();
-    QVBoxLayout *vbox = new QVBoxLayout();
-
-    widget->setLayout(vbox);
-
-
-    QTextEdit *textEdit = new QTextEdit("<p>" + node->logMessages().join("</p><p>") + "</p>", this);
-    textEdit->setReadOnly(true);
-    textEdit->setLineWrapMode(QTextEdit::NoWrap);
-    vbox->addWidget(textEdit);
-
-    tabs->addTab(widget, tr("Log Messages"));
-
-    //
     // Data Collected Info
     //
     widget = new QWidget();
@@ -60,6 +45,22 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     }
 
     tabs->addTab(widget, tr("Datatypes Seen"));
+
+    //
+    // Log Message Viewer
+    //
+    widget = new QWidget();
+    QVBoxLayout *vbox = new QVBoxLayout();
+
+    widget->setLayout(vbox);
+
+
+    QTextEdit *textEdit = new QTextEdit("<p>" + node->logMessages().join("</p><p>") + "</p>", this);
+    textEdit->setReadOnly(true);
+    textEdit->setLineWrapMode(QTextEdit::NoWrap);
+    vbox->addWidget(textEdit);
+
+    tabs->addTab(widget, tr("Log Messages"));
 
     //
     // closing button box
