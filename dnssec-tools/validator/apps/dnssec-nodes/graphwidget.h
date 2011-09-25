@@ -98,6 +98,7 @@ public:
 
     void setInfo(const QString &text);
     void setInfo(Node *node);
+    void hideInfo();
 
     LogWatcher *logWatcher() { return m_logWatcher; }
     NodeList   *nodeList() { return m_nodeList; }

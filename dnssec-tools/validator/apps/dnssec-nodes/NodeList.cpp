@@ -165,8 +165,10 @@ bool NodeList::limitChildren(Node *node) {
 
             haveLimited = true;
 
-            if (m_selectedNode == node)
+            if (m_selectedNode == node) {
                 m_selectedNode = 0;
+                m_graphWidget->hideInfo();
+            }
 
             new DelayedDelete<Node>(node);
         }
