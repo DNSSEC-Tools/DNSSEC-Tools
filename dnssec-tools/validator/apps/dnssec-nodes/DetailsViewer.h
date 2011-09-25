@@ -1,16 +1,16 @@
-#ifndef LOGVIEWER_H
-#define LOGVIEWER_H
+#ifndef DETAILSVIEWER_H
+#define DETAILSVIEWER_H
 
 #include <QDialog>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QDialogButtonBox>
 #include "node.h"
 
-class LogViewer : public QDialog
+class DetailsViewer : public QDialog
 {
     Q_OBJECT
 public:
-    explicit LogViewer(Node *node, QWidget *parent = 0);
+    explicit DetailsViewer(Node *node, QWidget *parent = 0);
 
 signals:
 
@@ -21,4 +21,4 @@ private:
     QVBoxLayout *m_layout;
 };
 
-#endif // LOGVIEWER_H
+#endif // DETAILSVIEWER_H

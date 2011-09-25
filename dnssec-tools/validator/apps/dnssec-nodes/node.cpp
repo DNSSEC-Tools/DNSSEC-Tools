@@ -48,7 +48,7 @@
 #include "edge.h"
 #include "node.h"
 #include "graphwidget.h"
-#include "LogViewer.h"
+#include "DetailsViewer.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_fqdn(fqdn), m_depth(depth), m_additionalInfo(""),
@@ -243,7 +243,7 @@ void Node::mousePressEvent(QGraphicsSceneMouseEvent *event)
         event->setButton(Qt::LeftButton);
         QGraphicsItem::mousePressEvent(event);
     } else if (event->button() == Qt::RightButton) {
-        LogViewer lv(this);
+        DetailsViewer lv(this);
         lv.exec();
     } else {
         // everything else selects
@@ -329,4 +329,9 @@ void Node::cacheDNSDataValidity()
     foreach(DNSData data, m_subData) {
         m_resultCache |= data.DNSSECStatus();
     }
+}
+
+int Node::DNSSECValidity()
+{
+    return m_resultCache;
 }

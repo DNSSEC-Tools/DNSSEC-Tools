@@ -1,4 +1,4 @@
-#include "LogViewer.h"
+#include "DetailsViewer.h"
 
 #include <QtGui/QLabel>
 #include <QtGui/QTextEdit>
@@ -6,7 +6,7 @@
 
 #include <qdebug.h>
 
-LogViewer::LogViewer(Node *node, QWidget *parent) :
+DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     QDialog(parent), m_node(node)
 {
     m_layout = new QVBoxLayout();

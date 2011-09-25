@@ -100,6 +100,7 @@ public:
     void setAccessTime(time_t newTime) { m_accessTime = newTime; }
 
     void cacheDNSDataValidity();
+    int  DNSSECValidity();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
