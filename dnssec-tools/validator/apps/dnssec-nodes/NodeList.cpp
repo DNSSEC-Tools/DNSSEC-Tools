@@ -230,7 +230,7 @@ inline void NodeList::filterNode(Node *node) {
             node->setAlpha(255);
             node->setZValue(1);
         } else {
-            node->setAlpha(128);
+            node->setAlpha(64);
             node->setZValue(-1);
         }
 
