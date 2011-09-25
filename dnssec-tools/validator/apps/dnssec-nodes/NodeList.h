@@ -7,6 +7,8 @@
 #include "edge.h"
 #include "graphwidget.h"
 
+#include <QtGui/QHBoxLayout>
+
 class GraphWidget;
 
 const QString ROOT_NODE_NAME = "<root>";
@@ -17,7 +19,7 @@ class NodeList : public QObject
 public:
     explicit NodeList(GraphWidget *parent = 0);
 
-    enum FilterType { NONE, TOPBAD };
+    enum FilterType { NONE, TOPBAD, BYNAME };
 
     Node * node(const QString &nodeName);
     Node * addNodes(const QString &nodeName);
@@ -41,6 +43,9 @@ public:
 
     void   setFilter(FilterType filterType);
     void   filterNode(Node *node);
+    void   setFilterWidget(QWidget *filterBox);
+
+
 signals:
     void   dataChanged();
 
@@ -52,6 +57,8 @@ public slots:
 
     void filterBadToTop() { setFilter(TOPBAD); }
     void filterNone() { setFilter(NONE); }
+    void filterByName();
+    void setFilterFQDNExpression(QString regexp);
 
 private:
     GraphWidget                          *m_graphWidget;
@@ -71,6 +78,8 @@ private:
     time_t                                m_timeDropOlderThan;
 
     FilterType                            m_filterType;
+    QRegExp                               m_nameRegexp;
+    QWidget                              *m_filterBox;
 };
 
 #endif // NODELIST_H

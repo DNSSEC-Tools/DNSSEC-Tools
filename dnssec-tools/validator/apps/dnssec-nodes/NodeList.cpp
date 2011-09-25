@@ -185,6 +185,9 @@ void  NodeList::setCenterNode(Node *newCenter) {
 }
 
 void NodeList::setFilter(FilterType filterType) {
+    // reset stuff
+    m_filterBox->hide();
+
     m_filterType = filterType;
     applyFilter();
 }
@@ -204,6 +207,11 @@ void NodeList::applyFilter() {
     }
 }
 
+void NodeList::setFilterFQDNExpression(QString regexp) {
+    m_nameRegexp = QRegExp(regexp);
+    applyFilter();
+}
+
 inline void NodeList::filterNode(Node *node) {
     switch(m_filterType) {
     case TOPBAD:
@@ -212,8 +220,27 @@ inline void NodeList::filterNode(Node *node) {
         }
         break;
 
+    case BYNAME:
+        if (m_nameRegexp.isEmpty() || m_nameRegexp.indexIn(node->fqdn()) != -1) {
+            node->setAlpha(255);
+            node->setZValue(1);
+        } else {
+            node->setAlpha(128);
+            node->setZValue(-1);
+        }
+
     default:
         break;
     }
+}
+
+void NodeList::filterByName() {
+    setFilter(BYNAME);
+    m_filterBox->show();
+}
+
+void NodeList::setFilterWidget(QWidget *filterBox)
+{
+    m_filterBox = filterBox;
 }
 
