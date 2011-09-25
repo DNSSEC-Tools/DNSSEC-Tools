@@ -5,7 +5,7 @@
 
 NodeList::NodeList(GraphWidget *parent) :
     QObject(parent), m_graphWidget(parent), m_centerNode(0), m_nodes(), m_edges(),
-    m_timer(this), m_maxNodes(0), m_accessCounter(0), m_accessDropOlderThan(0)
+    m_timer(this), m_maxNodes(0), m_accessCounter(0), m_accessDropOlderThan(0), m_selectedNode(0)
 {
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(limit()));
     m_timer.start(5000); /* clear things out every 5 seconds or so */
@@ -165,6 +165,9 @@ bool NodeList::limitChildren(Node *node) {
 
             haveLimited = true;
 
+            if (m_selectedNode == node)
+                m_selectedNode = 0;
+
             new DelayedDelete<Node>(node);
         }
     }
@@ -242,5 +245,15 @@ void NodeList::filterByName() {
 void NodeList::setFilterWidget(QWidget *filterBox)
 {
     m_filterBox = filterBox;
+}
+
+void NodeList::setSelectedNode(Node *node)
+{
+    m_selectedNode = node;
+}
+
+Node * NodeList::selectedNode()
+{
+    return m_selectedNode;
 }
 

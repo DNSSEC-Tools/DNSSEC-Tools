@@ -43,6 +43,7 @@
 #include "node.h"
 #include "DNSData.h"
 #include "NodesPreferences.h"
+#include "DetailsViewer.h"
 
 #include <QtGui>
 #include <qdebug.h>
@@ -88,7 +89,14 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
 
     createStartingNode();
 
+    m_infoBox->addWidget(m_nodeInfoLabel = new QLabel(tr("Node Information: ")));
+    m_nodeInfoLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_infoBox->addWidget(m_infoLabel = new QLabel(""));
+    m_infoLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+    m_infoBox->addWidget(m_infoMoreButton = new QPushButton("More..."));
+    connect(m_infoMoreButton, SIGNAL(clicked()), this, SLOT(moreInfoButton()));
+    m_infoMoreButton->hide();
+    m_nodeInfoLabel->hide();
 
     // m_logWatcher->parseLogFile();
 
@@ -447,6 +455,8 @@ void GraphWidget::setLayoutType(LayoutType layoutType)
 
 void GraphWidget::setInfo(const QString &text)
 {
+    m_nodeInfoLabel->show();
+    m_infoMoreButton->show();
     m_infoLabel->setText(text);
 }
 
@@ -462,6 +472,14 @@ void GraphWidget::setInfo(Node *node) {
     }
     buildString += + "[" + node->getSubData() + "]";
     setInfo(buildString);
+    m_nodeList->setSelectedNode(node);
+}
+
+void GraphWidget::moreInfoButton() {
+    if (m_nodeList->selectedNode()) {
+        DetailsViewer viewer(m_nodeList->selectedNode());
+        viewer.exec();
+    }
 }
 
 void GraphWidget::createStartingNode()
