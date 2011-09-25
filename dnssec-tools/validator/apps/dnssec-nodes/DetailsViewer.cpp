@@ -59,7 +59,7 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
         form->addRow(iterator.key(), label = new QLabel(iterator.value().DNSSECStringStatuses().join(",")));
     }
 
-    tabs->addTab(widget, "Datatypes Seen");
+    tabs->addTab(widget, tr("Datatypes Seen"));
 
     //
     // closing button box
