@@ -102,6 +102,7 @@ public:
     void cacheDNSDataValidity();
     int  DNSSECValidity();
 
+    void setAlpha(int alpha);
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 

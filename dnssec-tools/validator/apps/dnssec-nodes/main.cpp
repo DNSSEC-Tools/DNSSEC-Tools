@@ -53,14 +53,30 @@ int main(int argc, char **argv)
     QWidget *mainWidget = new QWidget;
     QVBoxLayout *layout = new QVBoxLayout();
     QHBoxLayout *hbox = new QHBoxLayout();
+
+    // Information Box at the Top
     QHBoxLayout *infoBox = new QHBoxLayout();
     layout->addLayout(infoBox);
 
+    // Filter box, hidden by default
+    QWidget *filterWidget = new QWidget();
+    QHBoxLayout *filterBox = new QHBoxLayout();
+    filterWidget->setLayout(filterBox);
+    QLabel *filterLabel = new QLabel("Filter by Name:");
+    filterBox->addWidget(filterLabel);
+    QLineEdit *filterEditBox = new QLineEdit();
+    filterBox->addWidget(filterEditBox);
+    layout->addWidget(filterWidget);
+
     QLineEdit *editBox = new QLineEdit();
+
+    // Main GraphWidget object
     GraphWidget *graphWidget = new GraphWidget(0, editBox, fileName, infoBox);
     layout->addWidget(graphWidget);
     layout->addLayout(hbox);
 
+
+    // Edit box at the bottom
     hbox->addWidget(editBox);
 
     QMainWindow mainWindow;
@@ -113,6 +129,9 @@ int main(int argc, char **argv)
     action = layoutMenu->addAction("circle");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToCircles()));
 
+    //
+    // Filter menu
+    //
     QMenu *filterMenu = menu->addMenu("Filter");
     action = filterMenu->addAction("Remove Filters");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterNone()));
@@ -120,6 +139,14 @@ int main(int argc, char **argv)
 
     action = filterMenu->addAction("Failed nodes to the top");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterBadToTop()));
+
+    action = filterMenu->addAction("Filter by Name");
+    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterByName()));
+    graphWidget->nodeList()->setFilterWidget(filterWidget);
+    filterEditBox->connect(filterEditBox, SIGNAL(textChanged(QString)), graphWidget->nodeList(), SLOT(setFilterFQDNExpression(QString)));
+    filterWidget->hide();
+
+
     menu->addSeparator();
 
     action = menu->addAction("Preferences");
