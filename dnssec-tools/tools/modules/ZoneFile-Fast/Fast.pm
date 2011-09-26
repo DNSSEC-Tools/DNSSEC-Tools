@@ -53,8 +53,15 @@ my $MAXIMUM_TTL = 0x7fffffff;
 my $pat_ttl = qr{\d+[\dwdhms]*}i;
 my $pat_skip = qr{\s*(?:;.*)?};
 my $pat_name = qr{[-\*\w\$\d\/*]+(?:\.[-\*\w\$\d\/]+)*};
-my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
 my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
+
+#
+# Added the ability to have a backslash in the SOA username.  This is to
+# provide for the RFC-allowed "Joe\.Jones.example.com" construct to allow
+# dots in usernames.  Keeping the original version here for easy reference.
+#
+# my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
+my $pat_maybefullname   = qr{[-\w\$\d\/*\\]+(?:\.[-\w\$\d\/]+)*\.?};
 
 my $debug;
 my $domain;
