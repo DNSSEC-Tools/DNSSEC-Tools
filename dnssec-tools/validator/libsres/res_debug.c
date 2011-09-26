@@ -235,7 +235,7 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
 #endif
                 goto cleanup;
             }
-            _print_or_log(file, LOG_DEBUG, "%s", buf);
+            _print_or_log(file, LOG_DEBUG, "%s\n", buf);
         }
         rrnum++;
     }
@@ -1269,7 +1269,7 @@ libsres_pquery(const u_char * msg, size_t len, FILE * file)
             ";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n",
             _libsres_opcodes[opcode], p_rcode(rcode), id);
 
-    strcpy(buf, "; flags:");
+    strcpy(buf, ";; flags:");
     if (libsres_msg_getflag(handle, ns_f_qr))
         strcat(buf, " qr");
     if (libsres_msg_getflag(handle, ns_f_aa))
@@ -1290,14 +1290,14 @@ libsres_pquery(const u_char * msg, size_t len, FILE * file)
 
     _print_or_log(file, LOG_DEBUG, "; %s: %d", p_section(ns_s_qd, opcode),
                   qdcount);
-    do_section(&handle, ns_s_qd, RES_PRF_QUES, file);
     _print_or_log(file, LOG_DEBUG, ", %s: %d", p_section(ns_s_an, opcode),
                   ancount);
-    do_section(&handle, ns_s_an, RES_PRF_ANS, file);
     _print_or_log(file, LOG_DEBUG, ", %s: %d", p_section(ns_s_ns, opcode),
                   nscount);
-    do_section(&handle, ns_s_ns, RES_PRF_AUTH, file);
-    _print_or_log(file, LOG_DEBUG, ", %s: %d", p_section(ns_s_ar, opcode),
+    _print_or_log(file, LOG_DEBUG, ", %s: %d\n", p_section(ns_s_ar, opcode),
                   arcount);
+    do_section(&handle, ns_s_qd, RES_PRF_QUES, file);
+    do_section(&handle, ns_s_an, RES_PRF_ANS, file);
+    do_section(&handle, ns_s_ns, RES_PRF_AUTH, file);
     do_section(&handle, ns_s_ar, RES_PRF_ADD, file);
 }
