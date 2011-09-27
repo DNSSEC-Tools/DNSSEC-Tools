@@ -8,6 +8,8 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(%opts);
 
+appendstuff();
+
 sub InitMakeParams {
     $DIRS = ['ZoneFile-Fast'];
     if ($ARGV[0] ne 'NOVALIDATOR') {
@@ -20,4 +22,17 @@ sub InitMakeParams {
 	     'DIR'          => $DIRS, # avoids the testing dir
 	    );
     return %opts;
+}
+
+sub appendstuff {
+	open(MK,">> Makefile");
+
+	print MK '
+
+%.pm:   %.pm.in
+	cd $(CURDIR)/../.. && ./config.status
+
+';
+
+	close(MK);
 }
