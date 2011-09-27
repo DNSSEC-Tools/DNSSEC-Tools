@@ -97,7 +97,7 @@ extern const char *_libsres_opcodes[];
 int
 res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
                  const char *dname,     /* domain name */
-                 u_int16_t class, u_int16_t type,   /* class and type of query */
+                 u_int16_t class_h, u_int16_t type_h,   /* class and type of query */
                  const u_char * data,   /* resource record data */
                  size_t datalen,   /* length of data */
                  const u_char * newrr_in,       /* new rr for modify or append */
@@ -116,7 +116,7 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
 #ifdef DEBUG
     if (pref_ns->ns_options & RES_DEBUG)
         printf(";; res_val_nmkquery(%s, %s, %s, %s)\n",
-               _libsres_opcodes[op], dname, p_class(class), p_type(type));
+               _libsres_opcodes[op], dname, p_class(class_h), p_type(type_h));
 #endif
     /*
      * Initialize header fields.
@@ -151,8 +151,8 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
                          lastdnptr)) < 0)
             return (-1);
         cp += n;
-        RES_PUT16(type, cp);
-        RES_PUT16(class, cp);
+        RES_PUT16(type_h, cp);
+        RES_PUT16(class_h, cp);
         hp->qdcount = htons(1);
         if (op == ns_o_query || data == NULL)
             break;
@@ -167,7 +167,7 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
             return (-1);
         cp += n;
         RES_PUT16(ns_t_null, cp);
-        RES_PUT16(class, cp);
+        RES_PUT16(class_h, cp);
         RES_PUT32(0, cp);
         RES_PUT16(0, cp);
         hp->arcount = htons(1);
@@ -180,8 +180,8 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
         if (ep - cp < 1 + NS_RRFIXEDSZ + datalen_16)
             return (-1);
         *cp++ = '\0';           /* no domain name */
-        RES_PUT16(type, cp);
-        RES_PUT16(class, cp);
+        RES_PUT16(type_h, cp);
+        RES_PUT16(class_h, cp);
         RES_PUT32(0, cp);
         RES_PUT16(datalen_16, cp);
         if (datalen_16) {

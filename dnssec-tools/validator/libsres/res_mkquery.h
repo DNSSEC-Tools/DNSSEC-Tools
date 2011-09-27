@@ -25,7 +25,7 @@
 int
                 res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
                                  const char *dname,     /* domain name */
-                                 u_int16_t class, u_int16_t type,   /* class and type of query */
+                                 u_int16_t class_h, u_int16_t type_h,   /* class and type of query */
                                  const u_char * data,   /* resource record data */
                                  size_t datalen,   /* length of data */
                                  const u_char * newrr_in,       /* new rr for modify or append */

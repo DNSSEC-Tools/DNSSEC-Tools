@@ -35,8 +35,8 @@ val_free_answer_chain(struct val_answer_chain *answers)
 }
 
 int
-val_get_answer_from_result(val_context_t *context, const char *name, int class,
-                           int type, struct val_result_chain **results,
+val_get_answer_from_result(val_context_t *context, const char *name, int class_h,
+                           int type_h, struct val_result_chain **results,
                            struct val_answer_chain **answers,
                            u_int32_t vgafr_flags)
 {
@@ -69,8 +69,8 @@ val_get_answer_from_result(val_context_t *context, const char *name, int class,
             return VAL_OUT_OF_MEMORY;
         } 
         ans->val_ans_status = VAL_UNTRUSTED_ANSWER;
-        ans->val_ans_class = class;
-        ans->val_ans_type = type;
+        ans->val_ans_class = class_h;
+        ans->val_ans_type = type_h;
         ans->val_ans = NULL;
         ans->val_ans_next = NULL;
         *answers = ans;
@@ -125,8 +125,8 @@ val_get_answer_from_result(val_context_t *context, const char *name, int class,
             } else {
                 n = name; /* the name being queried for */
             }
-            ans->val_ans_class = class; 
-            ans->val_ans_type = type; 
+            ans->val_ans_class = class_h; 
+            ans->val_ans_type = type_h; 
             ans->val_ans = NULL;
         } 
 
@@ -187,8 +187,8 @@ err:
 int
 val_get_rrset(val_context_t *context,
               const char *name,
-              int class,
-              int type,
+              int class_h,
+              int type_h,
               u_int32_t flags,
               struct val_answer_chain **answers) 
 {
@@ -204,7 +204,7 @@ val_get_rrset(val_context_t *context,
     if (ctx == NULL)
         return VAL_INTERNAL_ERROR;
 
-    if ((retval = val_resolve_and_check(ctx, name, class, type, 
+    if ((retval = val_resolve_and_check(ctx, name, class_h, type_h, 
                                        flags,
                                        &results)) != VAL_NO_ERROR) {
         val_log(ctx, LOG_INFO,
@@ -215,7 +215,7 @@ val_get_rrset(val_context_t *context,
     }
     CTX_UNLOCK_POL(ctx); 
 
-    retval = val_get_answer_from_result(ctx, name, class, type, &results,
+    retval = val_get_answer_from_result(ctx, name, class_h, type_h, &results,
                                         answers, 0);
     return retval;
 } 
