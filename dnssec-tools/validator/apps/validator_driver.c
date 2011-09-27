@@ -77,7 +77,7 @@ sig_shutdown(int a)
 
 int
 check_results(val_context_t * context, const char *desc, char * name,
-              const u_int16_t class, const u_int16_t type,
+              const u_int16_t class_h, const u_int16_t type_h,
               const int *result_ar, struct val_result_chain *results,
               int trusted_only)
 {
@@ -181,7 +181,7 @@ print_val_response(struct val_response *resp)
 //
 int
 sendquery(val_context_t * context, const char *desc, char * name,
-          int class, int type, u_int32_t flags,
+          int class_h, int type_h, u_int32_t flags,
           const int *result_ar, int trusted_only,
           struct val_response *resp)
 {
@@ -195,16 +195,16 @@ sendquery(val_context_t * context, const char *desc, char * name,
     fprintf(stderr, "%s: ****START**** \n", desc);
     
     ret_val =
-        val_resolve_and_check(context, name, class, type, flags, &results);
+        val_resolve_and_check(context, name, class_h, type_h, flags, &results);
 
     if (ret_val == VAL_NO_ERROR) {
 
         if (resp)
-            ret_val = compose_answer(name, type, class, results, resp);
+            ret_val = compose_answer(name, type_h, class_h, results, resp);
 
         if (result_ar)
             err =
-                check_results(context, desc, name, class, type,
+                check_results(context, desc, name, class_h, type_h,
                               result_ar, results, trusted_only);
 
         val_free_result_chain(results);
@@ -399,7 +399,7 @@ process_packet(val_context_t *context)
     HEADER         *query_header, *response_header;
     u_char         *pos;
     int             q_name_len, rc;
-    u_int16_t       q_type, q_class;
+    u_int16_t       type_h, class_h;
 
     struct sockaddr from;
     socklen_t       from_len;
@@ -439,13 +439,13 @@ process_packet(val_context_t *context)
     /*
      * get class and type
      */
-    VAL_GET16(q_type, pos);
-    VAL_GET16(q_class, pos);
+    VAL_GET16(type_h, pos);
+    VAL_GET16(class_h, pos);
 
     response_size = sizeof(response);
     
-    get_results(context, "test", (char *)&query[sizeof(HEADER)], (int)q_class,
-                (int)q_type, response, &response_size, 0);
+    get_results(context, "test", (char *)&query[sizeof(HEADER)], (int)class_h,
+                (int)type_h, response, &response_size, 0);
 
     /*
      * check to see if we need a dummy response

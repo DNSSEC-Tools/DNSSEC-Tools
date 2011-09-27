@@ -129,7 +129,7 @@ ns_sprintrr(const ns_msg * handle, const ns_rr * rr,
  */
 int
 ns_sprintrrf(const u_char * msg, size_t msglen,
-             const char *name, ns_class class, ns_type type,
+             const char *name, ns_class class_h, ns_type type_h,
              u_long ttl, const u_char * rdata, size_t rdlen,
              const char *name_ctx, const char *origin,
              char *buf, size_t buflen)
@@ -179,7 +179,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
      */
     T(x = ns_format_ttl(ttl, buf, buflen));
     addlen(x, &buf, &buflen);
-    len = SPRINTF((tmp, " %s %s", p_class(class), p_type(type)));
+    len = SPRINTF((tmp, " %s %s", p_class(class_h), p_type(type_h)));
     T(addstr(tmp, len, &buf, &buflen));
     if (rdlen == 0U)
         return (buf - obuf);
@@ -188,7 +188,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
     /*
      * RData.
      */
-    switch (type) {
+    switch (type_h) {
     case ns_t_a:
         if (rdlen != (size_t) NS_INADDRSZ)
             goto formerr;
@@ -222,7 +222,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
         /*
          * Second word, optional in ISDN records. 
          */
-        if (type == ns_t_isdn && rdata == edata)
+        if (type_h == ns_t_isdn && rdata == edata)
             break;
 
         T(len = charstr(rdata, edata, &buf, &buflen));
@@ -579,7 +579,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
 
     case ns_t_rrsig:{
             char            base64_key[NS_MD5RSA_MAX_BASE64];
-            u_int           type, algorithm, labels, footprint;
+            u_int           type_h, algorithm, labels, footprint;
             const char     *leader;
             u_long          t;
             int             n;
@@ -588,12 +588,12 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
                 goto formerr;
 
             /** Type covered, Algorithm, Label count, Original TTL.  */
-            RES_GET16(type, rdata);
+            RES_GET16(type_h, rdata);
             algorithm = *rdata++;
             labels = *rdata++;
             RES_GET32(t, rdata);
             len = SPRINTF((tmp, "%s %d %d %lu ",
-                           p_type(type), algorithm, labels, t));
+                           p_type(type_h), algorithm, labels, t));
             T(addstr(tmp, len, &buf, &buflen));
             if (labels > (u_int) dn_count_labels(name))
                 goto formerr;
@@ -807,7 +807,7 @@ nxtbitmaps:
 #endif
 
     case ns_t_opt:{
-            len = SPRINTF((tmp, "%u bytes", class));
+            len = SPRINTF((tmp, "%u bytes", class_h));
             T(addstr(tmp, len, &buf, &buflen));
             break;
         }

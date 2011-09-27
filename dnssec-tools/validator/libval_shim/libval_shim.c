@@ -242,7 +242,7 @@ res_init(void)
 
 
 int
-res_query(const char *dname, int class, int type, 
+res_query(const char *dname, int class_h, int type_h, 
 	  unsigned char *answer, int anslen)
 {
   val_status_t          val_status;
@@ -252,9 +252,9 @@ res_query(const char *dname, int class, int type,
     return -1;
 
   val_log(NULL, LOG_DEBUG, "libval_shim: res_query(%s,%d,%d) called: wrapper\n",
-	  dname, class, type);
+	  dname, class_h, type_h);
 
-  ret = val_res_query(libval_shim_ctx, dname, class, type, answer, anslen,
+  ret = val_res_query(libval_shim_ctx, dname, class_h, type_h, answer, anslen,
 			&val_status);
 
   if (val_istrusted(val_status) && !val_does_not_exist(val_status)) {
@@ -266,7 +266,7 @@ res_query(const char *dname, int class, int type,
 
 
 int
-res_querydomain(const char *name, const char *domain, int class, int type, 
+res_querydomain(const char *name, const char *domain, int class_h, int type_h, 
 		u_char * answer, int anslen)
 {
   val_log(NULL, LOG_DEBUG, "libval_shim: res_querydomain called: not-available\n");
@@ -276,7 +276,7 @@ res_querydomain(const char *name, const char *domain, int class, int type,
 
 
 int
-res_search(const char *dname, int class, int type, 
+res_search(const char *dname, int class_h, int type_h, 
 	   unsigned char *answer, int anslen)
 {
   val_log(NULL, LOG_DEBUG, "libval_shim: res_search called: not-available\n");

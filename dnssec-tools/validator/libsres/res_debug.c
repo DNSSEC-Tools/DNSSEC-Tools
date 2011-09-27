@@ -577,19 +577,19 @@ p_section(int section, int opcode)
  * Return a mnemonic for class.
  */
 const char     *
-p_class(int class)
+p_class(int class_h)
 {
     int             success;
     const char     *result;
     static char     classbuf[20];
 
     result =
-        sym_ntos((const struct RES_SYM_TYPE *) __p_res_class_syms, class, &success);
+        sym_ntos((const struct RES_SYM_TYPE *) __p_res_class_syms, class_h, &success);
     if (success)
         return (result);
-    if (class < 0 || class > 0xfff)
+    if (class_h < 0 || class_h > 0xfff)
         return ("BADCLASS");
-    snprintf(classbuf, sizeof(classbuf), "CLASS%d", class);
+    snprintf(classbuf, sizeof(classbuf), "CLASS%d", class_h);
     return (classbuf);
 }
 

@@ -384,8 +384,8 @@ struct queries_for_query;
                                           *results);
     int             val_resolve_and_check(val_context_t * context,
                                           const char * domain_name,
-                                          int qclass,
-                                          int qtype,
+                                          int class_h,
+                                          int type_h,
                                           unsigned int flags,
                                           struct val_result_chain
                                           **results);
@@ -422,7 +422,7 @@ struct queries_for_query;
      * from val_x_query.c 
      */
     int             val_res_query(val_context_t * ctx, const char *dname,
-                                  int q_class, int type, unsigned char * answer,
+                                  int class_h, int type_h, unsigned char * answer,
                                   int anslen, val_status_t * val_status);
     int             val_res_search(val_context_t * ctx, const char *dname,
                                    int class_h, int type, unsigned char * answer,
@@ -529,8 +529,8 @@ struct queries_for_query;
      */
     int val_get_rrset(val_context_t *ctx,
                       const char *name,
-                      int classid,
-                      int type,
+                      int class_h,
+                      int type_h,
                       unsigned int flags,
                       struct val_answer_chain **answers);
 
@@ -541,7 +541,7 @@ struct queries_for_query;
      * utility functions. mostly used internal to libval.
      */
     int val_get_answer_from_result(val_context_t *context, const char *name,
-                                   int class, int type,
+                                   int class_h, int type_h,
                                    struct val_result_chain **results,
                                    struct val_answer_chain **answers,
                                    u_int32_t vgafr_flags);
