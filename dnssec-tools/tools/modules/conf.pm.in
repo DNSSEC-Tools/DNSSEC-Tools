@@ -678,15 +678,17 @@ sub makelocalstatedir
 	#
 	if($#$errorlist > -1)
 	{
-		print STDERR "Errors creating path:  $subpath:\n";
-		print STDERR "    (set DT_STATEDIR to change the location)\n";
+		my $errstr = '';			# Error string.
+
+		$errstr = "Errors creating path:  $subpath:\n";
+		$errstr .= "    (set DT_STATEDIR to change the location)\n";
 		foreach my $err (@$errorlist)
 		{
 			my ($file, $msg) = each %$err;
-			print STDERR "  $file:  $msg\n";
+			$errstr .= "  $file:  $msg\n";
 		}
 
-		exit(1);
+		err($errstr,1);
 	}
 
 	#
