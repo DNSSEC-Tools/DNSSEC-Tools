@@ -27,43 +27,44 @@ test.dnssec-tools.org:
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
 pastdate-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1790
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1758
   Error:       RRSIG record for pastdate-a.test.dnssec-tools.org has
 	       expired
 
 pastdate-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1805
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1773
   Error:       RRSIG record for pastdate-aaaa.test.dnssec-tools.org has
 	       expired
 
-pastdate-cname-to-badsign-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1820
+pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1788
   Error:       RRSIG record for
-	       pastdate-cname-to-badsign-a.test.dnssec-tools.org has
+	       pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org has
 	       expired
 
 pastdate-cname-to-badsign-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1835
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1812
   Error:       RRSIG record for
 	       pastdate-cname-to-badsign-aaaa.test.dnssec-tools.org has
 	       expired
 
+pastdate-cname-to-badsign-a.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1827
+  Error:       RRSIG record for
+	       pastdate-cname-to-badsign-a.test.dnssec-tools.org has
+	       expired
+
 pastdate-cname-to-futuredate-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1850
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1842
   Error:       RRSIG record for
 	       pastdate-cname-to-futuredate-a.test.dnssec-tools.org has
 	       expired
 
 pastdate-cname-to-futuredate-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1865
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1857
   Error:       RRSIG record for
 	       pastdate-cname-to-futuredate-aaaa.test.dnssec-tools.org has
 	       expired
-
-pastdate-cname-to-good-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1880
-  Error:       RRSIG record for
-	       pastdate-cname-to-good-a.test.dnssec-tools.org has expired
 
 pastdate-cname-to-good-aaaa.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:1895
@@ -82,10 +83,10 @@ pastdate-cname-to-nosig-aaaa.test.dnssec-tools.org:
 	       pastdate-cname-to-nosig-aaaa.test.dnssec-tools.org has
 	       expired
 
-pastdate-cname-to-pastdate-a.test.dnssec-tools.org:
+pastdate-cname-to-baddata-a.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:1940
   Error:       RRSIG record for
-	       pastdate-cname-to-pastdate-a.test.dnssec-tools.org has
+	       pastdate-cname-to-baddata-a.test.dnssec-tools.org has
 	       expired
 
 pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org:
@@ -94,68 +95,67 @@ pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org:
 	       pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org has
 	       expired
 
-pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1970
-  Error:       RRSIG record for
-	       pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org
-	       has expired
-
-pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:1985
-  Error:       RRSIG record for
-	       pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org has
-	       expired
-
-pastdate-cname-to-baddata-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2002
-  Error:       RRSIG record for
-	       pastdate-cname-to-baddata-a.test.dnssec-tools.org has
-	       expired
-
-reverseddates-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2009
-  Error:       RRSIG is nearing its expiration time
-
-reverseddates-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2025
-  Error:       RRSIG is nearing its expiration time
-
 pastdate-cname-to-reverseddates-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2049
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1970
   Error:       RRSIG record for
 	       pastdate-cname-to-reverseddates-a.test.dnssec-tools.org has
 	       expired
 
-pastdate-ds.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2067
-  Error:       RRSIG record for pastdate-ds.test.dnssec-tools.org has
+pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1985
+  Error:       RRSIG record for
+	       pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org
+	       has expired
+
+reverseddates-a.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:1994
+  Error:       RRSIG is nearing its expiration time
+
+pastdate-cname-to-pastdate-a.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2018
+  Error:       RRSIG record for
+	       pastdate-cname-to-pastdate-a.test.dnssec-tools.org has
 	       expired
 
+pastdate-cname-to-good-a.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2033
+  Error:       RRSIG record for
+	       pastdate-cname-to-good-a.test.dnssec-tools.org has expired
+
+reverseddates-aaaa.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2040
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-cname-to-baddata-a.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2056
+  Error:       RRSIG is nearing its expiration time
+
 reverseddates-cname-to-badsign-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2074
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2072
   Error:       RRSIG is nearing its expiration time
 
 reverseddates-cname-to-badsign-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2090
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2088
   Error:       RRSIG is nearing its expiration time
 
 reverseddates-cname-to-futuredate-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2106
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2104
   Error:       RRSIG is nearing its expiration time
 
 reverseddates-cname-to-futuredate-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2122
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2120
   Error:       RRSIG is nearing its expiration time
 
 reverseddates-cname-to-good-a.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2138
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2136
   Error:       RRSIG is nearing its expiration time
 
-reverseddates-cname-to-good-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2154
-  Error:       RRSIG is nearing its expiration time
+pastdate-ds.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2163
+  Error:       RRSIG record for pastdate-ds.test.dnssec-tools.org has
+	       expired
 
-reverseddates-cname-to-nosig-a.test.dnssec-tools.org:
+reverseddates-cname-to-baddata-aaaa.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:2170
   Error:       RRSIG is nearing its expiration time
 
@@ -167,27 +167,27 @@ reverseddates-cname-to-pastdate-a.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:2202
   Error:       RRSIG is nearing its expiration time
 
-reverseddates-cname-to-baddata-a.test.dnssec-tools.org:
+reverseddates-cname-to-pastdate-aaaa.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:2218
   Error:       RRSIG is nearing its expiration time
 
-reverseddates-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
+reverseddates-cname-to-good-aaaa.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:2234
   Error:       RRSIG is nearing its expiration time
 
-reverseddates-cname-to-baddata-aaaa.test.dnssec-tools.org:
+reverseddates-cname-to-reverseddates-a.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:2250
   Error:       RRSIG is nearing its expiration time
 
+reverseddates-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2268
+  Error:       RRSIG is nearing its expiration time
+
 reverseddates-ns.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2275
+  Location:    db.test.dnssec-tools.org.zs.signed.modified:2341
   Error:       RRSIG is nearing its expiration time
 
-reverseddates-cname-to-pastdate-aaaa.test.dnssec-tools.org:
-  Location:    db.test.dnssec-tools.org.zs.signed.modified:2318
-  Error:       RRSIG is nearing its expiration time
-
-reverseddates-cname-to-reverseddates-a.test.dnssec-tools.org:
+reverseddates-cname-to-nosig-a.test.dnssec-tools.org:
   Location:    db.test.dnssec-tools.org.zs.signed.modified:2357
   Error:       RRSIG is nearing its expiration time
 
@@ -204,7 +204,7 @@ reverseddates-cname-to-pastdate-a.test.dnssec-tools.org:
 pastdate-a.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.test.dnssec-tools.org type: A
 	       failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 cnametodne-cname-to-badsign-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -220,18 +220,18 @@ pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-pastdate-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 pastdate-cname-to-nosig-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-nosig-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-ds.test.dnssec-tools.org type: DS
 	       failed to verify: Signature may only be used in the future;
-	       after 20111111094822
+	       after 20111126094104
 
 badsign-cname-to-reverseddates-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -241,7 +241,7 @@ badsign-cname-to-reverseddates-a.test.dnssec-tools.org:
 futuredate-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-aaaa.test.dnssec-tools.org type:
 	       AAAA failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 reverseddates-cname-to-nosig-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -261,7 +261,7 @@ futuredate-cname-to-futuredate-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-futuredate-aaaa.test.dnssec-tools.org
 	       type: CNAME failed to verify: Signature may only be used in
-	       the future; after 20111111094822
+	       the future; after 20111126094104
 
 cnametodne-cname-to-futuredate-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -271,13 +271,13 @@ cnametodne-cname-to-futuredate-aaaa.test.dnssec-tools.org:
 pastdate-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-aaaa.test.dnssec-tools.org type:
 	       AAAA failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-baddata-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 baddata-cname-to-nosig-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -293,7 +293,7 @@ futuredate-cname-to-badsign-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-badsign-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 reverseddates-cname-to-baddata-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -319,13 +319,13 @@ pastdate-cname-to-badsign-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-badsign-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 futuredate-cname-to-baddata-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-baddata-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 reverseddates-cname-to-badsign-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -336,7 +336,7 @@ pastdate-cname-to-futuredate-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-futuredate-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 insecure-ns.test.dnssec-tools.org:
   Error:       sub-domain insecure-ns.test.dnssec-tools.org is not securely
@@ -346,18 +346,18 @@ pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-reverseddates-aaaa.test.dnssec-tools.org
 	       type: CNAME failed to verify: Signature has expired since:
-	       20110912104322
-
-baddata-cname-to-good-aaaa.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       baddata-cname-to-good-aaaa.test.dnssec-tools.org type: CNAME
-	       failed to verify: RSA Verification failed
+	       20110927103604
 
 futuredate-cname-to-pastdate-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-pastdate-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
+
+baddata-cname-to-good-aaaa.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       baddata-cname-to-good-aaaa.test.dnssec-tools.org type: CNAME
+	       failed to verify: RSA Verification failed
 
 badsign-cname-to-futuredate-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -368,7 +368,7 @@ pastdate-cname-to-good-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-good-a.test.dnssec-tools.org type: CNAME
 	       failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 baddata-cname-to-badsign-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -441,25 +441,25 @@ futuredate-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-reverseddates-aaaa.test.dnssec-tools.org
 	       type: CNAME failed to verify: Signature may only be used in
-	       the future; after 20111111094822
+	       the future; after 20111126094104
 
 pastdate-cname-to-baddata-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-baddata-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 pastdate-cname-to-good-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-good-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 pastdate-cname-to-futuredate-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-futuredate-aaaa.test.dnssec-tools.org
 	       type: CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 addedlater-nosig-A.test.dnssec-tools.org:
   Error:       name addedlater-nosig-A.test.dnssec-tools.org does not have
@@ -473,25 +473,25 @@ futuredate-cname-to-baddata-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-baddata-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 futuredate-cname-to-good-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-good-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 futuredate-cname-to-pastdate-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-pastdate-aaaa.test.dnssec-tools.org
 	       type: CNAME failed to verify: Signature may only be used in
-	       the future; after 20111111094822
+	       the future; after 20111126094104
 
 futuredate-cname-to-nosig-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-nosig-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 addedlater-withsig-A.test.dnssec-tools.org:
   Error:       name addedlater-withsig-A.test.dnssec-tools.org does not
@@ -579,7 +579,7 @@ futuredate-cname-to-badsign-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-badsign-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 badsign-cname-to-badsign-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -594,7 +594,7 @@ futuredate-cname-to-good-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-good-a.test.dnssec-tools.org type: CNAME
 	       failed to verify: Signature may only be used in the future;
-	       after 20111111094822
+	       after 20111126094104
 
 badsign-cname-to-baddata-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -605,7 +605,7 @@ futuredate-cname-to-nosig-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-nosig-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 reverseddates-cname-to-baddata-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -630,13 +630,13 @@ pastdate-cname-to-nosig-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-nosig-a.test.dnssec-tools.org type: CNAME
 	       failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 futuredate-cname-to-reverseddates-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-reverseddates-a.test.dnssec-tools.org
 	       type: CNAME failed to verify: Signature may only be used in
-	       the future; after 20111111094822
+	       the future; after 20111126094104
 
 reverseddates-cname-to-reverseddates-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -656,7 +656,7 @@ badsign-cname-to-good-aaaa.test.dnssec-tools.org:
 futuredate-a.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.test.dnssec-tools.org type: A
 	       failed to verify: Signature may only be used in the future;
-	       after 20111111094822
+	       after 20111126094104
 
 reverseddates-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -676,7 +676,7 @@ pastdate-cname-to-pastdate-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-pastdate-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 badsign-cname-to-reverseddates-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -687,13 +687,13 @@ pastdate-cname-to-badsign-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-badsign-aaaa.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 futuredate-cname-to-futuredate-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-cname-to-futuredate-a.test.dnssec-tools.org type:
 	       CNAME failed to verify: Signature may only be used in the
-	       future; after 20111111094822
+	       future; after 20111126094104
 
 baddata-cname-to-baddata-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -703,7 +703,7 @@ baddata-cname-to-baddata-aaaa.test.dnssec-tools.org:
 pastdate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-ds.test.dnssec-tools.org type: DS
 	       failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 badsign-cname-to-nosig-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -728,7 +728,7 @@ pastdate-cname-to-reverseddates-a.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-cname-to-reverseddates-a.test.dnssec-tools.org
 	       type: CNAME failed to verify: Signature has expired since:
-	       20110912104322
+	       20110927103604
 
 cnametodne-cname-to-badsign-aaaa.test.dnssec-tools.org:
   Error:       RRSIG on name:
