@@ -303,38 +303,39 @@ struct queries_for_query;
 #define VAL_AS_CTX_USER_SUPPLIED     0x00000001 /* i.e. don't delete it! */
 #define VAL_AS_IGNORE_CACHE          0x00000002
 #define VAL_AS_NO_NEW_QUERIES        0x00000004
-#define VAL_AS_DONE                  0x00000008 /* have results/answers */
-#define VAL_AS_CB_COMPLETED          0x00000010 /* called user callbacks */
-#define VAL_AS_NO_ANSWERS            0x00000020 /* don't care about answers */
-#define VAL_AS_NO_CALLBACKS          0x00000040 /* don't call callbacks */
+#define VAL_AS_NO_ANSWERS            0x00000008 /* don't care about answers */
+#define VAL_AS_NO_CALLBACKS          0x00000010 /* don't call callbacks */
+#define VAL_AS_NO_CANCEL_CALLBACKS   0x00000020 /* no cb if req cancelled */
 
+#define VAL_AS_DONE                  0x01000000 /* have results/answers */
+#define VAL_AS_CALLBACK_CALLED       0x02000000 /* called user callbacks */
+
+    /*
+     * asynchronous events
+     */
+#define VAL_AS_EVENT_COMPLETED             0x01
+#define VAL_AS_EVENT_CANCELED              0x02
+
+    /** opaque status object for async request */
     typedef struct val_async_status_s val_async_status;
-    typedef int (*val_cb_results)(val_async_status *as);
 
-    struct val_async_status_s {
-        val_context_t                 *val_as_ctx;
-        unsigned int                  val_as_flags;
+    typedef struct val_cb_params_s {
+        val_status_t             val_status;
+        char                    *name;
+        int                      class_h;
+        int                      type_h;
+        struct val_result_chain *results;
+        struct val_answer_chain *answers;
+    } val_cb_params_t;
 
-        unsigned char                 val_as_inflight;
-        struct queries_for_query      *val_as_top_q;
-        struct queries_for_query      *val_as_queries;
-
-        unsigned char                 *val_as_domain_name_n;
-        int                           val_as_class;
-        int                           val_as_type;
-
-        struct val_result_chain       *val_as_results;
-        struct val_answer_chain       *val_as_answers;
-
-        val_cb_results                val_as_result_cb;
-        void                          *val_as_cb_user_ctx;
-
-        struct val_async_status_s     *val_as_next;
-    };
+    typedef int (*val_async_event_cb)(val_async_status *async_status,
+                                      int event, val_context_t *ctx,
+                                      void *cb_data, val_cb_params_t *cbp);
 
     int             val_async_submit(val_context_t * ctx,
-                                     const char * domain_name, int qclass,
-                                     int qtype, unsigned int flags,
+                                     const char * domain_name, int class_h,
+                                     int type_h, unsigned int flags,
+                                     val_async_event_cb callback, void *cb_data,
                                      val_async_status **async_status);
     int             val_async_check_wait(val_context_t *context,
                                          fd_set *pending_desc, int *nfds,
@@ -350,8 +351,8 @@ struct queries_for_query;
     /*
      * cancellation flags
      */
-#define VAL_ASYNC_CANCEL_NO_CALLBACKS     0x00000001 /* no cb if req completed */
-#define VAL_ASYNC_CANCEL_RESERVED_MASK    0xFF000000 /* one byte internal use */
+#define VAL_AS_CANCEL_NO_CALLBACKS     0x00000001 /* no cb if req completed */
+#define VAL_AS_CANCEL_RESERVED_MASK    0xFF000000 /* one byte internal use */
 
     int             val_async_cancel(val_context_t *context,
                                      val_async_status *as,

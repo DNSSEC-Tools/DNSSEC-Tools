@@ -6242,8 +6242,8 @@ int try_chase_query(val_context_t * context,
 int
 val_resolve_and_check(val_context_t * ctx,
                       const char * domain_name,
-                      int qclass,
-                      int qtype,
+                      int class_h,
+                      int type_h,
                       u_int32_t flags,
                       struct val_result_chain **results)
 {
@@ -6268,12 +6268,12 @@ val_resolve_and_check(val_context_t * ctx,
      * Sanity check the values of class and type 
      * Should not be larger than sizeof u_int16_t
      */
-    if (qclass < 0 || qtype < 0 || 
-        qtype > ns_t_max || qclass > ns_c_max) {
+    if (class_h < 0 || type_h < 0 || 
+        type_h > ns_t_max || class_h > ns_c_max) {
         return VAL_BAD_ARGUMENT;
     } 
-    q_class = (u_int16_t) qclass;
-    q_type = (u_int16_t) qtype;
+    q_class = (u_int16_t) class_h;
+    q_type = (u_int16_t) type_h;
 
     if ((retval = ns_name_pton(domain_name, 
                         domain_name_n, sizeof(domain_name_n))) == -1) {
@@ -6411,7 +6411,7 @@ val_resolve_and_check(val_context_t * ctx,
 
     if (results) {
         val_log_authentication_chain(context, LOG_NOTICE, 
-            domain_name, qclass, qtype, *results);
+            domain_name, class_h, type_h, *results);
     }
 
   err:
@@ -6574,7 +6574,7 @@ _async_status_free(val_async_status *as)
     if (! as->val_as_flags & VAL_AS_CTX_USER_SUPPLIED)
         val_free_context(as->val_as_ctx);
 
-    FREE(as->val_as_domain_name_n);
+    FREE(as->val_as_name);
     FREE(as);
 
     return VAL_NO_ERROR;
@@ -6586,22 +6586,44 @@ _async_status_free(val_async_status *as)
  * returns 1 if callback called, 0 otherwise
  */
 static int
-_call_callbacks(val_async_status *as)
+_call_callbacks(int event, val_async_status *as)
 {
-    if ((NULL == as) || (NULL == as->val_as_result_cb))
+    int callit = 1;
+
+    if ((NULL == as) || (NULL == as->val_as_result_cb) ||
+        (as->val_as_flags & VAL_AS_CALLBACK_CALLED))
         return 0;
 
-    if ((as->val_as_flags & VAL_AS_DONE) &&
-        !(as->val_as_flags & VAL_AS_NO_CALLBACKS)) {
-        /*
-         * one callback per customer, please (otherwise caller might
-         * call async cancel, which will call callbacks = instant loop!)
-         */
-        as->val_as_flags |= VAL_AS_NO_CALLBACKS;
-        (*as->val_as_result_cb)(as);
-        return 1;
+    /*
+     * one callback per customer, please (otherwise caller might
+     * call async cancel, which will call callbacks = instant loop!)
+     */
+    as->val_as_flags |= VAL_AS_CALLBACK_CALLED;
+
+    if (VAL_AS_EVENT_COMPLETED == event) {
+        if (!(as->val_as_flags & VAL_AS_DONE) ||
+            (as->val_as_flags & VAL_AS_NO_CALLBACKS))
+            callit = 0;
+    } else if (VAL_AS_EVENT_CANCELED == event) {
+        if (as->val_as_flags & VAL_AS_NO_CANCEL_CALLBACKS)
+            callit = 0;
     }
-    return 0;
+
+    if (callit) {
+        val_cb_params_t cbp;
+        memset(&cbp, 0, sizeof(cbp));
+
+        cbp.val_status = as->val_as_retval;
+        cbp.name = as->val_as_name;
+        cbp.class_h = as->val_as_class;
+        cbp.type_h = as->val_as_type;
+        cbp.results = as->val_as_results;
+        cbp.answers = as->val_as_answers;
+
+        (*as->val_as_result_cb)(as, event, as->val_as_ctx,
+                                as->val_as_cb_user_ctx, &cbp );
+    }
+    return callit;
 }
 
 static void
@@ -6645,7 +6667,7 @@ _handle_completed(val_context_t *context)
     while (completed) {
         as = completed;
         completed = completed->val_as_next;
-        _call_callbacks(as);
+        _call_callbacks(VAL_AS_EVENT_COMPLETED, as);
         as->val_as_ctx = NULL; /* we've already removed ourselves */
         _async_status_free(as); /* no ctx, so no lock needed */
     }
@@ -6655,8 +6677,9 @@ _handle_completed(val_context_t *context)
  * Look inside the cache, ask the resolver for missing data.
  */
 int
-val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
-                 int qtype, u_int32_t flags, val_async_status **async_status)
+val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
+                 int type_h, u_int32_t flags, val_async_event_cb callback,
+                 void *cb_data, val_async_status **async_status)
 {
 
     int             retval;
@@ -6666,6 +6689,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     val_context_t            *context;
     int data_received = 0;
     int data_missing = 1, more_data;
+    u_char domain_name_n[NS_MAXCDNAME];
 
     if ((domain_name == NULL) || (async_status == NULL))
         return VAL_BAD_ARGUMENT;
@@ -6676,8 +6700,15 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
      * Sanity check the values of class and type
      * Should not be larger than sizeof u_int16_t
      */
-    if (qclass < 0 || qtype < 0 ||
-        qtype > ns_t_max || qclass > ns_c_max) {
+    if (class_h < 0 || type_h < 0 ||
+        type_h > ns_t_max || class_h > ns_c_max) {
+        return VAL_BAD_ARGUMENT;
+    }
+
+    if ((retval = ns_name_pton(domain_name, domain_name_n,
+                               NS_MAXCDNAME)) == -1) {
+        val_log(ctx, LOG_INFO, "val_resolve_and_check(): Cannot parse name %s",
+                domain_name);
         return VAL_BAD_ARGUMENT;
     }
 
@@ -6685,25 +6716,18 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     if (NULL == as)
         return VAL_OUT_OF_MEMORY;
 
-    as->val_as_domain_name_n = (u_char *)MALLOC(NS_MAXCDNAME * sizeof(u_char));
-    if (as->val_as_domain_name_n == NULL) {
+    val_log(NULL, LOG_DEBUG, "as %p allocated", as);
+
+    as->val_as_name = strdup(domain_name);
+    if (as->val_as_name == NULL) {
         FREE(as);
         return VAL_OUT_OF_MEMORY;
     }
 
-    val_log(NULL, LOG_DEBUG, "as %p allocated", as);
-
-    if ((retval = ns_name_pton(domain_name,
-                               as->val_as_domain_name_n,
-                               NS_MAXCDNAME)) == -1) {
-        val_log(ctx, LOG_INFO, "val_resolve_and_check(): Cannot parse name %s",
-                domain_name);
-        FREE(as->val_as_domain_name_n);
-        FREE(as);
-        return VAL_BAD_ARGUMENT;
-    }
-    as->val_as_class = (u_int16_t) qclass;
-    as->val_as_type = (u_int16_t) qtype;
+    as->val_as_result_cb = callback;
+    as->val_as_cb_user_ctx = cb_data;
+    as->val_as_class = (u_int16_t) class_h;
+    as->val_as_type = (u_int16_t) type_h;
 
     /*
      * get context, if needed
@@ -6725,7 +6749,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     CTX_LOCK_ACACHE(context);
 
     retval = add_to_qfq_chain(context, &as->val_as_queries,
-                              as->val_as_domain_name_n, as->val_as_type,
+                              domain_name_n, as->val_as_type,
                               as->val_as_class, flags & VAL_QFLAGS_USERMASK,
                               &added_q);
     if (VAL_NO_ERROR == retval) {
@@ -6789,7 +6813,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int qclass,
     else {
         /* put in context async queries list */
         val_log(context,
-                LOG_DEBUG, "adding %s to context as_list", domain_name);
+                LOG_DEBUG, "adding %s to context as_list", as->val_as_name);
         as->val_as_next = context->as_list;
         context->as_list = as;
     }
@@ -6901,11 +6925,8 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     }
 
     if ((VAL_NO_ERROR == retval) && (as->val_as_results)) {
-        char name_p[NS_MAXDNAME];
-        if (-1 == ns_name_ntop(as->val_as_domain_name_n, name_p, sizeof(name_p)))
-            snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log_authentication_chain(context, LOG_NOTICE,
-                                     name_p, as->val_as_class,
+                                     as->val_as_name, as->val_as_class,
                                      as->val_as_type, as->val_as_results);
     }
 
@@ -7074,7 +7095,7 @@ val_async_check(val_context_t *context, fd_set *pending_desc,
  * user flags defined in validator.h
  * upper byte reserved for internal use
  */
-#define VAL_ASYNC_CANCEL_REMOVED   0x01000000 /* already removed from ctx */
+#define VAL_AS_CANCEL_CTX_REMOVED   0x01000000 /* already removed from ctx */
 
 /** caller has lock, if needed */
 static void
@@ -7083,14 +7104,15 @@ _async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
     if (NULL == context || NULL == as)
         return ;
 
+    if (flags & VAL_AS_CANCEL_NO_CALLBACKS)
+        as->val_as_flags |= VAL_AS_CALLBACK_CALLED;
 
     /** call callback if done */
-    if (!(flags & VAL_ASYNC_CANCEL_NO_CALLBACKS))
-        _call_callbacks(as);
+    _call_callbacks(VAL_AS_EVENT_CANCELED, as);
 
     val_log(context, LOG_DEBUG, "as %p cancelled", as);
 
-    if (! (flags & VAL_ASYNC_CANCEL_REMOVED))
+    if (! (flags & VAL_AS_CANCEL_CTX_REMOVED))
         _context_as_remove(context, as);
 
     _async_status_free(as);
@@ -7111,7 +7133,7 @@ val_async_cancel(val_context_t *context, val_async_status *as, u_int flags)
     if (NULL == context || NULL == as)
         return VAL_BAD_ARGUMENT;
 
-    flags &= VAL_ASYNC_CANCEL_RESERVED_MASK; /* mask off reserved bits */
+    flags &= ~VAL_AS_CANCEL_RESERVED_MASK; /* mask off reserved bits */
 
     CTX_LOCK_ACACHE(context);
 
@@ -7138,13 +7160,13 @@ val_async_cancel_all(val_context_t *context, u_int flags)
     if (NULL == context)
         return VAL_BAD_ARGUMENT;
 
-    flags &= VAL_ASYNC_CANCEL_RESERVED_MASK; /* mask off reserved bits */
+    flags &= ~VAL_AS_CANCEL_RESERVED_MASK; /* mask off reserved bits */
 
     CTX_LOCK_ACACHE(context);
 
     for (as = context->as_list; as; as = next) {
         next = as->val_as_next;
-        _async_cancel_one(context, as, flags | VAL_ASYNC_CANCEL_REMOVED);
+        _async_cancel_one(context, as, flags | VAL_AS_CANCEL_CTX_REMOVED);
     }
 
     context->as_list = NULL;

@@ -337,6 +337,30 @@ extern          "C" {
         u_int32_t default_qflags;
     } ; 
 
+#ifndef VAL_NO_ASYNC
+    struct val_async_status_s {
+        val_context_t                 *val_as_ctx;
+        unsigned int                  val_as_flags;
+
+        unsigned char                 val_as_inflight;
+        struct queries_for_query      *val_as_top_q;
+        struct queries_for_query      *val_as_queries;
+
+        char                          *val_as_name;
+        int                           val_as_class;
+        int                           val_as_type;
+
+        int                           val_as_retval;
+        struct val_result_chain       *val_as_results;
+        struct val_answer_chain       *val_as_answers;
+
+        val_async_event_cb             val_as_result_cb;
+        void                          *val_as_cb_user_ctx;
+
+        struct val_async_status_s     *val_as_next;
+    };
+#endif
+
     struct val_rrset_digested {
         struct rrset_rec *ac_data;
         struct val_digested_auth_chain *val_ac_rrset_next;
