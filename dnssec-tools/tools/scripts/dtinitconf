@@ -29,8 +29,10 @@ my $DTVERS = "DNSSEC-Tools Version: 1.10";
 #
 my @DTPROGS =
 (
+	"genkrf",
 	"keyarch",
 	"rollchk",
+	"rollctl",
 	"zonesigner"
 );
 
@@ -178,8 +180,10 @@ my $roothints;				# root.hints file to create.
 # Program paths.
 #
 my $dtdir;				# DNSSEC-Tools directory.
+my $genkrf;				# genkrf program.
 my $keyarch;				# keyarch program.
 my $rollchk;				# rollchk program.
+my $rollctl;				# rollctl program.
 my $zonesigner;				# zonesigner program.
 
 my $binddir;				# BIND directory.
@@ -284,11 +288,13 @@ sub main
 		# Set some defaults (that aren't already set.)
 		#
 		$admin		= "root";
+		$genkrf		= "genkrf";
 		$keyarch	= "keyarch";
 		$keygen		= "dnssec-keygen";
 		$kgopts		= "";
 		$rndc		= "rndc";
 		$rollchk	= "rollchk";
+		$rollctl	= "rollctl";
 		$roothints	= "/etc/root.hints";
 		$tacontact	= "root";
 
@@ -557,8 +563,10 @@ sub writeconf()
 		print "\troll-logtz            - \"$rlogtz\"\n";
 		print "\tzoneerrs              - \"$zoneerrs\"\n\n";
 
+		print "\tgenkrf     - \"$genkrf\"\n";
 		print "\tkeyarch    - \"$keyarch\"\n";
 		print "\trollchk    - \"$rollchk\"\n";
+		print "\trollctl    - \"$rollctl\"\n";
 		print "\tzonesigner - \"$zonesigner\"\n";
 		print "\tkeygen     - \"$keygen\"\n";
 		print "\trndc       - \"$rndc\"\n";
@@ -602,8 +610,10 @@ mailer-type	$mailertype
 #
 # Paths to needed programs.  These may need adjusting for individual hosts.
 #
+genkrf		$genkrf
 keyarch		$keyarch
 rollchk		$rollchk
+rollctl		$rollctl
 zonesigner	$zonesigner
 
 keygen		$keygen
@@ -747,8 +757,10 @@ sub writetemplate()
 #
 # Paths to needed programs.  These may need adjusting for individual hosts.
 #
+# genkrf		$genkrf
 # keyarch		$keyarch
 # rollchk		$rollchk
+# rollctl		$rollctl
 # zonesigner		$zonesigner
 
 # keygen		$keygen
@@ -875,8 +887,8 @@ sub editconf()
 # Purpose:	This routine gathers path-related data.  The primary task
 #		is to figure out the paths for DNSSEC-Tools and BIND programs.
 #		After digging up these paths, they're used to create paths for
-#		keyarch, rollchk, zonesigner, named_checkzone, dnssec_keygen,
-#		dnssec_signzone, and rndc.
+#		genkrf, keyarch, rollchk, rollctl, zonesigner, named_checkzone,
+#		dnssec_keygen, dnssec_signzone, and rndc.
 #
 sub get_paths()
 {
@@ -972,21 +984,27 @@ sub get_paths()
 	#
 	if(($dtdir eq "") || ($dtdir eq "path"))
 	{
+		$genkrf	    = "genkrf";
 		$keyarch    = "keyarch";
 		$rollchk    = "rollchk";
+		$rollctl    = "rollctl";
 		$zonesigner = "zonesigner";
 	}
 	else
 	{
+		$genkrf	    = "$dtdir/genkrf";
 		$keyarch    = "$dtdir/keyarch";
 		$rollchk    = "$dtdir/rollchk";
+		$rollctl    = "$dtdir/rollctl";
 		$zonesigner = "$dtdir/zonesigner";
 
 		print "\n";
 		print "\tChecking validity of DNSSEC-Tools paths\n";
 		$pcret += pathchk("DNSSEC-Tools directory",$dtdir);
+		$pcret += pathchk("DNSSEC-Tools' genkrf",$genkrf);
 		$pcret += pathchk("DNSSEC-Tools' keyarch",$keyarch);
 		$pcret += pathchk("DNSSEC-Tools' rollchk",$rollchk);
+		$pcret += pathchk("DNSSEC-Tools' rollctl",$rollctl);
 		$pcret += pathchk("DNSSEC-Tools' zonesigner",$zonesigner);
 	}
 
@@ -1106,14 +1124,18 @@ sub guess_paths()
 	#
 	if(($dtdir eq "") || ($dtdir eq "path"))
 	{
+		$genkrf	    = "genkrf";
 		$keyarch    = "keyarch";
 		$rollchk    = "rollchk";
+		$rollctl    = "rollctl";
 		$zonesigner = "zonesigner";
 	}
 	else
 	{
+		$genkrf	    = "$dtdir/genkrf";
 		$keyarch    = "$dtdir/keyarch";
 		$rollchk    = "$dtdir/rollchk";
+		$rollctl    = "$dtdir/rollctl";
 		$zonesigner = "$dtdir/zonesigner";
 	}
 
@@ -1683,11 +1705,17 @@ sub finddtdir()
 	#
 	# Look for the DNSSEC-Tools tools in our defaults.
 	#
+	$pbg = dnssec_tools_default("genkrf");
+	$pbg =~ s/\/genkrf$//;
+	$hfound{$pbg} = 1;
 	$pbg = dnssec_tools_default("keyarch");
 	$pbg =~ s/\/keyarch$//;
 	$hfound{$pbg} = 1;
 	$pbg = dnssec_tools_default("rollchk");
 	$pbg =~ s/\/rollchk$//;
+	$hfound{$pbg} = 1;
+	$pbg = dnssec_tools_default("rollctl");
+	$pbg =~ s/\/rollctl$//;
 	$hfound{$pbg} = 1;
 	$pbg = dnssec_tools_default("zonesigner");
 	$pbg =~ s/\/zonesigner$//;
