@@ -491,22 +491,22 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
 
 #ifndef VAL_NO_ASYNC
 int
-suite_async_callback(val_async_status *as)
+suite_async_callback(val_async_status *async_status, int event,
+                     val_context_t *ctx, void *cb_data, val_cb_params_t *cbp)
 {
     testsuite *suite;
-    if (NULL == as || NULL == as->val_as_cb_user_ctx) {
-        val_log(as->val_as_ctx, LOG_ERR, "bad parameter for callback");
+    if ((NULL == cb_data) || (NULL == cbp)) {
+        val_log(ctx, LOG_ERR, "bad parameter for callback");
         return VAL_BAD_ARGUMENT;
     }
 
-    suite = (testsuite *)as->val_as_cb_user_ctx;
-
+    suite = (testsuite *)cb_data;
     --suite->in_flight;
     --suite->remaining;
 
-    val_log(as->val_as_ctx, LOG_INFO,
-            "query completed; %d in flight, %d remaining",
-            suite->in_flight, suite->remaining);
+    val_log(ctx, LOG_INFO,
+            "%s query completed; %d in flight, %d remaining",
+            cbp->name, suite->in_flight, suite->remaining);
     return VAL_NO_ERROR;
 }
 
@@ -537,16 +537,15 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
              ++i, ++j, curr_test = curr_test->next) {
             val_log(context, LOG_DEBUG, "starting test %i (max %d) %s", i, tce,
                     curr_test->desc);
+            memset(&curr_test->resp, 0, sizeof(curr_test->resp));
             rc = val_async_submit(context, curr_test->qn, curr_test->qc,
-                                  curr_test->qt, flags, &curr_test->as);
+                                  curr_test->qt, flags, &suite_async_callback,
+                                  suite, &curr_test->as);
             if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
                 val_log(context, LOG_ERR, "error sending %i %s", i,
                         curr_test->desc);
                 continue;
             }
-            memset(&curr_test->resp, 0, sizeof(curr_test->resp));
-            curr_test->as->val_as_result_cb = &suite_async_callback;
-            curr_test->as->val_as_cb_user_ctx = suite;
             ++run;
             ++suite->in_flight;
         }
