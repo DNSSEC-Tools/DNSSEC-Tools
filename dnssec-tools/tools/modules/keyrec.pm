@@ -509,7 +509,7 @@ sub keyrec_names
 # Routine:	keyrec_keypaths()
 #
 # Purpose:	Return an array of the paths of a zone keyrec's keys.
-#		The type of key is specified by the caller.
+#		The type of key to return is specified by the caller.
 #
 sub keyrec_keypaths
 {
@@ -519,6 +519,11 @@ sub keyrec_keypaths
 	my $sset;				# Signing set name.
 	my $keylist;				# List of keys.
 	my @paths = ();				# Array for keyrec names.
+
+	#
+	# Ensure the key type is in the expected case.
+	#
+	$krt = lc($krt);
 
 	#
 	# Ensure this is a zone keyrec.
@@ -531,8 +536,35 @@ sub keyrec_keypaths
 	if(($krt ne "kskcur") && ($krt ne "kskpub") &&
 	   ($krt ne "kskrev") && ($krt ne "kskobs") &&
 	   ($krt ne "zskcur") && ($krt ne "zskpub") &&
-	   ($krt ne "zsknew") && ($krt ne "zskobs"))
+	   ($krt ne "zsknew") && ($krt ne "zskobs") &&
+	   ($krt ne "ksk")    && ($krt ne "zsk")    && ($krt ne "all"))
 	{
+		return(@paths);
+	}
+
+	#
+	# Handle the special keytypes.
+	#
+	if($krt eq "all")
+	{
+		@paths = keyrec_keypaths($krn,"ksk");
+		@paths = (@paths, keyrec_keypaths($krn,"zsk"));
+		return(@paths);
+	}
+	elsif($krt eq "ksk")
+	{
+		@paths = keyrec_keypaths($krn,"kskcur");
+		@paths = (@paths, keyrec_keypaths($krn,"kskpub"));
+		@paths = (@paths, keyrec_keypaths($krn,"kskrev"));
+		@paths = (@paths, keyrec_keypaths($krn,"kskobs"));
+		return(@paths);
+	}
+	elsif($krt eq "zsk")
+	{
+		@paths = keyrec_keypaths($krn,"zskcur");
+		@paths = (@paths, keyrec_keypaths($krn,"zskpub"));
+		@paths = (@paths, keyrec_keypaths($krn,"zsknew"));
+		@paths = (@paths, keyrec_keypaths($krn,"zskobs"));
 		return(@paths);
 	}
 
@@ -2466,10 +2498,17 @@ given zone.  The zone is specified in I<zonename> and the type of key is
 given in I<keytype>.
 
 I<keytype> must be one of the following:  "kskcur", "kskpub", "kskrev",
-"kskobs"", "zskcur", "zskpub", "zsknew", or "zskobs".
+"kskobs"", "zskcur", "zskpub", "zsknew", "zskobs", "ksk", "zsk", or "all".
+Case does not matter for the I<keytype>.
 
-If the given key type is not defined in the given zone's zone I<keyrec>, then
-a null set is returned.
+If I<keytype> is one of the special labels ("ksk", "zsk", or "all") then a
+set of key paths will be returned.
+A I<keytype> of "ksk" will return paths to all KSK keys for the zone,
+a I<keytype> of "zsk" will return paths to all ZSK keys for the zone,
+and a I<keytype> of "all" will return paths to all keys for the zone,
+
+If the given key type is not defined in the given zone's zone I<keyrec>
+or if the key type is not recognized, then a null set is returned.
 
 =item I<keyrec_names()>
 
