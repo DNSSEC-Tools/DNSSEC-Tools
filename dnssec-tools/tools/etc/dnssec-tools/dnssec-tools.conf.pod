@@ -75,6 +75,10 @@ A true/false flag indicating if the B<zonesigner> command should display
 a message about entropy generation.  This is primarily dependent on the
 implementation of a system's random number generation.
 
+=item genkrf
+
+The path to the DNSSEC-Tools B<genkrf> command.
+
 =item keyarch
 
 The path to the DNSSEC-Tools B<keyarch> command.
@@ -176,6 +180,10 @@ The username that B<rollerd> will be run by.  The name will be converted to
 its associated uid, and the effective uid of the B<rollerd> process will be
 set to that uid.  This may be given as a user name or a uid.
 
+=item rollctl
+
+The path to the DNSSEC-Tools B<rollctl> command.
+
 =item savekeys
 
 A true/false flag indicating if old keys should be moved to the
@@ -262,8 +270,10 @@ The following is an example B<dnssec-tools.conf> configuration file.
     zonecheck-opts  -k ignore
     zonesign        /usr/local/sbin/dnssec-signzone
 
+    genkrf	    /usr/bin/genkrf
     keyarch	    /usr/bin/keyarch
     rollchk	    /usr/bin/rollchk
+    rollctl	    /usr/bin/rollctl
     zonesigner      /usr/bin/zonesigner
 
     #
