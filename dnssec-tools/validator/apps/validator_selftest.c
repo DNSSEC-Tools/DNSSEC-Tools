@@ -558,9 +558,11 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         val_async_select_info(context, &activefds, &nfds, &timeout);
         if (0 == nfds) {
             val_log(context, LOG_DEBUG,
-                    "no file decsriptors set for requests");
+                    "no file descriptors set for requests");
             rc = val_async_check(context, &activefds, &nfds, 0);
             val_async_select_info(context, &activefds, &nfds, &timeout);
+            if (0 == nfds)
+                continue;
         }
         /** adjust libsres absolute timeout to select relative timeout */
         if (timeout.tv_sec == LONG_MAX)
