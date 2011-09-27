@@ -80,6 +80,7 @@ my $ROOTHINTS = 'http://www.internic.net/zones/named.root';
 #
 # Command-line options specifically for this program.
 #
+my %opts = ();				# Options hash.
 my @opts =
 (
 	"outfile=s",			# Output config file.
@@ -272,7 +273,7 @@ sub main
 		#
 		# Ensure the config directory is writable.
 		#
-		if(! -w $confdir)
+		if((! -w $confdir) && (! defined($opts{'outfile'})))
 		{
 			print STDERR "\nwarning:  configuration directory \"$confdir\" is not writable;\n";
 			print STDERR "\t\tthis must be fixed before the final pieces of data are gathered\n\n";
@@ -343,7 +344,6 @@ sub main
 sub optsandargs
 {
 	my $ropts;				# Reference to options hash.
-	my %opts = ();				# Options hash.
 
 	#
 	# Slurp up the options.
@@ -1856,7 +1856,8 @@ programs, the user is prompted for the proper location.
 If the configuration file's parent directory does not exist, then an attempt
 is made to create the directory.  The new directory's ownership will be set
 to I<root> for the owner and I<dnssec> for the group, assuming the I<dnssec>
-group exists.
+group exists.  Writability checks for the directory will not be performed if
+the I<-outfile> option is given.
 
 =head1 OPTIONS
 
