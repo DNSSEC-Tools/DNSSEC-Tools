@@ -768,8 +768,10 @@ sub check_files
 	#
 	# Check the DNSSEC-Tools commands.
 	#
+	file_check("genkrf","x");
 	file_check("keyarch","x");
 	file_check("rollchk","x");
+	file_check("rollctl","x");
 	file_check("zonesigner","x");
 
 	#
@@ -1239,6 +1241,11 @@ The following path checks are performed for DNSSEC-Tools commands:
 
 =over 8
 
+=item I<genkrf>
+
+Ensure the I<genkrf> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
 =item I<keyarch>
 
 Ensure the I<keyarch> field is valid.  If the filename starts with a '/',
@@ -1247,6 +1254,11 @@ the file must be a regular executable file.
 =item I<rollchk>
 
 Ensure the I<rollchk> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=item I<rollctl>
+
+Ensure the I<rollctl> field is valid.  If the filename starts with a '/',
 the file must be a regular executable file.
 
 =item I<zonesigner>
