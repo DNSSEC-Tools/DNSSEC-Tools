@@ -188,12 +188,14 @@ sendquery(val_context_t * context, const char *desc, char * name,
     int             ret_val;
     struct val_result_chain *results = NULL;
     int             err = 0;
+    struct timeval     now, start, duration;
 
     if ((NULL == desc) || (NULL == name) || (NULL == result_ar) )
         return -1;
 
     fprintf(stderr, "%s: ****START**** \n", desc);
     
+    gettimeofday(&start, NULL);
     ret_val =
         val_resolve_and_check(context, name, class_h, type_h, flags, &results);
 
@@ -213,9 +215,13 @@ sendquery(val_context_t * context, const char *desc, char * name,
         fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %s\n",
                 p_val_err(ret_val));
     }
+    gettimeofday(&now, NULL);
 
     results = NULL;
-    fprintf(stderr, "%s: ****END**** \n", desc);
+
+    timersub(&now, &start, &duration);
+    fprintf(stderr, "%s: ****END**** %ld.%ld sec\n", desc, duration.tv_sec,
+            duration.tv_usec);
 
     return (err != 0);          /* 0 success, 1 error */
 }
