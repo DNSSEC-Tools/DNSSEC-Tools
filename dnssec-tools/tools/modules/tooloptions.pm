@@ -90,6 +90,7 @@ my @stdopts =
 		["ksklength=i",		"Length of KSK"],
 		["ksklife=i",		"Life-span of KSK"],
 		["revperiod=i",		"Revocation period"],
+		["dsdir=s",		"Directory for dsset files"],
 		["ksdir=s",		"Directory for keyset files"],
 
 	'',
