@@ -90,6 +90,7 @@ my @ZONEFIELDS = (
 			'zskdirectory',
 			'kskdirectory',
 			'archivedir',
+			'dsdir',
 			'ksdir',
 			'kskcount',
 			'kskcur',
