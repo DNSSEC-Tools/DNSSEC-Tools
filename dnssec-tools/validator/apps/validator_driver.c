@@ -27,9 +27,6 @@
 #define	VERS	"version: 1.0"
 #define	DTVERS	 "DNSSEC-Tools Version: 1.8"
 
-
-#define NO_OF_THREADS 0
-
 #define BUFLEN 16000
 
 int             MAX_RESPCOUNT = 10;
@@ -52,6 +49,7 @@ static struct option prog_options[] = {
     {"testcase", 1, 0, 'T'},
     {"testcase-conf", 1, 0, 'F'},
     {"label", 1, 0, 'l'},
+    {"multi-thread", 1, 0, 'm'},
     {"output", 1, 0, 'o'},
     {"resolv-conf", 1, 0, 'r'},
     {"dnsval-conf", 1, 0, 'v'},
@@ -536,7 +534,7 @@ one_test(val_context_t *context, char *name, int class_h,
         FREE(resp.vr_response);
 }
 
-#if NO_OF_THREADS
+#if defined(HAVE_PTHREAD_H) && !defined(VAL_NO_THREADS)
 struct thread_params_st {
     val_context_t *context;
     int tcs;
@@ -598,7 +596,40 @@ void *firethread_ot(void *param) {
     
     return NULL;
 }
-#endif
+
+void
+do_threads(int num_threads, struct thread_params_st *threadparams)
+{
+#define VALIDATOR_MAX_THREADS 100
+    struct thread_params_st *threadparams_copy;
+    pthread_t tids[VALIDATOR_MAX_THREADS];
+    int j;
+
+    if (num_threads > VALIDATOR_MAX_THREADS) {
+        fprintf(stderr, "limiting threads to %d\n", VALIDATOR_MAX_THREADS);
+        num_threads = VALIDATOR_MAX_THREADS;
+    }
+
+    for (j=0; j < num_threads; j++) {
+        threadparams_copy = malloc(sizeof(*threadparams_copy));
+        if (NULL == threadparams_copy)
+            break;
+        memcpy(threadparams_copy, threadparams, sizeof(*threadparams_copy));
+        pthread_create(&tids[j], NULL, firethread_st,
+                       (void *)threadparams_copy);
+    }
+
+    for (j=0; j < num_threads; j++) {
+        pthread_join(tids[j], NULL);
+    }
+}
+#else
+void
+do_threads(int num_threads, struct thread_params_st *threadparams)
+{
+    fprintf(stderr, "Thread support not available\n");
+}
+#endif /* defined(HAVE_PTHREAD_H) && !defined(VAL_NO_THREADS) */
 
 
 
@@ -615,12 +646,13 @@ main(int argc, char *argv[])
     // Parse the command line for a query and resolve+validate it
     int             c;
     char           *domain_name = NULL;
-    const char     *args = "c:dF:hi:I:l:w:o:pr:S:st:T:v:V";
+    const char     *args = "c:dF:hi:I:l:m:w:o:pr:S:st:T:v:V";
     int            class_h = ns_c_in;
     int            type_h = ns_t_a;
     int             success = 0;
     int             doprint = 0;
     int             selftest = 0;
+    int             num_threads = 0;
     int             max_in_flight = 1;
     int             daemon = 0;
     u_int32_t       flags = VAL_QUERY_AC_DETAIL;
@@ -725,6 +757,10 @@ main(int argc, char *argv[])
 #endif /* ndef VAL_NO_ASYNC */
             break;
 
+        case 'm':
+            num_threads = atoi(optarg);
+            break;
+
         case 'v':
             dnsval_conf_set(optarg);
             break;
@@ -805,29 +841,21 @@ main(int argc, char *argv[])
             goto done;
         } else {
 
-#if NO_OF_THREADS
-            pthread_t tids[NO_OF_THREADS];
-            struct thread_params_st 
-                threadparams = {context, tcs, tce, flags, testcase_config, suite, doprint, wait, max_in_flight};
-            int j;
-                
-            for (j=0; j < NO_OF_THREADS; j++) {
-                pthread_create(&tids[j], NULL, firethread_st, (void *)&threadparams);
-            }
-                
-            for (j=0; j < NO_OF_THREADS; j++) {
-                pthread_join(tids[j], NULL);
-            }
-            fprintf(stderr, "Parent exiting\n");
-#else
-            do { /* endless loop */ 
-                rc = self_test(context, tcs, tce, flags, testcase_config, suite,
-                               doprint, max_in_flight);
-                if (wait)
-                    sleep(wait);
-            } while (wait && !rc);
-#endif
+            if (num_threads > 0) {
+                struct thread_params_st 
+                    threadparams = {context, tcs, tce, flags, testcase_config,
+                                    suite, doprint, wait, max_in_flight};
 
+                do_threads(num_threads, &threadparams);
+                fprintf(stderr, "Parent exiting\n");
+            } else {
+                do { /* endless loop */ 
+                    rc = self_test(context, tcs, tce, flags, testcase_config,
+                                   suite, doprint, max_in_flight);
+                    if (wait)
+                        sleep(wait);
+                } while (wait && !rc);
+            }
         }
 
         goto done;
@@ -835,28 +863,22 @@ main(int argc, char *argv[])
 
     domain_name = argv[optind++];
 
-#if NO_OF_THREADS
-    pthread_t tids[NO_OF_THREADS];
-    struct thread_params_ot 
-                threadparams = {context, domain_name, class_h, type_h, flags, retvals, doprint, wait};
-    int j;
-                
-    for (j=0; j < NO_OF_THREADS; j++) {
-        pthread_create(&tids[j], NULL, firethread_ot, (void *)&threadparams);
-    }
-    
-    for (j=0; j < NO_OF_THREADS; j++) {
-        pthread_join(tids[j], NULL);
-    }
-    fprintf(stderr, "Parent exiting\n");
-#else
-    do { /* endless loop */
-        one_test(context, domain_name, class_h, type_h, flags, retvals, doprint);
+    if (num_threads > 0) {
+        struct thread_params_st 
+            threadparams = {context, tcs, tce, flags, testcase_config,
+                            suite, doprint, wait, max_in_flight};
 
-        if (wait)
-            sleep(wait);
-    } while (wait);
-#endif
+        do_threads(num_threads, &threadparams);
+    } else {
+        do { /* endless loop */
+            one_test(context, domain_name, class_h, type_h, flags, retvals,
+                     doprint);
+
+            if (wait)
+                sleep(wait);
+        } while (wait);
+
+    }
 
 done:
     if (context)

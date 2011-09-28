@@ -37,7 +37,6 @@ typedef struct testsuite_st {
     struct testsuite_st *next;
 } testsuite;
 
-static testsuite * testsuite_head = NULL;
 
 extern int             
 val_get_token(char **buf_ptr,
@@ -49,13 +48,13 @@ val_get_token(char **buf_ptr,
               int ignore_space);
 
 static void
-selftest_cleanup(void)
+selftest_cleanup(testsuite *head)
 {
     testsuite *tmp_s;
     testcase  *tmp_c;
 
-    while (NULL != testsuite_head) {
-        tmp_s = testsuite_head;
+    while (NULL != head) {
+        tmp_s = head;
         FREE(tmp_s->name);
         while (NULL != (tmp_c = tmp_s->head)) {
             FREE(tmp_c->desc);
@@ -63,7 +62,7 @@ selftest_cleanup(void)
             tmp_s->head = tmp_c->next;
             FREE(tmp_c);
         }
-        testsuite_head = tmp_s->next;
+        head = tmp_s->next;
         FREE(tmp_s);
     }
 }
@@ -202,9 +201,9 @@ vtc_parse_result(const char *result)
 }
 
 static testsuite *
-find_suite(const char *name)
+find_suite(testsuite *head, const char *name)
 {
-    testsuite      *curr_suite = testsuite_head;
+    testsuite      *curr_suite = head;
 
     for(; NULL != curr_suite; curr_suite = curr_suite->next)
         if (0 == strcmp(name, curr_suite->name))
@@ -217,7 +216,7 @@ find_suite(const char *name)
  * Make sense of the validator testcase configuration file
  */
 int
-read_val_testcase_file(const char *filename)
+read_val_testcase_file(const char *filename, testsuite **head)
 {
     int             fd;
 #ifdef HAVE_FLOCK
@@ -226,12 +225,17 @@ read_val_testcase_file(const char *filename)
     int             retval = VAL_NO_ERROR, endst = 0;
     char            token[1025];
     int             line_number = 1;
-    testsuite      *curr_suite = NULL;
+    testsuite      *curr_suite = NULL, *testsuite_head;
     testcase       *tmp_case = NULL, *tail = NULL;
     char *buf_ptr, *end_ptr;
     char *buf = NULL;
     struct stat sb;
    
+    if (NULL == filename || NULL == head)
+        return VAL_BAD_ARGUMENT;
+
+    *head = NULL;
+
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
         return VAL_CONF_NOT_FOUND;
@@ -287,7 +291,7 @@ read_val_testcase_file(const char *filename)
         if ((NULL != pos) && (0 == pos[1])) {
             *pos = 0;
 
-            curr_suite = find_suite(token);
+            curr_suite = find_suite(testsuite_head, token);
             if (NULL == curr_suite) {
                 /** new suite */
                 curr_suite = calloc(1, sizeof(*curr_suite));
@@ -451,6 +455,8 @@ err:
             filename);
         exit(2);
     }
+
+    *head = testsuite_head;
 
     return retval;
 }
@@ -682,17 +688,14 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
           const char *tests_file, const char *suites, int doprint,
           int max_in_flight)
 {
-    testsuite *suite;
+    testsuite *suite, *head;
     int rc;
 
-    if (NULL == testsuite_head) {
-        if (NULL == tests_file)
-            tests_file = VALIDATOR_TESTCASES;
-        read_val_testcase_file(tests_file);
-        atexit(selftest_cleanup);
-    }
+    if (NULL == tests_file)
+        tests_file = VALIDATOR_TESTCASES;
+    read_val_testcase_file(tests_file, &head);
 
-    suite = testsuite_head;
+    suite = head;
 
     if (NULL == suites) {
 
@@ -713,7 +716,7 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
                 *next++ = 0;
 
 
-            suite = find_suite(name);
+            suite = find_suite(head, name);
             if (NULL == suite)
                 fprintf(stderr, "unknown suite %s\n", name);
             else {
@@ -726,6 +729,8 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
         }
         free(name_save);
     }
+
+    selftest_cleanup(head);
 
     return 0;
 }
