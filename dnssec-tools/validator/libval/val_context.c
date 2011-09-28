@@ -49,6 +49,16 @@ pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
 #define UNLOCK_DEFAULT_CONTEXT()
 #endif
 
+
+
+#ifdef HAVE_PTHREAD_H
+#  define CTX_LOCK_REFCNT(ctx)    pthread_mutex_lock(&(ctx)->ref_lock)
+#  define CTX_UNLOCK_REFCNT(ctx)  pthread_mutex_unlock(&(ctx)->ref_lock)
+#else
+#  define CTX_LOCK_REFCNT()
+#  define CTX_UNLOCK_REFCNT()
+#endif /* HAVE_PTHREAD_H */
+
 /*
  * re-read resolver policy into the context
  */
@@ -224,6 +234,10 @@ val_create_context_with_conf(char *label,
         *newcontext = the_default_context;
         UNLOCK_DEFAULT_CONTEXT();
 
+        CTX_LOCK_REFCNT(*newcontext);
+        ++(*newcontext)->refcount;
+        CTX_UNLOCK_REFCNT(*newcontext);
+
         /* have configuration files changed? */
         if (VAL_NO_ERROR != (retval = val_refresh_context(*newcontext))) {
             return retval;
@@ -239,6 +253,7 @@ val_create_context_with_conf(char *label,
         return VAL_OUT_OF_MEMORY;
     }
     memset(*newcontext, 0, sizeof(val_context_t));
+    ++(*newcontext)->refcount; /* don't need lock, it's a new object */
 
 #ifndef VAL_NO_THREADS
     if (0 != pthread_rwlock_init(&(*newcontext)->pol_rwlock, NULL)) {
@@ -248,6 +263,16 @@ val_create_context_with_conf(char *label,
     }
     if (0 != pthread_mutex_init(&(*newcontext)->ac_lock, NULL)) {
         pthread_rwlock_destroy(&(*newcontext)->pol_rwlock);
+        FREE(*newcontext);
+        *newcontext = NULL;
+        return VAL_INTERNAL_ERROR;
+    }
+#endif
+
+#ifdef HAVE_PTHREAD_H
+    if (0 != pthread_mutex_init(&(*newcontext)->ref_lock, NULL)) {
+        pthread_rwlock_destroy(&(*newcontext)->pol_rwlock);
+        pthread_mutex_destroy(&(*newcontext)->ac_lock);
         FREE(*newcontext);
         *newcontext = NULL;
         return VAL_INTERNAL_ERROR;
@@ -413,18 +438,28 @@ void
 val_free_context(val_context_t * context)
 {
     struct val_query_chain *q;
-    val_context_t *ctx = context;
+    int default_or_has_refs = 0;
 
+    if (context == NULL)
+        return;
     /*
      * Never free the default context 
      */
     LOCK_DEFAULT_CONTEXT();
-    if (ctx == the_default_context) {
-        ctx = NULL;
+    if (context == the_default_context) {
+        default_or_has_refs = 1;
     }
     UNLOCK_DEFAULT_CONTEXT();
 
-    if (ctx == NULL)
+    /*
+     * never free context which has multiple users
+     */
+    CTX_LOCK_REFCNT(context);
+    if (--context->refcount > 0)
+        default_or_has_refs = 1;
+    CTX_UNLOCK_REFCNT(context);
+
+    if (default_or_has_refs)
         return;
 
 #ifndef VAL_NO_ASYNC
