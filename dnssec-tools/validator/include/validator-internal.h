@@ -294,12 +294,12 @@ extern          "C" {
         pthread_rwlock_t pol_rwlock;
         /*
          * The mutex lock ensures that changes to the 
-         * context cache can only be made by one thread
-         * at any given time
+         * context cache and async query list can only be
+         * made by one thread at any given time
          */
         pthread_mutex_t ac_lock;
 #endif
-        
+
         char  id[VAL_CTX_IDLEN];
         char  *label;
 
@@ -335,6 +335,11 @@ extern          "C" {
 #endif
 
         u_int32_t default_qflags;
+
+#ifdef HAVE_PTHREAD_H 
+        pthread_mutex_t ref_lock;
+#endif
+        int   refcount;
     } ; 
 
 #ifndef VAL_NO_ASYNC
