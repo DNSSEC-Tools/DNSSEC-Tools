@@ -335,11 +335,6 @@ res_io_send(struct expected_arrival *shipit)
             shipit->ea_socket = INVALID_SOCKET;
             return SR_IO_SOCKET_ERROR;
         }
-
-        /*
-         * set non-blocking
-         */
-        fcntl(shipit->ea_socket, F_SETFL, O_NONBLOCK);
     }
 
     /*
