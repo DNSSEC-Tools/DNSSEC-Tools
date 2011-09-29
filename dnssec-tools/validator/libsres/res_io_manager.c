@@ -316,7 +316,7 @@ res_io_send(struct expected_arrival *shipit)
             CLOSESOCK(shipit->ea_socket);
             return SR_IO_SOCKET_ERROR;
         }
-         
+
         /*
          * OS X wants the socket size to be sockaddr_in for INET,
          * while Linux is happy with sockaddr_storage. 
@@ -335,6 +335,11 @@ res_io_send(struct expected_arrival *shipit)
             shipit->ea_socket = INVALID_SOCKET;
             return SR_IO_SOCKET_ERROR;
         }
+
+        /*
+         * set non-blocking
+         */
+        fcntl(shipit->ea_socket, F_SETFL, O_NONBLOCK);
     }
 
     /*
@@ -1086,15 +1091,16 @@ res_io_read_udp(struct expected_arrival *arrival)
         recvfrom(arrival->ea_socket, (char *)arrival->ea_response, bytes_waiting,
                  0, (struct sockaddr*)&from, &from_length);
 
-    if (0 == ret_val) { /* what does 0 bytes mean from udp socket? */
-        // xxx-rks: allow other attempt, or goto error?
+    if (0 == ret_val) {
         res_log(NULL, LOG_INFO,
-                "libsres: ""0 bytes on socket %d, read_udp failed",
+                "libsres: ""0 bytes on socket %d, socket shutdown.",
                 arrival->ea_socket);
-        FREE(arrival->ea_response);
-        arrival->ea_response = NULL;
-        arrival->ea_response_length = 0;
-        return SR_IO_SOCKET_ERROR;
+        goto error;
+    }
+    else if (-1 == ret_val && (EAGAIN == errno || EWOULDBLOCK == errno)) {
+        res_log(NULL, LOG_INFO,
+                "libsres: ""no data on socket %d.", arrival->ea_socket);
+        goto allow_retry;
     }
 
     arr_family = arrival->ea_ns->ns_address[arrival->ea_which_address]->ss_family;
@@ -1131,15 +1137,18 @@ res_io_read_udp(struct expected_arrival *arrival)
     return SR_IO_UNSET;
 
   error:
-    res_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, read_udp failed",
-            arrival->ea_socket);
-    FREE(arrival->ea_response);
-    arrival->ea_response = NULL;
-    arrival->ea_response_length = 0;
     /*
      * Cancel this source 
      */
     res_io_cancel_source(arrival);
+    res_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, %s",
+            arrival->ea_socket, (ret_val == 0) ?
+            "socket shutdown" : "read_udp failed");
+
+  allow_retry:
+    FREE(arrival->ea_response);
+    arrival->ea_response = NULL;
+    arrival->ea_response_length = 0;
     return SR_IO_SOCKET_ERROR;
 }
 

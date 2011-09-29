@@ -2562,6 +2562,8 @@ val_async_select_info(val_context_t *context, fd_set *activefds,
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
+    CTX_LOCK_ACACHE(context);
+
     for (as = context->as_list; as; as = as->val_as_next)
         for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {
 
@@ -2584,6 +2586,8 @@ val_async_select_info(val_context_t *context, fd_set *activefds,
             res_async_query_select_info(qfq->qfq_query->qc_ea, nfds, activefds,
                                         timeout);
         }
+
+    CTX_UNLOCK_ACACHE(context);
 
     return VAL_NO_ERROR;
 }
