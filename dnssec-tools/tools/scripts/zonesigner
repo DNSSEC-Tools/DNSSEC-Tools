@@ -39,6 +39,7 @@ BEGIN
 use strict;
 
 use Cwd;
+use File::Spec;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
@@ -106,6 +107,7 @@ my $nogends;				# Don't generate DS records.
 my $help = 0;				# Help flag.
 my $version = 0;			# Version flag.
 my $kgopts;				# Additional key-generation options.
+my $dsdir;				# Directory to hold dssets.
 my $ksdir;				# Directory to hold keysets.
 my $nokrfile;				# Flag for not using a keyrec file.
 my $random;				# Random number generation method.
@@ -218,7 +220,7 @@ my $packed	= 0;			# Running-packed flag.
 #
 my @exitcodes =
 (
-	"successful execution",
+	"successful execution",						# 0
 	"-rfc5011 and -norfc5011 may not be specified together",
 	"-droprevoked and -nodroprevoked may not be specified together",
 	"-keydirectory and -kskdirectory may not be specified together",
@@ -228,7 +230,7 @@ my @exitcodes =
 	"no key archive directory was specified",
 	"key archive directory is not a directory",
 	"key archive directory must not be /",
-	"-savekeys and -nosave may not be specified together",
+	"-savekeys and -nosave may not be specified together",		# 10
 	"either a KSK or a ZSK directory was incorrectly specified",
 	"either a specified KSK or ZSK directory is not a directory",
 	"neither the KSK nor the ZSK directory may be the root directory",
@@ -238,7 +240,7 @@ my @exitcodes =
 	"zone file already signed",
 	"specified signing set does not exist",
 	"specified Current ZSK signing set does not exist",
-	"specified Published ZSK signing set does not exist",
+	"specified Published ZSK signing set does not exist",		# 20
 	"specified new signing-set name already exists",
 	"specified KSK signing set already exists",
 	"no KSK signing set was specified",
@@ -248,7 +250,7 @@ my @exitcodes =
 	"ZSK keyrec does not exist in keyrec file",
 	"unable to generate ZSK key file",
 	"unable to archive keys because key archive directory is not a directory",
-	"KSK repository is not a directory",
+	"KSK repository is not a directory",				# 30
 	"ZSK repository is not a directory",
 	"unable to update serial number in zonefile",
 	"zone file's modified contents are empty",
@@ -258,12 +260,16 @@ my @exitcodes =
 	"no keys defined for a particular signing set for zone",
 	"no keyrec exists for required signing set",
 	"error in keyrec file -- a particular signing set keyrec is not a set keyrec",
-	"specified signing set does not contain any keys",
+	"specified signing set does not contain any keys",		# 40
 	"no key keyrec exists for a particular key",
 	"keyrec of specified key has an unexpected type",
 	"usage message printed",
 	"invalid exit code given to -xc",
 	"named-checkzone returned an error",
+	"unable to create dsset archive directory",
+	"dsset archive directory is not a directory",
+	"dsset archive directory is not writable",
+	"dsset archive directory must not be /",
 );
 
 #
@@ -463,6 +469,7 @@ sub optsandargs
 	$usensec3 = $opts{'usensec3'}	|| dnssec_tools_default("usensec3");
 	$nsec3optout = $opts{'nsec3optout'}  || dnssec_tools_default("nsec3optout");
 	$kgopts   = $opts{'kgopts'}	|| "";
+	$dsdir	  = $opts{'dsdir'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
 	$ksignset = $opts{'ksignset'}	|| "";
 	$signset  = $opts{'signset'}	|| "";
@@ -626,6 +633,56 @@ sub optsandargs
 	{
 		$opts{'enddate'} = $enddate;
 		$enddate = "-e $enddate";
+	}
+
+	#
+	# Muck about with the dsset directory argument.
+	#
+	if($dsdir ne "")
+	{
+		#
+		# If the dsset directory is the current directory, we'll
+		# drop the argument.
+		#
+		if($dsdir eq '.')
+		{
+			$dsdir = '';
+		}
+		else
+		{
+			#
+			# Get the absolute pathname for the dsset directory.
+			#
+			$dsdir = File::Spec->rel2abs($dsdir);
+			$opts{'dsdir'} = $dsdir;
+
+			#
+			# Check some usability shtuff for the dsset directory.
+			#
+			if(! -e $dsdir)
+			{
+				if(mkdir($dsdir) == 0)
+				{
+					print STDERR "unable to create dsset archive directory $dsdir\n";
+					exit(46);
+				}
+			}
+			if((-e $dsdir) && (! -d $dsdir))
+			{
+				print STDERR "dsset archive directory $dsdir is not a directory\n";
+				exit(47);
+			}
+			if(! -w $dsdir)
+			{
+				print STDERR "dsset archive directory $dsdir is not writable\n";
+				exit(48);
+			}
+			if($dsdir eq '/')
+			{
+				print STDERR "dsset archive directory must not be /\n";
+				exit(49);
+			}
+		}
 	}
 
 	if($ksdir ne "")
@@ -2244,6 +2301,19 @@ sub zonesign
 	}
 
 	#
+	# Maybe move the zone's dsset file to its own directory.
+	#
+	if($dsdir ne '')
+	{
+		my $dsfile = "dsset-$zone";
+
+		$dsfile =~ /(.)$/;
+		$dsfile = $dsfile . "." if($1 ne '.');
+
+		System("$MV $dsfile $dsdir");
+	}
+
+	#
 	# Add the ZSKs' keyrecs to the keyrec file.
 	#
 	updzonerec($UPD_ALLKEYS);
@@ -3403,6 +3473,7 @@ sub printopts
 	print "\tzone-signing options:\n";
 	print "\t\tenddate		- <$enddate>\n";
 	print "\t\tgends		- <$gends>\n";
+	print "\t\tdsdir		- <$dsdir>\n";
 	print "\t\tksdir		- <$ksdir>\n";
 	print "\t\tnogends		- <$nogends>\n";
 	print "\t\tszopts		- <$szopts>\n";
@@ -3589,6 +3660,7 @@ sub usage
 	print STDERR "\t\t\t-endtime end-time\n";
 	print STDERR "\t\t\t-gends\n";
 	print STDERR "\t\t\t-nogends\n";
+	print STDERR "\t\t\t-dsdir dsset-directory\n";
 	print STDERR "\t\t\t-ksdir keyset-directory\n";
 	print STDERR "\t\t\t-szopts dnssec-signzone-options\n";
 	print STDERR "\n";
@@ -3930,6 +4002,11 @@ This directory B<may not> be the root directory.
 
 The time between ZSK rollovers.  This is measured in seconds.
 
+=item B<-dsdir>
+
+Specify a directory for storing dssets.  This directory will be created if it
+does not exist.  The directory must be writable and not the root directory.
+
 =item B<-signset>
 
 The name of the ZSK signing set to use as the Current ZSK signing set.  The
@@ -4155,6 +4232,14 @@ directory
 =item 44 - invalid exit code given to -xc
 
 =item 45 - named-checkzone returned an error
+
+=item 46 - unable to create dsset archive directory
+
+=item 47 - dsset archive directory is not a directory
+
+=item 48 - dsset archive directory is not writable
+
+=item 49 - dsset archive directory must not be /
 
 =back
 
