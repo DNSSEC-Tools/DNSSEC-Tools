@@ -7,6 +7,7 @@
 
 #include "validator-config.h"
 #include <validator/validator.h>
+#include <validator/resolver.h>
 
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
