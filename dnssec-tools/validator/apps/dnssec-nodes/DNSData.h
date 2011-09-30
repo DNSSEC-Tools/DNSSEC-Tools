@@ -21,9 +21,17 @@ public:
     QString     DNSSECStatusForEnum(Status status) const;
     QStringList DNSSECStringStatuses() const;
 
+    // UNKNOWN really means "nothing known yet"
     void addDNSSECStatus(int additionalStatus) {
-        if (m_DNSSECStatus & UNKNOWN) // we now should known something
+        // don't add UNKNOWN to something we do know
+        if (m_DNSSECStatus != 0 && additionalStatus == UNKNOWN)
+            return;
+
+        // if we were unknown, we should now be more so remove the UNKNOWN
+        if (m_DNSSECStatus & UNKNOWN)
             m_DNSSECStatus ^= UNKNOWN;
+
+        // add in the status
         m_DNSSECStatus |= additionalStatus;
     }
 
