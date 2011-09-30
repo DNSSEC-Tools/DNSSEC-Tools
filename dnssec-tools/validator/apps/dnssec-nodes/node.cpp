@@ -183,36 +183,81 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     painter->setBrush(Qt::darkGray);
     painter->drawEllipse(-7, -7, 20, 20);
 
-    QColor color;
-    if (m_resultCache & DNSData::FAILED)
-        color = Qt::red;
-    else if ((m_resultCache & (DNSData::DNE | DNSData::VALIDATED)) == (DNSData::DNE | DNSData::VALIDATED))
-        color = Qt::blue;
-    else if (m_resultCache & DNSData::DNE)
-        color = Qt::cyan;
-    else if (m_resultCache & DNSData::VALIDATED)
-        color = Qt::green;
-    else if (m_resultCache & DNSData::TRUSTED)
-        color = Qt::yellow;
-    else
-        color = QColor(128,128,128);
+    if (m_subData.count() > 1) {
+        int angleSegment = 360 * 16 / m_subData.count();
+        int count = 0;
+        qDebug() << "here: " << m_fqdn << " / " << angleSegment;
 
-    color.setAlpha(m_colorAlpha);
+        foreach (DNSData data, m_subData) {
 
-    QRadialGradient gradient(-3, -3, 10);
-    if (option->state & QStyle::State_Sunken) {
-        gradient.setCenter(3, 3);
-        gradient.setFocalPoint(3, 3);
-        gradient.setColorAt(1, QColor(color).light(120));
-        gradient.setColorAt(0, QColor(Qt::white).light(120));
+            QColor color;
+            if (data.DNSSECStatus() & DNSData::FAILED)
+                color = Qt::red;
+            else if ((data.DNSSECStatus() & (DNSData::DNE | DNSData::VALIDATED)) == (DNSData::DNE | DNSData::VALIDATED))
+                color = Qt::blue;
+            else if (data.DNSSECStatus() & DNSData::DNE)
+                color = Qt::cyan;
+            else if (data.DNSSECStatus() & DNSData::VALIDATED)
+                color = Qt::green;
+            else if (data.DNSSECStatus() & DNSData::TRUSTED)
+                color = Qt::yellow;
+            else
+                color = QColor(128,128,128);
+
+            color.setAlpha(m_colorAlpha);
+
+            QRadialGradient gradient(-3, -3, 10);
+            if (option->state & QStyle::State_Sunken) {
+                gradient.setCenter(3, 3);
+                gradient.setFocalPoint(3, 3);
+                gradient.setColorAt(1, QColor(color).light(120));
+                gradient.setColorAt(0, QColor(Qt::white).light(120));
+            } else {
+                gradient.setColorAt(0, QColor(Qt::white));
+                gradient.setColorAt(1, QColor(color));
+            }
+
+            painter->setBrush(gradient);
+
+            painter->setPen(QPen(Qt::black, 0));
+
+            painter->drawPie(QRectF(-7, -7, 20, 20), count * angleSegment, angleSegment);
+
+            count++;
+        }
     } else {
-        gradient.setColorAt(0, QColor(Qt::white));
-        gradient.setColorAt(1, QColor(color));
-    }
-    painter->setBrush(gradient);
+        QColor color;
+        if (m_resultCache & DNSData::FAILED)
+            color = Qt::red;
+        else if ((m_resultCache & (DNSData::DNE | DNSData::VALIDATED)) == (DNSData::DNE | DNSData::VALIDATED))
+            color = Qt::blue;
+        else if (m_resultCache & DNSData::DNE)
+            color = Qt::cyan;
+        else if (m_resultCache & DNSData::VALIDATED)
+            color = Qt::green;
+        else if (m_resultCache & DNSData::TRUSTED)
+            color = Qt::yellow;
+        else
+            color = QColor(128,128,128);
 
-    painter->setPen(QPen(Qt::black, 0));
-    painter->drawEllipse(-10, -10, 20, 20);
+        color.setAlpha(m_colorAlpha);
+
+        QRadialGradient gradient(-3, -3, 10);
+        if (option->state & QStyle::State_Sunken) {
+            gradient.setCenter(3, 3);
+            gradient.setFocalPoint(3, 3);
+            gradient.setColorAt(1, QColor(color).light(120));
+            gradient.setColorAt(0, QColor(Qt::white).light(120));
+        } else {
+            gradient.setColorAt(0, QColor(Qt::white));
+            gradient.setColorAt(1, QColor(color));
+        }
+        painter->setBrush(gradient);
+        painter->setPen(QPen(Qt::black, 0));
+
+        painter->drawEllipse(-10, -10, 20, 20);
+    }
+
 
     if (m_nodeName.length() > 0) {
         QFont font = painter->font();
