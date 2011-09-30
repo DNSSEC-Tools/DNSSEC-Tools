@@ -177,6 +177,45 @@ QPainterPath Node::shape() const
     return path;
 }
 
+QColor Node::getColorForStatus(int status) {
+    QColor color;
+
+    if (status & DNSData::FAILED)
+        color = Qt::red;
+    else if ((status & (DNSData::DNE | DNSData::VALIDATED)) == (DNSData::DNE | DNSData::VALIDATED))
+        color = Qt::blue;
+    else if (status & DNSData::DNE)
+        color = Qt::cyan;
+    else if (status & DNSData::VALIDATED)
+        color = Qt::green;
+    else if (status & DNSData::TRUSTED)
+        color = Qt::yellow;
+    else
+        color = QColor(128,128,128);
+
+    color.setAlpha(m_colorAlpha);
+
+    return color;
+}
+
+void Node::setupPainting(int status, const QStyleOptionGraphicsItem *option, QPainter *painter) {
+    QColor color = getColorForStatus(status);
+
+    QRadialGradient gradient(-3, -3, 10);
+    if (option->state & QStyle::State_Sunken) {
+        gradient.setCenter(3, 3);
+        gradient.setFocalPoint(3, 3);
+        gradient.setColorAt(1, QColor(color).light(120));
+        gradient.setColorAt(0, QColor(Qt::white).light(120));
+    } else {
+        gradient.setColorAt(0, QColor(Qt::white));
+        gradient.setColorAt(1, QColor(color));
+    }
+
+    painter->setBrush(gradient);
+    painter->setPen(QPen(Qt::black, 0));
+}
+
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
     painter->setPen(Qt::NoPen);
@@ -189,71 +228,14 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
         qDebug() << "here: " << m_fqdn << " / " << angleSegment;
 
         foreach (DNSData data, m_subData) {
-
-            QColor color;
-            if (data.DNSSECStatus() & DNSData::FAILED)
-                color = Qt::red;
-            else if ((data.DNSSECStatus() & (DNSData::DNE | DNSData::VALIDATED)) == (DNSData::DNE | DNSData::VALIDATED))
-                color = Qt::blue;
-            else if (data.DNSSECStatus() & DNSData::DNE)
-                color = Qt::cyan;
-            else if (data.DNSSECStatus() & DNSData::VALIDATED)
-                color = Qt::green;
-            else if (data.DNSSECStatus() & DNSData::TRUSTED)
-                color = Qt::yellow;
-            else
-                color = QColor(128,128,128);
-
-            color.setAlpha(m_colorAlpha);
-
-            QRadialGradient gradient(-3, -3, 10);
-            if (option->state & QStyle::State_Sunken) {
-                gradient.setCenter(3, 3);
-                gradient.setFocalPoint(3, 3);
-                gradient.setColorAt(1, QColor(color).light(120));
-                gradient.setColorAt(0, QColor(Qt::white).light(120));
-            } else {
-                gradient.setColorAt(0, QColor(Qt::white));
-                gradient.setColorAt(1, QColor(color));
-            }
-
-            painter->setBrush(gradient);
-
-            painter->setPen(QPen(Qt::black, 0));
+            setupPainting(data.DNSSECStatus(), option, painter);
 
             painter->drawPie(QRectF(-7, -7, 20, 20), count * angleSegment, angleSegment);
 
             count++;
         }
     } else {
-        QColor color;
-        if (m_resultCache & DNSData::FAILED)
-            color = Qt::red;
-        else if ((m_resultCache & (DNSData::DNE | DNSData::VALIDATED)) == (DNSData::DNE | DNSData::VALIDATED))
-            color = Qt::blue;
-        else if (m_resultCache & DNSData::DNE)
-            color = Qt::cyan;
-        else if (m_resultCache & DNSData::VALIDATED)
-            color = Qt::green;
-        else if (m_resultCache & DNSData::TRUSTED)
-            color = Qt::yellow;
-        else
-            color = QColor(128,128,128);
-
-        color.setAlpha(m_colorAlpha);
-
-        QRadialGradient gradient(-3, -3, 10);
-        if (option->state & QStyle::State_Sunken) {
-            gradient.setCenter(3, 3);
-            gradient.setFocalPoint(3, 3);
-            gradient.setColorAt(1, QColor(color).light(120));
-            gradient.setColorAt(0, QColor(Qt::white).light(120));
-        } else {
-            gradient.setColorAt(0, QColor(Qt::white));
-            gradient.setColorAt(1, QColor(color));
-        }
-        painter->setBrush(gradient);
-        painter->setPen(QPen(Qt::black, 0));
+        setupPainting(m_resultCache, option, painter);
 
         painter->drawEllipse(-10, -10, 20, 20);
     }
