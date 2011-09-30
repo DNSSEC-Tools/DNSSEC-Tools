@@ -110,9 +110,7 @@ void NodeList::clear()
 
 void NodeList::limit()
 {
-    if (m_maxNodes <= 0)
-        return;
-    if (m_accessCounter <= m_maxNodes)
+    if (!m_enableMaxNodes || !m_enableMaxTime)
         return;
 
     m_accessDropOlderThan = m_accessCounter - m_maxNodes;
