@@ -70,6 +70,7 @@ void           *my_malloc(size_t t, char *filename, int lineno);
 char           *my_strdup(const char *str, char *filename, int lineno);
 
 void            print_response(u_char * ans, size_t resplen);
+void            log_response(u_char * ans, size_t resplen);
 void            print_hex_field(u_char field[], size_t length, size_t width,
                                 char *pref);
 void            print_hex(u_char field[], size_t length);
