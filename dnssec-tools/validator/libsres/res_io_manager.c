@@ -1074,17 +1074,28 @@ res_io_read_udp(struct expected_arrival *arrival)
     struct sockaddr_storage from;
     socklen_t       from_length = sizeof(from);
     int             ret_val, arr_family;
+    int             flags = 0;
 
     if (NULL == arrival)
         return SR_IO_INTERNAL_ERROR;
+
+    if (NULL != arrival->ea_response) {
+        res_log(NULL, LOG_INFO,
+                "libsres: ""**** already have response for ea 0x%x socket %d.",
+                arrival, arrival->ea_socket);
+        return SR_IO_UNSET;
+    }
 
     arrival->ea_response = (u_char *) MALLOC(bytes_waiting * sizeof(u_char));
     if (NULL == arrival->ea_response)
         return SR_IO_MEMORY_ERROR;
 
+#ifdef MSG_DONTWAIT
+    flags = MSG_DONTWAIT;
+#endif
     ret_val =
         recvfrom(arrival->ea_socket, (char *)arrival->ea_response, bytes_waiting,
-                 0, (struct sockaddr*)&from, &from_length);
+                 flags, (struct sockaddr*)&from, &from_length);
 
     if (0 == ret_val) {
         res_log(NULL, LOG_INFO,
@@ -1094,7 +1105,7 @@ res_io_read_udp(struct expected_arrival *arrival)
     }
     else if (-1 == ret_val && (EAGAIN == errno || EWOULDBLOCK == errno)) {
         res_log(NULL, LOG_INFO,
-                "libsres: ""no data on socket %d.", arrival->ea_socket);
+                "libsres: ""**** no data on socket %d.", arrival->ea_socket);
         goto allow_retry;
     }
 
