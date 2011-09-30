@@ -104,6 +104,8 @@ public:
     int  DNSSECValidity();
 
     void setAlpha(int alpha);
+    QColor getColorForStatus(int status);
+    void setupPainting(int status, const QStyleOptionGraphicsItem *option, QPainter *painter);
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
