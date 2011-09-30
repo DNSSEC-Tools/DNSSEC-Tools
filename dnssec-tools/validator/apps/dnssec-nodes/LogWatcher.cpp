@@ -87,7 +87,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         nodeName = m_trustedRegexp.cap(1);
         result.setRecordType(m_trustedRegexp.cap(2));
         result.setDNSSECStatus(DNSData::TRUSTED);
-        logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\1 </font></b>");
+        logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\2 record for \\1 </font></b>");
         additionalInfo = "Data is trusted, but not proven to be secure";
 
     } else if (m_pinsecure2Regexp.indexIn(logMessage) > -1) {
@@ -100,9 +100,10 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
 
     } else if (m_pinsecureRegexp.indexIn(logMessage) > -1) {
         nodeName = m_pinsecureRegexp.cap(1);
-        result.setDNSSECStatus(DNSData::TRUSTED);
         // XXX: need the query type
         //result.setRecordType(m_validatedRegexp.cap(2));
+        result.setDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
+        result.setRecordType("DS");
         logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 is provably insecure </font></b>");
         additionalInfo = "This node has been proven to be <b>not</b> DNSEC protected";
 
