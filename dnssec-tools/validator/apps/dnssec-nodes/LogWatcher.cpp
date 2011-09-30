@@ -11,24 +11,36 @@
 // and match #1 is the name, and match #2 is the type (eg AAAA)
 
 #define QUERY_MATCH "\\{([^, ]+).*[, ]([A-Z0-9]*)\\([0-9]+\\)\\}"
+
+// Matches "@0x7fbf08476ee0: com SOA: "
 #define BIND_MATCH  "@0x[0-9a-f]+: ([^ ]+) ([^:]+): "
+
+// Matches "0x7fbf0c0a7850(www.dnssec-deployment.org/AAAA'): "
+#define BIND_PAREN_MATCH "0x[0-9a-f]+\\(([^/]+)/([^:']+)'*\\): "
 
 LogWatcher::LogWatcher(GraphWidget *parent)
     : m_graphWidget(parent), m_timer(0),
 
       // libval regexps
-    m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
-    m_lookingUpRegexp("looking for " QUERY_MATCH),
-    m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
-    m_trustedRegexp("Validation result for " QUERY_MATCH ": (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
+      m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
+      m_lookingUpRegexp("looking for " QUERY_MATCH),
+      m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
+      m_trustedRegexp("Validation result for " QUERY_MATCH ": (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
       m_pinsecureRegexp("Setting proof status for (.*) to: VAL_NONEXISTENT_TYPE"),
       m_pinsecure2Regexp("Setting authentication chain status for " QUERY_MATCH " to Provably Insecure"),
-    m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
-    m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:"),
+      m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
+      m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:"),
 
-    // bind regexps
+      // bind regexps
       m_bindValidatedRegex(BIND_MATCH "verify rdataset.*: success"),
-      m_bindBogusRegexp(BIND_MATCH "verify rdataset.*failed to verify")
+      m_bindBogusRegexp(BIND_MATCH "verify rdataset.*failed to verify"),
+      m_bindQueryRegexp(BIND_PAREN_MATCH "query"),
+      m_bindPIRegexp(BIND_MATCH "marking.*proveunsecure"),
+      m_bindDNERegexp(BIND_PAREN_MATCH "nonexistence validation OK"),
+      m_bindTrustedAnswerRegexp(BIND_MATCH "marking as answer.*dsfetched"),
+      m_bindAnswerResponseRegexp(BIND_PAREN_MATCH "answer_response"),
+      m_bindNoAnswerResponseRegexp(BIND_PAREN_MATCH "noanswer_response"),
+      m_bindProvenNSECRegexp(BIND_MATCH "nonexistence proof\\(s\\) found")
 {
     m_nodeList = m_graphWidget->nodeList();
 }
@@ -51,7 +63,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         nodeName = m_lookingUpRegexp.cap(1);
         result.setRecordType(m_lookingUpRegexp.cap(2));
         result.addDNSSECStatus(DNSData::UNKNOWN);
-        logMessage.replace(m_lookingUpRegexp, "<b>looking up \\1</b>  ");
+        logMessage.replace(m_lookingUpRegexp, "<b>looking up a \\2 record for \\1</b>  ");
     } else if (m_validatedRegexp.indexIn(logMessage) > -1) {
         if (m_graphWidget && !m_graphWidget->showNsec3() && m_validatedRegexp.cap(2) == "NSEC3")
             return false;
@@ -116,6 +128,46 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_bindValidatedRegex, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
+    } else if (m_bindQueryRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_bindQueryRegexp.cap(1);
+        result.setRecordType(m_bindQueryRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::UNKNOWN);
+        logMessage.replace(m_bindQueryRegexp, "<b>looking up a \\2 record for \\1</b>  ");
+    } else if (m_bindPIRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_bindPIRegexp.cap(1);
+        result.setRecordType(m_bindPIRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::TRUSTED);
+        logMessage.replace(m_bindPIRegexp, "<b><font color=\"brown\"> \\1 (\\2) is provably insecure </font></b>  ");
+    } else if (m_bindTrustedAnswerRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_bindTrustedAnswerRegexp.cap(1);
+        result.setRecordType(m_bindTrustedAnswerRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::TRUSTED);
+        logMessage.replace(m_bindTrustedAnswerRegexp, "<b><font color=\"brown\"> \\1 (\\2) is trusted but not proven </font></b>  ");
+
+    } else if (m_bindAnswerResponseRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_bindAnswerResponseRegexp.cap(1);
+        result.setRecordType(m_bindAnswerResponseRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::TRUSTED);
+        logMessage.replace(m_bindAnswerResponseRegexp, "<b><font color=\"brown\"> an answer for a \\2 record for \\1 was found</font></b>  ");//    } else if (m_bindDNERegexp.indexIn(logMessage) > -1) {
+
+        // Unfortunately, this catches missing servers and stuff and doesn't mark *only* non-existance
+//    } else if (m_bindNoAnswerResponseRegexp.indexIn(logMessage) > -1) {
+//        nodeName = m_bindNoAnswerResponseRegexp.cap(1);
+//        result.setRecordType(m_bindNoAnswerResponseRegexp.cap(2));
+//        result.addDNSSECStatus(DNSData::DNE);
+//        logMessage.replace(m_bindNoAnswerResponseRegexp, "<b><font color=\"brown\"> an answer for a \\2 record for \\1 was not found</font></b>  ");//    } else if (m_bindDNERegexp.indexIn(logMessage) > -1) {
+
+
+    } else if (m_bindDNERegexp.indexIn(logMessage) > -1) {
+        nodeName = m_bindDNERegexp.cap(1);
+        result.setRecordType(m_bindDNERegexp.cap(2));
+        result.addDNSSECStatus(DNSData::DNE);
+        logMessage.replace(m_bindDNERegexp, "<b><font color=\"brown\"> a \\2 record for \\1 provably does not exist </font></b>  ");
+    } else if (m_bindProvenNSECRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_bindProvenNSECRegexp.cap(1);
+        result.setRecordType(m_bindProvenNSECRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::DNE | DNSData::VALIDATED);
+        logMessage.replace(m_bindProvenNSECRegexp, "<b><font color=\"brown\"> a \\2 record for \\1 provably does not exist </font></b>  ");
     } else {
         return false;
     }

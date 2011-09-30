@@ -54,6 +54,13 @@ private:
     // bind regexps
     QRegExp    m_bindValidatedRegex;
     QRegExp    m_bindBogusRegexp;
+    QRegExp    m_bindQueryRegexp;
+    QRegExp    m_bindPIRegexp;
+    QRegExp    m_bindDNERegexp;
+    QRegExp    m_bindTrustedAnswerRegexp;
+    QRegExp    m_bindNoAnswerResponseRegexp;
+    QRegExp    m_bindAnswerResponseRegexp;
+    QRegExp    m_bindProvenNSECRegexp;
 };
 
 #endif // LOGWATCHER_H
