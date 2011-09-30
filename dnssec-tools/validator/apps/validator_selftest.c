@@ -225,7 +225,7 @@ read_val_testcase_file(const char *filename, testsuite **head)
     int             retval = VAL_NO_ERROR, endst = 0;
     char            token[1025];
     int             line_number = 1;
-    testsuite      *curr_suite = NULL, *testsuite_head;
+    testsuite      *curr_suite = NULL, *testsuite_head = NULL;
     testcase       *tmp_case = NULL, *tail = NULL;
     char *buf_ptr, *end_ptr;
     char *buf = NULL;
