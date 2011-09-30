@@ -11,9 +11,12 @@
 // and match #1 is the name, and match #2 is the type (eg AAAA)
 
 #define QUERY_MATCH "\\{([^, ]+).*[, ]([A-Z0-9]*)\\([0-9]+\\)\\}"
+#define BIND_MATCH  "@0x[0-9a-f]+: ([^ ]+) ([^:]+): "
 
 LogWatcher::LogWatcher(GraphWidget *parent)
     : m_graphWidget(parent), m_timer(0),
+
+      // libval regexps
     m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
     m_lookingUpRegexp("looking for " QUERY_MATCH),
     m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
@@ -21,7 +24,11 @@ LogWatcher::LogWatcher(GraphWidget *parent)
       m_pinsecureRegexp("Setting proof status for (.*) to: VAL_NONEXISTENT_TYPE"),
       m_pinsecure2Regexp("Setting authentication chain status for " QUERY_MATCH " to Provably Insecure"),
     m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
-    m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:")
+    m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:"),
+
+    // bind regexps
+      m_bindValidatedRegex(BIND_MATCH "verify rdataset.*: success"),
+      m_bindBogusRegexp(BIND_MATCH "verify rdataset.*failed to verify")
 {
     m_nodeList = m_graphWidget->nodeList();
 }
@@ -37,6 +44,9 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
 
     // qDebug() << logMessage;
 
+    // ---------------------------------------------------------------
+    // match libval patterns
+    //
     if (m_lookingUpRegexp.indexIn(logMessage) > -1) {
         nodeName = m_lookingUpRegexp.cap(1);
         result.setRecordType(m_lookingUpRegexp.cap(2));
@@ -56,7 +66,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         nodeName = m_bogusRegexp.cap(1);
         result.setRecordType(m_bogusRegexp.cap(2));
         result.setDNSSECStatus(DNSData::FAILED);
-        logMessage.replace(m_bogusRegexp, "<b><font color=\"red\">BOGUS Record found for \\1 \\2</font></b>");
+        logMessage.replace(m_bogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
         additionalInfo = "DNSSEC Security for this Node Failed";
     } else if (m_trustedRegexp.indexIn(logMessage) > -1) {
         nodeName = m_trustedRegexp.cap(1);
@@ -90,6 +100,22 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setDNSSECStatus(DNSData::DNE);
         additionalInfo = "This node supposedly doesn't exist, but its non-existence can't be proven.";
         logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> \\1 does not exist, but can't be proven' </font></b>");
+
+    // --------------------------------------------------------------
+    // Match bind patterns
+
+    } else if (m_bindBogusRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_bindBogusRegexp.cap(1);
+        result.setRecordType(m_bindBogusRegexp.cap(2));
+        result.setDNSSECStatus(DNSData::FAILED);
+        logMessage.replace(m_bindBogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
+        additionalInfo = "DNSSEC Security for this Node Failed";
+    } else if (m_bindValidatedRegex.indexIn(logMessage) > -1) {
+        nodeName = m_bindValidatedRegex.cap(1);
+        result.setRecordType(m_bindValidatedRegex.cap(2));
+        result.setDNSSECStatus(DNSData::VALIDATED);
+        logMessage.replace(m_bindValidatedRegex, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
+        additionalInfo = "The data for this node has been Validated";
     } else {
         return false;
     }
