@@ -6630,7 +6630,7 @@ static void
 _handle_completed(val_context_t *context)
 
 {
-    val_async_status           *as, *next, *last, *completed = NULL;
+    val_async_status           *as, *next, *last = NULL, *completed = NULL;
 
     if ((NULL == context) || (NULL == context->as_list))
         return;
