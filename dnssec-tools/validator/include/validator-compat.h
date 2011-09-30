@@ -184,6 +184,9 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
 #ifdef WIN32
 #define getdtablesize() FD_SETSIZE
 #define sleep(x) Sleep(x*1000)
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK WSAEWOULDBLOCK
+#endif
 #ifndef EMSGSIZE
 #define EMSGSIZE WSAEMSGSIZE
 #endif
