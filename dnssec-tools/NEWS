@@ -12,6 +12,16 @@ details.
                       Note the asynchronous api is still under development and
                       subject to changes that break backwards compatibility.
 
+    - rollerd:      - Added an experimental time-based method for queuing
+		      rollover operations.  This original method (full list
+		      of all zones) is the default queuing method, but the
+		      new method can be used by editing the rollerd script.
+		      rollctl and rollrec.pm were also modified to support
+		      this change.
+		    - Added support for merging a set of rollrec files.
+		      rollctl and rollrec.pm were also modified to support
+		      this change.
+
  Plus many more minor features and bug fixes
 
 1.10
