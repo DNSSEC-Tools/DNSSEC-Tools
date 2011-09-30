@@ -42,6 +42,7 @@ private:
 
     QTimer              *m_timer;
 
+    // libval regexps
     QRegExp    m_validatedRegexp;
     QRegExp    m_lookingUpRegexp;
     QRegExp    m_bogusRegexp;
@@ -49,6 +50,10 @@ private:
     QRegExp    m_pinsecureRegexp, m_pinsecure2Regexp;
     QRegExp    m_dneRegexp;
     QRegExp    m_maybeDneRegexp;
+
+    // bind regexps
+    QRegExp    m_bindValidatedRegex;
+    QRegExp    m_bindBogusRegexp;
 };
 
 #endif // LOGWATCHER_H
