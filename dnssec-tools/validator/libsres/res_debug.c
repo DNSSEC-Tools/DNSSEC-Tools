@@ -159,7 +159,7 @@ _print_or_log(void *file, int level, const char *template, ...)
     va_start(ap, template);
 
     if (NULL == file)
-        val_log_ap((val_context_t*)NULL, level, template, ap);
+        res_log((val_context_t*)NULL, level, template, ap);
     else
         vfprintf(file, template, ap);
 
