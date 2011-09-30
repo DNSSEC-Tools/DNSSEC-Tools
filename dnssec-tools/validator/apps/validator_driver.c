@@ -561,9 +561,13 @@ struct thread_params_ot {
 void *firethread_st(void *param) {
     struct thread_params_st *threadparams = (struct thread_params_st *)param;
     /*child process*/
+
+#ifndef WIN32
     fprintf(stderr, "Start of thread %u\n context=%u\n", 
             (unsigned int)pthread_self(), 
             (unsigned int)threadparams->context);
+#endif
+
     do {
         self_test(threadparams->context, threadparams->tcs, threadparams->tce, threadparams->flags, 
                   threadparams->testcase_config, threadparams->suite, threadparams->doprint, threadparams->max_in_flight);
@@ -571,8 +575,10 @@ void *firethread_st(void *param) {
             sleep(threadparams->wait);
     }while (threadparams->wait);
     
+#ifndef WIN32
     fprintf(stderr, "End of thread %u\n", 
             (unsigned int)pthread_self());
+#endif
 
     return NULL;
 }
@@ -580,9 +586,13 @@ void *firethread_st(void *param) {
 void *firethread_ot(void *param) {
     struct thread_params_ot *threadparams = (struct thread_params_ot *)param;
     /*child process*/
+
+#ifndef WIN32
     fprintf(stderr, "Start of thread %u\n context=%u\n", 
             (unsigned int)pthread_self(), 
             (unsigned int)threadparams->context);
+#endif
+
     do {
         one_test(threadparams->context, threadparams->name, threadparams->class_h, 
                   threadparams->type_h, threadparams->flags, 
@@ -591,8 +601,10 @@ void *firethread_ot(void *param) {
             sleep(threadparams->wait);
     }while (threadparams->wait);
 
+#ifndef WIN32
     fprintf(stderr, "End of thread %u\n", 
             (unsigned int)pthread_self());
+#endif
     
     return NULL;
 }
