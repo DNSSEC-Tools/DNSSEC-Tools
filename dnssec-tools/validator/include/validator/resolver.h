@@ -288,12 +288,20 @@ res_async_ea_isset(struct expected_arrival *ea, fd_set *fds);
                         (vvp)->tv_usec += 1000000;                      \
                 }                                                       \
         } while (/* CONSTCOND */ 0)
+#endif
+#ifndef timerclear
 #define timerclear(tvp)         (tvp)->tv_sec = (tvp)->tv_usec = 0L
+#endif
+#ifndef timerisset
 #define timerisset(tvp)         ((tvp)->tv_sec || (tvp)->tv_usec)
+#endif
+#ifndef timercmp
 #define timercmp(tvp, uvp, cmp)                                         \
     (((tvp)->tv_sec == (uvp)->tv_sec) ?                                 \
      ((tvp)->tv_usec cmp (uvp)->tv_usec) :                              \
      ((tvp)->tv_sec cmp (uvp)->tv_sec))
+#endif
+#ifndef timeradd
 #define timeradd(tvp, uvp, vvp)                                         \
     do {                                                                \
         (vvp)->tv_sec = (tvp)->tv_sec + (uvp)->tv_sec;                  \
