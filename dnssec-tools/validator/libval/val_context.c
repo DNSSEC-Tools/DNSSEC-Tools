@@ -468,7 +468,6 @@ val_free_context(val_context_t * context)
 #endif
 
 #ifndef VAL_NO_THREADS
-    CTX_LOCK_POL_EX(context);
     pthread_rwlock_destroy(&context->pol_rwlock);
     pthread_mutex_destroy(&context->ac_lock);
 #endif
