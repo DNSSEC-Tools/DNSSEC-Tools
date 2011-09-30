@@ -50,8 +50,8 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "zonesigner";
-my $VERS   = "$NAME version: 1.9";
-my $DTVERS = "DNSSEC-Tools Version: 1.10";
+my $VERS   = "$NAME version: 1.11";
+my $DTVERS = "DNSSEC-Tools Version: 1.11";
 
 #
 # Verbose values.
@@ -3873,14 +3873,32 @@ B<zonesigner>.
 
 =over 4
 
-=item B<-nokrfile>
+=item B<-archivedir>
 
-No I<keyrec> file will be consulted or created.
+The key archive directory.  If a key archive directory hasn't been specified
+(on the command line or in the DNSSEC-Tools configuration file) and the
+B<-nosave> option was B<not> given, then B<zonesigner> will leave the keys
+in the current directory.
 
-=item B<-krfile>
+When the files are saved into the archive directory, the existing file names
+are prepended with a timestamp.  The timestamp indicates when the files are
+archived.
 
-I<keyrec> file to use in processing options.  See the man page for
-B<Net::DNS::SEC::Tools::tooloptions.pm> for more details about this file.
+This directory B<may not> be the root directory.
+
+=item B<-droprevoked>
+
+Explicitly obsolete currently revoked KSKs and remove them from the signing
+set before resigning.  This is mutually exclusive from B<-nodroprevoked>.
+If neither B<-droprevoked> nor B<-nodroprevoked> are given, then
+B<-droprevoked> functionality is assumed..
+
+=item B<-dsdir>
+
+Specify a directory for storing dssets.  This directory will be created if it
+does not exist.
+
+The directory must be writable and B<may not> be the root directory.
 
 =item B<-genkeys>
 
@@ -3897,53 +3915,14 @@ this zone will be used.
 Generate new ZSKs for the zone.  By default, the last ZSKs generated for this
 zone will be used.
 
-=item B<-newpubksk>
+=item B<-help>
 
-Generate new Published KSKs for the zone.  Any existing Published KSKs will
-be marked as obsolete.
+Display a usage message.
 
-=item B<-norfc5011>
+=item B<-intermediate>
 
-Disable RFC5011 KSK revocation when rolling or replacing existing KSK key
-sets.  By default, B<zonesigner> performs RFC5011 KSK revocation and this
-option supersedes this behavior and any option setting within the I<keyrec>
-file.
-
-=item B<-droprevoked>
-
-Explicitly obsolete currently revoked KSKs and remove them from the signing
-set before resigning.  This is mutually exclusive from B<-nodroprevoked>.
-If neither B<-droprevoked> nor B<-nodroprevoked> are given, then
-B<-droprevoked> functionality is assumed..
-
-=item B<-nodroprevoked>
-
-Explicitly turn off obsoleting currently revoked KSKs and remove them
-from the signing set before resigning.  This is mutually exclusive from
-B<-droprevoked>.
-If neither B<-droprevoked> nor B<-nodroprevoked> are given, then
-B<-droprevoked> functionality is assumed..
-
-=item B<-useboth>
-
-Use the existing Current B<and> Published ZSKs to sign the zone.
-
-=item B<-usezskpub>
-
-Use the existing Published ZSKs to sign the zone.
-
-=item B<-archivedir>
-
-The key archive directory.  If a key archive directory hasn't been specified
-(on the command line or in the DNSSEC-Tools configuration file) and the
-B<-nosave> option was B<not> given, then B<zonesigner> will leave the keys
-in the current directory.
-
-When the files are saved into the archive directory, the existing file names
-are prepended with a timestamp.  The timestamp indicates when the files are
-archived.
-
-This directory B<may not> be the root directory.
+Filename to use for the temporary zone file.  The zone file will be copied to
+this file and then the key names appended.
 
 =item B<-keydirectory>
 
@@ -3952,10 +3931,23 @@ store the keys in the directory in which B<zonesigner> is executed.
 
 This directory B<may not> be the root directory.
 
-=item B<-nosave>
+=item B<-krfile>
 
-Do not save obsolete keys to the key archive directory.  The default behavior
-is to save obsolete keys.
+I<keyrec> file to use in processing options.  See the man page for
+B<Net::DNS::SEC::Tools::tooloptions.pm> for more details about this file.
+
+=item B<-ksignset>
+
+The name of the KSK signing set to use.  If the signing set does not exist,
+then this must be used in conjunction with either B<-genkeys> or B<-genksk>.
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+The default signing set name is "I<zone>-signset-I<N>", where I<zone> is the
+zone being signed and I<N> is a number.
+
+If B<-ksignset> is not specified, then B<zonesigner> will use the default and
+increment the number for subsequent signing sets.
 
 =item B<-kskcount>
 
@@ -3973,53 +3965,54 @@ This directory B<may not> be the root directory.
 
 The time between KSK rollovers.  This is measured in seconds.
 
-=item B<-ksignset>
+=item B<-newpubksk>
 
-The name of the KSK signing set to use.  If the signing set does not exist,
-then this must be used in conjunction with either B<-genkeys> or B<-genksk>.
-The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+Generate new Published KSKs for the zone.  Any existing Published KSKs will
+be marked as obsolete.
 
-The name may contain alphanumerics, underscores, hyphens, periods, and commas.
-The default signing set name is "I<zone>-signset-I<N>", where I<zone> is the
-zone being signed and I<N> is a number.
+=item B<-nodroprevoked>
 
-If B<-ksignset> is not specified, then B<zonesigner> will use the default and
-increment the number for subsequent signing sets.
+Explicitly turn off obsoleting currently revoked KSKs and remove them
+from the signing set before resigning.  This is mutually exclusive from
+B<-droprevoked>.
+If neither B<-droprevoked> nor B<-nodroprevoked> are given, then
+B<-droprevoked> functionality is assumed..
 
-=item B<-zskcount>
+=item B<-nokrfile>
 
-The number of ZSK keys to generate and with which to sign the zone.  The
-default is to use a single ZSK key.
+No I<keyrec> file will be consulted or created.
 
-=item B<-zskdirectory>
+=item B<-norfc5011>
 
-The directory in which ZSK keys will be stored.  The default is to store the
-keys in the directory in which B<zonesigner> is executed.
+Disable RFC5011 KSK revocation when rolling or replacing existing KSK key
+sets.  By default, B<zonesigner> performs RFC5011 KSK revocation and this
+option supersedes this behavior and any option setting within the I<keyrec>
+file.
 
-This directory B<may not> be the root directory.
+=item B<-nosave>
 
-=item B<-zsklife>
+Do not save obsolete keys to the key archive directory.  The default behavior
+is to save obsolete keys.
 
-The time between ZSK rollovers.  This is measured in seconds.
+=item B<-phase>
 
-=item B<-dsdir>
+Specify an rollover option based on the rollover phase, as opposed to using
+the option naming the specific action to be performed.  The purpose of this
+option is to bring clarity and greater understanding to how B<zonesigner> is
+used in the rollover process.
 
-Specify a directory for storing dssets.  This directory will be created if it
-does not exist.  The directory must be writable and not the root directory.
+The following are the mappings between the B<-phase> options and the action
+options.
 
-=item B<-signset>
+    Phase Option             Action-based Option
+    -phase ksk2              -newpubksk
+    -phase ksk4              -rollksk
+    -phase zsk2              -usezskpub
+    -phase zsk4b             -rollzsk
+    -phase zsk4b             (no option)
 
-The name of the ZSK signing set to use as the Current ZSK signing set.  The
-zone is signed and the given signing set becomes the zone's new Current ZSK
-signing set.  If the signing set does not exist, then this must be used in
-conjunction with either B<-genkeys> or B<-genzsk>.
-
-The name may contain alphanumerics, underscores, hyphens, periods, and commas.
-The default signing set name is "I<zone>signset-I<N>", where I<zone> is the
-zone being signed and I<N> is a number.
-
-If B<-signset> is not specified, then B<zonesigner> will use the default and
-increment the number for subsequent signing sets.
+B<Warning>:  The B<-phase> option should only be used if you know
+what you're doing.
 
 =item B<-rollksk>
 
@@ -4097,37 +4090,59 @@ when using this option.  B<rollerd> automates the rollover process and may be
 used to safely take care of this aspect of DNSSEC management.  Using the
 B<-rollzsk> option should only be used if you know what you're doing.
 
-=item B<-phase>
+=item B<-showkeycmd>
 
-Specify an rollover option based on the rollover phase, as opposed to using
-the option naming the specific action to be performed.  The purpose of this
-option is to bring clarity and greater understanding to how B<zonesigner> is
-used in the rollover process.
+Display the actual key-generation command (with options and arguments) that is
+executed.  This is a small subset of verbose level 3 output.
 
-The following are the mappings between the B<-phase> options and the action
-options.
+=item B<-showsigncmd>
 
-    Phase Option             Action-based Option
-    -phase ksk2              -newpubksk
-    -phase ksk4              -rollksk
-    -phase zsk2              -usezskpub
-    -phase zsk4b             -rollzsk
-    -phase zsk4b             (no option)
+Display the actual zone-signing command (with options and arguments) that is
+executed.  This is a small subset of verbose level 3 output.
 
-B<Warning>:  The B<-phase> option should only be used if you know
-what you're doing.
+=item B<-signset>
 
-=item B<-intermediate>
+The name of the ZSK signing set to use as the Current ZSK signing set.  The
+zone is signed and the given signing set becomes the zone's new Current ZSK
+signing set.  If the signing set does not exist, then this must be used in
+conjunction with either B<-genkeys> or B<-genzsk>.
 
-Filename to use for the temporary zone file.  The zone file will be copied to
-this file and then the key names appended.
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+The default signing set name is "I<zone>signset-I<N>", where I<zone> is the
+zone being signed and I<N> is a number.
 
-=item B<-zone>
+If B<-signset> is not specified, then B<zonesigner> will use the default and
+increment the number for subsequent signing sets.
 
-Name of the zone that will be signed.  This zone name may be given with this
-option or as the first non-option command line argument.  In the second case,
-if the argument contains directory separators, then final element of the path
-will be used for the zone name.
+=item B<-useboth>
+
+Use the existing Current B<and> Published ZSKs to sign the zone.
+
+=item B<-usezskpub>
+
+Use the existing Published ZSKs to sign the zone.
+
+=item B<-Version>
+
+Display the version information for B<zonesigner> and the DNSSEC-Tools package.
+
+=item B<-verbose>
+
+Verbose output will be given.  As more instances of B<-verbose> are given on
+the command line, additional levels of verbosity are achieved.
+
+    level	output
+    -----	------
+      1		operations being performed
+		  (e.g., generating key files, signing zone) 
+      2		details on operations and some operation results
+		  (e.g., new key names, zone serial number)
+      3		operations' parameters and additional details
+		  (e.g., key lengths, encryption algorithm,
+		  executed commands)
+
+Higher levels of verbosity are cumulative.  Specifying two instances of
+B<-verbose> will get the output from the first and second levels of output.
 
 =item B<-xc>
 
@@ -4245,41 +4260,28 @@ directory
 
 An error message will be printed if an invalid exit code is given.
 
-=item B<-help>
+=item B<-zone>
 
-Display a usage message.
+Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.  In the second case,
+if the argument contains directory separators, then final element of the path
+will be used for the zone name.
 
-=item B<-Version>
+=item B<-zskcount>
 
-Display the version information for B<zonesigner> and the DNSSEC-Tools package.
+The number of ZSK keys to generate and with which to sign the zone.  The
+default is to use a single ZSK key.
 
-=item B<-verbose>
+=item B<-zskdirectory>
 
-Verbose output will be given.  As more instances of B<-verbose> are given on
-the command line, additional levels of verbosity are achieved.
+The directory in which ZSK keys will be stored.  The default is to store the
+keys in the directory in which B<zonesigner> is executed.
 
-    level	output
-    -----	------
-      1		operations being performed
-		  (e.g., generating key files, signing zone) 
-      2		details on operations and some operation results
-		  (e.g., new key names, zone serial number)
-      3		operations' parameters and additional details
-		  (e.g., key lengths, encryption algorithm,
-		  executed commands)
+This directory B<may not> be the root directory.
 
-Higher levels of verbosity are cumulative.  Specifying two instances of
-B<-verbose> will get the output from the first and second levels of output.
+=item B<-zsklife>
 
-=item B<-showkeycmd>
-
-Display the actual key-generation command (with options and arguments) that is
-executed.  This is a small subset of verbose level 3 output.
-
-=item B<-showsigncmd>
-
-Display the actual zone-signing command (with options and arguments) that is
-executed.  This is a small subset of verbose level 3 output.
+The time between ZSK rollovers.  This is measured in seconds.
 
 =back
 
@@ -4293,26 +4295,29 @@ Cryptographic algorithm used to generate the zone's keys.  The default value
 is RSASHA1.  The option value is passed to B<dnssec-keygen> as the B<-a> flag.
 Consult B<dnssec-keygen>'s manual page to determine legal values.
 
-=item B<-ksklength>
-
-Bit length of the zone's KSK key.
-The default is 2048.
-
-=item B<-random>
-
-Source of randomness used to generate the zone's keys.	This is assumed to be
-a file, for example B</dev/urandom>.
-
-=item B<-zsklength>
-
-Bit length of the zone's ZSK key.
-The default is 1024.
-
 =item B<-kgopts>
 
 Additional options for B<dnssec-keygen> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the B<-kgopts> option.
+
+=item B<-ksklength>
+
+Bit length of the zone's KSK key.
+The default is 2048.
+
+=item B<-nsec3optout>
+
+When this flag and the I<-usensec3> flag are set, the zone will be signed
+using the Opt-Out support described in RFC5155.  A quick summary is that
+only sub-domains with valid DS or public keys available will be signed and the
+rest will not be.  This greatly reduces the computational and memory
+requirements of extremely large zones with lots of unsigned children.
+
+=item B<-random>
+
+Source of randomness used to generate the zone's keys.	This is assumed to be
+a file, for example B</dev/urandom>.
 
 =item B<-usensec3>
 
@@ -4322,13 +4327,10 @@ support the use of NSEC3 or else zone-signing will fail.  Zonesigner
 will automatically generate new keys of the correct type if one of the
 I<-genkeys> or similar options is used.
 
-=item B<-nsec3optout>
+=item B<-zsklength>
 
-When this flag and the I<-usensec3> flag are set, the zone will be signed
-using the Opt-Out support described in RFC5155.  A quick summary is that
-only sub-domains with valid DS or public keys available will be signed and the
-rest will not be.  This greatly reduces the computational and memory
-requirements of extremely large zones with lots of unsigned children.
+Bit length of the zone's ZSK key.
+The default is 1024.
 
 =back
 
