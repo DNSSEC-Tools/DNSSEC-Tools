@@ -186,10 +186,13 @@ QColor Node::getColorForStatus(int status) {
         color = Qt::blue;
     else if (status & DNSData::DNE)
         color = Qt::cyan;
-    else if (status & DNSData::VALIDATED)
-        color = Qt::green;
+    // note: TRUSTED trumps VALIDATED because some log messages mistakenly
+    // indicate validated when the entire chain is not.  Thus if any status
+    // indicates it was TRUSTED, then something somewhere wasn't complete.
     else if (status & DNSData::TRUSTED)
         color = Qt::yellow;
+    else if (status & DNSData::VALIDATED)
+        color = Qt::green;
     else
         color = QColor(128,128,128);
 
