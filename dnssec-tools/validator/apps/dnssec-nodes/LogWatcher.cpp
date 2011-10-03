@@ -26,7 +26,7 @@ LogWatcher::LogWatcher(GraphWidget *parent)
       m_lookingUpRegexp("looking for " QUERY_MATCH),
       m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
       m_trustedRegexp("Validation result for " QUERY_MATCH ": (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
-      m_pinsecureRegexp("Setting proof status for (.*) to: VAL_NONEXISTENT_TYPE"),
+      m_pinsecureRegexp("Setting proof status for " QUERY_MATCH " to: VAL_NONEXISTENT_TYPE"),
       m_pinsecure2Regexp("Setting authentication chain status for " QUERY_MATCH " to Provably Insecure"),
       m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
       m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:"),
