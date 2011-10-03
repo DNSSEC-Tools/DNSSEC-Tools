@@ -22,14 +22,16 @@ LogWatcher::LogWatcher(GraphWidget *parent)
     : m_graphWidget(parent), m_timer(0),
 
       // libval regexps
-      m_validatedRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
+      m_validatedRegexp("Validation result for " QUERY_MATCH ": VAL_SUCCESS:"),
+      m_validatedChainPartRegexp("name=(.*) class=IN type=([^\[]*).* from-server.*status=VAL_AC_VERIFIED:"),
+      m_cryptoSuccessRegexp("Verified a RRSIG for ([^ ]+) \\(([^\\)]+)\\)"),
       m_lookingUpRegexp("looking for " QUERY_MATCH),
       m_bogusRegexp("Validation result for " QUERY_MATCH ".*BOGUS"),
       m_trustedRegexp("Validation result for " QUERY_MATCH ": (VAL_IGNORE_VALIDATION|VAL_PINSECURE)"),
       m_pinsecureRegexp("Setting proof status for " QUERY_MATCH " to: VAL_NONEXISTENT_TYPE"),
       m_pinsecure2Regexp("Setting authentication chain status for " QUERY_MATCH " to Provably Insecure"),
       m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
-      m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_NAME_NOCHAIN:"),
+      m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE)_NOCHAIN:"),
 
       // bind regexps
       m_bindValidatedRegex(BIND_MATCH "verify rdataset.*: success"),
@@ -72,27 +74,39 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
             return false; // never show 'good' for something missing
         nodeName = m_validatedRegexp.cap(1);
         result.setRecordType(m_validatedRegexp.cap(2));
-        result.setDNSSECStatus(DNSData::VALIDATED);
+        result.addDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
+
+    } else if (m_validatedChainPartRegexp.indexIn(logMessage) > -1) {
+        if (m_graphWidget && !m_graphWidget->showNsec3() && m_validatedChainPartRegexp.cap(2) == "NSEC3")
+            return false;
+        if (m_validatedChainPartRegexp.cap(2) == "NSEC")
+            return false; // never show 'good' for something missing
+        nodeName = m_validatedChainPartRegexp.cap(1);
+        result.setRecordType(m_validatedChainPartRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::VALIDATED);
+        logMessage.replace(m_validatedChainPartRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
+        additionalInfo = "The data for this node has been ValidatedChainPart";
 
     } else if (m_bogusRegexp.indexIn(logMessage) > -1) {
         nodeName = m_bogusRegexp.cap(1);
         result.setRecordType(m_bogusRegexp.cap(2));
-        result.setDNSSECStatus(DNSData::FAILED);
+        result.addDNSSECStatus(DNSData::FAILED);
         logMessage.replace(m_bogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
         additionalInfo = "DNSSEC Security for this Node Failed";
 
     } else if (m_trustedRegexp.indexIn(logMessage) > -1) {
         nodeName = m_trustedRegexp.cap(1);
         result.setRecordType(m_trustedRegexp.cap(2));
-        result.setDNSSECStatus(DNSData::TRUSTED);
+        result.addDNSSECStatus(DNSData::TRUSTED);
         logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\2 record for \\1 </font></b>");
         additionalInfo = "Data is trusted, but not proven to be secure";
 
     } else if (m_pinsecure2Regexp.indexIn(logMessage) > -1) {
         nodeName = m_pinsecure2Regexp.cap(1);
-        result.setDNSSECStatus(DNSData::TRUSTED);
+        result.addDNSSECStatus(DNSData::TRUSTED);
+        result.setRecordType(m_pinsecure2Regexp.cap(2));
         // XXX: need the query type
         //result.setRecordType(m_validatedRegexp.cap(2));
         logMessage.replace(m_pinsecure2Regexp, ":<b><font color=\"brown\"> \\1 (\\2) is provably insecure </font></b>");
@@ -102,7 +116,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         nodeName = m_pinsecureRegexp.cap(1);
         // XXX: need the query type
         //result.setRecordType(m_validatedRegexp.cap(2));
-        result.setDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
+        result.addDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
         result.setRecordType("DS");
         logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 is provably insecure </font></b>");
         additionalInfo = "This node has been proven to be <b>not</b> DNSEC protected";
@@ -110,16 +124,29 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
     } else if (m_dneRegexp.indexIn(logMessage) > -1) {
         nodeName = m_dneRegexp.cap(1);
         result.setRecordType(m_dneRegexp.cap(2));
-        result.setDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
+        result.addDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
         logMessage.replace(m_dneRegexp, ":<b><font color=\"brown\"> \\1 provably does not exist </font></b>");
         additionalInfo = "This node has been proven to not exist in the DNS";
 
     } else if (m_maybeDneRegexp.indexIn(logMessage) > -1) {
         nodeName = m_maybeDneRegexp.cap(1);
         result.setRecordType(m_maybeDneRegexp.cap(2));
-        result.setDNSSECStatus(DNSData::DNE);
+        result.addDNSSECStatus(DNSData::DNE);
         additionalInfo = "This node supposedly doesn't exist, but its non-existence can't be proven.";
         logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> \\1 does not exist, but can't be proven' </font></b>");
+
+    } else if (m_cryptoSuccessRegexp.indexIn(logMessage) > -1) {
+        if (m_graphWidget && !m_graphWidget->showNsec3() && m_cryptoSuccessRegexp.cap(2) == "NSEC3")
+            return false;
+        if (m_cryptoSuccessRegexp.cap(2) == "NSEC")
+            return false; // never show 'good' for something missing
+        nodeName = m_cryptoSuccessRegexp.cap(1);
+        result.setRecordType(m_cryptoSuccessRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::VALIDATED);
+        logMessage.replace(m_cryptoSuccessRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
+        additionalInfo = "The data for this node has been Validated";
+
+
 
     // --------------------------------------------------------------
     // Match bind patterns
@@ -127,14 +154,14 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
     } else if (m_bindBogusRegexp.indexIn(logMessage) > -1) {
         nodeName = m_bindBogusRegexp.cap(1);
         result.setRecordType(m_bindBogusRegexp.cap(2));
-        result.setDNSSECStatus(DNSData::FAILED);
+        result.addDNSSECStatus(DNSData::FAILED);
         logMessage.replace(m_bindBogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
         additionalInfo = "DNSSEC Security for this Node Failed";
 
     } else if (m_bindValidatedRegex.indexIn(logMessage) > -1) {
         nodeName = m_bindValidatedRegex.cap(1);
         result.setRecordType(m_bindValidatedRegex.cap(2));
-        result.setDNSSECStatus(DNSData::VALIDATED);
+        result.addDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_bindValidatedRegex, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
         additionalInfo = "The data for this node has been Validated";
 
