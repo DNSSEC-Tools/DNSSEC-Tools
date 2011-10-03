@@ -44,6 +44,8 @@ private:
 
     // libval regexps
     QRegExp    m_validatedRegexp;
+    QRegExp    m_validatedChainPartRegexp;
+    QRegExp    m_cryptoSuccessRegexp;
     QRegExp    m_lookingUpRegexp;
     QRegExp    m_bogusRegexp;
     QRegExp    m_trustedRegexp;
