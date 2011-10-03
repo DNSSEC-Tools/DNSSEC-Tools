@@ -3749,6 +3749,7 @@ verify_provably_insecure(val_context_t * context,
         }
         if (*done == 0) {
             /* Need more data */
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", name_p);
             goto donefornow;
         }
     } else {
@@ -3864,7 +3865,7 @@ verify_provably_insecure(val_context_t * context,
             }
             memcpy(nxt_qname, curzone_n, len);
         }
-       
+
         /* Add another label to curzone_n */
         CUT_AND_APPEND_LABEL(q_labels, nxt_qname);
         if (nxt_qname == NULL) {
@@ -3872,15 +3873,15 @@ verify_provably_insecure(val_context_t * context,
             goto err;
         }
 
+        if ((curzone_n == NULL) ||
+                (-1 == ns_name_ntop(nxt_qname, tempname_p, sizeof(tempname_p)))) {
+            snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
+        } 
+       
         /* find next zone cut going down from the trust anchor */
         if ((VAL_NO_ERROR !=
                 find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n))
                 || (*done && zonecut_n == NULL)) {
-
-            if ((curzone_n == NULL) ||
-                    (-1 == ns_name_ntop(nxt_qname, tempname_p, sizeof(tempname_p)))) {
-                snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
-            } 
 
             val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", tempname_p);
             goto err;
@@ -3888,6 +3889,7 @@ verify_provably_insecure(val_context_t * context,
 
         if (*done == 0) {
             /* Need more data */
+            val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", tempname_p);
             goto donefornow;
         }
 
