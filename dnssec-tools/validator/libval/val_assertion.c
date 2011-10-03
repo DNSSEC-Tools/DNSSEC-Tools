@@ -3398,7 +3398,7 @@ prove_nonexistence(val_context_t * ctx,
     }
 
     val_log(ctx, LOG_DEBUG, 
-            "prove_nonexistence(): Setting proof status for %s to: %s", name_p, p_val_status(*status));
+            "prove_nonexistence(): Setting proof status for {%s, %s(%d), %s(%d)} to: %s", name_p, p_class(qc_class_h), qc_class_h, p_type(qtype_h), qtype_h, p_val_status(*status));
 
     return VAL_NO_ERROR;
 
