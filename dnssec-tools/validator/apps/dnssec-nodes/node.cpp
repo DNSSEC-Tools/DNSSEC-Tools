@@ -225,7 +225,6 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     if (m_subData.count() > 1) {
         int angleSegment = 360 * 16 / m_subData.count();
         int count = 0;
-        qDebug() << "here: " << m_fqdn << " / " << angleSegment;
 
         foreach (DNSData data, m_subData) {
             setupPainting(data.DNSSECStatus(), option, painter);
