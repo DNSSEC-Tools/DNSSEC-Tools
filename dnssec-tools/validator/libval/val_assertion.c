@@ -5009,14 +5009,15 @@ verify_and_validate(val_context_t * context,
                         res->val_rc_status = VAL_NOTRUST;
                     }
                 } else {
-                    /* already processed the final state for this authentication chain before */
+                    /* already processed the final state for this authentication chain */
                     val_log(context, LOG_INFO, 
-                            "verify_and_validate(): Ending authentication chain at {%s %s(%d) %s(%d)}",
+                            "verify_and_validate(): Assertion end state for {%s %s(%d) %s(%d)} already set to %s",
                             name_p, 
                             p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
                             next_as->val_ac_rrset.ac_data->rrs_class_h,
                             p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
-                            next_as->val_ac_rrset.ac_data->rrs_type_h);
+                            next_as->val_ac_rrset.ac_data->rrs_type_h,
+                            p_val_status(res->val_rc_status));
                     SET_CHAIN_COMPLETE(res->val_rc_status);
                 }
 
