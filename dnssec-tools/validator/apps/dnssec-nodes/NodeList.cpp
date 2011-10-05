@@ -241,7 +241,7 @@ void NodeList::filterByName() {
     deleteFiltersAndEffects();
 
     MultiEffect *effect = new MultiEffect();
-    effect->addEffect(new SetZValue(5));
+    effect->addEffect(new SetZValue(-5));
     effect->addEffect(new SetAlphaEffect(64));
 
     Filter *filter = new NotFilter(new NameFilter("cnn"));
