@@ -224,21 +224,6 @@ void NodeList::deleteFiltersAndEffects() {
 void NodeList::applyFilter() {
     resetEffects();
 
-    switch(m_filterType) {
-    case TOPBAD:
-        m_filtersAndEffects.push_back(new FilterEffectPair(new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5)));
-        break;
-
-    case BYNAME:
-        m_filtersAndEffects.push_back(new FilterEffectPair(new NotFilter(new NameFilter("cnn")), new SetZValue(5)));
-        m_filtersAndEffects.push_back(new FilterEffectPair(new NotFilter(new NameFilter("cnn")), new SetAlphaEffect(64)));
-
-        break;
-
-    default:
-        break;
-    }
-
     foreach (FilterEffectPair *pair, m_filtersAndEffects) {
         foreach (Node *node, m_nodes) {
             if (pair->first->matches(node)) {
