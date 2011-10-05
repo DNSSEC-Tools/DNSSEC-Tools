@@ -201,7 +201,7 @@ void NodeList::setFilter(FilterType filterType) {
     m_filterBox->hide();
 
     m_filterType = filterType;
-    applyFilter();
+    applyFilters();
 }
 
 void NodeList::resetEffects() {
@@ -221,7 +221,7 @@ void NodeList::deleteFiltersAndEffects() {
     m_filtersAndEffects.clear();
 }
 
-void NodeList::applyFilter() {
+void NodeList::applyFilters() {
     resetEffects();
 
     foreach (FilterEffectPair *pair, m_filtersAndEffects) {
@@ -243,7 +243,7 @@ void NodeList::filterNode(Node *node) {
 
 void NodeList::setFilterFQDNExpression(QString regexp) {
     m_nameRegexp = QRegExp(regexp);
-    applyFilter();
+    applyFilters();
 }
 
 void NodeList::filterByName() {
@@ -258,7 +258,7 @@ void NodeList::filterByName() {
     addFilterAndEffect(filter, effect);
     m_filterBox->show();
 
-    applyFilter();
+    applyFilters();
 }
 
 void NodeList::filterBadToTop()
@@ -267,7 +267,7 @@ void NodeList::filterBadToTop()
 
     addFilterAndEffect(new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5));
 
-    applyFilter();
+    applyFilters();
 }
 
 void NodeList::setFilterWidget(QWidget *filterBox)
