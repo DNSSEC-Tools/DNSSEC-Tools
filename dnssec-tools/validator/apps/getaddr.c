@@ -269,8 +269,8 @@ main(int argc, char *argv[])
         fprintf(stderr, "async support not available\n");
 #else
         struct getaddr_s cb_data = { &retval, &val_ainfo, &val_status, 0 };
-        vgai_callback my_cb = &_callback;
-        vgai_status *status = NULL;
+        val_gai_callback my_cb = &_callback;
+        val_gai_status *status = NULL;
         struct timeval tv;
         val_context_t *context;
         /*
