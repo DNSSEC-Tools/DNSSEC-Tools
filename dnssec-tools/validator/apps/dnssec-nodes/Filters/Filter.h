@@ -1,12 +1,14 @@
 #ifndef FILTER_H
 #define FILTER_H
 
+#include <QObject>
 #include <QtGui/QHBoxLayout>
 
 #include "node.h"
 
-class Filter
+class Filter : public QObject
 {
+    Q_OBJECT
 public:
     Filter();
 
