@@ -7,6 +7,7 @@
 
 #include "Effects/SetAlphaEffect.h"
 #include "Effects/SetZValue.h"
+#include "Effects/MultiEffect.h"
 
 #include <qdebug.h>
 
@@ -212,6 +213,7 @@ void NodeList::resetEffects() {
 }
 
 void NodeList::deleteFiltersAndEffects() {
+    resetEffects(); // Make sure we clear out what was done before forgetting how to undo it
     foreach(FilterEffectPair *pair, m_filtersAndEffects) {
         delete pair->first;
         delete pair->second;
@@ -222,8 +224,6 @@ void NodeList::deleteFiltersAndEffects() {
 void NodeList::applyFilter() {
     resetEffects();
 
-    // XXX: eventually this goes away
-    deleteFiltersAndEffects();
     switch(m_filterType) {
     case TOPBAD:
         m_filtersAndEffects.push_back(new FilterEffectPair(new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5)));
@@ -262,8 +262,27 @@ void NodeList::setFilterFQDNExpression(QString regexp) {
 }
 
 void NodeList::filterByName() {
-    setFilter(BYNAME);
+    deleteFiltersAndEffects();
+
+    MultiEffect *effect = new MultiEffect();
+    effect->addEffect(new SetZValue(5));
+    effect->addEffect(new SetAlphaEffect(64));
+
+    Filter *filter = new NotFilter(new NameFilter("cnn"));
+
+    addFilterAndEffect(filter, effect);
     m_filterBox->show();
+
+    applyFilter();
+}
+
+void NodeList::filterBadToTop()
+{
+    deleteFiltersAndEffects();
+
+    addFilterAndEffect(new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5));
+
+    applyFilter();
 }
 
 void NodeList::setFilterWidget(QWidget *filterBox)
@@ -285,4 +304,5 @@ void NodeList::addFilterAndEffect(Filter *filter, Effect *effect)
 {
     m_filtersAndEffects.push_back(new FilterEffectPair(filter, effect));
 }
+
 
