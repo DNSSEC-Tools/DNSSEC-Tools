@@ -241,11 +241,6 @@ void NodeList::filterNode(Node *node) {
     }
 }
 
-void NodeList::setFilterFQDNExpression(QString regexp) {
-    m_nameRegexp = QRegExp(regexp);
-    applyFilters();
-}
-
 void NodeList::filterByName() {
     deleteFiltersAndEffects();
 

@@ -32,6 +32,7 @@ LogWatcher::LogWatcher(GraphWidget *parent)
       m_pinsecure2Regexp("Setting authentication chain status for " QUERY_MATCH " to Provably Insecure"),
       m_dneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE):"),
       m_maybeDneRegexp("Validation result for " QUERY_MATCH ".*VAL_NONEXISTENT_(NAME|TYPE)_NOCHAIN:"),
+      m_ignoreValidationRegexp("Assertion end state for " QUERY_MATCH " already set to VAL_IGNORE_VALIDATION"),
 
       // bind regexps
       m_bindValidatedRegex(BIND_MATCH "verify rdataset.*: success"),
@@ -133,7 +134,14 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setRecordType(m_maybeDneRegexp.cap(2));
         result.addDNSSECStatus(DNSData::DNE);
         additionalInfo = "This node supposedly doesn't exist, but its non-existence can't be proven.";
-        logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> \\1 does not exist, but can't be proven' </font></b>");
+        logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> Record for \\2 for \\1 does not exist, but can't be proven' </font></b>");
+
+    } else if (m_ignoreValidationRegexp.indexIn(logMessage) > -1) {
+        nodeName = m_ignoreValidationRegexp.cap(1);
+        result.setRecordType(m_ignoreValidationRegexp.cap(2));
+        result.addDNSSECStatus(DNSData::IGNORE);
+        additionalInfo = "The validation results for this data aren't needed.";
+        logMessage.replace(m_ignoreValidationRegexp, ":<b><font color=\"brown\"> Record \\2 for \\1 validation results is not needed and is being ignored' </font></b>");
 
     } else if (m_cryptoSuccessRegexp.indexIn(logMessage) > -1) {
         if (m_graphWidget && !m_graphWidget->showNsec3() && m_cryptoSuccessRegexp.cap(2) == "NSEC3")

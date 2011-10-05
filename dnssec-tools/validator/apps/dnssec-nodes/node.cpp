@@ -193,6 +193,8 @@ QColor Node::getColorForStatus(int status) {
         color = Qt::yellow;
     else if (status & DNSData::VALIDATED)
         color = Qt::green;
+    else if (status & DNSData::IGNORE)
+        color = Qt::magenta;
     else
         color = QColor(128,128,128);
 
