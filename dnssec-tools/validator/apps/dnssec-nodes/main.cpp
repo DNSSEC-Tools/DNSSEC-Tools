@@ -59,14 +59,8 @@ int main(int argc, char **argv)
     layout->addLayout(infoBox);
 
     // Filter box, hidden by default
-    QWidget *filterWidget = new QWidget();
     QHBoxLayout *filterBox = new QHBoxLayout();
-    filterWidget->setLayout(filterBox);
-    QLabel *filterLabel = new QLabel("Filter by RegExp:");
-    filterBox->addWidget(filterLabel);
-    QLineEdit *filterEditBox = new QLineEdit();
-    filterBox->addWidget(filterEditBox);
-    layout->addWidget(filterWidget);
+    layout->addLayout(filterBox);
 
     QLineEdit *editBox = new QLineEdit();
 
@@ -150,10 +144,7 @@ int main(int argc, char **argv)
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterByName()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
-    graphWidget->nodeList()->setFilterWidget(filterWidget);
-    filterEditBox->connect(filterEditBox, SIGNAL(textChanged(QString)), graphWidget->nodeList(), SLOT(setFilterFQDNExpression(QString)));
-    filterWidget->hide();
-
+    graphWidget->nodeList()->setFilterBox(filterBox);
 
     menu->addSeparator();
 

@@ -196,14 +196,6 @@ void  NodeList::setCenterNode(Node *newCenter) {
     qDebug() << "here after: " << m_nodes.count();
 }
 
-void NodeList::setFilter(FilterType filterType) {
-    // reset stuff
-    m_filterBox->hide();
-
-    m_filterType = filterType;
-    applyFilters();
-}
-
 void NodeList::resetEffects() {
     foreach (FilterEffectPair *pair, m_filtersAndEffects) {
         foreach (Node *node, m_nodes) {
@@ -241,6 +233,12 @@ void NodeList::filterNode(Node *node) {
     }
 }
 
+void NodeList::filterNone()
+{
+    deleteFiltersAndEffects();
+    setupFilterBox(0);
+}
+
 void NodeList::filterByName() {
     deleteFiltersAndEffects();
 
@@ -249,23 +247,25 @@ void NodeList::filterByName() {
     effect->addEffect(new SetAlphaEffect(64));
 
     Filter *filter = new NotFilter(new NameFilter("cnn"));
+    setupFilterBox(filter);
 
     addFilterAndEffect(filter, effect);
-    m_filterBox->show();
 
     applyFilters();
 }
 
 void NodeList::filterBadToTop()
 {
+    Filter *filter;
+
     deleteFiltersAndEffects();
 
-    addFilterAndEffect(new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5));
-
+    addFilterAndEffect(filter = new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5));
+    setupFilterBox(filter);
     applyFilters();
 }
 
-void NodeList::setFilterWidget(QWidget *filterBox)
+void NodeList::setFilterBox(QHBoxLayout *filterBox)
 {
     m_filterBox = filterBox;
 }
@@ -285,4 +285,30 @@ void NodeList::addFilterAndEffect(Filter *filter, Effect *effect)
     m_filtersAndEffects.push_back(new FilterEffectPair(filter, effect));
 }
 
+void NodeList::clearLayout(QLayout *layout) {
+    QLayoutItem *item;
+    while((item = layout->takeAt(0))) {
+        if (item->layout()) {
+            clearLayout(item->layout());
+            delete item->layout();
+        }
+        if (item->widget()) {
+            delete item->widget();
+        }
+        // XXX: item->deleteLater();
+    }
+}
+
+void NodeList::setupFilterBox(Filter *filter)
+{
+
+    // Delete the current items
+    clearLayout(m_filterBox);
+
+    if (filter) {
+        qDebug() << "there" << filter;
+        filter->configWidgets(m_filterBox);
+    }
+    //filterEditBox->connect(filterEditBox, SIGNAL(textChanged(QString)), graphWidget->nodeList(), SLOT(setFilterFQDNExpression(QString)));
+}
 

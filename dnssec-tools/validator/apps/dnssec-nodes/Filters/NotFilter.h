@@ -10,6 +10,7 @@ public:
 
     virtual bool      matches(Node *node) { return ! m_childFilter->matches(node); }
     virtual QString   name() { return "Opposite of: " + m_childFilter->name(); }
+    virtual void      configWidgets(QHBoxLayout *hbox) { m_childFilter->configWidgets(hbox); }
 
 private:
     Filter *m_childFilter;

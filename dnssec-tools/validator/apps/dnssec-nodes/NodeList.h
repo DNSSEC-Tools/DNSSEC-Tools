@@ -46,14 +46,15 @@ public:
 
     bool   limitChildren(Node *node);
 
-    void   setFilter(FilterType filterType);
     void   filterNode(Node *node);
-    void   setFilterWidget(QWidget *filterBox);
+    void   setFilterBox(QHBoxLayout *filterBox);
 
     void   setSelectedNode(Node *node);
     Node  *selectedNode();
 
     void   addFilterAndEffect(Filter *filter, Effect *effect);
+    void   setupFilterBox(Filter *filter = 0);
+    void   clearLayout(QLayout *layout);
 
 signals:
     void   dataChanged();
@@ -68,7 +69,7 @@ public slots:
 
     void filterBadToTop();
     void filterByName();
-    void filterNone() { deleteFiltersAndEffects(); }
+    void filterNone();
 
 private:
     GraphWidget                          *m_graphWidget;
@@ -89,7 +90,7 @@ private:
 
     FilterType                            m_filterType;
     QRegExp                               m_nameRegexp;
-    QWidget                              *m_filterBox;
+    QHBoxLayout                          *m_filterBox;
 
     Node                                 *m_selectedNode;
 
