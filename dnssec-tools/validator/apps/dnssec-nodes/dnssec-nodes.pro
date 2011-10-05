@@ -10,7 +10,10 @@ HEADERS += \
     DetailsViewer.h \
     Effects/Effect.h \
     Effects/SetAlphaEffect.h \
-    Effects/SetZValue.h
+    Effects/SetZValue.h \
+    Filters/Filter.h \
+    Filters/DNSSECStatusFilter.h \
+    Filters/NameFilter.h
 
 SOURCES += \
         edge.cpp \
@@ -24,7 +27,10 @@ SOURCES += \
     DetailsViewer.cpp \
     Effects/Effect.cpp \
     Effects/SetAlphaEffect.cpp \
-    Effects/SetZValue.cpp
+    Effects/SetZValue.cpp \
+    Filters/Filter.cpp \
+    Filters/DNSSECStatusFilter.cpp \
+    Filters/NameFilter.cpp
 
 DEFINES += NETWORKACCESS
 
@@ -57,6 +63,12 @@ OTHER_FILES += \
     qtc_packaging/debian_harmattan/control \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog
+
+
+
+
+
+
 
 
 
