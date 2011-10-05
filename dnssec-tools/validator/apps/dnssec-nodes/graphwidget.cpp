@@ -527,3 +527,25 @@ void GraphWidget::setPrefs()
     m_nodeList->setEnableMaxTime(settings.value("enableMaxNodes", false).toBool());
 }
 
+void GraphWidget::about()
+{
+    QMessageBox msgBox;
+    msgBox.setText("<img src=\":/icons/dnssec-nodes-64x64.png\" style=\"float: right\"/>"
+                   "<h1>DNSSEC-Nodes</h1><p><i>A component of the DNSSEC-Tools Project</i></p><p>For more information, please visit http://www.dnssec-tools.org/.");
+    msgBox.exec();
+}
+
+void GraphWidget::help()
+{
+    QMessageBox msgBox;
+    msgBox.setText("<img src=\":/icons/dnssec-nodes-64x64.png\" style=\"float: right\"/>"
+                   "<h1>DNSSEC-Nodes Help</h1><p>The DNSSEC-Nodes application is a DNS debugging and visualizing tool.  This tool will allow you to:"
+                   "<ul><li>Load and analyize DNSSEC-Tools and Bind log files<li>"
+                   "<li>Visually display and interact with collected DNS Data<li>"
+                   "<li>Filter DNS nodes based on its status or name</li>"
+                   "</ul>"
+                   "<p>For a full list of features and usage instructions, please visit DNSSEC-Nodes section of the DNSSEC-Tools Wiki Page at: <br />"
+                   "https://www.dnssec-tools.org/wiki/index.php?title=DNSSEC-Nodes</p>"
+                   );
+    msgBox.exec();
+}
