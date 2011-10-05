@@ -53,6 +53,7 @@ public:
     void   setSelectedNode(Node *node);
     Node  *selectedNode();
 
+    void   addFilterAndEffect(Filter *filter, Effect *effect);
 
 signals:
     void   dataChanged();
