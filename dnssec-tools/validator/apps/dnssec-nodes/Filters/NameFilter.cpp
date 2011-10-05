@@ -24,6 +24,7 @@ QString NameFilter::searchName() const
 void NameFilter::setRegExp()
 {
     m_regexp = QRegExp(m_searchName);
+    emit filterChanged();
 }
 
 bool NameFilter::matches(Node *node)
