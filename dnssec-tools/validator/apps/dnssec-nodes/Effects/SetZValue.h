@@ -6,14 +6,14 @@
 class SetZValue : public Effect
 {
 public:
-    SetZValue(unsigned int zvalue);
+    SetZValue(int zvalue);
 
     virtual void    applyToNode(Node *node);
     virtual void    resetNode(Node *node);
     virtual QString name() { return "Raise or Lower the Node"; }
 
 private:
-    unsigned int    m_zvalue;
+    int    m_zvalue;
 };
 
 #endif // SETZVALUE_H

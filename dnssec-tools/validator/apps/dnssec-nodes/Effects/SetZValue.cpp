@@ -1,8 +1,9 @@
 #include "SetZValue.h"
 
 #include "node.h"
+#include <qdebug.h>
 
-SetZValue::SetZValue(unsigned int zvalue)
+SetZValue::SetZValue(int zvalue)
     : m_zvalue(zvalue)
 {
 }
