@@ -151,6 +151,16 @@ int main(int argc, char **argv)
     action = menu->addAction("Preferences");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(showPrefs()));
 
+    //
+    // Help Menu
+    //
+    menu = menubar->addMenu("&Help");
+    action = menu->addAction("About DNSSEC-Nodes");
+    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(about()));
+
+    action = menu->addAction("Help");
+    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(help()));
+
 #if defined(Q_OS_SYMBIAN) || defined(Q_WS_MAEMO_5)
     mainWindow.menuBar()->addAction("Shuffle", graphWidget, SLOT(shuffle()));
     mainWindow.menuBar()->addAction("Zoom In", graphWidget, SLOT(zoomIn()));

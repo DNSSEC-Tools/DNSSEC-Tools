@@ -132,6 +132,9 @@ public slots:
     void showPrefs();
     void moreInfoButton();
 
+    void about();
+    void help();
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void timerEvent(QTimerEvent *event);
