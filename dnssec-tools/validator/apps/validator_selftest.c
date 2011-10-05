@@ -511,8 +511,8 @@ suite_async_callback(val_async_status *async_status, int event,
     --suite->remaining;
 
     val_log(ctx, LOG_INFO,
-            "%s query completed; %d in flight, %d remaining",
-            cbp->name, suite->in_flight, suite->remaining);
+            "as 0x%x %s query completed; %d in flight, %d remaining",
+            async_status, cbp->name, suite->in_flight, suite->remaining);
     return VAL_NO_ERROR;
 }
 
@@ -564,11 +564,20 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         val_async_select_info(context, &activefds, &nfds, &timeout);
         if (0 == nfds) {
             val_log(context, LOG_DEBUG,
-                    "no file descriptors set for requests");
+                    "no file descriptors set! (%d unsent, %d inflight)",
+                    unsent, suite->in_flight);
+            /* maybe socket got closed, need to send next request */
             rc = val_async_check(context, &activefds, &nfds, 0);
             val_async_select_info(context, &activefds, &nfds, &timeout);
-            if (0 == nfds)
+            if (0 == nfds) {
+                if (suite->in_flight && !unsent) {
+                    val_log(context, LOG_DEBUG,
+                            "**** no file descriptors set! (%d unsent, %d inflight)",
+                            unsent, suite->in_flight);
+                    break;
+                }
                 continue;
+            }
         }
         /** adjust libsres absolute timeout to select relative timeout */
         if (timeout.tv_sec == LONG_MAX)
