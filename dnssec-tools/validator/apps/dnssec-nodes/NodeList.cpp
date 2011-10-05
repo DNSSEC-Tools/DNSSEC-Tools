@@ -281,3 +281,8 @@ Node * NodeList::selectedNode()
     return m_selectedNode;
 }
 
+void NodeList::addFilterAndEffect(Filter *filter, Effect *effect)
+{
+    m_filtersAndEffects.push_back(new FilterEffectPair(filter, effect));
+}
+
