@@ -7,7 +7,10 @@ HEADERS += \
     NodeList.h \
     NodesPreferences.h \
     DelayedDelete.h \
-    DetailsViewer.h
+    DetailsViewer.h \
+    Effects/Effect.h \
+    Effects/SetAlphaEffect.h \
+    Effects/SetZValue.h
 
 SOURCES += \
         edge.cpp \
@@ -18,7 +21,10 @@ SOURCES += \
     LogWatcher.cpp \
     NodeList.cpp \
     NodesPreferences.cpp \
-    DetailsViewer.cpp
+    DetailsViewer.cpp \
+    Effects/Effect.cpp \
+    Effects/SetAlphaEffect.cpp \
+    Effects/SetZValue.cpp
 
 DEFINES += NETWORKACCESS
 
@@ -51,6 +57,12 @@ OTHER_FILES += \
     qtc_packaging/debian_harmattan/control \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog
+
+
+
+
+
+
 
 
 

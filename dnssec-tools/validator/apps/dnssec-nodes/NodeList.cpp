@@ -1,11 +1,15 @@
 #include "NodeList.h"
 #include "DelayedDelete.h"
 
+#include "Effects/SetAlphaEffect.h"
+#include "Effects/SetZValue.h"
+
 #include <qdebug.h>
 
 NodeList::NodeList(GraphWidget *parent) :
     QObject(parent), m_graphWidget(parent), m_centerNode(0), m_nodes(), m_edges(),
-    m_timer(this), m_maxNodes(0), m_accessCounter(0), m_accessDropOlderThan(0), m_selectedNode(0)
+    m_timer(this), m_maxNodes(0), m_accessCounter(0), m_accessDropOlderThan(0), m_selectedNode(0),
+    m_filtersAndEffects()
 {
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(limit()));
     m_timer.start(5000); /* clear things out every 5 seconds or so */
@@ -195,15 +199,41 @@ void NodeList::setFilter(FilterType filterType) {
     applyFilter();
 }
 
+void NodeList::resetEffects() {
+    foreach (Effect *effect, m_filtersAndEffects) {
+        foreach (Node *node, m_nodes) {
+            effect->resetNode(node);
+        }
+    }
+}
+
+void NodeList::deleteFiltersAndEffects() {
+    foreach(Effect *effect, m_filtersAndEffects) {
+        delete effect;
+    }
+    m_filtersAndEffects.clear();
+}
+
 void NodeList::applyFilter() {
-    // Reset the current Z values first
-    foreach (Node *node, m_nodes) {
-        node->setZValue(-1);
-        node->setAlpha(255);
+    resetEffects();
+
+    // XXX: eventually this goes away
+    deleteFiltersAndEffects();
+    switch(m_filterType) {
+    case TOPBAD:
+        m_filtersAndEffects.push_back(new SetZValue(5));
+        break;
+
+    case BYNAME:
+        m_filtersAndEffects.push_back(new SetAlphaEffect(64));
+        m_filtersAndEffects.push_back(new SetZValue(5));
+        break;
+
+    default:
+        break;
     }
 
-    if (m_filterType != NONE) {
-        // Apply the selected filter
+    foreach (Effect *effect, m_filtersAndEffects) {
         foreach (Node *node, m_nodes) {
             filterNode(node);
         }
@@ -219,17 +249,22 @@ inline void NodeList::filterNode(Node *node) {
     switch(m_filterType) {
     case TOPBAD:
         if (node->DNSSECValidity() & DNSData::FAILED) {
-            node->setZValue(1);
+             foreach (Effect *effect, m_filtersAndEffects) {
+                 effect->applyToNode(node);
+             }
         }
+
         break;
 
     case BYNAME:
         if (m_nameRegexp.isEmpty() || m_nameRegexp.indexIn(node->fqdn()) != -1) {
-            node->setAlpha(255);
-            node->setZValue(1);
+            foreach (Effect *effect, m_filtersAndEffects) {
+                effect->resetNode(node);
+            }
         } else {
-            node->setAlpha(64);
-            node->setZValue(-1);
+            foreach (Effect *effect, m_filtersAndEffects) {
+                effect->applyToNode(node);
+            }
         }
 
     default:
