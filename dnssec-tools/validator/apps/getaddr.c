@@ -24,6 +24,9 @@ static struct option prog_options[] = {
     {"canonname", 0, 0, 'c'},
     {"service", 0, 0, 's'},
     {"Version", 0, 0, 'V'},
+#ifndef VAL_NO_ASYNC
+    {"async", 0, 0, 'a'},
+#endif
     {0, 0, 0, 0}
 };
 #endif
@@ -49,6 +52,10 @@ usage(char *progname)
             "\t              file:<file-name>   (opened in append mode)\n" 
             "\t              net[:<host-name>:<host-port>] (127.0.0.1:1053\n" 
             "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
+#ifndef VAL_NO_ASYNC
+    fprintf(stderr,
+            "\t-a, --async                     exercise async code(deubg)\n");
+#endif
     fprintf(stderr,
             "\t-V, --Version                   display version and exit\n");
 
@@ -171,7 +178,11 @@ _callback(void *callback_data, int eai_retval, struct addrinfo *res,
 int
 main(int argc, char *argv[])
 {
-    const char     *allowed_args = "ahco:s:Vv:r:i:";
+    const char     *allowed_args =
+#ifndef VAL_NO_ASYNC
+        "a"
+#endif
+        "hco:s:Vv:r:i:";
     char           *node = NULL;
     char           *service = NULL;
     struct addrinfo hints;
@@ -222,9 +233,11 @@ main(int argc, char *argv[])
             getcanonname = 1;
             break;
 
+#ifndef VAL_NO_ASYNC
         case 'a':
             async = 1;
             break;
+#endif
 
         case 'v':
             dnsval_conf_set(optarg);
