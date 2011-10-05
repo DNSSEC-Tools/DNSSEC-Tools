@@ -66,8 +66,8 @@ public slots:
     void resetEffects();
     void deleteFiltersAndEffects();
 
-    void filterBadToTop() { setFilter(TOPBAD); }
-    void filterNone() { setFilter(NONE); }
+    void filterBadToTop();
+    void filterNone() { deleteFiltersAndEffects(); }
     void filterByName();
     void setFilterFQDNExpression(QString regexp);
 
