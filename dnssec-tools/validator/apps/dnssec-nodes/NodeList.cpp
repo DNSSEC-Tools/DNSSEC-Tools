@@ -258,7 +258,12 @@ void NodeList::filterBadToTop()
 
     deleteFiltersAndEffects();
 
-    addFilterAndEffect(filter = new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5));
+    MultiEffect *effect = new MultiEffect();
+    effect->addEffect(new SetZValue(-5));
+    effect->addEffect(new SetAlphaEffect(64));
+
+    addFilterAndEffect(filter = new NotFilter(new DNSSECStatusFilter(DNSData::FAILED)), effect);
+
     setupFilterBox(filter);
     applyFilters();
 }
