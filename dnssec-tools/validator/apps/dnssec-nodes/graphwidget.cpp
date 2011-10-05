@@ -93,7 +93,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     m_nodeInfoLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_infoBox->addWidget(m_infoLabel = new QLabel(""));
     m_infoLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
-    m_infoBox->addWidget(m_infoMoreButton = new QPushButton("More..."));
+    m_infoBox->addWidget(m_infoMoreButton = new QPushButton("Details..."));
     connect(m_infoMoreButton, SIGNAL(clicked()), this, SLOT(moreInfoButton()));
     m_infoMoreButton->hide();
     m_nodeInfoLabel->hide();
