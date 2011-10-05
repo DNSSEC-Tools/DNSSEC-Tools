@@ -7,6 +7,8 @@
 #include "edge.h"
 #include "graphwidget.h"
 
+#include "Effects/Effect.h"
+
 #include <QtGui/QHBoxLayout>
 
 class GraphWidget;
@@ -57,6 +59,8 @@ public slots:
     void limit();
 
     void applyFilter();
+    void resetEffects();
+    void deleteFiltersAndEffects();
 
     void filterBadToTop() { setFilter(TOPBAD); }
     void filterNone() { setFilter(NONE); }
@@ -85,6 +89,8 @@ private:
     QWidget                              *m_filterBox;
 
     Node                                 *m_selectedNode;
+
+    QList<Effect *>                       m_filtersAndEffects;
 };
 
 #endif // NODELIST_H
