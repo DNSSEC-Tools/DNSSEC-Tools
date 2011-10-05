@@ -6625,6 +6625,14 @@ _call_callbacks(int event, val_async_status *as)
 
         (*as->val_as_result_cb)(as, event, as->val_as_ctx,
                                 as->val_as_cb_user_ctx, &cbp );
+
+        /** did callback release resources? */
+        if (NULL == cbp.results)
+            as->val_as_results = NULL;
+        if (NULL == cbp.answers)
+            as->val_as_answers = NULL;
+        if (NULL == cbp.name)
+            as->val_as_name = NULL;
     }
     return callit;
 }
