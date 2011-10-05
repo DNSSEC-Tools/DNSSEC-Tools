@@ -62,7 +62,7 @@ public slots:
     void clear();
     void limit();
 
-    void applyFilter();
+    void applyFilters();
     void resetEffects();
     void deleteFiltersAndEffects();
 
