@@ -7034,13 +7034,17 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
  *                   closest event for pending async requests.
  *             flags -- flags affecting operation of this function.
  *                      None defined yet.
+ *
+ * Returns:  < 0  : VAL_* error
+ *             0  : VAL_NO_ERROR
+ *           > 0  : number of asnchronous status objects checked
  */
 int
 val_async_check_wait(val_context_t *context, fd_set *pending_desc,
                      int *nfds, struct timeval *tv, u_int32_t flags)
 {
     val_async_status           *as;
-    int retval = VAL_NO_ERROR;
+    int                         count = 0;
 
     if (NULL == context)
         return VAL_BAD_ARGUMENT;
@@ -7075,6 +7079,8 @@ val_async_check_wait(val_context_t *context, fd_set *pending_desc,
 
     for (as = context->as_list; as; as = as->val_as_next) {
 
+        ++count;
+
         if (as->val_as_flags & VAL_AS_DONE)
             continue; /* we'll deal with these later */
 
@@ -7086,9 +7092,10 @@ val_async_check_wait(val_context_t *context, fd_set *pending_desc,
     CTX_UNLOCK_ACACHE(context);
 
     /** if we checked requests, some might have completed */
-    _handle_completed(context);
+    if (count)
+        _handle_completed(context);
 
-    return retval;
+    return count;
 }
 
 /** for backwards compatibility. see val_async_check_wait */
