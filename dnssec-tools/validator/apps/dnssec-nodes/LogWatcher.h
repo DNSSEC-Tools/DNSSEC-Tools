@@ -52,6 +52,7 @@ private:
     QRegExp    m_pinsecureRegexp, m_pinsecure2Regexp;
     QRegExp    m_dneRegexp;
     QRegExp    m_maybeDneRegexp;
+    QRegExp    m_ignoreValidationRegexp;
 
     // bind regexps
     QRegExp    m_bindValidatedRegex;

@@ -25,6 +25,8 @@ inline QString DNSData::DNSSECStatusForEnum(DNSData::Status status) const
         return "Does Not Exist";
     case FAILED:
         return "DNSSEC Failed";
+    case IGNORE:
+        return "Validation Not Needed";
     }
     return "No Such Status";
 }
@@ -42,6 +44,8 @@ QStringList DNSData::DNSSECStringStatuses() const
         results.push_back(DNSSECStatusForEnum(DNE));
     if (m_DNSSECStatus & FAILED)
         results.push_back(DNSSECStatusForEnum(FAILED));
+    if (m_DNSSECStatus & IGNORE)
+        results.push_back(DNSSECStatusForEnum(IGNORE));
     return results;
 }
 

@@ -67,9 +67,8 @@ public slots:
     void deleteFiltersAndEffects();
 
     void filterBadToTop();
-    void filterNone() { deleteFiltersAndEffects(); }
     void filterByName();
-    void setFilterFQDNExpression(QString regexp);
+    void filterNone() { deleteFiltersAndEffects(); }
 
 private:
     GraphWidget                          *m_graphWidget;
