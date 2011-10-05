@@ -13,7 +13,8 @@ HEADERS += \
     Effects/SetZValue.h \
     Filters/Filter.h \
     Filters/DNSSECStatusFilter.h \
-    Filters/NameFilter.h
+    Filters/NameFilter.h \
+    Filters/NotFilter.h
 
 SOURCES += \
         edge.cpp \
@@ -30,7 +31,8 @@ SOURCES += \
     Effects/SetZValue.cpp \
     Filters/Filter.cpp \
     Filters/DNSSECStatusFilter.cpp \
-    Filters/NameFilter.cpp
+    Filters/NameFilter.cpp \
+    Filters/NotFilter.cpp
 
 DEFINES += NETWORKACCESS
 
@@ -63,6 +65,8 @@ OTHER_FILES += \
     qtc_packaging/debian_harmattan/control \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog
+
+
 
 
 

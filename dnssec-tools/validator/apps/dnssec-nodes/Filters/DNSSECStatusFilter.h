@@ -4,7 +4,7 @@
 #include "Filter.h"
 #include "node.h"
 
-class DNSSECStatusFilter
+class DNSSECStatusFilter : public Filter
 {
 public:
     DNSSECStatusFilter(int dnssecValidity, bool requireAll = true);
