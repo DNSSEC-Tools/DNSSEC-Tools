@@ -6987,10 +6987,7 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
         gettimeofday(&now, NULL);
         timeradd(&now, &tv, timeout); /* add current time to delay */
     }
-    CTX_LOCK_ACACHE(context);
     retval = val_async_select_info(context, pending_desc, nfds, timeout);
-    CTX_UNLOCK_ACACHE(context);
-
     if (VAL_NO_ERROR != retval)
         return -1;
 
