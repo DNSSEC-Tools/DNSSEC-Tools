@@ -3,7 +3,7 @@
 
 #include "Filter.h"
 
-class NameFilter
+class NameFilter : public Filter
 {
 public:
     NameFilter(const QString &searchName);

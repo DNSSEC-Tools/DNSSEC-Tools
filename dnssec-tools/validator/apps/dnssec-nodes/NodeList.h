@@ -8,12 +8,15 @@
 #include "graphwidget.h"
 
 #include "Effects/Effect.h"
+#include "Filters/Filter.h"
 
 #include <QtGui/QHBoxLayout>
 
 class GraphWidget;
 
 const QString ROOT_NODE_NAME = "<root>";
+
+typedef QPair<Filter *, Effect *> FilterEffectPair;
 
 class NodeList : public QObject
 {
@@ -90,7 +93,7 @@ private:
 
     Node                                 *m_selectedNode;
 
-    QList<Effect *>                       m_filtersAndEffects;
+    QList< QPair<Filter *,Effect *> *>    m_filtersAndEffects;
 };
 
 #endif // NODELIST_H

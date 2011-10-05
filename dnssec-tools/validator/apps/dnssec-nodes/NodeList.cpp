@@ -1,6 +1,10 @@
 #include "NodeList.h"
 #include "DelayedDelete.h"
 
+#include "Filters/DNSSECStatusFilter.h"
+#include "Filters/NameFilter.h"
+#include "Filters/NotFilter.h"
+
 #include "Effects/SetAlphaEffect.h"
 #include "Effects/SetZValue.h"
 
@@ -200,16 +204,17 @@ void NodeList::setFilter(FilterType filterType) {
 }
 
 void NodeList::resetEffects() {
-    foreach (Effect *effect, m_filtersAndEffects) {
+    foreach (FilterEffectPair *pair, m_filtersAndEffects) {
         foreach (Node *node, m_nodes) {
-            effect->resetNode(node);
+            pair->second->resetNode(node);
         }
     }
 }
 
 void NodeList::deleteFiltersAndEffects() {
-    foreach(Effect *effect, m_filtersAndEffects) {
-        delete effect;
+    foreach(FilterEffectPair *pair, m_filtersAndEffects) {
+        delete pair->first;
+        delete pair->second;
     }
     m_filtersAndEffects.clear();
 }
@@ -221,21 +226,32 @@ void NodeList::applyFilter() {
     deleteFiltersAndEffects();
     switch(m_filterType) {
     case TOPBAD:
-        m_filtersAndEffects.push_back(new SetZValue(5));
+        m_filtersAndEffects.push_back(new FilterEffectPair(new DNSSECStatusFilter(DNSData::FAILED), new SetZValue(5)));
         break;
 
     case BYNAME:
-        m_filtersAndEffects.push_back(new SetAlphaEffect(64));
-        m_filtersAndEffects.push_back(new SetZValue(5));
+        m_filtersAndEffects.push_back(new FilterEffectPair(new NotFilter(new NameFilter("cnn")), new SetZValue(5)));
+        m_filtersAndEffects.push_back(new FilterEffectPair(new NotFilter(new NameFilter("cnn")), new SetAlphaEffect(64)));
+
         break;
 
     default:
         break;
     }
 
-    foreach (Effect *effect, m_filtersAndEffects) {
+    foreach (FilterEffectPair *pair, m_filtersAndEffects) {
         foreach (Node *node, m_nodes) {
-            filterNode(node);
+            if (pair->first->matches(node)) {
+                pair->second->applyToNode(node);
+            }
+        }
+    }
+}
+
+void NodeList::filterNode(Node *node) {
+    foreach (FilterEffectPair *pair, m_filtersAndEffects) {
+        if (pair->first->matches(node)) {
+            pair->second->applyToNode(node);
         }
     }
 }
@@ -243,33 +259,6 @@ void NodeList::applyFilter() {
 void NodeList::setFilterFQDNExpression(QString regexp) {
     m_nameRegexp = QRegExp(regexp);
     applyFilter();
-}
-
-inline void NodeList::filterNode(Node *node) {
-    switch(m_filterType) {
-    case TOPBAD:
-        if (node->DNSSECValidity() & DNSData::FAILED) {
-             foreach (Effect *effect, m_filtersAndEffects) {
-                 effect->applyToNode(node);
-             }
-        }
-
-        break;
-
-    case BYNAME:
-        if (m_nameRegexp.isEmpty() || m_nameRegexp.indexIn(node->fqdn()) != -1) {
-            foreach (Effect *effect, m_filtersAndEffects) {
-                effect->resetNode(node);
-            }
-        } else {
-            foreach (Effect *effect, m_filtersAndEffects) {
-                effect->applyToNode(node);
-            }
-        }
-
-    default:
-        break;
-    }
 }
 
 void NodeList::filterByName() {
