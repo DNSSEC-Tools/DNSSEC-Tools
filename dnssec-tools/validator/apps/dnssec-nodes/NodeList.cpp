@@ -184,7 +184,6 @@ bool NodeList::limitChildren(Node *node) {
 }
 
 void  NodeList::setCenterNode(Node *newCenter) {
-    qDebug() << "setting center";
     if (m_centerNode) {
         if (m_nodes.contains(ROOT_NODE_NAME))
             m_nodes.remove(ROOT_NODE_NAME);
@@ -193,7 +192,6 @@ void  NodeList::setCenterNode(Node *newCenter) {
 
     m_centerNode = newCenter;
     m_nodes[ROOT_NODE_NAME] = newCenter;
-    qDebug() << "here after: " << m_nodes.count();
 }
 
 void NodeList::resetEffects() {
@@ -283,6 +281,7 @@ Node * NodeList::selectedNode()
 void NodeList::addFilterAndEffect(Filter *filter, Effect *effect)
 {
     m_filtersAndEffects.push_back(new FilterEffectPair(filter, effect));
+    connect(filter, SIGNAL(filterChanged()), this, SLOT(applyFilters()));
 }
 
 void NodeList::clearLayout(QLayout *layout) {
@@ -306,7 +305,6 @@ void NodeList::setupFilterBox(Filter *filter)
     clearLayout(m_filterBox);
 
     if (filter) {
-        qDebug() << "there" << filter;
         filter->configWidgets(m_filterBox);
     }
     //filterEditBox->connect(filterEditBox, SIGNAL(textChanged(QString)), graphWidget->nodeList(), SLOT(setFilterFQDNExpression(QString)));

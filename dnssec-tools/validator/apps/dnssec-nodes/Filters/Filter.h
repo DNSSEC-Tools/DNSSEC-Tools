@@ -5,6 +5,7 @@
 #include <QtGui/QHBoxLayout>
 
 #include "node.h"
+#include <qdebug.h>
 
 class Filter : public QObject
 {
@@ -15,6 +16,11 @@ public:
     virtual bool      matches(Node *node) = 0;
     virtual QString   name() = 0;
     virtual void      configWidgets(QHBoxLayout *hbox) { Q_UNUSED(hbox); }
+
+    void              filterHasChanged() { emit filterChanged(); qDebug() << "here: changing";}
+
+signals:
+    void              filterChanged();
 };
 
 #endif // FILTER_H

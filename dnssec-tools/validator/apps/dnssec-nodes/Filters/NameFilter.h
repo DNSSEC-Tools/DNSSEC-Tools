@@ -5,6 +5,7 @@
 
 class NameFilter : public Filter
 {
+    Q_OBJECT
 public:
     NameFilter(const QString &searchName);
 

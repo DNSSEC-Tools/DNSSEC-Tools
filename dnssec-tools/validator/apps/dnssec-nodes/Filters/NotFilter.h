@@ -5,6 +5,8 @@
 
 class NotFilter : public Filter
 {
+    Q_OBJECT
+
 public:
     NotFilter(Filter *ofThis);
 
