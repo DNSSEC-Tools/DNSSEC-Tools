@@ -344,7 +344,7 @@ void Node::addSubData(const DNSData &data)
         // merge in the other data with ours (internally this drops UNKNOWNS
         m_subData[data.recordType()].addDNSSECStatus(data.DNSSECStatus());
     }
-    cacheDNSDataValidity();;
+    cacheDNSDataValidity();
 }
 
 QString Node::getSubData()

@@ -227,6 +227,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
     if (additionalInfo.length() > 0)
         thenode->setAdditionalInfo(additionalInfo);
     thenode->addLogMessage(logMessage);
+    m_nodeList->reApplyFiltersTo(thenode);
     return true;
 }
 

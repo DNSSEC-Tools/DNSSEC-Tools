@@ -226,12 +226,23 @@ void NodeList::applyFilters() {
     }
 }
 
+void NodeList::resetNode(Node *node) {
+    foreach (FilterEffectPair *pair, m_filtersAndEffects) {
+        pair->second->resetNode(node);
+    }
+}
+
 void NodeList::filterNode(Node *node) {
     foreach (FilterEffectPair *pair, m_filtersAndEffects) {
         if (pair->first->matches(node)) {
             pair->second->applyToNode(node);
         }
     }
+}
+
+void NodeList::reApplyFiltersTo(Node *node) {
+    resetNode(node);
+    filterNode(node);
 }
 
 void NodeList::filterNone()
