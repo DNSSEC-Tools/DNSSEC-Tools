@@ -140,6 +140,11 @@ int main(int argc, char **argv)
     action->setCheckable(true);
     action->setActionGroup(filterActions);
 
+    action = filterMenu->addAction("Filter by Data Type");
+    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterByDataType()));
+    action->setCheckable(true);
+    action->setActionGroup(filterActions);
+
     action = filterMenu->addAction("Filter by Name");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterByName()));
     action->setCheckable(true);

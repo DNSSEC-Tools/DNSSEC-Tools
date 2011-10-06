@@ -68,6 +68,7 @@ public slots:
     void deleteFiltersAndEffects();
 
     void filterBadToTop();
+    void filterByDataType();
     void filterByName();
     void filterNone();
 

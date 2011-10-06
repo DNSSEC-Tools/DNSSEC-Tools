@@ -15,7 +15,8 @@ HEADERS += \
     Filters/DNSSECStatusFilter.h \
     Filters/NameFilter.h \
     Filters/NotFilter.h \
-    Effects/MultiEffect.h
+    Effects/MultiEffect.h \
+    Filters/TypeFilter.h
 
 SOURCES += \
         edge.cpp \
@@ -34,7 +35,8 @@ SOURCES += \
     Filters/DNSSECStatusFilter.cpp \
     Filters/NameFilter.cpp \
     Filters/NotFilter.cpp \
-    Effects/MultiEffect.cpp
+    Effects/MultiEffect.cpp \
+    Filters/TypeFilter.cpp
 
 DEFINES += NETWORKACCESS
 
@@ -67,6 +69,8 @@ OTHER_FILES += \
     qtc_packaging/debian_harmattan/control \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog
+
+
 
 
 
