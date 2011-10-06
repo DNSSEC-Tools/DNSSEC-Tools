@@ -85,6 +85,7 @@ int main(int argc, char **argv)
     mainWindow.setCentralWidget(mainWidget);
     mainWindow.setWindowIcon(QIcon(":/icons/dnssec-nodes-64x64.png"));
 
+    hbox->addWidget(new QLabel("Zoom Layout: "));
     QPushButton *button;
     hbox->addWidget(button = new QPushButton("+"));
     button->connect(button, SIGNAL(clicked()), graphWidget, SLOT(zoomIn()));
