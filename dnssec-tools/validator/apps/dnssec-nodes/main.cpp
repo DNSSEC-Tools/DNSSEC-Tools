@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     action->setActionGroup(filterActions);
     filterMenu->addSeparator();
 
-    action = filterMenu->addAction("Failed nodes to the top");
+    action = filterMenu->addAction("Filter by Data Status");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterBadToTop()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
