@@ -464,13 +464,15 @@ void GraphWidget::setInfo(Node *node) {
     QString buildString;
     Node *nodeIterator = node;
     while (nodeIterator && nodeIterator->nodeName() != "<root>") {
-        buildString = buildString + "." + nodeIterator->nodeName();
+        buildString = (buildString.isEmpty() ? "" : buildString + ".") + nodeIterator->nodeName();
         nodeIterator = nodeIterator->parent();
     }
+#ifdef ADD_ADDITIONAL_INFO_IN
     if (node->additionalInfo().length() > 0) {
         buildString += " (" + node->additionalInfo() + ")";
     }
     buildString += + "[" + node->getSubData() + "]";
+#endif
     setInfo(buildString);
     m_nodeList->setSelectedNode(node);
 }
