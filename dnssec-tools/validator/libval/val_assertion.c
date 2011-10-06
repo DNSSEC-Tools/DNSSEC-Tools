@@ -3734,8 +3734,6 @@ verify_zonecut_in_rrsig(struct val_result_chain *results, u_char *expected_zc)
         return 0;
 
     if (val_does_not_exist(results->val_rc_status)) {
-        if (results->val_rc_proof_count == 0)
-            return 0;
         /* Check if the zonecut in each proof's RRSIG matches the expected zonecut */
         for (i=0; i < results->val_rc_proof_count; i++) {
             struct val_authentication_chain *as = results->val_rc_proofs[i];
@@ -4041,10 +4039,15 @@ verify_provably_insecure(val_context_t * context,
          * If this is not a proof, check that curzone_n matches 
          * the zonecut in the RRSIG for the DS
          */
-        else if (val_does_not_exist(results->val_rc_status) ||
-                   !verify_zonecut_in_rrsig(results, curzone_n)) {
-
-            val_log(context, LOG_NOTICE, "verify_provably_insecure(): Misplaced DS non-existance proof for %s", tempname_p);
+        else if (!val_does_not_exist(results->val_rc_status)) {
+            if (!verify_zonecut_in_rrsig(results, curzone_n)) {
+                val_log(context, LOG_NOTICE, 
+                        "verify_provably_insecure(): Inconsistent zonecut for DS at %s", tempname_p);
+                goto err; 
+            }
+        } else {
+            val_log(context, LOG_NOTICE, 
+                    "verify_provably_insecure(): Misplaced DS non-existance proof for %s", tempname_p);
             goto err; 
         }
 
