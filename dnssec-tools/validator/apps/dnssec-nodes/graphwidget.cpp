@@ -109,6 +109,9 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     val_log_add_cb(NULL, 99, &val_collect_logs);
 
     setPrefs();
+
+    if (!fileName.isEmpty())
+        m_logWatcher->parseLogFile(fileName);
 }
 
 void GraphWidget::addItem(QGraphicsItem *newItem) {
