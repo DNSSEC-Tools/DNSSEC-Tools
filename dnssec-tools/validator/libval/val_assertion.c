@@ -2366,6 +2366,29 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
             }
             
             offset = n->the_set->rrs_data->rr_rdata_length - nsec_bit_field;
+
+            /*
+             * For DS type non-existence NS bit must be set
+             */
+            if (qtype_h == ns_t_ds && 
+                !(is_type_set((&(n->the_set->rrs_data->
+                                rr_rdata[nsec_bit_field])), offset, ns_t_ns))) {
+                val_log(ctx, LOG_INFO, 
+                        "prove_nsec_span(): NSEC error - NS must be set for DS type non-existence");
+                continue;
+            
+            }
+
+            /*
+             * NS can only be set if the SOA bit is not set
+             */ 
+            if (qtype_h == ns_t_ds &&
+                (is_type_set((&(n->the_set->rrs_data->
+                                rr_rdata[nsec_bit_field])), offset, ns_t_soa))) {
+                val_log(ctx, LOG_INFO, 
+                        "prove_nsec_span(): NSEC error - SOA bit must not be set for DS type non-existence");
+                continue;
+            }
         
             if (is_type_set((&(n->the_set->rrs_data->
                             rr_rdata[nsec_bit_field])), offset, qtype_h)) { 
@@ -2739,17 +2762,27 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
                         nsec3_bm_len = n->the_set->rrs_data->rr_rdata_length - n->nd.bit_field;
 
                    if (nsec3_bm_len > 0) {
+                        /*
+                         * For DS type non-existence NS bit must be set
+                         */
+                        if (qtype_h == ns_t_ds && 
+                                !(is_type_set((&(n->the_set->rrs_data->
+                                rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_ns))) {
+
+                           val_log(ctx, LOG_INFO, 
+                                   "prove_nsec3_span(): NSEC3 error - NS must be set for DS type non-existence");
+                           FREE(hash);
+                           continue;
+                        } 
+
                        /*
                         * NS can only be set if the SOA bit is not set 
                         */
-                       if (qtype_h == ns_t_ds && 
-                                (is_type_set((&(n->the_set->rrs_data->
-                                rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_ns)) &&
-                           (is_type_set((&(n->the_set->rrs_data->
-                                rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_soa))) {
-
+                       if (qtype_h == ns_t_ds &&
+                               is_type_set((&(n->the_set->rrs_data->
+                                rr_rdata[n->nd.bit_field])), nsec3_bm_len, ns_t_soa)) {
                            val_log(ctx, LOG_INFO, 
-                                   "prove_nsec3_span(): NSEC3 error - NS can only be set if the SOA bit is not set");
+                                   "prove_nsec3_span(): NSEC3 error - SOA bit must not be set for DS type non-existence");
                            FREE(hash);
                            continue;
                        }
@@ -3684,6 +3717,58 @@ prove_existence(val_context_t * context,
 }
 #endif
 
+
+/* 
+ * Check that the zonecut seen in the RRSIG matches the expected zonecut 
+ * return 1 if it matches, 0 if not.
+ */ 
+
+static
+verify_zonecut_in_rrsig(struct val_result_chain *results, u_char *expected_zc)
+{
+    int i;
+    u_char *zc = NULL;
+
+    if (results == NULL || expected_zc == NULL)
+        return 0;
+
+    if (val_does_not_exist(results->val_rc_status)) {
+        if (results->val_rc_proof_count == 0)
+            return 0;
+        /* Check if the zonecut in each proof's RRSIG matches the expected zonecut */
+        for (i=0; i < results->val_rc_proof_count; i++) {
+            struct val_authentication_chain *as = results->val_rc_proofs[i];
+            if (as && as->val_ac_rrset && as->val_ac_rrset->val_rrset_sig) {
+                u_char *rdata = as->val_ac_rrset->val_rrset_sig->rr_rdata;
+                if (rdata && as->val_ac_rrset->val_rrset_sig->rr_rdata_length > SIGNBY) {
+                    zc = &rdata[SIGNBY];
+                    if (namecmp(zc, expected_zc)) {
+                        return 0;
+                    }
+                    /* matches, check other proofs */
+                }
+            }
+        } 
+    } else {
+        struct val_authentication_chain *as = results->val_rc_answer;
+        /* Check if the zonecut in the RRSIG matches the expected zonecut */
+        if (as && as->val_ac_rrset && as->val_ac_rrset->val_rrset_sig) {
+            u_char *rdata = as->val_ac_rrset->val_rrset_sig->rr_rdata;
+            if (rdata && as->val_ac_rrset->val_rrset_sig->rr_rdata_length > SIGNBY) {
+                zc = &rdata[SIGNBY];
+                if (namecmp(zc, expected_zc)) {
+                    return 0;
+                }
+            }
+        }
+    }
+
+    if (zc != NULL)
+        return 1;
+
+    return 0;
+}
+
 /*
  * This function does the provably insecure check in a
  * top-down fashion
@@ -3937,10 +4022,29 @@ verify_provably_insecure(val_context_t * context,
             goto err; 
         }
 
-        /* if non-existent set as provably insecure and break */
-        if (val_does_not_exist(results->val_rc_status)) {
-            val_log(context, LOG_INFO, "verify_provably_insecure(): %s is provably insecure", name_p);
-            *is_pinsecure = 1;
+        /* 
+         * if non-existent set as provably insecure and break 
+         * It's got to be a missing type, nothing else will do 
+         */
+        if (results->val_rc_status == VAL_NONEXISTENT_TYPE ||
+            results->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN) {
+            /* 
+             * Check that curzone_n matches the zonecut seen in the proof RRSIG 
+             */ 
+            if (verify_zonecut_in_rrsig(results, curzone_n)) {
+                val_log(context, LOG_INFO, "verify_provably_insecure(): %s is provably insecure", name_p);
+                *is_pinsecure = 1;
+            }
+        } 
+        /* 
+         * If this is not a proof, check that curzone_n matches 
+         * the zonecut in the RRSIG for the DS
+         */
+        else if (val_does_not_exist(results->val_rc_status) ||
+                   !verify_zonecut_in_rrsig(results, curzone_n)) {
+
+            val_log(context, LOG_NOTICE, "verify_provably_insecure(): Misplaced DS non-existance proof for %s", tempname_p);
+            goto err; 
         }
 
         if (*is_pinsecure) {
