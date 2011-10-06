@@ -41,8 +41,8 @@ LogWatcher::LogWatcher(GraphWidget *parent)
       m_bindPIRegexp(BIND_MATCH "marking.*proveunsecure"),
       m_bindDNERegexp(BIND_PAREN_MATCH "nonexistence validation OK"),
       m_bindTrustedAnswerRegexp(BIND_MATCH "marking as answer.*dsfetched"),
-      m_bindAnswerResponseRegexp(BIND_PAREN_MATCH "answer_response"),
       m_bindNoAnswerResponseRegexp(BIND_PAREN_MATCH "noanswer_response"),
+      m_bindAnswerResponseRegexp(BIND_PAREN_MATCH "answer_response"),
       m_bindProvenNSECRegexp(BIND_MATCH "nonexistence proof\\(s\\) found")
 {
     m_nodeList = m_graphWidget->nodeList();
