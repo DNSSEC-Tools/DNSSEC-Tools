@@ -110,6 +110,8 @@ void NodeList::clear()
         delete anEdge;
     }
 
+    m_centerNode = 0;
+
     m_nodes.clear();
     m_edges.clear();
 
