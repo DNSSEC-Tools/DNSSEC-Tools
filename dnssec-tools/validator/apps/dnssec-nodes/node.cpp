@@ -377,3 +377,17 @@ QMap<QString, DNSData>Node::getAllSubData()
 {
     return m_subData;
 }
+
+bool Node::subDataExistsFor(QString type)
+{
+    if (m_subData.contains(type)) {
+        qDebug() << m_fqdn << " contains data for " << type;
+        return true;
+    } else {
+        qDebug() << m_fqdn << " contains NO data for " << type;
+
+    }
+
+    qDebug() << "  types it has" << m_subData.keys();
+    return false;
+}

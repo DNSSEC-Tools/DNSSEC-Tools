@@ -4,6 +4,7 @@
 #include "Filters/DNSSECStatusFilter.h"
 #include "Filters/NameFilter.h"
 #include "Filters/NotFilter.h"
+#include "Filters/TypeFilter.h"
 
 #include "Effects/SetAlphaEffect.h"
 #include "Effects/SetZValue.h"
@@ -246,11 +247,27 @@ void NodeList::filterByName() {
     effect->addEffect(new SetZValue(-5));
     effect->addEffect(new SetAlphaEffect(64));
 
-    Filter *filter = new NotFilter(new NameFilter("cnn"));
+    Filter *filter = new NotFilter(new NameFilter(""));
     setupFilterBox(filter);
 
     addFilterAndEffect(filter, effect);
 
+    applyFilters();
+}
+
+void NodeList::filterByDataType()
+{
+    Filter *filter;
+
+    deleteFiltersAndEffects();
+
+    MultiEffect *effect = new MultiEffect();
+    effect->addEffect(new SetZValue(-5));
+    effect->addEffect(new SetAlphaEffect(64));
+
+    addFilterAndEffect(filter = new NotFilter(new TypeFilter("A")), effect);
+
+    setupFilterBox(filter);
     applyFilters();
 }
 
@@ -316,4 +333,5 @@ void NodeList::setupFilterBox(Filter *filter)
     }
     //filterEditBox->connect(filterEditBox, SIGNAL(textChanged(QString)), graphWidget->nodeList(), SLOT(setFilterFQDNExpression(QString)));
 }
+
 
