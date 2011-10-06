@@ -79,7 +79,7 @@ public:
 
     void busy();
     void unbusy();
-    void doActualLookup(const QString &lookupString);
+    void doActualLookup(const QString &lookupString, int lookupType = 1); // default is type "A"
 
     void addItem(QGraphicsItem *newItem);
     void removeItem(QGraphicsItem *removeThis);
@@ -119,6 +119,7 @@ public slots:
     void addRootNode(QString newNode);
     void doLookupFromLineEdit();
     void doLookup(QString lookupString);
+    void setLookupType(int type);
     void scaleWindow();
     void resizeEvent(QResizeEvent *event);
     void openLogFile();
@@ -156,6 +157,7 @@ private:
     QTimer      *m_timer;
     LayoutType   m_layoutType;
     int          m_childSize;
+    int          m_lookupType;
 
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;

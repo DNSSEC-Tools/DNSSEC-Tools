@@ -41,6 +41,7 @@
 #include <QtGui>
 
 #include "graphwidget.h"
+#include "TypeMenu.h"
 
 int main(int argc, char **argv)
 {
@@ -71,8 +72,13 @@ int main(int argc, char **argv)
 
 
     // Edit box at the bottom
+    QPushButton *lookupTypeButton = new QPushButton("A");
+    TypeMenu *lookupType = new TypeMenu(lookupTypeButton);
     hbox->addWidget(new QLabel("Perform a Lookup:"));
     hbox->addWidget(editBox);
+    hbox->addWidget(new QLabel("For Type:"));
+    hbox->addWidget(lookupTypeButton);
+    lookupType->connect(lookupType, SIGNAL(typeSet(int)), graphWidget, SLOT(setLookupType(int)));
 
     QMainWindow mainWindow;
     mainWidget->setLayout(layout);
