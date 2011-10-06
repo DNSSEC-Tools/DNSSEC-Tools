@@ -3724,7 +3724,7 @@ prove_existence(val_context_t * context,
  * return 1 if it matches, 0 if not.
  */ 
 
-static
+static int 
 verify_zonecut_in_rrsig(struct val_result_chain *results, u_char *expected_zc)
 {
     int i;
