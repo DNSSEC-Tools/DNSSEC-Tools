@@ -47,6 +47,8 @@ public:
     bool   limitChildren(Node *node);
 
     void   filterNode(Node *node);
+    void   resetNode(Node *node);
+    void   reApplyFiltersTo(Node *node);
     void   setFilterBox(QHBoxLayout *filterBox);
 
     void   setSelectedNode(Node *node);

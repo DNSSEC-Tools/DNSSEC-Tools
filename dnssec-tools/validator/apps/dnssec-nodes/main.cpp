@@ -71,6 +71,7 @@ int main(int argc, char **argv)
 
 
     // Edit box at the bottom
+    hbox->addWidget(new QLabel("Perform a Lookup:"));
     hbox->addWidget(editBox);
 
     QMainWindow mainWindow;
