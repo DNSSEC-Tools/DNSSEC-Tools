@@ -3476,6 +3476,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     while (temp_qfq) {
         struct val_query_chain *q = temp_qfq->qfq_query;
         if ((q->qc_type_h != ns_t_ds) /* match any type but DS */
+            && (q->qc_state == Q_ANSWERED) 
             && (q->qc_zonecut_n != NULL)
             && (q->qc_class_h == ns_c_in)
             && (namecmp(q->qc_original_name, qname_n) == 0)) {
@@ -3963,9 +3964,7 @@ verify_provably_insecure(val_context_t * context,
         } 
        
         /* find next zone cut going down from the trust anchor */
-        if ((VAL_NO_ERROR !=
-                find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n))
-                || (*done && zonecut_n == NULL)) {
+        if (VAL_NO_ERROR != find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n)) {
 
             val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", tempname_p);
             goto err;
@@ -3977,7 +3976,10 @@ verify_provably_insecure(val_context_t * context,
             goto donefornow;
         }
 
-        /* if the zonecut is same as before, try again */
+        /* if we failed to get a zonecut or the zonecut is same as before, try again with the next name */
+        if (zonecut_n == NULL) {
+            continue;
+        }
         if (!namecmp(zonecut_n, curzone_n)) {
             FREE(zonecut_n);
             zonecut_n = NULL;
