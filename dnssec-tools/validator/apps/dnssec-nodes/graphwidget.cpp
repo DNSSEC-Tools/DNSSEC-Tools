@@ -72,7 +72,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     : QGraphicsView(parent), timerId(0), m_editor(editor),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
-      m_layoutType(springyLayout), m_childSize(30),
+      m_layoutType(springyLayout), m_childSize(30), m_lookupType(ns_t_a),
       m_infoBox(infoBox), m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this))
 {
     myScene = new QGraphicsScene(this);
@@ -360,25 +360,26 @@ void GraphWidget::layoutCircleNode(Node *node, qreal startX, qreal startY, qreal
 }
 
 void GraphWidget::doLookup(QString src) {
-    doActualLookup(src);
+    doActualLookup(src, m_lookupType);
 }
 
 void GraphWidget::addRootNode(QString newNode) {
     myScene->addItem(new Node(this, newNode));
 }
 
-void GraphWidget::doActualLookup(const QString &lookupString)
+void GraphWidget::doActualLookup(const QString &lookupString, int lookupType)
 {
     val_status_t val_status;
     struct addrinfo *aitop = NULL;
     int ret;
     u_char buf[4096];
+    Node *node = 0;
 
     busy();
 
     // perform the lookup
     ret = val_res_query(NULL, lookupString.toUtf8(), ns_c_in,
-                        ns_t_a, buf, sizeof(buf), &val_status);
+                        lookupType, buf, sizeof(buf), &val_status);
 
     // do something with the results
     if (ret <= 0) {
@@ -394,7 +395,7 @@ void GraphWidget::doActualLookup(const QString &lookupString)
         //setSecurityStatus(val_status);
     } else {
         QColor color;
-        Node *node = m_nodeList->node(lookupString);
+        node = m_nodeList->node(lookupString);
         DNSData::Status result;
 
         if (val_isvalidated(val_status)) {
@@ -413,6 +414,8 @@ void GraphWidget::doActualLookup(const QString &lookupString)
         m_logWatcher->parseLogMessage(logMessage);
     }
     val_log_strings.clear();
+    if (node)
+        m_nodeList->reApplyFiltersTo(node);
 
     freeaddrinfo(aitop);
     unbusy();
@@ -557,4 +560,9 @@ void GraphWidget::help()
                    );
     msgBox.setStandardButtons(QMessageBox::Close);
     msgBox.exec();
+}
+
+void GraphWidget::setLookupType(int type)
+{
+    m_lookupType = type;
 }
