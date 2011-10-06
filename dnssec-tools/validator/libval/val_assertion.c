@@ -3468,25 +3468,26 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     if (qname_n == NULL)
         return VAL_NO_ERROR;
 
-    /* if we already have a DNSKEY or DS, pick up zonecut info from here */
-    if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname_n, 
-                               ns_t_dnskey, ns_c_in, VAL_QFLAGS_ANY)) &&
-            temp_qfq->qfq_query->qc_state == Q_ANSWERED &&
-            temp_qfq->qfq_query->qc_zonecut_n != NULL &&
-            namename(qname_n, temp_qfq->qfq_query->qc_zonecut_n)) {
+    /* 
+     * if we already have a matching query structure with the zonecut 
+     * pick up the info from there 
+     */
+    temp_qfq = *queries;
+    while (temp_qfq) {
+        struct val_query_chain *q = temp_qfq->qfq_query;
+        if ((q->qc_type_h != ns_t_ds) /* match any type but DS */
+            && (q->qc_zonecut_n != NULL)
+            && (q->qc_class_h == ns_c_in)
+            && (namecmp(q->qc_original_name, qname_n) == 0)) {
+            break;
+        }
+        temp_qfq = temp_qfq->qfq_next;
+    }
 
+    if (NULL != temp_qfq) { 
         zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
         *done = 1;
         
-    } else if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, 
-                            qname_n, ns_t_ds, ns_c_in, VAL_QFLAGS_ANY)) &&
-            temp_qfq->qfq_query->qc_state == Q_ANSWERED &&
-            temp_qfq->qfq_query->qc_ans != NULL && /* the zonecut of the proof would be the parent ! */
-            temp_qfq->qfq_query->qc_zonecut_n != NULL &&
-            namename(qname_n, temp_qfq->qfq_query->qc_zonecut_n)) {
-        
-        zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
-        *done = 1;
     } else {
 
       u_char *cur_q = qname_n;  
