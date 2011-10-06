@@ -38,9 +38,11 @@ void NameFilter::configWidgets(QHBoxLayout *hbox)
 {
     QLabel *filterLabel = new QLabel("Filter by RegExp:");
     hbox->addWidget(filterLabel);
+
     QLineEdit *filterEditBox = new QLineEdit();
     hbox->addWidget(filterEditBox);
     filterEditBox->setText(m_searchName);
+    filterEditBox->setFocus();
 
     connect(filterEditBox, SIGNAL(textChanged(QString)), this, SLOT(setSearchName(QString)));
 }
