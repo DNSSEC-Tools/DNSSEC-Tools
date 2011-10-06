@@ -51,7 +51,7 @@
 #include "DetailsViewer.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
-    : m_parent(0), graph(graphWidget), m_nodeName(nodeName), m_fqdn(fqdn), m_depth(depth), m_additionalInfo(""),
+    : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth), m_additionalInfo(""),
       m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255)
 {
     setFlag(ItemIsMovable);

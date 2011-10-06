@@ -5,14 +5,14 @@
 #include <qdebug.h>
 
 NameFilter::NameFilter(const QString &searchName)
-    : m_searchName(searchName)
+    : m_searchName(searchName.toLower())
 {
     setRegExp();
 }
 
 void NameFilter::setSearchName(QString searchName)
 {
-    m_searchName = searchName;
+    m_searchName = searchName.toLower();
     setRegExp();
 }
 
