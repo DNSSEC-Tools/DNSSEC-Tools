@@ -95,6 +95,9 @@ int main(int argc, char **argv)
 
     QMenuBar *menubar = mainWindow.menuBar();
 
+    //
+    // File Menu
+    //
     QMenu *menu = menubar->addMenu("&File");
 
     menu->addSeparator();
@@ -109,6 +112,9 @@ int main(int argc, char **argv)
 
     action = menu->addAction("&ReRead All Log Files");
     action->connect(action, SIGNAL(triggered()), graphWidget->logWatcher(), SLOT(reReadLogFile()));
+
+    QMenu *previousMenu = menu->addMenu("Previous Logs");
+    graphWidget->setPreviousFileList(previousMenu);
 
     menu->addSeparator();
 

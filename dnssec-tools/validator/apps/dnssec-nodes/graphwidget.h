@@ -52,6 +52,7 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QFile>
 #include <QtCore/QList>
+#include <QtCore/QSignalMapper>
 #include <QtGui/QPushButton>
 
 #include "LogWatcher.h"
@@ -106,6 +107,9 @@ public:
     void setPrefs();
     bool animateNodeMovements();
 
+    void openThisLogFile(QString logFile);
+    void setPreviousFileList(QMenu *menu = 0);
+
 public slots:
     void shuffle();
     void zoomIn();
@@ -124,6 +128,7 @@ public slots:
     void scaleWindow();
     void resizeEvent(QResizeEvent *event);
     void openLogFile();
+    void openPreviousLogFile(int which);
 
     void toggleLockedNodes();
     void setLockedNodes(bool newVal);
@@ -166,10 +171,14 @@ private:
     QLabel      *m_infoLabel;
     QPushButton *m_infoMoreButton;
     QLabel      *m_nodeInfoLabel;
+    QMenu       *m_previousFileMenu;
+    QSignalMapper m_mapper;
 
     // NodeList *MUST* come before LogWatcher in init calls
     NodeList    *m_nodeList;
     LogWatcher  *m_logWatcher;
+
+    QStringList  m_previousFiles;
 };
 //! [0]
 
