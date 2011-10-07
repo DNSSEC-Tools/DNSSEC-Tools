@@ -565,4 +565,5 @@ void GraphWidget::help()
 void GraphWidget::setLookupType(int type)
 {
     m_lookupType = type;
+    doLookupFromLineEdit();
 }
