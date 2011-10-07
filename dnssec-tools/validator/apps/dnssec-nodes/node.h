@@ -87,9 +87,6 @@ public:
     QPainterPath shape() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
-    void setAdditionalInfo(const QString &info);
-    QString additionalInfo() const;
-
     void addSubData(const DNSData &data);
     QString getSubData();
     QMap<QString, DNSData> getAllSubData();
@@ -126,7 +123,6 @@ private:
     QString      m_fqdn;
     int          m_depth;
     QStringList  m_logMessages;
-    QString      m_additionalInfo;
     QMap<QString, DNSData>  m_subData;
     int            m_accessCount;
     time_t         m_accessTime;
