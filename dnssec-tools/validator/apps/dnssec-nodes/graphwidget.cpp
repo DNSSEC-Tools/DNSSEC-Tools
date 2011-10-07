@@ -60,6 +60,8 @@
 
 #include <QTimer>
 
+const int maxHistory = 10;
+
 static QStringList val_log_strings;
 void val_collect_logs(struct val_log *logp, int level, const char *buf)
 {
@@ -73,7 +75,8 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
       m_layoutType(springyLayout), m_childSize(30), m_lookupType(ns_t_a), m_animateNodeMovements(true),
-      m_infoBox(infoBox), m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this))
+      m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
+      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this))
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -504,6 +507,74 @@ void GraphWidget::createStartingNode()
     centerNode->addSubData(DNSData("DNSKEY", DNSData::TRUSTED));
 }
 
+void GraphWidget::openPreviousLogFile(int which) {
+    if (which > m_previousFiles.count()) {
+        QMessageBox uhoh;
+        uhoh.setText("Critical Error: I can't find which file to open.  Please report this bug.");
+        uhoh.exec();
+        return;
+    }
+
+    QString whichFile = m_previousFiles[which];
+    openThisLogFile(whichFile);
+}
+
+void GraphWidget::openThisLogFile(QString logFile) {
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+
+    settings.setValue("logFile", logFile);
+    if (logFile.length() > 0) {
+        bool oldAnimate = m_animateNodeMovements;
+        m_animateNodeMovements = false;
+        m_logWatcher->parseLogFile(logFile);
+        m_animateNodeMovements = oldAnimate;
+    }
+
+    m_previousFiles.push_front(logFile);
+    while (m_previousFiles.count() > maxHistory) {
+        m_previousFiles.pop_back();
+    }
+
+    settings.beginWriteArray("previousLogFiles", m_previousFiles.count());
+    int i = 0;
+    foreach (QString fileName, m_previousFiles) {
+        settings.setArrayIndex(i++);
+        settings.setValue("previousFile", fileName);
+    }
+    settings.endArray();
+
+    setPreviousFileList();
+}
+
+void GraphWidget::setPreviousFileList(QMenu *menu) {
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    QAction   *action;
+    m_previousFiles.clear();
+
+    // default to the previously saved menu
+    if (!menu && m_previousFileMenu)
+        menu = m_previousFileMenu;
+    if (menu)
+        menu->clear();
+
+    int size = settings.beginReadArray("previousLogFiles");
+    for(int i = 0; i < size; i++) {
+        settings.setArrayIndex(i);
+        m_previousFiles.push_back(settings.value("previousFile").toString());
+        if (menu) {
+            action = menu->addAction(m_previousFiles.last());
+            connect(action, SIGNAL(triggered()), &m_mapper, SLOT(map()));
+            m_mapper.setMapping(action, i);
+        }
+    }
+
+    // save for future reloading
+    if (!m_previousFileMenu) {
+        connect(&m_mapper, SIGNAL(mapped(int)), this, SLOT(openPreviousLogFile(int)));
+    }
+    m_previousFileMenu = menu;
+}
+
 void GraphWidget::openLogFile() {
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
     QString chosenFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
@@ -514,14 +585,8 @@ void GraphWidget::openLogFile() {
     if (!dialog.exec())
         return;
 
-    chosenFile = dialog.selectedFiles()[0];
-    settings.setValue("logFile", chosenFile);
-    if (chosenFile.length() > 0) {
-        bool oldAnimate = m_animateNodeMovements;
-        m_animateNodeMovements = false;
-        m_logWatcher->parseLogFile(chosenFile);
-        m_animateNodeMovements = oldAnimate;
-    }
+    openThisLogFile(dialog.selectedFiles()[0]);
+
 }
 
 void GraphWidget::showPrefs()
