@@ -1796,11 +1796,16 @@ digest_response(val_context_t * context,
                     soa_seen = 1;
                 }
 
-                SAVE_RR_TO_LIST(resp_ns, 
+                if (!nothing_other_than_alias ||
+                        (namename(matched_q->qc_original_name, rrs_zonecut_n) &&
+                         namename(name_n, rrs_zonecut_n))) {
+                    /* Only save proofs that are relevant to the main query */
+                    SAVE_RR_TO_LIST(resp_ns, 
                                 &learned_proofs, name_n, type_h,
                                 set_type_h, class_h, ttl_h, hptr, rdata,
                                 rdata_len_h, from_section, authoritive,
                                 iterative, rrs_zonecut_n);
+                }
             } else if (set_type_h == ns_t_ns) {
                 /* 
                  * The zonecut information for name servers is 
