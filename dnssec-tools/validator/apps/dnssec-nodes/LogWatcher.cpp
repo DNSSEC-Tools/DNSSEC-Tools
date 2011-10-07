@@ -52,7 +52,6 @@ LogWatcher::LogWatcher(GraphWidget *parent)
 bool LogWatcher::parseLogMessage(QString logMessage) {
     QColor color;
     QString nodeName;
-    QString additionalInfo = "";
     QList<DNSData> dnsDataNodes;
     Node *thenode;
     DNSData result("UNKNOWN", DNSData::UNKNOWN);
@@ -77,7 +76,6 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setRecordType(m_validatedRegexp.cap(2));
         result.addDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-        additionalInfo = "The data for this node has been Validated";
 
     } else if (m_validatedChainPartRegexp.indexIn(logMessage) > -1) {
         if (m_graphWidget && !m_graphWidget->showNsec3() && m_validatedChainPartRegexp.cap(2) == "NSEC3")
@@ -88,21 +86,18 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setRecordType(m_validatedChainPartRegexp.cap(2));
         result.addDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_validatedChainPartRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-        additionalInfo = "The data for this node has been ValidatedChainPart";
 
     } else if (m_bogusRegexp.indexIn(logMessage) > -1) {
         nodeName = m_bogusRegexp.cap(1);
         result.setRecordType(m_bogusRegexp.cap(2));
         result.addDNSSECStatus(DNSData::FAILED);
         logMessage.replace(m_bogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
-        additionalInfo = "DNSSEC Security for this Node Failed";
 
     } else if (m_trustedRegexp.indexIn(logMessage) > -1) {
         nodeName = m_trustedRegexp.cap(1);
         result.setRecordType(m_trustedRegexp.cap(2));
         result.addDNSSECStatus(DNSData::TRUSTED);
         logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\2 record for \\1 </font></b>");
-        additionalInfo = "Data is trusted, but not proven to be secure";
 
     } else if (m_pinsecure2Regexp.indexIn(logMessage) > -1) {
         nodeName = m_pinsecure2Regexp.cap(1);
@@ -111,7 +106,6 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         // XXX: need the query type
         //result.setRecordType(m_validatedRegexp.cap(2));
         logMessage.replace(m_pinsecure2Regexp, ":<b><font color=\"brown\"> \\1 (\\2) is provably insecure </font></b>");
-        additionalInfo = "This node has been proven to be <b>not</b> DNSEC protected";
 
     } else if (m_pinsecureRegexp.indexIn(logMessage) > -1) {
         nodeName = m_pinsecureRegexp.cap(1);
@@ -120,27 +114,23 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.addDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
         result.setRecordType("DS");
         logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 is provably insecure </font></b>");
-        additionalInfo = "This node has been proven to be <b>not</b> DNSEC protected";
 
     } else if (m_dneRegexp.indexIn(logMessage) > -1) {
         nodeName = m_dneRegexp.cap(1);
         result.setRecordType(m_dneRegexp.cap(2));
         result.addDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
         logMessage.replace(m_dneRegexp, ":<b><font color=\"brown\"> \\1 provably does not exist </font></b>");
-        additionalInfo = "This node has been proven to not exist in the DNS";
 
     } else if (m_maybeDneRegexp.indexIn(logMessage) > -1) {
         nodeName = m_maybeDneRegexp.cap(1);
         result.setRecordType(m_maybeDneRegexp.cap(2));
         result.addDNSSECStatus(DNSData::DNE);
-        additionalInfo = "This node supposedly doesn't exist, but its non-existence can't be proven.";
         logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> Record for \\2 for \\1 does not exist, but can't be proven' </font></b>");
 
     } else if (m_ignoreValidationRegexp.indexIn(logMessage) > -1) {
         nodeName = m_ignoreValidationRegexp.cap(1);
         result.setRecordType(m_ignoreValidationRegexp.cap(2));
         result.addDNSSECStatus(DNSData::IGNORE);
-        additionalInfo = "The validation results for this data aren't needed.";
         logMessage.replace(m_ignoreValidationRegexp, ":<b><font color=\"brown\"> Record \\2 for \\1 validation results is not needed and is being ignored' </font></b>");
 
     } else if (m_cryptoSuccessRegexp.indexIn(logMessage) > -1) {
@@ -152,7 +142,6 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setRecordType(m_cryptoSuccessRegexp.cap(2));
         result.addDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_cryptoSuccessRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-        additionalInfo = "The data for this node has been Validated";
 
 
 
@@ -164,14 +153,12 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         result.setRecordType(m_bindBogusRegexp.cap(2));
         result.addDNSSECStatus(DNSData::FAILED);
         logMessage.replace(m_bindBogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
-        additionalInfo = "DNSSEC Security for this Node Failed";
 
     } else if (m_bindValidatedRegex.indexIn(logMessage) > -1) {
         nodeName = m_bindValidatedRegex.cap(1);
         result.setRecordType(m_bindValidatedRegex.cap(2));
         result.addDNSSECStatus(DNSData::VALIDATED);
         logMessage.replace(m_bindValidatedRegex, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-        additionalInfo = "The data for this node has been Validated";
 
     } else if (m_bindQueryRegexp.indexIn(logMessage) > -1) {
         nodeName = m_bindQueryRegexp.cap(1);
@@ -224,8 +211,6 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
         return false;
     thenode = m_nodeList->node(nodeName);
     thenode->addSubData(result);
-    if (additionalInfo.length() > 0)
-        thenode->setAdditionalInfo(additionalInfo);
     thenode->addLogMessage(logMessage);
     m_nodeList->reApplyFiltersTo(thenode);
     return true;

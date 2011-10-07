@@ -51,7 +51,7 @@
 #include "DetailsViewer.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
-    : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth), m_additionalInfo(""),
+    : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth),
       m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255)
 {
     setFlag(ItemIsMovable);
@@ -324,16 +324,6 @@ void Node::addLogMessage(const QString logMessage)
 QStringList Node::logMessages()
 {
     return m_logMessages;
-}
-
-void Node::setAdditionalInfo(const QString &info)
-{
-    m_additionalInfo = info;
-}
-
-QString Node::additionalInfo() const
-{
-    return m_additionalInfo;
 }
 
 void Node::addSubData(const DNSData &data)
