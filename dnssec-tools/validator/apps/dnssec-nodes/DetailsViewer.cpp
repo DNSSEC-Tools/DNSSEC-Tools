@@ -5,6 +5,9 @@
 #include <QtGui/QFont>
 #include <QtGui/QTabWidget>
 #include <QtGui/QFormLayout>
+#include <QtGui/QStandardItemModel>
+#include <QtGui/QTableView>
+#include <QtGui/QTableWidget>
 
 #include <qdebug.h>
 
@@ -33,18 +36,35 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     //
     // Data Collected Info
     //
-    widget = new QWidget();
-    QFormLayout *form = new QFormLayout();
-    widget->setLayout(form);
+    QTableWidget *table = new QTableWidget(node->getAllSubData().count(), 2, tabs);
+
+    table->setHorizontalHeaderItem(0, new QTableWidgetItem(tr("Record Type")));
+    table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Status")));
 
     QMapIterator<QString, DNSData> iterator(node->getAllSubData());
     QLabel *label;
+    QTableWidgetItem *item;
+    int row = 0;
     while(iterator.hasNext()) {
         iterator.next();
-        form->addRow(iterator.key(), label = new QLabel(iterator.value().DNSSECStringStatuses().join(",")));
-    }
 
-    tabs->addTab(widget, tr("Datatypes Seen"));
+        QColor backgroundColor = node->getColorForStatus(iterator.value().DNSSECStatus()).lighter(175);
+
+        item = new QTableWidgetItem(iterator.key());
+        item->setFlags(Qt::ItemIsEnabled);
+        item->setBackgroundColor(backgroundColor);
+        table->setItem(row, 0, item);
+
+        item = new QTableWidgetItem(iterator.value().DNSSECStringStatuses().join(", "));
+        item->setFlags(Qt::ItemIsEnabled);
+        item->setBackgroundColor(backgroundColor);
+        table->setItem(row, 1, item);
+
+        row++;
+    }
+    table->resizeColumnsToContents();
+
+    tabs->addTab(table, tr("Datatypes Seen"));
 
     //
     // Log Message Viewer
