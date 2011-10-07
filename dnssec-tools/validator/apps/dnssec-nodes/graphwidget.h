@@ -128,6 +128,7 @@ public slots:
     void scaleWindow();
     void resizeEvent(QResizeEvent *event);
     void openLogFile();
+    void selectAndOpenLogFile(QString defaultLogFile = "");
     void openPreviousLogFile(int which);
 
     void toggleLockedNodes();

@@ -517,7 +517,7 @@ void GraphWidget::openPreviousLogFile(int which) {
     }
 
     QString whichFile = m_previousFiles[which];
-    openThisLogFile(whichFile);
+    selectAndOpenLogFile(whichFile);
 }
 
 void GraphWidget::openThisLogFile(QString logFile, bool skipToEnd) {
@@ -579,10 +579,16 @@ void GraphWidget::setPreviousFileList(QMenu *menu) {
 }
 
 void GraphWidget::openLogFile() {
-    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
-    QString chosenFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
+    selectAndOpenLogFile();
+}
 
-    LogFilePicker filePicker(chosenFile);
+void GraphWidget::selectAndOpenLogFile(QString defaultLogFile) {
+    if (defaultLogFile.isEmpty()) {
+        QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+        defaultLogFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
+    }
+
+    LogFilePicker filePicker(defaultLogFile);
     if (!filePicker.exec())
         return;
 
