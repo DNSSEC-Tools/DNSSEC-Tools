@@ -4000,7 +4000,7 @@ verify_provably_insecure(val_context_t * context,
         /* try validating the DS */
         if (VAL_NO_ERROR != (retval = 
                     try_chase_query(context, zonecut_n, ns_c_in, 
-                                    ns_t_ds, flags, queries, &results, done))) {
+                                    ns_t_ds, flags|VAL_QUERY_AC_DETAIL, queries, &results, done))) {
             val_log(context, LOG_INFO, 
                     "verify_provably_insecure(): Cannot chase DS record for %s", tempname_p);
             goto err;
