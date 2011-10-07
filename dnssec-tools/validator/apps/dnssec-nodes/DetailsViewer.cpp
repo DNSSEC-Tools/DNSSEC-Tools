@@ -42,7 +42,6 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Status")));
 
     QMapIterator<QString, DNSData> iterator(node->getAllSubData());
-    QLabel *label;
     QTableWidgetItem *item;
     int row = 0;
     while(iterator.hasNext()) {
