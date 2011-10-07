@@ -530,7 +530,9 @@ void GraphWidget::openThisLogFile(QString logFile) {
         m_animateNodeMovements = oldAnimate;
     }
 
+    m_previousFiles.removeAll(logFile);
     m_previousFiles.push_front(logFile);
+
     while (m_previousFiles.count() > maxHistory) {
         m_previousFiles.pop_back();
     }
