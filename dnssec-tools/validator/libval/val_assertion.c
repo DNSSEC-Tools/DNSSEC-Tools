@@ -5441,7 +5441,7 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
         /* don't look at the cache for this query */
         val_log(context, LOG_DEBUG,
-                "ask_cache(): skipping cache for {%s %s(%d) %s(%d)}, flags=%d",
+                "ask_cache(): skipping cache for {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
@@ -5450,7 +5450,7 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     }
  
     val_log(context, LOG_DEBUG,
-            "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%d", name_p,
+            "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%x", name_p,
             p_class(next_q->qfq_query->qc_class_h),
             next_q->qfq_query->qc_class_h, p_type(next_q->qfq_query->qc_type_h),
             next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
@@ -5468,7 +5468,7 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (next_q->qfq_query->qc_state == Q_ANSWERED) {
 
         val_log(context, LOG_INFO,
-                "ask_cache(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%d",
+                "ask_cache(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
@@ -5533,7 +5533,7 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         response->di_answers = NULL;
     } else {
         val_log(context, LOG_INFO,
-                "ask_cache(): received error response for {%s %s(%d) %s(%d)}, flags=%d: %d",
+                "ask_cache(): received error response for {%s %s(%d) %s(%d)}, flags=%x: %d",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
@@ -5576,7 +5576,7 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
 
     if (query->qfq_query->qc_flags & VAL_QUERY_SKIP_RESOLVER) {
         val_log(context, LOG_INFO,
-                "ask_resolver(): skipping query {%s %s(%d) %s(%d)}, flags=%d%s",
+                "ask_resolver(): skipping query {%s %s(%d) %s(%d)}, flags=%x%s",
                 name_p, p_class(query->qfq_query->qc_class_h),
                 query->qfq_query->qc_class_h,
                 p_type(query->qfq_query->qc_type_h),
@@ -5586,7 +5586,7 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
     }
 
     val_log(context, LOG_INFO,
-            "ask_resolver(): sending query for {%s %s(%d) %s(%d)}, flags=%d%s",
+            "ask_resolver(): sending query for {%s %s(%d) %s(%d)}, flags=%x%s",
             name_p, p_class(query->qfq_query->qc_class_h),
             query->qfq_query->qc_class_h, p_type(query->qfq_query->qc_type_h),
             query->qfq_query->qc_type_h, query->qfq_query->qc_flags,
@@ -5696,7 +5696,7 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
                                sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO,
-                "ask_resolver(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%d",
+                "ask_resolver(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
@@ -5713,7 +5713,7 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
                                sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO,
-                "ask_resolver(): received error response for {%s %s(%d) %s(%d)}, flags=%d: %d",
+                "ask_resolver(): received error response for {%s %s(%d) %s(%d)}, flags=%x: %d",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
