@@ -107,7 +107,7 @@ public:
     void setPrefs();
     bool animateNodeMovements();
 
-    void openThisLogFile(QString logFile);
+    void openThisLogFile(QString logFile, bool skipToEnd = false);
     void setPreviousFileList(QMenu *menu = 0);
 
 public slots:

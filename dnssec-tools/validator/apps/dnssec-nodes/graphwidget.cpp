@@ -44,6 +44,7 @@
 #include "DNSData.h"
 #include "NodesPreferences.h"
 #include "DetailsViewer.h"
+#include "LogFilePicker.h"
 
 #include <QtGui>
 #include <qdebug.h>
@@ -519,14 +520,14 @@ void GraphWidget::openPreviousLogFile(int which) {
     openThisLogFile(whichFile);
 }
 
-void GraphWidget::openThisLogFile(QString logFile) {
+void GraphWidget::openThisLogFile(QString logFile, bool skipToEnd) {
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
 
     settings.setValue("logFile", logFile);
     if (logFile.length() > 0) {
         bool oldAnimate = m_animateNodeMovements;
         m_animateNodeMovements = false;
-        m_logWatcher->parseLogFile(logFile);
+        m_logWatcher->parseLogFile(logFile, skipToEnd);
         m_animateNodeMovements = oldAnimate;
     }
 
@@ -581,13 +582,11 @@ void GraphWidget::openLogFile() {
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
     QString chosenFile = settings.value("logFile", QString("/var/log/libval.log")).toString();
 
-    QFileDialog dialog;
-    dialog.selectFile(chosenFile);
-    dialog.setFileMode(QFileDialog::AnyFile);
-    if (!dialog.exec())
+    LogFilePicker filePicker(chosenFile);
+    if (!filePicker.exec())
         return;
 
-    openThisLogFile(dialog.selectedFiles()[0]);
+    openThisLogFile(filePicker.file(), filePicker.skipToEnd());
 
 }
 

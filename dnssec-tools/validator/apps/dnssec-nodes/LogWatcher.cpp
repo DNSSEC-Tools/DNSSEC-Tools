@@ -128,7 +128,7 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
     return true;
 }
 
-void LogWatcher::parseLogFile(const QString &fileToOpen) {
+void LogWatcher::parseLogFile(const QString &fileToOpen, bool skipToEnd) {
     QString fileName = fileToOpen;
     QFile       *logFile;
     QTextStream *logStream;
@@ -162,6 +162,10 @@ void LogWatcher::parseLogFile(const QString &fileToOpen) {
     // connect(logFile, SIGNAL(readyRead()), this, SLOT(parseTillEnd()));
 
     // qDebug() << "Opened: " << fileName;
+
+    // if requested, skip to the end of the file
+    if (skipToEnd)
+        logStream->seek(logStream->device()->bytesAvailable());
 
     parseTillEnd();
 }
