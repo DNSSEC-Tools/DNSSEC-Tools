@@ -104,6 +104,7 @@ public:
     NodeList   *nodeList() { return m_nodeList; }
 
     void setPrefs();
+    bool animateNodeMovements();
 
 public slots:
     void shuffle();
@@ -127,6 +128,7 @@ public slots:
     void toggleLockedNodes();
     void setLockedNodes(bool newVal);
     void setShowNSEC3Records(bool newVal);
+    void setAnimateNodeMovements(bool newValue);
 
     bool showNsec3() { return m_shownsec3; }
 
@@ -158,6 +160,7 @@ private:
     LayoutType   m_layoutType;
     int          m_childSize;
     int          m_lookupType;
+    bool         m_animateNodeMovements;
 
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;
