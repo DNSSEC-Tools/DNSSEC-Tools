@@ -32,7 +32,7 @@ class LogWatcher : public QObject
 public:
     LogWatcher(GraphWidget *parent = 0);
 
-    void parseLogFile(const QString &fileToOpen);
+    void parseLogFile(const QString &fileToOpen, bool skipToEnd = false);
     bool parseLogMessage(QString logMessage);
 
     void openLogFile();

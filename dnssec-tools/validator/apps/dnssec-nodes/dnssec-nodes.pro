@@ -17,7 +17,8 @@ HEADERS += \
     Filters/NotFilter.h \
     Effects/MultiEffect.h \
     Filters/TypeFilter.h \
-    TypeMenu.h
+    TypeMenu.h \
+    LogFilePicker.h
 
 SOURCES += \
         edge.cpp \
@@ -38,7 +39,8 @@ SOURCES += \
     Filters/NotFilter.cpp \
     Effects/MultiEffect.cpp \
     Filters/TypeFilter.cpp \
-    TypeMenu.cpp
+    TypeMenu.cpp \
+    LogFilePicker.cpp
 
 DEFINES += NETWORKACCESS
 
@@ -71,6 +73,8 @@ OTHER_FILES += \
     qtc_packaging/debian_harmattan/control \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog
+
+
 
 
 
