@@ -125,6 +125,11 @@ int main(int argc, char **argv)
     action->setCheckable(true);
     action->connect(action, SIGNAL(triggered(bool)), graphWidget, SLOT(setShowNSEC3Records(bool)));
 
+    action = menu->addAction("Animate Node Movemets");
+    action->setCheckable(true);
+    action->setChecked(graphWidget->animateNodeMovements());
+    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setAnimateNodeMovements(bool)));
+
     QMenu *layoutMenu = menu->addMenu("Layout");
     action = layoutMenu->addAction("tree");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToTree()));
@@ -168,10 +173,10 @@ int main(int argc, char **argv)
     // Help Menu
     //
     menu = menubar->addMenu("&Help");
-    action = menu->addAction("About DNSSEC-Nodes");
+    action = menu->addAction("&About DNSSEC-Nodes");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(about()));
 
-    action = menu->addAction("Help");
+    action = menu->addAction("&Help");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(help()));
 
 #if defined(Q_OS_SYMBIAN) || defined(Q_WS_MAEMO_5)

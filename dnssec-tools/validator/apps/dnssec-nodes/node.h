@@ -117,7 +117,7 @@ private:
     QSet<Edge *> edgeList;
     QSet<Node *> m_children;
     Node         *m_parent;
-    QPointF newPos;
+    QPointF      newPos;
     GraphWidget *graph;
     QString      m_nodeName;
     QString      m_fqdn;

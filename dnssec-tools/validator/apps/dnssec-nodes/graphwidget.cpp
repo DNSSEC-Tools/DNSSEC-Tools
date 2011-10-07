@@ -72,7 +72,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     : QGraphicsView(parent), timerId(0), m_editor(editor),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
-      m_layoutType(springyLayout), m_childSize(30), m_lookupType(ns_t_a),
+      m_layoutType(springyLayout), m_childSize(30), m_lookupType(ns_t_a), m_animateNodeMovements(true),
       m_infoBox(infoBox), m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this))
 {
     myScene = new QGraphicsScene(this);
@@ -322,7 +322,10 @@ int GraphWidget::layoutTreeNode(Node *node, int minX, int minY) {
     if (childNodes.count() > 0)
         runningMinX -= m_childSize;
 
-    node->setNewPos(QPointF(minX + (runningMinX - minX)/2, minY));
+    QPointF newpos(minX + (runningMinX - minX)/2, minY);
+    node->setNewPos(newpos);
+    if (! m_animateNodeMovements)
+        node->setPos(newpos);
     return runningMinX;
 }
 
@@ -356,7 +359,10 @@ void GraphWidget::layoutCircleNode(Node *node, qreal startX, qreal startY, qreal
         return;
     }
 
-    node->setNewPos(QPointF(startX, startY));
+    QPointF newpos(startX, startY);
+    node->setNewPos(newpos);
+    if (! m_animateNodeMovements)
+        node->setPos(newpos);
 }
 
 void GraphWidget::doLookup(QString src) {
@@ -533,6 +539,18 @@ void GraphWidget::setPrefs()
 
     m_nodeList->setMaxTime(settings.value("maxTime", 1).toInt());
     m_nodeList->setEnableMaxTime(settings.value("enableMaxNodes", false).toBool());
+
+    m_animateNodeMovements = settings.value("animateNodes", true).toBool();
+}
+
+void GraphWidget::setAnimateNodeMovements(bool newValue) {
+    m_animateNodeMovements = newValue;
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    settings.setValue("animateNodes", true);
+}
+
+bool GraphWidget::animateNodeMovements() {
+    return m_animateNodeMovements;
 }
 
 void GraphWidget::about()
