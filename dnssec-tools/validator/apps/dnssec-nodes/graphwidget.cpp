@@ -517,7 +517,10 @@ void GraphWidget::openLogFile() {
     chosenFile = dialog.selectedFiles()[0];
     settings.setValue("logFile", chosenFile);
     if (chosenFile.length() > 0) {
+        bool oldAnimate = m_animateNodeMovements;
+        m_animateNodeMovements = false;
         m_logWatcher->parseLogFile(chosenFile);
+        m_animateNodeMovements = oldAnimate;
     }
 }
 
