@@ -43,9 +43,35 @@ LogWatcher::LogWatcher(GraphWidget *parent)
       m_bindTrustedAnswerRegexp(BIND_MATCH "marking as answer.*dsfetched"),
       m_bindNoAnswerResponseRegexp(BIND_PAREN_MATCH "noanswer_response"),
       m_bindAnswerResponseRegexp(BIND_PAREN_MATCH "answer_response"),
-      m_bindProvenNSECRegexp(BIND_MATCH "nonexistence proof\\(s\\) found")
+      m_bindProvenNSECRegexp(BIND_MATCH "nonexistence proof\\(s\\) found"),
+
+      m_regexpList()
 {
     m_nodeList = m_graphWidget->nodeList();
+
+    // libval regexps
+    m_regexpList.push_back(RegexpData(m_validatedRegexp,          DNSData::VALIDATED, "green") );
+    m_regexpList.push_back(RegexpData(m_validatedChainPartRegexp, DNSData::VALIDATED, "green") );
+    m_regexpList.push_back(RegexpData(m_cryptoSuccessRegexp,      DNSData::VALIDATED, "green") );
+    m_regexpList.push_back(RegexpData(m_lookingUpRegexp,          DNSData::UNKNOWN,   "black") );
+    m_regexpList.push_back(RegexpData(m_bogusRegexp,              DNSData::FAILED,    "red") );
+    m_regexpList.push_back(RegexpData(m_trustedRegexp,            DNSData::TRUSTED,   "brown") );
+    m_regexpList.push_back(RegexpData(m_pinsecure2Regexp,         DNSData::TRUSTED,   "brown"));
+    m_regexpList.push_back(RegexpData(m_dneRegexp,                DNSData::VALIDATED | DNSData::DNE,   "green"));
+    m_regexpList.push_back(RegexpData(m_maybeDneRegexp,           DNSData::DNE,       "brown"));
+    m_regexpList.push_back(RegexpData(m_ignoreValidationRegexp,   DNSData::IGNORE,    "brown"));
+
+    // bind regexps
+    m_regexpList.push_back(RegexpData(m_bindBogusRegexp,          DNSData::FAILED,    "red"));
+    m_regexpList.push_back(RegexpData(m_bindValidatedRegex,       DNSData::VALIDATED, "green"));
+    m_regexpList.push_back(RegexpData(m_bindQueryRegexp,          DNSData::UNKNOWN,   "black"));
+    m_regexpList.push_back(RegexpData(m_bindPIRegexp,             DNSData::TRUSTED,   "brown"));
+    m_regexpList.push_back(RegexpData(m_bindTrustedAnswerRegexp,  DNSData::TRUSTED,   "brown"));
+    m_regexpList.push_back(RegexpData(m_bindAnswerResponseRegexp, DNSData::UNKNOWN,   "brown"));
+    // Unfortunately, this catches missing servers and stuff and doesn't mark *only* non-existance
+    // m_regexpList.push_back(RegexpData(m_bindNoAnswerResponseRegexp, DNSData::DNE,   "brown"));
+    m_regexpList.push_back(RegexpData(m_bindDNERegexp,            DNSData::DNE,       "brown"));
+    m_regexpList.push_back(RegexpData(m_bindProvenNSECRegexp,     DNSData::DNE | DNSData::VALIDATED,   "brown"));
 }
 
 
@@ -58,160 +84,46 @@ bool LogWatcher::parseLogMessage(QString logMessage) {
 
     // qDebug() << logMessage;
 
-    // ---------------------------------------------------------------
-    // match libval patterns
-    //
-    if (m_lookingUpRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_lookingUpRegexp.cap(1);
-        result.setRecordType(m_lookingUpRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::UNKNOWN);
-        logMessage.replace(m_lookingUpRegexp, "<b>looking up a \\2 record for \\1</b>  ");
+    // loop through all the registered regexps and mark them appropriately
+    QList< RegexpData >::const_iterator i = m_regexpList.constBegin();
+    QList< RegexpData >::const_iterator last = m_regexpList.constEnd();
+    while (i != last) {
+        if ((*i).regexp.indexIn(logMessage) > -1) {
+            if (m_graphWidget && !m_graphWidget->showNsec3() && (*i).regexp.cap(2) == "NSEC3")
+                return false;
+            if ((*i).regexp.cap(2) == "NSEC")
+                return false; // never show 'good' for something missing
 
-    } else if (m_validatedRegexp.indexIn(logMessage) > -1) {
-        if (m_graphWidget && !m_graphWidget->showNsec3() && m_validatedRegexp.cap(2) == "NSEC3")
-            return false;
-        if (m_validatedRegexp.cap(2) == "NSEC")
-            return false; // never show 'good' for something missing
-        nodeName = m_validatedRegexp.cap(1);
-        result.setRecordType(m_validatedRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::VALIDATED);
-        logMessage.replace(m_validatedRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
+            nodeName = (*i).regexp.cap(1);
+            result.setRecordType((*i).regexp.cap(2));
+            result.addDNSSECStatus((*i).status);
+            logMessage = "<b><font color=\"" + (*i).colorName + "\">" + logMessage + "</font></b>";
+            break;
+        }
+        i++;
+    }
 
-    } else if (m_validatedChainPartRegexp.indexIn(logMessage) > -1) {
-        if (m_graphWidget && !m_graphWidget->showNsec3() && m_validatedChainPartRegexp.cap(2) == "NSEC3")
-            return false;
-        if (m_validatedChainPartRegexp.cap(2) == "NSEC")
-            return false; // never show 'good' for something missing
-        nodeName = m_validatedChainPartRegexp.cap(1);
-        result.setRecordType(m_validatedChainPartRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::VALIDATED);
-        logMessage.replace(m_validatedChainPartRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-
-    } else if (m_bogusRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bogusRegexp.cap(1);
-        result.setRecordType(m_bogusRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::FAILED);
-        logMessage.replace(m_bogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
-
-    } else if (m_trustedRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_trustedRegexp.cap(1);
-        result.setRecordType(m_trustedRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::TRUSTED);
-        logMessage.replace(m_trustedRegexp, "<b><font color=\"brown\">Trusting result for \\2 record for \\1 </font></b>");
-
-    } else if (m_pinsecure2Regexp.indexIn(logMessage) > -1) {
-        nodeName = m_pinsecure2Regexp.cap(1);
-        result.addDNSSECStatus(DNSData::TRUSTED);
-        result.setRecordType(m_pinsecure2Regexp.cap(2));
-        // XXX: need the query type
-        //result.setRecordType(m_validatedRegexp.cap(2));
-        logMessage.replace(m_pinsecure2Regexp, ":<b><font color=\"brown\"> \\1 (\\2) is provably insecure </font></b>");
-
-    } else if (m_pinsecureRegexp.indexIn(logMessage) > -1) {
+    // This one can't be put in the normal list since it remarks the data type as DS
+    if (m_pinsecureRegexp.indexIn(logMessage) > -1) {
         nodeName = m_pinsecureRegexp.cap(1);
         // XXX: need the query type
         //result.setRecordType(m_validatedRegexp.cap(2));
         result.addDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
         result.setRecordType("DS");
-        logMessage.replace(m_pinsecureRegexp, ":<b><font color=\"brown\"> \\1 is provably insecure </font></b>");
-
-    } else if (m_dneRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_dneRegexp.cap(1);
-        result.setRecordType(m_dneRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::VALIDATED | DNSData::DNE);
-        logMessage.replace(m_dneRegexp, ":<b><font color=\"brown\"> \\1 provably does not exist </font></b>");
-
-    } else if (m_maybeDneRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_maybeDneRegexp.cap(1);
-        result.setRecordType(m_maybeDneRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::DNE);
-        logMessage.replace(m_maybeDneRegexp, ":<b><font color=\"brown\"> Record for \\2 for \\1 does not exist, but can't be proven' </font></b>");
-
-    } else if (m_ignoreValidationRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_ignoreValidationRegexp.cap(1);
-        result.setRecordType(m_ignoreValidationRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::IGNORE);
-        logMessage.replace(m_ignoreValidationRegexp, ":<b><font color=\"brown\"> Record \\2 for \\1 validation results is not needed and is being ignored' </font></b>");
-
-    } else if (m_cryptoSuccessRegexp.indexIn(logMessage) > -1) {
-        if (m_graphWidget && !m_graphWidget->showNsec3() && m_cryptoSuccessRegexp.cap(2) == "NSEC3")
-            return false;
-        if (m_cryptoSuccessRegexp.cap(2) == "NSEC")
-            return false; // never show 'good' for something missing
-        nodeName = m_cryptoSuccessRegexp.cap(1);
-        result.setRecordType(m_cryptoSuccessRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::VALIDATED);
-        logMessage.replace(m_cryptoSuccessRegexp, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-
-
-
-    // --------------------------------------------------------------
-    // Match bind patterns
-
-    } else if (m_bindBogusRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bindBogusRegexp.cap(1);
-        result.setRecordType(m_bindBogusRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::FAILED);
-        logMessage.replace(m_bindBogusRegexp, "<b><font color=\"green\">BOGUS Record found for a \\2 record for \\1 </font></b>");
-
-    } else if (m_bindValidatedRegex.indexIn(logMessage) > -1) {
-        nodeName = m_bindValidatedRegex.cap(1);
-        result.setRecordType(m_bindValidatedRegex.cap(2));
-        result.addDNSSECStatus(DNSData::VALIDATED);
-        logMessage.replace(m_bindValidatedRegex, "<b><font color=\"green\">Verified a \\2 record for \\1 </font></b>");
-
-    } else if (m_bindQueryRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bindQueryRegexp.cap(1);
-        result.setRecordType(m_bindQueryRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::UNKNOWN);
-        logMessage.replace(m_bindQueryRegexp, "<b>looking up a \\2 record for \\1</b>  ");
-
-    } else if (m_bindPIRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bindPIRegexp.cap(1);
-        result.setRecordType(m_bindPIRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::TRUSTED);
-        logMessage.replace(m_bindPIRegexp, "<b><font color=\"brown\"> \\1 (\\2) is provably insecure </font></b>  ");
-
-    } else if (m_bindTrustedAnswerRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bindTrustedAnswerRegexp.cap(1);
-        result.setRecordType(m_bindTrustedAnswerRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::TRUSTED);
-        logMessage.replace(m_bindTrustedAnswerRegexp, "<b><font color=\"brown\"> \\1 (\\2) is trusted but not proven </font></b>  ");
-
-    } else if (m_bindAnswerResponseRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bindAnswerResponseRegexp.cap(1);
-        result.setRecordType(m_bindAnswerResponseRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::TRUSTED);
-        logMessage.replace(m_bindAnswerResponseRegexp, "<b><font color=\"brown\"> an answer for a \\2 record for \\1 was found</font></b>  ");//    } else if (m_bindDNERegexp.indexIn(logMessage) > -1) {
-
-        // Unfortunately, this catches missing servers and stuff and doesn't mark *only* non-existance
-//    } else if (m_bindNoAnswerResponseRegexp.indexIn(logMessage) > -1) {
-//        nodeName = m_bindNoAnswerResponseRegexp.cap(1);
-//        result.setRecordType(m_bindNoAnswerResponseRegexp.cap(2));
-//        result.addDNSSECStatus(DNSData::DNE);
-//        logMessage.replace(m_bindNoAnswerResponseRegexp, "<b><font color=\"brown\"> an answer for a \\2 record for \\1 was not found</font></b>  ");//    } else if (m_bindDNERegexp.indexIn(logMessage) > -1) {
-
-
-    } else if (m_bindDNERegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bindDNERegexp.cap(1);
-        result.setRecordType(m_bindDNERegexp.cap(2));
-        result.addDNSSECStatus(DNSData::DNE);
-        logMessage.replace(m_bindDNERegexp, "<b><font color=\"brown\"> a \\2 record for \\1 provably does not exist </font></b>  ");
-
-    } else if (m_bindProvenNSECRegexp.indexIn(logMessage) > -1) {
-        nodeName = m_bindProvenNSECRegexp.cap(1);
-        result.setRecordType(m_bindProvenNSECRegexp.cap(2));
-        result.addDNSSECStatus(DNSData::DNE | DNSData::VALIDATED);
-        logMessage.replace(m_bindProvenNSECRegexp, "<b><font color=\"brown\"> a \\2 record for \\1 provably does not exist </font></b>  ");
-
-    } else {
+        logMessage = "<b><font color=\"brown\">" + logMessage + "</font></b>";
+    } else if (nodeName.isEmpty()) {
         return false;
     }
+
     if (nodeName == ".")
         return false;
+
+    // add the data to the node
     thenode = m_nodeList->node(nodeName);
     thenode->addSubData(result);
     thenode->addLogMessage(logMessage);
+
+    // update the screen
     m_nodeList->reApplyFiltersTo(thenode);
     return true;
 }
