@@ -4,14 +4,26 @@
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
 #include <QtCore/QStringList>
+#include <QtCore/QString>
 #include <QtCore/QRegExp>
 #include <QtCore/QTimer>
+#include <QtCore/QList>
+#include <QtCore/QPair>
 
 #include "graphwidget.h"
 #include "NodeList.h"
+#include "DNSData.h"
 
 class GraphWidget;
 class NodeList;
+
+class RegexpData {
+public:
+    RegexpData(QRegExp r, int s, QString c) : regexp(r), status(s), colorName(c) { }
+    QRegExp         regexp;
+    int             status;
+    QString         colorName;
+};
 
 class LogWatcher : public QObject
 {
@@ -64,6 +76,8 @@ private:
     QRegExp    m_bindNoAnswerResponseRegexp;
     QRegExp    m_bindAnswerResponseRegexp;
     QRegExp    m_bindProvenNSECRegexp;
+
+    QList< RegexpData > m_regexpList;
 };
 
 #endif // LOGWATCHER_H
