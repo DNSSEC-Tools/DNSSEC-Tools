@@ -25,7 +25,12 @@
 #include <aknappui.h>
 #endif // Q_OS_SYMBIAN && ORIENTATIONLOCK
 
-static const QString resultServerBaseURL = "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi";
+// #define ENABLE_RESULTS_SUBMISSION
+#ifndef RESULTS_SUBMIT_URL
+#define RESULTS_SUBMIT_URL "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi"
+#endif
+
+static const QString resultServerBaseURL = RESULTS_SUBMIT_URL;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), m_rows(0), m_manager(0), m_detailedResults(0), m_submitResults(0)
@@ -145,13 +150,17 @@ void MainWindow::setupMenus() {
 #ifdef SMALL_DEVICE
     QMenuBar *bar = menuBar();
     results = bar->addAction(tr("Detailed results"));
+#ifdef ENABLE_SUBMIT_RESULTS
     submitResults = bar->addAction(tr("Submit Results"));
+#endif
     about = bar->addAction(tr("About"));
 #else
     QMenu *nameMenu = menuBar()->addMenu(tr("&File"));
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     m_detailedResults = nameMenu->addAction(tr("&Detailed results"));
+#ifdef ENABLE_SUBMIT_RESULTS
     m_submitResults = nameMenu->addAction(tr("&Submit Results"));
+#endif
     about = helpMenu->addAction(tr("About"));
     nameMenu->addSeparator();
     exitAction = nameMenu->addAction(tr("&Quit"));
@@ -160,9 +169,11 @@ void MainWindow::setupMenus() {
 
     connect(about, SIGNAL(triggered()), this, SLOT(showAbout()));
     connect(m_detailedResults, SIGNAL(triggered()), this, SLOT(showResultDetails()));
-    connect(m_submitResults, SIGNAL(triggered()), this, SLOT(maybeSubmitResults()));
 
-    m_submitResults->setEnabled(false);
+    if (m_submitResults) {
+        connect(m_submitResults, SIGNAL(triggered()), this, SLOT(maybeSubmitResults()));
+        m_submitResults->setEnabled(false);
+    }
     m_detailedResults->setEnabled(false);
 }
 
@@ -280,15 +291,17 @@ MainWindow::doLookupTest(QString lookupName, int queryType, char *resolv_conf)
 void MainWindow::unbusy() {
     setCursor(Qt::ArrowCursor);
     m_testButton->setEnabled(true);
-    m_submitResults->setEnabled(true);
     m_detailedResults->setEnabled(true);
+    if (m_submitResults)
+        m_submitResults->setEnabled(true);
 }
 
 void MainWindow::busy() {
     setCursor(Qt::WaitCursor);
     m_testButton->setEnabled(false);
-    m_submitResults->setEnabled(false);
     m_detailedResults->setEnabled(false);
+    if (m_submitResults)
+        m_submitResults->setEnabled(false);
 }
 
 void MainWindow::loadResolvConf()
