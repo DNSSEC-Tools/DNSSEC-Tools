@@ -169,6 +169,9 @@ void Window::createActions()
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
 
+    aboutAction = new QAction(tr("&About"), this);
+    connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
+
     prefsAction = new QAction(tr("&Preferences"), this);
     connect(prefsAction, SIGNAL(triggered()), this, SLOT(showPreferences()));
 }
@@ -186,6 +189,7 @@ void Window::createTrayIcon()
     trayIconMenu->addAction(showAction);
     trayIconMenu->addAction(prefsAction);
     trayIconMenu->addSeparator();
+    trayIconMenu->addAction(aboutAction);
     trayIconMenu->addAction(quitAction);
 
     trayIcon = new QSystemTrayIcon(this);
@@ -351,6 +355,21 @@ void Window::createMenus()
     QMenuBar *menubar = menuBar();
     QMenu *menu = menubar->addMenu("&Options");
     QAction *action = menu->addAction("Preferences");
-
     connect(action, SIGNAL(triggered()), this, SLOT(showPreferences()));
+
+    menu = menubar->addMenu("&Help");
+    action = menu->addAction("About");
+    connect(action, SIGNAL(triggered()), this, SLOT(about()));
+}
+
+
+void Window::about()
+{
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("About DNSSEC-System-Tray");
+    msgBox.setText("<img src=\":/icons/justlock.png\" style=\"float: right\"/>"
+                   "<h1>DNSSEC-System-Tray</h1><p><i>A component of the DNSSEC-Tools Project</i></p><p>For more information, please visit http://www.dnssec-tools.org/.</i></p>"
+                   "<p>DNSSEC-Tools Version: 1.10</p>");
+    msgBox.setStandardButtons(QMessageBox::Close);
+    msgBox.exec();
 }
