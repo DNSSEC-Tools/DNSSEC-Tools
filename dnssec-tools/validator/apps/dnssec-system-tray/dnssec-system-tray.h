@@ -54,6 +54,7 @@
 #include <QtGui/QIcon>
 #include <QtCore/QMap>
 #include <QtCore/QDateTime>
+#include <QtGui/QMainWindow>
 
 class DNSTrayData {
 public:
@@ -63,7 +64,7 @@ public:
     int        count;
 };
 
-class Window : public QDialog
+class Window : public QMainWindow
 {
     Q_OBJECT
 
@@ -95,6 +96,7 @@ private:
     void createActions();
     void createTrayIcon();
     void createRegexps();
+    void createMenus();
     void parseLogMessage(const QString logMessage);
 
     QVBoxLayout *m_topLayout;

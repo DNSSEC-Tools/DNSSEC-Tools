@@ -53,7 +53,10 @@ Window::Window()
     createLogWidgets();
     createActions();
     createTrayIcon();
-    setLayout(m_topLayout);
+    createMenus();
+    QWidget *widget = new QWidget();
+    widget->setLayout(m_topLayout);
+    setCentralWidget(widget);
 
     createRegexps();
 
@@ -95,7 +98,7 @@ void Window::setVisible(bool visible)
 {
     hideAction->setEnabled(visible);
     showAction->setEnabled(isMaximized() || !visible);
-    QDialog::setVisible(visible);
+    QMainWindow::setVisible(visible);
 }
 
 void Window::closeEvent(QCloseEvent *event)
@@ -308,4 +311,13 @@ void Window::parseLogMessage(const QString logMessage) {
 
 QSize Window::sizeHint() const {
     return QSize(800, 420); // should fit most modern devices.
+}
+
+void Window::createMenus()
+{
+    QMenuBar *menubar = menuBar();
+    QMenu *menu = menubar->addMenu("&Options");
+    QAction *action = menu->addAction("Preferences");
+
+    connect(action, SIGNAL(triggered()), this, SLOT(showPreferences()));
 }
