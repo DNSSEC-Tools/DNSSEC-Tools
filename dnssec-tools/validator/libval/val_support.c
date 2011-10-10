@@ -1629,6 +1629,41 @@ copy_rrset_rec_list(struct rrset_rec *rr_set)
     return copy_set;
 }
 
+struct rrset_rec *
+copy_rrset_rec_list_in_zonecut(struct rrset_rec *rr_set, u_char *qname_n) 
+{
+    struct rrset_rec *copy_set, *cur_set, *prev_set, *new_set;
+
+    copy_set = cur_set = prev_set = new_set = NULL;
+
+    if (qname_n == NULL)
+        return NULL;
+
+    for (cur_set = rr_set; cur_set; cur_set=cur_set->rrs_next) {
+
+        /* 
+         * if the zonecut exists, check if it is within the query name 
+         * it is okay for the zonecut to be NULL 
+         */
+        if(cur_set->rrs_zonecut_n && !namename(qname_n, cur_set->rrs_zonecut_n)) {
+            continue;
+        }
+
+        new_set = copy_rrset_rec(cur_set);
+        if (!new_set) {
+            res_sq_free_rrset_recs(&copy_set);
+            return NULL;
+        }    
+        if (prev_set) {
+            prev_set->rrs_next = new_set;
+        } else {
+            copy_set = new_set;
+        }
+        prev_set = new_set;
+    }
+    return copy_set;
+}
+
 /*
  *
  * returns

@@ -134,6 +134,8 @@ struct val_rr_rec  *copy_rr_rec_list(u_int16_t type_h, struct val_rr_rec *o_rr,
 int             link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr);
 struct rrset_rec *copy_rrset_rec(struct rrset_rec *rr_set);
 struct rrset_rec *copy_rrset_rec_list(struct rrset_rec *rr_set);
+struct rrset_rec *copy_rrset_rec_list_in_zonecut(struct rrset_rec *rr_set, 
+                                                 u_char *zonecut_n);
 int             register_query(struct query_list **q, u_char * name_n,
                                u_int16_t type_h, u_char * zone_n);
 void            deregister_queries(struct query_list **q);
