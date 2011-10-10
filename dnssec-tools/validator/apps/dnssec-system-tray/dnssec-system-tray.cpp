@@ -91,8 +91,10 @@ void Window::toggleVisibility() {
     if (isVisible()) {
         resetIsNew();
         hide();
-    } else
+    } else {
         showNormal();
+        trayIcon->setIcon(m_icon); // remove the warning icon, if any
+    }
     fillTable(); // updates the contents after resetting the isNew flag
 }
 
@@ -312,6 +314,8 @@ void Window::parseLogMessage(const QString logMessage) {
     if (isVisible()) {
         // only the immediate new one is highlighted when the window is visible, which is updated below
         resetIsNew();
+    } else {
+        trayIcon->setIcon(m_warningIcon);
     }
 
     if (!m_trayData.contains(name)) {
