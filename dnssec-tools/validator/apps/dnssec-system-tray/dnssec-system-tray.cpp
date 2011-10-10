@@ -134,14 +134,14 @@ void Window::createLogWidgets()
     m_topLayout->addWidget(m_topTitle = new QLabel("DNSSEC Log Messages"));
     m_topLayout->addWidget(m_log = new QTableWidget(m_maxRows, 3));
     m_log->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
-    m_log->setHorizontalHeaderItem(1, new QTableWidgetItem("Name"));
-    m_log->setHorizontalHeaderItem(2, new QTableWidgetItem("Last Failure Time"));
+    m_log->setHorizontalHeaderItem(1, new QTableWidgetItem("Count"));
+    m_log->setHorizontalHeaderItem(2, new QTableWidgetItem("Name"));
+    m_log->setHorizontalHeaderItem(3, new QTableWidgetItem("Last Failure Time"));
     m_log->verticalHeader()->hide();
     m_log->resizeRowsToContents();
     m_log->resizeColumnsToContents();
     m_log->setShowGrid(false);
 }
-
 
 void Window::createActions()
 {
@@ -238,6 +238,39 @@ void Window::parseTillEnd()
     }
 }
 
+void Window::dropOldest() {
+    DNSTrayData &ref = *(m_trayData.begin());
+    bool haveOne = false;
+    foreach(DNSTrayData data, m_trayData) {
+        if (!haveOne || data.lastHit < ref.lastHit)
+            ref = data;
+    }
+    m_trayData.remove(ref.name);
+}
+
+void Window::fillTable() {
+    m_log->clear();
+    int row = 0;
+    foreach (DNSTrayData data, m_trayData) {
+        m_log->setItem(row, 0, new QTableWidgetItem(m_warningIcon, ""));
+        m_log->setItem(row, 1, new QTableWidgetItem(QString().number(data.count)));
+        m_log->setItem(row, 2, new QTableWidgetItem(data.name));
+        m_log->setItem(row, 3, new QTableWidgetItem(data.lastHit.toString()));
+
+        row++;
+    }
+    m_log->setColumnCount(4);
+    m_log->setRowCount(row);
+
+    m_log->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
+    m_log->setHorizontalHeaderItem(1, new QTableWidgetItem("Count"));
+    m_log->setHorizontalHeaderItem(2, new QTableWidgetItem("Name"));
+    m_log->setHorizontalHeaderItem(3, new QTableWidgetItem("Last Failure Time"));
+
+    m_log->resizeColumnsToContents();
+    m_log->resizeRowsToContents();
+}
+
 void Window::parseLogMessage(const QString logMessage) {
     QString name;
     QString type;
@@ -252,24 +285,18 @@ void Window::parseLogMessage(const QString logMessage) {
     }
 
     showMessage(QString(tr("DNSSEC Validation Failure on %1")).arg(name));
-    if (m_log->rowCount() != m_maxRows)
-        m_log->setRowCount(m_maxRows);
-    if (m_rowCount+1 >= m_maxRows) {
-        // XXX
-        for(int i = 0; i < m_maxRows; i++) {
-            for(int j = 0; j < 3; j++) {
-                m_log->setItem(i, j, m_log->takeItem(i+1, j));
-            }
-        }
+
+    if (!m_trayData.contains(name)) {
+        m_trayData.insert(name, DNSTrayData(name, QDateTime::currentDateTime()));
+        while (m_trayData.count() > m_maxRows)
+            dropOldest();
+    } else {
+        DNSTrayData &data = m_trayData[name];
+        data.count++;
+        data.lastHit = QDateTime::currentDateTime();
     }
-    m_log->setItem(m_rowCount, 0, new QTableWidgetItem(m_warningIcon, ""));
-    m_log->setItem(m_rowCount, 1, new QTableWidgetItem(name));
-    m_log->setItem(m_rowCount, 2,
-                   new QTableWidgetItem(QDateTime::currentDateTime().toString()));
-    m_log->resizeColumnsToContents();
-    m_log->resizeRowsToContents();
-    if (m_rowCount+1 < m_maxRows)
-        m_rowCount++;
+
+    fillTable();
 }
 
 QSize Window::sizeHint() const {
