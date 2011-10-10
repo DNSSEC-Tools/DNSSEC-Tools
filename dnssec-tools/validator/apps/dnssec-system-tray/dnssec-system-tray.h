@@ -99,6 +99,7 @@ private:
     void createRegexps();
     void createMenus();
     void parseLogMessage(const QString logMessage);
+    QTableWidgetItem * populateItem(const DNSTrayData &data, QTableWidgetItem *item);
 
     QVBoxLayout *m_topLayout;
     QLabel *m_topTitle;
