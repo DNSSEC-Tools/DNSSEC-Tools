@@ -147,7 +147,7 @@ int main(int argc, char **argv)
     //
     QActionGroup *filterActions = new QActionGroup(&app);
     QMenu *filterMenu = menu->addMenu("Filter");
-    action = filterMenu->addAction("No Filters");
+    action = filterMenu->addAction("Do Net Filter");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterNone()));
     action->setCheckable(true);
     action->setChecked(true);
