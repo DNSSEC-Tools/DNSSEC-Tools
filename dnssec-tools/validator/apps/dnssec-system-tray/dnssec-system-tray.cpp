@@ -133,6 +133,10 @@ void Window::createLogWidgets()
     m_topLayout = new QVBoxLayout();
     m_topLayout->addWidget(m_topTitle = new QLabel("DNSSEC Log Messages"));
     m_topLayout->addWidget(m_log = new QTableWidget(m_maxRows, 3));
+    m_log->setHorizontalHeaderItem(0, new QTableWidgetItem(""));
+    m_log->setHorizontalHeaderItem(1, new QTableWidgetItem("Name"));
+    m_log->setHorizontalHeaderItem(2, new QTableWidgetItem("Last Failure Time"));
+    m_log->verticalHeader()->hide();
     m_log->resizeRowsToContents();
     m_log->resizeColumnsToContents();
     m_log->setShowGrid(false);
@@ -173,8 +177,13 @@ void Window::createTrayIcon()
     trayIcon->setContextMenu(trayIconMenu);
 }
 
+// these were taken from dnssec-nodes list of matches
+#define QUERY_MATCH "\\{([^, ]+).*[, ]([A-Z0-9]*)\\([0-9]+\\)\\}"
+#define BIND_MATCH  "@0x[0-9a-f]+: ([^ ]+) ([^:]+): "
+
 void Window::createRegexps() {
-    m_bogusRegexp = QRegExp("Validation result for \\{([^,]+),.*BOGUS");
+    m_bogusRegexp = QRegExp("Validation result for " QUERY_MATCH ".*BOGUS");
+    m_bindBogusRegexp = QRegExp(BIND_MATCH "verify rdataset.*failed to verify");
 }
 
 void Window::openLogFile(bool seekToEnd)
@@ -230,27 +239,37 @@ void Window::parseTillEnd()
 }
 
 void Window::parseLogMessage(const QString logMessage) {
+    QString name;
+    QString type;
     if (m_bogusRegexp.indexIn(logMessage) > -1) {
-        showMessage(QString("DNSSEC Validation Failure on %1").arg(m_bogusRegexp.cap(1)));
-        if (m_log->rowCount() != m_maxRows)
-            m_log->setRowCount(m_maxRows);
-        if (m_rowCount+1 >= m_maxRows) {
-            // XXX
-            for(int i = 0; i < m_maxRows; i++) {
-                for(int j = 0; j < 3; j++) {
-                    m_log->setItem(i, j, m_log->takeItem(i+1, j));
-                }
+        name = m_bogusRegexp.cap(1);
+        type = m_bogusRegexp.cap(2);
+    } else if (m_bindBogusRegexp.indexIn(logMessage) > -1) {
+        name = m_bindBogusRegexp.cap(1);
+        type = m_bindBogusRegexp.cap(2);
+    } else {
+        return;
+    }
+
+    showMessage(QString(tr("DNSSEC Validation Failure on %1")).arg(name));
+    if (m_log->rowCount() != m_maxRows)
+        m_log->setRowCount(m_maxRows);
+    if (m_rowCount+1 >= m_maxRows) {
+        // XXX
+        for(int i = 0; i < m_maxRows; i++) {
+            for(int j = 0; j < 3; j++) {
+                m_log->setItem(i, j, m_log->takeItem(i+1, j));
             }
         }
-        m_log->setItem(m_rowCount, 0, new QTableWidgetItem(m_warningIcon, ""));
-        m_log->setItem(m_rowCount, 1, new QTableWidgetItem(m_bogusRegexp.cap(1)));
-        m_log->setItem(m_rowCount, 2,
-                       new QTableWidgetItem(QDateTime::currentDateTime().toString()));
-        m_log->resizeColumnsToContents();
-        m_log->resizeRowsToContents();
-        if (m_rowCount+1 < m_maxRows)
-            m_rowCount++;
     }
+    m_log->setItem(m_rowCount, 0, new QTableWidgetItem(m_warningIcon, ""));
+    m_log->setItem(m_rowCount, 1, new QTableWidgetItem(name));
+    m_log->setItem(m_rowCount, 2,
+                   new QTableWidgetItem(QDateTime::currentDateTime().toString()));
+    m_log->resizeColumnsToContents();
+    m_log->resizeRowsToContents();
+    if (m_rowCount+1 < m_maxRows)
+        m_rowCount++;
 }
 
 QSize Window::sizeHint() const {
