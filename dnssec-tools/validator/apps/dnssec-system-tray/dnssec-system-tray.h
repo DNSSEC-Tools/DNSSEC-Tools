@@ -87,6 +87,7 @@ private slots:
     void parseTillEnd();
     void showPreferences();
     void loadPreferences(bool seekToEnd = false);
+    void toggleVisibility();
 
 private:
     void createLogWidgets();

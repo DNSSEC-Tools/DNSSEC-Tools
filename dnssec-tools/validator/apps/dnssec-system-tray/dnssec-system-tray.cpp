@@ -84,6 +84,13 @@ void Window::loadPreferences(bool seekToEnd) {
     openLogFile(seekToEnd);
 }
 
+void Window::toggleVisibility() {
+    if (isVisible())
+        hide();
+    else
+        showNormal();
+}
+
 void Window::setVisible(bool visible)
 {
     hideAction->setEnabled(visible);
@@ -111,7 +118,7 @@ void Window::iconActivated(QSystemTrayIcon::ActivationReason reason)
     case QSystemTrayIcon::Trigger:
     case QSystemTrayIcon::DoubleClick:
     case QSystemTrayIcon::MiddleClick:
-        showNormal();
+        toggleVisibility();
         break;
     default:
         ;
