@@ -8,6 +8,7 @@
 #include <QtGui/QStandardItemModel>
 #include <QtGui/QTableView>
 #include <QtGui/QTableWidget>
+#include <QtGui/QHeaderView>
 
 #include <qdebug.h>
 
@@ -40,6 +41,7 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
 
     table->setHorizontalHeaderItem(0, new QTableWidgetItem(tr("Record Type")));
     table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Status")));
+    table->verticalHeader()->hide();
 
     QMapIterator<QString, DNSData> iterator(node->getAllSubData());
     QTableWidgetItem *item;
