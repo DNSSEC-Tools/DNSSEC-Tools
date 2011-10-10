@@ -11,6 +11,7 @@ DNSSECStatusFilter::DNSSECStatusFilter(int dnssecValitiy, bool requireAll)
     m_validityType[DNSData::VALIDATED]  = "That Were Validated";
     m_validityType[DNSData::FAILED] =  "That Failed Validation";
     m_validityType[DNSData::DNE] = "Which Do Not Exist";
+    m_validityType[DNSData::IGNORE] = "That Have An Ignored DNSSEC Status";
 
 }
 
