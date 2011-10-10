@@ -52,6 +52,16 @@
 #include <QtCore/QRegExp>
 #include <QtCore/QFileSystemWatcher>
 #include <QtGui/QIcon>
+#include <QtCore/QMap>
+#include <QtCore/QDateTime>
+
+class DNSTrayData {
+public:
+    DNSTrayData(QString n = "", QDateTime d = QDateTime::currentDateTime(), int c = 0) : name(n), lastHit(d), count(c) { }
+    QString    name;
+    QDateTime  lastHit;
+    int        count;
+};
 
 class Window : public QDialog
 {
@@ -64,6 +74,8 @@ public:
 
     void openLogFile(bool seekToEnd = false);
     QSize sizeHint() const;
+    void fillTable();
+    void dropOldest();
 
 protected:
     void closeEvent(QCloseEvent *event);
@@ -108,6 +120,8 @@ private:
     int        m_maxRows, m_rowCount;
     bool       m_showStillRunningWarning;
     QIcon      m_warningIcon;
+
+    QMap<QString, DNSTrayData> m_trayData;
 };
 
 #endif
