@@ -91,6 +91,7 @@ private slots:
     void loadPreferences(bool seekToEnd = false);
     void toggleVisibility();
     void resetIsNew();
+    void about();
 
 private:
     void createLogWidgets();
@@ -112,6 +113,7 @@ private:
     QAction *showAction;
     QAction *quitAction;
     QAction *prefsAction;
+    QAction *aboutAction;
 
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
