@@ -2,6 +2,10 @@
 
 #include <QtCore/QSettings>
 #include <QtGui/QDialogButtonBox>
+#include <QtGui/QPushButton>
+#include <QtGui/QFileDialog>
+#include <QtGui/QLabel>
+#include <QtGui/QFont>
 
 DnssecSystemTrayPrefs::DnssecSystemTrayPrefs(QWidget *parent) :
     QDialog(parent)
@@ -12,11 +16,23 @@ DnssecSystemTrayPrefs::DnssecSystemTrayPrefs(QWidget *parent) :
 void
 DnssecSystemTrayPrefs::setupWindow() {
     QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
+    QLabel *label;
 
     m_topLayout = new QVBoxLayout();
     m_topLayout->addLayout(m_formLayout = new QFormLayout());
 
-    m_formLayout->addRow(tr("Log File to Watch"), m_logFile = new QLineEdit());
+    QHBoxLayout *hbox = new QHBoxLayout();
+    m_logFile = new QLineEdit();
+    hbox->addWidget(m_logFile);
+    QPushButton *browserButton = new QPushButton(tr("Browse..."));
+    hbox->addWidget(browserButton);
+    connect(browserButton, SIGNAL(clicked()), this, SLOT(openBrowseWindow()));
+
+    m_formLayout->addRow(tr("Log File to Watch"), hbox);
+    m_formLayout->addRow(new QLabel(""), label = new QLabel("(either a bind-named or libval log)"));
+    QFont font = label->font();
+    font.setItalic(true);
+    label->setFont(font);
     m_logFile->setText(settings.value("logFile", QString("")).toString());
 
     m_formLayout->addRow(tr("Number of Log Messages to Keep"), m_logNumber = new QSpinBox());
@@ -36,6 +52,7 @@ DnssecSystemTrayPrefs::setupWindow() {
     m_topLayout->addWidget(buttonBox);
 
     setLayout(m_topLayout);
+    setMinimumSize(640,400);
 }
 
 void
@@ -45,4 +62,15 @@ DnssecSystemTrayPrefs::savePrefs() {
     settings.setValue("logNumber", m_logNumber->value());
     settings.setValue("stillRunningWarning", m_stillRunningWarning->isChecked());
     accept();
+}
+
+void DnssecSystemTrayPrefs::openBrowseWindow()
+{
+    QFileDialog dialog;
+    dialog.selectFile(m_logFile->text());
+    dialog.setFileMode(QFileDialog::AnyFile);
+    if (!dialog.exec())
+        return;
+
+    m_logFile->setText(dialog.selectedFiles()[0]);
 }

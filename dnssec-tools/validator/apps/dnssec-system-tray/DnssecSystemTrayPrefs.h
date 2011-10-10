@@ -19,6 +19,7 @@ signals:
 
 public slots:
     void savePrefs();
+    void openBrowseWindow();
 
 private:
     QVBoxLayout     *m_topLayout;
