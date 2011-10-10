@@ -314,7 +314,7 @@ void MainWindow::loadResolvConf()
 void MainWindow::showAbout()
 {
     QMessageBox message;
-    message.setText("<p><b>DNSSEC-Check</b><br /><p>DNSSEC-Check tests the likelyhood that your network will support client-side DNSSEC validation.  "
+    message.setText("<p><b>DNSSEC-Check</b><p><i>DNSSEC-Tools Version: 1.10</i></p><p>DNSSEC-Check tests the likelyhood that your network will support client-side DNSSEC validation.  "
                     "DNSSEC-Check is a application created for the <a href=\"http://www.dnssec-tools.org/\">DNSSEC-Tools</a> project."
                     "<p>This project is a work-in-progress and this is an alpha-version of this software.  It is currently most suited to people that "
                     "know and understand how the DNS and DNSSEC works."
