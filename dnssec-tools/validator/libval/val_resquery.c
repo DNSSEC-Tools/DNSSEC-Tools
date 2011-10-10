@@ -1151,7 +1151,7 @@ follow_referral_or_alias_link(val_context_t * context,
             if(VAL_NO_ERROR != 
                     (ret_val = add_to_qfq_chain(context, queries, 
                                             matched_q->qc_zonecut_n, ns_t_dnskey,
-                                            ns_c_in, matched_qfq->qfq_flags, &added_q)))
+                                            ns_c_in, matched_q->qc_flags, &added_q)))
                 return ret_val;
 
             /* fetch DS only if are about to enter a zone that is below the trust point */    
@@ -1160,7 +1160,7 @@ follow_referral_or_alias_link(val_context_t * context,
                 if (VAL_NO_ERROR != 
                         (ret_val = add_to_qfq_chain(context, queries, 
                                                     referral_zone_n, ns_t_ds,
-                                                    ns_c_in, matched_qfq->qfq_flags, 
+                                                    ns_c_in, matched_q->qc_flags, 
                                                     &added_q)))
                     return ret_val;
             } 
@@ -1361,12 +1361,14 @@ process_cname_dname_responses(u_char *name_n,
 
     if (*qnames) {
 
-        if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n))
+        if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n)) {
             /*
              * Keep the current query name as the last name in the chain 
              */
             memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n,
                    wire_name_length((*qnames)->qnc_name_n));
+        }
+
     }
 
     return VAL_NO_ERROR;
@@ -1712,6 +1714,8 @@ digest_response(val_context_t * context,
              extract_from_rr(response_data, &response_index, end, name_n,
                              &type_h, &set_type_h, &class_h, &ttl_h,
                              &rdata_len_h, &rdata_index)) != VAL_NO_ERROR) {
+            matched_q->qc_state = Q_RESPONSE_ERROR;
+            ret_val = VAL_NO_ERROR;
             goto done;
         }
 
@@ -1723,6 +1727,8 @@ digest_response(val_context_t * context,
         if ((ret_val =
              decompress(&rdata, response_data, rdata_index, end, type_h,
                         &rdata_len_h)) != VAL_NO_ERROR) {
+            matched_q->qc_state = Q_RESPONSE_ERROR;
+            ret_val = VAL_NO_ERROR;
             goto done;
         }
 
@@ -1775,6 +1781,12 @@ digest_response(val_context_t * context,
                             val_log(context, LOG_DEBUG, "digest_response(): CNAME/DNAME error or loop encountered");
                         goto done;
                     }
+                    /* forget the current zonecut */
+                    if (matched_q->qc_zonecut_n) {
+                        FREE(matched_q->qc_zonecut_n);
+                        matched_q->qc_zonecut_n = NULL;
+                        rrs_zonecut_n = NULL; 
+                    }
                 } else {
                     nothing_other_than_alias = 0;
                 }
@@ -1796,16 +1808,11 @@ digest_response(val_context_t * context,
                     soa_seen = 1;
                 }
 
-                if (!nothing_other_than_alias ||
-                        (namename(matched_q->qc_original_name, rrs_zonecut_n) &&
-                         namename(name_n, rrs_zonecut_n))) {
-                    /* Only save proofs that are relevant to the main query */
-                    SAVE_RR_TO_LIST(resp_ns, 
+                SAVE_RR_TO_LIST(resp_ns, 
                                 &learned_proofs, name_n, type_h,
                                 set_type_h, class_h, ttl_h, hptr, rdata,
                                 rdata_len_h, from_section, authoritive,
                                 iterative, rrs_zonecut_n);
-                }
             } else if (set_type_h == ns_t_ns) {
                 /* 
                  * The zonecut information for name servers is 
@@ -2079,8 +2086,13 @@ digest_response(val_context_t * context,
 
     if (referral_seen || nothing_other_than_alias) {
         struct rrset_rec *cloned_answers, *cloned_proofs;
-        cloned_answers = copy_rrset_rec_list(learned_answers);
-        cloned_proofs = copy_rrset_rec_list(learned_proofs);
+
+        /* 
+         * If we're trying to validate ensure that the zonecuts for the rrsets 
+         * are within the qname
+         */
+        cloned_answers = copy_rrset_rec_list_in_zonecut(learned_answers, matched_q->qc_original_name);
+        cloned_proofs = copy_rrset_rec_list_in_zonecut(learned_proofs, matched_q->qc_original_name);
 
         if (VAL_NO_ERROR != (ret_val =
             follow_referral_or_alias_link(context,
@@ -2100,13 +2112,15 @@ digest_response(val_context_t * context,
 
         /*
          * if we hadn't enabled EDNS0 but we got a response for a zone 
-         * where DNSSEC is enabled, we should retry with EDNS0 enabled
+         * where DNSSEC is enabled, we should retry with EDNS0 enabled,
+         * but only if DNSSEC is being requested.
          * (This can occur if a name server a name server is 
          * authoritative for the parent zone as well as the 
          * child zone, or if one of the name servers reached while 
          * following referrals is also recursive)
          */
         if (zonecut_was_modified && 
+            !(matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE) &&
             (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
             !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) {
             if (VAL_NO_ERROR != (ret_val =
