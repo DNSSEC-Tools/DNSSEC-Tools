@@ -284,6 +284,7 @@ void Window::fillTable() {
 void Window::parseLogMessage(const QString logMessage) {
     QString name;
     QString type;
+
     if (m_bogusRegexp.indexIn(logMessage) > -1) {
         name = m_bogusRegexp.cap(1);
         type = m_bogusRegexp.cap(2);
@@ -296,6 +297,13 @@ void Window::parseLogMessage(const QString logMessage) {
 
     showMessage(QString(tr("DNSSEC Validation Failure on %1")).arg(name));
 
+    if (isVisible()) {
+        // only the immediate new one is highlighted when the window is visible, which is updated below
+        foreach (DNSTrayData data, m_trayData) {
+            data.isNew = false;
+        }
+    }
+
     if (!m_trayData.contains(name)) {
         m_trayData.insert(name, DNSTrayData(name, QDateTime::currentDateTime()));
         while (m_trayData.count() > m_maxRows)
@@ -304,6 +312,7 @@ void Window::parseLogMessage(const QString logMessage) {
         DNSTrayData &data = m_trayData[name];
         data.count++;
         data.lastHit = QDateTime::currentDateTime();
+        data.isNew = true;
     }
 
     fillTable();

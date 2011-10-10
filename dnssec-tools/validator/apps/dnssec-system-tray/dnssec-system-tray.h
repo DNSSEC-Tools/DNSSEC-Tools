@@ -58,10 +58,11 @@
 
 class DNSTrayData {
 public:
-    DNSTrayData(QString n = "", QDateTime d = QDateTime::currentDateTime(), int c = 0) : name(n), lastHit(d), count(c) { }
+    DNSTrayData(QString n = "", QDateTime d = QDateTime::currentDateTime(), bool i = true, int c = 0) : name(n), lastHit(d), count(c), isNew(i) { }
     QString    name;
     QDateTime  lastHit;
     int        count;
+    bool       isNew;
 };
 
 class Window : public QMainWindow
