@@ -258,14 +258,24 @@ void Window::dropOldest() {
     m_trayData.remove(ref.name);
 }
 
+QTableWidgetItem *Window::populateItem(const DNSTrayData &data, QTableWidgetItem *item) {
+    item->setFlags(Qt::ItemIsEnabled);
+    if (data.isNew) {
+        qDebug() << "new: " << data.name;
+        item->setBackgroundColor(Qt::yellow);
+    }
+    return item;
+}
+
 void Window::fillTable() {
     m_log->clear();
     int row = 0;
+    QTableWidgetItem *item;
     foreach (DNSTrayData data, m_trayData) {
-        m_log->setItem(row, 0, new QTableWidgetItem(m_warningIcon, ""));
-        m_log->setItem(row, 1, new QTableWidgetItem(QString().number(data.count)));
-        m_log->setItem(row, 2, new QTableWidgetItem(data.name));
-        m_log->setItem(row, 3, new QTableWidgetItem(data.lastHit.toString()));
+        m_log->setItem(row, 0, populateItem(data, new QTableWidgetItem(m_warningIcon, "")));
+        m_log->setItem(row, 1, populateItem(data, new QTableWidgetItem(QString().number(data.count))));
+        m_log->setItem(row, 2, populateItem(data, new QTableWidgetItem(data.name)));
+        m_log->setItem(row, 3, populateItem(data, new QTableWidgetItem(data.lastHit.toString())));
 
         row++;
     }
@@ -298,9 +308,18 @@ void Window::parseLogMessage(const QString logMessage) {
     showMessage(QString(tr("DNSSEC Validation Failure on %1")).arg(name));
 
     if (isVisible()) {
+        qDebug() << "is vis: " << logMessage;
         // only the immediate new one is highlighted when the window is visible, which is updated below
+        QMap<QString, DNSTrayData>::iterator i = m_trayData.begin();
+        QMap<QString, DNSTrayData>::iterator stopAt = m_trayData.end();
+        while (i != stopAt) {
+            qDebug() << "unsettingx " << i.value().name;
+            i.value().isNew = false;
+
+            i++;
+        }
         foreach (DNSTrayData data, m_trayData) {
-            data.isNew = false;
+            qDebug() << "  unsetting " << data.name << " to " << data.isNew;
         }
     }
 
@@ -315,6 +334,7 @@ void Window::parseLogMessage(const QString logMessage) {
         data.isNew = true;
     }
 
+    qDebug() << "Filling---";
     fillTable();
 }
 
