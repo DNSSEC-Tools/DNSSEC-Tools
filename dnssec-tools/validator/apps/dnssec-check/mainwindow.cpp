@@ -28,7 +28,7 @@
 static const QString resultServerBaseURL = "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi";
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), m_rows(0), m_manager(0)
+    : QMainWindow(parent), m_rows(0), m_manager(0), m_detailedResults(0), m_submitResults(0)
 {
     loadResolvConf();
     setupWidgets();
@@ -140,8 +140,6 @@ void MainWindow::addAddress(QString server, int row) {
 
 void MainWindow::setupMenus() {
     QAction *about;
-    QAction *results;
-    QAction *submitResults;
     QAction *exitAction;
 
 #ifdef SMALL_DEVICE
@@ -152,8 +150,8 @@ void MainWindow::setupMenus() {
 #else
     QMenu *nameMenu = menuBar()->addMenu(tr("&File"));
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-    results = nameMenu->addAction(tr("&Detailed results"));
-    submitResults = nameMenu->addAction(tr("&Submit Results"));
+    m_detailedResults = nameMenu->addAction(tr("&Detailed results"));
+    m_submitResults = nameMenu->addAction(tr("&Submit Results"));
     about = helpMenu->addAction(tr("About"));
     nameMenu->addSeparator();
     exitAction = nameMenu->addAction(tr("&Quit"));
@@ -161,8 +159,11 @@ void MainWindow::setupMenus() {
 #endif
 
     connect(about, SIGNAL(triggered()), this, SLOT(showAbout()));
-    connect(results, SIGNAL(triggered()), this, SLOT(showResultDetails()));
-    connect(submitResults, SIGNAL(triggered()), this, SLOT(submitResults()));
+    connect(m_detailedResults, SIGNAL(triggered()), this, SLOT(showResultDetails()));
+    connect(m_submitResults, SIGNAL(triggered()), this, SLOT(maybeSubmitResults()));
+
+    m_submitResults->setEnabled(false);
+    m_detailedResults->setEnabled(false);
 }
 
 void MainWindow::setOrientation(Orientation orientation)
@@ -238,6 +239,7 @@ void MainWindow::getAnswers()
     }
 
     unbusy();
+
 }
 
 void MainWindow::getSubAnswers() {
@@ -278,11 +280,15 @@ MainWindow::doLookupTest(QString lookupName, int queryType, char *resolv_conf)
 void MainWindow::unbusy() {
     setCursor(Qt::ArrowCursor);
     m_testButton->setEnabled(true);
+    m_submitResults->setEnabled(true);
+    m_detailedResults->setEnabled(true);
 }
 
 void MainWindow::busy() {
     setCursor(Qt::WaitCursor);
-    m_testButton->setDisabled(true);
+    m_testButton->setEnabled(false);
+    m_submitResults->setEnabled(false);
+    m_detailedResults->setEnabled(false);
 }
 
 void MainWindow::loadResolvConf()
@@ -348,30 +354,32 @@ void MainWindow::maybeSubmitResults()
     qDebug() << "got to submitting results";
     if (dialog.exec() == QDialog::Accepted) {
         qDebug() << "done; will send";
-        submitResults();
+        submitResults(dialog.locationDescription());
     } else {
         qDebug() << "denied";
     }
 }
 
-void MainWindow::submitResults()
+void MainWindow::submitResults(QString locationDescription)
 {
-    QString accessURL = resultServerBaseURL + "?";
-    accessURL += "dataVersion=1";
+    QUrl accessURL = resultServerBaseURL;
+    accessURL.addQueryItem("dataVersion", "1");
     int count=0;
     foreach(QString serverAddress, m_serverAddresses) {
-        accessURL += "&server" + QString::number(count++) + "=" + serverAddress;
+        accessURL.addQueryItem("server" + QString::number(count++), serverAddress);
     }
 
     foreach(QStatusLight *light, m_tests) {
-        accessURL += "&" + light->name() + QString::number(light->rowNumber()) + "=" + light->statusString();
+        accessURL.addQueryItem(light->name() + QString::number(light->rowNumber()), light->statusString());
     }
+
+    accessURL.addQueryItem("locationDescription", locationDescription);
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();
         connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(respnonseReceived(QNetworkReply*)));
     }
-    m_manager->get(QNetworkRequest(QUrl(accessURL)));
+    m_manager->get(QNetworkRequest(accessURL));
 }
 
 void MainWindow::respnonseReceived(QNetworkReply *response)

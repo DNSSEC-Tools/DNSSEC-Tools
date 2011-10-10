@@ -57,7 +57,7 @@ public slots:
     void showAbout();
     void showResultDetails();
     void maybeSubmitResults();
-    void submitResults();
+    void submitResults(QString locationDescription = "");
     void addLineAddress();
     void respnonseReceived(QNetworkReply *response);
 
@@ -81,7 +81,8 @@ private:
 
     int m_rows;
     QNetworkAccessManager *m_manager;
-
+    QAction *m_detailedResults;
+    QAction *m_submitResults;
 };
 
 #endif // MAINWINDOW_H
