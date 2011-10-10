@@ -76,6 +76,20 @@
     }\
 }while (0)
 
+/* 
+ * VAL_QUERY_RECURSE and VAL_QUERY_NO_EDNS0 are special 
+ * If we are not looking for this flag, then return an existing node that has this
+ * flag set if that's whats in our cache. 
+ * If we are looking for this flag, do not return a node that does not have this
+ * flag set
+ */
+#define QUERY_FLAGS_MATCHING(cacheflag, queryflag) \
+    ((queryflag == VAL_QFLAGS_ANY) ||\
+     (((queryflag & VAL_QFLAGS_CACHE_MASK) == (cacheflag & VAL_QFLAGS_CACHE_MASK)) &&\
+        (!(queryflag & VAL_QUERY_RECURSE) || (cacheflag & VAL_QUERY_RECURSE)) &&\
+        (!(queryflag & VAL_QUERY_NO_EDNS0) || (cacheflag & VAL_QUERY_NO_EDNS0))))
+
+
 static int _ask_cache_one(val_context_t * context,
                           struct queries_for_query **queries,
                           struct queries_for_query *next_q, int *data_received,
@@ -399,6 +413,7 @@ clear_query_chain_structure(val_context_t *context,
 }
 
 
+
 /*
  * Add {domain_name, type, class} to the list of queries currently active
  * for validating a response. 
@@ -429,6 +444,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
         return VAL_BAD_ARGUMENT;
 #endif
 
+
     /*
      * Check if query already exists 
      */
@@ -437,13 +453,10 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     while (temp) {
         if ((temp->qc_type_h == type_h)
             && (temp->qc_class_h == class_h)
-            && ((flags == VAL_QFLAGS_ANY) ||
-                 ((temp->qc_flags & VAL_QFLAGS_CACHE_MASK) == (flags & VAL_QFLAGS_CACHE_MASK)))) {
-
-            if (namecmp(temp->qc_original_name, name_n) == 0)
-                break;
-
-        }
+            && (QUERY_FLAGS_MATCHING(temp->qc_flags, flags))
+            && (namecmp(temp->qc_original_name, name_n) == 0)) {
+           break;
+        } 
         prev = temp;
         temp = temp->qc_next;
     }
@@ -590,8 +603,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     while (temp) {
         if ((temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
-            && ((flags == VAL_QFLAGS_ANY) ||
-                ((temp->qfq_query->qc_flags & VAL_QFLAGS_CACHE_MASK) == (flags & VAL_QFLAGS_CACHE_MASK)))
+            && (QUERY_FLAGS_MATCHING(temp->qfq_query->qc_flags, flags))
             && (namecmp(temp->qfq_query->qc_original_name, name_n) == 0)) {
 #ifdef LIBVAL_DLV
             if (type_h == ns_t_dlv) {
@@ -1880,7 +1892,7 @@ assimilate_answers(val_context_t * context,
                                              queries, matched_q,
                                              response->di_qnames,
                                              type_h, class_h, 
-                                             matched_qfq->qfq_flags))) {
+                                             matched_q->qc_flags))) {
             return retval;
         }
     }
@@ -1903,7 +1915,7 @@ assimilate_answers(val_context_t * context,
                                              queries, matched_q,
                                              response->di_qnames,
                                              type_h, class_h, 
-                                             matched_qfq->qfq_flags))) {
+                                             matched_q->qc_flags))) {
             return retval;
         }
     }
@@ -3479,7 +3491,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
             && (q->qc_state == Q_ANSWERED) 
             && (q->qc_zonecut_n != NULL)
             && (q->qc_class_h == ns_c_in)
-            && (namecmp(q->qc_original_name, qname_n) == 0)) {
+            && (namecmp(q->qc_name_n, qname_n) == 0)) {
             break;
         }
         temp_qfq = temp_qfq->qfq_next;
@@ -3510,6 +3522,18 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         for (res = results; res; res = res->val_rc_next) {
             int             i;
             struct val_rrset_rec *soa_rrset = NULL;
+
+            /* 
+             * if we just proved that the type does not exist,
+             * it means that the query name itself is the zonecut
+             */
+            if ((res->val_rc_status == VAL_NONEXISTENT_TYPE) ||
+                (res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
+
+                zonecut_name_n = cur_q;
+                break;
+            }
+
             if ((res->val_rc_answer == NULL)
                 || (res->val_rc_answer->val_ac_rrset == NULL)) {
                 if (res->val_rc_proof_count == 0)
@@ -3826,17 +3850,38 @@ verify_provably_insecure(val_context_t * context,
 
     /* find the zonecut for the query */
     if (known_zonecut_n == NULL) {
-        if (VAL_NO_ERROR != find_next_zonecut(context, queries, q_name_n, done, &q_zonecut_n)
-             || (*done && q_zonecut_n == NULL)) {
+        /* 
+         * in order to fetch an SOA with validation enabled, when the zone is not signed
+         * we might have to prove that the DS for that name does not exist. 
+         * In order to determine the DS record to query, we need  to find the zonecut
+         * ie issue an SOA request. This may result in an infinite loop, so don't find
+         * the zonecut in such cases.
+         */
+        if ((q_type_h != ns_t_soa) || (flags & VAL_QUERY_DONT_VALIDATE)) {
+            if (VAL_NO_ERROR != find_next_zonecut(context, queries, q_name_n, done, &q_zonecut_n)) {
+                val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
+                goto err;
 
-            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
-            goto err;
+            } else if (*done == 0) {
+                /* Need more data */
+                val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", name_p);
+                goto donefornow;
+            }
         }
-        if (*done == 0) {
-            /* Need more data */
-            val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", name_p);
-            goto donefornow;
+       
+        /* 
+         * In cases where the zonecut does not exist simply start with the qname 
+         */
+        if (q_zonecut_n == NULL) {
+            size_t len = wire_name_length(q_name_n);
+            q_zonecut_n = (u_char *) MALLOC (len * sizeof (u_char));
+            if (q_zonecut_n == NULL) {
+                retval = VAL_OUT_OF_MEMORY;
+                goto err;
+            }
+            memcpy(q_zonecut_n, q_name_n, len);
         }
+        
     } else {
         /* copy the known zonecut into our zonecut variable */
         size_t zclen = wire_name_length(known_zonecut_n);
@@ -3962,25 +4007,54 @@ verify_provably_insecure(val_context_t * context,
                 (-1 == ns_name_ntop(nxt_qname, tempname_p, sizeof(tempname_p)))) {
             snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
         } 
-       
-        /* find next zone cut going down from the trust anchor */
-        if (VAL_NO_ERROR != find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n)) {
+    
+        /* 
+         * in order to fetch an SOA with validation enabled, when the zone is not signed
+         * we might have to prove that the DS for that name does not exist. 
+         * In order to determine the DS record to query, we need  to find the zonecut
+         * ie issue an SOA request. This may result in an infinite loop so don't look
+         * for the SOA record.
+         */
+        if ( q_type_h != ns_t_soa || 
+            (flags & VAL_QUERY_DONT_VALIDATE) ||
+            namecmp(q_name_n, nxt_qname)) {
 
-            val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", tempname_p);
-            goto err;
+            /* find next zone cut going down from the trust anchor */
+            if (VAL_NO_ERROR != find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n)) {
+                val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", tempname_p);
+                goto err;
+            } else if (*done == 0) {
+                /* Need more data */
+                val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", tempname_p);
+                goto donefornow;
+            }
         }
 
-        if (*done == 0) {
-            /* Need more data */
-            val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", tempname_p);
-            goto donefornow;
-        }
-
-        /* if we failed to get a zonecut or the zonecut is same as before, try again with the next name */
         if (zonecut_n == NULL) {
-            continue;
-        }
-        if (!namecmp(zonecut_n, curzone_n)) {
+            
+            /* 
+             * if we failed to get the zonecut, and there's other labels to try 
+             * try those first
+             */
+            if (*q_labels != '\0') {
+                continue;
+            }
+
+            /* 
+             * if we failed to get the zonecut, and there's nothing else to try  
+             * try using nxt_qname as the last resort 
+             */
+            size_t len = wire_name_length(nxt_qname);
+            zonecut_n = (u_char *) MALLOC (len * sizeof (u_char));
+            if (zonecut_n == NULL) {
+                retval = VAL_OUT_OF_MEMORY;
+                goto err;
+            }
+            memcpy(zonecut_n, nxt_qname, len);
+
+        } else if (!namecmp(zonecut_n, curzone_n)) {
+
+            /* if the zonecut is same as before, try again with the next name */
             FREE(zonecut_n);
             zonecut_n = NULL;
             continue;
@@ -5437,7 +5511,6 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
     if ((next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) ||
-        (next_q->qfq_query->qc_flags & VAL_QUERY_RECURSE) ||
         (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
         /* don't look at the cache for this query */
         val_log(context, LOG_DEBUG,
