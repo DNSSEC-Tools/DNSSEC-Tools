@@ -90,6 +90,7 @@ private slots:
     void showPreferences();
     void loadPreferences(bool seekToEnd = false);
     void toggleVisibility();
+    void resetIsNew();
 
 private:
     void createLogWidgets();
