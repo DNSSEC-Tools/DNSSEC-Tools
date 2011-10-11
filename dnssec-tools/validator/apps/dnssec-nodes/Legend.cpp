@@ -25,7 +25,7 @@ Legend::Legend(QWidget *parent) :
     DNSData d;
     Node *n = new Node(0);
 
-    layout->addWidget(label = new QLabel("<h2>Legend</h2>"));
+    layout->addWidget(label = new QLabel(tr("<h2>DNSSEC-Nodes Coloring Legend</h2>")));
     label->setAlignment(Qt::AlignHCenter);
 
     QList<DNSData::Status> statuses;
@@ -36,8 +36,8 @@ Legend::Legend(QWidget *parent) :
     QTableWidget *table = new QTableWidget(statuses.count(), 2, this);
     layout->addWidget(table);
 
-    table->setHorizontalHeaderItem(0, new QTableWidgetItem("Node"));
-    table->setHorizontalHeaderItem(1, new QTableWidgetItem("Description"));
+    table->setHorizontalHeaderItem(0, new QTableWidgetItem(tr("Node")));
+    table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Description")));
     table->verticalHeader()->hide();
 
     QPointF rect = n->boundingRect().bottomRight() - n->boundingRect().topLeft();
@@ -75,6 +75,7 @@ Legend::Legend(QWidget *parent) :
     table->resizeColumnsToContents();
     table->setSelectionMode(QAbstractItemView::NoSelection);
 
+    layout->addWidget(new QLabel(tr("<p>Note: Widgets containing multiple nodes will show multiple status colors")));
     //
     // closing button box
     //
