@@ -7,6 +7,7 @@
 #include <QtGui/QLineEdit>
 #include <QtGui/QSpinBox>
 #include <QtGui/QCheckBox>
+#include <QtGui/QTextEdit>
 
 class DnssecSystemTrayPrefs : public QDialog
 {
@@ -15,6 +16,8 @@ public:
     explicit DnssecSystemTrayPrefs(QWidget *parent = 0);
 
     void setupWindow();
+    void readLogFiles();
+    void listFromString();
 signals:
 
 public slots:
@@ -24,9 +27,10 @@ public slots:
 private:
     QVBoxLayout     *m_topLayout;
     QFormLayout     *m_formLayout;
-    QLineEdit       *m_logFile;
+    QTextEdit       *m_logFile;
     QSpinBox        *m_logNumber;
     QCheckBox       *m_stillRunningWarning;
+    QStringList      m_logFileList;
 };
 
 #endif // DNSSECSYSTEMTRAYPREFS_H
