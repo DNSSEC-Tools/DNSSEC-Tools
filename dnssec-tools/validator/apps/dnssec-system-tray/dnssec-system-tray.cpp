@@ -353,12 +353,17 @@ QSize Window::sizeHint() const {
 void Window::createMenus()
 {
     QMenuBar *menubar = menuBar();
-    QMenu *menu = menubar->addMenu("&Options");
-    QAction *action = menu->addAction("Preferences");
+
+    QMenu *menu = menubar->addMenu("&File");
+    QAction *action = menu->addAction("&Quit");
+    connect(action, SIGNAL(triggered()), qApp, SLOT(quit()));
+
+    menu = menubar->addMenu("&Options");
+    action = menu->addAction("&Preferences");
     connect(action, SIGNAL(triggered()), this, SLOT(showPreferences()));
 
     menu = menubar->addMenu("&Help");
-    action = menu->addAction("About");
+    action = menu->addAction("&About");
     connect(action, SIGNAL(triggered()), this, SLOT(about()));
 }
 
