@@ -111,7 +111,7 @@ void DnssecSystemTrayPrefs::openBrowseWindow()
 void DnssecSystemTrayPrefs::listFromString() {
     m_logFileList.clear();
     foreach(QString logFile, m_logFile->toPlainText().split("\n", QString::SkipEmptyParts)) {
-        if (!logFile.isEmpty() && QFile(logFile).exists()) {
+        if (!logFile.isEmpty()) {
             m_logFileList.append(logFile);
         }
     }
