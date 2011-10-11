@@ -74,10 +74,12 @@ public:
 
     void setVisible(bool visible);
 
-    void openLogFile(bool seekToEnd = false);
+    void openLogFiles(bool seekToEnd = false);
     QSize sizeHint() const;
     void fillTable();
     void dropOldest();
+    void readLogFileNames();
+    void clearOldLogFiles();
 
 protected:
     void closeEvent(QCloseEvent *event);
@@ -88,7 +90,7 @@ private slots:
     void messageClicked();
     void parseTillEnd();
     void showPreferences();
-    void loadPreferences(bool seekToEnd = false);
+    void loadPreferences(bool seekToEnd = true);
     void toggleVisibility();
     void resetIsNew();
     void about();
@@ -118,10 +120,10 @@ private:
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
 
-    QString      m_fileName;
-    QFile       *m_logFile;
-    QFileSystemWatcher *m_fileWatcher;
-    QTextStream *m_logStream;
+    QStringList          m_fileNames;
+    QList<QFile *>       m_logFiles;
+    QList<QTextStream *> m_logStreams;
+    QFileSystemWatcher  *m_fileWatcher;
 
     QRegExp    m_bogusRegexp;
     QRegExp    m_bindBogusRegexp;
