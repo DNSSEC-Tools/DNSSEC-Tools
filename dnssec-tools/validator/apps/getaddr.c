@@ -168,8 +168,10 @@ _callback(void *callback_data, int eai_retval, struct addrinfo *res,
     *gas->vstatus = val_status;
     gas->done = 1;
 
+    /*
     printf("_callback %p %d %p %d\n", callback_data, eai_retval, res,
            val_status);
+    */
 
     return 0; /* OK */
 }
@@ -296,7 +298,7 @@ main(int argc, char *argv[])
          * submit request
          */
         retval = val_getaddrinfo_submit(context, node, service, &hints,
-                                        &my_cb, &cb_data, 0, &status);
+                                        my_cb, &cb_data, 0, &status);
         /*
          * wait for it to complete
          */
