@@ -497,7 +497,7 @@ struct queries_for_query;
                                            const char *nodename,
                                            const char *servname,
                                            const struct addrinfo *hints_in,
-                                           val_gai_callback *callback,
+                                           val_gai_callback callback,
                                            void *callback_data,
                                            u_int vgai_flags,
                                            val_gai_status **status);
