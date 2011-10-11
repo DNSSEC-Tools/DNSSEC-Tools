@@ -1477,7 +1477,7 @@ struct val_gai_status_s {
     val_async_status *inet6_status;
 
     u_int             flags;
-    val_gai_callback *callback;
+    val_gai_callback  callback;
     void             *callback_data;
 };
 
@@ -1641,7 +1641,7 @@ _vgai_async_callback(val_async_status *as, int event,
 int
 val_getaddrinfo_submit(val_context_t * context, const char *nodename,
                        const char *servname, const struct addrinfo *hints_in,
-                       val_gai_callback *callback, void *callback_data,
+                       val_gai_callback callback, void *callback_data,
                        u_int val_gai_flags, val_gai_status **status)
 {
     val_gai_status        *vgai = NULL;
