@@ -207,7 +207,7 @@ void Node::setupPainting(int status, const QStyleOptionGraphicsItem *option, QPa
     QColor color = getColorForStatus(status);
 
     QRadialGradient gradient(-3, -3, 10);
-    if (option->state & QStyle::State_Sunken) {
+    if (option && option->state & QStyle::State_Sunken) {
         gradient.setCenter(3, 3);
         gradient.setFocalPoint(3, 3);
         gradient.setColorAt(1, QColor(color).light(120));
