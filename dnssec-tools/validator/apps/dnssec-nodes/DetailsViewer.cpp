@@ -9,6 +9,8 @@
 #include <QtGui/QTableView>
 #include <QtGui/QTableWidget>
 #include <QtGui/QHeaderView>
+#include <QtGui/QIcon>
+#include <QtGui/QPainter>
 
 #include <qdebug.h>
 
