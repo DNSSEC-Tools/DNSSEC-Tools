@@ -182,6 +182,9 @@ int main(int argc, char **argv)
     action = menu->addAction("&About DNSSEC-Nodes");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(about()));
 
+    action = menu->addAction("&Legend");
+    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(legend()));
+
     action = menu->addAction("&Help");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(help()));
 
