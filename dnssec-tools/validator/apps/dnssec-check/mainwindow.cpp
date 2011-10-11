@@ -25,7 +25,10 @@
 #include <aknappui.h>
 #endif // Q_OS_SYMBIAN && ORIENTATIONLOCK
 
-// #define ENABLE_RESULTS_SUBMISSION
+// --------------------------------------------------------------------------
+// CONFIG: UNCOMMENT THIS IF YOU WANT TO SUBMIT TEST RESULTS TO A CGI SCRIPT:
+// #define ENABLE_RESULTS_SUBMISSION 1
+
 #ifndef RESULTS_SUBMIT_URL
 #define RESULTS_SUBMIT_URL "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi"
 #endif
@@ -150,7 +153,7 @@ void MainWindow::setupMenus() {
 #ifdef SMALL_DEVICE
     QMenuBar *bar = menuBar();
     results = bar->addAction(tr("Detailed results"));
-#ifdef ENABLE_SUBMIT_RESULTS
+#ifdef ENABLE_RESULTS_SUBMISSION
     submitResults = bar->addAction(tr("Submit Results"));
 #endif
     about = bar->addAction(tr("About"));
@@ -158,7 +161,7 @@ void MainWindow::setupMenus() {
     QMenu *nameMenu = menuBar()->addMenu(tr("&File"));
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     m_detailedResults = nameMenu->addAction(tr("&Detailed results"));
-#ifdef ENABLE_SUBMIT_RESULTS
+#ifdef ENABLE_RESULTS_SUBMISSION
     m_submitResults = nameMenu->addAction(tr("&Submit Results"));
 #endif
     about = helpMenu->addAction(tr("About"));
@@ -387,6 +390,7 @@ void MainWindow::submitResults(QString locationDescription)
     }
 
     accessURL.addQueryItem("locationDescription", locationDescription);
+    accessURL.addQueryItem("DNSSECToolsVersion", "1.10");
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();
