@@ -44,6 +44,13 @@
 	    <file>validator/apps/dnssec-check/mainwindow.cpp</file>
 	  </files>
 	</modify>
+	<modify
+	  find='(DNSSECToolsVersion", *")[\.0-9]+(rc\d+|pre\d+|)'
+	  replace='$1{VERSION}'>
+	  <files>
+	    <file>validator/apps/dnssec-check/mainwindow.cpp</file>
+	  </files>
+	</modify>
       </modifications>
     </step>
 
