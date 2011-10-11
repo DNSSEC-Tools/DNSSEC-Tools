@@ -17,9 +17,6 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
 {
     QWidget *widget;
 
-    m_layout = new QVBoxLayout();
-    setLayout(m_layout);
-
     // Title
     QLabel *title = new QLabel(node->fqdn(), this);
     QFont font = title->font();

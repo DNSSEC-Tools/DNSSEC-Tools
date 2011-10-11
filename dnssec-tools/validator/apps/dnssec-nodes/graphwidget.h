@@ -57,6 +57,7 @@
 
 #include "LogWatcher.h"
 #include "NodeList.h"
+#include "Legend.h"
 
 class Node;
 class Edge;
@@ -141,6 +142,7 @@ public slots:
     void showPrefs();
     void moreInfoButton();
 
+    void legend();
     void about();
     void help();
 
@@ -180,6 +182,8 @@ private:
     LogWatcher  *m_logWatcher;
 
     QStringList  m_previousFiles;
+
+    Legend      *m_legend;
 };
 //! [0]
 

@@ -77,7 +77,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_timer(0),
       m_layoutType(springyLayout), m_childSize(30), m_lookupType(ns_t_a), m_animateNodeMovements(true),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
-      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this))
+      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0)
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -654,6 +654,13 @@ void GraphWidget::help()
                    );
     msgBox.setStandardButtons(QMessageBox::Close);
     msgBox.exec();
+}
+
+void GraphWidget::legend()
+{
+    if (!m_legend)
+        m_legend = new Legend(this);
+    m_legend->show();
 }
 
 void GraphWidget::setLookupType(int type)
