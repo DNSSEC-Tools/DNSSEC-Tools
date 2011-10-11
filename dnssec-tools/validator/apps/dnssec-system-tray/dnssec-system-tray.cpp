@@ -46,7 +46,7 @@
 #include "DnssecSystemTrayPrefs.h"
 
 Window::Window()
-    : m_icon(":/images/justlock.png"), m_logFile(0), m_fileWatcher(0), m_logStream(0),
+    : m_icon(":/images/justlock.png"), m_logFiles(),  m_logStreams(), m_fileWatcher(0),
       m_maxRows(5), m_rowCount(0), m_warningIcon(":/images/trianglewarning.png")
 {
     loadPreferences(true);
@@ -81,10 +81,22 @@ void Window::loadPreferences(bool seekToEnd) {
         m_fileWatcher = 0;
     }
     QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
-    m_fileName = settings.value("logFile", "").toString();
     m_maxRows = settings.value("logNumber", 5).toInt();
     m_showStillRunningWarning = settings.value("stillRunningWarning", true).toBool();
-    openLogFile(seekToEnd);
+    readLogFileNames();
+    openLogFiles(seekToEnd);
+}
+
+void
+Window::readLogFileNames()
+{
+    QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
+    int numFiles = settings.beginReadArray("logFileList");
+    for(int i = 0 ; i < numFiles; i++) {
+        settings.setArrayIndex(i);
+        m_fileNames.push_back(settings.value("logFile").toString());
+    }
+    settings.endArray();
 }
 
 void Window::toggleVisibility() {
@@ -205,55 +217,70 @@ void Window::createRegexps() {
     m_bindBogusRegexp = QRegExp(BIND_MATCH "verify rdataset.*failed to verify");
 }
 
-void Window::openLogFile(bool seekToEnd)
+void Window::clearOldLogFiles()
 {
-    if (m_logFile) {
-        delete m_logFile;
-        m_logFile = 0;
+    foreach(QFile *logFile, m_logFiles) {
+        logFile->close();
+        delete logFile;
     }
+    m_logFiles.clear();
 
-    if (m_logStream) {
-        delete m_logStream;
-        m_logStream = 0;
+    foreach(QTextStream *logStream, m_logStreams) {
+        delete logStream;
     }
+    m_logStreams.clear();
+
+    if (m_fileWatcher)
+        m_fileWatcher->removePaths(m_fileWatcher->files());
+}
+
+void Window::openLogFiles(bool seekToEnd)
+{
+    clearOldLogFiles();
 
     // first watch this file if need be for changes (including creation)
     if (!m_fileWatcher) {
         m_fileWatcher = new QFileSystemWatcher();
-        m_fileWatcher->addPath(m_fileName);
         connect(m_fileWatcher, SIGNAL(fileChanged(QString)), this, SLOT(parseTillEnd()));
     }
 
-    // open the file if possible
-    m_logFile = new QFile(m_fileName);
-    if (!m_logFile->exists())
-        return;
+    foreach(QString fileName, m_fileNames) {
+        QTextStream *logStream;
+        QFile *logFile;
 
-    if (!m_logFile->open(QIODevice::ReadOnly | QIODevice::Text)) {
-        delete m_logFile;
-        m_logFile = 0;
-        return;
+        m_fileWatcher->addPath(fileName);
+
+        // open the file if possible
+        logFile = new QFile(fileName);
+        if (!logFile->exists())
+            return;
+
+        if (!logFile->open(QIODevice::ReadOnly | QIODevice::Text)) {
+            delete logFile;
+            logFile = 0;
+            continue;
+        }
+
+        // jump to the end; we only look for new things.
+        if (seekToEnd)
+            logFile->seek(logFile->size());
+
+        // create the log stream
+        logStream = new QTextStream(logFile);
+        qDebug() << "succeeded in opening " << fileName;
+
+        m_logFiles.push_back(logFile);
+        m_logStreams.push_back(logStream);
     }
-
-    // jump to the end; we only look for new things.
-    if (seekToEnd)
-        m_logFile->seek(m_logFile->size());
-
-    // create the log stream
-    m_logStream = new QTextStream(m_logFile);
-    qDebug() << "succeeded in opening " << m_fileName;
 }
 
 void Window::parseTillEnd()
 {
-    if (!m_logStream) {
-        openLogFile();
-        if (!m_logStream)
-            return;
-    }
-    while (!m_logStream->atEnd()) {
-        QString line = m_logStream->readLine();
-        parseLogMessage(line);
+    foreach(QTextStream *logStream, m_logStreams) {
+        while (!logStream->atEnd()) {
+            QString line = logStream->readLine();
+            parseLogMessage(line);
+        }
     }
 }
 
