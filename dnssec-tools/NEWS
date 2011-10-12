@@ -22,6 +22,22 @@ details.
 		      rollctl and rollrec.pm were also modified to support
 		      this change.
 
+    - dnssec-nodes  - This graphical DNS debugging utility was greatly enhanced
+                    - Now parses both bind and libval log files
+                    - Multiple log files can be watched
+                    - Node's represent multiple data sets
+                      internally, which are independently displayed
+                      and tracked.
+                    - Added support for searching for and
+                      highlighting DNS data and DNSSEC status
+                      results
+
+    - dnssec-system-tray
+                    - This utility can now report on BOGUS responses
+                      detected in both libval and bind log files.
+                    - Summary window revamped to group similar
+                      messages together.
+
  Plus many more minor features and bug fixes
 
 1.10
