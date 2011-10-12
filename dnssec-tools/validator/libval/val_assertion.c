@@ -7158,7 +7158,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
  */
 int
 val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
-                 struct timeval *timeout, u_int32_t flags)
+                 struct timeval *timeout, unsigned int flags)
 {
     int              waiting, retval;
     fd_set           local_fdset;
@@ -7326,7 +7326,7 @@ _async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
  *            flags -- see VAL_ASYNC_CANCEL_* flags in validator.h
  */
 int
-val_async_cancel(val_context_t *context, val_async_status *as, u_int flags)
+val_async_cancel(val_context_t *context, val_async_status *as, unsigned int flags)
 {
     if (NULL == context || NULL == as)
         return VAL_BAD_ARGUMENT;
@@ -7351,7 +7351,7 @@ val_async_cancel(val_context_t *context, val_async_status *as, u_int flags)
  *            flags -- see VAL_ASYNC_CANCEL_* flags in validator.h
  */
 int
-val_async_cancel_all(val_context_t *context, u_int flags)
+val_async_cancel_all(val_context_t *context, unsigned int flags)
 {
     val_async_status *as, *next;
 

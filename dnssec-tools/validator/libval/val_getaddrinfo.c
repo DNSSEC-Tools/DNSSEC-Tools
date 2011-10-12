@@ -1642,7 +1642,7 @@ int
 val_getaddrinfo_submit(val_context_t * context, const char *nodename,
                        const char *servname, const struct addrinfo *hints_in,
                        val_gai_callback callback, void *callback_data,
-                       u_int val_gai_flags, val_gai_status **status)
+                       unsigned int val_gai_flags, val_gai_status **status)
 {
     val_gai_status        *vgai = NULL;
     int                    vretval = VAL_NO_ERROR, rc;
