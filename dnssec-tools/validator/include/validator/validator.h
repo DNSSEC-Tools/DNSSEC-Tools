@@ -343,7 +343,7 @@ struct queries_for_query;
                                          struct timeval *tv, unsigned int flags);
     int             val_async_select(val_context_t *context, fd_set *pending,
                                      int *nfds, struct timeval *timeout,
-                                     u_int32_t flags);
+                                     unsigned int flags);
     int             val_async_select_info(val_context_t *context,
                                     fd_set *fds,
                                     int *num_fds,
@@ -357,8 +357,8 @@ struct queries_for_query;
 
     int             val_async_cancel(val_context_t *context,
                                      val_async_status *as,
-                                     u_int flags);
-    int             val_async_cancel_all(val_context_t *context, u_int flags);
+                                     unsigned int flags);
+    int             val_async_cancel_all(val_context_t *context, unsigned int flags);
 
     /*
      * backwards compatibility
@@ -499,7 +499,7 @@ struct queries_for_query;
                                            const struct addrinfo *hints_in,
                                            val_gai_callback callback,
                                            void *callback_data,
-                                           u_int vgai_flags,
+                                           unsigned int vgai_flags,
                                            val_gai_status **status);
 
     /*
@@ -546,7 +546,7 @@ struct queries_for_query;
                                    int class_h, int type_h,
                                    struct val_result_chain **results,
                                    struct val_answer_chain **answers,
-                                   u_int32_t vgafr_flags);
+                                   unsigned int vgafr_flags);
 
 
     /*

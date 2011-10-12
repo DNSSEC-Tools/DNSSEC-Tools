@@ -38,7 +38,7 @@ int
 val_get_answer_from_result(val_context_t *context, const char *name, int class_h,
                            int type_h, struct val_result_chain **results,
                            struct val_answer_chain **answers,
-                           u_int32_t vgafr_flags)
+                           unsigned int vgafr_flags)
 {
     struct val_result_chain *res = NULL;
     struct val_answer_chain *ans = NULL;
