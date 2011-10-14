@@ -18,6 +18,8 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     QDialog(parent), m_node(node)
 {
     QWidget *widget;
+    m_layout = new QVBoxLayout();
+    setLayout(m_layout);
 
     // Title
     QLabel *title = new QLabel(node->fqdn(), this);
