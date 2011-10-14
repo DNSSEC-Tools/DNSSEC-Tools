@@ -44,6 +44,9 @@ SOURCES += \
     LogFilePicker.cpp \
     Legend.cpp
 
+BINDIR = $$PREFIX/bin
+DATADIR =$$PREFIX/share
+
 DEFINES += NETWORKACCESS
 
 LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
@@ -54,6 +57,14 @@ include(deployment.pri)
 qtcAddDeployment()
 
 RESOURCES += dnssec-nodes.qrc
+
+unix:!symbian {
+    maemo5 {
+        target.path = /opt/usr/bin
+    } else {
+        target.path = $$PREFIX/bin
+    }
+}
 
 symbian {
     TARGET.UID3 = 0xA000A642
