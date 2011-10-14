@@ -12,7 +12,7 @@ DNSData::DNSData(QString recordType, Status DNSSECStatus)
 
 }
 
-inline QString DNSData::DNSSECStatusForEnum(DNSData::Status status) const
+QString DNSData::DNSSECStatusForEnum(DNSData::Status status) const
 {
     switch (status) {
     case UNKNOWN:
