@@ -75,7 +75,9 @@ Legend::Legend(QWidget *parent) :
     table->resizeColumnsToContents();
     table->setSelectionMode(QAbstractItemView::NoSelection);
 
-    layout->addWidget(new QLabel(tr("<p>Note: Widgets containing multiple nodes will show multiple status colors")));
+    layout->addWidget(new QLabel(tr("<p>Note: Widgets containing multiple nodes will show multiple status colors</p>")));
+    layout->addWidget(new QLabel(tr("<p>Note: Some colors will take precedence over others; the color represents the most important status.</p>")));
+
     //
     // closing button box
     //
