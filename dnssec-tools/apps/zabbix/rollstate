@@ -213,6 +213,10 @@ If the zone is in KSK rollover, then the phase number will be given as a
 negative number.  This is purely for the purposes of creating distinctive 
 graphs in the Zabbix monitoring system.
 
+This monitor plugin is a proof-of-concept prototype.  It makes some
+assumptions (e.g., location of B<rollrec> file) that are invalid for
+production monitors.  This may be fixed in the future.
+
 =head1 ERROR VALUES
 
 If an error condition is encountered and I<-numeric> is not specified, then
