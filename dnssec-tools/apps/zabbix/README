@@ -1,0 +1,69 @@
+# Copyright 2011 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			  DNSSEC-Tools
+		     Is your domain secure?
+
+Zabbix is an open-source system for monitoring networks and computers.
+An agent plugin has been written to monitor zone rollover controlled by
+DNSSEC-Tools.  The modifications were made to Zabbix version 1.8.8.
+
+The DNSSEC-Tools rollstate plugin provides monitoring information about
+a set of zones being managed by rollerd.  It returns either a string
+or a number indicating the rollover state for a specified zone.
+
+The rollstate documentation (available by executing "perldoc rollstate")
+will provide more information about the use of rollstate.  In particular,
+rollstate must be modified to use the proper rollrec file.  This current
+prototype has the rollrec's path hard-coded.
+
+rollstate provide two sorts of output.  With the -numeric option, it will
+print something like: "3" or "-1".  Without that option, it will print
+something like:  "ZSK phase 3" or "KSK phase 1".  The -numeric option
+is intended to allow rollover phases to be graphed and the negative
+number for KSK phases gives them a distinctive difference on the graph.
+
+This plugin is referenced by Zabbix through a UserParameter entry in the
+zabbix_agentd.conf file.  A set of example entries are included here and
+they must be modified for site-specific paths and zones.  The keys in the
+UserParameter entries must be assigned to Zabbix items, and the items
+must be assigned to Zabbix hosts.  They can then be further assigned to
+graphs and screens, as any other Zabbix item.
+
+
+Caveat:  When using these modifications with Zabbix, you must be aware
+	 of the frequency of zone rollover actions and the frequency of
+	 Zabbix item checks.  It is almost certain that there will be
+	 some amount of latency between actual zone rollover status and 
+	 the rollover status displayed by Zabbix.  This is the nature of
+	 the system and it should be expected.  This should only be a
+	 problem if your zones are fast-rolling zones.  If a zone has a
+	 TTL of just a few minutes, then the Zabbix display may lag
+	 behind reality.
+
+
+Files
+-----
+
+This directory contains files for use in Zabbix monitoring of zone
+rollover controlled by DNSSEC-Tools.  Brief descriptions of these
+files are given below.
+
+	rollstate
+		This Perl script is a Zabbix plugin that determines
+		the status of a zone.  It is referenced by the
+		UserParameter entries defined in zabbix_agentd.conf.
+
+		"perldoc rollstate" will give additional information.
+
+	zabbix_agentd.conf
+		This contains a set of sample UserParameter entries
+		that run the rollstate plugin.  There are entries to
+		provide both text and numeric output.
+
+	item.fields
+		This contains a brief discussion of a few of the fields
+		that must be set when defining an item that uses the
+		DNSSEC-Tools rollstate plugin.
+

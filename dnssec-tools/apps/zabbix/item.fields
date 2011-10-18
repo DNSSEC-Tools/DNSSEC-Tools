@@ -1,0 +1,56 @@
+# Copyright 2011 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			  DNSSEC-Tools
+		     Is your domain secure?
+
+
+Zabbix Item Field Examples
+--------------------------
+
+In order for Zabbix to monitor something, an "item" must be defined
+for that something.  The following are suggested values for items
+that will monitor zone rollover as managed by DNSSEC-Tools.  These
+are assumed to be using the rollstate plugin.
+
+There are two sets of item fields, one for text responses and one for
+numeric responses.
+
+
+General Notes
+-------------
+
+Anywhere "<zone>" occurs, it should be replaced as needed by the appropriate
+zone name.
+
+The update interval is dependent on the time between zone rollover phases
+and the amount of lag time you find acceptable between state changes and 
+being aware of the state changes.  If each rollover phase takes 14 days,
+then you may find it acceptable to have that zone's item checked once per
+day.  If the rollover phase only lasts one hour, you may want the item to
+be checked every ten minutes.  These trade-offs must be determined by each
+site individually.
+
+
+Text Responses from Rollstate
+-----------------------------
+
+These responses are intended for use by humans.
+
+	Type			Zabbix agent
+	Key			dnssec-tools.rollover.status.<zone>
+	Type of information	Character
+
+
+Numeric Responses from Rollstate
+--------------------------------
+
+These responses are intended to be used as input to Zabbix graphs.
+They easily readable by humans, but the interpretation may not be
+as clear as the text responses.
+
+	Type			Zabbix agent
+	Key			dnssec-tools.rollover.statusnum.<zone>
+	Type of information	Numeric (float)
+

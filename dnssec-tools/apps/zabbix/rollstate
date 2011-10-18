@@ -1,0 +1,272 @@
+#!/usr/bin/perl
+#
+# Copyright 2011 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# rollstate
+#
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "rollstate";
+my $VERS   = "$NAME version: 1.0";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();                       # Filled option array.
+my @opts =
+(
+	"numeric",			# Give a numeric response.
+
+	"Version",			# Display the version number.
+	"help",				# Display a help message.
+
+);
+
+my $usenum;
+
+
+my $RRF = "/home/dt-nagios/zones/demo.rollrec";		# Name of rollrec file.
+
+
+main();
+exit(0);
+
+#-------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $zone;		# Zone whose rollover state we're getting.
+
+	#
+	# Check for options and a zone.
+	#
+	$zone = doopts();
+
+	#
+	# Read the rollrec file and give info for the specified zone.
+	#
+	rollrec_read($RRF);
+	rollstate($zone);
+	rollrec_close();
+}
+
+#-------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	my $zone = shift;			# Zone to examine.
+
+	#
+	# Parse the options.
+	# 
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number if requested
+	#
+	version() if(defined($options{'Version'}));
+
+	#    
+	# Give a usage flag if asked.
+	# 
+	usage() if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$usenum = $options{'numeric'} || 0;
+
+	#
+	# Ensure we were given a zone.
+	#
+	usage() if(@ARGV == 0);
+
+	return($ARGV[0]);
+}
+
+#-------------------------------------------------------------------------
+# Routine:	rollstate()
+#
+sub rollstate
+{
+	my $zone = shift;			# Zone to examine.
+	my $ksk;				# Zone's KSK rollover state.
+	my $zsk;				# Zone's ZSK rollover state.
+
+	if(! rollrec_exists($zone))
+	{
+		out("no rollrec for zone \"$zone\"",150);
+		return;
+	}
+
+	$ksk = rollrec_recval($zone,"kskphase");
+	$zsk = rollrec_recval($zone,"zskphase");
+
+	if(($ksk > 0) && ($zsk > 0))
+	{
+		out("invalid rollover state for zone $zone; cannot be in KSK and ZSK rollover simultaneously",200);
+	}
+	elsif($ksk < 0)
+	{
+		out("invalid rollover state for zone $zone; cannot have a negative KSK rollover state ($ksk)",250);
+	}
+	elsif($zsk < 0)
+	{
+		out("invalid rollover state for zone $zone; cannot have a negative ZSK rollover state ($zsk)",300);
+	}
+	elsif($ksk > 0)
+	{
+		out('KSK phase',$ksk);
+	}
+	elsif($zsk > 0)
+	{
+		out('ZSK phase',$zsk);
+	}
+	else
+	{
+		out('normal mode','0');
+	}
+}
+
+#-------------------------------------------------------------------------
+# Routine:	out()
+#
+sub out
+{
+	my $rolltype = shift;			# Type of rollover.
+	my $phasenum = shift;			# Rollover phase number.
+
+	if($usenum)
+	{
+		$phasenum *= -1 if($rolltype =~ /KSK/);
+		print "$phasenum\n";
+	}
+	else
+	{
+		$phasenum = '' if(($phasenum == 0) || ($phasenum > 10));
+
+		print "$rolltype $phasenum\n";
+	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number and exit.
+#
+sub version
+{
+        print STDERR "$VERS\n";
+	exit(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:	Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  rollstate [-numeric | -Version | -help] <zone>\n";
+	exit(0);
+}
+
+=pod
+
+=head1 NAME
+
+rollstate - Displays the rollover state for a specified zone.
+
+=head1 SYNOPSIS
+
+  rollstate [options] <zone>
+
+=head1 DESCRIPTION
+
+B<rollstate> was written specifically to gather information on zone rollover
+states for a demonstration Zabbix monitoring environment.  It can be adapted
+for use in other environments, but that is its intended purpose.
+
+The rollover state of the specified zone will be printed.  The state will
+look something like "normal mode", "ZSK phase 1", or "KSK phase 3".
+
+If the I<-numeric> option is given, then only the rollover phase will be
+printed.  If no keys in the zone are being rolled, then "0" will be printed.
+If the zone is in KSK rollover, then the phase number will be given as a
+negative number.  This is purely for the purposes of creating distinctive 
+graphs in the Zabbix monitoring system.
+
+=head1 ERROR VALUES
+
+If an error condition is encountered and I<-numeric> is not specified, then
+an error message will be printed.  If I<-numeric> is given, then then a large
+error value will be printed.  This large value will allow the error condition
+to easily stand out in a Zabbix graph.  The error values and their meanings
+are given below:
+
+=over 4
+
+=item B<150> - No B<rollrec> for zone I<zone> exists in the B<rollrec> file.
+
+=item B<200> - The B<rollrec> file contains an invalid rollover state for the
+zone.  The zone cannot be in KSK and ZSK rollover simultaneously.
+
+=item B<250> - The B<rollrec> file contains an invalid rollover state for the
+zone.  The zone cannot have a negative KSK rollover state.
+
+=item B<300> - The B<rollrec> file contains an invalid rollover state for the
+zone.  The zone cannot have a negative ZSK rollover state.
+
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-numeric>
+
+A numeric response will be printed, instead of the textual response.
+
+=item B<-Version>
+
+Displays the version information for B<dtinitconf> and the DNSSEC-Tools
+package.
+
+=item B<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2011 SPARTA, Inc.  All rights reserved.  See the COPYING file
+included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<lsroll(1)>,   
+B<rollerd(8)>,   
+B<rollrec(5)>,   
+
+=cut
+
