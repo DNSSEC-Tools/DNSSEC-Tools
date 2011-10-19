@@ -2335,15 +2335,15 @@ transform_outstanding_results(val_context_t *context,
 static void
 prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist, 
                 u_char * qname_n, u_int16_t qtype_h, 
+                u_char *ce_hint,
                 struct nsecprooflist **span_proof, 
                 struct nsecprooflist **wcard_proof,
                 int *notype)
 {
-
     struct nsecprooflist *n;
     u_char   wc_n[NS_MAXCDNAME];
-    u_char       *ce = NULL;
     u_char *soa_name_n;
+    u_char *ce = NULL;
 
     if (ctx == NULL || nlist == NULL || qname_n == NULL || 
         span_proof == NULL || wcard_proof == NULL || notype == NULL) {
@@ -2455,13 +2455,26 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
     if (ce == NULL)
         return;
 
-    /* Check for wildcard proof */
+    /* 
+     * if we have CE hints, check if the hint was as close as the
+     * value we just obtained
+     */
+    if (ce_hint) {
+        if (namename(ce_hint, ce) == NULL) {
+            *span_proof = NULL;
+        }
+        /* don't do any wildcard related tests if we are just checking for a name's span*/
+        *wcard_proof = *span_proof;
+        return;
+    }
 
+    /* Check for wildcard proof */
     if (NS_MAXCDNAME < wire_name_length(ce) + 2) {
         val_log(ctx, LOG_INFO,
                 "prove_nsec_span(): NSEC3 Error - label length with wildcard exceeds bounds");
         return;
     }
+
     memset(wc_n, 0, sizeof(wc_n));
     wc_n[0] = 0x01;
     wc_n[1] = 0x2a;             /* for the '*' character */
@@ -2474,7 +2487,12 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
         nxtname = n->the_set->rrs_data->rr_rdata;
         cmp = namecmp(wc_n, n->the_set->rrs_name_n);
 
-        if (cmp == 0 || (cmp > 0 && namecmp(wc_n, nxtname) <= 0)) {
+        if (cmp == 0) {
+            /* wildcard proves non-existence of the type, we've already proved that the type is not set */
+            *wcard_proof = n;
+            *notype = 1;
+            return;
+        } else if (cmp > 0 && namecmp(wc_n, nxtname) <= 0) {
             *wcard_proof = n;
             return;
         }
@@ -2484,7 +2502,7 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
 static int
 nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                struct queries_for_query **queries,
-               int only_span_chk,
+               u_char *ce_hint,
                struct val_result_chain **proof_res,
                struct val_result_chain **results,
                u_char * qname_n, u_int16_t qtype_h,
@@ -2547,16 +2565,9 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
 
     prove_nsec_span(ctx, nlist, qname_n,
-                    qtype_h, &span, &wcard, &notype);
-    if (!span) {
-        val_log(ctx, LOG_INFO, "nsec_proof_chk() : Incomplete Proof - Proof does not cover span");
-        *status = VAL_INCOMPLETE_PROOF;
-        retval = VAL_NO_ERROR;
-        goto done;
-    }
+                    qtype_h, ce_hint, &span, &wcard, &notype);
 
-    if (soa_set && !soa_set->val_rc_consumed &&
-        soa_name_n && !namecmp(soa_name_n, &span->res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig->rr_rdata[SIGNBY])) {
+    if (soa_set && !soa_set->val_rc_consumed) { 
         if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, soa_set, queries, results,
                                                   *proof_res, &new_res))) {
@@ -2565,29 +2576,28 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *proof_res = new_res;
     }
 
-    if (notype) {
+    if (span && !span->res->val_rc_consumed) { 
         if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, span->res, queries, results,
                                                   *proof_res, &new_res))) {
             goto err;
         }
         *proof_res = new_res;
-        *status = VAL_NONEXISTENT_TYPE;
-        retval = VAL_NO_ERROR;
-        goto done;
     }
 
-    if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, span->res, queries, results,
+    if (wcard && !wcard->res->val_rc_consumed) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, wcard->res, queries, results,
                                                   *proof_res, &new_res))) {
-        goto err;
+            goto err;
+        }
+        *proof_res = new_res;
     }
-    *proof_res = new_res;
 
-    *status = VAL_NONEXISTENT_NAME;
-
-    if (only_span_chk) {
-        retval =  VAL_NO_ERROR;
+    if (!span) {
+        val_log(ctx, LOG_INFO, "nsec_proof_chk() : Incomplete Proof - Proof does not cover span");
+        *status = VAL_INCOMPLETE_PROOF;
+        retval = VAL_NO_ERROR;
         goto done;
     }
 
@@ -2597,14 +2607,14 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         retval =  VAL_NO_ERROR;
         goto done;
     }
-    if (!wcard->res->val_rc_consumed) {
-        if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, wcard->res, queries, results,
-                                                  *proof_res, &new_res))) {
-            goto err;
-        }
-        *proof_res = new_res;
+
+    if (notype) {
+        *status = VAL_NONEXISTENT_TYPE;
+    } else {
+        *status = VAL_NONEXISTENT_NAME;
     }
+
+    retval = VAL_NO_ERROR;
     goto done;
 
   err:
@@ -2712,35 +2722,39 @@ static void
 prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist, 
                  u_char * qname_n, 
                  u_int16_t qtype_h, u_int32_t *ttl_x, 
+                 u_char *ce_hint,
                  struct nsec3prooflist **ncn, 
                  struct nsec3prooflist **cpe, 
                  struct nsec3prooflist **wcp, 
                  int *notype,
                  int *optout) 
 {
-    u_char       *cp = NULL;
     u_char       *s_cp, *e_cp, *n_cp;
     size_t        hashlen;
     u_char       *hash = NULL;
     u_char   wc_n[NS_MAXCDNAME];
     struct nsec3prooflist *n;
     u_char *soa_name_n;
+    u_char *cp = NULL;
 
     if (ctx == NULL || nlist == NULL || 
             qname_n == NULL || ttl_x == NULL || ncn == NULL || 
             cpe == NULL || wcp == NULL || notype == NULL || optout == NULL)
         return;
 
-    cp = qname_n;
     *ncn = NULL;
     *cpe = NULL;
     *wcp = NULL;
     *notype = 0;
     *optout = 0;
 
-    soa_name_n = cp;
-
-    while (namecmp(cp, soa_name_n) >= 0) {
+    /* try to find the closest provable enclosure if we don't have any hints */
+    if (ce_hint) {
+      cp = ce_hint;
+    } else {
+      cp = qname_n;
+      soa_name_n = cp;
+      while (namecmp(cp, soa_name_n) >= 0) {
 
         for (n = nlist; n; n=n->next) {
 
@@ -2844,19 +2858,19 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
         if (*cpe != NULL)
             break;
         STRIP_LABEL(cp, cp);
+      }
+      if (*cpe == NULL)
+        return;
     }
 
-    if (*cpe == NULL)
-        return;
-
-    /* We now have a CPE; find the NCN */
+    /* find the NCN */
        
     /* find the name one label greater than cp */
     s_cp = qname_n;
     e_cp = qname_n + wire_name_length(qname_n);
     while (s_cp < e_cp) {
         n_cp = s_cp + s_cp[0] +1; 
-        if (n_cp == cp) 
+        if (!namecmp(n_cp, cp)) 
             break;
         s_cp = n_cp;
     }
@@ -2899,8 +2913,11 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
         FREE(hash);
     }
 
-    if (*ncn == NULL)
+    /* don't do any wildcard related tests if we are just checking for a name's span*/
+    if (ce_hint) {
+        *wcp = *ncn;
         return;
+    }
 
     /* last iteration: look for wildcard proof */
     if (NS_MAXCDNAME < wire_name_length(cp) + 2) {
@@ -2928,6 +2945,16 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
         }
 
         /*
+         * Check if there is an exact match 
+         */
+        if (!label_bytes_cmp(n->nsec3_hash, n->nsec3_hashlen, hash, hashlen)) {
+            /* wildcard proves non-existence of the type, we've already proved that the type is not set */
+            *wcp = n;
+            *notype = 1;
+            FREE(hash);
+            break;
+        } else
+        /*
          * Check if NSEC3 covers the hash 
          */
         if (CHECK_RANGE(n->nsec3_hash, n->nsec3_hashlen, 
@@ -2947,7 +2974,7 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
 static int
 nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 struct queries_for_query **queries,
-                int only_span_chk,
+                u_char *ce_hint,
                 struct val_result_chain **proof_res,
                 struct val_result_chain **results,
                 u_char * qname_n, u_int16_t qtype_h, 
@@ -2967,6 +2994,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     struct rrset_rec *the_set;
     int notype;
     u_char *soa_name_n = NULL;
+    u_char *cp = ce_hint;
 
     if (ctx == NULL || queries == NULL || proof_res == NULL || results == NULL ||
         qname_n == NULL || status == NULL || qc_proof == NULL) {
@@ -3026,28 +3054,41 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
 
     prove_nsec3_span(ctx, nlist, qname_n, qtype_h, 
-            &ttl_x, &ncn, &cpe, &wcp, &notype, &optout);
+            &ttl_x, cp, &ncn, &cpe, &wcp, &notype, &optout);
 
     if (qc_proof) {
         SET_MIN_TTL(qc_proof->val_ac_query->qc_ttl_x, ttl_x);
     }
 
-    if (!ncn) {
-        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - NCN was not found");
-        *status = VAL_INCOMPLETE_PROOF;
-        retval = VAL_NO_ERROR;
-        goto done;
-    }
-    
-    if (!cpe) {
-        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - CPE was not found");
-        *status = VAL_INCOMPLETE_PROOF;
-        retval = VAL_NO_ERROR;
-        goto done;
+    if (cpe && !cpe->res->val_rc_consumed) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, cpe->res, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
+        cp = &cpe->res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig->rr_rdata[SIGNBY];
     }
 
-    if (soa_set && !soa_set->val_rc_consumed &&
-        soa_name_n && !namecmp(soa_name_n, &cpe->res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig->rr_rdata[SIGNBY])) {
+    if (ncn && !ncn->res->val_rc_consumed) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, ncn->res, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
+    }
+
+    if (wcp && !wcp->res->val_rc_consumed) {
+        if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, wcp->res, queries, results,
+                                                  *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
+    }
+
+    if (soa_set && !soa_set->val_rc_consumed) {
         if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, soa_set, queries, results,
                                                   *proof_res, &new_res))) {
@@ -3056,32 +3097,34 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *proof_res = new_res;
     }
 
-    if (notype) {
-        /* we've proved that a type was missing */
-        if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, cpe->res, queries, results,
-                                                  *proof_res, &new_res))) {
-            goto err;
-        }
-        *proof_res = new_res;
-        *status = VAL_NONEXISTENT_TYPE;
+    if (!cp) {
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - CPE was not found");
+        *status = VAL_INCOMPLETE_PROOF;
         retval = VAL_NO_ERROR;
         goto done;
     }
 
-    if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, cpe->res, queries, results,
-                                                  *proof_res, &new_res))) {
-        goto err;
+    if (!ncn) {
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - NCN was not found");
+        *status = VAL_INCOMPLETE_PROOF;
+        retval = VAL_NO_ERROR;
+        goto done;
     }
-    *proof_res = new_res;
 
-    if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, ncn->res, queries, results,
-                                                  *proof_res, &new_res))) {
-        goto err;
+    if (!wcp) {
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - Cannot prove wildcard non-existence");
+        *status = VAL_INCOMPLETE_PROOF;
+        retval =  VAL_NO_ERROR;
+        goto done;
     }
-    *proof_res = new_res;
+
+
+    if (notype) {
+        /* we've proved that a type was missing */
+        *status = VAL_NONEXISTENT_TYPE;
+        retval = VAL_NO_ERROR;
+        goto done;
+    }
 
     if (optout) {
         GET_HEADER_STATUS_CODE(qc_proof, *status);
@@ -3096,26 +3139,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *status = VAL_NONEXISTENT_NAME;
     }
     
-    if (only_span_chk) {
-        /* we don't do wildcard checks here */
-        retval =  VAL_NO_ERROR;
-        goto done;
-    }
-
-    if (!wcp) {
-        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - Cannot prove wildcard non-existence");
-        *status = VAL_INCOMPLETE_PROOF;
-        retval =  VAL_NO_ERROR;
-        goto done;
-    }
-    if (!wcp->res->val_rc_consumed) {
-        if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, wcp->res, queries, results,
-                                                  *proof_res, &new_res))) {
-            goto err;
-        }
-        *proof_res = new_res;
-    }
     goto done;
 
   err:
@@ -3243,8 +3266,8 @@ check_anc_proof(val_context_t *context,
         *matches = 0;
     } else if (nsec3) {
         prove_nsec3_span(context, nsec3list, name_n, q->qc_type_h, 
-                &ttl_x, &ncn, &cpe, &wcp3, &notype, &optout);
-        if (ncn && cpe && (optout || wcp)) {
+                &ttl_x, NULL, &ncn, &cpe, &wcp3, &notype, &optout);
+        if (ncn && cpe && (optout || wcp3)) {
             SET_MIN_TTL(q->qc_ttl_x, ttl_x);
             *matches = 1;
         }
@@ -3252,7 +3275,7 @@ check_anc_proof(val_context_t *context,
 #endif
     if (nsec) {
         prove_nsec_span(context, nseclist, name_n, 
-                        q->qc_type_h, &span, &wcp, &notype);
+                        q->qc_type_h, NULL, &span, &wcp, &notype);
 
         /* check if span check exists */
         if (span && wcp) {
@@ -3294,7 +3317,7 @@ prove_nonexistence(val_context_t * ctx,
                    u_char * qname_n,
                    u_int16_t qtype_h,
                    u_int16_t qc_class_h,
-                   int only_span_chk,
+                   u_char *ce_hint,
                    struct val_digested_auth_chain *qc_proof,
                    val_status_t * status,
                    u_int32_t *soa_ttl_x)
@@ -3417,7 +3440,7 @@ prove_nonexistence(val_context_t * ctx,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             nsec_proof_chk(ctx, w_results, queries, only_span_chk, 
+             nsec_proof_chk(ctx, w_results, queries, ce_hint, 
                             proof_res, results, qname_n,
                             qtype_h, status)))
             goto err;
@@ -3429,7 +3452,7 @@ prove_nonexistence(val_context_t * ctx,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             nsec3_proof_chk(ctx, w_results, queries, only_span_chk,
+             nsec3_proof_chk(ctx, w_results, queries, ce_hint,
                              proof_res, results, qname_n,
                              qtype_h, status, qc_proof)))
             goto err;
@@ -5851,7 +5874,7 @@ check_proof_sanity(val_context_t * context,
             (retval =
              prove_nonexistence(context, w_results, queries, &proof_res, results,
                                 top_q->qc_name_n, top_q->qc_type_h,
-                                top_q->qc_class_h, 0, top_q->qc_proof,
+                                top_q->qc_class_h, NULL, top_q->qc_proof,
                                 &status, &soa_ttl_x)))
             return retval;
     }
@@ -5910,9 +5933,22 @@ check_wildcard_sanity(val_context_t * context,
             /*
              * we need to prove that the name does not itself exist 
              */
-            if ((res->val_rc_rrset->val_ac_rrset.ac_data) &&
-                    ((zonecut_n =
-                      res->val_rc_rrset->val_ac_rrset.ac_data->rrs_zonecut_n))) {
+            if (res->val_rc_rrset->val_ac_rrset.ac_data &&
+                res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig) {
+
+                /* Use the closest enclosure from the RRSIG */
+                size_t sig_labels = res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig->rr_rdata[RRSIGLABEL] + 1;
+                size_t name_labels = wire_name_labels(top_q->qc_original_name); 
+                u_char *ce = NULL;
+                int i;
+
+                if (sig_labels < name_labels) {
+                    ce = top_q->qc_original_name;
+                    for (i = sig_labels; i < name_labels; i++) {
+                        ce = ce + ce[0] + 1; 
+                    } 
+                }
+
                 /*
                  * Check if this proves non-existence of name 
                  */
@@ -5920,7 +5956,7 @@ check_wildcard_sanity(val_context_t * context,
                         (retval = 
                          prove_nonexistence(context, w_results, queries, &target_res,
                                             results, top_q->qc_original_name, top_q->qc_type_h,
-                                            top_q->qc_class_h, 1, 
+                                            top_q->qc_class_h, ce, 
                                             top_q->qc_proof, &status,
                                             &ttl_x)))
                          /*prove_existence(context, top_q->qc_name_n,
@@ -5939,12 +5975,9 @@ check_wildcard_sanity(val_context_t * context,
                      * Change from VAL_AC_WCARD_VERIFIED to VAL_AC_VERIFIED 
                      */
                     target_res->val_rc_answer->val_ac_status = VAL_AC_VERIFIED;
-                } else if (status == VAL_NONEXISTENT_TYPE) {
-                    /* 
-                     * If the type is missing, status remains as is
-                     */
-
                 } else {
+                    val_log(context, LOG_INFO,
+                            "check_wildcard_sanity(): Wildcard sanity check failed");
                     target_res->val_rc_status = VAL_BOGUS;
                 }
             } else {
@@ -6158,7 +6191,7 @@ check_alias_sanity(val_context_t * context,
                 (retval =
                  prove_nonexistence(context, w_results, queries, &proof_res,
                                     results, qname_n, top_q->qc_type_h,
-                                    top_q->qc_class_h, 0, top_q->qc_proof,
+                                    top_q->qc_class_h, NULL, top_q->qc_proof,
                                     &status, &soa_ttl_x))) {
                 goto err;
             }
