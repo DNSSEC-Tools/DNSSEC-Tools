@@ -1,0 +1,38 @@
+#!/bin/tcsh
+#
+# Copyright 2011 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# backup-zabbix
+#
+#	This script backs up the Zabbix database to a file and then
+#	compresses the backup file.
+#
+
+#
+# Get a timestamp for the backup file's name.
+#
+set chronos	= `date '+%y%m%d'`
+
+#
+# Set some variables.
+#
+set dbout	= "$chronos-zabbix.db"
+set dbname	= "zabbix"
+set dbuser	= "zabbix"
+set dbargs	= "--add-drop-table --add-locks --extended-insert --single-transaction -quick"
+
+#
+# Backup the Zabbix database.
+#
+echo backing up zabbix database to $dbout
+mysqldump $dbname $dbargs -u $dbuser -p > $dbout
+
+#
+# Compress the backup.
+#
+echo compressing zabbix database to $dbout.bz2
+rm -f $dbout.bz2
+bzip2 $dbout
+
+exit 0
