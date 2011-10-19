@@ -57,10 +57,17 @@ files are given below.
 
 		"perldoc rollstate" will give additional information.
 
+	zonestate
+		This Perl script is a Zabbix plugin that determines
+		the validity of a zone file.  It is referenced by the
+		UserParameter entries defined in zabbix_agentd.conf.
+
+		"perldoc zonestate" will give additional information.
+
 	zabbix_agentd.conf
 		This contains a set of sample UserParameter entries
-		that run the rollstate plugin.  There are entries to
-		provide both text and numeric output.
+		that run the rollstate and zonestate plugins.  There
+		are entries to provide both text and numeric output.
 
 	item.fields
 		This contains a brief discussion of a few of the fields

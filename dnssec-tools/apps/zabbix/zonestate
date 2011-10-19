@@ -1,0 +1,285 @@
+#!/usr/bin/perl
+#
+# Copyright 2011 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# zonestate
+#
+#	zonestate gathers information on zone file validity
+#	for a demonstration Zabbix monitoring environment.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "zonestate";
+my $VERS   = "$NAME version: 1.0";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();                       # Filled option array.
+my @opts =
+(
+	"numeric",			# Give a numeric response.
+	"verbose",			# Give a verbose error response.
+
+	"Version",			# Display the version number.
+	"help",				# Display a help message.
+
+);
+
+my $usenum  = 0;				# Flag for -numeric.
+my $verbose = 0;				# Flag for -verbose.
+
+
+my $DEMODIR = "/home/dt-nagios/zones";		# Demo directory.
+my $RRF	    = "$DEMODIR/demo.rollrec";		# Path to rollrec file.
+
+
+$| = 1;
+main();
+exit(0);
+
+#-------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $zone;		# Zone whose zonefile validity we're getting.
+
+	#
+	# Check for options and a zone.
+	#
+	$zone = doopts();
+
+	#
+	# This is purely for demo purposes.  We're wanting to have a bad
+	# zonefile to show what happens when zonestate finds one, so we're
+	# redirecting things when fail.com is requested.
+	# 
+	if($zone eq 'fail.com')
+	{
+		$DEMODIR = '/uem/zabbix/fake-data';
+		$RRF = "$DEMODIR/demo.rollrec";
+		$verbose = 1;
+	}
+
+	#
+	# Read the rollrec file and check the specified zone's validity.
+	#
+
+	rollrec_read($RRF);
+	zonestate($zone);
+	rollrec_close();
+}
+
+#-------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	my $zone = shift;			# Zone to examine.
+
+	#
+	# Parse the options.
+	# 
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number if requested
+	#
+	version() if(defined($options{'Version'}));
+
+	#    
+	# Give a usage flag if asked.
+	# 
+	usage() if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$usenum	 = $options{'numeric'} || 0;
+	$verbose = $options{'verbose'} || 0;
+
+	#
+	# Ensure we were given a zone.
+	#
+	usage() if(@ARGV == 0);
+
+	return($ARGV[0]);
+}
+
+#-------------------------------------------------------------------------
+# Routine:	zonestate()
+#
+sub zonestate
+{
+	my $zone = shift;			# Zone to examine.
+	my $zonefile;				# Zone's file name.
+	my $zonepath;				# Zone's path name.
+	my $ret;				# Zone-check return code.
+
+	if(! rollrec_exists($zone))
+	{
+		out("no rollrec entry for zone \"$zone\"",150);
+		return;
+	}
+
+	#
+	# Get the path to the zone.
+	#
+	$zonefile = rollrec_recval($zone,"zonefile");
+	$zonepath = "$DEMODIR/$zonefile" if($zonefile !~ /^\//);
+
+	#
+	# Check the validity of the zone file.
+	#
+	system("/usr/sbin/named-checkzone -q $zone $zonepath");
+	$ret = $? >> 8;
+
+	if($ret == 0)
+	{
+		out("zone file valid",0);
+	}
+	else
+	{
+		my $outstr = "$zone has problems";	# Output string.
+
+		if($verbose)
+		{
+			$outstr = `/usr/sbin/named-checkzone $zone $zonepath`;
+		}
+		out($outstr,$ret);
+	}
+}
+
+#-------------------------------------------------------------------------
+# Routine:	out()
+#
+sub out
+{
+	my $msg = shift;			# Message to maybe print.
+	my $rc = shift;				# Value to print.
+
+	if($usenum)
+	{
+		print "$rc\n";
+	}
+	else
+	{
+		print "$msg\n";
+	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number and exit.
+#
+sub version
+{
+        print STDERR "$VERS\n";
+	exit(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:	Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  zonestate [-numeric | -verbose | -Version | -help] <zone>\n";
+	exit(0);
+}
+
+=pod
+
+=head1 NAME
+
+zonestate - Displays the validity for a specified zonefile.
+
+=head1 SYNOPSIS
+
+  zonestate [options] <zone>
+
+=head1 DESCRIPTION
+
+B<zonestate> was written specifically to gather information on zone file
+validity for a demonstration Zabbix monitoring environment.  It can be
+adapted for use in other environments, but that is its intended purpose.
+
+The B<named-checkzone> command will be executed for the specified zone
+and a message will be printed that indicates the validity or errors of
+the specified zone.  The zone file and the zone name are found in the
+B<rollrec> entry in the B<rollerd> demo environment.
+
+If the I<-verbose> option is given, then an invalid zonefile will result
+in the output from B<named-checkzone> being given.  If I<-verbose> isn't
+given, then a simple error message will be printed.
+
+If the I<-numeric> option is given, then only the return code from
+B<named-checkzone> will be printed.  This is intended for the purposes
+of creating graphs in the Zabbix monitoring system.
+
+This monitor plugin is a proof-of-concept prototype.  It makes some
+assumptions (e.g., location of B<rollrec> file) that are invalid for
+production monitors.  This may be fixed in the future.
+
+Purely for demo purposes, the B<fail.com> is handled differently from
+all other domains.  A bad zone file was built for B<fail.com> in order
+to demonstrate B<zonestate>'s behavior when it finds an errorful zone
+file.  This zone file is not kept with the main B<rollerd> demo zones,
+but in its own location.  If B<fail.com> is specified as the zone to
+check, then B<zonestate> is redirected to the intentionally bad zonefile.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-numeric>
+
+A numeric response will be printed, instead of the textual response.
+
+=item B<-verbose>
+
+A verbose response will be printed if an error is encountered.  This verbose
+response will consist of the output from B<named-checkzone>.
+
+=item B<-Version>
+
+Displays the version information for B<dtinitconf> and the DNSSEC-Tools
+package.
+
+=item B<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2011 SPARTA, Inc.  All rights reserved.  See the COPYING file
+included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<named-checkzone(8)>,   
+B<rollerd(8)>,   
+B<rollrec(5)>   
+
+=cut
+
