@@ -2834,8 +2834,10 @@ prove_nsec3_span(val_context_t *ctx, struct nsec3prooflist *nlist,
                      */
                     *cpe = n;
                     *ncn = n;
+                    *wcp = n;
                     *notype = 1;
-
+                    FREE(hash);
+                    return;
                 } else if (!(*cpe)) {
                     /*
                      * This is the closest provable encounter 
