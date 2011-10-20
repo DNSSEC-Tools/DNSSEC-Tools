@@ -42,6 +42,7 @@ h1,h2 {
 <tr><td>Record</td><td>CNAME</td><td>A CNAME record pointing to an address record</td></tr>
 <tr><td>Record</td><td>NS</td><td>An NS record pointing to a child zone.</td></tr>
 <tr><td>Record</td><td>TXT</td><td></td></tr>
+<tr><td>Record</td><td>wildcard</td><td></td></tr>
 <tr><td>Record</td><td>longlabel</td><td>A TXT record with a maximum length label (63)</td></tr>
 <tr><td>Manipulation</td><td>good</td><td>An unmodified record that should be completely valid.</td></tr>
 <tr><td>Manipulation</td><td>badsign</td><td>The RRSIG signature data was modified after signing so the signature should no longer be a valid signature.</td></tr>
@@ -70,6 +71,7 @@ h1,h2 {
     <h2>Records in test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.test.dnssec-tools.org.zs.signed.modified">test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.test.dnssec-tools.org.zs.signed.modified.donuts.txt">test.dnssec-tools.org</a></p>
+        <li>*.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.test.dnssec-tools.org</li>
         <li>baddata-A.test.dnssec-tools.org</li>
@@ -204,6 +206,7 @@ h1,h2 {
     <h2>Records in nsec3-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified">nsec3-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">nsec3-ns.test.dnssec-tools.org</a></p>
+        <li>*.nsec3-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.nsec3-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.nsec3-ns.test.dnssec-tools.org</li>
         <li>baddata-A.nsec3-ns.test.dnssec-tools.org</li>
@@ -226,6 +229,7 @@ h1,h2 {
     <h2>Records in rsamd5keys-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified">rsamd5keys-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">rsamd5keys-ns.test.dnssec-tools.org</a></p>
+        <li>*.rsamd5keys-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.rsamd5keys-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.rsamd5keys-ns.test.dnssec-tools.org</li>
         <li>baddata-A.rsamd5keys-ns.test.dnssec-tools.org</li>
@@ -248,6 +252,7 @@ h1,h2 {
     <h2>Records in newkeys-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified">newkeys-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">newkeys-ns.test.dnssec-tools.org</a></p>
+        <li>*.newkeys-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.newkeys-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.newkeys-ns.test.dnssec-tools.org</li>
         <li>baddata-A.newkeys-ns.test.dnssec-tools.org</li>
@@ -270,6 +275,7 @@ h1,h2 {
     <h2>Records in newzsk-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified">newzsk-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.newzsk-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">newzsk-ns.test.dnssec-tools.org</a></p>
+        <li>*.newzsk-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.newzsk-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.newzsk-ns.test.dnssec-tools.org</li>
         <li>baddata-A.newzsk-ns.test.dnssec-tools.org</li>
@@ -292,6 +298,7 @@ h1,h2 {
     <h2>Records in rollzsk-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified">rollzsk-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">rollzsk-ns.test.dnssec-tools.org</a></p>
+        <li>*.rollzsk-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.rollzsk-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.rollzsk-ns.test.dnssec-tools.org</li>
         <li>baddata-A.rollzsk-ns.test.dnssec-tools.org</li>
@@ -314,6 +321,7 @@ h1,h2 {
     <h2>Records in reverseddates-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified">reverseddates-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">reverseddates-ns.test.dnssec-tools.org</a></p>
+        <li>*.reverseddates-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.reverseddates-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.reverseddates-ns.test.dnssec-tools.org</li>
         <li>baddata-A.reverseddates-ns.test.dnssec-tools.org</li>
@@ -336,6 +344,7 @@ h1,h2 {
     <h2>Records in pastdate-ds.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.pastdate-ds.test.dnssec-tools.org.zs.signed.modified">pastdate-ds.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.pastdate-ds.test.dnssec-tools.org.zs.signed.modified.donuts.txt">pastdate-ds.test.dnssec-tools.org</a></p>
+        <li>*.pastdate-ds.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.pastdate-ds.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.pastdate-ds.test.dnssec-tools.org</li>
         <li>baddata-A.pastdate-ds.test.dnssec-tools.org</li>
@@ -358,6 +367,7 @@ h1,h2 {
     <h2>Records in futuredate-ds.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified">futuredate-ds.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified.donuts.txt">futuredate-ds.test.dnssec-tools.org</a></p>
+        <li>*.futuredate-ds.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.futuredate-ds.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.futuredate-ds.test.dnssec-tools.org</li>
         <li>baddata-A.futuredate-ds.test.dnssec-tools.org</li>
@@ -380,6 +390,7 @@ h1,h2 {
     <h2>Records in nods-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.nods-ns.test.dnssec-tools.org.zs.signed.modified">nods-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.nods-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">nods-ns.test.dnssec-tools.org</a></p>
+        <li>*.nods-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.nods-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.nods-ns.test.dnssec-tools.org</li>
         <li>baddata-A.nods-ns.test.dnssec-tools.org</li>
@@ -402,6 +413,7 @@ h1,h2 {
     <h2>Records in nosig-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.nosig-ns.test.dnssec-tools.org.zs.signed.modified">nosig-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.nosig-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">nosig-ns.test.dnssec-tools.org</a></p>
+        <li>*.nosig-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.nosig-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org</li>
         <li>baddata-A.nosig-ns.test.dnssec-tools.org</li>
@@ -424,6 +436,7 @@ h1,h2 {
     <h2>Records in badsign-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.badsign-ns.test.dnssec-tools.org.zs.signed.modified">badsign-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.badsign-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">badsign-ns.test.dnssec-tools.org</a></p>
+        <li>*.badsign-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.badsign-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.badsign-ns.test.dnssec-tools.org</li>
         <li>baddata-A.badsign-ns.test.dnssec-tools.org</li>
@@ -446,6 +459,7 @@ h1,h2 {
     <h2>Records in good-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.good-ns.test.dnssec-tools.org.zs.signed.modified">good-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.good-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">good-ns.test.dnssec-tools.org</a></p>
+        <li>*.good-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-A.good-ns.test.dnssec-tools.org</li>
         <li>addedlater-nosig-AAAA.good-ns.test.dnssec-tools.org</li>
         <li>baddata-A.good-ns.test.dnssec-tools.org</li>
@@ -468,6 +482,7 @@ h1,h2 {
     <h2>Records in insecure-ns.test.dnssec-tools.org</h2>
     <ul><p>The zone file for this domain: <a href="db.insecure-ns.test.dnssec-tools.org.zs.signed.modified">insecure-ns.test.dnssec-tools.org</a></p>
 <p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href="db.insecure-ns.test.dnssec-tools.org.zs.signed.modified.donuts.txt">insecure-ns.test.dnssec-tools.org</a></p>
+        <li>*.insecure-ns.test.dnssec-tools.org</li>
         <li>baddata-A.insecure-ns.test.dnssec-tools.org</li>
         <li>baddata-AAAA.insecure-ns.test.dnssec-tools.org</li>
         <li>badsign-A.insecure-ns.test.dnssec-tools.org</li>
