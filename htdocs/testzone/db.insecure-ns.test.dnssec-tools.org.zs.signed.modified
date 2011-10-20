@@ -4,7 +4,7 @@
 ;
 $TTL 1D
 insecure-ns.test.dnssec-tools.org.	600	IN SOA dns.insecure-ns.test.dnssec-tools.org. hardaker.insecure-ns.test.dnssec-tools.org. (
-					1318375158
+					1319145777
 					2H       ; refresh (2 hours)
 					1H       ; retry (1 hour)
 					1W       ; expire (1 week)
@@ -44,4 +44,5 @@ reverseddates-aaaa             1D IN  AAAA   2001:470:1F00:FFFF::1
 ; Other Record Types
 ;
 extra-txt                      1D IN  TXT    "TXT record test"
+*                              1D IN  TXT    "Wild Card Record"
 longlabel-01234567890123456789012345678901234567890123456789012.insecure-ns.test.dnssec-tools.org. 1D IN  TXT    "Long Label Test"
