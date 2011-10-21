@@ -5,7 +5,7 @@ details.
 1.11								(9/30/11)
  - New Features:
 
-    - libval:       - Significant improvements and bug fixes to the the
+    - libval:       - Significant improvements and bug fixes to the 
                       asynchronous support.
                     - Added asynchronous version of val_getaddr_info.
                     - Some reworking of the asynchronous API and callbacks.
@@ -13,14 +13,14 @@ details.
                       subject to changes that break backwards compatibility.
 
     - rollerd:      - Added an experimental time-based method for queuing
-		      rollover operations.  This original method (full list
-		      of all zones) is the default queuing method, but the
-		      new method can be used by editing the rollerd script.
-		      rollctl and rollrec.pm were also modified to support
-		      this change.
-		    - Added support for merging a set of rollrec files.
-		      rollctl and rollrec.pm were also modified to support
-		      this change.
+                      rollover operations.  This original method (full list
+                      of all zones) is the default queuing method, but the
+                      new method can be used by editing the rollerd script.
+                      rollctl and rollrec.pm were also modified to support
+                      this change.
+                    - Added support for merging a set of rollrec files.
+                      rollctl and rollrec.pm were also modified to support
+                      this change.
 
     - dnssec-nodes  - This graphical DNS debugging utility was greatly enhanced
                     - Now parses both bind and libval log files
@@ -45,26 +45,25 @@ details.
     - New Apps:     (see the validator/apps directory for details)
                     - dnssec-check: check dnssec support from your ISP
                     - dnssec-nodes: graphically displays a DNS
-		      hierarchy, color coded by each node's DNSSEC status
+                      hierarchy, color coded by each node's DNSSEC status
                     - dnssec-system-tray: displays pop-up
-     		      notifications when a libval-enabled application
-		      triggers a DNSSEC error
+                      notifications when a libval-enabled application
+                      triggers a DNSSEC error
                     - lookup: a graphical DNS lookup utility that
-		      displays the results in a hierarchical tree and
-		      color codes the window according to DNSSEC status
-
+                      displays the results in a hierarchical tree and
+                      color codes the window according to DNSSEC status
     - libval:       - Added support for building on Windows.
-                    - added support for falling back to recursion when
+      & libsres     - added support for falling back to recursion when
                       the caching name server does not appear to 
                       support DNSSEC. This also works as a mechanism
-                      to work around poisoned or misbehaving cache. 
-                    - Significant improvements to the the asynchronous support. 
+                      to work around a poisoned or misbehaving cache. 
+                    - Significant improvements to the asynchronous support. 
     - lsdnssec:     - Improvements to lsdnssec to display different
                       output depending on whether a zone is a
                       stand-alone zone or under control of rollerd.
     - nagios:       - Plugins for the nagios monitoring system which
-                      enable monitoring of zone rollerover states.
-    - firefox:      - Improved patches that work with the most recent firefox
+                      enable monitoring of zone rollover states.
+    - firefox:      - Updated patches that work with the most recent firefox
 
  Plus many more minor features and bug fixes
 
@@ -75,21 +74,20 @@ details.
                     - fixed bugs to align timing output with rollerd.
     - rollerd:      - Added a -logtz flag for logging timezones
                     - fixed bugs related to the -alwayssign flag.
-		    - zonesigner's path is taken from the config file.
+                    - zonesigner's path is taken from the config file.
     - rollctl:      - Added -rollall and -rollzone options.
     - zonesigner:   - Assumes keys need to be generated for new zones
-		      (Assumes -genkeys option was given if a keyrec file
-		      can't be found.)
+                      (Assumes -genkeys option was given if a keyrec file
+                      can't be found.)
                     - Exits with unique exit codes if a failure occurs.
                       ("zonesigner -xc CODE" can lookup a description for it.")
-		    - Added the -phase option so rollover options could be
-		      more easily specified.
+                    - Added the -phase option so rollover options could be
+                      more easily specified.
     - lights:       - A simple GUI to check the status of rollover states
     - blinkenlights:- Added hide/show commands for rollrec names and zone
-		      names, for split-zone support
+                      names, for split-zone support
     - cleankrf:	    - Fixed deletion of obsolete set keyrecs.
     - GUI commands: - Fixed how the Exit command works so they don't coredump.
-
     - libsres
       & libval:     - New beta support for issuing asynchronous requests.
                       This can speed up queries by up to 4 times if used.
