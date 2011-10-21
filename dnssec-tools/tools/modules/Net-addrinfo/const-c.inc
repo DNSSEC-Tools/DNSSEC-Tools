@@ -329,7 +329,7 @@ static int
 constant_12 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     AI_CANONNAME EAI_BADFLAGS EAI_CANCELED EAI_OVERFLOW EAI_SOCKTYPE */
+     AI_CANONNAME EAI_BADFLAGS EAI_CANCELED EAI_OVERFLOW EAI_SOCKTYPE EAI_BADHINTS */
   /* Offset 10 gives the best switch position.  */
   switch (name[10]) {
   case 'E':
@@ -381,6 +381,17 @@ constant_12 (pTHX_ const char *name, IV *iv_return) {
     /*                         ^        */
 #ifdef EAI_SOCKTYPE
       *iv_return = EAI_SOCKTYPE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'T':
+    if (memEQ(name, "EAI_BADHINTS", 12)) {
+    /*                         ^        */
+#ifdef EAI_BADHINTS
+      *iv_return = EAI_BADHINTS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -543,7 +554,7 @@ my @names = (qw(AI_ADDRCONFIG AI_ALL AI_CANONIDN AI_CANONNAME AI_IDN
 	       EAI_ADDRFAMILY EAI_AGAIN EAI_ALLDONE EAI_BADFLAGS EAI_CANCELED
 	       EAI_FAIL EAI_FAMILY EAI_IDN_ENCODE EAI_INPROGRESS EAI_INTR
 	       EAI_MEMORY EAI_NODATA EAI_NONAME EAI_NOTCANCELED EAI_OVERFLOW
-	       EAI_SERVICE EAI_SOCKTYPE EAI_SYSTEM GAI_NOWAIT GAI_WAIT
+	       EAI_SERVICE EAI_SOCKTYPE EAI_BADHINTS EAI_SYSTEM GAI_NOWAIT GAI_WAIT
 	       NI_DGRAM NI_IDN NI_IDN_ALLOW_UNASSIGNED
 	       NI_IDN_USE_STD3_ASCII_RULES NI_MAXHOST NI_MAXSERV NI_NAMEREQD
 	       NI_NOFQDN NI_NUMERICHOST NI_NUMERICSERV));
