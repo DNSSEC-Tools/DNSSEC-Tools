@@ -168,8 +168,8 @@ multiple-answers:
 # Defaults
 #
 :
-"Test Case 1" addedlater-A.test.dnssec-tools.org ns_c_in ns_t_a VAL_NONEXISTENT_NAME;
-"Test Case 2" addedlater-AAAA.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_NONEXISTENT_NAME;
+"Test Case 1" addedlater-A.test.dnssec-tools.org ns_c_in ns_t_a VAL_NONEXISTENT_TYPE;
+"Test Case 2" addedlater-AAAA.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_NONEXISTENT_TYPE;
 "Test Case 3" addedlater-nosig-A.test.dnssec-tools.org ns_c_in ns_t_a VAL_BOGUS;
 "Test Case 4" addedlater-nosig-AAAA.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_BOGUS;
 "Test Case 5" baddata-A.test.dnssec-tools.org ns_c_in ns_t_a VAL_BOGUS;
@@ -508,8 +508,8 @@ multiple-answers:
 "Test Case 338" pastdate-AAAA.badsign-ns.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_BOGUS;
 "Test Case 339" reverseddates-A.badsign-ns.test.dnssec-tools.org ns_c_in ns_t_a VAL_BOGUS;
 "Test Case 340" reverseddates-AAAA.badsign-ns.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_BOGUS;
-"Test Case 341" addedlater-A.good-ns.test.dnssec-tools.org ns_c_in ns_t_a VAL_NONEXISTENT_NAME;
-"Test Case 342" addedlater-AAAA.good-ns.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_NONEXISTENT_NAME;
+"Test Case 341" addedlater-A.good-ns.test.dnssec-tools.org ns_c_in ns_t_a VAL_NONEXISTENT_TYPE;
+"Test Case 342" addedlater-AAAA.good-ns.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_NONEXISTENT_TYPE;
 "Test Case 343" addedlater-nosig-A.good-ns.test.dnssec-tools.org ns_c_in ns_t_a VAL_BOGUS;
 "Test Case 344" addedlater-nosig-AAAA.good-ns.test.dnssec-tools.org ns_c_in ns_t_aaaa VAL_BOGUS;
 "Test Case 345" baddata-A.good-ns.test.dnssec-tools.org ns_c_in ns_t_a VAL_BOGUS;
