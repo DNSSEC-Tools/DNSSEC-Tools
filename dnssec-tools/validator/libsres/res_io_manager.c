@@ -392,7 +392,7 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
     struct expected_arrival *temp;
     int ret_val = -1;
 
-    if (transaction_id == -1 )
+    if (transaction_id < 0)
         return -1;
 
     pthread_mutex_lock(&mutex);
