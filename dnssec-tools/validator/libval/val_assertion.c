@@ -2297,8 +2297,14 @@ transform_outstanding_results(val_context_t *context,
      */
     while (w_res) {
 
+        new_res = NULL;
+
         if (!w_res->val_rc_consumed) {
-            if (VAL_NO_ERROR !=
+
+            if (w_res->val_rc_is_proof && !val_istrusted(proof_status)) {
+                val_log(context, LOG_INFO, 
+                        "transform_outstanding_results(): Discarding extraneous proof of non-existance");
+            } else if (VAL_NO_ERROR !=
                 (retval =
                  transform_single_result(context, w_res, queries, results, *proof_res,
                                          &new_res))) {
@@ -6362,24 +6368,27 @@ construct_authentication_chain(val_context_t * context,
         /* if any of the results are bad try re-querying from root */
         for (res=*results; res; res=res->val_rc_next) {
             if (res->val_rc_status == VAL_BOGUS) {
-                if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) { 
-                    return retval;
-                }
-
-                if (switched) {
-                    val_log(context, LOG_DEBUG, "Trying to work around bogus respose. Re-querying from root.");
-
-                    _free_w_results(*w_results);
-                    val_free_result_chain(*results);
-                    *w_results = NULL;
-                    *results = NULL;
-
-                    top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
-                    *done = 0;
-                }
-
-                return VAL_NO_ERROR;
+                break;
             }
+        }
+        if (*results == NULL || res != NULL) {
+            if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) { 
+                return retval;
+            }
+
+            if (switched) {
+                val_log(context, LOG_DEBUG, "Trying to work around bogus respose. Re-querying from root.");
+
+                _free_w_results(*w_results);
+                val_free_result_chain(*results);
+                *w_results = NULL;
+                *results = NULL;
+
+                top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
+                *done = 0;
+            }
+
+            return VAL_NO_ERROR;
         }
     }
 
@@ -6601,7 +6610,7 @@ val_resolve_and_check(val_context_t * ctx,
 
     retval = VAL_NO_ERROR;
 
-    if (results) {
+    if (*results) {
         val_log_authentication_chain(context, LOG_NOTICE, 
             domain_name, class_h, type_h, *results);
     }
