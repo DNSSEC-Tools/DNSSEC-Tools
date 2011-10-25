@@ -12,6 +12,8 @@
 
 #include <qdebug.h>
 
+#include <sys/time.h>
+
 NodeList::NodeList(GraphWidget *parent) :
     QObject(parent), m_graphWidget(parent), m_centerNode(0), m_nodes(), m_edges(),
     m_timer(this), m_maxNodes(0), m_accessCounter(0), m_accessDropOlderThan(0), m_selectedNode(0),
