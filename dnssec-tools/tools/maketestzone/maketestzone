@@ -148,6 +148,11 @@ my %extrarecords =
 				    'TXT', '"Long Label Test"');
 		       add_web_stuff_for_domain($domain, "$record", "TXT");
 		   },
+    wildcard => sub { my ($domain, $name) = @_;
+		       print_record("*", "1D IN",
+				    'TXT', '"Wild Card Record"');
+		       add_web_stuff_for_domain($domain, "*", "TXT");
+		   },
 # XXX: arg...  need to find the actual rules.
 #     longrecord => sub { my ($domain, $name) = @_;
 # 			my $length = 230 - length($domain) - 1 - 64;
