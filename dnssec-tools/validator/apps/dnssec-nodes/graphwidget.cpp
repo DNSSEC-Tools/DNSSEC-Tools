@@ -51,13 +51,29 @@
 
 #include <math.h>
 
+#ifdef __WIN32__
+#include <winsock2.h>
+#include <windns.h>
+#include <ws2tcpip.h>
+#define ns_t_a   DNS_TYPE_A
+#define ns_c_in  1
+#endif
+
+#ifndef __WIN32__
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
+#endif /* __WIN32__ */
 #include <validator/resolver.h>
 #include <validator/validator.h>
 #include <sys/types.h>
+#ifndef __WIN32__
 #include <sys/socket.h>
 #include <netdb.h>
+#endif /* __WIN32__ */
+
+#ifdef __WIN32__
+void WSAAPI freeaddrinfo (struct addrinfo*);
+#endif
 
 #include <QTimer>
 

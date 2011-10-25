@@ -11,14 +11,14 @@ public:
     enum Status { UNKNOWN = 1, TRUSTED = 2, VALIDATED = 4, DNE = 8, FAILED = 16, IGNORE = 32 };
 
     DNSData();
-    DNSData(QString recordType, Status DNSSECStatus);
+    DNSData(QString recordType, int DNSSECStatus);
 
     void setRecordType(QString recordType)    { m_recordType = recordType; }
     QString recordType() const                { return m_recordType; }
 
     void setDNSSECStatus(int DNSSECStatus)    { m_DNSSECStatus = DNSSECStatus; }
     int  DNSSECStatus() const                 { return m_DNSSECStatus; }
-    QString     DNSSECStatusForEnum(Status status) const;
+    QString     DNSSECStatusForEnum(int status) const;
     QStringList DNSSECStringStatuses() const;
 
     // UNKNOWN really means "nothing known yet"

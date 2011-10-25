@@ -5,14 +5,14 @@ DNSData::DNSData()
 {
 }
 
-DNSData::DNSData(QString recordType, Status DNSSECStatus)
+DNSData::DNSData(QString recordType, int DNSSECStatus)
     : m_recordType(recordType),
       m_DNSSECStatus(DNSSECStatus)
 {
 
 }
 
-QString DNSData::DNSSECStatusForEnum(DNSData::Status status) const
+QString DNSData::DNSSECStatusForEnum(int status) const
 {
     switch (status) {
     case UNKNOWN:
@@ -27,6 +27,10 @@ QString DNSData::DNSSECStatusForEnum(DNSData::Status status) const
         return "DNSSEC Failed";
     case IGNORE:
         return "Validation Not Needed";
+    case DNE|VALIDATED:
+        return "Proven to not exist";
+    default:
+        return "Unknown Status";
     }
     return "No Such Status";
 }

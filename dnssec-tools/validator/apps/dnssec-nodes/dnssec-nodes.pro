@@ -46,6 +46,7 @@ SOURCES += \
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
+INCLUDEPATH += ../../include
 
 DEFINES += NETWORKACCESS
 

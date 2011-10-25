@@ -28,9 +28,9 @@ Legend::Legend(QWidget *parent) :
     layout->addWidget(label = new QLabel(tr("<h2>DNSSEC-Nodes Coloring Legend</h2>")));
     label->setAlignment(Qt::AlignHCenter);
 
-    QList<DNSData::Status> statuses;
+    QList<int> statuses;
     statuses << DNSData::UNKNOWN <<  DNSData::TRUSTED <<  DNSData::VALIDATED <<  DNSData::DNE
-             << DNSData::FAILED <<  DNSData::IGNORE;
+             << DNSData::FAILED <<  DNSData::IGNORE << (DNSData::DNE | DNSData::VALIDATED);
 
     // Add the legend widget
     QTableWidget *table = new QTableWidget(statuses.count(), 2, this);
@@ -45,7 +45,7 @@ Legend::Legend(QWidget *parent) :
     QPointF br = n->boundingRect().bottomRight();
 
     int row = 0;
-    foreach(DNSData::Status status, statuses) {
+    foreach(int status, statuses) {
         QTableWidgetItem *item = new QTableWidgetItem(d.DNSSECStatusForEnum(status));
         item->setFlags(Qt::ItemIsEnabled);
         item->setBackgroundColor(n->getColorForStatus(status).lighter());

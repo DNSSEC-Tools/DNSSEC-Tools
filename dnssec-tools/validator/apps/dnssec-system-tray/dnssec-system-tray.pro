@@ -8,6 +8,13 @@ SOURCES       = main.cpp \
 RESOURCES     = dnssec-system-tray.qrc
 QT           += xml svg
 
+include(deployment.pri)
+qtcAddDeployment()
+
+BINDIR = $$PREFIX/bin
+DATADIR =$$PREFIX/share
+
+INSTALLS += target
 
 # install
 target.path = $$BINDIR
