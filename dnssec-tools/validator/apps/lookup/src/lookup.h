@@ -16,7 +16,7 @@
 
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
-#include <validator-config.h>
+#include <validator/validator-config.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
 
