@@ -24,18 +24,18 @@ pastdate-a.good-ns.test.dnssec-tools.org:
   Error:       RRSIG record for pastdate-a.good-ns.test.dnssec-tools.org
 	       has expired
 
-pastdate-aaaa.good-ns.test.dnssec-tools.org:
-  Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:335
-  Error:       RRSIG record for pastdate-aaaa.good-ns.test.dnssec-tools.org
-	       has expired
+reverseddates-a.good-ns.test.dnssec-tools.org:
+  Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:359
+  Error:       RRSIG is nearing its expiration time
 
 reverseddates-aaaa.good-ns.test.dnssec-tools.org:
-  Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:358
+  Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:375
   Error:       RRSIG is nearing its expiration time
 
-reverseddates-a.good-ns.test.dnssec-tools.org:
-  Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:390
-  Error:       RRSIG is nearing its expiration time
+pastdate-aaaa.good-ns.test.dnssec-tools.org:
+  Location:    db.good-ns.test.dnssec-tools.org.zs.signed.modified:415
+  Error:       RRSIG record for pastdate-aaaa.good-ns.test.dnssec-tools.org
+	       has expired
 
 addedlater-withsig-AAAA.good-ns.test.dnssec-tools.org:
   Error:       name addedlater-withsig-AAAA.good-ns.test.dnssec-tools.org
@@ -47,6 +47,10 @@ addedlater-withsig-A.good-ns.test.dnssec-tools.org:
 	       not have an NSEC record, which is required for secure
 	       domains.
 
+nsectest.good-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: nsectest.good-ns.test.dnssec-tools.org type:
+	       NSEC failed to verify: RSA Verification failed
+
 badsign-a.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.good-ns.test.dnssec-tools.org type:
 	       A failed to verify: RSA Verification failed
@@ -54,7 +58,7 @@ badsign-a.good-ns.test.dnssec-tools.org:
 futuredate-aaaa.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-aaaa.good-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature may only be used in
-	       the future; after 20111219132257
+	       the future; after 20111224090456
 
 reverseddates-aaaa.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -68,7 +72,7 @@ reverseddates-a.good-ns.test.dnssec-tools.org:
 futuredate-a.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.good-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20111219132257
+	       future; after 20111224090456
 
 addedlater-nosig-AAAA.good-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.good-ns.test.dnssec-tools.org
@@ -87,7 +91,7 @@ badsign-aaaa.good-ns.test.dnssec-tools.org:
 pastdate-aaaa.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-aaaa.good-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature has expired since:
-	       20111020141757
+	       20111025095956
 
 addedlater-nosig-A.good-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-A.good-ns.test.dnssec-tools.org does
@@ -106,10 +110,10 @@ baddata-a.good-ns.test.dnssec-tools.org:
 pastdate-a.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.good-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20111020141757
+	       20111025095956
 
 baddata-aaaa.good-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: baddata-aaaa.good-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: RSA Verification failed
 
-23 errors found in db.good-ns.test.dnssec-tools.org.zs.signed.modified
+24 errors found in db.good-ns.test.dnssec-tools.org.zs.signed.modified

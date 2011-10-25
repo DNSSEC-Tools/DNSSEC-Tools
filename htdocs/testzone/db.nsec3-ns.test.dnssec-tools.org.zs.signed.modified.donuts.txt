@@ -1,19 +1,19 @@
-pastdate-a.nsec3-ns.test.dnssec-tools.org:
-  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:199
-  Error:       RRSIG record for pastdate-a.nsec3-ns.test.dnssec-tools.org
-	       has expired
-
 pastdate-aaaa.nsec3-ns.test.dnssec-tools.org:
-  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:206
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:208
   Error:       RRSIG record for
 	       pastdate-aaaa.nsec3-ns.test.dnssec-tools.org has expired
 
 reverseddates-a.nsec3-ns.test.dnssec-tools.org:
-  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:213
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:215
   Error:       RRSIG is nearing its expiration time
 
+pastdate-a.nsec3-ns.test.dnssec-tools.org:
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:248
+  Error:       RRSIG record for pastdate-a.nsec3-ns.test.dnssec-tools.org
+	       has expired
+
 reverseddates-aaaa.nsec3-ns.test.dnssec-tools.org:
-  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:221
+  Location:    db.nsec3-ns.test.dnssec-tools.org.zs.signed.modified:294
   Error:       RRSIG is nearing its expiration time
 
 addedlater-nosig-A.nsec3-ns.test.dnssec-tools.org:
@@ -33,7 +33,7 @@ reverseddates-aaaa.nsec3-ns.test.dnssec-tools.org:
 pastdate-a.nsec3-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.nsec3-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20111020141808
+	       20111025100007
 
 nosig-aaaa.nsec3-ns.test.dnssec-tools.org:
   Error:       name nosig-aaaa.nsec3-ns.test.dnssec-tools.org does not have
@@ -42,7 +42,7 @@ nosig-aaaa.nsec3-ns.test.dnssec-tools.org:
 pastdate-aaaa.nsec3-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-aaaa.nsec3-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature has expired since:
-	       20111020141808
+	       20111025100007
 
 badsign-aaaa.nsec3-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-aaaa.nsec3-ns.test.dnssec-tools.org
@@ -52,12 +52,12 @@ futuredate-aaaa.nsec3-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.nsec3-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20111219132308
+	       after 20111224090507
 
 futuredate-a.nsec3-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.nsec3-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20111219132308
+	       future; after 20111224090507
 
 addedlater-nosig-AAAA.nsec3-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.nsec3-ns.test.dnssec-tools.org

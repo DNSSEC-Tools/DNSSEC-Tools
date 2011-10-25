@@ -20,45 +20,45 @@ futuredate-ds.test.dnssec-tools.org:
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
 pastdate-aaaa.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:327
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:337
   Error:       RRSIG record for
 	       pastdate-aaaa.futuredate-ds.test.dnssec-tools.org has
 	       expired
 
 reverseddates-a.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:334
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:375
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.futuredate-ds.test.dnssec-tools.org:
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:391
   Error:       RRSIG is nearing its expiration time
 
 pastdate-a.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:383
+  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:415
   Error:       RRSIG record for
 	       pastdate-a.futuredate-ds.test.dnssec-tools.org has expired
-
-reverseddates-aaaa.futuredate-ds.test.dnssec-tools.org:
-  Location:    db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified:390
-  Error:       RRSIG is nearing its expiration time
 
 futuredate-aaaa.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.futuredate-ds.test.dnssec-tools.org type:
 	       AAAA failed to verify: Signature may only be used in the
-	       future; after 20111219132300
+	       future; after 20111224090458
 
 badsign-a.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.futuredate-ds.test.dnssec-tools.org
 	       type: A failed to verify: RSA Verification failed
 
-pastdate-aaaa.futuredate-ds.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       pastdate-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
-	       failed to verify: Signature has expired since:
-	       20111020141800
-
 futuredate-a.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-a.futuredate-ds.test.dnssec-tools.org type: A
 	       failed to verify: Signature may only be used in the future;
-	       after 20111219132300
+	       after 20111224090458
+
+pastdate-aaaa.futuredate-ds.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       pastdate-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature has expired since:
+	       20111025095958
 
 addedlater-withsig-A.futuredate-ds.test.dnssec-tools.org:
   Error:       name
@@ -90,21 +90,25 @@ baddata-aaaa.futuredate-ds.test.dnssec-tools.org:
 	       baddata-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
 	       failed to verify: RSA Verification failed
 
-badsign-aaaa.futuredate-ds.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       badsign-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
-	       failed to verify: RSA Verification failed
+nsectest.futuredate-ds.test.dnssec-tools.org:
+  Error:       RRSIG on name: nsectest.futuredate-ds.test.dnssec-tools.org
+	       type: NSEC failed to verify: RSA Verification failed
 
 reverseddates-a.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       reverseddates-a.futuredate-ds.test.dnssec-tools.org type: A
 	       failed to verify: RSA Verification failed
 
+badsign-aaaa.futuredate-ds.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       badsign-aaaa.futuredate-ds.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
 pastdate-a.futuredate-ds.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-a.futuredate-ds.test.dnssec-tools.org type: A
 	       failed to verify: Signature has expired since:
-	       20111020141800
+	       20111025095958
 
 addedlater-nosig-AAAA.futuredate-ds.test.dnssec-tools.org:
   Error:       name
@@ -124,4 +128,4 @@ addedlater-withsig-AAAA.futuredate-ds.test.dnssec-tools.org:
 	       does not have an NSEC record, which is required for secure
 	       domains.
 
-23 errors found in db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified
+24 errors found in db.futuredate-ds.test.dnssec-tools.org.zs.signed.modified
