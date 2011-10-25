@@ -1549,6 +1549,9 @@ read_next_val_config_file(val_context_t *ctx,
                      * re-definition of global options 
                      * or global options was not in the first file
                      */
+                    val_log(ctx, LOG_WARNING, 
+                            "read_next_val_config_file(): Ignoring global options from line %d of %s",
+                            line_number, dnsval_c->dnsval_conf);
                     free_global_options(gt_opt);
                     FREE(gt_opt);
                     gt_opt = NULL;
