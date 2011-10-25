@@ -19,23 +19,27 @@ nods-ns.test.dnssec-tools.org:
 	       See this web page for details: 
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
-pastdate-aaaa.nods-ns.test.dnssec-tools.org:
+pastdate-a.nods-ns.test.dnssec-tools.org:
   Location:    db.nods-ns.test.dnssec-tools.org.zs.signed.modified:320
+  Error:       RRSIG record for pastdate-a.nods-ns.test.dnssec-tools.org
+	       has expired
+
+pastdate-aaaa.nods-ns.test.dnssec-tools.org:
+  Location:    db.nods-ns.test.dnssec-tools.org.zs.signed.modified:351
   Error:       RRSIG record for pastdate-aaaa.nods-ns.test.dnssec-tools.org
 	       has expired
 
-reverseddates-a.nods-ns.test.dnssec-tools.org:
-  Location:    db.nods-ns.test.dnssec-tools.org.zs.signed.modified:343
-  Error:       RRSIG is nearing its expiration time
-
 reverseddates-aaaa.nods-ns.test.dnssec-tools.org:
-  Location:    db.nods-ns.test.dnssec-tools.org.zs.signed.modified:359
+  Location:    db.nods-ns.test.dnssec-tools.org.zs.signed.modified:358
   Error:       RRSIG is nearing its expiration time
 
-pastdate-a.nods-ns.test.dnssec-tools.org:
-  Location:    db.nods-ns.test.dnssec-tools.org.zs.signed.modified:399
-  Error:       RRSIG record for pastdate-a.nods-ns.test.dnssec-tools.org
-	       has expired
+reverseddates-a.nods-ns.test.dnssec-tools.org:
+  Location:    db.nods-ns.test.dnssec-tools.org.zs.signed.modified:374
+  Error:       RRSIG is nearing its expiration time
+
+nsectest.nods-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: nsectest.nods-ns.test.dnssec-tools.org type:
+	       NSEC failed to verify: RSA Verification failed
 
 badsign-a.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.nods-ns.test.dnssec-tools.org type:
@@ -48,7 +52,7 @@ baddata-a.nods-ns.test.dnssec-tools.org:
 futuredate-a.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.nods-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20111219132259
+	       future; after 20111224090458
 
 badsign-aaaa.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-aaaa.nods-ns.test.dnssec-tools.org
@@ -61,7 +65,7 @@ reverseddates-a.nods-ns.test.dnssec-tools.org:
 pastdate-a.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.nods-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20111020141759
+	       20111025095958
 
 addedlater-withsig-AAAA.nods-ns.test.dnssec-tools.org:
   Error:       name addedlater-withsig-AAAA.nods-ns.test.dnssec-tools.org
@@ -71,7 +75,7 @@ addedlater-withsig-AAAA.nods-ns.test.dnssec-tools.org:
 futuredate-aaaa.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-aaaa.nods-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature may only be used in
-	       the future; after 20111219132259
+	       the future; after 20111224090458
 
 reverseddates-aaaa.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -91,7 +95,7 @@ addedlater-nosig-AAAA.nods-ns.test.dnssec-tools.org:
 pastdate-aaaa.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-aaaa.nods-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: Signature has expired since:
-	       20111020141759
+	       20111025095958
 
 baddata-aaaa.nods-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: baddata-aaaa.nods-ns.test.dnssec-tools.org
@@ -112,4 +116,4 @@ addedlater-nosig-A.nods-ns.test.dnssec-tools.org:
 	       not have a RRSIG record, which is required for secure
 	       domains.
 
-23 errors found in db.nods-ns.test.dnssec-tools.org.zs.signed.modified
+24 errors found in db.nods-ns.test.dnssec-tools.org.zs.signed.modified
