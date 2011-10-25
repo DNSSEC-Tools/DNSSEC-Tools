@@ -14,7 +14,23 @@ LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
 
 QT += network
 
+include(deployment.pri)
+qtcAddDeployment()
+
+BINDIR = $$PREFIX/bin
+DATADIR =$$PREFIX/share
+
+INSTALLS += target
+
 symbian:TARGET.UID3 = 0xECD7BC68
+
+unix:!symbian {
+    maemo5 {
+        target.path = /opt/usr/bin
+    } else {
+        target.path = $$PREFIX/bin
+    }
+}
 
 # If your application uses the Qt Mobility libraries, uncomment
 # the following lines and add the respective components to the 
@@ -30,10 +46,6 @@ HEADERS += mainwindow.h \
     QStatusLight.h \
     dnssec_checks.h \
     SubmitDialog.h
-
-# Please do not modify the following two lines. Required for deployment.
-include(deployment.pri)
-qtcAddDeployment()
 
 RESOURCES += \
     dnssec-check.qrc
