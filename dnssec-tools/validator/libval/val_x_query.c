@@ -283,6 +283,8 @@ compose_answer(const char * name,
     if ((f_resp == NULL) || (name == NULL))
         return VAL_BAD_ARGUMENT;
 
+    memset(f_resp, 0, sizeof(struct val_response));
+
     /* 
      * Sanity check the values of class and type 
      * Should not be larger than sizeof u_int16_t
@@ -310,24 +312,7 @@ compose_answer(const char * name,
             f_resp->vr_length = 0;
             return VAL_OUT_OF_MEMORY;
     }
-
     
-    /*
-     * temporary buffers for different sections 
-     */
-    anbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
-    nsbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
-    arbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
-    if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
-        if (anbuf)
-            FREE(anbuf);
-        if (nsbuf)
-            FREE(nsbuf);
-        if (arbuf)
-            FREE(arbuf);
-        return VAL_OUT_OF_MEMORY;
-    }
-
     /*
      * Header 
      */
@@ -349,6 +334,23 @@ compose_answer(const char * name,
     if (results == NULL) {
         return VAL_NO_ERROR;
     }
+
+    /*
+     * temporary buffers for different sections 
+     */
+    anbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
+    nsbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
+    arbuf = (u_char *) MALLOC(resp_len * sizeof(u_char));
+    if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
+        if (anbuf)
+            FREE(anbuf);
+        if (nsbuf)
+            FREE(nsbuf);
+        if (arbuf)
+            FREE(arbuf);
+        return VAL_OUT_OF_MEMORY;
+    }
+
 
     for (res = results; res; res = res->val_rc_next) {
 
