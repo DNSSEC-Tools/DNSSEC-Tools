@@ -83,7 +83,7 @@ check_results(val_context_t * context, const char *desc, char * name,
     int             err = 0, i;
     struct val_result_chain *res;
 
-    if ((NULL == result_ar) || (NULL == results))
+    if (NULL == result_ar)
         return -1;
 
     /*
@@ -95,6 +95,17 @@ check_results(val_context_t * context, const char *desc, char * name,
         i++;
     }
     result_array[i] = 0;
+
+    /* 
+     * if we don't have any answers, the result type is VAL_UNTRUSTED_ANSWER */
+    if (results == NULL) {
+        for (i = 0; result_array[i] != 0; i++) {
+            if (VAL_UNTRUSTED_ANSWER == result_array[i]) {
+                result_array[i] = -1;   /* Mark this as done  */
+                break;
+            }
+        }
+    }
 
     for (res = results; res && (err == 0); res = res->val_rc_next) {
         for (i = 0; result_array[i] != 0; i++) {
@@ -113,7 +124,7 @@ check_results(val_context_t * context, const char *desc, char * name,
             } else {
                 fprintf(stderr, "%s: \t", desc);
                 fprintf(stderr,
-                        "FAILED: Remaining error values expected\n");
+                        "FAILED: Unexpected error values\n");
                 for (i = 0; result_array[i] != 0; i++) {
                     if (result_array[i] != -1)
                         fprintf(stderr, "     %s(%d)\n",
@@ -188,7 +199,7 @@ sendquery(val_context_t * context, const char *desc, char * name,
     int             err = 0;
     struct timeval     now, start, duration;
 
-    if ((NULL == desc) || (NULL == name) || (NULL == result_ar) )
+    if ((NULL == desc) || (NULL == name) || (NULL == result_ar) || (resp == NULL))
         return -1;
 
     fprintf(stderr, "%s: ****START**** \n", desc);
@@ -199,8 +210,7 @@ sendquery(val_context_t * context, const char *desc, char * name,
 
     if (ret_val == VAL_NO_ERROR) {
 
-        if (resp)
-            ret_val = compose_answer(name, type_h, class_h, results, resp);
+        ret_val = compose_answer(name, type_h, class_h, results, resp);
 
         if (result_ar)
             err =
@@ -667,6 +677,7 @@ main(int argc, char *argv[])
     int             num_threads = 0;
     int             max_in_flight = 1;
     int             daemon = 0;
+    //u_int32_t       flags = VAL_QUERY_AC_DETAIL|VAL_QUERY_NO_EDNS0_FALLBACK;
     u_int32_t       flags = VAL_QUERY_AC_DETAIL;
     int             retvals[] = { 0 };
     int             tcs = 0, tce = -1;
