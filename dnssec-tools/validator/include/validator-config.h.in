@@ -287,6 +287,15 @@
 /* Define if NSEC3 is required. */
 #undef LIBVAL_NSEC3
 
+/* Define if resolver config file is provided inline. */
+#undef LIBVAL_RESOLV_CONF_INLINE
+
+/* Define if root.hints file is provided inline. */
+#undef LIBVAL_ROOT_HINTS_INLINE
+
+/* Define if validator config file is provided inline. */
+#undef LIBVAL_VAL_INLINE
+
 /* Define if <arpa/nameser.h> has HEADER. */
 #undef NAMESER_HAS_HEADER
 
@@ -302,22 +311,19 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
-
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
 /* Define if gethostbyname_r returns a struct hostent */
 #undef R_FUNCS_RETURN_STRUCT
 
-/* The size of `int', as computed by sizeof. */
+/* The size of a `int', as computed by sizeof. */
 #undef SIZEOF_INT
 
-/* The size of `long', as computed by sizeof. */
+/* The size of a `long', as computed by sizeof. */
 #undef SIZEOF_LONG
 
-/* The size of `short', as computed by sizeof. */
+/* The size of a `short', as computed by sizeof. */
 #undef SIZEOF_SHORT
 
 /* *s*printf() functions are char* */
