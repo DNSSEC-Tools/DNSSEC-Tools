@@ -539,7 +539,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
     int retval = EAI_FAIL;
 
     if (res == NULL)
-        return 0;
+        return EAI_FAIL;
 
     /* 
      * we may be calling get_addrinfo_from_result() repeatedly
