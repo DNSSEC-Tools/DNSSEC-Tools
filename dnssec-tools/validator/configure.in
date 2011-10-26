@@ -114,6 +114,45 @@ AC_ARG_WITH(validator-testcases-file,
 AC_DEFINE_UNQUOTED(VALIDATOR_TESTCASES,"$VALIDATOR_TESTCASES", [validator testcases configuration file])
 AC_SUBST(VALIDATOR_TESTCASES)
 
+AH_TEMPLATE([LIBVAL_VAL_INLINE], [Define if validator config file is provided inline.])
+VAL_CONF_INLINE_DATA=
+AC_ARG_WITH(inline-dnsval-conf,
+        [  --with-inline-dnsval-conf=FILE dnsval config file.],
+        [ AC_CHECK_FILE($with_inline_dnsval_conf,
+                [raw_conf_data=`cat $with_inline_dnsval_conf`
+dnl                 VAL_CONF_INLINE_DATA=`echo $raw_conf_data | sed 's/\n//'`
+                 VAL_CONF_INLINE_DATA=`echo $raw_conf_data`
+                 AC_DEFINE(LIBVAL_VAL_INLINE, 1)])
+        ])
+AC_SUBST(VAL_CONF_INLINE_DATA)
+AC_MSG_CACHE_ADD(Validator inline configuration : $with_inline_dnsval_conf)
+
+AH_TEMPLATE([LIBVAL_ROOT_HINTS_INLINE], [Define if root.hints file is provided inline.])
+ROOT_HINTS_INLINE_DATA=
+AC_ARG_WITH(inline-root-hints,
+        [  --with-inline-root-hints=FILE root.hints file.],
+        [ AC_CHECK_FILE($with_inline_root_hints,
+                [raw_conf_data=`cat $with_inline_root_hints`
+dnl                 ROOT_HINTS_INLINE_DATA=`echo $raw_conf_data | sed 's/\n//'`
+                 ROOT_HINTS_INLINE_DATA=`echo $raw_conf_data`
+                 AC_DEFINE(LIBVAL_ROOT_HINTS_INLINE, 1)])
+        ])
+AC_SUBST(ROOT_HINTS_INLINE_DATA)
+AC_MSG_CACHE_ADD(Root hints inline file         : $with_inline_root_hints)
+
+AH_TEMPLATE([LIBVAL_RESOLV_CONF_INLINE], [Define if resolver config file is provided inline.])
+RESOLV_CONF_INLINE_DATA=
+AC_ARG_WITH(inline-resolv-conf,
+        [  --with-inline-resolv-conf=FILE resolv.conf file.],
+        [ AC_CHECK_FILE($with_inline_resolv_conf,
+                [raw_conf_data=`cat $with_inline_resolv_conf`
+dnl                 RESOLV_CONF_INLINE_DATA=`echo $raw_conf_data | sed 's/\n//'`
+                 RESOLV_CONF_INLINE_DATA=`echo $raw_conf_data`
+                 AC_DEFINE(LIBVAL_RESOLV_CONF_INLINE, 1)])
+        ])
+AC_SUBST(RESOLV_CONF_INLINE_DATA)
+AC_MSG_CACHE_ADD(Resolver inline configuration  : $with_inline_resolv_conf)
+
 dnl ----------------------------------------------------------------------
 dnl
 #
@@ -722,6 +761,7 @@ AC_CONFIG_FILES([
  apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot
 ])
 AC_CONFIG_FILES([libval-config:libval-config.in], [chmod +x libval-config])
+AC_CONFIG_FILES([libval/val_inline_conf.h:libval/val_inline_conf.h.in])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT
 AC_MSG_CACHE_DISPLAY()
