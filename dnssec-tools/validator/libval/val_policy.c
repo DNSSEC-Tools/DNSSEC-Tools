@@ -625,6 +625,7 @@ val_get_token(char **buf_ptr,
     int             comment = 0;
     char            c;
     int             j = 0;
+    int            trail_space = -1;
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || 
         (end_ptr == NULL) || (line_number == NULL) ||
@@ -706,8 +707,12 @@ val_get_token(char **buf_ptr,
                         }
                     }     
                 }
-                if (!isspace(c))
+                if (!isspace(c)) {
                     escaped = 0;
+                    trail_space = -1;
+                } else {
+                    trail_space = i;
+                }
                 conf_token[i++] = c;
                 break;
         }
@@ -720,6 +725,11 @@ done:
 
         return VAL_CONF_PARSE_ERROR;
     }
+    /* remove all trailing white spaces */
+    if (trail_space != -1) {
+        conf_token[trail_space] = '\0';
+    }
+
     return VAL_NO_ERROR;
 }
 
