@@ -613,12 +613,12 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-VAL_ROOT_HINTS
-VAL_RESOLV_CONF
-LIBVAL_SUFFIX
 RESOLV_CONF_INLINE_DATA
 ROOT_HINTS_INLINE_DATA
 VAL_CONF_INLINE_DATA
+VAL_ROOT_HINTS
+VAL_RESOLV_CONF
+LIBVAL_SUFFIX
 VALIDATOR_TESTCASES
 VAL_CONFIGURATION_FILE
 DEVFLAGS
@@ -725,9 +725,6 @@ with_resolv_conf
 with_root_hints
 with_dnsval_conf
 with_validator_testcases_file
-with_inline_dnsval_conf
-with_inline_root_hints
-with_inline_resolv_conf
 with_defaults
 enable_defaults
 with_cflags
@@ -745,6 +742,10 @@ with_ssl
 enable_ssl
 enable_sha256_check
 with_threads
+with_inline_dnsval_conf
+with_inline_root_hints
+with_inline_resolv_conf
+with_inline_confs
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1393,9 +1394,6 @@ Optional Packages:
   --with-root-hints=FILE  root.hints config file.
   --with-dnsval-conf=FILE dnsval config file (SYSCONFDIR/dnssec-tools/dnsval.conf).
   --with-validator-testcases-file=FILE dnsval config file (SYSCONFDIR/dnssec-tools/dnsval.conf).
-  --with-inline-dnsval-conf=FILE dnsval config file.
-  --with-inline-root-hints=FILE root.hints file.
-  --with-inline-resolv-conf=FILE resolv.conf file.
 
 Miscellaneous:
   --with-defaults         Use defaults for prompted values.
@@ -1407,6 +1405,10 @@ Miscellaneous:
   --with-openssl=PATH     Look for openssl in PATH/{lib,include}.
 
   --without-threads       Don't use threads.
+  --with-inline-dnsval-conf=FILE dnsval config file.
+  --with-inline-root-hints=FILE root.hints file.
+  --with-inline-resolv-conf=FILE resolv.conf file.
+  --without-inline-confs         Disable use of inline (pre-configured) configuration data.
 
 Some influential environment variables:
   CC          C compiler command
@@ -11350,124 +11352,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-
-VAL_CONF_INLINE_DATA=
-
-# Check whether --with-inline-dnsval-conf was given.
-if test "${with_inline_dnsval_conf+set}" = set; then :
-  withval=$with_inline_dnsval_conf;  as_ac_File=`$as_echo "ac_cv_file_$with_inline_dnsval_conf" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_inline_dnsval_conf" >&5
-$as_echo_n "checking for $with_inline_dnsval_conf... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_inline_dnsval_conf"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-                 VAL_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_dnsval_conf`
-
-fi
-
-
-fi
-
-
-if test "x$with_inline_dnsval_conf" != "x"; then
-
-  cat >> configure-summary << EOF
-  Validator inline configuration : $with_inline_dnsval_conf
-EOF
-
-fi
-
-ROOT_HINTS_INLINE_DATA=
-
-# Check whether --with-inline-root-hints was given.
-if test "${with_inline_root_hints+set}" = set; then :
-  withval=$with_inline_root_hints;  as_ac_File=`$as_echo "ac_cv_file_$with_inline_root_hints" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_inline_root_hints" >&5
-$as_echo_n "checking for $with_inline_root_hints... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_inline_root_hints"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-                 ROOT_HINTS_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_root_hints`
-
-fi
-
-
-fi
-
-
-if test "x$with_inline_root_hints" != "x"; then
-
-  cat >> configure-summary << EOF
-  Root hints inline file         : $with_inline_root_hints
-EOF
-
-fi
-
-RESOLV_CONF_INLINE_DATA=
-
-# Check whether --with-inline-resolv-conf was given.
-if test "${with_inline_resolv_conf+set}" = set; then :
-  withval=$with_inline_resolv_conf;  as_ac_File=`$as_echo "ac_cv_file_$with_inline_resolv_conf" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_inline_resolv_conf" >&5
-$as_echo_n "checking for $with_inline_resolv_conf... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_inline_resolv_conf"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-                 RESOLV_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_resolv_conf`
-
-fi
-
-
-fi
-
-
-if test "x$with_inline_resolv_conf" != "x"; then
-
-  cat >> configure-summary << EOF
-  Resolver inline configuration  : $with_inline_resolv_conf
-EOF
-
-fi
-
 #
 # otherwise prompted information
 #
@@ -13522,6 +13406,141 @@ VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
   cat >> configure-summary << EOF
   libval root hints              : $VAL_ROOT_HINTS
 EOF
+
+
+
+
+
+
+# Check whether --with-inline-dnsval-conf was given.
+if test "${with_inline_dnsval_conf+set}" = set; then :
+  withval=$with_inline_dnsval_conf; inline_val_conf_file=$with_inline_dnsval_conf
+else
+  inline_val_conf_file=etc/dnsval.conf
+fi
+
+
+
+# Check whether --with-inline-root-hints was given.
+if test "${with_inline_root_hints+set}" = set; then :
+  withval=$with_inline_root_hints; inline_root_conf_file=$with_inline_root_hints
+else
+  inline_root_conf_file=etc/root.hints
+fi
+
+
+
+# Check whether --with-inline-resolv-conf was given.
+if test "${with_inline_resolv_conf+set}" = set; then :
+  withval=$with_inline_resolv_conf; inline_resolv_conf_file=$with_inline_resolv_conf
+else
+  inline_resolv_conf_file=etc/resolv.conf
+fi
+
+
+
+# Check whether --with-inline-confs was given.
+if test "${with_inline_confs+set}" = set; then :
+  withval=$with_inline_confs; inline_confs=$with_inline_confs
+else
+  inline_confs="yes"
+fi
+
+
+if test "$inline_confs" = "yes"; then
+    $as_echo "#define LIBVAL_INLINE_POLICY 1" >>confdefs.h
+
+else
+    inline_val_conf_file=
+    inline_root_conf_file=
+    inline_resolv_conf_file=
+fi
+
+VAL_CONF_INLINE_DATA=
+as_ac_File=`$as_echo "ac_cv_file_$inline_val_conf_file" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $inline_val_conf_file" >&5
+$as_echo_n "checking for $inline_val_conf_file... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$inline_val_conf_file"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  VAL_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_val_conf_file`
+
+  cat >> configure-summary << EOF
+  Validator inline configuration : $inline_val_conf_file
+EOF
+
+fi
+
+
+
+ROOT_HINTS_INLINE_DATA=
+as_ac_File=`$as_echo "ac_cv_file_$inline_root_conf_file" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $inline_root_conf_file" >&5
+$as_echo_n "checking for $inline_root_conf_file... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$inline_root_conf_file"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+   ROOT_HINTS_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_root_conf_file`
+
+  cat >> configure-summary << EOF
+  Root hints inline file         : $inline_root_conf_file
+EOF
+
+fi
+
+
+
+RESOLV_CONF_INLINE_DATA=
+as_ac_File=`$as_echo "ac_cv_file_$inline_resolv_conf_file" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $inline_resolv_conf_file" >&5
+$as_echo_n "checking for $inline_resolv_conf_file... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$inline_resolv_conf_file"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+   RESOLV_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_resolv_conf_file`
+
+  cat >> configure-summary << EOF
+  Resolver inline configuration  : $inline_resolv_conf_file
+EOF
+
+fi
+
 
 
 

@@ -113,46 +113,6 @@ AC_ARG_WITH(validator-testcases-file,
     [VALIDATOR_TESTCASES=$with_validator_testcases_file])
 AC_DEFINE_UNQUOTED(VALIDATOR_TESTCASES,"$VALIDATOR_TESTCASES", [validator testcases configuration file])
 AC_SUBST(VALIDATOR_TESTCASES)
-
-VAL_CONF_INLINE_DATA=
-AC_ARG_WITH(inline-dnsval-conf,
-        [  --with-inline-dnsval-conf=FILE dnsval config file.],
-        [ AC_CHECK_FILE($with_inline_dnsval_conf,
-                [
-                 VAL_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_dnsval_conf`
-                ])
-        ])
-AC_SUBST(VAL_CONF_INLINE_DATA)
-if test "x$with_inline_dnsval_conf" != "x"; then
-    AC_MSG_CACHE_ADD(Validator inline configuration : $with_inline_dnsval_conf)
-fi
-
-ROOT_HINTS_INLINE_DATA=
-AC_ARG_WITH(inline-root-hints,
-        [  --with-inline-root-hints=FILE root.hints file.],
-        [ AC_CHECK_FILE($with_inline_root_hints,
-                [
-                 ROOT_HINTS_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_root_hints`
-                ])
-        ])
-AC_SUBST(ROOT_HINTS_INLINE_DATA)
-if test "x$with_inline_root_hints" != "x"; then
-    AC_MSG_CACHE_ADD(Root hints inline file         : $with_inline_root_hints)
-fi
-
-RESOLV_CONF_INLINE_DATA=
-AC_ARG_WITH(inline-resolv-conf,
-        [  --with-inline-resolv-conf=FILE resolv.conf file.],
-        [ AC_CHECK_FILE($with_inline_resolv_conf,
-                [
-                 RESOLV_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_resolv_conf`
-                ])
-        ])
-AC_SUBST(RESOLV_CONF_INLINE_DATA)
-if test "x$with_inline_resolv_conf" != "x"; then
-    AC_MSG_CACHE_ADD(Resolver inline configuration  : $with_inline_resolv_conf)
-fi
-
 dnl ----------------------------------------------------------------------
 dnl
 #
@@ -748,7 +708,59 @@ VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
 #AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS")
 AC_SUBST(VAL_ROOT_HINTS)
 AC_MSG_CACHE_ADD(libval root hints              : $VAL_ROOT_HINTS)
-  
+
+
+AH_TEMPLATE([LIBVAL_INLINE_POLICY], [Define if inline configuration files are to be used.])
+
+dnl inline_val_conf_file=$VAL_CONFIGURATION_FILE
+AC_ARG_WITH(inline-dnsval-conf,
+        [  --with-inline-dnsval-conf=FILE dnsval config file.],
+        [inline_val_conf_file=$with_inline_dnsval_conf],
+        [inline_val_conf_file=etc/dnsval.conf])
+
+dnl inline_root_conf_file=$VAL_ROOT_HINTS
+AC_ARG_WITH(inline-root-hints,
+        [  --with-inline-root-hints=FILE root.hints file.],
+        [inline_root_conf_file=$with_inline_root_hints],
+        [inline_root_conf_file=etc/root.hints])
+    
+dnl inline_resolv_conf_file=$VAL_RESOLV_CONF
+AC_ARG_WITH(inline-resolv-conf,
+        [  --with-inline-resolv-conf=FILE resolv.conf file.],
+        [inline_resolv_conf_file=$with_inline_resolv_conf],
+        [inline_resolv_conf_file=etc/resolv.conf])
+    
+AC_ARG_WITH(inline-confs,
+        [  --without-inline-confs         Disable use of inline (pre-configured) configuration data.],
+        [inline_confs=$with_inline_confs],
+        [inline_confs="yes"])
+
+if test "$inline_confs" = "yes"; then
+    AC_DEFINE(LIBVAL_INLINE_POLICY, 1)
+else
+    inline_val_conf_file=
+    inline_root_conf_file=
+    inline_resolv_conf_file=
+fi
+
+VAL_CONF_INLINE_DATA=
+AC_CHECK_FILE($inline_val_conf_file,
+                [VAL_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_val_conf_file`
+                AC_MSG_CACHE_ADD(Validator inline configuration : $inline_val_conf_file)])
+AC_SUBST(VAL_CONF_INLINE_DATA)
+
+ROOT_HINTS_INLINE_DATA=
+AC_CHECK_FILE($inline_root_conf_file,
+              [ ROOT_HINTS_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_root_conf_file` 
+                AC_MSG_CACHE_ADD(Root hints inline file         : $inline_root_conf_file)])
+AC_SUBST(ROOT_HINTS_INLINE_DATA)
+
+RESOLV_CONF_INLINE_DATA=
+AC_CHECK_FILE($inline_resolv_conf_file,
+              [ RESOLV_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_resolv_conf_file`
+                AC_MSG_CACHE_ADD(Resolver inline configuration  : $inline_resolv_conf_file)])
+AC_SUBST(RESOLV_CONF_INLINE_DATA)
+
 
 dnl ----------------------------------------------------------------------
 
