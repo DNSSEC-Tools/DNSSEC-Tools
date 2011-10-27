@@ -1,10 +1,16 @@
 #ifndef VAL_INLINE_CONF_H
 #define VAL_INLINE_CONF_H
 
+#ifdef LIBVAL_INLINE_POLICY
 const char val_conf_inline_buf[] = ""@VAL_CONF_INLINE_DATA@;
 
 const char root_hints_inline_buf[] = ""@ROOT_HINTS_INLINE_DATA@;
 
 const char resolv_conf_inline_buf[] = ""@RESOLV_CONF_INLINE_DATA@;
+#else
+const char val_conf_inline_buf[] = "";
+const char root_hints_inline_buf[] = "";
+const char resolv_conf_inline_buf[] = "";
+#endif
 
 #endif
