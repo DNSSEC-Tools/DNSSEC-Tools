@@ -119,9 +119,8 @@ VAL_CONF_INLINE_DATA=
 AC_ARG_WITH(inline-dnsval-conf,
         [  --with-inline-dnsval-conf=FILE dnsval config file.],
         [ AC_CHECK_FILE($with_inline_dnsval_conf,
-                [raw_conf_data=`cat $with_inline_dnsval_conf`
-dnl                 VAL_CONF_INLINE_DATA=`echo $raw_conf_data | sed 's/\n//'`
-                 VAL_CONF_INLINE_DATA=`echo $raw_conf_data`
+                [
+                 VAL_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_dnsval_conf`
                  AC_DEFINE(LIBVAL_VAL_INLINE, 1)])
         ])
 AC_SUBST(VAL_CONF_INLINE_DATA)
@@ -132,9 +131,8 @@ ROOT_HINTS_INLINE_DATA=
 AC_ARG_WITH(inline-root-hints,
         [  --with-inline-root-hints=FILE root.hints file.],
         [ AC_CHECK_FILE($with_inline_root_hints,
-                [raw_conf_data=`cat $with_inline_root_hints`
-dnl                 ROOT_HINTS_INLINE_DATA=`echo $raw_conf_data | sed 's/\n//'`
-                 ROOT_HINTS_INLINE_DATA=`echo $raw_conf_data`
+                [
+                 ROOT_HINTS_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_root_hints`
                  AC_DEFINE(LIBVAL_ROOT_HINTS_INLINE, 1)])
         ])
 AC_SUBST(ROOT_HINTS_INLINE_DATA)
@@ -145,9 +143,8 @@ RESOLV_CONF_INLINE_DATA=
 AC_ARG_WITH(inline-resolv-conf,
         [  --with-inline-resolv-conf=FILE resolv.conf file.],
         [ AC_CHECK_FILE($with_inline_resolv_conf,
-                [raw_conf_data=`cat $with_inline_resolv_conf`
-dnl                 RESOLV_CONF_INLINE_DATA=`echo $raw_conf_data | sed 's/\n//'`
-                 RESOLV_CONF_INLINE_DATA=`echo $raw_conf_data`
+                [
+                 RESOLV_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_resolv_conf`
                  AC_DEFINE(LIBVAL_RESOLV_CONF_INLINE, 1)])
         ])
 AC_SUBST(RESOLV_CONF_INLINE_DATA)
