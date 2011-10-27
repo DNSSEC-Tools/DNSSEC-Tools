@@ -11351,7 +11351,6 @@ _ACEOF
 
 
 
-
 VAL_CONF_INLINE_DATA=
 
 # Check whether --with-inline-dnsval-conf was given.
@@ -11376,7 +11375,6 @@ $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
 
                  VAL_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_dnsval_conf`
-                 $as_echo "#define LIBVAL_VAL_INLINE 1" >>confdefs.h
 
 fi
 
@@ -11384,12 +11382,13 @@ fi
 fi
 
 
+if test "x$with_inline_dnsval_conf" != "x"; then
 
   cat >> configure-summary << EOF
   Validator inline configuration : $with_inline_dnsval_conf
 EOF
 
-
+fi
 
 ROOT_HINTS_INLINE_DATA=
 
@@ -11415,7 +11414,6 @@ $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
 
                  ROOT_HINTS_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_root_hints`
-                 $as_echo "#define LIBVAL_ROOT_HINTS_INLINE 1" >>confdefs.h
 
 fi
 
@@ -11423,12 +11421,13 @@ fi
 fi
 
 
+if test "x$with_inline_root_hints" != "x"; then
 
   cat >> configure-summary << EOF
   Root hints inline file         : $with_inline_root_hints
 EOF
 
-
+fi
 
 RESOLV_CONF_INLINE_DATA=
 
@@ -11454,7 +11453,6 @@ $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
 
                  RESOLV_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $with_inline_resolv_conf`
-                 $as_echo "#define LIBVAL_RESOLV_CONF_INLINE 1" >>confdefs.h
 
 fi
 
@@ -11462,11 +11460,13 @@ fi
 fi
 
 
+if test "x$with_inline_resolv_conf" != "x"; then
 
   cat >> configure-summary << EOF
   Resolver inline configuration  : $with_inline_resolv_conf
 EOF
 
+fi
 
 #
 # otherwise prompted information
