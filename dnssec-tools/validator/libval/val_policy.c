@@ -18,6 +18,7 @@
 #include "val_context.h"
 #include "val_assertion.h"
 #include "val_parse.h"
+#include "val_inline_conf.h"
 
 
 #define READ_POL_FOR_ZONE(buf_ptr, end_ptr, line_number, endst, retval, err, token)  do {\
@@ -77,38 +78,38 @@
  * configuration and root.hints files.
  ***************************************************************
  */
-static char    *resolv_conf = NULL;
-static char    *root_hints = NULL;
-static char    *dnsval_conf = NULL;
+static char    *g_resolv_conf = NULL;
+static char    *g_root_hints = NULL;
+static char    *g_dnsval_conf = NULL;
 
 static int      atexit_reg = 0;
 
 static void
 policy_cleanup(void)
 {
-    if (NULL != resolv_conf)
-        free(resolv_conf);
+    if (NULL != g_resolv_conf)
+        free(g_resolv_conf);
 
-    if (NULL != root_hints)
-        free(root_hints);
+    if (NULL != g_root_hints)
+        free(g_root_hints);
 
-    if (NULL != dnsval_conf)
-        free(dnsval_conf);
+    if (NULL != g_dnsval_conf)
+        free(g_dnsval_conf);
 }
 
 
 char           *
 resolv_conf_get(void)
 {
-    if (NULL == resolv_conf) {
+    if (NULL == g_resolv_conf) {
         if (0 == atexit_reg) {
             atexit_reg = 1;
             atexit(policy_cleanup);
         }
-        resolv_conf = strdup(VAL_RESOLV_CONF);
+        g_resolv_conf = strdup(VAL_RESOLV_CONF);
     }
 
-    return strdup(resolv_conf);
+    return strdup(g_resolv_conf);
 }
 
 int
@@ -119,13 +120,13 @@ resolv_conf_set(const char *name)
     if (NULL == new_name)
         return 1;
 
-    if (NULL != resolv_conf)
-        free(resolv_conf);
+    if (NULL != g_resolv_conf)
+        free(g_resolv_conf);
     else if (0 == atexit_reg) {
         atexit_reg = 1;
         atexit(policy_cleanup);
     }
-    resolv_conf = new_name;
+    g_resolv_conf = new_name;
 
     return 0;
 }
@@ -133,16 +134,16 @@ resolv_conf_set(const char *name)
 char           *
 root_hints_get(void)
 {
-    if (NULL == root_hints) {
+    if (NULL == g_root_hints) {
         if (0 == atexit_reg) {
             atexit_reg = 1;
             atexit(policy_cleanup);
         }
 
-        root_hints = strdup(VAL_ROOT_HINTS);
+        g_root_hints = strdup(VAL_ROOT_HINTS);
     }
 
-    return strdup(root_hints);
+    return strdup(g_root_hints);
 }
 
 int
@@ -153,14 +154,14 @@ root_hints_set(const char *name)
     if (NULL == new_name)
         return 1;
 
-    if (NULL != root_hints)
-        free(root_hints);
+    if (NULL != g_root_hints)
+        free(g_root_hints);
     else if (0 == atexit_reg) {
         atexit_reg = 1;
         atexit(policy_cleanup);
     }
 
-    root_hints = new_name;
+    g_root_hints = new_name;
 
     return 0;
 }
@@ -168,10 +169,10 @@ root_hints_set(const char *name)
 char           *
 dnsval_conf_get(void)
 {
-    if (NULL == dnsval_conf)
-        dnsval_conf = strdup(VAL_CONFIGURATION_FILE);
+    if (NULL == g_dnsval_conf)
+        g_dnsval_conf = strdup(VAL_CONFIGURATION_FILE);
 
-    return strdup(dnsval_conf);
+    return strdup(g_dnsval_conf);
 }
 
 int
@@ -182,9 +183,9 @@ dnsval_conf_set(const char *name)
     if (NULL == new_name)
         return 1;
 
-    if (NULL != dnsval_conf)
-        free(dnsval_conf);
-    dnsval_conf = new_name;
+    if (NULL != g_dnsval_conf)
+        free(g_dnsval_conf);
+    g_dnsval_conf = new_name;
 
     return 0;
 }
@@ -1436,6 +1437,7 @@ read_next_val_config_file(val_context_t *ctx,
     char token[TOKEN_MAX];
     int endst = 0;
     char *buf = NULL;
+    size_t bufsize = 0;
     char *buf_ptr, *end_ptr;
     int  line_number = 1;
     struct policy_fragment *pol_frag = NULL;
@@ -1460,44 +1462,56 @@ read_next_val_config_file(val_context_t *ctx,
     next_label = *label;
     
     fd = open(dnsval_c->dnsval_conf, O_RDONLY);
-    if (fd == -1) {
+    if (fd < 0) {
         val_log(ctx, LOG_ERR, 
                 "read_next_val_config_file(): Could not open validator conf file for reading: %s",
                 dnsval_c->dnsval_conf);
         /* check if we have at least one file */
-        if (dnsval_c == dlist) {
-            retval = VAL_CONF_NOT_FOUND;
-            goto err;
-        } else {
+        if (dnsval_c != dlist) {
             return VAL_NO_ERROR;
         }
-    }
+        /* check if we have the validator policy available inline */
+        bufsize = sizeof(val_conf_inline_buf);
+        if (!strncmp(val_conf_inline_buf, "", sizeof(""))) {
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        }
+        val_log(ctx, LOG_INFO, 
+                "read_next_val_config_file(): Using inline validator configuration data");
+        buf = (char *) MALLOC (bufsize * sizeof(char));
+        if (buf == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        memcpy(buf, val_conf_inline_buf, bufsize);
+    } else {
 #ifdef HAVE_FLOCK
-    memset(&fl, 0, sizeof(fl));
-    fl.l_type = F_RDLCK;
-    fcntl(fd, F_SETLKW, &fl);
+        memset(&fl, 0, sizeof(fl));
+        fl.l_type = F_RDLCK;
+        fcntl(fd, F_SETLKW, &fl);
 #endif
-
-    if (0 != fstat(fd, &sb)) {
-        val_log(ctx, LOG_ERR, 
+        if (0 != fstat(fd, &sb)) {
+            val_log(ctx, LOG_ERR, 
                 "read_next_val_config_file(): Could not stat validator conf file: %s",
                 dnsval_c->dnsval_conf);
-        retval = VAL_CONF_NOT_FOUND;
-        goto err;
-    } 
-    dnsval_c->v_timestamp = sb.st_mtime;
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        } 
+        dnsval_c->v_timestamp = sb.st_mtime;
+        bufsize = sb.st_size;
 
-    buf = (char *) MALLOC (sb.st_size * sizeof(char));
-    if (buf == NULL) {
-        retval = VAL_OUT_OF_MEMORY;
-        goto err;
-    }
+        buf = (char *) MALLOC (bufsize * sizeof(char));
+        if (buf == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
 
-    if (-1 == read(fd, buf, sb.st_size)) {
-        val_log(ctx, LOG_ERR, "read_next_val_config_file(): Could not read validator conf file: %s",
-                dnsval_c->dnsval_conf);
-        retval = VAL_CONF_NOT_FOUND;
-        goto err;
+        if (-1 == read(fd, buf, bufsize)) {
+            val_log(ctx, LOG_ERR, "read_next_val_config_file(): Could not read validator conf file: %s",
+                    dnsval_c->dnsval_conf);
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        }
     }
 
     val_log(ctx, LOG_NOTICE, "read_next_val_config_file(): Reading validator policy from %s",
@@ -1520,7 +1534,7 @@ read_next_val_config_file(val_context_t *ctx,
         /* don't free global options g_opt since we're going to reuse this */
 
         buf_ptr = buf;
-        end_ptr = buf+sb.st_size;
+        end_ptr = buf+bufsize;
         dnsval_l = NULL;
         done = 1;
     
@@ -1732,12 +1746,15 @@ read_next_val_config_file(val_context_t *ctx,
     *label = next_label;
     FREE(buf);
     buf = NULL;
+
+    if (fd > 0) {
 #ifdef HAVE_FLOCK
-    fl.l_type = F_UNLCK;
-    fcntl(fd, F_SETLKW, &fl);
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLKW, &fl);
 #endif
-    close(fd);
-    fd = -1;
+        close(fd);
+        fd = -1;
+    }
     return VAL_NO_ERROR;
 
 err:
@@ -1957,68 +1974,84 @@ read_res_config_file(val_context_t * ctx)
     struct stat sb;
     char *buf_ptr, *end_ptr;
     char *buf = NULL;
+    size_t bufsize = 0;
     int retval;
+    time_t mtime = 0;
 
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
-    resolv_config = ctx->resolv_conf;
-    if (NULL == resolv_config) {
-        if (!ctx->root_ns) {
-            val_log(ctx, LOG_WARNING, 
-                    "read_res_config_file(): Resolver configuration is NULL and root-hints was not found");
-            return VAL_CONF_NOT_FOUND;
-        }
-        val_log(ctx, LOG_DEBUG, "read_res_config_file(): No resolv.conf file configured, but root-hints available"); 
-        return VAL_NO_ERROR;
-    }
+    fd = -1;
 
-    fd = open(resolv_config, O_RDONLY);
-    if (fd == -1) {
-        val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open resolver conf file for reading: %s",
-                resolv_conf);
-    
-        /* Use default resolv.conf file */
-        FREE(ctx->resolv_conf);
-        ctx->resolv_conf = strdup(VAL_DEFAULT_RESOLV_CONF);
-        if (ctx->resolv_conf == NULL) {
-            return VAL_OUT_OF_MEMORY;
-        }
-        resolv_config = ctx->resolv_conf;
+    resolv_config = ctx->resolv_conf;
+    if (resolv_config) {
         fd = open(resolv_config, O_RDONLY);
         if (fd == -1) {
-            val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open default resolver conf file for reading: %s",
-                    resolv_conf);
-            return VAL_CONF_NOT_FOUND;
+            val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open resolver conf file for reading: %s",
+                resolv_config);
+    
+            /* Use default resolv.conf file */
+            FREE(ctx->resolv_conf);
+            ctx->resolv_conf = strdup(VAL_DEFAULT_RESOLV_CONF);
+            if (ctx->resolv_conf == NULL) {
+                return VAL_OUT_OF_MEMORY;
+            }
+            resolv_config = ctx->resolv_conf;
+            fd = open(resolv_config, O_RDONLY);
         }
     }
+
+    if (fd > 0) {
 #ifdef HAVE_FLOCK
-    fl.l_type = F_RDLCK;
-    fcntl(fd, F_SETLKW, &fl);
+        fl.l_type = F_RDLCK;
+        fcntl(fd, F_SETLKW, &fl);
 #endif
 
-    if (0 != fstat(fd, &sb)) {
-        retval = VAL_CONF_NOT_FOUND;
-        goto err;
-    } 
-    if (0 == sb.st_size)
-        goto empty;
+        if (0 != fstat(fd, &sb)) {
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        } 
+        if (0 == sb.st_size)
+            goto empty;
 
-    buf = (char *) MALLOC (sb.st_size * sizeof(char));
-    if (buf == NULL) {
-        retval = VAL_OUT_OF_MEMORY;
-        goto err;
+        mtime = sb.st_mtime;
+        bufsize = sb.st_size;
+        buf = (char *) MALLOC (bufsize * sizeof(char));
+        if (buf == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        if (-1 == read(fd, buf, bufsize)) {
+            val_log(ctx, LOG_ERR, "read_res_config_file(): Could not read resolver conf file: %s",
+                    resolv_config);
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        }
+        val_log(ctx, LOG_NOTICE, "read_res_config_file(): Reading resolver policy from %s", resolv_config);
+
+    } else {
+        if (resolv_config)
+            val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open resolver conf file for reading: %s",
+                    resolv_config);
+
+        /* Try to read any inline root.hints information */
+        mtime = 0;
+        bufsize = sizeof(resolv_conf_inline_buf);
+        if (!strncmp(resolv_conf_inline_buf, "", sizeof(""))) {
+            goto empty;
+        }
+        val_log(ctx, LOG_INFO, 
+                "read_res_config_file(): Using inline resolv.conf data");
+        buf = (char *) MALLOC (bufsize * sizeof(char));
+        if (buf == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        memcpy(buf, resolv_conf_inline_buf, bufsize);
     }
+
     buf_ptr = buf;
-    end_ptr = buf+sb.st_size;
-
-    if (-1 == read(fd, buf, sb.st_size)) {
-        val_log(ctx, LOG_ERR, "read_res_config_file(): Could not read resolver conf file: %s",
-                resolv_conf);
-        retval = VAL_CONF_NOT_FOUND;
-        goto err;
-    }
-    val_log(ctx, LOG_NOTICE, "read_res_config_file(): Reading resolver policy from %s", resolv_config);
+    end_ptr = buf+bufsize;
 
     while(buf_ptr < end_ptr) {
 
@@ -2112,12 +2145,15 @@ read_res_config_file(val_context_t * ctx)
     }
 
     FREE(buf);
+
   empty:
+    if (fd > 0 ) {
 #ifdef HAVE_FLOCK
-    fl.l_type = F_UNLCK;
-    fcntl(fd, F_SETLKW, &fl);
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLKW, &fl);
 #endif
-    close(fd);
+        close(fd);
+    }
 
     /*
      * Check if we have root hints 
@@ -2125,7 +2161,7 @@ read_res_config_file(val_context_t * ctx)
     if (ns_head == NULL) {
         if (!ctx->root_ns) {
             val_log(ctx, LOG_WARNING, 
-                    "read_res_config_file(): Resolver configuration is empty, but root-hints was not found");
+                    "read_res_config_file(): Resolver configuration empty or missing, but root-hints was not found");
             return VAL_CONF_NOT_FOUND;
         }
     } 
@@ -2134,7 +2170,7 @@ read_res_config_file(val_context_t * ctx)
     CTX_LOCK_POL_EX(ctx);
     destroy_respol(ctx);
     ctx->nslist = ns_head;
-    ctx->r_timestamp = sb.st_mtime;
+    ctx->r_timestamp = mtime;
     CTX_UNLOCK_POL(ctx);
     CTX_LOCK_POL_SH(ctx);
 
@@ -2191,6 +2227,8 @@ read_root_hints_file(val_context_t * ctx)
     int have_type;
     char *buf_ptr, *end_ptr;
     char *buf = NULL;
+    size_t bufsize = 0;
+    time_t mtime;
 
     class_h = 0;
     have_type = 0;
@@ -2199,48 +2237,63 @@ read_root_hints_file(val_context_t * ctx)
         return VAL_BAD_ARGUMENT;
     
     root_hints = ctx->root_conf;
-    /* 
-     *  Root hints are not necessary. Only needed if our resolv.conf is empty. 
-     * Flag the error at that time
-     */
-    if (NULL == root_hints) {
-        val_log(ctx, LOG_INFO, "read_root_hints_file(): No root.hints file configured"); 
-        return VAL_NO_ERROR;
-    }
 
-    fd = open(root_hints, O_RDONLY);
-    if (fd == -1) {
-        val_log(ctx, LOG_INFO, "read_root_hints_file(): Could not open root hints file for reading: %s",
-                root_hints);
-        return VAL_NO_ERROR;
-    }
+    fd = -1;
+
+    if (NULL != root_hints && 
+            (fd = open(root_hints, O_RDONLY)) > 0) {
 #ifdef HAVE_FLOCK
-    fl.l_type = F_RDLCK;
-    fcntl(fd, F_SETLKW, &fl);
+        fl.l_type = F_RDLCK;
+        fcntl(fd, F_SETLKW, &fl);
 #endif
-
-    if (0 != fstat(fd, &sb)) { 
-        retval = VAL_CONF_NOT_FOUND;
-        goto err;
-    }
-
-    buf = (char *) MALLOC (sb.st_size * sizeof(char));
-    if (buf == NULL) {
-        retval = VAL_OUT_OF_MEMORY;
-        goto err;
-    }
-    buf_ptr = buf;
-    end_ptr = buf+sb.st_size;
-
-    if (-1 == read(fd, buf, sb.st_size)) {
-        val_log(ctx, LOG_ERR, "read_root_hints_file(): Could not read root hints file: %s",
+        if (0 != fstat(fd, &sb)) { 
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        }
+        mtime = sb.st_mtime;
+        bufsize = sb.st_size;
+        buf = (char *) MALLOC (bufsize * sizeof(char));
+        if (buf == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        if (-1 == read(fd, buf, bufsize)) {
+            val_log(ctx, LOG_ERR, "read_root_hints_file(): Could not read root hints file: %s",
+                    root_hints);
+            retval = VAL_CONF_NOT_FOUND;
+            goto err;
+        }
+        val_log(ctx, LOG_NOTICE, "read_root_hints_file(): Reading root hints from %s",
                 root_hints);
-        retval = VAL_CONF_NOT_FOUND;
-        goto err;
+
+    } else {
+        /* Try to read any inline root.hints information */
+        mtime = 0;
+        bufsize = sizeof(root_hints_inline_buf);
+        if (!strncmp(root_hints_inline_buf, "", sizeof(""))) {
+            if (root_hints)
+                val_log(ctx, LOG_INFO, "read_root_hints_file(): Could not open root hints file for reading: %s",
+                    root_hints);
+            else
+                val_log(ctx, LOG_INFO, "read_root_hints_file(): No root.hints file configured"); 
+            /* 
+             * Root hints are not necessary. Only needed if our resolv.conf is empty. 
+             * Flag the error at that time
+             */
+            return VAL_NO_ERROR;
+        }
+        val_log(ctx, LOG_INFO, 
+                "read_root_hints_file(): Using inline root.hints data");
+        buf = (char *) MALLOC (bufsize * sizeof(char));
+        if (buf == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        memcpy(buf, root_hints_inline_buf, bufsize);
     }
 
-    val_log(ctx, LOG_NOTICE, "read_root_hints_file(): Reading root hints from %s",
-            root_hints);
+    buf_ptr = buf;
+    end_ptr = buf+bufsize;
 
     while (buf_ptr < end_ptr) {
 
@@ -2412,7 +2465,7 @@ read_root_hints_file(val_context_t * ctx)
     if (ctx->root_ns)
         free_name_servers(&ctx->root_ns);
     ctx->root_ns = ns_list;
-    ctx->h_timestamp = sb.st_mtime;
+    ctx->h_timestamp = mtime;
     CTX_UNLOCK_POL(ctx);
     CTX_LOCK_POL_SH(ctx);
 
@@ -2420,11 +2473,14 @@ read_root_hints_file(val_context_t * ctx)
 
     val_log(ctx, LOG_DEBUG, "read_root_hints_file(): Done reading root hints");
     FREE(buf);
+
+    if (fd > 0) {
 #ifdef HAVE_FLOCK
-    fl.l_type = F_UNLCK;
-    fcntl(fd, F_SETLKW, &fl);
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLKW, &fl);
 #endif
-    close(fd);
+        close(fd);
+    }
 
     return VAL_NO_ERROR;
 
@@ -2432,11 +2488,13 @@ read_root_hints_file(val_context_t * ctx)
 
     if (buf)
         FREE(buf);
+    if (fd > 0) {
 #ifdef HAVE_FLOCK
-    fl.l_type = F_UNLCK;
-    fcntl(fd, F_SETLKW, &fl);
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLKW, &fl);
 #endif
-    close(fd);
+        close(fd);
+    }
     res_sq_free_rrset_recs(&root_info);
     val_log(ctx, LOG_ERR, "read_root_hints_file(): Error encountered while reading file %s - %s", 
             root_hints, p_val_err(retval));
