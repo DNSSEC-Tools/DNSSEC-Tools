@@ -37,7 +37,7 @@ void usage(char *progname)
     printf("        -h, --help                        Display this help and exit\n");
     printf("        -d, --dnsval-conf=<dnsval.conf>   Specify the dnsval.conf file\n");
     printf("        -r, --resolv-conf=<resolv.conf>   Specify the resolv.conf file\n");
-    printf("        -i, --root_h-nts=<root.hints>     Specify the root.hints file\n");
+    printf("        -i, --root-hints=<root.hints>     Specify the root.hints file\n");
     printf("        -v, --verbose                     Enable verbose mode\n");
 }
 
