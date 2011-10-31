@@ -25,19 +25,19 @@ new-files:
 	phaser demo.rollrec
 
 zones-short:
-	zonesigner -zsklife 60 -genkeys example.com
-	zonesigner -zsklife 30 -e +25 -genkeys test.com
+	zonesigner -zsklife 30 -genkeys example.com
+	zonesigner -zsklife 30 -e now+25 -genkeys test.com
 
-#	zonesigner -zsklife 60 -kskdirectory /tmp/e-ksk -zskdirectory /tmp/e-zsk -genkeys example.com
-#	zonesigner -zsklife 30 -e +25 -kskdirectory /tmp/t-ksk -zskdirectory /tmp/t-zsk -genkeys test.com
+#	zonesigner -zsklife 30 -kskdirectory /tmp/e-ksk -zskdirectory /tmp/e-zsk -genkeys example.com
+#	zonesigner -zsklife 30 -e now+25 -kskdirectory /tmp/t-ksk -zskdirectory /tmp/t-zsk -genkeys test.com
 
 zones-same:
-	zonesigner -zsklife 60 -genkeys example.com
-	zonesigner -zsklife 60 -genkeys test.com
+	zonesigner -zsklife 30 -genkeys example.com
+	zonesigner -zsklife 30 -genkeys test.com
 
 zones-long:
 	zonesigner -zsklife 7200 -genkeys example.com
-	zonesigner -zsklife 3600 -e +25 -genkeys test.com
+	zonesigner -zsklife 3600 -e now+25 -genkeys test.com
 
 
 long:	clean zones-long new-files
