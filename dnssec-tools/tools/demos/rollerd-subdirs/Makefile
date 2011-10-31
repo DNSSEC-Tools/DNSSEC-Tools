@@ -35,7 +35,7 @@ new-files:
 	phaser demo.rollrec
 
 zones-short:
-	cd ${DIRDUMMY}   ; zonesigner -zsklife 15 -e +25 -genkeys dummy.com
+	cd ${DIRDUMMY}   ; zonesigner -zsklife 15 -e now+25 -genkeys dummy.com
 	cd ${DIREXAMPLE} ; zonesigner -zsklife 60 -genkeys example.com
 	zonesigner -zsklife 30 -genkeys test.com
 
@@ -45,7 +45,7 @@ zones-same:
 	zonesigner -zsklife 60 -genkeys test.com
 
 zones-long:
-	zonesigner -zsklife 600 -e +25 -genkeys dummy.com
+	zonesigner -zsklife 600 -e now+25 -genkeys dummy.com
 	zonesigner -zsklife 7200 -genkeys example.com
 	zonesigner -zsklife 3600 -genkeys test.com
 
