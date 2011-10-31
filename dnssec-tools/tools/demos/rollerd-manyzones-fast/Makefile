@@ -22,7 +22,7 @@ pristine-files:
 	phaser demo.rollrec
 
 zones-short:
-	zonesigner -zsklife 15 -e +25 -genkeys dummy.com
+	zonesigner -zsklife 15 -e now+25 -genkeys dummy.com
 	zonesigner -zsklife 15 -genkeys example.com
 	zonesigner -zsklife 15 -genkeys test.com
 	zonesigner -zsklife 15 -genkeys woof.com
