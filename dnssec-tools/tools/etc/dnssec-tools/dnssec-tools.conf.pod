@@ -267,7 +267,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     keygen          /usr/local/sbin/dnssec-keygen
     rndc            /usr/local/sbin/rndc
     zonecheck       /usr/local/sbin/named-checkzone
-    zonecheck-opts  -k ignore
+    zonecheck-opts  -i local -k ignore
     zonesign        /usr/local/sbin/dnssec-signzone
 
     genkrf	    /usr/bin/genkrf
