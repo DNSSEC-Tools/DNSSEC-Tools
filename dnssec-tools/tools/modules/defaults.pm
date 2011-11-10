@@ -67,7 +67,7 @@ my %defaults =
 #	"viewimage"	   => "/usr/X11R6/bin/viewimage",
 	"zone_errors"	   => 5,
 	"zonecheck"	   => getprefixdir() . "/sbin/named-checkzone",
-	"zonecheck-opts"   => "",		# Options for zone checker.
+	"zonecheck-opts"   => "-i local",	# Options for zone checker.
 	"zonesign"	   => getprefixdir() . "/sbin/dnssec-signzone",
 	"zonesign-opts"	   => "",		# Options for zone signer.
 	"zskcount"	   => 1,		# Number of Current ZSK keys.
@@ -357,6 +357,9 @@ This default holds the path to the zone-verification program.
 =item B<zonecheck-opts>
 
 This default hold a set of options for the zone-verification program.
+
+This default is set to "-i local".  This value has been found to greatly
+improve the amount of time it takes B<named-checkzone> to run.
 
 =item B<zonesign>
 
