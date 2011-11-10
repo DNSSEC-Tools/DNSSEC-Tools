@@ -1445,7 +1445,7 @@ sub get_dt_opts()
 	print "\n";
 
 	$kgopts = getval("Key-Generation Options","");
-	$zcopts = getval("Zone-Checking Options","");
+	$zcopts = getval("Zone-Checking Options","-i local");
 	$zsopts = getval("Zone-Signing Options","");
 	print "\n";
 
