@@ -4367,6 +4367,10 @@ Additional options for B<dnssec-signzone> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the B<-szopts> option.
 
+The default value for this option is "-i local", set in B<defaults.pm>.
+This value has been found to greatly improve the amount of time it takes
+B<named-checkzone> to run.
+
 =back
 
 =head2 Other Options
