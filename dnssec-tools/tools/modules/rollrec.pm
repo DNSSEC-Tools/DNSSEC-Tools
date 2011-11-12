@@ -597,7 +597,8 @@ sub rollrec_readfile
 {
 	my $rfh = shift;			# File handle for rollrec file.
 	my $name;				# Name of the rollrec entry.
-	my $havecmdsalready = 0;
+	my $havecmdsalready = 0;		# Commands-read flag.
+	my $prevline = 'dummy';			# Previous line.
 
 	#
 	# If we already have commands loaded, don't reload them.
@@ -616,6 +617,15 @@ sub rollrec_readfile
 		my $value = "";		# Keyword's value.
 
 		$line = $_;
+
+		#
+		# Collapse consecutive blank lines to a single blank.
+		#
+		# This isn't strictly necessary, but it keeps rollrec files
+		# from getting filled with lots of blank lines.
+		#
+		next if(($prevline =~ /^\s*$/) && ($line =~ /^\s*$/));
+		$prevline = $line;
 
 		#
 		# Save the line in our array of rollrec lines.
@@ -1322,6 +1332,14 @@ sub rollrec_del
 	$rollreclen -= $len;
 
 	#
+	# Fold two consecutive blank lines into one.
+	#
+	if(($rollreclines[$rrind-1] eq "\n") && ($rollreclines[$rrind] eq "\n"))
+	{
+		splice(@rollreclines,$rrind,1);
+	}
+
+	#
 	# Mark that the file has been modified.
 	#
 	$modified = 1;
@@ -1824,6 +1842,11 @@ I<rollrec_close()> saves the file and close the Perl file handle to the
 I<rollrec> file.  If a I<rollrec> file is no longer wanted to be open, yet
 the contents should not be saved, I<rollrec_discard()> gets rid of the data
 closes and the file handle B<without> saving any modified data.
+
+On reading a I<rollrec> file, consecutive blank lines are collapsed into a
+single blank line.  As I<rollrec> entries are added and deleted, files merged
+and files split, it is possible for blocks of consecutive blanks lines to
+grow.  This will prevent these blocks from growing excessively.
 
 =head1 ROLLREC LOCKING
 
