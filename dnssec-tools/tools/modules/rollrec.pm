@@ -1301,7 +1301,7 @@ sub rollrec_del
 		$lkey = $1;
 		$lval = $2;
 
-		last if($lkey eq "roll");
+		last if(($lkey eq "roll") || ($lkey eq "skip"));
 	}
 	$ind--;
 
@@ -1937,7 +1937,7 @@ I<rollrec> synchronization file does not exist, it will be created.  If the
 process can't create the synchronization file, an error will be returned.
 Success or failure is returned.
 
-=item I<rollrec_merge(target_rollrec_file,rollrec_file2, ... rollrec_fileN)>
+=item I<rollrec_merge(target_rollrec_file, rollrec_file1, ... rollrec_fileN)>
 
 This interface merges the specified I<rollrec> files.  It reads each file
 and parses them into a I<rollrec> hash table and a file-contents array.  The
@@ -2088,6 +2088,9 @@ I<rollrec_names> is a list of I<rollrec> entries that will be moved from the
 current file to the file named in I<new_rollrec_file>.  If some of the given
 I<rollrec> names are invalid, the valid names will be moved to the new file
 and the invalid names will be returned in a list to the caller.
+
+Only the I<rollrec> entries themselves will be moved to the new I<rollrec>
+file.  Any associated comments will be left in the current I<rollrec> file.
 
 On success, the count of moved I<rollrec> entries is returned.  Error returns
 are given below.
