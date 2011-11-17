@@ -30,17 +30,19 @@ extern          "C" {
 /*
  * Query states 
  */
-#define Q_INIT          1
-#define Q_SENT          2
-#define Q_WAIT_FOR_GLUE 3
-#define Q_ANSWERED      4
-#define Q_ERROR_BASE    5
-#define Q_QUERY_ERROR (Q_ERROR_BASE + 0) 
-#define Q_RESPONSE_ERROR (Q_ERROR_BASE + 1) 
-#define Q_WRONG_ANSWER (Q_ERROR_BASE + 2) 
-#define Q_REFERRAL_ERROR (Q_ERROR_BASE + 3) 
-#define Q_MISSING_GLUE (Q_ERROR_BASE + 4) 
-#define Q_CONFLICTING_ANSWERS (Q_ERROR_BASE + 5) 
+#define Q_INIT                  0x0001 
+#define Q_SENT                  0x0002 
+#define Q_WAIT_FOR_A_GLUE       0x0004 
+#define Q_WAIT_FOR_AAAA_GLUE    0x0008
+#define Q_WAIT_FOR_GLUE         (Q_WAIT_FOR_A_GLUE | Q_WAIT_FOR_AAAA_GLUE)    
+#define Q_ANSWERED              0x0010
+#define Q_ERROR_BASE            0x0020
+#define Q_QUERY_ERROR           0x0040    
+#define Q_RESPONSE_ERROR        0x0080 
+#define Q_WRONG_ANSWER          0x0100
+#define Q_REFERRAL_ERROR        0x0200
+#define Q_MISSING_GLUE          0x0400
+#define Q_CONFLICTING_ANSWERS   0x0800
 
 
 /*
