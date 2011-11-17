@@ -220,10 +220,10 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
 #ifdef WIN32
 #ifdef LIBVAL_USE_WOCK
 #define INET_NTOP(family, sa, addrlen, buf, buflen, addr) \
-    addr = (family != AF_INET) ? NULL :\
-               inet_ntoa(((struct sockaddr_in *)sa)->sin_addr) 
+    (addr = (family != AF_INET) ? NULL :\
+               inet_ntoa(((struct sockaddr_in *)sa)->sin_addr))
 #define INET_PTON(family, buf, sa, addrlenptr) \
-    (((struct sockaddr_in *)sa)->sin_addr.s_addr = (family != AF_INET)? INADDR_NONE : inet_addr(buf)) == INADDR_NONE ? 0 : 1
+    ((((struct sockaddr_in *)sa)->sin_addr.s_addr = (family != AF_INET)? INADDR_NONE : inet_addr(buf)) == INADDR_NONE ? 0 : 1)
 #else
 #define INET_NTOP(family, sa, addrlen, buf, buflen, addr) \
     ((WSAAddressToStringA((SOCKADDR *)sa, addrlen,\
@@ -234,11 +234,11 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
 #endif
 #else
 #define INET_NTOP(family, sa, addrlen, buf, buflen, addr) \
-    addr = (family == AF_INET6) ? inet_ntop(family, &((struct sockaddr_in6 *)sa)->sin6_addr, buf, buflen) :\
-               inet_ntop(family, &((struct sockaddr_in *)sa)->sin_addr, buf, buflen) 
+    (addr = (family == AF_INET6) ? inet_ntop(family, &((struct sockaddr_in6 *)sa)->sin6_addr, buf, buflen) :\
+               inet_ntop(family, &((struct sockaddr_in *)sa)->sin_addr, buf, buflen))
 #define INET_PTON(family, buf, sa, addrlenptr) \
-    (family == AF_INET6) ? inet_pton(family, buf, &((struct sockaddr_in6 *)sa)->sin6_addr) : \
-               inet_pton(family, buf, &((struct sockaddr_in *)sa)->sin_addr)
+    ((family == AF_INET6) ? inet_pton(family, buf, &((struct sockaddr_in6 *)sa)->sin6_addr) : \
+               inet_pton(family, buf, &((struct sockaddr_in *)sa)->sin_addr))
 #endif
 
 
