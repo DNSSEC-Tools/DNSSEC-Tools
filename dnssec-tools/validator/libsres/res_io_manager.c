@@ -92,27 +92,52 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
  * Find a port in the range 1024 - 65535 
  */
 static int
-bind_to_random_source(SOCKET s)
+bind_to_random_source(int af, SOCKET s)
 {   
-    /* XXX This is not IPv6 ready yet. Probably need to have
-     * XXX a config statement in dnsval.conf that allows the
-     * XXX user to specify the preferred source IP
-     */
     struct sockaddr_storage ea_source;
-    struct sockaddr_in *sa = (struct sockaddr_in *) &ea_source;
+    struct sockaddr_in *sa4 = (struct sockaddr_in *) &ea_source;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) &ea_source;
+#endif
+    struct sockaddr *sa;
+    size_t sock_size;
+
     u_int16_t next_port, start_port;
 
-    memset(sa, 0, sizeof(ea_source));
-    sa->sin_family = AF_INET;
-    sa->sin_addr.s_addr = htonl(INADDR_ANY);
+    memset(&ea_source, 0, sizeof(ea_source));
+    if (af == AF_INET) {
+        sa4->sin_family = AF_INET;
+        sa4->sin_addr.s_addr = htonl(INADDR_ANY);
+#ifdef VAL_IPV6
+    } else if (af == AF_INET6) {
+        sa6->sin6_family = AF_INET6;
+        /*struct in6_addr anyaddr = IN6ADDR_ANY_INIT*/
+        /*sa6->sin6_addr = IN6ADDR_ANY_INIT*/
+        sa6->sin6_addr = in6addr_any;
+#endif
+    } else {
+        res_log(NULL,LOG_ERR,"libsres: could not bind to random port for unsupported address family %d", af);
+        return 1; /* failure */
+    }
 
     start_port = (libsres_random() % 64512) + 1024;
     next_port = start_port;
 
     do {
-        sa->sin_port = htons(next_port);
-        if (0 == bind(s, (const struct sockaddr *)sa, 
-                    sizeof(struct sockaddr_in))) {
+        if (af == AF_INET) {
+            sa4->sin_port = htons(next_port);
+            sa = (struct sockaddr *) sa4;
+            sock_size = sizeof(struct sockaddr_in);
+#ifdef VAL_IPV6
+        } else { /* AF_INET6 */
+            sa6->sin6_port = htons(next_port);
+            sa = (struct sockaddr *) sa6;
+            sock_size = sizeof(struct sockaddr_in6);
+#endif
+        }
+
+        if (0 == bind(s, (const struct sockaddr *)sa, sock_size)) {
+            //res_log(NULL,LOG_ERR,"libsres: bound to random port %d", next_port);
             return 0; /* success */
         } else  {
             /* error */
@@ -124,7 +149,7 @@ bind_to_random_source(SOCKET s)
     } while (next_port != start_port);
 
     /* wrapped around and still no ports found */
-    res_log(NULL,LOG_ERR,"libsres: ""could not bind to random port");
+    res_log(NULL,LOG_ERR,"libsres: could not bind to random port above %d", start_port);
 
     return 1; /* failure */
 }
@@ -300,10 +325,10 @@ res_io_send(struct expected_arrival *shipit)
      * which causes the source to be cancelled next go-round.
      */
     if (shipit->ea_socket == INVALID_SOCKET) {
-        int             i = shipit->ea_which_address;
+        int i = shipit->ea_which_address;
+        int af =  shipit->ea_ns->ns_address[i]->ss_family;
 
-        shipit->ea_socket = socket(shipit->ea_ns->ns_address[i]->ss_family,
-                                   socket_type, 0);
+        shipit->ea_socket = socket(af, socket_type, 0);
         if (shipit->ea_socket == INVALID_SOCKET) {
             res_log(NULL,LOG_ERR,"libsres: ""socket() failed, errno = %d",
                 errno);
@@ -311,7 +336,7 @@ res_io_send(struct expected_arrival *shipit)
         }
 
         /* Set the source port */
-        if (0 != bind_to_random_source(shipit->ea_socket)) {
+        if (0 != bind_to_random_source(af, shipit->ea_socket)) {
             /* error */
             CLOSESOCK(shipit->ea_socket);
             return SR_IO_SOCKET_ERROR;
@@ -320,10 +345,17 @@ res_io_send(struct expected_arrival *shipit)
         /*
          * OS X wants the socket size to be sockaddr_in for INET,
          * while Linux is happy with sockaddr_storage. 
-         * XXX Might need to fix this for sockaddr_in6 too...
          */
-        socket_size = shipit->ea_ns->ns_address[i]->ss_family == AF_INET ?
-                      sizeof(struct sockaddr_in) : sizeof(struct sockaddr_storage);
+        if (af == AF_INET) {
+            socket_size = sizeof(struct sockaddr_in);
+#ifdef VAL_IPV6
+        } else if (af == AF_INET6) {
+            socket_size = sizeof(struct sockaddr_in6);
+#endif
+        } else {
+            socket_size = sizeof(struct sockaddr_storage); 
+        }
+
         if (connect
             (shipit->ea_socket,
              (struct sockaddr *) shipit->ea_ns->ns_address[i],
