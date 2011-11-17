@@ -77,17 +77,17 @@
 }while (0)
 
 /* 
- * VAL_QUERY_RECURSE and VAL_QUERY_NO_EDNS0 are special 
- * If we are not looking for this flag, then return an existing node that has this
- * flag set if that's whats in our cache. 
- * If we are looking for this flag, do not return a node that does not have this
+ * The flags in VAL_QFLAGS_CACHE_PREF_MASK: 
+ * (VAL_QUERY_RECURSE, VAL_QUERY_NO_EDNS0, VAL_QUERY_SKIP_CACHE) are special 
+ * If we are not looking for these flags, then return what ever we find 
+ * If we are looking for this flag, only return a node that has this 
  * flag set
  */
 #define QUERY_FLAGS_MATCHING(cacheflag, queryflag) \
     ((queryflag == VAL_QFLAGS_ANY) ||\
      (((queryflag & VAL_QFLAGS_CACHE_MASK) == (cacheflag & VAL_QFLAGS_CACHE_MASK)) &&\
-        (!(queryflag & VAL_QUERY_RECURSE) || (cacheflag & VAL_QUERY_RECURSE)) &&\
-        (!(queryflag & VAL_QUERY_NO_EDNS0) || (cacheflag & VAL_QUERY_NO_EDNS0))))
+      (!(queryflag & VAL_QFLAGS_CACHE_PREF_MASK) || \
+       ((queryflag & VAL_QFLAGS_CACHE_PREF_MASK) == (cacheflag & queryflag & VAL_QFLAGS_CACHE_PREF_MASK)))))
 
 
 static int _ask_cache_one(val_context_t * context,
@@ -466,8 +466,13 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
          * reset the query if VAL_QUERY_REFRESH_QCACHE is set 
          */
         if (temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
+
             if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, temp, &cleared)))
                 return retval;
+
+            if (cleared) {
+                temp->qc_flags ^= VAL_QUERY_REFRESH_QCACHE;
+            }
         }
         *added_q = temp;
         return VAL_NO_ERROR;
@@ -577,7 +582,7 @@ static int requery_with_edns0(val_context_t *context,
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
         matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
     } 
-    matched_q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+    matched_q->qc_flags |= VAL_QUERY_SKIP_CACHE;
 
     val_log(context, LOG_DEBUG,
             "requery_with_edns0(): EDNS0 was not used; re-issuing query");
@@ -599,6 +604,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     struct queries_for_query *temp, *prev;
     temp = *queries;
     prev = temp;
+
 
     while (temp) {
         if ((temp->qfq_query->qc_type_h == type_h)
@@ -670,6 +676,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     struct val_query_chain *added_q = NULL;
     struct timeval  tv;
     int retval;
+    u_int32_t tflags = flags;
     
     /*
      * sanity checks 
@@ -679,10 +686,15 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
 
     *added_qfq = NULL;
 
+    /* if this is DNSSEC meta-data then EDNS0 must be set */
+    if (DNSSEC_METADATA_QTYPE(type_h) && (tflags & VAL_QUERY_NO_EDNS0)) {
+        tflags ^= VAL_QUERY_NO_EDNS0;
+    }
+
     /*
      * Check if query already exists 
      */
-    new_qfq = check_in_qfq_chain(context, queries, name_n, type_h, class_h, flags); 
+    new_qfq = check_in_qfq_chain(context, queries, name_n, type_h, class_h, tflags); 
     if (new_qfq == NULL) {
         /*
          * Add to the cache and to the qfq chain 
@@ -690,7 +702,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if (VAL_NO_ERROR !=
                 (retval =
                     add_to_query_chain(context, name_n, type_h, class_h,
-                                    flags, &added_q)))
+                                    tflags, &added_q)))
             return retval;
 
         new_qfq = (struct queries_for_query *) MALLOC (sizeof(struct queries_for_query));
@@ -704,7 +716,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         LOCK_QC_SH(added_q);
 
         new_qfq->qfq_query = added_q;
-        new_qfq->qfq_flags = flags;
+        new_qfq->qfq_flags = tflags;
         new_qfq->qfq_next = NULL;
         gettimeofday(&tv, NULL);
         if (added_q->qc_bad > 0 || 
@@ -712,7 +724,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
             tv.tv_sec > added_q->qc_ttl_x)) {
             /* try to get an exclusive lock on this query */
                 if (added_q->qc_bad > 0 && 
-                        !(flags & VAL_QUERY_DONT_VALIDATE)) {
+                        !(tflags & VAL_QUERY_DONT_VALIDATE)) {
                     /* Invoke bad-cache logic only if validation is requested */
                     added_q->qc_bad++;
                     if (added_q->qc_bad > QUERY_BAD_CACHE_THRESHOLD) {
@@ -2072,19 +2084,12 @@ get_ac_trust(val_context_t *context,
         name_n = next_as->val_ac_rrset.ac_data->rrs_zonecut_n;
     }
 
-    /** see if query already submitted */
-    added_q = check_in_qfq_chain(context, queries, name_n, type,
-                                 next_as->val_ac_rrset.ac_data->rrs_class_h,
-                                 flags);
-    if (NULL == added_q) {
-
-        /** Create a query for missing data */
-        if (VAL_NO_ERROR !=
+    /** Create a query for missing data */
+    if (VAL_NO_ERROR !=
             add_to_qfq_chain(context, queries, name_n, type,
                              next_as->val_ac_rrset.ac_data->rrs_class_h, 
                              flags, &added_q))
-            return NULL;
-    }
+        return NULL;
 
     if (added_q->qfq_query->qc_state < Q_ANSWERED) {
         if (next_as->val_ac_status > VAL_AC_FAIL_BASE) {
@@ -4835,8 +4840,7 @@ static int switch_to_root(val_context_t * context,
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
         matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
     }
-    matched_q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
-    matched_q->qc_flags |= VAL_QUERY_RECURSE;
+    matched_q->qc_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
 
     val_log(context, LOG_INFO,
             "switch_to_root(): Re-initiating query from root for {%s %s %s}",
@@ -4900,7 +4904,7 @@ verify_and_validate(val_context_t * context,
              * Recurse from root for all additional queries sent in
              * in relation to this query; e.g. queries for DNSKEYs, DS etc 
              */
-            top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
+            top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
             goto query_reset;
         }
         /* create a dummy result */
@@ -5328,7 +5332,7 @@ verify_and_validate(val_context_t * context,
                  * in relation to this query; e.g. queries for DNSKEYs, DS etc 
                  */
                 res->val_rc_rrset = NULL;
-                top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
+                top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
                 goto query_reset;
             }
         }
@@ -5523,8 +5527,7 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
-    if ((next_q->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) ||
-        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
+    if (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE) {
         /* don't look at the cache for this query */
         val_log(context, LOG_DEBUG,
                 "ask_cache(): skipping cache for {%s %s(%d) %s(%d)}, flags=%x",
@@ -5692,12 +5695,6 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
             retval = val_resquery_send(context, query);
         if (retval == VAL_NO_ERROR)
             query->qfq_query->qc_state = Q_SENT;
-        /* 
-         * reset the VAL_QUERY_REFRESH_QCACHE flag
-         */
-        if (query->qfq_query->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
-            query->qfq_query->qc_flags ^= VAL_QUERY_REFRESH_QCACHE;
-        }
     }
 
     return retval;
@@ -6395,7 +6392,7 @@ construct_authentication_chain(val_context_t * context,
                 *w_results = NULL;
                 *results = NULL;
 
-                top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_REFRESH_QCACHE);
+                top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
                 *done = 0;
             }
 
