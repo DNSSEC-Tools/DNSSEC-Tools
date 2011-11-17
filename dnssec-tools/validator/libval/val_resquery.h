@@ -12,8 +12,8 @@
                                    type_h != ns_t_ds) ? 1 : 0)
 
 struct glue_fetch_bucket {
-    struct queries_for_query *qfq[MAX_GLUE_FETCH_DEPTH];
-    int qfq_count;
+    struct queries_for_query *qfq;
+    struct glue_fetch_bucket *next_dep;
     struct glue_fetch_bucket *next_bucket;
 };
 
