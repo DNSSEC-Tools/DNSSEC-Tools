@@ -2411,6 +2411,17 @@ read_root_hints_file(val_context_t * ctx)
             }
             rdata_len_h = sizeof(struct in_addr);
             memcpy(rdata_n, &sa.sin_addr, rdata_len_h);
+#ifdef VAL_IPV6
+        } else if (type_h == ns_t_aaaa) {
+            struct sockaddr_in6 sa6;
+            size_t addrlen6 = sizeof(struct sockaddr_in6);
+            if (INET_PTON(AF_INET6, token, ((struct sockaddr *)&sa6), &addrlen6) != 1) {
+                retval = VAL_CONF_PARSE_ERROR;
+                goto err;
+            }
+            rdata_len_h = sizeof(struct in6_addr);
+            memcpy(rdata_n, &sa6.sin6_addr, rdata_len_h);
+#endif
         } else if (type_h == ns_t_ns) {
             if (ns_name_pton(token, rdata_n, sizeof(rdata_n)) == -1) {
                 retval = VAL_CONF_PARSE_ERROR;
