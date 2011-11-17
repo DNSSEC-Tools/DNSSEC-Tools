@@ -12,8 +12,8 @@ extern          "C" {
 
 #define VAL_FLAG_CHAIN_COMPLETE 0x80
 #define VAL_MASKED_FLAG_CHAIN_COMPLETE 0x7f
-#define SET_CHAIN_COMPLETE(status)         status |= VAL_FLAG_CHAIN_COMPLETE
-#define SET_MASKED_STATUS(st, new_val)     st = (st & VAL_FLAG_CHAIN_COMPLETE) | new_val
+#define SET_CHAIN_COMPLETE(status)         (status |= VAL_FLAG_CHAIN_COMPLETE)
+#define SET_MASKED_STATUS(st, new_val)     (st = (st & VAL_FLAG_CHAIN_COMPLETE) | new_val)
 #define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_MASKED_FLAG_CHAIN_COMPLETE) == chk_val)
 
 #define VAL_NO_ERROR 0
