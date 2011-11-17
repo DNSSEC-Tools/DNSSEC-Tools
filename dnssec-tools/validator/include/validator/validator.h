@@ -47,8 +47,8 @@ struct timeval;
  */
 #define VAL_QFLAGS_ANY          0xffffffff
 /*
- * Flags in this bit mask are checked when finding
- * a matching record in the query cache 
+ * Flags in this bit mask MUST match when finding
+ * a record in the query cache 
  */
 #define VAL_QFLAGS_CACHE_MASK       0x0000ffff
 #define VAL_QUERY_AC_DETAIL         0x00000001
@@ -57,19 +57,27 @@ struct timeval;
 #define VAL_QUERY_USING_DLV         0x00000008 
 #define VAL_QUERY_ASYNC             0x00000010
 #define VAL_QUERY_NO_EDNS0_FALLBACK 0x00000020
-#define VAL_QUERY_SKIP_CACHE        0x00000080
-#define VAL_QUERY_SKIP_RESOLVER     0x00000100
+#define VAL_QUERY_SKIP_RESOLVER     0x00000040
 
 /*
- * Flags in this bit mask are not checked when finding
+ * Flags in this bit mask are MUST match if they
+ * are requested, they MAY match if these flags are
+ * not requested 
+ */
+#define VAL_QFLAGS_CACHE_PREF_MASK  0x00ff0000
+#define VAL_QUERY_RECURSE           0x00010000
+#define VAL_QUERY_NO_EDNS0          0x00020000
+#define VAL_QUERY_SKIP_CACHE        0x00040000
+
+/*
+ * Flags in this bit mask are NOT checked when finding
  * a matching record in the query cache 
  */
-#define VAL_QFLAGS_NOCACHE_MASK     0xffff0000
-#define VAL_QUERY_EDNS0_FALLBACK    0x00010000 
-#define VAL_QUERY_GLUE_REQUEST      0x00020000
-#define VAL_QUERY_REFRESH_QCACHE    0x00040000
-#define VAL_QUERY_RECURSE           0x00080000
-#define VAL_QUERY_NO_EDNS0          0x00100000
+#define VAL_QFLAGS_NOCACHE_MASK     0xff000000
+#define VAL_QUERY_EDNS0_FALLBACK    0x01000000 
+#define VAL_QUERY_GLUE_REQUEST      0x02000000
+#define VAL_QUERY_REFRESH_QCACHE    0x04000000
+
 
 #define VAL_QFLAGS_USERMASK (VAL_QUERY_AC_DETAIL |\
                              VAL_QUERY_DONT_VALIDATE |\
