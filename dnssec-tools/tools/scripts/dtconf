@@ -68,7 +68,7 @@ sub main()
 	# Read the config file.
 	#
 	%dtconf = parseconfig($conffile);
-	if(!defined(%dtconf))
+	if(%dtconf == 0)
 	{
 		err("config file \"$conffile\" not parsed\n");
 		exit(-1);
