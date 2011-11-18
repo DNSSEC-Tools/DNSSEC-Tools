@@ -1970,12 +1970,12 @@ sub zsk_phase2
 	if(!$krf  || ($krf eq ""))
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  no keyrec for zone specified");
-		return;
+		return(2);
 	}
 	if(! -e $krf)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  keyrec \"$krf\" for zone does not exist");
-		return;
+		return(2);
 	}
 
 	#
