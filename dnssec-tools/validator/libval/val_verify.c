@@ -757,9 +757,8 @@ verify_next_assertion(val_context_t * ctx,
         if (nextrr == NULL) {
             val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
             SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
-        } 
 
-        if (as->val_ac_status == VAL_AC_TRUST ||
+        } else if (as->val_ac_status == VAL_AC_TRUST ||
             (is_verified && 
                      nextrr->rr_status == VAL_AC_TRUST_POINT)) {
             /* we've verified a trust anchor */
