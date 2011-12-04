@@ -1601,12 +1601,13 @@ read_next_val_config_file(val_context_t *ctx,
                     } 
                     if (gt_opt->app_policy == VAL_POL_GOPT_OVERRIDE ||
                             (*label == NULL && gt_opt->app_policy == VAL_POL_GOPT_ENABLE)) {
-                        next_label = getprogname(); 
-                        if (next_label != NULL) {
+                        const char *c_next_label = getprogname();
+                        if (c_next_label != NULL) {
                             val_log(ctx, LOG_NOTICE, 
                                     "read_next_val_config_file(): Using policy label from app name: %s",
-                                    next_label);
+                                    c_next_label);
                             done = 0;
+                            next_label = (char *)c_next_label;
                             break;
                         }
                         /* policy does not exist, dont create the impression that we have one */
@@ -2405,7 +2406,8 @@ read_root_hints_file(val_context_t * ctx)
         if (type_h == ns_t_a) {
             struct sockaddr_in sa;
             size_t addrlen4 = sizeof(struct sockaddr_in);
-            if (INET_PTON(AF_INET, token, ((struct sockaddr *)&sa), &addrlen4) != 1) {
+            if (addrlen4 == addrlen4 && /* this is to remove unused variable warning */
+                INET_PTON(AF_INET, token, ((struct sockaddr *)&sa), &addrlen4) != 1) {
                 retval = VAL_CONF_PARSE_ERROR;
                 goto err;
             }
@@ -2415,7 +2417,8 @@ read_root_hints_file(val_context_t * ctx)
         } else if (type_h == ns_t_aaaa) {
             struct sockaddr_in6 sa6;
             size_t addrlen6 = sizeof(struct sockaddr_in6);
-            if (INET_PTON(AF_INET6, token, ((struct sockaddr *)&sa6), &addrlen6) != 1) {
+            if (addrlen6 == addrlen6 && /* this is to remove unused variable warning */
+                INET_PTON(AF_INET6, token, ((struct sockaddr *)&sa6), &addrlen6) != 1) {
                 retval = VAL_CONF_PARSE_ERROR;
                 goto err;
             }
