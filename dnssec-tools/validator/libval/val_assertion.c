@@ -7246,12 +7246,17 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
  *           > 0  : number of asnchronous status objects checked
  */
 int
-val_async_check_wait(val_context_t *context, fd_set *pending_desc,
+val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
                      int *nfds, struct timeval *tv, u_int32_t flags)
 {
     val_async_status           *as;
     int                         count = 0;
+    val_context_t *context;
 
+    /*
+     * get context, if needed
+     */
+    context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context)
         return VAL_BAD_ARGUMENT;
 
