@@ -2638,12 +2638,17 @@ val_resquery_async_rcv(val_context_t * context,
  }
  
 int
-val_async_select_info(val_context_t *context, fd_set *activefds,
+val_async_select_info(val_context_t *ctx, fd_set *activefds,
                       int *nfds, struct timeval *timeout)
 {
     val_async_status *as;
     struct queries_for_query *qfq;
+    val_context_t *context;
 
+    /*
+     * get context, if needed
+     */
+    context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context)
         return VAL_BAD_ARGUMENT;
 
