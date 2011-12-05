@@ -277,7 +277,7 @@ sub main
 
 	#
 	# Initialize a few things...
-	#	- force nonbuffered
+	#	- force unbuffered
 	#	- default error action
 	#	- set run-packed flag
 	#
@@ -1429,7 +1429,7 @@ sub queue_prtsooners
 }
 
 #-----------------------------------------------------------------------------
-# Routine:      queue_rolleve()
+# Routine:      queue_rollevent()
 #
 # Purpose	Handle the rollover event for a single rollrec entry.
 #
@@ -1885,23 +1885,21 @@ sub zsk_phaser
 	my $rname = shift;		# Zone name.
 	my $rrr = shift;		# Reference to rollrec.
 
-	my %rr;				# Rollrec hash.
-	my $phase;			# Zone's current rollover phase.
+	my $ph;				# Zone's current rollover phase.
 
 	#
 	# Get this rollrec record's current phase.
 	#
-	%rr = %$rrr;
-	$phase = $rr{'zskphase'};
+	$ph = $rrr->{'zskphase'};
 
 	#
 	# Work on this rollrec's phase.
 	#
-	$phase = zskphase($rname,$rrr,1)	if($phase == 0);
-	$phase = zsk_phasewait($rname,$rrr,1)	if($phase == 1);
-	$phase = zsk_phase2($rname,$rrr)	if($phase == 2);
-	$phase = zsk_phasewait($rname,$rrr,3)	if($phase == 3);
-	$phase = zsk_phase4($rname,$rrr)	if($phase == 4);
+	$ph = phasecmd(\&zskphase,$rname,$rrr,'normal')		if($ph == 0);
+	$ph = phasecmd(\&zsk_phasewait,$rname,$rrr,'zsk1')	if($ph == 1);
+	$ph = phasecmd(\&zsk_phase2,$rname,$rrr,'zsk2')		if($ph == 2);
+	$ph = phasecmd(\&zsk_phasewait,$rname,$rrr,'zsk3')	if($ph == 3);
+	$ph = phasecmd(\&zsk_phase4,$rname,$rrr,'zsk4')		if($ph == 4);
 }
 
 #-----------------------------------------------------------------------------
@@ -1916,14 +1914,6 @@ sub zsk_phasewait
 	my $rrr	  = shift;			# Reference to rollrec.
 	my $phase = shift;			# Rollover phase.
 
-	my %rr;					# Rollrec hash.
-
-	#
-	# Get the rollrec.
-	#
-	$rrr = rollrec_fullrec($rname);
-	%rr = %$rrr;
-
 	#
 	# Check if we can go to the next rollover phase.  If not, we'll
 	# go to the next rollrec entry and return to this later.
@@ -1934,11 +1924,9 @@ sub zsk_phasewait
 	}
 
 	#
-	# Bump this rollrec's phase number and return the new phase.
+	# Return the next phase number.
 	#
-	$phase++;
-	zskphase($rname,$rrr,$phase);
-	return($phase);
+	return($phase + 1);
 }
 
 #-----------------------------------------------------------------------------
@@ -1991,6 +1979,7 @@ sub zsk_phase2
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to sign zone with the Published ZSK");
+		return(-1);
 	}
 
 	#
@@ -2011,6 +2000,7 @@ sub zsk_phase2
 			rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to read keyrec \"$krf\"; marking $rname as skipped");
 		}
 		skipnow($rname);
+		return(-1);
 	}
 
 	#
@@ -2029,11 +2019,9 @@ sub zsk_phase2
 	}
 
 	#
-	# Bump this rollrec's phase number and return the new phase.
+	# Return the next phase number.
 	#
-	zskphase($rname,$rrr,3);
 	return(3);
-
 }
 
 #-----------------------------------------------------------------------------
@@ -2066,12 +2054,12 @@ sub zsk_phase4
 	if(!$krf  || ($krf eq ""))
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  no keyrec for zone specified");
-		return;
+		return(-1);
 	}
 	if(! -e $krf)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  keyrec \"$krf\" for zone does not exist");
-		return;
+		return(-1);
 	}
 
 	#
@@ -2087,6 +2075,7 @@ sub zsk_phase4
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to adjust ZSK keyrec");
+		return(-1);
 	}
 
 	#
@@ -2096,6 +2085,7 @@ sub zsk_phase4
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the Current ZSK");
+		return(-1);
 	}
 
 	#
@@ -2108,16 +2098,11 @@ sub zsk_phase4
 	}
 
 	#
-	# Put ourselves back in the pre-roll state.
-	#
-	zskphase($rname,$rrr,0);
-
-	#
 	# Set a timestamp for the completion of the ZSK roll.
 	#
 	rollstamp($rname,'zsk');
 	clearzoneerr($rname,$rrr);
-	return(0);
+	return(5);
 }
 
 ###############################################################################
@@ -2393,26 +2378,25 @@ sub ksk_phaser
 	my $rrr = shift;		# Reference to rollrec.
 
 	my %rr;				# Rollrec hash.
-	my $phase;			# Zone's current rollover phase.
+	my $ph;				# Zone's current rollover phase.
 
 	#
 	# Get this rollrec record's current phase.
 	#
 	%rr = %$rrr;
-	$phase = $rr{'kskphase'};
+	$ph = $rr{'kskphase'};
 
 	#
 	# Work on this rollrec's phase.
 	#
-	$phase = kskphase($rname,$rrr,1)	if($phase == 0);
-	$phase = ksk_phasewait($rname,$rrr,1)	if($phase == 1);
-	$phase = ksk_phase2($rname,$rrr)	if($phase == 2);
-	$phase = ksk_phasewait($rname,$rrr,3)	if($phase == 3);
-	$phase = ksk_phase4($rname,$rrr)	if($phase == 4);
-	$phase = ksk_phase5($rname,$rrr)	if($phase == 5);
-	$phase = ksk_phase6($rname,$rrr)	if($phase == 6);
-	$phase = ksk_phase7($rname,$rrr)	if($phase == 7);
-
+	$ph = phasecmd(\&kskphase,$rname,$rrr,'normal')		if($ph == 0);
+	$ph = phasecmd(\&ksk_phasewait,$rname,$rrr,'ksk1')	if($ph == 1);
+	$ph = phasecmd(\&ksk_phase2,$rname,$rrr,'ksk2')		if($ph == 2);
+	$ph = phasecmd(\&ksk_phasewait,$rname,$rrr,'ksk3')	if($ph == 3);
+	$ph = phasecmd(\&ksk_phase4,$rname,$rrr,'ksk4')		if($ph == 4);
+	$ph = phasecmd(\&ksk_phase5,$rname,$rrr,'ksk5')		if($ph == 5);
+	$ph = phasecmd(\&ksk_phase6,$rname,$rrr,'ksk6')		if($ph == 6);
+	$ph = phasecmd(\&ksk_phase7,$rname,$rrr,'ksk7')		if($ph == 7);
 }
 
 #-----------------------------------------------------------------------------
@@ -2427,13 +2411,10 @@ sub ksk_phasewait
 	my $rrr	  = shift;			# Reference to rollrec.
 	my $phase = shift;			# Rollover phase.
 
-	my %rr;					# Rollrec hash.
-
 	#
 	# Get the rollrec.
 	#
 	$rrr = rollrec_fullrec($rname);
-	%rr = %$rrr;
 
 	#
 	# Check if we can go to the next rollover phase.  If not, we'll
@@ -2444,11 +2425,9 @@ sub ksk_phasewait
 			  !holddownexpire($rname,$rrr,$phase));
 
 	#
-	# Bump this rollrec's KSK phase number and return the new phase.
+	# Return the next phase number.
 	#
-	$phase++;
-	kskphase($rname,$rrr,$phase);
-	return($phase);
+	return($phase + 1);
 }
 
 #-----------------------------------------------------------------------------
@@ -2481,12 +2460,12 @@ sub ksk_phase2
 	if(!$krf || ($krf eq ""))
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  no keyrec for zone specified");
-		return;
+		return(-1);
 	}
 	if(! -e $krf)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  keyrec \"$krf\" for zone does not exist");
-		return;
+		return(-1);
 	}
 
 	#
@@ -2501,6 +2480,7 @@ sub ksk_phase2
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published KSK");
+		return(-1);
 	}
 
 	#
@@ -2515,7 +2495,6 @@ sub ksk_phase2
 	#
 	# On to the phase 3.
 	#
-	kskphase($rname,$rrr,3);
 	return(3);
 }
 
@@ -2546,12 +2525,12 @@ sub ksk_phase4
 	if(!$krf || ($krf eq ""))
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  no keyrec for zone specified");
-		return;
+		return(-1);
 	}
 	if(! -e $krf)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  keyrec \"$krf\" for zone does not exist");
-		return;
+		return(-1);
 	}
 
 	#
@@ -2566,12 +2545,12 @@ sub ksk_phase4
 	if($ret)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to roll the Published KSK to the Current KSK");
+		return(-1);
 	}
 
 	#
-	# Now to the phase 5.
+	# Now to phase 5.
 	#
-	kskphase($rname,$rrr,5);
 	return(5);
 }
 
@@ -2598,7 +2577,7 @@ sub ksk_phase5
 	if($auto)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 5:  automatic keyset transfer not yet supported");
-		return;
+		return(-1);
 	}
 	elsif(($dtconf{'admin-email'}  eq 'nomail') ||
 	      ($rrr->{'administrator'} eq 'nomail'))
@@ -2644,7 +2623,6 @@ to continue, its keyset must be transferred to its parent.";
 	#
 	# Pressing on to phase 6.
 	#
-	kskphase($rname,$rrr,6);
 	return(6);
 }
 
@@ -2669,7 +2647,7 @@ sub ksk_phase6
 	if($auto)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 6:  automatic DS-record determination not yet supported");
-		return;
+		return(-1);
 	}
 	else
 	{
@@ -2711,13 +2689,9 @@ sub ksk_phase7
 	}
 
 	#
-	# Reload the zone.
-	#
-	$krf = $rr{'keyrec'};
-
-	#
 	# Set up the keyarch command we'll be executing.
 	#
+	$krf = $rr{'keyrec'};
 	$zname = $rr{'zonename'};
 	$keyarch_cmd = "$keyarch -dtconf $dtcf -zone $zname $krf -verbose";
 
@@ -2728,6 +2702,7 @@ sub ksk_phase7
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
 
 		zoneerr($rname,$rrr);
+		return(-1);
 	}
 	else
 	{
@@ -2736,16 +2711,14 @@ sub ksk_phase7
 	}
 
 	#
-	# Move the rollrec back to phase 0.
-	#
-	kskphase($rname,$rrr,0);
-
-	#
 	# Set a timestamp for the completion of the KSK roll.
 	#
 	rollstamp($rname,'ksk');
 
-	return(0);
+	#
+	# Returning to normal rollover state.
+	#
+	return(8);
 }
 
 ###############################################################################
@@ -3053,6 +3026,149 @@ $timesecs = str2time($timestr);
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	phasecmd()
+#
+# Purpose:	Run a list of commands for this rollover phase.  If a list is
+#		not defined for this phase, then we'll use the default action.
+#		action.
+#
+sub phasecmd
+{
+	my $phasefunc = shift;		# Reference to phase function.
+	my $rname = shift;		# Zone name.
+	my $rrr = shift;		# Reference to rollrec.
+	my $phase = shift;		# Phase we're handling.
+
+	my $progkey = "prog-$phase";	# Config. key for phase's programs.
+	my $cmdlist;			# Execution flag.
+	my @cmds;			# List of commands to run for phase.
+	my $ret;			# Return value from phase function.
+
+	my %rr = %$rrr;			# Rollrec hash.
+	my $cmdargs;			# Arguments to the command.
+	my $phasetype;			# Phase type.
+	my $phasenum;			# Phase number.
+	my $newphase;			# New phase number.
+
+	#
+	# Get the command list for this rollover phase.  Force the default
+	# if a command list isn't defined for the phase.
+	#
+	if(!defined($dtconf{$progkey}) || ($dtconf{$progkey} eq ''))
+	{
+		$cmdlist = 'default';
+	}
+	else
+	{
+		$cmdlist = $dtconf{$progkey}
+	}
+	@cmds = split /;/, $cmdlist;
+
+	#
+	# Break out the phase atoms.  If this is a normal phase, then
+	# we'll be alchemists and transmute the atoms we need.
+	#
+	if($phase eq 'normal')
+	{
+		$phasetype = 'normal';
+		$phasenum  = 1;
+	}
+	else
+	{
+		$phase = lc($phase);
+		$phase =~ /([kz]sk)(\d)/;
+		$phasetype = $1;
+		$phasenum  = $2;
+	}
+
+	#
+	# Run the commands defined for this phase.  The default commands
+	# are handled internally to rollerd.
+	#
+	foreach my $cmd (@cmds)
+	{
+		#
+		# Get rid of any leading or trailing blanks.
+		#
+		$cmd =~ s/^\s+(.*)\s+$/$1/;
+
+		#
+		# Take this phase's normal rollover action if the command
+		# is "default".
+		#
+		if($cmd =~ /^default$/i)
+		{
+			#
+			# Run the phase-specific routine.
+			#
+			$ret = $phasefunc->($rname,$rrr,$phasenum);
+			return($phasenum) if($ret < 0);
+
+			#
+			# This is a special case for when we're in normal
+			# rollover.
+			# (Yes, in this situation, normal is a special case.)
+			#
+			$phasenum = 0 if($phase eq '0');
+
+			#
+			# Save the return code as our new phase.
+			#
+			$newphase = $ret;
+		}
+		else
+		{
+			#
+			# Set up the arguments for the command.
+			#
+			$cmdargs = "$rr{'zonename'} $phase $rname $rollrecfile $rr{'keyrec'}";
+
+			#
+			# Execute the phase's locally defined program.
+			#
+			$ret = localprog($rname,$cmd,$cmdargs,$phase);
+			#
+			# Stay in this phase if this command didn't succeed.
+			#
+			return($phasenum) if($ret != 0);
+		}
+
+
+	}
+
+	#
+	# If we've reached the final rollover phase, we'll go to non-rollover.
+	#
+	if(($phase eq 'ksk7') || ($phase eq 'zsk4'))
+	{
+		$newphase = 0;
+	}
+
+	#
+	# Special handling for KSK rollovers:
+	#	- set the new KSK phase if we've progressed.
+	#
+	if($phase =~ /^ksk/)
+	{
+		kskphase($rname,$rrr,$newphase) if($phasenum != $newphase);
+	}
+
+	#
+	# Special handling for ZSK rollovers:
+	#	- set the new ZSK phase if we've progressed.
+	#
+	if($phase =~ /^zsk/)
+	{
+		zskphase($rname,$rrr,$newphase) if($phasenum != $newphase);
+	}
+
+	#
+	# Return the phase number we should be in.
+	#
+	return($phasenum);
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	zskphase()
 #
 # Purpose:	Moves a rollrec into the next ZSK phase, setting both the
@@ -3103,7 +3219,7 @@ sub zskphase
 	#
 	# If we're at the start of a rollover, we'll log the expiration time.
 	#
-	return if($phase != 0);
+	return(0) if($phase != 0);
 
 	#
 	# Get the rollin' key's keyrec for our zone.
@@ -3157,6 +3273,7 @@ rollrec_settime($rname);
 	rollrec_write();
 	rollrec_close();
 	rollrec_read($rollrecfile);
+	return(0);
 }
 
 #-----------------------------------------------------------------------------
@@ -3167,27 +3284,31 @@ rollrec_settime($rname);
 #
 sub kskphase
 {
-	my $rname = shift;				# Name of rollrec.
-	my $rrr	  = shift;				# Rollrec reference.
-	my $phase = shift;				# New phase.
+	my $rname = shift;		# Name of rollrec.
+	my $rrr	  = shift;		# Rollrec reference.
+	my $phase = shift;		# New phase.
 
-	my $phasedesc = rollmgr_get_phase('KSK', $phase); # human phase descr
+	my $phasedesc;			# Human-readable phase description.
 
-	my %rr = %$rrr;					# Rollrec hash.
+	my %rr = %$rrr;			# Rollrec hash.
 
-	my $krname;					# Name of key's rollrec.
-	my $krec;					# Key's keyrec.
+	my $krname;			# Name of key's rollrec.
+	my $krec;			# Key's keyrec.
 
-	my $setrec;					# Set's keyrec.
-	my $setlist;					# Set's key list.
+	my $setrec;			# Set's keyrec.
+	my $setlist;			# Set's key list.
 
-	my $exptime;					# Key's time to expiry.
-	my $chronostr;					# Pretty rollover time.
+	my $exptime;			# Key's time to expiry.
+	my $chronostr;			# Pretty rollover time.
 
+	#
+	# Build the phase description string.
+	#
+	$phasedesc = rollmgr_get_phase('KSK', $phase);
 	$phasedesc = " ($phasedesc)";
 	$phasedesc = '' if($phasedesc eq ' ()');
 
-	if($phase == 1)
+	if($phase eq 'normal')
 	{
 		rolllog_log(LOG_TMI,$rname,"starting KSK rollover");
 	}
@@ -3266,6 +3387,56 @@ rollrec_settime($rname);
 	rollrec_write();
 	rollrec_close();
 	rollrec_read($rollrecfile);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	localprog()
+#
+# Purpose:	This routine runs a locally-configured command as part or all
+#		of a rollover phase.  The programs must be configured in the
+#		dnssec-tools.conf file in order to be run here.
+#
+sub localprog
+{
+	my $rname = shift;			# Rollrec name.
+	my $cmd = shift;			# Command.
+	my $cmdargs = shift;			# Command arguments.
+	my $phase = shift;			# Phase we're in.
+	my $out = '';				# Command output.
+	my $ret;				# Execution return code.
+
+	#
+	# Tell the world about this command.
+	#
+	rolllog_log(LOG_INFO,$rname,"executing local program \"$cmd $cmdargs\"");
+
+	#
+	# Execute the local command.  We'll save the stdout and stderr output
+	# in case it's needed later.  (Well..., we don't do anything with it
+	# right now, but someone might someday want it.
+	#
+	open(LPROG,"$cmd $cmdargs 2>&1 |");
+	while(<LPROG>)
+	{
+		$out .= $_;
+	}
+	chomp $out;
+	close(LPROG);
+	$ret = $? >> 8;
+
+	#
+	# Give a message based on return code.
+	#
+	if($ret > 0)
+	{
+		rolllog_log(LOG_ERR,$rname,"$phase command $cmd returned error $ret");
+	}
+	else
+	{
+		rolllog_log(LOG_INFO,$rname,"$phase command $cmd succeeded");
+	}
+
+	return($ret);
 }
 
 #-----------------------------------------------------------------------------
@@ -4715,7 +4886,7 @@ sub cmd_phasemsg
 	}
 
 	#
-	# If it fails, return the failure to the calledr.
+	# If it fails, return the failure to the caller.
 	#
 	rolllog_log(LOG_INFO,'<command>',"invalid phase-message ($pmsg)");
 	rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid phase-message length \"$pmsg\"");
@@ -6269,6 +6440,150 @@ field.
 At this time, the other conventions of RFC5011 are not being followed.
 Specifically, it's not waiting for a while before removing the old key
 and it's not adding the revoke bit to the old key after switching.
+
+=head2 Site-Specific Rollover Actions
+
+An administrator can specify site-specific commands to be run during the
+various rollover phases.  The commands can be run in place of the default
+B<rollerd> rollover actions, or in addition to them.  This subsection
+describes how to make use of site-specific rollover actions.
+
+This capability is provided to allow different installations to handle
+rollover according to their specific needs.  For example, it is anticipated
+that this might be helpful to sites using HSM hardware, or to allow for
+enhanced reporting to administrators.  This has been used with simple test
+programs to ensure that it actually works.  However, it has not yet been used
+in actual HSM environment or with other production-level software
+replacements.
+
+See the I<ZSK Rollover Using the Pre-Publish Method> and I<KSK Rollover
+Using the Double Signature Method> sections for descriptions of the default
+rollover actions.
+
+B<WARNING:> This has the potential of being a dangerous capability.  Be
+I<very> careful when setting up and using it.  Take care with the site-specific
+commands to be executed and the permissions and ownership of B<rollerd> and
+its data files.
+
+=head3 DNSSEC-Tools Configuration File Changes
+
+The DNSSEC-Tools configuration file must be modified to tell B<rollerd> what
+must be run for the non-default rollover phase actions.  Key/value pairs may
+be set for each rollover phase to control how that phase differs from the
+default.
+
+The value portion of the configuration entry contains the path to the
+site-specific command, along with any arguments it might need.  Multiple
+commands are separated by semicolons.
+
+The reserved I<default> command tells B<rollerd> to use its normal rollover
+action for a particular phase.  This may be combined with other commands to
+provide things such as specialized logging or notifications.
+
+B<rollerd> will only alter the behavior of a rollover phase if the
+configuration file contains an entry for that phase.  If not, the default
+action will be taken.
+
+For example, this configuration line tells B<rollerd> that for ZSK rollover
+phase 2, instead of using its normal B<zonesigner> executions it should run
+the B<hsm-signer> command.
+
+    prog-zsk2        hsm-signer
+
+In this example, this configuration line informs B<rollerd> that when entering
+KSK rollover phase 1 and ZSK rollover phase 1, it should execute the
+B<log-and-mail> command, then use the normal rollover action for those phases.
+
+    prog-ksk1        /usr/local/sbin/log-and-mail mary;default
+    prog-zsk1        /usr/local/sbin/log-and-mail bob;default
+
+The following configuration keys are used for controlling KSK rollover
+phases: I<prog-ksk1>, I<prog-ksk2>, I<prog-ksk3>, I<prog-ksk4>, I<prog-ksk5>,
+I<prog-ksk6>, and I<prog-ksk7>,
+
+The following configuration keys are used for controlling ZSK rollover phases:
+I<prog-zsk1>, I<prog-zsk2>, I<prog-zsk3>, and I<prog-zsk4>.
+
+The I<prog-kskf> configuration key controls the normal, non-rollover state.
+
+=head3 Site-Specific Commands
+
+To be generally useful, the site-specific commands executed by B<rollerd>
+will be given a standard set of arguments, and a standard set of exit
+values will be recognized.  
+
+The standard arguments from B<rollerd> are:
+    1. zonename - Zone to be handled.
+    2. phase - Zone's current rollover phase (e.g., zsk1, ksk6, normal.)
+    3. rollrec name - Zone's entry key in the rollrec file.
+    4. rollrec file - The path to the rollrec file.
+    5. keyrec file - The path to the zone's keyrec file.
+
+The I<prog-phase> entry in the configuration file may specify additional
+options and arguments for a command.  These will be included on the execution
+command line I<prior> to the standard arguments.
+
+The standard exit values expected by B<rollerd> are:
+    0. The zone can move to the next rollover phase.
+       This is only applicable to the current command; other
+       commands in this phase's command list must still be run.
+    1. The zone should stay in the current rollover phase.
+       This is not necessarily the result of an error. 
+    2. An error was found in the arguments given to the command.
+    3. An error was encountered during execution.
+
+If a rollover phase's configuration entry lists multiple commands, they will
+be executed in the order listed.  If any command in that command list fails,
+processing stops there.
+
+The B<rp-wrapper> command shows how a site-specific command may be written.
+B<rp-wrapper> may be used as a skeleton on which to build a more useful
+rollover-phase command.
+
+=head3 Considerations for Site-Specific Commands
+
+The following should be taken into consideration when writing a site-specific
+command for a rollover phase.
+
+=over 4
+
+=item execution length
+
+A phase command should not execute very long.  As currently written, B<rollerd>
+serializes zone rollover.  So the longer a phase command takes to execute, the
+longer it will take to get to the next zone.  If a phase command sleeps or
+actively waits, so to speak, for the next phase timeout, then every zone
+B<rollerd> manages will be left waiting.
+
+=item follow interface guidelines
+
+Follow the standards for arguments and exit values.  Not following the
+standards is likely to negatively affect zone rollover.
+
+=item frequency of command execution
+
+If B<rollerd> is operating in its traditional "full list" processing mode, a
+phase command list will be executed every time B<rollerd> cycles through its
+zone list and a zone is in that particular command's phase.  For example, if
+<i>prog_zsk1</i> is defined for example.com, that command list will be
+executed for example.com every time B<rollerd> runs its zone list and finds
+example.com is in the ZSK phase 1 rollover state.  A phase command B<must> take
+this into account so it doesn't perform its actions more frequently than
+necessary.  This is most likely an issue for the various rollover wait states,
+and the possibly normal state.
+
+If B<rollerd> is operating in the experimental "soon queue" processing mode,
+a phase command list will be executed only when a phase change occurs.  Since
+phase changes are time queued, this should not happen more than once per
+phase.  A phase command B<should> take this into account, in case the soon
+queue is reordered before the zone leaves the queue, or queue timing is
+relatively swift.  This is most likely an issue for the various rollover
+wait states.
+
+B<WARNING:>  "soon queue" processing is I<experimental>.  Care should be taken
+when using this processing method, as it may still have some lingering bugs.
+
+=back
 
 =head2 Zone Reloading
 
