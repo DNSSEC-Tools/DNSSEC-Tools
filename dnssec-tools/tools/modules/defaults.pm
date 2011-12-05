@@ -290,7 +290,7 @@ by I<Mail::Mailer> may be used here.
 These defaults hold the default phase commands to be executed by B<rollerd>
 for each phase of KSK rollover.  The I<default> keyword indicates that the
 normal phase processing should be performed.  Multiple commands may be given,
-but they must be separated by semicolons.  The I<default> keyword may be
+but they must be separated by bangs.  The I<default> keyword may be
 combined with other commands.
 
 =item B<prog_normal>
@@ -298,7 +298,7 @@ combined with other commands.
 These defaults hold the default phase commands to be executed by B<rollerd>
 when a zone is not in a rollover state.  The I<default> keyword indicates that
 the normal phase processing should be performed.  Multiple commands may be
-given, but they must be separated by semicolons.  The I<default> keyword may
+given, but they must be separated by bangs.  The I<default> keyword may
 be combined with other commands.
 
 =item B<prog_zsk1> ... B<prog_zsk7>
@@ -306,7 +306,7 @@ be combined with other commands.
 These defaults hold the default phase commands to be executed by B<rollerd>
 for each phase of ZSK rollover.  The I<default> keyword indicates that the
 normal phase processing should be performed.  Multiple commands may be given,
-but they must be separated by semicolons.  The I<default> keyword may be
+but they must be separated by bangs.  The I<default> keyword may be
 combined with other commands.
 
 =item B<random>
