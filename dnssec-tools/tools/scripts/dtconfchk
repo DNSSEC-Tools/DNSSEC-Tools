@@ -783,6 +783,30 @@ sub check_files
 	file_check("zonesign","x");
 
 	#
+	# Check the user-defined KSK phase commands.
+	#
+	phasecmd_check("prog-ksk1");
+	phasecmd_check("prog-ksk2");
+	phasecmd_check("prog-ksk3");
+	phasecmd_check("prog-ksk4");
+	phasecmd_check("prog-ksk5");
+	phasecmd_check("prog-ksk6");
+	phasecmd_check("prog-ksk7");
+
+	#
+	# Check the user-defined normal phase commands.
+	#
+	phasecmd_check("prog-normal");
+
+	#
+	# Check the user-defined ZSK phase commands.
+	#
+	phasecmd_check("prog-zsk1");
+	phasecmd_check("prog-zsk2");
+	phasecmd_check("prog-zsk3");
+	phasecmd_check("prog-zsk4");
+
+	#
 	# Check the other files.
 	#
 	file_check("random","c");
@@ -866,8 +890,8 @@ sub check_misc
 #-----------------------------------------------------------------------------
 # Routine:	file_check()
 #
-# Purpose:	Check the file fields:  ensure that the file exists and check
-#		some basic file-specific data.
+# Purpose:	Front-end for file checks.  This checks the field existence
+#		in the config data, then runs the actual check.
 #
 sub file_check
 {
@@ -885,6 +909,24 @@ sub file_check
 		prt(1,"$field not defined");
 		return;
 	}
+
+	#
+	# Do the actual file checks.
+	#
+	real_file_check($field,$fname,$ftype);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	real_file_check()
+#
+# Purpose:	Check the file fields:  ensure that the file exists and check
+#		some basic file-specific data.
+#
+sub real_file_check
+{
+	my $field = shift;			# Field being checked.
+	my $fname = shift;			# Name of file to check.
+	my $ftype = shift;			# Type of file.
 
 	#
 	# If the filename isn't an absolute path, then we'll stop
@@ -1019,6 +1061,67 @@ sub bool_check
 	else
 	{
 		prt(1,"$label ($val) acceptable");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	phasecmd_check()
+#
+# Purpose:	Check the named phase-command field.  If it exists, the
+#		command list is checked for validity.
+#
+sub phasecmd_check
+{
+	my $phase = shift;				# Phase to check.
+	my $cmds;					# Command list string.
+	my @cmds;					# Command list.
+
+	#
+	# Return if the field isn't defined.
+	#
+	$cmds = $dtconf{"$phase"};
+	if(!defined($cmds))
+	{
+		prt(1,"$phase not defined");
+		return;
+	}
+
+	#
+	# Break the command string into a list.
+	#
+	@cmds = split /;/, $cmds;
+
+	#
+	# Check each element of the command list.  We're only looking at the
+	# command portion of each list element, not the argument and options.
+	#
+	foreach my $cmd (@cmds)
+	{
+		#
+		# Strip off leading and trailing blanks, then just get the
+		# command name.  Arguments and options are ignored.
+		#
+		$cmd =~ s/^\s*([^\s]+)\s.*$/$1/;
+
+		#
+		# The default command is always fine.
+		#
+		next if($cmd =~ /^default$/i);
+
+		#
+		# The null command isn't.
+		#
+		if($cmd eq '')
+		{
+			prt(0,"$phase has a null command");
+			$errs++;
+			next;
+		}
+
+		#
+		# Run the file checks.
+		#
+		real_file_check($phase,$cmd,"x");
 	}
 }
 
@@ -1308,6 +1411,21 @@ The following checks are performed for B<rollerd> values:
 
 =over 8
 
+=item I<log_tz>
+
+Ensure the I<log_tz> field is either 'gmt' or 'local'.
+
+=item I<prog_normal>
+
+=item I<prog_ksk1> ... I<prog_ksk7>
+
+=item I<prog_zsk1> ... I<prog_zsk4>
+
+Ensure that the rollover phase commands are valid paths.   Each of these
+fields is a semicolon-separated command list.  The file checks are run on
+the commands to ensure the commands exist and are executable.  Options and
+arguments to the commands are ignored, as is the I<default> keyword.
+
 =item I<roll_loadzone>
 
 Ensure that the I<roll_loadzone> flag is a valid boolean.
@@ -1342,10 +1460,6 @@ B<rollerd>'s sleep-time must be at least one minute.
 Ensure that the username for B<rollerd> is valid.  If it's a username, it
 must be translatable to a uid; if it's a uid, it must translate to a known
 username.
-
-=item I<log_tz>
-
-Ensure the I<log_tz> field is either 'gmt' or 'local'.
 
 =item I<zone_errors>
 
