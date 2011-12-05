@@ -133,6 +133,39 @@ The type of mailer that will be contacted by I<dt_adminmail()>.  This is
 passed to I<Mail::Mailer> (by way of I<Mail::Send>.)  Any values recognized
 by I<Mail::Mailer> may be used here.  The default value is B<stmp>.
 
+=item prog-ksk1 ... prog-ksk7
+
+A semicolon-separated list commands to run when a zone enters a particular KSK
+rollover phase.  The programs can replace default rollover actions or be
+executed in addition to the default actions.  The I<default> keyword must be
+included if the default action should be taken.  Options and arguments may be
+passed to non-default commands.
+
+The default rollover action and requirements for user-written phase commands
+are described in the documentation for B<rollerd>.
+
+=item prog-normal
+
+A semicolon-separated list commands to run when a zone enters the normal,
+non-rollover phase.  The programs can replace default actions or be executed
+in addition to the default actions.  The I<default> keyword must be included
+if the default action should be taken.  Options and arguments may be passed to
+non-default commands.
+
+The default rollover action and requirements for user-written phase commands
+are described in the documentation for B<rollerd>.
+
+=item prog-zsk1 ... prog-zsk7
+
+A semicolon-separated list commands to run when a zone enters a particular ZSK
+rollover phase.  The programs can replace default rollover actions or be
+executed in addition to the default actions.  The I<default> keyword must be
+included if the default action should be taken.  Options and arguments may be
+passed to non-default commands.
+
+The default rollover action and requirements for user-written phase commands
+are described in the documentation for B<rollerd>.
+
 =item random
 
 The random device generator to be passed to B<dnssec-keygen>.
@@ -155,7 +188,7 @@ The default logging level used by B<rollerd>.  The valid levels are defined
 and described in I<rollmgr.pm>.
 
 
-=item roll_phasemsg	long
+=item roll_phasemsg
 
 The default length of phase-related log messages used by B<rollerd>.  The
 valid levels are "long" and "short", with "long" being the default value.
@@ -275,6 +308,12 @@ The following is an example B<dnssec-tools.conf> configuration file.
     rollchk	    /usr/bin/rollchk
     rollctl	    /usr/bin/rollctl
     zonesigner      /usr/bin/zonesigner
+
+    #
+    # Special processing for a couple of zone phases.
+    #
+    prog-ksk5       xfer-ds-epp ;default ; adminmail mary bob 
+    prog-ksk6       check-for-ds
 
     #
     # Settings for dnssec-keygen.
