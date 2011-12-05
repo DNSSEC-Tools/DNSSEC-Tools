@@ -45,6 +45,18 @@ my %defaults =
 	"revperiod"	   => 3888000,		# Revocation period.
 	"lifespan-max"	   => 94608000,		# Max lifespan (two years.)
 	"lifespan-min"	   => 3600,		# Min lifespan (one hour.)
+	"prog-ksk1"	   => 'default',	# Program for KSK phase 1.
+	"prog-ksk2"	   => 'default',	# Program for KSK phase 2.
+	"prog-ksk3"	   => 'default',	# Program for KSK phase 3.
+	"prog-ksk4"	   => 'default',	# Program for KSK phase 4.
+	"prog-ksk5"	   => 'default',	# Program for KSK phase 5.
+	"prog-ksk6"	   => 'default',	# Program for KSK phase 6.
+	"prog-ksk7"	   => 'default',	# Program for KSK phase 7.
+	"prog-normal"	   => 'default',	# Program for non-rollover.
+	"prog-zsk1"	   => 'default',	# Program for ZSK phase 1.
+	"prog-zsk2"	   => 'default',	# Program for ZSK phase 2.
+	"prog-zsk3"	   => 'default',	# Program for ZSK phase 3.
+	"prog-zsk4"	   => 'default',	# Program for ZSK phase 4.
 	"random"	   => "/dev/urandom",	# Random no. generator device.
 	"rndc"		   => getprefixdir() . "/sbin/rndc",
 	"roll_loadzone"	   => 1,		# Zone-reloading flag.
@@ -250,24 +262,6 @@ This default holds the default lifespan of a KSK key.  This is only used
 for determining when to rollover the KSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
 
-=item B<mailer-server>
-
-The mail server that will be contacted by I<dt_adminmail()>.  This is
-passed to I<Mail::Send>.
-
-=item B<mailer-type>
-
-The type of mailer that will be contacted by I<dt_adminmail()>.  This is
-passed to I<Mail::Mailer> (by way of I<Mail::Send>.)  Any values recognized
-by I<Mail::Mailer> may be used here.
-
-=item B<revperiod>
-
-This default holds the default revocation period of a KSK key. This is
-the minimum period of time a revoked KSK is required to remain in the
-signing set so that it is properly observed by resolvers.  This is
-measured in seconds.
-
 =item B<lifespan-max>
 
 This default is the maximum lifespan of a key.
@@ -280,9 +274,51 @@ This default is the minimum lifespan of a key.
 
 This default is the timezone to be used in log-message timestamps.
 
+=item B<mailer-server>
+
+The mail server that will be contacted by I<dt_adminmail()>.  This is
+passed to I<Mail::Send>.
+
+=item B<mailer-type>
+
+The type of mailer that will be contacted by I<dt_adminmail()>.  This is
+passed to I<Mail::Mailer> (by way of I<Mail::Send>.)  Any values recognized
+by I<Mail::Mailer> may be used here.
+
+=item B<prog_ksk1> ... B<prog_ksk7>
+
+These defaults hold the default phase commands to be executed by B<rollerd>
+for each phase of KSK rollover.  The I<default> keyword indicates that the
+normal phase processing should be performed.  Multiple commands may be given,
+but they must be separated by semicolons.  The I<default> keyword may be
+combined with other commands.
+
+=item B<prog_normal>
+
+These defaults hold the default phase commands to be executed by B<rollerd>
+when a zone is not in a rollover state.  The I<default> keyword indicates that
+the normal phase processing should be performed.  Multiple commands may be
+given, but they must be separated by semicolons.  The I<default> keyword may
+be combined with other commands.
+
+=item B<prog_zsk1> ... B<prog_zsk7>
+
+These defaults hold the default phase commands to be executed by B<rollerd>
+for each phase of ZSK rollover.  The I<default> keyword indicates that the
+normal phase processing should be performed.  Multiple commands may be given,
+but they must be separated by semicolons.  The I<default> keyword may be
+combined with other commands.
+
 =item B<random>
 
 This default holds the default random number generator device.
+
+=item B<revperiod>
+
+This default holds the default revocation period of a KSK key. This is
+the minimum period of time a revoked KSK is required to remain in the
+signing set so that it is properly observed by resolvers.  This is
+measured in seconds.
 
 =item B<rndc>
 
