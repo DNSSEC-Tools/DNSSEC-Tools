@@ -3062,7 +3062,7 @@ sub phasecmd
 	{
 		$cmdlist = $dtconf{$progkey}
 	}
-	@cmds = split /;/, $cmdlist;
+	@cmds = split /!/, $cmdlist;
 
 	#
 	# Break out the phase atoms.  If this is a normal phase, then
@@ -3090,7 +3090,7 @@ sub phasecmd
 		#
 		# Get rid of any leading or trailing blanks.
 		#
-		$cmd =~ s/^\s+(.*)\s+$/$1/;
+		$cmd =~ s/^\s*(.*?)\s*$/$1/;
 
 		#
 		# Take this phase's normal rollover action if the command
@@ -6473,8 +6473,8 @@ be set for each rollover phase to control how that phase differs from the
 default.
 
 The value portion of the configuration entry contains the path to the
-site-specific command, along with any arguments it might need.  Multiple
-commands are separated by semicolons.
+site-specific phase command, along with any arguments it might need.
+Multiple commands are separated by bangs.
 
 The reserved I<default> command tells B<rollerd> to use its normal rollover
 action for a particular phase.  This may be combined with other commands to
@@ -6494,8 +6494,8 @@ In this example, this configuration line informs B<rollerd> that when entering
 KSK rollover phase 1 and ZSK rollover phase 1, it should execute the
 B<log-and-mail> command, then use the normal rollover action for those phases.
 
-    prog-ksk1        /usr/local/sbin/log-and-mail mary;default
-    prog-zsk1        /usr/local/sbin/log-and-mail bob;default
+    prog-ksk1        /usr/local/sbin/log-and-mail mary ! default
+    prog-zsk1        /usr/local/sbin/log-and-mail bob!default
 
 The following configuration keys are used for controlling KSK rollover
 phases: I<prog-ksk1>, I<prog-ksk2>, I<prog-ksk3>, I<prog-ksk4>, I<prog-ksk5>,
