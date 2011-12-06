@@ -1896,37 +1896,10 @@ sub zsk_phaser
 	# Work on this rollrec's phase.
 	#
 	$ph = phasecmd(\&zskphase,$rname,$rrr,'normal')		if($ph == 0);
-	$ph = phasecmd(\&zsk_phasewait,$rname,$rrr,'zsk1')	if($ph == 1);
+	$ph = phasecmd(\&phasewait,$rname,$rrr,'zsk1')		if($ph == 1);
 	$ph = phasecmd(\&zsk_phase2,$rname,$rrr,'zsk2')		if($ph == 2);
-	$ph = phasecmd(\&zsk_phasewait,$rname,$rrr,'zsk3')	if($ph == 3);
+	$ph = phasecmd(\&phasewait,$rname,$rrr,'zsk3')		if($ph == 3);
 	$ph = phasecmd(\&zsk_phase4,$rname,$rrr,'zsk4')		if($ph == 4);
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	zsk_phasewait()
-#
-# Purpose:	Check if this zone's rollover-wait phase is over.
-#		The zone's phase number -- current or new -- is returned.
-#
-sub zsk_phasewait
-{
-	my $rname = shift;			# Name of rollrec.
-	my $rrr	  = shift;			# Reference to rollrec.
-	my $phase = shift;			# Rollover phase.
-
-	#
-	# Check if we can go to the next rollover phase.  If not, we'll
-	# go to the next rollrec entry and return to this later.
-	#
-	if(!ttlexpire($rname,$rrr,$phase,'ZSK'))
-	{
-		return($phase);
-	}
-
-	#
-	# Return the next phase number.
-	#
-	return($phase + 1);
 }
 
 #-----------------------------------------------------------------------------
@@ -2390,44 +2363,13 @@ sub ksk_phaser
 	# Work on this rollrec's phase.
 	#
 	$ph = phasecmd(\&kskphase,$rname,$rrr,'normal')		if($ph == 0);
-	$ph = phasecmd(\&ksk_phasewait,$rname,$rrr,'ksk1')	if($ph == 1);
+	$ph = phasecmd(\&phasewait,$rname,$rrr,'ksk1')		if($ph == 1);
 	$ph = phasecmd(\&ksk_phase2,$rname,$rrr,'ksk2')		if($ph == 2);
-	$ph = phasecmd(\&ksk_phasewait,$rname,$rrr,'ksk3')	if($ph == 3);
+	$ph = phasecmd(\&phasewait,$rname,$rrr,'ksk3')		if($ph == 3);
 	$ph = phasecmd(\&ksk_phase4,$rname,$rrr,'ksk4')		if($ph == 4);
 	$ph = phasecmd(\&ksk_phase5,$rname,$rrr,'ksk5')		if($ph == 5);
 	$ph = phasecmd(\&ksk_phase6,$rname,$rrr,'ksk6')		if($ph == 6);
 	$ph = phasecmd(\&ksk_phase7,$rname,$rrr,'ksk7')		if($ph == 7);
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	ksk_phasewait()
-#
-# Purpose:	Check if this zone's KSK rollover-wait phase is over.
-#		The zone's KSK phase number -- current or new -- is returned.
-#
-sub ksk_phasewait
-{
-	my $rname = shift;			# Name of rollrec.
-	my $rrr	  = shift;			# Reference to rollrec.
-	my $phase = shift;			# Rollover phase.
-
-	#
-	# Get the rollrec.
-	#
-	$rrr = rollrec_fullrec($rname);
-
-	#
-	# Check if we can go to the next rollover phase.  If not, we'll
-	# go to the next rollrec entry and return to this later.
-	#
-	return($phase) if(!ttlexpire($rname,$rrr,$phase,'KSK'));
-	return($phase) if((boolconvert($rrr->{'istrustanchor'}) == 1) &&
-			  !holddownexpire($rname,$rrr,$phase));
-
-	#
-	# Return the next phase number.
-	#
-	return($phase + 1);
 }
 
 #-----------------------------------------------------------------------------
@@ -3101,7 +3043,7 @@ sub phasecmd
 			#
 			# Run the phase-specific routine.
 			#
-			$ret = $phasefunc->($rname,$rrr,$phasenum);
+			$ret = $phasefunc->($rname,$rrr,$phasenum,$phasetype);
 			return($phasenum) if($ret < 0);
 
 			#
@@ -3166,6 +3108,45 @@ sub phasecmd
 	# Return the phase number we should be in.
 	#
 	return($phasenum);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	phasewait()
+#
+# Purpose:	Check if this zone's rollover wait phase is over.
+#		The zone's phase number -- current or new -- is returned.
+#		KSKs will also be checked for trust-anchorship and if the
+#		hold-down timer has expired.
+#
+sub phasewait
+{
+	my $rname     = shift;			# Name of rollrec.
+	my $rrr	      = shift;			# Reference to rollrec.
+	my $phase     = shift;			# Rollover phase.
+	my $phasetype = shift;			# Rollover phase type.
+
+	#
+	# Check if we can go to the next rollover phase.  If not, we'll
+	# go to the next rollrec entry and return to this later.
+	#
+	if($phasetype =~ /zsk/i)
+	{
+		if(!ttlexpire($rname,$rrr,$phase,'ZSK'))
+		{
+			return($phase);
+		}
+	}
+	else
+	{
+		return($phase) if(!ttlexpire($rname,$rrr,$phase,'KSK'));
+		return($phase) if((boolconvert($rrr->{'istrustanchor'}) == 1) &&
+				  !holddownexpire($rname,$rrr,$phase));
+	}
+
+	#
+	# Return the next phase number.
+	#
+	return($phase + 1);
 }
 
 #-----------------------------------------------------------------------------
