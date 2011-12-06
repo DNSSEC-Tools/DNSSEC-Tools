@@ -658,6 +658,11 @@ sub buildmainwind
 		       -accelerator => 'Ctrl+S');
 	$cmdg->command(-label => 'Skip All Zones',
 		       -command => [\&general_cmds, "skipall"]);
+	$cmdg->separator();
+	$cmdg->command(-label => 'Restart Selected Skipped Zone',
+		       -command => [\&general_cmds, "rollzone"]);
+	$cmdg->command(-label => 'Restart All Skipped Zones',
+		       -command => [\&general_cmds, "rollall"]);
 
 	$cmdg->pack(-side => 'left');
 
@@ -1243,7 +1248,7 @@ sub general_cmds
 	# These commands need a zone.  By hook or by crook, we'll ensure
 	# that we have one.
 	#
-	if($rcmd eq "skipzone")
+	if(($rcmd eq "skipzone") || ($rcmd eq "rollzone"))
 	{
 		#
 		# If a zone has been selected, we'll use it.  If not,
@@ -1302,6 +1307,11 @@ sub general_cmds
 	{
 		delete($badzones{$zone});
 	}
+
+	#
+	# And let's get the window redrawn.
+	#
+	painter($paintmax+1);
 }
 
 #---------------------------------------------------------------------------
@@ -1808,6 +1818,7 @@ sub readrrf
 	#
 	@zonenames = ();
 	%zonenames = ();
+%rollers = ();
 
 	#
 	# Pretty-up the window.
@@ -2563,6 +2574,7 @@ sub rollerdcmd
 	elsif($cmd eq "readrrf")
 	{
 		painter($paintmax+1);
+		$paintcount = $paintmax + 1;
 	}
 	elsif($cmd eq "nop")
 	{
@@ -4120,6 +4132,13 @@ The commands in this menu are basic GUI commands.
 
 =item *
 
+Halt Rollerd
+
+B<rollerd>'s execution is halted.  As a result, B<blinkenlights>' execution
+will also be halted.
+
+=item *
+
 Quit
 
 B<blinkenlights> will stop execution.
@@ -4223,10 +4242,25 @@ currently skipped zones.
 
 =item *
 
-Halt Rollerd
+Restart Selected Skipped Zone
 
-B<rollerd>'s execution is halted.  As a result, B<blinkenlights>' execution
-will also be halted.
+The selected zone will be moved from the skipped state to the roll state.
+The zone will re-enter the roll state at the same point from which it entered
+the skip state; it will not be moved to the beginning of either KSK or ZSK
+rollover.
+This only has an effect on skipped zones.  A zone may be selected by clicking
+on its zone stripe.  If this command is selected without a zone having been
+selected, a dialog box is displayed from which a currently skipped zone may be
+chosen.
+
+=item *
+
+Restart All Skipped Zones
+
+All zones will be moved from the skipped state to the roll state.
+The zones will re-enter the roll state at the same point from which they
+entered the skip state; they will not be moved to the beginning of either
+KSK or ZSK rollover.  This has no effect on currently rolling zones.
 
 =back
 
