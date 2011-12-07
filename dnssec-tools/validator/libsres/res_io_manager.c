@@ -1179,7 +1179,7 @@ res_io_read_udp(struct expected_arrival *arrival)
      * Cancel this source 
      */
     res_io_cancel_source(arrival);
-    res_log(NULL, LOG_ERR, "libsres: ""Closing socket %d, %s",
+    res_log(NULL, LOG_INFO, "libsres: ""Closing socket %d, %s",
             arrival->ea_socket, (ret_val == 0) ?
             "socket shutdown" : "read_udp failed");
 
