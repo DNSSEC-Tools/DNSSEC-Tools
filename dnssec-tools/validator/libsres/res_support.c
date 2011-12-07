@@ -134,12 +134,12 @@ print_hex_field(u_char field[], size_t length, size_t width, char *pref)
     start = 0;
     do {
         stop = (start + width) < length ? (start + width) : length;
-        printf(pref);
+        printf("%s", pref);
         for (i = start; i < stop; i++)
             printf("%02x ", (u_char) field[i]);
         printf("\n");
 
-        printf(pref);
+        printf("%s", pref);
         for (i = start; i < stop; i++)
             if (isprint(field[i]))
                 printf(" %c ", (u_char) field[i]);
@@ -348,6 +348,7 @@ u_int16_t libsres_random(void)
 #ifndef USE_LIBVAL_LOGGING
 
 static int sres_level = LOG_WARNING;
+//static int sres_level = 0;
 
 void
 res_log(void *dont_care, int level, const char *template, ...)
@@ -374,7 +375,7 @@ res_log(void *dont_care, int level, const char *template, ...)
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
     va_end(ap);
 
-    fprintf(stderr, buf);
+    fprintf(stderr, "%s", buf);
     fprintf(stderr, "\n");
     fflush(stderr);
 }
