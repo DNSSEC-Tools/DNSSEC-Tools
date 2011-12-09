@@ -199,10 +199,10 @@ my $EVT_QUEUE_SOON = 2;		# Queues, with "soon" events.
 # queue.  Every N seconds, the entire queue of zones is scanned to see if any
 # rollover events must be handled.
 #
-# "soon" queue processing is experimental.  When finished, it will maintain
-# a sub-queue of the rollover events that must be handled soon.  Rather than
-# processing the full queue of managed zones every N seconds, the "soon queue"
-# will be handled as the events occur.
+# "soon" queue processing is experimental.  It maintains a sub-queue of the
+# rollover events that must be handled soon.  Rather than processing the full
+# queue of managed zones every N seconds, the "soon queue" is handled as the
+# events occur.
 #
 # "soon" processing is still being tested and should *not* be considered
 # reliable!  (yet...)
@@ -220,12 +220,22 @@ my @event_methods =
 
 #######################################################################
 #
-# Queue-soon data.
+# Soon Queue data.
 #
 
 my $QUEUE_ERRTIME = 60;			# Time to sleep on rollrec error.
 
-my $QUEUE_SOONLIMIT = 100;
+#
+# $QUEUE_SOONLIMIT defines the length of "soon".  When building the soon
+# queue, any zone with an event between now and (now + $QUEUE_SOONLIMIT)
+# will be added to the soon queue.  This is a seconds count.
+#
+# This value will depend on the number of managed zones and their lifespans.
+# The default value is for a day, which means the soon queue will hold all
+# events that will occur within the next 24 hours.
+#
+my $QUEUE_SOONLIMIT = 86400;
+
 my $QUEUE_RUNSCAN = '<<< run full scan >>>';	# Fake rollrec name to trigger
 						# a full scan.
 
@@ -263,21 +273,20 @@ exit($ret);
 #
 # Purpose:	Do Everything.
 #
-#			 steps:
-#				while rollrec file is not empty
-#					read rollrec file
+#		basic steps:
+#			while rollrec file is not empty
+#				read rollrec file
 #
-#					for each rollrec in the rollrec file
-#						handle according to its phase
+#				for each rollrec in the rollrec file
+#					handle according to its phase
 #
 sub main
 {
-	my $argc;			# Number of command line arguments.
 	my $olderr;			# Saved error action.
 
 	#
 	# Initialize a few things...
-	#	- force unbuffered
+	#	- force unbuffered output
 	#	- default error action
 	#	- set run-packed flag
 	#
@@ -6485,7 +6494,7 @@ I<prog-ksk6>, and I<prog-ksk7>,
 The following configuration keys are used for controlling ZSK rollover phases:
 I<prog-zsk1>, I<prog-zsk2>, I<prog-zsk3>, and I<prog-zsk4>.
 
-The I<prog-kskf> configuration key controls the normal, non-rollover state.
+The I<prog-normal> configuration key controls the normal, non-rollover state.
 
 =head3 Site-Specific Commands
 
@@ -6551,15 +6560,15 @@ executed for example.com every time B<rollerd> runs its zone list and finds
 example.com is in the ZSK phase 1 rollover state.  A phase command B<must> take
 this into account so it doesn't perform its actions more frequently than
 necessary.  This is most likely an issue for the various rollover wait states,
-and the possibly normal state.
+and possibly the normal state.
 
-If B<rollerd> is operating in the experimental "soon queue" processing mode,
-a phase command list will be executed only when a phase change occurs.  Since
-phase changes are time queued, this should not happen more than once per
-phase.  A phase command B<should> take this into account, in case the soon
-queue is reordered before the zone leaves the queue, or queue timing is
-relatively swift.  This is most likely an issue for the various rollover
-wait states.
+If B<rollerd> is operating in the experimental "soon queue" processing mode, a
+phase command list will be executed for a zone only when a phase change
+occurs.  Since phase changes are time queued, this should not happen more than
+once per phase.  A phase command B<should> take this into account, in case the
+soon queue is reordered before the zone leaves the queue, or queue timing is
+relatively swift.  This is most likely an issue for the various rollover wait
+states.
 
 B<WARNING:>  "soon queue" processing is I<experimental>.  Care should be taken
 when using this processing method, as it may still have some lingering bugs.
