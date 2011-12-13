@@ -438,9 +438,10 @@ sub buildmainwind
 		       -command => \&file_open,
 		       -accelerator => 'Ctrl+O',
 		       -underline => 0);
-	$file->command(-label => 'Halt Rollerd',
-		       -command => \&file_halt,
-		       -underline => 0);
+	$file->command(-label => 'Halt Rollerd After Current Operations',
+			-command => [\&file_halt, '']);
+	$file->command(-label => 'Halt Rollerd Now',
+			-command => [\&file_halt, 'now']);
 	$file->separator();
 	$file->command(-label => 'Quit',
 			          -command => \&file_quit,
@@ -817,10 +818,12 @@ sub file_open
 #
 sub file_halt
 {
+	my $opt = shift;				# Optional "now".
+
 	#
-	# Destroy the rollrec name table's widgets.
+	# Tell rollerd that it's time to go away.
 	#
-	system("rollctl -quiet -halt");
+	system("rollctl -quiet -halt $opt");
 
 	#
 	# Pause for a moment and then shut outself down.
