@@ -86,7 +86,6 @@ our @EXPORT = qw(
 			rollrec_lock
 			rollrec_merge
 			rollrec_names
-			rollrec_newrec
 			rollrec_read
 			rollrec_readfiles
 			rollrec_rectype
@@ -138,6 +137,7 @@ my @rollreclines;		# Rollrec lines.
 my $rollreclen;			# Number of rollrec lines.
 
 my %rollrecs;			# Rollrec hash table (keywords/values.)
+my %rollrecindex;		# Maps rollrec names to @rollreclines indices.
 
 my $modified;			# File-modified flag.
 
@@ -497,26 +497,9 @@ sub rollrec_split
 		}
 
 		#
-		# Find this rollrec in @rollreclines.
+		# Find the index for this rollrec in @rollreclines.
 		#
-		for($rrind=0;$rrind<$rollreclen;$rrind++)
-		{
-			my $ln = $rollreclines[$rrind];	# Line in rollrec file.
-			my $rrname;			# Rollrec name.
-
-			#
-			# Dig out the line's keyword and value.
-			#
-			$ln =~ /^\s*(roll|skip)\s+"([a-z0-9\/\-+_.,: \t]+)"/i;
-			$rrname = $2;
-
-			#
-			# If this line has the rollrec's name and is the start
-			# of a new rollrec, then we've found our man.
-			#
-			#
-			last if(lc($rrname) eq lc($rrn));
-		}
+		$rrind = rrindex($rrn);
 
 		#
 		# Bump our count of split rollrecs.
@@ -551,6 +534,15 @@ sub rollrec_split
 			}
 
 			print ROLLREC_SPLIT "$ln";
+		}
+
+		#
+		# If we hit the beginning of the next rollrec or a
+		# blank line, we'll write a blank line and, drop out.
+		#
+		if($rrind == $rollreclen)
+		{
+			print ROLLREC_SPLIT "\n";
 		}
 
 		#
@@ -672,7 +664,7 @@ sub rollrec_readfile
 				err("rollrec_readfile:  duplicate record name; aborting...\n",-1);
 				return(-1);
 			}
-			rollrec_newrec($keyword,$name);
+			rollrec_newrec($keyword,$name,$rollreclen - 1);
 			next;
 		}
 
@@ -714,6 +706,20 @@ print STDERR "rollrec_readfile:  processing command: $value / $havecmdsalready\n
 		#
 		$rollrecs{$name}{$keyword} = $value;
 	}
+
+	#
+	# Make sure the last line is a blank line.
+	#
+	if($rollreclines[-1] !~ /^\s*$/)
+	{
+		push @rollreclines, "\n";
+		$rollreclen = @rollreclines;
+	}
+
+	#
+	# Build our index of rollrec indices.
+	#
+	buildrrindex();
 
 	return(0);
 }
@@ -797,6 +803,7 @@ sub rollrec_rectype
 {
 	my $name    = shift;		# Name of rollrec we're modifying.
 	my $rectype = shift;		# Rollrec's new type.
+	my $rrind;			# Rollrec's index.
 
 # print STDERR "rollrec_rectype:  <$name> <$rectype>\n";
 
@@ -806,42 +813,26 @@ sub rollrec_rectype
 	return(0) if(($rectype ne "roll") && ($rectype ne "skip"));
 
 	#
-	# Find the appropriate entry to modify in @rollreclines.  If the
-	# given field isn't set in $name's rollrec, we'll insert this as
-	# a new field at the end of that rollrec.
+	# Ensure this is a valid rollrec.
 	#
-	for(my $rrind=0;$rrind<$rollreclen;$rrind++)
-	{
-		my $line = $rollreclines[$rrind];	# Line in rollrec file.
-		my $rtype;				# Rollrec type.
-		my $rrname;				# Rollrec name.
-
-		#
-		# Dig out the line's keyword and value.
-		#
-		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
-		$rtype = $1;
-		$rrname = $2;
-
-		#
-		# If this line has the rollrec's name and is the start of a
-		# new rollrec, then like the Mounties we've found our man.
-		# We'll change the record type and return success.
-		#
-		if(lc($rrname) eq lc($name))
-		{
-			$rollrecs{$name}{'rollrec_type'} = $rectype;
-			$line =~ s/$rtype/$rectype/;
-			$rollreclines[$rrind] = $line;
-			$modified = 1;
-			return(1);
-		}
-	}
+	return(0) if(!defined($rollrecindex{$name}));
 
 	#
-	# We didn't find the line, so we'll return failure.
+	# Get the rollrec's index.
 	#
-	return(0);
+	$rrind = rrindex($name);
+
+	#
+	# Change the rollrec's type.
+	#
+	$rollreclines[$rrind] =~ s/^(\s*)(roll|skip)(\s+)/$1$rectype$3/i;
+	$rollrecs{$name}{'rollrec_type'} = $rectype;
+
+	#
+	# Set the modified flag and return success.
+	#
+	$modified = 1;
+	return(1);
 }
 
 #--------------------------------------------------------------------------
@@ -875,7 +866,7 @@ sub rollrec_setval
 		#
 		# Add the rollrec to the %rollrecs hash.
 		#
-		rollrec_newrec("roll",$name);
+		rollrec_newrec("roll",$name,$rollreclen + 1);
 
 		#
 		# Start the new rollrec in @rollreclines.
@@ -883,6 +874,7 @@ sub rollrec_setval
 		$rollreclines[$rollreclen] = "\n";
 		$rollreclen++;
 		$rollreclines[$rollreclen] = "roll\t\"$name\"\n";
+		$rollrecindex{$name} = $rollreclen;
 		$rollreclen++;
 	}
 
@@ -892,32 +884,9 @@ sub rollrec_setval
 	$rollrecs{$name}{$field} = $val;
 
 	#
-	# Find the appropriate rollrec to modify in @rollreclines.  If the
-	# given field isn't set in $name's rollrec, we'll insert this as
-	# a new field at the end of that rollrec.
+	# Get the index of the rollrec in @rollreclines.
 	#
-	for($rrind=0;$rrind<$rollreclen;$rrind++)
-	{
-		my $line = $rollreclines[$rrind];	# Line in rollrec file.
-		my $rrname;				# Rollrec name.
-
-		#
-		# Dig out the line's keyword and value.
-		#
-		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
-		$rrname = $2;
-
-		#
-		# If this line has the rollrec's name and is the start of a
-		# new rollrec, then we've found our man.
-		#
-		# IMPORTANT NOTE:  We will *always* find the rollrec we're
-		#		   looking for.  The exists() check above
-		#		   ensures that there will be a rollrec with
-		#		   the name we want.
-		#
-		last if(lc($rrname) eq lc($name));
-	}
+	$rrind = rrindex($name);
 
 	#
 	# Find the specified field's entry in the rollrec's lines in
@@ -1003,6 +972,11 @@ sub rollrec_setval
 		# Bump the array length counter.
 		#
 		$rollreclen++;
+
+		#
+		# Rebuild our table of rollrec indices.
+		#
+		buildrrindex();
 	}
 
 	#
@@ -1049,30 +1023,9 @@ sub rollrec_delfield
 	delete($rollrecs{$name}{$field});
 
 	#
-	# Find the appropriate rollrec to modify in @rollreclines.
+	# Get the index for the rollrec.
 	#
-	for($rrind=0;$rrind<$rollreclen;$rrind++)
-	{
-		my $line = $rollreclines[$rrind];	# Line in rollrec file.
-		my $rrname;				# Rollrec name.
-
-		#
-		# Dig out the line's keyword and value.
-		#
-		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
-		$rrname = $2;
-
-		#
-		# If this line has the rollrec's name and is the start of a
-		# new rollrec, then we've found our man.
-		#
-		# IMPORTANT NOTE:  We will *always* find the rollrec we're
-		#		   looking for.  The exists() check above
-		#		   ensures that there will be a rollrec with
-		#		   the name we want.
-		#
-		last if(lc($rrname) eq lc($name));
-	}
+	$rrind = rrindex($name);
 
 	#
 	# Find the specified field's entry in the rollrec's lines in
@@ -1122,11 +1075,13 @@ sub rollrec_delfield
 	}
 
 	#
-	# If we found the entry, we'll delete it.
+	# If we found the entry, we'll delete it and rebuild the
+	# rollrec index table.
 	#
 	if($found)
 	{
 		splice @rollreclines, $fldind, 1;
+		buildrrindex();
 	}
 
 	#
@@ -1165,14 +1120,16 @@ sub rollrec_add
 	#
 	# Create the basic rollrec info.
 	#
-	rollrec_newrec($rrtype,$rrname);
+	rollrec_newrec($rrtype,$rrname,$rollreclen + 1);
 
 	#
 	# Add the new rollrec's first line to the end of the rollrec table.
+	# and add an entry to the rollrec index.
 	#
 	$rollreclines[$rollreclen] = "\n";
 	$rollreclen++;
 	$rollreclines[$rollreclen] = "roll\t\"$rrname\"\n";
+	$rollrecindex{$rrname} = $rollreclen;
 	$rollreclen++;
 
 	#
@@ -1265,9 +1222,10 @@ sub rollrec_del
 # print "rollrec_del:  down in\n";
 
 	#
-	# Don't allow empty rollrec names.
+	# Don't allow empty rollrec names or non-existent rollrecs.
 	#
 	return(-1) if($rrname eq "");
+	return(-1) if(!defined($rollrecindex{$rrname}));
 
 	#
 	# Get a copy of the rollrec from the rollrec hash and then delete
@@ -1278,41 +1236,24 @@ sub rollrec_del
 	delete $rollrecs{$rrname};
 
 	#
-	# Find the index of the first line for this rollrec in the
-	# list of file lines.
+	# Get the index for this rollrec.
 	#
-	for($ind = 0;$ind < $rollreclen; $ind++)
-	{
-		$line = $rollreclines[$ind];
-
-		$line =~ /\s*(\S+)\s+(\S+)/;
-		$lkey = $1;
-		$lval = $2;
-
-		$lval =~ s/"//g;
-
-		last if($lval eq $rrname);
-	}
-	$rrind = $ind;
-
-	#
-	# If we didn't find a rollrec with this name, return failure.
-	#
-	return(-1) if($ind == $rollreclen);
+	$rrind = rrindex($rrname);
 
 	#
 	# Find the beginning of the next rollrec.
 	#
-	for($ind = $rrind+1;$ind < $rollreclen; $ind++)
+	for($ind = $rrind+1; $ind < $rollreclen; $ind++)
 	{
 		$line = $rollreclines[$ind];
 
-		$line =~ /\s*(\S+)\s+(\S+)/;
+		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
 		$lkey = $1;
 		$lval = $2;
 
 		last if(($lkey eq "roll") || ($lkey eq "skip"));
 	}
+
 	$ind--;
 
 	#
@@ -1338,6 +1279,11 @@ sub rollrec_del
 	{
 		splice(@rollreclines,$rrind,1);
 	}
+
+	#
+	# Rebuild our table of rollrec indices.
+	#
+	buildrrindex();
 
 	#
 	# Mark that the file has been modified.
@@ -1397,31 +1343,19 @@ sub rollrec_rename
 	%rollrec = %$rrr;
 
 	#
-	# Find the index of the first line for this rollrec in the
-	# list of file lines.
-	#
-	$rollreclen = @rollreclines;
-	for($rrind = 0;$rrind < $rollreclen; $rrind++)
-	{
-		$line = $rollreclines[$rrind];
-
-		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
-		$lkey = $1;
-		$lval = $2;
-
-		$lval =~ s/"//g;
-
-		last if($lval eq $oldname);
-	}
-
-	#
 	# If we didn't find a rollrec with this name, return failure.
 	#
-	return(-5) if($rrind == $rollreclen);
+	return(-5) if(!defined($rollrecindex{name}));
+
+	#
+	# Get the index of this rollrec.
+	#
+	$rrind = rrindex($oldname);
 
 	#
 	# Find the beginning of the next rollrec.
 	#
+	$rollreclen = @rollreclines;
 	for($ind = $rrind+1;$ind < $rollreclen; $ind++)
 	{
 		$line = $rollreclines[$ind];
@@ -1462,9 +1396,11 @@ sub rollrec_rename
 	}
 
 	#
-	# Delete the old rollrec.
+	# Delete the old rollrec and the old name's entry in the index hash.
 	#
 	delete $rollrecs{$oldname};
+	$rollrecindex{$newname} = $rollrecindex{$oldname};
+	delete $rollrecindex{$oldname};
 
 	#
 	# Mark that the file has been modified.
@@ -1507,10 +1443,17 @@ sub rollrec_settime
 # Purpose:	Creates a rollrec in %rollrecs.  The name and type fields
 #		are set.
 #
+#		This routine is NOT rebuilding the index.  Doing this here
+#		has the potential for slowing down file reads and such.
+#		The index is dealt with in those module routines which call
+#		rollrec_newrec(); since it isn't exported, there should be
+#		no outside callers to worry about.
+#
 sub rollrec_newrec
 {
 	my $type = shift;		# Type of rollrec we're creating.
 	my $name = shift;		# Name of rollrec we're creating.
+	my $line = shift;		# Line number of this rollrec.
 
 # print "rollrec_newrec:  down in\n";
 
@@ -1518,6 +1461,8 @@ sub rollrec_newrec
 
 	$rollrecs{$name}{"rollrec_name"} = $name;
 	$rollrecs{$name}{"rollrec_type"} = $type;
+
+	$rollrecindex{$name} = $line;
 }
 
 #--------------------------------------------------------------------------
@@ -1568,6 +1513,7 @@ sub rollrec_init
 # print "rollrec_init:  down in\n";
 
 	%rollrecs     = ();
+	%rollrecindex = ();
 	@rollreclines = ();
 	$rollreclen   = 0;
 	$modified     = 0;
@@ -1682,6 +1628,103 @@ sub rollrec_write
 	# Unlock the rollrec file.
 	#
 	return(flock(ROLLREC,LOCK_UN));
+}
+
+#--------------------------------------------------------------------------
+# Routine:	buildrrindex()
+#
+# Purpose:	This routine builds a name->index hash table for the defined
+#		rollrecs.  The name is the name of a rollrec.  The index is
+#		that rollrec's index in the @rollreclines array.  This hash
+#		table drastically speeds up the reference time over the old
+#		method of searching the whole table.
+#
+sub buildrrindex
+{
+# print "buildrrindex:  down in\n";
+
+	#
+	# Zap the current rollrec index.
+	#
+	%rollrecindex = ();
+
+	#
+	# Traipse through @rollreclines, and save the line index for the
+	# start of each rollrec.
+	#
+	for(my $rrind=0;$rrind<$rollreclen;$rrind++)
+	{
+		my $line = $rollreclines[$rrind];	# Line in rollrec file.
+		my $rrname;				# Rollrec name.
+
+		#
+		# Dig out the line's keyword and value.
+		#
+		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
+		$rrname = $2;
+
+		#
+		# If this is a roll or skip line, save the line index for
+		# this rollrec entry.
+		#
+		if($rrname ne '')
+		{
+			$rollrecindex{$rrname} = $rrind;
+		}
+	}
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rrindex()
+#
+# Purpose:	Get the index for the named rollrec entry.  We'll first
+#		consult the name's existing index to @rollreclines.  If the
+#		name matches, all's well.  If it doesn't, then we'll rebuild
+#		the index hash and then get the table index.
+#
+#		Callers MUST have already checked that the rollrec name
+#		exists.  Arguably, this should be done here, but it isn't.
+#
+sub rrindex
+{
+	my $name = shift;			# Rollrec to look up.
+	my $rrind;				# Rollrec's index.
+	my $line;				# Supposed start of rollrec.
+	my $lname;				# Name from line.
+
+	#
+	# Find the index for this rollrec in @rollreclines.
+	#
+	$rrind = $rollrecindex{$name};
+
+	#
+	# Get the line we're expecting this rollrec to start with.
+	#
+	$line = $rollreclines[$rrind];
+
+	#
+	# Dig out the rollrec name from this line.
+	#
+	$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
+	$lname = $2;
+
+	#
+	# If this name doesn't match the requested name, we'll rebuild
+	# the index and call ourself to find the index.
+	#
+	# This should never fail, as long as the caller already ensured
+	# the rollrec name is valid.
+	#
+	if($lname ne $name)
+	{
+		buildrrindex();
+		$rrind = rrindex($name);
+	}
+
+	#
+	# Give the rollrec's index back to our caller.
+	#
+	return($rrind);
 }
 
 #--------------------------------------------------------------------------
@@ -2157,12 +2200,6 @@ This routine initializes the internal I<rollrec> data.  Pending changes will
 be lost.  An open I<rollrec> file handle will remain open, though the data are
 no longer held internally.  A new I<rollrec> file must be read in order to use
 the B<rollrec.pm> interfaces again.
-
-=item I<rollrec_newrec(type,name)>
-
-This interface creates a new I<rollrec>.  The I<rollrec_name> field in the
-I<rollrec> is set to the values of the I<name> parameter.  The I<type>
-parameter must be either "roll" or "skip".
 
 =item I<rollrec_default()>
 
