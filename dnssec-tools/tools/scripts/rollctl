@@ -49,7 +49,7 @@ my $DTVERS = "DNSSEC-Tools Version: 1.11";
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"halt",				# Shutdown rollerd.
+	"halt:s",			# Shutdown rollerd.
 	"display",			# Turn on rollerd's graphical display.
 	"dspub",			# Parent has published a DS record.
 	"dspuball",			# Parents have published DS records.
@@ -69,10 +69,11 @@ my @opts =
 	"runqueue",			# Run the queue.
 	"queuelist",			# Get list of zones in the soon queue.
 	"queuestatus",			# Status of queue-soon event handler.
-	"shutdown",			# Shutdown rollerd.
+	"shutdown:s",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
 	"skipzone",			# Stop the named zone(s) from rolling.
 	"sleeptime=i",			# Set rollerd's sleep time.
+	"splitrrf",			# Split a rollrec file in two.
 	"status",			# Get rollerd's status.
 	"zonelog",			# Set a zone's/zones' logging level.
 	"zonestatus",			# Get status of zones.
@@ -109,6 +110,7 @@ my $shutdownflag    = 0;
 my $skipallflag	    = 0;
 my $skipzoneflag    = 0;
 my $sleeptimeflag   = 0;
+my $splitrrfflag    = 0;
 my $statusflag	    = 0;
 my $zonelogflag	    = 0;
 my $zonestatflag    = 0;
@@ -651,6 +653,27 @@ sub main()
 			$rcret++;
 		}
 	}
+	elsif($splitrrfflag)
+	{
+		my $rrfs = join(':', @ARGV);
+
+		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SPLITRRF,$rrfs))
+		{
+			print STDERR "rollctl:  error sending command SPLITRRF\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd split the rollrec file\n";
+		}
+		else
+		{
+			print STDERR "rollerd did not split the rollrec files\n";
+			$rcret++;
+		}
+	}
 	elsif($statusflag)
 	{
 		if(!rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_STATUS))
@@ -672,6 +695,19 @@ sub main()
 	}
 	elsif($shutdownflag)
 	{
+		if($shutdownflag == 2)
+		{
+			my $pid = rollmgr_getid();
+			if(kill("INT", $pid) < 1)
+			{
+				print STDERR "rollctl:  unable to send immediate SHUTDOWN\n";
+				exit(1);
+			}
+
+			print STDERR "rollctl:  immediate SHUTDOWN notice sent to rollerd\n";
+			exit(0);
+		}
+
 		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SHUTDOWN))
 		{
 			print STDERR "rollctl:  error sending command SHUTDOWN\n";
@@ -841,7 +877,6 @@ sub doopts
 	}
 	if(exists($options{'mergerrfs'}))
 	{
-$mergerrfsflag = $options{'mergerrfs'};
 		$mergerrfsflag = 1;
 		$commandcount++;
 	}
@@ -908,6 +943,12 @@ $mergerrfsflag = $options{'mergerrfs'};
 	if(exists($options{'shutdown'}) || exists($options{'halt'}))
 	{
 		$shutdownflag =	1;
+
+		if(($options{'shutdown'} eq 'now') || ($options{'halt'} eq 'now'))
+		{
+			$shutdownflag = 2;
+		}
+
 		$commandcount++;
 	}
 	if(exists($options{'skipall'}))
@@ -923,6 +964,11 @@ $mergerrfsflag = $options{'mergerrfs'};
 	if(exists($options{'sleeptime'}))
 	{
 		$sleeptimeflag = $options{'sleeptime'};
+		$commandcount++;
+	}
+	if(exists($options{'splitrrf'}))
+	{
+		$splitrrfflag = 1;
 		$commandcount++;
 	}
 	if(exists($options{'status'}))
@@ -1099,7 +1145,7 @@ sub showloglevels
 sub usage
 {
 	print STDERR "usage:  rollctl [options] \n";
-	print STDERR "\t-halt			shutdown rollerd\n";
+	print STDERR "\t-halt [now]		shutdown rollerd\n";
 	print STDERR "\t-display		start graphical display\n";
 	print STDERR "\t-dspub <zone>		parent has published DS record for zone\n";
 	print STDERR "\t-dspuball		parents have published DS records for zones\n";
@@ -1116,9 +1162,10 @@ sub usage
 	print STDERR "\t-rollzsk <zone>		roll named zone\n";
 	print STDERR "\t-rollrec <rollrec>	set rollrec file\n";
 	print STDERR "\t-runqueue		run queue\n";
-	print STDERR "\t-shutdown		shutdown rollerd\n";
+	print STDERR "\t-shutdown [now]		shutdown rollerd\n";
 	print STDERR "\t-skipall		skip all zones\n";
 	print STDERR "\t-skipzone <zone>	skip named zone\n";
+	print STDERR "\t-splitrrf <rrf entries>	split the current rollrec file\n";
 	print STDERR "\t-sleeptime <seconds>	set sleep time (in seconds)\n";
 	print STDERR "\t-status			get rollerd's status\n";
 	print STDERR "\t-zonelog		set a zone's log level\n";
@@ -1182,9 +1229,11 @@ for three zones.
 Indicates that DS records have been published for all zones in phase 6 of
 KSK rollover.
 
-=item B<-halt>
+=item B<-halt> [now]
 
-Cleanly halts B<rollerd> execution.
+Cleanly halts B<rollerd> execution.  If the optional I<now> parameter is
+given, then B<rollerd> will be halted immediately, rather than allowing it to
+complete its currently queued operations.
 
 =item B<-logfile logfile>
 
@@ -1301,6 +1350,14 @@ for three zones.
 
 Sets B<rollerd>'s sleep time to I<seconds> seconds.  I<sleeptime> must be an
 integer at least as large as the B<$MIN_SLEEP> value in B<rollerd>.
+
+=item B<-splitrrf new-rrf zone0 ... zoneN>
+
+Tells B<rollerd> to move a set of I<rollrec> entries from the current
+I<rollrec> file into a new file.  The new file is named in the I<new-rrf>
+parameter.  The I<rollrec> entries whose names correspond to the I<zone0> to
+I<zoneN> list are moved to the new file.  The name of the new I<rollrec> file
+and the zone names must not contain colons.
 
 =item B<-status>
 
