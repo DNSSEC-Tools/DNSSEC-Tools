@@ -48,7 +48,8 @@ struct timeval;
 #define VAL_QFLAGS_ANY          0xffffffff
 /*
  * Flags in this bit mask MUST match when finding
- * a record in the query cache 
+ * a record in the query cache. If they are not
+ * requested they cannot match. 
  */
 #define VAL_QFLAGS_CACHE_MASK       0x0000ffff
 #define VAL_QUERY_AC_DETAIL         0x00000001
@@ -70,7 +71,7 @@ struct timeval;
 #define VAL_QUERY_SKIP_CACHE        0x00040000
 
 /*
- * Flags in this bit mask are NOT checked when finding
+ * Flags in this bit mask are ignored when finding
  * a matching record in the query cache 
  */
 #define VAL_QFLAGS_NOCACHE_MASK     0xff000000
@@ -84,9 +85,9 @@ struct timeval;
                              VAL_QUERY_NO_DLV |\
                              VAL_QUERY_ASYNC |\
                              VAL_QUERY_NO_EDNS0_FALLBACK |\
-                             VAL_QUERY_SKIP_CACHE |\
                              VAL_QUERY_SKIP_RESOLVER |\
                              VAL_QUERY_RECURSE |\
+                             VAL_QUERY_SKIP_CACHE |\
                              VAL_QUERY_REFRESH_QCACHE)
 
 #ifndef LOG_EMERG
