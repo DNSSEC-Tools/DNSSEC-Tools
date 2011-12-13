@@ -307,6 +307,7 @@ main(int argc, char *argv[])
             tv.tv_usec = 567;
             val_async_check_wait(context, NULL, NULL, &tv, 0);
         }
+        val_free_context(context);
 #endif
     }
 

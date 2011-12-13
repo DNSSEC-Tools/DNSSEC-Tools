@@ -275,6 +275,8 @@ QSize Lookup::sizeHint()
 
 Lookup::~Lookup()
 {
+    if (val_ctx)
+        val_free_context(val_ctx);
 }
 
 void
