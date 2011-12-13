@@ -253,6 +253,9 @@ my $queue_soonend;			# End of current "soon" period.
 
 #######################################################################
 
+my $queued_int = 0;			# Queued-SIGINT flag.
+my $queued_hup = 0;			# Queued-SIGHUP flag.
+
 my $ret;				# Return code from main().
 my $runerr;				# Execution error -- used in runner().
 
@@ -518,6 +521,15 @@ sub rollkeys
 	{
 		my $rrr;		# Reference to rollrec.
 		my %rr;			# Rollrec hash.
+
+		#
+		# Close down if we've received an INT signal.
+		#
+		if($queued_int)
+		{
+			rolllog_log(LOG_INFO,"$rname","received immediate shutdown command");
+			halt_handler();
+		}
 
 		#
 		# Return to our execution directory.
@@ -6112,9 +6124,6 @@ sub skipnow
 #
 # Purpose:	Initialize handlers for our externally provided commands.
 #
-my $queued_int = 0;
-my $queued_hup = 0;
-
 sub controllers
 {
 	my $onflag = shift;				# Handler on/off flag.
