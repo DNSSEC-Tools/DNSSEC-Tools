@@ -588,8 +588,10 @@ sub buildmainwind
 	# Add the File menu entries.
 	#
 
-	$file->command(-label => 'Halt Rollerd',
+	$file->command(-label => 'Halt Rollerd After Current Operations',
 		       -command => [\&commander, "halt"]);
+	$file->command(-label => 'Halt Rollerd Now',
+		       -command => [\&commander, "halt now"]);
 	$file->separator();
 	$file->command(-label => 'Quit',
 		       -command => \&file_quit,
@@ -4132,10 +4134,18 @@ The commands in this menu are basic GUI commands.
 
 =item *
 
-Halt Rollerd
+Halt Rollerd After Current Operations
 
-B<rollerd>'s execution is halted.  As a result, B<blinkenlights>' execution
-will also be halted.
+B<rollerd>'s execution is halted after completing its current set of zone
+operations.  As a result, B<blinkenlights>' execution will also be halted.
+
+=item *
+
+Halt Rollerd Now
+
+B<rollerd>'s execution is halted immediately.  As a result, B<blinkenlights>'
+execution will also be halted.  If B<rollerd>'s command queue already contains
+a set of commands, they may be processed prior to this command.
 
 =item *
 
