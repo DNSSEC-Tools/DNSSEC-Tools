@@ -527,7 +527,7 @@ sub rollkeys
 		#
 		if($queued_int)
 		{
-			rolllog_log(LOG_INFO,"$rname","received immediate shutdown command");
+			rolllog_log(LOG_INFO,$rname,"received immediate shutdown command");
 			halt_handler();
 		}
 
@@ -794,9 +794,7 @@ rolllog_log(LOG_ALWAYS,""," ");
 		# Read the rollrec file.
 		#
 		# WARNING:  We're only locking the file while we're reading
-		#	    it!  This may not be the safest way to do this,
-		#	    but the full queue scan can take rather a long
-		#	    time.
+		#	    it!  This may not be the safest way to do this.
 		#
 		rollrec_lock();
 		rollrec_read($rollrecfile);
@@ -1018,7 +1016,7 @@ rolllog_log(LOG_ALWAYS,""," ");
 		}
 
   endsooners:
-			rollrec_unlock();
+		rollrec_unlock();
 
 	}
 
@@ -1142,6 +1140,15 @@ sub queue_scansooners
 	foreach my $rrn (@queue_sooners)
 	{
 		my $nxt;
+
+		#
+		# Close down if we've received an INT signal.
+		#
+		if($queued_int)
+		{
+			rolllog_log(LOG_INFO,$rrn,"received immediate shutdown command");
+			halt_handler();
+		}
 
 		next if($rrn eq $QUEUE_RUNSCAN);
 
