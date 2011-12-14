@@ -1,0 +1,573 @@
+#!/usr/bin/perl
+#
+# Copyright 2011 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# rp-wrapper
+#
+#	This script is a example script for use as an installation-specific
+#	phase command to handle a particular rollover phase.  This script
+#	is intended to be run by rollerd.
+#
+#	This script includes validation of the arguments provided by rollerd,
+#	so it can be used as a starting point for building real phase commands.
+#
+#
+#	rp-wrapper zone-name phase rollrec-name rollrec-file keyrec-file
+#
+#		phase:
+#			ksk1, ksk2, ..., ksk7
+#			zsk1, zsk2, ksk3, zsk4
+#			normal
+#
+#	exit codes:
+#
+#		0 - continue to next phase
+#		1 - stay in the current phase
+#		2 - error found in the arguments
+#		3 - error encountered during execution
+#
+#	issues:
+#		- maximum runtime
+#		
+#	
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "rp-wrapper";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.11";
+
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"quiet",			# Give no output.
+	"verbose",			# Give lots of output.
+
+	"Version",			# Display the version number and exit.
+	"help",				# Give a full usage message and exit.
+);
+
+#
+# Flag values for the various options.  Option connection should be obvious.
+#
+my $quiet	= 0;			# Give no output.
+my $verbose	= 0;			# Give lots of output.
+
+#
+# Argument variables.
+#
+my $zone	= '';			# Zone's name.
+my $phase	= '';			# Zone's rollover phase.
+my $rrname	= '';			# Zone's rollrec name.
+my $rrfile	= '';			# Zone's rollrec file.
+my $krffile	= '';			# Zone's keyrec file.
+
+#######################################################################
+
+my $NUMSITEARGS = 0;				# Count of site-specific args.
+my @siteargs = ();				# Site-specific arguments.
+
+#######################################################################
+#
+# Exit codes recognized by rollerd.
+#
+
+my $RC_GOOD  = 0;			# Proceed to next rollover phase.
+my $RC_WAIT  = 1;			# Stay in current rollover phase.
+my $RC_BAD   = 2;			# Errors in arguments.
+my $RC_ERROR = 2;			# Errors in processing.
+
+
+
+my %rollrec = ();				# Zone's rollrec entry.
+my %keyrec  = ();				# Zone's keyrec entry.
+
+
+main();
+exit(0);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+
+	#
+	# Check the site-specific arguments required by the implementer of
+	# the wrapped functionality.  These arguments are provided in the
+	# dnssec-tools.conf file.
+	#
+	siteargs();
+
+	#
+	# Check the standard arguments provided by rollerd.
+	#
+	stdargs();
+
+	#
+	# Handle this command execution.
+	#
+	dostuff();
+
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	dostuff()
+#
+# Purpose:	As is, this routine is an fairly useless action routine.
+#		It writes the standard arguments and the site-specific
+#		arguments to a file in /tmp.
+#
+#		It is intended purely for the sake of example.
+#
+sub dostuff
+{
+	my @path;			# Elements of the rollrec file path.
+
+	#
+	# Convert the full path of the rollrec file to only the file's name.
+	#
+	@path = split /\//, $ARGV[3];
+	$ARGV[3] = $path[-1];
+
+	#
+	# Write the data to the file.
+	#
+	open(RPOUT,">>/tmp/roll.out.$ARGV[0]");
+	print RPOUT "$0:  argv - @ARGV\n";
+	print RPOUT "\tsiteargs - <@siteargs>\n\n" if(@siteargs > 0);
+	close(RPOUT);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	siteargs()
+#
+# Purpose:	This routine moves the site-specific command line arguments
+#		from the command line argument list to a site-specific
+#		argument list.
+#
+sub siteargs
+{
+	#
+	# Move the site-specific arguments.
+	#
+	foreach my $num (1 .. $NUMSITEARGS)
+	{
+		my $arg = shift @ARGV;
+		push @siteargs, $arg;
+	}
+
+	#
+	# Argument checking and validation would be good.  As this is
+	# an example script, not much we can do to check things...
+	#
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	stdargs()
+#
+# Purpose:	This routine shakes and bakes the standard, rollerd-provided
+#		command line arguments.
+#
+sub stdargs
+{
+	my %dtconf;				# DNSSEC-Tools config values.
+	my $argc;				# Argument count.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(0)  if(defined($options{'help'}));
+
+	$quiet	 = $options{'quiet'}	|| 0;
+	$verbose = $options{'verbose'}	|| 0;
+
+	#
+	# If the valid-zone or the expired-zone option was given, but the
+	# zones specifier wasn't, we'll assume they want all the zones listed.
+	#
+	if($quiet && $verbose)
+	{
+		print STDERR "$0:  -quiet and -verbose are mutually exclusive\n";
+		exit($RC_BAD);
+	}
+
+	#
+	# Ensure we were given all the arguments we need.
+	#
+	$argc = @ARGV;
+	usage(1) if(($argc != 4) && ($argc != 5));
+
+
+	#
+	# Get the arguments.
+	#
+	$zone	 = $ARGV[0];
+	$phase	 = $ARGV[1];
+	$rrname	 = $ARGV[2];
+	$rrfile	 = $ARGV[3];
+
+	#
+	# Validate the phase.
+	#
+	verifyphase($phase);
+
+	#
+	# Ensure the rollrec file exists.
+	#
+	checkfile($rrfile,"rollrec file");
+
+	#
+	# Ensure the rollrec data are valid.
+	#
+	verify_rollrec($rrfile,$rrname);
+
+	#
+	# Ensure the keyrec is valid.
+	#
+	$krffile = defined($ARGV[4]) ? $ARGV[4] : $rollrec{'keyrec'};
+	verify_keyrec($krffile,$zone);
+
+	#
+	# Ensure the keyrec file exists.
+	#
+	checkfile($krffile,"keyrec file");
+
+	#
+	# Maybe print the arguments.
+	#
+	if($verbose)
+	{
+		out("zone		\"$zone\"");
+		out("rollover-phase	\"$phase\"");
+		out("rollrec-name	\"$rrname\"");
+		out("rollrec-file	\"$rrfile\"");
+		out("keyrec-name	\"$krffile\"");
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	verifyphase()
+#
+# Purpose:	This routine ensures that a valid phase name was given.
+#
+sub verifyphase
+{
+	my $phase = shift;			# Phase to check.
+
+	$phase = lc($phase);
+
+	if(($phase ne 'ksk1')	&&
+	   ($phase ne 'ksk2')	&&
+	   ($phase ne 'ksk3')	&&
+	   ($phase ne 'ksk4')	&&
+	   ($phase ne 'ksk5')	&&
+	   ($phase ne 'ksk6')	&&
+	   ($phase ne 'ksk7')	&&
+	   ($phase ne 'zsk1')	&&
+	   ($phase ne 'zsk2')	&&
+	   ($phase ne 'zsk3')	&&
+	   ($phase ne 'zsk4')	&&
+	   ($phase ne 'normal'))
+	{
+		out("$0:  \"$phase\" is an invalid rollover phase");
+		exit($RC_BAD);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	checkfile()
+#
+# Purpose:	This routine ensures that a given file exists, is readable,
+#		and is a non-empty regular file.
+#
+sub checkfile
+{
+	my $fname = shift;			# File to check.
+	my $fstr = shift;			# File description.
+
+	if($fname eq '')
+	{
+		out("$0:  no $fstr specified");
+		exit($RC_BAD);
+	}
+
+	if(! -e $fname)
+	{
+		out("$0:  $fstr \"$fname\" does not exist");
+		exit($RC_BAD);
+	}
+
+	if(! -r $fname)
+	{
+		out("$0:  \"$fname\" is not readable");
+		exit($RC_BAD);
+	}
+
+	if(! -f $fname)
+	{
+		out("$0:  \"$fname\" is not a regular file");
+		exit($RC_BAD);
+	}
+
+	if(! -s $fname)
+	{
+		out("$0:  \"$fname\" is empty");
+		exit($RC_BAD);
+	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	verify_rollrec()
+#
+# Purpose:	Ensure the rollrec name and file are valid.
+#
+sub verify_rollrec
+{
+	my $rrf = shift;				# Rollrec file.
+	my $rrn = shift;				# Rollrec name.
+	my $rrec;					# Rollrec reference.
+
+	#
+	# Read the rollrec file.
+	#
+	if(rollrec_read($rrf) < 0)
+	{
+		out("$0:  unable to read rollrec file \"$rrf\"");
+		exit($RC_BAD);
+	}
+
+	#
+	# Ensure the rollrec file contains the rollrec entry.
+	#
+	if(! rollrec_exists($rrn))
+	{
+		out("$0:  rollrec \"$rrn\" does not exist in rollrec file \"$rrf\"");
+		exit($RC_BAD);
+	}
+
+	#
+	# Save the contents of the rollrec entry.
+	#
+	$rrec = rollrec_fullrec($rrn);
+	%rollrec = %$rrec;
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	verify_keyrec()
+#
+# Purpose:	Ensure the keyrec file has the required keyrec.
+#
+sub verify_keyrec
+{
+	my $krf = shift;				# Keyrec file.
+	my $krn = shift;				# Keyrec name.
+	my $krec;					# Keyrec reference.
+
+	#
+	# Read the keyrec file.
+	#
+	if(keyrec_read($krf) < 0)
+	{
+		out("$0:  unable to read keyrec file \"$krf\"");
+		exit($RC_BAD);
+	}
+
+	#
+	# Ensure the keyrec file contains the keyrec entry.
+	#
+	if(! keyrec_exists($krn))
+	{
+		out("$0:  keyrec \"$krn\" does not exist in keyrec file \"$krf\"");
+		exit($RC_BAD);
+	}
+
+	#
+	# Save the contents of the keyrec entry.
+	#
+	$krec = keyrec_fullrec($krn);
+	%keyrec = %$krec;
+}
+
+#----------------------------------------------------------------------
+# Routine:	out()
+#
+# Purpose:	Write an output line, if the user wants 'em.
+#
+sub out
+{
+	my $outstr = shift;		# Line to write.
+
+	print "$outstr\n" if(! $quiet);
+}
+
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+
+	print STDERR "usage:  $0 [options] zonename phase rollrec-name rollrec-file [keyrec-file]\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+rp-wrapper - Example script for installation-specific rollover program.
+
+=head1 SYNOPSIS
+
+  rp-wrapper [options] zonename phase rollrec-name rollrec-file [keyrec-file]
+
+=head1 DESCRIPTION
+
+B<rp-wrapper> is a wrapper/example script for use as an installation-specific
+phase command to handle a particular rollover phase.  This script is intended
+to be run by B<rollerd>.  These rollover phase commands may be executed in
+place of the normal rollover actions, or in addition to them.
+
+When executed by B<rollerd>, B<rp-wrapper> is given a standard set of
+arguments.  It validates these arguments to ensure it can properly act
+on behalf of B<rollerd>.  These arguments are described in the next section.
+
+Site-specific arguments and options may be passed to B<rp-wrapper> and other
+phase commands through the B<dnssec-tools.conf> file.  These arguments and
+options are passed I<before> the standard arguments.  The I<stdargs()>
+subroutine parses and validates the standard arguments from the command line.
+A subroutine, I<siteargs()>, is called prior to I<stdargs> in order to
+handle site-specific arguments.  The existing I<siteargs()> is very simple
+and must be expanded as needed.
+
+=head1 STANDARD ARGUMENTS
+
+The I<zonename> argument is the name of the zone under consideration.
+
+The I<phase> argument tells B<rp-wrapper> the rollover phase that the zone
+has just entered.  It may be one of the following values: I<ksk1>, I<ksk2>,
+I<ksk3>, I<ksk4>, I<ksk5>, I<ksk6>, I<ksk7>, I<zsk1>, I<zsk2>, I<ksk3>,
+I<zsk4>, or I<normal>,
+
+The I<rollrec-name> argument is the name of the zone's I<rollrec> record.
+
+The I<rollrec-file> argument is the path to the I<rollrec> file that is
+controlling the zone's rollover actions.  It may be absolute or relative.
+
+The I<keyrec-file> argument is the path to the I<keyrec> file that contains
+key information used in signing the zone's zonefile.  It may be absolute or
+relative.  This argument is optional; if it is not specified, then it will be
+derived by appending B<.krf> to the zone's name and will be assumed to be in
+the directory in which B<rp-wrapper> is executed.
+
+=head1 OPTIONS
+
+B<rp-wrapper> takes the following options:
+
+=over 4
+
+=item B<-quiet>
+
+Does not give any output.
+
+=item B<-verbose>
+
+Gives verbose output.
+
+=item B<-Version>
+
+Displays the version information for B<rp-wrapper> and the DNSSEC-Tools
+package and exits.
+
+=item B<-help>
+
+Displays a usage message and exits.
+
+=back
+
+=head1 EXIT CODES
+
+B<rp-wrapper> gives the following exit codes:
+
+- 0 - B<rollerd> should move the zone to the next rollover phase.
+
+- 1 - B<rollerd> should keep the zone in the same rollover phase.
+      This is not an error condition.  It may, for example, be the
+      result of needing to wait an extended time for an external
+      condition, and other zone rollovers should not be held up.
+
+- 2 - An error was found in the arguments given to B<rp-wrapper>.
+
+- 3 - An error was encountered during execution.
+
+=head1 COPYRIGHT
+
+Copyright 2011 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<rollerd(8)>, B<zonesigner(8)>
+
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>,
+
+B<file-keyrec(5)>,
+B<file-rollrec(5)>,
+B<file-dnssec-tools.conf(5)>
+
+=cut
+
