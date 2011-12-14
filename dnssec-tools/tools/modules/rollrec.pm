@@ -65,10 +65,16 @@ use Fcntl qw(:DEFAULT :flock);
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::rollmgr;
 
-our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.0";
+our $VERSION = "1.10";
+our $MODULE_VERSION = "1.10.0";
 
 our @ISA = qw(Exporter);
+
+#--------------------------------------------------------------------------
+
+#
+# Exported commands.
+#
 
 our @EXPORT = qw(
 			rollrec_add
@@ -96,7 +102,24 @@ our @EXPORT = qw(
 			rollrec_split
 			rollrec_unlock
 			rollrec_write
+			rollrec_zonegroup
+			rollrec_zonegroups
+			rollrec_zonegroup_cmds
 		);
+
+#--------------------------------------------------------------------------
+
+#
+# Zonegroup commands.
+#
+my %zg_commands =
+	(
+		'rollcmd_dspub'		=>	1,
+		'rollcmd_rollksk'	=>	1,
+		'rollcmd_rollzone'	=>	1,
+		'rollcmd_rollzsk'	=>	1,
+		'rollcmd_skipzone'	=>	1,
+	);
 
 #--------------------------------------------------------------------------
 
@@ -114,6 +137,7 @@ my @ROLLFIELDS = (
 			'zonename',
 			'zonefile',
 			'keyrec',
+			'zonegroup',
 			'maxttl',
 			'administrator',
 			'directory',
@@ -136,8 +160,10 @@ my @ROLLFIELDS = (
 my @rollreclines;		# Rollrec lines.
 my $rollreclen;			# Number of rollrec lines.
 
-my %rollrecs;			# Rollrec hash table (keywords/values.)
+my %rollrecs;			# Rollrec hash table.
 my %rollrecindex;		# Maps rollrec names to @rollreclines indices.
+
+my %zonegroups;			# Zone group hash table.
 
 my $modified;			# File-modified flag.
 
@@ -702,6 +728,15 @@ print STDERR "rollrec_readfile:  processing command: $value / $havecmdsalready\n
 		}
 
 		#
+		# Save this zone's zonegroup.
+		#
+		if($keyword =~ /^zonegroup$/i)
+		{
+			$zonegroups{$value}++;
+		}
+
+
+		#
 		# Save this subfield into the rollrec's collection.
 		#
 		$rollrecs{$name}{$keyword} = $value;
@@ -742,6 +777,64 @@ sub rollrec_names
 	}
 
 	return(@names);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_zonegroups()
+#
+# Purpose:	Return the zonegroups hash.
+#
+sub rollrec_zonegroups
+{
+# print "rollrec_zonegroups:  down in\n";
+
+	return(%zonegroups);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_zonegroup()
+#
+# Purpose:	Return the zones (rollrec names) in a given zonegroup.
+#
+sub rollrec_zonegroup
+{
+	my $zgname = shift;				# Zonegroup to look up.
+	my @zglist = ();				# Zones in zonegroup.
+
+# print "rollrec_zonegroup:  down in\n";
+
+	#
+	# Return null if the name isn't defined.
+	#
+	return if(! defined($zgname));
+
+	#
+	# Build a list of the zones in this zonegroup.
+	#
+	foreach my $rrn (sort(keys(%rollrecs)))
+	{
+		if($rollrecs{$rrn}{'zonegroup'} eq $zgname)
+		{
+			push @zglist, $rrn;
+		}
+	}
+
+	#
+	# Return the list.
+	#
+	return(@zglist);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_zonegroup_cmds()
+#
+# Purpose:	Return the list of commands relevant to zonegroups.
+#
+sub rollrec_zonegroup_cmds
+{
+# print "rollrec_zonegroup_cmds:  down in\n";
+
+	return(%zg_commands);
 }
 
 #--------------------------------------------------------------------------
@@ -1513,6 +1606,7 @@ sub rollrec_init
 # print "rollrec_init:  down in\n";
 
 	%rollrecs     = ();
+	%zonegroups   = ();
 	%rollrecindex = ();
 	@rollreclines = ();
 	$rollreclen   = 0;
@@ -1822,6 +1916,10 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   $count = rollrec_merge("primary.rrf", "new0.rrf", "new1".rrf");
   @retvals = rollrec_split("new-rollrec.rrf", @rollrec_list);
 
+  %zgroups = rollrec_zonegroups();
+  @zgroup = rollrec_zonegroup($zonegroupname);
+  @zgcmds = rollrec_zonegroup_cmds();
+
   rollrec_write();
   rollrec_close();
   rollrec_discard();
@@ -1844,6 +1942,7 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 	zonename		"example.com"
 	zonefile		"/etc/dnssec-tools/zones/db.example.com"
 	keyrec			"/etc/dnssec-tools/keyrec/example.keyrec"
+	zonegroup		"example zones"
 	directory		"/etc/dnssec-tools/dir-example.com"
 	kskphase		"0"
 	zskphase		"2"
@@ -2182,6 +2281,32 @@ If the program has not modified the contents of the I<rollrec> file, it is not
 rewritten.
 
 I<rollrec_write()> gets an exclusive lock on the I<rollrec> file while writing.
+
+=item I<rollrec_zonegroup($zonegroupname)>
+
+This interface returns a list of the zones in the zonegroup (named by
+I<$zonegroupname>) defined in the current I<rollrec> file.  Null is returned
+if there are no zones in the zonegroup.
+
+While this is using the term "zone", it is actually referring to the name of
+the rollrec entries.  For a particular rollrec entry, the rollrec name is
+usually the same as the zone name, but this is not a requirement.
+
+=item I<rollrec_zonegroup_cmds()>
+
+This interface returns a list of the rollctl commands whose behavior changes
+when they are used with the I<-group> option.
+
+=item I<rollrec_zonegroups()>
+
+This interface returns a hash table of the zonegroups defined in the current
+I<rollrec> file.  The hash key is the name of the zonegroup; the hash value
+is the number of zones in the zonegroup.  Null is returned if there are no
+zonegroups in the I<rollrec> file.
+
+While this is using the term "zone", it is actually referring to the name of
+the rollrec entries.  For a particular rollrec entry, the rollrec name is
+usually the same as the zone name, but this is not a requirement.
 
 =back
 
