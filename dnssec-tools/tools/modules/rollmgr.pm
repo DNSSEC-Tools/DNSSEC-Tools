@@ -153,24 +153,28 @@ our @EXPORT = qw(
 			 ROLLCMD_SPLITRRF
 			 ROLLCMD_STATUS
 			 ROLLCMD_ZONELOG
+			 ROLLCMD_ZONEGROUP
 			 ROLLCMD_ZONESTATUS
 			 ROLLCMD_ZSARGS
 
-			 ROLLCMD_RC_OKAY
-			 ROLLCMD_RC_BADLEVEL
+			 ROLLMGR_GROUP
+
+			 ROLLCMD_RC_BADEVENT
 			 ROLLCMD_RC_BADFILE
-			 ROLLCMD_RC_BADSLEEP
+			 ROLLCMD_RC_BADLEVEL
 			 ROLLCMD_RC_BADROLLREC
+			 ROLLCMD_RC_BADSLEEP
 			 ROLLCMD_RC_BADTZ
-			 ROLLCMD_RC_DISPLAY
-			 ROLLCMD_RC_RRFOPEN
-			 ROLLCMD_RC_NOZONES
 			 ROLLCMD_RC_BADZONE
 			 ROLLCMD_RC_BADZONEDATA
-			 ROLLCMD_RC_BADEVENT
+			 ROLLCMD_RC_BADZONEGROUP
+			 ROLLCMD_RC_DISPLAY
 			 ROLLCMD_RC_KSKROLL
-			 ROLLCMD_RC_ZSKROLL
 			 ROLLCMD_RC_NOARGS
+			 ROLLCMD_RC_NOZONES
+			 ROLLCMD_RC_OKAY
+			 ROLLCMD_RC_RRFOPEN
+			 ROLLCMD_RC_ZSKROLL
 
 			 CHANNEL_WAIT
 			 CHANNEL_CLOSE
@@ -219,6 +223,7 @@ my $ROLLCMD_RC_KSKROLL		= 11;
 my $ROLLCMD_RC_ZSKROLL		= 12;
 my $ROLLCMD_RC_NOARGS		= 13;
 my $ROLLCMD_RC_BADEVENT		= 14;
+my $ROLLCMD_RC_BADZONEGROUP	= 15;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);		};
 sub ROLLCMD_RC_BADEVENT		{ return($ROLLCMD_RC_BADEVENT);		};
@@ -229,6 +234,7 @@ sub ROLLCMD_RC_BADSLEEP		{ return($ROLLCMD_RC_BADSLEEP);		};
 sub ROLLCMD_RC_BADTZ		{ return($ROLLCMD_RC_BADTZ);		};
 sub ROLLCMD_RC_BADZONE		{ return($ROLLCMD_RC_BADZONE);		};
 sub ROLLCMD_RC_BADZONEDATA	{ return($ROLLCMD_RC_BADZONEDATA);	};
+sub ROLLCMD_RC_BADZONEGROUP	{ return($ROLLCMD_RC_BADZONEGROUP);	};
 sub ROLLCMD_RC_DISPLAY		{ return($ROLLCMD_RC_DISPLAY);		};
 sub ROLLCMD_RC_KSKROLL		{ return($ROLLCMD_RC_KSKROLL);		};
 sub ROLLCMD_RC_NOARGS		{ return($ROLLCMD_RC_NOARGS);		};
@@ -265,6 +271,7 @@ my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_SPLITRRF	= "rollcmd_splitrrf";
 my $ROLLCMD_STATUS	= "rollcmd_status";
+my $ROLLCMD_ZONEGROUP	= "rollcmd_zonegroup";
 my $ROLLCMD_ZONELOG	= "rollcmd_zonelog";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
 my $ROLLCMD_ZSARGS	= "rollcmd_zsargs";
@@ -294,9 +301,13 @@ sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
 sub ROLLCMD_SPLITRRF		{ return($ROLLCMD_SPLITRRF);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
+sub ROLLCMD_ZONEGROUP		{ return($ROLLCMD_ZONEGROUP);	};
 sub ROLLCMD_ZONELOG		{ return($ROLLCMD_ZONELOG);	};
 sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
 sub ROLLCMD_ZSARGS		{ return($ROLLCMD_ZSARGS);	};
+
+my $ROLLMGR_GROUP	= "g-";
+sub ROLLMGR_GROUP		{ return($ROLLMGR_GROUP);	};
 
 my %roll_commands =
 (
@@ -326,6 +337,7 @@ my %roll_commands =
 	rollcmd_sleeptime	=> 1,
 	rollcmd_splitrrf	=> 1,
 	rollcmd_status		=> 1,
+	rollcmd_zonegroup	=> 1,
 	rollcmd_zonelog		=> 1,
 	rollcmd_zonestatus	=> 1,
 	rollcmd_zsargs		=> 1,
@@ -1873,7 +1885,27 @@ sub rollmgr_verifycmd
 	$hval = $roll_commands{$cmd};
 # print "rollmgr_verifycmd:  <$cmd>\t\t<$hval>\n";
 
-	return(0) if(!defined($hval));
+	#
+	# If the command is undefined, we'll check if it's a group
+	# command.  If so, we'll strip the group indicator and try again.
+	#
+	if(!defined($hval))
+	{
+		my $gstr = ROLLMGR_GROUP;	# Group command indicator.
+		if($cmd =~ /^$gstr/)
+		{
+			$cmd =~ s/^$gstr//;
+			return(rollmgr_verifycmd($cmd));
+		}
+		else
+		{
+			return(0);
+		}
+	}
+
+	#
+	# Success!
+	#
 	return(1);
 }
 
@@ -2161,6 +2193,8 @@ The available commands and their required data are:
 			zone names	current rollrec file into a
 					new rollrec file
    ROLLCMD_STATUS	none		get status of rollerd
+   ROLLCMD_ZONEGROUP	zonegroup name	get info on all zonegroups
+					or a particular zonegroup
    ROLLCMD_ZONELOG	zone name	set the logging level for
 			logging level	a particular zone
    ROLLCMD_ZONESTATUS	none		get status of the zones
