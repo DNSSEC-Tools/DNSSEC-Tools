@@ -116,6 +116,11 @@ The time-stamp of the beginning of the zone's current phase.
 
 The zone's zone file.
 
+ * zonegroup
+
+The zone's zonegroup.  This is used to associate related zones for group
+I<rollctl> commands.  This field is optional.
+
  * zonename
 
 The zone's name.  If this is not given, then B<rollerd> will create a new
@@ -152,6 +157,7 @@ The following is an example of a roll I<rollrec>:
             zonename        "example.com"
             zonefile        "example.signed"
             keyrec          "example.krf"
+            zonegroup       "example zones"
             kskphase        "1"
             zskphase        "0"
             administrator   "bob@bobbox.example.com"
