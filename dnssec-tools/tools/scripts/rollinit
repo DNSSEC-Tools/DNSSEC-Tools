@@ -22,7 +22,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollinit";
-my $VERS   = "$NAME version: 1.9.1";
+my $VERS   = "$NAME version: 1.11.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.11";
 
 #######################################################################
@@ -40,6 +40,7 @@ my @opts =
 	"admin=s",			# Administrator.
 	"directory=s",			# Directory.
 	"loglevel=s",			# Logging level.
+	"zg=s",				# Zone group.
 	"skip",				# Skip record flag.
 
 	"out=s",			# Output file.
@@ -53,6 +54,7 @@ my @opts =
 #
 my $rnameopt;				# Rollrec name option value.
 my $zonefileopt;			# Zone name option value.
+my $zonegroup;				# Zone group option value.
 my $kropt;				# Keyrec file option value.
 my $adminopt;				# Administrator option value.
 my $diropt;				# Directory option value.
@@ -121,12 +123,13 @@ sub doopts
 	#
 	
 	# backwards compat: honor -zone if -zonefile isn't given
-	$rnameopt     = $options{'rollrec'}	  || "";
-	$zonefileopt  = $options{'zonefile'}	  || $options{'zone'} || "";
-	$kropt	      = $options{'keyrec'}	  || "";
-	$adminopt     = $options{'admin'}	  || "";
-	$diropt	      = $options{'directory'}     || "";
-	$logopt	      = $options{'loglevel'}      || "";
+	$rnameopt     = $options{'rollrec'}	  || '';
+	$zonefileopt  = $options{'zonefile'}	  || $options{'zone'} || '';
+	$zonegroup    = $options{'zg'}		  || '';
+	$kropt	      = $options{'keyrec'}	  || '';
+	$adminopt     = $options{'admin'}	  || '';
+	$diropt	      = $options{'directory'}     || '';
+	$logopt	      = $options{'loglevel'}      || '';
 	$skipopt      = $options{'skip'}	  || 0;
 
 	$outfile      = $options{'out'}	          || "";
@@ -271,9 +274,10 @@ sub newrollrec
 	print OUT "	zonename	\"$zone\"\n";
 	print OUT "	zonefile	\"$zonefile\"\n";
 	print OUT "	keyrec		\"$krfile\"\n";
-	print OUT "	administrator	\"$admin\"\n"	 if($admin  ne "");
-	print OUT "	directory	\"$dir\"\n"	 if($dir    ne "");
-	print OUT "	loglevel	\"$logopt\"\n"	 if($logopt ne "");
+	print OUT "	zonegroup	\"$zonegroup\"\n" if($zonegroup ne '');
+	print OUT "	administrator	\"$admin\"\n"	  if($admin  ne '');
+	print OUT "	directory	\"$dir\"\n"	  if($dir    ne '');
+	print OUT "	loglevel	\"$logopt\"\n"	  if($logopt ne '');
 	print OUT "	kskphase	\"0\"\n";
 	print OUT "	zskphase	\"0\"\n";
 	print OUT "	ksk_rolldate	\" \"\n";
@@ -311,6 +315,7 @@ sub usage
 	print STDERR "usage:  rollinit [options] <zonename1> ... <zonenameN>\n";
 	print STDERR "\t-rollrec 	rollrec name\n";
 	print STDERR "\t-zonefile	zone file\n";
+	print STDERR "\t-zonegroup	zone group\n";
 	print STDERR "\t-keyrec		keyrec file\n";
 	print STDERR "\t-admin		administrator\n";
 	print STDERR "\t-directory	directory\n";
@@ -343,12 +348,16 @@ B<rollinit> creates new I<rollrec> entries for a I<rollrec> file.  This
 I<rollrec> file will be used by B<rollerd> to manage key rollover for
 the named zones.
 
+The newly generated I<rollrec> entries are written to standard output,
+unless the B<-out> option is specified.
+
 A I<rollrec> entry has this format:
 
     roll "example.com"
 	zonename	"example.com"
 	zonefile	"example.com.signed"
 	keyrec		"example.com.krf"
+	zonegroup	"example-zones"
 	kskphase	"0"
 	zskphase	"0"
 	administrator	"bob@bobhost.example.com"
@@ -365,6 +374,10 @@ A I<rollrec> entry has this format:
 	istrustanchor   "no"
         holddowntime    "60D"
 
+The keywords B<roll> and B<skip> indicate whether B<rollerd> should process
+or ignore a particular I<rollrec> entry.  B<roll> records are created by
+default; B<skip> entries are created if the B<-skip> option is specified.
+
 The I<roll> line has a name which is used to distinguish it from all other
 I<rollrec> entries in the file.  The I<zonename> field is set to the name
 of the zone.  These two data are often the same, but this is not required.
@@ -376,30 +389,47 @@ and arguments.  The manner of generating the I<rollrec>'s actual values is a
 little complex and is described in the ZONEFILE And KEYREC FIELDS section
 below.
 
-The I<administrator> field is set to "bob@bobhost.example.com" to indicate
-that the email messages to the zone's administrator should be sent to
-"bob@bobhost.example.com".
+The I<zonegroup> field is used to associate a set of I<rollrec>s together, so
+they can be controlled by a single B<rollctl -group> command.  This field is
+optional and B<rollinit> only sets it if the I<-zonegroup> option is specified.
+(While this is using the term "zone", it is actually referring to the name of
+the I<rollrec> entries.)
 
-The I<directory> field is set to "/var/dns/zones/example.com" to indicate
-that the files for this zone should be found in B</var/dns/zones/example.com>.
-This includes the zone file, the signed zone file, and the I<keyrec> file.
+The I<administrator> field is set to the email address of the person (or
+person, if the address is actually a mailing list) considered to be the
+responsible person for the zone.
 
-The I<loglevel> field is set to "phase" to indicate that B<rollerd> should
-only log phase-level (and greater) log messages for this zone.
+The I<directory> field is set to the directory that contains the the files
+for the zone.  These files include the zone file, the signed zone file, and
+the I<keyrec> file.
 
-The I<kskphase> field is set to 0 to indicate that the zone is in
-normal operation (non-rollover) for KSK keys.
-The I<zskphase> field is set to 0 to indicate that the zone is in
-normal operation (non-rollover) for ZSK keys.
+The I<loglevel> field is set to the level of log messages that B<rollerd>
+should produce for this zone.  The log level includes those messages at a
+greater priority to the specified level, so a level of "phase" will also
+include "err" and "fatal" messages.
 
-The I<ksk_rolldate> and I<ksk_rollsecs> fields are set to indicate that the
-zone has not yet undergone KSK rollover.
+The I<kskphase> and I<zskphase> fields indicate the rollover phase for the
+zone's KSK and ZSK keys.  The value 0 indicates that the zone is in normal
+operation (non-rollover) for that key type.  A non-zero phase (1-7 for KSKs;
+1-4 for ZSKs) indicates that the zone is in the process of rolling the keys.
+Only one of these fields should ever be non-zero at a particular time.  If
+both are zero, then no rollover operations are taking place.
 
-The I<zsk_rolldate> and I<zsk_rollsecs> fields are set to indicate that the
-zone has not yet undergone ZSK rollover.
+The I<ksk_rolldate> and I<ksk_rollsecs> fields indicate when KSK rollover
+started.  If the values are a blank and zero, respectively, then the zone
+is not in KSK rollover.
 
-The I<display> field is set to indicate that B<blinkenlights> should display
-the record.  The I<maxttl> and I<phasestart> fields are set to dummy values.
+The I<zsk_rolldate> and I<zsk_rollsecs> fields indicate when ZSK rollover
+started.  If the values are a blank and zero, respectively, then the zone
+is not in ZSK rollover.
+
+The Boolean I<display> field indicates if B<blinkenlights> should display
+information about this zone.
+
+The I<maxttl> field contains the maximum TTL value from the zone file.
+
+The I<phasestart> fields contains the date that the current rollover phase
+was entered.
 
 I<rollrec> files also have the I<zsargs> field that holds user-specified
 options for B<zonesigner>.  This field is set during B<rollerd> execution
@@ -413,13 +443,6 @@ a trust-anchor.  If set to "yes" then 60 days will be the minimum wait
 time during phase 3 of KSK rolling to ensure remote validators can
 properly follow the steps needed as specified by RFC5011.  The 60-day
 default can be changed via the B<holddowntime> field.
-
-The keywords B<roll> and B<skip> indicate whether B<rollerd> should process
-or ignore a particular I<rollrec> entry.  B<roll> records are created by
-default; B<skip> entries are created if the B<-skip> option is specified.
-
-The newly generated I<rollrec> entries are written to standard output,
-unless the B<-out> option is specified.
 
 =head1 ZONEFILE and KEYREC FIELDS
 
@@ -473,6 +496,10 @@ See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 
 This specifies the value of the I<keyrec> field.
 See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
+
+=item B<-zg zonegroup>
+
+This specifies the value of the I<zonegroup> field.  This field is optional.
 
 =item B<-admin>
 
@@ -708,6 +735,24 @@ zones, with the B<-rollrec> option.  The I<rollrec> names include a space.
 	    zonename        "example2.com"
 	    zonefile        "example2.com.signed"
 	    keyrec	    "example2.com.krf"
+
+=head2 Example 14.  Multiple zones, -zg option
+
+This example shows the I<rollrec> generated by giving B<rollinit> a set of
+zones, with the B<-zg> option.
+
+    $ rollinit -zg "example zones" example1.com example2.com
+	roll    "example1.com"
+	    zonename        "example1.com"
+	    zonefile        "example1.com.signed"
+	    keyrec	    "example1.com.krf"
+	    zonegroup       "example zones"
+
+	roll    "example2.com"
+	    zonename        "example2.com"
+	    zonefile        "example2.com.signed"
+	    keyrec	    "example2.com.krf"
+	    zonegroup       "example zones"
 
 =head1 COPYRIGHT
 
