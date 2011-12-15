@@ -75,9 +75,12 @@ my @opts =
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"splitrrf",			# Split a rollrec file in two.
 	"status",			# Get rollerd's status.
+	"zonegroup:s",			# Get a list of current zone groups.
 	"zonelog",			# Set a zone's/zones' logging level.
 	"zonestatus",			# Get status of zones.
 	"zsargs",			# Set zonesigner args for some zones.
+
+	"group",			# Apply command to zone group.
 
 	"Version",			# Display the version number.
 	"quiet",			# Don't print anything.
@@ -92,6 +95,7 @@ my $commandcount    = 0;
 my $dispflag	    = 0;
 my $dspubflag	    = 0;
 my $dspuballflag    = 0;
+my $groupflag	    = 0;
 my $logfileflag	    = 0;
 my $loglevelflag    = 0;
 my $logtzflag	    = 0;
@@ -112,6 +116,7 @@ my $skipzoneflag    = 0;
 my $sleeptimeflag   = 0;
 my $splitrrfflag    = 0;
 my $statusflag	    = 0;
+my $zonegroupflag   = undef;
 my $zonelogflag	    = 0;
 my $zonestatflag    = 0;
 my $zrollallflag    = 0;
@@ -189,7 +194,7 @@ sub main()
 	#
 	if($dispflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,1))
+		if(! sendcmd(ROLLCMD_DISPLAY,1))
 		{
 			print STDERR "rollctl:  error sending command DISPLAY\n";
 			exit(1);
@@ -216,7 +221,7 @@ sub main()
 
 		foreach my $zone (@ARGV)
 		{
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$zone))
+			if(! sendcmd(ROLLCMD_DSPUB,$zone))
 			{
 				print STDERR "rollctl:  error sending command DSPUB($zone)\n";
 				exit(1);
@@ -237,7 +242,7 @@ sub main()
 	}
 	elsif($dspuballflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUBALL,$dspuballflag))
+		if(! sendcmd(ROLLCMD_DSPUBALL,$dspuballflag))
 		{
 			print STDERR "rollctl:  error sending command DSPUBALL\n";
 			exit(1);
@@ -256,7 +261,7 @@ sub main()
 	}
 	elsif($logfileflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGFILE,$logfileflag))
+		if(! sendcmd(ROLLCMD_LOGFILE,$logfileflag))
 		{
 			print STDERR "rollctl:  error sending command LOGFILE\n";
 			exit(1);
@@ -282,7 +287,7 @@ sub main()
 		}
 		else
 		{
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag))
+			if(! sendcmd(ROLLCMD_LOGLEVEL,$loglevelflag))
 			{
 				print STDERR "rollctl:  error sending command LOGLEVEL\n";
 				exit(1);
@@ -302,7 +307,7 @@ sub main()
 	}
 	elsif($logtzflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGTZ,$logtzflag))
+		if(! sendcmd(ROLLCMD_LOGTZ,$logtzflag))
 		{
 			print STDERR "rollctl:  error sending command LOGTZ\n";
 			exit(1);
@@ -328,7 +333,7 @@ sub main()
 		}
 		else
 		{
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_PHASEMSG,$logphasemsg))
+			if(! sendcmd(ROLLCMD_PHASEMSG,$logphasemsg))
 			{
 				print STDERR "rollctl:  error sending command PHASEMSG\n";
 				exit(1);
@@ -350,7 +355,7 @@ sub main()
 	{
 		my $rrfs = join(':', @ARGV);
 
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_MERGERRFS,$rrfs))
+		if(! sendcmd(ROLLCMD_MERGERRFS,$rrfs))
 		{
 			print STDERR "rollctl:  error sending command MERGERRFS\n";
 			exit(1);
@@ -369,7 +374,7 @@ sub main()
 	}
 	elsif($nodispflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,0))
+		if(! sendcmd(ROLLCMD_DISPLAY,0))
 		{
 			print STDERR "rollctl:  error sending command DISPLAY\n";
 			exit(1);
@@ -388,7 +393,7 @@ sub main()
 	}
 	elsif($rollallflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALL))
+		if(! sendcmd(ROLLCMD_ROLLALL))
 		{
 			print STDERR "rollctl:  error sending command ROLLALL\n";
 			exit(1);
@@ -407,7 +412,7 @@ sub main()
 	}
 	elsif($zrollallflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALLZSKS))
+		if(! sendcmd(ROLLCMD_ROLLALLZSKS))
 		{
 			print STDERR "rollctl:  error sending command ROLLALLZSKS\n";
 			exit(1);
@@ -426,7 +431,7 @@ sub main()
 	}
 	elsif($rollrecflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLREC,$rollrecflag) )
+		if(! sendcmd(ROLLCMD_ROLLREC,$rollrecflag))
 		{
 			print STDERR "rollctl:  error sending command ROLLREC\n";
 			exit(1);
@@ -453,7 +458,7 @@ sub main()
 
 		foreach my $zone (@ARGV)
 		{
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$zone))
+			if(! sendcmd(ROLLCMD_ROLLKSK,$zone))
 			{
 				print STDERR "rollctl:  error sending command ROLLKSK($zone)\n";
 				exit(1);
@@ -481,7 +486,7 @@ sub main()
 
 		foreach my $zone (@ARGV)
 		{
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZONE,$zone))
+			if(! sendcmd(ROLLCMD_ROLLZONE,$zone))
 			{
 				print STDERR "rollctl:  error sending command ROLLZONE($zone)\n";
 				exit(1);
@@ -509,7 +514,7 @@ sub main()
 
 		foreach my $zone (@ARGV)
 		{
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$zone))
+			if(! sendcmd(ROLLCMD_ROLLZSK,$zone))
 			{
 				print STDERR "rollctl:  error sending command ROLLZSK($zone)\n";
 				exit(1);
@@ -529,7 +534,7 @@ sub main()
 	}
 	elsif($runqueueflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_RUNQUEUE))
+		if(! sendcmd(ROLLCMD_RUNQUEUE))
 		{
 			print STDERR "rollctl:  error sending command RUNQUEUE\n";
 			exit(1);
@@ -551,7 +556,7 @@ sub main()
 	}
 	elsif($queuelistflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_QUEUELIST))
+		if(! sendcmd(ROLLCMD_QUEUELIST))
 		{
 			print STDERR "rollctl:  error sending command QUEUELIST\n";
 			exit(1);
@@ -570,7 +575,7 @@ sub main()
 	}
 	elsif($queuestatusflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_QUEUESTATUS))
+		if(! sendcmd(ROLLCMD_QUEUESTATUS))
 		{
 			print STDERR "rollctl:  error sending command QUEUESTATUS\n";
 			exit(1);
@@ -589,7 +594,7 @@ sub main()
 	}
 	elsif($skipallflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPALL,$skipzoneflag))
+		if(! sendcmd(ROLLCMD_SKIPALL,$skipzoneflag))
 		{
 			print STDERR "rollctl:  error sending command SKIPALL\n";
 			exit(1);
@@ -616,7 +621,7 @@ sub main()
 
 		foreach my $zone (@ARGV)
 		{
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$zone))
+			if(! sendcmd(ROLLCMD_SKIPZONE,$zone))
 			{
 				print STDERR "rollctl:  error sending command SKIPZONE($zone)\n";
 				exit(1);
@@ -636,7 +641,7 @@ sub main()
 	}
 	elsif($sleeptimeflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag))
+		if(! sendcmd(ROLLCMD_SLEEPTIME,$sleeptimeflag))
 		{
 			print STDERR "rollctl:  error sending command SLEEPTIME\n";
 			exit(1);
@@ -657,7 +662,7 @@ sub main()
 	{
 		my $rrfs = join(':', @ARGV);
 
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SPLITRRF,$rrfs))
+		if(! sendcmd(ROLLCMD_SPLITRRF,$rrfs))
 		{
 			print STDERR "rollctl:  error sending command SPLITRRF\n";
 			exit(1);
@@ -676,7 +681,7 @@ sub main()
 	}
 	elsif($statusflag)
 	{
-		if(!rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_STATUS))
+		if(! sendcmd(ROLLCMD_STATUS))
 		{
 			print STDERR "rollctl:  error sending command ZONELOG\n";
 			exit(1);
@@ -708,7 +713,7 @@ sub main()
 			exit(0);
 		}
 
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SHUTDOWN))
+		if(! sendcmd(ROLLCMD_SHUTDOWN))
 		{
 			print STDERR "rollctl:  error sending command SHUTDOWN\n";
 			exit(1);
@@ -721,6 +726,24 @@ sub main()
 		else
 		{
 			print STDERR "shutdown failed:  \"$resp\"\n";
+			$rcret++;
+		}
+	}
+	elsif(defined($zonegroupflag))
+	{
+		if(! sendcmd(ROLLCMD_ZONEGROUP,$zonegroupflag))
+		{
+			print STDERR "rollctl:  error sending command ZONEGROUP\n";
+			exit(1);
+		}
+		($ret, $resp) = rollmgr_getresp($zonegroupflag);
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "$resp\n";
 			$rcret++;
 		}
 	}
@@ -740,7 +763,7 @@ sub main()
 				next;
 			}
 
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONELOG,$zone))
+			if(! sendcmd(ROLLCMD_ZONELOG,$zone))
 			{
 				print STDERR "rollctl:  error sending command ZONELOG($zone)\n";
 				exit(1);
@@ -760,7 +783,7 @@ sub main()
 	}
 	elsif($zonestatflag)
 	{
-		if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONESTATUS))
+		if(! sendcmd(ROLLCMD_ZONESTATUS))
 		{
 			print STDERR "rollctl:  error sending command ZONESTATUS\n";
 			exit(1);
@@ -790,7 +813,7 @@ sub main()
 
 			$zsargs = join ',', @ARGV;
 
-			if(! rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZSARGS,$zsargs))
+			if(! sendcmd(ROLLCMD_ZSARGS,$zsargs))
 			{
 				print STDERR "rollctl:  error sending command ZSARGS\n";
 				exit(1);
@@ -859,6 +882,10 @@ sub doopts
 	{
 		$dspuballflag = $options{'dspuball'};
 		$commandcount++;
+	}
+	if(exists($options{'group'}))
+	{
+		$groupflag = $options{'group'};
 	}
 	if(exists($options{'logfile'}))
 	{
@@ -976,6 +1003,11 @@ sub doopts
 		$statusflag = $options{'status'};
 		$commandcount++;
 	}
+	if(exists($options{'zonegroup'}))
+	{
+		$zonegroupflag = $options{'zonegroup'};
+		$commandcount++;
+	}
 	if(exists($options{'zonelog'}))
 	{
 		$zonelogflag = $options{'zonelog'};
@@ -1005,6 +1037,11 @@ sub doopts
 	if($commandcount > 1)
 	{
 		print STDERR "only one command argument may be specified per execution\n";
+		exit(3);
+	}
+	elsif($commandcount < 1)
+	{
+		print STDERR "a command argument must be specified\n";
 		exit(3);
 	}
 
@@ -1105,17 +1142,23 @@ sub zonestatus
 }
 
 #----------------------------------------------------------------------
-# Routine:	version()
+# Routine:	sendcmd()
 #
-# Purpose:	Print the version number(s) and exit.
+# Purpose:	Send the command to rollerd.  We'll also prepend the
+#		group-command indicator if -group was given.
 #
-sub version
+sub sendcmd
 {
-	print STDERR "$VERS\n";
-	print STDERR "$DTVERS\n";
+	my $cmd = shift;			# Command to send rollerd.
+	my $arg = shift;			# Command's optional argument.
+	my $ret;				# Return code.
 
-	exit(0);
+	$cmd = ROLLMGR_GROUP . $cmd if($groupflag);
+
+	$ret = rollmgr_sendcmd(CHANNEL_WAIT,$cmd,$arg);
+	return($ret);
 }
+
 
 #----------------------------------------------------------------------
 # Routine:	showloglevels()
@@ -1139,6 +1182,19 @@ sub showloglevels
 	exit(0);
 }
 
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
 #-----------------------------------------------------------------------------
 # Routine:	usage()
 #
@@ -1149,11 +1205,12 @@ sub usage
 	print STDERR "\t-display		start graphical display\n";
 	print STDERR "\t-dspub <zone>		parent has published DS record for zone\n";
 	print STDERR "\t-dspuball		parents have published DS records for zones\n";
+	print STDERR "\t-group			apply command to zone group\n";
 	print STDERR "\t-logfile <logfile>	set log file\n";
 	print STDERR "\t-loglevel <loglevel>	set logging level\n";
 	print STDERR "\t-logtz <log-timezone>	set logging timezone\n";
 	print STDERR "\t-phasemsg <length>	set phase-message length\n";
-	print STDERR "\t-pidfile <pidfile>	set phase-message length\n";
+	print STDERR "\t-pidfile <pidfile>	set rollerd's process-id file\n";
 	print STDERR "\t-nodisplay		stop graphical display\n";
 	print STDERR "\t-rollall		restart all suspended zones\n";
 	print STDERR "\t-rollallzsks		roll all zones\n";
@@ -1168,6 +1225,7 @@ sub usage
 	print STDERR "\t-splitrrf <rrf entries>	split the current rollrec file\n";
 	print STDERR "\t-sleeptime <seconds>	set sleep time (in seconds)\n";
 	print STDERR "\t-status			get rollerd's status\n";
+	print STDERR "\t-zonegroup [zonegroup]	show zone groups\n";
 	print STDERR "\t-zonelog		set a zone's log level\n";
 	print STDERR "\t-zonestatus		get status of zones\n";
 	print STDERR "\t-zsargs	 <zone>		set zonesigner arguments for zones\n";
@@ -1228,6 +1286,16 @@ for three zones.
 
 Indicates that DS records have been published for all zones in phase 6 of
 KSK rollover.
+
+=item B<-group>
+
+Indicates that the specified command should apply to a zone group instead of
+a zone.  Consequently, the specified zone must actually be a zone group.
+This option must be used in conjunction with another command.
+
+This option only applies to the following commands: B<-dspub>, B<-rollksk>, 
+B<-rollzone>, B<-rollzsk>, and B<-skipzone>.  This command will have no
+effect if it is given to other other commands.
 
 =item B<-halt> [now]
 
@@ -1364,6 +1432,17 @@ and the zone names must not contain colons.
 Has B<rollerd> write several of its operational parameters to its log file.
 The parameters are also reported to B<rollctl>, which prints them to the
 screen.
+
+=item B<-zonegroup> I<[zone-group]>
+
+Requests information about zone groups from B<rollerd>.  If the optional
+I<zone-group> argument is not given, then B<rollerd> will return a list of
+the defined zone groups and the number of zones in each.  If a I<zone-group>
+is specified, then B<rollerd> will return a list of the zones in that group.
+
+(While this is using the term "zone", it is actually referring to the name
+of the I<rollrec> entries.  For a particular I<rollrec> entry, the I<rollrec>
+name is usually the same as the zone name, but this is not a requirement.)
 
 =item B<-zonelog>
 
