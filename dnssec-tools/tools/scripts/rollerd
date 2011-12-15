@@ -4413,8 +4413,9 @@ sub sleeper_override
 #
 sub commander
 {
-	my $cmd;					# Client's command.
-	my $data;					# Command's data.
+	my $cmd;				# Client's command.
+	my $data;				# Command's data.
+	my $gstr = ROLLMGR_GROUP;		# Group command indicator.
 
 	rolllog_log(LOG_TMI,'<command>',"checking commands");
 
@@ -4432,125 +4433,190 @@ sub commander
 		rolllog_log(LOG_TMI,'<command>',"cmd   - \"$cmd\"");
 		rolllog_log(LOG_TMI,'<command>',"data  - \"$data\"") if($data ne "");
 
-		if($cmd eq ROLLCMD_DISPLAY())
+		#
+		# Deal with the command as zone-related or as a group command.
+		#
+		if($cmd =~ /^$gstr/)
 		{
-			cmd_display($data);
+
+			$cmd =~ s/^$gstr//;
+			groupcmd($cmd,$data);
 		}
-		elsif($cmd eq ROLLCMD_DSPUB())
+		else
 		{
-			cmd_dspub($data);
-		}
-		elsif($cmd eq ROLLCMD_DSPUBALL())
-		{
-			cmd_dspuball();
-		}
-		elsif($cmd eq ROLLCMD_LOGFILE())
-		{
-			cmd_logfile($data);
-		}
-		elsif($cmd eq ROLLCMD_LOGLEVEL())
-		{
-			cmd_loglevel($data);
-		}
-		elsif($cmd eq ROLLCMD_LOGMSG())
-		{
-			cmd_logmsg($data);
-		}
-		elsif($cmd eq ROLLCMD_LOGTZ())
-		{
-			cmd_logtz($data);
-		}
-		elsif($cmd eq ROLLCMD_MERGERRFS())
-		{
-			cmd_mergerrfs($data);
-		}
-		elsif($cmd eq ROLLCMD_PHASEMSG())
-		{
-			cmd_phasemsg($data);
-		}
-		elsif($cmd eq ROLLCMD_ROLLALL())
-		{
-			cmd_rollall();
-		}
-		elsif($cmd eq ROLLCMD_ROLLALLZSKS())
-		{
-			cmd_rollallzsks();
-		}
-		elsif($cmd eq ROLLCMD_ROLLREC())
-		{
-			if(cmd_rollrec($data))
+			if(singlecmd($cmd,$data) == 1)
 			{
 				last;
 			}
 		}
-		elsif($cmd eq ROLLCMD_ROLLKSK())
-		{
-			cmd_rollnow($data,'KSK');
-		}
-		elsif($cmd eq ROLLCMD_ROLLZONE())
-		{
-			cmd_rollzone($data);
-		}
-		elsif($cmd eq ROLLCMD_ROLLZSK())
-		{
-			cmd_rollnow($data,'ZSK');
-		}
-		elsif($cmd eq ROLLCMD_RUNQUEUE())
-		{
-			cmd_runqueue($data);
-		}
-		elsif($cmd eq ROLLCMD_QUEUELIST())
-		{
-			cmd_queuelist($data);
-		}
-		elsif($cmd eq ROLLCMD_QUEUESTATUS())
-		{
-			cmd_queuestatus($data);
-		}
-		elsif($cmd eq ROLLCMD_SHUTDOWN())
-		{
-			cmd_shutdown($data);
-		}
-		elsif($cmd eq ROLLCMD_SKIPALL())
-		{
-			cmd_skipall();
-		}
-		elsif($cmd eq ROLLCMD_SKIPZONE())
-		{
-			cmd_skipzone($data);
-		}
-		elsif($cmd eq ROLLCMD_SLEEPTIME())
-		{
-			cmd_sleeptime($data);
-		}
-		elsif($cmd eq ROLLCMD_SPLITRRF())
-		{
-			cmd_splitrrf($data);
-		}
-		elsif($cmd eq ROLLCMD_STATUS())
-		{
-			cmd_status($data);
-		}
-		elsif($cmd eq ROLLCMD_ZONELOG())
-		{
-			cmd_zonelog($data);
-		}
-		elsif($cmd eq ROLLCMD_ZONESTATUS())
-		{
-			cmd_zonestatus($data);
-		}
-		elsif($cmd eq ROLLCMD_ZSARGS())
-		{
-			cmd_zsargs($data);
-		}
-		else
-		{
-			rolllog_log(LOG_ERR,'<command>',"invalid command  - \"$cmd\"");
-		}
 
 		rollmgr_closechan();
 	}
+}
 
+#-----------------------------------------------------------------------------
+# Routine:	groupcmd()
+#
+# Purpose:	Execute a command for each zone in a zone group.
+#
+sub groupcmd
+{
+	my $cmd = shift;			# Client's command.
+	my $data = shift;			# Command's data.
+	my %zgcmds;				# Zone group commands.
+	my @zonegroup;				# Zones in the named group.
+
+	#
+	# Get the list of recognized zone-group commands.  If the requested
+	# command isn't allowed for zone groups, we'll quietly run it as
+	# a regular command.
+	#
+	%zgcmds = rollrec_zonegroup_cmds();
+	if(! defined($zgcmds{$cmd}))
+	{
+		singlecmd($cmd,$data);
+		return;
+	}
+
+	#
+	# Run the named command on each zone in the specified zone group.
+	# 
+	@zonegroup = rollrec_zonegroup($data);
+	foreach my $zn (@zonegroup)
+	{
+		singlecmd($cmd,$zn);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	singlecmd()
+#
+# Purpose:	Execute a single command.
+#
+sub singlecmd
+{
+	my $cmd = shift;				# Client's command.
+	my $data = shift;				# Command's data.
+
+	if($cmd eq ROLLCMD_DISPLAY())
+	{
+		cmd_display($data);
+	}
+	elsif($cmd eq ROLLCMD_DSPUB())
+	{
+		cmd_dspub($data);
+	}
+	elsif($cmd eq ROLLCMD_DSPUBALL())
+	{
+		cmd_dspuball();
+	}
+	elsif($cmd eq ROLLCMD_LOGFILE())
+	{
+		cmd_logfile($data);
+	}
+	elsif($cmd eq ROLLCMD_LOGLEVEL())
+	{
+		cmd_loglevel($data);
+	}
+	elsif($cmd eq ROLLCMD_LOGMSG())
+	{
+		cmd_logmsg($data);
+	}
+	elsif($cmd eq ROLLCMD_LOGTZ())
+	{
+		cmd_logtz($data);
+	}
+	elsif($cmd eq ROLLCMD_MERGERRFS())
+	{
+		cmd_mergerrfs($data);
+	}
+	elsif($cmd eq ROLLCMD_PHASEMSG())
+	{
+		cmd_phasemsg($data);
+	}
+	elsif($cmd eq ROLLCMD_ROLLALL())
+	{
+		cmd_rollall();
+	}
+	elsif($cmd eq ROLLCMD_ROLLALLZSKS())
+	{
+		cmd_rollallzsks();
+	}
+	elsif($cmd eq ROLLCMD_ROLLREC())
+	{
+		return(1) if(cmd_rollrec($data));
+	}
+	elsif($cmd eq ROLLCMD_ROLLKSK())
+	{
+		cmd_rollnow($data,'KSK');
+	}
+	elsif($cmd eq ROLLCMD_ROLLZONE())
+	{
+		cmd_rollzone($data);
+	}
+	elsif($cmd eq ROLLCMD_ROLLZSK())
+	{
+		cmd_rollnow($data,'ZSK');
+	}
+	elsif($cmd eq ROLLCMD_RUNQUEUE())
+	{
+		cmd_runqueue($data);
+	}
+	elsif($cmd eq ROLLCMD_QUEUELIST())
+	{
+		cmd_queuelist($data);
+	}
+	elsif($cmd eq ROLLCMD_QUEUESTATUS())
+	{
+		cmd_queuestatus($data);
+	}
+	elsif($cmd eq ROLLCMD_SHUTDOWN())
+	{
+		cmd_shutdown($data);
+	}
+	elsif($cmd eq ROLLCMD_SKIPALL())
+	{
+		cmd_skipall();
+	}
+	elsif($cmd eq ROLLCMD_SKIPZONE())
+	{
+		cmd_skipzone($data);
+	}
+	elsif($cmd eq ROLLCMD_SLEEPTIME())
+	{
+		cmd_sleeptime($data);
+	}
+	elsif($cmd eq ROLLCMD_SPLITRRF())
+	{
+		cmd_splitrrf($data);
+	}
+	elsif($cmd eq ROLLCMD_STATUS())
+	{
+		cmd_status($data);
+	}
+	elsif($cmd eq ROLLCMD_ZONEGROUP())
+	{
+		cmd_zonegroup($data);
+	}
+	elsif($cmd eq ROLLCMD_ZONELOG())
+	{
+		cmd_zonelog($data);
+	}
+	elsif($cmd eq ROLLCMD_ZONESTATUS())
+	{
+		cmd_zonestatus($data);
+	}
+	elsif($cmd eq ROLLCMD_ZSARGS())
+	{
+		cmd_zsargs($data);
+	}
+	else
+	{
+		rolllog_log(LOG_ERR,'<command>',"invalid command  - \"$cmd\"");
+	}
+
+	return(0);
 }
 
 #-----------------------------------------------------------------------------
@@ -5627,6 +5693,85 @@ sub cmd_status
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	cmd_zonegroup()
+#
+# Purpose:	Give a caller info about the zone groups or the list of zone
+#		in a specified group.
+#
+sub cmd_zonegroup
+{
+	my $data = shift;				# Command's data.
+	my $outbuf = '';				# Response buffer.
+	my $errbuf = '';				# Error buffer.
+
+	#
+	# Get the info to report.
+	#
+	if($data eq '')
+	{
+		my %zgroups;				# Zone groups.
+
+		#
+		# Get the list of zone groups.
+		#
+		%zgroups = rollrec_zonegroups();
+
+		#
+		# Build the list of zone groups and count of zones in
+		# that group.
+		#
+		foreach my $zg (sort(keys(%zgroups)))
+		{
+			$outbuf .= "$zg:\t$zgroups{$zg} zones\n";		
+		}
+
+		#
+		# Mark an error if there are no zone groups.
+		#
+		if($outbuf eq '')
+		{
+			$errbuf = "no zone groups defined";
+		}
+	}
+	else
+	{
+		my @zgroup;				# Zone group.
+
+		@zgroup = rollrec_zonegroup($data);
+
+		#
+		# Buid the list of zones in this group.  If there are no
+		# zones in this group, this isn't really a zone group.
+		#
+		if(@zgroup > 0)
+		{
+			$outbuf = join("\n",@zgroup);
+		}
+		else
+		{
+			$errbuf = "invalid zone group \"$data\"";
+		}
+		
+	}
+
+	#
+	# Send the status report to the caller.
+	#
+	chomp $outbuf;
+	if($outbuf ne '')
+	{
+		rolllog_log(LOG_TMI,'<command>',"zonegroup($data) command received");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
+	}
+	else
+	{
+		rolllog_log(LOG_INFO,'<command>',$errbuf);
+		rollmgr_sendresp(ROLLCMD_RC_BADZONEGROUP,$errbuf);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	cmd_zonelog()
 #
 # Purpose:	Set the logging level for a zone.
@@ -6620,6 +6765,7 @@ sample I<rollrec> entry:
 		zonename        "example.com"
 		zonefile        "example.com.signed"
 		keyrec          "example.com.krf"
+		zonegroup       "demo-zones"
 		directory	"dir-example.com"
 		kskphase        "0"
 		zskphase        "3"
@@ -6638,7 +6784,9 @@ The first line gives the I<rollrec> entry's name.  The name distinguishes it
 from other I<rollrec> entries and must be unique.  This may be the zone's
 name, but this is not a requirement.  The following lines give the zone's
 name, the zone's signed zone file, I<keyrec> file, the current rollover
-phases, the rollover timestamps, and other information.
+phases, the rollover timestamps, and other information.  The zone group is
+optional and allows a set of related zones to be controlled with a single
+B<rollctl> execution, rather than one execution per zone.
 
 If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
 I<rollrec> will be changed into a "skip" I<rollrec>.  That record will not be
@@ -6923,19 +7071,6 @@ The following problems (or potential problems) are known:
 
 Any process that can write to the rollover socket can send commands to
 B<rollerd>.  This is probably not a Good Thing.
-
-=back
-
-=head1 POSSIBLE ENHANCEMENTS
-
-The following potential enhancements may be made:
-
-=over 4
-
-=item -
-
-It'd be good to base B<rollerd>'s sleep time on when the next operation must
-take place, rather than a simple seconds count.
 
 =back
 
