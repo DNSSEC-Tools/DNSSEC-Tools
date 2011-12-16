@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollset";
-my $VERS   = "$NAME version: 1.9.1";
+my $VERS   = "$NAME version: 1.11.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.11";
 
 #######################################################################
@@ -40,6 +40,7 @@ my $name	= '';
 my $newname	= '';
 my $zonename	= '';
 my $zonefile	= '';
+my $zonegroup	= '';
 my $keyrec	= '';
 my $zsargs	= '';
 my $roll	= 0;
@@ -63,6 +64,7 @@ my @opts =
 	"skip",				# Make record a skip record.
 	"newname=s",			# New rollrec name.
 	"zonename=s",			# New zonename value.
+	"zg=s",				# New zonegroup value.
 	"file=s",			# New zonefile value.
 	"keyrec=s",			# New keyrec value.
 	"admin=s",			# New administrator email address.
@@ -137,6 +139,7 @@ sub doopts
 	$newname   = $options{'newname'};
 	$zonename  = $options{'zonename'};
 	$zonefile  = $options{'file'};
+	$zonegroup = $options{'zg'};
 	$keyrec	   = $options{'keyrec'};
 	$admin	   = $options{'admin'};
 	$directory = $options{'directory'};
@@ -365,6 +368,7 @@ sub editrrf
 		#
 		changer($zonename,$rname,'zonename',$zonename);
 		changer($zonefile,$rname,'zonefile',$zonefile);
+		changer($zonegroup,$rname,'zonegroup',$zonegroup);
 		changer($keyrec,$rname,'keyrec',$keyrec);
 		changer($admin,$rname,'administrator',$admin);
 		changer($directory,$rname,'directory',$directory);
@@ -522,6 +526,7 @@ sub usage
 	print STDERR "		-skip\n";
 	print STDERR "		-newname new-zone-name\n";
 	print STDERR "		-zonename zone-name\n";
+	print STDERR "		-zg zonegroup-name\n";
 	print STDERR "		-file zone-file\n";
 	print STDERR "		-keyrec keyrec-file\n";
 	print STDERR "		-admin admin-email\n";
@@ -591,8 +596,13 @@ I<zone-file>.
 
 =item B<-keyrec keyrec-file>
 
-The keyrec file in the selected I<rollrec> records is modified to be
+The I<keyrec> file in the selected I<rollrec> records is modified to be
 I<keyrec-file>.
+
+=item B<-zg zonegroup-name>
+
+The zonegroup in the selected I<rollrec> records is modified to be
+I<zonegroup-name>.
 
 =item B<-admin addr>
 
