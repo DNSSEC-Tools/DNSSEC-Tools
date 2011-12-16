@@ -155,16 +155,26 @@ val_log_rrsig_rdata(const val_context_t * ctx, int level,
 {
     char            ctime_buf1[1028], ctime_buf2[1028];
     char            buf[1028];
+    struct timeval  tv_sig1, tv_sig2;
+
     if (rdata) {
         if (!prefix)
             prefix = "";
+
+        memset(&tv_sig1, 0, sizeof(tv_sig1));
+        memset(&tv_sig2, 0, sizeof(tv_sig2));
+        tv_sig1.tv_sec = rdata->sig_expr; 
+        tv_sig2.tv_sec = rdata->sig_incp; 
+
+        GET_TIME_BUF((const time_t *)(&tv_sig1.tv_sec), ctime_buf1);
+        GET_TIME_BUF((const time_t *)(&tv_sig2.tv_sec), ctime_buf2);
+
         val_log(ctx, level, "%s Type=%d Algo=%d[%s] Labels=%d OrgTTL=%d "
                 "SigExp=%s SigIncp=%s KeyTag=%d[0x %04x] Signer=%s Sig=%s",
                 prefix, rdata->algorithm,
                 get_algorithm_string(rdata->algorithm), rdata->labels,
                 rdata->orig_ttl,
-                GET_TIME_BUF((const time_t *) (&(rdata->sig_expr)), ctime_buf1),
-                GET_TIME_BUF((const time_t *) (&(rdata->sig_incp)), ctime_buf2),
+                ctime_buf1, ctime_buf2,
                 rdata->key_tag, rdata->key_tag, rdata->signer_name,
                 get_base64_string(rdata->signature, rdata->signature_len,
                                   buf, 1024));

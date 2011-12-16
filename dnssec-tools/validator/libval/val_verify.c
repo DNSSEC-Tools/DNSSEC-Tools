@@ -96,6 +96,7 @@ val_sigverify(val_context_t * ctx,
               int clock_skew)
 {
     struct timeval  tv;
+    struct timeval  tv_sig;
 
     /** Inputs to this function have already been NULL-checked **/
 
@@ -141,15 +142,16 @@ val_sigverify(val_context_t * ctx,
             if (tv.tv_sec < rrsig->sig_incp - clock_skew) {
                 char            currTime[1028];
                 char            incpTime[1028];
-                char            *timeptr1 = NULL;
-                char            *timeptr2 = NULL;
-                memset(currTime, 0, 1028);
-                memset(incpTime, 0, 1028);
-                timeptr1 = GET_TIME_BUF((const time_t *) (&(tv.tv_sec)), currTime);
-                timeptr2 = GET_TIME_BUF((const time_t *) (&(rrsig->sig_incp)), incpTime);
+
+                memset(&tv_sig, 0, sizeof(tv_sig));
+                tv_sig.tv_sec = rrsig->sig_incp;
+
+                GET_TIME_BUF((const time_t *)(&tv.tv_sec), currTime);
+                GET_TIME_BUF((const time_t *)(&tv_sig.tv_sec), incpTime);
+
                 val_log(ctx, LOG_INFO,
                         "val_sigverify(): Signature not yet valid. Current time (%s) is less than signature inception time (%s).",
-                        timeptr1, timeptr2);
+                        currTime, incpTime);
                 *sig_status = VAL_AC_RRSIG_NOTYETACTIVE;
                 return 0;
             } else {
@@ -163,15 +165,18 @@ val_sigverify(val_context_t * ctx,
             if (tv.tv_sec > rrsig->sig_expr + clock_skew) {
                 char            currTime[1028];
                 char            exprTime[1028];
-                char            *timeptr1 = NULL;
-                char            *timeptr2 = NULL;
-                memset(currTime, 0, 1028);
-                memset(exprTime, 0, 1028);
-                timeptr1 = GET_TIME_BUF((const time_t *) (&(tv.tv_sec)), currTime);
-                timeptr2 = GET_TIME_BUF((const time_t *) (&(rrsig->sig_expr)), exprTime);
+
+                memset(&tv_sig, 0, sizeof(tv_sig));
+                tv_sig.tv_sec = rrsig->sig_expr;
+
+                memset(currTime, 0, sizeof(currTime));
+                memset(exprTime, 0, sizeof(exprTime));
+                GET_TIME_BUF((const time_t *)(&tv.tv_sec), currTime);
+                GET_TIME_BUF((const time_t *)(&tv_sig.tv_sec), exprTime);
+
                 val_log(ctx, LOG_INFO,
                         "val_sigverify(): Signature expired. Current time (%s) is greater than signature expiration time (%s).",
-                        timeptr1, timeptr2);
+                        currTime, exprTime);
                 *sig_status = VAL_AC_RRSIG_EXPIRED;
                 return 0;
             } else {

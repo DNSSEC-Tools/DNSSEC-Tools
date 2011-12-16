@@ -273,12 +273,39 @@ extern int      h_errno;
 #define GET_LAST_ERR()  h_errno
 #endif
 
-#ifdef sun 
-#define GET_TIME_BUF(tv_sec, time_buf) ctime_r(tv_sec, time_buf, sizeof(time_buf))
-#elif WIN32
-#define GET_TIME_BUF(tv_sec, time_buf) ctime(tv_sec)
+#if WIN32
+#define GET_TIME_BUF(tv_sec, time_buf) do {\
+    char *c;\
+    char *e = time_buf + sizeof(time_buf);;\
+    memset(time_buf, 0, sizeof(time_buf));\
+    c = ctime(tv_sec);\
+    if (c) {\
+        strncpy(time_buf, c, sizeof(time_buf));\
+        for(c=time_buf; c < e && *c != '\0' && *c != '\n'; c++);\
+        if( c < e && *c == '\n')\
+            *c = '\0';\
+    }\
+} while(0)
+#elif sun
+#define GET_TIME_BUF(tv_sec, time_buf) do {\
+    char *c;\
+    char *e = time_buf + sizeof(time_buf);;\
+    memset(time_buf, 0, sizeof(time_buf));\
+    ctime_r(tv_sec, time_buf, sizeof(time_buf));\
+    for(c=time_buf; c < e && *c != '\0' && *c != '\n'; c++);\
+    if(c < e && *c == '\n')\
+        *c = '\0';\
+} while(0)
 #else
-#define GET_TIME_BUF(tv_sec, time_buf) ctime_r(tv_sec, time_buf)
+#define GET_TIME_BUF(tv_sec, time_buf) do {\
+    char *c;\
+    char *e = time_buf + sizeof(time_buf);;\
+    memset(time_buf, 0, sizeof(time_buf));\
+    ctime_r(tv_sec, time_buf);\
+    for(c=time_buf; c < e && *c != '\0' && *c != '\n'; c++);\
+    if(c < e && *c == '\n')\
+        *c = '\0';\
+} while(0)
 #endif
 
 #ifndef BYTE_ORDER
