@@ -20,7 +20,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lsroll";
-my $VERS   = "$NAME version: 1.9.1";
+my $VERS   = "$NAME version: 1.11.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.11";
 
 #######################################################################
@@ -39,6 +39,8 @@ my @opts =
 		"type",			# Record type.
 		"zonename",		# Zone names.
 		"zonefile",		# Zone files.
+		"zonegroup",		# Zonegroup names.
+		"zg",			# Zonegroup names.
 		"keyrec",		# Keyrec files.
 		"kskphase",		# KSK rollover phases.
 		"zskphase",		# ZSK rollover phases.
@@ -74,6 +76,7 @@ my $typeflag;
 my $nameflag;
 my $zonenameflag;
 my $zonefileflag;
+my $zonegroupflag;
 my $keyrecflag;
 my $kphaseflag;
 my $zphaseflag;
@@ -243,6 +246,7 @@ sub doopts
 	$nameflag	= 1;
 	$zonenameflag	= 0;
 	$zonefileflag	= 1;
+	$zonegroupflag	= 0;
 	$keyrecflag	= 1;
 	$kphaseflag	= 1;
 	$zphaseflag	= 1;
@@ -265,6 +269,7 @@ sub doopts
 		$nameflag	= 1;
 		$zonenameflag	= 0;
 		$zonefileflag	= 1;
+		$zonegroupflag	= 0;
 		$keyrecflag	= 1;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
@@ -286,6 +291,7 @@ sub doopts
 		$nameflag	= 1;
 		$zonenameflag	= 1;
 		$zonefileflag	= 1;
+		$zonegroupflag	= 1;
 		$keyrecflag	= 1;
 		$kphaseflag	= 1;
 		$zphaseflag	= 1;
@@ -305,6 +311,7 @@ sub doopts
 		$nameflag	= 1;
 		$zonenameflag	= 0;
 		$zonefileflag	= 0;
+		$zonegroupflag	= 0;
 		$keyrecflag	= 0;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
@@ -325,6 +332,7 @@ sub doopts
 	$typeflag	= 1 if($options{'type'});
 	$zonefileflag	= 1 if($options{'zonefile'});
 	$zonenameflag	= 1 if($options{'zonename'});
+	$zonegroupflag	= 1 if($options{'zonegroup'} || $options{'zg'});
 	$keyrecflag	= 1 if($options{'keyrec'});
 	$phasesflag	= 1 if($options{'phases'});
 	$dirflag	= 1 if($options{'directory'});
@@ -427,9 +435,10 @@ sub getrollrecs
 	foreach my $rn (sort(keys(%rollrecs)))
 	{
 		#
-		# Add quotes to the rollrec name.
+		# Add quotes to the rollrec and zonegroup names.
 		#
 		$rollrecs{$rn}{'rollrec_name'} = "\"$rollrecs{$rn}{'rollrec_name'}\""; 
+		$rollrecs{$rn}{'zonegroup'} = "\"$rollrecs{$rn}{'zonegroup'}\""; 
 
 		#
 		# Add quotes to the timestamps.
@@ -584,6 +593,7 @@ sub makeheader
 	$rr{'phasestart'}	= 'Phase Start';
 	$rr{'phases'}		= 'KSK/ZSK';
 	$rr{'zonefile'}		= 'Zonefile';
+	$rr{'zonegroup'}	= 'Zonegroup';
 	$rr{'zonename'}		= 'Zonename';
 	$rr{'zsk_rolldate'}	= 'Last ZSK Rollover';
 	$rr{'zskphase'}		= 'ZSK Phase';
@@ -617,6 +627,7 @@ sub showrollrecs
 	my $ttl;				# Maximum TTL in rollrec.
 	my $type;				# Rollrec's type.
 	my $zonefile;				# Zone file in rollrec.
+	my $zonegroup;				# Zonegroup name in rollrec.
 	my $zonename;				# Zone name in rollrec.
 	my $zsargs;				# Zonesigner arguments.
 	my $zskphase;				# Current ZSK phase in rollrec.
@@ -644,23 +655,24 @@ sub showrollrecs
 		# Set fields from the rollrec.  If this is a skip record,
 		# we won't get the phases, ttl, or phase start.
 		#
-		$type	  = $rr{'rollrec_type'};
-		$name	  = $rr{'rollrec_name'};
-		$zonename = $rr{'zonename'};
-		$zonefile = $rr{'zonefile'};
-		$keyrec	  = $rr{'keyrec'};
-		$kskphase = $rr{'kskphase'};
-		$zskphase = $rr{'zskphase'};
-		$phases	  = $rr{'phases'};
-		$ttl	  = $rr{'maxttl'};
-		$disp	  = $rr{'display'};
-		$phstart  = $rr{'phasestart'};
-		$lastksk  = $rr{'ksk_rolldate'};
-		$lastzsk  = $rr{'zsk_rolldate'};
-		$admin	  = $rr{'administrator'};
-		$direct	  = $rr{'directory'};
-		$loglevel = $rr{'loglevel'};
-		$zsargs	  = $rr{'zsargs'};
+		$type	   = $rr{'rollrec_type'};
+		$name	   = $rr{'rollrec_name'};
+		$zonename  = $rr{'zonename'};
+		$zonefile  = $rr{'zonefile'};
+		$zonegroup = $rr{'zonegroup'};
+		$keyrec	   = $rr{'keyrec'};
+		$kskphase  = $rr{'kskphase'};
+		$zskphase  = $rr{'zskphase'};
+		$phases	   = $rr{'phases'};
+		$ttl	   = $rr{'maxttl'};
+		$disp	   = $rr{'display'};
+		$phstart   = $rr{'phasestart'};
+		$lastksk   = $rr{'ksk_rolldate'};
+		$lastzsk   = $rr{'zsk_rolldate'};
+		$admin	   = $rr{'administrator'};
+		$direct	   = $rr{'directory'};
+		$loglevel  = $rr{'loglevel'};
+		$zsargs	   = $rr{'zsargs'};
 
 		#
 		# Build the output string.
@@ -668,6 +680,7 @@ sub showrollrecs
 		$prevkey = 'first-field';
 		$out  = outfld($rrn,'rollrec_name',$name,1);
 		$out .= outfld($rrn,'zonename',$zonename,$zonenameflag);
+		$out .= outfld($rrn,'zonegroup',$zonegroup,$zonegroupflag);
 		$out .= outfld($rrn,'rollrec_type',$type,$typeflag);
 		$out .= outfld($rrn,'zonefile',$zonefile,$zonefileflag);
 		$out .= outfld($rrn,'keyrec',$keyrec,$keyrecflag);
@@ -770,8 +783,9 @@ sub usage
 	print STDERR "\t\t-skip		skip records\n";
 	print STDERR "\tattribute-selection options:\n";
 	print STDERR "\t\t-type          	record type\n";
-	print STDERR "\t\t-zonename  	zonename\n";
+	print STDERR "\t\t-zonename  	zone name\n";
 	print STDERR "\t\t-zonefile  	zonefile\n";
+	print STDERR "\t\t-zonegroup  	zonegroup name\n";
 	print STDERR "\t\t-keyrec\t	keyrec file\n";
 	print STDERR "\t\t-kskphase	KSK rollover phase\n";
 	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
@@ -849,6 +863,7 @@ The table below shows the fields displayed for each output format.
     rollrec type           no            no          yes        no
     zonename               no            no          yes        yes
     zone file              yes           no          yes        yes
+    zonegroup              no            no          yes        no
     keyrec file            yes           no          yes        yes
     KSK phase              yes           no          yes        no
     ZSK phase              yes           no          yes        no
@@ -919,6 +934,15 @@ is the same.
 
 The record's zonefile is included in the output.  This field is part
 of the default output.
+
+=item B<-zonegroup>
+
+The record's zonegroup is included in the output, enclosed in double quotes.
+If a I<rollrec> does not contain a zonegroup, then the value "" is given.
+
+=item B<-zg>
+
+This option is a synonym for the B<-zonegroup> option.
 
 =item B<-keyrec>
 
