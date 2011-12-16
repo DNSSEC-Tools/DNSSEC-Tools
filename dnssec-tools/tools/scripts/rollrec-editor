@@ -33,7 +33,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "rollrec-editor";
-my $VERS   = "$NAME version: 1.9.2";
+my $VERS   = "$NAME version: 1.11.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.11";
 
 ######################################################################
@@ -218,16 +218,17 @@ my $RRTAB_SEL	= 'blue';
 my $COL_FIELD	 = 0;				# Edit table's label column.
 my $COL_DATA	 = 1;				# Edit table's data column.
 
-my $ROW_TYPE	 = 0;				# Type row.
-my $ROW_ZONENAME = 1;				# Zonename row.
-my $ROW_ZONEFILE = 2;				# Zonefile row.
-my $ROW_KEYREC	 = 3;				# Keyrec row.
-my $ROW_ADMIN	 = 4;				# Administrator's email row.
-my $ROW_DIR	 = 5;				# Directory row.
-my $ROW_DISPLAY	 = 6;				# Display row.
-my $ROW_LOG	 = 7;				# Loglevel col.
-my $ROW_MAXTTL	 = 8;				# Maxttl row.
-my $ROW_ZSARGS	 = 9;				# Zsargs row.
+my $ROW_TYPE	  = 0;				# Type row.
+my $ROW_ZONENAME  = 1;				# Zonename row.
+my $ROW_ZONEFILE  = 2;				# Zonefile row.
+my $ROW_KEYREC	  = 3;				# Keyrec row.
+my $ROW_ZONEGROUP = 4;				# Zonegroup row.
+my $ROW_ADMIN	  = 5;				# Administrator's email row.
+my $ROW_DIR	  = 6;				# Directory row.
+my $ROW_DISPLAY	  = 7;				# Display row.
+my $ROW_LOG	  = 8;				# Loglevel col.
+my $ROW_MAXTTL	  = 9;				# Maxttl row.
+my $ROW_ZSARGS	  = 10;				# Zsargs row.
 
 my $ROW_FIRST	 = $ROW_TYPE;			# Edit table's first row.
 my $ROW_LAST	 = $ROW_ZSARGS;			# Edit table's last row.
@@ -245,6 +246,7 @@ my @ET_LABELS =
 	"Zonename",
 	"Zonefile",
 	"Keyrec",
+	"Zonegroup",
 	"Admin Email",
 	"Directory",
 	"Display Flag",
@@ -266,6 +268,7 @@ my @EDITFIELDS =
 			'loglevel',
 			'maxttl',
 			'zonefile',
+			'zonegroup',
 			'zonename',
 			'zsargs'
 		);
@@ -2088,6 +2091,7 @@ sub editwindow
 	$rollrecs{$rrn}{'maxttl'}	 = $rrec->{'maxttl'};
 	$rollrecs{$rrn}{'rollrec_type'}	 = $rrec->{'rollrec_type'};
 	$rollrecs{$rrn}{'zonefile'}	 = $rrec->{'zonefile'};
+	$rollrecs{$rrn}{'zonegroup'}	 = $rrec->{'zonegroup'};
 
 	if(!defined($rrec->{'zonename'}))
 	{
@@ -2198,6 +2202,14 @@ sub editwindow
 	$ent = $eframe->Entry(-textvariable => \$rollrecs{$rrn}{'keyrec'});
 	$ent->pack(-fill => 'x', -side => 'top');
 	$edittab->put($ROW_KEYREC,$COL_DATA,$ent);
+
+	#----------------
+	#
+	# Zonegroup:  Add the stuff for the rollrec's zonegroup.
+	#
+	$ent = $eframe->Entry(-textvariable => \$rollrecs{$rrn}{'zonegroup'});
+	$ent->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_ZONEGROUP,$COL_DATA,$ent);
 
 	#----------------
 	#
@@ -2538,6 +2550,7 @@ sub readrrf
 		$rollrecs{$rrn}{'maxttl'}	 = $rrec->{'maxttl'};
 		$rollrecs{$rrn}{'rollrec_type'}	 = $rrec->{'rollrec_type'};
 		$rollrecs{$rrn}{'zonefile'}	 = $rrec->{'zonefile'};
+		$rollrecs{$rrn}{'zonegroup'}	 = $rrec->{'zonegroup'};
 		$rollrecs{$rrn}{'zonename'}	 = $rrec->{'zonename'};
 		$rollrecs{$rrn}{'zsargs'}	 = $rrec->{'zsargs'};
 
@@ -2697,6 +2710,7 @@ sub renamesaver
 #			- display
 #			- loglevel
 #			- maxttl
+#			- zonegroup
 #
 #		Error checks are:
 #			- empty zonename field
@@ -2732,6 +2746,7 @@ sub goodrollrec
 	my $maxttl;				# Maximum TTL.
 	my $zonedir;				# Directory.
 	my $zonefile;				# Zonefile.
+	my $zonegroup;				# Zonegroup.
 	my $zonename;				# Zonename.
 	my $zsargs;				# Zonesigner arguments.
 
@@ -2758,14 +2773,15 @@ sub goodrollrec
 	#
 	# Get the rollrec data.
 	#
-	$admin	  = $rollrecs{$rrn}{'administrator'};
-	$dispflag = $rollrecs{$rrn}{'display'};
-	$krfile	  = $rollrecs{$rrn}{'keyrec'};
-	$loglevel = $rollrecs{$rrn}{'loglevel'};
-	$maxttl	  = $rollrecs{$rrn}{'maxttl'};
-	$zonedir  = $rollrecs{$rrn}{'directory'};
-	$zonefile = $rollrecs{$rrn}{'zonefile'};
-	$zsargs	  = $rollrecs{$rrn}{'zsargs'};
+	$admin	   = $rollrecs{$rrn}{'administrator'};
+	$dispflag  = $rollrecs{$rrn}{'display'};
+	$krfile	   = $rollrecs{$rrn}{'keyrec'};
+	$loglevel  = $rollrecs{$rrn}{'loglevel'};
+	$maxttl	   = $rollrecs{$rrn}{'maxttl'};
+	$zonedir   = $rollrecs{$rrn}{'directory'};
+	$zonefile  = $rollrecs{$rrn}{'zonefile'};
+	$zonegroup = $rollrecs{$rrn}{'zonegroup'};
+	$zsargs	   = $rollrecs{$rrn}{'zsargs'};
 	if(!defined($rollrecs{$rrn}{'zonename'}))
 	{
 		$zonename = $rrn;
@@ -2782,6 +2798,7 @@ sub goodrollrec
 	{
 		fieldcolor($ROW_ZONEFILE,$rrn,$NORMALCOLOR);
 		fieldcolor($ROW_KEYREC,$rrn,$NORMALCOLOR);
+		fieldcolor($ROW_ZONEGROUP,$rrn,$NORMALCOLOR);
 		fieldcolor($ROW_ADMIN,$rrn,$NORMALCOLOR);
 		fieldcolor($ROW_DIR,$rrn,$NORMALCOLOR);
 		fieldcolor($ROW_DISPLAY,$rrn,$NORMALCOLOR);
@@ -2842,6 +2859,10 @@ sub goodrollrec
 			$warns++;
 		}
 	}
+
+	#
+	# No validity checks for the zonegroup.
+	#
 
 	#
 	# No validity checks for the administrator.
@@ -2966,6 +2987,14 @@ sub goodrollrec
 		if($rollrecs{$rrn}{'maxttl'} eq '')
 		{
 			delete $rollrecs{$rrn}{'maxttl'};
+		}
+
+		#
+		# Delete the zonegroup if it's empty.
+		#
+		if(($rollrecs{$rrn}{'zonegroup'}) eq '')
+		{
+			delete $rollrecs{$rrn}{'zonegroup'};
 		}
 
 		#
@@ -4140,19 +4169,6 @@ The following are known issues.  These will be resolved in the fullness of time.
 There is an issue with the column count and adding new I<rollrecs>.
 It doesn't always work properly, thus occasionally leaving some I<rollrec>
 buttons undisplayed.
-
-=item
-
-Segmentation violation on exit.  This should not affect anything as file has
-already been saved.
-
-Occurs on:
-    - Mac OS X 10.4.9-10.4.11 with Perl 5.8.6
-    - Mac OS X 10.6.4 with Perl 5.10.0
-
-Does not occur on:
-    - Linux FC5 with Perl 5.8.8
-    - Mac OS X 10.5.8 with Perl 5.8.8
 
 =item
 
