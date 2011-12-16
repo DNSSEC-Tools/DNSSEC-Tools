@@ -39,7 +39,7 @@ my @opts =
 		"type",			# Record type.
 		"zonename",		# Zone names.
 		"zonefile",		# Zone files.
-		"zonegroup",		# Zonegroup names.
+		"zonegroups",		# Just the zonegroup names.
 		"zg",			# Zonegroup names.
 		"keyrec",		# Keyrec files.
 		"kskphase",		# KSK rollover phases.
@@ -76,7 +76,8 @@ my $typeflag;
 my $nameflag;
 my $zonenameflag;
 my $zonefileflag;
-my $zonegroupflag;
+my $zgflag;
+my $zonegroupsflag;
 my $keyrecflag;
 my $kphaseflag;
 my $zphaseflag;
@@ -106,6 +107,7 @@ my $HEADER_RRN = "<<<header>>>";	# Name for column header "rollrec".
 my @rrnames;				# List of rollrecs in the files.
 
 my %rollrecs = ();			# Rollrecs from the rollrec files.
+my %zonegroups = ();			# Zonegroups from the rollrecs.
 
 my %lengths  = ();			# Maximum lengths of each rollrec field.
 
@@ -246,7 +248,7 @@ sub doopts
 	$nameflag	= 1;
 	$zonenameflag	= 0;
 	$zonefileflag	= 1;
-	$zonegroupflag	= 0;
+	$zgflag		= 0;
 	$keyrecflag	= 1;
 	$kphaseflag	= 1;
 	$zphaseflag	= 1;
@@ -269,7 +271,7 @@ sub doopts
 		$nameflag	= 1;
 		$zonenameflag	= 0;
 		$zonefileflag	= 1;
-		$zonegroupflag	= 0;
+		$zgflag		= 0;
 		$keyrecflag	= 1;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
@@ -291,7 +293,7 @@ sub doopts
 		$nameflag	= 1;
 		$zonenameflag	= 1;
 		$zonefileflag	= 1;
-		$zonegroupflag	= 1;
+		$zgflag		= 1;
 		$keyrecflag	= 1;
 		$kphaseflag	= 1;
 		$zphaseflag	= 1;
@@ -311,7 +313,7 @@ sub doopts
 		$nameflag	= 1;
 		$zonenameflag	= 0;
 		$zonefileflag	= 0;
-		$zonegroupflag	= 0;
+		$zgflag		= 0;
 		$keyrecflag	= 0;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
@@ -332,7 +334,7 @@ sub doopts
 	$typeflag	= 1 if($options{'type'});
 	$zonefileflag	= 1 if($options{'zonefile'});
 	$zonenameflag	= 1 if($options{'zonename'});
-	$zonegroupflag	= 1 if($options{'zonegroup'} || $options{'zg'});
+	$zgflag		= 1 if($options{'zg'});
 	$keyrecflag	= 1 if($options{'keyrec'});
 	$phasesflag	= 1 if($options{'phases'});
 	$dirflag	= 1 if($options{'directory'});
@@ -346,6 +348,7 @@ sub doopts
 	$kphaseflag	= 1 if($options{'kskphase'});
 	$zphaseflag	= 1 if($options{'zskphase'});
 	$zsargsflag	= 1 if($options{'zsargs'});
+	$zonegroupsflag	= 1 if($options{'zonegroups'});
 
 	#
 	# Adjust the phase-related flags to ensure that The Right Thing
@@ -439,6 +442,7 @@ sub getrollrecs
 		#
 		$rollrecs{$rn}{'rollrec_name'} = "\"$rollrecs{$rn}{'rollrec_name'}\""; 
 		$rollrecs{$rn}{'zonegroup'} = "\"$rollrecs{$rn}{'zonegroup'}\""; 
+		$zonegroups{$rollrecs{$rn}{'zonegroup'}}++;
 
 		#
 		# Add quotes to the timestamps.
@@ -633,6 +637,15 @@ sub showrollrecs
 	my $zskphase;				# Current ZSK phase in rollrec.
 
 	#
+	# Only show zone groups.
+	#
+	if($zonegroupsflag)
+	{
+		showzonegroups();
+		return;
+	}
+
+	#
 	# Loop through the zone list and give data on the desired zones.
 	#
 	foreach my $rrn (sort(keys(%rollrecs)))
@@ -680,7 +693,7 @@ sub showrollrecs
 		$prevkey = 'first-field';
 		$out  = outfld($rrn,'rollrec_name',$name,1);
 		$out .= outfld($rrn,'zonename',$zonename,$zonenameflag);
-		$out .= outfld($rrn,'zonegroup',$zonegroup,$zonegroupflag);
+		$out .= outfld($rrn,'zonegroup',$zonegroup,$zgflag);
 		$out .= outfld($rrn,'rollrec_type',$type,$typeflag);
 		$out .= outfld($rrn,'zonefile',$zonefile,$zonefileflag);
 		$out .= outfld($rrn,'keyrec',$keyrec,$keyrecflag);
@@ -708,6 +721,70 @@ sub showrollrecs
 		#
 		print "$out\n";
 	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	showzonegroups()
+#
+# Purpose:	This routine displays a list of the zonegroups defined in
+#		the rollrec files.  There are three output formats: default,
+#		long, terse.  However, default and terse are the same.
+#
+sub showzonegroups
+{
+	my $out = '';				# Output string.
+	my $mlen = $lengths{'zonegroup'};	# Maximum zonegroup length.
+	my $zglen;				# Length of zonegroup name.
+	my $blen;				# Space buffer length.
+	my $spaces;				# Spaces to add.
+
+	if($headerflag)
+	{
+		$out = "Zonegroup    ";
+
+		if($long)
+		{
+			$zglen = length($out);
+			$mlen = ($mlen > $zglen) ? $mlen : $zglen;
+			$blen = $mlen - $zglen;
+			$spaces = ' ' x $blen if($blen > 0);
+			$out .= $spaces . "Members";
+		}
+
+		$out .= "\n";
+	}
+
+	if($long)
+	{
+
+		#
+		# Figure out the spacing for the zonegroup and member
+		# count, then add a line to the output buffer.
+		#
+		foreach my $zg (sort(keys(%zonegroups)))
+		{
+			next if($zg eq '""');
+
+			$zglen = length($zg);
+			$blen = $mlen - $zglen;
+			$spaces = ' ' x $blen if($blen > 0);
+			$out .= $zg . $spaces . $zonegroups{$zg} . "\n";
+		}
+
+	}
+	else
+	{
+		foreach my $zg (sort(keys(%zonegroups)))
+		{
+			next if($zg eq '""');
+			$out .= "$zg\n";
+		}
+	}
+
+	#
+	# Write the output.
+	#
+	print "$out";
 }
 
 #----------------------------------------------------------------------
@@ -785,8 +862,8 @@ sub usage
 	print STDERR "\t\t-type          	record type\n";
 	print STDERR "\t\t-zonename  	zone name\n";
 	print STDERR "\t\t-zonefile  	zonefile\n";
-	print STDERR "\t\t-zonegroup  	zonegroup name\n";
 	print STDERR "\t\t-keyrec\t	keyrec file\n";
+	print STDERR "\t\t-zg	  	zonegroup name\n";
 	print STDERR "\t\t-kskphase	KSK rollover phase\n";
 	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
 	print STDERR "\t\t-phases\t	KSK and ZSK rollover phases\n";
@@ -799,6 +876,7 @@ sub usage
 	print STDERR "\t\t-lastksk	time last KSK rollover ended\n";
 	print STDERR "\t\t-lastzsk	time last ZSK rollover ended\n";
 	print STDERR "\t\t-zsargs		zonesigner arguments\n";
+	print STDERR "\t\t-zonegroups  	just give zonegroup names\n";
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-headers	give explanatory column headers\n";
@@ -935,14 +1013,10 @@ is the same.
 The record's zonefile is included in the output.  This field is part
 of the default output.
 
-=item B<-zonegroup>
+=item B<-zg>
 
 The record's zonegroup is included in the output, enclosed in double quotes.
 If a I<rollrec> does not contain a zonegroup, then the value "" is given.
-
-=item B<-zg>
-
-This option is a synonym for the B<-zonegroup> option.
 
 =item B<-keyrec>
 
@@ -1024,6 +1098,13 @@ If no ZSK rollover has yet been performed for this zone, an empty date is given.
 
 The record's user-defined B<zonesigner> arguments are included in the output.
 If no arguments have been set for this zone, then the value "(none)" is given.
+
+=item B<-zonegroup>
+
+The zonegroups defined in the I<rollrec> are listed, enclosed in double
+quotes.  All other I<rollrec> fields are ignored.  If the I<-long> option
+is specified, then each zonegroup name will be accompanied by the number
+of I<rollrec> entries in that zonegroup.
 
 =back
 
