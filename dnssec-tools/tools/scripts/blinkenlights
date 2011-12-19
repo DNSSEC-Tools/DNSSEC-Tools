@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.9.1";
+my $VERS   = "$NAME version: 1.11.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.11";
 
 #######################################################################
@@ -90,7 +90,8 @@ my $COL3  = 3;			# Column 3.
 my $COL4  = 4;			# Column 4.
 my $COL5  = 5;			# Column 5.
 my $COL6  = 6;			# Column 6.
-my $MAXCOLS = 7;		# Maximum number of columns.
+my $COL7  = 7;			# Column 7.
+my $MAXCOLS = 8;		# Maximum number of columns.
 
 #
 # Column constants for infostripe.
@@ -105,17 +106,19 @@ my $SLEEPCOL	= $COL3;	# Rollerd's sleeptime.
 my $DISPLAYCOL	= $COL4;	# Count of displayed zones.
 my $INFO5	= $COL5;	# Unused.
 my $INFO6	= $COL6;	# Unused.
+my $INFO7	= $COL7;	# Unused.
 
 #
 # Default column constants for zonestripes.
 #
 my $NAMECOL	= $COL0;	# Rollrec name. 
 my $ZONECOL	= $COL1;	# Zone name. 
-my $PHASECOL	= $COL2;	# Rollover phase.
-my $ZSKLBLCOL	= $COL3;	# ZSK label.
-my $ZSKKEYCOL	= $COL4;	# ZSK key/signing set name.
-my $KSKLBLCOL	= $COL5;	# KSK label.
-my $KSKKEYCOL	= $COL6;	# KSK key/signing set name.
+my $ZONEGRPCOL	= $COL2;	# Zonegroup name. 
+my $PHASECOL	= $COL3;	# Rollover phase.
+my $ZSKLBLCOL	= $COL4;	# ZSK label.
+my $ZSKKEYCOL	= $COL5;	# ZSK key/signing set name.
+my $KSKLBLCOL	= $COL6;	# KSK label.
+my $KSKKEYCOL	= $COL7;	# KSK key/signing set name.
 
 my $UNUSED	= -1;		# Unused column.
 
@@ -124,6 +127,7 @@ my $UNUSED	= -1;		# Unused column.
 #
 my $namecol	= $NAMECOL;	# Rollrec-name column.
 my $zonecol	= $ZONECOL;	# Zone-name column.
+my $zgcol	= $ZONEGRPCOL;	# Zonegroup-name column.
 my $phasecol	= $PHASECOL;	# Rollover phase.
 my $zsklblcol	= $ZSKLBLCOL;	# Current ZSK label.
 my $zskkeycol	= $ZSKKEYCOL;	# Current ZSK key/signing set name.
@@ -132,8 +136,10 @@ my $kskkeycol	= $KSKKEYCOL;	# Current KSK key/signing set name.
 
 my $showrrnames	  = 1;		# Flag indicating if rollrec names are shown.
 my $showzonenames = 1;		# Flag indicating if zonenames are shown.
+my $showzgnames	  = 1;		# Flag indicating if zonegroup names are shown.
 my $showksksets	  = 1;		# Flag indicating if KSK signing sets are shown.
 my $showzsksets	  = 1;		# Flag indicating if ZSK signing sets are shown.
+my $showkeysets	  = 1;		# Flag indicating if keysets are shown.
 
 my $numcols	= $MAXCOLS;	# Number of columns in use.
 
@@ -310,10 +316,13 @@ my $op_clrs;					# Colors item.
 my $op_mdfy;					# Modify toggle.
 my $op_shad;					# Shading toggle.
 my $op_skip;					# Skip toggle.
-my $dm_rrn;					# Rollrec name display toggle
-my $dm_znm;					# Zonename display toggle
-my $dm_ksk;					# KSK set display toggle
-my $dm_zsk;					# ZSK set display toggle
+my $dm_rrn;					# Rollrec name display toggle.
+my $dm_znm;					# Zonename display toggle.
+my $dm_zgr;					# Zonegroup display toggle.
+my $dm_ksk;					# KSK set display toggle.
+my $dm_zsk;					# ZSK set display toggle.
+my $dm_sak;					# Keyset show.
+my $dm_snk;					# Keyset no-show.
 
 #
 # Messages for the Display menu.
@@ -339,11 +348,17 @@ my $RRNAME	= 'Show Rollrec Name';
 my $NOZONENAME	= 'Hide Zone Name';
 my $ZONENAME	= 'Show Zone Name';
 
+my $NOZONEGROUP	= 'Hide Zonegroup Name';
+my $ZONEGROUP	= 'Show Zonegroup Name';
+
 my $NOKSKSETS	= 'Hide KSK Sets';
 my $KSKSETS	= 'Show KSK Sets';
 
 my $NOZSKSETS	= 'Hide ZSK Sets';
 my $ZSKSETS	= 'Show ZSK Sets';
+
+my $NOKEYSETS	= 'Hide All Keysets';
+my $KEYSETS	= 'Show All Keysets';
 
 
 #
@@ -357,6 +372,7 @@ my $noskip;				# Show/don't show skipped zones flag.
 my $shademsg;				# Message about shading.
 my $namesetmsg;				# Message about rollrec name display.
 my $zonesetmsg;				# Message about zone name display.
+my $zgsetmsg;				# Message about zonegroup name display.
 my $ksksetmsg = '';			# Message about KSK signing set display.
 my $zsksetmsg = '';			# Message about ZSK signing set display.
 
@@ -379,17 +395,18 @@ my $title = "dummy";				# File node for title.
 #
 # Zone information.
 #
-my %rollers = ();				# Zones that might roll.
-my %zones = ();					# Zones we're watching.
-my %zonecolors = ();				# Zone color indices.
-my %zonerows = ();				# Zones' starting-row indices.
-my @zonenames = ();				# Screen-order list of zones.
-my %zonenames = ();				# Rollrec name -> zone name map.
-my $zonecnt = 1;				# Count of zones we're watching.
-my %keyrecs = ();				# Zones' keyrec filenames.
-my %display = ();				# Zones' display flag.
+my %rollers	= ();				# Zones that might roll.
+my %zones	= ();				# Zones we're watching.
+my %zonecolors	= ();				# Zone color indices.
+my %zonerows	= ();				# Zones' starting-row indices.
+my @zonenames	= ();				# Screen-order list of zones.
+my %zonenames	= ();				# Rollrec name -> zone name map.
+my %zonegroups	= ();				# Rollrec name -> zonegroup map.
+my $zonecnt	= 1;				# Count of zones we're watching.
+my %keyrecs	= ();				# Zones' keyrec filenames.
+my %display	= ();				# Zones' display flag.
 
-my %badzones = ();				# Zones with problems.
+my %badzones	= ();				# Zones with problems.
 
 #
 # Saved zone data, needed for repaints.
@@ -697,9 +714,9 @@ sub buildmainwind
 	#
 	# Add the KSK Control menu entries.
 	#
-	$cmdk->command(-label	=> 'DS Published Selected Zone',
+	$cmdk->command(-label	=> 'DS Published for Selected Zone',
 		       -command => [\&kskcmds, "dspub"]);
-	$cmdk->command(-label	=> 'DS Published All Zones',
+	$cmdk->command(-label	=> 'DS Published for All Zones',
 		       -command => [\&kskcmds, "dspuball"], );
 
 	$cmdk->pack(-side => 'left');
@@ -726,12 +743,17 @@ sub buildmainwind
 
 	$namesetmsg = $showrrnames ? $NORRNAME : $RRNAME;
 	$dm_rrn = $dspl->command(-label   => $namesetmsg,
-				  -command => [\&disp_menus, 'RRNAME'],
+				  -command => [\&disp_menus, 'RRNAME', 1],
 				  -state   => 'normal');
 
 	$zonesetmsg = $showzonenames ? $NOZONENAME : $ZONENAME;
 	$dm_znm = $dspl->command(-label   => $zonesetmsg,
-				  -command => [\&disp_menus, 'ZONENAME'],
+				  -command => [\&disp_menus, 'ZONENAME', 1],
+				  -state   => 'normal');
+
+	$zgsetmsg = $showzgnames ? $NOZONEGROUP : $ZONEGROUP;
+	$dm_zgr = $dspl->command(-label   => $zgsetmsg,
+				  -command => [\&disp_menus, 'ZONEGROUP', 1],
 				  -state   => 'normal');
 
 	#
@@ -754,27 +776,28 @@ sub buildmainwind
 
 	$ksksetmsg = $showksksets ? $NOKSKSETS : $KSKSETS;
 	$dm_ksk = $dspl->command(-label   => $ksksetmsg,
-				 -command => [\&disp_menus, 'KSK'],
+				 -command => [\&disp_menus, 'KSK', 1],
 				 -state   => 'normal');
 
 	$zsksetmsg = $showzsksets ? $NOZSKSETS : $ZSKSETS;
 	$dm_zsk = $dspl->command(-label   => $zsksetmsg,
-				 -command => [\&disp_menus, 'ZSK'],
+				 -command => [\&disp_menus, 'ZSK', 1],
 				 -state   => 'normal');
 
-	$dspl->separator();
-	$dspl->pack(-side => 'left');
+	$dm_sak = $dspl->command(-label   => 'Show All Keysets',
+				 -command => [\&disp_menus, 'SHOW ALL', 1],
+				 -state   => 'normal');
 
-	###############
-
-	$dspl->command(-label   => 'Hide All Keysets',
-				  -command => [\&disp_menus, 'HIDE ALL'],
-				  -state   => 'normal');
-	$dspl->command(-label   => 'Show All Keysets',
-				  -command => [\&disp_menus, 'SHOW ALL'],
-				  -state   => 'normal');
+	$dm_snk = $dspl->command(-label   => 'Hide All Keysets',
+				 -command => [\&disp_menus, 'HIDE ALL', 1],
+				 -state   => 'normal');
 
 	$dspl->pack(-side => 'left');
+
+	#
+	# Set up the show/hide all keysets menu items.
+	#
+	menuconfig();
 
 	##################################################
 	#
@@ -957,7 +980,8 @@ sub disp_skip
 #
 sub disp_menus
 {
-	my $menucmd = shift;		# Triggering menu command.
+	my $menucmd   = shift;		# Triggering menu command.
+	my $paintflag = shift;		# Flag indicating if we should repaint.
 
 	my $lbl;			# New menu label.
 	my $newstate;			# New state for rrname menu item.
@@ -1024,6 +1048,35 @@ sub disp_menus
 		$dm_rrn->configure(-state => $newstate);
 		$dm_znm->configure(-label => $lbl);
 	}
+	elsif($menucmd eq 'ZONEGROUP')
+	{
+		#
+		# If we're currently displaying zonegroups, we'll stop.
+		# If we aren't currently displaying zonegroups, we'll start.
+		#
+		if($showzgnames)
+		{
+			$zonecol       = $UNUSED;
+			$lbl	       = $ZONEGROUP;
+			$newstate      = 'disabled';
+			$showzgnames   = 0;
+		}
+		else
+		{
+			#
+			# Set up for showing the zonename.
+			#
+			$zonecol       = $ZONECOL;
+			$lbl	       = $NOZONEGROUP;
+			$newstate      = 'normal';
+			$showzgnames   = 1;
+		}
+
+		#
+		# Set the labels on a few menu items.
+		#
+		$dm_zgr->configure(-label => $lbl);
+	}
 	elsif($menucmd eq 'KSK')
 	{
 		#
@@ -1073,25 +1126,25 @@ sub disp_menus
 		#
 		# Hide all the signing sets.
 		#
-		disp_menus('KSK') if($showksksets);
-		disp_menus('ZSK') if($showzsksets);
-		return;
+		disp_menus('KSK',0) if($showksksets);
+		disp_menus('ZSK',0) if($showzsksets);
 	}
 	elsif($menucmd eq 'SHOW ALL')
 	{
-		#
-		# Hide all the signing sets.
-		#
-		disp_menus('KSK') if(!$showksksets);
-		disp_menus('ZSK') if(!$showzsksets);
-		return;
+		disp_menus('KSK',0) if(! $showksksets);
+		disp_menus('ZSK',0) if(! $showzsksets);
 	}
+
+	#
+	# Set up the show/hide all keysets menu items.
+	#
+	menuconfig();
 
 	#
 	# Recreate the display table.
 	#
 	$paintcount = $paintmax + 1;
-	painter();
+	painter() if($paintflag);
 
 	#
 	# Recalculate the number of rows we need and redraw the screen.
@@ -1761,16 +1814,28 @@ sub calccols
 	}
 
 	#
+	# Calculate the position of the ZSK data columns.
+	#
+	if($showzgnames)
+	{
+		$zgcol = $showrrnames + $showzonenames;
+	}
+	else
+	{
+		$zgcol = $UNUSED;
+	}
+
+	#
 	# Calculate the position of the phase column.
 	#
-	$phasecol = $showrrnames + $showzonenames;
+	$phasecol = $showrrnames + $showzonenames + $showzgnames;
 
 	#
 	# Calculate the position of the ZSK data columns.
 	#
 	if($showzsksets)
 	{
-		$zsklblcol = $showrrnames + $showzonenames + 1;
+		$zsklblcol = $showrrnames + $showzonenames + $showzgnames + 1;
 		$zskkeycol = $zsklblcol + 1;
 	}
 	else
@@ -1784,7 +1849,7 @@ sub calccols
 	#
 	if($showksksets)
 	{
-		$ksklblcol = $showrrnames + $showzonenames + 1 + ($showzsksets * 2);
+		$ksklblcol = $showrrnames + $showzonenames + $showzgnames + 1 + ($showzsksets * 2);
 		$kskkeycol = $ksklblcol + 1;
 	}
 	else
@@ -1796,7 +1861,7 @@ sub calccols
 	#
 	# Calculate the number of columns.
 	#
-	$numcols = $showrrnames + $showzonenames + 1 +
+	$numcols = $showrrnames + $showzonenames + $showzgnames + 1 +
 		   ($showksksets * 2) + ($showzsksets * 2);
 }
 
@@ -1818,9 +1883,10 @@ sub readrrf
 	#
 	# Initialize some data.
 	#
-	@zonenames = ();
-	%zonenames = ();
-%rollers = ();
+	@zonenames  = ();
+	%zonenames  = ();
+	%zonegroups = ();
+	%rollers    = ();
 
 	#
 	# Pretty-up the window.
@@ -1856,6 +1922,16 @@ sub readrrf
 		if(defined($rr->{'zonename'}))
 		{
 			$zonenames{$zone} = $rr->{'zonename'}
+		}
+
+		#
+		# Save the *actual* zonename.  $zone is the name of the
+		# rollrec entry; $zonenames{$zone} is the 'zonename' field
+		# in the rollrec.
+		#
+		if(defined($rr->{'zonegroup'}))
+		{
+			$zonegroups{$zone} = $rr->{'zonegroup'}
 		}
 
 		#
@@ -2047,6 +2123,13 @@ sub headerstripe
 		$zonetab->put($TITLEROW,$zonecol,$lab);
 	}
 
+	if($showzgnames)
+	{
+		$lab = $zonetab->Label(-text => 'Zone Group   ',
+				       -font => $font, -background => 'tan');
+		$zonetab->put($TITLEROW,$zgcol,$lab);
+	}
+
 	$lab = $zonetab->Label(-text => 'Status',
 			       -font => $font, -background => 'tan');
 	$zonetab->put($TITLEROW,$phasecol,$lab);
@@ -2072,6 +2155,7 @@ sub headerstripe
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$kskkeycol,$lab);
 	}
+
 }
 
 #---------------------------------------------------------------------------
@@ -2164,9 +2248,9 @@ sub zonestripe
 	# Handle skipped zones here.  We won't do anything if skipped zones
 	# shouldn't be displayed.  Otherwise, we'll just put up a single line.
 	#
-	#  col 0    col 1    col 2     col 3      col 4      col 5      col 6
-	#  rollrec  zone    "skipped"  <blank>    <blank>    <blank>    <blank>
-	#  name     name
+	#  col 0    col 1  col 2  col 3      col 4    col 5    col 6    col 7
+	#  rollrec  zone   zone   "skipped"  <blank>  <blank>  <blank>  <blank>
+	#  name     name   group
 	#
 	if(($rollers{$zone} == 0) || ($phase == -42))
 	{
@@ -2199,6 +2283,15 @@ sub zonestripe
 					       -foreground => $fgcolor,
 					       -background => $bgcolor);
 			$zonetab->put($row0,$zonecol,$lab);
+		}
+
+		if($showzgnames)
+		{
+			$lab = $zonetab->Label(-text => $zonegroups{$zone},
+					       -font => $font,
+					       -foreground => $fgcolor,
+					       -background => $bgcolor);
+			$zonetab->put($row0,$zgcol,$lab);
 		}
 
 		$lab = $zonetab->Label(-text => $zlabel,
@@ -2272,9 +2365,27 @@ sub zonestripe
 		$zonetab->put($row2,$zonecol,$blank);
 	}
 
+	############################################
+	#
+	# Third column:  zonegroup name
+	#
+	if($showzgnames)
+	{
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row0,$zgcol,$blank);
+		$lab = $zonetab->Label(-text => $zonegroups{$zone},
+				       -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+
+		$zonetab->put($row1,$zgcol,$lab);
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row2,$zgcol,$blank);
+	}
+
 	###########################################
 	#
-	# Third column:  zone rollover phase
+	# Fourth column:  zone rollover phase
 	#
 	$phasestr = "$rolltype phase $phase";
 	$phasestr = " " if($phase == 0);
@@ -2294,7 +2405,7 @@ sub zonestripe
 
 	###########################################
 	#
-	# Fourth and fifth columns:  ZSKs
+	# Fifth and sixth columns:  ZSKs
 	#
 	if($showzsksets)
 	{
@@ -2313,7 +2424,7 @@ sub zonestripe
 		$zsknew	 .= "    ";
 
 		#
-		# Third column:  key label
+		# Fifth column:  key label
 		#
 		$lab = $zonetab->Label(-text => "Current   ", -font => $font,
 				       -foreground => $NORMALFG,
@@ -2329,7 +2440,7 @@ sub zonestripe
 		$zonetab->put($row2,$zsklblcol,$lab);
 
 		#
-		# Fourth columns:  key name
+		# Sixth columns:  key name
 		#
 		$lab = $zonetab->Label(-text => $zskcur, -font => $font,
 				       -foreground => $NORMALFG,
@@ -2348,7 +2459,7 @@ sub zonestripe
 
 	###########################################
 	#
-	# Sixth and seventh columns:  KSKs
+	# Seventh and eighth columns:  KSKs
 	#
 	if($showksksets)
 	{
@@ -2365,7 +2476,7 @@ sub zonestripe
 		$kskpub	 .= "    ";
 
 		#
-		# Fifth column:  KSK keyset label
+		# Seventh column:  KSK keyset label
 		#
 		$lab = $zonetab->Label(-text => "Current   ", -font => $font,
 				       -foreground => $NORMALFG,
@@ -2381,7 +2492,7 @@ sub zonestripe
 		$zonetab->put($row2,$ksklblcol,$lab);
 
 		#
-		# Sixth columns:  KSK keyset name
+		# Eighth column:  KSK keyset name
 		#
 		$lab = $zonetab->Label(-text => $kskcur, -font => $font,
 				       -foreground => $NORMALFG,
@@ -2395,6 +2506,7 @@ sub zonestripe
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row2,$kskkeycol,$lab);
+
 	}
 
 	###########################################
@@ -2823,6 +2935,33 @@ sub calcrows
 }
 
 #---------------------------------------------------------------------------
+# Routine:	menuconfig()
+#
+# Purpose:	Set the state of the Show/Hide All Keysets menu items.
+#
+sub menuconfig
+{
+	#
+	# Set up the show/hide all keysets menu items.
+	#
+	if(!$showksksets && !$showzsksets)
+	{
+		$dm_sak->configure(-state => 'normal');
+		$dm_snk->configure(-state => 'disabled');
+	}
+	elsif($showksksets && $showzsksets)
+	{
+		$dm_sak->configure(-state => 'disabled');
+		$dm_snk->configure(-state => 'normal');
+	}
+	else
+	{
+		$dm_sak->configure(-state => 'normal');
+		$dm_snk->configure(-state => 'normal');
+	}
+}
+
+#---------------------------------------------------------------------------
 # Routine:	getcolor()
 #
 # Purpose:	Figure out what color this zone's stripe needs.
@@ -3142,6 +3281,11 @@ sub setopt
 	{
 		if   ($value =~ /kskset/i)	{ $showksksets	 = 0;	}
 		elsif($value =~ /zskset/i)	{ $showzsksets	 = 0;	}
+		elsif($value =~ /keysets/i)
+		{
+			$showksksets = 0;
+			$showzsksets = 0;
+		}
 		elsif($value =~ /zonenames/i)
 		{
 			if($showrrnames == 0)
@@ -3153,6 +3297,10 @@ sub setopt
 			{
 				$showzonenames = 0;
 			}
+		}
+		elsif($value =~ /zonegroups/i)
+		{
+			$showzgnames = 0;
 		}
 		elsif($value =~ /rollrecs/i)
 		{
@@ -3417,413 +3565,12 @@ user.  There are two ways to have rollerd start blinkenlights.  First, rollctl
 may be given the -display option.  Second, the -display option may be given on
 rollerd's command line.
 
-SCREEN LAYOUT
-
-The blinkenlights window is laid out as a series of \"stripes\".  The top
-stripe contains status information about rollerd, the second stripe
-contains column headers, and the bulk of the window consists of zone stripes.
-The list below provides more detail on the contents of each stripe.
-
-See the WINDOW COLORS section for a discussion of the colors used for the
-zone stripes.
-
-	* rollerd information stripe
-
-	  The information stripe contains five pieces of information:
-	  rollerd's current rollrec file, the count of rolling zones, the
-	  count of skipped zones, the count of zones to be displayed, and
-	  the amount of time rollerd waits between processing its queue,
-	  Coincidentally, that last datum is also the amount of time between
-	  blinkenlights screen updates.
-
-	* column headers stripe
-
-	  This stripe contains the column headers for the columns of
-	  each zone stripe.
-
-	* zone stripes
-
-	  Each zone managed by rollerd (i.e., every zone in the current
-	  rollrec file) will have a zone stripe which describes that
-	  zone's current state.  The stripe is divided into three
-	  sections:  the zone name, the current rollover state, and the
-	  zone's DNSSEC keys.
-
-	  The zone name section just contains the name of the zone.
-
-	  The rollover state section contains the rollover phase number,
-	  a text explanation of the phase, and the amount of time
-	  remaining in that rollover phase.  The phase explanation is
-	  \"normal operation\" when the zone isn't currently in rollover.
-
-	  The DNSSEC key section contains the names of the Current,
-	  Published, and New ZSK keys for that stripe's zone.
-
-	  See the WINDOW COLORS section for a discussion of the colors
-	  used for the zone stripes.
-
-WINDOW COLORS
-
-The default blinkenlights configuration uses window coloring to provide visual
-cues and to aid in easily distinguishing zone information.  The default window
-coloring behavior gives each zone stripe has its own color and the rollover
-state section of each zone stripe is shaded to show the zone's phase.  Window
-coloring can be turned off (and on) with configuration options and menu
-commands.
-
-The two window coloring behaviors are discussed more fully below:
-
-	* zone stripe colors
-
-	  Each rolling zone's stripe is given one of three colors:  blue, red,
-	  or green.  The color is assigned on a top-down basis and the colors
-	  wrap if there are more than three zones.  So, the first zone is
-	  always blue, the second zone red, the third zone green, the fourth
-	  zone blue, etc.
-
-	  The colors do not stay with a particular zone.  If a rolling zone
-	  becomes a skipped zone, the zone stripes will be reassigned new
-	  colors to account for that skipped zone.
-
-	  Skipped zones are not colored with these three colors.  Stripes for
-	  skipped zones are colored either grey or a color set in the
-	  configuration file.  If you choose to use a non-standard color for
-	  skipped zones your should ensure that it is not one of the colors
-	  used for rolling zones' stripes.  Modifying the skipcolor
-	  configuration field allows the skipped-zone color to be changed.
-
-	  The colors configuration field can be used to turn on or off the use
-	  of colors for zone stripes.  If stripe coloring is turned off, then
-	  every stripe will be displayed using the skipcolor color.
-
-	* rollover-state shading
-
-	  The only portion of a zone stripe that changes color is the status
-	  column; the color of the rest of the zone stripe stays constant.
-	  Before a zone enters rollover, the status column is the same color
-	  as the rest of the stripe.  When the zone enters rollover, the
-	  status column's color is changed to a very light shade of the
-	  stripe's normal color.  As the rollover phases progress towards
-	  rollover completion, the status column's shade darkens.  Once
-	  rollover completes, the status column returns again to the same
-	  shade as the rest of that stripe.
-
-	  The shading configuration field can be used to turn on or off the
-	  use of shading in the rollover-state column.  If shading is turned
-	  off, then the zone stripe will be a solid color.
-
-	  See the CONFIGURATION FILE section for information on setting the
-	  configuration fields.
-
-
-MENU COMMANDS
-
-A number of menu commands are available to control the behavior of blinkenlights
-and to send commands to rollerd.  These commands are discusses in this section.
-
-	File Menu
-
-		The commands in this menu are basic GUI commands.
-
-		* Quit
-
-		  blinkenlights will stop execution.
-
-	Options Menu
-
-		The commands in this menu control the appearance and behavior of
-		blinkenlights.
-
-		* Row Colors (toggle)
-
-		  This menu item is a toggle to turn on or off the coloring of
-		  zone stripes.  If row coloring is turned off, zone stripes
-		  will all be the same color.  If row coloring is turned on,
-		  zone stripes will be displayed in varying colors.  See the
-		  WINDOW COLORS section for a discussion of row coloring.
-
-		* Status Column Shading (toggle)
-
-		  This menu item is a toggle to turn on or off the shading of
-		  the zone status column.  If shading is turned off, the zone
-		  stripes will present a solid, unchanging band of color for
-		  each zone.  If shading is turned on, the color of the zone
-		  status column will change according to the zone's rollover
-		  state.
-
-		* Skipped Zones Display (toggle)
-
-		  This menu item is a toggle to turn on or off the display of
-		  skipped zones.  If display is turned off, zone stripes for
-		  skipped zones will not be displayed.  If display is turned
-		  on, zone stripes for all zones will be displayed.
-
-		* Modification Commands (toggle)
-
-		  In some situations, it may be desirable to turn off
-		  blinkenlights' ability to send commands to rollerd.  This
-		  menu item is a toggle to turn on or off this ability.  If
-		  the commands are turned off, then the \"Zone Control\" menu
-		  and keyboard shortcuts are disabled.  If the commands are
-		  turned on, then the \"Zone Control\" menu and keyboard
-		  shortcuts are enabled.
-
-		* Font Size
-
-		  This menu item allows selection of font size of text
-		  displayed in the main window.
-
-		  Normally, changing the font size causes the window to grow
-		  and shrink as required.  However, on Mac OS X there seems to
-		  be a problem when the size selected increases the window
-		  size to be greater than will fit on the screen.  If the font
-		  size is subsequently reduced, the window size does not
-		  shrink in response.
-
-		* Zones to Display
-
-		  This menu item allows selection of the number of zones to
-		  be displayed in the main window.
-
-	Zone Control Menu
-
-		The commands in this menu are GUI interfaces for the rollctl
-		command.  Not all of the rollctl commands have interfaces --
-		only those which directly affect zone management.
-
-		* Roll Selected Zone
-
-		  The selected zone will be moved to the rollover state.  This
-		  only has an effect on skipped zones.  A zone may be selected
-		  by clicking on its zone stripe.  If this command is selected
-		  without a zone having been selected, a dialog box is displayed
-		  from which a currently skipped zone may be chosen.
-
-		* Roll All Zones
-
-		  All zones will be moved to the rollover state.  This has no
-		  effect on currently rolling zones.
-
-		* Run the Queue
-
-		  rollerd is awoken and runs through its queue of zones.  The
-		  operation required for each zone is then performed.
-
-		* Skip Selected Zone
-
-		  The selected zone will be moved to the skipped state.  This
-		  only has an effect on rolling zones.  A zone may be selected
-		  by clicking on its zone stripe.  If this command is selected
-		  without a zone having been selected, a dialog box is
-		  displayed from which a currently rolling zone may be chosen.
-
-		* Skip All Zones
-
-		  All zones will be moved to the skipped state.  This has no
-		  effect on currently skipped zones.
-
-		* Halt Rollerd
-
-		  rollerd's execution is halted.  As a result, blinkenlights'
-		  execution will also be halted.
-
-	Display Menu
-
-		The commands in this menu provide control over what is being
-		displayed.  There are commands for displaying and hiding both
-		zone stripes, columns of key sets, columns of rollrec names,
-		and columns of zonenames.
-
-		The zonestripe commands allow all, some, or none of the zone
-		stripes to be displayed.  Undisplayed rolling zones will
-		continue to roll, but they will do so without the blinkenlights
-		window indicating this.
-
-		The data column commands allow individual columns of data to
-		be hidden or displayed.  The zone status column may not be
-		hidden.  Only one of the rollrec name and zonename columns may
-		be hidden at a time.
-
-		* Zone Selection
-
-	          A dialog box is created that holds a list of the zones
-	          currently managed by rollerd.  The user may select which
-	          zones should be displayed by clicking on the zone's checkbox.
-	          Zones with a selected checkbox will be displayed; zones
-	          without a selected checkbox will not be displayed.
-
-		* Display All Zones
-
-		  All zones will be displayed in the blinkenlights window.
-
-		* Hide All Zones
-
-		  No zones will be displayed in the blinkenlights window.
-
-		* Rollrec Name (toggle)
-
-		  This menu item is a toggle to turn on or off the display of
-		  rollrec names.  If display is turned off, the column holding
-		  the rollrec names will be removed from the display and the
-		  display window will shrink.  If display is turned on, the
-		  column holding the rollrec names will be restored to the
-		  display and the display window will be expanded.
-
-		  When displayed, the rollrec names will always be the
-		  left-most columns.
-
-		* Zone Name (toggle)
-
-		  This menu item is a toggle to turn on or off the display of
-		  rollrec names.  If display is turned off, the column holding
-		  the rollrec names will be removed from the display and the
-		  display window will shrink.  If display is turned on, the
-		  column holding the rollrec names will be restored to the
-		  display and the display window will be expanded.
-
-		  When displayed, the rollrec names will always be the
-		  left-most columns.
-
-		* KSK Sets (toggle)
-
-		  This menu item is a toggle to turn on or off the display of
-		  KSK signing set names.  If display is turned off, the
-		  columns holding the KSK signing set names and labels will be
-		  removed from the display and the display window will shrink.
-		  If display is turned on, the columns holding the KSK signing
-		  set names and labels will be restored to the display and the
-		  display window will be expanded.
-
-		  When displayed, KSK signing sets will always be the
-		  right-most columns.
-
-		* ZSK Sets (toggle)
-
-		  This menu item is a toggle to turn on or off the display of
-		  ZSK signing set names.  If display is turned off, the
-		  columns holding the ZSK signing set names and labels will be
-		  removed from the display and the display window will shrink.
-		  If display is turned on, the columns holding the ZSK signing
-		  set names and labels will be restored to the display and the
-		  display window will be expanded.
-
-		  When displayed, ZSK signing sets will always be immediately
-		  to the right of the zone status column.
-
-		* Hide All Keysets
-
-		  Turns off display of the KSK and ZSK signing set names.
-
-		* Show All Keysets
-
-		  Turns on display of the KSK and ZSK signing set names.
-
-
-	Help Menu
-
-		The commands in this menu provide assistance to the user.
-
-		* Help
-
-		  Display a window containing help information.
-
-CONFIGURATION FILE
-
-Several aspects of blinkenlights' behavior may be controlled from
-configuration files.  Configuration value may be specified in the DNSSEC Tools
-configuration file or in a more specific rc.blinkenlights.  The system-wide
-blinkenlights configuration file is in the DNSSEC-Tools configuration
-directory and is named blinkenlights.conf.  Multiple rc.blinkenlights
-files may exist on a system, but only one in the directory in which
-blinkenlights is executed is used.
-
-The following are the available configuration values:
-
-    colors	Turn on/off use of colors on zone stripes.
-    fontsize	The size of the font in the output window.
-    maxzones	The number of zones to display.
-    modify	Turn on/off execution of rollerd modification commands.
-    shading	Turn on/off shading of the status columns.
-    showskip	Turn on/off display of skipped zones.
-    skipcolor	The background color used for skipped zones.
-
-The rc.blinkenlights file is only searched for in the directory in which
-blinkenlights is executed.  The potential problems inherent in this may cause
-these blinkenlights-specific configuration files to be removed in the future.
-
-This file is in the \"field value\" format, where field specifies the output
-aspect and value defines the value for that field.  The following are the
-recognized fields:
-
-Empty lines and comments are ignored.  Comment lines are lines that start with
-an octothorpe ('#').
-
-Spaces are not allowed in the configuration values.
-
-Choose your skipcolors carefully.  The only foreground color used is black, so
-your background colors must work well with black.
-
-The \"noshow\" command controls display of the various data columns.  The
-command valid values are:
-
-    rollrecs	Turn off display of the rollrec names column.
-		This value may not be used with \"noshow zonenames\".
-    zonenames	Turn off display of the zonenames column.
-		This value may not be used with \"noshow rollrecs\".
-    kskset	Turn off display of the KSK signing set columns.
-    zskset	Turn off display of the ZSK signing set columns.
-
-WARNINGS
-
-blinkenlights has several potential problems that must be taken into account:
-
-	* development environment
-
-	  blinkenlights was developed and tested on a single-user system
-	  running X11 using a relatively small number of zones.  While it
-	  works fine in this environment, it has not been run on a system
-	  with many users or in a situation where the system console hasn't
-	  been in use by the blinkenlights user.
-
-	* long-term performance issues
-
-	  In early tests, the longer blinkenlights runs, the slower the
-	  updates become.  This is probably a result of the Tk implementation
-	  or the way Tk interfaces with X11.  This is pure supposition, though.
-
-	  This performance impact is affected by a number of things, such as
-	  the number of zones managed by rollerd and the length of rollerd's
-	  sleep interval.  Large numbers of zones or very short sleep
-	  intervals will increase the possibility of blinkenlights'
-	  performance degrading.
-
-	  This appears to have been resolved by periodically performing a
-	  complete rebuild of the screen.  blinkenlights keeps track of the
-	  number of screen updates it makes and rebuilds the screen when this
-	  count exceeds a threshold.  The threshold is built into blinkenlights
-	  and stored in the $paintmax variable.  This threshold may be adjusted
-	  if there are too many screen rebuilds or if blinkenlights' performance
-	  slows too much.  Raising the number will reduce the screen rebuilds;
-	  lowering the number will (may) increase performance.
+For additional information, please see the blinkenlights man page.
 
 COPYRIGHT
 
 	Copyright 2006-2011 SPARTA, Inc.  All rights reserved.
 	See the COPYING file included with the DNSSEC-Tools package for details.
-
-AUTHOR
-
-	Wayne Morrison, tewok\@users.sourceforge.net
-
-SEE ALSO
-
-	rollctl(8), rollerd(8), zonesigner(8)
-
-	blinkenlights.conf(5),
-	Net::DNS::SEC::Tools::keyrec(5),
-	Net::DNS::SEC::Tools::rollrec(5),
-	Net::DNS::SEC::Tools::timetrans(5)
-
 
 ";
 
@@ -3998,10 +3745,11 @@ zone stripes
 
 Each zone managed by B<rollerd> (i.e., every zone in the current I<rollrec>
 file) will have a zone stripe which describes that zone's current state.  The
-stripe is divided into four sections:  the zone name, the current rollover
-state, and the zone's DNSSEC keys.
+stripe is divided into three sections:  zone identification, the current
+rollover state, and the zone's DNSSEC keys.
 
-The zone name section just contains the name of the zone.
+The zone identification section contains the name of the zone, the name of
+the zone's I<rollrec> entry, and the zone's zonegroup..
 
 The rollover state section contains the rollover phase number, a text
 explanation of the phase, and the amount of time remaining in that rollover
@@ -4195,9 +3943,10 @@ Modification Commands (toggle)
 
 In some situations, it may be desirable to turn off B<blinkenlights>' ability
 to send commands to B<rollerd>.  This menu item is a toggle to turn on or off
-this ability.  If the commands are turned off, then the "Zone Control" menu
-and keyboard shortcuts are disabled.  If the commands are turned on, then the
-"Zone Control" menu and keyboard shortcuts are enabled.
+this ability.  If the commands are turned off, then the "ZSK Control" and
+"KSK Control" menus and their keyboard shortcuts are disabled.  If the
+commands are turned on, then the "ZSK Control" and "KSK Control" menus and
+their keyboard shortcuts are enabled.
 
 =item *
 
@@ -4293,7 +4042,7 @@ dialog box is displayed from which a currently skipped zone may be chosen.
 
 =item *
 
-Roll All Zones' ZSK
+Roll All Zones' ZSKs
 
 All zones' ZSKs will be moved to the rollover state.  This has no effect on
 currently rolling zones.
@@ -4309,7 +4058,7 @@ related to KSK-specific zone management.
 
 =item *
 
-DS Published Selected Zone
+DS Published for Selected Zone
 
 This command is used to indicate that the selected zone's parent has published
 a new DS record for the zone.  It moves the zone from phase 6 to phase 7 of
@@ -4317,11 +4066,12 @@ KSK rollover.
 
 =item *
 
-DS Published All Zones
+DS Published for All Zones
 
 This command is used to indicate that all the zones in KSK rollover phase 6
 have new DS records published by their parents.  It moves all these zones from
-phase 6 to phase 7 of KSK rollover.
+phase 6 to phase 7 of KSK rollover.  There is no effect on zones not in KSK
+rollover phase 6.
 
 =back
 
@@ -4345,7 +4095,7 @@ I<rollrec> name and I<zonename> columns may be hidden at a time.
 
 Zone Selection
 
-A dialog box is created that holds a list of the zones currently managed by
+A dialog box is displayed that holds a list of the zones currently managed by
 B<rollerd>.  The user may select which zones should be displayed by clicking
 on the zone's checkbox.  Zones with a selected checkbox will be displayed;
 zones without a selected checkbox will not be displayed.
@@ -4366,25 +4116,40 @@ No zones will be displayed in the B<blinkenlights> window.
 
 Rollrec Name (toggle)
 
-This menu item is a toggle to turn on or off the display of rollrec names.
-If display is turned off, the column holding the rollrec names will be removed
+This menu item is a toggle to turn on or off the display of I<rollrec> names.
+If display is turned off, the column holding the I<rollrec> names will be removed
 from the display and the display window will shrink.  If display is turned on,
-the column holding the rollrec names will be restored to the display and the
+the column holding the I<rollrec> names will be restored to the display and the
 display window will be expanded.
 
-When displayed, the rollrec names will always be the left-most columns.
+When displayed, the I<rollrec> names will always be the left-most columns.
 
 =item *
 
 Zone Name (toggle)
 
-This menu item is a toggle to turn on or off the display of rollrec names.
-If display is turned off, the column holding the rollrec names will be removed
-from the display and the display window will shrink.  If display is turned on,
-the column holding the rollrec names will be restored to the display and the
-display window will be expanded.
+This menu item is a toggle to turn on or off the display of the zone names in
+a I<rollrec> entry.  If display is turned off, the column holding the zone
+names will be removed from the display and the display window will shrink.  If
+display is turned on, the column holding the zone names will be restored to
+the display and the display window will be expanded.
 
-When displayed, the rollrec names will always be the left-most columns.
+When displayed, the zone name will always be the second-from left or left-most
+column, depending on if the I<rollrec> name is also being displayed.
+
+=item *
+
+Zonegroup Name (toggle)
+
+This menu item is a toggle to turn on or off the display of the zoneground in
+I<rollrec> entries.  If display is turned off, the column holding the rollrec
+names will be removed from the display and the display window will shrink.  If
+display is turned on, the column holding the rollrec names will be restored to
+the display and the display window will be expanded.
+
+When displayed, the rollrec names will always be the in one of the first
+through third columns, depending on if the I<rollrec> name and zone name
+are also being displayed.
 
 =item *
 
@@ -4486,8 +4251,10 @@ command valid values are:
 		This value may not be used with "noshow zonenames".
     zonenames	Turn off display of the zonenames column.
 		This value may not be used with "noshow rollrecs".
+    zonegroups	Turn off display of the zonegroups column.
     kskset	Turn off display of the KSK signing set columns.
     zskset	Turn off display of the ZSK signing set columns.
+    keysets	Turn off display of the KSK and ZSK signing set columns.
 
 =head1 REQUIREMENTS
 
