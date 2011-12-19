@@ -15,6 +15,8 @@
     do {\
         pthread_rwlock_wrlock(&ctx->pol_rwlock);\
     } while (0)
+#define CTX_LOCK_POL_EX_TRY(ctx) \
+       (0 == pthread_rwlock_trywrlock(&ctx->pol_rwlock)) 
 #define CTX_UNLOCK_POL(ctx) \
     do {\
         pthread_rwlock_unlock(&ctx->pol_rwlock);\
@@ -28,6 +30,7 @@
 
 #define CTX_LOCK_POL_SH(ctx) 
 #define CTX_LOCK_POL_EX(ctx)
+#define CTX_LOCK_POL_EX_TRY(ctx) (1 == 1)
 #define CTX_UNLOCK_POL(ctx) 
 #define CTX_LOCK_ACACHE(ctx) 
 #define CTX_UNLOCK_ACACHE(ctx)
