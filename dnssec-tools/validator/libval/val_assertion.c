@@ -504,6 +504,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     return VAL_NO_ERROR;
 }
 
+#if 0
 static int
 remove_and_free_query_chain(val_context_t *context,
                             struct val_query_chain *added_q)
@@ -546,6 +547,7 @@ remove_and_free_query_chain(val_context_t *context,
 
     return VAL_NO_ERROR;
 }
+#endif
 
 void
 free_authentication_chain_structure(struct val_digested_auth_chain *assertions)
@@ -763,6 +765,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     return VAL_NO_ERROR; 
 }
 
+#if 0
 /*
  * internal free routine use on error during insert. this version also frees
  * the val_query_chain (after removing it from the context query list).
@@ -785,6 +788,7 @@ _free_qfq_chain(val_context_t *context, struct queries_for_query *queries)
     FREE(queries);
     return VAL_NO_ERROR;
 }
+#endif
 
 int 
 free_qfq_chain(val_context_t *context, struct queries_for_query *queries)
