@@ -59,6 +59,7 @@ struct timeval;
 #define VAL_QUERY_ASYNC             0x00000010
 #define VAL_QUERY_NO_EDNS0_FALLBACK 0x00000020
 #define VAL_QUERY_SKIP_RESOLVER     0x00000040
+#define VAL_QUERY_REFRESH_QCACHE    0x00000080
 
 /*
  * Flags in this bit mask are MUST match if they
@@ -67,7 +68,7 @@ struct timeval;
  */
 #define VAL_QFLAGS_CACHE_PREF_MASK  0x00ff0000
 #define VAL_QUERY_RECURSE           0x00010000
-#define VAL_QUERY_NO_EDNS0          0x00020000
+#define VAL_QUERY_EDNS0             0x00020000
 #define VAL_QUERY_SKIP_CACHE        0x00040000
 
 /*
@@ -77,7 +78,6 @@ struct timeval;
 #define VAL_QFLAGS_NOCACHE_MASK     0xff000000
 #define VAL_QUERY_EDNS0_FALLBACK    0x01000000 
 #define VAL_QUERY_GLUE_REQUEST      0x02000000
-#define VAL_QUERY_REFRESH_QCACHE    0x04000000
 
 
 #define VAL_QFLAGS_USERMASK (VAL_QUERY_AC_DETAIL |\
@@ -87,8 +87,7 @@ struct timeval;
                              VAL_QUERY_NO_EDNS0_FALLBACK |\
                              VAL_QUERY_SKIP_RESOLVER |\
                              VAL_QUERY_RECURSE |\
-                             VAL_QUERY_SKIP_CACHE |\
-                             VAL_QUERY_REFRESH_QCACHE)
+                             VAL_QUERY_SKIP_CACHE)
 
 #ifndef LOG_EMERG
 #define LOG_EMERG 0
