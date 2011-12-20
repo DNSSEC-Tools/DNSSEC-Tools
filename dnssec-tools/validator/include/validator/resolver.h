@@ -168,7 +168,7 @@ int             response_recv(int *trans_id,
 void            res_cancel(int *transaction_id);
 int             res_nsfallback(int transaction_id, struct timeval *closest_event,
                                const char *name, const unsigned short class_h,
-                               const unsigned short type_h, int *edns0);
+                               const unsigned short type_h);
 
 void            wait_for_res_data(fd_set * pending_desc,
                                   struct timeval *closest_event);
@@ -214,7 +214,7 @@ int res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
 int res_nsfallback_ea(struct expected_arrival *temp,
                       struct timeval *closest_event,
                       const char *name, const unsigned short class_h,
-                      const unsigned short type_h, int *edns0);
+                      const unsigned short type_h);
 
 struct expected_arrival *
 res_async_query_create(const char *name, const unsigned short type_h,
