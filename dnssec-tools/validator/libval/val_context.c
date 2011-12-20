@@ -248,9 +248,11 @@ val_create_context_with_conf(char *label,
             return retval;
         }
 
+#ifdef VAL_REFCOUNTS
         CTX_LOCK_REFCNT(*newcontext);
         ++(*newcontext)->refcount;
         CTX_UNLOCK_REFCNT(*newcontext);
+#endif
 
         val_log(*newcontext, LOG_INFO, "reusing default context");
         return retval;
