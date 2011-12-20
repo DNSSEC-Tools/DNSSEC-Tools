@@ -50,7 +50,7 @@ pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 
-
+#ifdef VAL_REFCOUNTS
 #ifdef HAVE_PTHREAD_H
 #  define CTX_LOCK_REFCNT(ctx)    pthread_mutex_lock(&(ctx)->ref_lock)
 #  define CTX_UNLOCK_REFCNT(ctx)  pthread_mutex_unlock(&(ctx)->ref_lock)
@@ -58,6 +58,7 @@ pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
 #  define CTX_LOCK_REFCNT()
 #  define CTX_UNLOCK_REFCNT()
 #endif /* HAVE_PTHREAD_H */
+#endif
 
 /*
  * re-read resolver policy into the context
@@ -261,7 +262,9 @@ val_create_context_with_conf(char *label,
         return VAL_OUT_OF_MEMORY;
     }
     memset(*newcontext, 0, sizeof(val_context_t));
+#ifdef VAL_REFCOUNTS
     ++(*newcontext)->refcount; /* don't need lock, it's a new object */
+#endif
 
 #ifndef VAL_NO_THREADS
     if (0 != pthread_rwlock_init(&(*newcontext)->pol_rwlock, NULL)) {
@@ -465,11 +468,12 @@ val_free_context(val_context_t * context)
     if (!CTX_LOCK_POL_EX_TRY(context)) {
         default_or_has_refs = 1;
     }
-
+#ifdef VAL_REFCOUNTS
     CTX_LOCK_REFCNT(context);
     if (--context->refcount > 0)
         default_or_has_refs = 1;
     CTX_UNLOCK_REFCNT(context);
+#endif
 
     if (default_or_has_refs)
         return;
