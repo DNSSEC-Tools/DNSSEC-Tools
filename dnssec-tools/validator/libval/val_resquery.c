@@ -799,7 +799,7 @@ done:
         /* if query is for some DNSSEC meta data then we always turn on EDNS0 */
         if (DNSSEC_METADATA_QTYPE(next_q->qc_type_h)) {
             edns0 = 1;
-        } else if (!(next_q->qc_flags & VAL_QUERY_NO_EDNS0)) { 
+        } else { 
             if (next_q->qc_zonecut_n != NULL)
                 test_n = next_q->qc_zonecut_n;
             else
@@ -821,9 +821,7 @@ done:
             val_log(context, LOG_DEBUG,
                     " find_nslist_for_query(): Setting D0 bit and using EDNS0");
 
-            if (next_q->qc_flags & VAL_QUERY_NO_EDNS0) {
-                next_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
-            }
+            next_q->qc_flags |= VAL_QUERY_EDNS0;
 
             for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
                 ns->ns_edns0_size = (context && context->g_opt)? 
@@ -1089,9 +1087,7 @@ follow_referral_or_alias_link(val_context_t * context,
         *learned_zones = NULL;
 
         /* don't re-use EDNS0 status from alias */
-        if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
-            matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
-        }
+        matched_q->qc_flags |= VAL_QUERY_EDNS0;
 
         return VAL_NO_ERROR;
     } 
@@ -1184,9 +1180,9 @@ follow_referral_or_alias_link(val_context_t * context,
         /* 
          * If the trust point for the zone we are entering into 
          * is different from the zone we're at
-         * ensure that we reset the VAL_QUERY_NO_EDNS0 status
+         * ensure that we set the VAL_QUERY_EDNS0 status
          */
-        if (tp && (matched_q->qc_flags & VAL_QUERY_NO_EDNS0)) {
+        if (tp && !(matched_q->qc_flags & VAL_QUERY_EDNS0)) {
             u_char *tp_ref = NULL;
             if (VAL_NO_ERROR != (ret_val = 
                 find_trust_point(context, referral_zone_n, 
@@ -1198,7 +1194,7 @@ follow_referral_or_alias_link(val_context_t * context,
             if (tp_ref && namecmp(tp, tp_ref)) { 
                 val_log(context, LOG_DEBUG, 
                         "follow_referral_or_alias_link(): Re-enabling EDNS0 where previously disabled");
-                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+                matched_q->qc_flags |= VAL_QUERY_EDNS0;
             }
             if (tp_ref) {
                 FREE(tp_ref);
@@ -1715,7 +1711,7 @@ digest_response(val_context_t * context,
          * or we got only additional section data (e.g. EDNS0 opt records)
          * Check if EDNS was not used when it should have
          */
-        if ((matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
+        if (!(matched_q->qc_flags & VAL_QUERY_EDNS0) &&
             !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) { 
             if (VAL_NO_ERROR != (ret_val =
                 get_zse(context, query_name_n, matched_q->qc_flags, 
@@ -1724,7 +1720,7 @@ digest_response(val_context_t * context,
             }
             SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
             if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
-                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+                matched_q->qc_flags |= VAL_QUERY_EDNS0;
                 matched_q->qc_state = Q_INIT;
                 ret_val = VAL_NO_ERROR;
                 goto done;
@@ -2139,7 +2135,8 @@ digest_response(val_context_t * context,
                 val_log(context, LOG_DEBUG, "digest_response(): Disabling further EDNS0 for {%s %s(%d) %s(%d)}",
                         query_name_p, p_class(query_class_h), query_class_h,
                         p_type(query_type_h), query_type_h); 
-                matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
+                if (matched_q->qc_flags & VAL_QUERY_EDNS0)
+                    matched_q->qc_flags ^= VAL_QUERY_EDNS0;
             }
 
         } else {
@@ -2184,7 +2181,7 @@ digest_response(val_context_t * context,
          */
         if (zonecut_was_modified && 
             !(matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE) &&
-            (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) &&
+            !(matched_q->qc_flags & VAL_QUERY_EDNS0) &&
             !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) {
             if (VAL_NO_ERROR != (ret_val =
                 get_zse(context, query_name_n, matched_q->qc_flags, 
@@ -2193,7 +2190,7 @@ digest_response(val_context_t * context,
             }
             SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
             if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
-                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
+                matched_q->qc_flags |= VAL_QUERY_EDNS0;
                 matched_q->qc_state = Q_INIT;
                 ret_val = VAL_NO_ERROR;
                 goto done;
