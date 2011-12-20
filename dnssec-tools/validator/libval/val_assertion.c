@@ -301,19 +301,18 @@ init_query_chain_node(struct val_query_chain *q)
 
     memcpy(q->qc_name_n, q->qc_original_name, 
             wire_name_length(q->qc_original_name));
+    q->qc_state = Q_INIT;
     q->qc_ttl_x = 0;
     q->qc_bad = 0;
-    q->qc_state = Q_INIT;
-
-    q->qc_ans = NULL;
-    q->qc_proof = NULL;
-    q->qc_trans_id = -1;
-    q->qc_ea = NULL;
     q->qc_zonecut_n = NULL;
+    q->qc_referral = NULL;
     q->qc_ns_list = NULL;
     q->qc_respondent_server = NULL;
     q->qc_respondent_server_options = 0;
-    q->qc_referral = NULL;
+    q->qc_trans_id = -1;
+    q->qc_ea = NULL;
+    q->qc_ans = NULL;
+    q->qc_proof = NULL;
 }
 
 static void 
@@ -367,51 +366,18 @@ free_query_chain_structure(struct val_query_chain *queries)
        return;
 
     val_log(NULL, LOG_DEBUG, "qc %p free", queries);
-
-#ifndef VAL_NO_THREADS
-    pthread_rwlock_destroy(&queries->qc_rwlock);
-#endif
-
     _release_query_chain_structure(queries);
     FREE(queries);
 }
 
-static int 
-clear_query_chain_structure(val_context_t *context, 
-                            struct val_query_chain *query, 
-                            int *cleared)
+void 
+clear_query_chain_structure(struct val_query_chain *query) 
 {
-
-    if (cleared == NULL || context == NULL)
-        return VAL_BAD_ARGUMENT;
-
-    if (NULL == query)
-       return VAL_NO_ERROR;
-
-    *cleared = 0;
-
-    /* Try to upgrade to an exclusive lock if we can */
-    //val_log(context, LOG_DEBUG, "acquiring exclusive lock for %x", query); 
-    UNLOCK_QC(query);
-    if (!TRY_LOCK_QC_EX(query)) {
-        //val_log(context, LOG_DEBUG, "could not acquire exclusive lock for %x", query); 
-        LOCK_QC_SH(query);
-        return VAL_NO_ERROR;
+    if (query) {
+        _release_query_chain_structure(query);
+        init_query_chain_node(query);
     }
-
-    /* we should be holding an exclusive lock at this point */
-    *cleared = 1;
-    _release_query_chain_structure(query);
-    init_query_chain_node(query);
-
-    /* release exclusive lock */
-    UNLOCK_QC(query);
-    LOCK_QC_SH(query);
-    //val_log(context, LOG_DEBUG, "releasing lock for %x", query); 
-
-    return VAL_NO_ERROR;
 }
-
 
 
 /*
@@ -428,8 +394,9 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                    const u_int16_t type_h, const u_int16_t class_h, 
                    const u_int32_t flags, struct val_query_chain **added_q)
 {
-    struct val_query_chain *temp, *prev;
-    int retval;
+    struct val_query_chain *temp, *prev, *old;
+    struct timeval  tv;
+    char name_p[NS_MAXDNAME];
     
     /*
      * sanity checks 
@@ -449,33 +416,75 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
      * Check if query already exists 
      */
     temp = context->q_list;
-    prev = temp;
+    prev = NULL;
+    gettimeofday(&tv, NULL);
     while (temp) {
+
+        /*
+         * Remove this query if it has expired and is not being used
+         */
+        if ((temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) &&
+            temp->qc_refcount == 0) {
+            if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
+                snprintf(name_p, sizeof(name_p), "unknown/error");
+            val_log(context, LOG_INFO, "add_to_qfq_chain(): Deleting expired cache data: {%s %s(%d) %s(%d)}", 
+                    name_p, p_class(temp->qc_class_h),
+                    temp->qc_class_h, p_type(temp->qc_type_h),
+                    temp->qc_type_h);
+
+            if (prev == NULL) {
+                context->q_list = temp->qc_next;
+            } else {
+                prev->qc_next = temp->qc_next;
+            }
+            old = temp;
+            temp = temp->qc_next;
+            old->qc_next = NULL;
+            free_query_chain_structure(old);
+            continue;
+        }
+
         if ((temp->qc_type_h == type_h)
             && (temp->qc_class_h == class_h)
             && (QUERY_FLAGS_MATCHING(temp->qc_flags, flags))
             && (namecmp(temp->qc_original_name, name_n) == 0)) {
-           break;
+
+            /* Invoke bad-cache logic only if validation is requested */
+            if (temp->qc_bad > 0 && 
+                !(flags & VAL_QUERY_DONT_VALIDATE)) {
+
+                temp->qc_bad++;
+                if (temp->qc_bad < QUERY_BAD_CACHE_THRESHOLD) {
+                    /* don't cache the bad answer */
+                    temp->qc_ttl_x = 0; 
+                } else if (temp->qc_bad == QUERY_BAD_CACHE_THRESHOLD) {
+                    if (temp->qc_ttl_x > 0) {
+                        SET_MIN_TTL(temp->qc_ttl_x, (tv.tv_sec + QUERY_BAD_CACHE_TTL));
+                    } else {
+                        temp->qc_ttl_x = tv.tv_sec + QUERY_BAD_CACHE_TTL;
+                    }
+                } else /* temp->qc_bad > QUERY_BAD_CACHE_THRESHOLD */ {
+                    temp->qc_bad = QUERY_BAD_CACHE_THRESHOLD;
+                } 
+            }
+
+            if (temp->qc_state >= Q_ANSWERED && tv.tv_sec >= temp->qc_ttl_x) { 
+                /* TTL has expired; Refresh this data at the next safe opportunity */
+                if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
+                    snprintf(name_p, sizeof(name_p), "unknown/error");
+                val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
+                        name_p, p_class(temp->qc_class_h),
+                        temp->qc_class_h, p_type(temp->qc_type_h),
+                        temp->qc_type_h);
+                temp->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+            } else {
+                /* return this cached record */
+                *added_q = temp;
+                return VAL_NO_ERROR;
+            }
         } 
         prev = temp;
         temp = temp->qc_next;
-    }
-    if (temp != NULL) {
-        int cleared = 0;
-        /* 
-         * reset the query if VAL_QUERY_REFRESH_QCACHE is set 
-         */
-        if (temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
-
-            if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, temp, &cleared)))
-                return retval;
-
-            if (cleared) {
-                temp->qc_flags ^= VAL_QUERY_REFRESH_QCACHE;
-            }
-        }
-        *added_q = temp;
-        return VAL_NO_ERROR;
     }
 
     temp =
@@ -483,13 +492,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     if (temp == NULL)
         return VAL_OUT_OF_MEMORY;
 
-#ifndef VAL_NO_THREADS
-    if (0 != pthread_rwlock_init(&temp->qc_rwlock, NULL)) {
-        FREE(temp);
-        return VAL_INTERNAL_ERROR;
-    } 
-#endif
-
+    temp->qc_refcount = 0;
     memcpy(temp->qc_original_name, name_n, wire_name_length(name_n));
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
@@ -676,7 +679,6 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     struct queries_for_query *new_qfq = NULL;
     /* use only those flags that affect caching */
     struct val_query_chain *added_q = NULL;
-    struct timeval  tv;
     int retval;
     u_int32_t tflags = flags;
     
@@ -712,50 +714,9 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
             return VAL_OUT_OF_MEMORY;
         }
 
-        /* grab a shared lock on the query */
-        //val_log(context, LOG_DEBUG, "acquiring shared lock for %x: %s %d %d %u", 
-        //        added_q, name_n, class_h, type_h, flags); 
-        LOCK_QC_SH(added_q);
-
+        added_q->qc_refcount++;
         new_qfq->qfq_query = added_q;
         new_qfq->qfq_flags = tflags;
-        new_qfq->qfq_next = NULL;
-        gettimeofday(&tv, NULL);
-        if (added_q->qc_bad > 0 || 
-            (added_q->qc_ttl_x > 0 && 
-            tv.tv_sec > added_q->qc_ttl_x)) {
-            /* try to get an exclusive lock on this query */
-                if (added_q->qc_bad > 0 && 
-                        !(tflags & VAL_QUERY_DONT_VALIDATE)) {
-                    /* Invoke bad-cache logic only if validation is requested */
-                    added_q->qc_bad++;
-                    if (added_q->qc_bad > QUERY_BAD_CACHE_THRESHOLD) {
-                        added_q->qc_bad = QUERY_BAD_CACHE_THRESHOLD;
-                        SET_MIN_TTL(added_q->qc_ttl_x, tv.tv_sec + QUERY_BAD_CACHE_TTL);
-                    } else {
-                        added_q->qc_ttl_x = 0; 
-                    }
-                }
-               
-                if (tv.tv_sec > added_q->qc_ttl_x) { 
-                    /* flush data for this query and start again */
-                    char name_p[NS_MAXDNAME];
-                    int cleared = 0;
-                    if (-1 == ns_name_ntop(added_q->qc_original_name, name_p, sizeof(name_p)))
-                        snprintf(name_p, sizeof(name_p), "unknown/error");
-                    val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
-                            name_p, p_class(added_q->qc_class_h),
-                            added_q->qc_class_h, p_type(added_q->qc_type_h),
-                            added_q->qc_type_h);
-
-                    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, added_q, &cleared))) {
-                        free_qfq_chain(context, new_qfq);
-                        return retval;
-                    }
-
-                }
-
-        }
         new_qfq->qfq_next = *queries;
         *queries = new_qfq;
     } 
@@ -799,9 +760,9 @@ free_qfq_chain(val_context_t *context, struct queries_for_query *queries)
     if (queries->qfq_next)
         free_qfq_chain(context, queries->qfq_next);
 
-    /* release our lock on the val_query_chain element */
-    //val_log(context, LOG_DEBUG, "releasing lock for %x", queries->qfq_query); 
-    UNLOCK_QC(queries->qfq_query);
+    if (queries->qfq_query) {
+        queries->qfq_query->qc_refcount--;
+    }
 
     FREE(queries);
     /* 
@@ -4800,17 +4761,18 @@ done:
 /*
  * Begin iteratively querying for this answer starting from root
  */ 
-static int switch_to_root(val_context_t * context, 
-                          struct val_query_chain *matched_q,
-                          int *switched)
+static 
+int switch_to_root(val_context_t * context, 
+                   struct queries_for_query *matched_qfq,
+                   int *switched)
 {
     char   name_p[NS_MAXDNAME];
-    int retval;
-    int cleared = 0;
+    struct val_query_chain *matched_q;
 
-    if (!context || !matched_q || !switched)
+    if (!context || !matched_qfq || !switched)
         return VAL_BAD_ARGUMENT;
 
+    matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
     *switched = 0;
 
     /* Don't perform this logic if we're configured not to */
@@ -4833,13 +4795,7 @@ static int switch_to_root(val_context_t * context,
         return VAL_NO_ERROR;
     } 
 
-    if (VAL_NO_ERROR != (retval = clear_query_chain_structure(context, matched_q, &cleared))) {
-        return retval;
-    }
-
-    if (!cleared) {
-        return VAL_NO_ERROR;
-    }
+    clear_query_chain_structure(matched_q);
 
     if (matched_q->qc_flags & VAL_QUERY_NO_EDNS0) {
         matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
@@ -4901,7 +4857,7 @@ verify_and_validate(val_context_t * context,
                                name_p, sizeof(name_p))) {
             snprintf(name_p, sizeof(name_p), "unknown/error");
         }
-        if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) {
+        if (VAL_NO_ERROR != (retval = switch_to_root(context, top_qfq, &switched))) {
             return retval;
         }
         if (switched) {
@@ -5268,16 +5224,6 @@ verify_and_validate(val_context_t * context,
                             res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else {
-                        /*
-                         * try recursing from root if we aren't already
-                         */
-                        if (VAL_NO_ERROR != (retval = switch_to_root(context, next_as->val_ac_query, &switched))) {
-                            return retval;
-                        }
-                        if (switched) {
-                            res->val_rc_rrset = NULL;
-                            goto query_reset;
-                        }
                         if (next_as->val_ac_status <= VAL_AC_LAST_ERROR || 
                             (next_as->val_ac_status == VAL_AC_DATA_MISSING && is_proof)) {
                             val_log(context, LOG_INFO, 
@@ -5330,7 +5276,7 @@ verify_and_validate(val_context_t * context,
              * For error conditions Try getting this answer iteratively from
              * root if we aren't doing so already
              */
-            if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) {
+            if (VAL_NO_ERROR != (retval = switch_to_root(context, top_qfq, &switched))) {
                 return retval;
             }
             if (switched) {
@@ -5374,7 +5320,6 @@ verify_and_validate(val_context_t * context,
 
             if (do_dlv) {
                 struct queries_for_query *added_q;
-                int requery = 0;
 
                 val_log(context, LOG_INFO,
                         "verify_and_validate(): Attempting DLV validation");
@@ -6395,19 +6340,15 @@ construct_authentication_chain(val_context_t * context,
             }
         }
         if (*results == NULL || res != NULL) {
-            if (VAL_NO_ERROR != (retval = switch_to_root(context, top_q, &switched))) { 
+            if (VAL_NO_ERROR != (retval = switch_to_root(context, top_qfq, &switched))) { 
                 return retval;
             }
 
             if (switched) {
-                val_log(context, LOG_DEBUG, "Trying to work around bogus respose. Re-querying from root.");
-
                 _free_w_results(*w_results);
                 val_free_result_chain(*results);
                 *w_results = NULL;
                 *results = NULL;
-
-                top_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
                 *done = 0;
             }
 

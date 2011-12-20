@@ -170,14 +170,12 @@ extern          "C" {
     };
 
     struct val_query_chain {
-#ifndef VAL_NO_THREADS
         /*
-         * The read-write lock ensures that
+         * The refcount is to ensure that
          * queries are not deleted from the cache while
          * they are still being accessed by some thread 
          */
-        pthread_rwlock_t qc_rwlock;
-#endif
+        int             qc_refcount;
         u_char          qc_name_n[NS_MAXCDNAME];
         u_char          qc_original_name[NS_MAXCDNAME];
         u_int16_t       qc_type_h;
