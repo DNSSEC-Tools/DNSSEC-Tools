@@ -2759,9 +2759,7 @@ val_add_valpolicy(val_context_t *context,
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
         if (NULL != namename(q->qc_name_n, zone_n)) {
-            q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
-            if (pol_entry->exp_ttl > 0)
-                q->qc_ttl_x = pol_entry->exp_ttl;
+            clear_query_chain_structure(q);
         }
     }
     
@@ -2818,7 +2816,7 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
         if (NULL != namename(q->qc_name_n, p->zone_n)) {
-            q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+            clear_query_chain_structure(q);
         }
     }
     
