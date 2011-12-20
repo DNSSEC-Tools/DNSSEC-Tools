@@ -288,7 +288,7 @@ val_free_result_chain(struct val_result_chain *results)
 /*
  * Initialize the query structure. 
  * qc_original_name MUST be set before calling this function
- * certain val_query_chain members are left untouched. These are:
+ * certain val_query_chain members MUST be left untouched. These are:
  *  qc_flags
  *  qc_type
  *  qc_class
