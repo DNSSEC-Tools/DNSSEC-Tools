@@ -151,7 +151,12 @@ val_refresh_context(val_context_t *context)
     if (NULL == context)
         return VAL_BAD_ARGUMENT;
 
-    CTX_LOCK_POL_SH(context);
+    /* 
+     * Don't refresh the context if someone else is using it
+     */
+    if (!CTX_LOCK_POL_EX_TRY(context)) {
+        return VAL_NO_ERROR;
+    }
 
     GET_LATEST_TIMESTAMP(context, context->resolv_conf, context->r_timestamp,
                          rsb);
@@ -180,18 +185,20 @@ val_refresh_context(val_context_t *context)
         }
     }
 
-    CTX_UNLOCK_POL(context); 
-
-    return VAL_NO_ERROR;
+    retval = VAL_NO_ERROR;
 
 err:
-    CTX_UNLOCK_POL(context); 
+    CTX_UNLOCK_POL(context);
     return retval;
 
 }
 
 /*
  * Create a context with given configuration files
+ * If the resulting context translates to the default context,
+ * then set the global value of default_context, but only if 
+ * it was NULL. I.E. don't override a previously set 
+ * default_context.
  */
 int
 val_create_context_with_conf(char *label, 
@@ -203,7 +210,6 @@ val_create_context_with_conf(char *label,
     int             retval;
     char *base_dnsval_conf = NULL;
     int is_override = 0;
-    val_context_t *old_default_context = NULL;
 
 #ifdef WIN32 
     if (!wsaInitialized) {
@@ -219,7 +225,6 @@ val_create_context_with_conf(char *label,
         return VAL_BAD_ARGUMENT;
 
     LOCK_DEFAULT_CONTEXT();
-
     /* Check if the request is for the default context, and we have one available */
     /* 
      *  either label should be NULL, or if label is not NULL, our global policy should
@@ -232,16 +237,19 @@ val_create_context_with_conf(char *label,
            the_default_context->g_opt->app_policy == VAL_POL_GOPT_OVERRIDE)))) {
 
         *newcontext = the_default_context;
+
+        /* have configuration files changed? */
+        retval = val_refresh_context(the_default_context);
+
         UNLOCK_DEFAULT_CONTEXT();
+
+        if (VAL_NO_ERROR != retval) {
+            return retval;
+        }
 
         CTX_LOCK_REFCNT(*newcontext);
         ++(*newcontext)->refcount;
         CTX_UNLOCK_REFCNT(*newcontext);
-
-        /* have configuration files changed? */
-        if (VAL_NO_ERROR != (retval = val_refresh_context(*newcontext))) {
-            return retval;
-        }
 
         val_log(*newcontext, LOG_INFO, "reusing default context");
         return retval;
@@ -280,11 +288,8 @@ val_create_context_with_conf(char *label,
 #endif
 
     if (snprintf
-        ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u",
-         (unsigned) (*newcontext)) < 0)
+        ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u", (*newcontext)) < 0)
         strcpy((*newcontext)->id, "libval");
-
-    CTX_LOCK_POL_SH((*newcontext));
 
     /* 
      * Set default configuration files 
@@ -355,8 +360,6 @@ val_create_context_with_conf(char *label,
         (*newcontext)->default_qflags |= VAL_QUERY_AC_DETAIL;
     }
 
-    CTX_UNLOCK_POL((*newcontext));
-
     val_log(*newcontext, LOG_DEBUG, 
             "val_create_context_with_conf(): Context created with %s %s %s", 
             (*newcontext)->dnsval_l->dnsval_conf,
@@ -364,19 +367,24 @@ val_create_context_with_conf(char *label,
             (*newcontext)->root_conf);
 
     if (label == NULL || is_override) {
+        /*
+         * Set the default context if this was not set earlier.
+         * We do not override a previously set default context,
+         * since that context might still be in use.
+         * We could have checked if the reference count for the
+         * previous default context was 0 before freeing it up, 
+         * but that would make the behaviour of val_create_context_with_conf()
+         * non-deterministic.
+         */
         LOCK_DEFAULT_CONTEXT();
-        old_default_context = the_default_context;
-        the_default_context = *newcontext;
+        if (the_default_context == NULL)
+            the_default_context = *newcontext;
         UNLOCK_DEFAULT_CONTEXT();
     }
     
-    if (old_default_context) {
-        val_free_context(old_default_context);
-    }
     return VAL_NO_ERROR;
 
 err:
-    CTX_UNLOCK_POL((*newcontext));
     val_free_context(*newcontext);
     *newcontext = NULL;
     return retval;
@@ -397,13 +405,13 @@ val_create_context(char *label,
  *
  * Purpose:   set up context for a query
  *
- * NOTE: This function obtains a shared lock on the context's policy.
  *
  * Parameter: results -- results for query
  *            ctx -- user supplied context, if any
  *
  * Returns:   VAL_NO_ERROR or error code to return to user
  *
+ * NOTE: This function obtains a shared lock on the context's policy. 
  */
 val_context_t *
 val_create_or_refresh_context(val_context_t *ctx)
@@ -425,8 +433,7 @@ val_create_or_refresh_context(val_context_t *ctx)
         }
     }
 
-    if (context)
-        CTX_LOCK_POL_SH(context);
+    CTX_LOCK_POL_SH(context);
 
     return context;
 }
@@ -442,6 +449,7 @@ val_free_context(val_context_t * context)
 
     if (context == NULL)
         return;
+    
     /*
      * Never free the default context 
      */
@@ -454,6 +462,10 @@ val_free_context(val_context_t * context)
     /*
      * never free context which has multiple users
      */
+    if (!CTX_LOCK_POL_EX_TRY(context)) {
+        default_or_has_refs = 1;
+    }
+
     CTX_LOCK_REFCNT(context);
     if (--context->refcount > 0)
         default_or_has_refs = 1;
@@ -461,6 +473,11 @@ val_free_context(val_context_t * context)
 
     if (default_or_has_refs)
         return;
+
+    /* 
+     * we have an exclusive lock here, but we don't bother
+     * unlocking since we're going to destroy it anyway.
+     */
 
 #ifndef VAL_NO_ASYNC
     /** cancel uses locks, so this must be before locks are destroyed */

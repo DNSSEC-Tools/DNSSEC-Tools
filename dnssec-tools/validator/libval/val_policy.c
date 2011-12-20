@@ -1886,13 +1886,9 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
         *is_override = 1;
     }
 
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_EX(ctx);
-
     if (ctx->label)
         FREE(ctx->label);
     ctx->label = newctxlab;
-
 
     destroy_valpol(ctx);
 
@@ -1929,16 +1925,15 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     }
 
     /* 
-     * Re-initialize caches 
+     * Free the query cache 
      */
-    for(q = ctx->q_list; q; q=q->qc_next) {
-        q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+    while (NULL != (q = ctx->q_list)) {
+        ctx->q_list = q->qc_next;
+        free_query_chain_structure(q);
+        q = NULL;
     }
 
     ctx->dnsval_l = dlist;
-
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_SH(ctx);
 
     val_log(ctx, LOG_DEBUG, "read_val_config_file(): Done reading validator configuration");
 
@@ -2177,13 +2172,9 @@ read_res_config_file(val_context_t * ctx)
         }
     } 
 
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_EX(ctx);
     destroy_respol(ctx);
     ctx->nslist = ns_head;
     ctx->r_timestamp = mtime;
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_SH(ctx);
 
     val_log(ctx, LOG_DEBUG, 
             "read_res_config_file(): Done reading resolver configuration");
@@ -2484,14 +2475,10 @@ read_root_hints_file(val_context_t * ctx)
     }
 #endif
 
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_EX(ctx);
     if (ctx->root_ns)
         free_name_servers(&ctx->root_ns);
     ctx->root_ns = ns_list;
     ctx->h_timestamp = mtime;
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_SH(ctx);
 
     res_sq_free_rrset_recs(&root_info);
 
@@ -2761,24 +2748,24 @@ val_add_valpolicy(val_context_t *context,
     }
    
     /* Lock exclusively */
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_EX(ctx);
+    CTX_LOCK_ACACHE(ctx);
+
+    (*pol)->pe = pol_entry;
+    (*pol)->index = index;
+
+    /* Merge this policy into the context */
+    STORE_POLICY_ENTRY_IN_LIST(pol_entry, ctx->e_pol[index]);
 
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
-        /* Should never fail when holding above locks */
         if (NULL != namename(q->qc_name_n, zone_n)) {
             q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
             if (pol_entry->exp_ttl > 0)
                 q->qc_ttl_x = pol_entry->exp_ttl;
         }
     }
-    (*pol)->pe = pol_entry;
-    (*pol)->index = index;
-
-    /* Merge this policy into the context */
-    STORE_POLICY_ENTRY_IN_LIST(pol_entry, ctx->e_pol[index]);
     
+    CTX_UNLOCK_ACACHE(ctx);
     CTX_UNLOCK_POL(ctx);
 
     return VAL_NO_ERROR;
@@ -2800,8 +2787,7 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
         return VAL_INTERNAL_ERROR;
     
     /* Lock exclusively */
-    CTX_UNLOCK_POL(ctx);
-    CTX_LOCK_POL_EX(ctx);
+    CTX_LOCK_ACACHE(ctx);
 
     /* find this policy in the context */
     prev = NULL;
@@ -2824,22 +2810,22 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
     }
     p->next = NULL;
 
-    /* Flush queries that match this name */
-    for(q=ctx->q_list; q; q=q->qc_next) {
-        /* Should never fail when holding above locks */
-        if (NULL != namename(q->qc_name_n, p->zone_n)) {
-            q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
-        }
-    }
-    
     /* free the policy */
     conf_elem_array[pol->index].free(p);
     FREE(p);
     FREE(pol);
     
+    /* Flush queries that match this name */
+    for(q=ctx->q_list; q; q=q->qc_next) {
+        if (NULL != namename(q->qc_name_n, p->zone_n)) {
+            q->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+        }
+    }
+    
     retval = VAL_NO_ERROR;
 
 err:
+    CTX_UNLOCK_ACACHE(ctx);
     CTX_UNLOCK_POL(ctx);
     
     return retval;
