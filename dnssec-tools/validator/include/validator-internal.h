@@ -339,7 +339,9 @@ extern          "C" {
 #ifdef HAVE_PTHREAD_H 
         pthread_mutex_t ref_lock;
 #endif
+#ifdef VAL_REFCOUNTS
         int   refcount;
+#endif
     } ; 
 
 #ifndef VAL_NO_ASYNC
