@@ -6805,6 +6805,7 @@ _handle_completed(val_context_t *context)
         _call_callbacks(VAL_AS_EVENT_COMPLETED, as);
         as->val_as_ctx = NULL; /* we've already removed ourselves */
         _async_status_free(as); /* no ctx, so no lock needed */
+        CTX_UNLOCK_POL(context);
     }
 }
 
@@ -6940,8 +6941,6 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
         if (NULL == added_q->qfq_query->qc_ea)
             retval = VAL_INTERNAL_ERROR;
     }
-
-    CTX_UNLOCK_POL(context);
 
     if ((VAL_NO_ERROR != retval) && (NULL != added_q))
         _async_status_free(as);
@@ -7170,23 +7169,29 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
     val_async_status           *as;
     int                         count = 0;
     val_context_t *context;
+    int retval = VAL_NO_ERROR;
 
     /*
      * get context, if needed
      */
     context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
-    if (NULL == context)
+    if (NULL == context) {
         return VAL_BAD_ARGUMENT;
+    }
 
-    if (NULL == context->as_list)
-        return VAL_NO_ERROR;
+    if (NULL == context->as_list) {
+        retval = VAL_NO_ERROR;
+        goto done;
+    }
 
     /** handle any completed requests */
     _handle_completed(context);
 
     /** might not be anything left to check now */
-    if (NULL == context->as_list)
-        return VAL_NO_ERROR;
+    if (NULL == context->as_list) {
+        retval = VAL_NO_ERROR;
+        goto done;
+    }
 
     /** if caller didn't call select, do it for them */
     if ((pending_desc == NULL) || (NULL == nfds)) {
@@ -7199,12 +7204,13 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
         nfds = &local_nfds;
 
         waiting = val_async_select(context, pending_desc, nfds, tv, 0);
-        if (waiting <= 0 )
-            return VAL_NO_ERROR; /* nothing to check */
+        if (waiting <= 0 ){
+            retval = VAL_NO_ERROR; /* nothing to check */
+            goto done;
+        }
     }
 
     CTX_LOCK_ACACHE(context);
-    CTX_LOCK_POL_SH(context);
 
     for (as = context->as_list; as; as = as->val_as_next) {
 
@@ -7217,14 +7223,17 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
         _async_check_one(as, pending_desc, nfds, flags);
     }
 
-    CTX_UNLOCK_POL(context);
     CTX_UNLOCK_ACACHE(context);
 
     /** if we checked requests, some might have completed */
     if (count)
         _handle_completed(context);
 
-    return count;
+    retval = count;
+
+done:
+    CTX_UNLOCK_POL(context);
+    return retval;
 }
 
 /** for backwards compatibility. see val_async_check_wait */
@@ -7260,6 +7269,8 @@ _async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
         _context_as_remove(context, as);
 
     _async_status_free(as);
+
+    CTX_UNLOCK_POL(context);
 }
 
 /*
