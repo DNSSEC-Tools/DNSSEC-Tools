@@ -3317,7 +3317,7 @@ prove_nonexistence(val_context_t * ctx,
                    u_char *ce_wcard,
                    struct val_digested_auth_chain *qc_proof,
                    val_status_t * status,
-                   u_int32_t *soa_ttl_x)
+                   u_int32_t *soa_ttl)
 {
     struct val_internal_result *res;
     char   name_p[NS_MAXDNAME];
@@ -3378,9 +3378,9 @@ prove_nonexistence(val_context_t * ctx,
                 int offset = the_set->rrs_data->rr_rdata_length -
                                     sizeof(u_int32_t);
                 u_char *cp = the_set->rrs_data->rr_rdata + offset;
-                VAL_GET32((*soa_ttl_x), cp);
+                VAL_GET32((*soa_ttl), cp);
             } else {
-                *soa_ttl_x = the_set->rrs_ttl_x;
+                *soa_ttl = the_set->rrs_ttl_x;
             }
         } else if (the_set->rrs_type_h == ns_t_nsec) {
             if ((!the_set->rrs_sig) ||
@@ -4880,6 +4880,7 @@ verify_and_validate(val_context_t * context,
     int    retval = VAL_NO_ERROR;
     char   name_p[NS_MAXDNAME];
     int switched = 0;
+    struct timeval tv;
 
     if ((top_qfq == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
@@ -4923,6 +4924,8 @@ verify_and_validate(val_context_t * context,
         (*results)->val_rc_flags = top_qfq->qfq_flags;
         (*results)->val_rc_status = VAL_DNS_ERROR;
         (*results)->val_rc_next = NULL;
+        gettimeofday(&tv, NULL);
+        top_q->qc_ttl_x = QUERY_BAD_CACHE_TTL + tv.tv_sec; 
         return VAL_NO_ERROR;
     }
 
@@ -5833,7 +5836,9 @@ check_proof_sanity(val_context_t * context,
     struct val_query_chain *top_q;
     val_status_t    status = VAL_DONT_KNOW;
     int             retval = VAL_NO_ERROR;
+    u_int32_t soa_ttl = 0;
     u_int32_t soa_ttl_x = 0;
+    struct timeval  tv;
 
     if (top_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -5866,13 +5871,15 @@ check_proof_sanity(val_context_t * context,
              prove_nonexistence(context, w_results, queries, &proof_res, results,
                                 top_q->qc_name_n, top_q->qc_type_h,
                                 top_q->qc_class_h, NULL, top_q->qc_proof,
-                                &status, &soa_ttl_x)))
+                                &status, &soa_ttl)))
             return retval;
     }
 
     if (proof_res) {
         proof_res->val_rc_status = status;
         if (val_istrusted(status)) {
+            gettimeofday(&tv, NULL);
+            soa_ttl_x = soa_ttl + tv.tv_sec;
             SET_MIN_TTL(top_q->qc_ttl_x, soa_ttl_x);
         }
     }
@@ -6011,8 +6018,10 @@ check_alias_sanity(val_context_t * context,
     u_char *p;
     int   is_same_name;
     u_char temp_name[NS_MAXCDNAME];
+    u_int32_t soa_ttl = 0;
     u_int32_t soa_ttl_x = 0;
     struct val_query_chain *top_q;
+    struct timeval  tv;
 
     if (top_qfq == NULL || results == NULL)
         return VAL_BAD_ARGUMENT;
@@ -6183,13 +6192,15 @@ check_alias_sanity(val_context_t * context,
                  prove_nonexistence(context, w_results, queries, &proof_res,
                                     results, qname_n, top_q->qc_type_h,
                                     top_q->qc_class_h, NULL, top_q->qc_proof,
-                                    &status, &soa_ttl_x))) {
+                                    &status, &soa_ttl))) {
                 goto err;
             }
 
             if (proof_res) {
                 proof_res->val_rc_status = status;
                 if (val_istrusted(status)) {
+                    gettimeofday(&tv, NULL);
+                    soa_ttl_x = soa_ttl + tv.tv_sec;
                     SET_MIN_TTL(top_q->qc_ttl_x, soa_ttl_x);
                 }
             } else {
