@@ -281,11 +281,11 @@ long            res_timeout(struct name_server *ns);
  */
 int             res_nsfallback(int transaction_id, struct timeval *closest_event,
                                const char *name, const u_int16_t class_h,
-                               const u_int16_t type_h, int *edns0);
+                               const u_int16_t type_h);
 int             res_nsfallback_ea(struct expected_arrival *,
                                   struct timeval *closest_event, 
                                   const char *name, const u_int16_t class_h, 
-                                  const u_int16_t type_h, int *edns0);
+                                  const u_int16_t type_h);
 
 /*
  * for a given ea, update data structures needed by select

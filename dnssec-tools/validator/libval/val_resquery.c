@@ -2396,7 +2396,7 @@ val_res_nsfallback(val_context_t *context,
                    struct val_query_chain *matched_q, const char *name_p,
                    struct timeval *closest_event)
 {
-    int edns0, ret_val;
+    int ret_val;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
@@ -2414,12 +2414,12 @@ val_res_nsfallback(val_context_t *context,
     if (matched_q->qc_ea)
         ret_val = res_nsfallback_ea(matched_q->qc_ea, closest_event,
                                     name_p, matched_q->qc_class_h, 
-                                    matched_q->qc_type_h, &edns0);
+                                    matched_q->qc_type_h);
     else
 #endif
         ret_val = res_nsfallback(matched_q->qc_trans_id, closest_event,
                                  name_p, matched_q->qc_class_h, 
-                                 matched_q->qc_type_h, &edns0);
+                                 matched_q->qc_type_h);
     if (-1 == ret_val) {
         matched_q->qc_state = Q_RESPONSE_ERROR;
         val_res_cancel(matched_q);
@@ -2428,15 +2428,6 @@ val_res_nsfallback(val_context_t *context,
         val_log(context, LOG_DEBUG,
                 "val_res_nsfallback(): Doing EDNS0 fallback"); 
         matched_q->qc_flags |= VAL_QUERY_EDNS0_FALLBACK;
-        if (edns0) {
-            /* reset the flag if enabled */
-            if(matched_q->qc_flags & VAL_QUERY_NO_EDNS0)
-                matched_q->qc_flags ^= VAL_QUERY_NO_EDNS0;
-        } else {
-            /* set the flag if disabled */
-            if (!(matched_q->qc_flags & VAL_QUERY_NO_EDNS0))
-                matched_q->qc_flags |= VAL_QUERY_NO_EDNS0;
-        }
     }
 }
 
@@ -2679,6 +2670,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
         }
 
     CTX_UNLOCK_ACACHE(context);
+    CTX_UNLOCK_POL(context);
 
     return VAL_NO_ERROR;
 }
