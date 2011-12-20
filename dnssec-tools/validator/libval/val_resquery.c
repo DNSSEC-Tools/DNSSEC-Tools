@@ -239,19 +239,18 @@ find_matching_glue(val_context_t *context,
                     break;
             }
        
-            if (as && glueptr->qc_state == Q_ANSWERED) {
-                if (VAL_NO_ERROR == (retval =
+            if (as && glueptr->qc_state == Q_ANSWERED &&
+               (VAL_NO_ERROR == (retval =
                         extract_glue_from_rdata(as->val_ac_rrset.ac_data->rrs_data,
-                                            pending_ns))) {
+                                            pending_ns)))) {
                     val_log(context, LOG_DEBUG,
                             "find_matching_glue(): successfully fetched glue (%s) for %s", 
                             p_type(glue_type), name_p);
-                } else {
-                    val_log(context, LOG_DEBUG, 
-                            "find_matching_glue(): Could not fetch glue (%s) for %s", 
-                            p_type(glue_type), name_p);
-                    glueptr->qc_state = Q_REFERRAL_ERROR;
-                }
+            } else {
+                val_log(context, LOG_DEBUG, 
+                        "find_matching_glue(): Could not fetch glue (%s) for %s", 
+                        p_type(glue_type), name_p);
+                glueptr->qc_state = Q_REFERRAL_ERROR;
             }
 
             if (glue_type == ns_t_a)
@@ -294,24 +293,23 @@ merge_glue_in_referral(val_context_t *context,
     if (pc->qc_referral == NULL) 
         return VAL_NO_ERROR;
     
-    if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_A_GLUE, qfq_pc, bucket, queries)))
-        return retval;
-
-    if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_AAAA_GLUE, qfq_pc, bucket, queries)))
-        return retval;
-
-    if (pc->qc_state & Q_WAIT_FOR_GLUE) {
-        /* we're not done with fetching glue  */
-        return VAL_NO_ERROR;
-    }
-
-    /*
-     * If we reach here we've processed both A and AAAA glue
-     * check if we have at least some data to work with 
-     */
     pending_ns = pc->qc_referral->cur_pending_glue_ns;
     if (pending_ns) {
+        if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_A_GLUE, qfq_pc, bucket, queries)))
+            return retval;
 
+        if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_AAAA_GLUE, qfq_pc, bucket, queries)))
+            return retval;
+
+        if (pc->qc_state & Q_WAIT_FOR_GLUE) {
+            /* we're not done with fetching glue  */
+            return VAL_NO_ERROR;
+        }
+
+        /*
+         * If we reach here we've processed both A and AAAA glue
+         * check if we have at least some data to work with 
+         */
         if (ns_name_ntop(pending_ns->ns_name_n, name_p,
                      sizeof(name_p)) < 0) {
             strncpy(name_p, "unknown/error", sizeof(name_p)-1); 
@@ -454,12 +452,13 @@ fix_glue(val_context_t * context,
             }
             if (next_q->qfq_query->qc_state >= Q_ERROR_BASE) {
                 val_log(context, LOG_DEBUG,
-                        "fix_glue(): Error fetching {%s %s(%d) %s(%d)} and no pending glue (state: %d)", name_p,
+                        "fix_glue(): Error fetching {%s %s(%d) %s(%d)} and no pending glue (state: %d flags :%x)", name_p,
                         p_class(next_q->qfq_query->qc_class_h),
                         next_q->qfq_query->qc_class_h,
                         p_type(next_q->qfq_query->qc_type_h),
                         next_q->qfq_query->qc_type_h,
-                        next_q->qfq_query->qc_state);
+                        next_q->qfq_query->qc_state,
+                        next_q->qfq_query->qc_flags);
             }
         }
         if (next_q->qfq_query->qc_state < Q_ANSWERED) {
