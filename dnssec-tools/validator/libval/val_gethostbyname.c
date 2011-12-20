@@ -721,6 +721,7 @@ val_gethostbyname2_r(val_context_t * context,
     }
     val_log(ctx, LOG_DEBUG, "val_gethostbyname2_r returned success, herrno = %d, val_status = %s", 
                 *h_errnop, val_status? p_val_status(*val_status) : NULL); 
+    CTX_UNLOCK_POL(ctx);
     return 0;
 
 err:

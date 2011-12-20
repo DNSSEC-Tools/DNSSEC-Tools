@@ -210,12 +210,13 @@ val_get_rrset(val_context_t *context,
         val_log(ctx, LOG_INFO,
                 "get_addrinfo_from_dns(): val_resolve_and_check failed - %s",
                 p_val_err(retval));
-        CTX_UNLOCK_POL(ctx); 
-        return retval;
+        goto err; 
     }
-    CTX_UNLOCK_POL(ctx); 
 
     retval = val_get_answer_from_result(ctx, name, class_h, type_h, &results,
                                         answers, 0);
+
+err:
+    CTX_UNLOCK_POL(ctx);
     return retval;
 } 

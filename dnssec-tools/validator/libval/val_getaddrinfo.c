@@ -1081,7 +1081,7 @@ val_getaddrinfo(val_context_t * context,
                                        hints, res, val_status);
     }
 
-    CTX_UNLOCK_POL(ctx); /* when was it locked? */
+    CTX_UNLOCK_POL(ctx);
     return retval;
 }                               /* val_getaddrinfo() */
 
