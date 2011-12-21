@@ -710,9 +710,6 @@ find_nslist_for_query(val_context_t * context,
     struct name_server *ref_ns_list;
     int             ret_val;
     struct val_query_chain *next_q;
-    u_char       *test_n;
-    u_int16_t       tzonestatus;
-    u_int32_t ttl_x = 0;
     struct name_server *ns;
     u_char ns_cred = SR_CRED_UNSET;
 
@@ -790,46 +787,14 @@ find_nslist_for_query(val_context_t * context,
 done:
 
     /*
-     * Only set the CD and EDNS0 options if we feel the server 
-     * is capable of handling DNSSEC
+     * Set the CD and EDNS0 options
      */
-
-    if (next_q->qc_ns_list) { 
-        int edns0 = 0;
-        /* if query is for some DNSSEC meta data then we always turn on EDNS0 */
-        if (DNSSEC_METADATA_QTYPE(next_q->qc_type_h)) {
-            edns0 = 1;
-        } else { 
-            if (next_q->qc_zonecut_n != NULL)
-                test_n = next_q->qc_zonecut_n;
-            else
-                test_n = next_q->qc_name_n;
-                    
-            /* check if the zone has a security expectation of validate */
-            if (VAL_NO_ERROR != (ret_val = 
-                    get_zse(context, test_n, next_q->qc_flags, 
-                            &tzonestatus, NULL, &ttl_x))) {
-                    return ret_val;
-            }
-            SET_MIN_TTL(next_q->qc_ttl_x, ttl_x);
-
-            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
-                edns0 = 1;
-            }
-        }
-        if (edns0) {
-            val_log(context, LOG_DEBUG,
-                    " find_nslist_for_query(): Setting D0 bit and using EDNS0");
-
-            next_q->qc_flags |= VAL_QUERY_EDNS0;
-
-            for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
-                ns->ns_edns0_size = (context && context->g_opt)? 
+    for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
+        ns->ns_edns0_size = (context && context->g_opt)? 
                     context->g_opt->edns0_size : RES_EDNS0_DEFAULT;
-                ns->ns_options |= RES_USE_DNSSEC;
-            }
-        }
+        ns->ns_options |= RES_USE_DNSSEC;
     }
+
     return VAL_NO_ERROR;
 }
 
@@ -1086,9 +1051,6 @@ follow_referral_or_alias_link(val_context_t * context,
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
 
-        /* don't re-use EDNS0 status from alias */
-        matched_q->qc_flags |= VAL_QUERY_EDNS0;
-
         return VAL_NO_ERROR;
     } 
 
@@ -1176,30 +1138,6 @@ follow_referral_or_alias_link(val_context_t * context,
             return ret_val;
         }
         SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
-
-        /* 
-         * If the trust point for the zone we are entering into 
-         * is different from the zone we're at
-         * ensure that we set the VAL_QUERY_EDNS0 status
-         */
-        if (tp && !(matched_q->qc_flags & VAL_QUERY_EDNS0)) {
-            u_char *tp_ref = NULL;
-            if (VAL_NO_ERROR != (ret_val = 
-                find_trust_point(context, referral_zone_n, 
-                                 &tp_ref, &ttl_x))) {
-                return ret_val;
-            }
-            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
-
-            if (tp_ref && namecmp(tp, tp_ref)) { 
-                val_log(context, LOG_DEBUG, 
-                        "follow_referral_or_alias_link(): Re-enabling EDNS0 where previously disabled");
-                matched_q->qc_flags |= VAL_QUERY_EDNS0;
-            }
-            if (tp_ref) {
-                FREE(tp_ref);
-            } 
-        }
 
         if (tp && tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
             
@@ -1596,8 +1534,6 @@ digest_response(val_context_t * context,
     struct qname_chain **qnames;
     int             zonecut_was_modified = 0;
     struct val_query_chain *matched_q;
-    u_int16_t tzonestatus;
-    u_int32_t ttl_x;
     char query_name_p[NS_MAXDNAME];
     char rrs_zonecut_p[NS_MAXDNAME];
     char name_p[NS_MAXDNAME];
@@ -1706,29 +1642,10 @@ digest_response(val_context_t * context,
             matched_q->qc_state = Q_RESPONSE_ERROR; 
             goto done;
         }
-        /*
-         * We got a response with no records 
-         * or we got only additional section data (e.g. EDNS0 opt records)
-         * Check if EDNS was not used when it should have
-         */
-        if (!(matched_q->qc_flags & VAL_QUERY_EDNS0) &&
-            !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) { 
-            if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, query_name_n, matched_q->qc_flags, 
-                        &tzonestatus, NULL, &ttl_x))) { 
-                return ret_val;
-            }
-            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
-            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
-                matched_q->qc_flags |= VAL_QUERY_EDNS0;
-                matched_q->qc_state = Q_INIT;
-                ret_val = VAL_NO_ERROR;
-                goto done;
-            }
-        }
 
         /*
-         * Else this is a non-existence result
+         * We got a response with no records 
+         * This is a non-existence result
          * Type is decided by the rcode, which we will check later
          */
         matched_q->qc_state = Q_ANSWERED;
@@ -2131,12 +2048,6 @@ digest_response(val_context_t * context,
                 referral_seen = FALSE;
             } else {
                 /* XXX else this is a DS non-existence proof and it is a referral */
-                /* Don't enable EDNS0 below this level */
-                val_log(context, LOG_DEBUG, "digest_response(): Disabling further EDNS0 for {%s %s(%d) %s(%d)}",
-                        query_name_p, p_class(query_class_h), query_class_h,
-                        p_type(query_type_h), query_type_h); 
-                if (matched_q->qc_flags & VAL_QUERY_EDNS0)
-                    matched_q->qc_flags ^= VAL_QUERY_EDNS0;
             }
 
         } else {
@@ -2170,33 +2081,6 @@ digest_response(val_context_t * context,
 
     } else {
 
-        /*
-         * if we hadn't enabled EDNS0 but we got a response for a zone 
-         * where DNSSEC is enabled, we should retry with EDNS0 enabled,
-         * but only if DNSSEC is being requested.
-         * (This can occur if a name server a name server is 
-         * authoritative for the parent zone as well as the 
-         * child zone, or if one of the name servers reached while 
-         * following referrals is also recursive)
-         */
-        if (zonecut_was_modified && 
-            !(matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE) &&
-            !(matched_q->qc_flags & VAL_QUERY_EDNS0) &&
-            !(matched_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) {
-            if (VAL_NO_ERROR != (ret_val =
-                get_zse(context, query_name_n, matched_q->qc_flags, 
-                        &tzonestatus, NULL, &ttl_x))) { 
-                return ret_val;
-            }
-            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
-            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) { 
-                matched_q->qc_flags |= VAL_QUERY_EDNS0;
-                matched_q->qc_state = Q_INIT;
-                ret_val = VAL_NO_ERROR;
-                goto done;
-            }
-        }
-        
         di_response->di_answers = copy_rrset_rec_list(learned_answers);
         di_response->di_proofs = copy_rrset_rec_list(learned_proofs);
         

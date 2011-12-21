@@ -78,7 +78,7 @@
 
 /* 
  * The flags in VAL_QFLAGS_CACHE_PREF_MASK: 
- * (VAL_QUERY_RECURSE, VAL_QUERY_EDNS0, VAL_QUERY_SKIP_CACHE) are special 
+ * (VAL_QUERY_RECURSE, VAL_QUERY_SKIP_CACHE) are special 
  * If we are not looking for these flags, then return what ever we find 
  * If we are looking for this flag, only return a node that has this 
  * flag set
@@ -642,7 +642,6 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     /* use only those flags that affect caching */
     struct val_query_chain *added_q = NULL;
     int retval;
-    u_int32_t tflags = flags;
     
     /*
      * sanity checks 
@@ -652,15 +651,10 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
 
     *added_qfq = NULL;
 
-    /* if this is DNSSEC meta-data then EDNS0 must be set */
-    if (DNSSEC_METADATA_QTYPE(type_h)) {
-        tflags |= VAL_QUERY_EDNS0;
-    }
-
     /*
      * Check if query already exists 
      */
-    new_qfq = check_in_qfq_chain(context, queries, name_n, type_h, class_h, tflags); 
+    new_qfq = check_in_qfq_chain(context, queries, name_n, type_h, class_h, flags); 
     if (new_qfq == NULL) {
         /*
          * Add to the cache and to the qfq chain 
@@ -668,7 +662,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if (VAL_NO_ERROR !=
                 (retval =
                     add_to_query_chain(context, name_n, type_h, class_h,
-                                    tflags, &added_q)))
+                                    flags, &added_q)))
             return retval;
 
         new_qfq = (struct queries_for_query *) MALLOC (sizeof(struct queries_for_query));
@@ -678,7 +672,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
 
         added_q->qc_refcount++;
         new_qfq->qfq_query = added_q;
-        new_qfq->qfq_flags = tflags;
+        new_qfq->qfq_flags = flags;
         new_qfq->qfq_next = *queries;
         *queries = new_qfq;
     } 
@@ -4761,12 +4755,12 @@ int switch_to_root(val_context_t * context,
 
     /* reset the flags that are not in the user mask */
     matched_q->qc_flags &= VAL_QFLAGS_USERMASK;
-    matched_q->qc_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE|VAL_QUERY_EDNS0);
+    matched_q->qc_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
     /*
      * Recurse from root for all additional queries sent in
      * in relation to this query; e.g. queries for DNSKEYs, DS etc 
      */
-    matched_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE|VAL_QUERY_EDNS0);
+    matched_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
     val_log(context, LOG_INFO,
             "switch_to_root(): Re-initiating query from root for {%s %s %s}",
             name_p,
@@ -5279,30 +5273,11 @@ verify_and_validate(val_context_t * context,
                 val_log(context, LOG_INFO,
                         "verify_and_validate(): Attempting DLV validation");
 
-                /* 
-                 * If we did not use EDNS earlier we wont have the DNSSEC
-                 * meta-data to prove non-existence. So retry with EDNS0 in this case
-                 */
                 top_q->qc_flags |= VAL_QUERY_USING_DLV; 
-
-                /* If we were already using EDNS0 don't redo */
-                if (!(top_q->qc_respondent_server_options & RES_USE_DNSSEC) && 
-                    !(top_q->qc_flags & VAL_QUERY_EDNS0_FALLBACK)) {
-
-                    clear_query_chain_structure(top_q);
-                    top_q->qc_flags |= (VAL_QUERY_SKIP_CACHE|VAL_QUERY_EDNS0);
-
-                    val_log(context, LOG_DEBUG,
-                            "verify_and_validate(): EDNS0 was not used; re-issuing query");
-
-                    res->val_rc_rrset = NULL;
-                    goto query_reset;
-                }
 
                 /* set the DLV flag */
                 res->val_rc_flags |= VAL_QUERY_USING_DLV; 
                 res->val_rc_rrset->val_ac_status = VAL_AC_INIT;
-                /* XXX need to turn on EDNS0 */
                 if (VAL_NO_ERROR !=
                     (retval = build_pending_query(context, queries, 
                                                   res->val_rc_rrset, 
@@ -5431,6 +5406,8 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     struct domain_info *response = NULL;
     char                name_p[NS_MAXDNAME];
     int                 retval;
+
+    val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
     if (next_q->qfq_query->qc_state < Q_ANSWERED)
         *data_missing = 1;

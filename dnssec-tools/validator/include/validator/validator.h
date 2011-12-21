@@ -68,8 +68,7 @@ struct timeval;
  */
 #define VAL_QFLAGS_CACHE_PREF_MASK  0x00ff0000
 #define VAL_QUERY_RECURSE           0x00010000
-#define VAL_QUERY_EDNS0             0x00020000
-#define VAL_QUERY_SKIP_CACHE        0x00040000
+#define VAL_QUERY_SKIP_CACHE        0x00020000
 
 /*
  * Flags in this bit mask are ignored when finding
