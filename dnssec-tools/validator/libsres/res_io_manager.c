@@ -459,32 +459,32 @@ res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event,
                 if (edns0_fallback[i] == 0) {
                     /* try without EDNS0 */
                     temp->ea_ns->ns_options ^= RES_USE_DNSSEC;
-                    if (temp->ea_signed)
-                        FREE(temp->ea_signed);
-                    temp->ea_signed = NULL;
-                    temp->ea_signed_length = 0;
-
-                    if (res_create_query_payload(temp->ea_ns,
-                                    name, class_h, type_h,
-                                    &temp->ea_signed,
-                                    &temp->ea_signed_length) < 0)
-                        break;
                 }
                 temp->ea_remaining_attempts++;
-                if (temp->ea_socket != INVALID_SOCKET)
-                    CLOSESOCK(temp->ea_socket);
-                temp->ea_socket = INVALID_SOCKET;
-
                 break;
             }
         }
     }
 
+    if (temp->ea_signed)
+        FREE(temp->ea_signed);
+    temp->ea_signed = NULL;
+    temp->ea_signed_length = 0;
+    if (res_create_query_payload(temp->ea_ns,
+                name, class_h, type_h,
+                &temp->ea_signed,
+                &temp->ea_signed_length) < 0) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""could not create query payload");
+        return -1;
+    }
+    if (temp->ea_socket != INVALID_SOCKET)
+        CLOSESOCK(temp->ea_socket);
+    temp->ea_socket = INVALID_SOCKET;
+
     res_log(NULL, LOG_INFO, "libsres: "
             "ns fallback for {%s %s(%d) %s(%d)}, edns0 size:%d",
             name, p_class(class_h), class_h, p_type(type_h), type_h,
             temp->ea_ns->ns_edns0_size);
-
 
     if (temp->ea_remaining_attempts == 0) {
         res_log(NULL, LOG_DEBUG, "libsres: ""no remaining attempts");
@@ -956,7 +956,6 @@ wait_for_res_data(fd_set * pending_desc, struct timeval *closest_event)
     int            ready;
 
     res_log(NULL,LOG_DEBUG,"libsres: ""wait_for_res_data");
-
     /*
      * Set the timeout in case nothing arrives.  The timeout will expire
      * prior to the next event that res_io_check needs to initiate.  If
