@@ -14,6 +14,7 @@
 #include "val_context.h"
 #include "val_assertion.h"
 #include "val_parse.h"
+#include "res_support.h"
 
 #define STRIP_LABEL(name, newname) do {\
     int label_len;\

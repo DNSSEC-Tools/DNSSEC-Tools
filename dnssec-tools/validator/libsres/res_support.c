@@ -341,6 +341,188 @@ u_int16_t libsres_random(void)
     return rnd;
 }
 
+int
+label_bytes_cmp(const u_char * field1, size_t length1, 
+                const u_char * field2, size_t length2)
+{
+    u_char        buffer1[NS_MAXCDNAME];
+    u_char        buffer2[NS_MAXCDNAME];
+    size_t        i;
+    size_t        min_len;
+    int           ret_val;
+
+    /*
+     * If the first n bytes are the same, then the length determines
+     * the difference - if any 
+     */
+    if (length1 == 0 || length2 == 0)
+        return length1 - length2;
+
+    min_len = (length1 < length2) ? length1 : length2;
+
+    /*
+     * Compare this label's first min_len bytes 
+     */
+    /*
+     * Convert to lower case first 
+     */
+    memcpy(buffer1, field1, min_len);
+    for (i = 0; i < min_len; i++)
+        if (isupper(buffer1[i]))
+            buffer1[i] = tolower(buffer1[i]);
+
+    memcpy(buffer2, field2, min_len);
+    for (i = 0; i < min_len; i++)
+        if (isupper(buffer2[i]))
+            buffer2[i] = tolower(buffer2[i]);
+
+    ret_val = memcmp(buffer1, buffer2, min_len);
+
+    /*
+     * If they differ, propgate that 
+     */
+    if (ret_val != 0)
+        return ret_val;
+    /*
+     * If the first n bytes are the same, then the length determines
+     * the difference - if any 
+     */
+    return length1 - length2;
+}
+
+int
+labelcmp(const u_char * name1, const u_char * name2, size_t label_cnt)
+{
+    /*
+     * Compare two names, assuming same number of labels in each 
+     */
+    size_t             length1;
+    size_t             length2;
+    const u_char  *ptr1[256];
+    const u_char  *ptr2[256];
+    size_t offset1 = 0;
+    size_t offset2 = 0;
+    size_t i;
+    
+    length1 = (int) (name1 ? name1[0] : 0);
+    length2 = (int) (name2 ? name2[0] : 0);
+
+    if (length1 == 0 || length2 == 0)
+        return length1 - length2;
+
+    if (label_cnt > 256) {
+        return -1;
+    }
+    
+    /* mark all the label start points */
+    for(i=0; i<label_cnt; i++) {
+        ptr1[i] = &name1[offset1];
+        ptr2[i] = &name2[offset2];
+        offset1 += name1[offset1]+1;
+        offset2 += name2[offset2]+1; 
+    }
+    
+    /* start from the last label, work upwards */
+    while (label_cnt > 0) {
+        int retval;
+
+        length1 = *ptr1[label_cnt-1];
+        length2 = *ptr2[label_cnt-1]; 
+
+        if (length1 == 0 || length2 == 0) {
+            retval = length1 - length2;
+        } else {
+            retval = label_bytes_cmp(&ptr1[label_cnt-1][1], 
+                                     length1,
+                                     &ptr2[label_cnt-1][1],
+                                     length2);
+        }
+
+        if (retval != 0)
+            return retval;
+
+        label_cnt--; 
+    }
+
+    /* all labels are identical */
+    return 0;
+}
+
+/*
+ * compare DNS wire format names
+ *
+ * returns
+ *      <0 if name1 is before name2
+ *       0 if equal
+ *      >0 if name1 is after name2
+ */
+int
+namecmp(const u_char * name1, const u_char * name2)
+{
+    size_t             labels1 = 1;
+    size_t             labels2 = 1;
+    size_t             index1 = 0;
+    size_t             index2 = 0;
+    size_t             i;
+    size_t             label_cnt;
+    size_t             ldiff;
+    int             ret_val;
+
+    /*
+     * deal w/any null ptrs 
+     */
+    if (name1 == NULL) {
+        if (name2 == NULL)
+            return 0;
+        else
+            return -1;
+    } else {
+        if (name2 == NULL)
+            return 1;
+    }
+
+    /*
+     * count labels 
+     */
+    for (; name1[index1]; index1 += (int) name1[index1] + 1)
+        labels1++;
+    for (; name2[index2]; index2 += (int) name2[index2] + 1)
+        labels2++;
+
+    index1 = 0;
+    index2 = 0;
+
+    /*
+     * find index in longer name where the number of labels is equal 
+     */
+    if (labels1 > labels2) {
+        label_cnt = labels2;
+        ldiff = labels1 - labels2;
+        for (i = 0; i < ldiff; i++)
+            index1 += name1[index1] + 1;
+    }
+    else {
+        label_cnt = labels1;
+        ldiff = labels2 - labels1;
+        for (i = 0; i < ldiff; i++)
+            index2 += name2[index2] + 1;
+    }
+
+    /*
+     * compare last N labels 
+     */
+    ret_val = labelcmp(&name1[index1], &name2[index2], label_cnt);
+
+    if (ret_val != 0)
+        return ret_val;
+
+    /*
+     * If one dname is a "proper suffix" of the other,
+     * the shorter comes first 
+     */
+    return labels1 - labels2;
+}
+
 /*
  * using val_log for logging introduces a circular dependency. Default to
  * using stderr for logging unless USE_LIBVAL_LOGGING is defined.
