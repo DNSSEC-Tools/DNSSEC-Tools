@@ -384,6 +384,16 @@ res_log(void *dont_care, int level, const char *template, ...)
 
 /** pass messages on to val_log... */
 void
+res_log_ap(void *dont_care, int level, const char *template, va_list ap)
+{
+    if (NULL == template)
+        return;
+
+    val_log_ap((val_context_t*)dont_care, level, template, ap);
+}
+
+/** pass messages on to val_log... */
+void
 res_log(void *dont_care, int level, const char *template, ...)
 {
     va_list         ap;
