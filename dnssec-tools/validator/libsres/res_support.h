@@ -80,6 +80,8 @@ u_int16_t       libsres_random(void);
 int             libsres_msg_getflag(ns_msg han, int flag);
 
 void            res_log(void *dont_care, int level, const char *template, ...);
+void            res_log_ap(void *dont_care, int level, const char *template,
+                           va_list ap);
 
 
 #endif                          /* RES_SUPPORT_H */
