@@ -30,6 +30,7 @@
 #include "val_support.h"
 #include "val_resquery.h"
 #include "val_cache.h"
+#include "res_support.h"
 
 struct zone_ns_map_t {
     u_char        zone_n[NS_MAXCDNAME];

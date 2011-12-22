@@ -59,11 +59,6 @@ void            my_free(void *p, char *filename, int lineno);
 void           *my_malloc(size_t t, char *filename, int lineno);
 char           *my_strdup(const char *str, char *filename, int lineno);
 
-int             label_bytes_cmp(const u_char * field1, size_t length1,
-                                const u_char * field2, size_t length2);
-int             labelcmp(const u_char * name1, const u_char * name2, 
-                        size_t label_cnt);
-int             namecmp(const u_char * name1, const u_char * name2);
 u_char *      namename(u_char * big_name, u_char * little_name);
 #ifdef LIBVAL_NSEC3
 void            base32hex_encode(u_char * in, size_t inlen,
