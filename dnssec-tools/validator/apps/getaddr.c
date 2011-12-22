@@ -168,10 +168,8 @@ _callback(void *callback_data, int eai_retval, struct addrinfo *res,
     *gas->vstatus = val_status;
     gas->done = 1;
 
-    /*
-    printf("_callback %p %d %p %d\n", callback_data, eai_retval, res,
+    val_log(NULL, LOG_DEBUG, "_callback %p %d %p %d\n", callback_data, eai_retval, res,
            val_status);
-    */
 
     return 0; /* OK */
 }
