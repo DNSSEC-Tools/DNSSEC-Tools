@@ -293,7 +293,7 @@ val_create_context_with_conf(char *label,
 #endif
 
     if (snprintf
-        ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u", (*newcontext)) < 0)
+        ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u", (u_int)(*newcontext)) < 0)
         strcpy((*newcontext)->id, "libval");
 
     /* 
