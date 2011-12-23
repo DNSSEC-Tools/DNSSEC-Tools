@@ -2376,16 +2376,13 @@ $cronus = str2time($cronus);
 sub ksk_phaser
 {
 	my $rname = shift;		# Zone name.
-	my $rrr = shift;		# Reference to rollrec.
-
-	my %rr;				# Rollrec hash.
+	my $rrr	  = shift;		# Reference to rollrec.
 	my $ph;				# Zone's current rollover phase.
 
 	#
 	# Get this rollrec record's current phase.
 	#
-	%rr = %$rrr;
-	$ph = $rr{'kskphase'};
+	$ph = $rrr->{'kskphase'};
 
 	#
 	# Work on this rollrec's phase.
@@ -3097,6 +3094,7 @@ sub phasecmd
 			# Execute the phase's locally defined program.
 			#
 			$ret = localprog($rname,$cmd,$cmdargs,$phase);
+
 			#
 			# Stay in this phase if this command didn't succeed.
 			#
@@ -3135,7 +3133,7 @@ sub phasecmd
 	#
 	# Return the phase number we should be in.
 	#
-	return($phasenum);
+	return($newphase);
 }
 
 #-----------------------------------------------------------------------------
@@ -3152,6 +3150,11 @@ sub phasewait
 	my $rrr	      = shift;			# Reference to rollrec.
 	my $phase     = shift;			# Rollover phase.
 	my $phasetype = shift;			# Rollover phase type.
+
+	#
+	# Make sure we've got the latest and greatest rollrec.
+	#
+	$rrr = rollrec_fullrec($rname);
 
 	#
 	# Check if we can go to the next rollover phase.  If not, we'll
@@ -3189,7 +3192,7 @@ sub zskphase
 	my $rrr	  = shift;				# Rollrec reference.
 	my $phase = shift;				# New phase.
 
-	my $phasedesc = rollmgr_get_phase('ZSK', $phase); # human phase descr
+	my $phasedesc = rollmgr_get_phase('ZSK',$phase); # Human phase descr.
 
 	my %rr = %$rrr;					# Rollrec hash.
 
@@ -3277,8 +3280,7 @@ sub zskphase
 	#
 	# Reset the phasestart field.
 	#
-#	rollrec_settime($rname,0);
-rollrec_settime($rname);
+	rollrec_settime($rname);
 	rollrec_write();
 	rollrec_close();
 	rollrec_read($rollrecfile);
@@ -3317,7 +3319,7 @@ sub kskphase
 	$phasedesc = " ($phasedesc)";
 	$phasedesc = '' if($phasedesc eq ' ()');
 
-	if($phase eq 'normal')
+	if($phase == 1)
 	{
 		rolllog_log(LOG_TMI,$rname,"starting KSK rollover");
 	}
@@ -3391,8 +3393,7 @@ sub kskphase
 	#
 	# Reset the phasestart field.
 	#
-#	rollrec_settime($rname,0);
-rollrec_settime($rname);
+	rollrec_settime($rname);
 	rollrec_write();
 	rollrec_close();
 	rollrec_read($rollrecfile);
