@@ -84,7 +84,7 @@
 
 int             read_root_hints_file(val_context_t * ctx);
 int             read_res_config_file(val_context_t * ctx);
-int             read_val_config_file(val_context_t * ctx, char *scope, int *is_override);
+int             read_val_config_file(val_context_t * ctx, char *scope);
 void            destroy_valpol(val_context_t * ctx);
 void            destroy_respol(val_context_t * ctx);
 struct hosts   *parse_etc_hosts(const char *name);

@@ -85,26 +85,16 @@ static int
 val_refresh_validator_policy(val_context_t * context)
 {
     struct dnsval_list *dnsval_l;
-    int is_override = 0;
 
     if (context == NULL) 
         return VAL_NO_ERROR;
 
-    if (read_val_config_file(context, context->label, &is_override) != VAL_NO_ERROR) {
+    if (read_val_config_file(context, context->label) != VAL_NO_ERROR) {
         for(dnsval_l = context->dnsval_l; dnsval_l; dnsval_l=dnsval_l->next)
             dnsval_l->v_timestamp = -1;
         val_log(context, LOG_WARNING, 
                 "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
     }
-
-    /*
-     * We do not override a previously set default context,
-     * since that context might still be in use.
-     * We could have checked if the reference count for the
-     * previous default context was 0 before freeing it up, 
-     * but that would make the behaviour of this function 
-     * non-deterministic.
-     */
 
     return VAL_NO_ERROR; 
 }
@@ -206,7 +196,6 @@ val_create_context_internal( char *label,
 {
     int             retval;
     char *base_dnsval_conf = NULL;
-    int is_override = 0;
 
 #ifdef WIN32 
     if (!wsaInitialized) {
@@ -352,7 +341,7 @@ val_create_context_internal( char *label,
     (*newcontext)->dnsval_l->next = NULL;
     
     if ((retval =
-         read_val_config_file(*newcontext, label, &is_override)) != VAL_NO_ERROR) {
+         read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
         goto err;
     }
 
@@ -367,7 +356,7 @@ val_create_context_internal( char *label,
             (*newcontext)->resolv_conf,
             (*newcontext)->root_conf);
 
-    if (label == NULL || is_override) {
+    if (label == NULL) {
         /*
          * Set the default context if this was not set earlier.
          * We do not override a previously set default context,

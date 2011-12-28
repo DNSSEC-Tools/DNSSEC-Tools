@@ -1793,7 +1793,7 @@ err:
  * Precedence is environment, app and user
  */
 int
-read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
+read_val_config_file(val_context_t * ctx, char *scope)
 {
     struct policy_overrides *overrides;
     struct policy_overrides *t;
@@ -1806,7 +1806,7 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
     char *newctxlab;
     struct val_query_chain *q;
    
-    if (ctx == NULL || is_override == NULL)
+    if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
     
     if (ctx->dnsval_l && ctx->dnsval_l->dnsval_conf)
@@ -1828,7 +1828,6 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
 
     overrides = NULL;
     g_opt = NULL;
-    *is_override = 0;
 
     while(dnsval_c) {
         struct dnsval_list *added_list = NULL;
@@ -1879,11 +1878,6 @@ read_val_config_file(val_context_t * ctx, char *scope, int *is_override)
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
-    }
-
-    if (label != scope) {
-        /* check if the pointer has changed */
-        *is_override = 1;
     }
 
     if (ctx->label)
