@@ -486,26 +486,23 @@ void
 val_free_context(val_context_t * context)
 {
     struct val_query_chain *q;
-    int default_or_has_refs = 0;
+    int has_refs = 0;
 
     if (context == NULL)
         return;
     
     /*
-     * Never free the default context 
+     * never free context that has multiple users
      */
     LOCK_DEFAULT_CONTEXT();
-    if (context == the_default_context) {
-        default_or_has_refs = 1;
+    if (!CTX_LOCK_POL_EX_TRY(context)) {
+        has_refs = 1;
+    } else if (context == the_default_context) {
+        /* we'll be freeing up the default context */
+        the_default_context = NULL;
     }
     UNLOCK_DEFAULT_CONTEXT();
 
-    /*
-     * never free context which has multiple users
-     */
-    if (!CTX_LOCK_POL_EX_TRY(context)) {
-        default_or_has_refs = 1;
-    }
 #ifdef VAL_REFCOUNTS
     CTX_LOCK_REFCNT(context);
     if (--context->refcount > 0)
@@ -513,11 +510,11 @@ val_free_context(val_context_t * context)
     CTX_UNLOCK_REFCNT(context);
 #endif
 
-    if (default_or_has_refs)
+    if (has_refs)
         return;
 
     /* 
-     * we have an exclusive lock here, but we don't bother
+     * we have an exclusive policy lock here, but we don't bother
      * unlocking since we're going to destroy it anyway.
      */
 
