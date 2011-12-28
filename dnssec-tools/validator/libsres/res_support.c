@@ -562,6 +562,33 @@ res_log(void *dont_care, int level, const char *template, ...)
     fflush(stderr);
 }
 
+void
+res_log_ap(void *dont_care, int level, const char *template, va_list ap)
+{
+    char            buf[1028];
+    struct timeval  tv;
+    struct tm       *tm;
+
+    if (NULL == template)
+        return;
+
+    /** check individual level */
+    if (level > sres_level)
+        return;
+
+    gettimeofday(&tv, NULL);
+    tm = localtime(&tv.tv_sec);
+
+    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+            tm->tm_hour, tm->tm_min, tm->tm_sec);
+    vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
+
+    fprintf(stderr, "%s\n", buf);
+    fflush(stderr);
+}
+
+
 #else /* ifdef USE_LIBVAL_LOGGING */
 
 /** pass messages on to val_log... */
