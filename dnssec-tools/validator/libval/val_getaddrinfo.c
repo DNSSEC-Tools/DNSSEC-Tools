@@ -1463,7 +1463,6 @@ int val_getaddrinfo_has_status(int rc) {
 #ifndef VAL_NO_ASYNC
 
 #define VAL_GAI_DONE         0x0001
-#define VAL_GAI_FREE_CONTEXT 0x0002
 
 struct val_gai_status_s {
     char             *nodename;
@@ -1512,11 +1511,6 @@ _free_vgai( val_gai_status *vgai )
     if (NULL != vgai->res) {
         freeaddrinfo(vgai->res);
         vgai->res = NULL;
-    }
-
-    if (vgai->flags & VAL_GAI_FREE_CONTEXT) {
-        val_free_context(vgai->context);
-        vgai->context = NULL;
     }
 
     free(vgai);
@@ -1658,8 +1652,6 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
     ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         return VAL_INTERNAL_ERROR;
-    else if (ctx != context) /* we allocated our own context */
-        val_gai_flags |= VAL_GAI_FREE_CONTEXT;
 
     /*
      * use a default hints structure if one is not available.
