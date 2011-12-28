@@ -79,12 +79,6 @@ u_int16_t       retrieve_type(const u_char * rr);
 u_int16_t       libsres_random(void);
 int             libsres_msg_getflag(ns_msg han, int flag);
 
-int             label_bytes_cmp(const u_char * field1, size_t length1,
-                                const u_char * field2, size_t length2);
-int             labelcmp(const u_char * name1, const u_char * name2, 
-                        size_t label_cnt);
-int             namecmp(const u_char * name1, const u_char * name2);
-
 void            res_log(void *dont_care, int level, const char *template, ...);
 void            res_log_ap(void *dont_care, int level, const char *template,
                            va_list ap);

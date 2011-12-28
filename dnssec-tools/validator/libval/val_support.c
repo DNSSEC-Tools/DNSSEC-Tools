@@ -23,7 +23,6 @@
 #include "validator-internal.h"
 
 #include "val_support.h"
-#include "res_support.h"
 
 u_char * 
 namename(u_char * big_name, u_char * little_name)

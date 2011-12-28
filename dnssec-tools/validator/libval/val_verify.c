@@ -15,7 +15,6 @@
 #include "val_crypto.h"
 #include "val_policy.h"
 #include "val_parse.h"
-#include "res_support.h"
 
 
 #define ZONE_KEY_FLAG 0x0100    /* Zone Key Flag, RFC 4034 */

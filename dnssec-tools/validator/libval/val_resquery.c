@@ -30,7 +30,6 @@
 #include "val_cache.h"
 #include "val_assertion.h"
 #include "val_context.h"
-#include "res_support.h"
 
 #define MERGE_RR(old_rr, new_rr) do{ \
 	if (old_rr == NULL) \
