@@ -202,6 +202,12 @@ void            res_io_set_debug(int val);
 int             res_io_get_debug(void);
 void            res_io_view(void);
 
+int             label_bytes_cmp(const u_char * field1, size_t length1,
+                                const u_char * field2, size_t length2);
+int             labelcmp(const u_char * name1, const u_char * name2, 
+                        size_t label_cnt);
+int             namecmp(const u_char * name1, const u_char * name2);
+
 unsigned short       res_nametoclass(const char *buf, int *successp);
 unsigned short       res_nametotype(const char *buf, int *successp);
 
