@@ -86,7 +86,7 @@ val_refresh_validator_policy(val_context_t * context)
 {
     struct dnsval_list *dnsval_l;
     int is_override = 0;
-    val_context_t *old_default_context = NULL;
+
     if (context == NULL) 
         return VAL_NO_ERROR;
 
@@ -97,19 +97,14 @@ val_refresh_validator_policy(val_context_t * context)
                 "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
     }
 
-    if (is_override) {
-        LOCK_DEFAULT_CONTEXT();
-        if (the_default_context != context) {
-            old_default_context = the_default_context;
-            the_default_context = context;
-        }
-        UNLOCK_DEFAULT_CONTEXT();
-    }
-    
-    /* we've changed the default context, free the old one */
-    if (old_default_context) {
-        val_free_context(old_default_context);
-    }
+    /*
+     * We do not override a previously set default context,
+     * since that context might still be in use.
+     * We could have checked if the reference count for the
+     * previous default context was 0 before freeing it up, 
+     * but that would make the behaviour of this function 
+     * non-deterministic.
+     */
 
     return VAL_NO_ERROR; 
 }
