@@ -439,6 +439,17 @@ query_queue(const char *name, const u_int16_t type_h, const u_int16_t class_h,
     return SR_UNSET;
 }
 
+/*
+ * Returns:
+ *    SR_INTERNAL_ERROR
+ *    SR_NO_ANSWER_YET
+ *    SR_NO_ANSWER
+ *    SR_GOT_ANSWER
+ *    SR_UNSET
+ *
+ * caller is responsible for releasing respondent, even when SR_NO_ANSWER
+ * is returned.
+ */
 int
 response_recv(int *trans_id,
               fd_set *pending_desc,
@@ -484,9 +495,6 @@ response_recv(int *trans_id,
             FREE(*answer);
             *answer = NULL;
             *answer_length = 0;
-            if (*respondent != NULL)
-                free_name_server(respondent);
-            *respondent = NULL;
             return SR_NO_ANSWER; 
         }
     } 
@@ -507,11 +515,17 @@ get(const char *name,
     struct timeval closest_event;
     fd_set pending_desc;
     if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
+        if (server)
+            *server = NULL;
         res_log(NULL,LOG_DEBUG,"libsres: ""get %s", name);
         do {
             FD_ZERO(&pending_desc);
             timerclear(&closest_event);
 
+            if (server && NULL != *server) {
+                free_name_server(server);
+                *server = NULL;
+            }
             ret_val = response_recv(&trans_id, &pending_desc, &closest_event, server, response,
                                     response_length);
 
@@ -542,12 +556,18 @@ get_tcp(const char *name, u_int16_t type_h, u_int16_t class_h,
         return ret_val;
 
     res_switch_all_to_tcp_tid(trans_id);
+    if (server)
+        *server = NULL;
 
     res_log(NULL,LOG_DEBUG,"libsres: ""get_tcp %s", name);
     do {
         FD_ZERO(&pending_desc);
         timerclear(&closest_event);
 
+        if (server && NULL != *server) {
+            free_name_server(server);
+            *server = NULL;
+        }
         ret_val = response_recv(&trans_id, &pending_desc, &closest_event,
                                 server, response, response_length);
 
