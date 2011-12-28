@@ -30,6 +30,8 @@
 #define FALSE 0
 #endif
 
+void res_print_server(struct name_server *ea_ns, int i);
+
 static int res_io_debug = FALSE;
 
 void
@@ -264,7 +266,7 @@ res_io_cancel_source(struct expected_arrival *ea)
     }
 
     /* no more retries */
-    ea->ea_remaining_attempts = 0;
+    ea->ea_remaining_attempts = -1;
 
     /* bump cancel time to current time */
     gettimeofday(&ea->ea_cancel_time, NULL);
@@ -416,10 +418,16 @@ res_io_send(struct expected_arrival *shipit)
     return SR_IO_UNSET;
 }
 
+/*
+ * 1 : edns0 fallback succeeded, ready for retry.
+ * 0 : edns0 fallback failed, no more retries for server
+ * -1: unknown error
+ *     NOTE: val_res_nsfallback will cancel an entire request if -1 returned
+ */
 int 
 res_nsfallback(int transaction_id, struct timeval *closest_event, 
-               const char *name, const u_int16_t class_h, 
-               const u_int16_t type_h)
+               struct name_server *server, const char *name,
+               const u_int16_t class_h, const u_int16_t type_h)
 {
     struct expected_arrival *temp;
     int ret_val = -1;
@@ -428,28 +436,66 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
         return -1;
 
     pthread_mutex_lock(&mutex);
-    for (temp = transactions[transaction_id];
-         temp && temp->ea_remaining_attempts == -1;
-         temp = temp->ea_next)
-         ;
+    temp = transactions[transaction_id];
     if (temp != NULL)
-        ret_val = res_nsfallback_ea(temp, closest_event, name, class_h, type_h);
-
+        ret_val = res_nsfallback_ea(temp, closest_event, server, name, class_h,
+                                    type_h);
     pthread_mutex_unlock(&mutex);
     return ret_val;
 }
 
+/*
+ * 1 : edns0 fallback succeeded, ready for retry.
+ * 0 : edns0 fallback failed, no more retries for server
+ * -1: unknown error
+ *     NOTE: val_res_nsfallback will cancel an entire request if -1 returned
+ */
 int 
-res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event, 
-                  const char *name, const u_int16_t class_h, 
-                  const u_int16_t type_h)
+res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event, 
+                  struct name_server *server, const char *name,
+                  const u_int16_t class_h, const u_int16_t type_h)
 {
     const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
-    long             delay = 0, i;
+    long             delay = 0, i, old_size;
+    struct expected_arrival *temp = ea;
 
     if (!temp && !name)
         return -1;
 
+    if (!server) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""no server specified");
+        // return -1;
+    }
+
+    for(;temp;temp=temp->ea_next) {
+        //res_print_ea(temp);
+        /** match name, then look for address */
+        if (namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
+            continue;
+        if (memcmp(server->ns_address[0],
+                   temp->ea_ns->ns_address[temp->ea_which_address],
+                   sizeof(*server->ns_address[0])) == 0)
+            break;
+    }
+
+    if (!temp) {
+        res_log(NULL, LOG_DEBUG, "libsres: "
+                "no matching server found for fallback");
+        return -1;
+    }
+
+    /** even if there is a smaller size to fall back to, no attempts left */
+    if (temp->ea_remaining_attempts < 0) {
+        res_log(NULL, LOG_DEBUG, "libsres: "
+                "ea %p no remaining attempts for fallback", temp);
+        if (res_io_are_all_finished(ea))
+            return -1;
+        return 0;
+    }
+
+    res_log(NULL, LOG_DEBUG, "libsres: ""ea %p attempting ns fallback", temp);
+
+    old_size = temp->ea_ns->ns_edns0_size;
     if ((temp->ea_ns->ns_options & RES_USE_DNSSEC) && 
         (temp->ea_ns->ns_edns0_size > 0)) {
         for (i = 0; i < sizeof(edns0_fallback); i++) {
@@ -458,6 +504,8 @@ res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event,
                 temp->ea_ns->ns_edns0_size = edns0_fallback[i];
                 if (edns0_fallback[i] == 0) {
                     /* try without EDNS0 */
+                    res_log(NULL, LOG_DEBUG, "libsres: "
+                            "fallback disabling edns0");
                     temp->ea_ns->ns_options ^= RES_USE_DNSSEC;
                 }
                 temp->ea_remaining_attempts++;
@@ -466,10 +514,26 @@ res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event,
         }
     }
 
+    /** didn't find a smaller size to try and were already on last attempt */
+    if (temp->ea_remaining_attempts == 0) {
+        res_log(NULL, LOG_DEBUG, "libsres: "
+                "fallback already exhausted edns retries");
+        res_io_cancel_source(temp);
+        if (res_io_are_all_finished(ea))
+            return -1;
+        return 0;
+    }
+
+    if (0 == old_size) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""fallback already disabled edns");
+        return 0;
+    }
+
     if (temp->ea_signed)
         FREE(temp->ea_signed);
     temp->ea_signed = NULL;
     temp->ea_signed_length = 0;
+
     if (res_create_query_payload(temp->ea_ns,
                 name, class_h, type_h,
                 &temp->ea_signed,
@@ -482,14 +546,9 @@ res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event,
     temp->ea_socket = INVALID_SOCKET;
 
     res_log(NULL, LOG_INFO, "libsres: "
-            "ns fallback for {%s %s(%d) %s(%d)}, edns0 size:%d",
+            "ns fallback for {%s %s(%d) %s(%d)}, edns0 size %d > %d",
             name, p_class(class_h), class_h, p_type(type_h), type_h,
-            temp->ea_ns->ns_edns0_size);
-
-    if (temp->ea_remaining_attempts == 0) {
-        res_log(NULL, LOG_DEBUG, "libsres: ""no remaining attempts");
-        return -1;
-    }
+            old_size, temp->ea_ns->ns_edns0_size);
 
     gettimeofday(&temp->ea_next_try, NULL);
     for (i = 0; i < temp->ea_remaining_attempts; i++)
@@ -512,7 +571,7 @@ res_nsfallback_ea(struct expected_arrival *temp, struct timeval *closest_event,
             } 
         }
     }
-    return 0;
+    return 1;
 }
 
 static void
@@ -531,6 +590,7 @@ res_io_next_address(struct expected_arrival *ea,
             ea->ea_socket = INVALID_SOCKET;
         }
         ea->ea_which_address++;
+        ea->ea_ns->ns_edns0_size = RES_EDNS0_DEFAULT;
         ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
         set_alarm(&(ea->ea_next_try), 0);
         set_alarm(&(ea->ea_cancel_time),res_get_timeout(ea->ea_ns));
@@ -983,7 +1043,8 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
     int             retval;
     int             save_count = -1;
 
-    res_log(NULL,LOG_DEBUG,"libsres: "" checking for response for ea %p",
+    struct expected_arrival *orig = ea_list;
+    res_log(NULL,LOG_DEBUG,"libsres: "" checking for response for ea %p list",
             ea_list);
     for( ; ea_list; ea_list = ea_list->ea_next) {
         if (ea_list->ea_remaining_attempts == -1)
@@ -993,6 +1054,9 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             continue;
 
         { /** dummy block to preserve indentation; reformat later */
+            if (ea_list != orig)
+                res_log(NULL,LOG_DEBUG,"libsres: "" found response in ea %p",
+                        ea_list);
             *answer = ea_list->ea_response;
             *answer_length = ea_list->ea_response_length;
             res_log(NULL, LOG_DEBUG,
@@ -1453,6 +1517,21 @@ res_io_cancel_all(void)
         j = i;
         res_cancel(&j);
     }
+}
+
+void
+res_print_server(struct name_server *ea_ns, int i)
+{
+    struct sockaddr_in *s =
+        (struct sockaddr_in *) ((ea_ns->ns_address[i]));
+    char            buf[INET6_ADDRSTRLEN + 1];
+    const char     *addr = NULL;
+    size_t	    buflen = sizeof(buf);
+    if (AF_INET == ea_ns->ns_address[i]->ss_family)
+        INET_NTOP(AF_INET, (struct sockaddr *)s, sizeof(s), buf, buflen,
+                  addr);
+    res_log(NULL, LOG_DEBUG, "libsres: ""   Nameserver: %s", 
+            addr ? addr : "");
 }
 
 void

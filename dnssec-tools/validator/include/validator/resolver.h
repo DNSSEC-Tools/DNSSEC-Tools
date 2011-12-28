@@ -166,7 +166,9 @@ int             response_recv(int *trans_id,
                               struct name_server **respondent,
                               unsigned char ** answer, size_t * answer_length);
 void            res_cancel(int *transaction_id);
-int             res_nsfallback(int transaction_id, struct timeval *closest_event,
+int             res_nsfallback(int transaction_id,
+                               struct timeval *closest_event,
+                               struct name_server *server,
                                const char *name, const unsigned short class_h,
                                const unsigned short type_h);
 
@@ -212,7 +214,7 @@ int res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
  */
 
 int res_nsfallback_ea(struct expected_arrival *temp,
-                      struct timeval *closest_event,
+                      struct timeval *closest_event, struct name_server *server,
                       const char *name, const unsigned short class_h,
                       const unsigned short type_h);
 

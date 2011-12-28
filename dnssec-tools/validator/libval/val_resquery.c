@@ -2244,9 +2244,11 @@ val_resquery_rcv(val_context_t * context,
 
     /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
-        val_res_nsfallback(context, matched_q, name_p, closest_event);
+        val_res_nsfallback(context, matched_q, server, name_p, closest_event);
         if (response_data)
             FREE(response_data);
+        if (server)
+            free_name_server(&server);
         return VAL_NO_ERROR;
     }
 
@@ -2274,8 +2276,8 @@ val_res_cancel(struct val_query_chain *matched_q)
 }
 
 void
-val_res_nsfallback(val_context_t *context,
-                   struct val_query_chain *matched_q, const char *name_p,
+val_res_nsfallback(val_context_t *context, struct val_query_chain *matched_q,
+                   struct name_server *server, const char *name_p,
                    struct timeval *closest_event)
 {
     int ret_val;
@@ -2294,22 +2296,26 @@ val_res_nsfallback(val_context_t *context,
 
 #ifndef VAL_NO_ASYNC
     if (matched_q->qc_ea)
-        ret_val = res_nsfallback_ea(matched_q->qc_ea, closest_event,
+        ret_val = res_nsfallback_ea(matched_q->qc_ea, closest_event, server,
                                     name_p, matched_q->qc_class_h, 
                                     matched_q->qc_type_h);
     else
 #endif
-        ret_val = res_nsfallback(matched_q->qc_trans_id, closest_event,
+        ret_val = res_nsfallback(matched_q->qc_trans_id, closest_event, server,
                                  name_p, matched_q->qc_class_h, 
                                  matched_q->qc_type_h);
-    if (-1 == ret_val) {
+    if (ret_val < 0) {
         matched_q->qc_state = Q_RESPONSE_ERROR;
         val_res_cancel(matched_q);
     }
-    else {
+    else if (1 == ret_val) {
         val_log(context, LOG_DEBUG,
                 "val_res_nsfallback(): Doing EDNS0 fallback"); 
         matched_q->qc_flags |= VAL_QUERY_EDNS0_FALLBACK;
+    }
+    else {
+        val_log(context, LOG_DEBUG,
+                "val_res_nsfallback(): EDNS0 fallback failed"); 
     }
 }
 
@@ -2371,7 +2377,7 @@ _process_rcvd_response(val_context_t * context,
         free_domain_info_ptrs(*response);
         FREE(*response);
         *response = NULL;
-        val_res_nsfallback(context, matched_q, name_p, closest_event);
+        val_res_nsfallback(context, matched_q, server, name_p, closest_event);
         if (matched_q->qc_state != Q_RESPONSE_ERROR)
             matched_q->qc_state = Q_SENT;
     }
@@ -2495,10 +2501,12 @@ val_resquery_async_rcv(val_context_t * context,
 
     /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
-        if (stream || !res_async_ea_is_using_stream(matched_q->qc_ea))
-            val_res_nsfallback(context, matched_q, name_p, closest_event);
+        //if (stream || !res_async_ea_is_using_stream(matched_q->qc_ea))
+        val_res_nsfallback(context, matched_q, server, name_p, closest_event);
         if (response_data)
             FREE(response_data);
+        if (server)
+            free_name_server(&server);
         return VAL_NO_ERROR;
     }
 
