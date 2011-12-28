@@ -6676,9 +6676,6 @@ _async_status_free(val_async_status *as)
 
     _context_as_remove(as->val_as_ctx, as);
 
-    if (! as->val_as_flags & VAL_AS_CTX_USER_SUPPLIED)
-        val_free_context(as->val_as_ctx);
-
     FREE(as->val_as_name);
     FREE(as);
 
@@ -6849,12 +6846,8 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
     context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context) {
         _async_status_free(as); /* no context, so no lock needed */
-        return retval;
+        return VAL_INTERNAL_ERROR;
     }
-    if (context == ctx)
-        as->val_as_flags |= VAL_AS_CTX_USER_SUPPLIED;
-    else
-        as->val_as_flags &= (~VAL_AS_CTX_USER_SUPPLIED);
 
     as->val_as_ctx = context;
 
@@ -7154,7 +7147,7 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
      */
     context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context) {
-        return VAL_BAD_ARGUMENT;
+        return VAL_INTERNAL_ERROR;
     }
 
     if (NULL == context->as_list) {

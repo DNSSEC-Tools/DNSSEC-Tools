@@ -308,12 +308,11 @@ struct queries_for_query;
     /*
      * asynchronous status
      */
-#define VAL_AS_CTX_USER_SUPPLIED     0x00000001 /* i.e. don't delete it! */
-#define VAL_AS_IGNORE_CACHE          0x00000002
-#define VAL_AS_NO_NEW_QUERIES        0x00000004
-#define VAL_AS_NO_ANSWERS            0x00000008 /* don't care about answers */
-#define VAL_AS_NO_CALLBACKS          0x00000010 /* don't call callbacks */
-#define VAL_AS_NO_CANCEL_CALLBACKS   0x00000020 /* no cb if req cancelled */
+#define VAL_AS_IGNORE_CACHE          0x00000001
+#define VAL_AS_NO_NEW_QUERIES        0x00000002
+#define VAL_AS_NO_ANSWERS            0x00000004 /* don't care about answers */
+#define VAL_AS_NO_CALLBACKS          0x00000008 /* don't call callbacks */
+#define VAL_AS_NO_CANCEL_CALLBACKS   0x00000010 /* no cb if req cancelled */
 
 #define VAL_AS_DONE                  0x01000000 /* have results/answers */
 #define VAL_AS_CALLBACK_CALLED       0x02000000 /* called user callbacks */
