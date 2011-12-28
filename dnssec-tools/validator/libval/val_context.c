@@ -201,8 +201,9 @@ err:
  * it was NULL. I.E. don't override a previously set 
  * default_context.
  */
-int
-val_create_context_with_conf(char *label, 
+static int
+val_create_context_internal( char *label, 
+                             unsigned int flags,
                              char *dnsval_conf, 
                              char *resolv_conf, 
                              char *root_conf, 
@@ -360,7 +361,7 @@ val_create_context_with_conf(char *label,
         goto err;
     }
 
-    (*newcontext)->default_qflags = 0; 
+    (*newcontext)->default_qflags = flags & VAL_QFLAGS_USERMASK; 
     if ((*newcontext)->val_log_targets != NULL) {
         (*newcontext)->default_qflags |= VAL_QUERY_AC_DETAIL;
     }
@@ -396,13 +397,48 @@ err:
 }
 
 /*
+ * Create a context with given configuration files
+ */
+int
+val_create_context_with_conf(char *label, 
+                             char *dnsval_conf, 
+                             char *resolv_conf, 
+                             char *root_conf, 
+                             val_context_t ** newcontext)
+{
+    return val_create_context_internal(label, 0,
+                dnsval_conf, resolv_conf, root_conf, newcontext); 
+}
+
+/*
+ * Create a context with given configuration files
+ * and with the given default query flags
+ */
+int
+val_create_context_with_flags(char *label, 
+                              unsigned int flags,
+                              char *dnsval_conf, 
+                              char *resolv_conf, 
+                              char *root_conf, 
+                              val_context_t ** newcontext)
+{
+
+    return val_create_context_internal(label, 
+                flags,
+                dnsval_conf, resolv_conf, root_conf, newcontext); 
+
+}
+
+
+/*
  * Create a context with default configuration files
  */
 int
 val_create_context(char *label, 
                    val_context_t ** newcontext)
 {
-    return val_create_context_with_conf(label, NULL, NULL, NULL, newcontext);
+    return val_create_context_internal(label, 0,
+                NULL, NULL, NULL, newcontext);
 }
 
 /*

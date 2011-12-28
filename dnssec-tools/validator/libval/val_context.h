@@ -43,6 +43,12 @@ int             val_create_context_with_conf(char *label,
                                              char *resolv_conf,
                                              char *root_conf,
                                              val_context_t ** newcontext);
+int             val_create_context_with_flags(char *label,
+                                              unsigned int flags,
+                                              char *dnsval_conf,
+                                              char *resolv_conf,
+                                              char *root_conf,
+                                              val_context_t ** newcontext);
 int             val_create_context(char *label,
                                    val_context_t ** newcontext);
 val_context_t * val_create_or_refresh_context(val_context_t *ctx);

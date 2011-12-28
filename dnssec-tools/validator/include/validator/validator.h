@@ -407,6 +407,12 @@ struct queries_for_query;
                                                  char *resolv_conf,
                                                  char *root_conf,
                                                  val_context_t ** newcontext);
+    int             val_create_context_with_flags(char *label,
+                                                  unsigned int flags,
+                                                  char *dnsval_conf,
+                                                  char *resolv_conf,
+                                                  char *root_conf,
+                                                  val_context_t ** newcontext);
     int             val_create_context(char *label,
                                        val_context_t ** newcontext);
     void            val_free_context(val_context_t * context);
