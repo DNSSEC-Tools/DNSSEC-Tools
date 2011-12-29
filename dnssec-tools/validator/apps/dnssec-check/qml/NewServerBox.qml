@@ -17,8 +17,8 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: 5
         width: parent.width
-        font.pixelSize: buttonText.font.pixelSize
         color: "white"
+        font.pixelSize: 20
 
         property string defaultText: "add new resolver address"
 
