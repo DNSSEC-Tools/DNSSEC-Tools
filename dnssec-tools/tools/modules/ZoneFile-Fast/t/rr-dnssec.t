@@ -51,6 +51,7 @@ BEGIN {
          q{dnssec-tools.org. 			86400	DNSKEY	256 3 5 AQOfW6Uo0QQZS1fJmtx3XoX+B67Bxfyn+uhe py5JifpPWPnx+O0bR30+Oi4bpVrXtipGK3EW ouDWy4eAflrsdIgunotWE1H4/rQaXxc4IowJ V8dm5xejyMswUzPOxL3mnbhQ0gUtSTSO7/Ho EJisuqy50/pg1y8a09PiicJefXaB31IawDXn IZz2QYluyxS2zYPnb/2RjeCxgTzGgtjUYlw5 0czRYDARyGlkAiwxch/RfgEcqoLk+dPwmSU9 l4Shu8XkkpiAFEUqs3cTooA2UltVvKFpqoMT q0EVHcdHDuIExeGCxCw/RjsiOOIey3BKo86T NCU8USUWld3FinA4BPnB;bogus extra comment},
 	 q{test.dnssec-tools.org.  86400   IN      DS      28827 5 1 23a4c97124ab46e7fb7abb58e36887ff78745ac8},
 	 q{test.dnssec-tools.org.  86400   IN      DS      28827 5 2 7d06a161755f7c7ca0d15b8039c7d7b45fb8e5dd025fcebe209cb07756bbae07},
+	 q{test.dnssec-tools.org.  86400 IN      DS      28827 5 2 ( 7d06a161755f7c7ca0d15b8039c7d7b45fb8e5dd025fcebe209cb07756bbae07 ) },
 	 q{test.dnssec-tools.org.  86400   DS      28827 5 1 23a4c97124ab46e7fb7abb58e36887ff78745ac8},
 	 # a specific test for ttl values that could accidentially match DS
 	 q{test.dnssec-tools.org.          DS      28827 5 2 7d06a161755f7c7ca0d15b8039c7d7b45fb8e5dd025fcebe209cb07756bbae07},

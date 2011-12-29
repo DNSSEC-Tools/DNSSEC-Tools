@@ -880,6 +880,9 @@ sub parse_line
 	      $ds->{'digest'} .= $1;
 	      $ds->{'digest'} = lc($ds->{'digest'});
 	      $ds->{'digest'} =~ s/\s//g;
+	      # remove any surrounding single line ()s
+	      $ds->{'digest'} =~ s/^\(//;
+	      $ds->{'digest'} =~ s/\)$//;
 	      $ds->{'digestbin'} = pack("H*", $ds->{'digest'});
 	      push @zone, $ds;
 	      $ds = undef;
