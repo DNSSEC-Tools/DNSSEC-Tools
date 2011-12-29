@@ -23,3 +23,12 @@ Description:
   like infamous `CNAME and other data' back to the user, or to do a zone
   file modification), parse() inserts line numbering information into
   Net::DNS::RR objects.
+
+Important Note about DNSSEC:
+
+  If you try to load a ZoneFile with DNSSEC records in it *and* you
+  haven't installed all the other necessary perl modules require to
+  support the Net::DNS::SEC module set, you will get bad results.
+  And, worse they'll be cryptic.  A common problem is failing to
+  install the MIME::Base32 and MIME::Base64 perl modules in addition
+  to the Net::DNS::SEC modules.
