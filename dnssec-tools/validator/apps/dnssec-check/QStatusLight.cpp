@@ -7,20 +7,10 @@
 #include <qdebug.h>
 
 QStatusLight::QStatusLight(QWidget *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName, int rowNumber) :
-    QPushButton(parent), m_status(UNKNOWN), m_checkFunction(check_function),
-    m_serverAddress(0), m_checkName(checkName), m_statusStrings(), m_rowNumber(rowNumber)
+    QPushButton(parent), m_dnssecTest(parent, check_function, serverAddress, checkName), m_rowNumber(rowNumber)
 {
-    if (serverAddress)
-        m_serverAddress = strdup(serverAddress);
-    m_msgBuffer[0] = 0;
-    m_msgBuffer[sizeof(m_msgBuffer)-1] = 0;
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(this, SIGNAL(clicked()), this, SLOT(showError()));
-
-    m_statusStrings.insert(UNKNOWN, "unknown");
-    m_statusStrings.insert(GOOD, "good");
-    m_statusStrings.insert(BAD, "bad");
-    m_statusStrings.insert(WARNING, "warning");
 }
 
 void QStatusLight::paintEvent(QPaintEvent *e)
@@ -43,23 +33,23 @@ void QStatusLight::paintEvent(QPaintEvent *e)
     QRadialGradient gradiant(maxSize/2, maxSize/2, maxSize/2, maxSize/3, maxSize/3);
     gradiant.setColorAt(0, Qt::white);
 
-    switch (m_status) {
-    case UNKNOWN:
+    switch (m_dnssecTest.status()) {
+    case DNSSECTest::UNKNOWN:
         painter.setPen(Qt::gray);
         darkColor = Qt::darkGray;
         gradiant.setColorAt(1, Qt::gray);
         break;
-    case GOOD:
+    case DNSSECTest::GOOD:
         painter.setPen(Qt::green);
         darkColor = Qt::darkGreen;
         gradiant.setColorAt(1, Qt::green);
         break;
-    case BAD:
+    case DNSSECTest::BAD:
         painter.setPen(Qt::red);
         darkColor = Qt::darkRed;
         gradiant.setColorAt(1, Qt::red);
         break;
-    case WARNING:
+    case DNSSECTest::WARNING:
         painter.setPen(Qt::yellow);
         darkColor = Qt::darkYellow;
         gradiant.setColorAt(1, Qt::yellow);
@@ -75,12 +65,12 @@ void QStatusLight::paintEvent(QPaintEvent *e)
     painter.setBrush(Qt::NoBrush);
 
     painter.drawEllipse(0,0,maxSize+1,maxSize+1);
-    if (m_checkName.length() > 0) {
+    if (m_dnssecTest.name().length() > 0) {
         QFont font = painter.font();
         font.setPointSize(3*font.pointSize()/4);
         painter.setFont(font);
         painter.setPen(Qt::black);
-        painter.drawText(QRect(1,maxSize/2, maxSize, maxSize/2), Qt::AlignCenter, m_checkName);
+        painter.drawText(QRect(1,maxSize/2, maxSize, maxSize/2), Qt::AlignCenter, m_dnssecTest.name());
     }
 
     painter.restore();
@@ -94,70 +84,39 @@ QSize QStatusLight::sizeHint() {
     return minimumSizeHint();
 }
 
-QStatusLight::lightStatus QStatusLight::status()
+void QStatusLight::showError()
 {
-    return m_status;
+    if (m_dnssecTest.message().length() == 0)
+        return;
+
+    QMessageBox message;
+    message.setText(m_dnssecTest.message());
+
+    if (m_dnssecTest.status() == DNSSECTest::GOOD)
+        message.setIcon(QMessageBox::Information);
+    else if (m_dnssecTest.status() == DNSSECTest::BAD)
+        message.setIcon(QMessageBox::Warning);
+    message.exec();
 }
 
-void QStatusLight::setStatus(QStatusLight::lightStatus newStatus)
+void QStatusLight::reset()
 {
-    m_status = newStatus;
+    m_dnssecTest.setStatus(DNSSECTest::UNKNOWN);
     update();
 }
 
 void QStatusLight::check()
 {
-    if (!m_checkFunction || !m_serverAddress)
-        return;
-    int rc = (*m_checkFunction)(m_serverAddress, m_msgBuffer, sizeof(m_msgBuffer));
-    if (rc == 0)
-        setStatus(GOOD);
-    if (rc == 1)
-        setStatus(BAD);
-    if (rc == 2)
-        setStatus(WARNING);
-    setToolTip(QString(m_msgBuffer));
+    m_dnssecTest.check();
+    setToolTip(QString(m_dnssecTest.message()));
 }
 
-void QStatusLight::showError()
+DNSSECTest * QStatusLight::test()
 {
-    if (m_msgBuffer[0] == 0)
-        return;
-    QMessageBox message;
-    message.setText(m_msgBuffer);
-    if (m_status == GOOD)
-        message.setIcon(QMessageBox::Information);
-    else if (m_status == BAD)
-        message.setIcon(QMessageBox::Warning);
-    message.exec();
+    return &m_dnssecTest;
 }
 
-void QStatusLight::setMessage(const QString &message)
-{
-    strncpy(m_msgBuffer, message.toAscii().data(), sizeof(m_msgBuffer)-1);
-}
-
-const QString QStatusLight::message() const
-{
-    return QString(m_msgBuffer);
-}
-
-const QString QStatusLight::serverAddress() const
-{
-    return QString(m_serverAddress);
-}
-
-const QString QStatusLight::name() const
-{
-    return m_checkName;
-}
-
-QString QStatusLight::statusString()
-{
-    return m_statusStrings[m_status];
-}
-
-int QStatusLight::rowNumber() const
+int QStatusLight::rowNumber()
 {
     return m_rowNumber;
 }

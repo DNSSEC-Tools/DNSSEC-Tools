@@ -42,14 +42,18 @@ SOURCES += main.cpp mainwindow.cpp \
     dnssec_checks.cpp \
     QStatusLight.cpp \
     SubmitDialog.cpp \
-    DataSubmitter.cpp
+    DNSSECTest.cpp
 HEADERS += mainwindow.h \
     QStatusLight.h \
     dnssec_checks.h \
     SubmitDialog.h \
-    DataSubmitter.h
+    DNSSECTest.h
 
+#    DataSubmitter.h \
+#    DataSubmitter.cpp \
 RESOURCES += \
     dnssec-check.qrc
+
+
 
 

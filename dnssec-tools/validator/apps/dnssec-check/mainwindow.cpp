@@ -220,10 +220,10 @@ void MainWindow::setOrientation(Orientation orientation)
 void MainWindow::startGetAnswers()
 {
     foreach(QStatusLight *light, m_tests) {
-        light->setStatus(QStatusLight::UNKNOWN);
+        light->reset();
     }
-    m_resolverResult->setStatus(QStatusLight::UNKNOWN);
-    m_bypassResult->setStatus(QStatusLight::UNKNOWN);
+    m_resolverResult->reset();
+    m_bypassResult->reset();
 
     QTimer::singleShot(0, this, SLOT(getAnswers()));
 }
@@ -237,19 +237,19 @@ void MainWindow::getAnswers()
 
     // try with the default context (and, ie, the default resolver)
     if (doLookupTest()) {
-        m_resolverResult->setStatus(QStatusLight::GOOD);
-        m_resolverResult->setMessage(tr("Succeeded in a DNSSEC validation using the local ISP"));
+        m_resolverResult->test()->setStatus(DNSSECTest::GOOD);
+        m_resolverResult->test()->setMessage(tr("Succeeded in a DNSSEC validation using the local ISP"));
     } else {
-        m_resolverResult->setStatus(QStatusLight::BAD);
-        m_resolverResult->setMessage(tr("Failed to perform a DNSSEC validation using the local ISP"));
+        m_resolverResult->test()->setStatus(DNSSECTest::BAD);
+        m_resolverResult->test()->setMessage(tr("Failed to perform a DNSSEC validation using the local ISP"));
     }
 
     if (doLookupTest("dnssec-tools.org", 48, "/dev/null")) {
-        m_bypassResult->setStatus(QStatusLight::GOOD);
-        m_bypassResult->setMessage(tr("Succeeded in a DNSSEC validation bypassing local ISP"));
+        m_bypassResult->test()->setStatus(DNSSECTest::GOOD);
+        m_bypassResult->test()->setMessage(tr("Succeeded in a DNSSEC validation bypassing local ISP"));
     } else {
-        m_bypassResult->setStatus(QStatusLight::BAD);
-        m_bypassResult->setMessage(tr("Failed to bypass the local ISP for performing DNSSEC validation"));
+        m_bypassResult->test()->setStatus(DNSSECTest::BAD);
+        m_bypassResult->test()->setMessage(tr("Failed to bypass the local ISP for performing DNSSEC validation"));
     }
 
     unbusy();
@@ -359,7 +359,7 @@ void MainWindow::showResultDetails()
                          "<p>The results show below are the detailed results for each test that was sent to each of the tested name server.<br /><p>");
 
     foreach (QStatusLight *light, m_tests) {
-        results = results + light->serverAddress() + ": " + light->message() + "<br />\n";
+        results = results + light->test()->serverAddress() + ": " + light->test()->message() + "<br />\n";
     }
 
     message.setText(results);
@@ -378,3 +378,40 @@ void MainWindow::maybeSubmitResults()
         qDebug() << "denied";
     }
 }
+
+void MainWindow::submitResults(QString locationDescription)
+{
+    QUrl accessURL = resultServerBaseURL;
+    accessURL.addQueryItem("dataVersion", "1");
+    int count=0;
+    foreach(QString serverAddress, m_serverAddresses) {
+        accessURL.addQueryItem("server" + QString::number(count++), serverAddress);
+    }
+
+    DNSSECTest *test;
+
+    foreach(QStatusLight *light, m_tests) {
+        test = light->test();
+        accessURL.addQueryItem(test->name() + QString::number(light->rowNumber()), test->statusString());
+    }
+
+    accessURL.addQueryItem("locationDescription", locationDescription);
+    accessURL.addQueryItem("DNSSECToolsVersion", "1.11");
+
+    if (!m_manager) {
+        m_manager = new QNetworkAccessManager();
+        connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(respnonseReceived(QNetworkReply*)));
+    }
+    m_manager->get(QNetworkRequest(accessURL));
+}
+
+void MainWindow::respnonseReceived(QNetworkReply *response)
+{
+    QMessageBox msg;
+    if (response->error() == QNetworkReply::NoError)
+        msg.setText("We've successfully recevied your test results.  Thank you for your help!");
+    else
+        msg.setText("Unfortunately we failed to send your test results to the collection server.");
+    msg.exec();
+}
+
