@@ -1,0 +1,10 @@
+[Unit]
+Description=Donuts DNS lint checking daemon
+After=network.target
+
+[Service]
+ExecStart=@prefix@/bin/donutsd
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
