@@ -202,8 +202,8 @@ sub parse
 	    Net::DNS::RR->new_from_hash(%$z);
 
 	  if ($newrec->{'type'} eq 'DNSKEY') {
-	      if (ref($newrec) ne 'DNSKEY') {
-		  warn "Failed to define a DNSSEC object; you're probably missing either MIME::Base64 or MIME::Base32";
+	      if (ref($newrec) ne 'Net::DNS::RR::DNSKEY') {
+		  warn "Failed to define a DNSSEC object (got: " . ref($newrec) . "); you're probably missing either MIME::Base64 or MIME::Base32";
 	      } else {
 		  $newrec->setkeytag;
 	      }
