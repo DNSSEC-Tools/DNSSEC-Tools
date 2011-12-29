@@ -42,17 +42,40 @@ SOURCES += main.cpp mainwindow.cpp \
     dnssec_checks.cpp \
     QStatusLight.cpp \
     SubmitDialog.cpp \
-    DNSSECTest.cpp
+    DNSSECTest.cpp \
+    TestManager.cpp
 HEADERS += mainwindow.h \
     QStatusLight.h \
     dnssec_checks.h \
     SubmitDialog.h \
-    DNSSECTest.h
+    DNSSECTest.h \
+    TestManager.h
 
 #    DataSubmitter.h \
 #    DataSubmitter.cpp \
 RESOURCES += \
     dnssec-check.qrc
+
+OTHER_FILES += \
+    qml/DnssecCheck.qml \
+    qml/Result.qml \
+    qml/HostLabel.qml \
+    qml/DNSSECCheck.js
+
+# Please do not modify the following two lines. Required for deployment.
+include(deployment.pri)
+qtcAddDeployment()
+
+# Please do not modify the following two lines. Required for deployment.
+include(qmlapplicationviewer/qmlapplicationviewer.pri)
+qtcAddDeployment()
+
+
+
+
+
+
+
 
 
 

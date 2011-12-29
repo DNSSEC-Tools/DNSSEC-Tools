@@ -10,9 +10,16 @@ class DNSSECTest : public QObject
     Q_OBJECT
 
 public:
+    Q_ENUMS(lightStatus)
     enum lightStatus { UNKNOWN, GOOD, WARNING, BAD };
 
-    explicit DNSSECTest(QObject *parent = 0, CheckFunction *check_function = 0, const char *serverAddress = 0, const QString &checkName = "");
+    Q_PROPERTY(lightStatus status     READ status        WRITE setStatus   NOTIFY statusChanged)
+    Q_PROPERTY(QString message        READ message       WRITE setMessage  NOTIFY messageChanged)
+    Q_PROPERTY(QString name           READ name                            NOTIFY nameChanged)
+    Q_PROPERTY(QString serverAddress  READ serverAddress                   NOTIFY serverAddressChanged)
+
+    DNSSECTest(QObject *parent = 0, CheckFunction *check_function = 0, const char *serverAddress = 0, const QString &checkName = "");
+    DNSSECTest(const DNSSECTest &copyFrom);
 
     lightStatus status();
     QString statusString();
@@ -22,11 +29,14 @@ public:
     void setMessage(const QString &message);
 
     const QString name() const;
-    int rowNumber() const;
 
     const QString serverAddress() const;
 
 signals:
+    void statusChanged();
+    void messageChanged();
+    void nameChanged();
+    void serverAddressChanged();
 
 public slots:
     void check();

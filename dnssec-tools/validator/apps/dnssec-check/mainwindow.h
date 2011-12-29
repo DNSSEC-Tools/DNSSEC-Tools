@@ -22,6 +22,7 @@
 #include <QtNetwork/QNetworkAccessManager>
 
 #include "QStatusLight.h"
+#include "TestManager.h"
 
 #if (defined(Q_WS_MAEMO_5) || defined(MAEMO_CHANGES))
 #define SMALL_DEVICE 1
@@ -62,6 +63,7 @@ public slots:
     void respnonseReceived(QNetworkReply *response);
 
 private:
+    TestManager  m_testManager;
     QStringList  m_serverAddresses;
 
     QWidget     *m_mainWidget;
