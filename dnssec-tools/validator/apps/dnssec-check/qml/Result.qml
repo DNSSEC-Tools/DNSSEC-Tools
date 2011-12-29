@@ -57,7 +57,7 @@ Rectangle {
             when: test.status == DNSSECTest.BAD
             PropertyChanges {
                 target: result
-                color: "red"
+                color: "#ffbbbb"
             }
         },
         State {
