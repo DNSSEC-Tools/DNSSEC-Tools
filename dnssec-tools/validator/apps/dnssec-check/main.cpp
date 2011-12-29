@@ -9,7 +9,7 @@
 #include <QDeclarativeComponent>
 
 // #define to force QML usage
-// #define USE_QML
+#define USE_QML
 
 int main(int argc, char *argv[])
 {
