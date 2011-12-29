@@ -41,11 +41,15 @@ unix:!symbian {
 SOURCES += main.cpp mainwindow.cpp \
     dnssec_checks.cpp \
     QStatusLight.cpp \
-    SubmitDialog.cpp
+    SubmitDialog.cpp \
+    DataSubmitter.cpp
 HEADERS += mainwindow.h \
     QStatusLight.h \
     dnssec_checks.h \
-    SubmitDialog.h
+    SubmitDialog.h \
+    DataSubmitter.h
 
 RESOURCES += \
     dnssec-check.qrc
+
+
