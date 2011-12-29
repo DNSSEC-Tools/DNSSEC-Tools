@@ -617,6 +617,33 @@ sub parse_line
 	  } else {
 	      error("bad txtdata in $type");
 	  }
+      } elsif (/\G(type[0-9]+)[ \t]+/igc) {
+          my $type = $1;
+	  if (/\G\\#\s+(\d+)\s+\(\s(.*)$/gc) {
+	      # multi-line
+	      $sshfp = { 
+			Line    => $ln,
+			name    => $domain,
+			type    => uc $type,
+			ttl     => $ttl,
+			class   => "IN",
+                        fptype  => $1,
+			fingerprint => $2,
+		       };
+	      $parse = \&parse_sshfp;
+	  } elsif (/\G\\#\s+(\d+)\s+(.*)$pat_skip$/gc) {
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => uc $type,
+			   ttl     => $ttl,
+			   class   => "IN",
+                           fptype  => $1,
+			   fingerprint => $2,
+			  };
+	  } else {
+	      error("bad data in in $type");
+	  }
       } elsif (/\G(sshfp)[ \t]+/igc) {
 	  if (/\G(\d+)\s+(\d+)\s+\(\s*$/gc) {
 	      # multi-line
@@ -992,7 +1019,7 @@ sub parse_line
       } elsif (/\Gany\s+tsig.*$/igc) {
 	  # XXX ignore tsigs
       } else {
-	  error("unrecognized type");
+	  error("unrecognized type for $domain\n$_\n");
       }
   }
 
