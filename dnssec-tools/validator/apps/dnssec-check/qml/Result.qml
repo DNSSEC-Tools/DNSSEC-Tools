@@ -70,4 +70,12 @@ Rectangle {
             }
         }
     ]
+
+    transitions: [
+        Transition {
+            from: "*"
+            to: "*"
+            ColorAnimation { duration: 500 }
+        }
+    ]
 }

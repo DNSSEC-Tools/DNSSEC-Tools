@@ -61,7 +61,8 @@ OTHER_FILES += \
     qml/Result.qml \
     qml/HostLabel.qml \
     qml/DNSSECCheck.js \
-    qml/NewServerBox.qml
+    qml/NewServerBox.qml \
+    qml/Button.qml
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
@@ -70,6 +71,9 @@ qtcAddDeployment()
 # Please do not modify the following two lines. Required for deployment.
 include(qmlapplicationviewer/qmlapplicationviewer.pri)
 qtcAddDeployment()
+
+
+
 
 
 

@@ -49,31 +49,13 @@ Rectangle {
         }
     }
 
-    Rectangle {
+    Button {
         id: testButton
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.leftMargin: border.width
-        anchors.topMargin: border.width
-        color: "#ccccff"
-        border.color: "blue"
-        border.width: 5
-        radius: 10
-        width: buttonText.width + 2 * border.width
-        height: buttonText.height + 2 * border.width
 
-        Text {
-            id: buttonText
-            text: "test";
-            font.pixelSize: 20
-            anchors.centerIn: parent
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    DNSSECCheck.runAllTests()
-                }
-            }
+        onClicked: {
+            DNSSECCheck.runAllTests()
         }
     }
 
