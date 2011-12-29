@@ -75,7 +75,7 @@ Rectangle {
         Transition {
             from: "*"
             to: "*"
-            ColorAnimation { duration: 500 }
+            ColorAnimation { duration: 250 }
         }
     ]
 }

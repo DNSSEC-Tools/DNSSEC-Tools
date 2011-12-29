@@ -71,3 +71,9 @@ function runAllTests() {
         tests[result].test.check();
     }
 }
+
+function resetTests() {
+    for(var result in tests) {
+        tests[result].test.status = DNSSECTest.UNKNOWN
+    }
+}

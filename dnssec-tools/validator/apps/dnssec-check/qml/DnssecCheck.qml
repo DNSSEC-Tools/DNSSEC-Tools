@@ -60,7 +60,7 @@ Rectangle {
         anchors.left: newServerBox.left
         anchors.topMargin: 10
 
-        spacing: 5
+        spacing: 10
 
         Button {
             id: testButton
@@ -74,7 +74,7 @@ Rectangle {
             id: resetButton
             text: "Reset"
             onClicked: {
-                console.log("reset")
+                DNSSECCheck.resetTests()
             }
         }
     }
