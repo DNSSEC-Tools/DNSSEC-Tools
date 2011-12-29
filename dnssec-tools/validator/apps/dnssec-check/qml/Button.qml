@@ -2,19 +2,20 @@ import QtQuick 1.0
 
 Rectangle {
     id: root
-    color: "#ccccff"
-    border.color: "white"
+    color: "#aac"
+    border.color: "#bbe"
     width: buttonText.width + 10
     height: buttonText.height + 10
     border.width: 2
     radius: 5
     anchors.margins: 5
 
+    property alias text: buttonText.text
+
     signal clicked
 
     Text {
         id: buttonText
-        text: "test";
         font.pixelSize: 20
         anchors.centerIn: parent
 
