@@ -6,17 +6,22 @@ Rectangle {
     width: 800
     height: 400
     id: root
+    color: "black"
 
     Rectangle {
         id: titleBox
         width: 7*parent.width/8
         height: titleText.height + 4
-        color: "#cccccc"
+        color: "#444"
         anchors.top: parent.top
         anchors.right: parent.right
+        anchors.rightMargin: 10
+        anchors.topMargin: 5
+        radius: 2
         Text {
             id: titleText
-            text: "Tests"
+            text: "DNSSEC-Check"
+            color: "white"
             font.pixelSize: 20
             font.underline: true
             font.bold: true
@@ -30,7 +35,7 @@ Rectangle {
         anchors.left: titleBox.left
         width:  titleBox.width
         height: resultGrid.height + 2 * border.width
-        color: "white"
+        color: "black"
         border.color: "#bbbbbb"
         border.width: 1
         anchors.topMargin: 10
@@ -72,56 +77,8 @@ Rectangle {
         }
     }
 
-    Rectangle {
-        width:  resultsBox.width
-        height: newHost.height + border.width
-        border.color: "black"
-        border.width: 1
-        anchors.top: resultsBox.bottom
-        anchors.left: resultsBox.left
-        anchors.topMargin: 10
-
-        TextInput {
-            id: newHost
-            anchors.left: parent.left
-            anchors.leftMargin: 5
-            width: parent.width
-            font.pixelSize: buttonText.font.pixelSize
-
-            property string defaultText: "add new resolver address"
-
-            text: defaultText
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    console.log("foo" + newHost.text)
-                    if (newHost.text == newHost.defaultText) {
-                        console.log("bar")
-                        newHost.text = ""
-                    }
-                    newHost.focus = true
-                }
-            }
-
-            onAccepted: {
-                DNSSECCheck.addSingleHost(newHost.text)
-                newHost.text = newHost.defaultText
-                newHost.focus = false
-            }
-
-            states:[
-                State {
-                    when: newHost.text == newHost.defaultText
-                    PropertyChanges {
-                        target: newHost
-                        font.italic: true
-                        color: "#bbb"
-                    }
-                }
-
-            ]
-        }
+    NewServerBox {
+        id: newServerBox
     }
 
     Component.onCompleted: {

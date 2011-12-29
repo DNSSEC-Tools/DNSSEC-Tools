@@ -15,6 +15,7 @@ Rectangle {
     border.width: 2
     //color: "#bbbbbb"
     //state: "unknown"
+    color:   "black"
 
     Text {
         id: testName
