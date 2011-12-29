@@ -11,7 +11,6 @@ TestManager::TestManager(QObject *parent) :
 }
 
 DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) {
-    qDebug() << "creating " << address << " of type " << type << " and named " << name;
     switch (type) {
     case basic_dns:
             return new DNSSECTest(m_parent, &check_basic_dns, address.toAscii().data(), name);

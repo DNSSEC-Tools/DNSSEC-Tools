@@ -8,7 +8,6 @@ function loadInitial() {
 }
 
 function makeLight(creator, type, name, host) {
-    console.log("test type " + type + " for host " + host)
     var result = creator.createObject(resultGrid)
     result.name = name
     result.test = testManager.makeTest(type, host, name);
@@ -69,8 +68,6 @@ function createAllComponents() {
 
 function runAllTests() {
     for(var result in tests) {
-        console.log("here: " + result + " - " + tests[result])
         tests[result].test.check();
-        console.log("result: " + tests[result].test.message)
     }
 }
