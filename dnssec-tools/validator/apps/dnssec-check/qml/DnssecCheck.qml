@@ -10,13 +10,12 @@ Rectangle {
 
     Rectangle {
         id: titleBox
-        width: 7*parent.width/8
+        width: parent.width
         height: titleText.height + 4
         color: "#444"
         anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.rightMargin: 10
-        anchors.topMargin: 5
+        anchors.left: parent.left
+        anchors.margins: 10
         radius: 2
         Text {
             id: titleText
@@ -49,18 +48,35 @@ Rectangle {
         }
     }
 
-    Button {
-        id: testButton
-        anchors.top: parent.top
-        anchors.left: parent.left
-
-        onClicked: {
-            DNSSECCheck.runAllTests()
-        }
-    }
 
     NewServerBox {
         id: newServerBox
+        anchors.top: resultsBox.bottom
+        anchors.left: resultsBox.left
+    }
+
+    Row {
+        anchors.top: newServerBox.bottom
+        anchors.left: newServerBox.left
+        anchors.topMargin: 10
+
+        spacing: 5
+
+        Button {
+            id: testButton
+            text: "Run Tests"
+            onClicked: {
+                DNSSECCheck.runAllTests()
+            }
+        }
+
+        Button {
+            id: resetButton
+            text: "Reset"
+            onClicked: {
+                console.log("reset")
+            }
+        }
     }
 
     Component.onCompleted: {
