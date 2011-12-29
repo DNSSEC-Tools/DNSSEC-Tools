@@ -1,5 +1,7 @@
 #include "DNSSECTest.h"
 
+#include <qdebug.h>
+
 DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName) :
     QObject(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName), m_statusStrings()
 {
@@ -15,6 +17,20 @@ DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const cha
     m_statusStrings.insert(WARNING, "warning");
 }
 
+DNSSECTest::DNSSECTest(const DNSSECTest &copyFrom) :
+    m_status(copyFrom.m_status), m_checkFunction(copyFrom.m_checkFunction),
+    m_serverAddress(0), m_checkName(copyFrom.m_checkName), m_statusStrings(copyFrom.m_statusStrings)
+{
+    if (copyFrom.m_serverAddress) {
+        m_serverAddress = strdup(copyFrom.m_serverAddress);
+    }
+    m_msgBuffer[0] = 0;
+    if (copyFrom.m_msgBuffer[0]) {
+        strncpy(m_msgBuffer, copyFrom.m_msgBuffer, qMax(strlen(copyFrom.m_msgBuffer), sizeof(m_msgBuffer)-1));
+    }
+}
+
+
 DNSSECTest::lightStatus DNSSECTest::status()
 {
     return m_status;
@@ -22,7 +38,10 @@ DNSSECTest::lightStatus DNSSECTest::status()
 
 void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
 {
-    m_status = newStatus;
+    if (newStatus != m_status) {
+        m_status = newStatus;
+        emit statusChanged();
+    }
 }
 
 void DNSSECTest::check()
@@ -41,6 +60,7 @@ void DNSSECTest::check()
 void DNSSECTest::setMessage(const QString &message)
 {
     strncpy(m_msgBuffer, message.toAscii().data(), sizeof(m_msgBuffer)-1);
+    emit messageChanged();
 }
 
 const QString DNSSECTest::message() const

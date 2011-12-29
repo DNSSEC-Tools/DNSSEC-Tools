@@ -36,9 +36,9 @@
 static const QString resultServerBaseURL = RESULTS_SUBMIT_URL;
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), m_rows(0), m_manager(0), m_detailedResults(0), m_submitResults(0)
+    : QMainWindow(parent), m_testManager(), m_rows(0), m_manager(0), m_detailedResults(0), m_submitResults(0)
 {
-    loadResolvConf();
+    m_serverAddresses = m_testManager.loadResolvConf();
     setupWidgets();
     setupMenus();
     setWindowIcon(QIcon(":/images/dnssec-check-64x64.png"));
@@ -308,32 +308,6 @@ void MainWindow::busy() {
     m_detailedResults->setEnabled(false);
     if (m_submitResults)
         m_submitResults->setEnabled(false);
-}
-
-void MainWindow::loadResolvConf()
-{
-    const char *resolv_conf_file = resolv_conf_get();
-
-#ifdef SMALL_DEVICE
-    if (strcmp(resolv_conf_file, "/dev/null") == 0) {
-        resolv_conf_file = "/var/run/resolv.conf.wlan0";
-    }
-#endif
-
-    QFile resolvConf(resolv_conf_file);
-    resolvConf.open(QIODevice::ReadOnly);
-
-    QRegExp nsRegexp("^\\s*nameserver\\s+(\\S+)");
-    qDebug() << "reading " << resolv_conf_file;
-
-    while (!resolvConf.atEnd()) {
-        QByteArray line = resolvConf.readLine();
-        if (nsRegexp.indexIn(line) != -1) {
-            m_serverAddresses.push_back(nsRegexp.cap(1));
-        }
-    }
-    resolvConf.close();
-    qDebug() << m_serverAddresses;
 }
 
 void MainWindow::showAbout()
