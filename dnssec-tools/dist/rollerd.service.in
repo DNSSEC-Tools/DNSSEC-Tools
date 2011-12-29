@@ -1,0 +1,10 @@
+[Unit]
+Description=Rollerd DNS rolling daemon
+After=network.target
+
+[Service]
+ExecStart=@prefix@/bin/rollerd -foreground
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
