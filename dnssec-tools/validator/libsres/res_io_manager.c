@@ -30,22 +30,6 @@
 #define FALSE 0
 #endif
 
-void res_print_server(struct name_server *ea_ns, int i);
-
-static int res_io_debug = FALSE;
-
-void
-res_io_set_debug(int val)
-{
-    res_io_debug = val;
-}
-
-int
-res_io_get_debug(void)
-{
-    return res_io_debug;
-}
-
 /*
  * Less than or equal comparison for timeval structures
  * note: timercmp doesn't handle <= or >=

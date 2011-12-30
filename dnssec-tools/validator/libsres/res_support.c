@@ -527,10 +527,22 @@ namecmp(const u_char * name1, const u_char * name2)
  * using val_log for logging introduces a circular dependency. Default to
  * using stderr for logging unless USE_LIBVAL_LOGGING is defined.
  */
-#ifndef USE_LIBVAL_LOGGING
-
 static int sres_level = LOG_WARNING;
-//static int sres_level = 0;
+
+void
+res_set_debug_level(int level)
+{
+    sres_level = level;
+}
+
+int
+res_get_debug_level(void)
+{
+    return sres_level;
+}
+
+
+#ifndef USE_LIBVAL_LOGGING
 
 void
 res_log(void *dont_care, int level, const char *template, ...)
@@ -540,11 +552,7 @@ res_log(void *dont_care, int level, const char *template, ...)
     struct tm       *tm;
     va_list         ap;
 
-    if (NULL == template)
-        return;
-
-    /** check individual level */
-    if (level > sres_level)
+    if (NULL == template || level > sres_level)
         return;
 
     gettimeofday(&tv, NULL);
@@ -557,8 +565,7 @@ res_log(void *dont_care, int level, const char *template, ...)
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
     va_end(ap);
 
-    fprintf(stderr, "%s", buf);
-    fprintf(stderr, "\n");
+    fprintf(stderr, "%s\n", buf);
     fflush(stderr);
 }
 
@@ -569,11 +576,7 @@ res_log_ap(void *dont_care, int level, const char *template, va_list ap)
     struct timeval  tv;
     struct tm       *tm;
 
-    if (NULL == template)
-        return;
-
-    /** check individual level */
-    if (level > sres_level)
+    if (NULL == template || level > sres_level)
         return;
 
     gettimeofday(&tv, NULL);
@@ -595,10 +598,10 @@ res_log_ap(void *dont_care, int level, const char *template, va_list ap)
 void
 res_log_ap(void *dont_care, int level, const char *template, va_list ap)
 {
-    if (NULL == template)
+    if (NULL == template || level > sres_level)
         return;
 
-    val_log_ap((val_context_t*)dont_care, level, template, ap);
+    val_log_ap((val_context_t*)dont_care, LOG_ERROR, template, ap);
 }
 
 /** pass messages on to val_log... */
@@ -607,11 +610,11 @@ res_log(void *dont_care, int level, const char *template, ...)
 {
     va_list         ap;
 
-    if (NULL == template)
+    if (NULL == template || level > sres_level)
         return;
 
     va_start(ap, template);
-    val_log_ap((val_context_t*)dont_care, level, template, ap);
+    val_log_ap((val_context_t*)dont_care, LOG_ERROR, template, ap);
     va_end(ap);
 }
 

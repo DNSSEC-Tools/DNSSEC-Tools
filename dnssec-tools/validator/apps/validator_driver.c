@@ -849,9 +849,9 @@ main(int argc, char *argv[])
     context = NULL;
 #endif
 
-    /* returned level is 0 based;, > 6 means 8 or higher; e.g. -o 8:stdout */
+    /* returned level is 0 based;, > 6 means 7 or higher; e.g. -o 7:stdout */
     if (val_log_highest_debug_level() > 6)
-        res_io_set_debug(1);
+        res_set_debug_level(val_log_highest_debug_level());
 
     rc = 0;
 
