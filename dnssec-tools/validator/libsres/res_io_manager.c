@@ -216,6 +216,7 @@ res_ea_init(u_char * signed_query, size_t signed_length,
     memset(temp, 0x0, sizeof(struct expected_arrival));
     temp->ea_socket = INVALID_SOCKET;
     temp->ea_ns = ns;
+    temp->ea_edns0_size = ns->ns_edns0_size;
     temp->ea_which_address = 0;
     temp->ea_using_stream = FALSE;
     temp->ea_signed = signed_query;
@@ -480,13 +481,13 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
 
     res_log(NULL, LOG_DEBUG, "libsres: ""ea %p attempting ns fallback", temp);
 
-    old_size = temp->ea_ns->ns_edns0_size;
+    old_size = temp->ea_edns0_size;
     if ((temp->ea_ns->ns_options & RES_USE_DNSSEC) && 
-        (temp->ea_ns->ns_edns0_size > 0)) {
+        (temp->ea_edns0_size > 0)) {
         for (i = 0; i < sizeof(edns0_fallback); i++) {
-            if (temp->ea_ns->ns_edns0_size > edns0_fallback[i]) {
+            if (temp->ea_edns0_size > edns0_fallback[i]) {
                 /* try using a lower edns0 value */
-                temp->ea_ns->ns_edns0_size = edns0_fallback[i];
+                temp->ea_edns0_size = edns0_fallback[i];
                 if (edns0_fallback[i] == 0) {
                     /* try without EDNS0 */
                     res_log(NULL, LOG_DEBUG, "libsres: "
@@ -534,7 +535,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     res_log(NULL, LOG_INFO, "libsres: "
             "ns fallback for {%s %s(%d) %s(%d)}, edns0 size %d > %d",
             name, p_class(class_h), class_h, p_type(type_h), type_h,
-            old_size, temp->ea_ns->ns_edns0_size);
+            old_size, temp->ea_edns0_size);
 
   reset:
     gettimeofday(&temp->ea_next_try, NULL);
@@ -577,7 +578,7 @@ res_io_next_address(struct expected_arrival *ea,
             ea->ea_socket = INVALID_SOCKET;
         }
         ea->ea_which_address++;
-        ea->ea_ns->ns_edns0_size = RES_EDNS0_DEFAULT;
+        ea->ea_edns0_size = ea->ea_ns->ns_edns0_size;
         ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
         set_alarm(&(ea->ea_next_try), 0);
         set_alarm(&(ea->ea_cancel_time),res_get_timeout(ea->ea_ns));
