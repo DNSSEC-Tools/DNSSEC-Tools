@@ -455,7 +455,8 @@ do_verify(val_context_t * ctx,
           val_astatus_t * sig_status,
           struct rrset_rec *the_set,
           struct val_rr_rec *the_sig,
-          val_dnskey_rdata_t * the_key, int is_a_wildcard)
+          val_dnskey_rdata_t * the_key, int is_a_wildcard,
+          u_int32_t flags)
 {
     /*
      * Use the crypto routines to verify the signature
@@ -509,9 +510,13 @@ do_verify(val_context_t * ctx,
 
     rrsig_rdata.next = NULL;
 
-    get_clock_skew(ctx, zone_n, &clock_skew, &ttl_x);
-    /* the state is valid for only as long as the policy validity period */
-    SET_MIN_TTL(the_set->rrs_ttl_x, ttl_x);
+    if (flags & VAL_QUERY_IGNORE_SKEW) {
+        clock_skew = -1;
+    } else {
+        get_clock_skew(ctx, zone_n, &clock_skew, &ttl_x);
+        /* the state is valid for only as long as the policy validity period */
+        SET_MIN_TTL(the_set->rrs_ttl_x, ttl_x);
+    }
 
     /*
      * Perform the verification 
@@ -629,7 +634,8 @@ check_label_count(struct rrset_rec *the_set,
 void
 verify_next_assertion(val_context_t * ctx,
                       struct val_digested_auth_chain *as,
-                      struct val_digested_auth_chain *the_trust)
+                      struct val_digested_auth_chain *the_trust,
+                      u_int32_t flags)
 {
     struct rrset_rec *the_set;
     struct val_rr_rec  *the_sig;
@@ -734,7 +740,7 @@ verify_next_assertion(val_context_t * ctx,
             is_verified = do_verify(ctx, signby_name_n,
                       &nextrr->rr_status,
                       &the_sig->rr_status,
-                      the_set, the_sig, &dnskey, is_a_wildcard);
+                      the_set, the_sig, &dnskey, is_a_wildcard, flags);
 
             /*
              * There might be multiple keys with the same key tag; set this as

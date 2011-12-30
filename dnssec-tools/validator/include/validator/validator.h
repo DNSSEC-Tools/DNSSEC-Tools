@@ -60,6 +60,7 @@ struct timeval;
 #define VAL_QUERY_NO_EDNS0_FALLBACK 0x00000020
 #define VAL_QUERY_SKIP_RESOLVER     0x00000040
 #define VAL_QUERY_REFRESH_QCACHE    0x00000080
+#define VAL_QUERY_IGNORE_SKEW       0x00000100
 
 /*
  * Flags in this bit mask are MUST match if they
