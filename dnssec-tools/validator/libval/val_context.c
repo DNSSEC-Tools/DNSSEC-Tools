@@ -399,18 +399,18 @@ val_create_context_with_conf(char *label,
  * and with the given default query flags
  */
 int
-val_create_context_with_flags(char *label, 
-                              unsigned int flags,
-                              char *dnsval_conf, 
-                              char *resolv_conf, 
-                              char *root_conf, 
-                              val_context_t ** newcontext)
+val_create_context_ex(char *label, 
+                      val_context_opt_t *opt,
+                      val_context_t ** newcontext)
 {
 
-    return val_create_context_internal(label, 
-                flags,
-                dnsval_conf, resolv_conf, root_conf, newcontext); 
+    if (opt == NULL)
+        return VAL_BAD_ARGUMENT;
 
+    return val_create_context_internal(label, 
+                opt->vc_flags, opt->vc_val_conf, 
+                opt->vc_res_conf, opt->vc_root_conf, 
+                newcontext); 
 }
 
 
