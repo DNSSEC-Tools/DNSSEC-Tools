@@ -712,6 +712,7 @@ find_nslist_for_query(val_context_t * context,
     struct val_query_chain *next_q;
     struct name_server *ns;
     u_char ns_cred = SR_CRED_UNSET;
+    long edns0_size;
 
     if (next_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -789,9 +790,12 @@ done:
     /*
      * Set the CD and EDNS0 options
      */
-    for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
-        ns->ns_edns0_size = (context && context->g_opt)? 
+    edns0_size = (context && context->g_opt)?
                     context->g_opt->edns0_size : RES_EDNS0_DEFAULT;
+    val_log(context, LOG_WARNING, 
+            "find_nslist_for_query(): Enabling DNSSEC for query (EDNS0 = %ld).", edns0_size);
+    for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
+        ns->ns_edns0_size = edns0_size;
         ns->ns_options |= RES_USE_DNSSEC;
     }
 
@@ -1539,6 +1543,7 @@ digest_response(val_context_t * context,
     char name_p[NS_MAXDNAME];
     struct name_server *resp_ns = NULL;
     int top_name;
+    char name_buf[INET6_ADDRSTRLEN + 1];
 
     if ((matched_qfq == NULL) || (queries == NULL) ||
         (di_response == NULL) || (response_data == NULL))
@@ -1614,10 +1619,17 @@ digest_response(val_context_t * context,
        goto done;
     }
 
+    strcpy(name_buf, "");
+    if (resp_ns && resp_ns->ns_number_of_addresses > 0) {
+        val_get_ns_string((struct sockaddr *)resp_ns->ns_address[0],
+                          name_buf, sizeof(name_buf));
+    }
+
     val_log(context, LOG_DEBUG, 
-            "digest_response(): Processing response for {%s %s(%d) %s(%d)} from zonecut: %s",
+            "digest_response(): Processing response for {%s %s(%d) %s(%d)}"
+            "from zonecut: %s (%s)",
             query_name_p, p_class(query_class_h), query_class_h,
-            p_type(query_type_h), query_type_h, rrs_zonecut_p); 
+            p_type(query_type_h), query_type_h, rrs_zonecut_p, name_buf); 
 
     /*
      *  Skip question section 
