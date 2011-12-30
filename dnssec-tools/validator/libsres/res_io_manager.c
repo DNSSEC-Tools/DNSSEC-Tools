@@ -441,6 +441,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
 {
     const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
     long             delay = 0, i, old_size;
+    int              retval = 1;
     struct expected_arrival *temp = ea;
 
     if (!temp && !name)
@@ -510,7 +511,8 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
 
     if (0 == old_size) {
         res_log(NULL, LOG_DEBUG, "libsres: ""fallback already disabled edns");
-        return 0;
+        retval = 0;
+        goto reset;
     }
 
     if (temp->ea_signed)
@@ -534,6 +536,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
             name, p_class(class_h), class_h, p_type(type_h), type_h,
             old_size, temp->ea_ns->ns_edns0_size);
 
+  reset:
     gettimeofday(&temp->ea_next_try, NULL);
     for (i = 0; i < temp->ea_remaining_attempts; i++)
         delay += temp->ea_ns->ns_retrans << i;
@@ -555,7 +558,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
             } 
         }
     }
-    return 1;
+    return retval;
 }
 
 static void
