@@ -112,6 +112,14 @@ struct val_log;
 typedef struct val_log val_log_t;
 struct queries_for_query;
 
+/* validator context options */
+typedef struct val_context_opt {
+    unsigned int vc_flags;
+    char *vc_val_conf;
+    char *vc_res_conf;
+    char *vc_root_conf;
+} val_context_opt_t;
+
 /*
  * Validator policies can be one of the following
  */
@@ -406,12 +414,9 @@ struct queries_for_query;
                                                  char *resolv_conf,
                                                  char *root_conf,
                                                  val_context_t ** newcontext);
-    int             val_create_context_with_flags(char *label,
-                                                  unsigned int flags,
-                                                  char *dnsval_conf,
-                                                  char *resolv_conf,
-                                                  char *root_conf,
-                                                  val_context_t ** newcontext);
+    int             val_create_context_ex(char *label,
+                                          val_context_opt_t *opt,
+                                          val_context_t ** newcontext);
     int             val_create_context(char *label,
                                        val_context_t ** newcontext);
     void            val_free_context(val_context_t * context);
