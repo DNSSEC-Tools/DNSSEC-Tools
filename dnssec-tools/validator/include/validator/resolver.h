@@ -198,8 +198,8 @@ int             clone_ns_list(struct name_server **ns_list,
 void            free_name_server(struct name_server **ns);
 void            free_name_servers(struct name_server **ns);
 
-void            res_io_set_debug(int val);
-int             res_io_get_debug(void);
+void            res_set_debug(int val);
+int             res_get_debug(void);
 void            res_io_view(void);
 
 int             label_bytes_cmp(const u_char * field1, size_t length1,
