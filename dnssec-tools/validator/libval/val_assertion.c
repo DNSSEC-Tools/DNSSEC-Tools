@@ -4396,7 +4396,7 @@ try_verify_assertion(val_context_t * context,
             the_trust = get_ac_trust(context, next_as, queries, flags, 0); 
         }
 
-        verify_next_assertion(context, next_as, the_trust);
+        verify_next_assertion(context, next_as, the_trust, flags);
         /* 
          * Set the TTL to the minimum of the authentication 
          * chain element and the trust element

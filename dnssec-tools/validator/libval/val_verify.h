@@ -53,6 +53,7 @@ int             ds_hash_is_equal(val_context_t *ctx,
  */
 void            verify_next_assertion(val_context_t * ctx,
                                       struct val_digested_auth_chain *as,
-                                      struct val_digested_auth_chain *the_trust);
+                                      struct val_digested_auth_chain *the_trust,
+                                      u_int flags);
 
 #endif
