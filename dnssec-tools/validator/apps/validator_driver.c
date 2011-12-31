@@ -83,14 +83,18 @@ int
 check_results(val_context_t * context, const char *desc, char * name,
               const u_int16_t class_h, const u_int16_t type_h,
               const int *result_ar, struct val_result_chain *results,
-              int trusted_only)
+              int trusted_only, struct timeval *start)
 {
     int             result_array[MAX_TEST_RESULTS];
     int             err = 0, i;
+    struct timeval  now, duration;
     struct val_result_chain *res;
 
-    if (NULL == result_ar)
+    if (NULL == result_ar || NULL == start)
         return -1;
+
+    gettimeofday(&now, NULL);
+    timersub(&now, start, &duration);
 
     /*
      * make a local copy of result array 
@@ -167,6 +171,9 @@ check_results(val_context_t * context, const char *desc, char * name,
                 "FAILED: Some results were not validated successfully \n");
     }
 
+    fprintf(stderr, "%s: ****END**** %ld.%ld sec\n", desc, duration.tv_sec,
+            duration.tv_usec);
+
     return err;
 }
 
@@ -202,7 +209,7 @@ sendquery(val_context_t * context, const char *desc, char * name,
     int             ret_val;
     struct val_result_chain *results = NULL;
     int             err = 0;
-    struct timeval     now, start, duration;
+    struct timeval     start;
 
     if ((NULL == desc) || (NULL == name) || (NULL == result_ar) || (resp == NULL))
         return -1;
@@ -220,7 +227,7 @@ sendquery(val_context_t * context, const char *desc, char * name,
         if (result_ar)
             err =
                 check_results(context, desc, name, class_h, type_h,
-                              result_ar, results, trusted_only);
+                              result_ar, results, trusted_only, &start);
 
         val_free_result_chain(results);
     } else {
@@ -228,13 +235,7 @@ sendquery(val_context_t * context, const char *desc, char * name,
         fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %s\n",
                 p_val_err(ret_val));
     }
-    gettimeofday(&now, NULL);
-
     results = NULL;
-
-    timersub(&now, &start, &duration);
-    fprintf(stderr, "%s: ****END**** %ld.%ld sec\n", desc, duration.tv_sec,
-            duration.tv_usec);
 
     return (err != 0);          /* 0 success, 1 error */
 }
