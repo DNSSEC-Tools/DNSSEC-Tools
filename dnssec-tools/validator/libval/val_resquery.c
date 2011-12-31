@@ -2277,7 +2277,7 @@ val_res_cancel(struct val_query_chain *matched_q)
 
 #ifndef VAL_NO_ASYNC
     if (matched_q->qc_ea) {
-        res_async_query_free(matched_q->qc_ea);
+        res_async_query_free(matched_q->qc_ea); /* frees whole ea list */
         matched_q->qc_ea = NULL;
     }
     else
@@ -2527,7 +2527,11 @@ val_resquery_async_rcv(val_context_t * context,
 
     return ret_val;
  }
- 
+
+/*
+ *
+ * timeout is a relative value. e.g. 5 seconds
+ */ 
 int
 val_async_select_info(val_context_t *ctx, fd_set *activefds,
                       int *nfds, struct timeval *timeout)
@@ -2535,6 +2539,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
     val_async_status *as;
     struct queries_for_query *qfq;
     val_context_t *context;
+    struct timeval   now, closest, *closest_event = &closest;
 
     /*
      * get context, if needed
@@ -2544,6 +2549,23 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
         return VAL_BAD_ARGUMENT;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
+
+    /** need to adjust relative timeout to absolute time used by libval */
+    if (timeout) {
+        if(timeout->tv_sec < LONG_MAX) {
+            /* add current time to delay */
+            gettimeofday(&now, NULL);
+            timeradd(&now, timeout, &closest);
+        } else
+            memcpy(closest_event, timeout, sizeof(closest_event));
+        if (closest.tv_sec < 0) {
+            closest.tv_sec = 0;
+            closest.tv_usec = 0;
+        }
+        else if (closest.tv_usec < 0)
+            closest.tv_usec = 0;
+    } else
+        closest_event = NULL;
 
     CTX_LOCK_ACACHE(context);
 
@@ -2567,11 +2589,26 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
                     p_type(qfq->qfq_query->qc_type_h),
                     qfq->qfq_query->qc_type_h, qfq->qfq_query->qc_ea);
             res_async_query_select_info(qfq->qfq_query->qc_ea, nfds, activefds,
-                                        timeout);
+                                        closest_event);
         }
 
     CTX_UNLOCK_ACACHE(context);
     CTX_UNLOCK_POL(context);
+
+    /** convert absolute time to relative timeout */
+    if (timeout) {
+        timersub(closest_event, &now, timeout);
+        /** in debugger timeout's can expire/overflow */
+        if (timeout->tv_sec < 0) {
+            timeout->tv_sec = 0;
+            timeout->tv_usec = 0;
+        } else if (timeout->tv_usec < 0)
+            timeout->tv_usec = 0;
+        val_log(context, LOG_DEBUG,
+                "val_async_select_info: next event at %ld.%ld (%ld.%ld)",
+                closest.tv_sec, closest.tv_usec,
+                timeout->tv_sec, timeout->tv_usec);
+    }
 
     return VAL_NO_ERROR;
 }
