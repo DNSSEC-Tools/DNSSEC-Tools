@@ -177,8 +177,10 @@ print_val_response(struct val_response *resp)
 
     printf("DNSSEC status: %s [%d]\n",
            p_val_error(resp->vr_val_status), resp->vr_val_status);
-    if (val_istrusted(resp->vr_val_status)) {
-        printf("Trusted response:\n");
+    if (val_isvalidated(resp->vr_val_status)) {
+        printf("Validated response:\n");
+    } else if (val_istrusted(resp->vr_val_status)) {
+        printf("Trusted but not validated response:\n");
     } else {
         printf("Untrusted response:\n");
     }
