@@ -214,6 +214,15 @@ set_alarm(struct timeval *tv, long delay)
     tv->tv_sec += delay;
 }
 
+void
+set_alarms(struct expected_arrival *ea, long next, long cancel)
+{
+    gettimeofday(&ea->ea_next_try, NULL);
+    ea->ea_next_try.tv_sec += next;
+    ea->ea_cancel_time.tv_sec = ea->ea_next_try.tv_sec + cancel;
+    ea->ea_cancel_time.tv_usec = ea->ea_next_try.tv_usec;
+}
+
 struct expected_arrival *
 res_ea_init(u_char * signed_query, size_t signed_length,
             struct name_server *ns, long delay)
@@ -238,8 +247,7 @@ res_ea_init(u_char * signed_query, size_t signed_length,
     temp->ea_response = NULL;
     temp->ea_response_length = 0;
     temp->ea_remaining_attempts = ns->ns_retry+1;
-    set_alarm(&temp->ea_next_try, delay);
-    set_alarm(&temp->ea_cancel_time, delay + res_get_timeout(ns));
+    set_alarms(temp, delay, res_get_timeout(ns));
     temp->ea_next = NULL;
 
     return temp;
@@ -411,7 +419,7 @@ res_io_send(struct expected_arrival *shipit)
     delay = shipit->ea_ns->ns_retrans
         << (shipit->ea_ns->ns_retry + 1 - shipit->ea_remaining_attempts--);
     res_log(NULL, LOG_DEBUG, "libsres: ""next try delay %d", delay);
-    set_alarm(&shipit->ea_next_try, delay);
+    set_alarms(shipit, delay, res_get_timeout(shipit->ea_ns));
     res_print_ea(shipit);
 
     return SR_IO_UNSET;
@@ -443,6 +451,34 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
     return ret_val;
 }
 
+static void
+_reset_timeouts(struct expected_arrival *temp)
+{
+    res_log(NULL, LOG_INFO, "libsres: ""reset timeout for %p", temp);
+
+    set_alarms(temp, 0, res_get_timeout(temp->ea_ns));
+
+    /* 
+     *  if next event is in the future, make sure we
+     *  offset it to the current time IF it's not already active.
+     */
+    if (temp->ea_next) {
+        struct expected_arrival *t;
+        long offset = temp->ea_next->ea_next_try.tv_sec - 
+                            temp->ea_next_try.tv_sec;
+        if (offset > 0) {
+            for (t=temp->ea_next; t; t=t->ea_next) {
+                if (INVALID_SOCKET != t->ea_socket)
+                    continue;
+                res_log(NULL, LOG_INFO, "libsres: ""timeout offset %ld for %p",
+                        offset, t);
+                t->ea_next_try.tv_sec -= offset;
+                t->ea_cancel_time.tv_sec -= offset;
+            } 
+        }
+    }
+}
+
 /*
  * 1 : edns0 fallback succeeded, ready for retry.
  * 0 : edns0 fallback failed, no more retries for server
@@ -455,8 +491,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
                   const u_int16_t class_h, const u_int16_t type_h)
 {
     const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
-    long             delay = 0, i, old_size;
-    int              retval = 1;
+    long             i, old_size;
     struct expected_arrival *temp = ea;
 
     if (!temp && !name)
@@ -524,10 +559,13 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
         return 0;
     }
 
+    /** reset timeouts for immediate retries */
+    _reset_timeouts(temp);
+    UPDATE(closest_event, temp->ea_next_try);
+
     if (0 == old_size) {
         res_log(NULL, LOG_DEBUG, "libsres: ""fallback already disabled edns");
-        retval = 0;
-        goto reset;
+        return 0;
     }
 
     if (temp->ea_signed)
@@ -551,29 +589,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
             name, p_class(class_h), class_h, p_type(type_h), type_h,
             old_size, temp->ea_edns0_size);
 
-  reset:
-    gettimeofday(&temp->ea_next_try, NULL);
-    for (i = 0; i < temp->ea_remaining_attempts; i++)
-        delay += temp->ea_ns->ns_retrans << i;
-
-    set_alarm(&temp->ea_cancel_time, delay); 
-    UPDATE(closest_event, temp->ea_next_try);
-    /* 
-     *  if next event is in the future, make sure we
-     *  offset it to the current time 
-     */
-    if (temp->ea_next) {
-        struct expected_arrival *t;
-        long offset = temp->ea_next->ea_next_try.tv_sec - 
-                            temp->ea_next_try.tv_sec;
-        if (offset > 0) {
-            for (t=temp->ea_next; t; t=t->ea_next) {
-                t->ea_next_try.tv_sec -= offset;
-                t->ea_cancel_time.tv_sec -= offset;
-            } 
-        }
-    }
-    return retval;
+    return 1;
 }
 
 static void
@@ -594,8 +610,7 @@ res_io_next_address(struct expected_arrival *ea,
         ea->ea_which_address++;
         ea->ea_edns0_size = ea->ea_ns->ns_edns0_size;
         ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
-        set_alarm(&(ea->ea_next_try), 0);
-        set_alarm(&(ea->ea_cancel_time),res_get_timeout(ea->ea_ns));
+        set_alarms(ea, 0, res_get_timeout(ea->ea_ns));
         res_log(NULL, LOG_INFO,
                 "libsres: ""%s - SWITCHING TO NEW ADDRESS", more_prefix);
     } else {
@@ -1091,7 +1106,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                       size_t * answer_length,
                       struct name_server **respondent)
 {
-    int             retval, retries = 0;
+    int             retval = SR_IO_UNSET, retries = 0;
 
     struct expected_arrival *orig = ea_list;
     res_log(NULL,LOG_DEBUG,"libsres: "" checking for response for ea %p list",
@@ -1122,7 +1137,8 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                 ea_list->ea_socket = INVALID_SOCKET;
             }
             _clone_respondent(ea_list, respondent);
-            set_alarm(&ea_list->ea_next_try, 0); // or res_io_next_address??
+            set_alarms(ea_list, 0, res_get_timeout(ea_list->ea_ns));
+            retval = SR_IO_NO_ANSWER;
             continue; /* in case another ea has a response */
         }
 
@@ -1149,10 +1165,10 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
 
     if (0 == retries) {
         res_log(NULL, LOG_DEBUG, "libsres: ""*** no answer and no retries!");
-        return SR_IO_NO_ANSWER;
+        retval = SR_IO_NO_ANSWER;
     }
 
-    return SR_IO_UNSET;
+    return retval;
 }
 
 size_t
@@ -1331,9 +1347,7 @@ res_switch_to_tcp(struct expected_arrival *ea)
         ea->ea_socket = INVALID_SOCKET;
     }
     ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
-    set_alarm(&ea->ea_next_try, 0);
-
-    set_alarm(&ea->ea_cancel_time, res_get_timeout(ea->ea_ns));
+    set_alarms(ea, 0, res_get_timeout(ea->ea_ns));
 }
 
 /*
