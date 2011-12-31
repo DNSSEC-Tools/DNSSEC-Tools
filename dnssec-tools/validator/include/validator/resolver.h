@@ -135,6 +135,11 @@ struct name_server {
 
 struct expected_arrival {
     SOCKET          ea_socket;
+#ifdef EA_EXTRA_DEBUG
+    char           *name;
+    u_int16_t       ea_type_h;
+    u_int16_t       ea_class_h;
+#endif
     struct name_server *ea_ns;
     int             ea_which_address;
     int             ea_edns0_size;

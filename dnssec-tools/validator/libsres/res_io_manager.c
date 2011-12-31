@@ -160,6 +160,15 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
 {
     if ((ea == NULL) || (*ea == NULL))
         return;
+
+#ifdef DEBUG_DONT_RELEASE_ANYTHING
+    {
+        static struct expected_arrival *holding = NULL;
+
+        (*ea)->ea_next = holding;
+        holding = *ea;
+    }
+#else
     if ((*ea)->ea_socket != INVALID_SOCKET)
         res_log(NULL, LOG_DEBUG, "libsres: ""ea %p, fd %d free",
                 *ea, (*ea)->ea_socket);
@@ -168,6 +177,10 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
                 *ea, (*ea)->ea_socket);
     if ((*ea)->ea_ns != NULL)
         free_name_server(&((*ea)->ea_ns));
+#ifdef EA_EXTRA_DEBUG
+    if ((*ea)->name != NULL)
+        free((*ea)->name);
+#endif
     if ((*ea)->ea_socket != INVALID_SOCKET)
         CLOSESOCK((*ea)->ea_socket);
     if ((*ea)->ea_signed)
@@ -175,6 +188,7 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
     if ((*ea)->ea_response)
         FREE((*ea)->ea_response);
     FREE(*ea);
+#endif
 
     *ea = NULL;
 }
@@ -197,7 +211,6 @@ set_alarm(struct timeval *tv, long delay)
 {
     gettimeofday(tv, NULL);
     tv->tv_sec += delay;
-    tv->tv_usec = 0;
 }
 
 struct expected_arrival *
@@ -599,6 +612,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                      struct timeval *now, int *net_change, int *active)
 {
     struct timeval  local_now;
+    int             remaining = 0;
     
     /*
      * if caller didn't pass us current time, get it
@@ -624,6 +638,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                     ea, ea->ea_socket, ea->ea_remaining_attempts);
             continue;
         }
+        ++remaining;
         if (ea->ea_socket != INVALID_SOCKET )
             res_print_ea(ea);
 
@@ -651,7 +666,6 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                     if (needed_new_socket) {
                         if (net_change)
                             ++(*net_change);
-                        res_print_ea(ea);
                     }
                     break; /* from while remaining attempts */
                 }
@@ -686,11 +700,21 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                 ++(*active);
         }
     }
-    if (next_evt)
-        res_log(NULL, LOG_DEBUG, "libsres: ""  Next event %ld.%ld",
-                next_evt->tv_sec, next_evt->tv_usec);
+    if (next_evt) {
+        struct timeval  now,when;
+        gettimeofday(&now, NULL);
+        timersub(next_evt, &now, &when);
+        if (when.tv_sec < 0) {
+            when.tv_sec = when.tv_usec = 0;
+        }
+        res_log(NULL, LOG_DEBUG, "libsres: ""  Next event %ld.%ld (%ld.%ld)",
+                next_evt->tv_sec, next_evt->tv_usec, when.tv_sec, when.tv_usec);
+    }
 
-    return SR_IO_UNSET;
+    if (remaining)
+        return SR_IO_UNSET;
+    else
+        return SR_IO_NO_ANSWER;
 }
 
 int
@@ -905,13 +929,15 @@ void
 res_io_select_info(struct expected_arrival *ea_list, int *nfds,
                    fd_set * read_descriptors, struct timeval *timeout)
 {
-    struct timeval now;
+    struct timeval now, orig;
+    int            count = 0;
 
     if (timeout) {
         res_log(NULL, LOG_DEBUG,
                 "libsres: "" ea %p select/timeout info", ea_list);
         res_log(NULL, LOG_DEBUG+1, "libsres: ""    orig timeout %ld,%ld",
                 timeout->tv_sec, timeout->tv_usec);
+        memcpy(&orig, timeout, sizeof(orig));
         gettimeofday(&now, NULL);
     }
     else
@@ -926,7 +952,9 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
             (ea_list->ea_socket == INVALID_SOCKET))
             continue;
 
-        res_log(NULL,LOG_DEBUG, "libsres:""   fd %d added", ea_list->ea_socket);
+        ++count;
+        res_log(NULL,LOG_DEBUG, "libsres:""   fd %d added, rem %d",
+                ea_list->ea_socket, ea_list->ea_remaining_attempts);
         if (read_descriptors)
             FD_SET(ea_list->ea_socket, read_descriptors);
         if (nfds && (ea_list->ea_socket >= *nfds))
@@ -937,10 +965,16 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
             UPDATE(timeout, ea_list->ea_next_try);
         }
     }
-    if (timeout) {
-        res_log(NULL, LOG_DEBUG, "libsres: ""    final timeout %ld,%ld",
-                timeout->tv_sec, timeout->tv_usec);
+    if (timeout && (orig.tv_sec != timeout->tv_sec ||
+                    orig.tv_usec != timeout->tv_usec)) {
+        res_log(NULL, LOG_DEBUG,
+                "libsres: ""    timeout updated to %ld.%ld, %d fds added",
+                timeout->tv_sec, timeout->tv_usec, count);
     }
+    else
+        res_log(NULL, LOG_DEBUG,
+                "libsres: ""    %d fds added", count);
+
 }
 
 static int
@@ -1529,6 +1563,7 @@ res_print_ea(struct expected_arrival *ea)
     char            buf[INET6_ADDRSTRLEN + 1];
     const char     *addr = NULL;
     size_t	    buflen = sizeof(buf);
+    struct timeval  now,when_next, when_cancel;
 
         struct sockaddr_in *s =
             (struct sockaddr_in *) ((ea->ea_ns->ns_address[i]));
@@ -1547,15 +1582,41 @@ res_print_ea(struct expected_arrival *ea)
             port = s->sin_port;
         }
 
-        res_log(NULL, LOG_DEBUG, "libsres: "
-                "  ea %p Socket: %d, Stream: %d, Nameserver: %s/(%d)",
-                ea, ea->ea_socket, ea->ea_using_stream, addr ? addr : "",
-                ntohs(port));
-        res_log(NULL, LOG_DEBUG, "libsres: "
-                "  Remaining retries: %d, Next try %ld.%ld, Cancel at %ld.%ld",
-                ea->ea_remaining_attempts, ea->ea_next_try.tv_sec,
-                ea->ea_next_try.tv_usec, ea->ea_cancel_time.tv_sec,
-                ea->ea_cancel_time.tv_usec);
+        gettimeofday(&now, NULL);
+        timersub(&ea->ea_next_try, &now, &when_next);
+        timersub(&ea->ea_cancel_time, &now, &when_cancel);
+
+        if (ea->ea_remaining_attempts < 0) { 
+            res_log(NULL, LOG_DEBUG, "libsres: ""  ea %p "
+#ifdef EA_EXTRA_DEBUG
+                    "%s "
+#endif
+                    "Socket: %d, Nameserver: %s:%d, no more retries", ea,
+#ifdef EA_EXTRA_DEBUG
+                    ea->name,
+#endif
+                    ea->ea_socket, addr ? addr : "", ntohs(port));
+        } else {
+            res_log(NULL, LOG_DEBUG, "libsres: " "  ea %p "
+#ifdef EA_EXTRA_DEBUG
+                    "{%s %s(%d) %s(%d)} "
+#endif
+                    "Socket: %d, Stream: %d, Nameserver: %s:%d", ea,
+#ifdef EA_EXTRA_DEBUG
+                    ea->name, p_class(ea->ea_class_h), ea->ea_class_h,
+                    p_type(ea->ea_type_h), ea->ea_type_h,
+#endif
+                    ea->ea_socket, ea->ea_using_stream, addr ? addr : "",
+                    ntohs(port));
+            res_log(NULL, LOG_DEBUG, "libsres: "
+                    "  Remaining retries: %d, "
+                    "Next try %ld.%ld (%ld.%ld), Cancel at %ld.%ld (%ld.%ld)",
+                    ea->ea_remaining_attempts, ea->ea_next_try.tv_sec,
+                    ea->ea_next_try.tv_usec, when_next.tv_sec,
+                    when_next.tv_usec, ea->ea_cancel_time.tv_sec,
+                    ea->ea_cancel_time.tv_usec, when_cancel.tv_sec,
+                    when_cancel.tv_usec);
+        } 
 }
 
 void
@@ -1683,6 +1744,11 @@ res_async_query_create(const char *name, const u_int16_t type_h,
             ret_val = SR_IO_MEMORY_ERROR;
             break; /* fatal, bail */
         }
+#ifdef EA_EXTRA_DEBUG
+        new_ea->name = strdup(name);
+        new_ea->ea_type_h = type_h;
+        new_ea->ea_class_h = class_h;
+#endif
 
         /** add to list */
         if (NULL != head) {
