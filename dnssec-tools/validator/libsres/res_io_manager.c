@@ -161,14 +161,6 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
     if ((ea == NULL) || (*ea == NULL))
         return;
 
-#ifdef DEBUG_DONT_RELEASE_ANYTHING
-    {
-        static struct expected_arrival *holding = NULL;
-
-        (*ea)->ea_next = holding;
-        holding = *ea;
-    }
-#else
     if ((*ea)->ea_socket != INVALID_SOCKET)
         res_log(NULL, LOG_DEBUG, "libsres: ""ea %p, fd %d free",
                 *ea, (*ea)->ea_socket);
@@ -187,6 +179,15 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
         FREE((*ea)->ea_signed);
     if ((*ea)->ea_response)
         FREE((*ea)->ea_response);
+
+#ifdef DEBUG_DONT_RELEASE_ANYTHING
+    {
+        static struct expected_arrival *holding = NULL;
+
+        (*ea)->ea_next = holding;
+        holding = *ea;
+    }
+#else
     FREE(*ea);
 #endif
 
@@ -612,7 +613,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                      struct timeval *now, int *net_change, int *active)
 {
     struct timeval  local_now;
-    int             remaining = 0;
+    int             remaining = 0, no_sock = 0;
     
     /*
      * if caller didn't pass us current time, get it
@@ -638,17 +639,19 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                     ea, ea->ea_socket, ea->ea_remaining_attempts);
             continue;
         }
-        ++remaining;
         if (ea->ea_socket != INVALID_SOCKET )
             res_print_ea(ea);
+        else
+            ++no_sock;
 
         /*
          * check for timeouts. If there is another address, move to it
          */
-        if ( LTEQ(ea->ea_cancel_time, (*now))) {
-            res_io_next_address(ea, "TIMEOUTS", "TIMEOUT - CANCELING");
-            if (net_change)
+        if ( LTEQ(ea->ea_cancel_time, (*now)) ||
+             ((0 == ea->ea_remaining_attempts) && LTEQ(ea->ea_next_try, (*now)))) {
+            if (net_change && ea->ea_socket != INVALID_SOCKET)
                 --(*net_change);
+            res_io_next_address(ea, "TIMEOUTS", "TIMEOUT - CANCELING");
         }
 
         /*
@@ -671,32 +674,17 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                 }
             } /* while */
         }
-        else if (ea->ea_socket == INVALID_SOCKET) {
-            struct expected_arrival *tmp_ea = ea;
-#if 0 
-            for (tmp_ea = ea->ea_next; tmp_ea; tmp_ea = tmp_ea->ea_next ) {
-                res_log(NULL, LOG_DEBUG, "libsres: "" skipping ea");
-                res_print_ea(ea);
-            }
-#else
-            int count = 1;
-            for (tmp_ea = ea->ea_next; tmp_ea; tmp_ea = tmp_ea->ea_next )
-                ++count;
-            res_log(NULL, LOG_DEBUG, "libsres: "" skipping remaining %d ns list",
-                    count);
-#endif
-            break;
-        }
 
         /*
          * update next event
          */
         if (ea->ea_remaining_attempts != -1) {
+            ++remaining;
             if (next_evt) {
                 UPDATE(next_evt, ea->ea_cancel_time);
                 UPDATE(next_evt, ea->ea_next_try);
             }
-            if (active)
+            if (active && ea->ea_socket != INVALID_SOCKET)
                 ++(*active);
         }
     }
@@ -710,6 +698,8 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
         res_log(NULL, LOG_DEBUG, "libsres: ""  Next event %ld.%ld (%ld.%ld)",
                 next_evt->tv_sec, next_evt->tv_usec, when.tv_sec, when.tv_usec);
     }
+    if (no_sock)
+        res_log(NULL, LOG_DEBUG, "libsres: ""  skipped %d invalid sockets", no_sock);
 
     if (remaining)
         return SR_IO_UNSET;
@@ -930,7 +920,7 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
                    fd_set * read_descriptors, struct timeval *timeout)
 {
     struct timeval now, orig;
-    int            count = 0;
+    int            count = 0, skipped = 0;
 
     if (timeout) {
         res_log(NULL, LOG_DEBUG,
@@ -949,8 +939,18 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
      */
     for ( ; ea_list; ea_list = ea_list->ea_next) {
         if ((ea_list->ea_remaining_attempts == -1) ||
-            (ea_list->ea_socket == INVALID_SOCKET))
+            (ea_list->ea_socket == INVALID_SOCKET)) {
+            if (ea_list->ea_remaining_attempts > 0) {
+                if (timeout) {
+                    UPDATE(timeout, ea_list->ea_cancel_time);
+                    UPDATE(timeout, ea_list->ea_next_try);
+                }
+                ++skipped;
+            }
+            res_log(NULL,LOG_DEBUG+1, "libsres:""   fd %d, rem %d",
+                    ea_list->ea_socket, ea_list->ea_remaining_attempts);
             continue;
+        }
 
         ++count;
         res_log(NULL,LOG_DEBUG, "libsres:""   fd %d added, rem %d",
@@ -968,12 +968,12 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
     if (timeout && (orig.tv_sec != timeout->tv_sec ||
                     orig.tv_usec != timeout->tv_usec)) {
         res_log(NULL, LOG_DEBUG,
-                "libsres: ""    timeout updated to %ld.%ld, %d fds added",
-                timeout->tv_sec, timeout->tv_usec, count);
+                "libsres: ""    new timeout %ld.%ld, %d fds added, %d inactive",
+                timeout->tv_sec, timeout->tv_usec, count, skipped);
     }
     else
         res_log(NULL, LOG_DEBUG,
-                "libsres: ""    %d fds added", count);
+                "libsres: ""    %d fds added, %d inactive", count, skipped);
 
 }
 
@@ -1062,18 +1062,39 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                       size_t * answer_length,
                       struct name_server **respondent)
 {
-    int             retval;
-    int             save_count = -1;
+    int             retval, retries = 0, save_count = -1;
 
     struct expected_arrival *orig = ea_list;
     res_log(NULL,LOG_DEBUG,"libsres: "" checking for response for ea %p list",
             ea_list);
     for( ; ea_list; ea_list = ea_list->ea_next) {
-        if (ea_list->ea_remaining_attempts == -1)
-            continue;
+
+        if (ea_list->ea_remaining_attempts != -1)
+            ++retries;
 
         if (!ea_list->ea_response)
             continue;
+
+        if (ea_list->ea_remaining_attempts == -1) {
+            res_log(NULL, LOG_DEBUG, "libsres: "
+                    " *** ANSWER with no remaining attempts");
+            //continue;
+        }
+
+        /** basic format checks; NOTE: returns SR_*, *NOT* SR_IO_* */
+        retval = res_response_checks(&ea_list->ea_response,
+                                     &ea_list->ea_response_length, respondent);
+        if (SR_UNSET != retval) { /* cleared response */
+            res_log(NULL, LOG_DEBUG, "libsres: "
+                    "*** dropped response for ea %p rc %d", ea_list, retval);
+            res_print_ea(ea_list);
+            if (ea_list->ea_socket != INVALID_SOCKET) {
+                CLOSESOCK (ea_list->ea_socket);
+                ea_list->ea_socket = INVALID_SOCKET;
+            }
+            set_alarm(&ea_list->ea_next_try, 0); // or res_io_next_address??
+            continue;
+        }
 
         { /** dummy block to preserve indentation; reformat later */
             if (ea_list != orig)
@@ -1111,6 +1132,12 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             return SR_IO_GOT_ANSWER;
         }
     }
+
+    if (0 == retries) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""*** no answer and no retries!");
+        return SR_IO_NO_ANSWER;
+    }
+
     return SR_IO_UNSET;
 }
 
@@ -1298,7 +1325,7 @@ res_switch_to_tcp(struct expected_arrival *ea)
 /*
  * switch all ea entries in the chain to tcp.
  *
- * unline res_switch_to_tcp, which is used during processing, this
+ * unlike res_switch_to_tcp, which is used during processing, this
  * function is intended to be called BEFORE processing starts. Thus
  * the retry count and next/cancel timers are not touched.
  */
