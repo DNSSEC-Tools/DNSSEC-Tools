@@ -340,6 +340,7 @@ typedef struct val_context_opt {
         char                    *name;
         int                      class_h;
         int                      type_h;
+        int                      retval;
         struct val_result_chain *results;
         struct val_answer_chain *answers;
     } val_cb_params_t;
