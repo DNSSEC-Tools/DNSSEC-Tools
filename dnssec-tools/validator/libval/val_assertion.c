@@ -6944,7 +6944,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     struct val_query_chain     *vqc;
     val_context_t              *context;
     struct timeval             closest_event, now;
-    int retval, data_received, data_missing, done;
+    int retval, data_received, data_missing, done, checked = 0, count = 0;
     struct expected_arrival   *ea;
 
     if ((NULL == as) || (as->val_as_ctx == NULL) ||
@@ -6971,6 +6971,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         if (NULL == qfq->qfq_query->qc_ea) // completed or cancelled query
             continue;
 
+        ++checked;
         if (res_async_ea_isset(qfq->qfq_query->qc_ea, pending_desc))
             retval = _resolver_rcv_one(as->val_as_ctx, &as->val_as_queries, qfq,
                                        pending_desc, &closest_event,
@@ -6982,7 +6983,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         if (retval < 0 && res_io_are_all_finished(qfq->qfq_query->qc_ea)) {
             val_log(context, LOG_DEBUG,
                     "  CANCELING qfq %p: rc %d and all_finished",
-                    retval, qfq->qfq_query);
+                    qfq->qfq_query, retval);
             val_res_cancel(qfq->qfq_query);
         }
 
@@ -7064,12 +7065,19 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
             continue;
         }
 
-        ++(*remaining);
+        ++count;
         val_log(context, LOG_DEBUG, "   qfq %p:       vqc %p:", qfq, vqc);
         for(ea = vqc->qc_ea; ea; ea = ea->ea_next)
             res_print_ea(ea);
     } /* qfq loop */
+    if(remaining)
+        *remaining += count;
 
+    if (0 == checked && 0 == count) {
+        as->val_as_flags |= VAL_AS_DONE;
+        val_log(context, LOG_DEBUG, "as %p _async_check_one/DONE NO QUERIES",
+                as);
+    }
 
     val_log(context,LOG_DEBUG,"as %p _async_check_one return %d, end rem %d",
             as, retval, remaining ? *remaining : 0);
