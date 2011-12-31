@@ -171,6 +171,8 @@ int             response_recv(int *trans_id,
                               struct timeval *closest_event,
                               struct name_server **respondent,
                               unsigned char ** answer, size_t * answer_length);
+int             res_response_checks(u_char ** answer, size_t * answer_length,
+                                    struct name_server **respondent);
 void            res_cancel(int *transaction_id);
 int             res_nsfallback(int transaction_id,
                                struct timeval *closest_event,
