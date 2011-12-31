@@ -547,8 +547,9 @@ suite_async_callback(val_async_status *as, int event,
 
             ret_val = check_results(acbd->ctx, tc->desc, tc->qn, tc->qc, tc->qt,
                                     tc->qr, cbp->results, 0);
-            if (-1 == ret_val)
+            if (0 != ret_val) {
                 ++acbd->ts->failed;
+            }
         }
 
         val_free_result_chain(cbp->results);
