@@ -580,9 +580,6 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
         res_log(NULL, LOG_DEBUG, "libsres: ""could not create query payload");
         return -1;
     }
-    if (temp->ea_socket != INVALID_SOCKET)
-        CLOSESOCK(temp->ea_socket);
-    temp->ea_socket = INVALID_SOCKET;
 
     res_log(NULL, LOG_INFO, "libsres: "
             "ns fallback for {%s %s(%d) %s(%d)}, edns0 size %d > %d",
@@ -1132,10 +1129,6 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             res_log(NULL, LOG_DEBUG, "libsres: "
                     "*** dropped response for ea %p rc %d", ea_list, retval);
             res_print_ea(ea_list);
-            if (ea_list->ea_socket != INVALID_SOCKET) {
-                CLOSESOCK (ea_list->ea_socket);
-                ea_list->ea_socket = INVALID_SOCKET;
-            }
             _clone_respondent(ea_list, respondent);
             set_alarms(ea_list, 0, res_get_timeout(ea_list->ea_ns));
             retval = SR_IO_NO_ANSWER;
