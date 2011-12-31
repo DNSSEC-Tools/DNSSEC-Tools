@@ -15,6 +15,8 @@
 #include "val_assertion.h"
 #include "val_parse.h"
 
+extern void res_print_ea(struct expected_arrival *ea);
+
 #define STRIP_LABEL(name, newname) do {\
     int label_len;\
     label_len = name[0];\
@@ -571,7 +573,6 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     struct queries_for_query *temp, *prev;
     temp = *queries;
     prev = temp;
-
 
     while (temp) {
         if ((temp->qfq_query->qc_type_h == type_h)
@@ -6826,7 +6827,8 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
     if (NULL == as)
         return VAL_OUT_OF_MEMORY;
 
-    val_log(NULL, LOG_DEBUG, "as %p allocated", as);
+    val_log(NULL, LOG_DEBUG, "as %p allocated for {%s %s(%d) %s(%d)}", as,
+            domain_name, p_class(class_h), class_h, p_type(type_h), type_h);
 
     as->val_as_name = strdup(domain_name);
     if (as->val_as_name == NULL) {
@@ -6935,19 +6937,22 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
  */
 static int
 _async_check_one(val_async_status *as, fd_set *pending_desc,
-                     int *nfds, u_int32_t flags)
+                 int *nfds, int *remaining, u_int32_t flags)
 {
     struct queries_for_query   *qfq, *initial_q;
+    struct val_query_chain     *vqc;
     val_context_t              *context;
     struct timeval             closest_event, now;
     int retval, data_received, data_missing, done;
+    struct expected_arrival   *ea;
 
     if ((NULL == as) || (as->val_as_ctx == NULL) ||
-        (pending_desc == NULL) || (NULL == nfds))
+        (pending_desc == NULL) || (NULL == nfds) || (NULL == remaining))
         return VAL_BAD_ARGUMENT;
 
     context = as->val_as_ctx;
-    val_log(context,LOG_DEBUG,"as %p _async_check_one", as);
+    val_log(context,LOG_DEBUG,"as %p _async_check_one / start rem %d", as,
+            remaining ? *remaining : 0);
 
   try_again:
     initial_q = qfq = as->val_as_queries;
@@ -6962,7 +6967,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     gettimeofday(&now, NULL);
     for (; qfq; qfq = qfq->qfq_next) {
 
-        if (NULL == qfq->qfq_query->qc_ea)
+        if (NULL == qfq->qfq_query->qc_ea) // completed or cancelled query
             continue;
 
         if (res_async_ea_isset(qfq->qfq_query->qc_ea, pending_desc))
@@ -6973,8 +6978,12 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
             retval = res_io_check_ea_list(qfq->qfq_query->qc_ea, &closest_event,
                                           &now, NULL, NULL);
 
-        if (retval < 0 && res_io_are_all_finished(qfq->qfq_query->qc_ea))
+        if (retval < 0 && res_io_are_all_finished(qfq->qfq_query->qc_ea)) {
+            val_log(context, LOG_DEBUG,
+                    "  CANCELING qfq %p: rc %d and all_finished",
+                    retval, qfq->qfq_query);
             val_res_cancel(qfq->qfq_query);
+        }
 
     } /* qfq loop */
 
@@ -6985,7 +6994,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         retval = ask_cache(context, &as->val_as_queries,
                            &data_received, &data_missing);
         if (VAL_NO_ERROR != retval)
-            return retval;
+            goto done;
     }
 
     /*
@@ -6995,13 +7004,13 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         retval = _resolver_submit(context, &as->val_as_queries,
                                   &data_received, &data_missing);
         if (VAL_NO_ERROR != retval)
-            return retval;
+            goto done;
     }
 
     if (VAL_NO_ERROR !=
         (retval = fix_glue(context, &as->val_as_queries,
                            &data_missing)))
-        return retval;
+        goto done;
 
     if (data_received || !data_missing) {
         struct val_internal_result *w_results = NULL;
@@ -7022,7 +7031,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         w_results = NULL;
 
         if (VAL_NO_ERROR != retval)
-            return retval;
+            goto done;
 
         data_missing = 1;
         data_received = 0;
@@ -7043,6 +7052,26 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         as->val_as_queries = NULL;
     }
 
+  done:
+    /** count remaining queries */
+    val_log(context, LOG_DEBUG, "as %p (%s) remaining:", as, as->val_as_name);
+    for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {
+
+        vqc = qfq->qfq_query;
+        if (NULL == vqc || res_io_are_all_finished(vqc->qc_ea)) {
+            val_log(context, LOG_DEBUG, "   qfq %p completed/canceled", qfq);
+            continue;
+        }
+
+        ++(*remaining);
+        val_log(context, LOG_DEBUG, "   qfq %p:       vqc %p:", qfq, vqc);
+        for(ea = vqc->qc_ea; ea; ea = ea->ea_next)
+            res_print_ea(ea);
+    } /* qfq loop */
+
+
+    val_log(context,LOG_DEBUG,"as %p _async_check_one return %d, end rem %d",
+            as, retval, remaining ? *remaining : 0);
     return retval;
 }
 
@@ -7073,7 +7102,6 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
     int              waiting, retval;
     fd_set           local_fdset;
     int              local_nfds;
-    struct timeval   now, tv;
 
     if ((NULL == pending_desc) || (NULL == nfds)) {
         pending_desc = &local_fdset;
@@ -7082,12 +7110,6 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
         local_nfds = 0;
     }
 
-    /** need to adjust relative timeout to absolute time used by libval */
-    if (timeout) {
-        memcpy(&tv, timeout, sizeof(tv)); /* save original tv */
-        gettimeofday(&now, NULL);
-        timeradd(&now, &tv, timeout); /* add current time to delay */
-    }
     retval = val_async_select_info(context, pending_desc, nfds, timeout);
     if (VAL_NO_ERROR != retval)
         return -1;
@@ -7095,20 +7117,13 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
     /** convert absolute time to relative timeout */
     if (timeout) {
         val_log(context, LOG_DEBUG,
-                "val_async_select: next event at %ld.%ld seconds", 
-                timeout->tv_sec, timeout->tv_usec);
-        timersub(timeout, &now, timeout);
-        /** in debugger timeout's can expire */
-        if (timeout->tv_usec < 0)
-            timeout->tv_usec = 0;
-        if (timeout->tv_sec < 0)
-            timeout->tv_sec = 0;
-        val_log(context, LOG_DEBUG,
                 "val_async_select: Waiting for %ld.%ld seconds", 
                 timeout->tv_sec, timeout->tv_usec);
     }
+    local_nfds = *nfds;
     waiting = select(*nfds, pending_desc, NULL, NULL, timeout);
-    val_log(context, LOG_DEBUG, "val_async_select: %d FDs ready", waiting);
+    val_log(context, LOG_DEBUG, "val_async_select: %d FDs ready (max %d)",
+            waiting, local_nfds);
     return waiting;
 }
 
@@ -7134,15 +7149,15 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
  *                      None defined yet.
  *
  * Returns:  < 0  : VAL_* error
- *             0  : VAL_NO_ERROR
- *           > 0  : number of asnchronous status objects checked
+ *             0  : no pending requests found
+ *           > 0  : number of requests still pending
  */
 int
 val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
                      int *nfds, struct timeval *tv, u_int32_t flags)
 {
     val_async_status           *as;
-    int                         count = 0;
+    int                         count = 0, completed = 0;
     val_context_t *context;
     int retval = VAL_NO_ERROR;
 
@@ -7158,6 +7173,9 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
         retval = VAL_NO_ERROR;
         goto done;
     }
+
+    val_log(context, LOG_DEBUG, "val_async_check_wait tv %ld.%ld",
+            tv ? tv->tv_sec : -1, tv ? tv->tv_usec : -1);
 
     /** handle any completed requests */
     _handle_completed(context);
@@ -7179,29 +7197,29 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
         nfds = &local_nfds;
 
         waiting = val_async_select(context, pending_desc, nfds, tv, 0);
-        if (waiting <= 0 ){
-            retval = VAL_NO_ERROR; /* nothing to check */
-            goto done;
-        }
+        if (waiting < 0 )
+            return VAL_INTERNAL_ERROR;
+        else if (0 == waiting)
+            return 0; /* nothing to check */
     }
 
     CTX_LOCK_ACACHE(context);
 
     for (as = context->as_list; as; as = as->val_as_next) {
 
-        ++count;
-
         if (as->val_as_flags & VAL_AS_DONE)
-            continue; /* we'll deal with these later */
-
-        /* ignore errors, keep trying other requests */
-        _async_check_one(as, pending_desc, nfds, flags);
+            ++completed;
+        else {
+            /* ignore errors, keep trying other requests */
+            _async_check_one(as, pending_desc, nfds, &count, flags);
+            if (as->val_as_flags & VAL_AS_DONE)
+                ++completed;
+        }
     }
 
     CTX_UNLOCK_ACACHE(context);
 
-    /** if we checked requests, some might have completed */
-    if (count)
+    if (completed)
         _handle_completed(context);
 
     retval = count;
