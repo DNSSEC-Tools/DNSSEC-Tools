@@ -18,10 +18,10 @@
 
 typedef struct testcase_st {
     char               *desc;
-    char               *qn;
-    int                 qc;
-    int                 qt;
-    int                 qr[MAX_TEST_RESULTS];
+    char               *qn; /* name */
+    int                 qc; /* class */
+    int                 qt; /* type */
+    int                 qr[MAX_TEST_RESULTS]; /* expected rc */
 #ifndef VAL_NO_ASYNC
     val_async_status   *as;
 #endif
@@ -34,8 +34,18 @@ typedef struct testsuite_st {
     testcase            *head;
     int                 in_flight;
     int                 remaining;
+    int                 failed;
     struct testsuite_st *next;
 } testsuite;
+
+#ifndef VAL_NO_ASYNC
+typedef struct async_cbd_st {
+    val_context_t      *ctx;
+    testcase           *tc;
+    testsuite          *ts;
+    int                 doprint;
+} async_cbd;
+#endif
 
 
 extern int             
@@ -497,22 +507,61 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
 
 #ifndef VAL_NO_ASYNC
 int
-suite_async_callback(val_async_status *async_status, int event,
+suite_async_callback(val_async_status *as, int event,
                      val_context_t *ctx, void *cb_data, val_cb_params_t *cbp)
 {
-    testsuite *suite;
+    async_cbd *acbd;
+    testcase  *tc;
     if ((NULL == cb_data) || (NULL == cbp)) {
         val_log(ctx, LOG_ERR, "bad parameter for callback");
         return VAL_BAD_ARGUMENT;
     }
 
-    suite = (testsuite *)cb_data;
-    --suite->in_flight;
-    --suite->remaining;
+    acbd = (async_cbd *)cb_data;
+    --acbd->ts->in_flight;
+    --acbd->ts->remaining;
+    tc = acbd->tc;
 
     val_log(ctx, LOG_INFO,
             "as 0x%x %s query completed; %d in flight, %d remaining",
-            async_status, cbp->name, suite->in_flight, suite->remaining);
+            as, cbp->name, acbd->ts->in_flight, acbd->ts->remaining);
+
+    if (cbp->retval == VAL_NO_ERROR) {
+
+        int ret_val = compose_answer(tc->qn, tc->qt, tc->qc, cbp->results,
+                                     &tc->resp);
+
+        if (VAL_NO_ERROR != ret_val) {
+            fprintf(stderr, "%s: \t", tc->desc);
+            fprintf(stderr, "FAILED: Error in compose_answer(): %d\n",
+                    ret_val);
+            ++acbd->ts->failed;
+        }
+        else {
+            if (tc->resp.vr_response == NULL) {
+                fprintf(stderr, "FAILED: No response\n");
+            } else if (acbd->doprint) {
+                print_val_response(&tc->resp);
+            }
+            FREE(tc->resp.vr_response);
+
+            ret_val = check_results(acbd->ctx, tc->desc, tc->qn, tc->qc, tc->qt,
+                                    tc->qr, cbp->results, 0);
+            if (-1 == ret_val)
+                ++acbd->ts->failed;
+        }
+
+        val_free_result_chain(cbp->results);
+        cbp->results = NULL;
+    } else {
+        fprintf(stderr, "%s: \t", tc->desc);
+        fprintf(stderr, "FAILED: Error during async resolution: %s\n",
+                p_val_err(cbp->retval));
+        ++acbd->ts->failed;
+    }
+
+    free(acbd);
+
     return VAL_NO_ERROR;
 }
 
@@ -525,9 +574,15 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
     fd_set             activefds;
     struct timeval     timeout, now;
     testcase          *curr_test = start_test;
+    async_cbd         *acbd;
 
     if (!curr_test || !suite)
         return 0;
+
+    if (tcs > tce) {
+        fprintf(stderr,"bad range\n");
+        return 0;
+    }
 
     i = tcs;
     suite->remaining = tce - tcs + 1;
@@ -544,9 +599,14 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             val_log(context, LOG_DEBUG, "starting test %i (max %d) %s", i, tce,
                     curr_test->desc);
             memset(&curr_test->resp, 0, sizeof(curr_test->resp));
+            acbd = (async_cbd*) MALLOC(sizeof(async_cbd));
+            acbd->ts = suite;
+            acbd->tc = curr_test;
+            acbd->ctx = context;
+            acbd->doprint = doprint;
             rc = val_async_submit(context, curr_test->qn, curr_test->qc,
                                   curr_test->qt, flags, &suite_async_callback,
-                                  suite, &curr_test->as);
+                                  acbd, &curr_test->as);
             if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
                 val_log(context, LOG_ERR, "error sending %i %s", i,
                         curr_test->desc);
@@ -560,7 +620,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         /** set up fdset/timeout for select */
         FD_ZERO(&activefds);
         nfds = 0;
-        timeout.tv_sec = LONG_MAX;
+        timeout.tv_sec = 300; /* 5 min */
         val_async_select_info(context, &activefds, &nfds, &timeout);
         if (0 == nfds) {
             val_log(context, LOG_DEBUG,
@@ -574,20 +634,11 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                     val_log(context, LOG_DEBUG,
                             "**** no file descriptors set! (%d unsent, %d inflight)",
                             unsent, suite->in_flight);
+                    suite->failed += suite->in_flight;
                     break;
                 }
                 continue;
             }
-        }
-        /** adjust libsres absolute timeout to select relative timeout */
-        if (timeout.tv_sec == LONG_MAX)
-            timeout.tv_sec = 1;
-        else {
-            gettimeofday(&now, NULL);
-            if (timeout.tv_sec > now.tv_sec)
-                timeout.tv_sec -= now.tv_sec;
-            else
-                timeout.tv_sec = 0;
         }
 
         /** don't sleep too long if more queries are waiting to be sent */
@@ -597,9 +648,10 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             timeout.tv_sec = 0;
             timeout.tv_usec = 500;
         }
+        gettimeofday(&now, NULL);
         val_log(context, LOG_INFO,
                 "select @ %d, max fd %d, timeout %ld.%ld, %d in flight, %d unsent",
-                now.tv_sec, nfds, timeout.tv_sec, now.tv_usec,
+                now.tv_sec, nfds, timeout.tv_sec, timeout.tv_usec,
                 suite->in_flight, unsent);
         if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG))
             res_io_count_ready(&activefds, nfds); // debug
@@ -624,6 +676,8 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         rc = val_async_check(context, &activefds, &nfds, 0);
 
     } /* while(remaining) */
+
+    *failed = suite->failed;
 
     return run;
 }
