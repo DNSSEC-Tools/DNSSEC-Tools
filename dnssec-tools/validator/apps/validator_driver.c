@@ -73,6 +73,12 @@ sig_shutdown(int a)
     done = 1;
 }
 
+/*
+ * Returns:
+ *   0  expected results
+ *   1  untrusted / unexpected result
+ *  -1  bad parameter 
+ */
 int
 check_results(val_context_t * context, const char *desc, char * name,
               const u_int16_t class_h, const u_int16_t type_h,
@@ -107,6 +113,7 @@ check_results(val_context_t * context, const char *desc, char * name,
         }
     }
 
+    fprintf(stderr, "%s: \t", desc);
     for (res = results; res && (err == 0); res = res->val_rc_next) {
         for (i = 0; result_array[i] != 0; i++) {
             if (res->val_rc_status == result_array[i]) {
@@ -122,7 +129,6 @@ check_results(val_context_t * context, const char *desc, char * name,
                     err = 1;
                 }
             } else {
-                fprintf(stderr, "%s: \t", desc);
                 fprintf(stderr,
                         "FAILED: Unexpected error values\n");
                 for (i = 0; result_array[i] != 0; i++) {
@@ -146,7 +152,6 @@ check_results(val_context_t * context, const char *desc, char * name,
          */
         for (i = 0; result_array[i] != 0; i++) {
             if (result_array[i] != -1) {
-                fprintf(stderr, "%s: \t", desc);
                 fprintf(stderr,
                         "FAILED: Some results were not received \n");
                 err = 1;
@@ -155,11 +160,9 @@ check_results(val_context_t * context, const char *desc, char * name,
         }
 
         if (!err) {
-            fprintf(stderr, "%s: \t", desc);
             fprintf(stderr, "OK\n");
         }
     } else if (trusted_only) {
-        fprintf(stderr, "%s: \t", desc);
         fprintf(stderr,
                 "FAILED: Some results were not validated successfully \n");
     }
