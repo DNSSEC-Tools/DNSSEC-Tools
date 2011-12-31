@@ -6719,6 +6719,7 @@ _call_callbacks(int event, val_async_status *as)
         cbp.name = as->val_as_name;
         cbp.class_h = as->val_as_class;
         cbp.type_h = as->val_as_type;
+        cbp.retval = as->val_as_retval;
         cbp.results = as->val_as_results;
         cbp.answers = as->val_as_answers;
 
