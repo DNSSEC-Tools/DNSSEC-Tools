@@ -339,8 +339,8 @@ res_io_send(struct expected_arrival *shipit)
 
         shipit->ea_socket = socket(af, socket_type, 0);
         if (shipit->ea_socket == INVALID_SOCKET) {
-            res_log(NULL,LOG_ERR,"libsres: ""socket() failed, errno = %d",
-                errno);
+            res_log(NULL,LOG_ERR,"libsres: ""socket() failed, errno = %d %s",
+                    errno, strerror(errno));
             return SR_IO_SOCKET_ERROR;
         }
 
