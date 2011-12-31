@@ -412,9 +412,13 @@ p_query_status(int err)
             return "Q_INIT";
         case Q_SENT:
             return "Q_SENT";
+        case Q_ANSWERED:
+            return "Q_ANSWERED";
         case Q_WAIT_FOR_A_GLUE:
         case Q_WAIT_FOR_AAAA_GLUE:
             return "Q_WAIT_FOR_GLUE";
+        case Q_QUERY_ERROR:
+            return "Q_QUERY_ERROR";
         case Q_RESPONSE_ERROR:
             return "Q_RESPONSE_ERROR";
         case Q_WRONG_ANSWER:
