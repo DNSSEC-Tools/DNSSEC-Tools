@@ -611,11 +611,20 @@ res_io_next_address(struct expected_arrival *ea,
         res_log(NULL, LOG_INFO,
                 "libsres: ""%s - SWITCHING TO NEW ADDRESS", more_prefix);
     } else {
+        struct expected_arrival *next_server = ea->ea_next;
+
         /*
          * cancel this source 
          */
         res_io_cancel_remaining_attempts(ea);
         res_log(NULL, LOG_INFO, "libsres: ""%s", no_more_str);
+
+        if (next_server && next_server->ea_remaining_attempts &&
+            INVALID_SOCKET == next_server->ea_socket) {
+            res_log(NULL, LOG_INFO, "libsres: ""jump-starting next server %p",
+                    next_server);
+            _reset_timeouts(next_server);
+        }
     }
     res_print_ea(ea);
 }
