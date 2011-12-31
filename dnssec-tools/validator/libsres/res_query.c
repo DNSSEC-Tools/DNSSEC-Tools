@@ -465,10 +465,7 @@ res_response_checks(u_char ** answer, size_t * answer_length,
     FREE(*answer);
     *answer = NULL;
     *answer_length = 0;
-    if (*respondent != NULL) {
-        free_name_server(respondent);
-        *respondent = NULL;
-    }
+
     return SR_NO_ANSWER; 
 }
 
