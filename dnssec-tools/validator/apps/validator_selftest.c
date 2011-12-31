@@ -22,6 +22,7 @@ typedef struct testcase_st {
     int                 qc; /* class */
     int                 qt; /* type */
     int                 qr[MAX_TEST_RESULTS]; /* expected rc */
+    struct timeval      start;
 #ifndef VAL_NO_ASYNC
     val_async_status   *as;
 #endif
@@ -546,7 +547,7 @@ suite_async_callback(val_async_status *as, int event,
             FREE(tc->resp.vr_response);
 
             ret_val = check_results(acbd->ctx, tc->desc, tc->qn, tc->qc, tc->qt,
-                                    tc->qr, cbp->results, 0);
+                                    tc->qr, cbp->results, 0, &tc->start);
             if (0 != ret_val) {
                 ++acbd->ts->failed;
             }
@@ -613,6 +614,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                         curr_test->desc);
                 continue;
             }
+            gettimeofday(&curr_test->start, NULL);
             ++run;
             ++suite->in_flight;
         }
