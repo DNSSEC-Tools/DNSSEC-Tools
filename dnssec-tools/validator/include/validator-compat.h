@@ -203,7 +203,11 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
 #define INVALID_SOCKET -1
 #endif
 #ifndef CLOSESOCK
-#define CLOSESOCK close
+#  ifdef DEBUG_DONT_RELEASE_ANYTHING
+#     define CLOSESOCK(x) do { ; } while(0)
+#  else
+#     define CLOSESOCK close
+#  endif
 #endif
 
 #ifndef HAVE_SYSLOG_H
