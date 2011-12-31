@@ -2501,6 +2501,7 @@ val_resquery_async_rcv(val_context_t * context,
     /** get the response, if any */
     ret_val = res_io_get_a_response(matched_q->qc_ea, &response_data,
                                     &response_length, &server);
+    ret_val = res_map_srio_to_sr(ret_val);
 
     /** convert name to printable string */
     if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
