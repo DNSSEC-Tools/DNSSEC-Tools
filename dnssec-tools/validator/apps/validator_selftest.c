@@ -637,7 +637,6 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                     suite->failed += suite->in_flight;
                     break;
                 }
-                continue;
             }
         }
 
