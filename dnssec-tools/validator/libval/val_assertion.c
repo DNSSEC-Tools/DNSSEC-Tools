@@ -7098,6 +7098,11 @@ val_async_select(val_context_t *context, fd_set *pending_desc, int *nfds,
                 "val_async_select: next event at %ld.%ld seconds", 
                 timeout->tv_sec, timeout->tv_usec);
         timersub(timeout, &now, timeout);
+        /** in debugger timeout's can expire */
+        if (timeout->tv_usec < 0)
+            timeout->tv_usec = 0;
+        if (timeout->tv_sec < 0)
+            timeout->tv_sec = 0;
         val_log(context, LOG_DEBUG,
                 "val_async_select: Waiting for %ld.%ld seconds", 
                 timeout->tv_sec, timeout->tv_usec);
