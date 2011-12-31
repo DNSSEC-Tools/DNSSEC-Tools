@@ -2479,7 +2479,7 @@ val_resquery_async_rcv(val_context_t * context,
     struct name_server *server = NULL;
     u_char       *response_data = NULL;
     size_t       response_length = 0;
-    char         name_p[NS_MAXDNAME], stream;
+    char         name_p[NS_MAXDNAME];
     struct val_query_chain *matched_q;
     int             ret_val, handled;
 
@@ -2491,7 +2491,6 @@ val_resquery_async_rcv(val_context_t * context,
 
     matched_q = matched_qfq->qfq_query; /* ! NULL if matched_qfq ! NULL */
     *response = NULL;
-    stream = res_async_ea_is_using_stream(matched_q->qc_ea);
 
     /** check for a response */
     ret_val = res_async_query_handle(matched_q->qc_ea, &handled, pending_desc);
@@ -2508,12 +2507,13 @@ val_resquery_async_rcv(val_context_t * context,
         matched_q->qc_state = Q_RESPONSE_ERROR;
         if (response_data)
             FREE(response_data);
+        if (server)
+            free_name_server(&server);
         return VAL_NO_ERROR;
     }
 
     /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
-        //if (stream || !res_async_ea_is_using_stream(matched_q->qc_ea))
         val_res_nsfallback(context, matched_q, server, name_p, closest_event);
         if (response_data)
             FREE(response_data);

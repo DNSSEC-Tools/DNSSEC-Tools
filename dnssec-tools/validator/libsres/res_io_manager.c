@@ -1057,12 +1057,41 @@ wait_for_res_data(fd_set * pending_desc, struct timeval *closest_event)
     // will catch this condition when we actually read data
 }
 
+static int
+_clone_respondent(struct expected_arrival *ea,
+                  struct name_server **respondent)
+{
+    int save_count = -1, retval;
+
+    /*
+     * don't clone all when we just need one. temporarily set
+     * number of nameservers to 1 before cloning.
+     */
+    if (ea->ea_ns->ns_number_of_addresses > 1) {
+        save_count = ea->ea_ns->ns_number_of_addresses;
+        ea->ea_ns->ns_number_of_addresses = 1;
+    }
+    if (SR_UNSET != (retval = clone_ns(respondent, ea->ea_ns)))
+        return retval;
+    if (save_count > 0) /* restore original count */
+        ea->ea_ns->ns_number_of_addresses = save_count;
+    
+    /** if response wasn't from first address, fixup respondent */
+    if (ea->ea_which_address != 0) {
+        memcpy(((*respondent)->ns_address[0]),
+               ea->ea_ns->ns_address[ea->ea_which_address],
+               sizeof(struct sockaddr_storage));
+    }
+
+    return SR_UNSET;
+}
+
 int
 res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                       size_t * answer_length,
                       struct name_server **respondent)
 {
-    int             retval, retries = 0, save_count = -1;
+    int             retval, retries = 0;
 
     struct expected_arrival *orig = ea_list;
     res_log(NULL,LOG_DEBUG,"libsres: "" checking for response for ea %p list",
@@ -1092,8 +1121,9 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                 CLOSESOCK (ea_list->ea_socket);
                 ea_list->ea_socket = INVALID_SOCKET;
             }
+            _clone_respondent(ea_list, respondent);
             set_alarm(&ea_list->ea_next_try, 0); // or res_io_next_address??
-            continue;
+            continue; /* in case another ea has a response */
         }
 
         { /** dummy block to preserve indentation; reformat later */
@@ -1106,27 +1136,11 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
                     "libsres: ""get_response got %zd bytes on socket %d",
                     *answer_length, ea_list->ea_socket);
 
-            /*
-             * don't clone all when we just need one. temporarily set
-             * number of nameservers to 1 before cloning.
-             */
-            if (ea_list->ea_ns->ns_number_of_addresses > 1) {
-                save_count = ea_list->ea_ns->ns_number_of_addresses;
-                ea_list->ea_ns->ns_number_of_addresses = 1;
-            }
-            if (SR_UNSET !=
-                (retval = clone_ns(respondent, ea_list->ea_ns)))
-                return retval;
-            if (save_count > 0) /* restore original count */
-                ea_list->ea_ns->ns_number_of_addresses = save_count;
+            retval = _clone_respondent(ea_list, respondent);
 
-            /** if response wasn't from first address, fixup respondent */
-            if (ea_list->ea_which_address != 0) {
-                memcpy(((*respondent)->ns_address[0]),
-                       ea_list->ea_ns->ns_address[ea_list->
-                                                  ea_which_address],
-                       sizeof(struct sockaddr_storage));
-            }
+            if (SR_UNSET != retval)
+                return retval;
+
             ea_list->ea_response = NULL;
             ea_list->ea_response_length = 0;
             return SR_IO_GOT_ANSWER;
