@@ -214,6 +214,8 @@ int             labelcmp(const u_char * name1, const u_char * name2,
                         size_t label_cnt);
 int             namecmp(const u_char * name1, const u_char * name2);
 
+    int             res_map_srio_to_sr(int val);
+
 unsigned short       res_nametoclass(const char *buf, int *successp);
 unsigned short       res_nametotype(const char *buf, int *successp);
 

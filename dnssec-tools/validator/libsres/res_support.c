@@ -25,6 +25,7 @@
 #include <openssl/rand.h>
 
 #include "res_support.h"
+#include "res_io_manager.h"
 
 extern void     libsres_pquery(const u_char * msg, size_t len, FILE * file);
 
@@ -521,6 +522,30 @@ namecmp(const u_char * name1, const u_char * name2)
      * the shorter comes first 
      */
     return labels1 - labels2;
+}
+
+int
+res_map_srio_to_sr(int val)
+{
+    switch(val) {
+        case  SR_IO_UNSET:
+        case  SR_IO_GOT_ANSWER:
+            val = SR_UNSET;
+            break;
+        case SR_IO_NO_ANSWER_YET:
+            val = SR_NO_ANSWER_YET;
+            break;
+        case  SR_IO_NO_ANSWER:
+            val = SR_NO_ANSWER;
+            break;
+        case SR_IO_MEMORY_ERROR:
+        case SR_IO_TOO_MANY_TRANS:
+        case SR_IO_SOCKET_ERROR:
+        case SR_IO_INTERNAL_ERROR:
+        default:
+            val = SR_INTERNAL_ERROR;
+    }
+    return val;
 }
 
 /*

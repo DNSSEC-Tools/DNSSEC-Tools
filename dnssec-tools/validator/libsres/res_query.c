@@ -439,6 +439,39 @@ query_queue(const char *name, const u_int16_t type_h, const u_int16_t class_h,
     return SR_UNSET;
 }
 
+int
+res_response_checks(u_char ** answer, size_t * answer_length,
+                    struct name_server **respondent)
+{
+    int retval;
+
+    if (NULL == answer || NULL == answer_length)
+        return SR_INTERNAL_ERROR;
+
+    log_response(*answer, *answer_length);
+
+    if ((*respondent != NULL) && 
+        (res_tsig_verifies(*respondent, 
+                           *answer, *answer_length) != SR_TS_OK))
+        retval = SR_TSIG_ERROR;
+    else
+        retval = theres_something_wrong_with_header(*answer, *answer_length);
+
+    if (SR_UNSET == retval)
+        return retval;
+
+    res_log(NULL,LOG_DEBUG,"libsres: ""error in response; dropping; rc %d",
+            retval);
+    FREE(*answer);
+    *answer = NULL;
+    *answer_length = 0;
+    if (*respondent != NULL) {
+        free_name_server(respondent);
+        *respondent = NULL;
+    }
+    return SR_NO_ANSWER; 
+}
+
 /*
  * Returns:
  *    SR_INTERNAL_ERROR
@@ -475,31 +508,9 @@ response_recv(int *trans_id,
     ret_val = res_io_accept(*trans_id, pending_desc, closest_event, 
                             answer, answer_length, respondent);
 
-    if (ret_val == SR_IO_NO_ANSWER_YET)
-        return SR_NO_ANSWER_YET;
+    ret_val = res_map_srio_to_sr(ret_val);
 
-    if (ret_val == SR_IO_NO_ANSWER)
-        return SR_NO_ANSWER;
-
-    if (ret_val == SR_IO_GOT_ANSWER) {
-        log_response(*answer, *answer_length);
-        if ((*respondent != NULL) && 
-            (res_tsig_verifies(*respondent, 
-                               *answer, *answer_length) == SR_TS_OK) && 
-            (theres_something_wrong_with_header(*answer, 
-                                                *answer_length) == SR_UNSET)) {
-            return SR_UNSET;
-
-        } else {
-            res_log(NULL,LOG_DEBUG,"libsres: ""error in response; dropping");
-            FREE(*answer);
-            *answer = NULL;
-            *answer_length = 0;
-            return SR_NO_ANSWER; 
-        }
-    } 
-
-    return SR_NO_ANSWER_YET;
+    return ret_val;
 }
 
 int
