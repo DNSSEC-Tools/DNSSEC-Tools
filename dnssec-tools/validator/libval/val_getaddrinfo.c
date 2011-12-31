@@ -1467,7 +1467,7 @@ int val_getaddrinfo_has_status(int rc) {
 struct val_gai_status_s {
     char             *nodename;
     char             *servname;
-    struct addrinfo  *hints;
+    const struct addrinfo  *hints;
 
     val_context_t    *context;
     struct addrinfo  *res;
@@ -1524,7 +1524,7 @@ static int
 _vgai_async_callback(val_async_status *as, int event,
                      val_context_t *ctx, void *cb_data, val_cb_params_t *cbp)
 {
-    int                rc;
+    int                rc, gai_rc;
     val_gai_status    *vgai;
 
     val_log(ctx, LOG_DEBUG, "val_getaddrinfo async callback for %p", as);
@@ -1552,14 +1552,12 @@ _vgai_async_callback(val_async_status *as, int event,
         /*
          * get addrinfo from results
          */
-        rc = get_addrinfo_from_result(ctx, cbp->answers, vgai->servname,
-                                      vgai->hints, &vgai->res,
-                                      &vgai->val_status);
-        if (VAL_NO_ERROR == rc) {
-            val_log(ctx, LOG_DEBUG,
-                    "val_gai_callback get_addrinfo_from_result() returned=%d with val_status=%d",
-                    rc, vgai->val_status);
-        }
+        gai_rc = get_addrinfo_from_result(ctx, cbp->answers, vgai->servname,
+                                          vgai->hints, &vgai->res,
+                                          &vgai->val_status);
+        val_log(ctx, LOG_DEBUG,
+                "val_gai_callback get_addrinfo_from_result() returned=%d with val_status=%d",
+                gai_rc, vgai->val_status);
     }
 
     /*
@@ -1689,6 +1687,7 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
     vgai->flags = val_gai_flags;
     vgai->callback = callback;
     vgai->callback_data = callback_data;
+    vgai->hints = hints;
     if (servname)
         vgai->servname = (char *)strdup(servname);
     if (nodename)
