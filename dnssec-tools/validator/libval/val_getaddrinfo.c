@@ -1527,13 +1527,15 @@ _vgai_async_callback(val_async_status *as, int event,
     int                rc, gai_rc;
     val_gai_status    *vgai;
 
-    val_log(ctx, LOG_DEBUG, "val_getaddrinfo async callback for %p", as);
-
     vgai = (val_gai_status *)cb_data;
     if (NULL == vgai) {
         val_log(ctx, LOG_DEBUG, "val_getaddrinfo no callback data!");
         return VAL_NO_ERROR;
     }
+    val_log(ctx, LOG_DEBUG,
+            "val_getaddrinfo async callback for %p, %s %s(%d)", as,
+            vgai->nodename, p_type(cbp->type_h), cbp->type_h);
+
 
     if (0 == vgai->val_status) /* recently created */
         vgai->val_status = VAL_VALIDATED_ANSWER;
