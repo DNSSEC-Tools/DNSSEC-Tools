@@ -601,7 +601,7 @@ res_log_ap(void *dont_care, int level, const char *template, va_list ap)
     if (NULL == template || level > sres_level)
         return;
 
-    val_log_ap((val_context_t*)dont_care, LOG_ERROR, template, ap);
+    val_log_ap((val_context_t*)dont_care, LOG_ERR, template, ap);
 }
 
 /** pass messages on to val_log... */
@@ -614,7 +614,7 @@ res_log(void *dont_care, int level, const char *template, ...)
         return;
 
     va_start(ap, template);
-    val_log_ap((val_context_t*)dont_care, LOG_ERROR, template, ap);
+    val_log_ap((val_context_t*)dont_care, LOG_ERR, template, ap);
     va_end(ap);
 }
 

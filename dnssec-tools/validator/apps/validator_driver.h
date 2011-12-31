@@ -17,6 +17,10 @@ int self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
               const char *tests, const char *suites, int doprint,
               int max_in_flight);
 
+int check_results(val_context_t * context, const char *desc, char * name,
+                  const u_int16_t class_h, const u_int16_t type_h,
+                  const int *result_ar, struct val_result_chain *results,
+                  int trusted_only);
 
 
 #endif /* VALIDATOR_DRIVER_H */
