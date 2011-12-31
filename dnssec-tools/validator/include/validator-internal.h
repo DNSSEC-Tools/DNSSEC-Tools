@@ -29,6 +29,8 @@ extern          "C" {
 
 /*
  * Query states 
+ *
+ * please update p_query_status() when adding values.
  */
 #define Q_INIT                  0x0001 
 #define Q_SENT                  0x0002 
