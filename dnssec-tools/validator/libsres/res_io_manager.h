@@ -89,6 +89,30 @@ int             res_io_queue(int *transaction_id, u_char * signed_query,
                              long delay);
 
 /*
+ * res_io_queue_ea
+ * 
+ *   Enters an existing query for submission
+ * 
+ * Parameters
+ * 
+ * transaction_id is either the id for an existing transaction to which the
+ * query should be added, or -1 to begin a new transaction. The new
+ * transaction id will be set before returning.
+ * 
+ * new_ea is a pointer to an existing query which becomes "owned" by the
+ * io manger. 
+ * 
+ * Return values
+ * 
+ * >= 0                 Number of remaining sources pending
+ * SR_IO_MEMORY_ERROR   Not enough memory
+ * SR_IO_TOO_MANY_TRANS Too many current requests
+ */
+int             res_io_queue_ea(int *transaction_id,
+                                struct expected_arrival *new_ea);
+
+
+/*
  * res_io_accept
  * 
  * Requests a response for the indicated transaction.  If there

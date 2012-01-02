@@ -393,48 +393,21 @@ int
 query_queue(const char *name, const u_int16_t type_h, const u_int16_t class_h,
             struct name_server *pref_ns, int *trans_id)
 {
+    struct expected_arrival *ea;
     int             ret_val;
 
-    u_char         *signed_query = NULL;
-    size_t          signed_length = 0;
-
-    struct name_server *ns_list = NULL;
-    struct name_server *ns;
-    long   delay = 0;
+    if (pref_ns == NULL || name == NULL || trans_id == NULL)
+        return SR_CALL_ERROR;
 
     *trans_id = -1;
 
-    if (pref_ns == NULL)
-        return SR_CALL_ERROR;
+    ea = res_async_query_create(name, type_h, class_h, pref_ns, 0);
+    if (NULL == ea)
+        return SR_MEMORY_ERROR;
 
-
-    /** res_io_stall(); */
-
-    /*
-     * clone these and store to ns_list 
-     */
-    if ((ret_val = clone_ns_list(&ns_list, pref_ns)) != SR_UNSET)
-        return ret_val;
-
-    /*
-     * Loop through the list of destinations 
-     */
-    for (ns = ns_list; ns; ns = ns->ns_next) {
-
-        /*
-         * Form the query with res_val_nmkquery_n 
-         */
-        if ((ret_val = res_create_query_payload(ns, name, class_h, type_h, 
-                        &signed_query, &signed_length)) < 0) {
-            continue;
-        }
-        if ((ret_val = res_io_queue(trans_id, signed_query,
-                                    signed_length, ns, delay)) < 0) {
-            continue;
-        }
-
-        delay += LIBSRES_NS_STAGGER;
-    }
+    ret_val = res_io_queue_ea(trans_id, ea);
+    if (ret_val != SR_IO_UNSET)
+        return SR_INTERNAL_ERROR;
 
     return SR_UNSET;
 }
