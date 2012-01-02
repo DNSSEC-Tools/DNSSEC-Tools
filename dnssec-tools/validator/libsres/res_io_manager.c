@@ -1564,6 +1564,8 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
 
     if (ret_val == SR_IO_UNSET)
         return SR_IO_NO_ANSWER_YET;
+    else if (ret_val == SR_IO_NO_ANSWER)
+        return SR_IO_NO_ANSWER;
     else
         return SR_IO_GOT_ANSWER;
 }
