@@ -730,6 +730,7 @@ sub buildmainwind
 	#
 	# Add the Display menu entries.
 	#
+
 	$dspl->command(-label	=> 'Zone Selection...',
 		       -command => \&zdisp_select);
 	$dspl->command(-label	=> 'Display All Zones',
@@ -798,6 +799,14 @@ sub buildmainwind
 	# Set up the show/hide all keysets menu items.
 	#
 	menuconfig();
+
+	###############
+
+	#
+	# Add a menu item to force a display refresh.
+	#
+	$dspl->command(-label	=> 'Refresh Display',
+		       -command => \&disp_refresh);
 
 	##################################################
 	#
@@ -1661,6 +1670,16 @@ sub zdisp_select
 	#
 	calcrows();
 	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_refresh()
+#
+# Purpose:	Repaint the screen.
+#
+sub disp_refresh
+{
+	painter($paintmax+1);
 }
 
 ##############################################################################
@@ -4189,6 +4208,12 @@ Turns off display of the KSK and ZSK signing set names.
 Show All Keysets
 
 Turns on display of the KSK and ZSK signing set names.
+
+=item *
+
+Refresh Display
+
+Refresh the B<blinkenlights> display.
 
 =back
 
