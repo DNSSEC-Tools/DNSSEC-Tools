@@ -479,11 +479,11 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
     int i, rc, run = 0;
     struct val_response resp;
 
-    memset(&resp, 0, sizeof(resp));
-
     for (i = tcs;
          curr_test != NULL && curr_test->desc != NULL && i <= tce;
          curr_test = curr_test->next) {
+
+        memset(&resp, 0, sizeof(resp));
 
         ++run;
         fprintf(stderr, "%d: ", ++i);
