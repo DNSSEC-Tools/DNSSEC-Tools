@@ -837,11 +837,10 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
 }
 
 int
-res_io_queue(int *transaction_id, u_char * signed_query,
-             size_t signed_length, struct name_server *ns, long delay)
+res_io_queue_ea(int *transaction_id, struct expected_arrival *new_ea)
 {
     int             try_index;
-    struct expected_arrival *temp, *new_ea;
+    struct expected_arrival *temp;
 
     /*
      * Determine (new) transaction location 
@@ -874,12 +873,6 @@ res_io_queue(int *transaction_id, u_char * signed_query,
     /*
      * Register this request 
      */
-    new_ea = res_ea_init(signed_query, signed_length, ns, delay);
-    if (new_ea == NULL) {
-        /** We can't add this */
-        pthread_mutex_unlock(&mutex);
-        return SR_IO_MEMORY_ERROR;
-    }
     if (transactions[*transaction_id] == NULL) {
         /*
          * Add this as the first request 
@@ -896,6 +889,26 @@ res_io_queue(int *transaction_id, u_char * signed_query,
     }
 
     pthread_mutex_unlock(&mutex);
+
+    return SR_IO_UNSET;
+}
+
+int
+res_io_queue(int *transaction_id, u_char * signed_query,
+             size_t signed_length, struct name_server *ns, long delay)
+{
+    struct expected_arrival *new_ea;
+    int                      ret_val;
+
+    new_ea = res_ea_init(signed_query, signed_length, ns, delay);
+    if (new_ea == NULL)
+        return SR_IO_MEMORY_ERROR;
+
+    ret_val = res_io_queue_ea(transaction_id, new_ea);
+    if (ret_val != SR_IO_UNSET) {
+        res_free_ea_list(new_ea);
+        return ret_val;
+    }
 
     return SR_IO_UNSET;
 }
