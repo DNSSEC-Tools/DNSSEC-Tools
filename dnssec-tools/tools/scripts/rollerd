@@ -618,12 +618,12 @@ sub rollkeys
 		if($rr{'kskphase'} == -1)
 		{
 			rolllog_log(LOG_TMI,$rname,"new kskphase entry");
-			kskphase($rname,$rrr,0)
+			nextphase($rname,$rrr,0,'KSK')
 		}
 		if($rr{'zskphase'} == -1)
 		{
 			rolllog_log(LOG_TMI,$rname,"new zskphase entry");
-			zskphase($rname,$rrr,0)
+			nextphase($rname,$rrr,0,'ZSK')
 		}
 
 		#
@@ -1545,12 +1545,12 @@ sub queue_rollevent
 	if($rr{'kskphase'} == -1)
 	{
 		rolllog_log(LOG_TMI,$rname,"new kskphase entry");
-		kskphase($rname,$rrr,0)
+		nextphase($rname,$rrr,0,'KSK')
 	}
 	if($rr{'zskphase'} == -1)
 	{
 		rolllog_log(LOG_TMI,$rname,"new zskphase entry");
-		zskphase($rname,$rrr,0)
+		nextphase($rname,$rrr,0,'ZSK')
 	}
 
 	#
@@ -1923,7 +1923,7 @@ sub zsk_phaser
 	#
 	# Work on this rollrec's phase.
 	#
-	$ph = phasecmd(\&zskphase,$rname,$rrr,'normal')		if($ph == 0);
+	$ph = phasecmd(\&nextphase,$rname,$rrr,'normal','ZSK')	if($ph == 0);
 	$ph = phasecmd(\&phasewait,$rname,$rrr,'zsk1')		if($ph == 1);
 	$ph = phasecmd(\&zsk_phase2,$rname,$rrr,'zsk2')		if($ph == 2);
 	$ph = phasecmd(\&phasewait,$rname,$rrr,'zsk3')		if($ph == 3);
@@ -2387,7 +2387,7 @@ sub ksk_phaser
 	#
 	# Work on this rollrec's phase.
 	#
-	$ph = phasecmd(\&kskphase,$rname,$rrr,'normal')		if($ph == 0);
+	$ph = phasecmd(\&nextphase,$rname,$rrr,'normal','KSK')	if($ph == 0);
 	$ph = phasecmd(\&phasewait,$rname,$rrr,'ksk1')		if($ph == 1);
 	$ph = phasecmd(\&ksk_phase2,$rname,$rrr,'ksk2')		if($ph == 2);
 	$ph = phasecmd(\&phasewait,$rname,$rrr,'ksk3')		if($ph == 3);
@@ -3005,6 +3005,7 @@ sub phasecmd
 	my $rname = shift;		# Zone name.
 	my $rrr = shift;		# Reference to rollrec.
 	my $phase = shift;		# Phase we're handling.
+	my $ptaux = shift;		# Auxilliary phase type.
 
 	my $progkey = "prog-$phase";	# Config. key for phase's programs.
 	my $cmdlist;			# Execution flag.
@@ -3068,7 +3069,13 @@ sub phasecmd
 			#
 			# Run the phase-specific routine.
 			#
-			$ret = $phasefunc->($rname,$rrr,$phasenum,$phasetype);
+			# When this change was made, nextphase() (and the old
+			# kskphase() and zskphase()) were the only phasefuncs
+			# that used the third and fourth arguments.  The fourth
+			# was originally $phasetype, but it's being changed to
+			# $ptaux.
+			#
+			$ret = $phasefunc->($rname,$rrr,$phasenum,$ptaux);
 			return($phasenum) if($ret < 0);
 
 			#
@@ -3118,7 +3125,7 @@ sub phasecmd
 	#
 	if($phase =~ /^ksk/)
 	{
-		kskphase($rname,$rrr,$newphase) if($phasenum != $newphase);
+		nextphase($rname,$rrr,$newphase,'KSK') if($phasenum != $newphase);
 	}
 
 	#
@@ -3127,7 +3134,7 @@ sub phasecmd
 	#
 	if($phase =~ /^zsk/)
 	{
-		zskphase($rname,$rrr,$newphase) if($phasenum != $newphase);
+		nextphase($rname,$rrr,$newphase,'ZSK') if($phasenum != $newphase);
 	}
 
 	#
@@ -3181,18 +3188,23 @@ sub phasewait
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	zskphase()
+# Routine:	nextphase()
 #
-# Purpose:	Moves a rollrec into the next ZSK phase, setting both the
+# Purpose:	Moves a rollrec into the next rollover phase, setting both the
 #		phase number and the phase start time.
 #
-sub zskphase
+sub nextphase
 {
-	my $rname = shift;				# Name of rollrec.
-	my $rrr	  = shift;				# Rollrec reference.
-	my $phase = shift;				# New phase.
+	my $rname	= shift;			# Name of rollrec.
+	my $rrr		= shift;			# Rollrec reference.
+	my $phase	= shift;			# New phase.
+	my $phasetype	= shift;			# Type of rollover.
 
-	my $phasedesc = rollmgr_get_phase('ZSK',$phase); # Human phase descr.
+	my $phasedesc;					# Human phase descr.
+	my $ptlc;					# Lowercase phasetype.
+	my $phasekey;					# Phase hashkey.
+	my $phaselife;					# Life hashkey.
+	my $curphase;					# Current phase hashkey.
 
 	my %rr = %$rrr;					# Rollrec hash.
 
@@ -3205,28 +3217,50 @@ sub zskphase
 	my $exptime;					# Key's time to expiry.
 	my $chronostr;					# Pretty rollover time.
 
+	#
+	# Set up the phase description.
+	#
+	$phasedesc = rollmgr_get_phase($phasetype,$phase);
 	$phasedesc = " ($phasedesc)";
 	$phasedesc = '' if($phasedesc eq ' ()');
 
+	#
+	# Set up some phasetype-based hash keys.
+	#
+	$ptlc = lc($phasetype);
+	$phasekey = $ptlc . 'phase';
+	$phaselife = $ptlc . 'life';
+	$curphase = $ptlc . 'cur';
+
+	#
+	# Give a log message about this rollover phase.
+	#
 	if($phase == 1)
 	{
-		rolllog_log(LOG_TMI,$rname,"starting ZSK rollover");
+		rolllog_log(LOG_TMI,$rname,"starting $phasetype rollover");
 	}
 	else
 	{
-		rolllog_log(LOG_TMI,$rname,"moving to ZSK phase $phase$phasedesc");
+		rolllog_log(LOG_TMI,$rname,"moving to $phasetype phase $phase$phasedesc");
 	}
 
-	rolllog_log(LOG_PHASE,$rname,"ZSK phase $phase$phasedesc");
+	rolllog_log(LOG_PHASE,$rname,"$phasetype phase $phase$phasedesc");
 
-	$rrr->{'zskphase'} = $phase;
-	rollrec_setval($rname,"zskphase",$phase);
+#
+# Are these next two lines needed?  One of kskphase()/zskphase() had them
+# and the other didn't.  We'll try it a bit without and see how things go.
+#
+#	rollrec_close();
+#	rollrec_read($rollrecfile);
+
+	$rrr->{$phasekey} = $phase;
+	rollrec_setval($rname,$phasekey,$phase);
 	rollrec_settime($rname);
 	rollrec_write();
 	rollrec_close();
 	rollrec_read($rollrecfile);
 
-	display("zskphase $rname $phase");
+	display("$phasekey $rname $phase");
 
 	#
 	# If we're at the start of a rollover, we'll log the expiration time.
@@ -3237,10 +3271,10 @@ sub zskphase
 	# Get the rollin' key's keyrec for our zone.
 	#
 	$krname = $rr{'keyrec'};
-	$setrec = zonekeykr($rname,$rr{'zonename'},$krname,"zskcur");
+	$setrec = zonekeykr($rname,$rr{'zonename'},$krname,$curphase);
 	if($setrec == 0)
 	{
-		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for the zskcur signing set in \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for the $curphase signing set in \"$krname\"");
 		return(0);
 	}
 
@@ -3249,12 +3283,12 @@ sub zskphase
 	#
 	if($setrec->{'keyrec_type'} ne 'set')
 	{
-		rolllog_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to ZSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to $phasetype phase $phase");
 		return(0);
 	}
 	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
 	{
-		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to ZSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to $phasetype phase $phase");
 		return(0);
 	}
 
@@ -3264,7 +3298,7 @@ sub zskphase
 	$setlist = $setrec->{'keys'};
 	foreach my $key (split / /, $setlist)
 	{
-		my $lifetime = keyrec_recval($key,'zsklife');
+		my $lifetime = keyrec_recval($key,$phaselife);
 		if(($exptime == 0) || ($lifetime < $exptime))
 		{
 			$exptime = $lifetime;
@@ -3275,7 +3309,7 @@ sub zskphase
 	# Tell the log when the zone will expire, based on the lifespan.
 	#
 	$chronostr = timetrans($exptime);
-	rolllog_log(LOG_INFO,$rname,"    ZSK expiration in $chronostr\n");
+	rolllog_log(LOG_INFO,$rname,"    $phasetype expiration in $chronostr\n");
 
 	#
 	# Reset the phasestart field.
@@ -3285,118 +3319,6 @@ sub zskphase
 	rollrec_close();
 	rollrec_read($rollrecfile);
 	return(0);
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	kskphase()
-#
-# Purpose:	Moves a rollrec into the next phase of KSK rollover, setting
-#		both the phase number and the phase start time.
-#
-sub kskphase
-{
-	my $rname = shift;		# Name of rollrec.
-	my $rrr	  = shift;		# Rollrec reference.
-	my $phase = shift;		# New phase.
-
-	my $phasedesc;			# Human-readable phase description.
-
-	my %rr = %$rrr;			# Rollrec hash.
-
-	my $krname;			# Name of key's rollrec.
-	my $krec;			# Key's keyrec.
-
-	my $setrec;			# Set's keyrec.
-	my $setlist;			# Set's key list.
-
-	my $exptime;			# Key's time to expiry.
-	my $chronostr;			# Pretty rollover time.
-
-	#
-	# Build the phase description string.
-	#
-	$phasedesc = rollmgr_get_phase('KSK', $phase);
-	$phasedesc = " ($phasedesc)";
-	$phasedesc = '' if($phasedesc eq ' ()');
-
-	if($phase == 1)
-	{
-		rolllog_log(LOG_TMI,$rname,"starting KSK rollover");
-	}
-	else
-	{
-		rolllog_log(LOG_TMI,$rname,"moving to KSK phase $phase$phasedesc");
-	}
-
-	rolllog_log(LOG_PHASE,$rname,"KSK phase $phase$phasedesc");
-
-	rollrec_close();
-	rollrec_read($rollrecfile);
-	$rrr->{'kskphase'} = $phase;
-	rollrec_setval($rname,"kskphase",$phase);
-	rollrec_settime($rname);
-	rollrec_write();
-	rollrec_close();
-	rollrec_read($rollrecfile);
-
-	display("kskphase $rname $phase");
-
-	#
-	# If we're at the start of a rollover, we'll log the expiration time.
-	#
-	return if($phase != 0);
-
-	#
-	# Get the rollin' KSK's keyrec for our zone.
-	#
-	$krname = $rr{'keyrec'};
-	$setrec = zonekeykr($rname,$rr{'zonename'},$krname,"kskcur");
-	if($setrec == 0)
-	{
-		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for the kskcur signing set in \"$krname\"");
-		return(0);
-	}
-
-	#
-	# Make sure we've got an actual set keyrec and keys.
-	#
-	if($setrec->{'keyrec_type'} ne 'set')
-	{
-		rolllog_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to KSK phase $phase$phasedesc");
-		return(0);
-	}
-	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
-	{
-		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to KSK phase $phase$phasedesc");
-		return(0);
-	}
-
-	#
-	# Find the key with the shortest lifetime.
-	#
-	$setlist = $setrec->{'keys'};
-	foreach my $key (split / /, $setlist)
-	{
-		my $lifetime = keyrec_recval($key,'ksklife');
-		if(($exptime == 0) || ($lifetime < $exptime))
-		{
-			$exptime = $lifetime;
-		}
-	}
-
-	#
-	# Tell the log when the zone will expire, based on the lifespan.
-	#
-	$chronostr = timetrans($exptime);
-	rolllog_log(LOG_INFO,$rname,"    KSK expiration in $chronostr\n");
-
-	#
-	# Reset the phasestart field.
-	#
-	rollrec_settime($rname);
-	rollrec_write();
-	rollrec_close();
-	rollrec_read($rollrecfile);
 }
 
 #-----------------------------------------------------------------------------
@@ -4705,7 +4627,7 @@ sub cmd_dspub
 	# Change the zone's rollover phase to phase 7 (the final phase) and
 	# re-run the queue now.
 	#
-	kskphase($zone,$rrr,7);
+	nextphase($zone,$rrr,7,'KSK');
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
 	sleeper_override();
 }
@@ -4743,7 +4665,7 @@ sub cmd_dspuball
 		#
 		# Change the zone's rollover phase to phase 7.
 		#
-		kskphase($zone,$rrr,7);
+		nextphase($zone,$rrr,7,'KSK');
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
 	}
 
@@ -6165,12 +6087,12 @@ sub rollnow
 		#
 		if($rolltype eq 'KSK')
 		{
-			kskphase($zone,$rrr,1);
+			nextphase($zone,$rrr,1,'KSK');
 			$rollstr = 'KSK rollover';
 		}
 		elsif($rolltype eq 'ZSK')
 		{
-			zskphase($zone,$rrr,1);
+			nextphase($zone,$rrr,1,'ZSK');
 			$rollstr = 'ZSK rollover';
 		}
 		elsif($rolltype eq 'restart')
