@@ -86,89 +86,103 @@ check_results(val_context_t * context, const char *desc, char * name,
               int trusted_only, struct timeval *start)
 {
     int             result_array[MAX_TEST_RESULTS];
-    int             err = 0, i;
+    int             extra_res[MAX_TEST_RESULTS];
+    int             err = 0, i, extra = 0, missing = 0, untrusted = 0;
     struct timeval  now, duration;
     struct val_result_chain *res;
+
+#define CR_EXPECTED  -1
+#define CR_UNTRUSTED -2
+#define CR_MISSING   -3
 
     if (NULL == result_ar || NULL == start)
         return -1;
 
+    /** calculate query duration */
     gettimeofday(&now, NULL);
     timersub(&now, start, &duration);
 
     /*
      * make a local copy of result array 
      */
-    i = 0;
-    while (result_ar[i] != 0) {
+    for (i = 0; result_ar[i] != 0; ++i)
         result_array[i] = result_ar[i];
-        i++;
-    }
+
     result_array[i] = 0;
 
     /* 
      * if we don't have any answers, the result type is VAL_UNTRUSTED_ANSWER */
     if (results == NULL) {
-        for (i = 0; result_array[i] != 0; i++) {
-            if (VAL_UNTRUSTED_ANSWER == result_array[i]) {
-                result_array[i] = -1;   /* Mark this as done  */
-                break;
+        for (i = 0; result_array[i] != 0; ++i) {
+            if (VAL_UNTRUSTED_ANSWER != result_array[i])
+                continue;
+            /* Mark this as done */
+            if (trusted_only) {
+                ++untrusted;
+                result_array[i] = CR_UNTRUSTED;
             }
+            else
+                result_array[i] = CR_EXPECTED;
         }
     }
 
+    /** compare results we do have against what we expect */
     fprintf(stderr, "%s: \t", desc);
     for (res = results; res && (err == 0); res = res->val_rc_next) {
         for (i = 0; result_array[i] != 0; i++) {
-            if (res->val_rc_status == result_array[i]) {
-                result_array[i] = -1;   /* Mark this as done  */
-                break;
+            if (res->val_rc_status != result_array[i])
+                continue;
+            /* Mark this as done */
+            if (trusted_only && !val_istrusted(res->val_rc_status)) {
+                result_array[i] = CR_UNTRUSTED;
+                ++untrusted;
             }
+            else
+                result_array[i] = CR_EXPECTED;
+            break;
         }
-        if (result_array[i] == 0) {
-            if (trusted_only) {
-                if (val_istrusted(res->val_rc_status)) {
-                    continue;
-                } else {
-                    err = 1;
-                }
-            } else {
-                fprintf(stderr,
-                        "FAILED: Unexpected error values\n");
-                for (i = 0; result_array[i] != 0; i++) {
-                    if (result_array[i] != -1)
-                        fprintf(stderr, "     %s(%d)\n",
-                                p_val_error(result_array[i]),
-                                result_array[i]);
-                }
-                fprintf(stderr, "\n");
-                err = 1;
-            }
-        }
+        if (result_array[i] == 0) /* didn't expect this result */
+            extra_res[extra++] = res->val_rc_status;
     }
 
     /*
-     * All results were in the result array 
+     * Check if any values were missing
      */
+    for (i = 0; result_array[i] != 0; ++i)
+        if (result_array[i] > 0)
+            ++missing;
+
+    /*
+     * print results
+     */
+    err = untrusted + extra + missing;
     if (!err) {
-        /*
-         * Check if all error values were marked 
-         */
-        for (i = 0; result_array[i] != 0; i++) {
-            if (result_array[i] != -1) {
-                fprintf(stderr,
-                        "FAILED: Some results were not received \n");
-                err = 1;
-                break;
-            }
+        fprintf(stderr, "OK\n");
+    } else {
+        fprintf(stderr, "FAILED: received results did not match expectations\n");
+
+        /** print extra */
+        if (extra) {
+            fprintf(stderr, "   Some results were not expected\n");
+            for (i = 0; i < extra; ++i)
+                fprintf(stderr,         "     UNEXPECTED %s(%d)\n",
+                        p_val_error(extra_res[i]), extra_res[i]);
         }
 
-        if (!err) {
-            fprintf(stderr, "OK\n");
-        }
-    } else if (trusted_only) {
-        fprintf(stderr,
-                "FAILED: Some results were not validated successfully \n");
+        /** print missing/untrusted */
+        if (trusted_only && untrusted)
+            fprintf(stderr, "   Some results were not validated successfully\n");
+        if (missing)
+            fprintf(stderr, "   Some results were not received\n");
+        if (missing || (trusted_only && untrusted))
+            for (i = 0; result_array[i] != 0; i++)
+                if (result_array[i] > 0)
+                    fprintf(stderr, "     MISSING    %s(%d)\n",
+                            p_val_error(result_array[i]), result_array[i]);
+                else if (result_array[i] == CR_UNTRUSTED)
+                    fprintf(stderr, "     UNTRUSTED  %s(%d)\n",
+                            p_val_error(result_ar[i]), result_ar[i]);
+
     }
 
     fprintf(stderr, "%s: ****END**** %ld.%ld sec\n", desc, duration.tv_sec,
