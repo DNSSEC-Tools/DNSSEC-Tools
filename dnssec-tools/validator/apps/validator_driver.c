@@ -830,11 +830,11 @@ main(int argc, char *argv[])
             break;
 
         case 'T':
-            tcs = strtol(optarg, &nextarg, 10) - 1;
+            tcs = strtol(optarg, &nextarg, 10);
             if (*nextarg == '\0')
                 tce = tcs;
             else
-                tce = atoi(++nextarg) - 1;
+                tce = atoi(++nextarg);
             break;
 
         case 'l':
