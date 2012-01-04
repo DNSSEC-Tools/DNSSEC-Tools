@@ -730,7 +730,6 @@ sub buildmainwind
 	#
 	# Add the Display menu entries.
 	#
-
 	$dspl->command(-label	=> 'Zone Selection...',
 		       -command => \&zdisp_select);
 	$dspl->command(-label	=> 'Display All Zones',
@@ -1836,7 +1835,7 @@ sub calccols
 	}
 
 	#
-	# Calculate the position of the ZSK data columns.
+	# Calculate the position of the zonegroups column.
 	#
 	if($showzgnames)
 	{
@@ -2118,6 +2117,10 @@ sub infostripe
 	$lab = $zonetab->Label(-text => ' ',
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$INFO6,$lab);
+
+	$lab = $zonetab->Label(-text => ' ',
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,$INFO7,$lab);
 
 	painter();
 }
@@ -4144,7 +4147,7 @@ from the display and the display window will shrink.  If display is turned on,
 the column holding the I<rollrec> names will be restored to the display and the
 display window will be expanded.
 
-When displayed, the I<rollrec> names will always be the left-most columns.
+When displayed, the I<rollrec> names will always be the leftmost columns.
 
 =item *
 
@@ -4156,7 +4159,7 @@ names will be removed from the display and the display window will shrink.  If
 display is turned on, the column holding the zone names will be restored to
 the display and the display window will be expanded.
 
-When displayed, the zone name will always be the second-from left or left-most
+When displayed, the zone name will always be the second-from left or leftmost
 column, depending on if the I<rollrec> name is also being displayed.
 
 =item *
@@ -4184,7 +4187,7 @@ shrink.  If display is turned on, the columns holding the KSK signing set
 names and labels will be restored to the display and the display window will
 be expanded.
 
-When displayed, KSK signing sets will always be the right-most columns.
+When displayed, KSK signing sets will always be the rightmost columns.
 
 =item *
 
