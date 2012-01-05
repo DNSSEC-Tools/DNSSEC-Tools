@@ -924,7 +924,7 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
      LIBSRES_NS_STAGGER SR_ZI_STATUS_UNSET VAL_AC_INVALID_KEY
      VAL_AC_SIGNING_KEY VAL_AC_TRUST_NOCHK VAL_AC_TRUST_POINT
      VAL_BARE_TRUST_KEY VAL_BOGUS_PROVABLE VAL_CONF_NOT_FOUND
-     VAL_FROM_AUTHORITY VAL_INTERNAL_ERROR VAL_QUERY_NO_EDNS0
+     VAL_FROM_AUTHORITY VAL_INTERNAL_ERROR 
      VAL_TRUSTED_ANSWER VAL_UNTRUSTED_ZONE */
   /* Offset 13 gives the best switch position.  */
   switch (name[13]) {
@@ -955,15 +955,6 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
     /*                            ^           */
 #ifdef VAL_INTERNAL_ERROR
       *iv_return = VAL_INTERNAL_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_QUERY_NO_EDNS0", 18)) {
-    /*                            ^           */
-#ifdef VAL_QUERY_NO_EDNS0
-      *iv_return = VAL_QUERY_NO_EDNS0;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1244,7 +1235,7 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
      VAL_AC_RRSIG_EXPIRED VAL_AC_RRSIG_MISSING VAL_AC_VERIFIED_LINK
      VAL_CONF_PARSE_ERROR VAL_INCOMPLETE_PROOF VAL_IRRELEVANT_PROOF
      VAL_NONEXISTENT_NAME VAL_NONEXISTENT_TYPE VAL_POL_GOPT_DISABLE
-     VAL_UNTRUSTED_ANSWER VAL_VALIDATED_ANSWER */
+     VAL_UNTRUSTED_ANSWER VAL_VALIDATED_ANSWER VAL_QUERY_SKIP_CACHE */
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
   case 'A':
@@ -1384,6 +1375,17 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
+  case 'Y':
+    if (memEQ(name, "VAL_QUERY_SKIP_CACHE", 20)) {
+    /*                       ^                  */
+#ifdef VAL_QUERY_SKIP_CACHE
+      *iv_return = VAL_QUERY_SKIP_CACHE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case '_':
     if (memEQ(name, "VAL_CONF_PARSE_ERROR", 20)) {
     /*                       ^                  */
@@ -1407,7 +1409,8 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
      VAL_AC_DNSKEY_MISSING VAL_AC_DNSKEY_NOMATCH VAL_AC_NEGATIVE_PROOF
      VAL_AC_RRSIG_VERIFIED VAL_AC_UNTRUSTED_ZONE VAL_AC_WAIT_FOR_RRSIG
      VAL_AC_WAIT_FOR_TRUST VAL_AC_WCARD_VERIFIED VAL_AS_NO_NEW_QUERIES
-     VAL_IGNORE_VALIDATION VAL_POL_GOPT_OVERRIDE VAL_QFLAGS_CACHE_MASK */
+     VAL_IGNORE_VALIDATION VAL_POL_GOPT_OVERRIDE VAL_QFLAGS_CACHE_MASK 
+     VAL_QUERY_IGNORE_SKEW */
   /* Offset 20 gives the best switch position.  */
   switch (name[20]) {
   case 'D':
@@ -1567,6 +1570,17 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
+  case 'W':
+    if (memEQ(name, "VAL_QUERY_IGNORE_SKE", 20)) {
+    /*                                   W      */
+#ifdef VAL_QUERY_IGNORE_SKEW
+      *iv_return = VAL_QUERY_IGNORE_SKEW;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   }
   return PERL_constant_NOTFOUND;
 }
@@ -1643,7 +1657,7 @@ constant_23 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_FLAG_CHAIN_COMPLETE VAL_PINSECURE_UNTRUSTED VAL_QFLAGS_NOCACHE_MASK
-     VAL_QUERY_DONT_VALIDATE */
+     VAL_QUERY_DONT_VALIDATE VAL_QUERY_SKIP_RESOLVER */
   /* Offset 12 gives the best switch position.  */
   switch (name[12]) {
   case 'E':
@@ -1662,6 +1676,15 @@ constant_23 (pTHX_ const char *name, IV *iv_return) {
     /*                           ^                 */
 #ifdef VAL_FLAG_CHAIN_COMPLETE
       *iv_return = VAL_FLAG_CHAIN_COMPLETE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    } 
+    if (memEQ(name, "VAL_QUERY_SKIP_RESOLVER", 23)) {
+    /*                           ^                 */
+#ifdef VAL_QUERY_SKIP_RESOLVER
+      *iv_return = VAL_QUERY_SKIP_RESOLVER;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1993,7 +2016,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_POL_GOPT_OVERRIDE VAL_QFLAGS_ANY VAL_QFLAGS_CACHE_MASK
 	       VAL_QFLAGS_NOCACHE_MASK VAL_QFLAGS_USERMASK VAL_QUERY_AC_DETAIL
 	       VAL_QUERY_ASYNC VAL_QUERY_DONT_VALIDATE VAL_QUERY_EDNS0_FALLBACK
-	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV VAL_QUERY_NO_EDNS0
+	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV 
 	       VAL_QUERY_NO_EDNS0_FALLBACK VAL_QUERY_RECURSE
 	       VAL_QUERY_REFRESH_QCACHE VAL_QUERY_USING_DLV
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
