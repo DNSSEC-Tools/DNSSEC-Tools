@@ -7073,7 +7073,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     if(remaining)
         *remaining += count;
 
-    if (0 == checked && 0 == count) {
+    if (0 == checked && 0 == count && !(as->val_as_flags & VAL_AS_DONE)) {
         as->val_as_flags |= VAL_AS_DONE;
         val_log(context, LOG_DEBUG, "as %p _async_check_one/DONE NO QUERIES",
                 as);
