@@ -16,6 +16,7 @@
 #include "val_parse.h"
 
 extern void res_print_ea(struct expected_arrival *ea);
+extern const char *p_query_status(int err);
 
 #define STRIP_LABEL(name, newname) do {\
     int label_len;\
@@ -6944,10 +6945,9 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
                  int *nfds, int *remaining, u_int32_t flags)
 {
     struct queries_for_query   *qfq, *initial_q;
-    struct val_query_chain     *vqc;
     val_context_t              *context;
     struct timeval             closest_event, now;
-    int retval, data_received, data_missing, done, checked = 0, count = 0;
+    int retval, data_received, data_missing, done, checked = 0, as_remain;
     struct expected_arrival   *ea;
 
     if ((NULL == as) || (as->val_as_ctx == NULL) ||
@@ -6960,6 +6960,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
 
   try_again:
     initial_q = qfq = as->val_as_queries;
+    as_remain = 0;
 
     data_missing = 1; // result->val_as_flags |= VAL_RC_DATA_MISSING
     data_received = 0;
@@ -6970,25 +6971,42 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     timerclear(&closest_event);
     gettimeofday(&now, NULL);
     for (; qfq; qfq = qfq->qfq_next) {
+        int qfq_remain = 0;
 
-        if (NULL == qfq->qfq_query->qc_ea) // completed or cancelled query
+        if (NULL == qfq->qfq_query->qc_ea) { // completed or cancelled query
+            val_log(context,LOG_DEBUG+1, "skipping query : %s(0x%x)",
+                    p_query_status(qfq->qfq_query->qc_state),
+                    qfq->qfq_query->qc_state);
             continue;
+        }
 
         ++checked;
+        ea = qfq->qfq_query->qc_ea; /* save ptr for loging */
         if (res_async_ea_isset(qfq->qfq_query->qc_ea, pending_desc))
             retval = _resolver_rcv_one(as->val_as_ctx, &as->val_as_queries, qfq,
                                        pending_desc, &closest_event,
                                        &data_received);
         else
             retval = res_io_check_ea_list(qfq->qfq_query->qc_ea, &closest_event,
-                                          &now, NULL, NULL);
+                                          &now, NULL, &qfq_remain);
 
-        if (retval < 0 && res_io_are_all_finished(qfq->qfq_query->qc_ea)) {
-            val_log(context, LOG_DEBUG,
-                    "  CANCELING qfq %p: rc %d and all_finished",
-                    qfq->qfq_query, retval);
-            val_res_cancel(qfq->qfq_query);
+        if (retval < 0)
+            val_log(context, LOG_DEBUG,"  qfq %p: BAD RC %d", qfq->qfq_query,
+                    retval);
+        if(NULL == qfq->qfq_query->qc_ea ||
+           res_io_are_all_finished(qfq->qfq_query->qc_ea)) {
+            val_log(context, LOG_DEBUG,"  qfq %p: FINISHED ea %p/%p",
+                    qfq->qfq_query, ea, qfq->qfq_query->qc_ea);
+            if (retval < 0) {
+                val_log(context, LOG_DEBUG,
+                        "  CANCELING qfq %p: rc %d and all_finished",
+                        qfq->qfq_query, retval);
+                val_res_cancel(qfq->qfq_query);
+
+            }        
         }
+        else
+            as_remain += qfq_remain;
 
     } /* qfq loop */
 
@@ -7011,11 +7029,12 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
                                   &data_received, &data_missing, &sent);
         if (VAL_NO_ERROR != retval)
             goto done;
+        if (sent)
+            ++as_remain;
     }
 
     if (VAL_NO_ERROR !=
-        (retval = fix_glue(context, &as->val_as_queries,
-                           &data_missing)))
+        (retval = fix_glue(context, &as->val_as_queries, &data_missing)))
         goto done;
 
     if (data_received || !data_missing) {
@@ -7029,6 +7048,8 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
             as->val_as_flags |= VAL_AS_DONE;
             val_log(context, LOG_DEBUG, "as %p _async_check_one/DONE", as);
         } else {
+            if (-1 == done)
+                ++as_remain; /* switched to root */
             val_free_result_chain(as->val_as_results);
             as->val_as_results = NULL;
         }
@@ -7059,32 +7080,11 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     }
 
   done:
-    /** count remaining queries */
-    val_log(context, LOG_DEBUG, "as %p (%s) remaining:", as, as->val_as_name);
-    for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {
+    if (remaining)
+        *remaining += as_remain ? as_remain : checked;
 
-        vqc = qfq->qfq_query;
-        if (NULL == vqc || res_io_are_all_finished(vqc->qc_ea)) {
-            val_log(context, LOG_DEBUG, "   qfq %p completed/canceled", qfq);
-            continue;
-        }
-
-        ++count;
-        val_log(context, LOG_DEBUG, "   qfq %p:       vqc %p:", qfq, vqc);
-        for(ea = vqc->qc_ea; ea; ea = ea->ea_next)
-            res_print_ea(ea);
-    } /* qfq loop */
-    if(remaining)
-        *remaining += count;
-
-    if (0 == checked && 0 == count && !(as->val_as_flags & VAL_AS_DONE)) {
-        as->val_as_flags |= VAL_AS_DONE;
-        val_log(context, LOG_DEBUG, "as %p _async_check_one/DONE NO QUERIES",
-                as);
-    }
-
-    val_log(context,LOG_DEBUG,"as %p _async_check_one return %d, end rem %d",
-            as, retval, remaining ? *remaining : 0);
+    val_log(context,LOG_DEBUG,"as %p _async_check_one return %d, rem %d, chk %d",
+            as, retval, remaining ? *remaining : -1, checked);
     return retval;
 }
 
