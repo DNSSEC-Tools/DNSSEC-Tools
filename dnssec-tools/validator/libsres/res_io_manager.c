@@ -628,13 +628,20 @@ res_io_next_address(struct expected_arrival *ea,
     }
     res_print_ea(ea);
 }
-
+/*
+ * net_change : optional pointer for returning the next change in the
+ *              number of open/active sockets.
+ *
+ * active : optional pointer for returning number of active queries.
+ *          this includes any query with remaining retries, regardless
+ *          of whether or not it has a current open/active socket.
+ */
 int
 res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                      struct timeval *now, int *net_change, int *active)
 {
     struct timeval  local_now;
-    int             remaining = 0, no_sock = 0;
+    int             remaining = 0, no_sock = 0, no_att = 0, open = 0;
     
     /*
      * if caller didn't pass us current time, get it
@@ -658,6 +665,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
             res_log(NULL, LOG_DEBUG, "libsres: "
                     " skipping %p (sock %d, rem %d)",
                     ea, ea->ea_socket, ea->ea_remaining_attempts);
+            ++no_att;
             continue;
         }
         if (ea->ea_socket != INVALID_SOCKET )
@@ -705,8 +713,8 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                 UPDATE(next_evt, ea->ea_cancel_time);
                 UPDATE(next_evt, ea->ea_next_try);
             }
-            if (active && ea->ea_socket != INVALID_SOCKET)
-                ++(*active);
+            if (ea->ea_socket != INVALID_SOCKET)
+                ++open;
         }
     }
     if (next_evt) {
@@ -716,12 +724,19 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
         if (when.tv_sec < 0) {
             when.tv_sec = when.tv_usec = 0;
         }
-        res_log(NULL, LOG_DEBUG, "libsres: ""  Next event %ld.%ld (%ld.%ld)",
-                next_evt->tv_sec, next_evt->tv_usec, when.tv_sec, when.tv_usec);
-    }
-    if (no_sock)
-        res_log(NULL, LOG_DEBUG, "libsres: ""  skipped %d invalid sockets", no_sock);
+        res_log(NULL, LOG_DEBUG, "libsres: "
+                "  Next event %ld.%ld (%ld.%ld) remaining %d (%d active)",
+                next_evt->tv_sec, next_evt->tv_usec, when.tv_sec, when.tv_usec,
+                remaining, open);
+    } else
+        res_log(NULL, LOG_DEBUG, "libsres: ""  remaining %d (%d active)",
+                remaining, open);
+    if (no_sock || no_att)
+        res_log(NULL, LOG_DEBUG, "libsres: "
+                "  skipped %d closed sockets, %d no attempts", no_sock, no_att);
 
+    if (active)
+        *active = remaining;
     if (remaining)
         return SR_IO_UNSET;
     else
