@@ -60,6 +60,8 @@ pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
 #endif /* HAVE_PTHREAD_H */
 #endif
 
+
+
 /*
  * re-read resolver policy into the context
  */
@@ -345,9 +347,10 @@ val_create_context_internal( char *label,
         goto err;
     }
 
-    (*newcontext)->default_qflags = flags & VAL_QFLAGS_USERMASK; 
+    (*newcontext)->def_cflags = 0; 
+    (*newcontext)->def_uflags = flags & VAL_QFLAGS_USERMASK; 
     if ((*newcontext)->val_log_targets != NULL) {
-        (*newcontext)->default_qflags |= VAL_QUERY_AC_DETAIL;
+        (*newcontext)->def_cflags |= VAL_QUERY_AC_DETAIL;
     }
 
     val_log(*newcontext, LOG_DEBUG, 
@@ -574,3 +577,29 @@ val_free_validator_state()
     return VAL_NO_ERROR;
 }
 
+int 
+val_context_setqflags(val_context_t *context, 
+                      unsigned char action, 
+                      unsigned int flags)
+{
+    val_context_t *ctx = NULL;
+
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL) { 
+        return VAL_INTERNAL_ERROR;
+    }
+   
+    /* Lock exclusively */
+    CTX_LOCK_ACACHE(ctx);
+
+    if (action == VAL_CTX_FLAG_SET) {
+        ctx->def_uflags |= flags;
+    } else if (action == VAL_CTX_FLAG_RESET) {
+        ctx->def_uflags ^= (ctx->def_uflags & flags);
+    }
+    
+    CTX_UNLOCK_ACACHE(ctx);
+    CTX_UNLOCK_POL(ctx);
+
+    return VAL_NO_ERROR;
+}  

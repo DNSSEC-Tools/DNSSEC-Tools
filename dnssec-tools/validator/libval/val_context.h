@@ -51,6 +51,9 @@ int             val_create_context(char *label,
 val_context_t * val_create_or_refresh_context(val_context_t *ctx);
 void            val_free_context(val_context_t * context);
 int             val_free_validator_state(void);
+int             val_context_setqflags(val_context_t *context,
+                                      unsigned char action,
+                                      unsigned int flags);
 
 #ifndef VAL_NO_ASYNC
 /* remove asynchronous status from context async queries list */

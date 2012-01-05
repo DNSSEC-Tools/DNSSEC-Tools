@@ -6401,10 +6401,9 @@ val_resolve_and_check(val_context_t * ctx,
     CTX_LOCK_ACACHE(context);
    
     if (VAL_NO_ERROR != (retval =
-                add_to_qfq_chain(context, &queries, domain_name_n, q_type,
-                                 q_class, 
-                                 (flags | context->default_qflags) & VAL_QFLAGS_USERMASK, 
-                                 &added_q))) {
+                add_to_qfq_chain(context, &queries, domain_name_n, q_type, q_class, 
+                    (flags | context->def_cflags | context->def_uflags) & VAL_QFLAGS_USERMASK, 
+                    &added_q))) {
         goto err;
     }
     top_q = added_q;
