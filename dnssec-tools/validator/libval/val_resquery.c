@@ -307,7 +307,7 @@ merge_glue_in_referral(val_context_t *context,
         }
 
         /*
-         * If we reach here we've processed both A and AAAA glue
+         * If we reach here we've processed both A and AAAA glue.
          * check if we have at least some data to work with 
          */
         if (ns_name_ntop(pending_ns->ns_name_n, name_p,
