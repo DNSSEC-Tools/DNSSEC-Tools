@@ -101,7 +101,7 @@ static int _resolver_submit_one(val_context_t * context,
                                 struct queries_for_query *query);
 static int _resolver_submit(val_context_t * context,
                             struct queries_for_query **queries,
-                            int *data_received, int *data_missing);
+                            int *data_received, int *data_missing, int *sent);
 static int _resolver_rcv_one(val_context_t * context,
                              struct queries_for_query **queries,
                              struct queries_for_query *next_q,
@@ -5363,7 +5363,7 @@ ask_resolver(val_context_t * context,
              
 {
     struct queries_for_query *next_q;
-    int             retval = VAL_NO_ERROR;
+    int             retval = VAL_NO_ERROR, sent = 0;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
 
@@ -5376,7 +5376,8 @@ ask_resolver(val_context_t * context,
         return VAL_NO_ERROR;
 
     /** check queries and submit any unsent queries */
-    retval = _resolver_submit(context, queries, data_received, data_missing);
+    retval = _resolver_submit(context, queries, data_received, data_missing,
+                              &sent);
     if (retval != VAL_NO_ERROR)
         return retval;
 
@@ -5594,7 +5595,7 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
 
 static int
 _resolver_submit(val_context_t * context, struct queries_for_query **queries,
-                 int *data_received, int *data_missing)
+                 int *data_received, int *data_missing, int *sent)
 {
     struct queries_for_query *next_q;
     int                       need_data = 0;
@@ -5630,6 +5631,8 @@ _resolver_submit(val_context_t * context, struct queries_for_query **queries,
         retval = _resolver_submit_one(context, queries, next_q);
         if (VAL_NO_ERROR != retval)
             break;
+        if (next_q->qfq_query->qc_state == Q_SENT)
+            ++(*sent);
     }
 
     /* if no data needed, tell caller no data is missing */
@@ -7003,8 +7006,9 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
      * Send un-sent new queries
      */
     if (!(as->val_as_flags & VAL_AS_NO_NEW_QUERIES)) {
+        int sent = 0;
         retval = _resolver_submit(context, &as->val_as_queries,
-                                  &data_received, &data_missing);
+                                  &data_received, &data_missing, &sent);
         if (VAL_NO_ERROR != retval)
             goto done;
     }
