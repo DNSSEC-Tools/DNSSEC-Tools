@@ -6,6 +6,8 @@
 I<val_create_context()>
 I<val_free_context()> - manage validator context
 
+I<val_context_setqflags()> - manage validator context flags
+
 I<val_resolve_and_check()>, I<val_free_result_chain()> - query and validate
 answers from a DNS name server
 
@@ -29,6 +31,10 @@ I<val_log_add_optarg> - control log message verbosity and output location
   #include <validator.h>
 
   int val_create_context(const char *label, val_context_t **newcontext);
+
+  int val_context_setqflags(val_context_t *context, 
+                            unsigned char action, 
+                            unsigned int flags);
 
   int val_resolve_and_check(val_context_t *context,
                          const char *domain_name,
@@ -73,6 +79,11 @@ for this field:
 
 causes the validator to disable validation for this query.  
 
+=item B<VAL_QUERY_IGNORE_SKEW> 
+
+causes the validator to disable checking signature inception and
+expiration times on RRSIGs.  
+
 =item B<VAL_QUERY_AC_DETAIL> 
 
 causes the validator to copy the authentication chain details into the 
@@ -99,9 +110,11 @@ various name servers in the delegation hierarchy, instead of
 requesting this information from
 any caching name server that may be configured in B<dnsval.conf>
 
-=item B<VAL_QUERY_REFRESH_QCACHE>
-forces libval to fetch lookup information from other name servers instead
-of looking for this data in its local cache.
+=item B<VAL_QUERY_SKIP_RESOLVER>
+forces libval to only look at its cache while trying to resolve a name. 
+
+=item B<VAL_QUERY_SKIP_CACHE>
+forces libval to ignore cached data while trying to resolve a name. 
 
 =back
 
@@ -119,6 +132,26 @@ resolver (see I<dnsval.conf(3)>). These defaults may be different if
 any other value was specified at library configure time. If the default 
 resolver configuration file is not found at the specified location, libval
 will also try to fallback to /etc/resolv.conf as a last resort.
+
+Default query flags can be set and unset for a given context using 
+I<val_context_setqflags()>. This allows an application to alter the 
+DNSSEC validator processing, while still having most of the more 
+granular default configuration specified in its configuration file.  
+The I<action> parameter can be set to one of the following.
+
+=over 4
+
+=item B<VAL_CTX_FLAG_SET> 
+
+causes the validator to set the given flag as one of the default 
+query flags. 
+
+=item B<VAL_CTX_FLAG_RESET> 
+
+causes the validator to reset the given flag if it was set as one 
+of the default query flags for the context.
+
+=back
 
 Answers returned by I<val_resolve_and_check()> are made available in the
 I<*results> linked list.  Each answer corresponds to a distinct RRset; multiple
