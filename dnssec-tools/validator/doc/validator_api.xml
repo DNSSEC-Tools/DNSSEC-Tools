@@ -4,7 +4,7 @@
 <?rfc toc="yes"?>
 
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
-<rfc ipr="trust200902" docName="draft-hayatnagarkar-dnsext-validator-api-08">
+<rfc ipr="trust200902" docName="draft-hayatnagarkar-dnsext-validator-api-09">
   <front>
     <title> DNSSEC Validator API </title>
 
@@ -33,7 +33,7 @@
             fullname="Abhijit Hayatnagarkar"> 
     </author>
 
-    <date month="July" year="2011" />
+    <date month="January" year="2012" />
     <workgroup> DNS Extensions </workgroup>
     <keyword>Internet-Draft</keyword>
 
@@ -466,6 +466,10 @@ values are implementation-specific: </t>
    for the given name. Any resulting answer will have a validation
    status value of VAL_IGNORE_VALIDATION. </t> 
 
+<t hangText="VAL_QUERY_IGNORE_SKEW">
+   If this flag is specified, signature inception and expiration times
+   MUST be ignored for RRSIGs in the authentication chain. </t>
+
 <t hangText="VAL_QUERY_NO_DLV">
    If this flag is specified, Dynamic Look-aside Validation (DLV) 
    <xref target="refs.DLV"/> processing for this name MUST NOT be 
@@ -482,13 +486,19 @@ values are implementation-specific: </t>
    instead of requesting this information from any caching name server that may be 
    specified as configuration data. </t> 
 
-<t hangText="VAL_QUERY_REFRESH_QCACHE">
-   If this flag is specified, any locally cached information for the 
-   name being looked up MUST be ignored. </t>
-
 <t hangText="VAL_QUERY_NO_EDNS0_FALLBACK">
    If this flag is specified, re-trying the query with smaller EDNS0 advertised window
    sizes MUST NOT be attempted as a fallback strategy. </t> 
+
+<t hangText="VAL_QUERY_SKIP_RESOLVER">
+   If this flag is specified, only the cache should be consulted while looking
+   up a name. New queries MUST NOT be sent on the wire as part of looking up and
+   validating the cached answer. </t>  
+
+<t hangText="VAL_QUERY_SKIP_CACHE">
+   If this flag is specified, any locally cached information for the 
+   name being looked up MUST be ignored. </t>
+
 </list></t> 
 
 <t> val_resolve_and_check() MUST return 0 on success and an error code from 
@@ -1151,46 +1161,36 @@ val_free_context() function. newctx MUST be set to NULL if an error is encounter
     </figure>
     </section>
 
-    <section title="val_add_valpolicy, val_remove_valpolicy">
-    <figure>
-    <artwork>
-#include &lt;validator.h&gt;
+    <section title="val_context_setqflags">
+      <figure>
+      <artwork>
+#include &lt;validator/validator.h&gt;
 
-int val_add_valpolicy(  val_context_t       *context, 
-                        void *policy_definition,
-                        val_policy_entry_t **pol);
+int val_context_setqflags(val_context_t *context,
+                          unsigned char action,
+                          unsigned int flags);
 
-int val_remove_valpolicy(val_context_t      *context, 
-                         val_policy_entry_t *pol);
-    </artwork>
-    <postamble>
-<t>The val_add_valpolicy() function allows an application to add a new DNSSEC
-validator policy definition to an existing DNSSEC validator context. 
-The newly added policy MUST only be associated with the current DNSSEC 
-validator context and MUST NOT be stored persistently in the system 
-configuration. The policy_definition field points to a policy definition 
-structure; its internal representation is implementation-specific. 
-A timeout value MAY be attached to 
-the DNSSEC validator policy as part of the policy_definition structure
-such that after the timeout interval, the effects of the newly added DNSSEC 
-validator policy is ignored. A handle to the newly 
-added DNSSEC validator policy MUST be returned in *pol, which is a pointer to
-the val_policy_entry_t structure.  This structure is opaque to applications and
-applications MUST NOT modify its contents. </t>
+      </artwork>
+      <postamble>
+<t> This function allows an application to set or reset default 
+query flags for a given context. This enables the application to 
+alter the DNSSEC validator processing, while still having most of 
+the granular default configuration specified in its configuration file. </t>
 
-<t> Applications can revoke the effects of a newly added DNSSEC validator
-policy before the expiry of its timeout interval using the 
-val_remove_valpolicy() function. The DNSSEC validator policy 
-that is to be removed from the DNSSEC validator context is identified by its
-handle, pol. Memory allocated for the val_policy_entry_t structure MUST be 
-released when an application invokes the val_remove_valpolicy() function.</t>
+<t>The application may specify one of the following action types, where their 
+   numeric values are implementation-specific.</t>
 
-<t> The above functions MUST return 0 on success and an error code from 
-<xref target="val-return-values"/> on failure.  </t>
+<t> <list style="hanging">
+        <t> </t>
+        <t hangText="VAL_CTX_FLAG_SET:">Set the given flag as 
+        one of the default query flags for the context.</t>
+        <t> </t>
+        <t hangText="VAL_CTX_FLAG_RESET:">Reset the given flag if 
+        it was set as one of the default query flags for the context.</t>
+      </list> </t>
     </postamble>
     </figure>
     </section>
-
   </section> <!-- DNSSEC Validator Context API -->
     
   <section title="Function Return Codes and p_val_err()" anchor="val-return-values">
