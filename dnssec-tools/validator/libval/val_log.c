@@ -414,6 +414,7 @@ p_query_status(int err)
             return "Q_SENT";
         case Q_ANSWERED:
             return "Q_ANSWERED";
+        case (Q_WAIT_FOR_A_GLUE|Q_WAIT_FOR_AAAA_GLUE):
         case Q_WAIT_FOR_A_GLUE:
         case Q_WAIT_FOR_AAAA_GLUE:
             return "Q_WAIT_FOR_GLUE";
