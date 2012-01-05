@@ -336,7 +336,11 @@ extern          "C" {
         val_async_status       *as_list;
 #endif
 
-        u_int32_t default_qflags;
+        /* default flags that the context applies automatically */
+        u_int32_t def_cflags;
+
+        /* flags that get applied to the query by application preferences */
+        u_int32_t def_uflags;
 
 #ifdef HAVE_PTHREAD_H 
         pthread_mutex_t ref_lock;

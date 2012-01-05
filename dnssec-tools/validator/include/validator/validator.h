@@ -424,6 +424,12 @@ typedef struct val_context_opt {
     void            val_free_context(val_context_t * context);
     int             val_free_validator_state(void);
 
+#define VAL_CTX_FLAG_SET        0x01
+#define VAL_CTX_FLAG_RESET      0x02
+    int             val_context_setqflags(val_context_t *context,
+                                          unsigned char action,
+                                          unsigned int flags);
+
     /*
      * from val_policy.h 
      */
