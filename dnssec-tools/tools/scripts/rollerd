@@ -3246,13 +3246,15 @@ sub nextphase
 
 	rolllog_log(LOG_PHASE,$rname,"$phasetype phase $phase$phasedesc");
 
-#
-# Are these next two lines needed?  One of kskphase()/zskphase() had them
-# and the other didn't.  We'll try it a bit without and see how things go.
-#
-#	rollrec_close();
-#	rollrec_read($rollrecfile);
+	#
+	# Get the latest and greatest rollrec file.
+	#
+	rollrec_close();
+	rollrec_read($rollrecfile);
 
+	#
+	# Change the zone's phase and plop it on disk.
+	#
 	$rrr->{$phasekey} = $phase;
 	rollrec_setval($rname,$phasekey,$phase);
 	rollrec_settime($rname);
@@ -4620,12 +4622,12 @@ sub cmd_dspub
 	if($phase != 6)
 	{
 		rolllog_log(LOG_INFO,'<command>',"zone not in KSK-rollover phase 6");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"$zone not in KSK-rollover phase 6");
 		return;
 	}
 
 	#
-	# Change the zone's rollover phase to phase 7 (the final phase) and
-	# re-run the queue now.
+	# Change the zone's rollover phase to phase 7 (the final phase).
 	#
 	nextphase($zone,$rrr,7,'KSK');
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
