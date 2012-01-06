@@ -1,0 +1,170 @@
+# Copyright 2011-2012 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+
+rollerd-zonegroups demo
+
+	This directory contains tools and data for demonstrating the
+	DNSSEC-Tools rollover daemon's handling of zonegroups.
+
+	This demo shows the rollerd managing zone rollover for ten zones, where
+	nine of the zones are in four zonegroups and one not in a zonegroup.
+	A graphical window will appear showing the zones' rollover phases and
+	their zonegroups.  As rollover proceeds, the phases (as displayed in
+	the graphical window) will change.  Commands in the graphical window
+	allow the user to apply commands to the different zonegroups.
+
+To run the demo:
+
+	- Run the demo with these commands:
+
+		# make all
+		# rundemo
+
+	  The first command will build and sign the zones and initialize
+	  various state data.
+
+	  The second command starts the demo running.
+
+	- This demo uses *very* short zone lifetimes, lifetimes that
+	  are impractically short.  The makefile has other demo targets;
+	  consult the Makefile for other options.
+
+	- A graphical window is created that holds the whole of the demo
+	  output.  The window in which the demo was started will have a
+	  "tail -f log.demo" of rollerd's log file.
+
+	  Occasionally, the display of the log.demo contents won't start.
+	  This can be fixed by giving a control-C in that window.
+
+	All commands should be run as root.
+
+To stop the demo:
+
+	- Run this command:
+
+		# rollctl -halt
+
+	  Stopping rollerd will also stop the blinkenlights graphical program.
+	  Usually.
+
+Demo Operation:
+
+	- The demo follows the rollover operation of ten zones:
+	  example-000.com through example-009.com.
+
+	  The zones are in the following groups:
+
+		example000.com		zg-1
+		example001.com		zg-1
+		example002.com		zg-1
+
+		example003.com		zg-2
+		example004.com		zg-2
+
+		example005.com		zg-3
+		example006.com		zg-3
+
+		example007.com		not in a zonegropu
+
+		example008.com		zg-4
+		example009.com		zg-4
+
+
+	  This is a very simple demo -- the rollover phase and key names are
+	  what visibly change.
+
+	- The colors of the blocks in the "Rollover Phase" column change to
+	  show the change in rollover phase:
+
+		During normal operation, the color is supposed to match the
+		rest of the row.  
+
+		During rollover, the colors start very light in phase 1 and
+		progressively converge on the color of the rest of the row 
+		as rollover phases move along
+
+	- The ZSK key names are given vertically in this order:  current,
+	  published, new.  When a rollover cycle completes:
+
+		- the old "published" key becomes the new "current" key
+		- the old "new" key becomes the new "published" key
+		- a new "new" key is created
+
+	  This gives the effect of the key names (very slowly) rolling up the
+	  screen and disappearing.
+
+	- The zones have different expiration times, so don't expect each
+	  zone to proceed at the same rate.
+
+	- The times given in the "Rollover Phase" columns are approximate
+	  and depend on rollerd, blinkenlights, multitasking queue updates,
+	  and timers timing out.
+
+	- When the demo is first started, all zones are in active rollover
+	  management.  
+
+	- If you want to disable a zone's rollover, use this command:
+
+		# rollctl -skipzone <zonename>
+
+	- If you want to disable a zone group's rollover, use this command:
+
+		# rollctl -group -skipzone <zonegroup name>
+
+	- If you want to enable a zone's rollover, use this command:
+
+		# rollctl -rollzone <zonename>
+
+	- If you want to enable a zone group's rollover, use this command:
+
+		# rollctl -group -rollzone <zonegroup name>
+
+	- Demo phases 2 and 4 are very short-lived.  It is possible to
+	  miss them if you blink at the wrong time.  Seriously.
+
+	- If you've got all the demo files, you can run the demo by just
+	  executing "rundemo".  It's probably best, however, to start
+	  fresh each time by running "make all" before running "rundemo".
+
+Possible cosmetic changes, if desired:
+
+	- If demo window is too big (or too small) the font size can be
+	  changed and this should adjust the window size.
+
+	- If you don't like the descriptions in the "Rollover Phase" column,
+	  they may be fixed in blinkenlights in @phasedescr.
+
+	- If you don't like the rollover-phase colors of the "Rollover Phase"
+	  column, they may be changed in blinkenlights in @phasecolors.
+
+	- If you don't like the skipped-zone color, it may be changed in
+	  blinkenlights in $skipcolor.
+
+WARNINGS:
+
+	- This demo requires the DNSSEC-Tools scripts and modules, BIND, Perl,
+	  and Perl/Tk.
+
+
+Files:
+	Makefile		Makefile to control demo execution.
+	README			This file.
+	phaser			Adjusts zone start times in rollrec file.
+	rc.blinkenlights	Configuration file for demo GUI.
+	rundemo			Executes demo.
+	save-demo.rollrec	Pristine copy of demo's rollrec file.
+	save-example-000.com	Pristine copy of example-000.com's zone file.
+	save-example-001.com	Pristine copy of example-001.com's zone file.
+	save-example-002.com	Pristine copy of example-002.com's zone file.
+	save-example-003.com	Pristine copy of example-003.com's zone file.
+	save-example-004.com	Pristine copy of example-004.com's zone file.
+	save-example-005.com	Pristine copy of example-005.com's zone file.
+	save-example-006.com	Pristine copy of example-006.com's zone file.
+	save-example-007.com	Pristine copy of example-007.com's zone file.
+	save-example-008.com	Pristine copy of example-008.com's zone file.
+	save-example-009.com	Pristine copy of example-009.com's zone file.

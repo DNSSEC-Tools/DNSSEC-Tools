@@ -1,0 +1,153 @@
+#!/usr/bin/perl
+#
+# Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# rundemo
+#
+#	This script runs the zonegroups demo for the DNSSEC-Tools
+#	rollerd daemon.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::rollrec;
+
+my %options = ();				# Filled option array.
+my @opts =
+(
+	"autods",				# Auto-pub DS records.
+	"reload",				# Reload zones.
+	"loglevel=n",				# Logging level.
+	"help",					# Display help message.
+);
+
+my $cmd;					# Demo command to execute.
+my $dir;					# Current-directory argument.
+my $log;					# Log-file argument.
+my $lvl;					# Log-level argument.
+my $rrf;					# Rollrec-file argument.
+my $slp;					# Sleep-time argument.
+
+my $curdir    = ".";
+my $logfile   = "log.demo";
+my $loglvl    = "phase";
+my $noload    = "-noreload";
+my $sleeptime = "15";
+my $rrfile    = "demo.rollrec";
+
+my $autods    = 0;				# Auto-DS'ing flag.
+my $cpid      = 0;				# autods child pid.
+
+main();
+exit();
+
+#------------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	#
+	# Set the log level, maybe using a command-line argument.
+	#
+	opts();
+	print "\nusing a loglevel of \"$loglvl\"\n\n";
+
+	#
+	# Set our remaining arguments.
+	#
+	$dir	= "-dir $curdir";
+	$log	= "-logfile $logfile";
+	$lvl	= "-loglevel $loglvl";
+	$slp	= "-sleep $sleeptime";
+	$rrf	= "-rrf $rrfile";
+
+	#
+	# Build our demo command.
+	#
+	$cmd = "rollerd $dir $log $lvl $noload $slp $rrf -display";
+
+	#
+	# Ensure rollerd is not running and zap the demo log file.
+	#
+#	system("rollctl -halt >/dev/null 2>&1 &");
+	system("rollctl -halt");
+	system("cp /dev/null $logfile");
+
+	#
+	# Set up automatic DS handling.  (maybe)
+	autods();
+
+	#
+	# Start the demo and peek at the log file.
+	#
+	system("$cmd &");
+	system("tail -f $logfile");
+}
+
+#------------------------------------------------------------------------------
+# Routine:	opts()
+#
+sub opts
+{
+	GetOptions(\%options,@opts) || usage();
+	usage() if($options{'help'});
+
+	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
+
+	$autods = defined($options{'autods'});
+
+	$noload = "" if(defined($options{'reload'}));
+}
+
+#------------------------------------------------------------------------------
+# Routine:	autods()
+#
+sub autods
+{
+	my $nap = $sleeptime * 2;			# autods sleep-time.
+
+	#
+	# Only set up autods childproc if -autods was given.
+	#
+	return if(!$autods);
+	print "\nstarting auto-DS checking\n\n";
+	$SIG{CHLD} = "IGNORE";
+
+	#
+	# Spawn a child and let the parent return.
+	#
+	$cpid = fork();
+	return if($cpid != 0);
+
+	#
+	# Whenever a zone hits KSK rollover phase 6, tell rollerd that
+	# the parent has published the new DS record.
+	#
+	while(42)
+	{
+		sleep($nap);
+
+		rollrec_read($rrfile);
+		foreach my $zone (sort(rollrec_names()))
+		{
+			my $kphase = rollrec_recval($zone,'kskphase');
+
+			if($kphase == 6)
+			{
+				system("rollctl -dspub $zone > /dev/null");
+			}
+		}
+		rollrec_close();
+	}
+}
+
+#------------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  rundemo [-autods | -loglevel lvl | -reload]\n";
+	exit(0);
+}
