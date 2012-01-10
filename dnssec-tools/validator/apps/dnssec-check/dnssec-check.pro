@@ -62,7 +62,14 @@ OTHER_FILES += \
     qml/HostLabel.qml \
     qml/DNSSECCheck.js \
     qml/NewServerBox.qml \
-    qml/Button.qml
+    qml/Button.qml \
+    qtc_packaging/debian_harmattan/rules \
+    qtc_packaging/debian_harmattan/README \
+    qtc_packaging/debian_harmattan/manifest.aegis \
+    qtc_packaging/debian_harmattan/copyright \
+    qtc_packaging/debian_harmattan/control \
+    qtc_packaging/debian_harmattan/compat \
+    qtc_packaging/debian_harmattan/changelog
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
@@ -71,6 +78,7 @@ qtcAddDeployment()
 # Please do not modify the following two lines. Required for deployment.
 include(qmlapplicationviewer/qmlapplicationviewer.pri)
 qtcAddDeployment()
+
 
 
 
