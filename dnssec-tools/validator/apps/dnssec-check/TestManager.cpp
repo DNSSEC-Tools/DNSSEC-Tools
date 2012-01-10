@@ -38,7 +38,7 @@ QStringList TestManager::loadResolvConf()
 {
     const char *resolv_conf_file = resolv_conf_get();
 
-#ifdef SMALL_DEVICE
+#if defined(IS_MAEMO) || defined(IS_HARMATTAN)
     if (strcmp(resolv_conf_file, "/dev/null") == 0) {
         resolv_conf_file = "/var/run/resolv.conf.wlan0";
     }
