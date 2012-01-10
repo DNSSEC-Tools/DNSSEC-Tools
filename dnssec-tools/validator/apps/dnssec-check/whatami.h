@@ -12,6 +12,7 @@
 
 #if defined(__arm__) && !defined(IS_MAEMO)
 #define IS_MEEGO 1
+#define IS_HARMATTAN
 #endif
 
 #if defined(ANDROID)
