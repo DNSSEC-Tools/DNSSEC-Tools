@@ -1,0 +1,255 @@
+diff --git a/config.tests/unix/dnssec/dnssec.cpp b/config.tests/unix/dnssec/dnssec.cpp
+new file mode 100644
+index 0000000..a71a656
+--- /dev/null
++++ b/config.tests/unix/dnssec/dnssec.cpp
+@@ -0,0 +1,54 @@
++/****************************************************************************
++**
++** Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
++** All rights reserved.
++** Contact: Nokia Corporation (qt-info@nokia.com)
++**
++** This file is part of the config.tests of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** No Commercial Usage
++** This file contains pre-release code and may not be distributed.
++** You may use this file in accordance with the terms and conditions
++** contained in the Technology Preview License Agreement accompanying
++** this package.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Nokia gives you certain additional
++** rights.  These rights are described in the Nokia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** If you have questions regarding the use of this file, please contact
++** Nokia at qt-info@nokia.com.
++**
++**
++**
++**
++**
++**
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include <validator/validator-config.h>
++#include <validator/validator.h>
++
++int main(int, char **)
++{
++    val_status_t val_status;
++    struct addrinfo *ainfo;
++    
++    /* we don't actually care if it succeeds or not; just compiling is ok */
++    val_getaddrinfo(NULL, "www.example.com", NULL, NULL, &ainfo, &val_status);
++
++    return 0;
++}
+diff --git a/config.tests/unix/dnssec/dnssec.pro b/config.tests/unix/dnssec/dnssec.pro
+new file mode 100644
+index 0000000..a255d3b
+--- /dev/null
++++ b/config.tests/unix/dnssec/dnssec.pro
+@@ -0,0 +1,4 @@
++SOURCES = dnssec.cpp
++CONFIG -= qt dylib
++mac:CONFIG -= app_bundle
++LIBS += -lval-threads -lsres -lcrypto -lpthread
+diff --git a/configure b/configure
+index 976267e..07751d4 100755
+--- a/configure
++++ b/configure
+@@ -792,6 +792,7 @@ CFG_CLOCK_GETTIME=auto
+ CFG_CLOCK_MONOTONIC=auto
+ CFG_MREMAP=auto
+ CFG_GETADDRINFO=auto
++CFG_DNSSEC=auto
+ CFG_IPV6IFNAME=auto
+ CFG_GETIFADDRS=auto
+ CFG_INOTIFY=auto
+@@ -6640,6 +6641,24 @@ if [ "$CFG_GETADDRINFO" != "no" ]; then
+     fi
+ fi
+ 
++# find if the platform provides libval with val_getaddrinfo (dnssec lookups)
++if [ "$CFG_DNSSEC" != "no" ]; then
++    if "$unixtests/compile.test" "$XQMAKESPEC" "$QMAKE_CONFIG" $OPT_VERBOSE "$relpath" "$outpath" config.tests/unix/dnssec "dnssec" $L_FLAGS $I_FLAGS $l_FLAGS; then
++        CFG_DNSSEC=yes
++    else
++	if [ "$CFG_DNSSEC" = "yes" ] && [ "$CFG_CONFIGURE_EXIT_ON_ERROR" = "yes" ]; then
++            echo "dnssec support cannot be enabled due to functionality tests!"
++            echo " Turn on verbose messaging (-v) to $0 to see the final report."
++            echo " If you believe this message is in error you may use the continue"
++            echo " switch (-continue) to $0 to continue."
++	    echo " Note: dnssec support requires the DNSSEC-Tools libval library"
++            exit 101
++	else
++	    CFG_DNSSEC=no
++	fi
++    fi
++fi
++
+ # find if the platform provides inotify
+ if [ "$CFG_INOTIFY" != "no" ]; then
+     if "$unixtests/compile.test" "$XQMAKESPEC" "$QMAKE_CONFIG" $OPT_VERBOSE "$relpath" "$outpath" config.tests/unix/inotify "inotify" $L_FLAGS $I_FLAGS $l_FLAGS; then
+@@ -7145,6 +7164,9 @@ fi
+ if [ "$CFG_GETADDRINFO" = "yes" ]; then
+     QT_CONFIG="$QT_CONFIG getaddrinfo"
+ fi
++if [ "$CFG_DNSSEC" = "yes" ]; then
++    QT_CONFIG="$QT_CONFIG dnssec"
++fi
+ if [ "$CFG_IPV6IFNAME" = "yes" ]; then
+     QT_CONFIG="$QT_CONFIG ipv6ifname"
+ fi
+@@ -8180,6 +8202,7 @@ fi
+ [ "$CFG_CLOCK_MONOTONIC" = "no" ] && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_CLOCK_MONOTONIC"
+ [ "$CFG_MREMAP" = "no" ]     && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_MREMAP"
+ [ "$CFG_GETADDRINFO" = "no" ]&& QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_GETADDRINFO"
++[ "$CFG_DNSSEC" = "no" ]     && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_DNSSEC"
+ [ "$CFG_IPV6IFNAME" = "no" ] && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_IPV6IFNAME"
+ [ "$CFG_GETIFADDRS" = "no" ] && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_GETIFADDRS"
+ [ "$CFG_INOTIFY" = "no" ]    && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_INOTIFY"
+@@ -8466,6 +8489,11 @@ elif [ "$CFG_OPENSSL" = "linked" ]; then
+     echo "OPENSSL_LIBS = -lssl -lcrypto" >> "$CACHEFILE.tmp"
+ fi
+ 
++#dump in the DNSSEC info
++if [ '!' -z "$CFG_DNSSEC" ]; then
++    echo "DNSSEC_LIBS = -lval-threads -lsres -lcrypto" >> "$CACHEFILE.tmp"
++fi
++
+ #dump in the SDK info
+ if [ '!' -z "$CFG_SDK" ]; then
+    echo "QMAKE_MAC_SDK = $CFG_SDK" >> "$CACHEFILE.tmp"
+@@ -8661,6 +8689,7 @@ fi
+ echo "IPv6 support ........... $CFG_IPV6"
+ echo "IPv6 ifname support .... $CFG_IPV6IFNAME"
+ echo "getaddrinfo support .... $CFG_GETADDRINFO"
++echo "dnssec support ......... $CFG_DNSSEC"
+ echo "getifaddrs support ..... $CFG_GETIFADDRS"
+ echo "Accessibility .......... $CFG_ACCESSIBILITY"
+ echo "NIS support ............ $CFG_NIS"
+diff --git a/src/network/kernel/kernel.pri b/src/network/kernel/kernel.pri
+index bb98305..1869d6e 100644
+--- a/src/network/kernel/kernel.pri
++++ b/src/network/kernel/kernel.pri
+@@ -32,3 +32,9 @@ else:symbian:SOURCES += kernel/qnetworkproxy_symbian.cpp
+ else:SOURCES += kernel/qnetworkproxy_generic.cpp
+ 
+ symbian: LIBS += -lcommsdat
++
++# DNSSEC support requires libval/libsres/libcrypto
++contains(QT_CONFIG, dnssec) {
++    LIBS += $$DNSSEC_LIBS
++}
++
+diff --git a/src/network/kernel/qhostinfo.h b/src/network/kernel/qhostinfo.h
+index 33453e7..0d5bff9 100644
+--- a/src/network/kernel/qhostinfo.h
++++ b/src/network/kernel/qhostinfo.h
+@@ -61,7 +61,8 @@ public:
+     enum HostInfoError {
+         NoError,
+         HostNotFound,
+-        UnknownError
++        UnknownError,
++        DNSNotTrusted
+     };
+ 
+     QHostInfo(int lookupId = -1);
+diff --git a/src/network/kernel/qhostinfo_unix.cpp b/src/network/kernel/qhostinfo_unix.cpp
+index 8fc6bf6..2193410 100644
+--- a/src/network/kernel/qhostinfo_unix.cpp
++++ b/src/network/kernel/qhostinfo_unix.cpp
+@@ -62,6 +62,11 @@
+ #  include <resolv.h>
+ #endif
+ 
++#if ! defined(QT_NO_DNSSEC)
++#undef QT_NO_GETADDRINFO
++#include <validator/validator.h>
++#endif
++
+ #if defined (QT_NO_GETADDRINFO)
+ #include <qmutex.h>
+ QT_BEGIN_NAMESPACE
+@@ -208,19 +213,42 @@ QHostInfo QHostInfoAgent::fromName(const QString &hostName)
+ #ifdef Q_ADDRCONFIG
+     hints.ai_flags = Q_ADDRCONFIG;
+ #endif
++#if ! defined(QT_NO_DNSSEC)
++    val_status_t val_status;
++#endif
+ 
++#if ! defined(QT_NO_DNSSEC)
++    int result = val_getaddrinfo(NULL, aceHostname.constData(), 0, &hints, &res,
++                                 &val_status);
++#else
+     int result = getaddrinfo(aceHostname.constData(), 0, &hints, &res);
++#endif
+ # ifdef Q_ADDRCONFIG
+     if (result == EAI_BADFLAGS) {
+         // if the lookup failed with AI_ADDRCONFIG set, try again without it
+         hints.ai_flags = 0;
++#if ! defined(QT_NO_DNSSEC)
++        /* technically, this shouldn't actually happen with libval with
++           its current code base, but to be safe we'll mimic !dnssec */
++        result = val_getaddrinfo(NULL, aceHostname.constData(), 0, &hints, &res,
++                                 &val_status);
++#else
+         result = getaddrinfo(aceHostname.constData(), 0, &hints, &res);
++#endif
+     }
+ # endif
+ 
+     if (result == 0) {
+         addrinfo *node = res;
+         QList<QHostAddress> addresses;
++
++#if ! defined(QT_NO_DNSSEC)
++        if (!val_istrusted(val_status)) {
++            results.setError(QHostInfo::DNSNotTrusted);
++            results.setErrorString(tr("DNS Answer Not Trusted"));
++        } else {
++#endif
++
+         while (node) {
+ #ifdef QHOSTINFO_DEBUG
+                 qDebug() << "getaddrinfo node: flags:" << node->ai_flags << "family:" << node->ai_family << "ai_socktype:" << node->ai_socktype << "ai_protocol:" << node->ai_protocol << "ai_addrlen:" << node->ai_addrlen;
+@@ -252,7 +280,13 @@ QHostInfo QHostInfoAgent::fromName(const QString &hostName)
+         }
+ 
+         results.setAddresses(addresses);
++
++#if ! defined(QT_NO_DNSSEC)
++        }
++#endif
++
+         freeaddrinfo(res);
++
+     } else if (result == EAI_NONAME
+                || result ==  EAI_FAIL
+ #ifdef EAI_NODATA
+diff --git a/src/network/network.pro b/src/network/network.pro
+index 948922b..dac726b 100644
+--- a/src/network/network.pro
++++ b/src/network/network.pro
+@@ -29,3 +29,4 @@ symbian {
+    TARGET.UID3=0x2001B2DE
+    LIBS += -lesock -linsock -lcertstore -lefsrv -lctframework
+ }
++

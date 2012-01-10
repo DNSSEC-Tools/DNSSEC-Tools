@@ -1,0 +1,27 @@
+The patch included in the qt4.patch file modifies the base Qt code to:
+
+  - make all DNS lookups (done using the Qt Classes) perform DNSSEC validation
+    - This extends the returned error codes by 1, providing a new
+      DNSNotTrusted enum returned by the QHostInfo class.
+  - adds configure tests to add the needed libval and libsres
+    libraries to the compilation line
+
+Applying and Using The Patch
+============================
+  # cd QTSRCDIR/
+  # patch -p1 < /path/to/qt4.patch
+  # ./configure [with any options you want, such as "-prefix /opt/qt4-dnssec" ]
+  # make
+  # make install
+
+Also Available From Gitorious
+=============================
+
+  An already patched version of the latest Qt4 code is also available
+  on gitorious:
+
+    # git clone git://gitorious.org/~wjhardaker/qt/wjhardaker-qt.git
+    # cd wjhardaker-qt
+    # checkout wjhardaker-qt/qt-dnssec
+
+
