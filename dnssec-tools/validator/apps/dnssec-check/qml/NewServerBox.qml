@@ -41,6 +41,7 @@ Rectangle {
                 DNSSECCheck.addSingleHost(newHost.text)
             }
             newHost.text = newHost.defaultText
+            newHost.closeSoftwareInputPanel()
             newHost.focus = false
         }
 
