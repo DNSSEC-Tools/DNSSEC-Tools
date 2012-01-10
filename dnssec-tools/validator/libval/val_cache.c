@@ -24,7 +24,7 @@
  * Contains implementation for storage and retrieval functions for the validator
  * rrset cache.
  */
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_support.h"

@@ -19,7 +19,7 @@
  * See the COPYING file distributed with this software for details.
  */
 
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include <validator/validator.h>
 #include <validator/resolver.h>
 

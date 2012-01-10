@@ -39,7 +39,7 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE, EVEN
  * IF IBM IS APPRISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #define Assert(Cond) if (!(Cond)) abort()

@@ -2483,7 +2483,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-ac_config_headers="$ac_config_headers include/validator-config.h"
+ac_config_headers="$ac_config_headers include/validator/validator-config.h"
 
 
 
@@ -13213,9 +13213,9 @@ them carefully, as they determine how the validator library and related
 applications are to function.
 
         After the configure script finishes, you can browse the newly
-created include/validator-config.h file for further - less important - parameters
-to modify.  Be careful if you re-run configure though, since the file
-will be overwritten.
+created include/validator/validator-config.h file for further - less
+important - parameters to modify.  Be careful if you re-run configure
+though, since the file will be overwritten.
 
 -Press return to continue-
 EOF
@@ -14541,7 +14541,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "include/validator-config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/validator-config.h" ;;
+    "include/validator/validator-config.h") CONFIG_HEADERS="$CONFIG_HEADERS include/validator/validator-config.h" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile:Makefile.top:Makefile.in" ;;
     "libsres/Makefile") CONFIG_FILES="$CONFIG_FILES libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot" ;;

@@ -7,7 +7,7 @@
  * Program to check if the provided dnsval.conf file is valid 
  *
  */
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include <validator/validator.h>
 
 #ifdef HAVE_LIBGEN_H

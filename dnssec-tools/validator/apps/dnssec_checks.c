@@ -1,4 +1,4 @@
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include <validator/validator.h>
 #include <validator/resolver.h>
 
