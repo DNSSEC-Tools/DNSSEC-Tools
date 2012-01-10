@@ -12,7 +12,7 @@
  * DESCRIPTION
  * Contains implementation of val_getaddrinfo() and friends
  */
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_policy.h"

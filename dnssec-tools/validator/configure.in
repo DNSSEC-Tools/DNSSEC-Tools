@@ -5,7 +5,7 @@ dnl provide it a file to simply check for its existence.
 AC_INIT([dnssec-tools-validator], [0.3], [dnssec-tools-users@lists.sourceforge.net])
 AC_PREREQ([2.59])
 
-AC_CONFIG_HEADER(include/validator-config.h)
+AC_CONFIG_HEADER(include/validator/validator-config.h)
 
 AC_MSG_CACHE_INIT()
 
@@ -635,9 +635,9 @@ them carefully, as they determine how the validator library and related
 applications are to function.
 
         After the configure script finishes, you can browse the newly
-created include/validator-config.h file for further - less important - parameters
-to modify.  Be careful if you re-run configure though, since the file
-will be overwritten.
+created include/validator/validator-config.h file for further - less
+important - parameters to modify.  Be careful if you re-run configure
+though, since the file will be overwritten.
 
 -Press return to continue-
 EOF

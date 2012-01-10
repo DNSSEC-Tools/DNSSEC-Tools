@@ -13,7 +13,7 @@
  * It generates an output suitable for consumption by the
  * drawvalmap.pl script.  This output is written to stderr.
  */
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include <validator/validator.h>
 #include <validator/resolver.h>
 

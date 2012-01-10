@@ -15,7 +15,7 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #ifndef HAVE_INET_NSAP_NTOA

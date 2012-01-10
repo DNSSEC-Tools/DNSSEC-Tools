@@ -5,7 +5,7 @@
  * A command-line tool for testing the val_res_query() function.
  */
 
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include <validator/validator.h>
 #include <validator/resolver.h>
 

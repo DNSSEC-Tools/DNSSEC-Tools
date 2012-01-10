@@ -7,7 +7,7 @@
  * A command-line tool for testing the val_gethostbyname*() functions.
  */
 
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include <validator/validator.h>
 
 #ifdef HAVE_GETOPT_H
