@@ -7,9 +7,14 @@ DEPLOYMENTFOLDERS = # file1 dir1
 # Avoid auto screen rotation
 #DEFINES += ORIENTATIONLOCK
 
+# path to the harmattan libraries
+contains(MEEGO_EDITION,harmattan): {
+    LIBS += -L/scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
+}
+
 # Needs to be defined for Symbian
 DEFINES += NETWORKACCESS
-INCLUDEPATH += /opt/maemo/usr/include/
+INCLUDEPATH += /opt/maemo/usr/include/ ../../include
 LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
 
 QT += network
