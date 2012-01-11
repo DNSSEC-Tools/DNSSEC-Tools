@@ -792,7 +792,7 @@ done:
      */
     edns0_size = (context && context->g_opt)?
                     context->g_opt->edns0_size : RES_EDNS0_DEFAULT;
-    val_log(context, LOG_WARNING, 
+    val_log(context, LOG_DEBUG,
             "find_nslist_for_query(): Enabling DNSSEC for query (EDNS0 = %ld).", edns0_size);
     for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
         ns->ns_edns0_size = edns0_size;
