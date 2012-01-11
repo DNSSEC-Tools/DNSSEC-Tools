@@ -7010,6 +7010,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
                         "  CANCELING qfq %p: rc %d and all_finished",
                         qfq->qfq_query, retval);
                 val_res_cancel(qfq->qfq_query);
+                qfq->qfq_query->qc_state = Q_RESPONSE_ERROR;
 
             }        
         }
