@@ -581,6 +581,11 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
         return -1;
     }
 
+    /** close socket so retry uses different port */
+    if (temp->ea_socket != INVALID_SOCKET)
+        CLOSESOCK(temp->ea_socket);
+    temp->ea_socket = INVALID_SOCKET;
+
     res_log(NULL, LOG_INFO, "libsres: "
             "ns fallback for {%s %s(%d) %s(%d)}, edns0 size %d > %d",
             name, p_class(class_h), class_h, p_type(type_h), type_h,
@@ -1165,6 +1170,11 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
         if (SR_UNSET != retval) { /* cleared response */
             res_log(NULL, LOG_DEBUG, "libsres: "
                     "*** dropped response for ea %p rc %d", ea_list, retval);
+            /** close socket so retry uses different port */
+            if (ea_list->ea_socket != INVALID_SOCKET) {
+                CLOSESOCK (ea_list->ea_socket);
+                ea_list->ea_socket = INVALID_SOCKET;
+            }
             res_print_ea(ea_list);
             _clone_respondent(ea_list, respondent);
             set_alarms(ea_list, 0, res_get_timeout(ea_list->ea_ns));
