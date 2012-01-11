@@ -2392,7 +2392,7 @@ read_root_hints_file(val_context_t * ctx)
             struct sockaddr_in sa;
             size_t addrlen4 = sizeof(struct sockaddr_in);
             if ((addrlen4 == addrlen4) && /* this is to remove unused variable warning */
-                INET_PTON(AF_INET, token, ((struct sockaddr *)&sa), &addrlen4) != 1) {
+                (INET_PTON(AF_INET, token, ((struct sockaddr *)&sa), &addrlen4) != 1)) {
                 retval = VAL_CONF_PARSE_ERROR;
                 goto err;
             }
@@ -2403,7 +2403,7 @@ read_root_hints_file(val_context_t * ctx)
             struct sockaddr_in6 sa6;
             size_t addrlen6 = sizeof(struct sockaddr_in6);
             if ((addrlen6 == addrlen6) && /* this is to remove unused variable warning */
-                INET_PTON(AF_INET6, token, ((struct sockaddr *)&sa6), &addrlen6) != 1) {
+                (INET_PTON(AF_INET6, token, ((struct sockaddr *)&sa6), &addrlen6) != 1)) {
                 retval = VAL_CONF_PARSE_ERROR;
                 goto err;
             }
@@ -2501,8 +2501,8 @@ read_root_hints_file(val_context_t * ctx)
         close(fd);
     }
     res_sq_free_rrset_recs(&root_info);
-    val_log(ctx, LOG_ERR, "read_root_hints_file(): Error encountered while reading file %s - %s", 
-            root_hints, p_val_err(retval));
+    val_log(ctx, LOG_ERR, "read_root_hints_file(): Error encountered around line %d while reading file %s - %s",
+            line_number, root_hints, p_val_err(retval));
     return retval;
 }
 
