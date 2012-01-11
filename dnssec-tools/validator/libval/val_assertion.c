@@ -6680,7 +6680,16 @@ _async_status_free(val_async_status *as)
     _context_as_remove(as->val_as_ctx, as);
 
     FREE(as->val_as_name);
+#ifdef DEBUG_DONT_RELEASE_ANYTHING
+    {
+        static val_async_status *holding = NULL;
+
+        as->val_as_next = holding;
+        holding = as;
+    }
+#else
     FREE(as);
+#endif
 
     return VAL_NO_ERROR;
 }
