@@ -126,23 +126,30 @@ check_results(val_context_t * context, const char *desc, char * name,
         }
     }
 
+    /** check for any untrusted results, if reqested */
+    if (trusted_only) {
+        for (res = results; res; res = res->val_rc_next) {
+            if (!val_istrusted(res->val_rc_status))
+                ++untrusted;
+        }
+    }
     /** compare results we do have against what we expect */
     fprintf(stderr, "%s: \t", desc);
-    for (res = results; res && (err == 0); res = res->val_rc_next) {
-        for (i = 0; result_array[i] != 0; i++) {
-            if (res->val_rc_status != result_array[i])
-                continue;
-            /* Mark this as done */
-            if (trusted_only && !val_istrusted(res->val_rc_status)) {
-                result_array[i] = CR_UNTRUSTED;
-                ++untrusted;
+    if (result_array[0]) {
+        for (res = results; res; res = res->val_rc_next) {
+            for (i = 0; result_array[i] != 0; i++) {
+                if (res->val_rc_status != result_array[i])
+                    continue;
+                /* Mark this as done */
+                if (trusted_only && !val_istrusted(res->val_rc_status))
+                    result_array[i] = CR_UNTRUSTED;
+                else
+                    result_array[i] = CR_EXPECTED;
+                break;
             }
-            else
-                result_array[i] = CR_EXPECTED;
-            break;
+            if (result_array[i] == 0) /* didn't expect this result */
+                extra_res[extra++] = res->val_rc_status;
         }
-        if (result_array[i] == 0) /* didn't expect this result */
-            extra_res[extra++] = res->val_rc_status;
     }
 
     /*
