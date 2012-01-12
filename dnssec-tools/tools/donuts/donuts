@@ -999,10 +999,12 @@ options.
 
 =item -q
 
-Turns on a quieter output mode.  This only affects one case: if no
-errors are found, it will not print out "0 errors found".
+Turns on a quieter output mode where only the errors and warnings are
+shown.  IE, the summary line of "N errors found ..." is not shown.
 
--q is ignored if a -v argument is present.
+-q is ignored if a -v argument is present; the -v argument requests a
+longer output summary and thus it doesn't make sense to use them both
+at the same time.
 
 =item -v
 
