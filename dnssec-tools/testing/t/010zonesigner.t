@@ -51,7 +51,7 @@ example.com:
      ZSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-00001)
      ZSK (pub) 12345  -b 2048  01/01/01     (example.com-signset-00002)
 
-zone will expire in 4 weeks, 2 days, 0 seconds
+zone will expire in 30 days
 DO NOT delete the keys until this time has passed.
 },
     "nsec3test" =>   q{
@@ -70,7 +70,7 @@ nsec3.example.com:
      ZSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00001)
      ZSK (pub) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00002)
 
-zone will expire in 4 weeks, 2 days, 0 seconds
+zone will expire in 30 days
 DO NOT delete the keys until this time has passed.
 }
 );

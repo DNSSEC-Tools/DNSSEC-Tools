@@ -66,7 +66,7 @@ chomp ($keygen, $zonecheck, $zonesign);
 
 my $zonesigner_signzone = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $zonesigner -v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir ./keyarchive -genkeys $domain >> $logfile 2>&1";
 
-my $donuts_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $donuts -C -r \'$donutsrules\' $domainfile.signed $domain >> $logfile 2>&1";
+my $donuts_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch -I$testdir/lib $donuts -v -C -r \'$donutsrules\' $domainfile.signed $domain >> $logfile 2>&1";
 
 if (exists $options{v}) {
   print "zonesigner_signzone:\n$zonesigner_signzone\n";
