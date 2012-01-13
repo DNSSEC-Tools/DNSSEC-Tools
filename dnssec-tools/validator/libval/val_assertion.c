@@ -4744,12 +4744,15 @@ int switch_to_root(val_context_t * context,
     }
 
     if ((matched_q->qc_flags & VAL_QUERY_RECURSE) ||
+        (matched_q->qc_refcount != 0) ||
         (context->root_ns == NULL)) {
         /*
-         * No root hints configured or we were already recursing 
+         * No root hints configured or 
+         * we were already recursing or
+         * the query was in use by some other thread
          */
         val_log(context, LOG_DEBUG, 
-                "switch_to_root(): nothing to do; no root.hints configured or already doing recursion");
+                "switch_to_root(): Ignored - no root.hints configured, already doing recursion or query in use");
         return VAL_NO_ERROR;
     } 
 
@@ -5224,21 +5227,6 @@ verify_and_validate(val_context_t * context,
              */
             fix_validation_result(context, res, queries, flags);
 
-        }
-
-        if (res->val_rc_status == VAL_BOGUS ||
-            res->val_rc_status == VAL_DNS_ERROR) {
-            /*
-             * For error conditions Try getting this answer iteratively from
-             * root if we aren't doing so already
-             */
-            if (VAL_NO_ERROR != (retval = switch_to_root(context, top_qfq, &switched))) {
-                return retval;
-            }
-            if (switched) {
-                res->val_rc_rrset = NULL;
-                goto query_reset;
-            }
         }
 
 #ifdef LIBVAL_DLV
