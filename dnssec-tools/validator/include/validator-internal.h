@@ -294,12 +294,19 @@ extern          "C" {
          * "active" val_resolve_and_check() call
          */
         pthread_rwlock_t pol_rwlock;
+#ifdef CTX_LOCK_COUNTS
+        long             pol_count;
+#endif
+
         /*
          * The mutex lock ensures that changes to the 
          * context cache and async query list can only be
          * made by one thread at any given time
          */
         pthread_mutex_t ac_lock;
+#ifdef CTX_LOCK_COUNTS
+        long            ac_count;
+#endif
 #endif
 
         char  id[VAL_CTX_IDLEN];
