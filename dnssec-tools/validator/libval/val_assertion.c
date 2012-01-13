@@ -373,13 +373,20 @@ free_query_chain_structure(struct val_query_chain *queries)
     FREE(queries);
 }
 
-void 
+/*
+ * return 1 if the query chain element was cleared 0 if not
+ */
+int 
 clear_query_chain_structure(struct val_query_chain *query) 
 {
-    if (query) {
+    if (query & query->qc_refcount == 0) {
         _release_query_chain_structure(query);
         init_query_chain_node(query);
+
+        return 1;
     }
+
+    return 0;
 }
 
 
@@ -4752,11 +4759,15 @@ int switch_to_root(val_context_t * context,
          * the query was in use by some other thread
          */
         val_log(context, LOG_DEBUG, 
-                "switch_to_root(): Ignored - no root.hints configured, already doing recursion or query in use");
+                "switch_to_root(): Ignored - no root.hints configured or already doing recursion");
         return VAL_NO_ERROR;
     } 
 
-    clear_query_chain_structure(matched_q);
+    if (!clear_query_chain_structure(matched_q)) {
+        val_log(context, LOG_DEBUG, 
+                "switch_to_root(): Ignored - query is in use");
+        return VAL_NO_ERROR;
+    }
 
     /* reset the flags that are not in the user mask */
     matched_q->qc_flags &= VAL_QFLAGS_USERMASK;
