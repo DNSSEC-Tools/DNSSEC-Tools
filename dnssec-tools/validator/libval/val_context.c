@@ -145,6 +145,7 @@ val_refresh_context(val_context_t *context)
     if (!CTX_LOCK_POL_EX_TRY(context)) {
         return VAL_NO_ERROR;
     }
+    CTX_LOCK_COUNT_INC(context,pol_count); /* only needed for EX_TRY */
 
     GET_LATEST_TIMESTAMP(context, context->resolv_conf, context->r_timestamp,
                          rsb);
@@ -484,16 +485,19 @@ val_free_context(val_context_t * context)
     LOCK_DEFAULT_CONTEXT();
     if (!CTX_LOCK_POL_EX_TRY(context)) {
         has_refs = 1;
-    } else if (context == the_default_context) {
-        /* we'll be freeing up the default context */
-        the_default_context = NULL;
+    } else {
+        CTX_LOCK_COUNT_INC(context,pol_count); /* only needed for EX_TRY */
+        if (context == the_default_context) {
+            /* we'll be freeing up the default context */
+            the_default_context = NULL;
+        }
     }
     UNLOCK_DEFAULT_CONTEXT();
 
 #ifdef VAL_REFCOUNTS
     CTX_LOCK_REFCNT(context);
     if (--context->refcount > 0)
-        default_or_has_refs = 1;
+        has_refs = 1;
     CTX_UNLOCK_REFCNT(context);
 #endif
 

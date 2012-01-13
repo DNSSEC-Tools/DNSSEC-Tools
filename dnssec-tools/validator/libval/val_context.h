@@ -7,24 +7,40 @@
 
 #ifndef VAL_NO_THREADS
 
+#ifdef CTX_LOCK_COUNTS
+#define CTX_LOCK_COUNT_INC(ctx,it) ++ctx->it
+#define CTX_LOCK_COUNT_DEC(ctx,it) --ctx->it
+#else
+#define CTX_LOCK_COUNT_INC(ctx,it)
+#define CTX_LOCK_COUNT_DEC(ctx,it)
+#endif
 #define CTX_LOCK_POL_SH(ctx) \
     do {\
         pthread_rwlock_rdlock(&ctx->pol_rwlock);\
+        CTX_LOCK_COUNT_INC(ctx,pol_count);\
     } while (0)
 #define CTX_LOCK_POL_EX(ctx) \
     do {\
         pthread_rwlock_wrlock(&ctx->pol_rwlock);\
+        CTX_LOCK_COUNT_INC(ctx,pol_count);\
     } while (0)
 #define CTX_LOCK_POL_EX_TRY(ctx) \
        (0 == pthread_rwlock_trywrlock(&ctx->pol_rwlock)) 
 #define CTX_UNLOCK_POL(ctx) \
     do {\
         pthread_rwlock_unlock(&ctx->pol_rwlock);\
+        CTX_LOCK_COUNT_DEC(ctx,pol_count);\
     } while (0)
-#define CTX_LOCK_ACACHE(ctx)\
-    pthread_mutex_lock(&ctx->ac_lock)
-#define CTX_UNLOCK_ACACHE(ctx)\
-    pthread_mutex_unlock(&ctx->ac_lock)
+#define CTX_LOCK_ACACHE(ctx) \
+    do {                                        \
+        pthread_mutex_lock(&ctx->ac_lock);      \
+        CTX_LOCK_COUNT_INC(ctx,ac_count);       \
+    } while (0)
+#define CTX_UNLOCK_ACACHE(ctx) \
+    do {                                        \
+        pthread_mutex_unlock(&ctx->ac_lock);    \
+        CTX_LOCK_COUNT_DEC(ctx,ac_count);       \
+    } while (0)
 
 #else
 
