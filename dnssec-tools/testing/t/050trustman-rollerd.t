@@ -101,7 +101,7 @@ if (!( -x $keygen && -x $zonecheck && -x $zonesign &&
 }
 
 
-my $zsargs = "-v -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir -szopts -P -zskcount 1 -kskcount 1";
+my $zsargs = "-v -nodroprevoke -keygen $keygen -zonecheck $zonecheck -zonesign $zonesign -archivedir $archivedir -szopts -P -zskcount 1 -kskcount 1";
 my $zsargs_resp   = parsepstring($zsargs);
 
 
@@ -114,12 +114,16 @@ my %rollerd_response = (
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run "1"
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: adding missing zonename field (example.com) to rollrec
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
  example.com: KSK phase 1
+ rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
 
@@ -131,15 +135,19 @@ my %rollerd_response = (
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run "1"
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 2
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
  example.com: KSK phase 2: unable to reload zone, rc - 1
  example.com: KSK phase 3
  example.com: KSK phase 3; cache expires in minutes, seconds
+ rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
     "ksk46" => qq{ rollerd starting ----------------------------------------
@@ -150,11 +158,14 @@ my %rollerd_response = (
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run ""
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -168,11 +179,14 @@ my %rollerd_response = (
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run ""
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -187,11 +201,14 @@ my %rollerd_response = (
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run ""
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -603,6 +620,7 @@ sub parsepstring {
   $pstring =~ s/(logfile.*"|rollrec file.*").*(testing\/rollerd\/)/\1\2/g;
   $pstring =~ s/[ \t]+/ /g;
   $pstring =~ s/cache expires in (\d+) (minutes*)(, (\d+) seconds)*/cache expires in minutes, seconds/g;
+  $pstring =~ s/expires in (\d+) days, (\d+) hours, (\d+) minutes, (\d+) seconds/expires in days, hours, minutes, seconds/g;
   $pstring =~ s/expiration in \d+.*/expiration in weeks, days, hours, seconds/g;
   $pstring =~ s/admin must transfer/admin notified to transfer/g;
   $pstring =~ s/.*invalid admin; unable to notify.*\n//g;

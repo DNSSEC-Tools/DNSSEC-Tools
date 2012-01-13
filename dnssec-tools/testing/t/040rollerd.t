@@ -78,12 +78,16 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run "1"
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: adding missing zonename field (example.com) to rollrec
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
  example.com: KSK phase 1
+ rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
 
@@ -95,15 +99,19 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run "1"
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 2
  example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
  example.com: KSK phase 2: unable to reload zone, rc - 1
  example.com: KSK phase 3
  example.com: KSK phase 3; cache expires in minutes, seconds
+ rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
     "ksk46" => qq{ rollerd starting ----------------------------------------
@@ -114,11 +122,14 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run ""
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -132,11 +143,14 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run ""
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -151,11 +165,14 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run ""
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
@@ -171,9 +188,12 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run "1"
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: reloading zone for KSK phase 7
  example.com: KSK phase 7: unable to reload zone, rc - 1
  example.com: KSK phase 7: zone, key files archived
@@ -182,6 +202,7 @@ my %rollerd_response = (
  example.com: creating new zsk_rollsecs record and forcing ZSK rollover
  example.com: current ZSK has expired
  example.com: ZSK phase 1
+ rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
     "zsk23" => qq{ rollerd starting ----------------------------------------
@@ -192,15 +213,19 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run "1"
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: ZSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -usezskpub $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -usezskpub -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for ZSK phase 2
  example.com: ZSK phase 2: unable to reload zone, rc - 1
  example.com: ZSK phase 3
- example.com: ZSK phase 3; cache expires in minutes, seconds
+ example.com: KSK phase 3; cache expires in minutes, seconds
+ rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
     "zsk4" => qq{ rollerd starting ----------------------------------------
@@ -211,16 +236,20 @@ my %rollerd_response = (
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ single-run "1"
  zone reload "1"
- sleeptime "15"
+ event method "Full List"
  
+ 
+ Using the full_list_event_loop() processor!!!
  example.com: ZSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollzsk $zsargs_resp -krf example.com.krf example.com example.com.signed"
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollzsk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
+ example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for ZSK phase 4
  example.com: ZSK phase 4: unable to reload zone, rc - 1
  example.com: ZSK phase 0
  example.com: ZSK expiration in weeks, days, hours, seconds
+ rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
  );
@@ -271,7 +300,7 @@ print DTC "zonecheck\t\"$zonecheck\"\n";
 print DTC "zonesign\t$zonesign\n";
 print DTC "zonesigner\t$zonesign\n";
 print DTC "archivedir\t\"$archivedir\"\n";
-print DTC "rndc \t$rndc\n";
+print DTC "rndc\t$rndc\n";
 close (DTC);
 
 
