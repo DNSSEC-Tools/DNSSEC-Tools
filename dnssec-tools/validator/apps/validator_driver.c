@@ -282,6 +282,7 @@ usage(char *progname)
     printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
     printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
     printf("        -I, --inflight=<number> Maximum number of simultaneous queries\n");
+    printf("        -m, --multi-thread=<number> Maximum number of simultaneous threads\n");
     printf("        -w, --wait=<secs> Run tests in a loop, sleeping for specifed seconds between runs\n");
     printf("        -l, --label=<label-string> Specifies the policy to use during validation\n");
     printf("        -o, --output=<debug-level>:<dest-type>[:<dest-options>]\n");
