@@ -379,7 +379,7 @@ free_query_chain_structure(struct val_query_chain *queries)
 int 
 clear_query_chain_structure(struct val_query_chain *query) 
 {
-    if (query & query->qc_refcount == 0) {
+    if (query && (query->qc_refcount == 0)) {
         _release_query_chain_structure(query);
         init_query_chain_node(query);
 
