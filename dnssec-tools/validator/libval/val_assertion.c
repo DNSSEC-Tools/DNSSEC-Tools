@@ -2238,7 +2238,7 @@ transform_outstanding_results(val_context_t *context,
 
             if (w_res->val_rc_is_proof && !val_istrusted(proof_status)) {
                 val_log(context, LOG_INFO, 
-                        "transform_outstanding_results(): Discarding extraneous proof of non-existance");
+                        "transform_outstanding_results(): Discarding untrusted proof of non-existance");
             } else if (VAL_NO_ERROR !=
                 (retval =
                  transform_single_result(context, w_res, queries, results, *proof_res,
