@@ -1,48 +1,88 @@
-
-; <<>> DiG 9.7.0-P2 <<>> @e.root-servers.net . ns
-; (1 server found)
-;; global options: +cmd
-;; Got answer:
-;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 49089
-;; flags: qr aa rd; QUERY: 1, ANSWER: 13, AUTHORITY: 0, ADDITIONAL: 14
-;; WARNING: recursion requested but not available
-
-;; QUESTION SECTION:
-;.				IN	NS
-
-;; ANSWER SECTION:
-.			518400	IN	NS	k.root-servers.net.
-.			518400	IN	NS	a.root-servers.net.
-.			518400	IN	NS	c.root-servers.net.
-.			518400	IN	NS	i.root-servers.net.
-.			518400	IN	NS	j.root-servers.net.
-.			518400	IN	NS	l.root-servers.net.
-.			518400	IN	NS	g.root-servers.net.
-.			518400	IN	NS	m.root-servers.net.
-.			518400	IN	NS	b.root-servers.net.
-.			518400	IN	NS	h.root-servers.net.
-.			518400	IN	NS	e.root-servers.net.
-.			518400	IN	NS	d.root-servers.net.
-.			518400	IN	NS	f.root-servers.net.
-
-;; ADDITIONAL SECTION:
-a.root-servers.net.	3600000	IN	A	198.41.0.4
-a.root-servers.net.	3600000	IN	AAAA	2001:503:ba3e::2:30
-b.root-servers.net.	3600000	IN	A	192.228.79.201
-c.root-servers.net.	3600000	IN	A	192.33.4.12
-d.root-servers.net.	3600000	IN	A	128.8.10.90
-e.root-servers.net.	3600000	IN	A	192.203.230.10
-f.root-servers.net.	3600000	IN	A	192.5.5.241
-f.root-servers.net.	3600000	IN	AAAA	2001:500:2f::f
-g.root-servers.net.	3600000	IN	A	192.112.36.4
-h.root-servers.net.	3600000	IN	A	128.63.2.53
-h.root-servers.net.	3600000	IN	AAAA	2001:500:1::803f:235
-i.root-servers.net.	3600000	IN	A	192.36.148.17
-i.root-servers.net.	3600000	IN	AAAA	2001:7fe::53
-j.root-servers.net.	3600000	IN	A	192.58.128.30
-
-;; Query time: 27 msec
-;; SERVER: 192.203.230.10#53(192.203.230.10)
-;; WHEN: Fri Jun 18 06:57:41 2010
-;; MSG SIZE  rcvd: 500
-
+;       This file holds the information on root name servers needed to
+;       initialize cache of Internet domain name servers
+;       (e.g. reference this file in the "cache  .  <file>"
+;       configuration file of BIND domain name servers).
+;
+;       This file is made available by InterNIC 
+;       under anonymous FTP as
+;           file                /domain/named.cache
+;           on server           FTP.INTERNIC.NET
+;       -OR-                    RS.INTERNIC.NET
+;
+;       last update:    Jun 8, 2011
+;       related version of root zone:   2011060800
+;
+; formerly NS.INTERNIC.NET
+;
+.                        3600000  IN  NS    A.ROOT-SERVERS.NET.
+A.ROOT-SERVERS.NET.      3600000      A     198.41.0.4
+A.ROOT-SERVERS.NET.      3600000      AAAA  2001:503:BA3E::2:30
+;
+; FORMERLY NS1.ISI.EDU
+;
+.                        3600000      NS    B.ROOT-SERVERS.NET.
+B.ROOT-SERVERS.NET.      3600000      A     192.228.79.201
+;
+; FORMERLY C.PSI.NET
+;
+.                        3600000      NS    C.ROOT-SERVERS.NET.
+C.ROOT-SERVERS.NET.      3600000      A     192.33.4.12
+;
+; FORMERLY TERP.UMD.EDU
+;
+.                        3600000      NS    D.ROOT-SERVERS.NET.
+D.ROOT-SERVERS.NET.      3600000      A     128.8.10.90
+D.ROOT-SERVERS.NET.	 3600000      AAAA  2001:500:2D::D
+;
+; FORMERLY NS.NASA.GOV
+;
+.                        3600000      NS    E.ROOT-SERVERS.NET.
+E.ROOT-SERVERS.NET.      3600000      A     192.203.230.10
+;
+; FORMERLY NS.ISC.ORG
+;
+.                        3600000      NS    F.ROOT-SERVERS.NET.
+F.ROOT-SERVERS.NET.      3600000      A     192.5.5.241
+F.ROOT-SERVERS.NET.      3600000      AAAA  2001:500:2F::F
+;
+; FORMERLY NS.NIC.DDN.MIL
+;
+.                        3600000      NS    G.ROOT-SERVERS.NET.
+G.ROOT-SERVERS.NET.      3600000      A     192.112.36.4
+;
+; FORMERLY AOS.ARL.ARMY.MIL
+;
+.                        3600000      NS    H.ROOT-SERVERS.NET.
+H.ROOT-SERVERS.NET.      3600000      A     128.63.2.53
+H.ROOT-SERVERS.NET.      3600000      AAAA  2001:500:1::803F:235
+;
+; FORMERLY NIC.NORDU.NET
+;
+.                        3600000      NS    I.ROOT-SERVERS.NET.
+I.ROOT-SERVERS.NET.      3600000      A     192.36.148.17
+I.ROOT-SERVERS.NET.      3600000      AAAA  2001:7FE::53
+;
+; OPERATED BY VERISIGN, INC.
+;
+.                        3600000      NS    J.ROOT-SERVERS.NET.
+J.ROOT-SERVERS.NET.      3600000      A     192.58.128.30
+J.ROOT-SERVERS.NET.      3600000      AAAA  2001:503:C27::2:30
+;
+; OPERATED BY RIPE NCC
+;
+.                        3600000      NS    K.ROOT-SERVERS.NET.
+K.ROOT-SERVERS.NET.      3600000      A     193.0.14.129
+K.ROOT-SERVERS.NET.      3600000      AAAA  2001:7FD::1
+;
+; OPERATED BY ICANN
+;
+.                        3600000      NS    L.ROOT-SERVERS.NET.
+L.ROOT-SERVERS.NET.      3600000      A     199.7.83.42
+L.ROOT-SERVERS.NET.      3600000      AAAA  2001:500:3::42
+;
+; OPERATED BY WIDE
+;
+.                        3600000      NS    M.ROOT-SERVERS.NET.
+M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
+M.ROOT-SERVERS.NET.      3600000      AAAA  2001:DC3::35
+; End of File
