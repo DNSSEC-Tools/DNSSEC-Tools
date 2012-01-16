@@ -512,6 +512,7 @@ do_verify(val_context_t * ctx,
 
     if (flags & VAL_QUERY_IGNORE_SKEW) {
         clock_skew = -1;
+        val_log(ctx, LOG_DEBUG, "do_verify(): Ignoring clock skew"); 
     } else {
         get_clock_skew(ctx, zone_n, &clock_skew, &ttl_x);
         /* the state is valid for only as long as the policy validity period */
