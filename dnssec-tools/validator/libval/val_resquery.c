@@ -1570,22 +1570,7 @@ digest_response(val_context_t * context,
     additional = ntohs(header->arcount);
 
     resp_ns = matched_q->qc_respondent_server;
-    /*
-     * If our response header does not have the CD bit
-     * reset RES_USE_DNSSEC flag in the respondent name server
-     * XXX This means that we're using the CD bit in the response
-     * XXX to determine if the name server is DNSSEC capable or not.
-     * XXX This is a simplistic approach.
-     * XXX depending on the response below, we need to infer the name server's 
-     * XXX capability, recognizing the possibility that the name server may lie
-     * XXX occassionally, such as when there is a man in the middle spoofing attack. 
-     * XXX We should recurse from root whenever we feel that the name server
-     * XXX has not returned a good response. 
-     */
-    if ((header->cd != 1) && 
-        resp_ns && (resp_ns->ns_options & RES_USE_DNSSEC)) {
-        resp_ns->ns_options ^= RES_USE_DNSSEC;
-    }
+
     val_log(context, LOG_DEBUG, "digest_response(): server options set to: %u", 
                                 resp_ns->ns_options);
 
@@ -1738,12 +1723,10 @@ digest_response(val_context_t * context,
 
         if (from_section == VAL_FROM_ANSWER && 
             /* 
-             * do not do this processing for CNAME targets in the answer section, 
-             * unless we were asking a recursive nameserver using DNSSEC or we're 
-             * not doing validation 
+             * do not process CNAME targets in the answer section, 
+             * unless we're ignoring validation
              */
             (top_name || 
-             (resp_ns->ns_options & RES_USE_DNSSEC) || 
              (matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE))) {
 
             if (nothing_other_than_alias) {
