@@ -1,0 +1,31 @@
+
+Local DNSSEC validation for NTP
+===============================
+
+
+This patch adds DNSSEC support to NTP. Additionally, if the ntpd daemon 
+is started with the -g option, clock skew will be ignored during the 
+validation of DNSSEC reponses. This is to solve a cyclic dependency problem 
+where DNSSEC validation relies on accurate system type, and in order to 
+adjust time, NTP will need to do a DNS query to the NTP servers.
+
+This patch has been tested on ntp-dev-4.2.7p250 
+
+
+BUILD
+=====
+
+1. Apply the patch
+
+2. Re-generate the configure script
+    $ cd ntp-XXX
+    $ autoconf
+    $ cd sntp
+    $ autoconf
+
+3. Run the configure script, enabling DNSSEC and pointing to any 
+   non-standard location for necessary libval libraries.
+   For example:
+    $ LDFLAGS="-L/usr/local/opt/lib" \
+      CFLAGS="-g -I/usr/local/opt/include" ./configure --with-dnsval
+

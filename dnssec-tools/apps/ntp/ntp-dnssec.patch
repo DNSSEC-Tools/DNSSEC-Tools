@@ -1,0 +1,1382 @@
+diff -u -r ntp-dev-4.2.7p250/config.h.in ntp-dev-4.2.7p250.dnssec/config.h.in
+--- ntp-dev-4.2.7p250/config.h.in	2012-01-15 06:36:59.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/config.h.in	2012-01-16 12:27:05.000000000 -0500
+@@ -359,6 +359,9 @@
+ /* Use Rendezvous/DNS-SD registration */
+ #undef HAVE_DNSREGISTRATION
+ 
++/* Perform local DNSSEC Validation using dnsval */
++#undef HAVE_DNSVAL
++
+ /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
+ #undef HAVE_DOPRNT
+ 
+@@ -1503,6 +1506,28 @@
+ /* Must we have a CTTY for fsetown? */
+ #undef USE_FSETOWNCTTY
+ 
++/* Enable extensions on AIX 3, Interix.  */
++#ifndef _ALL_SOURCE
++# undef _ALL_SOURCE
++#endif
++/* Enable GNU extensions on systems that have them.  */
++#ifndef _GNU_SOURCE
++# undef _GNU_SOURCE
++#endif
++/* Enable threading extensions on Solaris.  */
++#ifndef _POSIX_PTHREAD_SEMANTICS
++# undef _POSIX_PTHREAD_SEMANTICS
++#endif
++/* Enable extensions on HP NonStop.  */
++#ifndef _TANDEM_SOURCE
++# undef _TANDEM_SOURCE
++#endif
++/* Enable general extensions on Solaris.  */
++#ifndef __EXTENSIONS__
++# undef __EXTENSIONS__
++#endif
++
++
+ /* Can we use SIGPOLL for tty IO? */
+ #undef USE_TTY_SIGPOLL
+ 
+@@ -1555,9 +1580,6 @@
+ /* enable thread safety */
+ #undef _THREAD_SAFE
+ 
+-/* Define to 500 only on HP-UX. */
+-#undef _XOPEN_SOURCE
+-
+ /* Are we _special_? */
+ #undef __APPLE_USE_RFC_3542
+ 
+@@ -1566,28 +1588,6 @@
+ # undef __CHAR_UNSIGNED__
+ #endif
+ 
+-/* Enable extensions on AIX 3, Interix.  */
+-#ifndef _ALL_SOURCE
+-# undef _ALL_SOURCE
+-#endif
+-/* Enable GNU extensions on systems that have them.  */
+-#ifndef _GNU_SOURCE
+-# undef _GNU_SOURCE
+-#endif
+-/* Enable threading extensions on Solaris.  */
+-#ifndef _POSIX_PTHREAD_SEMANTICS
+-# undef _POSIX_PTHREAD_SEMANTICS
+-#endif
+-/* Enable extensions on HP NonStop.  */
+-#ifndef _TANDEM_SOURCE
+-# undef _TANDEM_SOURCE
+-#endif
+-/* Enable general extensions on Solaris.  */
+-#ifndef __EXTENSIONS__
+-# undef __EXTENSIONS__
+-#endif
+-
+-
+ /* deviant */
+ #undef adjtimex
+ 
+diff -u -r ntp-dev-4.2.7p250/configure.ac ntp-dev-4.2.7p250.dnssec/configure.ac
+--- ntp-dev-4.2.7p250/configure.ac	2011-10-21 14:30:06.000000000 -0400
++++ ntp-dev-4.2.7p250.dnssec/configure.ac	2012-01-16 12:27:05.000000000 -0500
+@@ -199,6 +199,28 @@
+     ;;
+ esac
+ 
++dnl 
++dnl Check for DNSSEC support
++dnl
++AC_ARG_WITH(
++	[dnsval],
++	AS_HELP_STRING([--with-dnsval], [- Enable local DNSSEC validation using dnsval]),
++	want_dnssec=$withval, 
++	want_dnssec=no)
++case "$want_dnssec" in
++ yes)
++    if test "x$ac_cv_header_pthread_h" != xyes; then
++		AC_MSG_ERROR(["Configured needs to be fine-tuned for non-pthread support"])
++	fi
++	AC_CHECK_LIB([val-threads], 
++				 [val_getaddrinfo],
++				 [LIBS="-lval-threads -lsres -lcrypto $LIBS"
++                  AC_DEFINE([HAVE_DNSVAL], [1], [Perform local DNSSEC Validation using dnsval])],
++				 [AC_MSG_ERROR(["Can't find required libraries for DNSSEC support"])], 
++				 [-lsres -lcrypto])
++	;;
++esac
++
+ AC_CHECK_HEADERS([bstring.h])
+ AC_CHECK_HEADER(
+     [dns_sd.h],
+diff -u -r ntp-dev-4.2.7p250/include/ntp_intres.h ntp-dev-4.2.7p250.dnssec/include/ntp_intres.h
+--- ntp-dev-4.2.7p250/include/ntp_intres.h	2011-02-21 04:08:19.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/include/ntp_intres.h	2012-01-16 12:27:05.000000000 -0500
+@@ -19,6 +19,14 @@
+ extern int	getaddrinfo_sometime(const char *, const char *,
+ 				     const struct addrinfo *, int,
+ 				     gai_sometime_callback, void *);
++#ifdef HAVE_DNSVAL
++extern int	getaddrinfo_sometime_blocking(const char *, const char *,
++				     const struct addrinfo *, int,
++				     gai_sometime_callback, void *);
++extern int	getaddrinfo_sometime_nonblocking(const char *, const char *,
++				     const struct addrinfo *, int,
++				     gai_sometime_callback, void *);
++#endif
+ /*
+  * In gai_sometime_callback routines, the resulting addrinfo list is
+  * only available until the callback returns.  To hold on to the list
+diff -u -r ntp-dev-4.2.7p250/include/ntpd.h ntp-dev-4.2.7p250.dnssec/include/ntpd.h
+--- ntp-dev-4.2.7p250/include/ntpd.h	2011-12-18 06:01:47.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/include/ntpd.h	2012-01-16 12:27:05.000000000 -0500
+@@ -569,4 +569,3 @@
+ extern struct refclock * const refclock_conf[];
+ extern u_char	num_refclock_conf;
+ #endif
+-
+diff -u -r ntp-dev-4.2.7p250/libntp/decodenetnum.c ntp-dev-4.2.7p250.dnssec/libntp/decodenetnum.c
+--- ntp-dev-4.2.7p250/libntp/decodenetnum.c	2011-11-03 15:17:26.000000000 -0400
++++ ntp-dev-4.2.7p250.dnssec/libntp/decodenetnum.c	2012-01-16 12:27:05.000000000 -0500
+@@ -11,6 +11,10 @@
+ #include <netinet/in.h>
+ #endif
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntp.h"
+ #include "ntp_stdlib.h"
+ #include "ntp_assert.h"
+@@ -34,6 +38,9 @@
+ 	char *pp;
+ 	char *np;
+ 	char name[80];
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	NTP_REQUIRE(num != NULL);
+ 	NTP_REQUIRE(strlen(num) < sizeof(name));
+@@ -69,9 +76,21 @@
+ 	}
+ 	ZERO(hints);
+ 	hints.ai_flags = Z_AI_NUMERICHOST;
++#ifdef HAVE_DNSVAL
++	err = val_getaddrinfo(NULL, cp, "ntp", &hints, &ai, &val_status);
++#else
+ 	err = getaddrinfo(cp, "ntp", &hints, &ai);
++#endif
+ 	if (err != 0)
+ 		return 0;
++#ifdef HAVE_DNSVAL
++    if (val_istrusted(val_status)) {
++        if (ai) {
++            freeaddrinfo(ai);
++        }
++        return 0;
++    }
++#endif
+ 	NTP_INSIST(ai->ai_addrlen <= sizeof(*netnum));
+ 	ZERO(*netnum);
+ 	memcpy(netnum, ai->ai_addr, ai->ai_addrlen);
+diff -u -r ntp-dev-4.2.7p250/libntp/ntp_intres.c ntp-dev-4.2.7p250.dnssec/libntp/ntp_intres.c
+--- ntp-dev-4.2.7p250/libntp/ntp_intres.c	2011-04-21 02:04:48.000000000 -0400
++++ ntp-dev-4.2.7p250.dnssec/libntp/ntp_intres.c	2012-01-16 12:27:05.000000000 -0500
+@@ -92,6 +92,10 @@
+ # endif
+ #endif
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntp.h"
+ #include "ntp_debug.h"
+ #include "ntp_malloc.h"
+@@ -186,6 +190,22 @@
+ #endif
+ } dnsworker_ctx;
+ 
++#ifdef HAVE_DNSVAL
++/* callback data structure associated with the asynchronous
++ * lookup function provided by dnsval. The memory for this
++ * structure is allocated before the callback is invoked
++ * and freed in the callback routine
++ */ 
++struct dnsval_gai_data {
++	int retry;
++	const char *		node;
++	const char *		service;
++	const struct addrinfo *	hints;
++	gai_sometime_callback callback;
++	void * context;
++};
++#endif
++
+ 
+ /* === variables === */
+ dnschild_ctx **		dnschild_contexts;		/* parent */
+@@ -224,9 +244,133 @@
+ static	void		getnameinfo_sometime_complete(blocking_work_req,
+ 						      void *, size_t,
+ 						      void *);
++#ifdef HAVE_DNSVAL
++static int 			dnsval_gai_callback(void *callback_data, 
++					          int, struct addrinfo *, 
++							  val_status_t); 
++#endif
+ 
+ 
+ /* === functions === */
++
++#ifdef HAVE_DNSVAL
++int
++getaddrinfo_sometime(
++	const char *		node,
++	const char *		service,
++	const struct addrinfo *	hints,
++	int			retry,
++	gai_sometime_callback	callback,
++	void *			context
++	)
++{
++#ifdef HAVE_SIGNALED_IO
++    /*
++     * If we're using signaled IO, we won't be able to call select() on 
++     * dnsval's descriptors, so use the blocking version of the lookup routine
++     */
++    return getaddrinfo_sometime_blocking(node,service,hints,retry,callback,context);
++#else
++    return getaddrinfo_sometime_nonblocking(node,service,hints,retry,callback,context);
++#endif
++}
++
++/*
++ * Use the asynchronous lookup functionality from dnsval to resolve
++ * the name and perform DNSSEC validation of the response, and then
++ * invoke the provided callback completion function.
++ */
++int
++getaddrinfo_sometime_nonblocking(
++	const char *		node,
++	const char *		service,
++	const struct addrinfo *	hints,
++	int			retry,
++	gai_sometime_callback	callback,
++	void *			context
++	)
++{
++	int retval;
++	val_gai_callback dnsval_cb = &dnsval_gai_callback;
++	val_gai_status *status = NULL;
++
++	struct dnsval_gai_data *dnsval_cbdata = 
++			emalloc_zero(sizeof(struct dnsval_gai_data));
++	dnsval_cbdata->node = node;
++	dnsval_cbdata->service = service;
++	dnsval_cbdata->hints = hints;
++	dnsval_cbdata->retry = retry;
++	dnsval_cbdata->callback = callback;
++	dnsval_cbdata->context = context;
++
++	retval = val_getaddrinfo_submit(NULL, node, service, hints, 
++				dnsval_cb, dnsval_cbdata, 0, &status);
++	if (retval != VAL_NO_ERROR) {
++		msyslog(LOG_ERR, "unable to perform asynchronous getaddrinfo request using dnsval.");
++		errno = EFAULT;
++		return -1;
++	}
++
++	return 0;
++}
++
++static int
++dnsval_gai_callback(
++	void *dnsval_cbdata, 
++	int eai_retval, 
++	struct addrinfo *res,
++	val_status_t val_status)
++{
++	struct addrinfo *ai = NULL;
++    struct dnsval_gai_data *gd;
++
++	if (!dnsval_cbdata) {
++		return 1;
++	}
++    gd = (struct dnsval_gai_data *)dnsval_cbdata;
++
++	/* XXX Need to properly handle retries */
++
++	/* Extract the result only if DNSSEC validation was successful */
++	if (VAL_GETADDRINFO_HAS_STATUS(eai_retval)) {
++		if (val_istrusted(val_status)) {
++			ai = res;
++		} else {
++			msyslog(LOG_INFO,
++					"DNS response for %s failed validation", gd->node);
++		}
++	}
++
++	(gd->callback)(eai_retval, eai_retval,
++	                gd->context, 
++				    gd->node, 
++				    gd->service,
++				    gd->hints, 
++				    ai);
++
++	if (res) {
++		freeaddrinfo(res);
++	}
++
++	free(dnsval_cbdata);
++	return 0;
++}
++
++
++/*
++ * getaddrinfo_sometime_blocking - uses blocking child to call getaddrinfo then
++ *			  invokes provided callback completion function.
++ */
++int
++getaddrinfo_sometime_blocking(
++	const char *		node,
++	const char *		service,
++	const struct addrinfo *	hints,
++	int			retry,
++	gai_sometime_callback	callback,
++	void *			context
++	)
++#else
+ /*
+  * getaddrinfo_sometime - uses blocking child to call getaddrinfo then
+  *			  invokes provided callback completion function.
+@@ -240,6 +384,7 @@
+ 	gai_sometime_callback	callback,
+ 	void *			context
+ 	)
++#endif
+ {
+ 	blocking_gai_req *	gai_req;
+ 	u_int			idx;
+@@ -319,6 +464,9 @@
+ 	size_t			resp_octets;
+ 	char *			cp;
+ 	time_t			time_now;
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	gai_req = (void *)((char *)req + sizeof(*req));
+ 	node = (char *)gai_req + sizeof(*gai_req);
+@@ -349,8 +497,22 @@
+ 		fflush(stdout);
+ #endif	
+ 	ai_res = NULL;
++#ifdef HAVE_DNSVAL
++	gai_resp->retcode = val_getaddrinfo(NULL, node, service, &gai_req->hints,
++					&ai_res, &val_status);
++    if (gai_resp->retcode == 0 && !val_istrusted(val_status)) {
++        if (ai_res) {
++            freeaddrinfo(ai_res);
++        }
++        gai_resp->retcode = EAI_FAIL;
++	    TRACE(2, ("DNSSEC validation failed for node %s serv %s fam %d flags %x\n", 
++		  node, service, gai_req->hints.ai_family,
++		  gai_req->hints.ai_flags));
++    }
++#else
+ 	gai_resp->retcode = getaddrinfo(node, service, &gai_req->hints,
+ 					&ai_res);
++#endif
+ 	gai_resp->retry = gai_req->retry;
+ #ifdef EAI_SYSTEM
+ 	if (EAI_SYSTEM == gai_resp->retcode)
+@@ -618,7 +780,6 @@
+ }
+ #endif	/* TEST_BLOCKING_WORKER */
+ 
+-
+ int
+ getnameinfo_sometime(
+ 	sockaddr_u *		psau,
+@@ -671,7 +832,6 @@
+ 	return 0;
+ }
+ 
+-
+ int
+ blocking_getnameinfo(
+ 	blocking_child *	c,
+diff -u -r ntp-dev-4.2.7p250/libntp/ntp_rfc2553.c ntp-dev-4.2.7p250.dnssec/libntp/ntp_rfc2553.c
+--- ntp-dev-4.2.7p250/libntp/ntp_rfc2553.c	2011-05-08 04:11:52.000000000 -0400
++++ ntp-dev-4.2.7p250.dnssec/libntp/ntp_rfc2553.c	2012-01-16 12:27:05.000000000 -0500
+@@ -76,6 +76,9 @@
+ #ifdef HAVE_NETINET_IN_H
+ #include <netinet/in.h>
+ #endif
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
+ #include "ntp_rfc2553.h"
+ 
+ #include "ntpd.h"
+@@ -268,7 +271,15 @@
+ 	struct hostent **Addresses
+ )
+ {
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++	*Addresses = val_gethostbyname(NULL, name, &val_status);
++    if (!val_istrusted(val_status)) {
++        return NO_RECOVERY;
++    }
++#else
+ 	*Addresses = gethostbyname(name);
++#endif
+ 	return (h_errno);
+ }
+ #endif
+@@ -539,7 +550,6 @@
+ 	/*
+ 	 * Look for a name
+ 	 */
+-
+ 	errval = DNSlookup_name(nodename, AF_INET, &hp);
+ 
+ 	if (hp == NULL) {
+diff -u -r ntp-dev-4.2.7p250/libntp/numtohost.c ntp-dev-4.2.7p250.dnssec/libntp/numtohost.c
+--- ntp-dev-4.2.7p250/libntp/numtohost.c	2011-04-05 03:35:33.000000000 -0400
++++ ntp-dev-4.2.7p250.dnssec/libntp/numtohost.c	2012-01-16 12:27:05.000000000 -0500
+@@ -8,6 +8,10 @@
+ #include <netinet/in.h>		/* ntohl */
+ #endif
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntp_fp.h"
+ #include "ntp_stdlib.h"
+ #include "lib_strbuf.h"
+@@ -23,6 +27,9 @@
+ {
+ 	char *bp;
+ 	struct hostent *hp;
++#ifdef HAVE_DNSVAL
++	val_status_t val_status;
++#endif
+ 
+ 	/*
+ 	 * This is really gross, but saves lots of hanging looking for
+@@ -30,10 +37,17 @@
+ 	 * addresses on the loopback network except for the loopback
+ 	 * host itself.
+ 	 */
++#ifdef HAVE_DNSVAL
++	if ((((ntohl(netnum) & LOOPBACKNETMASK) == LOOPBACKNET)
++	     && (ntohl(netnum) != LOOPBACKHOST))
++	    || ((hp = val_gethostbyaddr(NULL, (char *)&netnum, sizeof netnum, AF_INET, &val_status))
++		== 0) || !val_istrusted(val_status))
++#else
+ 	if ((((ntohl(netnum) & LOOPBACKNETMASK) == LOOPBACKNET)
+ 	     && (ntohl(netnum) != LOOPBACKHOST))
+ 	    || ((hp = gethostbyaddr((char *)&netnum, sizeof netnum, AF_INET))
+ 		== 0))
++#endif
+ 	    return numtoa(netnum);
+ 	
+ 	LIB_GETBUF(bp);
+diff -u -r ntp-dev-4.2.7p250/libntp/socktohost.c ntp-dev-4.2.7p250.dnssec/libntp/socktohost.c
+--- ntp-dev-4.2.7p250/libntp/socktohost.c	2011-03-06 05:04:46.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/libntp/socktohost.c	2012-01-16 12:27:05.000000000 -0500
+@@ -14,6 +14,10 @@
+ 
+ #include <stdio.h>
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntp_fp.h"
+ #include "lib_strbuf.h"
+ #include "ntp_stdlib.h"
+@@ -36,13 +40,22 @@
+ 	sockaddr_u		addr;
+ 	size_t			octets;
+ 	int			a_info;
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	/* reverse the address to purported DNS name */
+ 	LIB_GETBUF(pbuf);
+ 	gni_flags = NI_DGRAM | NI_NAMEREQD;
++#ifdef HAVE_DNSVAL
++	if (val_getnameinfo(NULL, &sock->sa, SOCKLEN(sock), pbuf, LIB_BUFLENGTH,
++			NULL, 0, gni_flags, &val_status) || !val_istrusted(val_status))
++		return stoa(sock);	/* use address */
++#else
+ 	if (getnameinfo(&sock->sa, SOCKLEN(sock), pbuf, LIB_BUFLENGTH,
+ 			NULL, 0, gni_flags))
+ 		return stoa(sock);	/* use address */
++#endif
+ 
+ 	TRACE(1, ("%s reversed to %s\n", stoa(sock), pbuf));
+ 
+@@ -57,7 +70,11 @@
+ 	hints.ai_flags = 0;
+ 	alist = NULL;
+ 
++#ifdef HAVE_DNSVAL
++	a_info = val_getaddrinfo(NULL, pbuf, svc, &hints, &alist, &val_status);
++#else
+ 	a_info = getaddrinfo(pbuf, svc, &hints, &alist);
++#endif
+ 	if (a_info == EAI_NONAME
+ #ifdef EAI_NODATA
+ 	    || a_info == EAI_NODATA
+@@ -67,18 +84,41 @@
+ #ifdef AI_ADDRCONFIG
+ 		hints.ai_flags |= AI_ADDRCONFIG;
+ #endif
+-		a_info = getaddrinfo(pbuf, svc, &hints, &alist);	
++#ifdef HAVE_DNSVAL
++		if (alist) {
++			freeaddrinfo(alist);
++		}
++		a_info = val_getaddrinfo(NULL, pbuf, svc, &hints, &alist, &val_status);
++#else
++		a_info = getaddrinfo(pbuf, svc, &hints, &alist);
++#endif
+ 	}
+ #ifdef AI_ADDRCONFIG
+ 	/* Some older implementations don't like AI_ADDRCONFIG. */
+ 	if (a_info == EAI_BADFLAGS) {
+ 		hints.ai_flags &= ~AI_ADDRCONFIG;
+-		a_info = getaddrinfo(pbuf, svc, &hints, &alist);	
++#ifdef HAVE_DNSVAL
++		if (alist) {
++			freeaddrinfo(alist);
++		}
++		a_info = val_getaddrinfo(NULL, pbuf, svc, &hints, &alist, &val_status);
++#else
++		a_info = getaddrinfo(pbuf, svc, &hints, &alist);
++#endif
+ 	}
+ #endif
+ 	if (a_info)
+ 		goto forward_fail;
+ 
++#ifdef HAVE_DNSVAL
++	if (!val_istrusted(val_status)) {
++        if (alist) {
++            freeaddrinfo(alist);
++        }
++		goto forward_fail;
++	}	
++#endif
++
+ 	NTP_INSIST(alist != NULL);
+ 
+ 	for (ai = alist; ai != NULL; ai = ai->ai_next) {
+diff -u -r ntp-dev-4.2.7p250/ntpd/cmd_args.c ntp-dev-4.2.7p250.dnssec/ntpd/cmd_args.c
+--- ntp-dev-4.2.7p250/ntpd/cmd_args.c	2011-10-10 01:48:29.000000000 -0400
++++ ntp-dev-4.2.7p250.dnssec/ntpd/cmd_args.c	2012-01-16 12:27:05.000000000 -0500
+@@ -5,6 +5,10 @@
+ # include <config.h>
+ #endif
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntpd.h"
+ #include "ntp_stdlib.h"
+ #include "ntp_config.h"
+@@ -75,6 +79,16 @@
+ 
+ 	if (HAVE_OPT( PANICGATE ))
+ 		allow_panic = TRUE;
++#ifdef HAVE_DNSVAL
++	if (HAVE_OPT( PANICGATE )) {
++        /* Disable DNSSEC Validation */
++		if (VAL_NO_ERROR != val_context_setqflags(NULL, VAL_CTX_FLAG_SET, VAL_QUERY_IGNORE_SKEW)) {
++		    msyslog(LOG_ERR, "Failed to create DNSSEC validator context.");
++		    exit(1);
++        }
++		msyslog(LOG_NOTICE, "DNSSEC clock-skew tolerance enabled.");
++    }
++#endif
+ 
+ #ifdef HAVE_DROPROOT
+ 	if (HAVE_OPT( JAILDIR )) {
+diff -u -r ntp-dev-4.2.7p250/ntpd/ntp_config.c ntp-dev-4.2.7p250.dnssec/ntpd/ntp_config.c
+--- ntp-dev-4.2.7p250/ntpd/ntp_config.c	2011-12-18 06:01:48.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/ntpd/ntp_config.c	2012-01-16 12:27:05.000000000 -0500
+@@ -33,6 +33,10 @@
+ #include <isc/net.h>
+ #include <isc/result.h>
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntp.h"
+ #include "ntpd.h"
+ #include "ntp_io.h"
+@@ -1664,6 +1668,9 @@
+ 	sockaddr_u *final_addr;
+ 	struct addrinfo *ptr;
+ 	int gai_err;
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 	
+ 	final_addr = emalloc(sizeof(*final_addr));
+ 
+@@ -1672,15 +1679,34 @@
+ 			 addr_prefix, curr_addr_num++);
+ 		printf("Selecting ip address %s for hostname %s\n",
+ 		       addr_string, addr->address);
++#ifdef HAVE_DNSVAL
++		gai_err = val_getaddrinfo(NULL, addr_string, "ntp", NULL, &ptr, &val_status);
++#else
+ 		gai_err = getaddrinfo(addr_string, "ntp", NULL, &ptr);
++#endif
+ 	} else {
++#ifdef HAVE_DNSVAL
++		gai_err = val_getaddrinfo(NULL, addr->address, "ntp", NULL, &ptr, &val_status);
++#else
+ 		gai_err = getaddrinfo(addr->address, "ntp", NULL, &ptr);
++#endif
+ 	}
+ 
+ 	if (gai_err) {
+ 		fprintf(stderr, "ERROR!! Could not get a new address\n");
+ 		exit(1);
+ 	}
++
++#ifdef HAVE_DNSVAL
++    if (!val_istrusted(val_status)) {
++		fprintf(stderr, "ERROR!! DNSSEC validation for address failed\n");
++		if (ptr) {
++			freeaddrinfo(ptr);
++		}
++		exit(1);
++    }
++#endif
++
+ 	memcpy(final_addr, ptr->ai_addr, ptr->ai_addrlen);
+ 	fprintf(stderr, "Successful in setting ip address of simulated server to: %s\n",
+ 		stoa(final_addr));
+@@ -2221,6 +2247,9 @@
+ #else
+ 	    "mssntp restrict bit ignored, this ntpd was configured without --enable-ntp-signd.";
+ #endif
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	/* Configure the mru options */
+ 	my_opt = HEAD_PFIFO(ptree->mru_opts);
+@@ -2459,16 +2488,36 @@
+ 				hints.ai_protocol = IPPROTO_UDP;
+ 				hints.ai_socktype = SOCK_DGRAM;
+ 				hints.ai_family = my_node->addr->type;
++
++#ifdef HAVE_DNSVAL
++				rc = val_getaddrinfo(NULL, my_node->addr->address,
++						 "ntp", &hints,
++						 &ai_list, &val_status);
++#else
+ 				rc = getaddrinfo(my_node->addr->address,
+ 						 "ntp", &hints,
+ 						 &ai_list);
+-				if (rc) {
++#endif
++
++                if (rc) {
+ 					msyslog(LOG_ERR,
+ 						"restrict: ignoring line %d, address/host '%s' unusable.",
+ 						my_node->line_no,
+ 						my_node->addr->address);
+ 					continue;
+ 				}
++#ifdef HAVE_DNSVAL
++				if (!val_istrusted(val_status)) {
++					msyslog(LOG_ERR,
++						"restrict: ignoring line %d, address/host '%s' could not be validated.",
++						my_node->line_no,
++						my_node->addr->address);
++                    if (ai_list) {
++                        freeaddrinfo(ai_list);
++                    }
++					continue;
++				}
++#endif
+ 				NTP_INSIST(ai_list != NULL);
+ 				pai = ai_list;
+ 				NTP_INSIST(pai->ai_addr != NULL);
+diff -u -r ntp-dev-4.2.7p250/ntpd/ntp_loopfilter.c ntp-dev-4.2.7p250.dnssec/ntpd/ntp_loopfilter.c
+--- ntp-dev-4.2.7p250/ntpd/ntp_loopfilter.c	2011-12-18 06:01:47.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/ntpd/ntp_loopfilter.c	2012-01-16 12:27:05.000000000 -0500
+@@ -8,6 +8,10 @@
+ # include <config.h>
+ #endif
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntpd.h"
+ #include "ntp_io.h"
+ #include "ntp_unixtime.h"
+@@ -136,6 +140,7 @@
+ static	void	stop_kern_loop(void);
+ #endif /* KERNEL_PLL */
+ 
++
+ /*
+  * Clock state machine control flags
+  */
+@@ -178,6 +183,7 @@
+ #endif /* SIGSYS */
+ #endif /* KERNEL_PLL */
+ 
++
+ /*
+  * init_loopfilter - initialize loop filter data
+  */
+@@ -445,6 +451,19 @@
+ 		 * startup until the initial transient has subsided.
+ 		 */
+ 		default:
++#ifdef HAVE_DNSVAL
++		    if (allow_panic) {
++                /* Enable DNSSEC Validation */
++                if (VAL_NO_ERROR != val_context_setqflags(NULL, VAL_CTX_FLAG_RESET, VAL_QUERY_IGNORE_SKEW)) {
++                    /* something didn't work right, log and keep trying */
++		            msyslog(LOG_NOTICE, "DNSSEC clock-skew tolerance could not be disabled. Panic correction still in effect.");
++                } else {
++		            msyslog(LOG_NOTICE, "DNSSEC clock-skew tolerance disabled.");
++			        allow_panic = FALSE;
++                }
++            } 
++            else /* fall-through */
++#endif
+ 			allow_panic = FALSE;
+ 			if (freq_cnt == 0) {
+ 
+diff -u -r ntp-dev-4.2.7p250/ntpd/ntpd.c ntp-dev-4.2.7p250.dnssec/ntpd/ntpd.c
+--- ntp-dev-4.2.7p250/ntpd/ntpd.c	2012-01-15 06:06:40.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/ntpd/ntpd.c	2012-01-16 12:27:05.000000000 -0500
+@@ -977,6 +977,9 @@
+ #  ifndef HAVE_SIGNALED_IO
+ 			rdfdes = activefds;
+ #   if !defined(VMS) && !defined(SYS_VXWORKS)
++#     ifdef HAVE_DNSVAL
++            val_async_select_info(NULL, &rdfdes, &maxactivefd, NULL);
++#     endif
+ 			nfound = select(maxactivefd + 1, &rdfdes, NULL,
+ 					NULL, NULL);
+ #   else	/* VMS, VxWorks */
+@@ -986,11 +989,18 @@
+ 
+ 				t1.tv_sec = 1;
+ 				t1.tv_usec = 0;
++#     ifdef HAVE_DNSVAL
++                val_async_select_info(NULL, &rdfdes, &maxactivefd, &t1);
++#     endif
+ 				nfound = select(maxactivefd + 1,
+ 						&rdfdes, NULL, NULL,
+ 						&t1);
+ 			}
+ #   endif	/* VMS, VxWorks */
++
++#  ifdef HAVE_DNSVAL
++            val_async_check_wait(NULL, &rdfdes, &maxactivefd, NULL, 0);
++#  endif
+ 			if (nfound > 0) {
+ 				l_fp ts;
+ 
+@@ -1008,7 +1018,6 @@
+ 			}
+ #   endif /* DEBUG */
+ #  else /* HAVE_SIGNALED_IO */
+-
+ 			wait_for_signal();
+ #  endif /* HAVE_SIGNALED_IO */
+ 			if (alarm_flag) {	/* alarmed? */
+diff -u -r ntp-dev-4.2.7p250/ntpd/refclock_nmea.c ntp-dev-4.2.7p250.dnssec/ntpd/refclock_nmea.c
+--- ntp-dev-4.2.7p250/ntpd/refclock_nmea.c	2012-01-06 06:07:50.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/ntpd/refclock_nmea.c	2012-01-16 12:27:05.000000000 -0500
+@@ -30,6 +30,10 @@
+ #include <stdio.h>
+ #include <ctype.h>
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntpd.h"
+ #include "ntp_io.h"
+ #include "ntp_unixtime.h"
+@@ -1663,6 +1667,9 @@
+ 	struct addrinfo	 ai_hint;	/* resolution hint	*/
+ 	struct addrinfo	*ai_list;	/* resolution result	*/
+ 	struct addrinfo *ai;		/* result scan ptr	*/
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	fd = -1;
+ 	
+@@ -1689,8 +1696,21 @@
+ 	ZERO(ai_hint);
+ 	ai_hint.ai_protocol = IPPROTO_TCP;
+ 	ai_hint.ai_socktype = SOCK_STREAM;
++
++#ifdef HAVE_DNSVAL
++	if (val_getaddrinfo(NULL, host, port, &ai_hint, &ai_list, &val_status))
++		return fd;
++
++	if (!val_istrusted(val_status)) {
++		if (ai_list) {
++			freeaddrinfo(ai_list);
++		}
++		return fd;
++    }
++#else
+ 	if (getaddrinfo(host, port, &ai_hint, &ai_list))
+ 		return fd;
++#endif
+ 	
+ 	for (ai = ai_list; ai && (fd == -1); ai = ai->ai_next) {
+ 		sh = socket(ai->ai_family, ai->ai_socktype,
+Only in ntp-dev-4.2.7p250.dnssec/ntpd: refclock_nmea.c.orig
+diff -u -r ntp-dev-4.2.7p250/ntpdate/ntpdate.c ntp-dev-4.2.7p250.dnssec/ntpdate/ntpdate.c
+--- ntp-dev-4.2.7p250/ntpdate/ntpdate.c	2012-01-06 06:07:57.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/ntpdate/ntpdate.c	2012-01-16 12:27:05.000000000 -0500
+@@ -48,6 +48,10 @@
+ 
+ #include <arpa/inet.h>
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #ifdef SYS_VXWORKS
+ # include "ioLib.h"
+ # include "sockLib.h"
+@@ -1351,6 +1355,9 @@
+ 	/* Service name */
+ 	char service[5];
+ 	sockaddr_u addr;
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	strlcpy(service, "ntp", sizeof(service));
+ 
+@@ -1364,8 +1371,13 @@
+ 		printf("Looking for host %s and service %s\n", serv, service);
+ #endif
+ 
++#ifdef HAVE_DNSVAL
++	error = val_getaddrinfo(NULL, serv, service, &hints, &addrResult, &val_status);
++	if (error != 0 || !val_istrusted(val_status)) {
++#else
+ 	error = getaddrinfo(serv, service, &hints, &addrResult);
+ 	if (error != 0) {
++#endif
+ 		/* Conduct more refined error analysis */
+ 		if (error == EAI_FAIL || error == EAI_AGAIN){
+ 			/* Name server is unusable. Exit after failing on the
+@@ -1679,6 +1691,9 @@
+ 	int rc;
+ 	int optval = 1;
+ 	int check_ntp_port_in_use = !debug && !simple_query && !unpriv_port;
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	/*
+ 	 * Init buffer free list and stat counters
+@@ -1699,7 +1714,15 @@
+ 	hints.ai_flags = AI_PASSIVE;
+ 	hints.ai_socktype = SOCK_DGRAM;
+ 
++#ifdef HAVE_DNSVAL
++	if (val_getaddrinfo(NULL, NULL, service, &hints, &res, &val_status) != 0 ||
++        !val_istrusted(val_status)) {
++        if (res) {
++            freeaddrinfo(res);
++        }
++#else
+ 	if (getaddrinfo(NULL, service, &hints, &res) != 0) {
++#endif
+ 		msyslog(LOG_ERR, "getaddrinfo() failed: %m");
+ 		exit(1);
+ 		/*NOTREACHED*/
+diff -u -r ntp-dev-4.2.7p250/ntpdc/ntpdc.c ntp-dev-4.2.7p250.dnssec/ntpdc/ntpdc.c
+--- ntp-dev-4.2.7p250/ntpdc/ntpdc.c	2012-01-15 06:06:40.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/ntpdc/ntpdc.c	2012-01-16 12:27:05.000000000 -0500
+@@ -19,6 +19,10 @@
+ #include <isc/net.h>
+ #include <isc/result.h>
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntpdc.h"
+ #include "ntp_select.h"
+ #include "ntp_stdlib.h"
+@@ -396,6 +400,9 @@
+ 	register const char *cp;
+ 	char name[LENHOSTNAME];
+ 	char service[5];
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	/*
+ 	 * We need to get by the [] if they were entered 
+@@ -429,7 +436,11 @@
+ 	hints.ai_socktype = SOCK_DGRAM;
+ 	hints.ai_flags = Z_AI_NUMERICHOST;
+ 
++#ifdef HAVE_DNSVAL
++	a_info = val_getaddrinfo(NULL, hname, service, &hints, &ai, &val_status);
++#else
+ 	a_info = getaddrinfo(hname, service, &hints, &ai);
++#endif
+ 	if (a_info == EAI_NONAME
+ #ifdef EAI_NODATA
+ 	    || a_info == EAI_NODATA
+@@ -439,12 +450,26 @@
+ #ifdef AI_ADDRCONFIG
+ 		hints.ai_flags |= AI_ADDRCONFIG;
+ #endif
++#ifdef HAVE_DNSVAL
++        if (ai) {
++            freeaddrinfo(ai);
++        }
++        a_info = val_getaddrinfo(NULL, hname, service, &hints, &ai, &val_status);
++#else
+ 		a_info = getaddrinfo(hname, service, &hints, &ai);	
++#endif
+ 	}
+ 	/* Some older implementations don't like AI_ADDRCONFIG. */
+ 	if (a_info == EAI_BADFLAGS) {
+ 		hints.ai_flags = AI_CANONNAME;
++#ifdef HAVE_DNSVAL
++        if (ai) {
++            freeaddrinfo(ai);
++        }
++        a_info = val_getaddrinfo(NULL, hname, service, &hints, &ai, &val_status);
++#else
+ 		a_info = getaddrinfo(hname, service, &hints, &ai);	
++#endif
+ 	}
+ 	if (a_info != 0) {
+ 		fprintf(stderr, "%s\n", gai_strerror(a_info));
+@@ -453,6 +478,15 @@
+ 		return 0;
+ 	}
+ 
++#ifdef HAVE_DNSVAL
++    if (!val_istrusted(val_status)) {
++        if (ai) {
++            freeaddrinfo(ai);
++        }
++		return 0;
++    }  
++#endif
++
+ 	/* 
+ 	 * getaddrinfo() has returned without error so ai should not 
+ 	 * be NULL.
+@@ -1423,6 +1457,9 @@
+ 	)
+ {
+ 	struct addrinfo hints, *ai = NULL;
++#ifdef HAVE_DNSVAL
++	val_status_t val_status;
++#endif
+ 
+ 	ZERO(hints);
+ 	hints.ai_flags = AI_CANONNAME;
+@@ -1436,10 +1473,20 @@
+ 	 */
+ 	if (decodenetnum(hname, num)) {
+ 		if (fullhost != NULL)
++#ifdef HAVE_DNSVAL
++			val_getnameinfo(NULL, &num->sa, SOCKLEN(num), fullhost,
++				    LENHOSTNAME, NULL, 0, 0, &val_status);
++#else
+ 			getnameinfo(&num->sa, SOCKLEN(num), fullhost,
+ 				    LENHOSTNAME, NULL, 0, 0);
++#endif
+ 		return 1;
++#ifdef HAVE_DNSVAL
++	} else if (val_getaddrinfo(NULL, hname, "ntp", &hints, &ai, &val_status) == 0 && 
++			   val_istrusted(val_status)) {
++#else
+ 	} else if (getaddrinfo(hname, "ntp", &hints, &ai) == 0) {
++#endif
+ 		NTP_INSIST(sizeof(*num) >= ai->ai_addrlen);
+ 		memcpy(num, ai->ai_addr, ai->ai_addrlen);
+ 		if (fullhost != NULL) {
+@@ -1447,12 +1494,31 @@
+ 				strlcpy(fullhost, ai->ai_canonname,
+ 					LENHOSTNAME);
+ 			else
++#ifdef HAVE_DNSVAL
++				if (0 == val_getnameinfo(NULL, &num->sa, SOCKLEN(num),
++					    	fullhost, LENHOSTNAME, NULL,
++					    	0, 0, &val_status) && !val_istrusted(val_status)) {
++					memset(&num->sa, 0, sizeof(num->sa)); 
++				}
++#else
+ 				getnameinfo(&num->sa, SOCKLEN(num),
+ 					    fullhost, LENHOSTNAME, NULL,
+ 					    0, 0);
++#endif
++		}
++#ifdef HAVE_DNSVAL
++		if (ai) {
++			freeaddrinfo(ai);
+ 		}
++		
++#endif
+ 		return 1;
+ 	}
++#ifdef HAVE_DNSVAL
++	if (ai) {
++		freeaddrinfo(ai);
++	}
++#endif
+ 	fprintf(stderr, "***Can't find host %s\n", hname);
+ 
+ 	return 0;
+Only in ntp-dev-4.2.7p250.dnssec/ntpdc: ntpdc.c.orig
+diff -u -r ntp-dev-4.2.7p250/ntpq/ntpq.c ntp-dev-4.2.7p250.dnssec/ntpq/ntpq.c
+--- ntp-dev-4.2.7p250/ntpq/ntpq.c	2012-01-15 06:06:40.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/ntpq/ntpq.c	2012-01-16 12:36:10.000000000 -0500
+@@ -20,6 +20,10 @@
+ #include <isc/net.h>
+ #include <isc/result.h>
+ 
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
++
+ #include "ntpq.h"
+ #include "ntp_stdlib.h"
+ #include "ntp_unixtime.h"
+@@ -521,6 +525,9 @@
+ 	size_t octets;
+ 	register const char *cp;
+ 	char name[LENHOSTNAME];
++#ifdef HAVE_DNSVAL
++	val_status_t val_status;
++#endif
+ 
+ 	/*
+ 	 * We need to get by the [] if they were entered
+@@ -554,7 +561,11 @@
+ 	hints.ai_flags = Z_AI_NUMERICHOST;
+ 	ai = NULL;
+ 
++#ifdef HAVE_DNSVAL
++	a_info = val_getaddrinfo(NULL, hname, svc, &hints, &ai, &val_status);
++#else
+ 	a_info = getaddrinfo(hname, svc, &hints, &ai);
++#endif
+ 	if (a_info == EAI_NONAME
+ #ifdef EAI_NODATA
+ 	    || a_info == EAI_NODATA
+@@ -564,19 +575,42 @@
+ #ifdef AI_ADDRCONFIG
+ 		hints.ai_flags |= AI_ADDRCONFIG;
+ #endif
++#ifdef HAVE_DNSVAL
++		if (ai) {
++			freeaddrinfo(ai);
++		}
++		a_info = val_getaddrinfo(NULL, hname, svc, &hints, &ai, &val_status);
++#else
+ 		a_info = getaddrinfo(hname, svc, &hints, &ai);
++#endif
+ 	}
+ #ifdef AI_ADDRCONFIG
+ 	/* Some older implementations don't like AI_ADDRCONFIG. */
+ 	if (a_info == EAI_BADFLAGS) {
+ 		hints.ai_flags &= ~AI_ADDRCONFIG;
++#ifdef HAVE_DNSVAL
++		if (ai) {
++			freeaddrinfo(ai);
++		}
++		a_info = val_getaddrinfo(NULL, hname, svc, &hints, &ai, &val_status);
++#else
+ 		a_info = getaddrinfo(hname, svc, &hints, &ai);
++#endif
+ 	}
+ #endif
+ 	if (a_info != 0) {
+ 		fprintf(stderr, "%s\n", gai_strerror(a_info));
+ 		return 0;
+ 	}
++#ifdef HAVE_DNSVAL
++	if (!val_istrusted(val_status)) {
++		if (ai) {
++			freeaddrinfo(ai);
++		}
++		fprintf(stderr, "%s\n", "DNSSEC Validation failed.");
++		return 0;
++	}  
++#endif
+ 
+ 	INSIST(ai != NULL);
+ 	ZERO(addr);
+@@ -1706,6 +1740,9 @@
+ 	)
+ {
+ 	struct addrinfo hints, *ai = NULL;
++#ifdef HAVE_DNSVAL
++    val_status_t val_status;
++#endif
+ 
+ 	ZERO(hints);
+ 	hints.ai_flags = AI_CANONNAME;
+@@ -1719,10 +1756,20 @@
+ 	 */
+ 	if (decodenetnum(hname, num)) {
+ 		if (fullhost != NULL)
++#ifdef HAVE_DNSVAL
++			val_getnameinfo(NULL, &num->sa, SOCKLEN(num), fullhost,
++				    LENHOSTNAME, NULL, 0, 0, &val_status);
++#else
+ 			getnameinfo(&num->sa, SOCKLEN(num), fullhost,
+ 				    LENHOSTNAME, NULL, 0, 0);
++#endif
+ 		return 1;
++#ifdef HAVE_DNSVAL
++	} else if (val_getaddrinfo(NULL, hname, "ntp", &hints, &ai, &val_status) == 0 && 
++               val_istrusted(val_status)) {
++#else
+ 	} else if (getaddrinfo(hname, "ntp", &hints, &ai) == 0) {
++#endif
+ 		INSIST(sizeof(*num) >= ai->ai_addrlen);
+ 		memcpy(num, ai->ai_addr, ai->ai_addrlen);
+ 		if (fullhost != NULL) {
+@@ -1730,13 +1777,24 @@
+ 				strlcpy(fullhost, ai->ai_canonname,
+ 					LENHOSTNAME);
+ 			else
++#ifdef HAVE_DNSVAL
++				val_getnameinfo(NULL, &num->sa, SOCKLEN(num),
++					    fullhost, LENHOSTNAME, NULL,
++					    0, 0, &val_status);
++#else
+ 				getnameinfo(&num->sa, SOCKLEN(num),
+ 					    fullhost, LENHOSTNAME, NULL,
+ 					    0, 0);
++#endif
+ 		}
+ 		freeaddrinfo(ai);
+ 		return 1;
+ 	}
++#ifdef HAVE_DNSVAL
++    if (ai) {
++        freeaddrinfo(ai);
++    }
++#endif
+ 	fprintf(stderr, "***Can't find host %s\n", hname);
+ 
+ 	return 0;
+Only in ntp-dev-4.2.7p250.dnssec/ntpq: ntpq.c.orig
+diff -u -r ntp-dev-4.2.7p250/sntp/config.h.in ntp-dev-4.2.7p250.dnssec/sntp/config.h.in
+--- ntp-dev-4.2.7p250/sntp/config.h.in	2012-01-15 06:36:48.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/sntp/config.h.in	2012-01-16 12:27:05.000000000 -0500
+@@ -74,6 +74,9 @@
+ /* Define to 1 if you have the <dlfcn.h> header file. */
+ #undef HAVE_DLFCN_H
+ 
++/* Perform local DNSSEC Validation using dnsval */
++#undef HAVE_DNSVAL
++
+ /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
+ #undef HAVE_DOPRNT
+ 
+@@ -786,6 +789,28 @@
+ /* What type to use for setsockopt */
+ #undef TYPEOF_IP_MULTICAST_LOOP
+ 
++/* Enable extensions on AIX 3, Interix.  */
++#ifndef _ALL_SOURCE
++# undef _ALL_SOURCE
++#endif
++/* Enable GNU extensions on systems that have them.  */
++#ifndef _GNU_SOURCE
++# undef _GNU_SOURCE
++#endif
++/* Enable threading extensions on Solaris.  */
++#ifndef _POSIX_PTHREAD_SEMANTICS
++# undef _POSIX_PTHREAD_SEMANTICS
++#endif
++/* Enable extensions on HP NonStop.  */
++#ifndef _TANDEM_SOURCE
++# undef _TANDEM_SOURCE
++#endif
++/* Enable general extensions on Solaris.  */
++#ifndef __EXTENSIONS__
++# undef __EXTENSIONS__
++#endif
++
++
+ /* Can we use SIGPOLL for tty IO? */
+ #undef USE_TTY_SIGPOLL
+ 
+@@ -838,9 +863,6 @@
+ /* enable thread safety */
+ #undef _THREAD_SAFE
+ 
+-/* Define to 500 only on HP-UX. */
+-#undef _XOPEN_SOURCE
+-
+ /* Are we _special_? */
+ #undef __APPLE_USE_RFC_3542
+ 
+@@ -849,28 +871,6 @@
+ # undef __CHAR_UNSIGNED__
+ #endif
+ 
+-/* Enable extensions on AIX 3, Interix.  */
+-#ifndef _ALL_SOURCE
+-# undef _ALL_SOURCE
+-#endif
+-/* Enable GNU extensions on systems that have them.  */
+-#ifndef _GNU_SOURCE
+-# undef _GNU_SOURCE
+-#endif
+-/* Enable threading extensions on Solaris.  */
+-#ifndef _POSIX_PTHREAD_SEMANTICS
+-# undef _POSIX_PTHREAD_SEMANTICS
+-#endif
+-/* Enable extensions on HP NonStop.  */
+-#ifndef _TANDEM_SOURCE
+-# undef _TANDEM_SOURCE
+-#endif
+-/* Enable general extensions on Solaris.  */
+-#ifndef __EXTENSIONS__
+-# undef __EXTENSIONS__
+-#endif
+-
+-
+ /* Define to empty if `const' does not conform to ANSI C. */
+ #undef const
+ 
+diff -u -r ntp-dev-4.2.7p250/sntp/configure.ac ntp-dev-4.2.7p250.dnssec/sntp/configure.ac
+--- ntp-dev-4.2.7p250/sntp/configure.ac	2011-08-09 04:02:45.000000000 -0400
++++ ntp-dev-4.2.7p250.dnssec/sntp/configure.ac	2012-01-16 12:27:05.000000000 -0500
+@@ -102,6 +102,28 @@
+ dnl AC_SEARCH_LIBS([inet_pton], [nsl])
+ AC_SEARCH_LIBS([openlog], [gen syslog])
+ 
++dnl 
++dnl Check for DNSSEC support
++dnl
++AC_ARG_WITH(
++	[dnsval],
++	AS_HELP_STRING([--with-dnsval], [- Enable local DNSSEC validation using dnsval]),
++	want_dnssec=$withval, 
++	want_dnssec=no)
++case "$want_dnssec" in
++ yes)
++    if test "x$ac_cv_header_pthread_h" != xyes; then
++		AC_MSG_ERROR(["Configured needs to be fine-tuned for non-pthread support"])
++	fi
++	AC_CHECK_LIB([val-threads], 
++				 [val_getaddrinfo],
++				 [LIBS="-lval-threads -lsres -lcrypto $LIBS"
++                  AC_DEFINE([HAVE_DNSVAL], [1], [Perform local DNSSEC Validation using dnsval])],
++				 [AC_MSG_ERROR(["Can't find required libraries for DNSSEC support"])], 
++				 [-lsres -lcrypto])
++	;;
++esac
++
+ # Checks for header files.
+ AC_CHECK_HEADERS([netdb.h string.h strings.h syslog.h])
+ 
+diff -u -r ntp-dev-4.2.7p250/sntp/main.c ntp-dev-4.2.7p250.dnssec/sntp/main.c
+--- ntp-dev-4.2.7p250/sntp/main.c	2012-01-08 18:03:10.000000000 -0500
++++ ntp-dev-4.2.7p250.dnssec/sntp/main.c	2012-01-16 12:27:05.000000000 -0500
+@@ -7,6 +7,9 @@
+ #ifdef WORK_THREAD
+ # include <event2/thread.h>
+ #endif
++#ifdef HAVE_DNSVAL
++#include <validator/validator.h>
++#endif
+ 
+ #include "main.h"
+ #include "ntp_libopts.h"
+@@ -267,6 +270,29 @@
+ 	for (i = 0; i < argc; ++i)
+ 		handle_lookup(argv[i], CTX_UCST);
+ 
++/* 
++ * If we used getaddrinfo_sometime() [non-blocking] instead of 
++ * getaddrinfo_sometime_blocking() to issue the queries then the following 
++ * code block would need to be uncommented. The issue with using the 
++ * non-blocking lookup routine is that it cannot be used effectively in 
++ * conjunction with libevent. That is, we'd need to wait for all DNS lookups 
++ * to complete before we are able to send NTP packets out.
++ * The better approach would be to instrument libevent to use dnsval's 
++ * async validation routines internally.
++ */ 
++#if 0
++#if HAVE_DNSVAL
++    do {
++        fd_set fds;
++        int numfds;
++
++        FD_ZERO(&fds);       /* clear fd_set */
++        numfds = 0;            /* no FDs yet */
++        val_async_select(NULL, &fds, &numfds, NULL, 0);
++        val_async_check_wait(NULL, &fds, &numfds, NULL, 0);
++    } while (n_pending_dns > 0);
++#endif
++#endif
+ 	event_base_dispatch(base);
+ 	event_base_free(base);
+ 
+@@ -417,8 +443,22 @@
+ 	}
+ 
+ 	++n_pending_dns;
++#ifdef HAVE_DNSVAL
++    /*
++     * It is possible to use getaddrinfo_sometime() [non-blocking] in 
++     * place of getaddrinfo_sometime_blocking() too.
++     * If we did so, we'd have to manage the descriptors
++     * associated with the DNS lookup within sntp itself.
++     * But this approach is sub-optimal when used in 
++     * conjunction with libevent. 
++     * Also See the ifdef 0 block in sntp_main().
++     */ 
++	getaddrinfo_sometime_blocking(name, "123", &hints, 0,
++			     &sntp_name_resolved, ctx);
++#else
+ 	getaddrinfo_sometime(name, "123", &hints, 0,
+ 			     &sntp_name_resolved, ctx);
++#endif
+ }
+ 
+ 
