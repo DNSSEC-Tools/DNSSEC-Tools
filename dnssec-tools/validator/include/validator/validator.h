@@ -87,7 +87,8 @@ struct timeval;
                              VAL_QUERY_NO_EDNS0_FALLBACK |\
                              VAL_QUERY_SKIP_RESOLVER |\
                              VAL_QUERY_RECURSE |\
-                             VAL_QUERY_SKIP_CACHE)
+                             VAL_QUERY_SKIP_CACHE|\
+                             VAL_QUERY_IGNORE_SKEW)
 
 #ifndef LOG_EMERG
 #define LOG_EMERG 0
