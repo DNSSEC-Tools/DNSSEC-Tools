@@ -598,8 +598,14 @@ val_context_setqflags(val_context_t *context,
 
     if (action == VAL_CTX_FLAG_SET) {
         ctx->def_uflags |= flags;
+        val_log(ctx, LOG_DEBUG, 
+                "val_context_setqflags(): default user query flags after SET %x", 
+                ctx->def_uflags);
     } else if (action == VAL_CTX_FLAG_RESET) {
         ctx->def_uflags ^= (ctx->def_uflags & flags);
+        val_log(ctx, LOG_DEBUG, 
+                "val_context_setqflags(): default user query flags after RESET %x", 
+                ctx->def_uflags);
     }
     
     CTX_UNLOCK_ACACHE(ctx);
