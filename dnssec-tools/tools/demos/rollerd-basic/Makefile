@@ -35,6 +35,10 @@ zones-same:
 	zonesigner -zsklife 30 -genkeys example.com
 	zonesigner -zsklife 30 -genkeys test.com
 
+zones-diff:
+	zonesigner -zsklife 90 -genkeys example.com
+	zonesigner -zsklife 90 -ksklife 90 -genkeys test.com
+
 zones-long:
 	zonesigner -zsklife 7200 -genkeys example.com
 	zonesigner -zsklife 3600 -e now+25 -genkeys test.com
