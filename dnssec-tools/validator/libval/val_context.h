@@ -28,8 +28,8 @@
        (0 == pthread_rwlock_trywrlock(&ctx->pol_rwlock)) 
 #define CTX_UNLOCK_POL(ctx) \
     do {\
-        pthread_rwlock_unlock(&ctx->pol_rwlock);\
         CTX_LOCK_COUNT_DEC(ctx,pol_count);\
+        pthread_rwlock_unlock(&ctx->pol_rwlock);\
     } while (0)
 #define CTX_LOCK_ACACHE(ctx) \
     do {                                        \
@@ -38,8 +38,8 @@
     } while (0)
 #define CTX_UNLOCK_ACACHE(ctx) \
     do {                                        \
-        pthread_mutex_unlock(&ctx->ac_lock);    \
         CTX_LOCK_COUNT_DEC(ctx,ac_count);       \
+        pthread_mutex_unlock(&ctx->ac_lock);    \
     } while (0)
 
 #else
