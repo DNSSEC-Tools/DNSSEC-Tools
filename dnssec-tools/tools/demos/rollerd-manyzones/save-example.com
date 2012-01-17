@@ -12,15 +12,15 @@ $TTL	1m
 		IN	MX 10	leodhas.example.com.
 
 
-mull			IN	A	100.69.82.21
-iona			IN	A	100.69.82.22
-leodhas			IN	A	100.69.82.23
-harris			IN	A	100.69.82.24
-barra			IN	A	100.69.82.25
-skye			IN	A	100.69.82.26
-uist			IN	A	100.69.82.27
-staffa			IN	A	100.69.82.28
-arran			IN	A	100.69.82.29
-soarplane		IN	A	100.69.82.99
+mull			IN	A	1.2.82.21
+iona			IN	A	1.2.82.22
+leodhas			IN	A	1.2.82.23
+harris			IN	A	1.2.82.24
+barra			IN	A	1.2.82.25
+skye			IN	A	1.2.82.26
+uist			IN	A	1.2.82.27
+staffa			IN	A	1.2.82.28
+arran			IN	A	1.2.82.29
+soarplane		IN	A	1.2.82.99
 
 

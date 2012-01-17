@@ -12,15 +12,15 @@ $TTL	1m
 		IN	MX 10	leodhas.test.com.
 
 
-mull			IN	A	200.69.82.21
-iona			IN	A	200.69.82.22
-leodhas			IN	A	200.69.82.23
-harris			IN	A	200.69.82.24
-barra			IN	A	200.69.82.25
-skye			IN	A	200.69.82.26
-uist			IN	A	200.69.82.27
-staffa			IN	A	200.69.82.28
-arran			IN	A	200.69.82.29
-soarplane		IN	A	200.69.82.99
+mull			IN	A	1.3.82.21
+iona			IN	A	1.3.82.22
+leodhas			IN	A	1.3.82.23
+harris			IN	A	1.3.82.24
+barra			IN	A	1.3.82.25
+skye			IN	A	1.3.82.26
+uist			IN	A	1.3.82.27
+staffa			IN	A	1.3.82.28
+arran			IN	A	1.3.82.29
+soarplane		IN	A	1.3.82.99
 
 
