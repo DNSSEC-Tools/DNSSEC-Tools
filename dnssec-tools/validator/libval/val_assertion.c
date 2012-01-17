@@ -421,6 +421,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
         return VAL_BAD_ARGUMENT;
 #endif
 
+    ASSERT_HAVE_AC_LOCK(context);
 
     /*
      * Check if query already exists 
@@ -531,6 +532,8 @@ remove_and_free_query_chain(val_context_t *context,
         return VAL_BAD_ARGUMENT;
 
     val_log(context, LOG_DEBUG, "qc %p remove/free", added_q);
+
+    ASSERT_HAVE_AC_LOCK(context);
 
     if (added_q->qc_next)
         remove_and_free_query_chain(context, added_q->qc_next);
@@ -6631,6 +6634,8 @@ _context_as_remove(val_context_t *context, val_async_status *as)
         (as->val_as_ctx && (as->val_as_ctx != context)))
         return;
 
+    ASSERT_HAVE_AC_LOCK(context);
+
     if (NULL == context->as_list)
         return;
 
@@ -6929,6 +6934,8 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
     if ((VAL_NO_ERROR != retval) && (NULL != added_q))
         _async_status_free(as);
     else {
+        ASSERT_HAVE_AC_LOCK(context);
+
         /* put in context async queries list */
         val_log(context,
                 LOG_DEBUG, "adding %s to context as_list", as->val_as_name);
