@@ -33,17 +33,20 @@ typedef struct testcase_st {
 typedef struct testsuite_st {
     char                *name;
     testcase            *head;
+    struct testsuite_st *next;
+} testsuite;
+
+typedef struct testsuite_stats_st {
     int                 in_flight;
     int                 remaining;
     int                 failed;
-    struct testsuite_st *next;
-} testsuite;
+} testsuite_stats;
 
 #ifndef VAL_NO_ASYNC
 typedef struct async_cbd_st {
     val_context_t      *ctx;
     testcase           *tc;
-    testsuite          *ts;
+    testsuite_stats    *ss;
     int                 doprint;
 } async_cbd;
 #endif
@@ -519,13 +522,13 @@ suite_async_callback(val_async_status *as, int event,
     }
 
     acbd = (async_cbd *)cb_data;
-    --acbd->ts->in_flight;
-    --acbd->ts->remaining;
+    --acbd->ss->in_flight;
+    --acbd->ss->remaining;
     tc = acbd->tc;
 
     val_log(ctx, LOG_INFO,
             "as 0x%x %s query completed; %d in flight, %d remaining",
-            as, cbp->name, acbd->ts->in_flight, acbd->ts->remaining);
+            as, cbp->name, acbd->ss->in_flight, acbd->ss->remaining);
 
     if (cbp->retval == VAL_NO_ERROR) {
 
@@ -536,7 +539,7 @@ suite_async_callback(val_async_status *as, int event,
             fprintf(stderr, "%s: \t", tc->desc);
             fprintf(stderr, "FAILED: Error in compose_answer(): %d\n",
                     ret_val);
-            ++acbd->ts->failed;
+            ++acbd->ss->failed;
         }
         else {
             if (tc->resp.vr_response == NULL) {
@@ -549,7 +552,7 @@ suite_async_callback(val_async_status *as, int event,
             ret_val = check_results(acbd->ctx, tc->desc, tc->qn, tc->qc, tc->qt,
                                     tc->qr, cbp->results, 0, &tc->start);
             if (0 != ret_val) {
-                ++acbd->ts->failed;
+                ++acbd->ss->failed;
             }
         }
 
@@ -559,7 +562,7 @@ suite_async_callback(val_async_status *as, int event,
         fprintf(stderr, "%s: \t", tc->desc);
         fprintf(stderr, "FAILED: Error during async resolution: %s\n",
                 p_val_err(cbp->retval));
-        ++acbd->ts->failed;
+        ++acbd->ss->failed;
     }
 
     free(acbd);
@@ -577,6 +580,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
     struct timeval     timeout, now;
     testcase          *curr_test = start_test;
     async_cbd         *acbd;
+    testsuite_stats    suite_stats, *sstats = &suite_stats;
 
     if (!curr_test || !suite)
         return 0;
@@ -586,14 +590,15 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         return 0;
     }
 
+    memset(sstats, 0x00, sizeof(sstats));
     i = tcs;
-    suite->remaining = tce - tcs + 1;
-    suite->in_flight = 0;
+    sstats->remaining = tce - tcs + 1;
+    sstats->in_flight = 0;
 
-    while (suite->remaining || suite->in_flight) {
+    while (sstats->remaining || sstats->in_flight) {
         /** send up to burst queries */
         for (j = 0;
-             suite->in_flight < max_in_flight &&
+             sstats->in_flight < max_in_flight &&
                  i <= tce &&
                  j < burst &&
                  curr_test;
@@ -602,7 +607,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                     curr_test->desc);
             memset(&curr_test->resp, 0, sizeof(curr_test->resp));
             acbd = (async_cbd*) MALLOC(sizeof(async_cbd));
-            acbd->ts = suite;
+            acbd->ss = sstats;
             acbd->tc = curr_test;
             acbd->ctx = context;
             acbd->doprint = doprint;
@@ -616,7 +621,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             }
             gettimeofday(&curr_test->start, NULL);
             ++run;
-            ++suite->in_flight;
+            ++sstats->in_flight;
         }
         unsent = tce - i + 1;
 
@@ -628,23 +633,23 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         if (0 == nfds) {
             val_log(context, LOG_DEBUG,
                     "no file descriptors set! (%d unsent, %d inflight)",
-                    unsent, suite->in_flight);
+                    unsent, sstats->in_flight);
             /* maybe socket got closed, need to send next request */
             rc = val_async_check(context, &activefds, &nfds, 0);
             val_async_select_info(context, &activefds, &nfds, &timeout);
             if (0 == nfds) {
-                if (suite->in_flight && !unsent) {
+                if (sstats->in_flight && !unsent) {
                     val_log(context, LOG_DEBUG,
                             "**** no file descriptors set! (%d unsent, %d inflight)",
-                            unsent, suite->in_flight);
-                    suite->failed += suite->in_flight;
+                            unsent, sstats->in_flight);
+                    sstats->failed += sstats->in_flight;
                     break;
                 }
             }
         }
 
         /** don't sleep too long if more queries are waiting to be sent */
-        if (unsent && suite->in_flight < max_in_flight && timeout.tv_sec > 0) {
+        if (unsent && sstats->in_flight < max_in_flight && timeout.tv_sec > 0) {
             val_log(context, LOG_DEBUG,
                     "reducing timeout so we can send more requests");
             timeout.tv_sec = 0;
@@ -654,7 +659,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         val_log(context, LOG_INFO,
                 "select @ %d, max fd %d, timeout %ld.%ld, %d in flight, %d unsent",
                 now.tv_sec, nfds, timeout.tv_sec, timeout.tv_usec,
-                suite->in_flight, unsent);
+                sstats->in_flight, unsent);
         if ((nfds > 0) && (val_log_debug_level() >= LOG_DEBUG))
             res_io_count_ready(&activefds, nfds); // debug
 
@@ -679,7 +684,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
 
     } /* while(remaining) */
 
-    *failed = suite->failed;
+    *failed = sstats->failed;
 
     return run;
 }
