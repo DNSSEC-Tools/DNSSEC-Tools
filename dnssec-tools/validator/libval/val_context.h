@@ -10,9 +10,19 @@
 #ifdef CTX_LOCK_COUNTS
 #define CTX_LOCK_COUNT_INC(ctx,it) ++ctx->it
 #define CTX_LOCK_COUNT_DEC(ctx,it) --ctx->it
+#include <assert.h>
+#define ASSERT_HAVE_AC_LOCK(ctx)                                        \
+    do {                                                                \
+        if (1 != ctx->ac_count) {                                       \
+            val_log(NULL,LOG_WARNING,"FAILED: lock count %d", ctx->ac_count); \
+            fflush(NULL);                                               \
+        }                                                               \
+        assert(ctx->ac_count == 1);                                     \
+    } while(0)
 #else
 #define CTX_LOCK_COUNT_INC(ctx,it)
 #define CTX_LOCK_COUNT_DEC(ctx,it)
+#define ASSERT_HAVE_AC_LOCK(ctx)
 #endif
 #define CTX_LOCK_POL_SH(ctx) \
     do {\
