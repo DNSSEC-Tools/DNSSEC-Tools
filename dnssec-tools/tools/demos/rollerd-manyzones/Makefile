@@ -12,7 +12,6 @@ many-zones-rollerd:	clean pristine-files zones-short
 pristine-files:
 	cp save-demo.rollrec demo.rollrec
 	cp save-demo-smallset.rollrec demo-smallset.rollrec
-	cp save-db.cache db.cache
 	cp save-dummy.com dummy.com
 	cp save-example.com example.com
 	cp save-test.com test.com
@@ -35,7 +34,7 @@ zones-short:
 clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
 	rm -f dummy.com example.com test.com woof.com xorn.com yowzah.com zero.com
-	rm -f db.cache demo.rollrec demo-smallset.rollrec
+	rm -f demo.rollrec demo-smallset.rollrec
 	@echo NOT deleting log.demo
 	@echo ' '
 
