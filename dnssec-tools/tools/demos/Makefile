@@ -10,7 +10,8 @@ SUBDIRS =	rollerd-basic		\
 		rollerd-manyzones-fast	\
 		rollerd-split-view	\
 		rollerd-subdirs		\
-		rollerd-vastzones
+		rollerd-vastzones	\
+		rollerd-zonegroups
 
 default:	clean
 
