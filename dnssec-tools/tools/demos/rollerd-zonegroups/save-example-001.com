@@ -12,15 +12,15 @@ $TTL	30s
 		IN	MX 10	leodhas.example001.com.
 
 
-mull			IN	A	100.0.1.21
-iona			IN	A	100.0.1.22
-leodhas			IN	A	100.0.1.23
-harris			IN	A	100.0.1.24
-barra			IN	A	100.0.1.25
-skye			IN	A	100.0.1.26
-uist			IN	A	100.0.1.27
-staffa			IN	A	100.0.1.28
-arran			IN	A	100.0.1.29
-soarplane		IN	A	100.0.1.99
+mull			IN	A	1.1.81.21
+iona			IN	A	1.1.81.22
+leodhas			IN	A	1.1.81.23
+harris			IN	A	1.1.81.24
+barra			IN	A	1.1.81.25
+skye			IN	A	1.1.81.26
+uist			IN	A	1.1.81.27
+staffa			IN	A	1.1.81.28
+arran			IN	A	1.1.81.29
+soarplane		IN	A	1.1.81.99
 
 
