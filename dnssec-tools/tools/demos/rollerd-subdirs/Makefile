@@ -25,9 +25,6 @@ new-files:
 	mkdir ${DIREXAMPLE}
 
 	cp save-demo.rollrec demo.rollrec
-	cp save-db.cache db.cache
-	cp save-db.cache ${DIRDUMMY}/db.cache
-	cp save-db.cache ${DIREXAMPLE}/db.cache
 	cp save-dummy.com ${DIRDUMMY}/dummy.com
 	cp save-example.com ${DIREXAMPLE}/example.com
 	cp save-test.com test.com
@@ -58,7 +55,7 @@ same:	clean zones-same new-files
 
 clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
-	rm -f dummy.com example.com test.com db.cache demo.rollrec
+	rm -f dummy.com example.com test.com demo.rollrec
 	rm -fr ${DIRDUMMY} ${DIREXAMPLE}
 	@echo NOT deleting log.demo
 
