@@ -634,8 +634,13 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
             val_log(context, LOG_DEBUG,
                     "no file descriptors set! (%d unsent, %d inflight)",
                     unsent, sstats->in_flight);
-            /* maybe socket got closed, need to send next request */
+            /*
+             * maybe socket got closed & need to send next request,
+             * or answer is in cache and needs to be processed.
+             */
             rc = val_async_check(context, &activefds, &nfds, 0);
+            if (0 == sstats->remaining && 0 == sstats->in_flight)
+                break; 
             val_async_select_info(context, &activefds, &nfds, &timeout);
             if (0 == nfds) {
                 if (sstats->in_flight && !unsent) {
