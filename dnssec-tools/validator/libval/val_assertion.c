@@ -488,6 +488,8 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                         temp->qc_class_h, p_type(temp->qc_type_h),
                         temp->qc_type_h);
                 temp->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+                /* There should be no other matching query in the list, so bail out */ 
+                break;
             } else {
                 /* return this cached record */
                 *added_q = temp;
@@ -4754,7 +4756,6 @@ int switch_to_root(val_context_t * context,
     }
 
     if ((matched_q->qc_flags & VAL_QUERY_RECURSE) ||
-        (matched_q->qc_refcount != 0) ||
         (context->root_ns == NULL)) {
         /*
          * No root hints configured or 
