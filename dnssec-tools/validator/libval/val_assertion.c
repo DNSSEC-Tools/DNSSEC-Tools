@@ -434,24 +434,25 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
         /*
          * Remove this query if it has expired and is not being used
          */
-        if ((temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) &&
-            temp->qc_refcount == 0) {
-            if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
-                snprintf(name_p, sizeof(name_p), "unknown/error");
-            val_log(context, LOG_INFO, "add_to_qfq_chain(): Deleting expired cache data: {%s %s(%d) %s(%d)}", 
-                    name_p, p_class(temp->qc_class_h),
-                    temp->qc_class_h, p_type(temp->qc_type_h),
-                    temp->qc_type_h);
+        if (temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
+            if (temp->qc_refcount == 0) {
+                if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
+                    snprintf(name_p, sizeof(name_p), "unknown/error");
+                val_log(context, LOG_INFO, "add_to_qfq_chain(): Deleting expired cache data: {%s %s(%d) %s(%d)}", 
+                        name_p, p_class(temp->qc_class_h),
+                        temp->qc_class_h, p_type(temp->qc_type_h),
+                        temp->qc_type_h);
 
-            if (prev == NULL) {
-                context->q_list = temp->qc_next;
-            } else {
-                prev->qc_next = temp->qc_next;
+                if (prev == NULL) {
+                    context->q_list = temp->qc_next;
+                } else {
+                    prev->qc_next = temp->qc_next;
+                }
+                old = temp;
+                temp = temp->qc_next;
+                old->qc_next = NULL;
+                free_query_chain_structure(old);
             }
-            old = temp;
-            temp = temp->qc_next;
-            old->qc_next = NULL;
-            free_query_chain_structure(old);
             continue;
         }
 
@@ -480,7 +481,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
             }
 
             if (temp->qc_state >= Q_ANSWERED && tv.tv_sec >= temp->qc_ttl_x) { 
-                /* TTL has expired; Refresh this data at the next safe opportunity */
+                /* Remove this data at the next safe opportunity */ 
                 if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
                     snprintf(name_p, sizeof(name_p), "unknown/error");
                 val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
