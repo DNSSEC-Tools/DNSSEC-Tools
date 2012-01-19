@@ -559,14 +559,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
 
                     temp_ns->ns_retrans = RES_TIMEOUT;
                     temp_ns->ns_retry = RES_RETRY;
-                    temp_ns->ns_options = RES_DEFAULT;
-                    /* 
-                     * Depending on where we got the definition for RES_DEFAULT
-                     * RES_RECURSE may or may not be set.
-                     * Ensure that recursion is disabled by default 
-                     */
-                    if (temp_ns->ns_options & RES_RECURSE)
-                        temp_ns->ns_options ^= RES_RECURSE;
+                    temp_ns->ns_options = SR_QUERY_DEFAULT;
 
                     temp_ns->ns_edns0_size = RES_EDNS0_DEFAULT;
 
@@ -796,7 +789,7 @@ done:
             "find_nslist_for_query(): Enabling DNSSEC for query (EDNS0 = %ld).", edns0_size);
     for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
         ns->ns_edns0_size = edns0_size;
-        ns->ns_options |= RES_USE_DNSSEC;
+        ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
     }
 
     return VAL_NO_ERROR;
