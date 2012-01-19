@@ -13475,7 +13475,7 @@ eval ac_res=\$$as_ac_File
 	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
 $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-  VAL_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_val_conf_file`
+  VAL_CONF_INLINE_DATA=`sed -e 's/"/\\\"/g ; s/^/"/ ; s/$/\\\n"/;' $inline_val_conf_file`
 
   cat >> configure-summary << EOF
   Validator inline configuration : $inline_val_conf_file
@@ -13504,7 +13504,7 @@ eval ac_res=\$$as_ac_File
 	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
 $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-   ROOT_HINTS_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_root_conf_file`
+   ROOT_HINTS_INLINE_DATA=`sed -e 's/"/\\\"/g ; s/^/"/ ; s/$/\\\n"/;' $inline_root_conf_file`
 
   cat >> configure-summary << EOF
   Root hints inline file         : $inline_root_conf_file
@@ -13533,7 +13533,7 @@ eval ac_res=\$$as_ac_File
 	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
 $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-   RESOLV_CONF_INLINE_DATA=`sed -e 's/^/"/;s/$/\\\n"/;' $inline_resolv_conf_file`
+   RESOLV_CONF_INLINE_DATA=`sed -e 's/"/\\\"/g ; s/^/"/ ; s/$/\\\n"/;' $inline_resolv_conf_file`
 
   cat >> configure-summary << EOF
   Resolver inline configuration  : $inline_resolv_conf_file
