@@ -1722,7 +1722,7 @@ constant_24 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_IGNORE_VALIDATION VAL_AC_WRONG_LABEL_COUNT VAL_AS_CTX_USER_SUPPLIED
-     VAL_QUERY_EDNS0_FALLBACK VAL_QUERY_REFRESH_QCACHE VAL_RESOURCE_UNAVAILABLE
+     VAL_QUERY_EDNS0_FALLBACK VAL_RESOURCE_UNAVAILABLE
      */
   /* Offset 22 gives the best switch position.  */
   switch (name[22]) {
@@ -1742,17 +1742,6 @@ constant_24 (pTHX_ const char *name, IV *iv_return) {
     /*                                     ^        */
 #ifdef VAL_AS_CTX_USER_SUPPLIED
       *iv_return = VAL_AS_CTX_USER_SUPPLIED;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'H':
-    if (memEQ(name, "VAL_QUERY_REFRESH_QCACHE", 24)) {
-    /*                                     ^        */
-#ifdef VAL_QUERY_REFRESH_QCACHE
-      *iv_return = VAL_QUERY_REFRESH_QCACHE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2018,7 +2007,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_QUERY_ASYNC VAL_QUERY_DONT_VALIDATE VAL_QUERY_EDNS0_FALLBACK
 	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV 
 	       VAL_QUERY_NO_EDNS0_FALLBACK VAL_QUERY_RECURSE
-	       VAL_QUERY_REFRESH_QCACHE VAL_QUERY_USING_DLV
+	       VAL_QUERY_USING_DLV
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
 	       VAL_UNTRUSTED_ANSWER VAL_UNTRUSTED_ZONE VAL_VALIDATED_ANSWER
 	       ZONE_USE_NOTHING ZONE_USE_TSIG p_as_error p_val_error));
@@ -2101,13 +2090,32 @@ __END__
     return constant_26 (aTHX_ name, iv_return);
     break;
   case 27:
-    if (memEQ(name, "VAL_QUERY_NO_EDNS0_FALLBACK", 27)) {
-#ifdef VAL_QUERY_NO_EDNS0_FALLBACK
-      *iv_return = VAL_QUERY_NO_EDNS0_FALLBACK;
-      return PERL_constant_ISIV;
+    /* Names all of length 27.  */
+    /* VAL_QUERY_NO_EDNS0_FALLBACK VAL_QUERY_MARK_FOR_DELETION */
+    /* Offset 10 gives the best switch position.  */
+    switch (name[10]) {
+    case 'M':
+      if (memEQ(name, "VAL_QUERY_MARK_FOR_DELETION", 27)) {
+      /*                         ^                  */
+#ifdef VAL_QUERY_MARK_FOR_DELETION
+        *iv_return = VAL_QUERY_MARK_FOR_DELETION;
+        return PERL_constant_ISIV;
 #else
-      return PERL_constant_NOTDEF;
+        return PERL_constant_NOTDEF;
 #endif
+      }
+      break;
+    case 'N':
+      if (memEQ(name, "VAL_QUERY_NO_EDNS0_FALLBACK", 27)) {
+      /*                         ^                  */
+#ifdef VAL_QUERY_NO_EDNS0_FALLBACK
+        *iv_return = VAL_QUERY_NO_EDNS0_FALLBACK;
+        return PERL_constant_ISIV;
+#else
+        return PERL_constant_NOTDEF;
+#endif
+      }
+      break;
     }
     break;
   case 28:
