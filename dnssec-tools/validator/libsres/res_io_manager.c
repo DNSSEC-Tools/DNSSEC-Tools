@@ -531,7 +531,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     res_log(NULL, LOG_DEBUG, "libsres: ""ea %p attempting ns fallback", temp);
 
     old_size = temp->ea_edns0_size;
-    if ((temp->ea_ns->ns_options & RES_USE_DNSSEC) && 
+    if ((temp->ea_ns->ns_options & SR_QUERY_VALIDATING_STUB_FLAGS) && 
         (temp->ea_edns0_size > 0)) {
         for (i = 0; i < sizeof(edns0_fallback); i++) {
             if (temp->ea_edns0_size > edns0_fallback[i]) {
@@ -541,7 +541,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
                     /* try without EDNS0 */
                     res_log(NULL, LOG_DEBUG, "libsres: "
                             "fallback disabling edns0");
-                    temp->ea_ns->ns_options ^= RES_USE_DNSSEC;
+                    temp->ea_ns->ns_options ^= SR_QUERY_VALIDATING_STUB_FLAGS;
                 }
                 temp->ea_remaining_attempts++;
                 break;

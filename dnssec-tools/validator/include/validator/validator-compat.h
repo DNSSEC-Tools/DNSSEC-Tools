@@ -396,36 +396,6 @@ typedef struct {
 #endif
 
 #ifndef HAVE_RESOLV_H
-#define RES_INIT        0x00000001      /* address initialized */
-#define RES_DEBUG       0x00000002      /* print debug messages */
-#define RES_AAONLY      0x00000004      /* authoritative answers only (!IMPL)*/
-#define RES_USEVC       0x00000008      /* use virtual circuit */
-#define RES_PRIMARY     0x00000010      /* query primary server only (!IMPL) */
-#define RES_IGNTC       0x00000020      /* ignore trucation errors */
-#define RES_RECURSE     0x00000040      /* recursion desired */
-#define RES_DEFNAMES    0x00000080      /* use default domain name */
-#define RES_STAYOPEN    0x00000100      /* Keep TCP socket open */
-#define RES_DNSRCH      0x00000200      /* search up local domain tree */
-#define RES_INSECURE1   0x00000400      /* type 1 security disabled */
-#define RES_INSECURE2   0x00000800      /* type 2 security disabled */
-#define RES_NOALIASES   0x00001000      /* shuts off HOSTALIASES feature */
-#define RES_USE_INET6   0x00002000      /* use/map IPv6 in gethostbyname() */
-#define RES_ROTATE      0x00004000      /* rotate ns list after each query */
-#define RES_NOCHECKNAME 0x00008000      /* do not check names for sanity. */
-#define RES_KEEPTSIG    0x00010000      /* do not strip TSIG records */
-#define RES_BLAST       0x00020000      /* blast all recursive servers */
-#define RES_NO_NIBBLE   0x00040000      /* disable IPv6 nibble mode reverse */
-#define RES_NO_BITSTRING 0x00080000     /* disable IPv6 bitstring mode reverse */
-#define RES_NOTLDQUERY  0x00100000      /* don't unqualified name as a tld */
-#define RES_USE_DNSSEC  0x00200000      /* use DNSSEC using OK bit in OPT */
-/* KAME extensions: use higher bit to avoid conflict with ISC use */
-#define RES_USE_DNAME   0x10000000      /* use DNAME */
-#define RES_USE_A6      0x20000000      /* use A6 */
-#define RES_USE_EDNS0   0x40000000      /* use EDNS0 if configured */
-#define RES_NO_NIBBLE2  0x80000000      /* disable alternate nibble lookup */
-
-#define RES_DEFAULT     (RES_RECURSE | RES_DEFNAMES | RES_DNSRCH | RES_INSECURE1)
-
 /*
  * Resolver "pfcode" values.  Used by dig.
  */
@@ -447,17 +417,6 @@ typedef struct {
 #define RES_PRF_TRUNC   0x00008000
 /*                      0x00010000      */
 #endif /* HAVE_RESOLV_H */
-
-/*
- * Even if we have resolv.h we may not have the following definitions
- */
-#ifndef RES_USE_DNSSEC
-#define RES_USE_DNSSEC  0x00800000
-#endif
-
-#ifndef RES_USE_EDNS0
-#define RES_USE_EDNS0   0x00100000
-#endif
 
 /*
  * OpenBSD has t_*, but not ns_t_*

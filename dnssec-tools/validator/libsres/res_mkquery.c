@@ -114,7 +114,7 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
     //      UNUSED(newrr_in);
 
 #ifdef DEBUG
-    if (pref_ns->ns_options & RES_DEBUG)
+    if (pref_ns->ns_options & SR_QUERY_DEBUG)
         printf(";; res_val_nmkquery(%s, %s, %s, %s)\n",
                _libsres_opcodes[op], dname, p_class(class_h), p_type(type_h));
 #endif
@@ -130,7 +130,7 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
     hp = (HEADER *) buf;
     hp->id = libsres_random();
     hp->opcode = op;
-    hp->rd = (pref_ns->ns_options & RES_RECURSE) != 0U;
+    hp->rd = (pref_ns->ns_options & SR_QUERY_RECURSE) != 0U;
     hp->rcode = ns_r_noerror;
     cp = buf + NS_HFIXEDSZ;
     ep = buf + buflen;
@@ -218,15 +218,22 @@ res_create_query_payload(struct name_server *ns,
     if (ret_val==  -1)
         return SR_MKQUERY_INTERNAL_ERROR;
 
-    if (ns->ns_options & RES_USE_DNSSEC) {
+    if (ns->ns_options & SR_QUERY_SET_DO) {
+        /** Enable EDNS0 and set the DO flag */
         ret_val = res_val_nopt(ns, query, query_limit,
                              &query_length);
+    }
+    if (ns->ns_options & SR_QUERY_SET_CD) {
         /** Set the CD flag */
+        if (!(ns->ns_options & SR_QUERY_SET_DO)) {
+            res_log(NULL, LOG_NOTICE, 
+                    "libsres: ""CD bit set without EDNS0/DO enabled");
+        }
         ((HEADER *) query)->cd = 1;
     }
     if (ret_val == -1)
         return SR_MKQUERY_INTERNAL_ERROR;
-    if (ns->ns_options & RES_RECURSE) {
+    if (ns->ns_options & SR_QUERY_RECURSE) {
         ((HEADER *)query)->rd = 1;
     } else {
         /* don't ask for recursion */
@@ -259,7 +266,7 @@ res_val_nopt(struct name_server *pref_ns,
     u_int16_t       flags = 0;
 
 #ifdef DEBUG
-    if ((pref_ns->ns_options & RES_DEBUG) != 0U)
+    if ((pref_ns->ns_options & SR_QUERY_DEBUG) != 0U)
         printf(";; res_nopt()\n");
 #endif
 
@@ -281,7 +288,7 @@ res_val_nopt(struct name_server *pref_ns,
     *cp++ = ns_r_noerror;       /* extended RCODE */
     *cp++ = 0;                  /* EDNS version */
 #ifdef DEBUG
-    if (pref_ns->ns_options & RES_DEBUG)
+    if (pref_ns->ns_options & SR_QUERY_DEBUG)
         printf(";; res_opt()... ENDS0 DNSSEC\n");
 #endif
     flags |= NS_OPT_DNSSEC_OK;

@@ -2088,7 +2088,7 @@ read_res_config_file(val_context_t * ctx)
                 goto err;
 	        }
             if (ns != NULL) {
-                ns->ns_options |= RES_RECURSE;
+                ns->ns_options |= SR_QUERY_RECURSE;
                 if (ns_tail == NULL) {
                     ns_head = ns;
                     ns_tail = ns;
