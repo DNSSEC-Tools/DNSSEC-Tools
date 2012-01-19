@@ -250,7 +250,6 @@ res_create_query_payload(struct name_server *ns,
 
 
 
-#ifdef RES_USE_EDNS0
 /*
  * attach OPT pseudo-RR, as documented in RFC2671 (EDNS0). 
  */
@@ -301,4 +300,3 @@ res_val_nopt(struct name_server *pref_ns,
 
     return 0;
 }
-#endif
