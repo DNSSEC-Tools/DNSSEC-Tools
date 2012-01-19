@@ -434,7 +434,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
         /*
          * Remove this query if it has expired and is not being used
          */
-        if (temp->qc_flags & VAL_QUERY_REFRESH_QCACHE) {
+        if (temp->qc_flags & VAL_QUERY_MARK_FOR_DELETION) {
             if (temp->qc_refcount == 0) {
                 if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
                     snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -488,7 +488,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
                         temp->qc_type_h);
-                temp->qc_flags |= VAL_QUERY_REFRESH_QCACHE;
+                temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
                 /* There should be no other matching query in the list, so bail out */ 
                 break;
             } else {
