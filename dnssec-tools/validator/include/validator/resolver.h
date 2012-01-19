@@ -136,12 +136,12 @@ struct name_server {
 /*
  * ns_options values
  */
-#define SR_QUERY_DEFAULT            0x00000000
 #define SR_QUERY_DEBUG              0x00000001
 #define SR_QUERY_RECURSE            0x00000002 
 #define SR_QUERY_SET_DO             0x00000004 
 #define SR_QUERY_SET_CD             0x00000008
-#define SR_QUERY_VALIDATING_STUB_FLAGS (SR_QUERY_SET_DO | SR_QUERY_SET_CD) 
+#define SR_QUERY_VALIDATING_STUB_FLAGS  (SR_QUERY_SET_DO | SR_QUERY_SET_CD) 
+#define SR_QUERY_DEFAULT                (SR_QUERY_RECURSE) 
 
 
 struct expected_arrival {

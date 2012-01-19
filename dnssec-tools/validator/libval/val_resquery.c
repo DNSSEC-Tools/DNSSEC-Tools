@@ -559,7 +559,13 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
 
                     temp_ns->ns_retrans = RES_TIMEOUT;
                     temp_ns->ns_retry = RES_RETRY;
+
                     temp_ns->ns_options = SR_QUERY_DEFAULT;
+                    /* 
+                     * Ensure that recursion is disabled by default 
+                     */
+                     if (temp_ns->ns_options & SR_QUERY_RECURSE)
+                        temp_ns->ns_options ^= SR_QUERY_RECURSE;
 
                     temp_ns->ns_edns0_size = RES_EDNS0_DEFAULT;
 
