@@ -15,6 +15,7 @@
 #include <QMessageBox>
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
+#include <QCryptographicHash>
 
 #include <qdebug.h>
 
@@ -27,7 +28,7 @@
 
 // --------------------------------------------------------------------------
 // CONFIG: UNCOMMENT THIS IF YOU WANT TO SUBMIT TEST RESULTS TO A CGI SCRIPT:
-// #define ENABLE_RESULTS_SUBMISSION 1
+#define ENABLE_RESULTS_SUBMISSION 1
 
 #ifndef RESULTS_SUBMIT_URL
 #define RESULTS_SUBMIT_URL "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi"
@@ -360,7 +361,8 @@ void MainWindow::submitResults(QString locationDescription)
     accessURL.addQueryItem("dataVersion", "1");
     int count=0;
     foreach(QString serverAddress, m_serverAddresses) {
-        accessURL.addQueryItem("server" + QString::number(count++), serverAddress);
+        accessURL.addQueryItem("server" + QString::number(count++),
+                               QCryptographicHash::hash(serverAddress.toUtf8(), QCryptographicHash::Sha1).toHex());
     }
 
     DNSSECTest *test;
