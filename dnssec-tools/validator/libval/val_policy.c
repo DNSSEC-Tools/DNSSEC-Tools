@@ -1963,6 +1963,12 @@ destroy_respol(val_context_t * ctx)
     }
 }
 
+struct name_server *
+val_get_nameservers(val_context_t *ctx)
+{
+    return ctx->nslist;
+}
+
 #ifdef ANDROID
 int
 read_res_config_file(val_context_t * ctx)
