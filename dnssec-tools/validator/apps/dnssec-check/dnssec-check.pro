@@ -10,6 +10,8 @@ DEPLOYMENTFOLDERS = # file1 dir1
 # path to the harmattan libraries
 contains(MEEGO_EDITION,harmattan): {
     LIBS += -L/scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
+} else {
+    LIBS += -L/usr/local/lib
 }
 
 # Needs to be defined for Symbian
