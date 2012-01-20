@@ -2508,10 +2508,7 @@ sub updzonerec
 	#
 	# Set a timestamp for the zone entry.
 	#
-	$chronosecs = time();
-	$chronostr  = gmtime($chronosecs);
-	keyrec_setval('zone',$zone,'keyrec_signsecs',$chronosecs);
-	keyrec_setval('zone',$zone,'keyrec_signdate',$chronostr);
+	keyrec_settime('zone',$zone);
 
 	#
 	# For KSKs, save the signing-set names and set the zone owners.
