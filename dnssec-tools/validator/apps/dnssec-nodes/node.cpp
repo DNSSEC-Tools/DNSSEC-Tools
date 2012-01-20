@@ -247,7 +247,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
 
     if (m_nodeName.length() > 0) {
         QFont font = painter->font();
-        font.setPointSize(4);
+        font.setPointSize(6);
         painter->setFont(font);
         painter->drawText(QRectF(-10, -5, 20, 20), m_nodeName);
     }
