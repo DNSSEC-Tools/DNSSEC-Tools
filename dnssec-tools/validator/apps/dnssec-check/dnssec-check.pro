@@ -8,7 +8,12 @@ DEPLOYMENTFOLDERS = # file1 dir1
 #DEFINES += ORIENTATIONLOCK
 
 # for android
+INCLUDEPATH += ../../include
 isEmpty(ANDROID_PLATFORM) {
+    LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
+    maemo5 {
+        INCLUDEPATH += /opt/maemo/usr/include/
+    }
 } else {
     LIBS        += -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
     LIBS        += -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libval/.libs -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libsres/.libs
@@ -25,13 +30,8 @@ contains(MEEGO_EDITION,harmattan): {
 
 # Needs to be defined for Symbian
 DEFINES += NETWORKACCESS
-INCLUDEPATH += /opt/maemo/usr/include/ ../../include
-LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
 
-QT += network
-
-include(deployment.pri)
-qtcAddDeployment()
+QT += network declarative
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
@@ -89,4 +89,8 @@ OTHER_FILES += \
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
+qtcAddDeployment()
+
+# Please do not modify the following two lines. Required for deployment.
+include(qmlapplicationviewer/qmlapplicationviewer.pri)
 qtcAddDeployment()
