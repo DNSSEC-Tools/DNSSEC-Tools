@@ -595,7 +595,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
     sstats->remaining = tce - tcs + 1;
     sstats->in_flight = 0;
 
-    while (sstats->remaining || sstats->in_flight) {
+    while (sstats->remaining) {
         /** send up to burst queries */
         for (j = 0;
              sstats->in_flight < max_in_flight &&
@@ -615,8 +615,10 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                                   curr_test->qt, flags, &suite_async_callback,
                                   acbd, &curr_test->as);
             if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
-                val_log(context, LOG_ERR, "error sending %i %s", i,
-                        curr_test->desc);
+                val_log(context, LOG_ERR, "FAILED: error sending test %i: %s",
+                         i, curr_test->desc);
+                ++sstats->failed;
+                --sstats->remaining;
                 continue;
             }
             gettimeofday(&curr_test->start, NULL);
@@ -628,38 +630,71 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         /** set up fdset/timeout for select */
         FD_ZERO(&activefds);
         nfds = 0;
-        timeout.tv_sec = 300; /* 5 min */
-        val_async_select_info(context, &activefds, &nfds, &timeout);
-        if (0 == nfds) {
-            val_log(context, LOG_DEBUG,
-                    "no file descriptors set! (%d unsent, %d inflight)",
-                    unsent, sstats->in_flight);
-            /*
-             * maybe socket got closed & need to send next request,
-             * or answer is in cache and needs to be processed.
-             */
-            rc = val_async_check(context, &activefds, &nfds, 0);
-            if (0 == sstats->remaining && 0 == sstats->in_flight)
-                break; 
-            val_async_select_info(context, &activefds, &nfds, &timeout);
-            if (0 == nfds) {
-                if (sstats->in_flight && !unsent) {
-                    val_log(context, LOG_DEBUG,
-                            "**** no file descriptors set! (%d unsent, %d inflight)",
-                            unsent, sstats->in_flight);
-                    sstats->failed += sstats->in_flight;
-                    break;
-                }
-            }
-        }
-
         /** don't sleep too long if more queries are waiting to be sent */
         if (unsent && sstats->in_flight < max_in_flight && timeout.tv_sec > 0) {
             val_log(context, LOG_DEBUG,
                     "reducing timeout so we can send more requests");
             timeout.tv_sec = 0;
             timeout.tv_usec = 500;
+        } else {
+            timeout.tv_sec = 60; /* 1 min */
+            timeout.tv_usec = 0;
         }
+        val_log(context, LOG_INFO,
+                "timeout %ld.%ld, %d in flight, %d unsent %d remain",
+                timeout.tv_sec, timeout.tv_usec, sstats->in_flight, unsent,
+                sstats->remaining);
+        val_async_select_info(context, &activefds, &nfds, &timeout);
+        if (0 == nfds) {
+            val_log(context, LOG_DEBUG,
+                    "no file descriptors set! (%d unsent, %d inflight, %d remain)",
+                    unsent, sstats->in_flight, sstats->remaining);
+            /*
+             * maybe socket got closed & need to send next request,
+             * or answer is in cache and needs to be processed.
+             */
+            rc = val_async_check(context, &activefds, &nfds, 0);
+            if (0 == sstats->remaining)
+                break; /* all callbacks called */
+            val_log(context, LOG_DEBUG,
+                    "after check (%d unsent, %d inflight, %d remain)",
+                    unsent, sstats->in_flight, sstats->remaining);
+            val_async_select_info(context, &activefds, &nfds, &timeout);
+            if (0 == nfds) {
+                if (unsent) {
+                    if (sstats->in_flight < max_in_flight)
+                        continue; /* submit more if we can */
+                } else if (sstats->in_flight) {
+                    /*
+                     * all queries submitted, some in flight, but no fds
+                     * waiting? after we've called val_async_check()?
+                     * I don't think we can recover from that, but lets
+                     * try just in case.
+                     */
+                    int prev_inflight = sstats->in_flight;
+                    val_log(context, LOG_WARNING,
+                            "xxx file descriptors set! (%d inflight)",
+                            sstats->in_flight);
+                    while (sstats->in_flight) {
+                        /** try checking again */
+                        rc = val_async_check(context, &activefds, &nfds, 0);
+                        if (sstats->in_flight == prev_inflight)
+                            break; /* no progress */
+                        prev_inflight = sstats->in_flight;
+                        val_log(context, LOG_INFO,
+                                "xxx progress! (%d inflight)",
+                                sstats->in_flight);
+                    }
+                    if (nfds == 0) {
+                        sstats->failed += sstats->in_flight;
+                        break;
+                    }
+                    val_log(context, LOG_INFO,
+                            "xxx some file descriptors!" );
+                }
+            }
+        }
+
         gettimeofday(&now, NULL);
         val_log(context, LOG_INFO,
                 "select @ %d, max fd %d, timeout %ld.%ld, %d in flight, %d unsent",
