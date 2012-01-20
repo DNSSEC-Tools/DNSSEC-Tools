@@ -77,9 +77,3 @@ QStringList TestManager::loadResolvConf()
     return m_serverAddresses;
 }
 
-
-
-void TestManager::bogusTest()
-{
-    qDebug() << "here bogustest";
-}

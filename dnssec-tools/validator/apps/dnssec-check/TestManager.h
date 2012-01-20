@@ -31,7 +31,6 @@ public:
     explicit TestManager(QObject *parent = 0);
 
     Q_INVOKABLE DNSSECTest *makeTest(testType type, QString address, QString name);
-    Q_INVOKABLE void bogusTest();
     Q_INVOKABLE QStringList loadResolvConf();
 
 signals:
