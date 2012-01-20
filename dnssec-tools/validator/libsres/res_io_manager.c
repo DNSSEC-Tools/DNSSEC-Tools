@@ -1006,6 +1006,14 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
             continue;
         }
 
+        if (read_descriptors &&
+            FD_ISSET(ea_list->ea_socket, read_descriptors)) {
+            ++skipped;
+            res_log(NULL,LOG_DEBUG+1, "libsres:""   fd %d already set",
+                    ea_list->ea_socket);
+            continue;
+        }
+                
         ++count;
         res_log(NULL,LOG_DEBUG, "libsres:""   fd %d added, rem %d",
                 ea_list->ea_socket, ea_list->ea_remaining_attempts);
