@@ -395,7 +395,7 @@ typedef struct {
 
 #endif
 
-#if !defined(HAVE_RESOLV_H) || defined(eabi)
+#if !defined(HAVE_RESOLV_H) || defined(eabi) || defined(ANDROID)
 #define RES_INIT        0x00000001      /* address initialized */
 #define RES_DEBUG       0x00000002      /* print debug messages */
 #define RES_AAONLY      0x00000004      /* authoritative answers only (!IMPL)*/
@@ -614,7 +614,7 @@ typedef enum __ns_rcode {
 #endif /* HAVE_NS_R_BADSIG */
 
 /* eabi = android */
-#if !defined(HAVE_ARPA_NAMESER_H) || defined(eabi)
+#if !defined(HAVE_ARPA_NAMESER_H) || defined(eabi) || defined(ANDROID)
 /*
  * Define constants based on RFC 883, RFC 1034, RFC 1035
  */

@@ -4,15 +4,14 @@
 
 #define HAVE_DECL_NS_NTOP 1
 
-#include "validator/validator-config.h"
+#include "validator-config.h"
 #include "arpa/nameser.h"
 #include "validator/resolver.h"
 #include "resolv.h"
 
-#include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
-#elif ! defined( HAVE_ARPA_NAMESER_H )
+#elif ! defined( HAVE_ARPA_NAMESER_H )  && !defined(eabi) && !defined(ANDROID)
 #include "arpa/header.h"
 #endif
 
