@@ -18,10 +18,9 @@ Rectangle {
         id: buttonText
         font.pixelSize: 20
         anchors.centerIn: parent
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked:    {root.clicked()}
-        }
+    }
+    MouseArea {
+        anchors.fill: parent
+        onClicked:    {root.clicked()}
     }
 }
