@@ -1964,9 +1964,20 @@ destroy_respol(val_context_t * ctx)
 }
 
 struct name_server *
-val_get_nameservers(val_context_t *ctx)
+val_get_nameservers(val_context_t *context)
 {
-    return ctx->nslist;
+    val_context_t *ctx = NULL;
+    struct name_server *ns_list = NULL;
+
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL) {
+        return NULL;
+    }
+    clone_ns_list(&ns_list, ctx->nslist);
+
+    CTX_UNLOCK_POL(ctx);
+
+    return ns_list;
 }
 
 #ifdef ANDROID
