@@ -6912,16 +6912,27 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
 
             // xxx-rks construct_authentication_chain (see resolve_and_check)
             if (!data_missing) {
+                struct val_internal_result *w_results = NULL;
+                int                         done = 0;
+
                 val_log(context, LOG_WARNING, "*** ! data_missing in submit");
-#if 0
+#if 1
                 retval = construct_authentication_chain(context, added_q,
                                                         &as->val_as_queries,
-                                                        &w_results, results,
+                                                        &w_results,
+                                                        &as->val_as_results,
                                                         &done);
-                if (VAL_NO_ERROR == retval) {
-                    data_missing = 1;
-                    data_received = 0;
+                if (done) {
+                    as->val_as_flags |= VAL_AS_DONE;
+                    val_log(context, LOG_DEBUG, "as %p ! val_async_submit/DONE",
+                            as);
+                } else {
+                    val_free_result_chain(as->val_as_results);
+                    as->val_as_results = NULL;
                 }
+                
+                _free_w_results(w_results);
+                w_results = NULL;
 #endif
             }
 
