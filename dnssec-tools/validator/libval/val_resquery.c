@@ -2523,6 +2523,9 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
     struct queries_for_query *qfq;
     val_context_t *context;
     struct timeval   now, closest, *closest_event = &closest;
+#ifndef VAL_NO_THREADS
+    pthread_t                 self = pthread_self();
+#endif
 
     /*
      * get context, if needed
@@ -2552,7 +2555,13 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
 
     CTX_LOCK_ACACHE(context);
 
-    for (as = context->as_list; as; as = as->val_as_next)
+    for (as = context->as_list; as; as = as->val_as_next) {
+
+#ifndef VAL_NO_THREADS
+        if (! (as->val_as_ctx->ctx_flags & CTX_PROCESS_ALL_THREADS) &&
+            (! pthread_equal(self, as->val_as_tid)))
+            continue;
+#endif
         for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {
 
             char         name_p[NS_MAXDNAME];
@@ -2574,6 +2583,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
             res_async_query_select_info(qfq->qfq_query->qc_ea, nfds, activefds,
                                         closest_event);
         }
+    }
 
     CTX_UNLOCK_ACACHE(context);
     CTX_UNLOCK_POL(context);

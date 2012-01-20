@@ -6759,6 +6759,9 @@ static void
 _handle_completed(val_context_t *context)
 
 {
+#ifndef VAL_NO_THREADS
+    pthread_t                   self = pthread_self();
+#endif
     val_async_status           *as, *next, *last = NULL, *completed = NULL;
 
     if ((NULL == context) || (NULL == context->as_list))
@@ -6771,7 +6774,12 @@ _handle_completed(val_context_t *context)
 
         next = as->val_as_next; /* save next in case we remove as */
 
-        if (! (as->val_as_flags & VAL_AS_DONE)) {
+        if (! (as->val_as_flags & VAL_AS_DONE)
+#ifndef VAL_NO_THREADS
+            || (! (context->ctx_flags & CTX_PROCESS_ALL_THREADS) &&
+                (! pthread_equal(self, as->val_as_tid)))
+#endif
+            ) {
             last = as;
             continue;
         }
@@ -6855,6 +6863,9 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
         return VAL_OUT_OF_MEMORY;
     }
 
+#ifndef VAL_NO_THREADS
+    as->val_as_tid = pthread_self();
+#endif
     as->val_as_result_cb = callback;
     as->val_as_cb_user_ctx = cb_data;
     as->val_as_class = (u_int16_t) class_h;
@@ -6965,14 +6976,27 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     struct timeval             closest_event, now;
     int retval, data_received, data_missing, done, checked = 0, as_remain;
     struct expected_arrival   *ea;
+#ifndef VAL_NO_THREADS
+    pthread_t                   self = pthread_self();
+#endif
 
     if ((NULL == as) || (as->val_as_ctx == NULL) ||
         (pending_desc == NULL) || (NULL == nfds) || (NULL == remaining))
         return VAL_BAD_ARGUMENT;
 
     context = as->val_as_ctx;
-    val_log(context,LOG_DEBUG,"as %p _async_check_one / start rem %d", as,
-            remaining ? *remaining : 0);
+
+#ifndef VAL_NO_THREADS
+    if (! (context->ctx_flags & CTX_PROCESS_ALL_THREADS) &&
+        ! pthread_equal(self, as->val_as_tid)) {
+        val_log(context,LOG_DEBUG, "as %p tid %d _async_check_one skiping tid",
+                as, as->val_as_tid);
+        return VAL_NO_ERROR;
+    }
+#endif
+
+    val_log(context,LOG_DEBUG,"as %p tid %d _async_check_one / start rem %d", as,
+            as->val_as_tid, remaining ? *remaining : 0);
 
   try_again:
     initial_q = qfq = as->val_as_queries;
@@ -7186,6 +7210,9 @@ int
 val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
                      int *nfds, struct timeval *tv, u_int32_t flags)
 {
+#ifndef VAL_NO_THREADS
+    pthread_t                   self = pthread_self();
+#endif
     val_async_status           *as;
     int                         count = 0, completed = 0;
     val_context_t *context;
@@ -7249,6 +7276,12 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
     CTX_LOCK_ACACHE(context);
 
     for (as = context->as_list; as; as = as->val_as_next) {
+
+#ifndef VAL_NO_THREADS
+        if (! (as->val_as_ctx->ctx_flags & CTX_PROCESS_ALL_THREADS) &&
+            (! pthread_equal(self, as->val_as_tid)))
+            continue;
+#endif
 
         if (as->val_as_flags & VAL_AS_DONE)
             ++completed;
