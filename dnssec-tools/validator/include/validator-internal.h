@@ -307,6 +307,8 @@ extern          "C" {
 #ifdef CTX_LOCK_COUNTS
         long            ac_count;
 #endif
+
+        u_int32_t       ctx_flags;
 #endif
 
         char  id[VAL_CTX_IDLEN];
@@ -357,10 +359,16 @@ extern          "C" {
 #endif
     } ; 
 
+#define CTX_PROCESS_ALL_THREADS             0x00000001
+
+
 #ifndef VAL_NO_ASYNC
     struct val_async_status_s {
         val_context_t                 *val_as_ctx;
         unsigned int                  val_as_flags;
+#ifndef VAL_NO_THREADS
+        pthread_t                     val_as_tid;
+#endif
 
         unsigned char                 val_as_inflight;
         struct queries_for_query      *val_as_top_q;
