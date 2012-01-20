@@ -514,6 +514,7 @@ val_free_context(val_context_t * context)
     val_async_cancel_all(context, 0);
 #endif
 
+    CTX_UNLOCK_POL(context);
 #ifndef VAL_NO_THREADS
     pthread_rwlock_destroy(&context->pol_rwlock);
     pthread_mutex_destroy(&context->ac_lock);
