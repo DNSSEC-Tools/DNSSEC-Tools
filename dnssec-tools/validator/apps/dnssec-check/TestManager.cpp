@@ -23,6 +23,8 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
             return new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
     case do_bit:
             return new DNSSECTest(m_parent, &check_do_bit, address.toAscii().data(), name);
+    case ad_bit:
+            return new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
     case do_has_rrsigs:
             return new DNSSECTest(m_parent, &check_do_has_rrsigs, address.toAscii().data(), name);
     case small_edns0:

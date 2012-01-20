@@ -165,7 +165,7 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
 
     ns = parse_name_server(ns_name, NULL);
     ns->ns_edns0_size = 4096;
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -240,7 +240,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
     int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS| SR_QUERY_RECURSE;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -291,6 +291,50 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
 
     free_name_server(&ns);
     RETURN_SUCCESS("SUCCEEDED: Query with DO bit returned a DO bit as expected");
+}
+
+
+int check_ad_bit(char *ns_name, char *buf, size_t buf_len) {
+    /* queries with the DO bit and sees if the AD bit is set for a response
+       that should be valadatable from the root down. */
+
+    int rc;
+    struct name_server *ns;
+    struct name_server *server;
+    u_char *response;
+    size_t len;
+    int found_edns0 = 0;
+
+    ns_msg          handle;
+    int             qdcount, ancount, nscount, arcount;
+    u_int           opcode, rcode, id;
+    ns_rr           rr;
+    int             rrnum;
+    int             has_ad;
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_SET_DO | SR_QUERY_RECURSE;
+    printf("bits: %x (toggling %x)\n", ns->ns_options, ns_f_cd);
+    ns->ns_options &= ~ ns_f_cd;
+
+    printf("bits: %x\n", ns->ns_options);
+
+    rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
+             &server, &response, &len);
+
+    if (rc != SR_UNSET)
+        RETURN_ERROR("query failed entirely");
+
+    if (ns_initparse(response, len, &handle) < 0)
+        RETURN_ERROR("failed to init parser");
+
+    has_ad = libsres_msg_getflag(handle, ns_f_ad);
+
+    if (!has_ad)
+        RETURN_ERROR("No AD bit set on a validatable query.");
+
+    free_name_server(&ns);
+    RETURN_SUCCESS("SUCCEEDED: Query with DO bit returned the AD bit as expected for a validatable query");
 }
 
 

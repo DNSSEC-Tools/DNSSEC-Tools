@@ -128,6 +128,9 @@ void MainWindow::addAddress(QString server, int row) {
     m_results->addWidget(light = new QStatusLight(0, &check_do_bit, server.toAscii().data(), "DO", row), row, column++);
     m_tests.push_back(light);
 
+    m_results->addWidget(light = new QStatusLight(0, &check_ad_bit, server.toAscii().data(), "AD", row), row, column++);
+    m_tests.push_back(light);
+
     m_results->addWidget(light = new QStatusLight(0, &check_do_has_rrsigs, server.toAscii().data(), "RRSIG", row), row, column++);
     m_tests.push_back(light);
 
