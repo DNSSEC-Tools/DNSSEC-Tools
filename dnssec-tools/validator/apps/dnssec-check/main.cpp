@@ -6,9 +6,9 @@
 #include <qdebug.h>
 
 #include <QtGui/QApplication>
-#include <QDeclarativeContext>
-#include <QDeclarativeEngine>
-#include <QDeclarativeComponent>
+#include <QtDeclarative/QDeclarativeContext>
+#include <QtDeclarative/QDeclarativeEngine>
+#include <QtDeclarative/QDeclarativeComponent>
 
 int main(int argc, char *argv[])
 {
