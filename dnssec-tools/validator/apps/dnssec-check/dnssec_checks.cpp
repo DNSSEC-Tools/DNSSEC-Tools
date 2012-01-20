@@ -50,6 +50,7 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len) {
     int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -106,6 +107,7 @@ int check_basic_tcp(char *ns_name, char *buf, size_t buf_len) {
     int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     rc = get_tcp("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
                  &server, &response, &len);
@@ -163,7 +165,7 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
 
     ns = parse_name_server(ns_name, NULL);
     ns->ns_edns0_size = 4096;
-    ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -238,7 +240,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
     int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -312,7 +314,7 @@ int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len) {
     int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -376,7 +378,7 @@ int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char 
     int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     rc = get(name, ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -451,7 +453,7 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
     int             rrnum;
 
     ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     rc = get(name, rrtype, ns_c_in, ns,
              &server, &response, &len);
