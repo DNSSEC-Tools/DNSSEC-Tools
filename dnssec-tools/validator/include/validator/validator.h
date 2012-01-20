@@ -445,6 +445,7 @@ typedef struct val_context_opt {
                                       val_policy_handle_t **pol);
     int             val_remove_valpolicy(val_context_t *context, 
                                       val_policy_handle_t *pol);
+    struct name_server *val_get_nameservers(val_context_t *ctx);
     /*
      * from val_x_query.c 
      */
