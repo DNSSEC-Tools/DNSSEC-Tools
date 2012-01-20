@@ -21,8 +21,15 @@ Rectangle {
         id: testName
         font.pixelSize: parent.size/4
         anchors.centerIn: parent
+        z: 3
     }
-
+    Text {
+        id: testNameBackGround
+        font.pixelSize: testName.font.pixelSize
+        anchors.centerIn: parent
+        color: "white"
+        z: 2
+    }
     MouseArea {
         anchors.fill: parent
         onClicked: {
@@ -34,6 +41,9 @@ Rectangle {
                 //result.state = "good"
             }
         }
+        hoverEnabled: true
+        onEntered: { testName.font.pixelSize = parent.size/3 ; testName.color = "white" }
+        onExited:  { testName.font.pixelSize = parent.size/4 ; testName.color = "black"  }
     }
 
     states: [
