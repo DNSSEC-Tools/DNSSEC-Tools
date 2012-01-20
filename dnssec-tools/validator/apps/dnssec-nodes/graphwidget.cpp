@@ -91,7 +91,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     : QGraphicsView(parent), timerId(0), m_editor(editor),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
-      m_layoutType(springyLayout), m_childSize(30), m_lookupType(ns_t_a), m_animateNodeMovements(true),
+      m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
       m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0)
 {
@@ -404,8 +404,10 @@ void GraphWidget::doActualLookup(const QString &lookupString, int lookupType)
     busy();
 
     // perform the lookup
-    ret = val_res_query(NULL, lookupString.toUtf8(), ns_c_in,
+    qDebug() << "here: " << lookupString;
+    ret = val_res_query(NULL, lookupString.toUtf8(), 1,
                         lookupType, buf, sizeof(buf), &val_status);
+    qDebug() << "  result:" << ret;
 
     // do something with the results
     if (ret <= 0) {
@@ -443,7 +445,8 @@ void GraphWidget::doActualLookup(const QString &lookupString, int lookupType)
     if (node)
         m_nodeList->reApplyFiltersTo(node);
 
-    freeaddrinfo(aitop);
+    if (aitop)
+        freeaddrinfo(aitop);
     unbusy();
 }
 
