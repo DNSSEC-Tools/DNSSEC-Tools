@@ -85,6 +85,14 @@ Rectangle {
                 DNSSECCheck.resetTests()
             }
         }
+
+        Button {
+            id: quitButton
+            text: "Quit"
+            onClicked: {
+                Qt.quit()
+            }
+        }
     }
 
     Component.onCompleted: {
