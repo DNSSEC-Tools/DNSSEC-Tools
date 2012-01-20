@@ -18,6 +18,9 @@
 // Matches "0x7fbf0c0a7850(www.dnssec-deployment.org/AAAA'): "
 #define BIND_PAREN_MATCH "0x[0-9a-f]+\\(([^/]+)/([^:']+)'*\\): "
 
+#define UNBOUND_ANGLE_MATCH "<([^ ]+) ([A-Z0-9]+) IN>"
+#define UNBOUND_MATCH       "([^ ]+) ([A-Z0-9]+) IN"
+
 LogWatcher::LogWatcher(GraphWidget *parent)
     : m_graphWidget(parent), m_timer(0),
 
@@ -44,6 +47,17 @@ LogWatcher::LogWatcher(GraphWidget *parent)
       m_bindNoAnswerResponseRegexp(BIND_PAREN_MATCH "noanswer_response"),
       m_bindAnswerResponseRegexp(BIND_PAREN_MATCH "answer_response"),
       m_bindProvenNSECRegexp(BIND_MATCH "nonexistence proof\\(s\\) found"),
+
+      // unbound regexps
+      m_unboundValidatedRegex("validation success " UNBOUND_MATCH),
+      m_unboundBogusRegexp("validation failure " UNBOUND_ANGLE_MATCH),
+      m_unboundQueryRegexp("resolving" UNBOUND_MATCH),
+      //m_unboundPIRegexp(UNBOUND_MATCH "marking.*proveunsecure"),
+      //m_unboundDNERegexp(UNBOUND_PAREN_MATCH "nonexistence validation OK"),
+      //m_unboundTrustedAnswerRegexp(UNBOUND_MATCH "marking as answer.*dsfetched"),
+      //m_unboundNoAnswerResponseRegexp(UNBOUND_PAREN_MATCH "noanswer_response"),
+      //m_unboundAnswerResponseRegexp(UNBOUND_PAREN_MATCH "answer_response"),
+      //m_unboundProvenNSECRegexp(UNBOUND_MATCH "nonexistence proof\\(s\\) found"),
 
       m_regexpList()
 {
@@ -72,6 +86,18 @@ LogWatcher::LogWatcher(GraphWidget *parent)
     // m_regexpList.push_back(RegexpData(m_bindNoAnswerResponseRegexp, DNSData::DNE,   "brown"));
     m_regexpList.push_back(RegexpData(m_bindDNERegexp,            DNSData::DNE,       "brown"));
     m_regexpList.push_back(RegexpData(m_bindProvenNSECRegexp,     DNSData::DNE | DNSData::VALIDATED,   "brown"));
+
+    // unbound regexps
+    m_regexpList.push_back(RegexpData(m_unboundBogusRegexp,          DNSData::FAILED,    "red"));
+    m_regexpList.push_back(RegexpData(m_unboundValidatedRegex,       DNSData::VALIDATED, "green"));
+    m_regexpList.push_back(RegexpData(m_unboundQueryRegexp,          DNSData::UNKNOWN,   "black"));
+    m_regexpList.push_back(RegexpData(m_unboundPIRegexp,             DNSData::TRUSTED,   "brown"));
+    m_regexpList.push_back(RegexpData(m_unboundTrustedAnswerRegexp,  DNSData::TRUSTED,   "brown"));
+    m_regexpList.push_back(RegexpData(m_unboundAnswerResponseRegexp, DNSData::UNKNOWN,   "brown"));
+    // Unfortunately, this catches missing servers and stuff and doesn't mark *only* non-existance
+    // m_regexpList.push_back(RegexpData(m_unboundNoAnswerResponseRegexp, DNSData::DNE,   "brown"));
+    m_regexpList.push_back(RegexpData(m_unboundDNERegexp,            DNSData::DNE,       "brown"));
+    m_regexpList.push_back(RegexpData(m_unboundProvenNSECRegexp,     DNSData::DNE | DNSData::VALIDATED,   "brown"));
 }
 
 
