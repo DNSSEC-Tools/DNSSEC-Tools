@@ -76,7 +76,7 @@ Window::Window()
 }
 
 void Window::loadPreferences(bool seekToEnd) {
-    if (!m_fileWatcher) {
+    if (m_fileWatcher) {
         delete m_fileWatcher;
         m_fileWatcher = 0;
     }
@@ -90,6 +90,8 @@ void Window::loadPreferences(bool seekToEnd) {
 void
 Window::readLogFileNames()
 {
+    m_fileNames.clear();
+
     QSettings settings("DNSSEC-Tools", "dnssec-system-tray");
     int numFiles = settings.beginReadArray("logFileList");
     for(int i = 0 ; i < numFiles; i++) {
