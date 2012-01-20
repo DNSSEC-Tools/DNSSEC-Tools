@@ -892,6 +892,7 @@ main(int argc, char *argv[])
             goto done;
         } else {
 
+#ifndef VAL_NO_THREADS
             if (num_threads > 0) {
                 struct thread_params_st 
                     threadparams = {context, tcs, tce, flags, testcase_config,
@@ -900,13 +901,16 @@ main(int argc, char *argv[])
                 do_threads(num_threads, &threadparams);
                 fprintf(stderr, "Parent exiting\n");
             } else {
+#endif /* VAL_NO_THREADS */
                 do { /* endless loop */ 
                     rc = self_test(context, tcs, tce, flags, testcase_config,
                                    suite, doprint, max_in_flight);
                     if (wait)
                         sleep(wait);
                 } while (wait && !rc);
+#ifndef VAL_NO_THREADS
             }
+#endif /* VAL_NO_THREADS */
         }
 
         goto done;
@@ -914,6 +918,7 @@ main(int argc, char *argv[])
 
     domain_name = argv[optind++];
 
+#ifndef VAL_NO_THREADS
     if (num_threads > 0) {
         struct thread_params_st 
             threadparams = {context, tcs, tce, flags, testcase_config,
@@ -921,6 +926,7 @@ main(int argc, char *argv[])
 
         do_threads(num_threads, &threadparams);
     } else {
+#endif /* VAL_NO_THREADS */
         do { /* endless loop */
             one_test(context, domain_name, class_h, type_h, flags, retvals,
                      doprint);
@@ -929,7 +935,9 @@ main(int argc, char *argv[])
                 sleep(wait);
         } while (wait);
 
+#ifndef VAL_NO_THREADS
     }
+#endif /* VAL_NO_THREADS */
 
 done:
     if (context)
