@@ -4,7 +4,7 @@
 
 #define HAVE_DECL_NS_NTOP 1
 
-#include "validator-config.h"
+#include <validator/validator-config.h>
 #include "arpa/nameser.h"
 #include "validator/resolver.h"
 #include "resolv.h"
