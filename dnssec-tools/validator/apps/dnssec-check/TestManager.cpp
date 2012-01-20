@@ -2,6 +2,12 @@
 #include "dnssec_checks.h"
 #include "qdebug.h"
 
+#include <arpa/inet.h>
+
+#include <validator/validator-config.h>
+#include <validator/validator.h>
+#include <validator-internal.h>
+
 #include <QtCore/QFile>
 #include <QtCore/QRegExp>
 
@@ -38,25 +44,38 @@ QStringList TestManager::loadResolvConf()
 {
     const char *resolv_conf_file = resolv_conf_get();
 
-#if defined(IS_MAEMO) || defined(IS_HARMATTAN)
-    if (strcmp(resolv_conf_file, "/dev/null") == 0) {
-        resolv_conf_file = "/var/run/resolv.conf.wlan0";
-    }
-#endif
+    // create a libval context
+    val_context_t *ctx = NULL;
+    val_create_context("", &ctx);
+    if (!ctx)
+        return QStringList();
 
-    QFile resolvConf(resolv_conf_file);
-    resolvConf.open(QIODevice::ReadOnly);
+    // loop through them
+    struct name_server *ns_list = ctx->nslist;
+    char buffer[1025];
+    buffer[sizeof(buffer)-1] = '\0';
+    const char *ret;
 
-    QRegExp nsRegexp("^\\s*nameserver\\s+(\\S+)");
-    qDebug() << "reading " << resolv_conf_file;
+    while(ns_list) {
+        QString addr;
+        struct sockaddr_storage *serv_addr = ns_list->ns_address[0];
+        struct sockaddr_in      *sa = (struct sockaddr_in *) serv_addr;
+        struct sockaddr_in6     *sa6 = (struct sockaddr_in6 *) serv_addr;
 
-    while (!resolvConf.atEnd()) {
-        QByteArray line = resolvConf.readLine();
-        if (nsRegexp.indexIn(line) != -1) {
-            m_serverAddresses.push_back(nsRegexp.cap(1));
+        if (sa->sin_family == AF_INET) {
+            ret = inet_ntop(sa->sin_family, &sa->sin_addr,
+                            buffer, sizeof(buffer)-1);
+        } else {
+            ret = inet_ntop(sa6->sin6_family, &sa6->sin6_addr,
+                            buffer, sizeof(buffer)-1);
         }
+        if (ret) {
+            m_serverAddresses.push_back(QString(buffer));
+        }
+
+        ns_list = ns_list->ns_next;
     }
-    resolvConf.close();
+
     qDebug() << m_serverAddresses;
     return m_serverAddresses;
 }
