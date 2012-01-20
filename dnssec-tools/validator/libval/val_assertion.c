@@ -452,7 +452,8 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 temp = temp->qc_next;
                 old->qc_next = NULL;
                 free_query_chain_structure(old);
-            }
+            } else
+                temp = temp->qc_next;
             continue;
         }
 
