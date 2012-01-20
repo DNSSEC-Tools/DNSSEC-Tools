@@ -12,6 +12,8 @@ Rectangle {
     anchors.topMargin: 10
     color: "#222"
 
+    signal addHost(string hostaddr)
+
     TextInput {
         id: newHost
         anchors.left: parent.left
@@ -38,7 +40,7 @@ Rectangle {
 
         onAccepted: {
             if (newHost.text != "") {
-                DNSSECCheck.addSingleHost(newHost.text)
+                addHost(newHost.text)
             }
             newHost.text = newHost.defaultText
             newHost.closeSoftwareInputPanel()

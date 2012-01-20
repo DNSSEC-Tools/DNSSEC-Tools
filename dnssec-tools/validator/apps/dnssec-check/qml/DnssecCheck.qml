@@ -61,6 +61,9 @@ Rectangle {
         id: newServerBox
         anchors.top: resultsBox.bottom
         anchors.left: resultsBox.left
+        onAddHost: {
+            DNSSECCheck.addSingleHost(hostaddr)
+        }
     }
 
     Row {
