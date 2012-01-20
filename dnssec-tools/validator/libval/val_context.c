@@ -268,7 +268,6 @@ val_create_context_internal( char *label,
         *newcontext = NULL;
         return VAL_INTERNAL_ERROR;
     }
-#endif
 
 #ifdef HAVE_PTHREAD_H
     if (0 != pthread_mutex_init(&(*newcontext)->ref_lock, NULL)) {
@@ -278,6 +277,7 @@ val_create_context_internal( char *label,
         *newcontext = NULL;
         return VAL_INTERNAL_ERROR;
     }
+#endif
 #endif
 
     if (snprintf
