@@ -1,6 +1,8 @@
 var hosts = [];
 var tests = [];
 
+var testNumber = 0;
+
 function loadInitial() {
     hosts = testManager.loadResolvConf();
 
@@ -67,8 +69,18 @@ function createAllComponents() {
 }
 
 function runAllTests() {
-    for(var result in tests) {
-        tests[result].test.check();
+    resetTests()
+    testNumber = -1;
+    runNextTest();
+}
+
+function runNextTest() {
+    testNumber++;
+    if (testNumber < tests.length) {
+	tests[testNumber].test.check();
+        timer.start();
+    } else {
+        timer.stop()
     }
 }
 

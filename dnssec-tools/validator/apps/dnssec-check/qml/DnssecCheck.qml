@@ -8,6 +8,14 @@ Rectangle {
     id: root
     color: "black"
 
+    Timer {
+        id:       timer;
+        interval: 5;
+        running:  false;
+        repeat:   true;
+        onTriggered: { DNSSECCheck.runNextTest(); }
+    }
+
     Rectangle {
         id: titleBox
         width: parent.width
