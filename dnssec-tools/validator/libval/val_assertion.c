@@ -7005,10 +7005,10 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
                 as, as->val_as_tid);
         return VAL_NO_ERROR;
     }
-#endif
 
     val_log(context,LOG_DEBUG,"as %p tid %d _async_check_one / start rem %d", as,
             as->val_as_tid, remaining ? *remaining : 0);
+#endif
 
   try_again:
     initial_q = qfq = as->val_as_queries;
