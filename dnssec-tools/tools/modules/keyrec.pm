@@ -84,20 +84,20 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read
 # Fields in a zone keyrec.
 #
 my @ZONEFIELDS = (
-			'zonefile',
 			'keyrec_type',
-			'endtime',
+			'zonefile',
+			'signedzone',
 			'zskdirectory',
 			'kskdirectory',
 			'archivedir',
 			'dsdir',
 			'ksdir',
+			'endtime',
 			'kskcount',
 			'kskcur',
 			'kskpub',
 			'kskrev',
 	                'rfc5011',
-			'signedzone',
 			'zskcount',
 			'zskcur',
 			'zskpub',
@@ -791,7 +791,6 @@ sub keyrec_setval
 		}
 	}
 
-	
 	#
 	# If we found the entry, we'll modify it in place.
 	# If we didn't find the entry, we'll insert a new line into the array.
@@ -802,17 +801,23 @@ sub keyrec_setval
 	}
 	else
 	{
-		my $newline = "\t$field\t\t\"$val\"\n";
+		my $newline;			# New keyrec field to save.
+		my @endarr;			# Last part of @keyreclines.
 
 		#
-		# If the keyword is longer than 7 characters, we'll lop out one
-		# of the tabs between the keyword and the value.  This is to do
-		# some rough, simple formatting to keep the keyrec file somewhat
-		# orderly.  This assumes eight-character tabstops.
+		# Create the new line.  If the keyword is longer than 7
+		# characters, we'll only use a single tab between the
+		# keyword and the value.  This is to do some rough, simple
+		# formatting to keep the keyrec file somewhat orderly.
+		# This assumes eight-character tabstops.
 		#
 		if(length($field) > 7)
 		{
-			$newline =~ s/\t\t/\t/;
+			$newline = "\t$field\t\"$val\"\n";
+		}
+		else
+		{
+			$newline = "\t$field\t\t\"$val\"\n";
 		}
 
 		#
@@ -821,7 +826,8 @@ sub keyrec_setval
 		# in the middle, we'll do the magic to insert it at the start
 		# of the keyrec.
 		#
-		my @endarr = splice(@keyreclines,$krind+1);
+		$lastfld++ if($keyreclines[$lastfld] eq "\n");
+		@endarr = splice(@keyreclines,$lastfld+1);
 		push @keyreclines, $newline;
 		push @keyreclines, @endarr;
 
