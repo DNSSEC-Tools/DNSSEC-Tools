@@ -63,6 +63,9 @@
 
 #endif /*VAL_NO_THREADS*/
 
+#define CTX_LOCK_COUNT_INC(ctx,it)
+#define CTX_LOCK_COUNT_DEC(ctx,it)
+#define ASSERT_HAVE_AC_LOCK(ctx)
 
 int             val_create_context_with_conf(char *label,
                                              char *dnsval_conf,
