@@ -2562,6 +2562,11 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
             (! pthread_equal(self, as->val_as_tid)))
             continue;
 #endif
+        if (as->val_as_flags & VAL_AS_DONE) {
+            closest.tv_sec = 0;
+            closest.tv_usec = 0;
+            continue;
+        }
         for (qfq = as->val_as_queries; qfq; qfq = qfq->qfq_next) {
 
             char         name_p[NS_MAXDNAME];
