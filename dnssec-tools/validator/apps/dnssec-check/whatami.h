@@ -10,7 +10,7 @@
 #define IS_MAEMO 1
 #endif
 
-#if defined(__arm__) && !defined(IS_MAEMO)
+#if defined(__arm__) && !defined(IS_MAEMO) && !defined(ANDROID)
 #define IS_MEEGO 1
 #define IS_HARMATTAN
 #endif
