@@ -7,6 +7,10 @@ DEPLOYMENTFOLDERS = # file1 dir1
 # Avoid auto screen rotation
 #DEFINES += ORIENTATIONLOCK
 
+# for android
+LIBS        += -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
+LIBS        += -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libval/.libs -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libsres/.libs
+
 # path to the harmattan libraries
 contains(MEEGO_EDITION,harmattan): {
     LIBS += -L/scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
