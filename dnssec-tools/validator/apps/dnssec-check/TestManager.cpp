@@ -6,7 +6,6 @@
 
 #include <validator/validator-config.h>
 #include <validator/validator.h>
-#include <validator-internal.h>
 
 #include <QtCore/QFile>
 #include <QtCore/QRegExp>
@@ -42,16 +41,14 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
 
 QStringList TestManager::loadResolvConf()
 {
-    const char *resolv_conf_file = resolv_conf_get();
-
     // create a libval context
     val_context_t *ctx = NULL;
-    val_create_context("", &ctx);
+    val_create_context(NULL, &ctx);
     if (!ctx)
         return QStringList();
 
     // loop through them
-    struct name_server *ns_list = ctx->nslist;
+    struct name_server *ns_list = val_get_nameservers(ctx);
     char buffer[1025];
     buffer[sizeof(buffer)-1] = '\0';
     const char *ret;
