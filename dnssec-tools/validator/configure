@@ -13457,7 +13457,15 @@ else
 fi
 
 VAL_CONF_INLINE_DATA=
-as_ac_File=`$as_echo "ac_cv_file_$inline_val_conf_file" | $as_tr_sh`
+if test "$cross_compiling" = yes ; then
+  # ac_check_file dosn't work when cross compiling, so assume it's there
+
+  cat >> configure-summary << EOF
+  Validator inline configuration : $inline_val_conf_file
+EOF
+
+else
+  as_ac_File=`$as_echo "ac_cv_file_$inline_val_conf_file" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $inline_val_conf_file" >&5
 $as_echo_n "checking for $inline_val_conf_file... " >&6; }
 if eval \${$as_ac_File+:} false; then :
@@ -13483,10 +13491,19 @@ EOF
 
 fi
 
+fi
 
 
 ROOT_HINTS_INLINE_DATA=
-as_ac_File=`$as_echo "ac_cv_file_$inline_root_conf_file" | $as_tr_sh`
+if test "$cross_compiling" = yes ; then
+  # ac_check_file dosn't work when cross compiling, so assume it's there
+
+  cat >> configure-summary << EOF
+  Root hints inline file         : $inline_root_conf_file
+EOF
+
+else
+  as_ac_File=`$as_echo "ac_cv_file_$inline_root_conf_file" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $inline_root_conf_file" >&5
 $as_echo_n "checking for $inline_root_conf_file... " >&6; }
 if eval \${$as_ac_File+:} false; then :
@@ -13512,10 +13529,19 @@ EOF
 
 fi
 
+fi
 
 
 RESOLV_CONF_INLINE_DATA=
-as_ac_File=`$as_echo "ac_cv_file_$inline_resolv_conf_file" | $as_tr_sh`
+if test "$cross_compiling" = yes ; then
+  # ac_check_file dosn't work when cross compiling, so assume it's there
+
+  cat >> configure-summary << EOF
+  Resolver inline configuration  : $inline_resolv_conf_file
+EOF
+
+else
+  as_ac_File=`$as_echo "ac_cv_file_$inline_resolv_conf_file" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $inline_resolv_conf_file" >&5
 $as_echo_n "checking for $inline_resolv_conf_file... " >&6; }
 if eval \${$as_ac_File+:} false; then :
@@ -13541,6 +13567,7 @@ EOF
 
 fi
 
+fi
 
 
 
