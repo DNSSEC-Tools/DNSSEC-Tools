@@ -196,6 +196,32 @@ create_nsaddr_array(int num_addrs)
 }
 
 struct name_server *
+create_name_server(void)
+{
+    struct name_server *ns;
+    ns = (struct name_server *) MALLOC(sizeof(struct name_server));
+    if (ns == NULL)
+        return NULL;
+
+    /*
+     * Initialize the rest of the fields
+     */
+    ns->ns_tsig = NULL;
+    ns->ns_security_options = ZONE_USE_NOTHING;
+    ns->ns_status = 0;
+
+    ns->ns_retrans = RES_TIMEOUT;
+    ns->ns_retry = RES_RETRY;
+    ns->ns_options = SR_QUERY_DEFAULT | SR_QUERY_DEBUG;
+    ns->ns_edns0_size = RES_EDNS0_DEFAULT;
+
+    ns->ns_next = NULL;
+    ns->ns_number_of_addresses = 0;
+
+    return ns;
+}
+
+struct name_server *
 parse_name_server(const char *cp, const char *name_n)
 {
     short port_num = NS_DEFAULTPORT;
@@ -218,7 +244,7 @@ parse_name_server(const char *cp, const char *name_n)
     if (cp ==  NULL)
         return NULL;
 
-    ns = (struct name_server *) MALLOC(sizeof(struct name_server));
+    ns = create_name_server();
     if (ns == NULL)
         return NULL;
 
@@ -229,21 +255,6 @@ parse_name_server(const char *cp, const char *name_n)
         FREE(ns);
         return NULL;
     }
-
-    /*
-     * Initialize the rest of the fields
-     */
-    ns->ns_tsig = NULL;
-    ns->ns_security_options = ZONE_USE_NOTHING;
-    ns->ns_status = 0;
-
-    ns->ns_retrans = RES_TIMEOUT;
-    ns->ns_retry = RES_RETRY;
-    ns->ns_options = SR_QUERY_DEFAULT | SR_QUERY_DEBUG;
-    ns->ns_edns0_size = RES_EDNS0_DEFAULT;
-
-    ns->ns_next = NULL;
-    ns->ns_number_of_addresses = 0;
 
     /*
      * Look for port number in address string

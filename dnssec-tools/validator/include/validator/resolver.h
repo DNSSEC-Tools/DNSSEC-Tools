@@ -208,6 +208,7 @@ int             get_tcp(const char *name_n,
 void            print_response(unsigned char * ans, size_t resplen);
 
 struct sockaddr_storage **create_nsaddr_array(int num_addrs);
+struct name_server *create_name_server(void);
 struct name_server *parse_name_server(const char *cp,
                                       const char *name_n);
 int             clone_ns(struct name_server **cloned_ns,
