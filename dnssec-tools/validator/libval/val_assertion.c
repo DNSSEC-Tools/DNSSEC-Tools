@@ -7280,8 +7280,10 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
         waiting = val_async_select(context, pending_desc, nfds, tv, 0);
         if (waiting < 0 )
             return VAL_INTERNAL_ERROR;
-        else if (0 == waiting)
-            return 0; /* nothing to check */
+        /*
+         * even if nothing waiting, keep going. queries might be
+         * completed or waiting to be sent.
+         */
     }
 
     CTX_LOCK_ACACHE(context);
