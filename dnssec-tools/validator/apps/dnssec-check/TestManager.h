@@ -21,6 +21,7 @@ public:
         { basic_dns,
           basic_tcp,
           do_bit,
+          ad_bit,
           do_has_rrsigs,
           small_edns0,
           can_get_nsec,

@@ -4,6 +4,7 @@
 int check_basic_dns(char *ns_name, char *buf, size_t buf_len);
 int check_basic_tcp(char *ns_name, char *buf, size_t buf_len);
 int check_do_bit(char *ns_name, char *buf, size_t buf_len);
+int check_ad_bit(char *ns_name, char *buf, size_t buf_len);
 int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len);
 int check_small_edns0(char *ns_name, char *buf, size_t buf_len);
 int check_can_get_nsec(char *ns_name, char *buf, size_t buf_len);

@@ -36,16 +36,18 @@ function addHost(labelComponent, resultComponent, host) {
 
     makeLight(resultComponent, 1, "TCP", host)
     makeLight(resultComponent, 2, "DO", host)
-    makeLight(resultComponent, 3, "RRSIG", host)
-    makeLight(resultComponent, 4, "EDNS0", host)
-    makeLight(resultComponent, 5, "NSEC", host)
-    makeLight(resultComponent, 6, "NSEC3", host)
-    makeLight(resultComponent, 7, "DNSKEY", host)
-    makeLight(resultComponent, 8, "DS", host)
+    makeLight(resultComponent, 3, "AD", host)
+    makeLight(resultComponent, 4, "RRSIG", host)
+    makeLight(resultComponent, 5, "EDNS0", host)
+    makeLight(resultComponent, 6, "NSEC", host)
+    makeLight(resultComponent, 7, "NSEC3", host)
+    makeLight(resultComponent, 8, "DNSKEY", host)
+    makeLight(resultComponent, 9, "DS", host)
 
     // XXX: for some reason the enums aren't working:
     // makeLight(resultComponent, testManager.basic_tcp, "TCP", host)
     // makeLight(resultComponent, testManager.do_bit, "DO", host)
+    // makeLight(resultComponent, testManager.ad_bit, "AD", host)
     // makeLight(resultComponent, testManager.do_has_rrsigs, "RRSIG", host)
     // makeLight(resultComponent, testManager.small_edns0, "EDNS0", host)
     // makeLight(resultComponent, testManager.can_get_nsec, "NSEC", host)
@@ -58,7 +60,7 @@ function createAllComponents() {
     tests = [];
 
     resultGrid.rows = hosts.length
-    resultGrid.columns = 10
+    resultGrid.columns = 11
 
     var resultComponent = Qt.createComponent("Result.qml")
     var labelComponent  = Qt.createComponent("HostLabel.qml")
