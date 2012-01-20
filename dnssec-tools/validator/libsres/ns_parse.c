@@ -20,7 +20,7 @@
 #include "res_support.h"
 #include "res_comp.h"
 
-#if HAVE_ARPA_NAMESER_H && !defined(__OpenBSD__)
+#if HAVE_ARPA_NAMESER_H && !defined(__OpenBSD__) && !defined(eabi)
 #ifndef STRUCT___NS_MSG_HAS__MSG_PTR
 #   ifdef STRUCT___NS_MSG_HAS__PTR
 #      define _msg_ptr _ptr
