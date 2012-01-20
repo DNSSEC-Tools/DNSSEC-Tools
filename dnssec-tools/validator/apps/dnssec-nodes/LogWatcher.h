@@ -77,6 +77,17 @@ private:
     QRegExp    m_bindAnswerResponseRegexp;
     QRegExp    m_bindProvenNSECRegexp;
 
+    // unbound regexps
+    QRegExp    m_unboundValidatedRegex;
+    QRegExp    m_unboundBogusRegexp;
+    QRegExp    m_unboundQueryRegexp;
+    QRegExp    m_unboundPIRegexp;
+    QRegExp    m_unboundDNERegexp;
+    QRegExp    m_unboundTrustedAnswerRegexp;
+    QRegExp    m_unboundNoAnswerResponseRegexp;
+    QRegExp    m_unboundAnswerResponseRegexp;
+    QRegExp    m_unboundProvenNSECRegexp;
+
     QList< RegexpData > m_regexpList;
 };
 
