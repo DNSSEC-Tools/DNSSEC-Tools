@@ -20,6 +20,9 @@
 #include "val_parse.h"
 #include "val_inline_conf.h"
 
+#ifdef ANDROID
+#include <sys/system_properties.h>
+#endif /* ANDROID */
 
 #define READ_POL_FOR_ZONE(buf_ptr, end_ptr, line_number, endst, retval, err, token)  do {\
     /*\
@@ -1960,6 +1963,69 @@ destroy_respol(val_context_t * ctx)
     }
 }
 
+#ifdef ANDROID
+int
+read_res_config_file(val_context_t * ctx)
+{
+    /* android stores its resolvers in its property system */
+    char property_buffer[PROP_VALUE_MAX + 1];
+    char property_name[PROP_NAME_MAX+1];
+    int  property_buffer_len;
+    int  counter = 0;
+    struct name_server *ns_head = NULL;
+    struct name_server *ns_tail = NULL;
+    struct name_server *ns = NULL;
+
+    while(counter < 255) { /* arbitary way-too-high upper limit */
+        /* shouldn't be necessary, but still wise */
+        property_name[PROP_NAME_MAX] = '\0';
+        property_buffer[PROP_VALUE_MAX] = '\0';
+
+        snprintf(property_name, PROP_NAME_MAX, "net.dns%d", ++counter);
+        if (! __system_property_get(property_name, property_buffer)) {
+            /* end of the list: 0 length return */
+            break;
+        }
+
+        ns = parse_name_server(property_buffer, NULL);
+        if (ns == NULL) {
+            val_log(ctx, LOG_WARNING,
+                    "read_res_config_file(): error parsing android resource!");
+            return VAL_CONF_PARSE_ERROR;
+        }
+
+        ns->ns_options |= RES_RECURSE;
+        if (ns_tail == NULL) {
+            ns_head = ns;
+            ns_tail = ns;
+        } else {
+            ns_tail->ns_next = ns;
+            ns_tail = ns;
+        }
+    }
+
+    /*
+     * Check if we have root hints 
+     */
+    if (ns_head == NULL) {
+        if (!ctx->root_ns) {
+            val_log(ctx, LOG_WARNING, 
+                    "read_res_config_file(): Resolver configuration empty or missing, but root-hints was not found");
+            return VAL_CONF_NOT_FOUND;
+        }
+    } 
+
+    destroy_respol(ctx);
+    ctx->nslist = ns_head;
+    ctx->r_timestamp = 0; /* XXX: set to what?  there is no file stat */
+
+    val_log(ctx, LOG_DEBUG, 
+            "read_res_config_file(): Done reading resolver configuration");
+    return VAL_NO_ERROR;
+}
+
+#else /* ! ANDROID */
+
 int
 read_res_config_file(val_context_t * ctx)
 {
@@ -1981,7 +2047,7 @@ read_res_config_file(val_context_t * ctx)
     size_t bufsize = 0;
     int retval;
     time_t mtime = 0;
-
+    
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
@@ -2196,6 +2262,8 @@ read_res_config_file(val_context_t * ctx)
 
     return VAL_CONF_PARSE_ERROR;
 }
+
+#endif /* ! ANDROID */
 
 /*
  * parse the contents of the root.hints file into resource records 
