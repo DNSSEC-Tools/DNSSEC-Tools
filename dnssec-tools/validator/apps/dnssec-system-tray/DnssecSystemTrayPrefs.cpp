@@ -30,7 +30,7 @@ DnssecSystemTrayPrefs::setupWindow() {
     hbox->addWidget(browserButton);
     connect(browserButton, SIGNAL(clicked()), this, SLOT(openBrowseWindow()));
 
-    m_formLayout->addRow(tr("<p>Log File(s) to Watch<br /><i>(either bind-named or libval logs)</i></p>"), hbox);
+    m_formLayout->addRow(tr("<p>Log File(s) to Watch<br /><i>(either bind-named, unbound or libval logs)</i></p>"), hbox);
     m_formLayout->addRow(new QLabel(""), label = new QLabel(""));
     QFont font = label->font();
     font.setItalic(true);

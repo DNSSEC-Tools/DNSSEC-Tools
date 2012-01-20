@@ -211,10 +211,12 @@ void Window::createTrayIcon()
 // these were taken from dnssec-nodes list of matches
 #define QUERY_MATCH "\\{([^, ]+).*[, ]([A-Z0-9]*)\\([0-9]+\\)\\}"
 #define BIND_MATCH  "@0x[0-9a-f]+: ([^ ]+) ([^:]+): "
+#define UNBOUND_ANGLE_MATCH "<([^ ]+) ([A-Z0-9]+) IN>"
 
 void Window::createRegexps() {
     m_bogusRegexp = QRegExp("Validation result for " QUERY_MATCH ".*BOGUS");
     m_bindBogusRegexp = QRegExp(BIND_MATCH "verify rdataset.*failed to verify");
+    m_unboundBogusRegexp = QRegExp("validation failure " UNBOUND_ANGLE_MATCH);
 }
 
 void Window::clearOldLogFiles()
@@ -336,6 +338,9 @@ void Window::parseLogMessage(const QString logMessage) {
     } else if (m_bindBogusRegexp.indexIn(logMessage) > -1) {
         name = m_bindBogusRegexp.cap(1);
         type = m_bindBogusRegexp.cap(2);
+    } else if (m_unboundBogusRegexp.indexIn(logMessage) > -1) {
+        name = m_unboundBogusRegexp.cap(1);
+        type = m_unboundBogusRegexp.cap(2);
     } else {
         return;
     }

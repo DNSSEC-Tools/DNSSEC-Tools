@@ -127,6 +127,7 @@ private:
 
     QRegExp    m_bogusRegexp;
     QRegExp    m_bindBogusRegexp;
+    QRegExp    m_unboundBogusRegexp;
     int        m_maxRows, m_rowCount;
     bool       m_showStillRunningWarning;
     QIcon      m_warningIcon;
