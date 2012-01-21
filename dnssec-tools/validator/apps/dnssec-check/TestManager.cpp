@@ -9,9 +9,11 @@
 
 #include <QtCore/QFile>
 #include <QtCore/QRegExp>
+#include <QtCore/QUrl>
+#include <QtNetwork/QNetworkRequest>
 
 TestManager::TestManager(QObject *parent) :
-    QObject(parent), m_parent(parent)
+    QObject(parent), m_parent(parent), m_manager(0)
 {
 }
 
@@ -79,3 +81,32 @@ QStringList TestManager::loadResolvConf()
     return m_serverAddresses;
 }
 
+void TestManager::submitResults(QVariantList tests) {
+    QUrl accessURL = resultServerBaseURL;
+
+    if (tests.count() % 2 != 0) {
+        qWarning() << "data submitted to TestManager::submitResults wasn't in pairs; giving up";
+        return;
+    }
+
+    // add base data
+    accessURL.addQueryItem("dataVersion", "1");
+    accessURL.addQueryItem("DNSSECToolsVersion", "1.11");
+
+    // add the query results passed to us
+    for(int i = 0; i < tests.count(); i += 2) {
+        accessURL.addQueryItem(tests.at(i).toString(), tests.at(i+1).toString());
+    }
+
+    if (!m_manager) {
+        m_manager = new QNetworkAccessManager();
+        connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(responseReceived(QNetworkReply*)));
+    }
+    qDebug() << "submitting: " << accessURL;
+    m_manager->get(QNetworkRequest(accessURL));
+}
+
+void TestManager::responseReceived(QNetworkReply *response)
+{
+    // XXX: emit signal
+}

@@ -10,6 +10,16 @@
 #include <validator/validator.h>
 
 #include <QtCore/QStringList>
+#include <QtCore/QVariantList>
+#include <QtNetwork/QNetworkAccessManager>
+
+#define ENABLE_RESULTS_SUBMISSION 1
+
+#ifndef RESULTS_SUBMIT_URL
+#define RESULTS_SUBMIT_URL "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi"
+#endif
+
+static const QString resultServerBaseURL = RESULTS_SUBMIT_URL;
 
 class TestManager : public QObject
 {
@@ -34,13 +44,16 @@ public:
     Q_INVOKABLE DNSSECTest *makeTest(testType type, QString address, QString name);
     Q_INVOKABLE QStringList loadResolvConf();
 
+    Q_INVOKABLE void submitResults(QVariantList tests);
 signals:
 
 public slots:
+    void responseReceived(QNetworkReply *response);
 
 private:
     QObject *m_parent;
     QStringList  m_serverAddresses;
+    QNetworkAccessManager *m_manager;
 };
 
 #endif // TESTMANAGER_H

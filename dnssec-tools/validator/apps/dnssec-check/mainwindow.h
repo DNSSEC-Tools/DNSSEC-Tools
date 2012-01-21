@@ -60,7 +60,7 @@ public slots:
     void maybeSubmitResults();
     void submitResults(QString locationDescription = "");
     void addLineAddress();
-    void respnonseReceived(QNetworkReply *response);
+    void responseReceived(QNetworkReply *response);
 
 private:
     TestManager  m_testManager;

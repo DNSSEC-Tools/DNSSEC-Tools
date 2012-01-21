@@ -1,6 +1,7 @@
 var hosts = [];
 var tests = [];
-
+var rawtests = [];
+var hosttests = {};
 var testNumber = 0;
 
 function loadInitial() {
@@ -14,6 +15,8 @@ function makeLight(creator, type, name, host) {
     result.name = name
     result.test = testManager.makeTest(type, host, name);
     tests.push(result)
+    rawtests.push(result.test)
+    hosttests[host].push(result.test)
     return result
 }
 
@@ -29,6 +32,7 @@ function addHost(labelComponent, resultComponent, host) {
     var label = labelComponent.createObject(resultGrid)
 
     label.hostName = host
+    hosttests[host] = [];
 
     // var result = makeLight(resultComponent, testManager.basic_dns, "DNS", host)
     var result = makeLight(resultComponent, 0, "DNS", host)
@@ -90,4 +94,20 @@ function resetTests() {
     for(var result in tests) {
         tests[result].test.status = DNSSECTest.UNKNOWN
     }
+}
+
+function submitResults() {
+    var datalist = [];
+    var count = 0;
+    for(var host in hosttests) {
+        datalist.push("server" + count)
+        datalist.push(host)
+        for (var testnum in hosttests[host]) {
+            var test = hosttests[host][testnum]
+            datalist.push(test.name + count)
+            datalist.push(test.status)
+        }
+        count++;
+    }
+    testManager.submitResults(datalist)
 }
