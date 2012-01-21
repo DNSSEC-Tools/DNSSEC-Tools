@@ -65,10 +65,10 @@ int main(int argc, char **argv)
 
     QLineEdit *editBox = new QLineEdit();
 
+
     // Main GraphWidget object
     GraphWidget *graphWidget = new GraphWidget(0, editBox, fileName, infoBox);
-    layout->addWidget(graphWidget);
-    layout->addLayout(hbox);
+
 
 
     // Edit box at the bottom
@@ -93,6 +93,16 @@ int main(int argc, char **argv)
     hbox->addWidget(button = new QPushButton("-"));
     button->connect(button, SIGNAL(clicked()), graphWidget, SLOT(zoomOut()));
 
+#ifdef ANDROID
+    /* put the edit line on the top because the slide out keyboard covers it otherwise */
+    layout->addLayout(hbox);
+    layout->addWidget(graphWidget);
+#else
+    layout->addWidget(graphWidget);
+    layout->addLayout(hbox);
+#endif
+
+    /* menu system */
     QMenuBar *menubar = mainWindow.menuBar();
 
     //
