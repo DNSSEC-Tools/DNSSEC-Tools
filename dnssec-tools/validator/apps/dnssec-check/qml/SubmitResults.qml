@@ -1,10 +1,8 @@
 import QtQuick 1.0
 
 Item {
-    id: rootWant
+    id: rootResults
     z: 1
-
-    signal submitOk
 
     Rectangle {
         color: "white"
@@ -33,15 +31,7 @@ Item {
             font.pointSize: 12
             wrapMode: Text.Wrap
 
-            text: "<p>First, thanks for offering to submit your data!
-
-            <p>The data you submit will contain the following:
-            <ul>
-            <li>A SHA1 hashed IP address for each resolver.</li>
-            <li>The results of each test sent to the resolver</li>
-            </ul>
-
-            If this is ok to submit, please click the 'Submit It' button below."
+            text: testManager.submissionMessage
         }
         Row {
             id: submitButtonBox
@@ -53,19 +43,44 @@ Item {
 
             Button {
                 id: submitOk
-                text: "Submit It"
+                text: "Ok"
                 onClicked: {
-                    rootWant.submitOk()
+                    rootResults.state = "hidden"
                     dnssecCheckTop.state = "submitted"
-                }
-            }
-            Button {
-                id: submitCancel
-                text: "Cancel"
-                onClicked: {
-                    dnssecCheckTop.state = "ran"
                 }
             }
         }
     }
+
+    state: "hidden"
+
+    states: [
+        State {
+            name: "hidden"
+            PropertyChanges {
+                target: rootResults
+                opacity: 0
+            }
+        },
+
+        State {
+            name: "visible"
+            PropertyChanges {
+                target: rootResults
+                opacity: 1
+            }
+        }
+
+    ]
+
+    transitions: [
+        Transition {
+            from: "*"
+            to: "*"
+            PropertyAnimation {
+                properties: "opacity"
+                duration:   250
+            }
+        }
+    ]
 }

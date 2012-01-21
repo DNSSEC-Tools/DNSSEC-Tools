@@ -4,7 +4,7 @@ Rectangle {
     id: root
     color: "#aac"
     border.color: "#bbe"
-    width: (buttonText.width + 10 > 100) ? (buttonText.width + 10) : 100
+    width: (buttonText.width + 10 > 150) ? (buttonText.width + 10) : 150
     height: buttonText.height + 10
     border.width: 2
     radius: 5

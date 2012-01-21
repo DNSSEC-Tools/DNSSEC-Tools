@@ -11,6 +11,7 @@
 #include <QtCore/QRegExp>
 #include <QtCore/QUrl>
 #include <QtNetwork/QNetworkRequest>
+#include <QtNetwork/QNetworkReply>
 
 TestManager::TestManager(QObject *parent) :
     QObject(parent), m_parent(parent), m_manager(0)
@@ -102,11 +103,22 @@ void TestManager::submitResults(QVariantList tests) {
         m_manager = new QNetworkAccessManager();
         connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(responseReceived(QNetworkReply*)));
     }
-    qDebug() << "submitting: " << accessURL;
+    //qDebug() << "submitting: " << accessURL;
     m_manager->get(QNetworkRequest(accessURL));
 }
 
 void TestManager::responseReceived(QNetworkReply *response)
 {
-    // XXX: emit signal
+    if (response->error() == QNetworkReply::NoError)
+        m_submissionMessage = response->readAll();
+    else
+        m_submissionMessage = QString("Unfortunately we failed to send your test results to the collection server: " + response->errorString());
+
+    //qDebug() << "setting message to " << m_submissionMessage;
+    emit submissionMessageChanged();
+}
+
+QString TestManager::submissionMessage()
+{
+    return m_submissionMessage;
 }

@@ -45,7 +45,13 @@ public:
     Q_INVOKABLE QStringList loadResolvConf();
 
     Q_INVOKABLE void submitResults(QVariantList tests);
+
+    Q_PROPERTY(QString submissionMessage  READ submissionMessage                   NOTIFY submissionMessageChanged)
+
+    QString submissionMessage();
+
 signals:
+    void submissionMessageChanged();
 
 public slots:
     void responseReceived(QNetworkReply *response);
@@ -54,6 +60,7 @@ private:
     QObject *m_parent;
     QStringList  m_serverAddresses;
     QNetworkAccessManager *m_manager;
+    QString m_submissionMessage;
 };
 
 #endif // TESTMANAGER_H
