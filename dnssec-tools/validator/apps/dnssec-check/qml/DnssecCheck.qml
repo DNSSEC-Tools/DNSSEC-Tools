@@ -101,6 +101,7 @@ Rectangle {
         Button {
             id: quitButton
             text: "Quit"
+            enabled: resultsReceivedBox.state == "waiting" ? false : true;
             onClicked: {
                 Qt.quit()
             }
@@ -115,7 +116,10 @@ Rectangle {
         width: dnssecCheckTop.width
         height: dnssecCheckTop.height
 
-        onSubmitOk: DNSSECCheck.submitResults()
+        onSubmitOk: {
+            DNSSECCheck.submitResults()
+            resultsReceivedBox.state = "waiting"
+        }
     }
 
     SubmitResults {

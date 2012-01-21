@@ -62,7 +62,13 @@ Item {
                 opacity: 0
             }
         },
-
+        State {
+            name: "waiting"
+            PropertyChanges {
+                target: rootResults
+                opacity: 0
+            }
+        },
         State {
             name: "visible"
             PropertyChanges {
