@@ -314,10 +314,7 @@ int check_ad_bit(char *ns_name, char *buf, size_t buf_len) {
 
     ns = parse_name_server(ns_name, NULL);
     ns->ns_options |= SR_QUERY_SET_DO | SR_QUERY_RECURSE;
-    printf("bits: %x (toggling %x)\n", ns->ns_options, ns_f_cd);
     ns->ns_options &= ~ ns_f_cd;
-
-    printf("bits: %x\n", ns->ns_options);
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
