@@ -8,6 +8,7 @@
 #include "QStatusLight.h"
 #include "SubmitDialog.h"
 #include "dnssec_checks.h"
+#include "TestManager.h"
 
 #include <QtGui/QMenuBar>
 #include <QtGui/QMenu>
@@ -26,17 +27,9 @@
 #include <aknappui.h>
 #endif // Q_OS_SYMBIAN && ORIENTATIONLOCK
 
-#define ENABLE_RESULTS_SUBMISSION 1
-
-#ifndef RESULTS_SUBMIT_URL
-#define RESULTS_SUBMIT_URL "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi"
-#endif
-
 #ifdef ANDROID
 #define ns_c_in 1
 #endif
-
-static const QString resultServerBaseURL = RESULTS_SUBMIT_URL;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), m_testManager(), m_rows(0), m_manager(0), m_detailedResults(0), m_submitResults(0)
@@ -382,12 +375,12 @@ void MainWindow::submitResults(QString locationDescription)
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();
-        connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(respnonseReceived(QNetworkReply*)));
+        connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(responseReceived(QNetworkReply*)));
     }
     m_manager->get(QNetworkRequest(accessURL));
 }
 
-void MainWindow::respnonseReceived(QNetworkReply *response)
+void MainWindow::responseReceived(QNetworkReply *response)
 {
     QMessageBox msg;
     if (response->error() == QNetworkReply::NoError)

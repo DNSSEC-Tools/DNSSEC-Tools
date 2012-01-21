@@ -96,6 +96,14 @@ Rectangle {
                 Qt.quit()
             }
         }
+
+        Button {
+            id: submitButton
+            text: "Submit"
+            onClicked: {
+                DNSSECCheck.submitResults()
+            }
+        }
     }
 
     Component.onCompleted: {

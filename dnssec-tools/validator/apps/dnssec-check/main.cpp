@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
         use_qml = false;
 
     if (use_qml) {
+        qRegisterMetaType<DNSSECTest>("DNSSECTest");
         qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
         qmlRegisterType<TestManager, 1>("DNSSECTools", 1, 0, "TestManager");
 
