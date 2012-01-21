@@ -67,6 +67,7 @@ Rectangle {
     }
 
     Row {
+        id: buttonRow
         anchors.top: newServerBox.bottom
         anchors.left: newServerBox.left
         anchors.topMargin: 10
@@ -106,6 +107,21 @@ Rectangle {
                 Qt.quit()
             }
         }
+    }
+
+    property string runningStatus: ""
+    Text {
+        anchors.top: buttonRow.bottom
+        anchors.left: parent.left
+        anchors.margins: 10
+        width: parent.width
+        font.pointSize: 12
+        font.italic: true
+        text: ((resultsReceivedBox.submittingText != "" || parent.runningStatus != "") ? "Status: " : "") +
+              parent.runningStatus +
+              ((resultsReceivedBox.submittingText != "" && parent.runningStatus != "") ? ", " : "") +
+              resultsReceivedBox.submittingText
+        color: "white"
     }
 
     WantToSubmitInfo {
@@ -156,6 +172,10 @@ Rectangle {
                 target: resetButton
                 enabled: false
             }
+            PropertyChanges {
+                target: dnssecCheckTop
+                runningStatus: "Running all tests"
+            }
         },
         State {
             name: "ran"
@@ -170,6 +190,10 @@ Rectangle {
             PropertyChanges {
                 target: resetButton
                 enabled: true
+            }
+            PropertyChanges {
+                target: dnssecCheckTop
+                runningStatus: ""
             }
         },
         State {
