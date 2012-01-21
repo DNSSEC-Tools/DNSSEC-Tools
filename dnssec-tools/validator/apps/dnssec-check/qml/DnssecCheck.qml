@@ -118,6 +118,21 @@ Rectangle {
         onSubmitOk: DNSSECCheck.submitResults()
     }
 
+    SubmitResults {
+        id: resultsReceivedBox
+        z: 1
+        opacity: 0
+        anchors.fill: parent
+        width: dnssecCheckTop.width
+        height: dnssecCheckTop.height
+        Connections {
+            target: testManager
+            onSubmissionMessageChanged: {
+                resultsReceivedBox.state = "visible"
+            }
+        }
+    }
+
     Component.onCompleted: {
         DNSSECCheck.loadInitial()
     }
@@ -187,7 +202,6 @@ Rectangle {
                 opacity: 1
             }
         }
-
     ]
 
     transitions: [
