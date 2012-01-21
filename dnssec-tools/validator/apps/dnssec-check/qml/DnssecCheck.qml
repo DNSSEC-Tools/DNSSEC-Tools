@@ -5,7 +5,7 @@ import DNSSECTools 1.0
 Rectangle {
     width: 800
     height: 400
-    id: root
+    id: dnssecCheckTop
     color: "black"
 
     Timer {
@@ -90,23 +90,114 @@ Rectangle {
         }
 
         Button {
+            id: submitButton
+            text: "Submit Results"
+            onClicked: {
+                dnssecCheckTop.state = "wantsToSubmit"
+            }
+            enabled: false
+        }
+
+        Button {
             id: quitButton
             text: "Quit"
             onClicked: {
                 Qt.quit()
             }
         }
+    }
 
-        Button {
-            id: submitButton
-            text: "Submit"
-            onClicked: {
-                DNSSECCheck.submitResults()
-            }
-        }
+    WantToSubmitInfo {
+        id: wantToSubmitBox
+        z: 1
+        opacity: 0
+        anchors.fill: parent
+        width: dnssecCheckTop.width
+        height: dnssecCheckTop.height
+
+        onSubmitOk: DNSSECCheck.submitResults()
     }
 
     Component.onCompleted: {
         DNSSECCheck.loadInitial()
     }
+
+    states: [
+        State {
+            name: "running"
+            PropertyChanges {
+                target: submitButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: testButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: resetButton
+                enabled: false
+            }
+        },
+        State {
+            name: "ran"
+            PropertyChanges {
+                target: submitButton
+                enabled: true
+            }
+            PropertyChanges {
+                target: testButton
+                enabled: true
+            }
+            PropertyChanges {
+                target: resetButton
+                enabled: true
+            }
+        },
+        State {
+            name: "submitted"
+            PropertyChanges {
+                target: submitButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: testButton
+                enabled: true
+            }
+            PropertyChanges {
+                target: resetButton
+                enabled: true
+            }
+        },
+        State {
+            name: "wantsToSubmit"
+            PropertyChanges {
+                target: submitButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: testButton
+                enabled: true
+            }
+            PropertyChanges {
+                target: resetButton
+                enabled: true
+            }
+            PropertyChanges {
+                target: wantToSubmitBox
+                opacity: 1
+            }
+        }
+
+    ]
+
+    transitions: [
+        Transition {
+            from: "*"
+            to: "*"
+            PropertyAnimation {
+                properties: "opacity,font.color"
+                duration:   250
+            }
+        }
+    ]
 }

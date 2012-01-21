@@ -45,6 +45,7 @@ Rectangle {
             newHost.text = newHost.defaultText
             newHost.closeSoftwareInputPanel()
             newHost.focus = false
+            dnssecCheckTop.state = ""
         }
 
         states:[
