@@ -77,6 +77,7 @@ function createAllComponents() {
 function runAllTests() {
     resetTests()
     testNumber = -1;
+    dnssecCheckTop.state = "running"
     runNextTest();
 }
 
@@ -87,6 +88,7 @@ function runNextTest() {
         timer.start();
     } else {
         timer.stop()
+        dnssecCheckTop.state = "ran"
     }
 }
 
@@ -94,6 +96,7 @@ function resetTests() {
     for(var result in tests) {
         tests[result].test.status = DNSSECTest.UNKNOWN
     }
+    dnssecCheckTop.state = ""
 }
 
 function submitResults() {
