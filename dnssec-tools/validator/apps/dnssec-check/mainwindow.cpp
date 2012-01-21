@@ -26,12 +26,14 @@
 #include <aknappui.h>
 #endif // Q_OS_SYMBIAN && ORIENTATIONLOCK
 
-// --------------------------------------------------------------------------
-// CONFIG: UNCOMMENT THIS IF YOU WANT TO SUBMIT TEST RESULTS TO A CGI SCRIPT:
 #define ENABLE_RESULTS_SUBMISSION 1
 
 #ifndef RESULTS_SUBMIT_URL
 #define RESULTS_SUBMIT_URL "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi"
+#endif
+
+#ifdef ANDROID
+#define ns_c_in 1
 #endif
 
 static const QString resultServerBaseURL = RESULTS_SUBMIT_URL;
@@ -286,7 +288,7 @@ MainWindow::doLookupTest(QString lookupName, int queryType, char *resolv_conf)
     ret = val_res_query(context, lookupName.toUtf8(), ns_c_in,
                         queryType, buf, sizeof(buf), &val_status);
     qDebug() << "here: lookingup=" << lookupName << ", ret=" << ret << " / " << val_status;
-    
+
     if (aitop)
         freeaddrinfo(aitop);
     if (context != NULL) {
