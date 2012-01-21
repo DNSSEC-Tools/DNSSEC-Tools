@@ -4,6 +4,8 @@ Item {
     id: rootResults
     z: 1
 
+    property string submittingText: ""
+
     Rectangle {
         color: "white"
         opacity: .75
@@ -61,6 +63,10 @@ Item {
                 target: rootResults
                 opacity: 0
             }
+            PropertyChanges {
+                target: rootResults
+                submittingText: ""
+            }
         },
         State {
             name: "waiting"
@@ -68,12 +74,20 @@ Item {
                 target: rootResults
                 opacity: 0
             }
+            PropertyChanges {
+                target: rootResults
+                submittingText: "Sending results to the results server..."
+            }
         },
         State {
             name: "visible"
             PropertyChanges {
                 target: rootResults
                 opacity: 1
+            }
+            PropertyChanges {
+                target: rootResults
+                submittingText: ""
             }
         }
 
