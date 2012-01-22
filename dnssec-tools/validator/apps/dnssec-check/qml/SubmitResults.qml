@@ -4,54 +4,14 @@ Item {
     id: rootResults
     z: 1
 
+    property alias text: messageBox.text
     property string submittingText: ""
 
-    Rectangle {
-        color: "white"
-        opacity: .75
+
+    InfoBox {
+        id: messageBox
+        state: "hidden"
         anchors.fill: parent
-        z: parent.z + 1 -5
-    }
-    Rectangle {
-        id: submitBox
-        color: "black"
-        anchors.centerIn: parent
-        z: parent.z + 2
-        height: submitDescription.height + submitButtonBox.height + anchors.margins * 5
-        width: parent.width / 2
-        border.color: submitOk.border.color
-        border.width: 5
-        radius: 5
-        anchors.margins: 10
-        Text {
-            id: submitDescription
-            anchors.top: submitBox.top
-            anchors.left: submitBox.left
-            width: parent.width - anchors.margins
-            color: "white"
-            anchors.margins: 10
-            font.pointSize: 12
-            wrapMode: Text.Wrap
-
-            text: testManager.submissionMessage
-        }
-        Row {
-            id: submitButtonBox
-            anchors.top: submitDescription.bottom
-            //activeFocus: anchors.left: submitDescription.left
-            anchors.margins: 10
-            spacing: 10
-            anchors.horizontalCenter: submitDescription.horizontalCenter
-
-            Button {
-                id: submitOk
-                text: "Ok"
-                onClicked: {
-                    rootResults.state = "hidden"
-                    dnssecCheckTop.state = "submitted"
-                }
-            }
-        }
     }
 
     state: "hidden"
@@ -61,45 +21,36 @@ Item {
             name: "hidden"
             PropertyChanges {
                 target: rootResults
+                submittingText: ""
                 opacity: 0
             }
             PropertyChanges {
-                target: rootResults
-                submittingText: ""
+                target: messageBox
+                state:  "hidden"
             }
         },
         State {
             name: "waiting"
             PropertyChanges {
                 target: rootResults
+                submittingText: "Sending results to the results server..."
                 opacity: 0
             }
             PropertyChanges {
-                target: rootResults
-                submittingText: "Sending results to the results server..."
+                target: messageBox
+                state:  "hidden"
             }
         },
         State {
             name: "visible"
             PropertyChanges {
                 target: rootResults
+                submittingText: ""
                 opacity: 1
             }
             PropertyChanges {
-                target: rootResults
-                submittingText: ""
-            }
-        }
-
-    ]
-
-    transitions: [
-        Transition {
-            from: "*"
-            to: "*"
-            PropertyAnimation {
-                properties: "opacity"
-                duration:   250
+                target: messageBox
+                state:  "visible"
             }
         }
     ]
