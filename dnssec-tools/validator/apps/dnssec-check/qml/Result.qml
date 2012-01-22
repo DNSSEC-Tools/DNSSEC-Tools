@@ -32,13 +32,21 @@ Rectangle {
     }
     MouseArea {
         anchors.fill: parent
+        Timer {
+            id: runTimer
+            interval: 200
+            running: false; repeat: false
+            onTriggered: { running = false ; test.check() ; stop()}
+        }
+
         onClicked: {
-            console.log("starting test")
-            test.check()
-            console.log("result string: " + test.serverAddress + " -> " + test.status + " should be " + DNSSECTest.GOOD)
-            if (test.status == DNSSECTest.GOOD) {
-                console.log("setting state to good")
-                //result.state = "good"
+            if (test.status == DNSSECTest.UNKNOWN) {
+                // run immediately; we have no status yet
+                test.check()
+            } else {
+                test.status = DNSSECTest.UNKNOWN // need a timer to break before the test
+                runTimer.start()
+                // test.check()
             }
         }
         hoverEnabled: true

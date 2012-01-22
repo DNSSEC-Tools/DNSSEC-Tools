@@ -126,11 +126,10 @@ Rectangle {
 
     WantToSubmitInfo {
         id: wantToSubmitBox
-        z: 1
-        opacity: 0
         anchors.fill: parent
         width: dnssecCheckTop.width
         height: dnssecCheckTop.height
+        opacity: 0
 
         onSubmitOk: {
             DNSSECCheck.submitResults()
@@ -140,17 +139,36 @@ Rectangle {
 
     SubmitResults {
         id: resultsReceivedBox
-        z: 1
-        opacity: 0
+
         anchors.fill: parent
         width: dnssecCheckTop.width
         height: dnssecCheckTop.height
+
+        text: testManager.submissionMessage
+
         Connections {
             target: testManager
             onSubmissionMessageChanged: {
                 resultsReceivedBox.state = "visible"
             }
         }
+    }
+
+    InfoBox {
+        id: startupMessage
+        state: "visible"
+
+        anchors.fill: parent
+        width: dnssecCheckTop.width
+        height: dnssecCheckTop.height
+
+        widthPercent: .75
+
+        text: "<h2>Welcome to DNSSEC-Check</h2>
+        <p>On the following screen you will see a list of the DNS resolvers configured for your system.</p>
+        <p>Click on the <b>'Run Tests'</b> button
+        to run some DNSSEC compliance tests on them.  After all the tests have run, please consider clicking the <b>'Submit Results'</b>
+        button to help measure the world-wide DNSSEC deployment."
     }
 
     Component.onCompleted: {

@@ -65,7 +65,8 @@ HEADERS += mainwindow.h \
     dnssec_checks.h \
     SubmitDialog.h \
     DNSSECTest.h \
-    TestManager.h
+    TestManager.h \
+    qml/InfoBox.h
 
 #    DataSubmitter.h \
 #    DataSubmitter.cpp \
@@ -80,6 +81,7 @@ OTHER_FILES += \
     qml/DNSSECCheck.js \
     qml/NewServerBox.qml \
     qml/Button.qml \
+    qml/SubmitResults.qml \
     qtc_packaging/debian_harmattan/rules \
     qtc_packaging/debian_harmattan/README \
     qtc_packaging/debian_harmattan/manifest.aegis \
@@ -119,7 +121,8 @@ OTHER_FILES += \
     android/res/values-zh-rTW/strings.xml \
     android/res/values-id/strings.xml \
     android/res/values-fa/strings.xml \
-    qml/WantToSubmitInfo.qml
+    qml/WantToSubmitInfo.qml \
+    qml/InfoBox.qml
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
@@ -149,4 +152,8 @@ OTHER_FILES += \
     android/res/drawable-hdpi/icon.png \
     android/res/drawable-mdpi/icon.png \
     android/res/drawable-ldpi/icon.png
+
+
+
+
 
