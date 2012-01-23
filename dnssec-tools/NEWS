@@ -2,6 +2,36 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+1.12								(1/23/12)
+ - New Features:
+
+    - libval:       - Made improvements to support IPv6,
+                      added the ability to fetch IPv6 glue
+                    - Fixed the EDNS0 fallback behavior.
+                    - Tidied up the locking semantics in libval. 
+                    - Added support for hard-coding validator configuration 
+                      information that gets used in the absence of other 
+                      configuration data. This feature allows the 
+                      validator library to be self-contained in 
+                      environments where setting up configuration data at
+                      specific locations in the file system is not always 
+                      feasible.
+
+    - rollerd:      - Added support for phase-specific commands. This 
+                      allows the zone operator to customize processing 
+                      of the rollerd utility during different rollerd 
+                      phases. 
+                    - Improved the manner in which rollerd indexes 
+                      the zones being managed, with the result that we are
+                      now able to support a lot more zones with a single 
+                      rollerd instance.
+
+    - apps          - Added patch to enable local validation in NTP, with
+                      the ability to handle a specific chicken and egg problem 
+                      related to the interdependency between DNSSEC and an
+                      accurate system clock.
+
+
 1.11								(9/30/11)
  - New Features:
 
