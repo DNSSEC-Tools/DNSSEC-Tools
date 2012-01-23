@@ -30,7 +30,7 @@ Item {
             id: messageText
             anchors.top: messageBox.top
             anchors.left: messageBox.left
-            width: parent.width - anchors.margins
+            width: parent.width - anchors.margins*2
             color: "white"
             anchors.margins: 10
             font.pointSize: 12

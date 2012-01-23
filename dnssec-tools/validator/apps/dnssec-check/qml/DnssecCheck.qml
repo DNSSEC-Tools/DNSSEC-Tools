@@ -164,11 +164,14 @@ Rectangle {
 
         widthPercent: .75
 
-        text: "<h2>Welcome to DNSSEC-Check</h2>
+        text: "<h2>Welcome to DNSSEC-Check</h2><img style=\"float: right;\" src=\"qrc:/images/dnssec-check-64x64.png\" />
         <p>On the following screen you will see a list of the DNS resolvers configured for your system.</p>
         <p>Click on the <b>'Run Tests'</b> button
         to run some DNSSEC compliance tests on them.  After all the tests have run, please consider clicking the <b>'Submit Results'</b>
-        button to help measure the world-wide DNSSEC deployment."
+        button to help measure the world-wide DNSSEC deployment.
+	<p>For more information on DNSSEC-Check, please visit <a
+        href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">the DNSSEC-Check
+	wiki page</a></p>"
     }
 
     Component.onCompleted: {
