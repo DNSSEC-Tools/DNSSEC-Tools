@@ -489,13 +489,12 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
         memset(&resp, 0, sizeof(resp));
 
         ++run;
-        val_log(context, LOG_INFO, "%d: ", ++i);
+        fprintf(stderr, "%d: ", ++i);
         rc = sendquery(context, curr_test->desc,
                        curr_test->qn, curr_test->qc,
                        curr_test->qt, flags, curr_test->qr, 0, &resp);
         if (doprint) {
-            val_log(context, LOG_INFO, "%s: ****RESPONSE**** \n",
-                    curr_test->desc);
+            fprintf(stderr, "%s: ****RESPONSE**** \n", curr_test->desc);
             print_val_response(&resp);
         }
 
@@ -504,7 +503,7 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
 
         if (rc)
             ++(*failed);
-        val_log(context, LOG_INFO, "\n");
+        fprintf(stderr, "\n");
     }
 
     return run;
@@ -537,13 +536,14 @@ suite_async_callback(val_async_status *as, int event,
                                      &tc->resp);
 
         if (VAL_NO_ERROR != ret_val) {
-            val_log(acbd->ctx, LOG_WARNING, "%s: \tFAILED: Error in compose_answer(): %d",
-                    tc->desc, ret_val);
+            fprintf(stderr, "%s: \t", tc->desc);
+            fprintf(stderr, "FAILED: Error in compose_answer(): %d\n",
+                    ret_val);
             ++acbd->ss->failed;
         }
         else {
             if (tc->resp.vr_response == NULL) {
-                val_log(acbd->ctx, LOG_WARNING, "FAILED: No response");
+                fprintf(stderr, "FAILED: No response\n");
             } else if (acbd->doprint) {
                 print_val_response(&tc->resp);
             }
@@ -559,9 +559,9 @@ suite_async_callback(val_async_status *as, int event,
         val_free_result_chain(cbp->results);
         cbp->results = NULL;
     } else {
-        val_log(acbd->ctx, LOG_WARNING,
-                "%s: \tFAILED: Error during async resolution: %s",
-                tc->desc, p_val_err(cbp->retval));
+        fprintf(stderr, "%s: \t", tc->desc);
+        fprintf(stderr, "FAILED: Error during async resolution: %s\n",
+                p_val_err(cbp->retval));
         ++acbd->ss->failed;
     }
 
@@ -586,7 +586,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         return 0;
 
     if (tcs > tce) {
-        val_log(context, LOG_ERR, "bad range\n");
+        fprintf(stderr,"bad range\n");
         return 0;
     }
 
@@ -758,14 +758,13 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
         tce = tc_count - 1;
 
     if ((tce >= tc_count) || (tcs >= tc_count)) {
-        val_log(context, LOG_ERR,
+        fprintf(stderr,
                 "Invalid test case number (must be 0-%d)\n", tc_count);
         return 1;
     }
     tc_count = tce - tcs + 1;
 
-    val_log(context, LOG_INFO, "Suite '%s': Running %d tests", suite->name,
-            tc_count);
+    fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
 
     gettimeofday(&start, NULL);
 #ifndef VAL_NO_ASYNC
@@ -787,10 +786,9 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
         us -= 1000000L;
         s++;
     }
-    val_log(context, LOG_INFO,
-            "Suite '%s': Final results: %d/%d succeeded (%d failed)",
+    fprintf(stderr, "Suite '%s': Final results: %d/%d succeeded (%d failed)\n",
             suite->name, run_cnt - failed, run_cnt, failed);
-    val_log(context, LOG_INFO, "   runtime was %d.%d seconds", s, us);
+    fprintf(stderr, "   runtime was %d.%d seconds\n", s, us);
 
     return 0;
 }
@@ -830,7 +828,7 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
 
             suite = find_suite(head, name);
             if (NULL == suite)
-                val_log(context, LOG_ERR, "unknown suite %s\n", name);
+                fprintf(stderr, "unknown suite %s\n", name);
             else {
                 rc = run_test_suite(context, tcs, tce, flags, suite, doprint,
                                     max_in_flight);
