@@ -33,6 +33,9 @@ DEFINES += NETWORKACCESS
 
 QT += network declarative
 
+# OS X icon
+ICON=images/dnssec-check.icns
+
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
 
