@@ -489,12 +489,13 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
         memset(&resp, 0, sizeof(resp));
 
         ++run;
-        fprintf(stderr, "%d: ", ++i);
+        val_log(context, LOG_INFO, "%d: ", ++i);
         rc = sendquery(context, curr_test->desc,
                        curr_test->qn, curr_test->qc,
                        curr_test->qt, flags, curr_test->qr, 0, &resp);
         if (doprint) {
-            fprintf(stderr, "%s: ****RESPONSE**** \n", curr_test->desc);
+            val_log(context, LOG_INFO, "%s: ****RESPONSE**** \n",
+                    curr_test->desc);
             print_val_response(&resp);
         }
 
@@ -503,7 +504,7 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
 
         if (rc)
             ++(*failed);
-        fprintf(stderr, "\n");
+        val_log(context, LOG_INFO, "\n");
     }
 
     return run;
@@ -585,7 +586,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         return 0;
 
     if (tcs > tce) {
-        fprintf(stderr,"bad range\n");
+        val_log(context, LOG_ERR, "bad range\n");
         return 0;
     }
 
@@ -757,7 +758,7 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
         tce = tc_count - 1;
 
     if ((tce >= tc_count) || (tcs >= tc_count)) {
-        fprintf(stderr,
+        val_log(context, LOG_ERR,
                 "Invalid test case number (must be 0-%d)\n", tc_count);
         return 1;
     }
@@ -829,7 +830,7 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
 
             suite = find_suite(head, name);
             if (NULL == suite)
-                fprintf(stderr, "unknown suite %s\n", name);
+                val_log(context, LOG_ERR, "unknown suite %s\n", name);
             else {
                 rc = run_test_suite(context, tcs, tce, flags, suite, doprint,
                                     max_in_flight);

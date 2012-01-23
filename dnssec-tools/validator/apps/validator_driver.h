@@ -7,7 +7,9 @@
 
 #define MAX_TEST_RESULTS 10
 
+void print_val_response_ctx(val_context_t * context, struct val_response *resp);
 void print_val_response(struct val_response *resp);
+
 int sendquery(val_context_t * context, const char *desc, char * name,
               int class_h, int type_h, u_int32_t flags,
               const int *result_ar, int trusted_only,
