@@ -10,7 +10,13 @@ DEPLOYMENTFOLDERS = # file1 dir1
 # for android
 INCLUDEPATH += ../../include
 isEmpty(ANDROID_PLATFORM) {
-    LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
+    LIBS        += -lval-threads -lsres -lcrypto -lpthread
+    osx {
+        LIBS        += -lval-threads -lsres -lcrypto -lpthread
+    } else {
+        LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
+    }
+
     maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
     }
