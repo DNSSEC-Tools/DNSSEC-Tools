@@ -68,8 +68,7 @@ HEADERS += mainwindow.h \
     dnssec_checks.h \
     SubmitDialog.h \
     DNSSECTest.h \
-    TestManager.h \
-    qml/InfoBox.h
+    TestManager.h
 
 #    DataSubmitter.h \
 #    DataSubmitter.cpp \
