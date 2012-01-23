@@ -536,14 +536,13 @@ suite_async_callback(val_async_status *as, int event,
                                      &tc->resp);
 
         if (VAL_NO_ERROR != ret_val) {
-            fprintf(stderr, "%s: \t", tc->desc);
-            fprintf(stderr, "FAILED: Error in compose_answer(): %d\n",
-                    ret_val);
+            val_log(acbd->ctx, LOG_WARNING, "%s: \tFAILED: Error in compose_answer(): %d",
+                    tc->desc, ret_val);
             ++acbd->ss->failed;
         }
         else {
             if (tc->resp.vr_response == NULL) {
-                fprintf(stderr, "FAILED: No response\n");
+                val_log(acbd->ctx, LOG_WARNING, "FAILED: No response");
             } else if (acbd->doprint) {
                 print_val_response(&tc->resp);
             }
@@ -559,9 +558,9 @@ suite_async_callback(val_async_status *as, int event,
         val_free_result_chain(cbp->results);
         cbp->results = NULL;
     } else {
-        fprintf(stderr, "%s: \t", tc->desc);
-        fprintf(stderr, "FAILED: Error during async resolution: %s\n",
-                p_val_err(cbp->retval));
+        val_log(acbd->ctx, LOG_WARNING,
+                "%s: \tFAILED: Error during async resolution: %s",
+                tc->desc, p_val_err(cbp->retval));
         ++acbd->ss->failed;
     }
 
@@ -764,7 +763,8 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
     }
     tc_count = tce - tcs + 1;
 
-    fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
+    val_log(context, LOG_INFO, "Suite '%s': Running %d tests", suite->name,
+            tc_count);
 
     gettimeofday(&start, NULL);
 #ifndef VAL_NO_ASYNC
@@ -786,9 +786,10 @@ run_test_suite(val_context_t *context, int tcs, int tce, u_int32_t flags,
         us -= 1000000L;
         s++;
     }
-    fprintf(stderr, "Suite '%s': Final results: %d/%d succeeded (%d failed)\n",
+    val_log(context, LOG_INFO,
+            "Suite '%s': Final results: %d/%d succeeded (%d failed)",
             suite->name, run_cnt - failed, run_cnt, failed);
-    fprintf(stderr, "   runtime was %d.%d seconds\n", s, us);
+    val_log(context, LOG_INFO, "   runtime was %d.%d seconds", s, us);
 
     return 0;
 }
