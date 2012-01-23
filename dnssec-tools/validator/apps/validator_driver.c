@@ -205,22 +205,28 @@ check_results(val_context_t * context, const char *desc, char * name,
 void
 print_val_response(struct val_response *resp)
 {
+    print_val_response_ctx(NULL, resp);
+}
+
+void
+print_val_response_ctx(val_context_t * context, struct val_response *resp)
+{
     if (resp == NULL) {
-        printf("No answers returned. \n");
+        val_log(context, LOG_INFO, "No answers returned. \n");
         return;
     }
 
-    printf("DNSSEC status: %s [%d]\n",
-           p_val_error(resp->vr_val_status), resp->vr_val_status);
+    val_log(context, LOG_INFO, "DNSSEC status: %s [%d]\n",
+            p_val_error(resp->vr_val_status), resp->vr_val_status);
     if (val_isvalidated(resp->vr_val_status)) {
-        printf("Validated response:\n");
+        val_log(context, LOG_INFO, "Validated response:\n");
     } else if (val_istrusted(resp->vr_val_status)) {
-        printf("Trusted but not validated response:\n");
+        val_log(context, LOG_INFO, "Trusted but not validated response:\n");
     } else {
-        printf("Untrusted response:\n");
+        val_log(context, LOG_INFO, "Untrusted response:\n");
     }
-    print_response(resp->vr_response, resp->vr_length);
-    printf("\n");
+    log_response(resp->vr_response, resp->vr_length);
+    val_log(context, LOG_INFO, "\n");
 }
 
 // A wrapper function to send a query and print the output onto stderr
@@ -420,7 +426,7 @@ get_results(val_context_t * context, const char *desc, char *name,
                     err = 1;
                 }
                 else {
-                    print_response(resp.vr_response, resp.vr_length);
+                    log_response(resp.vr_response, resp.vr_length);
                     memcpy(response, resp.vr_response, resp.vr_length);
                     *response_size = resp.vr_length;
                 }
@@ -565,7 +571,7 @@ one_test(val_context_t *context, char *name, int class_h,
     struct val_response resp;
     memset(&resp, 0, sizeof(struct val_response));
     sendquery(context, "Result", name, class_h, type_h, flags, retvals, 1, &resp);
-    fprintf(stderr, "\n");
+    val_log(context, LOG_INFO, "\n");
 
     // If the print option is present, perform query and validation
     // again for printing the result
