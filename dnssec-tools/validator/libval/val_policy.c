@@ -2493,8 +2493,9 @@ read_root_hints_file(val_context_t * ctx)
             size_t addrlen6 = sizeof(struct sockaddr_in6);
             if ((addrlen6 == addrlen6) && /* this is to remove unused variable warning */
                 (INET_PTON(AF_INET6, token, ((struct sockaddr *)&sa6), &addrlen6) != 1)) {
-                retval = VAL_CONF_PARSE_ERROR;
-                goto err;
+                val_log(ctx, LOG_INFO, 
+                        "read_root_hints_file(): Cannot parse IPv6 address, skipping.");
+                continue;
             }
             rdata_len_h = sizeof(struct in6_addr);
             memcpy(rdata_n, &sa6.sin6_addr, rdata_len_h);
