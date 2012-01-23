@@ -134,7 +134,6 @@ check_results(val_context_t * context, const char *desc, char * name,
         }
     }
     /** compare results we do have against what we expect */
-    fprintf(stderr, "%s: \t", desc);
     if (result_array[0]) {
         for (res = results; res; res = res->val_rc_next) {
             for (i = 0; result_array[i] != 0; i++) {
@@ -164,36 +163,41 @@ check_results(val_context_t * context, const char *desc, char * name,
      */
     err = untrusted + extra + missing;
     if (!err) {
-        fprintf(stderr, "OK\n");
+        val_log(context, LOG_INFO, "%s: \tOK", desc);
     } else {
-        fprintf(stderr, "FAILED: received results did not match expectations\n");
+        val_log(context, LOG_WARNING,
+                "%s: \tFAILED: received results did not match expectations",
+                desc);
 
         /** print extra */
         if (extra) {
-            fprintf(stderr, "   Some results were not expected\n");
+            val_log(context, LOG_WARNING,
+                    "   Some results were not expected");
             for (i = 0; i < extra; ++i)
-                fprintf(stderr,         "     UNEXPECTED %s(%d)\n",
+                val_log(context, LOG_WARNING,     "     UNEXPECTED %s(%d)",
                         p_val_error(extra_res[i]), extra_res[i]);
         }
 
         /** print missing/untrusted */
         if (trusted_only && untrusted)
-            fprintf(stderr, "   Some results were not validated successfully\n");
+            val_log(context, LOG_INFO,
+                    "   Some results were not validated successfully");
         if (missing)
-            fprintf(stderr, "   Some results were not received\n");
+            val_log(context, LOG_WARNING,
+                    "   Some results were not received");
         if (missing || (trusted_only && untrusted))
             for (i = 0; result_array[i] != 0; i++)
                 if (result_array[i] > 0)
-                    fprintf(stderr, "     MISSING    %s(%d)\n",
+                    val_log(context, LOG_WARNING, "     MISSING    %s(%d)",
                             p_val_error(result_array[i]), result_array[i]);
                 else if (result_array[i] == CR_UNTRUSTED)
-                    fprintf(stderr, "     UNTRUSTED  %s(%d)\n",
+                    val_log(context, LOG_WARNING, "     UNTRUSTED  %s(%d)",
                             p_val_error(result_ar[i]), result_ar[i]);
 
     }
 
-    fprintf(stderr, "%s: ****END**** %ld.%ld sec\n", desc, duration.tv_sec,
-            duration.tv_usec);
+    val_log(context, LOG_INFO, "%s: ****END**** %ld.%ld sec", desc,
+            duration.tv_sec, duration.tv_usec);
 
     return err;
 }
@@ -235,7 +239,7 @@ sendquery(val_context_t * context, const char *desc, char * name,
     if ((NULL == desc) || (NULL == name) || (NULL == result_ar) || (resp == NULL))
         return -1;
 
-    fprintf(stderr, "%s: ****START**** \n", desc);
+    val_log(context, LOG_INFO, "%s: ****START****", desc);
     
     gettimeofday(&start, NULL);
     ret_val =
@@ -252,9 +256,9 @@ sendquery(val_context_t * context, const char *desc, char * name,
 
         val_free_result_chain(results);
     } else {
-        fprintf(stderr, "%s: \t", desc);
-        fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %s\n",
-                p_val_err(ret_val));
+        val_log(context, LOG_WARNING,
+                "%s: \tFAILED: Error in val_resolve_and_check(): %s",
+                desc, p_val_err(ret_val));
     }
     results = NULL;
 
@@ -380,7 +384,7 @@ get_results(val_context_t * context, const char *desc, char *name,
     response_size_max = *response_size;
     *response_size = 0;
 
-    fprintf(stderr, "%s: ****START**** \n", desc);
+    val_log(context, LOG_INFO, "%s: ****START****", desc);
 
     /*
      * Query the validator
@@ -394,22 +398,23 @@ get_results(val_context_t * context, const char *desc, char *name,
         val_free_result_chain(results);
 
         if (VAL_NO_ERROR != ret_val) {
-            fprintf(stderr, "%s: \t", desc);
-            fprintf(stderr, "FAILED: Error in compose_answer(): %d\n",
-                    ret_val);
+            val_log(context, LOG_WARNING,
+                    "%s: \tFAILED: Error in compose_answer(): %d",
+                    desc, ret_val);
         }
         else {
             if (resp.vr_response == NULL) {
-                fprintf(stderr, "FAILED: No response\n");
+                val_log(context, LOG_WARNING, "FAILED: No response");
             } else {
-                printf("DNSSEC status: %s [%d]\n",
+                val_log(context, LOG_INFO, "DNSSEC status: %s [%d]",
                        p_val_error(resp.vr_val_status), resp.vr_val_status);
                 if (val_isvalidated(resp.vr_val_status)) {
-                    printf("Validated response:\n");
+                    val_log(context, LOG_INFO, "Validated response:");
                 } else if (val_istrusted(resp.vr_val_status)) {
-                    printf("Trusted but not validated response:\n");
+                    val_log(context, LOG_INFO,
+                            "Trusted but not validated response:");
                 } else {
-                    printf("Non-validated response:\n");
+                    val_log(context, LOG_INFO, "Non-validated response:");
                 }
                 if (resp.vr_length > response_size_max) {
                     err = 1;
@@ -425,12 +430,12 @@ get_results(val_context_t * context, const char *desc, char *name,
         }
 
     } else {
-        fprintf(stderr, "%s: \t", desc);
-        fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %d, %s\n",
-                ret_val, p_val_err(ret_val));
+        val_log(context, LOG_WARNING,
+                "%s: \tFAILED: Error in val_resolve_and_check(): %d, %s",
+                desc, ret_val, p_val_err(ret_val));
     }
 
-    fprintf(stderr, "%s: ****END**** \n", desc);
+    val_log(context, LOG_INFO, "%s: ****END****", desc);
 
     return (err != 0);          /* 0 success, 1 error */
 }
@@ -601,7 +606,7 @@ void *firethread_st(void *param) {
     /*child process*/
 
 #ifndef WIN32
-    fprintf(stderr, "Start of thread %u\n context=%u\n", 
+    val_log(threadparams->context, LOG_INFO, "Start of thread %u\n context=%u", 
             (unsigned int)pthread_self(), 
             (unsigned int)threadparams->context);
 #endif
@@ -614,7 +619,7 @@ void *firethread_st(void *param) {
     }while (threadparams->wait);
     
 #ifndef WIN32
-    fprintf(stderr, "End of thread %u\n", 
+    val_log(threadparams->context, LOG_INFO, "End of thread %u", 
             (unsigned int)pthread_self());
 #endif
 
@@ -626,7 +631,7 @@ void *firethread_ot(void *param) {
     /*child process*/
 
 #ifndef WIN32
-    fprintf(stderr, "Start of thread %u\n context=%u\n", 
+    val_log(threadparams->context, LOG_INFO, "Start of thread %u\n context=%u", 
             (unsigned int)pthread_self(), 
             (unsigned int)threadparams->context);
 #endif
@@ -640,7 +645,7 @@ void *firethread_ot(void *param) {
     }while (threadparams->wait);
 
 #ifndef WIN32
-    fprintf(stderr, "End of thread %u\n", 
+    val_log(threadparams->context, LOG_INFO, "End of thread %u", 
             (unsigned int)pthread_self());
 #endif
     
@@ -656,7 +661,8 @@ do_threads(int num_threads, struct thread_params_st *threadparams)
     int j;
 
     if (num_threads > VALIDATOR_MAX_THREADS) {
-        fprintf(stderr, "limiting threads to %d\n", VALIDATOR_MAX_THREADS);
+        val_log(threadparams->context, LOG_WARNING, "limiting threads to %d",
+                VALIDATOR_MAX_THREADS);
         num_threads = VALIDATOR_MAX_THREADS;
     }
 
@@ -677,7 +683,7 @@ do_threads(int num_threads, struct thread_params_st *threadparams)
 void
 do_threads(int num_threads, struct thread_params_st *threadparams)
 {
-    fprintf(stderr, "Thread support not available\n");
+    val_log(context, LOG_WARNING, "Thread support not available");
 }
 #endif /* defined(HAVE_PTHREAD_H) && !defined(VAL_NO_THREADS) */
 
@@ -899,7 +905,7 @@ main(int argc, char *argv[])
                                     suite, doprint, wait, max_in_flight};
 
                 do_threads(num_threads, &threadparams);
-                fprintf(stderr, "Parent exiting\n");
+                val_log(context, LOG_INFO, "Parent exiting");
             } else {
 #endif /* VAL_NO_THREADS */
                 do { /* endless loop */ 
