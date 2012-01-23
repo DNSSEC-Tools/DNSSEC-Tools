@@ -138,5 +138,5 @@ OTHER_FILES += \
     android/res/values-es/strings.xml \
     android/res/values-zh-rTW/strings.xml \
     android/res/values-id/strings.xml \
-    android/res/values-fa/strings.xml
+    android/res/values-fa/strings.xml \
     android/res/drawable-ldpi/icon.png
