@@ -766,8 +766,7 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
             tm->tm_hour, tm->tm_min, tm->tm_sec);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
-    fprintf(logp->opt.file.fp, "%s", buf);
-    fprintf(logp->opt.file.fp, "\n");
+    fprintf(logp->opt.file.fp, "%s\n", buf);
     fflush(logp->opt.file.fp);
 }
 
