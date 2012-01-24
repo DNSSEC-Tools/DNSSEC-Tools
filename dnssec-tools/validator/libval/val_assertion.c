@@ -376,10 +376,14 @@ free_query_chain_structure(struct val_query_chain *queries)
 /*
  * return 1 if the query chain element was cleared 0 if not
  */
-int 
+static int 
 clear_query_chain_structure(struct val_query_chain *query) 
 {
-    if (query && (query->qc_refcount == 0)) {
+    /* 
+     * The query reference count must be 1, which signifies
+     * that there is only one current usage instance.
+     */
+    if (query && (query->qc_refcount == 1)) {
         _release_query_chain_structure(query);
         init_query_chain_node(query);
 
