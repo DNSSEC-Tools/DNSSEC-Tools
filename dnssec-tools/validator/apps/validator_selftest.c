@@ -594,6 +594,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
     i = tcs;
     sstats->remaining = tce - tcs + 1;
     sstats->in_flight = 0;
+    sstats->failed = 0;
 
     while (sstats->remaining) {
         /** send up to burst queries */
