@@ -4,7 +4,10 @@ Rectangle {
     id: root
     color: "#aac"
     border.color: "#bbe"
-    width: (buttonText.width + 10 > 150) ? (buttonText.width + 10) : 150
+
+    property int maxDefaultButtonSize: 125
+
+    width: (buttonText.width + 10 > maxDefaultButtonSize) ? (buttonText.width + 10) : maxDefaultButtonSize
     height: buttonText.height + 10
     border.width: 2
     radius: 5
@@ -17,7 +20,7 @@ Rectangle {
 
     Text {
         id: buttonText
-        font.pixelSize: 20
+        font.pixelSize: 16
         anchors.centerIn: parent
         color: root.enabled ? "black" : "gray"
     }
