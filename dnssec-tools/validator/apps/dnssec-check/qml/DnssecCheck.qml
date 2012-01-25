@@ -118,8 +118,8 @@ Rectangle {
         font.pointSize: 12
         font.italic: true
         text: ((resultsReceivedBox.submittingText != "" || parent.runningStatus != "") ? "Status: " : "") +
-              parent.runningStatus +
-              ((resultsReceivedBox.submittingText != "" && parent.runningStatus != "") ? ", " : "") +
+              ((parent.runningStatus == "idle" && resultsReceivedBox.submittingText != "") ? "" : parent.runningStatus) +
+              ((resultsReceivedBox.submittingText != "" && parent.runningStatus != "idle") ? ", " : "") +
               resultsReceivedBox.submittingText
         color: "white"
     }
