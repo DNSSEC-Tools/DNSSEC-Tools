@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
         QDeclarativeContext *context;
         viewer.addImportPath(":/qml");
         viewer.setWindowIcon(QIcon(":/images/dnssec-check-64x64.png"));
+        viewer.setWindowTitle("DNSSEC-Check");
 
         TestManager manager;
         context = viewer.rootContext();
