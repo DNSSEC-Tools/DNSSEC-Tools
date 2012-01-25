@@ -27,13 +27,13 @@
     } while(0);
 
 #define RETURN_ERROR(msg)                                  \
-    RETURN_CODE_BUF(CHECK_FAILED, msg, buf, buf_len);
+    RETURN_CODE_BUF(CHECK_FAILED, "Error: " msg, buf, buf_len);
 
 #define RETURN_SUCCESS(msg)                                \
-    RETURN_CODE_BUF(CHECK_SUCCEEDED, msg, buf, buf_len);
+    RETURN_CODE_BUF(CHECK_SUCCEEDED, "Success: " msg, buf, buf_len);
 
 #define RETURN_WARNING(msg)                                \
-    RETURN_CODE_BUF(CHECK_WARNING, msg, buf, buf_len);
+    RETURN_CODE_BUF(CHECK_WARNING, "Warning: " msg, buf, buf_len);
 
 int check_basic_dns(char *ns_name, char *buf, size_t buf_len) {
     int rc;
@@ -56,10 +56,10 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len) {
              &server, &response, &len);
 
     if (rc != SR_UNSET)
-        RETURN_ERROR("query failed entirely");
+        RETURN_ERROR("Basic DNS query failed entirely");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     opcode = libsres_msg_getflag(handle, ns_f_opcode);
     rcode = libsres_msg_getflag(handle, ns_f_rcode);
@@ -87,9 +87,9 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len) {
     }
 
     if (!found_a)
-        RETURN_ERROR("No A record found in the basic DNS test.");
+        RETURN_ERROR("No A record found using UDP in the basic DNS test.");
 
-    RETURN_SUCCESS("An A record was retrieved");
+    RETURN_SUCCESS("An A record was successfully retrieved");
 }
 
 int check_basic_tcp(char *ns_name, char *buf, size_t buf_len) {
@@ -113,10 +113,10 @@ int check_basic_tcp(char *ns_name, char *buf, size_t buf_len) {
                  &server, &response, &len);
 
     if (rc != SR_UNSET)
-        RETURN_ERROR("query failed entirely");
+        RETURN_ERROR("basic TCP query failed entirely");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     opcode = libsres_msg_getflag(handle, ns_f_opcode);
     rcode = libsres_msg_getflag(handle, ns_f_rcode);
@@ -144,9 +144,9 @@ int check_basic_tcp(char *ns_name, char *buf, size_t buf_len) {
     }
 
     if (!found_a)
-        RETURN_ERROR("No A record found in the basic DNS test.");
+        RETURN_ERROR("No A record was found in the basic DNS test over TCP.");
 
-    RETURN_SUCCESS("An A record was retrieved");
+    RETURN_SUCCESS("An A record was successfully retrieved over TCP");
 }
 
 int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
@@ -174,7 +174,7 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
         RETURN_ERROR("query failed entirely");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     opcode = libsres_msg_getflag(handle, ns_f_opcode);
     rcode = libsres_msg_getflag(handle, ns_f_rcode);
@@ -210,14 +210,14 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
     }
 
     if (!found_edns0)
-        RETURN_ERROR("No EDNS0 record found in the response.");
+        RETURN_ERROR("No EDNS0 record was found in the response but one was expected.");
 
     if (found_edns0 < 1500) {
-        snprintf(buf, buf_len, "The returned EDNS0 size (%d) is smaller than recommended (1500)", found_edns0);
+        snprintf(buf, buf_len, "Warning: The returned EDNS0 size (%d) is smaller than recommended (1500)", found_edns0);
         return CHECK_WARNING;
     }
 
-    snprintf(buf, buf_len, "The returned EDNS0 size (%d) is reasonable.", found_edns0);
+    snprintf(buf, buf_len, "Success: The returned EDNS0 size (%d) was reasonable.", found_edns0);
     return CHECK_SUCCEEDED;
 }
 
@@ -246,10 +246,10 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
              &server, &response, &len);
 
     if (rc != SR_UNSET)
-        RETURN_ERROR("query failed entirely");
+        RETURN_ERROR("Checking for the DO bit failed entirely: no response was received");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     opcode = libsres_msg_getflag(handle, ns_f_opcode);
     rcode = libsres_msg_getflag(handle, ns_f_rcode);
@@ -287,10 +287,10 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
     }
 
     if (!found_edns0)
-        RETURN_ERROR("No EDNS0 record found in the response.");
+        RETURN_ERROR("No EDNS0 record found in the response when one was expected.");
 
     free_name_server(&ns);
-    RETURN_SUCCESS("SUCCEEDED: Query with DO bit returned a DO bit as expected");
+    RETURN_SUCCESS("Query with DO bit returned a response with the DO bit set");
 }
 
 
@@ -320,18 +320,18 @@ int check_ad_bit(char *ns_name, char *buf, size_t buf_len) {
              &server, &response, &len);
 
     if (rc != SR_UNSET)
-        RETURN_ERROR("query failed entirely");
+        RETURN_ERROR("No response was received when checking for the AD bit");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     has_ad = libsres_msg_getflag(handle, ns_f_ad);
 
     if (!has_ad)
-        RETURN_ERROR("No AD bit set on a validatable query.");
+        RETURN_ERROR("The AD bit was not set on a validatable query.");
 
     free_name_server(&ns);
-    RETURN_SUCCESS("SUCCEEDED: Query with DO bit returned the AD bit as expected for a validatable query");
+    RETURN_SUCCESS("A query with DO bit set returned with the AD bit for a validatable query");
 }
 
 
@@ -361,10 +361,10 @@ int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len) {
              &server, &response, &len);
 
     if (rc != SR_UNSET)
-        RETURN_ERROR("query failed entirely");
+        RETURN_ERROR("No response was received when querying for returned RRSIGs");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     opcode = libsres_msg_getflag(handle, ns_f_opcode);
     rcode = libsres_msg_getflag(handle, ns_f_rcode);
@@ -393,10 +393,10 @@ int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len) {
     }
 
     if (!found_rrsig)
-        RETURN_ERROR("failed to find an expected RRSIG in a DNSSEC valid query");
+        RETURN_ERROR("Failed to find an expected RRSIG in a DNSSEC valid query");
 
     free_name_server(&ns);
-    RETURN_SUCCESS("SUCCEEDED: Query with DO bit returned answers including an RRSIG");
+    RETURN_SUCCESS("Quering with the DO bit set returned answers including RRSIGs");
 }
 
 
@@ -425,10 +425,10 @@ int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char 
              &server, &response, &len);
 
     if (rc != SR_UNSET)
-        RETURN_ERROR("query failed entirely");
+        RETURN_ERROR("Querying for negative answers failed to get a response");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     opcode = libsres_msg_getflag(handle, ns_f_opcode);
     rcode = libsres_msg_getflag(handle, ns_f_rcode);
@@ -444,7 +444,7 @@ int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char 
         if (ns_parserr(&handle, ns_s_ns, rrnum, &rr)) {
             if (errno != ENODEV) {
                 /* parse error */
-                RETURN_ERROR("failed to parse a returned answer RRSET");
+                RETURN_ERROR("Failed to parse a returned answer RRSET");
             }
             break; /* out of data */
         }
@@ -457,14 +457,14 @@ int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char 
     }
 
     if (!found_nsec && rrtype == ns_t_nsec)
-        RETURN_ERROR("failed to find an expected NSEC record in a query for a record that doesn't exist.");
+        RETURN_ERROR("Failed to find an expected NSEC record in a query for a record that doesn't exist.");
     if (!found_nsec)
-        RETURN_ERROR("failed to find an expected NSEC3 record in a query for a record that doesn't exist.");
+        RETURN_ERROR("Failed to find an expected NSEC3 record in a query for a record that doesn't exist.");
 
     free_name_server(&ns);
     if (!rrtype == ns_t_nsec)
-        RETURN_SUCCESS("SUCCEEDED: Query to a DNE record returned an NSEC record.");
-    RETURN_SUCCESS("SUCCEEDED: Query to a DNE record returned an NSEC3 record.");
+        RETURN_SUCCESS("Querying for a non-existent record returned an NSEC record.");
+    RETURN_SUCCESS("Querying for a non-existent record returned an NSEC3 record.");
 }
 
 int check_can_get_nsec(char *ns_name, char *buf, size_t buf_len) {
@@ -500,10 +500,10 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
              &server, &response, &len);
 
     if (rc != SR_UNSET)
-        RETURN_ERROR("query failed entirely");
+        RETURN_ERROR("Querying for a particular type failed to get a response");
 
     if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("failed to init parser");
+        RETURN_ERROR("Fatal internal error: failed to init parser");
 
     opcode = libsres_msg_getflag(handle, ns_f_opcode);
     rcode = libsres_msg_getflag(handle, ns_f_rcode);
@@ -519,7 +519,7 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
         if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
             if (errno != ENODEV) {
                 /* parse error */
-                RETURN_ERROR("failed to parse a returned answer RRSET");
+                RETURN_ERROR("Failed to parse a returned answer RRSET");
             }
             break; /* out of data */
         }
@@ -533,11 +533,11 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
     free_name_server(&ns);
 
     if (!found_type) {
-        snprintf(buf, buf_len, "Failed to retrieve a record of type %s", asciitype);
+        snprintf(buf, buf_len, "Error: Failed to retrieve a record of type %s", asciitype);
         return CHECK_FAILED;
     }
 
-    snprintf(buf, buf_len, "Successfully retrieved a record of type %s", asciitype);
+    snprintf(buf, buf_len, "Success: Successfully retrieved a record of type %s", asciitype);
 
     return CHECK_SUCCEEDED;
 }
