@@ -10,6 +10,16 @@ function loadInitial() {
     createAllComponents();
 }
 
+function clearServers() {
+    tests = []
+    hosts = []
+    rawtests = []
+    hosttests = {}
+    for(var i = resultGrid.children.length; i > 0 ; i--) {
+        resultGrid.children[i-1].destroy()
+    }
+}
+
 function makeLight(creator, type, name, host) {
     var result = creator.createObject(resultGrid)
     result.name = name
