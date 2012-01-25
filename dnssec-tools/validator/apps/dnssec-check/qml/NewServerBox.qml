@@ -3,7 +3,7 @@ import "DNSSECCheck.js" as DNSSECCheck
 import DNSSECTools 1.0
 
 Rectangle {
-    width:  resultsBox.width
+    width:  parent.width - addButton.width - addButton.border.width * 8
     height: newHost.height + border.width*2
     border.color: "#c0c0c0"
     border.width: 1
@@ -19,7 +19,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: 5
         anchors.verticalCenter: parent.verticalCenter
-        width: parent.width
+        width: parent.width - addButton.width
         color: "white"
         font.pixelSize: 20
 
@@ -30,9 +30,7 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                console.log("foo" + newHost.text)
                 if (newHost.text == newHost.defaultText) {
-                    console.log("bar")
                     newHost.text = ""
                 }
                 newHost.focus = true
@@ -40,6 +38,10 @@ Rectangle {
         }
 
         onAccepted: {
+            acceptHost()
+        }
+
+        function acceptHost() {
             if (newHost.text != "") {
                 addHost(newHost.text)
             }
@@ -60,5 +62,19 @@ Rectangle {
             }
 
         ]
+    }
+
+    Button {
+        id: addButton
+        text: "Add"
+        onClicked: {
+            newHost.acceptHost()
+        }
+        height: 200
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: parent.right
+        anchors.top: newHost.top
+        anchors.margins: 5
+        enabled: (newHost.text == newHost.defaultText || newHost.text == "") ? false : true
     }
 }
