@@ -8,6 +8,8 @@ Rectangle {
     id: dnssecCheckTop
     color: "black"
 
+    property string dnssecToolsVersion: "1.11"
+
     Timer {
         id:       timer;
         interval: 5;
@@ -140,7 +142,7 @@ Rectangle {
 
         Button {
             id: clearButton
-            text: "Clear Servers"
+            text: "Clear Resolvers"
             onClicked: {
                 DNSSECCheck.clearServers()
             }
@@ -243,7 +245,7 @@ Rectangle {
 
     InfoBox {
         id: startupMessage
-        state: testManager.getSetting("initMessageDisplayed") ? "hidden" : "visible"
+        state: testManager.getSetting("initMessageDisplayed") == dnssecToolsVersion ? "hidden" : "visible"
 
         anchors.fill: parent
         width: dnssecCheckTop.width
@@ -258,10 +260,10 @@ Rectangle {
         button to help measure the world-wide DNSSEC deployment.
 	<p>For more information on DNSSEC-Check, please visit <a
         href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">the DNSSEC-Check
-	wiki page</a></p>"
+        wiki page</a></p>"
 
         onDismissed: {
-            testManager.saveSetting("initMessageDisplayed", true)
+            testManager.saveSetting("initMessageDisplayed", dnssecToolsVersion)
         }
     }
 
