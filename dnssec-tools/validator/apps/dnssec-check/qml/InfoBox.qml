@@ -9,6 +9,8 @@ Flickable {
     property double widthPercent: .5
     state: "hidden"
 
+    signal dismissed
+
     MouseArea {
         anchors.fill: parent
         onClicked: { } // no op to prevent it from passing lower
@@ -58,6 +60,7 @@ Flickable {
                 onClicked: {
                     infoBox.state = "hidden"
                     dnssecCheckTop.state = "submitted"
+                    dismissed()
                 }
             }
         }

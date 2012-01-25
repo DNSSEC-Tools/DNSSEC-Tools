@@ -45,6 +45,8 @@ public:
     Q_INVOKABLE QStringList loadResolvConf();
 
     Q_INVOKABLE void submitResults(QVariantList tests);
+    Q_INVOKABLE void saveSetting(QString key, QVariant value);
+    Q_INVOKABLE QVariant getSetting(QString key);
 
     Q_PROPERTY(QString submissionMessage  READ submissionMessage                   NOTIFY submissionMessageChanged)
 

@@ -174,7 +174,7 @@ Rectangle {
 
     InfoBox {
         id: startupMessage
-        state: "visible"
+        state: testManager.getSetting("initMessageDisplayed") ? "hidden" : "visible"
 
         anchors.fill: parent
         width: dnssecCheckTop.width
@@ -190,6 +190,10 @@ Rectangle {
 	<p>For more information on DNSSEC-Check, please visit <a
         href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">the DNSSEC-Check
 	wiki page</a></p>"
+
+        onDismissed: {
+            testManager.saveSetting("initMessageDisplayed", true)
+        }
     }
 
     Component.onCompleted: {
