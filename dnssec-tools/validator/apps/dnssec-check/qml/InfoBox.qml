@@ -37,6 +37,7 @@ Item {
             wrapMode: Text.Wrap
 
             text: ""
+            onLinkActivated: Qt.openUrlExternally(link)
         }
         Row {
             id: infoButtonBox
