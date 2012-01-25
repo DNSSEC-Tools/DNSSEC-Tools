@@ -92,7 +92,7 @@ function runNextTest() {
         timer.stop()
         dnssecCheckTop.state = "ran"
         testStatusMessage.text = ""
-        testResultMessage.text = "All tests have run; hover over a result for details"
+        testResultMessage.text = "All tests have completed; hover over a result for details"
     }
 }
 
