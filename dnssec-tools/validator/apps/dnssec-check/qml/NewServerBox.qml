@@ -3,7 +3,7 @@ import "DNSSECCheck.js" as DNSSECCheck
 import DNSSECTools 1.0
 
 Rectangle {
-    width:  parent.width - (addButton.opacity == 0 ? 0 : addButton.width + addButton.border.width * 8)
+    width:  titleBox.width - (addButton.opacity == 0 ? 0 : addButton.width + addButton.border.width * 8)
     height: newHost.height + border.width*4
     border.color: "#c0c0c0"
     border.width: 1

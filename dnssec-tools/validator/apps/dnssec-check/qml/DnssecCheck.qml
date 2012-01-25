@@ -18,7 +18,7 @@ Rectangle {
 
     Rectangle {
         id: titleBox
-        width: parent.width
+        width: parent.width - anchors.margins * 2
         height: titleText.height + 4
         color: "#444"
         anchors.top: parent.top
@@ -33,6 +33,21 @@ Rectangle {
             font.underline: true
             font.bold: true
             anchors.centerIn: parent
+        }
+        Text {
+            id: titleHelpButton
+            text: "Help"
+            color: "white"
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            horizontalAlignment: Text.AlignRight
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    helpBox.state = "visible"
+                }
+            }
         }
     }
 
@@ -101,6 +116,8 @@ Rectangle {
             enabled: false
         }
 
+        // moved to the top...
+        /*
         Button {
             id: helpButton
             text: "Help"
@@ -108,6 +125,7 @@ Rectangle {
                 helpBox.state = "visible"
             }
         }
+        */
 
         Button {
             id: quitButton
@@ -119,33 +137,11 @@ Rectangle {
         }
     }
 
-    property string runningStatus: "idle"
-    Text {
-        id: statusMessage
-        anchors.top: buttonRow.bottom
-        anchors.left: parent.left
-        anchors.margins: 10
-        font.pointSize: 12
-        font.italic: true
-        text: ((resultsReceivedBox.submittingText != "" || parent.runningStatus != "") ? "Status: " : "") +
-              ((parent.runningStatus == "idle" && resultsReceivedBox.submittingText != "") ? "" : parent.runningStatus) +
-              ((resultsReceivedBox.submittingText != "" && parent.runningStatus != "idle") ? ", " : "") +
-              resultsReceivedBox.submittingText
-        color: "white"
-    }
-    Text {
-        id: dtlink
-        anchors.top: buttonRow.bottom
-        anchors.margins: 10
-        anchors.right: parent.right
-        font.pointSize:  12
-        text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><a href=\"http://www.dnssec-tools.org/\">http://www.dnssec-tools.org/</a>"
-        onLinkActivated: Qt.openUrlExternally(link)
-    }
+
 
     Text {
         id: testResultMessage
-        anchors.top: statusMessage.bottom
+        anchors.top: buttonRow.bottom
         anchors.margins: 10
         anchors.left: parent.left
         font.pointSize:  12
@@ -166,6 +162,30 @@ Rectangle {
         color: "white"
         wrapMode: Text.Wrap
         width: parent.width - anchors.margins * 2
+    }
+
+    property string runningStatus: "idle"
+    Text {
+        id: statusMessage
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.margins: 10
+        font.pointSize: 12
+        font.italic: true
+        text: ((resultsReceivedBox.submittingText != "" || parent.runningStatus != "") ? "Status: " : "") +
+              ((parent.runningStatus == "idle" && resultsReceivedBox.submittingText != "") ? "" : parent.runningStatus) +
+              ((resultsReceivedBox.submittingText != "" && parent.runningStatus != "idle") ? ", " : "") +
+              resultsReceivedBox.submittingText
+        color: "white"
+    }
+    Text {
+        id: dtlink
+        anchors.bottom: parent.bottom
+        anchors.margins: 10
+        anchors.right: parent.right
+        font.pointSize:  12
+        text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><a href=\"http://www.dnssec-tools.org/\">http://www.dnssec-tools.org/</a>"
+        onLinkActivated: Qt.openUrlExternally(link)
     }
 
     WantToSubmitInfo {
