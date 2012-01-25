@@ -264,6 +264,13 @@ Rectangle {
                 enabled: false
             }
         },
+        State {
+            name: "half"
+            PropertyChanges {
+                target: resetButton
+                enabled: true
+            }
+        },
 
         State {
             name: "running"
