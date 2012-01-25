@@ -4,8 +4,8 @@ import DNSSECTools 1.0
 
 Rectangle {
     width:  resultsBox.width
-    height: newHost.height + border.width
-    border.color: "black"
+    height: newHost.height + border.width*2
+    border.color: "#c0c0c0"
     border.width: 1
     anchors.top: resultsBox.bottom
     anchors.left: resultsBox.left
@@ -18,11 +18,12 @@ Rectangle {
         id: newHost
         anchors.left: parent.left
         anchors.leftMargin: 5
+        anchors.verticalCenter: parent.verticalCenter
         width: parent.width
         color: "white"
         font.pixelSize: 20
 
-        property string defaultText: "add new resolver address"
+        property string defaultText: "Click to add a new resolver address"
 
         text: defaultText
 
