@@ -48,7 +48,7 @@ Rectangle {
             newHost.text = newHost.defaultText
             newHost.closeSoftwareInputPanel()
             newHost.focus = false
-            dnssecCheckTop.state = ""
+            dnssecCheckTop.state = (dnssecCheckTop.state == "ran") ? "half" : ""
         }
 
         states:[
