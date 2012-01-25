@@ -58,7 +58,7 @@ Rectangle {
         width:  titleBox.width
         height: resultGrid.height + 2 * border.width
         color: "black"
-        border.color: "#bbbbbb"
+        border.color: resultGrid.children.length > 0 ? "#bbbbbb" : "black"
         border.width: 1
         anchors.topMargin: 10
 
@@ -126,6 +126,14 @@ Rectangle {
             }
         }
         */
+
+        Button {
+            id: clearButton
+            text: "Clear Servers"
+            onClicked: {
+                DNSSECCheck.clearServers()
+            }
+        }
 
         Button {
             id: quitButton
