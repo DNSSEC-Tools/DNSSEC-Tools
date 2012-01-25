@@ -67,7 +67,7 @@ Rectangle {
         anchors.top: titleBox.bottom
         anchors.left: titleBox.left
         width:  titleBox.width
-        height: resultGrid.height + 2 * border.width
+        height: resultGrid.height + 2 * border.width + 8
         color: "black"
         border.color: resultGrid.children.length > 0 ? "#bbbbbb" : "black"
         border.width: 1
@@ -77,8 +77,8 @@ Rectangle {
             id: resultGrid
             columns: 2
             spacing: 5
-            x: parent.border.width * 2
-            y: parent.border.width * 2
+            x: parent.border.width * 2 + 4
+            y: parent.border.width * 2 + 4
         }
     }
 
