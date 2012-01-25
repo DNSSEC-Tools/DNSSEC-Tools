@@ -95,14 +95,12 @@ Flickable {
         border.width: 5
         z: infoFlickable.z - 1
         width: messageBox.width
-        height: downDots.height + border.width*2
+        height: downArrow.height + border.width*2
         anchors.margins: 0
         opacity: infoFlickable.atYEnd ? 0 : 1
-        Text {
-            id: downDots
-            text: "..."
-            color: "white"
-            font.pointSize: 12
+        Image {
+            id: downArrow
+            source: ":/images/arrow.png"
             anchors.centerIn: parent
         }
         MouseArea {
@@ -124,16 +122,16 @@ Flickable {
         border.width: 5
         z: infoFlickable.z - 1
         width: messageBox.width
-        height: downDots.height + border.width*2
+        height: upArrow.height + border.width*2
         anchors.margins: 0
         opacity: infoFlickable.atYBeginning ? 0 : 1
-        Text {
-            id: upDots
-            text: "..."
-            color: "white"
-            font.pointSize: 12
+        Image {
+            id: upArrow
+            source: ":/images/arrow.png"
             anchors.centerIn: parent
+            rotation: 180
         }
+
         MouseArea {
             anchors.fill: parent
             onClicked: {
