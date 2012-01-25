@@ -80,6 +80,7 @@ Rectangle {
             onClicked: {
                 DNSSECCheck.runAllTests()
             }
+            enabled: resultGrid.rows > 0
         }
 
         Button {
@@ -265,7 +266,7 @@ Rectangle {
             name: "ran"
             PropertyChanges {
                 target: submitButton
-                enabled: true
+                enabled: resultGrid.rows > 1
             }
             PropertyChanges {
                 target: testButton
