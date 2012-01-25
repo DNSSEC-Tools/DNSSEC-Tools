@@ -49,20 +49,26 @@ public:
     Q_INVOKABLE QVariant getSetting(QString key);
 
     Q_PROPERTY(QString submissionMessage  READ submissionMessage                   NOTIFY submissionMessageChanged)
+    Q_PROPERTY(QString lastResultMessage  READ lastResultMessage                   NOTIFY lastResultMessageChanged)
 
     QString submissionMessage();
+    QString lastResultMessage();
 
 signals:
     void submissionMessageChanged();
+    void aResultMessageChanged(QString message);
+    void lastResultMessageChanged();
 
 public slots:
     void responseReceived(QNetworkReply *response);
+    void handleResultMessageChanged(QString message);
 
 private:
     QObject *m_parent;
     QStringList  m_serverAddresses;
     QNetworkAccessManager *m_manager;
     QString m_submissionMessage;
+    QString m_lastResultMessage;
 };
 
 #endif // TESTMANAGER_H

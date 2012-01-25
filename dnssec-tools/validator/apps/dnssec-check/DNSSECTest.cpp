@@ -10,6 +10,7 @@ DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const cha
 
     m_msgBuffer[0] = 0;
     m_msgBuffer[sizeof(m_msgBuffer)-1] = 0;
+    strcpy(m_msgBuffer, "Unknown");
 
     m_statusStrings.insert(UNKNOWN, "unknown");
     m_statusStrings.insert(GOOD, "good");
@@ -41,6 +42,8 @@ void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
     if (newStatus != m_status) {
         m_status = newStatus;
         emit statusChanged();
+        if (m_status == UNKNOWN)
+            setMessage("Unknown");
     }
 }
 
@@ -55,12 +58,14 @@ void DNSSECTest::check()
         setStatus(BAD);
     if (rc == 2)
         setStatus(WARNING);
+    setMessage(QString(m_msgBuffer));
 }
 
 void DNSSECTest::setMessage(const QString &message)
 {
     strncpy(m_msgBuffer, message.toAscii().data(), sizeof(m_msgBuffer)-1);
     emit messageChanged();
+    emit messageChanged(message);
 }
 
 const QString DNSSECTest::message() const
