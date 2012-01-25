@@ -13,7 +13,11 @@ Item {
         color: "white"
         opacity: .75
         anchors.fill: parent
-        z: parent.z + 1 -5
+        z: parent.z + 1
+        MouseArea {
+            anchors.fill: parent
+            onClicked: { } // no op to prevent it from passing lower
+        }
     }
     Rectangle {
         id: messageBox
