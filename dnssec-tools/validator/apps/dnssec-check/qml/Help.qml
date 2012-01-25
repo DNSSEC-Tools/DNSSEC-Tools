@@ -16,6 +16,44 @@ InfoBox {
     complete description of the tool, please visit the
     <a href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">DNSSEC-Check Wiki Page</a>.
 
+    <h2>Overview</h2>
+
+    <p>Upon starting, the DNSSEC-Check window shows you a list of the configured DNS resolvers for your system.  You can add new
+    resolvers to the list by clicking and typing into the box labeled \"<i>Click to add a new resolver address</i>\" and then hitting
+    return or pressing the \"<i>Add</i>\" button.  You can clear the list of resolvers and start with an empty list by clicking on
+    the \"<i>Clear Resolvers</i>\" button.
+
+    <p>The \"<i>Run Tessts</i>\" button will then execute each of the available tests for each of the resolvers and graphically
+    show you the results by coloring in the result circles.  The full list of tests and an explination of them can be found at the bottom
+    of this page.  The result circles have the following colors:
+
+    <ul>
+    <li>Green: the test passed
+    <li>Warning: the test partially succeeded
+    <li>Red: the test failed
+    </ul>
+
+    Hovering the mouse over a circle will show you a description of the test and its status.
+
+    To clear the test results, hit the reset button.  You can also individually click on a given circle to (re)run that test.
+
+    <h2>Submitting Your Results</h2>
+
+    One of the goals of the <a href=\"http://www.dnssec-deployment.org/\">DNSSEC-Deployment</a> project, which the
+    <a href=\"http://www.dnssec-tools.org/\">DNSSEC-Tools</a> project is a sub-project of, is to collect information about
+    the current deployment level of DNSSEC.  In order to do this, we're asking that willing participants submit the results of running
+    DNSSEC-Check to the collection server running on the DNSSEC-Tools web server.  The following pieces of information are collected and
+    processed by the collection server:
+    <ul>
+    <li>A hashed version of the IP address for each resolver</li>
+    <li>A hashed version of the IP address the submission is coming from</li>
+    <li>The success/fail/warning status result of each test that was run.</li>
+    </ul>
+
+    It should be noted that in the above data all the IP addresses are hashed to provide anonymity of the data.
+
+    <h2>Tests Performed</h2>
+
     <p>The following is a description of the tests performed.  Each test produces a color coded circle showing the results of
     the test:</p>
     <ul>
