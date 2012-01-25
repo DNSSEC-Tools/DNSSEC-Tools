@@ -11,7 +11,7 @@ Rectangle {
         id: label
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
-        font.pixelSize: 20
+        font.pixelSize: 18
         color: "white"
     }
 }

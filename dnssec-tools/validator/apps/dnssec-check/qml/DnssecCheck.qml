@@ -161,7 +161,8 @@ Rectangle {
     Text {
         id: testResultMessage
         anchors.top: buttonRow.bottom
-        anchors.margins: 10
+        anchors.leftMargin: 10
+        anchors.topMargin:  4
         anchors.left: parent.left
         font.pointSize:  12
         text: ""
@@ -173,8 +174,9 @@ Rectangle {
     Text {
         id: testStatusMessage
         anchors.top: testResultMessage.bottom
-        anchors.margins: 10
         anchors.left: parent.left
+        anchors.leftMargin: 10
+        anchors.topMargin:  2
         font.pointSize:  12
         text: ""
         onLinkActivated: Qt.openUrlExternally(link)
