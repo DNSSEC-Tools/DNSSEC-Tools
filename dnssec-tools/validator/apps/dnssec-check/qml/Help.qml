@@ -10,14 +10,12 @@ InfoBox {
 
     widthPercent: .75
 
-    text: "<style>a { color: #8888ff; } a:visited { color: red; }</style>
+    text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><h2>DNSSEC-Check Help</h2>
     The DNSSEC-Check application, developed as part of the <a href=\"http://www.dnssec-tools.org/\">DNSSEC-Tools</a> project
     is designed to test various aspects of DNS resolvers for their support of DNSSEC.  For the
     complete description of the tool, please visit the
-    <a href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">DNSSEC-Check Wiki Page</a>."
+    <a href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">DNSSEC-Check Wiki Page</a>.
 
-    // the following doesn't fit on the screen and we need a scroll bar to get it to work
-    /*
     <p>The following is a description of the tests performed.  Each test produces a color coded circle showing the results of
     the test:</p>
     <ul>
@@ -33,5 +31,5 @@ InfoBox {
     <li>AD: Does the resolver perform DNSSEC validation itself?</li>
     </ul>
     "
-    */
+
 }

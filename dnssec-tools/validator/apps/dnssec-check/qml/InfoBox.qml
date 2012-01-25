@@ -22,47 +22,85 @@ Flickable {
         anchors.fill: parent
         z: parent.z + 1
     }
-    Rectangle {
-        id: messageBox
-        color: "black"
+    Flickable {
+        id: infoFlickable
+        z: parent.z + 3
         anchors.centerIn: parent
-        z: parent.z + 2
-        height: messageText.height + infoButtonBox.height + anchors.margins * 5
-        width: widthPercent * parent.width
-        border.color: submitOk.border.color
-        border.width: 5
-        radius: 5
         anchors.margins: 10
-        Text {
-            id: messageText
-            anchors.top: messageBox.top
-            anchors.left: messageBox.left
-            width: parent.width - anchors.margins*2
-            color: "white"
-            anchors.margins: 10
-            font.pointSize: 12
-            wrapMode: Text.Wrap
+        flickableDirection: Flickable.VerticalFlick
+        clip: true
 
-            text: ""
-            onLinkActivated: Qt.openUrlExternally(link)
-        }
-        Row {
-            id: infoButtonBox
-            anchors.top: messageText.bottom
-            //activeFocus: anchors.left: messageText.left
-            anchors.margins: 10
-            spacing: 10
-            anchors.horizontalCenter: messageText.horizontalCenter
+        height: (parent.height < messageBox.height ? parent.height - bottomScrollBox.height * 4 : messageBox.height)
+        width: widthPercent * parent.width
 
-            Button {
-                id: submitOk
-                text: "Ok"
-                onClicked: {
-                    infoBox.state = "hidden"
-                    dnssecCheckTop.state = "submitted"
-                    dismissed()
+        contentWidth: messageBox.width
+        contentHeight: messageBox.height
+
+        Rectangle {
+            id: messageBox
+            color: "black"
+            anchors.centerIn: parent
+            z: parent.z + 2
+            width: messageText.width + border.width * 2 + 10
+            height: messageText.height + infoButtonBox.height + anchors.margins * 5
+            border.color: submitOk.border.color
+            border.width: 5
+            radius: 5
+            anchors.margins: 10
+            Text {
+                id: messageText
+                anchors.top: messageBox.top
+                anchors.left: messageBox.left
+                width: infoBox.width * infoBox.widthPercent - infoFlickable.anchors.margins * 2 - messageBox.anchors.margins * 2 -
+                       messageBox.border.width * 2
+                color: "white"
+                anchors.margins: 10
+                font.pointSize: 10
+                wrapMode: Text.Wrap
+
+                text: ""
+                onLinkActivated: Qt.openUrlExternally(link)
+            }
+            Row {
+                id: infoButtonBox
+                anchors.top: messageText.bottom
+                //activeFocus: anchors.left: messageText.left
+                anchors.margins: 10
+                spacing: 10
+                anchors.horizontalCenter: messageText.horizontalCenter
+
+                Button {
+                    id: submitOk
+                    text: "Ok"
+                    onClicked: {
+                        infoBox.state = "hidden"
+                        dnssecCheckTop.state = "submitted"
+                        dismissed()
+                    }
                 }
             }
+        }
+    }
+    Rectangle {
+        id: bottomScrollBox
+        color: "black"
+        anchors.topMargin: -border.width
+        anchors.top: infoFlickable.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.horizontalCenterOffset: -15
+        border.color: submitOk.border.color
+        border.width: 5
+        z: infoFlickable.z - 1
+        width: messageBox.width
+        height: dots.height + border.width*2
+        anchors.margins: 0
+        opacity: infoFlickable.atYEnd ? 0 : 1
+        Text {
+            id: dots
+            text: "..."
+            color: "white"
+            font.pointSize: 12
+            anchors.centerIn: parent
         }
     }
 
