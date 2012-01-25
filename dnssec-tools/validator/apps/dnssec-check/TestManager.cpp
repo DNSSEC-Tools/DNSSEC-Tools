@@ -13,6 +13,7 @@
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
 #include <QSettings>
+#include <QCryptographicHash>
 
 TestManager::TestManager(QObject *parent) :
     QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage()
@@ -159,4 +160,8 @@ void TestManager::handleResultMessageChanged(QString message)
 QString TestManager::lastResultMessage()
 {
     return m_lastResultMessage;
+}
+
+QString TestManager::sha1hex(QString input) {
+    return QCryptographicHash::hash(input.toUtf8(), QCryptographicHash::Sha1).toHex();
 }
