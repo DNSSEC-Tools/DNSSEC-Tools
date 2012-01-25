@@ -19,7 +19,7 @@ Rectangle {
     Rectangle {
         id: titleBox
         width: parent.width - anchors.margins * 2
-        height: titleText.height + 4
+        height: titleText.height + readyText.height + 4
         color: "#444"
         anchors.top: parent.top
         anchors.left: parent.left
@@ -32,8 +32,19 @@ Rectangle {
             font.pixelSize: 20
             font.underline: true
             font.bold: true
-            anchors.centerIn: parent
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
         }
+        Text {
+            id: readyText
+            text: "Is your world ready?"
+            color: "white"
+            font.pixelSize: 12
+            font.italic: true
+            anchors.top: titleText.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+
         Text {
             id: titleHelpButton
             text: "Help"
