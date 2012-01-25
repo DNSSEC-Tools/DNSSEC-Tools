@@ -48,6 +48,7 @@ Rectangle {
                 runTimer.start()
                 // test.check()
             }
+            dnssecCheckTop.state = "half"
         }
         hoverEnabled: true
         onEntered: { testName.font.pixelSize = parent.size/3 ; testName.color = "white"
