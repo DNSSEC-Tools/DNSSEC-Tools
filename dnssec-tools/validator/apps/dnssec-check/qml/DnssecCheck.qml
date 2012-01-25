@@ -100,6 +100,14 @@ Rectangle {
         }
 
         Button {
+            id: helpButton
+            text: "Help"
+            onClicked: {
+                helpBox.state = "visible"
+            }
+        }
+
+        Button {
             id: quitButton
             text: "Quit"
             enabled: resultsReceivedBox.state == "waiting" ? false : true;
@@ -109,12 +117,11 @@ Rectangle {
         }
     }
 
-    property string runningStatus: ""
+    property string runningStatus: "idle"
     Text {
         anchors.top: buttonRow.bottom
         anchors.left: parent.left
         anchors.margins: 10
-        width: parent.width
         font.pointSize: 12
         font.italic: true
         text: ((resultsReceivedBox.submittingText != "" || parent.runningStatus != "") ? "Status: " : "") +
@@ -122,6 +129,15 @@ Rectangle {
               ((resultsReceivedBox.submittingText != "" && parent.runningStatus != "idle") ? ", " : "") +
               resultsReceivedBox.submittingText
         color: "white"
+    }
+    Text {
+        id: dtlink
+        anchors.top: buttonRow.bottom
+        anchors.margins: 10
+        anchors.right: parent.right
+        font.pointSize:  12
+        text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><a href=\"http://www.dnssec-tools.org/\">http://www.dnssec-tools.org/</a>"
+        onLinkActivated: Qt.openUrlExternally(link)
     }
 
     WantToSubmitInfo {
@@ -154,6 +170,8 @@ Rectangle {
         }
     }
 
+    Help { id: helpBox }
+
     InfoBox {
         id: startupMessage
         state: "visible"
@@ -164,7 +182,7 @@ Rectangle {
 
         widthPercent: .75
 
-        text: "<h2>Welcome to DNSSEC-Check</h2><img style=\"float: right;\" src=\"qrc:/images/dnssec-check-64x64.png\" />
+        text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><h2>Welcome to DNSSEC-Check</h2><img style=\"float: right;\" src=\"qrc:/images/dnssec-check-64x64.png\" />
         <p>On the following screen you will see a list of the DNS resolvers configured for your system.</p>
         <p>Click on the <b>'Run Tests'</b> button
         to run some DNSSEC compliance tests on them.  After all the tests have run, please consider clicking the <b>'Submit Results'</b>
@@ -214,7 +232,7 @@ Rectangle {
             }
             PropertyChanges {
                 target: dnssecCheckTop
-                runningStatus: ""
+                runningStatus: "idle"
             }
         },
         State {
