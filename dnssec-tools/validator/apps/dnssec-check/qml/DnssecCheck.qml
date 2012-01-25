@@ -273,6 +273,25 @@ Rectangle {
             }
         },
         State {
+            name: "cleared"
+            PropertyChanges {
+                target:  resetButton
+                enabled: false
+            }
+            PropertyChanges {
+                target:  testButton
+                enabled: false
+            }
+            PropertyChanges {
+                target:  submitButton
+                enabled: false
+            }
+            PropertyChanges {
+                target:  clearButton
+                enabled: false
+            }
+        },
+        State {
             name: "half"
             PropertyChanges {
                 target: resetButton

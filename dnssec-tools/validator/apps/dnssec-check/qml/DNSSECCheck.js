@@ -18,6 +18,7 @@ function clearServers() {
     for(var i = resultGrid.children.length; i > 0 ; i--) {
         resultGrid.children[i-1].destroy()
     }
+    dnssecCheckTop.state = "cleared"
 }
 
 function makeLight(creator, type, name, host) {
