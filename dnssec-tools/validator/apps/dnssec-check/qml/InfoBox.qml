@@ -1,6 +1,6 @@
 import QtQuick 1.0
 
-Item {
+Flickable {
     id: infoBox
     z: 1
 
