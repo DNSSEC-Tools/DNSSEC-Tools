@@ -8,7 +8,7 @@ Rectangle {
     property int maxDefaultButtonSize: 125
 
     width: (buttonText.width + 10 > maxDefaultButtonSize) ? (buttonText.width + 10) : maxDefaultButtonSize
-    height: buttonText.height + 10
+    height: buttonText.height + 6
     border.width: 2
     radius: 5
     anchors.margins: 5
