@@ -83,7 +83,7 @@ Flickable {
     }
     Rectangle {
         id: bottomScrollBox
-        color: "black"
+        color: "#333"
         anchors.topMargin: -border.width
         anchors.top: infoFlickable.bottom
         anchors.horizontalCenter: parent.horizontalCenter
@@ -92,15 +92,50 @@ Flickable {
         border.width: 5
         z: infoFlickable.z - 1
         width: messageBox.width
-        height: dots.height + border.width*2
+        height: downDots.height + border.width*2
         anchors.margins: 0
         opacity: infoFlickable.atYEnd ? 0 : 1
         Text {
-            id: dots
+            id: downDots
             text: "..."
             color: "white"
             font.pointSize: 12
             anchors.centerIn: parent
+        }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                infoFlickable.contentY += infoFlickable.height / 2
+            }
+        }
+    }
+
+    Rectangle {
+        id: topScrollBox
+        color: "#333"
+        anchors.bottomMargin: -border.width
+        anchors.bottom: infoFlickable.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.horizontalCenterOffset: -15
+        border.color: submitOk.border.color
+        border.width: 5
+        z: infoFlickable.z - 1
+        width: messageBox.width
+        height: downDots.height + border.width*2
+        anchors.margins: 0
+        opacity: infoFlickable.atYBeginning ? 0 : 1
+        Text {
+            id: upDots
+            text: "..."
+            color: "white"
+            font.pointSize: 12
+            anchors.centerIn: parent
+        }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                infoFlickable.contentY -= infoFlickable.height / 2
+            }
         }
     }
 
