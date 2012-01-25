@@ -85,6 +85,7 @@ Rectangle {
         Button {
             id: resetButton
             text: "Reset"
+            enabled: false
             onClicked: {
                 DNSSECCheck.resetTests()
             }
@@ -200,7 +201,16 @@ Rectangle {
         DNSSECCheck.loadInitial()
     }
 
+    state: ""
     states: [
+        State {
+            name: ""
+            PropertyChanges {
+                target: resetButton
+                enabled: false
+            }
+        },
+
         State {
             name: "running"
             PropertyChanges {
