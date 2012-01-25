@@ -9,15 +9,16 @@ Item {
     property double widthPercent: .5
     state: "hidden"
 
+    MouseArea {
+        anchors.fill: parent
+        onClicked: { } // no op to prevent it from passing lower
+    }
+
     Rectangle {
         color: "white"
         opacity: .75
         anchors.fill: parent
         z: parent.z + 1
-        MouseArea {
-            anchors.fill: parent
-            onClicked: { } // no op to prevent it from passing lower
-        }
     }
     Rectangle {
         id: messageBox
