@@ -50,8 +50,10 @@ Rectangle {
             }
         }
         hoverEnabled: true
-        onEntered: { testName.font.pixelSize = parent.size/3 ; testName.color = "white" }
-        onExited:  { testName.font.pixelSize = parent.size/4 ; testName.color = "black"  }
+        onEntered: { testName.font.pixelSize = parent.size/3 ; testName.color = "white"
+                     testResultMessage.text = "Test Result: " + testName.text + " on " + test.serverAddress + ": " + test.message }
+        onExited:  { testName.font.pixelSize = parent.size/4 ; testName.color = "black"
+                     testResultMessage.text = "" }
     }
 
     states: [

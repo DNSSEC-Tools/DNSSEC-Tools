@@ -35,6 +35,7 @@ public:
 signals:
     void statusChanged();
     void messageChanged();
+    void messageChanged(QString message);
     void nameChanged();
     void serverAddressChanged();
 

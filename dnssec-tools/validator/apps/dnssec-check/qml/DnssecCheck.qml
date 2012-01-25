@@ -120,6 +120,7 @@ Rectangle {
 
     property string runningStatus: "idle"
     Text {
+        id: statusMessage
         anchors.top: buttonRow.bottom
         anchors.left: parent.left
         anchors.margins: 10
@@ -139,6 +140,17 @@ Rectangle {
         font.pointSize:  12
         text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><a href=\"http://www.dnssec-tools.org/\">http://www.dnssec-tools.org/</a>"
         onLinkActivated: Qt.openUrlExternally(link)
+    }
+
+    Text {
+        id: testResultMessage
+        anchors.top: statusMessage.bottom
+        anchors.margins: 10
+        anchors.left: parent.left
+        font.pointSize:  12
+        text: ""
+        onLinkActivated: Qt.openUrlExternally(link)
+        color: "white"
     }
 
     WantToSubmitInfo {
@@ -199,6 +211,13 @@ Rectangle {
 
     Component.onCompleted: {
         DNSSECCheck.loadInitial()
+    }
+
+    Connections {
+        target: testManager
+        onLastResultMessageChanged: {
+            testResultMessage.text = "Test Result: " + testManager.lastResultMessage
+        }
     }
 
     state: ""

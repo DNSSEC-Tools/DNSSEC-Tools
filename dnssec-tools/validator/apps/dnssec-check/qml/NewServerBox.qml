@@ -76,5 +76,6 @@ Rectangle {
         anchors.top: newHost.top
         anchors.margins: 5
         enabled: (newHost.text == newHost.defaultText || newHost.text == "") ? false : true
+        opacity: (newHost.text == newHost.defaultText || newHost.text == "") ? 0 : 1.0
     }
 }

@@ -15,34 +15,50 @@
 #include <QSettings>
 
 TestManager::TestManager(QObject *parent) :
-    QObject(parent), m_parent(parent), m_manager(0)
+    QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage()
 {
 }
 
 DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) {
+    DNSSECTest *newtest = 0;
+
     switch (type) {
     case basic_dns:
-            return new DNSSECTest(m_parent, &check_basic_dns, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_basic_dns, address.toAscii().data(), name);
+        break;
     case basic_tcp:
-            return new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
+        break;
     case do_bit:
-            return new DNSSECTest(m_parent, &check_do_bit, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_do_bit, address.toAscii().data(), name);
+        break;
     case ad_bit:
-            return new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
+        break;
     case do_has_rrsigs:
-            return new DNSSECTest(m_parent, &check_do_has_rrsigs, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs, address.toAscii().data(), name);
+        break;
     case small_edns0:
-            return new DNSSECTest(m_parent, &check_small_edns0, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_small_edns0, address.toAscii().data(), name);
+        break;
     case can_get_nsec:
-            return new DNSSECTest(m_parent, &check_can_get_nsec, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec, address.toAscii().data(), name);
+        break;
     case can_get_nsec3:
-            return new DNSSECTest(m_parent, &check_can_get_nsec3, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3, address.toAscii().data(), name);
+        break;
     case can_get_dnskey:
-            return new DNSSECTest(m_parent, &check_can_get_dnskey, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_dnskey, address.toAscii().data(), name);
+        break;
     case can_get_ds:
-            return new DNSSECTest(m_parent, &check_can_get_ds, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_ds, address.toAscii().data(), name);
+        break;
     }
-    return 0;
+    if (newtest) {
+        connect(newtest, SIGNAL(messageChanged(QString)), this, SLOT(handleResultMessageChanged(QString)));
+        connect(newtest, SIGNAL(messageChanged(QString)), this, SIGNAL(aResultMessageChanged(QString)));
+    }
+    return newtest;
 }
 
 QStringList TestManager::loadResolvConf()
@@ -132,4 +148,15 @@ void TestManager::saveSetting(QString key, QVariant value) {
 QVariant TestManager::getSetting(QString key) {
     QSettings settings("DNSSEC-Tools", "DNSSEC-Check");
     return settings.value(key).toString();
+}
+
+void TestManager::handleResultMessageChanged(QString message)
+{
+    m_lastResultMessage = message;
+    emit lastResultMessageChanged();
+}
+
+QString TestManager::lastResultMessage()
+{
+    return m_lastResultMessage;
 }
