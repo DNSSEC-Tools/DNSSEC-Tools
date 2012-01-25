@@ -9,6 +9,9 @@ Item {
     MouseArea {
         anchors.fill: parent
         onClicked: { } // no op to prevent it from passing lower
+        hoverEnabled: true
+        onEntered: { }
+        onExited:  { }
     }
 
     Rectangle {
