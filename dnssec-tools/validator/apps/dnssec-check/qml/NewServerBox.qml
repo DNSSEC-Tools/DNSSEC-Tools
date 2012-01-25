@@ -4,7 +4,7 @@ import DNSSECTools 1.0
 
 Rectangle {
     width:  parent.width - addButton.width - addButton.border.width * 8
-    height: newHost.height + border.width*2
+    height: newHost.height + border.width*4
     border.color: "#c0c0c0"
     border.width: 1
     anchors.top: resultsBox.bottom
