@@ -12,6 +12,7 @@
 #include <QtCore/QUrl>
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
+#include <QSettings>
 
 TestManager::TestManager(QObject *parent) :
     QObject(parent), m_parent(parent), m_manager(0)
@@ -121,4 +122,14 @@ void TestManager::responseReceived(QNetworkReply *response)
 QString TestManager::submissionMessage()
 {
     return m_submissionMessage;
+}
+
+void TestManager::saveSetting(QString key, QVariant value) {
+    QSettings settings("DNSSEC-Tools", "DNSSEC-Check");
+    settings.setValue(key, value);
+}
+
+QVariant TestManager::getSetting(QString key) {
+    QSettings settings("DNSSEC-Tools", "DNSSEC-Check");
+    return settings.value(key).toString();
 }
