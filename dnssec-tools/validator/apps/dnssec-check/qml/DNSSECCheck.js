@@ -78,6 +78,7 @@ function runAllTests() {
     resetTests()
     testNumber = -1;
     dnssecCheckTop.state = "running"
+    setTestStartMessage();
     runNextTest();
 }
 
@@ -86,9 +87,19 @@ function runNextTest() {
     if (testNumber < tests.length) {
 	tests[testNumber].test.check();
         timer.start();
+        setTestStartMessage()
     } else {
         timer.stop()
         dnssecCheckTop.state = "ran"
+        testStatusMessage.text = ""
+        testResultMessage.text = "All tests have run; hover over a result for details"
+    }
+}
+
+function setTestStartMessage() {
+    if (testNumber + 1 < tests.length) {
+        testStatusMessage.text =
+                "Test Status: sending test for " + tests[testNumber+1].test.name + " to " + tests[testNumber+1].test.serverAddress
     }
 }
 

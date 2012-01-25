@@ -151,6 +151,18 @@ Rectangle {
         text: ""
         onLinkActivated: Qt.openUrlExternally(link)
         color: "white"
+        wrapMode: Text.Wrap
+    }
+    Text {
+        id: testStatusMessage
+        anchors.top: testResultMessage.bottom
+        anchors.margins: 10
+        anchors.left: parent.left
+        font.pointSize:  12
+        text: ""
+        onLinkActivated: Qt.openUrlExternally(link)
+        color: "white"
+        wrapMode: Text.Wrap
     }
 
     WantToSubmitInfo {
