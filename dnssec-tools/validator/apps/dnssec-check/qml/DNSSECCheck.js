@@ -104,7 +104,7 @@ function submitResults() {
     var count = 0;
     for(var host in hosttests) {
         datalist.push("server" + count)
-        datalist.push(host)
+        datalist.push(testManager.sha1hex(host))
         for (var testnum in hosttests[host]) {
             var test = hosttests[host][testnum]
             datalist.push(test.name + count)

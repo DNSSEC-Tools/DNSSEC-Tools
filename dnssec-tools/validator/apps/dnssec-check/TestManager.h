@@ -16,7 +16,7 @@
 #define ENABLE_RESULTS_SUBMISSION 1
 
 #ifndef RESULTS_SUBMIT_URL
-#define RESULTS_SUBMIT_URL "http://www.hardakers.net/cgi-bin/dnssec-check-results.fcgi"
+#define RESULTS_SUBMIT_URL "http://www.hardakers.net/trend-tracker/trend-tracker.cgi?type=submit&"
 #endif
 
 static const QString resultServerBaseURL = RESULTS_SUBMIT_URL;
@@ -47,6 +47,7 @@ public:
     Q_INVOKABLE void submitResults(QVariantList tests);
     Q_INVOKABLE void saveSetting(QString key, QVariant value);
     Q_INVOKABLE QVariant getSetting(QString key);
+    Q_INVOKABLE QString sha1hex(QString input);
 
     Q_PROPERTY(QString submissionMessage  READ submissionMessage                   NOTIFY submissionMessageChanged)
     Q_PROPERTY(QString lastResultMessage  READ lastResultMessage                   NOTIFY lastResultMessageChanged)
