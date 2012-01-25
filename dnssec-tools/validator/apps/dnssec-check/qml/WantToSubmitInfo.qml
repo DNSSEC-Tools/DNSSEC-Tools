@@ -10,7 +10,8 @@ Item {
         color: "white"
         opacity: .75
         anchors.fill: parent
-        z: parent.z + 1 -5
+        z: parent.z + 1
+
     }
     Rectangle {
         id: submitBox
