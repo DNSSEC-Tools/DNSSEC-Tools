@@ -54,6 +54,14 @@ function testHost(host) {
     runAllTests()
 }
 
+function haveAllTestsRun() {
+    for(var i = tests.length; i > 0 ; i--) {
+        if (tests[i-1].test.status == DNSSECTest.UNKNOWN)
+            return false
+    }
+    return true
+}
+
 function makeLight(creator, type, name, host) {
     var result = creator.createObject(resultGrid)
     result.name = name
@@ -143,7 +151,7 @@ function runNextTest() {
         setTestStartMessage()
     } else {
         timer.stop()
-        if (currentTestHost == "")
+        if (currentTestHost == "" || haveAllTestsRun())
             dnssecCheckTop.state = "ran"
         else
             dnssecCheckTop.state = "half"
