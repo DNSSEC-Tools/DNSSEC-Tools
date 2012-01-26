@@ -1,8 +1,11 @@
-var hosts = [];
-var tests = [];
-var rawtests = [];
-var hosttests = {};
-var testNumber = 0;
+var hosts = []
+var tests = []
+var rawtests = []
+var testNumber = 0
+var hosttests = {}
+var numTests = 10
+var numColumns = numTests + 1
+var currentTestHost = ""
 
 function loadInitial() {
     hosts = testManager.loadResolvConf();
@@ -19,6 +22,36 @@ function clearServers() {
         resultGrid.children[i-1].destroy()
     }
     dnssecCheckTop.state = "cleared"
+}
+
+function removeHost(host) {
+    for(var i = tests.length; i > 0 ; i--) {
+        if (tests[i-1].test.serverAddress == host) {
+            console.log("removing: " + (i-1))
+            tests.splice(i-1,1)
+            resultGrid.children[i + Math.floor((i-1) / numTests)].destroy()
+        }
+    }
+    for(var i = resultGrid.children.length; i > 0; i--) {
+        if (resultGrid.children[i-1].hostName == host) {
+            resultGrid.children[i-1].destroy()
+        }
+    }
+}
+
+function clearHost(host) {
+    for(var i = tests.length; i > 0 ; i--) {
+        if (tests[i-1].test.serverAddress == host) {
+            tests[i-1].test.status = DNSSECTest.UNKNOWN
+        }
+    }
+}
+
+function testHost(host) {
+    clearHost(host)
+    currentTestHost = host
+    console.log("starting tests for '" + currentTestHost + "'")
+    runAllTests()
 }
 
 function makeLight(creator, type, name, host) {
@@ -86,24 +119,37 @@ function createAllComponents() {
 }
 
 function runAllTests() {
-    resetTests()
+    if (currentTestHost == "") {
+        resetTests()
+    }
     testNumber = -1;
     dnssecCheckTop.state = "running"
     setTestStartMessage();
+    console.log("starting tests for '" + currentTestHost + "'")
     runNextTest();
 }
 
 function runNextTest() {
-    testNumber++;
+    testNumber++
+
+    // find itmes from the specific host we want to test, if not all of them
+    while (currentTestHost != "" && testNumber < tests.length && tests[testNumber].test.serverAddress != currentTestHost) {
+        testNumber++
+    }
+
     if (testNumber < tests.length) {
 	tests[testNumber].test.check();
         timer.start();
         setTestStartMessage()
     } else {
         timer.stop()
-        dnssecCheckTop.state = "ran"
+        if (currentTestHost == "")
+            dnssecCheckTop.state = "ran"
+        else
+            dnssecCheckTop.state = "half"
         testStatusMessage.text = ""
         testResultMessage.text = "All tests have completed; hover over a result for details"
+        currentTestHost = ""
     }
 }
 

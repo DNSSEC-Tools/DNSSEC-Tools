@@ -131,7 +131,8 @@ OTHER_FILES += \
     android/res/values-fa/strings.xml \
     qml/WantToSubmitInfo.qml \
     qml/InfoBox.qml \
-    qml/Help.qml
+    qml/Help.qml \
+    qml/HostMenu.qml
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
@@ -161,6 +162,7 @@ OTHER_FILES += \
     android/res/drawable-hdpi/icon.png \
     android/res/drawable-mdpi/icon.png \
     android/res/drawable-ldpi/icon.png
+
 
 
 
