@@ -14,4 +14,12 @@ Rectangle {
         font.pixelSize: 18
         color: "white"
     }
+
+    MouseArea {
+        anchors.fill: parent
+        onClicked: {
+            hostMenu.host = hostName
+            hostMenu.state = "visible"
+        }
+    }
 }

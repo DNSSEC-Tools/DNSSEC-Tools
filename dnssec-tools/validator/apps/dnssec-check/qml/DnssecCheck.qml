@@ -243,6 +243,19 @@ Rectangle {
 
     Help { id: helpBox }
 
+    HostMenu {
+        id: hostMenu
+        onRemoveHost: {
+            DNSSECCheck.removeHost(host)
+        }
+        onTestHost: {
+            DNSSECCheck.testHost(host)
+        }
+        onClearHost: {
+            DNSSECCheck.clearHost(host)
+        }
+    }
+
     InfoBox {
         id: startupMessage
         state: testManager.getSetting("initMessageDisplayed") == dnssecToolsVersion ? "hidden" : "visible"
