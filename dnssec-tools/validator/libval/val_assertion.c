@@ -4069,20 +4069,23 @@ verify_provably_insecure(val_context_t * context,
                 val_log(context, LOG_INFO, "verify_provably_insecure(): %s is provably insecure", name_p);
                 *is_pinsecure = 1;
             }
-        } 
+        } else if (results->val_rc_status == VAL_NONEXISTENT_NAME ||
+                   results->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
+            /*
+             * Delegation does not exist. 
+             * Retry with next zonecut
+             */
+            FREE(zonecut_n);
+            zonecut_n = NULL;
+            continue;
+        }
         /* 
          * If this is not a proof, check that curzone_n matches 
          * the zonecut in the RRSIG for the DS
          */
-        else if (!val_does_not_exist(results->val_rc_status)) {
-            if (!verify_zonecut_in_rrsig(results, curzone_n)) {
-                val_log(context, LOG_NOTICE, 
-                        "verify_provably_insecure(): Inconsistent zonecut for DS at %s", tempname_p);
-                goto err; 
-            }
-        } else {
+        else if (!verify_zonecut_in_rrsig(results, curzone_n)) {
             val_log(context, LOG_NOTICE, 
-                    "verify_provably_insecure(): Misplaced DS non-existance proof for %s", tempname_p);
+                    "verify_provably_insecure(): Inconsistent zonecut for DS at %s", tempname_p);
             goto err; 
         }
 
@@ -4117,7 +4120,7 @@ verify_provably_insecure(val_context_t * context,
                 goto donefornow;
         }
 
-        /* validated DS; look for next (more specific) zonecut */ 
+        /* look for next (more specific) zonecut */ 
         if (curzone_n) {
             FREE(curzone_n);
         }
