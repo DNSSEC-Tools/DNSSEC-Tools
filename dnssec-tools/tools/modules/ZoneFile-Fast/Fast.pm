@@ -4,7 +4,7 @@
 # can do whatever you want with this stuff. If we meet some day, and you think
 # this stuff is worth it, you can buy me a beer in return.   Anton Berezin
 # ----------------------------------------------------------------------------
-# Copyright (c) 2005-2011 SPARTA, Inc.
+# Copyright (c) 2005-2012 SPARTA, Inc.
 # All rights reserved.
 #  
 # Redistribution and use in source and binary forms, with or without
@@ -1507,7 +1507,7 @@ Copyright 2003 by Anton Berezin and catpipe Systems ApS
 
   Anton Berezin
 
-Copyright (c) 2004-2011 SPARTA, Inc.
+Copyright (c) 2004-2012 SPARTA, Inc.
   All rights reserved.
    
   Redistribution and use in source and binary forms, with or without
