@@ -71,6 +71,14 @@ Flickable {
                     hostMenuBox.state = "hidden"
                 }
             }
+            Button {
+                id: cancelHost
+                text: "Cancel"
+                width: 300
+                onClicked: {
+                    hostMenuBox.state = "hidden"
+                }
+            }
         }
     }
 
