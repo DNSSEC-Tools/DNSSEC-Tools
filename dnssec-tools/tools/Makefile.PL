@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2009-2011 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2009-2012 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 
