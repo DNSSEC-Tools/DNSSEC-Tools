@@ -1,4 +1,3682 @@
 ------------------------------------------------------------------------
+r6428 | hardaker | 2012-01-26 21:23:51 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+update to do creation and signing of multiple tar files
+------------------------------------------------------------------------
+r6427 | hardaker | 2012-01-26 20:50:15 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/INSTALL
+   M /trunk/dnssec-tools/README
+   M /trunk/dnssec-tools/apps/README
+   M /trunk/dnssec-tools/apps/mozilla/README.firefox
+   M /trunk/dnssec-tools/apps/mozilla/README.nspr
+   M /trunk/dnssec-tools/apps/mozilla/README.xulrunner
+   M /trunk/dnssec-tools/apps/nagios/README
+   M /trunk/dnssec-tools/apps/nagios/dt_zonestat
+   M /trunk/dnssec-tools/apps/nagios/dtnagobj
+   M /trunk/dnssec-tools/apps/sendmail/README
+   M /trunk/dnssec-tools/apps/zabbix/README
+   M /trunk/dnssec-tools/apps/zabbix/backup-zabbix
+   M /trunk/dnssec-tools/apps/zabbix/item.fields
+   M /trunk/dnssec-tools/apps/zabbix/rollstate
+   M /trunk/dnssec-tools/apps/zabbix/zonestate
+   M /trunk/dnssec-tools/podmantex
+   M /trunk/dnssec-tools/podtrans
+   M /trunk/dnssec-tools/testing/README
+   M /trunk/dnssec-tools/tools/Makefile.PL
+   M /trunk/dnssec-tools/tools/convertar/Makefile.PL
+   M /trunk/dnssec-tools/tools/convertar/convertar
+   M /trunk/dnssec-tools/tools/convertar/lib/Net/DNS/SEC/Tools/TrustAnchor/Makefile.PL
+   M /trunk/dnssec-tools/tools/demos/demo-tools/autods
+   M /trunk/dnssec-tools/tools/demos/demo-tools/makezones
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/makezones
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/rundemo
+   M /trunk/dnssec-tools/tools/dnspktflow/Makefile.PL
+   M /trunk/dnssec-tools/tools/dnspktflow/dnspktflow
+   M /trunk/dnssec-tools/tools/donuts/Makefile.PL
+   M /trunk/dnssec-tools/tools/donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/donutsd
+   M /trunk/dnssec-tools/tools/donuts/rules/check_nameservers.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/dns.errors.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/nsec_check.rules.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/parent_child.rules.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/recommendations.rules.txt
+   M /trunk/dnssec-tools/tools/drawvalmap/Makefile.PL
+   M /trunk/dnssec-tools/tools/drawvalmap/drawvalmap
+   M /trunk/dnssec-tools/tools/etc/Makefile.PL
+   M /trunk/dnssec-tools/tools/etc/README
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf.pod
+   M /trunk/dnssec-tools/tools/logwatch/README
+   M /trunk/dnssec-tools/tools/maketestzone/Makefile.PL
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+   M /trunk/dnssec-tools/tools/mapper/Makefile.PL
+   M /trunk/dnssec-tools/tools/mapper/mapper
+   M /trunk/dnssec-tools/tools/modules/BootStrap.pm
+   M /trunk/dnssec-tools/tools/modules/Makefile.PL
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-addrinfo/addrinfo.pm
+   M /trunk/dnssec-tools/tools/modules/QWPrimitives.pm
+   M /trunk/dnssec-tools/tools/modules/README
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+   M /trunk/dnssec-tools/tools/modules/conf.pm.in
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+   M /trunk/dnssec-tools/tools/modules/keyrec.pod
+   M /trunk/dnssec-tools/tools/modules/rolllog.pm
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+   M /trunk/dnssec-tools/tools/modules/rollrec.pod
+   M /trunk/dnssec-tools/tools/modules/tests/Makefile.PL
+   M /trunk/dnssec-tools/tools/modules/tests/README
+   M /trunk/dnssec-tools/tools/modules/tests/test-conf
+   M /trunk/dnssec-tools/tools/modules/tests/test-keyrec
+   M /trunk/dnssec-tools/tools/modules/tests/test-rollmgr
+   M /trunk/dnssec-tools/tools/modules/tests/test-rollrec
+   M /trunk/dnssec-tools/tools/modules/tests/test-timetrans
+   M /trunk/dnssec-tools/tools/modules/tests/test-toolopts1
+   M /trunk/dnssec-tools/tools/modules/tests/test-toolopts2
+   M /trunk/dnssec-tools/tools/modules/tests/test-toolopts3
+   M /trunk/dnssec-tools/tools/modules/timetrans.pm
+   M /trunk/dnssec-tools/tools/modules/tooloptions.pm
+   M /trunk/dnssec-tools/tools/scripts/Makefile.PL
+   M /trunk/dnssec-tools/tools/scripts/README
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+   M /trunk/dnssec-tools/tools/scripts/dtck
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+   M /trunk/dnssec-tools/tools/scripts/dtdefs
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+   M /trunk/dnssec-tools/tools/scripts/dtreqmods
+   M /trunk/dnssec-tools/tools/scripts/dtupdkrf
+   M /trunk/dnssec-tools/tools/scripts/expchk
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+   M /trunk/dnssec-tools/tools/scripts/getdnskeys
+   M /trunk/dnssec-tools/tools/scripts/getds
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+   M /trunk/dnssec-tools/tools/scripts/lights
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+   M /trunk/dnssec-tools/tools/scripts/rolllog
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+   M /trunk/dnssec-tools/tools/scripts/rollset
+   M /trunk/dnssec-tools/tools/scripts/rp-wrapper
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+   M /trunk/dnssec-tools/tools/scripts/tachk
+   M /trunk/dnssec-tools/tools/scripts/timetrans
+   M /trunk/dnssec-tools/tools/scripts/trustman
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+   M /trunk/dnssec-tools/validator/README
+   M /trunk/dnssec-tools/validator/apps/README
+   M /trunk/dnssec-tools/validator/apps/getaddr.c
+   M /trunk/dnssec-tools/validator/apps/gethost.c
+   M /trunk/dnssec-tools/validator/apps/getname.c
+   M /trunk/dnssec-tools/validator/apps/getquery.c
+   M /trunk/dnssec-tools/validator/apps/getrrset.c
+   M /trunk/dnssec-tools/validator/apps/libsres_test.c
+   M /trunk/dnssec-tools/validator/apps/libval_check_conf.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.h
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+   M /trunk/dnssec-tools/validator/doc/getaddr.pod
+   M /trunk/dnssec-tools/validator/doc/gethost.pod
+   M /trunk/dnssec-tools/validator/doc/getname.pod
+   M /trunk/dnssec-tools/validator/doc/getquery.pod
+   M /trunk/dnssec-tools/validator/doc/getrrset.pod
+   M /trunk/dnssec-tools/validator/doc/libsres-implementation-notes
+   M /trunk/dnssec-tools/validator/doc/libsres.pod
+   M /trunk/dnssec-tools/validator/doc/libval-implementation-notes
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+   M /trunk/dnssec-tools/validator/doc/libval_check_conf.pod
+   M /trunk/dnssec-tools/validator/doc/libval_shim.pod
+   M /trunk/dnssec-tools/validator/doc/val_get_rrset.pod
+   M /trunk/dnssec-tools/validator/doc/val_getaddrinfo.pod
+   M /trunk/dnssec-tools/validator/doc/val_gethostbyname.pod
+   M /trunk/dnssec-tools/validator/doc/val_res_query.pod
+   M /trunk/dnssec-tools/validator/doc/validate.pod
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/include/validator/val_errors.h
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libsres/res_mkquery.h
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.h
+   M /trunk/dnssec-tools/validator/libval/README
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_assertion.h
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+   M /trunk/dnssec-tools/validator/libval/val_cache.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+   M /trunk/dnssec-tools/validator/libval/val_crypto.c
+   M /trunk/dnssec-tools/validator/libval/val_crypto.h
+   M /trunk/dnssec-tools/validator/libval/val_get_rrset.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+   M /trunk/dnssec-tools/validator/libval/val_gethostbyname.c
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+   M /trunk/dnssec-tools/validator/libval/val_parse.c
+   M /trunk/dnssec-tools/validator/libval/val_parse.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.h
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+   M /trunk/dnssec-tools/validator/libval/val_support.h
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.h
+   M /trunk/dnssec-tools/validator/libval/val_x_query.c
+
+copyright update for 2012
+------------------------------------------------------------------------
+r6426 | hardaker | 2012-01-26 20:47:51 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+more NEWS updates
+------------------------------------------------------------------------
+r6425 | hardaker | 2012-01-26 20:47:37 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+more news
+------------------------------------------------------------------------
+r6424 | hardaker | 2012-01-26 20:11:14 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+NEWS file update
+------------------------------------------------------------------------
+r6423 | hardaker | 2012-01-26 20:11:02 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+
+Change the data submission destination to the dnssec-tools collection agent
+------------------------------------------------------------------------
+r6422 | hardaker | 2012-01-26 20:10:49 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostLabel.qml
+
+set the test status on resolver-mouse-over to explain you can click on it
+------------------------------------------------------------------------
+r6421 | hardaker | 2012-01-26 20:10:34 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostMenu.qml
+
+Cancel button added to the resolver options
+------------------------------------------------------------------------
+r6420 | hardaker | 2012-01-26 20:10:19 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Help.qml
+
+update help to include resolver-clicks
+------------------------------------------------------------------------
+r6419 | hserus | 2012-01-26 14:15:50 -0800 (Thu, 26 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+While checking for the provably insecure condition, handle the case where the DS query returns a name error (which
+tells us that the canditate zonecut did not actually exist) 
+
+------------------------------------------------------------------------
+r6418 | tewok | 2012-01-26 12:32:51 -0800 (Thu, 26 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+Notes about rollerd's modifications for release 1.12.
+
+------------------------------------------------------------------------
+r6417 | hardaker | 2012-01-26 06:34:55 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+change to the ran state when all tests have been run by host buttons
+------------------------------------------------------------------------
+r6416 | hardaker | 2012-01-26 06:34:39 -0800 (Thu, 26 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostLabel.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostMenu.qml
+
+Added a new host menu to clear/test/remove resolvers
+------------------------------------------------------------------------
+r6415 | hardaker | 2012-01-25 13:09:45 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Help.qml
+
+better help text
+------------------------------------------------------------------------
+r6414 | hardaker | 2012-01-25 13:09:29 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+Show the info screen on each new version
+------------------------------------------------------------------------
+r6413 | hardaker | 2012-01-25 11:44:11 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+grid overlap onto square fixed
+------------------------------------------------------------------------
+r6412 | hardaker | 2012-01-25 11:37:23 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostLabel.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+Minor spacing changes
+------------------------------------------------------------------------
+r6411 | hardaker | 2012-01-25 11:37:09 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+
+shorten button a touch
+------------------------------------------------------------------------
+r6410 | hardaker | 2012-01-25 11:36:54 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+is your world ready yet sub-title
+------------------------------------------------------------------------
+r6409 | hardaker | 2012-01-25 11:10:12 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+
+Set the window title properly for qml
+------------------------------------------------------------------------
+r6408 | hardaker | 2012-01-25 10:42:09 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+Make the clear hosts button enter a new disabled state
+------------------------------------------------------------------------
+r6407 | hardaker | 2012-01-25 09:56:17 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/images/dnssec-check-512.png
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/images/dnssec-check-512.svg
+
+512 sized icons
+------------------------------------------------------------------------
+r6406 | hardaker | 2012-01-25 09:56:02 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/images/arrow.png
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+Use an arrow instead of dots for too-much-text
+------------------------------------------------------------------------
+r6405 | hardaker | 2012-01-25 09:55:46 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Help.qml
+
+help text cleanups
+------------------------------------------------------------------------
+r6404 | hardaker | 2012-01-25 09:55:34 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+Added a clear servers button
+------------------------------------------------------------------------
+r6403 | hardaker | 2012-01-25 09:55:20 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+set the state to half on a single result click
+------------------------------------------------------------------------
+r6402 | hardaker | 2012-01-25 09:55:07 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+make the reset button be there if in a half-ran state
+------------------------------------------------------------------------
+r6401 | hardaker | 2012-01-25 09:54:53 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+moved the help button to the top inside the title bar
+------------------------------------------------------------------------
+r6400 | hardaker | 2012-01-25 09:54:40 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+Improved error messages and make status messages wrap properly
+------------------------------------------------------------------------
+r6399 | hardaker | 2012-01-25 09:54:26 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+have the add button appear and don't leave a blank space till typing starts
+------------------------------------------------------------------------
+r6398 | hardaker | 2012-01-25 09:54:13 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+slight wording change
+------------------------------------------------------------------------
+r6397 | hardaker | 2012-01-25 09:54:00 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+only enable the run tests button if the number of servers > 0
+------------------------------------------------------------------------
+r6396 | hardaker | 2012-01-25 09:53:47 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+
+Don't run the click function unless we're enabled
+------------------------------------------------------------------------
+r6395 | hardaker | 2012-01-25 09:53:34 -0800 (Wed, 25 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+Test status line updates:
+- indicate what it's doing on a new line
+- set a closing message when all the tests are completed
+------------------------------------------------------------------------
+r6394 | hardaker | 2012-01-25 09:53:21 -0800 (Wed, 25 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml
+
+protect hover events in popup dialogs
+------------------------------------------------------------------------
+r6393 | hserus | 2012-01-25 08:53:02 -0800 (Wed, 25 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+
+Support build on OpenBSD
+
+------------------------------------------------------------------------
+r6392 | hardaker | 2012-01-24 21:45:54 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+sha1 the ip addresses from the resolver list from the qml interface
+------------------------------------------------------------------------
+r6391 | hardaker | 2012-01-24 21:45:38 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+display test results in a status line
+------------------------------------------------------------------------
+r6390 | hardaker | 2012-01-24 21:45:19 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+make top/bottom scroll indicators act on button presses
+------------------------------------------------------------------------
+r6389 | hardaker | 2012-01-24 21:45:04 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+gray out the reset button after use
+------------------------------------------------------------------------
+r6388 | hardaker | 2012-01-24 21:44:50 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Help.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+make the help box scrollable using the flickable model
+------------------------------------------------------------------------
+r6387 | hardaker | 2012-01-24 21:44:35 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+only show the info box on startup once, after that it isn't shown again
+------------------------------------------------------------------------
+r6386 | hardaker | 2012-01-24 21:44:20 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+increase the text entry size a touch
+------------------------------------------------------------------------
+r6385 | hardaker | 2012-01-24 21:44:06 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+added a "add" button to the right of the text entry box
+------------------------------------------------------------------------
+r6384 | hardaker | 2012-01-24 21:43:51 -0800 (Tue, 24 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Help.qml
+
+multiple gui improvements:
+- help text
+- link text is a whiter blue
+------------------------------------------------------------------------
+r6383 | hardaker | 2012-01-24 21:43:35 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+set a default status of idle when nothing is happening
+------------------------------------------------------------------------
+r6382 | hardaker | 2012-01-24 21:43:20 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+put the info box inside a flickable for long messages
+------------------------------------------------------------------------
+r6381 | hardaker | 2012-01-24 21:43:04 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml
+
+Moved the click-prevention up a level to block more
+------------------------------------------------------------------------
+r6380 | hardaker | 2012-01-24 21:42:49 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml
+
+Don't let clicks pass through to the lower areas
+------------------------------------------------------------------------
+r6379 | hardaker | 2012-01-24 21:42:34 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+make the new hosts line more obvious you should click in it
+------------------------------------------------------------------------
+r6378 | hardaker | 2012-01-24 21:42:18 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+open link in intro box
+------------------------------------------------------------------------
+r6377 | rstory | 2012-01-24 08:26:19 -0800 (Tue, 24 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+fix unitialized variable
+------------------------------------------------------------------------
+r6376 | hserus | 2012-01-24 08:01:27 -0800 (Tue, 24 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_assertion.h
+
+When we're clearing the query structure for a query that we currently hold in our queries_for_query list, we need to check if the reference count is 1, not 0.
+
+------------------------------------------------------------------------
+r6375 | hserus | 2012-01-24 06:47:39 -0800 (Tue, 24 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/install.rdf
+
+Works with versions 10+ too
+
+------------------------------------------------------------------------
+r6374 | hardaker | 2012-01-23 14:51:25 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+osx specific lib modifications
+------------------------------------------------------------------------
+r6373 | hardaker | 2012-01-23 14:50:56 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/images/dnssec-check.icns
+
+new mac icon that works
+------------------------------------------------------------------------
+r6372 | hardaker | 2012-01-23 13:45:05 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+removed a no longer existing header
+------------------------------------------------------------------------
+r6371 | hardaker | 2012-01-23 13:43:27 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+
+added a missing backslash to the qmake list of extra files
+------------------------------------------------------------------------
+r6370 | hardaker | 2012-01-23 13:43:09 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/images/dnssec-check.icns
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+
+added an icon for qml and mac versions
+------------------------------------------------------------------------
+r6369 | hardaker | 2012-01-23 13:42:44 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/images/dnssec-check-64x64.png
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+added the icon to the info box and fixed the info box sizing
+------------------------------------------------------------------------
+r6368 | hserus | 2012-01-23 12:48:15 -0800 (Mon, 23 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+Added some newsworthy items for 1.12. 
+
+------------------------------------------------------------------------
+r6367 | rstory | 2012-01-23 12:03:53 -0800 (Mon, 23 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.h
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+
+Revert "validate: fprintf -> val_log"
+
+This reverts all changes from commits 6362 and 6365
+------------------------------------------------------------------------
+r6366 | hserus | 2012-01-23 11:39:42 -0800 (Mon, 23 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Keep processing root.hints information even if IPv6 addresses could not be parsed.
+
+------------------------------------------------------------------------
+r6365 | rstory | 2012-01-23 09:52:59 -0800 (Mon, 23 Jan 2012) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.h
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+
+more printf to val_log conversions
+
+ - print_response is the odd man out, since it resides in
+   libsres. updated to use log_response, which will use
+   libsres logging, which, if configured appropriately, will
+   pass through to libval logging instead of printing to stderr
+------------------------------------------------------------------------
+r6364 | rstory | 2012-01-23 09:52:47 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+fix bad merge
+------------------------------------------------------------------------
+r6363 | rstory | 2012-01-23 09:52:34 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+
+merge two fprintfs into one
+------------------------------------------------------------------------
+r6362 | rstory | 2012-01-23 09:52:20 -0800 (Mon, 23 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+validate: fprintf -> val_log
+------------------------------------------------------------------------
+r6361 | hardaker | 2012-01-22 08:22:47 -0800 (Sun, 22 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml (from /trunk/dnssec-tools/validator/apps/dnssec-check/qml/SubmitResults.qml:6360)
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/SubmitResults.qml
+
+Multiple usability improvements:
+  - display an info box at start up per rstory's suggestion
+  - make the lights go gray again if testing fresh from a single light click
+------------------------------------------------------------------------
+r6360 | hardaker | 2012-01-21 12:31:15 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/SubmitResults.qml
+
+show a status line when something is happening in the background
+------------------------------------------------------------------------
+r6359 | hardaker | 2012-01-21 12:31:01 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+
+remove some debugging statements
+------------------------------------------------------------------------
+r6358 | hardaker | 2012-01-21 12:30:49 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/SubmitResults.qml
+
+disable the quit button while waiting for results
+------------------------------------------------------------------------
+r6357 | hardaker | 2012-01-21 12:30:33 -0800 (Sat, 21 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/SubmitResults.qml (from /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml:6356)
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml
+
+Added a new submitResults dialog that shows a message when the server
+gets the response.
+------------------------------------------------------------------------
+r6356 | hardaker | 2012-01-21 12:30:13 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml
+
+A new submit window for submitting data from QML
+------------------------------------------------------------------------
+r6355 | hardaker | 2012-01-21 12:29:56 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+support for submitting results from the QML interface
+------------------------------------------------------------------------
+r6354 | hardaker | 2012-01-21 12:29:40 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/android/build.xml
+
+case change the app name to DNSSEC
+------------------------------------------------------------------------
+r6353 | hardaker | 2012-01-21 12:29:25 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/build.xml
+
+case change the app name to DNSSEC
+------------------------------------------------------------------------
+r6352 | hardaker | 2012-01-21 12:29:10 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/AndroidManifest.xml
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/build.xml
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/res
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/res/drawable-hdpi
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/res/drawable-hdpi/icon.png
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/res/drawable-ldpi
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/res/drawable-ldpi/icon.png
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/res/drawable-mdpi
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/android/res/drawable-mdpi/icon.png
+
+android build files
+------------------------------------------------------------------------
+r6351 | hardaker | 2012-01-21 08:04:58 -0800 (Sat, 21 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/main.cpp
+
+android improvements for building
+------------------------------------------------------------------------
+r6350 | tewok | 2012-01-20 13:37:38 -0800 (Fri, 20 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Removed some code in favor of calling keyrec_settime().
+
+------------------------------------------------------------------------
+r6349 | hserus | 2012-01-20 11:43:30 -0800 (Fri, 20 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+In val_get_nameservers(), return a copy of the context's name server list.
+
+------------------------------------------------------------------------
+r6348 | hserus | 2012-01-20 11:16:09 -0800 (Fri, 20 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Release lock before destroying
+
+------------------------------------------------------------------------
+r6347 | tewok | 2012-01-20 11:02:06 -0800 (Fri, 20 Jan 2012) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+
+Reworked how keyrec_setval() creates a new field line.  This should result
+in a minor speed increase.  Very minor.
+Slight modification to where keyrec_setval() inserts a new field line.
+Reordered some fields in @ZONEFIELDS.
+
+------------------------------------------------------------------------
+r6346 | hardaker | 2012-01-20 11:00:35 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+added more android files to the OTHER_FILES list
+------------------------------------------------------------------------
+r6345 | hardaker | 2012-01-20 11:00:22 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+move the val_as_tid usage inside the threads ifdef
+------------------------------------------------------------------------
+r6344 | hardaker | 2012-01-20 11:00:09 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/res
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/res/drawable-hdpi
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/res/drawable-hdpi/icon.png
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/res/drawable-ldpi
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/res/drawable-ldpi/icon.png
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/res/drawable-mdpi
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/res/drawable-mdpi/icon.png
+
+android icons
+------------------------------------------------------------------------
+r6343 | hardaker | 2012-01-20 10:59:50 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+new test to check for the AD bit for a validating server
+------------------------------------------------------------------------
+r6342 | hardaker | 2012-01-20 10:59:34 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+
+include the QDeclarative header prefix
+------------------------------------------------------------------------
+r6341 | hardaker | 2012-01-20 10:59:21 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+
+use the newer SR_ flags instead of the older RES_ flags
+------------------------------------------------------------------------
+r6340 | hardaker | 2012-01-20 10:59:08 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+more cleanup for proper support on multiple system types
+------------------------------------------------------------------------
+r6339 | hardaker | 2012-01-20 10:58:55 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+update for android specific paths
+------------------------------------------------------------------------
+r6338 | hardaker | 2012-01-20 10:58:43 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+
+turn back on results submission but hash the ip addresses
+------------------------------------------------------------------------
+r6337 | hardaker | 2012-01-20 10:58:30 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+use a single for adding a new host so they get added to the global container
+------------------------------------------------------------------------
+r6336 | hardaker | 2012-01-20 10:58:16 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+
+remove debugging function
+------------------------------------------------------------------------
+r6335 | hardaker | 2012-01-20 10:58:02 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+added a quit button
+------------------------------------------------------------------------
+r6334 | hardaker | 2012-01-20 10:57:49 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+use the new val_get_nameservers() public API
+------------------------------------------------------------------------
+r6333 | hardaker | 2012-01-20 10:57:37 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+added a val_get_nameservers function to return the list of nameservers being used.
+------------------------------------------------------------------------
+r6332 | hardaker | 2012-01-20 10:57:23 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/AndroidManifest.xml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/android/build.xml
+
+android manifest and build files
+------------------------------------------------------------------------
+r6331 | hardaker | 2012-01-20 10:57:10 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+temporary android library path hacks; need to improve it eventually
+------------------------------------------------------------------------
+r6330 | hardaker | 2012-01-20 10:56:56 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Support for reading resolver information from android properties
+------------------------------------------------------------------------
+r6329 | hardaker | 2012-01-20 10:56:44 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/whatami.h
+
+don't define meego when on android
+------------------------------------------------------------------------
+r6328 | hardaker | 2012-01-20 10:56:32 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.pri
+
+update from recent android version
+------------------------------------------------------------------------
+r6327 | hardaker | 2012-01-20 10:56:18 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+temporary hack to use libval's internal parser for pulling nameservers
+------------------------------------------------------------------------
+r6326 | hardaker | 2012-01-20 10:56:05 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+added missing defines for non-thread devices
+------------------------------------------------------------------------
+r6325 | hardaker | 2012-01-20 10:55:53 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+
+define a new function to create a generic name server
+------------------------------------------------------------------------
+r6324 | hardaker | 2012-01-20 10:55:39 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+
+Define res_sym_const the structure on android where it doesn't exist
+------------------------------------------------------------------------
+r6323 | hardaker | 2012-01-20 10:55:27 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+
+Only do file existence checks when not cross-compiling
+------------------------------------------------------------------------
+r6322 | hardaker | 2012-01-20 10:55:15 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+
+header path fixes for validator-config.h
+------------------------------------------------------------------------
+r6321 | hardaker | 2012-01-20 10:55:02 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+
+android building changes
+------------------------------------------------------------------------
+r6320 | hardaker | 2012-01-20 10:54:48 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+
+more android porting
+------------------------------------------------------------------------
+r6319 | hardaker | 2012-01-20 10:54:33 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+no-threading fixes
+------------------------------------------------------------------------
+r6318 | hardaker | 2012-01-20 10:54:18 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/libsres/ns_parse.c
+
+added eabi definitions for android usage
+------------------------------------------------------------------------
+r6317 | hardaker | 2012-01-20 10:54:05 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.cpp
+
+small bugs fixed with preferences
+------------------------------------------------------------------------
+r6316 | hardaker | 2012-01-20 10:53:52 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/DnssecSystemTrayPrefs.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.h
+
+Add support for watching unbound logs
+------------------------------------------------------------------------
+r6315 | hardaker | 2012-01-20 10:53:39 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/LogWatcher.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/LogWatcher.h
+
+Attempt to parse some of the unbound logs, but they're not very descriptive.
+------------------------------------------------------------------------
+r6314 | hardaker | 2012-01-20 10:53:26 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+
+increase the font size of the nodes to 6
+------------------------------------------------------------------------
+r6313 | hardaker | 2012-01-20 10:53:13 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+
+move the mouse area out of the text so it affects the entire rectangle
+------------------------------------------------------------------------
+r6312 | hardaker | 2012-01-20 10:53:00 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+more flashies: make the name bigger on hover
+------------------------------------------------------------------------
+r6311 | hardaker | 2012-01-20 10:52:47 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+incrementally update the lights by using a timer (need to do async next)
+------------------------------------------------------------------------
+r6310 | hardaker | 2012-01-20 10:52:32 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+force add in /usr/local/lib on most systems
+------------------------------------------------------------------------
+r6309 | rstory | 2012-01-20 10:06:55 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+set closest event to 0 if an async_request is DONE
+------------------------------------------------------------------------
+r6308 | rstory | 2012-01-20 09:44:55 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+fix infinite loop accidentally introduced in 6294
+------------------------------------------------------------------------
+r6307 | rstory | 2012-01-20 09:44:43 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+check outstanding queries even if no FDs were active
+------------------------------------------------------------------------
+r6306 | rstory | 2012-01-20 09:44:31 -0800 (Fri, 20 Jan 2012) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+run_suite_async: lots of tweaks after multithread testing
+
+ - update sstats for error during submit
+ - reduce default timeout to 60 seconds
+ - add code to try and handle queries in flight with no active fd
+------------------------------------------------------------------------
+r6305 | rstory | 2012-01-20 09:44:19 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+res_io_select_info: don't set fd if it is already set
+------------------------------------------------------------------------
+r6304 | rstory | 2012-01-20 09:44:06 -0800 (Fri, 20 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+construct auth chain during submit if no missing data
+------------------------------------------------------------------------
+r6303 | rstory | 2012-01-20 09:43:54 -0800 (Fri, 20 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+only select on async requests for current thread
+
+ - add flags field to context to allow processing of all
+   threads
+------------------------------------------------------------------------
+r6302 | hserus | 2012-01-19 14:03:25 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.top
+
+Bump up LIBCURRENT
+
+------------------------------------------------------------------------
+r6301 | hserus | 2012-01-19 14:00:05 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Set SR_QUERY_RECURSE in the default name server options.
+
+------------------------------------------------------------------------
+r6300 | hserus | 2012-01-19 13:36:48 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_mkquery.c
+
+Remove ifdef for obsoleted RES_USE_EDNS0  
+
+------------------------------------------------------------------------
+r6299 | hserus | 2012-01-19 13:28:54 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+
+Escape quotes embedded within configuration files
+
+------------------------------------------------------------------------
+r6298 | tewok | 2012-01-19 11:36:50 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+More minor option-display changes.
+
+------------------------------------------------------------------------
+r6297 | hserus | 2012-01-19 09:14:35 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+
+Substitute VAL_QUERY_REFRESH_QCACHE with VAL_QUERY_MARK_FOR_DELETION
+
+------------------------------------------------------------------------
+r6296 | hserus | 2012-01-19 08:56:01 -0800 (Thu, 19 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Rename VAL_QUERY_REFRESH_QCACHE to VAL_QUERY_MARK_FOR_DELETION, in keeping with
+the main purpose of this flag. 
+
+------------------------------------------------------------------------
+r6295 | hserus | 2012-01-19 08:40:36 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/libsres.3
+   M /trunk/dnssec-tools/validator/doc/libsres.pod
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_mkquery.c
+   M /trunk/dnssec-tools/validator/libsres/res_mkquery.h
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Replace legacy RES_ query options with libsres-specific SR_QUERY_ definitions.
+
+------------------------------------------------------------------------
+r6294 | hserus | 2012-01-19 08:24:48 -0800 (Thu, 19 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Correct misleading comment on the purpose of VAL_QUERY_REFRESH_QCACHE
+Log message about deletion of expired query only when we hit that condition.
+
+------------------------------------------------------------------------
+r6293 | tewok | 2012-01-19 07:47:04 -0800 (Thu, 19 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Prettied up the "-v -v -v" output a little.
+
+------------------------------------------------------------------------
+r6292 | rstory | 2012-01-18 12:52:26 -0800 (Wed, 18 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+check if we're done before trying to select again
+------------------------------------------------------------------------
+r6291 | hserus | 2012-01-18 07:33:54 -0800 (Wed, 18 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/libsres.3
+   M /trunk/dnssec-tools/validator/doc/libsres.pod
+
+Fix typo in description of SR_QUERY_SET_CD
+
+------------------------------------------------------------------------
+r6289 | hserus | 2012-01-18 07:29:03 -0800 (Wed, 18 Jan 2012) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+In add_to_query_chain() don't continue to look for additional matching queries in the list if we already find a
+matching one with expired data.
+Don't explicitly check for (qc_refcount == 0) since we're already checking for this condition in
+clear_query_chain_structure()
+
+------------------------------------------------------------------------
+r6288 | rstory | 2012-01-17 12:25:20 -0800 (Tue, 17 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+separate suite test cases from runtime suite stats
+
+ - test suites shared between threads
+ - suite stats are local (per thread)
+------------------------------------------------------------------------
+r6287 | rstory | 2012-01-17 12:25:12 -0800 (Tue, 17 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+add ASSERT_HAVE_AC_LOCK, used only when CTX_LOCK_COUNTS defined
+------------------------------------------------------------------------
+r6286 | rstory | 2012-01-17 12:25:03 -0800 (Tue, 17 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+decr lock count before releasing lock
+------------------------------------------------------------------------
+r6285 | tewok | 2012-01-17 12:19:38 -0800 (Tue, 17 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/Makefile
+
+Added the zones-diff target.
+
+------------------------------------------------------------------------
+r6284 | tewok | 2012-01-17 12:18:34 -0800 (Tue, 17 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/Makefile
+
+Added the zonegroups demo to the demo list.
+
+------------------------------------------------------------------------
+r6283 | tewok | 2012-01-17 12:17:39 -0800 (Tue, 17 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-000.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-001.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-002.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-003.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-004.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-005.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-006.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-007.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-008.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-009.com
+
+Use currently unassigned IP addresses.
+
+------------------------------------------------------------------------
+r6282 | tewok | 2012-01-17 11:45:23 -0800 (Tue, 17 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-demo.rollrec
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-example.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-test.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-dummy.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-example.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-test.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-woof.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-xorn.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-yowzah.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-zero.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-dummy.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-example.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-test.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-woof.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-xorn.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-yowzah.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-zero.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/save-example.com
+
+Use IP addresses that are (currently) unassigned*.
+
+* At least according to "dig -x".
+
+------------------------------------------------------------------------
+r6281 | tewok | 2012-01-17 11:40:57 -0800 (Tue, 17 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/Makefile
+
+Make "clean" the default target.
+
+------------------------------------------------------------------------
+r6280 | tewok | 2012-01-17 11:33:49 -0800 (Tue, 17 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/Makefile
+   D /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-db.cache
+
+Deleted db.cache since it isn't required for the demo.
+
+------------------------------------------------------------------------
+r6279 | tewok | 2012-01-17 08:46:07 -0800 (Tue, 17 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/Makefile
+   D /trunk/dnssec-tools/tools/demos/rollerd-subdirs/save-db.cache
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/save-dummy.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/save-example.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/save-test.com
+
+Deleted save-db.cache because it isn't necessary for the demo.
+Modified zone files to work with current BIND.
+
+------------------------------------------------------------------------
+r6278 | tewok | 2012-01-17 07:30:59 -0800 (Tue, 17 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/Makefile
+   A /trunk/dnssec-tools/tools/demos/rollerd-split-view/save-example.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-split-view/save-inside.example.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/save-test.com
+
+Adding two zone files that somehow got missed before.
+Fixed another zone file to work with current BIND tools.
+
+------------------------------------------------------------------------
+r6277 | hserus | 2012-01-16 12:31:08 -0800 (Mon, 16 Jan 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/ntp
+   A /trunk/dnssec-tools/apps/ntp/README
+   A /trunk/dnssec-tools/apps/ntp/ntp-dnssec.patch
+
+Add patch for DNSSEC support in NTP
+
+------------------------------------------------------------------------
+r6276 | hserus | 2012-01-16 11:06:13 -0800 (Mon, 16 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Add more debug messages to indicate when query flags are modified on the flag.
+
+------------------------------------------------------------------------
+r6275 | hserus | 2012-01-16 11:03:29 -0800 (Mon, 16 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+
+Include VAL_QUERY_IGNORE_SKEW within the user query mask.
+
+------------------------------------------------------------------------
+r6274 | hserus | 2012-01-16 11:02:39 -0800 (Mon, 16 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Add debug message to indicate clock skew is being ignored through query flags.
+
+------------------------------------------------------------------------
+r6273 | hserus | 2012-01-16 08:38:06 -0800 (Mon, 16 Jan 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Since we no longer manage EDNS0 in libval remove older hack used to determine
+DNSSEC capability of recursive name server.
+
+------------------------------------------------------------------------
+r6272 | hserus | 2012-01-16 08:35:22 -0800 (Mon, 16 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Tweak a log message
+
+------------------------------------------------------------------------
+r6271 | hserus | 2012-01-16 08:34:46 -0800 (Mon, 16 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/etc/root.hints
+
+Update to recent version
+
+------------------------------------------------------------------------
+r6270 | hserus | 2012-01-13 14:06:26 -0800 (Fri, 13 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/testing/t/010zonesigner.t
+   M /trunk/dnssec-tools/testing/t/020donuts.t
+   M /trunk/dnssec-tools/testing/t/040rollerd.t
+   M /trunk/dnssec-tools/testing/t/050trustman-rollerd.t
+
+Update tests for latest expected output
+
+------------------------------------------------------------------------
+r6269 | hserus | 2012-01-13 10:50:14 -0800 (Fri, 13 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Disambiguate operator
+
+------------------------------------------------------------------------
+r6268 | hserus | 2012-01-13 10:48:55 -0800 (Fri, 13 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_assertion.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+In clear_query_chain_structure() check the reference count for the query before
+reinitializing the query structure. Request, but don't force clearing of the
+query structure when trying to modify policy on the fly.
+
+------------------------------------------------------------------------
+r6267 | hserus | 2012-01-13 10:35:58 -0800 (Fri, 13 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Don't try to reset the query when it is being used by another thread.
+
+------------------------------------------------------------------------
+r6266 | rstory | 2012-01-13 08:36:21 -0800 (Fri, 13 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+add optional counting on locks and contexts
+------------------------------------------------------------------------
+r6265 | rstory | 2012-01-13 08:35:49 -0800 (Fri, 13 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+add -m flag to help output
+------------------------------------------------------------------------
+r6264 | hardaker | 2012-01-12 10:30:36 -0800 (Thu, 12 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+minor documentation tweaks for -q/-v
+------------------------------------------------------------------------
+r6263 | rstory | 2012-01-11 13:28:49 -0800 (Wed, 11 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+bump log level to debug for edns0 message
+------------------------------------------------------------------------
+r6262 | rstory | 2012-01-11 13:28:42 -0800 (Wed, 11 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+tweak result checks
+
+ - don't count extra results if no expected results passed
+ - always check all results for trusted status
+------------------------------------------------------------------------
+r6261 | rstory | 2012-01-11 13:28:34 -0800 (Wed, 11 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+more parens; add line number to error message
+------------------------------------------------------------------------
+r6260 | rstory | 2012-01-11 12:33:11 -0800 (Wed, 11 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+use parens to ensure desired order of operation
+------------------------------------------------------------------------
+r6259 | rstory | 2012-01-11 12:00:11 -0800 (Wed, 11 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+fix usec to nsec conversion
+------------------------------------------------------------------------
+r6258 | rstory | 2012-01-11 12:00:03 -0800 (Wed, 11 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+set query state to response error when cancelling
+------------------------------------------------------------------------
+r6257 | rstory | 2012-01-11 11:59:55 -0800 (Wed, 11 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+revert r6191 "be less agressive about closing sockets"
+
+ - also add comment that closing sockets ensures we use a
+   different port, which makes spoofing harder for attackers
+------------------------------------------------------------------------
+r6256 | rstory | 2012-01-11 11:59:47 -0800 (Wed, 11 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+
+change ifdef for not closing sockets to DEBUG_DONT_CLOSESOCK
+------------------------------------------------------------------------
+r6255 | rstory | 2012-01-11 11:59:39 -0800 (Wed, 11 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+don't free async status pointers ifdef DEBUG_DONT_RELEASE_ANYTHING
+------------------------------------------------------------------------
+r6254 | hardaker | 2012-01-10 15:29:00 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/qt/README
+
+mention how to compile an application against an installation in another path
+------------------------------------------------------------------------
+r6253 | hardaker | 2012-01-10 15:28:50 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/qt/README
+   A /trunk/dnssec-tools/apps/qt/qt4.patch
+
+Added the qt4 patch
+------------------------------------------------------------------------
+r6252 | hardaker | 2012-01-10 15:28:40 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/README
+
+Added a readme file to describe what it is about
+------------------------------------------------------------------------
+r6251 | hardaker | 2012-01-10 15:28:28 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/qt/dnssec-test
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/.gitignore
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/DNSSECStatus.cpp
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/DNSSECStatus.h
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.cpp
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.h
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.ui
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/dnssec-test.pro
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/dnssec-tests.txt
+   A /trunk/dnssec-tools/apps/qt/dnssec-test/main.cpp
+
+a GUI application to quickly test all the entries in the test.DT zone
+------------------------------------------------------------------------
+r6250 | hardaker | 2012-01-10 15:28:16 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/qt
+   A /trunk/dnssec-tools/apps/qt/qml-test
+   A /trunk/dnssec-tools/apps/qt/qml-test/README
+   A /trunk/dnssec-tools/apps/qt/qml-test/test.qml
+
+Files to test Qt QML support of loading the DD webpage with its dnssec test
+------------------------------------------------------------------------
+r6249 | hardaker | 2012-01-10 15:28:05 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/rollerd.service.in
+
+DNS -> DNSSEC per tewok's suggestion
+------------------------------------------------------------------------
+r6248 | hardaker | 2012-01-10 15:27:55 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+
+close the input panel (software keyboard) on completion
+------------------------------------------------------------------------
+r6247 | hardaker | 2012-01-10 15:27:45 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/MeegoDnssecCheck.qml
+
+create a new high level meego screen wrapper
+------------------------------------------------------------------------
+r6246 | hardaker | 2012-01-10 15:27:33 -0800 (Tue, 10 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+link to a scratchbox lib when building for harmattan
+include path should include ../../include
+------------------------------------------------------------------------
+r6245 | hardaker | 2012-01-10 15:27:21 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.in
+
+use the new source path for installation
+------------------------------------------------------------------------
+r6244 | hardaker | 2012-01-10 15:27:12 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+
+added back missing -compat file
+------------------------------------------------------------------------
+r6243 | hardaker | 2012-01-10 15:26:58 -0800 (Tue, 10 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec_checks.c
+   M /trunk/dnssec-tools/validator/apps/getaddr.c
+   M /trunk/dnssec-tools/validator/apps/gethost.c
+   M /trunk/dnssec-tools/validator/apps/getname.c
+   M /trunk/dnssec-tools/validator/apps/getquery.c
+   M /trunk/dnssec-tools/validator/apps/getrrset.c
+   M /trunk/dnssec-tools/validator/apps/libsres_test.c
+   M /trunk/dnssec-tools/validator/apps/libval_check_conf.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+   A /trunk/dnssec-tools/validator/include/validator/validator-config.h.in (from /trunk/dnssec-tools/validator/include/validator-config.h.in:6242)
+   D /trunk/dnssec-tools/validator/include/validator-compat.h
+   D /trunk/dnssec-tools/validator/include/validator-config.h.in
+   M /trunk/dnssec-tools/validator/libsres/base64.c
+   M /trunk/dnssec-tools/validator/libsres/ns_name.c
+   M /trunk/dnssec-tools/validator/libsres/ns_netint.c
+   M /trunk/dnssec-tools/validator/libsres/ns_parse.c
+   M /trunk/dnssec-tools/validator/libsres/ns_print.c
+   M /trunk/dnssec-tools/validator/libsres/ns_samedomain.c
+   M /trunk/dnssec-tools/validator/libsres/ns_ttl.c
+   M /trunk/dnssec-tools/validator/libsres/nsap_addr.c
+   M /trunk/dnssec-tools/validator/libsres/res_comp.c
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_mkquery.c
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.c
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_crypto.c
+   M /trunk/dnssec-tools/validator/libval/val_get_rrset.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+   M /trunk/dnssec-tools/validator/libval/val_gethostbyname.c
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+   M /trunk/dnssec-tools/validator/libval/val_parse.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+   M /trunk/dnssec-tools/validator/libval/val_x_query.c
+   M /trunk/dnssec-tools/validator/libval_shim/libval_shim.c
+
+move the validator-config.h and -compat files to the validator/ subdirectory
+This lets all the code in the project compile either against the
+internal headers or against external ones so the code can be compiled
+inside or outside the project directory.
+------------------------------------------------------------------------
+r6242 | hardaker | 2012-01-10 15:26:26 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+
+don't force QML now that a command line app exists
+------------------------------------------------------------------------
+r6241 | hardaker | 2012-01-10 15:26:16 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan/README
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan/changelog
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan/compat
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan/control
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan/copyright
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan/manifest.aegis
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtc_packaging/debian_harmattan/rules
+
+Added harmattan packaging files
+------------------------------------------------------------------------
+r6240 | hardaker | 2012-01-10 15:26:03 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+only load the wlan0 file if on maemo or harmattan
+------------------------------------------------------------------------
+r6239 | hardaker | 2012-01-10 15:25:53 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/whatami.h
+
+define IS_HARMATTAN
+------------------------------------------------------------------------
+r6238 | hardaker | 2012-01-10 15:25:42 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/whatami.h
+
+added documentation to the header about what it defines, add symbian
+------------------------------------------------------------------------
+r6237 | hardaker | 2012-01-10 15:25:30 -0800 (Tue, 10 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+
+allow command line options to influence which GUI interface is presented
+------------------------------------------------------------------------
+r6236 | tewok | 2012-01-06 13:10:47 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/README
+
+Deleted reference to local phaser.
+
+------------------------------------------------------------------------
+r6235 | tewok | 2012-01-06 13:10:38 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/README
+
+Deleted reference to local phaser.
+
+------------------------------------------------------------------------
+r6234 | tewok | 2012-01-06 13:10:30 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/README
+
+Deleted reference to local phaser.
+
+------------------------------------------------------------------------
+r6233 | tewok | 2012-01-06 13:10:15 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/README
+
+Deleted reference to local phaser.
+
+------------------------------------------------------------------------
+r6232 | tewok | 2012-01-06 13:10:07 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/README
+
+Deleted reference to local phaser.
+
+------------------------------------------------------------------------
+r6231 | tewok | 2012-01-06 13:09:59 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/README
+
+Deleted reference to local phaser.
+
+------------------------------------------------------------------------
+r6230 | tewok | 2012-01-06 13:06:12 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/README
+
+Added a line about having demo-tools in your path.
+
+------------------------------------------------------------------------
+r6229 | tewok | 2012-01-06 13:04:52 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/demo-tools/README
+
+Added an entry for phaser.
+
+------------------------------------------------------------------------
+r6228 | tewok | 2012-01-06 13:03:30 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/tools/demos/demo-tools/phaser
+
+Consolidated various demo phasers into this single copy.
+
+------------------------------------------------------------------------
+r6227 | tewok | 2012-01-06 13:01:04 -0800 (Fri, 06 Jan 2012) | 3 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/phaser
+
+Deleted the individual phaser scripts since it's moving to the demo-tools
+directory.
+
+------------------------------------------------------------------------
+r6226 | tewok | 2012-01-06 13:00:54 -0800 (Fri, 06 Jan 2012) | 3 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/demos/rollerd-subdirs/phaser
+
+Deleted the individual phaser scripts since it's moving to the demo-tools
+directory.
+
+------------------------------------------------------------------------
+r6225 | tewok | 2012-01-06 13:00:44 -0800 (Fri, 06 Jan 2012) | 3 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/demos/rollerd-split-view/phaser
+
+Deleted the individual phaser scripts since it's moving to the demo-tools
+directory.
+
+------------------------------------------------------------------------
+r6224 | tewok | 2012-01-06 13:00:24 -0800 (Fri, 06 Jan 2012) | 3 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/demos/rollerd-manyzones/phaser
+
+Deleted the individual phaser scripts since it's moving to the demo-tools
+directory.
+
+------------------------------------------------------------------------
+r6223 | tewok | 2012-01-06 13:00:14 -0800 (Fri, 06 Jan 2012) | 3 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/phaser
+
+Deleted the individual phaser scripts since it's moving to the demo-tools
+directory.
+
+------------------------------------------------------------------------
+r6222 | tewok | 2012-01-06 12:59:25 -0800 (Fri, 06 Jan 2012) | 3 lines
+Changed paths:
+   D /trunk/dnssec-tools/tools/demos/rollerd-basic/phaser
+
+Deleted the individual phaser scripts since it's moving to the demo-tools
+directory.
+
+------------------------------------------------------------------------
+r6221 | tewok | 2012-01-06 10:00:25 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/README
+
+Added a brief description of the rollerd-zonegroups demo.
+
+------------------------------------------------------------------------
+r6220 | tewok | 2012-01-06 09:58:48 -0800 (Fri, 06 Jan 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/Makefile
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/README
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/phaser
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/rc.blinkenlights
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/rundemo
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-demo.rollrec
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-000.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-001.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-002.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-003.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-004.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-005.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-006.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-007.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-008.com
+   A /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-example-009.com
+
+Added files for zonegroups demo.
+
+------------------------------------------------------------------------
+r6219 | tewok | 2012-01-06 08:51:27 -0800 (Fri, 06 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Re-enabled a few rollrec interfaces in order to get the KSK7 synchronization
+working.
+Added an error response for bad dspub and dspuball user commands.
+
+------------------------------------------------------------------------
+r6218 | hserus | 2012-01-05 13:07:07 -0800 (Thu, 05 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+
+Define new flags, remove deprecated flags
+
+------------------------------------------------------------------------
+r6217 | hserus | 2012-01-05 13:04:14 -0800 (Thu, 05 Jan 2012) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/validator_api.xml
+
+Add new flag definitions. Remove val_add_valpolicy/val_remove_policy since this
+is needless complexity for the API definition at this stage. Define new 
+val_context_setqflags() function since this is likely closer to what 
+someone might need. All of these are proposed changes, and subject to further
+fine-tuning as may be necessary. 
+
+------------------------------------------------------------------------
+r6216 | hserus | 2012-01-05 12:57:50 -0800 (Thu, 05 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/libval-implementation-notes
+
+Update to be closer to reality.
+
+------------------------------------------------------------------------
+r6215 | hserus | 2012-01-05 12:52:25 -0800 (Thu, 05 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/Makefile.in
+   M /trunk/dnssec-tools/validator/doc/libval.3
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+
+Document new flags and functions
+
+------------------------------------------------------------------------
+r6214 | hserus | 2012-01-05 12:50:37 -0800 (Thu, 05 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+Add support for on-the-fly modification of default query flags for a context.
+
+------------------------------------------------------------------------
+r6213 | rstory | 2012-01-05 07:15:37 -0800 (Thu, 05 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+_async_check_one: rework count for remaining queries
+------------------------------------------------------------------------
+r6212 | rstory | 2012-01-05 07:15:23 -0800 (Thu, 05 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+_rseolver_submit: add param to return sent status
+------------------------------------------------------------------------
+r6211 | rstory | 2012-01-05 07:15:10 -0800 (Thu, 05 Jan 2012) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+res_io_check_ea_list tweaks
+
+ - document net_change and active parameters
+ - count/log cancelled/completed ea
+ - count future/unsent queries as active
+------------------------------------------------------------------------
+r6210 | rstory | 2012-01-05 07:14:53 -0800 (Thu, 05 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+fix minor typo in comment
+------------------------------------------------------------------------
+r6209 | rstory | 2012-01-05 07:14:41 -0800 (Thu, 05 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+
+add p_query_status case for combined glue statuses
+------------------------------------------------------------------------
+r6208 | rstory | 2012-01-05 07:14:27 -0800 (Thu, 05 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+don't check for done if we already know we're done
+------------------------------------------------------------------------
+r6206 | tewok | 2012-01-03 17:26:19 -0800 (Tue, 03 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added a missing blank column to the infostripe.  This once again allows zones
+to be selected.
+Fixed a few comments and typos.
+
+------------------------------------------------------------------------
+r6205 | rstory | 2012-01-03 12:04:30 -0800 (Tue, 03 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+fix off-by-one in -T processing..
+------------------------------------------------------------------------
+r6204 | rstory | 2012-01-03 12:04:21 -0800 (Tue, 03 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+rework validate's result logging
+
+ - log unexpected values
+ - log missing values
+------------------------------------------------------------------------
+r6203 | tewok | 2012-01-02 17:44:58 -0800 (Mon, 02 Jan 2012) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Collapsed kskphase() and zskphase() into nextphase().  They did essentially
+the same thing, but with log messages and rollrec fields pointing to the
+specific keytype.  nextphase() does The Right Thing for the different key
+types.
+
+------------------------------------------------------------------------
+r6202 | tewok | 2012-01-02 17:37:50 -0800 (Mon, 02 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added a menu separator above the Refresh.
+
+------------------------------------------------------------------------
+r6201 | tewok | 2012-01-02 15:51:50 -0800 (Mon, 02 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added a little extra description to the "refresh display" pod.
+
+------------------------------------------------------------------------
+r6200 | tewok | 2012-01-02 15:45:23 -0800 (Mon, 02 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added a "display refresh" command.
+
+------------------------------------------------------------------------
+r6199 | rstory | 2012-01-02 10:18:44 -0800 (Mon, 02 Jan 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.h
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+
+set ea debug info for sync queries
+
+ - change query_queue to use res_async_query_create +
+   new res_io_queue_ea
+------------------------------------------------------------------------
+r6198 | rstory | 2012-01-02 10:18:16 -0800 (Mon, 02 Jan 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+res_io_accept: fix return code for servfail case
+------------------------------------------------------------------------
+r6197 | hserus | 2012-01-02 06:55:26 -0800 (Mon, 02 Jan 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+Intialize structure before use.
+
+------------------------------------------------------------------------
+r6196 | rstory | 2011-12-31 07:42:03 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.h
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+add end/duration message for async tests too
+------------------------------------------------------------------------
+r6195 | rstory | 2011-12-31 07:41:55 -0800 (Sat, 31 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+check_results tweaks, proper rc check for finding failures
+
+ - document return values
+ - move multiple printfs to a single earlier printf
+ - update checks of rc from check_results for new meanings
+------------------------------------------------------------------------
+r6194 | rstory | 2011-12-31 07:41:47 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+check/print if trusted in print_val_response
+------------------------------------------------------------------------
+r6193 | rstory | 2011-12-31 07:41:39 -0800 (Sat, 31 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+fix spin loop
+
+ - sleep a while even if we have no active fds
+------------------------------------------------------------------------
+r6192 | rstory | 2011-12-31 07:41:31 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+jumpstart next nameserver when current one exhausted
+------------------------------------------------------------------------
+r6191 | rstory | 2011-12-31 07:41:23 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+be less agressive about closing sockets
+------------------------------------------------------------------------
+r6190 | rstory | 2011-12-31 07:41:15 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+log error string on socket error
+------------------------------------------------------------------------
+r6189 | rstory | 2011-12-31 07:41:07 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+set next_try/cancel together; new helper for resetting timeouts
+------------------------------------------------------------------------
+r6188 | rstory | 2011-12-31 07:40:59 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+cancel as when nothing checked and nothing remains
+------------------------------------------------------------------------
+r6187 | rstory | 2011-12-31 07:40:51 -0800 (Sat, 31 Dec 2011) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+more fallback fixes
+
+ - return respondent even when dropping request
+ - fallback not conditional on stream status
+------------------------------------------------------------------------
+r6186 | rstory | 2011-12-31 07:40:43 -0800 (Sat, 31 Dec 2011) | 21 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+lots of res_io_manager tweaks
+
+res_io_check_ea_list
+ - cancel instead of retry when no remaining attempts
+ - stricter checks for remaining count
+ - don't skip other eas when we hit a non-active socket
+ - don't count close sockets as active
+
+res_io_select_info
+ - update timeouts for closed socket if remaining attempts
+
+res_io_get_a_response
+ - check if response received even if no remaining attempts
+ - use new res_response_check to check header/tsig
+ - log message when dropping response, and set timer for
+   immediate retry
+ - return SR_IO_NO_ANSWER if no reponse and no remaining retries
+
+misc
+ - move conditional debug code later
+ - fix typo
+------------------------------------------------------------------------
+r6185 | rstory | 2011-12-31 07:40:34 -0800 (Sat, 31 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+new helper functions
+
+ - new res_response_check to check header/tsig
+ - new res_map_srio_to_sr to map SR_IO_* error codes to SR_*
+   error codes
+------------------------------------------------------------------------
+r6184 | rstory | 2011-12-31 07:40:25 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+
+update p_query_status for missing statuses
+------------------------------------------------------------------------
+r6183 | rstory | 2011-12-31 07:40:16 -0800 (Sat, 31 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.h
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+
+fix compiler errors
+
+ - use correct define when passing logs to libval
+ - add prototype for check_results
+ - fix prototype name for libsres debug functions
+------------------------------------------------------------------------
+r6182 | rstory | 2011-12-31 07:40:07 -0800 (Sat, 31 Dec 2011) | 10 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+validate async fixes
+
+- check for inverted range (eg 8-5)
+- max timeout 5 min
+- no relative timeout adjustment, library does that now
+- fix timeout in debug msg
+- check async results
+  - add failed count to testsuite
+  - new async callback struct to pass more params to callback
+  - in callback, call compose_answer & check_results
+------------------------------------------------------------------------
+r6181 | rstory | 2011-12-31 07:39:58 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+add retval to val_cb_params_t
+------------------------------------------------------------------------
+r6180 | rstory | 2011-12-31 07:39:49 -0800 (Sat, 31 Dec 2011) | 15 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+- val_async_select
+  - move abs/rel time adjustment to val_async_seclect_info
+- val_async_select_info
+  - timeout value is relative, adjust internally for res_io absolute
+- _async_check_one
+  - new param returns remaining queries
+    - could counting be optimized
+- val_async_check_wait
+  - check completed flag again after _async_check_one
+  - only call _handle_completed when we see completed flag
+  - return error on select error
+- val_async_submit
+  - return error if can't create context
+  - add details to debug message
+- add extern decl for res_print_ea
+------------------------------------------------------------------------
+r6179 | rstory | 2011-12-31 07:39:40 -0800 (Sat, 31 Dec 2011) | 16 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/include/validator-compat.h
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+tweaks to res_io_manager
+
+- conditionally add extra info to ea struct for debug output
+- conditionally don't release ea structs in free ro close sockets
+  - so no ptr/socket reuse, making them unique in debug output
+- set_alarm: don't clear u_sec
+- res_print_ea
+  - add relative time to debug
+  - less debug for expired/cancelled events
+- res_io_select_info
+  - only log final timeout if it changed
+  - add remaining ried to debug
+- res_io_check_ea_list
+  - count remaining requests
+  - return SR_IO_NO_ANSWER if no remaining requests
+  - add relative time to debug
+------------------------------------------------------------------------
+r6178 | rstory | 2011-12-31 07:39:31 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+avoid negative timeouts
+------------------------------------------------------------------------
+r6177 | rstory | 2011-12-31 07:39:23 -0800 (Sat, 31 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+log name/type in vgai callback
+------------------------------------------------------------------------
+r6176 | rstory | 2011-12-31 07:39:15 -0800 (Sat, 31 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+async getaddrinfo fixes
+
+ - save hints
+ - get_addrinfo_from_results return code is not a validator
+   error code, so don't treat it like one
+------------------------------------------------------------------------
+r6175 | hserus | 2011-12-30 14:14:04 -0800 (Fri, 30 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Add some more useful log messages
+
+------------------------------------------------------------------------
+r6174 | rstory | 2011-12-30 14:10:16 -0800 (Fri, 30 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+make edns0 size per expected arrival instead of per ns
+------------------------------------------------------------------------
+r6173 | rstory | 2011-12-30 12:22:52 -0800 (Fri, 30 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+more fallback fixes: reset timer for immediate retry
+------------------------------------------------------------------------
+r6172 | hserus | 2011-12-30 09:33:08 -0800 (Fri, 30 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.h
+
+Add ability to ignore clock skew during validation for a given query, through a new query flag VAL_QUERY_IGNORE_SKEW
+
+------------------------------------------------------------------------
+r6171 | hserus | 2011-12-30 08:00:55 -0800 (Fri, 30 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+Replace yet another val_create_context_with_foo() with val_create_context_ex(),
+which takes options passed within an (extensible) strucure.
+
+------------------------------------------------------------------------
+r6170 | rstory | 2011-12-30 07:37:25 -0800 (Fri, 30 Dec 2011) | 12 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/libsres_test.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+
+update libsres debugging
+
+ - previously used static level, LOG_WARNING.
+ - remove boolean res_io_set_debug()
+ - new res_set_debug(int)
+ - validate sets res debug level iff val debug level is 7 or higher
+ - test new level even when using libval logging (previously passed
+   level directly to libval), and pass LOG_ERROR to libval is libsres
+   level is met. This means that levels are (mostly) independent, so
+   libsres debug can be enabled even if libval level is higher. [Well,
+   once support is added to validate to specify separate debug levels.
+   This is left as an exercise to the reader.]
+------------------------------------------------------------------------
+r6169 | hardaker | 2011-12-29 15:59:07 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rr-dnssec.t
+
+allow DS digests to have surrounding ()s and strip them
+------------------------------------------------------------------------
+r6168 | hardaker | 2011-12-29 15:58:54 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+cpan bug 72997: patch from mithro to add support for signed https certificates
+------------------------------------------------------------------------
+r6167 | hardaker | 2011-12-29 15:58:42 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+check the right type of DNSKEY ref
+------------------------------------------------------------------------
+r6166 | hardaker | 2011-12-29 15:58:28 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/configure
+   M /trunk/dnssec-tools/configure.in
+   A /trunk/dnssec-tools/dist/donutsd.service.in
+   A /trunk/dnssec-tools/dist/rollerd.service.in
+
+added systemd service files for rollerd and donutsd
+------------------------------------------------------------------------
+r6165 | hardaker | 2011-12-29 15:58:14 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+added a reset button
+------------------------------------------------------------------------
+r6164 | hardaker | 2011-12-29 15:58:00 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+create a reset button and rearrange buttons to the bottom
+------------------------------------------------------------------------
+r6163 | hardaker | 2011-12-29 15:57:47 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+remove debugging
+------------------------------------------------------------------------
+r6162 | hardaker | 2011-12-29 15:57:33 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+outsourced the button and added a colorchange animation
+------------------------------------------------------------------------
+r6161 | hardaker | 2011-12-29 15:57:15 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostLabel.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+cleaned up qml structure and formatted in black
+------------------------------------------------------------------------
+r6160 | hardaker | 2011-12-29 15:56:59 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.pri
+
+forgot the application viewer object
+------------------------------------------------------------------------
+r6159 | hardaker | 2011-12-29 15:56:45 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+added a title and the ability to add new hosts
+------------------------------------------------------------------------
+r6158 | hardaker | 2011-12-29 15:56:30 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostLabel.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+
+qml interface start
+------------------------------------------------------------------------
+r6157 | hardaker | 2011-12-29 15:56:12 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+
+QML setup
+------------------------------------------------------------------------
+r6156 | hardaker | 2011-12-29 15:55:59 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.h (from /trunk/dnssec-tools/validator/apps/dnssec-check/QStatusLight.h:6155)
+   D /trunk/dnssec-tools/validator/apps/dnssec-check/DataSubmitter.cpp
+   D /trunk/dnssec-tools/validator/apps/dnssec-check/DataSubmitter.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/QStatusLight.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/QStatusLight.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+
+split the StatusLight class along the gui and infrastructure lines
+------------------------------------------------------------------------
+r6155 | hardaker | 2011-12-29 15:55:43 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/README
+
+document the potential problems with missing MIME modules
+------------------------------------------------------------------------
+r6154 | hardaker | 2011-12-29 15:55:30 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+version bump
+------------------------------------------------------------------------
+r6153 | hardaker | 2011-12-29 15:55:16 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Added a warning message when failing to load a DNSKEY
+------------------------------------------------------------------------
+r6152 | hardaker | 2011-12-29 15:55:04 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/whatami.h
+
+a new header to detect what type of interface to offer
+------------------------------------------------------------------------
+r6151 | hardaker | 2011-12-29 15:54:51 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/DataSubmitter.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/DataSubmitter.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+
+use newer libtool call
+------------------------------------------------------------------------
+r6150 | hardaker | 2011-12-29 15:54:36 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-system-tray/man
+   A /trunk/dnssec-tools/validator/apps/dnssec-system-tray/man/dnssec-system-tray.1
+
+added a basic manual page
+------------------------------------------------------------------------
+r6149 | hardaker | 2011-12-29 15:54:21 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/lookup/man
+   A /trunk/dnssec-tools/validator/apps/lookup/man/lookup.1
+
+added a basic manual page
+------------------------------------------------------------------------
+r6148 | hardaker | 2011-12-29 15:54:07 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/man
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/man/dnssec-check.1
+
+added a basic manual page
+------------------------------------------------------------------------
+r6147 | hardaker | 2011-12-29 15:53:53 -0800 (Thu, 29 Dec 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/man
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/man/dnssec-nodes.1
+
+added a basic manual page
+------------------------------------------------------------------------
+r6146 | hserus | 2011-12-28 11:41:01 -0800 (Wed, 28 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.h
+
+Don't set default policies based on overrides
+
+------------------------------------------------------------------------
+r6145 | hserus | 2011-12-28 11:31:11 -0800 (Wed, 28 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Do not attempt to free the default context when it may still be in use.
+
+------------------------------------------------------------------------
+r6144 | rstory | 2011-12-28 10:52:52 -0800 (Wed, 28 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_support.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+move label/name compare prototypes to resolver.h
+------------------------------------------------------------------------
+r6143 | rstory | 2011-12-28 10:38:31 -0800 (Wed, 28 Dec 2011) | 10 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.h
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.h
+
+fallback fixes.
+
+ - NOTE: return codes from res_nsfallback/res_nsfallback_ea in
+   libres have changed/expanded.
+
+ - use server to find right ea when falling back
+ - always return respondent from response_recv, even if
+   message was dropped (e.g. SERVFAIL)
+ - new utility function res_print_server to print name_server struct
+ - reset edns0 size when moving to new address for a name_server
+------------------------------------------------------------------------
+r6142 | rstory | 2011-12-28 09:10:58 -0800 (Wed, 28 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+
+add missing res_log_ap for when not using libval logging
+------------------------------------------------------------------------
+r6141 | hserus | 2011-12-28 08:40:37 -0800 (Wed, 28 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Allow the user to free up the default context as long as they hold the handle
+to it and as long as noone else is using it.
+
+------------------------------------------------------------------------
+r6140 | hserus | 2011-12-28 08:38:29 -0800 (Wed, 28 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+Don't free up the context associated with any async status object. If the user
+didn't supply a context, the default context is created (or re-used). If the
+user supplied a non-NULL context, it implies that the user created the context
+and will therefore also call val_free_context().
+
+------------------------------------------------------------------------
+r6139 | hserus | 2011-12-28 08:24:56 -0800 (Wed, 28 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+Add new function to enable creation of a validator context with specific default query flags
+
+------------------------------------------------------------------------
+r6138 | tewok | 2011-12-23 15:59:08 -0800 (Fri, 23 Dec 2011) | 13 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+This fixes a significant bug in KSK rollover, where the phase 3 wait wasn't
+happening.  This was a very recent bug, probably introduced sometime in
+December, 2011.  The first two fixes mentioned below take care of that problem.
+The others were minor bugs that affected the log and blinkenlights more than
+anything.
+
+Got the current rollrec ref, rather than use stale data.	phasewait()
+Return the new phase number, rather than current phase number.	phasecmd()
+Used a reference instead of copying the hash.			ksk_phaser()
+Phase 1 is start of KSK rollover, not phase normal.		kskphase()
+Deleted some dead code.
+Adjusted some comments.
+
+------------------------------------------------------------------------
+r6137 | rstory | 2011-12-22 12:52:48 -0800 (Thu, 22 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+   M /trunk/dnssec-tools/validator/libval/val_support.h
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+move label/name compare functions to libsres
+------------------------------------------------------------------------
+r6136 | rstory | 2011-12-22 12:52:39 -0800 (Thu, 22 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+fix compiler warning
+------------------------------------------------------------------------
+r6135 | rstory | 2011-12-22 12:52:31 -0800 (Thu, 22 Dec 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.h
+
+add res_log_ap for use when we already have va_list
+------------------------------------------------------------------------
+r6134 | rstory | 2011-12-22 12:52:22 -0800 (Thu, 22 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/getaddr.c
+
+add option to use libval async code for getaddr
+
+ - primarily as a way to exercise that code.
+------------------------------------------------------------------------
+r6132 | hserus | 2011-12-21 09:39:53 -0800 (Wed, 21 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Remove all use of the VAL_QUERY_EDNS0 flag in libval. Let libsres handle all 
+edns0 fallback for us.
+
+------------------------------------------------------------------------
+r6131 | hserus | 2011-12-20 16:12:14 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+Remove extra wait period between sending out query retries when we're already done with edns0 fallback processing.
+
+------------------------------------------------------------------------
+r6130 | hserus | 2011-12-20 09:37:24 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Clarify minor comment
+
+------------------------------------------------------------------------
+r6129 | hserus | 2011-12-20 09:34:46 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Conditionally enable context refcount increments
+
+------------------------------------------------------------------------
+r6128 | hserus | 2011-12-20 09:30:59 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Conditionally enable context refcounts
+
+------------------------------------------------------------------------
+r6127 | hserus | 2011-12-20 09:28:42 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Properly acquire the policy lock for async functions
+
+------------------------------------------------------------------------
+r6126 | hserus | 2011-12-20 09:20:45 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Use VAL_QUERY_EDNS0 instead of VAL_QUERY_NO_EDNS0. Semantics of setting this flag change according.
+
+------------------------------------------------------------------------
+r6125 | hserus | 2011-12-20 09:06:20 -0800 (Tue, 20 Dec 2011) | 8 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_assertion.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+As long as we hold the context's assertion cache lock, it should be
+safe to reset the query structure as long as we don't refer back to
+the query chain till such time that we release the assertion cache lock.
+
+Replace the query lock within the query structure to a simple
+reference count. Modify the reference count only when we hold the
+context's assertion lock in order to ensure thread safety.
+
+------------------------------------------------------------------------
+r6124 | hserus | 2011-12-20 08:18:12 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Set appropriate ttl expiry for hand-crafted non-existence response and for query error conditions.
+
+------------------------------------------------------------------------
+r6123 | hserus | 2011-12-20 07:54:33 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+#ifdef out unused routines remove_and_free_query_chain() and _free_qfq_chain()
+
+------------------------------------------------------------------------
+r6122 | hserus | 2011-12-20 07:25:05 -0800 (Tue, 20 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.h
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Handle EDNS fallback entirely within libsres
+
+------------------------------------------------------------------------
+r6121 | hserus | 2011-12-20 07:17:28 -0800 (Tue, 20 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Do not continue to look for glue if we don't have any partial NS information.
+Refine debug messages for glue-fetch logic. 
+
+------------------------------------------------------------------------
+r6120 | hserus | 2011-12-20 07:04:05 -0800 (Tue, 20 Dec 2011) | 11 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+- hold the policy lock only when we are actively using a context, and 
+  not if we're merely creating one.
+- try to acquire an exclusive (non-blocking) lock on the polcy in
+  val_refresh_context() instead of acquiring a (blocking) lock for each 
+  policy file.  Since we hold an exclusive lock during the context 
+  refresh, we don't need to perform more granular locking of the 
+  context's query chain in order to reset its contents.
+- when adding or removing policy fragments from a context acquire the
+  context's assertion lock (mutex) instead of an exclusive lock in the
+  policy, since that is safe too and will likely return sooner.
+
+------------------------------------------------------------------------
+r6119 | hserus | 2011-12-19 19:40:34 -0800 (Mon, 19 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_get_rrset.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+   M /trunk/dnssec-tools/validator/libval/val_gethostbyname.c
+
+Ensure that the context's policy lock is released upon exiting the high-level
+API functions.
+
+------------------------------------------------------------------------
+r6118 | tewok | 2011-12-19 12:29:48 -0800 (Mon, 19 Dec 2011) | 17 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added a column for zonegroups and allowed for hiding/showing the zone groups
+column.  Also did proper enabling/disabling of the "Show All Keysets" menu
+items.
+
+Deleted most of the text from the help menu item.  This was copied from
+the pod and reformatted for Tk.  Rather than letting the one get out of
+day, which was all too often the case, the remaining text is relatively
+non-specific and refers the reader to the pod.
+
+Added a paint flag parameter to disp_menus().  This allows for only
+repainting the display during display-menu commands when it's actually
+needed, rather than having several choppy updates happening when a
+single menu command is actually handled by multiple calls to disp_menus().
+
+Updated the pod to cover the current set of menu commands.
+ 
+
+------------------------------------------------------------------------
+r6117 | hserus | 2011-12-19 12:24:01 -0800 (Mon, 19 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+
+Add new macro that wraps around pthread_rwlock_trywrlock
+
+------------------------------------------------------------------------
+r6116 | tewok | 2011-12-16 11:33:20 -0800 (Fri, 16 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+
+Deleted -zonegroup as a synonym for -zg.
+Added -zonegroups to display just the names of defined zonegroups.
+
+------------------------------------------------------------------------
+r6115 | tewok | 2011-12-16 09:36:54 -0800 (Fri, 16 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+
+Added support for editing zonegroups.
+
+------------------------------------------------------------------------
+r6114 | tewok | 2011-12-16 07:44:52 -0800 (Fri, 16 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+
+Added the -zonegroup and -zg options for specifying a zonegroup.
+
+------------------------------------------------------------------------
+r6113 | hserus | 2011-12-16 07:40:45 -0800 (Fri, 16 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-compat.h
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+properly display timestamps
+
+------------------------------------------------------------------------
+r6112 | tewok | 2011-12-15 16:01:27 -0800 (Thu, 15 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollset
+
+Added the -zg option for setting the zonegroup.
+
+------------------------------------------------------------------------
+r6111 | tewok | 2011-12-15 12:51:59 -0800 (Thu, 15 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+
+Added the -zg option for specifying a zonegroup.
+Reworked big chunks o' pod.
+
+------------------------------------------------------------------------
+r6110 | tewok | 2011-12-14 16:08:31 -0800 (Wed, 14 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Moved command parsing from commander() to singlecmd().
+Added groupcmd() to expand group commands from zonegroup to zones.
+Added handling of zonegroup command.
+Removed some outdated pod.
+
+------------------------------------------------------------------------
+r6109 | tewok | 2011-12-14 16:00:57 -0800 (Wed, 14 Dec 2011) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+
+Added -zonegroup command and -group option.
+Moved rollmgr_sendcmd() calls into new sendcmd(), in order to centralize
+handling of -group.
+Moved version() lower in the file.
+Fixed usage line for -pidfile.
+
+------------------------------------------------------------------------
+r6108 | tewok | 2011-12-14 16:00:06 -0800 (Wed, 14 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pod
+
+Added description of zonegroup field.
+
+------------------------------------------------------------------------
+r6107 | tewok | 2011-12-14 15:56:37 -0800 (Wed, 14 Dec 2011) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+Added the rollrec_zonegroup(), rollrec_zonegroups(), rollrec_zonegroup_cmds()
+interfaces.
+When reading a rollrec file, a zone's zonegroup is added to the zonegroup
+list.
+Added the zonegroup field to rollrec entries.
+ 
+
+------------------------------------------------------------------------
+r6106 | tewok | 2011-12-14 14:54:02 -0800 (Wed, 14 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Added support for the zonegroup command and group commands.
+Added an error code for bad zonegroups.
+
+------------------------------------------------------------------------
+r6105 | tewok | 2011-12-14 12:41:18 -0800 (Wed, 14 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added a comment to the setopt() header.
+
+------------------------------------------------------------------------
+r6104 | tewok | 2011-12-14 08:38:17 -0800 (Wed, 14 Dec 2011) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/tools/scripts/rp-wrapper
+
+Example rollover phase program.  This does the basic argument validation
+for a rollover phase program and not much else.
+
+------------------------------------------------------------------------
+r6103 | tewok | 2011-12-13 12:55:01 -0800 (Tue, 13 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lights
+
+
+Added the "Halt Rollerd Now" command.
+Renamed the "Halt Rollerd" command to "Halt Rollerd After Current Operations".
+
+
+------------------------------------------------------------------------
+r6102 | tewok | 2011-12-13 12:54:23 -0800 (Tue, 13 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+
+
+Added the "Halt Rollerd Now" command.
+Renamed the "Halt Rollerd" command to "Halt Rollerd After Current Operations".
+
+
+------------------------------------------------------------------------
+r6101 | tewok | 2011-12-13 12:53:16 -0800 (Tue, 13 Dec 2011) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+
+Added the "Halt Rollerd Now" command.
+Renamed the "Halt Rollerd" command to "Halt Rollerd After Current Operations".
+
+------------------------------------------------------------------------
+r6100 | hserus | 2011-12-13 09:20:50 -0800 (Tue, 13 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/getaddr.c
+   M /trunk/dnssec-tools/validator/apps/lookup/src/lookup.cpp
+
+Release validator context after use.
+
+------------------------------------------------------------------------
+r6099 | hserus | 2011-12-13 07:48:08 -0800 (Tue, 13 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+
+Minor comment fixes.
+
+------------------------------------------------------------------------
+r6098 | tewok | 2011-12-13 07:28:04 -0800 (Tue, 13 Dec 2011) | 28 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+
+Added %rollrecindex to map rollrec names to the index of the rollrec's first
+line in @rollreclines.  This speeds up rollrec look-ups significantly.
+The changes are:
+
+	rollrec lookups in @rollreclines are now done with rrindex().  This
+	removed a lot of duplicated look-up code from a number of routines.
+
+	buildrrindex() creates %rollrecindex.
+
+	Added a line-number parameter to rollrec_newrec().
+
+	If rollrec_setval() creates a new rollrec, an index entry will be
+	created.
+
+	rollrec_add() creates an index entry.
+
+	rollrec_del() deletes an index entry.
+ 
+	rollrec_rename() deletes the index entry for the old name.
+ 
+Stopped exporting rollrec_newrec().
+ 
+rollrec_readfile() forces there to be a blank line at the end of a rollrec
+file.
+
+Fixed some comments.
+
+------------------------------------------------------------------------
+r6097 | tewok | 2011-12-12 16:59:30 -0800 (Mon, 12 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+
+Added -splitrrf command.
+Added now option to -halt and -shutdown.
+
+------------------------------------------------------------------------
+r6096 | tewok | 2011-12-12 16:51:56 -0800 (Mon, 12 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+
+Changed several hash values from \&unix_getid to \&unix_getpid to match the
+existing subroutine name.
+
+
+------------------------------------------------------------------------
+r6095 | tewok | 2011-12-12 16:48:15 -0800 (Mon, 12 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+
+Added recognition of SIGINT to the zone processing loop for the soon queue..
+Removed some unnecessary quotes from a log message.
+ 
+
+------------------------------------------------------------------------
+r6094 | tewok | 2011-12-12 16:39:04 -0800 (Mon, 12 Dec 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+
+Added recognition of SIGINT to the zone processing loop.
+Moved some globals.
+
+
+------------------------------------------------------------------------
+r6093 | tewok | 2011-12-09 09:56:31 -0800 (Fri, 09 Dec 2011) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Changed the default Soon Queue length from 100 seconds to 24 hours.
+Adjusted a number of comments.
+Fixed some phase-command pod.
+
+------------------------------------------------------------------------
+r6091 | hserus | 2011-12-07 08:59:08 -0800 (Wed, 07 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+Reduce debug level for reporting no data on socket
+
+------------------------------------------------------------------------
+r6090 | hserus | 2011-12-07 08:33:21 -0800 (Wed, 07 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+
+Add missing format specifier for debug statement.
+
+------------------------------------------------------------------------
+r6089 | tewok | 2011-12-06 12:36:44 -0800 (Tue, 06 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+
+Un-use'd a couple modules taht lsroll doesn't need.
+
+------------------------------------------------------------------------
+r6088 | tewok | 2011-12-06 10:22:34 -0800 (Tue, 06 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Added two menu commands for restarting skipped zones.
+Fixed a misplaced command description in the pod.
+
+------------------------------------------------------------------------
+r6087 | tewok | 2011-12-06 08:18:36 -0800 (Tue, 06 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Consolidated ksk_phasewait() and zsk_phasewait() into phasewait().
+
+------------------------------------------------------------------------
+r6086 | tewok | 2011-12-05 15:51:29 -0800 (Mon, 05 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Changed the command separator in "prog_*" from a semi to a bang.
+Fixed the regexp that strip blanks from the beginning and end of phase commands.
+
+------------------------------------------------------------------------
+r6085 | tewok | 2011-12-05 15:48:41 -0800 (Mon, 05 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+
+Changed the command separator in "prog_*" from a semi to a bang.
+
+------------------------------------------------------------------------
+r6084 | tewok | 2011-12-05 15:47:32 -0800 (Mon, 05 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf.pod
+
+Changed the command separator in "prog_*" from a semi to a bang.
+
+------------------------------------------------------------------------
+r6083 | tewok | 2011-12-05 15:46:20 -0800 (Mon, 05 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+
+Changed the command separator in "prog_*" from a semi to a bang.
+
+------------------------------------------------------------------------
+r6082 | tewok | 2011-12-05 08:32:18 -0800 (Mon, 05 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf.pod
+
+Added descriptions and example for phase processing commands.
+
+------------------------------------------------------------------------
+r6081 | tewok | 2011-12-05 08:28:03 -0800 (Mon, 05 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Added a pod reference to rp-wrapper.
+
+------------------------------------------------------------------------
+r6080 | tewok | 2011-12-05 08:21:29 -0800 (Mon, 05 Dec 2011) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+
+
+Added checks for phase command entries.
+Reorganized file-checking routine to accommodate new checks.
+Reordered a few option descriptions.
+ 
+
+------------------------------------------------------------------------
+r6079 | tewok | 2011-12-05 07:24:06 -0800 (Mon, 05 Dec 2011) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+
+
+Added defaults and pod descriptions for phase-processing commands.
+Alphabetized a few misplaced options in the pod.
+
+------------------------------------------------------------------------
+r6078 | tewok | 2011-12-05 07:10:53 -0800 (Mon, 05 Dec 2011) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Added ability for admins to specify site-specific commands to be run in
+addition to or in place of the normal rollover actions.
+
+Added some error return values to phase-processing routines.
+
+Made a couple minor code optimizations and typo fixes.
+
+------------------------------------------------------------------------
+r6077 | hserus | 2011-12-04 09:40:22 -0800 (Sun, 04 Dec 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/ns_print.c
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Fix compiler warnings
+
+------------------------------------------------------------------------
+r6076 | hserus | 2011-12-04 09:35:40 -0800 (Sun, 04 Dec 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+For val_async_check_wait and val_async_select_info use default context when the
+application does not provide one.
+
+------------------------------------------------------------------------
+r6074 | hserus | 2011-11-21 07:36:43 -0800 (Mon, 21 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Fix null pointer reference. 
+
+------------------------------------------------------------------------
+r6073 | tewok | 2011-11-18 13:43:35 -0800 (Fri, 18 Nov 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+If there are keyrec errors while in ZSK phase 2, we'll stay in ZSK2 rather
+than quietly moving back to normal rollover.
+
+------------------------------------------------------------------------
+r6072 | tewok | 2011-11-17 16:59:18 -0800 (Thu, 17 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+
+Deleted deprecated use of defined() on a hash.
+
+------------------------------------------------------------------------
+r6071 | tewok | 2011-11-17 16:54:23 -0800 (Thu, 17 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+
+Deleted deprecated use of defined() on a hash.
+
+------------------------------------------------------------------------
+r6070 | tewok | 2011-11-17 16:52:25 -0800 (Thu, 17 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+
+Tidying up function headers.
+
+------------------------------------------------------------------------
+r6069 | hserus | 2011-11-17 07:08:26 -0800 (Thu, 17 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.h
+
+Look for AAAA glue in addition to A glue.
+
+------------------------------------------------------------------------
+r6068 | hserus | 2011-11-17 07:06:46 -0800 (Thu, 17 Nov 2011) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Distinguish between VAL_QUERY_REFRESH_QCACHE and VAL_QUERY_SKIP_CACHE. The
+former is to reset a query, the latter is to ignore the cache. Insist on EDNS0
+every time we query for DNSSEC meta-data. 
+
+------------------------------------------------------------------------
+r6067 | hserus | 2011-11-17 07:03:57 -0800 (Thu, 17 Nov 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+
+Add yet another classification of query flags -- this time to represent flags
+that MUST match when they are requested, but MAY match at other times.
+
+------------------------------------------------------------------------
+r6066 | hserus | 2011-11-17 07:00:48 -0800 (Thu, 17 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Add support for binding to and reading IPv6 addresses
+
+------------------------------------------------------------------------
+r6065 | hserus | 2011-11-17 06:58:03 -0800 (Thu, 17 Nov 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+
+Change query state type to a bitmap value. Add new definitions to represent
+waiting for A and AAAA glue.
+
+------------------------------------------------------------------------
+r6064 | hserus | 2011-11-17 06:56:05 -0800 (Thu, 17 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/val_errors.h
+   M /trunk/dnssec-tools/validator/include/validator-compat.h
+
+Wrap macro definitions using paranthesis to disambiguate during dereference
+
+------------------------------------------------------------------------
+r6063 | tewok | 2011-11-12 09:31:48 -0800 (Sat, 12 Nov 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+When rollrec files are read, consecutive blank lines will be collapsed into a
+single blank line.
+When rollrec entries are deleted, newly consecutive blank lines as a result
+of the deletion will be collapsed into a single blank line.
+
+------------------------------------------------------------------------
+r6062 | tewok | 2011-11-11 16:52:03 -0800 (Fri, 11 Nov 2011) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+Fixed a bug in rollrec_del() where skip records wouldn't be noticed.  This
+could cause multiple rollrecs to be deleted rather than a single one.
+
+Made two minor changes to the pod for rollrec_merge().
+
+------------------------------------------------------------------------
+r6061 | tewok | 2011-11-11 08:06:44 -0800 (Fri, 11 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Added a note to the pod about -szopts using "-i local" as its default.
+
+------------------------------------------------------------------------
+r6060 | tewok | 2011-11-10 11:45:32 -0800 (Thu, 10 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+
+Added "-i local" as the default for zonecheck-opts.
+
+------------------------------------------------------------------------
+r6059 | tewok | 2011-11-10 11:32:37 -0800 (Thu, 10 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+
+Changed to use "-i local" as the default for zonecheck-opts.
+
+------------------------------------------------------------------------
+r6058 | tewok | 2011-11-10 11:25:47 -0800 (Thu, 10 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf.pod
+
+Added the "-i local" option to the default config file.
+
+------------------------------------------------------------------------
+r6056 | hserus | 2011-11-07 14:26:06 -0800 (Mon, 07 Nov 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Handle responses that contain both nsec and nsec3 proofs
+
+------------------------------------------------------------------------
+r6055 | tewok | 2011-10-31 15:00:14 -0700 (Mon, 31 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/Makefile
+
+Changed "+25" to "now+25" in zonesigner calls in makefiles.
+
+
+------------------------------------------------------------------------
+r6054 | tewok | 2011-10-31 14:59:50 -0700 (Mon, 31 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/Makefile
+
+Changed "+25" to "now+25" in zonesigner calls in makefiles.
+
+
+------------------------------------------------------------------------
+r6052 | hserus | 2011-10-27 13:40:44 -0700 (Thu, 27 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator-config.h.in
+   M /trunk/dnssec-tools/validator/libval/val_inline_conf.h.in
+
+Allow hardcoded policies to be disabled using --without-inline-confs
+
+------------------------------------------------------------------------
+r6051 | hserus | 2011-10-27 10:56:29 -0700 (Thu, 27 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator-config.h.in
+
+LIBVAL_* defines are unnecessary for enabling inline validator configuration.
+Display the AC_MSG for inline files only if they are available.
+
+------------------------------------------------------------------------
+r6050 | hserus | 2011-10-27 10:37:11 -0700 (Thu, 27 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+while parsing tokens remove trailing spaces by default
+
+------------------------------------------------------------------------
+r6049 | hserus | 2011-10-27 09:47:08 -0700 (Thu, 27 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/libval_check_conf.c
+
+Fix typo
+
+------------------------------------------------------------------------
+r6048 | hserus | 2011-10-27 09:41:13 -0700 (Thu, 27 Oct 2011) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Allow libval to use hardcoded dnsval.conf, root.hints and resolv.conf configuration information if the configuration file is missing.
+The hardcoded information can be set at configure time using
+  --with-inline-dnsval-conf=FILE dnsval config file.
+  --with-inline-root-hints=FILE root.hints file.
+  --with-inline-resolv-conf=FILE resolv.conf file.
+
+------------------------------------------------------------------------
+r6047 | hserus | 2011-10-27 09:22:38 -0700 (Thu, 27 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/aclocal.m4
+   M /trunk/dnssec-tools/validator/ltmain.sh
+
+Update after aclocal and glibtoolize -c 
+
+------------------------------------------------------------------------
+r6046 | hserus | 2011-10-27 09:21:55 -0700 (Thu, 27 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator-config.h.in
+   M /trunk/dnssec-tools/validator/libval/val_inline_conf.h.in
+
+Preserve newlines in file read to buffer
+
+------------------------------------------------------------------------
+r6045 | hardaker | 2011-10-26 15:23:30 -0700 (Wed, 26 Oct 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-system-tray/COPYING
+
+copying/license file since this is packaged independently too
+------------------------------------------------------------------------
+r6044 | hardaker | 2011-10-26 15:23:15 -0700 (Wed, 26 Oct 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/lookup/COPYING
+
+copying/license file since this is packaged independently too
+------------------------------------------------------------------------
+r6043 | hardaker | 2011-10-26 15:23:01 -0700 (Wed, 26 Oct 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/COPYING
+
+copying/license file since this is packaged independently too
+------------------------------------------------------------------------
+r6042 | hardaker | 2011-10-26 15:22:39 -0700 (Wed, 26 Oct 2011) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/COPYING
+
+copying/license file since this is packaged independently too
+------------------------------------------------------------------------
+r6041 | hserus | 2011-10-26 12:12:21 -0700 (Wed, 26 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator-config.h.in
+   A /trunk/dnssec-tools/validator/libval/val_inline_conf.h.in
+
+allow user to specify resolv.conf, dnsval.conf and root.hints files that will
+be used as inline defaults if the relevant files don't exist.
+
+------------------------------------------------------------------------
+r6040 | hserus | 2011-10-26 12:08:29 -0700 (Wed, 26 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+Return EAI_FAIL when there are no results available
+
+------------------------------------------------------------------------
+r6039 | hardaker | 2011-10-25 13:45:48 -0700 (Tue, 25 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+
+added support for generating an nsec record that fails to validate
+------------------------------------------------------------------------
+r6038 | hardaker | 2011-10-25 13:45:35 -0700 (Tue, 25 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/lookup/src/lookup.h
+
+change the validator-config.h reference to be inside validator/
+------------------------------------------------------------------------
+r6037 | hardaker | 2011-10-25 13:45:21 -0700 (Tue, 25 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+
+Added in a wildcard record for testing wildcards
+------------------------------------------------------------------------
+r6036 | hardaker | 2011-10-25 13:45:08 -0700 (Tue, 25 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Legend.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/NodeList.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.pro
+
+windows fixes and added validated DNE to the legend
+------------------------------------------------------------------------
+r6035 | hardaker | 2011-10-25 13:44:49 -0700 (Tue, 25 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+fix the .pro file so that make installs with a different prefix work
+------------------------------------------------------------------------
+r6033 | hserus | 2011-10-25 07:56:05 -0700 (Tue, 25 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/selftests.dist
+
+For test cases that would result in a NULL result structure, use an expected value of VAL_UNTRUSTED_ANSWER.
+Add various wildcard-related test cases
+
+------------------------------------------------------------------------
+r6032 | hserus | 2011-10-25 07:53:55 -0700 (Tue, 25 Oct 2011) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Discard any extraneous proof of non-existance. This does the right thing by returning success for a validated responses where there are extra proofs of
+non-existance. However this will also mean that for certain non-existance error conditions we won't have a result structure encapsulating the (broken) proofs,
+instead we will get a NULL result structure.  
+
+------------------------------------------------------------------------
+r6031 | hserus | 2011-10-25 07:48:48 -0700 (Tue, 25 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+while matching returned validation status values, treat a NULL response as an untrusted answer
+
+------------------------------------------------------------------------
+r6030 | hserus | 2011-10-25 07:46:56 -0700 (Tue, 25 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_x_query.c
+
+Initialize memory used for constructing response message.
+Allocate ans, auth and add  buffers only if the result structure is not NULL. 
+
+------------------------------------------------------------------------
+r6029 | hserus | 2011-10-25 07:44:35 -0700 (Tue, 25 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Add a log mesage when we're ignoring a duplicate option in the validator
+configuration file.
+
+------------------------------------------------------------------------
+r6028 | rstory | 2011-10-24 09:24:35 -0700 (Mon, 24 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/README
+
+fix typo in readme
+------------------------------------------------------------------------
+r6027 | rstory | 2011-10-24 09:24:25 -0700 (Mon, 24 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+don't allow negative indexing
+------------------------------------------------------------------------
+r6026 | hserus | 2011-10-24 06:49:52 -0700 (Mon, 24 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/selftests.dist
+
+Fix expected test case results to account for new wildcard at given name
+
+------------------------------------------------------------------------
+r6025 | hserus | 2011-10-21 10:43:31 -0700 (Fri, 21 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+replace tabs with spaces to keep formatting consistent 
+
+------------------------------------------------------------------------
+r6024 | hserus | 2011-10-21 08:45:37 -0700 (Fri, 21 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-addrinfo/addrinfo.pm
+   M /trunk/dnssec-tools/tools/modules/Net-addrinfo/const-c.inc
+   M /trunk/dnssec-tools/tools/modules/Net-addrinfo/t/basic.t
+
+Export some missing types, fix test suite so that all tests pass
+
+------------------------------------------------------------------------
+r6022 | tewok | 2011-10-19 09:32:02 -0700 (Wed, 19 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/zabbix/README
+   M /trunk/dnssec-tools/apps/zabbix/zabbix_agentd.conf
+   A /trunk/dnssec-tools/apps/zabbix/zonestate
+
+Added zonestate and its associated info.
+
+------------------------------------------------------------------------
+r6021 | tewok | 2011-10-19 09:31:26 -0700 (Wed, 19 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/zabbix/rollstate
+
+Deleted an unnecessary comma from the pod.
+
+------------------------------------------------------------------------
+r6020 | tewok | 2011-10-19 09:25:14 -0700 (Wed, 19 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/zabbix/README
+   A /trunk/dnssec-tools/apps/zabbix/backup-zabbix
+
+Added backup-zabbix.
+
+------------------------------------------------------------------------
+r6019 | hserus | 2011-10-19 07:26:00 -0700 (Wed, 19 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Fix checking of nonexisting type proof for nsec3
+
+------------------------------------------------------------------------
+r6018 | hserus | 2011-10-19 07:01:31 -0700 (Wed, 19 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+take 2 at trying to support handling of wildcard proofs
+
+------------------------------------------------------------------------
+r6017 | hserus | 2011-10-19 06:16:08 -0700 (Wed, 19 Oct 2011) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+
+Revert previous change for validation of wildcard proofs, since this breaks validation of other names.
+
+------------------------------------------------------------------------
+r6016 | hserus | 2011-10-18 20:02:50 -0700 (Tue, 18 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Try to support handling of wildcard proofs. This needs to be cleaned up a bit.
+
+------------------------------------------------------------------------
+r6015 | tewok | 2011-10-18 12:02:26 -0700 (Tue, 18 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/zabbix/rollstate
+
+Added a pod caveat about this being a proof-of-concept prototype.
+
+------------------------------------------------------------------------
+r6014 | tewok | 2011-10-18 11:24:41 -0700 (Tue, 18 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/zabbix/rollstate
+
+Added a header comment.
+
+------------------------------------------------------------------------
+r6013 | tewok | 2011-10-18 09:43:47 -0700 (Tue, 18 Oct 2011) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/zabbix
+   A /trunk/dnssec-tools/apps/zabbix/README
+   A /trunk/dnssec-tools/apps/zabbix/item.fields
+   A /trunk/dnssec-tools/apps/zabbix/rollstate
+   A /trunk/dnssec-tools/apps/zabbix/zabbix_agentd.conf
+
+Files for Zabbix monitoring -- a monitor plugin, example configuration lines,
+and example item configuration fields.
+
+------------------------------------------------------------------------
+r6012 | hardaker | 2011-10-14 15:58:37 -0700 (Fri, 14 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+
+ok, lets try .p1 instead
+------------------------------------------------------------------------
+r6011 | hardaker | 2011-10-14 15:46:55 -0700 (Fri, 14 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+
+mark the nodes version number as 1.11-2
+------------------------------------------------------------------------
+r6010 | hardaker | 2011-10-14 15:45:44 -0700 (Fri, 14 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DetailsViewer.cpp
+
+fix crashing when the details are presented
+------------------------------------------------------------------------
+r6008 | hardaker | 2011-10-14 15:45:18 -0700 (Fri, 14 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+
+set the install path based on a PREFIX variable
+------------------------------------------------------------------------
+r6007 | hardaker | 2011-10-14 15:44:59 -0700 (Fri, 14 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.cpp
+
+Don't inline function that is used by other classes too.
+------------------------------------------------------------------------
+r6006 | hardaker | 2011-10-14 15:44:42 -0700 (Fri, 14 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Legend.cpp
+
+talk about color precedence
+------------------------------------------------------------------------
+r6005 | hserus | 2011-10-12 10:58:24 -0700 (Wed, 12 Oct 2011) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_get_rrset.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+Use unsigned int instead of u_int variants for functions exported from libval.
+
+------------------------------------------------------------------------
+r6003 | hardaker | 2011-10-11 22:21:40 -0700 (Tue, 11 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/ChangeLog
+
+Update for verison 1.11
+------------------------------------------------------------------------
+r6002 | hardaker | 2011-10-11 22:17:27 -0700 (Tue, 11 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.top
+
+lib version update
+------------------------------------------------------------------------
+r6001 | hardaker | 2011-10-11 22:15:41 -0700 (Tue, 11 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/nagios/dtnagobj
+   M /trunk/dnssec-tools/tools/convertar/convertar
+   M /trunk/dnssec-tools/tools/demos/demo-tools/makezones
+   M /trunk/dnssec-tools/tools/dnspktflow/dnspktflow
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/drawvalmap/drawvalmap
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+   M /trunk/dnssec-tools/tools/mapper/mapper
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+   M /trunk/dnssec-tools/tools/scripts/dtck
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+   M /trunk/dnssec-tools/tools/scripts/dtdefs
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+   M /trunk/dnssec-tools/tools/scripts/dtreqmods
+   M /trunk/dnssec-tools/tools/scripts/dtupdkrf
+   M /trunk/dnssec-tools/tools/scripts/expchk
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+   M /trunk/dnssec-tools/tools/scripts/getdnskeys
+   M /trunk/dnssec-tools/tools/scripts/getds
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+   M /trunk/dnssec-tools/tools/scripts/lights
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+   M /trunk/dnssec-tools/tools/scripts/rolllog
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+   M /trunk/dnssec-tools/tools/scripts/rollset
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+   M /trunk/dnssec-tools/tools/scripts/tachk
+   M /trunk/dnssec-tools/tools/scripts/timetrans
+   M /trunk/dnssec-tools/tools/scripts/trustman
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.cpp
+
+Update Version Number: 1.11
+------------------------------------------------------------------------
+r6000 | hardaker | 2011-10-11 22:15:09 -0700 (Tue, 11 Oct 2011) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+NEWS update for 2 of the Qt apps
+------------------------------------------------------------------------
 r5998 | hardaker | 2011-10-11 13:55:56 -0700 (Tue, 11 Oct 2011) | 1 line
 Changed paths:
    M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Legend.cpp
