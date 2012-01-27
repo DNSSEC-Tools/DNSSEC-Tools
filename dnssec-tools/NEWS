@@ -2,7 +2,7 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
-1.12								(1/23/12)
+1.12								(1/26/12)
  - New Features:
 
     - libval:       - Made improvements to support IPv6,
@@ -36,6 +36,19 @@ details.
                       related to the interdependency between DNSSEC and an
                       accurate system clock.
 
+                    - Added a patch to enable DNSSEC validation in Qt
+                      based applications
+
+    - dnssec-check  - Completely rewritten GUI with many new features
+                    - Now contains the ability to submit the results
+                      to a central DNSSEC-Tools repository.  The
+                      results will be analyzed and published on a
+                      regular basis.  Please help us get started by
+                      running dnssec-check on your networks!  Note
+                      that it explains that it only sends hashed IP
+                      addresses to our servers and the reports
+                      generated will be aggregation summaries of the
+                      data collected.
 
 1.11								(9/30/11)
  - New Features:
