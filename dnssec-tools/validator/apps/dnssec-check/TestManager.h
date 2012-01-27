@@ -16,7 +16,7 @@
 #define ENABLE_RESULTS_SUBMISSION 1
 
 #ifndef RESULTS_SUBMIT_URL
-#define RESULTS_SUBMIT_URL "http://www.hardakers.net/trend-tracker/trend-tracker.cgi?type=submit&"
+#define RESULTS_SUBMIT_URL "https://www.dnssec-tools.org/dnssec-check/?type=submit&"
 #endif
 
 static const QString resultServerBaseURL = RESULTS_SUBMIT_URL;
