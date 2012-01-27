@@ -37,6 +37,13 @@ InfoBox {
 
     To clear the test results, hit the reset button.  You can also individually click on a given circle to (re)run that test.
 
+    Finally, clicking on a resolver address will bring up a menu that will let you:
+    <ul>
+    <li>Run the tests for that resolver</li>
+    <li>Reset the tests for that resolver</li>
+    <li>Remove that resolver from the list</li>
+    </ul>
+
     <h2>Submitting Your Results</h2>
 
     One of the goals of the <a href=\"http://www.dnssec-deployment.org/\">DNSSEC-Deployment</a> project, which the
