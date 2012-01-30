@@ -116,12 +116,7 @@ res_quecmp(u_char * query, u_char * response)
     if (query == NULL || response == NULL)
         return 1;
 
-    length = wire_name_length(&query[12]);
-
-    if (length != wire_name_length(&response[12]))
-        return 1;
-
-    return (memcmp(&query[12], &response[12], length));
+    return namecmp(&query[12], &response[12]);
 }
 
 int
