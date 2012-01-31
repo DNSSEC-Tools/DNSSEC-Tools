@@ -38,7 +38,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollctl";
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -72,6 +72,7 @@ my @opts =
 	"shutdown:s",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
 	"skipzone",			# Stop the named zone(s) from rolling.
+	"signzone",			# Sign (only) the named zone(s).
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"splitrrf",			# Split a rollrec file in two.
 	"status",			# Get rollerd's status.
@@ -111,6 +112,7 @@ my $runqueueflag    = 0;
 my $queuelistflag   = 0;
 my $queuestatusflag = 0;
 my $shutdownflag    = 0;
+my $signzoneflag    = 0;
 my $skipallflag	    = 0;
 my $skipzoneflag    = 0;
 my $sleeptimeflag   = 0;
@@ -592,6 +594,34 @@ sub main()
 			$rcret++;
 		}
 	}
+	elsif($signzoneflag)
+	{
+		if(@ARGV == 0)
+		{
+			print STDERR "rollctl: -signzone missing zone argument\n";
+			exit(2);
+		}
+
+		foreach my $zone (@ARGV)
+		{
+			if(! sendcmd(ROLLCMD_SIGNZONE,$zone))
+			{
+				print STDERR "rollctl:  error sending command SIGNZONE($zone)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = rollmgr_getresp();
+			if($ret == ROLLCMD_RC_OKAY)
+			{
+				print "zone $zone signed\n";
+			}
+			else
+			{
+				print STDERR "unable to sign zone $zone:  \"$resp\"\n";
+				$rcret++;
+			}
+		}
+	}
 	elsif($skipallflag)
 	{
 		if(! sendcmd(ROLLCMD_SKIPALL,$skipzoneflag))
@@ -978,6 +1008,11 @@ sub doopts
 
 		$commandcount++;
 	}
+	if(exists($options{'signzone'}))
+	{
+		$signzoneflag = $options{'signzone'};
+		$commandcount++;
+	}
 	if(exists($options{'skipall'}))
 	{
 		$skipallflag = $options{'skipall'};
@@ -1220,6 +1255,7 @@ sub usage
 	print STDERR "\t-rollrec <rollrec>	set rollrec file\n";
 	print STDERR "\t-runqueue		run queue\n";
 	print STDERR "\t-shutdown [now]		shutdown rollerd\n";
+	print STDERR "\t-signzone <zone>	sign named zone (no key rollover)\n";
 	print STDERR "\t-skipall		skip all zones\n";
 	print STDERR "\t-skipzone <zone>	skip named zone\n";
 	print STDERR "\t-splitrrf <rrf entries>	split the current rollrec file\n";
@@ -1399,6 +1435,12 @@ Wakes up B<rollerd> and has it run its queue of I<rollrec> entries.
 =item B<-shutdown>
 
 Synonym for B<-halt>.
+
+=item B<-signzone zone>
+
+Signs I<zone>'s zonefile without performing any rollover actions.  The zone
+is signed with the keys most recently used to sign the zone.  No new keys
+will be generated.
 
 =item B<-skipall>
 
