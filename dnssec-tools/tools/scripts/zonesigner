@@ -40,9 +40,11 @@ use strict;
 
 use Cwd;
 use File::Spec;
+use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
 
@@ -50,7 +52,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "zonesigner";
-my $VERS   = "$NAME version: 1.11";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -167,6 +169,12 @@ my $krfile;				# User-specified keyrec file.
 my $status;				# Zone-signing status.
 my @zonestat;				# stat() buffer for zone file.
 
+my $rollmgr;				# Zone's rollover manager.
+my $runbymgr = 0;			# Flag for execute by rollover manager.
+my $signonly = 0;			# Only sign zone, no key manipulation.
+my $cthulhu = 0;			# Re-executed flag. (Internal use only.)
+my $lastcomm;				# Last execution's command line.
+
 #
 # Some path variables to be set from the config file.
 #
@@ -175,6 +183,7 @@ my $zonecheck;
 my $zonesign;
 
 my %opts;				# Options.
+my $cmdline;				# Command line.
 our @saveargs = @ARGV;			# Copy of argument vector.
 
 #
@@ -202,6 +211,10 @@ my @zsopts = ( '',
 	       ["zonecheck=s",		'Location of named-checkzone.'],
 	       ["zonesign=s",		'Location of dnssec-signzone.'],
 	       ["xc=i",			'Display message for an exit code.'],
+
+	       ["rollmgr=s",		'Zone\'s rollover manager.'],
+	       ["signonly",		'Only sign zone, no key manipulation.'],
+	       ["Cthulhu",			'Do not use -- internal use only.'],
 	     );
 
 my $pubksk	= 0;			# Create-Published-KSKs flag.
@@ -299,6 +312,11 @@ sub main
 	helpchk();
 
 	#
+	# Check if we were run by the rollover manager.
+	#
+	chkrollmgr();
+
+	#
 	# Use a local config file if we're running as part of a packed
 	# configuration.
 	#
@@ -356,6 +374,17 @@ sub main
 	}
 
 	#
+	# This zone is being managed by a rollover manager, but we weren't
+	# invoked by the manager.  We'll take this to mean that a user
+	# wants to sign the zone without performing any rollover actions.
+	#
+	if((! $runbymgr) && ($rollmgr ne ''))
+	{
+		vmed_print("command-line run, rollmgr ($rollmgr) in krf\n\n");
+		mgrsign();
+	}
+
+	#
 	# Generate the KSK and ZSK key files.
 	#
 	genkeys();
@@ -364,7 +393,7 @@ sub main
 	# Create the key directories and move the key files into the
 	# appropriate repositories.
 	#
-	keydirs();
+	keydirs() if(! $signonly);
 
 	#
 	# Create the unsigned zone file and add include lines for the key files.
@@ -395,6 +424,11 @@ sub optsandargs
 	#
 	$argc = @ARGV;
 	usage(3) if($argc == 0 && !(eval {require Getopt::GUI::Long;}));
+
+	#
+	# Save the command line for storing in the keyrec file.
+	#
+	$cmdline = join(' ', @ARGV);
 
 	#
 	# Set the options, using the DNSSEC-Tools defaults, the DNSSEC-Tools
@@ -477,14 +511,27 @@ sub optsandargs
 	$ksdir	  = $opts{'ksdir'}	|| "";
 	$ksignset = $opts{'ksignset'}	|| "";
 	$signset  = $opts{'signset'}	|| "";
+	$signonly = $opts{'signonly'}	|| 0;
+	$cthulhu  = $opts{'Cthulhu'}	|| 0;
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
 	$nokrfile = $opts{'nokrfile'}	|| "";
+	$rollmgr  = $opts{'rollmgr'}	|| "";
 	$zcopts   = $opts{'zcopts'}	|| $opts{'zonecheck-opts'};
 	$zone	  = $opts{'zone'};
 
 	$showkeycmd  = $opts{'showkeycmd'}	|| 0;
 	$showsigncmd = $opts{'showsigncmd'}	|| 0;
+
+	#
+	# If -signonly was given, we'll save the last command we were run with. 
+	#
+	if($signonly)
+	{
+		$lastcomm = $opts{'lastcmd'};
+
+		vmed_print("-signonly given; using these arguments:  \"$lastcomm\"\n");
+	}
 
 	#
 	# If -genkeys was given, then we'll set -genksk and -genzsk.
@@ -1105,14 +1152,22 @@ sub genkeys
 	@zsknewlist = split / /, keyrec_recval($zsknewsetname,'keys');
 
 	#
-	# Generate the set of ZSK keys.
+	# If the caller wants key-rollover as well as zone-signing,
+	# we'll generate the required keys.
 	#
-	genzsks();
+	if(! $signonly)
+	{
+		#
+		# Generate the set of ZSK keys.
+		#
+		genzsks();
 
-	#
-	# Generate the set of KSK keys.
-	#
-	genksks();
+		#
+		# Generate the set of KSK keys.
+		#
+		genksks();
+	}
+
 }
 
 #----------------------------------------------------------------------
@@ -2318,6 +2373,12 @@ sub zonesign
 	}
 
 	#
+	# Save the rollover data for possible future use.
+	#
+ 	keyrec_setval('zone',$zone,'rollmgr',$rollmgr);
+ 	keyrec_setval('zone',$zone,'lastcmd',$cmdline);
+
+	#
 	# Add the ZSKs' keyrecs to the keyrec file.
 	#
 	updzonerec($UPD_ALLKEYS);
@@ -2473,6 +2534,7 @@ sub updzonerec
 	$opts{'zskcur'}		= $zskcursetname;
 	$opts{'zskpub'}		= $zskpubsetname;
 	$opts{'lastset'}	= keyrec_recval($zone,'lastset');
+	$opts{'rollmgr'}	= keyrec_recval($zone,'rollmgr');
 
 	#
 	# Save the zone end time and delete the option prefix.
@@ -3417,6 +3479,108 @@ sub chksset
 }
 
 #----------------------------------------------------------------------
+# Routine:	chkrollmgr()
+#
+# Purpose:	Determine if we were executed by the rollover manager.
+#		We'll parse the command line to find the -rollmgr argument.
+#		The argument list will be reset so more extensive argument
+#		handling can be performed later.
+#
+sub chkrollmgr
+{
+	my %locopts = ();			# Hashed options.
+
+	%locopts  = opts_cmdline(1,@zsopts);
+	$runbymgr = $locopts{'rollmgr'};
+}
+
+#----------------------------------------------------------------------
+# Routine:	mgrsign()
+#
+# Purpose:	Determine if we were executed by the rollover manager.
+#		If we couldn't contact the rollover manager, we'll assume
+#		it isn't running and we'll re-sign the zone ourself.
+#
+sub mgrsign
+{
+	my $ret;				# Return code from rollmgr.
+	my $resp;				# Response string from rollmgr.
+
+	#
+	# If rollerd isn't running, we'll handle the signing ourself.
+	#
+	if(rollmgr_running() != 1)
+	{
+		my $zonesigner;			# Path to zonesigner.
+		my $ret;			# Return code from zonesigner.
+
+		#
+		# Don't get into an execution loop.  This was only specified
+		# below, so if we're back here and find this flag was set
+		# then we'll let things proceed as normal.
+		#
+		return if($cthulhu);
+
+		vmed_print("rollerd is not running -- signing the zone directly\n");
+
+		#
+		# Get the last zonesigner command if it hasn't been found yet.
+		#
+		if($lastcomm eq '')
+		{
+			$lastcomm = $opts{'lastcmd'};
+		}
+
+		#
+		# Add a flag to force a re-sign without any key shenanigans
+		# and to prevent an execution loop.
+		#
+		$lastcomm .= " -signonly -Cthulhu";
+
+		#
+		# Get the path to the zonesigner command.
+		#
+		if(($zonesigner=dt_cmdpath('zonesigner')) eq '')
+		{
+			$zonesigner = 'zonesigner';
+		}
+
+		#
+		# Execute zonesigner for the zone.
+		#
+		$ret = System("$zonesigner $lastcomm");
+		$ret >>= 8;
+		exit($ret);
+	}
+
+	#
+	# Ask the rollover manager to sign the zone.
+	#
+	if(rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SIGNZONE,$zone) == 0)
+	{
+		print STDERR "unable to ask $rollmgr to sign $zone\n";
+		exit(1);
+	}
+
+	#
+	# And wait to hear how it went.
+	#
+	($ret, $resp) = rollmgr_getresp();
+	if($ret != ROLLCMD_RC_OKAY)
+	{
+		print STDERR "rollover manager $rollmgr unable to sign zone $zone\n";
+		print STDERR "\"$resp\"\n";
+		exit(1);
+	}
+
+	#
+	# Exit here since there's nothing further for us to do.
+	#
+	vprint("zone $zone signed by rollover manager $rollmgr\n");
+	exit(0);
+}
+
+#----------------------------------------------------------------------
 # Routine:	printopts()
 #
 # Purpose:	Display the value of our options.
@@ -3446,6 +3610,8 @@ sub printopts
 	print "\t\tarchdir       - $archdir\n";
 	print "\t\tshowkeycmd    - $showkeycmd\n";
 	print "\t\tshowsigncmd   - $showsigncmd\n";
+	print "\t\trollmgr       - $rollmgr\n";
+	print "\t\tsignonly      - $signonly\n";
 	print "\n";
 
 	print "\tkey-signing options:\n";
@@ -3549,7 +3715,7 @@ sub helpchk
 #
 sub System
 {
-	print "\trunning: ", join(" ", @_),"\n" if ($verbose > $VERBOSE_LOW);
+	vmed_print("\trunning: ", join(" ", @_),"\n");
 	return(system(@_));
 }
 
@@ -3562,7 +3728,7 @@ sub System
 sub System_output
 {
 	my $cmd = join(" ", @_);
-	print "\trunning: $cmd\n" if ($verbose > $VERBOSE_LOW);
+	vmed_print("\trunning: $cmd\n");
 	return(`$cmd`);
 }
 
@@ -3637,6 +3803,8 @@ sub usage
 	print STDERR "\t\t\t-zsklife lifespan\n";
 	print STDERR "\t\t\t-signset ZSK-set-name\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
+	print STDERR "\t\t\t-rollmgr rollover-manager\n";
+	print STDERR "\t\t\t-signonly";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-xc exitnum\n";
 	print STDERR "\t\t\t-help\n";
@@ -3753,6 +3921,11 @@ be created.  If the B<-zone> option is not given, then I<zone-file> will be
 used as the name of the zone that will be signed.  Generated keys are given
 this name as their base.
 
+Once B<zonesigner> has created a set of keys for a zone and signed the zone,
+it may be used to re-sign the as the zonefile changes.  When run without any
+options, B<zonesigner> will consult the zone's keyrec to find the appropriate
+set of keys and will then sign the specified zone with them.
+
 The zone file is modified to have B<include> commands, which will include the
 KSK and ZSK keys.  These lines are placed at the end of the file and should
 not be modified by the user.  If the zone file already includes any key files,
@@ -3773,6 +3946,13 @@ result in the signed zone being stored in I<example.com.signed>.
 Unless the B<-genkeys>, B<-genksk>, B<-genzsk>, or B<-newpubksk> options are
 specified, the last keys generated for a particular zone will be used in
 subsequent B<zonesigner> executions.
+
+B<zonesigner> can be used with a rollover manager, such as B<rollerd>, to
+provide automated management of a zone, its keys, and the signing of the zone.
+If a B<rollerd>-managed zonefile changes while B<rollerd> is waiting for a
+zone rollover to begin or a rollover phase to complete, B<zonesigner> may be
+used to sign the zone with the proper set of keys; B<rollerd> will not be
+disrupted by this.
 
 =head1 KEYREC FILES
 
@@ -4052,6 +4232,13 @@ what you're doing.
 B<Warning>:  This is may be a I<temporary> method of KSK rollover.  It I<may>
 be changed in the future.
 
+=item B<-rollmgr>
+
+The zone's rollover manager.  This indicates that the zone is under control
+of a rollover manager.  If a user wishes to sign a zone in the middle of a
+rollover wait phase, this field helps B<zonesigner> and the rollover manager
+to determine how best to handle the zone-signing operation.
+
 =item B<-rollzsk>
 
 Force a rollover of the ZSK keys using the Pre-Publish Key Rollover method.
@@ -4100,6 +4287,12 @@ executed.  This is a small subset of verbose level 3 output.
 
 Display the actual zone-signing command (with options and arguments) that is
 executed.  This is a small subset of verbose level 3 output.
+
+=item B<-signonly>
+
+Sign the zone without performing any key generation or key rollover operations.
+The keys used in the most recent B<zonesigner> signing of this zone will be the
+keys used for this signing.
 
 =item B<-signset>
 
@@ -4260,6 +4453,12 @@ directory
 =back
 
 An error message will be printed if an invalid exit code is given.
+
+=item B<-Cthulhu>
+
+This option is for internal use only and should never be used by a user.
+If this warning is ignored, then undefined, unnameable eldritch horrors
+may be visited upon your zone files.  Do not use.
 
 =item B<-zone>
 
