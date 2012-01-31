@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.11.1";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -2136,47 +2136,54 @@ sub headerstripe
 
 	if($showrrnames)
 	{
-		$lab = $zonetab->Label(-text => 'Rollrec Name ',
+		$lab = $zonetab->Label(-text => ' Rollrec Name ',
+				       -anchor => 'w',
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$namecol,$lab);
 	}
 
 	if($showzonenames)
 	{
-		$lab = $zonetab->Label(-text => 'Zone Name    ',
+		$lab = $zonetab->Label(-text => ' Zone Name ',
+				       -anchor => 'w',
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$zonecol,$lab);
 	}
 
 	if($showzgnames)
 	{
-		$lab = $zonetab->Label(-text => 'Zone Group   ',
+		$lab = $zonetab->Label(-text => ' Zone Group ',
+				       -anchor => 'w',
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$zgcol,$lab);
 	}
 
-	$lab = $zonetab->Label(-text => 'Status',
+	$lab = $zonetab->Label(-text => ' Status',
 			       -font => $font, -background => 'tan');
 	$zonetab->put($TITLEROW,$phasecol,$lab);
 
 	if($showzsksets)
 	{
-		$lab = $zonetab->Label(-text => 'ZSK Type    ',
+		$lab = $zonetab->Label(-text => ' ZSK Type ',
+				       -anchor => 'w',
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$zsklblcol,$lab);
 
-		$lab = $zonetab->Label(-text => 'ZSK Name    ',
+		$lab = $zonetab->Label(-text => ' ZSK Name ',
+				       -anchor => 'w',
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$zskkeycol,$lab);
 	}
 
 	if($showksksets)
 	{
-		$lab = $zonetab->Label(-text => 'KSK Type    ',
+		$lab = $zonetab->Label(-text => ' KSK Type ',
+				       -anchor => 'w',
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$ksklblcol,$lab);
 
-		$lab = $zonetab->Label(-text => 'KSK Name    ',
+		$lab = $zonetab->Label(-text => ' KSK Name ',
+				       -anchor => 'w',
 				       -font => $font, -background => 'tan');
 		$zonetab->put($TITLEROW,$kskkeycol,$lab);
 	}
@@ -2362,7 +2369,8 @@ sub zonestripe
 	{
 		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
 		$zonetab->put($row0,0,$blank);
-		$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
+		$lab = $zonetab->Label(-text => " $zonetxt", -font => $font,
+				       -anchor => 'w',
 				       -foreground => $fgcolor,
 				       -background => $bgcolor);
 
@@ -2380,7 +2388,8 @@ sub zonestripe
 	{
 		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
 		$zonetab->put($row0,$zonecol,$blank);
-		$lab = $zonetab->Label(-text => $zonename, -font => $font,
+		$lab = $zonetab->Label(-text => " $zonename", -font => $font,
+				       -anchor => 'w',
 				       -foreground => $fgcolor,
 				       -background => $bgcolor);
 
@@ -2398,8 +2407,9 @@ sub zonestripe
 	{
 		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
 		$zonetab->put($row0,$zgcol,$blank);
-		$lab = $zonetab->Label(-text => $zonegroups{$zone},
+		$lab = $zonetab->Label(-text => " $zonegroups{$zone}",
 				       -font => $font,
+				       -anchor => 'w',
 				       -foreground => $fgcolor,
 				       -background => $bgcolor);
 
@@ -2442,24 +2452,17 @@ sub zonestripe
 		$zsknew = keyrec_recval($zonename,'zsknew');
 
 		#
-		# Add some spacing to the fields.
-		#
-		$zskcur	 .= "    ";
-		$zskpub	 .= "    ";
-		$zsknew	 .= "    ";
-
-		#
 		# Fifth column:  key label
 		#
-		$lab = $zonetab->Label(-text => "Current   ", -font => $font,
+		$lab = $zonetab->Label(-text => " Current   ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row0,$zsklblcol,$lab);
-		$lab = $zonetab->Label(-text => "Published   ", -font => $font,
+		$lab = $zonetab->Label(-text => " Published ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row1,$zsklblcol,$lab);
-		$lab = $zonetab->Label(-text => "New   ", -font => $font,
+		$lab = $zonetab->Label(-text => " New       ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row2,$zsklblcol,$lab);
@@ -2467,16 +2470,16 @@ sub zonestripe
 		#
 		# Sixth columns:  key name
 		#
-		$lab = $zonetab->Label(-text => $zskcur, -font => $font,
+		$lab = $zonetab->Label(-text => " $zskcur ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row0,$zskkeycol,$lab);
 
-		$lab = $zonetab->Label(-text => $zskpub, -font => $font,
+		$lab = $zonetab->Label(-text => " $zskpub ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row1,$zskkeycol,$lab);
-		$lab = $zonetab->Label(-text => $zsknew, -font => $font,
+		$lab = $zonetab->Label(-text => " $zsknew ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row2,$zskkeycol,$lab);
@@ -2495,19 +2498,13 @@ sub zonestripe
 		$kskpub = keyrec_recval($zonename,'kskpub');
 
 		#
-		# Add some spacing to the fields.
-		#
-		$kskcur	 .= "    ";
-		$kskpub	 .= "    ";
-
-		#
 		# Seventh column:  KSK keyset label
 		#
-		$lab = $zonetab->Label(-text => "Current   ", -font => $font,
+		$lab = $zonetab->Label(-text => " Current   ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row0,$ksklblcol,$lab);
-		$lab = $zonetab->Label(-text => "Published   ", -font => $font,
+		$lab = $zonetab->Label(-text => " Published ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row1,$ksklblcol,$lab);
@@ -2519,11 +2516,11 @@ sub zonestripe
 		#
 		# Eighth column:  KSK keyset name
 		#
-		$lab = $zonetab->Label(-text => $kskcur, -font => $font,
+		$lab = $zonetab->Label(-text => " $kskcur ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row0,$kskkeycol,$lab);
-		$lab = $zonetab->Label(-text => $kskpub, -font => $font,
+		$lab = $zonetab->Label(-text => " $kskpub ", -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row1,$kskkeycol,$lab);
