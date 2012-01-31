@@ -700,7 +700,7 @@ sub rollrec_readfile
 			# The line is used to issue a specific command to run.
 			# We queue it for later processing.
 			#
-print STDERR "rollrec_readfile:  processing command: $value / $havecmdsalready\n";
+# print STDERR "rollrec_readfile:  processing command: $value / $havecmdsalready\n";
 
 			next if($havecmdsalready);
 
