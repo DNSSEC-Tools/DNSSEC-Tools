@@ -33,6 +33,7 @@ our $MODULE_VERSION = "1.9.0";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
+			opts_cmdline
 			opts_cmdopts
 			opts_createkrf
 			opts_drop
@@ -694,6 +695,63 @@ sub opts_int_zonecopy
 }
 
 ##############################################################################
+# Routine:	opts_cmdline()
+#
+# Purpose:	Parse a command line looking for the arguments in the standard
+#		set of options and the caller's set.  If the first argument is
+#		true, the program-wide @ARGV is restored after parsing.  If the
+#		caller provides other arguments, they're added as additional
+#		options.  The parsed options are returned to the caller.
+#
+sub opts_cmdline
+{
+	my $saveargv = shift;			# Flag for saving @ARGV.
+	my @csopts = @_;			# Command-specific options.
+
+	my @args;				# Copy of @ARGV.
+	my @opts;				# Copy of standard options.
+	my %parsedopts;				# Parsed options.
+
+	my $curgui = $gui;			# Saved $gui value.
+	my $curfc = $firstcall;			# Saved $firstcall value.
+
+	#
+	# Save the argument vector.
+	#
+	@args = @ARGV;
+
+	#
+	# Add the standard options to the caller's options.
+	#
+	@opts = @stdopts;
+	push @opts, @csopts if(@csopts > 0);
+
+	#
+	# Force some flags we need.
+	#
+	$gui = 0;
+	$firstcall = 0;
+
+	#
+	# Extract the command line options.
+	#
+	localgetoptions(\%parsedopts,@opts);
+
+	#
+	# Restore the forced flags.
+	#
+	$gui = $curgui;
+	$firstcall = $curfc;
+
+	#
+	# Restore the saved argument vector.
+	#
+	@ARGV = @args if($saveargv);
+
+	return(%parsedopts);
+}
+
+##############################################################################
 #
 sub opts_int_cmdline
 {
@@ -830,6 +888,8 @@ Net::DNS::SEC::Tools::tooloptions - DNSSEC-Tools option routines.
 
   @specopts = ("propagate+", "waittime=i");
 
+  %opts = opts_cmdline($restoreargv,@calleropts);
+
   $optsref = opts_cmdopts(@specopts);
   %options = %$optsref;
 
@@ -946,9 +1006,17 @@ will read each option source in turn, ending up with:
 
 =over 4
 
+=item I<opts_cmdline($restoreargv,@calleropts)>
+
+This routine parses a command line looking for the arguments in the standard
+set of options and an optional set of options specified by the caller.  If the
+first argument is true, the program-wide @ARGV is restored after parsing.  If
+the caller provides other arguments, they're added as additional options.  The
+parsed options are returned to the caller in a hash.
+
 =item I<opts_cmdopts(@csopts)>
 
-This I<opts_cmdopts()> call builds an option hash from the system configuration
+The I<opts_cmdopts()> call builds an option hash from the system configuration
 file, a I<keyrec>, and a set of command-specific options.  A reference to
 this option hash is returned to the caller.
 
