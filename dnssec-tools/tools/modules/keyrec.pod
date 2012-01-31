@@ -100,21 +100,30 @@ The name of the zone's Published KSK signing set.
 
 The directory that holds the KSK keys.
 
+ * lastcmd
+
+The most recent B<zonesigner> command line used for this zone.
+
  * lastset
 
 The most recently generated signing set for the zone.
+
+ * rollmgr
+
+The name of the rollover manager for this zone.  This doubles as an indicator
+that the zone actually is in rollover management.
 
  * serial
 
 The most recent serial number for the zone.
 
- * szopts
-
-Optional arguments passed to the B<dnssec-signzone> command.
-
  * signedzone
 
 The name of the signed zone file for this zone.
+
+ * szopts
+
+Optional arguments passed to the B<dnssec-signzone> command.
 
  * zonefile
 
