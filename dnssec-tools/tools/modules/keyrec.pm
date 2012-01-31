@@ -106,6 +106,8 @@ my @ZONEFIELDS = (
 			'lastset',
 			'gends',
 			'szopts',
+			'rollmgr',
+			'lastcmd',
 			'keyrec_signsecs',
 			'keyrec_signdate',
 		  );
