@@ -147,6 +147,7 @@ our @EXPORT = qw(
 			 ROLLCMD_QUEUELIST
 			 ROLLCMD_QUEUESTATUS
 			 ROLLCMD_SHUTDOWN
+			 ROLLCMD_SIGNZONE
 			 ROLLCMD_SKIPALL
 			 ROLLCMD_SKIPZONE
 			 ROLLCMD_SLEEPTIME
@@ -266,6 +267,7 @@ my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
 my $ROLLCMD_QUEUELIST	= "rollcmd_queuelist";
 my $ROLLCMD_QUEUESTATUS	= "rollcmd_queuestatus";
 my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
+my $ROLLCMD_SIGNZONE	= "rollcmd_signzone";
 my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
 my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
@@ -296,6 +298,7 @@ sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
 sub ROLLCMD_QUEUELIST		{ return($ROLLCMD_QUEUELIST);	};
 sub ROLLCMD_QUEUESTATUS		{ return($ROLLCMD_QUEUESTATUS);	};
 sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
+sub ROLLCMD_SIGNZONE		{ return($ROLLCMD_SIGNZONE);	};
 sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
 sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
@@ -332,6 +335,7 @@ my %roll_commands =
 	rollcmd_queuelist	=> 1,
 	rollcmd_queuestatus	=> 1,
 	rollcmd_shutdown	=> 1,
+	rollcmd_signzone	=> 1,
 	rollcmd_skipall		=> 1,
 	rollcmd_skipzone	=> 1,
 	rollcmd_sleeptime	=> 1,
