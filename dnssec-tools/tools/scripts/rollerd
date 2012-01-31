@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.9.1";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -379,6 +379,11 @@ sub main
 	bootmsg(1);
 
 	#
+	# Mark the domains as being under our control.
+	#
+	eminent_domains($rollrecfile);
+
+	#
 	# Set up the command channel.
 	#
 	rollmgr_channel(1);
@@ -408,6 +413,95 @@ sub main
 		exit(1);
 	}
 
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	eminent_domains()
+#
+# Purpose:	Mark the domains in the rollrec file as being under our
+#		control.
+#
+sub eminent_domains
+{
+	my $rrf	 = shift;				# Rollrec file.
+
+	#
+	# Exit with failure if the rollrec file is bad.
+	# 
+	if(!rrfokay($rrf,""))
+	{
+		rolllog_log(LOG_FATAL,'',"rollrec file \"$rrf\" invalid");
+		exit(61);
+	}
+
+	#
+	# Get the current contents of the rollrec file.
+	#
+	rollrec_lock();
+	rollrec_read($rollrecfile);
+
+	#
+	# For each rollrec entry, get the keyrec file and mark its zone
+	# entry as being controlled by us.
+	#
+	foreach my $rname (rollrec_names())
+	{
+		my $rrr;		# Reference to rollrec.
+		my $prefix;		# Rollrec's directory field.
+		my $keyrec;		# Keyrec's filename.
+
+		#
+		# Get the rollrec for this name.  If it doesn't have one,
+		# whinge and continue to the next.
+		#
+		$rrr = rollrec_fullrec($rname);
+		if(!defined($rrr))
+		{
+			rolllog_log(LOG_ERR,$rname,"no rollrec defined for zone");
+			next;
+		}
+
+		#
+		# Check for a directory.  We'll use rollerd's execution
+		# directory if one isn't defined.
+		#
+		$prefix = $xqtdir;
+		$prefix = $rrr->{'directory'} if(defined($rrr->{'directory'}));
+
+		#
+		# Build the keyrec file.
+		#
+		$keyrec = $rrr->{'keyrec'};
+		$keyrec = "$prefix/$keyrec" if($keyrec !~ /^\//);
+
+		#
+		# Set the error flag if either the zonefile or the keyrec
+		# file don't exist.
+		#
+		if(! -e $keyrec)
+		{
+			rolllog_log(LOG_ERR,$rname,"keyrec \"$keyrec\" does not exist");
+			next;
+		}
+
+		#
+		# Mark the keyrec's zone as being under our control.
+		#
+		keyrec_read($keyrec);
+		keyrec_setval('zone',$rname,'rollmgr',"rollerd");
+		keyrec_close();
+	}
+
+	#
+	# Save the current rollrec file state.
+	#
+	rollrec_close();
+	rollrec_unlock();
+
+	#
+	# Return success.
+	# 
+	return(1);
 }
 
 #-----------------------------------------------------------------------------
@@ -3005,7 +3099,7 @@ sub phasecmd
 	my $rname = shift;		# Zone name.
 	my $rrr = shift;		# Reference to rollrec.
 	my $phase = shift;		# Phase we're handling.
-	my $ptaux = shift;		# Auxilliary phase type.
+	my $ptaux = shift;		# Auxiliary phase type.
 
 	my $progkey = "prog-$phase";	# Config. key for phase's programs.
 	my $cmdlist;			# Execution flag.
@@ -3395,6 +3489,17 @@ sub signer
 	my $zonesigned;				# Signed zone file from keyrec.
 	my $cmdstr;				# Command to be executed.
 	my $initial = 0;			# Initial-signing flag.
+	my $signonly = '';			# Sign-only flag.
+
+	#
+	# If we've been requested to sign a quiescent zone, we'll set a
+	# flag and remove the marker from the phase indicator.
+	#
+	if($zsflag =~ / -signonly/)
+	{
+		$signonly = '-signonly';
+		$zsflag =~ s/ -signonly//;
+	}
 
 	#
 	# Convert the caller's version of $zsflag into what it actually
@@ -3412,6 +3517,12 @@ sub signer
 	{
 		$zsflag = '-usezskpub';
 	}
+	elsif($zsflag eq 'ZSK phase 4')
+	{
+		signer($rname,'ZSK phase 4a',$krr);
+		signer($rname,'ZSK phase 4b',$krr);
+		return;
+	}
 	elsif($zsflag eq 'ZSK phase 4a')
 	{
 		$zsflag = '-rollzsk';
@@ -3428,6 +3539,10 @@ sub signer
 	{
 		$zsflag	 = '-genkeys';
 		$initial = 1;
+	}
+	elsif($zsflag =~ /[KZ]SK phase [013567]/)
+	{
+		$zsflag	 = '';
 	}
 
 	#
@@ -3456,6 +3571,14 @@ sub signer
 	}
 
 	#
+	# If the -krf flag wasn't specified, we'll force it in here.
+	#
+	if($signonly)
+	{
+		$zsflag .= " -signonly";
+	}
+
+	#
 	# Set up a few data for the zonesigner command.  Normally, these
 	# will be taken from the keyrec file.  In the unusual(?) case of
 	# needing an initial signing, these will be generated.
@@ -3480,7 +3603,7 @@ sub signer
 	#
 	# Build the command to execute.
 	#
-	$cmdstr = "$zonesigner -dtconfig $dtcf $zsflag $zonefile $zonesigned";
+	$cmdstr = "$zonesigner -rollmgr rollerd -dtconfig $dtcf $zsflag $zonefile $zonesigned";
 
 	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
@@ -4500,6 +4623,10 @@ sub singlecmd
 	{
 		cmd_shutdown($data);
 	}
+	elsif($cmd eq ROLLCMD_SIGNZONE())
+	{
+		cmd_signzone($data);
+	}
 	elsif($cmd eq ROLLCMD_SKIPALL())
 	{
 		cmd_skipall();
@@ -5375,6 +5502,68 @@ sub cmd_shutdown
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd shutting down");
 
 	halt_handler();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_signzone()
+#
+# Purpose:	This command causes a zone signing, without any key creation
+#		or rolling.
+#
+sub cmd_signzone
+{
+	my $zone = shift;				# Command's data.
+
+	my $rrr;					# Rollrec reference.
+	my $krr;					# Keyrec reference.
+	my $kpval;					# KSK phase value.
+	my $zpval;					# ZSK phase value.
+	my $phasestr;					# Phase argument.
+
+	rolllog_log(LOG_TMI,'<command>',"signzone command received");
+
+	#
+	# Get the current phase values for the zone.
+	#
+	$rrr = rollrec_fullrec($zone);
+	$kpval = $rrr->{'kskphase'};
+	$zpval = $rrr->{'zskphase'};
+
+	#
+	# Check value and file existence, etc.
+	#
+	$krr = opts_zonekr($rrr->{'keyrec'},$zone);
+
+	#
+	# Set up the appropriate arguments to sign with.
+	#
+	if($kpval)
+	{
+		$phasestr = "KSK phase $kpval -signonly";
+	}
+	elsif($zpval)
+	{
+		$phasestr = "ZSK phase $zpval -signonly";
+	}
+	else
+	{
+		$phasestr = ' -signonly';
+	}
+
+	#
+	# Sign the zone.
+	#
+	rolllog_log(LOG_PHASE,'<command>',"mid-phase, user-initiated signing of $zone");
+	if(signer($zone,$phasestr,$krr) == 0)
+	{
+		rolllog_log(LOG_TMI,'<command>',"rollerd signed zone $zone");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd signed zone $zone");
+	}
+	else
+	{
+		rolllog_log(LOG_ERR,'<command>',"unable to sign zone $zone");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"unable to sign zone $zone");
+	}
 }
 
 #-----------------------------------------------------------------------------
@@ -6444,14 +6633,32 @@ rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover
 
 =head1 DESCRIPTION
 
-The B<rollerd> daemon manages key rollover for zones.  B<rollerd> handles
-both KSK and ZSK rollover, though only one rollover may take place at a time.
-Initiation of KSK rollovers takes precedence over the initiation of ZSK
-rollovers.  The Pre-Publish Method of key rollover is used for ZSK key
-rollovers.  The Double Signature Method of key rollover is used for KSK
-rollovers.  B<rollerd> maintains zone rollover state in files called
-I<rollrec> files.  The administrator may control B<rollerd> with the
-B<rollctl> command.  These are described in their own sections below.
+The B<rollerd> daemon manages key rollover for zones.  B<rollerd> is just a
+scheduler for zone rollover; it uses B<zonesigner> to perform the actual key
+generation, zone signing, and key manipulation.
+
+B<rollerd> manages both KSK and ZSK rollover, though only one rollover type
+per zone may take place at a time.  Initiation of KSK rollovers takes
+precedence over the initiation of ZSK rollovers.
+
+B<rollerd> uses two methods of key rollover.  The Pre-Publish Method of key
+rollover is used for ZSK key rollovers.  The Double Signature Method of key
+rollover is used for KSK rollovers.  These methods are described more fully
+below.
+
+B<rollerd> maintains zone rollover state in files called I<rollrec> files;
+zone/key mappings are stored in I<keyrec> files.  B<rollerd> only modifies
+I<rollrec> files.  For the most part, B<rollerd> does not modify I<keyrec>
+directly, but relies on B<zonesigner> to update those files as needed.
+(The exceptions where B<rollerd> modifies I<keyrec> files.  At start-up,
+it will mark each managed zone's I<keyrec> file to indicate the zone is under
+B<rollerd>'s control.  During the course of rollover, B<rollerd> will also
+update a zone's rollover times in its I<keyrec> file.)
+
+The administrator may control B<rollerd> with the B<rollctl> command.
+A large number of commands are available to control and modify B<rollerd>'s
+operation, as well as to retrieve information about rollover and daemon
+status.
 
 =head2 ZSK Rollover Using the Pre-Publish Method
 
