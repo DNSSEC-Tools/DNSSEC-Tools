@@ -75,9 +75,8 @@ my $BLCONFIG	= "./rc.blinkenlights";
 #
 # Row constants.
 #
-my $INFOROW  = 0;		# Row on which columns titles will be shown.
-my $TITLEROW = 1;		# Row on which columns titles will be shown.
-my $STARTROW = 2;		# First row on which zone info will be shown.
+my $TITLEROW = 0;		# Row on which columns titles will be shown.
+my $STARTROW = 1;		# First row on which zone info will be shown.
 my $ROWINCR  = 3;		# Number of rows for each zone.
 
 #
@@ -297,9 +296,11 @@ my @zphasedescr =
 #
 my $wm;						# Main window.
 my $mbar;					# Menubar frame.
+my $info;					# Info stripe.
 my $helpwin;					# Help window.
 my $body;					# Window body frame.
 my $zonetab;					# Zone data table.
+my $infotab;					# Info data vector.
 
 my $file;					# File menu.
 my $disp;					# Edit menu.
@@ -568,10 +569,14 @@ sub buildmainwind
 	#
 	# Create the frames we'll need.
 	#
+
 	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$info = $wm->Label(-text => 'dummy value', -anchor => 'w',
+			   -font => $font, -background => $INFOBG);
 	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
 
 	$mbar->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
+	$info->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
 	$body->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
 
 	#
@@ -830,6 +835,7 @@ sub buildmainwind
 	$zonetab->pack(-fill => 'both', -expand => 1);
 	$body->pack(-fill => 'both', -expand => 1);
 
+	##################################################
 	#
 	# Get the rollrec file info.
 	#
@@ -2039,32 +2045,26 @@ sub readrrf
 #---------------------------------------------------------------------------
 # Routine:	infostripe()
 #
-# Purpose:	Puts an information line in the top table row.
+# Purpose:	Puts some general info on the information line.
 #
 sub infostripe
 {
-	my $lab;
-	my $rollmsg;				# Message about rolled zones.
-	my $skipmsg;				# Message about skipped zones.
-	my $dispstr = '';			# Count of displayed zones.
-	my $timestr = '';			# rollerd's sleep time.
+	my $dispstr;				# Count of displayed zones.
+	my $timestr;				# rollerd's sleep time.
 	my $numzones;				# Number of zones in rollrec.
 	my $zcnt;				# Count of zones being shown.
 
+	my $spacer  = ' ' x 4;			# Spacer string.
+	my $infostr;				# Info string.
+
+	#
+	# Set some global count variables.
+	#
 	setcounts();
 
-	$lab = $zonetab->Label(-text => $title,
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$RRFCOL,$lab);
-
-	$lab = $zonetab->Label(-text => $rollcntmsg,
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$ROLLCNTCOL,$lab);
-
-	$lab = $zonetab->Label(-text => $skipcntmsg,
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$SKIPCNTCOL,$lab);
-
+	#
+	# Get rollerd's sleep value (via rollctl.)
+	#
 	open(RINFO,"$rollctl -status |");
 	while(<RINFO>)
 	{
@@ -2084,44 +2084,47 @@ sub infostripe
 			exit(0);
 		}
 
+		#
+		# Dig out the key/value fields of the line.
+		#
 		$line =~ /^(.*?):\W*(.*)$/;
 		$key = $1;
 		$value = $2;
 
+		#
+		# Translate the sleeptime value to something useful.
+		#
 		if($key eq "sleeptime")
 		{
 			$timestr = fuzzytimetrans($value);
 			$timestr =~ s/\.0//;
-			$timestr = "Query Interval:  $timestr";
+			$timestr = "Query Interval: $timestr";
 			last;
 		}
 	}
 	close(RINFO);
 
+	#
+	# Calculate the number of zones we're displaying.
+	#
 	$numzones = keys(%rollers);
 	$zcnt = ($numzones > $maxzones) ? $maxzones : $numzones;
 	$dispstr = "Displaying $zcnt of $numzones zones";
 
-	$lab = $zonetab->Label(-text => $timestr,
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$SLEEPCOL,$lab);
+	#
+	# Build our output string and set the infostripe.
+	#
+	$infostr = $spacer . $title	 .
+		   $spacer . $rollcntmsg .
+		   $spacer . $skipcntmsg .
+		   $spacer . $timestr	 .
+		   $spacer . $dispstr;
 
-	$lab = $zonetab->Label(-text => $dispstr,
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$DISPLAYCOL,$lab);
+	$info->configure(-text => $infostr);
 
-	$lab = $zonetab->Label(-text => ' ',
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$INFO5,$lab);
-
-	$lab = $zonetab->Label(-text => ' ',
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$INFO6,$lab);
-
-	$lab = $zonetab->Label(-text => ' ',
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$INFO7,$lab);
-
+	#
+	# Maybe update the window.   (Is this needed now?)
+	#
 	painter();
 }
 
@@ -2772,7 +2775,8 @@ sub selector
 	#
 	# Find the widget that has the same name as the event window.
 	#
-	for(my $xind=0; $xind < $lastrow; $xind++)
+#	for(my $xind=0; $xind < $lastrow; $xind++)
+	for(my $xind=$TITLEROW; $xind < $lastrow; $xind++)
 	{
 		for(my $yind=0; $yind < $MAXCOLS; $yind++)
 		{
@@ -2807,10 +2811,9 @@ sub selector
 	return if(!$found);
 
 	#
-	# Clear the selection and return if the click came in the
-	# information row or the title row.
+	# Clear the selection and return if the click came in the title row.
 	#
-	if(($selx == $INFOROW) || ($selx == $TITLEROW))
+	if($selx == $TITLEROW)
 	{
 		$selwidget->configure(-foreground => $NORMALFG) if($selwidget);
 		$selwidget = undef;
@@ -2833,6 +2836,7 @@ sub selector
 	# in our newly constructed zone-name array and find the zone's name
 	# in the array by working backwards from the index.
 	#
+
 	for(my $i=$selx; $i > 0; $i--)
 	{
 		#
@@ -2850,11 +2854,13 @@ sub selector
 			my $zstr;			# Widget's zone.
 
 			#
-			# Get this row's column-zero widget.  Go to the
-			# next if there isn't a zone in it.
+			# Get this row's column-zero widget and strip off
+			# leading and trailing blanks.  Go to the next
+			# widget if there isn't a zone in it.
 			#
 			$wij = $zonetab->get($rind,0);
 			$zstr = $wij->cget('-text');
+			$zstr =~ s/^[ ]*//;
 			$zstr =~ s/[ ]*$//;
 			next if($zstr eq '');
 
@@ -3583,9 +3589,9 @@ available through menu commands.  More information about the menu commands
 is available in the MENU COMMANDS section.
 
 blinkenlights is only intended to be started by rollerd, not directly by a
-user.  There are two ways to have rollerd start blinkenlights.  First, rollctl
-may be given the -display option.  Second, the -display option may be given on
-rollerd's command line.
+user.  There are two ways to have rollerd start blinkenlights.  First, the
+-display option may be given on rollerd's command line.  Second, rollctl
+may be given the -display option.
 
 For additional information, please see the blinkenlights man page.
 
@@ -3749,10 +3755,10 @@ zone stripes.
 
 B<rollerd> information stripe
 
-The information stripe contains four pieces of information:  B<rollerd>'s
+The information stripe contains five pieces of information:  B<rollerd>'s
 current I<rollrec> file, the count of rolling zones, the count of skipped
 zones, the count of zones to be displayed, and the amount of time B<rollerd>
-waits between processing its queue,  Coincidentally, that last datum is also
+waits between processing its queue.  Coincidentally, that last datum is also
 the amount of time between B<blinkenlights> screen updates.
 
 =item *
