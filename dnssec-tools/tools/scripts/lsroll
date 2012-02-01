@@ -14,13 +14,14 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case_always);
 
 use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::rolllog;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
 # Version information.
 #
 my $NAME   = "lsroll";
-my $VERS   = "$NAME version: 1.11.1";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -127,6 +128,7 @@ sub main()
 {
 	my $argc = @ARGV;		# Number of command line arguments.
 	my $errors = 0;			# Total error count.
+	my $cnt = 0;			# Total zones read.
 
 	#
 	# Check our options.
@@ -138,10 +140,15 @@ sub main()
 	#
 	while($argc > 0)
 	{
-		getrollrecs($ARGV[0]);
+		$cnt += getrollrecs($ARGV[0]);
 		shift @ARGV;
 		$argc = @ARGV;
 	}
+
+	#
+	# Exit if we didn't find any zones at all.
+	#
+	return(1) if($cnt == 0);
 
 	#
 	# Cook up the output:  build a header line and calculate the maximum
@@ -396,6 +403,7 @@ sub doopts
 sub getrollrecs
 {
 	my $rrfile = shift;			# Rollrec file.
+	my $zonecnt = 0;			# Count of zones found.
 
 	rollrec_lock();
 	rollrec_read($rrfile);
@@ -426,10 +434,22 @@ sub getrollrecs
 			next;
 		}
 
+		next if($rn eq '');
+
 		#
-		# Save the rollrec.
+		# Save the rollrec and bump our zone count.
 		#
 		$rollrecs{$rn} = $rr;
+		$zonecnt++;
+	}
+
+	#
+	# Give an error message if no zones were found.
+	#
+	if($zonecnt == 0)
+	{
+		print STDERR "no rollrec entries found in $rrfile\n";
+		return(0);
 	}
 
 	#
@@ -437,6 +457,11 @@ sub getrollrecs
 	#
 	foreach my $rn (sort(keys(%rollrecs)))
 	{
+		#
+		# Go to the next if the name is empty.
+		#
+		next if($rn eq '');
+
 		#
 		# Add quotes to the rollrec and zonegroup names.
 		#
@@ -530,6 +555,10 @@ sub getrollrecs
 		}
 	}
 
+	#
+	# Return the number of zones we found in the rollrec file.
+	#
+	return($zonecnt);
 }
 
 #----------------------------------------------------------------------
