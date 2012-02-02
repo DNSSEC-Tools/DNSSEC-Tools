@@ -787,8 +787,11 @@ find_nslist_for_query(val_context_t * context,
 done:
 
     /*
-     * Set the CD and EDNS0 options
+     * Set the CD and EDNS0 options only if we're requesting validation
      */
+    if (next_q->qc_flags & VAL_QUERY_DONT_VALIDATE) { 
+        return VAL_NO_ERROR;
+    }
     edns0_size = (context && context->g_opt)?
                     context->g_opt->edns0_size : RES_EDNS0_DEFAULT;
     val_log(context, LOG_DEBUG,
