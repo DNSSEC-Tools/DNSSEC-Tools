@@ -239,7 +239,7 @@ add_to_qname_chain(struct qname_chain **qnames, const u_char * name_n)
 
 
 int
-qname_chain_first_name(struct qname_chain *qnames, const u_char * name_n)
+name_in_qname_chain(struct qname_chain *qnames, const u_char * name_n)
 {
     struct qname_chain *qc;
 
@@ -250,8 +250,9 @@ qname_chain_first_name(struct qname_chain *qnames, const u_char * name_n)
     while (qc != NULL && namecmp(qc->qnc_name_n, name_n) != 0)
         qc = qc->qnc_next;
 
-    return (qc != NULL && qc->qnc_next == NULL);
+    return (qc != NULL);
 }
+
 
 void
 free_qname_chain(struct qname_chain **qnames)
@@ -1447,6 +1448,7 @@ copy_rrset_rec_list(struct rrset_rec *rr_set)
     return copy_set;
 }
 
+#if 0
 struct rrset_rec *
 copy_rrset_rec_list_in_zonecut(struct rrset_rec *rr_set, u_char *qname_n) 
 {
@@ -1481,6 +1483,7 @@ copy_rrset_rec_list_in_zonecut(struct rrset_rec *rr_set, u_char *qname_n)
     }
     return copy_set;
 }
+#endif
 
 /*
  *

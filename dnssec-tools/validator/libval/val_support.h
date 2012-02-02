@@ -71,8 +71,8 @@ void            res_sq_free_rr_recs(struct val_rr_rec **rr);
 void            res_sq_free_rrset_recs(struct rrset_rec **set);
 int             add_to_qname_chain(struct qname_chain **qnames,
                                    const u_char * name_n);
-int             qname_chain_first_name(struct qname_chain *qnames,
-                                       const u_char * name_n);
+int             name_in_qname_chain(struct qname_chain *qnames,
+                                    const u_char * name_n);
 void            free_qname_chain(struct qname_chain **qnames);
 void            free_domain_info_ptrs(struct domain_info *di);
 int             is_tail(u_char * full, u_char * tail);
@@ -129,8 +129,10 @@ struct val_rr_rec  *copy_rr_rec_list(u_int16_t type_h, struct val_rr_rec *o_rr,
 int             link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr);
 struct rrset_rec *copy_rrset_rec(struct rrset_rec *rr_set);
 struct rrset_rec *copy_rrset_rec_list(struct rrset_rec *rr_set);
+#if 0
 struct rrset_rec *copy_rrset_rec_list_in_zonecut(struct rrset_rec *rr_set, 
                                                  u_char *zonecut_n);
+#endif
 int             register_query(struct query_list **q, u_char * name_n,
                                u_int16_t type_h, u_char * zone_n);
 void            deregister_queries(struct query_list **q);
