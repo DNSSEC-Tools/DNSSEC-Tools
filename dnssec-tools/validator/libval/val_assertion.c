@@ -3462,8 +3462,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         
     } else {
 
-      u_char *cur_q = qname_n;  
-      do {
+        u_char *cur_q = qname_n;  
         if (VAL_NO_ERROR !=
             (retval = try_chase_query(context, cur_q, ns_c_in,
                                       ns_t_soa, 
@@ -3530,16 +3529,12 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
             }
         }
 
-        if (zonecut_name_n != NULL)
-            break;
-
-        val_free_result_chain(results);
-        results = NULL;
-
-        /* retry after stripping off left most label */
-        STRIP_LABEL(cur_q, cur_q);
-
-      } while (*cur_q != '\0');
+        if (zonecut_name_n == NULL) {
+            val_free_result_chain(results);
+            results = NULL;
+            /* Use the last name attempted */
+            zonecut_name_n = cur_q;
+        }
     }
 
     if (zonecut_name_n) {
