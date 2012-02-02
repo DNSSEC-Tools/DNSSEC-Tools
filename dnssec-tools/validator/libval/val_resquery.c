@@ -1528,6 +1528,7 @@ digest_response(val_context_t * context,
     struct rrset_rec *learned_zones = NULL;
     struct rrset_rec *learned_answers = NULL;
     struct rrset_rec *learned_proofs = NULL;
+    struct rrset_rec *learned_ds = NULL;
 
     u_char *query_name_n;
     u_int16_t       query_type_h;
@@ -1807,9 +1808,15 @@ digest_response(val_context_t * context,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
                                 authoritive, iterative, name_n);
+            } else if (set_type_h == ns_t_ds) {
+                SAVE_RR_TO_LIST(resp_ns,
+                                &learned_ds, name_n,
+                                type_h, set_type_h, class_h, ttl_h, hptr,
+                                rdata, rdata_len_h, from_section,
+                                authoritive, iterative, rrs_zonecut_n);
             }
         } else if (from_section == VAL_FROM_ADDITIONAL) {
-            if (set_type_h == ns_t_dnskey || set_type_h == ns_t_ds) {
+            if (set_type_h == ns_t_dnskey) {
                 SAVE_RR_TO_LIST(resp_ns,
                                 &learned_answers, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
@@ -1933,6 +1940,8 @@ digest_response(val_context_t * context,
                     if (VAL_NO_ERROR != fix_zonecut_in_rrset(learned_proofs, rrs_zonecut_n))
                         goto done;
                     if (VAL_NO_ERROR != fix_zonecut_in_rrset(learned_zones, rrs_zonecut_n))
+                        goto done;
+                    if (VAL_NO_ERROR != fix_zonecut_in_rrset(learned_ds, rrs_zonecut_n))
                         goto done;
                 }
             }
@@ -2080,7 +2089,11 @@ digest_response(val_context_t * context,
         goto done;
     }
 
-    if (VAL_NO_ERROR != (ret_val = stow_negative_answers(&learned_proofs, matched_q))) {
+    if (VAL_NO_ERROR != (ret_val = stow_answers(&learned_proofs, matched_q))) {
+        goto done;
+    }
+
+    if (VAL_NO_ERROR != (ret_val = stow_answers(&learned_ds, matched_q))) {
         goto done;
     }
 
@@ -2092,6 +2105,7 @@ digest_response(val_context_t * context,
     res_sq_free_rrset_recs(&learned_answers);
     res_sq_free_rrset_recs(&learned_proofs);
     res_sq_free_rrset_recs(&learned_zones);
+    res_sq_free_rrset_recs(&learned_ds);
     return ret_val;
 }
 
