@@ -1240,24 +1240,43 @@ follow_referral_or_alias_link(val_context_t * context,
         }                                                               \
     } while (0)
 
-#define FIX_ZONECUT(the_rrset, zonecut_n, retval) do {                  \
-        struct rrset_rec *cur_rrset;                                    \
-        size_t len = wire_name_length(zonecut_n);                          \
-        retval = VAL_NO_ERROR;                                          \
-        for (cur_rrset = the_rrset; cur_rrset;                          \
-                cur_rrset=cur_rrset->rrs_next){                         \
-            if (cur_rrset->rrs_zonecut_n)                               \
-                FREE(cur_rrset->rrs_zonecut_n);                         \
-            cur_rrset->rrs_zonecut_n =                                  \
-                    (u_char *) MALLOC(len * sizeof(u_char));        \
-            if (cur_rrset->rrs_zonecut_n == NULL) {                     \
-                retval = VAL_OUT_OF_MEMORY;                             \
-                break;                                                  \
-            } else {                                                    \
-                memcpy(cur_rrset->rrs_zonecut_n, zonecut_n, len);       \
-            }                                                           \
-        }                                                               \
-    } while (0)
+/*
+ * Set the zonecut for the given rrsets to the value provided
+ */
+static int 
+fix_zonecut_in_rrset(struct rrset_rec *the_rrset, u_char *zonecut_n)
+{
+    struct rrset_rec *cur_rrset;
+    size_t len;
+
+    if (the_rrset == NULL || zonecut_n == NULL)
+        return VAL_NO_ERROR;
+
+    len = wire_name_length(zonecut_n);
+
+    for (cur_rrset = the_rrset; cur_rrset; cur_rrset = cur_rrset->rrs_next){
+
+        /* Ensure that the zonecut is within the owner name */
+        if (!namename(cur_rrset->rrs_name_n, zonecut_n) ||
+            /* check if new zonecut is more specific than the previous one */
+            !cur_rrset->rrs_zonecut_n || 
+            !namename(zonecut_n, cur_rrset->rrs_zonecut_n)) {
+            continue;
+        }
+
+        FREE(cur_rrset->rrs_zonecut_n);
+
+        cur_rrset->rrs_zonecut_n =
+                    (u_char *) MALLOC(len * sizeof(u_char)); 
+        if (cur_rrset->rrs_zonecut_n == NULL)
+            return VAL_OUT_OF_MEMORY; 
+        
+        memcpy(cur_rrset->rrs_zonecut_n, zonecut_n, len);
+    }
+
+    return VAL_NO_ERROR;
+}
+
 
 /*
  * Check if CNAME or DNAME chain are invalid or contain a loop
@@ -1359,17 +1378,6 @@ process_cname_dname_responses(u_char *name_n,
         matched_q->qc_state = Q_INIT;
     }
 
-    if (*qnames) {
-
-        if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n)) {
-            /*
-             * Keep the current query name as the last name in the chain 
-             */
-            memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n,
-                   wire_name_length((*qnames)->qnc_name_n));
-        }
-
-    }
 
     return VAL_NO_ERROR;
 }
@@ -1521,6 +1529,7 @@ digest_response(val_context_t * context,
     struct rrset_rec *learned_zones = NULL;
     struct rrset_rec *learned_answers = NULL;
     struct rrset_rec *learned_proofs = NULL;
+    struct rrset_rec *learned_ds = NULL;
 
     u_char *query_name_n;
     u_int16_t       query_type_h;
@@ -1535,14 +1544,14 @@ digest_response(val_context_t * context,
     size_t         qnamelen, tot;
     size_t len;
     struct qname_chain **qnames;
-    int             zonecut_was_modified = 0;
     struct val_query_chain *matched_q;
     char query_name_p[NS_MAXDNAME];
     char rrs_zonecut_p[NS_MAXDNAME];
     char name_p[NS_MAXDNAME];
     struct name_server *resp_ns = NULL;
-    int top_name;
+    int isrelv = 0;
     char name_buf[INET6_ADDRSTRLEN + 1];
+    struct qname_chain *qc = NULL;
 
     if ((matched_qfq == NULL) || (queries == NULL) ||
         (di_response == NULL) || (response_data == NULL))
@@ -1705,10 +1714,23 @@ digest_response(val_context_t * context,
         }
 
         /*
-         * we're only authoritative for the first name in the
-         * CNAME chain
+         * Check if this resource record is relevant; 
+         * relevant qnames either match the top name in the qname
+         * stack exactly, or if the type is that of dname, is 
+         * a substring within it. All rrsigs that apply to names
+         * in the qname stack are also relevant. 
          */
-        top_name = qname_chain_first_name(*qnames, name_n);
+        qc = *qnames;
+        if (qc &&
+              (!namecmp(qc->qnc_name_n, name_n)) || 
+              ((set_type_h == ns_t_dname) &&
+                    namename(qc->qnc_name_n, name_n)) ||
+              ((type_h == ns_t_rrsig) &&
+                    name_in_qname_chain(qc, name_n))) {
+            isrelv = 1;
+        } else {
+            isrelv = 0;
+        }
 
         authoritive = (matched_q->qc_flags & VAL_QUERY_RECURSE) &&
                       (header->aa == 1);
@@ -1720,13 +1742,7 @@ digest_response(val_context_t * context,
          * If it is from the additional section it may contain some DNSSEC meta-data or it may be glue
          */
 
-        if (from_section == VAL_FROM_ANSWER && 
-            /* 
-             * do not process CNAME targets in the answer section, 
-             * unless we're ignoring validation
-             */
-            (top_name || 
-             (matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE))) {
+        if (from_section == VAL_FROM_ANSWER && isrelv) { 
 
             if (nothing_other_than_alias) {
                 /*
@@ -1793,9 +1809,15 @@ digest_response(val_context_t * context,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
                                 authoritive, iterative, name_n);
+            } else if (set_type_h == ns_t_ds) {
+                SAVE_RR_TO_LIST(resp_ns,
+                                &learned_ds, name_n,
+                                type_h, set_type_h, class_h, ttl_h, hptr,
+                                rdata, rdata_len_h, from_section,
+                                authoritive, iterative, rrs_zonecut_n);
             }
         } else if (from_section == VAL_FROM_ADDITIONAL) {
-            if (set_type_h == ns_t_dnskey || set_type_h == ns_t_ds) {
+            if (set_type_h == ns_t_dnskey) {
                 SAVE_RR_TO_LIST(resp_ns,
                                 &learned_answers, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
@@ -1848,81 +1870,46 @@ digest_response(val_context_t * context,
          * data (think of out-of-bailiwick glue), these records will not
          * be saved because of the anti-pollution rules.
          */
-        int fix_zonecut = 0;
-        if (authoritive &&
+        if (rrs_zonecut_n &&
+            authoritive &&
             i < (answer + authority) &&
             (set_type_h == ns_t_soa || 
              (set_type_h == ns_t_dnskey && i < answer) ||
              (set_type_h == ns_t_ns && 
               (answer > 0 || header->rcode != ns_r_noerror)))) {
 
-            fix_zonecut = 1;
-        }
-           
-        /* check if this is a lame delegation */
-        if (fix_zonecut &&
-            set_type_h == ns_t_soa && 
-            rrs_zonecut_n && 
-            /* new zonecut is not the same as the old */
-            namecmp(rrs_zonecut_n, name_n) &&
-            /* old zonecut is closer more specific than the new zonecut */
-            (namename(rrs_zonecut_n, name_n) != NULL)) { 
+            /* check if this is a lame delegation */
+            if (set_type_h == ns_t_soa && 
+                /* new zonecut is not the same as the old */
+                namecmp(rrs_zonecut_n, name_n) &&
+                /* old zonecut is closer more specific than the new zonecut */
+                (namename(rrs_zonecut_n, name_n) != NULL)) { 
 
-            val_log(context, LOG_DEBUG, "digest_response(): {%s %s(%d) %s(%d)} appears to lead to a lame server",
-                    query_name_p, p_class(query_class_h), query_class_h,
-                    p_type(query_type_h), query_type_h);
-            matched_q->qc_state = Q_REFERRAL_ERROR;
-            ret_val = VAL_NO_ERROR;
-            goto done;
-        }
-
-        /* make sure that our new zonecut is closer */
-        if (fix_zonecut &&
-              (rrs_zonecut_n == NULL 
-               || NULL != namename(name_n, rrs_zonecut_n))) {
-
-            /* 
-             *  special case for DS record: zonecut cannot be the same or larger 
-             *  than the queried name
-             */
-            if (query_type_h == ns_t_ds &&
-                NULL != namename (name_n, query_name_n)) {
-                fix_zonecut = 0;
-                val_log(context, LOG_DEBUG, "digest_response(): bad response for DS record. NS probably not DNSSEC-capable.");
-                matched_q->qc_state = Q_WRONG_ANSWER;
+                val_log(context, LOG_DEBUG, "digest_response(): {%s %s(%d) %s(%d)} appears to lead to a lame server",
+                        query_name_p, p_class(query_class_h), query_class_h,
+                        p_type(query_type_h), query_type_h);
+                matched_q->qc_state = Q_REFERRAL_ERROR;
                 ret_val = VAL_NO_ERROR;
                 goto done;
-            } else if (nothing_other_than_alias) {
+            }
+
+            /* make sure that our new zonecut is closer */
+            if (NULL != namename(name_n, rrs_zonecut_n)) {
+
                 /* 
-                 * make sure that the NS is closer to the alias than the target; 
-                 * if not don't fix the zonecut
+                 *  special case for DS record: zonecut cannot be the same or larger 
+                 *  than the queried name
                  */
-                u_char *n1 = NULL;
-                u_char *n2 = NULL;
+                if (query_type_h == ns_t_ds &&
+                    NULL != namename (name_n, query_name_n)) {
+                    val_log(context, LOG_DEBUG, "digest_response(): bad response for DS record. NS probably not DNSSEC-capable.");
+                    matched_q->qc_state = Q_WRONG_ANSWER;
+                    ret_val = VAL_NO_ERROR;
+                    goto done;
+                } 
 
-                if (*qnames) {
-                    struct qname_chain *q = *qnames;
-
-                    /* Compare with target */
-                    n1 = namename(name_n, q->qnc_name_n); 
-
-                    while(q->qnc_next) {
-                        q = q->qnc_next;
-                    }
-                    /* compare with alias */
-                    n2 = namename(name_n, q->qnc_name_n);
-                }
-
-               if (!n1 || !n2 || namename(n1, n2))
-                   fix_zonecut = 0;
-            } 
-            if (fix_zonecut && !zonecut_was_modified) {
-
-                zonecut_was_modified = 1;
-
-                /* don't do anything if our existing zonecut matches the new one  */
-                if (!matched_q->qc_zonecut_n ||
-                    namecmp(matched_q->qc_zonecut_n, name_n)) {
+                /* check if proposed zonecut is different from existing zonecut */ 
+                if (namecmp(rrs_zonecut_n, name_n)) { 
 
                     /* update the zonecut information */
                     if (matched_q->qc_zonecut_n) 
@@ -1935,47 +1922,33 @@ digest_response(val_context_t * context,
                     memcpy (matched_q->qc_zonecut_n, name_n, len);
                     rrs_zonecut_n = matched_q->qc_zonecut_n;
     
-                    if (rrs_zonecut_n && 
-                            ns_name_ntop(rrs_zonecut_n, rrs_zonecut_p, sizeof(rrs_zonecut_p)) == -1) {
+                    if (ns_name_ntop(rrs_zonecut_n, rrs_zonecut_p, sizeof(rrs_zonecut_p)) == -1) {
                         ret_val =  VAL_BAD_ARGUMENT;
                         goto done;
                     }
 
                     val_log(context, LOG_DEBUG, 
-                        "digest_response(): Setting zonecut for {%s %s(%d) %s(%d)} query responses to %s",
-                        query_name_p, p_class(query_class_h), query_class_h,
-                    p_type(query_type_h), query_type_h, rrs_zonecut_p);
+                            "digest_response(): Setting zonecut for {%s %s(%d) %s(%d)} query responses to %s",
+                            query_name_p, p_class(query_class_h), query_class_h,
+                            p_type(query_type_h), query_type_h, rrs_zonecut_p);
+
                     /*
                      * go back to all the rrsets that we created 
-                     * and fix the zonecut info 
+                     * and fix the zonecut info
                      */
-                    FIX_ZONECUT(learned_answers, rrs_zonecut_n, ret_val);
-                    if (ret_val != VAL_NO_ERROR)
+                    if (VAL_NO_ERROR != fix_zonecut_in_rrset(learned_answers, rrs_zonecut_n))
                         goto done;
-                    FIX_ZONECUT(learned_proofs, rrs_zonecut_n, ret_val);
-                    if (ret_val != VAL_NO_ERROR)
+                    if (VAL_NO_ERROR != fix_zonecut_in_rrset(learned_proofs, rrs_zonecut_n))
                         goto done;
-                    FIX_ZONECUT(learned_zones, rrs_zonecut_n, ret_val);
-                    if (ret_val != VAL_NO_ERROR)
+                    if (VAL_NO_ERROR != fix_zonecut_in_rrset(learned_zones, rrs_zonecut_n))
+                        goto done;
+                    if (VAL_NO_ERROR != fix_zonecut_in_rrset(learned_ds, rrs_zonecut_n))
                         goto done;
                 }
-            } else if (fix_zonecut && namecmp(rrs_zonecut_n, name_n)) {
-                /*
-                 * Multiple Zonecuts
-                 */
-                if (ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
-                    ret_val =  VAL_BAD_ARGUMENT;
-                    goto done;
-                }
-                val_log(context, LOG_DEBUG, 
-                        "digest_response(): Ambiguous zonecut for {%s %s(%d) %s(%d)} query responses -- %s versus %s", 
-                        query_name_p, p_class(query_class_h), query_class_h,
-                    p_type(query_type_h), query_type_h, rrs_zonecut_p, name_p);
-                matched_q->qc_state = Q_CONFLICTING_ANSWERS;
-                ret_val = VAL_NO_ERROR;
-                goto done;
             }
-        } else if (set_type_h == ns_t_ns && from_section == VAL_FROM_AUTHORITY && answer == 0) {
+        } 
+        
+        if (set_type_h == ns_t_ns && from_section == VAL_FROM_AUTHORITY && answer == 0) {
             if (referral_seen == FALSE) {
 
                 /*
@@ -2008,6 +1981,18 @@ digest_response(val_context_t * context,
         rdata = NULL;
 
     } 
+
+    if (*qnames) {
+
+        if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n)) {
+            /*
+             * Keep the current query name as the last name in the chain 
+             */
+            memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n,
+                   wire_name_length((*qnames)->qnc_name_n));
+        }
+
+    }
    
     if (learned_answers == NULL) {
         nothing_other_than_alias = 0;
@@ -2052,12 +2037,8 @@ digest_response(val_context_t * context,
     if (referral_seen || nothing_other_than_alias) {
         struct rrset_rec *cloned_answers, *cloned_proofs;
 
-        /* 
-         * If we're trying to validate ensure that the zonecuts for the rrsets 
-         * are within the qname
-         */
-        cloned_answers = copy_rrset_rec_list_in_zonecut(learned_answers, matched_q->qc_original_name);
-        cloned_proofs = copy_rrset_rec_list_in_zonecut(learned_proofs, matched_q->qc_original_name);
+        cloned_answers = copy_rrset_rec_list(learned_answers);
+        cloned_proofs = copy_rrset_rec_list(learned_proofs);
 
         if (VAL_NO_ERROR != (ret_val =
             follow_referral_or_alias_link(context,
@@ -2109,7 +2090,11 @@ digest_response(val_context_t * context,
         goto done;
     }
 
-    if (VAL_NO_ERROR != (ret_val = stow_negative_answers(&learned_proofs, matched_q))) {
+    if (VAL_NO_ERROR != (ret_val = stow_answers(&learned_proofs, matched_q))) {
+        goto done;
+    }
+
+    if (VAL_NO_ERROR != (ret_val = stow_answers(&learned_ds, matched_q))) {
         goto done;
     }
 
@@ -2121,6 +2106,7 @@ digest_response(val_context_t * context,
     res_sq_free_rrset_recs(&learned_answers);
     res_sq_free_rrset_recs(&learned_proofs);
     res_sq_free_rrset_recs(&learned_zones);
+    res_sq_free_rrset_recs(&learned_ds);
     return ret_val;
 }
 
