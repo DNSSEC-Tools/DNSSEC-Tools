@@ -63,10 +63,10 @@ system("perl -pi -e 's/phasestart1/$phase1/' $rrf");
 system("perl -pi -e 's/phasestart2/$phase2/' $rrf");
 system("perl -pi -e 's/phasestart3/$phase3/' $rrf");
 
-print "gmtime  - $tempus\n";
-print "phase 1 - $phase1\n";
-print "phase 2 - $phase2\n";
-print "phase 3 - $phase3\n";
+# print "gmtime  - $tempus\n";
+# print "phase 1 - $phase1\n";
+# print "phase 2 - $phase2\n";
+# print "phase 3 - $phase3\n";
 
 if($rrf eq "demo.rollrec")
 {
@@ -75,10 +75,10 @@ if($rrf eq "demo.rollrec")
 	system("perl -pi -e 's/phasestart6/$phase6/' $rrf");
 	system("perl -pi -e 's/phasestart7/$phase7/' $rrf");
 
-	print "phase 4 - $phase4\n";
-	print "phase 5 - $phase5\n";
-	print "phase 6 - $phase6\n";
-	print "phase 7 - $phase7\n";
+# 	print "phase 4 - $phase4\n";
+# 	print "phase 5 - $phase5\n";
+# 	print "phase 6 - $phase6\n";
+# 	print "phase 7 - $phase7\n";
 }
 
 exit(0);
