@@ -1359,18 +1359,6 @@ process_cname_dname_responses(u_char *name_n,
         matched_q->qc_state = Q_INIT;
     }
 
-    if (*qnames) {
-
-        if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n)) {
-            /*
-             * Keep the current query name as the last name in the chain 
-             */
-            memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n,
-                   wire_name_length((*qnames)->qnc_name_n));
-        }
-
-    }
-
     return VAL_NO_ERROR;
 }
 
@@ -2008,6 +1996,18 @@ digest_response(val_context_t * context,
         rdata = NULL;
 
     } 
+
+    if (*qnames) {
+
+        if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n)) {
+            /*
+             * Keep the current query name as the last name in the chain 
+             */
+            memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n,
+                   wire_name_length((*qnames)->qnc_name_n));
+        }
+
+    }
    
     if (learned_answers == NULL) {
         nothing_other_than_alias = 0;
