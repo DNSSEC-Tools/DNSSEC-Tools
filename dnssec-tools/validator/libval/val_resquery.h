@@ -9,7 +9,8 @@
 #define ALIAS_MATCH_TYPE(type_h) ((type_h != ns_t_any &&    \
                                    type_h != ns_t_rrsig &&  \
                                    type_h != ns_t_dnskey && \
-                                   type_h != ns_t_ds) ? 1 : 0)
+                                   type_h != ns_t_ds && \
+                                   type_h != ns_t_soa) ? 1 : 0)
 
 struct glue_fetch_bucket {
     struct queries_for_query *qfq;
