@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::BootStrap;
 # Version information.
 #
 my $NAME   = "dtinitconf";
-my $VERS   = "$NAME version: 1.3";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -104,6 +104,7 @@ my @opts =
 	"dtdir=s",			# Path to DNSSEC-Tools programs.
 #	"viewimage=s",			# Path to image viewer.
 
+	"autosign!",			# Turn on/off rollerd's autosign flag.
 	"roll-loadzone",		# Turn on rollerd's zone-loading flag.
 	"no-roll-loadzone",		# Turn off rollerd's zone-loading flag.
 	"roll-logfile=s",		# Logfile for rollerd.
@@ -159,6 +160,7 @@ my $kgopts;				# Options for key-generation program.
 my $zcopts;				# Options for zone-checking program.
 my $zsopts;				# Options for zone-signing program.
 
+my $autosign;				# Autosign flag for rolerd.
 my $rloadzone;				# rollerd's zone-loading flag.
 my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
@@ -389,6 +391,10 @@ sub optsandargs
 	$usegui	    = $opts{'usegui'}	   || dnssec_tools_default("usegui");
 	$entmsg	    = $opts{'entropy_msg'} || dnssec_tools_default("entropy_msg");
 
+	$autosign  = defined($opts{'autosign'}) ?
+				$opts{'autosign'} :
+				dnssec_tools_default("autosign");
+
 	$rloadzone = dnssec_tools_default("roll_loadzone");
 	$rloadzone = 0 if(defined($opts{'no-roll-loadzone'}));
 	$rloadzone = 1 if(defined($opts{'roll-loadzone'}));
@@ -555,6 +561,7 @@ sub writeconf()
 		print "\tsave-old-keys flag    - \"$savekeys\"\n";
 		print "\tuse-gui flag          - \"$usegui\"\n\n";
 
+		print "\tautosign              - \"$autosign\"\n";
 		print "\troll-loadzone         - \"$rloadzone\"\n";
 		print "\troll-logfile          - \"$rlogfile\"\n";
 		print "\troll-loglevel         - \"$rloglevel\"\n";
@@ -693,6 +700,7 @@ zskcount	$zskcnt
 #
 # Settings for rollerd.
 #
+autosign        $autosign
 roll_loadzone   $rloadzone
 roll_logfile    $rlogfile
 roll_loglevel   $rloglevel
@@ -822,6 +830,7 @@ sub writetemplate()
 #
 # Settings for rollerd.
 #
+# autosign        $autosign
 # roll_loadzone   $rloadzone
 # roll_logfile    $rlogfile
 # roll_loglevel   $rloglevel
@@ -1449,6 +1458,7 @@ sub get_dt_opts()
 	$zsopts = getval("Zone-Signing Options","");
 	print "\n";
 
+	$autosign  = getval("Rollerd's Auto-signing Flag",$autosign,"boolean");
 	$rloadzone = getval("Rollerd's Zone-loading Flag",$rloadzone,"boolean");
 	$rlogfile  = getval("Rollerd's Logfile",$rlogfile,"");
 	$rloglevel = getval("Rollerd's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
@@ -1780,16 +1790,13 @@ sub usage()
 
 	print STDERR "\t\t-archivedir <directory>\n";
 	print STDERR "\t\t-binddir <directory>\n";
-	print STDERR "\t\t-entropy_msg\n";
-	print STDERR "\t\t-noentropy_msg\n";
-	print STDERR "\t\t-savekeys\n";
-	print STDERR "\t\t-nosavekeys\n\n";
+	print STDERR "\t\t-entropy_msg | -noentropy_msg\n";
+	print STDERR "\t\t-savekeys | -nosavekeys\n\n";
 
-	print STDERR "\t\t-usegui\n";
-	print STDERR "\t\t-nousegui\n\n";
+	print STDERR "\t\t-usegui | -nousegui\n\n";
 
-	print STDERR "\t\t-roll-loadzone\n";
-	print STDERR "\t\t-no-roll-loadzone\n";
+	print STDERR "\t\t-autosign | -noautosign\n";
+	print STDERR "\t\t-roll-loadzone | -no-roll-loadzone\n";
 	print STDERR "\t\t-roll-logfile <logfile>\n";
 	print STDERR "\t\t-roll-loglevel <loglevel>\n";
 	print STDERR "\t\t-roll-sleeptime <sleep-time>\n";
@@ -2009,6 +2016,12 @@ default address used by the I<dt_adminmail()> routine.
 
 B<directory> is the archived-key directory.  Old encryption keys are moved to
 this directory, but only if they are to be saved and not deleted.
+
+=item B<-autosign>
+
+A flag indicating that B<rollerd> should automatically sign zonefiles that
+are found to be newer than their signed zonefile.  If B<-noautosign> is
+specified, this will be set to false.
 
 =item B<-binddir directory>
 
