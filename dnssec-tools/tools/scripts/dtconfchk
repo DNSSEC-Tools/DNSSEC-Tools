@@ -20,7 +20,7 @@ use Net::DNS::SEC::Tools::defaults;
 # Version information.
 #
 my $NAME   = "dtconfchk";
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -553,6 +553,11 @@ sub check_rollerd
 	$sleep	  = $dtconf{"roll_sleeptime"};
 	$username = $dtconf{"roll_username"};
 	$zoneerrs = $dtconf{"zone_errors"};
+
+	#
+	# Ensure rollerd's loadzone flag is an acceptable boolean.
+	#
+	bool_check('autosign');
 
 	#
 	# Ensure rollerd's loadzone flag is an acceptable boolean.
@@ -1410,6 +1415,10 @@ Ensure the I<tatmpdir> field is a directory.
 The following checks are performed for B<rollerd> values:
 
 =over 8
+
+=item I<autosign>
+
+Ensure that the I<autosign> flag is a valid boolean.
 
 =item I<log_tz>
 
