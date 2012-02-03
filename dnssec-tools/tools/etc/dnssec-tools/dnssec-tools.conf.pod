@@ -61,6 +61,11 @@ The default encryption algorithm to be passed to B<dnssec-keygen>.
 
 The pathname to the archived-key directory.
 
+=item autosign
+
+A true/false flag indicating if B<rollerd> should automatically sign
+zonefiles that have been modified more recently than their signed versions.
+
 =item default_keyrec
 
 The default I<keyrec> filename to be used by the B<keyrec.pm> module.
@@ -353,6 +358,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     roll_logfile    /usr/local/etc/dnssec-tools/log-rollerd
     roll_loglevel   info
     roll_sleeptime  60
+    autosign        1
     zone_errors     3
 
     log_tz		local
