@@ -25,8 +25,8 @@ our @EXPORT = qw(
 		   dnssec_tools_defnames
 		);
 
-our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.1";
+our $VERSION = "1.12";
+our $MODULE_VERSION = "1.12.1";
 
 my $installdir = getprefixdir() . "/bin"; # DNSSEC-Tools installation directory.
 
@@ -35,6 +35,7 @@ my %defaults =
 	"admin-email"	   => "root",		# Admin's email address.
 	"archivedir"	   => getprefixdir() . "/var/key-archive",
 	"algorithm"	   => "rsasha1",	# Encryption algorithm.
+	"autosign"	   => 1,		# Auto-sign zone files flag.
 	"enddate"	   => "+2764800",	# Zone life, in seconds.
 	"entropy_msg"	   => 1,		# Display entropy message flag.
 	"keygen"	   => getprefixdir() . "/sbin/dnssec-keygen",
