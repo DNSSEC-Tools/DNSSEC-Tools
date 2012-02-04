@@ -10,6 +10,8 @@
 #include <QtDeclarative/QDeclarativeEngine>
 #include <QtDeclarative/QDeclarativeComponent>
 
+#define USE_QML 1
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
