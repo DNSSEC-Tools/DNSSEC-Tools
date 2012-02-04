@@ -51,8 +51,8 @@ int main(int argc, char *argv[])
         #endif
 
 
+        viewer.setOrientation(QmlApplicationViewer::ScreenOrientationLockLandscape);
         #ifdef IS_MEEGO
-        viewer.setOrientation(QmlApplicationViewer::ScreenOrientationAuto);
         viewer.showFullScreen();
         #else
         viewer.show();
