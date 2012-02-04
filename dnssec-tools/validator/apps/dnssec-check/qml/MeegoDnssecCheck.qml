@@ -5,7 +5,7 @@ import QtQuick 1.0
 import com.nokia.meego 1.0
 PageStackWindow {
    initialPage: Page {
-      orientationLock: PageOrientation.Automatic
+      orientationLock: PageOrientation.LockLandscape
       DnssecCheck { anchors.fill: parent }
    }
 }
