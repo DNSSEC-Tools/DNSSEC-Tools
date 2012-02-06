@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -114,20 +114,21 @@ my $DT_LOGTZ	= "log_tz";
 my $DT_SLEEP	= "roll_sleeptime";
 my $DT_USERNAME	= "roll_username";
 
-my $OPT_HELP	   = "help";
+my $OPT_ALWAYSSIGN = "alwayssign";
+my $OPT_AUTOSIGN   = "autosign";
 my $OPT_DIR	   = "directory";
 my $OPT_DISPLAY	   = "display";
 my $OPT_DTCONF	   = "dtconfig";
+my $OPT_FOREGROUND = "foreground";
+my $OPT_HELP	   = "help";
 my $OPT_LOGFILE	   = "logfile";
 my $OPT_LOGLEVEL   = "loglevel";
 my $OPT_LOGTZ	   = "logtz";
 my $OPT_NORELOAD   = "noreload";
 my $OPT_PARAMS	   = "parameters";
-my $OPT_SINGLERUN  = "singlerun";
-my $OPT_FOREGROUND = "foreground";
-my $OPT_ALWAYSSIGN = "alwayssign";
 my $OPT_PIDFILE    = "pidfile";
 my $OPT_RRFILE	   = "rrfile";
+my $OPT_SINGLERUN  = "singlerun";
 my $OPT_SLEEP	   = "sleep";
 my $OPT_USERNAME   = "username";
 my $OPT_VERBOSE	   = "verbose";
@@ -148,6 +149,7 @@ my @opts =
 	"dtconfig=s",			# dnssec-tools config file to use.
 	"sleep=i",			# Sleep amount (in seconds.)
 	"parameters",			# Display the parameters and exit.
+	"autosign!",			# Autosign flag.
 	"singlerun",			# Single run:  process everything once.
 	"foreground",			# Run in the foreground; don't fork.
 	"alwayssign",			# Always sign when running in singlerun.
@@ -163,6 +165,7 @@ my @opts =
 # be obvious.
 #
 my $alwayssign = 0;			# Always sign the zone in -singlerun.
+my $autosign = 0;			# Autosign updated zones.
 my $dtcf;				# DNSSEC-Tools configuration file.
 my $foreground = 0;			# Run in the foreground.
 my $logfile;				# Log file.
@@ -1961,10 +1964,9 @@ return(0);
 	#
 	# Get the current time.
 	#
-	$cronus	 = time;
-
-$cronus = gmtime(time);
-$cronus = str2time($cronus);
+#	$cronus	 = time;
+	$cronus = gmtime(time);
+	$cronus = str2time($cronus);
 
 	#
 	# Figure out the log message we should give.
@@ -1985,11 +1987,19 @@ $cronus = str2time($cronus);
 	}
 
 	#
-	# The key has expired if the current time has passed the key's lifespan.
-	# The key has not expired if the key's lifespan has yet to reach the
-	# current time.
+	# The keyset has expired if the current time has passed the keyset's
+	# lifespan.
+	# The keyset has not expired if the keyset's lifespan has yet to reach
+	# the current time.
 	#
 	$expired = 1 if($cronus > $rolltime);
+
+	#
+	# If the keyset has not expired and the zone file has been modified,
+	# we'll sign the zone file.  We won't created any new keys or take
+	# any other rollover actions.
+	#
+	zonemodified($rrr,$rname) if(!$expired);
 
 	#
 	# Return the success/failure indication.
@@ -2417,10 +2427,9 @@ sub ksk_expired
 	#
 	# Get the current time.
 	#
-	$cronus	 = time;
-
-$cronus = gmtime(time);
-$cronus = str2time($cronus);
+#	$cronus	 = time;
+	$cronus = gmtime(time);
+	$cronus = str2time($cronus);
 
 	#
 	# Figure out the log message we should give.
@@ -2446,6 +2455,13 @@ $cronus = str2time($cronus);
 	# current time.
 	#
 	$expired = 1 if($cronus > $rolltime);
+
+	#
+	# If the keyset has not expired and the zone file has been modified,
+	# we'll sign the zone file.  We won't created any new keys or take
+	# any other rollover actions.
+	#
+	zonemodified($rrr,$rname) if(!$expired);
 
 	#
 	# Return the success/failure indication.
@@ -3072,11 +3088,10 @@ sub rollstamp
 	#
 	# Get the timestamps.
 	#
-	$timesecs = time();
-	$timestr  = gmtime($timesecs);
-
-$timestr = gmtime(time);
-$timesecs = str2time($timestr);
+#	$timesecs = time();
+#	$timestr  = gmtime($timesecs);
+	$timestr = gmtime(time);
+	$timesecs = str2time($timestr);
 
 	#
 	# Set the rollrec records to now and write the file.
@@ -3091,7 +3106,6 @@ $timesecs = str2time($timestr);
 #
 # Purpose:	Run a list of commands for this rollover phase.  If a list is
 #		not defined for this phase, then we'll use the default action.
-#		action.
 #
 sub phasecmd
 {
@@ -3214,21 +3228,36 @@ sub phasecmd
 	}
 
 	#
-	# Special handling for KSK rollovers:
-	#	- set the new KSK phase if we've progressed.
+	# Special handling if the phase has changed, followed by special
+	# handling if it hasn't.
 	#
-	if($phase =~ /^ksk/)
+	if($phasenum != $newphase)
 	{
-		nextphase($rname,$rrr,$newphase,'KSK') if($phasenum != $newphase);
-	}
+		#
+		# Set the new KSK phase.
+		#
+		if($phase =~ /^ksk/)
+		{
+			nextphase($rname,$rrr,$newphase,'KSK');
+		}
 
-	#
-	# Special handling for ZSK rollovers:
-	#	- set the new ZSK phase if we've progressed.
-	#
-	if($phase =~ /^zsk/)
+		#
+		# Set the new ZSK phase.
+		#
+		if($phase =~ /^zsk/)
+		{
+			nextphase($rname,$rrr,$newphase,'ZSK');
+		}
+
+		zonemodified($rrr,$rname) if($newphase == 0);
+	}
+	else
 	{
-		nextphase($rname,$rrr,$newphase,'ZSK') if($phasenum != $newphase);
+		#
+		# Re-sign the zone file if it has been modified more recently
+		# than the signed zone file.
+		#
+		zonemodified($rrr,$rname);
 	}
 
 	#
@@ -3838,6 +3867,9 @@ sub optsandargs
 	#
 	opts_onerr(0);
 
+	#
+	# Get a bunch of option values.
+	#
 	$singlerun  = $opts{$OPT_SINGLERUN};
 	$foreground = $opts{$OPT_FOREGROUND};
 	$alwayssign = $opts{$OPT_ALWAYSSIGN};
@@ -3852,6 +3884,15 @@ sub optsandargs
 	$username   = $opts{$OPT_USERNAME}   || $dtconf{$DT_USERNAME} || '';
 	$xqtdir	    = $opts{$OPT_DIR}	     || ".";
 	$zonesigner = $opts{$OPT_ZONESIGNER} || $dtconf{$OPT_ZONESIGNER} || '';
+
+	#
+	# Check for autosign presence or absence.
+	#
+	$autosign  = defined($opts{'autosign'}) ?
+				$opts{$OPT_AUTOSIGN} :
+				(defined($dtconf{'autosign'}) ?
+					$dtconf{$OPT_AUTOSIGN} :
+					dnssec_tools_default("autosign"));
 
 	#
 	# Determine whether or not we'll load zones.
@@ -3953,6 +3994,7 @@ sub optsandargs
 		print "\tlogfile        \"$logfile\"\n";
 		print "\tloglevel       \"$loglevel\"\n";
 		print "\tlogtz          \"$logtz\"\n";
+		print "\tautosign       \"$autosign\"\n";
 		print "\tzone reload    \"$zoneload\"\n";
 		print "\tsleeptime      \"$sleeptime\"\n";
 		exit(0)
@@ -4119,6 +4161,7 @@ sub bootmsg
 	rolllog_log(LOG_ALWAYS,"","	logfile		\"$logfile\"");
 	rolllog_log(LOG_ALWAYS,"","	loglevel	\"$loglevel\"");
 	rolllog_log(LOG_ALWAYS,"","	logtz		\"$logtz\"");
+	rolllog_log(LOG_ALWAYS,"","	autosign	\"$autosign\"");
 	rolllog_log(LOG_ALWAYS,"","	single-run	\"$singlerun\"");
 	if($event_methods[$eventmaster] == $EVT_FULLLIST)
 	{
@@ -5004,7 +5047,7 @@ sub cmd_phasemsg
 	rolllog_log(LOG_TMI,'<command>',"phasemsg command received");
 
 	#
-	# Set our phase-message legnth.
+	# Set our phase-message length.
 	#
 	if(rollmgr_phasemsg($pmsg) == 1)
 	{
@@ -5026,7 +5069,7 @@ sub cmd_phasemsg
 #		rollrec file.  The zones' rollrec records are marked as being
 #		"roll" records, which will cause rollerd to start working on
 #		them.  This change is reflected in the rollrec file.  rollnow()
-#		is called for each suspended zone, in order to rsume rollover.
+#		is called for each suspended zone, in order to resume rollover.
 #		We'll also keep track of the suspended zones we were and weren't
 #		able to stop and report them to the caller.
 #
@@ -5516,8 +5559,6 @@ sub cmd_signzone
 
 	my $rrr;					# Rollrec reference.
 	my $krr;					# Keyrec reference.
-	my $kpval;					# KSK phase value.
-	my $zpval;					# ZSK phase value.
 	my $phasestr;					# Phase argument.
 
 	rolllog_log(LOG_TMI,'<command>',"signzone command received");
@@ -5526,29 +5567,16 @@ sub cmd_signzone
 	# Get the current phase values for the zone.
 	#
 	$rrr = rollrec_fullrec($zone);
-	$kpval = $rrr->{'kskphase'};
-	$zpval = $rrr->{'zskphase'};
+
+	#
+	# Get the phase string we'll use for signing.
+	#
+	$phasestr = phaseargs($rrr->{'kskphase'},$rrr->{'zskphase'});
 
 	#
 	# Check value and file existence, etc.
 	#
 	$krr = opts_zonekr($rrr->{'keyrec'},$zone);
-
-	#
-	# Set up the appropriate arguments to sign with.
-	#
-	if($kpval)
-	{
-		$phasestr = "KSK phase $kpval -signonly";
-	}
-	elsif($zpval)
-	{
-		$phasestr = "ZSK phase $zpval -signonly";
-	}
-	else
-	{
-		$phasestr = ' -signonly';
-	}
 
 	#
 	# Sign the zone.
@@ -6451,6 +6479,118 @@ sub loadzone
 	return($ret);
 }
 
+#-----------------------------------------------------------------------------
+# Routine:	zonemodified()
+#
+# Purpose:	Checks if a zone file has been modified more recently than
+#		its signed version.  If so, then the zone file will be
+#		re-signed -- without any keys created or other rollover
+#		actions taken.
+#
+#		The "more recent" check is performed by comparing the date
+#		of last modification for the two zone files.  If the unsigned
+#		zonefile's date is greater than the signed zonefile's date,
+#		then it is assumed the unsigned zonefile was modified.
+#
+#		This only works if the signed and unsigned zonefiles are
+#		in different files.
+#
+sub zonemodified
+{
+	my $rrr = shift;		# Rollrec reference.
+	my $rname = shift;		# Zone under consideration.
+
+	my $krf = $rrr->{'keyrec'};
+	my $zfs = $rrr->{'zonefile'};	# Signed zonefile.
+	my $zfu;			# Unsigned zonefile.
+	my @zfst;			# Zonefile stat info.
+	my $zfstime;			# Update time of signed zone.
+	my $zfutime;			# Update time of unsigned zone.
+
+	#
+	# Go no further here if we aren't autosigning.
+	#
+	return if(! $autosign);
+
+	#
+	# Get the name of the zonefile.  (Shouldn't have to read the keyrec.)
+	#
+	$zfu = keyrec_recval($rname,'zonefile');
+
+	#
+	# Get the last modification time of the signed zonefile.
+	#
+	@zfst = stat($zfs);
+	$zfstime = @zfst[9];
+
+	#
+	# Get the last modification time of the unsigned zonefile.
+	#
+	@zfst = stat($zfu);
+	$zfutime = @zfst[9];
+
+	#
+	# Check the last modification times, and sign the zonefile if it's
+	# been changed more recently than the unsigned zonefile.
+	#
+	if($zfutime > $zfstime)
+	{
+		my $krr;			# Ref to zone's keyrec.
+		my $pstr;			# Phase string.
+
+		rolllog_log(LOG_PHASE,$rname,"zonefile modified; re-signing");
+
+		#
+		# Get the current phase (in string form) and a ref
+		# to the keyrec.
+		#
+		$pstr = phaseargs($rrr->{'kskphase'},$rrr->{'zskphase'});
+		$krr = keyrec_fullrec($rname);
+
+		#
+		# Sign -- just sign -- the zone.
+		#
+		if(signer($rname,$pstr,$krr) == 0)
+		{
+			rolllog_log(LOG_TMI,$rname,"rollerd signed zone");
+		}
+		else
+		{
+			rolllog_log(LOG_ERR,$rname,"unable to sign zone");
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	phaseargs()
+#
+# Purpose:	Translates the KSK phase or ZSK phase into the appropriate
+#		arguments for a sign-only zonesigner call.
+#
+sub phaseargs
+{
+	my $kpval = shift;			# KSK phase value.
+	my $zpval = shift;			# ZSK phase value.
+	my $phasestr;				# Translated argument list.
+
+	#
+	# Set up the appropriate arguments to sign with.
+	#
+	if($kpval)
+	{
+		$phasestr = "KSK phase $kpval -signonly";
+	}
+	elsif($zpval)
+	{
+		$phasestr = "ZSK phase $zpval -signonly";
+	}
+	else
+	{
+		$phasestr = ' -signonly';
+	}
+
+	return($phasestr);
+}
 
 #-----------------------------------------------------------------------------
 # Routine:	queue_int_handler()
@@ -6606,6 +6746,7 @@ sub usage
 	print STDERR "\t\t-zonesigner <full-path-to-zonesigner>\n";
 	print STDERR "\t\t-display\n";
 	print STDERR "\t\t-parameters\n";
+	print STDERR "\t\t-autosign | -noautosign\n";
 	print STDERR "\t\t-singlerun\n";
 	print STDERR "\t\t-foreground\n";
 	print STDERR "\t\t-alwayssign\n";
@@ -6655,10 +6796,24 @@ it will mark each managed zone's I<keyrec> file to indicate the zone is under
 B<rollerd>'s control.  During the course of rollover, B<rollerd> will also
 update a zone's rollover times in its I<keyrec> file.)
 
-The administrator may control B<rollerd> with the B<rollctl> command.
-A large number of commands are available to control and modify B<rollerd>'s
-operation, as well as to retrieve information about rollover and daemon
-status.
+The administrator may control B<rollerd> with the B<rollctl> command.  A large
+number of commands are available to control and modify B<rollerd>'s operation,
+as well as to retrieve information about rollover and daemon status.
+
+The zone administrator will need to update their zone files periodically.  If
+B<rollerd> is managing zones, then problems could arise if modified zones were
+signed without B<rollerd>'s knowledge.  To prevent such problems, B<rollerd>
+can be configured to automatically re-sign a zone when its zonefile is found
+to be newer than its corresponding signed zonefile.  (The files' "last
+modification" timestamps are compared.)  The zone will be re-signed without
+any other rollover actions taking place, so no new keys will be generated, no
+key rollovers will occur, and the various rollover timers will be unaffected.
+
+B<rollerd> will perform these re-signs by default, but this can be further
+controlled by the I<autosign> configuration parameter and B<rollerd>'s
+B<-autosign>/B<-noautosign> command line options.  If B<rollerd> is configured
+to not perform automatic re-signing, the administrator can still get this
+controlled behavior by use of the B<zonesigner> or B<rollctl> commands.
 
 =head2 ZSK Rollover Using the Pre-Publish Method
 
@@ -7073,6 +7228,12 @@ Manual copying and installation is still needed.
 Note: During ZSK and KSK rolling phases 1 and 3 the zone will not be
 signed since it is critical to wait for cache timeouts during this
 phase of rolling keys.
+
+=item B<-autosign> | B<-noautosign>
+
+Automatic zone-signing flag.  If this is set, then a zone's zonefile will
+be re-signed (and only re-signed) if it is found to be newer than the
+corresponding signed zonefile.
 
 =item B<-directory dir>
 
