@@ -6497,15 +6497,15 @@ sub loadzone
 #
 sub zonemodified
 {
-	my $rrr = shift;		# Rollrec reference.
-	my $rname = shift;		# Zone under consideration.
+	my $rrr = shift;			# Rollrec reference.
+	my $rname = shift;			# Zone under consideration.
 
-	my $krf = $rrr->{'keyrec'};
-	my $zfs = $rrr->{'zonefile'};	# Signed zonefile.
-	my $zfu;			# Unsigned zonefile.
-	my @zfst;			# Zonefile stat info.
-	my $zfstime;			# Update time of signed zone.
-	my $zfutime;			# Update time of unsigned zone.
+	my $krf = $rrr->{'keyrec'};		# Zone's keyrec file.
+	my $zfs;				# Signed zonefile.
+	my $zfu;				# Unsigned zonefile.
+	my @zfst;				# Zonefile stat info.
+	my $zfstime;				# Update time of signed zone.
+	my $zfutime;				# Update time of unsigned zone.
 
 	#
 	# Go no further here if we aren't autosigning.
@@ -6513,9 +6513,25 @@ sub zonemodified
 	return if(! $autosign);
 
 	#
-	# Get the name of the zonefile.  (Shouldn't have to read the keyrec.)
+	# Get the name of the zonefile.  If the name is null, we'll read
+	# the keyrec and get the name again.
 	#
-	$zfu = keyrec_recval($rname,'zonefile');
+	if(($zfu = keyrec_recval($rname,'zonefile')) eq '')
+	{
+		keyrec_read($krf);
+		$zfu = keyrec_recval($rname,'zonefile');
+	}
+
+	#
+	# Now we'll get the name of the signed zonefile.
+	#
+	$zfs = keyrec_recval($rname,'signedzone');
+	if($zfs ne $rrr->{'zonefile'})
+	{
+		rolllog_log(LOG_ERR,$rname,"rollrec and keyrec disagree about name of signed zone file");
+		rolllog_log(LOG_ERR,$rname,"  rollrec's signed zone file - $rrr->{'zonefile'}");
+		rolllog_log(LOG_ERR,$rname,"  keyrec's signed zone file  - $krf");
+	}
 
 	#
 	# Get the last modification time of the signed zonefile.
