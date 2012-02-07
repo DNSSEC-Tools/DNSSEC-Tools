@@ -14,7 +14,7 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "validator-config.h"
+#include "validator/validator-config.h"
 #include "validator/resolver.h"
 #include "validator/validator.h"
 
