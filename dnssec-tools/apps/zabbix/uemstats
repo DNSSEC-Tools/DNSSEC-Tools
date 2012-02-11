@@ -1,0 +1,357 @@
+#!/usr/bin/perl
+#
+# Copyright 2011-2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# uemstats
+#	uemstats retrieves the most recent DNS lookup response performed
+#	by UEM for a given sensor/name-server/target-host group.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "uemstats";
+my $VERS   = "$NAME version: 1.0";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();                       # Filled option array.
+my @opts =
+(
+	"Version",			# Display the version number.
+	"help",				# Display a help message.
+);
+
+
+
+# my $datadir = '/uem/zabbix/data/uem';
+
+my $uemdir  = '/uem/dns-mgmt/data';
+my $respdir = 'dns/resp';
+my $suffix  = 'NS-norec-dnssec.dns';
+
+my $sensor;				# UEM sensor we're looking at.
+my $nsip;				# Root nameserver we're looking at.
+my $target;				# Target host we're looking at.
+
+my %sensors =
+(
+	'uem-west'	=>	'75.101.48.146',
+	'uem-east'	=>	'157.185.82.41',
+	'uemdev1'	=>	'157.185.82.41',
+	'uemdev6'	=>	'75.101.48.146',
+	'75.101.48.146' =>	'75.101.48.146',
+	'157.185.82.41'	=>	'157.185.82.41',
+);
+
+my %roots =
+(
+	'a.root-servers.net'	=> '198.41.0.4',
+	'b.root-servers.net'	=> '192.228.79.201',
+	'c.root-servers.net'	=> '192.33.4.12',
+	'd.root-servers.net'	=> '128.8.10.90',
+	'e.root-servers.net'	=> '192.203.230.10',
+	'f.root-servers.net'	=> '192.5.5.241',
+	'g.root-servers.net'	=> '192.112.36.4',
+	'h.root-servers.net'	=> '128.63.2.53',
+	'i.root-servers.net'	=> '192.36.148.17',
+	'j.root-servers.net'	=> '192.58.128.30',
+	'k.root-servers.net'	=> '193.0.14.129',
+	'l.root-servers.net'	=> '199.7.83.42',
+	'm.root-servers.net'	=> '202.12.27.33',
+
+	'a'			=> '198.41.0.4',
+	'b'			=> '192.228.79.201',
+	'c'			=> '192.33.4.12',
+	'd'			=> '128.8.10.90',
+	'e'			=> '192.203.230.10',
+	'f'			=> '192.5.5.241',
+	'g'			=> '192.112.36.4',
+	'h'			=> '128.63.2.53',
+	'i'			=> '192.36.148.17',
+	'j'			=> '192.58.128.30',
+	'k'			=> '193.0.14.129',
+	'l'			=> '199.7.83.42',
+	'm'			=> '202.12.27.33',
+
+	'198.41.0.4'		=> '198.41.0.4',
+	'192.228.79.201'	=> '192.228.79.201',
+	'192.33.4.12'		=> '192.33.4.12',
+	'128.8.10.90'		=> '128.8.10.90',
+	'192.203.230.10'	=> '192.203.230.10',
+	'192.5.5.241'		=> '192.5.5.241',
+	'192.112.36.4'		=> '192.112.36.4',
+	'128.63.2.53'		=> '128.63.2.53',
+	'192.36.148.17'		=> '192.36.148.17',
+	'192.58.128.30'		=> '192.58.128.30',
+	'193.0.14.129'		=> '193.0.14.129',
+	'199.7.83.42'		=> '199.7.83.42',
+	'202.12.27.33'		=> '202.12.27.33',
+);
+
+my %targets =
+(
+	'.'		=>	1,
+	'nic.mil'	=>	1,
+	'tislabs.com'	=>	1,
+);
+
+main();
+exit(0);
+
+#-------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $ud;					# Most recent UEM datum.
+
+	#
+	# Check for options and arguments.
+	#
+	doopts();
+
+	#
+	# Get the most recent datum from the UEM rootserver/target/sensor
+	# triad.
+	#
+	$ud = uemdata();
+
+	#
+	# Give the response from the most recent file.
+	#
+	print "$ud\n";
+}
+
+#-------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	my $zone = shift;			# Zone to examine.
+
+	#
+	# Parse the options.
+	# 
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number if requested
+	#
+	version() if(defined($options{'Version'}));
+
+	#    
+	# Give a usage flag if asked.
+	# 
+	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a triad.
+	#
+	usage() if(@ARGV != 3);
+
+	#
+	# Ensure we were given a valid UEM sensor.
+	#
+	if(! defined($sensors{$ARGV[0]}))
+	{
+		print "-10\n";
+		exit;
+	}
+
+	#
+	# Ensure we were given a valid root server.
+	#
+	if(! defined($roots{$ARGV[1]}))
+	{
+		print "-20\n";
+		exit;
+	}
+
+	#
+	# Ensure we were given a valid target.
+	#
+	if(! defined($targets{$ARGV[2]}))
+	{
+		print "-30\n";
+		exit;
+	}
+
+	#
+	# Save the triad.
+	#
+	$sensor	= $sensors{$ARGV[0]};
+	$nsip	= $roots{$ARGV[1]};
+	$target	= $ARGV[2];
+}
+
+#-------------------------------------------------------------------------
+# Routine:	uemdata()
+#
+sub uemdata
+{
+	my $filerex;				# Regexp for this NS and target.
+	my @files;				# UEM data files.
+	my $lastfile;				# Last UEM data file.
+
+	my @lines;				# Lines from UEM data file.
+	my $lastline;				# Last entry.
+
+	#
+	# Get the data files for this rootserver/target pair.
+	#
+	$filerex = "$uemdir/$sensor/$respdir/*-$nsip-$target-$suffix";
+	@files = sort(glob($filerex));
+
+	#
+	# Get the contents of the most recent data file.
+	#
+	$lastfile = $files[-1];
+	open(DF,"< $lastfile");
+	@lines = <DF>;
+	close(DF);
+
+	#
+	# If this is a dataful entry, return its response time.
+	#
+	$lastline = @lines[-1];
+	if($lastline =~ /^.* (.*) (NOERROR|DNSSEC_NOT_SUPPORTED)/)
+	{
+		return($1);
+	}
+
+	#
+	# Otherwise, return nothing at all.
+	#
+	return('');
+}
+
+#-------------------------------------------------------------------------
+# Routine:	out()
+#
+sub out
+{
+	my $rolltype = shift;			# Type of rollover.
+	my $phasenum = shift;			# Rollover phase number.
+
+	$phasenum = '' if(($phasenum == 0) || ($phasenum > 10));
+	print "$rolltype $phasenum\n";
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number and exit.
+#
+sub version
+{
+        print STDERR "$VERS\n";
+	exit(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:	Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  uemstats [-Version | -help] <sensor> <rootserver> <target>\n";
+	exit(0);
+}
+
+=pod
+=head1 NAME
+
+uemstats - Displays the rollover state for a specified zone.
+
+=head1 SYNOPSIS
+
+  uemstats [options] <sensor> <nameserver> <target>
+
+=head1 DESCRIPTION
+
+B<uemstats> was written specifically to gather information on UEM status
+for a demonstration Zabbix monitoring environment.  It can be adapted
+for use in other environments, but that is its intended purpose.
+
+B<uemstats> retrieves the most recent DNS lookup response performed by UEM
+for a given sensor/name-server/target-host group.  If this is a non-error
+response, the response time is printed.  If it is an error, then a null
+response is given.     
+
+If the specified UEM sensor, root server, or target host are invalid,
+a negative number will be printed.
+
+The arguments are all required and are hard-coded in the body of B<uemstats>.
+If used in another environment, these values B<must> be modified to fit the
+new installation.
+
+These data B<must> be coordinated with the UEM configuration.  B<uemstats>
+does no polling or UEM data collection itself, it only uses data collected by
+the UEM system. 
+
+The following arguments are required:
+
+=over 4
+
+=item B<sensor> - The UEM sensor host.
+
+=item B<nameserver> - A nameserver.  This can be a root nameserver, as is
+used in this example version, or it can be another nameserver of the
+installer's choice.
+
+=item B<target> - A target host whose DNS information will be requested. 
+
+=back
+
+=head1 ERROR VALUES
+
+If an error condition is encountered, then an error value will be printed.
+The error values and their meanings are given below:
+
+=over 4
+
+=item B<-10> - An unrecognized UEM sensor was specified.
+
+=item B<-20> - An unrecognized nameserver was specified.
+
+=item B<-30> - An unrecognized target host was specified.
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-Version>
+
+Displays the version information for B<uemstats>.
+
+=item B<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2011-2012 SPARTA, Inc.  All rights reserved.  See the COPYING file
+included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=cut
+
