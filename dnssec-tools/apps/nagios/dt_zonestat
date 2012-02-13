@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2011 Cobham Analytic Solutions.  All rights reserved.
+# Copyright 2011-2012 Cobham Analytic Solutions.  All rights reserved.
 # See the COPYING file distributed with this software for details.
 #
 # dt_zonestat
@@ -26,8 +26,8 @@ use Net::DNS::SEC::Tools::dnssectools;
 # Version information.
 #
 my $NAME   = "dt_zonestat";
-my $VERS   = "$NAME version: 1.9.0";
-my $DTVERS = "DNSSEC-Tools Version: 1.9";
+my $VERS   = "$NAME version: 1.12.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 ######################################################################r
 #
@@ -427,7 +427,7 @@ sub version
 sub usage
 {
 	print STDERR "$VERS
-Copyright 2011 Cobham Analytic Solutions.  All rights reserved.
+Copyright 2011-2012 Cobham Analytic Solutions.  All rights reserved.
 
 This script retrieves the DNSSEC rollover phase for a specified zone.
 The phase is retrieved from the rollerd daemon or the active rollrec file.
@@ -466,7 +466,7 @@ status from B<rollerd> or by checking a specified B<rollrec> file.
 
 By default, B<dt_zonestat> will use B<rollctl> to retrieve zone status
 information from B<rollerd>.  If the B<-rrf> option is specified, then
-zone status information is found by running the the B<rollctl> command
+zone status information is found by running the the B<lsroll> command
 with the specified B<rollrec> file.
 
 Given uids of B<rollerd> and web servers, and the file permissions and
