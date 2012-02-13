@@ -1,0 +1,345 @@
+#!/usr/bin/perl
+#
+# Copyright 2011-2012 Cobham Analytic Solutions.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# dt_donuts
+#
+#	This script checks the validity of a zone files using the donuts
+#	command from DNSSEC-Tools.
+#
+#	This was written for DNSSEC-Tools.
+#
+# Revision History
+#	1.9.0	Original version: 8/2011		(1.0)
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::dnssectools;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "dt_donuts";
+my $VERS   = "$NAME version: 1.12.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+######################################################################r
+#
+# Data required for command line options.
+#
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+#######################################################################
+
+my $OUTFILE = "/tmp/z.dt_donuts";
+
+my $zonepath = '/home/dt-nagios/zones';		# Directory of zone file.
+
+my $zonefile = '';				# Zone file.
+my $zonename = '';				# Zone name.
+
+#
+# Run shtuff.
+#
+main();
+exit($RC_UNKNOWN);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for uem-dnsresp.
+#
+sub main
+{
+	$| = 0;
+
+# out("dt_donuts:  running");
+
+	#
+	# Check our options.
+	#
+	doopts();
+# out("\tzone - <$zone>");
+
+	#
+	# Get the statistics for this zone.
+	#
+# out("\tcalling donuts_lsroll($zone)");
+	make_donuts();
+
+	#
+	# Exit with the command's return code		(Shouldn't get here.)
+	#
+	print "dt_donuts should not get here\n";
+	exit($RC_UNKNOWN);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Ensure a zonefile and zone name were specified.
+	#
+	if(@ARGV != 2)
+	{
+		print "dt_donuts: no zone data specified\n";
+		return($RC_CRITICAL);
+	}
+
+	#
+	# Return the zone name.
+	#
+	$zonefile = $ARGV[0];
+	$zonename = $ARGV[1];
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	make_donuts()
+#
+sub make_donuts
+{
+	my $out;				# Command's output.
+	my @out;				# Output lines array.
+
+	#
+	# Get the donuts output.
+	#
+	$out = runner("/usr/bin/donuts $zonepath/$zonefile $zonename");
+	@out = split /\n/, $out;
+
+	#
+	# Check each line of the donuts output.  When we find a line talking
+	# about the number of errors found, we'll exit with an appropriate
+	# retcode.
+	#
+	foreach my $line (@out)
+	{
+		my $errcnt = 0;;		# Error count.
+
+		#
+		# Take a look at the line.
+		#
+		next if($line !~ /^\d+ errors found in /);
+		$line =~ /^(\d+) errors found in /;
+		$errcnt	= $1;
+
+		#
+		# Handle error-free zones.
+		#
+		if($errcnt == 0)
+		{
+			print "$zonename has no errors\n";
+			exit($RC_NORMAL);
+		}
+
+		#
+		# Handle an errorful zone.
+		#
+		print "$zonename has $errcnt errors\n";
+		exit($RC_CRITICAL);
+	}
+
+	#
+	# Handle a donuts execution that didn't discuss errors.
+	#
+	print "$zonename has an unknown number of errors\n";
+	exit($RC_UNKNOWN);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	runner()
+#
+sub runner
+{
+	my $cmd = shift;			# Command to execute.
+	my $out;				# Command's output.
+	my $ret;				# Command's return code.
+
+	#
+	# Run the command.
+	#
+	$out = `$cmd`;
+	$ret = $? >> 8;
+
+	#
+	# Return the command output if it succeeded.
+	#
+	return($out) if($ret == 0);
+
+	#
+	# Handle failed commands...
+	#
+
+#	print "Unable to execute donuts\n";
+	print "Cannot execute \"$cmd\"\n";
+	exit($RC_UNKNOWN);
+}
+
+
+
+#-----------------------------------------------------------------------------
+# Routine:	out()
+#
+# Purpose:	Temporary output routine.
+#
+sub out
+{
+	my $str = shift;
+
+	open(OUT,">>$OUTFILE");
+	print OUT "$str\n";
+	close(OUT);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	exit($RC_WARNING);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+Copyright 2011-2012 Cobham Analytic Solutions.  All rights reserved.
+
+This plugin runs donuts on a specified zone.  The error count is then printed.
+
+usage:  dt_donuts [options] <zonefile> <zonename>
+	options:
+		-Version	display program version
+		-help		display this message
+
+";
+
+	exit($RC_WARNING);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+dt_donuts - Nagios plugin to retrieve the B<donuts> status of a zone file
+
+=head1 SYNOPSIS
+
+  dt_donuts [options] <zone-file> <zone-name>
+
+=head1 DESCRIPTION
+
+B<dt_donuts> is a Nagios plugin to find the number of errors in a specified
+zone file.  The error count is then printed.  If used as part of a Nagios
+service, the error count will be included in the Nagios display.  The zone
+file's error count is determined by the DNSSEC-Tools B<donuts> command.
+
+=head1 NAGIOS USE
+
+This is run from a Nagios I<command> object.  These are examples of how the
+objects should be defined:
+
+
+  define command {
+      command_name    dt_donuts
+      command_line    $USER1$/dt_donuts $ARG1$ $ARG2$
+  }
+
+  define service {
+      service_description   zone rollover
+      check_command         dt_donuts!test.com.signed!test.com
+      host_name             test/test.com
+      active_checks_enabled 1
+      use                   dnssec-tools-service
+  }
+
+=head1 OPTIONS
+
+The following options are recognized by B<dt_donuts>:
+
+=over 4
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 EXIT CODES
+
+As a Nagios plugin, B<dt_donuts> must satisfy several requirements for its
+exit codes.  The expected exit codes are used by Nagios in determining how to
+display plugin output.  Plugins may also provide a single line of
+output that will be included in the Nagios display.
+
+The following table shows the exit codes and output for a zone's rollover
+state:
+
+
+   Zone Status               Exit Code   Output Line
+   donuts found no errors        0       <zone> had no errors
+   donuts found errors           2       <zone> had <count> errors
+   unable to run donuts          3       Unable to run donuts
+
+0 is the "okay" value; 1 is the "warning" value; 2 is the "critical" value;
+3 is the "unknown" value.
+
+=head1 COPYRIGHT
+
+Copyright 2011-2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+dt_zonestat(8)
+
+=cut

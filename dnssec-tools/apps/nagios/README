@@ -56,7 +56,6 @@ below.
 		The file is located in the source hierarchy for Nagios.
 		.../nagios-3.2.3/cgi/status.c
 
-
 	dtnagobj
 		This Perl script builds a file containing the Nagios
 		objects required to display zone rollover status.  It
@@ -87,6 +86,17 @@ below.
 
 		"perldoc dt_zonestat" will give additional information.
 
+	dt_donuts
+		This Perl script is a Nagios plugin that determines
+		if a zone file has any errors.  It executes the donuts
+		command to determine if the zone file contains errors.
+		It is referenced as part of the service objects created
+		by dtnagobj.
+
+		dt_donuts must be installed in the standard Nagios
+		plugin directory.
+
+		"perldoc dt_donuts" will give additional information.
 
 	sample.dnssec-tools.cfg
 		This is a sample file containing the Nagios objects
@@ -104,5 +114,4 @@ below.
 		sample-dnssec-tools.cfg file.  This file was taken from
 		the Split-View Demo directory, which is part of the
 		DNSSEC-Tools release.
-
 
