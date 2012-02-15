@@ -20,8 +20,8 @@ use Socket;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 
-our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.0";
+our $VERSION = "1.12";
+our $MODULE_VERSION = "1.12.1";
 
 our @ISA = qw(Exporter);
 
@@ -559,10 +559,22 @@ recorded.
 
 =over 4
 
-=item I<rolllog_levels()>
+=item I<rolllog_file(newfile,useflag)>
 
-This routine returns an array holding the text forms of the user-settable
-logging levels.  The levels are returned in order, from most verbose to least.
+This routine sets and retrieves the log file for B<rollerd>.
+The I<newfile> argument specifies the new log file to be set.  If I<newfile>
+exists, it must be a regular file.
+
+The I<useflag> argument is a boolean that indicates whether or not to give a
+descriptive message if an invalid log file is given.  If I<useflag> is
+true, the message is given and the process exits; if false, no message is
+given.  For any error condition, an empty string is returned.
+
+=item I<rolllog_gettz()>
+
+This routine returns the timezone selector currently in use.  This value may
+be either 'gmt' (for Greenwich Mean Time) or 'local' (for the host's local
+time.)
 
 =item I<rolllog_level(newlevel,useflag)>
 
@@ -579,16 +591,27 @@ If given with no arguments, the current logging level is returned.  In fact,
 the current level is always returned unless an error is found.  -1 is returned
 on error.
 
-=item I<rolllog_file(newfile,useflag)>
+=item I<rolllog_levels()>
 
-This routine sets and retrieves the log file for B<rollerd>.
-The I<newfile> argument specifies the new log file to be set.  If I<newfile>
-exists, it must be a regular file.
+This routine returns an array holding the text forms of the user-settable
+logging levels.  The levels are returned in order, from most verbose to least.
 
-The I<useflag> argument is a boolean that indicates whether or not to give a
-descriptive message if an invalid logging level is given.  If I<useflag> is
-true, the message is given and the process exits; if false, no message is
-given.  For any error condition, an empty string is returned.
+=item I<rolllog_log(level,group,message)>
+
+The I<rolllog_log()> interface writes a message to the log file.  Log
+messages have this format:
+
+	timestamp: group: message
+
+The I<level> argument is the message's logging level.  It will only be written
+to the log file if the current log level is numerically equal to or less than
+I<level>.
+
+I<group> allows messages to be associated together.  It is currently used by
+B<rollerd> to group messages by the zone to which the message applies.
+
+The I<message> argument is the log message itself.  Trailing newlines are
+removed.
 
 =item I<rolllog_num(loglevel)>
 
@@ -596,12 +619,6 @@ This routine translates a text log level (given in I<loglevel>) into the
 associated numeric log level.  The numeric log level is returned to the caller.
 
 If I<loglevel> is an invalid log level, -1 is returned.
-
-=item I<rolllog_gettz()>
-
-This routine returns the timezone selector currently in use.  This value may
-be either 'gmt' (for Greenwich Mean Time) or 'local' (for the host's local
-time.)
 
 =item I<rolllog_settz(tzsel)>
 
@@ -624,23 +641,6 @@ level.  Case is irrelevant when checking I<loglevel>.
 
 If I<loglevel> is numeric, it is must be in the valid range of log levels.
 I<undef> is returned if I<loglevel> is invalid.
-
-=item I<rolllog_log(level,group,message)>
-
-The I<rolllog_log()> interface writes a message to the log file.  Log
-messages have this format:
-
-	timestamp: group: message
-
-The I<level> argument is the message's logging level.  It will only be written
-to the log file if the current log level is numerically equal to or less than
-I<level>.
-
-I<group> allows messages to be associated together.  It is currently used by
-B<rollerd> to group messages by the zone to which the message applies.
-
-The I<message> argument is the log message itself.  Trailing newlines are
-removed.
 
 =item I<rolllog_validlevel(level)>
 
