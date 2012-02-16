@@ -40,7 +40,7 @@ reverseddates-aaaa.badsign-ns.test.dnssec-tools.org:
 pastdate-a.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.badsign-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20120201205959
+	       20120216071542
 
 badsign-aaaa.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-aaaa.badsign-ns.test.dnssec-tools.org
@@ -70,7 +70,7 @@ futuredate-aaaa.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.badsign-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20120401220459
+	       after 20120416082042
 
 addedlater-nosig-AAAA.badsign-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.badsign-ns.test.dnssec-tools.org
@@ -101,15 +101,15 @@ reverseddates-aaaa.badsign-ns.test.dnssec-tools.org:
 	       reverseddates-aaaa.badsign-ns.test.dnssec-tools.org type:
 	       AAAA failed to verify: RSA Verification failed
 
+badsign-a.badsign-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-a.badsign-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
 pastdate-aaaa.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-aaaa.badsign-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature has expired since:
-	       20120201205959
-
-badsign-a.badsign-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: badsign-a.badsign-ns.test.dnssec-tools.org
-	       type: A failed to verify: RSA Verification failed
+	       20120216071542
 
 baddata-aaaa.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: baddata-aaaa.badsign-ns.test.dnssec-tools.org
@@ -118,6 +118,6 @@ baddata-aaaa.badsign-ns.test.dnssec-tools.org:
 futuredate-a.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.badsign-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20120401220459
+	       future; after 20120416082042
 
 24 errors found in db.badsign-ns.test.dnssec-tools.org.zs.signed.modified
