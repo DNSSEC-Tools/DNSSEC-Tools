@@ -20,22 +20,22 @@ rollzsk-ns.test.dnssec-tools.org:
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
 pastdate-a.rollzsk-ns.test.dnssec-tools.org:
-  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:327
+  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:343
   Error:       RRSIG record for pastdate-a.rollzsk-ns.test.dnssec-tools.org
 	       has expired
 
+pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org:
+  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:358
+  Error:       RRSIG record for
+	       pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org has expired
+
 reverseddates-aaaa.rollzsk-ns.test.dnssec-tools.org:
-  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:359
+  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:365
   Error:       RRSIG is nearing its expiration time
 
 reverseddates-a.rollzsk-ns.test.dnssec-tools.org:
-  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:375
+  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:406
   Error:       RRSIG is nearing its expiration time
-
-pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org:
-  Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:415
-  Error:       RRSIG record for
-	       pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org has expired
 
 reverseddates-a.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -45,13 +45,13 @@ reverseddates-a.rollzsk-ns.test.dnssec-tools.org:
 pastdate-a.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: pastdate-a.rollzsk-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature has expired since:
-	       20120201210003
+	       20120216071546
 
 pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature has expired since:
-	       20120201210003
+	       20120216071546
 
 reverseddates-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -61,7 +61,7 @@ reverseddates-aaaa.rollzsk-ns.test.dnssec-tools.org:
 futuredate-a.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.rollzsk-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20120401220503
+	       future; after 20120416082046
 
 addedlater-nosig-AAAA.rollzsk-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.rollzsk-ns.test.dnssec-tools.org
@@ -81,7 +81,7 @@ futuredate-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.rollzsk-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20120401220503
+	       after 20120416082046
 
 badsign-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-aaaa.rollzsk-ns.test.dnssec-tools.org
@@ -102,12 +102,12 @@ baddata-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: baddata-aaaa.rollzsk-ns.test.dnssec-tools.org
 	       type: AAAA failed to verify: RSA Verification failed
 
-baddata-a.rollzsk-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: baddata-a.rollzsk-ns.test.dnssec-tools.org
-	       type: A failed to verify: RSA Verification failed
-
 badsign-a.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.rollzsk-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+baddata-a.rollzsk-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-a.rollzsk-ns.test.dnssec-tools.org
 	       type: A failed to verify: RSA Verification failed
 
 addedlater-nosig-A.rollzsk-ns.test.dnssec-tools.org:
