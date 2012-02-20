@@ -44,11 +44,13 @@ controlled by DNSSEC-Tools.  Brief descriptions of these files are given
 below.
 
 
-	status.c
-		This file is a standard part of the Nagios distribution.
-		It is a CGI that builds many of the Nagios status pages.
-		It has been modified to provide DNSSEC-Tools-specific
-		results in the "Status" column of services output.
+	diff-status.c
+		status.c is a standard part of the Nagios distribution,
+		living in .../cgi/status.c.  It is a CGI that builds many
+		of the Nagios status pages.  It has been modified to
+		provide DNSSEC-Tools-specific results in the "Status"
+		column of services output.  This is a diff of the original
+		version and the version modified for DNSSEC-Tools.
 
 		This modification is optional, but it provides
 		nicer output for zone rollover monitoring.
