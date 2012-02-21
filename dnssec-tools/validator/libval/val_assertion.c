@@ -6891,7 +6891,8 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
 
     retval = add_to_qfq_chain(context, &as->val_as_queries,
                               domain_name_n, as->val_as_type,
-                              as->val_as_class, flags & VAL_QFLAGS_USERMASK,
+                              as->val_as_class,
+                              (flags | context->def_cflags | context->def_uflags) & VAL_QFLAGS_USERMASK,
                               &added_q);
     if (VAL_NO_ERROR == retval) {
         as->val_as_top_q = added_q;
