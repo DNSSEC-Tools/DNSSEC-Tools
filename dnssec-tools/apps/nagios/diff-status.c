@@ -1,3 +1,9 @@
+#
+# Copyright 2011-2012 Cobham Analytic Solutions.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+
+
 80a81,85
 > /*
 >  * Defines used by the DNSSEC-Tools modifications.
