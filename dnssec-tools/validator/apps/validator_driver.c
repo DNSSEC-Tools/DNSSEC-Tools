@@ -50,6 +50,7 @@ static struct option prog_options[] = {
     {"testcase-conf", 1, 0, 'F'},
     {"label", 1, 0, 'l'},
     {"multi-thread", 1, 0, 'm'},
+    {"no-dnssec", 0, 0, 'n'},
     {"output", 1, 0, 'o'},
     {"resolv-conf", 1, 0, 'r'},
     {"dnsval-conf", 1, 0, 'v'},
@@ -292,6 +293,7 @@ usage(char *progname)
     printf("                  file:<file-name>   (opened in append mode)\n");
     printf("                  net[:<host-name>:<host-port>] (127.0.0.1:1053\n");
     printf("                  syslog[:facility] (0-23 (default 1 USER))\n");
+    printf("        -n, --no-dnssec        Don't do DNSSEC, just DNS\n");
     printf("        -V, --Version          Display version and exit\n");
     printf("Advanced Options:\n");
     printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
@@ -696,7 +698,7 @@ main(int argc, char *argv[])
     // Parse the command line for a query and resolve+validate it
     int             c;
     char           *domain_name = NULL;
-    const char     *args = "c:dF:hi:I:l:m:w:o:pr:S:st:T:v:V";
+    const char     *args = "c:dF:hi:I:l:m:nw:o:pr:S:st:T:v:V";
     int            class_h = ns_c_in;
     int            type_h = ns_t_a;
     int             success = 0;
@@ -706,7 +708,7 @@ main(int argc, char *argv[])
     int             max_in_flight = 1;
     int             daemon = 0;
     //u_int32_t       flags = VAL_QUERY_AC_DETAIL|VAL_QUERY_NO_EDNS0_FALLBACK;
-    u_int32_t       flags = VAL_QUERY_AC_DETAIL;
+    u_int32_t       flags = VAL_QUERY_AC_DETAIL, nodnssec_flag = 0;
     int             retvals[] = { 0 };
     int             tcs = 0, tce = -1;
     int             wait = 0;
@@ -778,6 +780,10 @@ main(int argc, char *argv[])
 
         case 'p':
             doprint = 1;
+            break;
+
+        case 'n':
+            nodnssec_flag = 1;
             break;
 
         case 'c':
@@ -882,6 +888,11 @@ main(int argc, char *argv[])
         res_set_debug_level(val_log_highest_debug_level());
 
     rc = 0;
+
+    if (nodnssec_flag) {
+        val_context_setqflags(context, VAL_CTX_FLAG_SET,
+                              VAL_QUERY_DONT_VALIDATE);
+    }
 
     // optind is a global variable.  See man page for getopt_long(3)
     if (optind >= argc) {
