@@ -1464,6 +1464,8 @@ int val_getaddrinfo_has_status(int rc) {
 
 #define VAL_GAI_DONE         0x0001
 
+#define VAL_AS_CANCEL_DONT_FREE 0x01000000
+
 struct val_gai_status_s {
     char             *nodename;
     char             *servname;
@@ -1481,22 +1483,30 @@ struct val_gai_status_s {
 };
 
 static void
-_free_vgai( val_gai_status *vgai )
+_cancel_vgai( val_gai_status *vgai, int flags )
 {
-    if (NULL == vgai)
-        return;
+    vgai->flags |= VAL_AS_CANCEL_DONT_FREE;
 
     if (NULL != vgai->inet_status) {
-        val_async_cancel(vgai->context, vgai->inet_status, 
-                         VAL_AS_CANCEL_NO_CALLBACKS);
+        val_async_cancel(vgai->context, vgai->inet_status, flags);
         vgai->inet_status = NULL;
     }
 
     if (NULL != vgai->inet6_status) {
-        val_async_cancel(vgai->context, vgai->inet6_status,
-                         VAL_AS_CANCEL_NO_CALLBACKS);
+        val_async_cancel(vgai->context, vgai->inet6_status, flags);
         vgai->inet6_status = NULL;
     }
+
+    vgai->flags &= ~VAL_AS_CANCEL_DONT_FREE;
+}
+
+static void
+_free_vgai( val_gai_status *vgai )
+{
+    if (NULL == vgai || vgai->flags & VAL_AS_CANCEL_DONT_FREE)
+        return;
+
+    _cancel_vgai( vgai, VAL_AS_CANCEL_NO_CALLBACKS);
 
     if (NULL != vgai->nodename) {
         free(vgai->nodename);
@@ -1514,6 +1524,15 @@ _free_vgai( val_gai_status *vgai )
     }
 
     free(vgai);
+}
+
+void
+val_getaddrinfo_cancel(val_gai_status *status, int flags)
+{
+    if (NULL == status)
+        return;
+    _cancel_vgai(status, flags);
+    _free_vgai(status);
 }
 
 /*
@@ -1597,7 +1616,10 @@ _vgai_async_callback(val_async_status *as, int event,
     if (NULL == vgai->callback) {
         val_log(ctx, LOG_DEBUG, "val_getaddrinfo async NULL callback!");
     } else {
-        (*vgai->callback)(vgai->callback_data, rc, vgai->res, vgai->val_status);
+        if (VAL_AS_EVENT_CANCELED == event)
+            gai_rc = VAL_AS_EVENT_CANCELED;
+        (*vgai->callback)(vgai->callback_data, gai_rc, vgai->res,
+                          vgai->val_status);
         /** let caller keep res structure */
         vgai->res = NULL;
     }
