@@ -528,6 +528,8 @@ typedef struct val_context_opt {
                                            void *callback_data,
                                            unsigned int vgai_flags,
                                            val_gai_status **status);
+    /** flags can be VAL_AS_CANCEL_NO_CALLBACKS */
+    void            val_getaddrinfo_cancel(val_gai_status *status, int flags);
 
     /*
      * A thread-safe, re-entrant version of val_gethostbyaddr 
