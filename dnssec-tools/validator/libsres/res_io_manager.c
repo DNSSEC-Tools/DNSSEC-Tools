@@ -494,29 +494,31 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     long             i, old_size;
     struct expected_arrival *temp = ea;
 
-    if (!temp && !name)
+    if (!temp || !name)
         return -1;
 
-    if (!server) {
-        res_log(NULL, LOG_DEBUG, "libsres: ""no server specified");
-        // return -1;
-    }
-
-    for(;temp;temp=temp->ea_next) {
-        //res_print_ea(temp);
-        /** match name, then look for address */
-        if (namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
-            continue;
-        if (memcmp(server->ns_address[0],
-                   temp->ea_ns->ns_address[temp->ea_which_address],
-                   sizeof(*server->ns_address[0])) == 0)
-            break;
-    }
-
-    if (!temp) {
-        res_log(NULL, LOG_DEBUG, "libsres: "
-                "no matching server found for fallback");
+    if (!server && ea->ea_next) {
+        res_log(NULL, LOG_DEBUG,
+                "libsres: ""no server specified and more than one ea");
         return -1;
+    }
+
+    if (server) {
+        for(;temp;temp=temp->ea_next) {
+            //res_print_ea(temp);
+            /** match name, then look for address */
+            if (namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
+                continue;
+            if (memcmp(server->ns_address[0],
+                       temp->ea_ns->ns_address[temp->ea_which_address],
+                       sizeof(*server->ns_address[0])) == 0)
+                break;
+        }
+        if (!temp) {
+            res_log(NULL, LOG_DEBUG, "libsres: "
+                    "no matching server found for fallback");
+            return -1;
+        }
     }
 
     /** even if there is a smaller size to fall back to, no attempts left */
