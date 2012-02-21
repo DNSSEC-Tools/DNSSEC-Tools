@@ -85,6 +85,8 @@ my @opts = (
 		"kskcur=s",			# Specify the current KSK.
 		"zskcur=s",			# Specify the current ZSK.
 		"zskpub=s",			# Specify the published ZSK.
+		"kskdir=s",			# Specify the KSK directory.
+		"zskdir=s",			# Specify the ZSK directory.
 		"Version",			# Display the version number.
 	   );
 
@@ -363,9 +365,11 @@ sub optsandargs
 	$zskpub	  = $opts{'zskpub'};
 
 	$kskcount = $opts{'kskcount'}	|| dnssec_tools_default("kskcount");
+	$kskdir	  = $opts{'kskdir'}	|| dnssec_tools_default("kskdir");
 	$ksklife  = $opts{'ksklife'}	|| dnssec_tools_default("ksklife");
 	$ksksize  = $opts{'ksklength'}	|| dnssec_tools_default("ksklength");
 	$zskcount = $opts{'zskcount'}	|| dnssec_tools_default("zskcount");
+	$zskdir	  = $opts{'zskdir'}	|| dnssec_tools_default("zskdir");
 	$zsklife  = $opts{'zsklife'}	|| dnssec_tools_default("zsklife");
 	$zsksize  = $opts{'zsklength'}	|| dnssec_tools_default("zsklength");
 
@@ -726,12 +730,14 @@ sub verbose
 
 	print "kskcur      - \"$kskcur\"\n" if($kskcur ne "");
 	print "kskcount    - \"$kskcount\"\n";
+	print "kskdir      - \"$kskdir\"\n";
 	print "ksksize     - \"$ksksize\"\n";
 	print "ksklife     - \"$ksklife\"\n\n";
 
 	print "zskcur      - \"$zskcur\"\n" if($zskcur ne "");
 	print "zskpub      - \"$zskpub\"\n" if($zskpub ne "");
 	print "zskcount    - \"$zskcount\"\n";
+	print "zskdir      - \"$zskdir\"\n";
 	print "zsksize     - \"$zsksize\"\n";
 	print "zsklife     - \"$zsklife\"\n\n";
 }
