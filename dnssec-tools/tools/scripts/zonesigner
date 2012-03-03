@@ -48,11 +48,13 @@ use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
 
+use POSIX;
+
 #
 # Version information.
 #
 my $NAME   = "zonesigner";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -214,7 +216,8 @@ my @zsopts = ( '',
 
 	       ["rollmgr=s",		'Zone\'s rollover manager.'],
 	       ["signonly",		'Only sign zone, no key manipulation.'],
-	       ["Cthulhu",			'Do not use -- internal use only.'],
+	       ["threshold=s",		'Sign zone iff expiration threshold exceeded.'],
+	       ["Cthulhu",		'Do not use -- internal use only.'],
 	     );
 
 my $pubksk	= 0;			# Create-Published-KSKs flag.
@@ -223,6 +226,7 @@ my $rollzsk	= 0;			# Force-a-ZSK-rollover flag.
 my $useboth	= 0;			# Use-Current-and-Published-ZSK flag.
 my $usezskpub	= 0;			# Use-Published-ZSK flag.
 my $nsec3	= 0;			# Use-Published-ZSK flag.
+my $threshold	= '';			# Threshold value.
 
 my $showsigncmd	= 0;			# Show-zone-sign-command flag.
 my $showkeycmd	= 0;			# Show-key-generation-command flag.
@@ -283,6 +287,9 @@ my @exitcodes =
 	"dsset archive directory is not a directory",
 	"dsset archive directory is not writable",
 	"dsset archive directory must not be /",
+	"invalid threshold",						# 50
+	"end-date must be numeric only",
+	"invalid format end-date",
 );
 
 #
@@ -498,27 +505,28 @@ sub optsandargs
 	#
 	# Get the rest of the options.
 	#
-	$alg	  = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
-	$archdir  = $opts{'archivedir'}	|| '.';
-	$enddate  = $opts{'endtime'}	|| dnssec_tools_default("enddate");
-	$gends	  = $opts{'gends'}	|| "";
-	$nogends  = $opts{'nogends'}	|| "";
-	$random   = $opts{'random'}	|| dnssec_tools_default("random");
-	$usensec3 = $opts{'usensec3'}	|| dnssec_tools_default("usensec3");
+	$alg	   = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
+	$archdir   = $opts{'archivedir'} || '.';
+	$enddate   = $opts{'endtime'}	|| dnssec_tools_default("enddate");
+	$gends	   = $opts{'gends'}	|| "";
+	$nogends   = $opts{'nogends'}	|| "";
+	$random    = $opts{'random'}	|| dnssec_tools_default("random");
+	$usensec3  = $opts{'usensec3'}	|| dnssec_tools_default("usensec3");
 	$nsec3optout = $opts{'nsec3optout'}  || dnssec_tools_default("nsec3optout");
-	$kgopts   = $opts{'kgopts'}	|| "";
-	$dsdir	  = $opts{'dsdir'}	|| "";
-	$ksdir	  = $opts{'ksdir'}	|| "";
-	$ksignset = $opts{'ksignset'}	|| "";
-	$signset  = $opts{'signset'}	|| "";
-	$signonly = $opts{'signonly'}	|| 0;
-	$cthulhu  = $opts{'Cthulhu'}	|| 0;
-	$szopts   = $opts{'szopts'}	|| "";
-	$krfile   = $opts{'krfile'}	|| "";
-	$nokrfile = $opts{'nokrfile'}	|| "";
-	$rollmgr  = $opts{'rollmgr'}	|| "";
-	$zcopts   = $opts{'zcopts'}	|| $opts{'zonecheck-opts'};
-	$zone	  = $opts{'zone'};
+	$kgopts    = $opts{'kgopts'}	|| "";
+	$dsdir	   = $opts{'dsdir'}	|| "";
+	$ksdir	   = $opts{'ksdir'}	|| "";
+	$ksignset  = $opts{'ksignset'}	|| "";
+	$signset   = $opts{'signset'}	|| "";
+	$signonly  = $opts{'signonly'}	|| 0;
+	$cthulhu   = $opts{'Cthulhu'}	|| 0;
+	$szopts    = $opts{'szopts'}	|| "";
+	$krfile    = $opts{'krfile'}	|| "";
+	$nokrfile  = $opts{'nokrfile'}	|| "";
+	$rollmgr   = $opts{'rollmgr'}	|| "";
+	$threshold = $opts{'threshold'}	|| '';
+	$zcopts    = $opts{'zcopts'}	|| $opts{'zonecheck-opts'};
+	$zone	   = $opts{'zone'};
 
 	$showkeycmd  = $opts{'showkeycmd'}	|| 0;
 	$showsigncmd = $opts{'showsigncmd'}	|| 0;
@@ -682,8 +690,16 @@ sub optsandargs
 
 	if($enddate ne "")
 	{
+		$enddate = timeconv($enddate);
+
+		if($enddate == -1)
+		{
+			print STDERR "invalid format end-date ($enddate)\n";
+			exit(51);
+		}
+
 		$opts{'enddate'} = $enddate;
-		$enddate = "-e $enddate";
+		$enddate = "-e now+$enddate";
 	}
 
 	#
@@ -1015,6 +1031,11 @@ sub optsandargs
 		print STDERR "-krfile and -nokrfile are mutually exclusive\n";
 		usage(5);
 	}
+
+	#
+	# If the user wants a threshold check, we'll do that now.
+	#
+	check_threshold($zone) if($threshold ne '');
 
 }
 
@@ -2453,7 +2474,7 @@ sub zonesign
 		my $edcopy = $enddate;		# Copy of the zone end date.
 		my $datestr;			# Translated end date.
 
-		$edcopy =~ s/^\-e \+//;
+		$edcopy =~ s/^\-e now\+//;
 		$datestr = timetrans($edcopy);
 
 		print "\n";
@@ -2540,7 +2561,7 @@ sub updzonerec
 	# Save the zone end time and delete the option prefix.
 	#
 	$opts{'endtime'} = $enddate;
-	$opts{'endtime'} =~ s/^-e //;
+	$opts{'endtime'} =~ s/^-e now\+//;
 
 	#
 	# Get the keyrec for the zone.  If there isn't one, it's a new
@@ -3581,6 +3602,220 @@ sub mgrsign
 }
 
 #----------------------------------------------------------------------
+# Routine:	check_threshold()
+#
+# Purpose:	Handle the threshold value.  We'll check to see if it's within
+#		the threshold from the last-sign time (if -threshold) or from
+#		the expiration time (if +threshold).  
+#
+sub check_threshold
+{
+	my $zone = shift;			# Zone we're signing.
+	my $now = time;				# Current time.
+	my $cvttime = $threshold;		# Time to convert.
+	my $secs;				# Converted time.
+	my $signsecs;				# Last time zone was signed.
+
+	#
+	# Don't do anything if there's no threshold option.
+	#
+	return if(!defined($opts{'threshold'}));
+
+	#
+	# Convert the user's time value into the seconds since the epoch.
+	#
+	$secs = timeconv($cvttime);
+
+	#
+	# Get the time the zone was last signed.
+	#
+	$signsecs = keyrec_recval($zone,'keyrec_signsecs');
+
+	#
+	# Handle the last-signed threshold...
+	#
+	if($threshold =~ /^\-/)
+	{
+		my @chronos;			# Time atoms.
+		my $threshold;			# Threshold time value.
+		my $midnow;			# Upcoming midnight.
+
+		#
+		# Get the time for tomorrow and adjust to tomorrow's midnight.
+		#
+#		@chronos = gmtime($now + 86400);
+		@chronos = localtime($now + 86400);
+		$chronos[0] = 0;
+		$chronos[1] = 0;
+		$chronos[2] = 0;
+
+		#
+		# Get the seconds count for one second before the upcoming
+		# midnight.
+		#
+		$midnow = mktime(@chronos) - 1;
+		
+		#
+		# Subtract the converted seconds count from the upcoming
+		# midnight to give the timing threshold.
+		# If this would put the threshold in the future, we'll
+		# use the current time as the starting point, rather than
+		# the approaching midnight.
+		#
+		$midnow = $now if(($midnow - $secs) > $now);
+		$threshold = $midnow - $secs;
+
+		#
+		# If the last time the zone was signed was after the threshold
+		# time calculated above, we'll give a message and exit.
+		#
+		if($signsecs > $threshold)
+		{
+			my $tdiff;			# Time difference.
+			my $tstr;			# Threshold end.
+
+			$tdiff = $signsecs - $threshold;
+			$tstr = timetrans($tdiff);
+
+			print "zone $zone outside of specified signing threshold; not signing\n";
+			print "threshold reached in $tstr\n";
+			exit(0);
+		}
+	}
+	#
+	# ... or the expiration threshold.
+	#
+	elsif($threshold =~ /^\+/)
+	{
+		my @chronos;			# Time atoms.
+		my $threshold;			# Threshold time value.
+		my $midnow;			# Midnight.
+		my $endsecs;			# Zone's expiration.
+
+		#
+		# Get the time for today and adjust the time to midnight.
+		#
+#		@chronos = gmtime($now);
+		@chronos = localtime($now);
+		$chronos[0] = 0;
+		$chronos[1] = 0;
+		$chronos[2] = 0;
+
+		#
+		# Get the seconds count for midnight.
+		#
+		$midnow = mktime(@chronos);
+		
+		#
+		# Add the converted seconds count to today's midnight to
+		# give the timing threshold.
+		# If this would put the threshold in the past, we'll use the
+		# current time as the starting point, rather than midnight.
+		#
+		$midnow = $now if(($midnow + $secs) < $now);
+		$threshold = $midnow + $secs;
+
+		#
+		# Get the RRSIGs' expiration date.
+		#
+		$endsecs = $signsecs + keyrec_recval($zone,'endtime');
+
+		#
+		# If the zone will expire after the threshold time
+		# calculated above, we'll give a message and exit.
+		#
+		if($endsecs > $threshold)
+		{
+			my $tdiff;			# Time difference.
+			my $tstr;			# Threshold end.
+
+			$tdiff = $endsecs - $now - $secs;
+			$tstr = timetrans($tdiff);
+
+			print "zone $zone outside of specified signing threshold; not signing\n";
+			print "threshold reached in $tstr\n";
+			exit(0);
+		}
+
+	}
+	else
+	{
+		print STDERR "invalid threshold - \"$threshold\"\n";
+		exit(100);
+	}
+
+	#
+	# Drop the threshold option since we've already dealt with it.
+	#
+	delete $opts{'threshold'};
+	print "zone $zone within specified signing threshold; re-signing\n\n";
+}
+
+#----------------------------------------------------------------------
+# Routine:	timeconv()
+#
+# Purpose:	
+#
+sub timeconv
+{
+	my $cron = shift;				# Time to convert.
+	my $tval;					# Time value to convert.
+	my $unit;					# Unit to convert from.
+	my $val = -1;					# Converted time value.
+
+	#
+	# Get rid of the leading option sign.
+	#
+	$cron =~ s/^[\+\-]//;
+
+	#
+	# Ensure the time value is valid.
+	#
+	return(-1) if($cron !~ /\d+[smhd]?/);
+
+	#
+	# If this is just a number, assume it's a seconds count and return it.
+	#
+	return($cron) if($cron =~ /^\d*$/);
+
+	#
+	# Split out the pieces of the time value.
+	#
+	$cron =~ /^(.+)(.)$/;
+	$tval = $1;
+	$unit = $2;
+
+	#
+	# Convert the time value into the requisite number of seconds,
+	# minutes, hours, or days.
+	#
+	if($unit eq 's')
+	{
+		$val = $tval;
+	}
+	elsif($unit eq 'm')
+	{
+		$val = $tval * 60;
+	}
+	elsif($unit eq 'h')
+	{
+		$val = $tval * 3600;
+	}
+	elsif($unit eq 'd')
+	{
+		$val = $tval * 86400;
+	}
+
+	#
+	# Return the converted time value,
+	#
+	return($val);
+}
+
+###############################################################
+
+
+#----------------------------------------------------------------------
 # Routine:	printopts()
 #
 # Purpose:	Display the value of our options.
@@ -3612,6 +3847,7 @@ sub printopts
 	print "\t\tshowsigncmd   - $showsigncmd\n";
 	print "\t\trollmgr       - $rollmgr\n";
 	print "\t\tsignonly      - $signonly\n";
+	print "\t\tthreshold     - $threshold\n";
 	print "\n";
 
 	print "\tkey-signing options:\n";
@@ -3804,7 +4040,8 @@ sub usage
 	print STDERR "\t\t\t-signset ZSK-set-name\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-rollmgr rollover-manager\n";
-	print STDERR "\t\t\t-signonly";
+	print STDERR "\t\t\t-signonly\n";
+	print STDERR "\t\t\t-threshold threshold-value\n";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-xc exitnum\n";
 	print STDERR "\t\t\t-help\n";
@@ -4308,6 +4545,31 @@ zone being signed and I<N> is a number.
 If B<-signset> is not specified, then B<zonesigner> will use the default and
 increment the number for subsequent signing sets.
 
+=item B<-threshold>
+
+Sign the zone if a threshold condition is met.  Depending on how the threshold
+is specified, it may be relative to the last time the zone was signed or to
+the zone's expiration date.
+
+I<threshold-time> is the threshold value, given as a numeric value, with an
+optional unit specifier.  The unit may be 's', 'm', 'h', or 'd', for seconds,
+minutes, hours, or days.  If the unit is not given, then the value is in
+seconds.  The threshold value must have either the '-' prefix or the '+'
+prefix to indicate which threshold to measure.  The threshold value I<+10d>
+refers to ten days prior to a zone's expiration date.
+
+If the '-' prefix is used, then the zone will be re-signed if B<zonesigner>
+is executed no more than I<threshold-time> after the last time the zone was
+signed.  I<threshold-time> is determined by subtracting the threshold value
+from the upcoming midnight.  If this would put the threshold time in the
+future, then it is calculated from the current time.
+
+If the '+' prefix is used, then the zone will be re-signed if B<zonesigner>
+is executed no more than I<threshold-time> before the zone's expiration date.
+I<threshold-time> is determined by subtracting the threshold value from the
+previous midnight.  If this would put I<threshold-time> in the past, then it
+is calculated from the current time.
+
 =item B<-useboth>
 
 Use the existing Current B<and> Published ZSKs to sign the zone.
@@ -4450,6 +4712,10 @@ directory
 
 =item 49 - dsset archive directory must not be /
 
+=item 50 - invalid threshold
+
+=item 51 - invalid format end-date
+
 =back
 
 An error message will be printed if an invalid exit code is given.
@@ -4540,8 +4806,9 @@ The default is 1024.
 
 =item B<-endtime>
 
-Time that the zone expires, measured in seconds.  See the man page for
-B<dnssec-signzone> for the valid format of this field.
+Time that the zone expires, as measured from the current time.  If given as a
+number, it is a count of seconds.  If it is given as a number followed by 's',
+'m', 'h', or 'd', then it is the number of seconds, minutes, hours, or days.
 The default value is 2764800 seconds (32 days.)
 
 =item B<-gends>
