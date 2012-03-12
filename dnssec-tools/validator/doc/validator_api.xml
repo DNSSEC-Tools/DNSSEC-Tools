@@ -33,7 +33,8 @@
             fullname="Abhijit Hayatnagarkar"> 
     </author>
 
-    <date month="January" year="2012" />
+    <!--  expiration date: six months from submission date -->
+    <date month="September" year="2012" />
     <workgroup> DNS Extensions </workgroup>
     <keyword>Internet-Draft</keyword>
 
@@ -856,8 +857,8 @@ the return value from p_ac_status(VAL_AC_VERIFIED) MAY be "VAL_AC_VERIFIED".
 #include &lt;validator/validator.h&gt;
 
 int val_async_submit(val_context_t *ctx, const char *domain_name,
-                     int class, int type, u_int32_t flags,
-                     val_cb_results *callback, void *user_context,
+                     int class, int type, unsigned int flags,
+                     val_async_event_cb *callback, void *user_context,
                      val_async_status **async_status);
         </artwork>
         <postamble>
@@ -894,14 +895,18 @@ int val_async_submit(val_context_t *ctx, const char *domain_name,
         <t hangText="VAL_AS_NO_NEW_QUERIES:">Don't send any new
         queries. Answers MUST come from the internal cache.</t>
         <t> </t>
-        <t hangText="VAL_AS_ONE_CALLBACK:">Don't call the callback
-        function with interim results. The callback function will only be
-        called when all validation results are ready.</t>
+        <t hangText="VAL_AS_NO_ANSWERS:">Caller doesn't care about
+        the answer results. This can be used for priming the cache.</t>
         <t> </t>
-        <t hangText="VAL_AS_SAVE_STATUS:">Don't release the async status
-        object after validation has completed and all callbacks have been
-        called. The caller assumes responsibility for calling
-        val_async_release when the object is no longer needed.</t>
+        <t hangText="VAL_AS_NO_CALLBACKS:">Don't call any callbacks.</t>
+        <t> </t>
+        <t hangText="VAL_AS_NO_CANCEL_CALLBACKS:">Call callbacks with results,
+        but don't call any callbacks when the reques is canceled.</t>
+        <t> </t>
+        <t hangText="VAL_AS_INTERIM_CALLBACKS:">Call the callback function
+        with interim results. If this flag is not specified, the callback
+        function will only be called when all validation results are ready.
+        </t>
       </list>
       </t>
     </section>  <!-- x.1.1. -->
@@ -938,23 +943,34 @@ int val_async_select_info(val_context_t *context,
       current value in timeout.</t>
     </section> <!-- x.1.2 val_ -->
 
-    <section title="val_async_check"> <!-- x.1.3.3 -->
+    <section title="val_async_check_wait"> <!-- x.1.3.3 -->
       <figure>
         <artwork>
 #include &lt;validator/validator.h&gt;
 
-int val_async_check(val_context_t *context, fd_set *fds, int *nfds,
-                    u_int32_t flags);
+int val_async_check_wait(val_context_t *context, fd_set *fds, int *nfds,
+                         struct timeval *timeout, unsigned int flags);
         </artwork>
         <postamble>
-          The val_async_check() function is called to handle timeouts or
-          process DNS responses to outstanding queries.
+          The val_async_check_wait() function handles timeouts or processes
+          DNS responses to outstanding queries. It may also call callbacks
+          for completed requests.
         </postamble>
       </figure>
 
-      <t>The parameters returned by select() (fds, nfds) MUST be passed to
-      the function. If there are responses, the implementation SHOULD
+      <t>The function provides two modes of operation. The first is for use
+      with an application that has its own select() loop. The applications
+      sets its own file descriptors, calls val_async_select_info() to
+      set file descriptors for pending queries and calls select(). The
+      fds and nfds parameters from select are passed in to val_async_check_wait
+      and the timeout value is ignored. If the implementation processes
+      responses for a file descriptor, the implementation SHOULD
       clear the appropriate file descriptor in fds and decrement nfds.
+      </t>
+      <t>In the second mode of operation, the fds and nfds parameters are
+      set to NULL and a timeout value is specified. The function will call
+      val_async_select_info() and select() internally, and process any
+      responses received before the timeout value expires.
       </t>
     </section>  <!-- x.1.3 val_async_check -->
   </section>  <!-- x.1. -->
@@ -965,18 +981,57 @@ int val_async_check(val_context_t *context, fd_set *fds, int *nfds,
       <artwork>
 #include &lt;validator/validator.h&gt;
 
-typedef int (*val_cb_results)(val_async_status *as, void *user_ctx);
+typedef struct val_cb_params_s {
+    val_status_t             val_status;
+    char                    *name;
+    int                      class_h;
+    int                      type_h;
+    int                      retval;
+    struct val_result_chain *results;
+    struct val_answer_chain *answers;
+} val_cb_params_t;
+
+typedef int (*val_async_event_cb)(val_async_status *as, int event,
+                                  val_context_t *ctx, void *user_ctx,
+                                  val_cb_params_t *callback_params);
       </artwork>
       <postamble>
         When an asynchronous request is submitted, a callback function and
         user context may be provided by the caller. This callback function
         is called when validation results are available. The user_ctx
         parameter MUST be the value given by the caller when the request
-        was submitted. The functions val_get_answer() and val_get_results(),
-        which are described in <xref target="async_status_data"/>,
-        can be used to examine the results in the async status object.
+        was submitted.
       </postamble>
     </figure>
+
+    <t>The callback params structure contains the orginal query parameters
+    (name, class and type), the 'return value' for the operation, pointers
+    to the result and answer chains, and the final validation status. This
+    structure will be released when the callback is completed. The application
+    can assume responsibility for any of the pointer values by copying them
+    and setting the pointers in the callback param structure to NULL. The
+    application then becomes responsible for releasing the memory with
+    val_free_result_chain (see <xref target="func-val-resolve-and-check"/>)
+    and/or val_free_answer_chain (see <xref target="hl_getrrset"/>), as
+    appropriate. </t>
+
+    <t>The following event types are defined:</t>
+    <t>
+      <list style="hanging">
+        <t> </t>
+        <t hangText="VAL_AS_EVENT_COMPLETED:">The request completed.</t>
+        <t> </t>
+        <t hangText="VAL_AS_EVENT_CANCELED:">The request was canceled. The
+        val_status, results and answers members of the callback parameter
+        structure are undefined.</t>
+        <t> </t>
+      </list></t>
+
+    <t>Possible codes for val_status  are listed in
+    <xref target="val-status"/>. When evaluating the validity of a DNS
+    response, applications SHOULD use the functions described in
+    <xref target="val-istrusted"/> instead of directly inspecting the
+    DNSSEC validation status code returned in val_status. </t>
 
     <t>After the callback function has completed, the implementation SHOULD
     release all resources allocated for the request.</t>
@@ -989,117 +1044,42 @@ typedef int (*val_cb_results)(val_async_status *as, void *user_ctx);
       <t>   An application which submits asynchronous requests needs a way to
       refer to each request for future operations. This asynchronous
       status object is an implementation specific opaque object which
-      the API can use to uniquely identify a particular request.</t>
+      an uniquely identifies a particular request.</t>
 
-      <t> When an asynchronous request is submitted, the API MUST create an
-      asynchronous status object to return to the caller. The size of the
-      object SHOULD be at least as large as the native pointer type.</t>
+      <t> When an asynchronous request is submitted, the implementation MUST
+      create an asynchronous status object to return to the caller. The size
+      of the object SHOULD be at least as large as the native pointer type.</t>
 
     <section title="Operations on asynchronous status objects" anchor="async_status_operations">
       <!-- x.3.2 -->
       <t> The API supports the following operations to manipulate
       asynchronous requests:</t>
-      <t>
-        <list style="symbols">
-          <t> checking for completion of request</t>
-          <t> releasing resources allocated for the request</t>
-          <t> cancelation of request</t>
-        </list>
-      </t>
-      <section title="val_async_status" anchor="val_async_status">
-        <!-- x.3.2.1 -->
-        <figure>
-          <artwork>
-#include &lt;validator/validator.h&gt;
-
-int val_async_status ( val_async_status *async_status);
-          </artwork>
-          <postamble>The return value will be zero (0) for requests which have
-            not yet completed, otherwise the return value will be the final
-            val_status value for the request.
-          </postamble>
-        </figure>
-      </section> <!-- x.3.2.1 val_async_status -->
-
-      <section title="val_async_release">  <!-- x.3.2.2 -->
-        <figure>
-          <artwork>
-#include &lt;validator/validator.h&gt;
-
-int val_async_release( val_async_status *async_status);
-          </artwork>
-          <postamble>
-            This function will release resources allocated for an
-            asynchronous request. If the request has not completed, all
-            outstanding queries and any pending queries will be canceled.
-          </postamble>
-        </figure>
-      </section> <!-- x.3.2.2 -->
-
       <section title="val_async_cancel"> <!-- x.3.2.3 -->
         <figure>
           <artwork>
 #include &lt;validator/validator.h&gt;
 
-int val_async_cancel( val_async_status *async_status);
+int val_async_cancel( val_context_t *context, val_async_status *async_status,
+                      unsigned int flags);
           </artwork>
           <postamble>
             This function will cancel an outstanding asynchronous request.
-            All resources used for the request SHOULD be released as if
-            val_async_release() had been called.
+            All resources used for the request SHOULD be released.
           </postamble>
         </figure>
+
+      <t>The following flags may be set for the request. The numerical
+      values for the flags are implementation-specific.</t>
+      <t>
+      <list style="hanging">
+        <t> </t>
+        <t hangText="VAL_AS_CANCEL_NO_CALLBACKS:">Do not call completed or
+        cancelled callbacks.</t>
+        <t> </t>
+      </list></t>
+
       </section>  <!-- x.3.2.3 -->
     </section> <!-- x.3.2 operations on asyncronous status -->
-
-
-    <section title="Extracting data from asynchronous status objects" anchor="async_status_data">
-      <!-- x.3.3 -->
-      <t> The API supports the following operations to extract data from
-      an asynchronous request object.</t>
-
-      <section title="val_async_get_answer, val_async_get_chain">
-        <!-- x.3.3.1 -->
-        <figure>
-          <artwork>
-#include &lt;validator/validator.h&gt;
-
-int val_async_get_answer( val_async_status *async_status,
-                          struct rr_rec **answer);
-
-int val_async_get_chain( val_async_status *async_status,
-                         struct val_result_chain **results,
-                         u_int32_t flags);
-          </artwork>
-          <postamble>
-            val_async_get_answer returns the record(s) returned for the
-            original request. val_async_get_chain returns the entire
-            result chain for the original request. Details about the
-            rr_rec struct, val_result_chain struct and the flags for
-            val_async_get_chain are described in
-            <xref target="func-val-resolve-and-check"/>, which describes
-            the val_resolve_and_check function.
-          </postamble>
-        </figure>
-
-        <t>These functions return pointers to data stored internally
-        in the async status object. Applications MUST copy the data
-        if they wish to have access to it after the async status object
-        has been released. For example, these callbacks will often be
-        used in asynchronous callbacks. After the final callback,
-        the asynchronous callback object will be released. Alternatively,
-        the application can specify the VAL_AS_SAVE_STATUS flag when
-        submitting the request. See <xref target="val_async_submit"/>
-        for further information about this flag.</t>
-      </section>  <!-- x.3.3.1 -->
-
-
-
-
-
-
-
-    </section> <!-- x.3.3 operations on asyncronous status -->
 
   </section> <!-- x.3 asyncronous status -->
 
@@ -1753,7 +1733,13 @@ the default EDNS0 size to be advertized in queries sent out by the validator.  <
 
 int done = 0;
 
-int my_callback(val_async_status *async_status, void *user_ctx) {
+int my_callback(val_async_status *async_status, int event, val_context_t *ctx,
+                void *user_ctx, val_cb_params_t *cbp) {
+   if (event == VAL_AS_EVENT_CANCELED) {
+      fprint("canceled: %s", (char*)user_ctx);
+      return;
+   }
+
    fprintf("final status for %s: %d\n", (char*)user_ctx,
            val_async_status(async_status));
    done = 1;
@@ -1773,13 +1759,20 @@ main() {
                          VAL_AS_ONE_CALLBACK, my_callback,
                          (void*)domain, &amp;async_status);
    while (!done) {
-      FD_ZERO(&amp;fds);       /* clear fd_set */
-      nfds = 0;            /* no FDs yet */
       tv.usec = 0;
       tv.sec = 10;         /* maximum timeout 10 sec */
+
+#ifdef NO_APPLICATION_FDS
+
+      val_async_check_wait(ctx, NULL, NULL, &amp;tv, 0);
+
+#else /* HAVE_OUR_OWN_FDS_TO_WATCH */
+
+      FD_ZERO(&amp;fds);       /* clear fd_set */
+      nfds = 0;            /* no FDs yet */
       val_async_select_info(&amp;ctx, &amp;fds, &amp;numfds, &amp;tv); /* async FDs */
 
-      /* application should set its own FDs here */
+      /* application should set its own FDs, if any, before calling select */
       ready = select(numfds+1, &amp;fds, NULL, NULL, &amp;tv);
       if ( ready &lt; 0 ) {
          break; /* or continue... */
@@ -1790,6 +1783,8 @@ main() {
       }
       /* handle async FDs/timeouts */
       val_async_check(&amp;ctx, &amp;fds, &amp;numfds, flags);
+
+#endif
    }
 }
             </artwork>
