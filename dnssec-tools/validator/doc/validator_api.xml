@@ -1137,7 +1137,7 @@ implementation-specific.  A possible definition is described in
       <artwork>
 #include &lt;validator/validator.h&gt;
 
-int val_create_context( char *scope,
+int val_create_context( char *label,
                         val_context_t **newctx );
 
 void val_free_context( val_context_t *ctx );
@@ -1150,14 +1150,14 @@ void val_free_context( val_context_t *ctx );
 <t> An application maintains a run-time handle to its validator policy 
 through the validator context. 
 val_create_context() creates a new DNSSEC validator context.
-The scope parameter identifies the DNSSEC validator policy to be used 
+The label parameter identifies the DNSSEC validator policy to be used 
 by the application for DNSSEC validation.  
 
-The manner in which the scope argument is used within the system configuration to
+The manner in which the label argument is used within the system configuration to
 identify specific validator policy settings is implementation-specific.
 However, all libraries that implement this API MUST internally create a 
 DNSSEC validator context with a (system-defined) default DNSSEC validator 
-policy if scope is NULL. </t>
+policy if label is NULL. </t>
 
 <t>The val_create_context() function MUST return 0 on success, 
 and an error code from <xref target="val-return-values"/> on failure. 
@@ -1580,35 +1580,6 @@ this draft draws on the results from that effort.</t>
         <section ...>
         <section ...>
         -->
-        <section title="Possible DNSSEC Validator Policy Definition" anchor="pol-config">
-<t> DNSSEC validator policy definitions in the system
-configuration are implementation-specific. The
-system may be implemented in the following manner. </t>
-
-<t> A hierarchical representation can be used for the scope
-parameter in val_create_context(), with each element in the hierarchy identifying 
-a different DNSSEC validator policy label in the system configuration. 
-Each policy label within the scope parameter can be separated by the ':' character; 
-the DNSSEC validator can then create an effective DNSSEC validator policy for the current
-DNSSEC validator context by cumulatively applying the policies corresponding to each label
-specified in the scope parameter. </t> 
-
-<t> Since the ':' character functions as a label separator, the system configuration must 
-flag an error if any DNSSEC policy label in the system configuration contains the ':' character. An 
-exception to this rule could be the label with value of ":", which could be used to 
-identify the default DNSSEC validator policy for the system.
-The ":" DNSSEC policy label, as with other DNSSEC policy labels,
-must be unique within the system configuration. </t> 
-
-<t> When adopting this approach for constructing a validator
-context from a given policy scope,
-the DNSSEC validator policy identified by the ":" label 
-should always be applied first. For example, for the DNSSEC validator policy scope 
-"mozilla:browser", the effective DNSSEC validator policy for a DNSSEC validator context should be 
-computed by applying policies for the ":", "browser" and "mozilla" policies, in that order. </t>
-
-<t> Additional attributes for the DNSSEC validator policy may be specified as indicated below. </t>
-
         <section title="Zone-Specific Validator Policy Settings">
 <t> Zone-specific validator policy settings may have the following structure.  </t> 
 <t> &lt;label&gt; &lt;attribute&gt; &lt;additional-data&gt;; </t>
