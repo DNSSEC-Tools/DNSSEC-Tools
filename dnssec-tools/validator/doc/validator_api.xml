@@ -849,13 +849,12 @@ the return value from p_ac_status(VAL_AC_VERIFIED) MAY be "VAL_AC_VERIFIED".
   completing much sooner than a series of synchronous requests.</t>
 
   <t> When submitting an asynchronous request, an application may
-  specify a callback function to be called when the request completes.
-  Alternatively, the application may periodically poll to see if a
-  request has completed.</t>
+  specify a callback function to be called when the request completes.</t>
 
   <t> Since DNSSEC validation of a domain name involves multiple queries,
   applications must periodically give time to the API for processing
-  responses and sending additional queries.</t>
+  responses and sending additional queries. (See val_async_check_wait()
+  in <xref target="val_async_check_wait"/>.)</t>
 
   <t> The functions and data structures defined in the low-level
   Asynchronous DNSSEC validator API are summarized below.</t>
@@ -877,13 +876,17 @@ int val_async_submit(val_context_t *ctx, const char *domain_name,
         <postamble>
           The val_async_submit() function submits a request for
           asynchronous processing of DNS queries for the data associated with
-          the given domain name, class and type. If specified, the given
-          callback function will be called as results become available. The
-          specified user context will also be passed to the callback function.
-          More information on the callback function and user_context can
-          be found in <xref target="async_callbacks"/>.
+          the given domain name, class and type.
         </postamble>
       </figure>
+
+      <t>If specified, the given callback function will be called when
+      results become available. Some flags, defined below, can affect
+      when and how often the callback is called.</t>
+
+      <t>The specified user context will also be passed to the callback
+      function. More information on the callback function and user_context can
+      be found in <xref target="async_callbacks"/>.</t>
 
       <t>The val_async_submit() function MUST return VAL_NO_ERROR on success
       and return a pointer to a newly allocated async_status object via the
@@ -1043,6 +1046,9 @@ typedef int (*val_async_event_cb)(val_async_status *as, int event,
         <t> </t>
         <t hangText="VAL_AS_EVENT_COMPLETED:">The request completed.</t>
         <t> </t>
+        <t hangText="VAL_AS_EVENT_INTERIM:">The request is still being
+        processed, but some interim results are available.</t>
+        <t> </t>
         <t hangText="VAL_AS_EVENT_CANCELED:">The request was canceled. The
         val_status, results and answers members of the callback parameter
         structure are undefined.</t>
@@ -1058,7 +1064,6 @@ typedef int (*val_async_event_cb)(val_async_status *as, int event,
     <t>After the callback function has completed, the implementation SHOULD
     release all resources allocated for the request.</t>
 
-    <t>[TBD: significance of return code?]</t>
   </section> <!-- x.2 asynchronous callbacks -->
 
   <section title="Asynchronous Status" anchor="async_status_main"> <!-- X.3 -->
