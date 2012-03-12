@@ -1,6 +1,6 @@
 
 # libtool build definitions
-.SUFFIXES: .c .o .lo .rc .3 .1 .pod
+.SUFFIXES: .c .o .lo .rc .3 .1 .pod .txt .xml
 .c.lo:
 	$(LIBTOOLCC) $(CPPFLAGS) -c -o $@ $<
 
@@ -11,3 +11,7 @@
 # pod to man build definitions for section 1 man pages.
 .pod.1:
 	pod2man -s 1 -c "User Commands" $< > $@
+
+# xml to rfc build definitions
+.xml.txt:
+	xml2rfc.tcl $<

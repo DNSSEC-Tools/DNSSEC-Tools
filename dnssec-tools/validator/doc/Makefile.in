@@ -68,6 +68,8 @@ MAN1PAGES=\
 
 all: $(MAN1PAGES) $(MAN3PAGES) 
 
+validator_api: validator_api.txt
+
 install:
 	$(MKPATH) $(DESTDIR)/$(man1dir)
 	for i in $(MAN1PAGES) ; do		\
