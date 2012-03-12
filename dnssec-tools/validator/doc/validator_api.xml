@@ -466,48 +466,48 @@ logically OR'd to each other. The following flags are defined; their
 values are implementation-specific: </t> 
 
 <t> <list style="hanging">
-<t hangText="VAL_QUERY_AC_DETAIL">
+<t hangText="VAL_QUERY_AC_DETAIL:">
    If this flag is specified, the complete authentication chain MUST be 
    returned for each answer within the val_result_chain structure. If
    this flag is not set then only the rrset information corresponding 
    to the answer or proof of non-existence for the queried name, domain_name
    SHOULD be returned within the val_result_chain structure. </t> 
 
-<t hangText="VAL_QUERY_DONT_VALIDATE">
+<t hangText="VAL_QUERY_DONT_VALIDATE:">
    If this flag is specified, validation processing MUST be ignored
    for the given name. Any resulting answer will have a validation
    status value of VAL_IGNORE_VALIDATION. </t> 
 
-<t hangText="VAL_QUERY_IGNORE_SKEW">
+<t hangText="VAL_QUERY_IGNORE_SKEW:">
    If this flag is specified, signature inception and expiration times
    MUST be ignored for RRSIGs in the authentication chain. </t>
 
-<t hangText="VAL_QUERY_NO_DLV">
+<t hangText="VAL_QUERY_NO_DLV:">
    If this flag is specified, Dynamic Look-aside Validation (DLV) 
    <xref target="refs.DLV"/> processing for this name MUST NOT be 
    performed. </t> 
 
-<t hangText="VAL_QUERY_ASYNC">
+<t hangText="VAL_QUERY_ASYNC:">
    If this flag is specified, this name MUST be resolved through
    the asynchronous lookup process (see <xref target="val-async"/>). </t>
 
-<t hangText="VAL_QUERY_RECURSE">
+<t hangText="VAL_QUERY_RECURSE:">
    If this flag is specified, the name MUST be looked up by 
    directly querying the authoritative name server for that name (which may
    involve iteratively querying various name servers in the delegation hierarchy)
    instead of requesting this information from any caching name server that may be 
    specified as configuration data. </t> 
 
-<t hangText="VAL_QUERY_NO_EDNS0_FALLBACK">
+<t hangText="VAL_QUERY_NO_EDNS0_FALLBACK:">
    If this flag is specified, re-trying the query with smaller EDNS0 advertised window
    sizes MUST NOT be attempted as a fallback strategy. </t> 
 
-<t hangText="VAL_QUERY_SKIP_RESOLVER">
+<t hangText="VAL_QUERY_SKIP_RESOLVER:">
    If this flag is specified, only the cache should be consulted while looking
    up a name. New queries MUST NOT be sent on the wire as part of looking up and
    validating the cached answer. </t>  
 
-<t hangText="VAL_QUERY_SKIP_CACHE">
+<t hangText="VAL_QUERY_SKIP_CACHE:">
    If this flag is specified, any locally cached information for the 
    name being looked up MUST be ignored. </t>
 
