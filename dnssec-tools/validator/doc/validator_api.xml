@@ -2,6 +2,8 @@
 <?rfc compact="yes" ?>
 <?rfc editing="no" ?>
 <?rfc toc="yes"?>
+<?rfc symrefs="yes"?>     <!-- use anchors instead of numbers for references -->
+<?rfc sortrefs="yes" ?>   <!-- alphabetize the references -->
 
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <rfc ipr="trust200902" docName="draft-hayatnagarkar-dnsext-validator-api-09">
@@ -33,8 +35,8 @@
             fullname="Abhijit Hayatnagarkar"> 
     </author>
 
-    <!--  expiration date: six months from submission date -->
-    <date month="September" year="2012" />
+    <!--  current month for this version -->
+    <date month="March" year="2012" />
     <workgroup> DNS Extensions </workgroup>
     <keyword>Internet-Draft</keyword>
 
@@ -158,9 +160,11 @@ struct hostent *val_gethostbyaddr( val_context_t *ctx,
                                    val_status_t  *val_status );
       </artwork>
       <postamble>
-<t>The val_gethostbyname() and val_gethostbyaddr() functions are DNSSEC-aware versions of the 
-gethostbyname() and gethostbyaddr() legacy DNS functions. 
-The new functions have an additional parameter, val_status, 
+The val_gethostbyname() and val_gethostbyaddr() functions are DNSSEC-aware
+versions of the gethostbyname() and gethostbyaddr() legacy DNS functions. 
+      </postamble>
+    </figure>
+<t>The new functions have an additional parameter, val_status, 
 which enables applications to check the DNSSEC validation status codes for
 the address-to-name and name-to-address translations. The other arguments to these
 functions and their return values have identical semantics to the corresponding legacy DNS functions as 
@@ -177,7 +181,7 @@ When evaluating the validity of a DNS response,
 applications SHOULD use the functions described in <xref target="val-istrusted"/> 
 instead of directly inspecting the DNSSEC validation status code returned in val_status.  </t>
 
-<t> The status code returned in val_status is determined by the following rules. </t> 
+<t> The status code returned in val_status is determined by the following rules.
     <list style="symbols">
     <t> A DNSSEC validation status of VAL_OOB_ANSWER MUST be returned if the complete answer is returned 
 using some out-of-band mechanism (for example, from a local configuration store such as /etc/hosts or its equivalent)
@@ -205,12 +209,10 @@ to treat such answers as trustworthy. If the previous two conditions for non-exi
 MUST be set to VAL_UNTRUSTED_ANSWER.</t>
 
     </list> 
-
-      </postamble>
-    </figure>
+</t> 
     </section>
 
-    <section title="val_getaddrinfo, val_getnameinfo" anchor="hl_getaddrinfo">
+    <section title="val_getaddrinfo, val_freeaddrinfo, val_getnameinfo" anchor="hl_getaddrinfo">
     <figure>
       <artwork>
 #include &lt;validator/validator.h&gt;
@@ -221,6 +223,8 @@ int val_getaddrinfo( val_context_t          *ctx,
                      const struct addrinfo  *hints,
                      struct addrinfo       **res ,
                      val_status_t           *val_status); 
+
+void val_freeaddrinfo( struct addrinfo     *res);
 
 int val_getnameinfo( val_context_t         *ctx, 
                      const struct sockaddr *sa,
@@ -234,13 +238,18 @@ int val_getnameinfo( val_context_t         *ctx,
 
       </artwork>
       <postamble>
-<t> These functions are DNSSEC-aware versions of the 
-getaddrinfo() and getnameinfo() legacy DNS functions
-(<xref target="refs.RFC3493"/>) respectively. 
-The val_getaddrinfo() function returns the address and service
-information for the specified domain name and service. The   
-val_getnameinfo() function performs an address-to-name
-translation in a protocol independent manner.  </t>
+These functions are DNSSEC-aware versions of the 
+getaddrinfo(), freeaddrinfo() and getnameinfo() legacy DNS functions
+(<xref target="refs.RFC3493"/>) respectively.
+      </postamble>
+    </figure>
+<t> The val_getaddrinfo() function returns the address and service
+information for the specified domain name and service. The val_freaddrinfo()
+function releases the memory used by the struct addrinfo returned in the
+res parameter when calling val_getaddrinfo.
+The val_getnameinfo() function performs an address-to-name
+translation in a protocol independent manner.
+</t>
 
 <t> The value of res MUST point to a valid addrinfo structure (<xref target="refs.RFC3493"/>) 
 on a successful return from the val_getaddrinfo() function or NULL in case of error.  
@@ -256,7 +265,7 @@ The syntax and semantics of other parameters in
 val_getaddrinfo() and val_getnameinfo() and their return values are identical to those specified for 
 getaddrinfo() and getnameinfo() in <xref target="refs.RFC3493"/>.  </t>
 
-<t> The status code returned in val_status is determined by the following rules. </t> 
+<t> The status code returned in val_status is determined by the following rules.
     <list style="symbols">
     <t> A DNSSEC validation status of VAL_OOB_ANSWER MUST be returned in val_status 
 if the complete answer is returned using some out-of-band mechanism (for example, 
@@ -288,9 +297,7 @@ to treat such answers as trustworthy (<xref target="val-context"/>).
 If the previous two conditions for non-existence are not satisfied, val_status
 MUST be set to VAL_UNTRUSTED_ANSWER.</t>
     </list> 
-
-      </postamble>
-      </figure>
+    </t> 
     </section>
 
     <section title="val_res_query">
@@ -308,9 +315,11 @@ int val_res_query(val_context_t *ctx,
 
       </artwork>
       <postamble>
-<t> The val_res_query() function is a DNSSEC-aware replacement 
+The val_res_query() function is a DNSSEC-aware replacement 
 for the res_query() function (currently not documented in any standard reference).
-The val_res_query() function queries the DNS 
+      </postamble>
+      </figure>
+<t> The val_res_query() function queries the DNS 
 for the data associated with the given domain name, class and type, 
 and returns the resulting resource record sets in a DNS-style response. </t>
 
@@ -324,7 +333,7 @@ When evaluating the validity of a DNS response, applications SHOULD use the func
 in <xref target="val-istrusted"/>
 instead of directly inspecting the DNSSEC validation status code returned in val_status. </t>
 
-<t> The status code returned in val_status is determined by the following rules. </t> 
+<t> The status code returned in val_status is determined by the following rules.
     <list style="symbols">
     <t> A DNSSEC validation status of VAL_VALIDATED_ANSWER MUST be
 returned if all resource record sets returned in the answer
@@ -345,9 +354,7 @@ type or name non-existence is returned, and local DNSSEC validator policy is con
 to treat such answers as trustworthy.  If the previous two conditions for non-existence are not satisfied, val_status
 MUST be set to VAL_UNTRUSTED_ANSWER.</t>
     </list> 
-
-      </postamble>
-      </figure>
+    </t>
     </section>
 
     <section title="val_get_rrset" anchor="hl_getrrset">
@@ -446,9 +453,13 @@ void val_free_result_chain(struct val_result_chain *results);
 
       </artwork>
       <postamble>
-<t> The val_resolve_and_check() function queries the DNS 
+The val_resolve_and_check() function queries the DNS 
 for the &lt;domain_name, class, type&gt; tuple and then performs the
-DNSSEC validation operation for the responses received. </t> 
+DNSSEC validation operation for the responses received. The
+val_free_result_chain() function releases the resources allocated for the
+returned result.
+      </postamble>
+      </figure>
 
 <t> The flags argument specifies a list of options to the validation process, 
 logically OR'd to each other. The following flags are defined; their 
@@ -653,8 +664,6 @@ cases the value of this field MUST be set to VAL_AC_UNSET.
 The rr_status field takes on a subset of all status codes possible for the 
 val_astatus_t type and is further described in <xref target="val-astatus"/>.  </t>
 
-      </postamble>
-      </figure>
     </section>
 
     <section title="Authentication Chain Status Codes and p_ac_status()" anchor="val-astatus">
@@ -858,7 +867,8 @@ the return value from p_ac_status(VAL_AC_VERIFIED) MAY be "VAL_AC_VERIFIED".
 
 int val_async_submit(val_context_t *ctx, const char *domain_name,
                      int class, int type, unsigned int flags,
-                     val_async_event_cb *callback, void *user_context,
+                     val_async_event_cb *callback,
+                     void *user_context,
                      val_async_status **async_status);
         </artwork>
         <postamble>
@@ -948,8 +958,9 @@ int val_async_select_info(val_context_t *context,
         <artwork>
 #include &lt;validator/validator.h&gt;
 
-int val_async_check_wait(val_context_t *context, fd_set *fds, int *nfds,
-                         struct timeval *timeout, unsigned int flags);
+int val_async_check_wait(val_context_t *ctx, fd_set *fds,
+                         int *nfds, struct timeval *timeout,
+                         unsigned int flags);
         </artwork>
         <postamble>
           The val_async_check_wait() function handles timeouts or processes
@@ -1059,7 +1070,8 @@ typedef int (*val_async_event_cb)(val_async_status *as, int event,
           <artwork>
 #include &lt;validator/validator.h&gt;
 
-int val_async_cancel( val_context_t *context, val_async_status *async_status,
+int val_async_cancel( val_context_t *context,
+                      val_async_status *async_status,
                       unsigned int flags);
           </artwork>
           <postamble>
@@ -1120,6 +1132,10 @@ int val_create_context( char *scope,
 void val_free_context( val_context_t *ctx );
       </artwork>
       <postamble>
+        These function create and release, respectively, validator
+        context objects.
+      </postamble>
+      </figure>
 <t> An application maintains a run-time handle to its validator policy 
 through the validator context. 
 val_create_context() creates a new DNSSEC validator context.
@@ -1137,8 +1153,6 @@ and an error code from <xref target="val-return-values"/> on failure.
 Memory for the newly created DNSSEC validator context MUST be returned in the 
 newctx field. This memory MUST be released when applications invoke the
 val_free_context() function. newctx MUST be set to NULL if an error is encountered.</t>
-    </postamble>
-    </figure>
     </section>
 
     <section title="val_context_setqflags">
@@ -1152,10 +1166,12 @@ int val_context_setqflags(val_context_t *context,
 
       </artwork>
       <postamble>
-<t> This function allows an application to set or reset default 
+This function allows an application to set or reset default 
 query flags for a given context. This enables the application to 
 alter the DNSSEC validator processing, while still having most of 
-the granular default configuration specified in its configuration file. </t>
+the granular default configuration specified in its configuration file.
+      </postamble>
+      </figure>
 
 <t>The application may specify one of the following action types, where their 
    numeric values are implementation-specific.</t>
@@ -1168,8 +1184,6 @@ the granular default configuration specified in its configuration file. </t>
         <t hangText="VAL_CTX_FLAG_RESET:">Reset the given flag if 
         it was set as one of the default query flags for the context.</t>
       </list> </t>
-    </postamble>
-    </figure>
     </section>
   </section> <!-- DNSSEC Validator Context API -->
     
@@ -1220,9 +1234,9 @@ to a string representation. </t>
 const char *p_val_err(int err);
     </artwork>
     <postamble>
-<t> The returned value from p_val_err() MAY be the string 
+The returned value from p_val_err() MAY be the string 
 conversion for the corresponding error code identifier. For example, 
-the return value from p_val_err(VAL_NO_ERROR) MAY be "VAL_NO_ERROR". </t>
+the return value from p_val_err(VAL_NO_ERROR) MAY be "VAL_NO_ERROR".
     </postamble>
 </figure>
 
@@ -1328,9 +1342,9 @@ The authentication chain does not lead up to a configured DNSSEC trust anchor. <
 const char *p_val_status(val_status_t status);
 </artwork>
 <postamble>
-<t> The value returned MAY be the string conversion
+The value returned MAY be the string conversion
 for the corresponding val_status_t identifier. For example,
-the return value from p_val_status(VAL_SUCCESS) MAY be "VAL_SUCCESS". </t> 
+the return value from p_val_status(VAL_SUCCESS) MAY be "VAL_SUCCESS".
 </postamble>
 </figure>
 
@@ -1348,6 +1362,11 @@ int val_isvalidated(val_status_t status);
 int val_does_not_exist(val_status_t status);
       </artwork>
       <postamble>
+        These functions return a boolean value indicating whether or
+        not the given val_status_t object is trusted, validated or
+        does not exist (respectively).
+      </postamble>
+      </figure>
 
     <t> Most applications will only be interested in a single value
  that represents the validity of DNS data. In some instances, an
@@ -1380,9 +1399,6 @@ verified or trusted through local DNSSEC validator policy).
 The return value from val_does_not_exist() MUST be greater than 0 if status is one of VAL_NONEXISTENT_TYPE,
 VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME_NOCHAIN, or VAL_NONEXISTENT_TYPE_NOCHAIN and
 MUST be equal to 0 for other status codes. </t>
-
-      </postamble>
-      </figure>
     </section>
 
   </section>
@@ -1609,8 +1625,6 @@ trust anchor's DNSKEY or DS record. An example is given below.
           DNCA lr qOA3lw== 
     ;
     </artwork>
-    <postamble>
-    </postamble>
     </figure>
 </t>
 </list> </t>
@@ -1645,8 +1659,6 @@ considered to be untrusted and DNSSEC validation for all other domain names woul
         . ignore
         ; 
     </artwork>
-    <postamble>
-    </postamble>
     </figure>
 </t> 
 </list> </t> 
@@ -1675,8 +1687,6 @@ where this condition would be treated as invalid.
         net untrusted
         ;
     </artwork>
-    <postamble>
-    </postamble>
     </figure>
 </t>
 </list> </t> 
@@ -1696,8 +1706,6 @@ inception and expiration checks would be disabled for all names under the exampl
         example.com -1 
         ;
     </artwork>
-    <postamble>
-    </postamble>
     </figure>
 </t>
 </list> </t> 
@@ -1733,8 +1741,9 @@ the default EDNS0 size to be advertized in queries sent out by the validator.  <
 
 int done = 0;
 
-int my_callback(val_async_status *async_status, int event, val_context_t *ctx,
-                void *user_ctx, val_cb_params_t *cbp) {
+int my_callback(val_async_status *async_status, int event,
+                val_context_t *ctx, void *user_ctx,
+                val_cb_params_t *cbp) {
    if (event == VAL_AS_EVENT_CANCELED) {
       fprint("canceled: %s", (char*)user_ctx);
       return;
@@ -1770,9 +1779,10 @@ main() {
 
       FD_ZERO(&amp;fds);       /* clear fd_set */
       nfds = 0;            /* no FDs yet */
-      val_async_select_info(&amp;ctx, &amp;fds, &amp;numfds, &amp;tv); /* async FDs */
 
-      /* application should set its own FDs, if any, before calling select */
+      /* set FDs for pending requests. application should also set
+       * its own FDs, if any, before calling select */
+      val_async_select_info(&amp;ctx, &amp;fds, &amp;numfds, &amp;tv);
       ready = select(numfds+1, &amp;fds, NULL, NULL, &amp;tv);
       if ( ready &lt; 0 ) {
          break; /* or continue... */
