@@ -1772,9 +1772,8 @@ main() {
    char             *domain = "www.example.com";
 
    /* submit request */
-   rc = val_async_submit(ctx, domain, ns_c_in, ns_t_a,
-                         VAL_AS_ONE_CALLBACK, my_callback,
-                         (void*)domain, &amp;async_status);
+   rc = val_async_submit(ctx, domain, ns_c_in, ns_t_a, 0,
+                         my_callback, (void*)domain, &amp;async_status);
    while (!done) {
       tv.usec = 0;
       tv.sec = 10;         /* maximum timeout 10 sec */
