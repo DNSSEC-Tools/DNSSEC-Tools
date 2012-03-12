@@ -137,7 +137,7 @@ target="refs.IEEE.1003.1-2004"/>. DNSSEC replacement functions for other legacy 
 expected to mirror, to a large extent, other functions described in this document. </t> 
 
 <t> The ctx parameter in the functions described in this API 
-points to a DNSSEC validator context object (<xref target="val-context"/>). 
+points to a DNSSEC validator context object (see <xref target="val-context"/>). 
 Applications MUST either supply a reference to a valid DNSSEC validator context object created 
 using the functions specified in <xref target="val-context"/> or supply a NULL 
 value for this parameter. Libraries that implement the DNSSEC Validator API 
@@ -195,7 +195,7 @@ hostent structure are validated successfully. </t>
 returned if at least one address or canonical name within the hostent structure 
 is not validated by the DNSSEC validation process, 
 but all answers are still considered trustworthy 
-(<xref target="val-context"/>) by way of the configured local DNSSEC validator policy. </t>
+(see <xref target="val-context"/>) by way of the configured local DNSSEC validator policy. </t>
     <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one 
 address or canonical name within the hostent structure is neither validated through 
 the DNSSEC validation process nor considered to be trusted according to the configured local DNSSEC validator policy. </t>
@@ -282,7 +282,7 @@ returned in val_status if the hostname returned by val_getnameinfo(),
 or at least one address or canonical name returned by val_getaddrinfo(), 
 is not validated by the DNSSEC validation process but all
 answers are still considered to be trustworthy 
-through the local DNSSEC validator policy (<xref target="val-context"/>). </t>
+through the local DNSSEC validator policy (see <xref target="val-context"/>). </t>
     <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one 
 address or canonical name returned by val_getaddrinfo() within the addrinfo structure, or 
 the returned hostname in val_getnameinfo(), is neither validated through the DNSSEC process nor considered 
@@ -341,7 +341,7 @@ are validated by the DNSSEC validation process. </t>
     <t> A DNSSEC validation status of VAL_TRUSTED_ANSWER MUST be
 returned if at least one resource record set returned in the answer
 is not validated by the DNSSEC validation process, but all resource record sets are still considered
-to be trustworthy according to the configured local DNSSEC validator policy (<xref target="val-context"/>). </t> 
+to be trustworthy according to the configured local DNSSEC validator policy (see <xref target="val-context"/>). </t> 
     <t> A DNSSEC validation status of VAL_UNTRUSTED_ANSWER MUST be returned if at least one resource record set in the
 answer is neither validated through the DNSSEC validation process nor considered to be trustworthy according to the 
 local DNSSEC validator policy. </t>
@@ -489,7 +489,7 @@ values are implementation-specific: </t>
 
 <t hangText="VAL_QUERY_ASYNC">
    If this flag is specified, this name MUST be resolved through
-   the asynchronous lookup process (<xref target="val-async"/>). </t>
+   the asynchronous lookup process (see <xref target="val-async"/>). </t>
 
 <t hangText="VAL_QUERY_RECURSE">
    If this flag is specified, the name MUST be looked up by 
@@ -951,9 +951,15 @@ int val_async_select_info(val_context_t *context,
       <t>The timeout structure MUST be set to the lowest timeout value of
       any pending asynchronous query timeout which is less than the
       current value in timeout.</t>
+
+      <t>After the application call select, val_async_check_wait() (see
+      <xref target="val_async_check_wait"/>) should be called with the
+      fd_set and number of ready file descriptors returned by select.
+      Example code is provided in
+      <xref target="Asynchronous API Example Code"/>.</t>
     </section> <!-- x.1.2 val_ -->
 
-    <section title="val_async_check_wait"> <!-- x.1.3.3 -->
+    <section title="val_async_check_wait" anchor="val_async_check_wait"> <!-- x.1.3.3 -->
       <figure>
         <artwork>
 #include &lt;validator/validator.h&gt;
@@ -983,6 +989,8 @@ int val_async_check_wait(val_context_t *ctx, fd_set *fds,
       val_async_select_info() and select() internally, and process any
       responses received before the timeout value expires.
       </t>
+      <t>Example code is provided in
+      <xref target="Asynchronous API Example Code"/>.</t>
     </section>  <!-- x.1.3 val_async_check -->
   </section>  <!-- x.1. -->
 
@@ -1730,7 +1738,7 @@ the default EDNS0 size to be advertized in queries sent out by the validator.  <
 
         </section>
 
-        <section title="Asynchronous API Example Code">
+        <section title="Asynchronous API Example Code" anchor="Asynchronous API Example Code">
           <figure>
             <preamble>
               The general flow for asynchronous request processing can
