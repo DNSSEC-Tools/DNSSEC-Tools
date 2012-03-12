@@ -70,6 +70,14 @@ all: $(MAN1PAGES) $(MAN3PAGES)
 
 validator_api: validator_api.txt
 
+checks:
+	@for x in `grep VAL validator_api.xml | sed -e 's/.*VAL_\([A-Z_]*\).*/VAL_\1/'|sort -u`; \
+	do \
+	echo $$x; \
+	find ../include/validator/ -name "*.h" | xargs -r grep $$x; \
+	done
+
+
 install:
 	$(MKPATH) $(DESTDIR)/$(man1dir)
 	for i in $(MAN1PAGES) ; do		\
