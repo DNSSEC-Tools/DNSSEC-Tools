@@ -2202,10 +2202,10 @@ will return the value "db.example.com".
 
 This routine renames the I<rollrec> named by I<old_rollrec_name> to
 I<new_rollrec_name>.  The actual effect is to change the name in the I<roll>
-or I<skip> line is changed to I<new_rollrec_name>.  The name is changed in
-the internal version of the the I<rollrec> file only.  The file itself is
-not changed, but must be saved by calling either I<rollrec_write()>,
-I<rollrec_save()>, or I<rollrec_saveas()>.
+or I<skip> line to I<new_rollrec_name>.  The name is changed in the internal
+version of the the I<rollrec> file only.  The file itself is not changed, but
+must be saved by calling either I<rollrec_write()>, I<rollrec_save()>, or
+I<rollrec_saveas()>.
 
 I<old_rollrec_name> must be the name of an existing I<rollrec>.  Conversely,
 I<new_rollrec_name> must not name an existing I<rollrec>.
