@@ -1913,7 +1913,7 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
 
   $default_file = rollrec_default();
 
-  $count = rollrec_merge("primary.rrf", "new0.rrf", "new1".rrf");
+  $count = rollrec_merge("primary.rrf", "new0.rrf", "new1.rrf");
   @retvals = rollrec_split("new-rollrec.rrf", @rollrec_list);
 
   %zgroups = rollrec_zonegroups();
