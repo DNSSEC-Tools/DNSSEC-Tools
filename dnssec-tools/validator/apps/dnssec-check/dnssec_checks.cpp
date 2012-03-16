@@ -231,6 +231,36 @@ int count_types(u_char *response, size_t len, char *buf, size_t buf_len, int rr_
     return count;
 }
 
+int _check_has_one_type_section_async(u_char *response, size_t response_size,
+                                      int rc, int *testStatus, int rrtype, ns_sect rrsection) {
+    int             rrnum;
+    char            buf[1024];
+    size_t          buf_len = sizeof(buf);
+
+    if (rc != SR_UNSET)
+        SET_ERROR("Basic DNS query failed entirely");
+
+    rrnum = count_types(response, response_size, buf, buf_len, rrtype, rrsection);
+
+    if (rrnum <= 0)
+        SET_ERROR("No record found the DNS response.");
+
+    SET_SUCCESS("At least one record was successfully retrieved");
+}
+
+int _check_has_one_type_async(u_char *response, size_t response_size,
+                              int rc, int *testStatus, void *localData) {
+    int             rrnum;
+    char            buf[1024];
+    size_t          buf_len = sizeof(buf);
+    int             rrtype = *((int *) localData);
+
+    free(localData);
+
+    return _check_has_one_type_section_async(response, response_size, rc, testStatus, rrtype, ns_s_an);
+}
+
+
 /******************************************************************************
  * TESTS
  ******************************************************************************/
@@ -323,33 +353,19 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
 }
 
 #ifndef VAL_NO_ASYNC
-int _check_basic_dns_async_response(u_char *response, size_t response_size,
-                                    int rc, int *testStatus, void *localData) {
-    int             rrnum;
-    char            buf[1024];
-    size_t          buf_len = sizeof(buf);
-
-    if (rc != SR_UNSET)
-        SET_ERROR("Basic DNS query failed entirely");
-
-    rrnum = count_types(response, response_size, buf, buf_len, ns_t_a, ns_s_an);
-    
-    if (rrnum <= 0)
-        SET_ERROR("No A record found using UDP in the basic DNS test.");
-
-    SET_SUCCESS("An A record was successfully retrieved");
-}
 
 int check_basic_dns_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     struct expected_arrival *ea;
     struct name_server *ns;
+    int *rrtype = (int *) malloc(sizeof(int));
+    *rrtype = ns_t_a;
 
     ns = parse_name_server(ns_name, NULL);
     ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
-    add_outstanding_async_query(ea, _check_basic_dns_async_response,
-                                testStatus, NULL);
+    add_outstanding_async_query(ea, _check_has_one_type_async,
+                                testStatus, rrtype);
 }
 #endif /* VAL_NO_ASYNC */
 
@@ -797,7 +813,7 @@ int check_can_get_nsec3_async(char *ns_name, char *buf, size_t buf_len, int *tes
 }
 #endif /* VAL_NO_ASYNC */
 
-int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *name, const char *asciitype, int rrtype) {
+int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *name, const char *asciitype, int *testStatus, int rrtype) {
     /* queries with the DO bit and thus should return an answer with
        the DO bit as well.  It should additionall have at least one
        RRSIG record. */
@@ -808,7 +824,6 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
     u_char *response;
     size_t len;
     int found_type = 0;
-    int ts = 0, *testStatus = &ts;
 
     ns_msg          handle;
     int             qdcount, ancount, nscount, arcount;
@@ -825,37 +840,11 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
     if (rc != SR_UNSET)
         RETURN_ERROR("Querying for a particular type failed to get a response");
 
-    if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("Fatal internal error: failed to init parser");
-
-    opcode = libsres_msg_getflag(handle, ns_f_opcode);
-    rcode = libsres_msg_getflag(handle, ns_f_rcode);
-    id = ns_msg_id(handle);
-    qdcount = ns_msg_count(handle, ns_s_qd);
-    ancount = ns_msg_count(handle, ns_s_an);
-    nscount = ns_msg_count(handle, ns_s_ns);
-    arcount = ns_msg_count(handle, ns_s_ar);
-
-    /* check the answer records for at least one RRSIG */
-    rrnum = 0;
-    for (;;) {
-        if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
-            if (errno != ENODEV) {
-                /* parse error */
-                RETURN_ERROR("Failed to parse a returned answer RRSET");
-            }
-            break; /* out of data */
-        }
-        if (ns_rr_type(rr) == rrtype) {
-            found_type = 1;
-            break;
-        }
-        rrnum++;
-    }
+    rrnum = count_types(response, len, buf, buf_len, rrtype, ns_s_an);
 
     free_name_server(&ns);
 
-    if (!found_type) {
+    if (rrnum <= 0) {
         snprintf(buf, buf_len, "Error: Failed to retrieve a record of type %s", asciitype);
         return CHECK_FAILED;
     }
@@ -866,9 +855,40 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
 }
 
 int check_can_get_dnskey(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", ns_t_dnskey);
+    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", testStatus, ns_t_dnskey);
 }
 
 int check_can_get_ds(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DS", ns_t_ds);
+    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DS", testStatus, ns_t_ds);
 }
+
+#ifndef VAL_NO_ASYNC
+int check_can_get_type_async(char *ns_name, char *buf, size_t buf_len, const char *name, const char *asciitype, int *testStatus, int rrtype) {
+    /* queries with the DO bit and thus a bad query should return an answer with
+       an NSEC or NSEC3 record based on the parent zones type. */
+
+    struct name_server *ns;
+    struct expected_arrival *ea;
+    int *expected_type = (int *) malloc(sizeof(int));
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+
+    *expected_type = rrtype;
+    ea = res_async_query_send(name, rrtype, ns_c_in, ns);
+    add_outstanding_async_query(ea, _check_has_one_type_async,
+                                testStatus, expected_type);
+
+    return 0;
+}
+
+int check_can_get_dnskey_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
+    return check_can_get_type_async(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", testStatus, ns_t_dnskey);
+}
+
+int check_can_get_ds_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
+    return check_can_get_type_async(ns_name, buf, buf_len, "dnssec-tools.org", "DS", testStatus, ns_t_ds);
+}
+
+
+#endif /* VAL_NO_ASYNC */
