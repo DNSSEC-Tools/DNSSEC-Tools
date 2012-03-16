@@ -43,7 +43,7 @@ public:
 
     void setOrientation(Orientation orientation);
 
-    bool doLookupTest(QString lookupName = QString("dnssec-tools.org"), int queryType = 48, char *resolv_conf = NULL);  // type = DNSKEY
+    bool doLookupTest(const QString lookupName = QString("dnssec-tools.org"), int queryType = 48, char *resolv_conf = NULL);  // type = DNSKEY
     void busy();
     void unbusy();
     void setupWidgets();

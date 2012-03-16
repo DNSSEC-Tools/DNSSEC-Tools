@@ -263,7 +263,7 @@ void MainWindow::getSubAnswers() {
 }
 
 bool
-MainWindow::doLookupTest(QString lookupName, int queryType, char *resolv_conf)
+MainWindow::doLookupTest(const QString lookupName, int queryType, char *resolv_conf)
 {
     val_status_t val_status;
     struct addrinfo *aitop = NULL;
