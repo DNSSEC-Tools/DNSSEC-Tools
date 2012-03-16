@@ -4,7 +4,7 @@ import DNSSECTools 1.0
 
 Rectangle {
     width: 800
-    height: 400
+    height: 360
     id: dnssecCheckTop
     color: "black"
 
@@ -350,7 +350,7 @@ Rectangle {
             name: "ran"
             PropertyChanges {
                 target: submitButton
-                enabled: resultGrid.rows > 1
+                enabled: resultGrid.rows > 0
             }
             PropertyChanges {
                 target: testButton
