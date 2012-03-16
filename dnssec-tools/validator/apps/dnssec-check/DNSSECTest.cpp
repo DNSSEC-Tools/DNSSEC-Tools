@@ -2,9 +2,9 @@
 
 #include <qdebug.h>
 
-DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName) :
+DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName, bool isAsync) :
     QObject(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName), m_statusStrings(),
-    m_async(false), m_result_status(-1)
+    m_async(isAsync), m_result_status(-1)
 {
     if (serverAddress)
         m_serverAddress = strdup(serverAddress);
