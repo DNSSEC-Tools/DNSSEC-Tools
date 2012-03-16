@@ -11,6 +11,7 @@ Rectangle {
     anchors.left: resultsBox.left
     anchors.topMargin: 10
     color: "#222"
+    opacity: dnssecCheckTop.state != "running"
 
     signal addHost(string hostaddr)
 

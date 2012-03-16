@@ -283,7 +283,7 @@ Rectangle {
     WaitCursor {
         id: waitText
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.verticalCenter:   titleBox.verticalCenter
+        anchors.verticalCenter:   newServerBox.verticalCenter
     }
 
     Component.onCompleted: {
