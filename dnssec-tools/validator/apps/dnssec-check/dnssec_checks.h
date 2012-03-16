@@ -17,9 +17,11 @@ int check_can_get_ds(char *ns_name, char *buf, size_t buf_len, int *return_statu
 
 /* async versions of the tests */
 int check_basic_dns_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
-int check_do_has_rrsigs_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_can_get_nsec_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_can_get_nsec3_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
+int check_do_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
+int check_ad_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
+int check_do_has_rrsigs_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_small_edns0_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
 int check_can_get_dnskey_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
 int check_can_get_ds_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);

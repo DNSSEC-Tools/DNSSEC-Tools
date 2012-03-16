@@ -527,6 +527,50 @@ int check_small_edns0_async(char *ns_name, char *buf, size_t buf_len, int *testS
 }
 #endif /* VAL_NO_ASYNC */
 
+int check_an_edns0_bit(u_char *response, size_t response_size, char *buf, size_t buf_len, int *testStatus, int bit)
+{
+    ns_msg          handle;
+    int             found_bit = 0;
+    int             rrnum;
+    ns_rr           rr;
+
+    if (ns_initparse(response, response_size, &handle) < 0)
+        RETURN_ERROR("Fatal internal error: failed to init parser");
+
+    /* check the answer records for the DO bit in the response */
+    rrnum = 0;
+    for (;;) {
+        if (ns_parserr(&handle, ns_s_ar, rrnum, &rr)) {
+            if (errno != ENODEV) {
+                /* parse error */
+                RETURN_ERROR("failed to parse a returned additional RRSET");
+            }
+            break; /* out of data */
+        }
+        if (ns_rr_type(rr) == ns_t_opt) {
+            u_int32_t       ttl = ns_rr_ttl(rr);
+
+
+            if ((ttl >> 16 & 0xff) != 0)
+                RETURN_ERROR("The EDNS version was not 0");
+
+            if ((ttl & bit) == bit)
+                RETURN_ERROR("The EDNS0 flag failed to include the expected bit");
+
+            found_bit = 1;
+
+            /* edns0 size = int(ns_rr_class(rr)) */
+            break;
+        }
+        rrnum++;
+    }
+
+    if (!found_bit)
+        RETURN_ERROR("No bit found in the response when one was expected.");
+
+    RETURN_SUCCESS("A query successfully returned a response with the proper bit set");
+}
+
 int check_do_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     /* queries with the DO bit and thus should return an answer with
        the DO bit as well.  It should additionall have at least one
@@ -551,53 +595,61 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
 
+
     if (rc != SR_UNSET)
         RETURN_ERROR("Checking for the DO bit failed entirely: no response was received");
 
-    if (ns_initparse(response, len, &handle) < 0)
+    free_name_server(&ns);
+
+    return check_an_edns0_bit(response, len, buf, buf_len, testStatus, RES_USE_DNSSEC);
+}
+
+#ifndef VAL_NO_ASYNC
+
+int _check_do_bit_async_response(u_char *response, size_t response_size,
+                                 int rc, int *testStatus, void *localData) {
+    char            buf[1024];
+    size_t          buf_len = sizeof(buf);
+
+    if (rc != SR_UNSET)
+        SET_ERROR("DO bit DNS query failed entirely");
+
+    return check_an_edns0_bit(response, response_size, buf, buf_len, testStatus, RES_USE_DNSSEC);
+}
+
+int check_do_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
+    struct expected_arrival *ea;
+    struct name_server *ns;
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_edns0_size = 4096;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+
+    ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
+    add_outstanding_async_query(ea, _check_do_bit_async_response,
+                                testStatus, NULL);
+}
+#endif /* VAL_NO_ASYNC */
+
+int check_a_flag(u_char *response, size_t response_size, char *buf, size_t buf_len, int *testStatus, int flag)
+{
+    ns_msg          handle;
+    int             found_bit = 0;
+    int             rrnum;
+    ns_rr           rr;
+    int             has_flag = 0;
+
+    if (ns_initparse(response, response_size, &handle) < 0)
         RETURN_ERROR("Fatal internal error: failed to init parser");
 
-    opcode = libsres_msg_getflag(handle, ns_f_opcode);
-    rcode = libsres_msg_getflag(handle, ns_f_rcode);
-    id = ns_msg_id(handle);
-    qdcount = ns_msg_count(handle, ns_s_qd);
-    ancount = ns_msg_count(handle, ns_s_an);
-    nscount = ns_msg_count(handle, ns_s_ns);
-    arcount = ns_msg_count(handle, ns_s_ar);
+    has_flag = libsres_msg_getflag(handle, flag);
 
-    /* check the answer records for the DO bit in the response */
-    rrnum = 0;
-    for (;;) {
-        if (ns_parserr(&handle, ns_s_ar, rrnum, &rr)) {
-            if (errno != ENODEV) {
-                /* parse error */
-                RETURN_ERROR("failed to parse a returned additional RRSET");
-            }
-            break; /* out of data */
-        }
-        if (ns_rr_type(rr) == ns_t_opt) {
-            u_int32_t       ttl = ns_rr_ttl(rr);
+    if (!has_flag)
+        RETURN_ERROR("An expected bit was not set on a response to a query.");
 
-            found_edns0 = 1;
-
-            if ((ttl >> 16 & 0xff) != 0)
-                RETURN_ERROR("The EDNS version was not 0");
-
-            if ((ttl & RES_USE_DNSSEC) == RES_USE_DNSSEC)
-                RETURN_ERROR("The EDNS0 flag failed to include the expected DO bit");
-
-            /* edns0 size = int(ns_rr_class(rr)) */
-            break;
-        }
-        rrnum++;
-    }
-
-    if (!found_edns0)
-        RETURN_ERROR("No EDNS0 record found in the response when one was expected.");
-
-    free_name_server(&ns);
-    RETURN_SUCCESS("Query with DO bit returned a response with the DO bit set");
+    RETURN_SUCCESS("A response was received with the expected BIT in place.");
 }
+
 
 
 int check_ad_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
@@ -625,22 +677,35 @@ int check_ad_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
 
-    if (rc != SR_UNSET)
-        RETURN_ERROR("No response was received when checking for the AD bit");
-
-    if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("Fatal internal error: failed to init parser");
-
-    has_ad = libsres_msg_getflag(handle, ns_f_ad);
-
-    if (!has_ad)
-        RETURN_ERROR("The AD bit was not set on a validatable query.");
-
-    free_name_server(&ns);
-    RETURN_SUCCESS("A query with DO bit set returned with the AD bit for a validatable query");
+    return check_a_flag(response, len, buf, buf_len, testStatus, ns_f_ad);
 }
 
+#ifndef VAL_NO_ASYNC
+int _check_ad_bit_async_response(u_char *response, size_t response_size,
+                                 int rc, int *testStatus, void *localData) {
+    int rrnum;
+    char            buf[1024];
+    size_t          buf_len = sizeof(buf);
 
+    if (rc != SR_UNSET)
+        SET_ERROR("Basic DNS query failed entirely");
+
+    return check_a_flag(response, response_size, buf, buf_len, testStatus, ns_f_ad);
+}
+
+int check_ad_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
+    struct expected_arrival *ea;
+    struct name_server *ns;
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_SET_DO | SR_QUERY_RECURSE;
+    ns->ns_options &= ~ ns_f_cd;
+
+    ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
+    add_outstanding_async_query(ea, _check_ad_bit_async_response,
+                                testStatus, NULL);
+}
+#endif /* !VAL_NO_ASYNC */
 
 int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     /* queries with the DO bit and thus should return an answer with

@@ -43,7 +43,7 @@ Item {
             name: "visible"
             PropertyChanges {
                 target: waitCursor
-                opacity: .75
+                opacity: .5
             }
             when: dnssecCheckTop.state == "running"
         }

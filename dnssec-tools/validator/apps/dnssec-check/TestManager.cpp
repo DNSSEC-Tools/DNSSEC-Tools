@@ -105,6 +105,12 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case can_get_ds:
         newtest =  new DNSSECTest(m_parent, &check_can_get_ds, address.toAscii().data(), name);
         break;
+    case do_bit:
+        newtest =  new DNSSECTest(m_parent, &check_do_bit, address.toAscii().data(), name);
+        break;
+    case ad_bit:
+        newtest =  new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
+        break;
 #else
     case basic_dns:
         newtest =  new DNSSECTest(m_parent, &check_basic_dns_async, address.toAscii().data(), name, true);
@@ -127,15 +133,16 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case can_get_ds:
         newtest =  new DNSSECTest(m_parent, &check_can_get_ds_async, address.toAscii().data(), name, true);
         break;
-#endif
-    case basic_tcp:
-        newtest =  new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
-        break;
     case do_bit:
-        newtest =  new DNSSECTest(m_parent, &check_do_bit, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_do_bit_async, address.toAscii().data(), name, true);
         break;
     case ad_bit:
-        newtest =  new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_ad_bit_async, address.toAscii().data(), name, true);
+        break;
+#endif
+
+    case basic_tcp:
+        newtest =  new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
         break;
 
 #ifdef LIBVAL_ASYNC_TESTING
