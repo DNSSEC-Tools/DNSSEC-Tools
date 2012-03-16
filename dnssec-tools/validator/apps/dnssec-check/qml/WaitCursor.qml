@@ -5,7 +5,7 @@ Item {
     z: 50
     width: waitTextContent.width + waitBackground.border.width * 4
     height: waitTextContent.height + waitBackground.border.width * 4
-    opacity:  1
+    opacity:  0
 
     property string waitText: "<p>Runing Tests<p>Please Wait"
 
