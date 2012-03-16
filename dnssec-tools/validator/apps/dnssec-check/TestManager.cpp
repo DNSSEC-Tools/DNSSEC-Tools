@@ -38,10 +38,22 @@ TestManager::dataAvailable()
 
     check_outstanding_async();
 
+    checkAvailableUpdates();
+}
+
+void
+TestManager::checkAvailableUpdates()
+{
     // tell the tests to check and emit as necessary
     foreach(DNSSECTest *test, m_tests) {
         test->update();
     }
+}
+
+void TestManager::startQueuedTransactions()
+{
+    check_queued_sends();
+    updateWatchedSockets();
 }
 
 void
@@ -65,13 +77,24 @@ TestManager::updateWatchedSockets()
     }
 
     m_num_fds = 0;
+    m_num_tcp_fds = 0;
     FD_ZERO(&m_fds);
-    collect_async_query_select_info(&m_fds, &m_num_fds);
+    FD_ZERO(&m_tcp_fds);
+    collect_async_query_select_info(&m_fds, &m_num_fds, &m_tcp_fds, &m_num_tcp_fds);
     //qDebug() << "sres sockets: " << m_num_fds;
     for(int i = 0; i < m_num_fds; i++) {
         if (FD_ISSET(i, &m_fds) && !m_socketWatchers.contains(i)) {
             //qDebug() << "watching sres socket #" << i;
             QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::UdpSocket, 0);
+            m_socketWatchers[i] = socketToWatch;
+            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
+            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
+        }
+    }
+    for(int i = 0; i < m_num_tcp_fds; i++) {
+        if (FD_ISSET(i, &m_tcp_fds) && !m_socketWatchers.contains(i)) {
+            //qDebug() << "watching sres tcp socket #" << i;
+            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::TcpSocket, 0);
             m_socketWatchers[i] = socketToWatch;
             socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
             connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
@@ -111,6 +134,9 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case ad_bit:
         newtest =  new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
         break;
+    case basic_tcp:
+        newtest =  new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
+        break;
 #else
     case basic_dns:
         newtest =  new DNSSECTest(m_parent, &check_basic_dns_async, address.toAscii().data(), name, true);
@@ -139,11 +165,11 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case ad_bit:
         newtest =  new DNSSECTest(m_parent, &check_ad_bit_async, address.toAscii().data(), name, true);
         break;
-#endif
-
     case basic_tcp:
-        newtest =  new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_basic_tcp_async, address.toAscii().data(), name, true);
         break;
+
+#endif
 
 #ifdef LIBVAL_ASYNC_TESTING
     case basic_async:
@@ -265,4 +291,9 @@ QString TestManager::lastResultMessage()
 
 QString TestManager::sha1hex(QString input) {
     return QCryptographicHash::hash(input.toUtf8(), QCryptographicHash::Sha1).toHex();
+}
+
+int TestManager::outStandingRequests()
+{
+    return async_requests_remaining();
 }

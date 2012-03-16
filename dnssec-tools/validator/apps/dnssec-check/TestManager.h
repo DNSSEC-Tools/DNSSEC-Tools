@@ -51,6 +51,9 @@ public:
     Q_INVOKABLE void saveSetting(QString key, QVariant value);
     Q_INVOKABLE QVariant getSetting(QString key);
     Q_INVOKABLE QString sha1hex(QString input);
+    Q_INVOKABLE int outStandingRequests();
+    Q_INVOKABLE void checkAvailableUpdates();
+    Q_INVOKABLE void startQueuedTransactions();
 
     Q_PROPERTY(QString submissionMessage  READ submissionMessage                   NOTIFY submissionMessageChanged)
     Q_PROPERTY(QString lastResultMessage  READ lastResultMessage                   NOTIFY lastResultMessageChanged)
@@ -78,8 +81,8 @@ private:
     QHash<int, QAbstractSocket *> m_socketWatchers;
     QList<DNSSECTest *> m_tests;
 
-    fd_set          m_fds;
-    int             m_num_fds;
+    fd_set          m_fds, m_tcp_fds;
+    int             m_num_fds, m_num_tcp_fds;
     struct timeval  m_timeout;
 };
 

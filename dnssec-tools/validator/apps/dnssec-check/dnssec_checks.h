@@ -2,7 +2,9 @@
 #define DNSSEC_CHECKS_H
 
 int check_outstanding_async();
-void collect_async_query_select_info(fd_set *fds, int *numfds);
+int async_requests_remaining();
+int check_queued_sends();
+void collect_async_query_select_info(fd_set *fds, int *numfds, fd_set *tcp_fds, int *numUdpFds);
 
 int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_basic_tcp(char *ns_name, char *buf, size_t buf_len, int *return_status);
@@ -17,6 +19,7 @@ int check_can_get_ds(char *ns_name, char *buf, size_t buf_len, int *return_statu
 
 /* async versions of the tests */
 int check_basic_dns_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
+int check_basic_tcp_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_can_get_nsec_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_can_get_nsec3_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_do_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);

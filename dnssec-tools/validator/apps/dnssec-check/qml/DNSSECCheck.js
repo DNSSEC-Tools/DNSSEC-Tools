@@ -56,7 +56,7 @@ function testHost(host) {
 
 function haveAllTestsRun() {
     for(var i = tests.length; i > 0 ; i--) {
-        if (tests[i-1].test.status == DNSSECTest.UNKNOWN)
+        if (tests[i-1].test.status === DNSSECTest.UNKNOWN || tests[i-1].test.status === DNSSECTest.TESTINGNOW)
             return false
     }
     return true
@@ -143,16 +143,23 @@ function runNextTest() {
     testNumber++
 
     // find itmes from the specific host we want to test, if not all of them
-    while (currentTestHost != "" && testNumber < tests.length && tests[testNumber].test.serverAddress != currentTestHost) {
+    while (currentTestHost != "" && testNumber < tests.length && tests[testNumber].test.serverAddress !== currentTestHost) {
         testNumber++
     }
 
     if (testNumber < tests.length) {
-	tests[testNumber].test.check();
+        tests[testNumber].test.check();
         timer.start();
         setTestStartMessage()
     } else {
+        if (testManager.outStandingRequests() > 0) {
+            testManager.startQueuedTransactions();
+            testManager.checkAvailableUpdates();
+            timer.start();
+            return;
+        }
         timer.stop()
+        testManager.checkAvailableUpdates();
         if (currentTestHost == "" || haveAllTestsRun())
             dnssecCheckTop.state = "ran"
         else
