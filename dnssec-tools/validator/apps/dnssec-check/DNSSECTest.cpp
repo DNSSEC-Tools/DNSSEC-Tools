@@ -44,9 +44,9 @@ void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
     if (newStatus != m_status) {
         m_status = newStatus;
         m_result_status = statusToRc(m_status);
-        emit statusChanged();
         if (m_status == UNKNOWN)
             setMessage("Unknown");
+        emit statusChanged();
     }
 }
 
@@ -55,10 +55,10 @@ void DNSSECTest::check()
     if (!m_checkFunction || !m_serverAddress)
         return;
     m_result_status = TESTINGNOW;
+    setStatus(TESTINGNOW);
     int rc = (*m_checkFunction)(m_serverAddress, m_msgBuffer, sizeof(m_msgBuffer), &m_result_status);
     if (m_async) {
         emit asyncTestSubmitted();
-        setStatus(TESTINGNOW);
         return;
     }
     setStatus(rcToStatus(rc));
@@ -66,13 +66,19 @@ void DNSSECTest::check()
 }
 
 DNSSECTest::lightStatus DNSSECTest::rcToStatus(int rc) {
-    if (rc == 0)
+    switch(rc) {
+    case 0:
         return GOOD;
-    if (rc == 1)
+    case 1:
         return BAD;
-    if (rc == 2)
+    case 2:
         return WARNING;
-    return UNKNOWN;
+    case -1:
+    case -2:
+        return TESTINGNOW;
+    default:
+        return UNKNOWN;
+    }
 }
 
 int DNSSECTest::statusToRc(DNSSECTest::lightStatus status) {
@@ -83,6 +89,8 @@ int DNSSECTest::statusToRc(DNSSECTest::lightStatus status) {
         return 1;
     case WARNING:
         return 2;
+    case TESTINGNOW:
+        return -1;
     default:
         return -1;
     }
@@ -119,7 +127,6 @@ void DNSSECTest::setAsync(bool async)
 void DNSSECTest::update()
 {
     if (m_async && statusToRc(m_status) != m_result_status) {
-        //qDebug() << "Updating: (" << this << ") "<< m_status << " -> " << m_result_status;
         setStatus(rcToStatus(m_result_status));
     }
 }

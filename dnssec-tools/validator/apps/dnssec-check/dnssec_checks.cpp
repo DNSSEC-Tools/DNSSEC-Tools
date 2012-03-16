@@ -21,10 +21,22 @@
 #include "arpa/header.h"
 #endif
 
+#define CHECK_QUEUED    -2
 #define CHECK_CRITICAL  -1
 #define CHECK_SUCCEEDED 0
 #define CHECK_FAILED    1
 #define CHECK_WARNING   2
+
+/* libsres functions that they don't export */
+extern "C" {
+    struct expected_arrival *
+            res_async_query_create(const char *name, const u_int16_t type_h,
+                                   const u_int16_t class_h, struct name_server *pref_ns,
+                                   u_int flags);
+    void    res_switch_all_to_tcp(struct expected_arrival *ea);
+    int     res_io_queue_ea(int *transaction_id, struct expected_arrival *new_ea);
+    int     res_io_send(struct expected_arrival *shipit);
+}
 
 /* Syncronous macros */
 
@@ -88,11 +100,29 @@ typedef struct outstanding_query_s {
 } outstanding_query;
 
 int maxcount = 0;
+int outstandingCount = 0;
 static outstanding_query outstanding_queries[1024];
 
 /*
  * Async Loop processing
  */
+
+int
+async_requests_remaining() {
+    return outstandingCount;
+}
+
+int
+check_queued_sends() {
+    int i;
+    for(i = 0; i < maxcount; i++) {
+        if (*outstanding_queries[i].testReturnStatus == CHECK_QUEUED) {
+            *outstanding_queries[i].testReturnStatus = CHECK_CRITICAL;
+            res_io_send(outstanding_queries[i].ea);
+        }
+    }
+}
+
 int
 check_outstanding_async() {
     int i, ret_val, handled = 0;
@@ -109,12 +139,11 @@ check_outstanding_async() {
         tv.tv_usec = 1;
 
         /* are we waiting on this one? */
-        if (!outstanding_queries[i].live)
+        if (!outstanding_queries[i].live || *outstanding_queries[i].testReturnStatus == CHECK_QUEUED)
             continue;
 
         res_async_query_select_info(outstanding_queries[i].ea, &numfds, &fds, &tv);
 
-        /* XXX: get fds */
         if (!res_async_ea_isset(outstanding_queries[i].ea, &fds))
             continue;
 
@@ -132,6 +161,7 @@ check_outstanding_async() {
                                              ret_val,
                                              outstanding_queries[i].testReturnStatus,
                                              outstanding_queries[i].localData);
+        outstandingCount--;
 
         outstanding_queries[i].live = 0;
     }
@@ -157,10 +187,11 @@ add_outstanding_async_query(struct expected_arrival *ea, AsyncCallback *callback
     outstanding_queries[i].localData = localData;
     if (maxcount <= i)
         maxcount = i+1;
+    outstandingCount++;
 }
 
 void
-collect_async_query_select_info(fd_set *fds, int *numfds) {
+collect_async_query_select_info(fd_set *udp_fds, int *numUdpFds, fd_set *tcp_fds, int *numTcpFds) {
     int i;
     struct timeval      tv;
 
@@ -168,7 +199,10 @@ collect_async_query_select_info(fd_set *fds, int *numfds) {
     tv.tv_usec = 1;
 
     for(i = 0; i < maxcount; i++) {
-        res_async_query_select_info(outstanding_queries[i].ea, numfds, fds, &tv);
+        if (outstanding_queries[i].ea->ea_using_stream)
+            res_async_query_select_info(outstanding_queries[i].ea, numTcpFds, tcp_fds, &tv);
+        else
+            res_async_query_select_info(outstanding_queries[i].ea, numUdpFds, udp_fds, &tv);
     }
 }
 
@@ -425,6 +459,28 @@ int check_basic_tcp(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
 
     RETURN_SUCCESS("An A record was successfully retrieved over TCP");
 }
+
+#ifndef VAL_NO_SYNC
+int check_basic_tcp_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
+    struct expected_arrival *ea;
+    struct name_server *ns;
+    int *rrtype = (int *) malloc(sizeof(int));
+    *rrtype = ns_t_a;
+    int trans_id = -1;
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+
+    ea = res_async_query_create("www.dnssec-tools.org", ns_t_a, ns_c_in, ns, 0);
+    res_switch_all_to_tcp(ea);
+    //fprintf(stderr, "trans id: %d\n", trans_id);
+    //res_io_check_ea_list(ea, NULL, NULL, NULL, NULL);
+    //res_io_send(ea);
+    *testStatus = CHECK_QUEUED;
+    add_outstanding_async_query(ea, _check_has_one_type_async,
+                                testStatus, rrtype);
+}
+#endif /* !VAL_NO_ASYNC */
 
 int check_small_edns0_results(u_char *response, size_t response_size, char *buf, size_t buf_len, int *testStatus) {
     ns_msg          handle;
