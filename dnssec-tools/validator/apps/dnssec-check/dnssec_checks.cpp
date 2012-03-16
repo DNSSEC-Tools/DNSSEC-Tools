@@ -2,6 +2,11 @@
 #include <errno.h>
 #include <string.h>
 
+/*
+ * NOTE:  Although this file is a .cpp file, the intent is for it to be fully
+ *        "C" compatible.  IE, do NOT put any C++ required code in here.
+ */
+
 #define HAVE_DECL_NS_NTOP 1
 
 #include <validator/validator-config.h>
