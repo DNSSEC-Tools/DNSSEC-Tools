@@ -4,7 +4,7 @@ import DNSSECTools 1.0
 Rectangle {
     id: result
 
-    property int size: 20
+    property int size: 16
     //property alias name: testName.text
     property string name: ""
     property DNSSECTest test

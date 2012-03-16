@@ -5,6 +5,7 @@ var testNumber = 0
 var hosttests = {}
 var numTests = 10
 var numColumns = numTests + 1
+var numHeaders = numColumns
 var currentTestHost = ""
 
 function getColumns() {
@@ -23,7 +24,7 @@ function clearServers() {
     hosts = []
     rawtests = []
     hosttests = {}
-    for(var i = resultGrid.children.length; i > 0 ; i--) {
+    for(var i = resultGrid.children.length; i > numHeaders ; i--) {
         resultGrid.children[i-1].destroy()
     }
     dnssecCheckTop.state = "cleared"
@@ -34,10 +35,10 @@ function removeHost(host) {
         if (tests[i-1].test.serverAddress == host) {
             console.log("removing: " + (i-1))
             tests.splice(i-1,1)
-            resultGrid.children[i + Math.floor((i-1) / numTests)].destroy()
+            resultGrid.children[numHeaders + i + Math.floor((i-1) / numTests)].destroy()
         }
     }
-    for(var i = resultGrid.children.length; i > 0; i--) {
+    for(var i = resultGrid.children.length; i > numHeaders; i--) {
         if (resultGrid.children[i-1].hostName == host) {
             resultGrid.children[i-1].destroy()
         }
