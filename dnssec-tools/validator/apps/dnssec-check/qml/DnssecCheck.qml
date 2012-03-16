@@ -280,6 +280,11 @@ Rectangle {
         }
     }
 
+    WaitCursor {
+        id: waitText
+        anchors.centerIn: parent
+    }
+
     Component.onCompleted: {
         DNSSECCheck.loadInitial()
     }
@@ -345,6 +350,7 @@ Rectangle {
                 target: dnssecCheckTop
                 runningStatus: "Running all tests"
             }
+
         },
         State {
             name: "ran"

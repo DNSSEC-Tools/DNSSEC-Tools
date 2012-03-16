@@ -132,7 +132,8 @@ OTHER_FILES += \
     qml/WantToSubmitInfo.qml \
     qml/InfoBox.qml \
     qml/Help.qml \
-    qml/HostMenu.qml
+    qml/HostMenu.qml \
+    qml/WaitCursor.qml
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
