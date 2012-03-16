@@ -4,7 +4,7 @@
 
 DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName) :
     QObject(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName), m_statusStrings(),
-    m_async(false), m_result_status(0)
+    m_async(false), m_result_status(-1)
 {
     if (serverAddress)
         m_serverAddress = strdup(serverAddress);
@@ -118,7 +118,7 @@ void DNSSECTest::setAsync(bool async)
 
 void DNSSECTest::update()
 {
-    if (m_async && int(m_status) != m_result_status) {
+    if (m_async && statusToRc(m_status) != m_result_status) {
         //qDebug() << "Updating: (" << this << ") "<< m_status << " -> " << m_result_status;
         setStatus(rcToStatus(m_result_status));
     }
