@@ -21,9 +21,18 @@
 #include "arpa/header.h"
 #endif
 
+#define CHECK_CRITICAL  -1
 #define CHECK_SUCCEEDED 0
 #define CHECK_FAILED    1
 #define CHECK_WARNING   2
+
+/* Syncronous macros */
+
+#define SET_MESSAGE(msg, buffer, buffer_len)               \
+    do {                                                   \
+        strncpy(buffer, msg, buffer_len-1);                \
+        buffer[buffer_len-1] = '\0';                       \
+    } while(0);
 
 #define RETURN_CODE_BUF(code, msg, buffer, buffer_len)     \
     do {                                                   \
@@ -35,12 +44,188 @@
 #define RETURN_ERROR(msg)                                  \
     RETURN_CODE_BUF(CHECK_FAILED, "Error: " msg, buf, buf_len);
 
+#define RETURN_CRITICAL(msg)                               \
+    RETURN_CODE_BUF(CHECK_CRITICAL, "Critical: " msg, buf, buf_len);
+
 #define RETURN_SUCCESS(msg)                                \
     RETURN_CODE_BUF(CHECK_SUCCEEDED, "Success: " msg, buf, buf_len);
 
 #define RETURN_WARNING(msg)                                \
     RETURN_CODE_BUF(CHECK_WARNING, "Warning: " msg, buf, buf_len);
 
+/* Asyncronous Macros */
+#define SET_CODE_BUF(code, msg, buffer, buffer_len)        \
+    do {                                                   \
+        strncpy(buffer, msg, buffer_len-1);                \
+        buffer[buffer_len-1] = '\0';                       \
+        *testStatus = (code == CHECK_CRITICAL ? CHECK_FAILED : code);                          \
+        return code;                                       \
+    } while(0);
+
+#define SET_CRITICIAL(msg)                                  \
+    SET_CODE_BUF(CHECK_CRITICAL, "CRITICIAL: " msg, buf, buf_len);
+
+#define SET_ERROR(msg)                                  \
+    SET_CODE_BUF(CHECK_FAILED, "Error: " msg, buf, buf_len);
+
+#define SET_SUCCESS(msg)                                \
+    SET_CODE_BUF(CHECK_SUCCEEDED, "Success: " msg, buf, buf_len);
+
+#define SET_WARNING(msg)                                \
+    SET_CODE_BUF(CHECK_WARNING, "Warning: " msg, buf, buf_len);
+
+typedef int (AsyncCallback) (u_char *buffer, size_t buffer_size, int status, int *testReturnStatus);
+
+typedef struct outstanding_query_s {
+    int                      live;
+    struct expected_arrival *ea;
+    AsyncCallback           *callback;
+    int                     *testReturnStatus;
+} outstanding_query;
+
+int maxcount = 0;
+static outstanding_query outstanding_queries[1024];
+
+/*
+ * Async Loop processing
+ */
+int
+check_outstanding_async() {
+    int i, ret_val, handled = 0;
+
+    for(i = 0; i < maxcount; i++) {
+        u_char             *response_data = NULL;
+        size_t              response_length = 0;
+        struct name_server *server = NULL;
+        fd_set              fds;
+        int                 numfds = 0;
+        struct timeval      tv;
+
+        tv.tv_sec = 0;
+        tv.tv_usec = 1;
+
+        /* are we waiting on this one? */
+        if (!outstanding_queries[i].live)
+            continue;
+
+        res_async_query_select_info(outstanding_queries[i].ea, &numfds, &fds, &tv);
+
+        /* XXX: get fds */
+        if (!res_async_ea_isset(outstanding_queries[i].ea, &fds))
+            continue;
+
+        /* much from _resolver_rcv_one -> val_resquery_async_rcv */
+        ret_val = res_async_query_handle(outstanding_queries[i].ea, &handled, &fds);
+
+        if (ret_val == SR_NO_ANSWER_YET)
+            continue;
+
+        ret_val = res_io_get_a_response(outstanding_queries[i].ea, &response_data,
+                                        &response_length, &server);
+        ret_val = res_map_srio_to_sr(ret_val);
+
+        (*(outstanding_queries[i].callback))(response_data, response_length, ret_val, outstanding_queries[i].testReturnStatus);
+
+        outstanding_queries[i].live = 0;
+    }
+}
+
+void
+add_outstanding_async_query(struct expected_arrival *ea, AsyncCallback *callback, int *testReturnStatus) {
+    int i = 0;
+
+    if (ea == NULL || callback == NULL)
+        return;
+
+    while(i < maxcount) {
+        if(!outstanding_queries[i].live)
+            break;
+        i++;
+    }
+    outstanding_queries[i].live = 1;
+    outstanding_queries[i].ea = ea;
+    outstanding_queries[i].callback = callback;
+    outstanding_queries[i].testReturnStatus = testReturnStatus;
+    if (maxcount <= i)
+        maxcount = i+1;
+}
+
+void
+collect_async_query_select_info(fd_set *fds, int *numfds) {
+    int i;
+    struct timeval      tv;
+
+    tv.tv_sec = 0;
+    tv.tv_usec = 1;
+
+    for(i = 0; i < maxcount; i++) {
+        res_async_query_select_info(outstanding_queries[i].ea, numfds, fds, &tv);
+    }
+}
+
+/*
+ * DNS convenience routines
+ */
+
+int count_types(u_char *response, size_t len, char *buf, size_t buf_len, int rr_type)
+{
+    int             rc;
+    ns_msg          handle;
+    int             qdcount, ancount, nscount, arcount;
+    u_int           opcode, rcode, id;
+    ns_rr           rr;
+    int             rrnum;
+    int             count = 0;
+    int             found_type = 0;
+
+    if (ns_initparse(response, len, &handle) < 0)
+        RETURN_CRITICAL("Fatal internal error: failed to init parser");
+
+    opcode = libsres_msg_getflag(handle, ns_f_opcode);
+    rcode = libsres_msg_getflag(handle, ns_f_rcode);
+
+    id = ns_msg_id(handle);
+    qdcount = ns_msg_count(handle, ns_s_qd);
+    ancount = ns_msg_count(handle, ns_s_an);
+    nscount = ns_msg_count(handle, ns_s_ns);
+    arcount = ns_msg_count(handle, ns_s_ar);
+
+    //fprintf(stderr, "section counts: %d,%d,%d,%d\n", qdcount, ancount, nscount, arcount);
+
+    /* check the answer records for the DO bit in the response */
+    rrnum = 0;
+    for (;;) {
+        if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
+            if (errno != ENODEV) {
+                /* parse error */
+                RETURN_ERROR("failed to parse a returned additional RRSET");
+            }
+            break; /* out of data */
+        }
+        if (ns_rr_type(rr) == rr_type) {
+            found_type = 1;
+            count++;
+        }
+        rrnum++;
+    }
+
+    //fprintf(stderr, "count of type %d: count=%d / found=%d\n", rr_type, count, found_type);
+
+    /* set some generic records, but tests should really reset these */
+    if (!found_type)
+        RETURN_ERROR("No record found.");
+
+    SET_MESSAGE("A record was successfully retrieved", buf, buf_len);
+    return count;
+}
+
+/******************************************************************************
+ * TESTS
+ ******************************************************************************/
+
+/* LIBVAL specific async testing (not used in general unless testing libval itself) */
+
+#ifndef VAL_NO_ASYNC
 typedef struct basic_callback_data_s {
     char *domain;
     val_async_status *val_status;
@@ -95,8 +280,11 @@ int check_basic_async(char *ns_name, char *buf, size_t buf_len, int *return_stat
                           basic_async_data, &basic_async_data->val_status);
 }
 
+#endif /* !VAL_NO_ASYNC */
 
-
+/*
+ * BASIC DNS (over UDP) testing
+ */
 int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     int rc;
     struct name_server *ns;
@@ -120,39 +308,47 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *return_status
     if (rc != SR_UNSET)
         RETURN_ERROR("Basic DNS query failed entirely");
 
-    if (ns_initparse(response, len, &handle) < 0)
-        RETURN_ERROR("Fatal internal error: failed to init parser");
-
-    opcode = libsres_msg_getflag(handle, ns_f_opcode);
-    rcode = libsres_msg_getflag(handle, ns_f_rcode);
-    id = ns_msg_id(handle);
-    qdcount = ns_msg_count(handle, ns_s_qd);
-    ancount = ns_msg_count(handle, ns_s_an);
-    nscount = ns_msg_count(handle, ns_s_ns);
-    arcount = ns_msg_count(handle, ns_s_ar);
-
-    /* check the answer records for the DO bit in the response */
-    rrnum = 0;
-    for (;;) {
-        if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
-            if (errno != ENODEV) {
-                /* parse error */
-                RETURN_ERROR("failed to parse a returned additional RRSET");
-            }
-            break; /* out of data */
-        }
-        if (ns_rr_type(rr) == ns_t_a) {
-            found_a = 1;
-            break;
-        }
-        rrnum++;
-    }
-
-    if (!found_a)
+    rrnum = count_types(response, len, buf, buf_len, ns_t_a);
+    
+    if (!rrnum)
         RETURN_ERROR("No A record found using UDP in the basic DNS test.");
 
     RETURN_SUCCESS("An A record was successfully retrieved");
 }
+
+#ifndef VAL_NO_ASYNC
+int _check_basic_dns_async_response(u_char *response, size_t response_size, int rc, int *testStatus) {
+    ns_msg          handle;
+    int             qdcount, ancount, nscount, arcount;
+    u_int           opcode, rcode, id;
+    ns_rr           rr;
+    int             rrnum;
+    char            buf[1024];
+    size_t          buf_len = sizeof(buf);
+    int             found_a = 0;
+
+    if (rc != SR_UNSET)
+        SET_ERROR("Basic DNS query failed entirely");
+
+    rrnum = count_types(response, response_size, buf, buf_len, ns_t_a);
+    
+    if (rrnum <= 0)
+        SET_ERROR("No A record found using UDP in the basic DNS test.");
+
+    SET_SUCCESS("An A record was successfully retrieved");
+}
+
+int check_basic_dns_async(char *ns_name, char *buf, size_t buf_len, int *return_status) {
+    struct expected_arrival *ea;
+    struct name_server *ns;
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+
+    ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
+    add_outstanding_async_query(ea, _check_basic_dns_async_response, return_status);
+}
+#endif /* VAL_NO_ASYNC */
 
 int check_basic_tcp(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     int rc;
@@ -282,6 +478,45 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len, int *return_stat
     snprintf(buf, buf_len, "Success: The returned EDNS0 size (%d) was reasonable.", found_edns0);
     return CHECK_SUCCEEDED;
 }
+
+#ifndef VAL_NO_ASYNC
+int _check_small_edns0_async_response(u_char *response, size_t response_size, int rc, int *testStatus) {
+    ns_msg          handle;
+    int             qdcount, ancount, nscount, arcount;
+    u_int           opcode, rcode, id;
+    ns_rr           rr;
+    int             rrnum;
+    char            buf[1024];
+    size_t          buf_len = sizeof(buf);
+    int             found_a = 0;
+
+    if (rc != SR_UNSET)
+        SET_ERROR("Basic DNS query failed entirely");
+
+    if (ns_initparse(response, response_size, &handle) < 0)
+        SET_ERROR("Fatal internal error: failed to init parser");
+
+    opcode = libsres_msg_getflag(handle, ns_f_opcode);
+    rcode = libsres_msg_getflag(handle, ns_f_rcode);
+    id = ns_msg_id(handle);
+    qdcount = ns_msg_count(handle, ns_s_qd);
+    ancount = ns_msg_count(handle, ns_s_an);
+    nscount = ns_msg_count(handle, ns_s_ns);
+    arcount = ns_msg_count(handle, ns_s_ar);
+}
+
+int check_small_edns0_async(char *ns_name, char *buf, size_t buf_len, int *return_status) {
+    struct expected_arrival *ea;
+    struct name_server *ns;
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_edns0_size = 4096;
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+
+    ea = res_async_query_send(ns_name, ns_t_a, ns_c_in, ns);
+    add_outstanding_async_query(ea, _check_small_edns0_async_response, return_status);
+}
+#endif /* VAL_NO_ASYNC */
 
 int check_do_bit(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     /* queries with the DO bit and thus should return an answer with

@@ -100,7 +100,6 @@ void MainWindow::addAddress(QString server, int row) {
     QLabel *label;
     int column = 3;
 
-    qDebug() << "here: " << row << " / " << m_rows;
     if (row < 0) {
         qDebug() << "using mrows: " << m_rows;
         row = m_rows;

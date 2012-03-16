@@ -39,6 +39,9 @@ public:
 
     void update();
 
+    lightStatus rcToStatus(int rc);
+    int statusToRc(DNSSECTest::lightStatus status);
+
 signals:
     void statusChanged();
     void messageChanged();

@@ -43,6 +43,7 @@ void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
 {
     if (newStatus != m_status) {
         m_status = newStatus;
+        m_result_status = statusToRc(m_status);
         emit statusChanged();
         if (m_status == UNKNOWN)
             setMessage("Unknown");
@@ -60,13 +61,31 @@ void DNSSECTest::check()
         setStatus(TESTINGNOW);
         return;
     }
-    if (rc == 0)
-        setStatus(GOOD);
-    if (rc == 1)
-        setStatus(BAD);
-    if (rc == 2)
-        setStatus(WARNING);
+    setStatus(rcToStatus(rc));
     setMessage(QString(m_msgBuffer));
+}
+
+DNSSECTest::lightStatus DNSSECTest::rcToStatus(int rc) {
+    if (rc == 0)
+        return GOOD;
+    if (rc == 1)
+        return BAD;
+    if (rc == 2)
+        return WARNING;
+    return UNKNOWN;
+}
+
+int DNSSECTest::statusToRc(DNSSECTest::lightStatus status) {
+    switch (status) {
+    case GOOD:
+        return 0;
+    case BAD:
+        return 1;
+    case WARNING:
+        return 2;
+    default:
+        return -1;
+    }
 }
 
 void DNSSECTest::setMessage(const QString &message)
@@ -100,7 +119,8 @@ void DNSSECTest::setAsync(bool async)
 void DNSSECTest::update()
 {
     if (m_async && int(m_status) != m_result_status) {
-        setStatus(lightStatus(m_result_status));
+        //qDebug() << "Updating: (" << this << ") "<< m_status << " -> " << m_result_status;
+        setStatus(rcToStatus(m_result_status));
     }
 }
 

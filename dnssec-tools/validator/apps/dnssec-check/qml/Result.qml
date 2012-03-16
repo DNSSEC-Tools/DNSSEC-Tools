@@ -52,7 +52,7 @@ Rectangle {
         }
         hoverEnabled: true
         onEntered: { testName.font.pixelSize = parent.size/3 ; testName.color = "white"
-                     testResultMessage.text = "Test Result: " + testName.text + " on " + test.serverAddress + ": " + test.message }
+            testResultMessage.text = "Test Result: " + testName.text + " on " + test.serverAddress + ": " + test.message  + " (" + test.status + ")"}
         onExited:  { testName.font.pixelSize = parent.size/4 ; testName.color = "black"
                      testResultMessage.text = "" }
     }
