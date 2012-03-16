@@ -4,7 +4,7 @@ import DNSSECTools 1.0
 Rectangle {
     id: result
 
-    property int size: 30
+    property int size: 20
     property alias name: testName.text
     property DNSSECTest test
 
@@ -52,7 +52,7 @@ Rectangle {
         }
         hoverEnabled: true
         onEntered: { testName.font.pixelSize = parent.size/3 ; testName.color = "white"
-            testResultMessage.text = "Test Result: " + testName.text + " on " + test.serverAddress + ": " + test.message  + " (" + test.status + ")"}
+            testResultMessage.text = "Test Result: " + testName.text + " on " + test.serverAddress + ": " + test.message}
         onExited:  { testName.font.pixelSize = parent.size/4 ; testName.color = "black"
                      testResultMessage.text = "" }
     }
