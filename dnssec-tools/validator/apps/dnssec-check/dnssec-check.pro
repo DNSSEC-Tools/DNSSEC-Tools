@@ -133,7 +133,8 @@ OTHER_FILES += \
     qml/InfoBox.qml \
     qml/Help.qml \
     qml/HostMenu.qml \
-    qml/WaitCursor.qml
+    qml/WaitCursor.qml \
+    qml/ResolverMenu.qml
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)
