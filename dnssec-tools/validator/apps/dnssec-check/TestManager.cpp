@@ -16,8 +16,50 @@
 #include <QCryptographicHash>
 
 TestManager::TestManager(QObject *parent) :
-    QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage()
+    QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(), m_socketWatchers(),
+    m_tests(), m_num_fds(0)
 {
+    FD_ZERO(&m_fds);
+    m_timeout.tv_sec = 0;
+    m_timeout.tv_usec = 0;
+}
+
+void
+TestManager::dataAvailable()
+{
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 1;
+
+    // loop through everything we have now
+    while (val_async_check_wait(NULL, NULL, NULL, &tv, 0) > 0) {
+        //qDebug() << " hit";
+    }
+
+    // tell the tests to check and emit as necessary
+    foreach(DNSSECTest *test, m_tests) {
+        test->update();
+    }
+}
+
+void
+TestManager::updateWatchedSockets()
+{
+    // process any buffered or cache data first
+    dataAvailable();
+
+    m_num_fds = 0;
+    FD_ZERO(&m_fds);
+    val_async_select_info(0, &m_fds, &m_num_fds, &m_timeout);
+    for(int i = 0; i < m_num_fds; i++) {
+        if (FD_ISSET(i, &m_fds) && !m_socketWatchers.contains(i)) {
+            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::UdpSocket, 0);
+            m_socketWatchers[i] = socketToWatch;
+            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
+            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
+            //qDebug() << "Watching socket #" << i;
+        }
+    }
 }
 
 DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) {
@@ -54,10 +96,18 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case can_get_ds:
         newtest =  new DNSSECTest(m_parent, &check_can_get_ds, address.toAscii().data(), name);
         break;
+    case basic_async:
+        newtest =  new DNSSECTest(m_parent, &check_basic_async, address.toAscii().data(), name);
+        newtest->setAsync(true);
+        break;
     }
     if (newtest) {
+        m_tests.push_back(newtest);
         connect(newtest, SIGNAL(messageChanged(QString)), this, SLOT(handleResultMessageChanged(QString)));
         connect(newtest, SIGNAL(messageChanged(QString)), this, SIGNAL(aResultMessageChanged(QString)));
+        if (newtest->async()) {
+            connect(newtest, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
+        }
     }
     return newtest;
 }

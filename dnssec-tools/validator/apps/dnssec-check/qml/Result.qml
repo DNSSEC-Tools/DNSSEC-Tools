@@ -89,6 +89,14 @@ Rectangle {
                 target: result
                 color: "orange"
             }
+        },
+        State {
+            name: "testing"
+            when: test.status == DNSSECTest.TESTINGNOW
+            PropertyChanges {
+                target: result
+                color: "#bbbbff"
+            }
         }
     ]
 

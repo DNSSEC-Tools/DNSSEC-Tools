@@ -3,7 +3,7 @@ var tests = []
 var rawtests = []
 var testNumber = 0
 var hosttests = {}
-var numTests = 10
+var numTests = 11
 var numColumns = numTests + 1
 var currentTestHost = ""
 
@@ -99,6 +99,7 @@ function addHost(labelComponent, resultComponent, host) {
     makeLight(resultComponent, 7, "NSEC3", host)
     makeLight(resultComponent, 8, "DNSKEY", host)
     makeLight(resultComponent, 9, "DS", host)
+    makeLight(resultComponent, 10, "DNS", host)
 
     // XXX: for some reason the enums aren't working:
     // makeLight(resultComponent, testManager.basic_tcp, "TCP", host)
@@ -116,7 +117,7 @@ function createAllComponents() {
     tests = [];
 
     resultGrid.rows = hosts.length
-    resultGrid.columns = 11
+    resultGrid.columns = numColumns
 
     var resultComponent = Qt.createComponent("Result.qml")
     var labelComponent  = Qt.createComponent("HostLabel.qml")

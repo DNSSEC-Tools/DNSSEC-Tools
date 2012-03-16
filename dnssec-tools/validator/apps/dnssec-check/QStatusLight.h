@@ -5,7 +5,7 @@
 
 #include "DNSSECTest.h"
 
-typedef int (CheckFunction) (char *serveraddr, char *returnString, size_t returnStringSize);
+typedef int (CheckFunction) (char *serveraddr, char *returnString, size_t returnStringSize, int *returnStatus);
 
 class QStatusLight : public QPushButton
 {
