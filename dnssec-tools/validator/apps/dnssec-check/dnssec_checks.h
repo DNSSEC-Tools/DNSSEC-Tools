@@ -21,6 +21,8 @@ int check_do_has_rrsigs_async(char *ns_name, char *buf, size_t buf_len, int *ret
 int check_can_get_nsec_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_can_get_nsec3_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 int check_small_edns0_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
+int check_can_get_dnskey_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
+int check_can_get_ds_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
 
 /* libval async test */
 int check_basic_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
