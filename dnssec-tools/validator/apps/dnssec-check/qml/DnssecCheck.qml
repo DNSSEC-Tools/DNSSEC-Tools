@@ -141,10 +141,10 @@ Rectangle {
         */
 
         Button {
-            id: clearButton
-            text: "Clear Resolvers"
+            id: resolverButton
+            text: "Resolvers"
             onClicked: {
-                DNSSECCheck.clearServers()
+                resolverMenu.state = "visible"
             }
         }
 
@@ -256,6 +256,17 @@ Rectangle {
         }
     }
 
+    ResolverMenu {
+        id: resolverMenu
+        onClearResolvers: {
+            DNSSECCheck.clearServers()
+        }
+        onLoadSystemResolvers: {
+            DNSSECCheck.clearServers()
+            DNSSECCheck.loadInitial()
+        }
+    }
+
     InfoBox {
         id: startupMessage
         state: testManager.getSetting("initMessageDisplayed") == dnssecToolsVersion ? "hidden" : "visible"
@@ -306,7 +317,7 @@ Rectangle {
                 enabled: false
             }
             PropertyChanges {
-                target: clearButton
+                target: resolverButton
                 enabled: true
             }
         },
@@ -325,8 +336,8 @@ Rectangle {
                 enabled: false
             }
             PropertyChanges {
-                target:  clearButton
-                enabled: false
+                target:  resolverButton
+                enabled: true
             }
         },
         State {
@@ -344,7 +355,7 @@ Rectangle {
                 enabled: false
             }
             PropertyChanges {
-                target: clearButton
+                target: resolverButton
                 enabled: false
             }
             PropertyChanges {

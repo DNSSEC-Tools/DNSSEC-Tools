@@ -11,6 +11,7 @@ function loadInitial() {
     hosts = testManager.loadResolvConf();
 
     createAllComponents();
+    dnssecCheckTop.state = ""
 }
 
 function clearServers() {

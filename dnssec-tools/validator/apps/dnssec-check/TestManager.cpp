@@ -197,6 +197,8 @@ QStringList TestManager::loadResolvConf()
     if (!ctx)
         return QStringList();
 
+    m_serverAddresses.clear();
+
     // loop through them
     struct name_server *ns_list = val_get_nameservers(ctx);
     char buffer[1025];
