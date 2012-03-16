@@ -140,6 +140,25 @@ Flickable {
         }
     }
 
+    Image {
+        id: quitBox
+        anchors.top: topScrollBox.bottom
+        anchors.right: topScrollBox.right
+        anchors.topMargin: 0
+        anchors.rightMargin: 4
+        z: infoFlickable.z + 2
+
+        source: ":/images/xbox.png"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                infoBox.state = "hidden"
+                dismissed()
+            }
+        }
+    }
+
     states: [
         State {
             name: "hidden"
