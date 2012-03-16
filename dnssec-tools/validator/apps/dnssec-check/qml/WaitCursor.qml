@@ -12,7 +12,7 @@ Item {
         width: 50;
         height: 10;
         anchors.verticalCenter: parent.verticalCenter
-        color: "green";
+        color: Qt.lighter("green");
         border.color: Qt.darker("green")
         border.width: 2
         x: 0
@@ -39,7 +39,7 @@ Item {
             name: "visible"
             PropertyChanges {
                 target: waitCursor
-                opacity: .75
+                opacity: 1
             }
             when: dnssecCheckTop.state == "running"
         }

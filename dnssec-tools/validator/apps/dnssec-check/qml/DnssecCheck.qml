@@ -84,7 +84,7 @@ Rectangle {
 
             property int resultWidth: 54
 
-            Header { text: "Host" ; width: 150}
+            Header { text: "Host" ; width: 150 }
             Header { text: "DNS" }
             Header { text: "TCP" }
             Header { text: "DO" }
