@@ -5,10 +5,11 @@ Rectangle {
     id: result
 
     property int size: 20
-    property alias name: testName.text
+    //property alias name: testName.text
+    property string name: ""
     property DNSSECTest test
 
-    width:  size
+    width:  resultGrid.resultWidth
     height: size
     radius: size/2
     border.color: Qt.darker(color)
@@ -17,19 +18,6 @@ Rectangle {
     //state: "unknown"
     color:   "black"
 
-    Text {
-        id: testName
-        font.pixelSize: parent.size/4
-        anchors.centerIn: parent
-        z: 3
-    }
-    Text {
-        id: testNameBackGround
-        font.pixelSize: testName.font.pixelSize
-        anchors.centerIn: parent
-        color: "white"
-        z: 2
-    }
     MouseArea {
         anchors.fill: parent
         Timer {
@@ -51,9 +39,9 @@ Rectangle {
             dnssecCheckTop.state = "half"
         }
         hoverEnabled: true
-        onEntered: { testName.font.pixelSize = parent.size/3 ; testName.color = "white"
-            testResultMessage.text = "Test Result: " + testName.text + " on " + test.serverAddress + ": " + test.message}
-        onExited:  { testName.font.pixelSize = parent.size/4 ; testName.color = "black"
+        onEntered: { // testName.font.pixelSize = parent.size/3 ; testName.color = "white"
+            testResultMessage.text = "Test Result: " + name + " on " + test.serverAddress + ": " + test.message}
+        onExited:  { // testName.font.pixelSize = parent.size/4 ; testName.color = "black"
                      testResultMessage.text = "" }
     }
 

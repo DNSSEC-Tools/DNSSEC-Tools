@@ -77,10 +77,24 @@ Rectangle {
 
         Grid {
             id: resultGrid
-            columns: 2
+            columns: getColumns()
             spacing: 5
             x: parent.border.width * 2 + 4
             y: parent.border.width * 2 + 4
+
+            property int resultWidth: 50
+
+            Header { text: "Host" }
+            Header { text: "DNS" }
+            Header { text: "TCP" }
+            Header { text: "DO" }
+            Header { text: "AD" }
+            Header { text: "RRSIG" }
+            Header { text: "EDNS0" }
+            Header { text: "NSEC" }
+            Header { text: "NSEC3" }
+            Header { text: "DNSKEY" }
+            Header { text: "DS" }
         }
     }
 

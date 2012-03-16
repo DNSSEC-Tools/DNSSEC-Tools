@@ -134,7 +134,8 @@ OTHER_FILES += \
     qml/Help.qml \
     qml/HostMenu.qml \
     qml/WaitCursor.qml \
-    qml/ResolverMenu.qml
+    qml/ResolverMenu.qml \
+    qml/Header.qml
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)

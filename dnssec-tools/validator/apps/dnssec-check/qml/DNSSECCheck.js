@@ -7,6 +7,10 @@ var numTests = 10
 var numColumns = numTests + 1
 var currentTestHost = ""
 
+function getColumns() {
+    return numColumns
+}
+
 function loadInitial() {
     hosts = testManager.loadResolvConf();
 
@@ -118,7 +122,7 @@ function addHost(labelComponent, resultComponent, host) {
 function createAllComponents() {
     tests = [];
 
-    resultGrid.rows = hosts.length
+    resultGrid.rows = hosts.length + 1
     resultGrid.columns = numColumns
 
     var resultComponent = Qt.createComponent("Result.qml")
