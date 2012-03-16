@@ -3,7 +3,8 @@
 #include <qdebug.h>
 
 DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName) :
-    QObject(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName), m_statusStrings()
+    QObject(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName), m_statusStrings(),
+    m_async(false), m_result_status(0)
 {
     if (serverAddress)
         m_serverAddress = strdup(serverAddress);
@@ -16,6 +17,7 @@ DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const cha
     m_statusStrings.insert(GOOD, "good");
     m_statusStrings.insert(BAD, "bad");
     m_statusStrings.insert(WARNING, "warning");
+    m_statusStrings.insert(TESTINGNOW, "testing");
 }
 
 DNSSECTest::DNSSECTest(const DNSSECTest &copyFrom) :
@@ -51,7 +53,13 @@ void DNSSECTest::check()
 {
     if (!m_checkFunction || !m_serverAddress)
         return;
-    int rc = (*m_checkFunction)(m_serverAddress, m_msgBuffer, sizeof(m_msgBuffer));
+    m_result_status = TESTINGNOW;
+    int rc = (*m_checkFunction)(m_serverAddress, m_msgBuffer, sizeof(m_msgBuffer), &m_result_status);
+    if (m_async) {
+        emit asyncTestSubmitted();
+        setStatus(TESTINGNOW);
+        return;
+    }
     if (rc == 0)
         setStatus(GOOD);
     if (rc == 1)
@@ -76,6 +84,24 @@ const QString DNSSECTest::message() const
 const QString DNSSECTest::serverAddress() const
 {
     return QString(m_serverAddress);
+}
+
+bool DNSSECTest::async() const
+{
+    return m_async;
+}
+
+void DNSSECTest::setAsync(bool async)
+{
+    m_async = async;
+    emit asyncChanged();
+}
+
+void DNSSECTest::update()
+{
+    if (m_async && int(m_status) != m_result_status) {
+        setStatus(lightStatus(m_result_status));
+    }
 }
 
 const QString DNSSECTest::name() const

@@ -12,6 +12,8 @@
 #include <QtCore/QStringList>
 #include <QtCore/QVariantList>
 #include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QAbstractSocket>
+#include <QtCore/QList>
 
 #define ENABLE_RESULTS_SUBMISSION 1
 
@@ -37,7 +39,8 @@ public:
           can_get_nsec,
           can_get_nsec3,
           can_get_dnskey,
-          can_get_ds
+          can_get_ds,
+          basic_async
         };
     explicit TestManager(QObject *parent = 0);
 
@@ -63,6 +66,8 @@ signals:
 public slots:
     void responseReceived(QNetworkReply *response);
     void handleResultMessageChanged(QString message);
+    void dataAvailable();
+    void updateWatchedSockets();
 
 private:
     QObject *m_parent;
@@ -70,6 +75,12 @@ private:
     QNetworkAccessManager *m_manager;
     QString m_submissionMessage;
     QString m_lastResultMessage;
+    QHash<int, QAbstractSocket *> m_socketWatchers;
+    QList<DNSSECTest *> m_tests;
+
+    fd_set          m_fds;
+    int             m_num_fds;
+    struct timeval  m_timeout;
 };
 
 #endif // TESTMANAGER_H

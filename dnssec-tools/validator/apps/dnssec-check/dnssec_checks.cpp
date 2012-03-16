@@ -12,6 +12,7 @@
 #include <validator/validator-config.h>
 #include "arpa/nameser.h"
 #include "validator/resolver.h"
+#include "validator/validator.h"
 #include "resolv.h"
 
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
@@ -40,7 +41,63 @@
 #define RETURN_WARNING(msg)                                \
     RETURN_CODE_BUF(CHECK_WARNING, "Warning: " msg, buf, buf_len);
 
-int check_basic_dns(char *ns_name, char *buf, size_t buf_len) {
+typedef struct basic_callback_data_s {
+    char *domain;
+    val_async_status *val_status;
+    int *return_status;
+} basic_callback_data;
+
+int _check_basic_async_response(val_async_status *async_status, int event,
+                                val_context_t *ctx, void *user_ctx,
+                                val_cb_params_t *cbp) {
+
+    basic_callback_data *data = (basic_callback_data *) user_ctx;
+
+    if (!data->return_status)
+        return 0;
+
+    if (val_istrusted(cbp->val_status)) {
+        *data->return_status = CHECK_SUCCEEDED;
+    } else {
+        *data->return_status = CHECK_FAILED;
+    }
+
+    return 0; /* OK */
+}
+
+int count = 0;
+int check_basic_async(char *ns_name, char *buf, size_t buf_len, int *return_status) {
+    int rc;
+    struct name_server *ns;
+    struct name_server *server;
+    u_char *response;
+    size_t len;
+    int found_a = 0;
+    val_async_event_cb callback_info = &_check_basic_async_response;
+    basic_callback_data *basic_async_data;
+
+    ns_msg          handle;
+    int             qdcount, ancount, nscount, arcount;
+    u_int           opcode, rcode, id;
+    ns_rr           rr;
+    int             rrnum;
+
+    ns = parse_name_server(ns_name, NULL);
+    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+
+    basic_async_data = (basic_callback_data *) malloc(sizeof(basic_callback_data));
+    basic_async_data->domain = strdup("www.dnssec-tools.org");
+    basic_async_data->val_status = 0;
+    basic_async_data->return_status = return_status;
+    count++;
+
+    rc = val_async_submit(NULL, basic_async_data->domain, ns_c_in, ns_t_a, 0, callback_info,
+                          basic_async_data, &basic_async_data->val_status);
+}
+
+
+
+int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     int rc;
     struct name_server *ns;
     struct name_server *server;
@@ -97,7 +154,7 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len) {
     RETURN_SUCCESS("An A record was successfully retrieved");
 }
 
-int check_basic_tcp(char *ns_name, char *buf, size_t buf_len) {
+int check_basic_tcp(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     int rc;
     struct name_server *ns;
     struct name_server *server;
@@ -154,7 +211,7 @@ int check_basic_tcp(char *ns_name, char *buf, size_t buf_len) {
     RETURN_SUCCESS("An A record was successfully retrieved over TCP");
 }
 
-int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
+int check_small_edns0(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     int rc;
     struct name_server *ns;
     struct name_server *server;
@@ -226,7 +283,7 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
     return CHECK_SUCCEEDED;
 }
 
-int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
+int check_do_bit(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     /* queries with the DO bit and thus should return an answer with
        the DO bit as well.  It should additionall have at least one
        RRSIG record. */
@@ -299,7 +356,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
 }
 
 
-int check_ad_bit(char *ns_name, char *buf, size_t buf_len) {
+int check_ad_bit(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     /* queries with the DO bit and sees if the AD bit is set for a response
        that should be valadatable from the root down. */
 
@@ -341,7 +398,7 @@ int check_ad_bit(char *ns_name, char *buf, size_t buf_len) {
 
 
 
-int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len) {
+int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     /* queries with the DO bit and thus should return an answer with
        the DO bit as well.  It should additionall have at least one
        RRSIG record. */
@@ -472,11 +529,11 @@ int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char 
     RETURN_SUCCESS("Querying for a non-existent record returned an NSEC3 record.");
 }
 
-int check_can_get_nsec(char *ns_name, char *buf, size_t buf_len) {
+int check_can_get_nsec(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     return check_can_get_negative(ns_name, buf, buf_len, "bogusdnstest.dnssec-tools.org", ns_t_nsec);
 }
 
-int check_can_get_nsec3(char *ns_name, char *buf, size_t buf_len) {
+int check_can_get_nsec3(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     return check_can_get_negative(ns_name, buf, buf_len, "foobardedabadoo.org", ns_t_nsec3);
 }
 
@@ -547,10 +604,10 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
     return CHECK_SUCCEEDED;
 }
 
-int check_can_get_dnskey(char *ns_name, char *buf, size_t buf_len) {
+int check_can_get_dnskey(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", ns_t_dnskey);
 }
 
-int check_can_get_ds(char *ns_name, char *buf, size_t buf_len) {
+int check_can_get_ds(char *ns_name, char *buf, size_t buf_len, int *return_status) {
     return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DS", ns_t_ds);
 }
