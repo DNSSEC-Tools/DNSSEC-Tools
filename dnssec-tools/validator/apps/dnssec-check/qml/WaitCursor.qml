@@ -3,32 +3,19 @@ import QtQuick 1.0
 Item {
     id: waitCursor
     z: 50
-    width: waitTextContent.width + waitBackground.border.width * 4
-    height: waitTextContent.height + waitBackground.border.width * 4
-    opacity:  0
-
-    property string waitText: "<p>Runing Tests<p>Please Wait"
+    width: dnssecCheckTop.width
+    height: rect.height
+    opacity: 0
 
     Rectangle {
-        id: waitBackground
-        border.color: "#fff"
-        border.width: 10
-        radius: 5
-        color: "#444"
-        opacity: .5
-        anchors.fill: parent
-        z: parent.z + 1
-    }
-
-    Text {
-        id: waitTextContent
-        text: waitText
-        color: "#fff"
-        z: parent.z + 2
-        font.pixelSize: 60
-        anchors.centerIn: parent
-        horizontalAlignment: Text.AlignHCenter
-        opacity: 1
+        id: rect
+        width: 50;
+        height: 10;
+        anchors.top: parent.top
+        color: "green";
+        border.color: Qt.darker("green")
+        border.width: 2
+        x: 0
     }
 
     states: [
@@ -43,7 +30,7 @@ Item {
             name: "visible"
             PropertyChanges {
                 target: waitCursor
-                opacity: .5
+                opacity: .75
             }
             when: dnssecCheckTop.state == "running"
         }
@@ -52,11 +39,31 @@ Item {
 
     transitions: [
         Transition {
-            from: "*"
-            to: "*"
+            from: ""
+            to: "visible"
             PropertyAnimation {
                 properties: "opacity"
                 duration:   100
+            }
+            SequentialAnimation {
+                //running: state == "visible"
+                loops: Animation.Infinite
+                PropertyAnimation {
+                    target: rect
+                    from: 0
+                    to: waitCursor.width - rect.width
+                    property: "x"
+                    easing.type: Easing.InOutSine
+                    duration: 500
+                }
+                PropertyAnimation {
+                    target: rect
+                    to: 0
+                    from: waitCursor.width - rect.width
+                    property: "x"
+                    easing.type: Easing.InOutSine
+                    duration: 500
+                }
             }
         }
     ]
