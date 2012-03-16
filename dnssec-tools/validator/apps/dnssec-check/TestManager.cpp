@@ -87,9 +87,30 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case basic_dns:
         newtest =  new DNSSECTest(m_parent, &check_basic_dns, address.toAscii().data(), name);
         break;
+    case do_has_rrsigs:
+        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs, address.toAscii().data(), name);
+        break;
+    case can_get_nsec:
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec, address.toAscii().data(), name);
+        break;
+    case can_get_nsec3:
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3, address.toAscii().data(), name);
+        break;
 #else
     case basic_dns:
         newtest =  new DNSSECTest(m_parent, &check_basic_dns_async, address.toAscii().data(), name);
+        newtest->setAsync(true);
+        break;
+    case do_has_rrsigs:
+        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs_async, address.toAscii().data(), name);
+        newtest->setAsync(true);
+        break;
+    case can_get_nsec:
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec_async, address.toAscii().data(), name);
+        newtest->setAsync(true);
+        break;
+    case can_get_nsec3:
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3_async, address.toAscii().data(), name);
         newtest->setAsync(true);
         break;
 #endif
@@ -102,17 +123,8 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case ad_bit:
         newtest =  new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
         break;
-    case do_has_rrsigs:
-        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs, address.toAscii().data(), name);
-        break;
     case small_edns0:
         newtest =  new DNSSECTest(m_parent, &check_small_edns0, address.toAscii().data(), name);
-        break;
-    case can_get_nsec:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec, address.toAscii().data(), name);
-        break;
-    case can_get_nsec3:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3, address.toAscii().data(), name);
         break;
     case can_get_dnskey:
         newtest =  new DNSSECTest(m_parent, &check_can_get_dnskey, address.toAscii().data(), name);
