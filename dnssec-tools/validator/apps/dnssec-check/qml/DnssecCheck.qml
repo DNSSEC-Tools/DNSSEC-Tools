@@ -304,6 +304,10 @@ Rectangle {
                 target: resetButton
                 enabled: false
             }
+            PropertyChanges {
+                target: clearButton
+                enabled: true
+            }
         },
         State {
             name: "cleared"
@@ -336,6 +340,10 @@ Rectangle {
             name: "running"
             PropertyChanges {
                 target: submitButton
+                enabled: false
+            }
+            PropertyChanges {
+                target: clearButton
                 enabled: false
             }
             PropertyChanges {
