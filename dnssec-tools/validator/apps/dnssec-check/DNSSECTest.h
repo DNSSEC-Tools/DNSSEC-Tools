@@ -20,7 +20,7 @@ public:
     Q_PROPERTY(bool    async          READ async         WRITE setAsync    NOTIFY asyncChanged)
 
 
-    DNSSECTest(QObject *parent = 0, CheckFunction *check_function = 0, const char *serverAddress = 0, const QString &checkName = "");
+    DNSSECTest(QObject *parent = 0, CheckFunction *check_function = 0, const char *serverAddress = 0, const QString &checkName = "", bool isAsync = false);
     DNSSECTest(const DNSSECTest &copyFrom);
 
     lightStatus status();
