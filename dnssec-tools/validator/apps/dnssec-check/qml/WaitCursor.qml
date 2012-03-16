@@ -4,18 +4,27 @@ Item {
     id: waitCursor
     z: 50
     width: dnssecCheckTop.width
-    height: rect.height
+    height: newServerBox.height
     opacity: 0
 
     Rectangle {
         id: rect
         width: 50;
         height: 10;
-        anchors.top: parent.top
+        anchors.verticalCenter: parent.verticalCenter
         color: "green";
         border.color: Qt.darker("green")
         border.width: 2
         x: 0
+    }
+
+    Text {
+        id: testingText
+        text: "Testing..."
+        color: "white"
+        font.italic: true
+        font.pixelSize: parent.height * 3 / 4
+        anchors.centerIn: parent
     }
 
     states: [
