@@ -282,7 +282,8 @@ Rectangle {
 
     WaitCursor {
         id: waitText
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter:   titleBox.verticalCenter
     }
 
     Component.onCompleted: {
