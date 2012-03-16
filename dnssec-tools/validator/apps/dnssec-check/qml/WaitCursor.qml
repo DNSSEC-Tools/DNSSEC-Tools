@@ -15,7 +15,7 @@ Item {
         border.width: 10
         radius: 5
         color: "#444"
-        opacity: .25
+        opacity: .5
         anchors.fill: parent
         z: parent.z + 1
     }
@@ -28,7 +28,7 @@ Item {
         font.pixelSize: 60
         anchors.centerIn: parent
         horizontalAlignment: Text.AlignHCenter
-        opacity: .75
+        opacity: 1
     }
 
     states: [
@@ -56,7 +56,7 @@ Item {
             to: "*"
             PropertyAnimation {
                 properties: "opacity"
-                duration:   250
+                duration:   100
             }
         }
     ]
