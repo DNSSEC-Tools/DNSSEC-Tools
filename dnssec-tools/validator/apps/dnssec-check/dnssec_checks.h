@@ -1,9 +1,9 @@
 #ifndef DNSSEC_CHECKS_H
 #define DNSSEC_CHECKS_H
 
-int check_outstanding_async();
 int async_requests_remaining();
-int check_queued_sends();
+void check_outstanding_async();
+void check_queued_sends();
 void collect_async_query_select_info(fd_set *fds, int *numfds, fd_set *tcp_fds, int *numUdpFds);
 
 int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *return_status);
