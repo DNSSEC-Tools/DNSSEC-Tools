@@ -362,16 +362,11 @@ sub optsandargs
 	#
 	# Get the path for the realmctl command.
 	#
-print "\n\ndon't use absolute path here\n\n\n";
-if(0)
-{
 	if(($realmctl=dt_cmdpath('realmctl')) eq '')
 	{
 		print STDERR "no absolute path defined for realmctl; exiting...\n";
 		exit(1);
 	}
-}
-$realmctl = "./realmctl";
 
 	#
 	# Kick dtrealms into *really* starting grandvizier, but only if
@@ -1252,7 +1247,6 @@ sub readrealm
 
 		$colorind = 0 if(($colorind % $NUMCOLORS) == 0);
 		$rowcolors{$realm} = $rowcolors[$colorind];
-print "$realm:  setting rowcolor - <$rowcolors{$realm}>\t$colorind\n";
 		$colorind++;
 	}
 
@@ -1358,7 +1352,6 @@ sub realmstripe
 	my $realmname;				# Actual realm name.
 	my $fgcolor  = $NORMALFG;		# Foreground color.
 	my $bgcolor;				# Background color.
-	my $phasecolor;				# Color of phase column.
 	my $out;				# Status response.
 
 	my $row;				# Row index.
@@ -1386,8 +1379,7 @@ sub realmstripe
 	#
 	# Get this realm's background color.
 	#
-	$bgcolor    = getcolor($realm);
-	$phasecolor = getcolor($realm);
+	$bgcolor = getcolor($realm);
 
 	#
 	# Get this realm's foreground color.
@@ -1398,7 +1390,7 @@ sub realmstripe
 	# Set the realm name's field.  (We're setting this here so it can
 	# be modified in a single place.)
 	#
-	$realmtxt  = "$realm    ";
+	$realmtxt = "$realm    ";
 
 	#
 	# Get the realm name.
@@ -2386,20 +2378,12 @@ COPYRIGHT
 			       -default_button => "Okay",
 			       -buttons => ["Okay"]);
 
-open(T,">>/tmp/t");
-print T "help_help:  0\n";
-close(T);
-
 	#
 	# Create a scrolled text widget for the help message itself.
 	# 
 	$helpwij = $helpwin->Scrolled('Text',
 				      -scrollbars => 'e',
 				      -state => 'normal');
-
-open(T,">>/tmp/t");
-print T "help_help:  1\n";
-close(T);
 
 	$helpwij->insert('1.0',$helpstr);
 	$helpwij->configure(-state => 'disabled');
