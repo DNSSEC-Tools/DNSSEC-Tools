@@ -4,13 +4,15 @@
 <head>
 <title>Net::DNS::SEC::Tools::timetrans - Convert an integer seconds count into text units.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:suresh@localhost.localdomain" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -29,9 +31,11 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -51,11 +55,11 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>The <em>timetrans</em>() interface in <strong>Net::DNS::SEC::Tools::timetrans</strong>
-converts an integer seconds count into the equivalent number of weeks,
-days, hours, and minutes.  The time converted is a relative time, <strong>not</strong>
-an absolute time.  The returned time is given in terms of weeks, days, hours,
-minutes, and seconds, as required to express the seconds count appropriately.</p>
+<p>The <em>timetrans</em>() interface in <strong>Net::DNS::SEC::Tools::timetrans</strong> converts an
+integer seconds count into the equivalent number of days, hours, and minutes.
+The time converted is a relative time, <strong>not</strong> an absolute time.  The returned
+time is given in terms of days, hours, minutes, and seconds, as required to
+express the seconds count appropriately.</p>
 <p>The <em>fuzzytimetrans</em>() interface converts an integer seconds count into the
 equivalent number of weeks <strong>or</strong> days <strong>or</strong> hours <strong>or</strong> minutes.  The unit
 chosen is that which is most natural for the seconds count.  One decimal
@@ -70,9 +74,9 @@ below.</p>
 </p>
 <h2><a name="timetrans__"><strong>timetrans()</strong></a></h2>
 <p>This routine converts an integer seconds count into the equivalent number of
-weeks, days, hours, and minutes.  This converted seconds count is returned
-as a text string.  The seconds count must be greater than zero or an error
-will be returned.</p>
+days, hours, and minutes.  This converted seconds count is returned as a text
+string.  The seconds count must be greater than zero or an error will be
+returned.</p>
 <p>Return Values:</p>
 <pre>
     If a valid seconds count was given, the count converted into the
@@ -103,8 +107,8 @@ will be returned.</p>
 <p><em>timetrans(888)</em> returns 14 minutes, 48 seconds</p>
 <p><em>timetrans(86400)</em> returns 1 day</p>
 <p><em>timetrans(86488)</em> returns 1 day, 28 seconds</p>
-<p><em>timetrans(715000)</em> returns 1 week, 1 day, 6 hours, 36 minutes, 40 second</p>
-<p><em>timetrans(720000)</em> returns 1 week, 1 day, 8 hours</p>
+<p><em>timetrans(715000)</em> returns 8 days, 6 hours, 36 minutes, 40 second</p>
+<p><em>timetrans(720000)</em> returns 8 days, 8 hours</p>
 <p><em>fuzzytimetrans(400)</em> returns 6.7 minutes</p>
 <p><em>fuzzytimetrans(420)</em> returns 7.0 minutes</p>
 <p><em>fuzzytimetrans(888)</em> returns 14.8 minutes</p>
@@ -116,7 +120,7 @@ will be returned.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2008 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

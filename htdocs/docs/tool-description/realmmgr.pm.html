@@ -1,0 +1,282 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Net::DNS::SEC::Tools::realmmgr - Communicate with the DNSSEC-Tools realms
+manager.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#general_interfaces">GENERAL INTERFACES</a></li>
+	<li><a href="#dtrealms_communications_interfaces">DTREALMS COMMUNICATIONS INTERFACES</a></li>
+	<li><a href="#warnings">WARNINGS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>Net::DNS::SEC::Tools::realmmgr - Communicate with the DNSSEC-Tools realms
+manager.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use Net::DNS::SEC::Tools::realmmgr;</pre>
+<pre>
+  $dir = realmmgr_dir();</pre>
+<pre>
+  $idfile = realmmgr_idfile();</pre>
+<pre>
+  $id = realmmgr_getid();</pre>
+<pre>
+  realmmgr_dropid();</pre>
+<pre>
+  realmmgr_rmid();</pre>
+<pre>
+  realmmgr_cmdint();</pre>
+<pre>
+  $runflag = realmmgr_running();</pre>
+<pre>
+  realmmgr_halt();</pre>
+<pre>
+  realmmgr_channel(1);
+  ($cmd,$data) = realmmgr_getcmd();
+  $ret = realmmgr_verifycmd($cmd);</pre>
+<pre>
+  realmmgr_sendcmd(CHANNEL_CLOSE,REALMCMD_STARTREALM,&quot;example-realm&quot;);</pre>
+<pre>
+  realmmgr_sendcmd(CHANNEL_WAIT,REALMCMD_STARTREALM,&quot;example-realm&quot;);
+  ($retcode, $respmsg) = realmmgr_getresp();</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <strong>Net::DNS::SEC::Tools::realmmgr</strong> module provides standard,
+platform-independent methods for a program to communicate with DNSSEC-Tools'
+<strong>dtrealms</strong> realms manager.  There are two interface classes described
+here:  general interfaces and communications interfaces.</p>
+<p>
+</p>
+<hr />
+<h1><a name="general_interfaces">GENERAL INTERFACES</a></h1>
+<p>The interfaces to the <strong>Net::DNS::SEC::Tools::realmmgr</strong> module are given below.</p>
+<dl>
+<dt><strong><a name="realmmgr_dir" class="item"><em>realmmgr_dir()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns <strong>dtrealms</strong>'s directory.</p>
+</dd>
+<dt><strong><a name="realmmgr_idfile" class="item"><em>realmmgr_idfile()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns <strong>dtrealms</strong>'s id file.</p>
+</dd>
+<dt><strong><a name="realmmgr_getid" class="item"><em>realmmgr_getid()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns <strong>dtrealms</strong>'s process id.  If a non-zero value
+is passed as an argument, the id file will be left open and accessible through
+the PIDFILE file handle.  See the WARNINGS section below.</p>
+<p>Return Values:</p>
+<pre>
+    On success, the first portion of the file contents
+        (up to 80 characters) is returned.
+    -1 is returned if the id file does not exist.</pre>
+</dd>
+<dt><strong><a name="realmmgr_dropid" class="item"><em>realmmgr_dropid()</em></a></strong></dt>
+
+<dd>
+<p>This interface ensures that another instance of <strong>dtrealms</strong> is not
+running and then creates a id file for future reference.</p>
+<p>Return Values:</p>
+<pre>
+    1 - the id file was successfully created for this process
+    0 - another process is already acting as dtrealms
+   -1 - unable to create the id file</pre>
+</dd>
+<dt><strong><a name="realmmgr_rmid" class="item"><em>realmmgr_rmid()</em></a></strong></dt>
+
+<dd>
+<p>This interface deletes <strong>dtrealms</strong>'s id file.</p>
+<p>Return Values:</p>
+<pre>
+     1 - the id file was successfully deleted
+     0 - no id file exists
+    -1 - the calling process is not dtrealms
+    -2 - unable to delete the id file</pre>
+</dd>
+<dt><strong><a name="realmmgr_cmdint" class="item"><em>realmmgr_cmdint()</em></a></strong></dt>
+
+<dd>
+<p>This routine informs <strong>dtrealms</strong> that a command has been sent via
+<em>realmmgr_sendcmd()</em>.</p>
+<p>Return Values:</p>
+<pre>
+    -1 - an invalid process id was found for dtrealms
+    Anything else indicates the number of processes that were
+    signaled.
+    (This should only ever be 1.)</pre>
+</dd>
+<dt><strong><a name="realmmgr_running" class="item"><em>realmmgr_running()</em></a></strong></dt>
+
+<dd>
+<p>This routine determines if dtrealms is running and returns a value indicating
+the status.</p>
+<p>Return Values:</p>
+<pre>
+     1 - dtrealms is running.
+     0 - The process listed in the dtrealms process id file
+         is not running.
+    -1 - Unable to get the dtrealms process id.</pre>
+</dd>
+<dt><strong><a name="realmmgr_halt" class="item"><em>realmmgr_halt()</em></a></strong></dt>
+
+<dd>
+<p>This routine informs <strong>dtrealms</strong> to shut down.</p>
+<p>In the current implementation, the return code from the <strong>kill()</strong> command is
+returned.</p>
+<pre>
+    -1 - an invalid process id was found for dtrealms
+    Anything else indicates the number of processes that were
+    signaled.
+    (This should only ever be 1.)</pre>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="dtrealms_communications_interfaces">DTREALMS COMMUNICATIONS INTERFACES</a></h1>
+<dl>
+<dt><strong><a name="realmmgr_channel" class="item"><em>realmmgr_channel(serverflag)</em></a></strong></dt>
+
+<dd>
+<p>This interface sets up a persistent channel for communications with <strong>dtrealms</strong>.
+If <em>serverflag</em> is true, then the server's side of the channel is created.
+If <em>serverflag</em> is false, then the client's side of the channel is created.</p>
+<p>Currently, the connection may only be made to the localhost.  This may be
+changed to allow remote connections, if this is found to be needed.</p>
+</dd>
+<dt><strong><a name="realmmgr_queuecmd" class="item"><em>realmmgr_queuecmd(cmdname, value)</em></a></strong></dt>
+
+<dd>
+<p>This interface internally remembers a command and it's optional value
+for later processing.  See the <em>realmmgr_getcmd()</em> next for further
+details.</p>
+</dd>
+<dt><strong><a name="realmmgr_getcmd" class="item"><em>realmmgr_getcmd()</em></a></strong></dt>
+
+<dd>
+<p><em>realmmgr_getcmd()</em> processes commands that need to be dealt with.  If
+there are any internally stored commands queued via the
+<em>realmmgr_queuecmd()</em> function, they are dealt with first.  After that it
+retrieves a command sent over <strong>dtrealms</strong>'s communications channel by a
+client program.  The command and the command's data are sent in each
+message.</p>
+<p>The command and the command's data are returned to the caller.</p>
+</dd>
+<dt><strong><a name="realmmgr_sendcmd" class="item"><em>realmmgr_sendcmd(closeflag,cmd,data)</em></a></strong></dt>
+
+<dd>
+<p><em>realmmgr_sendcmd()</em> sends a command to <strong>dtrealms</strong>.  The command must be one
+of the commands from the table below.  This interface creates a communications
+channel to <strong>dtrealms</strong> and sends the message.  The channel is not closed, in
+case the caller wants to receive a response from <strong>dtrealms</strong>.</p>
+<p>The available commands and their required data are:</p>
+<pre>
+   command              data            purpose
+   -------              ----            -------
+   REALMCMD_COMMAND     realm, command  run command in a realm
+   REALMCMD_DISPLAY     1/0             start/stop dtrealms'
+                                        graphical display
+   REALMCMD_GETSTATUS   none            currently unused
+   REALMCMD_LOGFILE     log filename    change the log file
+   REALMCMD_LOGLEVEL    log level       set a new logging level
+   REALMCMD_LOGMSG      log message     add a message to the log
+   REALMCMD_LOGTZ       timezone        set timezone for log messages
+   REALMCMD_NODISPLAY   0               stop dtrealms' graphical display
+   REALMCMD_REALMSTATUS none            get status of the realms
+   REALMCMD_SHUTDOWN    none            stop dtrealms and its realms
+   REALMCMD_STARTALL    none            start all stopped realms
+   REALMCMD_STOPALL     none            stop all running realms
+   REALMCMD_STARTREALM  realm name      restart a suspended realm
+   REALMCMD_STOPREALM   realm name      stop realm
+   REALMCMD_STATUS      none            get status of dtrealms</pre>
+<p>The data aren't checked for validity by <em>realmmgr_sendcmd()</em>; validity
+checking is a responsibility of <strong>dtrealms</strong>.</p>
+<p>If the caller does not need a response from <strong>dtrealms</strong>, then <em>closeflag</em>
+should be set to <strong>CHANNEL_CLOSE</strong>; if a response is required then
+<em>closeflag</em> should be <strong>CHANNEL_WAIT</strong>.  These values are boolean values,
+and the constants aren't required.</p>
+<p>On success, 1 is returned.  If an invalid command is given, 0 is returned.</p>
+</dd>
+<dt><strong><a name="realmmgr_getresp" class="item"><em>realmmgr_getresp()</em></a></strong></dt>
+
+<dd>
+<p>After executing a client command sent via <em>realmmgr_sendcmd()</em>, <strong>dtrealms</strong>
+will send a response to the client.  <em>realmmgr_getresp()</em> allows
+the client to retrieve the response.</p>
+<p>A return code and a response string are returned, in that order.  Both are
+specific to the command sent.</p>
+</dd>
+<dt><strong><a name="realmmgr_verifycmd" class="item"><em>realmmgr_verifycmd(cmd)</em></a></strong></dt>
+
+<dd>
+<p><em>realmmgr_verifycmd()</em> verifies that <em>cmd</em> is a valid command for <strong>dtrealms</strong>.
+1 is returned for a valid command; 0 is returned for an invalid command.</p>
+<p>1 is returned for a valid command; 0 is returned for an invalid command.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="warnings">WARNINGS</a></h1>
+<p>1.  <em>realmmgr_getid()</em> attempts to exclusively lock the id file.
+Set a timer if this matters to you.</p>
+<p>2.  <em>realmmgr_getid()</em> has a nice little race condition.  We should lock
+the file prior to opening it, but we can't do so without it being open.</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>realmctl(1)</strong></p>
+<p><strong>dtrealms(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::realm.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::rolllog.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::rollmgr.pm(3)</strong></p>
+
+</body>
+
+</html>

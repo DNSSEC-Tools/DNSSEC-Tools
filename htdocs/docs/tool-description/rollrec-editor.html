@@ -4,7 +4,7 @@
 <head>
 <title>rollrec-editor - DNSSEC-Tools Rollrec GUI Editor</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
@@ -256,6 +256,16 @@ If the <em>ignore-warnings</em> flag has been turned on, then these warnings wil
 not be reported.  Errors (e.g., invalid log conditions) will always be
 reported.</p>
 </dd>
+<dt><strong><a name="rename_selected_rollrec" class="item"><strong>Rename Selected Rollrec</strong></a></strong></dt>
+
+<dd>
+<p>Rename the selected <em>rollrec</em> record.   The name in the <em>rollrec</em>'s &quot;roll&quot;
+or &quot;skip&quot; line will be changed to the new name.  Only one <em>rollrec</em> may be
+renamed at a time, and it may not be edited while the rename is taking place.</p>
+<p>If the <em>rollrec</em> has been modified, the new contents <strong>must</strong> be written to
+disk prior to the rename happening.  The user will be prompted to ensure that
+this the user wishes to continue.</p>
+</dd>
 <dt><strong><a name="merge_rollrec_files" class="item"><strong>Merge Rollrec Files</strong></a></strong></dt>
 
 <dd>
@@ -419,13 +429,6 @@ buttons undisplayed.</p>
 </dd>
 <dt>
 <dd>
-<p>Segmentation violation on exit.  Should not affect anything as file has
-already been saved.  Occurs on Mac OS X 10.4.9-10.4.11 with Perl 5.8.6;
-does not occur on Linux FC5 with Perl 5.8.8 or Mac OS X 10.5.8 with Perl
-5.8.8.</p>
-</dd>
-<dt>
-<dd>
 <p>There is no undo command.</p>
 </dd>
 </dl>
@@ -433,7 +436,7 @@ does not occur on Linux FC5 with Perl 5.8.8 or Mac OS X 10.5.8 with Perl
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2007-2010 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2007-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

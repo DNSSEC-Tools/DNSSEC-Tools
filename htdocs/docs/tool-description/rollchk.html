@@ -5,7 +5,7 @@
 <title>rollchk - Check a DNSSEC-Tools I&lt;rollrec&gt; file for problems and
 inconsistencies.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
@@ -20,6 +20,14 @@ inconsistencies.</title>
 	<li><a href="#name">NAME</a></li>
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#types_of_checks">TYPES OF CHECKS</a></li>
+	<ul>
+
+		<li><a href="#file_checks">File Checks</a></li>
+		<li><a href="#raw_file_checks">Raw File Checks</a></li>
+		<li><a href="#rollrec_checks">Rollrec Checks</a></li>
+	</ul>
+
 	<li><a href="#options">OPTIONS</a></li>
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
@@ -48,12 +56,45 @@ inconsistencies.</p>
 <h1><a name="description">DESCRIPTION</a></h1>
 <p>This script checks the <em>rollrec</em> file specified by <em>rollrec-file</em> for
 problems and inconsistencies.</p>
-<p>Recognized problems include:</p>
+<p>
+</p>
+<hr />
+<h1><a name="types_of_checks">TYPES OF CHECKS</a></h1>
+<p>There are three types of checks performed by <strong>rollchk</strong>:  file checks,
+&quot;raw&quot; file checks, and <em>rollrec</em> checks.  The checks are performed in that
+order, and if any of the group checks fail then <strong>rollchk</strong> exits.</p>
+<p>
+</p>
+<h2><a name="file_checks">File Checks</a></h2>
+<p>These checks determine basic information about the <em>rollrec</em> file itself.
+Recognized problems are:</p>
 <ul>
 <li><strong><a name="non_existent_rollrec_file" class="item">non-existent rollrec file</a></strong>
 
 <p>The specified <em>rollrec</em> file does not exist.</p>
 </li>
+<li><strong><a name="non_regular_rollrec_file" class="item">non-regular rollrec file</a></strong>
+
+<p>The specified <em>rollrec</em> file is not a regular file.</p>
+</li>
+</ul>
+<p>
+</p>
+<h2><a name="raw_file_checks">Raw File Checks</a></h2>
+<p>These checks are performed directly on the file contents, rather than by
+using the <em>rollrec.pm</em> interfaces.  Recognized problems are:</p>
+<ul>
+<li><strong><a name="duplicated_rollrec_names" class="item">duplicated rollrec names</a></strong>
+
+<p>A <em>rollrec</em> name is not unique.</p>
+</li>
+</ul>
+<p>
+</p>
+<h2><a name="rollrec_checks">Rollrec Checks</a></h2>
+<p>These checks are performed after referencing the file contents with the
+the <em>rollrec.pm</em> interfaces.  Recognized problems are:</p>
+<ul>
 <li><strong><a name="no_zones_defined" class="item">no zones defined</a></strong>
 
 <p>No zones are defined in the specified <em>rollrec</em> file.</p>
@@ -183,7 +224,7 @@ This option is mutually exclusive of the <strong>-roll</strong> option.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2010 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

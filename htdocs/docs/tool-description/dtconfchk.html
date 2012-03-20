@@ -4,7 +4,7 @@
 <head>
 <title>dtconfchk - Check a DNSSEC-Tools configuration file for sanity</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
@@ -147,6 +147,12 @@ artificial limit under which it <em>may</em> not make sense to have an end-time.
 commands, and a few miscellaneous files.</p>
 <p>The following path checks are performed for DNSSEC-Tools commands:</p>
 <dl>
+<dt><strong><a name="genkrf" class="item"><em>genkrf</em></a></strong></dt>
+
+<dd>
+<p>Ensure the <em>genkrf</em> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.</p>
+</dd>
 <dt><strong><a name="keyarch" class="item"><em>keyarch</em></a></strong></dt>
 
 <dd>
@@ -157,6 +163,12 @@ the file must be a regular executable file.</p>
 
 <dd>
 <p>Ensure the <em>rollchk</em> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.</p>
+</dd>
+<dt><strong><a name="rollctl" class="item"><em>rollctl</em></a></strong></dt>
+
+<dd>
+<p>Ensure the <em>rollctl</em> field is valid.  If the filename starts with a '/',
 the file must be a regular executable file.</p>
 </dd>
 <dt><strong><a name="zonesigner" class="item"><em>zonesigner</em></a></strong></dt>
@@ -222,6 +234,28 @@ directories:</p>
 <h2><a name="rollover_daemon_checks">Rollover Daemon Checks</a></h2>
 <p>The following checks are performed for <strong>rollerd</strong> values:</p>
 <dl>
+<dt><strong><a name="autosign" class="item"><em>autosign</em></a></strong></dt>
+
+<dd>
+<p>Ensure that the <em>autosign</em> flag is a valid boolean.</p>
+</dd>
+<dt><strong><a name="log_tz" class="item"><em>log_tz</em></a></strong></dt>
+
+<dd>
+<p>Ensure the <em>log_tz</em> field is either 'gmt' or 'local'.</p>
+</dd>
+<dt><strong><a name="prog_normal" class="item"><em>prog_normal</em></a></strong></dt>
+
+<dt><strong><a name="prog_ksk1_prog_ksk7" class="item"><em>prog_ksk1</em> ... <em>prog_ksk7</em></a></strong></dt>
+
+<dt><strong><a name="prog_zsk1_prog_zsk4" class="item"><em>prog_zsk1</em> ... <em>prog_zsk4</em></a></strong></dt>
+
+<dd>
+<p>Ensure that the rollover phase commands are valid paths.   Each of these
+fields is a semicolon-separated command list.  The file checks are run on
+the commands to ensure the commands exist and are executable.  Options and
+arguments to the commands are ignored, as is the <em>default</em> keyword.</p>
+</dd>
 <dt><strong><a name="roll_loadzone" class="item"><em>roll_loadzone</em></a></strong></dt>
 
 <dd>
@@ -379,7 +413,7 @@ The number of errors will be used as the exit code.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

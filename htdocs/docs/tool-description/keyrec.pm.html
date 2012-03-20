@@ -4,13 +4,15 @@
 <head>
 <title>Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I&lt;keyrec&gt; file operations</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:suresh@localhost.localdomain" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -18,16 +20,18 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#keyrec_interfaces">KEYREC INTERFACES</a></li>
-	<li><a href="#keyrec_signingset_interfaces">KEYREC SIGNING-SET INTERFACES</a></li>
+	<li><a href="#keyrec_signing_set_interfaces">KEYREC SIGNING-SET INTERFACES</a></li>
 	<li><a href="#keyrec_internal_interfaces">KEYREC INTERNAL INTERFACES</a></li>
 	<li><a href="#keyrec_debugging_interfaces">KEYREC DEBUGGING INTERFACES</a></li>
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -41,7 +45,8 @@
   use Net::DNS::SEC::Tools::keyrec;</pre>
 <pre>
   keyrec_creat(&quot;localzone.keyrec&quot;);
-  keyrec_open(&quot;localzone.keyrec&quot;);
+  keyrec_open(&quot;localzone.keyrec&quot;);  (DEPRECATED)
+  $okfile = keyrec_filestat(&quot;localzone.keyrec&quot;);
   keyrec_read(&quot;localzone.keyrec&quot;);</pre>
 <pre>
   @krnames = keyrec_names();</pre>
@@ -57,16 +62,19 @@
   keyrec_add(&quot;zone&quot;,&quot;example.com&quot;,\%zone_krfields);
   keyrec_add(&quot;key&quot;,&quot;Kexample.com.+005+12345&quot;,\%keydata);</pre>
 <pre>
-  keyrec_del(&quot;example.com&quot;);
-  keyrec_del(&quot;Kexample.com.+005+12345&quot;);</pre>
+  keyrec_del(&quot;example.com&quot;);</pre>
 <pre>
   keyrec_setval(&quot;zone&quot;,&quot;example.com&quot;,&quot;zonefile&quot;,&quot;db.example.com&quot;);</pre>
 <pre>
+  keyrec_delval(&quot;example.com&quot;,&quot;kskrev&quot;);</pre>
+<pre>
   @kskpaths = keyrec_keypaths(&quot;example.com&quot;,&quot;kskcur&quot;);</pre>
+<pre>
+  $obsflag = keyrec_revoke_check(&quot;Kexample.com.+005+12345&quot;);</pre>
 <pre>
   $setname = keyrec_signset_newname(&quot;example.com&quot;);</pre>
 <pre>
-  keyrec_signset_new(&quot;zone&quot;,&quot;example-keys&quot;);</pre>
+  keyrec_signset_new($zone,&quot;example-set-21&quot;,&quot;zskcur&quot;);</pre>
 <pre>
   keyrec_signset_addkey(&quot;example-keys&quot;,&quot;Kexample.com+005+12345&quot;,
                                          &quot;Kexample.com+005+54321&quot;);
@@ -92,6 +100,7 @@
   keyrec_close();
   keyrec_discard();</pre>
 <pre>
+  $current_krf = keyrec_curkrf();
   $default_krf = keyrec_defkrf();</pre>
 <p>
 </p>
@@ -113,18 +122,21 @@ following is an example of a key <em>keyrec</em>:</p>
           keyrec_type     &quot;kskcur&quot;
           algorithm       &quot;rsasha1&quot;
           random          &quot;/dev/urandom&quot;
-          ksklength       &quot;512&quot;
+          ksklength       &quot;2048&quot;
           ksklife         &quot;15768000&quot;
+          revperiod       &quot;3888000&quot;
+          revtime         &quot;1103277532&quot;
           keyrec_gensecs  &quot;1101183727&quot;
           keyrec_gendate  &quot;Tue Nov 23 04:22:07 2004&quot;</pre>
-<p>The first step in using this module <strong>must</strong> be to create a new <em>keyrec</em>
-file or open and read an existing one.  The <em>keyrec_creat()</em> interface creates
-a <em>keyrec</em> file if it does not exist and opens it.  The <em>keyrec_open()</em>
-interface opens an existing <em>keyrec</em> file.  The <em>keyrec_read()</em> interface
-reads the file and parses it into an internal format. The file's
-records are copied into a hash table (for easy reference by the
-<strong>Net::DNS::SEC::Tools::keyrec</strong> routines) and in an array (for
-preserving formatting and comments.)</p>
+<p>The first step in using this module <strong>must</strong> be to create a new <em>keyrec</em> file
+or open and read an existing one.  The <em>keyrec_creat()</em> interface creates a
+<em>keyrec</em> file if it does not exist.  The <em>keyrec_read()</em> interface opens
+and reads the file, then parses it into an internal format.  The file's
+records are copied into a hash table (for easy and fast reference by the
+<strong>Net::DNS::SEC::Tools::keyrec</strong> routines) and in an array (for preserving
+formatting and comments.) The <em>keyrec_filestat()</em> interface may be used
+check that the given file may be a <em>keyrec</em> file, though it doesn't check
+the file's contents.</p>
 <p>After the file has been read, the contents are referenced using
 <em>keyrec_fullrec()</em> and <em>keyrec_recval()</em>.  The <em>keyrec</em> contents are
 modified using <em>keyrec_add()</em>, and <em>keyrec_setval()</em>.  <em>keyrec_settime()</em>
@@ -144,99 +156,88 @@ closes the file handle <strong>without</strong> saving any modified data.</p>
 <h1><a name="keyrec_interfaces">KEYREC INTERFACES</a></h1>
 <p>The interfaces to the <strong>Net::DNS::SEC::Tools::keyrec</strong> module are given below.</p>
 <dl>
-<dt><strong><a name="item_keyrec_add"><em>keyrec_add(keyrec_type,keyrec_name,fields)</em></a></strong>
+<dt><strong><a name="keyrec_add" class="item"><em>keyrec_add(keyrec_type,keyrec_name,fields)</em></a></strong></dt>
 
 <dd>
 <p>This routine adds a new <em>keyrec</em> to the <em>keyrec</em> file and the internal
 representation of the file contents.  The <em>keyrec</em> is added to both the
 <em>%keyrecs</em> hash table and the <em>@keyreclines</em> array.</p>
-</dd>
-<dd>
-<p><em>keyrec_type</em> specifies the type of the <em>keyrec</em> -- ``key'' or ``zone''.
+<p><em>keyrec_type</em> specifies the type of the <em>keyrec</em> -- &quot;key&quot; or &quot;zone&quot;.
 <em>keyrec_name</em> is the name of the <em>keyrec</em>.  <em>fields</em> is a reference to a
 hash table that contains the name/value <em>keyrec</em> fields.  The keys of the
 hash table are always converted to lowercase, but the entry values are left
 as given.</p>
-</dd>
-<dd>
 <p>The <em>ksklength</em> entry is only added if the value of the <em>keyrec_type</em>
-field is ``kskcur''.</p>
-</dd>
-<dd>
+field is &quot;kskcur&quot;.</p>
 <p>The <em>zsklength</em> entry is only added if the value of the <em>keyrec_type</em>
-field is ``zsk'', ``zskcur'', ``zskpub'', or ``zsknew''.</p>
-</dd>
-<dd>
+field is &quot;zsk&quot;, &quot;zskcur&quot;, &quot;zskpub&quot;, or &quot;zsknew&quot;.</p>
 <p>Timestamp fields are added at the end of the <em>keyrec</em>.  For key <em>keyrec</em>s,
 the <em>keyrec_gensecs</em> and <em>keyrec_gendate</em> timestamp fields are added.  For
 zone <em>keyrec</em>s, the <em>keyrec_signsecs</em> and <em>keyrec_signdate</em> timestamp
 fields are added.</p>
-</dd>
-<dd>
 <p>If a specified field isn't defined for the <em>keyrec</em> type, the entry isn't
 added.  This prevents zone <em>keyrec</em> data from getting mingled with key
 <em>keyrec</em> data.</p>
-</dd>
-<dd>
 <p>A blank line is added after the final line of the new <em>keyrec</em>.  After adding
 all new <em>keyrec</em> entries, the <em>keyrec</em> file is written but is not closed.</p>
-</dd>
-<dd>
 <p>Return values are:</p>
-</dd>
-<dd>
 <pre>
     0 success
     -1 invalid I&lt;krtype&gt;</pre>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_close"><em>keyrec_close()</em></a></strong>
+<dt><strong><a name="keyrec_close" class="item"><em>keyrec_close()</em></a></strong></dt>
 
 <dd>
 <p>This interface saves the internal version of the <em>keyrec</em> file (opened with
-<em>keyrec_creat()</em>, <em>keyrec_open()</em> or <em>keyrec_read()</em>) and closes the file
-handle.</p>
+<em>keyrec_read()</em>) and closes the file handle.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_creat"><em>keyrec_creat(keyrec_file)</em></a></strong>
+<dt><strong><a name="keyrec_creat" class="item"><em>keyrec_creat(keyrec_file)</em></a></strong></dt>
 
 <dd>
 <p>This interface creates a <em>keyrec</em> file if it does not exist, and truncates
-the file if it already exists.  It leaves the file in the open state.</p>
-</dd>
-<dd>
+the file if it already exists.</p>
 <p><em>keyrec_creat()</em> returns 1 if the file was created successfully.
 It returns 0 if there was an error in creating the file.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_defkrf"><em>keyrec_defkrf()</em></a></strong>
+<dt><strong><a name="keyrec_curkrf" class="item"><em>keyrec_curkrf()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the name of the <em>keyrec</em> file that is currently in use.
+This value is the filename passed to <em>keyrec_read()</em> or <em>keyrec_creat()</em>;
+it is not guaranteed to be either an absolute or relative filename.</p>
+</dd>
+<dt><strong><a name="keyrec_defkrf" class="item"><em>keyrec_defkrf()</em></a></strong></dt>
 
 <dd>
 <p>This routine returns the default <em>keyrec</em> filename from the DNSSEC-Tools
 configuration file.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_del"><em>keyrec_del(keyrec_name)</em></a></strong>
+<dt><strong><a name="keyrec_del" class="item"><em>keyrec_del(keyrec_name)</em></a></strong></dt>
 
 <dd>
 <p>This routine deletes a <em>keyrec</em> from the <em>keyrec</em> file and the internal
 representation of the file contents.  The <em>keyrec</em> is deleted from both
 the <em>%keyrecs</em> hash table and the <em>@keyreclines</em> array.</p>
-</dd>
-<dd>
 <p>Only the <em>keyrec</em> itself is deleted from the file.  Any associated comments
 and blank lines surrounding it are left intact.</p>
-</dd>
-<dd>
 <p>Return values are:</p>
-</dd>
-<dd>
 <pre>
-    0 successful I&lt;keyrec&gt; deletion
-    -1 invalid I&lt;krtype&gt; (empty string or unknown name)</pre>
+     0 successful keyrec deletion
+    -1 invalid krtype (empty string or unknown name)</pre>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_discard"><em>keyrec_discard()</em></a></strong>
+<dt><strong><a name="keyrec_delval" class="item"><em>keyrec_delval(keyrec_name, field)</em></a></strong></dt>
+
+<dd>
+<p>This routine deletes the <em>field</em> from the <em>keyrec</em> named by <em>keyrec_name</em>.
+The <em>keyrec</em> is deleted from both the <em>%keyrecs</em> hash table and the
+<em>@keyreclines</em> array.</p>
+<p>Return values are:</p>
+<pre>
+    -1 keyrec_name not the name of an existing keyrec
+     0 field not found in keyrec
+     1 field deleted from keyrec</pre>
+</dd>
+<dt><strong><a name="keyrec_discard" class="item"><em>keyrec_discard()</em></a></strong></dt>
 
 <dd>
 <p>This routine removes a <em>keyrec</em> file from use by a program.  The internally
@@ -244,46 +245,75 @@ stored data are deleted and the <em>keyrec</em> file handle is closed.  However,
 modified data are not saved prior to closing the file handle.  Thus, modified
 and new data will be lost.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_exists"><em>keyrec_exists(keyrec_name)</em></a></strong>
+<dt><strong><a name="keyrec_exists" class="item"><em>keyrec_exists(keyrec_name)</em></a></strong></dt>
 
 <dd>
 <p><em>keyrec_exists()</em> returns a boolean indicating if a <em>keyrec</em> exists that
 has the specified <em>keyrec_name</em>.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_fullrec"><em>keyrec_fullrec(keyrec_name)</em></a></strong>
+<dt><strong><a name="keyrec_filestat" class="item"><em>keyrec_filestat(keyrec_name)</em></a></strong></dt>
+
+<dd>
+<p><em>keyrec_filestat()</em> checks that a given file might be a reasonable candidate
+for a DNSSEC-Tools <em>keyrec</em> file.  The checks to be performed may be gleaned
+from the list of return values.</p>
+<p>Return values are:
+    0 - returned if the tests are all succeed
+    1 - an actual name wasn't given
+    2 - the file does not exist
+    3 - the file is not a regular file
+    4 - the file is not readable
+    5 - the file is empty</p>
+</dd>
+<dt><strong><a name="keyrec_fullrec" class="item"><em>keyrec_fullrec(keyrec_name)</em></a></strong></dt>
 
 <dd>
 <p><em>keyrec_fullrec()</em> returns a reference to the <em>keyrec</em> specified in
 <em>keyrec_name</em>.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_keyfields"><em>keyrec_keyfields()</em></a></strong>
+<dt><strong><a name="keyrec_keyfields" class="item"><em>keyrec_keyfields()</em></a></strong></dt>
 
 <dd>
 <p>This routine returns a list of the recognized fields for a key <em>keyrec</em>.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_names"><em>keyrec_names()</em></a></strong>
+<dt><strong><a name="keyrec_keypaths" class="item"><em>keyrec_keypaths(zonename,keytype)</em></a></strong></dt>
+
+<dd>
+<p><em>keyrec_keypaths()</em> returns a list of paths to a set of key files for a
+given zone.  The zone is specified in <em>zonename</em> and the type of key is
+given in <em>keytype</em>.</p>
+<p><em>keytype</em> must be one of the following:  &quot;kskcur&quot;, &quot;kskpub&quot;, &quot;kskrev&quot;,
+&quot;kskobs&quot;&quot;, &quot;zskcur&quot;, &quot;zskpub&quot;, &quot;zsknew&quot;, &quot;zskobs&quot;, &quot;ksk&quot;, &quot;zsk&quot;, or &quot;all&quot;.
+Case does not matter for the <em>keytype</em>.</p>
+<p>If <em>keytype</em> is one of the special labels (&quot;ksk&quot;, &quot;zsk&quot;, or &quot;all&quot;) then a
+set of key paths will be returned.
+A <em>keytype</em> of &quot;ksk&quot; will return paths to all KSK keys for the zone,
+a <em>keytype</em> of &quot;zsk&quot; will return paths to all ZSK keys for the zone,
+and a <em>keytype</em> of &quot;all&quot; will return paths to all keys for the zone,</p>
+<p>If the given key type is not defined in the given zone's zone <em>keyrec</em>
+or if the key type is not recognized, then a null set is returned.</p>
+</dd>
+<dt><strong><a name="keyrec_names" class="item"><em>keyrec_names()</em></a></strong></dt>
 
 <dd>
 <p>This routine returns a list of the <em>keyrec</em> names from the file.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_open"><em>keyrec_open(keyrec_file)</em></a></strong>
+<dt><strong><a name="keyrec_open" class="item"><em>keyrec_open(keyrec_file)</em> <strong>DEPRECATED</strong></a></strong></dt>
 
 <dd>
-<p>This interface opens an existing <em>keyrec</em> file.  It first attempts to open
-the <em>keyrec</em> file for reading and writing.  If this fails, then it attempts
-to open it read-only.</p>
+<p>This routine used to open an existing DNSSEC-Tools <em>keyrec</em> file.  However,
+this was an unnecessary operation since <em>keyrec_read()</em> would open the file
+if it wasn't already open.</p>
+<p>This call will eventually be removed.  For now, it calls <em>keyrec_filestat()</em>
+to check the validity of the specified <em>keyrec</em> file.</p>
+<p>Return values:</p>
+<pre>
+    1 is the file passes all of keyrec_filestat()'s tests
+    0 is the file fails any of keyrec_filestat()'s tests</pre>
+<p>For backwards compatibility, the success/failure meaning of the return values
+matches the success/failure meaning of <em>keyrec_open()</em>'s original returns.</p>
 </dd>
-<dd>
-<p><em>keyrec_open()</em> returns 1 if the file was opened successfully.  It returns 0
-if the file does not exists or if there was an error in opening the file.</p>
-</dd>
-</li>
-<dt><strong><a name="item_keyrec_read"><em>keyrec_read(keyrec_file)</em></a></strong>
+<dt><strong><a name="keyrec_read" class="item"><em>keyrec_read(keyrec_file)</em></a></strong></dt>
 
 <dd>
 <p>This interface reads the specified <em>keyrec</em> file and parses it into a
@@ -291,97 +321,72 @@ if the file does not exists or if there was an error in opening the file.</p>
 called prior to any of the other <strong>Net::DNS::SEC::Tools::keyrec</strong> calls.  If
 another <em>keyrec</em> is already open, then it is saved and closed prior to
 opening the new <em>keyrec</em>.</p>
-</dd>
-<dd>
 <p>Upon success, <em>keyrec_read()</em> returns the number of <em>keyrec</em>s read from the
 file.</p>
-</dd>
-<dd>
 <p>Failure return values:</p>
-</dd>
-<dd>
 <pre>
-    -1 specified I&lt;keyrec&gt; file doesn't exit
+    -1 specified I&lt;keyrec&gt; file doesn't exist
     -2 unable to open I&lt;keyrec&gt; file
     -3 duplicate I&lt;keyrec&gt; names in file</pre>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_recval"><em>keyrec_recval(keyrec_name,keyrec_field)</em></a></strong>
+<dt><strong><a name="keyrec_recval" class="item"><em>keyrec_recval(keyrec_name,keyrec_field)</em></a></strong></dt>
 
 <dd>
 <p>This routine returns the value of a specified field in a given <em>keyrec</em>.
 <em>keyrec_name</em> is the name of the particular <em>keyrec</em> to consult.
 <em>keyrec_field</em> is the field name within that <em>keyrec</em>.</p>
-</dd>
-<dd>
 <p>For example, the current <em>keyrec</em> file contains the following <em>keyrec</em>:</p>
-</dd>
-<dd>
 <pre>
     zone        &quot;example.com&quot;
                 zonefile        &quot;db.example.com&quot;</pre>
-</dd>
-<dd>
 <p>The call:</p>
-</dd>
-<dd>
 <pre>
     keyrec_recval(&quot;example.com&quot;,&quot;zonefile&quot;)</pre>
+<p>will return the value &quot;db.example.com&quot;.</p>
 </dd>
+<dt><strong><a name="keyrec_revoke_check" class="item"><em>keyrec_revoke_check(key)</em></a></strong></dt>
+
 <dd>
-<p>will return the value ``db.example.com''.</p>
+<p>This interface checks a revoked KSK's <em>keyrec</em> to determine if it is in or
+out of its revocation period.  The key must be a &quot;kskrev&quot; type key, and it
+must have &quot;revtime&quot; and &quot;revperiod&quot; fields defined in the <em>keyrec</em>.</p>
+<p>The determination is made by subtracting the revoke time from the current
+time.  If this is greater than the revocation period, the the key has
+exceeded the time in which it must be revoked.  If not, then it must remain
+revoked.</p>
+<p>Return values:</p>
+<pre>
+     1 specified key is outside the revocation period and should be
+       marked as obsolete
+     0 specified key is in the revocation period and should be left
+       revoked
+    -1 error (invalid key type, missing I&lt;keyrec&gt; data)</pre>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_saveas"><em>keyrec_saveas(keyrec_file_copy)</em></a></strong>
+<dt><strong><a name="keyrec_saveas" class="item"><em>keyrec_saveas(keyrec_file_copy)</em></a></strong></dt>
 
 <dd>
 <p>This interface saves the internal version of the <em>keyrec</em> file (opened with
-<em>keyrec_creat()</em>, <em>keyrec_open()</em> or <em>keyrec_read()</em>) to the file named in
-the <em>keyrec_file_copy</em> parameter.  The new file's file handle is closed, 
-but the original file and the file handle to the original file are not
-affected.</p>
+or <em>keyrec_read()</em>) to the file named in the <em>keyrec_file_copy</em> parameter.
+The new file's file handle is closed, but the original file and the file
+handle to the original file are not affected.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_setval"><em>keyrec_setval(keyrec_type,keyrec_name,field,value)</em></a></strong>
+<dt><strong><a name="keyrec_setval" class="item"><em>keyrec_setval(keyrec_type,keyrec_name,field,value)</em></a></strong></dt>
 
 <dd>
 <p>Set the value of a <em>name/field</em> pair in a specified <em>keyrec</em>.  The file is
 <strong>not</strong> written after updating the value.  The value is saved in both
 <em>%keyrecs</em> and in <em>@keyreclines</em>, and the file-modified flag is set.</p>
-</dd>
-<dd>
 <p><em>keyrec_type</em> specifies the type of the <em>keyrec</em>.  This is only used if a
 new <em>keyrec</em> is being created by this call.
 <em>keyrec_name</em> is the name of the <em>keyrec</em> that will be modified.
 <em>field</em> is the <em>keyrec</em> field which will be modified.
 <em>value</em> is the new value for the field.</p>
-</dd>
-<dd>
 <p>Return values are:</p>
-</dd>
-<dd>
 <pre>
     0 if the creation succeeded
     -1 invalid type was given</pre>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_keypaths"><em>keyrec_keypaths(zonename,keytype)</em></a></strong>
-
-<dd>
-<p><em>keyrec_keypaths()</em> returns a list of paths to a set of key files for a
-given zone.  The zone is specified in <em>zonename</em> and the type of key is
-given in <em>keytype</em>.</p>
-</dd>
-<dd>
-<p><em>keytype</em> must be one of the following:  ``kskcur'', ``kskpub'', ``ksknew'',
-``zskcur'', or ``zskpub''.</p>
-</dd>
-<dd>
-<p>If the given key type is not defined in the given zone's zone <em>keyrec</em>, then
-a null set is returned.</p>
-</dd>
-</li>
-<dt><strong><a name="item_keyrec_settime"><em>keyrec_settime(keyrec_type,keyrec_name)</em></a></strong>
+<dt><strong><a name="keyrec_settime" class="item"><em>keyrec_settime(keyrec_type,keyrec_name)</em></a></strong></dt>
 
 <dd>
 <p>Set the timestamp of a specified <em>keyrec</em>.  The file is <strong>not</strong> written
@@ -389,52 +394,46 @@ after updating the value.  The value is saved in both <em>%keyrecs</em> and in
 <em>@keyreclines</em>, and the file-modified flag is set.  The <em>keyrec</em>'s
 <em>keyrec_signdate</em> and <em>keyrec_signsecs</em> fields are modified.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_write"><em>keyrec_write()</em></a></strong>
+<dt><strong><a name="keyrec_write" class="item"><em>keyrec_write()</em></a></strong></dt>
 
 <dd>
 <p>This interface saves the internal version of the <em>keyrec</em> file (opened with
-<em>keyrec_creat()</em>, <em>keyrec_open()</em> or <em>keyrec_read()</em>).  It does not close
-the file handle.  As an efficiency measure, an internal modification flag is
-checked prior to writing the file.  If the program has not modified the
-contents of the <em>keyrec</em> file, it is not rewritten.</p>
+or <em>keyrec_read()</em>).  It does not close the file handle.  As an efficiency
+measure, an internal modification flag is checked prior to writing the file.
+If the program has not modified the contents of the <em>keyrec</em> file, it is not
+rewritten.</p>
+<p><em>keyrec_write()</em> gets an exclusive lock on the <em>keyrec</em> file while writing.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_zonefields"><em>keyrec_zonefields()</em></a></strong>
+<dt><strong><a name="keyrec_zonefields" class="item"><em>keyrec_zonefields()</em></a></strong></dt>
 
 <dd>
 <p>This routine returns a list of the recognized fields for a zone <em>keyrec</em>.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
-<h1><a name="keyrec_signingset_interfaces">KEYREC SIGNING-SET INTERFACES</a></h1>
-<p>Signing Sets are collections of encryption keys, defined by inclusion in a
-particular ``set'' <em>keyrec</em>.  The names of the keys are in the <em>keyrec</em>'s
+<h1><a name="keyrec_signing_set_interfaces">KEYREC SIGNING-SET INTERFACES</a></h1>
+<p>Signing sets are collections of encryption keys, defined by inclusion in a
+particular &quot;set&quot; <em>keyrec</em>.  The names of the keys are in the <em>keyrec</em>'s
 <em>keys</em> record, which contains the names of the key <em>keyrec</em>s.  Due to the
-way key names are handled, the names in a Signing Set must not contain spaces.</p>
-<p>The Signing-Set-specific interfaces are given below.</p>
+way key names are handled, the names in a signing set must not contain spaces.</p>
+<p>The signing-set-specific interfaces are given below.</p>
 <dl>
-<dt><strong><a name="item_keyrec_signset_newname"><em>keyrec_signset_newname(zone_name)</em></a></strong>
+<dt><strong><a name="keyrec_signset_newname" class="item"><em>keyrec_signset_newname(zone_name)</em></a></strong></dt>
 
 <dd>
-<p><em>keyrec_signset_newname()</em> creates a name for a new Signing Set.  The name
+<p><em>keyrec_signset_newname()</em> creates a name for a new signing set.  The name
 will be generated by referencing the <em>lastset</em> field in the <em>keyrec</em> for
 zone <em>zone_name</em>, if the <em>keyrec</em> has such a field.  The set index number
 (described below) will be incremented and the <em>lastset</em> with the new index
-number will be returned as the new Signing Set name.  If the zone <em>keyrec</em>
+number will be returned as the new signing set name.  If the zone <em>keyrec</em>
 does not have a <em>lastset</em> field, then the default set name of
 <em>signing-set-0</em> will be used.</p>
-</dd>
-<dd>
 <p>The set index number is the first number found in the <em>lastset</em> field.  It
 doesn't matter where in the field it is found, the first number will be
-considered to be the Signing Set index.  The examples below show how this is
+considered to be the signing set index.  The examples below show how this is
 determined:</p>
-</dd>
-<dd>
 <pre>
     lastset field               index
     -------------               -----
@@ -444,56 +443,74 @@ determined:</p>
     signing-88-set-1              88
     signingset4321              4321</pre>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_signset_new"><em>keyrec_signset_new(signing_set_name)</em></a></strong>
+<dt><strong><a name="keyrec_signset_new" class="item"><em>keyrec_signset_new(zone,signing_set_name,set_type)</em></a></strong></dt>
 
 <dd>
-<p><em>keyrec_signset_new()</em> creates the Signing Set named by <em>signing_set_name</em>.
-It returns 1 if the call is successful; 0 if it is not.</p>
+<p><em>keyrec_signset_new()</em> creates the signing set named by <em>signing_set_name</em>
+for the zone <em>zone</em>.  It is given the type <em>type</em>, which must be one of the
+following:  &quot;kskcur&quot;, &quot;kskpub&quot;, &quot;kskrev&quot;, &quot;kskobs&quot;, &quot;zskcur&quot;, &quot;zskpub&quot;,
+&quot;zsknew&quot;, or &quot;zskobs&quot;.</p>
+<p>It returns 1 if the call is successful; 0 if it is not.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_signset_addkey"><em>keyrec_signset_addkey(signing_set_name,key_list)</em></a></strong>
+<dt><strong><a name="keyrec_signset_addkey" class="item"><em>keyrec_signset_addkey(signing_set_name,key_list)</em></a></strong></dt>
 
 <dd>
-<p><em>keyrec_signset_addkey()</em> adds the keys listed in <em>key_list</em> to the Signing
-Set named by <em>signing_set_name</em>.  <em>key_list</em> may either be an array or a set
+<p><em>keyrec_signset_addkey()</em> adds the keys listed in <em>key_list</em> to the signing
+set named by <em>signing_set_name</em>.  <em>key_list</em> may either be an array or a set
 or arguments to the routine.  The <em>keyrec</em> is created if it does not already
 exist.
 It returns 1 if the call is successful; 0 if it is not.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_signset_delkey"><em>keyrec_signset_delkey(signing_set_name,key_name)</em></a></strong>
+<dt><strong><a name="keyrec_signset_delkey" class="item"><em>keyrec_signset_delkey(signing_set_name,key_name)</em></a></strong></dt>
 
 <dd>
 <p><em>keyrec_signset_delkey()</em> deletes the key given in <em>key_name</em> to the
-Signing Set named by <em>signing_set_name</em>.
+signing set named by <em>signing_set_name</em>.
 It returns 1 if the call is successful; 0 if it is not.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_signset_haskey"><em>keyrec_signset_haskey(signing_set_name,key_name)</em></a></strong>
+<dt><strong><a name="keyrec_signset_haskey" class="item"><em>keyrec_signset_haskey(signing_set_name,key_name)</em></a></strong></dt>
 
 <dd>
 <p><em>keyrec_signset_haskey()</em> returns a flag indicating if the key specified
-in <em>key_name</em> is one of the keys in the Signing Set named by
+in <em>key_name</em> is one of the keys in the signing set named by
 <em>signing_set_name</em>.
 It returns 1 if the signing set has the key; 0 if it does not.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_signset_clear"><em>keyrec_signset_clear(keyrec_name)</em></a></strong>
+<dt><strong><a name="keyrec_signset_clear" class="item"><em>keyrec_signset_clear(keyrec_name)</em></a></strong></dt>
 
 <dd>
 <p><em>keyrec_signset_clear()</em> clears the entire signing set from the <em>keyrec</em>
 named by <em>keyrec_name</em>.
 It returns 1 if the call is successful; 0 if it is not.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_signsets"><em>keyrec_signsets()</em></a></strong>
+<dt><strong><a name="keyrec_signsets" class="item"><em>keyrec_signsets()</em></a></strong></dt>
 
 <dd>
 <p><em>keyrec_signsets()</em> returns the names of the signing sets in the <em>keyrec</em>
 file.  These names are returned in an array.</p>
 </dd>
-</li>
+<dt><strong><a name="keyrec_signset_keys" class="item"><em>keyrec_signset_keys(keyrec_name,signset_type)</em></a></strong></dt>
+
+<dd>
+<p><em>keyrec_signset_keys()</em> returns the names of the keys that are members of
+a given signing set in the <em>keyrec</em> file.  The keys are returned in a
+space-separated string.</p>
+<p>There are two ways of calling <em>keyrec_signset_keys()</em>.   The first method
+specifies a zone <em>keyrec</em> name and a signing set type.  The signing set name
+is found by referencing the set field in the zone <em>keyrec</em>, then the <em>keys</em>
+field of that signing set is returned.</p>
+<p>The second method specifies the signing set directly, and its <em>keys</em> field
+is returned.</p>
+<p>Valid signing set types are:</p>
+<pre>
+    kskcur        kskpub        kskrev        kskobs
+    zskcur        zskpub        zsknew        zskobs</pre>
+<p>The following errors are recognized, resulting in an undefined return:</p>
+<pre>
+    keyrec_name is not a defined keyrec
+    signset_type is an invalid signing set type
+    the signing set keyrec is not a set keyrec</pre>
+</dd>
 </dl>
 <p>
 </p>
@@ -504,7 +521,7 @@ file.  These names are returned in an array.</p>
 may have need of them.  Use with caution, as misuse may result in damaged or
 lost <em>keyrec</em> files.</p>
 <dl>
-<dt><strong><a name="item_keyrec_init"><em>keyrec_init()</em></a></strong>
+<dt><strong><a name="keyrec_init" class="item"><em>keyrec_init()</em></a></strong></dt>
 
 <dd>
 <p>This routine initializes the internal <em>keyrec</em> data.  Pending changes will
@@ -512,23 +529,17 @@ be lost.  An open <em>keyrec</em> file handle will remain open, though the data 
 no longer held internally.  A new <em>keyrec</em> file must be read in order to use
 the <strong>keyrec.pm</strong> interfaces again.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_newkeyrec"><em>keyrec_newkeyrec(kr_name,kr_type)</em></a></strong>
+<dt><strong><a name="keyrec_newkeyrec" class="item"><em>keyrec_newkeyrec(kr_name,kr_type)</em></a></strong></dt>
 
 <dd>
 <p>This interface creates a new <em>keyrec</em>.  The <em>keyrec_name</em> and <em>keyrec_hash</em>
 fields in the <em>keyrec</em> are set to the values of the <em>kr_name</em> and <em>kr_type</em>
-parameters.  <em>kr_type</em> must be either ``key'' or ``zone''.</p>
-</dd>
-<dd>
+parameters.  <em>kr_type</em> must be either &quot;key&quot; or &quot;zone&quot;.</p>
 <p>Return values are:</p>
-</dd>
-<dd>
 <pre>
     0 if the creation succeeded
     -1 if an invalid I&lt;keyrec&gt; type was given</pre>
 </dd>
-</li>
 </dl>
 <p>
 </p>
@@ -538,7 +549,7 @@ parameters.  <em>kr_type</em> must be either ``key'' or ``zone''.</p>
 <em>keyrec</em> file.  They are intended to be used for debugging and testing, but
 may be useful at other times.</p>
 <dl>
-<dt><strong><a name="item_keyrec_dump_hash"><em>keyrec_dump_hash()</em></a></strong>
+<dt><strong><a name="keyrec_dump_hash" class="item"><em>keyrec_dump_hash()</em></a></strong></dt>
 
 <dd>
 <p>This routine prints the <em>keyrec</em> file as it is stored internally in a hash
@@ -547,8 +558,7 @@ alphabetized for each <em>keyrec</em>.  New <em>keyrec</em>s and <em>keyrec</em>
 alphabetized along with current <em>keyrec</em>s and fields.  Comments from the
 <em>keyrec</em> file are not included with the hash table.</p>
 </dd>
-</li>
-<dt><strong><a name="item_keyrec_dump_array"><em>keyrec_dump_array()</em></a></strong>
+<dt><strong><a name="keyrec_dump_array" class="item"><em>keyrec_dump_array()</em></a></strong></dt>
 
 <dd>
 <p>This routine prints the <em>keyrec</em> file as it is stored internally in
@@ -559,13 +569,12 @@ appended to the end of the array.  <em>keyrec</em> fields added to existing
 Comments and vertical whitespace are preserved as given in the
 <em>keyrec</em> file.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

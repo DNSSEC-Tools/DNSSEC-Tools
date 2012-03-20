@@ -4,7 +4,7 @@
 <head>
 <title>lsdnssec - List DNSSEC components of zones from files or directories</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
@@ -39,7 +39,7 @@
 <hr />
 <h1><a name="synopsis">SYNOPSIS</a></h1>
 <pre>
-  lsdnssec [-d 1-9] [FILES OR DIRECTORIES...]</pre>
+  lsdnssec [-d 1-9] [OPTIONS] [FILES OR DIRECTORIES...]</pre>
 <p>
 </p>
 <hr />
@@ -74,7 +74,30 @@ displayed.</p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
+<dt><strong><a name="z_zonename1_zonename2" class="item"><strong>-z ZONENAME1[,ZONENAME2]</strong></a></strong></dt>
+
+<dt><strong><a name="zone_zonename1_zonename2" class="item"><strong>--zone=ZONENAME1[,ZONENAME2]</strong></a></strong></dt>
+
+<dd>
+<p>Only prints information about the named zone(s).</p>
+</dd>
+<dt><strong><a name="p_number" class="item"><strong>-p NUMBER</strong></a></strong></dt>
+
+<dt><strong><a name="phase_number" class="item"><strong>--phase=NUMBER</strong></a></strong></dt>
+
+<dd>
+<p>Only prints information about zones currently being rolled by <strong>rollerd</strong>
+and where either a zsk or a ksk rollover is taking place and is in
+phase NUMBER.</p>
+<p>If the phase NUMBER is specified as 0, then any zone in any rolling
+phase will be printed (but not zones that aren't being rolled at all).</p>
+<p>This flag is especially useful to find all of your zones that are
+currently in KSK rolling phase 6, which requires operator intervention
+to propegate the new DS records into the parent zone.</p>
+</dd>
 <dt><strong><a name="r" class="item"><strong>-r</strong></a></strong></dt>
+
+<dt><strong><a name="roll_status" class="item"><strong>--roll-status</strong></a></strong></dt>
 
 <dd>
 <p>Show only rolling information from the rollrec files.  By default both
@@ -82,11 +105,27 @@ roll-state and key information is shown.</p>
 </dd>
 <dt><strong><a name="k" class="item"><strong>-k</strong></a></strong></dt>
 
+<dt><strong><a name="key_data" class="item"><strong>--key-data</strong></a></strong></dt>
+
 <dd>
 <p>Show only keying information from the krf files.  By default both
 roll-state and key information is shown.</p>
 </dd>
+<dt><strong><a name="k" class="item"><strong>-K</strong></a></strong></dt>
+
+<dt><strong><a name="key_gen_time" class="item"><strong>--key-gen-time</strong></a></strong></dt>
+
+<dd>
+<p>Normally <strong>rollerd</strong> calculates the age of a key based on the last time a
+key was rolled.  However, it's also possible to calculate the age of a
+key based on the different between now and when it was created (which
+was typically before the rolling began).  The <em>-K</em> flag switches to
+this second mode of key age calculation (which will not match how
+<strong>rollerd</strong> actually performs).</p>
+</dd>
 <dt><strong><a name="d_1_9" class="item"><strong>-d 1-9</strong></a></strong></dt>
+
+<dt><strong><a name="detail_1_9" class="item"><strong>--detail 1-9</strong></a></strong></dt>
 
 <dd>
 <p>Controls the amount of information shown in the output.  A level of 9
@@ -103,7 +142,7 @@ default level is 5.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2009-2010 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2009-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

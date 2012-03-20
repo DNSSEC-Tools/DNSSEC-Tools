@@ -4,7 +4,7 @@
 <head>
 <title>dtinitconf - Creates a DNSSEC-Tools configuration file</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
@@ -76,7 +76,8 @@ programs, the user is prompted for the proper location.</p>
 <p>If the configuration file's parent directory does not exist, then an attempt
 is made to create the directory.  The new directory's ownership will be set
 to <em>root</em> for the owner and <em>dnssec</em> for the group, assuming the <em>dnssec</em>
-group exists.</p>
+group exists.  Writability checks for the directory will not be performed if
+the <em>-outfile</em> option is given.</p>
 <p>
 </p>
 <hr />
@@ -95,7 +96,7 @@ encryption keys.</p>
 
 <dd>
 <p>Selects the cryptographic algorithm. The value of algorithm must be one that
-is recognized by <strong>dnssec-keygen</strong>.</p>
+is recognized by the installed version of <strong>dnssec-keygen</strong>.</p>
 </dd>
 <dt><strong><a name="kskcount_ksk_count" class="item"><strong>-kskcount KSK-count</strong></a></strong></dt>
 
@@ -234,6 +235,13 @@ default address used by the <em>dt_adminmail()</em> routine.</p>
 <p><strong>directory</strong> is the archived-key directory.  Old encryption keys are moved to
 this directory, but only if they are to be saved and not deleted.</p>
 </dd>
+<dt><strong><a name="autosign" class="item"><strong>-autosign</strong></a></strong></dt>
+
+<dd>
+<p>A flag indicating that <strong>rollerd</strong> should automatically sign zonefiles that
+are found to be newer than their signed zonefile.  If <strong>-noautosign</strong> is
+specified, this will be set to false.</p>
+</dd>
 <dt><strong><a name="binddir_directory" class="item"><strong>-binddir directory</strong></a></strong></dt>
 
 <dd>
@@ -257,6 +265,19 @@ are executed.</p>
 <p>A flag indicating that <strong>zonesigner</strong> should display a message about entropy
 generation.  This is primarily dependent on the implementation of a system's
 random number generation.</p>
+</dd>
+<dt><strong><a name="mailer_server_host" class="item"><strong>-mailer-server host</strong></a></strong></dt>
+
+<dd>
+<p>The mail server that will be contacted by <em>dt_adminmail()</em>.
+This is passed to <em>Mail::Send</em>.</p>
+</dd>
+<dt><strong><a name="mailer_server_mailtype" class="item"><strong>-mailer-server mailtype</strong></a></strong></dt>
+
+<dd>
+<p>The mail type that will be contacted by <em>dt_adminmail()</em>.
+This is passed to <em>Mail::Mailer</em> (by way of <em>Mail::Send</em>.)
+Any values recognized by <em>Mail::Mailer</em> may be used here.</p>
 </dd>
 <dt><strong><a name="noentropy_msg" class="item"><strong>-noentropy_msg</strong></a></strong></dt>
 
@@ -283,6 +304,20 @@ zones.</p>
 <dd>
 <p><strong>loglevel</strong> is the logging level for the <strong>rollerd</strong> daemon.</p>
 </dd>
+<dt><strong><a name="roll_phasemsg_length" class="item"><strong>-roll-phasemsg length</strong></a></strong></dt>
+
+<dd>
+<p><strong>length</strong> is the default length of phase-related log messages used by
+<strong>rollerd</strong>.  The valid levels are &quot;long&quot; and &quot;short&quot;, with &quot;long&quot; being
+the default value.</p>
+<p>The long message length means that a phase description will be included with
+some log messages.  For example, the long form of a message about ZSK rollover
+phase 3 will look like this:  &quot;ZSK phase 3 (Waiting for old zone data to
+expire from caches)&quot;.</p>
+<p>The short message length means that a phase description will not be included
+with some log messages.  For example, the short form of a message about ZSK
+rollover phase 3 will look like this:  &quot;ZSK phase 3&quot;.</p>
+</dd>
 <dt><strong><a name="roll_sleeptime_sleep_time" class="item"><strong>-roll-sleeptime sleep-time</strong></a></strong></dt>
 
 <dd>
@@ -294,6 +329,11 @@ zones.</p>
 <p><strong>username</strong> is the user for which the <strong>rollerd</strong> daemon will be executed.  If
 this is a username, it must correspond to a valid uid; if it is a uid, it
 must correspond to a valid username.</p>
+</dd>
+<dt><strong><a name="roll_logtz_logtz" class="item"><strong>-roll-logtz logtz</strong></a></strong></dt>
+
+<dd>
+<p><strong>loglevel</strong> is the timezone of the message timestamp for <strong>rollerd</strong>'s logfile.</p>
 </dd>
 <dt><strong><a name="zoneerrs_error_count" class="item"><strong>-zoneerrs error-count</strong></a></strong></dt>
 
@@ -393,7 +433,7 @@ editor will be used.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2010 SPARTA, Inc.  All rights reserved.  See the COPYING file
+<p>Copyright 2006-2012 SPARTA, Inc.  All rights reserved.  See the COPYING file
 included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

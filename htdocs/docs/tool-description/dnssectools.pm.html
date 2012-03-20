@@ -4,13 +4,15 @@
 <head>
 <title>Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools package.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:suresh@localhost.localdomain" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -22,9 +24,11 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -54,89 +58,85 @@ DNSSEC-Tools utilities.</p>
 <h1><a name="interfaces">INTERFACES</a></h1>
 <p>The interfaces to the <strong>dnssectools</strong> module are given below.</p>
 <dl>
-<dt><strong><a name="item_dt_adminmail"><em>dt_adminmail(subject,msgbody,recipient)</em></a></strong>
+<dt><strong><a name="dt_adminmail" class="item"><em>dt_adminmail(subject,msgbody,recipient)</em></a></strong></dt>
 
 <dd>
 <p>This routine emails a message to the administrative user listed in the
 DNSSEC-Tools configuration file.</p>
-</dd>
-<dd>
 <p><em>dt_adminmail()</em> requires two parameters, both scalars.
 The <em>subject</em> parameter is the subject for the mail message.
 The <em>msgbody</em> parameter is the body of the mail message.</p>
-</dd>
-<dd>
 <p>A third parameter, <em>recipient</em>, may be given to specify the message's
 recipient.  If this is not given, then the recipient will be taken from
-the <em>admin-email</em> record of the DNSSEC-Tools configuration file.</p>
-</dd>
-<dd>
+the <em>admin-email</em> record of the DNSSEC-Tools configuration file.
+If <em>recipient</em> is &quot;nomail&quot;, then no message will be sent and success
+will be returned.</p>
 <p>Return values:</p>
-</dd>
-<dd>
 <pre>
         1 - the message was created and sent.
         0 - an invalid recipient was specified.</pre>
 </dd>
-</li>
-<dt><strong><a name="item_dt_cmdpath"><em>dt_cmdpath(command)</em></a></strong>
+</dl>
+<p>It relies on the the following dnssec-tools.conf configuration parameters:</p>
+<dl>
+<dt><strong><a name="admin_email" class="item"><em>admin-email</em></a></strong></dt>
+
+<dd>
+<p>The email address that the mail should come from.</p>
+</dd>
+<dt><strong><a name="mailer_type" class="item"><em>mailer-type</em></a></strong></dt>
+
+<dd>
+<p>Should be one of: <em>sendmail, smtp, qmail</em>.  This option is not
+required and will default to trying sendmail and qmail to deliever the
+mail.  If <em>mailer-server</em> is set to a defined value but <em>mailer-type</em> is not, then <em>mailer-type</em> will default to</p>
+</dd>
+<dt><strong><a name="mailer_server" class="item"><em>mailer-server</em></a></strong></dt>
+
+<dd>
+<p>The server, if <em>admin-mail</em> is set to <em>smtp</em>, that the mail should
+be delivered to.</p>
+</dd>
+<dt><strong><a name="dt_cmdpath" class="item"><em>dt_cmdpath(command)</em></a></strong></dt>
 
 <dd>
 <p>This routine returns the path to a specified DNSSEC-Tools command.
 <em>command</em> should be the name only, without any leading directories.
 The command name is checked to ensure that it is a valid DNSEC-Tools command,</p>
-</dd>
-<dd>
 <p>Return values:</p>
-</dd>
-<dd>
 <pre>
         The absolute path to the command is returned if the command
         is valid.
         Null is returned if the command is not valid.</pre>
 </dd>
-</li>
-<dt><strong><a name="item_dt_filetype"><em>dt_filetype(path)</em></a></strong>
+<dt><strong><a name="dt_filetype" class="item"><em>dt_filetype(path)</em></a></strong></dt>
 
 <dd>
 <p>This routine returns the type of the file named in <em>path</em>.  The rollrec and
 keyrec records contained therein are counted and a type determination is made.</p>
-</dd>
-<dd>
 <p>Return values:</p>
-</dd>
-<dd>
 <pre>
         &quot;keyrec&quot; -  At least one keyrec record was found and no
                     rollrec records were found.</pre>
-</dd>
-<dd>
 <pre>
         &quot;rollrec&quot; - At least one rollrec record was found and
                     no keyrec records were found.</pre>
-</dd>
-<dd>
 <pre>
         &quot;mixed&quot; -   At least one rollrec record and at least one
                     keyrec record were found.
                     This is most likely an erroneous file.</pre>
-</dd>
-<dd>
 <pre>
         &quot;unknown&quot; - No rollrec records nor keyrec records
                     were found.</pre>
-</dd>
-<dd>
 <pre>
         &quot;nofile&quot;  - The specified file does not exist.</pre>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2008 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
