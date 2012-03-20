@@ -775,19 +775,18 @@ Starts all suspended realms.
 
 Stops all running realms.
 
-=item B<-cmd -- realm cmd>
+=item B<-cmd -- realm cmd args>
 
-=item B<-command -- realm cmd>
+=item B<-command -- realm cmd args>
 
 Sends a command to the specified realm.  The command given as I<cmd> will be
-sent to the B<rollerd> running in realm I<realm> via the B<rollctl> command.
-(See B<rollctl(8)> for more information on its commands.)
+sent to the B<rollerd> running in realm I<realm>.
 
 The double-dash given above is critical for proper argument parsing of the
 command line.
 
-All command-line arguments following the realm name will be sent as the
-command.
+All command-line arguments, as I<args> above, following the realm name and
+command name will be sent as the command.
 
 Whatever output the command gives will be returned to B<realmctl>, which will
 then print that output.  The command's return code will be appended to the
@@ -797,7 +796,12 @@ success or failure.
 For example, this command will tell the realm B<giant-isp> to stop
 rollover of zone I<bob.example.com>:
 
-    $ realmctl -command -- giant-isp -skipzone bob.example.com
+   $ realmctl -command -- giant-isp rollctl -skipzone bob.example.com
+
+B<Warning:>  This is an inherently dangerous command.  When choosing a user
+under which the realm and rollover commands will be executed, be aware that
+this problem exists.  B<realmctl> I<may> be modified in the future to
+restrict the commands that may be executed with this option.
 
 =item B<-display>
 
