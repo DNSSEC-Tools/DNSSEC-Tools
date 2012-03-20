@@ -32,9 +32,10 @@ Rectangle {
                 // run immediately; we have no status yet
                 test.check()
             } else {
-                test.status = DNSSECTest.UNKNOWN // need a timer to break before the test
-                runTimer.start()
-                // test.check()
+                resultInfo.testName = test.name
+                resultInfo.testResult = test.message
+                resultInfo.resolverName = test.serverAddress
+                resultInfo.state = "visible"
             }
             dnssecCheckTop.state = "half"
         }
