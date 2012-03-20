@@ -42,6 +42,7 @@ CP=@CP@
 INSTALL=@INSTALL@
 DOCINSTALL=$(INSTALL) -m 644
 MKPATH=$(top_srcdir)/mkinstalldirs
+EXEEXT=@EXEEXT@
 
 VAL_RESOLV_CONF=@VAL_RESOLV_CONF@
 VAL_ROOT_HINTS=@VAL_ROOT_HINTS@
@@ -73,4 +74,4 @@ LIBTOOL=@LIBTOOL@
 LIBTOOLCC=$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS)
 LIBTOOLLD=$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -rpath $(libdir) -version-info $(LIBCURRENT):$(LIBREVISION):$(LIBAGE)
 LIBTOOLIN=$(LIBTOOL) --mode=install $(INSTALL)
-LIBTOOLFN=$(LIBTOOL) --mode=finish $(libdir)
+LIBTOOLFN=$(LIBTOOL) --mode=finish

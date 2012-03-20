@@ -26,5 +26,5 @@ $(LIBVAL_SHIM): $(LOBJ)
 install:
 	$(MKPATH) $(DESTDIR)/$(libdir)
 	$(LIBTOOLIN) $(LIBVAL_SHIM) $(DESTDIR)/$(libdir)
-	$(LIBTOOLFN)
+	$(LIBTOOLFN) $(DESTDIR)/$(libdir)
 
