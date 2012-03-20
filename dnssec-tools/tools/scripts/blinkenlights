@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -51,8 +51,8 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	"maxzones=i",			# Maximum number of zones.
-	"Version",			# Display the version number.
 	"display",			# Tell rollerd to execute us.
+	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
 
@@ -1769,7 +1769,7 @@ sub maketable
 #
 # Purpose:	Rebuild the zone status table.  This also re-reads the
 #		current rollrec file, so the zones listed may increase
-#		or shrink depending on the state of that file..
+#		or shrink depending on the state of that file.
 #
 sub buildtable
 {
@@ -3476,7 +3476,7 @@ sub settitle
 #		count if the new max zones count exceeds it.
 #
 #		If the maxzones count rises above our normal repaint mark
-#		and then later drops below it, we'll reset the the repaint
+#		and then later drops below it, we'll reset the repaint
 #		mark back to the default.
 #
 sub setmaxzones
@@ -3661,7 +3661,12 @@ sub version
 #
 sub usage
 {
-	print STDERR "usage:  blinkenlights [-Version] <rollrec-file>\n";
+	print STDERR "usage:  blinkenlights [options] <rollrec-file>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\tdisplay        tell rollerd to start display\n";
+	print STDERR "\t\tmaxzones       maximum number of zones\n";
+	print STDERR "\t\tVersion        display version info\n";
+	print STDERR "\t\thelp           display help message\n";
 	exit(0);
 }
 
@@ -3777,7 +3782,7 @@ stripe is divided into three sections:  zone identification, the current
 rollover state, and the zone's DNSSEC keys.
 
 The zone identification section contains the name of the zone, the name of
-the zone's I<rollrec> entry, and the zone's zonegroup..
+the zone's I<rollrec> entry, and the zone's zonegroup.
 
 The rollover state section contains the rollover phase number, a text
 explanation of the phase, and the amount of time remaining in that rollover
@@ -4348,7 +4353,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
