@@ -37,11 +37,11 @@
 #define STORE_POLICY_ENTRY_IN_LIST(pol, head) do {\
     policy_entry_t *prev, *cur, *next;\
     while (pol) {\
-        next = pol->next;\
         int name_len = wire_name_length(pol->zone_n);\
         /*\
          * Store according to decreasing zone name length \
          */\
+        next = pol->next;\
         prev = NULL;\
         for (cur = head; cur;\
             prev = cur, cur = cur->next)\
@@ -1812,6 +1812,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
     char *label;
     char *newctxlab;
     struct val_query_chain *q;
+    char *logtarget = NULL;
    
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1919,7 +1920,6 @@ read_val_config_file(val_context_t * ctx, char *scope)
     }
 
     /* set the log target from environment */
-    char *logtarget = NULL;
     logtarget = getenv(VAL_LOG_TARGET);
     if (logtarget) {
         val_log_add_optarg_to_list(&ctx->val_log_targets, logtarget, 1);

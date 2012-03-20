@@ -255,11 +255,12 @@ compose_answer(const char * name,
     int             retval;
     u_char name_n[NS_MAXCDNAME];
     u_int16_t class_n, type_n;
-    SET_LAST_ERR(0);
 
     struct val_rrset_rec *rrset;
     int validated = 1;
     int trusted = 1;
+
+    SET_LAST_ERR(0);
 
     ancount = 0;
     nscount = 0;

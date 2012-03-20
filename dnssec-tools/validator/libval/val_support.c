@@ -64,7 +64,7 @@ void
 base32hex_encode(u_char * in, size_t inlen, u_char ** out,
                  size_t * outlen)
 {
-    u_char        base32hex[32] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+    u_char        base32hex[] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
     u_char       *in_ch, *buf;
     u_char       *out_ch;
     u_char        padbuf[5];
