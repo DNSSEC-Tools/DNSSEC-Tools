@@ -73,12 +73,14 @@ Commands
 This following DNSSEC-Tools commands are for use in managing DNSSEC
 environments.  Brief descriptions of these tools are given below.
 
-	zonesigner	Generates a set of keys for a zone and signs the zone
-			with those keys.  This combines the functionality of
-			dnssec-keygen and dnssec-signzone, recording relevant
-			information in a keyrec file.
+	blinkenlights	Gives an elaborate graphical display of rollerd activity
+			and allows some control of zones.
 
-	dtdefs		Display DNSSEC-Tools defaults.
+	bubbles		Gives a simple graphical display of rollerd activity.
+
+	cleanarch	Cleans key archives.
+
+	cleankrf	Cleans unreferenced key keyrecs from keyrec files.
 
 	dtck            Runs validation checks on all the data files used by
 			the DNSSEC-Tools scripts.
@@ -88,8 +90,12 @@ environments.  Brief descriptions of these tools are given below.
 
 	dtconfchk	Verifies the validity of a DNSSEC-Tools config file.
 
+	dtdefs		Display DNSSEC-Tools defaults.
+
 	dtinitconf	Create a new DNSSEC-Tools configuration file from
 			command-line options and defaults.
+
+	dtrealms	Manages multiple simultaneous rollover environments.
 
 	dtreqmods	Checks for Perl modules required by DNSSEC-Tools.
 
@@ -97,31 +103,39 @@ environments.  Brief descriptions of these tools are given below.
 			format.  The keyrec file format changes rarely,
 			so this is not commonly needed.
 
-	krfcheck	Verifies the validity of a keyrec file.
-
-	genkrf		Generates a keyrec file using existing key signing
-			key and/or zone signing keys.
-
-	lskrf		Lists the contents of a keyrec file.
-
-	lsroll		Lists the contents of a rollrec file.
+	expchk		Checks a keyrec file for expired zones.
 
 	fixkrf		Adjusts a keyrec file's data to account for moved
 			encryption key files.
 
-	expchk		Checks a keyrec file for expired zones.
+	genkrf		Generates a keyrec file using existing key signing
+			key and/or zone signing keys.
 
-	cleanarch	Cleans key archives.
-
-	cleankrf	Cleans unreferenced key keyrecs from keyrec files.
+	grandvizier	Graphic display of rollover environments.
 
 	keyarch		Archives obsolete keys.
+
+	krfcheck	Verifies the validity of a keyrec file.
+
+	lights		Gives a very simple GUI summary of zone rollover states.
+
+	lskrf		Lists the contents of a keyrec file.
+
+	lsrealm		Lists the contents of a realms file.
+
+	lsroll		Lists the contents of a rollrec file.
+
+	realmchk	Verifies the validity of a realms file.
+
+	realmctl	Control program for the dtrealms daemon.
+
+	realminit	Generates realms records for a realm.
+
+	rollchk		Verifies the validity of a rollrec file.
 
 	rollctl		Control program for the rollover daemon.
 
 	rollerd		The rollover daemon.
-
-	rollchk		Verifies the validity of a rollrec file.
 
 	rollinit	Generates rollrec records for domains.
 
@@ -133,13 +147,6 @@ environments.  Brief descriptions of these tools are given below.
 
 	signset-editor	GUI editor for managing signing sets in keyrec files.
 
-	blinkenlights	Gives an elaborate graphical display of rollerd activity
-			and allows some control of zones.
-
-	bubbles		Gives a simple graphical display of rollerd activity.
-
-	lights		Gives a very simple GUI summary of zone rollover states.
-
 	tachk		Reads a trusted-keys block from a named.conf file and
 			performs queries to see if the configured trust
 			anchors are still published by the zones.
@@ -149,6 +156,12 @@ environments.  Brief descriptions of these tools are given below.
 			appropriate number of seconds.  Intended for use in
 			calculating the end-time argument used by zonesigner
 			and dnssec-signzone.
+
+	zonesigner	Generates a set of keys for a zone and signs the zone
+			with those keys.  This combines the functionality of
+			dnssec-keygen and dnssec-signzone, recording relevant
+			information in a keyrec file.
+
 
 Modules
 -------
@@ -160,7 +173,17 @@ environments.  Brief descriptions of these modules are given below.
 
 	defaults.pm	Holds default values for DNSSEC-Tools.
 
+	dnssectools.pm	Collection of disparate interfaces for DNSSEC-Tools.
+
 	keyrec.pm	Reads and manipulates keyrec files.
+
+	realm.pm	Reads and manipulates realms files.
+
+	realmmgr.pm	Communication interfaces for dtrealms.
+
+	rolllog.pm	Logging interfaces.
+
+	rollmgr.pm	Communication interfaces for rollerd.
 
 	rollrec.pm	Reads and manipulates rollrec files.
 

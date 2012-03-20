@@ -30,6 +30,8 @@ Brief descriptions of these tools are given below.
 	dtinitconf	Create a new DNSSEC-Tools configuration file from
 			command-line options and defaults.
 
+	dtrealms	The realms manager daemon.
+
 	dtreqmods	Checks for Perl modules required by DNSSEC-Tools.
 
 	dtupdkrf	Updates an old-format keyrec file to the current
@@ -47,6 +49,8 @@ Brief descriptions of these tools are given below.
 	getdnskeys      Fetch, compare and remember a list of DNSKEYs
 			from DNS zones
 
+	grandvizier	Graphic display of rollover environments.
+
 	keyarch		Archives obsolete keys.
 
 	krfcheck	Verifies the validity of a keyrec file.
@@ -55,7 +59,15 @@ Brief descriptions of these tools are given below.
 
 	lskrf		Lists the contents of a keyrec file.
 
+	lsrealm		Lists the contents of a realms file.
+
 	lsroll		Lists the contents of a rollrec file.
+
+	realmchk	Verifies the validity of a realms file.
+
+	realmctl	Control program for the dtrealms daemon.
+
+	realminit	Generates realms records for a realm.
 
 	rollctl		Control program for the rollover daemon.
 
@@ -95,3 +107,4 @@ Keyrec files are documented in the source for .../modules/keyrec.pm and in
 
 The DNSSEC-Tools configuration file is documented in 
 .../etc/dnssec/dnssec-tools.conf.pm.
+
