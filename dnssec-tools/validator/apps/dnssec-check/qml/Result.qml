@@ -24,7 +24,7 @@ Rectangle {
             id: runTimer
             interval: 200
             running: false; repeat: false
-            onTriggered: { running = false ; test.check() ; stop()}
+            onTriggered: { running = false ; test.check() ;  stop()}
         }
 
         onClicked: {

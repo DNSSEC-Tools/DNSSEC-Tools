@@ -140,6 +140,7 @@ function runAllTests() {
     }
     testNumber = -1;
     dnssecCheckTop.state = "running"
+    testManager.inTestLoop = true;
     setTestStartMessage();
     console.log("starting tests for '" + currentTestHost + "'")
     runNextTest();
@@ -158,6 +159,7 @@ function runNextTest() {
         timer.start();
         setTestStartMessage()
     } else {
+        testManager.inTestLoop = false;
         if (testManager.outStandingRequests() > 0) {
             testManager.startQueuedTransactions();
             testManager.checkAvailableUpdates();
