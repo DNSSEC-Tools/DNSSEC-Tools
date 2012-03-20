@@ -98,7 +98,7 @@ my $numchildren = 0;				# Count of actives children.
 
 #######################################################################
 
-my $LOG_DEFFILE	 = 'log.realmd';		# Default log file.
+my $LOG_DEFFILE	 = 'log.dtrealms';		# Default log file.
 my $LOG_DEFLEVEL = LOG_INFO;			# Default log level.
 my $LOG_DEFTZ	 = 'gmt';			# Default timezone for log.
 
@@ -149,18 +149,7 @@ sub main
 	#
 	# Turn on the display flag if user wants it.
 	#
-#	displayer($display) if(defined($opts{'display'}));
-if(defined($opts{'display'}))
-{
-rolllog_log(LOG_ALWAYS,"","\n\n\nSTARTING GRANDVIZIER\n\n\n");
-print "\n\n\nSTARTING GRANDVIZIER\n\n\n";
-displayer($display);
-}
-else
-{
-rolllog_log(LOG_ALWAYS,"","\n\n\nNOT STARTING GRANDVIZIER\n\n\n");
-print "\n\n\nNOT STARTING GRANDVIZIER\n\n\n";
-}
+	displayer($display) if(defined($opts{'display'}));
 
 	#
 	# Wait for something to happen.
@@ -1371,24 +1360,22 @@ sub displayer
 	#
         # Set the global display flag to an argument -- iff we got one.
         #
-rolllog_log(LOG_ALWAYS,'',"display 0 - $display");
         if(@_ == 1)
         {
                 $display = shift;
         }
-rolllog_log(LOG_ALWAYS,'',"display 1 - $display");
 
         #
         # Turn on or off the graphical display, depending on the display flag.
         #
         if($display)
         {
-rolllog_log(LOG_ALWAYS,'',"turning on grandvizier");
+		rolllog_log(LOG_INFO,'','starting grandvizier');
 		open(DISPLAY, "|grandvizier $realmfile");
         }
         else
         {
-rolllog_log(LOG_ALWAYS,'',"turning off grandvizier");
+		rolllog_log(LOG_INFO,'','stopping grandvizier');
 		display("halt");      
 		close(DISPLAY);
         }
