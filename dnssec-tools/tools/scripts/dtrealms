@@ -34,6 +34,7 @@ use Net::DNS::SEC::Tools::realm;
 use Net::DNS::SEC::Tools::realmmgr;
 
 use POSIX ":sys_wait_h";
+use POSIX "setsid";
 
 #
 # Despite its name, rolllog.pm is a general-purpose logging facility.
@@ -129,6 +130,12 @@ sub main
 	# Move to our work directory.
 	#
 	chdir($directory);
+
+	#
+	# Daemonize ourself.
+	#
+	exit(0) if(fork() != 0);
+	POSIX::setsid();
 
 	#
 	# Set up logging, user commands, and identify ourself.
