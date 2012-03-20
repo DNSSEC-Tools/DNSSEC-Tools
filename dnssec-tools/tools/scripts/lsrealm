@@ -1,0 +1,872 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# lsrealm
+#
+#	This script lists the realms in a realm file.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::realm;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "lsrealm";
+my $VERS   = "$NAME version: 1.12.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	# Records to select:
+		'active',		# Active realms.
+		'inactive',		# Inactive realms.
+
+	# Data to display:
+		'state',		# Status of realm.
+		'realmdir',		# Realm directory.
+		'configdir',		# Configuration directory.
+		'rollrec',		# Realm's rollrec file.
+		'admin',		# Realm administrator.
+		'display',		# Display flag.
+		'manager',		# Rollover manager.
+		'args',			# User-specified rollerd arguments.
+		'user',			# User to execute realm.
+
+	# Output format:
+		'count',		# Only give count of matching realms.
+		'fullpaths',		# Show full pathnames.
+		'headers',		# Give a column header.
+		'terse',		# Give terse output.
+		'long',			# Give long output.
+		'Version',		# Display the version number.
+
+		'help',			# Give a usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $activeflag;
+my $inactiveflag;
+
+my $stateflag;
+my $nameflag;
+my $realmdirflag;
+my $configdirflag;
+my $rollrecflag;
+my $adminflag;
+my $dispflag;
+my $managerflag;
+my $argsflag;
+my $userflag;
+
+my $cntflag;
+my $fullpaths = 0;			# Display full pathnames.
+my $headerflag;
+my $terse;
+my $long;
+my $version = 0;			# Display the version number.
+
+my $count   = 0;			# Record-match count.
+
+#######################################################################
+
+my $HEADER_RRN = "<<<header>>>";	# Name for column header "realm".
+
+my @rrnames;				# List of realms in the files.
+
+my %realms = ();			# Realms from the realm files.
+
+my %lengths  = ();			# Maximum lengths of realm field.
+
+my $prevkey;				# Previous realm key added to output.
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for lsrealm.
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+	my $cnt = 0;			# Total realms read.
+
+	#
+	# Check our options.
+	#
+	doopts($argc);
+
+	#
+	# Read the realm files.
+	#
+	while($argc > 0)
+	{
+		$cnt += getrealms($ARGV[0]);
+		shift @ARGV;
+		$argc = @ARGV;
+	}
+
+	#
+	# Exit if we didn't find any realms at all.
+	#
+	return(1) if($cnt == 0);
+
+	#
+	# Cook up the output:  build a header line and calculate the maximum
+	# length of each field.
+	#
+	makeheader();
+	maxlens();
+
+	#
+	# Display the requested data.
+	#
+	showrealms();
+
+	#
+	# If the matching-record count should be given, give the count in
+	# requested format.
+	#
+	if($cntflag)
+	{
+		if($terse)
+		{
+			print "$count\n";
+		}
+		else
+		{
+			my $plural = "s";
+			$plural = "" if($count == 1);
+
+			print "$count matching record$plural\n";
+		}
+	}
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying options are given.
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$activeflag	= $options{'active'}	|| 0;
+	$inactiveflag	= $options{'inactive'}	|| 0;
+
+	$cntflag	= $options{'count'}	|| 0;
+	$headerflag	= $options{'headers'}	|| 0;
+	$terse		= $options{'terse'}	|| 0;
+	$long		= $options{'long'}	|| 0;
+
+	#
+	# Show the version number if requested
+	#
+	version() if(defined($options{'Version'}));
+
+	#
+	# Give a usage flag if asked.
+	#
+	usage() if(defined($options{'help'}));
+
+	#
+	# Check for conflicting options.
+	#
+	if($activeflag && $inactiveflag)
+	{
+		print STDERR "please select only one of -active and -inactive\n";
+		exit(0);
+	}
+
+	#
+	# Ensure we were given a realm file to check.
+	#
+	$argc = @ARGV;
+	usage() if($argc == 0);
+
+	#############################################################
+	#
+	# WARNING:  Code order beyond this point is critical.  Do *NOT* modify
+	#	    anything in the rest of this routine if you are an idiot.
+	#
+
+	#
+	# Make sure conflicting options weren't given.
+	#
+	usage() if($long && $terse);
+
+	#
+	# Set the output flags for -long output.
+	#
+	if($long)
+	{
+		$stateflag	= 1;
+		$nameflag	= 1;
+		$realmdirflag	= 1;
+		$configdirflag	= 1;
+		$rollrecflag	= 1;
+		$managerflag	= 1;
+		$adminflag	= 1;
+		$argsflag	= 1;
+		$dispflag	= 1;
+		$userflag	= 1;
+	}
+	elsif($terse)
+	{
+		#
+		# Set the output flags for -terse output.
+		#
+		$stateflag	= 0;
+		$nameflag	= 1;
+		$realmdirflag	= 0;
+		$configdirflag	= 0;
+		$rollrecflag	= 0;
+		$managerflag	= 0;
+		$adminflag	= 0;
+		$argsflag	= 0;
+		$dispflag	= 0;
+		$userflag	= 0;
+	}
+	else
+	{
+		#
+		# Set the default flag values.
+		#
+		$stateflag	= 1;
+		$nameflag	= 1;
+		$realmdirflag	= 0;
+		$configdirflag	= 0;
+		$rollrecflag	= 0;
+		$adminflag	= 0;
+		$managerflag	= 0;
+		$argsflag	= 0;
+		$dispflag	= 0;
+		$userflag	= 0;
+	}
+
+	#
+	# Now fold in the option values...
+	#
+	$stateflag	= 1 if($options{'state'});
+	$realmdirflag	= 1 if($options{'realmdir'});
+	$configdirflag	= 1 if($options{'configdir'});
+	$rollrecflag	= 1 if($options{'rollrec'});
+	$managerflag	= 1 if($options{'manager'});
+	$adminflag	= 1 if($options{'admin'});
+	$dispflag	= 1 if($options{'display'});
+	$argsflag	= 1 if($options{'args'});
+	$userflag	= 1 if($options{'user'});
+
+	$fullpaths	= 1 if($options{'fullpaths'});
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getrealms()
+#
+# Purpose:	This routine reads the specified realm file and puts each
+#		realm into the realmrec hash table.
+#		A little data-massage also takes place:
+#			- default admins are added to admin-less records
+#			- default managers are added to managers-less records
+#
+sub getrealms
+{
+	my $rrfile = shift;			# Realm file.
+	my $realmcnt = 0;			# Count of realms found.
+
+	realm_lock();
+	realm_read($rrfile);
+	realm_unlock();
+
+	#
+	# Load the realms from the realm file.
+	#
+	@rrnames = realm_names();
+	foreach my $rn (sort(@rrnames))
+	{
+		my $rr;				# Reference to realm.
+		my $state;			# Realm's state.
+
+		#
+		# Get a reference to the realm.
+		#
+		$rr = realm_fullrec($rn);
+
+		#
+		# If we're not displaying this type of record, don't
+		# include it in the length calculate.
+		#
+		$state = $rr->{'state'};
+		if(($activeflag	  && ($state eq "inactive"))	||
+		   ($inactiveflag && ($state eq "active")))
+		{
+			next;
+		}
+
+		next if($rn eq '');
+
+		#
+		# Save the realm and bump our realm count.
+		#
+		$realms{$rn} = $rr;
+		$realmcnt++;
+	}
+
+	#
+	# Give an error message if no realms were found.
+	#
+	if($realmcnt == 0)
+	{
+		print STDERR "no realm entries found in $rrfile\n";
+		return(0);
+	}
+
+	#
+	# Transmogrify a few fields in the realm as needed.
+	#
+	foreach my $rn (sort(keys(%realms)))
+	{
+		#
+		# Go to the next if the name is empty.
+		#
+		next if($rn eq '');
+
+		#
+		# Add quotes to the realm.
+		#
+		$realms{$rn}{'realm_name'} = "$realms{$rn}{'realm_name'}"; 
+
+		#
+		# If the realm has no administrator, give it the default.
+		#
+		if(!defined($realms{$rn}{'administrator'}))
+		{
+			$realms{$rn}{'administrator'} = "(defadmin)";
+		}
+
+		#
+		# If the realm has no manager, give it the default.
+		#
+		if(!defined($realms{$rn}{'manager'}))
+		{
+			$realms{$rn}{'manager'} = "(defmgr)";
+		}
+
+		#
+		# Adjust pathnames as needed.
+		#
+		$realms{$rn}{'configdir'} = getpath($realms{$rn}{'configdir'}); 
+		$realms{$rn}{'realmdir'}  = getpath($realms{$rn}{'realmdir'}); 
+		$realms{$rn}{'rollrec'}   = getpath($realms{$rn}{'rollrec'}); 
+
+		#
+		# Add quotes to the rollover manager's arguments.  If the
+		# realm has no args specified, give it a default message.
+		#
+		if(defined($realms{$rn}{'args'}))
+		{
+			$realms{$rn}{'args'} = "\"$realms{$rn}{'args'}\"";
+		}
+		else
+		{
+			$realms{$rn}{'args'} = "(none)";
+		}
+
+	}
+
+	#
+	# Return the number of realms we found in the realm file.
+	#
+	return($realmcnt);
+}
+
+#----------------------------------------------------------------------
+# Routine:	maxlens()
+#
+# Purpose:	Calculate the maximum length of each realm field.
+#		After finding the longest length for each field, we'll
+#		add a little buffer space.
+#
+sub maxlens
+{
+	#
+	# Loop through the realm list and give data on the desired realms.
+	#
+	foreach my $rrname (sort(keys(%realms)))
+	{
+		my $recref = $realms{$rrname};
+		my %realm  = %$recref;
+
+		foreach my $key (sort(keys(%realm)))
+		{
+			if(length($realm{$key}) > $lengths{$key})
+			{
+				$lengths{$key} = length($realm{$key});
+			}
+		}
+	}
+
+	#
+	# Build a dummy entry for the phases option.  This can be hardcoded
+	# since a -phases will only ever give output of the "M/N" form.
+	#
+	$lengths{'phases'} = 3 if(!defined($lengths{'phases'}));
+
+	#
+	# Add a little buffer space between fields.
+	#
+	foreach my $key (sort(keys(%lengths)))
+	{
+		$lengths{$key} += 4;
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	makeheader()
+#
+# Purpose:	Build a header line as a fake realm.
+#
+sub makeheader
+{
+	my %rr;					# New, fake realm.
+
+	return if(!$headerflag);
+
+	$rr{'realm_type'}	= 'Type';
+	$rr{'administrator'}	= 'Administrator';
+	$rr{'args'}		= 'Manager Arguments';
+	$rr{'configdir'}	= 'Configuration Directory';
+	$rr{'display'}		= 'Display Flag';
+	$rr{'manager'}		= 'Rollover Manager';
+	$rr{'realm_name'}	= 'Name';
+	$rr{'realmdir'}		= 'Realm Directory';
+	$rr{'rollrec'}		= 'Rollrec';
+	$rr{'state'}		= 'Realm State';
+	$rr{'user'}		= 'User';
+
+	$realms{$HEADER_RRN} = \%rr;
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	showrealms()
+#
+# Purpose:	This routine displays realm data.  There are three output
+#		formats: default, long, terse.
+#		See the pod for more info on the formats.
+#
+sub showrealms
+{
+	my $out;				# Output string.
+
+	my $state;				# Realm's state.
+	my $name;				# Realm record name.
+	my $cdir;				# Configuration directory.
+	my $rdir;				# Directory for realm's files.
+	my $admin;				# Realm administrator's email.
+	my $disp;				# Display flag.
+	my $rollrec;				# Rollrec file for realm.
+	my $manager;				# Rollover manager.
+	my $args;				# Manager's arguments.
+	my $user;				# User to run as.
+
+	#
+	# Loop through the realm list and give data on the desired realms.
+	#
+	foreach my $rrn (sort(keys(%realms)))
+	{
+		my $rrr = $realms{$rrn};	# Realm's loaded realm ref.
+		my %rr = %$rrr;			# Realm's loaded realm.
+
+		#
+		# Bump the matching-records count.
+		#
+		$count++ if($rrn ne $HEADER_RRN);
+
+		#
+		# Stay cloaked if only the count of matching records
+		# should be given.
+		#
+		next if($cntflag);
+
+		#
+		# Set fields from the realm.
+		#
+		$state	 = $rr{'state'};
+		$admin	 = $rr{'administrator'};
+		$args	 = $rr{'args'};
+		$cdir	 = $rr{'configdir'};
+		$disp	 = $rr{'display'};
+		$manager = $rr{'manager'};
+		$name	 = $rr{'realm_name'};
+		$rdir	 = $rr{'realmdir'};
+		$rollrec = $rr{'rollrec'};
+		$state	 = $rr{'state'};
+		$user	 = $rr{'user'};
+
+		#
+		# Build the output string.
+		#
+		$prevkey = 'first-field';
+		$out  = outfld($rrn,'realm_name',$name,1);
+		$out .= outfld($rrn,'state',$state,$stateflag);
+		$out .= outfld($rrn,'realmdir',$rdir,$realmdirflag);
+		$out .= outfld($rrn,'rollrec',$rollrec,$rollrecflag);
+		$out .= outfld($rrn,'configdir',$cdir,$configdirflag);
+		$out .= outfld($rrn,'administrator',$admin,$adminflag);
+		$out .= outfld($rrn,'manager',$manager,$managerflag);
+		$out .= outfld($rrn,'display',$disp,$dispflag);
+		$out .= outfld($rrn,'user',$user,$userflag);
+		$out .= outfld($rrn,'args',$args,$argsflag);
+
+		#
+		# Write the output.
+		#
+		print "$out\n";
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	outfld()
+#
+# Purpose:	Build a field's piece of the output line.  It does the needed
+#		spacing and determination of whether that fields should be
+#		included in the line.
+#
+#		This routine only *builds* part of the output line.
+#		It does not write it to output.
+#
+sub outfld
+{
+	my $realm = shift;				# Realm name.
+	my $key  = shift;				# Hashkey.
+	my $val	 = shift;				# Value to print.
+	my $flag = shift;				# Output flag.
+
+	my $ret;					# Return string.
+	my $mlen;					# Maximum field length.
+	my $vlen;					# Length of value.
+	my $blen;					# Space buffer length.
+	my $spaces;					# Spaces to add.
+
+	#
+	# Return if the given flag isn't set and -long wasn't given.
+	#
+	return('') if(!$long && !$flag);
+
+	#
+	# Figure out spacing for this line.
+	#
+	$mlen = $lengths{$prevkey};
+	$vlen = length($realms{$realm}{$prevkey});
+	$blen = $mlen - $vlen;
+	$spaces = ' ' x $blen if($blen > 0);
+
+	#
+	# Build the output line.
+	#
+	$ret = $spaces . $val;
+
+	#
+	# Save the hash key and return the output string to the caller.
+	#
+	$prevkey = $key;
+	return($ret);
+}
+
+#----------------------------------------------------------------------
+# Routine:	getpath()
+#
+# Purpose:	Return the path to print, based on if the -fullpaths option
+#		was given.  If it was, the full path will be used.  If not,
+#		the final path node will be used.
+#
+sub getpath
+{
+	my $path = shift;				# Path to massage.
+
+	if((! $fullpaths) && ($path =~ /\//))
+	{
+		my @nodes;				# Path chunks.
+
+		@nodes = split('/',$path);
+		$path = $nodes[-1]; 
+	}
+
+	return($path);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  lsrealm [options] <realm-file>\n";
+	print STDERR "\trecord-selection options:\n";
+	print STDERR "\t\t-active        active records\n";
+	print STDERR "\t\t-inactive      inactive records\n";
+	print STDERR "\tattribute-selection options:\n";
+	print STDERR "\t\t-name          name\n";
+	print STDERR "\t\t-state         realm's state\n";
+	print STDERR "\t\t-realmdir      realm's directory\n";
+	print STDERR "\t\t-configdir     configuration directory\n";
+	print STDERR "\t\t-rollrec       rollrec file\n";
+	print STDERR "\t\t-admin         realm adminstrator's email\n";
+	print STDERR "\t\t-display       display flag\n";
+	print STDERR "\t\t-manager       realm's rollover manager\n";
+	print STDERR "\t\t-args          manager arguments\n";
+	print STDERR "\t\t-user          manager user\n";
+	print STDERR "\toutput-format options:\n";
+	print STDERR "\t\t-count         only give count of matching realms\n";
+	print STDERR "\t\t-fullpaths     only give count of matching realms\n";
+	print STDERR "\t\t-headers       give explanatory column headers\n";
+	print STDERR "\t\t-terse         terse output\n";
+	print STDERR "\t\t-long          long output\n";
+	print STDERR "\t\t-Version       display version number\n";
+	print STDERR "\t\t-help          help message \n";
+
+	exit(1);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+lsrealm - List the I<realm>s in a DNSSEC-Tools I<realm> file
+
+=head1 SYNOPSIS
+
+  lsrealm [options] <realm-files>
+
+=head1 DESCRIPTION
+
+This script lists the contents of the specified I<realm> files.  All I<realm>
+files are loaded before the output is displayed.  If any I<realm>s have
+duplicated names, whether within one file or across multiple files, the later
+I<realm> will be the one whose data are displayed.
+
+The output displayed for each realm in a I<realm> file depends on the selected
+records, the selected attributes, and the selected output format.  Each option
+in these option groups is described in detail in the next section.  The three
+base output formats are described here.
+
+The B<-terse> option indicates that a minimal amount of output is desired; the
+B<-long> option indicates that a great deal of output is desired.  The
+record-selection and attribute-selection options may be used in conjunction
+with B<-terse> to display exactly the set of I<realm> fields needed.
+
+The default output format is that used when neither B<-terse> nor B<-long> is
+given, and is a middle ground between terse and long output.
+
+The table below shows the fields displayed for each output format.
+
+    realm field          default        terse        long
+    -------------        -------        -----        ----
+    realm name             yes           yes         yes
+    state                  yes           no          yes
+    config directory       no            no          yes
+    realm directory        no            no          yes
+    rollrec file           no            no          yes
+    administrator          no            no          yes
+    directory              no            no          yes
+    display flag           no            no          yes
+    manager                no            no          yes
+    manager arguments      no            no          yes
+    user                   no            no          yes
+
+=head1 OPTIONS
+
+There are three types of options recognized by B<lsrealm>:  record-selection
+options, attribute-selection options, and output-format options.  Each type
+is described in the subsections below.
+
+=head2 Record-selection Options
+
+These options select the records that will be displayed by B<lsrealm>.
+By default, all records will be displayed; selecting one or the other of
+these options will restrict the records shown.
+
+These options are mutually exclusive.
+
+=over 4
+
+=item B<-active>
+
+List all active records in the I<realm> file.
+
+=item B<-inactive>
+
+List all inactive records in the I<realm> file.
+
+=back
+
+=head2 Attribute-selection Options
+
+These options select the attributes of the records that will be displayed
+by B<lsrealm>.
+
+=over 4
+
+=item B<-admin>
+
+The record's administrator value is included in the output.
+If an administrator value is not included in a I<realm>, then the value
+"(defadmin)" will be given.
+
+=item B<-args>
+
+The record's user-defined arguments for the realm's rollover manager.
+
+=item B<-configdir>
+
+The record's configuration directory is included in the output.
+This value will be the filename only, unless the B<-fullpaths> option
+is given.  In that case, the full pathname will be printed.
+
+=item B<-display>
+
+The record's display flag, used by B<grandvizier> is included in the output.
+
+=item B<-manager>
+
+The record's manager field, indicating which rollover manager is used for the
+realm..  The default is B<rollerd>, but individual installations may use other
+managers.
+
+=item B<-realmdir>
+
+The record's realm directory is included in the output.
+This value will be the filename only, unless the B<-fullpaths> option
+is given.  In that case, the full pathname will be printed.
+
+=item B<-rollrec>
+
+The record's I<rollrec> file is included in the output.
+This value will be the filename only, unless the B<-fullpaths> option
+is given.  In that case, the full pathname will be printed.
+
+=item B<-state>
+
+Include each I<realm> record's state in the output.  The state will be
+either "active" or "inactive".
+This field is part of the default output.
+
+=item B<-user>
+
+The record's user field, which is the user the realm's manager will be
+executed with.  I<This field is not yet implemented.>
+
+=back
+
+=head2 Output-format Options
+
+These options select the type of output that will be given by I<lsrealm>.
+
+=over 4
+
+=item B<-count>
+
+Only a count of matching realms in the I<realm> file is given.
+
+=item B<-fullpaths>
+
+Display pathname data as the full pathname given in the realm file.
+If this option is not specified, only the filename itself will be displayed.
+
+=item B<-headers>
+
+Display explanatory column headers.
+
+=item B<-terse>
+
+Terse output is given.  Only the record name and any other fields specifically
+selected are included in the output.
+
+=item B<-long>
+
+Long output is given.  All record fields are included.
+
+=item B<-help>
+
+Display a usage message.
+
+=item B<-Version>
+
+Displays the version information for B<lsrealm> and the DNSSEC-Tools package.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<dtrealms(8)>,
+B<grandvizier(8)>,
+B<realminit(8)>
+
+B<Net::DNS::SEC::Tools::realm.pm(3)>
+
+B<file-realm(5)>
+
+=cut
+
