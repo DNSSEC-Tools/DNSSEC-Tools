@@ -79,12 +79,9 @@ function assignHostGrade() {
         var finished = true
         var maxGrade = 0
 
-        console.log("checking host " + hostname)
-
         for(var j = 0; j < hosttests[hostname].length; j++) {
             if (hosttests[hostname][j].status == DNSSECTest.UNKNOWN)
                 finished = false
-            console.log("  checking test #" + j + " -> " + hosttests[hostname][j].status)
 
             // Check for any failure == at least a B
             if (hosttests[hostname][j].status != DNSSECTest.GOOD) {
@@ -92,17 +89,24 @@ function assignHostGrade() {
             }
 
             // if they can't do UDP, it's a complete failure
-            if (j == 0 && hosttests[hostname][j].status != DNSSECTest.GOOD) {
+            if (hosttests[hostname][j].name == "DNS" && hosttests[hostname][j].status != DNSSECTest.GOOD) {
                 maxGrade = 4;
             }
 
             // if they can't do the DNSSEC specific tests (DO, RRSIG, NSEC, NSEC3, DNSKEY, DS) they get a C
-            if ((j == 1 || j == 2 || j == 4 || j == 6 || j == 7 || j == 8 || j == 9) &&
+            if ((hosttests[hostname][j].name == "TCP" ||
+                 hosttests[hostname][j].name == "DO" ||
+                 hosttests[hostname][j].name == "RRSIG" ||
+                 hosttests[hostname][j].name == "NSEC" ||
+                 hosttests[hostname][j].name == "NSEC3" ||
+                 hosttests[hostname][j].name == "DNSKEY" ||
+                 hosttests[hostname][j].name == "DS") &&
                     hosttests[hostname][j].status != DNSSECTest.GOOD) {
                 maxGrade = 2;
             }
 
-            if (j == 5 && hosttests[hostname][j].status != DNSSECTest.GOOD) {
+            // If they fail EDNS0, then it's a D
+            if (hosttests[hostname][j].name == "EDNS0" && hosttests[hostname][j].status != DNSSECTest.GOOD) {
                 maxGrade = 3;
             }
         }
