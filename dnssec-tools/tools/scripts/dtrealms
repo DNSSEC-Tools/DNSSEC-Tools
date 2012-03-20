@@ -1,0 +1,2075 @@
+#!/usr/bin/perl
+#
+# Copyright 2011-2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# dtrealms
+#
+#	This script manages the running DNSSEC-Tools realms.
+#
+#	This daemon isn't necessary for running multiple realms.
+#	However, it does make it easier to manage multiple realms
+#	running consecutively.
+#
+
+#
+# our $prefixdir  = $ENV{'DT_PREFIX'}     || "/usr/local";
+# our $sysconfdir = $ENV{'DT_SYSCONFDIR'} || "/usr/local/etc";
+# our $STATEDIR   = $ENV{'DT_STATEDIR'}   || "/usr/local/var";
+#
+# Configuration file.
+# our $CONFFILE = "${sysconfdir}/dnssec-tools/dnssec-tools.conf";
+#
+
+use strict;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::dnssectools;
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::realm;
+use Net::DNS::SEC::Tools::realmmgr;
+
+use POSIX ":sys_wait_h";
+
+#
+# Despite its name, rolllog.pm is a general-purpose logging facility.
+#
+use Net::DNS::SEC::Tools::rolllog;
+
+#
+# Version information.
+#
+my $NAME   = "dtrealms";
+my $VERS   = "$NAME version: 1.12.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+
+my %dtconf;				# DNSSEC-Tools config file.
+my $dtconfig;				# DNSSEC-Tools configuration file.
+
+my %opts = ();				# Filled option array.
+my @opts =
+(
+	"directory=s",			# Directory we'll run in.
+	"display",			# Use output GUI.
+	"logfile=s",			# Log file.
+	"loglevel=s",			# Logging level.
+	"logtz=s",			# Logging timezone.
+
+	"help",				# Give a usage message and exit.
+	"verbose",			# Verbose output.
+	"Version",			# Display the version number.
+);
+
+my $directory = '';			# Directory flag.
+my $display = 0;			# Display flag.
+my $logfile;				# Log file.
+my $loglevel;				# Logging level.
+my $logtz;				# Logging timezone.
+my $username;				# User to execute as.
+
+#
+# Keywords for configuration file values.
+#
+my $DT_DIR	= 'realmd_directory';
+my $DT_DISPLAY	= 'realmd_display';
+my $DT_LOGLEVEL	= 'realmd_loglevel';
+my $DT_LOGFILE	= 'realmd_logfile';
+my $DT_LOGTZ	= 'realmd_logtz';
+
+#######################################################################
+
+my $xqtdir;					# Directory we started in.
+my $curdir;					# Current directory.
+
+my $realmfile = '';				# Current realm file.
+my @realms    = ();				# List of names in realm file.
+my %realms    = ();				# Hash of realm file.
+my %inactives   = ();				# Hash of inactive realms.
+my %actives   = ();				# Hash of actives realms.
+
+my %children	= ();				# Realm/pid hash table.
+my $numchildren = 0;				# Count of actives children.
+
+#######################################################################
+
+my $LOG_DEFFILE	 = 'log.realmd';		# Default log file.
+my $LOG_DEFLEVEL = LOG_INFO;			# Default log level.
+my $LOG_DEFTZ	 = 'gmt';			# Default timezone for log.
+
+#######################################################################
+
+my $MAXTRIES = 5;		# Number of times to attempt a realm halt.
+
+#######################################################################
+
+
+#
+# Do Everything.
+#
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	#
+	# Check our args and options.
+	#
+	doopts();
+
+	#
+	# Move to our work directory.
+	#
+	chdir($directory);
+
+	#
+	# Set up logging, user commands, and identify ourself.
+	#
+	housekeeping();
+
+	#
+	# Build our realm objects.
+	#
+	buildrealms(1);
+
+	#
+	# Turn on our signal handlers and start realm execution.
+	#
+	controllers(1);
+	runrealms();
+
+	#
+	# Turn on the display flag if user wants it.
+	#
+#	displayer($display) if(defined($opts{'display'}));
+if(defined($opts{'display'}))
+{
+rolllog_log(LOG_ALWAYS,"","\n\n\nSTARTING GRANDVIZIER\n\n\n");
+print "\n\n\nSTARTING GRANDVIZIER\n\n\n";
+displayer($display);
+}
+else
+{
+rolllog_log(LOG_ALWAYS,"","\n\n\nNOT STARTING GRANDVIZIER\n\n\n");
+print "\n\n\nNOT STARTING GRANDVIZIER\n\n\n";
+}
+
+	#
+	# Wait for something to happen.
+	#
+	waiter();
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying options are given.
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+
+	#
+	# Get the base values. 
+	#
+	$dtconfig = getconffile();
+	%dtconf = parseconfig();
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%opts,@opts) || usage();
+
+	#
+	# Check for a few easy options.
+	#
+	usage() if(defined($opts{'help'}));
+	version() if(defined($opts{'Version'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$directory = optcalc('directory', $DT_DIR,	'.');
+	$display   = defined($opts{'display'});
+	$loglevel  = optcalc('loglevel',  $DT_LOGLEVEL, $LOG_DEFLEVEL);
+	$logfile   = optcalc('logfile',	  $DT_LOGFILE,	$LOG_DEFFILE);
+	$logtz	   = optcalc('logtz',	  $DT_LOGTZ,	$LOG_DEFTZ);
+
+	#
+	# Get the realm file.
+	#
+	usage() if(!defined($ARGV[0]));
+	$realmfile = $ARGV[0];
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	housekeeping()
+#
+# Purpose:	Do some basic initialization work.
+#		This is expected to only be called once.
+#
+sub housekeeping
+{
+	#
+	# Set up logging and write some initial boot messages.
+	#
+	loginit();
+	bootmsg(1);
+
+	#
+	# Ensure we're the only dtrealms running and drop a pid file.
+	#
+	if(realmmgr_dropid() == 0)
+	{
+		print STDERR "another dtrealms is already running\n";
+		rolllog_log(LOG_ALWAYS,"","another dtrealms tried to start");
+		cleanup();
+	}
+
+	#
+	# Set up the command channel.
+	#
+	realmmgr_channel(1);
+
+	#
+	# Save our current directory.
+	#
+	$curdir = getcwd();
+	$xqtdir = $curdir;
+
+	$username = getpwuid($>);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	optcalc()
+#
+# Purpose:	This routine figures out which version of a variable to use.
+#		It selects (in order) a command-line option, an option from
+#		the DNSSEC-Tools config file, or a program default.
+#
+sub optcalc
+{
+	my $optskey = shift;				# Key for %opts.
+	my $dtckey  = shift;				# Key for %dtconf.
+	my $default = shift;				# Default value.
+	my $ret;					# Return value.
+
+	if(defined($opts{$optskey}))
+	{
+		$ret = $opts{$optskey};
+	}
+	else
+	{
+		if(defined($dtconf{$dtckey}))
+		{
+			$ret = $dtconf{$dtckey};
+		}
+		else
+		{
+			$ret = $default;
+		}
+	}
+
+	return($ret);
+}
+
+#------------------------------------------------------------------------
+# Routine:	loginit()
+#
+# Purpose:	Initialize our logging.
+#
+sub loginit
+{
+	my $errs = 0;					# Error count.
+
+	if(rolllog_file($logfile,0) eq '')
+	{
+		rolllog_log(LOG_FATAL,'',"started with invalid logging file - \"$logfile\"");
+	}
+
+	if(rolllog_level($loglevel) == -1)
+	{
+		rolllog_log(LOG_FATAL,'',"started with invalid logging level - \"$loglevel\"");
+	}
+
+	if(rolllog_settz($logtz) == undef)
+	{
+		rolllog_log(LOG_FATAL,'',"started with invalid logging timezone - \"$logtz\"");
+	}
+
+	exit(1) if($errs != 0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      bootmsg()
+#
+# Purpose:      Write a start-up message to the log.
+#
+sub bootmsg
+{
+	my $bootflag = shift;                           # Boot flag.
+
+	if($bootflag)
+	{
+		rolllog_log(LOG_ALWAYS,'',"$NAME starting " . ("-" x 40));
+	}
+	else
+	{
+		rolllog_log(LOG_ALWAYS,'',"$NAME changing logfiles " . ("-" x 31))
+	;
+	}
+
+	rolllog_log(LOG_ALWAYS,'',"$NAME parameters:");
+	rolllog_log(LOG_ALWAYS,'',"     realm file    \"$realmfile\"");
+	rolllog_log(LOG_ALWAYS,'',"     directory       \"$directory\"");
+	rolllog_log(LOG_ALWAYS,'',"     config file     \"$dtconfig\"");
+	rolllog_log(LOG_ALWAYS,'',"     logfile         \"$logfile\"");
+	rolllog_log(LOG_ALWAYS,'',"     loglevel        \"$loglevel\"");
+	rolllog_log(LOG_ALWAYS,'',"     logtz           \"$logtz\"");
+	rolllog_log(LOG_ALWAYS,'',"     running as      \"$username\"");
+
+	rolllog_log(LOG_ALWAYS,'',' ');
+}
+
+#------------------------------------------------------------------------
+# Routine:	buildrealms()
+#
+# Purpose:	Read the specified realms file and put it in a hash table.
+#
+sub buildrealms
+{
+	my $logflag = shift;			# Flag for logging actions.
+	my $ret;				# Return from realm_read().
+
+	rolllog_log(LOG_PHASE,'',"creating realms list") if($logflag);
+
+	#
+	# Read the realms file.
+	#
+	readrealms(1);
+
+	#
+	# Get a list of the realms and zap the realms hash.
+	#
+	@realms = realm_names();
+	%realms = ();
+
+	#
+	# Copy each realm entry into our own realm storage.
+	#
+	foreach my $realm (@realms)
+	{
+		my $rr = realm_fullrec($realm);
+
+		rolllog_log(LOG_INFO,'',"adding realm \"$realm\" to list") if($logflag);
+#		$realms{$realm} = %$rr;
+
+		foreach my $key (keys(%$rr))
+		{
+			$realms{$realm}{$key} = $rr->{$key};
+		}
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	readrealms()
+#
+# Purpose:	Read the specified realms file and put it in a hash table.
+#
+sub readrealms
+{
+	my $exitflag = shift;			# Exit-on-error flag.
+	my $ret;				# Return value.
+
+	#
+	# Read the realm file.
+	#
+	realm_lock();
+	$ret = realm_read($realmfile);
+	realm_unlock();
+
+	#
+	# Ensure realm file exists and is okay.
+	#
+	if($ret < 0)
+	{
+		if($ret == -1)
+		{
+			print STDERR "realm file \"$realmfile\" does not exist\n";
+		}
+		elsif($ret == -2)
+		{
+			print STDERR "unable to open realm file \"$realmfile\"";
+		}
+		elsif($ret == -3)
+		{
+			print STDERR "duplicate names in realm file \"$realmfile\"";
+		}
+
+		exit(2) if($exitflag);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	runrealms()
+#
+# Purpose:	This routine...
+#
+# rollerd -dir . -logfile log.demo -loglevel info -sleep 15 -rrf demo.rollrec &
+# rollerd -foreground -dir . -display -logfile $log -loglevel $llev $slp $rrf
+#
+sub runrealms
+{
+	rolllog_log(LOG_PHASE,"","starting realms");
+
+	foreach my $realm (keys(%realms))
+	{
+		#
+		# Don't start this realm if it should be inactive.
+		#
+		if($realms{$realm}->{'state'} eq 'inactive')
+		{
+			rolllog_log(LOG_INFO,$realm,"realm is inactive");
+			$inactives{$realm}++;
+			next;
+		}
+
+		#
+		# And get the realm going.
+		#
+		if(startrealm($realm) != 0)
+		{
+			rolllog_log(LOG_INFO,$realm,"unable to start realm");
+			$inactives{$realm}++;
+		}
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	waiter()
+#
+sub waiter
+{
+
+	#
+	# Wait while our children run.
+	#
+	while(42)
+	{
+		my $cpid;				# Pid of dead child.
+		my $ret;				# Child's return value.
+		my $found = 0;				# Found flag.
+
+		#
+		# Wait here until a child process has died.
+		#
+if(1)
+{
+		while(($cpid = wait()) != -1)
+		{
+			$ret = $? >> 8;
+			$numchildren--;
+
+			#
+			# Find which child has gone away.
+			#
+			foreach my $realm (sort(keys(%children)))
+			{
+				next if($children{$realm} != $cpid);
+
+				rolllog_log(LOG_INFO,$realm,"realm has exited; retcode - $ret");
+				$found++;
+			}
+
+			#
+			# Complain if we don't recognize the child's pid.
+			#
+			if(!$found)
+			{
+				rolllog_log(LOG_ERR,'???',"unknown realm has exited; pid - $cpid; retcode - $ret");
+			}
+		}
+}
+else
+{
+		$cpid = wait();
+		$ret = $? >> 8;
+		$numchildren--;
+
+		#
+		# Find which child has gone away.
+		#
+		foreach my $realm (sort(keys(%children)))
+		{
+			next if($children{$realm} != $cpid);
+
+			rolllog_log(LOG_INFO,$realm,"realm has exited; retcode - $ret");
+			$found++;
+		}
+
+		#
+		# Complain if we don't recognize the child's pid.
+		#
+		if(!$found)
+		{
+			rolllog_log(LOG_ERR,'???',"unknown realm has exited; pid - $cpid; retcode - $ret");
+		}
+}
+
+		#
+		# Sleep until something happens.
+		#
+		select(undef,undef,undef,undef);
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	realm_exec()
+#
+# Purpose:	Run a command in a given realm and do not wait for it to
+#		complete.  The child process is added to our list of children.
+#
+sub realm_exec
+{
+	my $realm = shift;			# Realms to start.
+	my $cmd = shift;			# Command to execute.
+
+	my $child;				# Procid for child realm.
+
+	#
+	# Create a child process for the rollover manager.
+	#
+	if(($child = fork()) == 0)
+	{
+		my $realmdir;			# Realm's execution directory.
+		my $statedir;			# Realm's state directory.
+		my $confdir;			# Realm's config directory.
+
+		#
+		# Get the realm's directories.
+		#
+		$confdir  = $realms{$realm}{'configdir'} | '.';
+		$realmdir = $realms{$realm}{'realmdir'}  | '.';
+		$statedir = $realms{$realm}{'statedir'}  | '.';
+
+		#
+		# Move into the realm's directory.
+		#
+		chdir($realmdir);
+
+		#
+		# Set the state directory and config file so the command
+		# will be run as in the proper realm.
+		#
+		$ENV{'DT_STATEDIR'}   = $statedir;
+		$ENV{'DT_SYSCONFDIR'} = $confdir;
+
+# DNSSEC-Tools config file is ${sysconfdir}/dnssec-tools/dnssec-tools.conf
+
+		rolllog_log(LOG_TMI,$realm,"executing \"$cmd\"");
+		exec $cmd;
+
+		#
+		# If the exec failed...
+		#
+		rolllog_log(LOG_TMI,$realm,"could not start \"$cmd\"; errno - $!");
+		exit(1);
+	}
+
+	#
+	# Add the child proc's info to the children hash.
+	#
+	$children{$realm} = $child;
+	$numchildren++;
+}
+
+#------------------------------------------------------------------------
+# Routine:	realm_system()
+#
+# Purpose:	Run a command in a given realm and wait for it to complete.
+#		The child process is not added to our list of children.
+#
+sub realm_system
+{
+	my $realm = shift;			# Realms to start.
+	my $cmd = shift;			# Command to execute.
+
+	my $confdir;				# Realm's config directory.
+	my $statedir;				# Realm's state directory.
+	my $realmdir;				# Realm's directory.
+	my $rc = '';				# Return code.
+	my $out = '';				# Command's output.
+
+	#
+	# Get the state directory and config file for this realm.
+	#
+	$confdir  = $realms{$realm}{'configdir'} | '.';
+	$statedir = $realms{$realm}{'statedir'}  | '.';
+	$realmdir = $realms{$realm}{'realmdir'}  | '.';
+
+	#
+	# Move into the realm's directory.
+	#
+	chdir($realmdir);
+
+	#
+	# Run the command with a timer.
+	#
+	eval
+	{
+		#
+		# Set a timer so we don't hang forever.
+		#
+		$SIG{'ALRM'} = sub { die 'command timeout' };
+		alarm(60);
+
+		#
+		# Execute the given command in the given realm.
+		#
+		rolllog_log(LOG_TMI,$realm,"executing \"$cmd\"");
+
+#		system("DT_STATEDIR=$realmdir DT_SYSCONFDIR=$confdir $cmd");
+#		$out = `DT_STATEDIR=$realmdir DT_SYSCONFDIR=$confdir $cmd`;
+#		$out = `DT_STATEDIR=$realmdir DT_SYSCONFDIR=$confdir $cmd 2>&1`;
+		$out = `DT_STATEDIR=$statedir DT_SYSCONFDIR=$confdir $cmd 2>&1`;
+		$rc = $? >> 8;
+
+		#
+		# Turn off the timer.
+		#
+		alarm(0);
+		$SIG{'ALRM'} = 'DEFAULT';
+	};
+
+	#
+	# Send the appropriate message to the caller.  We will recognize
+	# if the timer failed or not, but that's the only success/failure
+	# indicator we'll give for the command.
+	#
+	if($@ && ($@ =~ /command timeout/))
+	{
+		rolllog_log(LOG_ALWAYS,$realm,'realm_system() command timed out');
+		$rc = -1;
+		$out = 'timeout';
+	}
+	else
+	{
+		rolllog_log(LOG_TMI,$realm,'realm_system() succeeded');
+		rolllog_log(LOG_TMI,$realm,"    rc - <$rc>");
+		rolllog_log(LOG_TMI,$realm,"    out - <$out>");
+	}
+
+	#
+	# Return to dtrealm's directory.
+	#
+	chdir($xqtdir);
+
+	#
+	# Return the command's output.
+	#
+	return($rc,$out);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	controllers()
+#
+# Purpose:	Initialize handlers for our externally provided commands.
+#
+sub controllers
+{
+	my $onflag = shift;				# Handler on/off flag.
+
+	#
+	# Set the signal handlers that will manage incoming commands.
+	#
+	$SIG{'HUP'} = \&intcmd_handler;
+	$SIG{'INT'} = \&halt_handler;
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	commander()
+#
+# Purpose:	Get any commands sent to dtrealms' command socket.
+#
+sub commander
+{
+	my $cmd;				# Client's command.
+	my $data;				# Command's data.
+
+	rolllog_log(LOG_TMI,'<command>',"checking commands");
+
+	#
+	# Read and handle all the commands we've been sent.
+	#
+	while(42)
+	{
+		#
+		# Get the command, return if there wasn't one.
+		#
+		($cmd,$data) = realmmgr_getcmd(5);
+		return if(!defined($cmd));
+
+		rolllog_log(LOG_TMI,'<command>',"cmd   - \"$cmd\"");
+		rolllog_log(LOG_TMI,'<command>',"data  - \"$data\"") if($data ne "");
+
+		#
+		# Deal with the command.
+		#
+		if($cmd eq REALMCMD_COMMAND())
+		{
+			cmd_command($data);
+		}
+		elsif($cmd eq REALMCMD_DISPLAY())
+		{
+			cmd_display($data);
+		}
+		elsif($cmd eq REALMCMD_LOGFILE())
+		{
+			cmd_logfile($data);
+		}
+		elsif($cmd eq REALMCMD_LOGLEVEL())
+		{
+			cmd_loglevel($data);
+		}
+		elsif($cmd eq REALMCMD_LOGMSG())
+		{
+			cmd_logmsg($data);
+		}
+		elsif($cmd eq REALMCMD_LOGTZ())
+		{
+			cmd_logtz($data);
+		}
+		elsif($cmd eq REALMCMD_REALMSTATUS())
+		{
+			cmd_realmstatus($data);
+		}
+		elsif($cmd eq REALMCMD_SHUTDOWN())
+		{
+			cmd_shutdown($data);
+		}
+		elsif($cmd eq REALMCMD_STARTALL())
+		{
+			cmd_startall($data);
+		}
+		elsif($cmd eq REALMCMD_STARTREALM())
+		{
+			cmd_startrealm($data);
+		}
+		elsif($cmd eq REALMCMD_STATUS())
+		{
+			cmd_status($data);
+		}
+		elsif($cmd eq REALMCMD_STOPALL())
+		{
+			cmd_stopall($data);
+		}
+		elsif($cmd eq REALMCMD_STOPREALM())
+		{
+			cmd_stoprealm($data);
+		}
+		else
+		{
+			rolllog_log(LOG_ERR,'<command>',"invalid command  - \"$cmd\"");
+		}
+
+		realmmgr_closechan();
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_command()
+#
+sub cmd_command
+{
+	my $cmd  = shift;			# Command data.
+	my $ret;				# Return code.
+	my $resp;				# Response data.
+
+	my @atoms;				# Pieces of command string.
+	my $realm;				# Target realm for command.
+	my $command;				# Actual command to send.
+
+	rolllog_log(LOG_TMI,'<command>',"realm-command command received; cmd - \"$cmd\"");
+
+	#
+	# Build a response of the realms' status.
+	#
+	@atoms = split ' ', $cmd;
+	if(@atoms < 2)
+	{
+		rolllog_log(LOG_TMI,'<command>',"incomplete realm-command");
+		realmmgr_sendresp(REALMCMD_RC_BADREALMDATA,'incomplete realm-command; must have both a realm and command arguments.');
+		return;
+	}
+
+	#
+	# Build the pieces of the command.
+	#
+	$realm = shift @atoms;
+	$command = join ' ', @atoms;
+
+	#
+	# Execute the command.
+	#
+	rolllog_log(LOG_INFO,'<command>',"sending realm $realm command $command");
+	($ret, $resp) = realm_system($realm,$command);
+
+	#
+	# Send the appropriate message to the caller.  We will recognize
+	# if the timer failed or not, but that's the only success/failure
+	# indicator we'll give for the command.
+	#
+	if(($ret == -1) && ($resp eq 'timeout'))
+	{
+		rolllog_log(LOG_TMI,'<command>','realm command timed out');
+		realmmgr_sendresp(REALMCMD_RC_BADEVENT,'realm command timed out');
+	}
+	else
+	{
+		rolllog_log(LOG_TMI,'<command>',"realm-command response - <$resp>");
+		rolllog_log(LOG_TMI,'<command>',"realm-command return code - <$ret>");
+		#
+		# A return code line will be added to the output.
+		#
+		$resp .= "\nreturn code - $ret\n";
+
+		realmmgr_sendresp(REALMCMD_RC_OKAY,$resp);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_display()
+#
+# Purpose:	Set the logfile to the user's specified file.  Nothing is done
+#		if the user requests the same log file as is currently in use.
+#
+sub cmd_display
+{
+	my $onflag = shift;				# Display-on flag.
+
+	rolllog_log(LOG_TMI,'<command>',"display command received; status flag - \"$onflag\"");
+
+	#
+	# Do nothing if the we're already doing what the user wants.
+	#
+	if($display == $onflag)
+	{
+		if($display == 1)
+		{
+			rolllog_log(LOG_INFO,'<command>',"graphical display is already on");
+		}
+		else
+		{
+			rolllog_log(LOG_INFO,'<command>',"graphical display is already off");
+		}
+		realmmgr_sendresp(REALMCMD_RC_DISPLAY,"display status already as requested");
+		return;
+	}
+
+	#
+	# Change the logfile and give an appropriate set of log messages.
+	#
+	if($onflag)
+	{
+		displayer(1);
+		rolllog_log(LOG_INFO,'<command>',"dtrealms display started");
+		realmmgr_sendresp(REALMCMD_RC_OKAY,"dtrealms display started");
+	}
+	else
+	{
+		displayer(0);
+		rolllog_log(LOG_INFO,'<command>',"dtrealms display stopped");
+		realmmgr_sendresp(REALMCMD_RC_OKAY,"dtrealms display stopped");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_logfile()
+#
+# Purpose:	Set the logfile to the user's specified file.  Nothing is done
+#		if the user requests the same log file as is currently in use.
+#
+sub cmd_logfile
+{
+	my $newlog = shift;				# New log file.
+	my $oldlog;					# Old log file.
+
+	rolllog_log(LOG_TMI,'<command>',"logfile command received; new log file - \"$newlog\"");
+
+	#
+	# Do nothing if the new logfile is the same as the current logfile.
+	#
+	$oldlog = rolllog_file();
+	if($oldlog eq $newlog)
+	{
+		rolllog_log(LOG_INFO,'<command>',"new logfile ($newlog) same as the old logfile");
+		return;
+	}
+
+	#
+	# Change the logfile and give an appropriate set of log messages.
+	#
+	rolllog_log(LOG_INFO,'<command>',"logfile changed from $oldlog to $newlog");
+	rolllog_log(LOG_INFO,'<command>',"closing logfile $oldlog");
+	$oldlog = rolllog_file($newlog,0);
+	if($oldlog ne "")
+	{
+		rolllog_log(LOG_INFO,'<command>',"logfile changed from $oldlog to $newlog");
+		bootmsg(0);
+		realmmgr_sendresp(REALMCMD_RC_OKAY,"logfile changed to \"$newlog\"");
+
+		$logfile = $newlog;
+
+	}
+	else
+	{
+		rolllog_log(LOG_ERR,'<command>',"unable to change logfile to $newlog");
+		realmmgr_sendresp(REALMCMD_RC_BADFILE,"unable to change logfile to \"$newlog\"");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_loglevel()
+#
+# Purpose:	Set the logging level to the user's specified level.
+#
+sub cmd_loglevel
+{
+	my $newlvl = shift;				# New level.
+	my $oldlvl;					# Old level.
+
+	my $oldstr;					# Old level's string.
+	my $newstr;					# New level's string.
+
+	$newstr = rolllog_str($newlvl);
+	rolllog_log(LOG_TMI,'<command>',"loglevel command received; new logging level - \"$newstr\"");
+
+	$oldlvl = rolllog_level($newlvl,0);
+	if($oldlvl >= 0)
+	{
+		$oldstr = rolllog_str($oldlvl);
+
+		rolllog_log(LOG_INFO,'<command>',"loglevel changed from $oldstr to $newstr");
+		realmmgr_sendresp(REALMCMD_RC_OKAY,"loglevel changed from \"$oldstr\" to \"$newstr\"");
+
+		$loglevel	= $newlvl;
+	}
+	else
+	{
+		rolllog_log(LOG_ERR,'<command>',"unable to change loglevel to $newlvl");
+		realmmgr_sendresp(REALMCMD_RC_BADLEVEL,"invalid loglevel \"$newlvl\"");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_logmsg()
+#
+# Purpose:	Write a log message to the log file.
+#
+#		The way we check for a valid log level is only good in a
+#		single-threaded environment.
+#
+sub cmd_logmsg
+{
+	my $logstr = shift;			# Log level and message.
+
+	my $loglvl;				# Logging level.
+	my $logmsg;				# Log message.
+
+	my $oldlvl;				# Real logging level.
+	my $goodlvl;				# Real version of new level.
+
+	rolllog_log(LOG_TMI,'<command>',"logmsg command received");
+
+	#
+	# Dig the log level and message out of our argument.
+	#
+	$logstr =~ /^\((\w+)\)(.*)$/;
+	$loglvl = $1;
+	$logmsg = $2;
+
+	#
+	# Check the validity of the caller's log level.  If it's invalid,
+	# rolllog_level() will return a failure and we'll return.
+	#
+	$oldlvl = rolllog_level($loglvl,0);
+	if($oldlvl < 0)
+	{
+		rolllog_log(LOG_INFO,'<command>',"invalid loglevel ($loglvl) specified for logmsg command");
+		realmmgr_sendresp(REALMCMD_RC_BADLEVEL,"invalid loglevel \"$loglvl\"");
+		return;
+	}
+
+	#
+	# Reset the logging level and write the caller's message.
+	#
+	$goodlvl = rolllog_level($oldlvl,0);
+	rolllog_log($goodlvl,"<user msg>",$logmsg);
+	realmmgr_sendresp(REALMCMD_RC_OKAY,"message written to log");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_logtz()
+#
+# Purpose:	Set the timezone for log messages' timestamps.
+#
+sub cmd_logtz
+{
+	my $newtz = shift;			# New logging timezone.
+
+	my $oldtz;				# Current logging timezone.
+
+	rolllog_log(LOG_TMI,'<command>',"logtz command received");
+
+	#
+	# Set the new timezone for log messages.  If it's invalid, we'll
+	# return a failure and then return.
+	#
+	$oldtz = rolllog_settz($newtz);
+	if($oldtz eq '')
+	{
+		rolllog_log(LOG_INFO,'<command>',"invalid timezone ($newtz) specified for logtz command");
+		realmmgr_sendresp(REALMCMD_RC_BADTZ,"invalid logtz \"$newtz\"");
+		return;
+	}
+
+	#
+	# Save the new logging timezone.
+	#
+	$logtz = $newtz;
+
+	#
+	# Let the user know all's well.
+	#
+	rolllog_log(LOG_INFO,"<command>","logging timezone set to $newtz");
+	realmmgr_sendresp(REALMCMD_RC_OKAY,"new logging timezone set");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_realmstatus()
+#
+sub cmd_realmstatus
+{
+	my $data = shift;				# Command data.
+	my $resp = '';					# Response data.
+
+	my $statcmd = 'rollctl -zonestatus';		# Rollover status cmd.
+
+	rolllog_log(LOG_TMI,'<command>',"realmstatus command received; data - \"$data\"");
+
+	#
+	# Build a response of the realms' status.
+	#
+	foreach my $realm (sort(keys(%realms)))
+	{
+		my $state = $realms{$realm}{'state'};
+		my $ret;				# Return code.
+		my $statresp;				# Command response.
+
+		#
+		# Handle inactive zones.
+		#
+		if($inactives{$realm})
+		{
+			$resp .= "$realms{$realm}{'realm_name'}\tinactive\n";
+			next;
+		}
+
+		#
+		# Execute the command.
+		#
+		rolllog_log(LOG_TMI,'<command>',"sending realm $realm command $statcmd");
+		($ret, $statresp) = realm_system($realm,$statcmd);
+
+		#
+		# Send the zonestatus message to the caller.
+		#
+		if(($ret == -1) && ($statresp eq 'timeout'))
+		{
+			rolllog_log(LOG_TMI,'<command>',"\"$statcmd\" timed out");
+			$statresp = '(no data available)';
+		}
+		else
+		{
+			my @lines;			# Response lines.
+			my $norms = 0;			# Normal zones.
+			my $ksks = 0;			# Zones in KSK rollover.
+			my $ksk6s = 0;			# Zones in KSK 6 wait.
+			my $zsks = 0;			# Zones in ZSK rollover.
+
+			rolllog_log(LOG_TMI,'<command>',"$statcmd returned - <$resp>");
+
+			#
+			# Figure out how many zones are in normal state, how
+			# many are in KSK rollover, and how many are in ZSK
+			# rollover.
+			#
+			@lines = split /\n/, $statresp;
+			foreach my $line (@lines)
+			{
+				my @atoms = ();		# Pieces of line.
+
+				#
+				# Split the line into pieces.
+				#
+				$line =~ s/\s+/ /g;
+				@atoms = split / /, $line;
+
+				#
+				# Bump the appropriate count.
+				#
+				if($atoms[3] == 0)
+				{
+					$norms++;
+				}
+				elsif($atoms[3] == 6)
+				{
+					$ksk6s++;
+				}
+				elsif($atoms[2] eq 'KSK')
+				{
+					$ksks++;
+				}
+				elsif($atoms[2] eq 'ZSK')
+				{
+					$zsks++;
+				}
+			}
+
+			#
+			# Build the zone status piece.
+			#
+			$statresp = "$norms/$zsks/$ksks/$ksk6s";
+			chomp $statresp;
+		}
+
+		#
+		# Add this realm's data to the response buffer.
+		#
+		$resp .= "$realms{$realm}{'realm_name'}\tactive\t$statresp\n";
+
+	}
+
+	#
+	# Wiggle the response buffer a little.
+	#
+	$resp = 'no managed realms' if($resp eq '');
+
+	#
+	# Send the response to the user.
+	#
+	rolllog_log(LOG_TMI,'<command>',"realmstatus resp - <$resp>");
+	realmmgr_sendresp(REALMCMD_RC_OKAY,$resp);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_shutdown()
+#
+sub cmd_shutdown
+{
+	my $data = shift;				# Command data.
+
+	rolllog_log(LOG_TMI,'<command>',"shutdown command received");
+	realmmgr_sendresp(REALMCMD_RC_OKAY,"dtrealms shutting down");
+
+	halt_handler();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_startall()
+#
+sub cmd_startall
+{
+	my $data = shift;				# Data.
+	my $rc	 = REALMCMD_RC_OKAY;			# Return code.
+	my $resp = '';					# Response message.
+
+	rolllog_log(LOG_TMI,'<command>',"startall command received");
+
+	if(keys(%inactives) > 0)
+	{
+		foreach my $realm (sort(keys(%inactives)))
+		{
+			my $ret = startrealm($realm);
+
+			if($ret == 0)
+			{
+				rolllog_log(LOG_INFO,'<command>',"realm $realm started");
+				$resp .= "$realm started\n";
+			}
+			else
+			{
+				rolllog_log(LOG_INFO,'<command>',"unable to start realm $realm");
+				$resp .= "$realm not started\n";
+				$rc = REALMCMD_RC_BADREALM;
+			}
+		}
+
+		chomp($resp);
+	}
+	else
+	{
+		rolllog_log(LOG_INFO,'<command>',"no stopped realms");
+		$resp = "no stopped realms";
+		$rc = REALMCMD_RC_NOREALMS;
+	}
+
+	#
+	# Send the response message with the appropriate return code.
+	#
+	realmmgr_sendresp($rc,$resp);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_startrealm()
+#
+sub cmd_startrealm
+{
+	my $realm = shift;				# Command realm.
+	my $ret;					# Return code.
+
+	rolllog_log(LOG_TMI,'<command>',"startrealm command received; realm - \"realm\"");
+
+	$ret = startrealm($realm);
+
+	if($ret == 0)
+	{
+		rolllog_log(LOG_INFO,'<command>',"realm $realm started");
+		realmmgr_sendresp(REALMCMD_RC_OKAY,"realm \"$realm\" started");
+	}
+	else
+	{
+		rolllog_log(LOG_INFO,'<command>',"unable to start realm $realm");
+		realmmgr_sendresp(REALMCMD_RC_BADREALM,"unable to start realm \"$realm\"");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_status()
+#
+# Purpose:	Build a status response.
+#
+sub cmd_status
+{
+	my $data = shift;				# Command data.
+	my $resp = '';					# Response data.
+	my $active = 0;					# Active-realms count.
+	my $inactive = 0;				# Inactive-realms count.
+
+	rolllog_log(LOG_TMI,'<command>',"status command received");
+
+	$active	  = keys(%actives);
+	$inactive = keys(%inactives);
+
+	$resp .= "$NAME parameters:\n";
+	$resp .= "     realm file         \"$realmfile\"\n";
+	$resp .= "     directory          \"$directory\"\n";
+	$resp .= "     config file        \"$dtconfig\"\n";
+	$resp .= "     logfile            \"$logfile\"\n";
+	$resp .= "     loglevel           \"$loglevel\"\n";
+	$resp .= "     logtz              \"$logtz\"\n";
+	$resp .= "     running as         \"$username\"\n";
+	$resp .= "     active realms      $active\n";
+	$resp .= "     inactive realms    $inactive\n";
+
+	realmmgr_sendresp(REALMCMD_RC_OKAY,$resp);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_stopall()
+#
+sub cmd_stopall
+{
+	my $data = shift;				# Data.
+	my $rc	 = REALMCMD_RC_OKAY;			# Return code.
+	my $resp = '';					# Response message.
+
+	rolllog_log(LOG_TMI,'<command>',"stopall command received");
+
+	if(keys(%actives) > 0)
+	{
+		foreach my $realm (sort(keys(%actives)))
+		{
+			my $ret = stoprealm($realm);
+
+			if($ret == 0)
+			{
+				rolllog_log(LOG_INFO,'<command>',"realm $realm stopped");
+				$resp .= "$realm stopped\n";
+			}
+			else
+			{
+				rolllog_log(LOG_INFO,'<command>',"unable to stop realm $realm");
+				$resp .= "$realm not stopped\n";
+				$rc = REALMCMD_RC_BADREALM;
+			}
+		}
+
+		chomp($resp);
+	}
+	else
+	{
+		rolllog_log(LOG_INFO,'<command>',"no active realms");
+		$resp = "no active realms";
+		$rc = REALMCMD_RC_NOREALMS;
+	}
+
+	#
+	# Send the response message with the appropriate return code.
+	#
+	realmmgr_sendresp($rc,$resp);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_stoprealm()
+#
+sub cmd_stoprealm
+{
+	my $realm = shift;				# Realm to stop.
+	my $ret;					# Return code from stop.
+
+	rolllog_log(LOG_TMI,'<command>',"stoprealm command received; realm - \"$realm\"");
+
+	$ret = stoprealm($realm);
+
+	if($ret == 0)
+	{
+		rolllog_log(LOG_INFO,'<command>',"realm $realm stopped");
+		realmmgr_sendresp(REALMCMD_RC_OKAY,"realm \"$realm\" stopped");
+	}
+	else
+	{
+		rolllog_log(LOG_INFO,'<command>',"unable to stop realm $realm");
+		realmmgr_sendresp(REALMCMD_RC_BADREALM,"unable to stop realm \"$realm\"");
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	displayer()
+#
+sub displayer
+{
+	#
+        # Set the global display flag to an argument -- iff we got one.
+        #
+rolllog_log(LOG_ALWAYS,'',"display 0 - $display");
+        if(@_ == 1)
+        {
+                $display = shift;
+        }
+rolllog_log(LOG_ALWAYS,'',"display 1 - $display");
+
+        #
+        # Turn on or off the graphical display, depending on the display flag.
+        #
+        if($display)
+        {
+rolllog_log(LOG_ALWAYS,'',"turning on grandvizier");
+		open(DISPLAY, "|grandvizier $realmfile");
+        }
+        else
+        {
+rolllog_log(LOG_ALWAYS,'',"turning off grandvizier");
+		display("halt");      
+		close(DISPLAY);
+        }
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	display()
+#
+sub display
+{
+	my $dmsg = shift;                               # Message to send.
+	my $savedsel;                                   # Saved descriptor.
+	my $ret;                                        # Retcode from print.
+
+	return if(!$display);
+
+	#
+	# Force this message to be unbuffered.
+	#
+	$savedsel = select(DISPLAY);
+	$| = 1;
+	$ret = print DISPLAY "$dmsg\n";
+	select($savedsel);
+
+	if(!$ret)
+	{
+		rolllog_log(LOG_INFO,'<command>',"unable to send message to grandvizier; turning off display");
+		$display = 0;
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	startrealm()
+#
+sub startrealm
+{
+	my $realm = shift;				# Realm to start.
+
+	my $rcmd;					# Realm's command.
+	my $rrf;					# Realm's rollrec file.
+	my $args;					# Arguments.
+
+	#
+	# Make sure this is a valid realm.
+	#
+	if(! defined($realms{$realm}))
+	{
+		rolllog_log(LOG_ERR,$realm,"attempt to start undefined realm");
+		return(1);
+	}
+
+	#
+	# Make sure we aren't starting an active realm.
+	#
+	if($actives{$realm})
+	{
+		rolllog_log(LOG_ERR,$realm,"realm already active");
+		return(2);
+	}
+
+	#
+	# Make sure we aren't starting an active realm.
+	#
+	if(! validrealm($realm))
+	{
+		rolllog_log(LOG_ERR,$realm,"invalid realm definition");
+		return(3);
+	}
+
+	#
+	# Get the realm's rollrec file.  If it isn't an absolute
+	# path, we'll prepend the realm's directory.
+	#
+	$rrf  = $realms{$realm}->{'rollrec'};
+	if($rrf !~ /^\//)
+	{
+		my $rdir  = $realms{$realm}{'realmdir'} | '.';
+		$rrf  = "$rdir/$realms{$realm}->{'rollrec'}";
+	}
+
+	#
+	# Get the arguments for the manager.
+	#
+	$args = "$realms{$realm}->{'args'}";
+
+	#
+	# Get the manager and build the command.
+	#
+	$rcmd = $realms{$realm}{'manager'} | 'rollerd';
+
+	$rcmd .= " -foreground $args -rrf $rrf";
+
+	#
+	# Start the realm off and running.
+	#
+	rolllog_log(LOG_INFO,$realm,"starting realm \"$rcmd\"");
+	realm_exec($realm,$rcmd);
+
+	#
+	# Move the realm to our table of active children.
+	#
+	changestate($realm,'active');
+
+	#
+	# Move the realm from the inactive list to the active list.
+	#
+	delete $inactives{$realm};
+	$actives{$realm}++;
+
+	#
+	# Return success.
+	#
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	stoprealm()
+#
+sub stoprealm
+{
+	my $realm = shift;				# Realm to stop.
+	my $rpid;					# Realm's procid.
+
+	rolllog_log(LOG_TMI,$realm,"    stopping");
+
+	#
+	# Make sure we aren't stopping a stopped realm.
+	#
+	if($inactives{$realm})
+	{
+		rolllog_log(LOG_ERR,$realm,"realm already stopped");
+		return(1);
+	}
+
+	#
+	# Return an error if no realm was specified.
+	#
+	if($realm eq '')
+	{
+		rolllog_log(LOG_ERR,'<command>',"no realm specified");
+		return(2);
+	}
+
+	#
+	# Return an error if no realm was specified.
+	#
+	if(! defined($realms{$realm}))
+	{
+		rolllog_log(LOG_ERR,'<command>',"invalid realm specified");
+		return(3);
+	}
+
+	#
+	# Return an error if the realm isn't running.
+	#
+	if(! running($realm))
+	{
+		rolllog_log(LOG_ERR,'<command>',"realm $realm not currently active");
+		return(4);
+	}
+
+	#
+	# Get the realm's process id.
+	#
+	$rpid = $children{$realm};
+
+	#
+	# Try a few times to get the realm to halt itself.
+	#
+	for(my $ind = 1; $ind <= $MAXTRIES; $ind++)
+	{
+		rolllog_log(LOG_ERR,'<command>',"\"stop $realm\" attempt $ind/$MAXTRIES");
+		realm_system($realm,"rollctl -halt");
+
+		waitpid($rpid, WNOHANG);
+
+		last if(! running($realm));
+		sleep(3);
+	}
+
+	#
+	# Get forceful if the realm is ignoring us.
+	#
+	if(running($realm))
+	{
+		foreach my $sig (2, 9)
+		{
+			rolllog_log(LOG_ERR,'<command>',"realm $realm still active, sending signal $sig");
+			kill $sig, $rpid;
+			last if(! running($realm));
+			sleep(3);
+		}
+
+		#
+		# Check once more; return an error if somehow it's survived.
+		#
+		if(running($realm))
+		{
+			rolllog_log(LOG_ERR,'<command>',"realm $realm must be a super-realm; giving up");
+			return(5);
+		}
+	}
+
+	#
+	# Remove the realm from our table of active children.
+	#
+#	delete($children{$realm});
+
+	#
+	# Remove the realm from our table of active children.
+	#
+	changestate($realm,'inactive');
+
+	#
+	# Move the realm from the active list to the inactive list.
+	#
+	delete $actives{$realm};
+	$inactives{$realm} = 1;
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	changestate()
+#
+# Purpose:	Changes a realm's state.
+#
+sub changestate
+{
+	my $realm = shift;				# Realm to change.
+	my $state = shift;				# Realm's new state.
+
+	#
+	# Don't fool with anything if the realm is already in the
+	# requested state.
+	#
+	return if(realm_recval($realm,'state') eq $state);
+
+	realm_close();
+	realm_lock();
+	realm_read($realmfile);
+	realm_setval($realm,'state',$state);
+	realm_write();
+	realm_unlock();
+	buildrealms(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	validrealm()
+#
+# Purpose:	Check if the specified realm has a valid definition.
+#		The following conditions are checked:
+#
+#			- the state is either "active" or "inactive"
+#			- the config directory is a writable, searchable
+#			  directory
+#			- the state directory is a writable, searchable
+#			  directory.  If this is not defined, the config
+#			  directory will be used.
+#			- the realm directory is a writable, searchable
+#			  directory
+#			- the rollrec file is a writable regular file
+#			- if the user is defined, it is a valid user
+#
+#
+sub validrealm
+{
+	my $realm = shift;			# Realm to check.
+	my $errs = 0;				# Error count.
+
+	my $rr;					# Reference to realm data.
+	my $state;				# Realm state.
+	my $cdir;				# Config directory.
+	my $sdir;				# Realm directory.
+	my $rdir;				# Realm directory.
+	my $rollrec;				# Realm's rollrec.
+	my $user;				# Realm's execution user.
+
+	#
+	# Do a couple very quick error tests.
+	#
+	return(0) if(($realm eq '') || (! realm_exists($realm)));
+
+	#
+	# Get the realm record and set a few time-saving fields.
+	#
+	$rr = realm_fullrec($realm);
+	$state	 = $rr->{'state'};
+	$cdir	 = $rr->{'configdir'};
+	$sdir	 = $rr->{'statedir'};
+	$rdir	 = $rr->{'realmdir'};
+	$rollrec = $rr->{'rollrec'};
+	$rollrec = "$rdir/$rollrec" if($rollrec !~ /^\//);
+	$user	 = $rr->{'user'};
+
+	#
+	# Ensure the state is valid.
+	#
+	if(($state ne 'active') && ($state ne 'inactive'))
+	{
+		rolllog_log(LOG_TMI,$realm,"invalid state - \"$state\"\n");
+		$errs++;
+	}
+
+	#
+	# Ensure the configuration directory is valid.
+	#
+	if(!defined($cdir)) 
+	{
+		rolllog_log(LOG_TMI,$realm,"no config directory given\n");
+		$errs++;
+	}
+	else
+	{
+		if(! -d $cdir && ! -x $cdir && ! -w $cdir)
+		{
+			rolllog_log(LOG_TMI,$realm,"invalid config directory - \"$cdir\"\n");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the state directory is valid.  If a state directory wasn't
+	# defined, we'll use the configuration directory.
+	#
+	if(!defined($sdir)) 
+	{
+		$sdir = $cdir;
+	}
+	else
+	{
+		if(! -d $sdir && ! -x $sdir && ! -w $sdir)
+		{
+			rolllog_log(LOG_TMI,$realm,"invalid state directory - \"$sdir\"\n");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the realm directory is valid.
+	#
+	if(!defined($rdir)) 
+	{
+		rolllog_log(LOG_TMI,$realm,"no realm directory given\n");
+		$errs++;
+	}
+	else
+	{
+		if(! -d $cdir && ! -x $cdir && ! -w $cdir)
+		{
+			rolllog_log(LOG_TMI,$realm,"invalid realm directory - \"$cdir\"\n");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the realm's rollrec is valid.
+	#
+	if(!defined($rr->{'rollrec'})) 
+	{
+		rolllog_log(LOG_TMI,$realm,"no rollrec given\n");
+		$errs++;
+	}
+	else
+	{
+		if(! -f $rollrec && ! -w $rollrec)
+		{
+			rolllog_log(LOG_TMI,$realm,"invalid rollrec - \"$cdir\"\n");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the realm's user is valid.
+	#
+	if(defined($user))
+	{
+		if(getpwnam($user) == 0)
+		{
+			rolllog_log(LOG_TMI,$realm,"invalid user - \"$user\"\n");
+			$errs++;
+		}
+	}
+
+	#
+	# And now for the grand conclusion...
+	#
+	if($errs)
+	{
+		my $errstr;					# Error phrase.
+
+		$errstr = ($errs == 1) ? "1 error found" : "$errs errors found";
+
+		rolllog_log(LOG_INFO,$realm,"realm definition is invalid; $errstr\n");
+		return(0);
+	}
+
+	rolllog_log(LOG_INFO,$realm,"realm definition is valid\n");
+	return(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	running()
+#
+# Purpose:	Check if the specified realm is running.  If the realm is
+#		running, return 1.  If the realm isn't running, return 0.
+#
+#		Two error conditions will also give a return of 0:  a realm
+#		wasn't specified or the realm isn't in the child-pid table.
+#
+sub running
+{
+	my $realm = shift;				# Realm to check.
+	my $rstat;					# Running status.
+
+	return(0) if(($realm eq '') || (! defined($children{$realm})));
+
+	$rstat = kill 0, $children{$realm};
+	return($rstat);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      intcmd_handler()
+#
+# Purpose:      Handle an interrupt and get a command.
+#
+sub intcmd_handler
+{
+	rolllog_log(LOG_TMI,'<command>',"realms manager:  got a command interrupt\n");
+
+	commander();    
+}
+
+#------------------------------------------------------------------------
+# Routine:	halt_handler()
+#
+sub halt_handler
+{
+	rolllog_log(LOG_PHASE,"dtrealms","shutting down child realms");
+
+	display("halt woof 0");
+
+	#
+	# Try for a polite shutdown of the realms.
+	#
+	foreach my $realm (sort(keys(%children)))
+	{
+		rolllog_log(LOG_INFO,$realm,"    halting");
+		realm_system($realm,"rollctl -halt");
+	}
+
+	sleep(3);
+
+	#
+	# Be more persuasive, in case the realms are ignoring us.
+	#
+	foreach my $realm (sort(keys(%children)))
+	{
+		kill 2, $children{$realm};
+	}
+
+	#
+	# Clean up our pid.
+	#
+	realmmgr_rmid();
+
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	timeout_command()
+#
+sub timeout_command
+{
+	rolllog_log(LOG_INFO,'<command>',"user-requested command timed out");
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+        print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);     
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage:  $NAME [options] realm-file\n";
+	print "\toptions:\n";
+	print STDERR "\t\t-directory\n";       
+	print STDERR "\t\t-logfile\n";       
+	print STDERR "\t\t-loglevel\n";       
+	print STDERR "\t\t-logtz\n";       
+	print STDERR "\t\t-Version\n";       
+	print STDERR "\t\t-help\n";
+	print "\n";
+	print "\tunimplemented options:\n";
+	print STDERR "\t\t-display\n";       
+
+	exit(1);
+}
+
+
+#----------------------------------------------------------------------
+# Routine:      dumprealms()
+#
+sub dumprealms
+{
+	open(DUMP,">/tmp/z");
+	print DUMP "\nrealms:\n";
+
+	foreach my $realm (@realms)
+	{
+		my $rr = realm_fullrec($realm);
+		my %rr = %$rr;
+
+		print DUMP "\trealm <$realm>\n";
+		foreach my $k (sort(keys(%rr)))
+		{
+			print DUMP "\t\t$k -\t<$rr{$k}>\n";
+		}
+		print DUMP "\n";
+	}
+}
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+dtrealms - Displays defaults defined for DNSSEC-Tools
+
+=head1 SYNOPSIS
+
+  dtrealms [options] <realm-file>
+
+=head1 DESCRIPTION
+
+B<dtrealms> manages multiple distinct DNSSEC-Tools rollover environments
+running simultaneously.  Each rollover environment, called a B<realm>, is
+defined in a B<realms> file.  B<dtrealms> uses this file to determine how the
+rollover environment must be initialized such that it can run independently of
+the other rollover environments on a particular system.  This is useful for
+such things as managing very large collections of zones, segregating customer
+zones, and software tests.
+
+The B<realms> file may be created with B<realminit>.  Currently, the distinct
+environment for each realm must be created manually.  It is hoped that a tool
+will soon be available to assist with creating each realm's environment.
+
+B<dtrealms> isn't necessary for running multiple realms.  However, it does
+make it easier to manage multiple realms running consecutively.
+
+=head1 REALM SETUP
+
+A realm is primarily defined by its entry in a B<realms> file.  Four fields
+in particular describe where the realm's files are located and how it runs.
+kits configuration directory and its realm
+directory.  These paths are used to set the B<DT_STATEDIR> and B<DT_SYSCONFDIR>
+environment variables.  
+
+=over 4
+
+=item B<configdir>
+
+The B<configdir> field of the B<realms> file contains the name of the realm's
+configuration directory.  This file gives command paths and configuration
+values for running the DNSSEC-Tools.  The DNSSEC-Tools modules expects this
+directory hierarchy to contain a B<dnssec-tools> subdirectory, and a
+B<dnssec-tools.conf> file within that subdirectory.  The path fields in the
+configuration file point to various things, such as commands and key archives.
+It is recommended that these paths only point within the B<configdir>
+hierarchy.
+
+The B<DT_SYSCONFDIR> environment variable is set to the B<configdir> field.
+This will tell the DNSSEC-Tools programs and modules where to find their
+required data.
+
+=item B<statedir>
+
+The B<statedir> field of the B<realms> file contains the name of the realm's
+state directory.  This directory contains such files as the B<rollrec> lock
+file and the B<rollerd> communications socket.  If a realm definition does not
+contain a B<statedir> field, then that realm will use the B<configdir> field
+as its B<statedir> field.
+
+The B<DT_STATEDIR> environment variable is set to the B<statedir> field.  This
+will tell the DNSSEC-Tools programs and modules where to find these files.
+
+=item B<realmdir>
+
+The B<realmdir> field of the B<realms> file has the directory name in which
+the realm executes.  It is assumed this is where the realm's zone, key, and
+other files are located.
+
+=item B<rollrec>
+
+The B<rollrec> field of the B<realms> file is the name of the file that
+controls zone rollover.  This file points to the various B<keyrec> files that
+define the locations of the zone files and their associated key files.  A
+realm's B<rollrec> file can locate these files anywhere on the system, but it
+is I<strongly> recommended that they all remain within the realm's B<realmdir>
+hierarchy.
+
+=back
+
+While the DNSSEC-Tools programs will work fine if a realm's configuration,
+state, and realm directories are actually one directory, it is recommended
+that at the least the B<realmdir> files be separated from the B<configdir>
+and B<statedir> files.
+
+It is further recommended that the files for the various realms be segregated
+from each other.
+
+=head1 OPTIONS
+
+The following options are handled by B<dtrealms>.
+
+=over 4
+
+=item B<-directory>
+
+Directory in which B<dtrealms> will executed.
+
+=item B<-display>
+
+Start the B<grandvizier> display program to give a graphical indication of
+realm status.
+I<Not yet implemented.>
+
+=item B<-logfile>
+
+Logging file to use.
+
+=item B<-loglevel>
+
+Logging level to use when writing to the log file.  See B<rolllog(3)> for more
+details.
+
+=item B<-logtz>
+
+Time zone to use with the log file.  This must be either "gmt" or "local".
+
+=item B<-Version>
+
+Displays the version information for B<dtrealms> and the DNSSEC-Tools package.
+
+=item B<-help>
+
+Displays a help message and exits.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2011-2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<grandvizier(8)>,
+B<lsrealm(8)>,
+B<realminit(8)>
+
+B<Net::DNS::SEC::Tools::realm.pm(3)>,
+B<Net::DNS::SEC::Tools::realmmgr.pm(3)>
+
+=cut
