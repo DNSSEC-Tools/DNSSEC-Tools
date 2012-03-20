@@ -301,6 +301,8 @@ Return values:
 	1 - the message was created and sent.
 	0 - an invalid recipient was specified. 
 
+=back
+
 It relies on the the following dnssec-tools.conf configuration parameters:
 
 =over 4
