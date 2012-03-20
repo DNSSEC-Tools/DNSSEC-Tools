@@ -90,6 +90,9 @@ extern          "C" {
 #ifndef HAVE_SYS_TYPES_H
 #define HAVE_SYS_TYPES_H 1
 #endif
+#ifndef HAVE_FREEADDRINFO
+#define HAVE_FREEADDRINFO
+#endif
 #ifndef LIBVAL_DLV
 #define LIBVAL_DLV 1
 #endif
