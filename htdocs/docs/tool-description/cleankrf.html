@@ -4,7 +4,7 @@
 <head>
 <title>cleankrf - Clean a DNSSEC-Tools I&lt;keyrec&gt; files of old data</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
@@ -49,7 +49,8 @@ The old data are obsolete signing sets, orphaned keys, and obsolete keys.</p>
 <p>Obsolete signing sets are set <em>keyrec</em>s unreferenced by a zone <em>keyrec</em>.
 Revoked signing sets are considered obsolete by <strong>cleankrf</strong>.</p>
 <p>Orphaned keys are KSK and ZSK key <em>keyrec</em>s unreferenced by a set <em>keyrec</em>.</p>
-<p>Obsolete keys are ZSK key <em>keyrec</em>s with a <em>keyrec_type</em> of <strong>zskobs</strong>.</p>
+<p>Obsolete keys are key <em>keyrec</em>s with a <em>keyrec_type</em> of <strong>kskobs</strong> or
+<strong>zskobs</strong>.</p>
 <p><strong>cleankrf</strong>'s exit code is the count of orphaned and obsolete <em>keyrec</em>s
 found.</p>
 <p>
@@ -100,7 +101,7 @@ expired <em>keyrec</em>s.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

@@ -4,13 +4,15 @@
 <head>
 <title>Net::DNS::SEC::Tools::BootStrap - Optional loading of Perl modules</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:suresh@localhost.localdomain" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -22,9 +24,11 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -54,7 +58,7 @@ install a module via CPAN.</p>
 a module to try to load (and import) and a supplemental error message.  If
 the module fails to load, the supplemental error message will be displayed
 along with the installation-via-CPAN message.  If the error message consists
-of the string ``noerror'', then no error message will be displayed before the
+of the string &quot;noerror&quot;, then no error message will be displayed before the
 function exits.</p>
 <p>
 </p>
@@ -65,31 +69,25 @@ module into the <em>main</em> namespace.  This means that the <em>BootStrap.pm</
 module is likely to not be useful for importing symbols into other modules.
 Work-arounds for this are:</p>
 <dl>
-<dt><strong><a name="item__2d_import_the_symbols_by_hand">- import the symbols by hand</a></strong>
+<dt><strong><a name="import_the_symbols_by_hand" class="item">- import the symbols by hand</a></strong></dt>
 
 <dd>
 <pre>
   dnssec_tools_load_mods(
      PerlModule =&gt; 'Additional help/error text'
   );</pre>
-</dd>
-<dd>
 <pre>
   import PerlModule qw(func1 func2);</pre>
-</dd>
-<dd>
 <pre>
   func1(arg1, arg2);</pre>
 </dd>
-<dt><strong><a name="item__2d_call_the_fully_qualified_function_name">- call the fully qualified function name</a></strong>
+<dt><strong><a name="call_the_fully_qualified_function_name" class="item">- call the fully qualified function name</a></strong></dt>
 
 <dd>
 <pre>
   dnssec_tools_load_mods(
      PerlModule =&gt; 'Additional help/error text'
   );</pre>
-</dd>
-<dd>
 <pre>
   PerlModule::func1(arg1, arg2);</pre>
 </dd>
@@ -98,7 +96,7 @@ Work-arounds for this are:</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2008 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

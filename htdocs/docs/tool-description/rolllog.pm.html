@@ -4,13 +4,15 @@
 <head>
 <title>Net::DNS::SEC::Tools::rolllog - DNSSEC-Tools rollover logging interfaces.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:suresh@localhost.localdomain" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
 
-<p><a name="__index__"></a></p>
+
 <!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
 
 <ul>
 
@@ -22,9 +24,11 @@
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
+
+<hr name="index" />
+</div>
 <!-- INDEX END -->
 
-<hr />
 <p>
 </p>
 <hr />
@@ -54,6 +58,9 @@
 <pre>
   $bool = rolllog_validlevel($newlevel);
   $bool = rolllog_validlevel(8);</pre>
+<pre>
+  $curtz = rolllog_gettz();
+  $oldtz = rolllog_settz('local');</pre>
 <pre>
   rolllog_log(LOG_INFO,&quot;example.com&quot;,&quot;zone is valid&quot;);</pre>
 <p>
@@ -86,112 +93,101 @@ recorded.</p>
 <hr />
 <h1><a name="logging_interfaces">LOGGING INTERFACES</a></h1>
 <dl>
-<dt><strong><a name="item_rolllog_levels"><em>rolllog_levels()</em></a></strong>
-
-<dd>
-<p>This routine returns an array holding the text forms of the user-settable
-logging levels.  The levels are returned in order, from most verbose to least.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rolllog_level"><em>rolllog_level(newlevel,useflag)</em></a></strong>
-
-<dd>
-<p>This routine sets and retrieves the logging level for <strong>rollerd</strong>.
-The <em>newlevel</em> argument specifies the new logging level to be set.
-<em>newlevel</em> may be given in either text or numeric form.</p>
-</dd>
-<dd>
-<p>The <em>useflag</em> argument is a boolean that indicates whether or not to give a
-descriptive message and exit if an invalid logging level is given.  If
-<em>useflag</em> is true, the message is given and the process exits; if false, -1
-is returned.</p>
-</dd>
-<dd>
-<p>If given with no arguments, the current logging level is returned.  In fact,
-the current level is always returned unless an error is found.  -1 is returned
-on error.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rolllog_file"><em>rolllog_file(newfile,useflag)</em></a></strong>
+<dt><strong><a name="rolllog_file" class="item"><em>rolllog_file(newfile,useflag)</em></a></strong></dt>
 
 <dd>
 <p>This routine sets and retrieves the log file for <strong>rollerd</strong>.
 The <em>newfile</em> argument specifies the new log file to be set.  If <em>newfile</em>
 exists, it must be a regular file.</p>
-</dd>
-<dd>
 <p>The <em>useflag</em> argument is a boolean that indicates whether or not to give a
-descriptive message if an invalid logging level is given.  If <em>useflag</em> is
+descriptive message if an invalid log file is given.  If <em>useflag</em> is
 true, the message is given and the process exits; if false, no message is
 given.  For any error condition, an empty string is returned.</p>
 </dd>
-</li>
-<dt><strong><a name="item_rolllog_num"><em>rolllog_num(loglevel)</em></a></strong>
+<dt><strong><a name="rolllog_gettz" class="item"><em>rolllog_gettz()</em></a></strong></dt>
 
 <dd>
-<p>This routine translates a text log level (given in <em>loglevel</em>) into the
-associated numeric log level.  The numeric log level is returned to the caller.</p>
+<p>This routine returns the timezone selector currently in use.  This value may
+be either 'gmt' (for Greenwich Mean Time) or 'local' (for the host's local
+time.)</p>
 </dd>
-<dd>
-<p>If <em>loglevel</em> is an invalid log level, -1 is returned.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rolllog_str"><em>rolllog_str(loglevel)</em></a></strong>
+<dt><strong><a name="rolllog_level" class="item"><em>rolllog_level(newlevel,useflag)</em></a></strong></dt>
 
 <dd>
-<p>This routine translates a log level (given in <em>loglevel</em>) into the associated
-text log level.  The text log level is returned to the caller.</p>
+<p>This routine sets and retrieves the logging level for <strong>rollerd</strong>.
+The <em>newlevel</em> argument specifies the new logging level to be set.
+<em>newlevel</em> may be given in either text or numeric form.</p>
+<p>The <em>useflag</em> argument is a boolean that indicates whether or not to give a
+descriptive message and exit if an invalid logging level is given.  If
+<em>useflag</em> is true, the message is given and the process exits; if false, -1
+is returned.</p>
+<p>If given with no arguments, the current logging level is returned.  In fact,
+the current level is always returned unless an error is found.  -1 is returned
+on error.</p>
 </dd>
+<dt><strong><a name="rolllog_levels" class="item"><em>rolllog_levels()</em></a></strong></dt>
+
 <dd>
-<p>If <em>loglevel</em> is a text string, it is checked to ensure it is a valid log
-level.  Case is irrelevant when checking <em>loglevel</em>.</p>
+<p>This routine returns an array holding the text forms of the user-settable
+logging levels.  The levels are returned in order, from most verbose to least.</p>
 </dd>
-<dd>
-<p>If <em>loglevel</em> is numeric, it is must be in the valid range of log levels.
-<em>undef</em> is returned if <em>loglevel</em> is invalid.</p>
-</dd>
-</li>
-<dt><strong><a name="item_rolllog_log"><em>rolllog_log(level,group,message)</em></a></strong>
+<dt><strong><a name="rolllog_log" class="item"><em>rolllog_log(level,group,message)</em></a></strong></dt>
 
 <dd>
 <p>The <em>rolllog_log()</em> interface writes a message to the log file.  Log
 messages have this format:</p>
-</dd>
-<dd>
 <pre>
         timestamp: group: message</pre>
-</dd>
-<dd>
 <p>The <em>level</em> argument is the message's logging level.  It will only be written
 to the log file if the current log level is numerically equal to or less than
 <em>level</em>.</p>
-</dd>
-<dd>
 <p><em>group</em> allows messages to be associated together.  It is currently used by
 <strong>rollerd</strong> to group messages by the zone to which the message applies.</p>
-</dd>
-<dd>
 <p>The <em>message</em> argument is the log message itself.  Trailing newlines are
 removed.</p>
 </dd>
-</li>
-<dt><strong><a name="item_rolllog_validlevel"><em>rolllog_validlevel(level)</em></a></strong>
+<dt><strong><a name="rolllog_num" class="item"><em>rolllog_num(loglevel)</em></a></strong></dt>
+
+<dd>
+<p>This routine translates a text log level (given in <em>loglevel</em>) into the
+associated numeric log level.  The numeric log level is returned to the caller.</p>
+<p>If <em>loglevel</em> is an invalid log level, -1 is returned.</p>
+</dd>
+<dt><strong><a name="rolllog_settz" class="item"><em>rolllog_settz(tzsel)</em></a></strong></dt>
+
+<dd>
+<p>This routine sets the timezone to be used for timestamps in messages written
+to the log.  This <em>tzsel</em> value may be either 'gmt' (Greenwich Mean Time)
+or 'local' (for the host's local time.)  <em>tzsel</em> may be uppercase or
+lowercase; the value will be converted to lowercase.  If no value is passed,
+then the default will be used.</p>
+<p>The current timezone selector is returned.  If an invalid selector is given,
+then an undefined value is returned.</p>
+</dd>
+<dt><strong><a name="rolllog_str" class="item"><em>rolllog_str(loglevel)</em></a></strong></dt>
+
+<dd>
+<p>This routine translates a log level (given in <em>loglevel</em>) into the associated
+text log level.  The text log level is returned to the caller.</p>
+<p>If <em>loglevel</em> is a text string, it is checked to ensure it is a valid log
+level.  Case is irrelevant when checking <em>loglevel</em>.</p>
+<p>If <em>loglevel</em> is numeric, it is must be in the valid range of log levels.
+<em>undef</em> is returned if <em>loglevel</em> is invalid.</p>
+</dd>
+<dt><strong><a name="rolllog_validlevel" class="item"><em>rolllog_validlevel(level)</em></a></strong></dt>
 
 <dd>
 <p>This interface returns a boolean value indicating if the given logging level
 is valid.</p>
-</dd>
-<dd>
 <p>The <em>level</em> argument is the logging level to be validated.  It may be a
 numeric or textual value.</p>
 </dd>
-</li>
 </dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2008 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

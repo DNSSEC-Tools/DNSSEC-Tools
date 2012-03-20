@@ -4,7 +4,7 @@
 <head>
 <title>zonesigner - Generates encryption keys and signs a DNS zone</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
 </head>
 
 <body style="background-color: white">
@@ -128,6 +128,10 @@ arguments will remain the same.</p>
 be created.  If the <strong>-zone</strong> option is not given, then <em>zone-file</em> will be
 used as the name of the zone that will be signed.  Generated keys are given
 this name as their base.</p>
+<p>Once <strong>zonesigner</strong> has created a set of keys for a zone and signed the zone,
+it may be used to re-sign the as the zonefile changes.  When run without any
+options, <strong>zonesigner</strong> will consult the zone's keyrec to find the appropriate
+set of keys and will then sign the specified zone with them.</p>
 <p>The zone file is modified to have <strong>include</strong> commands, which will include the
 KSK and ZSK keys.  These lines are placed at the end of the file and should
 not be modified by the user.  If the zone file already includes any key files,
@@ -145,6 +149,12 @@ result in the signed zone being stored in <em>example.com.signed</em>.</p>
 <p>Unless the <strong>-genkeys</strong>, <strong>-genksk</strong>, <strong>-genzsk</strong>, or <strong>-newpubksk</strong> options are
 specified, the last keys generated for a particular zone will be used in
 subsequent <strong>zonesigner</strong> executions.</p>
+<p><strong>zonesigner</strong> can be used with a rollover manager, such as <strong>rollerd</strong>, to
+provide automated management of a zone, its keys, and the signing of the zone.
+If a <strong>rollerd</strong>-managed zonefile changes while <strong>rollerd</strong> is waiting for a
+zone rollover to begin or a rollover phase to complete, <strong>zonesigner</strong> may be
+used to sign the zone with the proper set of keys; <strong>rollerd</strong> will not be
+disrupted by this.</p>
 <p>
 </p>
 <hr />
@@ -240,16 +250,32 @@ intended.  These commands are  <strong>dnssec-keygen</strong>, <strong>dnssec-si
 </p>
 <h2><a name="zonesigner_specific_options"><strong>zonesigner</strong>-specific Options</a></h2>
 <dl>
-<dt><strong><a name="nokrfile" class="item"><strong>-nokrfile</strong></a></strong></dt>
+<dt><strong><a name="archivedir" class="item"><strong>-archivedir</strong></a></strong></dt>
 
 <dd>
-<p>No <em>keyrec</em> file will be consulted or created.</p>
+<p>The key archive directory.  If a key archive directory hasn't been specified
+(on the command line or in the DNSSEC-Tools configuration file) and the
+<strong>-nosave</strong> option was <strong>not</strong> given, then <strong>zonesigner</strong> will leave the keys
+in the current directory.</p>
+<p>When the files are saved into the archive directory, the existing file names
+are prepended with a timestamp.  The timestamp indicates when the files are
+archived.</p>
+<p>This directory <strong>may not</strong> be the root directory.</p>
 </dd>
-<dt><strong><a name="krfile" class="item"><strong>-krfile</strong></a></strong></dt>
+<dt><strong><a name="droprevoked" class="item"><strong>-droprevoked</strong></a></strong></dt>
 
 <dd>
-<p><em>keyrec</em> file to use in processing options.  See the man page for
-<strong>Net::DNS::SEC::Tools::tooloptions.pm</strong> for more details about this file.</p>
+<p>Explicitly obsolete currently revoked KSKs and remove them from the signing
+set before resigning.  This is mutually exclusive from <strong>-nodroprevoked</strong>.
+If neither <strong>-droprevoked</strong> nor <strong>-nodroprevoked</strong> are given, then
+<strong>-droprevoked</strong> functionality is assumed..</p>
+</dd>
+<dt><strong><a name="dsdir" class="item"><strong>-dsdir</strong></a></strong></dt>
+
+<dd>
+<p>Specify a directory for storing dssets.  This directory will be created if it
+does not exist.</p>
+<p>The directory must be writable and <strong>may not</strong> be the root directory.</p>
 </dd>
 <dt><strong><a name="genkeys" class="item"><strong>-genkeys</strong></a></strong></dt>
 
@@ -269,58 +295,16 @@ this zone will be used.</p>
 <p>Generate new ZSKs for the zone.  By default, the last ZSKs generated for this
 zone will be used.</p>
 </dd>
-<dt><strong><a name="newpubksk" class="item"><strong>-newpubksk</strong></a></strong></dt>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
 <dd>
-<p>Generate new Published KSKs for the zone.  Any existing Published KSKs will
-be marked as obsolete.</p>
+<p>Display a usage message.</p>
 </dd>
-<dt><strong><a name="norfc5011" class="item"><strong>-norfc5011</strong></a></strong></dt>
+<dt><strong><a name="intermediate" class="item"><strong>-intermediate</strong></a></strong></dt>
 
 <dd>
-<p>Disable <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> KSK revocation when rolling or replacing existing KSK key
-sets.  By default, <strong>zonesigner</strong> performs <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> KSK revocation and this
-option supercedes this behavior and any option setting within the <em>keyrec</em>
-file.</p>
-</dd>
-<dt><strong><a name="droprevoked" class="item"><strong>-droprevoked</strong></a></strong></dt>
-
-<dd>
-<p>Explicitly obsolete currently revoked KSKs and remove them from the signing
-set before resigning.  This is mutually exclusive from <strong>-nodroprevoked</strong>.
-If neither <strong>-droprevoked</strong> nor <strong>-nodroprevoked</strong> are given, then
-<strong>-droprevoked</strong> functionality is assumed..</p>
-</dd>
-<dt><strong><a name="nodroprevoked" class="item"><strong>-nodroprevoked</strong></a></strong></dt>
-
-<dd>
-<p>Explicitly turn off obsoleting currently revoked KSKs and remove them
-from the signing set before resigning.  This is mutually exclusive from
-<strong>-droprevoked</strong>.
-If neither <strong>-droprevoked</strong> nor <strong>-nodroprevoked</strong> are given, then
-<strong>-droprevoked</strong> functionality is assumed..</p>
-</dd>
-<dt><strong><a name="useboth" class="item"><strong>-useboth</strong></a></strong></dt>
-
-<dd>
-<p>Use the existing Current <strong>and</strong> Published ZSKs to sign the zone.</p>
-</dd>
-<dt><strong><a name="usezskpub" class="item"><strong>-usezskpub</strong></a></strong></dt>
-
-<dd>
-<p>Use the existing Published ZSKs to sign the zone.</p>
-</dd>
-<dt><strong><a name="archivedir" class="item"><strong>-archivedir</strong></a></strong></dt>
-
-<dd>
-<p>The key archive directory.  If a key archive directory hasn't been specified
-(on the command line or in the DNSSEC-Tools configuration file) and the
-<strong>-nosave</strong> option was <strong>not</strong> given, then <strong>zonesigner</strong> will leave the keys
-in the current directory.</p>
-<p>When the files are saved into the archive directory, the existing file names
-are prepended with a timestamp.  The timestamp indicates when the files are
-archived.</p>
-<p>This directory <strong>may not</strong> be the root directory.</p>
+<p>Filename to use for the temporary zone file.  The zone file will be copied to
+this file and then the key names appended.</p>
 </dd>
 <dt><strong><a name="keydirectory" class="item"><strong>-keydirectory</strong></a></strong></dt>
 
@@ -329,11 +313,23 @@ archived.</p>
 store the keys in the directory in which <strong>zonesigner</strong> is executed.</p>
 <p>This directory <strong>may not</strong> be the root directory.</p>
 </dd>
-<dt><strong><a name="nosave" class="item"><strong>-nosave</strong></a></strong></dt>
+<dt><strong><a name="krfile" class="item"><strong>-krfile</strong></a></strong></dt>
 
 <dd>
-<p>Do not save obsolete keys to the key archive directory.  The default behavior
-is to save obsolete keys.</p>
+<p><em>keyrec</em> file to use in processing options.  See the man page for
+<strong>Net::DNS::SEC::Tools::tooloptions.pm</strong> for more details about this file.</p>
+</dd>
+<dt><strong><a name="ksignset" class="item"><strong>-ksignset</strong></a></strong></dt>
+
+<dd>
+<p>The name of the KSK signing set to use.  If the signing set does not exist,
+then this must be used in conjunction with either <strong>-genkeys</strong> or <strong>-genksk</strong>.
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.</p>
+<p>The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+The default signing set name is &quot;<em>zone</em>-signset-<em>N</em>&quot;, where <em>zone</em> is the
+zone being signed and <em>N</em> is a number.</p>
+<p>If <strong>-ksignset</strong> is not specified, then <strong>zonesigner</strong> will use the default and
+increment the number for subsequent signing sets.</p>
 </dd>
 <dt><strong><a name="kskcount" class="item"><strong>-kskcount</strong></a></strong></dt>
 
@@ -353,48 +349,58 @@ keys in the directory in which <strong>zonesigner</strong> is executed.</p>
 <dd>
 <p>The time between KSK rollovers.  This is measured in seconds.</p>
 </dd>
-<dt><strong><a name="ksignset" class="item"><strong>-ksignset</strong></a></strong></dt>
+<dt><strong><a name="newpubksk" class="item"><strong>-newpubksk</strong></a></strong></dt>
 
 <dd>
-<p>The name of the KSK signing set to use.  If the signing set does not exist,
-then this must be used in conjunction with either <strong>-genkeys</strong> or <strong>-genksk</strong>.
-The name may contain alphanumerics, underscores, hyphens, periods, and commas.</p>
-<p>The name may contain alphanumerics, underscores, hyphens, periods, and commas.
-The default signing set name is &quot;<em>zone</em>-signset-<em>N</em>&quot;, where <em>zone</em> is the
-zone being signed and <em>N</em> is a number.</p>
-<p>If <strong>-ksignset</strong> is not specified, then <strong>zonesigner</strong> will use the default and
-increment the number for subsequent signing sets.</p>
+<p>Generate new Published KSKs for the zone.  Any existing Published KSKs will
+be marked as obsolete.</p>
 </dd>
-<dt><strong><a name="zskcount" class="item"><strong>-zskcount</strong></a></strong></dt>
+<dt><strong><a name="nodroprevoked" class="item"><strong>-nodroprevoked</strong></a></strong></dt>
 
 <dd>
-<p>The number of ZSK keys to generate and with which to sign the zone.  The
-default is to use a single ZSK key.</p>
+<p>Explicitly turn off obsoleting currently revoked KSKs and remove them
+from the signing set before resigning.  This is mutually exclusive from
+<strong>-droprevoked</strong>.
+If neither <strong>-droprevoked</strong> nor <strong>-nodroprevoked</strong> are given, then
+<strong>-droprevoked</strong> functionality is assumed..</p>
 </dd>
-<dt><strong><a name="zskdirectory" class="item"><strong>-zskdirectory</strong></a></strong></dt>
+<dt><strong><a name="nokrfile" class="item"><strong>-nokrfile</strong></a></strong></dt>
 
 <dd>
-<p>The directory in which ZSK keys will be stored.  The default is to store the
-keys in the directory in which <strong>zonesigner</strong> is executed.</p>
-<p>This directory <strong>may not</strong> be the root directory.</p>
+<p>No <em>keyrec</em> file will be consulted or created.</p>
 </dd>
-<dt><strong><a name="zsklife" class="item"><strong>-zsklife</strong></a></strong></dt>
+<dt><strong><a name="norfc5011" class="item"><strong>-norfc5011</strong></a></strong></dt>
 
 <dd>
-<p>The time between ZSK rollovers.  This is measured in seconds.</p>
+<p>Disable <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> KSK revocation when rolling or replacing existing KSK key
+sets.  By default, <strong>zonesigner</strong> performs <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> KSK revocation and this
+option supersedes this behavior and any option setting within the <em>keyrec</em>
+file.</p>
 </dd>
-<dt><strong><a name="signset" class="item"><strong>-signset</strong></a></strong></dt>
+<dt><strong><a name="nosave" class="item"><strong>-nosave</strong></a></strong></dt>
 
 <dd>
-<p>The name of the ZSK signing set to use as the Current ZSK signing set.  The
-zone is signed and the given signing set becomes the zone's new Current ZSK
-signing set.  If the signing set does not exist, then this must be used in
-conjunction with either <strong>-genkeys</strong> or <strong>-genzsk</strong>.</p>
-<p>The name may contain alphanumerics, underscores, hyphens, periods, and commas.
-The default signing set name is &quot;<em>zone</em>signset-<em>N</em>&quot;, where <em>zone</em> is the
-zone being signed and <em>N</em> is a number.</p>
-<p>If <strong>-signset</strong> is not specified, then <strong>zonesigner</strong> will use the default and
-increment the number for subsequent signing sets.</p>
+<p>Do not save obsolete keys to the key archive directory.  The default behavior
+is to save obsolete keys.</p>
+</dd>
+<dt><strong><a name="phase" class="item"><strong>-phase</strong></a></strong></dt>
+
+<dd>
+<p>Specify an rollover option based on the rollover phase, as opposed to using
+the option naming the specific action to be performed.  The purpose of this
+option is to bring clarity and greater understanding to how <strong>zonesigner</strong> is
+used in the rollover process.</p>
+<p>The following are the mappings between the <strong>-phase</strong> options and the action
+options.</p>
+<pre>
+    Phase Option             Action-based Option
+    -phase ksk2              -newpubksk
+    -phase ksk4              -rollksk
+    -phase zsk2              -usezskpub
+    -phase zsk4b             -rollzsk
+    -phase zsk4b             (no option)</pre>
+<p><strong>Warning</strong>:  The <strong>-phase</strong> option should only be used if you know
+what you're doing.</p>
 </dd>
 <dt><strong><a name="rollksk" class="item"><strong>-rollksk</strong></a></strong></dt>
 
@@ -427,6 +433,14 @@ management.</p>
 what you're doing.</p>
 <p><strong>Warning</strong>:  This is may be a <em>temporary</em> method of KSK rollover.  It <em>may</em>
 be changed in the future.</p>
+</dd>
+<dt><strong><a name="rollmgr" class="item"><strong>-rollmgr</strong></a></strong></dt>
+
+<dd>
+<p>The zone's rollover manager.  This indicates that the zone is under control
+of a rollover manager.  If a user wishes to sign a zone in the middle of a
+rollover wait phase, this field helps <strong>zonesigner</strong> and the rollover manager
+to determine how best to handle the zone-signing operation.</p>
 </dd>
 <dt><strong><a name="rollzsk" class="item"><strong>-rollzsk</strong></a></strong></dt>
 
@@ -464,22 +478,70 @@ when using this option.  <strong>rollerd</strong> automates the rollover process
 used to safely take care of this aspect of DNSSEC management.  Using the
 <strong>-rollzsk</strong> option should only be used if you know what you're doing.</p>
 </dd>
-<dt><strong><a name="intermediate" class="item"><strong>-intermediate</strong></a></strong></dt>
+<dt><strong><a name="showkeycmd" class="item"><strong>-showkeycmd</strong></a></strong></dt>
 
 <dd>
-<p>Filename to use for the temporary zone file.  The zone file will be copied to
-this file and then the key names appended.</p>
+<p>Display the actual key-generation command (with options and arguments) that is
+executed.  This is a small subset of verbose level 3 output.</p>
 </dd>
-<dt><strong><a name="zone" class="item"><strong>-zone</strong></a></strong></dt>
+<dt><strong><a name="showsigncmd" class="item"><strong>-showsigncmd</strong></a></strong></dt>
 
 <dd>
-<p>Name of the zone that will be signed.  This zone name may be given with this
-option or as the first non-option command line argument.</p>
+<p>Display the actual zone-signing command (with options and arguments) that is
+executed.  This is a small subset of verbose level 3 output.</p>
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
+<dt><strong><a name="signonly" class="item"><strong>-signonly</strong></a></strong></dt>
 
 <dd>
-<p>Display a usage message.</p>
+<p>Sign the zone without performing any key generation or key rollover operations.
+The keys used in the most recent <strong>zonesigner</strong> signing of this zone will be the
+keys used for this signing.</p>
+</dd>
+<dt><strong><a name="signset" class="item"><strong>-signset</strong></a></strong></dt>
+
+<dd>
+<p>The name of the ZSK signing set to use as the Current ZSK signing set.  The
+zone is signed and the given signing set becomes the zone's new Current ZSK
+signing set.  If the signing set does not exist, then this must be used in
+conjunction with either <strong>-genkeys</strong> or <strong>-genzsk</strong>.</p>
+<p>The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+The default signing set name is &quot;<em>zone</em>signset-<em>N</em>&quot;, where <em>zone</em> is the
+zone being signed and <em>N</em> is a number.</p>
+<p>If <strong>-signset</strong> is not specified, then <strong>zonesigner</strong> will use the default and
+increment the number for subsequent signing sets.</p>
+</dd>
+<dt><strong><a name="threshold" class="item"><strong>-threshold</strong></a></strong></dt>
+
+<dd>
+<p>Sign the zone if a threshold condition is met.  Depending on how the threshold
+is specified, it may be relative to the last time the zone was signed or to
+the zone's expiration date.</p>
+<p><em>threshold-time</em> is the threshold value, given as a numeric value, with an
+optional unit specifier.  The unit may be 's', 'm', 'h', or 'd', for seconds,
+minutes, hours, or days.  If the unit is not given, then the value is in
+seconds.  The threshold value must have either the '-' prefix or the '+'
+prefix to indicate which threshold to measure.  The threshold value <em>+10d</em>
+refers to ten days prior to a zone's expiration date.</p>
+<p>If the '-' prefix is used, then the zone will be re-signed if <strong>zonesigner</strong>
+is executed no more than <em>threshold-time</em> after the last time the zone was
+signed.  <em>threshold-time</em> is determined by subtracting the threshold value
+from the upcoming midnight.  If this would put the threshold time in the
+future, then it is calculated from the current time.</p>
+<p>If the '+' prefix is used, then the zone will be re-signed if <strong>zonesigner</strong>
+is executed no more than <em>threshold-time</em> before the zone's expiration date.
+<em>threshold-time</em> is determined by subtracting the threshold value from the
+previous midnight.  If this would put <em>threshold-time</em> in the past, then it
+is calculated from the current time.</p>
+</dd>
+<dt><strong><a name="useboth" class="item"><strong>-useboth</strong></a></strong></dt>
+
+<dd>
+<p>Use the existing Current <strong>and</strong> Published ZSKs to sign the zone.</p>
+</dd>
+<dt><strong><a name="usezskpub" class="item"><strong>-usezskpub</strong></a></strong></dt>
+
+<dd>
+<p>Use the existing Published ZSKs to sign the zone.</p>
 </dd>
 <dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
@@ -504,17 +566,207 @@ the command line, additional levels of verbosity are achieved.</p>
 <p>Higher levels of verbosity are cumulative.  Specifying two instances of
 <strong>-verbose</strong> will get the output from the first and second levels of output.</p>
 </dd>
-<dt><strong><a name="showkeycmd" class="item"><strong>-showkeycmd</strong></a></strong></dt>
+<dt><strong><a name="xc" class="item"><strong>-xc</strong></a></strong></dt>
 
 <dd>
-<p>Display the actual key-generation command (with options and arguments) that is
-executed.  This is a small subset of verbose level 3 output.</p>
+<p>Display a message associated with a <strong>zonesigner</strong> exit value.  This option is
+intended for use by those programs who wish for <strong>zonesigner</strong> to run silently,
+but need a description for why <strong>zonesigner</strong> has exited with an error.</p>
+<p>The following are the exit codes and their associated messages.</p>
+<ol>
+<li><strong><a name="successful_execution" class="item">- successful execution</a></strong>
+
+</li>
+<li><strong><a name="rfc5011_and_norfc5011_may_not_be_specified_together" class="item">- -rfc5011 and -norfc5011 may not be specified together</a></strong>
+
+</li>
+<li><strong><a name="droprevoked_and_nodroprevoked_may_not_be_specified_together" class="item">- -droprevoked and -nodroprevoked may not be specified together</a></strong>
+
+</li>
+<li><strong><a name="keydirectory_and_kskdirectory_may_not_be_specified_together" class="item">- -keydirectory and -kskdirectory may not be specified together</a></strong>
+
+</li>
+<li><strong><a name="keydirectory_and_zskdirectory_may_not_be_specified_together" class="item">- -keydirectory and -zskdirectory may not be specified together</a></strong>
+
+</li>
+<li><strong><a name="ksk_count_must_be_positive" class="item">- KSK count must be positive</a></strong>
+
+</li>
+<li><strong><a name="zsk_count_must_be_positive" class="item">- ZSK count must be positive</a></strong>
+
+</li>
+<li><strong><a name="no_key_archive_directory_was_specified" class="item">- no key archive directory was specified</a></strong>
+
+</li>
+<li><strong><a name="key_archive_directory_is_not_a_directory" class="item">- key archive directory is not a directory</a></strong>
+
+</li>
+<li><strong><a name="key_archive_directory_must_not_be" class="item">- key archive directory must not be /</a></strong>
+
+</li>
+<li><strong><a name="savekeys_and_nosave_may_not_be_specified_together" class="item">- -savekeys and -nosave may not be specified together</a></strong>
+
+</li>
+<li><strong><a name="either_a_ksk_or_a_zsk_directory_was_incorrectly_specified" class="item">- either a KSK or a ZSK directory was incorrectly specified</a></strong>
+
+</li>
+<li><strong><a name="either_a_specified_ksk_or_a_specified_zsk_directory_is_not_a_directory" class="item">- either a specified KSK or a specified ZSK directory is not a directory</a></strong>
+
+</li>
+<li><strong><a name="neither_the_ksk_nor_the_zsk_directory_may_be_the_root_directory" class="item">- neither the KSK nor the ZSK directory may be the root directory</a></strong>
+
+</li>
+<li><strong><a name="zone_file_output_file_and_intermediate_file_must_all_have_distinct_names" class="item">- zone file, output file, and intermediate file must all have distinct
+names</a></strong>
+
+</li>
+<li><strong><a name="zone_file_does_not_exist" class="item">- zone file does not exist</a></strong>
+
+</li>
+<li><strong><a name="zone_file_is_empty" class="item">- zone file is empty</a></strong>
+
+</li>
+<li><strong><a name="zone_file_already_signed" class="item">- zone file already signed</a></strong>
+
+</li>
+<li><strong><a name="specified_signing_set_does_not_exist" class="item">- specified signing set does not exist</a></strong>
+
+</li>
+<li><strong><a name="specified_current_zsk_signing_set_does_not_exist" class="item">- specified Current ZSK signing set does not exist</a></strong>
+
+</li>
+<li><strong><a name="specified_published_zsk_signing_set_does_not_exist" class="item">- specified Published ZSK signing set does not exist</a></strong>
+
+</li>
+<li><strong><a name="specified_new_signing_set_name_already_exists" class="item">- specified new signing-set name already exists</a></strong>
+
+</li>
+<li><strong><a name="specified_ksk_signing_set_already_exists" class="item">- specified KSK signing set already exists</a></strong>
+
+</li>
+<li><strong><a name="no_ksk_signing_set_was_specified" class="item">- no KSK signing set was specified</a></strong>
+
+</li>
+<li><strong><a name="specified_current_ksk_signing_set_does_not_exist" class="item">- specified Current KSK signing set does not exist</a></strong>
+
+</li>
+<li><strong><a name="specified_published_ksk_signing_set_does_not_exist" class="item">- specified Published KSK signing set does not exist</a></strong>
+
+</li>
+<li><strong><a name="unable_to_generate_ksk_key_file" class="item">- unable to generate KSK key file</a></strong>
+
+</li>
+<li><strong><a name="zsk_keyrec_does_not_exist_in_keyrec_file" class="item">- ZSK keyrec does not exist in keyrec file</a></strong>
+
+</li>
+<li><strong><a name="unable_to_generate_zsk_key_file" class="item">- unable to generate ZSK key file</a></strong>
+
+</li>
+<li><strong><a name="unable_to_archive_keys_because_key_archive_directory_is_not_a_directory" class="item">- unable to archive keys because key archive directory is not a
+directory</a></strong>
+
+</li>
+<li><strong><a name="ksk_repository_is_not_a_directory" class="item">- KSK repository is not a directory</a></strong>
+
+</li>
+<li><strong><a name="zsk_repository_is_not_a_directory" class="item">- ZSK repository is not a directory</a></strong>
+
+</li>
+<li><strong><a name="unable_to_update_serial_number_in_zonefile" class="item">- unable to update serial number in zonefile</a></strong>
+
+</li>
+<li><strong><a name="zone_file_s_modified_contents_are_empty" class="item">- zone file's modified contents are empty</a></strong>
+
+</li>
+<li><strong><a name="unable_to_sign_zone" class="item">- unable to sign zone</a></strong>
+
+</li>
+<li><strong><a name="no_published_ksks_have_been_created" class="item">- no Published KSKs have been created</a></strong>
+
+</li>
+<li><strong><a name="zone_has_no_published_zsks_to_rollover_to_current_zsks" class="item">- zone has no Published ZSKs to rollover to Current ZSKs</a></strong>
+
+</li>
+<li><strong><a name="no_keys_defined_for_a_particular_signing_set_for_zone" class="item">- no keys defined for a particular signing set for zone</a></strong>
+
+</li>
+<li><strong><a name="no_keyrec_exists_for_required_signing_set" class="item">- no keyrec exists for required signing set</a></strong>
+
+</li>
+<li><strong><a name="error_in_keyrec_file_a_particular_signing_set_keyrec_is_not_a_set_keyrec" class="item">- error in keyrec file -- a particular signing set keyrec is not a set keyrec</a></strong>
+
+</li>
+<li><strong><a name="specified_signing_set_does_not_contain_any_keys" class="item">- specified signing set does not contain any keys</a></strong>
+
+</li>
+<li><strong><a name="no_key_keyrec_exists_for_a_particular_key" class="item">- no key keyrec exists for a particular key</a></strong>
+
+</li>
+<li><strong><a name="keyrec_of_specified_key_has_an_unexpected_type" class="item">- keyrec of specified key has an unexpected type</a></strong>
+
+</li>
+<li><strong><a name="usage_message_printed" class="item">- usage message printed</a></strong>
+
+</li>
+<li><strong><a name="invalid_exit_code_given_to_xc" class="item">- invalid exit code given to -xc</a></strong>
+
+</li>
+<li><strong><a name="named_checkzone_returned_an_error" class="item">- named-checkzone returned an error</a></strong>
+
+</li>
+<li><strong><a name="unable_to_create_dsset_archive_directory" class="item">- unable to create dsset archive directory</a></strong>
+
+</li>
+<li><strong><a name="dsset_archive_directory_is_not_a_directory" class="item">- dsset archive directory is not a directory</a></strong>
+
+</li>
+<li><strong><a name="dsset_archive_directory_is_not_writable" class="item">- dsset archive directory is not writable</a></strong>
+
+</li>
+<li><strong><a name="dsset_archive_directory_must_not_be" class="item">- dsset archive directory must not be /</a></strong>
+
+</li>
+<li><strong><a name="invalid_threshold" class="item">- invalid threshold</a></strong>
+
+</li>
+<li><strong><a name="invalid_format_end_date" class="item">- invalid format end-date</a></strong>
+
+</li>
+</ol>
+<p>An error message will be printed if an invalid exit code is given.</p>
 </dd>
-<dt><strong><a name="showsigncmd" class="item"><strong>-showsigncmd</strong></a></strong></dt>
+<dt><strong><a name="cthulhu" class="item"><strong>-Cthulhu</strong></a></strong></dt>
 
 <dd>
-<p>Display the actual zone-signing command (with options and arguments) that is
-executed.  This is a small subset of verbose level 3 output.</p>
+<p>This option is for internal use only and should never be used by a user.
+If this warning is ignored, then undefined, unnameable eldritch horrors
+may be visited upon your zone files.  Do not use.</p>
+</dd>
+<dt><strong><a name="zone" class="item"><strong>-zone</strong></a></strong></dt>
+
+<dd>
+<p>Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.  In the second case,
+if the argument contains directory separators, then final element of the path
+will be used for the zone name.</p>
+</dd>
+<dt><strong><a name="zskcount" class="item"><strong>-zskcount</strong></a></strong></dt>
+
+<dd>
+<p>The number of ZSK keys to generate and with which to sign the zone.  The
+default is to use a single ZSK key.</p>
+</dd>
+<dt><strong><a name="zskdirectory" class="item"><strong>-zskdirectory</strong></a></strong></dt>
+
+<dd>
+<p>The directory in which ZSK keys will be stored.  The default is to store the
+keys in the directory in which <strong>zonesigner</strong> is executed.</p>
+<p>This directory <strong>may not</strong> be the root directory.</p>
+</dd>
+<dt><strong><a name="zsklife" class="item"><strong>-zsklife</strong></a></strong></dt>
+
+<dd>
+<p>The time between ZSK rollovers.  This is measured in seconds.</p>
 </dd>
 </dl>
 <p>
@@ -528,24 +780,6 @@ executed.  This is a small subset of verbose level 3 output.</p>
 is RSASHA1.  The option value is passed to <strong>dnssec-keygen</strong> as the <strong>-a</strong> flag.
 Consult <strong>dnssec-keygen</strong>'s manual page to determine legal values.</p>
 </dd>
-<dt><strong><a name="ksklength" class="item"><strong>-ksklength</strong></a></strong></dt>
-
-<dd>
-<p>Bit length of the zone's KSK key.
-The default is 2048.</p>
-</dd>
-<dt><strong><a name="random" class="item"><strong>-random</strong></a></strong></dt>
-
-<dd>
-<p><table cellspacing="0" cellpadding="0"><tr><td>Source of randomness used to generate the zone's keys.<td>This is assumed to be
-<tr><td>a file, for example <strong>/dev/urandom</strong>.</table></p>
-</dd>
-<dt><strong><a name="zsklength" class="item"><strong>-zsklength</strong></a></strong></dt>
-
-<dd>
-<p>Bit length of the zone's ZSK key.
-The default is 1024.</p>
-</dd>
 <dt><strong><a name="kgopts" class="item"><strong>-kgopts</strong></a></strong></dt>
 
 <dd>
@@ -553,14 +787,11 @@ The default is 1024.</p>
 The additional options are passed as a single string value as an argument to
 the <strong>-kgopts</strong> option.</p>
 </dd>
-<dt><strong><a name="usensec3" class="item"><strong>-usensec3</strong></a></strong></dt>
+<dt><strong><a name="ksklength" class="item"><strong>-ksklength</strong></a></strong></dt>
 
 <dd>
-<p>Signs the zone using <em>NSEC3</em> (see <a href="http://www.ietf.org/rfc/rfc5155.txt" class="rfc">RFC5155</a>) proof-of-non-existence records
-rather than <em>NSEC</em> records.  The keys used to sign the zone must 
-support the use of NSEC3 or else zone-signing will fail.  Zonesigner
-will automatically generate new keys of the correct type if one of the
-<em>-genkeys</em> or similar options is used.</p>
+<p>Bit length of the zone's KSK key.
+The default is 2048.</p>
 </dd>
 <dt><strong><a name="nsec3optout" class="item"><strong>-nsec3optout</strong></a></strong></dt>
 
@@ -571,6 +802,27 @@ only sub-domains with valid DS or public keys available will be signed and the
 rest will not be.  This greatly reduces the computational and memory
 requirements of extremely large zones with lots of unsigned children.</p>
 </dd>
+<dt><strong><a name="random" class="item"><strong>-random</strong></a></strong></dt>
+
+<dd>
+<p><table cellspacing="0" cellpadding="0"><tr><td>Source of randomness used to generate the zone's keys.<td>This is assumed to be
+<tr><td>a file, for example <strong>/dev/urandom</strong>.</table></p>
+</dd>
+<dt><strong><a name="usensec3" class="item"><strong>-usensec3</strong></a></strong></dt>
+
+<dd>
+<p>Signs the zone using <em>NSEC3</em> (see <a href="http://www.ietf.org/rfc/rfc5155.txt" class="rfc">RFC5155</a>) proof-of-non-existence records
+rather than <em>NSEC</em> records.  The keys used to sign the zone must 
+support the use of NSEC3 or else zone-signing will fail.  Zonesigner
+will automatically generate new keys of the correct type if one of the
+<em>-genkeys</em> or similar options is used.</p>
+</dd>
+<dt><strong><a name="zsklength" class="item"><strong>-zsklength</strong></a></strong></dt>
+
+<dd>
+<p>Bit length of the zone's ZSK key.
+The default is 1024.</p>
+</dd>
 </dl>
 <p>
 </p>
@@ -579,9 +831,10 @@ requirements of extremely large zones with lots of unsigned children.</p>
 <dt><strong><a name="endtime" class="item"><strong>-endtime</strong></a></strong></dt>
 
 <dd>
-<p>Time that the zone expires, measured in seconds.  See the man page for
-<strong>dnssec-signzone</strong> for the valid format of this field.
-The default value is 2592000 seconds (30 days.)</p>
+<p>Time that the zone expires, as measured from the current time.  If given as a
+number, it is a count of seconds.  If it is given as a number followed by 's',
+'m', 'h', or 'd', then it is the number of seconds, minutes, hours, or days.
+The default value is 2764800 seconds (32 days.)</p>
 </dd>
 <dt><strong><a name="gends" class="item"><strong>-gends</strong></a></strong></dt>
 
@@ -608,6 +861,9 @@ as the <strong>-d</strong> option.</p>
 <p>Additional options for <strong>dnssec-signzone</strong> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the <strong>-szopts</strong> option.</p>
+<p>The default value for this option is &quot;-i local&quot;, set in <strong>defaults.pm</strong>.
+This value has been found to greatly improve the amount of time it takes
+<strong>named-checkzone</strong> to run.</p>
 </dd>
 </dl>
 <p>
@@ -699,7 +955,7 @@ two set <em>keyrec</em>s, one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.
     zone        &quot;example.com&quot;
         zonefile        &quot;example.com&quot;
         signedzone      &quot;db.example.com&quot;
-        endtime         &quot;+2592000&quot;
+        endtime         &quot;+2764800&quot;
         kskcur          &quot;example.com.signset-24&quot;
         kskdirectory    &quot;.&quot;
         zskcur          &quot;example.com.signset-42&quot;
@@ -779,7 +1035,7 @@ plans are to allow for more flexible serial number manipulation.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2010 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

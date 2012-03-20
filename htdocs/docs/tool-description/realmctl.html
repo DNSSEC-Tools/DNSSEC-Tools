@@ -1,0 +1,243 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>realmctl - Send commands to the DNSSEC-Tools realms daemon</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#exit_codes">EXIT CODES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>realmctl - Send commands to the DNSSEC-Tools realms daemon</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  realmctl [options]</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <strong>realmctl</strong> command sends commands to <strong>dtrealms</strong>, the DNSSEC-Tools realms
+daemon.  In most cases, <strong>dtrealms</strong> will send a response to <strong>realmctl</strong>.
+<strong>realmctl</strong> will print a success or failure message, as appropriate.  Only one
+option may be specified on a command line.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<p>The following options are handled by <strong>realmctl</strong>.</p>
+<dl>
+<dt><strong><a name="allstart" class="item"><strong>-allstart</strong></a></strong></dt>
+
+<dd>
+<p>Starts all suspended realms.</p>
+</dd>
+<dt><strong><a name="allstop" class="item"><strong>-allstop</strong></a></strong></dt>
+
+<dd>
+<p>Stops all running realms.</p>
+</dd>
+<dt><strong><a name="cmd_realm_cmd" class="item"><strong>-cmd -- realm cmd</strong></a></strong></dt>
+
+<dt><strong><a name="command_realm_cmd" class="item"><strong>-command -- realm cmd</strong></a></strong></dt>
+
+<dd>
+<p>Sends a command to the specified realm.  The command given as <em>cmd</em> will be
+sent to the <strong>rollerd</strong> running in realm <em>realm</em> via the <strong>rollctl</strong> command.
+(See <strong>rollctl(8)</strong> for more information on its commands.)</p>
+<p>The double-dash given above is critical for proper argument parsing of the
+command line.</p>
+<p>All command-line arguments following the realm name will be sent as the
+command.</p>
+<p>Whatever output the command gives will be returned to <strong>realmctl</strong>, which will
+then print that output.  The command's return code will be appended to the
+command's output.  No attempt will be made to analyze the output for
+success or failure.</p>
+<p>For example, this command will tell the realm <strong>giant-isp</strong> to stop
+rollover of zone <em>bob.example.com</em>:</p>
+<pre>
+    $ realmctl -command -- giant-isp -skipzone bob.example.com</pre>
+</dd>
+<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
+
+<dd>
+<p>Starts the realms status GUI.</p>
+</dd>
+<dt><strong><a name="halt_now" class="item"><strong>-halt</strong> [now]</a></strong></dt>
+
+<dd>
+<p>Cleanly halts <strong>dtrealms</strong> execution.</p>
+</dd>
+<dt><strong><a name="logfile_logfile" class="item"><strong>-logfile logfile</strong></a></strong></dt>
+
+<dd>
+<p>Sets the <strong>dtrealms</strong> log file to <em>logfile</em>.  This must be a valid logging
+file, meaning that if <em>logfile</em> already exists, it must be a regular file.
+The only exceptions to this are if <em>logfile</em> is <strong>/dev/stdout</strong> or
+<strong>/dev/tty</strong>.</p>
+</dd>
+<dt><strong><a name="loglevel_loglevel" class="item"><strong>-loglevel loglevel</strong></a></strong></dt>
+
+<dd>
+<p>Sets the <strong>dtrealms</strong> logging level to <em>loglevel</em>.
+This must be one of the valid logging levels defined in <strong>realmmgr.pm(3)</strong>.</p>
+<p>If a logging level is not specified, then the list of valid levels will be
+printed and <strong>realmctl</strong> will exit.  The list is given in both text and numeric
+forms.</p>
+</dd>
+<dt><strong><a name="logtz_logtz" class="item"><strong>-logtz logtz</strong></a></strong></dt>
+
+<dd>
+<p>Sets the <strong>dtrealms</strong> logging timezone to <em>loglevel</em>.  This must be either
+<em>gmt</em> (for Greenwich Mean Time or <em>local</em> (for the host's local time.)</p>
+</dd>
+<dt><strong><a name="nodisplay" class="item"><strong>-nodisplay</strong></a></strong></dt>
+
+<dd>
+<p>Stops the realms status GUI.</p>
+</dd>
+<dt><strong><a name="realmstatus" class="item"><strong>-realmstatus</strong></a></strong></dt>
+
+<dd>
+<p>Gets the current status of all the realms from <strong>dtrealms</strong>.  For each realm,
+the name, execution status, and zone counts are printed.  The zone counts
+are, in order, the number of zones in normal state, the number of zones in
+ZSK rollover, the number of zones in KSK rollover, and the number of zones
+waiting in KSK phase 6.  The zone counts are determined by sending the
+realm's rollover manager an information request.  Therefore, if the zone is
+inactive, the zone counts are not included.</p>
+<p>Example:</p>
+<pre>
+    dev     active     normal: 18   ZSK: 3   KSK: 1   KSK phase 6: 0
+    test-r  inactive
+    money   active     normal: 10   ZSK: 0   KSK: 0   KSK phase 6: 1</pre>
+</dd>
+<dt><strong><a name="shutdown" class="item"><strong>-shutdown</strong></a></strong></dt>
+
+<dd>
+<p>Synonym for <strong>-halt</strong>.</p>
+</dd>
+<dt><strong><a name="startrealm_realm" class="item"><strong>-startrealm realm</strong></a></strong></dt>
+
+<dd>
+<p>Starts the suspended realm named by <em>realm</em>.  Multiple realms can be
+specified on the command line.  For instance, this command will send the
+<em>startrealm</em> command to <strong>dtrealms</strong> for three realms.</p>
+<pre>
+    $ realmctl -startrealm testing production customers</pre>
+</dd>
+<dt><strong><a name="status" class="item"><strong>-status</strong></a></strong></dt>
+
+<dd>
+<p>Has <strong>dtrealms</strong> write several of its operational parameters to its log file.
+The parameters are also reported to <strong>realmctl</strong>, which prints them to the
+screen.</p>
+</dd>
+<dt><strong><a name="stoprealm_realm" class="item"><strong>-stoprealm realm</strong></a></strong></dt>
+
+<dd>
+<p>Stops the realm named by <em>realm</em>.  Multiple realms can be specified on the
+command line.  For instance, this command will send the <em>stoprealm</em> command
+to <strong>dtrealms</strong> for two realms.</p>
+<pre>
+    $ realmctl -stoprealm big-isp-3 misc-customers</pre>
+</dd>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>realmctl</strong> and the DNSSEC-Tools package.</p>
+</dd>
+<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
+
+<dd>
+<p>Prevents output from being given.  Both error and non-error output is stopped.</p>
+</dd>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
+
+<dd>
+<p>Displays a usage message.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="exit_codes">EXIT CODES</a></h1>
+<p><strong>realmctl</strong> may give the following exit codes:</p>
+<ol>
+<li><strong><a name="successful_execution" class="item">- Successful execution</a></strong>
+
+</li>
+<li><strong><a name="error_sending_the_command_to_dtrealms" class="item">- Error sending the command to <strong>dtrealms</strong>.</a></strong>
+
+</li>
+<li><strong><a name="missing_realm_argument" class="item">- Missing realm argument.</a></strong>
+
+</li>
+<li><strong><a name="too_many_command_options_specified" class="item">- Too many command options specified.</a></strong>
+
+</li>
+<li><strong><a name="missing_argument_for_cmd_or_command" class="item">- Missing argument for <strong>-cmd</strong> or <strong>-command</strong>.</a></strong>
+
+</li>
+<li><strong><a name="no_option_specified" class="item">- No option specified.</a></strong>
+
+</li>
+<li><strong><a name="dtrealms_is_not_running" class="item">- dtrealms is not running.</a></strong>
+
+</li>
+<li><strong><a name="configuration_file_checks_failed" class="item">- Configuration file checks failed.</a></strong>
+
+</li>
+</ol>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>Net::DNS::SEC::Tools::realmmgr.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::realm.pm(3)</strong></p>
+<p><strong>dtrealms(8)</strong>,
+<strong>rollctl(8)</strong>
+<strong>rollerd(8)</strong></p>
+
+</body>
+
+</html>
