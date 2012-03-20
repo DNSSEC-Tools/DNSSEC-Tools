@@ -173,7 +173,7 @@ function runNextTest() {
         else
             dnssecCheckTop.state = "half"
         testStatusMessage.text = ""
-        testResultMessage.text = "All tests have completed; hover over a result for details"
+        testResultMessage.text = "All tests have completed; Click on a bubble for details"
         currentTestHost = ""
     }
 }

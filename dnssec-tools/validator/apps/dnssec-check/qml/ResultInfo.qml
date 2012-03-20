@@ -22,9 +22,9 @@ InfoBox {
 
     function updateText() {
         resultInfo.text = "<style>a { color: #8888ff; } a:visited { color: red; }</style><h2>DNSSEC-Check Result</h2>" +
-                "The <b>" + resultInfo.testName + "</b> test was run and tested against the <b>" + resolverName +
-                "</b> resolver, with the following result:" +
-                "<p>" + testResult + "</p>"
+                "<p>Test Name: <b>" + resultInfo.testName +
+                "</b></p><p>Tested resolver: <b>" + resolverName +
+                "</b></p><p>Test Result: <b>" + testResult + "</b></p>"
     }
 
     Component.onCompleted: {
