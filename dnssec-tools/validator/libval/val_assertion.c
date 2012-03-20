@@ -1043,6 +1043,8 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
     val_dnskey_rdata_t dnskey, *dnskey_p = &dnskey;
     struct val_rr_rec  *curkey;
     u_char       *zp;
+    int ta_specified;
+    int found;
 
     /*
      * This function should never be called with a NULL zone_n, but still... 
@@ -1078,8 +1080,8 @@ is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key,
      * for the remaining nodes, if the length of the zones are 
      * the same, look for an exact match 
      */
-    int ta_specified = 0;
-    int found = 0;
+    ta_specified = 0;
+    found = 0;
     for (; ta_cur &&
          (wire_name_length(ta_cur->zone_n) == name_len);
          ta_cur = ta_cur->next) {
@@ -3429,6 +3431,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     u_char *zonecut_name_n = NULL;
     struct queries_for_query *temp_qfq = NULL;
     u_char tname_n[NS_MAXCDNAME];
+    struct val_result_chain *res;
 
     if (context == NULL || queries == NULL || *queries == NULL || name_n == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
@@ -3474,8 +3477,6 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         } else if (!(*done)) {
             goto end; 
         }
-
-        struct val_result_chain *res;
 
         for (res = results; res; res = res->val_rc_next) {
             int             i;
@@ -3986,6 +3987,8 @@ verify_provably_insecure(val_context_t * context,
 
         if (zonecut_n == NULL) {
             
+            size_t        len;
+
             /* 
              * if we failed to get the zonecut, and there's other labels to try 
              * try those first
@@ -3998,7 +4001,7 @@ verify_provably_insecure(val_context_t * context,
              * if we failed to get the zonecut, and there's nothing else to try  
              * try using nxt_qname as the last resort 
              */
-            size_t len = wire_name_length(nxt_qname);
+            len = wire_name_length(nxt_qname);
             zonecut_n = (u_char *) MALLOC (len * sizeof (u_char));
             if (zonecut_n == NULL) {
                 retval = VAL_OUT_OF_MEMORY;

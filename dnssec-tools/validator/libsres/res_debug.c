@@ -178,7 +178,7 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
     char            err_buf[ERRBUFLEN + 1];
 #endif
 
-    buf = MALLOC(buflen);
+    buf = (char *)MALLOC(buflen);
     if (buf == NULL) {
         res_log(NULL,LOG_DEBUG, ";; memory allocation failure\n");
         return;

@@ -577,7 +577,7 @@ static int
 check_label_count(struct rrset_rec *the_set,
                   struct val_rr_rec *the_sig, int *is_a_wildcard)
 {
-    size_t        owner_labels;;
+    size_t        owner_labels;
     size_t        sig_labels;
 
     if ((the_set == NULL) || (the_sig == NULL) || (is_a_wildcard == NULL))

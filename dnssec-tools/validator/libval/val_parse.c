@@ -172,6 +172,7 @@ val_parse_ds_string(char *dsstr, size_t dsstrlen,
     char           *dsptr = NULL;
     char           *cp;
     size_t          bufsize;
+    int             i;
 
     if (dsstr == NULL || ds_rdata == NULL)
         return VAL_BAD_ARGUMENT;
@@ -229,7 +230,7 @@ val_parse_ds_string(char *dsstr, size_t dsstrlen,
     }
 
     /* Convert the hex string to a byte string */
-    int  i = 0;
+    i = 0;
     while (dsptr < ep && i < bufsize) { 
         char hexdigit[3];
         memcpy(hexdigit, dsptr, 2);
