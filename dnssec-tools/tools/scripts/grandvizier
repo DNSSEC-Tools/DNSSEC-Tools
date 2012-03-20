@@ -1,0 +1,2839 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# grandvizier
+#
+#	grandvizier is a display tool for use with the DNSSEC-Tools dtrealms
+#	program.  As dtrealms manages the realms listed in the realms file,
+#	grandvizier will display status information for the file's realms.
+#
+#	grandvizier is implemented in Perl/Tk, so both Perl and Perl/Tk must
+#	be installed on your system.
+#
+#	Things to fix:
+#		- different color stripes for active realms
+#		- grey rightmost column
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::dnssectools;
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::realm;
+use Net::DNS::SEC::Tools::timetrans;
+use Net::DNS::SEC::Tools::BootStrap;
+
+
+######################################################################
+#
+# Detect required Perl modules.
+#
+dnssec_tools_load_mods(
+			'Tk'		=> "",
+			'Tk::Dialog'	=> "",
+			'Tk::Pane'	=> "",
+			'Tk::Table'	=> "",
+		      );
+
+#
+# Version information.
+#
+my $NAME   = "grandvizier";
+my $VERS   = "$NAME version: 1.12.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"maxrealms=i",			# Maximum number of realms.
+	"Version",			# Display the version number.
+	"display",			# Tell dtrealms to execute us.
+	"help",				# Give a usage message and exit.
+);
+
+my $DEFAULT_MAXREALMS = 20;		# Default maximum number of realms.
+my $maxrealms = $DEFAULT_MAXREALMS;	# Maximum number of realms.
+
+#######################################################################
+
+#
+# grandvizier' configuration file.
+#
+my $CONFFILE	= "grandvizier.conf";
+my $BLCONFIG	= "./rc.grandvizier";
+
+#######################################################################
+#
+# Data involved with column layout.
+#
+
+#
+# Row constants.
+#
+my $TITLEROW = 0;		# Row on which columns titles will be shown.
+my $HEADROW  = 1;		# Column headers.
+my $STARTROW = 2;		# First row on which realm info will be shown.
+my $ROWINCR  = 1;		# Number of rows for each realm.
+
+#
+# Column constants.
+#
+my $COL0  = 0;			# Column 0.
+my $COL1  = 1;			# Column 1.
+my $COL2  = 2;			# Column 2.
+my $COL3  = 3;			# Column 3.
+my $COL4  = 4;			# Column 4.
+my $MAXCOLS = 5;		# Maximum number of columns.
+
+#
+# Column constants for infostripe.
+#
+my $RRFCOL		= $COL0;	# Realm file name.
+my $ACTIVECNTCOL	= $COL1;	# Active realm count.
+
+#
+# Default column constants for realmstripes.
+#
+my $NAMECOL	= $COL0;	# Realm name. 
+my $NORMALCOL	= $COL1;	# Normal rollover count.
+my $ZSKCOL	= $COL2;	# ZSK rollover count.
+my $KSKCOL	= $COL3;	# KSK rollover count.
+my $KSK6COL	= $COL4;	# KSK phase 6 count.
+
+my $UNUSED	= -1;		# Unused column.
+
+#######################################################################
+#
+# Data involved with display.
+#
+
+my $DEFPAINTMAX	= 100;		# Maximum screen paints before screen rebuild.
+my $paintmax	= $DEFPAINTMAX;	# Maximum screen paints before screen rebuild.
+my $paintcount	= -1;		# Count of screen paints.
+
+my $rczc = 0;			# Count of realm commands from dtrealms.
+
+my $DLGHEIGHT = 10;		# Height of the dialog box.
+
+#
+# Font size for output window.
+#
+my $FONTMIN	= 10;		# Minimum font size we'll allow.
+my $FONTMAX	= 42;		# Maximum font size we'll allow.
+my $FONTINCR	= 2;		# Font creation loop increment.
+my $fontsize	= 18;
+my $font	= "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+
+#
+# Foreground colors for realms.
+#
+my $NORMALFG	= 'black';			# Normal foreground color.
+my $SELECTEDFG	= 'white';			# Selected foreground color.
+
+#
+# Background colors for the realms, cycling through the list for table rows.
+#
+my $NUMCOLORS = 3;				# Maximum number of colors.
+my $INFOBG    = "white";			# Color for the info row.
+
+my $colorind  = 0;				# Current color index.
+my $activecolor	  = "skyblue1";			# Color for active realms.
+my $inactivecolor = "grey";			# Color for inactive realms.
+my $ERRORBG	  = "yellow";			# Color for error rows.
+
+#
+# The @rowcolors array holds the color names for the background of the
+# various rows.
+#
+my @rowcolors =
+(
+	'blue',
+	'red',
+	'green',
+);
+my %rowcolors = ();
+
+#######################################################################
+#
+# Global Tk widgets.
+#
+
+#
+# The main window and its frames.
+#
+my $wm;						# Main window.
+my $mbar;					# Menubar frame.
+my $info;					# Info stripe.
+my $headers;					# Column-headers stripe.
+my $helpwin;					# Help window.
+my $body;					# Window body frame.
+my $realmtab;					# Realm data table.
+my $infotab;					# Info data vector.
+
+my $file;					# File menu.
+my $disp;					# Edit menu.
+my $cmdg;					# Commands menu.
+my $dspl;					# Display menu.
+my $help;					# Help menu.
+
+#
+# Menu item widgets.
+#
+my $op_clrs;					# Colors item.
+my $op_mdfy;					# Modify toggle.
+my $op_stop;					# Skip toggle.
+
+#
+# Messages for the Display menu.
+#
+my $ALLOWCMDS	 = "Allow Commands";
+my $DISALLOWCMDS = "Disallow Commands";
+
+my $COLORING	 = "Color Realm Stripes";
+my $NOCOLORING	 = "Don't Color Realm Stripes";
+
+my $SHOWINACTIVE = "Display Inactive Realms";
+my $NOINACTIVE	 = "Hide Inactive Realms";
+
+
+#
+# Flags for the menu options.
+#
+my $nocolors;				# Use/don't use colors in stripes.
+my $nomodify;				# Allowing/disallowing commands flag.
+my $noinactives;			# Show/don't show inactive realms.
+
+#######################################################################
+#
+# Global shtuff.
+#
+
+#
+# Flags.
+#
+my $inhelpwind = 0;			# Flag for showing help window.
+
+#
+# Filename variables.
+#
+my $realmfile = "dummy";		# Realms file being watched.
+my $title  = "dummy";			# File node for title.
+
+#
+# Realm information.
+#
+my %realms	= ();			# Realms we're watching.
+my %actives	= ();			# Active realms.
+my %inactives	= ();			# Inactive realms.
+my %realmcolors	= ();			# Realms color indices.
+my %realmrows	= ();			# Realms' starting-row indices.
+my @realmnames	= ();			# Screen-order list of realms.
+my %realmnames	= ();			# Realmfile name -> realm name map.
+my $realmcnt	= 1;			# Count of watched realms.
+my %display	= ();			# Realms' display flag.
+
+my %badrealms	= ();			# Realms with problems.
+
+#
+# Data for the info stripe.
+#
+my $activecntmsg = ' ';			# Count of active realms.
+my $inactivecntmsg = ' ';		# Count of inactive realms.
+
+#
+# Data for button-selected realms.
+#
+my $selrealm;				# Selected realm name.
+my $selwidget;				# Selected realm's widget.
+my $lastrow = $STARTROW;		# Final row index.
+
+#
+# Timer info for scheduling checks of realm status.
+#
+my $MININT = 10;			# Minimum interval (seconds.)
+my $DEFINT = 60;			# Default interval (seconds.)
+my $sleeptime = $DEFINT * 1000;		# Time to sleep between checks.
+my $repid;				# Repeat id for realm checks.
+
+#
+# Command paths.
+#
+my $realmctl;				# Path for realmctl.
+
+###########################################################################
+
+main();
+exit(0);
+
+#---------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Do shtuff.
+#
+sub main
+{
+	erraction(ERR_EXIT);
+
+	$| = 1;
+
+	#
+	# Check for options.
+	#
+	optsandargs();
+
+	#
+	# Read our configuration file.
+	#
+	readconfig();
+
+	#
+	# Ensure that dtrealms is actually running.
+	#
+	dtrealmsup();
+
+	#
+	# Build the main window.
+	#
+	buildmainwind();
+
+	#
+	# Schedule our wakeup call.
+	#
+	$repid = $wm->repeat($sleeptime,\&chronos);
+
+	#
+	# Start the whole shebang rollin'.
+	#
+	MainLoop();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	Parse the command line for options and arguments.
+#
+sub optsandargs
+{
+	my $argc = @ARGV;		# Command line argument count.
+
+	my %blconf;			# DNSSEC-Tools config file contents.
+	my $confdir;			# DNSSEC-Tools configuration directory.
+	my $conffile;			# grandvizier configuration file.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Look for the immediate options.
+	#
+	version() if(defined($options{'Version'}));
+	usage()	  if(defined($options{'help'}));
+
+	#
+	# Check for a sleeptime option.
+	#
+	if(defined($options{'interval'}))
+	{
+		$sleeptime = $options{'interval'};
+		if($sleeptime < 10)
+		{
+			print STDERR "minimum interval is $MININT seconds\n";
+			exit(1);
+		}
+
+		$sleeptime *= 1000;
+	}
+
+	#
+	# Check for setting the maximum number of realms to display.
+	#
+	setmaxrealms(0, $options{'maxrealms'} || $DEFAULT_MAXREALMS );
+
+	#
+	# Get the path for the realmctl command.
+	#
+print "\n\ndon't use absolute path here\n\n\n";
+if(0)
+{
+	if(($realmctl=dt_cmdpath('realmctl')) eq '')
+	{
+		print STDERR "no absolute path defined for realmctl; exiting...\n";
+		exit(1);
+	}
+}
+$realmctl = "./realmctl";
+
+	#
+	# Kick dtrealms into *really* starting grandvizier, but only if
+	# no arguments were given or -display was given.
+	#
+	if(($argc == 0) || defined($options{'display'}))
+	{
+		exec "$realmctl -quiet -display" || print STDERR "unable to execute $realmctl -display\n";
+		exit(1);
+	}
+
+	#
+	# Save the name of the realms file.
+	#
+	$realmfile = $ARGV[0];
+
+	#
+	# Build the grandvizier configuration file's name.
+	#
+	$confdir = getconfdir();
+	$conffile = "$confdir/$CONFFILE";
+
+	#
+	# Set the option values based on the config file.
+	# Non-grandvizier options will be ignored by setopt().
+	#
+	%blconf = parseconfig($conffile);
+	foreach my $dtk (keys(%blconf))
+	{
+		setopt($dtk,$blconf{$dtk});
+	}
+
+}
+	my $sleep = 15 * 1000;
+
+#---------------------------------------------------------------------------
+# Routine:	buildmainwind()
+#
+# Purpose:	Build the main window.
+#
+sub buildmainwind
+{
+	my $colormsg;					# Color menu message.
+	my $modmsg;					# Modify menu message.
+	my $stopmsg;					# Skip menu message.
+	my $fnsmenu;					# Font-size menu.
+
+	#
+	# Create the main window.
+	#
+	$wm = MainWindow->new(-title => "grandvizier");
+
+	#
+	# Create the frames we'll need.
+	#
+
+	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$info = $wm->Label(-text => 'dummy value', -anchor => 'w',
+			   -font => $font, -background => $INFOBG);
+	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$mbar->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
+	$info->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
+	$body->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
+
+	#
+	# Create our menus.
+	#
+	$file = $mbar->Menubutton(-text	     => 'File',
+				  -tearoff   => 0,
+				  -underline => 0);
+	$disp = $mbar->Menubutton(-text	     => 'Options',
+				  -tearoff   => 0,
+				  -underline => 0);
+	$cmdg = $mbar->Menubutton(-text	     => 'Control',
+				  -tearoff   => 1,
+				  -underline => 0);
+	$help = $mbar->Menubutton(-text      => 'Help',
+				  -tearoff   => 0,
+				  -underline => 0);
+	$mbar->pack(-side => 'top', -fill => 'x');
+
+	##################################################
+	#
+	# Add the File menu entries.
+	#
+
+	$file->command(-label => 'Halt Dtrealms',
+		       -command => [\&commander, "halt"]);
+	$file->separator();
+	$file->command(-label => 'Quit',
+		       -command => \&file_quit,
+		       -accelerator => 'Ctrl+Q',
+		       -underline => 0);
+	$file->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-Q>',\&file_quit);
+	$wm->bind('<Control-Key-q>',\&file_quit);
+
+	##################################################
+	#
+	# Add the Options menu entries.
+	#
+	$colormsg = $NOCOLORING;
+	$colormsg = $COLORING if($nocolors);
+	$op_clrs = $disp->command(-label => $colormsg,-command => \&disp_color);
+	$disp->pack(-side => 'left');
+
+	$stopmsg = $NOINACTIVE;
+	$stopmsg = $SHOWINACTIVE if($noinactives);
+	$op_stop = $disp->command(-label => $stopmsg, -command => \&disp_stop);
+	$disp->pack(-side => 'left');
+
+	$disp->separator();
+	$disp->pack(-side => 'left');
+
+	$modmsg = $DISALLOWCMDS;
+	$modmsg = $ALLOWCMDS if($nomodify);
+	$op_mdfy = $disp->command(-label => $modmsg, -command => \&disp_modify);
+	$disp->pack(-side => 'left');
+
+	$disp->separator();
+	$disp->pack(-side => 'left');
+
+	#
+	# Add a bunch of font sizes.
+	#
+	$fnsmenu = $disp->cascade(-label => "Font Size");
+	for(my $ind = $FONTMIN; $ind <= $FONTMAX; $ind += $FONTINCR)
+	{
+		$fnsmenu->radiobutton(-label	=> "$ind",
+				      -variable => \$fontsize,
+				      -command	=> \&disp_font);
+	}
+	$disp->pack(-side => 'left');
+
+	$disp->command(-label	=> 'Realms to Display...',
+		       -command => \&disp_realmcount);
+	$disp->pack(-side => 'left');
+
+	##################################################
+	#
+	# Add the Control menu entries.
+	#
+	$cmdg->command(-label => 'Stop Selected Realm',
+		       -command => [\&general_cmds, "stoprealm"],
+		       -accelerator => 'Ctrl+S');
+	$cmdg->command(-label => 'Stop All Realms',
+		       -command => [\&general_cmds, "stopall"]);
+	$cmdg->separator();
+	$cmdg->command(-label => 'Start Selected Inactive Realm',
+		       -command => [\&general_cmds, "startrealm"]);
+	$cmdg->command(-label => 'Start All Inactive Realms',
+		       -command => [\&general_cmds, "startall"]);
+	$cmdg->separator();
+	$cmdg->command(-label	=> 'DS Published for All Zones in Selected Realm',
+		       -command => [\&general_cmds, "dspuball"], );
+
+	$cmdg->pack(-side => 'left');
+
+	if($nomodify)
+	{
+		$cmdg->configure(-state => 'disabled');
+	}
+
+	##################################################
+	#
+	# Add the Help menu entries.
+	#
+	$help->command(-label => 'Help',
+		       -command => \&help_help,
+		       -accelerator => 'Ctrl+H',
+		       -underline => 0);
+	$help->pack(-side => 'right');
+
+	$wm->bind('<Control-Key-h>',\&help_help);
+
+	##################################################
+	#
+	# Add the big ol' realm-status widget.
+	#
+	$realmtab = maketable();
+	$realmtab->pack(-fill => 'both', -expand => 1);
+	$body->pack(-fill => 'both', -expand => 1);
+
+	##################################################
+	#
+	# Get the realms file info.
+	#
+	readrealm($realmfile,0);
+
+	#
+	# Set up to get input from dtrealms.
+	#
+	$wm->fileevent('STDIN',readable => \&dtrealmscmd);
+
+	#
+	# Set up to handle mouse clicks.
+	#
+	$wm->bind('<Button>',\&selector);
+}
+
+##############################################################################
+#
+# Menu widget interface routines.
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	file_quit()
+#
+# Purpose:	Handle the quit menu command.
+#
+sub file_quit
+{
+	#
+	# Destroy the main window.  This will cause MainLoop() to return,
+	# leading to the program exiting.
+	#
+	$wm->destroy;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_color()
+#
+# Purpose:	Handle the Colors menu toggle.
+#
+sub disp_color
+{
+	if($nocolors)
+	{
+		$op_clrs->configure(-label => $NOCOLORING);
+		$cmdg->configure(-state => 'normal');
+		$nocolors = 0;
+	}
+	else
+	{
+		$op_clrs->configure(-label => $COLORING);
+		$cmdg->configure(-state => 'disabled');
+		$nocolors = 1;
+	}
+
+	calcrows();
+	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_font()
+#
+# Purpose:	Handle the Font Size menu item.  We'll set the font string
+#		and repaint the screen.
+#
+sub disp_font
+{
+	setfont();
+	painter($paintmax+1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_modify()
+#
+# Purpose:	Handle the Modify menu toggle.
+#
+sub disp_modify
+{
+	if($nomodify)
+	{
+		$op_mdfy->configure(-label => $DISALLOWCMDS);
+		$cmdg->configure(-state => 'normal');
+		$nomodify = 0;
+	}
+	else
+	{
+		$op_mdfy->configure(-label => $ALLOWCMDS);
+		$cmdg->configure(-state => 'disabled');
+		$nomodify = 1;
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_stop()
+#
+# Purpose:	Handle the Skip menu toggle.
+#
+sub disp_stop
+{
+	if($noinactives)
+	{
+		$op_stop->configure(-label => $NOINACTIVE);
+		$noinactives = 0;
+	}
+	else
+	{
+		$op_stop->configure(-label => $SHOWINACTIVE);
+		$noinactives = 1;
+	}
+
+	calcrows();
+	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_realmcount()
+#
+# Purpose:	Handle the Realms to Display menu command.
+#
+sub disp_realmcount
+{
+	my $dlg;					# Dialog box.
+	my $lab;					# Label widget.
+	my $ent;					# Entry widget.
+	my $ret;					# Dialog box return.
+
+	my $rcnt;					# New realm count.
+
+	#
+	# Create a new dialog box to get the name of the new realm entry.
+	#
+	$dlg = $wm->DialogBox(-title => 'Realms to Display',
+			      -buttons => ["Okay", "Cancel" ]);
+
+	#
+	# Add a description...
+	#
+	$lab = $dlg->add('Label', -text => 'Enter new count of realms to display:  ');
+	$lab->pack(-side => 'left');
+
+	#
+	# ... and a text entry slot, focus on the entry ...
+	#
+	$ent = $dlg->add('Entry');
+	$ent->pack(-side => 'left');
+	$dlg->configure(-focus => $ent);
+
+	#
+	# ... mix, stir, and *voila*!  We've got a dialog box.
+	#
+	$ret = $dlg->Show();
+
+	#
+	# Drop out if the user changed their mind.
+	#
+	return if($ret eq "Cancel");
+
+	#
+	# Get the user's requested name.
+	#
+	$rcnt = $ent->get();
+	$rcnt =~ s/^\s*(.+)\s*/$1/;
+
+	#
+	# Give a warning if the count is entirely numeric. 
+	#
+	if($rcnt !~ /^[0-9]+$/)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "Realm count must be entirely numeric",
+				   -buttons => ["Re-enter Count", "Cancel" ]);
+		$ret = $dlg->Show();
+
+		#
+		# Drop out if the user changed their mind.
+		#
+		return if($ret eq "Cancel");
+
+		#
+		# Let the user try again.
+		#
+		disp_realmcount();
+		return;
+	}
+
+	#
+	# Give a warning if the count isn't greater than zero.
+	#
+	if($rcnt < 1)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "Realm count must be greater than zero",
+				   -buttons => ["Re-enter Count", "Cancel" ]);
+		$ret = $dlg->Show();
+
+		#
+		# Drop out if the user changed their mind.
+		#
+		return if($ret eq "Cancel");
+
+		#
+		# Let the user try again.
+		#
+		disp_realmcount();
+		return;
+	}
+
+	#
+	# Set the maximum-realm count.
+	#
+	setmaxrealms(1,$rcnt);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	realm_stoprealm()
+#
+# Purpose:	Handle the Stop Realm menu command.
+#
+sub realm_stoprealm
+{
+	return if(!$realms{$selrealm});
+	general_cmds("stoprealm");
+}
+
+#---------------------------------------------------------------------------
+# Routine:	general_cmds()
+#
+# Purpose:	Handle the General Commands menu commands.
+#
+sub general_cmds
+{
+	my $rcmd = shift;				# User's command.
+	my $args = $rcmd;				# Command arguments.
+	my $rlmcmd;					# Command to execute.
+	my $ret;					# Command retcode.
+
+	my $realm = $selrealm;				# Realm to handle.
+
+	#
+	# Don't allow commands if -nomodify was given.
+	#
+	return if($nomodify);
+
+	#
+	# These commands need a realm.  By hook or by crook, we'll ensure
+	# that we have one.
+	#
+	if(($rcmd eq "stoprealm") || ($rcmd eq "startrealm"))
+	{
+		#
+		# If a realm has been selected, we'll use it.  If not,
+		# we'll prompt the user for the realm.
+		#
+		if($selrealm ne '')
+		{
+			$args = "$rcmd \"$selrealm\"";
+		}
+		else
+		{
+			$realm = getrealm($rcmd);
+			return if($realm eq "");
+			$args = "$rcmd \"$realm\"";
+		}
+	}
+	elsif($rcmd eq "dspub")
+	{
+		#
+		# If a realm hasn't been selected, we'll prompt the user
+		# for the realm.
+		#
+		if($selrealm eq '')
+		{
+			$realm = getrealm($rcmd);
+			return if($realm eq "");
+		}
+
+		#
+		# Move the selected realm into rollover phase 7.
+		#
+		$ret = system("$realmctl -quiet -dspub \"$realm\"");
+	}
+	elsif($rcmd eq "dspuball")
+	{
+		#
+		# Move this realm into rollover phase 7.
+		#
+		$ret = system("$realmctl -quiet -dspuball");
+	}
+
+	#
+	# Build and execute the command string.
+	#
+	$rlmcmd = "$realmctl -quiet -$args";
+	$ret = system($rlmcmd);
+
+	#
+	# If the command failed, we'll re-run the command and let the
+	# user see the failure message.
+	#
+	$ret = $ret >> 8;
+	if($ret != 0)
+	{
+		#
+		# Exit if dtrealms isn't running.
+		#
+		exit(1) if($ret == 200);
+
+		#
+		# Quietly run the command again.
+		*
+		$rlmcmd = "$realmctl -quiet $args";
+		system($rlmcmd);
+
+		#
+		# If we were trying to stop this realm, we'll mark
+		# it as having a problem and repaint its stripe.
+		#
+		if($rcmd eq "stoprealm")
+		{
+			$badrealms{$realm} = 1;
+			realmstripe($realm);
+		}
+	}
+	else
+	{
+		delete($badrealms{$realm});
+	}
+
+	#
+	# And let's get the window redrawn.
+	#
+	painter($paintmax+1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	commander()
+#
+# Purpose:	Handle the general commands.
+#
+sub commander
+{
+	my $rcmd = shift;				# Command to execute.
+
+	#
+	# Build and execute the command string.
+	#
+	$rcmd = "$realmctl -quiet -$rcmd";
+	system($rcmd);
+
+	#
+	# Wait a short bit and exit if dtrealms hasn't killed us.
+	#
+	if($rcmd eq "halt")
+	{
+		sleep(2);
+		exit(0);
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rdisp_setter()
+#
+# Purpose:	Handle the Display All/None menu choices.
+#
+sub rdisp_setter
+{
+	my $dispstate = shift;				# Display state.
+
+# print "rdisp_setter:  down in\n";
+
+	#
+	# Set the internal display state for all realms.
+	#
+	foreach my $realm (keys(%display))
+	{
+		$display{$realm} = $dispstate;
+	}
+
+	#
+	# Lock and load the realm file.
+	#
+	realm_lock();
+	realm_read($realmfile);
+
+	#
+	# Set the display state in the realm file.
+	#
+	foreach my $rname (realm_names())
+	{
+		realm_setval($rname,'display',$dispstate);
+	}
+
+	#
+	# Let others use the realm file.
+	#
+	realm_close();
+	realm_unlock();
+
+	#
+	# Update the screen.
+	#
+	calcrows();
+	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rdisp_select()
+#
+# Purpose:	Display the realm-display window and let the user select
+#		which realms to display or hide.
+#
+sub rdisp_select
+{
+	my $subwin;					# Display dialog.
+	my $rlmframe;					# Scrolled frame.
+	my $wdgt;					# Widget for window.
+
+	my %realmbox;					# Realm checkboxes.
+
+	#
+	# Create a new dialog box to hold our help info.
+	#
+	$subwin = $wm->Dialog(-title => "Realm Display Selection",
+			      -default_button => "Okay",
+			      -height => "10",
+			      -buttons => ["Okay", "Cancel"]);
+
+	#
+	# Put a label in the label stripe.
+	#
+	$wdgt = $subwin->Label(-text => 'Checked realms will be displayed');
+	$wdgt->pack();
+
+	#
+	# Now make the containers for the window.
+	#
+	$rlmframe = $subwin->Scrolled("Frame", -scrollbars => 'oe');
+	$rlmframe->pack(-anchor	=> 'w',
+		       -side	=> 'top',
+		       -fill	=> 'both',
+		       -expand	=> 1);
+
+	#
+	# Add the realm names to the scrolled box.
+	#
+	%realmbox = ();
+	foreach my $rlm (sort(keys(%display)))
+	{
+		$realmbox{$rlm} = $rlmframe->Checkbutton(-text => $rlm,
+						   -variable => \$display{$rlm},
+						   -anchor => 'nw',
+						);
+		$realmbox{$rlm}->pack(-side => 'top',-fill => 'x',-expand => 1);
+	}
+
+	$rlmframe->pack(-anchor => 'n', -side => 'top',
+		       -fill => 'both', -expand => 1);
+
+	#
+	# Display our modal dialog.
+	# 
+	return if($subwin->Show() eq "Cancel");
+
+	#
+	# Lock and load the realm file.
+	#
+	realm_lock();
+	realm_read($realmfile);
+
+	#
+	# Set the display state in the realm file.
+	#
+	foreach my $rlm (realm_names())
+	{
+		realm_setval($rlm,'display',$display{$rlm});
+	}
+
+	#
+	# Let others use the realm file.
+	#
+	realm_close();
+	realm_unlock();
+
+	#
+	# Update the screen.
+	#
+	calcrows();
+	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_refresh()
+#
+# Purpose:	Repaint the screen.
+#
+sub disp_refresh
+{
+	painter($paintmax+1);
+}
+
+##############################################################################
+#
+# Screen-drawing routines
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	painter()
+#
+# Purpose:	Adjust the screen-painting count as needed.  If we've hit
+#		a maximum value, destroy and rebuild the realm table.
+#
+sub painter
+{
+	return if($realmtab == undef);
+
+	#
+	# Set the paint-count to a user-specified value, or increment
+	# the current value if one wasn't given.
+	#
+	if(@_ > 0)
+	{
+		$paintcount = shift;
+	}
+	else
+	{
+		$paintcount++;
+	}
+
+	#
+	# If we've exceeded our maximum, reset the paint-count and rebuild
+	# the realm's table.
+	#
+	if($paintcount > $paintmax)
+	{
+		$paintcount = 0;
+		buildtable();
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	maketable()
+#
+# Purpose:	Create the realm status table.  As part of this, we'll also
+#		calculate the column indices for the each column.
+#
+sub maketable
+{
+	return if($body == undef);
+
+	#
+	# Create the table.
+	#
+	$realmtab = $body->Table(-rows		=> 12,
+				-columns	=> $MAXCOLS,
+				-scrollbars	=> 'e',
+				-relief		=> 'raised',
+				-borderwidth	=> 1,
+				-fixedrows	=> 0,
+				-takefocus	=> 1,
+			       );
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildtable()
+#
+# Purpose:	Rebuild the realm status table.  This also re-reads the
+#		current realm file, so the realms listed may increase
+#		or shrink depending on the state of that file.
+#
+sub buildtable
+{
+	#
+	# Destroy the realm table's widgets.
+	#
+	if($realmtab)
+	{
+		$realmtab->clear;
+		$realmtab->destroy;
+	}
+
+	#
+	# Create a brand new table.
+	#
+	$realmtab = maketable();
+
+	#
+	# Re-populate and update the table.
+	#
+	readrealm($realmfile,1);
+	$realmtab->update();
+
+	#
+	# Pack it all up.
+	#
+	$realmtab->pack(-fill => 'both', -expand => 1);
+	$body->pack(-fill => 'both', -expand => 1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	readrealm()
+#
+# Purpose:	Read a realm file and put the info on the screen.
+#
+sub readrealm
+{
+	my $rrf	     = shift;			# Realm to read.
+	my $timeflag = shift;			# Flag for using current time.
+
+	my $rr;					# Realm reference.
+	my $rcount = 0;				# Count of displayed realms.
+
+# print "readrealm:  down in\n";
+
+	#
+	# Initialize some data.
+	#
+	@realmnames = ();
+	%realmnames = ();
+	%realms	    = ();
+	%rowcolors  = ();
+
+	#
+	# Pretty-up the window.
+	#
+	settitle($rrf);
+	infostripe();
+	headerstripe();
+
+	#
+	# Get the realm file contents and the names of the realms it contains.
+	#
+	realm_read($rrf);
+	@realmnames = realm_names();
+
+	foreach my $realm (@realmnames)
+	{
+		#
+		# Read the realm's realm entry.
+		#
+		$rr = realm_fullrec($realm);
+
+		#
+		# Save the realm's index and add it (or don't) to our list
+		# of active realms.
+		#
+		$realms{$realm} = $realmcnt++;
+		if($rr->{'state'} eq "active")
+		{
+			$actives{$realm} = 1;
+		}
+		else
+		{
+			$inactives{$realm} = 0;
+		}
+
+		#
+		# Don't add this realm if it shouldn't be displayed.
+		# If there isn't a display entry in the realm entry,
+		# we'll assume it should be displayed.
+		#
+		$display{$realm} = 1;
+		if(defined($rr->{'display'}) && ($rr->{'display'} == 0))
+		{
+			$display{$realm} = 0;
+		}
+		next if($display{$realm} == 0);
+
+		#
+		# Skip this realm if we've already displayed the maximum
+		# number of realms.
+		#
+		next if($rcount == $maxrealms);
+		$rcount++;
+
+		#
+		# Figure out where each realm's stripe starts.
+		#
+		calcrows();
+
+		#
+		# Paint the window with this realm's info.
+		#
+		realmstripe($realm);
+
+		$colorind = 0 if(($colorind % $NUMCOLORS) == 0);
+		$rowcolors{$realm} = $rowcolors[$colorind];
+print "$realm:  setting rowcolor - <$rowcolors{$realm}>\t$colorind\n";
+		$colorind++;
+	}
+
+	#
+	# Housekeeping before returning.
+	#
+	infostripe();
+	realm_close();
+	$realmtab->update();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	infostripe()
+#
+# Purpose:	Puts some general info on the information line.
+#
+sub infostripe
+{
+	my $dispstr;				# Count of displayed realms.
+	my $timestr;				# dtrealms's sleep time.
+	my $numrealms;				# Num realms in realm file.
+	my $rcnt;				# Count of realms being shown.
+
+	my $spacer  = ' ' x 4;			# Spacer string.
+	my $infostr;				# Info string.
+
+	#
+	# Set some global count variables.
+	#
+	setcounts();
+
+	#
+	# Ensure dtrealms is still running.
+	#
+	dtrealmsup();
+
+	#
+	# Calculate the number of realms we're displaying.
+	#
+	$numrealms = keys(%realms);
+	$rcnt = ($numrealms > $maxrealms) ? $maxrealms : $numrealms;
+	$dispstr = "Displaying $rcnt of $numrealms realms";
+
+	#
+	# Build our output string and set the infostripe.
+	#
+	$infostr = $spacer . $title	 .
+		   $spacer . $activecntmsg .
+		   $spacer . $inactivecntmsg .
+		   $spacer . $timestr	 .
+		   $spacer . $dispstr;
+
+	$info->configure(-text => $infostr);
+
+	#
+	# Maybe update the window.   (Is this needed now?)
+	#
+	painter();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	headerstripe()
+#
+# Purpose:	Put a column-header line in the top table row.
+#
+sub headerstripe
+{
+	my $lab;
+
+	$lab = $realmtab->Label(-text => ' Realm Name ',
+			       -anchor => 'w',
+			       -font => $font, -background => 'tan');
+	$realmtab->put($TITLEROW,$NAMECOL,$lab);
+
+	$lab = $realmtab->Label(-text => ' Normal ',
+			       -anchor => 'w',
+			       -font => $font, -background => 'tan');
+	$realmtab->put($TITLEROW,$NORMALCOL,$lab);
+
+	$lab = $realmtab->Label(-text => ' ZSK Rollover',
+			       -font => $font, -background => 'tan');
+	$realmtab->put($TITLEROW,$ZSKCOL,$lab);
+
+	$lab = $realmtab->Label(-text => ' KSK Rollover',
+			       -font => $font, -background => 'tan');
+	$realmtab->put($TITLEROW,$KSKCOL,$lab);
+
+	$lab = $realmtab->Label(-text => ' KSK Phase 6',
+			       -font => $font, -background => 'tan');
+	$realmtab->put($TITLEROW,$KSK6COL,$lab);
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	realmstripe()
+#
+# Purpose:	Puts a line for the specified realm in the table.
+#
+sub realmstripe
+{
+	my $realm     = shift;			# Realm to add.
+
+	my $realmname;				# Actual realm name.
+	my $fgcolor  = $NORMALFG;		# Foreground color.
+	my $bgcolor;				# Background color.
+	my $phasecolor;				# Color of phase column.
+	my $out;				# Status response.
+
+	my $row;				# Row index.
+
+	my $normcnt = 'unknown';		# Count of normal realms.
+	my $zskcnt  = 'unknown';		# Count of zones in ZSK.
+	my $kskcnt  = 'unknown';		# Count of zones in KSK.
+	my $ksk6cnt = 'unknown';		# Zones in KSK phase 6.
+
+	my $blank;				# Blank label.
+	my $lab;				# Non-blank label.
+	my $realmtxt;				# Realm name.
+
+	#
+	# Don't account for this realm if it shouldn't be displayed.
+	#
+	return if($display{$realm} == 0);
+
+	#
+	# Get this realm's row group and row indices.
+	#
+	$row = $realmrows{$realm};
+	return if($row == 0);
+
+	#
+	# Get this realm's background color.
+	#
+	$bgcolor    = getcolor($realm);
+	$phasecolor = getcolor($realm);
+
+	#
+	# Get this realm's foreground color.
+	#
+	$fgcolor = $SELECTEDFG if($realm eq $selrealm);
+
+	#
+	# Set the realm name's field.  (We're setting this here so it can
+	# be modified in a single place.)
+	#
+	$realmtxt  = "$realm    ";
+
+	#
+	# Get the realm name.
+	#
+	$realmname = $realmnames{$realm};
+
+	#
+	# Handle inactive realms here.  We won't do anything if inactive realms
+	# shouldn't be displayed.  Otherwise, we'll just put up a single line.
+	#
+	#  col 0    col 1       col 2       col 3       col 4
+	#  realm    normal      ZSK         KSK         KSK phase 6
+	#  name     rollover    rollover    rollover    rollover
+	#
+	if($actives{$realm} == 0)
+	{
+		my $rlabel = 'inactive';		# Realm's label.
+
+		return if($noinactives);
+
+		#
+		# Set up some data for realms that have problems.
+		#
+		if(defined($badrealms{$realm}))
+		{
+			$rlabel = 'ERROR -- check dtrealms log';
+			$bgcolor = $ERRORBG;
+			next;
+		}
+
+		$lab = $realmtab->Label(-text => $realmtxt,
+				       -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+		$realmtab->put($row,$NAMECOL,$lab);
+
+		$lab = $realmtab->Label(-text => $rlabel,
+				       -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+		$realmtab->put($row,$NORMALCOL,$lab);
+
+		$lab = $realmtab->Label(-text => ' ',
+				       -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+		$realmtab->put($row,$ZSKCOL,$lab);
+
+		$lab = $realmtab->Label(-text => ' ',
+				       -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+		$realmtab->put($row,$KSKCOL,$lab);
+
+		$lab = $realmtab->Label(-text => ' ',
+				       -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+		$realmtab->put($row,$KSK6COL,$lab);
+
+		#
+		# Update the display.
+		#
+		$realmtab->update();
+		return;
+	}
+
+
+	#
+	# Build and execute the command string.
+	#
+	$out = `$realmctl -realmstatus`;
+	foreach my $line (split '\n', $out)
+	{
+		my @atoms;				# Pieces of line.
+
+		$line =~ s/\s+/ /g;
+		@atoms = split ' ', $line;
+
+		$normcnt = $atoms[3];
+		$zskcnt  = $atoms[5];
+		$kskcnt  = $atoms[7];
+		$ksk6cnt = $atoms[11];
+
+		last if($atoms[0] eq $realm);
+	}
+
+	############################################
+	#
+	# First column:  realm name
+	#
+	$lab = $realmtab->Label(-text => " $realmtxt", -font => $font,
+			       -anchor => 'w',
+			       -foreground => $fgcolor,
+			       -background => $bgcolor);
+
+	$realmtab->put($row,$NAMECOL,$lab);
+
+	############################################
+	#
+	# Second column:  count of zones in normal rollover
+	#
+	$lab = $realmtab->Label(-text => " $normcnt", -font => $font,
+			       -anchor => 'w',
+			       -foreground => $fgcolor,
+			       -background => $bgcolor);
+
+	$realmtab->put($row,$NORMALCOL,$lab);
+
+	############################################
+	#
+	# Second column:  count of zones in ZSK rollover
+	#
+	$lab = $realmtab->Label(-text => " $zskcnt", -font => $font,
+			       -anchor => 'w',
+			       -foreground => $fgcolor,
+			       -background => $bgcolor);
+
+	$realmtab->put($row,$ZSKCOL,$lab);
+
+	############################################
+	#
+	# Second column:  count of zones in KSK rollover
+	#
+	$lab = $realmtab->Label(-text => " $kskcnt", -font => $font,
+			       -anchor => 'w',
+			       -foreground => $fgcolor,
+			       -background => $bgcolor);
+
+	$realmtab->put($row,$KSKCOL,$lab);
+
+	############################################
+	#
+	# Second column:  count of zones in KSK phase 6 wait
+	#
+	$lab = $realmtab->Label(-text => " $ksk6cnt", -font => $font,
+			       -anchor => 'w',
+			       -foreground => $fgcolor,
+			       -background => $bgcolor);
+
+	$realmtab->put($row,$KSK6COL,$lab);
+
+	###########################################
+	#
+	# Update the display.
+	#
+	$realmtab->update();
+}
+
+#----------------------------------------------------------------------
+# Routine:      repaint()
+#
+# Purpose:      Redisplay the current realm data.
+#
+sub repaint
+{
+	my $rcount = 0;				# Count of displayed realms.
+
+	foreach my $rlm (sort(@realmnames))
+	{
+		#
+		# Don't account for this realm if it shouldn't be displayed.
+		#
+		next if($display{$rlm} == 0);
+
+		#
+		# Skip this realm if we've already displayed the maximum
+		# number of realms.
+		#
+		last if($rcount == $maxrealms);
+		$rcount++;
+
+		#
+		# Add in a stripe for this realm.
+		#
+		realmstripe($rlm);
+	}
+}
+
+##############################################################################
+#
+# Utility routines
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	dtrealmscmd()
+#
+# Purpose:	Handle commands from dtrealms.
+#
+sub dtrealmscmd
+{
+	my $line;					# Input from dtrealms.
+	my $cmd;					# Command.
+	my $realm;					# Command's realm.
+	my $data;					# Command data.
+
+	#
+	# Get the data from dtrealms.
+	#
+	$line = <STDIN>;
+	chomp($line);
+
+	#
+	# Break the line into its pieces.
+	#
+	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/ 	]+)\W+([0-9]+)/;
+	$cmd	= $1;
+	$realm	= $2;
+	$data	= $3;
+
+# print "\ndtrealmscmd:  cmd - <$cmd>\trealm - <$realm>\n\n";
+
+	#
+	# Handle the commands from dtrealms:
+	#
+	#	halt		exit
+	#	nop		do nothing
+	#	startrealm	start a realm
+	#	stoprealm	stop a realm
+	#	realmfile	change the realm file
+	#	badrealm	mark realm as having problems
+	#	readrealms	force a re-read of the realms file
+	#
+	if($cmd eq "halt")
+	{
+		exit(0);
+	}
+	elsif($cmd eq "realmfile")
+	{
+		$realmfile = $realm;
+		buildtable();
+		return;
+	}
+	elsif($cmd eq "badrealm")
+	{
+		$badrealms{$realm} = 1;
+		$rczc++;
+		realmstripe($realm) if($rczc < $maxrealms);
+		return;
+	}
+	elsif($cmd eq "readrealms")
+	{
+		painter($paintmax+1);
+		$paintcount = $paintmax + 1;
+	}
+	elsif($cmd eq "nop")
+	{
+		return;
+	}
+
+	#
+	# Increment the screen-paint count and update the realm table.
+	#
+	painter();
+	$realmtab->update();
+}
+
+#----------------------------------------------------------------------
+# Routine:      selector()
+#
+# Purpose:      Register a mouse-selected realm name.
+#
+sub selector
+{
+	my $argv = shift;				# Argument reference.
+	my %argv = %$argv;				# Argument hash.
+
+	my $wijname;					# Event's widget.
+	my @pieces;					# Pieces of array.
+
+	my $found = 0;					# Found-row flag.
+	my $selx;					# Selection x-coord.
+	my $wij;					# Selection's widget.
+
+	my @realmarr = ();				# Temp. realm/row array.
+
+	#
+	# Make sure we're clicking in our table and not in a menu or frame.
+	#
+	#	(This ugly bit of coding depends on our only
+	#	ever making a single table.)
+	#
+	$wijname = $argv{'_TkValue_'};
+	@pieces = split /\./, $wijname;
+
+	#
+	# If the selected widget isn't a table, we'll unselect the
+	# currently selected widget.
+	#
+	if($pieces[2] ne "table")
+	{
+		if($selwidget && ($pieces[2] !~ /menubutton/))
+		{
+			$selwidget->configure(-foreground => $NORMALFG);
+			$selrealm = '';
+			$selwidget = undef;
+
+		}
+		return;
+	}
+
+	#
+	# Find the widget that has the same name as the event window.
+	#
+	for(my $xind=$TITLEROW; $xind < $lastrow; $xind++)
+	{
+		for(my $yind=0; $yind < $MAXCOLS; $yind++)
+		{
+			my $pn;				# Widget's pathname.
+
+			#
+			# Get this x,y widget and its name.
+			#
+			$wij = $realmtab->get($xind,$yind);
+			$pn = $wij->PathName;
+
+			#
+			# Go to the next widget if this isn't it.
+			#
+			next if($pn ne $wijname);
+
+			#
+			# Save the index and drop out.
+			#
+			$selx = $xind;
+			$found = 1;
+			last;
+		}
+
+		last if($found);
+	}
+
+	#
+	# Nothing gets selected if the user didn't select anything.
+	# Obviously.
+	#
+	return if(!$found);
+
+	#
+	# Clear the selection and return if the click came in the title row.
+	#
+	if($selx == $TITLEROW)
+	{
+		$selwidget->configure(-foreground => $NORMALFG) if($selwidget);
+		$selwidget = undef;
+
+		$selrealm = '';
+		return;
+	}
+
+	#
+	# Build an array of realm names, indexed by the realm's first row.
+	#
+	foreach my $realm (keys(%realmrows))
+	{
+		$realmarr[$realmrows{$realm}] = $realm;
+	}
+
+	#
+	# Mark the proper realm name (row N, column 0) with a highlighted
+	# marking.  All others will be unhighlighted.  We'll work backwards
+	# in our newly constructed realm-name array and find the realm's name
+	# in the array by working backwards from the index.
+	#
+
+	for(my $i=$selx; $i > 0; $i--)
+	{
+		#
+		# Skip any blank widgets.
+		#
+		next if($realmarr[$i] eq '');
+
+		#
+		# Get the realm string's widget and set the selection
+		# color for each realm in the realm column.
+		#
+		for(my $rind=0; $rind < $lastrow; $rind++)
+		{
+			my $wij;			# Zone's widget.
+			my $rstr;			# Widget's realm.
+
+			#
+			# Get this row's column-zero widget and strip off
+			# leading and trailing blanks.  Go to the next
+			# widget if there isn't a realm here.
+			#
+			$wij = $realmtab->get($rind,0);
+			$rstr = $wij->cget('-text');
+			$rstr =~ s/^[ ]*//;
+			$rstr =~ s/[ ]*$//;
+			next if($rstr eq '');
+
+			#
+			# If this is our selected realm, mark the realm
+			# string as highlighted.  All others go to the
+			# normal unhighlighted look.
+			#
+			if($rstr eq $realmarr[$i])
+			{
+				$wij->configure(-foreground => $SELECTEDFG);
+				$selwidget = $wij;
+			}
+			else
+			{
+				$wij->configure(-foreground => $NORMALFG);
+			}
+		}
+
+		#
+		# Select this realm.
+		#
+		$selrealm = $realmarr[$i];
+		last;
+	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:      calcrows()
+#
+# Purpose:      Calculate the starting row for each displayed realm.
+#
+sub calcrows
+{
+	my $row = $STARTROW;				# Starting-row index.
+
+	#
+	# Zap the realm row index table and realm-colors table.
+	#
+	%realmrows = ();
+	%realmcolors = ();
+
+	#
+	# Reset the color index and initialize the last-row index.
+	#
+	$colorind = 0;
+	$lastrow = $STARTROW;			# Final row index.
+
+	#
+	# Sort the realm-names list and set the realm row index table
+	# according to whether or not each realm is displayed.
+	#
+	foreach my $rlm (sort(@realmnames))
+	{
+		#
+		# Save the row index for the realm name.
+		#
+		$realmrows{$rlm} = $row;
+
+		#
+		# Don't account for this realm if it shouldn't be displayed
+		# or if it's an inactive realm.
+		#
+		if(($noinactives && ($realms{$rlm} == 0)) ||
+		   ($display{$rlm} == 0))
+		{
+			$realmrows{$rlm} = 0;
+			next;
+		}
+
+		#
+		# Bump the row count.
+		#
+		$row += 1;
+
+		#
+		# Save the row index in case this is the last row.
+		#
+		$lastrow = $row;
+	}
+
+	#
+	# Set the table to the new row size.
+	#
+	$realmtab->configure(-rows => $lastrow);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getcolor()
+#
+# Purpose:	Figure out what color this realm's stripe needs.
+#
+sub getcolor
+{
+	my $realm = shift;		# Realm whose color we're getting.
+	my $colorname;			# Color to return.
+
+	#
+	# Return the inactive-realm color if this realm isn't active.
+	#
+#	return($inactivecolor) if(($realms{$realm} != 1) || $nocolors);
+	return($inactivecolor) if(($realms{$realm} == 0) || $nocolors);
+
+	#
+	# Get the background color for this realm.
+	#
+	$colorname = $rowcolors{$realm} || $activecolor;
+
+	#
+	# Return the appropriate color name.
+	#
+	return($colorname);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getnode()
+#
+# Purpose:	Return the last element in a path.
+#
+sub getnode
+{
+	my @pathelts;					# Path elements.
+	my $pathnode;					# Last path elements.
+
+	@pathelts = split /\//, $realmfile;
+	$pathnode = pop @pathelts;
+
+	return($pathnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getrealm()
+#
+# Purpose:	This routine creates a modal dialog box to allow the user to
+#		select a realm to be started or stopped.  For to-be-started
+#		realms, only those realms are listed which are currently
+#		stopped.  Similarly, for to-be-stopped realms, only those
+#		realms are listed which are currently active.
+#
+sub getrealm
+{
+	my $op = shift;				# Operation for realm.
+	my $opflag = 0;				# Operation flag.
+
+	my $dlg;				# Dialog widget.
+	my $rlist;				# Realm listbox.
+
+	my $listcnt = 0;			# Count of listed realms.
+
+	my $ret;				# Dialog's return value.
+	my @indarr;				# Listbox' select array.
+	my $selrealm;				# Selected realm.
+	my @selrealms;				# Selected realms.
+
+	my $height = $DLGHEIGHT;		# Height of dialog box.
+	my $realmcount = @realmnames;		# Number of realms.
+
+	#
+	# Set the realm operation flag.
+	#
+	$opflag = 1 if($op eq 'startrealm');
+
+	#
+	# Massage the realm operation for the dialog box's title.
+	#
+	$op =~ s/zsk//;
+	$op = ucfirst($op);
+
+	#
+	# Set the dialog box height.
+	#
+	$height = $realmcount if($realmcount < $height);
+
+	#
+	# Build and configure the dialog box and the widgets it contains.
+	#
+	$dlg = $wm->Dialog(-title => "Select Realm to $op", -text  => '',
+			   -default_button => 'Okay',
+			   -buttons => ['Okay', 'Cancel']);
+	$rlist = $dlg->Listbox(-relief	    => 'raised',
+			       -borderwidth => 1,
+			       -selectmode  => 'single');
+	$dlg->AddScrollbars($rlist);
+	$dlg->configure(-scrollbars => 'e');
+
+	#
+	# Add the realm names to the dialog's listbox.  However, we'll
+	# only add active realms to a stop-realm command and we'll only
+	# add stopped realms to a start-realm command.
+	#
+	foreach my $realm (sort(@realmnames))
+	{
+		if((!$opflag && ($realms{$realm} == 1))		||
+		   ( $opflag && ($realms{$realm} == 0)))
+		{
+			$rlist->insert('end',$realm);
+			$listcnt++;
+		}
+	}
+
+	#
+	# If there weren't any realms added, we'll return 'cause there's
+	# nothing for us to do.  The pack() is to keep Tk from whining.
+	#
+	if($listcnt == 0)
+	{
+		$rlist->pack(-fill => 'x', -expand => 1);
+		return;
+	}
+
+	#
+	# Pack 'er up and display the realm list.
+	#
+	$rlist->pack(-fill => 'x', -expand => 1);
+	$ret = $dlg->Show();
+
+	#
+	# Go no further if no realm was selected.
+	#
+	return('') if($ret eq 'Cancel');
+
+	#
+	# Dig out the selected realm and return it.
+	#
+	@indarr = $rlist->curselection;
+	return('') if(@indarr == 0);
+	@selrealms = $rlist->get($indarr[0]);
+	$selrealm = $selrealms[0];
+	return($selrealm);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	readconfig()
+#
+# Purpose:      Read our configuration file.  Config entries are "field value"
+#		pairs, with the following fields recognized:
+#
+#			fontsize	size of demo output font
+#			inactivecolor	color to use for inactive records
+#			modify		allow modification commands
+#			showinactive	show inactive realms
+#
+sub readconfig
+{
+	my $line;					# Configuration line.
+	my $field;					# Field name from line.
+	my $value;					# Field value from line.
+
+	#
+	# Return if we don't have a configuration file.
+	#
+	return if(!-e $BLCONFIG);
+
+	#
+	# Complain and return if we can't read our configuration file.
+	#
+	if(!-r $BLCONFIG)
+	{
+		print STDERR "unable to read $BLCONFIG; continuing...\n";
+		return;
+	}
+
+	#
+	# Read the config file, ignoring comment lines.  Each non-comment
+	# line is expected to be in a "field value" pair.  As we read each
+	# line, we'll take the appropriate action.
+	#
+	open(CONF,"<$BLCONFIG");
+	while(<CONF>)
+	{
+		$line = $_;
+		chomp($line);
+
+		#
+		# Skip empty and comment lines.
+		#
+		$line =~ s/^[ \t]+//;
+		next if(($line =~ /^\#/) || ($line =~ /^$/));
+
+		#
+		# Pull out the field and value from the line.
+		#
+		$line =~ /([a-zA-Z_\-]+)\W+([a-zA-Z0-9_\-]+)/;
+		$field = lc($1);
+		$value = $2;
+
+		#
+		# Set the config value.
+		#
+		setopt($field,$value);
+	}
+
+	close(CONF);
+}
+
+#----------------------------------------------------------------------
+# Routine:      setopt()
+#
+# Purpose:      Set the appropriate option from the specified field.
+#		This is done here in order to centralize things for both
+#		handling the DNSSEC-Tools configuration file and users'
+#		configuration files.
+#
+#		The following fields are recognized:
+#			colors		use different colors for stripes
+#			fontsize	size of demo output font
+#			maxrealms	maximum number of realms to display
+#			modify		allow modification commands
+#			showinactive	show inactive realms
+#			inactivecolor	color to use for inactive records
+#
+sub setopt
+{
+	my $field = shift;				
+	my $value = shift;				
+
+	#
+	# Handle the field values appropriately.
+	#
+	if($field eq "colors")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $nocolors = 0; }
+		else	 { $nocolors = 1; }
+	}
+	elsif($field eq "fontsize")
+	{
+		if($value =~ /[a-zA-Z\_\-]/)
+		{
+			print STDERR "invalid fontsize \"$value\" in configuration file\n";
+			next;
+		}
+		$fontsize = $value;
+		setfont();
+	}
+	elsif($field eq "maxrealms")
+	{
+		setmaxrealms(0,$value);
+	}
+	elsif($field eq "modify")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $nomodify = 0; }
+		else	 { $nomodify = 1; }
+	}
+	elsif($field eq "showinactive")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $noinactives = 0; }
+		else	 { $noinactives = 1; }
+	}
+	elsif($field eq "inactivecolor")
+	{
+		$inactivecolor = $value;
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:      flagval()
+#
+# Purpose:      Translate a flag value into a numeric.
+#
+sub flagval
+{
+	my $val = shift;			# Flag value to translate.
+	my $ret = 0;				# Return value.
+
+	$val = lc($val);
+
+	if(($val != 0)		||
+	   ($val eq "on")	||
+	   ($val eq "y")	||
+	   ($val eq "ye")	||
+	   ($val eq "yes"))
+	{
+		$ret = 1;
+	}
+
+	return($ret);
+}
+
+#----------------------------------------------------------------------
+# Routine:      setfont()
+#
+# Purpose:      Set the $font global variable.
+#
+sub setfont
+{
+	$font = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+}
+
+#----------------------------------------------------------------------
+# Routine:      setcounts()
+#
+# Purpose:      Set the active realm and inactive realm messages with the
+#		current counts.
+#
+sub setcounts
+{
+	my $total = 0;					# Total realm count.
+	my $actcnt = 0;					# Active realm count.
+	my $inactcnt = 0;				# Inactive realm count.
+
+	#
+	# Calculate the number of active and inactive realms.
+	#
+	$total = keys(%realms);
+	foreach my $rlm (keys(%realms))
+	{
+		$actcnt++ if($realms{$rlm});
+	}
+
+	$inactcnt = $total - $actcnt;
+
+	#
+	# Set the messages, in a grammatically anal-retentive manner.
+	#
+	if($actcnt != 0)
+	{
+		if($actcnt == 1)
+		{
+			$activecntmsg = "$actcnt Active Zone";
+		}
+		else
+		{
+			$activecntmsg = "$actcnt Active Zones";
+		}
+	}
+	else
+	{
+		$activecntmsg = "0 Active Zones";
+	}
+
+	if($inactcnt != 0)
+	{
+		if($inactcnt == 1)
+		{
+			$inactivecntmsg = "$inactcnt Inactive Zone";
+		}
+		else
+		{
+			$inactivecntmsg = "$inactcnt Inactive Zones";
+		}
+	}
+	else
+	{
+		$inactivecntmsg = "0 Inactive Zones";
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:      settitle()
+#
+# Purpose:      Set the title for use in the "Monitoring File" line.
+#
+sub settitle
+{
+	my $name = shift;				# Name to use.
+
+	$title = getnode($name);
+}
+
+#----------------------------------------------------------------------
+# Routine:      setmaxrealms()
+#
+# Purpose:      Set the max realms count.  We'll also adjust the paintmax
+#		count if the new max realms count exceeds it.
+#
+#		If the maxrealms count rises above our normal repaint mark
+#		and then later drops below it, we'll reset the repaint mark
+#		back to the default.
+#
+sub setmaxrealms
+{
+	my $build = shift;				# Rebuild flag.
+	my $mr = shift;					# New maxrealms value.
+
+	if($mr > 0)
+	{
+		$maxrealms = $mr;
+		$paintmax = ($maxrealms + 1) if($maxrealms > $paintmax);
+
+		$paintmax = $DEFPAINTMAX if($maxrealms < $DEFPAINTMAX);
+
+		if($build)
+		{
+			$paintcount = $paintmax;
+			buildtable();
+		}
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:      dtrealmsup()
+#
+# Purpose:      Ensures that dtrealms is running.
+#
+sub dtrealmsup
+{
+	my $realmcmd;					# realmctl command.
+	my $ret;					# realmctl return code.
+
+	#
+	# Build and execute the command string.
+	#
+	$realmcmd = "$realmctl -quiet -status";
+	$ret = system($realmcmd);
+
+	#
+	# If the command failed, we'll give an error and exit.
+	#
+	$ret = $ret >> 8;
+	if(($ret == 200) || ($ret == 201))
+	{
+		print STDERR "grandvizier:  unable to contact dtrealms\n";
+		exit(1);
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	chronos()
+#
+# Purpose:	Rebuild the realm table with the latest zone status.
+#		Right now, this just calls buildtable().  We could schedule
+#		a call directly to buildtable(), but we didn't in case we
+#		want to add more actions to this.
+#
+sub chronos
+{
+	buildtable();
+}
+
+##############################################################################
+#
+# Utility-window routines.
+#
+##############################################################################
+
+
+#---------------------------------------------------------------------------
+# Routine:	help_help()
+#
+# Purpose:	Display the help window.
+#
+#		This is a text-only version of the pod.  The Perl/Tk
+#		requirement section was removed because if the user is
+#		seeing this, then they've already got Perl/Tk.
+#
+#		Changes to this text should be reflected in the pod.
+#
+sub help_help
+{
+	my $hframe;				# Help frame.
+	my $wdgt;				# General widget.
+
+	my $helpstr;				# The help message to display.
+	my $helpwij;				# Text widget for help message.
+
+    ####################    beginning of help text    ####################
+
+	$helpstr = "
+
+grandvizier - DNSSEC-Tools dtrealms GUI
+
+SYNOPSIS
+         
+    grandvizier <realm-file>
+
+DESCRIPTION
+
+grandvizier is a GUI tool for use with monitoring and controlling the
+DNSSEC-Tools dtrealms program.  It displays information on the current state of
+the rollover realms that dtrealms is managing.  The user may control some
+aspects of dtrealms's execution using grandvizier menu commands.
+
+For additional information, please see the grandvizier man page.
+
+COPYRIGHT
+
+	Copyright 2012 SPARTA, Inc.  All rights reserved.
+	See the COPYING file included with the DNSSEC-Tools package for details.
+
+";
+
+    ####################    end of help text    ####################
+
+	#
+	# Create a new dialog box to hold our help info.
+	#
+	$helpwin = $wm->Dialog(-title => "Help!",
+			       -default_button => "Okay",
+			       -buttons => ["Okay"]);
+
+open(T,">>/tmp/t");
+print T "help_help:  0\n";
+close(T);
+
+	#
+	# Create a scrolled text widget for the help message itself.
+	# 
+	$helpwij = $helpwin->Scrolled('Text',
+				      -scrollbars => 'e',
+				      -state => 'normal');
+
+open(T,">>/tmp/t");
+print T "help_help:  1\n";
+close(T);
+
+	$helpwij->insert('1.0',$helpstr);
+	$helpwij->configure(-state => 'disabled');
+	$helpwij->pack(-side => 'top');
+
+	#
+	# Display our modal dialog.
+	# 
+	$helpwin->Show();
+}
+
+##############################################################################
+#
+# Option-based routines.
+#
+##############################################################################
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:      Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  grandvizier [-Version] <realms-file>\n";
+	exit(0);
+}
+
+1;
+
+#############################################################################
+#
+#	This text is also displayed in the help dialog.  Any changes to this
+#	text should be reflected in that function.
+#
+
+=pod
+
+=head1 NAME
+
+grandvizier - DNSSEC-Tools dtrealms GUI
+
+=head1 SYNOPSIS
+
+  grandvizier <realms-file>
+
+=head1 DESCRIPTION
+
+B<THIS NEEDS MAJOR EDITTING!!!>
+
+B<grandvizier> is a GUI tool for use with monitoring and controlling the
+DNSSEC-Tools B<dtrealms> program.  It displays information on the current state
+of the realms B<dtrealms> is managing.  The user may control some aspects of
+B<dtrealms>'s execution using B<grandvizier> menu commands.
+
+B<grandvizier> creates a window in which to display information about each
+realms.  (These realms are those in B<dtrealms>'s current I<realms> file.) For
+each realm, it displays the realm name and the count of zones in each of these
+four states:  normal, ZSK rollover, KSK rollover, and KSK phase 6 wait state.
+As the rollover status of the zones in each realm changes, B<grandvizier> will
+update its display for that realm.  Inactive realms, realms listed in the
+I<realms> file but which are not in currently being run, are displayed but
+have no useful information to display.
+
+The user may also hide realms from the display.  These realms, if in the
+active state, will continue to execute; however, their information will not be
+displayed.  Display state for each realm will persist across B<grandvizier>
+executions.
+
+Menu commands are available for some control over B<dtrealms>.  Display and
+execution options for B<grandvizier> are also available through menu commands.
+More information about the menu commands is available in the MENU COMMANDS
+section.
+
+B<grandvizier> is only intended to be started by B<dtrealms>, not directly by
+a user.  There are two ways to have B<dtrealms> start B<grandvizier>.  First,
+B<realmctl> may be given the B<-display> option.  Second, the B<-display>
+option may be given on B<dtrealms>' command line.
+
+=head1 OPTIONS
+
+B<grandvizier> takes the following options:
+
+=over 4
+
+=item B<-display>
+
+Tells B<dtrealms> to execute B<grandvizier> as a child process.
+
+=item B<-maxrealms>
+
+Tells B<grandvizier> how many realms to display.
+
+=item B<-Version>
+
+Displays the version information for B<grandvizier> and the DNSSEC-Tools
+package.
+
+=item B<-help>
+
+Displays a usage message and exits.
+
+=back
+
+=head1 SCREEN LAYOUT
+
+The B<grandvizier> window is laid out as a series of "stripes".  The top
+stripe contains status information about B<dtrealms>, the second stripe
+contains column headers, and the bulk of the window consists of realm stripes.
+The list below provides more detail on the contents of each stripe.
+
+See the ROW COLORS section for a discussion of the colors used for the
+zone stripes.
+
+=over 4
+
+=item *
+
+B<dtrealms> information stripe
+
+The information stripe contains five pieces of information:  B<dtrealms>'s
+current I<realms> file, the count of rolling zones, the count of stopped
+zones, the count of zones to be displayed, and the amount of time B<dtrealms>
+waits between processing its queue.  Coincidentally, that last datum is also
+the amount of time between B<grandvizier> screen updates.
+
+=item *
+
+column headers stripe
+
+This stripe contains the column headers for the columns of each realm stripe.
+
+=item *
+
+realm stripes
+
+Each realm managed by B<dtrealms> (i.e., every realm in the current I<realms>
+file) will have a realm stripe which describes that realm's current state.  The
+stripe is divided into three sections:  realm identification, the current
+rollover state, and the realm's DNSSEC keys.
+
+The realm identification section contains the name of the realm, the name of
+the realm's I<realms> entry, and the realm's zonegroup.
+
+The rollover state section contains the rollover phase number, a text
+explanation of the phase, and the amount of time remaining in that rollover
+phase.  The phase explanation is "normal operation" when the zone isn't
+currently in rollover.
+
+The DNSSEC key section contains two subsections, one for the zone's ZSK keys
+and another for the zone's KSK keys.  Each subsection contains the names of
+the signing sets active for the zone.  The ZSK subsection lists the Current,
+Published, and New ZSK keys; the KSK subsection lists the Current and
+Published.
+
+See the ROW COLORS section for a discussion of the colors used for the
+realm stripes.
+
+=back
+
+=head1 ROW COLORS
+
+The default B<grandvizier> configuration displays each realm in its own row
+with a rotating set of colors.  The rows alternate with blue, red, and green,
+as defined in the X11 B<rgb.txt> file.  Row coloring can be turned off (and
+on) with configuration options and menu commands.
+
+=head1 MENU COMMANDS
+
+A number of menu commands are available to control the behavior of
+B<grandvizier> and to send commands to B<dtrealms>.  These commands
+are discusses in this section.
+
+=head2 File Menu
+
+The commands in this menu are basic GUI commands.
+
+=over 4
+
+=item *
+
+Halt Dtrealms
+
+B<dtrealms>'s execution is halted immediately.  As a result, B<grandvizier>'s
+execution will also be halted.
+
+=item *
+
+Quit
+
+B<grandvizier> will stop execution.
+
+=back
+
+=head2 Options Menu
+
+The commands in this menu control the appearance and behavior of
+B<grandvizier>.
+
+=over 4
+
+=item *
+
+Row Colors (toggle)
+
+This menu item is a toggle to turn on or off the coloring of realm stripes.
+If row coloring is turned off, realm stripes will all be the same color.
+If row coloring is turned on, realm stripes will be displayed in varying
+colors.  See the ROW COLORS section for a discussion of row coloring.
+
+=item *
+
+Inactive Realms Display (toggle)
+
+This menu item is a toggle to turn on or off the display of inactive realms.
+If display is turned off, realm stripes for inactive realms will not be
+displayed.  If display is turned on, realm stripes for all realms will be
+displayed.
+
+=item *
+
+Modification Commands (toggle)
+
+In some situations, it may be desirable to turn off B<grandvizier>' ability
+to send commands to B<dtrealms>.  This menu item is a toggle to turn on or
+off this ability.
+
+=item *
+
+Font Size
+
+This menu item allows selection of font size of text displayed in the main
+window.
+
+Normally, changing the font size causes the window to grow and shrink as
+required.  However, on Mac OS X there seems to be a problem when the size
+selected increases the window size to be greater than will fit on the screen.
+If the font size is subsequently reduced, the window size does not shrink in
+response.
+
+=item *
+
+Realms to Display
+
+This menu item allows selection of the number of realms to be displayed in
+the main window.
+
+=back
+
+=head2 General Control Menu
+
+The commands in this menu are GUI interfaces for the B<realmctl> commands
+related to I<general> realm management.
+
+=over 4
+
+=item *
+
+Stop Selected Realm
+
+The selected realm will be moved to the inactive state.  This only has an
+effect on active realms.
+
+A realm may be selected by clicking on its realm stripe.  If this command is
+selected without a realm having been selected, a dialog box is displayed from
+which a currently active realm may be chosen.
+
+=item *
+
+Stop All Realms
+
+All realms will be moved to the inactive state.  This has no effect on
+currently inactive realms.
+
+=item *
+
+Restart Selected Inactive Realm
+
+The selected realm will be moved from the inactive state to the active state.
+The realm will enter the active state at the same point from which it entered
+the inactive state.  This only has an effect on inactive realms.
+
+A realm may be selected by clicking on its realm stripe.  If this command is
+selected without a realm having been selected, a dialog box is displayed from
+which a currently inactive realm may be chosen.
+
+=item *
+
+Restart All Stopped Realms
+
+All realms will be moved from the inactive state to the roll state.  The
+realms will enter the roll state at the same point from which they entered
+the inactive state.  This has no effect on currently active realms.
+
+=item *
+
+DS Published for All Zones in Selected Realm
+
+This command is used to indicate that all the zones in KSK rollover phase 6
+in the selected realm have new DS records published by their parents.  It
+moves all these realms from KSK phase 6 to KSK phase 7.  There is no effect
+on realms not in KSK rollover phase 6.
+
+=back
+
+=head2 Display Menu
+
+The commands in this menu provide control over what is being displayed.
+
+The realmstripe commands allow all, some, or none of the realm stripes to be
+displayed.  Undisplayed active realms will continue to be active, but they will
+do so without the B<grandvizier> window indicating this.
+
+=over 4
+
+=item *
+
+Realm Selection
+
+A dialog box is displayed that holds a list of the realms currently managed by
+B<dtrealms>.  The user may select which realms should be displayed by clicking
+on the realm's checkbox.  Realms with a selected checkbox will be displayed;
+realms without a selected checkbox will not be displayed.
+
+=item *
+
+Refresh Display
+
+Refresh the B<grandvizier> display.  The display will automatically refresh
+after a certain number of updates; this command forces it to happen immediately
+upon invocation.
+
+=back
+
+=head2 Help Menu
+
+The commands in this menu provide assistance to the user.
+
+=over 4
+
+=item *
+
+Help
+
+Display a window containing help information.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+
+Several aspects of B<grandvizier>' behavior may be controlled from
+configuration files.  Configuration value may be specified in the DNSSEC Tools
+configuration file or in a more specific B<rc.grandvizier>.  The system-wide
+B<grandvizier> configuration file is in the DNSSEC-Tools configuration
+directory and is named B<grandvizier.conf>.  Multiple B<rc.grandvizier>
+files may exist on a system, but only the one in the directory in which
+B<grandvizier> is executed is used.
+
+The following are the available configuration values:
+
+    colors              Turn on/off use of colors on realm stripes.
+    fontsize            The size of the font in the output window.
+    inactivecolor	The background color used for inactive zones.
+    maxrealms           The number of realms to display.
+    modify              Turn on/off execution of dtrealms modification commands.
+    showinactive	Turn on/off display of inactive zones.
+
+The B<rc.grandvizier> file is B<only> searched for in the directory in
+which B<grandvizier> is executed.  The potential problems inherent in
+this may cause these B<grandvizier>-specific configuration files to be
+removed in the future.
+
+This file is in the "field value" format, where I<field> specifies the output
+aspect and I<value> defines the value for that field.  The following are the
+recognized fields:
+
+Empty lines and comments are ignored.  Comment lines are lines that start
+with an octothorpe ('#').
+
+Spaces are not allowed in the configuration values.
+
+Choose your inactivecolors carefully.  The only foreground color used is
+black, so your background colors must work well with black.
+
+=head1 REQUIREMENTS
+
+B<grandvizier> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+installed on your system.
+
+=head1 WARNINGS
+
+B<grandvizier> has several potential problems that must be taken into
+account.
+
+=over 4
+
+=item development environment
+
+B<grandvizier> was developed and tested on a single-user system running X11
+using a relatively small number of zones.  While it works fine in this
+environment, it has not been run on a system with many users or in a situation
+where the system console hasn't been in use by the B<grandvizier> user.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<dtrealms(8)>,
+B<realmctl(8)>,
+B<rollerd(8)>
+
+B<Net::DNS::SEC::Tools::realm(5)>
+
+=cut
+
