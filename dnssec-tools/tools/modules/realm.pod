@@ -1,0 +1,151 @@
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# DNSSEC Tools
+#
+#	Realm file format.
+#
+
+1;
+
+#############################################################################
+
+=pod
+
+=head1 NAME
+
+B<Realm> - Realm-related data used by DNSSEC-Tools programs.
+
+=head1 DESCRIPTION
+
+The DNSSEC-Tools B<dtrealms> command manages a group of distinct rollover
+environments running on a single host.  These distinct rollover environments
+are called I<realms>.  B<dtrealms> uses a I<realm> file to properly create
+and manage each of its realms.
+
+A I<realms> file is organized in sets of I<realm> records.  Each I<realm>
+record describes the execution environment of a single rollover instance.
+A I<realm> consists of a set of keyword/value entries.
+
+The DNSSEC-Tools B<realm.pm> module manipulates the contents of a I<realm>
+file.  Module interfaces exist for looking up I<realm> records, creating new
+records, and modifying existing records.
+
+Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
+Comment lines start with either a '#' character or a ';' character.
+
+A I<realm>'s name may consist of alphabetic characters, numbers, and several
+special characters.  The special characters are the minus sign, the plus sign,
+the underscore, the comma, the period, the colon, the forward-slash, the
+space, and the tab.  This name is an identifier.
+
+The values in a I<realm>'s entries may consist of alphabetic characters,
+numbers, and several special characters.  The special characters are the
+minus sign, the plus sign, the underscore, the comma, the period, the
+colon, the forward-slash, the space, and the tab.
+
+=head1 REALM FIELDS
+
+The fields in a I<realm> record are:
+
+ * administrator
+
+This is the email address for the realm's administrative user.
+
+ * args
+
+The user-specified arguments for the rollover manager.  This is not a
+required field.
+
+ * configdir
+
+This field contains the name of the directory in which B<dtrealms> will
+find the realm's configuration information.  This directory must contain
+a subdirectory named B<dnssec-tools>, and the realm's configuration file
+will be stored there.  This is a required field.
+
+ * display
+
+This boolean field indicates whether or not the realm should be displayed
+by the B<grandvizier> program.  This is an optional field.
+
+ * manager
+
+This field contains the name of the rollover manager program for the realm.
+If this is not defined, then B<rollerd> will be used.
+
+ * realmdir
+
+This field contains the name of the directory in which B<dtrealms> will
+execute the realm's rollover manager.  This is a required field.
+
+ * rollrec
+
+The realm's B<rollrec> file.  This file will be used by the rollover manager
+to control the rollover environment.
+
+ * state
+
+This field contains the realm's state.  It must be either "active" or
+"inactive".
+
+ * statedir
+
+This field contains the name of the directory in which B<rollerd> and other
+DNSSEC-Tools programs will find the realm's state information.  If this is
+not specified, the B<configdir> directory will be used.
+
+ * user
+
+This field contains the name of the user that the realm will be executed as.
+This is an optional field.  I<This is not yet implemented in B<dtrealms>.>
+
+=head1 EXAMPLES
+
+The following are examples of I<realm>s:
+
+    realm "example"
+            state           "active"
+            configdir	    "/realms/configs/example"
+            statedir	    "/realms/states/example"
+            realmdir	    "/realms/realms/example"
+            rollrec         "demo-example.rollrec"
+            administrator   "zonefolks@example.com"
+            display         "1"
+            manager         "rollerd"
+            args            "-sleep 600 -loglevel phase -logfile log.example"
+            user            "zonemgr"
+
+    realm "testing"
+            state           "inactive"
+            configdir	    "/realms/configs/testing"
+            realmdir	    "/realms/realms/testing"
+            rollrec         "demo-testing.rollrec"
+            display         "1"
+            manager         "rollerd-tester"
+            args            "-sleep 60 -loglevel tmi -logfile log.testing"
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<dtrealms(8)>,
+B<grandvizier(8)>,
+B<lsrealm(8)>,
+B<realmchk(8)>,
+B<realminit(8)>
+
+B<Net::DNS::SEC::Tools::keyrec(3)>,
+B<Net::DNS::SEC::Tools::rollrec(3)>
+
+B<keyrec(5)>
+
+=cut
