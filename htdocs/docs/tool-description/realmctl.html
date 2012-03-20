@@ -65,18 +65,17 @@ option may be specified on a command line.</p>
 <dd>
 <p>Stops all running realms.</p>
 </dd>
-<dt><strong><a name="cmd_realm_cmd" class="item"><strong>-cmd -- realm cmd</strong></a></strong></dt>
+<dt><strong><a name="cmd_realm_cmd_args" class="item"><strong>-cmd -- realm cmd args</strong></a></strong></dt>
 
-<dt><strong><a name="command_realm_cmd" class="item"><strong>-command -- realm cmd</strong></a></strong></dt>
+<dt><strong><a name="command_realm_cmd_args" class="item"><strong>-command -- realm cmd args</strong></a></strong></dt>
 
 <dd>
 <p>Sends a command to the specified realm.  The command given as <em>cmd</em> will be
-sent to the <strong>rollerd</strong> running in realm <em>realm</em> via the <strong>rollctl</strong> command.
-(See <strong>rollctl(8)</strong> for more information on its commands.)</p>
+sent to the <strong>rollerd</strong> running in realm <em>realm</em>.</p>
 <p>The double-dash given above is critical for proper argument parsing of the
 command line.</p>
-<p>All command-line arguments following the realm name will be sent as the
-command.</p>
+<p>All command-line arguments, as <em>args</em> above, following the realm name and
+command name will be sent as the command.</p>
 <p>Whatever output the command gives will be returned to <strong>realmctl</strong>, which will
 then print that output.  The command's return code will be appended to the
 command's output.  No attempt will be made to analyze the output for
@@ -84,7 +83,11 @@ success or failure.</p>
 <p>For example, this command will tell the realm <strong>giant-isp</strong> to stop
 rollover of zone <em>bob.example.com</em>:</p>
 <pre>
-    $ realmctl -command -- giant-isp -skipzone bob.example.com</pre>
+   $ realmctl -command -- giant-isp rollctl -skipzone bob.example.com</pre>
+<p><strong>Warning:</strong>  This is an inherently dangerous command.  When choosing a user
+under which the realm and rollover commands will be executed, be aware that
+this problem exists.  <strong>realmctl</strong> <em>may</em> be modified in the future to
+restrict the commands that may be executed with this option.</p>
 </dd>
 <dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
 
