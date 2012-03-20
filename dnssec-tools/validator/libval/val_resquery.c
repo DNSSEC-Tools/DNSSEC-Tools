@@ -280,6 +280,7 @@ merge_glue_in_referral(val_context_t *context,
     struct val_query_chain *pc;
     struct name_server *pending_ns;
     char name_p[NS_MAXDNAME];
+    u_char *cur_ref_n;
 
     /*
      * check if we have data to merge 
@@ -348,7 +349,7 @@ merge_glue_in_referral(val_context_t *context,
                 pc->qc_zonecut_n = NULL;
             }
             /* update the zonecut to the current referral point */
-            u_char *cur_ref_n = pc->qc_referral->saved_zonecut_n;
+            cur_ref_n = pc->qc_referral->saved_zonecut_n;
             if (cur_ref_n != NULL) {
                 size_t len = wire_name_length(cur_ref_n);
                 pc->qc_zonecut_n = (u_char *) MALLOC(len * sizeof(u_char));
@@ -1294,7 +1295,9 @@ process_cname_dname_responses(u_char *name_n,
 {
     u_char        temp_name[NS_MAXCDNAME];
     u_char       *p;
+    u_char  *qname_n;
     int ret_val;
+    size_t len1, len2;
 
     if (!name_n || !rdata || !matched_q || 
             !qnames || !(*qnames) )
@@ -1330,16 +1333,16 @@ process_cname_dname_responses(u_char *name_n,
         matched_q->qc_state = Q_INIT;
     }
 
-    u_char  *qname_n = (*qnames)->qnc_name_n;
+    qname_n = (*qnames)->qnc_name_n;
     if (type_h == ns_t_dname &&
         matched_q->qc_type_h != ns_t_dname &&
         namecmp(qname_n, name_n) != 0 &&
         NULL != (p = namename(qname_n, name_n)) &&
         p > qname_n) {
 
-        u_char *qname_n = (*qnames)->qnc_name_n;
-        size_t len1 = p - qname_n;
-        size_t len2 = wire_name_length(rdata);
+        qname_n = (*qnames)->qnc_name_n;
+        len1 = p - qname_n;
+        len2 = wire_name_length(rdata);
         if (len1 + len2 > sizeof(temp_name)) {
             matched_q->qc_state = Q_REFERRAL_ERROR;
             if (referral_error)
@@ -2126,6 +2129,7 @@ val_resquery_send(val_context_t * context,
     int             ret_val;
     struct name_server *tempns;
     struct val_query_chain *matched_q;
+    struct name_server *nslist;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
     /*
@@ -2133,7 +2137,6 @@ val_resquery_send(val_context_t * context,
      * If nslist is NULL, read the cached zones and name servers
      * in context to create the nslist
      */
-    struct name_server *nslist;
     if ((matched_qfq == NULL) || 
         (matched_qfq->qfq_query->qc_ns_list == NULL)
 #ifndef VAL_NO_ASYNC

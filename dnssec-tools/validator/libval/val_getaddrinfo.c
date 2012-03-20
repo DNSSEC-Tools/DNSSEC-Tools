@@ -382,12 +382,12 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
     while (hs) {
         int             alias_index = 0;
         struct sockaddr_in  sa;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
         size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
 #ifdef VAL_IPV6
         struct sockaddr_in6 sa6;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
         size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
 #endif
@@ -817,13 +817,13 @@ _getaddrinfo_local(val_context_t * ctx, const char *nodename,
 {
     struct sockaddr_in  sa;
     struct addrinfo *ainfo4 = NULL;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
     size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
 #ifdef VAL_IPV6
     struct sockaddr_in6 sa6;
     struct addrinfo *ainfo6 = NULL;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
     size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
 #endif

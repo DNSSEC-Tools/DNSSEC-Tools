@@ -34,7 +34,7 @@ static int      seq_number = 0;
 FILE           *logfile = NULL;
 #define MEM_LOGFILE "memory_logfile"
 
-#ifndef HAVE_GETTIMEOFDAY
+#ifdef WIN32
 /*
    Implementation as per:
    The Open Group Base Specifications, Issue 6
@@ -56,6 +56,7 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */)
     return 0;
 }
 #endif
+
 
 void
 my_free(void *p, char *filename, int lineno)
@@ -233,11 +234,11 @@ parse_name_server(const char *cp, const char *name_n)
     struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
 #ifdef VAL_IPV6
     struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&serv_addr;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
     size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
 #endif
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
     size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
 
@@ -585,18 +586,25 @@ res_log(void *dont_care, int level, const char *template, ...)
 {
     char            buf[1028];
     struct timeval  tv;
-    struct tm       *tm;
     va_list         ap;
+    struct tm       tm;
+    struct tm       *tp;
 
     if (NULL == template || level > sres_level)
         return;
 
     gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
+
+#ifdef HAVE_LOCALTIME_R
+    localtime_r(&tv.tv_sec, &tm);
+    tp = &tm;
+#else
+    tp = localtime(&tv.tv_sec);
+#endif 
 
     snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-            tm->tm_hour, tm->tm_min, tm->tm_sec);
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
+            tp->tm_hour, tp->tm_min, tp->tm_sec);
     va_start(ap, template);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
     va_end(ap);
@@ -610,17 +618,23 @@ res_log_ap(void *dont_care, int level, const char *template, va_list ap)
 {
     char            buf[1028];
     struct timeval  tv;
-    struct tm       *tm;
+    struct tm       tm;
+    struct tm       *tp;
 
     if (NULL == template || level > sres_level)
         return;
 
     gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
+#ifdef HAVE_LOCALTIME_R
+    localtime_r(&tv.tv_sec, &tm);
+    tp = &tm;
+#else
+    tp = localtime(&tv.tv_sec);
+#endif 
 
     snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-            tm->tm_hour, tm->tm_min, tm->tm_sec);
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
+            tp->tm_hour, tp->tm_min, tp->tm_sec);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     fprintf(stderr, "%s\n", buf);
