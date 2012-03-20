@@ -22,8 +22,8 @@ use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 
-our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.0";
+our $VERSION = "1.12";
+our $MODULE_VERSION = "1.12.1";
 
 our @ISA = qw(Exporter);
 
@@ -38,33 +38,39 @@ our @EXPORT = qw(
 #
 my %dtcmds =
 (
-	"blinkenlights"	   => 1,
-	"cleanarch"	   => 1,
-	"cleankrf"	   => 1,
-	"dtconf"	   => 1,
-	"dtconfchk"	   => 1,
-	"dtdefs"	   => 1,
-	"dtinitconf"	   => 1,
-	"expchk"	   => 1,
-	"fixkrf"	   => 1,
-	"genkrf"	   => 1,
-	"getdnskeys"	   => 1,
-	"keyarch"	   => 1,
-	"krfcheck"	   => 1,
-	"lskrf"		   => 1,
-	"lsroll"	   => 1,
-	"rollchk"	   => 1,
-	"rollctl"	   => 1,
-	"rollerd"	   => 1,
-	"rollinit"	   => 1,
-	"rolllog"	   => 1,
-	"rollrec-editor"   => 1,
-	"rollset"	   => 1,
-	"signset-editor"   => 1,
-	"tachk"		   => 1,
-	"timetrans"	   => 1,
-	"trustman"	   => 1,
-	"zonesigner"	   => 1,
+	'blinkenlights'	   => 1,
+	'cleanarch'	   => 1,
+	'cleankrf'	   => 1,
+	'dtconf'	   => 1,
+	'dtconfchk'	   => 1,
+	'dtdefs'	   => 1,
+	'dtinitconf'	   => 1,
+	'dtrealms'	   => 1,
+	'expchk'	   => 1,
+	'fixkrf'	   => 1,
+	'genkrf'	   => 1,
+	'getdnskeys'	   => 1,
+	'grandvizier'	   => 1,
+	'keyarch'	   => 1,
+	'krfcheck'	   => 1,
+	'lskrf'		   => 1,
+	'lsrealm'	   => 1,
+	'lsroll'	   => 1,
+	'realmchk'	   => 1,
+	'realmctl'	   => 1,
+	'realminit'	   => 1,
+	'rollchk'	   => 1,
+	'rollctl'	   => 1,
+	'rollerd'	   => 1,
+	'rollinit'	   => 1,
+	'rolllog'	   => 1,
+	'rollrec-editor'   => 1,
+	'rollset'	   => 1,
+	'signset-editor'   => 1,
+	'tachk'		   => 1,
+	'timetrans'	   => 1,
+	'trustman'	   => 1,
+	'zonesigner'	   => 1,
 );
 
 #-----------------------------------------------------------------------------
