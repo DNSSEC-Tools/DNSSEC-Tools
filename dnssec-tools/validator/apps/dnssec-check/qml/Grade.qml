@@ -14,7 +14,7 @@ Item {
 
 
         color: "black"
-        border.color: "#bbb"
+        border.color: "white"
         border.width: 0
 
         Text {
@@ -22,7 +22,18 @@ Item {
             anchors.centerIn: parent
             font.pixelSize:   parent.height - parent.border.width * 3
             text: "?"
-            color: "white"
+            color: {
+                if (text == "?")
+                    return "#bbb"
+                if (text == "A")
+                    return Qt.lighter("green")
+                if (text == "B")
+                    return "orange"
+                if (text == "C" || text == "D")
+                    return "yellow"
+                if (text == "F")
+                    return "red"
+            }
         }
     }
 }
