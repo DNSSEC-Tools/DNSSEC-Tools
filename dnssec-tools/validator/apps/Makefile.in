@@ -31,14 +31,14 @@ ALL_LOBJ= $(VAL_LOBJ) \
 
 LT_DIR= .libs
 
-VALIDATOR=validate
-GETHOST=gethost
-GETADDR=getaddr
-GETRRSET=getrrset
-GETQUERY=getquery
-GETNAME=getname
-CHECK_CONF=libval_check_conf
-SRES_TEST=libsres_test
+VALIDATOR=validate$(EXEEXT)
+GETHOST=gethost$(EXEEXT)
+GETADDR=getaddr$(EXEEXT)
+GETRRSET=getrrset$(EXEEXT)
+GETQUERY=getquery$(EXEEXT)
+GETNAME=getname$(EXEEXT)
+CHECK_CONF=libval_check_conf$(EXEEXT)
+SRES_TEST=libsres_test$(EXEEXT)
 
 all: $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF) $(SRES_TEST)
 
