@@ -1,0 +1,533 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# realminit
+#
+#	This script creates a realm file.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::realm;
+use Net::DNS::SEC::Tools::rolllog;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "realminit";
+my $VERS   = "$NAME version: 1.12.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"active",			# Active flag.
+	"inactive",			# Inactive flag.
+	"configdir=s",			# Configuration directory.
+	"statedir=s",			# State directory.
+	"realmdir=s",			# Realm directory.
+	"rollrec=s",			# Rollrec file.
+	"admin=s",			# Administrator.
+	"display=s",			# Display flag.
+	"manager=s",			# Rollover manager.
+	"args=s",			# Arguments for rollover manager.
+	"user=s",			# User.
+
+	"out=s",			# Output file.
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $realmname;				# Realm's name.
+my $active;				# Execution state.
+my $confdir;				# Configuration directory.
+my $statedir;				# State directory.
+my $realmdir;				# Realm directory.
+my $rollrec;				# Realm's rollrec file.
+my $admin;				# Administrator option value.
+my $dispflag;				# Display flag.
+my $manager;				# Rollover manager.
+my $args;				# Arguments for rollover manager.
+my $user;				# User.
+
+my $outfile;				# Output file option value.
+my $version = 0;			# Display the version number.
+
+my $argc;				# Number of command line arguments.
+my $noopts = 0;				# No-options flag.
+
+#######################################################################
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller program.
+#
+sub main()
+{
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Set up the output file.
+	#
+	setout();
+
+	#
+	# Generate a realm record for each of the non-option command-line
+	# arguments.
+	#
+	foreach my $realm (@ARGV)
+	{
+		newrealm($realm);
+	}
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.
+#
+sub doopts
+{
+	my $errs = 0;					# Error count.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Several quick checks.
+	#
+	usage()	  if(defined($options{'help'}));
+	version() if(defined($options{'Version'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$active      = $options{'state'}	|| 1;
+	$confdir     = $options{'configdir'}	|| '';
+	$statedir    = $options{'statedir'}	|| '';
+	$realmdir    = $options{'realmdir'}	|| '';
+	$rollrec     = $options{'rollrec'}	|| '';
+	$admin	     = $options{'admin'}	|| '';
+	$dispflag    = $options{'display'}	|| 1;
+	$manager     = $options{'manager'}	|| 'rollerd';
+	$args	     = $options{'args'}		|| '';
+	$user	     = $options{'user'}		|| '';
+
+	$outfile     = $options{'out'}	        || '';
+	$version     = $options{'Version'};
+
+	#
+	# Set the active-realm flag.
+	#
+	if(defined($options{'active'}) && defined($options{'inactive'}))
+	{
+		print STDERR "-active and -inactive are mutually exclusive\n";
+		$errs++;
+	}
+	else
+	{
+		$active = 'active';
+		$active = 'inactive' if(defined($options{'inactive'}));
+	}
+
+	#
+	# Ensure a config directory was given.
+	#
+	if($confdir eq '')
+	{
+		print STDERR "configuration directory must be specified\n";
+		$errs++;
+	}
+
+	#
+	# If the state directory wasn't given, we'll use the config directory.
+	#
+	$statedir = $confdir if($statedir eq '');
+
+	#
+	# Ensure a realm directory was given.
+	#
+	if($realmdir eq '')
+	{
+		print STDERR "realm directory must be specified\n";
+		$errs++;
+	}
+
+	#
+	# Ensure a rollrec file was given.
+	#
+	if($rollrec eq '')
+	{
+		print STDERR "rollrec file must be specified\n";
+		$errs++;
+	}
+
+	#
+	# Check for realm names.
+	#
+	if(@ARGV == 0)
+	{
+		print STDERR "no realm names were specified\n";
+		$errs++;
+	}
+
+	#
+	# Drop out if there were any errors.
+	#
+	exit(1) if($errs);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	setout()
+#
+# Purpose:	Set up the output file descriptor.  If the -out option wasn't
+#		given, then we'll just write to the caller's tty.
+#
+sub setout
+{
+	$outfile = '-' if($outfile eq '');
+
+	open(OUT,">> $outfile");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	newrealm()
+#
+# Purpose:	This generates and prints a realm record.  It figures out
+#		whether to give an active or inactive record.
+#
+sub newrealm
+{
+	my $realm = shift;				# Realm to create.
+
+	print OUT "realm	\"$realm\"\n";
+	print OUT "	state		\"$active\"\n";
+	print OUT "	configdir	\"" . namer($realm,$confdir) . "\"\n";
+	print OUT "	statedir	\"" . namer($realm,$statedir) . "\"\n";
+	print OUT "	realmdir	\"" . namer($realm,$realmdir) . "\"\n";
+	print OUT "	rollrec		\"" . namer($realm,$rollrec) . "\"\n";
+	print OUT "	administrator	\"" . namer($realm,$admin) . "\"\n"  if($admin  ne '');
+	print OUT "	display		\"$dispflag\"\n";
+	print OUT "	manager		\"$manager\"\n";
+	print OUT "	args		\"" . namer($realm,$args) . "\"\n";
+	print OUT "	user		\"" . namer($realm,$user) . "\"\n"   if($user ne '');
+	print OUT "\n";
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	namer()
+#
+# Purpose:	This replaces equals-signs in the field with the named realm.
+#
+sub namer
+{
+	my $realm = shift;				# Realm for replacing.
+	my $field = shift;				# Data field to check.
+
+	$field =~ s/\=/$realm/g if($field =~ /\=/);
+
+	return($field);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  realminit [options] <realm1> ... <realmN>\n";
+	print STDERR "\t-active 	active flag\n";
+	print STDERR "\t-inactive 	inactive flag\n";
+	print STDERR "\t-configdir	configuration directory\n";
+	print STDERR "\t-statedir	state directory\n";
+	print STDERR "\t-realmdir	realm directory\n";
+	print STDERR "\t-rollrec	rollrec file\n";
+	print STDERR "\t-admin		administrator\n";
+	print STDERR "\t-display	display flag\n";
+	print STDERR "\t-manager	rollover manager\n";
+	print STDERR "\t-args		rollover manager's arguments\n";
+	print STDERR "\t-out		output file\n";
+	print STDERR "\t-Version	display version number\n";
+	print STDERR "\t-help		help message \n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+realminit - Create new I<realm> records for a DNSSEC-Tools I<realms> file.
+
+=head1 SYNOPSIS
+
+  realminit [options] <realm1> ... <realmN>
+
+=head1 DESCRIPTION
+
+B<realminit> creates new I<realm> entries for a B<realms> file.  B<dtrealms>
+manages multiple distinct DNSSEC-Tools rollover environments running
+simultaneously.  Each rollover environment, called a realm, is defined in a
+B<realms> file.  B<dtrealms> uses this file to determine how to run the
+rollover environment.  This is useful for such things as managing very large
+collections of zones, segregating customer zones, and software tests.
+
+The newly generated I<realm> entries are written to standard output,
+unless the B<-out> option is specified.
+
+A B<realms> file contains a number of entries, one for each managed I<realm>.
+A I<realm> entry has this format:
+
+    realm "example"
+        state          "active"
+        configdir      "/usr/realms/configs/example"
+        statedir       "/usr/realms/states/example"
+        realmsdir      "/usr/realms/realms-files/example"
+        rollrec        "example.rrf"
+        administrator  "bob@cat.example.com"
+        display        "1"
+        manager        "rollerd"
+        args           "-display -loglevel phase"
+
+Multiple I<realm> entries may be created with a single execution of
+B<realminit>.  Except for the entry's name field, the entries will be exactly
+the same unless the '=' metacharacter is used in the command-line options.  If
+the values of the B<configdir>, B<statedir>, B<realmdir>, B<rollrec>,
+B<administrator>, B<args>, or B<user> options contain an '=', then it will be
+replaced with the realm's name when building the entry.  See the EXAMPLES
+section for examples of how options are used by B<realminit>.
+
+=head1 OPTIONS
+
+B<realminit> may be given the following options:
+
+=over 4
+
+=item B<-active>
+
+This indicates that B<dtrealms> should start the realm when B<dtrealms>
+starts.  I<realms> are active by default.
+
+=item B<-administrator>
+
+This is the email address for the realm's administrator.
+
+=item B<-args>
+
+This is a set of command-line arguments passed to the realm's
+rollover manager when the realm is started.
+
+=item B<-configdir>
+
+This is the realm's configuration directory.  This will contain such files
+as the DNSSEC-Tools configuration file for that realm.
+
+=item B<-display>
+
+This indicates if the realm should be included in B<grandvizier> output.
+
+=item B<-inactive>
+
+This indicates that B<dtrealms> should not start the realm when B<dtrealms>
+starts.
+
+=item B<-manager>
+
+This is the rollover manager for the realm.  B<rollerd> is the default
+rollover manager, but other managers may be used.
+
+=item B<-out output-file>
+
+The new I<realm> entries will be appended to I<output-file>.
+The file will be created if it does not exist.
+
+If this option is not given, the new I<rollrec> entries will be written
+to standard output.
+
+=item B<-realmdir>
+
+This is the realm's data directory.  This directory is expected to contain the
+B<rollrec> file, zone files, B<keyrec> files, and key files for the zones in
+that realm.
+
+=item B<-rollrec>
+
+This is the path to the realm's B<rollrec> file.  This is used to control
+rollover actions for the realm.  If it is not an absolute path, it will be
+assumed to be relative to the B<realmdir> field.
+
+=item B<-statedir>
+
+This is the realm's state directory.  This will contain such files as that
+realm's B<rollrec> lock file and the B<rollerd> communications socket.  If the
+B<statedir> is not defined for a realm, then the realm's B<configdir> is used
+for that value.
+
+=item B<-user>
+
+This is the user that the realm is executed as.
+(I<This is not yet implemented in B<dtrealms>.>)
+
+=item B<-help>
+
+Display a usage message.
+
+=item B<-Version>
+
+Display version information for B<realminit> and DNSSEC-Tools.
+
+=back
+
+=head1 EXAMPLES
+
+The following options should make clear how B<realminit> deals with options
+and the new I<realm>s.  Example 1 will show the complete new I<realm> record.
+For the sake of brevity, the remaining examples will only show the fields
+relevant to that example.  Further examples will also use short-hand forms
+of the option names.
+
+=head2 Example 1.  One realm, with -statedir
+
+This example shows the I<realm> generated by giving B<realminit> a single
+realm.
+
+    $ realminit -active -configdir /realms/confs/example -statedir /realms/states/example -realmdir /realms/realms/example -rollrec example.rrf -admin bob@cat.example.com -args "-loglevel phase -logfile logger" example
+
+    realm	"example"
+	state		"active"
+	configdir	"/realms/confs/example"
+	statedir	"/realms/states/example"
+	realmdir	"/realms/realms/example"
+	rollrec		"example.rrf"
+	administrator	"bob@cat.example.com"
+	display		"1"
+	manager		"rollerd"
+	args		"-loglevel phase -logfile logger"
+
+=head2 Example 2.  One realm, without -statedir
+
+This example shows the I<realm> generated by giving B<realminit> a single
+realm.
+
+    $ realminit -active -configdir /realms/confs/example -realmdir /realms/realms/example -rollrec example.rrf -admin bob@cat.example.com -args "-loglevel phase -logfile logger" example
+
+    realm	"example"
+	state		"active"
+	configdir	"/realms/confs/example"
+	statedir	"/realms/confs/example"
+	...
+
+=head2 Example 3.  Two realms, without metacharacters
+
+This example shows the I<realms> generated by giving B<realminit> two
+realms, without using the special "=" metacharacter.
+
+    $ realminit -configdir /realms/confs/example -statedir /realms/states/example -realmdir /realms/realms/example -rollrec example.rrf -admin bob@cat.example.com example test
+
+    realm	"example"
+	configdir	"/realms/confs/example"
+	statedir	"/realms/states/example"
+	realmdir	"/realms/realms/example"
+	rollrec		"example.rrf"
+	administrator	"bob@cat.example.com"
+	...
+
+    realm	"test"
+	configdir	"/realms/confs/example"
+	statedir	"/realms/states/example"
+	realmdir	"/realms/realms/example"
+	rollrec		"example.rrf"
+	administrator	"bob@cat.example.com"
+	...
+
+=head2 Example 4.  Two realms, with metacharacters
+
+This example shows the I<realms> generated by giving B<realminit> two
+realms, and that uses the special "=" metacharacter.
+
+    $ realminit -configdir /realms/confs/= -statedir /realms/states/= -realmdir /realms/realms/= -rollrec =.rrf -admin bob@cat.=.com example test
+
+    realm	"example"
+	configdir	"/realms/confs/example"
+	statedir	"/realms/states/example"
+	realmdir	"/realms/realms/example"
+	rollrec		"example.rrf"
+	administrator	"bob@cat.example.com"
+	...
+
+    realm	"test"
+	configdir	"/realms/confs/test"
+	statedir	"/realms/states/test"
+	realmdir	"/realms/realms/test"
+	rollrec		"test.rrf"
+	administrator	"bob@cat.test.com"
+	...
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<lsrealm(1)>,
+B<dtrealms(8)>,
+B<realmchk(8)>
+
+B<Net::DNS::SEC::Tools::realm.pm(3)>,
+
+B<file-realmrec.pm(5)>
+
+=cut
