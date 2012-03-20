@@ -19,7 +19,7 @@
 #include "val_parse.h"
 #include "val_context.h"
 
-#if !HAVE_FREEADDRINFO
+#ifndef HAVE_FREEADDRINFO
 
 /* 
  * define this freeaddrinfo if we don't have it already available
