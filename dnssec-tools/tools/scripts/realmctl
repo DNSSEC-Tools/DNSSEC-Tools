@@ -1,0 +1,934 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# realmctl
+#
+#	This script controls the realms daemon.
+#	See the pod for more details.
+#
+
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::realmmgr;
+use Net::DNS::SEC::Tools::rolllog;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "realmctl";
+my $VERS   = "$NAME version: 1.12.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"allstart",			# Start all realms.
+	"allstop",			# Stop all realms.
+	"cmd",				# Command to execute in a realm.
+	"command",			# Command to execute in a realm.
+	"halt:s",			# Shutdown dtrealms.
+	"display",			# Turn on dtrealms' graphical display.
+	"logfile=s",			# Set dtrealms' log file.
+	"loglevel:s",			# Set dtrealms' logging level.
+	"logtz=s",			# Set dtrealms' logging timezone.
+	"nodisplay",			# Turn off dtrealms' graphical display.
+	"startrealm",			# Restart the suspended, named realm(s).
+	"shutdown:s",			# Shutdown dtrealms.
+	"stoprealm",			# Stop the named realm(s).
+	"status",			# Get dtrealms' status.
+	"realmstatus",			# Get status of realms.
+
+	"Version",			# Display the version number.
+	"quiet",			# Don't print anything.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flags for the options.  Variable/option mapping should obvious.
+#
+my $commandcount    = 0;
+
+my $allstopflag	    = 0;
+my $allstartflag    = 0;
+my $cmdstr	    = '';
+my $dispflag	    = 0;
+my $logfileflag	    = 0;
+my $loglevelflag    = 0;
+my $logtzflag	    = 0;
+my $nodispflag	    = 0;
+my $startrealmflag  = 0;
+my $shutdownflag    = 0;
+my $stoprealmflag   = 0;
+my $statusflag	    = 0;
+my $realmsstatflag  = 0;
+
+my $quiet	    = 0;
+my $version	    = 0;		# Display the version number.
+
+#######################################################################
+
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Yeah, yeah, a main() isn't necessary.  However, it offends my
+#		sense of aesthetics to have great gobs of code on the same
+#		level as a pile of globals.
+#
+#		But what about all those globals, you ask...
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	my $rcret = 0;			# Return code for realmctl.
+	my $ret;			# Return code from dtrealms.
+	my $resp;			# Response message from dtrealms.
+	my $olderr;			# Saved error action.
+
+	#
+	# Use the packed config file if we're running as part of a packed
+	# configuration.
+	#
+	if(runpacked())
+	{
+		setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+	}
+
+	#
+	# Check our options.  All the commands are alphabetized, except
+	# for shutdown.  We'll save that for last.
+	#
+	doopts($argc);
+
+	#
+	# Run our configuration checks and make sure any error messages
+	# will be printed.
+	#
+	$olderr = erraction(ERR_MSG);
+	if(dt_confcheck(0) > 0)
+	{
+		print STDERR "realmctl:  configuration checks failed, can't send commands\n";
+		exit(201);
+	}
+	erraction($olderr);
+
+	#
+	# If dtrealms isn't running, we'll give an error message and exit.
+	# Some realmmgr_running() implementations may not be fool-proof.
+	#
+	if(realmmgr_running() != 1)
+	{
+		print STDERR "dtrealms is not running\n";
+		exit(200);
+	}
+
+	#
+	# Send commands for all the specified options.
+	#
+	if($cmdstr ne '')
+	{
+		if(! sendcmd(REALMCMD_COMMAND,$cmdstr))
+		{
+			print STDERR "realmctl:  error sending command COMMAND\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if(($ret == REALMCMD_RC_BADEVENT) && ($resp eq 'realm command timed out'))
+		{
+			print "realm command timed out\n";
+		}
+		elsif($resp eq '')
+		{
+			print "command returned no output; return code - $ret\n";
+		}
+		else
+		{
+			chomp $resp;
+			print "command executed on realm\nreturned:\n$resp\n";
+		}
+	}
+	elsif($dispflag)
+	{
+		if(! sendcmd(REALMCMD_DISPLAY,1))
+		{
+			print STDERR "realmctl:  error sending command DISPLAY\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if(($ret == REALMCMD_RC_OKAY) && ($ret ne ""))
+		{
+			print "dtrealms display started\n";
+		}
+		else
+		{
+			print STDERR "dtrealms display not started\n";
+			$rcret++;
+		}
+	}
+	elsif($logfileflag)
+	{
+		if(! sendcmd(REALMCMD_LOGFILE,$logfileflag))
+		{
+			print STDERR "realmctl:  error sending command LOGFILE\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			print "dtrealms log file set to $logfileflag\n";
+		}
+		else
+		{
+			print STDERR "log-level set failed:  $resp\n";
+			$rcret++;
+		}
+	}
+	elsif($loglevelflag)
+	{
+		if(rolllog_validlevel($loglevelflag) == 0)
+		{
+			print STDERR "invalid dtrealms log level: $loglevelflag\n";
+			$rcret++;
+		}
+		else
+		{
+			if(! sendcmd(REALMCMD_LOGLEVEL,$loglevelflag))
+			{
+				print STDERR "realmctl:  error sending command LOGLEVEL\n";
+				exit(1);
+			}
+
+			($ret, $resp) = realmmgr_getresp();
+			if($ret == REALMCMD_RC_OKAY)
+			{
+				print "dtrealms log level set to $loglevelflag\n";
+			}
+			else
+			{
+				print STDERR "log-level set failed:  $resp\n";
+				$rcret++;
+			}
+		}
+	}
+	elsif($logtzflag)
+	{
+		if(! sendcmd(REALMCMD_LOGTZ,$logtzflag))
+		{
+			print STDERR "realmctl:  error sending command LOGTZ\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			print "dtrealms log timezone set to $logtzflag\n";
+		}
+		else
+		{
+			print STDERR "log-tz set failed:  $resp\n";
+			$rcret++;
+		}
+	}
+	elsif($nodispflag)
+	{
+		if(! sendcmd(REALMCMD_DISPLAY,0))
+		{
+			print STDERR "realmctl:  error sending command DISPLAY\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			print "dtrealms display stopped\n";
+		}
+		else
+		{
+			print STDERR "dtrealms display not stopped\n";
+			$rcret++;
+		}
+	}
+	elsif($realmsstatflag)
+	{
+		if(! sendcmd(REALMCMD_REALMSTATUS))
+		{
+			print STDERR "realmctl:  error sending command REALMSTATUS\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			realmstatus("$resp");
+		}
+		else
+		{
+			print STDERR "realmstatus failed:  \"$resp\"\n";
+			$rcret++;
+		}
+	}
+	elsif($startrealmflag)
+	{
+		if(@ARGV == 0)
+		{
+			print STDERR "realmctl: -startrealm missing realm argument\n";
+			exit(2);
+		}
+
+		foreach my $realm (@ARGV)
+		{
+			if(! sendcmd(REALMCMD_STARTREALM,$realm))
+			{
+				print STDERR "realmctl:  error sending command STARTZONE($realm)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = realmmgr_getresp();
+			if($ret == REALMCMD_RC_OKAY)
+			{
+				print "realm $realm started\n";
+			}
+			else
+			{
+				print STDERR "unable to start realm $realm:  \"$resp\"\n";
+				$rcret++;
+			}
+		}
+	}
+	elsif($allstartflag)
+	{
+		if(! sendcmd(REALMCMD_STARTALL,$allstartflag))
+		{
+			print STDERR "realmctl:  error sending command STARTALL\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "$resp\n";
+			$rcret++;
+		}
+	}
+	elsif($allstopflag)
+	{
+		if(! sendcmd(REALMCMD_STOPALL,$stoprealmflag))
+		{
+			print STDERR "realmctl:  error sending command STOPALL\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "$resp\n";
+			$rcret++;
+		}
+	}
+	elsif($stoprealmflag)
+	{
+		if(@ARGV == 0)
+		{
+			print STDERR "realmctl: -stoprealm missing realm argument\n";
+			exit(2);
+		}
+
+		foreach my $realm (@ARGV)
+		{
+			if(! sendcmd(REALMCMD_STOPREALM,$realm))
+			{
+				print STDERR "realmctl:  error sending command STOPREALM($realm)\n";
+				exit(1);
+			}
+
+			($ret, $resp) = realmmgr_getresp();
+			if($ret == REALMCMD_RC_OKAY)
+			{
+				print "realm $realm stopped\n";
+			}
+			else
+			{
+				print STDERR "unable to stop realm $realm:  \"$resp\"\n";
+				$rcret++;
+			}
+		}
+	}
+	elsif($statusflag)
+	{
+		if(! sendcmd(REALMCMD_STATUS))
+		{
+			print STDERR "realmctl:  error sending command STATUS\n";
+			exit(1);
+		}
+
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			print "$resp";
+		}
+		else
+		{
+			print STDERR "status failed:  \"$resp\"\n";
+			$rcret++;
+		}
+	}
+	elsif($shutdownflag)
+	{
+		if($shutdownflag == 2)
+		{
+			my $pid = realmmgr_getid();
+			if(kill("INT", $pid) < 1)
+			{
+				print STDERR "realmctl:  unable to send immediate SHUTDOWN\n";
+				exit(1);
+			}
+
+			print STDERR "realmctl:  immediate SHUTDOWN notice sent to dtrealms\n";
+			exit(0);
+		}
+
+		if(! sendcmd(REALMCMD_SHUTDOWN))
+		{
+			print STDERR "realmctl:  error sending command SHUTDOWN\n";
+			exit(1);
+		}
+		($ret, $resp) = realmmgr_getresp();
+		if($ret == REALMCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "shutdown failed:  \"$resp\"\n";
+			$rcret++;
+		}
+	}
+
+	return($rcret);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying options are given.
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+	my $argcnt;				# Specified-argument count.
+
+	#
+	# Give a usage flag if there aren't any options.
+	#
+	usage() if($argc == 0);
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts, verbose => 1) || usage();
+
+	#
+	# Handle a couple administrative tasks.
+	#
+	usage()   if(defined($options{'help'}));
+	version() if($version);
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$quiet = $options{'quiet'} || 0;
+
+	#
+	# Command Options
+	#
+
+	if(exists($options{'cmd'}) || exists($options{'command'}))
+	{
+		if(@ARGV < 2)
+		{
+			print STDERR "-command requires at least two arguments -- <realm> <command> <arguments>\n";
+			exit(4);
+		}
+		$cmdstr = join(' ',@ARGV);
+		$commandcount++;
+	}
+	if(exists($options{'display'}))
+	{
+		$dispflag = $options{'display'};
+		$commandcount++;
+	}
+	if(exists($options{'logfile'}))
+	{
+		$logfileflag = $options{'logfile'};
+		$commandcount++;
+	}
+	if(exists($options{'loglevel'}))
+	{
+		$loglevelflag = $options{'loglevel'};
+		$commandcount++;
+	}
+	if(exists($options{'logtz'}))
+	{
+		$logtzflag = $options{'logtz'};
+		$commandcount++;
+	}
+	if(exists($options{'nodisplay'}))
+	{
+		$nodispflag = $options{'nodisplay'};
+		$commandcount++;
+	}
+	if(exists($options{'realmstatus'}))
+	{
+		$realmsstatflag = $options{'realmstatus'};
+		$commandcount++;
+	}
+	if(exists($options{'startrealm'}))
+	{
+		$startrealmflag = $options{'startrealm'};
+		$commandcount++;
+	}
+	if(exists($options{'shutdown'}) || exists($options{'halt'}))
+	{
+		$shutdownflag =	1;
+
+		if(($options{'shutdown'} eq 'now') || ($options{'halt'} eq 'now'))
+		{
+			$shutdownflag = 2;
+		}
+
+		$commandcount++;
+	}
+	if(exists($options{'allstart'}))
+	{
+		$allstartflag = $options{'allstart'};
+		$commandcount++;
+	}
+	if(exists($options{'allstop'}))
+	{
+		$allstopflag = $options{'allstop'};
+		$commandcount++;
+	}
+	if(exists($options{'stoprealm'}))
+	{
+		$stoprealmflag = $options{'stoprealm'};
+		$commandcount++;
+	}
+	if(exists($options{'status'}))
+	{
+		$statusflag = $options{'status'};
+		$commandcount++;
+	}
+	if(exists($options{'Version'}))
+	{
+		$version = $options{'Version'};
+		$commandcount++;
+	}
+
+	#
+	# Ensure that only one command argument was given.
+	# We'll get rid of the non-command options before checking.
+	#
+
+	if($commandcount > 1)
+	{
+		print STDERR "only one command argument may be specified per execution\n";
+		exit(3);
+	}
+	elsif($commandcount < 1)
+	{
+		print STDERR "a command argument must be specified\n";
+		exit(5);
+	}
+
+	#
+	# Close our output descriptors if the -quiet option was given.
+	#
+	if($quiet)
+	{
+		close(STDOUT);
+		close(STDERR);
+	}
+
+	#
+	# Show the logging levels if one wasn't specified.
+	#
+	if(defined($options{'loglevel'}) && ($options{'loglevel'} eq ''))
+	{
+		showloglevels();
+	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	realmstatus()
+#
+# Purpose:	Print the status for all the realms.
+#
+sub realmstatus
+{
+	my $resp = shift;			# Full response from dtrealms.
+
+	my @lines;				# Line-split responses.
+	my @rnames = ();			# Realm names.
+	my @states = ();			# Realm states.
+	my @phases = ();			# Zone/phase counts.
+
+	my $rml = -1;				# Max. length of realm names.
+
+	#
+	# Check for dormancy.
+	#
+	if($resp eq 'no managed realms')
+	{
+		print "$resp\n";
+		return;
+	}
+
+	#
+	# Divide the pieces of each response line into the data arrays.
+	#
+	@lines = split /\n/, $resp;
+	foreach my $line (@lines)
+	{
+		my $len;
+		my @slices = split /\t/, $line;
+
+		#
+		# Save the atoms.
+		#
+		push @rnames, $slices[0];
+		push @states, $slices[1];
+		push @phases, $slices[2];
+
+		#
+		# Save the length of the longest realm name.
+		#
+		$len = length($slices[0]);
+		$rml = $len if($len > $rml);
+
+	}
+
+	#
+	# Pretty-print the realm-status data from dtrealms.
+	#
+	for(my $ind=0; $ind < @rnames; $ind++)
+	{
+		my @atoms;				# Actual phase counts.
+
+		if($states[$ind] eq 'inactive')
+		{
+			printf "%-$rml.*s    inactive\n", $rml, $rnames[$ind];
+			next;
+		}
+
+		@atoms = split /\//, $phases[$ind];
+
+		printf "%-$rml.*s    active      normal: $atoms[0]    ZSK: $atoms[1]    KSK: $atoms[2]    KSK phase 6: $atoms[3]\n",
+			$rml, $rnames[$ind];
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	sendcmd()
+#
+# Purpose:	Send the command to dtrealms.
+#
+sub sendcmd
+{
+	my $cmd = shift;			# Command to send dtrealms.
+	my $arg = shift;			# Command's optional argument.
+	my $ret;				# Return code.
+
+	$ret = realmmgr_sendcmd(CHANNEL_WAIT,$cmd,$arg);
+	return($ret);
+}
+
+
+#----------------------------------------------------------------------
+# Routine:	showloglevels()
+#
+# Purpose:	Print the logging levels and exit.
+#
+sub showloglevels
+{
+	my @levels = rolllog_levels();			# Valid logging levels.
+
+	print "valid dtrealms logging levels:\n";
+
+	foreach my $level (@levels)
+	{
+		my $lnum;				# Numeric logging level.
+
+		$lnum = rolllog_num($level);
+		print "\t$level\t\t($lnum)\n";
+	}
+
+	exit(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  realmctl [options] \n";
+	print STDERR "\t-allstart                        start all realms\n";
+	print STDERR "\t-allstop                         stop all realms\n";
+	print STDERR "\t-command -- <realm> <command>    send command to a realm\n";
+	print STDERR "\t-display                         start graphical display\n";
+	print STDERR "\t-halt                            shutdown dtrealms and its realms\n";
+	print STDERR "\t-logfile <logfile>               set log file\n";
+	print STDERR "\t-loglevel <loglevel>             set logging level\n";
+	print STDERR "\t-logtz <log-timezone>            set logging timezone\n";
+	print STDERR "\t-nodisplay                       stop graphical display\n";
+	print STDERR "\t-realmstatus                     get status of realms\n";
+	print STDERR "\t-shutdown                        shutdown dtrealms and its realms\n";
+	print STDERR "\t-startrealm <realm>              restart named suspended realm\n";
+	print STDERR "\t-status                          get dtrealms' status\n";
+	print STDERR "\t-stoprealm <realm>               stop named realm\n";
+	print STDERR "\t-Version                         display version number\n";
+	print STDERR "\t-quiet                           don't give any output\n";
+	print STDERR "\t-help                            help message \n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+realmctl - Send commands to the DNSSEC-Tools realms daemon
+
+=head1 SYNOPSIS
+
+  realmctl [options]
+
+=head1 DESCRIPTION
+
+The B<realmctl> command sends commands to B<dtrealms>, the DNSSEC-Tools realms
+daemon.  In most cases, B<dtrealms> will send a response to B<realmctl>.
+B<realmctl> will print a success or failure message, as appropriate.  Only one
+option may be specified on a command line.
+
+=head1 OPTIONS
+
+The following options are handled by B<realmctl>.
+
+=over 4
+
+=item B<-allstart>
+
+Starts all suspended realms.
+
+=item B<-allstop>
+
+Stops all running realms.
+
+=item B<-cmd -- realm cmd>
+
+=item B<-command -- realm cmd>
+
+Sends a command to the specified realm.  The command given as I<cmd> will be
+sent to the B<rollerd> running in realm I<realm> via the B<rollctl> command.
+(See B<rollctl(8)> for more information on its commands.)
+
+The double-dash given above is critical for proper argument parsing of the
+command line.
+
+All command-line arguments following the realm name will be sent as the
+command.
+
+Whatever output the command gives will be returned to B<realmctl>, which will
+then print that output.  The command's return code will be appended to the
+command's output.  No attempt will be made to analyze the output for
+success or failure.
+
+For example, this command will tell the realm B<giant-isp> to stop
+rollover of zone I<bob.example.com>:
+
+    $ realmctl -command -- giant-isp -skipzone bob.example.com
+
+=item B<-display>
+
+Starts the realms status GUI.
+
+=item B<-halt> [now]
+
+Cleanly halts B<dtrealms> execution.
+
+=item B<-logfile logfile>
+
+Sets the B<dtrealms> log file to I<logfile>.  This must be a valid logging
+file, meaning that if I<logfile> already exists, it must be a regular file.
+The only exceptions to this are if I<logfile> is B</dev/stdout> or
+B</dev/tty>.
+
+=item B<-loglevel loglevel>
+
+Sets the B<dtrealms> logging level to I<loglevel>.
+This must be one of the valid logging levels defined in B<realmmgr.pm(3)>.
+
+If a logging level is not specified, then the list of valid levels will be
+printed and B<realmctl> will exit.  The list is given in both text and numeric
+forms.
+
+=item B<-logtz logtz>
+
+Sets the B<dtrealms> logging timezone to I<loglevel>.  This must be either
+I<gmt> (for Greenwich Mean Time or I<local> (for the host's local time.)
+
+=item B<-nodisplay>
+
+Stops the realms status GUI.
+
+=item B<-realmstatus>
+
+Gets the current status of all the realms from B<dtrealms>.  For each realm,
+the name, execution status, and zone counts are printed.  The zone counts
+are, in order, the number of zones in normal state, the number of zones in
+ZSK rollover, the number of zones in KSK rollover, and the number of zones
+waiting in KSK phase 6.  The zone counts are determined by sending the
+realm's rollover manager an information request.  Therefore, if the zone is
+inactive, the zone counts are not included.
+
+Example:
+
+    dev     active     normal: 18   ZSK: 3   KSK: 1   KSK phase 6: 0
+    test-r  inactive
+    money   active     normal: 10   ZSK: 0   KSK: 0   KSK phase 6: 1
+
+=item B<-shutdown>
+
+Synonym for B<-halt>.
+
+=item B<-startrealm realm>
+
+Starts the suspended realm named by I<realm>.  Multiple realms can be
+specified on the command line.  For instance, this command will send the
+I<startrealm> command to B<dtrealms> for three realms.
+
+    $ realmctl -startrealm testing production customers
+
+=item B<-status>
+
+Has B<dtrealms> write several of its operational parameters to its log file.
+The parameters are also reported to B<realmctl>, which prints them to the
+screen.
+
+=item B<-stoprealm realm>
+
+Stops the realm named by I<realm>.  Multiple realms can be specified on the
+command line.  For instance, this command will send the I<stoprealm> command
+to B<dtrealms> for two realms.
+
+    $ realmctl -stoprealm big-isp-3 misc-customers
+
+=item B<-Version>
+
+Displays the version information for B<realmctl> and the DNSSEC-Tools package.
+
+=item B<-quiet>
+
+Prevents output from being given.  Both error and non-error output is stopped.
+
+=item B<-help>
+
+Displays a usage message.
+
+=back
+
+=head1 EXIT CODES
+
+B<realmctl> may give the following exit codes:
+
+=over 4
+
+=item 0 - Successful execution
+
+=item 1 - Error sending the command to B<dtrealms>.
+
+=item 2 - Missing realm argument.
+
+=item 3 - Too many command options specified.
+
+=item 4 - Missing argument for B<-cmd> or B<-command>.
+
+=item 5 - No option specified.
+
+=item 200 - dtrealms is not running.
+
+=item 201 - Configuration file checks failed.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<Net::DNS::SEC::Tools::realmmgr.pm(3)>,
+B<Net::DNS::SEC::Tools::realm.pm(3)>
+
+B<dtrealms(8)>,
+B<rollctl(8)>
+B<rollerd(8)>
+
+=cut
+
