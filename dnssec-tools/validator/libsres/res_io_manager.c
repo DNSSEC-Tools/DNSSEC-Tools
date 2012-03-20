@@ -1384,7 +1384,9 @@ res_switch_to_tcp(struct expected_arrival *ea)
     if (NULL == ea)
         return;
 
-    FREE(ea->ea_response);
+    if (ea->ea_response != NULL) {
+        FREE(ea->ea_response);
+    }
     ea->ea_response = NULL;
     ea->ea_response_length = 0;
 
@@ -1414,7 +1416,9 @@ res_switch_all_to_tcp(struct expected_arrival *ea)
 
     for (; ea; ea = ea->ea_next) {
 
-        FREE(ea->ea_response);
+        if (ea->ea_response != NULL) {
+            FREE(ea->ea_response);
+        }
         ea->ea_response = NULL;
         ea->ea_response_length = 0;
 
