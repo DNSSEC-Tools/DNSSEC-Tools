@@ -311,6 +311,10 @@ Rectangle {
         anchors.verticalCenter:   newServerBox.verticalCenter
     }
 
+    ResultInfo {
+        id: resultInfo
+    }
+
     Component.onCompleted: {
         DNSSECCheck.loadInitial()
     }
