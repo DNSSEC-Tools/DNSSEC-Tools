@@ -21,7 +21,7 @@ isEmpty(ANDROID_PLATFORM) {
         INCLUDEPATH += /opt/maemo/usr/include/
     }
 } else {
-    LIBS        += -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
+    LIBS        += -L/opt/android-external-openssl/lib/ -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
     LIBS        += -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libval/.libs -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libsres/.libs
     INCLUDEPATH += /home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/include
     LIBS        += -lval -lsres -lcrypto

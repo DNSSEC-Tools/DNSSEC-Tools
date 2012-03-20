@@ -17,7 +17,7 @@
 
 TestManager::TestManager(QObject *parent) :
     QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(), m_socketWatchers(),
-    m_tests(), m_num_fds(0)
+    m_tests(), m_num_fds(0), m_inTestLoop(false)
 {
     FD_ZERO(&m_fds);
     m_timeout.tv_sec = 0;
@@ -52,13 +52,15 @@ TestManager::checkAvailableUpdates()
 
 void TestManager::startQueuedTransactions()
 {
-    check_queued_sends();
     updateWatchedSockets();
 }
 
 void
 TestManager::updateWatchedSockets()
 {
+    if (!m_inTestLoop)
+        check_queued_sends();
+
     // process any buffered or cache data first
     dataAvailable();
 
@@ -291,6 +293,7 @@ QString TestManager::lastResultMessage()
     return m_lastResultMessage;
 }
 
+
 QString TestManager::sha1hex(QString input) {
     return QCryptographicHash::hash(input.toUtf8(), QCryptographicHash::Sha1).toHex();
 }
@@ -298,4 +301,17 @@ QString TestManager::sha1hex(QString input) {
 int TestManager::outStandingRequests()
 {
     return async_requests_remaining();
+}
+
+bool TestManager::inTestLoop()
+{
+    return m_inTestLoop;
+}
+
+void TestManager::setInTestLoop(bool newval)
+{
+    bool oldval = m_inTestLoop;
+    m_inTestLoop = newval;
+    if (oldval != newval)
+        emit inTestLoopChanged();
 }

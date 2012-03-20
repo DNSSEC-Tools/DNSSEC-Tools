@@ -55,16 +55,21 @@ public:
     Q_INVOKABLE void checkAvailableUpdates();
     Q_INVOKABLE void startQueuedTransactions();
 
-    Q_PROPERTY(QString submissionMessage  READ submissionMessage                   NOTIFY submissionMessageChanged)
-    Q_PROPERTY(QString lastResultMessage  READ lastResultMessage                   NOTIFY lastResultMessageChanged)
+    Q_PROPERTY(QString submissionMessage  READ submissionMessage                      NOTIFY submissionMessageChanged)
+    Q_PROPERTY(QString lastResultMessage  READ lastResultMessage                      NOTIFY lastResultMessageChanged)
+    Q_PROPERTY(bool inTestLoop            READ inTestLoop         WRITE setInTestLoop NOTIFY inTestLoopChanged)
 
     QString submissionMessage();
     QString lastResultMessage();
+
+    bool inTestLoop();
+    void setInTestLoop(bool newval);
 
 signals:
     void submissionMessageChanged();
     void aResultMessageChanged(QString message);
     void lastResultMessageChanged();
+    void inTestLoopChanged();
 
 public slots:
     void responseReceived(QNetworkReply *response);
@@ -84,6 +89,7 @@ private:
     fd_set          m_fds, m_tcp_fds;
     int             m_num_fds, m_num_tcp_fds;
     struct timeval  m_timeout;
+    bool            m_inTestLoop;
 };
 
 #endif // TESTMANAGER_H
