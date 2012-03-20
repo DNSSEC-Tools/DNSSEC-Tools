@@ -11,7 +11,8 @@ MKDIR=mkdir
 SRC_D=.
 
 LINK=link
-LFLAGS=/INCREMENTAL /NOLOGO /opt:ref /debug /DLL /MANIFEST /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE /NXCOMPAT /MACHINE:X64 
+LFLAGS64=/INCREMENTAL /NOLOGO /opt:ref /debug /DLL /MANIFEST /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE /NXCOMPAT /MACHINE:X64 
+LFLAGS32=/INCREMENTAL /NOLOGO /opt:ref /debug /DLL /MANIFEST /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE /NXCOMPAT /MACHINE:X86 
 EX_LIBS=ws2_32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib 
 LIB_SSL=/libpath:\usr\lib libeay32.lib ssleay32.lib
 
@@ -61,11 +62,19 @@ LIBVAL_OBJS = $(TMP_LIBVAL_D)\dllmain.obj \
 LIBVAL_DLL = $(OUT_D)\libval.dll
 
 	
-all: banner $(OUT_D) libsres libval 
+all: win64
 
-libsres: $(TMP_LIBSRES_D) $(LIBSRES_OBJS) $(LIBSRES_DLL)
+win32: $(OUT_D) libsres libval dll32
 
-libval: $(TMP_LIBVAL_D) $(LIBVAL_OBJS) $(LIBVAL_DLL)
+win64: $(OUT_D) libsres libval dll64 
+
+libsres: $(TMP_LIBSRES_D) $(LIBSRES_OBJS)
+
+libval: $(TMP_LIBVAL_D) $(LIBVAL_OBJS)
+
+dll32: libsres32 libval32
+
+dll64: libsres64 libval64
 
 clean:
 	IF EXIST $(OUT_D) rmdir /S /Q $(OUT_D)
@@ -92,13 +101,22 @@ $(TMP_LIBVAL_D):
 	$(CC) $(SHLIB_CFLAGS) /EHsc /GS /Fo$(*R).obj -c $<
 	
 
-$(OUT_D)\libsres.dll: $(LIBSRES_OBJS)
-	$(LINK) $(LFLAGS) /out:$(OUT_D)\libsres.dll @<< $(LIBSRES_OBJS) $(SHLIB_EX_OBJS) $(EX_LIBS) $(LIB_SSL) /DEF:$(SRC_LIBSRES_D)\libsres.def /ManifestFile:"$(TMP_LIBSRES_D)\libsres.dll.intermediate.manifest" 
+libsres64: $(LIBSRES_OBJS)
+	$(LINK) $(LFLAGS64) /out:$(OUT_D)\libsres.dll @<< $(LIBSRES_OBJS) $(SHLIB_EX_OBJS) $(EX_LIBS) $(LIB_SSL) /DEF:$(SRC_LIBSRES_D)\libsres.def /ManifestFile:"$(TMP_LIBSRES_D)\libsres.dll.intermediate.manifest" 
 <<
 	IF EXIST $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
 
-$(OUT_D)\libval.dll: $(LIBVAL_OBJS)
-	$(LINK) $(LFLAGS) /out:$(OUT_D)\libval.dll @<< $(LIBVAL_OBJS) $(SHLIB_EX_OBJS) $(EX_LIBS) $(LIB_SSL) $(OUT_D)\libsres.lib  /DEF:$(SRC_LIBVAL_D)\libval.def  /ManifestFile:"$(TMP_LIBVAL_D)\libval.dll.intermediate.manifest" 
+libval64: $(LIBVAL_OBJS)
+	$(LINK) $(LFLAGS64) /out:$(OUT_D)\libval.dll @<< $(LIBVAL_OBJS) $(SHLIB_EX_OBJS) $(EX_LIBS) $(LIB_SSL) $(OUT_D)\libsres.lib  /DEF:$(SRC_LIBVAL_D)\libval.def  /ManifestFile:"$(TMP_LIBVAL_D)\libval.dll.intermediate.manifest" 
 <<
 	IF EXIST $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
 	
+libsres32: $(LIBSRES_OBJS)
+	$(LINK) $(LFLAGS32) /out:$(OUT_D)\libsres.dll @<< $(LIBSRES_OBJS) $(SHLIB_EX_OBJS) $(EX_LIBS) $(LIB_SSL) /DEF:$(SRC_LIBSRES_D)\libsres.def /ManifestFile:"$(TMP_LIBSRES_D)\libsres.dll.intermediate.manifest" 
+<<
+	IF EXIST $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
+
+libval32: $(LIBVAL_OBJS)
+	$(LINK) $(LFLAGS32) /out:$(OUT_D)\libval.dll @<< $(LIBVAL_OBJS) $(SHLIB_EX_OBJS) $(EX_LIBS) $(LIB_SSL) $(OUT_D)\libsres.lib  /DEF:$(SRC_LIBVAL_D)\libval.def  /ManifestFile:"$(TMP_LIBVAL_D)\libval.dll.intermediate.manifest" 
+<<
+	IF EXIST $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;2
