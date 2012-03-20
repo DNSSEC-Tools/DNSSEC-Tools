@@ -405,8 +405,10 @@ sub get_edge_properties {
     # figure out the color code for the line
     my $edgecolor;
     if ((exists($pkt->{'dns'}{'Authoritative'}) &&
+	 $#{$pkt->{'dns'}{'Authoritative'}} > -1 &&
 	 $pkt->{'dns'}{'Authoritative'}[$#{$pkt->{'dns'}{'Authoritative'}}]{'type'} =~ /(RRSIG|DNSKEY|NSEC)/) ||
 	(exists($pkt->{'dns'}{'Queries'}) &&
+	 $#{$pkt->{'dns'}{'Queries'}} > -1 &&
 	 $pkt->{'dns'}{'Queries'}[$#{$pkt->{'dns'}{'Authoritative'}}]{'type'} =~ /(RRSIG|DNSKEY|NSEC)/)) {
 	$edgecolor = 'darkgreen';
     }
