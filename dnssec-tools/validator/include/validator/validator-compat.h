@@ -37,6 +37,101 @@
 extern          "C" {
 #endif
 
+#ifdef WIN32
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <fcntl.h>
+#include <time.h>
+
+#ifndef HAVE_ERRNO_H
+#define HAVE_ERRNO_H 1
+#endif
+#ifndef HAVE_GETOPT_H
+#define HAVE_GETOPT_H 1
+#endif
+#ifndef HAVE_INT16_T
+#define HAVE_INT16_T 1
+#endif
+#ifndef HAVE_INT32_T
+#define HAVE_INT32_T 1
+#endif
+#ifndef HAVE_INT8_T
+#define HAVE_INT8_T 1
+#endif
+#ifndef HAVE_LIBGEN_H
+#define HAVE_LIBGEN_H 1
+#endif
+#ifndef HAVE_LIMITS_H
+#define HAVE_LIMITS_H 1
+#endif
+#ifndef HAVE_MEMORY_H
+#define HAVE_MEMORY_H 1
+#endif
+#ifndef HAVE_SHA_256
+#define HAVE_SHA_256 1
+#endif
+#ifndef HAVE_STDINT_H
+#define HAVE_STDINT_H 1
+#endif
+#ifndef HAVE_STDLIB_H
+#define HAVE_STDLIB_H 1
+#endif
+#ifndef HAVE_STRING_H
+#define HAVE_STRING_H 1
+#endif
+#ifndef HAVE_SYS_STAT_H
+#define HAVE_SYS_STAT_H 1
+#endif
+#ifndef HAVE_SYS_TYPES_H
+#define HAVE_SYS_TYPES_H 1
+#endif
+#ifndef LIBVAL_DLV
+#define LIBVAL_DLV 1
+#endif
+#ifndef LIBVAL_INLINE_POLICY
+#define LIBVAL_INLINE_POLICY 1
+#endif
+#ifndef LIBVAL_NSEC3
+#define LIBVAL_NSEC3 1
+#endif
+#ifndef R_FUNCS_RETURN_STRUCT
+#define R_FUNCS_RETURN_STRUCT 1
+#endif
+#ifndef SIZEOF_INT
+#define SIZEOF_INT 4
+#endif
+#ifndef SIZEOF_LONG
+#define SIZEOF_LONG 4
+#endif
+#ifndef SIZEOF_SHORT
+#define SIZEOF_SHORT 2
+#endif
+#ifndef STDC_HEADERS
+#define STDC_HEADERS 1
+#endif
+#ifndef VAL_IPV6
+#define VAL_IPV6 1
+#endif
+#ifndef VAL_NO_THREADS
+#define VAL_NO_THREADS 1
+#endif
+#ifndef VAL_CONFIGURATION_FILE
+#define VAL_CONFIGURATION_FILE "dnsval.txt"
+#endif
+#ifndef VAL_RESOLV_CONF
+#define VAL_RESOLV_CONF "resolv.txt"
+#endif
+#ifndef VAL_ROOT_HINTS
+#define VAL_ROOT_HINTS "root.txt"
+#endif
+
+#endif /* WIN32 */
+
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
@@ -122,17 +217,6 @@ extern          "C" {
 #endif 
 #endif
 
-#ifdef WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifdef LIBVAL_USE_WSOCK
-#include <winsock.h>
-#else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif
-#endif
 
 /* define u_int32_t if not available */
 #ifndef HAVE_U_INT32_T
@@ -176,12 +260,22 @@ typedef unsigned short     u_int16_t;
 #ifndef HAVE_STRNCASECMP 
 #define strncasecmp _strnicmp
 #endif
-#ifndef HAVE_GETTIMEOFDAY 
-int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
-#endif
-
 
 #ifdef WIN32
+
+#ifndef HAVE_LOCALTIME_R
+#define HAVE_LOCALTIME_R 1
+int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
+/* flip the arguments arround for localtime_s */
+#ifndef localtime_r
+#define localtime_r(a, b) _localtime32_s(b, a)
+#endif
+#endif
+
+#ifndef va_copy
+#define va_copy(dst, src) ((void)((dst) = (src)))
+#endif
+
 #define getdtablesize() FD_SETSIZE
 #define sleep(x) Sleep(x*1000)
 #ifndef EWOULDBLOCK
@@ -194,6 +288,7 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
 #define INET6_ADDRSTRLEN 46
 #endif
 #define CLOSESOCK closesocket
+
 #endif /* WIN32 */
 
 #ifndef SOCKET_ERROR
@@ -222,20 +317,12 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
 #endif
 
 #ifdef WIN32
-#ifdef LIBVAL_USE_WOCK
-#define INET_NTOP(family, sa, addrlen, buf, buflen, addr) \
-    (addr = (family != AF_INET) ? NULL :\
-               inet_ntoa(((struct sockaddr_in *)sa)->sin_addr))
-#define INET_PTON(family, buf, sa, addrlenptr) \
-    ((((struct sockaddr_in *)sa)->sin_addr.s_addr = (family != AF_INET)? INADDR_NONE : inet_addr(buf)) == INADDR_NONE ? 0 : 1)
-#else
 #define INET_NTOP(family, sa, addrlen, buf, buflen, addr) \
     ((WSAAddressToStringA((SOCKADDR *)sa, addrlen,\
                                   NULL, buf, (DWORD *)&buflen) == 0) && ((addr = buf))) 
 #define INET_PTON(family, buf, sa, addrlenptr) \
-    ((WSAStringToAddress((LPTSTR)buf, family, NULL, \
+    ((WSAStringToAddressA((LPTSTR)buf, family, NULL, \
                                  (LPSOCKADDR)sa, (LPINT)addrlenptr) == 0) ? 1 : 0)
-#endif
 #else
 #define INET_NTOP(family, sa, addrlen, buf, buflen, addr) \
     (addr = (family == AF_INET6) ? inet_ntop(family, &((struct sockaddr_in6 *)sa)->sin6_addr, buf, buflen) :\
@@ -914,30 +1001,6 @@ struct addrinfo {
     struct  sockaddr *ai_addr;
     struct  addrinfo *ai_next;
 };
-#endif
-
-#ifdef LIBVAL_USE_WSOCK
-#define socklen_t int
-#define NI_MAXHOST      1025
-#define NI_MAXSERV      32
-#define NI_NOFQDN       0x01
-#define NI_NUMERICHOST  0x02
-#define NI_NAMEREQD     0x04
-#define NI_NUMERICSERV  0x08
-#define NI_DGRAM        0x10
-#define AI_PASSIVE      0x1
-#define AI_CANONNAME    0x2
-#define AI_NUMERICHOST  0x4
-#define NI_NUMERICHOST  0x02
-#define EAI_AGAIN       WSATRY_AGAIN
-#define EAI_BADFLAGS    WSAEINVAL
-#define EAI_FAIL        WSANO_RECOVERY
-#define EAI_FAMILY      WSAEAFNOSUPPORT
-#define EAI_MEMORY      WSA_NOT_ENOUGH_MEMORY
-#define EAI_NODATA      WSANO_DATA
-#define EAI_NONAME      WSAHOST_NOT_FOUND
-#define EAI_SERVICE     WSATYPE_NOT_FOUND
-#define EAI_SOCKTYPE    WSAESOCKTNOSUPPORT
 #endif
 
 #endif
