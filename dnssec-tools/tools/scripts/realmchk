@@ -1,0 +1,461 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# realmchk
+#
+#	This script checks the validity of a DNSSEC-Tools realms file.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+# use Net::DNS::SEC::Tools::dnssectools;
+# use Net::DNS::SEC::Tools::conf;
+# use Net::DNS::SEC::Tools::defaults;
+# use Net::DNS::SEC::Tools::realmmgr;
+
+use Net::DNS::SEC::Tools::realm;
+
+
+#
+# Version information.
+#
+my $NAME   = "realmchk";
+my $VERS   = "$NAME version: 1.12.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+
+my %dtconf;				# DNSSEC-Tools config file.
+my $dtconfig;				# DNSSEC-Tools configuration file.
+
+my %opts = ();				# Filled option array.
+my @opts =
+(
+	"quiet",			# Return count of errors only.
+	"verbose",			# Verbose output.
+
+	"help",				# Give a usage message and exit.
+	"Version",			# Display the version number.
+);
+
+my $quiet = 0;				# Quiet flag.
+my $verbose = 0;			# Verbose flag.
+
+my $errors = 0;				# Total error count.
+
+#######################################################################
+
+#
+# Do Everything.
+#
+main();
+exit($errors);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	#
+	# Check our args and options.
+	#
+	doopts();
+
+	#
+	# Wait for something to happen.
+	#
+	foreach my $rf (@ARGV)
+	{
+		my $nr;				# Number of realms in file.
+		my $badrealms = 0;		# Count of bad realms.
+
+		#
+		# Read the realms file and check for a few error conditions.
+		#
+		vprint("$rf:  checking realm file");
+		$nr = realm_read($rf);
+		if($nr < 0)
+		{
+			qprint("$rf:  unable to read realm file");
+			$errors++;
+			next;
+		}
+		elsif($nr == 0)
+		{
+			vprint("$rf:  no realms in realm file");
+			next;
+		}
+
+		#
+		# Check each realm in this realms file for validity.
+		#
+		foreach my $realm (sort(realm_names()))
+		{
+			my $ret;			# Error count for realm.
+
+			#
+			# Check the validity of this file.
+			#
+			$ret = validrealm($realm);
+			$errors += $ret;
+
+			if($ret)
+			{
+				vprint("  $realm:  invalid realm");
+				$badrealms++;
+			}
+			else
+			{
+				vprint("  $realm:  valid realm");
+			}
+		}
+
+		if($badrealms)
+		{
+			qprint("$rf:  invalid realm file");
+		}
+		else
+		{
+			qprint("$rf:  valid realm file");
+		}
+
+		vprint(' ');
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying options are given.
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%opts,@opts) || usage();
+
+	#
+	# Check for a few easy options.
+	#
+	usage() if(defined($opts{'help'}));
+	version() if(defined($opts{'Version'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$quiet	 = 1 if(defined($opts{'quiet'}));
+	$verbose = 1 if(defined($opts{'verbose'}));
+
+	#
+	# Check for mutually exclusive options.
+	#
+	if($quiet && $verbose)
+	{
+		print STDERR "-quiet and -verbose may not be given together\n";
+		exit(1);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	validrealm()
+#
+# Purpose:	Check if the specified realm has a valid definition.
+#		The following conditions are checked:
+#
+#			- state is either "active" or "inactive"
+#			- config directory is a writable, searchable directory
+#			- state directory is a writable, searchable directory.
+#			  If not defined, the config directory will be used.
+#			- realm directory is a writable, searchable directory
+#			- rollrec file is a writable regular file
+#			- if the user is defined, it is a valid user
+#
+#		This code was ripped out of dtrealms.  If there are fixes
+#		or additions here, they must be changed there also.
+#
+sub validrealm
+{
+	my $realm = shift;			# Realm to check.
+	my $errs = 0;				# Error count.
+
+	my $rr;					# Reference to realm data.
+	my $state;				# Realm state.
+	my $cdir;				# Config directory.
+	my $sdir;				# Realm directory.
+	my $rdir;				# Realm directory.
+	my $rollrec;				# Realm's rollrec.
+	my $user;				# Realm's execution user.
+
+	#
+	# Do a couple very quick error tests.
+	#
+	if($realm eq '')
+	{
+		vprint("    empty realm name");
+		return(1);
+	}
+	if(! realm_exists($realm))
+	{
+		vprint("$realm:  realm does not exist in realms file");
+		return(1);
+	}
+
+	vprint("    $realm:  checking realm definition");
+
+	#
+	# Get the realm record and set a few time-saving fields.
+	#
+	$rr = realm_fullrec($realm);
+	$state	 = $rr->{'state'};
+	$cdir	 = $rr->{'configdir'};
+	$sdir	 = $rr->{'statedir'};
+	$rdir	 = $rr->{'realmdir'};
+	$rollrec = $rr->{'rollrec'};
+	$rollrec = "$rdir/$rollrec" if($rollrec !~ /^\//);
+	$user	 = $rr->{'user'};
+
+	#
+	# Ensure the state is valid.
+	#
+	if(($state ne 'active') && ($state ne 'inactive'))
+	{
+		vprint("\tinvalid state - \"$state\"");
+		$errs++;
+	}
+
+	#
+	# Ensure the configuration directory is valid.
+	#
+	if(!defined($cdir)) 
+	{
+		vprint("\tno config directory given");
+		$errs++;
+	}
+	else
+	{
+		if(! -d $cdir || ! -x $cdir || ! -w $cdir)
+		{
+			vprint("\tinvalid config directory - \"$cdir\"");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the state directory is valid.  If a state directory wasn't
+	# defined, we'll use the configuration directory.
+	#
+	if(!defined($sdir)) 
+	{
+		$sdir = $cdir;
+	}
+	else
+	{
+		if(! -d $sdir || ! -x $sdir || ! -w $sdir)
+		{
+			vprint("\tinvalid state directory - \"$sdir\"");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the realm directory is valid.
+	#
+	if(!defined($rdir)) 
+	{
+		vprint("\tno realm directory given");
+		$errs++;
+	}
+	else
+	{
+		if(! -d $cdir && ! -x $cdir && ! -w $cdir)
+		{
+			vprint("\tinvalid realm directory - \"$cdir\"");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the realm's rollrec is valid.
+	#
+	if(!defined($rr->{'rollrec'})) 
+	{
+		vprint("\tno rollrec given");
+		$errs++;
+	}
+	else
+	{
+		if(! -f $rollrec && ! -w $rollrec)
+		{
+			vprint("\tinvalid rollrec - \"$cdir\"");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the realm's user is valid.
+	#
+	if(defined($user))
+	{
+		if(getpwnam($user) == 0)
+		{
+			vprint("\tinvalid user - \"$user\"");
+			$errs++;
+		}
+	}
+
+	#
+	# And now for the grand conclusion...
+	#
+if(0)
+{
+	if($errs)
+	{
+		my $errstr;				# Error phrase.
+
+		$errstr = ($errs == 1) ? "1 error found" : "$errs errors found";
+
+		vprint("    realm definition is invalid; $errstr");
+	}
+	else
+	{
+		vprint("    $realm:  realm definition is valid");
+	}
+}
+
+	return($errs);
+}
+
+#------------------------------------------------------------------------
+# Routine:	qprint()
+#
+sub qprint
+{
+	my $str = shift;
+	print "$str\n" if(! $quiet);
+}
+
+#------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;
+	print "$str\n" if($verbose);
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+        print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);     
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage:  $NAME [options] <realm-file1> ... <realm-fileN>\n";
+	print "\toptions:\n";
+	print STDERR "\t\t-quiet\n";       
+	print STDERR "\t\t-verbose\n";       
+	print STDERR "\t\t-Version\n";       
+	print STDERR "\t\t-help\n";
+
+	exit(1);
+}
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+realmchk - Validate a set of DNSSEC-Tools realms files
+
+=head1 SYNOPSIS
+
+  realmchk [options] <realm-files>
+
+=head1 DESCRIPTION
+
+B<realmchk> checks the validity of a set of DNSSEC-Tools B<realms> file.
+The results can be given in a summary or verbose form, or without any results
+printed at all.  The exit code is the count of errors found by B<realmchk> in
+all the B<realms> files checked.
+
+B<realmchk> identifies the following error conditions:
+
+* The state is either "active" or "inactive".
+
+* The config directory is a writable, searchable directory.
+
+* The state directory is a writable, searchable directory..
+
+* The realm directory is a writable, searchable directory.
+
+* The rollrec file is a writable regular file.
+
+* If the user is defined, it is a valid user.
+
+=head1 OPTIONS
+
+The following options are handled by B<realmchk>.
+
+=over 4
+
+=item B<-quiet>
+
+Give no output.
+
+=item B<-verbose>
+
+Provide extensive output describing the state of the B<realms> files.
+
+=item B<-Version>
+
+Displays the version information for B<realmchk> and the DNSSEC-Tools package.
+
+=item B<-help>
+
+Displays a help message and exits.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<dtrealms(8)>,
+B<lsrealm(8)>,
+B<realminit(8)>
+
+B<Net::DNS::SEC::Tools::realm.pm(3)>,
+
+=cut
+
