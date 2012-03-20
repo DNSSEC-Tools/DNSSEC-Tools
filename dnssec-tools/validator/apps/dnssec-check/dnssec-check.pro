@@ -136,7 +136,8 @@ OTHER_FILES += \
     qml/WaitCursor.qml \
     qml/ResolverMenu.qml \
     qml/Header.qml \
-    qml/ResultInfo.qml
+    qml/ResultInfo.qml \
+    qml/Grade.qml
 
 # Please do not modify the following two lines. Required for deployment.
 include(deployment.pri)

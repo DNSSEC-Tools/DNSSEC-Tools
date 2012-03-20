@@ -78,13 +78,14 @@ Rectangle {
         Grid {
             id: resultGrid
             columns: getColumns()
-            spacing: 5
+            spacing: 3
             x: parent.border.width * 2 + 4
             y: parent.border.width * 2 + 4
 
             property int resultWidth: 54
 
-            Header { text: "Host" ; width: 150 }
+            Header { text: "Host" ; width: 130 }
+            Header { text: "Grade" }
             Header { text: "DNS" }
             Header { text: "TCP" }
             Header { text: "DO" }
