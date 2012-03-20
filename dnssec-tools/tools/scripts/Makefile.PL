@@ -22,17 +22,23 @@ use ExtUtils::MakeMaker;
 			    dtconfchk
 			    dtdefs
 			    dtinitconf
+			    dtrealms
 			    expchk
 			    fixkrf
 			    genkrf
 			    getdnskeys
 			    getds
+			    grandvizier
 			    keyarch
 			    krfcheck
 			    lights
-			    lskrf
-			    lsroll
 			    lsdnssec
+			    lskrf
+			    lsrealm
+			    lsroll
+			    realmchk
+			    realmctl
+			    realminit
 			    rollchk
 			    rollctl
 			    rollerd
