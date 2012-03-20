@@ -239,15 +239,21 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     char            name_buf[INET6_ADDRSTRLEN + 1];
     const char     *serv_pr;
     int             tag = 0;
+    int             class_h;
+    int             type_h;
+    struct          val_rr_rec  *data;
+    struct          sockaddr *serv;
+    val_astatus_t   status;
+
 
     if (next_as == NULL)
         return;
 
-    int       class_h = next_as->val_ac_rrset->val_rrset_class;
-    int       type_h = next_as->val_ac_rrset->val_rrset_type;
-    struct val_rr_rec  *data = next_as->val_ac_rrset->val_rrset_data;
-    struct sockaddr *serv = next_as->val_ac_rrset->val_rrset_server;
-    val_astatus_t   status = next_as->val_ac_status;
+    class_h = next_as->val_ac_rrset->val_rrset_class;
+    type_h = next_as->val_ac_rrset->val_rrset_type;
+    data = next_as->val_ac_rrset->val_rrset_data;
+    serv = next_as->val_ac_rrset->val_rrset_server;
+    status = next_as->val_ac_status;
 
     if (NULL == prefix)
         prefix = "";
@@ -694,18 +700,24 @@ val_log_callback(val_log_t * logp, const val_context_t * ctx, int level,
     /** Needs to be at least two characters larger than message size */
     char            buf[1028];
     struct timeval  tv;
-    struct tm       *tm;
+    struct tm       tm;
+    struct tm       *tp;
 
     if (NULL == logp)
         return;
 
     gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
+#ifdef HAVE_LOCALTIME_R
+    localtime_r(&tv.tv_sec, &tm);
+    tp = &tm;
+#else
+    tp = localtime(&tv.tv_sec);
+#endif
     
     /** We allocated extra space  */
     snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-            tm->tm_hour, tm->tm_min, tm->tm_sec);
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
+            tp->tm_hour, tp->tm_min, tp->tm_sec);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     (*(logp->opt.cb.func))(logp, level, buf);
@@ -721,18 +733,24 @@ val_log_udp(val_log_t * logp, const val_context_t * ctx, int level,
     char            buf[1028];
     int             length = sizeof(struct sockaddr_in);
     struct timeval  tv;
-    struct tm       *tm;
+    struct tm       tm;
+    struct tm       *tp;
 
     if (NULL == logp)
         return;
 
     gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
+#ifdef HAVE_LOCALTIME_R
+    localtime_r(&tv.tv_sec, &tm);
+    tp = &tm;
+#else
+    tp = localtime(&tv.tv_sec);
+#endif
 
     /** We allocated extra space  */
     snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-            tm->tm_hour, tm->tm_min, tm->tm_sec);
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
+            tp->tm_hour, tp->tm_min, tp->tm_sec);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
     strcat(buf, "\n");
 
@@ -748,13 +766,19 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
 {
     char            buf[1028];
     struct timeval  tv;
-    struct tm       *tm;
+    struct tm       tm;
+    struct tm       *tp;
 
     if (NULL == logp)
         return;
 
     gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
+#ifdef HAVE_LOCALTIME_R
+    localtime_r(&tv.tv_sec, &tm);
+    tp = &tm;
+#else
+    tp = localtime(&tv.tv_sec);
+#endif
 
     if (NULL == logp->opt.file.fp) {
         logp->opt.file.fp = fopen(logp->opt.file.name, "a");
@@ -762,8 +786,8 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
             return;
     }
     snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-            tm->tm_hour, tm->tm_min, tm->tm_sec);
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
+            tp->tm_hour, tp->tm_min, tp->tm_sec);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     fprintf(logp->opt.file.fp, "%s\n", buf);
@@ -780,14 +804,20 @@ val_log_syslog(val_log_t * logp, const val_context_t * ctx, int level,
      */
     char            buf[sizeof("libval(0000000000000000)..")];
     struct timeval  tv;
-    struct tm       *tm;
+    struct tm       tm;
+    struct tm       *tp;
 
     gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
+#ifdef HAVE_LOCALTIME_R
+    localtime_r(&tv.tv_sec, &tm);
+    tp = &tm;
+#else
+    tp = localtime(&tv.tv_sec);
+#endif
 
     snprintf(buf, sizeof(buf), "%04d%02d%02d::%02d:%02d:%02d libval(%s)", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, 
-            tm->tm_hour, tm->tm_min, tm->tm_sec,
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday, 
+            tp->tm_hour, tp->tm_min, tp->tm_sec,
             (ctx == NULL) ? "0" : ctx->id);
     openlog(buf, VAL_LOG_OPTIONS, logp->opt.syslog.facility);
 

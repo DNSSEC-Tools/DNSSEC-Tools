@@ -118,12 +118,12 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
      */
     while (hs) {
         struct sockaddr_in sa;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
         size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
 #ifdef VAL_IPV6
         struct sockaddr_in6 sa6;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
         size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
 #endif
@@ -548,12 +548,12 @@ val_gethostbyname2_r(val_context_t * context,
                      int *h_errnop, val_status_t * val_status)
 {
     struct sockaddr_in  sa;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
     size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
 #ifdef VAL_IPV6
     struct sockaddr_in6 sa6;
-#if defined( WIN32 ) && !defined( LIBVAL_USE_WOCK )
+#if defined( WIN32 )
     size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
 #endif
@@ -1094,6 +1094,7 @@ val_gethostbyaddr(val_context_t * context,
 
     struct hostent *result_hostent = NULL;
     int             errnum = 0;
+    int             response;
     
     /*
      * set defaults for static values 
@@ -1105,13 +1106,13 @@ val_gethostbyaddr(val_context_t * context,
     ret_hostent.h_length = 0;
     ret_hostent.h_addr_list = NULL;
 
-    int             response = val_gethostbyaddr_r(context,
-                                                   addr, len, type,
-                                                   &ret_hostent,
-                                                   buffer, buflen,
-                                                   &result_hostent,
-                                                   &errnum,
-                                                   val_status);
+    response = val_gethostbyaddr_r(context,
+                                   addr, len, type,
+                                   &ret_hostent,
+                                   buffer, buflen,
+                                   &result_hostent,
+                                   &errnum,
+                                   val_status);
 
     if (response != 0) {
         SET_LAST_ERR(response);
