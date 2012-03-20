@@ -285,7 +285,7 @@ extern          "C" {
     };
 
 
-    struct val_context {
+    struct libval_context {
 
 #ifndef VAL_NO_THREADS
         /*
