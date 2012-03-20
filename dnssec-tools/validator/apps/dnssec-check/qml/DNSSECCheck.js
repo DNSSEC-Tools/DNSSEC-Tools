@@ -3,8 +3,9 @@ var tests = []
 var rawtests = []
 var testNumber = 0
 var hosttests = {}
+var hostgrades = {}
 var numTests = 10
-var numColumns = numTests + 1
+var numColumns = numTests + 2
 var numHeaders = numColumns
 var currentTestHost = ""
 
@@ -61,11 +62,55 @@ function testHost(host) {
 }
 
 function haveAllTestsRun() {
+    console.log(assignHostGrade());
     for(var i = tests.length; i > 0 ; i--) {
         if (tests[i-1].test.status === DNSSECTest.UNKNOWN || tests[i-1].test.status === DNSSECTest.TESTINGNOW)
             return false
     }
     return true
+}
+
+function assignHostGrade() {
+    var grades = ['A', 'B', 'C', 'D', 'F'];
+
+    for(var i = 0 ; i < hosts.length; i++) {
+        var hostname = hosts[i]
+        var hostarray = hosttests[hostname]
+        var finished = true
+        var maxGrade = 0
+
+        console.log("checking host " + hostname)
+
+        for(var j = 0; j < hosttests[hostname].length; j++) {
+            if (hosttests[hostname][j].status == DNSSECTest.UNKNOWN)
+                finished = false
+            console.log("  checking test #" + j + " -> " + hosttests[hostname][j].status)
+
+            // Check for any failure == at least a B
+            if (hosttests[hostname][j].status != DNSSECTest.GOOD) {
+                maxGrade = Math.max(maxGrade, 1);
+            }
+
+            // if they can't do UDP, it's a complete failure
+            if (j == 0 && hosttests[hostname][j].status != DNSSECTest.GOOD) {
+                maxGrade = 4;
+            }
+
+            // if they can't do the DNSSEC specific tests (DO, RRSIG, NSEC, NSEC3, DNSKEY, DS) they get a C
+            if ((j == 1 || j == 2 || j == 4 || j == 6 || j == 7 || j == 8 || j == 9) &&
+                    hosttests[hostname][j].status != DNSSECTest.GOOD) {
+                maxGrade = 2;
+            }
+
+            if (j == 5 && hosttests[hostname][j].status != DNSSECTest.GOOD) {
+                maxGrade = 3;
+            }
+        }
+        if (!finished)
+            hostgrades[hosts[i]].grade = "?"
+        else
+            hostgrades[hosts[i]].grade = grades[maxGrade]
+    }
 }
 
 function makeLight(creator, type, name, host) {
@@ -81,16 +126,20 @@ function makeLight(creator, type, name, host) {
 function addSingleHost(host) {
     var resultComponent = Qt.createComponent("Result.qml")
     var labelComponent  = Qt.createComponent("HostLabel.qml")
+    var hostComponent   = Qt.createComponent("Grade.qml")
+
     hosts.push(host)
     resultGrid.rows = resultGrid.rows + 1
-    addHost(labelComponent, resultComponent, host)
+    addHost(labelComponent, resultComponent, hostComponent, host)
 }
 
-function addHost(labelComponent, resultComponent, host) {
+function addHost(labelComponent, resultComponent, hostComponent, host) {
     var label = labelComponent.createObject(resultGrid)
+    var hostGrade = hostComponent.createObject(resultGrid)
 
     label.hostName = host
     hosttests[host] = [];
+    hostgrades[host] = hostGrade;
 
     // var result = makeLight(resultComponent, testManager.basic_dns, "DNS", host)
     var result = makeLight(resultComponent, 0, "DNS", host)
@@ -128,9 +177,14 @@ function createAllComponents() {
 
     var resultComponent = Qt.createComponent("Result.qml")
     var labelComponent  = Qt.createComponent("HostLabel.qml")
+    var hostComponent   = Qt.createComponent("Grade.qml")
+
+    if (hostComponent.status != Component.Ready) {
+        console.log(hostComponent.errorString())
+    }
 
     for(var host in hosts) {
-        addHost(labelComponent, resultComponent, hosts[host])
+        addHost(labelComponent, resultComponent, hostComponent, hosts[host])
     }
 }
 
@@ -175,6 +229,7 @@ function runNextTest() {
         testStatusMessage.text = ""
         testResultMessage.text = "All tests have completed; Click on a bubble for details"
         currentTestHost = ""
+        console.log(assignHostGrade());
     }
 }
 
