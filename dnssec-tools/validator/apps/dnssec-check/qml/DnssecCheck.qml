@@ -111,7 +111,7 @@ Rectangle {
     Row {
         id: buttonRow
         anchors.top: newServerBox.bottom
-        anchors.left: newServerBox.left
+        anchors.horizontalCenter: newServerBox.horizontalCenter
         anchors.topMargin: 10
 
         spacing: 10
