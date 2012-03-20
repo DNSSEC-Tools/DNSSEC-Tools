@@ -76,7 +76,7 @@ struct timeval;
  * a matching record in the query cache 
  */
 #define VAL_QFLAGS_NOCACHE_MASK     0xff000000
-#define VAL_QUERY_EDNS0_FALLBACK    0x01000000 
+#define VAL_QUERY_EDNS0_FALLBACK    0x01000000
 #define VAL_QUERY_GLUE_REQUEST      0x02000000
 
 
@@ -106,8 +106,9 @@ typedef unsigned char val_status_t;
 typedef unsigned short val_astatus_t;
 
 /* opaque types */
-struct val_context;
-typedef struct val_context val_context_t;
+struct libval_context;
+typedef struct libval_context val_context_t;
+
 struct val_policy_handle;
 typedef struct val_policy_handle val_policy_handle_t;
 struct val_log;
