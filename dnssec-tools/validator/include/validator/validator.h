@@ -513,6 +513,8 @@ typedef struct val_context_opt {
 
     int             val_getaddrinfo_has_status(int rc);
 
+    void            val_freeaddrinfo(struct addrinfo *ainfo);
+
 #define VAL_GETADDRINFO_HAS_STATUS val_getaddrinfo_has_status 
 #define VAL_GETNAMEINFO_HAS_STATUS val_getaddrinfo_has_status 
 

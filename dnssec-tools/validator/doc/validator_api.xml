@@ -257,7 +257,7 @@ translation in a protocol independent manner.
 <t> The value of res MUST point to a valid addrinfo structure (<xref target="refs.RFC3493"/>) 
 on a successful return from the val_getaddrinfo() function or NULL in case of error.  
 Sufficient memory MUST be internally allocated to hold the linked list pointed to by res.
-This memory MUST be released when applications invoke the freeaddrinfo() function.
+This memory MUST be released when applications invoke the val_freeaddrinfo() function.
 (<xref target="refs.RFC3493"/>). </t>
 
 <t> The DNSSEC validation status is returned in the val_status parameter.

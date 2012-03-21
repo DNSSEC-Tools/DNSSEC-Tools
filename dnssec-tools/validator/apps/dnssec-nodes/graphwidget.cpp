@@ -446,7 +446,7 @@ void GraphWidget::doActualLookup(const QString &lookupString, int lookupType)
         m_nodeList->reApplyFiltersTo(node);
 
     if (aitop)
-        freeaddrinfo(aitop);
+        val_freeaddrinfo(aitop);
     unbusy();
 }
 

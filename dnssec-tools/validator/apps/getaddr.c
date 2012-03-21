@@ -327,7 +327,7 @@ main(int argc, char *argv[])
     /*
      * cleanup 
      */
-    freeaddrinfo(val_ainfo);
+    val_freeaddrinfo(val_ainfo);
     if (val_isvalidated(val_status)) {
         return 2; 
     } 

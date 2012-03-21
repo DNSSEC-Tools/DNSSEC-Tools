@@ -282,7 +282,7 @@ MainWindow::doLookupTest(const QString lookupName, int queryType, char *resolv_c
     qDebug() << "here: lookingup=" << lookupName << ", ret=" << ret << " / " << val_status;
 
     if (aitop)
-        freeaddrinfo(aitop);
+        val_freeaddrinfo(aitop);
     if (context != NULL) {
         val_free_context(context);
     }
