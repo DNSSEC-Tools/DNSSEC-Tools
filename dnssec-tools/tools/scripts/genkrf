@@ -126,6 +126,7 @@ sub main()
 	my $errors = 0;			# Total error count.
 	my $retval;			# Return value.
 
+	my $signset;			# Signing-set name prefix.
 	my $curkey;			# Path to current ZSK.
 	my $pubkey;			# Path to published ZSK.
 
@@ -135,6 +136,12 @@ sub main()
 	# Parse the command line options.
 	#
 	optsandargs();
+
+	#
+	# Build the signing-set name prefix.
+	#
+	$signset = keyrec_signset_prefix($zone);
+	$signset =~ s/\-$//;
 
 	#
 	# Generate the keyrec file.
@@ -150,14 +157,14 @@ sub main()
 				     'zonefile'		=> $zonefile,
 				     'signedzone'	=> $signedfile,
 				     'endtime'		=> $endtime,
-				     'kskcur'		=> 'signing-set-1',
+				     'kskcur'		=> "$signset-00001",
 				     'kskcount'		=> $kskcount,
 				     'kskdirectory'	=> $kskdir,
 				     'zskcount'		=> $zskcount,
 				     'zskdirectory'	=> $zskdir,
-				     'zskcur'		=> 'signing-set-2',
-				     'zskpub'		=> 'signing-set-3',
-				     'lastset'		=> 'signing-set-3',
+				     'zskcur'		=> "$signset-00002",
+				     'zskpub'		=> "$signset-00003",
+				     'lastset'		=> "$signset-00003",
 				     'keyrec_signdate'	=> "",
 				     'keyrec_signsecs'	=> "",
 				  });
@@ -165,7 +172,7 @@ sub main()
 	#
 	# Add the KSK set keyrec.
 	#
-	keyrec_add('set', 'signing-set-1',
+	keyrec_add('set', "$signset-00001",
 				{
 				   'zonename'		=> $zone,
 				   'set_type'		=> 'kskcur',
@@ -177,7 +184,7 @@ sub main()
 	#
 	# Add the ZSKCUR set keyrec.
 	#
-	keyrec_add('set', 'signing-set-2',
+	keyrec_add('set', "$signset-00002",
 				{
 				   'zonename'		=> $zone,
 				   'set_type'		=> 'zskcur',
@@ -189,7 +196,7 @@ sub main()
 	#
 	# Add the ZSKPUB set keyrec.
 	#
-	keyrec_add('set', 'signing-set-3',
+	keyrec_add('set', "$signset-00003",
 				{
 				   'zonename'		=> $zone,
 				   'set_type'		=> 'zskpub',
@@ -318,15 +325,15 @@ sub main()
 	#
 	foreach my $key (@ksklist)
 	{
-		keyrec_signset_addkey('signing-set-1',$key);
+		keyrec_signset_addkey("$signset-00001",$key);
 	}
 	foreach my $key (@curlist)
 	{
-		keyrec_signset_addkey('signing-set-2',$key);
+		keyrec_signset_addkey("$signset-00002",$key);
 	}
 	foreach my $key (@publist)
 	{
-		keyrec_signset_addkey('signing-set-3',$key);
+		keyrec_signset_addkey("$signset-00003",$key);
 	}
 
 	#
@@ -951,7 +958,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
