@@ -107,5 +107,13 @@ windows:
 	  fi  \
          done
 
+windows-install:
+	@for i in $(WINSUBDIRS) ; do \
+	  (cd $$i ; make install DESTDIR=$(DESTDIR) ) ; \
+	  if test $$? != 0 ; then \
+	     exit 1 ; \
+	  fi  \
+         done
+
 TAGS:
 	find . -name '*.[ch]' -print | etags -
