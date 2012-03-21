@@ -19,13 +19,11 @@
 #include "val_parse.h"
 #include "val_context.h"
 
-#ifndef HAVE_FREEADDRINFO
-
 /* 
- * define this freeaddrinfo if we don't have it already available
+ * Free the addrinfo structure that we have allocated 
  */
 void
-freeaddrinfo(struct addrinfo *ainfo)
+val_freeaddrinfo(struct addrinfo *ainfo)
 {
     struct addrinfo *acurr = ainfo;
 
@@ -41,8 +39,6 @@ freeaddrinfo(struct addrinfo *ainfo)
         acurr = anext;
     }
 }
-
-#endif
 
 /*
  * Function: append_addrinfo
@@ -332,7 +328,7 @@ process_service_and_hints(const char *servname,
          */
         if (created_locally) {
             *res = NULL;
-            freeaddrinfo(a1);
+            val_freeaddrinfo(a1);
         }
         return EAI_SERVICE;
     }
@@ -398,7 +394,7 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
             (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (!ainfo) {
             if (retval)
-                freeaddrinfo(retval);
+                val_freeaddrinfo(retval);
             return EAI_MEMORY;
         }
 
@@ -425,8 +421,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
                 (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
             if (saddr4 == NULL) {
                 if (retval)
-                    freeaddrinfo(retval);
-                freeaddrinfo(ainfo);
+                    val_freeaddrinfo(retval);
+                val_freeaddrinfo(ainfo);
                 return EAI_MEMORY;
             }
             memset(saddr4, 0, sizeof(struct sockaddr_in));
@@ -446,8 +442,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
                 malloc(sizeof(struct sockaddr_in6));
             if (saddr6 == NULL) {
                 if (retval)
-                    freeaddrinfo(retval);
-                freeaddrinfo(ainfo);
+                    val_freeaddrinfo(retval);
+                val_freeaddrinfo(ainfo);
                 return EAI_MEMORY;
             }
             memset(saddr6, 0, sizeof(struct sockaddr_in6));
@@ -463,7 +459,7 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         else {
             val_log(ctx, LOG_WARNING, 
                     "get_addrinfo_from_etc_hosts(): Unkown address type");
-            freeaddrinfo(ainfo);
+            val_freeaddrinfo(ainfo);
             continue;
         }
 
@@ -471,9 +467,9 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
          * Expand the results based on servname and hints 
          */
         if ((ret = process_service_and_hints(servname, hints, &ainfo)) != 0) {
-            freeaddrinfo(ainfo);
+            val_freeaddrinfo(ainfo);
             if (retval)
-                freeaddrinfo(retval);
+                val_freeaddrinfo(retval);
             val_log(ctx, LOG_INFO, 
                     "get_addrinfo_from_etc_hosts(): Failed in process_service_and_hints()");
             return ret;
@@ -591,7 +587,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                     struct sockaddr_in *saddr4 = (struct sockaddr_in *)
                         malloc(sizeof(struct sockaddr_in));
                     if (saddr4 == NULL) {
-                        freeaddrinfo(ainfo);
+                        val_freeaddrinfo(ainfo);
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type A found");
@@ -610,7 +606,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                     struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)
                         malloc(sizeof(struct sockaddr_in6));
                     if (saddr6 == NULL) {
-                        freeaddrinfo(ainfo);
+                        val_freeaddrinfo(ainfo);
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type AAAA found");
@@ -623,7 +619,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                 } 
 #endif
                 else {
-                    freeaddrinfo(ainfo);
+                    val_freeaddrinfo(ainfo);
                     rr = rr->rr_next;
                     continue;
                 }
@@ -640,7 +636,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                  */
                 if ((retval = process_service_and_hints(servname, hints, &ainfo))
                     != 0) {
-                    freeaddrinfo(ainfo);
+                    val_freeaddrinfo(ainfo);
                     val_log(ctx, LOG_INFO, 
                         "get_addrinfo_from_result(): Failed in process_service_and_hints()");
                     return retval;
@@ -701,7 +697,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
  *            hints -- Hints to influence the return value.  Can be NULL.
  *              res -- A pointer to a variable of type (struct addrinfo *) to
  *                     hold the result.  The caller must free this return value
- *                     using freeaddrinfo().
+ *                     using val_freeaddrinfo().
  *
  * Returns: 0 on success and a non-zero value on error.
  *
@@ -916,7 +912,7 @@ _getaddrinfo_local(val_context_t * ctx, const char *nodename,
 
         if ((retval = process_service_and_hints(servname, cur_hints, &ainfo4))
             != 0) {
-            freeaddrinfo(ainfo4);
+            val_freeaddrinfo(ainfo4);
             val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
@@ -970,7 +966,7 @@ _getaddrinfo_local(val_context_t * ctx, const char *nodename,
 
         if ((retval = process_service_and_hints(servname, cur_hints, &ainfo6))
             != 0) {
-            freeaddrinfo(ainfo6);
+            val_freeaddrinfo(ainfo6);
             val_log(ctx, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
@@ -1050,7 +1046,7 @@ done:
  *                protocol is acceptable.
  *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
  *                structures. The caller must free this return value
- *                using freeaddrinfo().
+ *                using val_freeaddrinfo().
  *
  *     Note that at least one of nodename or servname must be a non-NULL value.
  *
@@ -1519,7 +1515,7 @@ _free_vgai( val_gai_status *vgai )
     }
 
     if (NULL != vgai->res) {
-        freeaddrinfo(vgai->res);
+        val_freeaddrinfo(vgai->res);
         vgai->res = NULL;
     }
 

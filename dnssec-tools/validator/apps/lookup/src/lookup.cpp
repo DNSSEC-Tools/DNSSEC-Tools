@@ -433,7 +433,7 @@ Lookup::dolookup()
 
     vlayout->invalidate();
 
-    freeaddrinfo(aitop);
+    val_freeaddrinfo(aitop);
     unbusy();
 }
 
