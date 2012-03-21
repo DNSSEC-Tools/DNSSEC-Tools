@@ -2453,6 +2453,9 @@ grandvizier - DNSSEC-Tools dtrealms GUI
 
 B<THIS NEEDS MAJOR EDITTING!!!>
 
+B<Warning:>  This is an early prototype.  Consider it to be beta quality, if 
+not alpha.
+
 B<grandvizier> is a GUI tool for use with monitoring and controlling the
 DNSSEC-Tools B<dtrealms> program.  It displays information on the current state
 of the realms B<dtrealms> is managing.  The user may control some aspects of
@@ -2540,23 +2543,15 @@ This stripe contains the column headers for the columns of each realm stripe.
 realm stripes
 
 Each realm managed by B<dtrealms> (i.e., every realm in the current I<realms>
-file) will have a realm stripe which describes that realm's current state.  The
-stripe is divided into three sections:  realm identification, the current
-rollover state, and the realm's DNSSEC keys.
+file) will have a realm stripe which describes that realm's current state.
+The stripe is divided into two sections:  realm identification and the realm's
+zone counts.
 
-The realm identification section contains the name of the realm, the name of
-the realm's I<realms> entry, and the realm's zonegroup.
+The realm identification section contains the name of the realm and the
+realm's B<rollrec> file.
 
-The rollover state section contains the rollover phase number, a text
-explanation of the phase, and the amount of time remaining in that rollover
-phase.  The phase explanation is "normal operation" when the zone isn't
-currently in rollover.
-
-The DNSSEC key section contains two subsections, one for the zone's ZSK keys
-and another for the zone's KSK keys.  Each subsection contains the names of
-the signing sets active for the zone.  The ZSK subsection lists the Current,
-Published, and New ZSK keys; the KSK subsection lists the Current and
-Published.
+The realm's zone counts section contains the number of zones in normal state,
+ZSK rollover, KSK rollover, and KSK phase 6 wait state.
 
 See the ROW COLORS section for a discussion of the colors used for the
 realm stripes.

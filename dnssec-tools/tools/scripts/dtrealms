@@ -881,7 +881,8 @@ sub cmd_display
 	}
 
 	#
-	# Change the logfile and give an appropriate set of log messages.
+	# Start or stop the display program and give an appropriate set of
+	# log messages.
 	#
 	if($onflag)
 	{
@@ -1362,6 +1363,8 @@ sub cmd_stoprealm
 #-----------------------------------------------------------------------------
 # Routine:	displayer()
 #
+# Purpose:	Start or stop the display program.
+#
 sub displayer
 {
 	#
@@ -1383,7 +1386,7 @@ sub displayer
         else
         {
 		rolllog_log(LOG_INFO,'','stopping grandvizier');
-		display("halt");      
+		display('halt');      
 		close(DISPLAY);
         }
 
@@ -1391,6 +1394,8 @@ sub displayer
 
 #-----------------------------------------------------------------------------
 # Routine:	display()
+#
+# Purpose:	Send a message to the display program.
 #
 sub display
 {
@@ -1410,7 +1415,7 @@ sub display
 
 	if(!$ret)
 	{
-		rolllog_log(LOG_INFO,'<command>',"unable to send message to grandvizier; turning off display");
+		rolllog_log(LOG_INFO,'<command>','unable to send message to grandvizier; turning off display');
 		$display = 0;
 	}
 
@@ -1932,6 +1937,9 @@ dtrealms - Displays defaults defined for DNSSEC-Tools
   dtrealms [options] <realm-file>
 
 =head1 DESCRIPTION
+
+B<Warning:>  This is an early prototype.  Consider it to be beta quality, if
+not alpha.
 
 B<dtrealms> manages multiple distinct DNSSEC-Tools rollover environments
 running simultaneously.  Each rollover environment, called a B<realm>, is
