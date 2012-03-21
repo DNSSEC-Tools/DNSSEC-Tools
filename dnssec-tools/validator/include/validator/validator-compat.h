@@ -90,9 +90,6 @@ extern          "C" {
 #ifndef HAVE_SYS_TYPES_H
 #define HAVE_SYS_TYPES_H 1
 #endif
-#ifndef HAVE_FREEADDRINFO
-#define HAVE_FREEADDRINFO
-#endif
 #ifndef LIBVAL_DLV
 #define LIBVAL_DLV 1
 #endif
@@ -266,14 +263,7 @@ typedef unsigned short     u_int16_t;
 
 #ifdef WIN32
 
-#ifndef HAVE_LOCALTIME_R
-#define HAVE_LOCALTIME_R 1
 int gettimeofday(struct timeval* p, void* tz /* IGNORED */);
-/* flip the arguments arround for localtime_s */
-#ifndef localtime_r
-#define localtime_r(a, b) _localtime32_s(b, a)
-#endif
-#endif
 
 #ifndef va_copy
 #define va_copy(dst, src) ((void)((dst) = (src)))
@@ -920,6 +910,11 @@ int libsres_msg_getflag(ns_msg han, int flag);
 #ifndef ns_msg_getflag
 #define ns_msg_getflag libsres_msg_getflag
 #endif
+
+#ifndef HAVE_FREEADDRINFO
+#define freeaddrinfo val_freeaddrinfo
+#endif
+
 
 #ifndef HAVE_DECL_NS_SAMENAME
 int             ns_samename(const char *a, const char *b);
