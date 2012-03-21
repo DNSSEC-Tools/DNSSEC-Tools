@@ -8,7 +8,7 @@
 #define getprogname() program_invocation_short_name 
 #endif
 
-typedef struct val_context ValContext;
+typedef struct libval_context ValContext;
 
 static ValContext *libval_shim_ctx = NULL;
 
