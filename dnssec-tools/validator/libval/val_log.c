@@ -699,25 +699,11 @@ val_log_callback(val_log_t * logp, const val_context_t * ctx, int level,
 {
     /** Needs to be at least two characters larger than message size */
     char            buf[1028];
-    struct timeval  tv;
-    struct tm       tm;
-    struct tm       *tp;
 
     if (NULL == logp)
         return;
 
-    gettimeofday(&tv, NULL);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&tv.tv_sec, &tm);
-    tp = &tm;
-#else
-    tp = localtime(&tv.tv_sec);
-#endif
-    
-    /** We allocated extra space  */
-    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
-            tp->tm_hour, tp->tm_min, tp->tm_sec);
+    res_gettimeofday_buf(buf, sizeof(buf) - 2);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     (*(logp->opt.cb.func))(logp, level, buf);
@@ -732,25 +718,11 @@ val_log_udp(val_log_t * logp, const val_context_t * ctx, int level,
     /** Needs to be at least two characters larger than message size */
     char            buf[1028];
     int             length = sizeof(struct sockaddr_in);
-    struct timeval  tv;
-    struct tm       tm;
-    struct tm       *tp;
 
     if (NULL == logp)
         return;
 
-    gettimeofday(&tv, NULL);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&tv.tv_sec, &tm);
-    tp = &tm;
-#else
-    tp = localtime(&tv.tv_sec);
-#endif
-
-    /** We allocated extra space  */
-    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
-            tp->tm_hour, tp->tm_min, tp->tm_sec);
+    res_gettimeofday_buf(buf, sizeof(buf) - 2);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
     strcat(buf, "\n");
 
@@ -772,22 +744,12 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
     if (NULL == logp)
         return;
 
-    gettimeofday(&tv, NULL);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&tv.tv_sec, &tm);
-    tp = &tm;
-#else
-    tp = localtime(&tv.tv_sec);
-#endif
-
+    res_gettimeofday_buf(buf, sizeof(buf) - 2);
     if (NULL == logp->opt.file.fp) {
         logp->opt.file.fp = fopen(logp->opt.file.name, "a");
         if (NULL == logp->opt.file.fp)
             return;
     }
-    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
-            tp->tm_hour, tp->tm_min, tp->tm_sec);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     fprintf(logp->opt.file.fp, "%s\n", buf);
@@ -802,23 +764,12 @@ val_log_syslog(val_log_t * logp, const val_context_t * ctx, int level,
     /*
      * Needs to be at least two characters larger than message size 
      */
-    char            buf[sizeof("libval(0000000000000000)..")];
-    struct timeval  tv;
-    struct tm       tm;
-    struct tm       *tp;
+    char            buf[1028];
 
-    gettimeofday(&tv, NULL);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&tv.tv_sec, &tm);
-    tp = &tm;
-#else
-    tp = localtime(&tv.tv_sec);
-#endif
-
-    snprintf(buf, sizeof(buf), "%04d%02d%02d::%02d:%02d:%02d libval(%s)", 
-            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday, 
-            tp->tm_hour, tp->tm_min, tp->tm_sec,
+    res_gettimeofday_buf(buf, sizeof(buf) - 2);
+    snprintf(&buf[19], sizeof(buf) - 21, " libval(%s)",
             (ctx == NULL) ? "0" : ctx->id);
+
     openlog(buf, VAL_LOG_OPTIONS, logp->opt.syslog.facility);
 
     vsyslog(logp->opt.syslog.facility | level, template, ap);

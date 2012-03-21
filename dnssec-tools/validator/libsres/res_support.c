@@ -57,6 +57,39 @@ int gettimeofday(struct timeval* p, void* tz /* IGNORED */)
 }
 #endif
 
+int
+res_gettimeofday_buf(char *buf, size_t bufsize) {
+
+    struct timeval  tv;
+    struct tm       *tp;
+    struct tm       tm;
+
+    tp = NULL;
+
+#ifdef WIN32
+    time(&tv.tv_sec);
+#else
+    gettimeofday(&tv, NULL);
+#endif
+
+#ifdef HAVE_LOCALTIME_R
+    localtime_r(&tv.tv_sec, &tm);
+    tp = &tm;
+#else
+    tp = localtime(&tv.tv_sec);
+#endif
+
+    if (tp) {
+        snprintf(buf, bufsize, "%04d%02d%02d::%02d:%02d:%02d ", 
+            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
+            tp->tm_hour, tp->tm_min, tp->tm_sec);
+    } else {
+        snprintf(buf, bufsize, "0000:00:00::00:00:00 ");
+    }
+
+    return 0;
+}
+
 
 void
 my_free(void *p, char *filename, int lineno)
@@ -585,26 +618,12 @@ void
 res_log(void *dont_care, int level, const char *template, ...)
 {
     char            buf[1028];
-    struct timeval  tv;
     va_list         ap;
-    struct tm       tm;
-    struct tm       *tp;
 
     if (NULL == template || level > sres_level)
         return;
 
-    gettimeofday(&tv, NULL);
-
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&tv.tv_sec, &tm);
-    tp = &tm;
-#else
-    tp = localtime(&tv.tv_sec);
-#endif 
-
-    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
-            tp->tm_hour, tp->tm_min, tp->tm_sec);
+    res_gettimeofday_buf(buf, sizeof(buf) - 2);
     va_start(ap, template);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
     va_end(ap);
@@ -617,24 +636,11 @@ void
 res_log_ap(void *dont_care, int level, const char *template, va_list ap)
 {
     char            buf[1028];
-    struct timeval  tv;
-    struct tm       tm;
-    struct tm       *tp;
 
     if (NULL == template || level > sres_level)
         return;
 
-    gettimeofday(&tv, NULL);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&tv.tv_sec, &tm);
-    tp = &tm;
-#else
-    tp = localtime(&tv.tv_sec);
-#endif 
-
-    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
-            tp->tm_year+1900, tp->tm_mon+1, tp->tm_mday,
-            tp->tm_hour, tp->tm_min, tp->tm_sec);
+    res_gettimeofday_buf(buf, sizeof(buf) - 2);
     vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     fprintf(stderr, "%s\n", buf);

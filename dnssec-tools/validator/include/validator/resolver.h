@@ -206,6 +206,7 @@ int             get_tcp(const char *name_n,
                         struct name_server **server,
                     unsigned char ** response, size_t * response_length);
 void            print_response(unsigned char * ans, size_t resplen);
+int             res_gettimeofday_buf(char *buf, size_t bufsize);
 
 struct sockaddr_storage **create_nsaddr_array(int num_addrs);
 struct name_server *create_name_server(void);
@@ -344,7 +345,6 @@ void res_switch_all_to_tcp_tid(int trans_id);
         }                                                               \
     } while (/* CONSTCOND */ 0)
 #endif
-
 
 #ifdef __cplusplus
 }                               /* extern C */
