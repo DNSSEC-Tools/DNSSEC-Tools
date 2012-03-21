@@ -91,7 +91,8 @@ my $COL1  = 1;			# Column 1.
 my $COL2  = 2;			# Column 2.
 my $COL3  = 3;			# Column 3.
 my $COL4  = 4;			# Column 4.
-my $MAXCOLS = 5;		# Maximum number of columns.
+my $COL5  = 5;			# Column 5.
+my $MAXCOLS = 6;		# Maximum number of columns.
 
 #
 # Column constants for infostripe.
@@ -103,10 +104,11 @@ my $ACTIVECNTCOL	= $COL1;	# Active realm count.
 # Default column constants for realmstripes.
 #
 my $NAMECOL	= $COL0;	# Realm name. 
-my $NORMALCOL	= $COL1;	# Normal rollover count.
-my $ZSKCOL	= $COL2;	# ZSK rollover count.
-my $KSKCOL	= $COL3;	# KSK rollover count.
-my $KSK6COL	= $COL4;	# KSK phase 6 count.
+my $ROLLRECCOL	= $COL1;	# Rollrec name. 
+my $NORMALCOL	= $COL2;	# Normal rollover count.
+my $ZSKCOL	= $COL3;	# ZSK rollover count.
+my $KSKCOL	= $COL4;	# KSK rollover count.
+my $KSK6COL	= $COL5;	# KSK phase 6 count.
 
 my $UNUSED	= -1;		# Unused column.
 
@@ -245,8 +247,8 @@ my %badrealms	= ();			# Realms with problems.
 #
 # Data for the info stripe.
 #
-my $activecntmsg = ' ';			# Count of active realms.
-my $inactivecntmsg = ' ';		# Count of inactive realms.
+my $activecntmsg = '';				# Count of active realms.
+my $inactivecntmsg = '';			# Count of inactive realms.
 
 #
 # Data for button-selected realms.
@@ -515,12 +517,12 @@ sub buildmainwind
 		       -command => [\&general_cmds, "stoprealm"],
 		       -accelerator => 'Ctrl+S');
 	$cmdg->command(-label => 'Stop All Realms',
-		       -command => [\&general_cmds, "stopall"]);
+		       -command => [\&general_cmds, "allstop"]);
 	$cmdg->separator();
 	$cmdg->command(-label => 'Start Selected Inactive Realm',
 		       -command => [\&general_cmds, "startrealm"]);
 	$cmdg->command(-label => 'Start All Inactive Realms',
-		       -command => [\&general_cmds, "startall"]);
+		       -command => [\&general_cmds, "allstart"]);
 	$cmdg->separator();
 	$cmdg->command(-label	=> 'DS Published for All Zones in Selected Realm',
 		       -command => [\&general_cmds, "dspuball"], );
@@ -1266,11 +1268,10 @@ sub readrealm
 sub infostripe
 {
 	my $dispstr;				# Count of displayed realms.
-	my $timestr;				# dtrealms's sleep time.
 	my $numrealms;				# Num realms in realm file.
 	my $rcnt;				# Count of realms being shown.
 
-	my $spacer  = ' ' x 4;			# Spacer string.
+	my $spacer  = ' ' x 8;			# Spacer string.
 	my $infostr;				# Info string.
 
 	#
@@ -1293,11 +1294,10 @@ sub infostripe
 	#
 	# Build our output string and set the infostripe.
 	#
-	$infostr = $spacer . $title	 .
-		   $spacer . $activecntmsg .
-		   $spacer . $inactivecntmsg .
-		   $spacer . $timestr	 .
-		   $spacer . $dispstr;
+	$infostr = $spacer . $title		.
+		   $spacer . $dispstr		.
+		   $spacer . $activecntmsg	.
+		   $spacer . $inactivecntmsg;
 
 	$info->configure(-text => $infostr);
 
@@ -1320,6 +1320,11 @@ sub headerstripe
 			       -anchor => 'w',
 			       -font => $font, -background => 'tan');
 	$realmtab->put($TITLEROW,$NAMECOL,$lab);
+
+	$lab = $realmtab->Label(-text => ' Rollrec Name ',
+			       -anchor => 'w',
+			       -font => $font, -background => 'tan');
+	$realmtab->put($TITLEROW,$ROLLRECCOL,$lab);
 
 	$lab = $realmtab->Label(-text => ' Normal ',
 			       -anchor => 'w',
@@ -1364,6 +1369,7 @@ sub realmstripe
 	my $blank;				# Blank label.
 	my $lab;				# Non-blank label.
 	my $realmtxt;				# Realm name.
+	my $rollrectxt;				# Rollrec name.
 
 	#
 	# Don't account for this realm if it shouldn't be displayed.
@@ -1401,15 +1407,20 @@ sub realmstripe
 	# Handle inactive realms here.  We won't do anything if inactive realms
 	# shouldn't be displayed.  Otherwise, we'll just put up a single line.
 	#
-	#  col 0    col 1       col 2       col 3       col 4
-	#  realm    normal      ZSK         KSK         KSK phase 6
-	#  name     rollover    rollover    rollover    rollover
+	#  col 0    col 1      col 2       col 3       col 4       col 5
+	#  realm    rollrec    normal      ZSK         KSK         KSK phase 6
+	#  name     name       rollover    rollover    rollover    rollover
 	#
 	if($actives{$realm} == 0)
 	{
 		my $rlabel = 'inactive';		# Realm's label.
 
 		return if($noinactives);
+
+		#
+		# Get the realm's rollrec name.
+		#
+		$rollrectxt = realm_recval($realm,'rollrec');
 
 		#
 		# Set up some data for realms that have problems.
@@ -1426,6 +1437,12 @@ sub realmstripe
 				       -foreground => $fgcolor,
 				       -background => $bgcolor);
 		$realmtab->put($row,$NAMECOL,$lab);
+
+		$lab = $realmtab->Label(-text => $rollrectxt,
+				       -font => $font,
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+		$realmtab->put($row,$ROLLRECCOL,$lab);
 
 		$lab = $realmtab->Label(-text => $rlabel,
 				       -font => $font,
@@ -1478,6 +1495,11 @@ sub realmstripe
 		last if($atoms[0] eq $realm);
 	}
 
+	#
+	# Get the realm's rollrec name.
+	#
+	$rollrectxt = realm_recval($realm,'rollrec');
+
 	############################################
 	#
 	# First column:  realm name
@@ -1491,7 +1513,17 @@ sub realmstripe
 
 	############################################
 	#
-	# Second column:  count of zones in normal rollover
+	# Second column:  rollrec name
+	#
+	$lab = $realmtab->Label(-text => " $rollrectxt", -font => $font,
+			       -anchor => 'w',
+			       -foreground => $fgcolor,
+			       -background => $bgcolor);
+	$realmtab->put($row,$ROLLRECCOL,$lab);
+
+	############################################
+	#
+	# Third column:  count of zones in normal rollover
 	#
 	$lab = $realmtab->Label(-text => " $normcnt", -font => $font,
 			       -anchor => 'w',
@@ -1502,7 +1534,7 @@ sub realmstripe
 
 	############################################
 	#
-	# Second column:  count of zones in ZSK rollover
+	# Fourth column:  count of zones in ZSK rollover
 	#
 	$lab = $realmtab->Label(-text => " $zskcnt", -font => $font,
 			       -anchor => 'w',
@@ -1513,7 +1545,7 @@ sub realmstripe
 
 	############################################
 	#
-	# Second column:  count of zones in KSK rollover
+	# Fifth column:  count of zones in KSK rollover
 	#
 	$lab = $realmtab->Label(-text => " $kskcnt", -font => $font,
 			       -anchor => 'w',
@@ -1524,7 +1556,7 @@ sub realmstripe
 
 	############################################
 	#
-	# Second column:  count of zones in KSK phase 6 wait
+	# Sixth column:  count of zones in KSK phase 6 wait
 	#
 	$lab = $realmtab->Label(-text => " $ksk6cnt", -font => $font,
 			       -anchor => 'w',
@@ -1617,7 +1649,11 @@ sub dtrealmscmd
 	#
 	if($cmd eq "halt")
 	{
-		exit(0);
+		#
+		# Destroy the main window.  This will cause MainLoop() to
+		# return, leading to the program exiting.
+		#
+		$wm->destroy;
 	}
 	elsif($cmd eq "realmfile")
 	{
@@ -2200,39 +2236,10 @@ sub setcounts
 	$inactcnt = $total - $actcnt;
 
 	#
-	# Set the messages, in a grammatically anal-retentive manner.
+	# Set the messages.
 	#
-	if($actcnt != 0)
-	{
-		if($actcnt == 1)
-		{
-			$activecntmsg = "$actcnt Active Zone";
-		}
-		else
-		{
-			$activecntmsg = "$actcnt Active Zones";
-		}
-	}
-	else
-	{
-		$activecntmsg = "0 Active Zones";
-	}
-
-	if($inactcnt != 0)
-	{
-		if($inactcnt == 1)
-		{
-			$inactivecntmsg = "$inactcnt Inactive Zone";
-		}
-		else
-		{
-			$inactivecntmsg = "$inactcnt Inactive Zones";
-		}
-	}
-	else
-	{
-		$inactivecntmsg = "0 Inactive Zones";
-	}
+	$activecntmsg	= "$actcnt Active";
+	$inactivecntmsg	= "$inactcnt Inactive";
 }
 
 #----------------------------------------------------------------------
