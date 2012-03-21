@@ -102,15 +102,6 @@ extern          "C" {
 #ifndef R_FUNCS_RETURN_STRUCT
 #define R_FUNCS_RETURN_STRUCT 1
 #endif
-#ifndef SIZEOF_INT
-#define SIZEOF_INT 4
-#endif
-#ifndef SIZEOF_LONG
-#define SIZEOF_LONG 4
-#endif
-#ifndef SIZEOF_SHORT
-#define SIZEOF_SHORT 2
-#endif
 #ifndef STDC_HEADERS
 #define STDC_HEADERS 1
 #endif
