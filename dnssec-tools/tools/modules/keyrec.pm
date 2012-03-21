@@ -59,8 +59,10 @@ use strict;
 use Net::DNS::SEC::Tools::conf;
 use Fcntl qw(:DEFAULT :flock);
 
-our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.1";
+our $VERSION = "1.12";
+our $MODULE_VERSION = "1.12.1";
+
+#--------------------------------------------------------------------------
 
 our @ISA = qw(Exporter);
 
@@ -77,8 +79,11 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read
 		 keyrec_signset_newname keyrec_signset_new keyrec_signset_keys
 		 keyrec_signset_addkey keyrec_signset_delkey
 		 keyrec_signset_haskey keyrec_signset_clear keyrec_signsets
+		 keyrec_signset_prefix
 		 keyrec_fmtchk
 	      );
+
+#--------------------------------------------------------------------------
 
 #
 # Fields in a zone keyrec.
@@ -143,6 +148,10 @@ my @KEYFIELDS = (
 			'keyrec_gendate',
 		        'zonename',
 		 );
+
+#--------------------------------------------------------------------------
+
+my $DEFSETPREFIX = '-signset-';		# Default signing-set prefix.
 
 my $curkrfname;				# Name of open keyrec file.
 
@@ -1380,8 +1389,7 @@ sub keyrec_signset_newname
 	my $setname;				# Name of zone's last set.
 	my $oldind;				# Old index of zone's last set.
 	my $newind;				# New index of zone's last set.
-
-	my $setprefix = '-signset-';
+	my $ssprefix;				# Signing-set prefix.
 
 # print "keyrec_signset_newname($zone):  down in\n";
 
@@ -1392,10 +1400,15 @@ sub keyrec_signset_newname
 	$setname = "$zone-signset-000" if(!defined($keyrecs{$zone}{'lastset'}));
 
 	#
+	# Build the signing-set prefix.
+	#
+	$ssprefix = keyrec_signset_prefix($zone);
+
+	#
 	# Get the first number in the set name.  If there isn't a number
 	# in the set name, we'll append a zero.
 	#
-	$setname =~ /$setprefix(\d+)/;
+	$setname =~ /$ssprefix(\d+)/;
 	$oldind = $1;
 	
 	if($oldind eq '')
@@ -1414,7 +1427,7 @@ sub keyrec_signset_newname
 		$newind = "0$newind";
 	}
 
-	$setname =~ s/$setprefix$oldind/$setprefix$newind/;
+	$setname =~ s/$ssprefix$oldind/$ssprefix$newind/;
 	keyrec_setval('zone',$zone,'lastset',$setname);
 
 	#
@@ -1756,6 +1769,21 @@ sub keyrec_signset_keys
 	# Return the signing set's key names.
 	#
 	return($keyrecs{$krname}{'keys'});
+}
+
+#--------------------------------------------------------------------------
+# Routine:	keyrec_signset_prefix()
+#
+# Purpose:	Build and return the signing-set prefix.
+#
+sub keyrec_signset_prefix
+{
+	my $zone = shift;			# Zone for this signing set.
+	my $prefix;				# Signing-set prefix.
+
+	$prefix = $zone . $DEFSETPREFIX;
+
+	return($prefix);
 }
 
 #--------------------------------------------------------------------------
@@ -2307,6 +2335,8 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   @signset = keyrec_signsets();
 
+  $sset_prefix = keyrec_signset_prefix("example.com");
+
   keyrec_settime("zone","example.com");
   keyrec_settime("set","signing-set-42");
   keyrec_settime("key","Kexample.com.+005+76543");
@@ -2683,6 +2713,12 @@ following:  "kskcur", "kskpub", "kskrev", "kskobs", "zskcur", "zskpub",
 
 It returns 1 if the call is successful; 0 if it is not.
 
+=item I<keyrec_signset_prefix(zone_name)>
+
+I<keyrec_signset_prefix()> returns the signing set prefix formed by
+concatenating the zone name and $DEFSETPREFIX.  This prefix should be
+followed by a numeric index.
+
 =item I<keyrec_signset_addkey(signing_set_name,key_list)>
 
 I<keyrec_signset_addkey()> adds the keys listed in I<key_list> to the signing
@@ -2806,7 +2842,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
