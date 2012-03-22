@@ -27,7 +27,9 @@ etc:
 include:
 	Header files required to build the validator.
 
-Installation instructions:
+
+Building and installing
+=======================
 
 The validator library is normally configured, compiled and installed through
 the normal build process for the DNSSEC-Tools suite. The validator library
@@ -37,3 +39,122 @@ can be optionally configured with/without support for the following modules:
 --without-dlv   : don't include support for Dynamic Lookaside Validation (DLV)
 --without-ipv6  : don't include support for IPv6
 
+
+Typical sequence is
+
+$ ./configure
+$ make
+$ sudo  make install
+
+
+The validator module honors the --prefix option in that it will install
+libraries and binaries in the expected locations and looks for configuration
+files in the correct $prefix/dnssec-tools/etc directory; except for the
+root.hints file, which the validator will try to locate in various standard
+system directories. The validator module also allows the user to override the
+default locations for these configuration files during the ./configure
+process. However, in no case will 'make install' actually install any
+configure files in the directory specified. The user must install these files
+manually.  
+
+The validator module supports hard-coded default policies for its
+validator policy, its root hints data and for its resolver policy.  These can
+be specified through the --with-inline-dnsval-conf, --with-inline-root-hints
+and --with-inline-resolv-conf configure options respectively.  
+
+As an example:
+$ ./configure --prefix=/usr/local/opt --with-openssl=/opt/local \
+              --with-inline-dnsval-conf=etc/dnsval.conf.default \
+              --with-inline-root-hints=etc/root.hints
+
+
+Building on Windows
+====================
+
+The validator library supports three different ways of building for Windows
+
+a) Building with MinGW/MSYS
+
+   - First build the openssl library using the following command line options
+     $ ./config -D__USE_MINGW_ANSI_STDIO=0 --prefix=/path/to/openssl
+     $ make install
+
+   - Configure the validator as follows:
+     $ CPPFLAGS='-D__USE_MINGW_ANSI_STDIO=0'\
+       CFLAGS='-g -mwindows -mconsole'\
+            ./configure --with-openssl=/path/to/openssl\
+                --prefix=/install/path \
+                --with-resolv-conf=resolv.txt --with-root-hints=root.txt\
+                --with-dnsval-conf=dnsval.txt \
+                --with-inline-dnsval-conf=etc/dnsval.conf \
+                --with-inline-root-hints=etc/root.hints 
+
+    - Build the library and command-line apps
+      $ make windows
+      $ make windows-install
+
+
+b) Building DLLs using nmake
+
+    (This method is made available courtesy Bob Novas.) 
+
+   - Download and install perl from http://www.activestate.com/activeperl/downloads 
+
+   - Open a command window and setup the environment using one of the two scripts:
+     C:\> vcvars32  (for a 32-bit system)
+     C:\> vcvars64  (for a 64-bit system)
+
+   - Build openssl for 64-bit systems as follows
+       > perl Configure --prefix="C:\path\to\openssl" VC-WIN64A
+       > ms\do_win64a
+       > nmake -f ms\ntdll.mak
+       > nmake -f ms\ntdll.mak install
+
+   - Build openssl for 32-bit systems as follows
+       > perl Configure --prefix="C:\path\to\openssl" VC-WIN32
+       > ms\do_ms
+       > nmake -f ms\ntdll.mak
+       > nmake -f ms\ntdll.mak install
+
+   - Build the validator library for 32-bit systems as follows
+       > nmake -f windows.mak win32
+
+   - Build the validator library for 32-bit systems as follows
+       > nmake -f windows.mak win64
+
+   The DLLs are created in the validator\Debug directory.
+
+
+c) Cross-compiling for Windows
+
+   This instructions were tested on OSX 10.6. The instructions for
+   other platforms are likely going to be quite similar. 
+
+   - Install mingw pre-requisites
+     $ sudo port install i386-mingw32-binutils i386-mingw32-runtime \
+         i386-mingw32-w32api i386-mingw32-gcc
+
+   - Bild the openssl library using the following command line options
+     $ ./Configure -D__USE_MINGW_ANSI_STDIO=0 \
+             --cross-compile-prefix=i386-mingw32- \
+             mingw --prefix=/usr/local/opt/mingw-dnssec
+     $ sudo make install
+
+   - Build the validator library as follows
+     $ PATH="/opt/local/i386-mingw32/bin:$PATH" \
+       LDFLAGS="-L/opt/local/i386-mingw32/lib" \
+       CPPFLAGS="-D__USE_MINGW_ANSI_STDIO=0" \
+       CFLAGS='-mwindows -mconsole' \
+            ./configure --disable-option-checking \
+                --with-openssl=/usr/local/opt/mingw-dnssec \
+                --with-resolv-conf=resolv.txt \
+                --with-root-hints=root.txt \
+                --with-dnsval-conf=dnsval.txt \
+                --with-inline-dnsval-conf=etc/dnsval.conf.default \
+                --with-inline-root-hints=etc/root.hints  \
+                --host=i386-mingw32  \
+                --prefix=/usr/local/opt/mingw-dnssec
+
+    - Build and install the library and command-line apps
+      $ make windows
+      $ sudo make windows-install
