@@ -19,7 +19,7 @@ use Net::DNS::SEC::Tools::rollmgr;
 # Version information.
 #
 my $NAME   = "rolllog";  
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -73,7 +73,11 @@ sub main
 	#
 	# Send the logging command to rollerd.
 	#
-	rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGMSG,"($loglevel)$logmsg");
+	if(rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGMSG,"($loglevel)$logmsg") == 0)
+	{
+		print STDERR "rolllog:  unable to send command to rollerd\n";
+		exit(1);
+	}
 
 	#
 	# Give an error message if rollerd didn't like something. 
@@ -180,7 +184,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
