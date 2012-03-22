@@ -54,6 +54,7 @@ public:
     Q_INVOKABLE int outStandingRequests();
     Q_INVOKABLE void checkAvailableUpdates();
     Q_INVOKABLE void startQueuedTransactions();
+    Q_INVOKABLE bool testName(const QString &resolverAddress);
 
     Q_PROPERTY(QString submissionMessage  READ submissionMessage                      NOTIFY submissionMessageChanged)
     Q_PROPERTY(QString lastResultMessage  READ lastResultMessage                      NOTIFY lastResultMessageChanged)
