@@ -45,7 +45,7 @@ use Net::DNS::SEC::Tools::rolllog;
 # Version information.
 #
 my $NAME   = "dtrealms";
-my $VERS   = "$NAME version: 1.12.2";
+my $VERS   = "$NAME version: 1.12.3";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -239,7 +239,11 @@ sub housekeeping
 	#
 	# Set up the command channel.
 	#
-	realmmgr_channel(1);
+	if(realmmgr_channel(1) != 1)
+	{
+		rolllog_log(LOG_FATAL,"","unable to create control communications channel");
+		exit(3);
+	}
 
 	#
 	# Save our current directory.
