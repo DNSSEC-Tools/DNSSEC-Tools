@@ -7,6 +7,9 @@ DEPLOYMENTFOLDERS = # file1 dir1
 # Avoid auto screen rotation
 #DEFINES += ORIENTATIONLOCK
 
+# define to have syncronous only queries
+# DEFINES += VAL_NO_ASYNC
+
 # for android
 INCLUDEPATH += ../../include
 isEmpty(ANDROID_PLATFORM) {
