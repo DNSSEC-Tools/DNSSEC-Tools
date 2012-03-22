@@ -146,12 +146,13 @@ check_outstanding_async() {
 
         res_async_query_select_info(outstanding_queries[i].ea, &numfds, &fds, &tv);
 
-        if (!res_async_ea_isset(outstanding_queries[i].ea, &fds))
-            continue;
+//        if (!res_async_ea_isset(outstanding_queries[i].ea, &fds))
+//            continue;
 
         /* much from _resolver_rcv_one -> val_resquery_async_rcv */
         ret_val = res_async_query_handle(outstanding_queries[i].ea, &handled, &fds);
 
+        fprintf(stderr, "checking: %d -> %d (no ans: %d)\n", i, ret_val, SR_NO_ANSWER_YET);
         if (ret_val == SR_NO_ANSWER_YET)
             continue;
 
@@ -282,6 +283,24 @@ void _check_has_one_type_async(u_char *response, size_t response_size,
     _check_has_one_type_section_async(response, response_size, rc, testStatus, buf, buf_len, rrtype, ns_s_an);
 }
 
+static struct name_server *
+_parse_name_server(char *ns_name, int flags) {
+    struct name_server *ns;
+
+    ns = parse_name_server(ns_name, NULL);
+
+    if (!ns)
+        return NULL;
+
+    ns->ns_options |= flags;
+
+    /* 1 retry at 1 second */
+    ns->ns_retrans = 1;
+    ns->ns_retry = 0;
+
+    return ns;
+}
+
 /******************************************************************************
  * TESTS
  ******************************************************************************/
@@ -318,8 +337,7 @@ void check_basic_async(char *ns_name, char *buf, size_t buf_len, int *testStatus
     val_async_event_cb callback_info = &_check_basic_async_response;
     basic_callback_data *basic_async_data;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     basic_async_data = (basic_callback_data *) malloc(sizeof(basic_callback_data));
     basic_async_data->domain = strdup("www.dnssec-tools.org");
@@ -344,8 +362,7 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     size_t len;
     int             rrnum;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -369,8 +386,7 @@ int check_basic_dns_async(char *ns_name, char *buf, size_t buf_len, int *testSta
     int *rrtype = (int *) malloc(sizeof(int));
     *rrtype = ns_t_a;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
     add_outstanding_async_query(ea, _check_has_one_type_async,
@@ -391,8 +407,7 @@ int check_basic_tcp(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     ns_rr           rr;
     int             rrnum;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     rc = get_tcp("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
                  &server, &response, &len);
@@ -433,8 +448,7 @@ int check_basic_tcp_async(char *ns_name, char *buf, size_t buf_len, int *testSta
     int *rrtype = (int *) malloc(sizeof(int));
     *rrtype = ns_t_a;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     ea = res_async_query_create("www.dnssec-tools.org", ns_t_a, ns_c_in, ns, 0);
     res_switch_all_to_tcp(ea);
@@ -481,8 +495,8 @@ int check_small_edns0_results(u_char *response, size_t response_size, char *buf,
     if (!found_edns0)
         RETURN_ERROR("No EDNS0 record was found in the response but one was expected.");
 
-    if (found_edns0 < 1500) {
-        snprintf(buf, buf_len, "Warning: The returned EDNS0 size (%d) is smaller than recommended (1500)", found_edns0);
+    if (found_edns0 < 1480) {
+        snprintf(buf, buf_len, "Warning: The returned EDNS0 size (%d) is smaller than recommended (1480)", found_edns0);
         *testStatus = CHECK_WARNING;
         return CHECK_WARNING;
     }
@@ -499,9 +513,8 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len, int *testStatus)
     u_char *response;
     size_t len;
 
-    ns = parse_name_server(ns_name, NULL);
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
     ns->ns_edns0_size = 4096;
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -525,9 +538,8 @@ int check_small_edns0_async(char *ns_name, char *buf, size_t buf_len, int *testS
     struct expected_arrival *ea;
     struct name_server *ns;
 
-    ns = parse_name_server(ns_name, NULL);
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
     ns->ns_edns0_size = 4096;
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     ea = res_async_query_send(ns_name, ns_t_a, ns_c_in, ns);
     add_outstanding_async_query(ea, _check_small_edns0_async_response,
@@ -591,8 +603,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     u_char *response;
     size_t len;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS| SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS| SR_QUERY_RECURSE);
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -621,9 +632,8 @@ int check_do_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus
     struct expected_arrival *ea;
     struct name_server *ns;
 
-    ns = parse_name_server(ns_name, NULL);
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
     ns->ns_edns0_size = 4096;
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
 
     ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
     add_outstanding_async_query(ea, _check_do_bit_async_response,
@@ -663,8 +673,7 @@ int check_ad_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     u_char *response;
     size_t len;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_SET_DO | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_SET_DO | SR_QUERY_RECURSE);
     ns->ns_options &= ~ ns_f_cd;
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
@@ -686,8 +695,7 @@ int check_ad_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus
     struct expected_arrival *ea;
     struct name_server *ns;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_SET_DO | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_SET_DO | SR_QUERY_RECURSE);
     ns->ns_options &= ~ ns_f_cd;
 
     ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
@@ -709,8 +717,7 @@ int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len, int *testStatu
     size_t len;
     int rrnum;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS);
 
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -746,8 +753,7 @@ int check_do_has_rrsigs_async(char *ns_name, char *buf, size_t buf_len, int *tes
     struct expected_arrival *ea;
     struct name_server *ns;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS);
 
     ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
     add_outstanding_async_query(ea, _check_has_rrsigs_async_response,
@@ -770,8 +776,7 @@ int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char 
 
     int             rrnum;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     rc = get(name, ns_t_a, ns_c_in, ns,
              &server, &response, &len);
@@ -833,8 +838,7 @@ int check_can_get_negative_async(char *ns_name, char *buf, size_t buf_len, const
     struct expected_arrival *ea;
     int *expected_type = (int *) malloc(sizeof(int));
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     *expected_type = rrtype;
     ea = res_async_query_send(name, ns_t_a, ns_c_in, ns);
@@ -866,8 +870,7 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
 
     int             rrnum;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     rc = get(name, rrtype, ns_c_in, ns,
              &server, &response, &len);
@@ -906,8 +909,7 @@ int check_can_get_type_async(char *ns_name, char *buf, size_t buf_len, const cha
     struct expected_arrival *ea;
     int *expected_type = (int *) malloc(sizeof(int));
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE;
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     *expected_type = rrtype;
     ea = res_async_query_send(name, rrtype, ns_c_in, ns);
