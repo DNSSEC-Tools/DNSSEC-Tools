@@ -14,7 +14,6 @@
  *
  * See RFC 2537, RFC 3110, RFC 4034 Appendix B.1, RFC 2536
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include <openssl/bn.h>

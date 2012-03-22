@@ -6,7 +6,6 @@
  * DESCRIPTION
  * Parsing functions for some useful RR types
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_parse.h"

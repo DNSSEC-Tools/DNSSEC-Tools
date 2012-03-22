@@ -6,6 +6,10 @@
 #ifndef _VALIDATOR_INTERNAL_H
 #define _VALIDATOR_INTERNAL_H
 
+#if !defined(WIN32) || defined(LIBVAL_CONFIGURED)
+#include "validator/validator-config.h"
+#endif
+
 #include "validator/validator.h"
 #include "validator/resolver.h"
 

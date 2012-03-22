@@ -2,7 +2,6 @@
  * Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_resquery.h"
