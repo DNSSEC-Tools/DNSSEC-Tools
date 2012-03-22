@@ -20,7 +20,7 @@ use Net::DNS::SEC::Tools::defaults;
 # Version information.
 #
 my $NAME   = "dtconfchk";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -1051,6 +1051,15 @@ sub bool_check
 	my $val;					# Value of label.
 
 	#
+	# Don't check values of undefined labels.
+	#
+	if(!defined($dtconf{$label}))
+	{
+		prt(1,"$label not defined in config file");
+		return;
+	}
+
+	#
 	# Convert the label's value into a boolean and check it for validity.
 	#
 	$val = $dtconf{$label};
@@ -1581,7 +1590,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
