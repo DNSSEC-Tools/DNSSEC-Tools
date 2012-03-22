@@ -8,6 +8,8 @@
 
 #if !defined(WIN32) || defined(LIBVAL_CONFIGURED)
 #include "validator/validator-config.h"
+#else
+#include "validator/validator-compat.h"
 #endif
 
 #include "validator/validator.h"
