@@ -32,9 +32,11 @@ TestManager::dataAvailable()
     tv.tv_usec = 1;
 
     // loop through everything we have now
+#ifndef VAL_NO_ASYNC
     while (val_async_check_wait(NULL, NULL, NULL, &tv, 0) > 0) {
         //qDebug() << " hit";
     }
+#endif
 
     check_outstanding_async();
 
@@ -58,6 +60,7 @@ void TestManager::startQueuedTransactions()
 void
 TestManager::updateWatchedSockets()
 {
+#ifndef VAL_NO_ASYNC
     if (!m_inTestLoop)
         check_queued_sends();
 
@@ -102,6 +105,7 @@ TestManager::updateWatchedSockets()
             connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
         }
     }
+#endif
 }
 
 DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) {
