@@ -33,6 +33,9 @@ AC_DEFINE_UNQUOTED(LIBVAL_CONFIGURE_OPTIONS,"$ac_configure_args", [Configure opt
 CONFIGURE_OPTIONS="\"$ac_configure_args\""
 AC_SUBST(CONFIGURE_OPTIONS)
 
+AH_TEMPLATE([LIBVAL_CONFIGURED], [Define if the configure script was run.])
+AC_DEFINE(LIBVAL_CONFIGURED)
+
 ########################################
 # add in -Dsolaris2, -Dlinux, etc as needed
 
@@ -600,7 +603,9 @@ AC_CHECK_TYPES([u_char, u_short, u_long])
 dnl ----------------------------------------------------------------------
 
 AH_BOTTOM([
+#if !defined(WIN32) || defined(LIBVAL_CONFIGURED)
 #include "validator/validator-compat.h"
+#endif
 ])
 
 dnl ----------------------------------------------------------------------
