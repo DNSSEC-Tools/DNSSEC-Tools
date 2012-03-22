@@ -172,6 +172,16 @@ my $UNIXSOCK	 = "/realmmgr.socket";		# Unix socket name.
 my $REALMMGR_PID = "/realmmgr.pid";		# Pid node name.
 
 #
+# Maximum lengths of Unix socket names for various systems.  These are used
+# in rollmgr_channel().
+#
+my $FREEBSD_MAXSOCKNAME	= 103;
+my $MACOSX_MAXSOCKNAME	= 103;
+my $LINUX_MAXSOCKNAME	= 107;
+my $UNKNOWN_MAXSOCKNAME = $MACOSX_MAXSOCKNAME;		# Use the shortest.
+my $maxsockname		= $UNKNOWN_MAXSOCKNAME;
+
+#
 # The CHANNEL_ entities are used for specifying whether realmmgr_sendcmd()
 # should or should not wait for a response from dtrealms.
 #
@@ -421,6 +431,23 @@ sub realmmgr_prepdep
 	if(($osname eq "solaris"))
 	{
 		$osclass = "sysv";
+	}
+
+	#
+	# Set the maximum socket-name length depending on which operating
+	# system class we're running on.
+	#
+	if($osname eq "darwin")
+	{
+		$maxsockname = $MACOSX_MAXSOCKNAME;
+	}
+	elsif($osname eq "freebsd")
+	{
+		$maxsockname = $FREEBSD_MAXSOCKNAME;
+	}
+	elsif($osname eq "linux")
+	{
+		$maxsockname = $LINUX_MAXSOCKNAME;
 	}
 
 	#
@@ -1308,8 +1335,8 @@ sub realmmgr_channel
 		if($server)
 		{
 			setsockopt(SOCK,SOL_SOCKET,SO_REUSEADDR,pack("l",1));
-			bind(SOCK,sockaddr_in($CMDPORT,$ADDR)) || return(0);
-			listen(SOCK,SOMAXCONN) || return(0);
+			bind(SOCK,sockaddr_in($CMDPORT,$ADDR)) || return(-2);
+			listen(SOCK,SOMAXCONN) || return(-4);
 		}
 		else
 		{
@@ -1331,6 +1358,13 @@ sub realmmgr_channel
 		#
 		$unixsock = makelocalstatedir("/dnssec-tools") . $UNIXSOCK;
 # print STDERR "realmmgr_channel:  unixsock - <$unixsock>\n";
+
+		#
+		# Ensure the socket name isn't too long.  This is a result
+		# of a hardcode maximum length for socket names.  This is
+		# in the kernel and isn't 
+		#
+		return(-5) if(length($unixsock) > $maxsockname);
 
 		$sockdata = sockaddr_un($unixsock);
 
@@ -1814,6 +1848,16 @@ If I<serverflag> is false, then the client's side of the channel is created.
 Currently, the connection may only be made to the localhost.  This may be
 changed to allow remote connections, if this is found to be needed.
 
+Return Values:
+
+      1 - Communications channel successfully established.
+      0 - Unable to connect to the server.
+     -1 - Unable to create a Unix socket.
+     -2 - Unable to bind to the Unix socket. (server only)
+     -3 - Unable to change the permissions on the Unix socket. (server only)
+     -4 - Unable to listen on the Unix socket. (server only)
+     -5 - The socket name was longer than allowed for a Unix socket.
+
 =item I<realmmgr_queuecmd(cmdname, value)>
 
 This interface internally remembers a command and it's optional value
@@ -1902,7 +1946,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
@@ -1915,3 +1959,4 @@ B<Net::DNS::SEC::Tools::rolllog.pm(3)>,
 B<Net::DNS::SEC::Tools::rollmgr.pm(3)>
 
 =cut
+
