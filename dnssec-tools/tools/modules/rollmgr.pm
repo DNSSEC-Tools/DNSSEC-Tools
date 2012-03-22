@@ -96,8 +96,8 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::rolllog;
 
-our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.0";
+our $VERSION = "1.12";
+our $MODULE_VERSION = "1.12.0";
 
 our @ISA = qw(Exporter);
 
@@ -194,6 +194,16 @@ my $EOL		= "\015\012";			# Net-standard end-of-line.
 
 my $CHANNEL_TYPE = PF_UNIX;			# Type of channel we're using.
 my $UNIXSOCK	= "/rollmgr.socket";		# Unix socket name.
+
+#
+# Maximum lengths of Unix socket names for various systems.  These are used
+# in rollmgr_channel().
+#
+my $FREEBSD_MAXSOCKNAME	= 103;
+my $MACOSX_MAXSOCKNAME	= 103;
+my $LINUX_MAXSOCKNAME	= 107;
+my $UNKNOWN_MAXSOCKNAME = $MACOSX_MAXSOCKNAME;		# Use the shortest.
+my $maxsockname		= $UNKNOWN_MAXSOCKNAME;
 
 #
 # The CHANNEL_ entities are used for specifying whether rollmgr_sendcmd()
@@ -552,6 +562,23 @@ sub rollmgr_prepdep
 	if(($osname eq "solaris"))
 	{
 		$osclass = "sysv";
+	}
+
+	#
+	# Set the maximum socket-name length depending on which operating
+	# system class we're running on.
+	#
+	if($osname eq "darwin")
+	{
+		$maxsockname = $MACOSX_MAXSOCKNAME;
+	}
+	elsif($osname eq "freebsd")
+	{
+		$maxsockname = $FREEBSD_MAXSOCKNAME;
+	}
+	elsif($osname eq "linux")
+	{
+		$maxsockname = $LINUX_MAXSOCKNAME;
 	}
 
 	#
@@ -1535,8 +1562,8 @@ sub rollmgr_channel
 		if($server)
 		{
 			setsockopt(SOCK,SOL_SOCKET,SO_REUSEADDR,pack("l",1));
-			bind(SOCK,sockaddr_in($CMDPORT,$ADDR)) || return(0);
-			listen(SOCK,SOMAXCONN) || return(0);
+			bind(SOCK,sockaddr_in($CMDPORT,$ADDR)) || return(-2);
+			listen(SOCK,SOMAXCONN) || return(-4);
 		}
 		else
 		{
@@ -1559,6 +1586,16 @@ sub rollmgr_channel
 		$unixsock = makelocalstatedir("/dnssec-tools") . $UNIXSOCK;
 # print STDERR "rollmgr_channel:  unixsock - <$unixsock>\n";
 
+		#
+		# Ensure the socket name isn't too long.  This is a result
+		# of a hardcode maximum length for socket names.  This is
+		# in the kernel and isn't 
+		#
+		return(-5) if(length($unixsock) > $maxsockname);
+
+		#
+		# Create the socket.
+		#
 		$sockdata = sockaddr_un($unixsock);
 
 		#
@@ -2124,6 +2161,16 @@ If I<serverflag> is false, then the client's side of the channel is created.
 Currently, the connection may only be made to the localhost.  This may be
 changed to allow remote connections, if this is found to be needed.
 
+Return Values:
+
+      1 - Communications channel successfully established.
+      0 - Unable to connect to the server.
+     -1 - Unable to create a Unix socket.
+     -2 - Unable to bind to the Unix socket. (server only)
+     -3 - Unable to change the permissions on the Unix socket. (server only)
+     -4 - Unable to listen on the Unix socket. (server only)
+     -5 - The socket name was longer than allowed for a Unix socket.
+
 =item I<rollmgr_queuecmd(cmdname, value)>
 
 This interface internally remembers a command and it's optional value
@@ -2258,7 +2305,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
