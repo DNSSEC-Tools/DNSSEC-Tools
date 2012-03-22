@@ -825,7 +825,7 @@ void _check_negative_async_response(u_char *response, size_t response_size,
     if (rrnum <= 0)
         SET_ERROR("Failed to find an expected NSEC3 record in a query for a record that doesn't exist.");
 
-    if (!rrtype == ns_t_nsec)
+    if (rrtype == ns_t_nsec)
         SET_SUCCESS("Querying for a non-existent record returned an NSEC record.");
     SET_SUCCESS("Querying for a non-existent record returned an NSEC3 record.");
 }
