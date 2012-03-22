@@ -8,7 +8,7 @@ Rectangle {
     id: dnssecCheckTop
     color: "black"
 
-    property string dnssecToolsVersion: "1.11"
+    property string dnssecToolsVersion: "1.12.1"
 
     Timer {
         id:       timer;
@@ -48,13 +48,28 @@ Rectangle {
         }
 
         Text {
-            id: titleHelpButton
-            text: "Help"
+            id: versionNumber
+            text: "Version " + dnssecCheckTop.dnssecToolsVersion
             color: "white"
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: parent.right
             anchors.rightMargin: 10
             horizontalAlignment: Text.AlignRight
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    helpBox.state = "visible"
+                }
+            }
+        }
+        Text {
+            id: titleHelpButton
+            text: "Help"
+            color: "white"
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            horizontalAlignment: Text.AlignLeft
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
@@ -292,17 +307,22 @@ Rectangle {
 
         widthPercent: .75
 
-        text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><h2>Welcome to DNSSEC-Check</h2><img style=\"float: right;\" src=\"qrc:/images/dnssec-check-64x64.png\" />
-        <p>On the following screen you will see a list of the DNS resolvers configured for your system.</p>
-        <p>Click on the <b>'Run Tests'</b> button
-        to run some DNSSEC compliance tests on them.  After all the tests have run, please consider clicking the <b>'Submit Results'</b>
-        button to help measure the world-wide DNSSEC deployment.
-	<p>For more information on DNSSEC-Check, please visit <a
-        href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">the DNSSEC-Check
-        wiki page</a></p>"
+        text: ""
 
         onDismissed: {
             testManager.saveSetting("initMessageDisplayed", dnssecToolsVersion)
+        }
+        Component.onCompleted: {
+            text = "<style>a { color: #8888ff; } a:visited { color: red; }</style><h2>Welcome to DNSSEC-Check</h2>"
+                    + "<h3><i>(version "
+                    + dnssecCheckTop.dnssecToolsVersion + ")</i></h2><img style=\"float: right;\" src=\"qrc:/images/dnssec-check-64x64.png\" />"
+                    + "<p>On the following screen you will see a list of the DNS resolvers configured for your system.</p>"
+                    + "<p>Click on the <b>'Run Tests'</b> button"
+                    + "to run some DNSSEC compliance tests on them.  After all the tests have run, please consider clicking the <b>'Submit Results'</b>"
+                    + "button to help measure the world-wide DNSSEC deployment."
+                    + "<p>For more information on DNSSEC-Check, please visit <a"
+                    + "href=\"https://www.dnssec-tools.org/wiki/index.php/DNSSEC-Check\">the DNSSEC-Check"
+                    + "wiki page</a></p>"
         }
     }
 
