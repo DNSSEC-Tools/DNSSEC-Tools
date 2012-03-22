@@ -18,7 +18,14 @@
 #include "val_context.h"
 #include "val_assertion.h"
 #include "val_parse.h"
+
+#if !defined(WIN32) || defined(LIBVAL_CONFIGURED)
 #include "val_inline_conf.h"
+#else
+const char val_conf_inline_buf[] = "";
+const char root_hints_inline_buf[] = "";
+const char resolv_conf_inline_buf[] = "";
+#endif
 
 #ifdef ANDROID
 #include <sys/system_properties.h>

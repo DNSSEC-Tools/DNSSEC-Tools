@@ -281,6 +281,9 @@
 /* Define to 1 if the system has the type `u_short'. */
 #undef HAVE_U_SHORT
 
+/* Define if the configure script was run. */
+#undef LIBVAL_CONFIGURED
+
 /* Configure options */
 #undef LIBVAL_CONFIGURE_OPTIONS
 
@@ -361,5 +364,7 @@
 #undef VAL_ROOT_HINTS
 
 
+#if !defined(WIN32) || defined(LIBVAL_CONFIGURED)
 #include "validator/validator-compat.h"
+#endif
 
