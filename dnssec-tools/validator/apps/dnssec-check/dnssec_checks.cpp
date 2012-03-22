@@ -46,47 +46,60 @@ extern "C" {
         buffer[buffer_len-1] = '\0';                       \
     } while(0);
 
-#define RETURN_CODE_BUF(code, msg, buffer, buffer_len)     \
+#define RETURN_SOMETHING_END(code, what, buffer, buffer_len)     \
+    buffer[buffer_len-1] = '\0';                       \
+    if (testStatus)                                    \
+        *testStatus = (code == CHECK_CRITICAL ? CHECK_FAILED : code);                          \
+    return what;                                       \
+   } while(0);
+
+#define RETURN_SOMETHING_CODE_BUF(code, what, msg, buffer, buffer_len)     \
     do {                                                   \
         strncpy(buffer, msg, buffer_len-1);                \
-        buffer[buffer_len-1] = '\0';                       \
-        if (testStatus)                                    \
-            *testStatus = code;                            \
-        return code;                                       \
-    } while(0);
+        RETURN_SOMETHING_END(code, what, buffer, buffer_len)
 
-#define RETURN_ERROR(msg)                                  \
-    RETURN_CODE_BUF(CHECK_FAILED, "Error: " msg, buf, buf_len);
+#define RETURN_SOMETHING_CODE_BUF1(code, what, msg, buffer, buffer_len, arg1)     \
+    do {                                                   \
+        snprintf(buffer, buffer_len-1, msg, arg1);         \
+        RETURN_SOMETHING_END(code, what, buffer, buffer_len)
 
-#define RETURN_CRITICAL(msg)                               \
-    RETURN_CODE_BUF(CHECK_CRITICAL, "Critical: " msg, buf, buf_len);
+#define RETURN_SOMETHING_CODE_BUF2(code, what, msg, buffer, buffer_len, arg1, arg2)     \
+    do {                                                   \
+        snprintf(buffer, buffer_len-1, msg, arg1);         \
+        RETURN_SOMETHING_END(code, what, buffer, buffer_len)
 
-#define RETURN_SUCCESS(msg)                                \
-    RETURN_CODE_BUF(CHECK_SUCCEEDED, "Success: " msg, buf, buf_len);
+#define RETURN_CODE_BUF(code, msg, buffer, buffer_len)              RETURN_SOMETHING_CODE_BUF(code, code, msg, buffer, buffer_len)
+#define RETURN_CODE_BUF1(code, msg, buffer, buffer_len, arg1)       RETURN_SOMETHING_CODE_BUF1(code, code, msg, buffer, buffer_len, arg1)
+#define RETURN_CODE_BUF2(code, msg, buffer, buffer_len, arg1, arg2) RETURN_SOMETHING_CODE_BUF2(code, code, msg, buffer, buffer_len, arg1, arg2)
 
-#define RETURN_WARNING(msg)                                \
-    RETURN_CODE_BUF(CHECK_WARNING, "Warning: " msg, buf, buf_len);
+#define RETURN_ERROR(msg)     RETURN_CODE_BUF(CHECK_FAILED,    "Error: "    msg, buf, buf_len);
+#define RETURN_CRITICAL(msg)  RETURN_CODE_BUF(CHECK_CRITICAL,  "Critical: " msg, buf, buf_len);
+#define RETURN_SUCCESS(msg)   RETURN_CODE_BUF(CHECK_SUCCEEDED, "Success: "  msg, buf, buf_len);
+#define RETURN_WARNING(msg)   RETURN_CODE_BUF(CHECK_WARNING,   "Warning: "  msg, buf, buf_len);
+
+#define RETURN_ERROR1(msg, arg1)     RETURN_CODE_BUF1(CHECK_FAILED,    "Error: "    msg, buf, buf_len, arg1);
+#define RETURN_CRITICAL1(msg, arg1)  RETURN_CODE_BUF1(CHECK_CRITICAL,  "Critical: " msg, buf, buf_len, arg1);
+#define RETURN_SUCCESS1(msg, arg1)   RETURN_CODE_BUF1(CHECK_SUCCEEDED, "Success: "  msg, buf, buf_len, arg1);
+#define RETURN_WARNING1(msg, arg1)   RETURN_CODE_BUF1(CHECK_WARNING,   "Warning: "  msg, buf, buf_len);
 
 /* Asyncronous Macros */
-#define SET_CODE_BUF(code, msg, buffer, buffer_len)        \
-    do {                                                   \
-        strncpy(buffer, msg, buffer_len-1);                \
-        buffer[buffer_len-1] = '\0';                       \
-        *testStatus = (code == CHECK_CRITICAL ? CHECK_FAILED : code);                          \
-        return;                                       \
-    } while(0);
+#define SET_CODE_BUF(code,  msg, buffer, buffer_len)                RETURN_SOMETHING_CODE_BUF(code, , msg, buffer, buffer_len)
+#define SET_CODE_BUF1(code, msg, buffer, buffer_len, arg1)          RETURN_SOMETHING_CODE_BUF1(code, , msg, buffer, buffer_len, arg1)
+#define SET_CODE_BUF2(code, msg, buffer, buffer_len, arg1, arg2)    RETURN_SOMETHING_CODE_BUF2(code, , msg, buffer, buffer_len, arg1, arg2)
 
-#define SET_CRITICIAL(msg)                                  \
-    SET_CODE_BUF(CHECK_CRITICAL, "CRITICIAL: " msg, buf, buf_len);
 
-#define SET_ERROR(msg)                                  \
-    SET_CODE_BUF(CHECK_FAILED, "Error: " msg, buf, buf_len);
+#define SET_CRITICIAL(msg)         SET_CODE_BUF(CHECK_CRITICAL, "CRITICIAL: " msg, buf, buf_len);
+#define SET_ERROR(msg)             SET_CODE_BUF(CHECK_FAILED, "Error: " msg, buf, buf_len);
+#define SET_SUCCESS(msg)           SET_CODE_BUF(CHECK_SUCCEEDED, "Success: " msg, buf, buf_len);
+#define SET_WARNING(msg)           SET_CODE_BUF(CHECK_WARNING, "Warning: " msg, buf, buf_len);
 
-#define SET_SUCCESS(msg)                                \
-    SET_CODE_BUF(CHECK_SUCCEEDED, "Success: " msg, buf, buf_len);
+#define SET_CRITICIAL1(msg, arg1)  SET_CODE_BUF1(CHECK_CRITICAL, "CRITICIAL: " msg, buf, buf_len, arg1);
+#define SET_ERROR1(msg, arg1)      SET_CODE_BUF1(CHECK_FAILED, "Error: " msg, buf, buf_len, arg1);
+#define SET_SUCCESS1(msg, arg1)    SET_CODE_BUF1(CHECK_SUCCEEDED, "Success: " msg, buf, buf_len, arg1);
 
-#define SET_WARNING(msg)                                \
-    SET_CODE_BUF(CHECK_WARNING, "Warning: " msg, buf, buf_len);
+#define SET_WARNING1(msg, arg1)    SET_CODE_BUF1(CHECK_WARNING, "Warning: " msg, buf, buf_len, arg1);
+
+/* Async related definitions */
 
 typedef void (AsyncCallback) (u_char *buffer, size_t buffer_size, int status,
                               int *testReturnStatus, char *buf, size_t buf_len, void *localData);
@@ -104,6 +117,18 @@ typedef struct outstanding_query_s {
 int maxcount = 0;
 int outstandingCount = 0;
 static outstanding_query outstanding_queries[1024];
+
+typedef struct async_info_s {
+        int             rr_type;
+        const char *rr_type_name;
+} async_info;
+
+async_info *malloc_async_info(int rr_type, const char *rr_type_name) {
+    async_info *ret = (async_info *) malloc(sizeof(async_info));
+    ret->rr_type = rr_type;
+    ret->rr_type_name = rr_type_name;
+    return ret;
+}
 
 /*
  * Async Loop processing
@@ -152,7 +177,6 @@ check_outstanding_async() {
         /* much from _resolver_rcv_one -> val_resquery_async_rcv */
         ret_val = res_async_query_handle(outstanding_queries[i].ea, &handled, &fds);
 
-        fprintf(stderr, "checking: %d -> %d (no ans: %d)\n", i, ret_val, SR_NO_ANSWER_YET);
         if (ret_val == SR_NO_ANSWER_YET)
             continue;
 
@@ -218,14 +242,14 @@ collect_async_query_select_info(fd_set *udp_fds, int *numUdpFds, fd_set *tcp_fds
  * DNS convenience routines
  */
 
-int count_types(u_char *response, size_t len, char *buf, size_t buf_len, int rr_type, ns_sect rr_section)
+int count_types(u_char *response, size_t len, char *buf, size_t buf_len, int rr_type, ns_sect rr_section, const char *rr_type_name)
 {
     ns_msg          handle;
     ns_rr           rr;
     int             rrnum;
     int             count = 0;
     int             found_type = 0;
-    int             ts, *testStatus = &ts;
+    int             *testStatus = NULL;
 
     if (ns_initparse(response, len, &handle) < 0)
         RETURN_CRITICAL("Fatal internal error: failed to init parser");
@@ -251,36 +275,34 @@ int count_types(u_char *response, size_t len, char *buf, size_t buf_len, int rr_
 
     /* set some generic records, but tests should really reset these */
     if (!found_type) {
-        SET_MESSAGE("No record found.", buf, buf_len);
-        return 0;
+        RETURN_SOMETHING_CODE_BUF1(0, 0, "No %s record found.", buf, buf_len, rr_type_name)
     }
 
-    SET_MESSAGE("A record was successfully retrieved", buf, buf_len);
-    return count;
+    RETURN_SOMETHING_CODE_BUF1(count, count, "At least one %s record was successfully retrieved", buf, buf_len, rr_type_name)
 }
 
 void _check_has_one_type_section_async(u_char *response, size_t response_size,
-                                       int rc, int *testStatus, char *buf, size_t buf_len, int rrtype, ns_sect rrsection) {
+                                       int rc, int *testStatus, char *buf, size_t buf_len,
+                                       int rrtype, ns_sect rrsection, const char *rrtypename) {
     int             rrnum;
 
     if (rc != SR_UNSET)
         SET_ERROR("Basic DNS query failed entirely");
 
-    rrnum = count_types(response, response_size, buf, buf_len, rrtype, rrsection);
+    rrnum = count_types(response, response_size, buf, buf_len, rrtype, rrsection, rrtypename);
 
     if (rrnum <= 0)
-        SET_ERROR("No record found the DNS response.");
+        SET_ERROR1("No %s record found the DNS response.", rrtypename);
 
-    SET_SUCCESS("At least one record was successfully retrieved");
+    SET_SUCCESS1("At least one %s record was successfully retrieved", rrtypename);
 }
 
 void _check_has_one_type_async(u_char *response, size_t response_size,
                               int rc, int *testStatus, char *buf, size_t buf_len, void *localData) {
-    int             rrtype = *((int *) localData);
+    async_info *info = (async_info *) localData;
 
+    _check_has_one_type_section_async(response, response_size, rc, testStatus, buf, buf_len, info->rr_type, ns_s_an, info->rr_type_name);
     free(localData);
-
-    _check_has_one_type_section_async(response, response_size, rc, testStatus, buf, buf_len, rrtype, ns_s_an);
 }
 
 static struct name_server *
@@ -296,7 +318,7 @@ _parse_name_server(char *ns_name, int flags) {
 
     /* 1 retry at 1 second */
     ns->ns_retrans = 1;
-    ns->ns_retry = 0;
+    ns->ns_retry = 1;
 
     return ns;
 }
@@ -370,7 +392,7 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     if (rc != SR_UNSET)
         RETURN_ERROR("Basic DNS query failed entirely");
 
-    rrnum = count_types(response, len, buf, buf_len, ns_t_a, ns_s_an);
+    rrnum = count_types(response, len, buf, buf_len, ns_t_a, ns_s_an, "A");
     
     if (rrnum <= 0)
         RETURN_ERROR("No A record found using UDP in the basic DNS test.");
@@ -383,14 +405,12 @@ int check_basic_dns(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
 int check_basic_dns_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     struct expected_arrival *ea;
     struct name_server *ns;
-    int *rrtype = (int *) malloc(sizeof(int));
-    *rrtype = ns_t_a;
 
     ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
     ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
     add_outstanding_async_query(ea, _check_has_one_type_async,
-                                testStatus, buf, buf_len, rrtype);
+                                testStatus, buf, buf_len, malloc_async_info(ns_t_a, "A"));
     return CHECK_CRITICAL;
 }
 #endif /* VAL_NO_ASYNC */
@@ -445,8 +465,6 @@ int check_basic_tcp(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
 int check_basic_tcp_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     struct expected_arrival *ea;
     struct name_server *ns;
-    int *rrtype = (int *) malloc(sizeof(int));
-    *rrtype = ns_t_a;
 
     ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
@@ -454,7 +472,7 @@ int check_basic_tcp_async(char *ns_name, char *buf, size_t buf_len, int *testSta
     res_switch_all_to_tcp(ea);
     *testStatus = CHECK_QUEUED;
     add_outstanding_async_query(ea, _check_has_one_type_async,
-                                testStatus, buf, buf_len, rrtype);
+                                testStatus, buf, buf_len, malloc_async_info(ns_t_a, "A (over tcp)"));
     return CHECK_CRITICAL;
 }
 #endif /* !VAL_NO_ASYNC */
@@ -548,7 +566,7 @@ int check_small_edns0_async(char *ns_name, char *buf, size_t buf_len, int *testS
 }
 #endif /* VAL_NO_ASYNC */
 
-int check_an_edns0_bit(u_char *response, size_t response_size, char *buf, size_t buf_len, int *testStatus, int bit)
+int check_an_edns0_bit(u_char *response, size_t response_size, char *buf, size_t buf_len, int *testStatus, int bit, const char *bitName)
 {
     ns_msg          handle;
     int             found_bit = 0;
@@ -587,9 +605,9 @@ int check_an_edns0_bit(u_char *response, size_t response_size, char *buf, size_t
     }
 
     if (!found_bit)
-        RETURN_ERROR("No bit found in the response when one was expected.");
+        RETURN_ERROR1("No %s bit found in the response when one was expected.", bitName);
 
-    RETURN_SUCCESS("A query successfully returned a response with the proper bit set");
+    RETURN_SUCCESS1("A query successfully returned a response with the %s bit set", bitName);
 }
 
 int check_do_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
@@ -614,7 +632,7 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
 
     free_name_server(&ns);
 
-    return check_an_edns0_bit(response, len, buf, buf_len, testStatus, RES_USE_DNSSEC);
+    return check_an_edns0_bit(response, len, buf, buf_len, testStatus, RES_USE_DNSSEC, "DO");
 }
 
 #ifndef VAL_NO_ASYNC
@@ -625,7 +643,7 @@ void _check_do_bit_async_response(u_char *response, size_t response_size,
     if (rc != SR_UNSET)
         SET_ERROR("DO bit DNS query failed entirely");
 
-    check_an_edns0_bit(response, response_size, buf, buf_len, testStatus, RES_USE_DNSSEC);
+    check_an_edns0_bit(response, response_size, buf, buf_len, testStatus, RES_USE_DNSSEC, "DO");
 }
 
 int check_do_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
@@ -642,7 +660,7 @@ int check_do_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus
 }
 #endif /* VAL_NO_ASYNC */
 
-int check_a_flag(int rc, u_char *response, size_t response_size, char *buf, size_t buf_len, int *testStatus, int flag)
+int check_a_flag(int rc, u_char *response, size_t response_size, char *buf, size_t buf_len, int *testStatus, int flag, const char *flagName)
 {
     ns_msg          handle;
     int             has_flag = 0;
@@ -656,9 +674,9 @@ int check_a_flag(int rc, u_char *response, size_t response_size, char *buf, size
     has_flag = libsres_msg_getflag(handle, flag);
 
     if (!has_flag)
-        RETURN_ERROR("An expected bit was not set on a response to a query.");
+        RETURN_ERROR1("The %s bit was not set on a response to a validatable query.", flagName);
 
-    RETURN_SUCCESS("A response was received with the expected BIT in place.");
+    RETURN_SUCCESS1("A response was received with the expected %s bit set.", flagName);
 }
 
 
@@ -679,7 +697,7 @@ int check_ad_bit(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
     rc = get("www.dnssec-tools.org", ns_t_a, ns_c_in, ns,
              &server, &response, &len);
 
-    return check_a_flag(rc, response, len, buf, buf_len, testStatus, ns_f_ad);
+    return check_a_flag(rc, response, len, buf, buf_len, testStatus, ns_f_ad, "AD");
 }
 
 #ifndef VAL_NO_ASYNC
@@ -688,7 +706,7 @@ void _check_ad_bit_async_response(u_char *response, size_t response_size,
     if (rc != SR_UNSET)
         SET_ERROR("Basic DNS query failed entirely");
 
-    check_a_flag(rc, response, response_size, buf, buf_len, testStatus, ns_f_ad);
+    check_a_flag(rc, response, response_size, buf, buf_len, testStatus, ns_f_ad, "AD");
 }
 
 int check_ad_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
@@ -725,7 +743,7 @@ int check_do_has_rrsigs(char *ns_name, char *buf, size_t buf_len, int *testStatu
     if (rc != SR_UNSET)
         RETURN_ERROR("No response was received when querying for returned RRSIGs");
 
-    rrnum = count_types(response, len, buf, buf_len, ns_t_rrsig, ns_s_an);
+    rrnum = count_types(response, len, buf, buf_len, ns_t_rrsig, ns_s_an, "RRSIG");
 
     if (rrnum <= 0)
         RETURN_ERROR("Failed to find an expected RRSIG in a DNSSEC valid query");
@@ -741,7 +759,7 @@ void _check_has_rrsigs_async_response(u_char *response, size_t response_size,
     if (rc != SR_UNSET)
         SET_ERROR("Basic DNS query failed entirely");
 
-    rrnum = count_types(response, response_size, buf, buf_len, ns_t_a, ns_s_an);
+    rrnum = count_types(response, response_size, buf, buf_len, ns_t_a, ns_s_an, "A");
     
     if (rrnum <= 0)
         SET_ERROR("No A record found using UDP in the basic DNS test.");
@@ -763,7 +781,7 @@ int check_do_has_rrsigs_async(char *ns_name, char *buf, size_t buf_len, int *tes
 #endif /* VAL_NO_ASYNC */
 
 
-int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char *name, int rrtype) {
+int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char *name, int rrtype, const char *rrtypename) {
     /* queries with the DO bit and thus a bad query should return an answer with
        an NSEC or NSEC3 record based on the parent zones type. */
 
@@ -785,25 +803,21 @@ int check_can_get_negative(char *ns_name, char *buf, size_t buf_len, const char 
         RETURN_ERROR("Querying for negative answers failed to get a response");
 
     rrnum = count_types(response, len, buf, buf_len,
-                        rrtype, ns_s_ns);
+                        rrtype, ns_s_ns, rrtypename);
 
-    if (rrnum <= 0 && rrtype == ns_t_nsec)
-        RETURN_ERROR("Failed to find an expected NSEC record in a query for a record that doesn't exist.");
     if (rrnum <= 0)
-        RETURN_ERROR("Failed to find an expected NSEC3 record in a query for a record that doesn't exist.");
+        RETURN_ERROR1("Failed to find an expected %s record in a query for a record that doesn't exist.", rrtypename);
 
     free_name_server(&ns);
-    if (!rrtype == ns_t_nsec)
-        RETURN_SUCCESS("Querying for a non-existent record returned an NSEC record.");
-    RETURN_SUCCESS("Querying for a non-existent record returned an NSEC3 record.");
+    RETURN_SUCCESS1("Querying for a non-existent record returned an %s record.", rrtypename);
 }
 
 int check_can_get_nsec(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_negative(ns_name, buf, buf_len, "bogusdnstest.dnssec-tools.org", ns_t_nsec);
+    return check_can_get_negative(ns_name, buf, buf_len, "bogusdnstest.dnssec-tools.org", ns_t_nsec, "NSEC");
 }
 
 int check_can_get_nsec3(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_negative(ns_name, buf, buf_len, "foobardedabadoo.org", ns_t_nsec3);
+    return check_can_get_negative(ns_name, buf, buf_len, "foobardedabadoo.org", ns_t_nsec3, "NSEC3");
 }
 
 #ifndef VAL_NO_ASYNC
@@ -817,7 +831,7 @@ void _check_negative_async_response(u_char *response, size_t response_size,
     if (rc != SR_UNSET)
         SET_ERROR("Query for a negative response failed to get an answer entirely");
 
-    rrnum = count_types(response, response_size, buf, buf_len, rrtype, ns_s_ns);
+    rrnum = count_types(response, response_size, buf, buf_len, rrtype, ns_s_ns, "XXXUNKOWN");
     free(expected_type);
 
     if (rrnum <= 0 && rrtype == ns_t_nsec)
@@ -857,7 +871,8 @@ int check_can_get_nsec3_async(char *ns_name, char *buf, size_t buf_len, int *tes
 }
 #endif /* VAL_NO_ASYNC */
 
-int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *name, const char *asciitype, int *testStatus, int rrtype) {
+int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *name, const char *asciitype, int *testStatus,
+                       int rrtype, const char *rrtypename) {
     /* queries with the DO bit and thus should return an answer with
        the DO bit as well.  It should additionall have at least one
        RRSIG record. */
@@ -878,7 +893,7 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
     if (rc != SR_UNSET)
         RETURN_ERROR("Querying for a particular type failed to get a response");
 
-    rrnum = count_types(response, len, buf, buf_len, rrtype, ns_s_an);
+    rrnum = count_types(response, len, buf, buf_len, rrtype, ns_s_an, rrtypename);
 
     free_name_server(&ns);
 
@@ -893,37 +908,36 @@ int check_can_get_type(char *ns_name, char *buf, size_t buf_len, const char *nam
 }
 
 int check_can_get_dnskey(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", testStatus, ns_t_dnskey);
+    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", testStatus, ns_t_dnskey, "DNSKEY");
 }
 
 int check_can_get_ds(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DS", testStatus, ns_t_ds);
+    return check_can_get_type(ns_name, buf, buf_len, "dnssec-tools.org", "DS", testStatus, ns_t_ds, "DS");
 }
 
 #ifndef VAL_NO_ASYNC
-int check_can_get_type_async(char *ns_name, char *buf, size_t buf_len, const char *name, const char *asciitype, int *testStatus, int rrtype) {
+int check_can_get_type_async(char *ns_name, char *buf, size_t buf_len, const char *name, const char *asciitype,
+                             int *testStatus, int rrtype, const char *rrtypename) {
     /* queries with the DO bit and thus a bad query should return an answer with
        an NSEC or NSEC3 record based on the parent zones type. */
 
     struct name_server *ns;
     struct expected_arrival *ea;
-    int *expected_type = (int *) malloc(sizeof(int));
 
     ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
 
-    *expected_type = rrtype;
     ea = res_async_query_send(name, rrtype, ns_c_in, ns);
     add_outstanding_async_query(ea, _check_has_one_type_async,
-                                testStatus, buf, buf_len, expected_type);
+                                testStatus, buf, buf_len, malloc_async_info(rrtype, rrtypename));
     return CHECK_CRITICAL;
 }
 
 int check_can_get_dnskey_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_type_async(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", testStatus, ns_t_dnskey);
+    return check_can_get_type_async(ns_name, buf, buf_len, "dnssec-tools.org", "DNSKEY", testStatus, ns_t_dnskey, "DNSKEY");
 }
 
 int check_can_get_ds_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
-    return check_can_get_type_async(ns_name, buf, buf_len, "dnssec-tools.org", "DS", testStatus, ns_t_ds);
+    return check_can_get_type_async(ns_name, buf, buf_len, "dnssec-tools.org", "DS", testStatus, ns_t_ds, "DS");
 }
 
 
