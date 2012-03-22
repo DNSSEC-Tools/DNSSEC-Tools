@@ -71,7 +71,6 @@ Rectangle {
         onClicked: {
             newHost.acceptHost()
         }
-        height: 200
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.right
         anchors.top: newHost.top
