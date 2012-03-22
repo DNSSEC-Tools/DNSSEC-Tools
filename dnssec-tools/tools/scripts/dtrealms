@@ -45,7 +45,7 @@ use Net::DNS::SEC::Tools::rolllog;
 # Version information.
 #
 my $NAME   = "dtrealms";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -350,6 +350,7 @@ sub buildrealms
 {
 	my $logflag = shift;			# Flag for logging actions.
 	my $ret;				# Return from realm_read().
+	my $fixed = 0;				# Fixed-realm flag.
 
 	rolllog_log(LOG_PHASE,'',"creating realms list") if($logflag);
 
@@ -374,12 +375,44 @@ sub buildrealms
 		rolllog_log(LOG_INFO,'',"adding realm \"$realm\" to list") if($logflag);
 #		$realms{$realm} = %$rr;
 
+		#
+		# Copy the fields one at a time into the %realms hash.
+		# If one of the directory fields is a relative path,
+		# convert it to absolute from the current directory.
+		#
 		foreach my $key (keys(%$rr))
 		{
 			$realms{$realm}{$key} = $rr->{$key};
+
+			if(($key eq 'configdir')	||
+			   ($key eq 'statedir')		||
+			   ($key eq 'realmdir'))
+			{
+				#
+				# Convert relative directories to absolute.
+				#
+				if($rr->{$key} !~ /^\//)
+				{
+					my $newval;		# New value.
+
+					$newval = "$curdir/$rr->{$key}";
+					realm_setval($realm,$key,$newval);
+					$realms{$realm}{$key} = $newval;
+					$fixed = 1;
+				}
+			}
 		}
 	}
 
+	#
+	# If we absoluted any of the directories, we'll save the new
+	# file and reload it.
+	#
+	if($fixed)
+	{
+		realm_write();
+		buildrealms();
+	}
 }
 
 #------------------------------------------------------------------------
@@ -2063,7 +2096,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
