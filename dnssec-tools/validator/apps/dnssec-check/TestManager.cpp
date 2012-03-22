@@ -57,6 +57,16 @@ void TestManager::startQueuedTransactions()
     updateWatchedSockets();
 }
 
+bool TestManager::testName(const QString &resolverAddress)
+{
+    struct name_server *ns;
+    ns = parse_name_server(resolverAddress.toAscii().data(), NULL);
+    if (ns == NULL)
+        return false;
+    free_name_server(&ns);
+    return true;
+}
+
 void
 TestManager::updateWatchedSockets()
 {

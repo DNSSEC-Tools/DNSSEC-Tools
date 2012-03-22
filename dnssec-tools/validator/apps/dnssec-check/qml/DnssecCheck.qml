@@ -326,6 +326,22 @@ Rectangle {
         }
     }
 
+    InfoBox {
+        id: hostErrorMessage
+        state: "hidden"
+
+        anchors.fill: parent
+        width: dnssecCheckTop.width
+        height: dnssecCheckTop.height
+
+        property string resolverAddress: ""
+
+        widthPercent: .75
+
+        text: "<h2>Invalid Resolver Address</h2><p>The resolver address you entered (" + resolverAddress + ") was not a valid "
+              + "address.  Please enter either a valid IP address or a valid DNS name."
+    }
+
     WaitCursor {
         id: waitText
         anchors.horizontalCenter: parent.horizontalCenter

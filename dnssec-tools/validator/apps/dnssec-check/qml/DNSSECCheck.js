@@ -128,6 +128,12 @@ function makeLight(creator, type, name, host) {
 }
 
 function addSingleHost(host) {
+    if (!testManager.testName(host)) {
+        hostErrorMessage.state = "visible"
+        hostErrorMessage.resolverAddress = host
+        return; // XXX: add an error message
+    }
+
     var resultComponent = Qt.createComponent("Result.qml")
     var labelComponent  = Qt.createComponent("HostLabel.qml")
     var hostComponent   = Qt.createComponent("Grade.qml")
