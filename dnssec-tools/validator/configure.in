@@ -603,9 +603,7 @@ AC_CHECK_TYPES([u_char, u_short, u_long])
 dnl ----------------------------------------------------------------------
 
 AH_BOTTOM([
-#if !defined(WIN32) || defined(LIBVAL_CONFIGURED)
 #include "validator/validator-compat.h"
-#endif
 ])
 
 dnl ----------------------------------------------------------------------
