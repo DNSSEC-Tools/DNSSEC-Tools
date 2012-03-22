@@ -14,7 +14,6 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "res_tsig.h"

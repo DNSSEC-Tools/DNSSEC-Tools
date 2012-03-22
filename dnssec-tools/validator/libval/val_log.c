@@ -7,7 +7,6 @@
  * DESCRIPTION
  * Contains the implementation for the logging functionality in libval
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_cache.h"

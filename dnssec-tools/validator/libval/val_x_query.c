@@ -10,7 +10,6 @@
  * functions, and their helpers.
  */
 
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_cache.h"

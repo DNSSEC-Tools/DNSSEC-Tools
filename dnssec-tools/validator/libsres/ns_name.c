@@ -14,7 +14,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #define NS_TYPE_ELT			0x40    /* EDNS0 extended label type */

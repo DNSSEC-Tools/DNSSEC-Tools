@@ -22,7 +22,6 @@
  * DESCRIPTION
  * Contains resolver functionality in libval 
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_resquery.h"

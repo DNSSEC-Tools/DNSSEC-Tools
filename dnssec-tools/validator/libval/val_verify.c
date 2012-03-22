@@ -6,7 +6,6 @@
  * DESCRIPTION:
  * Contains functions that interface to the signature verification routines.
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_support.h"

@@ -6,7 +6,6 @@
  * DESCRIPTION
  * Contains routines for context creation/deletion
  */ 
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_support.h"

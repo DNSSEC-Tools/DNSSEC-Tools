@@ -11,7 +11,6 @@
  * This file contains the implementation for a validating gethostbyname function.
  * Applications should be able to use this with minimal change.
  */
-#include "validator/validator-config.h"
 #include "validator-internal.h"
 
 #include "val_policy.h"
