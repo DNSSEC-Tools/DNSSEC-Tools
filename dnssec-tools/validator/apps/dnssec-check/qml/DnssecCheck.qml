@@ -338,7 +338,7 @@ Rectangle {
 
         widthPercent: .75
 
-        text: "<h2>Invalid Resolver Address</h2><p>The resolver address you entered (" + resolverAddress + ") was not a valid "
+        text: "<h2>Invalid Resolver Address</h2><p>The resolver address you entered ('" + resolverAddress + "') was not a valid "
               + "address.  Please enter either a valid IP address or a valid DNS name."
     }
 
