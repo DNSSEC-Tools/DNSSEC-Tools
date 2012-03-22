@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.2";
+my $VERS   = "$NAME version: 1.12.3";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -389,7 +389,12 @@ sub main
 	#
 	# Set up the command channel.
 	#
-	rollmgr_channel(1);
+	if(rollmgr_channel(1) != 1)
+	{
+		rolllog_log(LOG_FATAL,"","unable to create control communications channel");
+
+		exit(3);
+	}
 
 	#
 	# Main event loop.  If the rollrec file is okay, we'll read it,
@@ -7390,7 +7395,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
