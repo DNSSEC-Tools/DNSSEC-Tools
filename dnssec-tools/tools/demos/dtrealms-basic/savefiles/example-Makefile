@@ -1,0 +1,21 @@
+#
+# Copyright 2007-2012 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# Makefile for building demo data for the basic rollerd demo.
+#
+
+all:	zones
+	@../phaser demo-example.rollrec
+
+zones:
+	zonesigner -zsklife 60 -endtime 60 -genkeys example.com
+	zonesigner -zsklife 75 -endtime 75 -genkeys test.com
+	zonesigner -zsklife 90 -endtime 90 -genkeys demo.com
+
+clean:
+	@rm -f K* db.* dsset-* keyset-* *.krf *.signed
+	@rm -f example.com test.com demo.com demo-example.rollrec
+	@rm -fr SAVE-KEYS*
+	@echo NOT deleting log.demo
+

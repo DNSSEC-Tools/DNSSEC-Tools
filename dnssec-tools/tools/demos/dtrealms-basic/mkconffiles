@@ -1,0 +1,90 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# mkconffiles
+#
+#       This script builds the appropriate files and directories listed
+#	in a config file a DNSSEC-Tools demo system.  This is intended
+#	for use in setting up realms-related demos.
+#
+#	For directories, if a relative path is given, it is created
+#	relative to the realm directory.  If an absolute path is given,
+#	then it is created as is.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "mkconffiles";
+my $VERS   = "$NAME version: 1.12.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+my %dtconf;						# Config file contents.
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $conf;					# Config file.
+	my $rdir;					# Realm's directory.
+
+	#
+	# Check arguments.
+	#
+	usage() if(@ARGV != 2);
+	$conf = $ARGV[0];
+	$rdir = $ARGV[1];
+
+	#
+	# Read the config file.
+	#
+	%dtconf = parseconfig($conf);
+
+	#
+	# Make the required directories.
+	#
+	makedir('archivedir',$rdir);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	makedir()
+#
+sub makedir
+{
+	my $dir = shift;		# Config hash for directory to make.
+	my $rdir = shift;		# Realm directory.
+	my $newdir;			# Directory to create.
+
+	$dir = $dtconf{$dir};
+
+	$newdir = $dir;
+	$newdir = "$rdir/$dir" if($dir !~ /^\//);
+
+	mkdir $newdir;
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage: $0 <config-file> <realm-directory>\n";
+	exit(0);
+}
