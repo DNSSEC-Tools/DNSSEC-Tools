@@ -88,9 +88,8 @@ function assignHostGrade() {
                 maxGrade = Math.max(maxGrade, 1);
             }
 
-            // if they can't do UDP, it's a complete failure
             if (hosttests[hostname][j].name == "DNS" && hosttests[hostname][j].status != DNSSECTest.GOOD) {
-                maxGrade = 4;
+                maxGrade = Math.max(4, maxGrade);
             }
 
             // if they can't do the DNSSEC specific tests (DO, RRSIG, NSEC, NSEC3, DNSKEY, DS) they get a C
@@ -102,12 +101,12 @@ function assignHostGrade() {
                  hosttests[hostname][j].name == "DNSKEY" ||
                  hosttests[hostname][j].name == "DS") &&
                     hosttests[hostname][j].status != DNSSECTest.GOOD) {
-                maxGrade = 2;
+                maxGrade = Math.max(2, maxGrade);
             }
 
             // If they fail EDNS0, then it's a D
             if (hosttests[hostname][j].name == "EDNS0" && hosttests[hostname][j].status != DNSSECTest.GOOD) {
-                maxGrade = 3;
+                maxGrade = Math.max(3, maxGrade);
             }
         }
         if (!finished)
