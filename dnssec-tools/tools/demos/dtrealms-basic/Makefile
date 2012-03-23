@@ -13,41 +13,44 @@ basic:		new-files setup
 	@echo ' ----------------------------------------------------------- '
 #	./dtrealms
 
-new-files:
-	@rm -fr configs states r-example r-test
+new-files:	clean example-realm test-realm
+	@cp savefiles/demo.realm .
+
+example-realm:
 	@echo ' '
-	@echo 'building configuration directories'
+	@echo 'building the example realm'
+	@echo '	building configuration directories'
 	@mkdir -p configs/example/dnssec-tools
 	@cp savefiles/example-conf configs/example/dnssec-tools/dnssec-tools.conf
-	@mkdir -p configs/test/dnssec-tools
-	@cp savefiles/test-conf configs/test/dnssec-tools/dnssec-tools.conf
-	@echo ' '
-	@echo 'building state directories'
+	@echo '	building state directories'
 	@mkdir -p states/example
-	@mkdir -p states/test
-	@echo ' '
-	@echo 'building directory for r-example'
-	@mkdir r-example
-	@mkdir r-example/dnssec-tools
+	@echo '	building directory for r-example'
+	@mkdir -p r-example/dnssec-tools
 	@cp savefiles/example-Makefile r-example/Makefile
 	@cp savefiles/example-rollrec r-example/demo-example.rollrec
 	@cp savefiles/example-demo.com r-example/demo.com
 	@cp savefiles/example-example.com r-example/example.com
 	@cp savefiles/example-test.com r-example/test.com
 	@cp savefiles/rc.blinkenlights r-example/
+	@echo '	building other files'
+	@mkconffiles configs/example/dnssec-tools/dnssec-tools.conf r-example
+
+test-realm:
 	@echo ' '
-	@echo 'building directory for r-test'
-	@mkdir r-test
-	@mkdir r-test/dnssec-tools
+	@echo 'building the test realm'
+	@echo '	building configuration directories'
+	@mkdir -p configs/test/dnssec-tools
+	@cp savefiles/test-conf configs/test/dnssec-tools/dnssec-tools.conf
+	@echo '	building state directories'
+	@mkdir -p states/test
+	@echo '	building directory for r-test'
+	@mkdir -p r-test/dnssec-tools
 	@cp savefiles/test-Makefile r-test/Makefile
 	@cp savefiles/test-rollrec r-test/demo-test.rollrec
 	@cp savefiles/test-dev.com r-test/dev.com
 	@cp savefiles/test-test.com r-test/test.com
 	@cp savefiles/rc.blinkenlights r-test/
-	@echo ' '
-	@echo 'building other files'
-	@cp savefiles/demo.realm .
-	@mkconffiles configs/example/dnssec-tools/dnssec-tools.conf r-example
+	@echo '	building other files'
 	@mkconffiles configs/test/dnssec-tools/dnssec-tools.conf r-test
 
 setup:	setup-example setup-test
