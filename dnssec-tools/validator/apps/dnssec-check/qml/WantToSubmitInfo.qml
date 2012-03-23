@@ -5,6 +5,8 @@ Item {
     z: 1
 
     signal submitOk
+    property double widthPercent: .5
+    state: "hidden"
 
     MouseArea {
         anchors.fill: parent
@@ -20,13 +22,28 @@ Item {
         anchors.fill: parent
         z: parent.z + 1
     }
+    Flickable {
+        id: submitFlickable
+
+        z: parent.z + 3
+        anchors.centerIn: parent
+        anchors.margins: 10
+        flickableDirection: Flickable.VerticalFlick
+        clip: true
+
+        height: (parent.height < submitBox.height ? parent.height - bottomScrollBox.height * 4 : submitBox.height)
+        width: widthPercent * parent.width
+
+        contentWidth: submitBox.width
+        contentHeight: submitBox.height
+
     Rectangle {
         id: submitBox
         color: "black"
         anchors.centerIn: parent
-        z: parent.z + 2
+        z: parent.z + 5
         height: submitDescription.height + submitButtonBox.height + anchors.margins * 5
-        width: parent.width / 2
+        width: submitDescription.width + border.width * 2 + 10
         border.color: submitOk.border.color
         border.width: 5
         radius: 5
@@ -35,7 +52,8 @@ Item {
             id: submitDescription
             anchors.top: submitBox.top
             anchors.left: submitBox.left
-            width: parent.width - anchors.margins
+            width: rootWant.width * rootWant.widthPercent - submitFlickable.anchors.margins * 2 - submitBox.anchors.margins * 2 -
+                   submitBox.border.width * 2
             color: "white"
             anchors.margins: 10
             font.pointSize: 12
@@ -76,4 +94,39 @@ Item {
             }
         }
     }
+    }
+    states: [
+        State {
+            name: "hidden"
+            PropertyChanges {
+                target: rootWant
+                opacity: 0
+            }
+            PropertyChanges {
+                target: rootWant
+            }
+        },
+        State {
+            name: "visible"
+            PropertyChanges {
+                target: rootWant
+                opacity: 1
+            }
+            PropertyChanges {
+                target: rootWant
+            }
+        }
+
+    ]
+
+    transitions: [
+        Transition {
+            from: "*"
+            to: "*"
+            PropertyAnimation {
+                properties: "opacity"
+                duration:   250
+            }
+        }
+    ]
 }
