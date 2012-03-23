@@ -1,0 +1,25 @@
+
+realm "example"
+	state		"active"
+	configdir	"configs/example"
+	statedir	"states/example"
+	realmdir	"r-example"
+	rollrec		"demo-example.rollrec"
+	administrator	"zonefolks@example.com"
+	display		"1"
+	manager		"rollerd"
+	args		"-sleep 60 -loglevel phase -logfile log.example -display"
+#	user		"zonemgr"
+
+realm "test"
+	state		"active"
+	realmdir	"r-test"
+	configdir	"configs/test"
+	statedir	"states/test"
+	rollrec		"demo-test.rollrec"
+	manager		"rollerd"
+	args		"-display -sleep 30 -loglevel tmi -logfile log.test"
+	display		"1"
+#	user		"zonetest"
+
+

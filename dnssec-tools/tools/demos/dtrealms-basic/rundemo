@@ -1,0 +1,91 @@
+#!/usr/bin/perl
+#
+# Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# rundemo
+#
+#	This script runs the basic demo for the DNSSEC-Tools dtrealms daemon.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+my %options = ();				# Filled option array.
+my @opts =
+(
+	"loglevel=n",				# Logging level.
+	"help",					# Display help message.
+);
+
+my $curdir  = ".";
+my $logfile = "log.demo";
+my $loglvl  = "phase";
+my $realms  = "demo.realm";
+
+main();
+exit();
+
+#------------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $cmd;				# Demo command to execute.
+	my $dir;				# Current-directory argument.
+	my $log;				# Log-file argument.
+	my $lvl;				# Log-level argument.
+
+	#
+	# Set the log level, maybe using a command-line argument.
+	#
+	opts();
+	print "\nusing a loglevel of \"$loglvl\"\n\n";
+
+	#
+	# Set our remaining arguments.
+	#
+	$dir	= "-dir $curdir";
+	$log	= "-logfile $logfile";
+	$lvl	= "-loglevel $loglvl";
+	$realms	= "demo.realm";
+
+	#
+	# Build our demo command.
+	#
+	$cmd = "dtrealms $dir $log $lvl -display $realms";
+
+	#
+	# Ensure dtrealms is not running and zap the demo log file.
+	#
+	system("realmctl -halt >/dev/null 2>&1 &");
+	system("cp /dev/null $logfile");
+
+	#
+	# Start the demo and peek at the log file.
+	#
+	system("$cmd &");
+	system("tail -f $logfile");
+}
+
+#------------------------------------------------------------------------------
+# Routine:	opts()
+#
+sub opts
+{
+	GetOptions(\%options,@opts) || usage();
+	usage() if($options{'help'});
+
+	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
+
+}
+
+#------------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  rundemo [-loglevel lvl ]\n";
+	exit(0);
+}
