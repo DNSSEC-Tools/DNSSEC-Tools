@@ -66,9 +66,9 @@ $(LIBRES): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ) 
 
 install:
-	$(MKPATH) $(DESTDIR)/$(libdir)
-	$(LIBTOOLIN) $(LIBRES) $(DESTDIR)/$(libdir)
-	$(LIBTOOLFN) $(DESTDIR)/$(libdir)
-	$(MKPATH) $(DESTDIR)/$(includedir)
+	$(MKPATH) $(DESTDIR)$(libdir)
+	$(LIBTOOLIN) $(LIBRES) $(DESTDIR)$(libdir)
+	$(LIBTOOLFN) $(DESTDIR)$(libdir)
+	$(MKPATH) $(DESTDIR)$(includedir)
 	$(INSTALL) -m 644 ../include/validator/resolver.h \
-	  $(DESTDIR)/$(includedir)
+	  $(DESTDIR)$(includedir)

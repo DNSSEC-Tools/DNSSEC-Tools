@@ -24,7 +24,7 @@ $(LIBVAL_SHIM): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ) $(EXTRA_LIBS)
 
 install:
-	$(MKPATH) $(DESTDIR)/$(libdir)
-	$(LIBTOOLIN) $(LIBVAL_SHIM) $(DESTDIR)/$(libdir)
-	$(LIBTOOLFN) $(DESTDIR)/$(libdir)
+	$(MKPATH) $(DESTDIR)$(libdir)
+	$(LIBTOOLIN) $(LIBVAL_SHIM) $(DESTDIR)$(libdir)
+	$(LIBTOOLFN) $(DESTDIR)$(libdir)
 
