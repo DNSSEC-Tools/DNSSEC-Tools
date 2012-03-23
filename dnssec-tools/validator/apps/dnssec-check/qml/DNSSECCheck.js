@@ -5,7 +5,8 @@ var testNumber = 0
 var hosttests = {}
 var hostgrades = {}
 var numTests = 10
-var numColumns = numTests + 2
+var numLeftColumns = 2
+var numColumns = numTests + numLeftColumns
 var numHeaders = numColumns
 var currentTestHost = ""
 
@@ -34,16 +35,23 @@ function clearServers() {
 function removeHost(host) {
     for(var i = tests.length; i > 0 ; i--) {
         if (tests[i-1].test.serverAddress == host) {
-            console.log("removing: " + (i-1))
             tests.splice(i-1,1)
-            resultGrid.children[numHeaders + i + Math.floor((i-1) / numTests)].destroy()
+            resultGrid.children[numHeaders + (i-1) + numLeftColumns*Math.floor(1+(i-1) / numTests)].destroy()
         }
     }
+
+
     for(var i = resultGrid.children.length; i > numHeaders; i--) {
         if (resultGrid.children[i-1].hostName == host) {
             resultGrid.children[i-1].destroy()
         }
+        if (resultGrid.children[i-1] === hostgrades[host]) {
+            resultGrid.children[i-1]
+        }
     }
+
+    hostgrades[host].destroy();
+    delete hostgrades[host];
 }
 
 function clearHost(host) {
