@@ -8,6 +8,12 @@ AC_PREREQ([2.59])
 AC_CONFIG_HEADER(include/validator/validator-config.h)
 
 AC_MSG_CACHE_INIT()
+if test "x$cache_file" = "x/dev/null" ; then
+  CONFIG_CACHE_FILE=""
+else
+  CONFIG_CACHE_FILE=$cache_file
+fi
+AC_SUBST(CONFIG_CACHE_FILE)
 
 AC_PATH_PROG([PERLPROG],perl)
 AC_PATH_PROG(AR, ar)
