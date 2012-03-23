@@ -159,6 +159,7 @@ case $target_os in
     mingw32*)
         _WIN32_MSVC=1
         SKIP_SYSTEM_CHECKS=1
+        LDFLAGS="$LDFLAGS -Wl,--enable-stdcall-fixup"
         ;;
     *)
         ;;
@@ -222,7 +223,14 @@ AC_ARG_WITH(openssl,
 )
 dnl openssl defaults to /usr/local/ssl, so add it to the search path.
 if test "x$opensslpathset" != "x1"; then
-    AC_ADD_SEARCH_PATH(/usr/local/ssl)
+    case $build_os in
+      mingw32*)
+          AC_ADD_SEARCH_PATH(/c/OpenSSL-Win32)
+          ;;
+      *)
+          AC_ADD_SEARCH_PATH(/usr/local/ssl)
+          ;;
+    esac
 fi
 
 AC_ARG_ENABLE(openssl,,
