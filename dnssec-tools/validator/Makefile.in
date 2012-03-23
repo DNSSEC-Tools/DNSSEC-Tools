@@ -93,7 +93,7 @@ subdirclean:
 #
 
 configclean:
-	$(RM) -f config.cache config.status config.log \
+	$(RM) -f $(CONFIG_CACHE_FILE) config.status config.log \
 		Makefile stamp-h *.core
 
 universal: clean
