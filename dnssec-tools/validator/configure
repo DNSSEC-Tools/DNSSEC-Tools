@@ -673,6 +673,7 @@ CP
 RM
 AR
 PERLPROG
+CONFIG_CACHE_FILE
 target_alias
 host_alias
 build_alias
@@ -2389,7 +2390,7 @@ $as_echo "$as_me: loading site script $ac_site_file" >&6;}
       || { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "failed to load site script $ac_site_file
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
   fi
 done
 
@@ -2485,6 +2486,12 @@ ac_config_headers="$ac_config_headers include/validator/validator-config.h"
 
 
   rm -f configure-summary
+
+if test "x$cache_file" = "x/dev/null" ; then
+  CONFIG_CACHE_FILE=""
+else
+  CONFIG_CACHE_FILE=$cache_file
+fi
 
 
 # Extract the first word of "perl", so it can be a program name with args.
@@ -2726,7 +2733,7 @@ fi
 $as_echo "$ac_cv_build" >&6; }
 case $ac_cv_build in
 *-*-*) ;;
-*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5;;
+*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5 ;;
 esac
 build=$ac_cv_build
 ac_save_IFS=$IFS; IFS='-'
@@ -2759,7 +2766,7 @@ fi
 $as_echo "$ac_cv_host" >&6; }
 case $ac_cv_host in
 *-*-*) ;;
-*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5;;
+*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5 ;;
 esac
 host=$ac_cv_host
 ac_save_IFS=$IFS; IFS='-'
@@ -3145,7 +3152,7 @@ fi
 test -z "$CC" && { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "no acceptable C compiler found in \$PATH
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
 
 # Provide some information about the compiler.
 $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler version" >&5
@@ -3260,7 +3267,7 @@ sed 's/^/| /' conftest.$ac_ext >&5
 { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error 77 "C compiler cannot create executables
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -3303,7 +3310,7 @@ else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "cannot compute suffix of executables: cannot compile and link
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
 fi
 rm -f conftest conftest$ac_cv_exeext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_exeext" >&5
@@ -3362,7 +3369,7 @@ $as_echo "$ac_try_echo"; } >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "cannot run C compiled programs.
 If you meant to cross compile, use \`--host'.
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
     fi
   fi
 fi
@@ -3414,7 +3421,7 @@ sed 's/^/| /' conftest.$ac_ext >&5
 { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "cannot compute suffix of object files: cannot compile
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
 fi
 rm -f conftest.$ac_cv_objext conftest.$ac_ext
 fi
@@ -6904,7 +6911,7 @@ else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "C preprocessor \"$CPP\" fails sanity check
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
 fi
 
 ac_ext=c
@@ -11191,7 +11198,7 @@ fi
 $as_echo "$ac_cv_target" >&6; }
 case $ac_cv_target in
 *-*-*) ;;
-*) as_fn_error $? "invalid value of canonical target" "$LINENO" 5;;
+*) as_fn_error $? "invalid value of canonical target" "$LINENO" 5 ;;
 esac
 target=$ac_cv_target
 ac_save_IFS=$IFS; IFS='-'
@@ -11397,6 +11404,7 @@ $as_echo "yes" >&6; }
     mingw32*)
         _WIN32_MSVC=1
         SKIP_SYSTEM_CHECKS=1
+        LDFLAGS="$LDFLAGS -Wl,--enable-stdcall-fixup"
         ;;
     *)
         ;;
@@ -11513,6 +11521,20 @@ if test "${with_openssl+set}" = set; then :
 fi
 
 if test "x$opensslpathset" != "x1"; then
+    case $build_os in
+      mingw32*)
+
+  if test "x/c/OpenSSL-Win32" != x -a -d /c/OpenSSL-Win32; then
+     if test -d /c/OpenSSL-Win32/lib; then
+       LDFLAGS="-L/c/OpenSSL-Win32/lib $LDFLAGS"
+     fi
+     if test -d /c/OpenSSL-Win32/include; then
+	CPPFLAGS="-I/c/OpenSSL-Win32/include $CPPFLAGS"
+     fi
+  fi
+
+          ;;
+      *)
 
   if test "x/usr/local/ssl" != x -a -d /usr/local/ssl; then
      if test -d /usr/local/ssl/lib; then
@@ -11523,6 +11545,8 @@ if test "x$opensslpathset" != "x1"; then
      fi
   fi
 
+          ;;
+    esac
 fi
 
 # Check whether --enable-openssl was given.
@@ -11548,7 +11572,103 @@ if test "${enable_sha256_check+set}" = set; then :
   enableval=$enable_sha256_check;
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SHA256_Init in -lcrypto" >&5
+
+case $build_os in
+    mingw32*)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for SHA256_Init in -leay32" >&5
+$as_echo_n "checking for SHA256_Init in -leay32... " >&6; }
+if ${ac_cv_lib_eay32_SHA256_Init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-leay32  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char SHA256_Init ();
+int
+main ()
+{
+return SHA256_Init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_eay32_SHA256_Init=yes
+else
+  ac_cv_lib_eay32_SHA256_Init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_eay32_SHA256_Init" >&5
+$as_echo "$ac_cv_lib_eay32_SHA256_Init" >&6; }
+if test "x$ac_cv_lib_eay32_SHA256_Init" = xyes; then :
+  LIBS="$LIBS -leay32"
+            $as_echo "#define HAVE_SHA_256 1" >>confdefs.h
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_md5 in -leay32" >&5
+$as_echo_n "checking for EVP_md5 in -leay32... " >&6; }
+if ${ac_cv_lib_eay32_EVP_md5+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-leay32  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EVP_md5 ();
+int
+main ()
+{
+return EVP_md5 ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_eay32_EVP_md5=yes
+else
+  ac_cv_lib_eay32_EVP_md5=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_eay32_EVP_md5" >&5
+$as_echo "$ac_cv_lib_eay32_EVP_md5" >&6; }
+if test "x$ac_cv_lib_eay32_EVP_md5" = xyes; then :
+  LIBS="$LIBS -leay32"
+                if test "x$enable_sha256_check" != "xno"; then :
+  as_fn_error $? "Need openssl version > 0.9.8 for SHA-256 support. Use --disable-sha256-check to bypass this error." "$LINENO" 5
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Need openssl version > 0.9.8 for SHA-256 support." >&5
+$as_echo "$as_me: WARNING: Need openssl version > 0.9.8 for SHA-256 support." >&2;}
+fi
+else
+  as_fn_error $? "\"OpenSSL not found. get it from http://www.openssl.org.\"" "$LINENO" 5
+fi
+
+fi
+
+        ;;
+    *)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for SHA256_Init in -lcrypto" >&5
 $as_echo_n "checking for SHA256_Init in -lcrypto... " >&6; }
 if ${ac_cv_lib_crypto_SHA256_Init+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -11586,7 +11706,7 @@ fi
 $as_echo "$ac_cv_lib_crypto_SHA256_Init" >&6; }
 if test "x$ac_cv_lib_crypto_SHA256_Init" = xyes; then :
   LIBS="$LIBS -lcrypto"
-    $as_echo "#define HAVE_SHA_256 1" >>confdefs.h
+            $as_echo "#define HAVE_SHA_256 1" >>confdefs.h
 
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_md5 in -lcrypto" >&5
@@ -11627,7 +11747,7 @@ fi
 $as_echo "$ac_cv_lib_crypto_EVP_md5" >&6; }
 if test "x$ac_cv_lib_crypto_EVP_md5" = xyes; then :
   LIBS="$LIBS -lcrypto"
-        if test "x$enable_sha256_check" != "xno"; then :
+                if test "x$enable_sha256_check" != "xno"; then :
   as_fn_error $? "Need openssl version > 0.9.8 for SHA-256 support. Use --disable-sha256-check to bypass this error." "$LINENO" 5
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Need openssl version > 0.9.8 for SHA-256 support." >&5
@@ -11639,6 +11759,8 @@ fi
 
 fi
 
+        ;;
+esac
 
 
 for ac_header in crypto/sha2.h
@@ -12969,7 +13091,7 @@ else
      { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error 77 "cannot compute sizeof (short)
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
    else
      ac_cv_sizeof_short=0
    fi
@@ -13002,7 +13124,7 @@ else
      { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error 77 "cannot compute sizeof (int)
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
    else
      ac_cv_sizeof_int=0
    fi
@@ -13035,7 +13157,7 @@ else
      { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error 77 "cannot compute sizeof (long)
-See \`config.log' for more details" "$LINENO" 5; }
+See \`config.log' for more details" "$LINENO" 5 ; }
    else
      ac_cv_sizeof_long=0
    fi
@@ -14552,7 +14674,7 @@ do
     "libval/val_inline_conf.h") CONFIG_FILES="$CONFIG_FILES libval/val_inline_conf.h:libval/val_inline_conf.h.in" ;;
     "default") CONFIG_COMMANDS="$CONFIG_COMMANDS default" ;;
 
-  *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
+  *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5 ;;
   esac
 done
 
@@ -14870,7 +14992,7 @@ do
   esac
   case $ac_mode$ac_tag in
   :[FHL]*:*);;
-  :L* | :C*:*) as_fn_error $? "invalid tag \`$ac_tag'" "$LINENO" 5;;
+  :L* | :C*:*) as_fn_error $? "invalid tag \`$ac_tag'" "$LINENO" 5 ;;
   :[FH]-) ac_tag=-:-;;
   :[FH]*) ac_tag=$ac_tag:$ac_tag.in;;
   esac
@@ -14898,7 +15020,7 @@ do
 	   [\\/$]*) false;;
 	   *) test -f "$srcdir/$ac_f" && ac_f="$srcdir/$ac_f";;
 	   esac ||
-	   as_fn_error 1 "cannot find input file: \`$ac_f'" "$LINENO" 5;;
+	   as_fn_error 1 "cannot find input file: \`$ac_f'" "$LINENO" 5 ;;
       esac
       case $ac_f in *\'*) ac_f=`$as_echo "$ac_f" | sed "s/'/'\\\\\\\\''/g"`;; esac
       as_fn_append ac_file_inputs " '$ac_f'"
@@ -14925,7 +15047,7 @@ $as_echo "$as_me: creating $ac_file" >&6;}
 
     case $ac_tag in
     *:-:* | *:-) cat >"$ac_tmp/stdin" \
-      || as_fn_error $? "could not create $ac_file" "$LINENO" 5 ;;
+      || as_fn_error $? "could not create $ac_file" "$LINENO" 5  ;;
     esac
     ;;
   esac
