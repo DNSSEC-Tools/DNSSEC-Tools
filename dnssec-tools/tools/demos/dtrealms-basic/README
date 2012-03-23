@@ -1,0 +1,60 @@
+# Copyright 2012 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+
+dtrealms-basic demo
+
+	This directory contains tools and data for demonstrating the
+	DNSSEC-Tools realms daemon.
+
+	This demo shows the basic operation of dtrealms as it controls two
+	instances of rollerd.  A graphical window will appear showing
+	the realms' status, and the count of zones in normal state, ZSK
+	rollover, KSK rollover, and KSK phase 6 wait.  As rollover proceeds
+	in the two realms, the phase counts will change.  A graphical
+	interface will also be displayed for each realm, and they will
+	give more details about the particular zone rollovers.
+
+To run the demo:
+
+	- Run the demo with these commands:
+
+		# make basic
+		# rundemo
+
+	  The first command will build the realms and their required
+	  directories, and sign the zones and initialize various state.
+
+	  The second command starts the demo running.
+
+	- This demo uses *very* short zone lifetimes, lifetimes that
+	  are impractically short.
+
+	- A graphical window is created that holds the whole of the demo
+	  output.  The window in which the demo was started will have a
+	  "tail -f log.demo" of dtrealms's log file.
+
+To stop the demo:
+
+	- Run this command:
+
+		# realmctl -halt
+
+	  Stopping dtrealms will also stop the grandvizier and blinkenlights
+	  graphical programs.  Usually.
+
+
+Files:
+	Makefile		Makefile to control demo execution.
+	README			This file.
+	mkconffiles		Creates the required key archive directory.
+	phaser			Initializes some data at demo start.
+	rundemo			Executes demo.
+
+	Pristine copies of the config files, realm file, and zone files
+	are in the savefiles directory.
+
