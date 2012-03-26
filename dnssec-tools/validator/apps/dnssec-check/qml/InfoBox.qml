@@ -6,7 +6,7 @@ Flickable {
 
     property string statusText: ""
     property alias text: messageText.text
-    property double widthPercent: .5
+    property double widthPercent: .75
     state: "hidden"
 
     signal dismissed
@@ -36,7 +36,7 @@ Flickable {
         flickableDirection: Flickable.VerticalFlick
         clip: true
 
-        height: (parent.height < messageBox.height ? parent.height - bottomScrollBox.height * 4 : messageBox.height)
+        height: (parent.height < messageBox.height ? parent.height - bottomScrollBox.height * 2 : messageBox.height)
         width: widthPercent * parent.width
 
         contentWidth: messageBox.width
@@ -48,7 +48,7 @@ Flickable {
             anchors.centerIn: parent
             z: parent.z + 2
             width: messageText.width + border.width * 2 + 10
-            height: messageText.height + infoButtonBox.height + anchors.margins * 5
+            height: messageText.height + infoButtonBox.height + anchors.margins * 16
             border.color: submitOk.border.color
             border.width: 5
             radius: 5
