@@ -80,7 +80,6 @@ Flickable {
                     text: "Ok"
                     onClicked: {
                         infoBox.state = "hidden"
-                        dnssecCheckTop.state = "submitted"
                         dismissed()
                     }
                 }
