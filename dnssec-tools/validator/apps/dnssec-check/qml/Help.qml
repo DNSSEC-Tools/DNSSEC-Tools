@@ -8,7 +8,7 @@ InfoBox {
     width: dnssecCheckTop.width
     height: dnssecCheckTop.height
 
-    widthPercent: .75
+    widthPercent: .9
 
     text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><h2>DNSSEC-Check Help</h2>
     The DNSSEC-Check application, developed as part of the <a href=\"http://www.dnssec-tools.org/\">DNSSEC-Tools</a> project,
