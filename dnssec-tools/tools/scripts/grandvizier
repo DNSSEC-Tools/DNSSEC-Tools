@@ -43,7 +43,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "grandvizier";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -1650,10 +1650,11 @@ sub dtrealmscmd
 	if($cmd eq "halt")
 	{
 		#
-		# Destroy the main window.  This will cause MainLoop() to
-		# return, leading to the program exiting.
+		# Destroy the main window and exit.
 		#
 		$wm->destroy;
+		print "grandvizier exitting due to command from dtrealms\n";
+		exit(0);
 	}
 	elsif($cmd eq "realmfile")
 	{
