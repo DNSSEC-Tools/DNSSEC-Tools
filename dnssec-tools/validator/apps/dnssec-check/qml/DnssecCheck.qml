@@ -20,10 +20,18 @@ Rectangle {
 
     Timer {
         id:          giveUpTimer;
-        interval:    10000;
+        interval:    15000;
         running:     false;
-        repeat:      true;
+        repeat:      false;
         onTriggered: { DNSSECCheck.giveUpTimerHook(); }
+    }
+
+    Timer {
+        id:         countingTimer
+        interval:   1000
+        running:    false
+        repeat:     true
+        onTriggered: { waitText.waitLength++ }
     }
 
     Rectangle {
@@ -348,8 +356,8 @@ Rectangle {
     InfoBox {
         id: giveUpMessage
         text: "<h2>Giving Up!<h2>" +
-              "<p>Querying the resolves above is taking far longer than it should, so all remaining outstanding tests will be set" +
-              "to an error state and the testing will stop.</p>"
+              "<p>Querying the resolvers is taking far longer than it should, so all uncompleted tests will be marked " +
+              "as failed and the testing will stop.  If you believe these failures are incorrect, you may wish to rerun the tests.</p>"
     }
 
     WaitCursor {
@@ -441,7 +449,7 @@ Rectangle {
             name: "ran"
             PropertyChanges {
                 target: submitButton
-                enabled: resultGrid.rows > 0
+                enabled: true
             }
             PropertyChanges {
                 target: testButton
