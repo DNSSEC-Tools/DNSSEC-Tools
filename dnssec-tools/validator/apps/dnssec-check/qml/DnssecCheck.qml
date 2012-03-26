@@ -18,6 +18,14 @@ Rectangle {
         onTriggered: { DNSSECCheck.runNextTest(); }
     }
 
+    Timer {
+        id:          giveUpTimer;
+        interval:    10000;
+        running:     false;
+        repeat:      true;
+        onTriggered: { DNSSECCheck.giveUpTimerHook(); }
+    }
+
     Rectangle {
         id: titleBox
         width: parent.width - anchors.margins * 2
@@ -302,8 +310,6 @@ Rectangle {
         state: testManager.getSetting("initMessageDisplayed") == dnssecToolsVersion ? "hidden" : "visible"
 
         anchors.fill: parent
-        width: dnssecCheckTop.width
-        height: dnssecCheckTop.height
 
         widthPercent: .75
 
@@ -328,11 +334,8 @@ Rectangle {
 
     InfoBox {
         id: hostErrorMessage
-        state: "hidden"
 
         anchors.fill: parent
-        width: dnssecCheckTop.width
-        height: dnssecCheckTop.height
 
         property string resolverAddress: ""
 
@@ -340,6 +343,13 @@ Rectangle {
 
         text: "<h2>Invalid Resolver Address</h2><p>The resolver address you entered ('" + resolverAddress + "') was not a valid "
               + "address.  Please enter either a valid IP address or a valid DNS name."
+    }
+
+    InfoBox {
+        id: giveUpMessage
+        text: "<h2>Giving Up!<h2>" +
+              "<p>Querying the resolves above is taking far longer than it should, so all remaining outstanding tests will be set" +
+              "to an error state and the testing will stop.</p>"
     }
 
     WaitCursor {

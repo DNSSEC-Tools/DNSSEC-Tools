@@ -214,6 +214,7 @@ function runAllTests() {
     testManager.inTestLoop = true;
     setTestStartMessage();
     console.log("starting tests for '" + currentTestHost + "'")
+    giveUpTimer.start()
     runNextTest();
 }
 
@@ -238,17 +239,39 @@ function runNextTest() {
             timer.start();
             return;
         }
-        timer.stop()
-        testManager.checkAvailableUpdates();
-        if (currentTestHost == "" || haveAllTestsRun())
-            dnssecCheckTop.state = "ran"
-        else
-            dnssecCheckTop.state = "half"
-        testStatusMessage.text = ""
-        testResultMessage.text = "All tests have completed; Click on a bubble for details"
-        currentTestHost = ""
-        console.log(assignHostGrade());
+        stopTesting();
     }
+}
+
+function stopTesting() {
+    timer.stop()
+    giveUpTimer.stop()
+    testManager.checkAvailableUpdates();
+    if (currentTestHost == "" || haveAllTestsRun())
+        dnssecCheckTop.state = "ran"
+    else
+        dnssecCheckTop.state = "half"
+    testStatusMessage.text = ""
+    testResultMessage.text = "All tests have completed; Click on a bubble for details"
+    currentTestHost = ""
+    assignHostGrade();
+}
+
+function cancelTests() {
+    for(var i = 0; i < tests.length; i++) {
+        if (tests[i].test.status == DNSSECTest.TESTINGNOW)
+        tests[i].test.status = DNSSECTest.BAD
+    }
+    stopTesting()
+}
+
+function giveUpTimerHook() {
+    // if we get here, we're fairly sunk as it's taken a long time for the requests to complete.
+    // So we give up.
+    console.log("giving up")
+    giveUpMessage.state = "visible"
+    giveUpTimer.stop()
+    cancelTests()
 }
 
 function setTestStartMessage() {
