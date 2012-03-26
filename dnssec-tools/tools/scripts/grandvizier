@@ -43,7 +43,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "grandvizier";
-my $VERS   = "$NAME version: 1.12.3";
+my $VERS   = "$NAME version: 1.12.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -181,8 +181,8 @@ my $infotab;					# Info data vector.
 
 my $file;					# File menu.
 my $disp;					# Edit menu.
-my $cmdg;					# Commands menu.
-my $dspl;					# Display menu.
+my $rctl;					# Realm Control menu.
+my $rlmc;					# Realm Commands menu.
 my $help;					# Help menu.
 
 #
@@ -442,7 +442,10 @@ sub buildmainwind
 	$disp = $mbar->Menubutton(-text	     => 'Options',
 				  -tearoff   => 0,
 				  -underline => 0);
-	$cmdg = $mbar->Menubutton(-text	     => 'Control',
+	$rctl = $mbar->Menubutton(-text	     => 'Realm Control',
+				  -tearoff   => 1,
+				  -underline => 0);
+	$rlmc = $mbar->Menubutton(-text	     => 'Realm Commands',
 				  -tearoff   => 1,
 				  -underline => 0);
 	$help = $mbar->Menubutton(-text      => 'Help',
@@ -510,28 +513,46 @@ sub buildmainwind
 
 	##################################################
 	#
-	# Add the Control menu entries.
+	# Add the Realm Control menu entries.
 	#
-	$cmdg->command(-label => 'Stop Selected Realm',
-		       -command => [\&general_cmds, "stoprealm"],
+	$rctl->command(-label => 'Stop Selected Realm',
+		       -command => [\&realm_control, "stoprealm"],
 		       -accelerator => 'Ctrl+S');
-	$cmdg->command(-label => 'Stop All Realms',
-		       -command => [\&general_cmds, "allstop"]);
-	$cmdg->separator();
-	$cmdg->command(-label => 'Start Selected Inactive Realm',
-		       -command => [\&general_cmds, "startrealm"]);
-	$cmdg->command(-label => 'Start All Inactive Realms',
-		       -command => [\&general_cmds, "allstart"]);
-	$cmdg->separator();
-	$cmdg->command(-label	=> 'DS Published for All Zones in Selected Realm',
-		       -command => [\&general_cmds, "dspuball"], );
+	$rctl->command(-label => 'Stop All Realms',
+		       -command => [\&realm_control, "allstop"]);
+	$rctl->separator();
+	$rctl->command(-label => 'Start Selected Inactive Realm',
+		       -command => [\&realm_control, "startrealm"]);
+	$rctl->command(-label => 'Start All Inactive Realms',
+		       -command => [\&realm_control, "allstart"]);
 
-	$cmdg->pack(-side => 'left');
+	$rctl->pack(-side => 'left');
 
 	if($nomodify)
 	{
-		$cmdg->configure(-state => 'disabled');
+		$rctl->configure(-state => 'disabled');
 	}
+
+	##################################################
+	#
+	# Add the Realm Commands menu entries.
+	#
+	$rlmc->command(-label	=> 'DS Published for All Zones in All Realms',
+		       -command => [\&realm_cmds, "alldspuball"], );
+	$rlmc->command(-label	=> 'DS Published for All Zones in Selected Realm',
+		       -command => [\&realm_cmds, "dspuball"], );
+	$rlmc->separator();
+	$rlmc->command(-label	=> 'Stop All Zones in Selected Realm',
+		       -command => [\&realm_cmds, "stopall"], );
+	$rlmc->command(-label	=> 'Start All Zones in Selected Realm',
+		       -command => [\&realm_cmds, "startall"], );
+#	$rlmc->separator();
+#	$rlmc->command(-label	=> 'Stop Display GUI of Selected Realm',
+#		       -command => [\&realm_cmds, "stopdisp"], );
+#	$rlmc->command(-label	=> 'Start Display GUI of Selected Realm',
+#		       -command => [\&realm_cmds, "startdisp"], );
+
+	$rlmc->pack(-side => 'left');
 
 	##################################################
 	#
@@ -600,13 +621,13 @@ sub disp_color
 	if($nocolors)
 	{
 		$op_clrs->configure(-label => $NOCOLORING);
-		$cmdg->configure(-state => 'normal');
+		$rctl->configure(-state => 'normal');
 		$nocolors = 0;
 	}
 	else
 	{
 		$op_clrs->configure(-label => $COLORING);
-		$cmdg->configure(-state => 'disabled');
+		$rctl->configure(-state => 'disabled');
 		$nocolors = 1;
 	}
 
@@ -636,13 +657,13 @@ sub disp_modify
 	if($nomodify)
 	{
 		$op_mdfy->configure(-label => $DISALLOWCMDS);
-		$cmdg->configure(-state => 'normal');
+		$rctl->configure(-state => 'normal');
 		$nomodify = 0;
 	}
 	else
 	{
 		$op_mdfy->configure(-label => $ALLOWCMDS);
-		$cmdg->configure(-state => 'disabled');
+		$rctl->configure(-state => 'disabled');
 		$nomodify = 1;
 	}
 }
@@ -782,15 +803,15 @@ sub disp_realmcount
 sub realm_stoprealm
 {
 	return if(!$realms{$selrealm});
-	general_cmds("stoprealm");
+	realm_control("stoprealm");
 }
 
 #---------------------------------------------------------------------------
-# Routine:	general_cmds()
+# Routine:	realm_control()
 #
-# Purpose:	Handle the General Commands menu commands.
+# Purpose:	Handle the Realm Control menu commands.
 #
-sub general_cmds
+sub realm_control
 {
 	my $rcmd = shift;				# User's command.
 	my $args = $rcmd;				# Command arguments.
@@ -842,13 +863,6 @@ sub general_cmds
 		#
 		$ret = system("$realmctl -quiet -dspub \"$realm\"");
 	}
-	elsif($rcmd eq "dspuball")
-	{
-		#
-		# Move this realm into rollover phase 7.
-		#
-		$ret = system("$realmctl -quiet -dspuball");
-	}
 
 	#
 	# Build and execute the command string.
@@ -872,6 +886,126 @@ sub general_cmds
 		# Quietly run the command again.
 		*
 		$rlmcmd = "$realmctl -quiet $args";
+		system($rlmcmd);
+
+		#
+		# If we were trying to stop this realm, we'll mark
+		# it as having a problem and repaint its stripe.
+		#
+		if($rcmd eq "stoprealm")
+		{
+			$badrealms{$realm} = 1;
+			realmstripe($realm);
+		}
+	}
+	else
+	{
+		delete($badrealms{$realm});
+	}
+
+	#
+	# And let's get the window redrawn.
+	#
+	painter($paintmax+1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	realm_cmds()
+#
+# Purpose:	Handle the Realm Commands menu commands.
+#
+sub realm_cmds
+{
+	my $rcmd = shift;				# User's command.
+	my $args = $rcmd;				# Command arguments.
+	my $rlmcmd;					# Command to execute.
+	my $ret;					# Command retcode.
+
+	my $realm = $selrealm;				# Realm to handle.
+
+	#
+	# Don't allow commands if -nomodify was given.
+	#
+	return if($nomodify);
+
+	#
+	# If a realm has been selected, we'll use it.  If not, we'll
+	# prompt the user for the realm.
+	#
+	if($rcmd ne 'alldspuball')
+	{
+		if($selrealm ne '')
+		{
+			$args = "$rcmd \"$selrealm\"";
+		}
+		else
+		{
+			$realm = getrealm($rcmd);
+			return if($realm eq "");
+			$args = "$rcmd \"$realm\"";
+		}
+	}
+
+	#
+	# Map the menu command to rollctl command.
+	#
+	if($rcmd eq "startall")
+	{
+		$args = "rollctl -rollall";
+	}
+	elsif($rcmd eq "stopall")
+	{
+		$args = "rollctl -skipall";
+	}
+	elsif($rcmd eq "alldspuball")
+	{
+		my $savesel = $selrealm;		# Selected realm.
+
+		$args = "rollctl -dspuball";
+
+		foreach my $realm (sort(keys(%actives)))
+		{
+			$selrealm = $realm;
+			realm_cmds('dspuball');
+		}
+
+		$selrealm = $savesel;
+	}
+	elsif($rcmd eq "dspuball")
+	{
+		$args = "rollctl -dspuball";
+	}
+	elsif($rcmd eq "startdisp")
+	{
+		$args = "rollctl -display";
+	}
+	elsif($rcmd eq "stopdisp")
+	{
+		$args = "rollctl -nodisplay";
+	}
+
+	#
+	# Build and execute the command string.
+	#
+	$rlmcmd = "$realmctl -quiet -cmd -- $realm $args";
+	$ret = system($rlmcmd);
+
+	#
+	# If the command failed, we'll re-run the command and let the
+	# user see the failure message.
+	#
+	$ret = $ret >> 8;
+	if($ret != 0)
+	{
+		#
+		# Exit if dtrealms isn't running.
+		#
+		exit(1) if($ret == 200);
+
+		#
+		# Quietly run the command again.
+		*
+		$rlmcmd = "$realmctl -quiet -cmd -- $realm $args";
 		system($rlmcmd);
 
 		#
@@ -2811,7 +2945,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
