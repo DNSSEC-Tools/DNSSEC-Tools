@@ -212,7 +212,7 @@ Rectangle {
         anchors.leftMargin: 10
         anchors.topMargin:  4
         anchors.left: parent.left
-        font.pointSize:  12
+        font.pixelSize:  14
         text: ""
         onLinkActivated: Qt.openUrlExternally(link)
         color: "white"
@@ -225,7 +225,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: 10
         anchors.topMargin:  2
-        font.pointSize:  12
+        font.pixelSize:  16
         text: ""
         onLinkActivated: Qt.openUrlExternally(link)
         color: "white"
@@ -239,7 +239,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.margins: 10
-        font.pointSize: 12
+        font.pixelSize: 14
         font.italic: true
         text: ((resultsReceivedBox.submittingText != "" || parent.runningStatus != "") ? "Status: " : "") +
               ((parent.runningStatus == "idle" && resultsReceivedBox.submittingText != "") ? "" : parent.runningStatus) +
@@ -252,7 +252,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.margins: 10
         anchors.right: parent.right
-        font.pointSize:  12
+        font.pixelSize:  14
         text: "<style>a { color: #8888ff; } a:visited { color: red; }</style><a href=\"http://www.dnssec-tools.org/\">http://www.dnssec-tools.org/</a>"
         onLinkActivated: Qt.openUrlExternally(link)
     }
