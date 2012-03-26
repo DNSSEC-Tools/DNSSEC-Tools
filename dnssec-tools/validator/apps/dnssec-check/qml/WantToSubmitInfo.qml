@@ -56,7 +56,7 @@ Item {
                    submitBox.border.width * 2
             color: "white"
             anchors.margins: 10
-            font.pointSize: 12
+            font.pixelSize: 16
             wrapMode: Text.Wrap
 
             text: "<p>First, thanks for offering to submit your data!

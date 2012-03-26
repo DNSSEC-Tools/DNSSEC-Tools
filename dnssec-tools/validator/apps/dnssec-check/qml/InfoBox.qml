@@ -61,7 +61,7 @@ Flickable {
                        messageBox.border.width * 2
                 color: "white"
                 anchors.margins: 10
-                font.pointSize: 10
+                font.pixelSize: 14
                 wrapMode: Text.Wrap
 
                 text: ""
