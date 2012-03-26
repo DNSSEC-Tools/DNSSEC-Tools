@@ -210,6 +210,7 @@ function runAllTests() {
     if (currentTestHost == "") {
         resetTests()
     }
+    waitText.waitLength = 1;
     testNumber = -1;
     dnssecCheckTop.state = "running"
     testManager.inTestLoop = true;
