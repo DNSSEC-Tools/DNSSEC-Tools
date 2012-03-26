@@ -5,7 +5,7 @@ Item {
     z: 1
 
     signal submitOk
-    property double widthPercent: .5
+    property double widthPercent: .75
     state: "hidden"
 
     MouseArea {
