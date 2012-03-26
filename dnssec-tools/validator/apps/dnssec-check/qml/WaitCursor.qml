@@ -7,6 +7,9 @@ Item {
     height: newServerBox.height
     opacity: 0
 
+    property int waitLength:    0
+    property int waitLengthMax: giveUpTimer.interval / 1000;
+
     Rectangle {
         id: rect
         width: 50;
@@ -16,6 +19,19 @@ Item {
         border.color: Qt.darker("green")
         border.width: 2
         x: 0
+        z: parent.z + 2
+    }
+
+    Rectangle {
+        id: rectFilling
+        width: parent.width * waitLength / waitLengthMax;
+        height: parent.height
+        anchors.top: waitCursor.top
+        anchors.left: waitCursor.left
+        color: Qt.lighter("blue")
+        border.color: Qt.darker("blue")
+        border.width: 2
+        z: parent.z + 1
     }
 
     Text {
@@ -25,6 +41,7 @@ Item {
         font.italic: true
         font.pixelSize: parent.height * 3 / 4
         anchors.centerIn: parent
+        z: parent.z + 3
     }
 
     states: [

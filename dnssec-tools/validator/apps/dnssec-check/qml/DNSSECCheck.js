@@ -65,15 +65,16 @@ function clearHost(host) {
 function testHost(host) {
     clearHost(host)
     currentTestHost = host
-    console.log("starting tests for '" + currentTestHost + "'")
     runAllTests()
 }
 
 function haveAllTestsRun() {
-    console.log(assignHostGrade());
+    assignHostGrade();
     for(var i = tests.length; i > 0 ; i--) {
-        if (tests[i-1].test.status === DNSSECTest.UNKNOWN || tests[i-1].test.status === DNSSECTest.TESTINGNOW)
+        if (tests[i-1].test.status === DNSSECTest.UNKNOWN || tests[i-1].test.status === DNSSECTest.TESTINGNOW) {
+            console.log("test not done: " + i)
             return false
+        }
     }
     return true
 }
@@ -215,6 +216,7 @@ function runAllTests() {
     setTestStartMessage();
     console.log("starting tests for '" + currentTestHost + "'")
     giveUpTimer.start()
+    countingTimer.start()
     runNextTest();
 }
 
@@ -246,8 +248,11 @@ function runNextTest() {
 function stopTesting() {
     timer.stop()
     giveUpTimer.stop()
+    countingTimer.stop()
+    testManager.inTestLoop = false;
     testManager.checkAvailableUpdates();
-    if (currentTestHost == "" || haveAllTestsRun())
+    console.log("current host: '" + currentTestHost + "' => " + (currentTestHost == ""))
+    if (currentTestHost === "" || haveAllTestsRun())
         dnssecCheckTop.state = "ran"
     else
         dnssecCheckTop.state = "half"
@@ -270,7 +275,6 @@ function giveUpTimerHook() {
     // So we give up.
     console.log("giving up")
     giveUpMessage.state = "visible"
-    giveUpTimer.stop()
     cancelTests()
 }
 
@@ -285,6 +289,10 @@ function resetTests() {
     for(var result in tests) {
         tests[result].test.status = DNSSECTest.UNKNOWN
     }
+    for(var host in hosts) {
+        hostgrades[hosts[host]].grade = "?"
+    }
+
     dnssecCheckTop.state = ""
 }
 
