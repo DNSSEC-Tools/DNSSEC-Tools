@@ -11,6 +11,9 @@ Flickable {
 
     signal dismissed
 
+    width: dnssecCheckTop.width
+    height: dnssecCheckTop.height
+
     MouseArea {
         anchors.fill: parent
         onClicked: { } // no op to prevent it from passing lower
