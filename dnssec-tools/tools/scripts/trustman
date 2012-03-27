@@ -36,7 +36,7 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.2";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -293,10 +293,10 @@ if ($newconf) {
   } while (!$once);
 }
 
-#######################################################################
-# load_newkeys()
+#----------------------------------------------------------------------
+# Routine:	load_newkeys()
 #
-# Loads the newkeys info from a file.
+# Purpose:	Loads the newkeys info from a file.
 #
 sub load_newkeys {
   # load in the newkeys info from file if available
@@ -309,10 +309,10 @@ sub load_newkeys {
   $/ = $undefval;
 }
 
-#######################################################################
-# save_newkeys()
+#----------------------------------------------------------------------
+# Routine:	save_newkeys()
 #
-# Save any available new-key information.
+# Purpose:	Save any available new-key information.
 #
 sub save_newkeys {
   # whenever newkeys is modified, write it out
@@ -325,10 +325,10 @@ sub save_newkeys {
 }
 
 
-#######################################################################
-# show_version()
+#----------------------------------------------------------------------
+# Routine:	show_version()
 #
-# Prints a version message and exits.
+# Purpose:	Prints a version message and exits.
 #
 sub show_version {
   print STDERR "$VERS\n";
@@ -336,10 +336,10 @@ sub show_version {
   exit(0);
 }
 
-#######################################################################
-# chkfile()
+#----------------------------------------------------------------------
+# Routine:	chkfile()
 #
-# Verify the given file exists and is a file or directory.
+# Purpose:	Verify the given file exists and is a file or directory.
 #
 sub chkfile {
   my $fflag = shift;            # File/directory flag.
@@ -376,10 +376,11 @@ sub chkfile {
   }
 }
 
-#######################################################################
-# usage()
+#----------------------------------------------------------------------
+# Routine:	usage()
 #
-# Prints a command-usage message, with an optional error message, and exits.
+# Purpose:	Prints a command-usage message, with an optional error
+#		message, and exits.
 #
 sub usage {
   my ($extratext) = @_;
@@ -431,10 +432,10 @@ sub usage {
   exit(1);
 }
 
-#######################################################################
-# checkkeys()
+#----------------------------------------------------------------------
+# Routine:	checkkeys()
 #
-# Does most of the work for all of trustman.
+# Purpose:	Does most of the work for all of trustman.
 #
 sub checkkeys {
   my $sleep = shift;
@@ -783,8 +784,8 @@ sub checkkeys {
 
 my ($conffileh, $tmpfileh, $tmpfile, $currenttmpdir, $oldsep);
 
-#######################################################################
-# start_read_config()
+#----------------------------------------------------------------------
+# Routine:	start_read_config()
 #
 sub start_read_config {
   my ($currentfile) = @_;
@@ -801,16 +802,16 @@ sub start_read_config {
   }
 }
 
-#######################################################################
-# end_read_config()
+#----------------------------------------------------------------------
+# Routine:	end_read_config()
 #
 sub end_read_config {
   $conffileh->close();
   $/ = $oldsep;
 }
 
-#######################################################################
-# start_tmpfile()
+#----------------------------------------------------------------------
+# Routine:	start_tmpfile()
 #
 sub start_tmpfile {
   my ($currentfile) = @_;
@@ -842,8 +843,8 @@ sub start_tmpfile {
   return ($tmpfileh, $tmpfile)
 }
 
-#######################################################################
-# end_tmpfile()
+#----------------------------------------------------------------------
+# Routine:	end_tmpfile()
 #
 sub end_tmpfile {
   my ($currentfile) = @_;
@@ -861,18 +862,20 @@ sub end_tmpfile {
   $tmpfileh = undef;
 }
 
-#######################################################################
-# read_next_ta_chunk()
+#----------------------------------------------------------------------
+# Routine:	read_next_ta_chunk()
 #
-# This parses the dnsval.conf file into pieces.  Specifically:
-#   - Reads in a section
-#   - Assures the bounding ';' was not within a comment
-#   - strips off any leading comments so the first section should be
-#     of the "name type" clause it's looking for (eg: ":
-#     trust-anchor").
-#   - leaves the text in $_
-#   - *iff* $tmpfileh is defined, prints out the stripped parts to ensure
-#     that they're saved back to the tmp file being created.
+# Purpose:	This parses the dnsval.conf file into pieces.  Specifically:
+#		  - Reads in a section
+#		  - Assures the bounding ';' was not within a comment
+#		  - strips off any leading comments so the first section
+#		    should be of the "name type" clause it's looking for
+#		    (eg: ": trust-anchor").
+#		  - leaves the text in $_
+#		  - *iff* $tmpfileh is defined, prints out the stripped parts
+#		    to ensure that they're saved back to the tmp file being
+#		    created.
+#
 sub read_next_ta_chunk {
   $_ = <$conffileh>;
 
@@ -893,11 +896,12 @@ sub read_next_ta_chunk {
   return $_;
 }
 
-#######################################################################
-# find_next_ta_chunk_type()
+#----------------------------------------------------------------------
+# Routine:	find_next_ta_chunk_type()
 #
-# Looks for a particular section of the dnsval.conf file.
-# (Pretty much always "trust-anchor" is likely to be looked for.)
+# Purpose:	Looks for a particular section of the dnsval.conf file.
+#		(Pretty much always "trust-anchor" is likely to be looked for.)
+#
 sub find_next_ta_chunk_type {
   my ($type) = @_;
 
@@ -920,13 +924,13 @@ sub find_next_ta_chunk_type {
 }
 
 
-#######################################################################
-# add_ta_namedconf()
+#----------------------------------------------------------------------
+# Routine:	add_ta_namedconf()
 #
-# Add keys to a named.conf file which have been detected
-# from a validated source, and have passed their add_holddown_time.
+# Purpose:	Add keys to a named.conf file which have been detected from
+#		a validated source, and have passed their add_holddown_time.
 #
-# Implements Section 2.4.1 of RFC 5011.
+#		Implements Section 2.4.1 of RFC 5011.
 #
 sub add_ta_namedconf {
   my $zone = @_;
@@ -952,13 +956,13 @@ sub add_ta_namedconf {
   end_tmpfile($ncfile);
 }
 
-#######################################################################
-# add_ta_dnsvalconf()
+#----------------------------------------------------------------------
+# Routine:	add_ta_dnsvalconf()
 #
-# Add keys to a dnsval.conf file which have been detected
-# from a validated source, and have passed their add_holddown_time.
+# Purpose:	Add keys to a dnsval.conf file which have been detected from
+#		a validated source, and have passed their add_holddown_time.
 #
-# Implements Section 2.4.1 of RFC 5011.
+#		Implements Section 2.4.1 of RFC 5011.
 #
 sub add_ta_dnsvalconf {
   my ($zone) = @_;
@@ -1019,13 +1023,13 @@ sub add_ta_dnsvalconf {
   end_tmpfile($dvfile);
 }
 
-#######################################################################
-# remove_ta_dnsvalconf()
+#----------------------------------------------------------------------
+# Routine:	remove_ta_dnsvalconf()
 #
-# Remove keys from a dnsval.conf file.
-# This usually is required when a known key configured as a trust
-# anchor disappears from the query results from a validated
-# response, and remains missing for the required hold time.
+# Purpose:	Remove keys from a dnsval.conf file.
+#		This usually is required when a known key configured as a trust
+#		anchor disappears from the query results from a validated
+#		response, and remains missing for the required hold time.
 #
 sub remove_ta_dnsvalconf {
   my ($zone, $k, $f, $p, $a) = @_;
@@ -1071,13 +1075,13 @@ sub remove_ta_dnsvalconf {
   end_tmpfile($dvfile);
 }
 
-#######################################################################
-# remove_ta_namedconf()
+#----------------------------------------------------------------------
+# Routine:	remove_ta_namedconf()
 #
-# Remove keys from a named.conf file.
-# This usually is required when a known key configured as a trust
-# anchor disappears from the query results from a validated
-# response, and remains missing for the required hold time.
+# Purpose:	Remove keys from a named.conf file.
+#		This usually is required when a known key configured as a trust
+#		anchor disappears from the query results from a validated
+#		response, and remains missing for the required hold time.
 #
 sub remove_ta_namedconf {
   my ($zone, $key, $flags, $proto, $algo) = @_;
@@ -1160,13 +1164,13 @@ sub remove_ta_namedconf {
   end_tmpfile ($ncfile);
 }
 
-#######################################################################
-# revoke_ta_dnsvalconf()
+#----------------------------------------------------------------------
+# Routine:	revoke_ta_dnsvalconf()
 #
-# Revoke keys marked for revocation in a query response
-# from a validated zone.
+# Purpose:	Revoke keys marked for revocation in a query response
+#		from a validated zone.
 #
-# Implements Section 2.1 Revocation from RFC 5011.
+#		Implements Section 2.1 Revocation from RFC 5011.
 #
 sub revoke_ta_dnsvalconf {
   my ($zone,$keyrec) = @_;
@@ -1216,13 +1220,13 @@ sub revoke_ta_dnsvalconf {
   end_tmpfile($dvfile);
 }
 
-#######################################################################
-# revoke_ta_namedconf()
+#----------------------------------------------------------------------
+# Routine:	revoke_ta_namedconf()
 #
-# Revoke keys marked for revocation in a query response
-# from a validated zone.
+# Purpose:	Revoke keys marked for revocation in a query response
+#		from a validated zone.
 #
-# Implements Section 2.1 Revocation from RFC 5011.
+#		Implements Section 2.1 Revocation from RFC 5011.
 #
 sub revoke_ta_namedconf {
   my ($zone,$keyrec) = @_;
@@ -1303,12 +1307,13 @@ sub revoke_ta_namedconf {
   end_tmpfile($ncfile);
 }
 
-#######################################################################
-# get_zones_keys()
+#----------------------------------------------------------------------
+# Routine:	get_zones_keys()
 #
-# Retrieve zones to be monitored, and their configured trust
-# anchors (keys), from config files (named.conf and/or dnsval.conf).
-# Create the revzones structure for later use.
+# Purpose:	Retrieve zones to be monitored, and their configured trust
+#		anchors (keys), from config files (named.conf and/or
+#		dnsval.conf).
+#		Create the revzones structure for later use.
 #
 sub get_zones_keys {
   # using globals %keystorage and @zones, is this evil?
@@ -1338,11 +1343,11 @@ sub get_zones_keys {
 
 }
 
-#######################################################################
-# resolve_and_check_dnskey()
+#----------------------------------------------------------------------
+# Routine:	resolve_and_check_dnskey()
 #
-# Called by checkkeys, queries a zone to get the
-# DNSKEY record; returns an answer only if it was validated.
+# Purpose:	Queries a zone to get the DNSKEY record; returns an answer
+#		only if it was validated.  Called by checkkeys().
 #
 sub resolve_and_check_dnskey {
   my ($z,$file) = @_;
@@ -1373,12 +1378,12 @@ sub resolve_and_check_dnskey {
   return undef;
 }
 
-#######################################################################
-# read_conf_file()
+#----------------------------------------------------------------------
+# Routine:	read_conf_file()
 #
-# Reads in a named.conf style config file pointed to by $file.
-# Looks for trust anchors using $pat and stores key
-# information in $storage.
+# Purpose:	Reads in a named.conf style config file pointed to by $file.
+#		Looks for trust anchors using $pat and stores key
+#		information in $storage.
 #
 sub read_conf_file {
   my ($storage, $file, $configmap) = @_;
@@ -1426,12 +1431,12 @@ sub read_conf_file {
   close FILE;
 }
 
-#######################################################################
-# read_dnsval_file()
+#----------------------------------------------------------------------
+# Routine:	read_dnsval_file()
 #
-# Reads in a dnsval.conf style config file pointed to by $file.
-# Looks for trust anchors using $pat and stores key
-# information in $storage.
+# Purpose:	Reads in a dnsval.conf style config file pointed to by $file.
+#		Looks for trust anchors using $pat and stores key
+#		information in $storage.
 #
 sub read_dnsval_file {
   my ($storage, $file, $configmap) = @_;
@@ -1491,10 +1496,10 @@ sub read_dnsval_file {
   $fh->close;
 }
 
-#######################################################################
-# compute_add_holddown()
+#----------------------------------------------------------------------
+# Routine:	compute_add_holddown()
 #
-# Used in implementation of Section 2.4.1 of RFC 5011.
+# Purpose:	Used in implementation of Section 2.4.1 of RFC 5011.
 #
 sub compute_add_holddown {
   my ($ttl, $default) = @_;
@@ -1520,12 +1525,13 @@ sub compute_add_holddown {
 }
 
 
-#######################################################################
-# compute_remove_holddown()
+#----------------------------------------------------------------------
+# Routine:	compute_remove_holddown()
 #
-# Used in implementation of Section 2.4.2 of RFC 5011.
+# Purpose:	Used in implementation of Section 2.4.2 of RFC 5011.
 #
-# 30 days from "now"
+#		30 days from "now"
+#
 sub compute_remove_holddown {
   my $holddown;
   my $default = 2592000;
@@ -1537,14 +1543,14 @@ sub compute_remove_holddown {
   return $holddown;
 }
 
-#######################################################################
+#----------------------------------------------------------------------
+# Routine:	compute_sleepsecs()
 #
-# compute_sleepsecs()
+# Purpose:	Compute the sleep time in seconds.
+#		min(expiration interval [sigexpiration - now],1/2 * ottl,
+#			15 days).
 #
-# Compute the sleep time in seconds
-# min(expiration interval [sigexpiration - now],1/2 * ottl, 15 days).
-#
-# Implements Section 2.3 of RFC 5011.
+#		Implements Section 2.3 of RFC 5011.
 #
 sub compute_sleepsecs {
   my ($ottl,$sexp) = @_;
@@ -1573,15 +1579,16 @@ sub compute_sleepsecs {
   return ($actrefsecs,$actrefsecs+$nowsecs);
 }
 
-#######################################################################
-# compute_queryfail_sleepsecs()
+#----------------------------------------------------------------------
+# Routine:	compute_queryfail_sleepsecs()
 #
-# Compute the number of seconds to sleep in case of a query failure.
+# Purpose:	Compute the number of seconds to sleep in case of a query
+#		failure.
 #
-# MAX(1 hour, MIN(1 day, 0.1 * ottl, 0.1 *
+#		MAX(1 hour, MIN(1 day, 0.1 * ottl, 0.1 *
 #				expiration interval[sigexpiration - now])
 #
-# Implements Section 2.3 of RFC 5011.
+#		Implements Section 2.3 of RFC 5011.
 #
 sub compute_queryfail_sleepsecs {
   my ($ottl,$sexp) = @_;
@@ -1614,10 +1621,10 @@ sub compute_queryfail_sleepsecs {
   }
 }
 
-#######################################################################
-# notify()
+#----------------------------------------------------------------------
+# Routine:	notify()
 #
-# Depending on configuration, mails or logs notifications.
+# Purpose:	Mails or logs notifications, depending on configuration.
 #
 sub notify {
   my ($message) = @_;
@@ -1643,10 +1650,10 @@ sub notify {
 }
 
 
-#######################################################################
-# mailcontact()
+#----------------------------------------------------------------------
+# Routine:	mailcontact()
 #
-# Emails a contact address with the error output.
+# Purpose:	Emails a contact address with the error output.
 #
 sub mailcontact {
   my ($ok,$smtp,$contact,$msg) = @_;
@@ -1674,12 +1681,12 @@ sub mailcontact {
   $message->quit;
 }
 
-#######################################################################
-# compare_keys()
+#----------------------------------------------------------------------
+# Routine:	compare_keys()
 #
-# Compares the contents of two keys to see if the new one ($zone,
-# $rec, and $keyin) matches a cached one previously stored (in
-# $storage->{$zone}).
+# Purpose:	Compares the contents of two keys to see if the new one ($zone,
+#		$rec, and $keyin) matches a cached one previously stored (in
+#		$storage->{$zone}).
 #
 sub compare_keys {
   my ($storage, $zone, $rec, $keyin) = @_;
@@ -1703,19 +1710,19 @@ sub compare_keys {
   return $newkey;
 }
 
-#######################################################################
-# Verbose()
+#----------------------------------------------------------------------
+# Routine:	Verbose()
 #
-# Prints something(s) to STDERR only if -v was specified.
+# Purpose:	Prints something(s) to STDERR only if -v was specified.
 #
 sub Verbose {
   print STDERR @_ if ($opts{'v'});
 }
 
-#######################################################################
-# Die()
+#----------------------------------------------------------------------
+# Routine:	Die()
 #
-# Prints a fatal error message to STDERR and exits.
+# Purpose:	Prints a fatal error message to STDERR and exits.
 #
 sub Die {
   notify(join("",@_, "\n", "This is a fatal error.  EXITING!\n"));
@@ -1724,10 +1731,10 @@ sub Die {
   exit(1);
 }
 
-#######################################################################
-# daemonize()
+#----------------------------------------------------------------------
+# Routine:	daemonize()
 #
-# Run as a daemon.
+# Purpose:	Run as a daemon.
 #
 sub daemonize {
   chdir '/' or die "Can't chdir to /: $!";
@@ -1739,14 +1746,14 @@ sub daemonize {
   umask 0;
 }
 
-#######################################################################
-# keys_equal()
+#----------------------------------------------------------------------
+# Routine:	keys_equal()
 #
-# Computes key equality of to key references,
-#   equality based on: key, protocal, alogorithm (not flags!)
+# Purpose:	Computes key equality of to key references.  Equality is
+#		based on: key, protocal, alogorithm (not flags!)
 #
-# Returns: 1 : equal
-#          0 : not equal
+# Returns:	1 : equal
+#		0 : not equal
 #
 sub keys_equal {
   my ($key1, $key2) = @_;
@@ -1759,14 +1766,15 @@ sub keys_equal {
   return 0;
 }
 
-#######################################################################
-# key_in_keyarr()
+#----------------------------------------------------------------------
+# Routine:	key_in_keyarr()
 #
-# Checks if a key is in a key array, returns 1st matching location
-#   based on: keys_eqaul
+# Purpose:	Checks if a key is in a key array, returns first matching
+#		location.
+#		Based on: keys_eqaul
 #
-# Returns:  <0 : key not in key array
-#          >=0 : location of matching key in key array
+# Returns:	<  0 : key not in key array
+#		>= 0 : location of matching key in key array
 #
 sub key_in_keyarr {
   my ($key, $keyarr) = @_;
@@ -1779,10 +1787,10 @@ sub key_in_keyarr {
   return -1;
 }
 
-#######################################################################
-# print_keyrec()
+#----------------------------------------------------------------------
+# Routine:	print_keyrec()
 #
-# Print a keyrec.
+# Purpose:	Print a keyrec.
 #
 sub print_keyrec {
   my $rec = @_[0];
@@ -2017,7 +2025,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 Lindy Foster
 
 (Current contact for B<trustman> is Wayne Morrison,
-tewok@users.sourceforge.net.)
+tewok@tislabs.com.)
 
 =head1 SEE ALSO
 
