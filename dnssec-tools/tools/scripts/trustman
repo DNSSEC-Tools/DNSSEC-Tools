@@ -36,7 +36,7 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -1751,7 +1751,7 @@ sub daemonize {
   open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
   open STDERR, '>/dev/null' or die "Can't write to /dev/null: $!";
   defined(my $pid = fork()) or die "Can't fork: $!";
-  exit if $pid;
+  exit(0) if $pid;
   POSIX::setsid() or die "Can't start a new session: $!";
   umask 0;
 }
