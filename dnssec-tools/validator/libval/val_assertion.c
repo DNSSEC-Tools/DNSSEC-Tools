@@ -2438,6 +2438,7 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
         u_char  *nxtname;
         int cmp;
 
+        soa_name_n = &(n->the_set->rrs_sig->rr_rdata[SIGNBY]);
         nxtname = n->the_set->rrs_data->rr_rdata;
         cmp = namecmp(wc_n, n->the_set->rrs_name_n);
 
@@ -2446,9 +2447,16 @@ prove_nsec_span(val_context_t *ctx, struct nsecprooflist *nlist,
             *wcard_proof = n;
             *notype = 1;
             return;
-        } else if (cmp > 0 && namecmp(wc_n, nxtname) <= 0) {
-            *wcard_proof = n;
-            return;
+        } else if (cmp > 0) {
+            /*
+             * check if query name comes before the next name 
+             * or if the next name wraps around 
+             */
+            if (namecmp(wc_n, nxtname) <= 0 ||
+                !namecmp(nxtname, soa_name_n)) {
+                *wcard_proof = n;
+                return;
+            }
         }
     }
 }
