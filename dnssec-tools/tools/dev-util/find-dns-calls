@@ -25,4 +25,4 @@ if [ "x$DIRS" = "x" ]; then
    DIRS="."
 fi
 
-find $DIRS -type f -print |egrep "\.(c|cc|C|CC|h|H)$"|xargs -r egrep -n "$DNSCALLS"
+find $DIRS -type f -print |egrep "\.(c|cc|C|CC|h|H)$"|xargs egrep -n "$DNSCALLS"

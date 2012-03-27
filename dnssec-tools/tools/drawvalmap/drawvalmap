@@ -148,7 +148,8 @@ if ($htmlfile ne "") {
     $htmlfh->close;
 }
 
-$gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
+$gv = GraphViz->new(rankdir => 0, edge => { fontsize => '9'});
+#$gv = GraphViz->new(layout => 'dot', rankdir => 0, edge => { fontsize => '10'});
 $gv->add_node($libvalnode);
 
 # check if socket operation is desired

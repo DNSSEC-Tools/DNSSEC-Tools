@@ -239,8 +239,11 @@ my $gv;
 # either display everything at once, or if multiple files are
 # requested: save a series of cascading images to create an animation
 # with each new packet adding to the previous screen's data.
-my @graphArgs = (layout => $opts{'layout-style'},
-		 edge => { fontsize => $opts{'fontsize'}});
+#my @graphArgs = (layout => $opts{'layout-style'},
+#		 edge => { fontsize => $opts{'fontsize'}});
+my @graphArgs = (layout => 'fdp',
+            rankdir => 1,
+		    edge => { fontsize => $opts{'fontsize'}});
 if ($opts{'layout-style'} eq 'dot') {
     push @graphArgs, rankdir => 1;
 }
@@ -402,6 +405,8 @@ sub get_edge_properties {
 	$lab .= add_breakdown($pkt, 'Additional', '+');
     }
 
+    $lab = "";
+    
     # figure out the color code for the line
     my $edgecolor;
     if ((exists($pkt->{'dns'}{'Authoritative'}) &&
