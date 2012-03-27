@@ -296,6 +296,13 @@ if($newconf) {
 #
 sub load_newkeys {
   # load in the newkeys info from file if available
+
+  if($newkeyfile eq '')
+  {
+	print STDERR "newkey file unspecified\n";
+	return;
+  }
+
   if(open(FILE, "< $newkeyfile") == 0)
   {
     warn "can't open newkey file \'$newkeyfile\': $!";
@@ -319,7 +326,7 @@ sub save_newkeys {
   Verbose("Writing new keys to $newkeyfile\n");
   if(open(FILE, "> $newkeyfile") == 0)
   {
-    warn "can't open newkeys file: $!";
+    print STDERR "can't open newkeys file: $!\n";
     return;
   }
   print FILE
@@ -431,7 +438,7 @@ sub usage {
       - If missing options are not specified on the command line, some
         values will be read from the dnssec-tools.conf.  Run with the -c
         flag to generate suitable dnssec-tools.conf configuration lines.
-  ";
+";
   exit(1);
 }
 
