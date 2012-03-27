@@ -1234,7 +1234,7 @@ complete_read(SOCKET sock, u_char *field, size_t length)
             break;
         }
         bytes_read += bytes;
-    } while (bytes_read < length);
+    } while (bytes_read < length && bytes != 0);
 
     return bytes_read;
 }
