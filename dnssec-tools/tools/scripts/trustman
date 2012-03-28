@@ -670,10 +670,11 @@ sub checkkeys
 				}
 
 				#
-				# Verify that ALL keys in %keystorage (now %keys_to_verify) 
-				# were matched.
-				# If a known key disappears, set its remove_holddown timer for
-				# removal if it doesn't reappear in time.
+				# Verify that ALL keys in %keystorage (now
+				# %keys_to_verify) were matched.
+				# If a known key disappears, set its
+				# remove_holddown timer for removal if it
+				# doesn't reappear in time.
 			}
 			else
 			{
@@ -831,18 +832,12 @@ sub checkkeys
 					# mark this for deletion
 					if($zone_configfile_map{$z} eq $ncfile)
 					{
-						remove_ta_namedconf($z, $remkeys{$z}[$i]{key},
-								$remkeys{$z}[$i]{flags},
-								$remkeys{$z}[$i]{protocol},
-								$remkeys{$z}[$i]{algorithm});
+						remove_ta_namedconf($z, $remkeys{$z}[$i]);
 					}
 
 					if($zone_configfile_map{$z} eq $dvfile)
 					{
-						remove_ta_dnsvalconf($z, $remkeys{$z}[$i]{key},
-								$remkeys{$z}[$i]{flags},
-								$remkeys{$z}[$i]{protocol},
-								$remkeys{$z}[$i]{algorithm});
+						remove_ta_dnsvalconf($z, $remkeys{$z}[$i]);
 					}
 
 					#
@@ -850,6 +845,7 @@ sub checkkeys
 					# has been removed.
 					#
 					splice @{$remkeys{$z}},$i,1;
+
 				}
 			}
 		}
@@ -1221,7 +1217,12 @@ sub add_ta_dnsvalconf
 #
 sub remove_ta_dnsvalconf
 {
-	my ($zone, $k, $f, $p, $a) = @_;
+	my ($zone, $keyrec) = @_;
+
+	my $k	= $keyrec->{key};
+	my $f	= $keyrec->{flags};
+	my $p	= $keyrec->{protocol};
+	my $a	= $keyrec->{algorithm};
 	my $pat = "trust-anchor";
 
 	next if(!$dvfile);
@@ -1291,10 +1292,16 @@ sub remove_ta_dnsvalconf
 #		anchor disappears from the query results from a validated
 #		response, and remains missing for the required hold time.
 #
+
 sub remove_ta_namedconf
 {
-	my ($zone, $key, $flags, $proto, $algo) = @_;
-	my $pat = "^trusted-keys";
+	my ($zone, $keyrec) = @_;
+
+	my $key	  = $keyrec->{key};
+	my $flags = $keyrec->{flags};
+	my $proto = $keyrec->{protocol};
+	my $algo  = $keyrec->{algorithm};
+	my $pat	  = "^trusted-keys";
 
 	next if(!$ncfile);
 
