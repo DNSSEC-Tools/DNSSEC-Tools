@@ -11,18 +11,20 @@
 # If we're executing from a packed environment, make sure we've got the
 # library path for the packed modules.
 #
-BEGIN {
-  if($ENV{'PAR_TEMP'}) {
-    unshift @INC, ("$ENV{'PAR_TEMP'}/inc/lib");
-  }
+BEGIN
+{
+	if($ENV{'PAR_TEMP'})
+	{
+		unshift @INC, ("$ENV{'PAR_TEMP'}/inc/lib");
+	}
 }
 
 use strict;
 
 use Net::DNS;
 use Net::DNS::SEC::Tools::conf;
-use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Validator;
+use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::Packet;
 use Net::SMTP;
 use Getopt::Long qw(:config no_ignore_case_always);
@@ -37,257 +39,322 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.12.2";
+my $VERS   = "$NAME version: 1.12.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
 # Detect required Perl modules.
 #
 use Net::DNS::SEC::Tools::BootStrap;
-dnssec_tools_load_mods('Date::Parse'    => "",
-                       'Net::DNS::SEC'  => "");
+dnssec_tools_load_mods( 'Date::Parse'	 => "",
+			'Net::DNS::SEC'	 => "");
 
 ########################################################
-# Defaults
-
+# Option data.
+#
 my %opts = (
-            t => 3600,          # default to one hour
-            v => 0,             # verbose on
-            c => 0              # don't configure files
-           );
-
-########################################################
-# main
-#
-
-# Parse command-line options
-GetOptions(\%opts,
-           'a|anchor_data_file=s',
-           'c|config=s',
-           'd|dtconfig=s',
-           'f|foreground|fg',
-           'k|dnsval_conf_file=s',
-           'h|help',
-           'L|syslog',
-           'm|mail_contact_addr=s',
-           'n|named_conf_file=s',
-           'N|no_error',
-           'o|root_hints_file=s',
-           'p|print',
-           'r|resolv_conf_file=s',
-           's|smtp_server=s',
-           'nomail',
-           'S|single_run',
-           't|sleeptime=i',
-           'T|tmp_dir=s',
-           'v|verbose',
-           'V|Version',
-           'w|hold_time=s',
-           'z|zone=s',
-           'norevoke',
-          ) || usage();
-
-usage() if($opts{'h'});
-
-show_version() if($opts{'V'});
-
+		t => 3600,	# default to one hour
+		v => 0,		# verbose on
+		c => 0		# don't configure files
+	   );
 
 #
-# Use a local config file if we're running as part of a packed configuration.
+# Option variables.
 #
-if(runpacked()) {
-  setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
-}
-
-#
-# If there's a -dtconfig command line option, we'll use that.
-#
-if(exists($opts{'d'})) {
-  setconffile($opts{'d'});
-}
-
+my $contactaddr;
+my $dvfile;
+my $holdtime;
+my $ncfile;
+my $newconf;
+my $newkeyfile;				# Holds data about newly detected keys,
+my $resfile;
+my $rhfile;
+my $sleeptime;
+my $smtpserver;
+my $tmpdir;
 
 #
 # Option error count.
 #
 my $errs = 0;
 
-# Parse the dnssec-tools.conf file.
-my %dtconf = parseconfig();
-
-# Then $dtconf{'name_of_option_in_dnssec-tools.conf'}
-# contains the value of that option as set in the conf file.
-
-# newkeyfile will hold data about new keys detected,
-# but not yet added to config files (waiting for add_holddown_time
-# to expire).  Read this file if it exists, and write to it
-# any time the %newkeys structure is modified.
-my $newkeyfile = $opts{'a'} ? $opts{'a'}
-  : $dtconf{'taanchorfile'};
-
-my $newconf = $opts{'c'};
-
-my $resfile = $opts{'r'} ? $opts{'r'}
-  : $dtconf{'taresolvconffile'};
-
-my $ncfile = $opts{'n'} ? $opts{'n'}
-  : $dtconf{'tanamedconffile'};
-
-my $dvfile = $opts{'k'} ? $opts{'k'}
-  : $dtconf{'tadnsvalconffile'};
-
-my $rhfile = $opts{'o'} ? $opts{'o'}
-  : '';
-
-my $contactaddr = $opts{'m'} ? $opts{'m'}
-  : $dtconf{'tacontact'};
-
-my $smtpserver =  $opts{'s'} ? $opts{'s'}
-  : $dtconf{'tasmtpserver'};
-
-my $tmpdir =  $opts{'T'} ? $opts{'T'}
-  : $dtconf{'tatmpdir'};
-
-if(!$dvfile && !$ncfile) {
-  print STDERR "Error:  a dnsval.conf (-k) file or named.conf (-n) file must be specified.\n";
-  $errs++;
-}
-
+########################################################
+# Data.
 #
-# Use a local root.hints file if we're running in a packed configuration.
-#
-if(runpacked()) {
-  if($rhfile eq '') {
-    $rhfile = "$ENV{'PAR_TEMP'}/inc/root.hints";
-  }
 
-  if($resfile eq '') {
-    $resfile = "$ENV{'PAR_TEMP'}/inc/resolv.conf";
-  }
-}
+my %dtconf;				# Contents of dnssec-tools.conf file.
 
-#
-# Validate the files we've been given.
-#
-chkfile(1,0,$newkeyfile,"taanchorfile");
-chkfile(1,0,$dvfile,"tadnsvalconffile");
-chkfile(1,0,$ncfile,"tanamedconffile");
-chkfile(1,0,$resfile,"taresolvconffile");
-chkfile(1,0,$rhfile,"taroothintsfile");
-chkfile(0,0,$tmpdir,"tatmpdir");
-
-if(!$smtpserver) {
-  print STDERR "Error:  tasmtpserver is undefined in configuration file\n";
-  $errs++;
-}
-
-my $sleeptime = $opts{'t'} ? $opts{'t'}
-  : $dtconf{'tasleeptime'};
-
-my $holdtime = $opts{'w'} ? $opts{'w'}
-  : $dtconf{'taholdtime'};
-
-if(!$contactaddr && !$opts{'L'} && !$opts{'p'}) {
-  print STDERR "Error:  No reporting method chosen; please select -m, -L, or -p.\n";
-  $errs++;
-}
-
-#
-# Give a usage message if there were any errors.
-#
-if($errs) {
-  print "\n";
-  usage();
-}
-
-my $initrun = 1;
-
-# determine zones to be managed
-my @zones;
-push @zones, split(/,/,$opts{'z'}) if($opts{'z'});
-my %revzones;
-for(my $i = 0; $i <=$#zones; $i++) {
-  $revzones{$zones[$i]} = $i;
-}
-
+my @zones = ();
+my %revzones = ();
 my %keystorage;
-
 my %newkeys;
-load_newkeys();
 
 my %remkeys;
-
 my %sleeptimes;
 my %active_refresh_times;
-
 my %zone_configfile_map;
 my %zone_retry_times;
 
 my $once;
-
 my $norevoke = 0;
-$norevoke = 1 if($opts{'norevoke'});
+
+my $initrun = 1;
+
+###############################################################################
+
+main();
+exit(0);
+
+#----------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	optsandargs();
+
+	#
+	# Determine zones to be managed.
+	#
+	push @zones, split(/,/,$opts{'z'}) if($opts{'z'});
+	for(my $i = 0; $i <=$#zones; $i++)
+	{
+		$revzones{$zones[$i]} = $i;
+	}
 
 
-if($newconf) {
-  my $conffile = getconffile();
-  my $didnconf = 0;
-  my $didvconf = 0;
-  my $didtime = 0;
-  my $didcontact = 0;
-  my $didsmtp = 0;
-  open(CONF,$conffile) or die "unable to open \"$conffile\".";
-  usage () unless $newconf;
-  open(OUT,">$newconf") or die "unable to open \"$newconf\" for writing.";
-  while(<CONF>) {
-    next if(/^tasleeptime/ && ($opts{'t'}));
-    next if(/^tasholdime/ && ($opts{'w'}));
-    next if(/^tasmtpserver/ && ($opts{'s'}));
-    next if(/^tacontact/ && ($opts{'m'}));
-    next if(/^taresolvconffile/ && ($opts{'r'}));
-    next if(/^tanamedconffile/ && ($opts{'n'}));
-    next if(/^tadnsvalconffile/ && ($opts{'k'}));
-    next if(/^taroothintsfile/ && ($opts{'o'}));
-    print OUT $_;
-  }
-  if($opts{'t'}) {
-    print OUT "tasleeptime\t" . $sleeptime . "\n";
-  }
-  if($opts{'w'}) {
-    print OUT "taholdtime\t" . $holdtime . "\n";
-  }
-  if($opts{'s'}) {
-    print OUT "tasmtpserver\t" . $smtpserver . "\n";
-  }
-  if($opts{'m'}) {
-    print OUT "tacontact\t" . $contactaddr . "\n";
-  }
-  if($opts{'r'}) {
-    print OUT "taresolvconffile\t" . $resfile . "\n";
-  }
-  if($opts{'n'}) {
-    print OUT "tanamedconffile\t" . $ncfile . "\n";
-  }
-  if($opts{'k'}) {
-    print OUT "tadnsvalconffile\t" . $dvfile . "\n";
-  }
-  if($opts{'o'}) {
-    print OUT "taroothintsfile\t" . $rhfile . "\n";
-  }
-  close (OUT);
-  close (CONF);
+	load_newkeys();
 
-} else {
-  $once = $opts{'S'};
-  get_zones_keys(\%keystorage);
-  &daemonize if(!$opts{'f'});
-  do {
-    my $newsleeptime = &checkkeys($sleeptime);
-    if(!$once) {
-      Verbose("sleeping for $newsleeptime seconds\n");
-      sleep($newsleeptime);
-    }
-  } while(!$once);
+	mknewconf();
+
+	get_zones_keys(\%keystorage);
+	&daemonize if(!$opts{'f'});
+
+	do
+	{
+		my $newsleeptime = &checkkeys($sleeptime);
+		if(!$once)
+		{
+			Verbose("sleeping for $newsleeptime seconds\n");
+			sleep($newsleeptime);
+		}
+	} while(!$once);
+}
+
+#----------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+sub optsandargs
+{
+	#
+	# Parse command-line options.
+	#
+	GetOptions(\%opts,
+		   'a|anchor_data_file=s',
+		   'c|config=s',
+		   'd|dtconfig=s',
+		   'f|foreground|fg',
+		   'k|dnsval_conf_file=s',
+		   'h|help',
+		   'L|syslog',
+		   'm|mail_contact_addr=s',
+		   'n|named_conf_file=s',
+		   'N|no_error',
+		   'o|root_hints_file=s',
+		   'p|print',
+		   'r|resolv_conf_file=s',
+		   's|smtp_server=s',
+		   'nomail',
+		   'S|single_run',
+		   't|sleeptime=i',
+		   'T|tmp_dir=s',
+		   'v|verbose',
+		   'V|Version',
+		   'w|hold_time=s',
+		   'z|zone=s',
+		   'norevoke',
+		  ) || usage();
+
+	#
+	# Handle some immediate options.
+	#
+	usage()		if($opts{'h'});
+	show_version()	if($opts{'V'});
+
+	#
+	# Parse the DNSESC-Tools configuration file.
+	#
+	getdtconf();
+
+	#
+	# newkeyfile will hold data about new keys detected,
+	# but not yet added to config files (waiting for add_holddown_time
+	# to expire).  Read this file if it exists, and write to it
+	# any time the %newkeys structure is modified.
+	#
+	$newkeyfile  = $opts{'a'} ? $opts{'a'} : $dtconf{'taanchorfile'};
+	$newconf     = $opts{'c'};
+	$resfile     = $opts{'r'} ? $opts{'r'} : $dtconf{'taresolvconffile'};
+	$ncfile	     = $opts{'n'} ? $opts{'n'} : $dtconf{'tanamedconffile'};
+	$dvfile	     = $opts{'k'} ? $opts{'k'} : $dtconf{'tadnsvalconffile'};
+	$rhfile	     = $opts{'o'} ? $opts{'o'} : '';
+	$contactaddr = $opts{'m'} ? $opts{'m'} : $dtconf{'tacontact'};
+	$smtpserver  = $opts{'s'} ? $opts{'s'} : $dtconf{'tasmtpserver'};
+	$tmpdir	     = $opts{'T'} ? $opts{'T'} : $dtconf{'tatmpdir'};
+	$sleeptime   = $opts{'t'} ? $opts{'t'} : $dtconf{'tasleeptime'};
+	$holdtime    = $opts{'w'} ? $opts{'w'} : $dtconf{'taholdtime'};
+	$norevoke    = 1 if($opts{'norevoke'});
+	$once	     = $opts{'S'};
+
+	if(!$dvfile && !$ncfile)
+	{
+		print STDERR "Error:  a dnsval.conf (-k) file or named.conf (-n) file must be specified.\n";
+		$errs++;
+	}
+
+	#
+	# Use a local root.hints file if we're running in a packed environment.
+	#
+	if(runpacked())
+	{
+		$rhfile  = "$ENV{'PAR_TEMP'}/inc/root.hints"  if($rhfile eq '');
+		$resfile = "$ENV{'PAR_TEMP'}/inc/resolv.conf" if($resfile eq '');
+	}
+
+	#
+	# Validate the files we've been given.
+	#
+	chkfile(1,0,$newkeyfile,"taanchorfile");
+	chkfile(1,0,$dvfile,"tadnsvalconffile");
+	chkfile(1,0,$ncfile,"tanamedconffile");
+	chkfile(1,0,$resfile,"taresolvconffile");
+	chkfile(1,0,$rhfile,"taroothintsfile");
+	chkfile(0,0,$tmpdir,"tatmpdir");
+
+	#
+	# Ensure we have an SMTP server.
+	#
+	if(!$smtpserver)
+	{
+		print STDERR "Error:  tasmtpserver is undefined in configuration file and -s not given\n";
+		$errs++;
+	}
+
+	#
+	# Ensure we have a reporting method.
+	#
+	if(!$contactaddr && !$opts{'L'} && !$opts{'p'})
+	{
+		print STDERR "Error:  No reporting method chosen; please select -m, -L, or -p.\n";
+		$errs++;
+	}
+
+	#
+	# Give a usage message if there were any errors.
+	#
+	if($errs)
+	{
+		print "\n";
+		usage();
+	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	getdtconf()
+#
+# Purpose:	Parse the DNSESC-Tools configuration file.  If the -dtconfig
+#		option was given, we'll use that instead of the default.
+#
+sub getdtconf
+{
+	#
+	# Use a local config file if we're running as part of a packed
+	# configuration.
+	#
+	if(runpacked())
+	{
+		setconffile("$ENV{'PAR_TEMP'}/inc/dnssec-tools.conf");
+	}
+
+	#
+	# If there's a -dtconfig command line option, we'll use that.
+	#
+	setconffile($opts{'d'}) if(exists($opts{'d'}));
+
+	#
+	# Parse the dnssec-tools.conf file.
+	#
+	%dtconf = parseconfig();
+}
+
+#----------------------------------------------------------------------
+# Routine:	mknewconf()
+#
+sub mknewconf
+{
+	my $conffile;
+	my $didnconf = 0;
+	my $didvconf = 0;
+	my $didtime = 0;
+	my $didcontact = 0;
+	my $didsmtp = 0;
+
+	return if(! $newconf);
+
+	my $conffile = getconffile();
+
+	open(CONF,$conffile) or die "unable to open \"$conffile\".";
+	usage () unless $newconf;
+
+	open(OUT,">$newconf") or die "unable to open \"$newconf\" for writing.";
+	while(<CONF>)
+	{
+		next if(/^tasleeptime/	    && ($opts{'t'}));
+		next if(/^tasholdime/	    && ($opts{'w'}));
+		next if(/^tasmtpserver/	    && ($opts{'s'}));
+		next if(/^tacontact/	    && ($opts{'m'}));
+		next if(/^taresolvconffile/ && ($opts{'r'}));
+		next if(/^tanamedconffile/  && ($opts{'n'}));
+		next if(/^tadnsvalconffile/ && ($opts{'k'}));
+		next if(/^taroothintsfile/  && ($opts{'o'}));
+		print OUT $_;
+	}
+
+	if($opts{'t'})
+	{
+		print OUT "tasleeptime\t" . $sleeptime . "\n";
+	}
+	if($opts{'w'})
+	{
+		print OUT "taholdtime\t" . $holdtime . "\n";
+	}
+	if($opts{'s'})
+	{
+		print OUT "tasmtpserver\t" . $smtpserver . "\n";
+	}
+	if($opts{'m'})
+	{
+		print OUT "tacontact\t" . $contactaddr . "\n";
+	}
+	if($opts{'r'})
+	{
+		print OUT "taresolvconffile\t" . $resfile . "\n";
+	}
+	if($opts{'n'})
+	{
+		print OUT "tanamedconffile\t" . $ncfile . "\n";
+	}
+	if($opts{'k'})
+	{
+		print OUT "tadnsvalconffile\t" . $dvfile . "\n";
+	}
+	if($opts{'o'})
+	{
+		print OUT "taroothintsfile\t" . $rhfile . "\n";
+	}
+
+	close (OUT);
+	close (CONF);
 }
 
 #----------------------------------------------------------------------
@@ -295,26 +362,36 @@ if($newconf) {
 #
 # Purpose:	Loads the newkeys info from a file.
 #
-sub load_newkeys {
-  # load in the newkeys info from file if available
+sub load_newkeys
+{
+	my $undefval = $/;
 
-  if($newkeyfile eq '')
-  {
-	print STDERR "newkey file unspecified\n";
-	return;
-  }
+	#
+	# Load in the newkeys info from file if available.
+	#
+	if($newkeyfile eq '')
+	{
+		print STDERR "no newkey file; use -a option\n";
+		return;
+	}
 
-  if(open(FILE, "< $newkeyfile") == 0)
-  {
-    warn "can't open newkey file \'$newkeyfile\': $!";
-    return;
-  }
-  my $undefval = $/;
-  undef $/;
-  eval <FILE>;
-  warn "can't recreate newkey data from file: $@" if $@;
-  close FILE;
-  $/ = $undefval;
+	#
+	# Load in the newkeys info from file if available.
+	#
+	if(open(FILE, "< $newkeyfile") == 0)
+	{
+		print STDERR "can't open newkey file \'$newkeyfile\': $!\n";
+		return;
+	}
+
+	undef $/;
+
+	eval <FILE>;
+
+	warn "can't recreate newkey data from file: $@" if $@;
+
+	close FILE;
+	$/ = $undefval;
 }
 
 #----------------------------------------------------------------------
@@ -322,29 +399,31 @@ sub load_newkeys {
 #
 # Purpose:	Save any available new-key information.
 #
-sub save_newkeys {
-  # whenever newkeys is modified, write it out
-  Verbose("Writing new keys to $newkeyfile\n");
-  if(open(FILE, "> $newkeyfile") == 0)
-  {
-    print STDERR "can't open newkeys file: $!\n";
-    return;
-  }
-  print FILE
-    Data::Dumper->Dump([\%newkeys], [qw(*newkeys)]);
-  close FILE or warn "can't close newkeys file: $!";
-}
+sub save_newkeys
+{
+	#
+	# Load in the newkeys info from file if available.
+	#
+	if($newkeyfile eq '')
+	{
+		print STDERR "no newkey file; use -a option\n";
+		return;
+	}
 
+	#
+	# Write the newkeys file whenever it's modified.
+	#
+	Verbose("Writing new keys to $newkeyfile\n");
 
-#----------------------------------------------------------------------
-# Routine:	show_version()
-#
-# Purpose:	Prints a version message and exits.
-#
-sub show_version {
-  print STDERR "$VERS\n";
-  print STDERR "$DTVERS\n";
-  exit(0);
+	if(open(FILE, "> $newkeyfile") == 0)
+	{
+		warn "can't open newkeys file: $!";
+		return;
+	}
+
+	print FILE Data::Dumper->Dump([\%newkeys], [qw(*newkeys)]);
+
+	close FILE or warn "can't close newkeys file: $!";
 }
 
 #----------------------------------------------------------------------
@@ -352,95 +431,45 @@ sub show_version {
 #
 # Purpose:	Verify the given file exists and is a file or directory.
 #
-sub chkfile {
-  my $fflag = shift;            # File/directory flag.
-  my $reqd  = shift;            # Required flag.
-  my $name  = shift;            # Node name to check.
-  my $field = shift;            # Node's description.
+sub chkfile
+{
+	my $fflag = shift;            # File/directory flag.
+	my $reqd  = shift;            # Required flag.
+	my $name  = shift;            # Node name to check.
+	my $field = shift;            # Node's description.
 
-  if($reqd && ($name eq '')) {
-    print STDERR "Error:  $field is not set in configuration file\n";
-    $errs++;
-    return;
-  }
+	if($reqd && ($name eq ''))
+	{
+		print STDERR "Error:  $field is not set in configuration file\n";
+		$errs++;
+		return;
+	}
 
-  return if(! $name);
+	return if(! $name);
 
-  if(! -e $name) {
-    print STDERR "Error:  \"$name\" does not exist\n";
-    $errs++;
-    return;
-  }
+	if(! -e $name)
+	{
+		print STDERR "Error:  \"$name\" does not exist\n";
+		$errs++;
+		return;
+	}
 
-  if($fflag) {
-    if(! -f $name) {
-      print STDERR "Error:  \"$name\" is not a regular file\n";
-      $errs++;
-      return;
-    }
-  } else {
-    if(! -d $name) {
-      print STDERR "Error:  \"$name\" is not a directory\n";
-      $errs++;
-      return;
-    }
-  }
-}
-
-#----------------------------------------------------------------------
-# Routine:	usage()
-#
-# Purpose:	Prints a command-usage message, with an optional error
-#		message, and exits.
-#
-sub usage {
-  my ($extratext) = @_;
-  print STDERR "\nError:\n  $extratext\n\n" if($extratext);
-
-  print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-d DNSSECCONFIGFILE] [-v] [-V]
-
-  File Options:
-         -anchor_data_file FILE (-a)
-         -config FILE (-c)
-         -dtconfig DTCONFFILE (-d)
-         -dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
-         -named_conf_file /PATH/TO/NAMED.CONF (-n)
-         -resolv_conf_file CONFFILE (-r)
-         -root_hints_file /PATH/TO/root.hints (-o)
-         -tmp_dir TMPDIR (-T)
-
-  Logging and Output Options:
-         -mail_contact_addr EMAIL_ADDRESS (-m)
-         -smtp_server SMTPSERVERNAME (-s)
-         -no_error (-N)
-         -print (-p)
-         -syslog (-L)
-         -nomail
-
-  Operational Options:
-         -zone ZONE (-z)
-         -hold_time SECONDS (-w)
-         -single_run (-S)
-         -foreground (-f)
-         -sleeptime SECONDS (-t)
-
-  Testing Options:
-         -norevoke
-
-  Help Options:
-         -help (-h)
-         -verbose (-v)
-         -version (-V)
-
-  Extra Notes:
-      - If a zone is not specified, all zones in the key_containing_files
-        will be checked.
-
-      - If missing options are not specified on the command line, some
-        values will be read from the dnssec-tools.conf.  Run with the -c
-        flag to generate suitable dnssec-tools.conf configuration lines.
-";
-  exit(1);
+	if($fflag)
+	{
+		if(! -f $name)
+		{
+			print STDERR "Error:  \"$name\" is not a regular file\n";
+			$errs++;
+		}
+	}
+	else
+	{
+		if(! -d $name)
+		{
+			print STDERR "Error:  \"$name\" is not a directory\n";
+			$errs++;
+		}
+	}
 }
 
 #----------------------------------------------------------------------
@@ -448,429 +477,540 @@ sub usage {
 #
 # Purpose:	Does most of the work for all of trustman.
 #
-sub checkkeys {
-  my $sleep = shift;
+sub checkkeys
+{
+	my $sleep = shift;
+	my %keys_to_verify;
+	my @zones_to_check;
+	my $now = localtime();
+	my $nowsecs = str2time($now);
 
-  my %keys_to_verify;
-  foreach my $k (keys %keystorage) {
-    @{$keys_to_verify{$k}} = @{$keystorage{$k}};
-  }
-
-  my @zones_to_check;
-
-  foreach my $z (@zones) {
-    # check all zones to see if $active_refresh_times{$z} has been reached
-    my $now = localtime();
-    my $nowsecs = str2time($now);
-    if($nowsecs >= $active_refresh_times{$z}) {
-      push @zones_to_check, $z;
-    } elsif($initrun) {       # first time through, check all zones
-      push @zones_to_check, $z;
-    }
-  }
-
-  Verbose(" Checking zone keys for validity\n");
-  foreach my $z (@zones_to_check) {
-    my $query;
-    $query = resolve_and_check_dnskey($z,$dvfile);
-
-    my %pendingnewkeys;
-    if(keys %newkeys) {
-      for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
-        my $pendingkeyobj = { flags => $newkeys{$z}[$i]{flags},
-                              protocol => $newkeys{$z}[$i]{protocol},
-                              algorithm => $newkeys{$z}[$i]{algorithm},
-                              key => $newkeys{$z}[$i]{key},
-                              found => 0,
-                            };
-        Verbose("  pending key for $z\n");
-        push (@{$pendingnewkeys{$z}}, $pendingkeyobj);
-      }
-    }
-
-    # check the RRSIG over the DNSKEY
-    if($query) {
-      my $origttl;
-      foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
-
-        # This assumes that the orig TTLs are always the same
-        # (which they should be).  XXX: Turn this into a
-        # warning if not?
-        $origttl = $rrsigrec->orgttl;
-
-        my $sigexp = $rrsigrec->sigexpiration;
-        my $retryobj = { ottl => $origttl,
-                         sigexp => $sigexp
-                       };
-        $zone_retry_times{$z} = $retryobj;
-        my ($refresh_secs,$refresh_time) = 
-          compute_sleepsecs($origttl, $sigexp);
-        #Verbose("  $z ...  refresh_secs=$refresh_secs, refresh_time=$refresh_time\n");
-        $sleeptimes{$z} =  $refresh_secs;
-        $active_refresh_times{$z} = $refresh_time;
-        last;                   # only need one sleep time per zone
-        # XXX: yeah, but should we have the shortest or the longest?
-        # (in theory they *should* be the same...)
-      }
-
-      if(!$origttl) {
-        Verbose("No original TTL found for $z???");
-      }
-
-      # if an RRSET is received which does NOT contain a pending
-      # new key, remove that new key from the %newkeys
-      foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer) {
-        next if(!($keyrec->flags & 1));
-        my $ttl = $keyrec->ttl;
-        my $key = $keyrec->key;
-        $key =~ s/\s+//g;       # remove all spaces
-        my $nonmatch;
-        # we don't care if a DNSKEY record is found with the
-        # revoke bit set unless it is a key we have stored
-        # so check for a match first
-        $nonmatch = compare_keys(\%keystorage, $z, $keyrec, $key);
-        if($nonmatch) {
-          # may be a new key, remember it.
-          # check if this key is already in %newkeys
-
-          # also need to find any keys in %newkeys which do
-          # NOT appear in a subsequent RRSET
-
-          my $notnewkey = 0;
-          if(keys %newkeys) {
-            for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
-              if($newkeys{$z}[$i]{key} eq $key &&
-                  $newkeys{$z}[$i]{flags} eq $keyrec->flags &&
-                  $newkeys{$z}[$i]{protocol} eq $keyrec->protocol &&
-                  $newkeys{$z}[$i]{algorithm} eq $keyrec->algorithm ) {
-                $notnewkey = 1;
-                if(keys %pendingnewkeys) {
-                  for(my $i = 0; $i <= $#{$pendingnewkeys{$z}}; $i++) {
-                    if($pendingnewkeys{$z}[$i]{key} eq $key &&
-                        $pendingnewkeys{$z}[$i]{flags} eq $keyrec->flags &&
-                        $pendingnewkeys{$z}[$i]{protocol} eq $keyrec->protocol &&
-                        $pendingnewkeys{$z}[$i]{algorithm} eq $keyrec->algorithm ) {
-                      $pendingnewkeys{$z}[$i]{found} = 1;
-                    }
-                  }
-                }
-
-              }
-            }
-          }
-          if(!$notnewkey) {
-
-            my $add_holddown_time =
-              compute_add_holddown($origttl, $holdtime);
-            my $newkeyobj = { flags => $keyrec->flags,
-                              protocol => $keyrec->protocol,
-                              algorithm => $keyrec->algorithm,
-                              key => $key,
-                              holdtime => $add_holddown_time,
-                            };
-            Verbose("  adding holddown for new key in $z ($add_holddown_time seconds from now)\n");
-            push(@{$newkeys{$z}},$newkeyobj);
-            my $notif = "A new key has been received for zone " . $z . ".\n   It will be added when the add holddown time is reached.\n";
-            notify($notif) if($opts{'v'});
-            save_newkeys();
-          }
-          # check if it has the revoke bit set
-          # or we aren't doing revoke
-        } elsif(($keyrec->{flags} & 128) &&
-                 ($norevoke == 0)) {
-          # this key is being revoked
-          # print "key being revoked:\n";
-          # print_keyrec($keyrec);
-
-          if($dvfile) {
-            revoke_ta_dnsvalconf($z,$keyrec);
-          }
-          if($ncfile) {
-            revoke_ta_namedconf($z,$keyrec);
-          }
-
-          # verify that ALL keys in %keystorage (now %keys_to_verify) 
-          # were matched.
-          # if a known key disappears, set its remove_holddown timer for
-          # removal if it doesn't reappear in time
-        } else {
-          # if this is neither a new key, nor a revoked key
-          # if it is a configured trust anchor, delete it from
-          # the keys_to_verify structure so we know it is not
-          # "removed"
-
-          for(my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++) {
-            if($keys_to_verify{$z}[$i]{key} eq $key &&
-                $keys_to_verify{$z}[$i]{flags} eq $keyrec->flags &&
-                $keys_to_verify{$z}[$i]{protocol} eq $keyrec->protocol &&
-                $keys_to_verify{$z}[$i]{algorithm} eq $keyrec->algorithm ) {
-              splice @{$keys_to_verify{$z}},$i,1;
-            }
-          }
-          # if it appears in the %remkeys struct, since it has
-          # now reappeared, remove it from remkeys
-          if(keys %remkeys) {
-            for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++) {
-              if($remkeys{$z}[$i]{key} eq $key &&
-                  $remkeys{$z}[$i]{flags} eq $keyrec->flags &&
-                  $remkeys{$z}[$i]{protocol} eq $keyrec->protocol &&
-                  $remkeys{$z}[$i]{algorithm} eq $keyrec->algorithm ) {
-                splice @{$remkeys{$z}},$i,1;
-              }
-            }
-          }
-
-        }
-
-      }
-
-      # Only want to remove pending keys which do not appear in this
-      # RRSET if the query was successful.  Will deal with the
-      # unsuccessful query below.
-
-      for(my $k = 0; $k <= $#{$pendingnewkeys{$z}}; $k++) {
-        # any pending key still not marked found should be
-        # removed from %newkeys
-        if(!$pendingnewkeys{$z}[$k]{found}) {
-          for(my $j = 0; $j <= $#{$newkeys{$z}}; $j++) {
-            # find the entry in newkeys that corresponds to
-            # the pending key not found
-            if($newkeys{$z}[$j]{key} eq
-                $pendingnewkeys{$z}[$k]{key} &&
-                $newkeys{$z}[$j]{flags} eq
-                $pendingnewkeys{$z}[$k]{flags} &&
-                $newkeys{$z}[$j]{protocol} eq
-                $pendingnewkeys{$z}[$k]{protocol} &&
-                $newkeys{$z}[$j]{algorithm} eq
-                $pendingnewkeys{$z}[$k]{algorithm} ) {
-              splice @{$newkeys{$z}},$j,1;
-              # notify of this action if Verbose
-              my $notif = "Pending new key for zone " . $z . 
-                " has been removed.\n";
-              notify($notif) if($opts{'v'});
-              save_newkeys();
-            }
-          }
-        }
-      }
-    } else {
-      my $notif = "query for keys failed for zone " . $z . "\n";
-      notify($notif) if($opts{'v'});
-      my $refresh_secs = compute_queryfail_sleepsecs
-        ($zone_retry_times{$z}{'ottl'},
-         $zone_retry_times{$z}{'sigexp'});
-      $sleeptimes{$z} =  $refresh_secs;
-    }
-  }
-
-  # all zones have been queried, and queries have been processed
-
-  if(%newkeys) {
-    my @newkeyzones;
-
-    Verbose("checking new keys for timing\n");
-
-    # if add_holddown_time has been reached, notify
-
-    my $now = localtime();
-    my $nowsecs = str2time($now);
-
-    foreach my $z (keys %newkeys) {
-      for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
-        if($nowsecs >= $newkeys{$z}[$i]{holdtime}) {
-          # notify about this key
-          Verbose(" hold-down timer for key \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
-          push @newkeyzones, $z;
-        } else {
-          Verbose(" hold-down timer for key \"$z\" still in the future (" .
-                  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
-        }
-      }
-    }
-    foreach my $z (@newkeyzones) {
-      # these are all zones for which new keys have reached their
-      # add holddown time. add these keys as new trust anchors
-      # to the appropriate config files
-      if($ncfile && ($zone_configfile_map{$z} eq $ncfile)) {
-        add_ta_namedconf($z);
-      }
-      if($dvfile && ($zone_configfile_map{$z} eq $dvfile)) {
-        add_ta_dnsvalconf($z);
-      }
-      # now that this key has been added to the appropriate
-      # config file(s), put it in keystorage and remove it
-      # from newkeys
-      for(my $i =0; $i <= $#{$newkeys{$z}}; $i++) {
-        my $newstorageobj = { flags => $newkeys{$z}[$i]{flags},
-                              protocol => $newkeys{$z}[$i]{protocol},
-                              algorithm => $newkeys{$z}[$i]{algorithm},
-                              key => $newkeys{$z}[$i]{key},
-                            };
-        push (@{$keystorage{$z}}, $newstorageobj);
-
-        splice @{$newkeys{$z}},$i,1;
-        save_newkeys();
-      }
-    }
-    #        if(($contactaddr) && (@newkeyzones)) { # mail it
-    #            mailcontact(0,$smtpserver,$contactaddr,@newkeyzones);
-    #        }
-
-  }
-
-  if(keys %remkeys) {
-    # see if any remkeys have reached their holdtimes
-    # if so, remove them from the config file
-    my $now = localtime();
-    my $nowsecs = str2time($now);
-
-    foreach my $z (keys %remkeys) {
-      for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++) {
-        if($nowsecs >= $remkeys{$z}[$i]{holdtime}) {
-          # mark this for deletion
-          if($zone_configfile_map{$z} eq $ncfile) {
-            remove_ta_namedconf($z, $remkeys{$z}[$i]{key},
-                                $remkeys{$z}[$i]{flags},
-                                $remkeys{$z}[$i]{protocol},
-                                $remkeys{$z}[$i]{algorithm});
-          }
-          if($zone_configfile_map{$z} eq $dvfile) {
-            remove_ta_dnsvalconf($z, $remkeys{$z}[$i]{key},
-                                 $remkeys{$z}[$i]{flags},
-                                 $remkeys{$z}[$i]{protocol},
-                                 $remkeys{$z}[$i]{algorithm});
-          }
-          # remove this key from remkeys now, it has been removed
-          splice @{$remkeys{$z}},$i,1;
-        }
-      }
-    }
-  }
-
-  foreach my $z (keys %keys_to_verify) {
-    # any zones/keys still in %keys_to_verify did not appear
-    # in a query, but are configured trust anchors.
-    # Set the remove holddown time (30 days) for these keys
-    # and add to remkeys for processing on next go
+	foreach my $k (keys(%keystorage))
+	{
+		@{$keys_to_verify{$k}} = @{$keystorage{$k}};
+	}
 
 
-    my $remove_holddown_time = compute_remove_holddown();
-    for(my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++) {
-      my $remkeyobj = { flags => $keys_to_verify{$z}[$i]{flags},
-                        protocol => $keys_to_verify{$z}[$i]{protocol},
-                        algorithm => $keys_to_verify{$z}[$i]{algorithm},
-                        key => $keys_to_verify{$z}[$i]{key},
-                        holdtime => $remove_holddown_time,
-                      };
-      # only add this key if it isn't already there
-      my $addit = 1;
-      if(keys %remkeys) {
-        for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++) {
-          if($remkeys{$z}[$i]{key} eq $remkeyobj->{key} &&
-              $remkeys{$z}[$i]{flags} eq $remkeyobj->{flags} &&
-              $remkeys{$z}[$i]{protocol} eq $remkeyobj->{protocol} &&
-              $remkeys{$z}[$i]{algorithm} eq $remkeyobj->{algorithm}) {
-            $addit = 0;
-          }
-        }
-      }
-      if($addit) {
-        push (@{$remkeys{$z}},$remkeyobj);
-      }
-    }
-  }
+	#
+	# Check all zones to see if $active_refresh_times{$z} has been reached.
+	#
+	foreach my $z (@zones)
+	{
+		if($nowsecs >= $active_refresh_times{$z})
+		{
+			push @zones_to_check, $z;
+		}
+		elsif($initrun)
+		{       # first time through, check all zones
+			push @zones_to_check, $z;
+		}
+	}
 
-  $initrun = 0;
+	Verbose(" Checking zone keys for validity\n");
+	foreach my $z (@zones_to_check)
+	{
+		my $query;
+		$query = resolve_and_check_dnskey($z,$dvfile);
 
-  foreach my $z (keys %sleeptimes) {
-    if($sleep > $sleeptimes{$z} &&
-        $sleeptimes{$z} > 0) {
-      $sleep = $sleeptimes{$z};
-    }
-    # otherwise, just leaving the current $sleep
-  }
-  return $sleep;
+		my %pendingnewkeys;
+		if(keys(%newkeys))
+		{
+			for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
+			{
+				my $pendingkeyobj = {
+					flags => $newkeys{$z}[$i]{flags},
+					protocol => $newkeys{$z}[$i]{protocol},
+					algorithm => $newkeys{$z}[$i]{algorithm},
+					key => $newkeys{$z}[$i]{key},
+					found => 0,
+				};
+				Verbose("  pending key for $z\n");
+				push (@{$pendingnewkeys{$z}}, $pendingkeyobj);
+			}
+		}
 
-}                               # end checkkeys
+		# check the RRSIG over the DNSKEY
+
+		if(! $query)
+		{
+			my $notif = "query for keys failed for zone " . $z . "\n";
+			notify($notif) if($opts{'v'});
+			my $refresh_secs = compute_queryfail_sleepsecs(
+						 $zone_retry_times{$z}{'ottl'},
+						 $zone_retry_times{$z}{'sigexp'}
+						);
+			$sleeptimes{$z} =  $refresh_secs;
+
+			next;
+		}
+
+		my $origttl;
+		foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer)
+		{
+			#
+			# This assumes that the orig TTLs are always the same
+			# (which they should be).
+			# XXX: Turn this into a warning if not?
+			#
+			$origttl = $rrsigrec->orgttl;
+
+			my $sigexp = $rrsigrec->sigexpiration;
+			my $retryobj =	{
+						ottl => $origttl,
+						sigexp => $sigexp
+					};
+
+			$zone_retry_times{$z} = $retryobj;
+
+			my ($refresh_secs,$refresh_time) = 
+			compute_sleepsecs($origttl, $sigexp);
+
+#			Verbose("  $z ...  refresh_secs=$refresh_secs, refresh_time=$refresh_time\n");
+			$sleeptimes{$z} =  $refresh_secs;
+			$active_refresh_times{$z} = $refresh_time;
+
+			#
+			# Only need one sleep time per zone.
+			#
+			last;
+
+			#
+			# XXX: yeah, but should we have the shortest or the
+			# longest?  (In theory they *should* be the same...)
+			#
+		}
+
+		if(!$origttl)
+		{
+			Verbose("No original TTL found for $z???");
+		}
+
+		#
+		# If an RRSET is received which does NOT contain a pending
+		# new key, remove that new key from the %newkeys.
+		#
+		foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer)
+		{
+			next if(!($keyrec->flags & 1));
+			my $ttl = $keyrec->ttl;
+			my $key = $keyrec->key;
+			$key =~ s/\s+//g;       # remove all spaces
+
+			#
+			# We don't care if a DNSKEY record is found with the
+			# revoke bit set unless it's a key we have stored.
+			# So, check for a match first.
+			#
+			if(compare_keys(\%keystorage, $z, $keyrec, $key) != 0)
+			{
+				# May be a new key, remember it.
+				# Check if this key is already in %newkeys.
+
+				# Also need to find any keys in %newkeys which
+				# do NOT appear in a subsequent RRSET.
+
+				my $notnewkey = 0;
+				if(keys(%newkeys))
+				{
+					for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
+					{
+						if(keycmp($newkeys{$z}[$i], $keyrec, $key))
+						{
+							$notnewkey = 1;
+							if(keys(%pendingnewkeys))
+							{
+								for(my $i = 0; $i <= $#{$pendingnewkeys{$z}}; $i++)
+								{
+									if(keycmp($pendingnewkeys{$z}[$i], $keyrec, $key))
+									{
+										$pendingnewkeys{$z}[$i]{found} = 1;
+									}
+								}
+							}
+
+						}
+					}
+				}
+				if(!$notnewkey)
+				{
+					my $add_holddown_time = compute_add_holddown($origttl, $holdtime);
+					my $newkeyobj =
+						{
+							flags => $keyrec->flags,
+							protocol => $keyrec->protocol,
+							algorithm => $keyrec->algorithm,
+							key => $key,
+							holdtime => $add_holddown_time,
+						};
+
+					Verbose("  adding holddown for new key in $z ($add_holddown_time seconds from now)\n");
+
+					push(@{$newkeys{$z}},$newkeyobj);
+
+					my $notif = "A new key has been received for zone " . $z . ".\n   It will be added when the add holddown time is reached.\n";
+					notify($notif) if($opts{'v'});
+					save_newkeys();
+				}
+			}
+			# check if it has the revoke bit set
+			# or we aren't doing revoke
+			elsif(($keyrec->{flags} & 128) && ($norevoke == 0))
+			{
+				# this key is being revoked
+				# print "key being revoked:\n";
+				# print_keyrec($keyrec);
+
+				if($dvfile)
+				{
+					revoke_ta_dnsvalconf($z,$keyrec);
+				}
+				if($ncfile)
+				{
+					revoke_ta_namedconf($z,$keyrec);
+				}
+
+				#
+				# Verify that ALL keys in %keystorage (now %keys_to_verify) 
+				# were matched.
+				# If a known key disappears, set its remove_holddown timer for
+				# removal if it doesn't reappear in time.
+			}
+			else
+			{
+				#
+				# If this is neither a new key, nor a revoked
+				# key if it is a configured trust anchor, delete
+				# it from the keys_to_verify structure so we
+				# know it is not "removed".
+				#
+				for(my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++)
+				{
+					if(keycmp($keys_to_verify{$z}[$i], $keyrec, $key))
+					{
+						splice @{$keys_to_verify{$z}},$i,1;
+					}
+				}
+
+				#
+				# If it appears in the %remkeys struct, since
+				# it has now reappeared, remove it from remkeys.
+				#
+				if(keys(%remkeys))
+				{
+					for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++)
+					{
+						if(keycmp($remkeys{$z}[$i], $keyrec, $key))
+						{
+							splice @{$remkeys{$z}},$i,1;
+						}
+					}
+				}
+			}
+
+		}
+
+		# Only want to remove pending keys which do not appear in this
+		# RRSET if the query was successful.  Will deal with the
+		# unsuccessful query below.
+
+		for(my $k = 0; $k <= $#{$pendingnewkeys{$z}}; $k++)
+		{
+			# any pending key still not marked found should be
+			# removed from %newkeys
+			next if($pendingnewkeys{$z}[$k]{found});
+
+			for(my $j = 0; $j <= $#{$newkeys{$z}}; $j++)
+			{
+				# Find the entry in newkeys that corresponds to
+				# the pending key not found.
+				if(keycmp($newkeys{$z}[$j], $pendingnewkeys{$z}[$k]))
+				{
+					splice @{$newkeys{$z}},$j,1;
+					# notify of this action if Verbose
+					my $notif = "Pending new key for zone " . $z . " has been removed.\n";
+					notify($notif) if($opts{'v'});
+					save_newkeys();
+				}
+			}
+		}
+
+	}
+
+	#
+	# All zones have been queried, and queries have been processed.
+	#
+
+	if(%newkeys)
+	{
+		my @newkeyzones;
+
+		Verbose("checking new keys for timing\n");
+
+		# if add_holddown_time has been reached, notify
+
+		my $now = localtime();
+		my $nowsecs = str2time($now);
+
+		foreach my $z (keys(%newkeys))
+		{
+			for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
+			{
+				if($nowsecs >= $newkeys{$z}[$i]{holdtime})
+				{
+					# notify about this key
+					Verbose(" hold down timer for $z reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
+					push @newkeyzones, $z;
+				}
+				else
+				{
+					Verbose(" hold-down timer for key \"$z\" still in the future (" .  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
+				}
+			}
+		}
+
+		foreach my $z (@newkeyzones)
+		{
+			#
+			# These are all zones for which new keys have reached
+			# their add holddown time. add these keys as new trust
+			# anchors to the appropriate config files.
+			#
+			if($ncfile && ($zone_configfile_map{$z} eq $ncfile))
+			{
+				add_ta_namedconf($z);
+			}
+
+			if($dvfile && ($zone_configfile_map{$z} eq $dvfile))
+			{
+				add_ta_dnsvalconf($z);
+			}
+
+			#
+			# Now that this key has been added to the appropriate
+			# config file(s), put it in keystorage and remove it
+			# from newkeys.
+			#
+			for(my $i =0; $i <= $#{$newkeys{$z}}; $i++)
+			{
+				my $newstorageobj = {
+					flags	  => $newkeys{$z}[$i]{flags},
+					protocol  => $newkeys{$z}[$i]{protocol},
+					algorithm => $newkeys{$z}[$i]{algorithm},
+					key	  => $newkeys{$z}[$i]{key},
+				    };
+				push (@{$keystorage{$z}}, $newstorageobj);
+
+				splice @{$newkeys{$z}},$i,1;
+				save_newkeys();
+			}
+		}
+
+		#
+		# Mail it.
+		#
+#		if(($contactaddr) && (@newkeyzones))
+#		{
+#			mailcontact(0,$smtpserver,$contactaddr,@newkeyzones);
+#		}
+
+	}
+
+	if(keys(%remkeys))
+	{
+		# See if any remkeys have reached their holdtimes.
+		# If so, remove them from the config file.
+		my $now = localtime();
+		my $nowsecs = str2time($now);
+
+		foreach my $z (keys(%remkeys))
+		{
+			for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++)
+			{
+				if($nowsecs >= $remkeys{$z}[$i]{holdtime})
+				{
+					# mark this for deletion
+					if($zone_configfile_map{$z} eq $ncfile)
+					{
+						remove_ta_namedconf($z, $remkeys{$z}[$i]{key},
+								$remkeys{$z}[$i]{flags},
+								$remkeys{$z}[$i]{protocol},
+								$remkeys{$z}[$i]{algorithm});
+					}
+
+					if($zone_configfile_map{$z} eq $dvfile)
+					{
+						remove_ta_dnsvalconf($z, $remkeys{$z}[$i]{key},
+								$remkeys{$z}[$i]{flags},
+								$remkeys{$z}[$i]{protocol},
+								$remkeys{$z}[$i]{algorithm});
+					}
+
+					#
+					# Remove this key from remkeys now, it
+					# has been removed.
+					#
+					splice @{$remkeys{$z}},$i,1;
+				}
+			}
+		}
+	}
+
+	#
+	# Any zones or keys still in %keys_to_verify did not appear in a
+	# query, but are configured trust anchors.  Set the remove holddown
+	# time (30 days) for these keys and add to remkeys for processing
+	# on next go.
+	#
+	foreach my $z (keys(%keys_to_verify))
+	{
+		my $remove_holddown_time = compute_remove_holddown();
+
+		for(my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++)
+		{
+			my $remkeyobj = {
+				flags	  => $keys_to_verify{$z}[$i]{flags},
+				protocol  => $keys_to_verify{$z}[$i]{protocol},
+				algorithm => $keys_to_verify{$z}[$i]{algorithm},
+				key	  => $keys_to_verify{$z}[$i]{key},
+				holdtime  => $remove_holddown_time,
+			    };
+
+			#
+			# Only add this key if it isn't already there.
+			#
+			my $addit = 1;
+			if(keys(%remkeys))
+			{
+				for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++)
+				{
+					if(keycmp($remkeys{$z}[$i], $remkeyobj))
+					{
+						$addit = 0;
+					}
+				}
+			}
+
+			if($addit)
+			{
+				push (@{$remkeys{$z}},$remkeyobj);
+			}
+		}
+	}
+
+	$initrun = 0;
+
+	foreach my $z (keys(%sleeptimes))
+	{
+		if(($sleep > $sleeptimes{$z}) && ($sleeptimes{$z} > 0))
+		{
+			$sleep = $sleeptimes{$z};
+		}
+	}
+
+	return($sleep);
+}					# end checkkeys
 
 my ($conffileh, $tmpfileh, $tmpfile, $currenttmpdir, $oldsep);
 
 #----------------------------------------------------------------------
 # Routine:	start_read_config()
 #
-sub start_read_config {
-  my ($currentfile) = @_;
+sub start_read_config
+{
+	my ($currentfile) = @_;
 
-  $oldsep = $/;
-  $/ = ";";
+	$oldsep = $/;
+	$/ = ";";
 
-  $conffileh = new IO::File;
-  Die("Failed to create a file handle for opening $currentfile")
-    if(!$conffileh);
+	$conffileh = new IO::File;
 
-  if(!$conffileh->open("$currentfile")) {
-    Die("Failed to open the file handle for reading $currentfile")
-  }
+	Die("Failed to create a file handle for opening $currentfile")
+		if(!$conffileh);
+
+	if(!$conffileh->open("$currentfile"))
+	{
+		Die("Failed to open the file handle for reading $currentfile")
+	}
 }
 
 #----------------------------------------------------------------------
 # Routine:	end_read_config()
 #
-sub end_read_config {
-  $conffileh->close();
-  $/ = $oldsep;
+sub end_read_config
+{
+	$conffileh->close();
+	$/ = $oldsep;
 }
 
 #----------------------------------------------------------------------
 # Routine:	start_tmpfile()
 #
-sub start_tmpfile {
-  my ($currentfile) = @_;
+sub start_tmpfile
+{
+	my ($currentfile) = @_;
+	my ($base, $suffix);
 
-  my $newfile = $currentfile;
-  $newfile =~ s/(.*)\/([^\/]*)(\.[^\/]*)/$2-XXXXXX/; # contains dir path
-  my ($base, $suffix);
-  ($currenttmpdir, $base, $suffix) = ($1, $2, $3);
-  if(!$suffix) {
-    # doesn't contain dir path
-    $newfile =~ s/^([^\/]*)(\.[^\/]*)/$1-XXXXXX/;
-    ($currenttmpdir, $base, $suffix) = ("/tmp",$1, $2);
-  }
-  if(!$suffix) {
-    $newfile = "tmpfile-XXXXXX";
-    $currenttmpdir = "/tmp";
-    $suffix = ".conf";
-  }
-  $currenttmpdir = $tmpdir if($tmpdir);
-  ($tmpfileh, $tmpfile) = tempfile($newfile,
-                                   DIR => $currenttmpdir,
-                                   SUFFIX => $suffix);
+	my $newfile = $currentfile;
 
-  Die("Failed to open $currenttmpdir/$newfile.$suffix") if(!$tmpfileh);
+	$newfile =~ s/(.*)\/([^\/]*)(\.[^\/]*)/$2-XXXXXX/; # contains dir path
 
-  start_read_config($currentfile);
+	($currenttmpdir, $base, $suffix) = ($1, $2, $3);
 
-  Verbose("Opened $currenttmpdir/$tmpfile to create a replacement for $currentfile\n");
-  return ($tmpfileh, $tmpfile)
+	#
+	# Doesn't contain directory path.
+	#
+	if(!$suffix)
+	{
+		$newfile =~ s/^([^\/]*)(\.[^\/]*)/$1-XXXXXX/;
+		($currenttmpdir, $base, $suffix) = ("/tmp",$1, $2);
+	}
+
+	if(!$suffix)
+	{
+		$newfile = "tmpfile-XXXXXX";
+		$currenttmpdir = "/tmp";
+		$suffix = ".conf";
+	}
+
+	$currenttmpdir = $tmpdir if($tmpdir);
+	($tmpfileh, $tmpfile) = tempfile($newfile, DIR => $currenttmpdir, SUFFIX => $suffix);
+
+	Die("Failed to open $currenttmpdir/$newfile.$suffix") if(!$tmpfileh);
+
+	start_read_config($currentfile);
+
+	Verbose("Opened $currenttmpdir/$tmpfile to create a replacement for $currentfile\n");
+
+	return($tmpfileh, $tmpfile);
 }
 
 #----------------------------------------------------------------------
 # Routine:	end_tmpfile()
 #
-sub end_tmpfile {
-  my ($currentfile) = @_;
-  end_read_config($currentfile);
-  $tmpfileh->close();
-  # rename TMP to $ncfile
-  my $origname = $currentfile . ".orig";
-  if(!rename($currentfile,$origname)) {
-    Die("Fatal Error:  Failed to rename $currentfile to $origname!");
-  }
-  if(!rename ($tmpfile,$currentfile)) {
-    Die("Fatal Error:  Failed to rename newly created $tmpfile to $currentfile;\nAn appropriate -T flag or tatmpdir setting may correct this problem.");
-  }
-  Verbose("Closed $tmpfile and renamed back to $currentfile\n");
-  $tmpfileh = undef;
+sub end_tmpfile
+{
+	my ($currentfile) = @_;
+
+	end_read_config($currentfile);
+	$tmpfileh->close();
+
+	#
+	# Rename TMP to $ncfile.
+	#
+	my $origname = $currentfile . ".orig";
+
+	if(!rename($currentfile,$origname))
+	{
+		Die("Fatal Error:  Failed to rename $currentfile to $origname");
+	}
+
+	if(!rename($tmpfile,$currentfile))
+	{
+		Die("Fatal Error:  Failed to rename newly created $tmpfile to $currentfile;\nAn appropriate -T flag or tatmpdir setting may correct this problem.");
+	}
+
+	Verbose("Closed $tmpfile and renamed back to $currentfile\n");
+	$tmpfileh = undef;
 }
 
 #----------------------------------------------------------------------
@@ -887,24 +1027,31 @@ sub end_tmpfile {
 #		    to ensure that they're saved back to the tmp file being
 #		    created.
 #
-sub read_next_ta_chunk {
-  $_ = <$conffileh>;
+sub read_next_ta_chunk
+{
+	$_ = <$conffileh>;
 
-  # the ; separator may be in the middle of a comment unfortunately.
-  # read in more lines if so.
-  while(/[\n\r]\s*#[^\n\r]*;\s*$/ ||
-         /^\s*#[^\n\r]*;\s*$/) {
-    my $nextline = <$conffileh>;
-    last if($nextline eq '');
-    $_ .= $nextline;
-  }
+	#
+	# The ; separator may be in the middle of a comment unfortunately.
+	# read in more lines if so.
+	#
+	while(/[\n\r]\s*#[^\n\r]*;\s*$/ || /^\s*#[^\n\r]*;\s*$/)
+	{
+		my $nextline = <$conffileh>;
+		last if($nextline eq '');
+		$_ .= $nextline;
+	}
 
-  # weed out any comments that occur before the starting line we're
-  # looking for.
-  while(s/^(\s*#[^\n\r]*[\n\r])//) {
-    print $tmpfileh $1 if(defined($tmpfileh));
-  }
-  return $_;
+	#
+	# Weed out any comments that occur before the starting line we're
+	# looking for.
+	#
+	while(s/^(\s*#[^\n\r]*[\n\r])//)
+	{
+		print $tmpfileh $1 if(defined($tmpfileh));
+	}
+
+	return($_);
 }
 
 #----------------------------------------------------------------------
@@ -913,27 +1060,31 @@ sub read_next_ta_chunk {
 # Purpose:	Looks for a particular section of the dnsval.conf file.
 #		(Pretty much always "trust-anchor" is likely to be looked for.)
 #
-sub find_next_ta_chunk_type {
-  my ($type) = @_;
+sub find_next_ta_chunk_type
+{
+	my ($type) = @_;
 
-  while(read_next_ta_chunk()) {
+	while(read_next_ta_chunk())
+	{
 
-    my $zonefound = 0;
-    if(s/^(\s*\S+\s+$type\s*)//) {
-      # reprint the segment we just read and smashed
-      print $tmpfileh "$1";
+		my $zonefound = 0;
+		if(s/^(\s*\S+\s+$type\s*)//)
+		{
+			# Reprint the segment we just read and smashed.
+			print $tmpfileh "$1";
 
-      # strip the trailing ;
-      s/\s*;\s*$//;
+			# Strip the trailing semi.
+			s/\s*;\s*$//;
 
-      # return the rest for processing
-      return $_;
-    } else {
-      print $tmpfileh $_;
-    }
-  }
+			# Return the rest for processing.
+			return($_);
+		}
+		else
+		{
+			print $tmpfileh $_;
+		}
+	}
 }
-
 
 #----------------------------------------------------------------------
 # Routine:	add_ta_namedconf()
@@ -943,28 +1094,37 @@ sub find_next_ta_chunk_type {
 #
 #		Implements Section 2.4.1 of RFC 5011.
 #
-sub add_ta_namedconf {
-  my $zone = @_;
-  return if(!$ncfile);
+sub add_ta_namedconf
+{
+	my $zone = @_;
 
-  start_tmpfile($ncfile);
-  while(<$conffileh>) {
-    print $tmpfileh $_;
-    if(/^trusted-keys/) {
-      print $tmpfileh "\n\n";
-      for(my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
-        my $newkey = $zone . " " .
-          $newkeys{$zone}[$i]{flags} . " " .
-            $newkeys{$zone}[$i]{protocol} . " " .
-              $newkeys{$zone}[$i]{algorithm} . " " .
-                $newkeys{$zone}[$i]{key} . "\";\n";
-        print $tmpfileh $newkey;
-        my $notif = "New key added to " . $ncfile . " for zone " . $zone . "\n";
-        notify($notif);
-      }
-    }
-  }
-  end_tmpfile($ncfile);
+	return if(!$ncfile);
+
+	start_tmpfile($ncfile);
+
+	while(<$conffileh>)
+	{
+		print $tmpfileh $_;
+
+		if(/^trusted-keys/)
+		{
+			print $tmpfileh "\n\n";
+			for(my $i =0; $i <= $#{$newkeys{$zone}}; $i++)
+			{
+				my $newkey = $zone . " " .
+					$newkeys{$zone}[$i]{flags} . " " .
+					$newkeys{$zone}[$i]{protocol} . " " .
+					$newkeys{$zone}[$i]{algorithm} . " " .
+					$newkeys{$zone}[$i]{key} . "\";\n";
+
+				print $tmpfileh $newkey;
+
+				notify("New key added to " . $ncfile . " for zone " . $zone . "\n");
+			}
+		}
+	}
+
+	end_tmpfile($ncfile);
 }
 
 #----------------------------------------------------------------------
@@ -975,63 +1135,80 @@ sub add_ta_namedconf {
 #
 #		Implements Section 2.4.1 of RFC 5011.
 #
-sub add_ta_dnsvalconf {
-  my ($zone) = @_;
+sub add_ta_dnsvalconf
+{
+	my ($zone) = @_;
+	my $pat = "trust-anchor";
 
-  next if(!$dvfile);
+	next if(!$dvfile);
 
-  my $pat = "trust-anchor";
+	start_tmpfile($dvfile);
 
-  start_tmpfile($dvfile);
+	while(find_next_ta_chunk_type($pat))
+	{
+		my $zonefound = 0;
 
-  while(find_next_ta_chunk_type($pat)) {
+		#
+		# This is just looking to see if the zone we're adding a
+		# key for is already in the file (if it's not they've
+		# likely set a security expectation that allowed the key to
+		# be auto-added even though it's never been secured).
+		#
+		my $lookingfor = $_;
+		while($lookingfor)
+		{
+			# Skip comments and blank lines.
+			next if($lookingfor =~ s/^\s*#[^\n]*\n+//);
+			next if($lookingfor =~ s/^\s*\n//);
 
-    my $zonefound = 0;
+			#
+			# Spot the actual zone-name/data combo.
+			#
+			$lookingfor =~ s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//;
+			my ($z, $val) = ($1, $2);
 
-    # this is just looking to see if the zone we're adding a
-    # key for is already in the file (if it's not they've
-    # likely set a security expectation that allowed the key to
-    # be auto-added even though it's never been secured).
-    my $lookingfor = $_;
-    while($lookingfor) {
-      # no comments
-      next if($lookingfor =~ s/^\s*#[^\n]*\n+//);
-      # no blank lines
-      next if($lookingfor =~ s/^\s*\n//);
+			#
+			# Strip off the trailing dot from the zone name.
+			$z =~ s/\.$//;
 
-      # spot the actual zone-name/data combo
-      $lookingfor =~ s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//;
-      my ($z, $val) = ($1, $2);
-      # strip off the trailing dot from the zone name
-      $z =~ s/\.$//;
-      if($z eq $zone) {
-        $zonefound = 1;
-      }
-    }
+			if($z eq $zone)
+			{
+				$zonefound = 1;
+			}
+		}
 
-    # dump the original contents back out; this should preserve # lines
-    print $tmpfileh $_,"\n";
+		#
+		# Dump the original contents back out; this should preserve
+		# lines.
+		#
+		print $tmpfileh $_,"\n";
 
-    # print the new keys
-    for(my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
-      my $newkeyentry = $zone . ". \"" .
-        $newkeys{$zone}[$i]{flags} . " " .
-          $newkeys{$zone}[$i]{protocol} . " " .
-            $newkeys{$zone}[$i]{algorithm} . " " .
-              $newkeys{$zone}[$i]{key} . "\"";
-      if($zonefound) {
-        print $tmpfileh $newkeyentry . $2;
-        Verbose("Adding the following key to $dvfile:\n");
-        Verbose($newkeyentry . "\n");
-        my $notif = "New key added to " . $dvfile . " for zone " . $zone . "\n";
-        notify($notif);
-      } else {
-        Verbose("Failed to find original zone key in $ncfile!\n");
-      }
-    }
-    print $tmpfileh "\n;";
-  }
-  end_tmpfile($dvfile);
+		# Print the new keys.
+		for(my $i =0; $i <= $#{$newkeys{$zone}}; $i++)
+		{
+			my $newkeyentry = $zone . ". \"" .
+				$newkeys{$zone}[$i]{flags} . " " .
+				$newkeys{$zone}[$i]{protocol} . " " .
+				$newkeys{$zone}[$i]{algorithm} . " " .
+				$newkeys{$zone}[$i]{key} . "\"";
+
+			if($zonefound)
+			{
+				print $tmpfileh $newkeyentry . $2;
+				Verbose("Adding the following key to $dvfile:\n");
+				Verbose($newkeyentry . "\n");
+				notify("New key added to " . $dvfile . " for zone " . $zone . "\n");
+			}
+			else
+			{
+				Verbose("Failed to find original zone key in $ncfile!\n");
+			}
+		}
+
+		print $tmpfileh "\n;";
+	}
+
+	end_tmpfile($dvfile);
 }
 
 #----------------------------------------------------------------------
@@ -1042,48 +1219,68 @@ sub add_ta_dnsvalconf {
 #		anchor disappears from the query results from a validated
 #		response, and remains missing for the required hold time.
 #
-sub remove_ta_dnsvalconf {
-  my ($zone, $k, $f, $p, $a) = @_;
+sub remove_ta_dnsvalconf
+{
+	my ($zone, $k, $f, $p, $a) = @_;
+	my $pat = "trust-anchor";
 
-  next if(!$dvfile);
+	next if(!$dvfile);
 
-  my $pat = "trust-anchor";
+	start_tmpfile($dvfile);
 
-  start_tmpfile($dvfile);
-  while(find_next_ta_chunk_type($pat)) {
+	while(find_next_ta_chunk_type($pat))
+	{
+		while($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//)
+		{
+			my ($z, $val) = ($1, $2);
 
-    while($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-      my ($z, $val) = ($1, $2);
-      # strip off the trailing dot from the zone name
-      $z =~ s/\.$//;
-      $val =~ s/[\n\r]//g;
-      if($z eq $zone) {
-        my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
-        $key =~ s/\s+//g;
-        $k =~ s/[\n\r]//g;
-        if($k eq $key &&
-            $f eq $flags &&
-            $p eq $protocol &&
-            $a eq $algorithm) {
-          # its a match, comment it out
-          print $tmpfileh "# The following key has been removed.\n";
-          my $remkeyrec = $z . ". " . $val;
-          print $tmpfileh "# " . $remkeyrec . "\n\n";
-          my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
-          notify($notif);
-        } else {
-          # add the trailing dot when printing zone name
-          print $tmpfileh $z . ". " . $val . "\n\n";
-        }
+			#
+			# Strip off the trailing dot from the zone name.
+			#
+			$z =~ s/\.$//;
+			$val =~ s/[\n\r]//g;
 
-      } else {
-        # add the trailing dot when printing zone name
-        print $tmpfileh $z . ". " . $val . "\n\n";
-      }
-    }
-    print $tmpfileh "\n;\n";
-  }
-  end_tmpfile($dvfile);
+			if($z eq $zone)
+			{
+				my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+				$key =~ s/\s+//g;
+				$k =~ s/[\n\r]//g;
+
+				if(($k eq $key) &&
+				   ($f eq $flags) &&
+				   ($p eq $protocol) &&
+				   ($a eq $algorithm))
+				{
+					# It's a match, comment it out.
+					print $tmpfileh "# The following key has been removed.\n";
+
+					my $remkeyrec = $z . ". " . $val;
+					print $tmpfileh "# " . $remkeyrec . "\n\n";
+
+					notify("The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n");
+				}
+				else
+				{
+					#
+					# Add the trailing dot when printing
+					# the zone name.
+					#
+					print $tmpfileh $z . ". " . $val . "\n\n";
+				}
+			}
+			else
+			{
+				#
+				# Add the trailing dot when printing zone name.
+				#
+				print $tmpfileh $z . ". " . $val . "\n\n";
+			}
+		}
+
+		print $tmpfileh "\n;\n";
+	}
+
+	end_tmpfile($dvfile);
 }
 
 #----------------------------------------------------------------------
@@ -1094,85 +1291,111 @@ sub remove_ta_dnsvalconf {
 #		anchor disappears from the query results from a validated
 #		response, and remains missing for the required hold time.
 #
-sub remove_ta_namedconf {
-  my ($zone, $key, $flags, $proto, $algo) = @_;
+sub remove_ta_namedconf
+{
+	my ($zone, $key, $flags, $proto, $algo) = @_;
+	my $pat = "^trusted-keys";
 
-  next if(!$ncfile);
+	next if(!$ncfile);
 
-  my $pat = "^trusted-keys";
-  my $trustsection = 0;
+	my $trustsection = 0;
 
-  start_tmpfile($ncfile);
-  while(<$conffileh>) {
-    if(s/^\s*$pat\s*//) {
-      print $tmpfileh "trusted-keys {";
-      $trustsection = 1;
-      s/\s*\{//;
-      if($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
-        my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-        # strip off the trailing dot from the zone name
-        $z =~ s/\.$//;
-        $k =~ s/\s+//g;
-        $k =~ s/\"//g;
-        if($z eq $zone) {
-          $key =~ s/[\n\r]//g;
-          $key =~ s/\"//g;
-          if($key eq $k &&
-              $flags eq $f &&
-              $proto eq $p &&
-              $algo eq $a) {
-            # its a match, comment it out
-            print $tmpfileh $space; # attempting to preserve spacing
-            print $tmpfileh "# The following key has been removed.\n";
-            my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-            print $tmpfileh "# " . $remkeyrec . "\n";
-            my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
-            notify($notif);
-          }
-        } else {
-          # just print it, it's not the key we're looking for
-          print $tmpfileh $_;
-        }
-      }
-    } elsif($trustsection) {
-      if(/\s*\};/) {
-        $trustsection = 0;
-        print $tmpfileh "\n};\n";
-      } elsif($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
+	start_tmpfile($ncfile);
 
-        my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-        # strip off the trailing dot from the zone name
-        $z =~ s/\.$//;
-        $k =~ s/\s+//g;
-        $k =~ s/\"//g;
-        if($z eq $zone) {
-          $key =~ s/[\n\r]//g;
-          $key =~ s/\"//g;
-          if($key eq $k &&
-              $flags eq $f &&
-              $proto eq $p &&
-              $algo eq $a) {
-            # its a match, comment it out
-            print $tmpfileh $space; # attempting to preserve spacing
-            print $tmpfileh "# The following key has been removed.\n";
-            my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-            print $tmpfileh "# " . $remkeyrec . "\n";
-            my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
-            notify($notif);
-          } else {
-            # just print it, it's not the key we're looking for
-            print $tmpfileh $_;
-          }
-        } else {
-          # just print it, it's not the zone we're looking for
-          print $tmpfileh $_;
-        }
-      }
-    } else {
-      print $tmpfileh $_;
-    }
-  }
-  end_tmpfile ($ncfile);
+	while(<$conffileh>)
+	{
+		if(s/^\s*$pat\s*//)
+		{
+			print $tmpfileh "trusted-keys {";
+			$trustsection = 1;
+			s/\s*\{//;
+			if($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/)
+			{
+				my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+				# strip off the trailing dot from the zone name
+				$z =~ s/\.$//;
+				$k =~ s/\s+//g;
+				$k =~ s/\"//g;
+				if($z eq $zone)
+				{
+					$key =~ s/[\n\r]//g;
+					$key =~ s/\"//g;
+					if(($key eq $k) &&
+					   ($flags eq $f) &&
+					   ($proto eq $p) &&
+					   ($algo eq $a))
+					{
+						# It's a match, comment it out.
+						print $tmpfileh $space;	 # attempting to preserve spacing
+						print $tmpfileh "# The following key has been removed.\n";
+						my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+						print $tmpfileh "# " . $remkeyrec . "\n";
+						notify("The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n");
+					}
+				}
+				else
+				{
+					# Just print it, it's not the key we're looking for.
+					print $tmpfileh $_;
+				}
+			}
+		}
+		elsif($trustsection)
+		{
+			if(/\s*\};/)
+			{
+				$trustsection = 0;
+				print $tmpfileh "\n};\n";
+			}
+			elsif($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/)
+			{
+				my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+
+				#
+				# Strip off the trailing dot from the zone name.
+				#
+				$z =~ s/\.$//;
+				$k =~ s/\s+//g;
+				$k =~ s/\"//g;
+
+				if($z eq $zone)
+				{
+					$key =~ s/[\n\r]//g;
+					$key =~ s/\"//g;
+
+					if(($key eq $k) &&
+					   ($flags eq $f) &&
+					   ($proto eq $p) &&
+					   ($algo eq $a))
+					{
+						# It's a match, comment it out.
+						print $tmpfileh $space; # attempting to preserve spacing
+						print $tmpfileh "# The following key has been removed.\n";
+						my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+						print $tmpfileh "# " . $remkeyrec . "\n";
+
+						notify("The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n");
+					}
+					else
+					{
+						# Just print it, it's not the key we're looking for.
+						print $tmpfileh $_;
+					}
+				}
+				else
+				{
+					# Just print it, it's not the zone we're looking for.
+					print $tmpfileh $_;
+				}
+			}
+		}
+		else
+		{
+			print $tmpfileh $_;
+		}
+	}
+
+	end_tmpfile($ncfile);
 }
 
 #----------------------------------------------------------------------
@@ -1183,52 +1406,73 @@ sub remove_ta_namedconf {
 #
 #		Implements Section 2.1 Revocation from RFC 5011.
 #
-sub revoke_ta_dnsvalconf {
-  my ($zone,$keyrec) = @_;
+sub revoke_ta_dnsvalconf
+{
+	my ($zone,$keyrec) = @_;
+	my $pat = "trust-anchor";
 
-  next if(!$dvfile);
+	next if(!$dvfile);
 
-  my $pat = "trust-anchor";
+	start_tmpfile($dvfile);
 
-  start_tmpfile($dvfile);
-  while(find_next_ta_chunk_type($pat)) {
-    while($_ ne '' && s/^\s*(\S+)\s+("[^"]+"|[^\n\r]+)\s*//) { #"
-      my ($z, $val) = ($1, $2);
-      # strip off the trailing dot from the zone name
-      $z =~ s/\.$//;
-      $val =~ s/[\n\r]//g;
-      if($z eq $zone) {
-        my ($flags, $protocol, $algorithm, $key) = 
-          $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
-        $key =~ s/\s+//g;
-        my $keyin = $keyrec->{key};
-        $keyin =~ s/[\n\r]//g;
-        if($keyin eq $key &&
-            # flag will not match and prob doesn't matter, proto and algo prob
-            # do not matter either but I am leaving them in for now.
-            #           $keyrec->{flags} eq $flags &&
-            $keyrec->{protocol} eq $protocol &&
-            $keyrec->{algorithm} eq $algorithm) {
-          # its a match, comment it out
-          print $tmpfileh "# The following key has been revoked.\n";
-          # give the key new flag values
-          my $revkeyrec = $z . ". \"" . $keyrec->{flags} . " " . $protocol 
-            . " " . $algorithm . " " . $key . "\"";
-          print $tmpfileh "# " . $revkeyrec . "\n\n";
-          my $notif = "The following key has been revoked from zone " . 
-            $z . ":\n" . $revkeyrec . "\n";
-          notify($notif);
-        } else { # not the revoked key, put info back in file
-          print $tmpfileh $z . ". " . $val . "\n\n";
-        }
+	while(find_next_ta_chunk_type($pat))
+	{
+		while($_ ne '' && s/^\s*(\S+)\s+("[^"]+"|[^\n\r]+)\s*//)
+		{ #"
+			my ($z, $val) = ($1, $2);
 
-      } else {  # not the revoked zone, put info back in file
-        print $tmpfileh $z . ". " . $val . "\n\n";
-      }
-    }
-    print $tmpfileh "\n;\n";
-  }
-  end_tmpfile($dvfile);
+			#
+			# Strip off the trailing dot from the zone name.
+			#
+			$z =~ s/\.$//;
+			$val =~ s/[\n\r]//g;
+			
+			if($z ne $zone)
+			{
+				# Not the revoked zone, put info back in file.
+				print $tmpfileh $z . ". " . $val . "\n\n";
+				next;
+			}
+
+			my ($flags, $protocol, $algorithm, $key) = 
+				$val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+
+			$key =~ s/\s+//g;
+
+			my $keyin = $keyrec->{key};
+
+			$keyin =~ s/[\n\r]//g;
+
+			#
+			# Flag will not match and prob doesn't matter, proto
+			# and algo probably do not matter either but I am
+			# leaving them in for now.
+			#           $keyrec->{flags} eq $flags &&
+			if(($keyin eq $key) &&
+			   ($keyrec->{protocol} eq $protocol) &&
+			   ($keyrec->{algorithm} eq $algorithm))
+			{
+				# It's a match, comment it out.
+				print $tmpfileh "# The following key has been revoked.\n";
+
+				# Give the key new flag values.
+				my $revkeyrec = $z . ". \"" . $keyrec->{flags} . " " . $protocol . " " . $algorithm . " " . $key . "\"";
+				print $tmpfileh "# " . $revkeyrec . "\n\n";
+
+				notify("The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n");
+			}
+			else
+			{
+				# Not the revoked key, put info back in file.
+				print $tmpfileh $z . ". " . $val . "\n\n";
+			}
+
+		}
+
+		print $tmpfileh "\n;\n";
+	}
+
+	end_tmpfile($dvfile);
 }
 
 #----------------------------------------------------------------------
@@ -1239,83 +1483,113 @@ sub revoke_ta_dnsvalconf {
 #
 #		Implements Section 2.1 Revocation from RFC 5011.
 #
-sub revoke_ta_namedconf {
-  my ($zone,$keyrec) = @_;
+sub revoke_ta_namedconf
+{
+	my ($zone,$keyrec) = @_;
+	my $pat = "^trusted-keys";
+	my $trustsection = 0;
 
-  next if(!$ncfile);
+	next if(!$ncfile);
 
-  my $pat = "^trusted-keys";
-  my $trustsection = 0;
+	start_tmpfile($ncfile);
 
-  start_tmpfile($ncfile);
-  while(<$conffileh>) {
-    if(s/^\s*$pat\s*//) {
-      print $tmpfileh "trusted-keys {";
-      $trustsection = 1;
-      s/\s*\{//;
-      if($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
-        my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-        # strip off the trailing dot from the zone name
-        $z =~ s/\.$//;
-        $k =~ s/\s+//g;
-        $k =~ s/\"//g;
-        if($z eq $zone) {
-          my $keyin = $keyrec->{key};
-          $keyin =~ s/[\n\r]//g;
-          if($keyin eq $k &&
-              $keyrec->{flags} eq $f &&
-              $keyrec->{protocol} eq $p &&
-              $keyrec->{algorithm} eq $a) {
-            # its a match, comment it out
-            print $tmpfileh $space; # attempting to preserve spacing
-            print $tmpfileh "# The following key has been revoked.\n";
-            my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-            print $tmpfileh "# " . $revkeyrec . "\n";
-            my $notif = "The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n";
-            notify($notif);
-          } else {
-            # just print it, it's not the zone we're looking for
-            print $tmpfileh $_;
-          }
-        } else {
-          # just print it, it's not the zone we're looking for
-          print $tmpfileh $_;
-        }
-      }
+	while(<$conffileh>)
+	{
+		if(s/^\s*$pat\s*//)
+		{
+			print $tmpfileh "trusted-keys {";
+			$trustsection = 1;
+			s/\s*\{//;
 
-    } elsif($trustsection) {
-      if(/\s*\};/) {
-        $trustsection = 0;
-        print $tmpfileh "\n};\n";
-      } elsif($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
-        my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-        # strip off the trailing dot from the zone name
-        $z =~ s/\.$//;
-        $k =~ s/\s+//g;
-        $k =~ s/\"//g;
-        if($z eq $zone) {
-          my $keyin = $keyrec->{key};
-          $keyin =~ s/[\n\r]//g;
-          if($keyin eq $k &&
-              $keyrec->{flags} eq $f &&
-              $keyrec->{protocol} eq $p &&
-              $keyrec->{algorithm} eq $a) {
-            # its a match, comment it out
-            print $tmpfileh $space; # attempting to preserve spacing
-            print $tmpfileh "# The following key has been revoked.\n";
-            my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-            print $tmpfileh "# " . $revkeyrec . "\n";
-          }
-        } else {
-          # just print it, it's not the key we're looking for
-          print $tmpfileh $_;
-        }
-      }
-    } else {
-      print $tmpfileh $_;
-    }
-  }
-  end_tmpfile($ncfile);
+			if($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/)
+			{
+				my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+
+				# Strip off the trailing dot from the zone name.
+				$z =~ s/\.$//;
+				$k =~ s/\s+//g;
+				$k =~ s/\"//g;
+
+				if($z eq $zone)
+				{
+					my $keyin = $keyrec->{key};
+					$keyin =~ s/[\n\r]//g;
+					if(($keyin eq $k) &&
+					   ($keyrec->{flags} eq $f) &&
+					   ($keyrec->{protocol} eq $p) &&
+					   ($keyrec->{algorithm} eq $a))
+					{
+						# It's a match, comment it out.
+						print $tmpfileh $space; # attempting to preserve spacing
+						print $tmpfileh "# The following key has been revoked.\n";
+
+						my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+						print $tmpfileh "# " . $revkeyrec . "\n";
+
+						notify("The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n");
+					}
+					else
+					{
+						# Just print it, it's not the
+						# zone we're looking for.
+						print $tmpfileh $_;
+					}
+				}
+				else
+				{
+					# Just print it, it's not the zone
+					# we're looking for.
+					print $tmpfileh $_;
+				}
+			}
+		}
+		elsif($trustsection)
+		{
+
+			if(/\s*\};/)
+			{
+				$trustsection = 0;
+				print $tmpfileh "\n};\n";
+			}
+			elsif($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/)
+			{
+				my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+				# strip off the trailing dot from the zone name
+				$z =~ s/\.$//;
+				$k =~ s/\s+//g;
+				$k =~ s/\"//g;
+				if($z eq $zone)
+				{
+					my $keyin = $keyrec->{key};
+					$keyin =~ s/[\n\r]//g;
+
+					if(($keyin eq $k) &&
+					   ($keyrec->{flags} eq $f) &&
+					   ($keyrec->{protocol} eq $p) &&
+					   ($keyrec->{algorithm} eq $a))
+					{
+						# It's a match, comment it out.
+						print $tmpfileh $space; # attempting to preserve spacing
+						print $tmpfileh "# The following key has been revoked.\n";
+						my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+						print $tmpfileh "# " . $revkeyrec . "\n";
+					}
+				}
+				else
+				{
+					# Just print it, it's not the key
+					# we're looking for.
+					print $tmpfileh $_;
+				}
+			}
+		}
+		else
+		{
+			print $tmpfileh $_;
+		}
+	}
+
+	end_tmpfile($ncfile);
 }
 
 #----------------------------------------------------------------------
@@ -1326,32 +1600,37 @@ sub revoke_ta_namedconf {
 #		dnsval.conf).
 #		Create the revzones structure for later use.
 #
-sub get_zones_keys {
-  # using globals %keystorage and @zones, is this evil?
+sub get_zones_keys
+{
+	#
+	# If zones are specified on the command line, we will only check
+	# those zones.  Otherwise, check all zones found in config files.
+	#
+	read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map) if($ncfile);
+	read_dnsval_file(\%keystorage, $dvfile, \%zone_configfile_map) if($dvfile);
 
-  # if zones are specified on the command line, we will only
-  # check those zones. Otherwise, check all zones found in config files.
-  read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map) if($ncfile);
-  read_dnsval_file(\%keystorage, $dvfile, \%zone_configfile_map) if($dvfile);
+	#
+	# If @zones exists now, we used only zones from the cmd line,
+	# so we're done.  If not, we got zones from config files, and
+	# need to populate both @zones and %revzones.
+	#
+	if(!exists($zones[0]))
+	{
+		foreach my $z (keys(%keystorage))
+		{
+			$zones[$#zones + 1] = $z;
+			if(!(exists($revzones{$z})))
+			{
+				$revzones{$z} = $#zones +1;
+			}
+		}
+	}
 
-  # if @zones exists now, we used only zones from the cmd line,
-  # so we're done. if not, we got zones from config files, and
-  # need to populate both @zones and %revzones
-  if(!exists ($zones[0])) {
-    foreach my $z (keys(%keystorage)) {
-      $zones[$#zones + 1] = $z;
-      if(!(exists $revzones{$z})) {
-        $revzones{$z} = $#zones +1;
-      }
-    }
-  }
-
-
-  if(!@zones) {
-    print STDERR "No zones to check, exiting....\n";
-    exit(1);
-  }
-
+	if(!@zones)
+	{
+		print STDERR "No zones to check, exiting....\n";
+		exit(1);
+	}
 }
 
 #----------------------------------------------------------------------
@@ -1360,33 +1639,40 @@ sub get_zones_keys {
 # Purpose:	Queries a zone to get the DNSKEY record; returns an answer
 #		only if it was validated.  Called by checkkeys().
 #
-sub resolve_and_check_dnskey {
-  my ($z,$file) = @_;
-  Verbose(" Checking the live \"$z\" key\n");
+sub resolve_and_check_dnskey
+{
+	my ($z,$file) = @_;
+	Verbose(" Checking the live \"$z\" key\n");
 
-  my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
-                                               dnsval_conf => $file,
-                                               root_hints => $rhfile);
+	my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
+						     dnsval_conf => $file,
+						     root_hints  => $rhfile);
 
-  if(!$validator) {
-    Verbose ("Help! Failed to create validator object using:\n  resolv_conf: \'$resfile\', dnsval_conf: \'$file\', root_hints: \'$rhfile\'\n");
-    return undef;
-  }
+	if(!$validator)
+	{
+		Verbose("Help! Failed to create validator object using:\n  resolv_conf: \'$resfile\', dnsval_conf: \'$file\', root_hints: \'$rhfile\'\n");
+		return(undef);
+	}
 
-  my $r = $validator->res_query($z, "IN", "DNSKEY");
-  if($r && $validator->isvalidated) {
-    my ($pkt, $err) = new Net::DNS::Packet(\$r);
-    if(!$err) {
-      return $pkt;
-    }
-    Verbose("Got an error!! $err\n");
-  }
-  if($r) {
-    Verbose("Help! Failed to validate keys for \"$z\"\n");
-  } else {
-    Verbose("Help! resolving failed\n");
-  }
-  return undef;
+	my $r = $validator->res_query($z, "IN", "DNSKEY");
+	if($r && $validator->isvalidated)
+	{
+		my ($pkt, $err) = new Net::DNS::Packet(\$r);
+
+		return($pkt) if(!$err);
+		Verbose("Got an error!! $err\n");
+	}
+
+	if($r)
+	{
+		Verbose("Help! Failed to validate keys for \"$z\"\n");
+	}
+	else
+	{
+		Verbose("Help! resolving failed\n");
+	}
+
+	return(undef);
 }
 
 #----------------------------------------------------------------------
@@ -1396,50 +1682,68 @@ sub resolve_and_check_dnskey {
 #		Looks for trust anchors using $pat and stores key
 #		information in $storage.
 #
-sub read_conf_file {
-  my ($storage, $file, $configmap) = @_;
-  Verbose("Reading and parsing trust keys from $file\n");
-  my $pat = "trusted-keys";
+sub read_conf_file
+{
+	my ($storage, $file, $configmap) = @_;
+	my $pat = "trusted-keys";
 
-  # regexp pulled from Fast.pm
-  my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+	Verbose("Reading and parsing trust keys from $file\n");
 
-  open(FILE, "< $file") or die "can't open config file: $!\n";
-  while(<FILE>) {
-    if(/$pat/) {
-      while(<FILE>) {
-        last if(/^\s*\};/);
-        if(/\s*($pat_maybefullname)\s+(257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
+	#
+	# regexp pulled from Fast.pm.
+	#
+	my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
 
-          my $zonename = $1;
-          my ($flags, $protocol, $algorithm) = ($2, $3, $4);
-          my $key = $5;
-          $zonename =~ s/\.$//;
+	open(FILE, "< $file") or die "can't open config file: $!\n";
 
-          if(keys %revzones) {
-            # only store key data from zones we are actually checking (@zones)
-            # if zones were supplied on the command line (-z)
+	while(<FILE>)
+	{
+		next if(! /$pat/);
 
-            if(exists($revzones{$zonename})) {
-              $key =~ s/[\n\r\s]//g;
+		while(<FILE>)
+		{
+			last if(/^\s*\};/);
 
-              # need to remember where these keys came from
-              $configmap->{$zonename} = $file;
+			if(/\s*($pat_maybefullname)\s+(257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/)
+			{
+				my $zonename = $1;
+				my ($flags, $protocol, $algorithm) = ($2, $3, $4);
+				my $key = $5;
+				$zonename =~ s/\.$//;
 
-              my $newstorageobj = { flags => $flags,
-                                    protocol => $protocol,
-                                    algorithm => $algorithm,
-                                    key => $key,
-                                  };
-              Verbose(" Found a key for $zonename\n");
-              push (@{$storage->{$zonename}}, $newstorageobj);
-            }
-          }
-        }
-      }
-    }
-  }
-  close FILE;
+				if(keys(%revzones))
+				{
+					#
+					# Only store key data from zones we're
+					# actually checking (@zones) if zones
+					# were supplied on the command line
+					# (-z).
+					#
+					if(exists($revzones{$zonename}))
+					{
+						$key =~ s/[\n\r\s]//g;
+
+						# Need to remember where
+						# these keys came from.
+						$configmap->{$zonename} = $file;
+
+						my $newstorageobj = {
+								flags => $flags,
+								protocol => $protocol,
+								algorithm => $algorithm,
+								key => $key,
+							    };
+
+						Verbose(" Found a key for $zonename\n");
+						push (@{$storage->{$zonename}}, $newstorageobj);
+					}
+
+				}
+			}
+		}
+	}
+
+	close(FILE);
 }
 
 #----------------------------------------------------------------------
@@ -1449,62 +1753,80 @@ sub read_conf_file {
 #		Looks for trust anchors using $pat and stores key
 #		information in $storage.
 #
-sub read_dnsval_file {
-  my ($storage, $file, $configmap) = @_;
-  Verbose("Reading and parsing trust keys from $file\n");
-  my $pat = "trust-anchor";
+sub read_dnsval_file
+{
+	my ($storage, $file, $configmap) = @_;
+	my $pat = "trust-anchor";
 
-  start_read_config($file);
+	Verbose("Reading and parsing trust keys from $file\n");
 
-  my $fh = $conffileh;
-  while(read_next_ta_chunk()) {
-    s/\s;\s*$//;
-    if(s/^\s*(\S*)\s*$pat\s*//) {
-      my $trustanchor_type = $1;
-      while($_ ne '') {
-        next if(s/^[\n\r]\s*//);
-        next if(s/^\s*#[^\n\r]*[\n\r]*//);
-        #       last if(! s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//);
-        last if(! s/^\s*(\S+)\s+("+[^"]+"|DS[^\n\r]+)\s*//);
-        my ($zonename, $value) = ($1, $2);
-        $value =~ s/[\n\r]//g;
-        my ($flags, $proto, $algo, $key) = $value =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+	start_read_config($file);
 
+	my $fh = $conffileh;
 
-        # strip the trailing dot
-        $zonename =~ s/\.$//;
+	while(read_next_ta_chunk())
+	{
+		s/\s;\s*$//;
 
-        if(keys %revzones) {
-          # only store key data from zones we are actually checking (@zones)
-          # if zones were supplied on the command line (-z)
+		if(s/^\s*(\S*)\s*$pat\s*//)
+		{
+			my $trustanchor_type = $1;
 
-          if(exists($revzones{$zonename})) {
+			while($_ ne '')
+			{
+				next if(s/^[\n\r]\s*//);
+				next if(s/^\s*#[^\n\r]*[\n\r]*//);
 
-            $configmap->{$zonename} = $file;
+#				last if(! s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//);
+				last if(! s/^\s*(\S+)\s+("+[^"]+"|DS[^\n\r]+)\s*//);
 
-            push @{$storage->{$zonename}},
-              { flags => $flags,
-                protocol => $proto,
-                algorithm => $algo,
-                key => $key };
-            Verbose(" Found a key for $zonename\n");
-            $storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
-          }
-        } else {
-          $configmap->{$zonename} = $file;
+				my ($zonename, $value) = ($1, $2);
+				$value =~ s/[\n\r]//g;
+				my ($flags, $proto, $algo, $key) = $value =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
 
-          push @{$storage->{$zonename}},
-            { flags => $flags,
-              protocol => $proto,
-              algorithm => $algo,
-              key => $key };
-          Verbose(" Found a key for $zonename\n");
-          $storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
-        }
-      }
-    }
-  }
-  $fh->close;
+				# Strip the trailing dot.
+				$zonename =~ s/\.$//;
+
+				if(keys(%revzones))
+				{
+					#
+					# Only store key data from zones we are
+					# actually checking (@zones) if zones
+					# were supplied on the command line
+					# (-z).
+					#
+					if(exists($revzones{$zonename}))
+					{
+						$configmap->{$zonename} = $file;
+
+						push @{$storage->{$zonename}},
+							{ flags => $flags,
+							  protocol => $proto,
+							  algorithm => $algo,
+							  key => $key };
+
+						Verbose(" Found a key for $zonename\n");
+						$storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
+					}
+				}
+				else
+				{
+					$configmap->{$zonename} = $file;
+
+					push @{$storage->{$zonename}},
+						{ flags => $flags,
+						  protocol => $proto,
+						  algorithm => $algo,
+						  key => $key };
+
+					Verbose(" Found a key for $zonename\n");
+					$storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
+				}
+			}
+		}
+	}
+
+	$fh->close;
 }
 
 #----------------------------------------------------------------------
@@ -1512,27 +1834,43 @@ sub read_dnsval_file {
 #
 # Purpose:	Used in implementation of Section 2.4.1 of RFC 5011.
 #
-sub compute_add_holddown {
-  my ($ttl, $default) = @_;
-  my $holddown;
-  my $now = localtime();
-  my $nowsecs = str2time($now);
-  $default = 2592000 if(!$default); # default to 30 days
+sub compute_add_holddown
+{
+	my ($ttl, $default) = @_;
+	my $holddown;
+	my $now = localtime();
+	my $nowsecs = str2time($now);
 
-  # return secs since the epoch as the time to release this holddown
+	#
+	# Default to 30 days.
+	#
+	$default = 2592000 if(!$default);
 
-  if($default == -42) {
-    # allow 5 seconds from now; unsafe undocumented debugging feature.
-    return $nowsecs + 5;
-  }
+	#
+	# Return secs since the epoch as the time to release this holddown.
+	#
 
-  # Take the maximum of now+TTL or now+specified-default
-  if($ttl > $default) {
-    $holddown = $nowsecs + $ttl;
-  } else {
-    $holddown = $nowsecs + $default;
-  }
-  return $holddown;
+	#
+	# Allow 5 seconds from now; unsafe undocumented debugging feature.
+	#
+	if($default == -42)
+	{
+		return($nowsecs + 5);
+	}
+
+	#
+	# Take the maximum of now+TTL or now+specified-default.
+	#
+	if($ttl > $default)
+	{
+		$holddown = $nowsecs + $ttl;
+	}
+	else
+	{
+		$holddown = $nowsecs + $default;
+	}
+
+	return($holddown);
 }
 
 
@@ -1543,15 +1881,18 @@ sub compute_add_holddown {
 #
 #		30 days from "now"
 #
-sub compute_remove_holddown {
-  my $holddown;
-  my $default = 2592000;
-  my $now = localtime();
-  my $nowsecs = str2time($now);
+sub compute_remove_holddown
+{
+	my $holddown;
+	my $default = 2592000;
+	my $now = localtime();
+	my $nowsecs = str2time($now);
 
-  # return secs since the epoch as the time to release this holddown
-  $holddown = $nowsecs + $default;
-  return $holddown;
+	#
+	# Return secs since the epoch as the time to release this holddown.
+	#
+	$holddown = $nowsecs + $default;
+	return($holddown);
 }
 
 #----------------------------------------------------------------------
@@ -1563,31 +1904,44 @@ sub compute_remove_holddown {
 #
 #		Implements Section 2.3 of RFC 5011.
 #
-sub compute_sleepsecs {
-  my ($ottl,$sexp) = @_;
-  $sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
-  my $sigexp = str2time($sexp);
-  my $fifteendays = 129600;
-  my $halfottl = $ottl / 2;
-  my $now = localtime();
-  my $nowsecs = str2time($now);
-  my $expinterval = $sigexp - $nowsecs;
-  my $actrefsecs;
-  if($halfottl < $expinterval) {
-    if($halfottl < $fifteendays) {
-      $actrefsecs = $halfottl;
-    } else {
-      $actrefsecs = $fifteendays;
-    }
-  } else {
-    if($expinterval < $fifteendays) {
-      $actrefsecs = $expinterval;
-    } else {
-      $actrefsecs = $fifteendays
-    }
-  }
+sub compute_sleepsecs
+{
+	my ($ottl,$sexp) = @_;
 
-  return ($actrefsecs,$actrefsecs+$nowsecs);
+	$sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
+	my $sigexp = str2time($sexp);
+
+	my $fifteendays = 129600;
+	my $halfottl = $ottl / 2;
+	my $now = localtime();
+	my $nowsecs = str2time($now);
+	my $expinterval = $sigexp - $nowsecs;
+	my $actrefsecs;
+
+	if($halfottl < $expinterval)
+	{
+		if($halfottl < $fifteendays)
+		{
+			$actrefsecs = $halfottl;
+		}
+		else
+		{
+			$actrefsecs = $fifteendays;
+		}
+	}
+	else
+	{
+		if($expinterval < $fifteendays)
+		{
+			$actrefsecs = $expinterval;
+		}
+		else
+		{
+			$actrefsecs = $fifteendays
+		}
+	}
+
+	return($actrefsecs,$actrefsecs+$nowsecs);
 }
 
 #----------------------------------------------------------------------
@@ -1601,95 +1955,50 @@ sub compute_sleepsecs {
 #
 #		Implements Section 2.3 of RFC 5011.
 #
-sub compute_queryfail_sleepsecs {
-  my ($ottl,$sexp) = @_;
-  $sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
-  my $sigexp = str2time($sexp);
-  my $onehour = 3600;
-  my $oneday = 86400;
-  my $tenth_ottl = $ottl / 10;
-  my $now = localtime();
-  my $nowsecs = str2time($now);
-  my $tenth_expinterval = ($sigexp - $nowsecs) / 10;
-  my $refreshsecs;
-  if($tenth_ottl < $tenth_expinterval) {
-    if($tenth_ottl < $oneday) {
-      $refreshsecs = $tenth_ottl;
-    } else {
-      $refreshsecs = $oneday;
-    }
-  } else {
-    if($tenth_expinterval < $oneday) {
-      $refreshsecs = $tenth_expinterval;
-    } else {
-      $refreshsecs = $oneday;
-    }
-  }
-  if($refreshsecs >= $onehour) {
-    return ($refreshsecs);
-  } else {
-    return ($onehour);
-  }
-}
+sub compute_queryfail_sleepsecs
+{
+	my ($ottl,$sexp) = @_;
+	$sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
+	my $sigexp = str2time($sexp);
+	my $onehour = 3600;
+	my $oneday = 86400;
+	my $tenth_ottl = $ottl / 10;
+	my $now = localtime();
+	my $nowsecs = str2time($now);
+	my $tenth_expinterval = ($sigexp - $nowsecs) / 10;
+	my $refreshsecs;
 
-#----------------------------------------------------------------------
-# Routine:	notify()
-#
-# Purpose:	Mails or logs notifications, depending on configuration.
-#
-sub notify {
-  my ($message) = @_;
+	if($tenth_ottl < $tenth_expinterval)
+	{
+		if($tenth_ottl < $oneday)
+		{
+			$refreshsecs = $tenth_ottl;
+		}
+		else
+		{
+			$refreshsecs = $oneday;
+		}
+	}
+	else
+	{
+		if($tenth_expinterval < $oneday)
+		{
+			$refreshsecs = $tenth_expinterval;
+		}
+		else
+		{
+			$refreshsecs = $oneday;
+		}
+	}
 
-  if($opts{'L'}) {
-    openlog('trustman','pid','user') || warn "could not open syslog";
-    syslog('warning',"%s", $message);
-    closelog();
-  }
-  if($opts{'p'}) {
-    $| = 1;
-
-    # if in verbose mode, make sure messages are easily detectable
-    # within the verbose output.
-    Verbose("v" x 70 . "\n");
-    print $message;
-    Verbose("^" x 70 . "\n");
-  }
-  if($smtpserver && $contactaddr && !$opts{'nomail'}) {
-    Verbose("  mailing $contactaddr\n");
-    mailcontact(0,$smtpserver,$contactaddr,$message);
-  }
-}
-
-
-#----------------------------------------------------------------------
-# Routine:	mailcontact()
-#
-# Purpose:	Emails a contact address with the error output.
-#
-sub mailcontact {
-  my ($ok,$smtp,$contact,$msg) = @_;
-  my $fromaddr = 'trustman@localhost';
-
-  Verbose("sending mail to $contact\n");
-
-  # set up the SMTP object and required data
-  my $message = Net::SMTP->new($smtp) || die "failed to create smtp message";
-  $message->mail($fromaddr);
-  $message->to(split(/,\s*/,$contact));
-  $message->data();
-
-  # create headers
-  $message->datasend("To: " . $contact . "\n");
-  $message->datasend("From: " . $fromaddr . "\n");
-
-  # create the body of the message: the warning
-  $message->datasend("Subject: trustman notification\n\n");
-  $message->datasend($msg);
-  $message->datasend("\n\n");
-
-  # finish and send the message
-  $message->dataend();
-  $message->quit;
+	if($refreshsecs >= $onehour)
+	{
+		return($refreshsecs);
+	}
+	else
+	{
+		return($onehour);
+	}
 }
 
 #----------------------------------------------------------------------
@@ -1699,82 +2008,93 @@ sub mailcontact {
 #		$rec, and $keyin) matches a cached one previously stored (in
 #		$storage->{$zone}).
 #
-sub compare_keys {
-  my ($storage, $zone, $rec, $keyin) = @_;
-  my $newkey = 1;
-  if(!exists($storage->{$zone})) {
-    # What would nonexistence of this really mean?
-  }
-  for(my $i = 0; $i <= $#{$storage->{$zone}}; $i++) {
-    if($storage->{$zone}[$i]{key} eq $keyin &&
-        #            $storage->{$zone}[$i]{flags} eq $rec->flags &&
-        $storage->{$zone}[$i]{protocol} eq $rec->protocol &&
-        $storage->{$zone}[$i]{algorithm} eq $rec->algorithm) {
+sub compare_keys
+{
+	my ($storage, $zone, $rec, $keyin) = @_;
+	my $newkey = 1;
 
-      $newkey = 0;
-      # any match is good enough, get out now
-      $i = $#{$storage->{$zone}} + 1;
-    } else {
-      $newkey = 1;
-    }
-  }
-  return $newkey;
-}
+	if(!exists($storage->{$zone}))
+	{
+		# What would nonexistence of this really mean?
+	}
 
-#----------------------------------------------------------------------
-# Routine:	Verbose()
-#
-# Purpose:	Prints something(s) to STDERR only if -v was specified.
-#
-sub Verbose {
-  print STDERR @_ if($opts{'v'});
-}
+	for(my $i = 0; $i <= $#{$storage->{$zone}}; $i++)
+	{
+		# not testing: $storage->{$zone}[$i]{flags} eq $rec->flags &&
 
-#----------------------------------------------------------------------
-# Routine:	Die()
-#
-# Purpose:	Prints a fatal error message to STDERR and exits.
-#
-sub Die {
-  notify(join("",@_, "\n", "This is a fatal error.  EXITING!\n"));
-  print STDERR @_,"\n";
-  print STDERR "This is a fatal error.  EXITING!\n";
-  exit(1);
-}
+		if(($storage->{$zone}[$i]{key} eq $keyin) &&
+		   ($storage->{$zone}[$i]{protocol} eq $rec->protocol) &&
+		   ($storage->{$zone}[$i]{algorithm} eq $rec->algorithm))
+		{
+			$newkey = 0;
 
-#----------------------------------------------------------------------
-# Routine:	daemonize()
-#
-# Purpose:	Run as a daemon.
-#
-sub daemonize {
-  chdir '/' or die "Can't chdir to /: $!";
-  open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
-  open STDERR, '>/dev/null' or die "Can't write to /dev/null: $!";
-  defined(my $pid = fork()) or die "Can't fork: $!";
-  exit(0) if $pid;
-  POSIX::setsid() or die "Can't start a new session: $!";
-  umask 0;
+			# Any match is good enough, get out now.
+			$i = $#{$storage->{$zone}} + 1;
+		}
+		else
+		{
+			$newkey = 1;
+		}
+	}
+
+	return($newkey);
 }
 
 #----------------------------------------------------------------------
 # Routine:	keys_equal()
 #
-# Purpose:	Computes key equality of to key references.  Equality is
-#		based on: key, protocol, alogorithm (not flags!)
+# Purpose:	Computes key equality of two key references.
+#		Equality is based on: key, protocol, algorithm (not flags!)
 #
 # Returns:	1 : equal
 #		0 : not equal
 #
-sub keys_equal {
-  my ($key1, $key2) = @_;
+sub keys_equal
+{
+	my ($key1, $key2) = @_;
 
-  if( $key1->{key}       eq  $key2->{key}    &&
-       $key1->{protocol}  eq  $key2->{protocol} &&
-       $key1->{algorithm} eq  $key2->{algorithm}   ) {
-    return 1;
-  }
-  return 0;
+	if(($key1->{key}       eq  $key2->{key})      &&
+	   ($key1->{protocol}  eq  $key2->{protocol}) &&
+	   ($key1->{algorithm} eq  $key2->{algorithm}))
+	{
+		return(1);
+	}
+
+	return(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:	keycmp()
+#
+# Purpose:	Computes key equality of to key references.
+#		Equality is based on: key, protocol, algorithm, and flags.
+#
+#		If the key argument (the third argument) wasn't given,
+#		we'll use the 'key' value from the second hash.
+#
+#		(Might should consider combining keycmp() with keys_equal().)
+#
+# Returns:	1 : equal
+#		0 : not equal
+#
+sub keycmp
+{
+	my $key1 = shift;
+	my $key2 = shift;
+	my $key;
+
+	if(@_ > 0)	{ $key = shift;		}
+	else		{ $key = $key2->{key};	}
+
+	if(($key1->{key}	eq  $key)		&&
+	   ($key1->{flags}	eq  $key2->{flags})	&&
+	   ($key1->{protocol}	eq  $key2->{protocol})	&&
+	   ($key1->{algorithm}	eq  $key2->{algorithm}))
+	{
+		return(1);
+	}
+
+	return(0);
 }
 
 #----------------------------------------------------------------------
@@ -1787,15 +2107,19 @@ sub keys_equal {
 # Returns:	<  0 : key not in key array
 #		>= 0 : location of matching key in key array
 #
-sub key_in_keyarr {
-  my ($key, $keyarr) = @_;
+sub key_in_keyarr
+{
+	my ($key, $keyarr) = @_;
 
-  for(my $i=0; $i<$#{$keyarr}; $i++) {
-    if( keys_equal($key, $keyarr->[$i]) ) {
-      return $i;
-    }
-  }
-  return -1;
+	for(my $i=0; $i<$#{$keyarr}; $i++)
+	{
+		if(keys_equal($key, $keyarr->[$i]))
+		{
+			return($i);
+		}
+	}
+
+	return(-1);
 }
 
 #----------------------------------------------------------------------
@@ -1803,13 +2127,196 @@ sub key_in_keyarr {
 #
 # Purpose:	Print a keyrec.
 #
-sub print_keyrec {
-  my $rec = @_[0];
+sub print_keyrec
+{
+	my $rec = @_[0];
 
-  printf "flags: %s  protocol: %s  algo: %s\nkey:%s\n",
-    $rec->{flags},$rec->{protocol},$rec->{algorithm},
-      $rec->{key};
+	printf "flags: %s  protocol: %s  algo: %s\nkey:%s\n", $rec->{flags},
+			$rec->{protocol},$rec->{algorithm}, $rec->{key};
 
+}
+
+#----------------------------------------------------------------------
+# Routine:	daemonize()
+#
+# Purpose:	Run as a daemon.
+#
+sub daemonize
+{
+	chdir '/' or die "Can't chdir to /: $!";
+
+	open STDIN, '/dev/null'   or die "Can't read /dev/null: $!";
+	open STDERR, '>/dev/null' or die "Can't write to /dev/null: $!";
+
+	defined(my $pid = fork()) or die "Can't fork: $!";
+	exit(0) if $pid;
+
+	POSIX::setsid() or die "Can't start a new session: $!";
+	umask 0;
+}
+
+#----------------------------------------------------------------------
+# Routine:	notify()
+#
+# Purpose:	Mails or logs notifications, depending on configuration.
+#
+sub notify
+{
+	my ($message) = @_;
+
+	if($opts{'L'})
+	{
+		openlog('trustman','pid','user') || warn "could not open syslog";
+		syslog('warning',"%s", $message);
+		closelog();
+	}
+
+	if($opts{'p'})
+	{
+		$| = 1;
+
+		#
+		# If in verbose mode, make sure messages are easily detectable
+		# within the verbose output.
+		#
+		Verbose("v" x 70 . "\n");
+		print $message;
+		Verbose("^" x 70 . "\n");
+	}
+
+	if($smtpserver && $contactaddr && !$opts{'nomail'})
+	{
+		Verbose("  mailing $contactaddr\n");
+		mailcontact(0,$smtpserver,$contactaddr,$message);
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	mailcontact()
+#
+# Purpose:	Emails a contact address with the error output.
+#
+sub mailcontact
+{
+	my ($ok,$smtp,$contact,$msg) = @_;
+	my $fromaddr = 'trustman@localhost';
+
+	Verbose("sending mail to $contact\n");
+
+	#
+	# Set up the SMTP object and required data.
+	#
+	my $message = Net::SMTP->new($smtp) || die "failed to create smtp message";
+	$message->mail($fromaddr);
+	$message->to(split(/,\s*/,$contact));
+	$message->data();
+
+	# Create headers.
+	$message->datasend("To: " . $contact . "\n");
+	$message->datasend("From: " . $fromaddr . "\n");
+
+	# Create the body of the message: the warning.
+	$message->datasend("Subject: trustman notification\n\n");
+	$message->datasend($msg);
+	$message->datasend("\n\n");
+
+	# Finish and send the message.
+	$message->dataend();
+	$message->quit;
+}
+
+#----------------------------------------------------------------------
+# Routine:	Verbose()
+#
+# Purpose:	Prints something(s) to STDERR only if -v was specified.
+#
+sub Verbose
+{
+	print STDERR @_ if($opts{'v'});
+}
+
+#----------------------------------------------------------------------
+# Routine:	Die()
+#
+# Purpose:	Prints a fatal error message to STDERR and exits.
+#
+sub Die
+{
+	notify(join("",@_, "\n", "This is a fatal error.  EXITING!\n"));
+	print STDERR @_,"\n";
+	print STDERR "This is a fatal error.  EXITING!\n";
+	exit(1);
+}
+
+#----------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:	Prints a command-usage message, with an optional error
+#		message, and exits.
+#
+sub usage
+{
+	my ($extratext) = @_;
+	print STDERR "\nError:\n  $extratext\n\n" if($extratext);
+
+	print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-d DNSSECCONFIGFILE] [-v] [-V]
+
+	File Options:
+		-anchor_data_file FILE (-a)
+		-config FILE (-c)
+		-dtconfig DTCONFFILE (-d)
+		-dnsval_conf_file /PATH/TO/DNSVAL.CONF (-k)
+		-named_conf_file /PATH/TO/NAMED.CONF (-n)
+		-resolv_conf_file CONFFILE (-r)
+		-root_hints_file /PATH/TO/root.hints (-o)
+		-tmp_dir TMPDIR (-T)
+
+	Logging and Output Options:
+		-mail_contact_addr EMAIL_ADDRESS (-m)
+		-smtp_server SMTPSERVERNAME (-s)
+		-no_error (-N)
+		-print (-p)
+		-syslog (-L)
+		-nomail
+
+	Operational Options:
+		-zone ZONE (-z)
+		-hold_time SECONDS (-w)
+		-single_run (-S)
+		-foreground (-f)
+		-sleeptime SECONDS (-t)
+
+	Testing Options:
+		-norevoke
+
+	Help Options:
+		-help (-h)
+		-verbose (-v)
+		-version (-V)
+
+	Extra Notes:
+		- If a zone is not specified, all zones in the
+		  key_containing_files will be checked.
+
+		- If missing options are not specified on the command
+		  line, some values will be read from the dnssec-tools.conf.
+		  Run with the -c flag to generate suitable dnssec-tools.conf
+		  configuration lines.
+";
+
+	exit(1);
+}
+
+#----------------------------------------------------------------------
+# Routine:	show_version()
+#
+# Purpose:	Prints a version message and exits.
+#
+sub show_version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
 }
 
 ##############################################################################
