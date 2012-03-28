@@ -39,9 +39,6 @@ AC_DEFINE_UNQUOTED(LIBVAL_CONFIGURE_OPTIONS,"$ac_configure_args", [Configure opt
 CONFIGURE_OPTIONS="\"$ac_configure_args\""
 AC_SUBST(CONFIGURE_OPTIONS)
 
-AH_TEMPLATE([LIBVAL_CONFIGURED], [Define if the configure script was run.])
-AC_DEFINE(LIBVAL_CONFIGURED)
-
 ########################################
 # add in -Dsolaris2, -Dlinux, etc as needed
 
@@ -149,6 +146,8 @@ dnl
 AC_ARG_WITH(cflags,
 [  --with-cflags=CFLAGS    use CFLAGS as compile time arguments.],
     [CFLAGS=$with_cflags; export CFLAGS])
+
+CFLAGS="$CFLAGS -DLIBVAL_CONFIGURED=1"
 
 case $target_os in
     solaris*)
