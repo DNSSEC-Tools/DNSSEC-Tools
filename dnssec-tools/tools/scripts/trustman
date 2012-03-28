@@ -21,6 +21,7 @@ use strict;
 
 use Net::DNS;
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
 use Net::SMTP;
@@ -678,11 +679,11 @@ sub checkkeys {
       for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
         if($nowsecs >= $newkeys{$z}[$i]{holdtime}) {
           # notify about this key
-          Verbose(" hold down timer for $z reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
+          Verbose(" hold-down timer for key \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
           push @newkeyzones, $z;
         } else {
-          Verbose(" hold down timer for $z still in the future (" .
-                  ($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
+          Verbose(" hold-down timer for key \"$z\" still in the future (" .
+                  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
         }
       }
     }
