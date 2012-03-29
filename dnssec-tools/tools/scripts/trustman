@@ -1672,35 +1672,36 @@ sub get_zones_keys
 sub resolve_and_check_dnskey
 {
 	my ($z,$file) = @_;
+	my $validator;
+	my $rq;
+
 	Verbose(" Checking the live \"$z\" key\n");
 
-	my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
-						     dnsval_conf => $file,
-						     root_hints  => $rhfile);
-
-	if(!$validator)
+	$validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
+						  dnsval_conf => $file,
+						  root_hints  => $rhfile);
+	if(! $validator)
 	{
 		Verbose("Help! Failed to create validator object using:\n  resolv_conf: \'$resfile\', dnsval_conf: \'$file\', root_hints: \'$rhfile\'\n");
 		return(undef);
 	}
 
-	my $r = $validator->res_query($z, "IN", "DNSKEY");
-	if($r && $validator->isvalidated)
-	{
-		my ($pkt, $err) = new Net::DNS::Packet(\$r);
-
-		return($pkt) if(!$err);
-		Verbose("Got an error!! $err\n");
-	}
-
-	if($r)
-	{
-		Verbose("Help! Failed to validate keys for \"$z\"\n");
-	}
-	else
+	$rq = $validator->res_query($z, "IN", "DNSKEY");
+	if(! $rq)
 	{
 		Verbose("Help! resolving failed\n");
 	}
+
+	if($validator->isvalidated)
+	{
+		my ($pkt, $err) = new Net::DNS::Packet(\$rq);
+
+		return($pkt) if($err == 0);
+
+		Verbose("Got an error!! $err\n");
+	}
+
+	Verbose("Help! Failed to validate keys for \"$z\"\n");
 
 	return(undef);
 }
@@ -1709,8 +1710,8 @@ sub resolve_and_check_dnskey
 # Routine:	read_conf_file()
 #
 # Purpose:	Reads in a named.conf style config file pointed to by $file.
-#		Looks for trust anchors using $pat and stores key
-#		information in $storage.
+#		Looks for trust anchors using $pat and stores key information
+#		in $storage.
 #
 sub read_conf_file
 {
