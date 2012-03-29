@@ -1717,12 +1717,12 @@ sub read_conf_file
 	my ($storage, $file, $configmap) = @_;
 	my $pat = "trusted-keys";
 
-	Verbose("Reading and parsing trust keys from $file\n");
+	#
+	# This pattern is looking for a full name.  regexp pulled from Fast.pm.
+	#
+	my $mfn = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
 
-	#
-	# regexp pulled from Fast.pm.
-	#
-	my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+	Verbose("Reading and parsing trust keys from $file\n");
 
 	open(FILE, "< $file") or die "can't open config file: $!\n";
 
@@ -1734,41 +1734,44 @@ sub read_conf_file
 		{
 			last if(/^\s*\};/);
 
-			if(/\s*($pat_maybefullname)\s+(257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/)
+			next if(! /\s*($mfn)\s+(257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/);
+
+			my $zonename = $1;
+			my ($flags, $protocol, $algorithm) = ($2, $3, $4);
+			my $key = $5;
+
+			#
+			# Lop off trailing dots, but make sure the root
+			# isn't an empty string.
+			#
+			$zonename =~ s/\.$//;
+			$zonename = '.' if($zonename eq '');
+
+			if(keys(%revzones))
 			{
-				my $zonename = $1;
-				my ($flags, $protocol, $algorithm) = ($2, $3, $4);
-				my $key = $5;
-				$zonename =~ s/\.$//;
+				#
+				# Only store key data from zones we're actually
+				# checking (@zones) if zones were supplied on
+				# the command line (-z).
+				#
+				next if(! exists($revzones{$zonename}));
 
-				if(keys(%revzones))
-				{
-					#
-					# Only store key data from zones we're
-					# actually checking (@zones) if zones
-					# were supplied on the command line
-					# (-z).
-					#
-					if(exists($revzones{$zonename}))
+				$key =~ s/[\n\r\s]//g;
+
+				# Need to remember where these keys came from.
+				$configmap->{$zonename} = $file;
+
+				my $newstorageobj =
 					{
-						$key =~ s/[\n\r\s]//g;
+						flags	  => $flags,
+						protocol  => $protocol,
+						algorithm => $algorithm,
+						key	  => $key,
+					};
 
-						# Need to remember where
-						# these keys came from.
-						$configmap->{$zonename} = $file;
+				Verbose(" Found a key for zone \"$zonename\"\n");
+				push (@{$storage->{$zonename}}, $newstorageobj);
 
-						my $newstorageobj = {
-								flags => $flags,
-								protocol => $protocol,
-								algorithm => $algorithm,
-								key => $key,
-							    };
-
-						Verbose(" Found a key for zone \"$zonename\"\n");
-						push (@{$storage->{$zonename}}, $newstorageobj);
-					}
-
-				}
 			}
 		}
 	}
@@ -1798,60 +1801,65 @@ sub read_dnsval_file
 	{
 		s/\s;\s*$//;
 
-		if(s/^\s*(\S*)\s*$pat\s*//)
-		{
-			my $trustanchor_type = $1;
+		next if(! s/^\s*(\S*)\s*$pat\s*//);
 
-			while($_ ne '')
-			{
-				next if(s/^[\n\r]\s*//);
-				next if(s/^\s*#[^\n\r]*[\n\r]*//);
+		my $trustanchor_type = $1;
+
+		while($_ ne '')
+		{
+			next if(s/^[\n\r]\s*//);
+			next if(s/^\s*#[^\n\r]*[\n\r]*//);
 
 #				last if(! s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//);
-				last if(! s/^\s*(\S+)\s+("+[^"]+"|DS[^\n\r]+)\s*//);
+			last if(! s/^\s*(\S+)\s+("+[^"]+"|DS[^\n\r]+)\s*//);
 
-				my ($zonename, $value) = ($1, $2);
-				$value =~ s/[\n\r]//g;
-				my ($flags, $proto, $algo, $key) = $value =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+			my ($zonename, $value) = ($1, $2);
+			$value =~ s/[\n\r]//g;
+			my ($flags, $proto, $algo, $key) = $value =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
 
-				# Strip the trailing dot.
-				$zonename =~ s/\.$//;
+			#
+			# Lop off trailing dots, but make sure the root
+			# isn't an empty string.
+			#
+			$zonename =~ s/\.$//;
+			$zonename = '.' if($zonename eq '');
 
-				if(keys(%revzones))
-				{
-					#
-					# Only store key data from zones we are
-					# actually checking (@zones) if zones
-					# were supplied on the command line
-					# (-z).
-					#
-					if(exists($revzones{$zonename}))
+			if(keys(%revzones))
+			{
+				#
+				# Only store key data from zones we are
+				# actually checking (@zones) if zones
+				# were supplied on the command line (-z).
+				#
+				next if(! exists($revzones{$zonename}));
+
+				$configmap->{$zonename} = $file;
+
+				push @{$storage->{$zonename}},
 					{
-						$configmap->{$zonename} = $file;
+						flags	  => $flags,
+						protocol  => $proto,
+						algorithm => $algo,
+						key	  => $key,
+					};
 
-						push @{$storage->{$zonename}},
-							{ flags => $flags,
-							  protocol => $proto,
-							  algorithm => $algo,
-							  key => $key };
+				Verbose(" Found a key for zone \"$zonename\"\n");
+				$storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
+			}
+			else
+			{
+				$configmap->{$zonename} = $file;
 
-						Verbose(" Found a key for zone \"$zonename\"\n");
-						$storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
-					}
-				}
-				else
-				{
-					$configmap->{$zonename} = $file;
+				push @{$storage->{$zonename}},
+					{
+						flags	  => $flags,
+						protocol  => $proto,
+						algorithm => $algo,
+						key	  => $key,
+					};
 
-					push @{$storage->{$zonename}},
-						{ flags => $flags,
-						  protocol => $proto,
-						  algorithm => $algo,
-						  key => $key };
-
-					Verbose(" Found a key for zone \"$zonename\"\n");
-					$storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
-				}
+				Verbose(" Found a key for zone \"$zonename\"\n");
+				$storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
 			}
 		}
 	}
