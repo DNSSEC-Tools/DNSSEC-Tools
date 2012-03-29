@@ -39,7 +39,7 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.12.4";
+my $VERS   = "$NAME version: 1.12.5";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -1950,7 +1950,7 @@ sub compute_sleepsecs
 	$sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
 	my $sigexp = str2time($sexp);
 
-	my $fifteendays = 129600;
+	my $fifteendays = 1296000;
 	my $halfottl = $ottl / 2;
 	my $now = localtime();
 	my $nowsecs = str2time($now);
