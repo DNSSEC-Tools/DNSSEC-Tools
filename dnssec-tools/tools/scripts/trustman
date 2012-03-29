@@ -39,7 +39,7 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.12.5";
+my $VERS   = "$NAME version: 1.12.6";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -67,6 +67,32 @@ my %opts = (
 		t => $HOUR,	# default to one hour
 		v => 0,		# verbose on
 		c => 0		# don't configure files
+	   );
+
+my @opts = (
+		'a|anchor_data_file=s',
+		'c|config=s',
+		'd|dtconfig=s',
+		'f|foreground|fg',
+		'k|dnsval_conf_file=s',
+		'h|help',
+		'L|syslog',
+		'm|mail_contact_addr=s',
+		'n|named_conf_file=s',
+		'N|no_error',
+		'o|root_hints_file=s',
+		'p|print',
+		'r|resolv_conf_file=s',
+		's|smtp_server=s',
+		'nomail',
+		'S|single_run',
+		't|sleeptime=i',
+		'T|tmp_dir=s',
+		'v|verbose',
+		'V|Version',
+		'w|hold_time=s',
+		'z|zone=s',
+		'norevoke',
 	   );
 
 #
@@ -143,12 +169,12 @@ sub main
 	do
 	{
 		my $newsleeptime = &checkkeys($sleeptime);
-		if(!$once)
+		if(! $once)
 		{
 			Verbose("sleeping for $newsleeptime seconds\n");
 			sleep($newsleeptime);
 		}
-	} while(!$once);
+	} while(! $once);
 }
 
 #----------------------------------------------------------------------
@@ -159,31 +185,7 @@ sub optsandargs
 	#
 	# Parse command-line options.
 	#
-	GetOptions(\%opts,
-		   'a|anchor_data_file=s',
-		   'c|config=s',
-		   'd|dtconfig=s',
-		   'f|foreground|fg',
-		   'k|dnsval_conf_file=s',
-		   'h|help',
-		   'L|syslog',
-		   'm|mail_contact_addr=s',
-		   'n|named_conf_file=s',
-		   'N|no_error',
-		   'o|root_hints_file=s',
-		   'p|print',
-		   'r|resolv_conf_file=s',
-		   's|smtp_server=s',
-		   'nomail',
-		   'S|single_run',
-		   't|sleeptime=i',
-		   'T|tmp_dir=s',
-		   'v|verbose',
-		   'V|Version',
-		   'w|hold_time=s',
-		   'z|zone=s',
-		   'norevoke',
-		  ) || usage();
+	GetOptions(\%opts,@opts) || usage();
 
 	#
 	# Handle some immediate options.
@@ -315,7 +317,7 @@ sub mknewconf
 	my $conffile = getconffile();
 
 	open(CONF,$conffile) or die "unable to open \"$conffile\".";
-	usage () unless $newconf;
+	usage() unless $newconf;
 
 	open(OUT,">$newconf") or die "unable to open \"$newconf\" for writing.";
 	while(<CONF>)
@@ -496,11 +498,13 @@ sub checkkeys
 	my $now = localtime();
 	my $nowsecs = str2time($now);
 
+	#
+	# Copy the keys from the key storage to the list of keys to verify.
+	#
 	foreach my $k (keys(%keystorage))
 	{
 		@{$keys_to_verify{$k}} = @{$keystorage{$k}};
 	}
-
 
 	#
 	# Check all zones to see if $active_refresh_times{$z} has been reached.
@@ -526,81 +530,10 @@ sub checkkeys
 	# All zones have been queried, and queries have been processed.
 	#
 
-	if(%newkeys)
-	{
-		my @newkeyzones;
-
-		Verbose("checking new keys for timing\n");
-
-		#
-		# If add_holddown_time has been reached, notify.
-		#
-		my $now = localtime();
-		my $nowsecs = str2time($now);
-
-		foreach my $z (keys(%newkeys))
-		{
-			for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
-			{
-				if($nowsecs >= $newkeys{$z}[$i]{holdtime})
-				{
-					# notify about this key
-					Verbose(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
-					push @newkeyzones, $z;
-				}
-				else
-				{
-					Verbose(" hold-down timer for key \"$z\" still in the future (" .  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
-				}
-			}
-		}
-
-		foreach my $z (@newkeyzones)
-		{
-			#
-			# These are all zones for which new keys have reached
-			# their add holddown time. add these keys as new trust
-			# anchors to the appropriate config files.
-			#
-			if($ncfile && ($zone_configfile_map{$z} eq $ncfile))
-			{
-				add_ta_namedconf($z);
-			}
-
-			if($dvfile && ($zone_configfile_map{$z} eq $dvfile))
-			{
-				add_ta_dnsvalconf($z);
-			}
-
-			#
-			# Now that this key has been added to the appropriate
-			# config file(s), put it in keystorage and remove it
-			# from newkeys.
-			#
-			for(my $i =0; $i <= $#{$newkeys{$z}}; $i++)
-			{
-				my $newstorageobj = {
-					flags	  => $newkeys{$z}[$i]{flags},
-					protocol  => $newkeys{$z}[$i]{protocol},
-					algorithm => $newkeys{$z}[$i]{algorithm},
-					key	  => $newkeys{$z}[$i]{key},
-				    };
-				push (@{$keystorage{$z}}, $newstorageobj);
-
-				splice @{$newkeys{$z}},$i,1;
-				save_newkeys();
-			}
-		}
-
-		#
-		# Mail it.
-		#
-#		if(($contactaddr) && (@newkeyzones))
-#		{
-#			mailcontact(0,$smtpserver,$contactaddr,@newkeyzones);
-#		}
-
-	}
+	#
+	# Check timing of new keys.
+	#
+	timing_check() if(%newkeys);
 
 	if(keys(%remkeys))
 	{
@@ -693,7 +626,7 @@ sub checkkeys
 }					# end checkkeys
 
 #----------------------------------------------------------------------
-# Routine:	checzones()
+# Routine:	checkzones()
 #
 # Purpose:	Check zones.
 #
@@ -939,6 +872,87 @@ sub checkzones
 			}
 		}
 	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	timing_check()
+#
+# Purpose:	Check timing of new keys.
+#
+sub timing_check
+{
+	my @newkeyzones;
+
+	Verbose("checking new keys for timing\n");
+
+	#
+	# If add_holddown_time has been reached, notify.
+	#
+	my $now = localtime();
+	my $nowsecs = str2time($now);
+
+	foreach my $z (keys(%newkeys))
+	{
+		for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
+		{
+			if($nowsecs >= $newkeys{$z}[$i]{holdtime})
+			{
+				# notify about this key
+				Verbose(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
+				push @newkeyzones, $z;
+			}
+			else
+			{
+				Verbose(" hold-down timer for key \"$z\" still in the future (" .  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
+			}
+		}
+	}
+
+	foreach my $z (@newkeyzones)
+	{
+		#
+		# These are all zones for which new keys have reached
+		# their add hold-down time.  Add these keys as new trust
+		# anchors to the appropriate config files.
+		#
+		if($ncfile && ($zone_configfile_map{$z} eq $ncfile))
+		{
+			add_ta_namedconf($z);
+		}
+
+		if($dvfile && ($zone_configfile_map{$z} eq $dvfile))
+		{
+			add_ta_dnsvalconf($z);
+		}
+
+		#
+		# Now that this key has been added to the appropriate config
+		# file(s), put it in keystorage and remove it from newkeys.
+		#
+		for(my $i =0; $i <= $#{$newkeys{$z}}; $i++)
+		{
+			my $newstorageobj =
+			    {
+				flags	  => $newkeys{$z}[$i]{flags},
+				protocol  => $newkeys{$z}[$i]{protocol},
+				algorithm => $newkeys{$z}[$i]{algorithm},
+				key	  => $newkeys{$z}[$i]{key},
+			    };
+			push (@{$keystorage{$z}}, $newstorageobj);
+
+			splice @{$newkeys{$z}},$i,1;
+			save_newkeys();
+		}
+	}
+
+	#
+	# Mail it.
+	#
+#		if(($contactaddr) && (@newkeyzones))
+#		{
+#			mailcontact(0,$smtpserver,$contactaddr,@newkeyzones);
+#		}
 
 }
 
