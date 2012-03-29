@@ -39,7 +39,7 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.12.6";
+my $VERS   = "$NAME version: 1.12.7";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -168,10 +168,15 @@ sub main
 
 	do
 	{
-		my $newsleeptime = &checkkeys($sleeptime);
+		my $newsleeptime;
+
+		checkkeys();
+
+		$newsleeptime = getsleeptime($sleeptime);
+
 		if(! $once)
 		{
-			Verbose("sleeping for $newsleeptime seconds\n");
+			Verbose("sleeping for " . timetrans($newsleeptime) .  "\n");
 			sleep($newsleeptime);
 		}
 	} while(! $once);
@@ -492,7 +497,6 @@ sub chkfile
 #
 sub checkkeys
 {
-	my $sleep = shift;
 	my %keys_to_verify;
 	my @zones_to_check;
 	my $now = localtime();
@@ -613,16 +617,6 @@ sub checkkeys
 	}
 
 	$initrun = 0;
-
-	foreach my $z (keys(%sleeptimes))
-	{
-		if(($sleep > $sleeptimes{$z}) && ($sleeptimes{$z} > 0))
-		{
-			$sleep = $sleeptimes{$z};
-		}
-	}
-
-	return($sleep);
 }					# end checkkeys
 
 #----------------------------------------------------------------------
@@ -2183,6 +2177,26 @@ sub key_in_keyarr
 	}
 
 	return(-1);
+}
+
+#----------------------------------------------------------------------
+# Routine:	getsleeptime()
+#
+# Purpose:	Find the shortest sleep time of all the zones.
+#
+sub getsleeptime
+{
+	my $slp = shift;
+
+	foreach my $z (keys(%sleeptimes))
+	{
+		if(($slp > $sleeptimes{$z}) && ($sleeptimes{$z} > 0))
+		{
+			$slp = $sleeptimes{$z};
+		}
+	}
+
+	return($slp);
 }
 
 #----------------------------------------------------------------------
