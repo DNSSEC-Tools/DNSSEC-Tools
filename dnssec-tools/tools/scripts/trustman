@@ -50,10 +50,21 @@ dnssec_tools_load_mods( 'Date::Parse'	 => "",
 			'Net::DNS::SEC'	 => "");
 
 ########################################################
+#
+# Time constants.
+#
+
+my $DAYS30 = 2592000;
+my $DAYS15 = 129600;
+my $HOUR   = 3600;
+my $DAY	   = 86400;
+
+########################################################
+#
 # Option data.
 #
 my %opts = (
-		t => 3600,	# default to one hour
+		t => $HOUR,	# default to one hour
 		v => 0,		# verbose on
 		c => 0		# don't configure files
 	   );
@@ -79,6 +90,7 @@ my $tmpdir;
 my $errs = 0;
 
 ########################################################
+#
 # Data.
 #
 
@@ -520,8 +532,9 @@ sub checkkeys
 
 		Verbose("checking new keys for timing\n");
 
-		# if add_holddown_time has been reached, notify
-
+		#
+		# If add_holddown_time has been reached, notify.
+		#
 		my $now = localtime();
 		my $nowsecs = str2time($now);
 
@@ -1883,7 +1896,7 @@ sub compute_add_holddown
 	#
 	# Default to 30 days.
 	#
-	$default = 2592000 if(!$default);
+	$default = $DAYS30 if(!$default);
 
 	#
 	# Return secs since the epoch as the time to release this holddown.
@@ -1923,7 +1936,7 @@ sub compute_add_holddown
 sub compute_remove_holddown
 {
 	my $holddown;
-	my $default = 2592000;
+	my $default = $DAYS30;
 	my $now = localtime();
 	my $nowsecs = str2time($now);
 
@@ -1950,7 +1963,6 @@ sub compute_sleepsecs
 	$sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
 	my $sigexp = str2time($sexp);
 
-	my $fifteendays = 1296000;
 	my $halfottl = $ottl / 2;
 	my $now = localtime();
 	my $nowsecs = str2time($now);
@@ -1959,24 +1971,24 @@ sub compute_sleepsecs
 
 	if($halfottl < $expinterval)
 	{
-		if($halfottl < $fifteendays)
+		if($halfottl < $DAYS15)
 		{
 			$actrefsecs = $halfottl;
 		}
 		else
 		{
-			$actrefsecs = $fifteendays;
+			$actrefsecs = $DAYS15;
 		}
 	}
 	else
 	{
-		if($expinterval < $fifteendays)
+		if($expinterval < $DAYS15)
 		{
 			$actrefsecs = $expinterval;
 		}
 		else
 		{
-			$actrefsecs = $fifteendays
+			$actrefsecs = $DAYS15;
 		}
 	}
 
@@ -1999,8 +2011,6 @@ sub compute_queryfail_sleepsecs
 	my ($ottl,$sexp) = @_;
 	$sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
 	my $sigexp = str2time($sexp);
-	my $onehour = 3600;
-	my $oneday = 86400;
 	my $tenth_ottl = $ottl / 10;
 	my $now = localtime();
 	my $nowsecs = str2time($now);
@@ -2009,34 +2019,34 @@ sub compute_queryfail_sleepsecs
 
 	if($tenth_ottl < $tenth_expinterval)
 	{
-		if($tenth_ottl < $oneday)
+		if($tenth_ottl < $DAY)
 		{
 			$refreshsecs = $tenth_ottl;
 		}
 		else
 		{
-			$refreshsecs = $oneday;
+			$refreshsecs = $DAY;
 		}
 	}
 	else
 	{
-		if($tenth_expinterval < $oneday)
+		if($tenth_expinterval < $DAY)
 		{
 			$refreshsecs = $tenth_expinterval;
 		}
 		else
 		{
-			$refreshsecs = $oneday;
+			$refreshsecs = $DAY;
 		}
 	}
 
-	if($refreshsecs >= $onehour)
+	if($refreshsecs >= $HOUR)
 	{
 		return($refreshsecs);
 	}
 	else
 	{
-		return($onehour);
+		return($HOUR);
 	}
 }
 
