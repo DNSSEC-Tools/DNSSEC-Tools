@@ -546,47 +546,9 @@ sub checkkeys
 	removecheck() if(keys(%remkeys));
 
 	#
-	# Any zones or keys still in %keys_to_verify did not appear in a
-	# query, but are configured trust anchors.  Set the remove holddown
-	# time (30 days) for these keys and add to remkeys for processing
-	# on next go.
+	# Schedule the remaining trust anchors for hold-down checking.
 	#
-	foreach my $z (keys(%keys_to_verify))
-	{
-		my $remove_holddown_time = compute_remove_holddown();
-
-		for(my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++)
-		{
-			my $remkeyobj =
-			    {
-				flags	  => $keys_to_verify{$z}[$i]{flags},
-				protocol  => $keys_to_verify{$z}[$i]{protocol},
-				algorithm => $keys_to_verify{$z}[$i]{algorithm},
-				key	  => $keys_to_verify{$z}[$i]{key},
-				holdtime  => $remove_holddown_time,
-			    };
-
-			#
-			# Only add this key if it isn't already there.
-			#
-			my $addit = 1;
-			if(keys(%remkeys))
-			{
-				for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++)
-				{
-					if(keycmp($remkeys{$z}[$i], $remkeyobj))
-					{
-						$addit = 0;
-					}
-				}
-			}
-
-			if($addit)
-			{
-				push (@{$remkeys{$z}},$remkeyobj);
-			}
-		}
-	}
+	sched_remove(\%keys_to_verify);
 
 	$initrun = 0;
 }					# end checkkeys
@@ -956,6 +918,57 @@ sub removecheck
 			# Remove this key from remkeys now, it's been removed.
 			#
 			splice @{$remkeys{$z}},$i,1;
+		}
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	sched_remove()
+#
+# Purpose:	Any zones or keys still in %keys_to_verify did not appear in
+#		a query, but are configured trust anchors.  Set the remove
+#		hold-down time (30 days) for these keys and add to remkeys
+#		for processing on next go.
+#
+sub sched_remove
+{
+	my $hr = shift;
+	my %keys_to_verify = %$hr;
+
+	foreach my $z (keys(%keys_to_verify))
+	{
+		my $remove_holddown_time = compute_remove_holddown();
+
+		for(my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++)
+		{
+			my $remkeyobj =
+			    {
+				flags	  => $keys_to_verify{$z}[$i]{flags},
+				protocol  => $keys_to_verify{$z}[$i]{protocol},
+				algorithm => $keys_to_verify{$z}[$i]{algorithm},
+				key	  => $keys_to_verify{$z}[$i]{key},
+				holdtime  => $remove_holddown_time,
+			    };
+
+			#
+			# Only add this key if it isn't already there.
+			#
+			my $addit = 1;
+			if(keys(%remkeys))
+			{
+				for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++)
+				{
+					if(keycmp($remkeys{$z}[$i], $remkeyobj))
+					{
+						$addit = 0;
+					}
+				}
+			}
+
+			if($addit)
+			{
+				push (@{$remkeys{$z}},$remkeyobj);
+			}
 		}
 	}
 }
