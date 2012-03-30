@@ -566,7 +566,7 @@ sub checkzones
 	foreach my $z (@zones_to_check)
 	{
 		my $query;
-		my %pendingnewkeys;
+		my %pending;			# Pending new keys.
 
 		#
 		# Get the zone's validated DNSKEY record.
@@ -592,7 +592,7 @@ sub checkzones
 		{
 			for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
 			{
-				my $pendingkeyobj =
+				my $keyobj =
 				    {
 					flags	  => $newkeys{$z}[$i]{flags},
 					protocol  => $newkeys{$z}[$i]{protocol},
@@ -601,12 +601,16 @@ sub checkzones
 					found => 0,
 				    };
 				Verbose("  pending key for zone \"$z\"\n");
-				push (@{$pendingnewkeys{$z}}, $pendingkeyobj);
+				push (@{$pending{$z}}, $keyobj);
 			}
 		}
 
 		# check the RRSIG over the DNSKEY
 
+		#
+		# Calculate the sleep-time and refresh time for this DNSKEY
+		# based on one of its RRSIGs.
+		#
 		my $origttl;
 		foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer)
 		{
@@ -617,7 +621,7 @@ sub checkzones
 			#
 			$origttl = $rrsigrec->orgttl;
 
-			my $sigexp = $rrsigrec->sigexpiration;
+			my $sigexp   = $rrsigrec->sigexpiration;
 			my $retryobj =	{
 						ottl => $origttl,
 						sigexp => $sigexp
@@ -625,15 +629,15 @@ sub checkzones
 
 			$zone_retry_times{$z} = $retryobj;
 
-			my ($refresh_secs,$refresh_time) = 
-			compute_sleepsecs($origttl, $sigexp);
+			my ($rsecs,$rtm) = compute_sleepsecs($origttl,$sigexp);
 
-#			Verbose("  $z ...  refresh_secs=$refresh_secs, refresh_time=$refresh_time\n");
-			$sleeptimes{$z} =  $refresh_secs;
-			$active_refresh_times{$z} = $refresh_time;
+			$sleeptimes{$z} =  $rsecs;
+			$active_refresh_times{$z} = $rtm;
+
+#			Verbose("  $z ...  refresh_secs=$rsecs, refresh_time=$rtm\n");
 
 			#
-			# Only need one sleep time per zone.
+			# Only need one sleep time per zone so we'll drop out.
 			#
 			# XXX: But should we have the shortest or the
 			# longest?  (In theory they *should* be the same...)
@@ -641,7 +645,7 @@ sub checkzones
 			last;
 		}
 
-		if(!$origttl)
+		if(! $origttl)
 		{
 			Verbose("No original TTL found for \"$z\"???");
 		}
@@ -652,9 +656,10 @@ sub checkzones
 		#
 		foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer)
 		{
-			next if(!($keyrec->flags & 1));
 			my $ttl = $keyrec->ttl;
 			my $key = $keyrec->key;
+
+			next if(! ($keyrec->flags & 1));
 			$key =~ s/\s+//g;       # remove all spaces
 
 			#
@@ -664,13 +669,14 @@ sub checkzones
 			#
 			if(compare_keys(\%keystorage, $z, $keyrec, $key) != 0)
 			{
+				my $notnewkey = 0;
+
 				# May be a new key, remember it.
 				# Check if this key is already in %newkeys.
-
+				#
 				# Also need to find any keys in %newkeys which
 				# do NOT appear in a subsequent RRSET.
 
-				my $notnewkey = 0;
 				if(keys(%newkeys))
 				{
 					for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
@@ -678,14 +684,13 @@ sub checkzones
 						next if(keycmp($newkeys{$z}[$i], $keyrec, $key) == 0);
 
 						$notnewkey = 1;
-						if(keys(%pendingnewkeys))
+						next if(!keys(%pending));
+
+						for(my $i = 0; $i <= $#{$pending{$z}}; $i++)
 						{
-							for(my $i = 0; $i <= $#{$pendingnewkeys{$z}}; $i++)
+							if(keycmp($pending{$z}[$i], $keyrec, $key))
 							{
-								if(keycmp($pendingnewkeys{$z}[$i], $keyrec, $key))
-								{
-									$pendingnewkeys{$z}[$i]{found} = 1;
-								}
+								$pending{$z}[$i]{found} = 1;
 							}
 						}
 					}
@@ -773,25 +778,25 @@ sub checkzones
 		}
 
 		#
-		# Only want to remove pending keys which do not appear in this
-		# RRSET if the query was successful.  Will deal with the
-		# unsuccessful query below.
+		# Only want to remove pending keys which do not appear in
+		# this RRSET if the query was successful.  Will deal with
+		# the unsuccessful query below.
 		#
-		for(my $k = 0; $k <= $#{$pendingnewkeys{$z}}; $k++)
+		for(my $k = 0; $k <= $#{$pending{$z}}; $k++)
 		{
 			#
 			# Any pending key still not marked found should be
 			# removed from %newkeys.
 			#
-			next if($pendingnewkeys{$z}[$k]{found});
+			next if($pending{$z}[$k]{found});
 
 			for(my $j = 0; $j <= $#{$newkeys{$z}}; $j++)
 			{
 				#
-				# Find the entry in newkeys that corresponds to
-				# the pending key not found.
+				# Find the entry in newkeys that corresponds
+				# to the pending key not found.
 				#
-				if(keycmp($newkeys{$z}[$j], $pendingnewkeys{$z}[$k]))
+				if(keycmp($newkeys{$z}[$j], $pending{$z}[$k]))
 				{
 					splice @{$newkeys{$z}},$j,1;
 
