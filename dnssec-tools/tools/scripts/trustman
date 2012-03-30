@@ -39,7 +39,7 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.12.7";
+my $VERS   = "$NAME version: 1.12.8";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -512,15 +512,12 @@ sub checkkeys
 
 	#
 	# Check all zones to see if $active_refresh_times{$z} has been reached.
+	# We'll also add the zone if this is our first pass.
 	#
 	foreach my $z (@zones)
 	{
-		if($nowsecs >= $active_refresh_times{$z})
+		if(($nowsecs >= $active_refresh_times{$z}) || $initrun)
 		{
-			push @zones_to_check, $z;
-		}
-		elsif($initrun)
-		{       # first time through, check all zones
 			push @zones_to_check, $z;
 		}
 	}
@@ -551,7 +548,7 @@ sub checkkeys
 	sched_remove(\%keys_to_verify);
 
 	$initrun = 0;
-}					# end checkkeys
+}
 
 #----------------------------------------------------------------------
 # Routine:	checkzones()
@@ -569,9 +566,10 @@ sub checkzones
 	foreach my $z (@zones_to_check)
 	{
 		my $query;
+		my %pendingnewkeys;
+
 		$query = resolve_and_check_dnskey($z,$dvfile);
 
-		my %pendingnewkeys;
 		if(keys(%newkeys))
 		{
 			for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
@@ -593,7 +591,7 @@ sub checkzones
 		if(! $query)
 		{
 			my $notif = "query for keys failed for zone " . $z . "\n";
-			notify($notif) if($opts{'v'});
+			vnotify($notif);
 
 			my $refresh_secs = compute_queryfail_sleepsecs(
 						 $zone_retry_times{$z}{'ottl'},
@@ -706,7 +704,7 @@ sub checkzones
 					push(@{$newkeys{$z}},$newkeyobj);
 
 					my $notif = "A new key has been received for zone " . $z . ".\n   It will be added when the add holddown time is reached.\n";
-					notify($notif) if($opts{'v'});
+					vnotify($notif);
 					save_newkeys();
 				}
 			}
@@ -794,7 +792,7 @@ sub checkzones
 					splice @{$newkeys{$z}},$j,1;
 
 					my $notif = "Pending new key for zone " . $z . " has been removed.\n";
-					notify($notif) if($opts{'v'});
+					vnotify($notif);
 					save_newkeys();
 				}
 			}
@@ -2253,6 +2251,18 @@ sub daemonize
 
 	POSIX::setsid() or die "Can't start a new session: $!";
 	umask 0;
+}
+
+#----------------------------------------------------------------------
+# Routine:	vnotify()
+#
+# Purpose:	Send a notification, but only if the -v option was given.
+#
+sub vnotify
+{
+	my ($msg) = @_;
+
+	notify($msg) if($opts{'v'});
 }
 
 #----------------------------------------------------------------------
