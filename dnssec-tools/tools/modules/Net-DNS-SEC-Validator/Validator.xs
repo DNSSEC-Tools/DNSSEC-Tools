@@ -22,7 +22,7 @@
 #define ADDRINFO_TYPE		0
 #define VAL_ADDRINFO_TYPE	1
 
-typedef struct val_context ValContext;
+typedef struct libval_context ValContext;
 
 #if 0
 static void
