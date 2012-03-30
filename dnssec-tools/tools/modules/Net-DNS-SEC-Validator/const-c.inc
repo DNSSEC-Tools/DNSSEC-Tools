@@ -124,7 +124,7 @@ constant_10 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      LOG_NOTICE MAX_PROOFS SR_FORMERR SR_NOTIMPL SR_REFUSED VAL_EINVAL
-     VAL_ENOENT VAL_ENOMEM VAL_ENOSYS p_as_error */
+     VAL_ENOENT VAL_ENOMEM VAL_ENOSYS */
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
   case 'A':
@@ -224,17 +224,6 @@ constant_10 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'o':
-    if (memEQ(name, "p_as_error", 10)) {
-    /*                       ^        */
-#ifdef p_as_error
-      *iv_return = p_as_error;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
   }
   return PERL_constant_NOTFOUND;
 }
@@ -244,7 +233,7 @@ constant_11 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      LOG_WARNING SR_NXDOMAIN SR_SERVFAIL VAL_AC_INIT VAL_AS_DONE VAL_EACCESS
-     VAL_NOTRUST VAL_SUCCESS p_val_error */
+     VAL_NOTRUST VAL_SUCCESS */
   /* Offset 5 gives the best switch position.  */
   switch (name[5]) {
   case 'A':
@@ -327,17 +316,6 @@ constant_11 (pTHX_ const char *name, IV *iv_return) {
     /*                    ^            */
 #ifdef VAL_SUCCESS
       *iv_return = VAL_SUCCESS;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case '_':
-    if (memEQ(name, "p_val_error", 11)) {
-    /*                    ^            */
-#ifdef p_val_error
-      *iv_return = p_val_error;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1835,37 +1813,14 @@ constant_26 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_RRSIG_VERIFIED_SKEW VAL_AC_RRSIG_VERIFY_FAILED
-     VAL_AC_WCARD_VERIFIED_SKEW VAL_GETADDRINFO_HAS_STATUS
-     VAL_GETNAMEINFO_HAS_STATUS */
+     VAL_AC_WCARD_VERIFIED_SKEW */
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
-  case 'A':
-    if (memEQ(name, "VAL_GETNAMEINFO_HAS_STATUS", 26)) {
-    /*                       ^                        */
-#ifdef VAL_GETNAMEINFO_HAS_STATUS
-      *iv_return = VAL_GETNAMEINFO_HAS_STATUS;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
   case 'C':
     if (memEQ(name, "VAL_AC_WCARD_VERIFIED_SKEW", 26)) {
     /*                       ^                        */
 #ifdef VAL_AC_WCARD_VERIFIED_SKEW
       *iv_return = VAL_AC_WCARD_VERIFIED_SKEW;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'D':
-    if (memEQ(name, "VAL_GETADDRINFO_HAS_STATUS", 26)) {
-    /*                       ^                        */
-#ifdef VAL_GETADDRINFO_HAS_STATUS
-      *iv_return = VAL_GETADDRINFO_HAS_STATUS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1994,7 +1949,6 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_EINVAL VAL_ENOENT VAL_ENOMEM VAL_ENOSYS
 	       VAL_FLAG_CHAIN_COMPLETE VAL_FROM_ADDITIONAL VAL_FROM_ANSWER
 	       VAL_FROM_AUTHORITY VAL_FROM_QUERY VAL_FROM_UNSET
-	       VAL_GETADDRINFO_HAS_STATUS VAL_GETNAMEINFO_HAS_STATUS
 	       VAL_IGNORE_VALIDATION VAL_INCOMPLETE_PROOF VAL_INTERNAL_ERROR
 	       VAL_IRRELEVANT_PROOF VAL_MASKED_FLAG_CHAIN_COMPLETE
 	       VAL_NONEXISTENT_NAME VAL_NONEXISTENT_NAME_NOCHAIN
@@ -2010,7 +1964,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_QUERY_USING_DLV
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
 	       VAL_UNTRUSTED_ANSWER VAL_UNTRUSTED_ZONE VAL_VALIDATED_ANSWER
-	       ZONE_USE_NOTHING ZONE_USE_TSIG p_as_error p_val_error));
+	       ZONE_USE_NOTHING ZONE_USE_TSIG));
 
 print constant_types(), "\n"; # macro defs
 foreach (C_constant ("Net-DNS-Sec-Validator", 'constant', 'IV', $types, undef, 3, @names) ) {
