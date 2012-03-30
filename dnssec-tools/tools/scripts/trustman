@@ -568,40 +568,44 @@ sub checkzones
 		my $query;
 		my %pendingnewkeys;
 
+		#
+		# Get the zone's validated DNSKEY record.
+		#
 		$query = resolve_and_check_dnskey($z,$dvfile);
+		if(! $query)
+		{
+			vnotify("query for keys failed for zone $z\n");
 
+			compute_queryfail_sleepsecs(
+						$z,
+						$zone_retry_times{$z}{'ottl'},
+						$zone_retry_times{$z}{'sigexp'}
+					);
+
+			next;
+		}
+
+		#
+		# Add any new keys to this zone's list of pending new keys.
+		#
 		if(keys(%newkeys))
 		{
 			for(my $i = 0; $i <= $#{$newkeys{$z}}; $i++)
 			{
-				my $pendingkeyobj = {
-					flags => $newkeys{$z}[$i]{flags},
-					protocol => $newkeys{$z}[$i]{protocol},
+				my $pendingkeyobj =
+				    {
+					flags	  => $newkeys{$z}[$i]{flags},
+					protocol  => $newkeys{$z}[$i]{protocol},
 					algorithm => $newkeys{$z}[$i]{algorithm},
-					key => $newkeys{$z}[$i]{key},
+					key	  => $newkeys{$z}[$i]{key},
 					found => 0,
-				};
+				    };
 				Verbose("  pending key for zone \"$z\"\n");
 				push (@{$pendingnewkeys{$z}}, $pendingkeyobj);
 			}
 		}
 
 		# check the RRSIG over the DNSKEY
-
-		if(! $query)
-		{
-			my $notif = "query for keys failed for zone " . $z . "\n";
-			vnotify($notif);
-
-			my $refresh_secs = compute_queryfail_sleepsecs(
-						 $zone_retry_times{$z}{'ottl'},
-						 $zone_retry_times{$z}{'sigexp'}
-						);
-
-			$sleeptimes{$z} =  $refresh_secs;
-
-			next;
-		}
 
 		my $origttl;
 		foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer)
@@ -1709,7 +1713,7 @@ sub get_zones_keys
 # Routine:	resolve_and_check_dnskey()
 #
 # Purpose:	Queries a zone to get the DNSKEY record; returns an answer
-#		only if it was validated.  Called by checkkeys().
+#		only if it was validated.  Called by checkzones().
 #
 sub resolve_and_check_dnskey
 {
@@ -2028,7 +2032,7 @@ sub compute_sleepsecs
 # Routine:	compute_queryfail_sleepsecs()
 #
 # Purpose:	Compute the number of seconds to sleep in case of a query
-#		failure.
+#		failure.  The sleep-time is then saved for the specified zone.
 #
 #		MAX(1 hour, MIN(1 day, 0.1 * ottl, 0.1 *
 #				expiration interval[sigexpiration - now])
@@ -2037,7 +2041,7 @@ sub compute_sleepsecs
 #
 sub compute_queryfail_sleepsecs
 {
-	my ($ottl,$sexp) = @_;
+	my ($z,$ottl,$sexp) = @_;
 	$sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
 	my $sigexp = str2time($sexp);
 	my $tenth_ottl = $ottl / 10;
@@ -2069,14 +2073,18 @@ sub compute_queryfail_sleepsecs
 		}
 	}
 
+	#
+	# Save the appropriate sleep-time, but with an hour as the minimum.
+	#
 	if($refreshsecs >= $HOUR)
 	{
-		return($refreshsecs);
+		$sleeptimes{$z} = $refreshsecs;
 	}
 	else
 	{
-		return($HOUR);
+		$sleeptimes{$z} = $HOUR;
 	}
+
 }
 
 #----------------------------------------------------------------------
