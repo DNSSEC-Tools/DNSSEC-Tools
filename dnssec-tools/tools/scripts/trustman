@@ -539,40 +539,11 @@ sub checkkeys
 	#
 	timing_check() if(%newkeys);
 
-	if(keys(%remkeys))
-	{
-		# See if any remkeys have reached their holdtimes.
-		# If so, remove them from the config file.
-		my $now = localtime();
-		my $nowsecs = str2time($now);
-
-		foreach my $z (keys(%remkeys))
-		{
-			for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++)
-			{
-				if($nowsecs >= $remkeys{$z}[$i]{holdtime})
-				{
-					# mark this for deletion
-					if($zone_configfile_map{$z} eq $ncfile)
-					{
-						remove_ta_namedconf($z, $remkeys{$z}[$i]);
-					}
-
-					if($zone_configfile_map{$z} eq $dvfile)
-					{
-						remove_ta_dnsvalconf($z, $remkeys{$z}[$i]);
-					}
-
-					#
-					# Remove this key from remkeys now, it
-					# has been removed.
-					#
-					splice @{$remkeys{$z}},$i,1;
-
-				}
-			}
-		}
-	}
+	#
+	# If any keys have reached their hold-down time, remove them from
+	# the dnsval.conf and named.conf files.
+	#
+	removecheck() if(keys(%remkeys));
 
 	#
 	# Any zones or keys still in %keys_to_verify did not appear in a
@@ -586,7 +557,8 @@ sub checkkeys
 
 		for(my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++)
 		{
-			my $remkeyobj = {
+			my $remkeyobj =
+			    {
 				flags	  => $keys_to_verify{$z}[$i]{flags},
 				protocol  => $keys_to_verify{$z}[$i]{protocol},
 				algorithm => $keys_to_verify{$z}[$i]{algorithm},
@@ -948,6 +920,44 @@ sub timing_check
 #			mailcontact(0,$smtpserver,$contactaddr,@newkeyzones);
 #		}
 
+}
+
+#----------------------------------------------------------------------
+# Routine:	removecheck()
+#
+# Purpose:	See if any remkeys have reached their holdtimes.  If so,
+#		remove them from the dnsval.conf file and the named.conf file.
+#
+sub removecheck
+{
+	my $now = localtime();
+	my $nowsecs = str2time($now);
+
+	foreach my $z (keys(%remkeys))
+	{
+		for(my $i = 0; $i <= $#{$remkeys{$z}}; $i++)
+		{
+			next if($nowsecs < $remkeys{$z}[$i]{holdtime});
+
+			#
+			# Mark this for deletion.
+			#
+			if($zone_configfile_map{$z} eq $ncfile)
+			{
+				remove_ta_namedconf($z, $remkeys{$z}[$i]);
+			}
+
+			if($zone_configfile_map{$z} eq $dvfile)
+			{
+				remove_ta_dnsvalconf($z, $remkeys{$z}[$i]);
+			}
+
+			#
+			# Remove this key from remkeys now, it's been removed.
+			#
+			splice @{$remkeys{$z}},$i,1;
+		}
+	}
 }
 
 my ($conffileh, $tmpfileh, $tmpfile, $currenttmpdir, $oldsep);
