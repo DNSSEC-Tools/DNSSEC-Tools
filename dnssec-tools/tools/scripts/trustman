@@ -78,6 +78,7 @@ my @opts = (
 		'h|help',
 		'L|syslog',
 		'm|mail_contact_addr=s',
+		'M|Monitor',
 		'n|named_conf_file=s',
 		'N|no_error',
 		'o|root_hints_file=s',
@@ -101,6 +102,7 @@ my @opts = (
 my $contactaddr;
 my $dvfile;
 my $holdtime;
+my $monitor = '';			# Monitor flag.
 my $ncfile;
 my $newconf;
 my $newkeyfile;				# Holds data about newly detected keys,
@@ -110,10 +112,23 @@ my $sleeptime;
 my $smtpserver;
 my $tmpdir;
 
+my $errs = 0;				# Option error count.
+
+########################################################
 #
-# Option error count.
+# Monitoring data.
 #
-my $errs = 0;
+
+my $monstr = '';			# Monitor string.
+
+my $cnt_dvkeys = 0;			# Count of keys added to dnsval.conf.
+my $cnt_nckeys = 0;			# Count of keys added to named.conf.
+my $cnt_hdtimedout = 0;			# Count of hold-down timers reached.
+my $cnt_hdtimerson = 0;			# Count of hold-down timers in future.
+my $cnt_newkeys = 0;			# Count of new keys received.
+my $cnt_rmpkeys = 0;			# Count of removed pending new keys.
+my $cnt_rmkeys = 0;			# Count of keys removed from zone.
+my $cnt_revkeys = 0;			# Count of keys revoked from zone.
 
 ########################################################
 #
@@ -180,6 +195,53 @@ sub main
 			sleep($newsleeptime);
 		}
 	} while(! $once);
+
+	#
+	# If we're monitoring, print the contents of the monitor string.
+	#
+	if($monitor)
+	{
+		$monstr = '';
+
+		monvalue($cnt_dvkeys,
+			"$cnt_dvkeys key added to dnsval.conf; ",
+			"$cnt_dvkeys keys added to dnsval.conf; ");
+
+		monvalue($cnt_nckeys,
+			"$cnt_nckeys key added to named.conf; ",
+			"$cnt_nckeys keys added to named.conf; ");
+
+		monvalue($cnt_hdtimedout,
+			"$cnt_hdtimedout hold-down timer reached; ",
+			"$cnt_hdtimedout hold-down timers reached; ");
+
+		monvalue($cnt_hdtimerson,
+			"$cnt_hdtimerson hold-down timer in future; ",
+			"$cnt_hdtimerson hold-down timers in future; ");
+
+		monvalue($cnt_newkeys,
+			"$cnt_newkeys new key received; ",
+			"$cnt_newkeys new keys received; ");
+
+		monvalue($cnt_rmpkeys,
+			"$cnt_rmpkeys removed pending key; ",
+			"$cnt_rmpkeys removed pending keys; ");
+
+		monvalue($cnt_rmkeys,
+			"$cnt_rmkeys key removed; ",
+			"$cnt_rmkeys keys removed; ");
+
+		monvalue($cnt_revkeys,
+			"$cnt_revkeys key revoked; ",
+			"$cnt_revkeys keys revoked; ");
+
+
+		$monstr =~ s/; $//;
+
+		$monstr = "nothing to report" if($monstr eq '');
+
+		print "$monstr\n";
+	}
 }
 
 #----------------------------------------------------------------------
@@ -214,13 +276,14 @@ sub optsandargs
 	$resfile     = $opts{'r'} ? $opts{'r'} : $dtconf{'taresolvconffile'};
 	$ncfile	     = $opts{'n'} ? $opts{'n'} : $dtconf{'tanamedconffile'};
 	$dvfile	     = $opts{'k'} ? $opts{'k'} : $dtconf{'tadnsvalconffile'};
-	$rhfile	     = $opts{'o'} ? $opts{'o'} : '';
 	$contactaddr = $opts{'m'} ? $opts{'m'} : $dtconf{'tacontact'};
 	$smtpserver  = $opts{'s'} ? $opts{'s'} : $dtconf{'tasmtpserver'};
 	$tmpdir	     = $opts{'T'} ? $opts{'T'} : $dtconf{'tatmpdir'};
 	$sleeptime   = $opts{'t'} ? $opts{'t'} : $dtconf{'tasleeptime'};
 	$holdtime    = $opts{'w'} ? $opts{'w'} : $dtconf{'taholdtime'};
 	$norevoke    = 1 if($opts{'norevoke'});
+	$rhfile	     = $opts{'o'} ? $opts{'o'} : '';
+	$monitor     = $opts{'M'};
 	$once	     = $opts{'S'};
 
 	if(!$dvfile && !$ncfile)
@@ -264,6 +327,15 @@ sub optsandargs
 	{
 		print STDERR "Error:  No reporting method chosen; please select -m, -L, or -p.\n";
 		$errs++;
+	}
+
+	#
+	# If we're monitoring, turn off verbosity and turn on single-run.
+	#
+	if($monitor)
+	{
+		delete($opts{'v'});
+		$once = 1;
 	}
 
 	#
@@ -435,7 +507,7 @@ sub save_newkeys
 
 	if(open(FILE, "> $newkeyfile") == 0)
 	{
-		warn "can't open newkeys file: $!";
+		warn "can't open newkeys file \"$newkeyfile\": $!";
 		return;
 	}
 
@@ -715,6 +787,7 @@ sub checkzones
 					my $notif = "A new key has been received for zone " . $z . ".\n   It will be added when the add holddown time is reached.\n";
 					vnotify($notif);
 					save_newkeys();
+					$cnt_newkeys++;
 				}
 			}
 
@@ -803,6 +876,7 @@ sub checkzones
 					my $notif = "Pending new key for zone " . $z . " has been removed.\n";
 					vnotify($notif);
 					save_newkeys();
+					$cnt_rmpkeys++;
 				}
 			}
 		}
@@ -835,11 +909,15 @@ sub timing_check
 			{
 				# notify about this key
 				Verbose(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
+mon(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
 				push @newkeyzones, $z;
+				$cnt_hdtimedout++;
 			}
 			else
 			{
 				Verbose(" hold-down timer for key \"$z\" still in the future (" .  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
+mon(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
+				$cnt_hdtimerson++;
 			}
 		}
 	}
@@ -1190,6 +1268,7 @@ sub add_ta_namedconf
 				print $tmpfileh $newkey;
 
 				notify("New key added to " . $ncfile . " for zone " . $zone . "\n");
+				$cnt_nckeys++;
 			}
 		}
 	}
@@ -1268,6 +1347,7 @@ sub add_ta_dnsvalconf
 				Verbose("Adding the following key to $dvfile:\n");
 				Verbose($newkeyentry . "\n");
 				notify("New key added to " . $dvfile . " for zone " . $zone . "\n");
+				$cnt_dvkeys++;
 			}
 			else
 			{
@@ -1333,6 +1413,7 @@ sub remove_ta_dnsvalconf
 					print $tmpfileh "# " . $remkeyrec . "\n\n";
 
 					notify("The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n");
+					$cnt_rmkeys++;
 				}
 				else
 				{
@@ -1412,6 +1493,7 @@ sub remove_ta_namedconf
 						my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
 						print $tmpfileh "# " . $remkeyrec . "\n";
 						notify("The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n");
+						$cnt_rmkeys++;
 					}
 				}
 				else
@@ -1456,6 +1538,7 @@ sub remove_ta_namedconf
 						print $tmpfileh "# " . $remkeyrec . "\n";
 
 						notify("The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n");
+						$cnt_rmkeys++;
 					}
 					else
 					{
@@ -1541,6 +1624,7 @@ sub revoke_ta_dnsvalconf
 				print $tmpfileh "# " . $revkeyrec . "\n\n";
 
 				notify("The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n");
+				$cnt_revkeys++;
 			}
 			else
 			{
@@ -1608,6 +1692,7 @@ sub revoke_ta_namedconf
 						print $tmpfileh "# " . $revkeyrec . "\n";
 
 						notify("The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n");
+						$cnt_revkeys++;
 					}
 					else
 					{
@@ -2267,6 +2352,43 @@ sub daemonize
 }
 
 #----------------------------------------------------------------------
+# Routine:	mon()
+#
+# Purpose:	Add a line to the monitor string.
+#
+sub mon
+{
+	my ($msg) = @_;
+
+	$monstr .= "$msg\n" if($monitor);
+}
+
+#----------------------------------------------------------------------
+# Routine:	monvalue()
+#
+# Purpose:	Add a line to the monitor string iff it has a positive value.
+#		If a plural form is provided, we'll check to see if the value
+#		is one or more than one.  The appropriate form will be used.
+#
+sub monvalue
+{
+	my $val = shift;			# Value we're monitoring.
+	my $msgsing = shift;			# Singular form of message.
+	my $msgplural = shift;			# Plural form of message.
+
+	return if($val == 0);
+
+	if(($val == 1) || (! defined($msgplural)))
+	{
+		$monstr .= $msgsing;
+	}
+	else
+	{
+		$monstr .= $msgplural;
+	}
+}
+
+#----------------------------------------------------------------------
 # Routine:	vnotify()
 #
 # Purpose:	Send a notification, but only if the -v option was given.
@@ -2408,6 +2530,7 @@ sub usage
 		-single_run (-S)
 		-foreground (-f)
 		-sleeptime SECONDS (-t)
+		-Monitor (-M)
 
 	Testing Options:
 		-norevoke
@@ -2532,6 +2655,14 @@ files since renames across partitions will fail.
 
 The zone to check.  Specifying this option supersedes the default
 configuration file.
+
+=item B<-Monitor (-M)>
+
+Indicates that B<trustman> was run from a monitoring system, and a summary
+of events will be printed.  Specifying this option automatically turns on
+the B<-single_run> option and turns off the B<-verbose> option.  (This was
+developed for use with the Nagios monitoring system, but it can be adapted
+for others.)
 
 =item B<-mail_contact_addr email_address (-m)>
 
