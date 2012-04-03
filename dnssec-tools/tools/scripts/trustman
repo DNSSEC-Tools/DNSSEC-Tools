@@ -78,7 +78,7 @@ my @opts = (
 		'h|help',
 		'L|syslog',
 		'm|mail_contact_addr=s',
-		'M|Monitor',
+		'M|monitor',
 		'n|named_conf_file=s',
 		'N|no_error',
 		'o|root_hints_file=s',
@@ -2530,7 +2530,7 @@ sub usage
 		-single_run (-S)
 		-foreground (-f)
 		-sleeptime SECONDS (-t)
-		-Monitor (-M)
+		-monitor (-M)
 
 	Testing Options:
 		-norevoke
@@ -2621,62 +2621,57 @@ given.  The existing DNSSEC-Tools configuration file is copied to the
 specified configuration file, and new configuration entries are appended
 corresponding to the command line options.  B<trustman>-specific entries
 already in the existing configuration file will be replaced with new entries
-from the command line.  This will allow fewer command
-line options to be specified in the future.
+from the command line.  This will allow fewer command line options to be
+specified in the future.
+
+=item B<-dnsval_conf_file /path/to/dnsval.conf (-k)>
+
+A B<dnsval.conf> file to read, and possibly updated.
 
 =item B<-dtconfig config_file (-d)>
 
 Name of an alternate DNSSEC-Tools configuration file to be processed.
 If specified, this configuration file is used I<in place> of the normal
-DNSSEC-Tools configuration file B<not> in addition to it.  Also, it will be
+DNSSEC-Tools configuration file, B<not> in addition to it.  Also, it will be
 handled prior to I<keyrec> files, I<rollrec> files, and command-line options.
 
-=item B<-dnsval_conf_file /path/to/dnsval.conf (-k)>
+=item B<-foreground (-f)>
 
-A B<dnsval.conf> file to read and possibly update.
+Run in the foreground.  B<trustman> will still run in a loop.
+To run once, use the B<-single_run> option instead.
 
-=item B<-named_conf_file /path/to/named.conf (-n)>
+=item B<-hold_time seconds (-w)>
 
-A B<named.conf> file to read and possibly update.
-
-=item B<-root_hints_file /path/to/root.hints (-o)>
-
-A B<root.hints> file to read.
-
-=item B<-tmp_dir directory (-T)>
-
-Specifies where temporary files should be created.  This is used when
-creating new versions of the B<dnsval.conf> and B<named.conf> files before
-they are moved into place.  Most operating systems require the B</tmp>
-directory to be on the same partition as the B<dnsval.conf> and B<named.conf>
-files since renames across partitions will fail.
-
-=item B<-zone zone (-z)>
-
-The zone to check.  Specifying this option supersedes the default
-configuration file.
-
-=item B<-Monitor (-M)>
-
-Indicates that B<trustman> was run from a monitoring system, and a summary
-of events will be printed.  Specifying this option automatically turns on
-the B<-single_run> option and turns off the B<-verbose> option.  (This was
-developed for use with the Nagios monitoring system, but it can be adapted
-for others.)
+The value of the hold-down timer.  This is specified in seconds from the time
+that a new key is found.  Generally, the default and recommended value of 30
+days should be used.
 
 =item B<-mail_contact_addr email_address (-m)>
 
 Mail address for the contact person to whom reports should be sent.
 
-=item B<-smtp_server smtpservername (-s)>
+=item B<-monitor (-M)>
 
-SMTP server that B<trustman> should use to send reports by mail.
+Indicates that B<trustman> was run from a monitoring system, and a summary
+of events will be printed.  Specifying this option automatically turns on
+the B<-single_run> option and turns off the B<-verbose> option.
+
+(This was developed for use with the Nagios monitoring system, but it can
+be adapted for others.)
+
+=item B<-named_conf_file /path/to/named.conf (-n)>
+
+A B<named.conf> file to read, and possibly update.
 
 =item B<-nomail>
 
 Prevents mail from being sent, even if an SMTP server was specified in the
 configuration file.  This is useful for only sending notifications via
 B<stdout> (B<-p>) or B<syslog> (B<-L>).
+
+=item B<-norevoke>
+
+This option turns off checks for the REVOKE bit.
 
 =item B<-no_error (-N)>
 
@@ -2686,38 +2681,48 @@ Send report even when there are no errors.
 
 Log messages to B<stdout>.
 
-=item B<-hold_time seconds (-w)>
-
-The value of the hold-down timer.  This is specified in seconds from the time
-that a new key is found.  Generally, the default and recommended value of 30
-days should be used.
-
 =item B<-resolv_conf_file conffile (-r)>
 
 A B<resolv.conf> file to read.  B</dev/null> can be specified to force
 I<libval> to recursively answer the query rather than asking other name
 servers.)
 
+=item B<-root_hints_file /path/to/root.hints (-o)>
+
+A B<root.hints> file to read.
+
 =item B<-single_run (-S)>
 
-Run only once.
-
-=item B<-foreground (-f)>
-
-Run in the foreground.  B<trustman> will still run in a loop.
-To run once, use the B<-S> option instead.
-
-=item B<-syslog (-L)>
-
-Log messages to B<syslog>.
+Do not loop, but run only once.
 
 =item B<-sleeptime seconds (-t)>
 
 The number of seconds to sleep between checks.  Default is 3600 (one hour.)
 
-=item B<-norevoke>
+=item B<-smtp_server smtpservername (-s)>
 
-This option turns off checks for the REVOKE bit.
+SMTP server that B<trustman> should use to send reports by mail.
+
+=item B<-syslog (-L)>
+
+Log messages to B<syslog>.
+
+=item B<-tmp_dir directory (-T)>
+
+Specifies where temporary files should be created.  This is used when
+creating new versions of the B<dnsval.conf> and B<named.conf> files before
+they are moved into place.
+
+Files created in this directory will be B<renamed> to their final location.
+You should ensure that this directory, the final B<dnsval.conf> location,
+and the final B<named.conf> location are on the same disk partition.
+Most operating systems will only rename files within a partition and will 
+give an error if told to rename a file from one partition to another.
+
+=item B<-zone zone (-z)>
+
+The zone to check.  Specifying this option supersedes the default
+configuration file.
 
 =item B<-help (-h)>
 
