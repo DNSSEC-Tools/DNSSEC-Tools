@@ -100,6 +100,13 @@ below.
 
 		"perldoc dt_donuts" will give additional information.
 
+	dt-trustman
+		This Perl script is a Nagios plugin that checks for key
+		verification of trust anchors.  It executes the trustman
+		command to determine the verification.  It is intended
+		to run as a remote plugin, though it can just as easily
+		run on the Nagios host.
+
 	sample.dnssec-tools.cfg
 		This is a sample file containing the Nagios objects
 		for monitoring three zones whose rollover is managed
