@@ -39,7 +39,7 @@ $Data::Dumper::Purity = 1;
 # Version information.
 #
 my $NAME   = "trustman";
-my $VERS   = "$NAME version: 1.12.8";
+my $VERS   = "$NAME version: 1.12.9";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -252,12 +252,12 @@ sub optsandargs
 	#
 	# Parse command-line options.
 	#
-	GetOptions(\%opts,@opts) || usage();
+	GetOptions(\%opts,@opts) || usage(1);
 
 	#
 	# Handle some immediate options.
 	#
-	usage()		if($opts{'h'});
+	usage(0)	if($opts{'h'});
 	show_version()	if($opts{'V'});
 
 	#
@@ -344,7 +344,7 @@ sub optsandargs
 	if($errs)
 	{
 		print "\n";
-		usage();
+		usage(1);
 	}
 
 }
@@ -394,7 +394,7 @@ sub mknewconf
 	my $conffile = getconffile();
 
 	open(CONF,$conffile) or die "unable to open \"$conffile\".";
-	usage() unless $newconf;
+	usage(1) unless $newconf;
 
 	open(OUT,">$newconf") or die "unable to open \"$newconf\" for writing.";
 	while(<CONF>)
@@ -462,7 +462,7 @@ sub load_newkeys
 	if($newkeyfile eq '')
 	{
 		print STDERR "no newkey file; use -a option\n";
-		return;
+		exit(2);
 	}
 
 	#
@@ -471,7 +471,7 @@ sub load_newkeys
 	if(open(FILE, "< $newkeyfile") == 0)
 	{
 		print STDERR "can't open newkey file \'$newkeyfile\': $!\n";
-		return;
+		exit(3);
 	}
 
 	undef $/;
@@ -497,7 +497,7 @@ sub save_newkeys
 	if($newkeyfile eq '')
 	{
 		print STDERR "no newkey file; use -a option\n";
-		return;
+		exit(2);
 	}
 
 	#
@@ -508,7 +508,7 @@ sub save_newkeys
 	if(open(FILE, "> $newkeyfile") == 0)
 	{
 		warn "can't open newkeys file \"$newkeyfile\": $!";
-		return;
+		exit(3);
 	}
 
 	print FILE Data::Dumper->Dump([\%newkeys], [qw(*newkeys)]);
@@ -1795,7 +1795,7 @@ sub get_zones_keys
 	if(!@zones)
 	{
 		print STDERR "No zones to check, exiting....\n";
-		exit(1);
+		exit(4);
 	}
 }
 
@@ -2490,7 +2490,7 @@ sub Die
 	notify(join("",@_, "\n", "This is a fatal error.  EXITING!\n"));
 	print STDERR @_,"\n";
 	print STDERR "This is a fatal error.  EXITING!\n";
-	exit(1);
+	exit(5);
 }
 
 #----------------------------------------------------------------------
@@ -2501,7 +2501,9 @@ sub Die
 #
 sub usage
 {
+	my $rc = shift;					# Exit code.
 	my ($extratext) = @_;
+
 	print STDERR "\nError:\n  $extratext\n\n" if($extratext);
 
 	print STDERR "trustman [-k /PATH/TO/DNSVAL.CONF] [-n /PATH/TO/NAMED.CONF] [-z ZONE] [-L] [-f]\n         [-S] [-c OUTCONFIGFILE] [-d DNSSECCONFIGFILE] [-v] [-V]
@@ -2550,7 +2552,7 @@ sub usage
 		  configuration lines.
 ";
 
-	exit(1);
+	exit($rc);
 }
 
 #----------------------------------------------------------------------
@@ -2586,9 +2588,8 @@ for initialization and one-time key verification.
 
 By default, B<trustman> runs as a daemon to ensure that keys stored locally in
 configuration files still match the same keys fetched from the zone where they
-are defined.  (B<named.conf> and B<dnsval.conf> are the usual configuration
-files.)  These checks can be run once manually (B<-S>) and in the foreground
-(B<-f>).
+are defined.  In addition, these checks can be run once manually (B<-S>) and
+in the foreground (B<-f>).
 
 For each key mismatch check, if key mismatches are detected then B<trustman>
 performs the following operations:
@@ -2598,7 +2599,11 @@ performs the following operations:
     - removes revoked keys from the configuration file.
 
 On subsequent runs, the timers are checked.  If the timers have expired, keys
-are added or removed from the configuration file, as appropriate.
+are added to or removed from the configuration file, as appropriate.
+
+B<named.conf> and B<dnsval.conf> are the usual configuration files.  These
+files must be specified in the DNSSEC-Tools configuration file or in command
+line options.
 
 =head1 OPTIONS
 
@@ -2626,7 +2631,7 @@ specified in the future.
 
 =item B<-dnsval_conf_file /path/to/dnsval.conf (-k)>
 
-A B<dnsval.conf> file to read, and possibly updated.
+A B<dnsval.conf> file to read, and possibly be updated.
 
 =item B<-dtconfig config_file (-d)>
 
@@ -2642,7 +2647,7 @@ To run once, use the B<-single_run> option instead.
 
 =item B<-hold_time seconds (-w)>
 
-The value of the hold-down timer.  This is specified in seconds from the time
+The value of the hold-down timer.  This is the number of seconds from the time
 that a new key is found.  Generally, the default and recommended value of 30
 days should be used.
 
@@ -2656,8 +2661,8 @@ Indicates that B<trustman> was run from a monitoring system, and a summary
 of events will be printed.  Specifying this option automatically turns on
 the B<-single_run> option and turns off the B<-verbose> option.
 
-(This was developed for use with the Nagios monitoring system, but it can
-be adapted for others.)
+This was developed for use with the Nagios monitoring system, but it can
+be adapted for other monitors.
 
 =item B<-named_conf_file /path/to/named.conf (-n)>
 
@@ -2701,7 +2706,7 @@ The number of seconds to sleep between checks.  Default is 3600 (one hour.)
 
 =item B<-smtp_server smtpservername (-s)>
 
-SMTP server that B<trustman> should use to send reports by mail.
+The SMTP server that B<trustman> should use to send reports by mail.
 
 =item B<-syslog (-L)>
 
@@ -2741,56 +2746,74 @@ Displays the version information for B<trustman> and the DNSSEC-Tools package.
 =head1 CONFIGURATION
 
 In addition to the command line arguments, the B<dnssec-tools.conf> file can
-be configured with the following tokens to remove the need to use some of
+be configured with the following values to remove the need to use some of
 the command-line options.  The command-line options always override the
 settings in the B<dnssec-tools.conf> file.
 
 =over 4
 
-=item B<tasmtpserver servername>
+=item B<taanchorfile file>
 
-This is equivalent to the B<-smtp_server> flag for specifying where to send
-email notices through.
+This specifies the file where B<trustman> state information will be kept.
+This is equivalent to the B<-anchor_data_file> flag.
 
 =item B<tacontact contact_email>
 
-This is equivalent to the B<-mail_contact_addr> flag for specifying where to
-send email notices to.
-
-=item B<taanchorfile file>
-
-This specifies the file where B<trustman> state information to be kept.
-This is equivalent to the B<-anchor_data_file> flag.
-
-=item B<taresolvconffile file>
-
-This specifies the B<resolv.conf> file to use.
-This is equivalent to the B<-resolv_conf_file> flag.
-
-=item B<tanamedconffile file>
-
-This specifies the B<named.conf> file to read and write.
-This is equivalent to the B<-named_conf_file> flag.
+This is equivalent to the B<-mail_contact_addr> flag for specifying to whom
+email notices will be sent.
 
 =item B<tadnsvalconffile file>
 
 This specifies the B<dnsval.conf> file to read and write.
 This is equivalent to the B<-dnsval_conf_file> flag.
 
+=item B<tanamedconffile file>
+
+This specifies the B<named.conf> file to read and write.
+This is equivalent to the B<-named_conf_file> flag.
+
+=item B<taresolvconffile file>
+
+This specifies the B<resolv.conf> file to use.
+This is equivalent to the B<-resolv_conf_file> flag.
+
 =item B<taroothintsfile file>
 
 This specifies the B<root.hints> file to read.
 This is equivalent to the B<-root_hints_file> flag.
 
+=item B<tasmtpserver servername>
+
+This is equivalent to the B<-smtp_server> flag for specifying the SMTP server
+to which email notices will be sent.
+
 =item B<tatmpdir directory>
 
 This specifies where temporary files should be created.  This is used when
 creating new versions of the B<dnsval.conf> and B<named.conf> files before
-they're moved into place.  Most operating systems require the B</tmp> directory
-to be on the same partition as the B<dnsval.conf> and B<named.conf> files,
-since renames across partitions will fail.
+they're moved into place.
+
+See the note about renaming in the description of the B<-tmp_dir> option.
 
 =back
+
+=head1 EXIT CODES
+
+B<trustman> may exit for the following reasons:
+
+    0 - Successful execution.  In daemon mode, this may just mean
+	that the daemon was successfully started.  The daemon itself
+	may exit with some other error.
+
+    1 - Invalid options were specified.
+
+    2 - No new-key file was specified.
+
+    3 - Unable to open the new-key file.
+
+    4 - Unable to determine a set of zones to check.
+
+    5 - Some form of file-management error was encountered.
 
 =head1 COPYRIGHT
 
@@ -2801,8 +2824,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 Lindy Foster
 
-(Current contact for B<trustman> is Wayne Morrison,
-tewok@tislabs.com.)
+(Current contact for B<trustman> is Wayne Morrison, tewok@tislabs.com.)
 
 =head1 SEE ALSO
 
