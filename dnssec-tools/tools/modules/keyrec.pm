@@ -60,7 +60,7 @@ use Net::DNS::SEC::Tools::conf;
 use Fcntl qw(:DEFAULT :flock);
 
 our $VERSION = "1.12";
-our $MODULE_VERSION = "1.12.1";
+our $MODULE_VERSION = "1.12.2";
 
 #--------------------------------------------------------------------------
 
@@ -582,37 +582,106 @@ sub keyrec_keypaths
 
 	#
 	# Get and verify the name of the appropriate signing set.
+	# We have to handle obsolete keys differently than other keys
+	# since obsolete keys don't have a reference in the zone keyrec.
 	#
-	return(@paths) if(!defined($keyrecs{$krn}{$krt}));
-	$sset = $keyrecs{$krn}{$krt};
+	if(($krt ne 'kskobs') && ($krt ne 'zskobs'))
+	{
+		return(@paths) if(!defined($keyrecs{$krn}{$krt}));
 
-	#
-	# Get and verify the key list.
-	#
-	return(@paths) if(!defined($keyrecs{$sset}{'keys'}));
-	$keylist = $keyrecs{$sset}{'keys'};
+		#
+		# Get and verify the key list.
+		#
+		$sset = $keyrecs{$krn}{$krt};
+
+		return(@paths) if(!defined($keyrecs{$sset}{'keys'}));
+		$keylist = $keyrecs{$sset}{'keys'};
+	}
+	else
+	{
+		foreach my $kname (keyrec_names())
+		{
+			next if($keyrecs{$kname}{'set_type'} ne $krt);
+			$keylist .= " $keyrecs{$kname}{'keys'}";
+		}
+	}
 
 	#
 	# Get the keys' paths and add 'em to the path array.
 	#
-	foreach my $kn (split /[\s,]/, $keylist)
+	foreach my $kn (sort(split /[\s,]/, $keylist))
 	{
-		#
-		# Verify that this key exists and is the right type.
-		#
-		next if(!defined($keyrecs{$kn}));
-		next if($keyrecs{$kn}{'keyrec_type'} ne $krt);
+		my @newpaths;
 
-		#
-		# Push the key's path onto the path list.
-		#
-		push @paths, $keyrecs{$kn}{'keypath'};
+		@newpaths = getsetpaths($kn,$krt);
+		push @paths, @newpaths if(@newpaths != 0);
 	}
 
 	#
 	# Return the path list.
 	#
-	return(sort(@paths));
+	return(@paths);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	getsetpaths()
+#
+# Purpose:	Build a list of the keypaths for a given set.  This will
+#		fetch the paths for intermediate signing sets.
+#
+#		This routine is not exported.
+#
+sub getsetpaths
+{
+	my $kn = shift;					# Name of key to get.
+	my $kt = shift;					# Type of key to get.
+	my @paths = ();				# Set's path list.
+
+	#
+	# Verify that this key exists.
+	#
+	return(@paths) if($kn eq '') || (! defined($keyrecs{$kn}));
+
+	#
+	# If this is a set keyrec, we'll pull the key paths from its keylist.
+	# Otherwise, it's assumed to be a key keyrec and we'll take the key
+	# path from itself.
+	#
+	if($keyrecs{$kn}{'keyrec_type'} eq 'set')
+	{
+		my $keylist = $keyrecs{$kn}{'keys'};
+
+		#
+		# Get the keys' paths and add 'em to the path array.
+		#
+		foreach my $kname (split /[\s,]/, $keylist)
+		{
+			my @newpaths;
+			@newpaths = getsetpaths($kname,$kt);
+			push @paths, @newpaths if(@newpaths != 0);
+		}
+
+	}
+	else
+	{
+		#
+		# Verify that this key is the right type.
+		#
+		return(@paths) if($keyrecs{$kn}{'keyrec_type'} ne $kt);
+
+		#
+		# Push the key's path onto the path list.
+		#
+		if($keyrecs{$kn}{'keypath'} ne '')
+		{
+			push @paths, $keyrecs{$kn}{'keypath'};
+		}
+	}
+
+	#
+	# Return the path list.
+	#
+	return(@paths);
 }
 
 #--------------------------------------------------------------------------
