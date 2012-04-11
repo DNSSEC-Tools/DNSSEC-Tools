@@ -283,13 +283,16 @@ sub print_roll {
     } elsif ($rollrec->{'kskphase'} > 0) {
 	$type = 'ksk';
     } else {
-	print("  roll: not current rolling any keys\n");
+	print("  roll: not currently rolling any keys\n");
 	return;
     }
 
     my $phase = $rollrec->{$type . 'phase'};
-    printf("  roll: %3.3s phase:  %d - %s\n", uc($type),
-	   $phase, rollmgr_get_phase(uc($type), $phase));
+    my $pmsg = '';
+
+    $pmsg = '- ' . rollmgr_get_phase(uc($type), $phase)
+      if ($opts{'d'} > 5);
+    printf("  roll: %3.3s phase:  %d %s\n", uc($type), $phase, $pmsg);
 
     printf("        started:    $rollrec->{phasestart}\n")
       if ($opts{'d'} > 6);
@@ -504,6 +507,8 @@ sub print_zone_information {
     } else {
 	@zones = keys(%krfzones);
     }
+
+    rollmgr_phasemsg('long') if ($opts{'d'} > 5);
 
     foreach my $zone (@zones) {
 	my %keylives;
