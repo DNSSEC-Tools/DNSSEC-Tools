@@ -620,7 +620,7 @@ collects information:
 
 Key information is shown about the keys currently in use.  A bar graph is
 included that shows the age of the key with respect to the configured
-expected key-life time.
+expected key lifetime.
 
 This information is collected from any B<.krf> files B<lsdnssec> finds.
 
@@ -680,10 +680,10 @@ roll-state and key information is shown.
 
 Normally B<rollerd> calculates the age of a key based on the last time a
 key was rolled.  However, it's also possible to calculate the age of a
-key based on the different between now and when it was created (which
-was typically before the rolling began).  The I<-K> flag switches to
-this second mode of key age calculation (which will not match how
-B<rollerd> actually performs).
+key based on the difference between the time of execution and when the key
+was created (which was typically before the rolling began).
+The I<-K> flag switches to this second mode of key age calculation
+(which will not match how B<rollerd> actually performs).
 
 =item B<-d 1-9>
 
