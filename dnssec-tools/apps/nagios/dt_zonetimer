@@ -1,0 +1,331 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 Cobham Analytic Solutions.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# dt_zonetimer
+#
+#	This script determines how long a zone has until its next rollover
+#	phase.  It uses the lsdnssec command from DNSSEC-Tools.
+#
+#	This was written for DNSSEC-Tools.
+#
+# Revision History
+#	1.12.0	Original version: 4/2012		(1.0)
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::dnssectools;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "dt_zonetimer";
+my $VERS   = "$NAME version: 1.12.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+######################################################################r
+#
+# Data required for command line options.
+#
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'w=i',				# Warning limit (in seconds.)
+	'c=i',				# Critical limit (in seconds.)
+
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+my $DEF_WARN = 60;			# Default warning limit (in seconds.)
+my $DEF_CRIT = 3600;			# Default critical limit (in seconds.)
+
+my $warn = $DEF_WARN;			# Warning limit (in seconds.)
+my $crit = $DEF_CRIT;			# Critical limit (in seconds.)
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+#######################################################################
+
+my $OUTFILE = "/tmp/z.dt_zonetimer";
+
+my $krf = '';					# Keyrec file.
+my $rrf = '';					# Rollrec file.
+
+#
+# Run shtuff.
+#
+main();
+exit($RC_UNKNOWN);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for uem-dnsresp.
+#
+sub main
+{
+	$| = 0;
+
+# out("dt_zonetimer:  running");
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the statistics for this zone.
+	#
+# out("\tcalling ztimer()");
+	ztimer();
+
+	#
+	# Exit with the command's return code.		(Shouldn't get here.)
+	#
+	print "dt_zonetimer should not get here\n";
+	exit($RC_UNKNOWN);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	$warn = $options{'w'} if(defined($options{'w'}));
+	$crit = $options{'c'} if(defined($options{'c'}));
+
+	#
+	# Ensure a zonefile and zone name were specified.
+	#
+	if(@ARGV != 2)
+	{
+		print "dt_zonetimer: must specify keyrec file and rollrec file\n";
+		return($RC_CRITICAL);
+	}
+
+	#
+	# Return the zone name.
+	#
+	$krf = $ARGV[0];
+	$rrf = $ARGV[1];
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ztimer()
+#
+# Purpose:	Get the zone-timer info from the rollrec and a zone's keyrec.
+#		We'll massage the output a bit and give an appropriate return
+#		code.
+#
+sub ztimer
+{
+	my $cmd;				# Command to run.
+	my $out;				# Command's output.
+	my $ret = $RC_NORMAL;			# Return code from lsdnssec.
+
+	#
+	# Run the command.
+	#
+	$cmd = "/usr/bin/lsdnssec -M $krf $rrf";
+# out("running <$cmd>\n");
+	$out = `$cmd`;
+	$ret = $? >> 8;
+
+	#
+	# Strip off the domain and newline.
+	#
+	$out =~ s/^.*?://;
+	chomp($out);
+
+	#
+	# Handle failed commands...
+	#
+	if($ret != 0)
+	{
+		print "$out\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Figure out the return code to give for zones that are waiting
+	# for a rollover phase to end.
+	#
+	if($out =~ /: (\d+) seconds\s*$/)
+	{
+		my $secs = $1;			# Seconds to go.
+
+		if($secs < $crit)
+		{
+			$ret = $RC_CRITICAL;
+		}
+		elsif($secs < $warn)
+		{
+			$ret = $RC_WARNING;
+		}
+
+		$out =~ s/: (\d+) seconds\s*$//;
+	}
+
+	#
+	# Return the command output if it succeeded.
+	#
+	print "$out\n";
+	exit($ret);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	out()
+#
+# Purpose:	Temporary output routine.
+#
+sub out
+{
+	my $str = shift;
+
+	open(OUT,">>$OUTFILE");
+	print OUT "$str\n";
+	close(OUT);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	exit($RC_WARNING);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+Copyright 2012 Cobham Analytic Solutions.  All rights reserved.
+
+This plugin runs donuts on a specified zone.  The error count is then printed.
+
+usage:  dt_zonetimer [options] <keyrecfile> <rollrecfile>
+	options:
+		-w soon-value		\"soon-to-phase-end\" value
+		-c imminent-value	\"almost-to-phase-end\" value
+		-Version		display program version
+		-help			display this message
+
+";
+
+	exit($RC_WARNING);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+dt_zonetimer - Nagios plugin to determine time until next rollover phase
+
+=head1 SYNOPSIS
+
+  dt_zonetimer [options] <zone-file> <zone-name>
+
+=head1 DESCRIPTION
+
+B<dt_zonetimer> is a Nagios plugin that prints the time until a zone's
+next rollover phase.  It uses the B<lsdnssec> command from DNSSEC-Tools.
+
+=head1 NAGIOS USE
+
+This is run from a Nagios I<command> object.  These are examples of how the
+objects should be defined:
+
+
+  define command {
+      command_name    dt_zonetimer
+      command_line    $USER1$/dt_zonetimer -w $ARG1$ -c $ARG2$ $ARG3$ $ARG4$
+  }
+
+  define service {
+      service_description   zone rollover
+      check_command         dt_zonetimer!3600!86400!zones.rrf!test.com.krf
+      host_name             test.com
+      active_checks_enabled 1
+      ...
+  }
+
+=head1 OPTIONS
+
+The following options are recognized by B<dt_zonetimer>:
+
+=over 4
+
+=item I<-w>
+
+Specifies the number of seconds before the zone's next rollover phase that
+defines a "warning" period.  This indicates that the next rollover phase will
+happen soon.  This time period is installation- and zone-dependent.  At this
+point, Nagios will display a warning indicator.  The default value is 3600
+(one hour.)
+
+=item I<-c>
+
+Specifies the number of seconds before the zone's next rollover phase that
+defines a "critical" period.  This indicates that the next rollover phase
+is about to occur.  This time period is installation- and zone-dependent.
+At this point, Nagios will display a warning indicator.  The default value
+is 86400 (one day.)
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+dt_donuts(1),
+dt_zonestat(1)
+
+=cut
