@@ -61,8 +61,8 @@ my $RC_UNKNOWN	= 3;		# Unknown return code.
 
 my $OUTFILE = "/tmp/z.dt_zonetimer";
 
-my $krf = '';					# Keyrec file.
-my $rrf = '';					# Rollrec file.
+my $zone = '';							# Zone name.
+my $dfile = '';							# Data file.
 
 #
 # Run shtuff.
@@ -125,15 +125,15 @@ sub doopts
 	#
 	if(@ARGV != 2)
 	{
-		print "dt_zonetimer: must specify keyrec file and rollrec file\n";
+		print "dt_zonetimer: must specify a zone name and either a keyrec or a rollrec file\n";
 		return($RC_CRITICAL);
 	}
 
 	#
-	# Return the zone name.
+	# Get the zone and datafile names.
 	#
-	$krf = $ARGV[0];
-	$rrf = $ARGV[1];
+	$zone = $ARGV[0];
+	$dfile = $ARGV[1];
 }
 
 #-----------------------------------------------------------------------------
@@ -152,7 +152,7 @@ sub ztimer
 	#
 	# Run the command.
 	#
-	$cmd = "/usr/bin/lsdnssec -M $krf $rrf";
+	$cmd = "/usr/bin/lsdnssec -M -z $zone $dfile";
 # out("running <$cmd>\n");
 	$out = `$cmd`;
 	$ret = $? >> 8;
@@ -232,7 +232,7 @@ Copyright 2012 Cobham Analytic Solutions.  All rights reserved.
 
 This plugin runs donuts on a specified zone.  The error count is then printed.
 
-usage:  dt_zonetimer [options] <keyrecfile> <rollrecfile>
+usage:  dt_zonetimer [options] <zone> <datafile>
 	options:
 		-w soon-value		\"soon-to-phase-end\" value
 		-c imminent-value	\"almost-to-phase-end\" value
@@ -256,12 +256,22 @@ dt_zonetimer - Nagios plugin to determine time until next rollover phase
 
 =head1 SYNOPSIS
 
-  dt_zonetimer [options] <zone-file> <zone-name>
+  dt_zonetimer [options] <zonename> <datafile>
 
 =head1 DESCRIPTION
 
 B<dt_zonetimer> is a Nagios plugin that prints the time until a zone's
 next rollover phase.  It uses the B<lsdnssec> command from DNSSEC-Tools.
+
+I<zonename> is the name of the zone to be checked.
+
+I<datafile> is either a B<keyrec> file for the zone or a B<rollrec> file
+that holds a reference to the zone's B<keyrec> file.
+
+The timings displayed by Nagios will likely be a little different from those
+displayed by B<lsdnssec>.  Nagios runs its monitors and then displays the
+results.  Consequently, the times displayed by Nagios could be minutes old,
+depending on the update-time configured for Nagios.
 
 =head1 NAGIOS USE
 
