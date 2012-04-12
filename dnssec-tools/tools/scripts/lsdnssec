@@ -186,6 +186,22 @@ sub expand_files {
 	}
     }
 
+    # Get the keyrec files from any specified rollrecs.
+    my @morefiles = ();
+    foreach my $file (@filestodo) {
+	if ($file =~ /\.(rollrec|rrf)$/) {
+	    rollrec_read($file);
+	    foreach my $rrn (rollrec_names()) {
+		my $krf = rollrec_recval($rrn, 'keyrec');
+		if(-e $krf && -f $krf) {
+		    push @morefiles, $krf
+		}
+	    }
+	    rollrec_close();
+	}
+    }
+    push @filestodo, @morefiles;
+
     # Find the files that we can't read.
     foreach my $file (@filestodo) {
 	if (! -r $file) {
