@@ -49,6 +49,8 @@ DTGetOptions(config => [qw(allow_zero)],
 		['d|detail=i', 'Details level (1-9, 5 = default)',
 		 values => [1..9], type => 'menu', default => 5],
 
+	        ['M|monitor',    'Give data for monitor systems'],
+
 		["debug",
 		 "Debugging output (show extra processing information)."],
 
@@ -71,6 +73,12 @@ my @rolltypes = qw(roll);  # keywords for how rollrec data is stored.
 if (($opts{'d'} < 1) || ($opts{'d'} > 9)) {
     print STDERR "invalid -d option:  $opts{'d'}\n";
     exit(1);
+}
+
+# -M implies -r and -d 1.
+if ($opts{'M'}) {
+    $opts{'r'} = 1;
+    $opts{'d'} = 1;
 }
 
 # generate the list of files to read in.
@@ -532,6 +540,51 @@ sub print_roll {
     return $type;
 }
 
+sub monitor_roll
+{
+    my ($rolltype, $rollrec, $keylives) = @_;
+
+    my $type;
+    my $outstr;
+
+    if ($rollrec->{'zskphase'} > 0) {
+	$type = 'zsk';
+    } elsif ($rollrec->{'kskphase'} > 0) {
+	$type = 'ksk';
+    } else {
+	print("$rollrec->{'zonename'}:  not currently rolling any keys:\n");
+	return;
+    }
+
+    my $phase = $rollrec->{$type . 'phase'};
+
+    $outstr = "$rollrec->{'zonename'}:  " . uc($type) . " phase $phase:  ";
+
+    #
+    # remaining time
+    #
+    if (($phase == 1) || ($phase == 3)) {
+	my $timeremaining = $rollrec->{'maxttl'} * 2;
+        my $started = str2time($rollrec->{'phasestart'});
+
+	$timeremaining = get_ksk_phase3_length($rollrec)
+	  if ($type eq 'ksk' && $phase == 3);
+
+	$timeremaining -= ($gmtime - $started);
+
+	my $phaseremaining = "";
+	if ($timeremaining > 0) {
+	    $outstr .= fuzzytimetrans($timeremaining) . " remaining: $timeremaining seconds";
+	} else {
+	    $outstr .= "moving to next phase: 0 seconds";
+	}
+    } else {
+	$outstr .= "phase active: 0 seconds";
+    }
+
+    print "$outstr\n";
+}
+
 sub find_zone_phases {
     my ($phaseNeeded) = @_;
     my @zones;
@@ -571,7 +624,19 @@ sub print_zone_information {
 	my %keyremaining;
 	my %keylifetimes;
 	next if ($zone eq '');
-	
+
+	# Print monitor info.
+	if ($opts{'M'}) {
+	    foreach my $rolltype (@rolltypes) {
+		foreach my $roll (@{$rrdata{$zone}{$rolltype}}) {
+		    monitor_roll($rolltype, $rrlookup{$roll->{'rollrec_name'}});
+		}
+	    }
+
+	    print "\n" if (! $opts{'M'} > 2);
+	    next;
+	}
+
 	print "Zone: $zone\n";
 
 	# print each active key
@@ -719,7 +784,7 @@ phase will be printed (but not zones that aren't being rolled at all).
 
 This flag is especially useful to find all of your zones that are
 currently in KSK rolling phase 6, which requires operator intervention
-to propegate the new DS records into the parent zone.
+to propagate the new DS records into the parent zone.
 
 =item B<-r>
 
@@ -745,6 +810,15 @@ key based on the difference between the time of execution and when the key
 was created (which was typically before the rolling began).
 The I<-K> flag switches to this second mode of key age calculation
 (which will not match how B<rollerd> actually performs).
+
+=item B<-M>
+
+=item B<--monitor>
+
+The I<-M> flag gives an abbreviated version of B<lsdnssec> output that is
+intended for use by monitoring systems.  It displays the zone name, the
+rollover phase, and the time remaining in that phase.  This option implicitly
+sets the I<-r> flag on and sets the detail level to 1.
 
 =item B<-d 1-9>
 
