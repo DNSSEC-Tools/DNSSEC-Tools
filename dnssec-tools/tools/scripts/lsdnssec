@@ -156,7 +156,14 @@ sub load_files {
 # i.e. remove the directories and replace with their file contents
 sub expand_files {
     my @files = @_;
+    my @errext = ();
+    my @errrd = ();
+    my $errors = 0;
     foreach my $file (@files) {
+	if (! -e $file) {
+	    push @errext, $file;
+	    next;
+	}
 	if (-f $file) {
 	    push @filestodo, $file;
 	} elsif (-d $file) {
@@ -170,6 +177,55 @@ sub expand_files {
 	    }
 	}
     }
+
+    # Find the files that we can't read.
+    foreach my $file (@filestodo) {
+	if (! -r $file) {
+	    push @errrd, $file;
+	}
+    }
+
+    # Give an error and exit if unreadable or nonexistent file were specified.
+    $errors = @errext + @errrd;
+    if ($errors) {
+        if ($opts{'M'}) {
+	    if ($errors == 1) {
+	        print "1 file does not exist or is unreadable\n";
+	    } else {
+	        print $errors . " files do not exist or are unreadable\n";
+	    }
+	    exit(2);
+	}
+
+        if (@errext > 0) {
+	    if (@errext == 1) {
+	        print "1 named file does not exist\n";
+	    } else {
+	        print @errext . " named files do not exist\n";
+	    }
+	    if ($opts{'d'} > 5) {
+	        foreach my $file (sort(@errext)) {
+		    print "\t$file\n";
+	        }
+	    }
+        }
+
+        if (@errrd > 0) {
+	    if (@errext == 1) {
+	        print "1 file is not readable\n";
+	    } else {
+	        print @errext . " files are not readable\n";
+	    }
+	    if ($opts{'d'} > 5) {
+	        foreach my $file (sort(@errrd)) {
+		    print "\t$file\n";
+	        }
+	    }
+        }
+
+        exit(2);
+    }
+
 }
 
 sub get_ksk_phase3_length {
