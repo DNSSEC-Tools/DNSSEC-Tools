@@ -635,7 +635,7 @@ sub print_zone_information {
 
     rollmgr_phasemsg('long') if ($opts{'d'} > 5);
 
-    foreach my $zone (@zones) {
+    foreach my $zone (sort(@zones)) {
 	my %keylives;
 	my %keyremaining;
 	my %keylifetimes;
