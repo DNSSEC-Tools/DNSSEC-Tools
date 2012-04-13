@@ -169,6 +169,7 @@ check_outstanding_async() {
         if (!outstanding_queries[i].live || *outstanding_queries[i].testReturnStatus == CHECK_QUEUED)
             continue;
 
+        FD_ZERO(&fds);
         res_async_query_select_info(outstanding_queries[i].ea, &numfds, &fds, &tv);
 
 //        if (!res_async_ea_isset(outstanding_queries[i].ea, &fds))
