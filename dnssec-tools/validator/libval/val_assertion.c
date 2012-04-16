@@ -6344,13 +6344,27 @@ int try_chase_query(val_context_t * context,
                           q_class, flags, &top_q))) {
         return retval;
     }
-    if (VAL_NO_ERROR != (retval = 
-                    construct_authentication_chain(context, 
-                                                   top_q, 
-                                                   queries,
-                                                   &w_results,
-                                                   results, 
-                                                   done)))
+
+    /* 
+     * Never release a query when we're chasing it in the
+     * context of another query
+     */
+    if (top_q && top_q->qfq_query)
+        top_q->qfq_query->qc_refcount++;
+
+    retval = construct_authentication_chain(context, 
+                                            top_q, 
+                                            queries,
+                                            &w_results,
+                                            results, 
+                                            done);
+    /*
+     * Release ref count on query
+     */
+    if (top_q && top_q->qfq_query)
+        top_q->qfq_query->qc_refcount--;
+
+    if (VAL_NO_ERROR != retval)
         return retval;
 
     _free_w_results(w_results);
