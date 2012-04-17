@@ -3,7 +3,7 @@
 # Copyright 2012 Cobham Analytic Solutions.  All rights reserved.
 # See the COPYING file distributed with this software for details.
 #
-# dt-trustman
+# dt_trustman
 #
 #	This script acts as a remote Nagios plugin for monitoring the
 #	state of trustman.
@@ -23,7 +23,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 #
 # Version information.
 #
-my $NAME   = "dt-trustman";
+my $NAME   = "dt_trustman";
 my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
@@ -50,7 +50,7 @@ my $RC_UNKNOWN	= 3;		# Unknown return code.
 
 #######################################################################
 
-my $OUTFILE = "/tmp/dt-trustman.out";
+my $OUTFILE = "/tmp/dt_trustman.out";
 
 #
 # Run shtuff.
@@ -61,7 +61,7 @@ exit($RC_UNKNOWN);
 #-----------------------------------------------------------------------------
 # Routine:	main()
 #
-# Purpose:	Main controller routine for dt-trustman.
+# Purpose:	Main controller routine for dt_trustman.
 #
 sub main
 {
@@ -69,7 +69,7 @@ sub main
 
 	$| = 0;
 
-# out("dt-trustman:  running");
+# out("dt_trustman:  running");
 
 	#
 	# Check our options.
@@ -80,7 +80,7 @@ sub main
 	# Find out what trustman has to say.
 	#
 	$ret = run_trustman();
-# out("dt-trustman:  trustman exitted with <$ret>");
+# out("dt_trustman:  trustman exitted with <$ret>");
 	exit($ret);
 }
 
@@ -117,8 +117,8 @@ sub run_trustman
 	#
 	$out = `/usr/local/bin/trustman -M -f -S -k /etc/dnsval.conf -a /tmp/newkeys`;
 	$ret = $? >> 8;
-# out("dt-trustman:  trustman out - <$out>");
-# out("dt-trustman:  trustman returned <$ret>");
+# out("dt_trustman:  trustman out - <$out>");
+# out("dt_trustman:  trustman returned <$ret>");
 
 	#
 	# Return the command output if it succeeded.
@@ -169,7 +169,7 @@ Copyright 2012 Cobham Analytic Solutions.  All rights reserved.
 
 This script runs trustman to check for key verification of trust anchors.
 
-usage:  dt-trustman [options] <zone>
+usage:  dt_trustman [options] <zone>
 	options:
 		-Version	display program version
 		-help		display this message
@@ -187,21 +187,21 @@ usage:  dt-trustman [options] <zone>
 
 =head1 NAME
 
-dt-trustman - Nagios plugin to check for key verification of trust anchors
+dt_trustman - Nagios plugin to check for key verification of trust anchors
 
 =head1 SYNOPSIS
 
-  dt-trustman [options] <zone-name>
+  dt_trustman [options] <zone-name>
 
 =head1 DESCRIPTION
 
-B<dt-trustman> is a Nagios plugin used to check for key verification of
+B<dt_trustman> is a Nagios plugin used to check for key verification of
 trust anchors.
-B<dt-trustman> uses B<trustman> to perform the key verification.
-The host on which B<dt-trustman> and B<trustman> run must be configured
+B<dt_trustman> uses B<trustman> to perform the key verification.
+The host on which B<dt_trustman> and B<trustman> run must be configured
 with DNSSEC-Tools.
 
-B<dt-trustman> passes the following arguments to B<trustman>
+B<dt_trustman> passes the following arguments to B<trustman>
 
     -M -f -S -k /etc/dnsval.conf -a /tmp/newkeys
 
@@ -215,13 +215,13 @@ objects should be defined:
 
 
   define command {
-      command_name    dt-trustman
-      command_line    ssh $HOSTADDRESS$ dt-trustman $ARG1$
+      command_name    dt_trustman
+      command_line    ssh $HOSTADDRESS$ dt_trustman $ARG1$
   }
 
   define service {
       service_description   Trustman
-      check_command         dt-trustman!uem-sensor
+      check_command         dt_trustman!uem-sensor
       host_name             uem-sensor
       active_checks_enabled 1
       use                   dnssec-tools-service
@@ -229,7 +229,7 @@ objects should be defined:
 
 =head1 OPTIONS
 
-The following options are recognized by B<dt-trustman>:
+The following options are recognized by B<dt_trustman>:
 
 =over 4
 
