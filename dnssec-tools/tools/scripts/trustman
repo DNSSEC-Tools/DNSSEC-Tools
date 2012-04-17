@@ -163,6 +163,9 @@ exit(0);
 #
 sub main
 {
+	#
+	# Get our options and arguments.
+	#
 	optsandargs();
 
 	#
@@ -174,13 +177,28 @@ sub main
 		$revzones{$zones[$i]} = $i;
 	}
 
+	#
+	# Loads the newkeys info.
+	#
 	load_newkeys();
 
+	#
+	# Build a new configuration file.
+	#
 	mknewconf();
 
+	#
+	# Retrieve zones to be monitored and their configured trust anchors.
+	#
 	get_zones_keys(\%keystorage);
+
+	#
+	# Start the daemon, if that's what we should do.
+	#
 	&daemonize if(!$opts{'f'});
 
+	#
+	# Check the keys.
 	do
 	{
 		my $newsleeptime;
@@ -189,11 +207,9 @@ sub main
 
 		$newsleeptime = getsleeptime($sleeptime);
 
-		if(! $once)
-		{
-			Verbose("sleeping for " . timetrans($newsleeptime) .  "\n");
-			sleep($newsleeptime);
-		}
+		Verbose("sleeping for " . timetrans($newsleeptime) .  "\n") if(! $once);
+		sleep($newsleeptime);
+
 	} while(! $once);
 
 	#
@@ -380,22 +396,27 @@ sub getdtconf
 #----------------------------------------------------------------------
 # Routine:	mknewconf()
 #
+# Purpose:	Create a new configuration file based on our options.
+#
 sub mknewconf
 {
 	my $conffile;
-	my $didnconf = 0;
-	my $didvconf = 0;
-	my $didtime = 0;
-	my $didcontact = 0;
-	my $didsmtp = 0;
 
+	#
+	# Only make a new config file if one was specified.
+	#
 	return if(! $newconf);
 
-	my $conffile = getconffile();
-
+	#
+	# Open the current config file.
+	#
+	$conffile = getconffile();
 	open(CONF,$conffile) or die "unable to open \"$conffile\".";
 	usage(1) unless $newconf;
 
+	#
+	# Open the new config file and copy some lines from old to new.
+	#
 	open(OUT,">$newconf") or die "unable to open \"$newconf\" for writing.";
 	while(<CONF>)
 	{
@@ -410,39 +431,21 @@ sub mknewconf
 		print OUT $_;
 	}
 
-	if($opts{'t'})
-	{
-		print OUT "tasleeptime\t" . $sleeptime . "\n";
-	}
-	if($opts{'w'})
-	{
-		print OUT "taholdtime\t" . $holdtime . "\n";
-	}
-	if($opts{'s'})
-	{
-		print OUT "tasmtpserver\t" . $smtpserver . "\n";
-	}
-	if($opts{'m'})
-	{
-		print OUT "tacontact\t" . $contactaddr . "\n";
-	}
-	if($opts{'r'})
-	{
-		print OUT "taresolvconffile\t" . $resfile . "\n";
-	}
-	if($opts{'n'})
-	{
-		print OUT "tanamedconffile\t" . $ncfile . "\n";
-	}
-	if($opts{'k'})
-	{
-		print OUT "tadnsvalconffile\t" . $dvfile . "\n";
-	}
-	if($opts{'o'})
-	{
-		print OUT "taroothintsfile\t" . $rhfile . "\n";
-	}
+	#
+	# Copy the option values to the new file.
+	#
+	print OUT "tasleeptime\t" . $sleeptime . "\n"		if($opts{'t'});
+	print OUT "taholdtime\t" . $holdtime . "\n"		if($opts{'w'});
+	print OUT "tasmtpserver\t" . $smtpserver . "\n"		if($opts{'s'});
+	print OUT "tacontact\t" . $contactaddr . "\n"		if($opts{'m'});
+	print OUT "taresolvconffile\t" . $resfile . "\n"	if($opts{'r'});
+	print OUT "tanamedconffile\t" . $ncfile . "\n"		if($opts{'n'});
+	print OUT "tadnsvalconffile\t" . $dvfile . "\n"		if($opts{'k'});
+	print OUT "taroothintsfile\t" . $rhfile . "\n"		if($opts{'o'});
 
+	#
+	# Clean up a little.
+	#
 	close (OUT);
 	close (CONF);
 }
@@ -571,8 +574,7 @@ sub checkkeys
 {
 	my %keys_to_verify;
 	my @zones_to_check;
-	my $now = localtime();
-	my $nowsecs = str2time($now);
+	my $nowsecs = getnowsecs();
 
 	#
 	# Copy the keys from the key storage to the list of keys to verify.
@@ -898,8 +900,7 @@ sub timing_check
 	#
 	# If add_holddown_time has been reached, notify.
 	#
-	my $now = localtime();
-	my $nowsecs = str2time($now);
+	my $nowsecs = getnowsecs();
 
 	foreach my $z (keys(%newkeys))
 	{
@@ -977,8 +978,7 @@ mon(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]
 #
 sub removecheck
 {
-	my $now = localtime();
-	my $nowsecs = str2time($now);
+	my $nowsecs = getnowsecs();
 
 	foreach my $z (keys(%remkeys))
 	{
@@ -1762,8 +1762,7 @@ sub revoke_ta_namedconf
 # Routine:	get_zones_keys()
 #
 # Purpose:	Retrieve zones to be monitored, and their configured trust
-#		anchors (keys), from config files (named.conf and/or
-#		dnsval.conf).
+#		anchors (keys), from config files (named.conf, dnsval.conf).
 #		Create the revzones structure for later use.
 #
 sub get_zones_keys
@@ -1772,7 +1771,7 @@ sub get_zones_keys
 	# If zones are specified on the command line, we will only check
 	# those zones.  Otherwise, check all zones found in config files.
 	#
-	read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map) if($ncfile);
+	read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map)   if($ncfile);
 	read_dnsval_file(\%keystorage, $dvfile, \%zone_configfile_map) if($dvfile);
 
 	#
@@ -2013,8 +2012,7 @@ sub compute_add_holddown
 {
 	my ($ttl, $default) = @_;
 	my $holddown;
-	my $now = localtime();
-	my $nowsecs = str2time($now);
+	my $nowsecs = getnowsecs();
 
 	#
 	# Default to 30 days.
@@ -2060,8 +2058,7 @@ sub compute_remove_holddown
 {
 	my $holddown;
 	my $default = $DAYS30;
-	my $now = localtime();
-	my $nowsecs = str2time($now);
+	my $nowsecs = getnowsecs();
 
 	#
 	# Return secs since the epoch as the time to release this holddown.
@@ -2087,8 +2084,7 @@ sub compute_sleepsecs
 	my $sigexp = str2time($sexp);
 
 	my $halfottl = $ottl / 2;
-	my $now = localtime();
-	my $nowsecs = str2time($now);
+	my $nowsecs = getnowsecs();
 	my $expinterval = $sigexp - $nowsecs;
 	my $actrefsecs;
 
@@ -2135,8 +2131,7 @@ sub compute_queryfail_sleepsecs
 	$sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
 	my $sigexp = str2time($sexp);
 	my $tenth_ottl = $ottl / 10;
-	my $now = localtime();
-	my $nowsecs = str2time($now);
+	my $nowsecs = getnowsecs();
 	my $tenth_expinterval = ($sigexp - $nowsecs) / 10;
 	my $refreshsecs;
 
@@ -2302,10 +2297,14 @@ sub key_in_keyarr
 # Routine:	getsleeptime()
 #
 # Purpose:	Find the shortest sleep time of all the zones.
+#		The sleep time is only used if we're doing more than
+#		one pass over the keys.
 #
 sub getsleeptime
 {
 	my $slp = shift;
+
+	return(0) if($once);
 
 	foreach my $z (keys(%sleeptimes))
 	{
@@ -2316,6 +2315,19 @@ sub getsleeptime
 	}
 
 	return($slp);
+}
+
+#----------------------------------------------------------------------
+# Routine:	getnowsecs()
+#
+# Purpose:	Get the seconds for the current local time.
+#
+sub getnowsecs
+{
+	my $now = localtime();
+	my $nowsecs = str2time($now);
+
+	return($nowsecs);
 }
 
 #----------------------------------------------------------------------
