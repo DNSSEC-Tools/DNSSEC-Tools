@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.2";
+my $VERS   = "$NAME version: 1.12.3";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -2114,11 +2114,26 @@ sub infostripe
 	#
 	# Build our output string and set the infostripe.
 	#
+	if($numcols == 2)
+	{
+		$spacer  = ' ' x 2;
+	}
+
+	#
+	# Build our output string and set the infostripe.
+	#
 	$infostr = $spacer . $title	 .
 		   $spacer . $rollcntmsg .
-		   $spacer . $skipcntmsg .
-		   $spacer . $timestr	 .
-		   $spacer . $dispstr;
+		   $spacer . $skipcntmsg;
+
+	#
+	# Include more info, but only if there's room in the window.
+	#
+	if($numcols > 4)
+	{
+		   $infostr .= $spacer . $timestr .
+			       $spacer . $dispstr;
+	}
 
 	$info->configure(-text => $infostr);
 
@@ -2775,7 +2790,6 @@ sub selector
 	#
 	# Find the widget that has the same name as the event window.
 	#
-#	for(my $xind=0; $xind < $lastrow; $xind++)
 	for(my $xind=$TITLEROW; $xind < $lastrow; $xind++)
 	{
 		for(my $yind=0; $yind < $MAXCOLS; $yind++)
