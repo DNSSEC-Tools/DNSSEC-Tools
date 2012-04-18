@@ -191,4 +191,5 @@ zonesignertest
 
 # test rollerd again
 step=4
-rollerdtest
+rollerdtest -alwayssign
+
