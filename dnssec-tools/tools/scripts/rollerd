@@ -787,13 +787,16 @@ sub rollkeys
 				$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
 
 				#
-				# If we're in phases 2-3, make sure to use the
-				# published zsk.
+				# Tell the signer what phase we're in so it
+				# can decide what key to use.
 				#
-				if(($rrr->{'zskphase'} >= 2) &&
-				   ($rrr->{'zskphase'} <= 3))
+				if ($rrr->{'zskphase'} > 0)
 				{
-					$extraargs = "-usezskpub";
+					$extraargs = "ZSK phase $rrr->{'zskphase'}";
+				}
+				elsif ($rrr->{'kskphase'} > 0)
+				{
+					$extraargs = "KSK phase $rrr->{'kskphase'}";
 				}
 
 				#
@@ -805,7 +808,7 @@ sub rollkeys
 				#
 				# Actually do the signing.
 				#
-				my $ret = signer($rname, "always-sign", $krr);
+				my $ret = signer($rname, $extraargs, $krr);
 				if($ret)
 				{
 					rolllog_log(LOG_ERR, "signing $rname failed!");
@@ -1713,13 +1716,16 @@ sub queue_rollevent
 			$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
 
 			#
-			# If we're in phases 2-3, make sure to use the
-			# Published ZSK.
+			# Tell the signer what phase we're in so it
+			# can decide what key to use.
 			#
-			if(($rrr->{'zskphase'} >= 2) &&
-			   ($rrr->{'zskphase'} <= 3))
+			if ($rrr->{'zskphase'} > 0)
 			{
-				$extraargs = "-usezskpub";
+				$extraargs = "ZSK phase $rrr->{'zskphase'}";
+			}
+			elsif ($rrr->{'kskphase'} > 0)
+			{
+				$extraargs = "KSK phase $rrr->{'kskphase'}";
 			}
 
 			#
@@ -1730,7 +1736,7 @@ sub queue_rollevent
 			#
 			# Actually do the signing.
 			#
-			my $ret = signer($rname, "always-sign", $krr);
+			my $ret = signer($rname, $extraargs, $krr);
 			if($ret)
 			{
 				rolllog_log(LOG_ERR, "signing $rname failed!");
