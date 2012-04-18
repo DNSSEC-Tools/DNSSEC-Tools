@@ -6,7 +6,7 @@ dir=/tmp/rolltest
 rmdir=1
 rrfile=dns.rollrec
 ZONEVERSION=`zonesigner 2>&1 -Version | grep "Tools Version" | sed 's/.*: //'`
-if [ $ZONEVERSION = '1.12' -o  $ZONEVERSION = '1.12.1' ] ; then
+if [ $ZONEVERSION = '1.12' -o  $ZONEVERSION = '1.12.1' -o $ZONEVERSION = '1.7' ] ; then
     SKIPZONESIGNER=1
 else
     SKIPZONESIGNER=0
@@ -25,8 +25,6 @@ if [ "$rmdir" = "1" ] ; then
 fi
 mkdir -p $dir/dnssec-tools
 cd $dir
-
-
 
 step=1
 yearmon=`date +%Y%m`
@@ -56,7 +54,7 @@ checkrollerdphase() {
   expected=$1
   shift
   zskphase=`grep zskphase $rrfile | awk '{print $NF}' | sed 's/"//g;'`
-  log "Checking rollerd phase (expecting=$1, got=$zskphase)"
+  log "Checking rollerd phase (expecting=$expected, got=$zskphase)"
   if [ "$expected" != "$zskphase" ] ; then
     if [ "$1" != "" ] ; then
 	log "$@"
@@ -72,7 +70,7 @@ error() {
 
 zonesignertest() {
   # sign the zone
-  $ZONESIGNER example.com
+  $ZONESIGNER -genkeys example.com
 
   # verify it's using the current key (the last signature will be a
   # NSEC, which is ok.  The only thing we don't want is a DNSKEY)
