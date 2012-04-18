@@ -1220,7 +1220,7 @@ sub disp_zonecount
 	$zcnt =~ s/^\s*(.+)\s*/$1/;
 
 	#
-	# Give a warning if the count is entirely numeric. 
+	# Give a warning if the count isn't entirely numeric. 
 	#
 	if($zcnt !~ /^[0-9]+$/)
 	{
@@ -1273,6 +1273,11 @@ sub disp_zonecount
 	# Set the maximum-zone count.
 	#
 	setmaxzones(1,$zcnt);
+
+	#
+	# And let's get the window redrawn.
+	#
+	repaint();
 }
 
 #---------------------------------------------------------------------------
@@ -2640,14 +2645,14 @@ sub rollerdcmd
 		goodzone($zone);
 
 		$rczc++;
-		zonestripe($zone,'ZSK',$phase) if($rczc < $maxzones);
+		zonestripe($zone,'ZSK',$phase);
 	}
 	if($cmd eq "kskphase")
 	{
 		$zoneroll{$zone} = 'KSK';
 		goodzone($zone);
 		$rczc++;
-		zonestripe($zone,'KSK',$phase) if($rczc < $maxzones);
+		zonestripe($zone,'KSK',$phase);
 	}
 	elsif($cmd eq "halt")
 	{
@@ -2969,6 +2974,11 @@ sub calcrows
 		#
 		$lastrow = $row;
 	}
+
+	#
+	# Calculate the final row to account for changes in maxzones.
+	#
+	$lastrow = (($maxzones * $ROWINCR) + 1) if($lastrow > $maxzones);
 
 	#
 	# Set the table to the new row size.
