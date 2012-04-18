@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.3";
+my $VERS   = "$NAME version: 1.12.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -2030,7 +2030,7 @@ sub readrrf
 		}
 		else
 		{
-			zonestripe($zone,'',$phase);
+			zonestripe($zone,$rolltype,$phase);
 		}
 	}
 
