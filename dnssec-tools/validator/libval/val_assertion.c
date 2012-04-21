@@ -7271,14 +7271,14 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
     }
 
     val_log(context, LOG_DEBUG, "val_async_check_wait tv %ld.%ld"
-#ifdef CTX_LOCK_COUNTS
+#if !defined(VAL_NO_THREADS) && defined(CTX_LOCK_COUNTS)
             ", lock counts: pol %ld / ac %ld"
 #endif
 #ifdef VAL_REFCOUNTS
             ", ref count: %d"
 #endif
             , tv ? tv->tv_sec : -1, tv ? tv->tv_usec : -1
-#ifdef CTX_LOCK_COUNTS
+#if !defined(VAL_NO_THREADS) && defined(CTX_LOCK_COUNTS)
             , context->pol_count, context->ac_count
 #endif
 #ifdef VAL_REFCOUNTS
