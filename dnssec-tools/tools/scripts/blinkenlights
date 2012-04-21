@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.4";
+my $VERS   = "$NAME version: 1.12.5";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -839,7 +839,8 @@ sub buildmainwind
 	#
 	# Get the rollrec file info.
 	#
-	readrrf($rrfile,0);
+#	readrrf($rrfile,0);
+	readrrf($rrfile,1);
 
 	#
 	# Set up to get input from rollerd.
@@ -2275,7 +2276,8 @@ sub zonestripe
 	# Save this zone's data in case we need a repaint.
 	#
 	$zonephase{$zone} = $phase;
-	$zonechron{$zone} = $chronos;
+#	$zonechron{$zone} = $chronos;
+	$chronos = $zonechron{$zone};
 
 	#
 	# Set the zone name's field.  (We're setting this here so it can
@@ -2445,8 +2447,10 @@ sub zonestripe
 	#
 	# Fourth column:  zone rollover phase
 	#
-	$phasestr = "$rolltype phase $phase";
-	$phasestr = " " if($phase == 0);
+
+	$phasestr = ($phase != 0) ? "$rolltype phase $phase" : ' ';
+	$chronos  = ' ' if(($phase != 1) && ($phase != 3));
+
 	$lab = $zonetab->Label(-text => $phasestr, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
@@ -2624,7 +2628,8 @@ sub rollerdcmd
 	$zone	= $2;
 	$phase	= $3;
 
-# print "\nrollerdcmd:  cmd - <$cmd>\tzone - <$zone>\tphase - <$zone>\n\n";
+# print "\nrollerdcmd:  cmd - <$cmd>\tzone - <$zone>\tphase - <$phase>\n";
+# print "\tline - <$line>\n\n";
 
 	#
 	# Handle the commands from rollerd:
@@ -2645,12 +2650,14 @@ sub rollerdcmd
 		goodzone($zone);
 
 		$rczc++;
+$zonechron{$zone} = ' ' if(($phase != 1) && ($phase == 3));
 		zonestripe($zone,'ZSK',$phase);
 	}
-	if($cmd eq "kskphase")
+	elsif($cmd eq "kskphase")
 	{
 		$zoneroll{$zone} = 'KSK';
 		goodzone($zone);
+$zonechron{$zone} = ' ' if(($phase != 1) && ($phase == 3));
 		$rczc++;
 		zonestripe($zone,'KSK',$phase);
 	}
@@ -2701,13 +2708,29 @@ sub rollerdcmd
 
 		$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-]+)\W+([0-9]+)\W+([a-zA-Z]+)\W+(.*)$/;
 
+		$zone	  = $2;
+		$phase	  = $3;
 		$rolltype = $4;
 		$secs	  = $5;
-		$timestr  = fuzzytimetrans($secs);
-		$timestr  =~ s/\.0//;
 
 		goodzone($zone);
-		$timestr = "starting roll in $timestr" if($phase == 0);
+
+		if($phase == 0)
+		{
+			$timestr = "starting roll in $timestr";
+		}
+		elsif(($phase == 1) || ($phase == 3))
+		{
+			$timestr = fuzzytimetrans($secs);
+			$timestr =~ s/\.0//;
+		}
+		else
+		{
+			$timestr = ' ';
+		}
+
+		$zonechron{$zone} = $timestr;
+
 		$rczc++;
 		zonestripe($zone,$rolltype,$phase,$timestr) if($rczc < $maxzones);
 		$zoneroll{$zone} = '';
