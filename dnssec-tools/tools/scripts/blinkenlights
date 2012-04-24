@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.5";
+my $VERS   = "$NAME version: 1.12.6";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -403,6 +403,7 @@ my %zonerows	= ();				# Zones' starting-row indices.
 my @zonenames	= ();				# Screen-order list of zones.
 my %zonenames	= ();				# Rollrec name -> zone name map.
 my %zonegroups	= ();				# Rollrec name -> zonegroup map.
+my %zonenormals = ();				# Saved times for normal mode.
 my $zonecnt	= 1;				# Count of zones we're watching.
 my %keyrecs	= ();				# Zones' keyrec filenames.
 my %display	= ();				# Zones' display flag.
@@ -2449,7 +2450,7 @@ sub zonestripe
 	#
 
 	$phasestr = ($phase != 0) ? "$rolltype phase $phase" : ' ';
-	$chronos  = ' ' if(($phase != 1) && ($phase != 3));
+	$chronos  = ' ' if(($phase != 1) && ($phase != 3) && ($phase != 0));
 
 	$lab = $zonetab->Label(-text => $phasestr, -font => $font,
 			       -foreground => $NORMALFG,
@@ -2623,13 +2624,13 @@ sub rollerdcmd
 	#
 	# Break the line into its pieces.
 	#
-	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/ 	]+)\W+([0-9]+)/;
+#	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/ 	]+)\W+([0-9]+)/;
+	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/]+)\W+([0-9]+)/;
 	$cmd	= $1;
 	$zone	= $2;
 	$phase	= $3;
 
 # print "\nrollerdcmd:  cmd - <$cmd>\tzone - <$zone>\tphase - <$phase>\n";
-# print "\tline - <$line>\n\n";
 
 	#
 	# Handle the commands from rollerd:
@@ -2644,22 +2645,47 @@ sub rollerdcmd
 	#	badzone		mark zone as having problems
 	#	readrrd		force a re-read of the rollrec file
 	#
-	if($cmd eq "zskphase")
+	if(($cmd eq 'zskphase') || ($cmd eq 'kskphase'))
 	{
-		$zoneroll{$zone} = 'ZSK';
+		my $secs;		# Seconds left in phase.
+		my $prefix;		# Command prefix ("KSK" or "ZSK".)
+
+		#
+		# Get the roll type and set things up.
+		#
+		$prefix = uc(substr($cmd,0,3));
+		$zoneroll{$zone} = $prefix;
 		goodzone($zone);
 
+		#
+		# Get a few command-specific pieces of the command line.
+		#
+		$line =~ /^\S+\s+\S+\s+(\d+)\s+(\d+)/;
+		$phase = $1;
+		$secs  = $2;
+
+		#
+		# Set up the time field according to the phase.
+		#
+		if($phase == 0)
+		{
+			$zonechron{$zone} = ' '
+		}
+		elsif(($phase != 1) && ($phase != 3))
+		{
+			$zonechron{$zone} = ' '
+		}
+		else
+		{
+			$zonechron{$zone} = fuzzytimetrans($secs);
+			$zonechron{$zone} =~ s/\.0//;
+		}
+
+		#
+		# And paint the zone stripe.
+		#
 		$rczc++;
-$zonechron{$zone} = ' ' if(($phase != 1) && ($phase == 3));
-		zonestripe($zone,'ZSK',$phase);
-	}
-	elsif($cmd eq "kskphase")
-	{
-		$zoneroll{$zone} = 'KSK';
-		goodzone($zone);
-$zonechron{$zone} = ' ' if(($phase != 1) && ($phase == 3));
-		$rczc++;
-		zonestripe($zone,'KSK',$phase);
+		zonestripe($zone,$prefix,$phase);
 	}
 	elsif($cmd eq "halt")
 	{
@@ -2706,33 +2732,83 @@ $zonechron{$zone} = ' ' if(($phase != 1) && ($phase == 3));
 		my $secs;				# Additional data.
 		my $timestr;				# Translated time.
 
-		$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-]+)\W+([0-9]+)\W+([a-zA-Z]+)\W+(.*)$/;
+		#
+		# Get a few fields.
+		#
+		$line =~ /^\S+\s+(\S+)\s+(\d+)\s+([a-zA-Z]+)\s+(\d*)$/;
+		$zone	  = $1;
+		$phase	  = $2;
+		$rolltype = $3;
+		$secs	  = $4;
 
-		$zone	  = $2;
-		$phase	  = $3;
-		$rolltype = $4;
-		$secs	  = $5;
-
+		#
+		# Mark the zone as good.
+		#
 		goodzone($zone);
 
+		#
+		# The seconds count in normal operation (phase 0) requires
+		# a bit of special handling.  We'll be having a KSK and a
+		# ZSK expiration message arriving each pass through the
+		# zones.  Rather than having the remaining time flop between
+		# the two, we'll save the lowest and report that value.
+		#
+		if($phase == 0)
+		{
+			if(defined($zonenormals{$zone}))
+			{
+				if($zonenormals{$zone} > $secs)
+				{
+					$zonenormals{$zone} = $secs;
+				}
+				else
+				{
+					$secs = $zonenormals{$zone};
+				}
+			}
+			else
+			{
+				$zonenormals{$zone} = $secs;
+			}
+		}
+		else
+		{
+			#
+			# Reset the normal-operation time when we've
+			# entered a rollover.
+			#
+			delete $zonenormals{$zone};
+		}
+
+		#
+		# Translate the seconds count into something useful.
+		#
+		$timestr = fuzzytimetrans($secs);
+		$timestr =~ s/\.0//;
+
+		#
+		# Set up the time field according to the phase.
+		#
 		if($phase == 0)
 		{
 			$timestr = "starting roll in $timestr";
 		}
 		elsif(($phase == 1) || ($phase == 3))
 		{
-			$timestr = fuzzytimetrans($secs);
-			$timestr =~ s/\.0//;
+			# Leave the time string as it is for these phases.
 		}
 		else
 		{
 			$timestr = ' ';
 		}
-
 		$zonechron{$zone} = $timestr;
 
+		#
+		# Paint the zone stripe.
+		#
 		$rczc++;
-		zonestripe($zone,$rolltype,$phase,$timestr) if($rczc < $maxzones);
+#		zonestripe($zone,$rolltype,$phase,$timestr) if($rczc < $maxzones);
+		zonestripe($zone,$rolltype,$phase,$timestr);
 		$zoneroll{$zone} = '';
 	}
 	elsif($cmd eq "rollrec")
@@ -2761,6 +2837,10 @@ $zonechron{$zone} = ' ' if(($phase != 1) && ($phase == 3));
 	elsif($cmd eq "nop")
 	{
 		return;
+	}
+	else
+	{
+		print "\n\nUNKNOWN ROLLERD COMMAND:  $line\n\n\n";
 	}
 
 	#
