@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.3";
+my $VERS   = "$NAME version: 1.12.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -790,11 +790,11 @@ sub rollkeys
 				# Tell the signer what phase we're in so it
 				# can decide what key to use.
 				#
-				if ($rrr->{'zskphase'} > 0)
+				if($rrr->{'zskphase'} > 0)
 				{
 					$extraargs = "ZSK phase $rrr->{'zskphase'}";
 				}
-				elsif ($rrr->{'kskphase'} > 0)
+				elsif($rrr->{'kskphase'} > 0)
 				{
 					$extraargs = "KSK phase $rrr->{'kskphase'}";
 				}
@@ -1719,11 +1719,11 @@ sub queue_rollevent
 			# Tell the signer what phase we're in so it
 			# can decide what key to use.
 			#
-			if ($rrr->{'zskphase'} > 0)
+			if($rrr->{'zskphase'} > 0)
 			{
 				$extraargs = "ZSK phase $rrr->{'zskphase'}";
 			}
-			elsif ($rrr->{'kskphase'} > 0)
+			elsif($rrr->{'kskphase'} > 0)
 			{
 				$extraargs = "KSK phase $rrr->{'kskphase'}";
 			}
@@ -3166,6 +3166,11 @@ sub phasecmd
 		$phase =~ /([kz]sk)(\d)/;
 		$phasetype = $1;
 		$phasenum  = $2;
+
+		#
+		# Set a variable for phasewait().
+		#
+		$ptaux = $phasetype if(! defined($ptaux));
 	}
 
 	#
@@ -3396,12 +3401,12 @@ sub nextphase
 	rollrec_close();
 	rollrec_read($rollrecfile);
 
-	display("$phasekey $rname $phase");
+#	display("$phasekey $rname $phase");
 
 	#
 	# If we're at the start of a rollover, we'll log the expiration time.
 	#
-	return(0) if($phase != 0);
+#	return(0) if($phase != 0);
 
 	#
 	# Get the rollin' key's keyrec for our zone.
@@ -3445,15 +3450,24 @@ sub nextphase
 	# Tell the log when the zone will expire, based on the lifespan.
 	#
 	$chronostr = timetrans($exptime);
-	rolllog_log(LOG_INFO,$rname,"    $phasetype expiration in $chronostr\n");
+	rolllog_log(LOG_INFO,$rname,"    $phasetype expiration in $chronostr");
 
 	#
-	# Reset the phasestart field.
+	# Send phase info to the display program.
 	#
-	rollrec_settime($rname);
-	rollrec_write();
-	rollrec_close();
-	rollrec_read($rollrecfile);
+	$exptime = ($rrr->{'maxttl'} * 2) if($phase != 0);
+	display("$phasekey $rname $phase $exptime");
+
+	#
+	# Reset the phasestart field if we've completed a rollover cycle.
+	#
+	if($phase == 0)
+	{
+		rollrec_settime($rname);
+		rollrec_write();
+		rollrec_close();
+		rollrec_read($rollrecfile);
+	}
 	return(0);
 }
 
@@ -6660,7 +6674,7 @@ sub intcmd_handler
 #
 sub halt_handler
 {
-	display("halt woof 0");
+	display("halt rollerd 0");
 
 	rolllog_log(LOG_ALWAYS,"","rollover manager shutting down...\n");
 	rollrec_write(1);	# dump the current file with commands
