@@ -3401,13 +3401,6 @@ sub nextphase
 	rollrec_close();
 	rollrec_read($rollrecfile);
 
-#	display("$phasekey $rname $phase");
-
-	#
-	# If we're at the start of a rollover, we'll log the expiration time.
-	#
-#	return(0) if($phase != 0);
-
 	#
 	# Get the rollin' key's keyrec for our zone.
 	#
