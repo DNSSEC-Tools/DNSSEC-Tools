@@ -317,6 +317,7 @@ my $op_clrs;					# Colors item.
 my $op_mdfy;					# Modify toggle.
 my $op_shad;					# Shading toggle.
 my $op_skip;					# Skip toggle.
+my $op_time;					# Time toggle.
 my $dm_rrn;					# Rollrec name display toggle.
 my $dm_znm;					# Zonename display toggle.
 my $dm_zgr;					# Zonegroup display toggle.
@@ -339,6 +340,9 @@ my $NOSHADING	 = "Don't Shade Status Column";
 
 my $SHOWSKIP	 = "Display Skipped Zones";
 my $NOSKIP	 = "Hide Skipped Zones";
+
+my $SHOWTIME	 = "Display Status Times";
+my $NOTIME	 = "Hide Status Times";
 
 #
 # Messages for the Display menu.
@@ -369,6 +373,7 @@ my $nocolors;				# Use/don't use colors in stripes.
 my $nomodify;				# Allowing/disallowing commands flag.
 my $noshading;				# Shading/not shading zone stripes flag.
 my $noskip;				# Show/don't show skipped zones flag.
+my $notimes = 0;			# Show/don't show times in status col.
 
 my $shademsg;				# Message about shading.
 my $namesetmsg;				# Message about rollrec name display.
@@ -560,6 +565,7 @@ sub buildmainwind
 	my $colormsg;					# Color menu message.
 	my $modmsg;					# Modify menu message.
 	my $skipmsg;					# Skip menu message.
+	my $timemsg;					# Time menu message.
 	my $fnsmenu;					# Font-size menu.
 
 	#
@@ -642,6 +648,10 @@ sub buildmainwind
 	$skipmsg = $NOSKIP;
 	$skipmsg = $SHOWSKIP if($noskip);
 	$op_skip = $disp->command(-label => $skipmsg, -command => \&disp_skip);
+	$disp->pack(-side => 'left');
+
+	$timemsg = $notimes? $SHOWTIME : $NOTIME;
+	$op_time = $disp->command(-label => $timemsg, -command => \&disp_time);
 	$disp->pack(-side => 'left');
 
 	$disp->separator();
@@ -973,6 +983,28 @@ sub disp_skip
 	{
 		$op_skip->configure(-label => $SHOWSKIP);
 		$noskip = 1;
+	}
+
+	calcrows();
+	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_time()
+#
+# Purpose:	Handle the Time menu toggle.
+#
+sub disp_time
+{
+	if($notimes)
+	{
+		$op_time->configure(-label => $NOTIME);
+		$notimes = 0;
+	}
+	else
+	{
+		$op_time->configure(-label => $SHOWTIME);
+		$notimes = 1;
 	}
 
 	calcrows();
@@ -2450,7 +2482,10 @@ sub zonestripe
 	#
 
 	$phasestr = ($phase != 0) ? "$rolltype phase $phase" : ' ';
-	$chronos  = ' ' if(($phase != 1) && ($phase != 3) && ($phase != 0));
+	$chronos  = ' ' if((($phase != 1) &&
+			    ($phase != 3) &&
+			    ($phase != 0))	||
+			   ($notimes == 1));
 
 	$lab = $zonetab->Label(-text => $phasestr, -font => $font,
 			       -foreground => $NORMALFG,
@@ -3394,6 +3429,7 @@ sub readconfig
 #			noshow		things not to show
 #			shading		shade the status columns
 #			showskip	show skipped zones
+#			showtime	show status times
 #			skipcolor	color to use for skip records
 #
 sub setopt
@@ -3483,6 +3519,13 @@ sub setopt
 
 		if($ret) { $noskip = 0; }
 		else	 { $noskip = 1; }
+	}
+	elsif($field eq "showtime")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $notimes = 0; }
+		else	 { $notimes = 1; }
 	}
 	elsif($field eq "skipcolor")
 	{
@@ -4096,6 +4139,15 @@ Skipped Zones Display (toggle)
 This menu item is a toggle to turn on or off the display of skipped zones.  If
 display is turned off, zone stripes for skipped zones will not be displayed.
 If display is turned on, zone stripes for all zones will be displayed.
+
+=item *
+
+Status Times Display (toggle)
+
+This menu item is a toggle to turn on or off the display of status times.
+If display is turned off, the remaining time for a rollover phase will not
+be displayed in the "Status" column.  If display is turned on, the remaining
+times will be displayed.
 
 =item *
 
