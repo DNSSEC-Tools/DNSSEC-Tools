@@ -685,6 +685,8 @@ sub buildmainwind
 	#
 	# Add the General Control menu entries.
 	#
+	$cmdg->command(-label => 'Sign Selected Zone',
+		       -command => [\&general_cmds, "signzone"]);
 	$cmdg->command(-label => 'Run the Queue',
 		       -command => [\&general_cmds, "runqueue"]);
 	$cmdg->separator();
@@ -1366,7 +1368,8 @@ sub general_cmds
 	# These commands need a zone.  By hook or by crook, we'll ensure
 	# that we have one.
 	#
-	if(($rcmd eq "skipzone") || ($rcmd eq "rollzone"))
+	if(($rcmd eq "skipzone") || ($rcmd eq "rollzone") ||
+	   ($rcmd eq "signzone"))
 	{
 		#
 		# If a zone has been selected, we'll use it.  If not,
@@ -4196,6 +4199,13 @@ The commands in this menu are GUI interfaces for the B<rollctl> commands
 related to I<general> zone management.
 
 =over 4
+
+=item *
+
+Sign Selected Zone
+
+B<rollerd> is instructed to sign the selected zone.  The zone will only be
+signed; no key rollover will occur.
 
 =item *
 
