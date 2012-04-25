@@ -800,6 +800,13 @@ sub buildmainwind
 				 -command => [\&disp_menus, 'ZSK', 1],
 				 -state   => 'normal');
 
+	#
+	# DO NOT collapse the show all keysets and hide all keysets commands
+	#	 into a single toggle!!!  They should both be displayed
+	#	 when some keys have been hidden, so we'll keep both menu
+	#	 entries around all the time and disable one when it isn't
+	#	 relevant.
+	#
 	$dm_sak = $dspl->command(-label   => 'Show All Keysets',
 				 -command => [\&disp_menus, 'SHOW ALL', 1],
 				 -state   => 'normal');
