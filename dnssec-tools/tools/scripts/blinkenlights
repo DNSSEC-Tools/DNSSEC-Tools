@@ -3016,6 +3016,7 @@ sub selector
 			# widget if there isn't a zone in it.
 			#
 			$wij = $zonetab->get($rind,0);
+			next if(!defined($wij));
 			$zstr = $wij->cget('-text');
 			$zstr =~ s/^[ ]*//;
 			$zstr =~ s/[ ]*$//;
