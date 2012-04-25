@@ -2722,45 +2722,6 @@ sub rollerdcmd
 		$rczc++;
 		zonestripe($zone,$prefix,$phase);
 	}
-	elsif($cmd eq "halt")
-	{
-		exit(0);
-	}
-	elsif($cmd eq "startroll")
-	{
-
-		$rczc = 0;
-		return;
-
-		#
-		# The rest of this block is causing problems.
-		# We're going to bypass it for now.
-		#
-		return if($zone eq '<all>');
-
-		rollrec_read($rrfile);
-		$phase = rollrec_recval($zone,'zskphase');
-		rollrec_close();
-
-		$rollers{$zone} = 1;
-		calcrows();
-		infostripe();
-
-		$zonephase{$zone} = $phase;
-		goodzone($zone);
-		repaint();
-	}
-	elsif($cmd eq "stoproll")
-	{
-		goodzone($zone);
-		$rollers{$zone} = 0;
-		calcrows();
-		$zonephase{$zone} = -42;
-
-		infostripe();
-
-		repaint();
-	}
 	elsif($cmd eq "expiration")
 	{
 		my $rolltype;				# Type of rollover.
@@ -2846,6 +2807,46 @@ sub rollerdcmd
 		zonestripe($zone,$rolltype,$phase,$timestr);
 		$zoneroll{$zone} = '';
 	}
+	elsif($cmd eq "startroll")
+	{
+
+		$rczc = 0;
+		return;
+
+		#
+		# The rest of this block is causing problems.
+		# We're going to bypass it for now.
+		#
+		return if($zone eq '<all>');
+
+		rollrec_read($rrfile);
+		$phase = rollrec_recval($zone,'zskphase');
+		rollrec_close();
+
+		$rollers{$zone} = 1;
+		calcrows();
+		infostripe();
+
+		$zonephase{$zone} = $phase;
+		goodzone($zone);
+		repaint();
+	}
+	elsif($cmd eq "readrrf")
+	{
+		painter($paintmax+1);
+		$paintcount = $paintmax + 1;
+	}
+	elsif($cmd eq "stoproll")
+	{
+		goodzone($zone);
+		$rollers{$zone} = 0;
+		calcrows();
+		$zonephase{$zone} = -42;
+
+		infostripe();
+
+		repaint();
+	}
 	elsif($cmd eq "rollrec")
 	{
 		$rrfile = $zone;
@@ -2864,14 +2865,13 @@ sub rollerdcmd
 		zonestripe($zone,'KSK',0) if($rczc < $maxzones);
 		return;
 	}
-	elsif($cmd eq "readrrf")
-	{
-		painter($paintmax+1);
-		$paintcount = $paintmax + 1;
-	}
 	elsif($cmd eq "nop")
 	{
 		return;
+	}
+	elsif($cmd eq "halt")
+	{
+		exit(0);
 	}
 	else
 	{
