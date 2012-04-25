@@ -22,7 +22,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lskrf";
-my $VERS   = "$NAME version: 1.4";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 
@@ -972,6 +972,7 @@ sub makeheaders
 		$kr{'keyrec_name'}	= $SET;
 		$kr{'keyrec_type'}	= 'Set';
 		$kr{'keys'}		= 'Keys';
+		$kr{'set_type'}		= 'Set Type';
 		$kr{'zonename'}		= 'Zone Name';
 		$kr{'keyrec_setdate'}	= 'Last Set Modification';
 		$sets{$HEADER_KRN} = \%kr;
@@ -1387,7 +1388,7 @@ sub showsets
 		}
 
 		#
-		# Get a bunch of data from the zone keyrec.
+		# Get a bunch of data from the set keyrec.
 		#
 		$zone	 = $kr{'zonename'};
 		$settype = $kr{'set_type'};
@@ -1395,7 +1396,7 @@ sub showsets
 	 	$moddate = $kr{'keyrec_setdate'};
 
 		#
-		# Get a bunch of data from the zone keyrec.
+		# Skip this record if we aren't supposed to show this set type. 
 		#
 		next if($checktypes && !defined($settypes{$settype}));
 
@@ -1420,20 +1421,17 @@ sub showsets
 		#
 		# Convert the set's type into a pretty version.
 		#
-		if($settype ne '')
+		if($settype ne 'Set Type')
 		{
 			$settype =~ /^([kz]sk)(.+)$/i;
 			my $type1 = uc($1);
 			my $type2 = $2;
 			$settype = "$type1-$type2";
+			$sets{$sk}{'set_type'} = $settype;
 		}
 		else
 		{
-			if($setname eq $HEADER_KRN)
-			{
-				$settype = 'Set Type';
-			}
-			else
+			if($setname ne $HEADER_KRN)
 			{
 				$settype = '(unknown set type)';
 			}
@@ -2799,7 +2797,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
