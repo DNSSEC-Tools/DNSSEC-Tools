@@ -6548,7 +6548,7 @@ sub zonemodified
 	{
 		rolllog_log(LOG_ERR,$rname,"rollrec and keyrec disagree about name of signed zone file");
 		rolllog_log(LOG_ERR,$rname,"  rollrec's signed zone file - $rrr->{'zonefile'}");
-		rolllog_log(LOG_ERR,$rname,"  keyrec's signed zone file  - $krf");
+		rolllog_log(LOG_ERR,$rname,"  keyrec's signed zone file  - $zfs");
 	}
 
 	#
