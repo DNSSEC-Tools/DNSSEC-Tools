@@ -154,6 +154,8 @@ Flickable {
 
         MouseArea {
             anchors.fill: parent
+            // make the mouse area thrice as big as the parent for finger-friendliness
+            anchors.margins: -parent.width;
             onClicked: {
                 infoBox.state = "hidden"
                 dismissed()
