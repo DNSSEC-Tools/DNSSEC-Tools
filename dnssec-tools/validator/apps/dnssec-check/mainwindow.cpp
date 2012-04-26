@@ -20,6 +20,8 @@
 
 #include <qdebug.h>
 
+#include <validator/validator.h>
+
 #if defined(Q_OS_SYMBIAN) && defined(ORIENTATIONLOCK)
 #include <eikenv.h>
 #include <eikappui.h>

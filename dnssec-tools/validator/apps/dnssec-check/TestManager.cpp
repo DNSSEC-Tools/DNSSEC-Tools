@@ -17,11 +17,14 @@
 
 TestManager::TestManager(QObject *parent) :
     QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(), m_socketWatchers(),
-    m_tests(), m_num_fds(0), m_inTestLoop(false)
+    m_tests(), m_otherThread(), m_num_fds(0), m_inTestLoop(false)
 {
     FD_ZERO(&m_fds);
     m_timeout.tv_sec = 0;
     m_timeout.tv_usec = 0;
+
+    m_otherThread.start();
+    connect(this, SIGNAL(updatesMaybeAvailable()), &m_otherThread, SLOT(checkStatus()));
 }
 
 void
@@ -50,6 +53,7 @@ TestManager::checkAvailableUpdates()
     foreach(DNSSECTest *test, m_tests) {
         test->update();
     }
+    emit updatesMaybeAvailable();
 }
 
 void TestManager::startQueuedTransactions()
@@ -182,7 +186,7 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
         newtest =  new DNSSECTest(m_parent, &check_ad_bit_async, address.toAscii().data(), name, true);
         break;
     case basic_tcp:
-        newtest =  new DNSSECTest(m_parent, &check_basic_tcp_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_basic_tcp_async, address.toAscii().data(), name, true, &m_otherThread);
         break;
 
 #endif

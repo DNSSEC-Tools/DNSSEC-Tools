@@ -471,7 +471,8 @@ int check_basic_tcp_async(char *ns_name, char *buf, size_t buf_len, int *testSta
 
     ea = res_async_query_create("www.dnssec-tools.org", ns_t_a, ns_c_in, ns, 0);
     res_switch_all_to_tcp(ea);
-    *testStatus = CHECK_QUEUED;
+    //*testStatus = CHECK_QUEUED;
+    res_io_send(ea);
     add_outstanding_async_query(ea, _check_has_one_type_async,
                                 testStatus, buf, buf_len, malloc_async_info(ns_t_a, "A (over tcp)"));
     return CHECK_CRITICAL;
