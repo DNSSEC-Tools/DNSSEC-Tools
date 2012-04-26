@@ -13,6 +13,9 @@ DEPLOYMENTFOLDERS = # file1 dir1
 # for android
 INCLUDEPATH += ../../include
 isEmpty(ANDROID_PLATFORM) {
+    LIBS        += -L/home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/libval/.libs
+    LIBS        += -L/home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/libsres/.libs
+    LIBS        += -L/home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/include
     LIBS        += -lval-threads -lsres -lcrypto -lpthread
     osx {
         LIBS        += -lval-threads -lsres -lcrypto -lpthread
@@ -71,13 +74,15 @@ SOURCES += main.cpp mainwindow.cpp \
     QStatusLight.cpp \
     SubmitDialog.cpp \
     DNSSECTest.cpp \
-    TestManager.cpp
+    TestManager.cpp \
+    DNSSECCheckThread.cpp
 HEADERS += mainwindow.h \
     QStatusLight.h \
     dnssec_checks.h \
     SubmitDialog.h \
     DNSSECTest.h \
-    TestManager.h
+    TestManager.h \
+    DNSSECCheckThread.h
 
 #    DataSubmitter.h \
 #    DataSubmitter.cpp \

@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include "DNSSECTest.h"
+#include "DNSSECCheckThread.h"
 
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
@@ -71,6 +72,7 @@ signals:
     void aResultMessageChanged(QString message);
     void lastResultMessageChanged();
     void inTestLoopChanged();
+    void updatesMaybeAvailable();
 
 public slots:
     void responseReceived(QNetworkReply *response);
@@ -86,6 +88,7 @@ private:
     QString m_lastResultMessage;
     QHash<int, QAbstractSocket *> m_socketWatchers;
     QList<DNSSECTest *> m_tests;
+    DNSSECCheckThread m_otherThread;
 
     fd_set          m_fds, m_tcp_fds;
     int             m_num_fds, m_num_tcp_fds;

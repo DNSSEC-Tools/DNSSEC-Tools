@@ -2,9 +2,9 @@
 
 #include <qdebug.h>
 
-DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName, bool isAsync) :
+DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName, bool isAsync, DNSSECCheckThread *otherThread) :
     QObject(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName), m_statusStrings(),
-    m_async(isAsync), m_result_status(-1)
+    m_async(isAsync), m_otherThread(otherThread), m_result_status(-1)
 {
     if (serverAddress)
         m_serverAddress = strdup(serverAddress);
@@ -18,6 +18,11 @@ DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const cha
     m_statusStrings.insert(BAD, "bad");
     m_statusStrings.insert(WARNING, "warning");
     m_statusStrings.insert(TESTINGNOW, "testing");
+
+    if (m_otherThread) {
+        connect(this, SIGNAL(startTest(CheckFunction*,char*,bool)), m_otherThread, SLOT(startTest(CheckFunction*,char*,bool)));
+        connect(m_otherThread, SIGNAL(testResult(CheckFunction*,char*,int,QString)), this, SLOT(onTestResult(CheckFunction*,char*,int,QString)));
+    }
 }
 
 DNSSECTest::DNSSECTest(const DNSSECTest &copyFrom) :
@@ -50,19 +55,39 @@ void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
     }
 }
 
+void DNSSECTest::setStatus(int checkStatus)
+{
+    setStatus(rcToStatus(checkStatus));
+}
+
 void DNSSECTest::check()
 {
-    if (!m_checkFunction || !m_serverAddress)
-        return;
-    m_result_status = TESTINGNOW;
-    setStatus(TESTINGNOW);
-    int rc = (*m_checkFunction)(m_serverAddress, m_msgBuffer, sizeof(m_msgBuffer), &m_result_status);
-    if (m_async) {
-        emit asyncTestSubmitted();
-        return;
+    if (m_otherThread) {
+        qDebug() << "sending to other thread (current=" << QThread::currentThread() << ")";
+        emit startTest(m_checkFunction, m_serverAddress, m_async);
+    } else {
+        if (!m_checkFunction || !m_serverAddress)
+            return;
+        m_result_status = TESTINGNOW;
+        setStatus(TESTINGNOW);
+        int rc = (*m_checkFunction)(m_serverAddress, m_msgBuffer, sizeof(m_msgBuffer), &m_result_status);
+        if (m_async) {
+            emit asyncTestSubmitted();
+            return;
+        }
+        setStatus(rcToStatus(rc));
+        setMessage(QString(m_msgBuffer));
     }
-    setStatus(rcToStatus(rc));
-    setMessage(QString(m_msgBuffer));
+}
+
+void DNSSECTest::onTestResult(CheckFunction *check_function, char *server, int status, QString resultString)
+{
+    if (m_checkFunction == check_function &&
+        m_serverAddress == server) {
+        qDebug() << "got signal for server " << server << " status=" << status << " message=" << resultString;
+        setMessage(resultString);
+        setStatus(status);
+    }
 }
 
 DNSSECTest::lightStatus DNSSECTest::rcToStatus(int rc) {
