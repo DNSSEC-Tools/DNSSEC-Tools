@@ -90,9 +90,6 @@ void DNSSECTest::onTestResult(CheckFunction *check_function, char *server, int s
         m_serverAddress == server) {
         setMessage(resultString);
         setStatus(status);
-        qDebug() << "got notification.  needed=" << m_serverAddress << ", got=" << server;
-    } else {
-        qDebug() << "got wrong notification.  needed=" << m_serverAddress << ", got=" << server;
     }
 }
 

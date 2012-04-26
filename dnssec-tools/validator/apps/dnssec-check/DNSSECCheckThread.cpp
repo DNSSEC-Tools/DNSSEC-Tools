@@ -41,7 +41,6 @@ void DNSSECCheckThreadHandler::checkStatus()
     foreach(DNSSECCheckThreadData *data, m_dataList) {
         if (DNSSECTest::rcToStatus(data->m_result_status) != DNSSECTest::TESTINGNOW && DNSSECTest::rcToStatus(data->m_result_status) != DNSSECTest::UNKNOWN) {
             emit testResult(data->m_checkFunction, data->m_serverAddress, data->m_result_status, QString(data->m_msgBuffer));
-            qDebug() << "emitting for " << data->m_serverAddress << " -> " << data->m_result_status;
             m_dataList.removeOne(data);
         }
     }

@@ -53,7 +53,6 @@ function removeHost(host) {
     }
 
     for(var i = hosts.length-1; i >= 0; i--) {
-        console.log("checking: " + hosts[i] + " against " + host)
         if (hosts[i] == host) {
             hosts.splice(i,1)
         }
@@ -81,7 +80,6 @@ function haveAllTestsRun() {
     assignHostGrade();
     for(var i = tests.length; i > 0 ; i--) {
         if (tests[i-1].test.status === DNSSECTest.UNKNOWN || tests[i-1].test.status === DNSSECTest.TESTINGNOW) {
-            console.log("test not done: " + i)
             return false
         }
     }
@@ -224,7 +222,6 @@ function runAllTests() {
     dnssecCheckTop.state = "running"
     testManager.inTestLoop = true;
     setTestStartMessage();
-    console.log("starting tests for '" + currentTestHost + "'")
     giveUpTimer.start()
     countingTimer.start()
     runNextTest();
@@ -261,7 +258,6 @@ function stopTesting() {
     countingTimer.stop()
     testManager.inTestLoop = false;
     testManager.checkAvailableUpdates();
-    console.log("current host: '" + currentTestHost + "' => " + (currentTestHost == ""))
     if (currentTestHost === "" || haveAllTestsRun())
         dnssecCheckTop.state = "ran"
     else
@@ -283,7 +279,6 @@ function cancelTests() {
 function giveUpTimerHook() {
     // if we get here, we're fairly sunk as it's taken a long time for the requests to complete.
     // So we give up.
-    console.log("giving up")
     giveUpMessage.state = "visible"
     cancelTests()
 }
@@ -300,7 +295,6 @@ function resetTests() {
         tests[result].test.status = DNSSECTest.UNKNOWN
     }
     for(var host in hosts) {
-        console.log("host = " + host + " -> " + hosts[host])
         hostgrades[hosts[host]].grade = "?"
     }
 
