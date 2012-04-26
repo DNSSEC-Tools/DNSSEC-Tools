@@ -890,6 +890,11 @@ sub doopts
 	GetOptions(\%options,@opts, verbose => 1) || usage();
 
 	#
+	# Give a usage flag if asked.
+	#
+	usage() if(defined($options{'help'}));
+
+	#
 	# Set our option variables based on the parsed options.
 	#
 	$quiet = $options{'quiet'} || 0;
@@ -1101,11 +1106,6 @@ sub doopts
 	{
 		showloglevels();
 	}
-
-	#
-	# Give a usage flag if asked.
-	#
-	usage() if(defined($options{'help'}));
 
 	#
 	# Ensure that conflicting options weren't given.
