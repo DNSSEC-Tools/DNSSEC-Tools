@@ -23,8 +23,13 @@ TestManager::TestManager(QObject *parent) :
     m_timeout.tv_sec = 0;
     m_timeout.tv_usec = 0;
 
+    connect(&m_otherThread, SIGNAL(handlerReady(DNSSECCheckThreadHandler*)), this, SLOT(handlerReady(DNSSECCheckThreadHandler*)));
     m_otherThread.start();
-    connect(this, SIGNAL(updatesMaybeAvailable()), &m_otherThread, SLOT(checkStatus()));
+}
+
+void
+TestManager::handlerReady(DNSSECCheckThreadHandler *handler) {
+    connect(this, SIGNAL(updatesMaybeAvailable()), handler, SLOT(checkStatus()));
 }
 
 void

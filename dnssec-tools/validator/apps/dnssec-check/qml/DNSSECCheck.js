@@ -265,8 +265,8 @@ function stopTesting() {
 
 function cancelTests() {
     for(var i = 0; i < tests.length; i++) {
-        if (tests[i].test.status == DNSSECTest.TESTINGNOW)
-        tests[i].test.status = DNSSECTest.BAD
+        if (tests[i].test.status == DNSSECTest.TESTINGNOW || tests[i].test.status == DNSSECTest.UNKNOWN)
+            tests[i].test.status = DNSSECTest.BAD
     }
     stopTesting()
 }
