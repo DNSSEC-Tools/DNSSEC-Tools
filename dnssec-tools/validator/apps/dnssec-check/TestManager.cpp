@@ -30,6 +30,7 @@ TestManager::TestManager(QObject *parent) :
 void
 TestManager::handlerReady(DNSSECCheckThreadHandler *handler) {
     connect(this, SIGNAL(updatesMaybeAvailable()), handler, SLOT(checkStatus()));
+    connect(handler, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
 }
 
 void

@@ -15,17 +15,13 @@
 #include "validator/validator.h"
 #include "resolv.h"
 
+#include "dnssec_checks.h"
+
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
 #elif ! defined( HAVE_ARPA_NAMESER_H )  && !defined(eabi) && !defined(ANDROID)
 #include "arpa/header.h"
 #endif
-
-#define CHECK_QUEUED    -2
-#define CHECK_CRITICAL  -1
-#define CHECK_SUCCEEDED 0
-#define CHECK_FAILED    1
-#define CHECK_WARNING   2
 
 /* libsres functions that they don't export */
 extern "C" {
