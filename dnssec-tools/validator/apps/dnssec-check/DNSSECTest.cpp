@@ -1,4 +1,5 @@
 #include "DNSSECTest.h"
+#include "dnssec_checks.h"
 
 #include <qdebug.h>
 
@@ -44,6 +45,8 @@ DNSSECTest::lightStatus DNSSECTest::status()
     return m_status;
 }
 
+CheckFunction check_basic_tcp_async;
+
 void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
 {
     if (newStatus != m_status) {
@@ -51,6 +54,8 @@ void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
         m_result_status = statusToRc(m_status);
         if (m_status == UNKNOWN)
             setMessage("Unknown");
+        if (QString(m_serverAddress) == QString("8.8.8.8") && m_checkFunction == &check_basic_tcp_async)
+            qDebug() << "status change for " << m_serverAddress << ": " << m_status;
         emit statusChanged();
     }
 }
@@ -85,20 +90,27 @@ void DNSSECTest::onTestResult(CheckFunction *check_function, char *server, int s
         m_serverAddress == server) {
         setMessage(resultString);
         setStatus(status);
+        qDebug() << "got notification.  needed=" << m_serverAddress << ", got=" << server;
+    } else {
+        qDebug() << "got wrong notification.  needed=" << m_serverAddress << ", got=" << server;
     }
 }
 
 DNSSECTest::lightStatus DNSSECTest::rcToStatus(int rc) {
     switch(rc) {
-    case 0:
+    case CHECK_SUCCEEDED:
         return GOOD;
-    case 1:
+
+    case CHECK_FAILED:
         return BAD;
-    case 2:
+
+    case CHECK_WARNING:
         return WARNING;
-    case -1:
-    case -2:
+
+    case CHECK_CRITICAL:
+    case CHECK_QUEUED:
         return TESTINGNOW;
+
     default:
         return UNKNOWN;
     }

@@ -1,6 +1,12 @@
 #ifndef DNSSEC_CHECKS_H
 #define DNSSEC_CHECKS_H
 
+#define CHECK_QUEUED    -2
+#define CHECK_CRITICAL  -1
+#define CHECK_SUCCEEDED 0
+#define CHECK_FAILED    1
+#define CHECK_WARNING   2
+
 int async_requests_remaining();
 void check_outstanding_async();
 void check_queued_sends();
@@ -30,6 +36,6 @@ int check_can_get_dnskey_async(char *ns_name, char *buf, size_t buf_len, int *te
 int check_can_get_ds_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
 
 /* libval async test */
-int check_basic_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
+void check_basic_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
 
 #endif // DNSSEC_CHECKS_H
