@@ -50,6 +50,13 @@ function removeHost(host) {
         }
     }
 
+    for(var i = hosts.length-1; i >= 0; i--) {
+        console.log("checking: " + hosts[i] + " against " + host)
+        if (hosts[i] == host) {
+            hosts.splice(i,1)
+        }
+    }
+
     hostgrades[host].destroy();
     delete hostgrades[host];
 }
@@ -291,6 +298,7 @@ function resetTests() {
         tests[result].test.status = DNSSECTest.UNKNOWN
     }
     for(var host in hosts) {
+        console.log("host = " + host + " -> " + hosts[host])
         hostgrades[hosts[host]].grade = "?"
     }
 
