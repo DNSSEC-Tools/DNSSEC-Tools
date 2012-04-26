@@ -20,8 +20,8 @@ DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const cha
     m_statusStrings.insert(TESTINGNOW, "testing");
 
     if (m_otherThread) {
-        connect(this, SIGNAL(startTest(CheckFunction*,char*,bool)), m_otherThread, SLOT(startTest(CheckFunction*,char*,bool)));
-        connect(m_otherThread, SIGNAL(testResult(CheckFunction*,char*,int,QString)), this, SLOT(onTestResult(CheckFunction*,char*,int,QString)));
+        connect(this, SIGNAL(startTest(CheckFunction*,char*,bool)), m_otherThread->handler(), SLOT(startTest(CheckFunction*,char*,bool)));
+        connect(m_otherThread->handler(), SIGNAL(testResult(CheckFunction*,char*,int,QString)), this, SLOT(onTestResult(CheckFunction*,char*,int,QString)));
     }
 }
 
@@ -63,7 +63,6 @@ void DNSSECTest::setStatus(int checkStatus)
 void DNSSECTest::check()
 {
     if (m_otherThread) {
-        qDebug() << "sending to other thread (current=" << QThread::currentThread() << ")";
         emit startTest(m_checkFunction, m_serverAddress, m_async);
     } else {
         if (!m_checkFunction || !m_serverAddress)
@@ -84,7 +83,6 @@ void DNSSECTest::onTestResult(CheckFunction *check_function, char *server, int s
 {
     if (m_checkFunction == check_function &&
         m_serverAddress == server) {
-        qDebug() << "got signal for server " << server << " status=" << status << " message=" << resultString;
         setMessage(resultString);
         setStatus(status);
     }

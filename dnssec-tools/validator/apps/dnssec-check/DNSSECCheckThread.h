@@ -18,11 +18,11 @@ public:
     char           m_msgBuffer[4096];
 };
 
-class DNSSECCheckThread : public QThread
+class DNSSECCheckThreadHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit DNSSECCheckThread(QObject *parent = 0);
+    explicit DNSSECCheckThreadHandler(QObject *parent = 0);
     
     void run();
 signals:
@@ -35,6 +35,21 @@ public slots:
 
 private:
     QList<DNSSECCheckThreadData *> m_dataList;
+};
+
+class DNSSECCheckThread : public QThread
+{
+    Q_OBJECT
+public:
+    explicit DNSSECCheckThread() : m_handler(0) { }
+    void run();
+    DNSSECCheckThreadHandler *handler() { return m_handler; }
+
+signals:
+    void handlerReady(DNSSECCheckThreadHandler *);
+
+private:
+    DNSSECCheckThreadHandler *m_handler;
 };
 
 #endif // DNSSECCHECKTHREAD_H

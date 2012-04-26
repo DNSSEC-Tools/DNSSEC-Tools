@@ -2,21 +2,21 @@
 
 #include <qdebug.h>
 
-DNSSECCheckThread::DNSSECCheckThread(QObject *parent) :
-    QThread(parent)
+DNSSECCheckThreadHandler::DNSSECCheckThreadHandler(QObject *parent) :
+    QObject(parent)
 {
 }
 
 void DNSSECCheckThread::run()
 {
-    qDebug() << "other thread started (current=" << QThread::currentThread() << ") && tid=" << QThread::currentThreadId();
+    m_handler = new DNSSECCheckThreadHandler();
+    emit handlerReady(m_handler);
     exec();
 }
 
-void DNSSECCheckThread::startTest(CheckFunction *checkFunction, char *serverAddress, bool async)
+void DNSSECCheckThreadHandler::startTest(CheckFunction *checkFunction, char *serverAddress, bool async)
 {
     int rc;
-    qDebug() << "testing in other thread (" << QThread::currentThread() << "): && tid=" << QThread::currentThreadId() << " -- " << serverAddress;
 
     if (!checkFunction || !serverAddress)
         return;
@@ -36,13 +36,10 @@ void DNSSECCheckThread::startTest(CheckFunction *checkFunction, char *serverAddr
     delete data;
 }
 
-void DNSSECCheckThread::checkStatus()
+void DNSSECCheckThreadHandler::checkStatus()
 {
-    if (m_dataList.count() > 0)
-        qDebug() << "checking list: " << m_dataList.count();
     foreach(DNSSECCheckThreadData *data, m_dataList) {
         if (DNSSECTest::rcToStatus(data->m_result_status) != DNSSECTest::TESTINGNOW) {
-            qDebug() << "got result for " << data->m_serverAddress;
             emit testResult(data->m_checkFunction, data->m_serverAddress, data->m_result_status, QString(data->m_msgBuffer));
             m_dataList.removeOne(data);
         }

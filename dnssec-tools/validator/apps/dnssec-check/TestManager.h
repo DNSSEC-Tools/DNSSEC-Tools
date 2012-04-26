@@ -79,6 +79,7 @@ public slots:
     void handleResultMessageChanged(QString message);
     void dataAvailable();
     void updateWatchedSockets();
+    void handlerReady(DNSSECCheckThreadHandler *handler);
 
 private:
     QObject *m_parent;
