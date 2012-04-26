@@ -1,3 +1,5 @@
+// XXX: most of these should be combined into a single associative array per host rather than have
+// a bunch of independent structures (ie, fix the feature creep mess)
 var hosts = []
 var tests = []
 var rawtests = []
