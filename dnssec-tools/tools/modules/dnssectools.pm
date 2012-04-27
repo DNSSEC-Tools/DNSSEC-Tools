@@ -53,6 +53,7 @@ my %dtcmds =
 	'grandvizier'	   => 1,
 	'keyarch'	   => 1,
 	'krfcheck'	   => 1,
+	'lsdnssec'	   => 1,
 	'lskrf'		   => 1,
 	'lsrealm'	   => 1,
 	'lsroll'	   => 1,

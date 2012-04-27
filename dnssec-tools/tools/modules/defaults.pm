@@ -105,6 +105,7 @@ my %defaults =
 	'grandvizier'	   => "$installdir/grandvizier",
 	'keyarch'	   => "$installdir/keyarch",
 	'krfcheck'	   => "$installdir/krfcheck",
+	'lsdnssec'	   => "$installdir/lsdnssec",
 	'lskrf'		   => "$installdir/lskrf",
 	'lsrealm'	   => "$installdir/lsrealm",
 	'lsroll'	   => "$installdir/lsroll",
