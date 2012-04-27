@@ -54,7 +54,7 @@ use POSIX;
 # Version information.
 #
 my $NAME   = "zonesigner";
-my $VERS   = "$NAME version: 1.12.2";
+my $VERS   = "$NAME version: 1.12.3";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -2715,7 +2715,7 @@ sub serialincr
 	# Find the SOA line and components.
 	#
 	($serialnum) = 
-	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w\\]+\s+\(?\s*(\d+)/si);
+	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w\\]+\s*\(?\s*(\d+)/si);
 
 	return(-1) if(!defined($serialnum) || $serialnum eq '');
 
@@ -5026,7 +5026,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
