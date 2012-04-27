@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.4";
+my $VERS   = "$NAME version: 1.12.5";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -263,6 +263,13 @@ my $ret;				# Return code from main().
 my $runerr;				# Execution error -- used in runner().
 
 #
+# If we find the rollrec file is empty, we'll give an error message
+# only on an occasional pass through the zone list.
+#
+my $MAXRRFERRS = 5;			# Number of list passes to stay quiet.
+my $rrferrors = 0;			# Count of times through list.
+
+#
 # Detect required Perl modules.
 #
 dnssec_tools_load_mods('Date::Parse'	=> "",
@@ -439,7 +446,7 @@ sub eminent_domains
 	if(!rrfokay($rrf,""))
 	{
 		rolllog_log(LOG_FATAL,'',"rollrec file \"$rrf\" invalid");
-		exit(61);
+		return(0);
 	}
 
 	#
@@ -4019,12 +4026,12 @@ sub optsandargs
 	}
 
 	#
-	# Whine and die if the rollrec file doesn't exist.
+	# Whine if the rollrec file doesn't exist.
 	#
-	if(! -e $rollrecfile)
+	if(!rrfokay($rollrecfile,""))
 	{
-		print STDERR "rollerd:  rollrec file \"$rollrecfile\" does not exist\n";
-		$opterrs++;
+		print STDERR "rollerd:  rollrec file \"$rollrecfile\" does not exist\n\n";
+		print STDERR "rollerd:  not stopping execution; waiting for a rollrec\n";
 	}
 
 	#
@@ -4373,17 +4380,47 @@ sub rrfokay
 {
 	my $rrf = shift;				# Rollrec file to check.
 	my $mp  = shift;				# Message prefix.
+	my $ret = 1;					# Return code.
+	my $err;					# Error message.
 
+	#
+	# Check that the file exists and is non-zero in length.  If one of
+	# those conditions fails, we'll set an error message and return code.
+	#
 	if(! -e $rrf)
 	{
-		rolllog_log(LOG_ERR,$mp,"rollrec file \"$rrf\" does not exist");
-		return(0);
+		$err = "rollrec file \"$rrf\" does not exist";
+		$ret = 0;
 	}
 	elsif(-z $rrf)
 	{
-		rolllog_log(LOG_ERR,$mp,"rollrec file \"$rrf\" is zero length");
+		$err = "rollrec file \"$rrf\" is zero length";
+		$ret = 0;
+	}
+
+	#
+	# If we found an error, we'll (maybe) give an error message and
+	# bump our error count.
+	#
+	if($ret == 0)
+	{
+		if($rrferrors == 0)
+		{
+			rolllog_log(LOG_ERR,$mp,$err);
+			$rrferrors = $MAXRRFERRS;
+		}
+		else
+		{
+			$rrferrors--;
+		}
+
 		return(0);
 	}
+
+	#
+	# Reset our error count and return success.
+	#
+	$rrferrors = 0;
 	return(1);
 }
 
@@ -6848,6 +6885,12 @@ controlled by the I<autosign> configuration parameter and B<rollerd>'s
 B<-autosign>/B<-noautosign> command line options.  If B<rollerd> is configured
 to not perform automatic re-signing, the administrator can still get this
 controlled behavior by use of the B<zonesigner> or B<rollctl> commands.
+
+If the B<rollrec> file does not exist or is of zero length, B<rollerd> will
+give an error message and continue running.  It will periodically wake up and
+check for a usable B<rollrec> file.  Once it finds the specified B<rollrec>
+file exists and isn't empty, then it will proceed with normal rollover
+management.
 
 =head2 ZSK Rollover Using the Pre-Publish Method
 
