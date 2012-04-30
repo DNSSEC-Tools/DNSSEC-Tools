@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.5";
+my $VERS   = "$NAME version: 1.12.6";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -3447,16 +3447,13 @@ sub nextphase
 	}
 
 	#
-	# Tell the log when the zone will expire, based on the lifespan.
-	#
-	$chronostr = timetrans($exptime);
-	rolllog_log(LOG_INFO,$rname,"    $phasetype expiration in $chronostr");
-
-	#
 	# Send phase info to the display program.
 	#
 	$exptime = ($rrr->{'maxttl'} * 2) if($phase != 0);
 	display("$phasekey $rname $phase $exptime");
+
+	$chronostr = timetrans($exptime);
+	rolllog_log(LOG_INFO,$rname,"    $phasetype expiration in $chronostr ($exptime)");
 
 	#
 	# Reset the phasestart field if we've completed a rollover cycle.
