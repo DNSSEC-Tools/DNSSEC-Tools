@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.6";
+my $VERS   = "$NAME version: 1.12.7";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -411,14 +411,12 @@ sub main
 	if($eventmaster == $EVT_FULLLIST)
 	{
 		rolllog_log(LOG_ALWAYS,""," ");
-		rolllog_log(LOG_ALWAYS,"","Using the full_list_event_loop() processor!!!");
 
 		full_list_event_loop();
 	}
 	if($eventmaster == $EVT_QUEUE_SOON)
 	{
 		rolllog_log(LOG_ALWAYS,""," ");
-		rolllog_log(LOG_ALWAYS,"","Using the queue_soon_event_loop() processor!!!");
 		queue_soon_event_loop();
 	}
 	else
@@ -2445,7 +2443,6 @@ sub ksk_expired
 	#
 	# Get the current time.
 	#
-#	$cronus	 = time;
 	$cronus = gmtime(time);
 	$cronus = str2time($cronus);
 
@@ -4722,6 +4719,10 @@ sub singlecmd
 	{
 		cmd_signzone($data);
 	}
+	elsif($cmd eq ROLLCMD_SIGNZONES())
+	{
+		cmd_signzones($data);
+	}
 	elsif($cmd eq ROLLCMD_SKIPALL())
 	{
 		cmd_skipall();
@@ -5643,6 +5644,79 @@ sub cmd_signzone
 	{
 		rolllog_log(LOG_ERR,'<command>',"unable to sign zone $zone");
 		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"unable to sign zone $zone");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_signzones()
+#
+# Purpose:	This command causes all unskipped zones to be signed, without
+#		any key creation or rolling.
+#
+sub cmd_signzones
+{
+	my $skipflag = shift;				# Command's data.
+
+	my $rrr;					# Rollrec reference.
+	my $krr;					# Keyrec reference.
+	my $phasestr;					# Phase argument.
+	my @errzones = ();				# Unsigned zones.
+
+	rolllog_log(LOG_TMI,'<command>',"signzones command received; data - \"$skipflag\"");
+
+	#
+	# Convert the textual zone-skip flag into an easy-to-use boolean.
+	#
+	$skipflag = ($skipflag eq 'active') ? 1 : 0;
+
+	#
+	# Sign each active zone in the rollrec file.  Any skipped zones will
+	# not be signed.
+	#
+	foreach my $zone (rollrec_names())
+	{
+		#
+		# Get the current rollrec for this zone and (maybe) skip
+		# any skipped zones.
+		#
+		$rrr = rollrec_fullrec($zone);
+		next if($skipflag && ($rrr->{'rollrec_type'} eq 'skip'));
+
+		#
+		# Get the phase string we'll use for signing.
+		#
+		$phasestr = phaseargs($rrr->{'kskphase'},$rrr->{'zskphase'});
+
+		#
+		# Check value and file existence, etc.
+		#
+		$krr = opts_zonekr($rrr->{'keyrec'},$zone);
+
+		#
+		# Sign the zone.
+		#
+		rolllog_log(LOG_PHASE,'<command>',"mid-phase, user-initiated signing of $zone");
+		if(signer($zone,$phasestr,$krr) != 0)
+		{
+			push @errzones, $zone;
+		}
+	}
+
+	#
+	# If we signed all the zones, we'll send a success message.
+	# If we couldn't sign any zones, we'll return the list of bad
+	# zones to the caller.
+	#
+	if(@errzones == 0)
+	{
+		rolllog_log(LOG_TMI,'<command>',"rollerd signed all zones");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd signed all zones");
+	}
+	else
+	{
+		my $errstr = join(', ', @errzones);
+		rolllog_log(LOG_ERR,'<command>',"unable to sign all zones:  $errstr");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"unable to sign all zones:  $errstr");
 	}
 }
 
