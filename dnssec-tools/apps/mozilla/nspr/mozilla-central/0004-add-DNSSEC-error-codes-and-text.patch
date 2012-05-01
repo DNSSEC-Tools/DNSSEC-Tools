@@ -1,0 +1,78 @@
+From 0026efe3d9ab5a4d924fe25db8895b5865746be2 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 23 Feb 2012 11:15:29 -0500
+Subject: [PATCH 04/10] add DNSSEC error codes and text
+
+---
+ nsprpub/pr/include/prerr.h           |    8 +++++++-
+ nsprpub/pr/src/misc/prerr.c          |    4 +++-
+ nsprpub/pr/src/misc/prerr.et         |    2 ++
+ nsprpub/pr/src/misc/prerr.properties |    2 ++
+ 4 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/nsprpub/pr/include/prerr.h b/nsprpub/pr/include/prerr.h
+index eba68f1..5719160 100644
+--- a/nsprpub/pr/include/prerr.h
++++ b/nsprpub/pr/include/prerr.h
+@@ -272,8 +272,14 @@
+ /* The one-time function was previously called and failed. Its error code is no longer available */
+ #define PR_CALL_ONCE_ERROR                       (-5925L)
+ 
++/* The DNS record failed DNSSEC validation */
++#define PR_DNSSEC_VALIDATION_ERROR               (-5924L)
++
++/* The DNS record failed DNSSEC validation */
++#define PR_DNSSEC_DNE_ERROR                      (-5923L)
++
+ /* Placeholder for the end of the list */
+-#define PR_MAX_ERROR                             (-5924L)
++#define PR_MAX_ERROR                             (-5922L)
+ 
+ extern void nspr_InitializePRErrorTable(void);
+ #define ERROR_TABLE_BASE_nspr (-6000L)
+diff --git a/nsprpub/pr/src/misc/prerr.c b/nsprpub/pr/src/misc/prerr.c
+index 4db3113..df35520 100644
+--- a/nsprpub/pr/src/misc/prerr.c
++++ b/nsprpub/pr/src/misc/prerr.c
+@@ -118,11 +118,13 @@ static const struct PRErrorMessage text[] = {
+ 	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
+ 	{"PR_LIBRARY_NOT_LOADED_ERROR",    "The library is not loaded"},
+ 	{"PR_CALL_ONCE_ERROR",    "The one-time function was previously called and failed. Its error code is no longer available"},
++	{"PR_DNSSEC_VALIDATION_ERROR",    "The DNS record failed DNSSEC validation"},
++	{"PR_DNSSEC_DNE_ERROR",    "The DNS record does not exist"},
+ 	{"PR_MAX_ERROR",    "Placeholder for the end of the list"},
+ 	{0, 0}
+ };
+ 
+-static const struct PRErrorTable et = { text, "prerr", -6000L, 77 };
++static const struct PRErrorTable et = { text, "prerr", -6000L, 79 };
+ 
+ void nspr_InitializePRErrorTable(void) {
+     PR_ErrorInstallTable(&et);
+diff --git a/nsprpub/pr/src/misc/prerr.et b/nsprpub/pr/src/misc/prerr.et
+index 8578f95..f2a61d5 100644
+--- a/nsprpub/pr/src/misc/prerr.et
++++ b/nsprpub/pr/src/misc/prerr.et
+@@ -134,6 +134,8 @@ ec PR_CONNECT_ABORTED_ERROR,    "Connection aborted"
+ ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
+ ec PR_LIBRARY_NOT_LOADED_ERROR, "The library is not loaded"
+ ec PR_CALL_ONCE_ERROR, "The one-time function was previously called and failed. Its error code is no longer available"
++ec PR_DNSSEC_VALIDATION_ERROR,  "The DNS record failed DNSSEC validation"
++ec PR_DNSSEC_DNE_ERROR,         "The DNS record does not exist"
+ 
+ ec PR_MAX_ERROR,                "Placeholder for the end of the list"
+ 
+diff --git a/nsprpub/pr/src/misc/prerr.properties b/nsprpub/pr/src/misc/prerr.properties
+index 58a0285..c8d16ae 100644
+--- a/nsprpub/pr/src/misc/prerr.properties
++++ b/nsprpub/pr/src/misc/prerr.properties
+@@ -114,4 +114,6 @@ PR_CONNECT_ABORTED_ERROR=Connection aborted
+ PR_HOST_UNREACHABLE_ERROR=Host is unreachable
+ PR_LIBRARY_NOT_LOADED_ERROR=The library is not loaded
+ PR_CALL_ONCE_ERROR=The one-time function was previously called and failed. Its error code is no longer available
++PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
++PR_DNSSEC_DNE_ERROR=The DNS record does not exist
+ PR_MAX_ERROR=Placeholder for the end of the list
+-- 
+1.7.7.6
+

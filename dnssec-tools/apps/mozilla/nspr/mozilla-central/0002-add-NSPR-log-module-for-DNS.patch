@@ -1,0 +1,578 @@
+From b3f5daf27b9a8cfc07b236077214c8814f671098 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Mon, 9 Apr 2012 12:15:39 -0400
+Subject: [PATCH 02/10] add NSPR log module for DNS
+
+---
+ nsprpub/pr/include/private/primpl.h |    1 +
+ nsprpub/pr/src/misc/prinit.c        |    2 +
+ nsprpub/pr/src/misc/prnetdb.c       |  120 +++++++++++++++++++++++++++++++----
+ 3 files changed, 111 insertions(+), 12 deletions(-)
+
+diff --git a/nsprpub/pr/include/private/primpl.h b/nsprpub/pr/include/private/primpl.h
+index 0467819..8ed6581 100644
+--- a/nsprpub/pr/include/private/primpl.h
++++ b/nsprpub/pr/include/private/primpl.h
+@@ -1827,6 +1827,7 @@ extern PRLogModuleInfo *_pr_linker_lm;
+ extern PRLogModuleInfo *_pr_sched_lm;
+ extern PRLogModuleInfo *_pr_thread_lm;
+ extern PRLogModuleInfo *_pr_gc_lm;
++extern PRLogModuleInfo *_pr_dns_lm;
+ 
+ extern PRFileDesc *_pr_stdin;
+ extern PRFileDesc *_pr_stdout;
+diff --git a/nsprpub/pr/src/misc/prinit.c b/nsprpub/pr/src/misc/prinit.c
+index 08dbb82..7f97793 100644
+--- a/nsprpub/pr/src/misc/prinit.c
++++ b/nsprpub/pr/src/misc/prinit.c
+@@ -50,6 +50,7 @@ PRLogModuleInfo *_pr_thread_lm;
+ PRLogModuleInfo *_pr_gc_lm;
+ PRLogModuleInfo *_pr_shm_lm;
+ PRLogModuleInfo *_pr_shma_lm;
++PRLogModuleInfo *_pr_dns_lm;
+ 
+ PRFileDesc *_pr_stdin;
+ PRFileDesc *_pr_stdout;
+@@ -193,6 +194,7 @@ static void _PR_InitStuff(void)
+ 	_pr_gc_lm = PR_NewLogModule("gc");
+ 	_pr_shm_lm = PR_NewLogModule("shm");
+ 	_pr_shma_lm = PR_NewLogModule("shma");
++	_pr_dns_lm = PR_NewLogModule("dns");
+       
+     /* NOTE: These init's cannot depend on _PR_MD_CURRENT_THREAD() */ 
+     _PR_MD_EARLY_INIT();
+diff --git a/nsprpub/pr/src/misc/prnetdb.c b/nsprpub/pr/src/misc/prnetdb.c
+index 7ea8f39..567126a 100644
+--- a/nsprpub/pr/src/misc/prnetdb.c
++++ b/nsprpub/pr/src/misc/prnetdb.c
+@@ -707,6 +707,7 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
+ #endif
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, name));
+ 
+ #if defined(_PR_HAVE_GETHOST_R)
+     tmpbuf = localbuf;
+@@ -716,6 +717,8 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
+         if (NULL == tmpbuf)
+         {
+             PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
++            PR_LOG(_pr_dns_lm, PR_LOG_ERROR,
++                   ("%s out of memory\n", __FUNCTION__));
+             return rv;
+         }
+     }
+@@ -725,16 +728,25 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
+ 
+ 	h = GETHOSTBYNAME(name);
+     
++	PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++	       ("results: host=%s h_errno=%d\n", name, h_errno));
+ 	if (NULL == h)
+ 	{
++	    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++	           ("********** Status = LOOKUP_ERROR\n"));
+ 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_GETHOST_ERRNO());
+ 	}
+ 	else
+ 	{
+ 		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
++		PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++		       ("********** Status = SUCCESS\n"));
+ 		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
+-		if (PR_SUCCESS != rv)
++		if (PR_SUCCESS != rv) {
++		    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++		           ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+ 		    PR_SetError(PR_INSUFFICIENT_RESOURCES_ERROR, 0);
++		}
+ 	}
+ 	UNLOCK_DNS();
+ #if defined(_PR_HAVE_GETHOST_R)
+@@ -768,6 +780,8 @@ _pr_find_getipnodebyname(void)
+ #define GETIPNODEBYADDR "getipnodebyaddr"
+ #define FREEHOSTENT     "freehostent"
+ 
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++          ("%s probing for getipnodeby* functions\n", __FUNCTION__));
+     _pr_getipnodebyname_fp = PR_FindSymbolAndLibrary(GETIPNODEBYNAME, &lib);
+     if (NULL != _pr_getipnodebyname_fp) {
+         _pr_freehostent_fp = PR_FindSymbol(lib, FREEHOSTENT);
+@@ -782,6 +796,8 @@ _pr_find_getipnodebyname(void)
+         (void)PR_UnloadLibrary(lib);
+     } else
+         rv = PR_FAILURE;
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++          ("getipnodeby* function probe results: %d\n", rv));
+     return rv;
+ }
+ #endif
+@@ -848,9 +864,11 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+ #endif
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, name));
+ 
+     if (af != PR_AF_INET && af != PR_AF_INET6) {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         return PR_FAILURE;
+     }
+ 
+@@ -862,13 +880,12 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+      * machine going from offline to online.
+      */
+     if (!_pr_have_inet_if && !_pr_have_inet6_if) {
++	PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("query net interfaces\n"));
+ 	_pr_QueryNetIfs();
+-#ifdef DEBUG_QUERY_IFS
+ 	if (_pr_have_inet_if)
+-		printf("Have IPv4 source address\n");
++		PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("Have IPv4 source address\n"));
+ 	if (_pr_have_inet6_if)
+-		printf("Have IPv6 source address\n");
+-#endif
++		PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("Have IPv6 source address\n"));
+     }
+     PR_Unlock(_pr_query_ifs_lock);
+ #endif
+@@ -894,6 +911,7 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+         if (NULL == tmpbuf)
+         {
+             PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
++            PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("out of memory\n"));
+             return rv;
+         }
+     }
+@@ -952,6 +970,8 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+     
+ 	if (NULL == h)
+ 	{
++	    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++	           ("********** Status = LOOKUP_ERROR\n"));
+ #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
+ 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
+ #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
+@@ -967,10 +987,15 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+ 	{
+ 		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
+ 
++		PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++		       ("********** Status = SUCCESS\n"));
+ 		if (af == PR_AF_INET6) conversion = _PRIPAddrIPv4Mapped;
+ 		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
+-		if (PR_SUCCESS != rv)
++		if (PR_SUCCESS != rv) {
++		    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++		           ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+ 		    PR_SetError(PR_INSUFFICIENT_RESOURCES_ERROR, 0);
++		}
+ #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
+ 		freehostent(h);
+ #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
+@@ -983,8 +1008,11 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+ 				|| ((flags & PR_AI_ADDRCONFIG) && _pr_have_inet_if))
+ 				&& !did_af_inet && (h = GETHOSTBYNAME2(name, AF_INET)) != 0) {
+ 			rv = AppendV4AddrsToHostent(h, &buf, &bufsize, hp);
+-			if (PR_SUCCESS != rv)
++			if (PR_SUCCESS != rv) {
++				PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++				       ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+ 				PR_SetError(PR_INSUFFICIENT_RESOURCES_ERROR, 0);
++			}
+ 		}
+ #endif
+ 	}
+@@ -1033,6 +1061,8 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+ #endif
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%lx", __FUNCTION__,
++                                      (unsigned long) hostaddr));
+ 
+ 	if (hostaddr->raw.family == PR_AF_INET6)
+ 	{
+@@ -1065,6 +1095,7 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+ 			PR_ASSERT(af == AF_INET);
+ 			if (!_PR_IN6_IS_ADDR_V4MAPPED(&hostaddr->ipv6.ip)) {
+ 				PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++				PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+ 				return rv;
+ 			}
+ 			tmp_ip = _PR_IN6_V4MAPPED_TO_IPADDR((PRIPv6Addr *)
+@@ -1087,6 +1118,7 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+         if (NULL == tmpbuf)
+         {
+             PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
++            PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("out of memory\n"));
+             return rv;
+         }
+     }
+@@ -1115,6 +1147,8 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+ #endif /* _PR_HAVE_GETIPNODEBYADDR */
+ 	if (NULL == h)
+ 	{
++		PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++		       ("********** Status = LOOKUP_ERROR\n"));
+ #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYADDR)
+ 		PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
+ #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYADDR)
+@@ -1143,6 +1177,8 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+ 		rv = CopyHostent(h, &buf, &bufsize, conversion, hostentry);
+ 		if (PR_SUCCESS != rv) {
+ 		    PR_SetError(PR_INSUFFICIENT_RESOURCES_ERROR, 0);
++		    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++		           ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+ 		}
+ #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYADDR)
+ 		freehostent(h);
+@@ -1220,6 +1256,7 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+ #endif
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, name));
+ 
+ #if defined(_PR_HAVE_GETPROTO_R_INT)
+     {
+@@ -1242,6 +1279,7 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+     if (PR_NETDB_BUF_SIZE > buflen)
+     {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         return PR_FAILURE;
+     }
+ 
+@@ -1249,6 +1287,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+     if (NULL == getprotobyname_r(name, res, buffer, buflen))
+     {
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("********** Status = LOOKUP_ERROR\n"));
+         return PR_FAILURE;
+     }
+ #elif defined(_PR_HAVE_GETPROTO_R_INT)
+@@ -1260,6 +1300,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+ 	if (-1 == getprotobyname_r(name, res, (struct protoent_data*)buffer))
+     {
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("********** Status = LOOKUP_ERROR\n"));
+         return PR_FAILURE;
+     }
+ #elif defined(_PR_HAVE_5_ARG_GETPROTO_R)
+@@ -1267,6 +1309,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+     if (-1 == getprotobyname_r(name, res, buffer, buflen, &res))
+     {
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("********** Status = LOOKUP_ERROR\n"));
+         return PR_FAILURE;
+     }
+ #else  /* do it the hard way */
+@@ -1278,6 +1322,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+ 		{
+ 		    rv = PR_FAILURE;
+ 		    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
++		    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++		           ("********** Status = LOOKUP_ERROR\n"));
+         }
+ 		else
+ 		{
+@@ -1286,8 +1332,11 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+ 			AssignAliases(staticBuf, aliases);
+ #endif
+ 			rv = CopyProtoent(staticBuf, buffer, buflen, result);
+-			if (PR_FAILURE == rv)
++			if (PR_FAILURE == rv) {
+ 			    PR_SetError(PR_INSUFFICIENT_RESOURCES_ERROR, 0);
++			    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++			           ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
++			}
+         }
+ 		PR_Unlock(_getproto_lock);
+ 	}
+@@ -1304,6 +1353,7 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+ #endif
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%d\n", __FUNCTION__, number));
+ 
+ #if defined(_PR_HAVE_GETPROTO_R_INT)
+     {
+@@ -1326,6 +1376,7 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+     if (PR_NETDB_BUF_SIZE > buflen)
+     {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         return PR_FAILURE;
+     }
+ 
+@@ -1333,6 +1384,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+     if (NULL == getprotobynumber_r(number, res, buffer, buflen))
+     {
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+         return PR_FAILURE;
+     }
+ 
+@@ -1344,6 +1397,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+ 	if (-1 == getprotobynumber_r(number, res, (struct protoent_data*)buffer))
+     {
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+         return PR_FAILURE;
+     }
+ #elif defined(_PR_HAVE_5_ARG_GETPROTO_R)
+@@ -1351,6 +1406,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+     if (-1 == getprotobynumber_r(number, res, buffer, buflen, &res))
+     {
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+         return PR_FAILURE;
+     }
+ #else  /* do it the hard way */
+@@ -1361,6 +1418,8 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+ 		if (NULL == staticBuf)
+ 		{
+ 		    rv = PR_FAILURE;
++		    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++		           ("********** Status = LOOKUP_ERROR\n"));
+ 		    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_ERRNO());
+         }
+ 		else
+@@ -1370,8 +1429,11 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+ 			AssignAliases(staticBuf, aliases);
+ #endif
+ 			rv = CopyProtoent(staticBuf, buffer, buflen, result);
+-			if (PR_FAILURE == rv)
++			if (PR_FAILURE == rv) {
++			    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++			           ("PR_INSUFFICIENT_RESOURCES_ERROR\n"));
+ 			    PR_SetError(PR_INSUFFICIENT_RESOURCES_ERROR, 0);
++			}
+         }
+ 		PR_Unlock(_getproto_lock);
+ 	}
+@@ -1440,6 +1502,7 @@ PR_IMPLEMENT(PRStatus) PR_InitializeNetAddr(
+ {
+     PRStatus rv = PR_SUCCESS;
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s\n", __FUNCTION__));
+ 
+ 	if (val != PR_IpAddrNull) memset(addr, 0, sizeof(addr->inet));
+ 	addr->inet.family = AF_INET;
+@@ -1456,6 +1519,7 @@ PR_IMPLEMENT(PRStatus) PR_InitializeNetAddr(
+ 		break;
+ 	default:
+ 		PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++		PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+ 		rv = PR_FAILURE;
+ 	}
+     return rv;
+@@ -1466,6 +1530,7 @@ PR_IMPLEMENT(PRStatus) PR_SetNetAddr(
+ {
+     PRStatus rv = PR_SUCCESS;
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s\n", __FUNCTION__));
+ 
+     if (af == PR_AF_INET6)
+     {
+@@ -1486,6 +1551,7 @@ PR_IMPLEMENT(PRStatus) PR_SetNetAddr(
+             break;
+         default:
+             PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++            PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+             rv = PR_FAILURE;
+         }
+     }
+@@ -1506,6 +1572,7 @@ PR_IMPLEMENT(PRStatus) PR_SetNetAddr(
+             break;
+         default:
+             PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++            PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+             rv = PR_FAILURE;
+         }
+     }
+@@ -1968,6 +2035,9 @@ _pr_find_getaddrinfo(void)
+     int i;
+ 
+     for (i = 0; i < sizeof(libname)/sizeof(libname[0]); i++) {
++        PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++               ("%s probing %s for addrinfo/nameinfo functions\n", __FUNCTION__,
++                libname[0]));
+         lib = PR_LoadLibrary(libname[i]);
+         if (!lib) {
+             continue;
+@@ -1987,6 +2057,7 @@ _pr_find_getaddrinfo(void)
+             continue;
+         }
+         /* Keep the library loaded. */
++        PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("success!\n"));
+         return PR_SUCCESS;
+     }
+     return PR_FAILURE;
+@@ -1995,6 +2066,8 @@ _pr_find_getaddrinfo(void)
+      * Resolve getaddrinfo by searching all loaded libraries.  Then
+      * search library containing getaddrinfo for freeaddrinfo.
+      */
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++           ("%s probing for addrinfo/nameinfo functions\n", __FUNCTION__));
+     _pr_getaddrinfo = (FN_GETADDRINFO)
+         PR_FindFunctionSymbolAndLibrary(GETADDRINFO_SYMBOL, &lib);
+     if (!_pr_getaddrinfo) {
+@@ -2008,6 +2081,7 @@ _pr_find_getaddrinfo(void)
+     if (!_pr_freeaddrinfo || !_pr_getnameinfo) {
+         return PR_FAILURE;
+     }
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("success!\n"));
+     return PR_SUCCESS;
+ #endif
+ }
+@@ -2041,10 +2115,12 @@ pr_GetAddrInfoByNameFB(const char  *hostname,
+     PRStatus rv;
+     PRAddrInfoFB *ai;
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, hostname));
+     /* fallback on PR_GetHostByName */
+     ai = PR_NEW(PRAddrInfoFB);
+     if (!ai) {
+         PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("out of memory\n"));
+         return NULL;
+     }
+     rv = PR_GetHostByName(hostname, ai->buf, sizeof ai->buf, &ai->hostent);
+@@ -2062,15 +2138,17 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+                                                 PRUint16     af,
+                                                 PRIntn       flags)
+ {
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, hostname));
++
+     /* restrict input to supported values */
+     if ((af != PR_AF_INET && af != PR_AF_UNSPEC) ||
+         (flags & ~ PR_AI_NOCANONNAME) != PR_AI_ADDRCONFIG) {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         return NULL;
+     }
+ 
+-    if (!_pr_netdb_initialized) _pr_netdb_init();
+-
+ #ifdef PRNETDB_CHECK_FALLBACK
+     if (_pr_use_fallback) {
+         return pr_GetAddrInfoByNameFB(hostname, af, flags);
+@@ -2132,9 +2210,14 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+             rv = GETADDRINFO(hostname, NULL, &hints, &res);
+         }
+ #endif
+-        if (rv == 0)
++        if (rv == 0) {
++            PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
++                   ("********** Status = SUCCESS\n"));
+             return (PRAddrInfo *) res;
++        }
+ 
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("********** Status = LOOKUP_ERROR\n"));
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
+     }
+     return NULL;
+@@ -2222,6 +2305,7 @@ static PRStatus pr_StringToNetAddrGAI(const char *string, PRNetAddr *addr)
+     PRStatus status = PR_SUCCESS;
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, string));
+     memset(&hints, 0, sizeof(hints));
+     hints.ai_flags = AI_NUMERICHOST;
+     hints.ai_family = AF_UNSPEC;
+@@ -2231,6 +2315,7 @@ static PRStatus pr_StringToNetAddrGAI(const char *string, PRNetAddr *addr)
+     if (rv != 0)
+     {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, rv);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         return PR_FAILURE;
+     }
+ 
+@@ -2250,6 +2335,7 @@ static PRStatus pr_StringToNetAddrGAI(const char *string, PRNetAddr *addr)
+     else
+     {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         status = PR_FAILURE;
+     }
+ 
+@@ -2263,6 +2349,7 @@ static PRStatus pr_StringToNetAddrFB(const char *string, PRNetAddr *addr)
+     PRIntn rv;
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, string));
+     rv = pr_inet_aton(string, &addr->inet.ip);
+     if (1 == rv)
+     {
+@@ -2283,16 +2370,19 @@ static PRStatus pr_StringToNetAddrFB(const char *string, PRNetAddr *addr)
+ 
+     PR_ASSERT(0 == rv);
+     PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++    PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+     return PR_FAILURE;
+ }
+ 
+ PR_IMPLEMENT(PRStatus) PR_StringToNetAddr(const char *string, PRNetAddr *addr)
+ {
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, string));
+ 
+     if (!addr || !string || !*string)
+     {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         return PR_FAILURE;
+     }
+ 
+@@ -2327,6 +2417,8 @@ static PRStatus pr_NetAddrToStringGNI(
+     int rv;  /* 0 for success, or the error code EAI_xxx */
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%lx\n", __FUNCTION__,
++                                      (unsigned long) addr));
+ 
+ #ifdef _PR_INET6
+     if (addr->raw.family == PR_AF_INET6)
+@@ -2352,6 +2444,7 @@ static PRStatus pr_NetAddrToStringGNI(
+     if (rv != 0)
+     {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, rv);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+         return PR_FAILURE;
+     }
+     return PR_SUCCESS;
+@@ -2372,6 +2465,7 @@ static PRStatus pr_NetAddrToStringFB(
+         {
+             /* the size of the result buffer is inadequate */
+             PR_SetError(PR_BUFFER_OVERFLOW_ERROR, 0);
++            PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("buffer to small\n"));
+             return PR_FAILURE;
+         }
+     }
+@@ -2391,6 +2485,7 @@ static PRStatus pr_NetAddrToStringFB(
+ 
+ failed:
+     PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++    PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
+     return PR_FAILURE;
+ 
+ }  /* pr_NetAddrToStringFB */
+@@ -2400,6 +2495,7 @@ PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
+     const PRNetAddr *addr, char *string, PRUint32 size)
+ {
+     if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s\n", __FUNCTION__));
+ 
+ #ifdef PRNETDB_CHECK_FALLBACK
+     if (_pr_use_fallback)
+-- 
+1.7.7.6
+
