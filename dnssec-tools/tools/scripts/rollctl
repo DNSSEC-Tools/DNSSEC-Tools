@@ -38,7 +38,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollctl";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -72,7 +72,8 @@ my @opts =
 	"shutdown:s",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
 	"skipzone",			# Stop the named zone(s) from rolling.
-	"signzone",			# Sign (only) the named zone(s).
+	"signzone",			# Sign only the named zone(s).
+	"signzones",			# Sign all the zones.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"splitrrf",			# Split a rollrec file in two.
 	"status",			# Get rollerd's status.
@@ -113,6 +114,7 @@ my $queuelistflag   = 0;
 my $queuestatusflag = 0;
 my $shutdownflag    = 0;
 my $signzoneflag    = 0;
+my $signzonesflag   = 0;
 my $skipallflag	    = 0;
 my $skipzoneflag    = 0;
 my $sleeptimeflag   = 0;
@@ -622,6 +624,33 @@ sub main()
 			}
 		}
 	}
+	elsif($signzonesflag)
+	{
+		my $flag = shift @ARGV;
+
+		if(($flag ne 'all') && ($flag ne 'active'))
+		{
+			print STDERR "rollctl:  -signzones must be given the \"all\" or \"active\" argument\n";
+			exit(1);
+		}
+
+		if(! sendcmd(ROLLCMD_SIGNZONES,$flag))
+		{
+			print STDERR "rollctl:  error sending command SIGNZONES\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "all zones signed\n";
+		}
+		else
+		{
+			print STDERR "unable to sign all zones:  \"$resp\"\n";
+			$rcret++;
+		}
+	}
 	elsif($skipallflag)
 	{
 		if(! sendcmd(ROLLCMD_SKIPALL,$skipzoneflag))
@@ -1018,6 +1047,11 @@ sub doopts
 		$signzoneflag = $options{'signzone'};
 		$commandcount++;
 	}
+	if(exists($options{'signzones'}))
+	{
+		$signzonesflag = $options{'signzones'};
+		$commandcount++;
+	}
 	if(exists($options{'skipall'}))
 	{
 		$skipallflag = $options{'skipall'};
@@ -1236,38 +1270,39 @@ sub version
 sub usage
 {
 	print STDERR "usage:  rollctl [options] \n";
-	print STDERR "\t-halt [now]		shutdown rollerd\n";
-	print STDERR "\t-display		start graphical display\n";
-	print STDERR "\t-dspub <zone>		parent has published DS record for zone\n";
-	print STDERR "\t-dspuball		parents have published DS records for zones\n";
-	print STDERR "\t-group			apply command to zone group\n";
-	print STDERR "\t-logfile <logfile>	set log file\n";
-	print STDERR "\t-loglevel <loglevel>	set logging level\n";
-	print STDERR "\t-logtz <log-timezone>	set logging timezone\n";
-	print STDERR "\t-phasemsg <length>	set phase-message length\n";
-	print STDERR "\t-pidfile <pidfile>	set rollerd's process-id file\n";
-	print STDERR "\t-nodisplay		stop graphical display\n";
-	print STDERR "\t-rollall		restart all suspended zones\n";
-	print STDERR "\t-rollallzsks		roll all zones\n";
-	print STDERR "\t-rollksk <zone>		roll specified zone's KSK\n";
-	print STDERR "\t-rollzone <zone>	restart named suspended zone\n";
-	print STDERR "\t-rollzsk <zone>		roll named zone\n";
-	print STDERR "\t-rollrec <rollrec>	set rollrec file\n";
-	print STDERR "\t-runqueue		run queue\n";
-	print STDERR "\t-shutdown [now]		shutdown rollerd\n";
-	print STDERR "\t-signzone <zone>	sign named zone (no key rollover)\n";
-	print STDERR "\t-skipall		skip all zones\n";
-	print STDERR "\t-skipzone <zone>	skip named zone\n";
-	print STDERR "\t-splitrrf <rrf entries>	split the current rollrec file\n";
-	print STDERR "\t-sleeptime <seconds>	set sleep time (in seconds)\n";
-	print STDERR "\t-status			get rollerd's status\n";
-	print STDERR "\t-zonegroup [zonegroup]	show zone groups\n";
-	print STDERR "\t-zonelog		set a zone's log level\n";
-	print STDERR "\t-zonestatus		get status of zones\n";
-	print STDERR "\t-zsargs	 <zone>		set zonesigner arguments for zones\n";
-	print STDERR "\t-Version		display version number\n";
-	print STDERR "\t-quiet			don't give any output\n";
-	print STDERR "\t-help			help message \n";
+	print STDERR "\t-halt [now]		  shutdown rollerd\n";
+	print STDERR "\t-display		  start graphical display\n";
+	print STDERR "\t-dspub <zone>		  parent has published DS record for zone\n";
+	print STDERR "\t-dspuball		  parents have published DS records for zones\n";
+	print STDERR "\t-group			  apply command to zone group\n";
+	print STDERR "\t-logfile <logfile>	  set log file\n";
+	print STDERR "\t-loglevel <loglevel>	  set logging level\n";
+	print STDERR "\t-logtz <log-timezone>	  set logging timezone\n";
+	print STDERR "\t-phasemsg <length>	  set phase-message length\n";
+	print STDERR "\t-pidfile <pidfile>	  set rollerd's process-id file\n";
+	print STDERR "\t-nodisplay		  stop graphical display\n";
+	print STDERR "\t-rollall		  restart all suspended zones\n";
+	print STDERR "\t-rollallzsks		  roll all zones\n";
+	print STDERR "\t-rollksk <zone>		  roll specified zone's KSK\n";
+	print STDERR "\t-rollzone <zone>	  restart named suspended zone\n";
+	print STDERR "\t-rollzsk <zone>		  roll named zone\n";
+	print STDERR "\t-rollrec <rollrec>	  set rollrec file\n";
+	print STDERR "\t-runqueue		  run queue\n";
+	print STDERR "\t-shutdown [now]		  shutdown rollerd\n";
+	print STDERR "\t-signzone <zone>	  sign named zone (no key rollover)\n";
+	print STDERR "\t-signzones [all | active] sign zones (no key rollover)\n";
+	print STDERR "\t-skipall		  skip all zones\n";
+	print STDERR "\t-skipzone <zone>	  skip named zone\n";
+	print STDERR "\t-splitrrf <rrf entries>	  split the current rollrec file\n";
+	print STDERR "\t-sleeptime <seconds>	  set sleep time (in seconds)\n";
+	print STDERR "\t-status			  get rollerd's status\n";
+	print STDERR "\t-zonegroup [zonegroup]	  show zone groups\n";
+	print STDERR "\t-zonelog		  set a zone's log level\n";
+	print STDERR "\t-zonestatus		  get status of zones\n";
+	print STDERR "\t-zsargs	 <zone>		  set zonesigner arguments for zones\n";
+	print STDERR "\t-Version		  display version number\n";
+	print STDERR "\t-quiet			  don't give any output\n";
+	print STDERR "\t-help			  help message \n";
 	exit(0);
 }
 
@@ -1441,6 +1476,14 @@ Synonym for B<-halt>.
 Signs I<zone>'s zonefile without performing any rollover actions.  The zone
 is signed with the keys most recently used to sign the zone.  No new keys
 will be generated.
+
+=item B<-signzones [all | active]>
+
+Signs the zonefiles of zones managed by B<rollerd>, without performing any
+rollover actions.  If the B<all> option is given, then all of B<rollerd>'s
+zones will be signed.  If the B<active> option is given, then only those zones
+which aren't in the I<skip> stage will be signed.  The zones are signed with
+the keys most recently used to sign each zone.  No new keys will be generated.
 
 =item B<-skipall>
 
