@@ -148,6 +148,7 @@ our @EXPORT = qw(
 			 ROLLCMD_QUEUESTATUS
 			 ROLLCMD_SHUTDOWN
 			 ROLLCMD_SIGNZONE
+			 ROLLCMD_SIGNZONES
 			 ROLLCMD_SKIPALL
 			 ROLLCMD_SKIPZONE
 			 ROLLCMD_SLEEPTIME
@@ -257,67 +258,69 @@ sub ROLLCMD_RC_ZSKROLL		{ return($ROLLCMD_RC_ZSKROLL);		};
 # The remaining ROLLCMD_ entities are the rollmgr_sendcmd() commands
 # recognized by rollerd.  %roll_commands is a hash table of valid commands.
 #
-my $ROLLCMD_DISPLAY	= "rollcmd_display";
-my $ROLLCMD_DSPUB	= "rollcmd_dspub";
-my $ROLLCMD_DSPUBALL	= "rollcmd_dspuball";
-my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
-my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
-my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
-my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
-my $ROLLCMD_LOGTZ	= "rollcmd_logtz";
-my $ROLLCMD_MERGERRFS	= "rollcmd_mergerrfs";
-my $ROLLCMD_PHASEMSG	= "rollcmd_phasemsg";
-my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
-my $ROLLCMD_ROLLALLZSKS	= "rollcmd_rollallzsks";
-my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
-my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
-my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
-my $ROLLCMD_ROLLZSK	= "rollcmd_rollzsk";
-my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
-my $ROLLCMD_QUEUELIST	= "rollcmd_queuelist";
-my $ROLLCMD_QUEUESTATUS	= "rollcmd_queuestatus";
-my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
-my $ROLLCMD_SIGNZONE	= "rollcmd_signzone";
-my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
-my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
-my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
-my $ROLLCMD_SPLITRRF	= "rollcmd_splitrrf";
-my $ROLLCMD_STATUS	= "rollcmd_status";
-my $ROLLCMD_ZONEGROUP	= "rollcmd_zonegroup";
-my $ROLLCMD_ZONELOG	= "rollcmd_zonelog";
-my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
-my $ROLLCMD_ZSARGS	= "rollcmd_zsargs";
+my $ROLLCMD_DISPLAY	 = "rollcmd_display";
+my $ROLLCMD_DSPUB	 = "rollcmd_dspub";
+my $ROLLCMD_DSPUBALL	 = "rollcmd_dspuball";
+my $ROLLCMD_GETSTATUS	 = "rollcmd_getstatus";
+my $ROLLCMD_LOGFILE	 = "rollcmd_logfile";
+my $ROLLCMD_LOGLEVEL	 = "rollcmd_loglevel";
+my $ROLLCMD_LOGMSG	 = "rollcmd_logmsg";
+my $ROLLCMD_LOGTZ	 = "rollcmd_logtz";
+my $ROLLCMD_MERGERRFS	 = "rollcmd_mergerrfs";
+my $ROLLCMD_PHASEMSG	 = "rollcmd_phasemsg";
+my $ROLLCMD_ROLLALL	 = "rollcmd_rollall";
+my $ROLLCMD_ROLLALLZSKS	 = "rollcmd_rollallzsks";
+my $ROLLCMD_ROLLKSK	 = "rollcmd_rollksk";
+my $ROLLCMD_ROLLREC	 = "rollcmd_rollrec";
+my $ROLLCMD_ROLLZONE	 = "rollcmd_rollzone";
+my $ROLLCMD_ROLLZSK	 = "rollcmd_rollzsk";
+my $ROLLCMD_RUNQUEUE	 = "rollcmd_runqueue";
+my $ROLLCMD_QUEUELIST	 = "rollcmd_queuelist";
+my $ROLLCMD_QUEUESTATUS	 = "rollcmd_queuestatus";
+my $ROLLCMD_SHUTDOWN	 = "rollcmd_shutdown";
+my $ROLLCMD_SIGNZONE	 = "rollcmd_signzone";
+my $ROLLCMD_SIGNZONES	 = "rollcmd_signzones";
+my $ROLLCMD_SKIPALL	 = "rollcmd_skipall";
+my $ROLLCMD_SKIPZONE	 = "rollcmd_skipzone";
+my $ROLLCMD_SLEEPTIME	 = "rollcmd_sleeptime";
+my $ROLLCMD_SPLITRRF	 = "rollcmd_splitrrf";
+my $ROLLCMD_STATUS	 = "rollcmd_status";
+my $ROLLCMD_ZONEGROUP	 = "rollcmd_zonegroup";
+my $ROLLCMD_ZONELOG	 = "rollcmd_zonelog";
+my $ROLLCMD_ZONESTATUS	 = "rollcmd_zonestatus";
+my $ROLLCMD_ZSARGS	 = "rollcmd_zsargs";
 
-sub ROLLCMD_DISPLAY		{ return($ROLLCMD_DISPLAY);	};
-sub ROLLCMD_DSPUB		{ return($ROLLCMD_DSPUB);	};
-sub ROLLCMD_DSPUBALL		{ return($ROLLCMD_DSPUBALL);	};
-sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
-sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
-sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
-sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
-sub ROLLCMD_LOGTZ		{ return($ROLLCMD_LOGTZ);	};
-sub ROLLCMD_MERGERRFS		{ return($ROLLCMD_MERGERRFS);	};
-sub ROLLCMD_PHASEMSG		{ return($ROLLCMD_PHASEMSG);	};
-sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
-sub ROLLCMD_ROLLALLZSKS		{ return($ROLLCMD_ROLLALLZSKS);	};
-sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	};
-sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
-sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
-sub ROLLCMD_ROLLZSK		{ return($ROLLCMD_ROLLZSK);	};
-sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
-sub ROLLCMD_QUEUELIST		{ return($ROLLCMD_QUEUELIST);	};
-sub ROLLCMD_QUEUESTATUS		{ return($ROLLCMD_QUEUESTATUS);	};
-sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
-sub ROLLCMD_SIGNZONE		{ return($ROLLCMD_SIGNZONE);	};
-sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
-sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
-sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
-sub ROLLCMD_SPLITRRF		{ return($ROLLCMD_SPLITRRF);	};
-sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
-sub ROLLCMD_ZONEGROUP		{ return($ROLLCMD_ZONEGROUP);	};
-sub ROLLCMD_ZONELOG		{ return($ROLLCMD_ZONELOG);	};
-sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
-sub ROLLCMD_ZSARGS		{ return($ROLLCMD_ZSARGS);	};
+sub ROLLCMD_DISPLAY		{ return($ROLLCMD_DISPLAY);	 };
+sub ROLLCMD_DSPUB		{ return($ROLLCMD_DSPUB);	 };
+sub ROLLCMD_DSPUBALL		{ return($ROLLCMD_DSPUBALL);	 };
+sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	 };
+sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	 };
+sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	 };
+sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	 };
+sub ROLLCMD_LOGTZ		{ return($ROLLCMD_LOGTZ);	 };
+sub ROLLCMD_MERGERRFS		{ return($ROLLCMD_MERGERRFS);	 };
+sub ROLLCMD_PHASEMSG		{ return($ROLLCMD_PHASEMSG);	 };
+sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	 };
+sub ROLLCMD_ROLLALLZSKS		{ return($ROLLCMD_ROLLALLZSKS);	 };
+sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	 };
+sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	 };
+sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	 };
+sub ROLLCMD_ROLLZSK		{ return($ROLLCMD_ROLLZSK);	 };
+sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	 };
+sub ROLLCMD_QUEUELIST		{ return($ROLLCMD_QUEUELIST);	 };
+sub ROLLCMD_QUEUESTATUS		{ return($ROLLCMD_QUEUESTATUS);	 };
+sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	 };
+sub ROLLCMD_SIGNZONE		{ return($ROLLCMD_SIGNZONE);	 };
+sub ROLLCMD_SIGNZONES		{ return($ROLLCMD_SIGNZONES);	 };
+sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	 };
+sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	 };
+sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	 };
+sub ROLLCMD_SPLITRRF		{ return($ROLLCMD_SPLITRRF);	 };
+sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	 };
+sub ROLLCMD_ZONEGROUP		{ return($ROLLCMD_ZONEGROUP);	 };
+sub ROLLCMD_ZONELOG		{ return($ROLLCMD_ZONELOG);	 };
+sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	 };
+sub ROLLCMD_ZSARGS		{ return($ROLLCMD_ZSARGS);	 };
 
 my $ROLLMGR_GROUP	= "g-";
 sub ROLLMGR_GROUP		{ return($ROLLMGR_GROUP);	};
@@ -345,6 +348,7 @@ my %roll_commands =
 	rollcmd_queuelist	=> 1,
 	rollcmd_queuestatus	=> 1,
 	rollcmd_shutdown	=> 1,
+	rollcmd_signzones	=> 1,
 	rollcmd_signzone	=> 1,
 	rollcmd_skipall		=> 1,
 	rollcmd_skipzone	=> 1,
@@ -2236,6 +2240,8 @@ The available commands and their required data are:
    ROLLCMD_RUNQUEUE	none		rollerd runs through
 					its queue
    ROLLCMD_SHUTDOWN	none		stop rollerd
+   ROLLCMD_SIGNZONE	zone		sign a zone (no rollover)
+   ROLLCMD_SIGNZONEs	all or active	sign all or active zones
    ROLLCMD_SKIPALL	none		suspend all rollovers
    ROLLCMD_SKIPZONE	zone name	suspend rollover for a
 					rolling zone
