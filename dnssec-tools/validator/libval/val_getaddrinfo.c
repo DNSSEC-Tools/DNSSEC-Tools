@@ -1230,11 +1230,7 @@ val_getnameinfo(val_context_t * context,
     if (ctx == NULL)
         return EAI_FAIL;;
 
-    val_log(ctx, LOG_DEBUG,
-            "val_getnameinfo called with host = %s, serv = %s",
-            host == NULL ? "(null)" : host,
-            serv == NULL ? "(null)" : serv);
-
+    val_log(ctx, LOG_DEBUG, "val_getnameinfo(): called");
 
     *val_status = VAL_UNTRUSTED_ANSWER;
 
