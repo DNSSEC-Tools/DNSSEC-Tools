@@ -1,0 +1,158 @@
+From db56c860a1e2c6e0da0bf528b2e89b31a48c8133 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 23 Feb 2012 12:08:51 -0500
+Subject: [PATCH 05/10] factor out common code from PR_GetAddrInfoByName
+
+- not common to anything yet, but will be in the
+   following DNSSEC patch. Should be easy to see that
+   this doesn't change functionality. This was less
+   apparent when mixed in with the DNSSEC changes.
+---
+ nsprpub/pr/src/misc/prnetdb.c |  117 ++++++++++++++++++++++++-----------------
+ 1 files changed, 69 insertions(+), 48 deletions(-)
+
+diff --git a/nsprpub/pr/src/misc/prnetdb.c b/nsprpub/pr/src/misc/prnetdb.c
+index 567126a..b92e611 100644
+--- a/nsprpub/pr/src/misc/prnetdb.c
++++ b/nsprpub/pr/src/misc/prnetdb.c
+@@ -2134,6 +2134,73 @@ pr_GetAddrInfoByNameFB(const char  *hostname,
+ }
+ #endif /* PRNETDB_CHECK_FALLBACK */
+ 
++static int
++_PR_GetAddrInfoByNameExtended_setup_flags(PRUint16     af,
++                                          PRIntn       flags)
++
++{
++    /* restrict input to supported values */
++    if ((af != PR_AF_INET && af != PR_AF_UNSPEC) ||
++        (flags & ~ PR_AI_NOCANONNAME) != PR_AI_ADDRCONFIG) {
++        PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
++        return -1;
++    }
++
++    return 0;
++}
++
++static void
++_PR_GetAddrInfoByNameExtended_setup_hints(const char  *hostname,
++                                          PRUint16     af,
++                                          PRIntn       flags,
++                                          PRADDRINFO  *hints)
++{
++    /*
++     * we assume a RFC 2553 compliant getaddrinfo.  this may at some
++     * point need to be customized as platforms begin to adopt the
++     * RFC 3493.
++     */
++
++    memset(hints, 0, sizeof(*hints));
++    if (!(flags & PR_AI_NOCANONNAME))
++        hints->ai_flags |= AI_CANONNAME;
++#ifdef AI_ADDRCONFIG
++    /* 
++     * Propagate AI_ADDRCONFIG to the GETADDRINFO call if PR_AI_ADDRCONFIG
++     * is set.
++     * 
++     * Need a workaround for loopback host addresses:         
++     * The problem is that in glibc and Windows, AI_ADDRCONFIG applies the
++     * existence of an outgoing network interface to IP addresses of the
++     * loopback interface, due to a strict interpretation of the
++     * specification.  For example, if a computer does not have any
++     * outgoing IPv6 network interface, but its loopback network interface
++     * supports IPv6, a getaddrinfo call on "localhost" with AI_ADDRCONFIG
++     * won't return the IPv6 loopback address "::1", because getaddrinfo
++     * thinks the computer cannot connect to any IPv6 destination,
++     * ignoring the remote vs. local/loopback distinction.
++     */
++    if ((flags & PR_AI_ADDRCONFIG) &&
++        strcmp(hostname, "localhost") != 0 &&
++        strcmp(hostname, "localhost.localdomain") != 0 &&
++        strcmp(hostname, "localhost6") != 0 &&
++        strcmp(hostname, "localhost6.localdomain6") != 0) {
++      hints->ai_flags |= AI_ADDRCONFIG;
++    }
++#endif
++    hints->ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
++
++    /*
++     * it is important to select a socket type in the hints, otherwise we
++     * will get back repetitive entries: one for each socket type.  since
++     * we do not expose ai_socktype through our API, it is okay to do this
++     * here.  the application may still choose to create a socket of some
++     * other type.
++     */
++    hints->ai_socktype = SOCK_STREAM;
++}
++
+ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+                                                 PRUint16     af,
+                                                 PRIntn       flags)
+@@ -2141,11 +2208,7 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+     if (!_pr_netdb_initialized) _pr_netdb_init();
+     PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, hostname));
+ 
+-    /* restrict input to supported values */
+-    if ((af != PR_AF_INET && af != PR_AF_UNSPEC) ||
+-        (flags & ~ PR_AI_NOCANONNAME) != PR_AI_ADDRCONFIG) {
+-        PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+-        PR_LOG(_pr_dns_lm, PR_LOG_ERROR, ("invalid argument\n"));
++    if (-1 == _PR_GetAddrInfoByNameExtended_setup_flags(af, flags)) {
+         return NULL;
+     }
+ 
+@@ -2159,49 +2222,7 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+         PRADDRINFO *res, hints;
+         PRStatus rv;
+ 
+-        /*
+-         * we assume a RFC 2553 compliant getaddrinfo.  this may at some
+-         * point need to be customized as platforms begin to adopt the
+-         * RFC 3493.
+-         */
+-
+-        memset(&hints, 0, sizeof(hints));
+-        if (!(flags & PR_AI_NOCANONNAME))
+-            hints.ai_flags |= AI_CANONNAME;
+-#ifdef AI_ADDRCONFIG
+-        /* 
+-         * Propagate AI_ADDRCONFIG to the GETADDRINFO call if PR_AI_ADDRCONFIG
+-         * is set.
+-         * 
+-         * Need a workaround for loopback host addresses:         
+-         * The problem is that in glibc and Windows, AI_ADDRCONFIG applies the
+-         * existence of an outgoing network interface to IP addresses of the
+-         * loopback interface, due to a strict interpretation of the
+-         * specification.  For example, if a computer does not have any
+-         * outgoing IPv6 network interface, but its loopback network interface
+-         * supports IPv6, a getaddrinfo call on "localhost" with AI_ADDRCONFIG
+-         * won't return the IPv6 loopback address "::1", because getaddrinfo
+-         * thinks the computer cannot connect to any IPv6 destination,
+-         * ignoring the remote vs. local/loopback distinction.
+-         */
+-        if ((flags & PR_AI_ADDRCONFIG) &&
+-            strcmp(hostname, "localhost") != 0 &&
+-            strcmp(hostname, "localhost.localdomain") != 0 &&
+-            strcmp(hostname, "localhost6") != 0 &&
+-            strcmp(hostname, "localhost6.localdomain6") != 0) {
+-            hints.ai_flags |= AI_ADDRCONFIG;
+-        }
+-#endif
+-        hints.ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
+-
+-        /*
+-         * it is important to select a socket type in the hints, otherwise we
+-         * will get back repetitive entries: one for each socket type.  since
+-         * we do not expose ai_socktype through our API, it is okay to do this
+-         * here.  the application may still choose to create a socket of some
+-         * other type.
+-         */
+-        hints.ai_socktype = SOCK_STREAM;
++        _PR_GetAddrInfoByNameExtended_setup_hints(hostname, af, flags, &hints);
+ 
+         rv = GETADDRINFO(hostname, NULL, &hints, &res);
+ #ifdef AI_ADDRCONFIG
+-- 
+1.7.7.6
+
