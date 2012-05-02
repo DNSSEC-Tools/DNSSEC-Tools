@@ -26,29 +26,23 @@ new-files:
 
 zones-short:
 	zonesigner -zsklife 30 -genkeys example.com
-	zonesigner -zsklife 30 -e now+25 -genkeys test.com
-
-#	zonesigner -zsklife 30 -kskdirectory /tmp/e-ksk -zskdirectory /tmp/e-zsk -genkeys example.com
-#	zonesigner -zsklife 30 -e now+25 -kskdirectory /tmp/t-ksk -zskdirectory /tmp/t-zsk -genkeys test.com
+	zonesigner -zsklife 30 -e +25 -genkeys test.com
 
 zones-same:
 	zonesigner -zsklife 30 -genkeys example.com
 	zonesigner -zsklife 30 -genkeys test.com
 
-zones-diff:
-	zonesigner -zsklife 90 -genkeys example.com
-	zonesigner -zsklife 90 -ksklife 90 -genkeys test.com
-
 zones-long:
-	zonesigner -zsklife 7200 -genkeys example.com
-	zonesigner -zsklife 3600 -e now+25 -genkeys test.com
+#	zonesigner -zsklife 7200 -genkeys example.com
+	zonesigner -zsklife 3600 -ksklife 7200 -genkeys example.com
+	zonesigner -zsklife 3600 -e +25 -genkeys test.com
 
 
-long:	clean zones-long new-files
+long:	clean new-files zones-long
 
 short:	clean new-files zones-short
 
-same:	clean zones-same new-files
+same:	clean new-files zones-same
 
 clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
