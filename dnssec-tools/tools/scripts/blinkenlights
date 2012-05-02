@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.6";
+my $VERS   = "$NAME version: 1.12.7";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -687,6 +687,10 @@ sub buildmainwind
 	#
 	$cmdg->command(-label => 'Sign Selected Zone',
 		       -command => [\&general_cmds, "signzone"]);
+	$cmdg->command(-label => 'Sign All Zones',
+		       -command => [\&general_cmds, "signzones all"]);
+	$cmdg->command(-label => 'Sign Active Zones',
+		       -command => [\&general_cmds, "signzones active"]);
 	$cmdg->command(-label => 'Run the Queue',
 		       -command => [\&general_cmds, "runqueue"]);
 	$cmdg->separator();
@@ -2790,6 +2794,7 @@ sub rollerdcmd
 		# Translate the seconds count into something useful.
 		#
 		$timestr = fuzzytimetrans($secs);
+# $timestr = "$secs seconds";
 		$timestr =~ s/\.0//;
 
 		#
@@ -4206,6 +4211,20 @@ Sign Selected Zone
 
 B<rollerd> is instructed to sign the selected zone.  The zone will only be
 signed; no key rollover will occur.
+
+=item *
+
+Sign All Zones
+
+B<rollerd> is instructed to sign all the zones it manages.  The zone will
+only be signed; no key rollover will occur.
+
+=item *
+
+Sign Active Zones
+
+B<rollerd> is instructed to sign all the zones it manages.  Skipped zones
+will not be signed.  The zone will only be signed; no key rollover will occur.
 
 =item *
 
