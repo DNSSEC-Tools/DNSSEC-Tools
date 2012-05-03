@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.7";
+my $VERS   = "$NAME version: 1.12.8";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -740,6 +740,11 @@ sub buildmainwind
 		       -command => [\&kskcmds, "dspub"]);
 	$cmdk->command(-label	=> 'DS Published for All Zones',
 		       -command => [\&kskcmds, "dspuball"], );
+	$cmdk->separator();
+	$cmdk->command(-label	=> 'Roll Selected Zone\'s KSK',
+		       -command => [\&kskcmds, "rollksk"]);
+	$cmdk->command(-label	=> 'Roll All Zones\' KSKs',
+		       -command => [\&kskcmds, "rollallksks"], );
 
 	$cmdk->pack(-side => 'left');
 
@@ -1511,13 +1516,14 @@ sub zskcmds
 		if($rcmd eq "rollzsk")
 		{
 			$badzones{$zone} = 1;
-			zonestripe($zone,'KSK',0);
+			zonestripe($zone,'ZSK',0);
 		}
 	}
 	else
 	{
 		delete($badzones{$zone});
 	}
+
 }
 
 #---------------------------------------------------------------------------
@@ -1528,7 +1534,10 @@ sub zskcmds
 sub kskcmds
 {
 	my $rcmd = shift;				# Command to run.
+	my $args;					# Arguments for rollctl.
 	my $ret;					# rollctl return code.
+	my $zone;					# Zone to handle.
+
 
 	#
 	# Don't allow commands if -nomodify was given.
@@ -1539,10 +1548,8 @@ sub kskcmds
 	# These commands need a zone.  We've got to query the user for
 	# one, but until then they're unimplemented.
 	#
-	if($rcmd eq "dspub")
+	if(($rcmd eq "dspub") || ($rcmd eq "rollksk"))
 	{
-		my $zone;				# Zone to handle.
-
 		#
 		# If a zone has been selected, we'll use it.  If not,
 		# we'll prompt the user for the zone.
@@ -1554,26 +1561,51 @@ sub kskcmds
 			return if($zone eq "");
 		}
 
-		#
-		# Move the selected zone into rollover phase 7.
-		#
-		$ret = system("$rollctl -quiet -dspub \"$zone\"");
+		$args = "-$rcmd \"$zone\"";
 	}
-	elsif($rcmd eq "dspuball")
+	else
 	{
-		#
-		# Move this zone into rollover phase 7.
-		#
-		$ret = system("$rollctl -quiet -dspuball");
+		$args = "-$rcmd";
 	}
 
 	#
-	# Exit if rollerd isn't running.
+	# Send the command to rollerd.
+	#
+	$ret = system("$rollctl -quiet $args");
+
+	#
+	# If the command failed, we'll re-run the command and let the
+	# user see the failure message.
 	#
 	$ret = $ret >> 8;
-	if($ret == 200)
+	if($ret != 0)
 	{
-		exit(1);
+		my $rollcmd;				# Command for rollctl.
+
+		#
+		# Exit if rollerd isn't running.
+		#
+		if($ret == 200)
+		{
+			exit(1);
+		}
+
+		$rollcmd = "$rollctl -quiet -$args";
+		system($rollcmd);
+
+		#
+		# If we were trying to roll a zone, we'll mark
+		# it as having a problem and repaint its stripe.
+		#
+		if(($rcmd eq "dspub") || ($rcmd eq "rollksk"))
+		{
+			$badzones{$zone} = 1;
+			zonestripe($zone,'KSK',0);
+		}
+	}
+	else
+	{
+		delete($badzones{$zone});
 	}
 }
 
@@ -4284,10 +4316,11 @@ related to ZSK-specific zone management.
 
 Roll Selected Zone's ZSK
 
-The selected zone's ZSK will be moved to the rollover state.  This only has an
-effect on skipped zones.  A zone may be selected by clicking on its zone
-stripe.  If this command is selected without a zone having been selected, a
-dialog box is displayed from which a currently skipped zone may be chosen.
+The selected zone's ZSK will be moved to the rollover state.  This has no
+effect on zones that are already in rollover.  A zone may be selected by
+clicking on its zone stripe.  If this command is selected without a zone
+having been selected, a dialog box is displayed from which a currently
+skipped zone may be chosen.
 
 =item *
 
@@ -4321,6 +4354,23 @@ This command is used to indicate that all the zones in KSK rollover phase 6
 have new DS records published by their parents.  It moves all these zones from
 phase 6 to phase 7 of KSK rollover.  There is no effect on zones not in KSK
 rollover phase 6.
+
+=item *
+
+Roll Selected Zone's KSK
+
+The selected zone's KSK will be moved to the rollover state.  This has no
+effect on zones that are already in rollover.  A zone may be selected by
+clicking on its zone stripe.  If this command is selected without a zone
+having been selected, a dialog box is displayed from which a currently
+skipped zone may be chosen.
+
+=item *
+
+Roll All Zones' KSKs
+
+All zones' KSKs will be moved to the rollover state.  This has no effect on
+currently rolling zones.
 
 =back
 
