@@ -4679,6 +4679,10 @@ sub singlecmd
 	{
 		cmd_rollall();
 	}
+	elsif($cmd eq ROLLCMD_ROLLALLKSKS())
+	{
+		cmd_rollallksks();
+	}
 	elsif($cmd eq ROLLCMD_ROLLALLZSKS())
 	{
 		cmd_rollallzsks();
@@ -4689,7 +4693,7 @@ sub singlecmd
 	}
 	elsif($cmd eq ROLLCMD_ROLLKSK())
 	{
-		cmd_rollnow($data,'KSK');
+		cmd_rollnow($data,'KSK',1);
 	}
 	elsif($cmd eq ROLLCMD_ROLLZONE())
 	{
@@ -4697,7 +4701,7 @@ sub singlecmd
 	}
 	elsif($cmd eq ROLLCMD_ROLLZSK())
 	{
-		cmd_rollnow($data,'ZSK');
+		cmd_rollnow($data,'ZSK',1);
 	}
 	elsif($cmd eq ROLLCMD_RUNQUEUE())
 	{
@@ -5152,7 +5156,7 @@ sub cmd_rollall
 		# the domain name to the list of good zones.  If it didn't
 		# work, do the same for the bad count and bad-zone list.
 		#
-		if(rollnow($zone,'restart') == 1)
+		if(rollnow($zone,'restart',1) == 1)
 		{
 			$gcnt++;
 			$good .= "$zone ";
@@ -5198,82 +5202,27 @@ sub cmd_rollall
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	cmd_rollallksks()
+#
+# Purpose:	This command moves all the zones in the rollrec file into
+#		immediate KSK rollover.
+#
+sub cmd_rollallksks
+{
+	rolllog_log(LOG_TMI,'<command>',"rollallksks command received");
+	rollemall('KSK');
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	cmd_rollallzsks()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
-#		immediate ZSK rollover.  rollnow() is called for each zone,
-#		in order to start rollover.  We'll also keep track of the
-#		zones we were and weren't able to put in rollover, and
-#		report them to the caller.
+#		immediate ZSK rollover.
 #
 sub cmd_rollallzsks
 {
-	my $good = "";					# Rolled zones.
-	my $bad	 = "";					# Unrolled zones.
-
-	my $cnt	 = 0;					# Total count.
-	my $gcnt = 0;					# Rolled count.
-	my $bcnt = 0;					# Unrolled count.
-
 	rolllog_log(LOG_TMI,'<command>',"rollallzsks command received");
-
-	#
-	# Each zone in the rollrec file will be put in the rollover process,
-	# starting after that initial wait period.  We'll keep track of the
-	# zones that were rolled and those that weren't in order to provide
-	# an appropriate response message.
-	#
-	foreach my $zone (rollrec_names())
-	{
-		$cnt++;
-
-		#
-		# If the rollover worked, increment the good count and add
-		# the domain name to the list of good zones.  If it didn't
-		# work, do the same for the bad count and bad-zone list.
-		#
-		if(rollnow($zone,'ZSK') == 1)
-		{
-			$gcnt++;
-			$good .= "$zone ";
-		}
-		else
-		{
-			$bcnt++;
-			$bad .= "$zone ";
-		}
-	}
-
-	#
-	# We don't need no steenkin' trailing whitespace.
-	#
-	chomp $good;
-	chomp $bad;
-
-	#
-	# Send a response message to the caller.
-	#
-	if($gcnt == $cnt)
-	{
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,$good);
-	}
-	else
-	{
-		my $resp;				# Response message.
-
-		$resp = "zones not in rollrec file $rollrecfile:  $bad\n";
-
-		#
-		# If there were any zones that were put into rollover,
-		# we'll add them to the message as well.
-		#
-		if($gcnt > 0)
-		{
-			$resp .= "zones now in rollover:  $good\n";
-		}
-
-		rollmgr_sendresp(ROLLCMD_RC_BADZONE,$resp);
-	}
+	rollemall('ZSK');
 }
 
 #-----------------------------------------------------------------------------
@@ -5364,7 +5313,7 @@ sub cmd_rollnow
 	#
 	# Do the rollover and send an appropriate response.
 	#
-	$rollret = rollnow($zone,$rolltype);
+	$rollret = rollnow($zone,$rolltype,1);
 	if($rollret == 1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone $rolltype rollover started");
@@ -5392,7 +5341,7 @@ sub cmd_rollzone
 
 	rolllog_log(LOG_TMI,'<command>',"rollzone command received; zone - \"$zone\"");
 
-	if(rollnow($zone,'restart') == 1)
+	if(rollnow($zone,'restart',1) == 1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover started");
 	}
@@ -5452,7 +5401,7 @@ sub cmd_rollzsk
 	#
 	# Do the ZSK rollover and send an appropriate response.
 	#
-	$rollret = rollnow($zone,'ZSK');
+	$rollret = rollnow($zone,'ZSK',1);
 	if($rollret == 1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone ZSK rollover started");
@@ -6353,16 +6302,96 @@ sub cmd_zsargs
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	rollemall()
+#
+# Purpose:	This command moves all the zones in the rollrec file into
+#		immediate rollover.  The type of rollover is specified by the
+#		caller.  rollnow() is called for each zone, in order to start
+#		rollover.  We'll also keep track of the zones we were and
+#		weren't able to put in rollover, and report them to the caller.
+#
+sub rollemall
+{
+	my $rt = shift;					# Rollover type.
+
+	my $good = '';					# Rolled zones.
+	my $bad	 = '';					# Unrolled zones.
+
+	my $cnt	 = 0;					# Total count.
+	my $gcnt = 0;					# Rolled count.
+	my $bcnt = 0;					# Unrolled count.
+
+	#
+	# Each zone in the rollrec file will be put in the rollover process,
+	# starting after that initial wait period.  We'll keep track of the
+	# zones that were rolled and those that weren't in order to provide
+	# an appropriate response message.
+	#
+	foreach my $zone (rollrec_names())
+	{
+		$cnt++;
+
+		#
+		# If the rollover worked, increment the good count and add
+		# the domain name to the list of good zones.  If it didn't
+		# work, do the same for the bad count and bad-zone list.
+		#
+		if(rollnow($zone,$rt,0) == 1)
+		{
+			$gcnt++;
+			$good .= "$zone ";
+		}
+		else
+		{
+			$bcnt++;
+			$bad .= "$zone ";
+		}
+	}
+
+	#
+	# We don't need no steenkin' trailing whitespace.
+	#
+	chomp $good;
+	chomp $bad;
+
+	#
+	# Send a response message to the caller.
+	#
+	if($gcnt == $cnt)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,$good);
+	}
+	else
+	{
+		my $resp;				# Response message.
+
+		$resp = "zones not in rollrec file $rollrecfile:  $bad\n";
+
+		#
+		# If there were any zones that were put into rollover,
+		# we'll add them to the message as well.
+		#
+		if($gcnt > 0)
+		{
+			$resp .= "zones now in $rt rollover:  $good\n";
+		}
+
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,$resp);
+	}
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	rollnow()
 #
-# Purpose:	This command moves a zone into immediate rollover for the.
+# Purpose:	This command moves a zone into immediate rollover for the
 #		specified key type.  It doesn't sit in the initial waiting
 #		period, but starts right off in rollover phase 2.
 #
 sub rollnow
 {
-	my $zone = shift;			# Zone to roll.
+	my $zone     = shift;			# Zone to roll.
 	my $rolltype = shift;			# Type of roll to start.
+	my $force    = shift;			# Force-rollover flag.
 	my $rollstr;				# String of roll type.
 
 	#
@@ -6391,6 +6420,18 @@ sub rollnow
 			return(0);
 		}
 		%rr = %$rrr;
+
+		#
+		# If the caller isn't demanding a rollover, we'll make sure
+		# the zone isn't already rolling.
+		#
+		if(! $force)
+		{
+			if(($rr{'kskphase'} > 0) || ($rr{'zskphase'} > 0))
+			{
+				return(0);
+			}
+		}
 
 		#
 		# Do a few very simple validation checks.
