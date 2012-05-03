@@ -1941,7 +1941,7 @@ return(0);
 		{
 			rolllog_log(LOG_INFO,$rname,"creating new zsk_rollsecs record and forcing ZSK rollover");
 			rollstamp($rname,'zsk');
-			return(1);
+			return(0);
 		}
 		$starter = $rr{'zsk_rollsecs'};
 	}
@@ -2404,7 +2404,7 @@ sub ksk_expired
 		{
 			rolllog_log(LOG_INFO,$rname,"creating new ksk_rollsecs record and forcing KSK rollover");
 			rollstamp($rname,'ksk');
-			return(1);
+			return(0);
 		}
 		$starter = $rr{'ksk_rollsecs'};
 	}
