@@ -138,6 +138,7 @@ our @EXPORT = qw(
 			 ROLLCMD_MERGERRFS
 			 ROLLCMD_PHASEMSG
 			 ROLLCMD_ROLLALL
+			 ROLLCMD_ROLLALLKSKS
 			 ROLLCMD_ROLLALLZSKS
 			 ROLLCMD_ROLLKSK
 			 ROLLCMD_ROLLREC
@@ -269,6 +270,7 @@ my $ROLLCMD_LOGTZ	 = "rollcmd_logtz";
 my $ROLLCMD_MERGERRFS	 = "rollcmd_mergerrfs";
 my $ROLLCMD_PHASEMSG	 = "rollcmd_phasemsg";
 my $ROLLCMD_ROLLALL	 = "rollcmd_rollall";
+my $ROLLCMD_ROLLALLKSKS	 = "rollcmd_rollallksks";
 my $ROLLCMD_ROLLALLZSKS	 = "rollcmd_rollallzsks";
 my $ROLLCMD_ROLLKSK	 = "rollcmd_rollksk";
 my $ROLLCMD_ROLLREC	 = "rollcmd_rollrec";
@@ -301,6 +303,7 @@ sub ROLLCMD_LOGTZ		{ return($ROLLCMD_LOGTZ);	 };
 sub ROLLCMD_MERGERRFS		{ return($ROLLCMD_MERGERRFS);	 };
 sub ROLLCMD_PHASEMSG		{ return($ROLLCMD_PHASEMSG);	 };
 sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	 };
+sub ROLLCMD_ROLLALLKSKS		{ return($ROLLCMD_ROLLALLKSKS);	 };
 sub ROLLCMD_ROLLALLZSKS		{ return($ROLLCMD_ROLLALLZSKS);	 };
 sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	 };
 sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	 };
@@ -339,6 +342,7 @@ my %roll_commands =
 	rollcmd_nodisplay	=> 1,
 	rollcmd_phasemsg	=> 1,
 	rollcmd_rollall		=> 1,
+	rollcmd_rollallksks	=> 1,
 	rollcmd_rollallzsks	=> 1,
 	rollcmd_rollksk		=> 1,
 	rollcmd_rollrec		=> 1,
