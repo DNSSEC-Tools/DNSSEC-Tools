@@ -38,7 +38,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollctl";
-my $VERS   = "$NAME version: 1.12.2";
+my $VERS   = "$NAME version: 1.12.3";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -61,6 +61,7 @@ my @opts =
 	"pidfile=s",			# pid storage file.
 	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollall",			# Resume all suspended zones.
+	"rollallksks",			# KSK-roll all our zones.
 	"rollallzsks",			# ZSK-roll all our zones.
 	"rollksk",			# KSK roll the specified zone(s).
 	"rollrec=s",			# Change the rollrec file.
@@ -98,6 +99,7 @@ my $dispflag	    = 0;
 my $dspubflag	    = 0;
 my $dspuballflag    = 0;
 my $groupflag	    = 0;
+my $krollallflag    = 0;
 my $logfileflag	    = 0;
 my $loglevelflag    = 0;
 my $logtzflag	    = 0;
@@ -407,6 +409,25 @@ sub main()
 		if($ret == ROLLCMD_RC_OKAY)
 		{
 			print "all suspended zones now resumed:  $resp\n";
+		}
+		else
+		{
+			print STDERR "$resp";
+			$rcret++;
+		}
+	}
+	elsif($krollallflag)
+	{
+		if(! sendcmd(ROLLCMD_ROLLALLKSKS))
+		{
+			print STDERR "rollctl:  error sending command ROLLALLKSKS\n";
+			exit(1);
+		}
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "all zones now in KSK rollover:  $resp\n";
 		}
 		else
 		{
@@ -1001,6 +1022,11 @@ sub doopts
 		$rollallflag = $options{'rollall'};
 		$commandcount++;
 	}
+	if(exists($options{'rollallksks'}))
+	{
+		$krollallflag = $options{'rollallksks'};
+		$commandcount++;
+	}
 	if(exists($options{'rollallzsks'}))
 	{
 		$zrollallflag = $options{'rollallzsks'};
@@ -1425,9 +1451,15 @@ rollover phase 3 will look like this:  "ZSK phase 3".
 Resumes rollover for all zones in the current I<rollrec> file that have been
 suspended.  ("skip" zones are suspended.)
 
+=item B<-rollallksks>
+
+Initiates KSK rollover for all the zones defined in the current I<rollrec>
+file that aren't currently in rollover.
+
 =item B<-rollallzsks>
 
-Initiates ZSK rollover for all the zones defined in the current I<rollrec> file.
+Initiates ZSK rollover for all the zones defined in the current I<rollrec>
+file that aren't currently in rollover.
 
 =item B<-rollksk zone>
 
