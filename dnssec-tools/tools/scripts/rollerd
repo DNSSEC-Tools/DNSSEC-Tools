@@ -4693,7 +4693,7 @@ sub singlecmd
 	}
 	elsif($cmd eq ROLLCMD_ROLLKSK())
 	{
-		cmd_rollnow($data,'KSK',1);
+		cmd_rollnow($data,'KSK');
 	}
 	elsif($cmd eq ROLLCMD_ROLLZONE())
 	{
@@ -4701,7 +4701,7 @@ sub singlecmd
 	}
 	elsif($cmd eq ROLLCMD_ROLLZSK())
 	{
-		cmd_rollnow($data,'ZSK',1);
+		cmd_rollnow($data,'ZSK');
 	}
 	elsif($cmd eq ROLLCMD_RUNQUEUE())
 	{
@@ -5305,7 +5305,7 @@ sub cmd_rollnow
 	#
 	if($rr{'zskphase'} > 0)
 	{
-		rolllog_log(LOG_TMI,'<command>',"in ZSK rollover (phase $rr{'zskphase'});\nnot attempting ZSK rollover");
+		rolllog_log(LOG_TMI,'<command>',"in ZSK rollover (phase $rr{'zskphase'}); not attempting ZSK rollover");
 		rollmgr_sendresp(ROLLCMD_RC_ZSKROLL,"$zone is already engaged in a ZSK rollover");
 		return(0);
 	}
@@ -6427,10 +6427,18 @@ sub rollnow
 		#
 		if(! $force)
 		{
-			if(($rr{'kskphase'} > 0) || ($rr{'zskphase'} > 0))
+			if($rr{'kskphase'} > 0)
 			{
+				rolllog_log(LOG_TMI,'<command>',"in KSK rollover (phase $rr{'kskphase'}); not attempting rollover");
 				return(0);
 			}
+
+			if($rr{'zskphase'} > 0)
+			{
+				rolllog_log(LOG_TMI,'<command>',"in ZSK rollover (phase $rr{'zskphase'}); not attempting rollover");
+				return(0);
+			}
+
 		}
 
 		#
