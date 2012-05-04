@@ -38,7 +38,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollctl";
-my $VERS   = "$NAME version: 1.12.3";
+my $VERS   = "$NAME version: 1.12.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -213,7 +213,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollerd display not started\n";
+			print "rollerd display not started\n";
 			$rcret++;
 		}
 	}
@@ -240,7 +240,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "$resp\n";
+				print "$resp\n";
 				$rcret++;
 			}
 		}
@@ -261,7 +261,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "$resp\n";
+			print "$resp\n";
 			$rcret++;
 		}
 	}
@@ -280,7 +280,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "log-level set failed:  $resp\n";
+			print "log-level set failed:  $resp\n";
 			$rcret++;
 		}
 	}
@@ -306,7 +306,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "log-level set failed:  $resp\n";
+				print "log-level set failed:  $resp\n";
 				$rcret++;
 			}
 		}
@@ -326,7 +326,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "log-tz set failed:  $resp\n";
+			print "log-tz set failed:  $resp\n";
 			$rcret++;
 		}
 	}
@@ -352,7 +352,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "phasemsg set failed:  $resp\n";
+				print "phasemsg set failed:  $resp\n";
 				$rcret++;
 			}
 		}
@@ -374,7 +374,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollerd did not merge the rollrec files\n";
+			print "rollerd did not merge the rollrec files\n";
 			$rcret++;
 		}
 	}
@@ -393,7 +393,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollerd display not stopped\n";
+			print "rollerd display not stopped\n";
 			$rcret++;
 		}
 	}
@@ -412,7 +412,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "$resp";
+			print "$resp";
 			$rcret++;
 		}
 	}
@@ -431,7 +431,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "$resp";
+			print "$resp";
 			$rcret++;
 		}
 	}
@@ -450,7 +450,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "$resp";
+			print "$resp";
 			$rcret++;
 		}
 	}
@@ -469,7 +469,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "couldn't set rollrec file:  $resp\n";
+			print "couldn't set rollrec file:  $resp\n";
 			$rcret++;
 		}
 	}
@@ -496,7 +496,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "unable to force KSK rollover process for $zone:  $resp\n";
+				print "unable to force KSK rollover process for $zone:  $resp\n";
 				$rcret++;
 			}
 		}
@@ -524,7 +524,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "unable to restart rollover for zone $zone:  \"$resp\"\n";
+				print "unable to restart rollover for zone $zone:  \"$resp\"\n";
 				$rcret++;
 			}
 		}
@@ -552,7 +552,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "unable to force ZSK rollover process for $zone:  $resp\n";
+				print "unable to force ZSK rollover process for $zone:  $resp\n";
 				$rcret++;
 			}
 		}
@@ -575,7 +575,7 @@ sub main()
 			#
 			# Shouldn't ever get here...
 			#
-			print STDERR "couldn't force the rollrec queue:  $resp\n";
+			print "couldn't force the rollrec queue:  $resp\n";
 			$rcret++;
 		}
 	}
@@ -594,7 +594,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollerd error response:  <$resp>\n";
+			print "rollerd error response:  <$resp>\n";
 			$rcret++;
 		}
 	}
@@ -613,7 +613,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollerd error response:  <$resp>\n";
+			print "rollerd error response:  <$resp>\n";
 			$rcret++;
 		}
 	}
@@ -640,7 +640,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "unable to sign zone $zone:  \"$resp\"\n";
+				print "unable to sign zone $zone:  \"$resp\"\n";
 				$rcret++;
 			}
 		}
@@ -668,7 +668,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "unable to sign all zones:  \"$resp\"\n";
+			print "unable to sign all zones:  \"$resp\"\n";
 			$rcret++;
 		}
 	}
@@ -687,7 +687,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "$resp";
+			print "$resp";
 			$rcret++;
 		}
 	}
@@ -714,7 +714,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "unable to stop rollover for zone $zone:  \"$resp\"\n";
+				print "unable to stop rollover for zone $zone:  \"$resp\"\n";
 				$rcret++;
 			}
 		}
@@ -734,7 +734,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "sleep-time set failed:  \"$resp\"\n";
+			print "sleep-time set failed:  \"$resp\"\n";
 			$rcret++;
 		}
 	}
@@ -755,7 +755,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollerd did not split the rollrec files\n";
+			print "rollerd did not split the rollrec files\n";
 			$rcret++;
 		}
 	}
@@ -774,7 +774,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "status failed:  \"$resp\"\n";
+			print "status failed:  \"$resp\"\n";
 			$rcret++;
 		}
 	}
@@ -789,7 +789,7 @@ sub main()
 				exit(1);
 			}
 
-			print STDERR "rollctl:  immediate SHUTDOWN notice sent to rollerd\n";
+			print "rollctl:  immediate SHUTDOWN notice sent to rollerd\n";
 			exit(0);
 		}
 
@@ -805,7 +805,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "shutdown failed:  \"$resp\"\n";
+			print "shutdown failed:  \"$resp\"\n";
 			$rcret++;
 		}
 	}
@@ -823,7 +823,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "$resp\n";
+			print "$resp\n";
 			$rcret++;
 		}
 	}
@@ -856,7 +856,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "zonelog failed:  $resp\n";
+				print "zonelog failed:  $resp\n";
 				$rcret++;
 			}
 		}
@@ -876,7 +876,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "zonestatus failed:  \"$resp\"\n";
+			print "zonestatus failed:  \"$resp\"\n";
 			$rcret++;
 		}
 	}
@@ -906,7 +906,7 @@ sub main()
 			}
 			else
 			{
-				print STDERR "zsarg failed:  \"$resp\"\n";
+				print "zsarg failed:  \"$resp\"\n";
 				$rcret++;
 			}
 		}
