@@ -40,7 +40,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 1.12.8";
+my $VERS   = "$NAME version: 1.12.9";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -1498,6 +1498,8 @@ sub zskcmds
 	$ret = $ret >> 8;
 	if($ret != 0)
 	{
+		my $out;				# Command output.
+
 		#
 		# Exit if rollerd isn't running.
 		#
@@ -1506,18 +1508,38 @@ sub zskcmds
 			exit(1);
 		}
 
-		$rollcmd = "$rollctl -quiet -$args";
-		system($rollcmd);
+		$out = `$rollctl -$args`;
+		print $out;
 
 		#
-		# If we were trying to roll a zone, we'll mark
-		# it as having a problem and repaint its stripe.
+		# If we were trying to roll a zone, we'll complain to the
+		# user by way of a dialog box.
 		#
 		if($rcmd eq "rollzsk")
 		{
-			$badzones{$zone} = 1;
-			zonestripe($zone,'ZSK',0);
+			#
+			# Create a new dialog box for an error message.
+			#
+			if($out =~ /is already engaged in a [KZ]SK rollover/)
+			{
+				my $dbox;			# Dialog box.
+
+				$dbox = $wm->Dialog(-title => "$zone",
+					      -default_button => "Okay",
+					      -buttons => ["Okay"]);
+
+				$dbox->Label(-text => " ")->pack();
+				$dbox->Label(-text => "$zone $&")->pack();
+				$dbox->Label(-text => " ")->pack();
+
+				$dbox->Show();
+			}
+
 		}
+
+		$badzones{$zone} = 1;
+#		zonestripe($zone,'ZSK',0);
+
 	}
 	else
 	{
@@ -1580,7 +1602,7 @@ sub kskcmds
 	$ret = $ret >> 8;
 	if($ret != 0)
 	{
-		my $rollcmd;				# Command for rollctl.
+		my $out;				# rollctl output.
 
 		#
 		# Exit if rollerd isn't running.
@@ -1590,18 +1612,37 @@ sub kskcmds
 			exit(1);
 		}
 
-		$rollcmd = "$rollctl -quiet -$args";
-		system($rollcmd);
+		$out = `$rollctl -$args`;
+		print $out;
 
 		#
-		# If we were trying to roll a zone, we'll mark
-		# it as having a problem and repaint its stripe.
+		# If we were trying to roll a zone, we'll complain to the
+		# user by way of a dialog box.
 		#
-		if(($rcmd eq "dspub") || ($rcmd eq "rollksk"))
+		if($rcmd eq "rollksk")
 		{
-			$badzones{$zone} = 1;
-			zonestripe($zone,'KSK',0);
+			#
+			# Create a new dialog box for an error message.
+			#
+			if($out =~ /is already engaged in a [KZ]SK rollover/)
+			{
+				my $dbox;			# Dialog box.
+
+				$dbox = $wm->Dialog(-title => "$zone",
+					      -default_button => "Okay",
+					      -buttons => ["Okay"]);
+
+				$dbox->Label(-text => " ")->pack();
+				$dbox->Label(-text => "$zone $&")->pack();
+				$dbox->Label(-text => " ")->pack();
+
+				$dbox->Show();
+			}
+
 		}
+
+#		zonestripe($zone,'KSK',0);
+		$badzones{$zone} = 1;
 	}
 	else
 	{
