@@ -6430,12 +6430,16 @@ sub rollnow
 			if($rr{'kskphase'} > 0)
 			{
 				rolllog_log(LOG_TMI,'<command>',"in KSK rollover (phase $rr{'kskphase'}); not attempting rollover");
+				rollrec_close();
+				rollrec_unlock();
 				return(0);
 			}
 
 			if($rr{'zskphase'} > 0)
 			{
 				rolllog_log(LOG_TMI,'<command>',"in ZSK rollover (phase $rr{'zskphase'}); not attempting rollover");
+				rollrec_close();
+				rollrec_unlock();
 				return(0);
 			}
 
