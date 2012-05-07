@@ -11,7 +11,7 @@ DTGetOptions(\%opts,
 	     ['GUI:otherargs_text',    "ZONENAME [ZONENAME...]"],
 	     
 	     ['m|minimum-reporting=s',
-	                  "Minimum reporting time, or else remain silent"],
+	                  "Minimum reporting time, or else be silent for the zone"],
     );
 
 if ($#ARGV == -1) {
@@ -29,7 +29,10 @@ foreach my $zone (@ARGV) {
 	$enddate =~ s/^(....)(..)(..)(..)(..)(..)/$1-$2-$3 $4:$5:$6/;
 	my $epochtime = str2time($enddate);
 	my $delta = $epochtime - time();
-	print "$zone will expire in " . timetrans($delta) . "\n";
+
+	if (!defined($opts{'m'}) || $delta <= $opts{'m'}) {
+	    print "$zone will expire in " . timetrans($delta) . "\n";
+	}
     } else {
 	print "Failed to query for RRSIGs for '$zone'\n";
 	print "This can happen because the authoritative server for the zone\n";
