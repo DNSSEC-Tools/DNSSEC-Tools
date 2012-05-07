@@ -33,7 +33,8 @@ foreach my $zone (@ARGV) {
 
 	if (!defined($opts{'m'}) || $delta <= $opts{'m'}) {
 	    $count++;
-	    print "$zone will expire in " . timetrans($delta) . "\n";
+	    # 22 characters for zone should almost always print < 80 total
+	    printf("%-22.22s will expire in %s\n", $zone, timetrans($delta));
 	}
     } else {
 	print "Failed to query for RRSIGs for '$zone'\n";
