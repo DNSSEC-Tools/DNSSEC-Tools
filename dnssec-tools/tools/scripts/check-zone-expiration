@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+
+use Net::DNS;
+use Date::Parse;
+use Net::DNS::SEC::Tools::timetrans;
+
+my $zone = $ARGV[0] || "dnssec-tools.org";
+
+my $res    = Net::DNS::Resolver->new;
+my $query  = $res->query($zone, "RRSIG");
+if ($query) {
+    my $rrsig = ($query->answer)[0];
+    my $enddate = $rrsig->sigexpiration();
+    $enddate =~ s/^(....)(..)(..)(..)(..)(..)/$1-$2-$3 $4:$5:$6/;
+    my $epochtime = str2time($enddate);
+    my $delta = $epochtime - time();
+    print "$zone will expire in " . timetrans($delta) . "\n";
+} else {
+      print "Failed to query for RRSIGs for '$zone'\n";
+      print "This can happen because the authoritative server for the zone\n";
+      print "or the local resolver doesn't support querying for RRSIGs\n";
+}
+
+1;
+
+
