@@ -50,4 +50,55 @@ if (!defined($opts{'m'}) && $count > 0) {
 
 1;
 
+=pod
+
+=head1 NAME
+
+check-zone-expiration
+
+=head1 SYNOPSIS
+
+# check-zone-expiration dnssec-tools.org paypal.com
+dnssec-tools.org    will expire in 26 days, 2 hours, 16 minutes, 36 seconds
+paypal.com          will expire in 12 days, 17 hours, 7 minutes, 1 second
+
+# check-zone-expiration -m 1123200 dnssec-tools.org paypal.com 
+paypal.com          will expire in 12 days, 17 hours, 6 minutes, 22 seconds
+
+=head1 DESCRIPTION
+
+The check-zone-exiration script reports how long until a zone will
+expire by querying for the zone's (top level) RRSIG and calculating
+how much time is left before the signatures will no longer be valid.
+It will then report how much time is left in human readable form.
+
+If the -m switch is provided with a time argument (in seconds), it
+will only print output for zones that have less than that time left.
+
+=head1 OPTIONS
+
+=over
+
+=item  -m STRING
+
+=item  --minimum-reporting=STRING
+
+Minimum reporting time, or else be silent for the zone
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012-2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker, hardaker@tislabs.com
+
+=head1 SEE ALSO
+
+B<donuts(1)>
+
+=cut
 
