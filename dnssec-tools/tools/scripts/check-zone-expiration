@@ -3,6 +3,21 @@
 use Net::DNS;
 use Date::Parse;
 use Net::DNS::SEC::Tools::timetrans;
+use Net::DNS::SEC::Tools::QWPrimitives;
+
+my %opts;
+DTGetOptions(\%opts,
+	     ['GUI:VERSION',           "DNSSEC-Tools Version: 1.13"],
+	     ['GUI:otherargs_text',    "ZONENAME [ZONENAME...]"],
+	     
+	     ['m|minimum-reporting=s',
+	                  "Minimum reporting time, or else remain silent"],
+    );
+
+if ($#ARGV == -1) {
+    print STDERR "You must specify at least one ZONENAME for this tool to do anything useful\n";
+    exit 1;
+}
 
 my $zone = $ARGV[0] || "dnssec-tools.org";
 
