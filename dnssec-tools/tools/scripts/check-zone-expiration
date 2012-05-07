@@ -20,6 +20,7 @@ if ($#ARGV == -1) {
 }
 
 my $res    = Net::DNS::Resolver->new;
+my $count = 0;
 
 foreach my $zone (@ARGV) {
     my $query  = $res->query($zone, "RRSIG");
@@ -31,6 +32,7 @@ foreach my $zone (@ARGV) {
 	my $delta = $epochtime - time();
 
 	if (!defined($opts{'m'}) || $delta <= $opts{'m'}) {
+	    $count++;
 	    print "$zone will expire in " . timetrans($delta) . "\n";
 	}
     } else {
@@ -39,6 +41,11 @@ foreach my $zone (@ARGV) {
 	print "or the local resolver doesn't support querying for RRSIGs\n";
     }
 }
+
+if (!defined($opts{'m'}) && $count > 0) {
+    exit 1;
+}
+
 
 1;
 
