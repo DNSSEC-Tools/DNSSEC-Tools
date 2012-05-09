@@ -1,0 +1,1802 @@
+diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.pl
+--- webmin-1.580.orig/bind8/bind8-lib.pl	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/bind8-lib.pl	2012-04-30 16:42:38.208052791 -0400
+@@ -3,6 +3,21 @@
+ 
+ BEGIN { push(@INC, ".."); };
+ use WebminCore;
++my $have_dnssec_tools =
++  eval {
++      require Net::DNS::SEC::Tools::dnssectools;
++  };
++
++
++if ($have_dnssec_tools) {
++use Net::DNS::SEC::Tools::dnssectools;
++use Net::DNS::SEC::Tools::rollmgr;
++use Net::DNS::SEC::Tools::rollrec;
++use Net::DNS::SEC::Tools::keyrec;
++use Net::DNS;
++}
++
++
+ &init_config();
+ do 'records-lib.pl';
+ @extra_forward = split(/\s+/, $config{'extra_forward'});
+@@ -37,6 +52,16 @@
+ 	$rand_flag = "-r /dev/urandom";
+ 	}
+ 
++# have_dnssec_tools_support()
++# Returns 1 if dnssec-tools support is available
++sub have_dnssec_tools_support
++{
++	if ($have_dnssec_tools) {
++		return 1;
++	}
++	return undef;
++}
++
+ # get_bind_version()
+ # Returns the BIND verison number, or undef if unknown
+ sub get_bind_version
+@@ -1137,18 +1162,30 @@
+ 	}
+ }
+ 
+-# zones_table(&links, &titles, &types, &deletes)
++# zones_table(&links, &titles, &types, &deletes, &status)
+ # Returns a table of zones, with checkboxes to delete
+ sub zones_table
+ {
+ local($i);
+ local @tds = ( "width=5" );
+ local $rv;
++if ($have_dnssec_tools) {
++$rv .= &ui_columns_start([ "", $text{'index_zone'}, $text{'index_type'}, $text{'index_status'} ],
++			100, 0, \@tds);
++} else {
+ $rv .= &ui_columns_start([ "", $text{'index_zone'}, $text{'index_type'} ],
+ 			100, 0, \@tds);
++}
++
+ for($i=0; $i<@{$_[0]}; $i++) {
+-	local @cols = ( "<a href=\"$_[0]->[$i]\">$_[1]->[$i]</a>",
+-			$_[2]->[$i] );
++	local @cols;
++	if ($have_dnssec_tools) {
++		@cols = ( "<a href=\"$_[0]->[$i]\">$_[1]->[$i]</a>",
++			$_[2]->[$i], $_[4]->[$i]);
++	} else {
++		@cols = ( "<a href=\"$_[0]->[$i]\">$_[1]->[$i]</a>",
++			$_[2]->[$i]);
++	}
+ 	if (defined($_[3]->[$i])) {
+ 		$rv .= &ui_checked_columns_row(\@cols, \@tds, "d", $_[3]->[$i]);
+ 		}
+@@ -3104,6 +3141,7 @@
+ 	if ($recs[$i]->{'type'} eq 'NSEC' ||
+ 	    $recs[$i]->{'type'} eq 'NSEC3' ||
+ 	    $recs[$i]->{'type'} eq 'RRSIG' ||
++	    $recs[$i]->{'type'} eq 'NSEC3PARAM' ||
+ 	    $recs[$i]->{'type'} eq 'DNSKEY') {
+ 		&delete_record($fn, $recs[$i]);
+ 		}
+@@ -3174,11 +3212,55 @@
+ return undef;
+ }
+ 
++# check_if_dnssec_tools_managed(&domain)
++# Check if the given domain is managed by dnssec-tools
++# Return 1 if yes, undef if not
++sub check_if_dnssec_tools_managed
++{
++	local ($dom) = @_;
++	my $dt_managed;
++
++	if ($have_dnssec_tools) {
++		my $rrr;
++
++		&lock_file($config{"dnssectools_rollrec"});
++               rollrec_lock();
++		rollrec_read($config{"dnssectools_rollrec"});
++		$rrr = rollrec_fullrec($dom);
++		if ($rrr) {
++    			$dt_managed = 1;
++		}
++		rollrec_close();
++               rollrec_unlock();
++		&unlock_file($config{"dnssectools_rollrec"});
++	}
++
++	return $dt_managed;
++}
++
+ # sign_dnssec_zone_if_key(&zone|&zone-name, &recs, [bump-soa])
+ # If a zone has a DNSSEC key, sign it. Calls error if signing fails
+ sub sign_dnssec_zone_if_key
+ {
+ local ($z, $recs, $bump) = @_;
++
++# Check if zones are managed by dnssec-tools
++local $dom = $z->{'members'} ? $z->{'values'}->[0] : $z->{'name'};
++ 
++# If zone is managed through dnssec-tools use zonesigner for resigning the zone 
++if (&check_if_dnssec_tools_managed($dom)) {
++	# Do the signing
++	local $zonefile = &get_zone_file($z); 
++	local $krfile = "$zonefile".".krf";
++	local $err;
++
++	&lock_file(&make_chroot($zonefile));
++	$err = &dt_resign_zone($dom, $zonefile, $krfile, 0);
++	&unlock_file(&make_chroot($zonefile));
++	&error($err) if ($err);
++	return undef;
++}
++
+ local $keyrec = &get_dnskey_record($z, $recs);
+ if ($keyrec) {
+ 	local $err = &sign_dnssec_zone($z, $bump);
+@@ -3335,5 +3417,420 @@
+ return \%rv;
+ }
+ 
++sub get_dnssectools_config
++{ 
++	&lock_file($config{'dnssectools_conf'});
++	my $lref = &read_file_lines($config{'dnssectools_conf'}); 
++	my @rv; 
++	my $lnum = 0; 
++	foreach my $line (@$lref) {
++		my ($n, $v) = split(/\s+/, $line, 2); 
++		# Do basic sanity checking
++		$v =~ /(\S+)/;
++		$v = $1;
++		if ($n) {
++			push(@rv, { 'name' => $n, 'value' => $v, 'line' => $lnum });
++		} 
++		$lnum++;
++	} 
++	&flush_file_lines();
++	&unlock_file($config{'dnssectools_conf'});
++	return \@rv;
++}
++
++# save_dnssectools_directive(&config, name, value)
++# Save new dnssec-tools configuration values to the configuration file
++sub save_dnssectools_directive
++{
++	local $conf = $_[0];
++	local $nv = $_[1];
++
++	&lock_file($config{'dnssectools_conf'});
++	my $lref = &read_file_lines($config{'dnssectools_conf'});
++	
++	foreach my $n (keys %$nv) {
++		my $old = &find($n, $conf);
++		if ($old) {
++         		$lref->[$old->{'line'}] = "$n $$nv{$n}";
++        	}
++		else {
++         		push(@$lref, "$n $$nv{$n}");
++        	}
++	}
++
++	&flush_file_lines();
++	&unlock_file($config{'dnssectools_conf'});
++}
++
++# list_dnssec_dne()
++# return a list containing the two DNSSEC mechanisms used for
++# proving non-existance
++sub list_dnssec_dne
++{
++    return ("NSEC", "NSEC3");
++}
++
++# list_dnssec_dshash()
++# return a list containing the different DS record hash types 
++sub list_dnssec_dshash
++{
++    return ("SHA1", "SHA256"); 
++}
++
++# schedule_dnssec_cronjob()
++# schedule a cron job to handle periodic resign operations 
++sub schedule_dnssec_cronjob
++{
++	my $job;
++	my $period = $config{'dnssec_period'} || 21;
++
++	# Create or delete the cron job
++	$job = &get_dnssec_cron_job();
++	if (!$job) {
++		# Turn on cron job
++		$job = {'user' => 'root',
++			'active' => 1,
++			'command' => $dnssec_cron_cmd,
++			'mins' => int(rand()*60),
++			'hours' => int(rand()*24),
++			'days' => '*',
++			'months' => '*',
++			'weekdays' => '*' };
++
++		&lock_file(&cron::cron_file($job));
++		&cron::create_cron_job($job);
++		&unlock_file(&cron::cron_file($job));
++	}
++
++
++	&cron::create_wrapper($dnssec_cron_cmd, $module_name, "resign.pl");
++
++	&lock_file($module_config_file);
++	$config{'dnssec_period'} = $in{'period'};
++	&save_module_config();
++	&unlock_file($module_config_file);
++}
++
++# dt_sign_zone(zone, nsec3) 
++# Replaces a zone's file with one containing signed records.
++sub dt_sign_zone
++{
++    local ($zone, $nsec3) = @_;
++    local @recs;
++
++    local $z = &get_zone_file($zone);
++    local $d = $zone->{'name'};
++    local $z_chroot = &make_chroot($z);
++    local $k_chroot = $z_chroot.".krf";
++    local $usz = $z_chroot.".webmin-unsigned";
++    local $cmd;
++    local $out;
++
++    if ((($zonesigner=dt_cmdpath('zonesigner')) eq '')) {
++        return $text{'dt_zone_enocmd'};
++    }
++    if ($nsec3 == 1) {
++        $nsec3param = " -usensec3 -nsec3optout ";
++    } else {
++        $nsec3param = "";
++    }
++
++    &lock_file($z_chroot);
++
++    rollrec_lock();
++
++    # Remove DNSSEC records and save the unsigned zone file
++    @recs = &read_zone_file($z, $dom);
++    for(my $i=$#recs; $i>=0; $i--) {
++        if ($recs[$i]->{'type'} eq 'NSEC' ||
++            $recs[$i]->{'type'} eq 'NSEC3' ||
++            $recs[$i]->{'type'} eq 'NSEC3PARAM' ||
++            $recs[$i]->{'type'} eq 'RRSIG' ||
++            $recs[$i]->{'type'} eq 'DNSKEY') {
++                &delete_record($z, $recs[$i]);
++        }   
++    }
++    &copy_source_dest($z_chroot, $usz); 
++
++    $cmd = "$zonesigner $nsec3param".
++                " -genkeys ".
++                " -kskdirectory ".quotemeta($config{"dnssectools_keydir"}).
++                " -zskdirectory ".quotemeta($config{"dnssectools_keydir"}).
++                " -dsdir ".quotemeta($config{"dnssectools_keydir"}).
++                " -zone ".quotemeta($d).
++                " -krfile ".quotemeta($k_chroot).
++                " ".quotemeta($usz)." ".quotemeta($z_chroot);
++
++    $out = &backquote_logged("$cmd 2>&1");
++
++    if ($?) {
++        rollrec_unlock();
++        &unlock_file($z_chroot);
++        return $out;
++    }
++
++    # Create rollrec entry for zone
++    $rrfile = $config{"dnssectools_rollrec"};
++    &lock_file($rrfile);
++    open(OUT,">> $rrfile") || &error($text{'dt_zone_errfopen'});
++    print OUT "roll \"$d\"\n";
++    print OUT " zonename    \"$d\"\n";
++    print OUT " zonefile    \"$z_chroot\"\n";
++    print OUT " keyrec      \"$k_chroot\"\n";
++    print OUT " kskphase    \"0\"\n";
++    print OUT " zskphase    \"0\"\n";
++    print OUT " ksk_rolldate    \" \"\n";
++    print OUT " ksk_rollsecs    \"0\"\n";
++    print OUT " zsk_rolldate    \" \"\n";
++    print OUT " zsk_rollsecs    \"0\"\n";
++    print OUT " maxttl      \"0\"\n";
++    print OUT " phasestart  \"new\"\n";
++    &unlock_file($rrfile);
++
++    # Setup zone to be auto-resigned every 30 days
++    &schedule_dnssec_cronjob();
++
++    rollrec_unlock();
++    &unlock_file($z_chroot);
++	
++    &restart_bind();
++
++    return undef;
++}
++
++# dt_resign_zone(zone-name, zonefile, krfile, threshold) 
++# Replaces a zone's file with one containing signed records.
++sub dt_resign_zone
++{
++    local ($d, $z, $k, $t) = @_;
++
++    local $zonesigner;
++    local @recs;
++    local $cmd;
++    local $out;
++    local $threshold = "";
++    local $z_chroot = &make_chroot($z);
++    local $usz = $z_chroot.".webmin-unsigned";
++
++    if ((($zonesigner=dt_cmdpath('zonesigner')) eq '')) {
++        return $text{'dt_zone_enocmd'};
++    }
++
++    rollrec_lock();
++
++    # Remove DNSSEC records and save the unsigned zone file
++    @recs = &read_zone_file($z, $dom);
++    for(my $i=$#recs; $i>=0; $i--) {
++        if ($recs[$i]->{'type'} eq 'NSEC' ||
++            $recs[$i]->{'type'} eq 'NSEC3' ||
++            $recs[$i]->{'type'} eq 'NSEC3PARAM' ||
++            $recs[$i]->{'type'} eq 'RRSIG' ||
++            $recs[$i]->{'type'} eq 'DNSKEY') {
++                &delete_record($z, $recs[$i]);
++        }   
++    }
++    &copy_source_dest($z_chroot, $usz); 
++
++    if ($t > 0) {
++        $threshold = "-threshold ".quotemeta("-$t"."d"." "); 
++    }
++
++    $cmd = "$zonesigner -verbose -verbose".
++		" -kskdirectory ".quotemeta($config{"dnssectools_keydir"}).
++		" -zskdirectory ".quotemeta($config{"dnssectools_keydir"}).
++		" -dsdir ".quotemeta($config{"dnssectools_keydir"}).
++                " -zone ".quotemeta($d).
++                " -krfile ".quotemeta(&make_chroot($k)).
++                " ".$threshold.
++		" ".quotemeta($usz)." ".quotemeta($z_chroot);
++    $out = &backquote_logged("$cmd 2>&1");
++
++    rollrec_unlock();
++
++    return $out if ($?);
++
++    &restart_zone($d);
++
++    return undef;
++}
++
++# dt_zskroll_zone(zone-name)
++# Initates a zsk rollover operation for the zone 
++sub dt_zskroll_zone
++{
++    local ($d) = @_;
++    if (!rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZSK,$d)) {
++        return $text{'dt_zone_erollctl'};
++    }
++    
++    return undef;
++}
++
++# dt_kskroll_zone(zone-name)
++# Initates a ksk rollover operation for the zone 
++sub dt_kskroll_zone
++{
++    local ($d) = @_;
++    if (!rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLKSK,$d)) {
++        return $text{'dt_zone_erollctl'};
++    }
++    
++    return undef;
++}
++
++# dt_notify_parentzone(zone-name)
++# Notifies rollerd that the new DS record has been published in the parent zone 
++sub dt_notify_parentzone
++{
++    local ($d) = @_;
++    if (!rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$d)) {
++        return $text{'dt_zone_erollctl'};
++    }
++    
++    return undef;
++}
++
++# dt_rollerd_restart()
++# Restart the rollerd daemon 
++sub dt_rollerd_restart
++{
++    local $rollerd;
++    local $r;
++    local $cmd;
++    local $out;
++
++    if ((($rollerd=dt_cmdpath('rollerd')) eq '')) {
++        return $text{'dt_zone_enocmd'};
++    }
++    rollmgr_halt();
++    $r = $config{"dnssectools_rollrec"};   
++    $cmd = "$rollerd -rrfile ".quotemeta($r);
++    &execute_command($cmd);
++    return undef;
++}
++
++# dt_genkrf()
++# Generate a new krf file for the zone
++sub dt_genkrf
++{
++    local ($zone, $z_chroot, $k_chroot) = @_;
++    local $dom = $zone->{'name'};
++    local @keys = &get_dnssec_key($zone);
++    local $usz = $z_chroot.".webmin-unsigned";
++    local $zskcur = "";
++    local $kskcur = "";
++    local $cmd;
++    local $out;
++
++    local $oldkeydir = &get_keys_dir($zone);
++    local $keydir = $config{"dnssectools_keydir"};
++    mkdir($keydir);
++
++    foreach my $key (@keys) {
++        foreach my $f ('publicfile', 'privatefile') {
++            # Identify if this is a zsk or a ksk
++            $key->{$f} =~ /(K\Q$dom\E\.\+\d+\+\d+)/;
++            if ($key->{'ksk'}) {
++                $kskcur = $1; 
++            } else {
++                $zskcur = $1; 
++            }
++            &copy_source_dest($key->{$f}, $keydir);
++            &unlink_file($key->{$f});
++        }
++    }
++
++    if (($zskcur eq "") || ($kskcur eq "")) {
++        return &text('dt_zone_enokey', $dom);
++    }
++
++    # Remove the older dsset file 
++    if ($oldkeydir) {
++        &unlink_file($oldkeydir."/"."dsset-".$dom.".");
++    }
++
++    if ((($genkrf=dt_cmdpath('genkrf')) eq '')) {
++        return $text{'dt_zone_enocmd'};
++    }
++    $cmd = "$genkrf".
++                " -zone ".quotemeta($dom).
++                " -krfile ".quotemeta($k_chroot).
++                " -zskcur=".quotemeta($zskcur).
++                " -kskcur=".quotemeta($kskcur).
++                " -zskdir ".quotemeta($keydir).
++                " -kskdir ".quotemeta($keydir).
++                " ".quotemeta($usz)." ".quotemeta($z_chroot);
++
++    $out = &backquote_logged("$cmd 2>&1");
++
++    return $out if ($?);
++    return undef;
++}
++
++
++# dt_delete_dnssec_state()
++# Delete all DNSSEC-Tools meta-data for a given zone 
++sub dt_delete_dnssec_state
++{
++    local ($zone) = @_;
++
++    local $z = &get_zone_file($zone);
++    local $dom = $zone->{'members'} ? $zone->{'values'}->[0] : $zone->{'name'};
++    local $z_chroot = &make_chroot($z);
++    local $k_chroot = $z_chroot.".krf";
++    local $usz = $z_chroot.".webmin-unsigned";
++    local @recs;
++
++    if (&check_if_dnssec_tools_managed($dom)) {
++        rollrec_lock();
++
++    	#remove entry from rollrec file
++    	&lock_file($config{"dnssectools_rollrec"});
++    	rollrec_read($config{"dnssectools_rollrec"});
++    	rollrec_del($dom);
++    	rollrec_close();
++    	&unlock_file($config{"dnssectools_rollrec"});
++
++    	&lock_file($z_chroot);
++
++    	# remove key and krf files
++    	keyrec_read($k_chroot);
++    	@kskpaths = keyrec_keypaths($dom, "all");
++   	foreach (@kskpaths) {
++        	# remove any trailing ".key"
++        	s/(.*).key$/\1/;
++        	&unlink_file("$_.key");
++        	&unlink_file("$_.private");
++    	}
++    	keyrec_close();
++    	&unlink_file($k_chroot);
++    	&unlink_file($usz);
++
++    	# Delete dsset
++        &unlink_file($config{"dnssectools_keydir"}."/"."dsset-".$dom.".");
++
++    	# remove DNSSEC records from zonefile
++    	@recs = &read_zone_file($z, $dom);
++    	for(my $i=$#recs; $i>=0; $i--) {
++        	if ($recs[$i]->{'type'} eq 'NSEC' ||
++            	    $recs[$i]->{'type'} eq 'NSEC3' ||
++            	    $recs[$i]->{'type'} eq 'NSEC3PARAM' ||
++            	    $recs[$i]->{'type'} eq 'RRSIG' ||
++            	    $recs[$i]->{'type'} eq 'DNSKEY') {
++               	    &delete_record($z, $recs[$i]);
++        	}   
++    	}
++    	&bump_soa_record($z, \@recs);
++    
++    	&unlock_file($z_chroot);
++
++        rollrec_unlock();
++    
++        &restart_bind();
++    }
++
++    return undef;
++}
++
+ 1;
+ 
+diff -u -r webmin-1.580.orig/bind8/config-CentOS-Linux-6.0-* webmin-1.580.dt/bind8/config-CentOS-Linux-6.0-*
+--- webmin-1.580.orig/bind8/config-CentOS-Linux-6.0-*	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/config-CentOS-Linux-6.0-*	2012-04-30 16:42:38.231045414 -0400
+@@ -44,3 +44,11 @@
+ checkconf=named-checkconf
+ other_slaves=1
+ restart_cmd=restart
++keygen=dnssec-keygen
++tmpl_dnssec=0
++dnssec_period=1
++dnssectools_conf=/etc/dnssec-tools/dnssec-tools.conf
++dnssectools_rollmgr_pidfile=/var/run/rollmgr.pid
++tmpl_dnssec_dt=1
++dnssectools_rollrec=/var/named/system.rollrec
++dnssectools_keydir=/var/named/dtkeys
+diff -u -r webmin-1.580.orig/bind8/config.info webmin-1.580.dt/bind8/config.info
+--- webmin-1.580.orig/bind8/config.info	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/config.info	2012-04-30 16:42:38.208052791 -0400
+@@ -65,3 +65,8 @@
+ start_cmd=Command to start BIND,3,Default
+ stop_cmd=Command to stop BIND,3,Just kill process
+ restart_cmd=Command to apply BIND configuration,10,-Just send HUP signal,restart-Stop and restart,Other command
++dnssectools_conf=Full path to the dnssec-tools.conf file,0
++dnssectools_rollmgr_pidfile=Full path to the dnssec-tools rollmgr pid file,0
++dnssectools_rollrec=Full path to the dnssec-tools rollrec file,0
++dnssectools_keydir=Full path to the dnssec-tools key directory,0
++
+diff -u -r webmin-1.580.orig/bind8/conf_zonedef.cgi webmin-1.580.dt/bind8/conf_zonedef.cgi
+--- webmin-1.580.orig/bind8/conf_zonedef.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/conf_zonedef.cgi	2012-04-30 16:42:38.235116521 -0400
+@@ -72,6 +72,17 @@
+ 	print &ui_table_row($text{'zonedef_dnssec'},
+ 		&ui_yesno_radio("dnssec", $config{'tmpl_dnssec'}), 3);
+ 
++	if (&have_dnssec_tools_support()) {
++		# Automate using DNSSEC-Tools
++		print &ui_table_row($text{'zonedef_dnssec_dt'},
++			&ui_yesno_radio("dnssec_dt", $config{'tmpl_dnssec_dt'}), 3);
++
++		# Default DNE
++		print &ui_table_row($text{'zonedef_dne'},
++			&ui_select("dnssec_dne", $config{'tmpl_dnssec_dne'} || "NSEC",
++			[ &list_dnssec_dne() ]), 3);
++	}
++
+ 	# Default algorithm
+ 	print &ui_table_row($text{'zonedef_alg'},
+ 		&ui_select("alg", $config{'tmpl_dnssecalg'} || "RSASHA1",
+diff -u -r webmin-1.580.orig/bind8/create_master.cgi webmin-1.580.dt/bind8/create_master.cgi
+--- webmin-1.580.orig/bind8/create_master.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/create_master.cgi	2012-04-30 16:42:38.161041814 -0400
+@@ -163,6 +163,26 @@
+ 		}
+ 	}
+ 
++# Automatically sign zone if required 
++if (&have_dnssec_tools_support() && $in{'enable_dt'}) {
++        my $err;
++        my $nsec3 = 0;
++        $zone = &get_zone_name($idx, $in{'view'});
++        #$zone = $in{'zone'}; 
++
++        if ($in{'dne'} eq "NSEC") {
++                $nsec3 = 0;
++        } elsif ($in{'dne'} eq "NSEC3") {
++                $nsec3 = 1;
++        } else {
++                &error($text{'dt_zone_edne'});
++        }
++
++        # Sign zone 
++        $err = &dt_sign_zone($zone, $nsec3);
++        &error($err) if ($err);
++}
++
+ &redirect("edit_master.cgi?index=$idx&view=$in{'view'}");
+ 
+ 
+diff -u -r webmin-1.580.orig/bind8/delete_zone.cgi webmin-1.580.dt/bind8/delete_zone.cgi
+--- webmin-1.580.orig/bind8/delete_zone.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/delete_zone.cgi	2012-04-30 16:42:38.164046142 -0400
+@@ -117,6 +117,9 @@
+ # delete any keys
+ &delete_dnssec_key($zconf);
+ 
++# delete all dnssec-tools related state
++&dt_delete_dnssec_state($zconf);
++
+ # remove the zone directive
+ &lock_file(&make_chroot($zconf->{'file'}));
+ &save_directive($parent, [ $zconf ], [ ]);
+diff -u -r webmin-1.580.orig/bind8/edit_master.cgi webmin-1.580.dt/bind8/edit_master.cgi
+--- webmin-1.580.orig/bind8/edit_master.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/edit_master.cgi	2012-04-30 16:42:38.225026554 -0400
+@@ -106,6 +106,13 @@
+ 	push(@images, "images/whois.gif");
+ 	}
+ if (&supports_dnssec()) {
++	if (&have_dnssec_tools_support()) {
++		# DNSSEC Automation
++		push(@links, "edit_zonedt.cgi?index=$in{'index'}&view=$in{'view'}");
++		push(@titles, $text{'dt_enable_title'});
++		push(@images, "images/dnssectools.gif");
++	}
++
+ 	# Zone key
+ 	push(@links, "edit_zonekey.cgi?index=$in{'index'}&view=$in{'view'}");
+ 	push(@titles, $text{'zonekey_title'});
+diff -u -r webmin-1.580.orig/bind8/find_zones.cgi webmin-1.580.dt/bind8/find_zones.cgi
+--- webmin-1.580.orig/bind8/find_zones.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/find_zones.cgi	2012-04-30 16:42:38.229093435 -0400
+@@ -5,6 +5,13 @@
+ require './bind8-lib.pl';
+ &ReadParse();
+ 
++if (&have_dnssec_tools_support()) {
++	# Parse the rollrec file to determine zone status
++	&lock_file($config{"dnssectools_rollrec"});
++       rollrec_lock();
++	rollrec_read($config{"dnssectools_rollrec"});
++}
++
+ @zones = &list_zone_names();
+ foreach $z (@zones) {
+ 	$v = $z->{'name'};
+@@ -26,8 +33,35 @@
+ 		}
+ 	push(@zicons, "images/$t.gif");
+ 	push(@ztypes, $text{"index_$t"});
++	if (&have_dnssec_tools_support()) {
++		my $rrr = rollrec_fullrec($v);
++		if ($rrr) {
++			if($rrr->{'kskphase'} > 0) {
++				if($rrr->{'kskphase'} == 6) {
++					push(@zstatus, $text{"dt_status_waitfords"});
++				} else {
++					push(@zstatus, $text{"dt_status_inKSKroll"});
++				}
++			} elsif($rrr->{'zskphase'} > 0) {
++				push(@zstatus, $text{"dt_status_inZSKroll"});
++			} else {
++				push(@zstatus, $text{"dt_status_signed"});
++			}
++		} else {
++			push(@zstatus, $text{"dt_status_unsigned"});
++		}
++	}
++
+ 	$len++;
+ 	}
++
++if (&have_dnssec_tools_support()) {
++	rollrec_close();
++       rollrec_unlock();
++	&unlock_file($config{"dnssectools_rollrec"});
++}
++
++
+ if (@zlinks == 1) {
+ 	&redirect($zlinks[0]);
+ 	exit;
+@@ -44,6 +78,7 @@
+ 	@zicons = map { $zicons[$_] } @zorder;
+ 	@ztypes = map { $ztypes[$_] } @zorder;
+ 	@zdels = map { $zdels[$_] } @zorder;
++	@zstatus = map { $zstatus[$_] } @zorder;
+ 
+ 	if ($config{'show_list'}) {
+ 		# display as list
+@@ -53,15 +88,31 @@
+ 			   &select_invert_link("d", 0) );
+ 		print &ui_links_row(\@links);
+ 		@grid = ( );
++		if (&have_dnssec_tools_support()) {
+ 		push(@grid, &zones_table([ @zlinks[0 .. $mid-1] ],
+ 				      [ @ztitles[0 .. $mid-1] ],
+ 				      [ @ztypes[0 .. $mid-1] ],
+-				      [ @zdels[0 .. $mid-1] ] ));
++                                      [ @zdels[0 .. $mid-1] ],
++                                      [ @zstatus[0 .. $mid-1] ] ));
++		} else {
++		push(@grid, &zones_table([ @zlinks[0 .. $mid-1] ],
++				      [ @ztitles[0 .. $mid-1] ],
++				      [ @ztypes[0 .. $mid-1] ],
++                                      [ @zdels[0 .. $mid-1] ] ));
++		}
+ 		if ($mid < @zlinks) {
++			if (&have_dnssec_tools_support()) {
+ 			push(@grid, &zones_table([ @zlinks[$mid .. $#zlinks] ],
+ 					     [ @ztitles[$mid .. $#ztitles] ],
+ 					     [ @ztypes[$mid .. $#ztypes] ],
+-					     [ @zdels[$mid .. $#zdels] ]));
++                                             [ @zdels[$mid .. $#zdels] ],
++                                             [ @status[$mid .. $#zstatus] ]));
++			} else {
++			push(@grid, &zones_table([ @zlinks[$mid .. $#zlinks] ],
++					     [ @ztitles[$mid .. $#ztitles] ],
++					     [ @ztypes[$mid .. $#ztypes] ],
++                                             [ @zdels[$mid .. $#zdels] ] ));
++			}
+ 			}
+ 		print &ui_grid_table(\@grid, 2, 100,
+ 				     [ "width=50%", "width=50%" ]);
+diff -u -r webmin-1.580.orig/bind8/index.cgi webmin-1.580.dt/bind8/index.cgi
+--- webmin-1.580.orig/bind8/index.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/index.cgi	2012-04-30 16:42:38.167069219 -0400
+@@ -92,6 +92,7 @@
+ 		   "conf_zonedef.cgi", "list_slaves.cgi",
+ 		   $bind_version >= 9 ? ( "conf_rndc.cgi" ) : ( ),
+ 		   &supports_dnssec_client() ? ( "conf_trusted.cgi" ) : ( ),
++                   ((&supports_dnssec()) && (&have_dnssec_tools_support())) ? ( "conf_dnssectools.cgi" ) : ( ),
+ 		   &supports_dnssec() ? ( "conf_dnssec.cgi" ) : ( ),
+ 		   &supports_check_conf() ? ( "conf_ncheck.cgi" ) : ( ),
+ 		   "conf_manual.cgi" );
+@@ -144,6 +145,14 @@
+ elsif (@zones && (!@views || !$config{'by_view'})) {
+ 	# Show all zones
+ 	print &ui_subheading($text{'index_zones'});
++
++	if (&have_dnssec_tools_support()) {
++		# Parse the rollrec file to determine zone status
++		&lock_file($config{"dnssectools_rollrec"});
++               rollrec_lock();
++		rollrec_read($config{"dnssectools_rollrec"});
++	}
++
+ 	foreach $z (@zones) {
+ 		$v = $z->{'name'};
+ 		$t = $z->{'type'};
+@@ -169,14 +178,43 @@
+ 		push(@zsort, $t eq 'hint' ? undef : $ztitles[$#ztitles]);
+ 		push(@zicons, "images/$t.gif");
+ 		push(@ztypes, $text{"index_$t"});
++
++		if (&have_dnssec_tools_support()) {
++			my $rrr = rollrec_fullrec($v);
++			if ($rrr) {
++				if($rrr->{'kskphase'} > 0) {
++					if($rrr->{'kskphase'} == 6) {
++						push(@zstatus, $text{"dt_status_waitfords"});
++					} else {        
++						push(@zstatus, $text{"dt_status_inKSKroll"});
++					}
++				} elsif($rrr->{'zskphase'} > 0) {
++					push(@zstatus, $text{"dt_status_inZSKroll"});
++				} else {    
++					push(@zstatus, $text{"dt_status_signed"});
++				}
++			} else {
++				push(@zstatus, $text{"dt_status_unsigned"});
++			}
++		}
++
+ 		$zhash{$zn} = $z;
+ 		$ztitlehash{$zn} = $ztitles[$#ztitles];
+ 		$zlinkhash{$zn} = $zlinks[$#zlinks];
+ 		$ztypeshash{$zn} = $ztypes[$#ztypes];
+-		$zdelhash{$zn} = $zdels[$#ztypes];
++		$zdelhash{$zn} = $zdels[$#zdels];
++		if (&have_dnssec_tools_support()) {
++			$zstatushash{$zn} = $zstatus[$#zstatus];
++		}
+ 		$len++;
+ 		}
+ 
++	if (&have_dnssec_tools_support()) {
++		rollrec_close();
++               rollrec_unlock();
++		&unlock_file($config{"dnssectools_rollrec"});
++	}
++
+ 	# sort list of zones
+ 	@zorder = sort { &compare_zones($zsort[$a], $zsort[$b]) } (0 .. $len-1);
+ 	@zlinks = map { $zlinks[$_] } @zorder;
+@@ -184,6 +222,7 @@
+ 	@zicons = map { $zicons[$_] } @zorder;
+ 	@ztypes = map { $ztypes[$_] } @zorder;
+ 	@zdels = map { $zdels[$_] } @zorder;
++	@zstatus = map { $zstatus[$_] } @zorder;
+ 
+ 	print &ui_form_start("mass_delete.cgi", "post");
+ 	@links = ( &select_all_link("d", 0),
+@@ -195,15 +234,32 @@
+ 		# display as list
+ 		$mid = int((@zlinks+1)/2);
+ 		@grid = ( );
++		if (&have_dnssec_tools_support()) {
++		push(@grid, &zones_table([ @zlinks[0 .. $mid-1] ],
++				      [ @ztitles[0 .. $mid-1] ],
++				      [ @ztypes[0 .. $mid-1] ],
++				      [ @zdels[0 .. $mid-1] ],
++				      [ @zstatus[0 .. $mid-1] ]));
++		} else {
+ 		push(@grid, &zones_table([ @zlinks[0 .. $mid-1] ],
+ 				      [ @ztitles[0 .. $mid-1] ],
+ 				      [ @ztypes[0 .. $mid-1] ],
+-				      [ @zdels[0 .. $mid-1] ] ));
++				      [ @zdels[0 .. $mid-1] ]));
++
++		}
+ 		if ($mid < @zlinks) {
++			if (&have_dnssec_tools_support()) {
+ 			push(@grid, &zones_table([ @zlinks[$mid .. $#zlinks] ],
+ 					     [ @ztitles[$mid .. $#ztitles] ],
+ 					     [ @ztypes[$mid .. $#ztypes] ],
+-					     [ @zdels[$mid .. $#zdels] ]));
++					     [ @zdels[$mid .. $#ztypes] ],
++					     [ @zstatus[$mid .. $#ztypes] ]));
++			} else {
++			push(@grid, &zones_table([ @zlinks[$mid .. $#zlinks] ],
++					     [ @ztitles[$mid .. $#ztitles] ],
++					     [ @ztypes[$mid .. $#ztypes] ],
++					     [ @zdels[$mid .. $#ztypes] ]));
++			}
+ 			}
+ 		print &ui_grid_table(\@grid, 2, 100,
+ 				     [ "width=50%", "width=50%" ]);
+@@ -241,10 +297,18 @@
+ 			     [ "rdelete", $text{'index_massrdelete'} ] ]);
+ 	}
+ elsif (@zones) {
++
++	if (&have_dnssec_tools_support()) {
++		# Parse the rollrec file to determine zone status
++		&lock_file($config{"dnssectools_rollrec"});
++               rollrec_lock();
++		rollrec_read($config{"dnssectools_rollrec"});
++	}
++
+ 	# Show zones under views
+ 	print &ui_subheading($text{'index_zones'});
+ 	foreach $vw (@views) {
+-		local (@zorder, @zlinks, @ztitles, @zicons, @ztypes, @zsort, @zdels, $len);
++		local (@zorder, @zlinks, @ztitles, @zicons, @ztypes, @zsort, @zdels, @zstatus, $len);
+ 		local @zv = grep { $_->{'view'} eq $vw->{'name'} } @zones;
+ 		next if (!@zv);
+ 		print "<b>",&text('index_inview',
+@@ -261,6 +325,24 @@
+ 			push(@zicons, "images/$t.gif");
+ 			push(@ztypes, $text{"index_$t"});
+ 			push(@zdels, $z->{'index'}." ".$z->{'viewindex'});
++			if (&have_dnssec_tools_support()) {
++				my $rrr = rollrec_fullrec($v);
++				if ($rrr) {
++					if($rrr->{'kskphase'} > 0) {
++						if($rrr->{'kskphase'} == 6) {
++							push(@zstatus, $text{"dt_status_waitfords"});
++						} else {
++							push(@zstatus, $text{"dt_status_inKSKroll"});
++						}
++					} elsif($rrr->{'zskphase'} > 0) {
++						push(@zstatus, $text{"dt_status_inZSKroll"});
++					} else {
++						push(@zstatus, $text{"dt_status_signed"});
++					}
++				} else {
++					push(@zstatus, $text{"dt_status_unsigned"});
++				}
++			}
+ 			$len++;
+ 			}
+ 
+@@ -272,6 +354,7 @@
+ 		@zicons = map { $zicons[$_] } @zorder;
+ 		@ztypes = map { $ztypes[$_] } @zorder;
+ 		@zdels = map { $zdels[$_] } @zorder;
++		@zstatus = map { $zstatus[$_] } @zorder;
+ 
+ 		print &ui_form_start("mass_delete.cgi", "post");
+ 		print &ui_links_row(\@crlinks);
+@@ -279,16 +362,25 @@
+ 			# display as list
+ 			$mid = int((@zlinks+1)/2);
+ 			@grid = ( );
++			if (&have_dnssec_tools_support()) {
++			push(@grid, &zones_table([ @zlinks[0 .. $mid-1] ],
++					     [ @ztitles[0 .. $mid-1] ],
++					     [ @ztypes[0 .. $mid-1] ],
++					     [ @zdels[0 .. $mid-1] ],
++					     [ @zstatus[0 .. $mid-1] ]));
++			} else {
+ 			push(@grid, &zones_table([ @zlinks[0 .. $mid-1] ],
+ 					     [ @ztitles[0 .. $mid-1] ],
+ 					     [ @ztypes[0 .. $mid-1] ],
+ 					     [ @zdels[0 .. $mid-1] ]));
++			}
+ 			if ($mid < @zlinks) {
+ 				push(@grid, &zones_table(
+ 					     [ @zlinks[$mid .. $#zlinks] ],
+ 					     [ @ztitles[$mid .. $#ztitles] ],
+ 					     [ @ztypes[$mid .. $#ztypes] ],
+-					     [ @zdels[$mid .. $#zdels] ]));
++                                             [ @zdels[$mid .. $#zdels] ],
++                                             [ @zstatus[$mid .. $#zstatus] ]));
+ 				}
+ 			print &ui_grid_table(\@grid, 2, 100,
+ 					     [ "width=50%", "width=50%" ]);
+@@ -308,6 +400,11 @@
+ 			[ "create", $text{'index_masscreate'} ],
+ 			[ "rdelete", $text{'index_massrdelete'} ], ]);
+ 		}
++	if (&have_dnssec_tools_support()) {
++		rollrec_close();
++               rollrec_unlock();
++		&unlock_file($config{"dnssectools_rollrec"});
++	}
+ 	}
+ else {
+ 	print "<b>$text{'index_none'}</b><p>\n";
+@@ -407,8 +504,12 @@
+ if ($zhash{$name}) {
+ 	local $cb = $zdelhash{$name} ?
+ 		&ui_checkbox("d", $zdelhash{$name}, "", 0)." " : "";
++	if (&have_dnssec_tools_support()) {
++	print "<td>$cb<a href='$zlinkhash{$name}'>$ztitlehash{$name} ($ztypeshash{$name}) ($zstatushash{$name})</a></td> </tr>\n";
++	} else {
+ 	print "<td>$cb<a href='$zlinkhash{$name}'>$ztitlehash{$name} ($ztypeshash{$name})</a></td> </tr>\n";
+ 	}
++	}
+ else {
+ 	print "<td><br></td> </tr>\n";
+ 	}
+diff -u -r webmin-1.580.orig/bind8/lang/en webmin-1.580.dt/bind8/lang/en
+--- webmin-1.580.orig/bind8/lang/en	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/lang/en	2012-04-30 16:42:38.184047818 -0400
+@@ -29,6 +29,7 @@
+ index_stopmsg=Click this button to stop the BIND server. Any clients using it will be unable to resolve hostnames until it is restarted.
+ index_zone=Zone
+ index_type=Type
++index_status=Status
+ index_master=Master
+ index_slave=Slave
+ index_stub=Stub
+@@ -151,6 +152,7 @@
+ mcreate_title=Create Master Zone
+ mcreate_ecannot=You cannot create master zones
+ mcreate_opts=New master zone options
++mcreate_dnssec_tools_enable=Enable DNSSEC using DNSSEC-Tools
+ mcreate_type=Zone type
+ mcreate_fwd=Forward (Names to Addresses)
+ mcreate_rev=Reverse (Addresses to Names)
+@@ -690,6 +692,8 @@
+ zonedef_this=System hostname ($1)
+ zonedef_eprins=Missing or invalid default nameserver for master domains
+ zonedef_dnssec=Create DNSSEC key and sign new zones?
++zonedef_dnssec_dt=Automate all DNSSEC operations (ignore other settings below)?
++zonedef_dne=Authenticated Denial of Existance Using
+ zonedef_alg=Initial key algorithm
+ zonedef_size=Initial key size
+ zonedef_single=Number of keys to create
+@@ -1047,6 +1051,71 @@
+ dnssec_err=Failed to save DNSSEC key re-signing
+ dnssec_eperiod=Missing or invalid number of days between re-signs
+ 
++dnssectools_title=DNSSEC-Tools Automation
++dt_conf_title=DNSSEC-Tools Automation
++dt_enable_title=DNSSEC-Tools Automation
++dt_zone_title=Manage DNSSEC operations for Zone
++dt_zone_already=The zone appears to be signed, but is not using DNSSEC-Tools.
++dt_zone_desc=This zone does not have DNSSEC enabled yet. You can use this form to have Webmin automate DNSSEC processing using DNSSEC-Tools, so that clients resolving this zone are protected against DNS spoofing attacks.
++dt_zone_header=Zone DNSSEC-Tools Options
++dt_zone_dne=Authenticated Denial of Existence
++dt_zone_enable=DNSSEC Automation
++dt_zone_disable=Disable DNSSEC
++dt_zone_disabledesc=Removes this zone from the list of zones managed by DNSSEC-Tools for zone signing and key rollover.
++dt_zone_err=DNSSEC Operation failed
++dt_zone_edne=Bad authenticated denial mechanism
++dt_zone_signing=Signing zone $1 ...
++dt_zone_errfopen=Could not open the system rollrec file for writing
++dt_zone_enocmd=dnssec-tools not installed, or command not found
++dt_zone_erollctl=Could not notify the rollover manager of rollover event
++dt_zone_done=... done
++dt_zone_deleting_state=Deleting all state associated with zone $1 ...
++dt_zone_zoneupdate=Updating records in zone $1 ...
++dt_zone_expandsep=Show current KSK and DS set details ..
++dt_zone_ksksep=KSK record :
++dt_zone_dssep=DS record :
++dt_zone_resign=Re-Sign Zone
++dt_zone_resigndesc=Use existing keys to resign the zone data immediately
++dt_zone_zskroll=Roll ZSK
++dt_zone_zskrolldesc=Force rollover of the zone's zone signing key
++dt_zone_kskroll=Roll KSK
++dt_zone_kskrolldesc=Force rollover of the zone's key signing key
++dt_zone_ksknotify=Resume KSK Roll
++dt_zone_ksknotifydesc=Resume KSK rollover. Operator must confirm that the new DS set for the zone's KSKs has been published in the parent zone
++dt_zone_keyrollon=Key Rollover is currently underway
++dt_zone_rollerdrst=Start Rollerd
++dt_zone_rollerdrstdesc=Start the Rollerd daemon
++dt_zone_migrate=Migrate to DNSSEC-Tools
++dt_zone_migratedesc=Import existing set of keys to DNSSEC-Tools and have DNSSEC-Tools automate future DNSSEC key rollover operations.
++dt_zone_createkrf=Creating keyrec file for zone $1 and moving keys for zone to DNSSEC-Tools managed location ...
++dt_zone_rrf_updating=Updating rollrec entry for zone $1 ...
++dt_zone_enokey=Could not find all required keys for zone $1
++dt_conf_ecannot=You are not allowed to configure DNSSEC
++dt_conf_header=DNSSEC Parameters
++dt_conf_desc=This page allows you to configure the DNSSEC parameters for zones that have DNSSEC enabled.
++dt_conf_err=Failed to save DNSSEC Parameters
++dt_conf_email=Administrator Email Address
++dt_conf_eemail=Missing or invalid email address
++dt_conf_algorithm=Key Algorithm
++dt_conf_ealg=Missing or invalid Key Algorithm
++dt_conf_ksklength=Key Signing Key Length
++dt_conf_eksklen=Missing or invalid KSK Length
++dt_conf_zsklength=Zone Signing Key Length
++dt_conf_ezsklen=Missing or invalid ZSK Length
++dt_conf_nsec3=Use NSEC3 (yes/no)?
++dt_conf_ensec3=Missing or invalid NSEC3 choice
++dt_conf_endtime=Signature Validity Period
++dt_conf_eendtime=Missing or invalid signature validity period
++dt_conf_ksklife=KSK Rollover Interval
++dt_conf_eksklife=Missing or invalid KSK rollover interval
++dt_conf_zsklife=ZSK Rollover Interval
++dt_conf_ezsklife=Missing or invalid ZSK rollover interval
++dt_status_waitfords=Waiting for DS
++dt_status_inKSKroll=In KSK Roll
++dt_status_inZSKroll=In ZSK Roll
++dt_status_signed=Signed
++dt_status_unsigned=Unsigned
++
+ zonekey_title=Setup DNSSEC Key
+ zonekey_desc=This zone does not have a DNSSEC signing key yet. You can use this form to have Webmin create one, so that clients resolving this zone are protected against DNS spoofing attacks.
+ zonekey_header=New DNSSEC key options
+diff -u -r webmin-1.580.orig/bind8/master_form.cgi webmin-1.580.dt/bind8/master_form.cgi
+--- webmin-1.580.orig/bind8/master_form.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/master_form.cgi	2012-04-30 16:42:38.231045414 -0400
+@@ -20,6 +20,17 @@
+ print &ui_table_row($text{'mcreate_dom'},
+ 	&ui_textbox("zone", undef, 40), 3);
+ 
++# Sign zones automatically
++if (&have_dnssec_tools_support()) {
++	print &ui_table_row($text{'mcreate_dnssec_tools_enable'},
++		&ui_yesno_radio("enable_dt", $config{'tmpl_dnssec_dt'} ? 1 : 0));
++
++        # Key algorithm
++        print &ui_table_row($text{'dt_zone_dne'},
++                &ui_select("dne", "NSEC",
++                           [ &list_dnssec_dne() ]));
++}
++
+ $conf = &get_config();
+ @views = &find("view", $conf);
+ if (@views) {
+diff -u -r webmin-1.580.orig/bind8/records-lib.pl webmin-1.580.dt/bind8/records-lib.pl
+--- webmin-1.580.orig/bind8/records-lib.pl	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/records-lib.pl	2012-04-30 16:42:38.215060920 -0400
+@@ -882,5 +882,27 @@
+ 	}
+ }
+ 
++# get_dnskey_rrset(&zone, [&records])
++# Returns the DNSKEY recordset for some domain, or an empty array if none 
++sub get_dnskey_rrset
++{
++    local ($z, $recs) = @_;
++    local @rv = ();
++    if (!$recs) {
++      # Need to get zone file and thus records
++      my $fn = &get_zone_file($z);
++      $recs = [ &read_zone_file($fn, $dom) ];
++    }
++    # Find the record
++    local $dom = $z->{'members'} ? $z->{'values'}->[0] : $z->{'name'};
++    foreach my $r (@$recs) {
++      if ($r->{'type'} eq 'DNSKEY' &&
++          $r->{'name'} eq $dom.'.') {
++              push(@rv, $r);
++      }
++    }
++    return @rv;
++}
++
+ 1;
+ 
+diff -u -r webmin-1.580.orig/bind8/resign.pl webmin-1.580.dt/bind8/resign.pl
+--- webmin-1.580.orig/bind8/resign.pl	2012-04-25 15:38:00.971690612 -0400
++++ webmin-1.580.dt/bind8/resign.pl	2012-04-30 16:42:38.165030697 -0400
+@@ -4,20 +4,43 @@
+ $no_acl_check++;
+ require './bind8-lib.pl';
+ 
++my $zonefile;
++my $krfile;
++my $dom;
++my $err;
++
+ if ($ARGV[0] eq "--debug") {
+ 	$debug = 1;
+ 	}
+-if (!$config{'dnssec_period'}) {
+-	print STDERR "Maximum age not set\n" if ($debug);
+-	exit(0);
+-	}
++my $period = $config{'dnssec_period'} || 21;
+ 
+ @zones = &list_zone_names();
+ $errcount = 0;
+ foreach $z (@zones) {
+ 	# Get the key
+ 	next if ($z->{'type'} ne 'master');
++        $zonefile = &get_zone_file($z);
++        $krfile = "$zonefile".".krf";	
++        $dom = $z->{'members'} ? $z->{'values'}->[0] : $z->{'name'};
++
+ 	print STDERR "Considering zone $z->{'name'}\n" if ($debug);
++
++	# Do DNSSEC-Tools resign operation if zone is being managed by DNSSEC-Tools
++	if (&have_dnssec_tools_support() && check_if_dnssec_tools_managed($dom)) {
++        	&lock_file(&make_chroot($zonefile));
++        	$err = &dt_resign_zone($dom, $zonefile, $krfile, $period);
++        	&unlock_file(&make_chroot($zonefile));
++
++        	if ($err) {
++                	print STDERR "  Re-signing failed : $err\n";
++                	$errcount++;
++        	}
++        	elsif ($debug) {
++                	print STDERR "  Re-signed OK\n";
++        	}
++		next;
++        }
++        
+ 	@keys = &get_dnssec_key($z);
+ 	print STDERR "  Key count ",scalar(@keys),"\n" if ($debug);
+ 	next if (@keys != 2);
+@@ -48,4 +71,3 @@
+ 		}
+ 	}
+ exit($errcount);
+-
+diff -u -r webmin-1.580.orig/bind8/save_zonedef.cgi webmin-1.580.dt/bind8/save_zonedef.cgi
+--- webmin-1.580.orig/bind8/save_zonedef.cgi	2012-01-21 19:46:49.000000000 -0500
++++ webmin-1.580.dt/bind8/save_zonedef.cgi	2012-04-30 16:42:38.165030697 -0400
+@@ -65,14 +65,19 @@
+ 	}
+ if (defined($in{'dnssec'})) {
+ 	$config{'tmpl_dnssec'} = $in{'dnssec'};
+-	$config{'tmpl_dnssecalg'} = $in{'alg'};
+-	($ok, $err) = &compute_dnssec_key_size($in{'alg'}, $in{'size_def'},
+-					       $in{'size'});
+-	&error($err) if (!$ok);
+-	$config{'tmpl_dnssecsizedef'} = $in{'size_def'};
+-	$config{'tmpl_dnssecsize'} = $in{'size'};
+-	$config{'tmpl_dnssecsingle'} = $in{'single'};
+-	}
++        $config{'tmpl_dnssec_dt'} = $in{'dnssec_dt'};
++        if ($config{'tmpl_dnssec_dt'}) {
++            $config{'tmpl_dnssec_dne'} = $in{'dnssec_dne'};
++        } else {
++            $config{'tmpl_dnssecalg'} = $in{'alg'};
++            ($ok, $err) = &compute_dnssec_key_size($in{'alg'}, $in{'size_def'},
++                                               $in{'size'});
++            &error($err) if (!$ok);
++            $config{'tmpl_dnssecsizedef'} = $in{'size_def'};
++            $config{'tmpl_dnssecsize'} = $in{'size'};
++            $config{'tmpl_dnssecsingle'} = $in{'single'};
++        }
++}
+ &save_module_config();
+ &unlock_file("$module_config_directory/config");
+ 
+--- webmin-1.580.orig/bind8/conf_dnssectools.cgi	1969-12-31 19:00:00.000000000 -0500
++++ webmin-1.580.dt/bind8/conf_dnssectools.cgi	2012-04-30 16:42:38.215060920 -0400
+@@ -0,0 +1,82 @@
++#!/usr/local/bin/perl
++# Show a form to setup DNSSEC-Tools parameters
++
++require './bind8-lib.pl';
++
++local $conf;
++local $emailaddrs;
++local $algorithm;
++local $ksklength;
++local $zsklength;
++local $usensec3;
++local $endtime;
++local $ksklife;
++local $zsklife;
++
++&ReadParse();
++$access{'defaults'} || &error($text{'dt_conf_ecannot'});
++&ui_print_header(undef, $text{'dt_conf_title'}, "",
++		 undef, undef, undef, undef, &restart_links());
++
++print $text{'dt_conf_desc'},"<p>\n";
++
++$conf = get_dnssectools_config();
++
++print &ui_form_start("save_dnssectools.cgi", "post");
++print &ui_table_start($text{'dt_conf_header'}, undef, 2);
++
++$emailaddrs = find_value("admin-email", $conf);
++print &ui_table_row($text{'dt_conf_email'},
++		ui_textbox("dt_email", $emailaddrs, 50));
++
++#algorithm; dt_alg
++$algorithm = find_value("algorithm", $conf);
++print &ui_table_row($text{'dt_conf_algorithm'},
++		ui_textbox("dt_alg", $algorithm, 50));
++
++#ksklength; dt_ksklen
++$ksklength = find_value("ksklength", $conf);
++print &ui_table_row($text{'dt_conf_ksklength'},
++		ui_textbox("dt_ksklen", $ksklength, 50));
++
++#zsklength; dt_zsklen
++$zsklength = find_value("zsklength", $conf);
++print &ui_table_row($text{'dt_conf_zsklength'},
++		ui_textbox("dt_zsklen", $zsklength, 50));
++
++#usensec3; dt_nsec3
++$usensec3 = find_value("usensec3", $conf);
++print &ui_table_row($text{'dt_conf_nsec3'},
++		ui_textbox("dt_nsec3", $usensec3, 50));
++
++
++#endtime; dt_endtime
++$endtime = find_value("endtime", $conf);
++print &ui_table_row($text{'dt_conf_endtime'},
++		ui_textbox("dt_endtime", $endtime, 50));
++
++print &ui_table_hr();
++
++#ksklife; dt_ksklife
++$ksklife = find_value("ksklife", $conf);
++print &ui_table_row($text{'dt_conf_ksklife'},
++		ui_textbox("dt_ksklife", $ksklife, 50));
++
++#zsklife; dt_zsklife
++$zsklife = find_value("zsklife", $conf);
++print &ui_table_row($text{'dt_conf_zsklife'},
++		ui_textbox("dt_zsklife", $zsklife, 50));
++
++print &ui_table_hr();
++
++# Interval in days
++print &ui_table_row($text{'dnssec_period'},
++	&ui_textbox("period", $config{'dnssec_period'} || 21, 5)." ".
++	$text{'dnssec_days'});
++
++print &ui_table_hr();
++print &ui_table_end();
++print &ui_form_end([ [ undef, $text{'save'} ] ]);
++
++&ui_print_footer("", $text{'index_return'});
++
+--- webmin-1.580.orig/bind8/disable_zonedt.cgi	1969-12-31 19:00:00.000000000 -0500
++++ webmin-1.580.dt/bind8/disable_zonedt.cgi	2012-04-30 16:42:38.225026554 -0400
+@@ -0,0 +1,32 @@
++
++#!/usr/local/bin/perl
++# Remove the signing key records for a zone
++
++require './bind8-lib.pl';
++
++local $zone;
++local $dom;
++local $desc;
++
++&error_setup($text{'dt_zone_err'});
++&ReadParse();
++$zone = &get_zone_name($in{'index'}, $in{'view'});
++$dom = $zone->{'name'};
++&can_edit_zone($zone) ||
++	&error($text{'master_ecannot'});
++$desc = &ip6int_to_net(&arpa_to_ip($dom));
++
++&ui_print_unbuffered_header($desc, $text{'dt_enable_title'}, "",
++                           undef, undef, undef, undef, &restart_links($zone));
++
++if (&have_dnssec_tools_support()) {
++	print &text('dt_zone_deleting_state', $dom),"<br>\n";
++	&dt_delete_dnssec_state($zone);
++	print $text{'dt_zone_done'},"<br><br>\n";
++
++	&webmin_log("zonekeyoff", undef, $dom);
++}
++
++&ui_print_footer("edit_master.cgi?index=$in{'index'}&view=$in{'view'}",
++                 $text{'master_return'});
++
+--- webmin-1.580.orig/bind8/edit_zonedt.cgi	1969-12-31 19:00:00.000000000 -0500
++++ webmin-1.580.dt/bind8/edit_zonedt.cgi	2012-04-30 16:42:38.185063789 -0400
+@@ -0,0 +1,219 @@
++
++#!/usr/local/bin/perl
++# Display the signing key for a zone, or offer to set one up
++
++require './bind8-lib.pl';
++
++local $zone;
++local $dom;
++local $desc;
++local $rrr;
++
++&ReadParse();
++$zone = &get_zone_name($in{'index'}, $in{'view'});
++$dom = $zone->{'name'};
++&can_edit_zone($zone) ||
++	&error($text{'master_ecannot'});
++$desc = &ip6int_to_net(&arpa_to_ip($dom));
++
++&ui_print_header($desc, $text{'dt_zone_title'}, "",
++		 undef, undef, undef, undef, &restart_links($zone));
++
++
++# Check if zone is currently being managed by dnssec-tools
++if (&have_dnssec_tools_support()) {
++my $rrfile = $config{"dnssectools_rollrec"};
++&lock_file($rrfile);
++rollrec_read($rrfile);
++$rrr = rollrec_fullrec($dom);
++if ($rrr) {
++    # yes, it is managed by d-t
++
++    print "<br>\n<br>\n";
++
++    # Show existing keyset and DS
++    print &ui_hidden_start($text{'dt_zone_expandsep'},
++                           "sep", 0, "edit_zonedt.cgi?$in");
++    my @keys = &get_dnskey_rrset($zone);
++    foreach $key (@keys) {
++        # Check if this is a KSK
++	my $ksk = $key->{'values'}->[0] % 2 ? 1 : 0;
++
++        # Collapsible section for KSK details
++        if ($ksk) {
++	    # parse the key record into a record
++            my $keyline = join(" ", $key->{'name'}, $key->{'ttl'}, 
++                            $key->{'class'}, $key->{'type'}, @{$key->{'values'}});
++            my $dsline = "";
++            my @dsalgs = &list_dnssec_dshash(); 
++            foreach my $alg (@dsalgs) {
++                my $keyrr = Net::DNS::RR->new($keyline);
++                if ($keyrr) {
++                    my $dsrr = create Net::DNS::RR::DS($keyrr, digtype => "$alg");
++                    if ($dsrr) {
++                        $dsline = $dsline . $dsrr->string . "<br>\n";
++                    }
++                }
++            }
++
++            print $text{'dt_zone_ksksep'},"<br>\n";
++            print &ui_textarea("keyline", $keyline, 2, 80, "off", 0,
++                               "readonly style='width:90%'"),"<p>\n";
++            print $text{'dt_zone_dssep'},"<br>\n";
++            print &ui_textarea("dsline", $dsline, 2, 80, "off", 0,
++                               "readonly style='width:90%'"),"<p>\n";
++        }
++    }
++    print &ui_hidden_end();
++    print "<br>\n<br>\n";
++    print &ui_hr();
++    print "<br>\n<br>\n";
++
++    # Offer choices to manage DNSSEC operations
++
++    # Check if rollerd is running
++    my $rmgr_pid = $config{"dnssectools_rollmgr_pidfile"};
++    if ($rmgr_pid && !(&check_pid_file($rmgr_pid))) {
++        # Offer to start rollerd
++        print &ui_buttons_start();
++        print &ui_buttons_row("zone_dnssecmgt_dt.cgi",
++                              $text{'dt_zone_rollerdrst'},
++                              $text{'dt_zone_rollerdrstdesc'},
++                              &ui_hidden("view", $in{'view'}).
++                              &ui_hidden("index", $in{'index'}).
++                              &ui_hidden("optype", "rollerdrst"));
++    	print &ui_buttons_end();
++        print "<br>\n<br>\n";
++        print &ui_hr();
++        print "<br>\n<br>\n";
++    } else {
++
++        if(($rrr->{'zskphase'} == 0) && ($rrr->{'kskphase'} == 0))  {
++            print &ui_buttons_start();
++            print &ui_buttons_row("zone_dnssecmgt_dt.cgi",
++                                  $text{'dt_zone_zskroll'},
++                                  $text{'dt_zone_zskrolldesc'},
++                                  &ui_hidden("view", $in{'view'}).
++                                  &ui_hidden("index", $in{'index'}).
++                                  &ui_hidden("optype", "zskroll"));
++            print &ui_buttons_row("zone_dnssecmgt_dt.cgi",
++                                  $text{'dt_zone_kskroll'},
++                                  $text{'dt_zone_kskrolldesc'},
++                                  &ui_hidden("view", $in{'view'}).
++                                  &ui_hidden("index", $in{'index'}).
++                                  &ui_hidden("optype", "kskroll"));
++    	    print &ui_buttons_end();
++            print "<br>\n<br>\n";
++            print &ui_hr();
++            print "<br>\n<br>\n";
++
++        } elsif($rrr->{'kskphase'} == 6) { 
++            # if KSK rollphase has reached 6, we need to notify parent
++            print &ui_buttons_start();
++            print &ui_buttons_row("zone_dnssecmgt_dt.cgi",
++                                  $text{'dt_zone_ksknotify'},
++                                  $text{'dt_zone_ksknotifydesc'},
++                                  &ui_hidden("view", $in{'view'}).
++                                  &ui_hidden("index", $in{'index'}).
++                                  &ui_hidden("optype", "notify"));
++    	    print &ui_buttons_end();
++            print "<br>\n<br>\n";
++            print &ui_hr();
++            print "<br>\n<br>\n";
++
++        } else {
++            my $lsdnssec;
++            # Display rollerd status for this zone
++            print $text{'dt_zone_keyrollon'},"<br>\n";
++            print "<br>\n<br>\n";
++
++            if ((($lsdnssec=dt_cmdpath('lsdnssec')) ne '')) {
++                my $cmd = "$lsdnssec -z $dom $rrfile";
++                my $out = &backquote_command("$cmd");
++                print &ui_textarea("lsdnssec", $out, 12, 80, "soft", 0,
++                               "readonly style='width:90%'");
++                print "<br>\n<br>\n";
++            }
++
++            print &ui_hr();
++            print "<br>\n<br>\n";
++        }
++    }
++
++    # Offer to re-sign this zone 
++    print &ui_buttons_start();
++    print &ui_buttons_row("zone_dnssecmgt_dt.cgi",
++                          $text{'dt_zone_resign'},
++                          $text{'dt_zone_resigndesc'},
++                          &ui_hidden("view", $in{'view'}).
++                          &ui_hidden("index", $in{'index'}).
++                          &ui_hidden("optype", "resign"));
++    print &ui_buttons_end();
++    print "<br>\n<br>\n";
++    print &ui_hr();
++    print "<br>\n<br>\n";
++
++    # Offer to disable dnssec-tools for this zone 
++    print &ui_buttons_start();
++    print &ui_buttons_row("disable_zonedt.cgi", $text{'dt_zone_disable'},
++                          $text{'dt_zone_disabledesc'},
++                          &ui_hidden("view", $in{'view'}).
++                          &ui_hidden("index", $in{'index'}));
++    print &ui_buttons_end();
++    print "<br>\n<br>\n";
++    print "<br>\n<br>\n";
++
++} else {
++
++    # no, it's not managed by d-t
++    
++    # Check if the zone already has a key, from a DNSKEY record
++    my $keyrec = &get_dnskey_record($zone);
++    if ($keyrec) {
++	# Tell the user we already have it
++	print &text('dt_zone_already'),"\n";
++
++        print &ui_hr();
++        print &ui_buttons_start();
++
++        # Offer to migrate existing keys to dnssec-tools 
++        print &ui_buttons_row("zone_dnssecmigrate_dt.cgi", $text{'dt_zone_migrate'},
++                              $text{'dt_zone_migratedesc'},
++                              &ui_hidden("view", $in{'view'}).
++                              &ui_hidden("index", $in{'index'}));
++
++        # Offer to remove existing keys
++        print &ui_buttons_row("disable_zonekey.cgi", $text{'zonekey_disable'},
++                              $text{'zonekey_disabledesc'},
++                              &ui_hidden("view", $in{'view'}).
++                              &ui_hidden("index", $in{'index'}));
++
++        print &ui_buttons_end();
++
++    } else {
++
++        # Offer to enable dnssec-tools for this zone 
++
++	print $text{'dt_zone_desc'},"<p>\n";
++
++	print &ui_form_start("enable_zonedt.cgi", "post");
++	print &ui_hidden("index", $in{'index'});
++	print &ui_hidden("view", $in{'view'});
++
++	print &ui_table_start($text{'dt_zone_header'}, undef, 2);
++	# Key algorithm
++	print &ui_table_row($text{'dt_zone_dne'},
++		&ui_select("dne", "NSEC",
++			   [ &list_dnssec_dne() ]));
++	print &ui_table_end();
++
++	print &ui_form_end([ [ undef, $text{'dt_zone_enable'} ] ]);
++
++    }
++}
++rollrec_close();
++&unlock_file($rrfile);
++}
++
++&ui_print_footer("edit_master.cgi?index=$in{'index'}&view=$in{'view'}",
++	$text{'master_return'});
+--- webmin-1.580.orig/bind8/enable_zonedt.cgi	1969-12-31 19:00:00.000000000 -0500
++++ webmin-1.580.dt/bind8/enable_zonedt.cgi	2012-04-30 16:42:38.223021329 -0400
+@@ -0,0 +1,45 @@
++
++#!/usr/local/bin/perl
++# Create a signing key for a zone, add it, and sign the zone
++
++require './bind8-lib.pl';
++
++local $zone;
++local $dom;
++local $desc;
++
++&error_setup($text{'dt_zone_err'});
++&ReadParse();
++$zone = &get_zone_name($in{'index'}, $in{'view'});
++$dom = $zone->{'name'};
++&can_edit_zone($zone) ||
++	&error($text{'master_ecannot'});
++$desc = &ip6int_to_net(&arpa_to_ip($dom));
++
++&ui_print_unbuffered_header($desc, $text{'dt_enable_title'}, "",
++                            undef, undef, undef, undef, &restart_links($zone));
++
++if (&have_dnssec_tools_support()) {
++	my $err;
++	my $nsec3 = 0;
++
++	if ($in{'dne'} eq "NSEC") {
++		$nsec3 = 0;
++	} elsif ($in{'dne'} eq "NSEC3") {
++		$nsec3 = 1;
++	} else {
++		&error($text{'dt_zone_edne'}); 
++	}
++
++	# Sign zone 
++	print &text('dt_zone_signing', $dom),"<br>\n";
++	$err = &dt_sign_zone($zone, $nsec3);
++	&error($err) if ($err);
++	print $text{'dt_zone_done'},"<br>\n";
++
++	&webmin_log("zonekeyon", undef, $dom);
++}
++
++&ui_print_footer("edit_master.cgi?index=$in{'index'}&view=$in{'view'}",
++		 $text{'master_return'});
++
+--- webmin-1.580.orig/bind8/save_dnssectools.cgi	1969-12-31 19:00:00.000000000 -0500
++++ webmin-1.580.dt/bind8/save_dnssectools.cgi	2012-04-30 16:42:38.163018780 -0400
+@@ -0,0 +1,54 @@
++#!/usr/local/bin/perl
++# save dnssec-tools related options
++
++require './bind8-lib.pl';
++
++&ReadParse();
++&error_setup($text{'dt_conf_err'});
++$access{'defaults'} || &error($text{'dt_conf_ecannot'});
++
++local $conf = get_dnssectools_config();
++local %nv;
++
++$in{'dt_email'} =~ /(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z0-9-.]*\b)/ || 
++	&error($text{'dt_conf_eemail'});
++$nv{'admin-email'} = $1;
++
++$in{'dt_alg'} =~ /(\b[A-Za-z0-9]+\b)/ || 
++	&error($text{'dt_conf_ealg'});
++$nv{'algorithm'} = $1;
++
++$in{'dt_ksklen'} =~ /(\b[0-9]+\b)/ || 
++	&error($text{'dt_conf_eksklen'});
++$nv{'ksklength'} = $1;
++
++$in{'dt_zsklen'} =~ /(\b[0-9]+\b)/ || 
++	&error($text{'dt_conf_ezsklen'});
++$nv{'zsklength'} = $1;
++
++$in{'dt_nsec3'} =~ /(\b(yes|no)\b)/i || 
++	&error($text{'dt_conf_ensec3'});
++$nv{'usensec3'} = $1;
++
++$in{'dt_endtime'} =~ /(\+?[0-9]+)/ || 
++	&error($text{'dt_conf_eendtime'});
++$nv{'endtime'} = $1;
++
++$in{'dt_ksklife'} =~ /(\b[0-9]+\b)/  || 
++	&error($text{'dt_conf_eksklife'});
++$nv{'ksklife'} = $1;
++
++$in{'dt_zsklife'} =~ /(\b[0-9]+\b)/  || 
++	&error($text{'dt_conf_ezsklife'});
++$nv{'zsklife'} = $1;
++
++&save_dnssectools_directive($conf, \%nv);
++
++
++&lock_file($module_config_file);
++$config{'dnssec_period'} = $in{'period'};
++&save_module_config();
++&unlock_file($module_config_file);
++
++&webmin_log("dnssectools");
++&redirect("");
+--- webmin-1.580.orig/bind8/zone_dnssecmgt_dt.cgi	1969-12-31 19:00:00.000000000 -0500
++++ webmin-1.580.dt/bind8/zone_dnssecmgt_dt.cgi	2012-04-30 16:42:38.224056598 -0400
+@@ -0,0 +1,48 @@
++
++#!/usr/local/bin/perl
++# Perform one of a number of DNSSEC-related operations for the zone 
++
++require './bind8-lib.pl';
++
++local $zone;
++local $dom;
++local $err;
++
++&error_setup($text{'dt_zone_err'});
++&ReadParse();
++$zone = &get_zone_name($in{'index'}, $in{'view'});
++$dom = $zone->{'name'};
++&can_edit_zone($zone) ||
++	&error($text{'master_ecannot'});
++
++if (&have_dnssec_tools_support()) {
++	my $optype = $in{'optype'};
++	if ($optype eq "resign") {
++		# Do the signing
++		#$zonefile = &make_chroot(&absolute_path($zone->{'file'}));
++		my $zonefile = &get_zone_file($zone);
++		my $krfile = "$zonefile".".krf";
++		&lock_file(&make_chroot($zonefile));
++		$err = &dt_resign_zone($dom, $zonefile, $krfile, 0);
++		&unlock_file(&make_chroot($zonefile));
++		&error($err) if ($err);
++	} elsif ($optype eq "zskroll") {
++		$err = &dt_zskroll_zone($dom);
++		&error($err) if ($err);
++	} elsif ($optype eq "kskroll") {
++		$err = &dt_kskroll_zone($dom);
++		&error($err) if ($err);
++	} elsif ($optype eq "notify") {
++		$err = &dt_notify_parentzone($dom);
++		&error($err) if ($err);
++	} elsif ($optype eq "rollerdrst") {
++		$err = &dt_rollerd_restart();
++		&error($err) if ($err);
++	}
++
++	&webmin_log("manage", undef, $dom);
++}
++
++# Return to master page
++&redirect("edit_master.cgi?index=$in{'index'}&view=$in{'view'}");
++
+--- webmin-1.580.orig/bind8/zone_dnssecmigrate_dt.cgi	1969-12-31 19:00:00.000000000 -0500
++++ webmin-1.580.dt/bind8/zone_dnssecmigrate_dt.cgi	2012-04-30 16:42:38.231045414 -0400
+@@ -0,0 +1,79 @@
++
++#!/usr/local/bin/perl
++# Migrate an existing DNSSEC signed zone to using the DNSSEC-Tools suite for DNSSEC-related automation 
++
++require './bind8-lib.pl';
++
++local $zone;
++local $dom;
++local $desc;
++local $err;
++
++&error_setup($text{'dt_zone_err'});
++&ReadParse();
++$zone = &get_zone_name($in{'index'}, $in{'view'});
++$dom = $zone->{'name'};
++&can_edit_zone($zone) ||
++	&error($text{'master_ecannot'});
++$desc = &ip6int_to_net(&arpa_to_ip($dom));
++
++&ui_print_unbuffered_header($desc, $text{'dt_enable_title'}, "",
++                            undef, undef, undef, undef, &restart_links($zone));
++
++if (&have_dnssec_tools_support()) {
++	my $zonefile = &get_zone_file($zone);
++	my $krfile = "$zonefile".".krf";
++	my $z_chroot = &make_chroot($zonefile);
++	my $k_chroot = &make_chroot($krfile);
++	my $rrfile;
++
++	&lock_file($z_chroot);
++
++	# generate the keyrec file
++	print &text('dt_zone_createkrf', $dom),"<br>\n";
++	$err = &dt_genkrf($zone, $z_chroot, $k_chroot); 
++	if ($err) {
++		&unlock_file($z_chroot);
++		&error($err);
++	}
++
++	print $text{'dt_zone_done'},"<br><br>\n";
++
++	# resign the zone
++	print &text('dt_zone_signing', $dom),"<br>\n";
++	$err = &dt_resign_zone($dom, $zonefile, $krfile, 0);
++	if ($err) {
++		&unlock_file($z_chroot);
++		&error($err);
++	}
++	print $text{'dt_zone_done'},"<br><br>\n";
++
++	# Create rollrec entry for zone
++	print &text('dt_zone_rrf_updating', $dom),"<br>\n";
++	$rrfile = $config{"dnssectools_rollrec"};
++	&lock_file($rrfile);
++	open(OUT,">> $rrfile") || &error($text{'dt_zone_errfopen'});
++	print OUT "roll \"$dom\"\n";
++	print OUT " zonename    \"$dom\"\n";
++	print OUT " zonefile    \"$z_chroot\"\n";
++	print OUT " keyrec      \"$k_chroot\"\n";
++	print OUT " kskphase    \"0\"\n";
++	print OUT " zskphase    \"0\"\n";
++	print OUT " ksk_rolldate    \" \"\n";
++	print OUT " ksk_rollsecs    \"0\"\n";
++	print OUT " zsk_rolldate    \" \"\n";
++	print OUT " zsk_rollsecs    \"0\"\n";
++	print OUT " maxttl      \"0\"\n";
++	print OUT " phasestart  \"new\"\n";
++	&unlock_file($config{"dnssectools_rollrec"});
++	print $text{'dt_zone_done'},"<br>\n";
++
++	&unlock_file($z_chroot);
++
++  	&restart_bind();
++
++	&webmin_log("migrate", undef, $dom);
++}
++
++&ui_print_footer("edit_master.cgi?index=$in{'index'}&view=$in{'view'}",
++                 $text{'master_return'});
