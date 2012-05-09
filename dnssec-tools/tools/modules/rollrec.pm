@@ -2044,26 +2044,27 @@ A blank line is added after the final line of the new I<rollrec>.
 The I<rollrec> file is not written after I<rollrec_add()>, though
 it is internally marked as having been modified.
 
+=item I<rollrec_close()>
+
+This interface saves the internal version of the I<rollrec> file (opened with
+I<rollrec_read()>) and closes the file handle. 
+
 =item I<rollrec_del(rollrec_name)>
 
-This routine deletes a I<rollrec> from the I<rollrec> file and the internal
-representation of the file contents.  The I<rollrec> is deleted from both
+This routine deletes a I<rollrec> from the set of I<rollrec>s loaded into
+memory by the B<rollrec.pm> module.  The I<rollrec> is deleted from both
 the I<%rollrecs> hash table and the I<@rollreclines> array.
 
-Only the I<rollrec> itself is deleted from the file.  Any associated comments
-and blank lines surrounding it are left intact.  The I<rollrec> file is not
-written after I<rollrec_del()>, though it is internally marked as having been
-modified.
+The I<rollrec> file is not written after I<rollrec_del()>, though the
+collection of I<rollrec>s is internally marked as having been modified.
+
+Only the I<rollrec> itself is deleted.  Any associated comments and blank
+lines surrounding it are left intact.
 
 Return values are:
 
      0 successful rollrec deletion
     -1 unknown name
-
-=item I<rollrec_close()>
-
-This interface saves the internal version of the I<rollrec> file (opened with
-I<rollrec_read()>) and closes the file handle. 
 
 =item I<rollrec_delfield(rollrec_name,field)>
 
