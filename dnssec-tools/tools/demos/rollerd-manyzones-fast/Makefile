@@ -11,7 +11,6 @@ many-zones-rollerd:	clean pristine-files zones-short
 
 pristine-files:
 	cp save-demo.rollrec demo.rollrec
-	cp save-db.cache db.cache
 	cp save-dummy.com dummy.com
 	cp save-example.com example.com
 	cp save-test.com test.com
@@ -22,7 +21,7 @@ pristine-files:
 	phaser demo.rollrec
 
 zones-short:
-	zonesigner -zsklife 15 -e now+25 -genkeys dummy.com
+	zonesigner -zsklife 15 -e 25 -genkeys dummy.com
 	zonesigner -zsklife 15 -genkeys example.com
 	zonesigner -zsklife 15 -genkeys test.com
 	zonesigner -zsklife 15 -genkeys woof.com
@@ -33,7 +32,7 @@ zones-short:
 clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
 	rm -f dummy.com example.com test.com woof.com xorn.com yowzah.com zero.com
-	rm -f db.cache demo.rollrec
+	rm -f demo.rollrec
 	@echo NOT deleting log.demo
 	@echo ' '
 
