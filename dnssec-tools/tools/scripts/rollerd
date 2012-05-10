@@ -107,33 +107,34 @@ my $zrollmethod = $RM_ENDROLL;	# Rollover calculation to use for ZSKs.
 my $rollrecfile;			# Rollrec file to be managed.
 
 my %dtconf;				# DNSSEC-Tools config file.
-my $DT_LOADZONE	= "roll_loadzone";
-my $DT_LOGFILE	= "roll_logfile";
-my $DT_LOGLEVEL	= "roll_loglevel";
-my $DT_LOGTZ	= "log_tz";
-my $DT_SLEEP	= "roll_sleeptime";
-my $DT_USERNAME	= "roll_username";
+my $DT_LOADZONE	= 'roll_loadzone';
+my $DT_LOGFILE	= 'roll_logfile';
+my $DT_LOGLEVEL	= 'roll_loglevel';
+my $DT_LOGTZ	= 'log_tz';
+my $DT_SLEEP	= 'roll_sleeptime';
+my $DT_USERNAME	= 'roll_username';
 
-my $OPT_ALWAYSSIGN = "alwayssign";
-my $OPT_AUTOSIGN   = "autosign";
-my $OPT_DIR	   = "directory";
-my $OPT_DISPLAY	   = "display";
-my $OPT_DTCONF	   = "dtconfig";
-my $OPT_FOREGROUND = "foreground";
-my $OPT_HELP	   = "help";
-my $OPT_LOGFILE	   = "logfile";
-my $OPT_LOGLEVEL   = "loglevel";
-my $OPT_LOGTZ	   = "logtz";
-my $OPT_NORELOAD   = "noreload";
-my $OPT_PARAMS	   = "parameters";
-my $OPT_PIDFILE    = "pidfile";
-my $OPT_RRFILE	   = "rrfile";
-my $OPT_SINGLERUN  = "singlerun";
-my $OPT_SLEEP	   = "sleep";
-my $OPT_USERNAME   = "username";
-my $OPT_VERBOSE	   = "verbose";
-my $OPT_VERSION	   = "Version";
-my $OPT_ZONESIGNER = "zonesigner";
+my $OPT_ALWAYSSIGN = 'alwayssign';
+my $OPT_AUTOSIGN   = 'autosign';
+my $OPT_DIR	   = 'directory';
+my $OPT_DISPLAY	   = 'display';
+my $OPT_DTCONF	   = 'dtconfig';
+my $OPT_FOREGROUND = 'foreground';
+my $OPT_HELP	   = 'help';
+my $OPT_LOGFILE	   = 'logfile';
+my $OPT_LOGLEVEL   = 'loglevel';
+my $OPT_LOGTZ	   = 'logtz';
+my $OPT_NORELOAD   = 'noreload';
+my $OPT_PARAMS	   = 'parameters';
+my $OPT_PIDFILE    = 'pidfile';
+my $OPT_RRFILE	   = 'rrfile';
+my $OPT_SINGLERUN  = 'singlerun';
+my $OPT_SLEEP	   = 'sleep';
+my $OPT_USERNAME   = 'username';
+my $OPT_VERBOSE	   = 'verbose';
+my $OPT_VERSION	   = 'Version';
+my $OPT_ZONESIGNER = 'zonesigner';
+my $OPT_ZSARGS	   = 'zsargs';
 
 my %opts = ();			# Filled option array.
 my @opts =
@@ -158,6 +159,7 @@ my @opts =
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
 	"zonesigner=s",			# Location of zonesigner executable.
+	"zsargs=s",			# Arguments for zonesigner.
 );
 
 #
@@ -179,6 +181,7 @@ my $sleep_override = 0;			# Sleep-override flag.
 my $sleepcnt;				# Time we've slept so far.
 my $sleeptime;				# Sleep interval in seconds.
 my $username;				# User name we'll change to.
+my $gzsargs = '';			# Global zsargs for zonesigner.
 my $verbose = 0;			# Verbose option.
 
 my $display = 0;			# Do display processing.
@@ -3594,13 +3597,25 @@ sub signer
 	}
 
 	#
-	# Get the rollrec for this name and check if there are any
-	# user-specified zonesigner arguments.
+	# Get the rollrec and any user-specified zonesigner arguments
+	# for this zone.
 	#
 	$rrr = rollrec_fullrec($rname);
 	$zsargs = $rrr->{'zsargs'};
 
-	$zsflag = "$zsflag $zsargs" if($zsargs ne '');
+	#
+	# If there are any user-specified zonesigner arguments, add them
+	# to the zonesigner options.  If there aren't any, we'll add
+	# any global zonesigner args (from rollerd's -zsargs option).
+	#
+	if($zsargs ne '')
+	{
+		$zsflag = "$zsflag $zsargs";
+	}
+	else
+	{
+		$zsflag .= " $gzsargs" if($gzsargs ne '');
+	}
 
 	#
 	# If the -zone flag wasn't specified, we'll force it in here.
@@ -3900,8 +3915,9 @@ sub optsandargs
 	$sleeptime  = $opts{$OPT_SLEEP}	     || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 	$dtcf	    = $opts{$OPT_DTCONF}     || getconffile();
 	$display    = $opts{$OPT_DISPLAY}    || 0;
+	$gzsargs    = $opts{$OPT_ZSARGS}     || '';
 	$username   = $opts{$OPT_USERNAME}   || $dtconf{$DT_USERNAME} || '';
-	$xqtdir	    = $opts{$OPT_DIR}	     || ".";
+	$xqtdir	    = $opts{$OPT_DIR}	     || '.';
 	$zonesigner = $opts{$OPT_ZONESIGNER} || $dtconf{$OPT_ZONESIGNER} || '';
 
 	#
@@ -3975,6 +3991,27 @@ sub optsandargs
 			print STDERR "rollerd:  unable to switch to user \"$username\" -- $ret\n";
 			$opterrs++;
 		}
+	}
+
+	#
+	# Build a global zonesigner argument string.  We'll convert the
+	# internal equals signs to dashes or spaces, as appropriate.
+	#
+	if($gzsargs ne '')
+	{
+		my @args = split / /, $gzsargs;		# Argument array.
+
+		#
+		# Put the arguments into the form zonesigner is expecting
+		# and join up the bits into a single argument string.
+		#
+		for(my $ind=0; $ind < @args; $ind++)
+		{
+			$args[$ind] =~ s/^=/-/;
+			$args[$ind] =~ s/=/ /g;
+		}
+
+		$gzsargs = join ' ', @args;
 	}
 
 	#
@@ -6946,6 +6983,7 @@ sub usage
 	print STDERR "\t\t-foreground\n";
 	print STDERR "\t\t-alwayssign\n";
 	print STDERR "\t\t-username <username>\n";
+	print STDERR "\t\t-zsargs <argument-list>\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
@@ -7534,6 +7572,30 @@ B<rollerd> is installed.
 When using this option, the target user must have access to the various
 directories, logs, and data files that B<rollerd> requires to execute.
 Without this access, proper execution cannot occur.
+
+=item B<-zsargs arglist>
+
+Additional B<zonesigner> arguments that will be passed to all B<zonesigner>
+executions. These arguments will override the corresponding arguments in the
+DNSSEC-Tools configuration file, and the zones' I<keyrec> files.  If a zone's
+B<rollrec> entry contains a I<zsargs> field, then it will be used instead of
+those specified by this argument.
+
+Given the B<rollerd> argument processing, the new arguments for B<zonesigner>
+cannot be specified as expected.  Instead, the arguments should be given in
+the following manner.  The leading dash should be replaced with an equals sign.
+If the option takes an argument, the space that would separate the option from
+the option's argument should also be replaced by an equals sign.  If multiple
+arguments will be passed via B<-zsargs>, quotes must be used to group them
+into a single argument.
+
+B<rollerd> translates these arguments to the appropriate format for
+B<zonesigner>.  These examples should clarify the modifications:
+
+    normal zonesigner option     rollerd -zsargs option
+    ------------------------     ----------------------
+    -nokrfile                    -zsargs =nokrfile
+    -zskcount 5 -kskcount 3      -zsargs "=zskcount=5 =kskcount=3"
 
 =item B<-Version>
 
