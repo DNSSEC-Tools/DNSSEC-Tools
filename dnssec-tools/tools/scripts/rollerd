@@ -3894,7 +3894,7 @@ sub optsandargs
 	#
 	$singlerun  = $opts{$OPT_SINGLERUN};
 	$foreground = $opts{$OPT_FOREGROUND};
-	$alwayssign = $opts{$OPT_ALWAYSSIGN};
+	$alwayssign = $opts{$OPT_ALWAYSSIGN} || 0;
 	$pidfile    = $opts{$OPT_PIDFILE};
 	$verbose    = $opts{$OPT_VERBOSE};
 	$logfile    = $opts{$OPT_LOGFILE}    || $dtconf{$DT_LOGFILE};
@@ -4205,9 +4205,11 @@ sub bootmsg
 	rolllog_log(LOG_ALWAYS,"","	logfile		\"$logfile\"");
 	rolllog_log(LOG_ALWAYS,"","	loglevel	\"$loglevel\"");
 	rolllog_log(LOG_ALWAYS,"","	logtz		\"$logtz\"");
+	rolllog_log(LOG_ALWAYS,"","	always-sign	\"". $alwayssign ."\"");
 	rolllog_log(LOG_ALWAYS,"","	autosign	\"$autosign\"");
 	rolllog_log(LOG_ALWAYS,"","	single-run	\"$singlerun\"");
-	if($event_methods[$eventmaster] == $EVT_FULLLIST)
+	rolllog_log(LOG_ALWAYS,"","	zone reload	\"$zoneload\"");
+	if($eventmaster == $EVT_FULLLIST)
 	{
 		rolllog_log(LOG_ALWAYS,"","	sleeptime	\"$sleeptime\"");
 	}
@@ -5915,8 +5917,16 @@ sub cmd_status
 	$outbuf .= "logfile:            $lfile\n";
 	$outbuf .= "loglevel:           $lvl\n";
 	$outbuf .= "logtz:              $tz\n";
+	$outbuf .= "always-sign:        $alwayssign\n";
+	$outbuf .= "autosign:           $autosign\n";
 	$outbuf .= "zone reload:        $zoneload\n";
-	$outbuf .= "sleeptime:          $sleeptime\n";
+
+	if($eventmaster == $EVT_FULLLIST)
+	{
+		$outbuf .= "sleeptime:          $sleeptime\n";
+	}
+
+	$outbuf .= "event method:       $event_methods[$eventmaster]\n";
 
 	if($username ne '')
 	{
