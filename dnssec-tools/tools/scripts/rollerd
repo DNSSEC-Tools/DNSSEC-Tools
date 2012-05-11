@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.8";
+my $VERS   = "$NAME version: 1.12.9";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -261,6 +261,8 @@ my $queue_soonend;			# End of current "soon" period.
 
 my $queued_int = 0;			# Queued-SIGINT flag.
 my $queued_hup = 0;			# Queued-SIGHUP flag.
+
+my $wassigned;				# Flag indicating zone was signed.
 
 my $ret;				# Return code from main().
 my $runerr;				# Execution error -- used in runner().
@@ -737,6 +739,11 @@ sub rollkeys
 		}
 
 		#
+		# Turn off the flag indicating that the zone was signed.
+		# 
+		$wassigned = 0;
+
+		#
 		# If this zone's current KSK has expired, we'll get it rolling.
 		# 
 		if(ksk_expired($rname,$rrr,"kskcur"))
@@ -767,13 +774,7 @@ sub rollkeys
 		# If -alwayssign was specified, always sign the zone
 		# even if we didn't need to for this period.
 		#
-
-		#
-		# XXX:  This could double sign if some of the above steps
-		#	already signed the zone.  We should only sign if
-		#	nothing was done above.
-		#
-		if($alwayssign)
+		if($alwayssign && !$wassigned)
 		{
 			my $krr;		# Ref to keyrec data.
 			my $extraargs = "";	# Phase-dependent argument.
@@ -3670,6 +3671,7 @@ sub signer
 	else
 	{
 		$rrr->{'signed'} = 1;
+		$wassigned = 1;
 	}
 
 	return($ret);
