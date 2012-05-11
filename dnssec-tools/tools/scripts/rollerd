@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.12.7";
+my $VERS   = "$NAME version: 1.12.8";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -778,53 +778,39 @@ sub rollkeys
 			my $krr;		# Ref to keyrec data.
 			my $extraargs = "";	# Phase-dependent argument.
 
+			rolllog_log(LOG_TMI,$rname, "signing the zone $rrr->{'zonename'} (-alwayssign specified)");
+
 			#
-			# This is only safe to do if we're not waiting
-			# for caches to expire.
+			# Check value and file existence, etc.
 			#
-			if((($rrr->{'zskphase'} != 1) &&
-			    ($rrr->{'zskphase'} != 3) &&
-			    ($rrr->{'kskphase'} != 1) &&
-			    ($rrr->{'kskphase'} != 3)))
+			$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
+
+			#
+			# Tell the signer what phase we're in so it
+			# can decide what key to use.
+			#
+			if($rrr->{'zskphase'} > 0)
 			{
-				rolllog_log(LOG_TMI,$rname, "Signing the zone $rrr->{'zonename'} (-alwayssign specified)");
-
-				#
-				# Check value and file existence, etc.
-				#
-				$krr = opts_zonekr($rrr->{'keyrec'},$rrr->{'zonename'});
-
-				#
-				# Tell the signer what phase we're in so it
-				# can decide what key to use.
-				#
-				if($rrr->{'zskphase'} > 0)
-				{
-					$extraargs = "ZSK phase $rrr->{'zskphase'}";
-				}
-				elsif($rrr->{'kskphase'} > 0)
-				{
-					$extraargs = "KSK phase $rrr->{'kskphase'}";
-				}
-
-				#
-				# KSK signing uses double-signature so nothing
-				# is needed since zonesigner always uses all
-				# available keys.
-				#
-
-				#
-				# Actually do the signing.
-				#
-				my $ret = signer($rname, $extraargs, $krr);
-				if($ret)
-				{
-					rolllog_log(LOG_ERR, "signing $rname failed!");
-				}
+				$extraargs = "ZSK phase $rrr->{'zskphase'}";
 			}
-			else
+			elsif($rrr->{'kskphase'} > 0)
 			{
-				rolllog_log(LOG_TMI,$rname, "Not signing the zone $rrr->{'zonename'} (-alwayssign was specified but we're awaiting cache timeouts so we can't sign now)");
+				$extraargs = "KSK phase $rrr->{'kskphase'}";
+			}
+
+			#
+			# KSK signing uses double-signature so nothing
+			# is needed since zonesigner always uses all
+			# available keys.
+			#
+
+			#
+			# Actually do the signing.
+			#
+			my $ret = signer($rname, $extraargs, $krr);
+			if($ret)
+			{
+				rolllog_log(LOG_ERR, "signing $rname failed!");
 			}
 		}
 	}
@@ -7462,11 +7448,7 @@ The downside to using this option is that all the non-rolling zones will be
 signed after every sleep, which may be expensive computationally.
 
 Note:  The zone files are not updated or installed at this time.
-Manual copying and installation is still needed.
-
-Note: During ZSK and KSK rolling phases 1 and 3 the zone will not be
-signed since it is critical to wait for cache timeouts during this
-phase of rolling keys.
+Manual copying and installation are still needed.
 
 =item B<-autosign> | B<-noautosign>
 
