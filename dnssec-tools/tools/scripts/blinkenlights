@@ -852,6 +852,9 @@ sub buildmainwind
 		       -command => \&help_help,
 		       -accelerator => 'Ctrl+H',
 		       -underline => 0);
+	$help->command( -label => "About $NAME",    
+			-command => \&help_about,     
+			-underline => 0);
 	$help->pack(-side => 'right');
 
 	$wm->bind('<Control-Key-h>',\&help_help);
@@ -3895,6 +3898,21 @@ close(T);
 	$helpwin->Show();
 }
 
+#---------------------------------------------------------------------------
+# Routine:	help_about()
+#
+# Purpose:	Display an about window. 
+#
+sub help_about
+{
+	my $dlg;					# About dialog widget.
+
+	$dlg = $wm->Dialog(-title => "About $NAME",
+			   -text  => "$VERS\n\n$DTVERS",
+			   -buttons => ["Continue" ]);
+	$dlg->Show();
+}
+
 ##############################################################################
 #
 # Option-based routines.
@@ -4551,6 +4569,13 @@ The commands in this menu provide assistance to the user.
 Help
 
 Display a window containing help information.
+
+=item *
+
+About Blinkenlights
+
+Display a window containing versoin information on B<blinkenlights> and
+DNSSEC-Tools.
 
 =back
 
