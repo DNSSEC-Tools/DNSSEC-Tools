@@ -19,7 +19,7 @@ use Net::DNS::SEC::Tools::rollrec;
 # Version information.
 #
 my $NAME   = "lights";
-my $VERS   = "$NAME version: 1.0.1";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -128,11 +128,6 @@ my $lights;					# Lights table.
 #
 # Menubar and menu data.
 #
-
-#
-# Menu item widgets.
-#
-my $hm_help;					# Help item.
 
 #
 # Font data for text in button window.
@@ -291,7 +286,7 @@ sub doopts
 #
 sub buildmainwind
 {
-	my $file;					# File menu.
+	my $cmdmenu;					# Commands menu.
 	my $view;					# View menu.
 	my $opts;					# Options menu.
 	my $help;					# Help menu.
@@ -317,7 +312,7 @@ sub buildmainwind
 	#
 	# Create our menus.
 	#
-	$file = $mbar->Menubutton(-text => 'File',
+	$cmdmenu = $mbar->Menubutton(-text => 'Commands',
 				  -tearoff => 0,
 				  -underline => 0);
 	$opts = $mbar->Menubutton(-text => 'Options',
@@ -331,19 +326,22 @@ sub buildmainwind
 	#
 	# Add the File menu entries.
 	#
-	$file->command(-label => 'Halt Rollerd After Current Operations',
-			-command => [\&file_halt, '']);
-	$file->command(-label => 'Halt Rollerd Now',
-			-command => [\&file_halt, 'now']);
-	$file->separator();
-	$file->command(-label => 'Quit',
-		       -command => \&file_quit,
-		       -accelerator => 'Ctrl+Q',
-		       -underline => 0);
-	$file->pack(-side => 'left');
+	$cmdmenu->command(-label => 'DS Published for All Zones',
+			  -command => [\&cmd_dspuball, '']);
+	$cmdmenu->separator();
+	$cmdmenu->command(-label => 'Halt Rollerd After Current Operations',
+			  -command => [\&cmd_halt, '']);
+	$cmdmenu->command(-label => 'Halt Rollerd Now',
+			  -command => [\&cmd_halt, 'now']);
+	$cmdmenu->separator();
+	$cmdmenu->command(-label => 'Quit',
+			  -command => \&cmd_quit,
+			  -accelerator => 'Ctrl+Q',
+			  -underline => 0);
+	$cmdmenu->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-Q>',\&file_quit);
-	$wm->bind('<Control-Key-q>',\&file_quit);
+	$wm->bind('<Control-Key-Q>',\&cmd_quit);
+	$wm->bind('<Control-Key-q>',\&cmd_quit);
 
 	##################################################
 	#
@@ -359,10 +357,13 @@ sub buildmainwind
 	#
 	# Add the Help menu entries.
 	#
-	$hm_help = $help->command(-label => 'Help',
-			          -command => \&help_help,
-			          -accelerator => 'Ctrl+H',
-			          -underline => 0);
+	$help->command(-label => 'Help',
+		       -command => \&help_help,
+		       -accelerator => 'Ctrl+H',
+		       -underline => 0);
+	$help->command(-label => "About $NAME",
+		       -command => \&help_about,
+		       -underline => 0);
 	$help->pack(-side => 'right');
 
 	$wm->bind('<Control-Key-h>',\&help_help);
@@ -826,9 +827,21 @@ sub showzones
 ##############################################################################
 
 #---------------------------------------------------------------------------
-# Routine:	file_halt()
+# Routine:      cmd_dspuball()
 #
-sub file_halt
+sub cmd_dspuball
+{
+	#
+	# Tell rollerd that all the zones's new DS records have been
+	# published.
+	#
+	system("rollctl -quiet -dspuball");
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmd_halt()
+#
+sub cmd_halt
 {
 	my $opt = shift;				# Optional "now".
 
@@ -841,13 +854,13 @@ sub file_halt
 	# Wait a short bit then call are quitting routine.
 	#
 	sleep(2);
-	file_quit();
+	cmd_quit();
 }
 
 #---------------------------------------------------------------------------
-# Routine:	file_quit()
+# Routine:	cmd_quit()
 #
-sub file_quit
+sub cmd_quit
 {
 	#
 	# Destroy the rollrec name table's widgets.
@@ -960,7 +973,7 @@ More information may be found in lights' man page.
 	$helpwin = MainWindow->new(-relief => 'raised',
 				  -title  => 'Help!',
 				  -borderwidth => 1);
-	$helpwin->bind('<Control-Key-q>',\&file_quit);
+	$helpwin->bind('<Control-Key-q>',\&cmd_quit);
 	$helpwin->bind('<Control-Key-w>',\&helpbegone);
 
 	#
@@ -984,6 +997,22 @@ More information may be found in lights' man page.
 				-command => \&helpbegone);
 	$wdgt->pack(-side => 'top');
 }
+
+#---------------------------------------------------------------------------
+# Routine:	help_about()
+#
+# Purpose:	Display an about window.
+#
+sub help_about
+{
+	my $dlg;					# About dialog widget.
+
+	$dlg = $wm->Dialog(-title => "About $NAME",
+			   -text  => "$VERS\n\n$DTVERS",
+			   -buttons => ["Continue" ]);
+	$dlg->Show();
+}
+
 
 #----------------------------------------------------------------------
 #
