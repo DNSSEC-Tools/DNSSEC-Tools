@@ -318,8 +318,8 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
 +    rollrec_unlock();
 +    &unlock_file($z_chroot);
 +	
++    &dt_rollerd_restart();
 +    &restart_bind();
-+
 +    return undef;
 +}
 +
@@ -548,10 +548,10 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
 +    	&bump_soa_record($z, \@recs);
 +    
 +    	&unlock_file($z_chroot);
++       rollrec_unlock();
 +
-+        rollrec_unlock();
-+    
-+        &restart_bind();
++       &dt_rollerd_restart(); 
++       &restart_bind();
 +    }
 +
 +    return undef;
@@ -1793,8 +1793,8 @@ diff -u -r webmin-1.580.orig/bind8/save_zonedef.cgi webmin-1.580.dt/bind8/save_z
 +
 +	&unlock_file($z_chroot);
 +
++   &dt_rollerd_restart();
 +  	&restart_bind();
-+
 +	&webmin_log("migrate", undef, $dom);
 +}
 +
