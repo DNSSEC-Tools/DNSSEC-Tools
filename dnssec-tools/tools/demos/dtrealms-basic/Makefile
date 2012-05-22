@@ -7,11 +7,27 @@
 
 all: basic
 
+tmpdemo:	tmpdir
+	(cd /tmp/dtrealms-basic-demo ; make new-files)
+	(cd /tmp/dtrealms-basic-demo ; make setup)
+	@echo ' ----------------------------------------------------------- '
+	@echo ' '
+	@echo ' '
+	@echo to run this demo, "cd /tmp/dtrealms-basic-demo; rundemo"
+	@echo ' '
+
 basic:		new-files setup
 	@echo ' '
 	@echo ' '
 	@echo ' ----------------------------------------------------------- '
-#	./dtrealms
+	@echo ' '
+	@echo to run this demo, "rundemo"
+	@echo ' '
+
+tmpdir:
+	@rm -fr /tmp/dtrealms-basic-demo
+	@mkdir  /tmp/dtrealms-basic-demo
+	@cp -r * /tmp/dtrealms-basic-demo
 
 new-files:	clean example-realm test-realm
 	@cp savefiles/demo.realm .

@@ -38,6 +38,18 @@ To run the demo:
 	  output.  The window in which the demo was started will have a
 	  "tail -f log.demo" of dtrealms's log file.
 
+POTENTIAL DEMO PROBLEM:
+
+	Due to a realms configuration requirement colliding with an operating
+	system limitation, it's very possible the "make basic" demo will not
+	work correctly.  In this case, you can try running the demo with
+	these commands:
+
+		# make tmpdemo
+		# cd /tmp/dtrealms-basic-demo
+		# rundemo
+	This should solve the problem.
+
 To stop the demo:
 
 	- Run this command:
