@@ -300,7 +300,8 @@ exit($ret);
 #
 sub main
 {
-	my $olderr;			# Saved error action.
+	my $olderr;					# Saved error action.
+	my $ret;					# General return code.
 
 	#
 	# Initialize a few things...
@@ -401,9 +402,24 @@ sub main
 	#
 	# Set up the command channel.
 	#
-	if(rollmgr_channel(1) != 1)
+	if(($ret=rollmgr_channel(1)) != 1)
 	{
-		rolllog_log(LOG_FATAL,"","unable to create control communications channel");
+		my @errs =
+		    (
+			'Unable to connect to the server.',
+			'Unable to create a Unix socket.',
+			'Unable to bind to the Unix socket.',
+			'Unable to change the permissions on the Unix socket.',
+			'Unable to listen on the Unix socket.',
+			'Communications socket name was longer than allowed for a Unix socket.',
+		    );
+
+		#
+		# Adjust for array index.
+		#
+		$ret *= -1;
+
+		rolllog_log(LOG_FATAL,"","unable to create control communications channel:  $errs[$ret]");
 
 		exit(3);
 	}
