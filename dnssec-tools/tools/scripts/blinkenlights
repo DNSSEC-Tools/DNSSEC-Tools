@@ -2747,6 +2747,12 @@ sub rollerdcmd
 	chomp($line);
 
 	#
+	# Don't bother doing anything if rollerd (for some reason) sent
+	# us an empty command.
+	#
+	return if($line eq '');
+
+	#
 	# Break the line into its pieces.
 	#
 #	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/ 	]+)\W+([0-9]+)/;
@@ -2966,7 +2972,7 @@ sub rollerdcmd
 	}
 	else
 	{
-		print "\n\nUNKNOWN ROLLERD COMMAND:  $line\n\n\n";
+		print "\nUNKNOWN ROLLERD COMMAND:  \"$cmd\"\n\n";
 	}
 
 	#
