@@ -58,6 +58,7 @@ my @opts =
 (
 	"directory=s",			# Directory we'll run in.
 	"display",			# Use output GUI.
+	"foreground",			# Run in the foreground.
 	"logfile=s",			# Log file.
 	"loglevel=s",			# Logging level.
 	"logtz=s",			# Logging timezone.
@@ -69,6 +70,7 @@ my @opts =
 
 my $directory = '';			# Directory flag.
 my $display = 0;			# Display flag.
+my $foreground = 0;			# Foreground flag.
 my $logfile;				# Log file.
 my $loglevel;				# Logging level.
 my $logtz;				# Logging timezone.
@@ -134,8 +136,11 @@ sub main
 	#
 	# Daemonize ourself.
 	#
-	exit(0) if(fork() != 0);
-	POSIX::setsid();
+	if(! $foreground)
+	{
+		exit(0) if(fork() != 0);
+		POSIX::setsid();
+	}
 
 	#
 	# Set up logging, user commands, and identify ourself.
@@ -198,11 +203,12 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$directory = optcalc('directory', $DT_DIR,	'.');
-	$display   = defined($opts{'display'});
-	$loglevel  = optcalc('loglevel',  $DT_LOGLEVEL, $LOG_DEFLEVEL);
-	$logfile   = optcalc('logfile',	  $DT_LOGFILE,	$LOG_DEFFILE);
-	$logtz	   = optcalc('logtz',	  $DT_LOGTZ,	$LOG_DEFTZ);
+	$directory  = optcalc('directory', $DT_DIR,	'.');
+	$display    = defined($opts{'display'});
+	$foreground = defined($opts{'foreground'});
+	$loglevel   = optcalc('loglevel', $DT_LOGLEVEL, $LOG_DEFLEVEL);
+	$logfile    = optcalc('logfile',  $DT_LOGFILE,	$LOG_DEFFILE);
+	$logtz	    = optcalc('logtz',	  $DT_LOGTZ,	$LOG_DEFTZ);
 
 	#
 	# Get the realm file.
@@ -1925,14 +1931,13 @@ sub usage
 	print "usage:  $NAME [options] realm-file\n";
 	print "\toptions:\n";
 	print STDERR "\t\t-directory\n";       
+	print STDERR "\t\t-display\n";       
+	print STDERR "\t\t-foreground\n";       
 	print STDERR "\t\t-logfile\n";       
 	print STDERR "\t\t-loglevel\n";       
 	print STDERR "\t\t-logtz\n";       
 	print STDERR "\t\t-Version\n";       
 	print STDERR "\t\t-help\n";
-	print "\n";
-	print "\tunimplemented options:\n";
-	print STDERR "\t\t-display\n";       
 
 	exit(1);
 }
@@ -2068,7 +2073,10 @@ Directory in which B<dtrealms> will executed.
 
 Start the B<grandvizier> display program to give a graphical indication of
 realm status.
-I<Not yet implemented.>
+
+=item B<-foreground>
+
+Run B<dtrealms> in the foreground instead of as a daemon.
 
 =item B<-logfile>
 
