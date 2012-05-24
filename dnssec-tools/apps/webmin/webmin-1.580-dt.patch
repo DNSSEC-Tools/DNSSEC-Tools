@@ -1,6 +1,6 @@
 diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.pl
 --- webmin-1.580.orig/bind8/bind8-lib.pl	2012-01-21 19:46:49.000000000 -0500
-+++ webmin-1.580.dt/bind8/bind8-lib.pl	2012-04-30 16:42:38.208052791 -0400
++++ webmin-1.580.dt/bind8/bind8-lib.pl	2012-05-24 17:01:03.683325574 -0400
 @@ -3,6 +3,21 @@
  
  BEGIN { push(@INC, ".."); };
@@ -23,7 +23,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  &init_config();
  do 'records-lib.pl';
  @extra_forward = split(/\s+/, $config{'extra_forward'});
-@@ -37,6 +52,16 @@
+@@ -37,6 +52,25 @@
  	$rand_flag = "-r /dev/urandom";
  	}
  
@@ -32,6 +32,15 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
 +sub have_dnssec_tools_support
 +{
 +	if ($have_dnssec_tools) {
++		# check that the location for the following essential parameters have been defined
++		# dnssectools_conf
++		# dnssectools_rollrec
++		# dnssectools_keydir
++		# dnssectools_rollmgr_pidfile
++		return undef if (!$config{'dnssectools_conf'} ||
++				 !$config{'dnssectools_rollrec'} ||
++				 !$config{'dnssectools_keydir'} ||
++				 !$config{'dnssectools_rollmgr_pidfile'});
 +		return 1;
 +	}
 +	return undef;
@@ -40,7 +49,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  # get_bind_version()
  # Returns the BIND verison number, or undef if unknown
  sub get_bind_version
-@@ -1137,18 +1162,30 @@
+@@ -1137,18 +1171,30 @@
  	}
  }
  
@@ -52,7 +61,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  local($i);
  local @tds = ( "width=5" );
  local $rv;
-+if ($have_dnssec_tools) {
++if (&have_dnssec_tools_support()) {
 +$rv .= &ui_columns_start([ "", $text{'index_zone'}, $text{'index_type'}, $text{'index_status'} ],
 +			100, 0, \@tds);
 +} else {
@@ -64,7 +73,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
 -	local @cols = ( "<a href=\"$_[0]->[$i]\">$_[1]->[$i]</a>",
 -			$_[2]->[$i] );
 +	local @cols;
-+	if ($have_dnssec_tools) {
++	if (&have_dnssec_tools_support()) {
 +		@cols = ( "<a href=\"$_[0]->[$i]\">$_[1]->[$i]</a>",
 +			$_[2]->[$i], $_[4]->[$i]);
 +	} else {
@@ -74,7 +83,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  	if (defined($_[3]->[$i])) {
  		$rv .= &ui_checked_columns_row(\@cols, \@tds, "d", $_[3]->[$i]);
  		}
-@@ -3104,6 +3141,7 @@
+@@ -3104,6 +3150,7 @@
  	if ($recs[$i]->{'type'} eq 'NSEC' ||
  	    $recs[$i]->{'type'} eq 'NSEC3' ||
  	    $recs[$i]->{'type'} eq 'RRSIG' ||
@@ -82,7 +91,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  	    $recs[$i]->{'type'} eq 'DNSKEY') {
  		&delete_record($fn, $recs[$i]);
  		}
-@@ -3174,11 +3212,55 @@
+@@ -3174,11 +3221,55 @@
  return undef;
  }
  
@@ -94,7 +103,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
 +	local ($dom) = @_;
 +	my $dt_managed;
 +
-+	if ($have_dnssec_tools) {
++	if (&have_dnssec_tools_support()) {
 +		my $rrr;
 +
 +		&lock_file($config{"dnssectools_rollrec"});
@@ -138,7 +147,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  local $keyrec = &get_dnskey_record($z, $recs);
  if ($keyrec) {
  	local $err = &sign_dnssec_zone($z, $bump);
-@@ -3335,5 +3417,420 @@
+@@ -3335,5 +3426,420 @@
  return \%rv;
  }
  
@@ -561,19 +570,19 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  
 diff -u -r webmin-1.580.orig/bind8/config-CentOS-Linux-6.0-* webmin-1.580.dt/bind8/config-CentOS-Linux-6.0-*
 --- webmin-1.580.orig/bind8/config-CentOS-Linux-6.0-*	2012-01-21 19:46:49.000000000 -0500
-+++ webmin-1.580.dt/bind8/config-CentOS-Linux-6.0-*	2012-04-30 16:42:38.231045414 -0400
++++ webmin-1.580.dt/bind8/config-CentOS-Linux-6.0-*	2012-05-24 16:10:31.364265945 -0400
 @@ -44,3 +44,11 @@
  checkconf=named-checkconf
  other_slaves=1
  restart_cmd=restart
 +keygen=dnssec-keygen
 +tmpl_dnssec=0
-+dnssec_period=1
-+dnssectools_conf=/etc/dnssec-tools/dnssec-tools.conf
-+dnssectools_rollmgr_pidfile=/var/run/rollmgr.pid
++dnssec_period=21
 +tmpl_dnssec_dt=1
++dnssectools_conf=/etc/dnssec-tools/dnssec-tools.conf
 +dnssectools_rollrec=/var/named/system.rollrec
 +dnssectools_keydir=/var/named/dtkeys
++dnssectools_rollmgr_pidfile=/var/run/rollmgr.pid
 diff -u -r webmin-1.580.orig/bind8/config.info webmin-1.580.dt/bind8/config.info
 --- webmin-1.580.orig/bind8/config.info	2012-01-21 19:46:49.000000000 -0500
 +++ webmin-1.580.dt/bind8/config.info	2012-04-30 16:42:38.208052791 -0400
