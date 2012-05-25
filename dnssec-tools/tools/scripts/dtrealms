@@ -1481,7 +1481,11 @@ sub display
 	my $savedsel;                                   # Saved descriptor.
 	my $ret;                                        # Retcode from print.
 
-	return if(!$display);
+	#
+	# Don't try anything if we aren't connected to a display program.
+	#
+#       return if(!$display);
+	return if(fileno(DISPLAY) == -1);
 
 	#
 	# Force this message to be unbuffered.
