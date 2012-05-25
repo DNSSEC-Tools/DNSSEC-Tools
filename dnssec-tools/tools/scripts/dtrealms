@@ -1464,7 +1464,7 @@ sub displayer
         else
         {
 		rolllog_log(LOG_INFO,'','stopping grandvizier');
-		display('halt');      
+		display('halt dtrealms 1');      
 		close(DISPLAY);
         }
 
@@ -1912,7 +1912,7 @@ sub halt_handler
 {
 	rolllog_log(LOG_PHASE,"dtrealms","shutting down child realms");
 
-	display("halt woof 0");
+	display('halt dtrealms 0');
 
 	#
 	# Try for a polite shutdown of the realms.
