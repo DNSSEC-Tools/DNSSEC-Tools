@@ -605,9 +605,9 @@ sub realm_exec
 		#
 		# Get the realm's directories.
 		#
-		$confdir  = $realms{$realm}{'configdir'} | '.';
-		$realmdir = $realms{$realm}{'realmdir'}  | '.';
-		$statedir = $realms{$realm}{'statedir'}  | '.';
+		$confdir  = $realms{$realm}{'configdir'} || '.';
+		$realmdir = $realms{$realm}{'realmdir'}  || '.';
+		$statedir = $realms{$realm}{'statedir'}  || '.';
 
 		#
 		# Move into the realm's directory.
@@ -660,9 +660,9 @@ sub realm_system
 	#
 	# Get the state directory and config file for this realm.
 	#
-	$confdir  = $realms{$realm}{'configdir'} | '.';
-	$statedir = $realms{$realm}{'statedir'}  | '.';
-	$realmdir = $realms{$realm}{'realmdir'}  | '.';
+	$confdir  = $realms{$realm}{'configdir'} || '.';
+	$statedir = $realms{$realm}{'statedir'}  || '.';
+	$realmdir = $realms{$realm}{'realmdir'}  || '.';
 
 	#
 	# Move into the realm's directory.
