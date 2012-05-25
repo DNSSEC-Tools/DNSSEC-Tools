@@ -723,9 +723,6 @@ sub realm_system
 		#
 		rolllog_log(LOG_TMI,$realm,"executing \"$cmd\"");
 
-#		system("DT_STATEDIR=$realmdir DT_SYSCONFDIR=$confdir $cmd");
-#		$out = `DT_STATEDIR=$realmdir DT_SYSCONFDIR=$confdir $cmd`;
-#		$out = `DT_STATEDIR=$realmdir DT_SYSCONFDIR=$confdir $cmd 2>&1`;
 		$out = `DT_STATEDIR=$statedir DT_SYSCONFDIR=$confdir $cmd 2>&1`;
 		$rc = $? >> 8;
 
