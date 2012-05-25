@@ -519,6 +519,14 @@ sub runrealms
 #------------------------------------------------------------------------
 # Routine:	waiter()
 #
+# Purpose:	This is where we mostly live once things are running.
+#		We'll wait here in select() until something gets out
+#		attention.  This will almost always be a child realm
+#		dying or the arrival of a user command.
+#
+#		If a realm has died, we'll make sure we know which one
+#		it is.
+#
 sub waiter
 {
 
@@ -534,8 +542,6 @@ sub waiter
 		#
 		# Wait here until a child process has died.
 		#
-if(1)
-{
 		while(($cpid = wait()) != -1)
 		{
 			$ret = $? >> 8;
@@ -560,9 +566,34 @@ if(1)
 				rolllog_log(LOG_ERR,'???',"unknown realm has exited; pid - $cpid; retcode - $ret");
 			}
 		}
+
+		#
+		# Sleep until something happens.
+		#
+		select(undef,undef,undef,undef);
+	}
+
+	#
+	# We should never get here...
+	#
 }
-else
+
+#------------------------------------------------------------------------
+# Routine:	deadcode_waiter()
+#
+# Purpose:	This used to be part of waiter().  It would check to see
+#		which child process has died.  This code has been replaced
+#		and it will (soon) go away.  A bit more testing, and this
+#		routine will be deleted.
+#
+#		DO NOT CALL!!!
+#
+sub deadcode_waiter
 {
+		my $cpid;				# Pid of dead child.
+		my $ret;				# Child's return value.
+		my $found = 0;				# Found flag.
+
 		$cpid = wait();
 		$ret = $? >> 8;
 		$numchildren--;
@@ -585,14 +616,6 @@ else
 		{
 			rolllog_log(LOG_ERR,'???',"unknown realm has exited; pid - $cpid; retcode - $ret");
 		}
-}
-
-		#
-		# Sleep until something happens.
-		#
-		select(undef,undef,undef,undef);
-	}
-
 }
 
 #------------------------------------------------------------------------
