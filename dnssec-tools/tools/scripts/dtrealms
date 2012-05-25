@@ -181,8 +181,6 @@ sub main
 #
 sub doopts
 {
-	my $argc = shift;			# Command line argument count.
-
 	#
 	# Get the base values. 
 	#
@@ -226,6 +224,8 @@ sub doopts
 #
 sub housekeeping
 {
+	my $ret;					# General return code.
+
 	#
 	# Set up logging and write some initial boot messages.
 	#
@@ -245,9 +245,25 @@ sub housekeeping
 	#
 	# Set up the command channel.
 	#
-	if(realmmgr_channel(1) != 1)
+	if(($ret = realmmgr_channel(1)) != 1)
 	{
-		rolllog_log(LOG_FATAL,"","unable to create control communications channel");
+		my @errs =
+		    (
+			'Unable to connect to the server.',
+			'Unable to create a Unix socket.',
+			'Unable to bind to the Unix socket.',
+			'Unable to change the permissions on the Unix socket.',
+			'Unable to listen on the Unix socket.',
+			'Communications socket name was longer than allowed for a Unix socket.',
+		    );
+
+		#
+		# Adjust for array index.
+		#
+		$ret *= -1;
+
+		rolllog_log(LOG_FATAL,"","unable to create control communications channel:  $errs[$ret]");
+
 		exit(3);
 	}
 
@@ -335,8 +351,7 @@ sub bootmsg
 	}
 	else
 	{
-		rolllog_log(LOG_ALWAYS,'',"$NAME changing logfiles " . ("-" x 31))
-	;
+		rolllog_log(LOG_ALWAYS,'',"$NAME changing logfiles " . ("-" x 31));
 	}
 
 	rolllog_log(LOG_ALWAYS,'',"$NAME parameters:");
