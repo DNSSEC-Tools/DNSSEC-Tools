@@ -45,7 +45,7 @@ use Net::DNS::SEC::Tools::rolllog;
 # Version information.
 #
 my $NAME   = "dtrealms";
-my $VERS   = "$NAME version: 1.12.3";
+my $VERS   = "$NAME version: 1.12.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -121,6 +121,8 @@ exit(0);
 #------------------------------------------------------------------------
 # Routine:	main()
 #
+# Purpose:	Get everything going.
+#
 sub main
 {
 	#
@@ -176,8 +178,7 @@ sub main
 # Purpose:	This routine shakes and bakes our command line options.
 #		A bunch of option variables are set according to the specified
 #		options.  Then a little massaging is done to make sure that
-#		the proper actions are taken.  A few options imply others, so
-#		the implied options are set if the implying options are given.
+#		the proper actions are taken.
 #
 sub doopts
 {
@@ -273,6 +274,9 @@ sub housekeeping
 	$curdir = getcwd();
 	$xqtdir = $curdir;
 
+	#
+	# Save our name.
+	#
 	$username = getpwuid($>);
 }
 
@@ -290,29 +294,42 @@ sub optcalc
 	my $default = shift;				# Default value.
 	my $ret;					# Return value.
 
+	#
+	# Look at the command line first...
+	#
 	if(defined($opts{$optskey}))
 	{
 		$ret = $opts{$optskey};
 	}
 	else
 	{
+		#
+		# Then look at the config file.
+		#
 		if(defined($dtconf{$dtckey}))
 		{
 			$ret = $dtconf{$dtckey};
 		}
 		else
 		{
+			#
+			# Then look at the defaults.
+			#
 			$ret = $default;
 		}
 	}
 
+	#
+	# And now we'll return the result.
+	#
 	return($ret);
 }
 
 #------------------------------------------------------------------------
 # Routine:	loginit()
 #
-# Purpose:	Initialize our logging.
+# Purpose:	Initialize our logging.  The log file, the logging level
+#		and the log timezone are all set.
 #
 sub loginit
 {
@@ -458,7 +475,7 @@ sub readrealms
 	realm_unlock();
 
 	#
-	# Ensure realm file exists and is okay.
+	# Ensure the realm file exists and is okay.
 	#
 	if($ret < 0)
 	{
@@ -483,15 +500,17 @@ sub readrealms
 #-----------------------------------------------------------------------------
 # Routine:	runrealms()
 #
-# Purpose:	This routine...
-#
-# rollerd -dir . -logfile log.demo -loglevel info -sleep 15 -rrf demo.rollrec &
-# rollerd -foreground -dir . -display -logfile $log -loglevel $llev $slp $rrf
+# Purpose:	This routine starts executing all the realms in the realms
+#		list.  If the realm's state is set to "inactive", then that
+#		realm is added to the inactive list and it won't be started.
 #
 sub runrealms
 {
 	rolllog_log(LOG_PHASE,"","starting realms");
 
+	#
+	# Start each realm.
+	#
 	foreach my $realm (keys(%realms))
 	{
 		#
@@ -505,13 +524,17 @@ sub runrealms
 		}
 
 		#
-		# And get the realm going.
+		# Get the realm going.
 		#
 		if(startrealm($realm) != 0)
 		{
 			rolllog_log(LOG_INFO,$realm,"unable to start realm");
 			$inactives{$realm}++;
 		}
+
+		#
+		# No log message on success, as it has been handled.
+		#
 	}
 
 }
@@ -626,7 +649,7 @@ sub deadcode_waiter
 #
 sub realm_exec
 {
-	my $realm = shift;			# Realms to start.
+	my $realm = shift;			# Realm to start.
 	my $cmd = shift;			# Command to execute.
 
 	my $child;				# Procid for child realm.
@@ -672,7 +695,7 @@ sub realm_exec
 	}
 
 	#
-	# Add the child proc's info to the children hash.
+	# Add the child processes' info to the children hash.
 	#
 	$children{$realm} = $child;
 	$numchildren++;
@@ -696,7 +719,8 @@ sub realm_system
 	my $out = '';				# Command's output.
 
 	#
-	# Get the state directory and config file for this realm.
+	# Get the realm directory, state directory, and configuration
+	# file for this realm.
 	#
 	$confdir  = $realms{$realm}{'configdir'} || '.';
 	$statedir = $realms{$realm}{'statedir'}  || '.';
@@ -734,7 +758,7 @@ sub realm_system
 	};
 
 	#
-	# Send the appropriate message to the caller.  We will recognize
+	# Set an appropriate message for the caller.  We will recognize
 	# if the timer failed or not, but that's the only success/failure
 	# indicator we'll give for the command.
 	#
@@ -781,7 +805,7 @@ sub controllers
 #-----------------------------------------------------------------------------
 # Routine:	commander()
 #
-# Purpose:	Get any commands sent to dtrealms' command socket.
+# Purpose:	Handle any commands sent to dtrealms' command socket.
 #
 sub commander
 {
@@ -864,12 +888,17 @@ sub commander
 			rolllog_log(LOG_ERR,'<command>',"invalid command  - \"$cmd\"");
 		}
 
+		#
+		# Close the command channel.
+		#
 		realmmgr_closechan();
 	}
 }
 
 #-----------------------------------------------------------------------------
 # Routine:	cmd_command()
+#
+# Purpose:	Send user-specified commands to a zone.
 #
 sub cmd_command
 {
@@ -890,7 +919,7 @@ sub cmd_command
 	if(@atoms < 2)
 	{
 		rolllog_log(LOG_TMI,'<command>',"incomplete realm-command");
-		realmmgr_sendresp(REALMCMD_RC_BADREALMDATA,'incomplete realm-command; must have both a realm and command arguments.');
+		realmmgr_sendresp(REALMCMD_RC_BADREALMDATA,'incomplete realm-command; must have both realm and command arguments.');
 		return;
 	}
 
@@ -901,7 +930,11 @@ sub cmd_command
 	$command = join ' ', @atoms;
 
 	#
-	# Execute the command.
+	# Execute the command and wait for it to complete.
+	#
+	#	There is a potential danger here.  As of now, any command
+	#	can be specified for execution.  There should probably be
+	#	restrictions.
 	#
 	rolllog_log(LOG_INFO,'<command>',"sending realm $realm command $command");
 	($ret, $resp) = realm_system($realm,$command);
@@ -918,8 +951,8 @@ sub cmd_command
 	}
 	else
 	{
-		rolllog_log(LOG_TMI,'<command>',"realm-command response - <$resp>");
-		rolllog_log(LOG_TMI,'<command>',"realm-command return code - <$ret>");
+		rolllog_log(LOG_TMI,'<command>',"realm-command response - \"$resp\"");
+		rolllog_log(LOG_TMI,'<command>',"realm-command return code - \"$ret\"");
 		#
 		# A return code line will be added to the output.
 		#
@@ -932,8 +965,7 @@ sub cmd_command
 #-----------------------------------------------------------------------------
 # Routine:	cmd_display()
 #
-# Purpose:	Set the logfile to the user's specified file.  Nothing is done
-#		if the user requests the same log file as is currently in use.
+# Purpose:	Start or stop the realms display GUI.
 #
 sub cmd_display
 {
@@ -1045,7 +1077,7 @@ sub cmd_loglevel
 		rolllog_log(LOG_INFO,'<command>',"loglevel changed from $oldstr to $newstr");
 		realmmgr_sendresp(REALMCMD_RC_OKAY,"loglevel changed from \"$oldstr\" to \"$newstr\"");
 
-		$loglevel	= $newlvl;
+		$loglevel = $newlvl;
 	}
 	else
 	{
@@ -1151,7 +1183,7 @@ sub cmd_realmstatus
 	rolllog_log(LOG_TMI,'<command>',"realmstatus command received; data - \"$data\"");
 
 	#
-	# Build a response of the realms' status.
+	# Build a response of the realms' status. statusses? statii?  statuses.
 	#
 	foreach my $realm (sort(keys(%realms)))
 	{
@@ -1193,9 +1225,9 @@ sub cmd_realmstatus
 			rolllog_log(LOG_TMI,'<command>',"$statcmd returned - <$resp>");
 
 			#
-			# Figure out how many zones are in normal state, how
-			# many are in KSK rollover, and how many are in ZSK
-			# rollover.
+			# Figure out how many zones are in normal state,
+			# how many are in KSK rollover, how many are in
+			# KSK phase 6, and how many are in ZSK rollover.
 			#
 			@lines = split /\n/, $statresp;
 			foreach my $line (@lines)
@@ -1258,6 +1290,8 @@ sub cmd_realmstatus
 #-----------------------------------------------------------------------------
 # Routine:	cmd_shutdown()
 #
+# Purpose:	Shut down all the realms and ourself.
+#
 sub cmd_shutdown
 {
 	my $data = shift;				# Command data.
@@ -1271,6 +1305,8 @@ sub cmd_shutdown
 #-----------------------------------------------------------------------------
 # Routine:	cmd_startall()
 #
+# Purpose:	Start all inactive realms.
+#
 sub cmd_startall
 {
 	my $data = shift;				# Data.
@@ -1279,12 +1315,22 @@ sub cmd_startall
 
 	rolllog_log(LOG_TMI,'<command>',"startall command received");
 
+	#
+	# If there are inactive zones, we'll get 'em started.
+	# If there aren't any inactive zones, we'll give a message saying so.
+	#
 	if(keys(%inactives) > 0)
 	{
+		#
+		# Loop through the inactive-realm list, starting the realms
+		# as we go.
 		foreach my $realm (sort(keys(%inactives)))
 		{
 			my $ret = startrealm($realm);
 
+			#
+			# Save an appropriate response for each attempt.
+			#
 			if($ret == 0)
 			{
 				rolllog_log(LOG_INFO,'<command>',"realm $realm started");
@@ -1302,8 +1348,8 @@ sub cmd_startall
 	}
 	else
 	{
-		rolllog_log(LOG_INFO,'<command>',"no stopped realms");
-		$resp = "no stopped realms";
+		rolllog_log(LOG_INFO,'<command>',"no inactive realms");
+		$resp = "no inactive realms";
 		$rc = REALMCMD_RC_NOREALMS;
 	}
 
@@ -1316,6 +1362,8 @@ sub cmd_startall
 #-----------------------------------------------------------------------------
 # Routine:	cmd_startrealm()
 #
+# Purpose:	Start the specified inactive realm.
+#
 sub cmd_startrealm
 {
 	my $realm = shift;				# Command realm.
@@ -1323,8 +1371,14 @@ sub cmd_startrealm
 
 	rolllog_log(LOG_TMI,'<command>',"startrealm command received; realm - \"realm\"");
 
+	#
+	# Start the realm.
+	#
 	$ret = startrealm($realm);
 
+	#
+	# Send an appropriate message.
+	#
 	if($ret == 0)
 	{
 		rolllog_log(LOG_INFO,'<command>',"realm $realm started");
@@ -1340,7 +1394,7 @@ sub cmd_startrealm
 #-----------------------------------------------------------------------------
 # Routine:	cmd_status()
 #
-# Purpose:	Build a status response.
+# Purpose:	Build a status response for dtrealms.
 #
 sub cmd_status
 {
@@ -1351,9 +1405,15 @@ sub cmd_status
 
 	rolllog_log(LOG_TMI,'<command>',"status command received");
 
+	#
+	# Get some realm counts.
+	#
 	$active	  = keys(%actives);
 	$inactive = keys(%inactives);
 
+	#
+	# Build the response.
+	#
 	$resp .= "$NAME parameters:\n";
 	$resp .= "     realm file         \"$realmfile\"\n";
 	$resp .= "     directory          \"$directory\"\n";
@@ -1365,11 +1425,16 @@ sub cmd_status
 	$resp .= "     active realms      $active\n";
 	$resp .= "     inactive realms    $inactive\n";
 
+	#
+	# Send the response to the user.
+	#
 	realmmgr_sendresp(REALMCMD_RC_OKAY,$resp);
 }
 
 #-----------------------------------------------------------------------------
 # Routine:	cmd_stopall()
+#
+# Purpose:	Stop all active realms.
 #
 sub cmd_stopall
 {
@@ -1379,12 +1444,29 @@ sub cmd_stopall
 
 	rolllog_log(LOG_TMI,'<command>',"stopall command received");
 
+	#
+	# If there are active zones, we'll stop their execution.
+	# If there aren't any active zones, we'll give a message saying so.
+	#
 	if(keys(%actives) > 0)
 	{
+		#
+		# Go through the active-realms list, stopping each realm
+		# we come to.
+		#
 		foreach my $realm (sort(keys(%actives)))
 		{
-			my $ret = stoprealm($realm);
+			my $ret;			# Return code.
 
+			#
+			# Stop the realm.
+			#
+			$ret = stoprealm($realm);
+
+			#
+			# Build the response based on whether or not the
+			# realm stopped.
+			#
 			if($ret == 0)
 			{
 				rolllog_log(LOG_INFO,'<command>',"realm $realm stopped");
@@ -1416,6 +1498,8 @@ sub cmd_stopall
 #-----------------------------------------------------------------------------
 # Routine:	cmd_stoprealm()
 #
+# Purpose:	Stop the specified realm.
+#
 sub cmd_stoprealm
 {
 	my $realm = shift;				# Realm to stop.
@@ -1423,8 +1507,14 @@ sub cmd_stoprealm
 
 	rolllog_log(LOG_TMI,'<command>',"stoprealm command received; realm - \"$realm\"");
 
+	#
+	# Stop the realm.
+	#
 	$ret = stoprealm($realm);
 
+	#
+	# Send an appropriate message to the caller.
+	#
 	if($ret == 0)
 	{
 		rolllog_log(LOG_INFO,'<command>',"realm $realm stopped");
@@ -1484,7 +1574,7 @@ sub display
 	#
 	# Don't try anything if we aren't connected to a display program.
 	#
-#       return if(!$display);
+#	return if(!$display);
 	return if(fileno(DISPLAY) == -1);
 
 	#
@@ -1505,6 +1595,12 @@ sub display
 
 #-----------------------------------------------------------------------------
 # Routine:	startrealm()
+#
+# Purpose:	Start a realm executing.  The realm is checked for validity
+#		and that it isn't already active.  The command line is built
+#		and then it's started running as its own process.  It is
+#		then marked as active and moved from the inactive realms
+#		list to the active realms list.
 #
 sub startrealm
 {
@@ -1589,6 +1685,14 @@ sub startrealm
 
 #-----------------------------------------------------------------------------
 # Routine:	stoprealm()
+#
+# Purpose:	Stop a realm from executing.  The realm is verified to be
+#		both valid and an active realm.  Then the "rollctl -halt"
+#		command is executed within the realm.  If the realm does
+#		not obey the halt command, after a brief wait, then we'll
+#		get increasingly more insistent about it shutting down.
+#		The realm will be marked as inactive and then it will be
+#		moved from the active-realms list to the inactive list.
 #
 sub stoprealm
 {
@@ -1697,7 +1801,7 @@ sub stoprealm
 #-----------------------------------------------------------------------------
 # Routine:	changestate()
 #
-# Purpose:	Changes a realm's state.
+# Purpose:	Changes a realm's state in the realms file.
 #
 sub changestate
 {
@@ -1710,6 +1814,9 @@ sub changestate
 	#
 	return if(realm_recval($realm,'state') eq $state);
 
+	#
+	# Reset the realm's state in the realms file.
+	#
 	realm_close();
 	realm_lock();
 	realm_read($realmfile);
@@ -1750,7 +1857,6 @@ sub validrealm
 	my $rollrec;				# Realm's rollrec.
 	my $user;				# Realm's execution user.
 	my $errstr;				# Error phrase.
-
 
 	#
 	# Do a couple very quick error tests.
@@ -1908,10 +2014,16 @@ sub intcmd_handler
 #------------------------------------------------------------------------
 # Routine:	halt_handler()
 #
+# Purpose:      Deal with a halt command.  Stop the realms GUI, stop the
+#		realms, zap our pid file, and finally exit.
+#
 sub halt_handler
 {
 	rolllog_log(LOG_PHASE,"dtrealms","shutting down child realms");
 
+	#
+	# Turn off our GUI program.
+	#
 	display('halt dtrealms 0');
 
 	#
@@ -1934,7 +2046,7 @@ sub halt_handler
 	}
 
 	#
-	# Clean up our pid.
+	# Clean up our pid file.
 	#
 	realmmgr_rmid();
 
@@ -1943,6 +2055,8 @@ sub halt_handler
 
 #-----------------------------------------------------------------------------
 # Routine:	timeout_command()
+#
+# Purpose:	Log a message when we hit a user-requested command timeout.
 #
 sub timeout_command
 {
@@ -1981,9 +2095,10 @@ sub usage
 	exit(1);
 }
 
-
 #----------------------------------------------------------------------
 # Routine:      dumprealms()
+#
+# Purpose:	Dump the realms info to a file.  This is a debugging routine.
 #
 sub dumprealms
 {
