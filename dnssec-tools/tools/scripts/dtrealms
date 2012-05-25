@@ -1749,6 +1749,8 @@ sub validrealm
 	my $rdir;				# Realm directory.
 	my $rollrec;				# Realm's rollrec.
 	my $user;				# Realm's execution user.
+	my $errstr;				# Error phrase.
+
 
 	#
 	# Do a couple very quick error tests.
@@ -1859,18 +1861,16 @@ sub validrealm
 	#
 	# And now for the grand conclusion...
 	#
-	if($errs)
+	if($errs == 0)
 	{
-		my $errstr;					# Error phrase.
-
-		$errstr = ($errs == 1) ? "1 error found" : "$errs errors found";
-
-		rolllog_log(LOG_INFO,$realm,"realm definition is invalid; $errstr\n");
-		return(0);
+		rolllog_log(LOG_INFO,$realm,"realm definition is valid\n");
+		return(1);
 	}
 
-	rolllog_log(LOG_INFO,$realm,"realm definition is valid\n");
-	return(1);
+	$errstr = ($errs == 1) ? "1 error found" : "$errs errors found";
+
+	rolllog_log(LOG_INFO,$realm,"realm definition is invalid; $errstr\n");
+	return(0);
 }
 
 #-----------------------------------------------------------------------------
