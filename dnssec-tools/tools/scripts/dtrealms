@@ -1547,7 +1547,7 @@ sub startrealm
 	$rrf  = $realms{$realm}->{'rollrec'};
 	if($rrf !~ /^\//)
 	{
-		my $rdir  = $realms{$realm}{'realmdir'} | '.';
+		my $rdir  = $realms{$realm}{'realmdir'} || '.';
 		$rrf  = "$rdir/$realms{$realm}->{'rollrec'}";
 	}
 
@@ -1559,7 +1559,7 @@ sub startrealm
 	#
 	# Get the manager and build the command.
 	#
-	$rcmd = $realms{$realm}{'manager'} | 'rollerd';
+	$rcmd = $realms{$realm}{'manager'} || 'rollerd';
 
 	$rcmd .= " -foreground $args -rrf $rrf";
 
