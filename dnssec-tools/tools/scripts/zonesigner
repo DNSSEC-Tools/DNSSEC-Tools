@@ -2396,8 +2396,8 @@ sub zonesign
 	#
 	# Save the rollover data for possible future use.
 	#
- 	keyrec_setval('zone',$zone,'rollmgr',$rollmgr);
- 	keyrec_setval('zone',$zone,'lastcmd',$cmdline);
+	keyrec_setval('zone',$zone,'rollmgr',$rollmgr);
+	keyrec_setval('zone',$zone,'lastcmd',$cmdline);
 
 	#
 	# Add the ZSKs' keyrecs to the keyrec file.
@@ -2421,9 +2421,11 @@ sub zonesign
 	#
 	foreach my $ksk (sort(@kskcurlist))
 	{
+		my $ks = keyrec_recval($ksk,'ksklength'); # Size of this key.
+
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tKSK (cur) $keytag  $ksize  $chron\t($kskcursetname)\n";
+		print "\tKSK (cur) $keytag  $ks  $chron\t($kskcursetname)\n";
 	}
 
 	#
@@ -2431,9 +2433,11 @@ sub zonesign
 	#
 	foreach my $ksk (sort(@kskpublist))
 	{
+		my $ks = keyrec_recval($ksk,'ksklength'); # Size of this key.
+
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tKSK (pub) $keytag  $ksize  $chron\t($kskpubsetname)\n";
+		print "\tKSK (pub) $keytag  $ks  $chron\t($kskpubsetname)\n";
 	}
 
 	#
@@ -2441,9 +2445,11 @@ sub zonesign
 	#
 	foreach my $ksk (sort(@kskrevlist))
 	{
+		my $ks = keyrec_recval($ksk,'ksklength'); # Size of this key.
+
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tKSK (rev) $keytag  $ksize  $chron\t($kskrevsetname)\n";
+		print "\tKSK (rev) $keytag  $ks  $chron\t($kskrevsetname)\n";
 	}
 
 	#
@@ -2451,9 +2457,11 @@ sub zonesign
 	#
 	foreach my $zsk (sort(@zskcurlist))
 	{
+		my $zs = keyrec_recval($zsk,'zsklength'); # Size of this key.
+
 		$zsk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tZSK (cur) $keytag  $zsize  $chron\t($zskcursetname)\n";
+		print "\tZSK (cur) $keytag  $zs  $chron\t($zskcursetname)\n";
 	}
 
 	#
@@ -2461,9 +2469,11 @@ sub zonesign
 	#
 	foreach my $zsk (sort(@zskpublist))
 	{
+		my $zs = keyrec_recval($zsk,'zsklength'); # Size of this key.
+
 		$zsk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tZSK (pub) $keytag  $zsize  $chron\t($zskpubsetname)\n";
+		print "\tZSK (pub) $keytag  $zs  $chron\t($zskpubsetname)\n";
 	}
 
 	#
