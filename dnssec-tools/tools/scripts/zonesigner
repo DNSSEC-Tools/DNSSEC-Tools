@@ -54,7 +54,7 @@ use POSIX;
 # Version information.
 #
 my $NAME   = "zonesigner";
-my $VERS   = "$NAME version: 1.12.3";
+my $VERS   = "$NAME version: 1.12.4";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #
@@ -1344,9 +1344,20 @@ sub genzsks
 	$lastset = keyrec_recval($zone,'lastset');
 
 	#
+	# If a new ZSK count is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_zskcount'}))
+	{
+		$zskcnt = $opts{'new_zskcount'};
+		$opts{'zskcount'} = $opts{'new_zskcount'};
+		delete($opts{'new_zskcount'});
+		keyrec_delval($zone,'new_zskcount');
+	}
+
+	#
 	# Generate a set of current ZSKs and save their names.
 	#
-	for(my $ind=0; $ind < $zskcnt; $ind++)
+	for(1 .. $zskcnt)
 	{
 		my $key = genzsk("cur");		# Name of new key.
 		push @zskcurlist, $key;
@@ -1355,7 +1366,7 @@ sub genzsks
 	#
 	# Generate a set of published ZSKs and save their names.
 	#
-	for(my $ind=0; $ind < $zskcnt; $ind++)
+	for(1 .. $zskcnt)
 	{
 		my $key = genzsk("pub");		# Name of new key.
 		push @zskpublist, $key;
@@ -1532,9 +1543,20 @@ sub genksks
 		$lastset = keyrec_recval($zone,'lastset');
 
 		#
+		# If a new KSK count is wanted, then we'll get it now.
+		#
+		if(defined($opts{'new_kskcount'}))
+		{
+			$kskcnt = $opts{'new_kskcount'};
+			$opts{'kskcount'} = $opts{'new_kskcount'};
+			delete($opts{'new_kskcount'});
+			keyrec_delval($zone,'new_kskcount');
+		}
+
+		#
 		# Generate a set of KSKs and save their names.
 		#
-		for (1 .. $kskcnt)
+		for(1 .. $kskcnt)
 		{
 			push @kskpublist, genksk('kskpub');
 		}
@@ -1702,6 +1724,60 @@ sub genksk
 	vmed_print("generating KSK\n");
 
 	#
+	# If a new crypto algorithm is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_algorithm'}))
+	{
+		$alg = "-a $opts{'new_algorithm'}";
+		$opts{'algorithm'} = $opts{'new_algorithm'};
+		delete($opts{'new_algorithm'});
+		keyrec_delval($zone,'new_algorithm');
+	}
+
+	#
+	# If a new KSK length is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_ksklength'}))
+	{
+		$ksize = "-b $opts{'new_ksklength'}";
+		$opts{'ksklength'} = $opts{'new_ksklength'};
+		delete($opts{'new_ksklength'});
+		keyrec_delval($zone,'new_ksklength');
+	}
+
+	#
+	# If a new KSK lifetime is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_ksklife'}))
+	{
+		$ksklife = $opts{'new_ksklife'};
+		$opts{'ksklife'} = $opts{'new_ksklife'};
+		delete($opts{'new_ksklife'});
+		keyrec_delval($zone,'new_ksklife');
+	}
+
+	#
+	# If a new random-number generator is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_random'}))
+	{
+		$random = "-r $opts{'new_random'}";
+		$opts{'random'} = $opts{'new_random'};
+		delete($opts{'new_random'});
+		keyrec_delval($zone,'new_random');
+	}
+
+	#
+	# If a new KSK revocation period is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_revperiod'}))
+	{
+		$opts{'revperiod'} = $opts{'new_revperiod'};
+		delete($opts{'new_revperiod'});
+		keyrec_delval($zone,'new_revperiod');
+	}
+
+	#
 	# Set up a few vars for KSK generation.
 	#
 	$cmdopts = "$kgopts $random $alg $ksize";
@@ -1783,6 +1859,39 @@ sub genzsk
 	}
 
 	vmed_print("generating new \"$keytype\" ZSK\n");
+
+	#
+	# If a new crypto algorithm is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_algorithm'}))
+	{
+		$alg = "-a $opts{'new_algorithm'}";
+		$opts{'algorithm'} = $opts{'new_algorithm'};
+		delete($opts{'new_algorithm'});
+		keyrec_delval($zone,'new_algorithm');
+	}
+
+	#
+	# If a new random-number generator is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_random'}))
+	{
+		$random = "-r $opts{'new_random'}";
+		$opts{'random'} = $opts{'new_random'};
+		delete($opts{'new_random'});
+		keyrec_delval($zone,'new_random');
+	}
+
+	#
+	# If a new ZSK length is wanted, we'll grab it now.
+	#
+	if(defined($opts{'new_zsklength'}))
+	{
+		$zsize = "-b $opts{'new_zsklength'}";
+		$opts{'zsklength'} = $opts{'new_zsklength'};
+		delete($opts{'new_zsklength'});
+		keyrec_delval($zone,'new_zsklength');
+	}
 
 	#
 	# Set a few vars for key generation.
@@ -3195,7 +3304,6 @@ EOF
 #
 # Purpose:	Force a rollover of the KSK keys.  The Current KSKs are marked
 #		as revoked and the Published KSKs are marked as Current.
-#		New Published KSKs will be created, as well.
 #
 #		This should only be used if you know what you're doing.
 #
@@ -3295,7 +3403,7 @@ sub rollzsk
 
 	#
 	# Render the Current ZSKs obsolete.  Their keyrecs will be marked as
-	# zskobs and the keys will (may) be moved to the archive directory.
+	# zskobs and the keys may be moved to the archive directory.
 	#
 	ssetkeytype($zskcursetname,'zskobs',1);
 	@zskcurlist = ();
@@ -3312,7 +3420,7 @@ sub rollzsk
 	}
 
 	#
-	# Generate and save a new signing set name.
+	# Move the published set name to be the current set name.
 	#
 	$zskcursetname = $zskpubsetname;
 	$opts{'zskcur'} = $zskcursetname;
@@ -3325,6 +3433,29 @@ sub rollzsk
 	$setlist = join ' ', @zskcurlist;
 	keyrec_setval('set',$zskcursetname,'keys',$setlist);
 	@zskpublist = ();
+
+	#
+	# If a new ZSK life is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_zsklife'}))
+	{
+		$zsklife = $opts{'new_zsklife'};
+		$publife = $opts{'new_zsklife'};
+		$opts{'zsklife'} = $opts{'new_zsklife'};
+		delete($opts{'new_zsklife'});
+		keyrec_delval($zone,'new_zsklife');
+	}
+
+	#
+	# If a new ZSK count is wanted, then we'll get it now.
+	#
+	if(defined($opts{'new_zskcount'}))
+	{
+		$zskcnt = $opts{'new_zskcount'};
+		$opts{'zskcount'} = $opts{'new_zskcount'};
+		delete($opts{'new_zskcount'});
+		keyrec_delval($zone,'new_zskcount');
+	}
 
 	#
 	# If we have any New ZSKs, we'll make them the current Published ZSKs.
@@ -3352,7 +3483,7 @@ sub rollzsk
 		}
 
 		#
-		# Adjust the New and Published ZSKs and zap the old New list.
+		# Rename the New ZSKs to be Published and zap the old New list.
 		#
 		$zskpubsetname = $zsknewsetname;
 		$zsknewsetname = "";
@@ -3363,7 +3494,7 @@ sub rollzsk
 		#
 		# Create a set of Published keys.
 		#
-		for(my $ind=0; $ind < $zskcnt; $ind++)
+		for(1 .. $zskcnt)
 		{
 			my $krref;			# Keyrec reference.
 			my $zskpub;			# Published ZSK.
@@ -3400,7 +3531,7 @@ sub rollzsk
 	#
 	# Create a set of New ZSK keys.
 	#
-	for(my $ind=0; $ind < $zskcnt; $ind++)
+	for(1 .. $zskcnt)
 	{
 		my $zsknew = genzsk("new");
 		push @zsknewlist, $zsknew;
@@ -4222,6 +4353,14 @@ specific purpose, such as the current ZSK keys or the published ZSK keys.  Key
 I<keyrec>s contain information about the generated keys themselves, such as
 encryption algorithm, key length, and key lifetime.
 
+As a zone proceeds through key rollover, new cryptographic keys will be
+generated for the zone.  The various key parameters (e.g., key length and
+crypto algorithm) will be the same as the parameters previously used to
+generate keys for that zone.  The B<keymod> command allows these key
+parameters to be modified as needs change.  If a particular parameter is
+changed, such as the KSK length changing from 1024 to 2048, then I<future>
+keys will reflect that change; current and past keys will not be modified.
+
 =head2 Keyrec Files and RFC5011 KSK Revocation
 
 If RFC5011 processing is enabled, there is special handling of the zone's set
@@ -5040,7 +5179,9 @@ Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
-B<lskrf(1)>
+B<keymod(8)>,
+B<lskrf(1)>,
+B<rollerd(1)>
 
 B<dnssec-keygen(8)>,
 B<dnssec-signzone(8)>
