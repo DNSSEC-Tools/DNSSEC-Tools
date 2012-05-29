@@ -1,0 +1,551 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# keymod
+#
+#	This script modifies key parameters in a keyrec file.
+#	The new key parameters will be used by zonesigner in future executions.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "keymod";
+my $VERS   = "$NAME version: 1.12.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'zone=s',				# Zone to edit.
+	'algorithm=s',				# New algorithm.
+	'kskcount=i',				# New kskcount.
+	'ksklength=i',				# New ksklength.
+	'ksklife=i',				# New ksklife.
+	'random=s',				# New random.
+	'revperiod=i',				# New revperiod.
+	'zskcount=i',				# New zskcount.
+	'zsklength=i',				# New zsklength.
+	'zsklife=i',				# New zsklife.
+
+	'nocheck',				# Don't run krfcheck after edit.
+	'verbose',				# Give lotsa output.
+	'Version',				# Display the version number.
+	'help',					# Give a usage message and exit.
+);
+
+#
+# Flag variables for options.
+#
+my $zone;
+my $alg	;
+my $random;
+my $revperiod;
+
+my $kskcnt;
+my $ksklen;
+my $zsklen;
+my $zskcnt;
+my $ksklife;
+my $zsklife;
+
+#
+# Data required for command line options.
+#
+my $verbose	= 0;					# Verbose flag.
+my $check	= 1;					# No-check flag.
+
+#-----------------------------------------------------------------------------
+
+#
+# Recognized crypto algorithms.
+#
+my %algorithms =
+(
+	'rsasha1'       => 1,
+	'rsamd5'        => 1,
+	'dsa'           => 1,
+	'dh'            => 1,
+	'hmac-md5'      => 1,
+	'nsec3rsasha1'  => 1
+);
+
+#-----------------------------------------------------------------------------
+
+my $krf;					# Rollrec we're editing.
+my $zonemods;					# Count of mods made to a zone.
+my $ret;					# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	This routine controls everything.
+#
+sub main()
+{
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Edit the keyrec file.
+	#
+	editkrf();
+
+	#
+	# Maybe check the keyrec file for validity.
+	#
+	system("krfcheck $krf") if($check);
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine gets the options from the command line and does
+#		a bit of validity checking.
+#
+sub doopts
+{
+	my $errs = 0;						# Error count.
+
+	#
+	# Ensure we were given a keyrec file to check.
+	#
+	usage()   if(@ARGV == 0);
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or help info if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Set some flags based on the command line.
+	#
+	$zone	   = $options{'zone'};
+
+	$alg	   = $options{'algorithm'};
+	$kskcnt    = $options{'kskcount'};
+	$ksklen    = $options{'ksklength'};
+	$ksklife   = $options{'ksklife'};
+	$random	   = $options{'random'};
+	$revperiod = $options{'revperiod'};
+	$zskcnt    = $options{'zskcount'};
+	$zsklen    = $options{'zsklength'};
+	$zsklife   = $options{'zsklife'};
+
+	$check	   = $options{'check'};
+	$verbose   = $options{'verbose'};
+
+	#
+	# Ensure we're not being asked to do the impossible.
+	# (The stupid, actually.)
+	#
+	if(defined($alg) && ($algorithms{lc($alg)} == 0))
+	{
+		print STDERR "unknown cryptographic algorithm \"$alg\"\n";
+		$errs++;
+	}
+	if(defined($kskcnt) && ($kskcnt < 0))
+	{
+		print STDERR "KSK length must not be negative\n";
+		$errs++;
+	}
+	if(defined($ksklen) && ($ksklen < 0))
+	{
+		print STDERR "KSK length must not be negative\n";
+		$errs++;
+	}
+	if(defined($ksklife) && ($ksklife < 0))
+	{
+		print STDERR "KSK life must not be negative\n";
+		$errs++;
+	}
+	if(defined($revperiod) && ($revperiod < 0))
+	{
+		print STDERR "revocation period must not be negative\n";
+		$errs++;
+	}
+	if(defined($zskcnt) && ($zskcnt < 0))
+	{
+		print STDERR "ZSK length must not be negative\n";
+		$errs++;
+	}
+	if(defined($zsklen) && ($zsklen < 0))
+	{
+		print STDERR "ZSK length must not be negative\n";
+		$errs++;
+	}
+	if(defined($zsklife) && ($zsklife < 0))
+	{
+		print STDERR "ZSK life must not be negative\n";
+		$errs++;
+	}
+
+	#
+	# Exit if we hit any errors.
+	#
+	exit(1) if($errs);
+
+	#
+	# Delete the non-command options and ensure that we were given
+	# something to do.
+	#
+	delete $options{'zone'};
+	delete $options{'nocheck'};
+	delete $options{'verbose'};
+	if(keys(%options) == 0)
+	{
+		print STDERR "you must specify something to be changed\n";
+		exit(2);
+	}
+
+	if(@ARGV == 0)
+	{
+		print STDERR "no keyrec file specified\n";
+		exit(3);
+	}
+
+	#
+	# Save the name of the keyrec file.
+	#
+	$krf = $ARGV[0];
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	editkrf()
+#
+# Purpose:	This routine reads a keyrec file and copies the keyrec
+#		records into either the roll hash or the skip hash,
+#		depending on each record's type.  Any unrecognized keyrec
+#		entries are reported. 
+#
+sub editkrf
+{
+	#
+	# Load the keyrec file.
+	#
+	if(keyrec_read($krf) < 0)
+	{
+		print STDERR "unable to read keyrec file \"$krf\"\n";
+		exit(4);
+	}
+
+	#
+	# Go through the keyrecs and apply the needed changes.
+	#
+	foreach my $zname (keyrec_names())
+	{
+		my $kt;						# Keyrec's type.
+
+		#
+		# Go to the next record if:
+		#	- this isn't a zone record
+		#	- we aren't doing everything and
+		#	  this isn't the specified record
+		#
+		$kt = keyrec_recval($zname,'keyrec_type');
+		next if($kt ne 'zone');
+		next if(($zone ne '') && ($zname ne $zone));
+
+		#
+		# Set the keyrec fields as requested by the user.
+		#
+		$zonemods = 0;
+		setter($zname,'new_algorithm',$alg);
+		setter($zname,'new_kskcount',$kskcnt);
+		setter($zname,'new_ksklength',$ksklen);
+		setter($zname,'new_ksklife',$ksklife);
+		setter($zname,'new_random',$random);
+		setter($zname,'new_revperiod',$revperiod);
+		setter($zname,'new_zskcount',$zskcnt);
+		setter($zname,'new_zsklength',$zsklen);
+		setter($zname,'new_zsklife',$zsklife);
+
+		print "zone $zname updated\n" if($zonemods);
+	}
+
+	#
+	# Close and write the keyrec file.
+	#
+	keyrec_close();
+}
+
+#----------------------------------------------------------------------
+# Routine:	setter()
+#
+# Purpose:	Set a new value for a key parameter.
+#		If the new value is zero (or null), then the field will
+#		be deleted from the keyrec..
+#
+sub setter
+{
+	my $zname = shift;				# Keyrec name.
+	my $field = shift;				# Field to change.
+	my $val	  = shift;				# Field's new value.
+	my $oldval;					# Old value.
+
+	#
+	# Do nothing if this field shouldn't be changed.
+	#
+	return if(! defined($val));
+
+	#
+	# If the verbose flag was given, we'll show the old value and
+	# the new value.
+	#
+
+	#
+	# Change the keyrec field's value or delete the keyrec field.
+	#
+	if($val)
+	{
+		if($verbose)
+		{
+			$oldval = keyrec_recval($zname,$field);
+			print "$zname:  changing $field \"$oldval\" to \"$val\"\n";
+		}
+
+		keyrec_setval('zone',$zname,$field,$val);
+	}
+	else
+	{
+		if($verbose)
+		{
+			$oldval = keyrec_recval($zname,$field);
+			print "$zname:  deleting $field \"$oldval\"\n";
+		}
+
+		keyrec_delval($zname,$field);
+	}
+	$zonemods++;
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  keymod [options] <keyrec-file>\n";
+	print STDERR "	options:\n";
+
+	print STDERR "		-zone zonename\n";
+	print STDERR "		-algorithm algorithm\n";
+	print STDERR "		-kskcount kskcount\n";
+	print STDERR "		-ksklength ksklength\n";
+	print STDERR "		-ksklife ksklife\n";
+	print STDERR "		-random random\n";
+	print STDERR "		-revperiod revperiod\n";
+	print STDERR "		-zskcount zskcount\n";
+	print STDERR "		-zsklength zsklength\n";
+	print STDERR "		-zsklife zsklife\n";
+
+	print STDERR "		-nocheck\n";
+	print STDERR "		-verbose\n";
+	print STDERR "		-Version\n";
+	print STDERR "		-help\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+keymod - Modifies key parameters in a DNSSEC-Tools I<keyrec> file
+
+=head1 SYNOPSIS
+
+  keymod [options] keyrec-file
+
+=head1 DESCRIPTION
+
+B<keymod> modifies the key parameters in a keyrec file that are used to
+generate cryptographics keys used to sign zones.  The new parameters
+will be used by B<zonesigner> when generating I<new> keys.  It has no
+effect on existing keys.
+
+B<zonesigner> will use the new parameter for a zone the next time it
+generates a key that requires that parameter.  This means that, for example,
+a new ZSK length will not be used during the I<next> invocation of
+B<zonesigner> if that invocation will be performing KSK-rollover actions.
+
+The following fields may be modified:
+
+    algorithm - cryptographic algorithm for generating keys
+    kskcount - count of KSK keys
+    ksklength - length of KSK keys
+    ksklife - lifetime of KSK keys
+    random - random number generator device file
+    revperiod - revocation period for KSK keys
+    zskcount - count of ZSK keys
+    zsklength - length of ZSK keys
+    zsklife - lifetime of ZSK keys
+
+New key/value fields will be added to a zone I<keyrec> file to inform
+B<zonesigner> that new values should be used.  The key portion of the added
+fields will begin with "new_".  For example, a new KSK length of 2048 will
+be written to the I<keyrec> file as:
+
+    new_ksklength        2048
+
+All zone records in the specified I<keyrec> file will be modified, unless the
+B<-zone> option is given.  In that case, only the named zone will be modified.
+
+If a zone I<keyrec> already contains a new key/value field, then the value
+will be modified on subsequent runs of B<keymod>.
+
+=head1 OPTIONS
+
+B<keymod> recognizes the following options.  Multiple options may be combined
+in a single B<keymod> execution.
+
+All numeric values must be positive or zero.
+
+If a new key/value field should be deleted from a zone I<keyrec>, then a
+zero or empty string value should be specified for the appropriate option.
+
+=over 4
+
+=item B<-zone zonename>
+
+The zone I<keyrec> whose name matches I<zonename> is selected as the only
+I<keyrec> that will be modified.  If this name is not given, then all zone
+I<keyrec> records will be modified.
+
+=item B<-algorithm algorithm>
+
+The I<algorithm> field will be modified in the selected I<keyrec> records to
+the given value.  This field must be one of the following:
+
+	dh
+	dsa
+	hmac-md5
+	nsec3rsasha1
+	rsamd5
+	rsasha1
+
+=item B<-ksklength ksklength>
+
+The I<ksklength> field will be modified in the selected I<keyrec> records
+to the given value.  This is a numeric field whose values depend on the
+cryptographic algorithm to be used to generate keys for the zone.
+
+=item B<-kskcount kskcount>
+
+The I<kskcount> field will be modified in the selected I<keyrec> records to the
+given value.  This is a numeric field.
+
+=item B<-ksklife ksklife>
+
+The I<ksklife> field will be modified in the selected I<keyrec> records to the
+given value.  This is a numeric field.
+
+=item B<-random random>
+
+The I<random> field will be modified in the selected I<keyrec> records to the
+given value.  This is a text field that will be passed to the key generator.
+
+=item B<-revperiod revperiod>
+
+The I<revperiod> field will be modified in the selected I<keyrec> records to
+the given value.  This is a numeric field.
+
+=item B<-zskcount zskcount>
+
+The I<zskcount> field will be modified in the selected I<keyrec> records to the
+given value.  This is a numeric field.
+
+=item B<-zsklength zsklength>
+
+The I<zsklength> field will be modified in the selected I<keyrec> records
+to the given value.  This is a numeric field whose values depend on the
+cryptographic algorithm to be used to generate keys for the zone.
+
+=item B<-zsklife zsklife>
+
+The I<zsklife> field will be modified in the selected I<keyrec> records to the
+given value.  This is a numeric field.
+
+=item B<-nocheck>
+
+If this option is given, the B<krfcheck> command will B<not> be run on
+the modified I<keyrec> file.
+
+=item B<-verbose>
+
+Display information about every modification made to the I<keyrec> file.
+
+=item B<-Version>
+
+Displays the version information for B<keymod> and the DNSSEC-Tools package.
+
+=item B<-help>
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<zonesigner(8)>,
+B<krfcheck(8)>
+
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>
+
+B<file-keyrec(5)>
+
+=cut
+
