@@ -60,7 +60,7 @@ use Net::DNS::SEC::Tools::conf;
 use Fcntl qw(:DEFAULT :flock);
 
 our $VERSION = "1.12";
-our $MODULE_VERSION = "1.12.2";
+our $MODULE_VERSION = "1.12.3";
 
 #--------------------------------------------------------------------------
 
@@ -113,6 +113,15 @@ my @ZONEFIELDS = (
 			'szopts',
 			'rollmgr',
 			'lastcmd',
+			'new_algorithm',
+			'new_kgopts',
+			'new_ksklength',
+			'new_ksklife',
+			'new_random',
+			'new_revperiod',
+			'new_revtime',
+			'new_zsklength',
+			'new_zsklife',
 			'keyrec_signsecs',
 			'keyrec_signdate',
 		  );
