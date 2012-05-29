@@ -44,6 +44,16 @@ numbers, and several special characters.  The special characters are the minus
 sign, the plus sign, the underscore, the comma, the period, the colon, the
 forward-slash, the space, and the tab.
 
+The B<keymod> command modifies the key parameters for a zone.  The
+modifications will take effect in future invocations of B<zonesigner>, but
+current and past keys will not be affected.  To make these changes, B<keymod>
+places new entries in the zone I<keyrec>.  These entries are all temporary,
+and are automatically removed once B<zonesigner> starts using the new
+parameter values.  These temporary entries all begin with "new_" and the rest
+of the entry keyword is a normal entry keyword.  For example, if B<keymod> is
+used to modify the "ksklength" parameter, then a new entry will be added that
+has the keyword "new_ksklength".  See B<keymod(8)> for more information.
+
 =head1 FIELDS
 
 The fields in a I<keyrec> record are described in this section.  The fields
@@ -298,7 +308,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 B<lskrf(1)>
 
 B<dnssec-signzone(8)>,
-B<keyarch(8)>
+B<keyarch(8)>,
+B<keymod(8)>,
 B<signset-editor(8)>,
 B<zonesigner(8)>
 
