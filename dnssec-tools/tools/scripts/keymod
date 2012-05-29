@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "keymod";
-my $VERS   = "$NAME version: 1.12.0";
+my $VERS   = "$NAME version: 1.12.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -84,7 +84,6 @@ my %algorithms =
 
 #-----------------------------------------------------------------------------
 
-my $krf;					# Rollrec we're editing.
 my $zonemods;					# Count of mods made to a zone.
 my $ret;					# Return code from main().
 
@@ -98,20 +97,25 @@ exit($ret);
 #
 sub main()
 {
+	my $krf;					# Keyrec we're editing.
+
 	#
 	# Check our options.
 	#
 	doopts();
 
 	#
-	# Edit the keyrec file.
+	# Modify the keyrec file and validate the changes.
 	#
-	editkrf();
+	foreach $krf (@ARGV)
+	{
+		editkrf($krf);
 
-	#
-	# Maybe check the keyrec file for validity.
-	#
-	system("krfcheck $krf") if($check);
+		#
+		# Maybe check the keyrec file for validity.
+		#
+		system("krfcheck $krf") if($check);
+	}
 
 	return(0);
 }
@@ -229,11 +233,6 @@ sub doopts
 		exit(3);
 	}
 
-	#
-	# Save the name of the keyrec file.
-	#
-	$krf = $ARGV[0];
-
 }
 
 #-----------------------------------------------------------------------------
@@ -246,6 +245,8 @@ sub doopts
 #
 sub editkrf
 {
+	my $krf = shift;				# Keyrec file to modify.
+
 	#
 	# Load the keyrec file.
 	#
@@ -364,7 +365,7 @@ sub version
 #
 sub usage
 {
-	print STDERR "usage:  keymod [options] <keyrec-file>\n";
+	print STDERR "usage:  keymod [options] <keyrec files>\n";
 	print STDERR "	options:\n";
 
 	print STDERR "		-zone zonename\n";
@@ -399,7 +400,7 @@ keymod - Modifies key parameters in a DNSSEC-Tools I<keyrec> file
 
 =head1 SYNOPSIS
 
-  keymod [options] keyrec-file
+  keymod [options] keyrec1 ... keyrecN
 
 =head1 DESCRIPTION
 
