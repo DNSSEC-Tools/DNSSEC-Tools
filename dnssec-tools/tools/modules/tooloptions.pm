@@ -655,7 +655,8 @@ sub opts_int_zonecopy
 	#
 	# Copy the data from the Current KSK and Current ZSK keyrecs.
 	#
-	foreach my $ktype ('kskcur', 'zskcur')
+#	foreach my $ktype ('kskcur', 'zskcur')
+	foreach my $ktype ('kskcur', 'zskcur', 'kskpub', 'zskpub', 'zsknew')
 	{
 		my $setname;			# Name of the signing set.
 		my $setkeys;			# Keys in the signing set.
@@ -1039,8 +1040,8 @@ folded in as well, but the key's I<keyrec_> fields are excluded.  This
 call ensures that the named I<keyrec> is a zone I<keyrec>; if it isn't,
 I<undef> is returned.
 
-The I<keyrec> file is reading with I<keyrec_read()>.  To ensure it is
-properly read, I<keyrec_close()> is called first.
+The I<keyrec> file is read with I<keyrec_read()>.  To ensure it is properly
+read, I<keyrec_close()> is called first.
 
 The I<$keyrec_file> argument specifies a I<keyrec> file that will be
 consulted.  The I<keyrec> named by the I<$keyrec_name> argument will be
