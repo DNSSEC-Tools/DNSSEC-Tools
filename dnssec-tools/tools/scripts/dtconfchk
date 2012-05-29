@@ -724,33 +724,39 @@ sub check_nsec3
 	#
 	# Ensure the usensec3 and nsec3optout flags are valid booleans.
 	#
-	bool_check('usensec3');
-	bool_check('nsec3optout');
+	bool_check('usensec3')	  if(defined($dtconf{'usensec3'}));
+	bool_check('nsec3optout') if(defined($dtconf{'nsec3optout'}));
 
 	#
-	# Ensure the NSEC3 iteration count is positive.
+	# Check the NSEC3 iteration count.
 	#
-	if($iter < 1)
+	if(defined($iter))
 	{
-		prt(0,"NSEC3 iterations must be positive ($iter)");
-		$errs++;
-	}
-	else
-	{
-		prt(1,"NSEC3 iterations ($iter) acceptable");
-	}
+		#
+		# Ensure the NSEC3 iteration count is positive.
+		#
+		if($iter < 1)
+		{
+			prt(0,"NSEC3 iterations must be positive ($iter)");
+			$errs++;
+		}
+		else
+		{
+			prt(1,"NSEC3 iterations ($iter) acceptable");
+		}
 
-	#
-	# Ensure the NSEC3 iteration count is not too big.
-	#
-	if($iter > $MAXNSEC3ITER)
-	{
-		prt(0,"NSEC3 iterations is too big ($iter > $MAXNSEC3ITER)");
-		$errs++;
-	}
-	else
-	{
-		prt(1,"NSEC3 iterations ($iter) acceptable");
+		#
+		# Ensure the NSEC3 iteration count is not too big.
+		#
+		if($iter > $MAXNSEC3ITER)
+		{
+			prt(0,"NSEC3 iterations is too big ($iter > $MAXNSEC3ITER)");
+			$errs++;
+		}
+		else
+		{
+			prt(1,"NSEC3 iterations ($iter) acceptable");
+		}
 	}
 
 }
