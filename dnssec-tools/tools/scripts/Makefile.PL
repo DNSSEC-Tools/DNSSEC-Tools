@@ -31,6 +31,7 @@ use ExtUtils::MakeMaker;
 			    getds
 			    grandvizier
 			    keyarch
+			    keymod
 			    krfcheck
 			    lights
 			    lsdnssec
