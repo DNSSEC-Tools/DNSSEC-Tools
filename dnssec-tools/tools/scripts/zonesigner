@@ -1724,17 +1724,6 @@ sub genksk
 	vmed_print("generating KSK\n");
 
 	#
-	# If a new crypto algorithm is wanted, then we'll get it now.
-	#
-	if(defined($opts{'new_algorithm'}))
-	{
-		$alg = "-a $opts{'new_algorithm'}";
-		$opts{'algorithm'} = $opts{'new_algorithm'};
-		delete($opts{'new_algorithm'});
-		keyrec_delval($zone,'new_algorithm');
-	}
-
-	#
 	# If a new KSK length is wanted, then we'll get it now.
 	#
 	if(defined($opts{'new_ksklength'}))
@@ -1859,17 +1848,6 @@ sub genzsk
 	}
 
 	vmed_print("generating new \"$keytype\" ZSK\n");
-
-	#
-	# If a new crypto algorithm is wanted, then we'll get it now.
-	#
-	if(defined($opts{'new_algorithm'}))
-	{
-		$alg = "-a $opts{'new_algorithm'}";
-		$opts{'algorithm'} = $opts{'new_algorithm'};
-		delete($opts{'new_algorithm'});
-		keyrec_delval($zone,'new_algorithm');
-	}
 
 	#
 	# If a new random-number generator is wanted, then we'll get it now.
