@@ -113,7 +113,6 @@ my @ZONEFIELDS = (
 			'szopts',
 			'rollmgr',
 			'lastcmd',
-			'new_algorithm',
 			'new_kgopts',
 			'new_ksklength',
 			'new_ksklife',
