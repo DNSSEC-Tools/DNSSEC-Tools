@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "keymod";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -30,7 +30,6 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	'zone=s',				# Zone to edit.
-	'algorithm=s',				# New algorithm.
 	'kskcount=i',				# New kskcount.
 	'ksklength=i',				# New ksklength.
 	'ksklife=i',				# New ksklife.
@@ -50,7 +49,6 @@ my @opts =
 # Flag variables for options.
 #
 my $zone;
-my $alg	;
 my $random;
 my $revperiod;
 
@@ -66,21 +64,6 @@ my $zsklife;
 #
 my $verbose	= 0;					# Verbose flag.
 my $check	= 1;					# No-check flag.
-
-#-----------------------------------------------------------------------------
-
-#
-# Recognized crypto algorithms.
-#
-my %algorithms =
-(
-	'rsasha1'       => 1,
-	'rsamd5'        => 1,
-	'dsa'           => 1,
-	'dh'            => 1,
-	'hmac-md5'      => 1,
-	'nsec3rsasha1'  => 1
-);
 
 #-----------------------------------------------------------------------------
 
@@ -151,7 +134,6 @@ sub doopts
 	#
 	$zone	   = $options{'zone'};
 
-	$alg	   = $options{'algorithm'};
 	$kskcnt    = $options{'kskcount'};
 	$ksklen    = $options{'ksklength'};
 	$ksklife   = $options{'ksklife'};
@@ -168,11 +150,6 @@ sub doopts
 	# Ensure we're not being asked to do the impossible.
 	# (The stupid, actually.)
 	#
-	if(defined($alg) && ($algorithms{lc($alg)} == 0))
-	{
-		print STDERR "unknown cryptographic algorithm \"$alg\"\n";
-		$errs++;
-	}
 	if(defined($kskcnt) && ($kskcnt < 0))
 	{
 		print STDERR "KSK length must not be negative\n";
@@ -277,7 +254,6 @@ sub editkrf
 		# Set the keyrec fields as requested by the user.
 		#
 		$zonemods = 0;
-		setter($zname,'new_algorithm',$alg);
 		setter($zname,'new_kskcount',$kskcnt);
 		setter($zname,'new_ksklength',$ksklen);
 		setter($zname,'new_ksklife',$ksklife);
@@ -369,7 +345,6 @@ sub usage
 	print STDERR "	options:\n";
 
 	print STDERR "		-zone zonename\n";
-	print STDERR "		-algorithm algorithm\n";
 	print STDERR "		-kskcount kskcount\n";
 	print STDERR "		-ksklength ksklength\n";
 	print STDERR "		-ksklife ksklife\n";
@@ -416,7 +391,6 @@ B<zonesigner> if that invocation will be performing KSK-rollover actions.
 
 The following fields may be modified:
 
-    algorithm - cryptographic algorithm for generating keys
     kskcount - count of KSK keys
     ksklength - length of KSK keys
     ksklife - lifetime of KSK keys
@@ -456,18 +430,6 @@ zero or empty string value should be specified for the appropriate option.
 The zone I<keyrec> whose name matches I<zonename> is selected as the only
 I<keyrec> that will be modified.  If this name is not given, then all zone
 I<keyrec> records will be modified.
-
-=item B<-algorithm algorithm>
-
-The I<algorithm> field will be modified in the selected I<keyrec> records to
-the given value.  This field must be one of the following:
-
-	dh
-	dsa
-	hmac-md5
-	nsec3rsasha1
-	rsamd5
-	rsasha1
 
 =item B<-ksklength ksklength>
 
