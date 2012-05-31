@@ -1,0 +1,687 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# realmset
+#
+#	This script sets some values in a realm file.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::realm;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "realmset";
+my $VERS   = "$NAME version: 1.12.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'name=s',			# Realmrec to edit.
+	'administrator=s',		# New administrator value.
+	'args=s',			# New arguments value.
+	'configdir=s',			# New config directory value.
+	'display!',			# New display value.
+	'manager=s',			# New realm manager value.
+	'newname=s',			# New name for rollrec.
+	'realmdir=s',			# New realm directory value.
+	'rollrec=s',			# New rollrec value.
+	'state=s',			# New realm state value.
+	'statedir=s',			# New state directory value.
+	'user=s',			# New user value.
+	'del-administrator',		# Delete the administrator line.
+	'del-args',			# Delete the arguments line.
+	'del-display',			# Delete the display line.
+	'del-manager',			# Delete the manager line.
+	'del-user',			# Delete the user line.
+
+	'nocheck',			# Don't run realmchk after edits.
+	'verbose',			# Give lotsa output.
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+#
+# Data required for command line options.
+#
+my $name	= '';
+my $admin	= '';
+my $args	= '';
+my $confdir	= '';
+my $display	= 0;
+my $manager	= '';
+my $newname	= '';
+my $nodisplay	= 0;
+my $realmdir	= '';
+my $rollrec	= '';
+my $state	= '';
+my $statedir	= '';
+my $user	= '';
+my $deladmin	= 0;
+my $delargs	= 0;
+my $deldisp	= 0;
+my $delmanager	= 0;
+my $deluser	= 0;
+
+#
+# Flag variables for options.
+#
+my $verbose = 0;			# Verbose flag.
+my $check   = 0;			# Check-realm flag.
+my $doall   = 0;			# Edit all realm entries flag.
+
+
+#######################################################################
+
+my $rmf;				# Realm file we're editing.
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	This routine controls everything.
+#
+sub main()
+{
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Edit the realm file.
+	#
+	editrmf();
+
+	#
+	# Maybe check the realm file for validity.
+	#
+	if($check)
+	{
+		my $cmd = $verbose ? "realmchk -v" : "realmchk";
+
+		system("$cmd $rmf");
+	}
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine gets the options from the command line and does
+#		a bit of validity checking.
+#
+sub doopts
+{
+	my $errs = 0;					# Error count.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Ensure we were given a realm file to check.
+	#
+	usage() if(@ARGV == 0);
+
+	#
+	# Show the version number or help info if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Set some flags based on the command line.
+	#
+	$name	    = $options{'name'};
+	$admin	    = $options{'administrator'};
+	$args	    = $options{'args'};
+	$confdir    = $options{'configdir'};
+	$display    = $options{'display'};
+	$manager    = $options{'manager'};
+	$newname    = $options{'newname'};
+	$nodisplay  = $options{'nodisplay'};
+	$realmdir   = $options{'realmdir'};
+	$rollrec    = $options{'rollrec'};
+	$state	    = $options{'state'};
+	$statedir   = $options{'statedir'};
+	$user	    = $options{'user'};
+	$deladmin   = $options{'del-administrator'};
+	$delargs    = $options{'del-args'};
+	$deldisp    = $options{'del-display'};
+	$delmanager = $options{'del-manager'};
+	$deluser    = $options{'del-user'};
+
+	$check	   = $options{'nocheck'} ? 0 : 1;
+	$verbose   = $options{'verbose'};
+
+	#
+	# Ensure we're not being asked to do the impossible.
+	# (The stupid, actually.)
+	#
+	if(defined($state) && ($state ne 'active') && ($state ne 'inactive'))
+	{
+		print STDERR "state must be either \"active" or \"inactive\"\n";
+		$errs++;
+	}
+	if(defined($display) && (defined($nodisplay)))
+	{
+		print STDERR "-display and -nodisplay are mutually exclusive\n";
+		$errs++;
+	}
+	if(defined($admin) && (defined($deladmin)))
+	{
+		print STDERR "-administrator and -del-administrator are mutually exclusive\n";
+		$errs++;
+	}
+	if(defined($args) && (defined($delargs)))
+	{
+		print STDERR "-args and -del-args are mutually exclusive\n";
+		$errs++;
+	}
+	if(defined($display) && (defined($deldisp)))
+	{
+		print STDERR "-display and -del-display are mutually exclusive\n";
+		$errs++;
+	}
+	if(defined($nodisplay) && (defined($deldisp)))
+	{
+		print STDERR "-nodisplay and -del-display are mutually exclusive\n";
+		$errs++;
+	}
+	if(defined($manager) && (defined($delmanager)))
+	{
+		print STDERR "-manager and -del-manager are mutually exclusive\n";
+		$errs++;
+	}
+	if(defined($user) && (defined($deluser)))
+	{
+		print STDERR "-user and -del-user are mutually exclusive\n";
+		$errs++;
+	}
+
+	#
+	# Convert the realm-manager arguments into their real form.
+	#
+	if($args ne '')
+	{
+		my @args = split / /, $args;
+
+		for(my $ind=0; $ind < @args; $ind++)
+		{
+			$args[$ind] =~ s/^=/-/;
+			$args[$ind] =~ s/=/ /;
+		}
+		$args = join ' ', @args;
+	}
+
+	#
+	# If a realm name wasn't specified, we'll apply the fix to every
+	# realm in the file.
+	#
+	$doall = 1 if(! $name);
+
+	#
+	# Ensure that -rename will be applied to a specific realm.
+	#
+	if($newname && $doall)
+	{
+		print STDERR "-rename may only be used with a single realm\n";
+		$errs++;
+	}
+
+	#
+	# Delete the non-command options and ensure that we were given
+	# something to do.
+	#
+	delete $options{'name'};
+	delete $options{'nocheck'};
+	delete $options{'verbose'};
+	delete $options{'Version'};
+	delete $options{'help'};
+	if(keys(%options) == 0)
+	{
+		print STDERR "you must specify something to be changed\n";
+		$errs++;
+	}
+
+	#
+	# Exit if there were any errors.
+	#
+	exit(1) if($errs);
+
+	#
+	# Save the name of the realm file.
+	#
+	$rmf = $ARGV[0];
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	editrmf()
+#
+# Purpose:	This routine reads a realm file and modifies the records
+#		according to the command-line options.  After making its
+#		changes, the realm file is rewritten with the new contents.
+#
+sub editrmf
+{
+	#
+	# Lock and load the realm file.
+	#
+	realm_lock();
+	if(realm_read($rmf) < 0)
+	{
+		realm_unlock();
+		print STDERR "unable to read realm file \"$rmf\"\n";
+		exit(-1);
+	}
+
+	#
+	# Change the realm name, if so requested.
+	#
+	if($newname)
+	{
+		my $ret;				# Rename return code.
+
+		$ret = realm_rename($name,$newname);
+		if($ret == 0)
+		{
+			vprint("name:  realm name changed to \"$newname\"\n");
+		}
+		elsif($ret == -3)
+		{
+			print STDERR "unable to rename \"$name\"; $name is not a valid realm name\n";
+		}
+		elsif($ret == -4)
+		{
+			print STDERR "unable to rename \"$name\"; $newname is already a realm name\n";
+		}
+		elsif($ret == -5)
+		{
+			print STDERR "unable to rename \"$name\"\n";
+		}
+	}
+
+	#
+	# Go through the realms and apply the needed changes.
+	#
+	foreach my $rname (realm_names())
+	{
+		#
+		# Go to the next record if we aren't doing everything or if
+		# this isn't the specified record.
+		#
+		next if(!$doall && ($rname ne $name));
+
+		#
+		# Set the realm fields as requested by the user.
+		#
+		changer($admin,$rname,'administrator',$admin);
+		changer($args,$rname,'args',$args);
+		changer($confdir,$rname,'configdir',$confdir);
+		changer($manager,$rname,'manager',$manager);
+		changer($realmdir,$rname,'realmdir',$realmdir);
+		changer($rollrec,$rname,'rollrec',$rollrec);
+		changer($state,$rname,'state',$state);
+		changer($statedir,$rname,'statedir',$statedir);
+		changer($user,$rname,'user',$user);
+		changer($display,$rname,'display',1);
+		changer($nodisplay,$rname,'display',0);
+
+		#
+		# Delete some fields.
+		#
+		deleter($deladmin,$rname,'administrator');
+		deleter($delargs,$rname,'args');
+		deleter($deldisp,$rname,'display');
+		deleter($delmanager,$rname,'manager');
+		deleter($deluser,$rname,'user');
+	}
+
+	#
+	# Close, write, and unlock the realm file.
+	#
+	realm_close();
+	realm_unlock();
+}
+
+#----------------------------------------------------------------------
+# Routine:	changer()
+#
+# Purpose:	Change a realm field value and maybe give verbose messages.
+#
+sub changer
+{
+	my $flag  = shift;				# Flag value.
+	my $rname = shift;				# Realm name.
+	my $field = shift;				# Field to change.
+	my $val	  = shift;				# Field's new value.
+
+	#
+	# Do nothing if this field shouldn't be changed.
+	#
+	return if(! $flag);
+
+	#
+	# If the verbose flag was given, we'll show the old value and
+	# the new value.
+	#
+	if($verbose)
+	{
+		my $oldval;				# Old value.
+
+		$oldval = realm_recval($rname,$field);
+		print "$rname:  changing $field \"$oldval\" to \"$val\"\n";
+	}
+
+	#
+	# Change the realm field's value.
+	#
+	realm_setval($rname,$field,$val);
+}
+
+#----------------------------------------------------------------------
+# Routine:	deleter()
+#
+# Purpose:	Delete a realm field and maybe give verbose messages.
+#
+sub deleter
+{
+	my $flag  = shift;				# Flag value.
+	my $rname = shift;				# Realm name.
+	my $field = shift;				# Field to delete.
+
+	my $val;					# Value of field.
+
+	#
+	# Do nothing if this field shouldn't be deleted.
+	#
+	return if(!$flag);
+
+	#
+	# Ensure the field exists for the realm.
+	#
+	$val = realm_recval($rname,$field);
+	if(!defined($val))
+	{
+		print "$rname does not have a $field field\n" if(! $doall);
+		return;
+	}
+
+	#
+	# Maybe show the current value.
+	#
+	vprint("$rname:  deleting $field \"$val\"\n");
+
+	#
+	# Delete the realm field.
+	#
+	realm_delfield($rname,$field);
+}
+
+#----------------------------------------------------------------------
+# Routine:	vprint()
+#
+# Purpose:	Print the given string if the verbose flag is set.
+#
+sub vprint
+{
+	my $str = shift;
+
+	print $str if($verbose);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  realmset [options] <realm-file>\n";
+	print STDERR "	options:\n";
+
+	print STDERR "		-name realm-name\n";
+	print STDERR "		-newname new-realm-name\n";
+	print STDERR "		-administrator admin-email\n";
+	print STDERR "		-args rollerd-arguments\n";
+	print STDERR "		-configdir configuration-directory\n";
+	print STDERR "		-display\n";
+	print STDERR "		-manager realm-manager\n";
+	print STDERR "		-nodisplay\n";
+	print STDERR "		-realmdir realm-directory\n";
+	print STDERR "		-rollrec rollrec-file\n";
+	print STDERR "		-state realm-state\n";
+	print STDERR "		-statedir state-directory\n";
+	print STDERR "		-user username\n";
+
+	print STDERR "\n";
+
+	print STDERR "		-del-administrator\n";
+	print STDERR "		-del-args\n";
+	print STDERR "		-del-display\n";
+	print STDERR "		-del-manager\n";
+	print STDERR "		-del-user\n";
+
+	print STDERR "\n";
+
+	print STDERR "		-nocheck\n";
+	print STDERR "		-verbose\n";
+	print STDERR "		-Version\n";
+	print STDERR "		-help\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+realmset - Modifies entries in a DNSSEC-Tools I<realm> file
+
+=head1 SYNOPSIS
+
+  realmset [options] realm-file
+
+=head1 DESCRIPTION
+
+B<realmset> modifies fields in the I<realm> file specified by I<realm-file>.
+Multiple options may be combined in a single B<realmset> execution.
+B<realmset> operates quietly unless it is given the I<-verbose> option.
+
+All records in the specified I<realm> file will be modified, unless the
+B<-name> option is given.  In that case, only the named zone will be modified.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-administrator addr>
+
+The zone administrator's email address is set to I<addr>.
+
+=item B<-args arglist>
+
+Provides additional arguments for the realm manager.  These arguments will
+override the arguments in the DNSSEC-Tools defaults file, the DNSSEC-Tools
+configuration file, and the realms' I<rollrec> files.  The manager's
+argument list is given in I<arglist>.  If more than one argument is given,
+the set of arguments should be enclosed in quotes.
+
+Given the B<realmset> argument processing, the new arguments cannot be
+specified as they would from a command line.  Instead, the arguments should
+be given in the following manner.  The leading dash should be replaced with
+an equals sign.  If the option takes an argument, the space that would
+separate the option from the option's argument should also be replaced by
+an equals sign.  B<realmset> translates these arguments to the appropriate
+format for the realm manager.  These examples should clarify the argument
+modifications:
+
+    normal rollerd option		-args options
+    ------------------------		---------------
+	-display			   =display
+	-logfile /dt/log.file		   =zskcount=/dt/log.file
+
+The following are valid uses of I<-args>:
+
+    # realmset -args =display example.realm
+    # realmset -args "=loglevel=phase =sleep=3600" example.realm
+
+The B<-args> and B<-del-args> options are mutually exclusive.
+
+=item B<-configdir configdir>
+
+The directory to hold the realm's configuration files is set to I<confdir>.
+
+=item B<-del-administrator>
+
+The I<administrator> line is deleted from the selected I<realm> records.
+The B<-administrator> and B<-del-administrator> options are mutually exclusive.
+
+=item B<-del-args>
+
+The I<args> line is deleted from the selected I<realm> records.
+The B<-args> and B<-del-args> options are mutually exclusive.
+
+=item B<-del-display>
+
+The I<display> line is deleted from the selected I<realm> records.
+The B<-display>, B<-nodisplay>, and B<-del-display> options are mutually
+exclusive.
+
+=item B<-del-manager>
+
+The I<manager> line is deleted from the selected I<realm> records.
+The B<-manager> and B<-del-manager> options are mutually exclusive.
+
+=item B<-del-user>
+
+The I<user> line is deleted from the selected I<realm> records.
+The B<-user> and B<-del-user> options are mutually exclusive.
+
+=item B<-display>
+
+Turn on the GUI display of the selected I<realm>s.
+The B<-display>, B<-nodisplay>, and B<-del-display> options are mutually
+exclusive.
+
+=item B<-manager manager-program>
+
+The manager program for the selected realms is set to I<manager-program>.
+
+=item B<-name realmname>
+
+The I<realm> whose name matches I<realmname> is selected as the only realm
+that will be modified.  If this name is not given, then all I<realm> records
+will be modified.
+
+=item B<-newname new-name>
+
+The I<realm>'s name is changed to B<new-name>.
+The new name cannot be the name of an existing I<realm> in the file.
+This option must be used in conjunction with the B<-name> option.
+
+=item B<-nocheck>
+
+If this option is given, the B<realmchk> command will B<not> be run on
+the modified I<realm> file.
+
+=item B<-nodisplay>
+
+Turn off the GUI display of the selected I<realm>s.
+The B<-display>, B<-nodisplay>, and B<-del-display> options are mutually
+exclusive.
+
+=item B<-realmdir realmdir>
+
+The directory to hold the realm's files is set to I<realmdir>.
+
+=item B<-rollrec rollrec-file>
+
+The I<rollrec> file in the selected I<realm> records is modified to be
+I<rollrec-file>.
+
+=item B<-state newstate>
+
+The realm's state is set to I<newstate>.  This must be either "active" or
+"inactive".
+
+=item B<-statedir statedir>
+
+The directory to hold the realm's state files is set to I<statedir>.
+
+=item B<-user username>
+
+The user name in the selected I<realm> records is modified to be
+I<username>.
+
+=item B<-verbose>
+
+Display information about every modification made to the I<realm> file.
+
+=item B<-Version>
+
+Displays the version information for B<realmset> and the DNSSEC-Tools package.
+
+=item B<-help>
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<dtrealms(8)>,
+B<lsrealm(8)>,
+B<realmchk(8)>,
+B<realminit(8)>
+
+B<Net::DNS::SEC::Tools::realmmgr.pm(3)>,
+B<Net::DNS::SEC::Tools::realm.pm(3)>
+
+B<file-realm(5)>
+
+=cut
