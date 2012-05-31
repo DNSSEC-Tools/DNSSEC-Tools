@@ -41,6 +41,7 @@ use ExtUtils::MakeMaker;
 			    realmchk
 			    realmctl
 			    realminit
+			    realmset
 			    rollchk
 			    rollctl
 			    rollerd
