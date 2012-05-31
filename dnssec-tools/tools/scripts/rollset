@@ -59,30 +59,30 @@ my $rstzn	= 0;
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"name=s",			# Rollrec to edit.
-	"roll",				# Make record a roll record.
-	"skip",				# Make record a skip record.
-	"newname=s",			# New rollrec name.
-	"zonename=s",			# New zonename value.
-	"zg=s",				# New zonegroup value.
-	"file=s",			# New zonefile value.
-	"keyrec=s",			# New keyrec value.
-	"admin=s",			# New administrator email address.
-	"directory=s",			# New directory for zone's files.
-	"loglevel=s",			# New logging level value.
-	"display",			# Turn on display flag.
-	"nodisplay",			# Turn off display flag.
-	"zsargs=s",			# New zonesigner arguments.
-	"del-admin",			# Delete the administrator line.
-	"del-directory",		# Delete the directory line.
-	"del-loglevel",			# Delete the logging level line.
-	"del-zsargs",			# Delete the zonesigner arguments.
-	"reset-zonename",		# Reset the zonename fields.
+	'name=s',			# Rollrec to edit.
+	'roll',				# Make record a roll record.
+	'skip',				# Make record a skip record.
+	'newname=s',			# New rollrec name.
+	'zonename=s',			# New zonename value.
+	'zg=s',				# New zonegroup value.
+	'file=s',			# New zonefile value.
+	'keyrec=s',			# New keyrec value.
+	'admin=s',			# New administrator email address.
+	'directory=s',			# New directory for zone's files.
+	'loglevel=s',			# New logging level value.
+	'display',			# Turn on display flag.
+	'nodisplay',			# Turn off display flag.
+	'zsargs=s',			# New zonesigner arguments.
+	'del-admin',			# Delete the administrator line.
+	'del-directory',		# Delete the directory line.
+	'del-loglevel',			# Delete the logging level line.
+	'del-zsargs',			# Delete the zonesigner arguments.
+	'reset-zonename',		# Reset the zonename fields.
 
-	"check",			# Run rollchk after edits.
-	"verbose",			# Give lotsa output.
-	"Version",			# Display the version number.
-	"help",				# Give a usage message and exit.
+	'check',			# Run rollchk after edits.
+	'verbose',			# Give lotsa output.
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
 );
 
 
@@ -228,7 +228,7 @@ sub doopts
 	$doall = 1 if(! $name);
 
 	#
-	# Ensure that -rename was will be applied to a specific zone.
+	# Ensure that -rename will be applied to a specific zone.
 	#
 	if($newname && $doall)
 	{
@@ -578,16 +578,43 @@ B<-name> option is given.  In that case, only the named zone will be modified.
 
 =over 4
 
-=item B<-name rollrec-name>
+=item B<-admin addr>
 
-The I<rollrec> whose name matches I<zonename> is selected as the only rollrec
-that will be modified.  If this name is not given, then all I<rollrec> records
-will be modified.
+The zone administrator's email address is set to I<addr>.
 
-=item B<-zonename zone-name>
+=item B<-check>
 
-The zone name in the selected I<rollrec> records is modified to be
-I<zone-name>.
+If this option is given, the B<rollchk> command will be run on the modified
+I<rollrec> file.
+
+=item B<-del-admin>
+
+The I<administrator> line is deleted.
+The B<-admin> and B<-del-admin> options are mutually exclusive.
+
+=item B<-del-directory>
+
+The I<directory> line is deleted.
+The B<-directory> and B<-del-directory> options are mutually exclusive.
+
+=item B<-del-loglevel>
+
+The I<loglevel> line is deleted.
+The B<-loglevel> and B<-del-loglevel> options are mutually exclusive.
+
+=item B<-del-zsargs>
+
+The I<zsargs> line is deleted.
+The B<-zsargs> and B<-delzsargs> options are mutually exclusive.
+
+=item B<-directory dir>
+
+The directory to hold the zone's files is set to I<dir>.
+
+=item B<-display>
+
+Turn on the GUI display of the zones in the selected I<rollrec>s.
+This option is mutually exclusive of the I<-nodisplay> option.
 
 =item B<-file zone-file>
 
@@ -599,46 +626,16 @@ I<zone-file>.
 The I<keyrec> file in the selected I<rollrec> records is modified to be
 I<keyrec-file>.
 
-=item B<-zg zonegroup-name>
-
-The zonegroup in the selected I<rollrec> records is modified to be
-I<zonegroup-name>.
-
-=item B<-admin addr>
-
-The zone administrator's email address is set to I<addr>.
-
-=item B<-del-admin>
-
-The I<administrator> line is deleted.
-
-=item B<-del-directory>
-
-The I<directory> line is deleted.
-
-=item B<-del-loglevel>
-
-The I<loglevel> line is deleted.
-
-=item B<-del-zsargs>
-
-The I<zsargs> line is deleted.
-
-The B<-zsargs> and B<-delzsargs> options are mutually exclusive.
-
-=item B<-directory dir>
-
-The directory to hold the zone's files is set to I<dir>.
-
 =item B<-loglevel logging-level>
 
 The logging level of the selected I<rollrec> records is set to
 I<logging-level>.  The valid logging levels are defined in I<rollmgr.pm(3)>.
 
-=item B<-display>
+=item B<-name rollrec-name>
 
-Turn on the GUI display of the zones in the selected I<rollrec>s.
-This option is mutually exclusive of the I<-nodisplay> option.
+The I<rollrec> whose name matches I<zonename> is selected as the only rollrec
+that will be modified.  If this name is not given, then all I<rollrec> records
+will be modified.
 
 =item B<-nodisplay>
 
@@ -649,7 +646,7 @@ This option is mutually exclusive of the B<-display> option.
 
 The I<rollrec>'s name is changed to match the specified name.
 The new name cannot be the name of an existing I<rollrec> in the file.
-This option is must be used in conjunction with the B<-name> option.
+This option must be used in conjunction with the B<-name> option.
 
 =item B<-reset-zonename>
 
@@ -665,6 +662,16 @@ This option is mutually exclusive of the B<-skip> option.
 
 Convert the selected I<rollrec>s to be inactive ("skip") records.
 This option is mutually exclusive of the B<-roll> option.
+
+=item B<-zg zonegroup-name>
+
+The zonegroup in the selected I<rollrec> records is modified to be
+I<zonegroup-name>.
+
+=item B<-zonename zone-name>
+
+The zone name in the selected I<rollrec> records is modified to be
+I<zone-name>.
 
 =item B<-zsargs arglist>
 
@@ -693,11 +700,6 @@ The following are valid uses of I<-zsargs>:
     # rollset -zsargs "=ksklen=2048 =zsklen=2048" example.rollrec
 
 The B<-zsargs> and B<-delzsargs> options are mutually exclusive.
-
-=item B<-check>
-
-If this option is given, the B<rollchk> command will be run on the modified
-I<rollrec> file.
 
 =item B<-verbose>
 
