@@ -9,6 +9,17 @@
 #	for a demonstration Zabbix monitoring environment.
 #	It can be adapted for use in other environments.
 #
+#######################################################################
+#
+# History:
+#
+#	1.0	111018	Initial version.
+#
+#	1.1	120601	Modified the error return codes to be much closer to
+#			the normal data values.  The original codes are fine
+#			for letting you see an error has happened, but they
+#			effectively hide the real data.
+#
 
 use strict;
 
@@ -19,7 +30,7 @@ use Net::DNS::SEC::Tools::rollrec;
 # Version information.
 #
 my $NAME   = "rollstate";
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 1.1";
 
 #######################################################################
 
@@ -40,6 +51,15 @@ my $usenum;
 
 
 my $RRF = "/home/dt-nagios/zones/demo.rollrec";		# Name of rollrec file.
+
+
+#
+# Error values.
+#
+my $ERR_NOROLLREC = 15;			# No rollrec file found.
+my $ERR_KSKANDZSK = 20;			# KSK and ZSK phases are non-zero.
+my $ERR_NEGAKSK	  = 25;			# Negative KSK phase found.
+my $ERR_NEGAZSK	  = 30;			# Negative ZSK phase found.
 
 
 main();
@@ -111,7 +131,7 @@ sub rollstate
 
 	if(! rollrec_exists($zone))
 	{
-		out("no rollrec for zone \"$zone\"",150);
+		out("no rollrec for zone \"$zone\"",$ERR_NOROLLREC);
 		return;
 	}
 
@@ -120,15 +140,15 @@ sub rollstate
 
 	if(($ksk > 0) && ($zsk > 0))
 	{
-		out("invalid rollover state for zone $zone; cannot be in KSK and ZSK rollover simultaneously",200);
+		out("invalid rollover state for zone $zone; cannot be in KSK and ZSK rollover simultaneously",$ERR_KSKANDZSK);
 	}
 	elsif($ksk < 0)
 	{
-		out("invalid rollover state for zone $zone; cannot have a negative KSK rollover state ($ksk)",250);
+		out("invalid rollover state for zone $zone; cannot have a negative KSK rollover state ($ksk)",$ERR_NEGAKSK);
 	}
 	elsif($zsk < 0)
 	{
-		out("invalid rollover state for zone $zone; cannot have a negative ZSK rollover state ($zsk)",300);
+		out("invalid rollover state for zone $zone; cannot have a negative ZSK rollover state ($zsk)",$ERR_NEGAZSK);
 	}
 	elsif($ksk > 0)
 	{
@@ -227,15 +247,15 @@ are given below:
 
 =over 4
 
-=item B<150> - No B<rollrec> for zone I<zone> exists in the B<rollrec> file.
+=item B<15> - No B<rollrec> for zone I<zone> exists in the B<rollrec> file.
 
-=item B<200> - The B<rollrec> file contains an invalid rollover state for the
+=item B<20> - The B<rollrec> file contains an invalid rollover state for the
 zone.  The zone cannot be in KSK and ZSK rollover simultaneously.
 
-=item B<250> - The B<rollrec> file contains an invalid rollover state for the
+=item B<25> - The B<rollrec> file contains an invalid rollover state for the
 zone.  The zone cannot have a negative KSK rollover state.
 
-=item B<300> - The B<rollrec> file contains an invalid rollover state for the
+=item B<30> - The B<rollrec> file contains an invalid rollover state for the
 zone.  The zone cannot have a negative ZSK rollover state.
 
 
@@ -267,7 +287,7 @@ included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
