@@ -307,11 +307,14 @@ sub optsandargs
 	}
 
 	#
-	# If we're monitoring, turn off verbosity and turn on single-run.
+	# If we're monitoring, adjust some settings so we're *only*
+	# monitoring and files won't be rebuilt.
 	#
 	if($monitor)
 	{
 		delete($opts{'v'});
+		$newconf = 0;
+		$opts{'f'} = 1;
 		$once = 1;
 	}
 
@@ -362,6 +365,11 @@ sub getdtconf
 sub load_newkeys
 {
 	my $undefval = $/;
+
+	#
+	# If we're only monitoring, we won't worry about the newkey file.
+	#
+	return if($monitor);
 
 	#
 	# Load in the newkeys info from file if available.
@@ -707,6 +715,11 @@ sub monreport
 #
 sub save_newkeys
 {
+	#
+	# If we're only monitoring, we won't worry about the newkey file.
+	#
+	return if($monitor);
+
 	#
 	# Load in the newkeys info from file if available.
 	#
@@ -1349,6 +1362,11 @@ sub start_tmpfile
 sub end_tmpfile
 {
 	my ($currentfile) = @_;
+
+	#
+	# If we're only monitoring, we won't worry about the tmp file.
+	#
+	return if($monitor);
 
 	end_read_config($currentfile);
 	$tmpfileh->close();
