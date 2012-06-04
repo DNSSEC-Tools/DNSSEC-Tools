@@ -11,7 +11,9 @@
 #	This was written for DNSSEC-Tools.
 #
 # Revision History
-#	1.12.1	Original version: 3/2012		(1.0)
+#	1.12.1	Original version	3/2012		(1.0)
+#	1.12.2	Modified arguments	6/2012		(1.1)
+#		New arguments for trustman.
 #
 
 use strict;
@@ -24,7 +26,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "dt_trustman";
-my $VERS   = "$NAME version: 1.12.1";
+my $VERS   = "$NAME version: 1.12.2";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 ######################################################################r
@@ -115,7 +117,7 @@ sub run_trustman
 	#
 	# Get trustman's opinion.
 	#
-	$out = `/usr/local/bin/trustman -M -f -S -k /etc/dnsval.conf -a /tmp/newkeys`;
+	$out = `/usr/local/bin/trustman -M -k /etc/dnsval.conf`;
 	$ret = $? >> 8;
 # out("dt_trustman:  trustman out - <$out>");
 # out("dt_trustman:  trustman returned <$ret>");
@@ -203,9 +205,9 @@ with DNSSEC-Tools.
 
 B<dt_trustman> passes the following arguments to B<trustman>
 
-    -M -f -S -k /etc/dnsval.conf -a /tmp/newkeys
+    -M -k /etc/dnsval.conf
 
-The filenames may have to be adjusted, depending on the individual
+The filename may have to be adjusted, depending on the individual
 installation.
 
 =head1 NAGIOS USE
