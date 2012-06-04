@@ -45,7 +45,7 @@ use Net::DNS::SEC::Tools::rolllog;
 # Version information.
 #
 my $NAME   = "dtrealms";
-my $VERS   = "$NAME version: 1.12.4";
+my $VERS   = "$NAME version: 1.12.5";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -2134,9 +2134,6 @@ dtrealms - Displays defaults defined for DNSSEC-Tools
 
 =head1 DESCRIPTION
 
-B<Warning:>  This is an early prototype.  Consider it to be beta quality, if
-not alpha.
-
 B<dtrealms> manages multiple distinct DNSSEC-Tools rollover environments
 running simultaneously.  Each rollover environment, called a B<realm>, is
 defined in a B<realms> file.  B<dtrealms> uses this file to determine how the
@@ -2156,9 +2153,10 @@ make it easier to manage multiple realms running consecutively.
 
 A realm is primarily defined by its entry in a B<realms> file.  Four fields
 in particular describe where the realm's files are located and how it runs.
-kits configuration directory and its realm
-directory.  These paths are used to set the B<DT_STATEDIR> and B<DT_SYSCONFDIR>
-environment variables.  
+These are the realm's configuration directory, state directory, realm
+directory, and B<rollrec> file.  These directories are used to set the
+B<DT_STATEDIR> and B<DT_SYSCONFDIR> environment variables, and the B<rollrec>
+file defines which zones are managed by the realm's rollover manager.
 
 =over 4
 
@@ -2171,7 +2169,7 @@ directory hierarchy to contain a B<dnssec-tools> subdirectory, and a
 B<dnssec-tools.conf> file within that subdirectory.  The path fields in the
 configuration file point to various things, such as commands and key archives.
 It is recommended that these paths only point within the B<configdir>
-hierarchy.
+hierarchy, other than for system utilities.
 
 The B<DT_SYSCONFDIR> environment variable is set to the B<configdir> field.
 This will tell the DNSSEC-Tools programs and modules where to find their
@@ -2190,9 +2188,9 @@ will tell the DNSSEC-Tools programs and modules where to find these files.
 
 =item B<realmdir>
 
-The B<realmdir> field of the B<realms> file has the directory name in which
-the realm executes.  It is assumed this is where the realm's zone, key, and
-other files are located.
+The B<realmdir> field of the B<realms> file contains the name of the directory
+in which the realm executes.  This is where the realm's zone, key, and other
+files are located.
 
 =item B<rollrec>
 
@@ -2221,7 +2219,8 @@ The following options are handled by B<dtrealms>.
 
 =item B<-directory>
 
-Directory in which B<dtrealms> will executed.
+Directory in which B<dtrealms> will be executed.  Any relative paths given
+in realms configuration files will use this directory as their base.
 
 =item B<-display>
 
@@ -2238,8 +2237,8 @@ Logging file to use.
 
 =item B<-loglevel>
 
-Logging level to use when writing to the log file.  See B<rolllog(3)> for more
-details.
+Logging level to use when writing to the log file.  See B<rolllog(3)> for
+more details.
 
 =item B<-logtz>
 
@@ -2255,6 +2254,10 @@ Displays a help message and exits.
 
 =back
 
+=head1 WARNING
+
+This is an early prototype.  Consider it to be beta quality.
+
 =head1 COPYRIGHT
 
 Copyright 2011-2012 SPARTA, Inc.  All rights reserved.
@@ -2268,9 +2271,11 @@ Wayne Morrison, tewok@tislabs.com
 
 B<grandvizier(8)>,
 B<lsrealm(8)>,
-B<realminit(8)>
+B<realminit(8)>,
+B<realmset(8)>
 
 B<Net::DNS::SEC::Tools::realm.pm(3)>,
-B<Net::DNS::SEC::Tools::realmmgr.pm(3)>
+B<Net::DNS::SEC::Tools::realmmgr.pm(3)>,
+B<Net::DNS::SEC::Tools::rolllog.pm(3)>
 
 =cut
