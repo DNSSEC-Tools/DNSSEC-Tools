@@ -217,49 +217,8 @@ sub main
 	#
 	# If we're monitoring, print the contents of the monitor string.
 	#
-	if($monitor)
-	{
-		$monstr = '';
+	monreport() if($monitor);
 
-		monvalue($cnt_dvkeys,
-			"$cnt_dvkeys key added to dnsval.conf; ",
-			"$cnt_dvkeys keys added to dnsval.conf; ");
-
-		monvalue($cnt_nckeys,
-			"$cnt_nckeys key added to named.conf; ",
-			"$cnt_nckeys keys added to named.conf; ");
-
-		monvalue($cnt_hdtimedout,
-			"$cnt_hdtimedout hold-down timer reached; ",
-			"$cnt_hdtimedout hold-down timers reached; ");
-
-		monvalue($cnt_hdtimerson,
-			"$cnt_hdtimerson hold-down timer in future; ",
-			"$cnt_hdtimerson hold-down timers in future; ");
-
-		monvalue($cnt_newkeys,
-			"$cnt_newkeys new key received; ",
-			"$cnt_newkeys new keys received; ");
-
-		monvalue($cnt_rmpkeys,
-			"$cnt_rmpkeys removed pending key; ",
-			"$cnt_rmpkeys removed pending keys; ");
-
-		monvalue($cnt_rmkeys,
-			"$cnt_rmkeys key removed; ",
-			"$cnt_rmkeys keys removed; ");
-
-		monvalue($cnt_revkeys,
-			"$cnt_revkeys key revoked; ",
-			"$cnt_revkeys keys revoked; ");
-
-
-		$monstr =~ s/; $//;
-
-		$monstr = "nothing to report" if($monstr eq '');
-
-		print "$monstr\n";
-	}
 }
 
 #----------------------------------------------------------------------
@@ -689,6 +648,56 @@ sub read_dnsval_file
 	}
 
 	$fh->close;
+}
+
+#----------------------------------------------------------------------
+# Routine:	monreport()
+#
+# Purpose:	Gve a monitoring report.  This is only called if
+#		the -monitor option was given.
+#
+sub monreport
+{
+	$monstr = '';
+
+	monvalue($cnt_dvkeys,
+		"$cnt_dvkeys key added to dnsval.conf; ",
+		"$cnt_dvkeys keys added to dnsval.conf; ");
+
+	monvalue($cnt_nckeys,
+		"$cnt_nckeys key added to named.conf; ",
+		"$cnt_nckeys keys added to named.conf; ");
+
+	monvalue($cnt_hdtimedout,
+		"$cnt_hdtimedout hold-down timer reached; ",
+		"$cnt_hdtimedout hold-down timers reached; ");
+
+	monvalue($cnt_hdtimerson,
+		"$cnt_hdtimerson hold-down timer in future; ",
+		"$cnt_hdtimerson hold-down timers in future; ");
+
+	monvalue($cnt_newkeys,
+		"$cnt_newkeys new key received; ",
+		"$cnt_newkeys new keys received; ");
+
+	monvalue($cnt_rmpkeys,
+		"$cnt_rmpkeys removed pending key; ",
+		"$cnt_rmpkeys removed pending keys; ");
+
+	monvalue($cnt_rmkeys,
+		"$cnt_rmkeys key removed; ",
+		"$cnt_rmkeys keys removed; ");
+
+	monvalue($cnt_revkeys,
+		"$cnt_revkeys key revoked; ",
+		"$cnt_revkeys keys revoked; ");
+
+
+	$monstr =~ s/; $//;
+
+	$monstr = "nothing to report" if($monstr eq '');
+
+	print "$monstr\n";
 }
 
 #----------------------------------------------------------------------
