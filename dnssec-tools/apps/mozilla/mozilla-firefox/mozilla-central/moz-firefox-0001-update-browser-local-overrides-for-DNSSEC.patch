@@ -1,0 +1,63 @@
+From d4340eccddc310203a2407c437582868ae845290 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Mon, 4 Jun 2012 15:54:20 -0400
+Subject: [PATCH 5/6] update browser local overrides for DNSSEC
+
+---
+ .../en-US/chrome/overrides/appstrings.properties   |    2 +
+ .../locales/en-US/chrome/overrides/netError.dtd    |   26 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
+
+diff --git a/browser/locales/en-US/chrome/overrides/appstrings.properties b/browser/locales/en-US/chrome/overrides/appstrings.properties
+index 87e9538..aa01edf 100644
+--- a/browser/locales/en-US/chrome/overrides/appstrings.properties
++++ b/browser/locales/en-US/chrome/overrides/appstrings.properties
+@@ -37,6 +37,8 @@
+ malformedURI=The URL is not valid and cannot be loaded.
+ fileNotFound=Firefox can't find the file at %S.
+ dnsNotFound=Firefox can't find the server at %S.
++dnsDNSSECValidationError=The domain name %S failed DNSSEC validation checks.  Please contact a system administrator for help.
++dnsDNSSECDNEError=Firefox securely verified that the domain name %S does not exist.
+ protocolNotFound=Firefox doesn't know how to open this address, because the protocol (%S) isn't associated with any program.
+ connectionFailure=Firefox can't establish a connection to the server at %S.
+ netInterrupt=The connection to %S was interrupted while the page was loading.
+diff --git a/browser/locales/en-US/chrome/overrides/netError.dtd b/browser/locales/en-US/chrome/overrides/netError.dtd
+index 5b964b1..343d276 100644
+--- a/browser/locales/en-US/chrome/overrides/netError.dtd
++++ b/browser/locales/en-US/chrome/overrides/netError.dtd
+@@ -25,6 +25,32 @@
+ </ul>
+ ">
+ 
++<!ENTITY dnsDNSSECValidationError.title "DNSSEC Validation Error">
++<!ENTITY dnsDNSSECValidationError.longDesc "
++<p>The provided domain name failed DNSSEC validation checks.</p>
++<ul>
++  <li>This may be an attempt by a malicious entity to redirect
++    you to a different site than you intended.</li>
++  <li>&brandShortName; has canceled the request for your protection
++     and security.</li>
++  <li>This failure may be temporary; clicking on Try Again at a later
++    time may work.</li>
++</ul>
++">
++
++<!ENTITY dnsDNSSECDNEError.title "Domain Name Does Not Exist">
++<!ENTITY dnsDNSSECDNEError.longDesc "
++<p>&brandShortName; securely verified that the provided domain
++   name does not exist.</p>
++<ul>
++  <li>Did you make a mistake when typing the domain?
++    (e.g. <q><strong>ww</strong>.mozilla.org</q> instead of
++     <q><strong>www</strong>.mozilla.org</q>)</li>
++  <li>This domain address does not exist.  Are you sure it is
++      supposed to?  Maybe it used to but it no longer does?</li>
++</ul>
++">
++
+ <!ENTITY fileNotFound.title "File not found">
+ <!ENTITY fileNotFound.longDesc "
+ <ul>
+-- 
+1.7.7.6
+
