@@ -19,16 +19,16 @@ reverseddates-ns.test.dnssec-tools.org:
 	       See this web page for details: 
 	       http://marc.info/?l=bind-announce&m=116253119512445
 
-pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org:
-  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:192
-  Error:       RRSIG record for
-	       pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org has
-	       expired
-
 pastdate-a.reverseddates-ns.test.dnssec-tools.org:
-  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:223
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:176
   Error:       RRSIG record for
 	       pastdate-a.reverseddates-ns.test.dnssec-tools.org has
+	       expired
+
+pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:191
+  Error:       RRSIG record for
+	       pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org has
 	       expired
 
 reverseddates-aaaa.reverseddates-ns.test.dnssec-tools.org:
@@ -36,7 +36,7 @@ reverseddates-aaaa.reverseddates-ns.test.dnssec-tools.org:
   Error:       RRSIG is nearing its expiration time
 
 reverseddates-a.reverseddates-ns.test.dnssec-tools.org:
-  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:246
+  Location:    db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified:278
   Error:       RRSIG is nearing its expiration time
 
 reverseddates-aaaa.reverseddates-ns.test.dnssec-tools.org:
@@ -60,13 +60,13 @@ futuredate-aaaa.reverseddates-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.reverseddates-ns.test.dnssec-tools.org type:
 	       AAAA failed to verify: Signature may only be used in the
-	       future; after 20120804162804
+	       future; after 20120807162538
 
 pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-aaaa.reverseddates-ns.test.dnssec-tools.org type:
 	       AAAA failed to verify: Signature has expired since:
-	       20120605162304
+	       20120608162038
 
 addedlater-withsig-A.reverseddates-ns.test.dnssec-tools.org:
   Error:       name
@@ -86,16 +86,16 @@ addedlater-nosig-A.reverseddates-ns.test.dnssec-tools.org:
 	       does not have a RRSIG record, which is required for secure
 	       domains.
 
-baddata-aaaa.reverseddates-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       baddata-aaaa.reverseddates-ns.test.dnssec-tools.org type:
-	       AAAA failed to verify: RSA Verification failed
-
 futuredate-a.reverseddates-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-a.reverseddates-ns.test.dnssec-tools.org type: A
 	       failed to verify: Signature may only be used in the future;
-	       after 20120804162804
+	       after 20120807162538
+
+baddata-aaaa.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       baddata-aaaa.reverseddates-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: RSA Verification failed
 
 nsectest.reverseddates-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -122,16 +122,16 @@ pastdate-a.reverseddates-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       pastdate-a.reverseddates-ns.test.dnssec-tools.org type: A
 	       failed to verify: Signature has expired since:
-	       20120605162304
-
-reverseddates-a.reverseddates-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       reverseddates-a.reverseddates-ns.test.dnssec-tools.org type:
-	       A failed to verify: RSA Verification failed
+	       20120608162038
 
 badsign-a.reverseddates-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       badsign-a.reverseddates-ns.test.dnssec-tools.org type: A
 	       failed to verify: RSA Verification failed
+
+reverseddates-a.reverseddates-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.reverseddates-ns.test.dnssec-tools.org type:
+	       A failed to verify: RSA Verification failed
 
 24 errors found in db.reverseddates-ns.test.dnssec-tools.org.zs.signed.modified
