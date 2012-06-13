@@ -127,6 +127,7 @@ my $OPT_LOGTZ	   = 'logtz';
 my $OPT_NORELOAD   = 'noreload';
 my $OPT_PARAMS	   = 'parameters';
 my $OPT_PIDFILE    = 'pidfile';
+my $OPT_REALM	   = 'realm';
 my $OPT_RRFILE	   = 'rrfile';
 my $OPT_SINGLERUN  = 'singlerun';
 my $OPT_SLEEP	   = 'sleep';
@@ -155,6 +156,7 @@ my @opts =
 	"foreground",			# Run in the foreground; don't fork.
 	"alwayssign",			# Always sign when running in singlerun.
 	"username=s",			# User name for which to run as.
+	"realm=s",			# Realm we're running in.
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
 	"Version",			# Display the version number.
@@ -176,6 +178,7 @@ my $loglevel_save;			# Saved logging level.
 my $logtz;				# Logging timestamp.
 my $zoneload = 1;			# Zone-reload flag.
 my $pidfile;				# Pid storage file.
+my $realm;				# Our realm.
 my $singlerun = 0;			# Single run only.
 my $sleep_override = 0;			# Sleep-override flag.
 my $sleepcnt;				# Time we've slept so far.
@@ -3912,6 +3915,7 @@ sub optsandargs
 	$foreground = $opts{$OPT_FOREGROUND};
 	$alwayssign = $opts{$OPT_ALWAYSSIGN} || 0;
 	$pidfile    = $opts{$OPT_PIDFILE};
+	$realm	    = $opts{$OPT_REALM};
 	$verbose    = $opts{$OPT_VERBOSE};
 	$logfile    = $opts{$OPT_LOGFILE}    || $dtconf{$DT_LOGFILE};
 	$loglevel   = $opts{$OPT_LOGLEVEL}   || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
@@ -4216,6 +4220,7 @@ sub bootmsg
 
 	rolllog_log(LOG_ALWAYS,"","$ME parameters:");
 	rolllog_log(LOG_ALWAYS,"","	rollrec file	\"$rollrecfile\"");
+	rolllog_log(LOG_ALWAYS,"","	realm       	\"$realm\"");
 	rolllog_log(LOG_ALWAYS,"","	directory	\"$xqtdir\"");
 	rolllog_log(LOG_ALWAYS,"","	config file	\"$dtconfig\"");
 	rolllog_log(LOG_ALWAYS,"","	logfile		\"$logfile\"");
@@ -5926,6 +5931,7 @@ sub cmd_status
 	# Build status report.
 	#
 	$outbuf  = "boot-time:          $boottime\n";
+	$outbuf .= "realm:              $realm\n";
 	$outbuf .= "directory:          $curdir\n";
 	$outbuf .= "rollrec file:       $rollrecfile\n";
 	$outbuf .= "config file:        $dtconfig\n";
@@ -7541,6 +7547,13 @@ B</var/run/rollerd.pid> on most systems.
 Name of the I<rollrec> file to be processed.  This is the only required
 "option".
 
+=item B<-realm realm_name>
+
+Name of the realm in which B<rollerd> is running.  This is for use with the
+DNSSEC-Tools realms facility as a means of easily identifying different
+instantiations of B<rollerd>.  It is informational only (e.g., B<ps> output
+and log files) and is not used for anything else.
+
 =item B<-singlerun>
 
 Processes all needed steps once and exits.  This is not the ideal way to run
@@ -7655,6 +7668,7 @@ Wayne Morrison, tewok@tislabs.com
 =head1 SEE ALSO
 
 B<blinkenlights(8)>,
+B<dtrealms(8)>,
 B<named(8)>,
 B<rndc(8)>,
 B<rp-wrapper(8)>,
