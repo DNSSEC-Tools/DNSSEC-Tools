@@ -1658,7 +1658,7 @@ sub startrealm
 	#
 	$rcmd = $realms{$realm}{'manager'} || 'rollerd';
 
-	$rcmd .= " -foreground $args -rrf $rrf";
+	$rcmd .= " -realm $realm -foreground $args -rrf $rrf";
 
 	#
 	# Start the realm off and running.
