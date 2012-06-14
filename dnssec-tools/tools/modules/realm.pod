@@ -70,6 +70,11 @@ will be stored there.  This is a required field.
 This boolean field indicates whether or not the realm should be displayed
 by the B<grandvizier> program.  This is an optional field.
 
+ * hoard
+
+This field contains the pathname to a collection of files used to build a
+realm.  This field is B<only> used by the B<buildrealms> program.
+
  * manager
 
 This field contains the name of the rollover manager program for the realm.
@@ -137,6 +142,7 @@ Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
+B<buildrealms(8)>,
 B<dtrealms(8)>,
 B<grandvizier(8)>,
 B<lsrealm(8)>,
