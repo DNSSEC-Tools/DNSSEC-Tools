@@ -41,18 +41,18 @@ my @opts = (
 		'actions',		# Display actions taken.
 		'clear',		# Clean out the staging area.
 		'config=s',		# DNSSEC-Tools config file to copy.
-		'descend',		# Look at files in curdir hierarchy.
 		'directory=s',		# Final directory for realms.
-		'generate',		# Run zonesigner scripts on zones.
 		'nobuild',		# Don't build anything.
-		'noinstall',		# Build in staging area, don't install.
-		'stagedir',		# Directory for staging area.
+		'stagedir=s',		# Directory for staging area.
 
 		'quiet',		# Quiet output.
 		'verbose',		# Verbose output.
 		'help',			# Give help message.
 		'Version',		# Display the version number.
 	   );
+
+# 'descend',	# Look at files in curdir hierarchy.	(not yet implemented)
+# 'generate',	# Run zonesigner scripts on zones.	(not yet implemented)
  
 #
 # Variables for command line options.
@@ -60,11 +60,8 @@ my @opts = (
 my $actions;			# Display actions taken.
 my $clearstage;			# Clear the staging area before starting.
 my $conffile;			# DNSSEC-Tools configuration file to copy.
-my $descend;			# Look at files beneath current directory.
-my $directory = '';		# Install directory that isn't current dir.
-my $generate;			# Run zonesigner scripts on zones after build.
+my $directory;			# Install directory that isn't current dir.
 my $nobuild;			# Don't build, but show actions.
-my $noinstall;			# Build in staging area, but don't install.
 my $stagedir;			# Directory for staging area.
 
 my $quiet;			# Minimal or no output.
@@ -77,7 +74,7 @@ my $CP	  = '/bin/cp';
 my $MKDIR = '/bin/mkdir';
 my $MV	  = '/bin/mv';
 
-my $STAGEDIR = './temporary';
+my $STAGEDIR = './staging-buildrealms';
 
 #######################################################################
 
@@ -190,11 +187,8 @@ sub optsandargs
 	$actions    = $opts{'actions'}	 || 0;
 	$clearstage = $opts{'clear'}	 || 0;
 	$conffile   = $opts{'config'}	 || '';
-	$descend    = $opts{'descend'}	 || 0;
 	$directory  = $opts{'directory'} || $cwd;
-	$generate   = $opts{'generate'}	 || '.';
 	$nobuild    = $opts{'nobuild'}	 || 0;
- 	$noinstall  = $opts{'noinstall'} || 0;
 	$stagedir   = $opts{'stagedir'}	 || $STAGEDIR;
 
 	$quiet	    = $opts{'quiet'}	 || 0;
@@ -370,73 +364,6 @@ sub readrealm
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	filelist()
-#
-# Purpose:	Build a hash of files in a given file hoard.  The hash key
-#		is the node name, the value is the path.
-#
-sub filelist
-{
-	my $dir = shift;			# Hoard directory to index.
-	my $ret;				# Return value.
-	my @files;				# Files in this hoard.
-	my $errs = 0;				# Error count.
-
-	#
-	# Ensure we were given a directory.
-	#
-	return if($dir eq '');
-
-	#
-	# Reset the hoard.
-	#
-	%hoard = ();
-
-	#
-	# List all the files in this hoard.
-	#
-	@files = `find $dir -print`;
-
-	#
-	# Build a hash of all our files.
-	#
-	foreach my $path (sort(@files))
-	{
-		my $fn;					# Path's node.
-
-		#
-		# Skip the current directory, the hoard directory, and
-		# anything in the staging area.
-		#
-		chomp $path;
-		next if(($path eq '.')			  ||
-			($path eq "$dir")		  ||
-			($path =~ /^\.\/$stagedir\//));
-
-		#
-		# Get the last element of the path.
-		#
-		$fn = endnode($path);
-
-		#
-		# If we've already seen a node by this name, we'll complain.
-		# If we haven't seen it, we'll add it to our list.
-		#
-		if(defined($hoard{$fn}))
-		{
-			print STDERR "$hoard{fn} is a duplicated file names\n";
-			$errs++;
-		}
-		else
-		{
-			$hoard{$fn} = $path;
-		}
-	}
-
-	vprint("duplicated file names:  " . $errs);
-}
-
-#-----------------------------------------------------------------------------
 # Routine:	makestage()
 #
 # Purpose:	Make the staging directory we'll be using.  If -clear was
@@ -549,7 +476,8 @@ sub movefiles
 		# Get the hoard for this realm.
 		#
 		$hoard = $realms{$realm}{'hoard'};
-		vprint("building realm $realm from $hoard");
+		vprint("$realm:  building realm from $hoard");
+print "$realm:  building realm from $hoard\n";
 		filelist($hoard);
 
 		#
@@ -605,6 +533,7 @@ sub makeconfig
 	my $hoard = shift;			# Realm's file hoard.
 
 	my $newconf;				# New config file location.
+	my $cf = $conffile;			# Path to source config file.
 	my $cffile;				# Path to new config file.
 	my $newarch;				# Path to new key archive.
 	my $newrlog;				# Path to new rollerd logfile.
@@ -622,7 +551,7 @@ sub makeconfig
 	# specified by the user, then we'll either use the system config file
 	# or a .conf file from the realm's hoard.
 	#
-	if($conffile eq '')
+	if($cf eq '')
 	{
 		#
 		# Look for a <foo>.conf file in the realm's hoard.  If we
@@ -632,7 +561,7 @@ sub makeconfig
 		{
 			if($fn =~ /\.conf$/)
 			{
-				$conffile = $fn;
+				$cf = $hoard{$fn};
 				last;
 			}
 		}
@@ -641,11 +570,11 @@ sub makeconfig
 		# If we didn't find a .conf file in the hoard, we'll copy
 		# the system's config file into the realm's staging area.
 		#
-		if($conffile eq '')
+		if($cf eq '')
 		{
-			$conffile = getconffile();
-			vprint("$realm:  copying default config $conffile to $newconf");
-			if(action("$CP $conffile $newconf") < 0)
+			$cf = getconffile();
+			vprint("$realm:  copying default config $cf to $newconf");
+			if(action("$CP $cf $newconf") < 0)
 			{
 				print STDERR "$realm:  unable to copy default config to $newconf in staging area\n";
 				$errs++;
@@ -656,10 +585,10 @@ sub makeconfig
 			#
 			# Copy the hoard's .conf file to the staging area.
 			#
-			vprint("$realm:  moving config $conffile from hoard to $newconf");
-			if(action("$MV $conffile $newconf") < 0)
+			vprint("$realm:  moving config $cf from hoard to $newconf");
+			if(action("$MV $cf $newconf") < 0)
 			{
-				print STDERR "$realm:  unable to move config $conffile to $newconf in staging area\n";
+				print STDERR "$realm:  unable to move config $cf to $newconf in staging area\n";
 				$errs++;
 			}
 		}
@@ -670,10 +599,10 @@ sub makeconfig
 		# Copy the .conf file given on the command line to the
 		# staging area.
 		#
-		vprint("$realm:  copying config template $conffile to $newconf");
-		if(action("$CP $conffile $newconf") < 0)
+		vprint("$realm:  copying config template $cf to $newconf");
+		if(action("$CP $cf $newconf") < 0)
 		{
-			print STDERR "$realm:  unable to copy config $conffile to $newconf in staging area\n";
+			print STDERR "$realm:  unable to copy config $cf to $newconf in staging area\n";
 			$errs++;
 		}
 	}
@@ -682,7 +611,7 @@ sub makeconfig
 	# Get the path to the new config file, the new key archive, and the
 	# new rollerd log file.
 	#
-	$cffile  = "$newconf/" . endnode($conffile);
+	$cffile  = "$newconf/" . endnode($cf);
 	$newarch = "$directory/$realms{$realm}{'statedir'}/key-archive";
 	$newrlog = "$directory/$realms{$realm}{'configdir'}/log.rollerd";
 
@@ -1026,6 +955,73 @@ sub movefile
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	filelist()
+#
+# Purpose:	Build a hash of files in a given file hoard.  The hash key
+#		is the node name, the value is the path.
+#
+sub filelist
+{
+	my $dir = shift;			# Hoard directory to index.
+	my $ret;				# Return value.
+	my @files;				# Files in this hoard.
+	my $errs = 0;				# Error count.
+
+	#
+	# Ensure we were given a directory.
+	#
+	return if($dir eq '');
+
+	#
+	# Reset the hoard.
+	#
+	%hoard = ();
+
+	#
+	# List all the files in this hoard.
+	#
+	@files = `find $dir -print`;
+
+	#
+	# Build a hash of all our files.
+	#
+	foreach my $path (sort(@files))
+	{
+		my $fn;					# Path's node.
+
+		#
+		# Skip the current directory, the hoard directory, and
+		# anything in the staging area.
+		#
+		chomp $path;
+		next if(($path eq '.')			  ||
+			($path eq "$dir")		  ||
+			($path =~ /^\.\/$stagedir\//));
+
+		#
+		# Get the last element of the path.
+		#
+		$fn = endnode($path);
+
+		#
+		# If we've already seen a node by this name, we'll complain.
+		# If we haven't seen it, we'll add it to our list.
+		#
+		if(defined($hoard{$fn}))
+		{
+			print STDERR "$hoard{fn} is a duplicated file names\n";
+			$errs++;
+		}
+		else
+		{
+			$hoard{$fn} = $path;
+		}
+	}
+
+	vprint("duplicated file names:  " . $errs);
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	action()
 #
 # Purpose:	Run an external command.  The command will be saved in
@@ -1067,7 +1063,7 @@ sub printactions
 {
 	return if((! $actions) || $quiet);
 
-	print "actions:\n";
+	print "\nactions:\n";
 	foreach my $act (@actions)
 	{
 		print "$act\n";
@@ -1170,40 +1166,35 @@ creates file hierarchies, configuration files,
 
 =item B<-actions>
 
-Display actions taken.
+Display the file actions taken by B<buildrealms>.  This includes directory
+creations, file copies, and file moves.  If used in conjunction with the
+B<-nobuild> option, B<buildrealms> will not perform the actions, but will
+display the actions that would otherwise have been taken. 
 
 =item B<-clear>
 
-Clean out the staging area.
+This flag indicates that B<buildrealms> should delete the current staging
+area and its contents prior to building the realms.
 
 =item B<-config=s>
 
-DNSSEC-Tools config file to copy.
-
-=item B<-descend>
-
-Look at files in curdir hierarchy.
+The DNSSEC-Tools configuration file to copy for each realm.
 
 =item B<-directory=s>
 
 Final directory for realms.
 
-=item B<-generate>
-
-Run zonesigner scripts on zones.
-
 =item B<-nobuild>
 
-Don't build anything.
-
-=item B<-noinstall>
-
-Build in staging area, don't install.
+This option tells B<buildrealms> to go through the motions of building the
+new realms, but not to actually build anything.  If this is used in
+conjunctions with the B<-actions> option, B<buildrealms> will show the
+actions that would have been taken.
 
 =item B<-stagedir>
 
-Directory for staging area.
-
+This directory in which the new realms hierarchy is built.  The default
+staging area is B<./staging-buildrealms> if this option is not specified.
 
 =item B<-quiet>
 
