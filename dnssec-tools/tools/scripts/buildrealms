@@ -144,7 +144,7 @@ sub main
 	#
 	#
 	#
-	if($command eq 'tree')
+	if($command eq 'trees')
 	{
 		makestage();	# Create our staging area.
 		buildtrees();	# Create the various hierarchies we'll need.
@@ -213,6 +213,15 @@ sub optsandargs
 			print STDERR "default configuration file invalid:  $cf\n";
 			exit(12);
 		}
+	}
+
+	#
+	# Ensure that we're not supposed to be quietly verbose.
+	#
+	if($quiet && $verbose)
+	{
+		print STDERR "-quiet and -verbose are mutually exclusive\n";
+		exit(14);
 	}
 
 	#
@@ -319,21 +328,31 @@ sub readrealm
 		$realms{$realm}{'statedir'}  = $rr->{'statedir'};
 
 		#
+		# Ensure the realm's file hoard is defined in realm file.
+		#
+		if(! defined($hoard))
+		{
+			print STDERR "$realm:  hoard undefined in realm file\n";
+			$errs++;
+			next;
+		}
+
+		#
 		# Ensure the realm's file hoard is a real, accessible directory.
 		#
 		if(! -e $hoard)
 		{
-			print STDERR "hoard for realm $realm does not exist:  $hoard\n";
+			print STDERR "$realm:  hoard does not exist:  $hoard\n";
 			$errs++;
 		}
 		elsif(! -d $hoard)
 		{
-			print STDERR "hoard for realm $realm is not a directory:  $hoard\n";
+			print STDERR "$realm:  hoard is not a directory:  $hoard\n";
 			$errs++;
 		}
 		elsif((! -r $hoard) || (! -w $hoard) || (! -x $hoard))
 		{
-			print STDERR "hoard for realm $realm is inaccessible:  $hoard\n";
+			print STDERR "$realm:  hoard is inaccessible:  $hoard\n";
 			$errs++;
 		}
 
@@ -344,7 +363,7 @@ sub readrealm
 	#
 	if($errs)
 	{
-		print STDERR "unable to continue\n";
+		print STDERR "unable to continue due to errors\n";
 		exit(10);
 	}
 
@@ -427,7 +446,7 @@ sub buildtrees
 
 			if(action("$MKDIR -p $dir") < 0)
 			{
-				print STDERR "unable to create $dirtype directory \"$dir\" in staging area\n";
+				print STDERR "$realm:  unable to create $dirtype directory \"$dir\" in staging area\n";
 				$errs++;
 			}
 		}
@@ -477,8 +496,7 @@ sub movefiles
 		#
 		$hoard = $realms{$realm}{'hoard'};
 		vprint("$realm:  building realm from $hoard");
-print "$realm:  building realm from $hoard\n";
-		filelist($hoard);
+		filelist($realm,$hoard);
 
 		#
 		# Get some Important Values.
@@ -694,7 +712,6 @@ sub movehoard
 
 		$errs += movefile($realm,$krf,"$dest/$krf",'keyrec');
 		$errs += movefile($realm,$szf,"$dest/$szf",'signed zonefile');
-
 	}
 
 	#
@@ -803,14 +820,21 @@ sub movekeyrec
 			#
 			# Make a new key archive directory,
 			#
-			$tmparch = "$cwd/$stagedir/$realms{$realm}{'statedir'}/key-archive";
+			if($stagedir =~ /^\//)
+			{
+				$tmparch = "$stagedir/$realms{$realm}{'statedir'}/key-archive";
+			}
+			else
+			{
+				$tmparch = "$cwd/$stagedir/$realms{$realm}{'statedir'}/key-archive";
+			}
 			$tmparch =~ s/\/\.\//\//g;
 			vprint("$realm:  $krname:  making new key archive $tmparch");
 			if(! -e $tmparch)
 			{
 				if(action("$MKDIR $tmparch") < 0)
 				{
-					print STDERR "unable to make new key archive $tmparch in staging area for realm $realm\n";
+					print STDERR "$realm:  unable to make new key archive $tmparch in staging area\n";
 					$errs++;
 					next;
 				}
@@ -962,6 +986,7 @@ sub movefile
 #
 sub filelist
 {
+	my $realm = shift;			# Realm that owns hoard.
 	my $dir = shift;			# Hoard directory to index.
 	my $ret;				# Return value.
 	my @files;				# Files in this hoard.
@@ -1009,7 +1034,7 @@ sub filelist
 		#
 		if(defined($hoard{$fn}))
 		{
-			print STDERR "$hoard{fn} is a duplicated file names\n";
+			print STDERR "$realm:  $hoard{fn} is a duplicated file names\n";
 			$errs++;
 		}
 		else
@@ -1112,13 +1137,12 @@ sub version
 ##############################################################################
 #
 
-#--->  ASSUMPTION:  for safety's sake, can't run as root
 #--->  ASSUMPTION:  all a realm's files are in its hoard
-#--->  ASSUMPTION:  rollrec file will be moved to top of realmdir directory
 #--->  ASSUMPTION:  files in rollrec are relative paths
-#--->  ASSUMPTION:  anything in a hoard will be moved to destination
+#--->  ASSUMPTION:  rollrec file will be moved to top of realmdir directory
+#--->  ASSUMPTION:  anything in a hoard will be moved to realm directory
 #--->  ASSUMPTION:  archivedir in keyrec will be moved to <statedir>/key-archive
-#--->  ASSUMPTION:  config file moved to <configdir>/<conffile>
+#--->  ASSUMPTION:  config file moved to <configdir>/dnssec-tools/<conffile>
 
 =pod
 
@@ -1132,13 +1156,20 @@ buildrealms - description
 
 =head1 DESCRIPTION
 
-B<buildrealms> builds a realm environment for use by B<dtrealms>.
+B<buildrealms> helps in setting up a realm environment for use by B<dtrealms>.
+It creates the required file hierarchies for each realm, it moves a realm's
+files to their appropriate place in the hierarchy, and it updates several
+files for the final destination
 
-I<root> is not allowed to run B<buildrealms>.  Some of the actions taken can
-be devastating if a misconfigured (or maliciously constructed) I<realm> file
-is used to control construction.
+builds in a staging area
 
-=head1 WARNING
+files must be moved manually to destination
+
+=head1 WARNINGS
+
+I<root> is not allowed to run B<buildrealms>.  Some of the actions taken
+by B<buildrealms> can be devastating if a misconfigured (or maliciously
+constructed) I<realm> file is used to control construction.
 
 B<buildrealms> is not clairvoyant.  It does the best it can, but it is a
 general tool.  The resulting realms should be checked to ensure they are set
@@ -1151,12 +1182,40 @@ files, B<keyrec> files, and configuration file.
 
 =item B<create>
 
-builds the whole environment:  creates file hierarchies, configuration files,
-moves files, and adjusts paths in several files
+The B<create> command builds the whole realms environment.  B<buildrealms>
+takes the following actions when given this command:
+
+=over 4
+
+=item * A file hierarchy is created for each realm.
+
+=item * A DNSSEC-Tools configuration file is put in each realm's hierarchy.
+
+=item * The realm's B<rollrec>, B<keyrec>, and key files are moved into the
+hierarchy.
+
+=item * A key archive is created for each realm's existing, expired keys.
+
+=item * Paths in several files are adjusted for the new hierarchy and location.
+
+=back
 
 =item B<trees>
 
-creates file hierarchies, configuration files,
+The B<trees> command builds the basic directory hierarchy for each realm.
+The following directories are created for each realm:
+
+=over 4
+
+=item * configuration directory - holds the dnssec-tools directory
+
+=item * dnssec-tools directory - holds DNSSEC-Tools configuration information
+
+=item * state directory - holds state information
+
+=item * realm directory - holds B<rollrec>, B<keyrec>, and key files
+
+=back
 
 =back
 
@@ -1182,7 +1241,10 @@ The DNSSEC-Tools configuration file to copy for each realm.
 
 =item B<-directory=s>
 
-Final directory for realms.
+The target directory for the realms to be built by B<buildrealms>.  The
+new realms will not be moved to this directory, but the realms' files will
+reflect the use of this directory.  If this option is not specified, the
+current directory will be used.
 
 =item B<-nobuild>
 
@@ -1198,21 +1260,23 @@ staging area is B<./staging-buildrealms> if this option is not specified.
 
 =item B<-quiet>
 
-Quiet output.
+B<buildrealms> is prevented from printing any non-error output.
+This option and the B<-verbose> option are mutually exclusive.
 
 =item B<-verbose>
 
-Verbose output.
+B<buildrealms> prints a lot of information about what it is doing.
+This option and the B<-quiet> option are mutually exclusive.
 
 =item B<-Version>
 
-Display the version number.
+Displays the version number.
 
 =item B<-help>
 
-=back
+Displays a help message.
 
-=head1 EXAMPLES
+=back
 
 =head1 COPYRIGHT
 
@@ -1223,6 +1287,14 @@ Copyright 2012 SPARTA, Inc.  All rights reserved.
 Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
+
+B<dtrealms(8)>,
+B<realminit(8)>,
+B<realmset(8)>
+
+B<keyrec(5)>,
+B<realm(5)>,
+B<rollrec(5)>
 
 =cut
 
