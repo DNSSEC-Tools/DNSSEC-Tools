@@ -15,6 +15,7 @@ use ExtUtils::MakeMaker;
 	 'EXE_FILES' => [qw(
 			    blinkenlights
 			    bubbles
+			    buildrealms
                             check-zone-expiration
 			    cleanarch
 			    cleankrf
