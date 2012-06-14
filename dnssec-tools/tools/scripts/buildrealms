@@ -1,0 +1,1237 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+#
+# buildrealms
+#
+#	This script generates a whole realms environment.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::realm;
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::keyrec;
+
+use Cwd;
+use File::Path;
+
+#
+# Version information.
+#
+my $NAME   = "buildrealms";
+my $VERS   = "$NAME version: 1.12.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.12";
+
+#######################################################################
+#
+# Constants
+#
+
+#
+# Command-line options specifically for this program.
+#
+my %opts = ();					# Filled option array.
+my @opts = (
+		'actions',		# Display actions taken.
+		'clear',		# Clean out the staging area.
+		'config=s',		# DNSSEC-Tools config file to copy.
+		'descend',		# Look at files in curdir hierarchy.
+		'directory=s',		# Final directory for realms.
+		'generate',		# Run zonesigner scripts on zones.
+		'nobuild',		# Don't build anything.
+		'noinstall',		# Build in staging area, don't install.
+		'stagedir',		# Directory for staging area.
+
+		'quiet',		# Quiet output.
+		'verbose',		# Verbose output.
+		'help',			# Give help message.
+		'Version',		# Display the version number.
+	   );
+ 
+#
+# Variables for command line options.
+#
+my $actions;			# Display actions taken.
+my $clearstage;			# Clear the staging area before starting.
+my $conffile;			# DNSSEC-Tools configuration file to copy.
+my $descend;			# Look at files beneath current directory.
+my $directory = '';		# Install directory that isn't current dir.
+my $generate;			# Run zonesigner scripts on zones after build.
+my $nobuild;			# Don't build, but show actions.
+my $noinstall;			# Build in staging area, but don't install.
+my $stagedir;			# Directory for staging area.
+
+my $quiet;			# Minimal or no output.
+my $verbose;			# Verbose-output flag.
+
+#
+# Standard paths.
+#
+my $CP	  = '/bin/cp';
+my $MKDIR = '/bin/mkdir';
+my $MV	  = '/bin/mv';
+
+my $STAGEDIR = './temporary';
+
+#######################################################################
+
+my $cwd;					# Current directory.
+my $realmfile;					# Realm file to read.
+my %realms = ();				# Realm data we'll be needing.
+my %hoard = ();					# Realms' file hoards.
+
+my @actions = ();				# Actions we took.
+
+#
+# Valid commands.
+#
+my @cmdlist =
+(
+	'add',
+	'create',
+	'find',
+	'move',
+	'trees',
+);
+
+#
+# Commands which have yet to be implemented.
+#
+my %nyis =
+(
+	'add'		=> 1,
+	'find'		=> 1,
+	'move'		=> 1,
+);
+
+#######################################################################
+
+main();
+exit(0);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Do everything.
+#
+sub main
+{
+	my $command;					# Command to execute.
+
+	#
+	# Let's just not run as root.
+	#
+	if(($< == 0) || ($> == 0))
+	{
+		print STDERR "do not run as root\n";
+		exit(1);
+	}
+
+	#
+	# Do a bit of set up.
+	#
+	$cwd = getcwd();
+	$command = optsandargs();
+
+	#
+	# Get the required data from the realm file.
+	#
+	readrealm();
+
+	#
+	#
+	#
+	if($command eq 'tree')
+	{
+		makestage();	# Create our staging area.
+		buildtrees();	# Create the various hierarchies we'll need.
+	}
+	elsif($command eq 'create')
+	{
+		makestage();	# Create our staging area.
+		buildtrees();	# Create the various hierarchies we'll need.
+		movefiles();	# Move files into staging hierarchies.
+	}
+	else
+	{
+		print "ain't doing nuffin'\n";
+	}
+
+	printactions();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	Parse the command line for options and arguments.
+#
+sub optsandargs
+{
+	my $command;				# Command to be executed.
+	my $len;				# Length of command name.
+	my $ind;				# Command loop index.
+
+	#
+	# Slurp up the options.
+	#
+	GetOptions(\%opts,@opts) || usage();
+
+	version() if(defined($opts{'Version'}));
+
+	#
+	# Get shortcuts for the options.
+	#
+	$actions    = $opts{'actions'}	 || 0;
+	$clearstage = $opts{'clear'}	 || 0;
+	$conffile   = $opts{'config'}	 || '';
+	$descend    = $opts{'descend'}	 || 0;
+	$directory  = $opts{'directory'} || $cwd;
+	$generate   = $opts{'generate'}	 || '.';
+	$nobuild    = $opts{'nobuild'}	 || 0;
+ 	$noinstall  = $opts{'noinstall'} || 0;
+	$stagedir   = $opts{'stagedir'}	 || $STAGEDIR;
+
+	$quiet	    = $opts{'quiet'}	 || 0;
+	$verbose    = $opts{'verbose'}	 || 0;
+
+	#
+	# Ensure the config file is an existing, regular, readable file.
+	#
+	if($conffile ne '')
+	{
+		if((! -e $conffile) || (! -f $conffile) || (! -r $conffile))
+		{
+			print STDERR "invalid configuration file specified:  $conffile\n";
+			exit(11);
+		}
+	}
+	else
+	{
+		my $cf = getconffile();
+		if((! -e $cf) || (! -f $cf) || (! -r $cf))
+		{
+			print STDERR "default configuration file invalid:  $cf\n";
+			exit(12);
+		}
+	}
+
+	#
+	# Ensure we've got some arguments.
+	#
+	if(@ARGV < 2)
+	{
+		print STDERR "missing argument\n";
+		usage();
+	}
+
+	#
+	# Get the required arguments.
+	#
+	$realmfile = $ARGV[0];
+	$command   = $ARGV[1];
+
+	#
+	# Make sure a command was given.
+	#
+	if(($len=length($command)) < 1)
+	{
+		print STDERR "empty command given\n";
+		exit(1);
+	}
+
+	#
+	# Figure out which command was specified and return the full name.
+	#
+	for($ind=0; $ind < @cmdlist; $ind++)
+	{
+		my $cmd = $cmdlist[$ind];
+		$cmd = substr($cmd, 0, $len);
+
+		if($command eq $cmd)
+		{
+			$command = $cmdlist[$ind];
+			last;
+		}
+	}
+
+	#
+	# Error exit if a bad command was given.
+	#
+	if($ind == @cmdlist)
+	{
+		print STDERR "unrecognized command:  $command\n";
+		exit(1);
+	}
+
+	#
+	# Ensure the command has been implemented.
+	#
+	if(defined($nyis{$command}))
+	{
+		print STDERR "command $command is not yet implemented\n";
+		exit(3);
+	}
+
+	return($command);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	readrealm()
+#
+# Purpose:	Read the realm file and squirrel away some data for each realm.
+#		The realm file has a record that only we use.  We'll delete
+#		that record if everything else goes okay.
+#
+sub readrealm
+{
+	my $ret;					# Return value.
+	my $errs = 0;					# Error count.
+
+	#
+	# Read the realm file.
+	#
+	realm_lock();
+	$ret = realm_read($realmfile);
+
+	#
+	# Ensure we can read the realm file.
+	#
+	if($ret < 0)
+	{
+		print STDERR "unable to read realm file \"$realmfile\"\n";
+		exit(2);
+	}
+
+	#
+	# Save the realm data we'll actually be needing.
+	#
+	foreach my $realm (realm_names())
+	{
+		my $hoard;				# Realm's hoard.
+		my $rr = realm_fullrec($realm);		# Get the realm's info.
+
+		$hoard = $rr->{'hoard'};
+		$realms{$realm}{'hoard'}     = $hoard;
+
+		$realms{$realm}{'configdir'} = $rr->{'configdir'};
+		$realms{$realm}{'realmdir'}  = $rr->{'realmdir'};
+		$realms{$realm}{'rollrec'}   = $rr->{'rollrec'};
+		$realms{$realm}{'statedir'}  = $rr->{'statedir'};
+
+		#
+		# Ensure the realm's file hoard is a real, accessible directory.
+		#
+		if(! -e $hoard)
+		{
+			print STDERR "hoard for realm $realm does not exist:  $hoard\n";
+			$errs++;
+		}
+		elsif(! -d $hoard)
+		{
+			print STDERR "hoard for realm $realm is not a directory:  $hoard\n";
+			$errs++;
+		}
+		elsif((! -r $hoard) || (! -w $hoard) || (! -x $hoard))
+		{
+			print STDERR "hoard for realm $realm is inaccessible:  $hoard\n";
+			$errs++;
+		}
+
+	}
+
+	#
+	# Don't continue if we had a problem with any realm's hoard.
+	#
+	if($errs)
+	{
+		print STDERR "unable to continue\n";
+		exit(10);
+	}
+
+	#
+	# Delete the hoard records from the realm file.
+	#
+	foreach my $realm (realm_names())
+	{
+		realm_delfield($realm,'hoard');
+	}
+
+	#
+	# Clean up.
+	#
+	realm_close();
+	realm_unlock();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	filelist()
+#
+# Purpose:	Build a hash of files in a given file hoard.  The hash key
+#		is the node name, the value is the path.
+#
+sub filelist
+{
+	my $dir = shift;			# Hoard directory to index.
+	my $ret;				# Return value.
+	my @files;				# Files in this hoard.
+	my $errs = 0;				# Error count.
+
+	#
+	# Ensure we were given a directory.
+	#
+	return if($dir eq '');
+
+	#
+	# Reset the hoard.
+	#
+	%hoard = ();
+
+	#
+	# List all the files in this hoard.
+	#
+	@files = `find $dir -print`;
+
+	#
+	# Build a hash of all our files.
+	#
+	foreach my $path (sort(@files))
+	{
+		my $fn;					# Path's node.
+
+		#
+		# Skip the current directory, the hoard directory, and
+		# anything in the staging area.
+		#
+		chomp $path;
+		next if(($path eq '.')			  ||
+			($path eq "$dir")		  ||
+			($path =~ /^\.\/$stagedir\//));
+
+		#
+		# Get the last element of the path.
+		#
+		$fn = endnode($path);
+
+		#
+		# If we've already seen a node by this name, we'll complain.
+		# If we haven't seen it, we'll add it to our list.
+		#
+		if(defined($hoard{$fn}))
+		{
+			print STDERR "$hoard{fn} is a duplicated file names\n";
+			$errs++;
+		}
+		else
+		{
+			$hoard{$fn} = $path;
+		}
+	}
+
+	vprint("duplicated file names:  " . $errs);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	makestage()
+#
+# Purpose:	Make the staging directory we'll be using.  If -clear was
+#		given, we'll zap an existing file/directory of that name.
+#
+sub makestage
+{
+	#
+	# Clean out the staging directory (if it exists and clear option
+	# was given.)
+	#
+	if($clearstage && (-e $stagedir))
+	{
+		if(action("rm -fr $stagedir") < 0)
+		{
+			print STDERR "unable to clear staging directory \"$stagedir\"\n";
+			exit(7);
+		}
+	}
+
+	#
+	# Create the directory for the staging area.
+	#
+	if(action("$MKDIR -p $stagedir") < 0)
+	{
+		print STDERR "unable to create staging directory \"$stagedir\"\n";
+		exit(8);
+	}
+
+	print "staging area \"$stagedir\" created\n" if(! $quiet);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	buildtrees()
+#
+# Purpose:	Create the various file trees we *know* we'll need.  These
+#		are the three directories given in each realm record, as
+#		well as a "dnssec-tools" directory in the config directory.
+#
+sub buildtrees
+{
+	my $errs = 0;					# Error count.
+
+	print "building file hierarchies in staging area\n" if(! $quiet);
+
+	#
+	# Create the directories for each realm.
+	#
+	foreach my $realm (sort(keys(%realms)))
+	{
+		my $newconf;			# Actual config directory.
+
+		#
+		# Create this realm's directories in the staging area.
+		#
+		foreach my $dirtype (qw/configdir realmdir statedir/)
+		{
+			my $dir = "$stagedir/$realms{$realm}{$dirtype}";
+
+			next if(-e $dir);
+
+			if(action("$MKDIR -p $dir") < 0)
+			{
+				print STDERR "unable to create $dirtype directory \"$dir\" in staging area\n";
+				$errs++;
+			}
+		}
+
+		#
+		# Create the actual directory that will hold this realm's
+		# config files.
+		#
+		$newconf= "$stagedir/$realms{$realm}{'configdir'}/dnssec-tools";
+		if(action("$MKDIR -p $newconf") < 0)
+		{
+			print STDERR "$realm:  unable to create config directory \"$newconf\"\n";
+			$errs++;
+		}
+
+	}
+
+	exit(9) if($errs);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	movefiles()
+#
+# Purpose:	Move and build the various files into the locations in the
+#		staging area.  A configuration file is built for the realm,
+#		the realm's rollrec file and anything else from the hoard
+#		is moved into the staging area.
+#
+sub movefiles
+{
+	my $errs = 0;					# Error count.
+
+	#
+	# Create the directories for each realm.
+	#
+	foreach my $realm (sort(keys(%realms)))
+	{
+		my $dest;				# Destination directory.
+		my $rr;					# Rollrec file.
+		my $hrr;				# Path to rollrec file.
+		my $hoard;				# Realm's file hoard.
+
+		print "moving files for realm $realm\n" if(! $quiet);
+
+		#
+		# Get the hoard for this realm.
+		#
+		$hoard = $realms{$realm}{'hoard'};
+		vprint("building realm $realm from $hoard");
+		filelist($hoard);
+
+		#
+		# Get some Important Values.
+		#
+		$dest = "$stagedir/$realms{$realm}{'realmdir'}";
+		$rr = $realms{$realm}{'rollrec'};
+		$hrr = $hoard{$rr};
+
+		#
+		# Get a config file.
+		#
+		$errs += makeconfig($realm,$hoard);
+
+		#
+		# Move the bulk of realm's file hoard to its new home.
+		#
+		$errs += movehoard($realm,$hrr,$dest);
+
+		#
+		# Move the rollrec file.
+		#
+		$errs += movefile($realm,$rr,$dest,'rollrec');
+
+	}
+
+	#
+	# Move the realm file.
+	#
+	if(action("$CP $realmfile $stagedir") < 0)
+	{
+		print STDERR "unable to copy realm file $realmfile to staging area\n";
+		$errs++;
+	}
+
+	vprint("\n$errs errors encountered when moving files\n\n");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	makeconfig()
+#
+# Purpose:	Put a DNSSEC-Tools configuration file in a realm's staging
+#		area.  The new config file can come from one of three places:
+#			- command-line argument (copied to all realms)
+#			- a .conf file in realm's hoard (copied to that realm
+#			  only)
+#			- system's config file (copied to realms without a
+#			  .conf)
+#
+sub makeconfig
+{
+	my $realm = shift;			# Realm we're working on.
+	my $hoard = shift;			# Realm's file hoard.
+
+	my $newconf;				# New config file location.
+	my $cffile;				# Path to new config file.
+	my $newarch;				# Path to new key archive.
+	my $newrlog;				# Path to new rollerd logfile.
+	my $cmd;				# Command to execute.
+	my $errs = 0;				# Error count.
+	my $rc;					# Return code from system().
+
+	#
+	# Get the location for the new configuration file.
+	#
+	$newconf = "$stagedir/$realms{$realm}{'configdir'}/dnssec-tools";
+
+	#
+	# Put a new config file in the staging area.  If a config file wasn't
+	# specified by the user, then we'll either use the system config file
+	# or a .conf file from the realm's hoard.
+	#
+	if($conffile eq '')
+	{
+		#
+		# Look for a <foo>.conf file in the realm's hoard.  If we
+		# find one, we'll use it for this realm.
+		#
+		foreach my $fn (keys(%hoard))
+		{
+			if($fn =~ /\.conf$/)
+			{
+				$conffile = $fn;
+				last;
+			}
+		}
+
+		#
+		# If we didn't find a .conf file in the hoard, we'll copy
+		# the system's config file into the realm's staging area.
+		#
+		if($conffile eq '')
+		{
+			$conffile = getconffile();
+			vprint("$realm:  copying default config $conffile to $newconf");
+			if(action("$CP $conffile $newconf") < 0)
+			{
+				print STDERR "$realm:  unable to copy default config to $newconf in staging area\n";
+				$errs++;
+			}
+		}
+		else
+		{
+			#
+			# Copy the hoard's .conf file to the staging area.
+			#
+			vprint("$realm:  moving config $conffile from hoard to $newconf");
+			if(action("$MV $conffile $newconf") < 0)
+			{
+				print STDERR "$realm:  unable to move config $conffile to $newconf in staging area\n";
+				$errs++;
+			}
+		}
+	}
+	else
+	{
+		#
+		# Copy the .conf file given on the command line to the
+		# staging area.
+		#
+		vprint("$realm:  copying config template $conffile to $newconf");
+		if(action("$CP $conffile $newconf") < 0)
+		{
+			print STDERR "$realm:  unable to copy config $conffile to $newconf in staging area\n";
+			$errs++;
+		}
+	}
+
+	#
+	# Get the path to the new config file, the new key archive, and the
+	# new rollerd log file.
+	#
+	$cffile  = "$newconf/" . endnode($conffile);
+	$newarch = "$directory/$realms{$realm}{'statedir'}/key-archive";
+	$newrlog = "$directory/$realms{$realm}{'configdir'}/log.rollerd";
+
+	#
+	# Escape the path separators.
+	#
+	$newarch =~ s/\//\\\//g;
+	$newrlog =~ s/\//\\\//g;
+
+	#
+	# Adjust the archive directory in the config file.
+	#
+	vprint("$realm:  updating key archive in $cffile");
+	$cmd = 'perl -pi -e \'s/^(archivedir\s+).*/$1' . "$newarch/' $cffile";
+	$rc = system($cmd);
+	if(($rc >> 8) != 0)
+	{
+		print STDERR "$realm:  unable to update the key archive in $cffile\n";
+		$errs++;
+	}
+
+	#
+	# Adjust the rollerd logfile in the config file.
+	#
+	vprint("$realm:  updating rollerd logfile in $cffile");
+	$cmd = 'perl -pi -e \'s/^(roll_logfile\s+).*/$1' . "$newrlog/' $cffile";
+	$rc = system($cmd);
+	if(($rc >> 8) != 0)
+	{
+		print STDERR "$realm:  unable to update the rollerd logfile in $cffile\n";
+		$errs++;
+	}
+
+	#
+	# Return the error count.
+	#
+	return($errs);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	movehoard()
+#
+# Purpose:	Move the contents of a file hoard into the staging area.
+#
+sub movehoard
+{
+	my $realm = shift;			# Realm we're moving.
+	my $hrr = shift;			# Rollrec file we're looking at.
+	my $dest = shift;			# File destination.
+
+	my $hoard;				# Hoard directory.
+	my $errs = 0;				# Error count.
+
+	#
+	# Get a shortcut to the hoard.
+	#
+	$hoard = $realms{$realm}{'hoard'};
+
+	#
+	# Read this realm's rollrec.
+	#
+	rollrec_read($hrr);
+
+	#
+	# Get the keyrec and zonefile for each rollrec entry.
+	# We'll also dig into the keyrec for keyfiles.
+	#
+	foreach my $rrname (sort(rollrec_names()))
+	{
+		my $krf;			# Keyrec file.
+		my $szf;			# Signed zone file.
+
+		#
+		# Get the fields we need from the rollrec entry.
+		#
+		$krf = rollrec_recval($rrname,'keyrec');
+		$szf = rollrec_recval($rrname,'zonefile');
+
+		$errs += movekeyrec($realm,$krf,$dest);
+
+		$errs += movefile($realm,$krf,"$dest/$krf",'keyrec');
+		$errs += movefile($realm,$szf,"$dest/$szf",'signed zonefile');
+
+	}
+
+	#
+	# Move anything else in this hoard directory to the staging area.
+	#
+	foreach my $other (glob("$hoard/*"))
+	{
+		#
+		# Except for the rollrec file.
+		#
+		next if($other eq $hrr);
+
+		$other =~ s/^$hoard\///;
+		$errs += movefile($realm,$other,"$dest/$other",'other');
+	}
+
+	#
+	# Close the rollrec and return our error count.
+	#
+	rollrec_close();
+	return($errs);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	movekeyrec()
+#
+# Purpose:	Move the contents of a keyrec file into a given location.
+#
+#		Make some adjustments, depending on record type:
+#			- zone records:
+#				- move the zone file
+#				- adjust the kskdirectory field
+#				- adjust the zskdirectory field
+#
+#			- set records:
+#				(nothing yet)
+#
+#			- key records:
+#				- adjust the keypath field
+#
+sub movekeyrec
+{
+	my $realm = shift;			# Realm we're moving.
+	my $krf = shift;			# Keyrec file we're looking at.
+	my $dest = shift;			# File destination.
+	my $errs = 0;				# Error count.
+
+	my $fullhoard;				# Abspath to file hoard.
+	my $fulldest;				# Abspath to destination.
+
+	#
+	# Get some full paths we'll need.
+	#
+	$fulldest = "$cwd/$dest";
+	$fullhoard = "$cwd/$realms{$realm}{'hoard'}";
+	$fulldest =~ s/\/\.\//\//g;
+
+	#
+	# Read the keyrec.
+	#
+	keyrec_read($hoard{$krf});
+
+	#
+	# Get the keyrec and zonefile from the keyrec file.
+	# We'll also dig into the keyrec and adjust some paths.
+	#
+	foreach my $krname (sort(keyrec_names()))
+	{
+		my $krtype;					# Keyrec type.
+
+		#
+		# Get the keyrec's type.
+		#
+		$krtype = keyrec_recval($krname,'keyrec_type');
+
+		#
+		# Make the adjustments.
+		#
+		if($krtype eq 'zone')
+		{
+			my $zone;		# Zone file.
+			my $newarch;		# New key archive directory.
+			my $oldarch;		# Old key archive directory.
+			my $tmparch;		# Temporary archive directory.
+
+			#
+			# Move the zonefile.
+			#
+			$zone = keyrec_recval($krname,'zonefile');
+			vprint("$realm:  $krname:  moving zonefile");
+			$errs +=movefile($realm,$zone,"$dest/$zone",'zonefile');
+
+			#
+			# Adjust the key directory paths in the keyrec.
+			#
+			vprint("$realm:  $krname:  adjusting key directory paths in keyrec");
+			foreach my $dt (qw/kskdirectory zskdirectory/)
+			{
+				my $keydir;		# Directory from keyrec.
+
+				$keydir = keyrec_recval($krname,$dt);
+				$keydir =~ s/^$fullhoard/$directory/;
+				keyrec_setval('zone',$krname,$dt,$keydir);
+			}
+
+			#
+			# Make a new key archive directory,
+			#
+			$tmparch = "$cwd/$stagedir/$realms{$realm}{'statedir'}/key-archive";
+			$tmparch =~ s/\/\.\//\//g;
+			vprint("$realm:  $krname:  making new key archive $tmparch");
+			if(! -e $tmparch)
+			{
+				if(action("$MKDIR $tmparch") < 0)
+				{
+					print STDERR "unable to make new key archive $tmparch in staging area for realm $realm\n";
+					$errs++;
+					next;
+				}
+			}
+
+			#
+			# Build the name of the new archive directory.
+			#
+			$newarch = "$directory/$realms{$realm}{'statedir'}/key-archive";
+			$newarch =~ s/\/\.\//\//g;
+
+			#
+			# Adjust the keypaths for keys in the key archive.
+			#
+			$oldarch = keyrec_recval($krname,'archivedir');
+			vprint("$realm:  $krname:  adjusting keypaths for archived keys");
+			foreach my $key (sort(keyrec_names()))
+			{
+				my $archkey = keyrec_recval($key,'keypath');
+
+				next if(! defined($archkey));
+				next if($archkey !~ /^$oldarch\//);
+
+				if(-e $archkey)
+				{
+					if(action("$MV $archkey $tmparch") < 0)
+					{
+						print STDERR "$realm:  unable to move old archived key $archkey into new key archive in staging area\n";
+						return(1);
+					}
+				}
+
+				$archkey =~ s/^$oldarch\//$newarch\//;
+				keyrec_setval('key',$key,'keypath',$archkey);
+			}
+
+			vprint("$realm:  $krname:  adjusting archivedir for zone keyrec");
+			keyrec_setval('zone',$krname,'archivedir',$newarch);
+
+		}
+		elsif($krtype eq 'set')
+		{
+		}
+		elsif($krtype =~ /[zk]sk/)
+		{
+			my $keydir;		# Directory from keyrec.
+
+			#
+			# If this record has a keypath, we'll point it into
+			# the new directory.
+			#
+			$keydir = keyrec_recval($krname,'keypath');
+			if(defined($keydir))
+			{
+				$keydir =~ s/^$fullhoard/$directory/;
+				keyrec_setval('key',$krname,'keypath',$keydir);
+			}
+		}
+
+	}
+
+	#
+	# Close the keyrec and return our error count.
+	#
+	keyrec_close();
+	return($errs);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	movefile()
+#
+# Purpose:	Move a single file in a realm's file hoard to a given location.
+#		We won't move the rollrec file, as that's done elsewhere.
+#		It isn't just a straight move, as there's some validation and
+#		path finagling that goes along for the ride.
+#
+sub movefile
+{
+	my $realm = shift;				# Realm we're building.
+	my $fn = shift;					# File to move.
+	my $dest = shift;				# Destination directory.
+	my $desc = shift;				# Description of file.
+
+	my $hfn;					# Hoard path to file.
+	my $destpath;					# Hoard path to file.
+
+	#
+	# Ensure we've found the source file.
+	#
+	if(! defined($fn))
+	{
+		print STDERR "$realm:  $desc not defined\n";
+		return(1);
+	}
+
+	#
+	# Ensure we've found the source file.
+	#
+	$hfn = $hoard{$fn};
+	if(!defined($hfn))
+	{
+		print STDERR "$realm:  unable to find $desc \"$hfn\"\n";
+		return(1);
+	}
+
+	#
+	# Get rid of the hoard prefix from the destination path.
+	#
+	$destpath = $hfn;
+	$destpath =~ s/^$realms{$realm}{'hoard'}\/*//;
+
+	#
+	# If the source file path contains any directories, we'll create
+	# them in the destination.  But not for the rollrec file.
+	#
+	if(($destpath =~ /\//) && ($desc ne 'rollrec'))
+	{
+		my @nodes;				# Nodes in path.
+		my $path;				# Path without file.
+
+		@nodes = split /\//, $destpath;
+		pop @nodes;
+		$path = join('/', @nodes);
+
+		if(action("$MKDIR -p $dest/$path") < 0)
+		{
+			print STDERR "$realm:  unable to create directory \"$dest\" in staging area\n";
+			return(1);
+		}
+	}
+
+	#
+	# Move the file.
+	#
+	if(action("$MV $hfn $dest") < 0)
+	{
+		print STDERR "$realm:  unable to move $desc $hfn to $dest in staging area\n";
+		return(1);
+	}
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	action()
+#
+# Purpose:	Run an external command.  The command will be saved in
+#		a list of actions and the command's return code returned.
+#
+sub action
+{
+	my $act = shift;				# Action to take.
+	my $ret;					# Action's return code.
+
+	system($act) if(! $nobuild);
+	$ret = $?;
+
+	push @actions, $act;
+
+	return($ret);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	printactions()
+#
+# Purpose:	Return the final node in a path.
+#
+sub endnode
+{
+	my $path = shift;				# Path to parse.
+	my @chunks;					# Pieces of path.
+
+	@chunks = split '/', $path;
+	return($chunks[-1]);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	printactions()
+#
+# Purpose:	Print a list of the actions taken if the user wants it.
+#
+sub printactions
+{
+	return if((! $actions) || $quiet);
+
+	print "actions:\n";
+	foreach my $act (@actions)
+	{
+		print "$act\n";
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;				# String to print.
+
+	print "$str\n" if($verbose);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage: $0 [options] <realmsfile> <command> <command-args>\n";
+	print "\twhere <command> may be:\n";
+	print "\t\tactions      print actions taken\n";
+	print "\t\tcreate       create a new realms hierarchy\n";
+	print "\t\tadd          add realms to existing realms hierarchy\n";
+	print "\t\tfind         find files in given directories\n";
+	print "\t\ttree         create hierarchy, but don't move files\n";
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+#--->  ASSUMPTION:  for safety's sake, can't run as root
+#--->  ASSUMPTION:  all a realm's files are in its hoard
+#--->  ASSUMPTION:  rollrec file will be moved to top of realmdir directory
+#--->  ASSUMPTION:  files in rollrec are relative paths
+#--->  ASSUMPTION:  anything in a hoard will be moved to destination
+#--->  ASSUMPTION:  archivedir in keyrec will be moved to <statedir>/key-archive
+#--->  ASSUMPTION:  config file moved to <configdir>/<conffile>
+
+=pod
+
+=head1 NAME
+
+buildrealms - description
+
+=head1 SYNOPSIS
+
+  buildrealms [options] <realmsfile> <command> <command-args>
+
+=head1 DESCRIPTION
+
+B<buildrealms> builds a realm environment for use by B<dtrealms>.
+
+I<root> is not allowed to run B<buildrealms>.  Some of the actions taken can
+be devastating if a misconfigured (or maliciously constructed) I<realm> file
+is used to control construction.
+
+=head1 WARNING
+
+B<buildrealms> is not clairvoyant.  It does the best it can, but it is a
+general tool.  The resulting realms should be checked to ensure they are set
+up as desired.  In particular, you should check the B<realm> file B<rollrec>
+files, B<keyrec> files, and configuration file.
+
+=head1 COMMANDS
+
+=over 4
+
+=item B<create>
+
+builds the whole environment:  creates file hierarchies, configuration files,
+moves files, and adjusts paths in several files
+
+=item B<trees>
+
+creates file hierarchies, configuration files,
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-actions>
+
+Display actions taken.
+
+=item B<-clear>
+
+Clean out the staging area.
+
+=item B<-config=s>
+
+DNSSEC-Tools config file to copy.
+
+=item B<-descend>
+
+Look at files in curdir hierarchy.
+
+=item B<-directory=s>
+
+Final directory for realms.
+
+=item B<-generate>
+
+Run zonesigner scripts on zones.
+
+=item B<-nobuild>
+
+Don't build anything.
+
+=item B<-noinstall>
+
+Build in staging area, don't install.
+
+=item B<-stagedir>
+
+Directory for staging area.
+
+
+=item B<-quiet>
+
+Quiet output.
+
+=item B<-verbose>
+
+Verbose output.
+
+=item B<-Version>
+
+Display the version number.
+
+=item B<-help>
+
+=back
+
+=head1 EXAMPLES
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+=cut
+
