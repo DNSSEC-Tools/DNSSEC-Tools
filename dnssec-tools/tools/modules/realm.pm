@@ -109,6 +109,7 @@ my @REALMFIELDS = (
 			'user',
 			'manager',
 			'args',
+			'hoard',		# only used by buildrealms
 		  );
 
 #--------------------------------------------------------------------------
@@ -2080,7 +2081,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
