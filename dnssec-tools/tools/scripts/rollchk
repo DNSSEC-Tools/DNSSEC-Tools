@@ -77,7 +77,7 @@ use Net::DNS::ZoneFile::Fast;
 # Version information.
 #
 my $NAME   = "rollchk";
-my $VERS   = "$NAME version: 1.9.1";
+my $VERS   = "$NAME version: 1.13.0";
 my $DTVERS = "DNSSEC-Tools Version: 1.12";
 
 #######################################################################
@@ -511,8 +511,8 @@ sub rollrec_validate
 	{
 		my $tempus;			# ksk_rollsecs translation.
 
-		$tempus = gmtime($kskrsecs);
-		if($tempus ne $kskdate)
+		if((gmtime($kskrsecs) ne $kskdate) &&
+		   (localtime($kskrsecs) ne $kskdate))
 		{
 			qprint("$rrname:  ksk_rolldate does not match ksk_rollsecs\n");
 			$errs++;
@@ -535,8 +535,8 @@ sub rollrec_validate
 	{
 		my $tempus;			# zsk_rollsecs translation.
 
-		$tempus = gmtime($zskrsecs);
-		if($tempus ne $zskdate)
+		if((gmtime($zskrsecs) ne $zskdate) &&
+		   (localtime($zskrsecs) ne $zskdate))
 		{
 			qprint("$rrname:  zsk_rolldate does not match zsk_rollsecs\n");
 			$errs++;
@@ -1112,7 +1112,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
