@@ -22,8 +22,8 @@ use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 
-our $VERSION = "1.12";
-our $MODULE_VERSION = "1.12.1";
+our $VERSION = "1.13";
+our $MODULE_VERSION = "1.13.0";
 
 our @ISA = qw(Exporter);
 
@@ -366,7 +366,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
