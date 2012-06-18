@@ -264,7 +264,7 @@ function runNextTest() {
         if (currentSingleTestHost != "" || currentTestHostNum >= hosts.length) {
             // done entirely
             testManager.inTestLoop = false;
-            stopTesting()
+            timer.start() // we'll return at least once more to check outstanding
             return
         }
     }
