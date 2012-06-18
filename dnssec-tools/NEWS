@@ -2,6 +2,73 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+1.13
+ - New Features
+
+    - rollerd:      - Added support for the signzone command. Allow
+                      zones to be signed while in the midst of a
+                      rollover wait.
+                    - Added autosigning of modified zone files.  Zone
+                      files are considered modified when their "last
+                      modification" timestamp is more recent than that
+                      of the associated signed zone file.  This
+                      functionality includes adding the -autosign option
+                      and config field.
+                    - Added the dt-realms feature to Manages multiple
+                      simultaneous rollover environments.
+
+    - zonesigner:   - Added the -threshold option to specify a signing
+                      threshold.
+
+    - keymod:       - New tool that can be used to Modify key
+                      generation parameters in a keyrec file.
+
+    - dnssec-check
+
+
+    - libval:       - Bug fixes
+                    - Renamed all validator command-line apps to have
+                      a dt- prefix in order to avoid conflicts with
+                      pre-existing executables in certain platforms. 
+
+    - dnsval python module
+                    - Add python wrapper module for the validator
+                      library. Code contributed by Bob Novas. 
+    
+                      
+    - trustman:
+
+
+    - nagios        - Added the dt_donuts plugin for running trustman on
+                      remote machines.
+
+
+    - firefox       - updated nspr and firefox patches to work with
+                      mozilla-central and nspr-4.9
+
+
+    - webmin:       - Added the ability to perform DNSSEC 
+                      operations on DNSSEC-Tools managed signed 
+                      zones using the Webmin front-end. 
+
+    - ssh:          - Update the patch for enabling local DNSSEC
+                      validation to work with OpenSSH 6.0p1.
+
+
+
+
+1.12.2                              (5/3/12)
+    - Bux fix release
+      - Rollerd's -alwayssign flag logic had a critical error that could
+        have caused a zone to be signed with the wrong ZSK at particular
+        points of the ZSK key rolling process.
+   
+
+1.12.1                              (2/7/12)
+    - Minor bug fix release
+      - Fix perl Validator module so it compiles after a header move
+
+
 1.12								(1/26/12)
  - New Features:
 
