@@ -2,24 +2,24 @@
 
 =head1 NAME
 
-getquery - command-line test program for the I<val_res_query()> function 
+dt-getquery - command-line test program for the I<val_get_rrset()> function 
 
 =head1 SYNOPSIS
 
-   getquery [options] name 
+   dt-getquery [options] name 
 
 =head1 DESCRIPTION
 
-This utility is a command-line wrapper around the I<val_res_query()>
-function.  It invokes the I<val_res_query()> function with the given
-command-line arguments and displays the returned data as a DNS-style response. 
-It also displays the validation status value for the records returned for the query.
-
-The exit status for this program is 1 if the answer received is trusted, 2 if
-the answer received is validated, and -1 for an error.  The program returns 0 if 
-the result was neither trusted nor validated. The trusted and
+This utility is a command-line wrapper around the I<val_get_rrset()>
+function.  It invokes the I<val_get_rrset()> function with the given
+command-line arguments and displays the returned data and the 
+validated, trusted and non-existence status
+for each resource record set returned in the response. Any information about name
+aliases are also displayed. The trusted and
 validated status values are obtained using the I<val_istrusted()> and
 I<val_isvalidated()> functions from I<libval(3)>.
+
+This program returns 0 on success and -1 on failure.
 
 =head1 OPTIONS
 
@@ -59,7 +59,7 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story, Michael Baer
 
 =head1 SEE ALSO
 
-B<val_res_query(3)>
+B<val_get_rrset(3)>
 
 B<libval(3)>
 
