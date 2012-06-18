@@ -1,0 +1,29 @@
+README
+======
+
+dnsval.py is a Python wrapper module around the libval validator
+library. This code was contributed by Bob Novas, Shinkuro, Inc. 
+
+Wrapper functions are provided for the following basic validator
+functions: 
+    val_context_create()
+    val_free_context()
+    val_resolve_and_check()
+    val_free_result_chain()
+    val_context_setqflags()
+    val_istrusted()
+    val_isvalidated()
+    val_does_not_exist()
+    p_val_status()
+    p_ac_status()
+    val_log_add_optarg()
+    
+
+There is no support, currently, for any of the libval asynchronous
+resolution functions.
+
+
+The test program performs some basic tests of the wrappers mapping with
+the currently installed validator library. It may be run as follows:
+
+$ LD_LIBRARY_PATH=<path/to/validator/libs> python test_dnsval.py
