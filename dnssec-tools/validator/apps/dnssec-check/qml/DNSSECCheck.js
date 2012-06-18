@@ -1,16 +1,23 @@
 // XXX: most of these should be combined into a single associative array per host rather than have
 // a bunch of independent structures (ie, fix the feature creep mess)
+
 var hosts = []
 var tests = []
-var rawtests = []
-var testNumber = 0
-var hosttests = {}
-var hostgrades = {}
 var numTests = 10
 var numLeftColumns = 2
 var numColumns = numTests + numLeftColumns
 var numHeaders = numColumns
-var currentTestHost = ""
+var currentSingleTestHost = ""
+var currentTestHostNum = 0
+var currentTestNumber = 0
+
+var hostInfo = {}
+// Keys to host info:
+//   hostnum: what position in the hosts lists is this host
+//            (also an index into hosts[]
+//   tests:   test objects in use (ie, a C++ DNSSECTest object)
+//   grades:  grade objects
+//
 
 function getColumns() {
     return numColumns
@@ -26,8 +33,7 @@ function loadInitial() {
 function clearServers() {
     tests = []
     hosts = []
-    rawtests = []
-    hosttests = {}
+    hostInfo = {}
     for(var i = resultGrid.children.length; i > numHeaders ; i--) {
         resultGrid.children[i-1].destroy()
     }
@@ -35,52 +41,46 @@ function clearServers() {
 }
 
 function removeHost(host) {
-    for(var i = tests.length; i > 0 ; i--) {
-        if (tests[i-1].test.serverAddress == host) {
-            tests.splice(i-1,1)
-            resultGrid.children[numHeaders + (i-1) + numLeftColumns*Math.floor(1+(i-1) / numTests)].destroy()
-        }
+    var myHostNum = hostInfo[host]['hostnum']
+
+    // destroy all the test lights
+    for(var i = hostInfo[host]['tests'].length - 1; i >= 0 ; i--) {
+        resultGrid.children[numHeaders + myHostNum * (numTests + numLeftColumns) + i + numLeftColumns].destroy()
     }
 
+    // destroy the grade object
+    resultGrid.children[numHeaders + myHostNum * (numTests + numLeftColumns) + 1].destroy()
 
-    for(var i = resultGrid.children.length; i > numHeaders; i--) {
-        if (resultGrid.children[i-1].hostName == host) {
-            resultGrid.children[i-1].destroy()
-        }
-        if (resultGrid.children[i-1] === hostgrades[host]) {
-            resultGrid.children[i-1]
-        }
-    }
+    // destroy the host label object
+    resultGrid.children[numHeaders + myHostNum * (numTests + numLeftColumns)].destroy()
 
-    for(var i = hosts.length-1; i >= 0; i--) {
-        if (hosts[i] == host) {
-            hosts.splice(i,1)
-        }
-    }
+    // remove us from the numeric host list
+    hosts.splice(i, 1)
 
-    hostgrades[host].destroy();
-    delete hostgrades[host];
+    delete hostInfo[host]
 }
 
 function clearHost(host) {
-    for(var i = tests.length; i > 0 ; i--) {
-        if (tests[i-1].test.serverAddress == host) {
-            tests[i-1].test.status = DNSSECTest.UNKNOWN
-        }
+    for(var i = hostInfo[host]['tests'].length - 1; i >= 0 ; i--) {
+        hostInfo[host]['tests'][i].status = DNSSECTest.UNKNOWN
     }
 }
 
 function testHost(host) {
     clearHost(host)
-    currentTestHost = host
+    currentSingleTestHost = host
     runAllTests()
 }
 
 function haveAllTestsRun() {
     assignHostGrade();
-    for(var i = tests.length; i > 0 ; i--) {
-        if (tests[i-1].test.status === DNSSECTest.UNKNOWN || tests[i-1].test.status === DNSSECTest.TESTINGNOW) {
-            return false
+    for(var host = hosts.length - 1; i >= 0; i--) {
+        var hostName = hosts[host]
+        for(var testnum = hostInfo[hostName]['tests'].length - 1; i >= 0; i--) {
+            if (hostInfo[hostName]['tests'][testnum].status === DNSSECTest.UNKNOWN ||
+                hostInfo[hostName]['tests'][testnum].status === DNSSECTest.TESTINGNOW) {
+                return false
+            }
         }
     }
     return true
@@ -90,45 +90,45 @@ function assignHostGrade() {
     var grades = ['A', 'B', 'C', 'D', 'F'];
 
     for(var i = 0 ; i < hosts.length; i++) {
-        var hostname = hosts[i]
-        var hostarray = hosttests[hostname]
+        var hostName = hosts[i]
         var finished = true
         var maxGrade = 0
 
-        for(var j = 0; j < hosttests[hostname].length; j++) {
-            if (hosttests[hostname][j].status == DNSSECTest.UNKNOWN)
+        for(var j = 0; j < hostInfo[hostname]['tests'].length; j++) {
+            var testObject = hostInfo[hostname]['tests'][j]
+            if (testObject.status == DNSSECTest.UNKNOWN)
                 finished = false
 
             // Check for any failure == at least a B
-            if (hosttests[hostname][j].status != DNSSECTest.GOOD) {
+            if (testObject.status != DNSSECTest.GOOD) {
                 maxGrade = Math.max(maxGrade, 1);
             }
 
-            if (hosttests[hostname][j].name == "DNS" && hosttests[hostname][j].status != DNSSECTest.GOOD) {
+            if (testObject.name == "DNS" && testObject.status != DNSSECTest.GOOD) {
                 maxGrade = Math.max(4, maxGrade);
             }
 
             // if they can't do the DNSSEC specific tests (DO, RRSIG, NSEC, NSEC3, DNSKEY, DS) they get a C
-            if ((hosttests[hostname][j].name == "TCP" ||
-                 hosttests[hostname][j].name == "DO" ||
-                 hosttests[hostname][j].name == "RRSIG" ||
-                 hosttests[hostname][j].name == "NSEC" ||
-                 hosttests[hostname][j].name == "NSEC3" ||
-                 hosttests[hostname][j].name == "DNSKEY" ||
-                 hosttests[hostname][j].name == "DS") &&
-                    hosttests[hostname][j].status != DNSSECTest.GOOD) {
+            if ((testObject.name == "TCP" ||
+                 testObject.name == "DO" ||
+                 testObject.name == "RRSIG" ||
+                 testObject.name == "NSEC" ||
+                 testObject.name == "NSEC3" ||
+                 testObject.name == "DNSKEY" ||
+                 testObject.name == "DS") &&
+                testObject.status != DNSSECTest.GOOD) {
                 maxGrade = Math.max(2, maxGrade);
             }
 
             // If they fail EDNS0, then it's a D
-            if (hosttests[hostname][j].name == "EDNS0" && hosttests[hostname][j].status != DNSSECTest.GOOD) {
+            if (testObject.name == "EDNS0" && testObject.status != DNSSECTest.GOOD) {
                 maxGrade = Math.max(3, maxGrade);
             }
         }
         if (!finished)
-            hostgrades[hosts[i]].grade = "?"
+            hostInfo[hostname]['grades'].grade = "?"
         else
-            hostgrades[hosts[i]].grade = grades[maxGrade]
+            hostInfo[hostname]['grades'].grade = grades[maxGrade]
     }
 }
 
@@ -136,9 +136,8 @@ function makeLight(creator, type, name, host) {
     var result = creator.createObject(resultGrid)
     result.name = name
     result.test = testManager.makeTest(type, host, name);
-    tests.push(result)
-    rawtests.push(result.test)
-    hosttests[host].push(result.test)
+    hostInfo[host]['tests'].push(result)
+    //hosttests[host].push(result.test)
     return result
 }
 
@@ -163,8 +162,7 @@ function addHost(labelComponent, resultComponent, hostComponent, host) {
     var hostGrade = hostComponent.createObject(resultGrid)
 
     label.hostName = host
-    hosttests[host] = [];
-    hostgrades[host] = hostGrade;
+    hostInfo[host]['grades'] = hostGrade;
 
     // var result = makeLight(resultComponent, testManager.basic_dns, "DNS", host)
     var result = makeLight(resultComponent, 0, "DNS", host)
@@ -214,11 +212,12 @@ function createAllComponents() {
 }
 
 function runAllTests() {
-    if (currentTestHost == "") {
+    if (currentSingleTestHost == "") {
         resetTests()
     }
     waitText.waitLength = 1;
-    testNumber = -1;
+    currentTestHostNum = 0;
+    currentTestNumber = -1;
     dnssecCheckTop.state = "running"
     testManager.inTestLoop = true;
     setTestStartMessage();
@@ -228,12 +227,24 @@ function runAllTests() {
 }
 
 function runNextTest() {
-    testNumber++
+    // TODO
+    currentTestNumber++
 
-    // find itmes from the specific host we want to test, if not all of them
-    while (currentTestHost != "" && testNumber < tests.length && tests[testNumber].test.serverAddress !== currentTestHost) {
-        testNumber++
+    if (currentTestNumber >= hostInfo[hosts[currentTestHostNum]].length) {
+        // done with this host
+        currentTestNumber = 0
+        currentTestHostNum++
+        if (currentSingleTestHost != "" || currentTestHostNum >= hosts.length) {
+            // done entirely
+            stopTesting()
+            testManager.inTestLoop = false;
+            return
+        }
     }
+
+    hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber].check()
+    timer.start()
+    setTimerStartMessage()
 
     if (testNumber < tests.length) {
         tests[testNumber].test.check();
@@ -258,21 +269,27 @@ function stopTesting() {
     countingTimer.stop()
     testManager.inTestLoop = false;
     testManager.checkAvailableUpdates();
-    if (currentTestHost === "" || haveAllTestsRun())
+    if (currentSingleTestHost === "" || haveAllTestsRun())
         dnssecCheckTop.state = "ran"
     else
         dnssecCheckTop.state = "half"
     testStatusMessage.text = ""
     testResultMessage.text = "All tests have completed; Click on a bubble for details"
-    currentTestHost = ""
+    currentSingleTestHost = ""
     assignHostGrade();
 }
 
 function cancelTests() {
-    for(var i = 0; i < tests.length; i++) {
-        if (tests[i].test.status == DNSSECTest.TESTINGNOW || tests[i].test.status == DNSSECTest.UNKNOWN)
-            tests[i].test.status = DNSSECTest.BAD
+    for(var i = 0 ; i < hosts.length; i++) {
+        var hostName = hosts[i]
+
+        for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
+            var testObject = hostInfo[hostName]['tests'][j]
+            if (testObject.status == DNSSECTest.TESTINGNOW || testObject.status == DNSSECTest.UNKNOWN)
+                testObject.status = DNSSECTest.BAD
+        }
     }
+
     stopTesting()
 }
 
@@ -284,6 +301,7 @@ function giveUpTimerHook() {
 }
 
 function setTestStartMessage() {
+    // TODO
     if (testNumber + 1 < tests.length) {
         testStatusMessage.text =
                 "Test Status: sending test for " + tests[testNumber+1].test.name + " to " + tests[testNumber+1].test.serverAddress
@@ -291,11 +309,14 @@ function setTestStartMessage() {
 }
 
 function resetTests() {
-    for(var result in tests) {
-        tests[result].test.status = DNSSECTest.UNKNOWN
-    }
-    for(var host in hosts) {
-        hostgrades[hosts[host]].grade = "?"
+    for(var i = 0 ; i < hosts.length; i++) {
+        var hostName = hosts[i]
+
+        for(var j = 0; j < hostInfo[hostname]['tests'].length; j++) {
+            hostInfo[hostName]['tests'][j] = DNSSECTest.UNKNOWN
+        }
+
+        hostInfo[hostName]['grades'].grade = "?"
     }
 
     dnssecCheckTop.state = ""
@@ -304,13 +325,14 @@ function resetTests() {
 function submitResults() {
     var datalist = [];
     var count = 0;
-    for(var host in hosttests) {
-        datalist.push("server" + count)
-        datalist.push(testManager.sha1hex(host))
-        for (var testnum in hosttests[host]) {
-            var test = hosttests[host][testnum]
-            datalist.push(test.name + count)
-            datalist.push(test.status)
+    for(var i = 0 ; i < hosts.length; i++) {
+        var hostName = hosts[i]
+        datalist.push("server" + i)
+        datalist.push(testManager.sha1hex(hostname))
+        for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
+            var testObject = hostInfo[hostName]['tests'][j]
+            datalist.push(testObject.name + i)
+            datalist.push(testObject.status)
         }
         count++;
     }
