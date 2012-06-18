@@ -2294,9 +2294,9 @@ val_res_nsfallback(val_context_t *context, struct val_query_chain *matched_q,
     else if (1 == ret_val) {
         val_log(context, LOG_DEBUG,
                 "val_res_nsfallback(): Doing EDNS0 fallback"); 
-        matched_q->qc_flags |= VAL_QUERY_EDNS0_FALLBACK;
     }
     else {
+        matched_q->qc_state = Q_RESPONSE_ERROR;
         val_log(context, LOG_DEBUG,
                 "val_res_nsfallback(): EDNS0 fallback failed"); 
     }
