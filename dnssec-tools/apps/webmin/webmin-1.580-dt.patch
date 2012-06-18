@@ -5,6 +5,7 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  
  BEGIN { push(@INC, ".."); };
  use WebminCore;
++my $dnssec_tools_minver = 1.13;
 +my $have_dnssec_tools =
 +  eval {
 +	  require Net::DNS::SEC::Tools::dnssectools;
@@ -19,7 +20,6 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
 +use Net::DNS;
 +}
 +
-+
  &init_config();
  do 'records-lib.pl';
  @extra_forward = split(/\s+/, $config{'extra_forward'});
@@ -28,10 +28,10 @@ diff -u -r webmin-1.580.orig/bind8/bind8-lib.pl webmin-1.580.dt/bind8/bind8-lib.
  	}
  
 +# have_dnssec_tools_support()
-+# Returns 1 if dnssec-tools support is available
++# Returns 1 if dnssec-tools support is available and we meet minimum requirements
 +sub have_dnssec_tools_support
 +{
-+	if ($have_dnssec_tools) {
++	if ($have_dnssec_tools && $Net::DNS::SEC::Tools::rollrec::VERSION >= $dnssec_tools_minver) {
 +		# check that the location for the following essential parameters have been defined
 +		# dnssectools_conf
 +		# dnssectools_rollrec
