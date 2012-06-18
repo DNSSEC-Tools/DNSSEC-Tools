@@ -38,22 +38,20 @@ function clearServers() {
     dnssecCheckTop.state = "cleared"
 }
 
-function removeHost(host) {
-    var myHostNum
+function getHostIndex(host) {
     for(var i = hosts.length - 1; i >= 0; i--) {
         if(hosts[i] === host) {
-            myHostNum = i
+            return i
         }
     }
+    return -1
+}
+
+function removeHost(host) {
+    var myHostNum = getHostIndex(host)
 
     // destroy all the test lights
     for(var i = hostInfo[host]['tests'].length - 1; i >= 0 ; i--) {
-        console.log(numHeaders)
-        console.log(myHostNum)
-        console.log(numTests)
-        console.log(numLeftColumns)
-        console.log(i)
-        console.log("rm: " + (numHeaders + myHostNum * (numTests + numLeftColumns) + i + numLeftColumns))
         resultGrid.children[numHeaders + myHostNum * (numTests + numLeftColumns) + i + numLeftColumns].destroy()
     }
 
@@ -80,6 +78,7 @@ function clearHost(host) {
 function testHost(host) {
     clearHost(host)
     currentSingleTestHost = host
+    currentTestHostNum = getHostIndex(host)
     runAllTests()
 }
 
@@ -228,9 +227,9 @@ function createAllComponents() {
 function runAllTests() {
     if (currentSingleTestHost == "") {
         resetTests()
+        currentTestHostNum = 0;
     }
     waitText.waitLength = 1;
-    currentTestHostNum = 0;
     currentTestNumber = -1;
     dnssecCheckTop.state = "running"
     testManager.inTestLoop = true;
