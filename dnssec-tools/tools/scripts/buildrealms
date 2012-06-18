@@ -179,6 +179,7 @@ sub optsandargs
 	#
 	GetOptions(\%opts,@opts) || usage();
 
+	usage()   if(defined($opts{'help'}));
 	version() if(defined($opts{'Version'}));
 
 	#
@@ -1110,13 +1111,28 @@ sub vprint
 #
 sub usage
 {
-	print "usage: $0 [options] <realmsfile> <command> <command-args>\n";
+	print "usage: $0 [options] <realmsfile> <command> <arguments>\n";
 	print "\twhere <command> may be:\n";
 	print "\t\tactions      print actions taken\n";
 	print "\t\tcreate       create a new realms hierarchy\n";
 	print "\t\tadd          add realms to existing realms hierarchy\n";
 	print "\t\tfind         find files in given directories\n";
 	print "\t\ttree         create hierarchy, but don't move files\n";
+	print "\n";
+	print "\twhere <options> may be:\n";
+	print "\t\t-actions     display actions taken\n";
+	print "\t\t-clear       clean out the staging area\n";
+	print "\t\t-config      DNSSEC-Tools config file to copy\n";
+	print "\t\t-directory   final directory for realms\n";
+	print "\t\t-nobuild     don't build anything\n";
+	print "\t\t-stagedir    directory for staging area\n";
+	print "\n";
+	print "\t\t-quiet       quiet output\n";
+	print "\t\t-verbose     verbose output\n";
+	print "\t\t-help        give help message\n";
+	print "\t\t-Version     display the version number\n";
+
+	exit(0);
 }
 
 #----------------------------------------------------------------------
@@ -1137,18 +1153,11 @@ sub version
 ##############################################################################
 #
 
-#--->  ASSUMPTION:  all a realm's files are in its hoard
-#--->  ASSUMPTION:  files in rollrec are relative paths
-#--->  ASSUMPTION:  rollrec file will be moved to top of realmdir directory
-#--->  ASSUMPTION:  anything in a hoard will be moved to realm directory
-#--->  ASSUMPTION:  archivedir in keyrec will be moved to <statedir>/key-archive
-#--->  ASSUMPTION:  config file moved to <configdir>/dnssec-tools/<conffile>
-
 =pod
 
 =head1 NAME
 
-buildrealms - description
+buildrealms - assist in building a DNSSEC-Tools realms environment
 
 =head1 SYNOPSIS
 
@@ -1156,14 +1165,132 @@ buildrealms - description
 
 =head1 DESCRIPTION
 
-B<buildrealms> helps in setting up a realm environment for use by B<dtrealms>.
-It creates the required file hierarchies for each realm, it moves a realm's
-files to their appropriate place in the hierarchy, and it updates several
-files for the final destination
+B<buildrealms> helps in setting up a realms environment for use by B<dtrealms>.
+B<buildrealms> creates the required file hierarchies for each realm, it moves
+a realm's files to their appropriate place in the hierarchy, and it updates
+several files for the final destination.
 
-builds in a staging area
+The realm hierarchies are built in a staging area, which will hold the files
+for all the realms.  These are I<rollrec> files, I<keyrec> files, key files,
+configuration files, log files, and anything else needed for by DNSSEC-Tools
+to manage key rollover.  After B<buildrealms> creates these files, the user
+should check the files to ensure that they are correct.  The files and
+directories in the staging then must be manually moved to the final directory.
+It is from this directory that B<dtrealms> will manage the various realms.
+If the final directory isn't specified (via an option), then the directory
+in which B<buildrealms> was executed will be the final directory.
 
-files must be moved manually to destination
+B<buildrealms> uses a I<realms> file to control how it builds the realms
+environment.  This B<realm> entries in this file have a I<hoard> field,
+which is only used by B<buildrealms>.  For each realm, this field's value
+is a directory which holds the files needed by that particular realm.
+After building that realm, B<buildrealms> removes the I<hoard> entry from
+that B<realm> record.  After all the realms have been built, a copy of this
+I<realms> file is moved into the staging area.
+
+There are two operations B<buildrealms> currently provides.  These operations
+are in support of creating and maintaining a DNSSEC-Tools realms environment.
+This documentation describes the operations individually.
+
+=head2 Realms Environment Creation
+
+The I<create> command builds the whole realms environment.  The realm file
+hierarchies are built in the staging area.  After B<buildrealms> creates these
+files, the user should check the files to ensure that they are correct.  The
+files and directories in the staging then must be manually moved to the final
+directory.  If the final directory isn't specified (via an option), then the
+directory in which B<buildrealms> was executed will be the final directory.
+
+B<buildrealms> takes the following actions when given the I<create> command:
+
+=over 4
+
+=item * A file hierarchy is created for each realm.
+
+=item * A DNSSEC-Tools configuration file is put in each realm's hierarchy.
+If the I<-config> option is given, then the specified configuration file
+will be copied to each realm.  If it isn't given, then each realm's hoard
+will be searched for a file whose name ends with B<.conf>.  The first such
+file found will be used for that realm only.  If such a file is not found,
+then the system-wide DNSSEC-Tools configuration file will be used for that
+realm.
+
+=item * The realm's I<rollrec>, I<keyrec>, zone, and key files are moved into
+the hierarchy.  The I<rollrec> file is named in the I<realms> file.  The
+I<keyrec> and signed zone files are listed in the I<rollrec> file.  The
+unsigned zone files and key files are listed in the I<keyrec> file.
+
+=item * A key archive is created for each realm's existing, expired keys.
+The key archive is placed in the realm's state directory in the staging
+area.  Archived keys, as listed in the I<keyrec> files, are moved to this
+key archive.
+
+=item * Paths in several files are adjusted for the new hierarchy and the
+realm's final destination.  These paths include archived keys in the realm's
+I<keyrec> files, the key archive and B<rollerd> log files in the realm's
+DNSSEC-Tools configuration file, and key directories in the I<keyrec> files.
+
+=back
+
+=head2 Realms Hierarchy Creation
+
+The I<trees> command builds the basic directory hierarchy for each realm in
+the staging area.  However, no other files or directories are copied or moved
+in to the staging area..
+
+The following directories are created for each realm:
+
+=over 4
+
+=item * configuration directory - This holds the B<dnssec-tools> directory.
+
+=item * dnssec-tools directory - This will hold the DNSSEC-Tools configuration
+file.
+
+=item * state directory - This will hold the realm's state information,
+including the key archive.
+
+=item * realm directory - This will hold  the realm's I<rollrec> file, the
+I<keyrec> files, the zone files (signed and unsigned), and the key files.
+
+=back
+
+=head1 PREPARING FOR EXECUTION
+
+In preparing a I<realms> file and the realm hoards for B<buildrealms>, there
+are several things that should be kept in mind.
+
+=over 4
+
+=item * Use relative paths for the I<rollrec> file and three directories in
+the I<realms> file.
+
+=item * All a realm's files should be stored in its hoard.  They do not have
+to be in a particular place in the directory, as long as the I<rollrec> and
+I<keyrec> files are accurate.
+
+=item * At the end of the creation process, the I<realms> file will be
+copied into the top level of the staging area.
+
+=item * After specific files (e.g., I<rollrec>s, I<keyrec>s, etc.) are moved
+into a realm's part of the staging area, the remaining files in the hoard
+will be moved into the realm's I<realmdir> part of the staging area.  The
+hierarchical organization of the remaining hoard files will be preserved.
+
+=item * The contents of a I<keyrec>'s archive directory in the realm's
+hoard, as defined by the I<archivedir> field, will be moved to
+B<E<lt>statedirE<gt>/key-archive> in the staging area.
+
+=item * The configuration file for a realm will be put in
+B<E<lt>configdirE<gt>/dnssec-tools/E<lt>conffileE<gt>> in the staging area.
+The actual name of the configuration file (given here as B<E<lt>conffileE<gt>>)
+will depend on how the configuration file is found.  If the system-wide
+DNSSEC-Tools file is used, then the name will be B<dnssec-tools.conf>.  If
+the I<-config> option is used, then the name used with the option will be
+used.  If a B<.conf> file is found in the realm's hoard, then the full
+filename will be used.
+
+=back
 
 =head1 WARNINGS
 
@@ -1173,8 +1300,12 @@ constructed) I<realm> file is used to control construction.
 
 B<buildrealms> is not clairvoyant.  It does the best it can, but it is a
 general tool.  The resulting realms should be checked to ensure they are set
-up as desired.  In particular, you should check the B<realm> file B<rollrec>
-files, B<keyrec> files, and configuration file.
+up as desired.  In particular, you should check the B<realm> file I<rollrec>
+files, I<keyrec> files, and configuration file.
+
+No reverse functionality has been implemented, so once run, the files are
+modified, moved, and copied.  It might not be a bad idea to back up your files
+I<prior> to running B<buildrealms>, just in case...
 
 =head1 COMMANDS
 
@@ -1185,37 +1316,10 @@ files, B<keyrec> files, and configuration file.
 The B<create> command builds the whole realms environment.  B<buildrealms>
 takes the following actions when given this command:
 
-=over 4
-
-=item * A file hierarchy is created for each realm.
-
-=item * A DNSSEC-Tools configuration file is put in each realm's hierarchy.
-
-=item * The realm's B<rollrec>, B<keyrec>, and key files are moved into the
-hierarchy.
-
-=item * A key archive is created for each realm's existing, expired keys.
-
-=item * Paths in several files are adjusted for the new hierarchy and location.
-
-=back
-
 =item B<trees>
 
 The B<trees> command builds the basic directory hierarchy for each realm.
 The following directories are created for each realm:
-
-=over 4
-
-=item * configuration directory - holds the dnssec-tools directory
-
-=item * dnssec-tools directory - holds DNSSEC-Tools configuration information
-
-=item * state directory - holds state information
-
-=item * realm directory - holds B<rollrec>, B<keyrec>, and key files
-
-=back
 
 =back
 
@@ -1235,16 +1339,19 @@ display the actions that would otherwise have been taken.
 This flag indicates that B<buildrealms> should delete the current staging
 area and its contents prior to building the realms.
 
-=item B<-config=s>
+=item B<-config conffile>
 
-The DNSSEC-Tools configuration file to copy for each realm.
+B<conffile> is the DNSSEC-Tools configuration file to copy for each realm.
 
-=item B<-directory=s>
+=item B<-directory target>
 
-The target directory for the realms to be built by B<buildrealms>.  The
-new realms will not be moved to this directory, but the realms' files will
-reflect the use of this directory.  If this option is not specified, the
-current directory will be used.
+B<target> is the target directory for the realms to be built by
+B<buildrealms>.  The new realms will not be moved to this directory,
+but the realms' files will reflect the use of this directory.  If this
+option is not specified, the current directory will be used.
+
+If B<-directory> and B<-stagedir> use the same directory, then the
+realms environment will be build in the final directory.
 
 =item B<-nobuild>
 
@@ -1253,10 +1360,13 @@ new realms, but not to actually build anything.  If this is used in
 conjunctions with the B<-actions> option, B<buildrealms> will show the
 actions that would have been taken.
 
-=item B<-stagedir>
+=item B<-stagedir directory>
 
 This directory in which the new realms hierarchy is built.  The default
 staging area is B<./staging-buildrealms> if this option is not specified.
+
+If B<-directory> and B<-stagedir> use the same directory, then the realms
+environment will be build in the final directory.
 
 =item B<-quiet>
 
@@ -1277,6 +1387,111 @@ Displays the version number.
 Displays a help message.
 
 =back
+
+=head1 EXAMPLES
+
+The following examples may help clarify the use of B<buildrealms>.  In each
+example, the following I<realms> file will be used.
+
+    realm "example"
+        state           "active"
+        configdir       "configs/example"
+        statedir        "states/example"
+        realmdir        "r-example"
+        rollrec         "demo-example.rollrec"
+        administrator   "zonefolks@example.com"
+        display         "1"
+        manager         "rollerd"
+        args            "-loglevel phase -logfile log.example"
+        hoard           "r-example"
+
+    realm "test"
+        state           "active"
+        realmdir        "r-test"
+        configdir       "configs/test"
+        statedir        "states/test"
+        rollrec         "demo-test.rollrec"
+        manager         "rollerd"
+        args            "-loglevel tmi -logfile log.test"
+        display         "1"
+        hoard           "r-test"
+
+=head2 CREATE EXAMPLE
+
+Each realm record contains a I<hoard> field that B<buildrealms> will use to
+find that realm's files.  After running B<buildrealms demo.realm create> with
+the I<realms> file above, the following directories will be created:
+
+    staging-buildrealms/
+    staging-buildrealms/configs/
+    staging-buildrealms/configs/example/
+    staging-buildrealms/configs/example/dnssec-tools/
+    staging-buildrealms/configs/test/
+    staging-buildrealms/configs/test/dnssec-tools/
+
+    staging-buildrealms/r-example/
+    staging-buildrealms/r-example/dnssec-tools/
+    staging-buildrealms/r-test/
+    staging-buildrealms/r-test/dnssec-tools/
+
+    staging-buildrealms/states/
+    staging-buildrealms/states/example/
+    staging-buildrealms/states/example/key-archive/
+    staging-buildrealms/states/test/
+    staging-buildrealms/states/test/key-archive/
+
+The following files will be moved into the staging area.  In the interests
+of brevity this is only a subset of files moved to the staging area; most of
+the key files have not been included:
+
+    staging-buildrealms/demo.realm
+
+    staging-buildrealms/configs/example/dnssec-tools/dnssec-tools.conf
+    staging-buildrealms/configs/test/dnssec-tools/dnssec-tools.conf
+
+    staging-buildrealms/r-example/demo-example.rollrec
+    staging-buildrealms/r-example/demo.com
+    staging-buildrealms/r-example/demo.com.signed
+    staging-buildrealms/r-example/dsset-demo.com.
+    staging-buildrealms/r-example/dsset-example.com.
+    staging-buildrealms/r-example/dsset-test.com.
+    staging-buildrealms/r-example/example.com
+    staging-buildrealms/r-example/example.com.signed
+    staging-buildrealms/r-example/Kdemo.com.+005+16933.key
+    staging-buildrealms/r-example/Kdemo.com.+005+16933.private
+    staging-buildrealms/r-example/test.com
+    staging-buildrealms/r-example/test.com.signed
+
+    staging-buildrealms/r-test/demo-test.rollrec
+    staging-buildrealms/r-test/dev.com
+    staging-buildrealms/r-test/dev.com.signed
+    staging-buildrealms/r-test/dsset-dev.com.
+    staging-buildrealms/r-test/dsset-test.com.
+    staging-buildrealms/r-test/Ktest.com.+005+34236.key
+    staging-buildrealms/r-test/Ktest.com.+005+34236.private
+    staging-buildrealms/r-test/test.com
+    staging-buildrealms/r-test/test.com.signed
+
+=head2 TREES EXAMPLE
+
+After running B<buildrealms demo.realm trees> with the I<realms> file above,
+the following directories will be created:
+
+    staging-buildrealms/
+    staging-buildrealms/configs/
+    staging-buildrealms/configs/example/
+    staging-buildrealms/configs/example/dnssec-tools/
+    staging-buildrealms/configs/test/
+    staging-buildrealms/configs/test/dnssec-tools/
+
+    staging-buildrealms/r-example/
+    staging-buildrealms/r-test/
+
+    staging-buildrealms/states/
+    staging-buildrealms/states/example/
+    staging-buildrealms/states/test/
+
+No additional files or directories are created by this command.
 
 =head1 COPYRIGHT
 
