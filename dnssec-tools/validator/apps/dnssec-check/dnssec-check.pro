@@ -13,31 +13,25 @@ DEPLOYMENTFOLDERS = # file1 dir1
 # for android
 INCLUDEPATH += ../../include
 isEmpty(ANDROID_PLATFORM) {
-    LIBS        += -L/home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/libval/.libs
-    LIBS        += -L/home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/libsres/.libs
-    LIBS        += -L/home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/include
-    LIBS        += -lval-threads -lsres -lcrypto -lpthread
-    osx {
-        LIBS        += -lval-threads -lsres -lcrypto -lpthread
-    } else {
-        LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
-    }
+    # NOT Android
+    QMAKE_LIBDIR     += ../../libval/.libs
+    QMAKE_LIBDIR     += ../../libsres/.libs
 
-    maemo5 {
+    contains(MEEGO_EDITION,harmattan): {
+        QMAKE_LIBDIR += /scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
+    } else:osx {
+        LIBS        += -lval-threads -lsres -lcrypto -lpthread
+    } else:maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
+    } else {
+        LIBS        += -lval-threads -lsres -lcrypto -lpthread
     }
 } else {
+    # ANDROID specific items
     LIBS        += -L/opt/android-external-openssl/lib/ -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
     LIBS        += -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libval/.libs -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libsres/.libs
     INCLUDEPATH += /home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/include
     LIBS        += -lval -lsres -lcrypto
-}
-
-# path to the harmattan libraries
-contains(MEEGO_EDITION,harmattan): {
-    LIBS += -L/scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
-} else {
-    LIBS += -L/usr/local/lib
 }
 
 # Needs to be defined for Symbian
