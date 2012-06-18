@@ -37,12 +37,12 @@ $date2 = $3;
 #
 # Drop the minutes back a shade.
 #
-$min1 = adjuster($min,3);
+$min1 = adjuster($min,0);
 $min2 = adjuster($min,2);
 $min3 = adjuster($min,1);
 $min4 = adjuster($min,2);
 $min5 = adjuster($min,3);
-$min6 = adjuster($min,2);
+$min6 = adjuster($min,0);
 $min7 = adjuster($min,1);
 
 #
@@ -62,23 +62,21 @@ $phase7 = sprintf("phasestart	\"$date1%02d$date2\"",$min7);
 system("perl -pi -e 's/phasestart1/$phase1/' $rrf");
 system("perl -pi -e 's/phasestart2/$phase2/' $rrf");
 system("perl -pi -e 's/phasestart3/$phase3/' $rrf");
+system("perl -pi -e 's/phasestart4/$phase4/' $rrf");
+system("perl -pi -e 's/phasestart5/$phase5/' $rrf");
+system("perl -pi -e 's/phasestart6/$phase6/' $rrf");
+system("perl -pi -e 's/phasestart7/$phase7/' $rrf");
 
-# print "gmtime  - $tempus\n";
-# print "phase 1 - $phase1\n";
-# print "phase 2 - $phase2\n";
-# print "phase 3 - $phase3\n";
-
-if($rrf eq "demo.rollrec")
+if(0)
 {
-	system("perl -pi -e 's/phasestart4/$phase4/' $rrf");
-	system("perl -pi -e 's/phasestart5/$phase5/' $rrf");
-	system("perl -pi -e 's/phasestart6/$phase6/' $rrf");
-	system("perl -pi -e 's/phasestart7/$phase7/' $rrf");
-
-# 	print "phase 4 - $phase4\n";
-# 	print "phase 5 - $phase5\n";
-# 	print "phase 6 - $phase6\n";
-# 	print "phase 7 - $phase7\n";
+	print "gmtime  - $tempus\n";
+	print "phase 1 - $phase1\n";
+	print "phase 2 - $phase2\n";
+	print "phase 3 - $phase3\n";
+	print "phase 4 - $phase4\n";
+	print "phase 5 - $phase5\n";
+	print "phase 6 - $phase6\n";
+	print "phase 7 - $phase7\n";
 }
 
 exit(0);
