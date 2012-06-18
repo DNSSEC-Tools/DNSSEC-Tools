@@ -25,8 +25,8 @@ our @EXPORT = qw(
 		   dnssec_tools_defnames
 		);
 
-our $VERSION = "1.12";
-our $MODULE_VERSION = "1.12.1";
+our $VERSION = "1.13";
+our $MODULE_VERSION = "1.13.0";
 
 my $installdir = getprefixdir() . "/bin"; # DNSSEC-Tools installation directory.
 
@@ -553,6 +553,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =cut

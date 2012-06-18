@@ -59,8 +59,8 @@ use strict;
 use Net::DNS::SEC::Tools::conf;
 use Fcntl qw(:DEFAULT :flock);
 
-our $VERSION = "1.12";
-our $MODULE_VERSION = "1.12.3";
+our $VERSION = "1.13";
+our $MODULE_VERSION = "1.13.0";
 
 #--------------------------------------------------------------------------
 

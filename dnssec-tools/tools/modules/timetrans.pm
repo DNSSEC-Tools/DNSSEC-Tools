@@ -21,8 +21,8 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(timetrans fuzzytimetrans timetrans_weeks);
 
-our $VERSION = "1.9";
-our $MODULE_VERSION = "1.9.0";
+our $VERSION = "1.13";
+our $MODULE_VERSION = "1.13.0";
 
 
 #######################################################################
@@ -461,7 +461,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Wayne Morrison, tewok@users.sourceforge.net
+Wayne Morrison, tewok@tislabs.com
 
 =head1 SEE ALSO
 
