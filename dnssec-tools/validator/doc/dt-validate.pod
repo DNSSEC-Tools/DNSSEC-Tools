@@ -2,15 +2,15 @@
 
 =head1 NAME
 
-validate - Query the Domain Name System and display results of the DNSSEC validation process
+dt-validate - Query the Domain Name System and display results of the DNSSEC validation process
 
 =head1 SYNOPSIS
 
-  validate [options] DOMAIN_NAME
+  dt-validate [options] DOMAIN_NAME
 
 =head1 DESCRIPTION
 
-B<validate> is a diagnostic tool built on top of the DNSSEC validator.  It
+B<dt-validate> is a diagnostic tool built on top of the DNSSEC validator.  It
 takes I<DOMAIN_NAME> as an argument and queries the DNS for that domain name.
 It outputs the series of responses that were received from the DNS and the
 DNSSEC validation results for each domain name.  An examination of the queries
@@ -33,15 +33,15 @@ Display the help and exit.
 
 =item -p, --print
 
-Print the answers and validation results.  By default, B<validate>
+Print the answers and validation results.  By default, B<dt-validate>
 just outputs a series of responses and their validation results on
-I<stderr>.  When the I<-p> option is used, B<validate> will also output
+I<stderr>.  When the I<-p> option is used, B<dt-validate> will also output
 the final result on I<stdout>.
 
 =item -t I<TYPE>, --type=I<TYPE>
 
 This option can be used to specify the DNS type of the Resource Record
-queried.  If this option is not given, B<validate> will query for the
+queried.  If this option is not given, B<dt-validate> will query for the
 B<A> record for the given I<DOMAIN_NAME>.
 
 =item -v I<FILE>, --dnsval-conf=I<FILE>
@@ -58,7 +58,7 @@ configuration file containing the name servers to use for lookups.
 
 This option can be used to specify the location of the root.hints
 configuration file, containing the root name servers.  This is only
-used when no name server is found, and B<validate> must do recursive
+used when no name server is found, and B<dt-validate> must do recursive
 lookups itself.
 
 =item -S I<suite>[:I<suite>], --test-suite=I<suite>[:I<suite>]
