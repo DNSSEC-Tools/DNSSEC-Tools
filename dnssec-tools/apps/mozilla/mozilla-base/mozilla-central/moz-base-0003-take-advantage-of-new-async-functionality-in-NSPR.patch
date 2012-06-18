@@ -190,7 +190,7 @@ index c40a492..97622cd 100644
 +                (rec->host, rec->af, flags, security_flags,
 +                 resolver->mValContext, &_pr_callback, cb_data,
 +                 &(rec->asyncStatus));
-+            if (rc || NULL == rec->asyncStatus)
++            if (rc)
 +                _pr_callback(cb_data, EAI_SYSTEM, NULL, VAL_AC_UNSET);
 +
 +            cb_data = NULL;
