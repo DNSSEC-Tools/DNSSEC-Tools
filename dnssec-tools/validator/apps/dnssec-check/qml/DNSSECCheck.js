@@ -62,7 +62,7 @@ function removeHost(host) {
 
 function clearHost(host) {
     for(var i = hostInfo[host]['tests'].length - 1; i >= 0 ; i--) {
-        hostInfo[host]['tests'][i].status = DNSSECTest.UNKNOWN
+        hostInfo[host]['tests'][i].test.status = DNSSECTest.UNKNOWN
     }
 }
 
@@ -74,11 +74,11 @@ function testHost(host) {
 
 function haveAllTestsRun() {
     assignHostGrade();
-    for(var host = hosts.length - 1; i >= 0; i--) {
+    for(var host = hosts.length - 1; host >= 0; host--) {
         var hostName = hosts[host]
-        for(var testnum = hostInfo[hostName]['tests'].length - 1; i >= 0; i--) {
-            if (hostInfo[hostName]['tests'][testnum].status === DNSSECTest.UNKNOWN ||
-                hostInfo[hostName]['tests'][testnum].status === DNSSECTest.TESTINGNOW) {
+        for(var testnum = hostInfo[hostName]['tests'].length - 1; testnum >= 0; testnum--) {
+            if (hostInfo[hostName]['tests'][testnum].test.status === DNSSECTest.UNKNOWN ||
+                hostInfo[hostName]['tests'][testnum].test.status === DNSSECTest.TESTINGNOW) {
                 return false
             }
         }
@@ -94,8 +94,8 @@ function assignHostGrade() {
         var finished = true
         var maxGrade = 0
 
-        for(var j = 0; j < hostInfo[hostname]['tests'].length; j++) {
-            var testObject = hostInfo[hostname]['tests'][j]
+        for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
+            var testObject = hostInfo[hostName]['tests'][j].test
             if (testObject.status == DNSSECTest.UNKNOWN)
                 finished = false
 
@@ -126,9 +126,9 @@ function assignHostGrade() {
             }
         }
         if (!finished)
-            hostInfo[hostname]['grades'].grade = "?"
+            hostInfo[hostName]['grades'].grade = "?"
         else
-            hostInfo[hostname]['grades'].grade = grades[maxGrade]
+            hostInfo[hostName]['grades'].grade = grades[maxGrade]
     }
 }
 
@@ -162,7 +162,9 @@ function addHost(labelComponent, resultComponent, hostComponent, host) {
     var hostGrade = hostComponent.createObject(resultGrid)
 
     label.hostName = host
-    hostInfo[host]['grades'] = hostGrade;
+    hostInfo[host] = {}
+    hostInfo[host]['grades'] = hostGrade
+    hostInfo[host]['tests'] = []
 
     // var result = makeLight(resultComponent, testManager.basic_dns, "DNS", host)
     var result = makeLight(resultComponent, 0, "DNS", host)
@@ -227,40 +229,42 @@ function runAllTests() {
 }
 
 function runNextTest() {
-    // TODO
-    currentTestNumber++
 
-    if (currentTestNumber >= hostInfo[hosts[currentTestHostNum]].length) {
-        // done with this host
-        currentTestNumber = 0
-        currentTestHostNum++
-        if (currentSingleTestHost != "" || currentTestHostNum >= hosts.length) {
-            // done entirely
-            stopTesting()
-            testManager.inTestLoop = false;
-            return
-        }
-    }
-
-    hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber].check()
-    timer.start()
-    setTimerStartMessage()
-
-    if (testNumber < tests.length) {
-        tests[testNumber].test.check();
-        timer.start();
-        setTestStartMessage()
-    } else {
-        testManager.inTestLoop = false;
+    // See if we're just hanging around to finish testing
+    if (!testManager.inTestLoop) {
         if (testManager.outStandingRequests() > 0) {
             testManager.startQueuedTransactions();
             testManager.checkAvailableUpdates();
             testManager.dataAvailable();
             timer.start();
-            return;
+        } else {
+            stopTesting();
         }
-        stopTesting();
+
+        return;
     }
+
+    // still processing tests
+    currentTestNumber++
+
+    // check to see if we're beyond the maximum test for the current host
+    console.log("inc test: " + currentTestNumber + " >= " + hostInfo[hosts[currentTestHostNum]]['tests'].length)
+    if (currentTestNumber >= hostInfo[hosts[currentTestHostNum]]['tests'].length) {
+        // done with this host
+        currentTestNumber = 0
+        currentTestHostNum++
+        if (currentSingleTestHost != "" || currentTestHostNum >= hosts.length) {
+            // done entirely
+            testManager.inTestLoop = false;
+            stopTesting()
+            return
+        }
+    }
+
+    console.log(currentTestNumber)
+    hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber].test.check()
+    timer.start()
+    setTestStartMessage()
 }
 
 function stopTesting() {
@@ -284,7 +288,7 @@ function cancelTests() {
         var hostName = hosts[i]
 
         for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
-            var testObject = hostInfo[hostName]['tests'][j]
+            var testObject = hostInfo[hostName]['tests'][j].test
             if (testObject.status == DNSSECTest.TESTINGNOW || testObject.status == DNSSECTest.UNKNOWN)
                 testObject.status = DNSSECTest.BAD
         }
@@ -301,10 +305,22 @@ function giveUpTimerHook() {
 }
 
 function setTestStartMessage() {
-    // TODO
-    if (testNumber + 1 < tests.length) {
+    if (currentTestHostNum >= 0 && currentTestHostNum < hosts.length &&
+        currentTestNumber > -1 &&
+        currentTestNumber <= hostInfo[hosts[currentTestHostNum]]['tests'].length) {
+
+        console.log("tn: " + currentTestHostNum)
+        console.log("current test num: " + currentTestNumber)
+        console.log(hosts[currentTestHostNum])
+        console.log("tests: " + hostInfo[hosts[currentTestHostNum]]['tests'])
+        console.log(hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber])
+
         testStatusMessage.text =
-                "Test Status: sending test for " + tests[testNumber+1].test.name + " to " + tests[testNumber+1].test.serverAddress
+                "Test Status: sending test for " +
+                hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber].test.name +
+                " to " + hosts[currentTestHostNum]
+    } else {
+        testStatusMessage.text = "Idle"
     }
 }
 
@@ -312,8 +328,8 @@ function resetTests() {
     for(var i = 0 ; i < hosts.length; i++) {
         var hostName = hosts[i]
 
-        for(var j = 0; j < hostInfo[hostname]['tests'].length; j++) {
-            hostInfo[hostName]['tests'][j] = DNSSECTest.UNKNOWN
+        for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
+            hostInfo[hostName]['tests'][j].test.status = DNSSECTest.UNKNOWN
         }
 
         hostInfo[hostName]['grades'].grade = "?"
