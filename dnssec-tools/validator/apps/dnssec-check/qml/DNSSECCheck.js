@@ -62,9 +62,7 @@ function removeHost(host) {
     resultGrid.children[numHeaders + myHostNum * (numTests + numLeftColumns)].destroy()
 
     // remove us from the numeric host list
-    console.log("hosts1: " + hosts)
     hosts.splice(myHostNum, 1)
-    console.log("hosts2: " + hosts)
 
     delete hostInfo[host]
 }
@@ -259,7 +257,6 @@ function runNextTest() {
     currentTestNumber++
 
     // check to see if we're beyond the maximum test for the current host
-    console.log("inc test: " + currentTestNumber + " >= " + hostInfo[hosts[currentTestHostNum]]['tests'].length)
     if (currentTestNumber >= hostInfo[hosts[currentTestHostNum]]['tests'].length) {
         // done with this host
         currentTestNumber = 0
@@ -272,7 +269,6 @@ function runNextTest() {
         }
     }
 
-    console.log(currentTestNumber)
     hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber].test.check()
     timer.start()
     setTestStartMessage()
@@ -320,12 +316,6 @@ function setTestStartMessage() {
         currentTestNumber > -1 &&
         currentTestNumber <= hostInfo[hosts[currentTestHostNum]]['tests'].length) {
 
-        console.log("tn: " + currentTestHostNum)
-        console.log("current test num: " + currentTestNumber)
-        console.log(hosts[currentTestHostNum])
-        console.log("tests: " + hostInfo[hosts[currentTestHostNum]]['tests'])
-        console.log(hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber])
-
         testStatusMessage.text =
                 "Test Status: sending test for " +
                 hostInfo[hosts[currentTestHostNum]]['tests'][currentTestNumber].test.name +
@@ -355,9 +345,9 @@ function submitResults() {
     for(var i = 0 ; i < hosts.length; i++) {
         var hostName = hosts[i]
         datalist.push("server" + i)
-        datalist.push(testManager.sha1hex(hostname))
+        datalist.push(testManager.sha1hex(hostName))
         for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
-            var testObject = hostInfo[hostName]['tests'][j]
+            var testObject = hostInfo[hostName]['tests'][j].test
             datalist.push(testObject.name + i)
             datalist.push(testObject.status)
         }
