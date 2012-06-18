@@ -13,8 +13,6 @@ var currentTestNumber = 0
 
 var hostInfo = {}
 // Keys to host info:
-//   hostnum: what position in the hosts lists is this host
-//            (also an index into hosts[]
 //   tests:   test objects in use (ie, a C++ DNSSECTest object)
 //   grades:  grade objects
 //
@@ -41,10 +39,21 @@ function clearServers() {
 }
 
 function removeHost(host) {
-    var myHostNum = hostInfo[host]['hostnum']
+    var myHostNum
+    for(var i = hosts.length - 1; i >= 0; i--) {
+        if(hosts[i] === host) {
+            myHostNum = i
+        }
+    }
 
     // destroy all the test lights
     for(var i = hostInfo[host]['tests'].length - 1; i >= 0 ; i--) {
+        console.log(numHeaders)
+        console.log(myHostNum)
+        console.log(numTests)
+        console.log(numLeftColumns)
+        console.log(i)
+        console.log("rm: " + (numHeaders + myHostNum * (numTests + numLeftColumns) + i + numLeftColumns))
         resultGrid.children[numHeaders + myHostNum * (numTests + numLeftColumns) + i + numLeftColumns].destroy()
     }
 
@@ -55,7 +64,9 @@ function removeHost(host) {
     resultGrid.children[numHeaders + myHostNum * (numTests + numLeftColumns)].destroy()
 
     // remove us from the numeric host list
-    hosts.splice(i, 1)
+    console.log("hosts1: " + hosts)
+    hosts.splice(myHostNum, 1)
+    console.log("hosts2: " + hosts)
 
     delete hostInfo[host]
 }
@@ -165,6 +176,7 @@ function addHost(labelComponent, resultComponent, hostComponent, host) {
     hostInfo[host] = {}
     hostInfo[host]['grades'] = hostGrade
     hostInfo[host]['tests'] = []
+    hostInfo[host]['hostnum'] = hosts.length - 1
 
     // var result = makeLight(resultComponent, testManager.basic_dns, "DNS", host)
     var result = makeLight(resultComponent, 0, "DNS", host)
