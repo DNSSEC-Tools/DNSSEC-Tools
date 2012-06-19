@@ -2788,6 +2788,16 @@ sub hasincludes
 #		a zone file.  The serial number is found in both the multi-line
 #		parenthesized form and the single line unparenthesized form.
 #
+#		The SOA line is searched for, line by line.  There are three
+#		basic formats of interest:
+#			- serial number on SOA line, without parentheses
+#			- serial number on SOA line, with parentheses
+#			- serial number not on SOA line, with parentheses
+#
+#		Getting the old serial number and setting the new serial
+#		number maintain the existing format and any comments that
+#		may be on the line.
+#
 #		On success, the new serial number is returned.
 #		On failure, -1 is returned.
 #
@@ -2796,18 +2806,13 @@ sub serialincr
 	my $file = "";				# Contents of zone file.
 	my @lines = ();				# Contents of zone file.
 
-	my $remnant;				# Contents after the SOA line.
-	my $soafields;				# SOA's fields.
 	my $serialnum = -1;			# Current serial number.
 	my $serialnew;				# New serial number.
 
 	#
 	# Get the zone's current serial number.
 	#
-	if(defined($opts{'serial'}))
-	{
-		$serialnum = $opts{'serial'};
-	}
+	$serialnum = $opts{'serial'} if(defined($opts{'serial'}));
 
 	#
 	# Get the zonefile's contents.
@@ -2821,8 +2826,6 @@ sub serialincr
 	for(my $ind = 0; $ind < @lines; $ind++)
 	{
 		my $line = $lines[$ind];		# Current line.
-		my $preline;				# Line before serial.
-		my $postline;				# Line after serial.
 
 		#
 		# Delete the comment portion of the line.
@@ -2840,6 +2843,8 @@ sub serialincr
 		#
 		if($line =~ /\(/)
 		{
+			my $preline;			# Line before serial.
+			my $postline;			# Line after serial.
 
 			#
 			# Recover the original -- possibly commented -- line
@@ -2887,8 +2892,6 @@ sub serialincr
 				for(; $ind < @lines; $ind++)
 				{
 					my $line = $lines[$ind];
-					my $preline;
-					my $postline;
 					my $serial;
 
 					#
@@ -2949,15 +2952,15 @@ sub serialincr
 		}
 
 		#
-		# Make sure there's a serial number there.
-		#
-		return(-1) if(!defined($serialnew));
-
-		#
 		# We've found the SOA line, so we'll drop out.
 		#
 		last;
 	}
+
+	#
+	# Make sure a serial number was found.
+	#
+	return(-1) if(!defined($serialnew) || ($serialnew == -1));
 
 	#
 	# We'll save the new serial number in the keyrec.
@@ -2970,7 +2973,6 @@ sub serialincr
 	#
 	seek(ZF,0,0);
 	truncate(ZF,0);
-	$file = join("\n",@lines);
 	$file = join('',@lines);
 	print ZF $file;
 	close(ZF);
