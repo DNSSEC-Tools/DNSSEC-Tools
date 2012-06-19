@@ -2785,8 +2785,8 @@ sub hasincludes
 # Routine:	serialincr
 #
 # Purpose:	This routine increments the serial number of an SOA record in
-#		a zone file.  The serial number is found in both the multi-
-#		line parenthesized form and the single line unparenthesize form.
+#		a zone file.  The serial number is found in both the multi-line
+#		parenthesized form and the single line unparenthesized form.
 #
 #		On success, the new serial number is returned.
 #		On failure, -1 is returned.
@@ -2794,50 +2794,174 @@ sub hasincludes
 sub serialincr
 {
 	my $file = "";				# Contents of zone file.
-	my $flen = 0;				# Length of zone file.
+	my @lines = ();				# Contents of zone file.
 
 	my $remnant;				# Contents after the SOA line.
 	my $soafields;				# SOA's fields.
-	my $serialnum;				# Current serial number.
+	my $serialnum = -1;			# Current serial number.
 	my $serialnew;				# New serial number.
 
 	#
-	# Get the zone file's length and contents.
+	# Get the zone's current serial number.
 	#
-	$flen = $zonestat[7];
+	if(defined($opts{'serial'}))
+	{
+		$serialnum = $opts{'serial'};
+	}
+
+	#
+	# Get the zonefile's contents.
+	#
 	seek(ZF,0,0);
-	read(ZF,$file,$flen);
+	@lines = <ZF>;
 
 	#
 	# Find the SOA line and components.
 	#
-	($serialnum) = 
-	  ($file =~ /\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w\\]+\s*\(?\s*(\d+)/si);
-
-	return(-1) if(!defined($serialnum) || $serialnum eq '');
-
-	#
-	# We'll use the larger serial number of the one in the zone file
-	# and in the keyrec file.
-	#
-	$serialnew = $serialnum;
-	if(defined($opts{'serial'}))
+	for(my $ind = 0; $ind < @lines; $ind++)
 	{
-		my $serial = $opts{'serial'};
+		my $line = $lines[$ind];		# Current line.
+		my $preline;				# Line before serial.
+		my $postline;				# Line after serial.
 
-		$serialnew = $serial if($serial > $serialnum);
+		#
+		# Delete the comment portion of the line.
+		#
+		$line =~ s/;.*$//;
+
+		#
+		# If this line isn't an SOA, go to the next line.
+		#
+		next if($line !~ /IN\s+SOA/i);
+
+		#
+		# If the line has a left paren, it may be a multiline SOA.
+		# If it doesn't, the the SOA is all on one line.
+		#
+		if($line =~ /\(/)
+		{
+
+			#
+			# Recover the original -- possibly commented -- line
+			# and split it at the left paren.
+			#
+			$line = $lines[$ind];
+			$line =~ /^(.*?\()(.*)/;
+			$preline = $1;
+			$postline = $2;
+
+			#
+			# If the line's post-paren part has a number, we'll
+			# take that as the serial number.
+			# If it doesn't, we'll keep looking through the
+			# zonefile's lines until we find the next line with
+			# a number.
+			#
+			if($postline =~ /(\d+)/)
+			{
+				my $serial;
+
+				$serial = $1;
+				$serialnew = $serial;
+
+				#
+				# Increment the larger serial number of the
+				# one in the zonefile and the keyrec file.
+				#
+				$serialnew = $serialnum if($serialnum > $serialnew);
+				$serialnew++;
+
+				#
+				# Build the line.
+				#
+				$postline =~ s/$serial/$serialnew/;
+				$lines[$ind] = $preline . $postline . "\n";
+
+			}
+			else
+			{
+				#
+				# Look through each line for the next
+				# line-with-a-number.
+				#
+				for(; $ind < @lines; $ind++)
+				{
+					my $line = $lines[$ind];
+					my $preline;
+					my $postline;
+					my $serial;
+
+					#
+					# Delete the comment portion of line.
+					#
+					$line =~ s/;.*$//;
+
+					#
+					# Skip this line if it has no numbers.
+					#
+					next if($line !~ /\d/);
+
+					#
+					# Get the first number from the line.
+					#
+					$line =~ /(\d+)/;
+					$serial = $1;
+					$serialnew = $1;
+
+					#
+					# Increment the larger serial number
+					# of the one in the zonefile and the
+					# keyrec file.
+					#
+					$serialnew = $serialnum if($serialnum > $serialnew);
+					$serialnew++;
+
+					#
+					# Adjust the serial number in the
+					# actual zonefile line and drop out
+					# of the loop.
+					#
+					$lines[$ind] =~ s/$serial/$serialnew/;
+					last;
+				}
+			}
+		}
+		else
+		{
+			#
+			# Get the pieces of the line.
+			#
+			$line =~ /^(.*?\s+IN\s+SOA\s+\S+\s+\S+\s+)(\d+)(.*)/;
+			$serialnew = $2;
+
+			#
+			# Increment the larger serial number of the one in
+			# the zonefile and the keyrec file.
+			#
+			$serialnew = $serialnum if($serialnum > $serialnew);
+			$serialnew++;
+
+			#
+			# Build the new line.
+			#
+			$lines[$ind] = $1 . $serialnew . $3 . "\n";
+
+		}
+
+		#
+		# Make sure there's a serial number there.
+		#
+		return(-1) if(!defined($serialnew));
+
+		#
+		# We've found the SOA line, so we'll drop out.
+		#
+		last;
 	}
 
 	#
-	# Increment the serial number.
+	# We'll save the new serial number in the keyrec.
 	#
-	$serialnew++;
-
-	#
-	# Change the serial number in the file contents.  We'll also
-	# save the new serial number in the keyrec.
-	#
-	$file =~ s/(\s+IN\s+SOA\s+[-\.\w]+\s+[-\.\w\\]+\s+\(?\s*)(\d+)/$1$serialnew/sg;
 	keyrec_setval('zone',$zone,'serial',$serialnew);
 	$opts{'serial'} = $serialnew;
 
@@ -2846,6 +2970,8 @@ sub serialincr
 	#
 	seek(ZF,0,0);
 	truncate(ZF,0);
+	$file = join("\n",@lines);
+	$file = join('',@lines);
 	print ZF $file;
 	close(ZF);
 
