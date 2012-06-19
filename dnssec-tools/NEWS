@@ -14,13 +14,21 @@ details.
                       of the associated signed zone file.  This
                       functionality includes adding the -autosign option
                       and config field.
-                    - Added the dt-realms feature to Manages multiple
-                      simultaneous rollover environments.
+                    - Added additional commands (via rollctl) to allow
+                      greater control over zone rollover actions.
+                    - Added -zsargs option to allow global options to
+                      be passed to zonesigner.
+
+    - realms:       - Added the realms feature to manage multiple
+		      simultaneous rollover environments.  Several
+		      commands and modules (e.g., dtrealms, realms.pm,
+		      buildrealms) were added for the realms feature.
 
     - zonesigner:   - Added the -threshold option to specify a signing
                       threshold.
+                    - Better handling of serial numbers in zone files.
 
-    - keymod:       - New tool that can be used to Modify key
+    - keymod:       - New tool that can be used to modify key
                       generation parameters in a keyrec file.
 
     - dnssec-check
@@ -36,12 +44,12 @@ details.
                       library. Code contributed by Bob Novas. 
     
                       
-    - trustman:
-
+    - trustman:     - Added an option for use by monitoring systems.
 
     - nagios        - Added the dt_donuts plugin for running trustman on
                       remote machines.
-
+                    - Added the dt_trustman plugin for monitoring trust
+		      anchors.
 
     - firefox       - updated nspr and firefox patches to work with
                       mozilla-central and nspr-4.9
