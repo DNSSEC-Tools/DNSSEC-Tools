@@ -5,8 +5,6 @@
 #include "DNSSECTest.h"
 #include "DNSSECCheckThread.h"
 
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
 

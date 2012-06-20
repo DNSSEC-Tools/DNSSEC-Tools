@@ -1,6 +1,10 @@
 #ifndef DNSSEC_CHECKS_H
 #define DNSSEC_CHECKS_H
 
+#ifdef __MINGW32__
+#include <winsock2.h>
+#endif
+
 #define CHECK_QUEUED    -2
 #define CHECK_CRITICAL  -1
 #define CHECK_SUCCEEDED 0

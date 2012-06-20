@@ -279,7 +279,7 @@ MainWindow::doLookupTest(const QString lookupName, int queryType, char *resolv_c
     }
 
     // perform the lookup
-    ret = val_res_query(context, lookupName.toUtf8(), ns_c_in,
+    ret = val_res_query(context, lookupName.toUtf8(), 1 /* ns_c_in */,
                         queryType, buf, sizeof(buf), &val_status);
     qDebug() << "here: lookingup=" << lookupName << ", ret=" << ret << " / " << val_status;
 
