@@ -23,6 +23,9 @@ isEmpty(ANDROID_PLATFORM) {
         LIBS        += -lval-threads -lsres -lcrypto -lpthread
     } else:maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
+    } else:win32 {
+        #QMAKE_LIBDIR += /MinGW/msys/1.0/lib
+        LIBS += -lval-threads -lsres -leay32 -lpthread -lws2_32
     } else {
         LIBS        += -lval-threads -lsres -lcrypto -lpthread
     }
