@@ -2,8 +2,6 @@
 #include "dnssec_checks.h"
 #include "qdebug.h"
 
-#include <arpa/inet.h>
-
 #include <validator/validator-config.h>
 #include <validator/validator.h>
 

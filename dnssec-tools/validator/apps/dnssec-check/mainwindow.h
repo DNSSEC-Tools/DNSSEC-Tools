@@ -4,14 +4,10 @@
 
 #include <QtGui/QMainWindow>
 
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 
 #include <QtGui/QGridLayout>
 #include <QtGui/QVBoxLayout>
