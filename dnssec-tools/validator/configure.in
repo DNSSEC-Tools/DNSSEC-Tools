@@ -245,8 +245,8 @@ AC_ARG_ENABLE([sha256-check],
     AS_HELP_STRING([--disable-sha256-check],
          [Make misssing SHA-256 support a warning instead of an error.]))
 
-AC_SEARCH_LIBS(SHA256_Init, [crypto eay32], AC_DEFINE(HAVE_SHA_256),
-    AC_SEARCH_LIBS(EVP_md5, [crypto eay32],
+AC_SEARCH_LIBS(SHA256_Init, [crypto eay32 libeay32 crypt32], AC_DEFINE(HAVE_SHA_256),
+    AC_SEARCH_LIBS(EVP_md5, [crypto eay32 libeay32 crypt32],
         AS_IF([test "x$enable_sha256_check" != "xno"],
              [AC_MSG_ERROR(Need openssl version > 0.9.8 for SHA-256 support. Use --disable-sha256-check to bypass this error.)],
              [AC_MSG_WARN(Need openssl version > 0.9.8 for SHA-256 support.)]),
