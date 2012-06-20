@@ -57,6 +57,11 @@
 #ifndef RESOLVER_H
 #define RESOLVER_H
 
+#include <sys/time.h>
+#ifdef __MINGW32__
+#include <winsock2.h>
+#endif
+
 #ifdef __cplusplus
 extern          "C" {
 #endif
