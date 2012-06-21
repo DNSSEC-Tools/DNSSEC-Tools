@@ -203,7 +203,7 @@ sub optsandargs
 		if((! -e $conffile) || (! -f $conffile) || (! -r $conffile))
 		{
 			print STDERR "invalid configuration file specified:  $conffile\n";
-			exit(11);
+			exit(2);
 		}
 	}
 	else
@@ -212,7 +212,7 @@ sub optsandargs
 		if((! -e $cf) || (! -f $cf) || (! -r $cf))
 		{
 			print STDERR "default configuration file invalid:  $cf\n";
-			exit(12);
+			exit(3);
 		}
 	}
 
@@ -222,7 +222,7 @@ sub optsandargs
 	if($quiet && $verbose)
 	{
 		print STDERR "-quiet and -verbose are mutually exclusive\n";
-		exit(14);
+		exit(4);
 	}
 
 	#
@@ -246,7 +246,7 @@ sub optsandargs
 	if(($len=length($command)) < 1)
 	{
 		print STDERR "empty command given\n";
-		exit(1);
+		exit(5);
 	}
 
 	#
@@ -270,7 +270,7 @@ sub optsandargs
 	if($ind == @cmdlist)
 	{
 		print STDERR "unrecognized command:  $command\n";
-		exit(1);
+		exit(6);
 	}
 
 	#
@@ -279,7 +279,7 @@ sub optsandargs
 	if(defined($nyis{$command}))
 	{
 		print STDERR "command $command is not yet implemented\n";
-		exit(3);
+		exit(7);
 	}
 
 	return($command);
@@ -309,7 +309,7 @@ sub readrealm
 	if($ret < 0)
 	{
 		print STDERR "unable to read realm file \"$realmfile\"\n";
-		exit(2);
+		exit(8);
 	}
 
 	#
@@ -365,7 +365,7 @@ sub readrealm
 	if($errs)
 	{
 		print STDERR "unable to continue due to errors\n";
-		exit(10);
+		exit(9);
 	}
 
 	#
@@ -400,7 +400,7 @@ sub makestage
 		if(action("rm -fr $stagedir") < 0)
 		{
 			print STDERR "unable to clear staging directory \"$stagedir\"\n";
-			exit(7);
+			exit(10);
 		}
 	}
 
@@ -410,7 +410,7 @@ sub makestage
 	if(action("$MKDIR -p $stagedir") < 0)
 	{
 		print STDERR "unable to create staging directory \"$stagedir\"\n";
-		exit(8);
+		exit(11);
 	}
 
 	print "staging area \"$stagedir\" created\n" if(! $quiet);
@@ -465,7 +465,7 @@ sub buildtrees
 
 	}
 
-	exit(9) if($errs);
+	exit(12) if($errs);
 }
 
 #-----------------------------------------------------------------------------
