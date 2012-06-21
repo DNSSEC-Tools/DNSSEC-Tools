@@ -30,10 +30,10 @@ isEmpty(ANDROID_PLATFORM) {
         LIBS        += -lval-threads -lsres -lcrypto -lpthread
     }
 } else {
-    # ANDROID specific items
-    LIBS        += -L/opt/android-external-openssl/lib/ -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
-    LIBS        += -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libval/.libs -L/home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/libsres/.libs
-    INCLUDEPATH += /home/hardaker/src/dnssec/dt.android/dnssec-tools/validator/include
+    QMAKE_LIBDIR += /opt/android-external-openssl/lib/
+    QMAKE_LIBDIR += /root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
+    QMAKE_LIBDIR     += ../../libval/.libs
+    QMAKE_LIBDIR     += ../../libsres/.libs
     LIBS        += -lval -lsres -lcrypto
 }
 

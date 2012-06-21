@@ -279,6 +279,7 @@ Rectangle {
 
         text: testManager.submissionMessage
 
+
         Connections {
             target: testManager
             onSubmissionMessageChanged: {
