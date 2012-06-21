@@ -231,7 +231,7 @@ QStringList TestManager::loadResolvConf()
 
     while(ns_list) {
         QString addr;
-        struct sockaddr_storage *serv_addr = ns_list->ns_address[0];
+        struct sockaddr_storage *serv_addr = (struct sockaddr_storage *) ns_list->ns_address[0];
         struct sockaddr_in      *sa = (struct sockaddr_in *) serv_addr;
         struct sockaddr_in6     *sa6 = (struct sockaddr_in6 *) serv_addr;
 
