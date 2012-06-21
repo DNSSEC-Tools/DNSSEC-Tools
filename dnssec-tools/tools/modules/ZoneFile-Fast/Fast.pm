@@ -894,6 +894,8 @@ sub parse_line
 	      # XXX: set the typebm field ourselves?
 	      my ($nxtdname, $typelist) = ($1, $2);
 	      $typelist = join(" ",sort split(/\s+/,$typelist));
+	      print STDERR "**************************************** here: $nxtdname";
+	      exit;
 	      push @zone, 
 		{
 		 Line      => $ln,
@@ -901,7 +903,7 @@ sub parse_line
 		 class     => "IN",
 		 ttl       => $ttl,
 		 type      => "NSEC",
-		 nxtdname  => $nxtdname,
+		 nxtdname  => lc($nxtdname),
 		 typelist  => $typelist,
 		 typebm    =>
 		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$typelist)),
