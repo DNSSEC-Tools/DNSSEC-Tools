@@ -126,7 +126,7 @@ sub main
 	#
 	if(($< == 0) || ($> == 0))
 	{
-		print STDERR "do not run as root\n";
+		print STDERR "do not run $NAME as root\n";
 		exit(1);
 	}
 
