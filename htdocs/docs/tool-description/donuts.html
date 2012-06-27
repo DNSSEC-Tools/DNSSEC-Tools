@@ -257,9 +257,11 @@ options.</p>
 <dt><strong><a name="q" class="item">-q</a></strong></dt>
 
 <dd>
-<p>Turns on a quieter output mode.  This only affects one case: if no
-errors are found, it will not print out &quot;0 errors found&quot;.</p>
-<p>-q is ignored if a -v argument is present.</p>
+<p>Turns on a quieter output mode where only the errors and warnings are
+shown.  IE, the summary line of &quot;N errors found ...&quot; is not shown.</p>
+<p>-q is ignored if a -v argument is present; the -v argument requests a
+longer output summary and thus it doesn't make sense to use them both
+at the same time.</p>
 </dd>
 <dt><strong><a name="v" class="item">-v</a></strong></dt>
 
@@ -314,7 +316,7 @@ and in terms of the number of rules that are run to analyze the file:</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2009 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

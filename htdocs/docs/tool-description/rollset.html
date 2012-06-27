@@ -4,7 +4,7 @@
 <head>
 <title>rollset - Modifies entries in a DNSSEC-Tools I&lt;rollrec&gt; file</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:tewok@leodhas.local" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
@@ -55,18 +55,51 @@ option.</p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="name_rollrec_name" class="item"><strong>-name rollrec-name</strong></a></strong></dt>
+<dt><strong><a name="admin_addr" class="item"><strong>-admin addr</strong></a></strong></dt>
 
 <dd>
-<p>The <em>rollrec</em> whose name matches <em>zonename</em> is selected as the only rollrec
-that will be modified.  If this name is not given, then all <em>rollrec</em> records
-will be modified.</p>
+<p>The zone administrator's email address is set to <em>addr</em>.</p>
 </dd>
-<dt><strong><a name="zonename_zone_name" class="item"><strong>-zonename zone-name</strong></a></strong></dt>
+<dt><strong><a name="check" class="item"><strong>-check</strong></a></strong></dt>
 
 <dd>
-<p>The zone name in the selected <em>rollrec</em> records is modified to be
-<em>zone-name</em>.</p>
+<p>If this option is given, the <strong>rollchk</strong> command will be run on the modified
+<em>rollrec</em> file.</p>
+</dd>
+<dt><strong><a name="del_admin" class="item"><strong>-del-admin</strong></a></strong></dt>
+
+<dd>
+<p>The <em>administrator</em> line is deleted.
+The <strong>-admin</strong> and <strong>-del-admin</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="del_directory" class="item"><strong>-del-directory</strong></a></strong></dt>
+
+<dd>
+<p>The <em>directory</em> line is deleted.
+The <strong>-directory</strong> and <strong>-del-directory</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="del_loglevel" class="item"><strong>-del-loglevel</strong></a></strong></dt>
+
+<dd>
+<p>The <em>loglevel</em> line is deleted.
+The <strong>-loglevel</strong> and <strong>-del-loglevel</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="del_zsargs" class="item"><strong>-del-zsargs</strong></a></strong></dt>
+
+<dd>
+<p>The <em>zsargs</em> line is deleted.
+The <strong>-zsargs</strong> and <strong>-delzsargs</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="directory_dir" class="item"><strong>-directory dir</strong></a></strong></dt>
+
+<dd>
+<p>The directory to hold the zone's files is set to <em>dir</em>.</p>
+</dd>
+<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
+
+<dd>
+<p>Turn on the GUI display of the zones in the selected <em>rollrec</em>s.
+This option is mutually exclusive of the <em>-nodisplay</em> option.</p>
 </dd>
 <dt><strong><a name="file_zone_file" class="item"><strong>-file zone-file</strong></a></strong></dt>
 
@@ -80,54 +113,18 @@ will be modified.</p>
 <p>The <em>keyrec</em> file in the selected <em>rollrec</em> records is modified to be
 <em>keyrec-file</em>.</p>
 </dd>
-<dt><strong><a name="zg_zonegroup_name" class="item"><strong>-zg zonegroup-name</strong></a></strong></dt>
-
-<dd>
-<p>The zonegroup in the selected <em>rollrec</em> records is modified to be
-<em>zonegroup-name</em>.</p>
-</dd>
-<dt><strong><a name="admin_addr" class="item"><strong>-admin addr</strong></a></strong></dt>
-
-<dd>
-<p>The zone administrator's email address is set to <em>addr</em>.</p>
-</dd>
-<dt><strong><a name="del_admin" class="item"><strong>-del-admin</strong></a></strong></dt>
-
-<dd>
-<p>The <em>administrator</em> line is deleted.</p>
-</dd>
-<dt><strong><a name="del_directory" class="item"><strong>-del-directory</strong></a></strong></dt>
-
-<dd>
-<p>The <em>directory</em> line is deleted.</p>
-</dd>
-<dt><strong><a name="del_loglevel" class="item"><strong>-del-loglevel</strong></a></strong></dt>
-
-<dd>
-<p>The <em>loglevel</em> line is deleted.</p>
-</dd>
-<dt><strong><a name="del_zsargs" class="item"><strong>-del-zsargs</strong></a></strong></dt>
-
-<dd>
-<p>The <em>zsargs</em> line is deleted.</p>
-<p>The <strong>-zsargs</strong> and <strong>-delzsargs</strong> options are mutually exclusive.</p>
-</dd>
-<dt><strong><a name="directory_dir" class="item"><strong>-directory dir</strong></a></strong></dt>
-
-<dd>
-<p>The directory to hold the zone's files is set to <em>dir</em>.</p>
-</dd>
 <dt><strong><a name="loglevel_logging_level" class="item"><strong>-loglevel logging-level</strong></a></strong></dt>
 
 <dd>
 <p>The logging level of the selected <em>rollrec</em> records is set to
 <em>logging-level</em>.  The valid logging levels are defined in <em>rollmgr.pm(3)</em>.</p>
 </dd>
-<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
+<dt><strong><a name="name_rollrec_name" class="item"><strong>-name rollrec-name</strong></a></strong></dt>
 
 <dd>
-<p>Turn on the GUI display of the zones in the selected <em>rollrec</em>s.
-This option is mutually exclusive of the <em>-nodisplay</em> option.</p>
+<p>The <em>rollrec</em> whose name matches <em>zonename</em> is selected as the only rollrec
+that will be modified.  If this name is not given, then all <em>rollrec</em> records
+will be modified.</p>
 </dd>
 <dt><strong><a name="nodisplay" class="item"><strong>-nodisplay</strong></a></strong></dt>
 
@@ -140,7 +137,7 @@ This option is mutually exclusive of the <strong>-display</strong> option.</p>
 <dd>
 <p>The <em>rollrec</em>'s name is changed to match the specified name.
 The new name cannot be the name of an existing <em>rollrec</em> in the file.
-This option is must be used in conjunction with the <strong>-name</strong> option.</p>
+This option must be used in conjunction with the <strong>-name</strong> option.</p>
 </dd>
 <dt><strong><a name="reset_zonename" class="item"><strong>-reset-zonename</strong></a></strong></dt>
 
@@ -159,6 +156,18 @@ This option is mutually exclusive of the <strong>-skip</strong> option.</p>
 <dd>
 <p>Convert the selected <em>rollrec</em>s to be inactive (&quot;skip&quot;) records.
 This option is mutually exclusive of the <strong>-roll</strong> option.</p>
+</dd>
+<dt><strong><a name="zg_zonegroup_name" class="item"><strong>-zg zonegroup-name</strong></a></strong></dt>
+
+<dd>
+<p>The zonegroup in the selected <em>rollrec</em> records is modified to be
+<em>zonegroup-name</em>.</p>
+</dd>
+<dt><strong><a name="zonename_zone_name" class="item"><strong>-zonename zone-name</strong></a></strong></dt>
+
+<dd>
+<p>The zone name in the selected <em>rollrec</em> records is modified to be
+<em>zone-name</em>.</p>
 </dd>
 <dt><strong><a name="zsargs_arglist" class="item"><strong>-zsargs arglist</strong></a></strong></dt>
 
@@ -186,12 +195,6 @@ option from the option's argument should also be replaced by an equals sign.
     # rollset -zsargs &quot;=ksklen=2048 =zsklen=2048&quot; example.rollrec</pre>
 <p>The <strong>-zsargs</strong> and <strong>-delzsargs</strong> options are mutually exclusive.</p>
 </dd>
-<dt><strong><a name="check" class="item"><strong>-check</strong></a></strong></dt>
-
-<dd>
-<p>If this option is given, the <strong>rollchk</strong> command will be run on the modified
-<em>rollrec</em> file.</p>
-</dd>
 <dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
 <dd>
@@ -218,7 +221,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
 <p>
 </p>
 <hr />

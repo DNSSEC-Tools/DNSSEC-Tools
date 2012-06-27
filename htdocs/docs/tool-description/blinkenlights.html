@@ -4,7 +4,7 @@
 <head>
 <title>blinkenlights - DNSSEC-Tools rollerd GUI</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:tewok@leodhas.local" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
@@ -307,6 +307,13 @@ display is turned off, zone stripes for skipped zones will not be displayed.
 If display is turned on, zone stripes for all zones will be displayed.</p>
 </li>
 <li>
+<p>Status Times Display (toggle)</p>
+<p>This menu item is a toggle to turn on or off the display of status times.
+If display is turned off, the remaining time for a rollover phase will not
+be displayed in the &quot;Status&quot; column.  If display is turned on, the remaining
+times will be displayed.</p>
+</li>
+<li>
 <p>Modification Commands (toggle)</p>
 <p>In some situations, it may be desirable to turn off <strong>blinkenlights</strong>' ability
 to send commands to <strong>rollerd</strong>.  This menu item is a toggle to turn on or off
@@ -337,6 +344,21 @@ the main window.</p>
 <p>The commands in this menu are GUI interfaces for the <strong>rollctl</strong> commands
 related to <em>general</em> zone management.</p>
 <ul>
+<li>
+<p>Sign Selected Zone</p>
+<p><strong>rollerd</strong> is instructed to sign the selected zone.  The zone will only be
+signed; no key rollover will occur.</p>
+</li>
+<li>
+<p>Sign All Zones</p>
+<p><strong>rollerd</strong> is instructed to sign all the zones it manages.  The zone will
+only be signed; no key rollover will occur.</p>
+</li>
+<li>
+<p>Sign Active Zones</p>
+<p><strong>rollerd</strong> is instructed to sign all the zones it manages.  Skipped zones
+will not be signed.  The zone will only be signed; no key rollover will occur.</p>
+</li>
 <li>
 <p>Run the Queue</p>
 <p><strong>rollerd</strong> is awoken and runs through its queue of zones.  The operation
@@ -381,10 +403,11 @@ related to ZSK-specific zone management.</p>
 <ul>
 <li>
 <p>Roll Selected Zone's ZSK</p>
-<p>The selected zone's ZSK will be moved to the rollover state.  This only has an
-effect on skipped zones.  A zone may be selected by clicking on its zone
-stripe.  If this command is selected without a zone having been selected, a
-dialog box is displayed from which a currently skipped zone may be chosen.</p>
+<p>The selected zone's ZSK will be moved to the rollover state.  This has no
+effect on zones that are already in rollover.  A zone may be selected by
+clicking on its zone stripe.  If this command is selected without a zone
+having been selected, a dialog box is displayed from which a currently
+skipped zone may be chosen.</p>
 </li>
 <li>
 <p>Roll All Zones' ZSKs</p>
@@ -410,6 +433,19 @@ KSK rollover.</p>
 have new DS records published by their parents.  It moves all these zones from
 phase 6 to phase 7 of KSK rollover.  There is no effect on zones not in KSK
 rollover phase 6.</p>
+</li>
+<li>
+<p>Roll Selected Zone's KSK</p>
+<p>The selected zone's KSK will be moved to the rollover state.  This has no
+effect on zones that are already in rollover.  A zone may be selected by
+clicking on its zone stripe.  If this command is selected without a zone
+having been selected, a dialog box is displayed from which a currently
+skipped zone may be chosen.</p>
+</li>
+<li>
+<p>Roll All Zones' KSKs</p>
+<p>All zones' KSKs will be moved to the rollover state.  This has no effect on
+currently rolling zones.</p>
 </li>
 </ul>
 <p>
@@ -514,6 +550,11 @@ upon invocation.</p>
 <li>
 <p>Help</p>
 <p>Display a window containing help information.</p>
+</li>
+<li>
+<p>About Blinkenlights</p>
+<p>Display a window containing versoin information on <strong>blinkenlights</strong> and
+DNSSEC-Tools.</p>
 </li>
 </ul>
 <p>
