@@ -10,7 +10,7 @@ cd tools/scripts
 
 for i in * ../convertar/convertar ../dnspktflow/dnspktflow ../donuts/donuts \
            ../drawvalmap/drawvalmap ../maketestzone/maketestzone            \
-           ../mapper/mapper ; do
+           ../mapper/mapper ../../validator/doc ; do
     if test -f $i -a $i != "update-web-docs" ; then
 	if grep =pod $i > /dev/null ; then
 	    pod2html $i > ../../../htdocs/docs/tool-description/`basename $i`.html
