@@ -1,0 +1,186 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>keymod - Modifies key parameters in a DNSSEC-Tools I&lt;keyrec&gt; file</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>keymod - Modifies key parameters in a DNSSEC-Tools <em>keyrec</em> file</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  keymod [options] keyrec1 ... keyrecN</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><strong>keymod</strong> modifies the key parameters in a keyrec file that are used to
+generate cryptographics keys used to sign zones.  The new parameters
+will be used by <strong>zonesigner</strong> when generating <em>new</em> keys.  It has no
+effect on existing keys.</p>
+<p><strong>zonesigner</strong> will use the new parameter for a zone the next time it
+generates a key that requires that parameter.  This means that, for example,
+a new ZSK length will not be used during the <em>next</em> invocation of
+<strong>zonesigner</strong> if that invocation will be performing KSK-rollover actions.</p>
+<p>The following fields may be modified:</p>
+<pre>
+    kskcount - count of KSK keys
+    ksklength - length of KSK keys
+    ksklife - lifetime of KSK keys
+    random - random number generator device file
+    revperiod - revocation period for KSK keys
+    zskcount - count of ZSK keys
+    zsklength - length of ZSK keys
+    zsklife - lifetime of ZSK keys</pre>
+<p>New key/value fields will be added to a zone <em>keyrec</em> file to inform
+<strong>zonesigner</strong> that new values should be used.  The key portion of the added
+fields will begin with &quot;new_&quot;.  For example, a new KSK length of 2048 will
+be written to the <em>keyrec</em> file as:</p>
+<pre>
+    new_ksklength        2048</pre>
+<p>All zone records in the specified <em>keyrec</em> file will be modified, unless the
+<strong>-zone</strong> option is given.  In that case, only the named zone will be modified.</p>
+<p>If a zone <em>keyrec</em> already contains a new key/value field, then the value
+will be modified on subsequent runs of <strong>keymod</strong>.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<p><strong>keymod</strong> recognizes the following options.  Multiple options may be combined
+in a single <strong>keymod</strong> execution.</p>
+<p>All numeric values must be positive or zero.</p>
+<p>If a new key/value field should be deleted from a zone <em>keyrec</em>, then a
+zero or empty string value should be specified for the appropriate option.</p>
+<dl>
+<dt><strong><a name="zone_zonename" class="item"><strong>-zone zonename</strong></a></strong></dt>
+
+<dd>
+<p>The zone <em>keyrec</em> whose name matches <em>zonename</em> is selected as the only
+<em>keyrec</em> that will be modified.  If this name is not given, then all zone
+<em>keyrec</em> records will be modified.</p>
+</dd>
+<dt><strong><a name="ksklength_ksklength" class="item"><strong>-ksklength ksklength</strong></a></strong></dt>
+
+<dd>
+<p>The <em>ksklength</em> field will be modified in the selected <em>keyrec</em> records
+to the given value.  This is a numeric field whose values depend on the
+cryptographic algorithm to be used to generate keys for the zone.</p>
+</dd>
+<dt><strong><a name="kskcount_kskcount" class="item"><strong>-kskcount kskcount</strong></a></strong></dt>
+
+<dd>
+<p>The <em>kskcount</em> field will be modified in the selected <em>keyrec</em> records to the
+given value.  This is a numeric field.</p>
+</dd>
+<dt><strong><a name="ksklife_ksklife" class="item"><strong>-ksklife ksklife</strong></a></strong></dt>
+
+<dd>
+<p>The <em>ksklife</em> field will be modified in the selected <em>keyrec</em> records to the
+given value.  This is a numeric field.</p>
+</dd>
+<dt><strong><a name="random_random" class="item"><strong>-random random</strong></a></strong></dt>
+
+<dd>
+<p>The <em>random</em> field will be modified in the selected <em>keyrec</em> records to the
+given value.  This is a text field that will be passed to the key generator.</p>
+</dd>
+<dt><strong><a name="revperiod_revperiod" class="item"><strong>-revperiod revperiod</strong></a></strong></dt>
+
+<dd>
+<p>The <em>revperiod</em> field will be modified in the selected <em>keyrec</em> records to
+the given value.  This is a numeric field.</p>
+</dd>
+<dt><strong><a name="zskcount_zskcount" class="item"><strong>-zskcount zskcount</strong></a></strong></dt>
+
+<dd>
+<p>The <em>zskcount</em> field will be modified in the selected <em>keyrec</em> records to the
+given value.  This is a numeric field.</p>
+</dd>
+<dt><strong><a name="zsklength_zsklength" class="item"><strong>-zsklength zsklength</strong></a></strong></dt>
+
+<dd>
+<p>The <em>zsklength</em> field will be modified in the selected <em>keyrec</em> records
+to the given value.  This is a numeric field whose values depend on the
+cryptographic algorithm to be used to generate keys for the zone.</p>
+</dd>
+<dt><strong><a name="zsklife_zsklife" class="item"><strong>-zsklife zsklife</strong></a></strong></dt>
+
+<dd>
+<p>The <em>zsklife</em> field will be modified in the selected <em>keyrec</em> records to the
+given value.  This is a numeric field.</p>
+</dd>
+<dt><strong><a name="nocheck" class="item"><strong>-nocheck</strong></a></strong></dt>
+
+<dd>
+<p>If this option is given, the <strong>krfcheck</strong> command will <strong>not</strong> be run on
+the modified <em>keyrec</em> file.</p>
+</dd>
+<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
+
+<dd>
+<p>Display information about every modification made to the <em>keyrec</em> file.</p>
+</dd>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>keymod</strong> and the DNSSEC-Tools package.</p>
+</dd>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
+
+<dd>
+<p>Display a usage message.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>zonesigner(8)</strong>,
+<strong>krfcheck(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
+<p><strong>file-keyrec(5)</strong></p>
+
+</body>
+
+</html>

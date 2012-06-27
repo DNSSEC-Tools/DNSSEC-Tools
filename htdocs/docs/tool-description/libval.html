@@ -4,7 +4,7 @@
 <head>
 <title>I&lt;val_free_context&gt; - manage validator context</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:suresh@suresh-laptop.nonet" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
@@ -37,6 +37,7 @@
 <h1><a name="name">NAME</a></h1>
 <p><em>val_create_context()</em>
 <em>val_free_context()</em> - manage validator context</p>
+<p><em>val_context_setqflags()</em> - manage validator context flags</p>
 <p><em>val_resolve_and_check()</em>, <em>val_free_result_chain()</em> - query and validate
 answers from a DNS name server</p>
 <p><em>val_istrusted()</em> - check if status value corresponds to that of a
@@ -57,6 +58,10 @@ authentication chain status and error information</p>
   #include &lt;validator.h&gt;</pre>
 <pre>
   int val_create_context(const char *label, val_context_t **newcontext);</pre>
+<pre>
+  int val_context_setqflags(val_context_t *context, 
+                            unsigned char action, 
+                            unsigned int flags);</pre>
 <pre>
   int val_resolve_and_check(val_context_t *context,
                          const char *domain_name,
@@ -99,6 +104,12 @@ for this field:</p>
 <dd>
 <p>causes the validator to disable validation for this query.</p>
 </dd>
+<dt><strong><a name="val_query_ignore_skew" class="item"><strong>VAL_QUERY_IGNORE_SKEW</strong></a></strong></dt>
+
+<dd>
+<p>causes the validator to disable checking signature inception and
+expiration times on RRSIGs.</p>
+</dd>
 <dt><strong><a name="val_query_ac_detail" class="item"><strong>VAL_QUERY_AC_DETAIL</strong></a></strong></dt>
 
 <dd>
@@ -128,9 +139,11 @@ various name servers in the delegation hierarchy, instead of
 requesting this information from
 any caching name server that may be configured in <strong>dnsval.conf</strong></a></strong></dt>
 
-<dt><strong><a name="val_query_refresh_qcache_forces_libval_to_fetch_lookup_information_from_other_name_servers_instead_of_looking_for_this_data_in_its_local_cache" class="item"><strong>VAL_QUERY_REFRESH_QCACHE</strong>
-forces libval to fetch lookup information from other name servers instead
-of looking for this data in its local cache.</a></strong></dt>
+<dt><strong><a name="val_query_skip_resolver_forces_libval_to_only_look_at_its_cache_while_trying_to_resolve_a_name" class="item"><strong>VAL_QUERY_SKIP_RESOLVER</strong>
+forces libval to only look at its cache while trying to resolve a name.</a></strong></dt>
+
+<dt><strong><a name="val_query_skip_cache_forces_libval_to_ignore_cached_data_while_trying_to_resolve_a_name" class="item"><strong>VAL_QUERY_SKIP_CACHE</strong>
+forces libval to ignore cached data while trying to resolve a name.</a></strong></dt>
 
 </dl>
 <p>The first parameter to <em>val_resolve_and_check()</em> is the validator context.
@@ -146,6 +159,25 @@ resolver (see <em>dnsval.conf(3)</em>). These defaults may be different if
 any other value was specified at library configure time. If the default 
 resolver configuration file is not found at the specified location, libval
 will also try to fallback to /etc/resolv.conf as a last resort.</p>
+<p>Default query flags can be set and unset for a given context using 
+<em>val_context_setqflags()</em>. This allows an application to alter the 
+DNSSEC validator processing, while still having most of the more 
+granular default configuration specified in its configuration file.  
+The <em>action</em> parameter can be set to one of the following.</p>
+<dl>
+<dt><strong><a name="val_ctx_flag_set" class="item"><strong>VAL_CTX_FLAG_SET</strong></a></strong></dt>
+
+<dd>
+<p>causes the validator to set the given flag as one of the default 
+query flags.</p>
+</dd>
+<dt><strong><a name="val_ctx_flag_reset" class="item"><strong>VAL_CTX_FLAG_RESET</strong></a></strong></dt>
+
+<dd>
+<p>causes the validator to reset the given flag if it was set as one 
+of the default query flags for the context.</p>
+</dd>
+</dl>
 <p>Answers returned by <em>val_resolve_and_check()</em> are made available in the
 <em>*results</em> linked list.  Each answer corresponds to a distinct RRset; multiple
 RRs within the RRset are part of the same answer.  Multiple answers are possible when
@@ -467,6 +499,8 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.</p>
 <p>Any associated RRSIGs for the RDATA returned in <em>val_rrset_data</em>.</p>
 </dd>
 </dl>
+</dd>
+</dl>
 <dl>
 <dt><strong><a name="struct_val_rr_rec" class="item"><em>struct val_rr_rec</em></a></strong></dt>
 
@@ -587,8 +621,6 @@ variable <em>rr_status</em> and can return one of the following values:</p>
 </dl>
 </dd>
 </dl>
-</dd>
-</dl>
 <p>
 </p>
 <hr />
@@ -682,7 +714,7 @@ displayed in ASCII format using the <em>p_val_error()</em> function.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2011 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.</p>
 <p>
 </p>
@@ -695,7 +727,7 @@ See the COPYING file included with the dnssec-tools package for details.</p>
 <h1><a name="see_also">SEE ALSO</a></h1>
 <p><em>libsres(3)</em></p>
 <p><strong>dnsval.conf(5)</strong></p>
-<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
+<p><a href="http://www.dnssec-tools.org">http://www.dnssec-tools.org</a></p>
 
 </body>
 

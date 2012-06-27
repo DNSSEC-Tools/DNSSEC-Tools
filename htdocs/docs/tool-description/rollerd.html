@@ -4,7 +4,7 @@
 <head>
 <title>rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:tewok@leodhas.local" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
@@ -101,6 +101,11 @@ controlled by the <em>autosign</em> configuration parameter and <strong>rollerd<
 <strong>-autosign</strong>/<strong>-noautosign</strong> command line options.  If <strong>rollerd</strong> is configured
 to not perform automatic re-signing, the administrator can still get this
 controlled behavior by use of the <strong>zonesigner</strong> or <strong>rollctl</strong> commands.</p>
+<p>If the <strong>rollrec</strong> file does not exist or is of zero length, <strong>rollerd</strong> will
+give an error message and continue running.  It will periodically wake up and
+check for a usable <strong>rollrec</strong> file.  Once it finds the specified <strong>rollrec</strong>
+file exists and isn't empty, then it will proceed with normal rollover
+management.</p>
 <p>
 </p>
 <h2><a name="zsk_rollover_using_the_pre_publish_method">ZSK Rollover Using the Pre-Publish Method</a></h2>
@@ -470,10 +475,7 @@ allows complete management of zone signing to be taken over by <strong>rollerd</
 <p>The downside to using this option is that all the non-rolling zones will be
 signed after every sleep, which may be expensive computationally.</p>
 <p>Note:  The zone files are not updated or installed at this time.
-Manual copying and installation is still needed.</p>
-<p>Note: During ZSK and KSK rolling phases 1 and 3 the zone will not be
-signed since it is critical to wait for cache timeouts during this
-phase of rolling keys.</p>
+Manual copying and installation are still needed.</p>
 </dd>
 <dt><strong><a name="autosign_noautosign" class="item"><strong>-autosign</strong> | <strong>-noautosign</strong></a></strong></dt>
 
@@ -546,6 +548,14 @@ validation is performed.</p>
 <p>Name of the <em>rollrec</em> file to be processed.  This is the only required
 &quot;option&quot;.</p>
 </dd>
+<dt><strong><a name="realm_realm_name" class="item"><strong>-realm realm_name</strong></a></strong></dt>
+
+<dd>
+<p>Name of the realm in which <strong>rollerd</strong> is running.  This is for use with the
+DNSSEC-Tools realms facility as a means of easily identifying different
+instantiations of <strong>rollerd</strong>.  It is informational only (e.g., <strong>ps</strong> output
+and log files) and is not used for anything else.</p>
+</dd>
 <dt><strong><a name="singlerun" class="item"><strong>-singlerun</strong></a></strong></dt>
 
 <dd>
@@ -587,6 +597,29 @@ This restriction is dependent on the operating system and the manner by which
 <p>When using this option, the target user must have access to the various
 directories, logs, and data files that <strong>rollerd</strong> requires to execute.
 Without this access, proper execution cannot occur.</p>
+</dd>
+<dt><strong><a name="zsargs_arglist" class="item"><strong>-zsargs arglist</strong></a></strong></dt>
+
+<dd>
+<p>Additional <strong>zonesigner</strong> arguments that will be passed to all <strong>zonesigner</strong>
+executions. These arguments will override the corresponding arguments in the
+DNSSEC-Tools configuration file, and the zones' <em>keyrec</em> files.  If a zone's
+<strong>rollrec</strong> entry contains a <em>zsargs</em> field, then it will be used instead of
+those specified by this argument.</p>
+<p>Given the <strong>rollerd</strong> argument processing, the new arguments for <strong>zonesigner</strong>
+cannot be specified as expected.  Instead, the arguments should be given in
+the following manner.  The leading dash should be replaced with an equals sign.
+If the option takes an argument, the space that would separate the option from
+the option's argument should also be replaced by an equals sign.  If multiple
+arguments will be passed via <strong>-zsargs</strong>, quotes must be used to group them
+into a single argument.</p>
+<p><strong>rollerd</strong> translates these arguments to the appropriate format for
+<strong>zonesigner</strong>.  These examples should clarify the modifications:</p>
+<pre>
+    normal zonesigner option     rollerd -zsargs option
+    ------------------------     ----------------------
+    -nokrfile                    -zsargs =nokrfile
+    -zskcount 5 -kskcount 3      -zsargs &quot;=zskcount=5 =kskcount=3&quot;</pre>
 </dd>
 <dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
@@ -634,12 +667,13 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
 <p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
 <p><strong>blinkenlights(8)</strong>,
+<strong>dtrealms(8)</strong>,
 <strong>named(8)</strong>,
 <strong>rndc(8)</strong>,
 <strong>rp-wrapper(8)</strong>,

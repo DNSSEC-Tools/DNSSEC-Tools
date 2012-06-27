@@ -4,7 +4,7 @@
 <head>
 <title>rollctl - Send commands to the DNSSEC-Tools rollover daemon</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:tewok@leodhas.local" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
@@ -152,10 +152,17 @@ rollover phase 3 will look like this:  &quot;ZSK phase 3&quot;.</p>
 <p>Resumes rollover for all zones in the current <em>rollrec</em> file that have been
 suspended.  (&quot;skip&quot; zones are suspended.)</p>
 </dd>
+<dt><strong><a name="rollallksks" class="item"><strong>-rollallksks</strong></a></strong></dt>
+
+<dd>
+<p>Initiates KSK rollover for all the zones defined in the current <em>rollrec</em>
+file that aren't currently in rollover.</p>
+</dd>
 <dt><strong><a name="rollallzsks" class="item"><strong>-rollallzsks</strong></a></strong></dt>
 
 <dd>
-<p>Initiates ZSK rollover for all the zones defined in the current <em>rollrec</em> file.</p>
+<p>Initiates ZSK rollover for all the zones defined in the current <em>rollrec</em>
+file that aren't currently in rollover.</p>
 </dd>
 <dt><strong><a name="rollksk_zone" class="item"><strong>-rollksk zone</strong></a></strong></dt>
 
@@ -208,6 +215,15 @@ for three zones.</p>
 <p>Signs <em>zone</em>'s zonefile without performing any rollover actions.  The zone
 is signed with the keys most recently used to sign the zone.  No new keys
 will be generated.</p>
+</dd>
+<dt><strong><a name="signzones_all_active" class="item"><strong>-signzones [all | active]</strong></a></strong></dt>
+
+<dd>
+<p>Signs the zonefiles of zones managed by <strong>rollerd</strong>, without performing any
+rollover actions.  If the <strong>all</strong> option is given, then all of <strong>rollerd</strong>'s
+zones will be signed.  If the <strong>active</strong> option is given, then only those zones
+which aren't in the <em>skip</em> stage will be signed.  The zones are signed with
+the keys most recently used to sign each zone.  No new keys will be generated.</p>
 </dd>
 <dt><strong><a name="skipall" class="item"><strong>-skipall</strong></a></strong></dt>
 
@@ -378,7 +394,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
 <p>
 </p>
 <hr />

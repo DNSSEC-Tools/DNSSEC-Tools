@@ -4,7 +4,7 @@
 <head>
 <title>grandvizier - DNSSEC-Tools dtrealms GUI</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:tewok@leodhas.local" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
@@ -60,6 +60,8 @@
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
 <p><strong>THIS NEEDS MAJOR EDITTING!!!</strong></p>
+<p><strong>Warning:</strong>  This is an early prototype.  Consider it to be beta quality, if 
+not alpha.</p>
 <p><strong>grandvizier</strong> is a GUI tool for use with monitoring and controlling the
 DNSSEC-Tools <strong>dtrealms</strong> program.  It displays information on the current state
 of the realms <strong>dtrealms</strong> is managing.  The user may control some aspects of
@@ -138,20 +140,13 @@ the amount of time between <strong>grandvizier</strong> screen updates.</p>
 <li>
 <p>realm stripes</p>
 <p>Each realm managed by <strong>dtrealms</strong> (i.e., every realm in the current <em>realms</em>
-file) will have a realm stripe which describes that realm's current state.  The
-stripe is divided into three sections:  realm identification, the current
-rollover state, and the realm's DNSSEC keys.</p>
-<p>The realm identification section contains the name of the realm, the name of
-the realm's <em>realms</em> entry, and the realm's zonegroup.</p>
-<p>The rollover state section contains the rollover phase number, a text
-explanation of the phase, and the amount of time remaining in that rollover
-phase.  The phase explanation is &quot;normal operation&quot; when the zone isn't
-currently in rollover.</p>
-<p>The DNSSEC key section contains two subsections, one for the zone's ZSK keys
-and another for the zone's KSK keys.  Each subsection contains the names of
-the signing sets active for the zone.  The ZSK subsection lists the Current,
-Published, and New ZSK keys; the KSK subsection lists the Current and
-Published.</p>
+file) will have a realm stripe which describes that realm's current state.
+The stripe is divided into two sections:  realm identification and the realm's
+zone counts.</p>
+<p>The realm identification section contains the name of the realm and the
+realm's <strong>rollrec</strong> file.</p>
+<p>The realm's zone counts section contains the number of zones in normal state,
+ZSK rollover, KSK rollover, and KSK phase 6 wait state.</p>
 <p>See the ROW COLORS section for a discussion of the colors used for the
 realm stripes.</p>
 </li>
@@ -365,7 +360,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
 <p>
 </p>
 <hr />

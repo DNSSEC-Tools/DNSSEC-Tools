@@ -1,0 +1,233 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>realmset - Modifies entries in a DNSSEC-Tools I&lt;realm&gt; file</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>realmset - Modifies entries in a DNSSEC-Tools <em>realm</em> file</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  realmset [options] realm-file</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><strong>realmset</strong> modifies fields in the <em>realm</em> file specified by <em>realm-file</em>.
+Multiple options may be combined in a single <strong>realmset</strong> execution.
+<strong>realmset</strong> operates quietly unless it is given the <em>-verbose</em> option.</p>
+<p>All records in the specified <em>realm</em> file will be modified, unless the
+<strong>-name</strong> option is given.  In that case, only the named zone will be modified.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="administrator_addr" class="item"><strong>-administrator addr</strong></a></strong></dt>
+
+<dd>
+<p>The zone administrator's email address is set to <em>addr</em>.</p>
+</dd>
+<dt><strong><a name="args_arglist" class="item"><strong>-args arglist</strong></a></strong></dt>
+
+<dd>
+<p>Provides additional arguments for the realm manager.  These arguments will
+override the arguments in the DNSSEC-Tools defaults file, the DNSSEC-Tools
+configuration file, and the realms' <em>rollrec</em> files.  The manager's
+argument list is given in <em>arglist</em>.  If more than one argument is given,
+the set of arguments should be enclosed in quotes.</p>
+<p>Given the <strong>realmset</strong> argument processing, the new arguments cannot be
+specified as they would from a command line.  Instead, the arguments should
+be given in the following manner.  The leading dash should be replaced with
+an equals sign.  If the option takes an argument, the space that would
+separate the option from the option's argument should also be replaced by
+an equals sign.  <strong>realmset</strong> translates these arguments to the appropriate
+format for the realm manager.  These examples should clarify the argument
+modifications:</p>
+<pre>
+    normal rollerd option               -args options
+    ------------------------            ---------------
+        -display                           =display
+        -logfile /dt/log.file              =zskcount=/dt/log.file</pre>
+<p>The following are valid uses of <em>-args</em>:</p>
+<pre>
+    # realmset -args =display example.realm
+    # realmset -args &quot;=loglevel=phase =sleep=3600&quot; example.realm</pre>
+<p>The <strong>-args</strong> and <strong>-del-args</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="configdir_configdir" class="item"><strong>-configdir configdir</strong></a></strong></dt>
+
+<dd>
+<p>The directory to hold the realm's configuration files is set to <em>confdir</em>.</p>
+</dd>
+<dt><strong><a name="del_administrator" class="item"><strong>-del-administrator</strong></a></strong></dt>
+
+<dd>
+<p>The <em>administrator</em> line is deleted from the selected <em>realm</em> records.
+The <strong>-administrator</strong> and <strong>-del-administrator</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="del_args" class="item"><strong>-del-args</strong></a></strong></dt>
+
+<dd>
+<p>The <em>args</em> line is deleted from the selected <em>realm</em> records.
+The <strong>-args</strong> and <strong>-del-args</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="del_display" class="item"><strong>-del-display</strong></a></strong></dt>
+
+<dd>
+<p>The <em>display</em> line is deleted from the selected <em>realm</em> records.
+The <strong>-display</strong>, <strong>-nodisplay</strong>, and <strong>-del-display</strong> options are mutually
+exclusive.</p>
+</dd>
+<dt><strong><a name="del_manager" class="item"><strong>-del-manager</strong></a></strong></dt>
+
+<dd>
+<p>The <em>manager</em> line is deleted from the selected <em>realm</em> records.
+The <strong>-manager</strong> and <strong>-del-manager</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="del_user" class="item"><strong>-del-user</strong></a></strong></dt>
+
+<dd>
+<p>The <em>user</em> line is deleted from the selected <em>realm</em> records.
+The <strong>-user</strong> and <strong>-del-user</strong> options are mutually exclusive.</p>
+</dd>
+<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
+
+<dd>
+<p>Turn on the GUI display of the selected <em>realm</em>s.
+The <strong>-display</strong>, <strong>-nodisplay</strong>, and <strong>-del-display</strong> options are mutually
+exclusive.</p>
+</dd>
+<dt><strong><a name="manager_manager_program" class="item"><strong>-manager manager-program</strong></a></strong></dt>
+
+<dd>
+<p>The manager program for the selected realms is set to <em>manager-program</em>.</p>
+</dd>
+<dt><strong><a name="name_realmname" class="item"><strong>-name realmname</strong></a></strong></dt>
+
+<dd>
+<p>The <em>realm</em> whose name matches <em>realmname</em> is selected as the only realm
+that will be modified.  If this name is not given, then all <em>realm</em> records
+will be modified.</p>
+</dd>
+<dt><strong><a name="newname_new_name" class="item"><strong>-newname new-name</strong></a></strong></dt>
+
+<dd>
+<p>The <em>realm</em>'s name is changed to <strong>new-name</strong>.
+The new name cannot be the name of an existing <em>realm</em> in the file.
+This option must be used in conjunction with the <strong>-name</strong> option.</p>
+</dd>
+<dt><strong><a name="nocheck" class="item"><strong>-nocheck</strong></a></strong></dt>
+
+<dd>
+<p>If this option is given, the <strong>realmchk</strong> command will <strong>not</strong> be run on
+the modified <em>realm</em> file.</p>
+</dd>
+<dt><strong><a name="nodisplay" class="item"><strong>-nodisplay</strong></a></strong></dt>
+
+<dd>
+<p>Turn off the GUI display of the selected <em>realm</em>s.
+The <strong>-display</strong>, <strong>-nodisplay</strong>, and <strong>-del-display</strong> options are mutually
+exclusive.</p>
+</dd>
+<dt><strong><a name="realmdir_realmdir" class="item"><strong>-realmdir realmdir</strong></a></strong></dt>
+
+<dd>
+<p>The directory to hold the realm's files is set to <em>realmdir</em>.</p>
+</dd>
+<dt><strong><a name="rollrec_rollrec_file" class="item"><strong>-rollrec rollrec-file</strong></a></strong></dt>
+
+<dd>
+<p>The <em>rollrec</em> file in the selected <em>realm</em> records is modified to be
+<em>rollrec-file</em>.</p>
+</dd>
+<dt><strong><a name="state_newstate" class="item"><strong>-state newstate</strong></a></strong></dt>
+
+<dd>
+<p>The realm's state is set to <em>newstate</em>.  This must be either &quot;active&quot; or
+&quot;inactive&quot;.</p>
+</dd>
+<dt><strong><a name="statedir_statedir" class="item"><strong>-statedir statedir</strong></a></strong></dt>
+
+<dd>
+<p>The directory to hold the realm's state files is set to <em>statedir</em>.</p>
+</dd>
+<dt><strong><a name="user_username" class="item"><strong>-user username</strong></a></strong></dt>
+
+<dd>
+<p>The user name in the selected <em>realm</em> records is modified to be
+<em>username</em>.</p>
+</dd>
+<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
+
+<dd>
+<p>Display information about every modification made to the <em>realm</em> file.</p>
+</dd>
+<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+
+<dd>
+<p>Displays the version information for <strong>realmset</strong> and the DNSSEC-Tools package.</p>
+</dd>
+<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
+
+<dd>
+<p>Display a usage message.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>dtrealms(8)</strong>,
+<strong>lsrealm(8)</strong>,
+<strong>realmchk(8)</strong>,
+<strong>realminit(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::realmmgr.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::realm.pm(3)</strong></p>
+<p><strong>file-realm(5)</strong></p>
+
+</body>
+
+</html>
