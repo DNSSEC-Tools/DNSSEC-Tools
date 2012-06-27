@@ -196,6 +196,14 @@
       </commands>
     </step>
 
+    <step type="system" title="create the html docs" interactive="1">
+      <commands>
+	<command>cd ../htdocs && svn update</command>
+	<command>dist/update-web-docs</command>
+	<command>cd ../htdocs && svn commit -m "Updated online docs from latest release"</command>
+      </commands>
+    </step>
+
     <step type="Informational" name="webpage" title="Change the web page News"
 	  pause="1" mandatory="1">
       <text>
