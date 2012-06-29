@@ -28,6 +28,7 @@ extern "C" {
     void    res_switch_all_to_tcp(struct expected_arrival *ea);
     int     res_io_queue_ea(int *transaction_id, struct expected_arrival *new_ea);
     int     res_io_send(struct expected_arrival *shipit);
+    int     res_sq_free_expected_arrival(struct expected_arrival **ea);
 }
 
 /* Syncronous macros */
@@ -186,6 +187,7 @@ check_outstanding_async() {
         outstandingCount--;
 
         outstanding_queries[i].live = 0;
+        res_sq_free_expected_arrival(&outstanding_queries[i].ea);
     }
 }
 
@@ -224,7 +226,7 @@ collect_async_query_select_info(fd_set *udp_fds, int *numUdpFds, fd_set *tcp_fds
     tv.tv_usec = 1;
 
     for(i = 0; i < maxcount; i++) {
-        if (outstanding_queries[i].ea->ea_using_stream)
+        if (outstanding_queries[i].ea && outstanding_queries[i].ea->ea_using_stream)
             res_async_query_select_info(outstanding_queries[i].ea, numTcpFds, tcp_fds, &tv);
         else
             res_async_query_select_info(outstanding_queries[i].ea, numUdpFds, udp_fds, &tv);

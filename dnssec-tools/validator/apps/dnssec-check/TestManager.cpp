@@ -336,4 +336,6 @@ void TestManager::setInTestLoop(bool newval)
     m_inTestLoop = newval;
     if (oldval != newval)
         emit inTestLoopChanged();
+    if (!m_inTestLoop)
+        m_socketWatchers.clear();
 }
