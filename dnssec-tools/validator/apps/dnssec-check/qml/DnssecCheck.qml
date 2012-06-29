@@ -8,7 +8,7 @@ Rectangle {
     id: dnssecCheckTop
     color: "black"
 
-    property string dnssecToolsVersion: "1.12.4"
+    property string dnssecToolsVersion: "1.13.0.1"
 
     Timer {
         id:       timer;
