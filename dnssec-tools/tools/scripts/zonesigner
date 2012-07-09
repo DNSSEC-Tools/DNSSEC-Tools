@@ -54,7 +54,7 @@ use POSIX;
 # Version information.
 #
 my $NAME   = "zonesigner";
-my $VERS   = "$NAME version: 1.13.0";
+my $VERS   = "$NAME version: 1.13.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.13";
 
 #
@@ -2885,6 +2885,13 @@ sub serialincr
 			}
 			else
 			{
+				#
+				# If this line effectively ends with a left
+				# paren, we'll start looking for the serial
+				# number on the next line.
+				#
+				$ind++ if($preline =~ /\(\s*$/);
+
 				#
 				# Look through each line for the next
 				# line-with-a-number.
