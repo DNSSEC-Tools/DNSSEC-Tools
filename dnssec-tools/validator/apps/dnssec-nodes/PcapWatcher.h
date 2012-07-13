@@ -3,9 +3,9 @@
 
 #include <pcap.h>
 
-#include <QObject>
+#include <QThread>
 
-class PcapWatcher : public QObject
+class PcapWatcher : public QThread
 {
     Q_OBJECT
 public:
@@ -13,14 +13,18 @@ public:
     QString  deviceName();
     void     setDeviceName(const QString &deviceName);
 
+
 signals:
     void     failedToOpenDevice(QString errMsg);
+    void     addNode(QString nodeName);
     
 public slots:
     void     openDevice();
     void     closeDevice();
     
 private:
+    void run();
+
     QString             m_filterString;
     struct bpf_program  m_filterCompiled;
     QString             m_deviceName;

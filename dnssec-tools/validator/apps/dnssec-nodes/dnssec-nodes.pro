@@ -99,6 +99,7 @@ simulator: warning(This example might not fully work on Simulator platform)
 SOURCES += PcapWatcher.cpp
 HEADERS += PcapWatcher.h
 LIBS    += -lpcap
+DEFINES += WITH_PCAP
 
 OTHER_FILES += \
     qtc_packaging/debian_fremantle/rules \

@@ -94,6 +94,9 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
       m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
       m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0)
+#ifdef WITH_PCAP
+      , m_pcapWatcher()
+#endif
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -132,6 +135,11 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
 
     if (!fileName.isEmpty())
         m_logWatcher->parseLogFile(fileName);
+
+#ifdef WITH_PCAP
+    connect(&m_pcapWatcher, SIGNAL(addNode(QString)), m_nodeList, SLOT(addNodesSlot(QString)));
+    m_pcapWatcher.start();
+#endif
 }
 
 void GraphWidget::addItem(QGraphicsItem *newItem) {

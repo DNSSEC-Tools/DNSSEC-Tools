@@ -53,6 +53,7 @@ Node *NodeList::addNodes(const QString &nodeName) {
         completeString = *node + "." + completeString;
         count++;
     }
+    emit dataChanged();
     return returnNode;
 }
 
@@ -251,6 +252,12 @@ void NodeList::filterNone()
 {
     deleteFiltersAndEffects();
     setupFilterBox(0);
+}
+
+void NodeList::addNodesSlot(QString nodeName)
+{
+    qDebug() << "here: " + nodeName;
+    addNodes(nodeName);
 }
 
 void NodeList::filterByName() {

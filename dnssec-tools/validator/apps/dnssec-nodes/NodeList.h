@@ -74,6 +74,8 @@ public slots:
     void filterByName();
     void filterNone();
 
+    void addNodesSlot(QString nodeName);
+
 private:
     GraphWidget                          *m_graphWidget;
     Node                                 *m_centerNode;

@@ -58,6 +58,9 @@
 #include "LogWatcher.h"
 #include "NodeList.h"
 #include "Legend.h"
+#ifdef WITH_PCAP
+#include "PcapWatcher.h"
+#endif
 
 class Node;
 class Edge;
@@ -184,6 +187,10 @@ private:
     QStringList  m_previousFiles;
 
     Legend      *m_legend;
+
+#ifdef WITH_PCAP
+    PcapWatcher m_pcapWatcher;
+#endif
 };
 //! [0]
 
