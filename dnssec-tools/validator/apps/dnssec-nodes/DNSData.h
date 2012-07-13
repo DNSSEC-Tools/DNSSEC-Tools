@@ -8,7 +8,7 @@
 class DNSData
 {
 public:
-    enum Status { UNKNOWN = 1, TRUSTED = 2, VALIDATED = 4, DNE = 8, FAILED = 16, IGNORE = 32 };
+    enum Status { UNKNOWN = 1, TRUSTED = 2, VALIDATED = 4, DNE = 8, FAILED = 16, IGNORE = 32, AD_VERIFIED = 64 };
 
     DNSData();
     DNSData(QString recordType, int DNSSECStatus);

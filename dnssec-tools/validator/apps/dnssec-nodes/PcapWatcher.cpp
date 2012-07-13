@@ -140,8 +140,6 @@ void PcapWatcher::openDevice()
 }
 
 void PcapWatcher::run() {
-    emit addNode("foo.bar.com");
-    emit addNodeData("baz.ack.bar.com", DNSData("A", DNSData::UNKNOWN));
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(processPackets()));
     exec();
 }
@@ -226,6 +224,8 @@ void PcapWatcher::processPackets()
                 continue;
             }
 
+            DNSData::Status status = libsres_msg_getflag(handle, ns_f_ad) ? DNSData::AD_VERIFIED : DNSData::UNKNOWN;
+
             for (;;) {
                 if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
                     if (errno != ENODEV) {
@@ -236,7 +236,7 @@ void PcapWatcher::processPackets()
                     break; /* out of data */
                 }
 
-                emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), DNSData::UNKNOWN));
+                emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status));
 
                 //if (ns_rr_type(rr) == ns_t_a) {
                     /* insert stuff here */
