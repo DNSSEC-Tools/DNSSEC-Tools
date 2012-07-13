@@ -130,7 +130,14 @@ int main(int argc, char **argv)
 
 #ifdef WITH_PCAP
     action = menu->addAction("&Listen for traffic");
+    QAction *stopAction = menu->addAction("&Stop sniffing traffic");
     action->connect(action, SIGNAL(triggered()), graphWidget->pcapWatcher(), SLOT(openDevice()));
+    action->connect(action, SIGNAL(triggered(bool)), stopAction, SLOT(setDisabled(bool)));
+    action->connect(action, SIGNAL(triggered(bool)), action, SLOT(setEnabled(bool)));
+    stopAction->connect(stopAction, SIGNAL(triggered()), graphWidget->pcapWatcher(), SLOT(closeDevice()));
+    stopAction->connect(stopAction, SIGNAL(triggered(bool)), action, SLOT(setDisabled(bool)));
+    stopAction->connect(stopAction, SIGNAL(triggered(bool)), stopAction, SLOT(setEnabled(bool)));
+    stopAction->setDisabled(true);
 #endif
 
     menu->addSeparator();
