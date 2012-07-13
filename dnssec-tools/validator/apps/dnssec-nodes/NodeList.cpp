@@ -261,7 +261,6 @@ void NodeList::addNodesSlot(QString nodeName)
 
 void NodeList::addNodesData(QString nodeName, DNSData nodeData)
 {
-    qDebug() << "here: " + nodeName;
     addNodes(nodeName);
     Node *theNode = node(nodeName);
     theNode->addSubData(nodeData);
