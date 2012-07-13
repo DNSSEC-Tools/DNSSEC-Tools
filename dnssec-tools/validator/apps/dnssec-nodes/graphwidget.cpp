@@ -140,7 +140,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     connect(&m_pcapWatcher, SIGNAL(addNode(QString)), m_nodeList, SLOT(addNodesSlot(QString)));
     connect(&m_pcapWatcher, SIGNAL(addNodeData(QString,DNSData)), m_nodeList, SLOT(addNodesData(QString,DNSData)));
     connect(this, SIGNAL(openPcapDevice()), &m_pcapWatcher, SLOT(openDevice()));
-    m_pcapWatcher.setDeviceName("em1");
+    m_pcapWatcher.setDeviceName("lo");
     m_pcapWatcher.start();
     emit openPcapDevice();
 #endif

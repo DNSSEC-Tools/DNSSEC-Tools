@@ -29,6 +29,8 @@ QString DNSData::DNSSECStatusForEnum(int status) const
         return "Validation Not Needed";
     case DNE|VALIDATED:
         return "Proven to not exist";
+    case AD_VERIFIED:
+        return "AD bit verified";
     default:
         return "Unknown Status";
     }
@@ -50,6 +52,8 @@ QStringList DNSData::DNSSECStringStatuses() const
         results.push_back(DNSSECStatusForEnum(FAILED));
     if (m_DNSSECStatus & IGNORE)
         results.push_back(DNSSECStatusForEnum(IGNORE));
+    if (m_DNSSECStatus & AD_VERIFIED)
+        results.push_back(DNSSECStatusForEnum(AD_VERIFIED));
     return results;
 }
 
