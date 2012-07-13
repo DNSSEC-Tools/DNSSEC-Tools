@@ -128,6 +128,11 @@ int main(int argc, char **argv)
     QMenu *previousMenu = menu->addMenu("Previous Logs");
     graphWidget->setPreviousFileList(previousMenu);
 
+#ifdef WITH_PCAP
+    action = menu->addAction("&Listen for traffic");
+    action->connect(action, SIGNAL(triggered()), graphWidget->pcapWatcher(), SLOT(openDevice()));
+#endif
+
     menu->addSeparator();
 
     action = menu->addAction("&Quit");

@@ -142,7 +142,6 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &file
     connect(this, SIGNAL(openPcapDevice()), &m_pcapWatcher, SLOT(openDevice()));
     m_pcapWatcher.setDeviceName("lo");
     m_pcapWatcher.start();
-    emit openPcapDevice();
 #endif
 }
 
@@ -608,6 +607,13 @@ void GraphWidget::setPreviousFileList(QMenu *menu) {
     }
     m_previousFileMenu = menu;
 }
+
+#ifdef WITH_PCAP
+PcapWatcher *GraphWidget::pcapWatcher()
+{
+    return &m_pcapWatcher;
+}
+#endif
 
 void GraphWidget::openLogFile() {
     selectAndOpenLogFile();
