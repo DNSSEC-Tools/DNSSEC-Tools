@@ -1,5 +1,9 @@
 #include "PcapWatcher.h"
 
+#include <sys/types.h>
+#include <arpa/inet.h>
+typedef u_int32_t tcp_seq;
+
 /* standard libpcap sniffing structures */
 #define ETHER_ADDR_LEN	6
 
@@ -71,7 +75,7 @@ struct sniff_udp {
 };
 
 PcapWatcher::PcapWatcher(QObject *parent) :
-    QObject(parent), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0)
+    QThread(parent), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0)
 {
 }
 
@@ -114,6 +118,11 @@ void PcapWatcher::openDevice()
         emit failedToOpenDevice(tr("failed to install the filter: %s").arg(pcap_geterr(m_pcapHandle)));
         return;
     }
+}
+
+void PcapWatcher::run() {
+    emit addNode("foo.bar.com");
+    exec();
 }
 
 void PcapWatcher::closeDevice()
