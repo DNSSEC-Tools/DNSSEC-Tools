@@ -7,6 +7,8 @@
 
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <QtGui/QAction>
+
 typedef u_int32_t tcp_seq;
 
 /* standard libpcap sniffing structures */
@@ -90,7 +92,7 @@ struct sniff_udp {
 };
 
 PcapWatcher::PcapWatcher(QObject *parent) :
-    QThread(parent), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer(), counter(0)
+    QThread(parent), m_mapper(), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer(), counter(0)
 {
 }
 
@@ -102,6 +104,44 @@ QString PcapWatcher::deviceName()
 void PcapWatcher::setDeviceName(const QString &deviceName)
 {
     m_deviceName = deviceName;
+}
+
+void PcapWatcher::setupDeviceMenu(QMenu *menu)
+{
+    pcap_if_t *devList = 0, *devIter;
+    pcap_findalldevs(&devList, m_errorBuffer);
+
+    if (devList == 0) {
+        qWarning() << tr("failed to find any devices we could open");
+        QAction *action = menu->addAction("Run as root to enable sniffing");
+        action->setDisabled(true);
+        return;
+    }
+
+    QMenu   *subMenu = menu->addMenu("&Sniff traffic");
+    QAction *stopAction = menu->addAction("&Stop sniffing traffic");
+
+    connect(&m_mapper, SIGNAL(mapped(QString)), this, SLOT(setDeviceName(QString)));
+    connect(&m_mapper, SIGNAL(mapped(QString)), this, SLOT(openDevice()));
+    connect(stopAction, SIGNAL(triggered()), this, SLOT(closeDevice()));
+    connect(stopAction, SIGNAL(triggered(bool)), subMenu, SLOT(setDisabled(bool)));
+    stopAction->setDisabled(true);
+
+    for(devIter = devList; devIter != 0; devIter = devIter->next) {
+        QAction *action = subMenu->addAction(devIter->name);
+
+        connect(action, SIGNAL(triggered()), &m_mapper, SLOT(map()));
+        m_mapper.setMapping(action, QString(devIter->name));
+
+        action->connect(action, SIGNAL(triggered(bool)), stopAction, SLOT(setDisabled(bool)));
+        action->connect(action, SIGNAL(triggered(bool)), action, SLOT(setEnabled(bool)));
+        action->connect(action, SIGNAL(triggered(bool)), subMenu, SLOT(setEnabled(bool)));
+
+        stopAction->connect(stopAction, SIGNAL(triggered(bool)), action, SLOT(setDisabled(bool)));
+        stopAction->connect(stopAction, SIGNAL(triggered(bool)), stopAction, SLOT(setEnabled(bool)));
+    }
+
+
 }
 
 void PcapWatcher::openDevice()
@@ -168,7 +208,7 @@ void PcapWatcher::processPackets()
 
     if (m_pcapHandle) {
         // process packets received from pcap
-        while(packet = pcap_next(m_pcapHandle, &header)) {
+        while(NULL != (packet = pcap_next(m_pcapHandle, &header))) {
             int             rrnum = 0;
             ns_msg          handle;
             ns_rr           rr;
