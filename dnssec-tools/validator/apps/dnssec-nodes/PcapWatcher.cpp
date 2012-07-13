@@ -177,7 +177,6 @@ void PcapWatcher::processPackets()
 
             udp = 0;
             tcp = 0;
-            qDebug() << "got a packet";
             /* received a packet, now decode it */
             ethernet = (struct sniff_ethernet*)(packet);
 
@@ -237,7 +236,6 @@ void PcapWatcher::processPackets()
                     break; /* out of data */
                 }
 
-                qDebug() << "got: " << p_sres_type(ns_rr_type(rr));
                 emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), DNSData::UNKNOWN));
 
                 //if (ns_rr_type(rr) == ns_t_a) {
