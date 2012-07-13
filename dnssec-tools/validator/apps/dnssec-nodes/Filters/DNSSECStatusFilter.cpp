@@ -6,12 +6,13 @@
 DNSSECStatusFilter::DNSSECStatusFilter(int dnssecValitiy, bool requireAll)
     : m_dnssecValidity(dnssecValitiy), m_requireAll(requireAll), m_mapper(), m_menuButton(0)
 {
-    m_validityType[DNSData::UNKNOWN] = "That Have an Unkown (Inccomplete) Status";
+    m_validityType[DNSData::UNKNOWN] = "That Have An Unkown (Inccomplete) Status";
     m_validityType[DNSData::TRUSTED] = "That Are Trusted";
     m_validityType[DNSData::VALIDATED]  = "That Were Validated";
     m_validityType[DNSData::FAILED] =  "That Failed Validation";
     m_validityType[DNSData::DNE] = "Which Do Not Exist";
     m_validityType[DNSData::IGNORE] = "That Have An Ignored DNSSEC Status";
+    m_validityType[DNSData::AD_VERIFIED] = "That The Resolver Marked As Validated";
 
 }
 
