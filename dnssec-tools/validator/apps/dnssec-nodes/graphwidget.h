@@ -114,6 +114,10 @@ public:
     void openThisLogFile(QString logFile, bool skipToEnd = false);
     void setPreviousFileList(QMenu *menu = 0);
 
+#ifdef WITH_PCAP
+    PcapWatcher *pcapWatcher();
+#endif
+
 public slots:
     void shuffle();
     void zoomIn();
