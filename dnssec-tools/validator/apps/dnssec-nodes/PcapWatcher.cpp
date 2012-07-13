@@ -89,6 +89,8 @@ void PcapWatcher::openDevice()
 {
     bpf_u_int32 mask, net;
 
+    closeDevice();
+
     if (pcap_lookupnet(m_deviceName.toAscii().data(), &net, &mask, m_errorBuffer)) {
         emit failedToOpenDevice(tr("could not get netmask for device: %s").arg(m_deviceName));
         return;
@@ -111,5 +113,13 @@ void PcapWatcher::openDevice()
     if (pcap_setfilter(m_pcapHandle, &m_filterCompiled) < -1) {
         emit failedToOpenDevice(tr("failed to install the filter: %s").arg(pcap_geterr(m_pcapHandle)));
         return;
+    }
+}
+
+void PcapWatcher::closeDevice()
+{
+    if (m_pcapHandle) {
+        pcap_close(m_pcapHandle);
+        m_pcapHandle = 0;
     }
 }

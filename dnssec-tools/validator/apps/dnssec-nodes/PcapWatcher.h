@@ -18,6 +18,7 @@ signals:
     
 public slots:
     void     openDevice();
+    void     closeDevice();
     
 private:
     QString             m_filterString;
