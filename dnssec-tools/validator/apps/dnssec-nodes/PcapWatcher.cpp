@@ -1,11 +1,23 @@
 #include "PcapWatcher.h"
 
+#include <qdebug.h>
+
 #include <sys/types.h>
 #include <arpa/inet.h>
 typedef u_int32_t tcp_seq;
 
 /* standard libpcap sniffing structures */
 #define ETHER_ADDR_LEN	6
+/* ethernet headers are always exactly 14 bytes */
+#define SIZE_ETHERNET 14
+
+#define TYPE_IPv4 0x800
+#define TYPE_IPv6 0x86DD
+
+#define TYPE_UDP 17
+#define TYPE_TCP 6
+
+#define UDP_HEADER_SIZE 8
 
 /* Ethernet header */
 struct sniff_ethernet {
@@ -75,7 +87,7 @@ struct sniff_udp {
 };
 
 PcapWatcher::PcapWatcher(QObject *parent) :
-    QThread(parent), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer()
+    QThread(parent), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer(), counter(0)
 {
 }
 
@@ -92,17 +104,20 @@ void PcapWatcher::setDeviceName(const QString &deviceName)
 void PcapWatcher::openDevice()
 {
     bpf_u_int32 mask, net;
+    qDebug() << "opening device: " << deviceName();
 
     closeDevice();
 
     if (pcap_lookupnet(m_deviceName.toAscii().data(), &net, &mask, m_errorBuffer)) {
+        qWarning() << tr("could not get netmask for device: %s").arg(m_deviceName);
         emit failedToOpenDevice(tr("could not get netmask for device: %s").arg(m_deviceName));
         return;
     }
 
-    m_pcapHandle = pcap_open_live(m_deviceName.toAscii().data(), BUFSIZ, 1, 1000, m_errorBuffer);
+    m_pcapHandle = pcap_open_live(m_deviceName.toAscii().data(), BUFSIZ, 1, 100, m_errorBuffer);
     if (!m_pcapHandle) {
         // TODO: do something on error
+        qWarning() << "failed to open the device: " << QString(m_errorBuffer);
         emit failedToOpenDevice(QString(m_errorBuffer));
         return;
     }
@@ -138,8 +153,70 @@ void PcapWatcher::closeDevice()
 
 void PcapWatcher::processPackets()
 {
+    const u_char       *packet;
+    struct pcap_pkthdr  header;
+    unsigned int size_ip;
+    unsigned int size_tcp;
+
+    const struct sniff_ethernet *ethernet; /* The ethernet header */
+    const struct sniff_ip *ip; /* The IP header */
+    const struct sniff_tcp *tcp; /* The TCP header */
+    const struct sniff_udp *udp; /* The TCP header */
+    const u_char *payload; /* Packet payload */
+
     if (m_pcapHandle) {
         // process packets received from pcap
+        while(packet = pcap_next(m_pcapHandle, &header)) {
+            udp = 0;
+            tcp = 0;
+            qDebug() << "got a packet";
+            /* received a packet, now decode it */
+            ethernet = (struct sniff_ethernet*)(packet);
+
+            if (ntohs(ethernet->ether_type) == TYPE_IPv4) {
+                ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+                size_ip = IP_HL(ip)*4;
+                if (size_ip < 20) {
+                    printf("   * Invalid IP header length: %u bytes\n", size_ip);
+                    continue;
+                }
+                if (ip->ip_p == TYPE_UDP) {
+                    udp = (struct sniff_udp *) (packet + SIZE_ETHERNET + size_ip);
+                } else if (ip->ip_p == TYPE_TCP) {
+                    tcp = (struct sniff_tcp *) (packet + SIZE_ETHERNET + size_ip);
+                }
+            } else if (ntohs(ethernet->ether_type) == TYPE_IPv6) {
+                /* XXX: ipv6 */
+                continue;
+            } else {
+                /* The magical other protocols */
+                continue;
+            }
+
+            /* TCP processing */
+            /* XXX: UDP */
+            counter++;
+            if (tcp) {
+                tcp = (struct sniff_tcp*) (packet + SIZE_ETHERNET + size_ip);
+                size_tcp = TH_OFF(tcp)*4;
+                if (size_tcp < 20) {
+                    printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
+                    continue;
+                }
+                payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
+                emit addNodeData(QString::number(counter) + ".tcp.com", DNSData("A", DNSData::UNKNOWN));
+            } else if (udp) {
+                udp = (struct sniff_udp *) (packet + SIZE_ETHERNET + size_ip);
+                payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + UDP_HEADER_SIZE);
+                emit addNodeData(QString::number(counter) + ".udp.com", DNSData("A", DNSData::UNKNOWN));
+            } else {
+                qWarning() << "unknown protocol (shouldn't get here)";
+            }
+
+        }
+
+
+        // wait a while till the next packet
         m_timer.singleShot(100, this, SLOT(processPackets()));
     }
 }
