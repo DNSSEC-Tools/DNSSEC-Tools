@@ -51,6 +51,8 @@ int main(int argc, char **argv)
         fileName = app.arguments().last();
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 
+    qRegisterMetaType<DNSData>("DNSData");
+
     QWidget *mainWidget = new QWidget;
     QVBoxLayout *layout = new QVBoxLayout();
     QHBoxLayout *hbox = new QHBoxLayout();

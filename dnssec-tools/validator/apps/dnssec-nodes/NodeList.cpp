@@ -256,8 +256,15 @@ void NodeList::filterNone()
 
 void NodeList::addNodesSlot(QString nodeName)
 {
+    addNodes(nodeName);
+}
+
+void NodeList::addNodesData(QString nodeName, DNSData nodeData)
+{
     qDebug() << "here: " + nodeName;
     addNodes(nodeName);
+    Node *theNode = node(nodeName);
+    theNode->addSubData(nodeData);
 }
 
 void NodeList::filterByName() {

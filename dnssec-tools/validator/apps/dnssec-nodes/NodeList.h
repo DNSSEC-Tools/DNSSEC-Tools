@@ -75,6 +75,7 @@ public slots:
     void filterNone();
 
     void addNodesSlot(QString nodeName);
+    void addNodesData(QString nodeName, DNSData nodeData);
 
 private:
     GraphWidget                          *m_graphWidget;
