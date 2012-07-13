@@ -1,5 +1,8 @@
 #include "PcapWatcher.h"
 
+#include <validator/validator-config.h>
+#include "validator/resolver.h"
+
 #include <qdebug.h>
 
 #include <sys/types.h>
@@ -163,10 +166,15 @@ void PcapWatcher::processPackets()
     const struct sniff_tcp *tcp; /* The TCP header */
     const struct sniff_udp *udp; /* The TCP header */
     const u_char *payload; /* Packet payload */
+    size_t        payload_len;
 
     if (m_pcapHandle) {
         // process packets received from pcap
         while(packet = pcap_next(m_pcapHandle, &header)) {
+            int             rrnum = 0;
+            ns_msg          handle;
+            ns_rr           rr;
+
             udp = 0;
             tcp = 0;
             qDebug() << "got a packet";
@@ -204,13 +212,38 @@ void PcapWatcher::processPackets()
                     continue;
                 }
                 payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
-                emit addNodeData(QString::number(counter) + ".tcp.com", DNSData("A", DNSData::UNKNOWN));
+                payload_len = header.len - (SIZE_ETHERNET + size_ip + size_tcp);
             } else if (udp) {
                 udp = (struct sniff_udp *) (packet + SIZE_ETHERNET + size_ip);
                 payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + UDP_HEADER_SIZE);
-                emit addNodeData(QString::number(counter) + ".udp.com", DNSData("A", DNSData::UNKNOWN));
+                payload_len = header.len - (SIZE_ETHERNET + size_ip + UDP_HEADER_SIZE);
             } else {
                 qWarning() << "unknown protocol (shouldn't get here)";
+                continue;
+            }
+
+            if (ns_initparse(payload, payload_len, &handle) < 0) {
+                qWarning() << tr("Fatal internal error: failed to init parser");
+                continue;
+            }
+
+            for (;;) {
+                if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
+                    if (errno != ENODEV) {
+                        /* parse error */
+                        qWarning() << tr("failed to parse a returned additional RRSET");
+                        continue;
+                    }
+                    break; /* out of data */
+                }
+
+                qDebug() << "got: " << p_sres_type(ns_rr_type(rr));
+                emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), DNSData::UNKNOWN));
+
+                //if (ns_rr_type(rr) == ns_t_a) {
+                    /* insert stuff here */
+                //}
+                rrnum++;
             }
 
         }
