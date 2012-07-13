@@ -8,6 +8,11 @@
 
 #include "DNSData.h"
 
+//
+// Implemantation note:
+//   This switches back and forth between the pcap loop and the Qt loop, switching
+//   ever 100ms to give both event loops time to do things
+
 class PcapWatcher : public QThread
 {
     Q_OBJECT
@@ -36,6 +41,8 @@ private:
     char                m_errorBuffer[PCAP_ERRBUF_SIZE];
 
     QTimer              m_timer;
+
+    int                 counter;
 };
 
 #endif // PCAPWATCHER_H
