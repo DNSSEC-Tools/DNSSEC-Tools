@@ -94,6 +94,12 @@ symbian {
 
 simulator: warning(This example might not fully work on Simulator platform)
 
+# optional pcap development
+# (comment these lines out if not desired)
+SOURCES += PcapWatcher.cpp
+HEADERS += PcapWatcher.h
+LIBS += -lpcap
+
 OTHER_FILES += \
     qtc_packaging/debian_fremantle/rules \
     qtc_packaging/debian_fremantle/README \
