@@ -75,7 +75,7 @@ struct sniff_udp {
 };
 
 PcapWatcher::PcapWatcher(QObject *parent) :
-    QThread(parent), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0)
+    QThread(parent), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer()
 {
 }
 
@@ -118,10 +118,13 @@ void PcapWatcher::openDevice()
         emit failedToOpenDevice(tr("failed to install the filter: %s").arg(pcap_geterr(m_pcapHandle)));
         return;
     }
+    m_timer.singleShot(100, this, SLOT(processPackets()));
 }
 
 void PcapWatcher::run() {
     emit addNode("foo.bar.com");
+    emit addNodeData("baz.ack.bar.com", DNSData("A", DNSData::UNKNOWN));
+    connect(&m_timer, SIGNAL(timeout()), this, SLOT(processPackets()));
     exec();
 }
 
@@ -130,5 +133,13 @@ void PcapWatcher::closeDevice()
     if (m_pcapHandle) {
         pcap_close(m_pcapHandle);
         m_pcapHandle = 0;
+    }
+}
+
+void PcapWatcher::processPackets()
+{
+    if (m_pcapHandle) {
+        // process packets received from pcap
+        m_timer.singleShot(100, this, SLOT(processPackets()));
     }
 }

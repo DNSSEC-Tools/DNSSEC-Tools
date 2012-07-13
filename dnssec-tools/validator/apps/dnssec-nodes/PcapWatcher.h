@@ -4,6 +4,9 @@
 #include <pcap.h>
 
 #include <QThread>
+#include <QTimer>
+
+#include "DNSData.h"
 
 class PcapWatcher : public QThread
 {
@@ -13,14 +16,15 @@ public:
     QString  deviceName();
     void     setDeviceName(const QString &deviceName);
 
-
 signals:
     void     failedToOpenDevice(QString errMsg);
     void     addNode(QString nodeName);
-    
+    void     addNodeData(QString nodeName, DNSData data);
+
 public slots:
     void     openDevice();
     void     closeDevice();
+    void     processPackets();
     
 private:
     void run();
@@ -30,6 +34,8 @@ private:
     QString             m_deviceName;
     pcap_t             *m_pcapHandle;
     char                m_errorBuffer[PCAP_ERRBUF_SIZE];
+
+    QTimer              m_timer;
 };
 
 #endif // PCAPWATCHER_H
