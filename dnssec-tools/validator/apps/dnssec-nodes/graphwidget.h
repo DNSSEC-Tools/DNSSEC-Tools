@@ -149,6 +149,9 @@ public slots:
     void about();
     void help();
 
+signals:
+    void openPcapDevice();
+
 protected:
     void keyPressEvent(QKeyEvent *event);
     void timerEvent(QTimerEvent *event);
