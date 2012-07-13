@@ -5,6 +5,8 @@
 
 #include <QThread>
 #include <QTimer>
+#include <QSignalMapper>
+#include <QMenu>
 
 #include "DNSData.h"
 
@@ -19,7 +21,8 @@ class PcapWatcher : public QThread
 public:
     explicit PcapWatcher(QObject *parent = 0);
     QString  deviceName();
-    void     setDeviceName(const QString &deviceName);
+
+    void     setupDeviceMenu(QMenu *menu);
 
 signals:
     void     failedToOpenDevice(QString errMsg);
@@ -27,12 +30,15 @@ signals:
     void     addNodeData(QString nodeName, DNSData data);
 
 public slots:
+    void     setDeviceName(const QString &deviceName);
     void     openDevice();
     void     closeDevice();
     void     processPackets();
     
 private:
     void run();
+
+    QSignalMapper       m_mapper;
 
     QString             m_filterString;
     struct bpf_program  m_filterCompiled;
