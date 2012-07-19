@@ -303,35 +303,35 @@ for an RRSIG.
 
 =item VAL_IGNORE_VALIDATION
 
-        Local policy was configured to ignore validation
-        for the zone from which this data was received.
+Local policy was configured to ignore validation
+for the zone from which this data was received.
 
 =item VAL_UNTRUSTED_ZONE
 
-        Local policy was configured to reject
-        any data received from the given zone.
+Local policy was configured to reject
+any data received from the given zone.
 
 =item VAL_OOB_ANSWER
 
-        Answer was obtained using some Out of Band 
-        method, such as a local configuration file.
+Answer was obtained using some Out of Band 
+method, such as a local configuration file.
 
 =item VAL_BOGUS
 
-        Response could not be validated due to signature
-        verification failures or the inability to verify
-        proofs for an indeterminate number of components
-        in the authentication chain.
+Response could not be validated due to signature
+verification failures or the inability to verify
+proofs for an indeterminate number of components
+in the authentication chain.
 
 =item VAL_DNS_ERROR     
 
-        Some error was encountered during DNS processing. 
+Some error was encountered during DNS processing. 
 
 =item VAL_NOTRUST
 
-        All available components in the authentication
-        chain verified properly, but there was no trust
-        anchor available.
+All available components in the authentication
+chain verified properly, but there was no trust
+anchor available.
 
 =back
 
@@ -361,64 +361,82 @@ Validation state of the authentication chain element.  This field will
 contain the status code for the given component in the authentication chain.
 This field may contain one of the following values:
 
-    VAL_AC_UNSET
-        The status could not be determined. 
+=over 4
 
-    VAL_AC_IGNORE_VALIDATION
-        Validation for the given resource record was ignored,
-        either because of some local policy directive or
-        because of some protocol-specific behavior.
+=item VAL_AC_UNSET
 
-    VAL_AC_UNTRUSTED_ZONE
-        Local policy defined a given zone as untrusted,
-        with no further validation being deemed necessary.
+The status could not be determined. 
 
-    VAL_AC_PINSECURE
-        The authentication chain from a trust anchor to a
-        given zone could not be constructed due to the
-        provable absence of a DS record for this zone in
-        the parent.
+=item VAL_AC_IGNORE_VALIDATION
 
-    VAL_AC_BARE_RRSIG
-        The response was for a query of type RRSIG.  RRSIGs
-        contain the cryptographic signatures for other DNS
-        data and cannot themselves be validated.
+Validation for the given resource record was ignored,
+either because of some local policy directive or
+because of some protocol-specific behavior.
 
-    VAL_AC_NO_LINK
-        There was no trust anchor configured for a given
-        authentication chain or the chain didn't link up.
+=item VAL_AC_UNTRUSTED_ZONE
 
-    VAL_AC_TRUST
-        At least one of the signatures covering the given
-        DNSKEY RRset was directly verified using a key that was
-        configured as a DNSSEC trust anchor.
+Local policy defined a given zone as untrusted,
+with no further validation being deemed necessary.
 
-    VAL_AC_RRSIG_MISSING
-        RRSIG data could not be retrieved for a
-        resource record.
+=item VAL_AC_PINSECURE
 
-    VAL_AC_DNSKEY_MISSING
-        The DNSKEY for an RRSIG covering a resource
-        record could not be retrieved.
+The authentication chain from a trust anchor to a
+given zone could not be constructed due to the
+provable absence of a DS record for this zone in
+the parent.
 
-    VAL_AC_DS_MISSING
-        The DS record covering a DNSKEY record was
-        not available.
+=item VAL_AC_BARE_RRSIG
 
-    VAL_AC_DATA_MISSING
-        No data were returned for a query and the
-        DNS did not indicate an error.
+The response was for a query of type RRSIG.  RRSIGs
+contain the cryptographic signatures for other DNS
+data and cannot themselves be validated.
 
-    VAL_AC_DNS_ERROR
-        Some error was encountered during DNS processing. 
+=item VAL_AC_NO_LINK
 
-    VAL_AC_NOT_VERIFIED
-        All RRSIGs covering the RRset could not
-        be verified.
+There was no trust anchor configured for a given
+authentication chain or the chain didn't link up.
 
-    VAL_AC_VERIFIED
-        At least one RRSIG covering a resource
-        record had a status of VAL_AC_RRSIG_VERIFIED.
+=item VAL_AC_TRUST
+
+At least one of the signatures covering the given
+DNSKEY RRset was directly verified using a key that was
+configured as a DNSSEC trust anchor.
+
+=item VAL_AC_RRSIG_MISSING
+
+RRSIG data could not be retrieved for a
+resource record.
+
+=item VAL_AC_DNSKEY_MISSING
+
+The DNSKEY for an RRSIG covering a resource
+record could not be retrieved.
+
+=item VAL_AC_DS_MISSING
+
+The DS record covering a DNSKEY record was
+not available.
+
+=item VAL_AC_DATA_MISSING
+
+No data were returned for a query and the
+DNS did not indicate an error.
+
+=item VAL_AC_DNS_ERROR
+
+Some error was encountered during DNS processing. 
+
+=item VAL_AC_NOT_VERIFIED
+
+All RRSIGs covering the RRset could not
+be verified.
+
+=item VAL_AC_VERIFIED
+
+At least one RRSIG covering a resource
+record had a status of VAL_AC_RRSIG_VERIFIED.
+
+=back
 
 =item I<val_ac_rrset>
 
