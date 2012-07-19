@@ -58,6 +58,7 @@ public:
     void   setupFilterBox(Filter *filter = 0);
     void   clearLayout(QLayout *layout);
 
+    Effect *createDefaultEffect();
 signals:
     void   dataChanged();
 

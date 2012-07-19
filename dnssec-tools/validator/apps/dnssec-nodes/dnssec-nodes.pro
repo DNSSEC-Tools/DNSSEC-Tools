@@ -19,7 +19,8 @@ HEADERS += \
     Filters/TypeFilter.h \
     TypeMenu.h \
     LogFilePicker.h \
-    Legend.h
+    Legend.h \
+    Effects/SetBorderColor.h
 
 SOURCES += \
         edge.cpp \
@@ -42,7 +43,8 @@ SOURCES += \
     Filters/TypeFilter.cpp \
     TypeMenu.cpp \
     LogFilePicker.cpp \
-    Legend.cpp
+    Legend.cpp \
+    Effects/SetBorderColor.cpp
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share

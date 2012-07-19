@@ -52,7 +52,7 @@
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth),
-      m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255)
+      m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255), m_borderColor(Qt::black)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -220,15 +220,27 @@ void Node::setupPainting(int status, const QStyleOptionGraphicsItem *option, QPa
     }
 
     painter->setBrush(gradient);
-    painter->setPen(QPen(Qt::black, 0));
+    painter->setPen(QPen(m_borderColor, 0));
+}
+
+void Node::setBorderColor(const QColor &color)
+{
+    m_borderColor = color;
+}
+
+QColor Node::borderColor()
+{
+    return m_borderColor;
 }
 
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
+    // draw the shadow elipse
     painter->setPen(Qt::NoPen);
-    painter->setBrush(Qt::darkGray);
+    painter->setBrush(Qt::gray);
     painter->drawEllipse(-7, -7, 20, 20);
 
+    // draw the data bubble
     if (m_subData.count() > 1) {
         int angleSegment = 360 * 16 / m_subData.count();
         int count = 0;
