@@ -8,6 +8,7 @@
 
 #include "Effects/SetAlphaEffect.h"
 #include "Effects/SetZValue.h"
+#include "Effects/SetBorderColor.h"
 #include "Effects/MultiEffect.h"
 
 #include <qdebug.h>
@@ -266,13 +267,18 @@ void NodeList::addNodesData(QString nodeName, DNSData nodeData)
     theNode->addSubData(nodeData);
 }
 
-void NodeList::filterByName() {
-    deleteFiltersAndEffects();
-
+Effect *NodeList::createDefaultEffect() {
     MultiEffect *effect = new MultiEffect();
     effect->addEffect(new SetZValue(-5));
     effect->addEffect(new SetAlphaEffect(64));
+    effect->addEffect(new SetBorderColor(Qt::gray));
+    return effect;
+}
 
+void NodeList::filterByName() {
+    deleteFiltersAndEffects();
+
+    Effect *effect = createDefaultEffect();
     Filter *filter = new NotFilter(new NameFilter(""));
     setupFilterBox(filter);
 
@@ -287,9 +293,7 @@ void NodeList::filterByDataType()
 
     deleteFiltersAndEffects();
 
-    MultiEffect *effect = new MultiEffect();
-    effect->addEffect(new SetZValue(-5));
-    effect->addEffect(new SetAlphaEffect(64));
+    Effect *effect = createDefaultEffect();
 
     addFilterAndEffect(filter = new NotFilter(new TypeFilter("A")), effect);
 
@@ -303,9 +307,7 @@ void NodeList::filterBadToTop()
 
     deleteFiltersAndEffects();
 
-    MultiEffect *effect = new MultiEffect();
-    effect->addEffect(new SetZValue(-5));
-    effect->addEffect(new SetAlphaEffect(64));
+    Effect *effect = createDefaultEffect();
 
     addFilterAndEffect(filter = new NotFilter(new DNSSECStatusFilter(DNSData::FAILED)), effect);
 

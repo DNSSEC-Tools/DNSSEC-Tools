@@ -105,6 +105,9 @@ public:
     QColor getColorForStatus(int status);
     void setupPainting(int status, const QStyleOptionGraphicsItem *option, QPainter *painter);
 
+    void setBorderColor(const QColor &color);
+    QColor borderColor();
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
@@ -128,6 +131,7 @@ private:
     time_t         m_accessTime;
     int            m_resultCache;
     int            m_colorAlpha;
+    QColor         m_borderColor;
 };
 //! [0]
 
