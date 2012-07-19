@@ -246,76 +246,94 @@ authentication chain.
 
 Validation status for a given RRset.  This can be one of the following:
 
-    VAL_SUCCESS
-        Answer received and validated successfully.
+=over 4
 
-    VAL_NONEXISTENT_NAME
-        No name was present and a valid proof of non-
-	    existence confirming the missing name (NSEC or
- 	    NSEC3 span) was returned. The components of
-	    the proof were also individually validated.
+=item VAL_SUCCESS
 
-    VAL_NONEXISTENT_TYPE
-        No type exists for the name and a valid proof
-        of non-existence confirming the missing name
-        was returned.  The components of the proof
-        were also individually validated.
+Answer received and validated successfully.
 
-    VAL_NONEXISTENT_NAME_NOCHAIN
-        No name was present and a valid proof of non-
-	    existence confirming the missing name was
-	    returned. The components of the proof were also
-	    identified to be trustworthy, but they were
-	    not individually validated.
+=item VAL_NONEXISTENT_NAME
 
-    VAL_NONEXISTENT_TYPE_NOCHAIN
-        No type exists for the name and a valid proof
-        of non-existence confirming the missing name
-        (NSEC or NSEC3 span) was returned.  The
-        components of the proof were also identified
-        to be trustworthy, but they were not
-        individually validated.
+No name was present and a valid proof of non-
+existence confirming the missing name (NSEC or
+NSEC3 span) was returned. The components of
+the proof were also individually validated.
 
-    VAL_PINSECURE
-        The record or some ancestor of the record in
-        the authentication chain towards the trust
-        anchor was known to be provably insecure.
+=item VAL_NONEXISTENT_TYPE
 
-    VAL_PINSECURE_UNTRUSTED
-        The record or some ancestor of the record in the
-        authentication chain towards the trust anchor was
-        known to be provably insecure. But the provably
-        insecure condition was configured as untrustworthy.
+No type exists for the name and a valid proof
+of non-existence confirming the missing name
+was returned.  The components of the proof
+were also individually validated.
 
-    VAL_BARE_RRSIG
-        No DNSSEC validation possible, query was
-        for an RRSIG.
+=item VAL_NONEXISTENT_NAME_NOCHAIN
 
-    VAL_IGNORE_VALIDATION
+No name was present and a valid proof of non-
+existence confirming the missing name was
+returned. The components of the proof were also
+identified to be trustworthy, but they were
+not individually validated.
+
+=item VAL_NONEXISTENT_TYPE_NOCHAIN
+
+No type exists for the name and a valid proof
+of non-existence confirming the missing name
+(NSEC or NSEC3 span) was returned.  The
+components of the proof were also identified
+to be trustworthy, but they were not
+individually validated.
+
+=item VAL_PINSECURE
+
+The record or some ancestor of the record in
+the authentication chain towards the trust
+anchor was known to be provably insecure.
+
+=item VAL_PINSECURE_UNTRUSTED
+
+The record or some ancestor of the record in the
+authentication chain towards the trust anchor was
+known to be provably insecure. But the provably
+insecure condition was configured as untrustworthy.
+
+=item VAL_BARE_RRSIG
+
+No DNSSEC validation possible, query was
+for an RRSIG.
+
+=item VAL_IGNORE_VALIDATION
+
         Local policy was configured to ignore validation
         for the zone from which this data was received.
 
-    VAL_UNTRUSTED_ZONE
+=item VAL_UNTRUSTED_ZONE
+
         Local policy was configured to reject
         any data received from the given zone.
 
-    VAL_OOB_ANSWER
+=item VAL_OOB_ANSWER
+
         Answer was obtained using some Out of Band 
         method, such as a local configuration file.
 
-    VAL_BOGUS
+=item VAL_BOGUS
+
         Response could not be validated due to signature
         verification failures or the inability to verify
         proofs for an indeterminate number of components
         in the authentication chain.
 
-    VAL_DNS_ERROR	
+=item VAL_DNS_ERROR     
+
         Some error was encountered during DNS processing. 
 
-    VAL_NOTRUST
+=item VAL_NOTRUST
+
         All available components in the authentication
         chain verified properly, but there was no trust
         anchor available.
+
+=back
 
 Status values in I<val_status_t> returned by the validator can be displayed
 in ASCII format using I<p_val_status()>.
