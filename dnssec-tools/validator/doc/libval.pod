@@ -100,20 +100,24 @@ This is only available if the I<libval(3)> library has
 been compiled with DLV support.
 
 =item B<VAL_QUERY_NO_EDNS0_FALLBACK>
+
 In querying various name servers, libsres will also attempt multiple EDNS0
 sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set).
 This option causes libval to disable EDNS0 fallback for the query.
 
 =item B<VAL_QUERY_RECURSE>
+
 forces libval to recursively answer the query by iteratively querying
 various name servers in the delegation hierarchy, instead of
 requesting this information from
 any caching name server that may be configured in B<dnsval.conf>
 
 =item B<VAL_QUERY_SKIP_RESOLVER>
+
 forces libval to only look at its cache while trying to resolve a name. 
 
 =item B<VAL_QUERY_SKIP_CACHE>
+
 forces libval to ignore cached data while trying to resolve a name. 
 
 =back
