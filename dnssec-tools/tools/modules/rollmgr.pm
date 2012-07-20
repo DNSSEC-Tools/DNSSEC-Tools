@@ -605,7 +605,7 @@ sub rollmgr_prepdep
 #
 sub rollmgr_dir
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_dir\n";
@@ -622,7 +622,7 @@ sub rollmgr_dir
 #
 sub rollmgr_dropid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_dropid\n";
@@ -639,7 +639,7 @@ sub rollmgr_dropid
 #
 sub rollmgr_getid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_getid\n";
@@ -656,7 +656,7 @@ sub rollmgr_getid
 #
 sub rollmgr_halt
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_halt\n";
@@ -673,7 +673,7 @@ sub rollmgr_halt
 #
 sub rollmgr_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_idfile\n";
@@ -690,7 +690,7 @@ sub rollmgr_idfile
 #
 sub rollmgr_set_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_set_idfile\n";
@@ -706,7 +706,7 @@ sub rollmgr_set_idfile
 #
 sub rollmgr_loadzone
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_loadzone\n";
@@ -750,7 +750,7 @@ sub rollmgr_phasemsg
 #
 sub rollmgr_cmdint
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_cmdint\n";
@@ -767,7 +767,7 @@ sub rollmgr_cmdint
 #
 sub rollmgr_rmid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_rmid\n";
@@ -783,7 +783,7 @@ sub rollmgr_rmid
 #
 sub rollmgr_running
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_running\n";
@@ -800,7 +800,7 @@ sub rollmgr_running
 #
 sub rollmgr_saveid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "rollmgr_saveid\n";
@@ -830,7 +830,7 @@ sub rollmgr_saveid
 #
 sub uninit_dir
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_dir\n";
 
@@ -845,7 +845,7 @@ sub uninit_dir
 #
 sub uninit_dropid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_dropid\n";
 
@@ -860,7 +860,7 @@ sub uninit_dropid
 #
 sub uninit_getid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_getid\n";
 
@@ -875,7 +875,7 @@ sub uninit_getid
 #
 sub uninit_halt
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_halt\n";
 
@@ -890,7 +890,7 @@ sub uninit_halt
 #
 sub uninit_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_idfile\n";
 
@@ -905,7 +905,7 @@ sub uninit_idfile
 #
 sub uninit_set_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_set_idfile\n";
 
@@ -920,7 +920,7 @@ sub uninit_set_idfile
 #
 sub uninit_loadzone
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_loadzone\n";
 
@@ -935,7 +935,7 @@ sub uninit_loadzone
 #
 sub uninit_cmdint
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_cmdint\n";
 
@@ -950,7 +950,7 @@ sub uninit_cmdint
 #
 sub uninit_rmid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_rmid\n";
 
@@ -965,7 +965,7 @@ sub uninit_rmid
 #
 sub uninit_running
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_running\n";
 
@@ -980,7 +980,7 @@ sub uninit_running
 #
 sub uninit_saveid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_saveid\n";
 
