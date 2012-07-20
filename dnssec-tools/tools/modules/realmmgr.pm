@@ -466,7 +466,7 @@ sub realmmgr_prepdep
 #
 sub realmmgr_dir
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_dir\n";
@@ -483,7 +483,7 @@ sub realmmgr_dir
 #
 sub realmmgr_dropid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_dropid\n";
@@ -500,7 +500,7 @@ sub realmmgr_dropid
 #
 sub realmmgr_getid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_getid\n";
@@ -517,7 +517,7 @@ sub realmmgr_getid
 #
 sub realmmgr_halt
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_halt\n";
@@ -534,7 +534,7 @@ sub realmmgr_halt
 #
 sub realmmgr_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_idfile\n";
@@ -551,7 +551,7 @@ sub realmmgr_idfile
 #
 sub realmmgr_set_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_set_idfile\n";
@@ -568,7 +568,7 @@ sub realmmgr_set_idfile
 #
 sub realmmgr_cmdint
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_cmdint\n";
@@ -585,7 +585,7 @@ sub realmmgr_cmdint
 #
 sub realmmgr_rmid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_rmid\n";
@@ -601,7 +601,7 @@ sub realmmgr_rmid
 #
 sub realmmgr_running
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_running\n";
@@ -618,7 +618,7 @@ sub realmmgr_running
 #
 sub realmmgr_saveid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 	my $func;				# Actual function.
 
 # print "realmmgr_saveid\n";
@@ -648,7 +648,7 @@ sub realmmgr_saveid
 #
 sub uninit_dir
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_dir\n";
 
@@ -663,7 +663,7 @@ sub uninit_dir
 #
 sub uninit_dropid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_dropid\n";
 
@@ -678,7 +678,7 @@ sub uninit_dropid
 #
 sub uninit_getid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_getid\n";
 
@@ -693,7 +693,7 @@ sub uninit_getid
 #
 sub uninit_halt
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_halt\n";
 
@@ -708,7 +708,7 @@ sub uninit_halt
 #
 sub uninit_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_idfile\n";
 
@@ -723,7 +723,7 @@ sub uninit_idfile
 #
 sub uninit_set_idfile
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_set_idfile\n";
 
@@ -738,7 +738,7 @@ sub uninit_set_idfile
 #
 sub uninit_cmdint
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_cmdint\n";
 
@@ -753,7 +753,7 @@ sub uninit_cmdint
 #
 sub uninit_rmid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_rmid\n";
 
@@ -768,7 +768,7 @@ sub uninit_rmid
 #
 sub uninit_running
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_running\n";
 
@@ -783,7 +783,7 @@ sub uninit_running
 #
 sub uninit_saveid
 {
-	my @args = shift;			# Routine arguments.
+	my @args = @_;				# Routine arguments.
 
 # print "uninit_saveid\n";
 
