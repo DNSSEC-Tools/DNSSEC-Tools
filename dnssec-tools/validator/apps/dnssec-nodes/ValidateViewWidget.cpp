@@ -234,16 +234,6 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 myScene->addItem(text);
             }
 
-            if (spot != 0) {
-                // add an arrow
-                int polyVertStartSpot = spot + boxHeight + spacing + boxTopMargin;
-
-                drawArrow(boxLeftMargin + boxWidth/2,
-                          spot + boxHeight + boxTopMargin,
-                          boxLeftMargin + boxWidth/2, polyVertStartSpot);
-
-            }
-
             horizontalSpot += boxWidth + boxHorizontalSpacing;
             maxWidth = qMax(maxWidth, horizontalSpot);
         }
@@ -251,6 +241,14 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         spot -= verticalBoxDistance;
     }
 
+    // loop through all the DS records and have them point to the keys they're referencing
+    QMap<int, QPair<int, int> >::iterator dsIter, dsEnd = dsIdToLocation.end();
+    for(dsIter = dsIdToLocation.begin(); dsIter != dsEnd; dsIter++) {
+        QPair<int, int> dsLocation = dsIter.value();
+        QPair<int, int> dnskeyLocation = dnskeyIdToLocation[dsIter.key()];
+        drawArrow(dsLocation.first + boxWidth/2, dsLocation.second + boxHeight,
+                  dnskeyLocation.first + boxWidth/2, dnskeyLocation.second);
+    }
 
     myScene->setSceneRect(0, spot + boxHeight, maxWidth, -spot + boxHeight);
     if (rect)
