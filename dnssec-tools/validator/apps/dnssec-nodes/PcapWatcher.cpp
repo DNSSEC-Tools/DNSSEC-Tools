@@ -92,7 +92,7 @@ struct sniff_udp {
 };
 
 PcapWatcher::PcapWatcher(QObject *parent) :
-    QThread(parent), m_mapper(), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer(), counter(0)
+    QThread(parent), m_mapper(), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer()
 {
 }
 
