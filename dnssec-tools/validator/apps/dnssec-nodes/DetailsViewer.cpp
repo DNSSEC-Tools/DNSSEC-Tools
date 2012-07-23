@@ -3,7 +3,6 @@
 #include <QtGui/QLabel>
 #include <QtGui/QTextEdit>
 #include <QtGui/QFont>
-#include <QtGui/QTabWidget>
 #include <QtGui/QFormLayout>
 #include <QtGui/QStandardItemModel>
 #include <QtGui/QTableView>
@@ -11,11 +10,12 @@
 #include <QtGui/QHeaderView>
 #include <QtGui/QIcon>
 #include <QtGui/QPainter>
+#include <QtGui/QPushButton>
 
 #include <qdebug.h>
 
 DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
-    QDialog(parent), m_node(node)
+    QDialog(parent), m_node(node), m_mapper(new QSignalMapper())
 {
     QWidget *widget;
     m_layout = new QVBoxLayout();
@@ -32,13 +32,13 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     m_layout->addWidget(title);
 
     // display tabs
-    QTabWidget *tabs = new QTabWidget();
-    m_layout->addWidget(tabs);
+    m_tabs = new QTabWidget();
+    m_layout->addWidget(m_tabs);
 
     //
     // Data Collected Info
     //
-    QTableWidget *table = new QTableWidget(node->getAllSubData().count(), 2, tabs);
+    QTableWidget *table = new QTableWidget(node->getAllSubData().count(), 3, m_tabs);
 
     table->setHorizontalHeaderItem(0, new QTableWidgetItem(tr("Record Type")));
     table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Status")));
@@ -46,6 +46,7 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
 
     QMapIterator<QString, DNSData> iterator(node->getAllSubData());
     QTableWidgetItem *item;
+    QPushButton *button;
     int row = 0;
     while(iterator.hasNext()) {
         iterator.next();
@@ -62,11 +63,16 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
         item->setBackgroundColor(backgroundColor);
         table->setItem(row, 1, item);
 
+        button = new QPushButton("Validate");
+        connect(button, SIGNAL(clicked()), m_mapper, SLOT(map()));
+        m_mapper->setMapping(button, iterator.key());
+        table->setCellWidget(row, 2, button);
         row++;
     }
+    connect(m_mapper, SIGNAL(mapped(QString)), this, SLOT(validateNode(QString)));
     table->resizeColumnsToContents();
 
-    tabs->addTab(table, tr("Datatypes Seen"));
+    m_tabs->addTab(table, tr("Datatypes Seen"));
 
     //
     // Log Message Viewer
@@ -82,7 +88,7 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     textEdit->setLineWrapMode(QTextEdit::NoWrap);
     vbox->addWidget(textEdit);
 
-    tabs->addTab(widget, tr("Log Messages"));
+    m_tabs->addTab(widget, tr("Log Messages"));
 
     //
     // closing button box
@@ -95,3 +101,10 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
 
     connect(buttonBox, SIGNAL(rejected()), this, SLOT(accept()));
 }
+
+void DetailsViewer::validateNode(QString nodeName)
+{
+    m_tabs->addTab(new QLabel("validating " + nodeName + " for " + m_node->fqdn()), "validate");
+    m_tabs->setCurrentIndex(m_tabs->count()-1);
+}
+
