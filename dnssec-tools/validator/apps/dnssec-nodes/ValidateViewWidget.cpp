@@ -8,6 +8,14 @@
 
 #include <qdebug.h>
 
+#define RES_GET16(s, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (s) = ((u_int16_t)t_cp[0] << 8) \
+            | ((u_int16_t)t_cp[1]) \
+            ; \
+        (cp) += NS_INT16SZ; \
+} while (0)
+
 // from ns_print.c
 extern "C" {
 u_int16_t id_calc(const u_char * key, const int keysize);
@@ -128,6 +136,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     QGraphicsRectItem        *rect = 0;
     QGraphicsSimpleTextItem  *text;
     struct val_rr_rec *rrrec;
+    const u_char * rdata;
 
     // for each authentication record, display a horiz row of data
     for(vrcptr = results->val_rc_answer; vrcptr; vrcptr = vrcptr->val_ac_trust) {
@@ -135,6 +144,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
         // for each rrset in an auth record, display a box
         for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
+            rdata = rrrec->rr_rdata;
+
             qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
 
             rect = new QGraphicsRectItem(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight);
@@ -159,17 +170,38 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
             int keyId;
             QString nextLineText;
+            u_int           keyflags, protocol, algorithm, key_id, digest_type;
 
             switch (vrcptr->val_ac_rrset->val_rrset_type) {
             case ns_t_dnskey:
                 if (rrrec->rr_rdata_length < 0U + NS_INT16SZ + NS_INT8SZ + NS_INT8SZ)
                     break;
 
+                /* grab the KeyID */
                 keyId = id_calc(rrrec->rr_rdata, rrrec->rr_rdata_length);
-                nextLineText = QString("keyid: %1").arg(keyId);
+
+                /* get the flags */
+                RES_GET16(keyflags, rrrec->rr_rdata);
+                protocol = *rdata++;
+                algorithm = *rdata++;
+
+                nextLineText = QString(tr("%1, id: %2, proto: %3, alg: %4"))
+                        .arg((keyflags & 0x1) ? "KSK" : "ZSK")
+                        .arg(keyId)
+                        .arg(protocol)
+                        .arg(algorithm);
                 break;
 
             case ns_t_ds:
+                RES_GET16(keyId, rdata);
+                algorithm = *rdata++ & 0xF;
+                digest_type = *rdata++ & 0xF;
+
+                nextLineText = QString(tr("id: %1, alg: %2, digest: %3"))
+                        .arg(keyId)
+                        .arg(algorithm)
+                        .arg(digest_type);
+
                 break;
             }
 
