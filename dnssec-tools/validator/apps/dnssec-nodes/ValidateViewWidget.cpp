@@ -154,7 +154,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     struct val_rr_rec *rrrec;
     const u_char * rdata;
 
-    QMap<int, QPair<int, int> > dnskeyIdToLocation, dsIdToLocation;
+    QMap<int, QPair<int, int> > dnskeyIdToLocation;
+    QMap<QPair<int, int>, QPair<int, int> > dsIdToLocation;
 
     // for each authentication record, display a horiz row of data
     for(vrcptr = results->val_rc_answer; vrcptr; vrcptr = vrcptr->val_ac_trust) {
@@ -220,7 +221,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         .arg(keyId)
                         .arg(algorithm)
                         .arg(digest_type);
-                dsIdToLocation[keyId] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
+                dsIdToLocation[QPair<int, int>(keyId, digest_type)] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
 
                 break;
             }
@@ -242,10 +243,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     }
 
     // loop through all the DS records and have them point to the keys they're referencing
-    QMap<int, QPair<int, int> >::iterator dsIter, dsEnd = dsIdToLocation.end();
+    QMap<QPair<int, int>, QPair<int, int> >::iterator dsIter, dsEnd = dsIdToLocation.end();
     for(dsIter = dsIdToLocation.begin(); dsIter != dsEnd; dsIter++) {
         QPair<int, int> dsLocation = dsIter.value();
-        QPair<int, int> dnskeyLocation = dnskeyIdToLocation[dsIter.key()];
+        QPair<int, int> dnskeyLocation = dnskeyIdToLocation[dsIter.key().first];
         drawArrow(dsLocation.first + boxWidth/2, dsLocation.second + boxHeight,
                   dnskeyLocation.first + boxWidth/2, dnskeyLocation.second);
     }
