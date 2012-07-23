@@ -96,6 +96,16 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     val_result_chain                *results = 0;
     struct val_authentication_chain *vrcptr = 0;
 
+    const int spacing = 50;
+    const int boxWidth = 400;
+    const int boxHeight = 100;
+    const int boxTopMargin = 10;
+    const int boxLeftMargin = 10;
+    const int verticalBoxDistance = spacing + boxHeight;
+    const int boxHorizMiddle = boxLeftMargin + boxWidth/2;
+    const int arrowHalfWidth = 10;
+
+
     int ret;
     ret = val_resolve_and_check(NULL, name.toAscii().data(), 1, ns_t_a,
                                 VAL_QUERY_RECURSE | VAL_QUERY_AC_DETAIL |
@@ -109,7 +119,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     for(vrcptr = results->val_rc_answer->val_ac_trust; vrcptr; vrcptr = vrcptr->val_ac_trust) {
         qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
 
-        rect = new QGraphicsRectItem(10,spot+10,100,100);
+        rect = new QGraphicsRectItem(boxLeftMargin, spot+boxTopMargin, boxWidth, boxHeight);
         rect->setPen(QPen(Qt::black));
         myScene->addItem(rect);
 
@@ -118,25 +128,27 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         else
             text = new QGraphicsSimpleTextItem("(type unknown)");
         text->setPen(QPen(Qt::black));
-        text->setPos(20,spot+50);
+        text->setPos(boxLeftMargin * 2,spot+boxHeight/2);
         text->setScale(2.0);
         myScene->addItem(text);
 
         text = new QGraphicsSimpleTextItem(vrcptr->val_ac_rrset->val_rrset_name);
         text->setPen(QPen(Qt::black));
-        text->setPos(20,spot+20);
+        text->setPos(boxLeftMargin * 2,spot + boxTopMargin * 2);
         text->setScale(2.0);
         myScene->addItem(text);
 
         if (spot != 0) {
             // add an arrow
-            QGraphicsLineItem *line = new QGraphicsLineItem(10+100/2, spot-150+100+10, 10+100/2, spot+10);
+            QGraphicsLineItem *line = new QGraphicsLineItem(boxLeftMargin + boxWidth/2,
+                                                            spot - verticalBoxDistance +boxHeight + boxTopMargin,
+                                                            boxLeftMargin + boxWidth/2, spot + boxTopMargin);
             myScene->addItem(line);
 
             QPolygon polygon;
-            polygon << QPoint(10+100/2, spot+10)
-                    << QPoint(10+100/2 - 10, spot)
-                    << QPoint(10+100/2 + 10, spot);
+            polygon << QPoint(boxHorizMiddle, spot + boxTopMargin)
+                    << QPoint(boxHorizMiddle - arrowHalfWidth, spot)
+                    << QPoint(boxHorizMiddle + arrowHalfWidth, spot);
             QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
             polyItem->setBrush(QBrush(Qt::black));
             polyItem->setFillRule(Qt::OddEvenFill);
