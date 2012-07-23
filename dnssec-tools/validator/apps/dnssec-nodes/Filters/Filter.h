@@ -17,7 +17,7 @@ public:
     virtual QString   name() = 0;
     virtual void      configWidgets(QHBoxLayout *hbox) { Q_UNUSED(hbox); }
 
-    void              filterHasChanged() { emit filterChanged(); qDebug() << "here: changing";}
+    void              filterHasChanged() { emit filterChanged(); }
 
 signals:
     void              filterChanged();
