@@ -10,7 +10,6 @@ SetBorderColor::SetBorderColor(QColor borderColor)
 
 void SetBorderColor::applyToNode(Node *node)
 {
-    qDebug() << "setting color to " << m_borderColor;
     node->setBorderColor(m_borderColor);
 }
 
