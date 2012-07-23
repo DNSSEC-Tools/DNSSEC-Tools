@@ -3,17 +3,31 @@
 MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     QMainWindow(parent)
 {
+    // these hold everything
     QWidget *mainWidget = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout();
-    QHBoxLayout *hbox = new QHBoxLayout();
+    QVBoxLayout *mainLayout = new QVBoxLayout();
+    mainWidget->setLayout(mainLayout);
+
+    // tabs hold the switchable content
+    tabs = new QTabWidget(mainWidget);
+    mainLayout->addWidget(tabs);
+
+    //
+    // main tab: the node diagram itself
+    //
+    QWidget *nodeGraphWidget = new QWidget();
+    QVBoxLayout *nodeGraphLayout = new QVBoxLayout();
+    nodeGraphWidget->setLayout(nodeGraphLayout);
+    QHBoxLayout *nodeGraphWidgetHBox = new QHBoxLayout();
+    tabs->addTab(nodeGraphWidget, "Graph");
 
     // Information Box at the Top
     QHBoxLayout *infoBox = new QHBoxLayout();
-    layout->addLayout(infoBox);
+    nodeGraphLayout->addLayout(infoBox);
 
     // Filter box, hidden by default
     QHBoxLayout *filterBox = new QHBoxLayout();
-    layout->addLayout(filterBox);
+    nodeGraphLayout->addLayout(filterBox);
 
     QLineEdit *editBox = new QLineEdit();
 
@@ -21,36 +35,34 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     // Main GraphWidget object
     GraphWidget *graphWidget = new GraphWidget(0, editBox, fileName, infoBox);
 
-
-
     // Edit box at the bottom
     QPushButton *lookupTypeButton = new QPushButton("A");
     TypeMenu *lookupType = new TypeMenu(lookupTypeButton);
-    hbox->addWidget(new QLabel("Perform a Lookup:"));
-    hbox->addWidget(editBox);
-    hbox->addWidget(new QLabel("For Type:"));
-    hbox->addWidget(lookupTypeButton);
+    nodeGraphWidgetHBox->addWidget(new QLabel("Perform a Lookup:"));
+    nodeGraphWidgetHBox->addWidget(editBox);
+    nodeGraphWidgetHBox->addWidget(new QLabel("For Type:"));
+    nodeGraphWidgetHBox->addWidget(lookupTypeButton);
     lookupType->connect(lookupType, SIGNAL(typeSet(int)), graphWidget, SLOT(setLookupType(int)));
 
-    mainWidget->setLayout(layout);
+    mainWidget->setLayout(nodeGraphLayout);
     setCentralWidget(mainWidget);
     setWindowIcon(QIcon(":/icons/dnssec-nodes-64x64.png"));
 
-    hbox->addWidget(new QLabel("Zoom Layout: "));
+    nodeGraphWidgetHBox->addWidget(new QLabel("Zoom Layout: "));
     QPushButton *button;
-    hbox->addWidget(button = new QPushButton("+"));
+    nodeGraphWidgetHBox->addWidget(button = new QPushButton("+"));
     button->connect(button, SIGNAL(clicked()), graphWidget, SLOT(zoomIn()));
 
-    hbox->addWidget(button = new QPushButton("-"));
+    nodeGraphWidgetHBox->addWidget(button = new QPushButton("-"));
     button->connect(button, SIGNAL(clicked()), graphWidget, SLOT(zoomOut()));
 
 #ifdef ANDROID
     /* put the edit line on the top because the slide out keyboard covers it otherwise */
-    layout->addLayout(hbox);
-    layout->addWidget(graphWidget);
+    nodeGraphLayout->addLayout(hbox);
+    nodeGraphLayout->addWidget(graphWidget);
 #else
-    layout->addWidget(graphWidget);
-    layout->addLayout(hbox);
+    nodeGraphLayout->addWidget(graphWidget);
+    nodeGraphLayout->addLayout(nodeGraphWidgetHBox);
 #endif
 
     /* menu system */
