@@ -168,7 +168,12 @@ void ValidateViewWidget::scaleView(qreal scaleFactor)
 void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY) {
     const int arrowHalfWidth = 10;
 
-    QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY, toX, toY - arrowHalfWidth);
+    // draw line in 3 segments, two vertical stubs to make the arrow to triangle look better
+    QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY + 2*arrowHalfWidth, toX, toY - arrowHalfWidth*2);
+    myScene->addItem(line);
+    line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
+    myScene->addItem(line);
+    line = new QGraphicsLineItem(toX, toY - arrowHalfWidth*2, toX, toY - arrowHalfWidth);
     myScene->addItem(line);
 
     QPolygon polygon;
