@@ -154,6 +154,11 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWi
 
     m_statusColors[VAL_AC_RRSIG_VERIFIED] = Qt::green;
 
+    QMap<int, QString>::const_iterator mapIter, mapEnd = m_typeToName.constEnd();
+    for(mapIter = m_typeToName.constBegin(); mapIter != mapEnd; mapIter++) {
+        m_nameToType[mapIter.value()] = mapIter.key();
+    }
+
     scaleView(.5);
     validateSomething(m_nodeName, m_recordType);
 }
@@ -227,7 +232,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     int ret;
     // XXX: use the type string to look up a user defined type
-    ret = val_resolve_and_check(NULL, name.toAscii().data(), 1, ns_t_a,
+    ret = val_resolve_and_check(NULL, name.toAscii().data(), 1, m_nameToType[type],
                                 VAL_QUERY_RECURSE | VAL_QUERY_AC_DETAIL |
                                 VAL_QUERY_SKIP_CACHE,
                                 &results);

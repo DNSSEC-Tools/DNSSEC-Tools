@@ -26,6 +26,7 @@ private:
     QString         m_recordType;
 
     QMap<int, QString> m_typeToName;
+    QMap<QString, int> m_nameToType;
     QMap<int, QString> m_statusToName;
     QMap<int, QColor>  m_statusColors;
 };
