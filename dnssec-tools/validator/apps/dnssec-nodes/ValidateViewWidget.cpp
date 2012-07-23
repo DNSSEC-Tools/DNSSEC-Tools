@@ -118,51 +118,63 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     }
 
     int spot = 0;
+    int maxWidth = 0;
     QGraphicsRectItem        *rect = 0;
     QGraphicsSimpleTextItem  *text;
+    struct val_rr_rec *rrrec;
+
+    // for each authentication record, display a horiz row of data
     for(vrcptr = results->val_rc_answer->val_ac_trust; vrcptr; vrcptr = vrcptr->val_ac_trust) {
-        qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
+        int horizontalSpot = boxLeftMargin;
 
-        rect = new QGraphicsRectItem(boxLeftMargin, spot+boxTopMargin, boxWidth, boxHeight);
-        rect->setPen(QPen(Qt::black));
-        myScene->addItem(rect);
+        // for each rrset in an auth record, display a box
+        for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
+            qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
 
-        if (m_typeToName.contains(vrcptr->val_ac_rrset->val_rrset_type))
-            text = new QGraphicsSimpleTextItem(m_typeToName[vrcptr->val_ac_rrset->val_rrset_type]);
-        else
-            text = new QGraphicsSimpleTextItem("(type unknown)");
-        text->setPen(QPen(Qt::black));
-        text->setPos(boxLeftMargin * 2,spot+boxHeight/2);
-        text->setScale(2.0);
-        myScene->addItem(text);
+            rect = new QGraphicsRectItem(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight);
+            rect->setPen(QPen(Qt::black));
+            myScene->addItem(rect);
 
-        text = new QGraphicsSimpleTextItem(vrcptr->val_ac_rrset->val_rrset_name);
-        text->setPen(QPen(Qt::black));
-        text->setPos(boxLeftMargin * 2,spot + boxTopMargin * 2);
-        text->setScale(2.0);
-        myScene->addItem(text);
+            if (m_typeToName.contains(vrcptr->val_ac_rrset->val_rrset_type))
+                text = new QGraphicsSimpleTextItem(m_typeToName[vrcptr->val_ac_rrset->val_rrset_type]);
+            else
+                text = new QGraphicsSimpleTextItem("(type unknown)");
+            text->setPen(QPen(Qt::black));
+            text->setPos(boxLeftMargin + horizontalSpot, spot+boxHeight/2);
+            text->setScale(2.0);
+            myScene->addItem(text);
 
-        if (spot != 0) {
-            // add an arrow
-            QGraphicsLineItem *line = new QGraphicsLineItem(boxLeftMargin + boxWidth/2,
-                                                            spot - verticalBoxDistance +boxHeight + boxTopMargin,
-                                                            boxLeftMargin + boxWidth/2, spot + boxTopMargin);
-            myScene->addItem(line);
+            text = new QGraphicsSimpleTextItem(vrcptr->val_ac_rrset->val_rrset_name);
+            text->setPen(QPen(Qt::black));
+            text->setPos(boxLeftMargin + horizontalSpot, spot + boxTopMargin * 2);
+            text->setScale(2.0);
+            myScene->addItem(text);
 
-            QPolygon polygon;
-            polygon << QPoint(boxHorizMiddle, spot + boxTopMargin)
-                    << QPoint(boxHorizMiddle - arrowHalfWidth, spot)
-                    << QPoint(boxHorizMiddle + arrowHalfWidth, spot);
-            QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
-            polyItem->setBrush(QBrush(Qt::black));
-            polyItem->setFillRule(Qt::OddEvenFill);
-            myScene->addItem(polyItem);
+            if (spot != 0) {
+                // add an arrow
+                QGraphicsLineItem *line = new QGraphicsLineItem(boxLeftMargin + boxWidth/2,
+                                                                spot - verticalBoxDistance +boxHeight + boxTopMargin,
+                                                                boxLeftMargin + boxWidth/2, spot + boxTopMargin);
+                myScene->addItem(line);
+
+                QPolygon polygon;
+                polygon << QPoint(boxHorizMiddle, spot + boxTopMargin)
+                        << QPoint(boxHorizMiddle - arrowHalfWidth, spot)
+                        << QPoint(boxHorizMiddle + arrowHalfWidth, spot);
+                QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
+                polyItem->setBrush(QBrush(Qt::black));
+                polyItem->setFillRule(Qt::OddEvenFill);
+                myScene->addItem(polyItem);
+            }
+
+            horizontalSpot += boxWidth + boxLeftMargin;
+            maxWidth = qMax(maxWidth, horizontalSpot);
         }
 
-        spot += 150;
+        spot -= 150;
     }
 
-    myScene->setSceneRect(0, 0, 600, spot);
+    myScene->setSceneRect(0, spot, maxWidth, 0);
     if (rect)
         ensureVisible(rect);
 }
