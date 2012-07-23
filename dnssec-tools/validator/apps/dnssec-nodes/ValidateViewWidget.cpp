@@ -248,7 +248,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             rect->setPen(QPen(Qt::black));
             myScene->addItem(rect);
 
-            nextLineText = "%1 (%2)";
+            nextLineText = "%1 %2";
             // add the type-line
             if (m_typeToName.contains(vrcptr->val_ac_rrset->val_rrset_type))
                 nextLineText = nextLineText.arg(m_typeToName[vrcptr->val_ac_rrset->val_rrset_type]);
@@ -257,10 +257,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
             if (rrrec->rr_status == VAL_AC_UNSET)
                 nextLineText = nextLineText.arg("");
-            if (m_statusToName.contains(rrrec->rr_status))
-                nextLineText = nextLineText.arg(m_statusToName[rrrec->rr_status]);
+            else if (m_statusToName.contains(rrrec->rr_status))
+                nextLineText = nextLineText.arg("(" + m_statusToName[rrrec->rr_status] + ")");
             else
-                nextLineText = nextLineText.arg("status unknown");
+                nextLineText = nextLineText.arg("(unknown status)");
 
             text = new QGraphicsSimpleTextItem(nextLineText);
             text->setPen(QPen(Qt::black));
