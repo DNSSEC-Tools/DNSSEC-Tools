@@ -5,6 +5,7 @@
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QLineEdit>
 #include <QtGui/QMenuBar>
+#include <QtGui/QTabWidget>
 
 #include "graphwidget.h"
 #include "TypeMenu.h"
@@ -18,6 +19,9 @@ public:
 signals:
     
 public slots:
+
+private:
+    QTabWidget *tabs;
     
 };
 
