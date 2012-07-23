@@ -1,5 +1,7 @@
 #include "MainWindow.h"
 
+#include <QtGui/QMessageBox>
+
 MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     QMainWindow(parent)
 {
@@ -10,6 +12,8 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
 
     // tabs hold the switchable content
     tabs = new QTabWidget(mainWidget);
+    tabs->setTabsClosable(true);
+    connect(tabs, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
     mainLayout->addWidget(tabs);
 
     //
@@ -174,4 +178,19 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     resize(1024,800);
     show();
 #endif
+}
+
+void MainWindow::closeTab(int tabIndex)
+{
+    if (tabIndex != 0) {
+        tabs->removeTab(tabIndex);
+    } else {
+        QMessageBox quitBox;
+        quitBox.setText(tr("Closing the graph tab"));
+        quitBox.setInformativeText(tr("This will close DNSSEC-Nodes.  Did you really want to quit?"));
+        quitBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        quitBox.setDefaultButton(QMessageBox::No);
+        if (quitBox.exec() == QMessageBox::Yes)
+            exit(0);
+    }
 }
