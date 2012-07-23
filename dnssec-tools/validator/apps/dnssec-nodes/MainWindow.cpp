@@ -33,7 +33,7 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
 
 
     // Main GraphWidget object
-    GraphWidget *graphWidget = new GraphWidget(0, editBox, fileName, infoBox);
+    GraphWidget *graphWidget = new GraphWidget(0, editBox, tabs, fileName, infoBox);
 
     // Edit box at the bottom
     QPushButton *lookupTypeButton = new QPushButton("A");

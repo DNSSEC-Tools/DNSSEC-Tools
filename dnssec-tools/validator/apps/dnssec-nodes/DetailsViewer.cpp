@@ -16,31 +16,28 @@
 
 #include <qdebug.h>
 
-DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
-    QDialog(parent), m_node(node), m_mapper(new QSignalMapper())
+DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
+    QObject(parent), m_node(node), m_tabs(tabs), m_mapper(new QSignalMapper())
 {
-    QWidget *widget;
-    m_layout = new QVBoxLayout();
-    setLayout(m_layout);
+
+\
+    QVBoxLayout  *dataTypesBox = new QVBoxLayout();
+    QTableWidget *table = new QTableWidget(node->getAllSubData().count(), 3, m_tabs);
 
     // Title
-    QLabel *title = new QLabel(node->fqdn(), this);
+    QLabel *title = new QLabel(node->fqdn());
     QFont font = title->font();
     font.setBold(true);
     font.setUnderline(true);
     font.setPointSize(16);
     title->setFont(font);
     title->setAlignment(Qt::AlignCenter);
-    m_layout->addWidget(title);
-
-    // display tabs
-    m_tabs = new QTabWidget();
-    m_layout->addWidget(m_tabs);
+    dataTypesBox->addWidget(title);
 
     //
     // Data Collected Info
     //
-    QTableWidget *table = new QTableWidget(node->getAllSubData().count(), 3, m_tabs);
+    dataTypesBox->addWidget(table);
 
     table->setHorizontalHeaderItem(0, new QTableWidgetItem(tr("Record Type")));
     table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Status")));
@@ -74,39 +71,29 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     connect(m_mapper, SIGNAL(mapped(QString)), this, SLOT(validateNode(QString)));
     table->resizeColumnsToContents();
 
-    m_tabs->addTab(table, tr("Datatypes Seen"));
+    m_tabs->addTab(table, tr("%1 data").arg(node->fqdn()));
+    m_tabs->setCurrentWidget(table);
 
     //
     // Log Message Viewer
     //
-    widget = new QWidget();
+    QWidget *widget = new QWidget();
     QVBoxLayout *vbox = new QVBoxLayout();
 
     widget->setLayout(vbox);
 
 
-    QTextEdit *textEdit = new QTextEdit("<p>" + node->logMessages().join("</p><p>") + "</p>", this);
+    QTextEdit *textEdit = new QTextEdit("<p>" + node->logMessages().join("</p><p>") + "</p>");
     textEdit->setReadOnly(true);
     textEdit->setLineWrapMode(QTextEdit::NoWrap);
     vbox->addWidget(textEdit);
 
-    m_tabs->addTab(widget, tr("Log Messages"));
-
-    //
-    // closing button box
-    //
-
-    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Close, Qt::Horizontal, this);
-    m_layout->addWidget(buttonBox);
-
-    setMinimumSize(800,600);
-
-    connect(buttonBox, SIGNAL(rejected()), this, SLOT(accept()));
+    m_tabs->addTab(widget, tr("%1 Log").arg(node->fqdn()));
 }
 
 void DetailsViewer::validateNode(QString nodeType)
 {
-    m_tabs->addTab(new ValidateViewWidget(m_node->fqdn(), nodeType, this), m_node->fqdn() + "/" + nodeType);
+    m_tabs->addTab(new ValidateViewWidget(m_node->fqdn(), nodeType), m_node->fqdn() + "/" + nodeType);
     m_tabs->setCurrentIndex(m_tabs->count()-1);
 }
 
