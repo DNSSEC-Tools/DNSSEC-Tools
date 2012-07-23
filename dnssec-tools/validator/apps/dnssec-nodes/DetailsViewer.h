@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QDialogButtonBox>
+#include <QtCore/QSignalMapper>
+#include <QtGui/QTabWidget>
 #include "node.h"
 
 class DetailsViewer : public QDialog
@@ -15,10 +17,13 @@ public:
 signals:
 
 public slots:
+    void validateNode(QString nodeName);
 
 private:
-    Node        *m_node;
-    QVBoxLayout *m_layout;
+    Node          *m_node;
+    QVBoxLayout   *m_layout;
+    QSignalMapper *m_mapper;
+    QTabWidget    *m_tabs;
 };
 
 #endif // DETAILSVIEWER_H
