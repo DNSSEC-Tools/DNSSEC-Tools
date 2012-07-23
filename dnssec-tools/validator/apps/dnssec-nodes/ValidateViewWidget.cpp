@@ -105,6 +105,22 @@ void ValidateViewWidget::scaleView(qreal scaleFactor)
     scale(scaleFactor, scaleFactor);
 }
 
+void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY) {
+    const int arrowHalfWidth = 10;
+
+    QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY, toX, toY);
+    myScene->addItem(line);
+
+    QPolygon polygon;
+    polygon << QPoint(toX, toY)
+            << QPoint(toX - arrowHalfWidth, toY - arrowHalfWidth)
+            << QPoint(toX + arrowHalfWidth, toY - arrowHalfWidth);
+    QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
+    polyItem->setBrush(QBrush(Qt::black));
+    polyItem->setFillRule(Qt::OddEvenFill);
+    myScene->addItem(polyItem);
+}
+
 void ValidateViewWidget::validateSomething(QString name, QString type) {
     val_result_chain                *results = 0;
     struct val_authentication_chain *vrcptr = 0;
@@ -137,6 +153,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     QGraphicsSimpleTextItem  *text;
     struct val_rr_rec *rrrec;
     const u_char * rdata;
+
+    QMap<int, QPair<int, int> > dnskeyIdToLocation, dsIdToLocation;
 
     // for each authentication record, display a horiz row of data
     for(vrcptr = results->val_rc_answer; vrcptr; vrcptr = vrcptr->val_ac_trust) {
@@ -190,6 +208,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         .arg(keyId)
                         .arg(protocol)
                         .arg(algorithm);
+                dnskeyIdToLocation[keyId] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
                 break;
 
             case ns_t_ds:
@@ -201,9 +220,11 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         .arg(keyId)
                         .arg(algorithm)
                         .arg(digest_type);
+                dsIdToLocation[keyId] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
 
                 break;
             }
+
 
             if (nextLineText.length() > 0) {
                 text = new QGraphicsSimpleTextItem(nextLineText);
@@ -217,19 +238,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 // add an arrow
                 int polyVertStartSpot = spot + boxHeight + spacing + boxTopMargin;
 
-                QGraphicsLineItem *line = new QGraphicsLineItem(boxLeftMargin + boxWidth/2,
-                                                                spot + boxHeight + boxTopMargin,
-                                                                boxLeftMargin + boxWidth/2, polyVertStartSpot);
-                myScene->addItem(line);
+                drawArrow(boxLeftMargin + boxWidth/2,
+                          spot + boxHeight + boxTopMargin,
+                          boxLeftMargin + boxWidth/2, polyVertStartSpot);
 
-                QPolygon polygon;
-                polygon << QPoint(boxHorizMiddle, polyVertStartSpot)
-                        << QPoint(boxHorizMiddle - arrowHalfWidth, polyVertStartSpot - arrowHalfWidth)
-                        << QPoint(boxHorizMiddle + arrowHalfWidth, polyVertStartSpot - arrowHalfWidth);
-                QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
-                polyItem->setBrush(QBrush(Qt::black));
-                polyItem->setFillRule(Qt::OddEvenFill);
-                myScene->addItem(polyItem);
             }
 
             horizontalSpot += boxWidth + boxHorizontalSpacing;
@@ -238,6 +250,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
         spot -= verticalBoxDistance;
     }
+
 
     myScene->setSceneRect(0, spot + boxHeight, maxWidth, -spot + boxHeight);
     if (rect)
