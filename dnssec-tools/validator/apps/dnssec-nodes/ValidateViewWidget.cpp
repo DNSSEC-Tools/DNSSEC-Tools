@@ -152,6 +152,8 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWi
     m_statusToName[VAL_AC_VERIFIED_LINK] = "VERIFIED_LINK";
     m_statusToName[VAL_AC_UNKNOWN_ALGORITHM_LINK] = "UNKNOWN_ALGORITHM_LINK";
 
+    m_statusColors[VAL_AC_RRSIG_VERIFIED] = Qt::green;
+
     scaleView(.5);
     validateSomething(m_nodeName, m_recordType);
 }
@@ -165,24 +167,38 @@ void ValidateViewWidget::scaleView(qreal scaleFactor)
     scale(scaleFactor, scaleFactor);
 }
 
-void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, int horizRaiseMultiplier) {
+void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColor color, int horizRaiseMultiplier) {
     const int arrowHalfWidth = 10;
+
+    QBrush brush(color);
+    QPen   pen(color);
+
 
     if (fromY == toY) {
         // draw horizontal lines differently...  up -> across -> down
         QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - horizRaiseMultiplier*arrowHalfWidth);
+        line->setPen(pen);
         myScene->addItem(line);
+
         line = new QGraphicsLineItem(fromX, fromY, fromX, fromY - horizRaiseMultiplier*arrowHalfWidth);
+        line->setPen(pen);
         myScene->addItem(line);
+
         line = new QGraphicsLineItem(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - arrowHalfWidth);
+        line->setPen(pen);
         myScene->addItem(line);
     } else {
         // draw line in 3 segments, two vertical stubs to make the arrow to triangle look better
         QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY + 2*arrowHalfWidth, toX, toY - 2*arrowHalfWidth);
+        line->setPen(pen);
         myScene->addItem(line);
+
         line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
+        line->setPen(pen);
         myScene->addItem(line);
+
         line = new QGraphicsLineItem(toX, toY - 2*arrowHalfWidth, toX, toY - arrowHalfWidth);
+        line->setPen(pen);
         myScene->addItem(line);
     }
 
@@ -191,7 +207,8 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, int h
             << QPoint(toX - arrowHalfWidth, toY - arrowHalfWidth)
             << QPoint(toX + arrowHalfWidth, toY - arrowHalfWidth);
     QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
-    polyItem->setBrush(QBrush(Qt::black));
+    polyItem->setPen(pen);
+    polyItem->setBrush(brush);
     polyItem->setFillRule(Qt::OddEvenFill);
     myScene->addItem(polyItem);
 }
@@ -200,7 +217,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     val_result_chain                *results = 0;
     struct val_authentication_chain *vrcptr = 0;
 
-    const int boxWidth = 400;
+    const int boxWidth = 500;
     const int boxHeight = 120;
     const int spacing = boxHeight*2;
     const int boxTopMargin = 10;
@@ -229,7 +246,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     QMap<int, QPair<int, int> > dnskeyIdToLocation;
     QMap<QPair<int, int>, QPair<int, int> > dsIdToLocation;
     QMap<QPair<QString, int>, QList< QPair<int, int> > > nameAndTypeToLocation;
-    QMap<QPair<QString, int>, QList<int> > signedByList;
+    QMap<QPair<QString, int>, QList<QPair<int, int> > > signedByList;
 
     // for each authentication record, display a horiz row of data
     for(vrcptr = results->val_rc_answer; vrcptr; vrcptr = vrcptr->val_ac_trust) {
@@ -373,10 +390,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
             /** Signature bits follow....  */
 
-            qDebug() << vrcptr->val_ac_rrset->val_rrset_name << " of type " << type << " signed by key #" << keyId;
+            qDebug() << vrcptr->val_ac_rrset->val_rrset_name << " of type " << type << " signed by key #" << keyId << ", status = " << rrrec->rr_status << "=" << m_statusToName[rrrec->rr_status];
             if (! signedByList.contains(QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)))
-                signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)] = QList<int>();
-            signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)].push_back(keyId);
+                signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)] = QList<QPair<int, int> >();
+            signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)].push_back(QPair<int, int>(keyId, rrrec->rr_status));
         }
 
         spot -= verticalBoxDistance;
@@ -392,7 +409,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     }
 
     // loop through all the signatures and draw arrows for them
-    QMap<QPair<QString, int>, QList<int> >::const_iterator rrsigIter, rrsigEnd = signedByList.constEnd();
+    QMap<QPair<QString, int>, QList<QPair<int, int> > >::const_iterator rrsigIter, rrsigEnd = signedByList.constEnd();
 
     // for each signature we saw...
     for (rrsigIter = signedByList.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
@@ -401,22 +418,33 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         int widthOffset = 20;
 
         // ...there is a key that created the signature, which signed...
-        foreach(int keyId, *rrsigIter) {
+        QList<QPair<int, int> >::const_iterator keyIter, keyEnd = (*rrsigIter).constEnd();
+        for(keyIter = rrsigIter->constBegin(); keyIter != keyEnd; keyIter++) {
+            int keyId = keyIter->first;
+            int status = keyIter->second;
             QPair<int, int> dnsKeyLocation = dnskeyIdToLocation[keyId];
 
             // ... an rrset keyed by a name and record type
             QList<QPair<int, int> >::const_iterator listIter, listEnd = nameAndTypeToLocation[nameAndType].constEnd();
             for(listIter = nameAndTypeToLocation[nameAndType].constBegin(); listIter != listEnd; listIter++) {
+                QColor arrowColor;
+                if (status == VAL_AC_RRSIG_VERIFIED) {
+                    arrowColor = Qt::green;
+                } else if (status == VAL_AC_UNSET){
+                    arrowColor = Qt::black;
+                } else {
+                    arrowColor = Qt::red;
+                }
                 if (dnsKeyLocation.second == (*listIter).second) {
                     // signing something in the same row (another key)
                     drawArrow(dnsKeyLocation.first + widthOffset, dnsKeyLocation.second,
-                              (*listIter).first + boxWidth - widthOffset, (*listIter).second, raiseMultiplier);
+                              (*listIter).first + boxWidth - widthOffset, (*listIter).second, arrowColor, raiseMultiplier);
                     raiseMultiplier += 2;
                     widthOffset += 20;
                 } else {
                     // signing something in a different row (DNSKEY signing the final record or a DS)
                     drawArrow(dnsKeyLocation.first + boxWidth/2, dnsKeyLocation.second + boxHeight,
-                              (*listIter).first + boxWidth/2, (*listIter).second);
+                              (*listIter).first + boxWidth/2, (*listIter).second, arrowColor);
                 }
             }
         }
