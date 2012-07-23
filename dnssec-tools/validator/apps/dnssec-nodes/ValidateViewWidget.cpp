@@ -22,7 +22,7 @@ u_int16_t id_calc(const u_char * key, const int keysize);
 }
 
 ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWidget *parent) :
-    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_typeToName()
+    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_typeToName(), m_statusToName()
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -92,6 +92,56 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWi
     m_typeToName[253] = "MAILB";
     m_typeToName[254] = "MAILA";
 
+    m_statusToName[VAL_AC_UNSET] = "UNSET";
+    m_statusToName[VAL_AC_CAN_VERIFY] = "CAN_VERIFY";
+    m_statusToName[VAL_AC_WAIT_FOR_TRUST] = "WAIT_FOR_TRUST";
+    m_statusToName[VAL_AC_WAIT_FOR_RRSIG] = "WAIT_FOR_RRSIG";
+    m_statusToName[VAL_AC_TRUST_NOCHK] = "TRUST_NOCHK";
+    m_statusToName[VAL_AC_INIT] = "INIT";
+    m_statusToName[VAL_AC_NEGATIVE_PROOF] = "NEGATIVE_PROOF";
+    m_statusToName[VAL_AC_DONT_GO_FURTHER] = "DONT_GO_FURTHER";
+    m_statusToName[VAL_AC_IGNORE_VALIDATION] = "IGNORE_VALIDATION";
+    m_statusToName[VAL_AC_UNTRUSTED_ZONE] = "UNTRUSTED_ZONE";
+    m_statusToName[VAL_AC_PINSECURE] = "PINSECURE";
+    m_statusToName[VAL_AC_BARE_RRSIG] = "BARE_RRSIG";
+    m_statusToName[VAL_AC_NO_LINK] = "NO_LINK";
+    m_statusToName[VAL_AC_TRUST_ANCHOR] = "TRUST_ANCHOR";
+    m_statusToName[VAL_AC_TRUST] = "TRUST";
+    m_statusToName[VAL_AC_LAST_STATE] = "LAST_STATE";
+    m_statusToName[VAL_AC_ERROR_BASE] = "ERROR_BASE";
+    m_statusToName[VAL_AC_RRSIG_MISSING] = "RRSIG_MISSING";
+    m_statusToName[VAL_AC_DNSKEY_MISSING] = "DNSKEY_MISSING";
+    m_statusToName[VAL_AC_DS_MISSING] = "DS_MISSING";
+    m_statusToName[VAL_AC_LAST_ERROR] = "LAST_ERROR";
+    m_statusToName[VAL_AC_BAD_BASE] = "BAD_BASE";
+    m_statusToName[VAL_AC_DATA_MISSING] = "DATA_MISSING";
+    m_statusToName[VAL_AC_DNS_ERROR] = "DNS_ERROR";
+    m_statusToName[VAL_AC_LAST_BAD] = "LAST_BAD";
+    m_statusToName[VAL_AC_FAIL_BASE] = "FAIL_BASE";
+    m_statusToName[VAL_AC_NOT_VERIFIED] = "NOT_VERIFIED";
+    m_statusToName[VAL_AC_WRONG_LABEL_COUNT] = "WRONG_LABEL_COUNT";
+    m_statusToName[VAL_AC_INVALID_RRSIG] = "INVALID_RRSIG";
+    m_statusToName[VAL_AC_RRSIG_NOTYETACTIVE] = "RRSIG_NOTYETACTIVE";
+    m_statusToName[VAL_AC_RRSIG_EXPIRED] = "RRSIG_EXPIRED";
+    m_statusToName[VAL_AC_RRSIG_VERIFY_FAILED] = "RRSIG_VERIFY_FAILED";
+    m_statusToName[VAL_AC_RRSIG_ALGORITHM_MISMATCH] = "RRSIG_ALGORITHM_MISMATCH";
+    m_statusToName[VAL_AC_DNSKEY_NOMATCH] = "DNSKEY_NOMATCH";
+    m_statusToName[VAL_AC_UNKNOWN_DNSKEY_PROTOCOL] = "UNKNOWN_DNSKEY_PROTOCOL";
+    m_statusToName[VAL_AC_DS_NOMATCH] = "DS_NOMATCH";
+    m_statusToName[VAL_AC_INVALID_KEY] = "INVALID_KEY";
+    m_statusToName[VAL_AC_INVALID_DS] = "INVALID_DS";
+    m_statusToName[VAL_AC_ALGORITHM_NOT_SUPPORTED] = "ALGORITHM_NOT_SUPPORTED";
+    m_statusToName[VAL_AC_LAST_FAILURE] = "LAST_FAILURE";
+    m_statusToName[VAL_AC_VERIFIED] = "VERIFIED";
+    m_statusToName[VAL_AC_RRSIG_VERIFIED] = "RRSIG_VERIFIED";
+    m_statusToName[VAL_AC_WCARD_VERIFIED] = "WCARD_VERIFIED";
+    m_statusToName[VAL_AC_RRSIG_VERIFIED_SKEW] = "RRSIG_VERIFIED_SKEW";
+    m_statusToName[VAL_AC_WCARD_VERIFIED_SKEW] = "WCARD_VERIFIED_SKEW";
+    m_statusToName[VAL_AC_TRUST_POINT] = "TRUST_POINT";
+    m_statusToName[VAL_AC_SIGNING_KEY] = "SIGNING_KEY";
+    m_statusToName[VAL_AC_VERIFIED_LINK] = "VERIFIED_LINK";
+    m_statusToName[VAL_AC_UNKNOWN_ALGORITHM_LINK] = "UNKNOWN_ALGORITHM_LINK";
+
     scaleView(.5);
     validateSomething(m_nodeName, m_recordType);
 }
@@ -125,23 +175,20 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     val_result_chain                *results = 0;
     struct val_authentication_chain *vrcptr = 0;
 
-    const int spacing = 50;
     const int boxWidth = 400;
     const int boxHeight = 120;
+    const int spacing = boxHeight;
     const int boxTopMargin = 10;
     const int boxLeftMargin = 10;
     const int boxHorizontalSpacing = 30;
     const int verticalBoxDistance = spacing + boxHeight;
-    const int boxHorizMiddle = boxLeftMargin + boxWidth/2;
-    const int arrowHalfWidth = 10;
-
 
     int ret;
+    // XXX: use the type string to look up a user defined type
     ret = val_resolve_and_check(NULL, name.toAscii().data(), 1, ns_t_a,
                                 VAL_QUERY_RECURSE | VAL_QUERY_AC_DETAIL |
                                 VAL_QUERY_SKIP_CACHE,
                                 &results);
-    qDebug() << "got here: result = " << ret;
     if (ret != 0 || !results) {
         qWarning() << "failed to get results..."; // XXX: display SOMETHING!
         return;
@@ -162,24 +209,39 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         int horizontalSpot = boxLeftMargin;
 
         // for each rrset in an auth record, display a box
+        qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
+
         for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
+            QString nextLineText;
+
             rdata = rrrec->rr_rdata;
 
-            qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
-
+            // draw the bounding box of the record
             rect = new QGraphicsRectItem(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight);
             rect->setPen(QPen(Qt::black));
             myScene->addItem(rect);
 
+            nextLineText = "%1 (%2)";
+            // add the type-line
             if (m_typeToName.contains(vrcptr->val_ac_rrset->val_rrset_type))
-                text = new QGraphicsSimpleTextItem(m_typeToName[vrcptr->val_ac_rrset->val_rrset_type]);
+                nextLineText = nextLineText.arg(m_typeToName[vrcptr->val_ac_rrset->val_rrset_type]);
             else
-                text = new QGraphicsSimpleTextItem("(type unknown)");
+                nextLineText = nextLineText.arg("(type unknown)");
+
+            if (rrrec->rr_status == VAL_AC_UNSET)
+                nextLineText = nextLineText.arg("");
+            if (m_statusToName.contains(rrrec->rr_status))
+                nextLineText = nextLineText.arg(m_statusToName[rrrec->rr_status]);
+            else
+                nextLineText = nextLineText.arg("status unknown");
+
+            text = new QGraphicsSimpleTextItem(nextLineText);
             text->setPen(QPen(Qt::black));
             text->setPos(boxLeftMargin + horizontalSpot, spot + boxTopMargin*2);
             text->setScale(2.0);
             myScene->addItem(text);
 
+            // add the domain line
             QString rrsetName = vrcptr->val_ac_rrset->val_rrset_name;
             text = new QGraphicsSimpleTextItem(rrsetName == "." ? "<root>" : rrsetName);
             text->setPen(QPen(Qt::black));
@@ -187,9 +249,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             text->setScale(2.0);
             myScene->addItem(text);
 
-            int keyId;
-            QString nextLineText;
-            u_int           keyflags, protocol, algorithm, key_id, digest_type;
+            int     keyId;
+            u_int   keyflags, protocol, algorithm, digest_type;
 
             switch (vrcptr->val_ac_rrset->val_rrset_type) {
             case ns_t_dnskey:
@@ -255,12 +316,3 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     if (rect)
         ensureVisible(rect);
 }
-
-#ifdef maybe
-QPair<QGraphicsRectItem *, QGraphicsSimpleTextItem *>
-ValidateViewWidget::createRecordBox(struct val_authentication_chain *auth_chain, int spot) {
-    QGraphicsRectItem        *rect = new QGraphicsRectItem(10,spot,100,100);
-    QGraphicsSimpleTextItem  *text = new QGraphicsSimpleTextItem(auth_chain->val_rrset_name);
-    return
-}
-#endif

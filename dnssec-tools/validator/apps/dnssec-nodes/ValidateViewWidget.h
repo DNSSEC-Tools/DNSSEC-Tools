@@ -25,6 +25,7 @@ private:
     QString         m_recordType;
 
     QMap<int, QString> m_typeToName;
+    QMap<int, QString> m_statusToName;
 };
 
 #endif // VALIDATEVIEWWIDGET_H
