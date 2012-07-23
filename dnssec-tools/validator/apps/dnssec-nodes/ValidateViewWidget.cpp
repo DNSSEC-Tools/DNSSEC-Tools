@@ -124,7 +124,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     struct val_rr_rec *rrrec;
 
     // for each authentication record, display a horiz row of data
-    for(vrcptr = results->val_rc_answer->val_ac_trust; vrcptr; vrcptr = vrcptr->val_ac_trust) {
+    for(vrcptr = results->val_rc_answer; vrcptr; vrcptr = vrcptr->val_ac_trust) {
         int horizontalSpot = boxLeftMargin;
 
         // for each rrset in an auth record, display a box
@@ -144,7 +144,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             text->setScale(2.0);
             myScene->addItem(text);
 
-            text = new QGraphicsSimpleTextItem(vrcptr->val_ac_rrset->val_rrset_name);
+            QString rrsetName = vrcptr->val_ac_rrset->val_rrset_name;
+            text = new QGraphicsSimpleTextItem(rrsetName == "." ? "<root>" : rrsetName);
             text->setPen(QPen(Qt::black));
             text->setPos(boxLeftMargin + horizontalSpot, spot + boxTopMargin * 2);
             text->setScale(2.0);
