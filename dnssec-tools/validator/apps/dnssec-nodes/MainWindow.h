@@ -19,6 +19,7 @@ public:
 signals:
     
 public slots:
+    void closeTab(int tabIndex);
 
 private:
     QTabWidget *tabs;
