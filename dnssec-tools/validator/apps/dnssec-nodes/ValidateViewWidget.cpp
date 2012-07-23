@@ -152,15 +152,17 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
             if (spot != 0) {
                 // add an arrow
+                int polyVertStartSpot = spot + boxHeight + spacing + boxTopMargin;
+
                 QGraphicsLineItem *line = new QGraphicsLineItem(boxLeftMargin + boxWidth/2,
-                                                                spot - verticalBoxDistance +boxHeight + boxTopMargin,
-                                                                boxLeftMargin + boxWidth/2, spot + boxTopMargin);
+                                                                spot + boxHeight + boxTopMargin,
+                                                                boxLeftMargin + boxWidth/2, polyVertStartSpot);
                 myScene->addItem(line);
 
                 QPolygon polygon;
-                polygon << QPoint(boxHorizMiddle, spot + boxTopMargin)
-                        << QPoint(boxHorizMiddle - arrowHalfWidth, spot)
-                        << QPoint(boxHorizMiddle + arrowHalfWidth, spot);
+                polygon << QPoint(boxHorizMiddle, polyVertStartSpot)
+                        << QPoint(boxHorizMiddle - arrowHalfWidth, polyVertStartSpot - arrowHalfWidth)
+                        << QPoint(boxHorizMiddle + arrowHalfWidth, polyVertStartSpot - arrowHalfWidth);
                 QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
                 polyItem->setBrush(QBrush(Qt::black));
                 polyItem->setFillRule(Qt::OddEvenFill);
@@ -171,10 +173,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             maxWidth = qMax(maxWidth, horizontalSpot);
         }
 
-        spot -= 150;
+        spot -= verticalBoxDistance;
     }
 
-    myScene->setSceneRect(0, spot, maxWidth, 0);
+    myScene->setSceneRect(0, spot + boxHeight, maxWidth, -spot + boxHeight);
     if (rect)
         ensureVisible(rect);
 }
