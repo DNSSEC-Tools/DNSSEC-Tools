@@ -378,13 +378,16 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     // loop through all the signatures and draw arrows for them
     QMap<QPair<QString, int>, QList<int> >::const_iterator rrsigIter, rrsigEnd = signedByList.constEnd();
-    //QMap<QPair<QString, int>, QList<QPair<int, int> > >::const_iterator rrsigIter, rrsigEnd = nameAndTypeToLocation.constEnd();
+
+    // for each signature we saw...
     for (rrsigIter = signedByList.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
-    //for (rrsigIter = nameAndTypeToLocation.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
-        // the source comes from a dnskey, and the destination is each location in the saved array
         QPair<QString, int> nameAndType = rrsigIter.key();
+
+        // ...there is a key that created the signature, which signed...
         foreach(int keyId, *rrsigIter) {
             QPair<int, int> dnsKeyLocation = dnskeyIdToLocation[keyId];
+
+            // ... an rrset keyed by a name and record type
             QList<QPair<int, int> >::const_iterator listIter, listEnd = nameAndTypeToLocation[nameAndType].constEnd();
             for(listIter = nameAndTypeToLocation[nameAndType].constBegin(); listIter != listEnd; listIter++) {
                 drawArrow(dnsKeyLocation.first, dnsKeyLocation.second, (*listIter).first, (*listIter).second);
