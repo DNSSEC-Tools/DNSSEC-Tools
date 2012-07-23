@@ -16,6 +16,16 @@
         (cp) += NS_INT16SZ; \
 } while (0)
 
+#define RES_GET32(l, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (l) = ((u_int32_t)t_cp[0] << 24) \
+            | ((u_int32_t)t_cp[1] << 16) \
+            | ((u_int32_t)t_cp[2] << 8) \
+            | ((u_int32_t)t_cp[3]) \
+            ; \
+        (cp) += NS_INT32SZ; \
+} while (0)
+
 // from ns_print.c
 extern "C" {
 u_int16_t id_calc(const u_char * key, const int keysize);
@@ -203,6 +213,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     QMap<int, QPair<int, int> > dnskeyIdToLocation;
     QMap<QPair<int, int>, QPair<int, int> > dsIdToLocation;
+    QMap<QPair<QString, int>, QList< QPair<int, int> > > nameAndTypeToLocation;
+    QMap<QPair<QString, int>, QList<int> > signedByList;
 
     // for each authentication record, display a horiz row of data
     for(vrcptr = results->val_rc_answer; vrcptr; vrcptr = vrcptr->val_ac_trust) {
@@ -287,6 +299,11 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 break;
             }
 
+            QPair<QString, int> index = QPair<QString, int>(rrsetName, vrcptr->val_ac_rrset->val_rrset_type);
+            if (! nameAndTypeToLocation.contains(index))
+                nameAndTypeToLocation[index] = QList<QPair<int, int> >();
+            nameAndTypeToLocation[index].push_back(QPair<int,int>(horizontalSpot, spot + boxTopMargin));
+
 
             if (nextLineText.length() > 0) {
                 text = new QGraphicsSimpleTextItem(nextLineText);
@@ -300,6 +317,53 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             maxWidth = qMax(maxWidth, horizontalSpot);
         }
 
+        for(rrrec = vrcptr->val_ac_rrset->val_rrset_sig; rrrec; rrrec = rrrec->rr_next) {
+            int type;
+            u_long tmp;
+            unsigned short keyId;
+            u_char algorithm;
+            rdata = rrrec->rr_rdata;
+            char namebuf[1024];
+
+            if (rrrec->rr_rdata_length < 22U)
+                continue;
+
+            /** Type covered, Algorithm, Label count, Original TTL.  */
+            RES_GET16(type, rdata);
+            algorithm = *rdata++;
+
+            /** labels */
+            *rdata++;
+            //if (labels > (u_int) dn_count_labels(name))
+            //    goto formerr;
+
+            /* original TTL */
+            RES_GET32(tmp, rdata);
+
+            /** Signature expiration.  */
+            RES_GET32(tmp, rdata);
+            //len = SPRINTF((tmp, "%s ", p_secstodate(t)));
+
+            /** Time signed (inception).  */
+            RES_GET32(tmp, rdata);
+            //len = SPRINTF((tmp, "%s ", p_secstodate(t)));
+
+            /** keytag  */
+            RES_GET16(keyId, rdata);
+            //len = SPRINTF((tmp, "%u ", footprint));
+
+            /** Signer's name.  */
+            //if (dn_expand(rdata, rdata+something, vrcptr->val_ac_rrset->val_rrset_name, namebuf, sizeof(namebuf)) == -1)
+            //    continue;
+
+            /** Signature bits follow....  */
+
+            qDebug() << vrcptr->val_ac_rrset->val_rrset_name << " of type " << type << " signed by key #" << keyId;
+            if (! signedByList.contains(QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)))
+                signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)] = QList<int>();
+            signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)].push_back(keyId);
+        }
+
         spot -= verticalBoxDistance;
     }
 
@@ -310,6 +374,22 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         QPair<int, int> dnskeyLocation = dnskeyIdToLocation[dsIter.key().first];
         drawArrow(dsLocation.first + boxWidth/2, dsLocation.second + boxHeight,
                   dnskeyLocation.first + boxWidth/2, dnskeyLocation.second);
+    }
+
+    // loop through all the signatures and draw arrows for them
+    QMap<QPair<QString, int>, QList<int> >::const_iterator rrsigIter, rrsigEnd = signedByList.constEnd();
+    //QMap<QPair<QString, int>, QList<QPair<int, int> > >::const_iterator rrsigIter, rrsigEnd = nameAndTypeToLocation.constEnd();
+    for (rrsigIter = signedByList.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
+    //for (rrsigIter = nameAndTypeToLocation.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
+        // the source comes from a dnskey, and the destination is each location in the saved array
+        QPair<QString, int> nameAndType = rrsigIter.key();
+        foreach(int keyId, *rrsigIter) {
+            QPair<int, int> dnsKeyLocation = dnskeyIdToLocation[keyId];
+            QList<QPair<int, int> >::const_iterator listIter, listEnd = nameAndTypeToLocation[nameAndType].constEnd();
+            for(listIter = nameAndTypeToLocation[nameAndType].constBegin(); listIter != listEnd; listIter++) {
+                drawArrow(dnsKeyLocation.first, dnsKeyLocation.second, (*listIter).first, (*listIter).second);
+            }
+        }
     }
 
     myScene->setSceneRect(0, spot + boxHeight, maxWidth, -spot + boxHeight);
