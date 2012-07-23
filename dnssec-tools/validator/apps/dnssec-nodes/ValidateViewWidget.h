@@ -11,12 +11,14 @@ public:
     explicit ValidateViewWidget(QString nodeName, QString recordType, QWidget *parent = 0);
 
     void validateSomething(QString name, QString type);
+
 signals:
     
 public slots:
 
 private:
     void scaleView(qreal scaleFactor);
+    void drawArrow(int fromX, int fromY, int toX, int toY);
 
     QGraphicsScene *myScene;
     QString         m_nodeName;
