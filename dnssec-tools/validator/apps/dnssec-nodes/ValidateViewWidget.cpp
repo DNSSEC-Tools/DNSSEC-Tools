@@ -258,7 +258,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         int horizontalSpot = boxLeftMargin;
 
         // for each rrset in an auth record, display a box
-        qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
+        // qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
 
         for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
             QString nextLineText;
@@ -395,7 +395,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
             /** Signature bits follow....  */
 
-            qDebug() << vrcptr->val_ac_rrset->val_rrset_name << " of type " << type << " signed by key #" << keyId << ", status = " << rrrec->rr_status << "=" << m_statusToName[rrrec->rr_status];
+            //qDebug() << vrcptr->val_ac_rrset->val_rrset_name << " of type " << type << " signed by key #" << keyId << ", status = " << rrrec->rr_status << "=" << m_statusToName[rrrec->rr_status];
             if (! signedByList.contains(QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)))
                 signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)] = QList<QPair<int, int> >();
             signedByList[QPair<QString, int>(vrcptr->val_ac_rrset->val_rrset_name, type)].push_back(QPair<int, int>(keyId, rrrec->rr_status));

@@ -414,10 +414,8 @@ void GraphWidget::doActualLookup(const QString &lookupString, int lookupType)
     busy();
 
     // perform the lookup
-    qDebug() << "here: " << lookupString;
     ret = val_res_query(NULL, lookupString.toUtf8(), 1,
                         lookupType, buf, sizeof(buf), &val_status);
-    qDebug() << "  result:" << ret;
 
     // do something with the results
     if (ret <= 0) {
