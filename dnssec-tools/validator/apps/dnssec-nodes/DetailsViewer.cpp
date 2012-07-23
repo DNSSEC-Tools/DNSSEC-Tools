@@ -99,7 +99,7 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Close, Qt::Horizontal, this);
     m_layout->addWidget(buttonBox);
 
-    setMinimumSize(600,400);
+    setMinimumSize(800,600);
 
     connect(buttonBox, SIGNAL(rejected()), this, SLOT(accept()));
 }
