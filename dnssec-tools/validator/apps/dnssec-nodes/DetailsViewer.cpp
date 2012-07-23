@@ -12,6 +12,8 @@
 #include <QtGui/QPainter>
 #include <QtGui/QPushButton>
 
+#include "ValidateViewWidget.h"
+
 #include <qdebug.h>
 
 DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
@@ -102,9 +104,9 @@ DetailsViewer::DetailsViewer(Node *node, QWidget *parent) :
     connect(buttonBox, SIGNAL(rejected()), this, SLOT(accept()));
 }
 
-void DetailsViewer::validateNode(QString nodeName)
+void DetailsViewer::validateNode(QString nodeType)
 {
-    m_tabs->addTab(new QLabel("validating " + nodeName + " for " + m_node->fqdn()), "validate");
+    m_tabs->addTab(new ValidateViewWidget(m_node->fqdn(), nodeType, this), m_node->fqdn() + "/" + nodeType);
     m_tabs->setCurrentIndex(m_tabs->count()-1);
 }
 

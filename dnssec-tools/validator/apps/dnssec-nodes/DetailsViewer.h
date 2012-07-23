@@ -17,7 +17,7 @@ public:
 signals:
 
 public slots:
-    void validateNode(QString nodeName);
+    void validateNode(QString nodeType);
 
 private:
     Node          *m_node;
