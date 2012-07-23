@@ -3,6 +3,7 @@
 
 #include <QGraphicsView>
 #include <QtCore/QMap>
+#include <QtGui/QColor>
 
 class ValidateViewWidget : public QGraphicsView
 {
@@ -18,7 +19,7 @@ public slots:
 
 private:
     void scaleView(qreal scaleFactor);
-    void drawArrow(int fromX, int fromY, int toX, int toY, int horizRaiseMultiplier = 4);
+    void drawArrow(int fromX, int fromY, int toX, int toY, QColor color = Qt::black, int horizRaiseMultiplier = 4);
 
     QGraphicsScene *myScene;
     QString         m_nodeName;
@@ -26,6 +27,7 @@ private:
 
     QMap<int, QString> m_typeToName;
     QMap<int, QString> m_statusToName;
+    QMap<int, QColor>  m_statusColors;
 };
 
 #endif // VALIDATEVIEWWIDGET_H
