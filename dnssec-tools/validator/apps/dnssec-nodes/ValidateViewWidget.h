@@ -2,13 +2,15 @@
 #define VALIDATEVIEWWIDGET_H
 
 #include <QGraphicsView>
+#include <QtCore/QMap>
 
 class ValidateViewWidget : public QGraphicsView
 {
     Q_OBJECT
 public:
     explicit ValidateViewWidget(QString nodeName, QString recordType, QWidget *parent = 0);
-    
+
+    void validateSomething(QString name, QString type);
 signals:
     
 public slots:
@@ -19,6 +21,8 @@ private:
     QGraphicsScene *myScene;
     QString         m_nodeName;
     QString         m_recordType;
+
+    QMap<int, QString> m_typeToName;
 };
 
 #endif // VALIDATEVIEWWIDGET_H
