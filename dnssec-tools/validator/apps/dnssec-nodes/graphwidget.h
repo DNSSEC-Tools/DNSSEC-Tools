@@ -54,6 +54,7 @@
 #include <QtCore/QList>
 #include <QtCore/QSignalMapper>
 #include <QtGui/QPushButton>
+#include <QtGui/QTableWidget>
 
 #include "LogWatcher.h"
 #include "NodeList.h"
@@ -73,7 +74,7 @@ class GraphWidget : public QGraphicsView
     Q_OBJECT
 
 public:
-    GraphWidget(QWidget *parent = 0, QLineEdit *editor = 0, const QString &fileName = "", QHBoxLayout *infoBox = 0);
+    GraphWidget(QWidget *parent = 0, QLineEdit *editor = 0, QTabWidget *tabs = 0, const QString &fileName = "", QHBoxLayout *infoBox = 0);
 
     enum LayoutType { springyLayout, treeLayout, circleLayout };
 
@@ -113,6 +114,8 @@ public:
 
     void openThisLogFile(QString logFile, bool skipToEnd = false);
     void setPreviousFileList(QMenu *menu = 0);
+
+    QTabWidget *tabs() { return m_tabs; }
 
 #ifdef WITH_PCAP
     PcapWatcher *pcapWatcher();
@@ -198,6 +201,8 @@ private:
 #ifdef WITH_PCAP
     PcapWatcher m_pcapWatcher;
 #endif
+
+    QTabWidget  *m_tabs;
 };
 //! [0]
 

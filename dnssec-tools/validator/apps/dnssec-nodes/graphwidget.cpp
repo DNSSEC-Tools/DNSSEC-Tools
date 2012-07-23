@@ -87,8 +87,8 @@ void val_collect_logs(struct val_log *logp, int level, const char *buf)
     val_log_strings.push_back(buf);
 }
 
-GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, const QString &fileName, QHBoxLayout *infoBox)
-    : QGraphicsView(parent), timerId(0), m_editor(editor),
+GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, const QString &fileName, QHBoxLayout *infoBox)
+    : QGraphicsView(parent), timerId(0), m_editor(editor), m_tabs(tabs),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
       m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true),
@@ -524,8 +524,8 @@ void GraphWidget::setInfo(Node *node) {
 
 void GraphWidget::moreInfoButton() {
     if (m_nodeList->selectedNode()) {
-        DetailsViewer viewer(m_nodeList->selectedNode());
-        viewer.exec();
+        DetailsViewer *viewer = new DetailsViewer(m_nodeList->selectedNode(), m_tabs);
+        // XXX: yes, it leaks
     }
 }
 

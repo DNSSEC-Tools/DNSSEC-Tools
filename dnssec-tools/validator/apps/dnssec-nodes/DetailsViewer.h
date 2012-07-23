@@ -2,17 +2,18 @@
 #define DETAILSVIEWER_H
 
 #include <QDialog>
+#include <QObject>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QDialogButtonBox>
 #include <QtCore/QSignalMapper>
 #include <QtGui/QTabWidget>
 #include "node.h"
 
-class DetailsViewer : public QDialog
+class DetailsViewer : public QObject
 {
     Q_OBJECT
 public:
-    explicit DetailsViewer(Node *node, QWidget *parent = 0);
+    explicit DetailsViewer(Node *node, QTabWidget *tabs = 0, QWidget *parent = 0);
 
 signals:
 
@@ -21,7 +22,6 @@ public slots:
 
 private:
     Node          *m_node;
-    QVBoxLayout   *m_layout;
     QSignalMapper *m_mapper;
     QTabWidget    *m_tabs;
 };

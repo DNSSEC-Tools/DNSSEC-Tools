@@ -290,8 +290,8 @@ void Node::mousePressEvent(QGraphicsSceneMouseEvent *event)
         event->setButton(Qt::LeftButton);
         QGraphicsItem::mousePressEvent(event);
     } else if (event->button() == Qt::RightButton) {
-        DetailsViewer lv(this);
-        lv.exec();
+        DetailsViewer *leakThis = new DetailsViewer(this, graph->tabs());
+        Q_UNUSED(leakThis);
     } else {
         // everything else selects
         graph->setInfo(this);
