@@ -165,16 +165,26 @@ void ValidateViewWidget::scaleView(qreal scaleFactor)
     scale(scaleFactor, scaleFactor);
 }
 
-void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY) {
+void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, int horizRaiseMultiplier) {
     const int arrowHalfWidth = 10;
 
-    // draw line in 3 segments, two vertical stubs to make the arrow to triangle look better
-    QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY + 2*arrowHalfWidth, toX, toY - arrowHalfWidth*2);
-    myScene->addItem(line);
-    line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
-    myScene->addItem(line);
-    line = new QGraphicsLineItem(toX, toY - arrowHalfWidth*2, toX, toY - arrowHalfWidth);
-    myScene->addItem(line);
+    if (fromY == toY) {
+        // draw horizontal lines differently...  up -> across -> down
+        QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - horizRaiseMultiplier*arrowHalfWidth);
+        myScene->addItem(line);
+        line = new QGraphicsLineItem(fromX, fromY, fromX, fromY - horizRaiseMultiplier*arrowHalfWidth);
+        myScene->addItem(line);
+        line = new QGraphicsLineItem(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - arrowHalfWidth);
+        myScene->addItem(line);
+    } else {
+        // draw line in 3 segments, two vertical stubs to make the arrow to triangle look better
+        QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY + 2*arrowHalfWidth, toX, toY - 2*arrowHalfWidth);
+        myScene->addItem(line);
+        line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
+        myScene->addItem(line);
+        line = new QGraphicsLineItem(toX, toY - 2*arrowHalfWidth, toX, toY - arrowHalfWidth);
+        myScene->addItem(line);
+    }
 
     QPolygon polygon;
     polygon << QPoint(toX, toY)
@@ -192,7 +202,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     const int boxWidth = 400;
     const int boxHeight = 120;
-    const int spacing = boxHeight;
+    const int spacing = boxHeight*2;
     const int boxTopMargin = 10;
     const int boxLeftMargin = 10;
     const int boxHorizontalSpacing = 30;
@@ -387,6 +397,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     // for each signature we saw...
     for (rrsigIter = signedByList.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
         QPair<QString, int> nameAndType = rrsigIter.key();
+        int raiseMultiplier = 4;
+        int widthOffset = 20;
 
         // ...there is a key that created the signature, which signed...
         foreach(int keyId, *rrsigIter) {
@@ -395,7 +407,17 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             // ... an rrset keyed by a name and record type
             QList<QPair<int, int> >::const_iterator listIter, listEnd = nameAndTypeToLocation[nameAndType].constEnd();
             for(listIter = nameAndTypeToLocation[nameAndType].constBegin(); listIter != listEnd; listIter++) {
-                drawArrow(dnsKeyLocation.first, dnsKeyLocation.second, (*listIter).first, (*listIter).second);
+                if (dnsKeyLocation.second == (*listIter).second) {
+                    // signing something in the same row (another key)
+                    drawArrow(dnsKeyLocation.first + widthOffset, dnsKeyLocation.second,
+                              (*listIter).first + boxWidth - widthOffset, (*listIter).second, raiseMultiplier);
+                    raiseMultiplier += 2;
+                    widthOffset += 20;
+                } else {
+                    // signing something in a different row (DNSKEY signing the final record or a DS)
+                    drawArrow(dnsKeyLocation.first + boxWidth/2, dnsKeyLocation.second + boxHeight,
+                              (*listIter).first + boxWidth/2, (*listIter).second);
+                }
             }
         }
     }

@@ -18,7 +18,7 @@ public slots:
 
 private:
     void scaleView(qreal scaleFactor);
-    void drawArrow(int fromX, int fromY, int toX, int toY);
+    void drawArrow(int fromX, int fromY, int toX, int toY, int horizRaiseMultiplier = 4);
 
     QGraphicsScene *myScene;
     QString         m_nodeName;
