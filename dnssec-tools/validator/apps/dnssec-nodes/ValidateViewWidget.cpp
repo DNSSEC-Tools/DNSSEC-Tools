@@ -9,7 +9,7 @@
 #include <qdebug.h>
 
 ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWidget *parent) :
-    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType)
+    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_typeToName()
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -112,6 +112,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                                 VAL_QUERY_SKIP_CACHE,
                                 &results);
     qDebug() << "got here: result = " << ret;
+    if (ret != 0 || !results) {
+        qWarning() << "failed to get results..."; // XXX: display SOMETHING!
+        return;
+    }
 
     int spot = 0;
     QGraphicsRectItem        *rect = 0;
