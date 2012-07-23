@@ -260,11 +260,13 @@ void NodeList::addNodesSlot(QString nodeName)
     addNodes(nodeName);
 }
 
-void NodeList::addNodesData(QString nodeName, DNSData nodeData)
+void NodeList::addNodesData(QString nodeName, DNSData nodeData, QString optionalLogMessage)
 {
     addNodes(nodeName);
     Node *theNode = node(nodeName);
     theNode->addSubData(nodeData);
+    if (optionalLogMessage.length() > 0)
+        theNode->addLogMessage(optionalLogMessage);
 }
 
 Effect *NodeList::createDefaultEffect() {

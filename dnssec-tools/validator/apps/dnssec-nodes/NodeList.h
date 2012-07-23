@@ -76,7 +76,7 @@ public slots:
     void filterNone();
 
     void addNodesSlot(QString nodeName);
-    void addNodesData(QString nodeName, DNSData nodeData);
+    void addNodesData(QString nodeName, DNSData nodeData, QString optionalLogMessage = "");
 
 private:
     GraphWidget                          *m_graphWidget;

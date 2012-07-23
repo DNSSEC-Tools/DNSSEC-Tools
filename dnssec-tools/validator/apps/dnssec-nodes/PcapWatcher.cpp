@@ -240,7 +240,6 @@ void PcapWatcher::processPackets()
 
             /* TCP processing */
             /* XXX: UDP */
-            counter++;
             if (tcp) {
                 tcp = (struct sniff_tcp*) (packet + SIZE_ETHERNET + size_ip);
                 size_tcp = TH_OFF(tcp)*4;
@@ -276,7 +275,7 @@ void PcapWatcher::processPackets()
                     break; /* out of data */
                 }
 
-                emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status));
+                emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status), "Data collected from network draffic");
 
                 //if (ns_rr_type(rr) == ns_t_a) {
                     /* insert stuff here */

@@ -27,7 +27,7 @@ public:
 signals:
     void     failedToOpenDevice(QString errMsg);
     void     addNode(QString nodeName);
-    void     addNodeData(QString nodeName, DNSData data);
+    void     addNodeData(QString nodeName, DNSData data, QString logMessage);
 
 public slots:
     void     setDeviceName(const QString &deviceName);
@@ -47,8 +47,6 @@ private:
     char                m_errorBuffer[PCAP_ERRBUF_SIZE];
 
     QTimer              m_timer;
-
-    int                 counter;
 };
 
 #endif // PCAPWATCHER_H
