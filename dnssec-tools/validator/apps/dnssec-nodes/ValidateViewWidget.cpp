@@ -8,6 +8,11 @@
 
 #include <qdebug.h>
 
+// from ns_print.c
+extern "C" {
+u_int16_t id_calc(const u_char * key, const int keysize);
+}
+
 ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWidget *parent) :
     QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_typeToName()
 {
@@ -98,9 +103,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     const int spacing = 50;
     const int boxWidth = 400;
-    const int boxHeight = 100;
+    const int boxHeight = 120;
     const int boxTopMargin = 10;
     const int boxLeftMargin = 10;
+    const int boxHorizontalSpacing = 30;
     const int verticalBoxDistance = spacing + boxHeight;
     const int boxHorizMiddle = boxLeftMargin + boxWidth/2;
     const int arrowHalfWidth = 10;
@@ -140,16 +146,40 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             else
                 text = new QGraphicsSimpleTextItem("(type unknown)");
             text->setPen(QPen(Qt::black));
-            text->setPos(boxLeftMargin + horizontalSpot, spot+boxHeight/2);
+            text->setPos(boxLeftMargin + horizontalSpot, spot + boxTopMargin*2);
             text->setScale(2.0);
             myScene->addItem(text);
 
             QString rrsetName = vrcptr->val_ac_rrset->val_rrset_name;
             text = new QGraphicsSimpleTextItem(rrsetName == "." ? "<root>" : rrsetName);
             text->setPen(QPen(Qt::black));
-            text->setPos(boxLeftMargin + horizontalSpot, spot + boxTopMargin * 2);
+            text->setPos(boxLeftMargin + horizontalSpot, spot + boxHeight/2);
             text->setScale(2.0);
             myScene->addItem(text);
+
+            int keyId;
+            QString nextLineText;
+
+            switch (vrcptr->val_ac_rrset->val_rrset_type) {
+            case ns_t_dnskey:
+                if (rrrec->rr_rdata_length < 0U + NS_INT16SZ + NS_INT8SZ + NS_INT8SZ)
+                    break;
+
+                keyId = id_calc(rrrec->rr_rdata, rrrec->rr_rdata_length);
+                nextLineText = QString("keyid: %1").arg(keyId);
+                break;
+
+            case ns_t_ds:
+                break;
+            }
+
+            if (nextLineText.length() > 0) {
+                text = new QGraphicsSimpleTextItem(nextLineText);
+                text->setPen(QPen(Qt::black));
+                text->setPos(boxLeftMargin + horizontalSpot, spot + boxHeight - boxTopMargin*3);
+                text->setScale(2.0);
+                myScene->addItem(text);
+            }
 
             if (spot != 0) {
                 // add an arrow
@@ -170,7 +200,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 myScene->addItem(polyItem);
             }
 
-            horizontalSpot += boxWidth + boxLeftMargin;
+            horizontalSpot += boxWidth + boxHorizontalSpacing;
             maxWidth = qMax(maxWidth, horizontalSpot);
         }
 
