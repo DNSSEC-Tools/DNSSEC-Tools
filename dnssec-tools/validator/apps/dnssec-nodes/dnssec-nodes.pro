@@ -21,7 +21,8 @@ HEADERS += \
     LogFilePicker.h \
     Legend.h \
     Effects/SetBorderColor.h \
-    ValidateViewWidget.h
+    ValidateViewWidget.h \
+    MainWindow.h
 
 SOURCES += \
         edge.cpp \
@@ -46,7 +47,8 @@ SOURCES += \
     LogFilePicker.cpp \
     Legend.cpp \
     Effects/SetBorderColor.cpp \
-    ValidateViewWidget.cpp
+    ValidateViewWidget.cpp \
+    MainWindow.cpp
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
