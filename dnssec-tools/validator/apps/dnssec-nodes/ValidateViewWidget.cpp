@@ -128,6 +128,20 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         text->setScale(2.0);
         myScene->addItem(text);
 
+        if (spot != 0) {
+            // add an arrow
+            QGraphicsLineItem *line = new QGraphicsLineItem(10+100/2, spot-150+100+10, 10+100/2, spot+10);
+            myScene->addItem(line);
+
+            QPolygon polygon;
+            polygon << QPoint(10+100/2, spot+10)
+                    << QPoint(10+100/2 - 10, spot)
+                    << QPoint(10+100/2 + 10, spot);
+            QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
+            polyItem->setBrush(QBrush(Qt::black));
+            polyItem->setFillRule(Qt::OddEvenFill);
+            myScene->addItem(polyItem);
+        }
 
         spot += 150;
     }
