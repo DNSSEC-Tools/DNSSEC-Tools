@@ -159,7 +159,6 @@ struct expected_arrival {
 #endif
     struct name_server *ea_ns;
     int             ea_which_address;
-    int             ea_edns0_size;
     int             ea_using_stream;
     unsigned char   *ea_signed;
     size_t          ea_signed_length;
