@@ -238,7 +238,6 @@ res_ea_init(u_char * signed_query, size_t signed_length,
     memset(temp, 0x0, sizeof(struct expected_arrival));
     temp->ea_socket = INVALID_SOCKET;
     temp->ea_ns = ns;
-    temp->ea_edns0_size = ns->ns_edns0_size;
     temp->ea_which_address = 0;
     temp->ea_using_stream = FALSE;
     temp->ea_signed = signed_query;
@@ -503,7 +502,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     }
 
     if (server) {
-        for(;temp;temp=temp->ea_next) {
+        for(;temp && temp->ea_ns;temp=temp->ea_next) {
             //res_print_ea(temp);
             /** match name, then look for address */
             if (namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
@@ -531,13 +530,13 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
 
     res_log(NULL, LOG_DEBUG, "libsres: ""ea %p attempting ns fallback", temp);
 
-    old_size = temp->ea_edns0_size;
+    old_size = temp->ea_ns->ns_edns0_size;
     if ((temp->ea_ns->ns_options & SR_QUERY_VALIDATING_STUB_FLAGS) && 
-        (temp->ea_edns0_size > 0)) {
+        (temp->ea_ns->ns_edns0_size > 0)) {
         for (i = 0; i < sizeof(edns0_fallback); i++) {
-            if (temp->ea_edns0_size > edns0_fallback[i]) {
+            if (temp->ea_ns->ns_edns0_size > edns0_fallback[i]) {
                 /* try using a lower edns0 value */
-                temp->ea_edns0_size = edns0_fallback[i];
+                temp->ea_ns->ns_edns0_size = edns0_fallback[i];
                 if (edns0_fallback[i] == 0) {
                     /* try without EDNS0 */
                     res_log(NULL, LOG_DEBUG, "libsres: "
@@ -590,7 +589,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     res_log(NULL, LOG_INFO, "libsres: "
             "ns fallback for {%s %s(%d) %s(%d)}, edns0 size %d > %d",
             name, p_class(class_h), class_h, p_type(type_h), type_h,
-            old_size, temp->ea_edns0_size);
+            old_size, temp->ea_ns->ns_edns0_size);
 
     return 1;
 }
@@ -611,7 +610,6 @@ res_io_next_address(struct expected_arrival *ea,
             ea->ea_socket = INVALID_SOCKET;
         }
         ea->ea_which_address++;
-        ea->ea_edns0_size = ea->ea_ns->ns_edns0_size;
         ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
         set_alarms(ea, 0, res_get_timeout(ea->ea_ns));
         res_log(NULL, LOG_INFO,
