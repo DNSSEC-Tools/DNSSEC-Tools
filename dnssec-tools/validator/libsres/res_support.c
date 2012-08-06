@@ -249,6 +249,7 @@ create_name_server(void)
     ns->ns_edns0_size = RES_EDNS0_DEFAULT;
 
     ns->ns_next = NULL;
+    ns->ns_address = NULL;
     ns->ns_number_of_addresses = 0;
 
     return ns;
