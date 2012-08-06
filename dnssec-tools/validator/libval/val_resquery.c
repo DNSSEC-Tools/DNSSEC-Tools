@@ -528,8 +528,13 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                     /*
                      * Create the structure for the name server 
                      */
-                    temp_ns = (struct name_server *)
-                        MALLOC(sizeof(struct name_server));
+                    name_len = wire_name_length(ns_rr->rr_rdata);
+                    if (name_len > sizeof(temp_ns->ns_name_n)) {
+                        free_name_servers(ns_list);
+                        *ns_list = NULL;
+                        return VAL_OUT_OF_MEMORY;
+                    }
+                    temp_ns = create_name_server();
                     if (temp_ns == NULL) {
                         /*
                          * Since we're in trouble, free up just in case 
@@ -539,39 +544,18 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                         return VAL_OUT_OF_MEMORY;
                     }
 
-                    /*
-                     * Make room for the name and insert the name 
-                     */
-                    name_len = wire_name_length(ns_rr->rr_rdata);
-                    if (name_len > sizeof(temp_ns->ns_name_n)) {
-                        free_name_servers(ns_list);
-                        *ns_list = NULL;
-                        return VAL_OUT_OF_MEMORY;
-                    }
                     memcpy(temp_ns->ns_name_n, ns_rr->rr_rdata, name_len);
 
                     /*
                      * Initialize the rest of the fields 
                      */
-                    temp_ns->ns_tsig = NULL;
-                    temp_ns->ns_security_options = ZONE_USE_NOTHING;
                     temp_ns->ns_status = SR_ZI_STATUS_LEARNED;
-
-                    temp_ns->ns_retrans = RES_TIMEOUT;
-                    temp_ns->ns_retry = RES_RETRY;
-
-                    temp_ns->ns_options = SR_QUERY_DEFAULT;
                     /* 
                      * Ensure that recursion is disabled by default 
                      */
                      if (temp_ns->ns_options & SR_QUERY_RECURSE)
                         temp_ns->ns_options ^= SR_QUERY_RECURSE;
 
-                    temp_ns->ns_edns0_size = RES_EDNS0_DEFAULT;
-
-                    temp_ns->ns_next = NULL;
-                    temp_ns->ns_address = NULL;
-                    temp_ns->ns_number_of_addresses = 0;
                     /*
                      * Add the name server record to the list 
                      */
