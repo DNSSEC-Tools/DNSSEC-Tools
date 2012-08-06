@@ -529,7 +529,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                      * Create the structure for the name server 
                      */
                     name_len = wire_name_length(ns_rr->rr_rdata);
-                    if (name_len > sizeof(temp_ns->ns_name_n)) {
+                    if (name_len > NS_MAXCDNAME) {
                         free_name_servers(ns_list);
                         *ns_list = NULL;
                         return VAL_OUT_OF_MEMORY;
