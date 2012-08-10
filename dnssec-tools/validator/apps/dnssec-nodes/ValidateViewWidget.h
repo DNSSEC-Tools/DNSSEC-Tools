@@ -29,6 +29,8 @@ private:
     QMap<QString, int> m_nameToType;
     QMap<int, QString> m_statusToName;
     QMap<int, QColor>  m_statusColors;
+    QMap<int, QString> m_algorithmToName;
+    QMap<int, QString> m_digestToName;
 };
 
 #endif // VALIDATEVIEWWIDGET_H
