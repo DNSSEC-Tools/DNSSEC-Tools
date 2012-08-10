@@ -272,6 +272,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     QMap<int, QPair<int, int> > dnskeyIdToLocation;
     QMap<QPair<int, int>, QPair<int, int> > dsIdToLocation;
+    QMap<int, int> dnsKeyToStatus;
     QMap<QPair<QString, int>, QList< QPair<int, int> > > nameAndTypeToLocation;
     QMap<QPair<QString, int>, QList<QPair<int, int> > > signedByList;
 
@@ -348,6 +349,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         .arg(protocol)
                         .arg(algName);
                 dnskeyIdToLocation[keyId] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
+                dnsKeyToStatus[keyId] = rrrec->rr_status;
                 break;
 
             case ns_t_ds:
@@ -371,7 +373,6 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         .arg(algName)
                         .arg(digestName);
                 dsIdToLocation[QPair<int, int>(keyId, digest_type)] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
-
                 break;
             }
 
@@ -448,8 +449,11 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     for(dsIter = dsIdToLocation.begin(); dsIter != dsEnd; dsIter++) {
         QPair<int, int> dsLocation = dsIter.value();
         QPair<int, int> dnskeyLocation = dnskeyIdToLocation[dsIter.key().first];
+        QColor arrowColor = Qt::black;
+        if (dnsKeyToStatus[dsIter.key().first] == VAL_AC_VERIFIED_LINK)
+            arrowColor = Qt::green;
         drawArrow(dsLocation.first + boxWidth/2, dsLocation.second + boxHeight,
-                  dnskeyLocation.first + boxWidth/2, dnskeyLocation.second);
+                  dnskeyLocation.first + boxWidth/2, dnskeyLocation.second, arrowColor);
     }
 
     // loop through all the signatures and draw arrows for them
