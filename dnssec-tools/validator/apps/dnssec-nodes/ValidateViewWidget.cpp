@@ -154,6 +154,28 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWi
 
     m_statusColors[VAL_AC_RRSIG_VERIFIED] = Qt::green;
 
+    // DS digest types
+    m_digestToName[1] = "SHA-1";
+    m_digestToName[2] = "SHA-256";
+    m_digestToName[3] = "GOST R 34.11-94";
+    m_digestToName[4] = "SHA-384";
+
+    // DNSKEY algorithm types
+    m_algorithmToName[1] = "RSA/MD5";
+    m_algorithmToName[2] = "DH";
+    m_algorithmToName[3] = "DSA/SHA1";
+    m_algorithmToName[4] = "ECC";
+    m_algorithmToName[5] = "RSA/SHA-1";
+    m_algorithmToName[6] = "DSA-NSEC3-SHA1";
+    m_algorithmToName[7] = "RSASHA1-NSEC3-SHA1";
+    m_algorithmToName[8] = "RSA/SHA-256";
+    m_algorithmToName[9] = "Unassigned";
+    m_algorithmToName[10] = "RSA/SHA-512";
+    m_algorithmToName[11] = "Unassigned";
+    m_algorithmToName[12] = "ECC-GOST";
+    m_algorithmToName[13] = "ECDSAP256SHA256";
+    m_algorithmToName[14] = "ECDSAP384SHA384";
+
     QMap<int, QString>::const_iterator mapIter, mapEnd = m_typeToName.constEnd();
     for(mapIter = m_typeToName.constBegin(); mapIter != mapEnd; mapIter++) {
         m_nameToType[mapIter.value()] = mapIter.key();
@@ -300,6 +322,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
             int     keyId;
             u_int   keyflags, protocol, algorithm, digest_type;
+            QString algName;
 
             switch (vrcptr->val_ac_rrset->val_rrset_type) {
             case ns_t_dnskey:
@@ -314,11 +337,16 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 protocol = *rdata++;
                 algorithm = *rdata++;
 
-                nextLineText = QString(tr("%1, id: %2, proto: %3, alg: %4"))
+                if (m_algorithmToName.contains(algorithm))
+                    algName = m_algorithmToName[algorithm];
+                else
+                    algName = QString(tr("alg: %1")).arg(algorithm);
+
+                nextLineText = QString(tr("%1, id: %2, proto: %3, %4"))
                         .arg((keyflags & 0x1) ? "KSK" : "ZSK")
                         .arg(keyId)
                         .arg(protocol)
-                        .arg(algorithm);
+                        .arg(algName);
                 dnskeyIdToLocation[keyId] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
                 break;
 
@@ -327,10 +355,21 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 algorithm = *rdata++ & 0xF;
                 digest_type = *rdata++ & 0xF;
 
-                nextLineText = QString(tr("id: %1, alg: %2, digest: %3"))
+                QString digestName;
+                if (m_digestToName.contains(digest_type))
+                    digestName = m_digestToName[digest_type];
+                else
+                    digestName = QString(tr("digest: ")).arg(digest_type);
+
+                if (m_algorithmToName.contains(algorithm))
+                    algName = m_algorithmToName[algorithm];
+                else
+                    algName = QString(tr("alg: %1")).arg(algorithm);
+
+                nextLineText = QString(tr("id: %1, %2, %3"))
                         .arg(keyId)
-                        .arg(algorithm)
-                        .arg(digest_type);
+                        .arg(algName)
+                        .arg(digestName);
                 dsIdToLocation[QPair<int, int>(keyId, digest_type)] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
 
                 break;
