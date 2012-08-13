@@ -322,7 +322,7 @@ function cancelTests() {
 
 function giveUpTimerHook() {
     // if we get here, we're fairly sunk as it's taken a long time for the requests to complete.
-    // So we give up.
+    // So we retry or give up.
     if (restartCount >= giveUpTimer.retryCount) {
         giveUpMessage.state = "visible"
         cancelTests()
