@@ -19,10 +19,12 @@ Rectangle {
     }
 
     Timer {
+        property int retryCount: 2;
+
         id:          giveUpTimer;
-        interval:    15000;
+        interval:    5000;
         running:     false;
-        repeat:      false;
+        repeat:      true;
         onTriggered: { DNSSECCheck.giveUpTimerHook(); }
     }
 

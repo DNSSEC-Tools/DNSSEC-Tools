@@ -8,7 +8,7 @@ Item {
     opacity: 0
 
     property int waitLength:    0
-    property int waitLengthMax: giveUpTimer.interval / 1000;
+    property int waitLengthMax: giveUpTimer.interval * (giveUpTimer.retryCount + 1)/ 1000;
 
     Rectangle {
         id: rect
