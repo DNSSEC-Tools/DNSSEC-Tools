@@ -701,7 +701,7 @@ static void
 _have_addrs(int *have4, int *have6) {
     struct ifaddrs *ifaddr, *ifa;
     in_addr_t addr;
-    uint32_t *addr6;
+    struct in6_addr addr6;
     int family;
 
     val_log(NULL, LOG_INFO, "_have_addrs(): checking for A/AAAA addrs");
@@ -741,15 +741,14 @@ _have_addrs(int *have4, int *have6) {
         }
 #ifdef VAL_IPV6
         else if (have6 && family == AF_INET6 && *have6 == 0) {
-            addr6 = ((struct sockaddr_in6 *)
-                     (ifa->ifa_addr))->sin6_addr.s6_addr32;
+            addr6 = ((struct sockaddr_in6 *) (ifa->ifa_addr))->sin6_addr;
             if ((ifa->ifa_flags & IFF_UP)
 #ifdef IFF_RUNNING
                 && (ifa->ifa_flags & IFF_RUNNING)
 #endif                          /* IFF_RUNNING */
                 && !(ifa->ifa_flags & IFF_LOOPBACK)
-                && !IN6_IS_ADDR_LOOPBACK(addr6)
-                && !IN6_IS_ADDR_LINKLOCAL(addr6)
+                && !IN6_IS_ADDR_LOOPBACK(&addr6)
+                && !IN6_IS_ADDR_LINKLOCAL(&addr6)
                 ) {
                 ++*have6;
                 val_log(NULL, LOG_INFO, "have v6 addr!");
