@@ -270,6 +270,7 @@ main(int argc, char *argv[])
     }
 
     memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_flags = AI_ADDRCONFIG;
     if (getcanonname) {
         hints.ai_flags |= AI_CANONNAME;
     }
