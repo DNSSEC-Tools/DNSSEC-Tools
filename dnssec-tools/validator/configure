@@ -11791,7 +11791,7 @@ LIBS="$LIBS -lgdi32 -lws2_32"
 fi
 
 
-for ac_header in sys/param.h sys/types.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h netinet/in.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h
+for ac_header in sys/param.h sys/types.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h netinet/in.h net/if.h ifaddrs.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
