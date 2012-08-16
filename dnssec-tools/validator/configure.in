@@ -287,7 +287,7 @@ fi
 
 dnl ----------------------------------------------------------------------
 
-AC_CHECK_HEADERS(sys/param.h sys/types.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h netinet/in.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h)
+AC_CHECK_HEADERS(sys/param.h sys/types.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h netinet/in.h net/if.h ifaddrs.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h)
 AC_CHECK_DECLS([getopt_long_only, getopt_long],,,[
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

@@ -14,9 +14,20 @@
  */
 #include "validator-internal.h"
 
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+
 #include "val_policy.h"
 #include "val_parse.h"
 #include "val_context.h"
+
+#ifndef  INADDR_LOOPBACK
+# define INADDR_LOOPBACK    0x7f000001
+#endif
 
 /* 
  * Free the addrinfo structure that we have allocated 
@@ -682,6 +693,82 @@ get_addrinfo_from_result(const val_context_t * ctx,
     return retval;
 }                               /* get_addrinfo_from_result() */
 
+#ifdef AI_ADDRCONFIG
+/*
+ * check if we have ipv4/ipv6 addresses
+ */
+static void
+_have_addrs(int *have4, int *have6) {
+    struct ifaddrs *ifaddr, *ifa;
+    in_addr_t addr;
+    uint32_t *addr6;
+    int family;
+
+    val_log(NULL, LOG_INFO, "_have_addrs(): checking for A/AAAA addrs");
+
+    if (have4)
+        *have4 = 0;
+#ifdef VAL_IPV6
+    if (have6)
+        *have6 = 0;
+#endif
+
+    if (getifaddrs(&ifaddr) == -1) {
+        val_log(NULL, LOG_ERR, "getifaddrs failed");
+        return;
+    }
+
+    /* Walk through linked list, maintaining head pointer so we
+       can free list later */
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        family = ifa->ifa_addr->sa_family;
+
+        if (have4 && family == AF_INET && *have4 == 0) {
+            addr = ((struct sockaddr_in *) (ifa->ifa_addr))->sin_addr.s_addr;
+            if ((ifa->ifa_flags & IFF_UP)
+#ifdef IFF_RUNNING
+                && (ifa->ifa_flags & IFF_RUNNING)
+#endif                          /* IFF_RUNNING */
+                && !(ifa->ifa_flags & IFF_LOOPBACK)
+                && addr != INADDR_LOOPBACK) {
+                ++*have4;
+                val_log(NULL, LOG_INFO, "have v4 addr!");
+            }
+        }
+#ifdef VAL_IPV6
+        else if (have6 && family == AF_INET6 && *have6 == 0) {
+            addr6 = ((struct sockaddr_in6 *)
+                     (ifa->ifa_addr))->sin6_addr.s6_addr32;
+            if ((ifa->ifa_flags & IFF_UP)
+#ifdef IFF_RUNNING
+                && (ifa->ifa_flags & IFF_RUNNING)
+#endif                          /* IFF_RUNNING */
+                && !(ifa->ifa_flags & IFF_LOOPBACK)
+                && !IN6_IS_ADDR_LOOPBACK(addr6)
+                && !IN6_IS_ADDR_LINKLOCAL(addr6)
+                ) {
+                ++*have6;
+                val_log(NULL, LOG_INFO, "have v6 addr!");
+            }
+        }
+#endif
+        else
+            continue;
+        if ((NULL == have4 || *have4) &&
+            (NULL == have6 || *have6))
+            break;
+    } /* for ifrp */
+    goto cleanup;
+
+  cleanup:
+    freeifaddrs(ifaddr);
+}
+#endif /* AI_ADDRCONFIG */
+
 /*
  * Function: get_addrinfo_from_dns
  *
@@ -715,7 +802,7 @@ get_addrinfo_from_dns(val_context_t * ctx,
     struct addrinfo *ainfo = NULL;
     const struct addrinfo *hints;
     struct addrinfo default_hints;
-    int    ret = EAI_FAIL;
+    int    ret = EAI_FAIL, have4 = 1, have6 = 1;
 
     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns() called");
 
@@ -743,13 +830,22 @@ get_addrinfo_from_dns(val_context_t * ctx,
         *val_status = VAL_UNTRUSTED_ANSWER;
         return EAI_NONAME; 
     }
+
+#ifdef AI_ADDRCONFIG
+    if (hints->ai_flags & AI_ADDRCONFIG)
+        _have_addrs(&have4, &have6);
+#endif
     
     /*
      * Check if we need to return IPv4 addresses based on the hints 
      */
-    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
-
-        val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for A records");
+    if ((hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) 
+#ifdef AI_ADDRCONFIG
+        && (have4 != 0)
+#endif
+        ) {
+        val_log(ctx, LOG_DEBUG,
+                "get_addrinfo_from_dns(): checking for A records");
 
         if ((VAL_NO_ERROR == 
                     val_get_rrset(ctx, nodename, ns_c_in, ns_t_a, 0, &results)) 
@@ -758,8 +854,8 @@ get_addrinfo_from_dns(val_context_t * ctx,
             ret = get_addrinfo_from_result(ctx, results, servname,
                                          hints, &ainfo, val_status);
 
-            val_log(ctx, LOG_DEBUG, 
-                    "get_addrinfo_from_dns(): get_addrinfo_from_result() returned=%d with val_status=%d",
+            val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): "
+                    "get_addrinfo_from_result() returned=%d with val_status=%d",
                     ret, *val_status);
 
             val_free_answer_chain(results);
@@ -771,18 +867,23 @@ get_addrinfo_from_dns(val_context_t * ctx,
     /*
      * Check if we need to return IPv6 addresses based on the hints 
      */
-    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET6) {
+    if ((hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET6)
+#ifdef AI_ADDRCONFIG
+        && (have6 != 0)
+#endif
+        ) {
 
-        val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for AAAA records");
+        val_log(ctx, LOG_DEBUG,
+                "get_addrinfo_from_dns(): checking for AAAA records");
         
         if ((VAL_NO_ERROR == 
-                    val_get_rrset(ctx, nodename, ns_c_in, ns_t_aaaa, 0, &results)) 
-                && results) {
+             val_get_rrset(ctx, nodename, ns_c_in, ns_t_aaaa, 0, &results)) 
+            && results) {
             ret = get_addrinfo_from_result(ctx, results, servname,
                                          hints, &ainfo, val_status);
 
-            val_log(ctx, LOG_DEBUG, 
-                    "get_addrinfo_from_dns(): get_addrinfo_from_result() returned=%d with val_status=%d",
+            val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): "
+                    "get_addrinfo_from_result() returned=%d with val_status=%d",
                     ret, *val_status);
 
             val_free_answer_chain(results);
@@ -1652,7 +1753,7 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
                        unsigned int val_gai_flags, val_gai_status **status)
 {
     val_gai_status        *vgai = NULL;
-    int                    vretval = VAL_NO_ERROR, rc;
+    int                    vretval = VAL_NO_ERROR, rc, have4 = 1, have6 = 1;
     struct addrinfo       *res = NULL;
     const struct addrinfo *hints;
     struct addrinfo        default_hints;
@@ -1708,10 +1809,19 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
     if (nodename)
         vgai->nodename = (char *)strdup(nodename);
 
+#ifdef AI_ADDRCONFIG
+    if (hints->ai_flags & AI_ADDRCONFIG)
+        _have_addrs(&have4, &have6);
+#endif
+
     /*
      * Check if we need to return IPv4 addresses based on the hints
      */
-    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
+    if ((hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET)
+#ifdef AI_ADDRCONFIG
+        && (have4 != 0)
+#endif
+        ) {
 
         val_log(ctx, LOG_DEBUG,
                 "val_getaddrinfo_submit(): checking for A records");
@@ -1729,7 +1839,11 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
     /*
      * Check if we need to return IPv6 addresses based on the hints
      */
-    if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET6) {
+    if ((hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET6)
+#ifdef AI_ADDRCONFIG
+        && (have6 != 0)
+#endif
+        ) {
 
         val_log(ctx, LOG_DEBUG,
                 "val_getaddrinfo_submit(): checking for AAAA records");
