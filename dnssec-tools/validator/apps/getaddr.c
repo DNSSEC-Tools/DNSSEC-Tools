@@ -22,6 +22,7 @@
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
     {"canonname", 0, 0, 'c'},
+    {"nodnssec", 0, 0, 'n'},
     {"service", 0, 0, 's'},
     {"Version", 0, 0, 'V'},
 #ifndef VAL_NO_ASYNC
@@ -42,6 +43,8 @@ usage(char *progname)
             "\t-h, --help                      display usage and exit\n");
     fprintf(stderr,
             "\t-c, --canonname                 use the AI_CANONNAME flag\n");
+    fprintf(stderr,
+            "\t-n, --nodnssec                  no DNSSEC validation\n");
     fprintf(stderr,
             "\t-s, --service=<PORT|SERVICE>    transport-layer port or service name\n");
     fprintf(stderr,
@@ -182,7 +185,7 @@ main(int argc, char *argv[])
 #ifndef VAL_NO_ASYNC
         "a"
 #endif
-        "hco:s:Vv:r:i:";
+        "hco:s:Vv:r:i:n";
     char           *node = NULL;
     char           *service = NULL;
     struct addrinfo hints;
@@ -191,6 +194,7 @@ main(int argc, char *argv[])
     int             getcanonname = 0;
     int             portspecified = 0;
     int             async = 0;
+    int             nodnssec_flag = 0;
     val_log_t      *logp;
     val_status_t val_status;
 
@@ -239,6 +243,10 @@ main(int argc, char *argv[])
             break;
 #endif
 
+        case 'n':
+            nodnssec_flag = 1;
+            break;
+
         case 'v':
             dnsval_conf_set(optarg);
             break;
@@ -273,6 +281,11 @@ main(int argc, char *argv[])
     hints.ai_flags = AI_ADDRCONFIG;
     if (getcanonname) {
         hints.ai_flags |= AI_CANONNAME;
+    }
+
+    if (nodnssec_flag) {
+        val_context_setqflags(NULL, VAL_CTX_FLAG_SET,
+                              VAL_QUERY_DONT_VALIDATE);
     }
 
     if (!async) {
