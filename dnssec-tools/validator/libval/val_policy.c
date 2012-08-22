@@ -1511,7 +1511,12 @@ read_next_val_config_file(val_context_t *ctx,
 #ifdef HAVE_FLOCK
         memset(&fl, 0, sizeof(fl));
         fl.l_type = F_RDLCK;
-        fcntl(fd, F_SETLKW, &fl);
+        if (-1 == fcntl(fd, F_SETLK, &fl)) {
+            val_log(ctx, LOG_WARNING, 
+                "read_next_val_config_file(): Could not acquire shared lock on conf file: %s", 
+                dnsval_c->dnsval_conf);
+            goto err; 
+        }
 #endif
         if (0 != fstat(fd, &sb)) {
             val_log(ctx, LOG_ERR, 
@@ -1535,6 +1540,12 @@ read_next_val_config_file(val_context_t *ctx,
             retval = VAL_CONF_NOT_FOUND;
             goto err;
         }
+#ifdef HAVE_FLOCK
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLK, &fl);
+#endif
+        close(fd);
+        fd = -1;
     }
 
     val_log(ctx, LOG_NOTICE, "read_next_val_config_file(): Reading validator policy from %s",
@@ -1771,14 +1782,6 @@ read_next_val_config_file(val_context_t *ctx,
     FREE(buf);
     buf = NULL;
 
-    if (fd > 0) {
-#ifdef HAVE_FLOCK
-        fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
-#endif
-        close(fd);
-        fd = -1;
-    }
     return VAL_NO_ERROR;
 
 err:
@@ -1794,7 +1797,7 @@ err:
     if (fd != -1) {
 #ifdef HAVE_FLOCK
         fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
+        fcntl(fd, F_SETLK, &fl);
 #endif
         close(fd);
     }
@@ -2097,7 +2100,12 @@ read_res_config_file(val_context_t * ctx)
     if (fd > 0) {
 #ifdef HAVE_FLOCK
         fl.l_type = F_RDLCK;
-        fcntl(fd, F_SETLKW, &fl);
+        if (-1 == fcntl(fd, F_SETLK, &fl)) {
+            val_log(ctx, LOG_WARNING, 
+                "read_next_val_config_file(): Could not acquire shared lock on conf file: %s", 
+                resolv_config);
+            goto err;
+        }
 #endif
 
         if (0 != fstat(fd, &sb)) {
@@ -2120,6 +2128,13 @@ read_res_config_file(val_context_t * ctx)
             retval = VAL_CONF_NOT_FOUND;
             goto err;
         }
+#ifdef HAVE_FLOCK
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLK, &fl);
+#endif
+        close(fd);
+        fd = -1;
+
         val_log(ctx, LOG_NOTICE, "read_res_config_file(): Reading resolver policy from %s", resolv_config);
 
     } else {
@@ -2240,13 +2255,6 @@ read_res_config_file(val_context_t * ctx)
     FREE(buf);
 
   empty:
-    if (fd > 0 ) {
-#ifdef HAVE_FLOCK
-        fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
-#endif
-        close(fd);
-    }
 
     /*
      * Check if we have root hints 
@@ -2278,7 +2286,7 @@ read_res_config_file(val_context_t * ctx)
     if (fd != -1) {
 #ifdef HAVE_FLOCK
         fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
+        fcntl(fd, F_SETLK, &fl);
 #endif
         close(fd);
     }
@@ -2335,7 +2343,12 @@ read_root_hints_file(val_context_t * ctx)
             (fd = open(root_hints, O_RDONLY)) > 0) {
 #ifdef HAVE_FLOCK
         fl.l_type = F_RDLCK;
-        fcntl(fd, F_SETLKW, &fl);
+        if (-1 == fcntl(fd, F_SETLK, &fl)) {
+            val_log(ctx, LOG_WARNING, 
+                    "read_next_val_config_file(): Could not acquire shared lock on conf file: %s", 
+                    root_hints);
+            goto err;
+        }
 #endif
         if (0 != fstat(fd, &sb)) { 
             retval = VAL_CONF_NOT_FOUND;
@@ -2354,6 +2367,13 @@ read_root_hints_file(val_context_t * ctx)
             retval = VAL_CONF_NOT_FOUND;
             goto err;
         }
+#ifdef HAVE_FLOCK
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLK, &fl);
+#endif
+        close(fd);
+        fd = -1;
+
         val_log(ctx, LOG_NOTICE, "read_root_hints_file(): Reading root hints from %s",
                 root_hints);
 
@@ -2575,13 +2595,6 @@ read_root_hints_file(val_context_t * ctx)
     val_log(ctx, LOG_DEBUG, "read_root_hints_file(): Done reading root hints");
     FREE(buf);
 
-    if (fd > 0) {
-#ifdef HAVE_FLOCK
-        fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
-#endif
-        close(fd);
-    }
 
     return VAL_NO_ERROR;
 
@@ -2592,7 +2605,7 @@ read_root_hints_file(val_context_t * ctx)
     if (fd > 0) {
 #ifdef HAVE_FLOCK
         fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLKW, &fl);
+        fcntl(fd, F_SETLK, &fl);
 #endif
         close(fd);
     }
