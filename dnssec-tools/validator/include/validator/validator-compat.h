@@ -72,8 +72,8 @@ extern          "C" {
 #ifndef HAVE_MEMORY_H
 #define HAVE_MEMORY_H 1
 #endif
-#ifndef HAVE_SHA_256
-#define HAVE_SHA_256 1
+#ifndef HAVE_SHA_2
+#define HAVE_SHA_2 1
 #endif
 #ifndef HAVE_STDINT_H
 #define HAVE_STDINT_H 1

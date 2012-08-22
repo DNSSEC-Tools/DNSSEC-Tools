@@ -106,6 +106,9 @@ extern          "C" {
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32 
 #endif
+#ifndef SHA384_DIGEST_LENGTH
+#define SHA384_DIGEST_LENGTH 48 
+#endif
 #ifndef SHA512_DIGEST_LENGTH
 #define SHA512_DIGEST_LENGTH 64 
 #endif
@@ -119,6 +122,9 @@ extern          "C" {
 #endif
 #ifndef ALG_DS_HASH_SHA256
 #define ALG_DS_HASH_SHA256 2
+#endif
+#ifndef ALG_DS_HASH_SHA384
+#define ALG_DS_HASH_SHA384 4
 #endif
 
 /*
@@ -142,6 +148,8 @@ extern          "C" {
 #endif
 #define ALG_RSASHA256 8
 #define ALG_RSASHA512 10 
+#define ALG_ECDSAP256SHA256 13
+#define ALG_ECDSAP384SHA384 14
 
 /* query types for which edns0 is required */
 #ifdef LIBVAL_DLV

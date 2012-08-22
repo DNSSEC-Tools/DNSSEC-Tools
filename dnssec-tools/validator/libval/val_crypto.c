@@ -29,6 +29,11 @@
 #include <openssl/evp.h>
 #include <openssl/objects.h>    /* For NID_sha1 */
 
+#ifdef HAVE_SHA_2
+#include <openssl/ecdsa.h>
+#include <openssl/obj_mac.h>  /* for EC curves */
+#endif
+
 #include "val_crypto.h"
 #include "val_support.h"
 
@@ -369,7 +374,7 @@ rsasha_sigverify(val_context_t * ctx,
                   val_astatus_t * key_status, val_astatus_t * sig_status)
 {
     char            buf[1028];
-    int             buflen = 1024;
+    size_t          buflen = 1024;
     RSA            *rsa = NULL;
     u_char   sha_hash[MAX_DIGEST_LENGTH];
     size_t   hashlen = 0;
@@ -438,6 +443,121 @@ rsasha_sigverify(val_context_t * ctx,
     return;
 }
 
+#ifdef HAVE_SHA_2
+void
+ecdsa_sigverify(val_context_t * ctx,
+                const u_char *data,
+                size_t data_len,
+                const val_dnskey_rdata_t * dnskey,
+                const val_rrsig_rdata_t * rrsig,
+                val_astatus_t * key_status, val_astatus_t * sig_status)
+{
+    char            buf[1028];
+    size_t          buflen = 1024;
+    u_char   sha_hash[MAX_DIGEST_LENGTH];
+    EC_KEY   *eckey = NULL;
+    EC_GROUP *ecgroup = NULL;
+    EC_POINT *ecdsa_pub_key_pt = NULL;
+    BIGNUM *bn_pub_key = NULL;
+    ECDSA_SIG ecdsa_sig;
+
+    size_t   hashlen = 0;
+
+    val_log(ctx, LOG_DEBUG,
+            "ecdsa_sigverify(): parsing the public key...");
+
+    memset(sha_hash, 0, sizeof(sha_hash));
+
+    if ((eckey = EC_KEY_new()) == NULL) {
+        val_log(ctx, LOG_INFO,
+                "ecdsa_sigverify(): could not allocate ecdsa structure.");
+        *key_status = VAL_AC_INVALID_KEY;
+        return;
+    };
+
+    if (rrsig->algorithm == ALG_ECDSAP256SHA256) {
+        hashlen = SHA256_DIGEST_LENGTH; 
+        SHA256(data, data_len, sha_hash);
+        ecgroup = EC_GROUP_new_by_curve_name(NID_secp256k1);
+    } else if (rrsig->algorithm == ALG_ECDSAP384SHA384) {
+        hashlen = SHA384_DIGEST_LENGTH; 
+        SHA384(data, data_len, sha_hash);
+        ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
+    } 
+
+    
+    if ((ecgroup == NULL) || 
+        (!EC_KEY_set_group(eckey,ecgroup))) {
+        val_log(ctx, LOG_INFO,
+                "ecdsa_sigverify(): Could not create ECDSA key for given group.");
+        *key_status = VAL_AC_INVALID_KEY;
+        if (ecgroup) {
+            EC_GROUP_free(ecgroup);
+        }
+        EC_KEY_free(eckey);
+        return;
+    }
+
+    /* 
+     * contruct an EC_POINT from the "Q" field in the 
+     * dnskey->public_key, dnskey->public_key_len
+     */
+    bn_pub_key = BN_bin2bn(dnskey->public_key, (size_t)dnskey->public_key_len, NULL);
+    if (bn_pub_key == NULL) {
+        val_log(ctx, LOG_INFO,
+                "ecdsa_sigverify(): Error in parsing public key.");
+        EC_GROUP_free(ecgroup);
+        EC_KEY_free(eckey);
+        *key_status = VAL_AC_INVALID_KEY;
+    }
+
+    ecdsa_pub_key_pt = EC_POINT_new(ecgroup);
+    EC_POINT_bn2point(ecgroup, bn_pub_key, ecdsa_pub_key_pt, NULL);
+    if (!EC_KEY_set_public_key(eckey, ecdsa_pub_key_pt)) {
+        val_log(ctx, LOG_INFO,
+                "ecdsa_sigverify(): Error in parsing public key.");
+        BN_free(bn_pub_key);
+        EC_GROUP_free(ecgroup);
+        EC_KEY_free(eckey);
+        *key_status = VAL_AC_INVALID_KEY;
+        return;
+    }
+
+    val_log(ctx, LOG_DEBUG, "ecdsa_sigverify(): SHA hash = %s",
+            get_hex_string(sha_hash, hashlen, buf, buflen));
+    val_log(ctx, LOG_DEBUG,
+            "ecdsa_sigverify(): verifying ECDSA signature...");
+
+    /* 
+     * contruct ECDSA signature from the "r" and "s" fileds in 
+     * rrsig->signature, rrsig->signature_len
+     */
+    if (rrsig->signature_len == 2*hashlen) {
+        ecdsa_sig.r = BN_bin2bn(rrsig->signature, hashlen, NULL); 
+        ecdsa_sig.s = BN_bin2bn(&rrsig->signature[hashlen], hashlen, NULL); 
+    }
+
+    if (ECDSA_do_verify(sha_hash, hashlen, &ecdsa_sig, eckey) == 1) {
+        val_log(ctx, LOG_INFO, "ecdsa_sigverify(): returned SUCCESS");
+        *sig_status = VAL_AC_RRSIG_VERIFIED;
+    } else {
+        val_log(ctx, LOG_INFO, "ecdsa_sigverify(): returned FAILURE");
+        *sig_status = VAL_AC_RRSIG_VERIFY_FAILED;
+    }
+
+    /* Free all structures allocated */
+    if (ecdsa_sig.r)
+        BN_free(ecdsa_sig.r);
+    if (ecdsa_sig.s)
+        BN_free(ecdsa_sig.s);
+    BN_free(bn_pub_key);
+    EC_POINT_free(ecdsa_pub_key_pt);
+    EC_GROUP_free(ecgroup);
+    EC_KEY_free(eckey);
+
+    return;
+}
+#endif
 
 int
 ds_sha_hash_is_equal(u_char * name_n,
@@ -478,7 +598,7 @@ ds_sha_hash_is_equal(u_char * name_n,
     return 0;
 }
 
-#ifdef HAVE_SHA_256
+#ifdef HAVE_SHA_2
 int
 ds_sha256_hash_is_equal(u_char * name_n,
                         u_char * rrdata,
@@ -513,6 +633,45 @@ ds_sha256_hash_is_equal(u_char * name_n,
     FREE(qc_name_n);
 
     if (!memcmp(ds_digest, ds_hash, SHA256_DIGEST_LENGTH))
+        return 1;
+
+    return 0;
+}
+
+int
+ds_sha384_hash_is_equal(u_char * name_n,
+                        u_char * rrdata,
+                        size_t rrdatalen, 
+                        u_char * ds_hash,
+                        size_t ds_hash_len)
+{
+    u_char        ds_digest[SHA384_DIGEST_LENGTH];
+    size_t        namelen;
+    SHA512_CTX    c;
+    size_t          l_index;
+    u_char        *qc_name_n;
+
+    if (rrdata == NULL || ds_hash_len != SHA384_DIGEST_LENGTH)
+        return 0;
+
+    namelen = wire_name_length(name_n);
+    qc_name_n = (u_char *) MALLOC(namelen * sizeof(u_char));
+    if (qc_name_n == NULL) {
+        return 0;
+    }
+    memcpy(qc_name_n, name_n, namelen);
+    l_index = 0;
+    lower_name(qc_name_n, &l_index);
+
+    memset(ds_digest, 0, SHA384_DIGEST_LENGTH);
+
+    SHA384_Init(&c);
+    SHA384_Update(&c, qc_name_n, namelen);
+    SHA384_Update(&c, rrdata, rrdatalen);
+    SHA384_Final(ds_digest, &c);
+    FREE(qc_name_n);
+
+    if (!memcmp(ds_digest, ds_hash, SHA384_DIGEST_LENGTH))
         return 1;
 
     return 0;
