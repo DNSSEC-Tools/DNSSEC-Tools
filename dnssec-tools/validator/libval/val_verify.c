@@ -207,11 +207,21 @@ val_sigverify(val_context_t * ctx,
     case ALG_NSEC3_RSASHA1:
 #endif
     case ALG_RSASHA1:
+#ifdef HAVE_SHA_2
     case ALG_RSASHA256:
     case ALG_RSASHA512:
+#endif
         rsasha_sigverify(ctx, data, data_len, dnskey, rrsig,
                           dnskey_status, sig_status);
         break;
+
+#ifdef HAVE_SHA_2
+    case ALG_ECDSAP256SHA256:
+    case ALG_ECDSAP384SHA384:
+        ecdsa_sigverify(ctx, data, data_len, dnskey, rrsig,
+                        dnskey_status, sig_status);
+        break;
+#endif
 
     default:
         val_log(ctx, LOG_INFO, "val_sigverify(): Unsupported algorithm %d.",
@@ -557,9 +567,14 @@ ds_hash_is_equal(val_context_t *ctx,
 
     } 
 
-#ifdef HAVE_SHA_256
+#ifdef HAVE_SHA_2
     else if (ds_hashtype == ALG_DS_HASH_SHA256) {
         return ds_sha256_hash_is_equal(name_n, dnskey->rr_rdata,
+                                       (size_t)dnskey->rr_rdata_length, 
+                                       ds_hash, ds_hash_len);
+    } 
+    else if (ds_hashtype == ALG_DS_HASH_SHA384) {
+        return ds_sha384_hash_is_equal(name_n, dnskey->rr_rdata,
                                        (size_t)dnskey->rr_rdata_length, 
                                        ds_hash, ds_hash_len);
     } 

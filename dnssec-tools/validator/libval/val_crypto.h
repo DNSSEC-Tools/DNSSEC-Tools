@@ -36,14 +36,30 @@ void            rsasha_sigverify(val_context_t * ctx,
                                   val_astatus_t * key_status,
                                   val_astatus_t * sig_status);
 
+#ifdef HAVE_SHA_2
+void            ecdsa_sigverify(val_context_t * ctx,
+                                const u_char *data,
+                                size_t data_len,
+                                const val_dnskey_rdata_t * dnskey,
+                                const val_rrsig_rdata_t * rrsig,
+                                val_astatus_t * key_status,
+                                val_astatus_t * sig_status);
+#endif
+
 int             ds_sha_hash_is_equal(u_char * name_n,
                                      u_char * rrdata,
                                      size_t rrdatalen,
                                      u_char * ds_hash,
                                      size_t ds_hash_len);
 
-#ifdef HAVE_SHA_256
+#ifdef HAVE_SHA_2
 int             ds_sha256_hash_is_equal(u_char * name_n,
+                                        u_char * rrdata,
+                                        size_t rrdatalen,
+                                        u_char * ds_hash,
+                                        size_t ds_hash_len);
+
+int             ds_sha384_hash_is_equal(u_char * name_n,
                                         u_char * rrdata,
                                         size_t rrdatalen,
                                         u_char * ds_hash,
