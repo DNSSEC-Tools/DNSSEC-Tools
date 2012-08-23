@@ -1468,7 +1468,7 @@ read_next_val_config_file(val_context_t *ctx,
     int include_seen = 0;
     char *dnsval_filename = NULL;
     struct dnsval_list *dnsval_l;
-    int retval;
+    int retval = VAL_NO_ERROR;
     char *next_label;
     int done;
     char *env = NULL;
