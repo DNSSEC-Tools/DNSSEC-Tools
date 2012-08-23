@@ -159,7 +159,7 @@ main(int argc, char *argv[])
        sa->sin_port = htons(port);
        sa->sin_family = AF_INET;
        sock_size = sizeof(struct sockaddr_in);
-       INET_PTON(AF_INET, node, ((struct sockaddr *)&sa), &sock_size);
+       INET_PTON(AF_INET, node, ((struct sockaddr *)sa), &sock_size);
     } 
 #ifdef VAL_IPV6
     else {
@@ -167,7 +167,7 @@ main(int argc, char *argv[])
        sock_size = sizeof(struct sockaddr_in6);
        sa6->sin6_port = htons(port);
        sa6->sin6_family = AF_INET6;
-       INET_PTON(AF_INET6, node, ((struct sockaddr *)&sa6), &sock_size);
+       INET_PTON(AF_INET6, node, ((struct sockaddr *)sa6), &sock_size);
     }
 #endif
 
