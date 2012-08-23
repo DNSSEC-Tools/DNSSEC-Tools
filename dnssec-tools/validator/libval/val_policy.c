@@ -2099,6 +2099,7 @@ read_res_config_file(val_context_t * ctx)
 
     if (fd > 0) {
 #ifdef HAVE_FLOCK
+        memset(&fl, 0, sizeof(fl));
         fl.l_type = F_RDLCK;
         if (-1 == fcntl(fd, F_SETLK, &fl)) {
             val_log(ctx, LOG_WARNING, 
@@ -2342,6 +2343,7 @@ read_root_hints_file(val_context_t * ctx)
     if (NULL != root_hints && 
             (fd = open(root_hints, O_RDONLY)) > 0) {
 #ifdef HAVE_FLOCK
+        memset(&fl, 0, sizeof(fl));
         fl.l_type = F_RDLCK;
         if (-1 == fcntl(fd, F_SETLK, &fl)) {
             val_log(ctx, LOG_WARNING, 
@@ -2547,10 +2549,10 @@ read_root_hints_file(val_context_t * ctx)
             goto err;
         }
         if (type_h != ns_t_rrsig) {
-            /** Add this record to its chain of val_rr_rec's. */
+            /* Add this record to its chain. */
             retval = add_to_set(rr_set, rdata_len_h, rdata_n);
         } else {
-            /** Add this record to the sig of rrset_rec. */
+            /* Add this record's sig to its chain. */
             retval = add_as_sig(rr_set, rdata_len_h, rdata_n);
         }
         if (retval != VAL_NO_ERROR) {
