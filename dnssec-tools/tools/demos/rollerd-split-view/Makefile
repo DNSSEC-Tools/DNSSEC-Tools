@@ -25,7 +25,7 @@ new-files:
 
 zones-short:
 	cd ${DIREXOUT} ; zonesigner -krf example.com.krf -zone example.com -zsklife 90 -genkeys example.com
-	cd ${DIREXIN} ; zonesigner -krf inside.example.com.krf -zone example.com -zsklife 60 -e now+25 -genkeys inside.example.com
+	cd ${DIREXIN} ; zonesigner -krf inside.example.com.krf -zone example.com -zsklife 60 -e +25 -genkeys inside.example.com
 	zonesigner -zsklife 30 -genkeys test.com
 
 clean:
