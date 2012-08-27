@@ -22,7 +22,7 @@ typedef int     val_result_t;
 int             ds_hash_is_equal(val_context_t *ctx,
                     u_char ds_hashtype, u_char * ds_hash,
                     size_t ds_hash_len, u_char * name_n,
-                    struct val_rr_rec *dnskey, val_astatus_t * ds_status);
+                    struct rrset_rr *dnskey, val_astatus_t * ds_status);
 
 /*
  * Compare if DNSKEY matches DS 

@@ -174,7 +174,7 @@ wire_name_labels(const u_char * field)
 }
 
 void
-res_sq_free_rr_recs(struct val_rr_rec **rr)
+res_sq_free_rr_recs(struct rrset_rr **rr)
 {
     if (rr == NULL)
         return;
@@ -321,7 +321,7 @@ int
 add_to_set(struct rrset_rec *rr_set, size_t rdata_len_h,
            u_char * rdata)
 {
-    struct val_rr_rec  *rr;
+    struct rrset_rr  *rr;
 
     if ((rr_set == NULL) || (rdata == NULL) || (rdata_len_h == 0))
         return VAL_BAD_ARGUMENT;
@@ -329,7 +329,7 @@ add_to_set(struct rrset_rec *rr_set, size_t rdata_len_h,
     /*
      * Make sure we got the memory for it 
      */
-    rr = (struct val_rr_rec *) MALLOC(sizeof(struct val_rr_rec));
+    rr = (struct rrset_rr *) MALLOC(sizeof(struct rrset_rr));
     if (rr == NULL)
         return VAL_OUT_OF_MEMORY;
 
@@ -345,7 +345,7 @@ add_to_set(struct rrset_rec *rr_set, size_t rdata_len_h,
     if (rr_set->rrs_data == NULL) {
         rr_set->rrs_data = rr;
     } else {
-        struct val_rr_rec  *tmp_rr;
+        struct rrset_rr  *tmp_rr;
         tmp_rr = rr_set->rrs_data;
         while (tmp_rr->rr_next)
             tmp_rr = tmp_rr->rr_next;
@@ -368,7 +368,7 @@ int
 add_as_sig(struct rrset_rec *rr_set, size_t rdata_len_h,
            u_char * rdata)
 {
-    struct val_rr_rec  *rr;
+    struct rrset_rr  *rr;
 
     if ((rr_set == NULL) || (rdata == NULL) || (rdata_len_h == 0))
         return VAL_BAD_ARGUMENT;
@@ -376,7 +376,7 @@ add_as_sig(struct rrset_rec *rr_set, size_t rdata_len_h,
     /*
      * Make sure we got the memory for it 
      */
-    rr = (struct val_rr_rec *) MALLOC(sizeof(struct val_rr_rec));
+    rr = (struct rrset_rr *) MALLOC(sizeof(struct rrset_rr));
     if (rr == NULL)
         return VAL_OUT_OF_MEMORY;
 
@@ -393,7 +393,7 @@ add_as_sig(struct rrset_rec *rr_set, size_t rdata_len_h,
          * If this code is executed, then there is a problem brewing.
          * It will be caught in pre_verify to keep the code level.
          */
-        struct val_rr_rec  *tmp_rr;
+        struct rrset_rr  *tmp_rr;
         tmp_rr = rr_set->rrs_sig;
         while (tmp_rr->rr_next)
             tmp_rr = tmp_rr->rr_next;
@@ -1140,18 +1140,18 @@ lower(u_int16_t type_h, u_char * rdata, size_t len)
 
 
 
-struct val_rr_rec  *
-copy_rr_rec(u_int16_t type_h, struct val_rr_rec *r, int dolower)
+struct rrset_rr  *
+copy_rr_rec(u_int16_t type_h, struct rrset_rr *r, int dolower)
 {
     /*
      * Make a copy of an RR, lowering the case of any contained
      * domain name in the RR section.
      */
-    struct val_rr_rec  *the_copy;
+    struct rrset_rr  *the_copy;
 
     if (r == NULL)
         return NULL;
-    the_copy = (struct val_rr_rec *) MALLOC(sizeof(struct val_rr_rec));
+    the_copy = (struct rrset_rr *) MALLOC(sizeof(struct rrset_rr));
 
     if (the_copy == NULL)
         return NULL;
@@ -1176,44 +1176,8 @@ copy_rr_rec(u_int16_t type_h, struct val_rr_rec *r, int dolower)
     return the_copy;
 }
 
-/*
- * copy the entire list of rr_recs
- *
- * see copy_rr_rec() to copy a single val_rr_rec
- */
-struct val_rr_rec  *
-copy_rr_rec_list(u_int16_t type_h, struct val_rr_rec *o_rr, int dolower)
-{
-    struct val_rr_rec  *n_rr, *n_head;
-
-    if (NULL == o_rr)
-        return NULL;
-
-    /*
-     * copy list head
-     */
-    n_head = n_rr = copy_rr_rec(type_h, o_rr, dolower);
-    if (NULL == n_rr)
-        return NULL;
-
-    /*
-     * loop over list and copy each record
-     */
-    while (o_rr->rr_next) {
-        n_rr->rr_next = copy_rr_rec(type_h, o_rr->rr_next, dolower);
-        if (NULL == n_rr->rr_next)
-            break;
-
-        o_rr = o_rr->rr_next;
-        n_rr = n_rr->rr_next;
-    }
-    n_rr->rr_next = NULL;
-
-    return n_head;
-}
-
 int
-link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
+link_rr(struct rrset_rr **cs, struct rrset_rr *cr)
 {
     /*
      * Insert a copied RR into the set being prepared for signing.  This
@@ -1221,7 +1185,7 @@ link_rr(struct val_rr_rec **cs, struct val_rr_rec *cr)
      */
     int             ret_val;
     int             length;
-    struct val_rr_rec  *temp_rr;
+    struct rrset_rr  *temp_rr;
 
     if (cs == NULL)
         return 0;
@@ -1306,9 +1270,9 @@ struct rrset_rec *
 copy_rrset_rec(struct rrset_rec *rr_set)
 {
     struct rrset_rec *copy_set;
-    struct val_rr_rec  *orig_rr;
-    struct val_rr_rec  *copy_rr;
-    size_t          o_length;
+    struct rrset_rr  *orig_rr;
+    struct rrset_rr  *copy_rr;
+    size_t o_length;
 
     if (rr_set == NULL)
         return NULL;
@@ -1562,7 +1526,7 @@ merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info)
     struct rrset_rec *new_rr, *prev;
     struct rrset_rec *old;
     struct rrset_rec *trail_new;
-    struct val_rr_rec  *rr_exchange;
+    struct rrset_rr  *rr_exchange;
 
     if (new_info == NULL)
         return;

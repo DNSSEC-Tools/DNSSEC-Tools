@@ -148,7 +148,7 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
                      * copy from new to old: cred, status, section, ans_kind
                      * exchange: data, sig
                      */
-                    struct val_rr_rec  *rr_exchange;
+                    struct rrset_rr  *rr_exchange;
 
                     old->rrs_cred = new_rr->rrs_cred;
                     old->rrs_section = new_rr->rrs_section;

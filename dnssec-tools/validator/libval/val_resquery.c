@@ -55,7 +55,7 @@ static int _process_rcvd_response(val_context_t * context,
  * create a name_server struct from the given address rdata
  */
 static int
-extract_glue_from_rdata(struct val_rr_rec *addr_rr, struct name_server *ns)
+extract_glue_from_rdata(struct rrset_rr *addr_rr, struct name_server *ns)
 {
     struct sockaddr_in *sock_in;
 #ifdef VAL_IPV6
@@ -490,7 +490,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                           struct name_server **pending_glue)
 {
     struct rrset_rec *unchecked_set;
-    struct val_rr_rec  *ns_rr;
+    struct rrset_rr  *ns_rr;
     struct name_server *temp_ns;
     struct name_server *ns;
     struct name_server *pending_glue_last;
@@ -1201,11 +1201,11 @@ follow_referral_or_alias_link(val_context_t * context,
         }                                                               \
         else {                                                          \
             if (type_h != ns_t_rrsig) {                                 \
-                /* Add this record to its chain of val_rr_rec's. */     \
+                /* Add this record to its chain. */                     \
                 ret_val = add_to_set(rr_set,rdata_len_h,rdata);         \
             } else if (VAL_NO_ERROR ==                                  \
                     (ret_val = add_as_sig(rr_set,rdata_len_h,rdata))) { \
-                /* Add this record to the sig of rrset_rec (above). */  \
+                /* Add this record's sig to its chain. */               \
                 /* and override the zonecut using the rrsig info */     \
                 if (rr_set->rrs_zonecut_n) {                            \
                     FREE(rr_set->rrs_zonecut_n);                        \
@@ -1535,7 +1535,6 @@ digest_response(val_context_t * context,
     struct val_query_chain *matched_q;
     char query_name_p[NS_MAXDNAME];
     char rrs_zonecut_p[NS_MAXDNAME];
-    char name_p[NS_MAXDNAME];
     struct name_server *resp_ns = NULL;
     int isrelv = 0;
     char name_buf[INET6_ADDRSTRLEN + 1];

@@ -22,11 +22,9 @@ val_free_answer_chain(struct val_answer_chain *answers)
     
     while (ans) {
         struct val_answer_chain *temp_ans = ans;
-        if (temp_ans->val_ans_name) 
-            FREE(temp_ans->val_ans_name);
         /* the answer is actually of type val_rr_rec */
         if (temp_ans->val_ans) {
-            res_sq_free_rr_recs((struct val_rr_rec **)(&temp_ans->val_ans));
+            FREE((struct val_rr_rec *)(temp_ans->val_ans));
         }
         ans=temp_ans->val_ans_next;
         FREE(temp_ans);
@@ -44,7 +42,6 @@ val_get_answer_from_result(val_context_t *context, const char *name, int class_h
     struct val_answer_chain *last_ans = NULL;
     int retval = VAL_NO_ERROR;
     const char *n = NULL;
-    int len;
     char *name_alias = NULL;
     int trusted, validated;
     
@@ -61,12 +58,7 @@ val_get_answer_from_result(val_context_t *context, const char *name, int class_h
         if (ans == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
-        ans->val_ans_name = strdup(name); 
-        if (ans->val_ans_name == NULL) {
-            FREE(ans);
-            ans = NULL;
-            return VAL_OUT_OF_MEMORY;
-        } 
+        strncpy(ans->val_ans_name, name, NS_MAXDNAME-1);
         ans->val_ans_status = VAL_UNTRUSTED_ANSWER;
         ans->val_ans_class = class_h;
         ans->val_ans_type = type_h;
@@ -130,14 +122,7 @@ val_get_answer_from_result(val_context_t *context, const char *name, int class_h
         } 
 
         /* Convert the name to a string */
-        ans->val_ans_name = NULL;    
-        len = strlen(n) + 1;
-        ans->val_ans_name = (char *) MALLOC (len * sizeof (char));
-        if (ans->val_ans_name == NULL) {
-            retval = VAL_OUT_OF_MEMORY;
-            goto err;
-        }
-        strcpy(ans->val_ans_name, n);
+        strncpy(ans->val_ans_name, n, MAXDNAME-1);
 
         /* 
          * if the current answer was validated or 
