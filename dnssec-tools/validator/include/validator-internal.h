@@ -409,6 +409,13 @@ extern          "C" {
         struct val_digested_auth_chain *val_ac_next;
     };
 
+    struct rrset_rr {
+        unsigned char *rr_rdata;       /* Raw RDATA */
+        val_astatus_t   rr_status;
+        size_t rr_rdata_length;      /* RDATA length */
+        struct rrset_rr  *rr_next;
+    };
+
     struct rrset_rec {
         int       rrs_rcode;
         u_char   *rrs_name_n;       /* Owner */
@@ -419,8 +426,8 @@ extern          "C" {
         u_char  rrs_section;      /* VAL_FROM_... */
         struct sockaddr *rrs_server;      /* respondent server */
         unsigned long rrs_ns_options;
-        struct val_rr_rec  *rrs_data; /* All data RR's */
-        struct val_rr_rec  *rrs_sig;  /* All signatures */
+        struct rrset_rr  *rrs_data; /* All data RR's */
+        struct rrset_rr  *rrs_sig;  /* All signatures */
         u_char *rrs_zonecut_n;
         u_char rrs_cred;       /* SR_CRED_... */
         u_char rrs_ans_kind;   /* SR_ANS_... */

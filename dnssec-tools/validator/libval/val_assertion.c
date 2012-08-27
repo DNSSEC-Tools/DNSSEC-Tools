@@ -173,34 +173,20 @@ is_type_set(u_char * field, size_t field_len, u_int16_t type)
     return 0;
 }
 
-    
-void
-free_val_rrset_members(struct val_rrset_rec *r)
-{
-    if (r == NULL)
-        return;
-
-    if (r->val_rrset_name)
-        FREE(r->val_rrset_name);
-    if (r->val_rrset_server)
-        FREE(r->val_rrset_server);
-    if (r->val_rrset_data != NULL)
-        res_sq_free_rr_recs(&r->val_rrset_data);
-    if (r->val_rrset_sig != NULL)
-        res_sq_free_rr_recs(&r->val_rrset_sig);
-            
-}
-
 static void
 free_val_rrset(struct val_rrset_rec *r)
 {
     if (r == NULL)
         return;
 
-    free_val_rrset_members(r);
+    if (r->val_rrset_data)
+        FREE(r->val_rrset_data);
+    if (r->val_rrset_sig)
+        FREE(r->val_rrset_sig);
+
     FREE(r);
 }
-
+    
 static void
 val_free_authentication_chain_structure(struct val_authentication_chain *trust)
 {
@@ -1033,14 +1019,14 @@ find_trust_point(val_context_t * ctx, u_char * zone_n,
 }
 
 static int
-is_trusted_key(val_context_t * ctx, u_char * zone_n, struct val_rr_rec *key, 
+is_trusted_key(val_context_t * ctx, u_char * zone_n, struct rrset_rr *key, 
                val_astatus_t * status, u_int32_t flags, u_int32_t *ttl_x)
 {
     policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
     size_t       name_len;
     u_char       *ep; 
     val_dnskey_rdata_t dnskey, *dnskey_p = &dnskey;
-    struct val_rr_rec  *curkey;
+    struct rrset_rr  *curkey;
     u_char       *zp;
     int ta_specified;
     int found;
@@ -1496,7 +1482,7 @@ build_pending_query(val_context_t *context,
     u_char       *signby_name_n;
     u_int16_t       tzonestatus;
     int             retval;
-    struct val_rr_rec  *cur_rr;
+    struct rrset_rr  *cur_rr;
     u_int32_t ttl_x = 0;
     val_astatus_t  status = VAL_AC_UNSET;
 
@@ -1876,11 +1862,64 @@ assimilate_answers(val_context_t * context,
     return VAL_NO_ERROR;
 }
 
+/*
+ * copy the entire list of rr_recs
+ */
+static struct val_rr_rec  *
+copy_rr_rec_list(struct rrset_rr *o_rr)
+{
+    struct rrset_rr *c_rr;
+    struct val_rr_rec *n_rr, *head_rr;
+    size_t siz = 0;;
+    size_t off = 0;;
+    u_char *buf;
+
+    if (NULL == o_rr)
+        return NULL;
+
+    /*
+     * First determine the size to be allocated for the entire list
+     */
+    c_rr = o_rr;
+    while(c_rr) {
+        siz += c_rr->rr_rdata_length + sizeof(struct val_rr_rec);
+        c_rr = c_rr->rr_next;
+    }
+
+    buf = (u_char *) MALLOC (siz * sizeof(u_char));
+    if (NULL == buf)
+        return NULL;
+
+    head_rr = (struct val_rr_rec *)buf;
+
+    /*
+     * Next, copy the list contents 
+     */
+    c_rr = o_rr;
+    while(c_rr) {
+        n_rr = (struct val_rr_rec *)buf;
+        /* data is at the end */
+        n_rr->rr_rdata = buf+sizeof(struct val_rr_rec);
+        memcpy(n_rr->rr_rdata, c_rr->rr_rdata, c_rr->rr_rdata_length);
+        n_rr->rr_rdata_length = c_rr->rr_rdata_length;
+        n_rr->rr_status = c_rr->rr_status;
+        if (c_rr->rr_next) {
+            buf += sizeof(struct val_rr_rec) + n_rr->rr_rdata_length;
+            n_rr->rr_next = (struct val_rr_rec *)buf;
+        } else {
+            n_rr->rr_next = NULL;
+        }
+        c_rr = c_rr->rr_next;
+    }
+
+    return head_rr;
+}
+
+
 static int
 clone_val_rrset(struct rrset_rec *old_rrset, 
                 struct val_rrset_rec **new_rrset)
 {
-    int             retval;
     struct timeval  now;
 
     if (new_rrset == NULL)
@@ -1901,13 +1940,6 @@ clone_val_rrset(struct rrset_rec *old_rrset,
     if (old_rrset != NULL) {
         (*new_rrset)->val_rrset_rcode = (int)old_rrset->rrs_rcode;
 
-        (*new_rrset)->val_rrset_name = 
-            (char *) MALLOC (NS_MAXDNAME * sizeof(char));
-        if ((*new_rrset)->val_rrset_name == NULL) {
-            retval = VAL_OUT_OF_MEMORY;
-            goto err;
-        }
-        
         if (ns_name_ntop(old_rrset->rrs_name_n, 
                      (*new_rrset)->val_rrset_name,
                      NS_MAXDNAME) < 0) {
@@ -1921,38 +1953,26 @@ clone_val_rrset(struct rrset_rec *old_rrset,
         (*new_rrset)->val_rrset_type = (int)old_rrset->rrs_type_h;
         (*new_rrset)->val_rrset_section = (int)old_rrset->rrs_section;
         (*new_rrset)->val_rrset_data =
-            copy_rr_rec_list((*new_rrset)->val_rrset_type,
-                             old_rrset->rrs_data, 0);
+            copy_rr_rec_list(old_rrset->rrs_data);
         (*new_rrset)->val_rrset_sig =
-            copy_rr_rec_list((*new_rrset)->val_rrset_type,
-                             old_rrset->rrs_sig, 0);
+            copy_rr_rec_list(old_rrset->rrs_sig);
 
         /* Adjust the TTL */
         gettimeofday(&now, NULL);
         (*new_rrset)->val_rrset_ttl = (now.tv_sec >= old_rrset->rrs_ttl_x) ? 0 :
                                         (long) (old_rrset->rrs_ttl_x - now.tv_sec);
         if (old_rrset->rrs_server) {
-            (*new_rrset)->val_rrset_server =
-                (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
-            if ((*new_rrset)->val_rrset_server == NULL) {
-                retval = VAL_OUT_OF_MEMORY;
-                goto err;
-            }
-            memcpy((*new_rrset)->val_rrset_server,
+            memcpy(&((*new_rrset)->val_rrset_server),
                    old_rrset->rrs_server,
                    sizeof(struct sockaddr_storage));
 
         } else {
-            (*new_rrset)->val_rrset_server = NULL;
+            memset(&((*new_rrset)->val_rrset_server), 0, 
+                    sizeof(struct sockaddr_storage));
         }
     }
 
     return VAL_NO_ERROR;
-
-  err:
-    free_val_rrset(*new_rrset);
-    *new_rrset = NULL;
-    return retval;
 }
 
 static struct val_digested_auth_chain *
@@ -4313,11 +4333,8 @@ try_verify_assertion(val_context_t * context,
                         /*
                          * store the RRSIG in the assertion 
                          */
-                        next_as->val_ac_rrset.ac_data->rrs_sig =
-                            copy_rr_rec_list(pending_rrset->
-                                             rrs_type_h,
-                                             pending_rrset->
-                                             rrs_sig, 0);
+                        next_as->val_ac_rrset.ac_data->rrs_sig = pending_rrset->rrs_sig;
+                        pending_rrset->rrs_sig = NULL;
                         next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
                         /*
                          * create a pending query for the trust portion 
@@ -4480,7 +4497,7 @@ fix_validation_result(val_context_t * context,
                     /*
                      * see if one of the DNSKEYs links up 
                      */
-                    struct val_rr_rec  *drr;
+                    struct rrset_rr  *drr;
                     for (drr = as->val_ac_rrset.ac_data->rrs_data; drr;
                          drr = drr->rr_next) {
                         if (drr->rr_status ==
@@ -7037,7 +7054,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
             as->val_as_tid, remaining ? *remaining : 0);
 #endif
 
-  try_again:
+    do { 
     initial_q = qfq = as->val_as_queries;
     as_remain = 0;
 
@@ -7151,8 +7168,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     }
 
     /* check if more queries have been added */
-    if (initial_q != as->val_as_queries)
-        goto try_again;
+    } while (initial_q != as->val_as_queries);
 
     if ((VAL_NO_ERROR == retval) && (NULL != as->val_as_results)) {
         free_qfq_chain(context, as->val_as_queries);

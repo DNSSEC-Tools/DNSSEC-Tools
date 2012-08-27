@@ -76,7 +76,7 @@ struct timeval;
  * a matching record in the query cache 
  */
 #define VAL_QFLAGS_NOCACHE_MASK     0xff000000
-#define VAL_QUERY_EDNS0_FALLBACK    0x01000000
+#define VAL_QUERY_EDNS0_FALLBACK    0x01000000 //obsolete
 #define VAL_QUERY_GLUE_REQUEST      0x02000000
 
 
@@ -166,6 +166,12 @@ typedef struct val_context_opt {
     /*
      * Response structures  
      */
+
+    /*
+     * WARNING: DO NOT change the order of struct members in this
+     * struct. At certain times 'struct val_rr_rec' is typecast to
+     * 'struct rr_rec' 
+     */
     struct val_rr_rec {
         size_t rr_rdata_length;      /* RDATA length */
         unsigned char *rr_rdata;       /* Raw RDATA */
@@ -175,12 +181,12 @@ typedef struct val_context_opt {
 
     struct val_rrset_rec {
         int val_rrset_rcode;
-        char  *val_rrset_name;       /* Owner */
+        char val_rrset_name[NS_MAXDNAME];/* Owner */
         int val_rrset_class;      /* ns_c_... */
         int val_rrset_type;       /* ns_t_... */
         long val_rrset_ttl;        /* Received ttl */
         int  val_rrset_section;      /* VAL_FROM_... */
-        struct sockaddr *val_rrset_server;      /* respondent server */
+        struct sockaddr_storage val_rrset_server;      /* respondent server */
         struct val_rr_rec  *val_rrset_data; /* All data RR's */
         struct val_rr_rec  *val_rrset_sig;  /* All signatures */
     };
@@ -197,6 +203,11 @@ typedef struct val_context_opt {
         struct val_authentication_chain *val_ac_trust;
     };
 
+    /*
+     * WARNING: DO NOT change the order of struct members in this
+     * struct. At certain times 'struct val_rr_rec' is typecast to
+     * 'struct rr_rec' 
+     */
     struct rr_rec {
         size_t rr_length;
         unsigned char *rr_data;
@@ -216,7 +227,7 @@ typedef struct val_context_opt {
 
     struct val_answer_chain {
         val_status_t   val_ans_status;
-        char *val_ans_name;
+        char val_ans_name[NS_MAXDNAME];
         int val_ans_class;
         int val_ans_type;
         struct rr_rec *val_ans;

@@ -578,7 +578,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
             canonname = result->val_ans_name;
 
             /*
-             * Loop for each rr in the linked list of val_rr_rec structures 
+             * Loop for each rr in the linked list 
              */
             while (rr != NULL) {
                 struct addrinfo *ainfo = NULL;
