@@ -2756,7 +2756,8 @@ sub rollerdcmd
 	# Break the line into its pieces.
 	#
 #	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/ 	]+)\W+([0-9]+)/;
-	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/]+)\W+([0-9]+)/;
+#	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-_,:\/]+)\W+([0-9]+)/;
+	$line =~ /^([a-z]+)\W+"(.+)"\W+([0-9]+)/;
 	$cmd	= $1;
 	$zone	= $2;
 	$phase	= $3;
@@ -2973,6 +2974,7 @@ sub rollerdcmd
 	else
 	{
 		print "\nUNKNOWN ROLLERD COMMAND:  \"$cmd\"\n\n";
+print "rollerd:  bad command - \"$line\"\n\n";
 	}
 
 	#
