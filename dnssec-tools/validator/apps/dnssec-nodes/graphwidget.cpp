@@ -172,7 +172,7 @@ void GraphWidget::scaleWindow() {
     qreal newscale = qMin(windowSize.width() / myScene->sceneRect().width(), windowSize.height() / myScene->sceneRect().width());
 
     // apply it
-    scale(.95 * newscale, .95 * newscale);
+    scale(1.2 * newscale, 1.2 * newscale);
 }
 
 void GraphWidget::doLookupFromLineEdit() {
