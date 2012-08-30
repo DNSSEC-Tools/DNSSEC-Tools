@@ -6897,6 +6897,49 @@ sub halt_handler
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	chrrdir()
+#
+# Purpose:	Move into a rollrec's directory, if it has one defined.
+#
+sub chrrdir
+{
+	my $rname = shift;			# Rollrec's name.
+	my $rrdir = shift;			# Rollrec's directory.
+	my $id = shift;				# Call identity.  (optional)
+
+	#
+	# Don't do anything if the rollrec doesn't have a directory defined.
+	#
+	return(1) if(!defined($rrdir));
+
+	#
+	# Ensure we've got some trailing space at the end of the id string.
+	#
+	$id .= '  ' if($id !~ /\s$/);
+
+	#
+	# First we'll move into the execution directory, in case the rollrec
+	# directory isn't absolute.
+	#
+	chdir($xqtdir);
+
+	#
+	# Try to move into the rollrec's directory.  If we can't, we'll
+	# return a failure.
+	#
+	if(chdir($rrdir) == 0)
+	{
+
+		rolllog_log(LOG_ERR,$rname,$id . "invalid rollrec directory \"$rrdir\"; skipping...");
+
+		return(0);
+	}
+
+	rolllog_log(LOG_TMI,$rname,$id . "using rollrec directory \"$rrdir\"");
+	return(1);
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	cleanup()
 #
 # Purpose:	Perform whatever clean-up is required.
