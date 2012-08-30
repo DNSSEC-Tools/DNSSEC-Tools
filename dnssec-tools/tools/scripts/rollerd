@@ -4876,39 +4876,22 @@ sub cmd_display
 sub cmd_dspub
 {
 	my $zone = shift;				# Command's data.
-
-	my $rrr;					# Reference to rollrec.
-	my $phase;					# Zone's phase.
+	my $curdir;					# Current directory.
 
 	rolllog_log(LOG_TMI,'<command>',"dspub command received; zone - \"$zone\"");
 
 	#
-	# Get the zone's rollrec.
+	# Move the zone to KSK phase 7.  This might also do some directory
+	# swapping, so we'll save the current directory as well.
 	#
-	$rrr = rollrec_fullrec($zone);
-	if(!defined($rrr))
-	{
-		rolllog_log(LOG_ERR,'<command>',"no rollrec defined for zone $zone");
-		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
-		return;
-	}
+	$curdir = cwd();
+	dspubber('dspub',$zone);
 
 	#
-	# Ensure we're in the proper KSK-rollover phase to do this command.
+	# Return to the previous directory.
 	#
-	$phase = rollrec_recval($zone,'kskphase');
-	if($phase != 6)
-	{
-		rolllog_log(LOG_INFO,'<command>',"zone not in KSK-rollover phase 6");
-		rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"$zone not in KSK-rollover phase 6");
-		return;
-	}
+	chdir($curdir);
 
-	#
-	# Change the zone's rollover phase to phase 7 (the final phase).
-	#
-	nextphase($zone,$rrr,7,'KSK');
-	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
 	sleeper_override();
 }
 
@@ -4922,32 +4905,28 @@ sub cmd_dspuball
 {
 	my $rrr;					# Reference to rollrec.
 	my $phase;					# Zone's phase.
+	my $curdir;					# Current directory.
 
 	rolllog_log(LOG_TMI,'<command>',"dspuball command received");
 
+	#
+	# This might do some directory swapping, so we'll save the
+	# current directory.
+	#
+	$curdir = cwd();
+
+	#
+	# Move all the zones in KSK phase 6 over to KSK phase 7.
+	#
 	foreach my $zone (sort(rollrec_names()))
 	{
-		#
-		# Ensure we're in the proper KSK-rollover phase.
-		#
-		$phase = rollrec_recval($zone,'kskphase');
-		next if($phase != 6);
-
-		#
-		# Get the rollrec for this name.
-		#
-		$rrr = rollrec_fullrec($zone);
-		if(!defined($rrr))
-		{
-			rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
-		}
-
-		#
-		# Change the zone's rollover phase to phase 7.
-		#
-		nextphase($zone,$rrr,7,'KSK');
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
+		dspubber('dspuball',$zone);
 	}
+
+	#
+	# Return to the previous directory.
+	#
+	chdir($curdir);
 
 	sleeper_override();
 }
@@ -6359,6 +6338,73 @@ sub cmd_zsargs
 	rollrec_close();
 	rollrec_unlock();
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zsargs command completed\n");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	dspubber()
+#
+# Purpose:	Move the specified zone to KSK rollover phase 7, but only if
+#		it's in KSK phase 6.
+#
+#		If the zone isn't in KSK phase 6, then the zone's phase will
+#		be left alone.  If the call came from cmd_dspub(), then error 
+#		messages will be generated; if it came from cmd_dspuball(),
+#		then no error messages will be given.
+#
+#		WARNING:  dspubber() calls chrrdir() to move into a zone's
+#			  directory.  After doing its job, it does *not*
+#			  return to the previous directory and it expects the
+#			  caller to do so.  This is to minimize the number of
+#			  chdir()'s done when the caller is cmd_dspuball().
+#
+sub dspubber
+{
+	my $cmd = shift;			# Command we were called from.
+	my $rname = shift;			# Command's data.
+	my $rrr;				# Reference to rollrec.
+	my $phase;				# Zone's phase.
+
+	#
+	# Get the zone's rollrec.
+	#
+	$rrr = rollrec_fullrec($rname);
+	if(!defined($rrr))
+	{
+		rolllog_log(LOG_ERR,'<command>',"no rollrec defined for zone \"$rname\"");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"\"$rname\" not in rollrec file $rollrecfile");
+		return;
+	}
+
+	#
+	# Ensure we're in the proper KSK-rollover phase to do this command.
+	#
+	$phase = rollrec_recval($rname,'kskphase');
+	if($phase != 6)
+	{
+		if($cmd eq 'dspub')
+		{
+			rolllog_log(LOG_INFO,'<command>',"\"$rname\" in KSK-rollover phase 6");
+			rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"\"$rname\" not in KSK-rollover phase 6");
+		}
+		return;
+	}
+
+	#
+	# Move to the zone's directory.
+	#
+	if(chrrdir($rname,$rrr->{'directory'},"$cmd:") == 0)
+	{
+		rolllog_log(LOG_INFO,'<command>',"unable to move to \"$rname\" directory \"$rrr->{'directory'}\"");
+		rollmgr_sendresp(ROLLCMD_RC_BADROLLREC,"unable to move to $rname's directory \"$rrr->{'directory'}\"");
+		return;
+	}
+
+	#
+	# Change the zone's rollover phase to phase 7 (the final phase).
+	#
+	nextphase($rname,$rrr,7,'KSK');
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$rname\" now in KSK rollover phase 7");
+
 }
 
 #-----------------------------------------------------------------------------
