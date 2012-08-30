@@ -10,6 +10,7 @@ var numHeaders = numColumns
 var currentSingleTestHost = ""
 var currentTestHostNum = 0
 var currentTestNumber = 0
+var restartCount = 0
 
 var hostInfo = {}
 // Keys to host info:
@@ -229,6 +230,7 @@ function runAllTests() {
     }
     waitText.waitLength = 1;
     currentTestNumber = -1;
+    restartCount = 0;
     dnssecCheckTop.state = "running"
     testManager.inTestLoop = true;
     setTestStartMessage();
@@ -290,6 +292,20 @@ function stopTesting() {
     assignHostGrade();
 }
 
+function restartRunningTests() {
+    for(var i = 0 ; i < hosts.length; i++) {
+        var hostName = hosts[i]
+
+        for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
+            var testObject = hostInfo[hostName]['tests'][j].test
+            if (testObject.status == DNSSECTest.TESTINGNOW || testObject.status == DNSSECTest.UNKNOWN) {
+                testObject.status = DNSSECTest.UNKNOWN
+                testObject.check()
+            }
+        }
+    }
+}
+
 function cancelTests() {
     for(var i = 0 ; i < hosts.length; i++) {
         var hostName = hosts[i]
@@ -307,8 +323,13 @@ function cancelTests() {
 function giveUpTimerHook() {
     // if we get here, we're fairly sunk as it's taken a long time for the requests to complete.
     // So we give up.
-    giveUpMessage.state = "visible"
-    cancelTests()
+    if (restartCount >= giveUpTimer.retryCount) {
+        giveUpMessage.state = "visible"
+        cancelTests()
+    } else {
+        restartRunningTests()
+        restartCount++
+    }
 }
 
 function setTestStartMessage() {
