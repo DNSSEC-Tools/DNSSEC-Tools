@@ -47,9 +47,9 @@ Algorithm: RSASHA1: KSKs: 1 active, 0 stand-by, 0 revoked
 zone signed successfully
 
 example.com:
-     KSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-00003)
-     ZSK (cur) 12345  -b 2048  01/01/01     (example.com-signset-00001)
-     ZSK (pub) 12345  -b 2048  01/01/01     (example.com-signset-00002)
+     KSK (cur) 12345  2048  01/01/01     (example.com-signset-00003)
+     ZSK (cur) 12345  2048  01/01/01     (example.com-signset-00001)
+     ZSK (pub) 12345  2048  01/01/01     (example.com-signset-00002)
 
 zone will expire in 30 days
 DO NOT delete the keys until this time has passed.
@@ -66,9 +66,9 @@ Algorithm: NSEC3RSASHA1: KSKs: 1 active, 0 stand-by, 0 revoked
 zone signed successfully
 
 nsec3.example.com:
-     KSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00003)
-     ZSK (cur) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00001)
-     ZSK (pub) 12345  -b 2048  01/01/01     (nsec3.example.com-signset-00002)
+     KSK (cur) 12345  2048  01/01/01     (nsec3.example.com-signset-00003)
+     ZSK (cur) 12345  2048  01/01/01     (nsec3.example.com-signset-00001)
+     ZSK (pub) 12345  2048  01/01/01     (nsec3.example.com-signset-00002)
 
 zone will expire in 30 days
 DO NOT delete the keys until this time has passed.
@@ -158,7 +158,7 @@ sub parselog {
 #   print "before:\n$logtext\n"  if (exists $options{v});
 
   $logtext =~ s/\d+\/\d+\/\d+/01\/01\/01/g;
-  $logtext =~ s/\((cur|pub)\) \d\d\d\d\d  -b \d\d\d\d/(\1) 12345  -b 2048/g;
+  $logtext =~ s/\((cur|pub)\) \d\d\d\d\d  \d\d\d\d/(\1) 12345  2048/g;
   $logtext =~ s/\d+ +seconds/0 seconds/g;
   $logtext =~ s/\t/     /g;
   # commands not currently used by zonesigner, but searched for by
