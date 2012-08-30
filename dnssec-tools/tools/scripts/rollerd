@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.13.0";
+my $VERS   = "$NAME version: 1.13.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.13";
 
 #######################################################################
@@ -525,7 +525,7 @@ sub eminent_domains
 		# Mark the keyrec's zone as being under our control.
 		#
 		keyrec_read($keyrec);
-		keyrec_setval('zone',$rname,'rollmgr',"rollerd");
+		keyrec_setval('zone',$rrr->{'zonename'},'rollmgr',"rollerd");
 		keyrec_close();
 	}
 
@@ -566,6 +566,12 @@ sub full_list_event_loop
 		#
 		controllers(0);
 		$sleep_override = 0;
+
+		#
+		# Return to our execution directory.
+		#
+		rolllog_log(LOG_TMI,'',"execution directory:  chdir($xqtdir)");
+		chdir($xqtdir);
 
 		#
 		# If we have a valid rollrec file, we'll read its contents
@@ -717,21 +723,11 @@ sub rollkeys
 		}
 
 		#
-		# If this rollrec has a directory record, we'll move into
-		# that directory for execution.  If the chdir() fails, we'll
-		# skip this rollrec.
+		# If this rollrec has a directory record, we'll move into that
+		# directory for execution; if it doesn't we'll stay put.
+		# If the chdir() fails, we'll skip this rollrec.
 		#
-		if(exists($rr{'directory'}))
-		{
-			my $rrdir = $rr{'directory'};
-
-			if(chdir($rrdir) == 0)
-			{
-				rolllog_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
-				next;
-			}
-			rolllog_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
-		}
+		next if(chrrdir($rname,$rr{'directory'},'rollkeys:') == 0);
 
 		#
 		# If the zone's keyrec file doesn't exist, we'll try to
@@ -833,6 +829,7 @@ sub rollkeys
 				rolllog_log(LOG_ERR, "signing $rname failed!");
 			}
 		}
+
 	}
 
 	#
@@ -897,6 +894,12 @@ rolllog_log(LOG_ALWAYS,""," ");
 		# Turn off signal handlers while we're reading the rollrec file.
 		#
 		controllers(0);
+
+		#
+		# Return to our execution directory.
+		#
+		rolllog_log(LOG_TMI,'',"execution directory:  chdir($xqtdir)");
+		chdir($xqtdir);
 
 		#
 		# If we have a valid rollrec file, we'll read its contents
@@ -1643,20 +1646,11 @@ sub queue_rollevent
 	}
 
 	#
-	# If this rollrec has a directory record, we'll move into that directory
-	# for execution.  If the chdir() fails, we'll skip this rollrec.
+	# If this rollrec has a directory record, we'll move into that
+	# directory for execution; if it doesn't we'll stay put.
+	# If the chdir() fails, we'll skip this rollrec.
 	#
-	if(exists($rr{'directory'}))
-	{
-		my $rrdir = $rr{'directory'};
-
-		if(chdir($rrdir) == 0)
-		{
-			rolllog_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
-			return;
-		}
-		rolllog_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
-	}
+	return if(chrrdir($rname,$rr{'directory'},'queue_rollevent:') == 0);
 
 	#
 	# Ensure the record has the KSK and ZSK phase fields.
@@ -2136,7 +2130,7 @@ sub zsk_phase2
 	#
 	# Update the timestamp in the zone's keyrec.
 	#
-	keyrec_settime("zone",$rname);
+	keyrec_settime("zone",$rrr->{'zonename'});
 	keyrec_write();
 
 	#
@@ -3807,11 +3801,11 @@ sub zonekeykr
 	{
 		if($ret == -3)
 		{
-			rolllog_log(LOG_ERR,$rname,"keyname collision in keyrec \"$krname\"; marking $rname as skipped");
+			rolllog_log(LOG_ERR,$rname,"keyname collision in keyrec \"$krname\"; marking rollrec as skipped");
 		}
 		else
 		{
-			rolllog_log(LOG_ERR,$rname,"unable to read keyrec \"$krname\"; marking $rname as skipped");
+			rolllog_log(LOG_ERR,$rname,"unable to read keyrec \"$krname\"; marking rollrec as skipped");
 		}
 		skipnow($rname);
 	}
@@ -6798,19 +6792,24 @@ sub zonemodified
 	return if(! $autosign);
 
 	#
+	# Make sure we've got the correct keyrec file.
+	#
+	keyrec_read($krf);
+
+	#
 	# Get the name of the zonefile.  If the name is null, we'll read
 	# the keyrec and get the name again.
 	#
-	if(($zfu = keyrec_recval($rname,'zonefile')) eq '')
+	if(($zfu = keyrec_recval($rrr->{'zonename'},'zonefile')) eq '')
 	{
 		keyrec_read($krf);
-		$zfu = keyrec_recval($rname,'zonefile');
+		$zfu = keyrec_recval($rrr->{'zonename'},'zonefile');
 	}
 
 	#
 	# Now we'll get the name of the signed zonefile.
 	#
-	$zfs = keyrec_recval($rname,'signedzone');
+	$zfs = keyrec_recval($rrr->{'zonename'},'signedzone');
 	if($zfs ne $rrr->{'zonefile'})
 	{
 		rolllog_log(LOG_ERR,$rname,"rollrec and keyrec disagree about name of signed zone file");
