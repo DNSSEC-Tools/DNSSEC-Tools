@@ -7,7 +7,8 @@ DNSData::DNSData()
 
 DNSData::DNSData(QString recordType, int DNSSECStatus)
     : m_recordType(recordType),
-      m_DNSSECStatus(DNSSECStatus)
+      m_DNSSECStatus(DNSSECStatus),
+      m_node(0)
 {
 
 }
@@ -54,6 +55,26 @@ QStringList DNSData::DNSSECStringStatuses() const
         results.push_back(DNSSECStatusForEnum(IGNORE));
     if (m_DNSSECStatus & AD_VERIFIED)
         results.push_back(DNSSECStatusForEnum(AD_VERIFIED));
+
+    if (m_node)
+        m_node->update();
+
     return results;
 }
 
+// UNKNOWN really means "nothing known yet"
+void DNSData::addDNSSECStatus(int additionalStatus) {
+    // don't add UNKNOWN to something we do know
+    if (m_DNSSECStatus != 0 && additionalStatus == UNKNOWN)
+        return;
+
+    // if we were unknown, we should now be more so remove the UNKNOWN
+    if (m_DNSSECStatus & UNKNOWN)
+        m_DNSSECStatus ^= UNKNOWN;
+
+    // add in the status
+    m_DNSSECStatus |= additionalStatus;
+
+    if (m_node)
+        m_node->update();
+}
