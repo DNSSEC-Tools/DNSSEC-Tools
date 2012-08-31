@@ -5,6 +5,9 @@
 #include <QtCore/QStringList>
 #include <QHash>
 
+#include "node.h"
+class Node;
+
 class DNSData
 {
 public:
@@ -21,23 +24,14 @@ public:
     QString     DNSSECStatusForEnum(int status) const;
     QStringList DNSSECStringStatuses() const;
 
-    // UNKNOWN really means "nothing known yet"
-    void addDNSSECStatus(int additionalStatus) {
-        // don't add UNKNOWN to something we do know
-        if (m_DNSSECStatus != 0 && additionalStatus == UNKNOWN)
-            return;
+    void addDNSSECStatus(int additionalStatus);
 
-        // if we were unknown, we should now be more so remove the UNKNOWN
-        if (m_DNSSECStatus & UNKNOWN)
-            m_DNSSECStatus ^= UNKNOWN;
-
-        // add in the status
-        m_DNSSECStatus |= additionalStatus;
-    }
+    void setNode(Node *node) { m_node = node; }
 
 private:
     QString m_recordType;
     int m_DNSSECStatus;
+    Node *m_node;
 };
 
 inline bool operator==(const DNSData &a, const DNSData &b)

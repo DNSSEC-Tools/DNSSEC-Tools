@@ -46,6 +46,7 @@
 #include <QtCore/QSet>
 
 #include "DNSData.h"
+class DNSData;
 
 class Edge;
 class GraphWidget;
