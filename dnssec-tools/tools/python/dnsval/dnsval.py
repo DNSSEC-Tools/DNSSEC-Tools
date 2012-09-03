@@ -35,9 +35,9 @@ $Id: dnsval.py 76 2012-02-15 20:51:03Z bob.novas $
 
 
 from ctypes import CDLL, POINTER, RTLD_GLOBAL, Structure
-from ctypes import c_char_p, c_int, c_long, c_ubyte, c_uint, c_ulong, c_void_p
-from ctypes import byref, cast, create_string_buffer, pointer, sizeof
-from ctypes import  c_int8,  c_int16,  c_int32,  c_int64
+from ctypes import c_char_p, c_char, c_int, c_ushort, c_ubyte, c_uint, c_ulong, c_void_p
+from ctypes import byref, cast, create_string_buffer, pointer, sizeof, c_size_t
+from ctypes import c_int8,  c_int16,  c_int32,  c_int64
 from ctypes import c_uint8, c_uint16, c_uint32, c_uint64
 
 import os
@@ -98,12 +98,10 @@ VAL_CTX_FLAG_RESET                  = 0x02
 val_context_t = c_void_p
 val_status_t  = c_uint8
 val_astatus_t = c_uint16
-sockaddr      = c_ulong  #questionable but hopefully harmless
-size_t        = c_uint64 #long unsigned int
-val_rc_proofs = c_uint   #questionable but hopefully harmless
 val_log_t     = c_void_p
 
 MAX_PROOFS = 4
+NS_MAXDNAME = 1025
 
 class ValidatorException(Exception):
     """
@@ -118,22 +116,31 @@ class val_rr_rec(Structure):
     pass
 
 val_rr_rec._fields_ = \
-    [("rr_rdata_length",      size_t),
+    [("rr_rdata_length",      c_size_t),
      ("rr_data",              POINTER(c_ubyte)),
      ("rr_next",              POINTER(val_rr_rec)),
      ("rr_status",            val_astatus_t)]
+
+class sockaddr_storage(Structure):
+    pass
+
+sockaddr_storage._fields = \
+    [('ss_family', c_ushort),
+     ('__ss_pad1', c_char * 6),
+     ('__ss_align', c_int64),
+     ('__ss_pad2', c_char * 112)]
 
 class val_rrset_rec(Structure):
     pass
 
 val_rrset_rec._fields_ = \
     [("val_rrset_rcode",      c_int32),
-     ("val_rrset_name",       c_char_p),
+     ("val_rrset_name",       c_char * NS_MAXDNAME),
      ("val_rrset_class",      c_int32),
      ("val_rrset_type",       c_int32),
      ("val_rrset_ttl",        c_int64),
      ("val_rrset_section",    c_int32),
-     ("val_rrset_server",     POINTER(sockaddr)),
+     ("val_rrset_server",     sockaddr_storage),
      ("val_rrset_data",       POINTER(val_rr_rec)),
      ("val_rrset_sig",        POINTER(val_rr_rec))]
 
