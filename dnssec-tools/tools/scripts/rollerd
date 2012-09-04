@@ -68,7 +68,7 @@ use POSIX qw(setuid);
 # Version information.
 #
 my $NAME   = "rollerd";
-my $VERS   = "$NAME version: 1.13.0";
+my $VERS   = "$NAME version: 1.13.1";
 my $DTVERS = "DNSSEC-Tools Version: 1.13";
 
 #######################################################################
@@ -525,7 +525,7 @@ sub eminent_domains
 		# Mark the keyrec's zone as being under our control.
 		#
 		keyrec_read($keyrec);
-		keyrec_setval('zone',$rname,'rollmgr',"rollerd");
+		keyrec_setval('zone',$rrr->{'zonename'},'rollmgr',"rollerd");
 		keyrec_close();
 	}
 
@@ -566,6 +566,12 @@ sub full_list_event_loop
 		#
 		controllers(0);
 		$sleep_override = 0;
+
+		#
+		# Return to our execution directory.
+		#
+		rolllog_log(LOG_TMI,'',"execution directory:  chdir($xqtdir)");
+		chdir($xqtdir);
 
 		#
 		# If we have a valid rollrec file, we'll read its contents
@@ -717,21 +723,11 @@ sub rollkeys
 		}
 
 		#
-		# If this rollrec has a directory record, we'll move into
-		# that directory for execution.  If the chdir() fails, we'll
-		# skip this rollrec.
+		# If this rollrec has a directory record, we'll move into that
+		# directory for execution; if it doesn't we'll stay put.
+		# If the chdir() fails, we'll skip this rollrec.
 		#
-		if(exists($rr{'directory'}))
-		{
-			my $rrdir = $rr{'directory'};
-
-			if(chdir($rrdir) == 0)
-			{
-				rolllog_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
-				next;
-			}
-			rolllog_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
-		}
+		next if(chrrdir($rname,$rr{'directory'},'rollkeys:') == 0);
 
 		#
 		# If the zone's keyrec file doesn't exist, we'll try to
@@ -833,6 +829,7 @@ sub rollkeys
 				rolllog_log(LOG_ERR, "signing $rname failed!");
 			}
 		}
+
 	}
 
 	#
@@ -897,6 +894,12 @@ rolllog_log(LOG_ALWAYS,""," ");
 		# Turn off signal handlers while we're reading the rollrec file.
 		#
 		controllers(0);
+
+		#
+		# Return to our execution directory.
+		#
+		rolllog_log(LOG_TMI,'',"execution directory:  chdir($xqtdir)");
+		chdir($xqtdir);
 
 		#
 		# If we have a valid rollrec file, we'll read its contents
@@ -1643,20 +1646,11 @@ sub queue_rollevent
 	}
 
 	#
-	# If this rollrec has a directory record, we'll move into that directory
-	# for execution.  If the chdir() fails, we'll skip this rollrec.
+	# If this rollrec has a directory record, we'll move into that
+	# directory for execution; if it doesn't we'll stay put.
+	# If the chdir() fails, we'll skip this rollrec.
 	#
-	if(exists($rr{'directory'}))
-	{
-		my $rrdir = $rr{'directory'};
-
-		if(chdir($rrdir) == 0)
-		{
-			rolllog_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
-			return;
-		}
-		rolllog_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
-	}
+	return if(chrrdir($rname,$rr{'directory'},'queue_rollevent:') == 0);
 
 	#
 	# Ensure the record has the KSK and ZSK phase fields.
@@ -2136,7 +2130,7 @@ sub zsk_phase2
 	#
 	# Update the timestamp in the zone's keyrec.
 	#
-	keyrec_settime("zone",$rname);
+	keyrec_settime("zone",$rrr->{'zonename'});
 	keyrec_write();
 
 	#
@@ -3807,11 +3801,11 @@ sub zonekeykr
 	{
 		if($ret == -3)
 		{
-			rolllog_log(LOG_ERR,$rname,"keyname collision in keyrec \"$krname\"; marking $rname as skipped");
+			rolllog_log(LOG_ERR,$rname,"keyname collision in keyrec \"$krname\"; marking rollrec as skipped");
 		}
 		else
 		{
-			rolllog_log(LOG_ERR,$rname,"unable to read keyrec \"$krname\"; marking $rname as skipped");
+			rolllog_log(LOG_ERR,$rname,"unable to read keyrec \"$krname\"; marking rollrec as skipped");
 		}
 		skipnow($rname);
 	}
@@ -4876,39 +4870,22 @@ sub cmd_display
 sub cmd_dspub
 {
 	my $zone = shift;				# Command's data.
-
-	my $rrr;					# Reference to rollrec.
-	my $phase;					# Zone's phase.
+	my $curdir;					# Current directory.
 
 	rolllog_log(LOG_TMI,'<command>',"dspub command received; zone - \"$zone\"");
 
 	#
-	# Get the zone's rollrec.
+	# Move the zone to KSK phase 7.  This might also do some directory
+	# swapping, so we'll save the current directory as well.
 	#
-	$rrr = rollrec_fullrec($zone);
-	if(!defined($rrr))
-	{
-		rolllog_log(LOG_ERR,'<command>',"no rollrec defined for zone $zone");
-		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
-		return;
-	}
+	$curdir = cwd();
+	dspubber('dspub',$zone);
 
 	#
-	# Ensure we're in the proper KSK-rollover phase to do this command.
+	# Return to the previous directory.
 	#
-	$phase = rollrec_recval($zone,'kskphase');
-	if($phase != 6)
-	{
-		rolllog_log(LOG_INFO,'<command>',"zone not in KSK-rollover phase 6");
-		rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"$zone not in KSK-rollover phase 6");
-		return;
-	}
+	chdir($curdir);
 
-	#
-	# Change the zone's rollover phase to phase 7 (the final phase).
-	#
-	nextphase($zone,$rrr,7,'KSK');
-	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
 	sleeper_override();
 }
 
@@ -4922,32 +4899,28 @@ sub cmd_dspuball
 {
 	my $rrr;					# Reference to rollrec.
 	my $phase;					# Zone's phase.
+	my $curdir;					# Current directory.
 
 	rolllog_log(LOG_TMI,'<command>',"dspuball command received");
 
+	#
+	# This might do some directory swapping, so we'll save the
+	# current directory.
+	#
+	$curdir = cwd();
+
+	#
+	# Move all the zones in KSK phase 6 over to KSK phase 7.
+	#
 	foreach my $zone (sort(rollrec_names()))
 	{
-		#
-		# Ensure we're in the proper KSK-rollover phase.
-		#
-		$phase = rollrec_recval($zone,'kskphase');
-		next if($phase != 6);
-
-		#
-		# Get the rollrec for this name.
-		#
-		$rrr = rollrec_fullrec($zone);
-		if(!defined($rrr))
-		{
-			rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
-		}
-
-		#
-		# Change the zone's rollover phase to phase 7.
-		#
-		nextphase($zone,$rrr,7,'KSK');
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
+		dspubber('dspuball',$zone);
 	}
+
+	#
+	# Return to the previous directory.
+	#
+	chdir($curdir);
 
 	sleeper_override();
 }
@@ -6362,6 +6335,73 @@ sub cmd_zsargs
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	dspubber()
+#
+# Purpose:	Move the specified zone to KSK rollover phase 7, but only if
+#		it's in KSK phase 6.
+#
+#		If the zone isn't in KSK phase 6, then the zone's phase will
+#		be left alone.  If the call came from cmd_dspub(), then error 
+#		messages will be generated; if it came from cmd_dspuball(),
+#		then no error messages will be given.
+#
+#		WARNING:  dspubber() calls chrrdir() to move into a zone's
+#			  directory.  After doing its job, it does *not*
+#			  return to the previous directory and it expects the
+#			  caller to do so.  This is to minimize the number of
+#			  chdir()'s done when the caller is cmd_dspuball().
+#
+sub dspubber
+{
+	my $cmd = shift;			# Command we were called from.
+	my $rname = shift;			# Command's data.
+	my $rrr;				# Reference to rollrec.
+	my $phase;				# Zone's phase.
+
+	#
+	# Get the zone's rollrec.
+	#
+	$rrr = rollrec_fullrec($rname);
+	if(!defined($rrr))
+	{
+		rolllog_log(LOG_ERR,'<command>',"no rollrec defined for zone \"$rname\"");
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"\"$rname\" not in rollrec file $rollrecfile");
+		return;
+	}
+
+	#
+	# Ensure we're in the proper KSK-rollover phase to do this command.
+	#
+	$phase = rollrec_recval($rname,'kskphase');
+	if($phase != 6)
+	{
+		if($cmd eq 'dspub')
+		{
+			rolllog_log(LOG_INFO,'<command>',"\"$rname\" in KSK-rollover phase 6");
+			rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"\"$rname\" not in KSK-rollover phase 6");
+		}
+		return;
+	}
+
+	#
+	# Move to the zone's directory.
+	#
+	if(chrrdir($rname,$rrr->{'directory'},"$cmd:") == 0)
+	{
+		rolllog_log(LOG_INFO,'<command>',"unable to move to \"$rname\" directory \"$rrr->{'directory'}\"");
+		rollmgr_sendresp(ROLLCMD_RC_BADROLLREC,"unable to move to $rname's directory \"$rrr->{'directory'}\"");
+		return;
+	}
+
+	#
+	# Change the zone's rollover phase to phase 7 (the final phase).
+	#
+	nextphase($rname,$rrr,7,'KSK');
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$rname\" now in KSK rollover phase 7");
+
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	rollemall()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
@@ -6752,19 +6792,24 @@ sub zonemodified
 	return if(! $autosign);
 
 	#
+	# Make sure we've got the correct keyrec file.
+	#
+	keyrec_read($krf);
+
+	#
 	# Get the name of the zonefile.  If the name is null, we'll read
 	# the keyrec and get the name again.
 	#
-	if(($zfu = keyrec_recval($rname,'zonefile')) eq '')
+	if(($zfu = keyrec_recval($rrr->{'zonename'},'zonefile')) eq '')
 	{
 		keyrec_read($krf);
-		$zfu = keyrec_recval($rname,'zonefile');
+		$zfu = keyrec_recval($rrr->{'zonename'},'zonefile');
 	}
 
 	#
 	# Now we'll get the name of the signed zonefile.
 	#
-	$zfs = keyrec_recval($rname,'signedzone');
+	$zfs = keyrec_recval($rrr->{'zonename'},'signedzone');
 	if($zfs ne $rrr->{'zonefile'})
 	{
 		rolllog_log(LOG_ERR,$rname,"rollrec and keyrec disagree about name of signed zone file");
@@ -6894,6 +6939,49 @@ sub halt_handler
 	rollrec_write(1);	# dump the current file with commands
 	rollmgr_rmid();
 	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	chrrdir()
+#
+# Purpose:	Move into a rollrec's directory, if it has one defined.
+#
+sub chrrdir
+{
+	my $rname = shift;			# Rollrec's name.
+	my $rrdir = shift;			# Rollrec's directory.
+	my $id = shift;				# Call identity.  (optional)
+
+	#
+	# Don't do anything if the rollrec doesn't have a directory defined.
+	#
+	return(1) if(!defined($rrdir));
+
+	#
+	# Ensure we've got some trailing space at the end of the id string.
+	#
+	$id .= '  ' if($id !~ /\s$/);
+
+	#
+	# First we'll move into the execution directory, in case the rollrec
+	# directory isn't absolute.
+	#
+	chdir($xqtdir);
+
+	#
+	# Try to move into the rollrec's directory.  If we can't, we'll
+	# return a failure.
+	#
+	if(chdir($rrdir) == 0)
+	{
+
+		rolllog_log(LOG_ERR,$rname,$id . "invalid rollrec directory \"$rrdir\"; skipping...");
+
+		return(0);
+	}
+
+	rolllog_log(LOG_TMI,$rname,$id . "using rollrec directory \"$rrdir\"");
+	return(1);
 }
 
 #-----------------------------------------------------------------------------
