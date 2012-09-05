@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <QtGui/QAction>
+#include <QFileDialog>
 
 typedef u_int32_t tcp_seq;
 
@@ -116,6 +117,9 @@ void PcapWatcher::setupDeviceMenu(QMenu *menu)
     pcap_if_t *devList = 0, *devIter;
     pcap_findalldevs(&devList, m_errorBuffer);
 
+    QAction *dumpFileAction = menu->addAction("Open PCAP Dump &File");
+    connect(dumpFileAction, SIGNAL(triggered()), this, SLOT(openFile()));
+
     if (devList == 0) {
         qWarning() << tr("failed to find any devices we could open");
         QAction *action = menu->addAction("Run as root to enable sniffing");
@@ -190,8 +194,18 @@ void PcapWatcher::openDevice()
     m_timer.singleShot(100, this, SLOT(processPackets()));
 }
 
-void PcapWatcher::openFile(const QString &fileNameToOpen) {
-    bpf_u_int32 mask, net;
+void PcapWatcher::openFile(const QString &fileNameToOpenIn, bool animate) {
+    bpf_u_int32 mask = 0;
+    QString fileNameToOpen = fileNameToOpenIn;
+
+    if (fileNameToOpen.length() == 0) {
+        QFileDialog whichFileDialog(0, tr("Select a Dump File"));
+        whichFileDialog.setFileMode(QFileDialog::ExistingFile);
+        if (!whichFileDialog.exec())
+            return;
+        fileNameToOpen = whichFileDialog.selectedFiles().at(0);
+    }
+
     setFileName(fileNameToOpen);
     m_deviceName = QString();
     qDebug() << "opening file: " << fileName();
