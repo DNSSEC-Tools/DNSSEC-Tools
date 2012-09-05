@@ -21,17 +21,21 @@ class PcapWatcher : public QThread
 public:
     explicit PcapWatcher(QObject *parent = 0);
     QString  deviceName();
+    QString  fileName();
 
     void     setupDeviceMenu(QMenu *menu);
+    void     setFileName(const QString &fileName);
 
 signals:
     void     failedToOpenDevice(QString errMsg);
+    void     failedToOpenFile(QString errMsg);
     void     addNode(QString nodeName);
     void     addNodeData(QString nodeName, DNSData data, QString logMessage);
 
 public slots:
     void     setDeviceName(const QString &deviceName);
     void     openDevice();
+    void     openFile(const QString &fileNameToOpen);
     void     closeDevice();
     void     processPackets();
     
@@ -43,6 +47,7 @@ private:
     QString             m_filterString;
     struct bpf_program  m_filterCompiled;
     QString             m_deviceName;
+    QString             m_fileName;
     pcap_t             *m_pcapHandle;
     char                m_errorBuffer[PCAP_ERRBUF_SIZE];
 
