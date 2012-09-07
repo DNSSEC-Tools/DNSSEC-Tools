@@ -55,6 +55,22 @@ BEGIN {
 	 q{test.dnssec-tools.org.  86400   DS      28827 5 1 23a4c97124ab46e7fb7abb58e36887ff78745ac8},
 	 # a specific test for ttl values that could accidentially match DS
 	 q{test.dnssec-tools.org.          DS      28827 5 2 7d06a161755f7c7ca0d15b8039c7d7b45fb8e5dd025fcebe209cb07756bbae07},
+	 # bind 10 puts parens in new places:
+         q{example.com   10  RRSIG   SOA 5 2 10 20080613221109 (
+                    20080514221109 51389 example.com.
+                    rQ1d9a6ZCbZvwx47efKJL2s1FbcHzLt4SKca
+                    F2Xwr8YyPyhMffjkdFwtXGLFwvaQ9SE2ocEU
+                    /QpxKmvsqSyE3SyinuuCaR/XF/7XKK/PShUg
+                    iRJ7S/GExtJDfheJ04zydDyIYM8M96GpE920
+                    0LfJVZuo+gxwvrvTZiejVn1aNnc= )},
+         q{example.com   10  RRSIG   SOA 5 2 10 (
+                    20080613221109 20080514221109 51389 example.com.
+                    rQ1d9a6ZCbZvwx47efKJL2s1FbcHzLt4SKca
+                    F2Xwr8YyPyhMffjkdFwtXGLFwvaQ9SE2ocEU
+                    /QpxKmvsqSyE3SyinuuCaR/XF/7XKK/PShUg
+                    iRJ7S/GExtJDfheJ04zydDyIYM8M96GpE920
+                    0LfJVZuo+gxwvrvTZiejVn1aNnc= )},
+
 	 );
 }
 
