@@ -799,22 +799,7 @@ sub parse_line
 	  }
 
       } elsif (/\G(rrsig)[ \t]+/igc) {
-	  if (/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
-	      # some versions of bind (<10) put the sig-expir on the next line
-	      $rrsig = {
-		    first     => 1,
-		    Line      => $ln,
-		    name      => $domain,
-		    type      => "RRSIG",
-		    class     => "IN",
-		    ttl       => $ttl,
-		    typecovered => $1,
-		    algorithm => $2,
-		    labels    => $3,
-		    orgttl    => $4,
-		    sigexpiration => $5
-		   };
-	  } elsif (/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	  if (/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
 	      # some versions of bind (>=10) put the sig-expir on the first line
 	      $rrsig = {
 		    first     => 1,
@@ -827,10 +812,17 @@ sub parse_line
 		    algorithm => $2,
 		    labels    => $3,
 		    orgttl    => $4,
-		    needsigexp => 1,
 		   };
 	  } else {
 	      error("bad RRSIG data 1");
+	  }
+
+	  if (/\G(\d+)\s+/gc) {
+	      # some versions of bind (<10) put the sig-expir on the first line
+	      # and newer ones put it on the next.
+	      $rrsig->{'sigexpiration'} = $1;
+	  } else {
+	      $rrsig->{'needsigexp'} = $1;
 	  }
 
 	  if (/\G\(\s*$/gc) {
