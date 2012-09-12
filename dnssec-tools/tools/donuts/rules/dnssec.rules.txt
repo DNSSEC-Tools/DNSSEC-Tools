@@ -56,7 +56,7 @@ internal: yes
 #
 # NSEC is present?
 #
-name: DNSSEC_MISSING_NSEC_RECORD
+name: DNSSEC_MISSING_NSEC_RECORD1
 desc: checks to see if a given name is missing an NSEC record, which is require for dnssec to prove non-existence.
 level: 3
 ruletype: name
@@ -71,7 +71,7 @@ ruletype: name
 #
 # RRSIG is present?
 #
-name: DNSSEC_MISSING_RRSIG_RECORD
+name: DNSSEC_MISSING_RRSIG_RECORD1
 desc: Checks to see if a name contains a RRSIG record.
 level: 3
 ruletype: name
@@ -225,7 +225,7 @@ type: NS
   return;
 </test>
 
-name: DNSSEC_MISSING_RRSIG_RECORD
+name: DNSSEC_MISSING_RRSIG_RECORD2
 level: 3
 ruletype: name
 desc: RRSIG records signed by the zone's key are required for all records in order for the domain to be secure, with the exception of NS and glue records for children.
@@ -304,7 +304,7 @@ desc: RFC4034 section 3.0: The TTL value of an RRSIG RR MUST match the TTL value
   }
 </test>
 
-name: DNSSEC_MISSING_NSEC_RECORD
+name: DNSSEC_MISSING_NSEC_RECORD2
 level: 3
 ruletype: name
 desc: NSEC records are required for all names except child glue records in order for the domain to be secure from denial-of-existence attacks.
