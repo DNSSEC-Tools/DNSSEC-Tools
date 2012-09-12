@@ -101,6 +101,11 @@ QString PcapWatcher::deviceName()
     return m_deviceName;
 }
 
+QString PcapWatcher::fileName()
+{
+    return m_fileName;
+}
+
 void PcapWatcher::setDeviceName(const QString &deviceName)
 {
     m_deviceName = deviceName;
@@ -144,9 +149,15 @@ void PcapWatcher::setupDeviceMenu(QMenu *menu)
 
 }
 
+void PcapWatcher::setFileName(const QString &fileName)
+{
+    m_fileName = fileName;
+}
+
 void PcapWatcher::openDevice()
 {
     bpf_u_int32 mask, net;
+    m_fileName = QString();
     qDebug() << "opening device: " << deviceName();
 
     closeDevice();
@@ -162,6 +173,36 @@ void PcapWatcher::openDevice()
         // TODO: do something on error
         qWarning() << "failed to open the device: " << QString(m_errorBuffer);
         emit failedToOpenDevice(QString(m_errorBuffer));
+        return;
+    }
+
+    if (m_filterString.length() > 0) {
+        if (pcap_compile(m_pcapHandle, &m_filterCompiled, m_filterString.toAscii().data(), 1, mask) < -1) {
+            emit failedToOpenDevice(tr("failed to parse the filter: %s").arg(pcap_geterr(m_pcapHandle)));
+            return;
+        }
+    }
+
+    if (pcap_setfilter(m_pcapHandle, &m_filterCompiled) < -1) {
+        emit failedToOpenDevice(tr("failed to install the filter: %s").arg(pcap_geterr(m_pcapHandle)));
+        return;
+    }
+    m_timer.singleShot(100, this, SLOT(processPackets()));
+}
+
+void PcapWatcher::openFile(const QString &fileNameToOpen) {
+    bpf_u_int32 mask, net;
+    setFileName(fileNameToOpen);
+    m_deviceName = QString();
+    qDebug() << "opening file: " << fileName();
+
+    closeDevice();
+
+    m_pcapHandle = pcap_open_offline(m_fileName.toAscii().data(), m_errorBuffer);
+    if (!m_pcapHandle) {
+        // TODO: do something on error
+        qWarning() << "failed to open the device: " << QString(m_errorBuffer);
+        emit failedToOpenFile(QString(m_errorBuffer));
         return;
     }
 
