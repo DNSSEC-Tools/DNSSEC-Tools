@@ -93,23 +93,9 @@ struct sniff_udp {
 };
 
 PcapWatcher::PcapWatcher(QObject *parent) :
-    QThread(parent), m_mapper(), m_filterString("port 53"), m_deviceName(""), m_pcapHandle(0), m_timer()
+    QThread(parent), m_mapper(), m_filterString("port 53"), m_pcapHandle(0), m_timer(),
+    m_fileName(""), m_deviceName(""), m_animatePlayback(false)
 {
-}
-
-QString PcapWatcher::deviceName()
-{
-    return m_deviceName;
-}
-
-QString PcapWatcher::fileName()
-{
-    return m_fileName;
-}
-
-void PcapWatcher::setDeviceName(const QString &deviceName)
-{
-    m_deviceName = deviceName;
 }
 
 void PcapWatcher::setupDeviceMenu(QMenu *menu)
@@ -153,11 +139,6 @@ void PcapWatcher::setupDeviceMenu(QMenu *menu)
 
 }
 
-void PcapWatcher::setFileName(const QString &fileName)
-{
-    m_fileName = fileName;
-}
-
 void PcapWatcher::openDevice()
 {
     bpf_u_int32 mask, net;
@@ -194,7 +175,7 @@ void PcapWatcher::openDevice()
     m_timer.singleShot(100, this, SLOT(processPackets()));
 }
 
-void PcapWatcher::openFile(const QString &fileNameToOpenIn, bool animate) {
+void PcapWatcher::openFile(const QString &fileNameToOpenIn, bool animatePlayback) {
     bpf_u_int32 mask = 0;
     QString fileNameToOpen = fileNameToOpenIn;
 
@@ -207,6 +188,7 @@ void PcapWatcher::openFile(const QString &fileNameToOpenIn, bool animate) {
     }
 
     setFileName(fileNameToOpen);
+    setAnimatePlayback(animatePlayback);
     m_deviceName = QString();
     qDebug() << "opening file: " << fileName();
 

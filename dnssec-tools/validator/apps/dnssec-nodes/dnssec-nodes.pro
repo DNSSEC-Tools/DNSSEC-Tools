@@ -22,7 +22,8 @@ HEADERS += \
     Legend.h \
     Effects/SetBorderColor.h \
     ValidateViewWidget.h \
-    MainWindow.h
+    MainWindow.h \
+    qt_auto_properties.h
 
 SOURCES += \
         edge.cpp \
