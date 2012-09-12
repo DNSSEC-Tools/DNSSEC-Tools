@@ -799,10 +799,9 @@ sub parse_line
 	  }
 
       } elsif (/\G(rrsig)[ \t]+/igc) {
-	  if (!/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
-	      error("bad RRSIG data 1");
-	  }
-	  $rrsig = {
+	  if (/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	      # some versions of bind (<10) put the sig-expir on the next line
+	      $rrsig = {
 		    first     => 1,
 		    Line      => $ln,
 		    name      => $domain,
@@ -815,6 +814,25 @@ sub parse_line
 		    orgttl    => $4,
 		    sigexpiration => $5
 		   };
+	  } elsif (/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	      # some versions of bind (>=10) put the sig-expir on the first line
+	      $rrsig = {
+		    first     => 1,
+		    Line      => $ln,
+		    name      => $domain,
+		    type      => "RRSIG",
+		    class     => "IN",
+		    ttl       => $ttl,
+		    typecovered => $1,
+		    algorithm => $2,
+		    labels    => $3,
+		    orgttl    => $4,
+		    needsigexp => 1,
+		   };
+	  } else {
+	      error("bad RRSIG data 1");
+	  }
+
 	  if (/\G\(\s*$/gc) {
 	      # multi-line
 	      $parse = \&parse_rrsig;
@@ -1104,7 +1122,15 @@ sub parse_rrsig
       # got more data
       if ($rrsig->{'first'}) {
 	  delete $rrsig->{'first'};
-	  if (/\G\s*(\d+)\s+(\d+)\s+($pat_maybefullnameorroot)/gc) {
+	  if (exists($rrsig->{'needsigexp'}) &&
+	      /\G\s*(\d+)\s+(\d+)\s+(\d+)\s+($pat_maybefullnameorroot)/gc) {
+	      delete $rrsig->{'needsigexp'};
+	      $rrsig->{'sigexpiration'} = $1;
+	      $rrsig->{'siginception'} = $2;
+	      $rrsig->{'keytag'} = $3;
+	      $rrsig->{'signame'} = $4;
+	  } elsif (!exists($rrsig->{'needsigexp'}) && 
+		   /\G\s*(\d+)\s+(\d+)\s+($pat_maybefullnameorroot)/gc) {
 	      $rrsig->{'siginception'} = $1;
 	      $rrsig->{'keytag'} = $2;
 	      $rrsig->{'signame'} = $3;
