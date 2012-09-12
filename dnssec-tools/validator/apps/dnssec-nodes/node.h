@@ -109,9 +109,13 @@ public:
     void setBorderColor(const QColor &color);
     QColor borderColor();
 
+public slots:
+    void displayDetailsMenu(QPoint where = QPoint());
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
+    QMenu *makePopupMenu();
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
 

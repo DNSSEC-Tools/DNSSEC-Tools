@@ -43,12 +43,14 @@
 #include <QPainter>
 #include <QMessageBox>
 #include <QStyleOption>
+#include <QTextEdit>
 #include <qdebug.h>
 
 #include "edge.h"
 #include "node.h"
 #include "graphwidget.h"
 #include "DetailsViewer.h"
+#include "ValidateViewWidget.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth),
@@ -282,6 +284,63 @@ QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
     return QGraphicsItem::itemChange(change, value);
 }
 
+QMenu *Node::makePopupMenu() {
+    QMenu *menu = new QMenu();
+
+    menu->addAction(QObject::tr("Show Node Data"));
+    menu->addAction(QObject::tr("Show Log Entries"));
+    QMenu *validateMenu = menu->addMenu(QObject::tr("Validate"));
+
+    QMap<QString, DNSData>::const_iterator iter, end = m_subData.end();
+    for (iter = m_subData.begin(); iter != end; iter++) {
+        validateMenu->addAction(iter.key());
+    }
+    return menu;
+}
+
+void Node::displayDetailsMenu(QPoint where) {
+    QMenu *menu = makePopupMenu();
+    QAction *action = menu->exec(where);
+
+    QWidget *widget = 0;
+    QString tabLabel = "";
+    QString menuChoice;
+
+    if (!action)
+        return;
+
+    menuChoice = action->text();
+
+    if (menuChoice == QObject::tr("Show Log Entries")) {
+        //
+        // Log Message Viewer
+        //
+        widget = new QWidget();
+        QVBoxLayout *vbox = new QVBoxLayout();
+
+        widget->setLayout(vbox);
+
+        QTextEdit *textEdit = new QTextEdit("<p>" + logMessages().join("</p><p>") + "</p>");
+        textEdit->setReadOnly(true);
+        textEdit->setLineWrapMode(QTextEdit::NoWrap);
+        vbox->addWidget(textEdit);
+
+        tabLabel = QObject::tr("%1 Log").arg(fqdn());
+    } else if (menuChoice == QObject::tr("Show Node Data")) {
+        widget = new DetailsViewer(this, graph->tabs());
+        tabLabel = fqdn() + " Data";
+    } else {
+        tabLabel = fqdn() + "/" + menuChoice;
+        widget = new ValidateViewWidget(fqdn(), menuChoice);
+    }
+
+    if (widget) {
+        graph->tabs()->addTab(widget, tabLabel);
+        graph->tabs()->setCurrentIndex(graph->tabs()->count()-1);
+    }
+    delete menu;
+}
+
 void Node::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     update();
@@ -290,8 +349,7 @@ void Node::mousePressEvent(QGraphicsSceneMouseEvent *event)
         event->setButton(Qt::LeftButton);
         QGraphicsItem::mousePressEvent(event);
     } else if (event->button() == Qt::RightButton) {
-        DetailsViewer *leakThis = new DetailsViewer(this, graph->tabs());
-        Q_UNUSED(leakThis);
+        displayDetailsMenu(event->screenPos());
     } else {
         // everything else selects
         graph->setInfo(this);

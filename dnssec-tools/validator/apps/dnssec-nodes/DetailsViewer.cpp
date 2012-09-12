@@ -17,12 +17,11 @@
 #include <qdebug.h>
 
 DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
-    QObject(parent), m_node(node), m_tabs(tabs), m_mapper(new QSignalMapper())
+    QWidget(parent), m_node(node), m_mapper(new QSignalMapper()), m_tabs(tabs)
 {
-
-\
+    QVBoxLayout *mainLayout = new QVBoxLayout();
     QVBoxLayout  *dataTypesBox = new QVBoxLayout();
-    QTableWidget *table = new QTableWidget(node->getAllSubData().count(), 3, m_tabs);
+    QTableWidget *table = new QTableWidget(node->getAllSubData().count(), 3);
 
     // Title
     QLabel *title = new QLabel(node->fqdn());
@@ -71,24 +70,8 @@ DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
     connect(m_mapper, SIGNAL(mapped(QString)), this, SLOT(validateNode(QString)));
     table->resizeColumnsToContents();
 
-    m_tabs->addTab(table, tr("%1 data").arg(node->fqdn()));
-    m_tabs->setCurrentWidget(table);
-
-    //
-    // Log Message Viewer
-    //
-    QWidget *widget = new QWidget();
-    QVBoxLayout *vbox = new QVBoxLayout();
-
-    widget->setLayout(vbox);
-
-
-    QTextEdit *textEdit = new QTextEdit("<p>" + node->logMessages().join("</p><p>") + "</p>");
-    textEdit->setReadOnly(true);
-    textEdit->setLineWrapMode(QTextEdit::NoWrap);
-    vbox->addWidget(textEdit);
-
-    m_tabs->addTab(widget, tr("%1 Log").arg(node->fqdn()));
+    mainLayout->addWidget(table);
+    setLayout(mainLayout);
 }
 
 void DetailsViewer::validateNode(QString nodeType)
