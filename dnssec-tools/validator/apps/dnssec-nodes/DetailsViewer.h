@@ -9,7 +9,7 @@
 #include <QtGui/QTabWidget>
 #include "node.h"
 
-class DetailsViewer : public QObject
+class DetailsViewer : public QWidget
 {
     Q_OBJECT
 public:

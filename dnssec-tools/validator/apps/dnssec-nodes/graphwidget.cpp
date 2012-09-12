@@ -522,8 +522,8 @@ void GraphWidget::setInfo(Node *node) {
 
 void GraphWidget::moreInfoButton() {
     if (m_nodeList->selectedNode()) {
-        DetailsViewer *viewer = new DetailsViewer(m_nodeList->selectedNode(), m_tabs);
-        // XXX: yes, it leaks
+        Node *node = m_nodeList->selectedNode();
+        node->displayDetailsMenu(m_infoMoreButton->mapToGlobal(QPoint(0,0)));
     }
 }
 
