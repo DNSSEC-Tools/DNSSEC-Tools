@@ -35,7 +35,7 @@ signals:
 public slots:
     void     setDeviceName(const QString &deviceName);
     void     openDevice();
-    void     openFile(const QString &fileNameToOpen, bool animate = false);
+    void     openFile(const QString &fileNameToOpen = "", bool animate = false);
     void     closeDevice();
     void     processPackets();
     
