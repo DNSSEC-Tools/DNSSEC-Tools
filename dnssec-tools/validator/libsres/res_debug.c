@@ -447,6 +447,7 @@ const struct RES_SYM_TYPE __p_type_sres_syms[] = {
     {ns_t_dlv, "DLV", "DLV record"},
 #endif
     {ns_t_ds, "DS", "delegation signer"},
+    {ns_t_tlsa, "TLSA", "DANE TLSA"},
     {0, NULL, NULL}
 };
 

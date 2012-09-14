@@ -12360,6 +12360,24 @@ fi
 cat >>confdefs.h <<_ACEOF
 #define HAVE_DECL_NS_T_DS $ac_have_decl
 _ACEOF
+ac_fn_c_check_decl "$LINENO" "ns_t_tlsa" "ac_cv_have_decl_ns_t_tlsa" "
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+
+"
+if test "x$ac_cv_have_decl_ns_t_tlsa" = xyes; then :
+  ac_have_decl=1
+else
+  ac_have_decl=0
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_NS_T_TLSA $ac_have_decl
+_ACEOF
 
 ac_fn_c_check_decl "$LINENO" "p_rcode" "ac_cv_have_decl_p_rcode" "
 #ifdef HAVE_SYS_TYPES_H

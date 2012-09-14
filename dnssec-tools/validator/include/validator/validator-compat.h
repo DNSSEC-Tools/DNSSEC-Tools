@@ -660,6 +660,9 @@ typedef enum __ns_rcode {
 #if !HAVE_DECL_NS_T_NSEC
 #define ns_t_nsec     47
 #endif
+#if !HAVE_DECL_NS_T_TLSA
+#define ns_t_tlsa     52 
+#endif
 
 #ifdef LIBVAL_NSEC3
 #if !HAVE_DECL_NS_T_NSEC3

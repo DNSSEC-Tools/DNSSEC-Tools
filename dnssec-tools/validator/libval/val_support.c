@@ -689,6 +689,7 @@ decompress(u_char ** rdata,
     case ns_t_a6: 
     case ns_t_naptr:
     case ns_t_nsec:
+    case ns_t_tlsa:
     default:
         new_size = (size_t) * rdata_len_h;
         if (new_size == 0)
@@ -1064,6 +1065,7 @@ lower(u_int16_t type_h, u_char * rdata, size_t len)
     case ns_t_naptr:
     case ns_t_nsec: 
     case ns_t_rrsig: 
+    case ns_t_tlsa:
     default:
 
         return;
