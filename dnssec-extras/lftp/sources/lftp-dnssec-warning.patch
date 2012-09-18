@@ -1,0 +1,24 @@
+--- lftp-4.3.8-redhat/src/Resolver.cc	2012-01-24 04:38:25.000000000 -0500
++++ lftp-4.3.8/src/Resolver.cc	2012-09-05 11:02:30.684487836 -0400
+@@ -726,11 +726,16 @@
+       bool require_trust=ResMgr::QueryBool("dns:strict-dnssec",name);
+       ainfo_res	= val_getaddrinfo(NULL, name, NULL, &a_hint, &ainfo,
+                                   &val_status);
+-      if(VAL_GETADDRINFO_HAS_STATUS(ainfo_res)
+-      && !val_istrusted(val_status) && require_trust) {
+-          // untrusted answer
+-          error = _("DNS resoloution not trusted.");
+-          break;
++      if(VAL_GETADDRINFO_HAS_STATUS(ainfo_res) && !val_istrusted(val_status))
++      {
++          if(require_trust) {
++              // untrusted answer
++              error = _("DNS resolution not trusted.");
++              break;
++          } else {
++              fprintf(stderr,"\nWARNING: DNS lookup failed validation: %s\n",
++                      p_val_status(val_status));
++          }
+       }
+ #endif
+ 
