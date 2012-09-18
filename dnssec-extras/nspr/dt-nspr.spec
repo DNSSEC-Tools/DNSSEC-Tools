@@ -32,6 +32,9 @@ URL:            http://www.mozilla.org/projects/nspr/
 Group:          System Environment/Libraries
 BuildRoot:      %{_tmppath}/%{name}-%{version}-root
 Conflicts:      filesystem < 3
+Requires:       dnssec-tools-libs
+BuildRequires:  dnssec-tools-libs-devel openssl-devel autoconf213
+
 
 # Sources available at ftp://ftp.mozilla.org/pub/mozilla.org/nspr/releases/
 # When CVS tag based snapshots are being used, refer to CVS documentation on
@@ -39,6 +42,17 @@ Conflicts:      filesystem < 3
 Source0:        nspr-%{version}.tar.bz2
 
 Patch1:         nspr-config-pc.patch
+
+# DNSSEC-Tools
+Patch1001:     nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
+Patch1002:     nspr-0002-add-NSPR-log-module-for-DNS.patch
+Patch1003:     nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
+Patch1004:     nspr-0004-add-DNSSEC-error-codes-and-text.patch
+Patch1005:     nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch
+Patch1006:     nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch
+Patch1007:     nspr-0007-add-dnssec-validation-to-prnetdb.patch
+Patch1008:     nspr-0008-update-getai-to-test-async-disable-validation.patch
+
 
 %description
 NSPR provides platform independence for non-GUI operating system 
@@ -70,6 +84,21 @@ Header files for doing development with the Netscape Portable Runtime.
 cp ./mozilla/nsprpub/config/nspr-config.in ./mozilla/nsprpub/config/nspr-config-pc.in
 %patch1 -p0
 
+###############################
+# begin dnssec related patches
+%patch1001 -p1 -d mozilla -b .dnssec
+%patch1002 -p1 -d mozilla -b .dnssec
+%patch1003 -p1 -d mozilla -b .dnssec
+%patch1004 -p1 -d mozilla -b .dnssec
+%patch1005 -p1 -d mozilla -b .dnssec
+%patch1006 -p1 -d mozilla -b .dnssec
+%patch1007 -p1 -d mozilla -b .dnssec
+%patch1008 -p1 -d mozilla -b .dnssec
+# rebuild configure(s) due to dnssec patches
+(cd mozilla/nsprpub/; /bin/rm -f ./configure; /usr/bin/autoconf-2.13)
+# end dnssec related patches
+###############################
+
 %build
 
 # partial RELRO support as a security enhancement
@@ -87,6 +116,7 @@ export LDFLAGS
                  --enable-thumb2 \
 %endif
                  --enable-optimize="$RPM_OPT_FLAGS" \
+                 --with-system-val \
                  --disable-debug
 
 make

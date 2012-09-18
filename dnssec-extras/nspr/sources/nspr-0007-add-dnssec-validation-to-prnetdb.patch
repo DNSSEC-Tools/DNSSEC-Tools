@@ -1,0 +1,751 @@
+From 6d17e13fa47e2fb4f3d9897d53ba5827f9463276 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 23 Feb 2012 12:33:37 -0500
+Subject: [PATCH 7/8] add dnssec validation to prnetdb
+
+---
+ nsprpub/configure                   |  148 +++++++++--
+ nsprpub/pr/include/private/primpl.h |    3 +
+ nsprpub/pr/include/prnetdb.h        |    3 +
+ nsprpub/pr/src/io/pripv6.c          |    2 +-
+ nsprpub/pr/src/misc/prinit.c        |    6 +
+ nsprpub/pr/src/misc/prnetdb.c       |  511 ++++++++++++++++++++++++++++++++++-
+ 6 files changed, 634 insertions(+), 39 deletions(-)
+
+diff --git a/nsprpub/pr/include/private/primpl.h b/nsprpub/pr/include/private/primpl.h
+index 8ed6581..28a1a97 100644
+--- a/nsprpub/pr/include/private/primpl.h
++++ b/nsprpub/pr/include/private/primpl.h
+@@ -1828,6 +1828,9 @@ extern PRLogModuleInfo *_pr_sched_lm;
+ extern PRLogModuleInfo *_pr_thread_lm;
+ extern PRLogModuleInfo *_pr_gc_lm;
+ extern PRLogModuleInfo *_pr_dns_lm;
++#ifdef MOZ_DNSSEC
++extern PRLogModuleInfo *_pr_dnssec_lm;
++#endif
+ 
+ extern PRFileDesc *_pr_stdin;
+ extern PRFileDesc *_pr_stdout;
+diff --git a/nsprpub/pr/include/prnetdb.h b/nsprpub/pr/include/prnetdb.h
+index 4aedd8d..e2382b4 100644
+--- a/nsprpub/pr/include/prnetdb.h
++++ b/nsprpub/pr/include/prnetdb.h
+@@ -506,6 +506,9 @@ NSPR_API(PRUint64) PR_htonll(PRUint64);
+  ***********************************************************************/
+ #ifdef MOZ_DNSSEC
+ 
++#ifdef WIN32
++#include <winsock2.h>
++#endif
+ #include <validator/validator.h>
+ 
+ /* libval defines log levels that conflict with mozilla/system definitions. */
+diff --git a/nsprpub/pr/src/io/pripv6.c b/nsprpub/pr/src/io/pripv6.c
+index e4af39c..ad9e7b3 100644
+--- a/nsprpub/pr/src/io/pripv6.c
++++ b/nsprpub/pr/src/io/pripv6.c
+@@ -297,7 +297,7 @@ _pr_probe_ipv6_presence(void)
+         return PR_FALSE;
+ #endif
+ 
+-#if !defined(_PR_INET6) && defined(_PR_HAVE_GETADDRINFO)
++#if !defined(MOZ_DNSSEC) && !defined(_PR_INET6) && defined(_PR_HAVE_GETADDRINFO)
+     if (_pr_find_getaddrinfo() != PR_SUCCESS)
+         return PR_FALSE;
+ #endif
+diff --git a/nsprpub/pr/src/misc/prinit.c b/nsprpub/pr/src/misc/prinit.c
+index 7f97793..dc15f8a 100644
+--- a/nsprpub/pr/src/misc/prinit.c
++++ b/nsprpub/pr/src/misc/prinit.c
+@@ -51,6 +51,9 @@ PRLogModuleInfo *_pr_gc_lm;
+ PRLogModuleInfo *_pr_shm_lm;
+ PRLogModuleInfo *_pr_shma_lm;
+ PRLogModuleInfo *_pr_dns_lm;
++#ifdef MOZ_DNSSEC
++PRLogModuleInfo *_pr_dnssec_lm;
++#endif
+ 
+ PRFileDesc *_pr_stdin;
+ PRFileDesc *_pr_stdout;
+@@ -195,6 +198,9 @@ static void _PR_InitStuff(void)
+ 	_pr_shm_lm = PR_NewLogModule("shm");
+ 	_pr_shma_lm = PR_NewLogModule("shma");
+ 	_pr_dns_lm = PR_NewLogModule("dns");
++#ifdef MOZ_DNSSEC
++	_pr_dnssec_lm = PR_NewLogModule("dnssec");
++#endif
+       
+     /* NOTE: These init's cannot depend on _PR_MD_CURRENT_THREAD() */ 
+     _PR_MD_EARLY_INIT();
+diff --git a/nsprpub/pr/src/misc/prnetdb.c b/nsprpub/pr/src/misc/prnetdb.c
+index b92e611..139c4ee 100644
+--- a/nsprpub/pr/src/misc/prnetdb.c
++++ b/nsprpub/pr/src/misc/prnetdb.c
+@@ -35,6 +35,20 @@
+  *
+  * ***** END LICENSE BLOCK ***** */
+ 
++#ifdef MOZ_DNSSEC
++#ifdef WIN32
++#ifndef WIN32_LEAN_AND_MEAN
++#define WIN32_LEAN_AND_MEAN
++#endif
++#include <winsock2.h>
++#include <ws2tcpip.h>
++#endif
++#ifdef XP_UNIX
++#include <sys/types.h>
++#endif
++#include <validator/validator.h>
++#endif
++
+ #include "primpl.h"
+ 
+ #include <string.h>
+@@ -659,6 +673,108 @@ static PRStatus CopyProtoent(
+ }
+ #endif /* !defined(_PR_HAVE_GETPROTO_R) */
+ 
++#ifdef MOZ_DNSSEC
++
++/* 0 = enforce system policy, 1 = ignore, 2 = always secure */
++static int global_policy = 0;
++void
++PR_set_dnssec_validate_policy(int policy)
++{
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dnssec_lm, PR_LOG_NOTICE,
++           ("DNSSEC Setting policy: %d\n", policy));
++    global_policy = policy;
++}
++
++/** unadvertised function to add libval logging */
++void
++PR_add_libval_log(const char *arg)
++{
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dnssec_lm, PR_LOG_NOTICE, ("adding lival log: %d\n", arg));
++    val_log_add_optarg(arg,0);
++}
++
++static int
++dnssec_check_policy(val_status_t val_status, int policytype) 
++{
++    int rv = PR_FAILURE;
++
++    PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++           ("%s input: policy=%d, status=%d = %s\n", __FUNCTION__, policytype,
++            val_status, p_val_error(val_status)));
++
++    /*
++     * POLICY: ignore errors
++     */
++    if (policytype == DNSSEC_POLICY_IGNORE)
++        rv = PR_SUCCESS;
++
++    /*
++     * POLICY: require only when possible
++     *   -- IE, trust the policy specified in dnssec-tools's dnsval.conf
++     */
++    else if (policytype == DNSSEC_POLICY_ENFORCE_SYS_POLICY) {
++        if (val_istrusted(val_status))
++            rv = PR_SUCCESS;
++    }
++  
++    /*
++     * POLICY: always secure.
++     *    -- IE, require all lookups to return only secure results
++     */
++    else if (val_isvalidated(val_status))
++        rv = PR_SUCCESS;
++
++    PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG, ("returning %d\n", rv));
++    return rv;
++}
++
++
++PRErrorCode PR_dnssec_result_checks(PRUint16* security_flags,
++                                    val_status_t val_status, PRBool have_result)
++{
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++
++    /* set the security flags to how the results were achieved */
++    if (security_flags) {
++        if (val_isvalidated(val_status))
++            *security_flags = PR_DNSSEC_IS_VALIDATED;
++        else if (val_istrusted(val_status))
++            *security_flags = PR_DNSSEC_IS_TRUSTED;
++        else
++            *security_flags = PR_DNSSEC_IS_UNTRUSTED;
++        PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++               ("DNSSEC security flags for val_status %d => %x\n", 
++                val_status, *security_flags));
++    }
++ 
++    if (dnssec_check_policy(val_status, global_policy) != PR_SUCCESS) {
++        /* DNSsec validation failed */
++        PR_SetErrorText(0, "Host DNSsec validation failed");
++        PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
++        PR_LOG(_pr_dnssec_lm, PR_LOG_WARNING,
++               ("DNSSEC returning validation failure\n"));
++        return PR_DNSSEC_VALIDATION_ERROR;
++    }
++
++    if (!have_result && val_does_not_exist(val_status)) {
++        /* DNSSEC has proven that the record does not exist; we
++           return a different error message to show that the lookup
++           succeeded and there is officially no results */
++        PR_SetErrorText(0, "Address does not exist");
++        PR_SetError(PR_DNSSEC_DNE_ERROR, 0);
++        PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++               ("DNSSEC returning provable does not exist\n"));
++        return PR_DNSSEC_DNE_ERROR;
++    }
++
++    return 0; /* no error */
++}
++
++#endif /* MOZ_DNSSEC */
++
++
+ /*
+  * #################################################################
+  * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
+@@ -693,9 +809,109 @@ static PRStatus CopyProtoent(
+ #define GETHOSTBYADDR(addr, addrlen, af) gethostbyaddr(addr, addrlen, af)
+ 
+ #endif  /* definition of GETHOSTBYXXX */
++#ifdef MOZ_DNSSEC
++/* override GETHOSTBYNAME* functions if MOZ_DNSSEC is enabled.
++   We do this in a special section to allow the GETHOSTBYADDR to be
++   pulled above as normal.  Unfortunately, even though the DNSSEC APIs
++   are thread safe, if GETHOSTBYADDR is not then we'll still perform
++   safe locking because this code doesn't differentiate between calls
++   at all.
++*/
++#undef GETHOSTBYNAME
++#undef GETHOSTBYNAME2
++/*
++*/
++#ifndef _PR_HAVE_GETHOST_R
++#define _PR_HAVE_GETHOST_R 1
++#endif
++/*
++ * common code
++ */
++static struct hostent *
++_dnssec_ghbn_common(int ret, struct hostent *h, val_status_t val_status,
++                    PRUint16 *security_flags)
++{
++    PRErrorCode err;
++    if (!ret) {
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("Error: val_gethostbyname* returned=%d\n", ret));
++        return NULL;
++    }
++    err = PR_dnssec_result_checks(security_flags, val_status, h != NULL);
++    if (err) {
++        PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++               ("DNSSEC failure => val_status:%d\n", val_status));
++        /* XXX: if ret exists (but policy says no), free it? */
++        return NULL;
++    }
++    return h;
++}
++/* */
++static struct hostent *
++dnssec_gethostbyname(const char *name, struct hostent *ret, char *buf,
++                     size_t buflen, struct hostent **result,
++                     int *h_errnop, PRUint16 *security_flags)
++{
++    val_status_t val_status;
++    int ret_stat;
++  
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, name));
++    ret_stat = val_gethostbyname_r(NULL, name, ret, buf, buflen, result,
++                                   h_errnop, &val_status);
++    return _dnssec_ghbn_common(ret_stat, ret, val_status, security_flags);
++}
++/* */
++static struct hostent *
++dnssec_gethostbyname2(const char *name, int af, struct hostent *ret,
++                      char *buf, size_t buflen, struct hostent **result,
++                      int *h_errnop, PRUint16 *security_flags)
++{
++    val_status_t val_status;
++    int ret_stat;
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, name));
++    ret_stat = val_gethostbyname2_r(NULL, name, af, ret, buf, buflen,
++                                    result, h_errnop, &val_status);
++    return _dnssec_ghbn_common(ret_stat, ret, val_status, security_flags);
++}
++/* use dnssec versions */
++#define GETHOSTBYNAME(name)                                             \
++    (dnssec_gethostbyname(name, &tmphe, tmpbuf, bufsize, &h, &h_err,    \
++                          security_flags), h)
++#define GETHOSTBYNAME2(name, af)                                        \
++    (dnssec_gethostbyname2(name, af, &tmphe, tmpbuf, bufsize, &h, &h_err, \
++                           security_flags), h)
++#endif /* MOZ_DNSSEC */
++
++#ifdef MOZ_DNSSEC
++/* note: not DNSSEC specific, but only currently needed for DNSSEC */
++/* converts a return value from one which may include other (newer)
++   DNS error codes like those provided by DNSSEC validation to
++   something which older code can still understand */
++static void simplify_return_value(void)
++{
++  PRErrorCode errcode = PR_GetError();
++  switch(errcode) {
++    /* Pass the original codes */
++  case PR_DNSSEC_VALIDATION_ERROR:
++    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, 0);
++    break;
++  case PR_DNSSEC_DNE_ERROR:
++    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, 0);
++    break;
++  default:
++    /* everything else can pass on as before */
++    break;
++  }
++}
++#else
++#define simplify_return_value() void
++#endif
+ 
+-PR_IMPLEMENT(PRStatus) PR_GetHostByName(
+-    const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
++PR_IMPLEMENT(PRStatus) PR_GetHostByNameExtended(
++    const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp,
++    PRUint16 *security_flags)
+ {
+ 	struct hostent *h;
+ 	PRStatus rv = PR_FAILURE;
+@@ -734,7 +950,9 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
+ 	{
+ 	    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
+ 	           ("********** Status = LOOKUP_ERROR\n"));
++#ifndef MOZ_DNSSEC /* dnssec error already set */
+ 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_GETHOST_ERRNO());
++#endif
+ 	}
+ 	else
+ 	{
+@@ -756,6 +974,17 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
+ 	return rv;
+ }
+ 
++PR_IMPLEMENT(PRStatus) PR_GetHostByName(
++    const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
++{
++    PRStatus ret;
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, name));
++    ret = PR_GetHostByNameExtended(name, buf, bufsize, hp, NULL);
++    simplify_return_value();
++    return ret;
++}
++
+ #if !defined(_PR_INET6) && \
+         defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
+ typedef struct hostent  * (*_pr_getipnodebyname_t)(const char *, int,
+@@ -842,9 +1071,9 @@ static PRStatus AppendV4AddrsToHostent(
+ }
+ #endif
+ 
+-PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
++PR_IMPLEMENT(PRStatus) PR_GetIPNodeByNameExtended(
+     const char *name, PRUint16 af, PRIntn flags,
+-    char *buf, PRIntn bufsize, PRHostEnt *hp)
++    char *buf, PRIntn bufsize, PRHostEnt *hp, PRUint16 *security_flags)
+ {
+ 	struct hostent *h = 0;
+ 	PRStatus rv = PR_FAILURE;
+@@ -972,6 +1201,7 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+ 	{
+ 	    PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
+ 	           ("********** Status = LOOKUP_ERROR\n"));
++#ifndef MOZ_DNSSEC /* dnssec error already set */
+ #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
+ 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
+ #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
+@@ -982,6 +1212,7 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+ #else
+ 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_GETHOST_ERRNO());
+ #endif
++#endif /* MOZ_DNSSEC */
+ 	}
+ 	else
+ 	{
+@@ -1041,6 +1272,18 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+ 	return rv;
+ }
+ 
++PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
++    const char *name, PRUint16 af, PRIntn flags,
++    char *buf, PRIntn bufsize, PRHostEnt *hp)
++{
++    PRStatus ret;
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, name));
++    ret = PR_GetIPNodeByNameExtended(name, af, flags, buf, bufsize, hp, NULL);
++    simplify_return_value();
++    return ret;
++}
++
+ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+     const PRNetAddr *hostaddr, char *buf, PRIntn bufsize, PRHostEnt *hostentry)
+ {
+@@ -1965,8 +2208,24 @@ PR_IMPLEMENT(PRUint64) PR_htonll(PRUint64 n)
+  * socket function symbols at run time and perform a runtime
+  * test (the "probe") to see if they can actually be used.
+  */
++#if defined(MOZ_DNSSEC)
+ 
+-#ifndef _PR_HAVE_GETADDRINFO
++typedef struct addrinfo PRADDRINFO;
++typedef struct addrinfo DNSSECPRADDRINFO;
++
++#define GETADDRINFO(a,b,c,d) val_getaddrinfo(NULL, a, b, c, d, &val_status)
++#ifdef HAVE_VAL_FREEADDRINFO
++#define FREEADDRINFO val_freeaddrinfo
++#else
++#define FREEADDRINFO freeaddrinfo
++#endif
++#define GETNAMEINFO(a,b,c,d,e,f,g) val_getnameinfo(NULL, a, b, c, d, e, f, g, &val_status)
++
++#if !defined(_PR_HAVE_GETADDRINFO)
++#define _PR_HAVE_GETADDRINFO
++#endif
++
++#elif !defined(_PR_HAVE_GETADDRINFO)
+ 
+ /* need to check for fallback */
+ #define PRNETDB_CHECK_FALLBACK
+@@ -2136,9 +2395,16 @@ pr_GetAddrInfoByNameFB(const char  *hostname,
+ 
+ static int
+ _PR_GetAddrInfoByNameExtended_setup_flags(PRUint16     af,
+-                                          PRIntn       flags)
++                                          PRIntn       flags,
++                                          PRUint16    *security_flags)
+ 
+ {
++#ifdef MOZ_DNSSEC
++    /* wipe the security flags */
++    if (security_flags)
++        *security_flags = PR_DNSSEC_NO_FLAGS;
++#endif
++    
+     /* restrict input to supported values */
+     if ((af != PR_AF_INET && af != PR_AF_UNSPEC) ||
+         (flags & ~ PR_AI_NOCANONNAME) != PR_AI_ADDRCONFIG) {
+@@ -2201,14 +2467,20 @@ _PR_GetAddrInfoByNameExtended_setup_hints(const char  *hostname,
+     hints->ai_socktype = SOCK_STREAM;
+ }
+ 
+-PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
++
++PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByNameExtended(const char  *hostname,
+                                                 PRUint16     af,
+-                                                PRIntn       flags)
++                                                PRIntn       flags,
++                                                PRUint16     *security_flags)
+ {
++#ifdef MOZ_DNSSEC
++    val_status_t val_status;
++#endif
+     if (!_pr_netdb_initialized) _pr_netdb_init();
+     PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, hostname));
+ 
+-    if (-1 == _PR_GetAddrInfoByNameExtended_setup_flags(af, flags)) {
++    if (-1 == _PR_GetAddrInfoByNameExtended_setup_flags(af, flags,
++                                                        security_flags)) {
+         return NULL;
+     }
+ 
+@@ -2219,7 +2491,12 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+ #endif
+ #ifdef _PR_HAVE_GETADDRINFO
+     {
+-        PRADDRINFO *res, hints;
++        PRADDRINFO hints;
++#if defined(MOZ_DNSSEC)
++        DNSSECPRADDRINFO *res;
++#else
++        PRADDRINFO *res;
++#endif
+         PRStatus rv;
+ 
+         _PR_GetAddrInfoByNameExtended_setup_hints(hostname, af, flags, &hints);
+@@ -2231,6 +2508,20 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+             rv = GETADDRINFO(hostname, NULL, &hints, &res);
+         }
+ #endif
++#ifdef MOZ_DNSSEC
++        if (VAL_GETADDRINFO_HAS_STATUS(rv)) {
++            PRErrorCode err = PR_dnssec_result_checks(security_flags,
++                                                      val_status, res != NULL);
++            if (err) {
++              PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++                     ("DNSSEC failure: %s => val_status:%d\n",
++                      hostname, val_status));
++              if(res)
++                  FREEADDRINFO(res);
++              return NULL;
++            }
++        }
++#endif
+         if (rv == 0) {
+             PR_LOG(_pr_dns_lm, PR_LOG_DEBUG,
+                    ("********** Status = SUCCESS\n"));
+@@ -2245,13 +2536,27 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+ #endif /* _PR_HAVE_GETADDRINFO */
+ }
+ 
++PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
++                                                PRUint16     af,
++                                                PRIntn       flags)
++{
++    struct PRAddrInfo *result;
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++    PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, hostname));
++    result = PR_GetAddrInfoByNameExtended(hostname, af, flags, NULL);
++    simplify_return_value();
++    return result;
++}
++
+ PR_IMPLEMENT(void) PR_FreeAddrInfo(PRAddrInfo *ai)
+ {
+ #ifdef PRNETDB_CHECK_FALLBACK
+     if (_pr_use_fallback)
+         return PR_Free((PRAddrInfoFB *) ai);
+ #endif
+-#ifdef _PR_HAVE_GETADDRINFO
++#if defined(MOZ_DNSSEC)
++    FREEADDRINFO((DNSSECPRADDRINFO *) ai);
++#elif defined(_PR_HAVE_GETADDRINFO)
+     FREEADDRINFO((PRADDRINFO *) ai);
+ #endif
+ }
+@@ -2275,10 +2580,17 @@ PR_IMPLEMENT(void *) PR_EnumerateAddrInfo(void             *iterPtr,
+     }
+ #endif
+ #if defined(_PR_HAVE_GETADDRINFO)
++#if defined(MOZ_DNSSEC)
++    if (iterPtr)
++        ai = ((DNSSECPRADDRINFO *) iterPtr)->ai_next;
++    else
++        ai = (DNSSECPRADDRINFO *) base;
++#else
+     if (iterPtr)
+         ai = ((PRADDRINFO *) iterPtr)->ai_next;
+     else
+         ai = (PRADDRINFO *) base;
++#endif
+ 
+     while (ai && ai->ai_addrlen > sizeof(PRNetAddr))
+         ai = ai->ai_next;
+@@ -2324,6 +2636,9 @@ static PRStatus pr_StringToNetAddrGAI(const char *string, PRNetAddr *addr)
+     int rv;  /* 0 for success, or the error code EAI_xxx */
+     PRNetAddr laddr;
+     PRStatus status = PR_SUCCESS;
++#ifdef MOZ_DNSSEC
++    val_status_t val_status;
++#endif
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
+     PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, string));
+@@ -2436,6 +2751,9 @@ static PRStatus pr_NetAddrToStringGNI(
+     PRNetAddr addrcopy;
+ #endif
+     int rv;  /* 0 for success, or the error code EAI_xxx */
++#ifdef MOZ_DNSSEC
++    val_status_t val_status;
++#endif
+ 
+     if (!_pr_netdb_initialized) _pr_netdb_init();
+     PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%lx\n", __FUNCTION__,
+@@ -2527,6 +2845,177 @@ PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
+ #endif
+ }  /* PR_NetAddrToString */
+ 
++#if defined(MOZ_DNSSEC) && defined(HAVE_VAL_GETADDRINFO_SUBMIT)
++/***********************************************************************
++ *
++ *
++ * Implementation of PR_Async* functions
++ *
++ *
++ */
++/**
++ * PR_AsyncDNS_Idle
++ *
++ * waits for events for given context
++ *
++ * returns
++ *    1 : one or more event is pending or was processed
++ *    0 : no pending events
++ *   -1 : error selecting for events
++ *   -2 : no events to select on and no pending requests
++ */
++PR_IMPLEMENT(PRIntn) PR_AsyncDNS_Idle(val_context_t *ctx,
++                                      PRIntervalTime *timeout)
++{
++    PRUint32 rc;
++    PRIntervalTime now, start, passed;
++    struct timeval tv;
++    fd_set           fdset;
++    int              nfds = 0, waiting = 0;
++
++    if (NULL == timeout || NULL == ctx) {
++        PR_LOG(_pr_dnssec_lm, PR_LOG_ERROR,
++               ("AsyncDNS_Idle: bad param %p %p\n", timeout, ctx));
++        return -1;
++    }
++
++    start = PR_IntervalNow();
++    tv.tv_sec = PR_IntervalToSeconds(*timeout);
++    tv.tv_usec = 0;
++    PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++           ("AsyncDNS_Idle: now %u, timeout %lu sec\n", start,
++            (u_long)tv.tv_sec));
++
++    /** get fds to wait on */
++    FD_ZERO(&fdset);
++    rc = val_async_select_info(ctx, &fdset, &nfds, &tv);
++    if (VAL_NO_ERROR != rc) {
++        PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++               ("AsyncDNS_Idle:   bad rc %d from val_async_select_info\n", rc));
++        return -1;
++    }
++
++    if (nfds > 0 && nfds < FD_SETSIZE) {
++        PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++               ("AsyncDNS_Idle:   select with maxfd %d for %lu.%lu\n",
++                nfds, (u_long)tv.tv_sec, (u_long)tv.tv_usec));
++        waiting = select(nfds, &fdset, NULL, NULL, &tv);
++        now = PR_IntervalNow();
++        passed = (PRIntervalTime)(now - start);
++        PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++               ("AsyncDNS_Idle:   took %u ticks, %d waiting\n", passed,
++                waiting));
++    }
++    else {
++        PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++               ("AsyncDNS_Idle:   no select %d nfds\n", nfds));
++    }
++
++    /*
++     * check asynchronous status objects (even if none selected/ready,
++     * as there might be some completed requests to process
++     */
++    rc = val_async_check_wait(ctx, &fdset, &nfds, NULL, 0);
++    PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++           ("AsyncDNS_Idle:   %d remaining\n", rc));
++
++    if (0 == rc && 0 == nfds) {
++        PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++               ("AsyncDNS_Idle:   we're done (or confused)!\n"));
++      return -2;
++    }
++
++    return rc;
++}
++
++#ifdef HAVE_VAL_GETADDRINFO_CANCEL
++PR_IMPLEMENT(void)
++PR_AsyncDNS_CancelGetAddrInfoByName(val_gai_status *status, PRIntn flags)
++{
++    PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++           ("cancelling async GetAddrInfoByName request %p\n", status));
++    val_getaddrinfo_cancel(status, flags);
++}
++#endif /* HAVE_VAL_GETADDRINFO_CANCEL */
++
++typedef struct pr_async_status_s {
++    val_gai_callback cb;
++    void            *cb_data;
++    PRUint16        *security_flags;
++    PRADDRINFO       hints;
++} pr_async_status;
++
++
++static int 
++_callback(void *callback_data, int eai_retval, struct addrinfo *res,
++          val_status_t val_status)
++{
++    pr_async_status *as = (pr_async_status*)callback_data;
++    val_gai_callback cb = as->cb;
++    void            *cb_data = as->cb_data;
++    PRUint16         sec_flags;
++    int              rv;
++
++    PR_LOG(_pr_dnssec_lm, PR_LOG_DEBUG,
++           ("async callback; cb data %p, eai rv %d, res=%p, val_status=%d\n",
++            callback_data, eai_retval, res, val_status));
++
++    if (NULL == as) {
++      PR_LOG(_pr_dnssec_lm, PR_LOG_ERROR,
++             ("bad callback with NULL status pointer\n"));
++      return -1;
++    }
++
++    if (VAL_GETADDRINFO_HAS_STATUS(eai_retval)) {
++        PRErrorCode err = PR_dnssec_result_checks(&sec_flags, val_status,
++                                                  res != NULL);
++        if (as->security_flags)
++            *as->security_flags = sec_flags;
++        if (err) {
++            PR_LOG(_pr_dns_lm, PR_LOG_WARNING,
++                   ("DNSSEC failure: val_status:%d\n", val_status));
++            if(res)
++                FREEADDRINFO(res);
++            res = NULL;
++        }
++    }
++
++    rv = (*cb)(cb_data, eai_retval, res, val_status);
++
++    PR_Free(as);
++    return rv;
++}
++
++PR_IMPLEMENT(PRIntn) PR_AsyncSubmit_GetAddrInfoByNameExtended(
++  const char *hostname, PRUint16 af, PRIntn flags, PRUint16 *security_flags,
++  val_context_t *context, val_gai_callback cb, void *cb_data,
++  val_gai_status **status)
++{
++    PRIntn            rc;
++    pr_async_status  *pr_cb_data = 
++      (pr_async_status *)PR_Malloc(sizeof(*pr_cb_data));
++
++
++    if (NULL == pr_cb_data) {
++      (*cb)( cb_data, EAI_MEMORY, NULL, VAL_AC_UNSET);
++      return VAL_INTERNAL_ERROR;
++    }
++    
++    _PR_GetAddrInfoByNameExtended_setup_hints(hostname, af, flags,
++                                              &pr_cb_data->hints);
++    pr_cb_data->cb = cb;
++    pr_cb_data->cb_data = cb_data;
++    pr_cb_data->security_flags = security_flags;
++
++    /*
++     * submit request
++     */
++    rc = val_getaddrinfo_submit(context, hostname, NULL, &pr_cb_data->hints,
++                                _callback, pr_cb_data, 0, status);
++    return rc;
++}
++#endif /* defined(MOZ_DNSSEC) && defined(HAVE_VAL_GETADDRINFO_SUBMIT) */
++
+ static void _pr_netdb_init()
+ {
+     if (_pr_netdb_initialized)
+-- 
+1.7.7.6
+

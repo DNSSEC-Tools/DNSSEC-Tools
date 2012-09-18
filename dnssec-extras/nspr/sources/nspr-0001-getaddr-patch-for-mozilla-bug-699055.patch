@@ -1,0 +1,443 @@
+From 751aade563178a68cbb159ba8d7090c846abe9bd Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Mon, 9 Apr 2012 10:57:30 -0400
+Subject: [PATCH 1/8] v3 of getaddr patch, for mozilla bug 699055
+
+changes from v2:
+ add missing return in fallback case
+ log initialization results to _pr_io_lm
+---
+ nsprpub/pr/src/misc/prnetdb.c |  193 +++++++++++++++++++++++++++--------------
+ 1 files changed, 126 insertions(+), 67 deletions(-)
+
+diff --git a/nsprpub/pr/src/misc/prnetdb.c b/nsprpub/pr/src/misc/prnetdb.c
+index 2bd7f5c..7ea8f39 100644
+--- a/nsprpub/pr/src/misc/prnetdb.c
++++ b/nsprpub/pr/src/misc/prnetdb.c
+@@ -39,6 +39,9 @@
+ 
+ #include <string.h>
+ 
++static int _pr_netdb_initialized = 0;
++static void _pr_netdb_init();
++
+ /*
+  * On Unix, the error code for gethostbyname() and gethostbyaddr()
+  * is returned in the global variable h_errno, instead of the usual
+@@ -698,12 +701,12 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByName(
+ 	PRStatus rv = PR_FAILURE;
+ #if defined(_PR_HAVE_GETHOST_R)
+     char localbuf[PR_NETDB_BUF_SIZE];
+-    char *tmpbuf;
++    char *tmpbuf = localbuf;
+     struct hostent tmphe;
+     int h_err;
+ #endif
+ 
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+ #if defined(_PR_HAVE_GETHOST_R)
+     tmpbuf = localbuf;
+@@ -831,7 +834,7 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+ 	PRStatus rv = PR_FAILURE;
+ #if defined(_PR_HAVE_GETHOST_R)
+     char localbuf[PR_NETDB_BUF_SIZE];
+-    char *tmpbuf;
++    char *tmpbuf = localbuf;
+     struct hostent tmphe;
+     int h_err;
+ #endif
+@@ -844,7 +847,7 @@ PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
+     PRBool did_af_inet = PR_FALSE;
+ #endif
+ 
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+     if (af != PR_AF_INET && af != PR_AF_INET6) {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+@@ -1029,7 +1032,7 @@ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+ 	int error_num;
+ #endif
+ 
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+ 	if (hostaddr->raw.family == PR_AF_INET6)
+ 	{
+@@ -1216,7 +1219,7 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByName(
+ 	struct protoent* res = (struct protoent*)result;
+ #endif
+ 
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+ #if defined(_PR_HAVE_GETPROTO_R_INT)
+     {
+@@ -1300,7 +1303,7 @@ PR_IMPLEMENT(PRStatus) PR_GetProtoByNumber(
+ 	struct protoent* res = (struct protoent*)result;
+ #endif
+ 
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+ #if defined(_PR_HAVE_GETPROTO_R_INT)
+     {
+@@ -1436,7 +1439,7 @@ PR_IMPLEMENT(PRStatus) PR_InitializeNetAddr(
+     PRNetAddrValue val, PRUint16 port, PRNetAddr *addr)
+ {
+     PRStatus rv = PR_SUCCESS;
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+ 	if (val != PR_IpAddrNull) memset(addr, 0, sizeof(addr->inet));
+ 	addr->inet.family = AF_INET;
+@@ -1462,7 +1465,7 @@ PR_IMPLEMENT(PRStatus) PR_SetNetAddr(
+     PRNetAddrValue val, PRUint16 af, PRUint16 port, PRNetAddr *addr)
+ {
+     PRStatus rv = PR_SUCCESS;
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+     if (af == PR_AF_INET6)
+     {
+@@ -1852,11 +1855,13 @@ PR_IMPLEMENT(PRUint64) PR_htonll(PRUint64 n)
+  * Compile-time options:
+  *
+  *  _PR_HAVE_GETADDRINFO  Define this macro if the target system provides
+- *                        getaddrinfo. With this defined, NSPR will require
+- *                        getaddrinfo at run time. If this if not defined,
+- *                        then NSPR will attempt to dynamically resolve
+- *                        getaddrinfo, falling back to PR_GetHostByName if
+- *                        getaddrinfo does not exist on the target system.
++ *                        or may provide getaddrinfo. Without this defined,
++ *                        NSPR will fall back to PR_GetHostByName.
++ *
++ *                        If _PR_INET6 is not defined and _PR_INET6_PROBE
++ *                        is defined, then NSPR will attempt to dynamically
++ *                        resolve getaddrinfo, falling back to PR_GetHostByName
++ *                        if getaddrinfo does not exist on the target system.
+  *
+  * Since getaddrinfo is a relatively new system call on many systems,
+  * we are forced to dynamically resolve it at run time in most cases.
+@@ -1864,18 +1869,61 @@ PR_IMPLEMENT(PRUint64) PR_htonll(PRUint64 n)
+  * provide getaddrinfo in all versions that NSPR cares to support.
+  */
+ 
+-#if defined(_PR_HAVE_GETADDRINFO)
++/*
++ * from https://bugzilla.mozilla.org/show_bug.cgi?id=329807#c2
++ *
++ * The meanings of _PR_INET6 and _PR_INET6_PROBE are:
++ *
++ * 1. _PR_INET6 is defined and _PR_INET6_PROBE is not defined.
++ *
++ * The platform has the IPv6 socket API, and it can actually
++ * be used for IPv6.
++ *
++ * 2. _PR_INET6 is defined and _PR_INET6_PROBE is defined.
++ *
++ * The platform has the IPv6 socket API, but it can only be
++ * used for IPv6 on some machines where IPv6 is installed or
++ * enabled, so we need to perform a runtime test (the "probe")
++ * to find out.
++ *
++ * 3. _PR_INET6 is not defined and _PR_INET6_PROBE is not defined.
++ *
++ * Only IPv4 is available.
++ *
++ * 4. _PR_INET6 is not defined and _PR_INET6_PROBE is defined.
++ *
++ * The version of the OS we compiled NSPR on doesn't have the
++ * IPv6 socket API, but we know newer versions of the OS have
++ * the IPv6 socket API.  So we will try to look up the IPv6
++ * socket function symbols at run time and perform a runtime
++ * test (the "probe") to see if they can actually be used.
++ */
+ 
+-#if defined(_PR_INET6)
++#ifndef _PR_HAVE_GETADDRINFO
++
++/* need to check for fallback */
++#define PRNETDB_CHECK_FALLBACK
++static PRBool _pr_use_fallback = PR_TRUE; /* always use fallback */
++
++
++#else /* _PR_HAVE_GETADDRINFO */
++
++/* we may or may not need to probe */
+ 
+ typedef struct addrinfo PRADDRINFO;
++
++#if !defined(_PR_INET6_PROBE) || defined(_PR_INET6)
++
++/* no probing */
+ #define GETADDRINFO getaddrinfo
+ #define FREEADDRINFO freeaddrinfo
+ #define GETNAMEINFO getnameinfo
+ 
+-#elif defined(_PR_INET6_PROBE)
++#else /* defined(_PR_INET6_PROBE) && !defined(_PR_INET6) */
+ 
+-typedef struct addrinfo PRADDRINFO;
++/* need to check for fallback */
++#define PRNETDB_CHECK_FALLBACK
++static PRBool _pr_use_fallback = -1; /* maybe.. run probe in _pr_netdb_init */
+ 
+ /* getaddrinfo/freeaddrinfo/getnameinfo prototypes */ 
+ #if defined(WIN32)
+@@ -1904,6 +1952,7 @@ static FN_GETNAMEINFO   _pr_getnameinfo   = NULL;
+ #define FREEADDRINFO_SYMBOL "freeaddrinfo"
+ #define GETNAMEINFO_SYMBOL "getnameinfo"
+ 
++/* This will be called during _pr_ipv6_is_present() */
+ PRStatus
+ _pr_find_getaddrinfo(void)
+ {
+@@ -1967,11 +2016,12 @@ _pr_find_getaddrinfo(void)
+ #define FREEADDRINFO (*_pr_freeaddrinfo)
+ #define GETNAMEINFO (*_pr_getnameinfo)
+ 
+-#endif /* _PR_INET6 */
++#endif /* defined(_PR_INET6_PROBE) && !defined(_PR_INET6) */
+ 
+ #endif /* _PR_HAVE_GETADDRINFO */
+ 
+-#if !defined(_PR_HAVE_GETADDRINFO) || defined(_PR_INET6_PROBE)
++
++#ifdef PRNETDB_CHECK_FALLBACK
+ /*
+  * If getaddrinfo does not exist, then we will fall back on
+  * PR_GetHostByName, which requires that we allocate a buffer for the 
+@@ -1990,6 +2040,7 @@ pr_GetAddrInfoByNameFB(const char  *hostname,
+ {
+     PRStatus rv;
+     PRAddrInfoFB *ai;
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+     /* fallback on PR_GetHostByName */
+     ai = PR_NEW(PRAddrInfoFB);
+     if (!ai) {
+@@ -2005,7 +2056,7 @@ pr_GetAddrInfoByNameFB(const char  *hostname,
+ 
+     return (PRAddrInfo *) ai;
+ }
+-#endif /* !_PR_HAVE_GETADDRINFO || _PR_INET6_PROBE */
++#endif /* PRNETDB_CHECK_FALLBACK */
+ 
+ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+                                                 PRUint16     af,
+@@ -2018,16 +2069,14 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+         return NULL;
+     }
+ 
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+-#if !defined(_PR_HAVE_GETADDRINFO)
+-    return pr_GetAddrInfoByNameFB(hostname, af, flags);
+-#else
+-#if defined(_PR_INET6_PROBE)
+-    if (!_pr_ipv6_is_present()) {
++#ifdef PRNETDB_CHECK_FALLBACK
++    if (_pr_use_fallback) {
+         return pr_GetAddrInfoByNameFB(hostname, af, flags);
+     }
+ #endif
++#ifdef _PR_HAVE_GETADDRINFO
+     {
+         PRADDRINFO *res, hints;
+         PRStatus rv;
+@@ -2089,20 +2138,17 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
+     }
+     return NULL;
+-#endif
++#endif /* _PR_HAVE_GETADDRINFO */
+ }
+ 
+ PR_IMPLEMENT(void) PR_FreeAddrInfo(PRAddrInfo *ai)
+ {
+-#if defined(_PR_HAVE_GETADDRINFO)
+-#if defined(_PR_INET6_PROBE)
+-    if (!_pr_ipv6_is_present())
+-        PR_Free((PRAddrInfoFB *) ai);
+-    else
++#ifdef PRNETDB_CHECK_FALLBACK
++    if (_pr_use_fallback)
++        return PR_Free((PRAddrInfoFB *) ai);
+ #endif
+-        FREEADDRINFO((PRADDRINFO *) ai);
+-#else
+-    PR_Free((PRAddrInfoFB *) ai);
++#ifdef _PR_HAVE_GETADDRINFO
++    FREEADDRINFO((PRADDRINFO *) ai);
+ #endif
+ }
+ 
+@@ -2113,8 +2159,9 @@ PR_IMPLEMENT(void *) PR_EnumerateAddrInfo(void             *iterPtr,
+ {
+ #if defined(_PR_HAVE_GETADDRINFO)
+     PRADDRINFO *ai;
+-#if defined(_PR_INET6_PROBE)
+-    if (!_pr_ipv6_is_present()) {
++#endif
++#ifdef PRNETDB_CHECK_FALLBACK
++    if (_pr_use_fallback) {
+         /* using PRAddrInfoFB */
+         PRIntn iter = (PRIntn)(PRPtrdiff) iterPtr;
+         iter = PR_EnumerateHostEnt(iter, &((PRAddrInfoFB *) base)->hostent, port, result);
+@@ -2123,7 +2170,7 @@ PR_IMPLEMENT(void *) PR_EnumerateAddrInfo(void             *iterPtr,
+         return (void *)(PRPtrdiff) iter;
+     }
+ #endif
+-
++#if defined(_PR_HAVE_GETADDRINFO)
+     if (iterPtr)
+         ai = ((PRADDRINFO *) iterPtr)->ai_next;
+     else
+@@ -2150,29 +2197,19 @@ PR_IMPLEMENT(void *) PR_EnumerateAddrInfo(void             *iterPtr,
+     }
+ 
+     return ai;
+-#else
+-    /* using PRAddrInfoFB */
+-    PRIntn iter = (PRIntn) iterPtr;
+-    iter = PR_EnumerateHostEnt(iter, &((PRAddrInfoFB *) base)->hostent, port, result);
+-    if (iter < 0)
+-        iter = 0;
+-    return (void *) iter;
+-#endif
++#endif /* _PR_HAVE_GETADDRINFO */
+ }
+ 
+ PR_IMPLEMENT(const char *) PR_GetCanonNameFromAddrInfo(const PRAddrInfo *ai)
+ {
+-#if defined(_PR_HAVE_GETADDRINFO)
+-#if defined(_PR_INET6_PROBE)
+-    if (!_pr_ipv6_is_present()) {
++#ifdef PRNETDB_CHECK_FALLBACK
++    if (_pr_use_fallback) {
+         const PRAddrInfoFB *fb = (const PRAddrInfoFB *) ai;
+         return fb->has_cname ? fb->hostent.h_name : NULL;
+     } 
+ #endif
++#if defined(_PR_HAVE_GETADDRINFO)
+     return ((const PRADDRINFO *) ai)->ai_canonname;
+-#else
+-    const PRAddrInfoFB *fb = (const PRAddrInfoFB *) ai;
+-    return fb->has_cname ? fb->hostent.h_name : NULL;
+ #endif
+ }
+ 
+@@ -2184,6 +2221,7 @@ static PRStatus pr_StringToNetAddrGAI(const char *string, PRNetAddr *addr)
+     PRNetAddr laddr;
+     PRStatus status = PR_SUCCESS;
+ 
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+     memset(&hints, 0, sizeof(hints));
+     hints.ai_flags = AI_NUMERICHOST;
+     hints.ai_family = AF_UNSPEC;
+@@ -2224,6 +2262,7 @@ static PRStatus pr_StringToNetAddrFB(const char *string, PRNetAddr *addr)
+ {
+     PRIntn rv;
+ 
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+     rv = pr_inet_aton(string, &addr->inet.ip);
+     if (1 == rv)
+     {
+@@ -2249,7 +2288,7 @@ static PRStatus pr_StringToNetAddrFB(const char *string, PRNetAddr *addr)
+ 
+ PR_IMPLEMENT(PRStatus) PR_StringToNetAddr(const char *string, PRNetAddr *addr)
+ {
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+     if (!addr || !string || !*string)
+     {
+@@ -2257,13 +2296,11 @@ PR_IMPLEMENT(PRStatus) PR_StringToNetAddr(const char *string, PRNetAddr *addr)
+         return PR_FAILURE;
+     }
+ 
+-#if !defined(_PR_HAVE_GETADDRINFO)
+-    return pr_StringToNetAddrFB(string, addr);
+-#else
+-#if defined(_PR_INET6_PROBE)
+-    if (!_pr_ipv6_is_present())
++#ifdef PRNETDB_CHECK_FALLBACK
++    if (_pr_use_fallback)
+         return pr_StringToNetAddrFB(string, addr);
+ #endif
++#if defined(_PR_HAVE_GETADDRINFO)
+     /*
+      * getaddrinfo with AI_NUMERICHOST is much slower than pr_inet_aton on some
+      * platforms, such as Mac OS X (bug 404399), Linux glibc 2.10 (bug 344809),
+@@ -2289,6 +2326,8 @@ static PRStatus pr_NetAddrToStringGNI(
+ #endif
+     int rv;  /* 0 for success, or the error code EAI_xxx */
+ 
++    if (!_pr_netdb_initialized) _pr_netdb_init();
++
+ #ifdef _PR_INET6
+     if (addr->raw.family == PR_AF_INET6)
+     {
+@@ -2319,7 +2358,7 @@ static PRStatus pr_NetAddrToStringGNI(
+ }
+ #endif  /* _PR_HAVE_GETADDRINFO */
+ 
+-#if !defined(_PR_HAVE_GETADDRINFO) || defined(_PR_INET6_PROBE)
++#ifdef PRNETDB_CHECK_FALLBACK
+ static PRStatus pr_NetAddrToStringFB(
+     const PRNetAddr *addr, char *string, PRUint32 size)
+ {
+@@ -2355,20 +2394,40 @@ failed:
+     return PR_FAILURE;
+ 
+ }  /* pr_NetAddrToStringFB */
+-#endif  /* !_PR_HAVE_GETADDRINFO || _PR_INET6_PROBE */
++#endif  /* PRNETDB_CHECK_FALLBACK */
+ 
+ PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
+     const PRNetAddr *addr, char *string, PRUint32 size)
+ {
+-    if (!_pr_initialized) _PR_ImplicitInitialization();
++    if (!_pr_netdb_initialized) _pr_netdb_init();
+ 
+-#if !defined(_PR_HAVE_GETADDRINFO)
+-    return pr_NetAddrToStringFB(addr, string, size);
+-#else
+-#if defined(_PR_INET6_PROBE)
+-    if (!_pr_ipv6_is_present())
++#ifdef PRNETDB_CHECK_FALLBACK
++    if (_pr_use_fallback)
+         return pr_NetAddrToStringFB(addr, string, size);
+ #endif
++#if defined(_PR_HAVE_GETADDRINFO)
+     return pr_NetAddrToStringGNI(addr, string, size);
+ #endif
+ }  /* PR_NetAddrToString */
++
++static void _pr_netdb_init()
++{
++    if (_pr_netdb_initialized)
++        return;
++    _pr_netdb_initialized = 1;
++
++    if (!_pr_initialized)
++        _PR_ImplicitInitialization();
++
++#ifdef PRNETDB_CHECK_FALLBACK
++    /* make sure we've had a chance to probe for ipv6/getaddrinfo */
++    _pr_ipv6_is_present(); /* this will call _pr_find_getaddrinfo() */
++    _pr_use_fallback = (!_pr_getaddrinfo);
++    PR_LOG(_pr_io_lm, PR_LOG_DEBUG,
++           ("_pr_netdb_initialized, _pr_use_fallback=%d, _pr_ipv6_is_present=%d",
++            _pr_use_fallback, _pr_ipv6_is_present()));
++#else
++    PR_LOG(_pr_io_lm, PR_LOG_DEBUG,
++           ("_pr_netdb_initialized, no fallback probes"));
++#endif
++}
+-- 
+1.7.7.6
+
