@@ -1,3 +1,30 @@
+# DNSSEC-Tools
+%define _default_patch_fuzz 2
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
+%define base_name           firefox
+
 # Separated plugins are supported on x86(64) only
 %ifarch %{ix86} x86_64
 %define separated_plugins 1
@@ -6,14 +33,14 @@
 %endif
 
 # Build as a debug package?
-%define debug_build       0
+%define debug_build       1
 
 %if 0%{?fedora}
-%define homepage http://start.fedoraproject.org/
+%define homepage http://www.dnssec-tools.org/
 %else
 %define homepage file:///usr/share/doc/HTML/index.html
 %endif
-%define default_bookmarks_file %{_datadir}/bookmarks/default-bookmarks.html
+%define default_bookmarks_file /usr/share/bookmarks/default-bookmarks.html
 %define firefox_app_id \{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}
 
 %global xulrunner_version      15.0
@@ -22,7 +49,7 @@
 %global beta_version           0
 %global rc_version             0
 
-%global mozappdir     %{_libdir}/%{name}
+%global mozappdir     %{_libdir}/%{base_name}
 %global langpackdir   %{mozappdir}/langpacks
 %global tarballdir    mozilla-release
 
@@ -53,7 +80,7 @@
 %endif
 
 Summary:        Mozilla Firefox Web browser
-Name:           firefox
+Name:           dt-firefox
 Version:        15.0
 Release:        1%{?pre_tag}%{?dist}
 URL:            http://www.mozilla.org/projects/firefox/
@@ -90,16 +117,29 @@ Patch15:        firefox-15.0-enable-addons.patch
 
 %endif
 
+# -START- DNSSEC-Tools
+# - mozilla-base patches
+Patch1011:     moz-base-0001-take-advantage-of-new-DNSSEC-functionality-in-NSPR.patch
+Patch1012:     moz-base-0002-support-functions-in-preparation-for-async-support.patch
+Patch1013:     moz-base-0003-take-advantage-of-new-async-functionality-in-NSPR.patch
+Patch1014:     moz-base-0004-make-netwerk-DNSSEC-validation-aware.patch
+# - mozilla-browser patches
+Patch1101:     moz-firefox-0001-update-browser-local-overrides-for-DNSSEC.patch
+Patch1102:     moz-firefox-0002-add-DNSSEC-preferences-to-browser.patch
+# -END- DNSSEC-Tools
+
 # ---------------------------------------------------
 
 BuildRequires:  desktop-file-utils
 BuildRequires:  system-bookmarks
-BuildRequires:  xulrunner-devel%{?_isa} >= %{xulrunner_verrel}
+BuildRequires:  dt-xulrunner-devel%{?_isa} >= %{xulrunner_verrel}
+BuildRequires:  dnssec-tools-libs-devel openssl-devel autoconf213
 
-Requires:       xulrunner%{?_isa} >= %{xulrunner_verrel}
+Requires:       dt-xulrunner%{?_isa} >= %{xulrunner_verrel}
 Requires:       system-bookmarks
 Obsoletes:      mozilla <= 37:1.7.13
 Provides:       webclient
+Conflicts:      dt-firefox-aio
 
 %description
 Mozilla Firefox is an open-source web browser, designed for standards
@@ -131,6 +171,23 @@ cd %{tarballdir}
 # Not yet approved by Mozilla Corporation
 %endif
 
+###############################
+# DNSSEC-Tools
+# - mozilla-base patches
+%patch1011 -p1 -b .dnssec-moz-base
+%patch1012 -p1 -b .dnssec-moz-base
+%patch1013 -p1 -b .dnssec-moz-base
+%patch1014 -p1 -b .dnssec-moz-base
+# - mozilla-firefox patches
+%patch1101 -p1 -b .dnssec-moz-firefox
+%patch1102 -p1 -b .dnssec-moz-firefox
+
+# rebuild configure(s) due to dnssec patches
+/bin/rm -f ./configure
+/usr/bin/autoconf-2.13
+# end dnssec related patches
+###############################
+
 
 %{__rm} -f .mozconfig
 %{__cp} %{SOURCE10} .mozconfig
@@ -161,6 +218,8 @@ echo "ac_add_options --disable-debug" >> .mozconfig
 echo "ac_add_options --enable-optimize" >> .mozconfig
 %endif
 
+echo "ac_add_options --with-system-val" >> .mozconfig
+
 #---------------------------------------------------------------------
 
 %build
@@ -174,7 +233,7 @@ cd %{tarballdir}
 MOZ_OPT_FLAGS=$(echo $RPM_OPT_FLAGS | \
                      %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g')
 %if %{?debug_build}
-MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//')
+MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
 %endif
 export CFLAGS=$MOZ_OPT_FLAGS
 export CXXFLAGS=$MOZ_OPT_FLAGS
@@ -192,7 +251,8 @@ MOZ_SMP_FLAGS=-j1
 [ "$RPM_BUILD_NCPUS" -ge 4 ] && MOZ_SMP_FLAGS=-j4
 %endif
 
-export LDFLAGS="-Wl,-rpath,%{mozappdir}"
+export PATH="/usr/local/opt/bin:/usr/local/opt/sbin:$PATH"
+export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir}"
 make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS"
 
 # create debuginfo for crash-stats.mozilla.com
@@ -259,7 +319,7 @@ for s in 16 22 24 32 48 256; do
                $RPM_BUILD_ROOT%{_datadir}/icons/hicolor/${s}x${s}/apps/firefox.png
 done
 
-echo > ../%{name}.lang
+echo > ../%{base_name}.lang
 %if %{build_langpacks}
 # Extract langpacks, make any mods needed, repack the langpack, and install it.
 %{__mkdir_p} $RPM_BUILD_ROOT%{langpackdir}
@@ -280,7 +340,7 @@ for langpack in `ls firefox-langpacks/*.xpi`; do
 
   %{__install} -m 644 ${extensionID}.xpi $RPM_BUILD_ROOT%{langpackdir}
   language=`echo $language | sed -e 's/-/_/g'`
-  echo "%%lang($language) %{langpackdir}/${extensionID}.xpi" >> ../%{name}.lang
+  echo "%%lang($language) %{langpackdir}/${extensionID}.xpi" >> ../%{base_name}.lang
 done
 %{__rm} -rf firefox-langpacks
 %endif # build_langpacks
@@ -292,7 +352,7 @@ language_short=$2
 cd $RPM_BUILD_ROOT%{langpackdir}
 ln -s langpack-$language_long@firefox.mozilla.org.xpi langpack-$language_short@firefox.mozilla.org.xpi
 cd -
-echo "%%lang($language_short) %{langpackdir}/langpack-$language_short@firefox.mozilla.org.xpi" >> ../%{name}.lang
+echo "%%lang($language_short) %{langpackdir}/langpack-$language_short@firefox.mozilla.org.xpi" >> ../%{base_name}.lang
 }
 
 # Table of fallbacks for each language
@@ -348,7 +408,7 @@ fi
 %posttrans
 gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
-%files -f %{name}.lang
+%files -f %{base_name}.lang
 %defattr(-,root,root,-)
 %{_bindir}/firefox
 %{mozappdir}/firefox
