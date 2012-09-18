@@ -1,3 +1,30 @@
+# custom prefix
+# -Note: defining _var caused rpm to get confused about where the
+#        packages database was, so use manual prefix instead
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _includedir         %{_prefix}/include
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _tmppath            %{_var}/tmp
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
 # Do we want SELinux & Audit
 %if 0%{?!noselinux:1}
 %define WITH_SELINUX 1
@@ -84,7 +111,7 @@
 %define pam_ssh_agent_rel 31
 
 Summary: An open source implementation of SSH protocol versions 1 and 2
-Name: openssh
+Name: dt-openssh
 Version: %{openssh_ver}
 Release: %{openssh_rel}%{?dist}%{?rescue_rel}
 URL: http://www.openssh.com/portable.html
@@ -204,6 +231,8 @@ Patch71: openssh-5.8p2-log-usepam-no.patch
 #https://bugzilla.mindrot.org/show_bug.cgi?id=1604
 # sctp
 #https://bugzilla.mindrot.org/show_bug.cgi?id=1873 => https://bugzilla.redhat.com/show_bug.cgi?id=668993
+# dnssec local validation
+Patch1001: ssh-dnssec.pat
 
 License: BSD
 Group: Applications/Internet
@@ -236,6 +265,7 @@ BuildRequires: pam-devel
 BuildRequires: tcp_wrappers-devel
 BuildRequires: fipscheck-devel >= 1.3.0
 BuildRequires: openssl-devel >= 0.9.8j
+BuildRequires: dnssec-tools-libs-devel
 
 %if %{kerberos5}
 BuildRequires: krb5-devel
@@ -261,13 +291,14 @@ BuildRequires: xauth
 %package clients
 Summary: An open source SSH client applications
 Group: Applications/Internet
-Requires: openssh = %{version}-%{release}
+Requires: dt-openssh = %{version}-%{release}
 Requires: fipscheck-lib%{_isa} >= 1.3.0
 
 %package server
 Summary: An open source SSH server daemon
 Group: System Environment/Daemons
-Requires: openssh = %{version}-%{release}
+Conflicts: openssh-server
+Requires: dt-openssh = %{version}-%{release}
 Requires(pre): /usr/sbin/useradd
 Requires: pam >= 1.0.1-3
 Requires: fipscheck-lib%{_isa} >= 1.3.0
@@ -293,23 +324,23 @@ Requires: %{name}-server%{?_isa} = %{version}-%{release}
 %if %{ldap}
 %package ldap
 Summary: A LDAP support for open source SSH server daemon
-Requires: openssh = %{version}-%{release}
+Requires: dt-openssh = %{version}-%{release}
 Group: System Environment/Daemons
 %endif
 
 %package keycat
 Summary: A mls keycat backend for openssh
-Requires: openssh = %{version}-%{release}
+Requires: dt-openssh = %{version}-%{release}
 Group: System Environment/Daemons
 
 %package askpass
 Summary: A passphrase dialog for OpenSSH and X
 Group: Applications/Internet
-Requires: openssh = %{version}-%{release}
-Obsoletes: openssh-askpass-gnome
-Provides: openssh-askpass-gnome
+Requires: dt-openssh = %{version}-%{release}
+Obsoletes: dt-openssh-askpass-gnome
+Provides: dt-openssh-askpass-gnome
 
-%package -n pam_ssh_agent_auth
+%package -n dt-pam_ssh_agent_auth
 Summary: PAM module for authentication with ssh-agent
 Group: System Environment/Base
 Version: %{pam_ssh_agent_ver}
@@ -369,7 +400,7 @@ OpenSSH is a free version of SSH (Secure SHell), a program for logging
 into and executing commands on a remote machine. This package contains
 an X11 passphrase dialog for OpenSSH.
 
-%description -n pam_ssh_agent_auth
+%description -n dt-pam_ssh_agent_auth
 This package contains a PAM module which can be used to authenticate
 users using ssh keys stored in a ssh-agent. Through the use of the
 forwarding of ssh-agent connection it also allows to authenticate with
@@ -378,7 +409,7 @@ remote ssh-agent instance.
 The module is most useful for su and sudo service stacks.
 
 %prep
-%setup -q -a 4
+%setup -q -a 4 -n openssh-%{openssh_ver}
 #Do not enable by default
 ###%patch99 -p1 -b .wIm
 
@@ -440,6 +471,7 @@ popd
 %patch69 -p1 -b .askpass-ld
 %patch70 -p1 -b .restorecon
 %patch71 -p1 -b .log-usepam-no
+%patch1001 -p1 -b .dnssec
 
 autoreconf
 pushd pam_ssh_agent_auth-%{pam_ssh_agent_ver}
@@ -481,18 +513,20 @@ fi
 %endif
 
 %configure \
+        --prefix=%{_prefix} \
 	--sysconfdir=%{_sysconfdir}/ssh \
 	--libexecdir=%{_libexecdir}/openssh \
 	--datadir=%{_datadir}/openssh \
 	--with-tcp-wrappers \
-	--with-default-path=/usr/local/bin:/bin:/usr/bin \
-	--with-superuser-path=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
-	--with-privsep-path=%{_var}/empty/sshd \
+	--with-default-path=%{_prefix}/bin:/usr/local/bin:/bin:/usr/bin \
+	--with-superuser-path=%{_prefix}/sbin:%{_prefix}/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin \
+	--with-privsep-path=%{_prefix}/%{_var}/empty/sshd \
 	--enable-vendor-patchlevel="FC-%{version}-%{release}" \
 	--disable-strip \
 	--without-zlib-version-check \
 	--with-ssl-engine \
 	--with-authorized-keys-command \
+        --with-local-dnssec-validation \
 %if %{nss}
 	--with-nss \
 %endif
@@ -567,19 +601,19 @@ popd
 rm -rf $RPM_BUILD_ROOT
 mkdir -p -m755 $RPM_BUILD_ROOT%{_sysconfdir}/ssh
 mkdir -p -m755 $RPM_BUILD_ROOT%{_libexecdir}/openssh
-mkdir -p -m755 $RPM_BUILD_ROOT%{_var}/empty/sshd
+mkdir -p -m755 $RPM_BUILD_ROOT%{_prefix}/%{_var}/empty/sshd
 make install DESTDIR=$RPM_BUILD_ROOT
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ssh/ldap.conf
 
-install -d $RPM_BUILD_ROOT/etc/pam.d/
-install -d $RPM_BUILD_ROOT/etc/sysconfig/
-install -d $RPM_BUILD_ROOT/etc/rc.d/init.d
+install -d $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/
+install -d $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/
+install -d $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
 install -d $RPM_BUILD_ROOT%{_libexecdir}/openssh
 install -d $RPM_BUILD_ROOT%{_libdir}/fipscheck
-install -m644 %{SOURCE2} $RPM_BUILD_ROOT/etc/pam.d/sshd
-install -m644 %{SOURCE6} $RPM_BUILD_ROOT/etc/pam.d/ssh-keycat
-install -m755 %{SOURCE3} $RPM_BUILD_ROOT/etc/rc.d/init.d/sshd
-install -m644 %{SOURCE7} $RPM_BUILD_ROOT/etc/sysconfig/sshd
+install -m644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/sshd
+install -m644 %{SOURCE6} $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/ssh-keycat
+install -m755 %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d/sshd
+install -m644 %{SOURCE7} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/sshd
 install -m755 %{SOURCE13} $RPM_BUILD_ROOT/%{_sbindir}/sshd-keygen
 install -d -m755 $RPM_BUILD_ROOT/%{_unitdir}
 install -m644 %{SOURCE8} $RPM_BUILD_ROOT/%{_unitdir}/sshd-keygen.service
@@ -631,11 +665,11 @@ getent group sshd >/dev/null || groupadd -g %{sshd_uid} -r sshd || :
 %if %{nologin}
 getent passwd sshd >/dev/null || \
   useradd -c "Privilege-separated SSH" -u %{sshd_uid} -g sshd  -s /sbin/nologin \
-  -s /sbin/nologin -r -d /var/empty/sshd sshd 2> /dev/null || :
+  -s /sbin/nologin -r -d %{_prefix}/%{_var}/empty/sshd sshd 2> /dev/null || :
 %else
 getent passwd sshd >/dev/null || \
   useradd -c "Privilege-separated SSH" -u %{sshd_uid} -g sshd  -s /sbin/nologin \
-  -s /dev/null -r -d /var/empty/sshd sshd 2> /dev/null || :
+  -s /dev/null -r -d %{_prefix}/%{_var}/empty/sshd sshd 2> /dev/null || :
 %endif
 
 %post server
@@ -660,18 +694,6 @@ if [ $1 -eq 0 ] ; then
     /bin/systemctl stop sshd.service > /dev/null 2>&1 || :
     /bin/systemctl stop sshd-keygen.service > /dev/null 2>&1 || :
 fi
-
-%triggerun -n openssh-server -- openssh-server < 5.8p2-12
-/usr/bin/systemd-sysv-convert --save sshd >/dev/null 2>&1 || :
-/bin/systemctl enable sshd.service >/dev/null 2>&1
-/bin/systemctl enable sshd-keygen.service >/dev/null 2>&1
-/sbin/chkconfig --del sshd >/dev/null 2>&1 || :
-/bin/systemctl try-restart sshd.service >/dev/null 2>&1 || :
-# This one was never a service, so we don't simply restart it
-/bin/systemctl is-active -q sshd.service && /bin/systemctl start sshd-keygen.service >/dev/null 2>&1 || :
-
-%triggerpostun -n openssh-server-sysvinit -- openssh-server < 5.8p2-12
-/sbin/chkconfig --add sshd >/dev/null 2>&1 || :
 
 %files
 %defattr(-,root,root)
@@ -719,7 +741,7 @@ fi
 %if ! %{rescue}
 %files server
 %defattr(-,root,root)
-%dir %attr(0711,root,root) %{_var}/empty/sshd
+%dir %attr(0711,root,root) %{_prefix}/%{_var}/empty/sshd
 %attr(0755,root,root) %{_sbindir}/sshd
 %attr(0755,root,root) %{_sbindir}/sshd-keygen
 %attr(0644,root,root) %{_libdir}/fipscheck/sshd.hmac
@@ -729,8 +751,8 @@ fi
 %attr(0644,root,root) %{_mandir}/man8/sshd.8*
 %attr(0644,root,root) %{_mandir}/man8/sftp-server.8*
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/ssh/sshd_config
-%attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
-%attr(0640,root,root) %config(noreplace) /etc/sysconfig/sshd
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/sshd
+%attr(0640,root,root) %config(noreplace) %{_sysconfdir}/sysconfig/sshd
 %attr(0644,root,root) %{_unitdir}/sshd-keygen.service
 %attr(0644,root,root) %{_unitdir}/sshd.service
 
@@ -741,7 +763,7 @@ fi
 
 %files server-sysvinit
 %defattr(-,root,root)
-%attr(0755,root,root) /etc/rc.d/init.d/sshd
+%attr(0755,root,root) %{_sysconfdir}/rc.d/init.d/sshd
 %endif
 
 %if %{ldap}
@@ -758,7 +780,7 @@ fi
 %defattr(-,root,root)
 %doc HOWTO.ssh-keycat
 %attr(0755,root,root) %{_libexecdir}/openssh/ssh-keycat
-%attr(0644,root,root) %config(noreplace) /etc/pam.d/ssh-keycat
+%attr(0644,root,root) %config(noreplace) %{_sysconfdir}/pam.d/ssh-keycat
 
 %if ! %{no_gnome_askpass}
 %files askpass
@@ -769,7 +791,7 @@ fi
 %endif
 
 %if %{pam_ssh_agent}
-%files -n pam_ssh_agent_auth
+%files -n dt-pam_ssh_agent_auth
 %defattr(-,root,root)
 %doc pam_ssh_agent_auth-%{pam_ssh_agent_ver}/OPENSSH_LICENSE
 %attr(0755,root,root) /%{_lib}/security/pam_ssh_agent_auth.so
@@ -777,6 +799,9 @@ fi
 %endif
 
 %changelog
+* Mon Aug 20 2012 Robert Story <rstory@tislabs.com> 5.8p2-25.dt.1 + 0.9.2-31
+- DNSSEC-Tools patch
+
 * Wed Feb 22 2012 Petr Lautrbach <plautrba@redhat.com> 5.8p2-25 + 0.9.2-31
 - Look for x11 forward sockets with AI_ADDRCONFIG flag getaddrinfo (#735889)
 
