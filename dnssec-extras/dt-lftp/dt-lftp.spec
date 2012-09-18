@@ -1,5 +1,30 @@
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _includedir         %{_prefix}/include
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _tmppath            %{_var}/tmp
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
 Summary:	A sophisticated file transfer program
-Name:		lftp
+Name:		dt-lftp
 Version:	4.3.8
 Release:	1%{?dist}
 License:	GPLv3+
@@ -8,9 +33,11 @@ Source0:	ftp://ftp.yar.ru/lftp/lftp-%{version}.tar.xz
 URL:		http://lftp.yar.ru/
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:	ncurses-devel, gnutls-devel, pkgconfig, readline-devel, gettext
+BuildRequires:  dnssec-tools-libs-devel openssl-devel autoconf automake
 
 Patch1:  lftp-4.0.9-date_fmt.patch
 Patch2:  lftp-4.2.0-man.patch
+Patch99: lftp-ssl-search.patch
 
 %description
 LFTP is a sophisticated ftp/http file transfer program. Like bash, it has job
@@ -21,25 +48,28 @@ reliability in mind.
 %package scripts
 Summary:	Scripts for lftp
 Group:		Applications/Internet
-Requires:	lftp >= %{version}-%{release}
+Requires:	dt-lftp >= %{version}-%{release}
 BuildArch:	noarch
 
 %description scripts
 Utility scripts for use with lftp.
 
 %prep
-%setup -q
+%setup -q -n lftp-%{version}
 
 %patch1 -p1 -b .date_fmt
 %patch2 -p1 -b .man
+%patch99 -p1 -b .ssl-search
 
+autoreconf
 #sed -i.rpath -e '/lftp_cv_openssl/s|-R.*lib||' configure
 sed -i.norpath -e \
 	'/sys_lib_dlsearch_path_spec/s|/usr/lib |/usr/lib /usr/lib64 /lib64 |' \
 	configure
 
 %build
-%configure --with-modules --disable-static --with-gnutls --without-openssl --with-debug
+%configure --with-modules --disable-static --with-gnutls --with-debug \
+           --with-dnssec-local-validation
 make %{?_smp_mflags}
 
 %install
@@ -58,7 +88,7 @@ rm $RPM_BUILD_ROOT%{_libdir}/liblftp-tasks.la
 rm $RPM_BUILD_ROOT%{_libdir}/liblftp-jobs.so
 rm $RPM_BUILD_ROOT%{_libdir}/liblftp-tasks.so
 
-%find_lang %{name}
+%find_lang lftp
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -67,7 +97,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %postun -p /sbin/ldconfig
 
-%files -f %{name}.lang
+%files -f lftp.lang
 %defattr(-,root,root,-)
 %doc BUGS COPYING ChangeLog FAQ FEATURES README* NEWS THANKS TODO
 %config(noreplace) %{_sysconfdir}/lftp.conf
