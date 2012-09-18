@@ -1,3 +1,30 @@
+# DNSSEC-Tools
+%define _default_patch_fuzz 2
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
+%define app_name   firefox-aio
+
 # Separated plugins are supported on x86(64) only
 %ifarch %{ix86} x86_64
 %define separated_plugins 1
@@ -6,23 +33,22 @@
 %endif
 
 # Build as a debug package?
-%define debug_build       0
+%define debug_build       1
 
 %if 0%{?fedora}
-%define homepage http://start.fedoraproject.org/
+%define homepage http://www.dnssec-tools.org/
 %else
 %define homepage file:///usr/share/doc/HTML/index.html
 %endif
-%define default_bookmarks_file %{_datadir}/bookmarks/default-bookmarks.html
+# fedora bookmarks (from fedora-bookmarks rpm)
+%define default_bookmarks_file /usr/share/bookmarks/default-bookmarks.html
 %define firefox_app_id \{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}
 
-%global xulrunner_version      15.0
-%global xulrunner_release      1
 %global alpha_version          0
 %global beta_version           0
 %global rc_version             0
 
-%global mozappdir     %{_libdir}/%{name}
+%global mozappdir     %{_libdir}/%{app_name}
 %global langpackdir   %{mozappdir}/langpacks
 %global tarballdir    mozilla-release
 
@@ -46,14 +72,11 @@
 %global tarballdir  mozilla-release
 %endif
 %if %{defined pre_version}
-%global xulrunner_verrel %{xulrunner_version}-%{xulrunner_release}%{pre_name}
 %global pre_tag .%{pre_version}
-%else
-%global xulrunner_verrel %{xulrunner_version}-%{xulrunner_release}
 %endif
 
 Summary:        Mozilla Firefox Web browser
-Name:           firefox
+Name:           dt-%{app_name}
 Version:        15.0
 Release:        1%{?pre_tag}%{?dist}
 URL:            http://www.mozilla.org/projects/firefox/
@@ -90,14 +113,54 @@ Patch15:        firefox-15.0-enable-addons.patch
 
 %endif
 
+# DNSSEC-Tools
+Patch1001:	nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
+Patch1002:	nspr-0002-add-NSPR-log-module-for-DNS.patch
+Patch1003:	nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
+Patch1004:	nspr-0004-add-DNSSEC-error-codes-and-text.patch
+Patch1005:	nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch
+Patch1006:	nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch
+Patch1007:	nspr-0007-add-dnssec-validation-to-prnetdb.patch
+Patch1008:	nspr-0008-update-getai-to-test-async-disable-validation.patch
+# - mozilla-base patches
+Patch1011:	moz-base-0001-take-advantage-of-new-DNSSEC-functionality-in-NSPR.patch
+Patch1012:	moz-base-0002-support-functions-in-preparation-for-async-support.patch
+Patch1013:	moz-base-0003-take-advantage-of-new-async-functionality-in-NSPR.patch
+Patch1014:	moz-base-0004-make-netwerk-DNSSEC-validation-aware.patch
+# - mozilla-browser patches
+Patch1101:	moz-firefox-0001-update-browser-local-overrides-for-DNSSEC.patch
+Patch1102:	moz-firefox-0002-add-DNSSEC-preferences-to-browser.patch
+
 # ---------------------------------------------------
 
 BuildRequires:  desktop-file-utils
 BuildRequires:  system-bookmarks
-BuildRequires:  xulrunner-devel%{?_isa} >= %{xulrunner_verrel}
+BuildRequires:  dnssec-tools-libs-devel
+BuildRequires:  openssl-devel
+BuildRequires:  autoconf213
 
-Requires:       xulrunner%{?_isa} >= %{xulrunner_verrel}
 Requires:       system-bookmarks
+
+BuildRequires:  dnssec-tools-libs zip
+BuildRequires:  nss-devel nss-softokn
+BuildRequires:  libpng-devel libjpeg-devel
+BuildRequires:  zip  bzip2-devel  zlib-devel
+BuildRequires:  libIDL-devel
+BuildRequires:  gtk2-devel
+BuildRequires:  krb5-devel
+BuildRequires:  pango-devel
+BuildRequires:  freetype-devel
+BuildRequires:  libXt-devel  libXrender-devel
+BuildRequires:  hunspell-devel
+BuildRequires:  startup-notification-devel
+BuildRequires:  alsa-lib-devel
+BuildRequires:  libnotify-devel
+BuildRequires:  mesa-libGL-devel
+BuildRequires:  libcurl-devel
+BuildRequires:  libvpx-devel
+BuildRequires:  cairo-devel
+
+Conflicts:      dt-firefox
 Obsoletes:      mozilla <= 37:1.7.13
 Provides:       webclient
 
@@ -131,19 +194,42 @@ cd %{tarballdir}
 # Not yet approved by Mozilla Corporation
 %endif
 
+###############################
+# DNSSEC-Tools
+%patch1001 -p1 -b .dnssec
+%patch1002 -p1 -b .dnssec
+%patch1003 -p1 -b .dnssec
+%patch1004 -p1 -b .dnssec
+%patch1005 -p1 -b .dnssec
+%patch1006 -p1 -b .dnssec
+%patch1007 -p1 -b .dnssec
+%patch1008 -p1 -b .dnssec
+# - mozilla-base patches
+%patch1011 -p1 -b .dnssec-moz-base
+%patch1012 -p1 -b .dnssec-moz-base
+%patch1013 -p1 -b .dnssec-moz-base
+%patch1014 -p1 -b .dnssec-moz-base
+# - mozilla-firefox patches
+%patch1101 -p1 -b .dnssec-moz-firefox
+%patch1102 -p1 -b .dnssec-moz-firefox
+
+# rebuild configure(s) due to dnssec patches
+/bin/rm -f ./configure
+/usr/bin/autoconf-2.13 
+(cd nsprpub/; /bin/rm -f ./configure; /usr/bin/autoconf-2.13)
+# end dnssec related patches
+###############################
+
+
 
 %{__rm} -f .mozconfig
-%{__cp} %{SOURCE10} .mozconfig
+%{__grep} -Ev "(system-nspr|libxul|system-cairo)" %{SOURCE10} > .mozconfig
 %if %{official_branding}
 %{__cat} %{SOURCE11} >> .mozconfig
 %endif
 %if %{include_debuginfo}
 %{__cat} %{SOURCE13} >> .mozconfig
 %endif
-
-# Set up SDK path
-echo "ac_add_options --with-libxul-sdk=\
-`pkg-config --variable=sdkdir libxul`" >> .mozconfig
 
 %if !%{?separated_plugins}
 echo "ac_add_options --disable-ipc" >> .mozconfig
@@ -161,6 +247,12 @@ echo "ac_add_options --disable-debug" >> .mozconfig
 echo "ac_add_options --enable-optimize" >> .mozconfig
 %endif
 
+echo "ac_add_options --with-system-val" >> .mozconfig
+echo "ac_add_options --without-system-nspr" >> .mozconfig
+echo "ac_add_options --without-system-libxul" >> .mozconfig
+echo "ac_add_options --disable-skia" >> .mozconfig
+echo "ac_add_options --with-app-name=%{app_name}" >> .mozconfig
+
 #---------------------------------------------------------------------
 
 %build
@@ -174,7 +266,7 @@ cd %{tarballdir}
 MOZ_OPT_FLAGS=$(echo $RPM_OPT_FLAGS | \
                      %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g')
 %if %{?debug_build}
-MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//')
+MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
 %endif
 export CFLAGS=$MOZ_OPT_FLAGS
 export CXXFLAGS=$MOZ_OPT_FLAGS
@@ -192,7 +284,8 @@ MOZ_SMP_FLAGS=-j1
 [ "$RPM_BUILD_NCPUS" -ge 4 ] && MOZ_SMP_FLAGS=-j4
 %endif
 
-export LDFLAGS="-Wl,-rpath,%{mozappdir}"
+export PATH="/usr/local/opt/bin:/usr/local/opt/sbin:$PATH"
+export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir}"
 make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS"
 
 # create debuginfo for crash-stats.mozilla.com
@@ -218,6 +311,14 @@ cd %{tarballdir}
 # set up our default bookmarks
 %{__cp} -p %{default_bookmarks_file} dist/bin/defaults/profile/bookmarks.html
 
+# copy some libs they want that are part of external rpms
+for l in libfreebl3.so libnss3.so libnssckbi.so libnssdbm3.so libnssutil3.so libsmime3.so libsoftokn3.so libssl3.so
+do
+  %{__cp} -p /usr/%{_lib}/$l dist/bin/
+done
+# and an app
+%{__cp} -l /usr/%{_lib}/nss/unsupported-tools/shlibsign dist/bin
+
 # Make sure locale works for langpacks
 %{__cat} > dist/bin/defaults/preferences/firefox-l10n.js << EOF
 pref("general.useragent.locale", "chrome://global/locale/intl.properties");
@@ -232,23 +333,31 @@ DESTDIR=$RPM_BUILD_ROOT make install
 
 %{__mkdir_p} $RPM_BUILD_ROOT{%{_libdir},%{_bindir},%{_datadir}/applications}
 
+cat %{SOURCE20} | %{__sed} -e "s,firefox,%{app_name},g" \
+    > $RPM_BUILD_DIR/%{app_name}.desktop
+
 %if 0%{?fedora} <= 16
-desktop-file-install --vendor mozilla --dir $RPM_BUILD_ROOT%{_datadir}/applications %{SOURCE20}
+desktop-file-install --vendor mozilla --dir $RPM_BUILD_ROOT%{_datadir}/applications $RPM_BUILD_DIR/%{app_name}.desktop
 %else
-desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications %{SOURCE20}
+desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications $RPM_BUILD_DIR/%{app_name}.desktop
 %endif
 
 # set up the firefox start script
-%{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/firefox
-XULRUNNER_DIR=`pkg-config --variable=libdir libxul | %{__sed} -e "s,%{_libdir},,g"`
-%{__cat} %{SOURCE21} | %{__sed} -e "s,XULRUNNER_DIRECTORY,$XULRUNNER_DIR,g" > \
-  $RPM_BUILD_ROOT%{_bindir}/firefox
-%{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/firefox
+%{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/%{app_name}
+#XULRUNNER_DIR=`pkg-config --variable=libdir libxul | %{__sed} -e "s,%{_libdir},,g"`
+#%{__cat} %{SOURCE21} | %{__sed} -e "s,XULRUNNER_DIRECTORY,$XULRUNNER_DIR,g" > \
+#  $RPM_BUILD_ROOT%{_bindir}/firefox
+%{__cat} %{SOURCE21} | %{__sed} \
+    -e "s,/usr/,%{_prefix}/,g" \
+    -e "s,firefox,%{app_name},g" \
+    -e "s,XULRUNNER_DIRECTORY,%{app_name},g" \
+    > $RPM_BUILD_ROOT%{_bindir}/%{app_name}
+%{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/%{app_name}
 
 # Link with xulrunner 
-ln -s `pkg-config --variable=libdir libxul` $RPM_BUILD_ROOT/%{mozappdir}/xulrunner
+#ln -s `pkg-config --variable=libdir libxul` $RPM_BUILD_ROOT/%{mozappdir}/xulrunner
 
-%{__install} -p -D -m 644 %{SOURCE23} $RPM_BUILD_ROOT%{_mandir}/man1/firefox.1
+%{__install} -p -D -m 644 %{SOURCE23} $RPM_BUILD_ROOT%{_mandir}/man1/%{app_name}.1
 
 %{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/firefox-config
 %{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/update-settings.ini
@@ -256,10 +365,10 @@ ln -s `pkg-config --variable=libdir libxul` $RPM_BUILD_ROOT/%{mozappdir}/xulrunn
 for s in 16 22 24 32 48 256; do
     %{__mkdir_p} $RPM_BUILD_ROOT%{_datadir}/icons/hicolor/${s}x${s}/apps
     %{__cp} -p browser/branding/official/default${s}.png \
-               $RPM_BUILD_ROOT%{_datadir}/icons/hicolor/${s}x${s}/apps/firefox.png
+               $RPM_BUILD_ROOT%{_datadir}/icons/hicolor/${s}x${s}/apps/%{app_name}.png
 done
 
-echo > ../%{name}.lang
+echo > ../firefox.lang
 %if %{build_langpacks}
 # Extract langpacks, make any mods needed, repack the langpack, and install it.
 %{__mkdir_p} $RPM_BUILD_ROOT%{langpackdir}
@@ -280,7 +389,7 @@ for langpack in `ls firefox-langpacks/*.xpi`; do
 
   %{__install} -m 644 ${extensionID}.xpi $RPM_BUILD_ROOT%{langpackdir}
   language=`echo $language | sed -e 's/-/_/g'`
-  echo "%%lang($language) %{langpackdir}/${extensionID}.xpi" >> ../%{name}.lang
+  echo "%%lang($language) %{langpackdir}/${extensionID}.xpi" >> ../firefox.lang
 done
 %{__rm} -rf firefox-langpacks
 %endif # build_langpacks
@@ -292,7 +401,7 @@ language_short=$2
 cd $RPM_BUILD_ROOT%{langpackdir}
 ln -s langpack-$language_long@firefox.mozilla.org.xpi langpack-$language_short@firefox.mozilla.org.xpi
 cd -
-echo "%%lang($language_short) %{langpackdir}/langpack-$language_short@firefox.mozilla.org.xpi" >> ../%{name}.lang
+echo "%%lang($language_short) %{langpackdir}/langpack-$language_short@firefox.mozilla.org.xpi" >> ../firefox.lang
 }
 
 # Table of fallbacks for each language
@@ -348,10 +457,11 @@ fi
 %posttrans
 gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
-%files -f %{name}.lang
+%files -f firefox.lang
 %defattr(-,root,root,-)
-%{_bindir}/firefox
-%{mozappdir}/firefox
+%{_bindir}/%{app_name}
+%{mozappdir}/%{app_name}
+%{mozappdir}/%{app_name}-bin
 %doc %{_mandir}/man1/*
 %dir %{_datadir}/mozilla/extensions/%{firefox_app_id}
 %dir %{_libdir}/mozilla/extensions/%{firefox_app_id}
@@ -363,7 +473,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %dir %{mozappdir}/components
 %{mozappdir}/components/*.so
 %{mozappdir}/components/binary.manifest
-%{mozappdir}/defaults/preferences/channel-prefs.js
+%{mozappdir}/defaults/pref/channel-prefs.js
 %attr(644, root, root) %{mozappdir}/blocklist.xml
 %dir %{mozappdir}/extensions
 %{mozappdir}/extensions/{972ce4c6-7e08-4474-a285-3208198ce6fd}
@@ -376,13 +486,13 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{mozappdir}/run-mozilla.sh
 %{mozappdir}/application.ini
 %exclude %{mozappdir}/removed-files
-%{_datadir}/icons/hicolor/16x16/apps/firefox.png
-%{_datadir}/icons/hicolor/22x22/apps/firefox.png
-%{_datadir}/icons/hicolor/24x24/apps/firefox.png
-%{_datadir}/icons/hicolor/256x256/apps/firefox.png
-%{_datadir}/icons/hicolor/32x32/apps/firefox.png
-%{_datadir}/icons/hicolor/48x48/apps/firefox.png
-%{mozappdir}/xulrunner
+%{_datadir}/icons/hicolor/16x16/apps/%{app_name}.png
+%{_datadir}/icons/hicolor/22x22/apps/%{app_name}.png
+%{_datadir}/icons/hicolor/24x24/apps/%{app_name}.png
+%{_datadir}/icons/hicolor/256x256/apps/%{app_name}.png
+%{_datadir}/icons/hicolor/32x32/apps/%{app_name}.png
+%{_datadir}/icons/hicolor/48x48/apps/%{app_name}.png
+#%{mozappdir}/xulrunner
 
 %if %{include_debuginfo}
 #%{mozappdir}/crashreporter
@@ -390,6 +500,23 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 #%{mozappdir}/Throbber-small.gif
 #%{mozappdir}/plugin-container
 %endif
+
+# xulrunner files
+%{mozappdir}/dictionaries
+%{mozappdir}/*.so
+%{mozappdir}/mozilla-xremote-client
+%{mozappdir}/platform.ini
+%{mozappdir}/dependentlibs.list
+%{mozappdir}/plugin-container
+#%if !%{?system_nss}
+%{mozappdir}/*.chk
+#%endif
+
+# ignore nspr devel
+%exclude %{_libdir}/%{app_name}-devel-*
+%exclude %{_datadir}/idl/%{app_name}*
+%exclude %{_prefix}/include/%{app_name}*
+%exclude %{_libdir}/%{app_name}-devel-*/*
 
 #---------------------------------------------------------------------
 

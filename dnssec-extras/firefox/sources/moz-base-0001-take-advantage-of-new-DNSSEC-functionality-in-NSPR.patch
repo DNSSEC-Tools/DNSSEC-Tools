@@ -1,0 +1,448 @@
+From c694f4f5ec86f2e92a2b74dda74f323cf12139fb Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 13 Oct 2011 01:34:28 -0400
+Subject: [PATCH 1/6] take advantage of new DNSSEC functionality in NSPR
+
+---
+ configure.in                     |   57 +++++++++++++++++++++++++
+ netwerk/base/public/nsNetError.h |   12 +++++
+ netwerk/dns/nsDNSService2.cpp    |   26 ++++++++++++
+ netwerk/dns/nsDNSService2.h      |    4 ++
+ netwerk/dns/nsHostResolver.cpp   |   84 ++++++++++++++++++++++++++++++++++++--
+ netwerk/dns/nsHostResolver.h     |   29 ++++++++++++-
+ 6 files changed, 206 insertions(+), 6 deletions(-)
+
+diff --git a/configure.in b/configure.in
+index 40c3f2e..ab7ef4d 100644
+--- a/configure.in
++++ b/configure.in
+@@ -8388,6 +8388,63 @@ if test "$MOZ_APP_COMPONENT_MODULES"; then
+ fi
+ 
+ dnl ========================================================
++dnl = Add DNSSEC support 
++dnl ========================================================
++
++AC_ARG_WITH(system-val,
++[  --with-system-val[=PFX] 
++                  Use system DNSSEC validator [installed at prefix PFX]],
++   ,
++   [with_system_val=no])
++
++AC_ARG_WITH(system-openssl,
++[  --with-system-openssl[=PFX]
++                  Use system openssl libraries [installed at prefix PFX]],
++   ,
++   [with_system_openssl=no])
++
++VAL_LIBS=""
++OPENSSL_LIBS=""
++if test "x$with_system_val" != xno; then
++  CFLAGS="$CFLAGS -I${with_system_val}/include"
++  if test -n "$_WIN32_MSVC"; then
++    VAL_LIBS="${with_system_val}/lib/libval-threads.a ${with_system_val}/lib/libsres.a ${with_system_val}/lib/libcrypto.a ${with_system_val}/lib/libpthread.dll.a ${with_system_val}/lib/libgcc.a user32.lib gdi32.lib Ws2_32.lib"
++    AC_DEFINE(MOZ_DNSSEC)
++  else
++    LDFLAGS="$LDFLAGS -L${with_system_val}/lib"
++    if test "x$with_system_openssl" != xno; then
++        CFLAGS="$CFLAGS -I${with_system_openssl}/include"
++        LDFLAGS="$LDFLAGS -L${with_system_openssl}/lib" 
++    fi
++    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
++    AC_CHECK_LIB(val-threads, val_gethostbyname,
++        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
++         AC_DEFINE(MOZ_DNSSEC)], ,
++        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++  fi
++  dnl functions added in 1.11
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_submit,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_SUBMIT), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++  dnl functions added in 1.12
++  AC_CHECK_LIB(val-threads, val_context_setqflags,
++                AC_DEFINE(HAVE_VAL_CONTEXT_SETQFLAGS), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++
++  dnl functions added in 1.13
++  AC_CHECK_LIB(val-threads, val_freeaddrinfo,
++                AC_DEFINE(HAVE_VAL_FREEADDRINFO), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_cancel,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_CANCEL), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++fi
++LIBS="$LIBS $VAL_LIBS"
++NSPR_LIBS="$NSPR_LIBS $VAL_LIBS"
++AC_SUBST(VAL_LIBS)
++AC_SUBST(MOZ_DNSSEC)
++
++dnl ========================================================
+ dnl =
+ dnl = Maintainer debug option (no --enable equivalent)
+ dnl =
+diff --git a/netwerk/base/public/nsNetError.h b/netwerk/base/public/nsNetError.h
+index f326259..ad0d17b 100644
+--- a/netwerk/base/public/nsNetError.h
++++ b/netwerk/base/public/nsNetError.h
+@@ -308,6 +308,18 @@
+     NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 33)
+ 
+ /**
++ * A DNS lookup failed DNSSEC validation.
++ */
++#define NS_ERROR_DNSSEC_VALIDATION_ERROR \
++    NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 34)
++
++/**
++ * A DNS lookup was proven to not exist.
++ */
++#define NS_ERROR_DNSSEC_DNE_ERROR \
++    NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 35)
++
++/**
+  * The lookup of a proxy hostname failed.
+  *
+  * If a channel is configured to speak to a proxy server, then it will
+diff --git a/netwerk/dns/nsDNSService2.cpp b/netwerk/dns/nsDNSService2.cpp
+index 7458729..e13874f 100644
+--- a/netwerk/dns/nsDNSService2.cpp
++++ b/netwerk/dns/nsDNSService2.cpp
+@@ -376,6 +376,12 @@ nsDNSSyncRequest::EqualsAsyncListener(nsIDNSListener *aListener)
+ 
+ //-----------------------------------------------------------------------------
+ 
++#ifdef MOZ_DNSSEC
++
++val_context_t *nsDNSService::mValContext = nsnull;
++
++#endif
++
+ nsDNSService::nsDNSService()
+     : mLock("nsDNSServer.mLock")
+     , mFirstTime(true)
+@@ -447,6 +453,11 @@ nsDNSService::Init()
+         }
+     }
+ 
++#ifdef MOZ_DNSSEC
++    if (nsnull == mValContext)
++        val_create_context((char*)"mozilla-browser", &mValContext);
++#endif
++
+     // we have to null out mIDN since we might be getting re-initialized
+     // as a result of a pref change.
+     nsCOMPtr<nsIIDNService> idn;
+@@ -464,6 +475,9 @@ nsDNSService::Init()
+     nsresult rv = nsHostResolver::Create(maxCacheEntries,
+                                          maxCacheLifetime,
+                                          lifetimeGracePeriod,
++#ifdef MOZ_DNSSEC
++                                         mValContext,
++#endif
+                                          getter_AddRefs(res));
+     if (NS_SUCCEEDED(rv)) {
+         // now, set all of our member variables while holding the lock
+@@ -482,14 +496,26 @@ nsDNSService::Init()
+ NS_IMETHODIMP
+ nsDNSService::Shutdown()
+ {
++#ifdef MOZ_DNSSEC
++    val_context *ctx = nsnull;
++#endif
+     nsRefPtr<nsHostResolver> res;
+     {
+         MutexAutoLock lock(mLock);
+         res = mResolver;
+         mResolver = nsnull;
++#ifdef MOZ_DNSSEC
++        ctx = mValContext;
++        mValContext = nsnull;
++#endif
+     }
+     if (res)
+         res->Shutdown();
++#ifdef MOZ_DNSSEC
++    if (nsnull != ctx) {
++        val_free_context(ctx);
++    }
++#endif
+     return NS_OK;
+ }
+ 
+diff --git a/netwerk/dns/nsDNSService2.h b/netwerk/dns/nsDNSService2.h
+index 1749b41..e9bc4d8 100644
+--- a/netwerk/dns/nsDNSService2.h
++++ b/netwerk/dns/nsDNSService2.h
+@@ -41,4 +41,8 @@
+     bool                      mDisablePrefetch;
+     bool                      mFirstTime;
+     nsTHashtable<nsCStringHashKey> mLocalDomains;
++
++#ifdef MOZ_DNSSEC
++    static val_context_t     *mValContext;
++#endif
+ };
+diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
+index bae320e..b623468 100644
+--- a/netwerk/dns/nsHostResolver.cpp
++++ b/netwerk/dns/nsHostResolver.cpp
+@@ -56,6 +56,7 @@
+ #include "nsAutoPtr.h"
+ #include "pratom.h"
+ #include "prthread.h"
++#include "prnetdb.h"
+ #include "prerror.h"
+ #include "prtime.h"
+ #include "prlong.h"
+@@ -177,7 +178,11 @@ private:
+ // this macro filters out any flags that are not used when constructing the
+ // host key.  the significant flags are those that would affect the resulting
+ // host record (i.e., the flags that are passed down to PR_GetAddrInfoByName).
++#ifdef MOZ_DNSSEC
++#define RES_KEY_FLAGS(_f) ((_f) & (nsHostResolver::RES_CANON_NAME|nsHostResolver::RES_EXTENDED_ERRS))
++#else
+ #define RES_KEY_FLAGS(_f) ((_f) & nsHostResolver::RES_CANON_NAME)
++#endif
+ 
+ nsHostRecord::nsHostRecord(const nsHostKey *key)
+     : _refc(1)
+@@ -194,6 +199,10 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
+     memcpy((char *) host, key->host, strlen(key->host) + 1);
+     flags = key->flags;
+     af = key->af;
++#ifdef MOZ_DNSSEC
++    saved_status = NS_OK;
++    security_status_flags = 0;
++#endif
+ 
+     NS_LOG_ADDREF(this, 1, "nsHostRecord", sizeof(nsHostRecord));
+     expiration = NowInMinutes();
+@@ -369,10 +378,17 @@ HostDB_RemoveEntry(PLDHashTable *table,
+ 
+ nsHostResolver::nsHostResolver(PRUint32 maxCacheEntries,
+                                PRUint32 maxCacheLifetime,
+-                               PRUint32 lifetimeGracePeriod)
++                               PRUint32 lifetimeGracePeriod
++#ifdef MOZ_DNSSEC
++                               , val_context_t *valContext
++#endif
++    )
+     : mMaxCacheEntries(maxCacheEntries)
+     , mMaxCacheLifetime(maxCacheLifetime)
+     , mGracePeriod(lifetimeGracePeriod)
++#ifdef MOZ_DNSSEC
++    , mValContext(valContext)
++#endif
+     , mLock("nsHostResolver.mLock")
+     , mIdleThreadCV(mLock, "nsHostResolver.mIdleThreadCV")
+     , mNumIdleThreads(0)
+@@ -536,6 +552,10 @@ nsHostResolver::ResolveHost(const char            *host,
+     if (!net_IsValidHostName(nsDependentCString(host)))
+         return NS_ERROR_UNKNOWN_HOST;
+ 
++#ifdef MOZ_DNSSEC
++    flags = flags | RES_EXTENDED_ERRS;
++#endif
++
+     // if result is set inside the lock, then we need to issue the
+     // callback before returning.
+     nsRefPtr<nsHostRecord> result;
+@@ -597,7 +617,17 @@ nsHostResolver::ResolveHost(const char            *host,
+                     Telemetry::Accumulate(Telemetry::DNS_LOOKUP_METHOD,
+                                           METHOD_NEGATIVE_HIT);
+                     status = NS_ERROR_UNKNOWN_HOST;
++                    if (!he->rec->resolving) 
++                        // return the cached failure to the caller, but try and refresh
++                        // the record in the background
++                        IssueLookup(he->rec);
+                 }
++#ifdef MOZ_DNSSEC
++                else {
++                    // use the cached status value 
++                    status = he->rec->saved_status;
++                }
++#endif
+             }
+             // if the host name is an IP address literal and has been parsed,
+             // go ahead and use it.
+@@ -888,6 +918,9 @@ nsHostResolver::OnLookupComplete(nsHostRecord *rec, nsresult status, PRAddrInfo
+             rec->expiration += 1;                 /* one minute for negative cache */
+             rec->negative = true;
+         }
++#ifdef MOZ_DNSSEC
++        rec->saved_status = status;
++#endif
+         rec->resolving = false;
+         
+         if (rec->usingAnyThread) {
+@@ -978,6 +1011,25 @@ nsHostResolver::CancelAsyncRequest(const char            *host,
+         }
+     }
+ }
++//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
++#ifdef MOZ_DNSSEC
++static nsresult
++_ns_translate_dnssec_error(PRErrorCode err)
++{
++    switch(err) {
++        case PR_DNSSEC_VALIDATION_ERROR:
++            return NS_ERROR_DNSSEC_VALIDATION_ERROR;
++            break;
++
++        case PR_DNSSEC_DNE_ERROR:
++            return NS_ERROR_DNSSEC_DNE_ERROR;
++            break;
++    }
++
++    return NS_ERROR_UNKNOWN_HOST;
++}
++
++#endif // MOZ_DNSSEC
+ 
+ //----------------------------------------------------------------------------
+ 
+@@ -1000,11 +1052,24 @@ nsHostResolver::ThreadFunc(void *arg)
+ 
+         TimeStamp startTime = TimeStamp::Now();
+ 
+-        ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
++#ifdef MOZ_DNSSEC
++        if (rec->flags & RES_EXTENDED_ERRS) {
++            ai = PR_GetAddrInfoByNameExtended(rec->host, rec->af, flags,
++                                              &(rec->security_status_flags));
+ #if defined(RES_RETRY_ON_FAILURE)
+-        if (!ai && rs.Reset())
++            if (!ai && rs.Reset())
++                ai = PR_GetAddrInfoByNameExtended(rec->host, rec->af, flags,
++                                              &(rec->security_status_flags));
++#endif
++        } else
++#endif
++        {
+             ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
++#if defined(RES_RETRY_ON_FAILURE)
++            if (!ai && rs.Reset())
++                ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
+ #endif
++        }
+ 
+         TimeDuration elapsed = TimeStamp::Now() - startTime;
+         PRUint32 millis = static_cast<PRUint32>(elapsed.ToMilliseconds());
+@@ -1020,7 +1085,11 @@ nsHostResolver::ThreadFunc(void *arg)
+                                   millis);
+         }
+         else {
++#ifdef MOZ_DNSSEC
++            status = _ns_translate_dnssec_error(PR_GetError());
++#else
+             status = NS_ERROR_UNKNOWN_HOST;
++#endif
+             Telemetry::Accumulate(Telemetry::DNS_FAILED_LOOKUP_TIME, millis);
+         }
+         
+@@ -1037,6 +1106,9 @@ nsresult
+ nsHostResolver::Create(PRUint32         maxCacheEntries,
+                        PRUint32         maxCacheLifetime,
+                        PRUint32         lifetimeGracePeriod,
++#ifdef MOZ_DNSSEC
++                       val_context_t *valContext,
++#endif
+                        nsHostResolver **result)
+ {
+ #if defined(PR_LOGGING)
+@@ -1046,7 +1118,11 @@ nsHostResolver::Create(PRUint32         maxCacheEntries,
+ 
+     nsHostResolver *res = new nsHostResolver(maxCacheEntries,
+                                              maxCacheLifetime,
+-                                             lifetimeGracePeriod);
++                                             lifetimeGracePeriod
++#ifdef MOZ_DNSSEC
++                                             , valContext
++#endif
++        );
+     if (!res)
+         return NS_ERROR_OUT_OF_MEMORY;
+     NS_ADDREF(res);
+diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
+index 4ca2648..b177a32 100644
+--- a/netwerk/dns/nsHostResolver.h
++++ b/netwerk/dns/nsHostResolver.h
+@@ -43,6 +43,7 @@
+ #include "prclist.h"
+ #include "prnetdb.h"
+ #include "pldhash.h"
++#include "prerror.h"
+ #include "mozilla/CondVar.h"
+ #include "mozilla/Mutex.h"
+ #include "nsISupportsImpl.h"
+@@ -126,8 +127,17 @@ public:
+                                 of that negative entry forces an asynchronous refresh. */
+ 
+     PRUint32     expiration; /* measured in minutes since epoch */
++#ifdef MOZ_DNSSEC
++    PRUint16     security_status_flags; /* DNSSEC information (bitmask) */
++    nsresult     saved_status;
++#endif
++
++    bool HasResult() const { return addr_info || addr ||
++#ifdef MOZ_DNSSEC
++            security_status_flags ||
++#endif
++            negative; }
+ 
+-    bool HasResult() const { return addr_info || addr || negative; }
+ 
+     // hold addr_info_lock when calling the blacklist functions
+     bool Blacklisted(PRNetAddr *query);
+@@ -137,6 +147,8 @@ public:
+ private:
+     friend class nsHostResolver;
+ 
++    PRIntervalTime start;
++
+     PRCList callbacks; /* list of callbacks */
+ 
+     bool    resolving; /* true if this record is being resolved, which means
+@@ -218,6 +230,9 @@ public:
+     static nsresult Create(PRUint32         maxCacheEntries,  // zero disables cache
+                            PRUint32         maxCacheLifetime, // minutes
+                            PRUint32         lifetimeGracePeriod, // minutes
++#ifdef MOZ_DNSSEC
++                           val_context_t    *valContext,
++#endif
+                            nsHostResolver **resolver);
+     
+     /**
+@@ -275,11 +290,18 @@ public:
+         RES_PRIORITY_MEDIUM   = 1 << 2,
+         RES_PRIORITY_LOW  = 1 << 3,
+         RES_SPECULATE     = 1 << 4   
++#ifdef MOZ_DNSSEC
++        , RES_EXTENDED_ERRS = 1 << 5
++#endif
+     };
+ 
+ private:
+     nsHostResolver(PRUint32 maxCacheEntries = 50, PRUint32 maxCacheLifetime = 1,
+-                   PRUint32 lifetimeGracePeriod = 0);
++                   PRUint32 lifetimeGracePeriod = 0
++#ifdef MOZ_DNSSEC
++                   , val_context_t *valContext = nsnull
++#endif
++        );
+    ~nsHostResolver();
+ 
+     nsresult Init();
+@@ -307,6 +329,9 @@ private:
+     PRUint32      mMaxCacheEntries;
+     PRUint32      mMaxCacheLifetime;
+     PRUint32      mGracePeriod;
++#ifdef MOZ_DNSSEC
++    val_context_t *mValContext;
++#endif
+     Mutex         mLock;
+     CondVar       mIdleThreadCV;
+     PRUint32      mNumIdleThreads;
+-- 
+1.7.7.6
+
