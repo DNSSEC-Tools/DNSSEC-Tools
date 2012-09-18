@@ -1,20 +1,48 @@
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _includedir         %{_prefix}/include
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _tmppath            %{_var}/tmp
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
 #%define BuildRoot /tmp/%{name}-%{version}
 %define __spec_install_post %{nil}
 
 Summary: A web-based administration interface for Unix systems.
-Name: webmin
+Name: dt-webmin
 Version: 1.590
-Release: 1
+Release: 1%{?dist}
 Provides: %{name}-%{version}
 PreReq: /bin/sh /usr/bin/perl /bin/rm
 Requires: /bin/sh /usr/bin/perl /bin/rm
 AutoReq: 0
 License: Freeware
 Group: System/Tools
-Source: http://www.webmin.com/download/%{name}-%{version}.tar.gz
+Source: http://www.webmin.com/download/webmin-%{version}.tar.gz
 Vendor: Jamie Cameron
 BuildRoot: /tmp/%{name}-%{version}
 BuildArchitectures: noarch
+
+Patch99: webmin-dnssec.patch
+
 %description
 A web-based administration interface for Unix systems. Using Webmin you can
 configure DNS, Samba, NFS, local/remote filesystems and more using your
@@ -24,7 +52,9 @@ After installation, enter the URL http://localhost:10000/ into your
 browser and login as root with your root password.
 
 %prep
-%setup -q
+%setup -q -n webmin-%{version}
+
+patch99 -p1 -b .dnssec
 
 %build
 (find . -name '*.cgi' ; find . -name '*.pl') | perl perlpath.pl /usr/bin/perl -
@@ -37,22 +67,22 @@ rm -rf acl/Authen-SolarisRBAC-0.1*
 chmod -R og-w .
 
 %install
-mkdir -p %{buildroot}/usr/libexec/webmin
-mkdir -p %{buildroot}/etc/sysconfig/daemons
-mkdir -p %{buildroot}/etc/rc.d/{rc0.d,rc1.d,rc2.d,rc3.d,rc5.d,rc6.d}
-mkdir -p %{buildroot}/etc/init.d
-mkdir -p %{buildroot}/etc/pam.d
-cp -rp * %{buildroot}/usr/libexec/webmin
-cp webmin-daemon %{buildroot}/etc/sysconfig/daemons/webmin
-cp webmin-init %{buildroot}/etc/init.d/webmin
-cp webmin-pam %{buildroot}/etc/pam.d/webmin
-ln -s /etc/init.d/webmin %{buildroot}/etc/rc.d/rc2.d/S99webmin
-ln -s /etc/init.d/webmin %{buildroot}/etc/rc.d/rc3.d/S99webmin
-ln -s /etc/init.d/webmin %{buildroot}/etc/rc.d/rc5.d/S99webmin
-ln -s /etc/init.d/webmin %{buildroot}/etc/rc.d/rc0.d/K10webmin
-ln -s /etc/init.d/webmin %{buildroot}/etc/rc.d/rc1.d/K10webmin
-ln -s /etc/init.d/webmin %{buildroot}/etc/rc.d/rc6.d/K10webmin
-echo rpm >%{buildroot}/usr/libexec/webmin/install-type
+mkdir -p %{buildroot}%{_prefix}/usr/libexec/webmin
+mkdir -p %{buildroot}%{_prefix}/etc/sysconfig/daemons
+mkdir -p %{buildroot}%{_prefix}/etc/rc.d/{rc0.d,rc1.d,rc2.d,rc3.d,rc5.d,rc6.d}
+mkdir -p %{buildroot}%{_prefix}/etc/init.d
+mkdir -p %{buildroot}%{_prefix}/etc/pam.d
+cp -rp * %{buildroot}%{_prefix}/usr/libexec/webmin
+cp webmin-daemon %{buildroot}%{_prefix}/etc/sysconfig/daemons/webmin
+cp webmin-init %{buildroot}%{_prefix}/etc/init.d/webmin
+cp webmin-pam %{buildroot}%{_prefix}/etc/pam.d/webmin
+ln -s /etc/init.d/webmin %{buildroot}%{_prefix}/etc/rc.d/rc2.d/S99webmin
+ln -s /etc/init.d/webmin %{buildroot}%{_prefix}/etc/rc.d/rc3.d/S99webmin
+ln -s /etc/init.d/webmin %{buildroot}%{_prefix}/etc/rc.d/rc5.d/S99webmin
+ln -s /etc/init.d/webmin %{buildroot}%{_prefix}/etc/rc.d/rc0.d/K10webmin
+ln -s /etc/init.d/webmin %{buildroot}%{_prefix}/etc/rc.d/rc1.d/K10webmin
+ln -s /etc/init.d/webmin %{buildroot}%{_prefix}/etc/rc.d/rc6.d/K10webmin
+echo rpm >%{buildroot}%{_prefix}/usr/libexec/webmin/install-type
 
 %clean
 #%{rmDESTDIR}
@@ -60,16 +90,16 @@ echo rpm >%{buildroot}/usr/libexec/webmin/install-type
 
 %files
 %defattr(-,root,root)
-/usr/libexec/webmin
-%config /etc/sysconfig/daemons/webmin
-/etc/init.d/webmin
-/etc/rc.d/rc2.d/S99webmin
-/etc/rc.d/rc3.d/S99webmin
-/etc/rc.d/rc5.d/S99webmin
-/etc/rc.d/rc0.d/K10webmin
-/etc/rc.d/rc1.d/K10webmin
-/etc/rc.d/rc6.d/K10webmin
-%config /etc/pam.d/webmin
+%{_prefix}/usr/libexec/webmin
+%config %{_prefix}/etc/sysconfig/daemons/webmin
+%{_prefix}/etc/init.d/webmin
+%{_prefix}/etc/rc.d/rc2.d/S99webmin
+%{_prefix}/etc/rc.d/rc3.d/S99webmin
+%{_prefix}/etc/rc.d/rc5.d/S99webmin
+%{_prefix}/etc/rc.d/rc0.d/K10webmin
+%{_prefix}/etc/rc.d/rc1.d/K10webmin
+%{_prefix}/etc/rc.d/rc6.d/K10webmin
+%config %{_prefix}/etc/pam.d/webmin
 
 %pre
 perl <<EOD;
@@ -843,7 +873,7 @@ elsif ((-d "c:/windows" || -d "c:/winnt") && \`ver\` =~ /\\s6\\.0\\.76[0-9][0-9]
 EOD
 . /$$.check
 rm -f /$$.check
-if [ ! -r /etc/webmin/config ]; then
+if [ ! -r %{_prefix}/etc/webmin/config ]; then
 	if [ "$oscheck" = "" ]; then
 		echo Unable to identify operating system
 		exit 2
@@ -862,33 +892,33 @@ if [ ! -r /etc/webmin/config ]; then
 fi
 # Save /etc/webmin in case the upgrade trashes it
 if [ "$1" != 1 ]; then
-	rm -rf /etc/.webmin-backup
-	cp -r /etc/webmin /etc/.webmin-backup
+	rm -rf %{_prefix}/etc/.webmin-backup
+	cp -r %{_prefix}/etc/webmin %{_prefix}/etc/.webmin-backup
 fi
 # Put back old /etc/webmin saved when an RPM was removed
-if [ "$1" = 1 -a ! -d /etc/webmin -a -d /etc/webmin.rpmsave ]; then
-	mv /etc/webmin.rpmsave /etc/webmin
+if [ "$1" = 1 -a ! -d %{_prefix}/etc/webmin -a -d %{_prefix}/etc/webmin.rpmsave ]; then
+	mv %{_prefix}/etc/webmin.rpmsave %{_prefix}/etc/webmin
 fi
 /bin/true
 
 %post
-inetd=`grep "^inetd=" /etc/webmin/miniserv.conf 2>/dev/null | sed -e 's/inetd=//g'`
+inetd=`grep "^inetd=" %{_prefix}/etc/webmin/miniserv.conf 2>/dev/null | sed -e 's/inetd=//g'`
 startafter=0
 if [ "$1" != 1 ]; then
 	# Upgrading the RPM, so stop the old webmin properly
 	if [ "$inetd" != "1" ]; then
-		kill -0 `cat /var/webmin/miniserv.pid 2>/dev/null` 2>/dev/null
+		kill -0 `cat %{_prefix}/var/webmin/miniserv.pid 2>/dev/null` 2>/dev/null
 		if [ "$?" = 0 ]; then
 		  startafter=1
 		fi
-		/etc/init.d/webmin stop >/dev/null 2>&1 </dev/null
+		%{_prefix}/etc/init.d/webmin stop >/dev/null 2>&1 </dev/null
 	fi
 else
   startafter=1
 fi
-cd /usr/libexec/webmin
-config_dir=/etc/webmin
-var_dir=/var/webmin
+cd %{_prefix}/usr/libexec/webmin
+config_dir=%{_prefix}/etc/webmin
+var_dir=%{_prefix}/var/webmin
 perl=/usr/bin/perl
 autoos=3
 if [ "$WEBMIN_PORT" != "" ]; then
@@ -917,11 +947,11 @@ fi
 export config_dir var_dir perl autoos port login crypt host ssl nochown autothird noperlpath nouninstall nostart allow atboot
 ./setup.sh >$tempdir/webmin-setup.out 2>&1
 chmod 600 $tempdir/webmin-setup.out
-rm -f /var/lock/subsys/webmin
+rm -f %{_prefix}/var/lock/subsys/webmin
 if [ "$inetd" != "1" -a "$startafter" = "1" ]; then
-	/etc/init.d/webmin start >/dev/null 2>&1 </dev/null
+	%{_prefix}/etc/init.d/webmin start >/dev/null 2>&1 </dev/null
 fi
-cat >/etc/webmin/uninstall.sh <<EOFF
+cat >%{_prefix}/etc/webmin/uninstall.sh <<EOFF
 #!/bin/sh
 printf "Are you sure you want to uninstall Webmin? (y/n) : "
 read answer
@@ -932,17 +962,17 @@ if [ "\$answer" = "y" ]; then
 	echo "Done!"
 fi
 EOFF
-chmod +x /etc/webmin/uninstall.sh
-port=`grep "^port=" /etc/webmin/miniserv.conf | sed -e 's/port=//g'`
+chmod +x %{_prefix}/etc/webmin/uninstall.sh
+port=`grep "^port=" %{_prefix}/etc/webmin/miniserv.conf | sed -e 's/port=//g'`
 perl -e 'use Net::SSLeay' >/dev/null 2>/dev/null
 sslmode=0
 if [ "$?" = "0" ]; then
-	grep ssl=1 /etc/webmin/miniserv.conf >/dev/null 2>/dev/null
+	grep ssl=1 %{_prefix}/etc/webmin/miniserv.conf >/dev/null 2>/dev/null
 	if [ "$?" = "0" ]; then
 		sslmode=1
 	fi
 fi
-musthost=`grep musthost= /etc/webmin/miniserv.conf | sed -e 's/musthost=//'`
+musthost=`grep musthost= %{_prefix}/etc/webmin/miniserv.conf | sed -e 's/musthost=//'`
 if [ "" != "" ]; then
 	host=
 fi
@@ -956,45 +986,45 @@ echo "as root with your root password."
 
 %preun
 if [ "$1" = 0 ]; then
-	grep root=/usr/libexec/webmin /etc/webmin/miniserv.conf >/dev/null 2>&1
+	grep root=%{_prefix}/usr/libexec/webmin %{_prefix}/etc/webmin/miniserv.conf >/dev/null 2>&1
 	if [ "$?" = 0 ]; then
 		# RPM is being removed, and no new version of webmin
 		# has taken it's place. Run uninstalls and stop the server
 		echo "Running uninstall scripts .."
-		(cd /usr/libexec/webmin ; WEBMIN_CONFIG=/etc/webmin WEBMIN_VAR=/var/webmin LANG= /usr/libexec/webmin/run-uninstalls.pl)
-		/etc/init.d/webmin stop >/dev/null 2>&1 </dev/null
-		/etc/webmin/stop >/dev/null 2>&1 </dev/null
+		(cd %{_prefix}/usr/libexec/webmin ; WEBMIN_CONFIG=%{_prefix}/etc/webmin WEBMIN_VAR=%{_prefix}/var/webmin LANG= %{_prefix}/usr/libexec/webmin/run-uninstalls.pl)
+		%{_prefix}/etc/init.d/webmin stop >/dev/null 2>&1 </dev/null
+		%{_prefix}/etc/webmin/stop >/dev/null 2>&1 </dev/null
 	fi
 fi
 /bin/true
 
 %postun
 if [ "$1" = 0 ]; then
-	grep root=/usr/libexec/webmin /etc/webmin/miniserv.conf >/dev/null 2>&1
+	grep root=%{_prefix}/usr/libexec/webmin %{_prefix}/etc/webmin/miniserv.conf >/dev/null 2>&1
 	if [ "$?" = 0 ]; then
 		# RPM is being removed, and no new version of webmin
 		# has taken it's place. Rename away the /etc/webmin directory
-		rm -rf /etc/webmin.rpmsave
-		mv /etc/webmin /etc/webmin.rpmsave
-		rm -rf /var/webmin
+		rm -rf %{_prefix}/etc/webmin.rpmsave
+		mv %{_prefix}/etc/webmin %{_prefix}/etc/webmin.rpmsave
+		rm -rf %{_prefix}/var/webmin
 	fi
 fi
 /bin/true
 
 %triggerpostun -- webmin
-if [ ! -d /var/webmin -a "$1" = 2 ]; then
-	echo Re-creating /var/webmin directory
-	mkdir /var/webmin
+if [ ! -d %{_prefix}/var/webmin -a "$1" = 2 ]; then
+	echo Re-creating %{_prefix}/var/webmin directory
+	mkdir %{_prefix}/var/webmin
 fi
-if [ ! -r /etc/webmin/miniserv.conf -a -d /etc/.webmin-backup -a "$1" = 2 ]; then
-	echo Recovering /etc/webmin directory
-	rm -rf /etc/.webmin-broken
-	mv /etc/webmin /etc/.webmin-broken
-	mv /etc/.webmin-backup /etc/webmin
-	/etc/init.d/webmin stop >/dev/null 2>&1 </dev/null
-	/etc/init.d/webmin start >/dev/null 2>&1 </dev/null
+if [ ! -r %{_prefix}/etc/webmin/miniserv.conf -a -d %{_prefix}/etc/.webmin-backup -a "$1" = 2 ]; then
+	echo Recovering %{_prefix}/etc/webmin directory
+	rm -rf %{_prefix}/etc/.webmin-broken
+	mv %{_prefix}/etc/webmin %{_prefix}/etc/.webmin-broken
+	mv %{_prefix}/etc/.webmin-backup %{_prefix}/etc/webmin
+	%{_prefix}/etc/init.d/webmin stop >/dev/null 2>&1 </dev/null
+	%{_prefix}/etc/init.d/webmin start >/dev/null 2>&1 </dev/null
 else
-	rm -rf /etc/.webmin-backup
+	rm -rf %{_prefix}/etc/.webmin-backup
 fi
 /bin/true
 
