@@ -1,349 +1,8 @@
-commit a3e226edc51e1cde7e92b99e761c6bd2ddc773e1
-Author: Robert Story <rstory@localhost>
-Date:   Thu May 17 23:30:28 2012
-
-    DNSSEC-Tools local validation patch
-
-diff --git a/config.h.in b/config.h.in
-index 60d0c65..860dca4 100644
---- a/config.h.in
-+++ b/config.h.in
-@@ -125,6 +125,9 @@
- /* Define if you don't want to use wtmpx */
- #undef DISABLE_WTMPX
- 
-+/* Define if you want local DNSSEC validation support */
-+#undef DNSSEC_LOCAL_VALIDATION
-+
- /* Enable for PKCS#11 support */
- #undef ENABLE_PKCS11
- 
-@@ -587,9 +590,15 @@
- /* Define to 1 if you have the `pam' library (-lpam). */
- #undef HAVE_LIBPAM
- 
-+/* Define to 1 if you have the `pthread' library (-lpthread). */
-+#undef HAVE_LIBPTHREAD
-+
- /* Define to 1 if you have the `socket' library (-lsocket). */
- #undef HAVE_LIBSOCKET
- 
-+/* Define to 1 if you have the `sres' library (-lsres). */
-+#undef HAVE_LIBSRES
-+
- /* Define to 1 if you have the <libutil.h> header file. */
- #undef HAVE_LIBUTIL_H
- 
-@@ -1182,6 +1191,9 @@
- /* define if you have u_intxx_t data type */
- #undef HAVE_U_INTXX_T
- 
-+/* Define to 1 if you have the <validator/validator.h> header file. */
-+#undef HAVE_VALIDATOR_VALIDATOR_H
-+
- /* Define to 1 if you have the `vasprintf' function. */
- #undef HAVE_VASPRINTF
- 
-diff --git a/configure b/configure
-index 035b6f0..c732242 100755
---- a/configure
-+++ b/configure
-@@ -733,6 +733,7 @@ with_prngd_socket
- with_pam
- with_privsep_user
- with_sandbox
-+with_local_dnssec_validation
- with_selinux
- with_kerberos5
- with_privsep_path
-@@ -1423,6 +1424,7 @@ Optional Packages:
-   --with-pam              Enable PAM support
-   --with-privsep-user=user Specify non-privileged user for privilege separation
-   --with-sandbox=style    Specify privilege separation sandbox (no, darwin, rlimit, systrace, seccomp_filter)
-+  --with-local-dnssec-validation Enable local DNSSEC validation using libval
-   --with-selinux          Enable SELinux support
-   --with-kerberos5=PATH   Enable Kerberos 5 support
-   --with-privsep-path=xxx Path for privilege separation chroot (default=/var/empty)
-@@ -14537,6 +14539,265 @@ $as_echo "#define HAVE_SYS_NERR 1" >>confdefs.h
- 
- fi
- 
-+LIBVAL_MSG="no"
-+# Check whether user wants DNSSEC local validation support
-+
-+# Check whether --with-local-dnssec-validation was given.
-+if test "${with_local_dnssec_validation+set}" = set; then :
-+  withval=$with_local_dnssec_validation;  if test "x$withval" != "xno" ; then
-+ 		if test "x$withval" != "xyes" ; then
-+			CPPFLAGS="$CPPFLAGS -I${withval}"
-+			LDFLAGS="$LDFLAGS -L${withval}"
-+			if test ! -z "$need_dash_r" ; then
-+				LDFLAGS="$LDFLAGS -R${withval}"
-+ 		fi
-+			if test ! -z "$blibpath" ; then
-+				blibpath="$blibpath:${withval}"
-+ 		fi
-+ 	    fi
-+		for ac_header in validator/validator.h
-+do :
-+  ac_fn_c_check_header_mongrel "$LINENO" "validator/validator.h" "ac_cv_header_validator_validator_h" "$ac_includes_default"
-+if test "x$ac_cv_header_validator_validator_h" = xyes; then :
-+  cat >>confdefs.h <<_ACEOF
-+#define HAVE_VALIDATOR_VALIDATOR_H 1
-+_ACEOF
-+
-+fi
-+
-+done
-+
-+		if test "$ac_cv_header_validator_validator_h" != yes; then
-+			as_fn_error $? "Cannot find validator.h" "$LINENO" 5
-+		fi
-+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for query_send in -lsres" >&5
-+$as_echo_n "checking for query_send in -lsres... " >&6; }
-+if ${ac_cv_lib_sres_query_send+:} false; then :
-+  $as_echo_n "(cached) " >&6
-+else
-+  ac_check_lib_save_LIBS=$LIBS
-+LIBS="-lsres  $LIBS"
-+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-+/* end confdefs.h.  */
-+
-+/* Override any GCC internal prototype to avoid an error.
-+   Use char because int might match the return type of a GCC
-+   builtin and then its argument prototype would still apply.  */
-+#ifdef __cplusplus
-+extern "C"
-+#endif
-+char query_send ();
-+int
-+main ()
-+{
-+return query_send ();
-+  ;
-+  return 0;
-+}
-+_ACEOF
-+if ac_fn_c_try_link "$LINENO"; then :
-+  ac_cv_lib_sres_query_send=yes
-+else
-+  ac_cv_lib_sres_query_send=no
-+fi
-+rm -f core conftest.err conftest.$ac_objext \
-+    conftest$ac_exeext conftest.$ac_ext
-+LIBS=$ac_check_lib_save_LIBS
-+fi
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_sres_query_send" >&5
-+$as_echo "$ac_cv_lib_sres_query_send" >&6; }
-+if test "x$ac_cv_lib_sres_query_send" = xyes; then :
-+  cat >>confdefs.h <<_ACEOF
-+#define HAVE_LIBSRES 1
-+_ACEOF
-+
-+  LIBS="-lsres $LIBS"
-+
-+fi
-+
-+		if test "$ac_cv_lib_sres_query_send" != yes; then
-+			as_fn_error $? "Cannot find libsres" "$LINENO" 5
-+		fi
-+		LIBVAL_SUFFIX=""
-+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for p_val_status in -lval" >&5
-+$as_echo_n "checking for p_val_status in -lval... " >&6; }
-+if ${ac_cv_lib_val_p_val_status+:} false; then :
-+  $as_echo_n "(cached) " >&6
-+else
-+  ac_check_lib_save_LIBS=$LIBS
-+LIBS="-lval  $LIBS"
-+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-+/* end confdefs.h.  */
-+
-+/* Override any GCC internal prototype to avoid an error.
-+   Use char because int might match the return type of a GCC
-+   builtin and then its argument prototype would still apply.  */
-+#ifdef __cplusplus
-+extern "C"
-+#endif
-+char p_val_status ();
-+int
-+main ()
-+{
-+return p_val_status ();
-+  ;
-+  return 0;
-+}
-+_ACEOF
-+if ac_fn_c_try_link "$LINENO"; then :
-+  ac_cv_lib_val_p_val_status=yes
-+else
-+  ac_cv_lib_val_p_val_status=no
-+fi
-+rm -f core conftest.err conftest.$ac_objext \
-+    conftest$ac_exeext conftest.$ac_ext
-+LIBS=$ac_check_lib_save_LIBS
-+fi
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_val_p_val_status" >&5
-+$as_echo "$ac_cv_lib_val_p_val_status" >&6; }
-+if test "x$ac_cv_lib_val_p_val_status" = xyes; then :
-+  LIBS="$LIBS -lval"
-+else
-+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_rwlock_init in -lpthread" >&5
-+$as_echo_n "checking for pthread_rwlock_init in -lpthread... " >&6; }
-+if ${ac_cv_lib_pthread_pthread_rwlock_init+:} false; then :
-+  $as_echo_n "(cached) " >&6
-+else
-+  ac_check_lib_save_LIBS=$LIBS
-+LIBS="-lpthread  $LIBS"
-+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-+/* end confdefs.h.  */
-+
-+/* Override any GCC internal prototype to avoid an error.
-+   Use char because int might match the return type of a GCC
-+   builtin and then its argument prototype would still apply.  */
-+#ifdef __cplusplus
-+extern "C"
-+#endif
-+char pthread_rwlock_init ();
-+int
-+main ()
-+{
-+return pthread_rwlock_init ();
-+  ;
-+  return 0;
-+}
-+_ACEOF
-+if ac_fn_c_try_link "$LINENO"; then :
-+  ac_cv_lib_pthread_pthread_rwlock_init=yes
-+else
-+  ac_cv_lib_pthread_pthread_rwlock_init=no
-+fi
-+rm -f core conftest.err conftest.$ac_objext \
-+    conftest$ac_exeext conftest.$ac_ext
-+LIBS=$ac_check_lib_save_LIBS
-+fi
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_rwlock_init" >&5
-+$as_echo "$ac_cv_lib_pthread_pthread_rwlock_init" >&6; }
-+if test "x$ac_cv_lib_pthread_pthread_rwlock_init" = xyes; then :
-+  cat >>confdefs.h <<_ACEOF
-+#define HAVE_LIBPTHREAD 1
-+_ACEOF
-+
-+  LIBS="-lpthread $LIBS"
-+
-+fi
-+
-+			  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for p_val_status in -lval-threads" >&5
-+$as_echo_n "checking for p_val_status in -lval-threads... " >&6; }
-+if ${ac_cv_lib_val_threads_p_val_status+:} false; then :
-+  $as_echo_n "(cached) " >&6
-+else
-+  ac_check_lib_save_LIBS=$LIBS
-+LIBS="-lval-threads  $LIBS"
-+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-+/* end confdefs.h.  */
-+
-+/* Override any GCC internal prototype to avoid an error.
-+   Use char because int might match the return type of a GCC
-+   builtin and then its argument prototype would still apply.  */
-+#ifdef __cplusplus
-+extern "C"
-+#endif
-+char p_val_status ();
-+int
-+main ()
-+{
-+return p_val_status ();
-+  ;
-+  return 0;
-+}
-+_ACEOF
-+if ac_fn_c_try_link "$LINENO"; then :
-+  ac_cv_lib_val_threads_p_val_status=yes
-+else
-+  ac_cv_lib_val_threads_p_val_status=no
-+fi
-+rm -f core conftest.err conftest.$ac_objext \
-+    conftest$ac_exeext conftest.$ac_ext
-+LIBS=$ac_check_lib_save_LIBS
-+fi
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_val_threads_p_val_status" >&5
-+$as_echo "$ac_cv_lib_val_threads_p_val_status" >&6; }
-+if test "x$ac_cv_lib_val_threads_p_val_status" = xyes; then :
-+   LIBS="$LIBS -lval-threads -lpthread"
-+				  LIBVAL_SUFFIX="-threads"
-+else
-+  as_fn_error $? "Cannot find libval or libval-threads" "$LINENO" 5
-+fi
-+
-+
-+fi
-+
-+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for res_query in -lresolv" >&5
-+$as_echo_n "checking for res_query in -lresolv... " >&6; }
-+if ${ac_cv_lib_resolv_res_query+:} false; then :
-+  $as_echo_n "(cached) " >&6
-+else
-+  ac_check_lib_save_LIBS=$LIBS
-+LIBS="-lresolv  $LIBS"
-+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-+/* end confdefs.h.  */
-+
-+/* Override any GCC internal prototype to avoid an error.
-+   Use char because int might match the return type of a GCC
-+   builtin and then its argument prototype would still apply.  */
-+#ifdef __cplusplus
-+extern "C"
-+#endif
-+char res_query ();
-+int
-+main ()
-+{
-+return res_query ();
-+  ;
-+  return 0;
-+}
-+_ACEOF
-+if ac_fn_c_try_link "$LINENO"; then :
-+  ac_cv_lib_resolv_res_query=yes
-+else
-+  ac_cv_lib_resolv_res_query=no
-+fi
-+rm -f core conftest.err conftest.$ac_objext \
-+    conftest$ac_exeext conftest.$ac_ext
-+LIBS=$ac_check_lib_save_LIBS
-+fi
-+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_resolv_res_query" >&5
-+$as_echo "$ac_cv_lib_resolv_res_query" >&6; }
-+if test "x$ac_cv_lib_resolv_res_query" = xyes; then :
-+  LIBS="$LIBS -lresolv"
-+fi
-+
-+
-+$as_echo "#define DNSSEC_LOCAL_VALIDATION 1" >>confdefs.h
-+
-+		LIBVAL_MSG="yes, libval${LIBVAL_SUFFIX}"
-+	fi
-+
-+fi
-+
-+
- # Check libraries needed by DNS fingerprint support
- { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing getrrsetbyname" >&5
- $as_echo_n "checking for library containing getrrsetbyname... " >&6; }
-@@ -17930,6 +18191,7 @@ echo "              MD5 password support: $MD5_MSG"
- echo "                   libedit support: $LIBEDIT_MSG"
- echo "  Solaris process contract support: $SPC_MSG"
- echo "           Solaris project support: $SP_MSG"
-+echo "   Local DNSSEC validation support: $LIBVAL_MSG"
- echo "       IP address in \$DISPLAY hack: $DISPLAY_HACK_MSG"
- echo "           Translate v4 in v6 hack: $IPV4_IN6_HACK_MSG"
- echo "                  BSD Auth support: $BSD_AUTH_MSG"
-diff --git a/configure.ac b/configure.ac
-index 1457b8a..7a6b78b 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -3389,6 +3389,44 @@ if test "x$ac_cv_libc_defines_sys_nerr" = "xyes" ; then
- 	AC_DEFINE([HAVE_SYS_NERR], [1], [Define if your system defines sys_nerr])
+diff -u -r -b -w -p -d '--exclude-from=/home/rstory/.rcfiles/diff-ignore' -I ''\''$Id[:$]'\''' openssh-5.8p2-redhat/configure.ac openssh-5.8p2-dnssec/configure.ac
+--- openssh-5.8p2-redhat/configure.ac	2012-08-21 10:50:30.069985810 -0400
++++ openssh-5.8p2-dnssec/configure.ac	2012-08-20 16:43:40.425939065 -0400
+@@ -3560,6 +3560,44 @@ if test "x$ac_cv_libc_defines_sys_nerr"
+ 	AC_DEFINE(HAVE_SYS_NERR, 1, [Define if your system defines sys_nerr])
  fi
  
 +LIBVAL_MSG="no"
@@ -385,9 +44,9 @@ index 1457b8a..7a6b78b 100644
 +        ])
 +
  # Check libraries needed by DNS fingerprint support
- AC_SEARCH_LIBS([getrrsetbyname], [resolv],
- 	[AC_DEFINE([HAVE_GETRRSETBYNAME], [1],
-@@ -4345,6 +4383,7 @@ echo "              MD5 password support: $MD5_MSG"
+ AC_SEARCH_LIBS(getrrsetbyname, resolv,
+ 	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
+@@ -4466,6 +4504,7 @@ echo "              MD5 password support
  echo "                   libedit support: $LIBEDIT_MSG"
  echo "  Solaris process contract support: $SPC_MSG"
  echo "           Solaris project support: $SP_MSG"
@@ -395,10 +54,9 @@ index 1457b8a..7a6b78b 100644
  echo "       IP address in \$DISPLAY hack: $DISPLAY_HACK_MSG"
  echo "           Translate v4 in v6 hack: $IPV4_IN6_HACK_MSG"
  echo "                  BSD Auth support: $BSD_AUTH_MSG"
-diff --git a/dns.c b/dns.c
-index 131cb3d..64e917a 100644
---- a/dns.c
-+++ b/dns.c
+diff -u -r -b -w -p -d '--exclude-from=/home/rstory/.rcfiles/diff-ignore' -I ''\''$Id[:$]'\''' openssh-5.8p2-redhat/dns.c openssh-5.8p2-dnssec/dns.c
+--- openssh-5.8p2-redhat/dns.c	2012-08-21 10:50:30.055985926 -0400
++++ openssh-5.8p2-dnssec/dns.c	2012-08-20 16:46:17.900640952 -0400
 @@ -35,6 +35,10 @@
  #include <stdio.h>
  #include <string.h>
@@ -410,10 +68,10 @@ index 131cb3d..64e917a 100644
  #include "xmalloc.h"
  #include "key.h"
  #include "dns.h"
-@@ -177,7 +181,11 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
- {
+@@ -178,7 +182,11 @@ verify_host_key_dns(const char *hostname
  	u_int counter;
  	int result;
+ 	unsigned int rrset_flags = 0;
 +#ifndef DNSSEC_LOCAL_VALIDATION
  	struct rrsetinfo *fingerprints = NULL;
 +#else
@@ -422,15 +80,15 @@ index 131cb3d..64e917a 100644
  
  	u_int8_t hostkey_algorithm;
  	u_int8_t hostkey_digest_type;
-@@ -200,6 +208,7 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
+@@ -201,6 +209,7 @@ verify_host_key_dns(const char *hostname
  		return -1;
  	}
  
 +#ifndef DNSSEC_LOCAL_VALIDATION
- 	result = getrrsetbyname(hostname, DNS_RDATACLASS_IN,
- 	    DNS_RDATATYPE_SSHFP, 0, &fingerprints);
- 	if (result) {
-@@ -208,7 +217,7 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
+ 	/*
+ 	 * Original getrrsetbyname function, found on OpenBSD for example,
+ 	 * doesn't accept any flag and prerequisite for obtaining AD bit in
+@@ -220,7 +229,7 @@ verify_host_key_dns(const char *hostname
  	}
  
  	if (fingerprints->rri_flags & RRSET_VALIDATED) {
@@ -439,7 +97,7 @@ index 131cb3d..64e917a 100644
  		debug("found %d secure fingerprints in DNS",
  		    fingerprints->rri_nrdatas);
  	} else {
-@@ -257,6 +266,90 @@ verify_host_key_dns(const char *hostname, struct sockaddr *address,
+@@ -269,6 +278,90 @@ verify_host_key_dns(const char *hostname
  	xfree(hostkey_digest); /* from key_fingerprint_raw() */
  	freerrset(fingerprints);
  
@@ -530,10 +188,9 @@ index 131cb3d..64e917a 100644
  	if (*flags & DNS_VERIFY_FOUND)
  		if (*flags & DNS_VERIFY_MATCH)
  			debug("matching host key fingerprint found in DNS");
-diff --git a/dns.h b/dns.h
-index 90cfd7b..0b0eeab 100644
---- a/dns.h
-+++ b/dns.h
+diff -u -r -b -w -p -d '--exclude-from=/home/rstory/.rcfiles/diff-ignore' -I ''\''$Id[:$]'\''' openssh-5.8p2-redhat/dns.h openssh-5.8p2-dnssec/dns.h
+--- openssh-5.8p2-redhat/dns.h	2010-02-26 15:55:05.000000000 -0500
++++ openssh-5.8p2-dnssec/dns.h	2012-08-20 16:43:40.427939048 -0400
 @@ -45,6 +45,7 @@ enum sshfp_hashes {
  #define DNS_VERIFY_FOUND	0x00000001
  #define DNS_VERIFY_MATCH	0x00000002
@@ -542,19 +199,18 @@ index 90cfd7b..0b0eeab 100644
  
  int	verify_host_key_dns(const char *, struct sockaddr *, Key *, int *);
  int	export_dns_rr(const char *, Key *, FILE *, int);
-diff --git a/readconf.c b/readconf.c
-index 097bb05..fc7b2fb 100644
---- a/readconf.c
-+++ b/readconf.c
+diff -u -r -b -w -p -d '--exclude-from=/home/rstory/.rcfiles/diff-ignore' -I ''\''$Id[:$]'\''' openssh-5.8p2-redhat/readconf.c openssh-5.8p2-dnssec/readconf.c
+--- openssh-5.8p2-redhat/readconf.c	2012-08-21 10:50:30.077985743 -0400
++++ openssh-5.8p2-dnssec/readconf.c	2012-08-20 16:43:40.427939048 -0400
 @@ -134,6 +134,7 @@ typedef enum {
+ 	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
+ 	oSendEnv, oControlPath, oControlMaster, oControlPersist,
  	oHashKnownHosts,
++        oStrictDnssecChecking, oAutoAnswerValidatedKeys,
  	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
  	oVisualHostKey, oUseRoaming, oZeroKnowledgePasswordAuthentication,
-+        oStrictDnssecChecking, oAutoAnswerValidatedKeys,
- 	oKexAlgorithms, oIPQoS, oRequestTTY,
- 	oDeprecated, oUnsupported
- } OpCodes;
-@@ -243,6 +244,13 @@ static struct {
+ 	oKexAlgorithms, oIPQoS,
+@@ -254,6 +255,13 @@ static struct {
  #else
  	{ "zeroknowledgepasswordauthentication", oUnsupported },
  #endif
@@ -567,8 +223,8 @@ index 097bb05..fc7b2fb 100644
 +#endif
  	{ "kexalgorithms", oKexAlgorithms },
  	{ "ipqos", oIPQoS },
- 	{ "requesttty", oRequestTTY },
-@@ -519,6 +527,14 @@ parse_yesnoask:
+ 
+@@ -546,6 +554,14 @@ parse_yesnoask:
  			*intptr = value;
  		break;
  
@@ -583,7 +239,7 @@ index 097bb05..fc7b2fb 100644
  	case oCompression:
  		intptr = &options->compression;
  		goto parse_flag;
-@@ -1148,6 +1164,8 @@ initialize_options(Options * options)
+@@ -1137,6 +1153,8 @@ initialize_options(Options * options)
  	options->batch_mode = -1;
  	options->check_host_ip = -1;
  	options->strict_host_key_checking = -1;
@@ -592,7 +248,7 @@ index 097bb05..fc7b2fb 100644
  	options->compression = -1;
  	options->tcp_keep_alive = -1;
  	options->compression_level = -1;
-@@ -1255,6 +1273,10 @@ fill_default_options(Options * options)
+@@ -1251,6 +1269,10 @@ fill_default_options(Options * options)
  		options->check_host_ip = 1;
  	if (options->strict_host_key_checking == -1)
  		options->strict_host_key_checking = 2;	/* 2 is default */
@@ -603,24 +259,22 @@ index 097bb05..fc7b2fb 100644
  	if (options->compression == -1)
  		options->compression = 0;
  	if (options->tcp_keep_alive == -1)
-diff --git a/readconf.h b/readconf.h
-index be30ee0..2b22d06 100644
---- a/readconf.h
-+++ b/readconf.h
-@@ -134,6 +134,9 @@ typedef struct {
+diff -u -r -b -w -p -d '--exclude-from=/home/rstory/.rcfiles/diff-ignore' -I ''\''$Id[:$]'\''' openssh-5.8p2-redhat/readconf.h openssh-5.8p2-dnssec/readconf.h
+--- openssh-5.8p2-redhat/readconf.h	2012-08-21 10:50:30.077985743 -0400
++++ openssh-5.8p2-dnssec/readconf.h	2012-08-20 16:43:40.428939039 -0400
+@@ -137,6 +137,9 @@ typedef struct {
  
  	int	use_roaming;
  
 +	int     strict_dnssec_checking;	/* Strict DNSSEC checking. */
 +	int     autoanswer_validated_keys;
 +
- 	int	request_tty;
  }       Options;
  
-diff --git a/sshconnect.c b/sshconnect.c
-index 0ee7266..efa509c 100644
---- a/sshconnect.c
-+++ b/sshconnect.c
+ #define SSHCTL_MASTER_NO	0
+diff -u -r -b -w -p -d '--exclude-from=/home/rstory/.rcfiles/diff-ignore' -I ''\''$Id[:$]'\''' openssh-5.8p2-redhat/sshconnect.c openssh-5.8p2-dnssec/sshconnect.c
+--- openssh-5.8p2-redhat/sshconnect.c	2012-08-21 10:50:29.844987676 -0400
++++ openssh-5.8p2-dnssec/sshconnect.c	2012-08-20 16:50:14.098693894 -0400
 @@ -26,6 +26,10 @@
  #include <netinet/in.h>
  #include <arpa/inet.h>
@@ -650,7 +304,7 @@ index 0ee7266..efa509c 100644
  
  /*
   * Connect to the given ssh server using a proxy command.
-@@ -342,7 +350,11 @@ ssh_connect(const char *host, struct sockaddr_storage * hostaddr,
+@@ -342,7 +350,11 @@ ssh_connect(const char *host, struct soc
  	int on = 1;
  	int sock = -1, attempt;
  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
@@ -663,9 +317,9 @@ index 0ee7266..efa509c 100644
  
  	debug2("ssh_connect: needpriv %d", needpriv);
  
-@@ -356,9 +368,59 @@ ssh_connect(const char *host, struct sockaddr_storage * hostaddr,
- 	hints.ai_family = family;
+@@ -357,9 +369,59 @@ ssh_connect(const char *host, struct soc
  	hints.ai_socktype = SOCK_STREAM;
+ 	hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
  	snprintf(strport, sizeof strport, "%u", port);
 +#ifndef DNSSEC_LOCAL_VALIDATION
  	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0)
@@ -723,7 +377,7 @@ index 0ee7266..efa509c 100644
  
  	for (attempt = 0; attempt < connection_attempts; attempt++) {
  		if (attempt > 0) {
-@@ -814,6 +876,7 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -808,6 +870,7 @@ check_host_key(char *hostname, struct so
  		}
  		break;
  	case HOST_NEW:
@@ -731,7 +385,7 @@ index 0ee7266..efa509c 100644
  		if (options.host_key_alias == NULL && port != 0 &&
  		    port != SSH_DEFAULT_PORT) {
  			debug("checking without port identifier");
-@@ -860,6 +923,17 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -852,6 +915,17 @@ check_host_key(char *hostname, struct so
  					    "No matching host key fingerprint"
  					    " found in DNS.\n");
  			}
@@ -742,14 +396,14 @@ index 0ee7266..efa509c 100644
 +                                     "The authenticity of host '%.200s (%s)' was "
 +                                     " validated via DNSSEC%s",
 +                                     host, ip, msg1);
-+                            logit(msg);
++                            logit("%s", msg);
 +                            xfree(fp);
 +                        } else {
 +#endif
  			snprintf(msg, sizeof(msg),
  			    "The authenticity of host '%.200s (%s)' can't be "
  			    "established%s\n"
-@@ -874,6 +948,9 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -867,6 +941,9 @@ check_host_key(char *hostname, struct so
  			xfree(fp);
  			if (!confirm(msg))
  				goto fail;
@@ -759,7 +413,7 @@ index 0ee7266..efa509c 100644
  		}
  		/*
  		 * If not in strict mode, add the key automatically to the
-@@ -948,6 +1025,8 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -941,6 +1018,8 @@ check_host_key(char *hostname, struct so
  				key_msg = "is unchanged";
  			else
  				key_msg = "has a different value";
@@ -768,7 +422,7 @@ index 0ee7266..efa509c 100644
  			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  			error("@       WARNING: POSSIBLE DNS SPOOFING DETECTED!          @");
  			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-@@ -956,6 +1035,19 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -949,6 +1028,19 @@ check_host_key(char *hostname, struct so
  			error("%s. This could either mean that", key_msg);
  			error("DNS SPOOFING is happening or the IP address for the host");
  			error("and its host key have changed at the same time.");
@@ -788,7 +442,7 @@ index 0ee7266..efa509c 100644
  			if (ip_status != HOST_NEW)
  				error("Offending key for IP in %s:%lu",
  				    ip_found->file, ip_found->line);
-@@ -971,11 +1063,53 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -964,11 +1056,53 @@ check_host_key(char *hostname, struct so
  		 * If strict host key checking is in use, the user will have
  		 * to edit the key manually and we can only abort.
  		 */
@@ -809,25 +463,25 @@ index 0ee7266..efa509c 100644
 +			hostp = hostline;
 +			if (options.hash_known_hosts) {
 +                            /* Add hash of host and IP separately */
-+                            r = add_host_to_hostfile(user_hostfiles[0], host,
++                            r = add_host_to_hostfile(user_hostfile, host,
 +                                                     host_key, options.hash_known_hosts) &&
-+                                add_host_to_hostfile(user_hostfiles[0], ip,
++                                add_host_to_hostfile(user_hostfile, ip,
 +                                                     host_key, options.hash_known_hosts);
 +			} else {
 +                            /* Add unhashed "host,ip" */
-+                            r = add_host_to_hostfile(user_hostfiles[0],
++                            r = add_host_to_hostfile(user_hostfile,
 +                                                     hostline, host_key,
 +                                                     options.hash_known_hosts);
 +			}
 +                    } else {
-+			r = add_host_to_hostfile(user_hostfiles[0], host, host_key,
++			r = add_host_to_hostfile(user_hostfile, host, host_key,
 +                                                 options.hash_known_hosts);
 +			hostp = host;
 +                    }
 +                    
 +                    if (!r)
 +			logit("Failed to add the host to the list of known "
-+                              "hosts (%.500s).", user_hostfiles[0]);
++                              "hosts (%.500s).", user_hostfile);
 +                    else
 +			logit("Warning: Permanently added '%.200s' (%s) to the "
 +                              "list of known hosts.", hostp, type);
@@ -843,7 +497,7 @@ index 0ee7266..efa509c 100644
  
   continue_unsafe:
  		/*
-@@ -1039,6 +1173,7 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -1032,6 +1166,7 @@ check_host_key(char *hostname, struct so
  		 * by that sentence, and ask the user if he/she wishes to
  		 * accept the authentication.
  		 */
@@ -851,7 +505,7 @@ index 0ee7266..efa509c 100644
  		break;
  	case HOST_FOUND:
  		fatal("internal error");
-@@ -1063,10 +1198,19 @@ check_host_key(char *hostname, struct sockaddr *hostaddr, u_short port,
+@@ -1056,10 +1191,19 @@ check_host_key(char *hostname, struct so
  			error("Exiting, you have requested strict checking.");
  			goto fail;
  		} else if (options.strict_host_key_checking == 2) {
@@ -871,18 +525,18 @@ index 0ee7266..efa509c 100644
  		} else {
  			logit("%s", msg);
  		}
-@@ -1118,12 +1262,44 @@ verify_host_key(char *host, struct sockaddr *hostaddr, Key *host_key)
- 	/* XXX certs are not yet supported for DNS */
+@@ -1114,12 +1258,45 @@ verify_host_key(char *host, struct socka
  	if (!key_is_cert(host_key) && options.verify_host_key_dns &&
  	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
-+
+ 
 +#ifdef DNSSEC_LOCAL_VALIDATION
 +		/*
 +		 * local validation can result in a non-secure, but trusted
-+		 * response. For example, in a corporate network the authoritative
-+		 * server for internal DNS may be on the internal network, behind
-+		 * a firewall. Local validation policy can be configured to trust
-+		 * these results without using DNSSEC to validate them.
++		 * response. For example, in a corporate network the
++		 * authoritative server for internal DNS may be on the internal
++		 * network, behind a firewall. Local validation policy can be
++		 * configured to trust these results without using DNSSEC to
++                 * validate them.
 +		 */
 +		if (!(flags & DNS_VERIFY_TRUSTED)) {
 +			error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -899,24 +553,25 @@ index 0ee7266..efa509c 100644
  			    flags & DNS_VERIFY_MATCH &&
  			    flags & DNS_VERIFY_SECURE)
 +#ifndef DNSSEC_LOCAL_VALIDATION
- 				return 0;
++				return 0;
 +#else
 +                        {
-+                            if (flags & DNS_VERIFY_MATCH)
-+				matching_host_key_dns = 1;
-+                            if (options.autoanswer_validated_keys)
-+                                return check_host_key(host, hostaddr, options.port,
-+                                                      host_key, RDRW,
-+                                                      options.user_hostfiles, options.num_user_hostfiles,
-+                                                      options.system_hostfiles, options.num_system_hostfiles);
-+                            else
-+				return 0;
-+                        }
++				if (flags & DNS_VERIFY_MATCH)
++					matching_host_key_dns = 1;
++				if (options.autoanswer_validated_keys)
++					return check_host_key(host, hostaddr,
++							options.port,
++							host_key, RDRW,
++							options.user_hostfile,
++							options.system_hostfile);
++			else
+ 				return 0;
++			}
 +#endif
  
  			if (flags & DNS_VERIFY_MATCH) {
  				matching_host_key_dns = 1;
-@@ -1240,9 +1416,18 @@ warn_changed_key(Key *host_key)
+@@ -1244,9 +1423,18 @@ warn_changed_key(Key *host_key)
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
  	error("@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @");
  	error("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -932,6 +587,6 @@ index 0ee7266..efa509c 100644
 +#ifdef DNSSEC_LOCAL_VALIDATION
 +        }
 +#endif
- 	error("The fingerprint for the %s key sent by the remote host is\n%s.",
- 	    key_type(host_key), fp);
+ 	error("The fingerprint for the %s key sent by the remote host is\n%s%s.",
+ 	    key_type(host_key),key_fingerprint_prefix(),  fp);
  	error("Please contact your system administrator.");
