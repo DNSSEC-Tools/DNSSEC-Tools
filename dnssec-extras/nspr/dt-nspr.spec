@@ -1,5 +1,30 @@
+# DNSSEC-Tools
+%define _default_patch_fuzz 2
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
 Summary:        Netscape Portable Runtime
-Name:           nspr
+Name:           dt-nspr
 Version:        4.9.1
 Release:        2%{?dist}
 License:        MPLv2.0
@@ -11,7 +36,7 @@ Conflicts:      filesystem < 3
 # Sources available at ftp://ftp.mozilla.org/pub/mozilla.org/nspr/releases/
 # When CVS tag based snapshots are being used, refer to CVS documentation on
 # mozilla.org and check out subdirectory mozilla/nsprpub.
-Source0:        %{name}-%{version}.tar.bz2
+Source0:        nspr-%{version}.tar.bz2
 
 Patch1:         nspr-config-pc.patch
 
@@ -24,7 +49,7 @@ memory management (malloc and free) and shared library linking.
 %package devel
 Summary:        Development libraries for the Netscape Portable Runtime
 Group:          Development/Libraries
-Requires:       nspr = %{version}-%{release}
+Requires:       dt-nspr = %{version}-%{release}
 Requires:       pkgconfig
 Conflicts:      filesystem < 3
 
@@ -33,7 +58,7 @@ Header files for doing development with the Netscape Portable Runtime.
 
 %prep
 
-%setup -q
+%setup -q -n nspr-%{version}
 
 # Original nspr-config is not suitable for our distribution,
 # because on different platforms it contains different dynamic content.
