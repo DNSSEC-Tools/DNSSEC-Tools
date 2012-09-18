@@ -90,6 +90,7 @@ Patch14:		proftpd-1.3.4a-bug3720.patch
 Patch23:		proftpd-1.3.4a-bug3744.patch
 Patch24:		proftpd-1.3.4a-bug3745.patch
 Patch25:		proftpd-1.3.4a-bug3746.patch
+Patch99:		proftpd-dnssec.patch
 BuildRoot:		%{_tmppath}/%{name}-%{version}-%{release}-root
 Requires(preun):	coreutils, findutils
 %if %{use_systemd}
@@ -110,7 +111,7 @@ Requires:		systemd-units
 BuildRequires:		pam-devel, ncurses-devel, pkgconfig, gettext, zlib-devel
 BuildRequires:		openssl-devel, libacl-devel, libcap-devel, /usr/include/tcpd.h
 BuildRequires:		openldap-devel, mysql-devel, postgresql-devel, GeoIP-devel
-BuildRequires:		dnssec-tools-libs-devel
+BuildRequires:		dnssec-tools-libs-devel autoconf automake
 %if 0%{?use_pcre:1}
 BuildRequires:		pcre-devel >= 7.0
 %endif
@@ -253,6 +254,9 @@ cp -p %{SOURCE1} proftpd.conf
 # http://bugs.proftpd.org/show_bug.cgi?id=3746
 %patch25 -p0
 
+# dnssec support
+%patch99 -p1
+
 # Avoid documentation name conflicts
 mv contrib/README contrib/README.contrib
 
@@ -291,6 +295,8 @@ fi
 
 # Remove bogus exec permissions from source files
 chmod -c -x include/tpl.h lib/tpl.c
+
+autoconf
 
 %build
 
