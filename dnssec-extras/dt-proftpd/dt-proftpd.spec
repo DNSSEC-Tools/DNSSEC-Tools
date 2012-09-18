@@ -1,4 +1,29 @@
 #
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _includedir         %{_prefix}/include
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _tmppath            %{_var}/tmp
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
+#
 # Rebuild switch:
 #  --with integrationtests	enable integration tests (not fully maintained, may fail)
 #
@@ -12,7 +37,7 @@
 
 # With systemd, the runtime directory is /run rather than /var/run
 %if %{use_systemd}
-%global rundir /run
+%global rundir %{_prefix}/run
 %else
 %global rundir %{_localstatedir}/run
 %endif
@@ -39,7 +64,7 @@
 %global rpmrel 1
 
 Summary:		Flexible, stable and highly-configurable FTP server
-Name:			proftpd
+Name:			dt-proftpd
 Version:		1.3.4b
 Release:		%{?prever:0.}%{rpmrel}%{?prever:.%{prever}}%{?dist}
 License:		GPLv2+
@@ -85,6 +110,7 @@ Requires:		systemd-units
 BuildRequires:		pam-devel, ncurses-devel, pkgconfig, gettext, zlib-devel
 BuildRequires:		openssl-devel, libacl-devel, libcap-devel, /usr/include/tcpd.h
 BuildRequires:		openldap-devel, mysql-devel, postgresql-devel, GeoIP-devel
+BuildRequires:		dnssec-tools-libs-devel
 %if 0%{?use_pcre:1}
 BuildRequires:		pcre-devel >= 7.0
 %endif
@@ -184,7 +210,7 @@ ProFTPD server:
 * ftpwho: show the current process information for each FTP session
 
 %prep
-%setup -q -n %{name}-%{version}%{?prever} -a 10 -a 11 -a 13
+%setup -q -n proftpd-%{version}%{?prever} -a 10 -a 11 -a 13
 
 # Copy mod_vroot source, documentation and tests into place
 cp -p mod_vroot/mod_vroot.c contrib/
@@ -290,8 +316,9 @@ SMOD6=mod_sftp:mod_sftp_pam:mod_sftp_sql:mod_tls_shmcache%{?have_libmemcached::m
 %{?use_pcre:		--enable-pcre} \
 			--enable-shadow \
 			--enable-tests \
-			--with-libraries="%{_libdir}/mysql" \
-			--with-includes="%{_includedir}/mysql" \
+			--with-dnssec-local-validation \
+			--with-libraries="/usr/%{_lib}/mysql" \
+			--with-includes="%/usr/include/mysql" \
 			--with-modules=mod_readme:mod_auth_pam:mod_tls \
 			--with-shared=${SMOD1}:${SMOD2}:${SMOD3}:${SMOD4}:${SMOD5}:${SMOD6}:mod_ifsession
 
