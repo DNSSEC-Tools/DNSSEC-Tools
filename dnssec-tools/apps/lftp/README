@@ -1,13 +1,20 @@
 DNSSEC Validation for lftp
 ==========================
-This patch adds local DNSSEC validation to lftp, along with an option to
-enable it. The is code is only compiled if the configure option
---dnssec-local-validation is specified. The libraries libval and libsres
-from DNSSEC-Tools are prequisites. Additional options may be needed
-to point configure at the correct directory for these libraries.
+
+Introduction
+------------
+
+lftp contains support for performing local DNSSEC validation for
+all DNS lookups. This document contains very brief instructions
+on how to use this feature. Configuring DNS is out of the scope of this
+document.
+
+The libraries libval and libsres from DNSSEC-Tools are prequisites.
+Additional options may be needed to point configure at the correct
+directory for these libraries.
 
 When compiled in, the option is still off by default. The new boolean
-option 'dns:strict-dns' must be enabled by the user.
+option 'dns:strict-dnsssec' must be enabled by the user.
 
 Once strict DNSSEC checking is enabled, DNSSEC validation is done according
 to the configuration in the DNSSEC-tool configuration file dnsval.conf.
@@ -15,35 +22,137 @@ Please refer to the DNSSEC-Tools documentation for more information.
 
 	http://www.dnssec-tools.org/
 
-This patch has been tested with lftp 4.0.2 and DNSSEC-Tools 1.6.
+
+Background
+----------
+
+A detailed description of DNSSEC is out of scope for this document,
+but a basic background is provided.
+
+DNS response packets are fairly easy to spoof, so an attacker situated
+in the network path between a client and its configured DNS server
+could possibly inject DSN response packets, causing the client
+to connect to another host.
+
+DNSSEC introduces cryptographic signing of DNS records, allowing a
+resolver to verify that a response has not been spoofed. This is
+done by configuring 'Trust Anchors', which are known good keys used to
+sign a zone.
+
+
+Rationale for Local Validation
+------------------------------
+
+As DNSSEC deployment grows, more ISPs are offering DNS servers which
+are DNSSEC aware and perform DNSSEC validation. So one might wonder
+why they would want local validation. There are several reasons.
+
+- Deployment of DNSSEC is progressing slowly, so end users might not
+have DNS servers which are capable of, or configured for, DNSSEC processing.
+
+- DNSSEC only guarantees the integrity of the DNS response to
+the DNS server. The response from the DNS server to the local host
+has no protection. Thus an attacker who can inject packets in the
+path between a DNS server and a stub resolver can not only redirect
+the client, but can make it belive a response was authentic!
+
+- Even if a DNSSEC server is on a local and trusted network, an end
+user might not have any influence over local policy. In other words,
+they might not be able to get a new Trust Anchor configured for a
+zone which they trust or mark a zone which is correctly signed as
+untrusted.
+
+- A DNSSEC server will not return data to an application for a response
+which cannot be validated. The means that, to the client, the DNS lookups
+will appear to have failed, even if the DNS server did get a response.
+With local validation, the application can distinguish between a non-
+responsive domain and validation failure.
+
+
+Requirements
+------------
+
+This code requires that the DNSSEC-Tools resolver and validator
+libraries and headers be installed. The DNSSEC-Tools package
+can be obtained from:
+
+	http://www.dnssec-tools.org/resources/download.html
+
+
+Using DNSSEC validation
+-----------------------
+
+The extra validation code in lftp is optional, and must be enabled
+by specifying --with-local-dnssec-validation when running configure.
 
 
 Testing
-=======
-To verify that the patch is working, you first need to configure dnsval.conf
-to require validation for a domain that is not signed. For example:
+-------
+By default, DNSSEC-Tools' configuration file should be trying to validate
+all zones. A few zones are signed, but most are not. You can use
+the test zone provided by DNSSEC-Tools for verifying correct operation.
 
-    : zone-security-expectation
-                # ignore validation by default
-                . ignore
+First, configure lftp to require validation.
 
-                # require that dnssec-tools.org validates (it should)
-                dnssec-tools.org validate
-
-                # require that cobham.com validates (it wont)
-                sparta.com validate
-    ;
-
+ $ echo "set dns:strict-dnssec 1" > ~/.lftprc
 
 Next, simpy run lftp with a few domain. This configuration does not require
 validation for any domains except dnssec-tools.org and cobham.com. So:
 
-  $ lftp mirrors.kernel.org
-  lftp mirrors.kernel.org:~> 
+  $ lftp www.dnssec-tools.org
+  cd ok, cwd=/
+  lftp www.dnssec-tools.org:/> 
 
-  $ lftp dnssec-tools.org
-  lftp dnssec-tools.org:~>
+  $ lftp baddata-a.test.dnssec-tools.org
+  lftp: baddata-a.test.dnssec-tools.org: DNS resolution not trusted.
 
-  $ lftp sparta.com
-  lftp: sparta.com: DNS resoloution not trusted.
+
+Viewing Details
+---------------
+To see some debug output from the validation process, you can set the
+VAL_LOG_TARGET environment variable. (Higher numbers will result in more
+output. 5 is a good start, 7 is more than you really want.)
+
+ $ export VAL_LOG_TARGET="5:stdout"
+
+  $ lftp www.dnssec-tools.org
+  20120904::16:44:31 Validation result for {www.dnssec-tools.org, IN(1), A(1)}: VAL_SUCCESS:128 (Validated)
+  20120904::16:44:31     name=www.dnssec-tools.org class=IN type=A from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31     name=dnssec-tools.org class=IN type=DNSKEY[tag=34816] from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31     name=dnssec-tools.org class=IN type=DS from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31     name=org class=IN type=DNSKEY[tag=21366] from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31     name=org class=IN type=DS from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31     name=. class=IN type=DNSKEY from-server=192.168.122.1 status=VAL_AC_TRUST:12
+  20120904::16:44:31 Validation result for {www.dnssec-tools.org, IN(1), AAAA(28)}: VAL_NONEXISTENT_TYPE:133 (Validated)
+  20120904::16:44:31     Proof of non-existence [1 of 1]
+  20120904::16:44:31       name=www.dnssec-tools.org class=IN type=NSEC from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31       name=dnssec-tools.org class=IN type=DNSKEY[tag=34816] from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31       name=dnssec-tools.org class=IN type=DS from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31       name=org class=IN type=DNSKEY[tag=21366] from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31       name=org class=IN type=DS from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::16:44:31       name=. class=IN type=DNSKEY from-server=192.168.122.1 status=VAL_AC_TRUST:12
+  cd ok, cwd=/
+  lftp www.dnssec-tools.org:/> 
+
+  $ lftp baddata-a.test.dnssec-tools.org
+  20120904::13:29:20 Validation result for {baddata-a.test.dnssec-tools.org, IN(1), A(1)}: VAL_BOGUS:1 (Untrusted)
+  20120904::13:29:20     name=baddata-a.test.dnssec-tools.org class=IN type=A from-server=168.150.236.43 status=VAL_AC_NOT_VERIFIED:18
+  20120904::13:29:20     name=test.dnssec-tools.org class=IN type=DNSKEY[tag=28827] from-server=168.150.236.43 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20     name=test.dnssec-tools.org class=IN type=DS from-server=168.150.236.43 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20     name=dnssec-tools.org class=IN type=DNSKEY[tag=34816] from-server=168.150.236.43 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20     name=dnssec-tools.org class=IN type=DS from-server=199.249.120.1 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20     name=org class=IN type=DNSKEY[tag=21366] from-server=199.249.120.1 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20     name=org class=IN type=DS from-server=198.41.0.4 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20     name=. class=IN type=DNSKEY from-server=198.41.0.4 status=VAL_AC_TRUST:12
+  20120904::13:29:20 Validation result for {baddata-a.test.dnssec-tools.org, IN(1), AAAA(28)}: VAL_NONEXISTENT_TYPE:133 (Validated)
+  20120904::13:29:20     Proof of non-existence [1 of 1]
+  20120904::13:29:20       name=baddata-a.test.dnssec-tools.org class=IN type=NSEC from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20       name=test.dnssec-tools.org class=IN type=DNSKEY[tag=28827] from-server=168.150.236.43 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20       name=test.dnssec-tools.org class=IN type=DS from-server=168.150.236.43 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20       name=dnssec-tools.org class=IN type=DNSKEY[tag=34816] from-server=168.150.236.43 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20       name=dnssec-tools.org class=IN type=DS from-server=199.249.120.1 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20       name=org class=IN type=DNSKEY[tag=21366] from-server=199.249.120.1 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20       name=org class=IN type=DS from-server=198.41.0.4 status=VAL_AC_VERIFIED:31
+  20120904::13:29:20       name=. class=IN type=DNSKEY from-server=198.41.0.4 status=VAL_AC_TRUST:12
+  lftp: baddata-a.test.dnssec-tools.org: DNS resolution not trusted.
 
