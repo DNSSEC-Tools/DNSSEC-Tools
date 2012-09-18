@@ -1,3 +1,31 @@
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+%define _var                %{_prefix}/var
+
+# usind during build
+%define _tmppath	/tmp
+
+
 %bcond_without mysql
 %bcond_with pgsql
 %bcond_without ldap
@@ -27,7 +55,7 @@
 %define postfix_command_dir	%{_sbindir}
 %define postfix_queue_dir	%{_var}/spool/postfix
 %define postfix_data_dir	%{_var}/lib/postfix
-%define postfix_doc_dir		%{_docdir}/%{name}-%{version}
+%define postfix_doc_dir		%{_docdir}/postfix-%{version}
 %define postfix_sample_dir	%{postfix_doc_dir}/samples
 %define postfix_readme_dir	%{postfix_doc_dir}/README_FILES
 
@@ -35,7 +63,7 @@
 %global harden -pie -Wl,-z,relro,-z,now
 %endif
 
-Name: postfix
+Name: dt-postfix
 Summary: Postfix Mail Transport Agent
 Version: 2.9.4
 Release: 2%{?dist}
@@ -52,7 +80,7 @@ Requires(preun): systemd-units
 Requires(postun): systemd-units
 Provides: MTA smtpd smtpdaemon server(smtp)
 
-Source0: ftp://ftp.porcupine.org/mirrors/postfix-release/official/%{name}-%{version}.tar.gz
+Source0: ftp://ftp.porcupine.org/mirrors/postfix-release/official/postfix-%{version}.tar.gz
 Source1: postfix-etc-init.d-postfix
 Source2: postfix.service
 Source3: README-Postfix-SASL-RedHat.txt
@@ -133,7 +161,7 @@ warnings, errors and panics.
 qshape prints Postfix queue domain and age distribution.
 
 %prep
-%setup -q
+%setup -q -n postfix-%{version}
 # Apply obligatory patches
 %patch1 -p1 -b .config
 %patch2 -p1 -b .files
@@ -166,20 +194,20 @@ CCARGS="${CCARGS} -fsigned-char"
 %endif
 %if %{with pcre}
   # -I option required for pcre 3.4 (and later?)
-  CCARGS="${CCARGS} -DHAS_PCRE -I%{_includedir}/pcre"
+  CCARGS="${CCARGS} -DHAS_PCRE -I/usr/include/pcre"
   AUXLIBS="${AUXLIBS} -lpcre"
 %endif
 %if %{with mysql}
-  CCARGS="${CCARGS} -DHAS_MYSQL -I%{_includedir}/mysql"
-  AUXLIBS="${AUXLIBS} -L%{_libdir}/mysql -lmysqlclient -lm"
+  CCARGS="${CCARGS} -DHAS_MYSQL -I/usr/include/mysql"
+  AUXLIBS="${AUXLIBS} -L/usr/%{_lib}/mysql -lmysqlclient -lm"
 %endif
 %if %{with pgsql}
-  CCARGS="${CCARGS} -DHAS_PGSQL -I%{_includedir}/pgsql"
+  CCARGS="${CCARGS} -DHAS_PGSQL -I/usr/include/pgsql"
   AUXLIBS="${AUXLIBS} -lpq"
 %endif
 %if %{with sasl}
-  CCARGS="${CCARGS} -DUSE_SASL_AUTH -DUSE_CYRUS_SASL -I%{_includedir}/sasl"
-  AUXLIBS="${AUXLIBS} -L%{_libdir}/sasl2 -lsasl2"
+  CCARGS="${CCARGS} -DUSE_SASL_AUTH -DUSE_CYRUS_SASL -I/usr/include/sasl"
+  AUXLIBS="${AUXLIBS} -L/usr/%{_lib}/sasl2 -lsasl2"
   %global sasl_config_dir %{_sysconfdir}/sasl2
 %endif
 %if %{with tls}
@@ -300,8 +328,8 @@ install -c auxiliary/qshape/qshape.pl $RPM_BUILD_ROOT%{postfix_command_dir}/qsha
 rm -f $RPM_BUILD_ROOT%{postfix_config_dir}/aliases
 
 # create /usr/lib/sendmail
-mkdir -p $RPM_BUILD_ROOT/usr/lib
-pushd $RPM_BUILD_ROOT/usr/lib
+mkdir -p $RPM_BUILD_ROOT%{_prefix}/usr/lib
+pushd $RPM_BUILD_ROOT%{_prefix}/usr/lib
 ln -sf ../sbin/sendmail.postfix .
 popd
 
@@ -310,11 +338,14 @@ touch $RPM_BUILD_ROOT%{_var}/lib/misc/postfix.aliasesdb-stamp
 
 # prepare alternatives ghosts 
 for i in %{postfix_command_dir}/sendmail %{_bindir}/{mailq,newaliases,rmail} \
-	%{_sysconfdir}/pam.d/smtp /usr/lib/sendmail \
-	%{_mandir}/{man1/{mailq.1,newaliases.1},man5/aliases.5,man8/sendmail.8}
+	%{_sysconfdir}/pam.d/smtp %{_prefix}/usr/lib/sendmail \
+	%{_mandir}/{man1/{mailq.1,newaliases.1},man5/aliases.5,man8/sendmail.8}.gz
 do
 	touch $RPM_BUILD_ROOT$i
 done
+#%if %{with pflogsumm}
+#touch $RPM_BUILD_ROOT%{_mandir}/man1/pflogsumm.1.gz
+#%endif
 
 %post
 [ $1 -eq 1 ] && bin/systemctl daemon-reload >/dev/null 2>&1 || :
@@ -334,7 +365,7 @@ done
 	--slave %{_bindir}/newaliases mta-newaliases %{_bindir}/newaliases.postfix \
 	--slave %{_sysconfdir}/pam.d/smtp mta-pam %{_sysconfdir}/pam.d/smtp.postfix \
 	--slave %{_bindir}/rmail mta-rmail %{_bindir}/rmail.postfix \
-	--slave /usr/lib/sendmail mta-sendmail /usr/lib/sendmail.postfix \
+	--slave /usr/lib/sendmail mta-sendmail %{_prefix}/usr/lib/sendmail.postfix \
 	--slave %{_mandir}/man1/mailq.1.gz mta-mailqman %{_mandir}/man1/mailq.postfix.1.gz \
 	--slave %{_mandir}/man1/newaliases.1.gz mta-newaliasesman %{_mandir}/man1/newaliases.postfix.1.gz \
 	--slave %{_mandir}/man8/sendmail.8.gz mta-sendmailman %{_mandir}/man1/sendmail.postfix.1.gz \
@@ -384,15 +415,6 @@ fi
 
 %postun sysvinit
 [ "$1" -ge 1 ] && %{_initrddir}/postfix condrestart >/dev/null 2>&1 ||:
-
-%triggerun -- postfix < %{sysv2systemdnvr}
-%{_bindir}/systemd-sysv-convert --save postfix >/dev/null 2>&1 ||:
-%{_bindir}/systemd-sysv-convert --apply postfix >/dev/null 2>&1 ||:
-/sbin/chkconfig --del postfix >/dev/null 2>&1 || :
-/bin/systemctl try-restart postfix.service >/dev/null 2>&1 || :
-
-%triggerpostun -n postfix-sysvinit -- postfix < %{sysv2systemdnvr}
-/sbin/chkconfig --add postfix >/dev/null 2>&1 || :
 
 
 %clean
@@ -493,20 +515,20 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, root, root) %{_bindir}/newaliases.postfix
 %attr(0755, root, root) %{_bindir}/rmail.postfix
 %attr(0755, root, root) %{_sbindir}/sendmail.postfix
-%attr(0755, root, root) /usr/lib/sendmail.postfix
+%attr(0755, root, root) %{_prefix}/usr/lib/sendmail.postfix
 
 %ghost %{_sysconfdir}/pam.d/smtp
 
-%ghost %{_mandir}/man1/mailq.1.gz
-%ghost %{_mandir}/man1/newaliases.1.gz
-%ghost %{_mandir}/man5/aliases.5.gz
-%ghost %{_mandir}/man8/sendmail.8.gz
+%ghost %attr(0644, root, root) %{_mandir}/man1/mailq.1.gz
+%ghost %attr(0644, root, root) %{_mandir}/man1/newaliases.1.gz
+%ghost %attr(0644, root, root) %{_mandir}/man5/aliases.5.gz
+%ghost %attr(0644, root, root) %{_mandir}/man8/sendmail.8.gz
 
 %ghost %attr(0755, root, root) %{_bindir}/mailq
 %ghost %attr(0755, root, root) %{_bindir}/newaliases
 %ghost %attr(0755, root, root) %{_bindir}/rmail
 %ghost %attr(0755, root, root) %{_sbindir}/sendmail
-%ghost %attr(0755, root, root) /usr/lib/sendmail
+%ghost %attr(0755, root, root) %{_prefix}/usr/lib/sendmail
 
 %ghost %attr(0644, root, root) %{_var}/lib/misc/postfix.aliasesdb-stamp
 
@@ -520,7 +542,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %{_mandir}/man1/qshape*
 %if %{with pflogsumm}
 %doc %{postfix_doc_dir}/pflogsumm-faq.txt
-%attr(0644, root, root) %{_mandir}/man1/pflogsumm.1.gz
+%attr(0644, root, root) %{_mandir}/man1/pflogsumm.1
 %attr(0755, root, root) %{postfix_command_dir}/pflogsumm
 %endif
 
