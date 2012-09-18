@@ -116,7 +116,7 @@ Patch15:        firefox-15.0-enable-addons.patch
 # DNSSEC-Tools
 Patch1001:	nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
 Patch1002:	nspr-0002-add-NSPR-log-module-for-DNS.patch
-Patch1003:	nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
+Patch1003:	dt-firefox-aio-nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
 Patch1004:	nspr-0004-add-DNSSEC-error-codes-and-text.patch
 Patch1005:	nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch
 Patch1006:	nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch
