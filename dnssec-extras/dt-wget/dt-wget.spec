@@ -1,5 +1,30 @@
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _includedir         %{_prefix}/include
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _tmppath            %{_var}/tmp
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
 Summary: A utility for retrieving files using the HTTP or FTP protocols
-Name: wget
+Name: dt-wget
 Version: 1.13.4
 Release: 2%{?dist}
 License: GPLv3+
@@ -8,6 +33,7 @@ Url: http://www.gnu.org/software/wget/
 Source: ftp://ftp.gnu.org/gnu/wget/wget-%{version}.tar.bz2
 Patch1: wget-rh-modified.patch
 Patch2: wget-1.12-path.patch
+Patch99: wget-dnssec.patch
 
 # http://bzr.savannah.gnu.org/lh/wget/trunk/revision/2317
 #Patch3: wget-1.12-certificate-subjectAltName.patch
@@ -15,6 +41,7 @@ Provides: webclient
 Requires(post): /sbin/install-info
 Requires(preun): /sbin/install-info
 BuildRequires: openssl-devel, pkgconfig, texinfo, gettext, autoconf
+BuildRequires: dnssec-tools-libs-devel
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
@@ -27,17 +54,19 @@ HTTP servers to retrieve files over slow or unstable connections,
 support for Proxy servers, and configurability.
 
 %prep
-%setup -q
+%setup -q -n wget-%{version}
 %patch1 -p0
 %patch2 -p1
 #%patch3 -p0
+%patch99 -p1
 
 %build
 if pkg-config openssl ; then
     CPPFLAGS=`pkg-config --cflags openssl`; export CPPFLAGS
     LDFLAGS=`pkg-config --libs openssl`; export LDFLAGS
 fi
-%configure --with-ssl=openssl --enable-largefile --enable-opie --enable-digest --enable-ntlm --enable-nls --enable-ipv6 --disable-rpath
+%configure --with-ssl=openssl --enable-largefile --enable-opie --enable-digest --enable-ntlm --enable-nls --enable-ipv6 --disable-rpath \
+           --with-dnssec-local-validation
 make %{?_smp_mflags}
 
 %install
@@ -45,7 +74,7 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT CFLAGS="$RPM_OPT_FLAGS"
 rm -f $RPM_BUILD_ROOT/%{_infodir}/dir
 
-%find_lang %{name}
+%find_lang wget
 
 %post
 /sbin/install-info %{_infodir}/wget.info.gz %{_infodir}/dir || :
@@ -58,7 +87,7 @@ fi
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files -f %{name}.lang
+%files -f wget.lang
 %defattr(-,root,root)
 %doc AUTHORS MAILING-LIST NEWS README COPYING doc/sample.wgetrc
 %config(noreplace) %{_sysconfdir}/wgetrc
