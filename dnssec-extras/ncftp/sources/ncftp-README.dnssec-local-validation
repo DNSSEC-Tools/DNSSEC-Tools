@@ -1,0 +1,149 @@
+local DNSSEC validation for ncftp
+=================================
+
+Introduction
+------------
+
+NcFTP contains support for performing local DNSSEC validation for
+all DNS lookups. This document contains very brief instructions
+on how to use this feature. Configuring DNS is out of the scope of this
+document.
+
+
+Background
+----------
+
+A detailed description of DNSSEC is out of scope for this document,
+but a basic background is provided.
+
+DNS response packets are fairly easy to spoof, so an attacker situated
+in the network path between a client and its configured DNS server
+could possibly inject DSN response packets, causing the client
+to connect to another host.
+
+DNSSEC introduces cryptographic signing of DNS records, allowing a
+resolver to verify that a response has not been spoofed. This is
+done by configuring 'Trust Anchors', which are known good keys used to
+sign a zone.
+
+Rationale for Local Validation
+------------------------------
+
+As DNSSEC deployment grows, more ISPs are offering DNS servers which
+are DNSSEC aware and perform DNSSEC validation. So one might wonder
+why they would want local validation. There are several reasons.
+
+- Deployment of DNSSEC is progressing slowly, so end users might not
+have DNS servers which are capable of, or configured for, DNSSEC processing.
+
+- DNSSEC only guarantees the integrity of the DNS response to
+the DNS server. The response from the DNS server to the local host
+has no protection. Thus an attacker who can inject packets in the
+path between a DNS server and a stub resolver can not only redirect
+the client, but can make it belive a response was authentic!
+
+- Even if a DNSSEC server is on a local and trusted network, an end
+user might not have any influence over local policy. In other words,
+they might not be able to get a new Trust Anchor configured for a
+zone which they trust or mark a zone which is correctly signed as
+untrusted.
+
+- A DNSSEC server will not return data to an application for a response
+which cannot be validated. The means that, to the client, the DNS lookups
+will appear to have failed, even if the DNS server did get a response.
+With local validation, the application can distinguish between a non-
+responsive domain and validation failure.
+
+Requirements
+------------
+
+This code requires that the DNSSEC-Tools resolver and validator
+libraries and headers be installed. The DNSSEC-Tools package
+can be obtained from:
+
+	http://www.dnssec-tools.org/resources/download.html
+
+Using DNSSEC validation
+-----------------------
+
+The extra validation code in NcFTP is optional, and must be enabled
+by specifying --with-local-dnssec-validation when running configure.
+
+This patch has been tested on ncftp-3.2.0, 3.2.1 and 3.2.3.
+
+1) Apply the DNSSEC patch
+2) run autoheader and autoconf to regenerate several important
+   files. I had to use autoconf version 2.13.
+3) Configure with: ./configure --with-dnssec-local-validation
+4) make
+5) sudo make install
+
+
+
+Testing
+-------
+By default, DNSSEC-Tools' configuration file should be trying to validate
+all zones. A few zones are signed, but most are not.
+
+For domains which validate successfully, there is no difference in output:
+
+  $ ncftp ftp.ietf.org
+  NcFTP 3.2.5 (Feb 02, 2011) by Mike Gleason (http://www.NcFTP.com/contact/).
+  Connecting to 64.170.98.31...
+  ProFTPD 1.3.1 Server (ProFTPD) [64.170.98.31]
+  Logging in...
+  Anonymous access granted, restrictions apply
+  Logged in to ftp.ietf.org.
+  ncftp / > 
+
+For domains that do not validate successfully:
+
+  $ ncftp baddata-a.test.dnssec-tools.org
+  NcFTP 3.2.5 (Feb 02, 2011) by Mike Gleason (http://www.NcFTP.com/contact/).
+  Resolving baddata-a.test.dnssec-tools.org...
+  Untrusted DNS response for host "baddata-a.test.dnssec-tools.org".
+  ncftp> 
+  
+
+Viewing  Details
+----------------
+To see some debug output from the validation process, you can set the
+VAL_LOG_TARGET environment variable. (Higher numbers will result in more
+output. 5 is a good start, 7 is more than you really want.)
+
+Example Validation Success:
+
+  $ VAL_LOG_TARGET="5:stdout" ncftp ftp.ietf.org
+  NcFTP 3.2.5 (Feb 02, 2011) by Mike Gleason (http://www.NcFTP.com/contact/).
+  20120905::15:52:52 Validation result for {ftp.ietf.org, IN(1), A(1)}: VAL_SUCCESS:128 (Validated)
+  20120905::15:52:52     name=ftp.ietf.org class=IN type=A from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120905::15:52:52     name=ietf.org class=IN type=DNSKEY[tag=45586] from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120905::15:52:52     name=ietf.org class=IN type=DS from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120905::15:52:52     name=org class=IN type=DNSKEY[tag=21366] from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120905::15:52:52     name=org class=IN type=DS from-server=192.168.122.1 status=VAL_AC_VERIFIED:31
+  20120905::15:52:52     name=. class=IN type=DNSKEY from-server=192.168.122.1 status=VAL_AC_TRUST:12
+  20120905::15:52:53 Validation result for {31.98.170.64.in-addr.arpa., IN(1), PTR(12)}: VAL_PINSECURE:136 (Trusted but not Validated)
+  20120905::15:52:53     name=31.98.170.64.in-addr.arpa class=IN type=PTR from-server=192.168.122.1 status=VAL_AC_PINSECURE:9
+
+  ProFTPD 1.3.1 Server (ProFTPD) [64.170.98.31]
+  Logging in...
+  Anonymous access granted, restrictions apply
+  Logged in to ftp.ietf.org.
+  ncftp / > 
+
+Example Validation Failure:
+
+  $ VAL_LOG_TARGET="5:stdout" ncftp baddata-a.test.dnssec-tools.org
+  NcFTP 3.2.5 (Feb 02, 2011) by Mike Gleason (http://www.NcFTP.com/contact/).
+  20120905::15:46:56 Validation result for {baddata-a.test.dnssec-tools.org, IN(1), A(1)}: VAL_BOGUS:1 (Untrusted)
+  20120905::15:46:56     name=baddata-a.test.dnssec-tools.org class=IN type=A from-server=75.101.48.145 status=VAL_AC_NOT_VERIFIED:18
+  20120905::15:46:56     name=test.dnssec-tools.org class=IN type=DNSKEY from-server=75.101.48.145 status=UNEVALUATED:2
+  20120905::15:46:56     name=test.dnssec-tools.org class=IN type=DS from-server=192.94.214.100 status=VAL_AC_VERIFIED:31
+  20120905::15:46:56     name=dnssec-tools.org class=IN type=DNSKEY[tag=34816] from-server=192.94.214.100 status=VAL_AC_VERIFIED:31
+  20120905::15:46:56     name=dnssec-tools.org class=IN type=DS from-server=199.19.57.1 status=VAL_AC_VERIFIED:31
+  20120905::15:46:56     name=org class=IN type=DNSKEY[tag=21366] from-server=199.19.57.1 status=VAL_AC_VERIFIED:31
+  20120905::15:46:56     name=org class=IN type=DS from-server=198.41.0.4 status=VAL_AC_VERIFIED:31
+  20120905::15:46:56     name=. class=IN type=DNSKEY from-server=198.41.0.4 status=VAL_AC_TRUST:12
+
+  Untrusted DNS response for host "baddata-a.test.dnssec-tools.org".
+  ncftp> 
