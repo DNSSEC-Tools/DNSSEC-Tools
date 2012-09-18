@@ -1,0 +1,11 @@
+--- ncftp-3.2.5/configure.in.orig	2012-08-28 23:26:13.258030234 -0400
++++ ncftp-3.2.5/configure.in	2012-08-28 23:27:10.809564739 -0400
+@@ -97,7 +98,7 @@
+     if test "$ac_cv_header_validator_validator_h" != yes; then
+         AC_MSG_ERROR(Can't find validator.h)
+     fi
+-    AC_CHECK_LIB(ssl, SHA1_Init,,AC_MSG_ERROR([Can't find SSL library]))
++    AC_SEARCH_LIBS([SHA1_Init], [crypto ssl],,AC_MSG_ERROR([Can't find SSL library]))
+     AC_CHECK_LIB(sres, query_send,,AC_MSG_ERROR([Can't find libsres]))
+     AC_CHECK_LIB(val, p_val_status,
+                  LIBS="$LIBS -lval"

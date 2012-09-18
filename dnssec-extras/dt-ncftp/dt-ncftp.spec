@@ -1,5 +1,29 @@
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _tmppath            %{_var}/tmp
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
 Summary: Improved console FTP client
-Name: ncftp
+Name: dt-ncftp
 Version: 3.2.5
 Release: 3%{?dist}
 Epoch: 2
@@ -11,8 +35,9 @@ Source: ftp://ftp.ncftp.com/ncftp/ncftp-%{version}-src.tar.bz2
 Patch1: ncftp-3.0.3-resume.patch
 Patch2: ncftp-3.1.5-pmeter.patch
 Patch3: ncftp-3.2.3-ncursesw.patch
+Patch99: ncftp-ssl-search.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: ncurses-devel
+BuildRequires: ncurses-devel net-tools dnssec-tools-libs-devel openssl-devel autoconf213 automake
 
 %description
 Ncftp is an improved FTP client. Ncftp's improvements include support
@@ -21,15 +46,17 @@ anonymous logins, and more.
 
 
 %prep
-%setup -q
+%setup -q -n ncftp-%{version}
 #patch0 -p1 -b .ipv6
 %patch1 -p1 -b .res
 %patch2 -p1 -b .pmeter
 %patch3 -p1 -b .ncursesw
+%patch99 -p1 -b .ssl-search
 
+autoreconf-2.13 -l autoconf_local
 
 %build
-%configure --enable-signals
+%configure --enable-signals --with-dnssec-local-validation
 %{__make} STRIPFLAG=""
 
 
