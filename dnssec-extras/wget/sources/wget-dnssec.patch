@@ -1,0 +1,140 @@
+diff -u -r wget-1.13.4.orig/configure.ac wget-1.13.4/configure.ac
+--- wget-1.13.4.orig/configure.ac	2011-09-04 07:58:44.000000000 -0400
++++ wget-1.13.4/configure.ac	2012-08-29 17:52:59.279203973 -0400
+@@ -511,6 +511,36 @@
+   fi
+ fi
+ 
++dnl 
++dnl Check for dnssec validator library if configured
++dnl
++AC_ARG_WITH(dnssec-local-validation,
++        [  --with-dnssec-local-validation Enable local DNSSEC validation using libval (default=no)], want_dnssec=$withval, want_dnssec=no)
++if test "x$want_dnssec" = "xyes"; then
++    AC_CHECK_HEADERS(validator/validator.h)
++    if test "$ac_cv_header_validator_validator_h" != yes; then
++        AC_MSG_ERROR([Cannot find validator.h (from dnssec-tools)])
++    fi
++    AC_SEARCH_LIBS([SHA1_Init], [crypto ssl],,AC_MSG_ERROR([Cannot find SSL library]))
++    AC_CHECK_LIB(sres, query_send)
++    if test "$ac_cv_lib_sres_query_send" != yes; then
++        AC_MSG_ERROR([Cannot find libsres (from dnssec-tools)])
++    fi
++    AC_CHECK_LIB(val, p_val_status,[LIBS="$LIBS -lval"])
++    if test "x$ac_cv_lib_val_p_val_status" = "xno"; then
++        AC_CHECK_LIB(pthread, pthread_rwlock_init)
++	AC_CHECK_LIB(val-threads, p_val_status,
++                [LIBS="$LIBS -lval-threads -lpthread" LIBVAL_SUFFIX="-threads"],
++                AC_MSG_ERROR([Cannot find libval or libval-threads (from dnssec-tools)]))
++    fi
++    if test "x$ac_cv_lib_val_p_val_status" = "xyes" -o "x$ac_cv_lib_val_threads_p_val_status" = "xyes"; then
++        AC_DEFINE(DNSSEC_LOCAL_VALIDATION, 1,
++              [Define if you want local DNSSEC validation support])
++    fi
++    AC_MSG_NOTICE([support for dnssec validator compiled in])
++fi
++
++
+ 
+ dnl Needed by src/Makefile.am
+ AM_CONDITIONAL([IRI_IS_ENABLED], [test "X$iri" != "Xno"])
+Only in wget-1.13.4/: configure.ac.orig
+diff -u -r wget-1.13.4.orig/src/host.c wget-1.13.4/src/host.c
+--- wget-1.13.4.orig/src/host.c	2011-08-06 17:22:39.000000000 -0400
++++ wget-1.13.4/src/host.c	2012-08-29 17:44:21.496854405 -0400
+@@ -36,6 +36,11 @@
+ #include <string.h>
+ #include <assert.h>
+ 
++/* Support for dnssec validation */
++#ifdef DNSSEC_LOCAL_VALIDATION
++#include <validator/validator.h>
++#endif /* DNSSEC_LOCAL_VALIDATION */
++
+ #ifndef WINDOWS
+ # include <sys/types.h>
+ # include <sys/socket.h>
+@@ -381,7 +386,19 @@
+ getaddrinfo_with_timeout_callback (void *arg)
+ {
+   struct gaiwt_context *ctx = (struct gaiwt_context *)arg;
++#ifndef DNSSEC_LOCAL_VALIDATION
+   ctx->exit_code = getaddrinfo (ctx->node, ctx->service, ctx->hints, ctx->res);
++#else
++  int err = 0;
++  val_status_t vstatus;
++  err = val_getaddrinfo((val_context_t *)NULL, ctx->node, 
++                        ctx->service, ctx->hints, ctx->res, &vstatus);
++  if ((NULL != ctx->res) && (0 == val_istrusted(vstatus)))  { 
++      DEBUGP(("DNSSEC status: %s [%d]\n", p_val_error(vstatus), vstatus));
++      err = DNSSECAI_FAIL; 
++  }
++  ctx->exit_code = err;
++#endif
+ }
+ 
+ /* Just like getaddrinfo, except it times out after TIMEOUT seconds.
+@@ -779,9 +796,15 @@
+     err = getaddrinfo_with_timeout (host, NULL, &hints, &res, timeout);
+     if (err != 0 || res == NULL)
+       {
+-        if (!silent)
++          if (!silent) {
++#ifndef DNSSEC_LOCAL_VALIDATION
+           logprintf (LOG_VERBOSE, _("failed: %s.\n"),
+                      err != EAI_SYSTEM ? gai_strerror (err) : strerror (errno));
++#else
++          logprintf (LOG_VERBOSE, _("failed: %s.\n"),
++                     err != EAI_SYSTEM ? dnssec_strerror (err) : strerror (errno));
++#endif
++          }
+         return NULL;
+       }
+     al = address_list_from_addrinfo (res);
+@@ -914,3 +937,29 @@
+       host_name_addresses_map = NULL;
+     }
+ }
++
++#ifdef DNSSEC_LOCAL_VALIDATION
++/* DNSSEC additional proecudures
++
++   dnssec_strerror - looks for dnssec errors (currently there is
++                     only one), passes back dnssec specific error
++                     string or calls the system gai_strerror.  */
++
++static const char* dnssecai_fail_string = "DNS resoloution not trusted";
++static const char* dnssecai_noerror_string = "No Error";
++
++const char   *dnssec_strerror(int ecode)  
++{
++  switch (ecode) {
++  case 0:
++    return (dnssecai_noerror_string);
++  case DNSSECAI_FAIL:
++    return (dnssecai_fail_string);
++  }
++  /* default response*/
++  return (gai_strerror(ecode));
++} /* denssec_strerror */
++
++
++/* End DNSSEC Additional procedures */
++#endif
+Only in wget-1.13.4/src: host.c.orig
+diff -u -r wget-1.13.4.orig/src/host.h wget-1.13.4/src/host.h
+--- wget-1.13.4.orig/src/host.h	2011-01-01 07:12:35.000000000 -0500
++++ wget-1.13.4/src/host.h	2012-08-29 17:44:21.496854405 -0400
+@@ -98,6 +98,11 @@
+ bool is_valid_ipv6_address (const char *, const char *);
+ #endif
+ 
++#ifdef DNSSEC_LOCAL_VALIDATION
++#define DNSSECAI_FAIL   -600  /* sharing number space with netdb.h errors */
++const char   *dnssec_strerror(int ecode);
++#endif
++
+ bool accept_domain (struct url *);
+ bool sufmatch (const char **, const char *);
+ 
+Only in wget-1.13.4/src: host.h.orig
