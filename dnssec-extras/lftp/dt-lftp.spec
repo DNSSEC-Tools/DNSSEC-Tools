@@ -37,6 +37,8 @@ BuildRequires:  dnssec-tools-libs-devel openssl-devel autoconf automake
 
 Patch1:  lftp-4.0.9-date_fmt.patch
 Patch2:  lftp-4.2.0-man.patch
+Patch97: lftp-dnssec-readme.patch
+Patch98: lftp-dnssec-warning.patch
 Patch99: lftp-ssl-search.patch
 
 %description
@@ -59,6 +61,9 @@ Utility scripts for use with lftp.
 
 %patch1 -p1 -b .date_fmt
 %patch2 -p1 -b .man
+# no backup for readme, or backup gets included in files :-/
+%patch97 -p1 
+%patch98 -p1 -b .dnssec-warning
 %patch99 -p1 -b .ssl-search
 
 autoreconf
