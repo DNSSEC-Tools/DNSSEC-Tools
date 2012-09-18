@@ -1,3 +1,26 @@
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
 # Use system nspr/nss?
 %define system_nss        1
 
@@ -12,7 +35,7 @@
 %define system_cairo      0
 
 # Build as a debug package?
-%define debug_build       0
+%define debug_build       1
 
 # Minimal required versions
 %global cairo_version 1.10.2
@@ -40,12 +63,13 @@
 %global beta_version  0
 %global rc_version    0
 
-%global mozappdir     %{_libdir}/%{name}-%{gecko_dir_ver}
+%define base_name     xulrunner
+%global mozappdir     %{_libdir}/%{base_name}-%{gecko_dir_ver}
 %global tarballdir    mozilla-release
 
 # crash reporter work only on x86/x86_64
 %ifarch %{ix86} x86_64
-%global enable_mozilla_crashreporter 1
+%global enable_mozilla_crashreporter 0
 %else
 %global enable_mozilla_crashreporter 0
 %endif
@@ -71,17 +95,17 @@
 %endif
 
 Summary:        XUL Runtime for Gecko Applications
-Name:           xulrunner
+Name:           dt-xulrunner
 Version:        15.0
 Release:        2%{?pre_tag}%{?dist}
 URL:            http://developer.mozilla.org/En/XULRunner
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
-Source0:        ftp://ftp.mozilla.org/pub/%{name}/releases/%{version}%{?pre_version}/source/%{name}-%{version}%{?pre_version}.source.tar.bz2
-Source10:       %{name}-mozconfig
-Source11:       %{name}-mozconfig-debuginfo
-Source12:       %{name}-redhat-default-prefs.js
-Source21:       %{name}.sh.in
+Source0:        ftp://ftp.mozilla.org/pub/%{base_name}/releases/%{version}%{?pre_version}/source/%{base_name}-%{version}%{?pre_version}.source.tar.bz2
+Source10:       %{base_name}-mozconfig
+Source11:       %{base_name}-mozconfig-debuginfo
+Source12:       %{base_name}-redhat-default-prefs.js
+Source21:       %{base_name}.sh.in
 
 # build patches
 Patch0:         xulrunner-version.patch
@@ -104,7 +128,7 @@ Patch51:        mozilla-709732-gfx-icc-profile-fix.patch
 # ---------------------------------------------------
 
 %if %{?system_nss}
-BuildRequires:  nspr-devel >= %{nspr_version}
+BuildRequires:  dt-nspr-devel >= %{nspr_version}
 BuildRequires:  nss-devel >= %{nss_version}
 BuildRequires:  nss-static >= %{nss_version}
 %endif
@@ -133,7 +157,7 @@ BuildRequires:  libvpx-devel >= %{libvpx_version}
 
 Requires:       mozilla-filesystem
 %if %{?system_nss}
-Requires:       nspr >= %{nspr_version}
+Requires:       dt-nspr >= %{nspr_version}
 Requires:       nss >= %{nss_version}
 %endif
 Provides:       gecko-libs = %{gecko_verrel}
@@ -157,15 +181,15 @@ Summary: Development files for Gecko
 Group: Development/Libraries
 Obsoletes: mozilla-devel < 1.9
 Obsoletes: firefox-devel < 2.1
-Obsoletes: xulrunner-devel-unstable
+Obsoletes: dt-xulrunner-devel-unstable
 Provides: gecko-devel = %{gecko_verrel}
 Provides: gecko-devel%{?_isa} = %{gecko_verrel}
 Provides: gecko-devel-unstable = %{gecko_verrel}
 Provides: gecko-devel-unstable%{?_isa} = %{gecko_verrel}
 
-Requires: xulrunner = %{version}-%{release}
+Requires: dt-xulrunner = %{version}-%{release}
 %if %{?system_nss}
-Requires: nspr-devel >= %{nspr_version}
+Requires: dt-nspr-devel >= %{nspr_version}
 Requires: nss-devel >= %{nss_version}
 %endif
 %if %{?system_cairo}
@@ -200,17 +224,17 @@ for writing XUL+XPCOM applications with Mozilla XULRunner and Gecko.
 %global moz_debug_prefix %{_prefix}/lib/debug
 %global moz_debug_dir %{moz_debug_prefix}%{mozappdir}
 %global uname_m %(uname -m)
-%global symbols_file_name %{name}-%{version}.en-US.%{_os}-%{uname_m}.crashreporter-symbols.zip
+%global symbols_file_name %{base_name}-%{version}.en-US.%{_os}-%{uname_m}.crashreporter-symbols.zip
 %global symbols_file_path %{moz_debug_dir}/%{symbols_file_name}
 %global _find_debuginfo_opts -p %{symbols_file_path} -o debugcrashreporter.list
-%global crashreporter_pkg_name mozilla-crashreporter-%{name}-debuginfo
+%global crashreporter_pkg_name mozilla-crashreporter-%{base_name}-debuginfo
 %package -n %{crashreporter_pkg_name}
 Summary: Debugging symbols used by Mozilla's crash reporter servers
 Group: Development/Debug
 %description -n %{crashreporter_pkg_name}
 This package provides debug information for XULRunner, for use by
 Mozilla's crash reporter servers.  If you are trying to locally
-debug %{name}, you want to install %{name}-debuginfo instead.
+debug %{base_name}, you want to install %{base_name}-debuginfo instead.
 %files -n %{crashreporter_pkg_name} -f debugcrashreporter.list
 %defattr(-,root,root)
 %endif
@@ -320,6 +344,11 @@ esac
 
 cd %{tarballdir}
 
+# use dt-nspr
+export PATH=/usr/local/opt/bin:/usr/local/opt/sbin:$PATH
+export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir}"
+
+
 # -fpermissive is needed to build with gcc 4.6+ which has become stricter
 # 
 # Mozilla builds with -Wall with exception of a few warnings which show up
@@ -368,12 +397,12 @@ cd %{tarballdir}
 DESTDIR=$RPM_BUILD_ROOT make -C objdir install
 
 # Start script install
-%{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/%{name}
+%{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/%{base_name}
 %{__cat} %{SOURCE21} | %{__sed} -e 's,XULRUNNER_VERSION,%{gecko_dir_ver},g' > \
-  $RPM_BUILD_ROOT%{_bindir}/%{name}
-%{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/%{name}
+  $RPM_BUILD_ROOT%{_bindir}/%{base_name}
+%{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/%{base_name}
 
-%{__rm} -f $RPM_BUILD_ROOT%{mozappdir}/%{name}-config
+%{__rm} -f $RPM_BUILD_ROOT%{mozappdir}/%{base_name}-config
 
 # Copy pc files (for compatibility with 1.9.1)
 %{__cp} $RPM_BUILD_ROOT/%{_libdir}/pkgconfig/libxul.pc \
@@ -395,7 +424,7 @@ cat > ${genheader}.h << EOF
 EOF
 }
 
-INTERNAL_APP_NAME=%{name}-%{gecko_dir_ver}
+INTERNAL_APP_NAME=%{base_name}-%{gecko_dir_ver}
 
 pushd $RPM_BUILD_ROOT/%{_includedir}/${INTERNAL_APP_NAME}
 install_file "mozilla-config"
@@ -403,7 +432,7 @@ install_file "js-config"
 popd
 
 # Link libraries in sdk directory instead of copying them:
-pushd $RPM_BUILD_ROOT%{_libdir}/%{name}-devel-%{gecko_dir_ver}/sdk/lib
+pushd $RPM_BUILD_ROOT%{_libdir}/%{base_name}-devel-%{gecko_dir_ver}/sdk/lib
 for i in *.so; do
      rm $i
      ln -s %{mozappdir}/$i $i
@@ -491,10 +520,10 @@ fi
 
 %files devel
 %defattr(-,root,root,-)
-%dir %{_libdir}/%{name}-devel-*
-%{_datadir}/idl/%{name}*%{gecko_dir_ver}
-%{_includedir}/%{name}*%{gecko_dir_ver}
-%{_libdir}/%{name}-devel-*/*
+%dir %{_libdir}/%{base_name}-devel-*
+%{_datadir}/idl/%{base_name}*%{gecko_dir_ver}
+%{_includedir}/%{base_name}*%{gecko_dir_ver}
+%{_libdir}/%{base_name}-devel-*/*
 %{_libdir}/pkgconfig/*.pc
 %{mozappdir}/xpcshell
 
