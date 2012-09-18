@@ -1,0 +1,327 @@
+From f6597e36bd34e305b67196c980ba961923a392c8 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 23 Feb 2012 11:31:34 -0500
+Subject: [PATCH 6/8] header definitions for Extended (DNSSEC) and
+ asynchronous API
+
+     PR_GetHostByNameExtended, PR_GetIPNodeByNameExtended
+     PR_GetAddrInfoByNameExtended, PR_AsyncSubmit_GetAddrInfoByName
+     PR_AsyncSubmit_GetAddrInfoByNameExtended, PR_AsyncDNS_Idle
+     PR_AsyncDNS_Cancel, PR_set_dnssec_validate_policy,
+     PR_dnssec_result_checks
+---
+ nsprpub/pr/include/prnetdb.h |  291 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 291 insertions(+), 0 deletions(-)
+
+diff --git a/nsprpub/pr/include/prnetdb.h b/nsprpub/pr/include/prnetdb.h
+index f1b7ddc..4aedd8d 100644
+--- a/nsprpub/pr/include/prnetdb.h
++++ b/nsprpub/pr/include/prnetdb.h
+@@ -39,6 +39,8 @@
+ #define prnetdb_h___
+ 
+ #include "prtypes.h"
++#include "prerror.h"
++#include "prinrval.h"
+ #include "prio.h"
+ 
+ PR_BEGIN_EXTERN_C
+@@ -494,6 +496,295 @@ NSPR_API(PRUint16) PR_htons(PRUint16);
+ NSPR_API(PRUint32) PR_htonl(PRUint32);
+ NSPR_API(PRUint64) PR_htonll(PRUint64);
+ 
++
++/***********************************************************************
++ ***********************************************************************
++ **
++ **  DNSSEC functions/definitions
++ **
++ ***********************************************************************
++ ***********************************************************************/
++#ifdef MOZ_DNSSEC
++
++#include <validator/validator.h>
++
++/* libval defines log levels that conflict with mozilla/system definitions. */
++#undef LOG_INFO
++#undef LOG_WARNING
++#undef LOG_ERROR
++#undef LOG_ERROR_REPORT
++#undef LOG_FATAL
++#undef LOG_0
++
++/** define some flags */
++enum 
++{
++  PR_DNSSEC_NO_FLAGS = 0,
++  PR_DNSSEC_IS_TRUSTED = 1 << 0,
++  PR_DNSSEC_IS_VALIDATED = 1 << 1,
++  PR_DNSSEC_IS_UNTRUSTED = 1 << 2
++};
++
++
++/***********************************************************************
++** FUNCTION:	
++** DESCRIPTION:	PR_GetHostByNameExtended()
++** Lookup a host by name and provide extended error information
++**
++** INPUTS:
++**  char *hostname      Character string defining the host name of interest
++**  char *buf           A scratch buffer for the runtime to return result.
++**                      This buffer is allocated by the caller.
++**  PRIntn bufsize      Number of bytes in 'buf'. A recommnded value to
++**                      use is PR_NETDB_BUF_SIZE.
++** OUTPUTS:
++**  PRHostEnt *hostentry
++**                      This structure is filled in by the runtime if
++**                      the function returns PR_SUCCESS. This structure
++**                      is allocated by the caller.
++**  PRUint16 *security_flags
++**                      This returns the DNSSEC validation status for the
++**                      request. PR_DNSSEC_NO_FLAGS indicae that no
++**                      validation flags were set. PR_DNSSEC_IS_VALIDATED
++**                      indicates that the result was properly validated
++**                      up to a configured trust anchor. PR_DNSSEC_IS_TRUSTED
++**                      indicates that the result is considered trusted by
++**                      policy, not by validation. PR_DNSSEC_IS_UNTRUSTED
++**                      indicates that either validation failed or policy
++**                      configration indicates the domain is not trusted.
++** RETURN:
++**  PRStatus            PR_SUCCESS if the lookup succeeds. If it fails
++**                      the result will be PR_FAILURE and the reason
++**                      for the failure can be retrieved by PR_GetError().
++**                      This function is identical to the PR_GetHostByName
++**                      function but returns additional error codes via
++**                      PR_GetError() and may return even more in the future.
++***********************************************************************/
++NSPR_API(PRStatus) PR_GetHostByNameExtended(
++    const char *hostname, char *buf, PRIntn bufsize, PRHostEnt *hostentry,
++    PRUint16 *security_flags);
++
++/***********************************************************************
++** FUNCTION:	
++** DESCRIPTION:	PR_GetIPNodeByNameExtended()
++** Lookup a host by name. Equivalent to getipnodebyname(AI_DEFAULT)
++** of RFC 2553.
++**
++** INPUTS:
++**  char *hostname      Character string defining the host name of interest
++**  PRUint16 af         Address family (either PR_AF_INET or PR_AF_INET6)
++**  PRIntn flags        Specifies the types of addresses that are searched
++**                      for and the types of addresses that are returned.
++**                      The only supported flag is PR_AI_DEFAULT.
++**  char *buf           A scratch buffer for the runtime to return result.
++**                      This buffer is allocated by the caller.
++**  PRIntn bufsize      Number of bytes in 'buf'. A recommnded value to
++**                      use is PR_NETDB_BUF_SIZE.
++** OUTPUTS:
++**  PRHostEnt *hostentry
++**                      This structure is filled in by the runtime if
++**                      the function returns PR_SUCCESS. This structure
++**                      is allocated by the caller.
++** RETURN:
++**  PRStatus            PR_SUCCESS if the lookup succeeds. If it fails
++**                      the result will be PR_FAILURE and the reason
++**                      for the failure can be retrieved by PR_GetError().
++**                      This function is identical to the PR_GetIPNodeByName
++**                      function but returns additional error codes via
++**                      PR_GetError() and may return even more in the future.
++***********************************************************************/
++NSPR_API(PRStatus) PR_GetIPNodeByNameExtended(
++  const char *hostname, PRUint16 af, PRIntn flags, char *buf, PRIntn bufsize,
++  PRHostEnt *hostentry, PRUint16 *security_flags);
++
++/***********************************************************************
++** FUNCTION:
++** DESCRIPTION: PR_GetAddrInfoByNameExtended()
++**  Lookup a host by name. Equivalent to getaddrinfo(host, NULL, ...) of
++**  RFC 3493.
++**
++** INPUTS:
++**  char *hostname      Character string defining the host name of interest
++**  PRUint16 af         May be PR_AF_UNSPEC or PR_AF_INET.
++**  PRIntn flags        May be either PR_AI_ADDRCONFIG or
++**                      PR_AI_ADDRCONFIG | PR_AI_NOCANONNAME. Include
++**                      PR_AI_NOCANONNAME to suppress the determination of
++**                      the canonical name corresponding to hostname.
++** OUTPUTS:
++**  PRUint16 *security_flags
++**                      This returns the DNSSEC validation status for the
++**                      request. PR_DNSSEC_NO_FLAGS indicae that no
++**                      validation flags were set. PR_DNSSEC_IS_VALIDATED
++**                      indicates that the result was properly validated
++**                      up to a configured trust anchor. PR_DNSSEC_IS_TRUSTED
++**                      indicates that the result is considered trusted by
++**                      policy, not by validation. PR_DNSSEC_IS_UNTRUSTED
++**                      indicates that either validation failed or policy
++**                      configration indicates the domain is not trusted.
++** RETURN:
++**  PRAddrInfo*         Handle to a data structure containing the results
++**                      of the host lookup. Use PR_EnumerateAddrInfo to
++**                      inspect the PRNetAddr values stored in this object.
++**                      When no longer needed, this handle must be destroyed
++**                      with a call to PR_FreeAddrInfo.  If a lookup error
++**                      occurs, then NULL will be returned.
++**                      This function is identical to the PR_GetAddrInfoByNameFB
++**                      function but returns additional error codes via
++**                      PR_GetError() and may return even more in the future.
++***********************************************************************/
++NSPR_API(PRAddrInfo*) PR_GetAddrInfoByNameExtended(
++    const char *hostname, PRUint16 af, PRIntn flags, PRUint16 *security_flags);
++
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++/***********************************************************************
++** FUNCTION:
++** DESCRIPTION: PR_AsyncSubmit_GetAddrInfoByNameExtended()
++**  Submit an asynchronous lookup for a host by name.
++**
++** INPUTS:
++**  char *hostname      Character string defining the host name of interest
++**  PRUint16 af         May be PR_AF_UNSPEC or PR_AF_INET.
++**  PRIntn flags        May be either PR_AI_ADDRCONFIG or
++**                      PR_AI_ADDRCONFIG | PR_AI_NOCANONNAME. Include
++**                      PR_AI_NOCANONNAME to suppress the determination of
++**                      the canonical name corresponding to hostname.
++**  val_context_t*      Pointer to a libval context to be used while
++**                      processing an asynchronous request.
++**  val_gai_callback    Pointer to a libval callback function to be called
++**                      when the request completes.
++**  void*               Pointer to application data to be passed back to
++**                      the caller when the completion callback occurs.
++**  PRUint16 *security_flags
++**                      This optional pointer will contain the DNSSEC validation
++**                      status for the request when the callback function is
++**                      called. PR_DNSSEC_NO_FLAGS indicae that no
++**                      validation flags were set. PR_DNSSEC_IS_VALIDATED
++**                      indicates that the result was properly validated
++**                      up to a configured trust anchor. PR_DNSSEC_IS_TRUSTED
++**                      indicates that the result is considered trusted by
++**                      policy, not by validation. PR_DNSSEC_IS_UNTRUSTED
++**                      indicates that either validation failed or policy
++**                      configration indicates the domain is not trusted.
++** RETURN:
++**  PRAddrInfo*         Handle to a data structure containing the results
++**                      of the host lookup. Use PR_EnumerateAddrInfo to
++**                      inspect the PRNetAddr values stored in this object.
++**                      When no longer needed, this handle must be destroyed
++**                      with a call to PR_FreeAddrInfo.  If a lookup error
++**                      occurs, then NULL will be returned.
++**                      This function is identical to the PR_GetAddrInfoByNameFB
++**                      function but returns additional error codes via
++**  val_async_status**  Handle to an opaque object used by libval while
++**                      processing an asynchronous request.
++**                      PR_GetError() and may return even more in the future.
++***********************************************************************/
++NSPR_API(PRIntn) PR_AsyncSubmit_GetAddrInfoByNameExtended(
++  const char *hostname, PRUint16 af, PRIntn flags, PRUint16 *security_flags,
++  val_context_t *, val_gai_callback cb, void *cb_data, val_gai_status **);
++
++/***********************************************************************
++** FUNCTION:
++** DESCRIPTION: PR_AsyncDNS_Idle()
++**  Perform processing for asynchronous DNS. Will wait up to the interval
++**  specified in the 'to' parameter.
++**
++** INPUTS:
++**  PRIntervalTime*     Maximum time to wait for incoming data.
++**  val_context_t*      Pointer to a libval context to be used while
++**                      processing an asynchronous request.
++** RETURN:
++**  PRIntn               1 : one or more event is pending or was processed
++**                       0 : no pending events
++**                      -1 : error selecting for events
++**                      -2 : no events to select on and no pending requests
++**
++***********************************************************************/
++NSPR_API(PRIntn) PR_AsyncDNS_Idle(val_context_t *context, PRIntervalTime *to);
++
++#ifdef HAVE_VAL_GETADDRINFO_CANCEL
++/***********************************************************************
++** FUNCTION:
++** DESCRIPTION: PR_AsyncDNS_Cancel()
++**  Cancel an asynchronous lookup for a host by name. This will result in
++**  the callback being called.
++**
++** INPUTS:
++**  val_context_t*      Pointer to a libval context to be used while
++**                      processing an asynchronous request.
++**  val_async_status*   Status pointer returned to caller when the request
++**                      was submitted.
++**  PRintn              flags to affect the cancellation.
++**                      Currently the only available flag is
++**                      PR_ASYNCDNS_CANCEL_NO_CALLBACKS, which, if set,
++**                      will prevent callbacks being called for the
++**                      asynchronous result being cancelled.
++***********************************************************************/
++NSPR_API(void) PR_AsyncDNS_CancelGetAddrInfoByName(
++  val_gai_status *,  PRIntn flags);
++#define PR_ASYNCDNS_CANCEL_NO_CALLBACKS VAL_AS_CANCEL_NO_CALLBACKS
++#endif /* HAVE_VAL_GETADDRINFO_CANCEL */
++
++#endif /* HAVE_VAL_GETADDRINFO_SUBMIT */
++
++/***********************************************************************
++** FUNCTIONS: PR_set_dnssec_validate_policy
++** DESCRIPTION: set the DNS resolution policy
++**
++** returns PR_SUCCESS or PR_FAILURE for a given validation status,
++**   based on system validation policy.
++**
++** If global_policy = DNSSEC_POLICY_IGNORE
++**    - PR_SUCCESS is always returned
++**
++** If global_policy = DNSSEC_POLICY_ENFORCE_SYS_POLICY
++**    - PR_SUCCESS if verified or trusted by validator policy
++**    - PR_FAILURE if not
++**
++** If global_policy = DNSSEC_POLICY_ALWAYS_SECURE
++**    - PR_SUCCESS if verified
++**    - PR_FAILURE if not
++**
++** INPUT:
++**   PRInt32            Value for policy. See #defines below.
++***********************************************************************/
++NSPR_API(void) PR_set_dnssec_validate_policy(PRInt32);
++#define DNSSEC_POLICY_ENFORCE_SYS_POLICY  0 /* allow validated or trusted */
++#define DNSSEC_POLICY_IGNORE              1 /* ignore validation */
++#define DNSSEC_POLICY_ALWAYS_SECURE       2 /* require validation */
++
++/***********************************************************************
++** FUNCTIONS: PR_dnssec_result_checks
++** DESCRIPTION: set security flags results based on result and status
++**
++** INPUTS:
++**  PRUint16 *security_flags
++**                      This optional pointer will contain the DNSSEC validation
++**                      status for the request when the callback function is
++**                      called. PR_DNSSEC_NO_FLAGS indicae that no
++**                      validation flags were set. PR_DNSSEC_IS_VALIDATED
++**                      indicates that the result was properly validated
++**                      up to a configured trust anchor. PR_DNSSEC_IS_TRUSTED
++**                      indicates that the result is considered trusted by
++**                      policy, not by validation. PR_DNSSEC_IS_UNTRUSTED
++**                      indicates that either validation failed or policy
++**                      configration indicates the domain is not trusted.
++**   val_status_t       The validation status returned by a DNS call.
++**   PRBool have_result Indicates whether or no a result was returned from
++**                      the DNS call.
++** RETURN:
++**   PRErrorCode        Returns 0 when no dnssec errors occured. Returns
++**                      PR_DNSSEC_VALIDATION_ERROR when the status
++**                      indicates an untrusted result (validation failure
++**                      or by policy configuration). PR_DNSSEC_DNE_ERROR
++**                      indicates that the result was proven to not exist.
++***********************************************************************/
++NSPR_API(PRErrorCode) PR_dnssec_result_checks(PRUint16 *security_flags,
++                                              val_status_t val_status,
++                                              PRBool have_result);
++
++#endif /* MOZ_DNSSEC */
++
++
+ PR_END_EXTERN_C
+ 
+ #endif /* prnetdb_h___ */
+-- 
+1.7.7.6
+

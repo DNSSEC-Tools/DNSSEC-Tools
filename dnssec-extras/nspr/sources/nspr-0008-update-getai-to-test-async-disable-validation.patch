@@ -1,0 +1,312 @@
+From d7bec5eb656b578ca1ac12a66895eebe718e01f9 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 23 Feb 2012 12:35:22 -0500
+Subject: [PATCH 8/8] update getai to test async, disable validation
+
+---
+ nsprpub/pr/tests/getai.c |  276 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 269 insertions(+), 7 deletions(-)
+
+diff --git a/nsprpub/pr/tests/getai.c b/nsprpub/pr/tests/getai.c
+index eaa41d4..d88c838 100644
+--- a/nsprpub/pr/tests/getai.c
++++ b/nsprpub/pr/tests/getai.c
+@@ -39,26 +39,288 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ 
+-int main(int argc, char **argv)
++#include "plgetopt.h"
++
++void process_results(PRAddrInfo *ai);
++
++static void Help(void)
++{
++  char *help = "getai usage: "
++#ifdef MOZ_DNSSEC
++    "[-v] "
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++    "[-a] "
++#endif
++#endif
++    "[-d] "
++    "[-h] hostname\n";
++
++    PRFileDesc *err = PR_GetSpecialFD(PR_StandardError);
++    PR_fprintf(err, help);
++#ifdef MOZ_DNSSEC
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++    PR_fprintf(err, "\t-a   Asynchronous queries            (default: true)\n");
++#endif
++    PR_fprintf(err, "\t-v   Validate answers                (default: true)\n");
++#endif
++    PR_fprintf(err, "\t-d   Print debug info                (default: false)\n");
++    PR_fprintf(err, "\t-h   This message and nothing else\n");
++    exit(2);
++}  /* Help */
++
++    static char *opt_args =
++#ifdef MOZ_DNSSEC
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++  "a"
++#endif
++  "v"
++#endif
++  "hd";
++
++#ifdef MOZ_DNSSEC
++
++static val_context_t    *context = NULL;
++static PRBool            debug = PR_FALSE;
++
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++
++struct getai_cb_data {
++    PRIntn        done;
++    PRIntervalTime start;
++    PRIntervalTime end;
++
++    char         *host;
++
++    PRIntn        ai_retval;
++    PRAddrInfo   *ai;
++
++    val_status_t  val_status;
++};
++
++static int pending = 0;
++
++static int 
++_callback(void *callback_data, int eai_retval, struct addrinfo *res,
++          val_status_t val_status)
++{
++    struct getai_cb_data *cbd = (struct getai_cb_data*)callback_data;
++    const char *canon = cbd->ai ? PR_GetCanonNameFromAddrInfo(cbd->ai) : NULL;
++
++    cbd->end = PR_IntervalNow();
++    cbd->ai_retval = eai_retval;
++    cbd->ai = (PRAddrInfo*)res;
++    cbd->val_status = val_status;
++
++    --pending;
++    if (!canon)
++        canon = cbd->host;
++    if (debug)
++        printf("gai: callback for %s, took %d ticks, %d requests remain\n",
++               canon, cbd->end - cbd->start, pending);
++    else
++        printf("%s\n", cbd->host);
++
++    if (VAL_AS_EVENT_CANCELED == eai_retval) {
++        if (debug)
++            printf("gai: request cancelled\n");
++        if (cbd->ai) /* only process results if we got them */
++            process_results(cbd->ai);
++    }
++    else
++        process_results(cbd->ai);
++
++    free(cbd->host);
++    PR_Free(callback_data);
++
++    return 0; /* OK */
++}
++
++PRAddrInfo * _getai_async_result(int argc, char **argv, int type, int flags)
++{
++    PRAddrInfo      *ai = NULL;
++    PRIntn           rc, arg_idx = 0;
++    PRUint16         sec_flags = 0;
++    PRIntervalTime   timeout;
++    val_gai_status   *vgs;
++    struct getai_cb_data *cb_data;
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++    PRIntn           submitted;
++#endif
++   
++    while (arg_idx < argc && argv[arg_idx]) {
++      cb_data = PR_Malloc(sizeof(*cb_data));
++      if (NULL == cb_data) {
++        fprintf(stderr,"gai: memory error\n");
++        exit(1);
++      }
++      memset(cb_data, 0x0, sizeof(*cb_data));
++      cb_data->host = strdup(argv[arg_idx]);
++      if (NULL == cb_data) {
++        fprintf(stderr,"gai: memory error\n");
++        exit(1);
++      }
++      if (debug)
++          printf("gai: submitting %s\n", cb_data->host);
++      cb_data->start = PR_IntervalNow();
++      rc = PR_AsyncSubmit_GetAddrInfoByNameExtended(cb_data->host, type, flags,
++                                                    &sec_flags, context,
++                                                    &_callback,(void*)cb_data,
++                                                    &vgs);
++      if (rc != VAL_NO_ERROR) {
++        fprintf(stderr, "gai: PR_AsyncSubmit_GetAddrInfoByNameExtended failed: "
++                "(%d, %d)\n", PR_GetError(), PR_GetOSError());
++        exit(1);
++      }
++      ++arg_idx;
++      ++pending;
++    }
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++    submitted = pending;
++#endif
++
++    timeout = 9000; /*seconds */
++    while( pending > 0) {
++      if (debug)
++          printf("pending %d\n", pending);
++
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory_cancel)
++      /* if more than 3 request, cancel the last one */
++      if (submitted > 3 && NULL != vgs) {
++        printf("cancelling one\n");
++        PR_AsyncDNS_CancelGetAddrInfoByName(vgs, 0);
++        vgs = NULL;
++      }
++#endif
++      rc = PR_AsyncDNS_Idle(context, &timeout);
++      if (pending > 0 && rc < 0) {
++        fprintf(stderr, "gai: PR_AsyncIdle timeout\n");
++        exit(1);
++      }
++    }
++
++    return ai;
++}
++#endif /* HAVE_VAL_GETADDRINFO_SUBMIT */
++
++#endif /* MOZ_DNSSEC */
++
++PRAddrInfo * _getai_result(char *name, int type, int flags)
++{
++    PRAddrInfo      *ai = NULL;
++
++    printf("%s\n", name);
++#ifdef MOZ_DNSSEC
++    ai = PR_GetAddrInfoByNameExtended(name, type, flags, NULL);
++#else
++    ai = PR_GetAddrInfoByName(name, type, flags);
++#endif /* MOZ_DNSSEC */
++
++    process_results(ai);
++    return ai;
++}
++
++void process_results(PRAddrInfo *ai)
+ {
+-    PRAddrInfo *ai;
+     void *iter;
+     PRNetAddr addr;
+ 
+-    ai = PR_GetAddrInfoByName(argv[1], PR_AF_UNSPEC, PR_AI_ADDRCONFIG);
+     if (ai == NULL) {
+-        fprintf(stderr, "PR_GetAddrInfoByName failed: (%d, %d)\n",
+-            PR_GetError(), PR_GetOSError());
+-        exit(1);
++        PRErrorCode err = PR_GetError();
++        const char *err_str = err ?
++          PR_ErrorToString(err,PR_LANGUAGE_I_DEFAULT) : "n/a";
++        fprintf(stderr, "gai: request failed: (err: %d/%s, oserr: %d)\n",
++                err,  err_str, PR_GetOSError());
++        return;
+     }
+-    printf("%s\n", PR_GetCanonNameFromAddrInfo(ai));
++
+     iter = NULL;
+     while ((iter = PR_EnumerateAddrInfo(iter, ai, 0, &addr)) != NULL) {
+         char buf[128];
+         PR_NetAddrToString(&addr, buf, sizeof buf);
+         printf("%s\n", buf);
+     }
++
+     PR_FreeAddrInfo(ai);
++}
++
++int main(int argc, char **argv)
++{
++    PRAddrInfo *ai;
++    PLOptStatus os;
++    PLOptState *opt = PL_CreateOptState(argc, argv, opt_args);
++    int         arg_index = 1;
++#ifdef MOZ_DNSSEC
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++    PRBool      async = PR_TRUE;
++#endif
++    PRBool      validate = PR_TRUE;
++#endif
++
++    while (PL_OPT_EOL != (os = PL_GetNextOpt(opt)))
++    {
++        if (PL_OPT_BAD == os) continue;
++
++        switch (opt->option)
++        {
++#ifdef MOZ_DNSSEC
++          case 'd':
++            debug = PR_TRUE;
++            ++arg_index;
++            break;
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++          case 'a':
++            async = !async;
++            ++arg_index;
++            break;
++#endif
++          case 'v':
++            validate = !validate;
++            ++arg_index;
++            break;
++#endif
++          case 'h':
++            Help();
++            break;
++          default:
++            break;
++        }
++    }
++    PL_DestroyOptState(opt);
++
++    if (argv[arg_index][0] == '-')
++        Help();
++
++#ifdef MOZ_DNSSEC
++    if (debug)
++        val_log_add_optarg("7:stdout", 1);
++
++    /*
++     * create a new context
++     */
++    val_create_context("getai", &context);
++    if (context == NULL)
++        return 1;
++
++    if (!validate) {
++        printf("disabling validation...\n");
++#ifdef HAVE_VAL_CONTEXT_SETQFLAGS
++        val_context_setqflags(context, VAL_CTX_FLAG_SET,
++                              VAL_QUERY_DONT_VALIDATE);
++#endif
++        PR_set_dnssec_validate_policy(DNSSEC_POLICY_IGNORE);
++    }
++
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++    if (async)
++        ai = _getai_async_result(argc, &argv[arg_index], PR_AF_UNSPEC,
++                               PR_AI_ADDRCONFIG);
++    else
++#endif
++#endif /* MOZ_DNSSEC */
++        for (; arg_index < argc && argv[arg_index]; ++arg_index) {
++          ai = _getai_result(argv[arg_index], PR_AF_UNSPEC, PR_AI_ADDRCONFIG);
++        }
+     return 0;
+ }
+-- 
+1.7.7.6
+
