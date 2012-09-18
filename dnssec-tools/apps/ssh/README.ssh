@@ -35,8 +35,36 @@ resolver to verify that a response has not been spoofed. This is
 done by configuring 'Trust Anchors', which are know good keys used to
 sign a zone.
 
-Further rational for why one might want to use local validation is
-give at the end of this document.
+Rational for Local Validation
+-----------------------------
+
+As DNSSEC deployment grows, more ISPs are offering DNS servers which
+are DNSSEC aware and perform DNSSEC validation. Also, OpenSSH already
+has code to verify DNS key fingerprint records (SSHFP), so one might
+wonder why they would want local validation. There are several reasons.
+
+- Deployment of DNSSEC is progressing slowly, so end users might not
+have DNS servers which are capable of, or configured for, DNSSEC processing.
+
+- DNSSEC only guarantees the integrity of the DNS response to
+the DNS server. The response from the DNS server to the local host
+has no protection. Thus an attacker who can inject packets in the
+path between a DNS server and a stub resolver can not only redirect
+the client, but can make it belive a response was authentic!
+
+- Even if a DNSSEC server is on a local and trusted network, an end
+user might not have any influence over local policy. In other words,
+they might not be able to get a new Trust Anchor configured for a
+zone which they trust.
+
+- A DNSSEC server will not return data to an application for a response
+which cannot be validated. The means that, to the client, the DNS lookups
+will appear to have failed, even if the DNS server did get a response.
+With local validation, the application can distinguish between a non-
+responsive domain and validation failure. And since ssh performs its own
+validation of host keys upon connecting to a host, it may be an acceptable
+risk to return the questionable response to the application, along with a
+warning, and allow the end user to decide if they want to proceed.
 
 
 Requirements
@@ -98,37 +126,6 @@ AutoAnswerValidatedKeys is set to yes, any time ssh would normally
 prompt to accept a key, the prompt will be supressed and the key
 will be accepted if a matching SSHFP host key was found and validated
 by DNSSEC.
-
-
-Rational for Local Validation
------------------------------
-
-OpenSSH already has code to verify DNSSEC validity for DNS key
-fingerprint records (SSHFP), so one might wonder why they would
-want local validation. There are several reasons.
-
-- Deployment of DNSSEC is progressing quite slowly, so end
-users might not have DNS servers which are capable of, or configured
-for, DNSSEC processing.
-
-- DNSSEC only guarantees the integrity of the DNS response to
-the DNS server. The response from the DNS server to the local host
-has no protection. Thus an attacker who can inject packets in the
-path between a DNS server and a stub resolver can not only redirect
-the client, but can make it belive a response was authentic!
-
-- Even if a DNSSEC server is on a local and trusted network, an end
-user might not have any influence over local policy. In other words,
-they might not be able to get a new Trust Anchor configured for a
-zone which they trust.
-
-- A DNSSEC server will not return data to an application for a response
-which appears to have been modified. The means that, to the ssh
-client, the DNS lookups will appear to have failed, even if the DNS
-server did get a response. Since ssh performs its own validation of
-host keys upon connecting to a host, it may be an acceptable risk to
-return the questionable response to the application, along with a warning,
-and allow the end user to decide if they want to proceed.
 
 
 Robert Story
