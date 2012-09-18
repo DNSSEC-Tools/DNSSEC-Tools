@@ -1,0 +1,188 @@
+From f4a6e1803c23b2bf767ec66b47ea217c1b856ddd Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Wed, 11 Apr 2012 14:13:53 -0400
+Subject: [PATCH 3/8] add dnssec options/flags to configure and makefiles
+
+---
+ nsprpub/config/autoconf.mk.in |   12 +-
+ nsprpub/config/config.mk      |    5 +
+ nsprpub/config/nspr-config.in |    2 +-
+ nsprpub/configure             |  602 ++++++++++++++++++++++++++++++++---------
+ nsprpub/configure.in          |   71 +++++
+ nsprpub/pr/tests/Makefile.in  |    6 +
+ 6 files changed, 569 insertions(+), 129 deletions(-)
+
+diff --git a/nsprpub/config/autoconf.mk.in b/nsprpub/config/autoconf.mk.in
+index 77b6394..6b308a4 100644
+--- a/nsprpub/config/autoconf.mk.in
++++ b/nsprpub/config/autoconf.mk.in
+@@ -76,10 +76,10 @@ CYGWIN_WRAPPER	= @CYGWIN_WRAPPER@
+ MT		= @MT@
+ 
+ OS_CPPFLAGS	= @CPPFLAGS@
+-OS_CFLAGS	= $(OS_CPPFLAGS) @CFLAGS@ $(DSO_CFLAGS)
+-OS_CXXFLAGS	= $(OS_CPPFLAGS) @CXXFLAGS@ $(DSO_CFLAGS)
+-OS_LIBS         = @OS_LIBS@
+-OS_LDFLAGS	= @LDFLAGS@
++OS_CFLAGS	= $(OS_CPPFLAGS) @CFLAGS@ $(DSO_CFLAGS) $(VAL_CFLAGS)
++OS_CXXFLAGS	= $(OS_CPPFLAGS) @CXXFLAGS@ $(DSO_CFLAGS) $(VAL_CFLAGS)
++OS_LIBS         = @OS_LIBS@ $(VAL_LIBS)
++OS_LDFLAGS	= @LDFLAGS@ $(VAL_LDFLAGS)
+ OS_DLLFLAGS	= @OS_DLLFLAGS@
+ DLLFLAGS	= @DLLFLAGS@
+ EXEFLAGS  = @EXEFLAGS@
+@@ -95,6 +95,10 @@ WRAP_LDFLAGS	= @WRAP_LDFLAGS@
+ DSO_CFLAGS	= @DSO_CFLAGS@
+ DSO_LDOPTS	= @DSO_LDOPTS@
+ 
++VAL_CFLAGS	= @VAL_CFLAGS@
++VAL_LDFLAGS	= @VAL_LDFLAGS@ $(VAL_LIBS)
++VAL_LIBS	= @VAL_LIBS@
++
+ RESOLVE_LINK_SYMBOLS = @RESOLVE_LINK_SYMBOLS@
+ 
+ HOST_CC		= @HOST_CC@
+diff --git a/nsprpub/config/config.mk b/nsprpub/config/config.mk
+index 384d6c0..8bdf496 100644
+--- a/nsprpub/config/config.mk
++++ b/nsprpub/config/config.mk
+@@ -95,6 +95,11 @@ endif
+ endif # MOZ_PROFILE_USE
+ endif # NO_PROFILE_GUIDED_OPTIMIZE
+ 
++ifdef MOZ_DNSSEC
++CFLAGS += $(VAL_CFLAGS)
++LDFLAGS += $(VAL_LDFLAGS)
++endif # MOZ_DNSSEC
++
+ define MAKE_OBJDIR
+ if test ! -d $(@D); then rm -rf $(@D); $(NSINSTALL) -D $(@D); fi
+ endef
+diff --git a/nsprpub/config/nspr-config.in b/nsprpub/config/nspr-config.in
+index a7d2b4f..9d58135 100755
+diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
+--- mozilla/nsprpub/config/nspr.pc.in.orig      2012-09-07 11:34:04.754417882 -0400
++++ mozilla/nsprpub/config/nspr.pc.in   2012-09-07 11:34:17.604316386 -0400
+@@ -6,5 +6,5 @@
+ Name: NSPR
+ Description: The Netscape Portable Runtime
+ Version: @MOD_MAJOR_VERSION@.@MOD_MINOR_VERSION@.@MOD_PATCH_VERSION@
+-Libs: -L@libdir@ -lplds@MOD_MAJOR_VERSION@ -lplc@MOD_MAJOR_VERSION@ -lnspr@MOD_MAJOR_VERSION@
++Libs: -L@libdir@ -lplds@MOD_MAJOR_VERSION@ -lplc@MOD_MAJOR_VERSION@ -lnspr@MOD_MAJOR_VERSION@ @OS_LIBS@ @VAL_LIBS@
+ Cflags: -I@includedir@
+diff --git a/nsprpub/configure.in b/nsprpub/configure.in
+index 112ddd2..fd46449 100644
+--- a/nsprpub/configure.in
++++ b/nsprpub/configure.in
+@@ -2722,6 +2722,7 @@ dnl AC_HEADER_STDC
+ dnl AC_HEADER_SYS_WAIT
+ dnl AC_CHECK_HEADERS(fcntl.h limits.h sys/file.h sys/ioctl.h sys/time.h unistd.h)
+ 
++
+ dnl ========================================================
+ dnl Check for typedefs and structs
+ dnl ========================================================
+@@ -3241,6 +3242,76 @@ AC_ARG_WITH(wrap-malloc,
+     WRAP_LDFLAGS="${WRAP_LDFLAGS} $withval")
+ 
+ dnl ========================================================
++dnl = Add DNSSEC support 
++dnl ========================================================
++
++AC_ARG_WITH(system-val,
++[  --with-system-val[=PFX] 
++                  Use system DNSSEC validator [installed at prefix PFX]],
++   ,
++   [with_system_val=no])
++
++AC_ARG_WITH(system-openssl,
++[  --with-system-openssl[=PFX]
++                  Use system openssl libraries [installed at prefix PFX]],
++   ,
++   [with_system_openssl=no])
++
++_SAVE_LDFLAGS="$LDFLAGS"
++_SAVE_CFLAGS="$CFLAGS"
++VAL_LIBS=""
++OPENSSL_LIBS=""
++if test "x$with_system_val" != xno; then
++  VAL_CFLAGS="-I${with_system_val}/include"
++  if test -n "$_WIN32_MSVC"; then
++    VAL_LIBS="${with_system_val}/lib/libval-threads.a ${with_system_val}/lib/libsres.a ${with_system_val}/lib/libcrypto.a ${with_system_val}/lib/libpthread.dll.a ${with_system_val}/lib/libgcc.a user32.lib gdi32.lib Ws2_32.lib"
++    AC_DEFINE(MOZ_DNSSEC)
++  else
++    VAL_LDFLAGS="-L${with_system_val}/lib"
++    if test "x$with_system_openssl" != xno; then
++        if test -n "$with_system_openssl"; then
++            VAL_CFLAGS="$VAL_CFLAGS -I${with_system_openssl}/include"
++            VAL_LDFLAGS="$VAL_LDFLAGS -L${with_system_openssl}/lib" 
++        fi
++    fi
++    LDFLAGS="$LDFLAGS $VAL_LDFLAGS"
++    CFLAGS="$CFLAGS $VAL_CFLAGS"
++    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
++    AC_CHECK_LIB(val-threads, val_gethostbyname,
++        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
++         AC_DEFINE(MOZ_DNSSEC)], ,
++        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++  fi
++  dnl functions added in 1.11
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_submit,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_SUBMIT), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++  dnl functions added in 1.12
++  AC_CHECK_LIB(val-threads, val_context_setqflags,
++                AC_DEFINE(HAVE_VAL_CONTEXT_SETQFLAGS), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++
++  dnl functions added in 1.13
++  AC_CHECK_LIB(val-threads, val_freeaddrinfo,
++                AC_DEFINE(HAVE_VAL_FREEADDRINFO), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_cancel,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_CANCEL), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++fi
++LDFLAGS="$_SAVE_LDFLAGS"
++CFLAGS="$_SAVE_CFLAGS"
++
++AC_SUBST(VAL_LIBS)
++AC_SUBST(VAL_CFLAGS)
++AC_SUBST(VAL_LDFLAGS)
++AC_SUBST(HAVE_VAL_CONTEXT_SETQFLAGS)
++AC_SUBST(HAVE_VAL_GETADDRINFO_SUBMIT)
++AC_SUBST(HAVE_VAL_FREEADDRINFO)
++AC_SUBST(HAVE_VAL_GETADDRINFO_CANCEL)
++AC_SUBST(MOZ_DNSSEC)
++
++dnl ========================================================
+ dnl Substitution of found variables.
+ dnl ========================================================
+ AC_SUBST(SHELL_OVERRIDE)
+diff --git a/nsprpub/pr/tests/Makefile.in b/nsprpub/pr/tests/Makefile.in
+index 6d41984..09bf9a8 100644
+--- a/nsprpub/pr/tests/Makefile.in
++++ b/nsprpub/pr/tests/Makefile.in
+@@ -455,6 +455,10 @@ LIBPTHREAD =
+ XCFLAGS = $(OS_CFLAGS)
+ endif
+ 
++ifneq ($(VAL_LIBS),)
++EXTRA_LIBS += $(OS_LDFLAGS) $(OS_LIBS)
++endif
++
+ #####################################################
+ #
+ # The rules
+@@ -536,6 +540,8 @@ $(OBJDIR)/socket: $(OBJDIR)/socket.o
+ 	$(PURE) $(CC) $(XCFLAGS) $< $(LDOPTS) $(LIBPLC) $(LIBNSPR) $(LIBPTHREAD) $(EXTRA_LIBS) -o $@
+ $(OBJDIR)/testfile: $(OBJDIR)/testfile.o
+ 	$(PURE) $(CC) $(XCFLAGS) $< $(LDOPTS) $(LIBPLC) $(LIBNSPR) $(LIBPTHREAD) $(EXTRA_LIBS) -o $@
++$(OBJDIR)/getai: $(OBJDIR)/getai.o
++	$(PURE) $(CC) $(XCFLAGS) $(DEFINES) $< $(LDOPTS) $(LIBPLC) $(LIBNSPR) $(LIBPTHREAD) $(EXTRA_LIBS) -o $@
+ endif
+ 
+ #
+-- 
+1.7.7.6
+
