@@ -18,7 +18,8 @@ ALL_OBJ= $(VAL_OBJ) \
 	gethost.o \
 	getname.o \
 	libsres_test.o \
-    libval_check_conf.o
+    libval_check_conf.o \
+    dane_check.o
 
 ALL_LOBJ= $(VAL_LOBJ) \
 	getaddr.lo \
@@ -27,7 +28,8 @@ ALL_LOBJ= $(VAL_LOBJ) \
 	gethost.lo \
 	getname.lo \
 	libsres_test.lo \
-    libval_check_conf.lo
+    libval_check_conf.lo \
+    dane_check.lo
 
 LT_DIR= .libs
 
@@ -39,11 +41,12 @@ GETQUERY=dt-getquery$(EXEEXT)
 GETNAME=dt-getname$(EXEEXT)
 CHECK_CONF=libval_check_conf$(EXEEXT)
 SRES_TEST=libsres_test$(EXEEXT)
+DANECHK=dt-danechk$(EXEEXT)
 
-all: $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF) $(SRES_TEST)
+all: $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF) $(SRES_TEST) $(DANECHK)
 
 clean:
-	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF) $(SRES_TEST)
+	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR) $(GETRRSET) $(GETQUERY) $(GETNAME) $(CHECK_CONF) $(SRES_TEST) $(DANECHK)
 	$(RM) -rf $(LT_DIR)
 
 $(VALIDATOR): $(VAL_OBJ) $(LOCALLIBS)
@@ -73,6 +76,9 @@ $(SRES_TEST): libsres_test.lo $(LOCALLIBS)
 dnssec_checks: dnssec_checks.lo  $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ dnssec_checks.lo $(LDFLAGS) $(LIBS)
 
+$(DANECHK): dane_check.lo $(LOCALLIBS)
+	$(LIBTOOLLD) -o $@ dane_check.lo $(LDFLAGS) $(LIBS)
+
 install:
 	$(MKPATH) $(DESTDIR)$(bindir)
 	$(LIBTOOLIN) $(VALIDATOR) $(DESTDIR)$(bindir)
@@ -82,5 +88,6 @@ install:
 	$(LIBTOOLIN) $(GETQUERY) $(DESTDIR)$(bindir)
 	$(LIBTOOLIN) $(GETNAME) $(DESTDIR)$(bindir)
 	$(LIBTOOLIN) $(CHECK_CONF) $(DESTDIR)$(bindir)
+	$(LIBTOOLIN) $(DANECHK) $(DESTDIR)$(bindir)
 	$(MKPATH) `echo $(DESTDIR)@VALIDATOR_TESTCASES@ | sed 's#/[^/]*$$##'`
 	$(CP) selftests.dist $(DESTDIR)@VALIDATOR_TESTCASES@

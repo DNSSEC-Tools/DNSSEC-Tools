@@ -1,0 +1,105 @@
+
+/*
+ * Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
+ * See the COPYING file distributed with this software for details.
+ */
+#ifndef VAL_DANE_H
+#define VAL_DANE_H
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern          "C" {
+#endif
+
+/*
+ * DANE usage types
+ */
+#define DANE_USE_CA_CONSTRAINT  0
+#define DANE_USE_SVC_CONSTRAINT 1
+#define DANE_USE_TA_ASSERTION   2
+#define DANE_USE_DOMAIN_ISSUED  3
+
+/*
+ * DANE usage types
+ */
+#define DANE_SEL_FULLCERT   0
+#define DANE_SEL_PUBKEY     1
+
+/*
+ * DANE matching types
+ */
+#define DANE_MATCH_EXACT    0
+#define DANE_MATCH_SHA256   1
+#define DANE_MATCH_SHA512   2
+
+/*
+ * DANE parameters 
+ */
+#define DANE_PARAM_PROTO_TCP    0
+#define DANE_PARAM_PROTO_UDP    1
+#define DANE_PARAM_PROTO_SCTP   2
+#define DANE_PARAM_PROTO_STR_TCP "tcp"
+#define DANE_PARAM_PROTO_STR_UDP "udp"
+#define DANE_PARAM_PROTO_STR_SCTP "sctp"
+
+
+/*
+ * DANE specific return codes 
+ */
+#define VAL_DANE_NOERROR        0
+#define VAL_DANE_CANCELLED      1
+#define VAL_DANE_INTERNAL_ERROR 2
+#define VAL_DANE_NOTVALIDATED   3
+#define VAL_DANE_MISSING_TLSA   4
+#define VAL_DANE_MALFORMED_TLSA 5
+
+/*
+ * These are the parameters that the user would supply
+ * to control the manner in which DANE validation is performed.
+ */
+struct val_daneparams {
+    int port;
+    int proto; 
+};
+
+/*
+ * The DANE record details are returned in the following structure 
+ */
+struct val_danestatus {
+    long ttl;
+    int usage;
+    int selector;
+    int type;
+    size_t datalen;
+    unsigned char *data;
+    struct val_danestatus *next;
+};
+
+typedef int (*val_dane_callback)(void *callback_data, 
+                                 int retval,
+                                 struct val_danestatus **res);
+
+/*
+ * Prototypes
+ */
+const char *p_dane_error(int rc);
+void val_free_dane(struct val_danestatus *dres);
+int val_dane_submit(val_context_t *context, 
+                    const char *name,
+                    struct val_daneparams *params,
+                    val_dane_callback callback, 
+                    void *callback_data,
+                    val_async_status **status);
+int val_getdaneinfo(val_context_t *context,
+                    const char *name,
+                    struct val_daneparams
+                    *params,
+                    struct val_danestatus **dres);
+
+#ifdef __cplusplus
+}                               /* extern "C" */
+#endif
+#endif                          /* VAL_DANE_H */
