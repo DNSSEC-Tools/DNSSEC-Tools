@@ -393,7 +393,7 @@ int val_getdaneinfo(val_context_t *context,
      */
     dane_rc = get_dane_from_result(params,
                                    results, 
-                                   &dres);
+                                   dres);
 
     return dane_rc;
 }
