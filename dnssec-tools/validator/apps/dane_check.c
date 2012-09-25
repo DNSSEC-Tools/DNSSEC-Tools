@@ -83,8 +83,10 @@ _callback(void *callback_data,
     struct dane_cb *dcb = (struct dane_cb *)callback_data;
 
     *dcb->retval = dane_rc;
-    if (res != NULL)
+    if (res != NULL) {
         *dcb->danestatus = *res;
+        *res = NULL;
+    }
     else
         *dcb->danestatus = NULL;
     dcb->done = 1;

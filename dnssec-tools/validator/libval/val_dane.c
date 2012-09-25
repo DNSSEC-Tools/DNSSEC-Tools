@@ -92,6 +92,7 @@ get_dane_from_result(struct val_daneparams *dparam,
                 dcur->selector = (*cp)++;
                 dcur->type = (*cp)++;
                 dcur->datalen = end - cp;
+                dcur->next = NULL;
                 if (dcur->datalen > 0) {
                     dcur->data = (u_char *) MALLOC (dcur->datalen * sizeof(u_char));
                     if (dcur->data == NULL) {
@@ -224,7 +225,7 @@ done:
 
     FREE(dstat);
 
-    /* caller keeps the dres structure; don't free */
+    /* callback keeps the dres structure; don't free */
     dres = NULL;
 
     return VAL_NO_ERROR;
