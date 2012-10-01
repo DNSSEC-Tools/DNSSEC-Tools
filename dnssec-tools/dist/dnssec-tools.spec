@@ -1,7 +1,7 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.8
-Release: 3%{?dist}
+Version: 1.13
+Release: 5%{?dist}
 License: BSD
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
@@ -12,12 +12,13 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 # Require note: the auto-detection for perl-Net-DNS-SEC will not work since
 # the tools do run time tests for their existence.  But most of the tools
 # are much more useful with the modules in place, so we hand require them.
-Requires: perl(Net::DNS), perl(Net::DNS::SEC), dnssec-tools-perlmods, bind
+Requires: perl(Net::DNS), perl(Net::DNS::SEC), dnssec-tools-perlmods, bind, perl(Getopt::GUI::Long)
 Requires:  perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 BuildRequires: openssl-devel
 BuildRequires: perl(Test) perl(ExtUtils::MakeMaker)
-
-Patch4: dnssec-tools-linux-conf-paths-1.7.patch
+# Makes the code installation linux filesystem friendly
+Patch5: dnssec-tools-linux-conf-paths-1.13.patch
+Patch6: dnssec-tools-zonefile-fast-new-bind-1.13.patch
 
 %description
 
@@ -55,10 +56,11 @@ C-based libraries useful for developing dnssec aware tools.
 %prep
 %setup -q
 
-%patch4 -p0
+%patch5 -p0 
+%patch6 -p2
 
 %build
-%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf --disable-static --with-nsec3 --with-ipv6 --with-dlv
+%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/dnssec-tools/root.hints --with-resolv-conf=/etc/dnssec-tools/resolv.conf --disable-static --with-nsec3 --with-ipv6 --with-dlv --disable-bind-checks
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' validator/libtool
@@ -70,6 +72,7 @@ rm -rf %{buildroot}
 make install DESTCONFDIR=%{buildroot}/etc/dnssec-tools/ DESTDIR=%{buildroot} QUIET=
 
 %{__install} -m 644 %{SOURCE1} %{buildroot}/etc/dnssec-tools/dnsval.conf
+%{__install} -m 644 validator/etc/root.hints %{buildroot}/etc/dnssec-tools/root.hints
 
 # remove unneeded perl install files
 find %{buildroot} -type f -name .packlist -exec rm -f {} ';'
@@ -82,10 +85,9 @@ rm -f %{buildroot}%{_libdir}/*.la
 
 # Move the architecture dependent config file to its own place
 # (this allows multiple architecture rpms to be installed at the same time)
-mv ${RPM_BUILD_ROOT}/%{_bindir}/libval-config ${RPM_BUILD_ROOT}/%{_bindir}/libval-config-${basearch}
+mv ${RPM_BUILD_ROOT}/%{_bindir}/libval-config ${RPM_BUILD_ROOT}/%{_bindir}/libval-config-%{_arch}
 # Add a new wrapper script that calls the right file at run time
 install -m 755 %SOURCE2 ${RPM_BUILD_ROOT}/%{_bindir}/libval-config
-
 
 %post libs -p /sbin/ldconfig
 
@@ -100,7 +102,6 @@ rm -rf %{buildroot}
 
 %dir %{_sysconfdir}/dnssec-tools/
 %config(noreplace) %{_sysconfdir}/dnssec-tools/dnssec-tools.conf
-%config(noreplace) %{_sysconfdir}/dnssec-tools/dnsval.conf
 
 %{_bindir}/dnspktflow
 %{_bindir}/donuts
@@ -139,22 +140,35 @@ rm -rf %{buildroot}
 %{_bindir}/cleanarch
 
 %{_bindir}/libval_check_conf
-%{_bindir}/validate
+%{_bindir}/dt-validate
 # configure above 
 #%{_datadir}/dnssec-tools/validator-testcases
-%{_bindir}/getaddr
-%{_bindir}/gethost
-%{_bindir}/getname
-%{_bindir}/getquery
-%{_bindir}/getrrset
+%{_bindir}/dt-getaddr
+%{_bindir}/dt-gethost
+%{_bindir}/dt-getname
+%{_bindir}/dt-getquery
+%{_bindir}/dt-getrrset
 
 %{_bindir}/trustman
 %{_bindir}/blinkenlights
+%{_bindir}/lights
 %{_bindir}/cleankrf
 %{_bindir}/krfcheck
 %{_bindir}/rolllog
 %{_bindir}/signset-editor
 %{_bindir}/rollrec-editor
+
+# new in 1.13
+%{_bindir}/buildrealms
+%{_bindir}/check-zone-expiration
+%{_bindir}/dtrealms
+%{_bindir}/grandvizier
+%{_bindir}/keymod
+%{_bindir}/lsrealm
+%{_bindir}/realmchk
+%{_bindir}/realmctl
+%{_bindir}/realminit
+%{_bindir}/realmset
 
 %{_bindir}/lsdnssec
 
@@ -174,13 +188,13 @@ rm -rf %{buildroot}
 %{_mandir}/man1/keyarch.1.gz
 %{_mandir}/man1/maketestzone.1.gz
 %{_mandir}/man1/mapper.1.gz
-%{_mandir}/man1/validate.1.gz
-%{_mandir}/man1/getaddr.1.gz
-%{_mandir}/man1/gethost.1.gz
-%{_mandir}/man1/getname.1.gz
-%{_mandir}/man1/getquery.1.gz
-%{_mandir}/man1/getrrset.1.gz
 %{_mandir}/man1/zonesigner.1.gz
+%{_mandir}/man1/dt-validate.1.gz
+%{_mandir}/man1/dt-getaddr.1.gz
+%{_mandir}/man1/dt-gethost.1.gz
+%{_mandir}/man1/dt-getname.1.gz
+%{_mandir}/man1/dt-getquery.1.gz
+%{_mandir}/man1/dt-getrrset.1.gz
 
 %{_mandir}/man1/dtconfchk.1.gz
 %{_mandir}/man1/dtdefs.1.gz
@@ -201,6 +215,7 @@ rm -rf %{buildroot}
 %{_mandir}/man1/lsdnssec.1.gz
 %{_mandir}/man1/cleanarch.1.gz
 %{_mandir}/man1/blinkenlights.1.gz
+%{_mandir}/man1/lights.1.gz
 %{_mandir}/man1/cleankrf.1.gz
 %{_mandir}/man1/krfcheck.1.gz
 %{_mandir}/man1/rolllog.1.gz
@@ -208,10 +223,25 @@ rm -rf %{buildroot}
 %{_mandir}/man1/trustman.1.gz
 %{_mandir}/man1/dtck.1.gz
 %{_mandir}/man1/dtconf.1.gz
-%{_mandir}/man1/libval_check_conf.1.gz
+%{_mandir}/man1/dt-libval_check_conf.1.gz
 %{_mandir}/man1/rollrec-editor.1.gz
 %{_mandir}/man3/p_ac_status.3.gz
 %{_mandir}/man3/p_val_status.3.gz
+
+# new in 1.13
+%{_mandir}/man1/buildrealms.1.gz
+%{_mandir}/man1/check-zone-expiration.1.gz
+%{_mandir}/man1/dt-libval_check_conf.1.gz
+%{_mandir}/man1/dtrealms.1.gz
+%{_mandir}/man1/grandvizier.1.gz
+%{_mandir}/man1/keymod.1.gz
+%{_mandir}/man1/lsrealm.1.gz
+%{_mandir}/man1/realmchk.1.gz
+%{_mandir}/man1/realmctl.1.gz
+%{_mandir}/man1/realminit.1.gz
+%{_mandir}/man1/realmset.1.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::realm.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::realmmgr.3pm.gz
 
 %files perlmods
 %defattr(-,root,root)
@@ -257,6 +287,8 @@ rm -rf %{buildroot}
 %files libs
 %defattr(-,root,root)
 %{_libdir}/*.so.*
+%config(noreplace) %{_sysconfdir}/dnssec-tools/dnsval.conf
+%config(noreplace) %{_sysconfdir}/dnssec-tools/root.hints
 
 %files libs-devel
 %defattr(-,root,root)
@@ -295,12 +327,73 @@ rm -rf %{buildroot}
 %{_mandir}/man3/val_res_search.3.gz
 #%{_mandir}/man3/val_addrinfo.3.gz
 %{_mandir}/man3/val_add_valpolicy.3.gz
-%{_mandir}/man3/val_create_context_with_conf.3.gz
+%{_mandir}/man3/val_context_setqflags.3.gz
 %{_mandir}/man3/val_does_not_exist.3.gz
 %{_mandir}/man3/val_free_response.3.gz
 %{_mandir}/man3/val_freeaddrinfo.3.gz
 
 %changelog
+* Mon Oct  1 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.13-5
+- Rename the -config program to be unique per arch
+
+* Mon Sep 24 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.13-4
+- Fix ZoneFile::Fast module for newer bind versions
+
+* Wed Jul 18 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.13-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
+* Thu Jun 28 2012 Petr Pisar <ppisar@redhat.com> - 1.13-2
+- Perl 5.16 rebuild
+
+* Thu Jun 21 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.13-1
+- New 1.13 upstream release
+
+* Mon Jun 11 2012 Petr Pisar <ppisar@redhat.com> - 1.12.1-3
+- Perl 5.16 rebuild
+
+* Thu May 24 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.12.1-2
+- move validate to dt-validate to avoid a conflict
+
+* Fri May 18 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.12.1-1
+- Upgraded to 1.12.1
+
+* Fri Jan 27 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.12-1
+- Upgraded to version 1.12
+- Added a patch to fix the perl validator
+
+* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.11-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
+* Wed Oct 12 2011 Wes Hardaker <wjhns174@hardakers.net> - 1.11-1
+- Upgrade to the upstream 1.11
+
+* Thu Jul 21 2011 Petr Sabata <contyk@redhat.com> - 1.10-3
+- Perl mass rebuild
+
+* Thu Jul 21 2011 Wes Hardaker <wjhns174@hardakers.net> - 1.10-2
+- rebuild for perl again
+
+* Sun Jul  3 2011 Wes Hardaker <wjhns174@hardakers.net> - 1.10-1
+- Upgrade to 1.10
+
+* Thu Jun 16 2011 Marcela Mašláňová <mmaslano@redhat.com> - 1.9-5
+- Perl mass rebuild
+
+* Fri May  6 2011 Wes Hardaker <wjhns174@hardakers.net> - 1.9-4
+- per request, change the default resolv.conf to /etc/dnssec-tools so it's possible to override the internal default, which internally falls back to /etc/resolv.conf
+
+* Fri May  6 2011 Wes Hardaker <wjhns174@hardakers.net> - 1.9-3
+- move libval specific configs to the -libs package
+
+* Thu Mar 24 2011 Wes Hardaker <wjhns174@hardakers.net> - 1.9-1
+- Upgrade to 1.9 from upstream
+
+* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.8-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Tue Oct 26 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.8-4
+- Require getop
+
 * Tue Oct  5 2010 Wes Hardaker <wjhns174@hardakers.net> - 1.8-3
 - Added the . trust anchor and set default policy
 
