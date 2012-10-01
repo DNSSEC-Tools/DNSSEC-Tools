@@ -30,7 +30,9 @@
 #include <openssl/objects.h>    /* For NID_sha1 */
 
 #ifdef HAVE_SHA_2
+#ifdef HAVE_OPENSSL_ECDSA_H
 #include <openssl/ecdsa.h>
+#endif
 #include <openssl/obj_mac.h>  /* for EC curves */
 #endif
 
@@ -443,7 +445,7 @@ rsasha_sigverify(val_context_t * ctx,
     return;
 }
 
-#ifdef HAVE_SHA_2
+#if defined(HAVE_SHA_2) && defined(HAVE_OPENSSL_ECDSA_H)
 void
 ecdsa_sigverify(val_context_t * ctx,
                 const u_char *data,

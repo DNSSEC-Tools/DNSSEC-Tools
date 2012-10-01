@@ -255,7 +255,7 @@ AC_SEARCH_LIBS(SHA384_Init, [crypto eay32 libeay32 crypt32], AC_DEFINE(HAVE_SHA_
 
 
 AC_SUBST(LIBS)
-AC_CHECK_HEADERS(crypto/sha2.h)
+AC_CHECK_HEADERS(crypto/sha2.h openssl/ecdsa.h)
 
 dnl ----------------------------------------------------------------------
 AC_ARG_WITH(threads,
