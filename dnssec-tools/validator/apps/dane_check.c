@@ -104,7 +104,7 @@ main(int argc, char *argv[])
     const char     *allowed_args = "sl:o:Vv:r:i:nx:p:";
     char           *node = NULL;
     int             retval;
-    int             dane_retval;
+    int             dane_retval = VAL_DANE_INTERNAL_ERROR;
     int             async = 1;
     val_log_t      *logp;
     char           *label_str = NULL;
@@ -247,15 +247,38 @@ main(int argc, char *argv[])
         /*
          * wait for it to complete
          */
+#if 0
         while(0 == cb_data.done) {
-            tv.tv_sec = 4;
-            tv.tv_usec = 567;
+            tv.tv_sec = 10;
+            tv.tv_usec = 0;
             val_async_check_wait(context, NULL, NULL, &tv, 0);
         }
+#else
+        while(0 == cb_data.done) {
+            fd_set  activefds;
+            int nfds = 0;
+            int ready;
+            int rc;
+
+            FD_ZERO(&activefds);
+
+            tv.tv_sec = 10; /* 10 sec */
+            tv.tv_usec = 0;
+
+            val_async_select_info(context, &activefds, &nfds, &tv);
+            ready = select(nfds+1, &activefds, NULL, NULL, &tv);
+            if (ready < 0) {
+                continue;
+            } else if (ready == 0) {
+                break;
+            } 
+            val_async_check(context, &activefds, &nfds, 0);
+        }
+#endif
 #endif
     }
 
-    // XXX Print DANE information
+    /* XXX Print DANE information */
 
 done:
     printf("Return code = %s(%d)\n", 
