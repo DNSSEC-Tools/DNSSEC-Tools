@@ -205,6 +205,9 @@ _dane_async_callback(val_async_status *as, int event,
 done:
     (*dstat->callback)(dstat->callback_data, dane_rc, &dres); 
 
+    /* callback keeps the dres structure; don't free */
+    dres = NULL;
+
     /* Free up the val_cb_params_t structure */
     if(cbp->name)
         FREE(cbp->name);
@@ -215,18 +218,10 @@ done:
     cbp->answers = NULL;
 
     /* 
-     * XXX Shouldn't we be able to free up the main cbp pointer as well?
-     * XXX it gives an error instead
+     * XXX Shouldn't we free up the main cbp pointer as well?
      */
 
-    /* cancel any pending queries */
-    val_async_cancel(dstat->context, dstat->das,
-                     VAL_AS_CANCEL_NO_CALLBACKS);
-
     FREE(dstat);
-
-    /* callback keeps the dres structure; don't free */
-    dres = NULL;
 
     return VAL_NO_ERROR;
 }
@@ -322,9 +317,9 @@ int val_dane_submit(val_context_t *context,
      * invoke the correct callback function when we're done
      */
     dstat->context = ctx;
+    dstat->dparam = params;
     dstat->callback = callback; 
     dstat->callback_data = callback_data; 
-    dstat->dparam = params;
     dstat->das = NULL; 
 
     /*
