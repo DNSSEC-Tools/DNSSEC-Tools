@@ -73,20 +73,23 @@ my %rollerd_response = (
     "ksk1" =>   q{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run "1"
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
  example.com: adding missing zonename field (example.com) to rollrec
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
- example.com: KSK phase 1
+ example.com: creating new zsk_rollsecs record and forcing ZSK rollover
  rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
@@ -94,161 +97,137 @@ my %rollerd_response = (
     "ksk23" =>  qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run "1"
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
- example.com: KSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
- example.com: reloading zone for KSK phase 2
- example.com: KSK phase 2: unable to reload zone, rc - 1
- example.com: KSK phase 3
- example.com: KSK phase 3; cache expires in minutes, seconds
  rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
     "ksk46" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run ""
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
- example.com: KSK phase 5
- example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
- example.com: KSK phase 6: waiting for parental publication of DS record
 },
     "ksk7" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run ""
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
- example.com: KSK phase 5
- example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
- example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7
+ <command>: "example.com" in KSK-rollover phase 6
 },
     "kskhalt" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run ""
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
- example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
- example.com: KSK phase 5
- example.com: KSK phase 5: admin notified to transfer keyset
- example.com: KSK phase 6
- example.com: KSK phase 6: waiting for parental publication of DS record
- example.com: KSK phase 7
+ <command>: "example.com" in KSK-rollover phase 6
  rollover manager shutting down...
 },
     "zsk1" => q{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run "1"
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
- example.com: reloading zone for KSK phase 7
- example.com: KSK phase 7: unable to reload zone, rc - 1
- example.com: KSK phase 7: zone, key files archived
- example.com: KSK phase 0
- example.com: KSK expiration in weeks, days, hours, seconds
- example.com: creating new zsk_rollsecs record and forcing ZSK rollover
- example.com: current ZSK has expired
- example.com: ZSK phase 1
  rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
     "zsk23" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run "1"
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
- example.com: ZSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -usezskpub -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
- example.com: reloading zone for ZSK phase 2
- example.com: ZSK phase 2: unable to reload zone, rc - 1
- example.com: ZSK phase 3
- example.com: KSK phase 3; cache expires in minutes, seconds
  rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
     "zsk4" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "testing/rollerd/example.rollrec"
+ realm ""
  directory "../../testing/rollerd"
  config file "./dnssec-tools.conf"
  logfile "testing/rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run "1"
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
- example.com: ZSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollzsk -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -v -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/rollerd/keyarchive -szopts -P -krf example.com.krf example.com example.com.signed"
- example.com: reloading zone for ZSK phase 4
- example.com: ZSK phase 4: unable to reload zone, rc - 1
- example.com: ZSK phase 0
- example.com: ZSK expiration in weeks, days, hours, seconds
  rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
@@ -301,6 +280,7 @@ print DTC "zonesign\t$zonesign\n";
 print DTC "zonesigner\t$zonesign\n";
 print DTC "archivedir\t\"$archivedir\"\n";
 print DTC "rndc\t$rndc\n";
+print DTC "display\t0\n";
 close (DTC);
 
 
@@ -387,6 +367,8 @@ do_is($test, $log, $rollerd_response{ksk46},
 
 $test->is_eq(system("$rollctl_dspub"), 0, 
 	     "rollerd/rollctl: notifying rollerd of DS publication");
+
+exit;
 
 $log = &parselog;
 do_is($test, $log, $rollerd_response{ksk7}, 
