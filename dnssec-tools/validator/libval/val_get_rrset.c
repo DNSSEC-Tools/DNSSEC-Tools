@@ -122,7 +122,7 @@ val_get_answer_from_result(val_context_t *context, const char *name, int class_h
         } 
 
         /* Convert the name to a string */
-        strncpy(ans->val_ans_name, n, MAXDNAME-1);
+        strncpy(ans->val_ans_name, n, NS_MAXDNAME-1);
 
         /* 
          * if the current answer was validated or 
