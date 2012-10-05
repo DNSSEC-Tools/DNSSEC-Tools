@@ -218,7 +218,6 @@ sub main
 	# If we're monitoring, print the contents of the monitor string.
 	#
 	monreport() if($monitor);
-
 }
 
 #----------------------------------------------------------------------
@@ -427,7 +426,7 @@ sub mknewconf
 	while(<CONF>)
 	{
 		next if(/^tasleeptime/	    && ($opts{'t'}));
-		next if(/^tasholdime/	    && ($opts{'w'}));
+		next if(/^taholdtime/	    && ($opts{'w'}));
 		next if(/^tasmtpserver/	    && ($opts{'s'}));
 		next if(/^tacontact/	    && ($opts{'m'}));
 		next if(/^taresolvconffile/ && ($opts{'r'}));
@@ -1142,7 +1141,7 @@ mon(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]
 			}
 			else
 			{
-				Verbose(" hold-down timer for key \"$z\" still in the future (" .  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . " seconds)\n");
+				Verbose(" hold-down timer for key \"$z\" still in the future (" .  timetrans($newkeys{$z}[$i]{holdtime}- $nowsecs) . ")\n");
 mon(" hold-down timer for zone \"$z\" reached (now = $nowsecs > $newkeys{$z}[$i]{holdtime})\n");
 				$cnt_hdtimerson++;
 			}
