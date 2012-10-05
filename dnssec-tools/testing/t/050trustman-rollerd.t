@@ -109,20 +109,26 @@ my %rollerd_response = (
     "ksk1" =>   q{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "../../testing/trustman-rollerd/example.rollrec"
+ realm ""
  directory "../../testing/trustman-rollerd"
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run "1"
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
  example.com: adding missing zonename field (example.com) to rollrec
  example.com: creating new ksk_rollsecs record and forcing KSK rollover
+ example.com: creating new zsk_rollsecs record and forcing ZSK rollover
  example.com: KSK phase 1
+ example.com: KSK expiration in weeks, days, hours, seconds
+ <command>: forcing a KSK rollover for zone example.com
  rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
 },
@@ -130,22 +136,27 @@ my %rollerd_response = (
     "ksk23" =>  qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "../../testing/trustman-rollerd/example.rollrec"
+ realm ""
  directory "../../testing/trustman-rollerd"
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run "1"
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
  example.com: KSK phase 2
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -newpubksk $zsargs_resp -krf example.com.krf example.com example.com.signed"
+ example.com: KSK expiration in weeks, days, hours, seconds
+ example.com: executing "../../tools/scripts/zonesigner -rollmgr rollerd -dtconfig ./dnssec-tools.conf -newpubksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
  example.com: reloading zone for KSK phase 2
- example.com: KSK phase 2: unable to reload zone, rc - 1
+
  example.com: KSK phase 3
+ example.com: KSK expiration in weeks, days, hours, seconds
  example.com: KSK phase 3; cache expires in minutes, seconds
  rollover manager shutting down at end of single-run execution
  rollover manager shutting down...
@@ -153,93 +164,111 @@ my %rollerd_response = (
     "ksk46" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "../../testing/trustman-rollerd/example.rollrec"
+ realm ""
  directory "../../testing/trustman-rollerd"
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run ""
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
+ example.com: KSK expiration in weeks, days, hours, seconds
+ example.com: executing "../../tools/scripts/zonesigner -rollmgr rollerd -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
+ example.com: KSK expiration in weeks, days, hours, seconds
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
+ example.com: KSK expiration in weeks, days, hours, seconds
  example.com: KSK phase 6: waiting for parental publication of DS record
 },
     "ksk7" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "../../testing/trustman-rollerd/example.rollrec"
+ realm ""
  directory "../../testing/trustman-rollerd"
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run ""
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
+ example.com: KSK expiration in weeks, days, hours, seconds
+ example.com: executing "../../tools/scripts/zonesigner -rollmgr rollerd -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
+ example.com: KSK expiration in weeks, days, hours, seconds
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
+ example.com: KSK expiration in weeks, days, hours, seconds
  example.com: KSK phase 6: waiting for parental publication of DS record
  example.com: KSK phase 7
+ example.com: KSK expiration in weeks, days, hours, seconds
 },
     "kskhalt" => qq{ rollerd starting ----------------------------------------
  rollerd parameters:
  rollrec file "../../testing/trustman-rollerd/example.rollrec"
+ realm ""
  directory "../../testing/trustman-rollerd"
  config file "./dnssec-tools.conf"
  logfile "../../testing/trustman-rollerd/phase.log"
  loglevel "info"
  logtz ""
+ always-sign "0"
+ autosign "1"
  single-run ""
  zone reload "1"
+ sleeptime "15"
  event method "Full List"
  
  
- Using the full_list_event_loop() processor!!!
  example.com: KSK phase 4
- example.com: executing "../../tools/scripts/zonesigner -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
+ example.com: KSK expiration in weeks, days, hours, seconds
+ example.com: executing "../../tools/scripts/zonesigner -rollmgr rollerd -dtconfig ./dnssec-tools.conf -rollksk -v -nodroprevoke -keygen /opt/local/sbin/dnssec-keygen -zonecheck /opt/local/sbin/named-checkzone -zonesign /opt/local/sbin/dnssec-signzone -archivedir ../../testing/trustman-rollerd/keyarchive -szopts -P -zskcount 1 -kskcount 1 -krf example.com.krf example.com example.com.signed"
  example.com: KSK phase 5
+ example.com: KSK expiration in weeks, days, hours, seconds
  example.com: KSK phase 5: admin notified to transfer keyset
  example.com: KSK phase 6
+ example.com: KSK expiration in weeks, days, hours, seconds
  example.com: KSK phase 6: waiting for parental publication of DS record
  example.com: KSK phase 7
+ example.com: KSK expiration in weeks, days, hours, seconds
  rollover manager shutting down...
 },
 );
 
 my %trustman_response = (
     "talktonamed" => qq{Reading and parsing trust keys from $dnsvalfile
- Found a key for example.com
- Found a key for 
+ Found a key for zone "example.com"
+ Found a key for zone "."
  Checking zone keys for validity
- Checking the live "" key
- adding holddown for new key in (12 seconds from now)
+ Checking the live "example.com" key
+ Checking the live "." key
+ adding holddown for new key in . (12 seconds from now)
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-A new key has been received for zone .
+A new key has been received for zone ..
  It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
- Checking the live "example.com" key
 checking new keys for timing
- hold down timer for still in the future (12 seconds)
+ hold-down timer for key "." still in the future
 },
     "findnewkey" => qq{Reading and parsing trust keys from $dnsvalfile
- Found a key for example.com
- Found a key for 
+ Found a key for zone "example.com"
+ Found a key for zone "."
  Checking zone keys for validity
- Checking the live "" key
- pending key for 
  Checking the live "example.com" key
  adding holddown for new key in example.com (12 seconds from now)
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -247,21 +276,23 @@ A new key has been received for zone example.com.
  It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
+ Checking the live "." key
+ pending key for zone "."
 checking new keys for timing
- hold down timer for still in the future (12 seconds)
- hold down timer for example.com still in the future (12 seconds)
+ hold-down timer for key "example.com" still in the future
+ hold-down timer for key "." still in the future
 },
     "newkeytodnsval" => qq{Reading and parsing trust keys from $dnsvalfile
- Found a key for example.com
- Found a key for 
+ Found a key for zone "example.com"
+ Found a key for zone "."
  Checking zone keys for validity
- Checking the live "" key
- pending key for 
  Checking the live "example.com" key
- pending key for example.com
+ pending key for zone "example.com"
+ Checking the live "." key
+ pending key for zone "."
 checking new keys for timing
- hold down timer for still in the future (12 seconds)
- hold down timer for example.com reached (now 12 > 11)
+ hold-down timer for zone "example.com" reached
+ hold-down timer for key "." still in the future
 Opened ./tmp/tmp/dnsval-tmp.conf to create a replacement for ./dnsval.conf
 Adding the following key to ./dnsval.conf:
 example.com. "257 3 5 XXX"
@@ -272,12 +303,10 @@ Closed tmp/dnsval-tmp.conf and renamed back to ./dnsval.conf
 Writing new keys to ../../testing/trustman-rollerd/anchor_data
 },
     "revokeoldkeyindnsval" => qq{Reading and parsing trust keys from $dnsvalfile
- Found a key for example.com
- Found a key for 
- Found a key for example.com
+ Found a key for zone "example.com"
+ Found a key for zone "."
+ Found a key for zone "example.com"
  Checking zone keys for validity
- Checking the live "" key
- pending key for 
  Checking the live "example.com" key
 Opened ./tmp/tmp/dnsval-tmp.conf to create a replacement for ./dnsval.conf
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -285,8 +314,10 @@ The following key has been revoked from zone example.com:
 example.com. "385 3 5 XXX"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Closed tmp/dnsval-tmp.conf and renamed back to ./dnsval.conf
+ Checking the live "." key
+ pending key for zone "."
 checking new keys for timing
- hold down timer for still in the future (12 seconds)
+ hold-down timer for key "." still in the future
 },
 );
 
@@ -604,7 +635,9 @@ sub parsetlog {
   $logtext =~ s/secs=(\d|\.)+,/secs=18,/g;
   $logtext =~ s/time=(\d|\.)+/time=12/g;
   $logtext =~ s/\d+ +seconds/12 seconds/g;
-  $logtext =~ s/$domain reached \(now = \d+ > \d+\)/$domain reached (now 12 > 11)/g;
+#$logtext =~ s/"$domain" reached \(now = \d+ > \d+\)/$domain reached (now 12 > 11)/g;
+  $logtext =~ s/\"$domain\" reached .*\n/\"$domain\" reached\n/g;
+  $logtext =~ s/still in the future.*\n/still in the future\n/g;
   $logtext =~ s/$domain\. "(\d+) 3 5 .*"/$domain. "\1 3 5 XXX"/g;
   $logtext =~ s/(Opened|Closed)(.*)dnsval-......\.conf(.*)/\1\2dnsval-tmp.conf\3/g;
 
@@ -622,6 +655,7 @@ sub parsepstring {
   $pstring =~ s/cache expires in (\d+) (minutes*)(, (\d+) seconds)*/cache expires in minutes, seconds/g;
   $pstring =~ s/expires in (\d+) days, (\d+) hours, (\d+) minutes, (\d+) seconds/expires in days, hours, minutes, seconds/g;
   $pstring =~ s/expiration in \d+.*/expiration in weeks, days, hours, seconds/g;
+  $pstring =~ s/.*unable to reload zone.*//g;
   $pstring =~ s/admin must transfer/admin notified to transfer/g;
   $pstring =~ s/.*invalid admin; unable to notify.*\n//g;
   $pstring =~ s/$buildloc/..\/../g;
@@ -678,7 +712,7 @@ sub insert_newksk_dnsval {
   my $logtext = `cat $rlogfile`;
   my $ksknum = 0;
 
-  if ($logtext =~ /\s+KSK\s+\(cur\)\s+(\d+)\s+-b.*/ )  {
+  if ($logtext =~ /\s+KSK\s+\(cur\)\s+(\d+)\s+/ )  {
     $ksknum = $1;
   }
   else {

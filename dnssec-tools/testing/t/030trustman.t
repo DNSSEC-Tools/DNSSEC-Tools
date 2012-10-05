@@ -39,17 +39,17 @@ $ENV{'LD_LIBRARY_PATH'} = "$libvalpath:$libsrespath";
 
 my %trustman_response = (
     "firsttest" =>   q{Reading and parsing trust keys from ./dnsval.conf
- Found a key for 
+ Found a key for zone "."
  Checking zone keys for validity
- Checking the live "" key
-  adding holddown for new key in  (13 seconds from now)
+ Checking the live "." key
+  adding holddown for new key in . (13 seconds from now)
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-A new key has been received for zone .
+A new key has been received for zone ..
    It will be added when the add holddown time is reached.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Writing new keys to
 checking new keys for timing
- hold down timer for  still in the future (25 seconds)
+ hold-down timer for key "." still in the future (2 days)
 }
 );
 
@@ -84,7 +84,7 @@ copy ("$etcfiles/resolv.conf","resolv.conf") or
 # commands
 
 
-my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
+my $trustman_command = "perl -I$ENV{'BUILDDIR'}/tools/modules/blib/lib -I$ENV{'BUILDDIR'}/tools/modules/blib/arch $trustman -w 60 -k ./dnsval.conf -S -f -v -p --nomail --smtp_server localhost --anchor_data_file $anchor_data --resolv_conf ./resolv.conf -o ./root.hints --tmp_dir $statedir >> $logfile 2>&1 ";
 
 print "trustman command :\n$trustman_command\n" if (exists $options{v});
 
