@@ -251,14 +251,18 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     class_h = next_as->val_ac_rrset->val_rrset_class;
     type_h = next_as->val_ac_rrset->val_rrset_type;
     data = next_as->val_ac_rrset->val_rrset_data;
-    serv = (struct sockaddr *)&next_as->val_ac_rrset->val_rrset_server;
+    serv = next_as->val_ac_rrset->val_rrset_server;
     status = next_as->val_ac_status;
 
     if (NULL == prefix)
         prefix = "";
 
-    serv_pr = ((serv_pr =
-              val_get_ns_string(serv, name_buf, sizeof(name_buf))) == NULL) ? "VAL_CACHE" : serv_pr;
+    if (serv)
+        serv_pr =
+            ((serv_pr =
+              val_get_ns_string(serv, name_buf, sizeof(name_buf))) == NULL) ?  "VAL_CACHE" : serv_pr;
+    else
+        serv_pr = "NULL";
 
     if (type_h == ns_t_dnskey) {
         struct val_rr_rec  *curkey;
