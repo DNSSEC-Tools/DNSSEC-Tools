@@ -186,7 +186,7 @@ typedef struct val_context_opt {
         int val_rrset_type;       /* ns_t_... */
         long val_rrset_ttl;        /* Received ttl */
         int  val_rrset_section;      /* VAL_FROM_... */
-        struct sockaddr_storage val_rrset_server;      /* respondent server */
+        struct sockaddr *val_rrset_server;      /* respondent server */
         struct val_rr_rec  *val_rrset_data; /* All data RR's */
         struct val_rr_rec  *val_rrset_sig;  /* All signatures */
     };

@@ -179,6 +179,8 @@ free_val_rrset(struct val_rrset_rec *r)
     if (r == NULL)
         return;
 
+    if (r->val_rrset_server)
+        FREE(r->val_rrset_server);
     if (r->val_rrset_data)
         FREE(r->val_rrset_data);
     if (r->val_rrset_sig)
@@ -1962,13 +1964,15 @@ clone_val_rrset(struct rrset_rec *old_rrset,
         (*new_rrset)->val_rrset_ttl = (now.tv_sec >= old_rrset->rrs_ttl_x) ? 0 :
                                         (long) (old_rrset->rrs_ttl_x - now.tv_sec);
         if (old_rrset->rrs_server) {
-            memcpy(&((*new_rrset)->val_rrset_server),
-                   old_rrset->rrs_server,
-                   sizeof(struct sockaddr_storage));
-
+            (*new_rrset)->val_rrset_server =
+                (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
+            if ((*new_rrset)->val_rrset_server != NULL) {
+                memcpy((*new_rrset)->val_rrset_server,
+                        old_rrset->rrs_server,
+                        sizeof(struct sockaddr_storage));
+            }
         } else {
-            memset(&((*new_rrset)->val_rrset_server), 0, 
-                    sizeof(struct sockaddr_storage));
+            (*new_rrset)->val_rrset_server = NULL;
         }
     }
 
