@@ -20,9 +20,9 @@ details.
                       be passed to zonesigner.
 
     - realms:       - Added the realms feature to manage multiple
-		      simultaneous rollover environments.  Several
-		      commands and modules (e.g., dtrealms, realms.pm,
-		      buildrealms) were added for the realms feature.
+                      simultaneous rollover environments.  Several
+                      commands and modules (e.g., dtrealms, realms.pm,
+                      buildrealms) were added for the realms feature.
 
     - zonesigner:   - Added the -threshold option to specify a signing
                       threshold.
@@ -33,9 +33,9 @@ details.
 
     - dnssec-check  - significant rewrite since the 1.12 release, though
                       individual updates have been available already.
-		    - Asynchronous support for non-interrupting GUI support 
-		    - Letter grades assigned to each resolver
-		    - Various user-interface improvements
+                    - Asynchronous support for non-interrupting GUI support 
+                    - Letter grades assigned to each resolver
+                    - Various user-interface improvements
 
     - libval:       - Bug fixes
                     - Renamed all validator command-line apps to have
@@ -45,14 +45,13 @@ details.
     - dnsval python module
                     - Add python wrapper module for the validator
                       library. Code contributed by Bob Novas. 
-    
                       
     - trustman:     - Added an option for use by monitoring systems.
 
     - nagios        - Added the dt_donuts plugin for running trustman on
                       remote machines.
                     - Added the dt_trustman plugin for monitoring trust
-		      anchors.
+                      anchors.
 
     - firefox       - updated nspr and firefox patches to work with
                       mozilla-central and nspr-4.9
@@ -97,18 +96,18 @@ details.
                     - The library has been ported to the Android OS
 
     - rollerd:      - Added support for phase-specific commands. This allows
-		      the zone operator to customize processing of the rollerd
-		      utility during different rollerd phases. 
+                      the zone operator to customize processing of the rollerd
+                      utility during different rollerd phases. 
                     - Added support for zone groups.  This allows a collection
-		      of zones to be controlled as a group, rather each of
-		      those zones individually.
+                      of zones to be controlled as a group, rather each of
+                      those zones individually.
                     - Improved the manner in which rollerd indexes the zones
-		      being managed, with the significantly decreased access
-		      times for rollerd's data files.  This results in rollerd
-		      being able to support a lot more zones with a single
-		      rollerd instance.
+                      being managed, with the significantly decreased access
+                      times for rollerd's data files.  This results in rollerd
+                      being able to support a lot more zones with a single
+                      rollerd instance.
                     - rollctl and the rollover GUI programs may have new
-		      commands to allow for immediate termination of rollerd.
+                      commands to allow for immediate termination of rollerd.
 
     - apps          - Added patch to enable local validation in NTP, with
                       the ability to handle a specific chicken and egg problem 
