@@ -4744,7 +4744,6 @@ set_dlv_branchoff(val_context_t *context,
                copyfrm->qc_proof->val_ac_rrset.ac_data->rrs_ans_kind; 
             q->qc_proof->val_ac_status = copyfrm->qc_proof->val_ac_status;
         }
-        
     }
     
     *do_dlv = 1;
@@ -4860,6 +4859,7 @@ verify_and_validate(val_context_t * context,
     if (top_q->qc_state <= Q_SENT)
         return VAL_NO_ERROR;
 
+restart_query:
     *done = 1;
     
     if (top_q->qc_state > Q_ERROR_BASE) {
@@ -5324,6 +5324,8 @@ verify_and_validate(val_context_t * context,
                                                   &added_q, 
                                                   res->val_rc_flags)))
                     return retval;
+                res->val_rc_status = VAL_DONT_KNOW;
+                goto restart_query;
             }
             if (!thisdone || do_dlv) { 
                 *done = 0;
@@ -7165,16 +7167,13 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
         data_received = 0;
     }
 
-    if ((VAL_NO_ERROR == retval) && (as->val_as_results)) {
-        val_log_authentication_chain(context, LOG_NOTICE,
-                                     as->val_as_name, as->val_as_class,
-                                     as->val_as_type, as->val_as_results);
-    }
-
     /* check if more queries have been added */
     } while (initial_q != as->val_as_queries);
 
     if ((VAL_NO_ERROR == retval) && (NULL != as->val_as_results)) {
+        val_log_authentication_chain(context, LOG_NOTICE,
+                                     as->val_as_name, as->val_as_class,
+                                     as->val_as_type, as->val_as_results);
         free_qfq_chain(context, as->val_as_queries);
         as->val_as_queries = NULL;
     }
