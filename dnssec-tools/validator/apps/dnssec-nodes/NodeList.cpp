@@ -27,11 +27,17 @@ NodeList::NodeList(GraphWidget *parent) :
 }
 
 Node *NodeList::node(const QString &nodeName) {
-    if (! m_nodes.contains(nodeName)) {
-        return addNodes(nodeName);
+    QString maybeToLong(nodeName);
+    while (maybeToLong.endsWith("."))
+        maybeToLong.chop(1);
+    if (maybeToLong.length() == 0)
+        maybeToLong = "<root>";
+
+    if (! m_nodes.contains(maybeToLong)) {
+        return addNodes(maybeToLong);
     }
 
-    return m_nodes[nodeName];
+    return m_nodes[maybeToLong];
 }
 
 Node *NodeList::addNodes(const QString &nodeName) {
