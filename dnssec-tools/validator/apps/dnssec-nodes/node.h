@@ -90,7 +90,7 @@ public:
 
     void addSubData(const DNSData &data);
     QString getSubData();
-    QMap<QString, DNSData> getAllSubData();
+    QMap<QString, DNSData *> getAllSubData();
     bool subDataExistsFor(QString type);
 
     int accessCount() { return m_accessCount; }
@@ -131,7 +131,7 @@ private:
     QString      m_fqdn;
     int          m_depth;
     QStringList  m_logMessages;
-    QMap<QString, DNSData>  m_subData;
+    QMap<QString, DNSData *>  m_subData;
     int            m_accessCount;
     time_t         m_accessTime;
     int            m_resultCache;

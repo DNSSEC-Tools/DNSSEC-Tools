@@ -49,16 +49,19 @@ DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
 }
 
 void DetailsViewer::setNode(Node *node) {
+    if (!node)
+        return;
+
     m_title->setText(node->fqdn());
 
-    m_table->clear();
+    m_table->clearContents();
     m_rowCount = 0;
 
-    QMapIterator<QString, DNSData> iterator(node->getAllSubData());
+    QMapIterator<QString, DNSData *> iterator(node->getAllSubData());
     while(iterator.hasNext()) {
         iterator.next();
 
-        addRow(iterator.key(), iterator.value());
+        addRow(iterator.key(), *(iterator.value()));
     }
     connect(m_mapper, SIGNAL(mapped(QString)), this, SLOT(validateNode(QString)));
     m_table->resizeColumnsToContents();

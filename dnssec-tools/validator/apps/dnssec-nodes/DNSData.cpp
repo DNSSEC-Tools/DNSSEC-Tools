@@ -13,6 +13,11 @@ DNSData::DNSData(QString recordType, int DNSSECStatus)
 
 }
 
+DNSData::DNSData(const DNSData &from)
+    : m_recordType(from.m_recordType), m_DNSSECStatus(from.m_DNSSECStatus), m_node(from.m_node)
+{
+}
+
 QString DNSData::DNSSECStatusForEnum(int status) const
 {
     switch (status) {
@@ -64,6 +69,8 @@ QStringList DNSData::DNSSECStringStatuses() const
 
 // UNKNOWN really means "nothing known yet"
 void DNSData::addDNSSECStatus(int additionalStatus) {
+    int oldStatus = m_DNSSECStatus;
+
     // don't add UNKNOWN to something we do know
     if (m_DNSSECStatus != 0 && additionalStatus == UNKNOWN)
         return;
@@ -77,4 +84,7 @@ void DNSData::addDNSSECStatus(int additionalStatus) {
 
     if (m_node)
         m_node->update();
+
+    if (oldStatus != m_DNSSECStatus)
+        emit statusChanged(this);
 }

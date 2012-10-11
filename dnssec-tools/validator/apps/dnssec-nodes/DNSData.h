@@ -8,13 +8,15 @@
 #include "node.h"
 class Node;
 
-class DNSData
+class DNSData : public QObject
 {
+    Q_OBJECT
 public:
     enum Status { UNKNOWN = 1, TRUSTED = 2, VALIDATED = 4, DNE = 8, FAILED = 16, IGNORE = 32, AD_VERIFIED = 64 };
 
     DNSData();
     DNSData(QString recordType, int DNSSECStatus);
+    DNSData(const DNSData &from);
 
     void setRecordType(QString recordType)    { m_recordType = recordType; }
     QString recordType() const                { return m_recordType; }
@@ -27,6 +29,9 @@ public:
     void addDNSSECStatus(int additionalStatus);
 
     void setNode(Node *node) { m_node = node; }
+
+signals:
+    void statusChanged(DNSData *data);
 
 private:
     QString m_recordType;
