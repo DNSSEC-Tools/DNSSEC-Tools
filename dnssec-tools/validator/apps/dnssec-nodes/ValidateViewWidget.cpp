@@ -124,7 +124,7 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, Gra
     m_algorithmToName[13] = "ECDSAP256SHA256";
     m_algorithmToName[14] = "ECDSAP384SHA384";
 
-    scaleView(.5);
+    scaleView(.4);
     QTimer::singleShot(1, this, SLOT(validateDefault()));
 }
 
