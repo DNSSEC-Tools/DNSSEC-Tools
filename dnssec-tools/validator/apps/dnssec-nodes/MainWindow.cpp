@@ -132,6 +132,11 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     action->setChecked(graphWidget->updateLineEditAlways());
     action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setUpdateLineEditAlways(bool)));
 
+    action = menu->addAction("Additionally validate packets with SERVFAIL set");
+    action->setCheckable(true);
+    action->setChecked(graphWidget->autoValidateServFails());
+    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setAutoValidateServFails(bool)));
+
     QMenu *layoutMenu = menu->addMenu("Layout");
     action = layoutMenu->addAction("tree");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToTree()));
