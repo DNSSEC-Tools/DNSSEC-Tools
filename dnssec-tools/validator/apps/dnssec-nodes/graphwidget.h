@@ -146,6 +146,7 @@ public slots:
     void setLockedNodes(bool newVal);
     void setShowNSEC3Records(bool newVal);
     void setAnimateNodeMovements(bool newValue);
+    void setLineEditValue(const QString &value);
 
     bool showNsec3() { return m_shownsec3; }
 

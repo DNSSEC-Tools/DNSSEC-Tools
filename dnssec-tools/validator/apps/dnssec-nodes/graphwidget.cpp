@@ -180,6 +180,10 @@ void GraphWidget::doLookupFromLineEdit() {
     reLayout();
 }
 
+void GraphWidget::setLineEditValue(const QString &value) {
+    m_editor->setText(value);
+}
+
 void GraphWidget::itemMoved()
 {
     if (!m_lockNodes && !timerId)

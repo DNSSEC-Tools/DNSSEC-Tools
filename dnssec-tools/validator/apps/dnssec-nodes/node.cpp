@@ -288,6 +288,7 @@ QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
 QMenu *Node::makePopupMenu() {
     QMenu *menu = new QMenu();
 
+    menu->addAction(QObject::tr("Copy Name To Lookup Line"));
     menu->addAction(QObject::tr("Show Node Data"));
     menu->addAction(QObject::tr("Show Log Entries"));
     QMenu *validateMenu = menu->addMenu(QObject::tr("Validate"));
@@ -330,6 +331,8 @@ void Node::displayDetailsMenu(QPoint where) {
     } else if (menuChoice == QObject::tr("Show Node Data")) {
         widget = m_detailsViewer = new DetailsViewer(this, graph->tabs());
         tabLabel = fqdn() + " Data";
+    } else if (menuChoice == QObject::tr("Copy Name To Lookup Line")) {
+        graph->setLineEditValue(fqdn());
     } else {
         tabLabel = fqdn() + "/" + menuChoice;
         widget = new ValidateViewWidget(fqdn(), menuChoice);
