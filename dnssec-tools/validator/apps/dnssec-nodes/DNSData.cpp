@@ -112,7 +112,7 @@ void DNSData::addData(const QStringList &data)
     }
 }
 
-QList<QString> DNSData::data() {
+QList<QString> DNSData::data() const {
     return m_data.toList();
 }
 

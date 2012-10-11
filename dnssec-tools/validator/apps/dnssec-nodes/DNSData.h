@@ -38,7 +38,7 @@ public:
     void setNode(Node *node) { m_node = node; }
 
     void addData(const QStringList &data);
-    QList<QString> data();
+    QList<QString> data() const;
 
 signals:
     void statusChanged(const DNSData *data);
