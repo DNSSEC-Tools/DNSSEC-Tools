@@ -110,6 +110,7 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     menu->addSeparator();
 
     action = menu->addAction("&Quit");
+    action->setShortcut(Qt::CTRL | Qt::Key_Q);
     action->connect(action, SIGNAL(triggered()), this, SLOT(close()));
 
     menu = menubar->addMenu("&Options");
