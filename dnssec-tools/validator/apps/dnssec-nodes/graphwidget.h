@@ -121,6 +121,8 @@ public:
     PcapWatcher *pcapWatcher();
 #endif
 
+    bool updateLineEditAlways();
+
 public slots:
     void shuffle();
     void zoomIn();
@@ -146,7 +148,10 @@ public slots:
     void setLockedNodes(bool newVal);
     void setShowNSEC3Records(bool newVal);
     void setAnimateNodeMovements(bool newValue);
+
+    void setUpdateLineEditAlways(bool newValue);
     void setLineEditValue(const QString &value);
+    void maybeSetLineEditValue(const QString &value);
 
     bool showNsec3() { return m_shownsec3; }
 
@@ -183,6 +188,7 @@ private:
     int          m_childSize;
     int          m_lookupType;
     bool         m_animateNodeMovements;
+    bool         m_updateLineEditAlways;
 
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;

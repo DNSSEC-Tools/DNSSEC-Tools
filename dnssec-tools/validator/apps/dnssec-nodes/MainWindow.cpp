@@ -121,6 +121,11 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     action->setChecked(graphWidget->animateNodeMovements());
     action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setAnimateNodeMovements(bool)));
 
+    action = menu->addAction("Always Update Lookup Editor on Node Click");
+    action->setCheckable(true);
+    action->setChecked(graphWidget->updateLineEditAlways());
+    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setUpdateLineEditAlways(bool)));
+
     QMenu *layoutMenu = menu->addMenu("Layout");
     action = layoutMenu->addAction("tree");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToTree()));

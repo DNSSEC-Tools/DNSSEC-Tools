@@ -91,7 +91,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
     : QGraphicsView(parent), timerId(0), m_editor(editor), m_tabs(tabs),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
-      m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true),
+      m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true), m_updateLineEditAlways(false),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
       m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0)
 #ifdef WITH_PCAP
@@ -182,6 +182,11 @@ void GraphWidget::doLookupFromLineEdit() {
 
 void GraphWidget::setLineEditValue(const QString &value) {
     m_editor->setText(value);
+}
+
+void GraphWidget::maybeSetLineEditValue(const QString &value) {
+    if (m_updateLineEditAlways)
+        setLineEditValue(value);
 }
 
 void GraphWidget::itemMoved()
@@ -654,16 +659,27 @@ void GraphWidget::setPrefs()
     m_nodeList->setEnableMaxTime(settings.value("enableMaxNodes", false).toBool());
 
     m_animateNodeMovements = settings.value("animateNodes", true).toBool();
+    m_updateLineEditAlways = settings.value("updateLineEdit", false).toBool();
 }
 
 void GraphWidget::setAnimateNodeMovements(bool newValue) {
     m_animateNodeMovements = newValue;
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
-    settings.setValue("animateNodes", true);
+    settings.setValue("animateNodes", newValue);
+}
+
+void GraphWidget::setUpdateLineEditAlways(bool newValue) {
+    m_updateLineEditAlways = newValue;
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    settings.setValue("updateLineEdit", newValue);
 }
 
 bool GraphWidget::animateNodeMovements() {
     return m_animateNodeMovements;
+}
+
+bool GraphWidget::updateLineEditAlways() {
+    return m_updateLineEditAlways;
 }
 
 void GraphWidget::about()
