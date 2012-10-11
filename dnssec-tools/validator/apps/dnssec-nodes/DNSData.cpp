@@ -3,6 +3,8 @@
 #include <validator/validator-config.h>
 #include <validator/validator.h>
 
+#include <qdebug.h>
+
 DNSData::DNSData()
     : QObject(), m_recordType()
 {
@@ -101,4 +103,20 @@ DNSData::Status DNSData::getStatusFromValStatus(int val_status) {
     } else {
         return DNSData::FAILED;
     }
+}
+
+DNSData::Status DNSData::getStatusFromValAStatus(int val_astatus) {
+    if (val_astatus == VAL_AC_VERIFIED_LINK ||
+            val_astatus == VAL_AC_RRSIG_VERIFIED ||
+            val_astatus == VAL_AC_SIGNING_KEY)
+        return DNSData::VALIDATED;
+
+    if (val_astatus == VAL_AC_UNSET)
+        return DNSData::UNKNOWN;
+
+    if (val_astatus == VAL_AC_TRUST_POINT)
+        return DNSData::TRUSTED;
+
+    qDebug() << "unknown astatus: " << val_astatus;
+    return DNSData::UNKNOWN;
 }

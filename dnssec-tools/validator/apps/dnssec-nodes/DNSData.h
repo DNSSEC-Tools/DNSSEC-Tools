@@ -19,6 +19,7 @@ public:
     DNSData(const DNSData &from);
 
     static Status getStatusFromValStatus(int val_status);
+    static Status getStatusFromValAStatus(int val_astatus);
 
     virtual ~DNSData() {}
 
