@@ -12,7 +12,7 @@
 #include <QtGui/QPainter>
 #include <QtGui/QPushButton>
 
-#include "ValidateViewWidget.h"
+#include "ValidateViewWidgetHolder.h"
 
 #include <qdebug.h>
 
@@ -103,7 +103,7 @@ void DetailsViewer::addRow(QString recordType, DNSData *data) {
 
 void DetailsViewer::validateNode(QString nodeType)
 {
-    m_tabs->addTab(new ValidateViewWidget(m_node->fqdn(), nodeType, m_graphWidget), m_node->fqdn() + "/" + nodeType);
+    m_tabs->addTab(new ValidateViewWidgetHolder(m_node->fqdn(), nodeType, m_graphWidget), m_node->fqdn() + "/" + nodeType);
     m_tabs->setCurrentIndex(m_tabs->count()-1);
 }
 

@@ -473,3 +473,13 @@ void ValidateViewWidget::wheelEvent(QWheelEvent *event)
 {
     scaleView(pow((double)2, -event->delta() / 240.0));
 }
+
+void ValidateViewWidget::zoomIn()
+{
+    scaleView(qreal(1.2));
+}
+
+void ValidateViewWidget::zoomOut()
+{
+    scaleView(1 / qreal(1.2));
+}

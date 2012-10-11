@@ -24,7 +24,8 @@ HEADERS += \
     ValidateViewWidget.h \
     MainWindow.h \
     qt_auto_properties.h \
-    DNSResources.h
+    DNSResources.h \
+    ValidateViewWidgetHolder.h
 
 SOURCES += \
         edge.cpp \
@@ -51,7 +52,8 @@ SOURCES += \
     Effects/SetBorderColor.cpp \
     ValidateViewWidget.cpp \
     MainWindow.cpp \
-    DNSResources.cpp
+    DNSResources.cpp \
+    ValidateViewWidgetHolder.cpp
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share

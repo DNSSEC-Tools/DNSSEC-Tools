@@ -51,7 +51,7 @@
 #include "node.h"
 #include "graphwidget.h"
 #include "DetailsViewer.h"
-#include "ValidateViewWidget.h"
+#include "ValidateViewWidgetHolder.h"
 #include "DetailsViewer.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
@@ -340,7 +340,7 @@ void Node::displayDetailsMenu(QPoint where) {
         graph->setLineEditValue(fqdn());
     } else {
         tabLabel = fqdn() + "/" + menuChoice;
-        widget = new ValidateViewWidget(fqdn(), menuChoice, graph);
+        widget = new ValidateViewWidgetHolder(fqdn(), menuChoice, graph);
     }
 
     if (widget) {
