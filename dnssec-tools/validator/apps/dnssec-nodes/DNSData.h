@@ -18,6 +18,8 @@ public:
     DNSData(QString recordType, int DNSSECStatus);
     DNSData(const DNSData &from);
 
+    static Status getStatusFromValStatus(int val_status);
+
     virtual ~DNSData() {}
 
     void setRecordType(QString recordType)    { m_recordType = recordType; }
