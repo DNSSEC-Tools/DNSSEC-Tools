@@ -12,7 +12,7 @@ class DNSData : public QObject
 {
     Q_OBJECT
 public:
-    enum Status { UNKNOWN = 1, TRUSTED = 2, VALIDATED = 4, DNE = 8, FAILED = 16, IGNORE = 32, AD_VERIFIED = 64 };
+    enum Status { UNKNOWN = 1, TRUSTED = 2, VALIDATED = 4, DNE = 8, FAILED = 16, IGNORE = 32, AD_VERIFIED = 64, SERVFAIL_RCODE = 128 };
 
     DNSData();
     DNSData(QString recordType, int DNSSECStatus);

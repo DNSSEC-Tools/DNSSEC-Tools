@@ -43,6 +43,8 @@ QString DNSData::DNSSECStatusForEnum(int status) const
         return "Proven to not exist";
     case AD_VERIFIED:
         return "AD bit verified";
+    case SERVFAIL_RCODE:
+        return "SERVFAIL set";
     default:
         return "Unknown Status";
     }
@@ -66,6 +68,8 @@ QStringList DNSData::DNSSECStringStatuses() const
         results.push_back(DNSSECStatusForEnum(IGNORE));
     if (m_DNSSECStatus & AD_VERIFIED)
         results.push_back(DNSSECStatusForEnum(AD_VERIFIED));
+    if (m_DNSSECStatus & SERVFAIL_RCODE)
+        results.push_back(DNSSECStatusForEnum(SERVFAIL_RCODE));
 
     if (m_node)
         m_node->update();

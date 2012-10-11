@@ -13,6 +13,8 @@ DNSSECStatusFilter::DNSSECStatusFilter(int dnssecValitiy, bool requireAll)
     m_validityType[DNSData::DNE] = "Which Do Not Exist";
     m_validityType[DNSData::IGNORE] = "That Have An Ignored DNSSEC Status";
     m_validityType[DNSData::AD_VERIFIED] = "That The Resolver Marked As Validated";
+    m_validityType[DNSData::SERVFAIL_RCODE] = "The SERVFAIL response code was returned";
+
 
 }
 

@@ -30,7 +30,8 @@ Legend::Legend(QWidget *parent) :
 
     QList<int> statuses;
     statuses << DNSData::UNKNOWN <<  DNSData::TRUSTED <<  DNSData::VALIDATED <<  DNSData::DNE
-             << DNSData::FAILED <<  DNSData::IGNORE << (DNSData::DNE | DNSData::VALIDATED) << (DNSData::AD_VERIFIED);
+             << DNSData::FAILED <<  DNSData::IGNORE << (DNSData::DNE | DNSData::VALIDATED) << (DNSData::AD_VERIFIED)
+             << DNSData::SERVFAIL_RCODE;
 
     // Add the legend widget
     QTableWidget *table = new QTableWidget(statuses.count(), 2, this);
