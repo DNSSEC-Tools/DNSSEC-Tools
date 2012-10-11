@@ -11,6 +11,9 @@
 #include "node.h"
 #include <QLabel>
 
+class DNSData;
+class Node;
+
 struct NodeWidgets {
     QTableWidgetItem *label;
     QTableWidgetItem *status;

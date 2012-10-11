@@ -54,7 +54,8 @@
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth),
-      m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255), m_borderColor(Qt::black)
+      m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255), m_borderColor(Qt::black),
+      m_detailsViewer(0)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -327,7 +328,7 @@ void Node::displayDetailsMenu(QPoint where) {
 
         tabLabel = QObject::tr("%1 Log").arg(fqdn());
     } else if (menuChoice == QObject::tr("Show Node Data")) {
-        widget = new DetailsViewer(this, graph->tabs());
+        widget = m_detailsViewer = new DetailsViewer(this, graph->tabs());
         tabLabel = fqdn() + " Data";
     } else {
         tabLabel = fqdn() + "/" + menuChoice;
@@ -402,6 +403,9 @@ void Node::addSubData(const DNSData &data)
 {
     if (!m_subData.contains(data.recordType())) {
         m_subData.insert(data.recordType(), new DNSData(data));
+        if (m_detailsViewer) {
+            m_detailsViewer->addRow(data.recordType(), data);
+        }
     } else {
         // merge in the other data with ours (internally this drops UNKNOWNS
         m_subData[data.recordType()]->addDNSSECStatus(data.DNSSECStatus());
