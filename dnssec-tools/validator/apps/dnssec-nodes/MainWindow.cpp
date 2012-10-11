@@ -2,6 +2,12 @@
 
 #include <QtGui/QMessageBox>
 
+#include "NodeList.h"
+#include "LogWatcher.h"
+#ifdef WITH_PCAP
+#include "PcapWatcher.h"
+#endif
+
 MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     QMainWindow(parent)
 {

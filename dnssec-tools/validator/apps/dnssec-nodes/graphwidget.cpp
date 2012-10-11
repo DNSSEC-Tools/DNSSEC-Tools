@@ -46,6 +46,12 @@
 #include "DetailsViewer.h"
 #include "LogFilePicker.h"
 
+#include "LogWatcher.h"
+#include "NodeList.h"
+#ifdef WITH_PCAP
+#include "PcapWatcher.h"
+#endif
+
 #include "DNSResources.h"
 
 #include <QtGui>
@@ -97,7 +103,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
       m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0)
 #ifdef WITH_PCAP
-      , m_pcapWatcher()
+    , m_pcapWatcher(new PcapWatcher())
 #endif
 {
     myScene = new QGraphicsScene(this);
@@ -139,10 +145,10 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
         m_logWatcher->parseLogFile(fileName);
 
 #ifdef WITH_PCAP
-    connect(&m_pcapWatcher, SIGNAL(addNode(QString)), m_nodeList, SLOT(addNodesSlot(QString)));
-    connect(&m_pcapWatcher, SIGNAL(addNodeData(QString, DNSData, QString)), m_nodeList, SLOT(addNodesData(QString,DNSData, QString)));
-    connect(this, SIGNAL(openPcapDevice()), &m_pcapWatcher, SLOT(openDevice()));
-    m_pcapWatcher.start();
+    connect(m_pcapWatcher, SIGNAL(addNode(QString)), m_nodeList, SLOT(addNodesSlot(QString)));
+    connect(m_pcapWatcher, SIGNAL(addNodeData(QString, DNSData, QString)), m_nodeList, SLOT(addNodesData(QString,DNSData, QString)));
+    connect(this, SIGNAL(openPcapDevice()), m_pcapWatcher, SLOT(openDevice()));
+    m_pcapWatcher->start();
 #endif
 }
 
@@ -619,7 +625,7 @@ void GraphWidget::setPreviousFileList(QMenu *menu) {
 #ifdef WITH_PCAP
 PcapWatcher *GraphWidget::pcapWatcher()
 {
-    return &m_pcapWatcher;
+    return m_pcapWatcher;
 }
 #endif
 

@@ -56,17 +56,14 @@
 #include <QtGui/QPushButton>
 #include <QtGui/QTableWidget>
 
-#include "LogWatcher.h"
-#include "NodeList.h"
 #include "Legend.h"
-#ifdef WITH_PCAP
-#include "PcapWatcher.h"
-#endif
+
 
 class Node;
 class Edge;
 class LogWatcher;
 class NodeList;
+class PcapWatcher;
 
 //! [0]
 class GraphWidget : public QGraphicsView
@@ -206,7 +203,7 @@ private:
     Legend      *m_legend;
 
 #ifdef WITH_PCAP
-    PcapWatcher m_pcapWatcher;
+    PcapWatcher *m_pcapWatcher;
 #endif
 
     QTabWidget  *m_tabs;

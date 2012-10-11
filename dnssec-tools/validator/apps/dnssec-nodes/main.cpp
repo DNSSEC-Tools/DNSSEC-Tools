@@ -43,6 +43,7 @@
 #include "graphwidget.h"
 #include "TypeMenu.h"
 #include "MainWindow.h"
+#include "DNSData.h"
 
 int main(int argc, char **argv)
 {

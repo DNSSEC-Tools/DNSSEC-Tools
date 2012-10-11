@@ -1,5 +1,6 @@
 #include "LogWatcher.h"
 #include "node.h"
+#include "graphwidget.h"
 
 #include <QtCore/QSettings>
 #include <QtGui/QColor>

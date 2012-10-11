@@ -11,6 +11,8 @@
 #include "Effects/SetBorderColor.h"
 #include "Effects/MultiEffect.h"
 
+#include "graphwidget.h"
+
 #include <qdebug.h>
 
 #include <sys/time.h>
