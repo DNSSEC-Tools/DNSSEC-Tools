@@ -14,9 +14,18 @@ DNSData::DNSData(QString recordType, int DNSSECStatus)
     : QObject(),
       m_recordType(recordType),
       m_DNSSECStatus(DNSSECStatus),
-      m_node(0)
+      m_node(0), m_data()
 {
 
+}
+
+DNSData::DNSData(QString recordType, int DNSSECStatus, const QStringList &data)
+    : QObject(),
+      m_recordType(recordType),
+      m_DNSSECStatus(DNSSECStatus),
+      m_node(0), m_data()
+{
+    addData(data);
 }
 
 DNSData::DNSData(const DNSData &from)
@@ -94,6 +103,17 @@ void DNSData::addDNSSECStatus(int additionalStatus) {
 
     if (oldStatus != m_DNSSECStatus)
         emit statusChanged(this);
+}
+
+void DNSData::addData(const QStringList &data)
+{
+    foreach (const QString item, data) {
+        m_data.insert(item);
+    }
+}
+
+QList<QString> DNSData::data() {
+    return m_data.toList();
 }
 
 DNSData::Status DNSData::getStatusFromValStatus(int val_status) {
