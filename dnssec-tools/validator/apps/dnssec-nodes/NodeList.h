@@ -61,6 +61,9 @@ public:
     void   clearLayout(QLayout *layout);
 
     Effect *createDefaultEffect();
+
+    QString removeTrailingDots(const QString &from);
+
 signals:
     void   dataChanged();
 
