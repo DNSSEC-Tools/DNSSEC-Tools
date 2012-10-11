@@ -55,6 +55,8 @@ BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
 INCLUDEPATH += ../../include
 isEmpty(ANDROID_PLATFORM) {
+    QMAKE_LIBDIR     += ../../libval/.libs
+    QMAKE_LIBDIR     += ../../libsres/.libs
     LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
     maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
