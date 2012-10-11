@@ -108,7 +108,8 @@ void DNSData::addDNSSECStatus(int additionalStatus) {
 void DNSData::addData(const QStringList &data)
 {
     foreach (const QString item, data) {
-        m_data.insert(item);
+        if (item.length() > 0)
+            m_data.insert(item);
     }
 }
 
