@@ -11,8 +11,11 @@
 #include "node.h"
 #include <QLabel>
 
+#include "graphwidget.h"
+
 class DNSData;
 class Node;
+class GraphWidget;
 
 struct NodeWidgets {
     QTableWidgetItem *label;
@@ -23,7 +26,7 @@ class DetailsViewer : public QWidget
 {
     Q_OBJECT
 public:
-    explicit DetailsViewer(Node *node, QTabWidget *tabs = 0, QWidget *parent = 0);
+    explicit DetailsViewer(Node *node, GraphWidget *graphWidget, QTabWidget *tabs = 0, QWidget *parent = 0);
     void addRow(QString recordType, DNSData *data);
 
 signals:
@@ -42,6 +45,7 @@ private:
 
     QLabel        *m_title;
     QTableWidget  *m_table;
+    GraphWidget   *m_graphWidget;
 };
 
 #endif // DETAILSVIEWER_H

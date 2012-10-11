@@ -34,8 +34,8 @@ extern "C" {
 u_int16_t id_calc(const u_char * key, const int keysize);
 }
 
-ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWidget *parent) :
-    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_statusToName()
+ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, GraphWidget *graphWidget, QWidget *parent) :
+    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_statusToName(), m_graphWidget(graphWidget)
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);

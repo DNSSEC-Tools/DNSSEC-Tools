@@ -10,7 +10,6 @@
 #include <QtCore/QList>
 #include <QtCore/QPair>
 
-#include "graphwidget.h"
 #include "NodeList.h"
 #include "DNSData.h"
 

@@ -44,6 +44,7 @@
 #include <QMessageBox>
 #include <QStyleOption>
 #include <QTextEdit>
+#include <QMenu>
 #include <qdebug.h>
 
 #include "edge.h"
@@ -51,6 +52,7 @@
 #include "graphwidget.h"
 #include "DetailsViewer.h"
 #include "ValidateViewWidget.h"
+#include "DetailsViewer.h"
 
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth),
@@ -330,13 +332,13 @@ void Node::displayDetailsMenu(QPoint where) {
 
         tabLabel = QObject::tr("%1 Log").arg(fqdn());
     } else if (menuChoice == QObject::tr("Show Node Data")) {
-        widget = m_detailsViewer = new DetailsViewer(this, graph->tabs());
+        widget = m_detailsViewer = new DetailsViewer(this, graph, graph->tabs());
         tabLabel = fqdn() + " Data";
     } else if (menuChoice == QObject::tr("Copy Name To Lookup Line")) {
         graph->setLineEditValue(fqdn());
     } else {
         tabLabel = fqdn() + "/" + menuChoice;
-        widget = new ValidateViewWidget(fqdn(), menuChoice);
+        widget = new ValidateViewWidget(fqdn(), menuChoice, graph);
     }
 
     if (widget) {

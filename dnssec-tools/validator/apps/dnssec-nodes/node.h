@@ -45,7 +45,6 @@
 #include <QtCore/QList>
 #include <QtCore/QSet>
 
-#include "DetailsViewer.h"
 #include "DNSData.h"
 class DNSData;
 

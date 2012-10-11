@@ -5,7 +5,6 @@
 #include <QtCore/QTimer>
 #include "node.h"
 #include "edge.h"
-#include "graphwidget.h"
 
 #include "Effects/Effect.h"
 #include "Filters/Filter.h"
@@ -13,6 +12,9 @@
 #include <QtGui/QHBoxLayout>
 
 class GraphWidget;
+class DNSData;
+class Effect;
+class Filter;
 
 const QString ROOT_NODE_NAME = "<root>";
 

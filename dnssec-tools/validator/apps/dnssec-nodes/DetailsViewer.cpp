@@ -16,8 +16,8 @@
 
 #include <qdebug.h>
 
-DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
-    QWidget(parent), m_node(node), m_mapper(new QSignalMapper()), m_tabs(tabs), m_rows(), m_rowCount(0)
+DetailsViewer::DetailsViewer(Node *node, GraphWidget *graphWidget, QTabWidget *tabs, QWidget *parent):
+    QWidget(parent), m_node(node), m_mapper(new QSignalMapper()), m_tabs(tabs), m_rows(), m_rowCount(0), m_graphWidget(graphWidget)
 {
     QVBoxLayout *mainLayout = new QVBoxLayout();
     QVBoxLayout  *dataTypesBox = new QVBoxLayout();
@@ -103,7 +103,7 @@ void DetailsViewer::addRow(QString recordType, DNSData *data) {
 
 void DetailsViewer::validateNode(QString nodeType)
 {
-    m_tabs->addTab(new ValidateViewWidget(m_node->fqdn(), nodeType), m_node->fqdn() + "/" + nodeType);
+    m_tabs->addTab(new ValidateViewWidget(m_node->fqdn(), nodeType, m_graphWidget), m_node->fqdn() + "/" + nodeType);
     m_tabs->setCurrentIndex(m_tabs->count()-1);
 }
 
