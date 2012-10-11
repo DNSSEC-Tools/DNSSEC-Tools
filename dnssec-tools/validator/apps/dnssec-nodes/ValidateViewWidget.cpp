@@ -13,6 +13,7 @@
 #include "DNSData.h"
 #include <math.h>
 #include <QWheelEvent>
+#include <QApplication>
 
 #define RES_GET16(s, cp) do { \
         register const u_char *t_cp = (const u_char *)(cp); \
@@ -127,6 +128,8 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, Gra
     m_algorithmToName[14] = "ECDSAP384SHA384";
 
     scaleView(.4);
+
+    m_graphWidget->window()->setCursor(Qt::WaitCursor);
     QTimer::singleShot(1, this, SLOT(validateDefault()));
 }
 
@@ -209,6 +212,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                                 &results);
     if (ret != 0 || !results) {
         qWarning() << "failed to get results..."; // XXX: display SOMETHING!
+        m_graphWidget->window()->setCursor(Qt::ArrowCursor);
         return;
     }
 
@@ -467,6 +471,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     myScene->setSceneRect(0, spot + boxHeight, maxWidth, -spot + boxHeight);
     if (rect)
         ensureVisible(rect);
+
+    m_graphWidget->window()->setCursor(Qt::ArrowCursor);
 }
 
 void ValidateViewWidget::wheelEvent(QWheelEvent *event)
