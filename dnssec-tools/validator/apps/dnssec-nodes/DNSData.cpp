@@ -29,7 +29,7 @@ DNSData::DNSData(QString recordType, int DNSSECStatus, const QStringList &data)
 }
 
 DNSData::DNSData(const DNSData &from)
-    : QObject(), m_recordType(from.m_recordType), m_DNSSECStatus(from.m_DNSSECStatus), m_node(from.m_node)
+    : QObject(), m_recordType(from.m_recordType), m_DNSSECStatus(from.m_DNSSECStatus), m_node(from.m_node), m_data(from.m_data)
 {
 }
 

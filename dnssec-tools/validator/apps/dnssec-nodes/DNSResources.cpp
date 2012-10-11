@@ -179,3 +179,44 @@ int DNSResources::RRNameToType(const QString &name)
         return 254;
     return -1;
 }
+
+QString DNSResources::rrDataToQString(ns_rr rr)
+{
+    // XXX: move ot dns resources:
+    QString data;
+    char buf[1024];
+    const char *addr;
+    size_t buflen = sizeof(buf);
+    struct sockaddr_in sa;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 sa6;
+#endif
+
+    switch (ns_rr_type(rr)) {
+    case ns_t_a:
+        if (ns_rr_rdlen(rr) == (size_t) NS_INADDRSZ) {
+            memcpy(&sa.sin_addr, ns_rr_rdata(rr), NS_INADDRSZ);
+            INET_NTOP(AF_INET, ((struct sockaddr *)&sa), sizeof(sa), buf, buflen, addr);
+            data = QString(buf);
+        }
+        break;
+
+#ifdef VAL_IPV6
+    case ns_t_aaaa:
+        if (ns_rr_rdlen(rr) == (size_t) NS_IN6ADDRSZ) {
+            memcpy(&sa6.sin6_addr, ns_rr_rdata(rr), NS_IN6ADDRSZ);
+            INET_NTOP(AF_INET6, ((struct sockaddr *)&sa6), sizeof(sa6), buf, buflen, addr);
+            data = QString(buf);
+        }
+        break;
+#endif
+
+    case ns_t_txt: // XXX
+        break;
+
+    default:
+        break;
+    }
+
+    return data;
+}

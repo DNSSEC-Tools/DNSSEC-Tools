@@ -2,6 +2,7 @@
 
 #include <validator/validator-config.h>
 #include "validator/resolver.h"
+#include "DNSResources.h"
 
 #include <qdebug.h>
 
@@ -320,11 +321,9 @@ void PcapWatcher::processPackets()
                         break; /* out of data */
                     }
 
-                    emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status), "Data collected from network draffic");
+                    QString data = DNSResources::rrDataToQString(rr);
+                    emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status, QStringList(data)), "Data collected from network draffic");
 
-                    //if (ns_rr_type(rr) == ns_t_a) {
-                    /* insert stuff here */
-                    //}
                     rrnum++;
                 }
             }
