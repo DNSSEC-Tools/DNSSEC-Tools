@@ -233,6 +233,7 @@ void Node::setupPainting(int status, const QStyleOptionGraphicsItem *option, QPa
 void Node::setBorderColor(const QColor &color)
 {
     m_borderColor = color;
+    update();
 }
 
 QColor Node::borderColor()
@@ -448,6 +449,7 @@ int Node::DNSSECValidity()
 
 void Node::setAlpha(int alpha) {
     m_colorAlpha = alpha;
+    update();
 }
 
 QMap<QString, DNSData *>Node::getAllSubData()
