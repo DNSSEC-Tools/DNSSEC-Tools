@@ -46,6 +46,8 @@
 #include "DetailsViewer.h"
 #include "LogFilePicker.h"
 
+#include "DNSResources.h"
+
 #include <QtGui>
 #include <qdebug.h>
 
@@ -450,7 +452,7 @@ void GraphWidget::doActualLookup(const QString &lookupString, int lookupType)
         } else {
             result = DNSData::FAILED;
         }
-        node->addSubData(DNSData("A", result));
+        node->addSubData(DNSData(DNSResources::typeToRRName(lookupType), result));
     }
 
     QString lastInterestingString;
