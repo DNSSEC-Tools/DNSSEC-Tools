@@ -162,6 +162,9 @@ typedef struct val_context_opt {
  */
 #define GOPT_TRUST_LOCAL_STR "trust-local-answers"
 
+#ifndef NS_MAXDNAME
+#define NS_MAXDNAME 1025
+#endif
 
     /*
      * Response structures  
