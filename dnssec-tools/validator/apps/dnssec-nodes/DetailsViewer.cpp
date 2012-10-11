@@ -21,7 +21,7 @@ DetailsViewer::DetailsViewer(Node *node, GraphWidget *graphWidget, QTabWidget *t
 {
     QVBoxLayout *mainLayout = new QVBoxLayout();
     QVBoxLayout  *dataTypesBox = new QVBoxLayout();
-    m_table = new QTableWidget(node->getAllSubData().count(), 3);
+    m_table = new QTableWidget(node->getAllSubData().count(), 4);
 
     // Title
     m_title = new QLabel(node->fqdn());
