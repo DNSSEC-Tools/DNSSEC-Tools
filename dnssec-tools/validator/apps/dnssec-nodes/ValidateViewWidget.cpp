@@ -242,6 +242,9 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             rect->setPen(QPen(Qt::black));
             myScene->addItem(rect);
 
+            //
+            // draw the record type and status text
+            //
             nextLineText = "%1 %2";
             // add the type-line
             nextLineText = nextLineText.arg(DNSResources::typeToRRName(vrcptr->val_ac_rrset->val_rrset_type));
@@ -259,7 +262,9 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             text->setScale(2.0);
             myScene->addItem(text);
 
+            //
             // add the domain line
+            //
             QString rrsetName = vrcptr->val_ac_rrset->val_rrset_name;
             text = new QGraphicsSimpleTextItem(rrsetName == "." ? "<root>" : rrsetName);
             text->setPen(QPen(Qt::black));
@@ -267,6 +272,15 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             text->setScale(2.0);
             myScene->addItem(text);
 
+
+            //
+            // update the validation records in any existing data
+            //
+            m_graphWidget->nodeList()->node(rrsetName)->addSubData(DNSData(DNSResources::typeToRRName(vrcptr->val_ac_rrset->val_rrset_type), DNSData::getStatusFromValAStatus(rrrec->rr_status)));
+            qDebug() << "setting " << rrsetName << "/" << DNSResources::typeToRRName(vrcptr->val_ac_rrset->val_rrset_type) << " to " << rrrec->rr_status << " ( " << m_statusToName[rrrec->rr_status] << " )";
+            //
+            // add any additional info
+            //
             int     keyId;
             u_int   keyflags, protocol, algorithm, digest_type;
             QString algName;
