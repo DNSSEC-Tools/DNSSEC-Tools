@@ -132,7 +132,7 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     //
     QActionGroup *filterActions = new QActionGroup(this);
     QMenu *filterMenu = menu->addMenu("Filter");
-    action = filterMenu->addAction("Do Net Filter");
+    action = filterMenu->addAction("Do Not Filter");
     action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterNone()));
     action->setCheckable(true);
     action->setChecked(true);
