@@ -38,8 +38,10 @@ DetailsViewer::DetailsViewer(Node *node, GraphWidget *graphWidget, QTabWidget *t
     //
     dataTypesBox->addWidget(m_table);
 
-    m_table->setHorizontalHeaderItem(0, new QTableWidgetItem(tr("Record Type")));
-    m_table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Status")));
+    int itemnum = 0;
+    m_table->setHorizontalHeaderItem(itemnum++, new QTableWidgetItem(tr("Record Type")));
+    m_table->setHorizontalHeaderItem(itemnum++, new QTableWidgetItem(tr("Status")));
+    m_table->setHorizontalHeaderItem(itemnum++, new QTableWidgetItem(tr("Data")));
     m_table->verticalHeader()->hide();
 
     setNode(node);
@@ -71,24 +73,31 @@ void DetailsViewer::addRow(QString recordType, DNSData *data) {
     QTableWidgetItem *item;
     QPushButton *button;
 
+    int itemnum = 0;
+
     m_table->setRowCount(m_rowCount+1);
 
     NodeWidgets *info = new NodeWidgets();
 
     item = new QTableWidgetItem(recordType);
     item->setFlags(Qt::ItemIsEnabled);
-    m_table->setItem(m_rowCount, 0, item);
+    m_table->setItem(m_rowCount, itemnum++, item);
     info->label = item;
 
     item = new QTableWidgetItem();
     item->setFlags(Qt::ItemIsEnabled);
-    m_table->setItem(m_rowCount, 1, item);
+    m_table->setItem(m_rowCount, itemnum++, item);
     info->status = item;
+
+    item = new QTableWidgetItem(QStringList(data->data()).join(", "));
+    item->setFlags(Qt::ItemIsEnabled);
+    m_table->setItem(m_rowCount, itemnum++, item);
+    info->data = item;
 
     button = new QPushButton("Validate");
     connect(button, SIGNAL(clicked()), m_mapper, SLOT(map()));
     m_mapper->setMapping(button, recordType);
-    m_table->setCellWidget(m_rowCount, 2, button);
+    m_table->setCellWidget(m_rowCount, itemnum++, button);
 
     m_rows[recordType] = info;
 
@@ -111,9 +120,13 @@ void DetailsViewer::setStatus(const DNSData *data) {
     QString recordType = data->recordType();
     QColor color = m_node->getColorForStatus(data->DNSSECStatus()).lighter(175);
 
-    QTableWidgetItem *statusItem = m_rows[recordType]->status;
-    statusItem->setBackgroundColor(color);
-    statusItem->setText(data->DNSSECStringStatuses().join(", "));
+    QTableWidgetItem *item = m_rows[recordType]->status;
+    item->setBackgroundColor(color);
+    item->setText(data->DNSSECStringStatuses().join(", "));
+
+    item = m_rows[recordType]->data;
+    item->setBackgroundColor(color);
+    item->setText(QStringList(data->data()).join(", "));
 
     m_rows[recordType]->label->setBackgroundColor(color);
 }

@@ -20,6 +20,7 @@ class GraphWidget;
 struct NodeWidgets {
     QTableWidgetItem *label;
     QTableWidgetItem *status;
+    QTableWidgetItem *data;
 };
 
 class DetailsViewer : public QWidget
