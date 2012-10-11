@@ -4,6 +4,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QHash>
+#include <QSet>
 
 #include "node.h"
 class Node;
@@ -16,6 +17,7 @@ public:
 
     DNSData();
     DNSData(QString recordType, int DNSSECStatus);
+    DNSData(QString recordType, int DNSSECStatus, const QStringList &data);
     DNSData(const DNSData &from);
 
     static Status getStatusFromValStatus(int val_status);
@@ -35,6 +37,9 @@ public:
 
     void setNode(Node *node) { m_node = node; }
 
+    void addData(const QStringList &data);
+    QList<QString> data();
+
 signals:
     void statusChanged(const DNSData *data);
 
@@ -42,6 +47,7 @@ private:
     QString m_recordType;
     int m_DNSSECStatus;
     Node *m_node;
+    QSet<QString> m_data;
 };
 
 inline bool operator==(const DNSData &a, const DNSData &b)
