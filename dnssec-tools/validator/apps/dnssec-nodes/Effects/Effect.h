@@ -7,6 +7,7 @@ class Effect
 {
 public:
     Effect();
+    virtual ~Effect() { }
 
     virtual void    applyToNode(Node *node) = 0;
     virtual void    resetNode(Node *node) = 0;
