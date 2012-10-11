@@ -413,6 +413,7 @@ void Node::addSubData(const DNSData &data)
     if (!m_subData.contains(data.recordType())) {
         DNSData *newData = new DNSData(data);
         m_subData.insert(data.recordType(), newData);
+        newData->setNode(this);
         if (m_detailsViewer) {
             m_detailsViewer->addRow(data.recordType(), newData);
         }

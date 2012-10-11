@@ -71,9 +71,6 @@ QStringList DNSData::DNSSECStringStatuses() const
     if (m_DNSSECStatus & SERVFAIL_RCODE)
         results.push_back(DNSSECStatusForEnum(SERVFAIL_RCODE));
 
-    if (m_node)
-        m_node->update();
-
     return results;
 }
 
