@@ -26,12 +26,17 @@ NodeList::NodeList(GraphWidget *parent) :
     m_timer.start(5000); /* clear things out every 5 seconds or so */
 }
 
-Node *NodeList::node(const QString &nodeName) {
-    QString maybeToLong(nodeName);
+QString NodeList::removeTrailingDots(const QString &from) {
+    QString maybeToLong(from);
     while (maybeToLong.endsWith("."))
         maybeToLong.chop(1);
     if (maybeToLong.length() == 0)
         maybeToLong = "<root>";
+    return maybeToLong;
+}
+
+Node *NodeList::node(const QString &nodeName) {
+    QString maybeToLong = removeTrailingDots(nodeName);
 
     if (! m_nodes.contains(maybeToLong)) {
         return addNodes(maybeToLong);
@@ -43,8 +48,10 @@ Node *NodeList::node(const QString &nodeName) {
 Node *NodeList::addNodes(const QString &nodeName) {
     int count = 1;
     Node *returnNode = 0;
+    QString newNodeName = removeTrailingDots(nodeName);
 
-    QStringList nodeNameList = nodeName.split(".");
+
+    QStringList nodeNameList = newNodeName.split(".");
     QString completeString = QString("");
 
     QStringList::iterator node = nodeNameList.end();
