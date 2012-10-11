@@ -90,7 +90,9 @@ void DetailsViewer::addRow(QString recordType, const DNSData &data) {
 
     m_rows[recordType] = info;
 
-    setStatus(data);
+    connect(&data, SIGNAL(statusChanged(const DNSData*)), this, SLOT(setStatus(const DNSData *)));
+
+    setStatus(&data);
 
     m_rowCount++;
     m_table->resizeColumnsToContents();
@@ -102,13 +104,13 @@ void DetailsViewer::validateNode(QString nodeType)
     m_tabs->setCurrentIndex(m_tabs->count()-1);
 }
 
-void DetailsViewer::setStatus(DNSData data) {
-    QString recordType = data.recordType();
-    QColor color = m_node->getColorForStatus(data.DNSSECStatus()).lighter(175);
+void DetailsViewer::setStatus(const DNSData *data) {
+    QString recordType = data->recordType();
+    QColor color = m_node->getColorForStatus(data->DNSSECStatus()).lighter(175);
 
     QTableWidgetItem *statusItem = m_rows[recordType]->status;
     statusItem->setBackgroundColor(color);
-    statusItem->setText(data.DNSSECStringStatuses().join(", "));
+    statusItem->setText(data->DNSSECStringStatuses().join(", "));
 
     m_rows[recordType]->label->setBackgroundColor(color);
 }

@@ -28,7 +28,7 @@ signals:
 public slots:
     void validateNode(QString nodeType);
     void setNode(Node *node);
-    void setStatus(DNSData data);
+    void setStatus(const DNSData *data);
 
 private:
     Node          *m_node;
