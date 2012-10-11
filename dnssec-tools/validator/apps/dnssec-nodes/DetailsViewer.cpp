@@ -24,14 +24,14 @@ DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
     m_table = new QTableWidget(node->getAllSubData().count(), 3);
 
     // Title
-    QLabel *title = new QLabel(node->fqdn());
-    QFont font = title->font();
+    m_title = new QLabel(node->fqdn());
+    QFont font = m_title->font();
     font.setBold(true);
     font.setUnderline(true);
     font.setPointSize(16);
-    title->setFont(font);
-    title->setAlignment(Qt::AlignCenter);
-    dataTypesBox->addWidget(title);
+    m_title->setFont(font);
+    m_title->setAlignment(Qt::AlignCenter);
+    dataTypesBox->addWidget(m_title);
 
     //
     // Data Collected Info
@@ -42,6 +42,18 @@ DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
     m_table->setHorizontalHeaderItem(1, new QTableWidgetItem(tr("Status")));
     m_table->verticalHeader()->hide();
 
+    setNode(node);
+
+    mainLayout->addWidget(m_table);
+    setLayout(mainLayout);
+}
+
+void DetailsViewer::setNode(Node *node) {
+    m_title->setText(node->fqdn());
+
+    m_table->clear();
+    m_rowCount = 0;
+
     QMapIterator<QString, DNSData> iterator(node->getAllSubData());
     while(iterator.hasNext()) {
         iterator.next();
@@ -50,27 +62,21 @@ DetailsViewer::DetailsViewer(Node *node, QTabWidget *tabs, QWidget *parent):
     }
     connect(m_mapper, SIGNAL(mapped(QString)), this, SLOT(validateNode(QString)));
     m_table->resizeColumnsToContents();
-
-    mainLayout->addWidget(m_table);
-    setLayout(mainLayout);
 }
 
 void DetailsViewer::addRow(QString recordType, const DNSData &data) {
     QTableWidgetItem *item;
     QPushButton *button;
 
-    QColor backgroundColor = m_node->getColorForStatus(data.DNSSECStatus()).lighter(175);
     NodeWidgets *info = new NodeWidgets();
 
     item = new QTableWidgetItem(recordType);
     item->setFlags(Qt::ItemIsEnabled);
-    item->setBackgroundColor(backgroundColor);
     m_table->setItem(m_rowCount, 0, item);
     info->label = item;
 
-    item = new QTableWidgetItem(data.DNSSECStringStatuses().join(", "));
+    item = new QTableWidgetItem();
     item->setFlags(Qt::ItemIsEnabled);
-    item->setBackgroundColor(backgroundColor);
     m_table->setItem(m_rowCount, 1, item);
     info->status = item;
 
@@ -79,7 +85,12 @@ void DetailsViewer::addRow(QString recordType, const DNSData &data) {
     m_mapper->setMapping(button, recordType);
     m_table->setCellWidget(m_rowCount, 2, button);
 
+    m_rows[recordType] = info;
+
+    setStatus(data);
+
     m_rowCount++;
+    m_table->resizeColumnsToContents();
 }
 
 void DetailsViewer::validateNode(QString nodeType)
@@ -88,8 +99,13 @@ void DetailsViewer::validateNode(QString nodeType)
     m_tabs->setCurrentIndex(m_tabs->count()-1);
 }
 
-void DetailsViewer::setStatus(DNSData data, QString recordType) {
-    QTableWidgetItem *item = m_rows[recordType]->status;
-    item->setBackgroundColor(m_node->getColorForStatus(data.DNSSECStatus()).lighter(175));
-    item->setText(data.DNSSECStringStatuses().join(", "));
+void DetailsViewer::setStatus(DNSData data) {
+    QString recordType = data.recordType();
+    QColor color = m_node->getColorForStatus(data.DNSSECStatus()).lighter(175);
+
+    QTableWidgetItem *statusItem = m_rows[recordType]->status;
+    statusItem->setBackgroundColor(color);
+    statusItem->setText(data.DNSSECStringStatuses().join(", "));
+
+    m_rows[recordType]->label->setBackgroundColor(color);
 }

@@ -9,6 +9,7 @@
 #include <QtGui/QTabWidget>
 #include <QtGui/QTableWidgetItem>
 #include "node.h"
+#include <QLabel>
 
 struct NodeWidgets {
     QTableWidgetItem *label;
@@ -20,13 +21,14 @@ class DetailsViewer : public QWidget
     Q_OBJECT
 public:
     explicit DetailsViewer(Node *node, QTabWidget *tabs = 0, QWidget *parent = 0);
-    void setStatus(DNSData data, QString recordType);
+    void setStatus(DNSData data);
     void addRow(QString recordType, const DNSData &data);
 
 signals:
 
 public slots:
     void validateNode(QString nodeType);
+    void setNode(Node *node);
 
 private:
     Node          *m_node;
@@ -35,6 +37,7 @@ private:
     QMap<QString, NodeWidgets *> m_rows;
     int            m_rowCount;
 
+    QLabel        *m_title;
     QTableWidget  *m_table;
 };
 
