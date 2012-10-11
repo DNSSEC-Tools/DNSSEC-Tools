@@ -45,6 +45,9 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     nodeGraphWidgetHBox->addWidget(new QLabel("Perform a Lookup:"));
     nodeGraphWidgetHBox->addWidget(editBox);
     editBox->setText("www.dnssec-tools.org");
+    QPushButton *sendButton = new QPushButton("Send");
+    sendButton->connect(sendButton, SIGNAL(clicked()), graphWidget, SLOT(doLookupFromLineEdit()));
+    nodeGraphWidgetHBox->addWidget(sendButton);
     nodeGraphWidgetHBox->addWidget(new QLabel("For Type:"));
     nodeGraphWidgetHBox->addWidget(lookupTypeButton);
     lookupType->connect(lookupType, SIGNAL(typeSet(int)), graphWidget, SLOT(setLookupType(int)));
