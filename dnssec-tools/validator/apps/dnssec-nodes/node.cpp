@@ -405,9 +405,10 @@ QStringList Node::logMessages()
 void Node::addSubData(const DNSData &data)
 {
     if (!m_subData.contains(data.recordType())) {
-        m_subData.insert(data.recordType(), new DNSData(data));
+        DNSData *newData = new DNSData(data);
+        m_subData.insert(data.recordType(), newData);
         if (m_detailsViewer) {
-            m_detailsViewer->addRow(data.recordType(), data);
+            m_detailsViewer->addRow(data.recordType(), newData);
         }
     } else {
         // merge in the other data with ours (internally this drops UNKNOWNS
