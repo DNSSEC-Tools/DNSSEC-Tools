@@ -71,6 +71,8 @@ void DetailsViewer::addRow(QString recordType, const DNSData &data) {
     QTableWidgetItem *item;
     QPushButton *button;
 
+    m_table->setRowCount(m_rowCount+1);
+
     NodeWidgets *info = new NodeWidgets();
 
     item = new QTableWidgetItem(recordType);
@@ -95,6 +97,7 @@ void DetailsViewer::addRow(QString recordType, const DNSData &data) {
     setStatus(&data);
 
     m_rowCount++;
+    m_table->resizeRowsToContents();
     m_table->resizeColumnsToContents();
 }
 

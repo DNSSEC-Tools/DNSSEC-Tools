@@ -45,14 +45,17 @@
 #include <QtCore/QList>
 #include <QtCore/QSet>
 
+#include "DetailsViewer.h"
 #include "DNSData.h"
 class DNSData;
 
 class Edge;
 class GraphWidget;
+class DetailsViewer;
 QT_BEGIN_NAMESPACE
 class QGraphicsSceneMouseEvent;
 QT_END_NAMESPACE
+
 
 //! [0]
 class Node : public QGraphicsItem
@@ -137,6 +140,7 @@ private:
     int            m_resultCache;
     int            m_colorAlpha;
     QColor         m_borderColor;
+    DetailsViewer *m_detailsViewer;
 };
 //! [0]
 
