@@ -5,6 +5,8 @@
 #include <QtCore/QMap>
 #include <QtGui/QColor>
 
+#include "NodeList.h"
+
 class ValidateViewWidget : public QGraphicsView
 {
     Q_OBJECT
@@ -23,15 +25,15 @@ private:
     void drawArrow(int fromX, int fromY, int toX, int toY, QColor color = Qt::black, int horizRaiseMultiplier = 4);
 
     QGraphicsScene *myScene;
+    NodeList       *m_nodeList;
     QString         m_nodeName;
     QString         m_recordType;
 
-    QMap<int, QString> m_typeToName;
-    QMap<QString, int> m_nameToType;
     QMap<int, QString> m_statusToName;
     QMap<int, QColor>  m_statusColors;
     QMap<int, QString> m_algorithmToName;
     QMap<int, QString> m_digestToName;
+
 };
 
 #endif // VALIDATEVIEWWIDGET_H

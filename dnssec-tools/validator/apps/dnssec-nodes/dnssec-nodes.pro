@@ -23,7 +23,8 @@ HEADERS += \
     Effects/SetBorderColor.h \
     ValidateViewWidget.h \
     MainWindow.h \
-    qt_auto_properties.h
+    qt_auto_properties.h \
+    DNSResources.h
 
 SOURCES += \
         edge.cpp \
@@ -49,7 +50,8 @@ SOURCES += \
     Legend.cpp \
     Effects/SetBorderColor.cpp \
     ValidateViewWidget.cpp \
-    MainWindow.cpp
+    MainWindow.cpp \
+    DNSResources.cpp
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
