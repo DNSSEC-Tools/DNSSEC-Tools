@@ -61,13 +61,13 @@ void DetailsViewer::setNode(Node *node) {
     while(iterator.hasNext()) {
         iterator.next();
 
-        addRow(iterator.key(), *(iterator.value()));
+        addRow(iterator.key(), iterator.value());
     }
     connect(m_mapper, SIGNAL(mapped(QString)), this, SLOT(validateNode(QString)));
     m_table->resizeColumnsToContents();
 }
 
-void DetailsViewer::addRow(QString recordType, const DNSData &data) {
+void DetailsViewer::addRow(QString recordType, DNSData *data) {
     QTableWidgetItem *item;
     QPushButton *button;
 
@@ -92,9 +92,9 @@ void DetailsViewer::addRow(QString recordType, const DNSData &data) {
 
     m_rows[recordType] = info;
 
-    connect(&data, SIGNAL(statusChanged(const DNSData*)), this, SLOT(setStatus(const DNSData *)));
+    connect(data, SIGNAL(statusChanged(const DNSData*)), this, SLOT(setStatus(const DNSData *)));
 
-    setStatus(&data);
+    setStatus(data);
 
     m_rowCount++;
     m_table->resizeRowsToContents();
