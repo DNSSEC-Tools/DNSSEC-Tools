@@ -400,7 +400,6 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             unsigned short keyId;
             u_char algorithm;
             rdata = rrrec->rr_rdata;
-            char namebuf[1024];
 
             if (rrrec->rr_rdata_length < 22U)
                 continue;

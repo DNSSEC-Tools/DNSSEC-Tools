@@ -1,12 +1,13 @@
 #include "DNSData.h"
 
 DNSData::DNSData()
-    : m_recordType()
+    : QObject(), m_recordType()
 {
 }
 
 DNSData::DNSData(QString recordType, int DNSSECStatus)
-    : m_recordType(recordType),
+    : QObject(),
+      m_recordType(recordType),
       m_DNSSECStatus(DNSSECStatus),
       m_node(0)
 {
@@ -14,7 +15,7 @@ DNSData::DNSData(QString recordType, int DNSSECStatus)
 }
 
 DNSData::DNSData(const DNSData &from)
-    : m_recordType(from.m_recordType), m_DNSSECStatus(from.m_DNSSECStatus), m_node(from.m_node)
+    : QObject(), m_recordType(from.m_recordType), m_DNSSECStatus(from.m_DNSSECStatus), m_node(from.m_node)
 {
 }
 
