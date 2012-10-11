@@ -190,7 +190,6 @@ void PcapWatcher::openFile(const QString &fileNameToOpenIn, bool animatePlayback
     setFileName(fileNameToOpen);
     setAnimatePlayback(animatePlayback);
     m_deviceName = QString();
-    qDebug() << "opening file: " << fileName();
 
     closeDevice();
 
