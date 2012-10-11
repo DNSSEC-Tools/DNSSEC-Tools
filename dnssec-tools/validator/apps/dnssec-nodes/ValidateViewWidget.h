@@ -15,6 +15,7 @@ public:
     explicit ValidateViewWidget(QString nodeName, QString recordType, GraphWidget *graphWidget, QWidget *parent = 0);
 
     void validateSomething(QString name, QString type);
+    virtual void wheelEvent(QWheelEvent *event);
 
 signals:
     

@@ -11,6 +11,8 @@
 
 #include "DNSResources.h"
 #include "DNSData.h"
+#include <math.h>
+#include <QWheelEvent>
 
 #define RES_GET16(s, cp) do { \
         register const u_char *t_cp = (const u_char *)(cp); \
@@ -465,4 +467,9 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     myScene->setSceneRect(0, spot + boxHeight, maxWidth, -spot + boxHeight);
     if (rect)
         ensureVisible(rect);
+}
+
+void ValidateViewWidget::wheelEvent(QWheelEvent *event)
+{
+    scaleView(pow((double)2, -event->delta() / 240.0));
 }
