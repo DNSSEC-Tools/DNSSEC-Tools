@@ -466,7 +466,10 @@ void GraphWidget::doActualLookup(const QString &lookupString, int lookupType)
         } else {
             result = DNSData::FAILED;
         }
-        node->addSubData(DNSData(DNSResources::typeToRRName(lookupType), result));
+
+        QStringList dataThere = DNSResources::dnsDataToQStringList((char *) buf, ret);
+
+        node->addSubData(DNSData(DNSResources::typeToRRName(lookupType), result, dataThere));
     }
 
     QString lastInterestingString;

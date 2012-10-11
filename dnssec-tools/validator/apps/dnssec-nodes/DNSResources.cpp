@@ -180,6 +180,34 @@ int DNSResources::RRNameToType(const QString &name)
     return -1;
 }
 
+QStringList DNSResources::dnsDataToQStringList(const char *buf, size_t buf_len) {
+    ns_msg          handle;
+    int             rrnum = 0;
+    ns_rr           rr;
+    QStringList     results;
+
+    if (ns_initparse((u_char *) buf, buf_len, &handle) < 0) {
+        return results;
+    }
+
+    for (;;) {
+        if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
+            if (errno != ENODEV) {
+                /* parse error */
+                continue;
+            }
+            break; /* out of data */
+        }
+
+        QString data = DNSResources::rrDataToQString(rr);
+        if (data.length() > 0)
+            results.push_back(data);
+
+        rrnum++;
+    }
+    return results;
+}
+
 QString DNSResources::rrDataToQString(ns_rr rr)
 {
     // XXX: move ot dns resources:
