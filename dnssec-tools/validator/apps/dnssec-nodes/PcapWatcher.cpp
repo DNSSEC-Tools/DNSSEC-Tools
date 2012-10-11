@@ -300,26 +300,35 @@ void PcapWatcher::processPackets()
                 continue;
             }
 
+            int rcode = libsres_msg_getflag(handle, ns_f_rcode);
             DNSData::Status status = libsres_msg_getflag(handle, ns_f_ad) ? DNSData::AD_VERIFIED : DNSData::UNKNOWN;
 
-            for (;;) {
-                if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
-                    if (errno != ENODEV) {
-                        /* parse error */
-                        qWarning() << tr("failed to parse a returned additional RRSET");
-                        continue;
-                    }
-                    break; /* out of data */
+            if (rcode == ns_r_servfail) {
+                /* handle SERVFAIL error cases */
+                if (!ns_parserr(&handle, ns_s_qd, rrnum, &rr)) {
+                    /* the first (only) question should be the name we're failing on */
+                    emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), DNSData::SERVFAIL_RCODE), "SERVFAIL caught");
                 }
+            } else { // XXX: NXDomain?
+                /* handle normal responses */
+                for (;;) {
+                    if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
+                        if (errno != ENODEV) {
+                            /* parse error */
+                            qWarning() << tr("failed to parse a returned additional RRSET");
+                            continue;
+                        }
+                        break; /* out of data */
+                    }
 
-                emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status), "Data collected from network draffic");
+                    emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status), "Data collected from network draffic");
 
-                //if (ns_rr_type(rr) == ns_t_a) {
+                    //if (ns_rr_type(rr) == ns_t_a) {
                     /* insert stuff here */
-                //}
-                rrnum++;
+                    //}
+                    rrnum++;
+                }
             }
-
         }
 
 
