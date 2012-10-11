@@ -119,6 +119,7 @@ public:
 #endif
 
     bool updateLineEditAlways();
+    bool autoValidateServFails();
 
 public slots:
     void shuffle();
@@ -147,6 +148,7 @@ public slots:
     void setAnimateNodeMovements(bool newValue);
 
     void setUpdateLineEditAlways(bool newValue);
+    void setAutoValidateServFails(bool newValue);
     void setLineEditValue(const QString &value);
     void maybeSetLineEditValue(const QString &value);
 
@@ -186,6 +188,7 @@ private:
     int          m_lookupType;
     bool         m_animateNodeMovements;
     bool         m_updateLineEditAlways;
+    bool         m_autoValidateServFails;
 
     QHBoxLayout *m_infoBox;
     QLabel      *m_infoLabel;
