@@ -31,7 +31,7 @@ public:
     void setNode(Node *node) { m_node = node; }
 
 signals:
-    void statusChanged(DNSData *data);
+    void statusChanged(const DNSData *data);
 
 private:
     QString m_recordType;
