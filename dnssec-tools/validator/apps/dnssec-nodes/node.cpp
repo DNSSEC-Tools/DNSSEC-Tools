@@ -288,7 +288,8 @@ QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
 QMenu *Node::makePopupMenu() {
     QMenu *menu = new QMenu();
 
-    menu->addAction(QObject::tr("Copy Name To Lookup Line"));
+    if (!graph->updateLineEditAlways())
+        menu->addAction(QObject::tr("Copy Name To Lookup Line"));
     menu->addAction(QObject::tr("Show Node Data"));
     menu->addAction(QObject::tr("Show Log Entries"));
     QMenu *validateMenu = menu->addMenu(QObject::tr("Validate"));
@@ -348,6 +349,7 @@ void Node::displayDetailsMenu(QPoint where) {
 void Node::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     update();
+    graph->maybeSetLineEditValue(fqdn());
     if (event->button() == Qt::MidButton) {
         // middle button moves
         event->setButton(Qt::LeftButton);
