@@ -21,7 +21,6 @@ class DetailsViewer : public QWidget
     Q_OBJECT
 public:
     explicit DetailsViewer(Node *node, QTabWidget *tabs = 0, QWidget *parent = 0);
-    void setStatus(DNSData data);
     void addRow(QString recordType, const DNSData &data);
 
 signals:
@@ -29,6 +28,7 @@ signals:
 public slots:
     void validateNode(QString nodeType);
     void setNode(Node *node);
+    void setStatus(DNSData data);
 
 private:
     Node          *m_node;

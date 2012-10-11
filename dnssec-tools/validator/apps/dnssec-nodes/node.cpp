@@ -247,8 +247,8 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
         int angleSegment = 360 * 16 / m_subData.count();
         int count = 0;
 
-        foreach (DNSData data, m_subData) {
-            setupPainting(data.DNSSECStatus(), option, painter);
+        foreach (DNSData *data, m_subData) {
+            setupPainting(data->DNSSECStatus(), option, painter);
 
             painter->drawPie(QRectF(-7, -7, 20, 20), count * angleSegment, angleSegment);
 
@@ -291,7 +291,7 @@ QMenu *Node::makePopupMenu() {
     menu->addAction(QObject::tr("Show Log Entries"));
     QMenu *validateMenu = menu->addMenu(QObject::tr("Validate"));
 
-    QMap<QString, DNSData>::const_iterator iter, end = m_subData.end();
+    QMap<QString, DNSData *>::const_iterator iter, end = m_subData.end();
     for (iter = m_subData.begin(); iter != end; iter++) {
         validateMenu->addAction(iter.key());
     }
@@ -401,10 +401,10 @@ QStringList Node::logMessages()
 void Node::addSubData(const DNSData &data)
 {
     if (!m_subData.contains(data.recordType())) {
-        m_subData.insert(data.recordType(), data);
+        m_subData.insert(data.recordType(), new DNSData(data));
     } else {
         // merge in the other data with ours (internally this drops UNKNOWNS
-        m_subData[data.recordType()].addDNSSECStatus(data.DNSSECStatus());
+        m_subData[data.recordType()]->addDNSSECStatus(data.DNSSECStatus());
     }
     cacheDNSDataValidity();
 }
@@ -412,8 +412,8 @@ void Node::addSubData(const DNSData &data)
 QString Node::getSubData()
 {
     QString description;
-    foreach(DNSData data, m_subData) {
-        description += data.recordType() + "(" + QString::number(int(data.DNSSECStatus())) + "), ";
+    foreach(DNSData *data, m_subData) {
+        description += data->recordType() + "(" + QString::number(int(data->DNSSECStatus())) + "), ";
     }
     return description;
 }
@@ -421,8 +421,8 @@ QString Node::getSubData()
 void Node::cacheDNSDataValidity()
 {
     m_resultCache = 0;
-    foreach(DNSData data, m_subData) {
-        m_resultCache |= data.DNSSECStatus();
+    foreach(DNSData *data, m_subData) {
+        m_resultCache |= data->DNSSECStatus();
     }
 }
 
@@ -435,7 +435,7 @@ void Node::setAlpha(int alpha) {
     m_colorAlpha = alpha;
 }
 
-QMap<QString, DNSData>Node::getAllSubData()
+QMap<QString, DNSData *>Node::getAllSubData()
 {
     return m_subData;
 }
