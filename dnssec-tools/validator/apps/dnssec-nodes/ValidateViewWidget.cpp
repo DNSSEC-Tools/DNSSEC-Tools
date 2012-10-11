@@ -10,6 +10,7 @@
 #include <qdebug.h>
 
 #include "DNSResources.h"
+#include "DNSData.h"
 
 #define RES_GET16(s, cp) do { \
         register const u_char *t_cp = (const u_char *)(cp); \
@@ -208,6 +209,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         qWarning() << "failed to get results..."; // XXX: display SOMETHING!
         return;
     }
+
+    m_graphWidget->nodeList()->node(name)->addSubData(DNSData(type, DNSData::getStatusFromValStatus(results->val_rc_status)));
 
     int spot = 0;
     int maxWidth = 0;
@@ -436,6 +439,11 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                     drawArrow(dnsKeyLocation.first + boxWidth/2, dnsKeyLocation.second + boxHeight,
                               (*listIter).first + boxWidth/2, (*listIter).second, arrowColor);
                 }
+
+                // update the graph's data
+#ifdef FIXME
+                m_graphWidget->nodeList()->node();
+#endif
             }
         }
     }

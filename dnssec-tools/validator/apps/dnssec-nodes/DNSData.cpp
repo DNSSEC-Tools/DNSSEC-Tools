@@ -1,5 +1,8 @@
 #include "DNSData.h"
 
+#include <validator/validator-config.h>
+#include <validator/validator.h>
+
 DNSData::DNSData()
     : QObject(), m_recordType()
 {
@@ -88,4 +91,14 @@ void DNSData::addDNSSECStatus(int additionalStatus) {
 
     if (oldStatus != m_DNSSECStatus)
         emit statusChanged(this);
+}
+
+DNSData::Status DNSData::getStatusFromValStatus(int val_status) {
+    if (val_isvalidated(val_status)) {
+        return DNSData::VALIDATED;
+    } else if (val_istrusted(val_status)) {
+        return DNSData::TRUSTED;
+    } else {
+        return DNSData::FAILED;
+    }
 }
