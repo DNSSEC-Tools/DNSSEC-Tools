@@ -2,6 +2,7 @@
 
 #include <QtGui/QGraphicsRectItem>
 #include <QtGui/QGraphicsSimpleTextItem>
+#include <QtCore/QTimer>
 
 #include <validator/validator-config.h>
 #include <validator/validator.h>
@@ -182,7 +183,7 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, QWi
     }
 
     scaleView(.5);
-    validateSomething(m_nodeName, m_recordType);
+    QTimer::singleShot(1, this, SLOT(validateDefault()));
 }
 
 void ValidateViewWidget::scaleView(qreal scaleFactor)
@@ -238,6 +239,10 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
     polyItem->setBrush(brush);
     polyItem->setFillRule(Qt::OddEvenFill);
     myScene->addItem(polyItem);
+}
+
+void ValidateViewWidget::validateDefault() {
+    validateSomething(m_nodeName, m_recordType);
 }
 
 void ValidateViewWidget::validateSomething(QString name, QString type) {

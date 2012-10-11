@@ -16,6 +16,7 @@ public:
 signals:
     
 public slots:
+    void validateDefault();
 
 private:
     void scaleView(qreal scaleFactor);
