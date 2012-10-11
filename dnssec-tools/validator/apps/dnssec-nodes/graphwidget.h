@@ -57,13 +57,14 @@
 #include <QtGui/QTableWidget>
 
 #include "Legend.h"
-
+#include "DNSData.h"
 
 class Node;
 class Edge;
 class LogWatcher;
 class NodeList;
 class PcapWatcher;
+class DNSData;
 
 //! [0]
 class GraphWidget : public QGraphicsView
@@ -135,6 +136,7 @@ public slots:
     void addRootNode(QString newNode);
     void doLookupFromLineEdit();
     void doLookup(QString lookupString);
+    void doLookupFromServFail(QString nodeName, DNSData nodeData, QString optionalLogMessage);
     void setLookupType(int type);
     void scaleWindow();
     void resizeEvent(QResizeEvent *event);

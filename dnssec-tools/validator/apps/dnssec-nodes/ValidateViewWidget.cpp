@@ -277,7 +277,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             // update the validation records in any existing data
             //
             m_graphWidget->nodeList()->node(rrsetName)->addSubData(DNSData(DNSResources::typeToRRName(vrcptr->val_ac_rrset->val_rrset_type), DNSData::getStatusFromValAStatus(rrrec->rr_status)));
-            qDebug() << "setting " << rrsetName << "/" << DNSResources::typeToRRName(vrcptr->val_ac_rrset->val_rrset_type) << " to " << rrrec->rr_status << " ( " << m_statusToName[rrrec->rr_status] << " )";
+
             //
             // add any additional info
             //

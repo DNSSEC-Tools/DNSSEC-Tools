@@ -51,6 +51,7 @@
 #ifdef WITH_PCAP
 #include "PcapWatcher.h"
 #endif
+#include "DNSData.h"
 
 #include "DNSResources.h"
 
@@ -148,6 +149,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
 #ifdef WITH_PCAP
     connect(m_pcapWatcher, SIGNAL(addNode(QString)), m_nodeList, SLOT(addNodesSlot(QString)));
     connect(m_pcapWatcher, SIGNAL(addNodeData(QString, DNSData, QString)), m_nodeList, SLOT(addNodesData(QString,DNSData, QString)));
+    connect(m_pcapWatcher, SIGNAL(addNodeData(QString,DNSData,QString)), this, SLOT(doLookupFromServFail(QString,DNSData,QString)));
     connect(this, SIGNAL(openPcapDevice()), m_pcapWatcher, SLOT(openDevice()));
     m_pcapWatcher->start();
 #endif
@@ -182,6 +184,11 @@ void GraphWidget::scaleWindow() {
 
     // apply it
     scale(1.2 * newscale, 1.2 * newscale);
+}
+
+void GraphWidget::doLookupFromServFail(QString nodeName, DNSData nodeData, QString optionalLogMessage) {
+    if (autoValidateServFails())
+        doActualLookup(nodeName, DNSResources::RRNameToType(nodeData.recordType()));
 }
 
 void GraphWidget::doLookupFromLineEdit() {
