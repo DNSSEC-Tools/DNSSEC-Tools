@@ -21,6 +21,8 @@ signals:
     
 public slots:
     void validateDefault();
+    void zoomIn();
+    void zoomOut();
 
 private:
     void scaleView(qreal scaleFactor);
