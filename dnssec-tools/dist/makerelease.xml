@@ -198,9 +198,9 @@
 
     <step type="system" title="create the html docs" interactive="1">
       <commands>
-	<command>cd ../htdocs && svn update</command>
+	<command>cd ../htdocs &amp;&amp; svn update</command>
 	<command>dist/update-web-docs</command>
-	<command>cd ../htdocs && svn commit -m "Updated online docs from latest release"</command>
+	<command>cd ../htdocs &amp;&amp; svn commit -m "Updated online docs from latest release"</command>
       </commands>
     </step>
 
