@@ -372,7 +372,7 @@ void MainWindow::submitResults(QString locationDescription)
     }
 
     accessURL.addQueryItem("locationDescription", locationDescription);
-    accessURL.addQueryItem("1.14");
+    accessURL.addQueryItem("DNSSECToolsVersion", "1.14");
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();
