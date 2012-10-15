@@ -33,6 +33,8 @@
 #define ns_c_in 1
 #endif
 
+#define DNSSEC_CHECK_VERSION "1.14.0.1"
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), m_testManager(), m_rows(0), m_manager(0), m_detailedResults(0), m_submitResults(0)
 {
@@ -314,7 +316,7 @@ void MainWindow::busy() {
 void MainWindow::showAbout()
 {
     QMessageBox message;
-    message.setText("<p><b>DNSSEC-Check</b><p><i>DNSSEC-Tools Version: 1.14</i></p><p>DNSSEC-Check tests the likelyhood that your network will support client-side DNSSEC validation.  "
+    message.setText("<p><b>DNSSEC-Check</b><p><i>DNSSEC-Tools Version: " DNSSEC_CHECK_VERSION "</i></p><p>DNSSEC-Check tests the likelyhood that your network will support client-side DNSSEC validation.  "
                     "DNSSEC-Check is a application created for the <a href=\"http://www.dnssec-tools.org/\">DNSSEC-Tools</a> project."
                     "<p>This project is a work-in-progress and this is an alpha-version of this software.  It is currently most suited to people that "
                     "know and understand how the DNS and DNSSEC works."
@@ -372,7 +374,7 @@ void MainWindow::submitResults(QString locationDescription)
     }
 
     accessURL.addQueryItem("locationDescription", locationDescription);
-    accessURL.addQueryItem("DNSSECToolsVersion", "1.14");
+    accessURL.addQueryItem("DNSSECToolsVersion", DNSSEC_CHECK_VERSION);
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();
