@@ -79,7 +79,8 @@ HEADERS += mainwindow.h \
     SubmitDialog.h \
     DNSSECTest.h \
     TestManager.h \
-    DNSSECCheckThread.h
+    DNSSECCheckThread.h \
+    DnssecCheckVersion.h
 
 #    DataSubmitter.h \
 #    DataSubmitter.cpp \

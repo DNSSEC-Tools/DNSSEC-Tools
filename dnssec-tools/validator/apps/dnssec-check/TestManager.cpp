@@ -13,6 +13,8 @@
 #include <QSettings>
 #include <QCryptographicHash>
 
+#include "DnssecCheckVersion.h"
+
 TestManager::TestManager(QObject *parent) :
     QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(), m_socketWatchers(),
     m_tests(), m_otherThread(), m_num_fds(0), m_inTestLoop(false)

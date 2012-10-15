@@ -33,8 +33,6 @@
 #define ns_c_in 1
 #endif
 
-#define DNSSEC_CHECK_VERSION "1.14.0.1"
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), m_testManager(), m_rows(0), m_manager(0), m_detailedResults(0), m_submitResults(0)
 {

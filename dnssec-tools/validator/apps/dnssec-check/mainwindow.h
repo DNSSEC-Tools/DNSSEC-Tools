@@ -24,6 +24,8 @@
 #define SMALL_DEVICE 1
 #endif
 
+#include "DnssecCheckVersion.h"
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
