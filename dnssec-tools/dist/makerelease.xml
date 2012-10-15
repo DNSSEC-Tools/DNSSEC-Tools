@@ -45,10 +45,10 @@
 	  </files>
 	</modify>
 	<modify
-	  find='(DNSSECToolsVersion", *")[\.0-9]+(rc\d+|pre\d+|)'
+	  find='(DNSSEC_CHECK_VERSION ")[\.0-9]+(rc\d+|pre\d+|)'
 	  replace='$1{VERSION}'>
 	  <files>
-	    <file>validator/apps/dnssec-check/mainwindow.cpp</file>
+	    <file>validator/apps/dnssec-check/DnssecCheckVersion.h</file>
 	  </files>
 	</modify>
       </modifications>
