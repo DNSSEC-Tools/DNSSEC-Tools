@@ -14,6 +14,8 @@
 #include <QtNetwork/QAbstractSocket>
 #include <QtCore/QList>
 
+#include "DnssecCheckVersion.h"
+
 #define ENABLE_RESULTS_SUBMISSION 1
 
 #ifndef RESULTS_SUBMIT_URL
@@ -58,12 +60,15 @@ public:
     Q_PROPERTY(QString submissionMessage  READ submissionMessage                      NOTIFY submissionMessageChanged)
     Q_PROPERTY(QString lastResultMessage  READ lastResultMessage                      NOTIFY lastResultMessageChanged)
     Q_PROPERTY(bool inTestLoop            READ inTestLoop         WRITE setInTestLoop NOTIFY inTestLoopChanged)
+    Q_PROPERTY(QString dnssecCheckVersion READ dnssecCheckVersion)
 
     QString submissionMessage();
     QString lastResultMessage();
 
     bool inTestLoop();
     void setInTestLoop(bool newval);
+
+    QString dnssecCheckVersion() { return QString(DNSSEC_CHECK_VERSION); }
 
 signals:
     void submissionMessageChanged();
