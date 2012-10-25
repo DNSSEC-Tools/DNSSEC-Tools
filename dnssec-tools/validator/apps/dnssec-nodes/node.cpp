@@ -202,6 +202,8 @@ QColor Node::getColorForStatus(int status) {
         color = Qt::magenta;
     else if (status & DNSData::AD_VERIFIED)
         color = QColor(Qt::darkGreen);
+    else if (status & DNSData::AUTHORATATIVE)
+        color = QColor(Qt::green).lighter();
     else if (status & DNSData::SERVFAIL_RCODE)
         color = QColor(Qt::red).lighter();
     else

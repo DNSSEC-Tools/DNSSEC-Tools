@@ -301,7 +301,9 @@ void PcapWatcher::processPackets()
             }
 
             int rcode = libsres_msg_getflag(handle, ns_f_rcode);
-            DNSData::Status status = libsres_msg_getflag(handle, ns_f_ad) ? DNSData::AD_VERIFIED : DNSData::UNKNOWN;
+            DNSData::Status status = libsres_msg_getflag(handle, ns_f_ad) ?
+                        DNSData::AD_VERIFIED :
+                        (libsres_msg_getflag(handle, ns_f_aa) ? DNSData::AUTHORATATIVE : DNSData::UNKNOWN);
 
             if (rcode == ns_r_servfail) {
                 /* handle SERVFAIL error cases */
@@ -315,7 +317,7 @@ void PcapWatcher::processPackets()
                     /* the first (only) question should be the name we're failing on */
                     emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), DNSData::DNE), "NXDomain caught");
                 }
-            } else { // XXX: NXDomain?
+            } else {
                 /* handle normal responses */
                 for (;;) {
                     if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {

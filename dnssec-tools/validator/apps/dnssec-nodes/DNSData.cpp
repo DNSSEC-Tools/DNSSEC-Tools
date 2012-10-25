@@ -54,6 +54,8 @@ QString DNSData::DNSSECStatusForEnum(int status) const
         return "AD bit verified";
     case SERVFAIL_RCODE:
         return "SERVFAIL set";
+    case AUTHORATATIVE:
+        return "Authoritative Answer";
     default:
         return "Unknown Status";
     }
@@ -79,6 +81,8 @@ QStringList DNSData::DNSSECStringStatuses() const
         results.push_back(DNSSECStatusForEnum(AD_VERIFIED));
     if (m_DNSSECStatus & SERVFAIL_RCODE)
         results.push_back(DNSSECStatusForEnum(SERVFAIL_RCODE));
+    if (m_DNSSECStatus & AUTHORATATIVE)
+        results.push_back(DNSSECStatusForEnum(AUTHORATATIVE));
 
     return results;
 }
