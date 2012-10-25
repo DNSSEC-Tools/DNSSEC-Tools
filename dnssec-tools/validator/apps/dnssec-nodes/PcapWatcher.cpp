@@ -309,6 +309,12 @@ void PcapWatcher::processPackets()
                     /* the first (only) question should be the name we're failing on */
                     emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), DNSData::SERVFAIL_RCODE), "SERVFAIL caught");
                 }
+            } else if (rcode == ns_r_nxdomain) {
+                /* handle SERVFAIL error cases */
+                if (!ns_parserr(&handle, ns_s_qd, rrnum, &rr)) {
+                    /* the first (only) question should be the name we're failing on */
+                    emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), DNSData::DNE), "NXDomain caught");
+                }
             } else { // XXX: NXDomain?
                 /* handle normal responses */
                 for (;;) {
