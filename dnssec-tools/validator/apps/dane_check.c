@@ -110,6 +110,7 @@ main(int argc, char *argv[])
     char           *label_str = NULL;
     struct val_daneparams daneparams;
     struct val_danestatus *danestatus = NULL;
+    struct val_danestatus *dane_cur = NULL;
     int port = 443;
     int proto = DANE_PARAM_PROTO_TCP;
     val_context_t *context = NULL;
@@ -220,10 +221,6 @@ main(int argc, char *argv[])
 
         /* synchronous lookup and validation */
         dane_retval = val_getdaneinfo(context, node, &daneparams, &danestatus); 
-        if (VAL_NO_ERROR != retval) {
-            dane_retval = VAL_DANE_INTERNAL_ERROR; 
-            goto done;
-        }
     }
     else {
 #ifdef VAL_NO_ASYNC
@@ -283,6 +280,17 @@ main(int argc, char *argv[])
 done:
     printf("Return code = %s(%d)\n", 
             p_dane_error(dane_retval), dane_retval);
+
+
+    dane_cur = danestatus;
+    while (dane_cur) {
+        printf("DANE check s,t,u=%d,%d,%d\n",
+               dane_cur->selector,
+               dane_cur->type,
+               dane_cur->usage);
+
+        dane_cur = dane_cur->next;
+    }
 
     if (danestatus != NULL)
         val_free_dane(danestatus);
