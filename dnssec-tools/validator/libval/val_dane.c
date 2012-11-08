@@ -10,6 +10,9 @@
  * DESCRIPTION
  * This file contains the implementation for DANE (RFC 6698) 
  */
+
+#include <openssl/x509.h>
+
 #include "validator-internal.h"
 #include "val_context.h"
 #include "validator/val_dane.h"
@@ -74,7 +77,7 @@ get_dane_from_result(struct val_daneparams *dparam,
                 }
                 /* Parse the RR into the DANE structure */
                 cp = rr->rr_rdata;
-                end = cp + rr->rr_rdata_length + 1;
+                end = cp + rr->rr_rdata_length;
                 if (end - cp < 3) {
                     /* 
                      * Don't have enough data for the fixed length TLSA
@@ -88,9 +91,9 @@ get_dane_from_result(struct val_daneparams *dparam,
                  * application is allowed to cache this data
                  */
                 dcur->ttl = rrset->val_rrset_ttl;
-                dcur->usage = (*cp)++;
-                dcur->selector = (*cp)++;
-                dcur->type = (*cp)++;
+                dcur->usage = *cp++;
+                dcur->selector = *cp++;
+                dcur->type = *cp++;
                 dcur->datalen = end - cp;
                 dcur->next = NULL;
                 if (dcur->datalen > 0) {
@@ -393,3 +396,178 @@ int val_getdaneinfo(val_context_t *context,
 
     return dane_rc;
 }
+
+static
+int get_pkeybuf(const unsigned char **data, int len, 
+                int *pkeyLen, unsigned char **pkeybuf)
+{
+    X509 *cert;
+    EVP_PKEY *pkey;
+    int rv = 0;
+
+    if (pkeyLen == NULL || pkeybuf == NULL)
+        return -1;
+
+    *pkeyLen = 0;
+    *pkeybuf = NULL;
+
+    cert = d2i_X509(NULL, data, len);
+    if (cert == NULL)
+        return -1;
+
+    pkey = X509_get_pubkey(cert);
+    if (pkey == NULL) {
+        X509_free(cert);
+        return -1;
+    }
+
+    *pkeyLen = EVP_PKEY_size(pkey);
+    *pkeybuf = (unsigned char *)MALLOC((*pkeyLen+1) * sizeof(unsigned char));
+    if (*pkeybuf == NULL) {
+        rv = -1;
+    } else {
+        i2d_PublicKey(pkey, pkeybuf);
+    }
+    EVP_PKEY_free(pkey); 
+    X509_free(cert);
+    return rv;
+}
+
+int val_dane_match(val_context_t *ctx,
+                   struct val_danestatus *dane_cur, 
+                   const unsigned char **data, 
+                   int len)
+{
+
+#if 0
+    char buf1[1028];
+    char buf2[1028];
+    size_t buflen1 = 1024;
+    size_t buflen2 = 1024;
+#endif
+
+    if (dane_cur == NULL || data == NULL)
+        return -1;
+
+    val_log(ctx, LOG_DEBUG,
+            "val_dane_match(): checking for DANE cert match - sel:%d type:%d", 
+            dane_cur->selector, dane_cur->type);
+
+    if ((dane_cur->selector != DANE_SEL_FULLCERT) &&
+        (dane_cur->selector != DANE_SEL_PUBKEY)) {
+        val_log(ctx, LOG_DEBUG,
+            "val_dane_match(): Unknown DANE selector:%d",
+            dane_cur->selector);
+        return -1;
+    }
+
+    if (dane_cur->type == DANE_MATCH_EXACT) {
+        X509 *cert;
+        X509 *tlsa_cert;
+#if 0
+        val_log(ctx, LOG_DEBUG,
+            "val_dane_match(): checking for exact DANE cert match %s \n\n %s", 
+            get_hex_string(*data, len, buf1, buflen1),
+            get_hex_string(dane_cur->data, dane_cur->datalen, buf2, buflen2));
+#endif
+
+        if (dane_cur->selector == DANE_SEL_FULLCERT) {
+            cert = d2i_X509(NULL, data, len);
+            tlsa_cert = d2i_X509(NULL, (const unsigned char **)&dane_cur->data, 
+                                 dane_cur->datalen);
+            if ((cert != NULL) && (X509_cmp(tlsa_cert, cert) == 0)) {
+                X509_free(cert);
+                X509_free(tlsa_cert);
+                val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT success");
+                return 0;
+            }
+            val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT failed");
+            X509_free(cert);
+            X509_free(tlsa_cert);
+        } else {
+            int pkeyLen = 0;
+            unsigned char *pkeybuf = NULL;
+            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
+                return -1;
+
+            if (pkeyLen == dane_cur->datalen &&
+                0 == memcmp(pkeybuf, dane_cur->data, pkeyLen)) {
+
+                val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_PUBKEY/DANE_MATCH_EXACT success");
+                FREE(pkeybuf);
+                return 0;
+            }
+            val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_PUBKEY/DANE_MATCH_EXACT failed");
+            FREE(pkeybuf);
+            return 0;
+        }
+
+    } else if (dane_cur->type == DANE_MATCH_SHA256) {
+
+        unsigned char cert_sha[SHA256_DIGEST_LENGTH];
+        memset(cert_sha, 0, SHA256_DIGEST_LENGTH);
+
+        if (dane_cur->selector == DANE_SEL_FULLCERT) {
+            SHA256(*data, len, cert_sha);
+        } else {
+            int pkeyLen = 0;
+            unsigned char *pkeybuf = NULL;
+            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
+                return -1;
+            SHA256(pkeybuf, pkeyLen, cert_sha);
+            FREE(pkeybuf);
+        }
+
+#if 0
+        val_log(ctx, LOG_DEBUG,
+            "val_dane_match(): checking for DANE SHA match %s with %s", 
+            get_hex_string(cert_sha, SHA256_DIGEST_LENGTH, buf1, buflen1),
+            get_hex_string(dane_cur->data, dane_cur->datalen, buf2, buflen2));
+#endif
+
+        if (dane_cur->datalen == SHA256_DIGEST_LENGTH && 
+            0 == memcmp(cert_sha, dane_cur->data, SHA256_DIGEST_LENGTH)) {
+            val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA256 success");
+            return 0;
+        }
+        val_log(ctx, LOG_DEBUG, 
+                "val_dane_match(): DANE SHA256 does NOT match (len = %d)", 
+                dane_cur->datalen);
+        val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA256 failed");
+    } else if (dane_cur->type == DANE_MATCH_SHA512) {
+
+        unsigned char cert_sha[SHA512_DIGEST_LENGTH];
+        memset(cert_sha, 0, SHA512_DIGEST_LENGTH);
+
+        if (dane_cur->selector  == DANE_SEL_FULLCERT) {
+            SHA512(*data, len, cert_sha);
+        } else {
+            int pkeyLen = 0;
+            unsigned char *pkeybuf = NULL;
+            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
+                return -1;
+            SHA512(pkeybuf, pkeyLen, cert_sha);
+            FREE(pkeybuf);
+        }
+
+#if 0
+        val_log(ctx, LOG_DEBUG,
+            "val_dane_match(): checking for DANE SHA match %s with %s", 
+            get_hex_string(cert_sha, SHA512_DIGEST_LENGTH, buf1, buflen1),
+            get_hex_string(dane_cur->data, dane_cur->datalen, buf2, buflen2));
+#endif
+
+        if (dane_cur->datalen == SHA512_DIGEST_LENGTH &&
+            0 == memcmp(cert_sha, dane_cur->data, SHA512_DIGEST_LENGTH)) {
+            val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA512 success");
+            return 0;
+        }
+        val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA512 failed");
+    } else {
+        val_log(ctx, LOG_DEBUG,
+            "val_dane_match(): Error - Unknown DANE type:%d", dane_cur->type);
+    }
+
+    return -1;
+}
+

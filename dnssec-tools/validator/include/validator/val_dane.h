@@ -98,6 +98,10 @@ int val_getdaneinfo(val_context_t *context,
                     struct val_daneparams
                     *params,
                     struct val_danestatus **dres);
+int val_dane_match(val_context_t *ctx,
+                   struct val_danestatus *dane_cur, 
+                   const unsigned char **data, 
+                   int len);
 
 #ifdef __cplusplus
 }                               /* extern "C" */
