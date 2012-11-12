@@ -11,11 +11,17 @@
  * This file contains the implementation for DANE (RFC 6698) 
  */
 
-#include <openssl/x509.h>
-
 #include "validator-internal.h"
 #include "val_context.h"
 #include "validator/val_dane.h"
+
+#include <openssl/bn.h>
+#include <openssl/sha.h>
+#ifdef HAVE_CRYPTO_SHA2_H /* netbsd */
+#include <crypto/sha2.h>
+#endif
+#include <openssl/x509.h>
+#include <openssl/evp.h>
 
 /*
  * Internal callback structure
@@ -51,12 +57,12 @@ get_dane_from_result(struct val_daneparams *dparam,
 
     for (res = results; res != NULL; res = res->val_rc_next) {
 
+        if (val_does_not_exist(res->val_rc_status))
+            return VAL_DANE_MISSING_TLSA;
+
         /* DANE resource records MUST be validated */
         if (!val_isvalidated(res->val_rc_status))
             return VAL_DANE_NOTVALIDATED;
-
-        if (val_does_not_exist(res->val_rc_status))
-            return VAL_DANE_MISSING_TLSA;
 
         rrset = res->val_rc_rrset;
         if(!res->val_rc_alias && rrset && 
@@ -398,12 +404,13 @@ int val_getdaneinfo(val_context_t *context,
 }
 
 static
-int get_pkeybuf(const unsigned char **data, int len, 
+int get_pkeybuf(const unsigned char *data, int len, 
                 int *pkeyLen, unsigned char **pkeybuf)
 {
     X509 *cert;
     EVP_PKEY *pkey;
     int rv = 0;
+    const unsigned char *tmp = data;
 
     if (pkeyLen == NULL || pkeybuf == NULL)
         return -1;
@@ -411,7 +418,7 @@ int get_pkeybuf(const unsigned char **data, int len,
     *pkeyLen = 0;
     *pkeybuf = NULL;
 
-    cert = d2i_X509(NULL, data, len);
+    cert = d2i_X509(NULL, &tmp, len);
     if (cert == NULL)
         return -1;
 
@@ -421,12 +428,14 @@ int get_pkeybuf(const unsigned char **data, int len,
         return -1;
     }
 
-    *pkeyLen = EVP_PKEY_size(pkey);
-    *pkeybuf = (unsigned char *)MALLOC((*pkeyLen+1) * sizeof(unsigned char));
+    *pkeyLen = i2d_PUBKEY(pkey, NULL);
+    if (*pkeyLen > 0)
+        *pkeybuf = (unsigned char *)MALLOC((*pkeyLen) * sizeof(unsigned char));
     if (*pkeybuf == NULL) {
         rv = -1;
     } else {
-        i2d_PublicKey(pkey, pkeybuf);
+        unsigned char *tmp2 = *pkeybuf;
+        i2d_PUBKEY(pkey, &tmp2);
     }
     EVP_PKEY_free(pkey); 
     X509_free(cert);
@@ -435,16 +444,11 @@ int get_pkeybuf(const unsigned char **data, int len,
 
 int val_dane_match(val_context_t *ctx,
                    struct val_danestatus *dane_cur, 
-                   const unsigned char **data, 
+                   const unsigned char *data, 
                    int len)
 {
-
-#if 0
-    char buf1[1028];
-    char buf2[1028];
-    size_t buflen1 = 1024;
-    size_t buflen2 = 1024;
-#endif
+    SHA256_CTX ctx256;
+    SHA512_CTX ctx512;
 
     if (dane_cur == NULL || data == NULL)
         return -1;
@@ -465,15 +469,23 @@ int val_dane_match(val_context_t *ctx,
         X509 *cert;
         X509 *tlsa_cert;
 #if 0
-        val_log(ctx, LOG_DEBUG,
+    {
+        char buf1[1028];
+        char buf2[1028];
+        size_t buflen1 = 1024;
+        size_t buflen2 = 1024;
+        fprintf(stderr,
             "val_dane_match(): checking for exact DANE cert match %s \n\n %s", 
-            get_hex_string(*data, len, buf1, buflen1),
+            get_hex_string(data, len, buf1, buflen1),
             get_hex_string(dane_cur->data, dane_cur->datalen, buf2, buflen2));
+    }
 #endif
 
         if (dane_cur->selector == DANE_SEL_FULLCERT) {
-            cert = d2i_X509(NULL, data, len);
-            tlsa_cert = d2i_X509(NULL, (const unsigned char **)&dane_cur->data, 
+            const unsigned char *tmp = data;
+            const unsigned char *tmp2 = dane_cur->data;
+            cert = d2i_X509(NULL, &tmp, len);
+            tlsa_cert = d2i_X509(NULL, &tmp2, 
                                  dane_cur->datalen);
             if ((cert != NULL) && (X509_cmp(tlsa_cert, cert) == 0)) {
                 X509_free(cert);
@@ -487,6 +499,7 @@ int val_dane_match(val_context_t *ctx,
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
+
             if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
                 return -1;
 
@@ -508,21 +521,36 @@ int val_dane_match(val_context_t *ctx,
         memset(cert_sha, 0, SHA256_DIGEST_LENGTH);
 
         if (dane_cur->selector == DANE_SEL_FULLCERT) {
-            SHA256(*data, len, cert_sha);
+            SHA256(data, len, cert_sha);
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
             if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
                 return -1;
+#if 0
+            {
+                char buf1[1028];
+                size_t buflen1 = 1024;
+                fprintf(stderr, "pkeylen = %d, pkeybuf = %s\n",
+                        pkeyLen, 
+                        get_hex_string(pkeybuf, pkeyLen, buf1, buflen1));
+            }
+#endif
             SHA256(pkeybuf, pkeyLen, cert_sha);
             FREE(pkeybuf);
         }
 
 #if 0
-        val_log(ctx, LOG_DEBUG,
-            "val_dane_match(): checking for DANE SHA match %s with %s", 
+        {
+        char buf1[1028];
+        char buf2[1028];
+        size_t buflen1 = 1024;
+        size_t buflen2 = 1024;
+        fprintf(stderr,
+            "val_dane_match(): checking for DANE SHA256 match %s with %s", 
             get_hex_string(cert_sha, SHA256_DIGEST_LENGTH, buf1, buflen1),
             get_hex_string(dane_cur->data, dane_cur->datalen, buf2, buflen2));
+        }
 #endif
 
         if (dane_cur->datalen == SHA256_DIGEST_LENGTH && 
@@ -540,7 +568,7 @@ int val_dane_match(val_context_t *ctx,
         memset(cert_sha, 0, SHA512_DIGEST_LENGTH);
 
         if (dane_cur->selector  == DANE_SEL_FULLCERT) {
-            SHA512(*data, len, cert_sha);
+            SHA512(data, len, cert_sha);
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
@@ -551,10 +579,16 @@ int val_dane_match(val_context_t *ctx,
         }
 
 #if 0
-        val_log(ctx, LOG_DEBUG,
-            "val_dane_match(): checking for DANE SHA match %s with %s", 
+        {
+        char buf1[1028];
+        char buf2[1028];
+        size_t buflen1 = 1024;
+        size_t buflen2 = 1024;
+        fprintf(stderr,
+            "val_dane_match(): checking for DANE SHA512 match %s with %s", 
             get_hex_string(cert_sha, SHA512_DIGEST_LENGTH, buf1, buflen1),
             get_hex_string(dane_cur->data, dane_cur->datalen, buf2, buflen2));
+        }
 #endif
 
         if (dane_cur->datalen == SHA512_DIGEST_LENGTH &&
