@@ -278,9 +278,9 @@ main(int argc, char *argv[])
     /* XXX Print DANE information */
 
 done:
-    printf("Return code = %s(%d)\n", 
+    printf("Return code for %s = %s(%d)\n", 
+            node,
             p_dane_error(dane_retval), dane_retval);
-
 
     dane_cur = danestatus;
     while (dane_cur) {
