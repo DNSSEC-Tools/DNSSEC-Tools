@@ -15,13 +15,6 @@
 #include "val_context.h"
 #include "validator/val_dane.h"
 
-#include <openssl/bn.h>
-#include <openssl/sha.h>
-#ifdef HAVE_CRYPTO_SHA2_H /* netbsd */
-#include <crypto/sha2.h>
-#endif
-#include <openssl/x509.h>
-#include <openssl/evp.h>
 
 /*
  * Internal callback structure
@@ -451,7 +444,7 @@ int val_dane_match(val_context_t *ctx,
     SHA512_CTX ctx512;
 
     if (dane_cur == NULL || data == NULL)
-        return -1;
+        return VAL_DANE_CHECK_FAILED;
 
     val_log(ctx, LOG_DEBUG,
             "val_dane_match(): checking for DANE cert match - sel:%d type:%d", 
@@ -462,7 +455,7 @@ int val_dane_match(val_context_t *ctx,
         val_log(ctx, LOG_DEBUG,
             "val_dane_match(): Unknown DANE selector:%d",
             dane_cur->selector);
-        return -1;
+        return VAL_DANE_CHECK_FAILED;
     }
 
     if (dane_cur->type == DANE_MATCH_EXACT) {
@@ -491,7 +484,7 @@ int val_dane_match(val_context_t *ctx,
                 X509_free(cert);
                 X509_free(tlsa_cert);
                 val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT success");
-                return 0;
+                return VAL_DANE_NOERROR;
             }
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT failed");
             X509_free(cert);
@@ -501,18 +494,18 @@ int val_dane_match(val_context_t *ctx,
             unsigned char *pkeybuf = NULL;
 
             if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
-                return -1;
+                return VAL_DANE_CHECK_FAILED;
 
             if (pkeyLen == dane_cur->datalen &&
                 0 == memcmp(pkeybuf, dane_cur->data, pkeyLen)) {
 
                 val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_PUBKEY/DANE_MATCH_EXACT success");
                 FREE(pkeybuf);
-                return 0;
+                return VAL_DANE_NOERROR;
             }
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_PUBKEY/DANE_MATCH_EXACT failed");
             FREE(pkeybuf);
-            return 0;
+            return VAL_DANE_NOERROR;
         }
 
     } else if (dane_cur->type == DANE_MATCH_SHA256) {
@@ -526,7 +519,7 @@ int val_dane_match(val_context_t *ctx,
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
             if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
-                return -1;
+                return VAL_DANE_CHECK_FAILED;
 #if 0
             {
                 char buf1[1028];
@@ -556,7 +549,7 @@ int val_dane_match(val_context_t *ctx,
         if (dane_cur->datalen == SHA256_DIGEST_LENGTH && 
             0 == memcmp(cert_sha, dane_cur->data, SHA256_DIGEST_LENGTH)) {
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA256 success");
-            return 0;
+            return VAL_DANE_NOERROR;
         }
         val_log(ctx, LOG_DEBUG, 
                 "val_dane_match(): DANE SHA256 does NOT match (len = %d)", 
@@ -573,7 +566,7 @@ int val_dane_match(val_context_t *ctx,
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
             if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
-                return -1;
+                return VAL_DANE_CHECK_FAILED;
             SHA512(pkeybuf, pkeyLen, cert_sha);
             FREE(pkeybuf);
         }
@@ -594,7 +587,7 @@ int val_dane_match(val_context_t *ctx,
         if (dane_cur->datalen == SHA512_DIGEST_LENGTH &&
             0 == memcmp(cert_sha, dane_cur->data, SHA512_DIGEST_LENGTH)) {
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA512 success");
-            return 0;
+            return VAL_DANE_NOERROR;
         }
         val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA512 failed");
     } else {
@@ -602,6 +595,129 @@ int val_dane_match(val_context_t *ctx,
             "val_dane_match(): Error - Unknown DANE type:%d", dane_cur->type);
     }
 
-    return -1;
+    return VAL_DANE_CHECK_FAILED;
+}
+
+
+int val_dane_check(val_context_t *context,
+                   SSL *con,
+                   struct val_danestatus *danestatus,
+                   int *do_pathval) 
+{
+    STACK_OF(X509) *certList = NULL;
+    X509 *cert = NULL;
+    struct val_danestatus *dane_cur = NULL;
+    int have_dane = 0;
+    unsigned char *cert_data = NULL;
+    unsigned char *c = NULL;
+    int cert_datalen = 0;
+    int rv;
+    int i;
+
+    if (context == NULL || con == NULL || danestatus == NULL ||
+            do_pathval == NULL)
+        return VAL_DANE_CHECK_FAILED;
+
+    dane_cur = danestatus;
+    while(dane_cur)  {
+        have_dane = 1;
+        *do_pathval = 1;
+    
+        val_log(context, LOG_DEBUG, 
+                "DANE check s,t,u=%d,%d,%d\n",
+                dane_cur->selector,
+                dane_cur->type,
+                dane_cur->usage); 
+
+        switch (dane_cur->usage) {
+            case DANE_USE_CA_CONSTRAINT: /*0*/ {
+                /* 
+                 * Check that the TLSA cert matches one on the cert
+                 * chain
+                 */
+                certList = SSL_get_peer_cert_chain(con);
+                if (!certList) {
+                    break;
+                }
+                for (i = 0; i < sk_X509_num(certList); i++) {
+                    cert = sk_X509_value(certList, i);
+                    c = cert_data;
+                    cert_datalen = i2d_X509(cert, &c);
+                    if(cert_datalen > 0 &&
+                            val_dane_match(context,
+                                dane_cur,
+                                (const unsigned char *)cert_data,
+                                cert_datalen) == 0) {
+                        val_log(context, LOG_DEBUG, "DANE: val_dane_match() success\n");
+                        rv = VAL_DANE_NOERROR;
+                        free(cert_data);
+                        goto done;
+                    }
+                }
+                val_log(context, LOG_DEBUG, "DANE: val_dane_match() failed\n");
+                break;
+            }
+
+            case DANE_USE_DOMAIN_ISSUED: /*3*/
+                *do_pathval = 0;
+                /* fall-through */
+            case DANE_USE_SVC_CONSTRAINT: /*1*/ 
+                cert = SSL_get_peer_certificate(con);
+                c = cert_data;
+                cert_datalen = i2d_X509(cert, &c);
+                if(cert_datalen > 0 && 
+                        val_dane_match(context, 
+                                  dane_cur,
+                                  (const unsigned char *)cert_data,
+                                  cert_datalen) == 0) {
+                    val_log(context, LOG_DEBUG, "DANE: val_dane_match() success\n");
+                    rv = VAL_DANE_NOERROR;
+                    free(cert_data);
+                    goto done;
+                }
+                val_log(context, LOG_DEBUG, "DANE: val_dane_match() failed\n");
+                break;
+
+            case DANE_USE_TA_ASSERTION: /*2*/ {
+                SSL_CTX *ctx = SSL_get_SSL_CTX(con);
+                X509_STORE *store;
+                *do_pathval = 0;
+                if (store = X509_STORE_new()) {
+                    X509 *tlsa_cert = NULL;
+                    c = dane_cur->data;
+                    tlsa_cert = d2i_X509(NULL, (const unsigned char **)&c, 
+                                         dane_cur->datalen);
+                    X509_STORE_add_cert(store, tlsa_cert);
+                    SSL_CTX_set_cert_store(ctx, store);
+                    if (SSL_get_verify_result(con) == X509_V_OK) {
+                        val_log(context, LOG_DEBUG, "DANE: val_dane_match() success\n");
+                        rv = VAL_DANE_NOERROR;
+                        goto done;
+                    }
+                }
+
+                val_log(context, LOG_DEBUG, "DANE: val_dane_match() failed\n");
+                break;
+            }
+            default:
+                val_log(context, LOG_DEBUG, "DANE: val_dane_match() failed\n");
+                break;
+        }
+
+        dane_cur = dane_cur->next;
+    }
+
+    rv = VAL_DANE_CHECK_FAILED; 
+
+done:
+    if (have_dane) {
+        if (rv == VAL_DANE_NOERROR)
+            val_log(context, LOG_DEBUG, "DANE: Passed validation\n");
+        else {
+            val_log(context, LOG_DEBUG, "DANE: validation failed\n");
+        }
+    }
+
+   return rv;
 }
 
