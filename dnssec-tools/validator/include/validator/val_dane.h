@@ -62,7 +62,7 @@ extern          "C" {
 #define VAL_DANE_CANCELLED      1
 #define VAL_DANE_INTERNAL_ERROR 2
 #define VAL_DANE_NOTVALIDATED   3
-#define VAL_DANE_MISSING_TLSA   4
+#define VAL_DANE_IGNORE_TLSA    4
 #define VAL_DANE_MALFORMED_TLSA 5
 #define VAL_DANE_CHECK_FAILED   6
 
