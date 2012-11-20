@@ -10,6 +10,15 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#include <openssl/bn.h>
+#include <openssl/sha.h>
+#ifdef HAVE_CRYPTO_SHA2_H /* netbsd */
+#include <crypto/sha2.h>
+#endif
+#include <openssl/x509.h>
+#include <openssl/evp.h>
+#include <openssl/ssl.h>
+
 #ifdef __cplusplus
 extern          "C" {
 #endif
@@ -55,6 +64,7 @@ extern          "C" {
 #define VAL_DANE_NOTVALIDATED   3
 #define VAL_DANE_MISSING_TLSA   4
 #define VAL_DANE_MALFORMED_TLSA 5
+#define VAL_DANE_CHECK_FAILED   6
 
 /*
  * These are the parameters that the user would supply
@@ -102,6 +112,10 @@ int val_dane_match(val_context_t *ctx,
                    struct val_danestatus *dane_cur, 
                    const unsigned char *data, 
                    int len);
+int val_dane_check(val_context_t *context,
+                   SSL *con,
+                   struct val_danestatus *danestatus,
+                   int *do_pathval);
 
 #ifdef __cplusplus
 }                               /* extern "C" */
