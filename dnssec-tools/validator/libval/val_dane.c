@@ -51,7 +51,7 @@ get_dane_from_result(struct val_daneparams *dparam,
     for (res = results; res != NULL; res = res->val_rc_next) {
 
         if (val_does_not_exist(res->val_rc_status))
-            return VAL_DANE_MISSING_TLSA;
+            return VAL_DANE_IGNORE_TLSA;
 
         /* DANE resource records MUST be validated */
         if (!val_isvalidated(res->val_rc_status))
@@ -247,8 +247,14 @@ const char *p_dane_error(int rc)
         case VAL_DANE_NOTVALIDATED:
             err = "VAL_DANE_NOTVALIDATED";
             break;
-        case VAL_DANE_MISSING_TLSA:
-            err = "VAL_DANE_MISSING_TLSA";
+        case VAL_DANE_IGNORE_TLSA:
+            err = "VAL_DANE_IGNORE_TLSA";
+            break;
+        case VAL_DANE_MALFORMED_TLSA:
+            err = "VAL_DANE_MALFORMED_TLSA";
+            break;
+        case VAL_DANE_CHECK_FAILED:
+            err = "VAL_DANE_CHECK_FAILED";
             break;
         default:
             err = "UNKNOWN DANE error";
