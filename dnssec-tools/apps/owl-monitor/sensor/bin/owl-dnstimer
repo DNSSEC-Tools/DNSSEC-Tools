@@ -1,0 +1,983 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-dnstimer						Owl Monitoring System
+#
+#       This script runs timing tests for DNS lookups.  It starts a thread
+#	for each of a set of queries defined in the Owl configuration file.
+#	Each thread periodically sends a DNS request for a specified host to
+#	a particular nameserver.  The time taken to fulfill the request is
+#	recorded for later transfer to the Owl manager.
+#
+# Revision History:
+#	1.0	121201	Initial version.
+#
+
+use strict;
+
+use FindBin;
+
+use lib "$FindBin::Bin/../perllib";
+use owlutils;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS;
+use Net::DNS::Packet;
+use Net::DNS::Resolver;
+
+use threads;
+use threads::shared;
+use Thread::Queue;
+
+use Log::Dispatch;
+use Log::Dispatch::FileRotate;
+
+use Date::Format;
+use POSIX qw(setsid);
+use Time::HiRes qw(time);
+
+#
+# Version information.
+#
+my $NAME   = "owl-dnstimer";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#------------------------------------------------------------------------
+# Defaults and some constants.
+
+my $NSBASE = 'root-servers.net';		# Base name for root servers.
+
+my $DEF_CONFIG	= $owlutils::DEF_CONFIG;	# Default config file nodename.
+my $DEF_CONFDIR	= $owlutils::DEF_CONFDIR;	# Default config directory.
+my $DEF_DATADIR	= $owlutils::DEF_DATADIR;	# Default data directory.
+my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
+
+my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"confdir|cd=s",				# Specify config directory.
+	"config|cf=s",				# Specify config file.
+	"datadir=s",				# Specify data directory.
+	"logdir=s",				# Specify log directory.
+
+	"defaults",				# Print defaults.
+	"foreground|fg",			# Run in foreground.
+	"stop",					# Stop execution.
+
+	"help",					# Give help message.
+	"Version",				# Give version info.
+	"verbose",				# Give verbose output.
+);
+
+my $verbose = 0;
+my $confdir;					# Config directory.
+my $config;					# Config file.
+my $datadir;					# Data directory.
+my $foreground;					# Foreground-execution flag.
+my $logdir;					# Log directory.
+my $logfile;					# Log file.
+my $stopper;					# Stop-execution flag.
+
+#------------------------------------------------------------------------
+#
+# Error strings for log messages.  This is indexed by a code set in nstimer().
+#
+my @errors =
+(
+	'NOERROR',		# 0
+	'FORMERR',		# 1
+	'SERVFAIL',		# 2
+	'NXDOMAIN',		# 3
+	'NOTIMP',		# 4
+	'REFUSED',		# 5
+	'YXDOMAIN',		# 6
+	'YXRRSET',		# 7
+	'NXRRSET',		# 8
+	'NOTAUTH',		# 9
+	'NOTZONE',		# 10
+	'UNASSIGNED',		# 11
+	'UNASSIGNED',		# 12
+	'UNASSIGNED',		# 13
+	'UNASSIGNED',		# 14
+	'UNASSIGNED',		# 15
+	'BADVERS/BADSIG',	# 16
+	'BADKEY',		# 17
+	'BADTIME',		# 18
+	'BADMODE',		# 19
+	'BADNAME',		# 20
+	'BADALG',		# 21
+	'BADTRUNC',		# 22
+);
+
+my $MAXERR = 22;				# Maximum error.
+
+#------------------------------------------------------------------------
+#
+# Constants for configuration data.
+#
+
+my $idletime = 1 * 60;			# Main thread wait time.
+
+#------------------------------------------------------------------------
+# Data and log message data.
+#
+
+my $logmsgs :shared = ();
+
+my $sensorlog;				# Sensor's log object.
+my %loginfo = ();			# Logging information.
+
+my $nextroll = 0;			# Time of next datafile rollover.
+
+my $pidfile;				# Name of process-id file.
+my $sensorname;				# Sensor's name from config file.
+
+#------------------------------------------------------------------------
+# Threads and queries.
+#
+
+our @cf_targets	  = ();				# List of targets.
+our @cf_servers	  = ();				# List of nameservers.
+our @cf_qtypes	  = ();				# List of query types.
+our @cf_intervals = ();				# List of query intervals.
+our @cf_timeouts  = ();				# List of query timeouts.
+our @cf_rollints  = ();				# Datafile rollover interval.
+our @cf_states	  = ();				# State of targets.
+
+my @seekers = ();				# Query thread objects.
+my @resolvers = ();				# Resolver objects.
+my @datafiles = ();				# Datafiles for queries.
+my @datafds = ();				# Descriptors for datafiles.
+
+my $bunyan;					# Thread to handle logs.
+
+#------------------------------------------------------------------------
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $nscount = 0;		# Number of query threads started.
+
+	#
+	# Check our options and read the configuration file.
+	#
+	doopts();
+	owl_setup($NAME,$confdir,$datadir,$logdir);
+	if(owl_readconfig($config,$datadir,$logdir) != 0)
+	{
+		exit(2);
+	}
+
+	#
+	# Perform initialization steps.
+	#
+	startup();
+
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+	exit(1) if(owl_chkdir('log', $logdir) == 1);
+
+	#
+	# Daemonize ourself.
+	# 
+	if((! $foreground) && fork())
+	{
+		print "$NAME started and running as daemon\n";
+		exit(0);
+	}
+	POSIX::setsid() if(! $foreground);
+	owl_writepid();
+
+	#
+	# Build a name resolver object for each target/query.
+	#
+	makeresolvers();
+
+	#
+	# Create a new log-message queue for our threads to use.
+	#
+	$sensorlog->warning("creating logmsg queue") if($verbose);
+	$logmsgs = Thread::Queue->new();
+
+	#
+	# Print the root resolvers we're using.
+	#
+	printroots();
+
+	#
+	# Start a query thread for each root nameserver that has a valid entry.
+	#
+	$sensorlog->warning("creating query-threads for each target/nameserver pair");
+	for(my $ind=0; $ind < @cf_targets; $ind++)
+	{
+		$datafds[$ind] = -1;
+
+		next if($cf_states[$ind] == 0);
+
+		push @seekers, threads->create(\&querythread,$ind);
+		$nscount++;
+	}
+
+	#
+	# Complain and exit if we didn't start any query threads.
+	#
+	if($nscount == 0)
+	{
+		$sensorlog->warning("no root nameserver query threads started");
+		print STDERR "no root nameserver query threads started\n";
+		exit(4);
+	}
+
+	#
+	# Start a thread to handle log messages from the query threads.
+	#
+	$sensorlog->warning("creating log thread") if($verbose);
+	$bunyan = threads->create(\&bunyan);
+
+	#
+	# Master thread will just sit here twiddling its thumbs.
+	#
+	while(42)
+	{
+		select(undef,undef,undef,$idletime);
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version()	if(defined($options{'Version'}));
+	usage(1)	if(defined($options{'help'}));
+	owl_printdefs()	if(defined($options{'defaults'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$confdir    = $options{'confdir'}    || $DEF_CONFDIR;
+	$config	    = $options{'config'}     || $DEF_CONFIG;
+	$foreground = $options{'foreground'} || 0;
+	$stopper    = $options{'stop'}       || 0;
+	$verbose    = $options{'verbose'};
+
+	$datadir    = $options{'datadir'};
+	$logdir	    = $options{'logdir'};
+
+	#
+	# Moosh together a few variables to build the config file.
+	#
+	$config = "$confdir/$config" if($config !~ /\//);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	startup()
+#
+sub startup
+{
+	#
+	# Set up our signal handlers.
+	#
+	sigurd();
+
+	#
+	# Set up our log file..
+	#
+	$sensorlog = owl_setlog($NAME);
+
+	#
+	# Shutdown any owl-dnstimer instances that are running.
+	#
+	if($stopper)
+	{
+		owl_halt('owl-dnstimer');
+		exit(0);
+	}
+
+	#
+	# Make sure we're the only owl-dnstimer running.  We'll also allow a
+	# user to signal the other owl-dnstimer to shut down.
+	#
+	if(owl_singleton(0) == 0)
+	{
+		#
+		# If we're not the only owl-dnstimer running, we'll
+		# complain and exit.
+		#
+		$sensorlog->warning("$NAME already running");
+		print STDERR "$NAME already running\n";
+		exit(2);
+	}
+
+	#
+	# Get some data set in our utilities.
+	#
+	$pidfile    = $owlutils::pidfile;
+	$datadir    = $owlutils::datadir;
+	$logdir	    = $owlutils::logdir;
+	$sensorname = $owlutils::sensorname;
+
+	@cf_targets   = @owlutils::cf_targets;
+	@cf_servers   = @owlutils::cf_servers;
+	@cf_qtypes    = @owlutils::cf_qtypes;
+	@cf_intervals = @owlutils::cf_intervals;
+	@cf_timeouts  = @owlutils::cf_timeouts;
+	@cf_rollints  = @owlutils::cf_rollints;
+	@cf_states    = @owlutils::cf_states;
+
+	#
+	# Give some extra-tasty output.
+	#
+	if($verbose)
+	{
+		print "confdir - $confdir\n";
+		print "config  - $config\n";
+		print "datadir - $datadir\n";
+		print "logdir  - $logdir\n";
+		print "\n";
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	makeresolvers()
+#
+# Purpose:	Build a resolver object for each defined root nameserver.
+#		These objects will be saved in the %roots hash.
+#
+sub makeresolvers
+{
+	for(my $ind=0; $ind < @cf_servers; $ind++)
+	{
+		my $nsname;				# Name server's name.
+		my $res;				# Resolver object.
+		my $timeout;				# Query timeout value.
+
+		$nsname  = $cf_servers[$ind];
+		$timeout = $cf_timeouts[$ind];
+
+		#
+		# Build the resolver object.
+		#
+if(1)
+{
+		$res = Net::DNS::Resolver->new(
+						  nameservers => [$nsname],
+						  recurse     => 0,
+						  retry       => 1,
+					      );
+}
+else
+{
+		$res = Net::DNS::Resolver->new(
+						nameservers => ['d.root-servers.net'],
+						recurse     => 1,
+						retry       => 1,
+					      );
+}
+
+		#
+		# Set some resolver fields.
+		#
+		$res->cdflag(1);
+		$res->tcp_timeout($timeout);
+		$res->udp_timeout($timeout);
+
+		#
+		# Save this root's resolver object.
+		#
+		push @resolvers, $res;
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	querythread()
+#
+# Purpose:	This routine runs the nameserver timing queries.  It is run
+#		in a separate thread for each taret/nameserver pair.
+#
+sub querythread
+{
+	my $qind = shift;				# Query's array index.
+	my $target;					# Query's target host.
+	my $ns;						# Query's name server.
+	my $dfn = '';					# Datafile name.
+
+	$target = $cf_targets[$qind];
+	$ns = $cf_servers[$qind];
+
+	while(42)
+	{
+		my $now;				# Current time.
+		my $later;				# Next time to run.
+		my $naptime;				# Time to sleep.
+
+		#
+		# Get the name of the current data file and save it in the
+		# @datafiles array.  We may roll the data file.
+		#
+		getdatafile($qind,$ns);
+
+		#
+		# Give some verbose output about the change in datafile.
+		#
+		if($verbose && ($dfn ne $datafiles[$qind]))
+		{
+			print STDERR "new datafile - $datafiles[$qind]\n";
+			$sensorlog->warning("new datafile - $datafiles[$qind]");
+			$dfn = $datafiles[$qind];
+		}
+
+		#
+		# Get the time we're supposed to check again.
+		#
+		$later = time() + $cf_intervals[$qind];
+
+		#
+		# Run our timing check of the nameserver.
+		#
+		nstimer($qind);
+
+		#
+		# Calculate how much time we need to sleep, based on
+		# how much time we spent in the ns timing check.
+		#
+		$now = time();
+		$naptime = sprintf("%1.0f", ($later - $now));
+
+		#
+		# And let's wait for our next checkup time.
+		#
+		sleep($naptime);
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	getdatafile()
+#
+sub getdatafile
+{
+	my $qind = shift;	# Query index.
+	my $ns;			# Nameserver on whose behalf we're working.
+	my $tg;			# Target we're querying.
+	my $qt;			# Query type.
+	my $ctime = time();	# Current time.
+	my @cronos;		# Current GMT time, broken out into atoms.
+	my $datafn;		# Full data path to new data file.
+	my $datafd;		# File descriptor to new data file.
+
+	#
+	# Use the current datafile if the next rollover time is yet to come.
+	#
+	return if($nextroll > $ctime);
+
+	#
+	# Build the filename for the next datafile.
+	#
+	$ns = $cf_servers[$qind];
+	$tg = $cf_targets[$qind];
+	$qt = $cf_qtypes[$qind];
+	@cronos = gmtime($ctime);
+	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.dns",
+						$cronos[5] % 100,
+						$cronos[4] + 1,
+						$cronos[3],
+						$cronos[2],
+						$cronos[1]);
+
+	#
+	# Create a new data file.
+	#
+	$datafn = "$datadir/$datafiles[$qind]";
+	if(($datafd=new IO::File "> $datafn") == 0)
+	{
+		$logmsgs->enqueue("$tg:$ns:  unable to open $datafn : $!");
+		$seekers[$qind]->join();
+	}
+
+	#
+	# Close the old data file.
+	#
+	if($datafds[$qind] != -1)
+	{
+		my $dfd;				# Datafile descriptor.
+
+		$dfd = $datafds[$qind];
+		$dfd = $$dfd;
+
+		$dfd->close();
+	}
+
+	#
+	# Save the new file descriptor.
+	#
+	autoflush $datafd, 1;
+	$datafds[$qind] = \$datafd;
+	$logmsgs->enqueue("$tg:$ns:  changing to new datafile $datafn");
+
+	#
+	# Calculate the time for the next datafile rollover.
+	#
+	$nextroll = $ctime + $cf_rollints[$qind];
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	nstimer()
+#
+# Purpose:	Send a message to a root nameserver and time how long it
+#		takes for a response to arrive.  We'll then log the message
+#		and response time for use by a monitor.
+#
+#		This is timing how long it takes a root server to respond to
+#		a request.  The root servers are currently being sent the
+#		hostname.bind query that will result in an anycast response.
+#		Things must change if an actual look-up is required.
+#
+sub nstimer
+{
+	my $qind = shift;				# Query index.
+	my $target;					# Target host.
+	my $ns;						# Name server.
+	my $resolver;					# Resolver object.
+	my $resp;					# Resolver's response.
+	my $reply = 'undefined response';		# Reply message.
+	my $rcode = -1;					# send() error code.
+
+	my $qtype;					# Query type.
+	my $family = 'IN';				# Address family.
+
+	my $time0;					# Start time.
+	my $time1;					# Stop time.
+	my $timediff;					# Time difference.
+
+	#
+	# Get the some objects.
+	#
+	$ns	  = $cf_servers[$qind];
+	$target   = $cf_targets[$qind];
+	$qtype	  = $cf_qtypes[$qind];
+	$resolver = $resolvers[$qind];
+
+	#
+	# Make sure we were given a nameserver.
+	#
+	if(!defined($ns))
+	{
+		$sensorlog->warning("nstimer:  undefined nameserver");
+		print STDERR "nstimer:  undefined nameserver\n";
+		return;
+	}
+
+	#
+	# If we want an anycast result, we'll have to adjust some fields.
+	#
+	if($qtype =~ /^anycast$/i)
+	{
+		$target	= 'hostname.bind';
+		$qtype	= 'TXT';
+		$family	= 'CH';
+	}
+
+	#
+	# Send the query to the root server, and time the query.
+	#
+	$time0 = time();
+
+	$resp = $resolver->send($target, $qtype, $family);
+
+	$time1 = time();
+	$timediff = $time1 - $time0;
+
+	#
+	# We'll try to make sense of the answer, if one was returned.
+	#
+	if(defined($resp))
+	{
+		$rcode = $resp->header->rcode;
+
+		#
+		# If there's an answer, we'll stuff the text response
+		# into the reply string.
+		#
+		if(($resp->header->ancount > 0) && defined($resp->answer))
+		{
+			foreach my $txtrr ($resp->answer)
+			{
+				$reply = $txtrr->string;
+			}
+		}
+	}
+
+	#
+	# Send the answer off to be logged.
+	#
+	logger($qind,$reply,$rcode,$time0,$timediff);
+}
+
+#------------------------------------------------------------------------
+# Routine:	logger()
+#
+# Purpose:	Log a response from nstimer().  If a valid reply was sent
+#		from a root nameserver, we'll pull the anycast host from
+#		the reply data.  We're expecting the anycast response to
+#		look like this:
+#
+#			hostname.bind. 0       CH      TXT     "anycaster-name"
+#
+sub logger
+{
+	my $qind = shift;			# Query index.
+	my $reply = shift;			# Nameserver's reply.
+	my $rcode = shift;			# Success value of query.
+	my $cronos = shift;			# Time test was run.
+	my $td = shift;				# Time to run test.
+
+	my $qtype;				# Query type.
+	my $succstr;				# Success code string.
+	my $anycast = '';			# Nameserver's anycast instance.
+	my $msg;				# Formatted message to send.
+	my $dfd;				# Datafile descriptor.
+
+	#
+	# Get some data -- local variable for quick-access.
+	#
+	$qtype = $cf_qtypes[$qind];
+
+	#
+	# If the anycast request was successful, we'll get the anycast
+	# server's name.
+	#
+	if(($qtype eq 'ANYCAST') && ($rcode eq 'NOERROR'))
+	{
+		$reply =~ /"(.*)"/;
+		$anycast = $1;
+	}
+
+	#
+	# Get the success string for the query.
+	#
+	$succstr = $rcode;
+
+	$msg = sprintf("%10.5f $cf_targets[$qind] $cf_servers[$qind] $qtype %10.15f $succstr $anycast",$cronos,$td);
+
+	$logmsgs->enqueue($msg);
+
+	$dfd = $datafds[$qind];
+	$dfd = $$dfd;
+
+	print $dfd "$msg\n";
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	bunyan()
+#
+# Purpose:	Handle log manipulation and log messages for the query
+#		threads.
+#
+#		Log messages will have this format:
+#			1398421888.14615 d 0.020882844924927 NOERROR d-mimsy-3
+#
+sub bunyan
+{
+	#
+	# If the request was successful, we'll get the anycast server's name.
+	#
+	while(42)
+	{
+		my $msg;			# Message from query thread.
+
+		$msg = $logmsgs->dequeue();
+		chomp $msg;
+		$sensorlog->warning($msg);
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigurd()
+#
+# Purpose:	Set up signal handlers.
+#
+sub sigurd
+{
+	$SIG{HUP}  = \&cleanup;
+	$SIG{INT}  = \&cleanup;
+	$SIG{QUIT} = \&cleanup;
+	$SIG{TERM} = \&cleanup;
+	$SIG{USR1} = 'IGNORE';
+	$SIG{USR2} = \&sigmund;
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigmund()
+#
+# Purpose:	Dummy signal handler for SIGUSR2.
+#
+sub sigmund
+{
+	print "$NAME:  use \"$NAME -stop\" to shutdown\n";
+}
+
+#------------------------------------------------------------------------
+# Routine:	cleanup()
+#
+# Purpose:	Close down query threads.
+#
+sub cleanup
+{
+	#
+	# Shut down the query threads.
+	#
+	$sensorlog->warning("shutting down query-threads");
+	for(my $qind=0; $qind < @seekers; $qind++)
+	{
+		my $qt = $seekers[$qind];
+		my $tid = $qt->tid(); 
+
+		$sensorlog->warning("shutting down query-thread for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
+		$qt->kill('SIGUSR2')->detach();
+	}
+
+	#
+	# And now zap the logging thread.
+	#
+	$bunyan->kill('SIGUSR2')->detach();
+
+	#
+	# Remove the process-id file.
+	#
+	$sensorlog->warning("unlinking pidfile $pidfile") if($verbose);
+	print STDERR "\n\nunlinking pidfile \"$pidfile\"\n" if($verbose);
+	unlink($pidfile);
+
+	#
+	# Wait a moment for the final log message to be written.
+	#
+	$sensorlog->warning("shutting down...");
+	print STDERR "$NAME shutting down...\n" if($verbose);
+	sleep(1);
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	printroots()
+#
+# Purpose:	Print config info for each defined target/nameserver pair.
+#
+sub printroots
+{
+	return if(!$verbose);
+
+	for(my $qind=0; $qind < @cf_servers; $qind++)
+	{
+		my $msg;
+
+		$msg = sprintf("%10s/%10s:  interval %d, timeout %d, state %s, rollint %d",
+				$cf_targets[$qind],
+				$cf_servers[$qind],
+				$cf_intervals[$qind],
+				$cf_timeouts[$qind],
+				$cf_states[$qind] ? 'active' : 'inactive',
+				$cf_rollints[$qind]);
+
+		$sensorlog->warning("$msg");
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  $0 [options]\n";
+
+	print STDERR "\t\where options are:\n";
+	print STDERR "\t\t-confdir config-directory\n";
+	print STDERR "\t\t-cd config-directory\n";
+	print STDERR "\t\t-config config-file\n";
+	print STDERR "\t\t-cf config-file\n";
+	print STDERR "\t\t-datadir data-directory\n";
+	print STDERR "\t\t-defaults\n";
+	print STDERR "\t\t-foreground\n";
+	print STDERR "\t\t-fg\n";
+	print STDERR "\t\t-logdir log-directory\n";
+	print STDERR "\t\t-stop\n";
+	print STDERR "\t\t-help\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-Version\n";
+
+
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+
+=pod
+
+=head1 NAME
+
+owl-dnstimer - DNS query timer for the Owl Monitoring System
+
+=head1 SYNOPSIS
+
+  owl-dnstimer [options] <config file>
+
+=head1 DESCRIPTION
+
+B<owl-dnstimer> runs timing tests of DNS lookups.  It starts a set of threads,
+each of which periodically sends a DNS query for a specified target host to a
+particular nameserver.  The DNS query type, target, and nameserver are defined
+in the Owl configuration file.  The time taken from query to response is saved
+in a file specifically for that nameserver, target, and query type.  The data
+so collected are intended to be used in the Owl system to track the
+responsiveness of DNS root nameservers.
+
+The B<owl-dnstimer> configuration file defines which root nameservers are
+contacted, as well as how often they are contacted.  B<owl-dnstimer> maintains a
+log file that tracks the status of requests and query status.  B<owl-dnstimer>'s
+configuration and data files, as well as the layout for the environment, are
+described in their own man pages.
+
+=head2 FILE ORGANIZATION
+
+B<owl-dnstimer> assumes that the file hierarchy for the sensor is arranged like
+this:
+
+    bin/owl-dnstimer
+    conf/owl.conf
+    data/<data files>
+    log/<log files>
+
+These directories maybe be in the home directory of the executing user,
+or they may be located in another directory elsewhere.  However, the four
+directories should be kept together.
+
+Several options are available that alter this behavior.  If these options are
+used, then this default file hierarchy need not be followed.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-confdir config-directory>
+
+=item B<-cd config-directory>
+
+Specifies the directory that holds the B<owl-dnstimer> configuration file.  If
+this is not given, then the default B<conf> name will be used.  If this is a
+relative path, it will be relative from the point of execution.
+
+The B<owl-dnstimer.pid> file is stored in this directory.
+
+=item B<-config config-file>
+
+=item B<-cf config-file>
+
+Specifies the B<owl-dnstimer> configuration file.  If I<config-file> does not
+contain any directory nodes, then the specified name will be prefixed with the
+configuration directory.  If it does contain directory nodes, the configuration
+directory (default or option-specified) will be ignored.  If this is not
+given, then the default B<owl.conf> name will be used.
+
+=item B<-datadir data-directory>
+
+Specifies the directory that will hold the B<owl-dnstimer> data files.  If
+this is not given, then the default B<data> name will be used.  If this is a
+relative path, it will be relative from the point of execution.  If this
+directory doesn't exist, it will be created.
+
+=item B<-defaults>
+
+Print the query default values for B<owl-dnstimer> and exit.  These are the
+program defaults, not the configuration- and option-enhanced values.
+
+=item B<-foreground>
+
+=item B<-fg>
+
+B<owl-dnstimer> will run as a foreground process if either of these options is
+given.  Otherwise, it will run as a daemon.
+
+=item B<-logdir log-directory>
+
+Specifies the directory that will hold the B<owl-dnstimer> log files.
+If this is not given, then the default B<log> name will be used.  If this
+is a relative path, it will be relative from the point of execution.  If
+this directory doesn't exist, it will be created.
+
+=item B<-stop>
+
+Stops the execution of an existing B<owl-dnstimer> process.
+
+=item B<-help>
+
+Prints a help message.
+
+=item B<-verbose>
+
+Prints verbose output.
+
+=item B<-Version>
+
+Prints B<owl-dnstimer>'s version and exit.
+
+=back
+
+=head1 SEE ALSO
+
+owl-sensord(1)
+
+owl-config(5),
+owl-data(5)
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+

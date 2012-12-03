@@ -1,0 +1,577 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+
+#
+# owl-transfer						Owl Monitoring System
+#
+#       This script transfers sensor data from the Owl sensor to the Owl
+#	manager.
+#
+# Revision History:
+#	1.0	121201	Initial version.
+#
+
+use strict;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+use POSIX qw(setsid);
+use Time::Local;
+
+use FindBin;
+
+use lib "$FindBin::Bin/../perllib";
+use owlutils;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-transfer";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+###################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"config=s",			# Configuration file.
+	"datadir=s",			# Top-level data directory.
+	"logdir=s",			# Top-level logging directory.
+
+	"foreground|fg",		# Run in foreground.
+	"stop",				# Stop execution.
+
+	"verbose",			# Verbose output.
+	"Version",			# Version output.
+	"help",				# Give a usage message and exit.
+);
+
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $verbose = 0;				# Display verbose output.
+my $foreground;					# Foreground-execution flag.
+my $stopper;					# Stop-execution flag.
+
+###################################################
+#
+# Constants and variables for various files and directories.
+#
+my $basedir  = ".";				# Base directory we'll look in.
+
+my $DEF_CONFIG	= $owlutils::DEF_CONFIG;	# Default config file nodename.
+my $DEF_CONFDIR	= $owlutils::DEF_CONFDIR;	# Default config directory.
+my $DEF_DATADIR	= $owlutils::DEF_DATADIR;	# Default data directory.
+my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
+
+my $DEF_CONFFILE  = "$DEF_CONFDIR/$DEF_CONFIG";	# Default Owl config file.
+
+my $CONF_DATADIR  = "datadir";			# Data directory record.
+
+###################################################
+
+my $curdir;					# Current directory.
+my $conffile = $DEF_CONFFILE;			# Configuration file.
+my $datadir  = $DEF_DATADIR;			# Top-level data directory.
+my $logdir   = '';				# Logging directory.
+
+
+my $pidfile;					# Name of process-id file.
+my @sshusers;					# user@host for rsyncing.
+my $xferint;					# Data-transfer interval.
+
+my $errs = 0;					# Error count.
+
+#######################################################################
+
+main();
+exit(0);
+
+#--------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	$| = 0;
+
+	#
+	# A little directory wiggling.
+	#
+	$curdir = getcwd();
+	$basedir = $curdir if($basedir eq ".");
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Perform initialization steps.
+	#
+	startup();
+
+	#
+	# Grab some globals from the config file.
+	#
+        $pidfile  = $owlutils::pidfile;
+	@sshusers = @owlutils::sshusers;
+	$xferint = $owlutils::transfer_interval;
+
+	if($verbose)
+	{
+		print "configuration parameters:\n";
+		print "\tcurrent directory      \"$curdir\"\n";
+		print "\tconfiguration file     \"$conffile\"\n";
+		print "\tprocess-id file        \"$pidfile\"\n";
+		print "\tdata directory         \"$datadir\"\n";
+		print "\tdata-transfer interval \"$xferint\" minutes\n";
+		print "\tssh users		\"@sshusers\"\n";
+		print "\n";
+	}
+
+	#
+	# Don't proceed on errors.
+	#
+	if($errs)
+	{
+		my $sfx = ($errs != 1) ? 's' : '';	# Pluralization suffix.
+
+		print "$NAME:  $errs error$sfx found during initialization; halting...\n";
+		exit(1);
+	}
+
+	#
+	# Daemonize ourself.
+	# 
+	exit(0) if((! $foreground) && fork());
+	POSIX::setsid();
+	owl_writepid();
+
+	#
+	# Periodically run the rsync to send the data to the manager.
+	#
+	teleporter();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(1)  if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+        $foreground = $options{'foreground'} || 0;
+	$stopper    = $options{'stop'}	     || 0;
+	$verbose    = $options{'verbose'}    || 0;
+
+	#
+	# Get the configuration file's name.  If the user specified one,
+	# we'll use it.  If not, we'll try using one of two defaults.
+	#
+	if(defined($options{'config'}))
+	{
+		$conffile = $options{'config'};
+	}
+	else
+	{
+		$conffile = $DEF_CONFFILE;
+		if(! -e $conffile)
+		{
+			$conffile = glob("$basedir/conf/owl.conf");
+		}
+	}
+
+	#
+	# Check our data directory.
+	#
+	$datadir = $options{'datadir'} if(defined($options{'datadir'}));
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	startup()
+#
+# Purpose:	Do some initialization shtuff:
+#			- set up Owl-specific fields
+#			- set up signal handlers
+#			- ensure we're the only owl-transfer running
+#			- handle the -stop argument
+#
+sub startup
+{
+
+	#
+	# Read the sensor configuration file.
+	#
+	owl_setup($NAME);
+	if(owl_readconfig($conffile,$datadir,$logdir) != 0)
+	{
+		exit(2);
+	}
+
+	#
+	# Get the proper data directory name.
+	#
+	$datadir = setparam('datadir',$datadir,$owlutils::datadir,$DEF_DATADIR);
+
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+#	exit(1) if(owl_chkdir('log', $logdir) == 1);
+
+	#
+	# Add the base directory if this isn't an absolute path.
+	# We'll also handle a special case so we don't add the base
+	# directory multiple times.
+	#
+	if($datadir !~ /^\//)
+	{
+		if($datadir =~ /^\.\//)
+		{
+			$datadir =~ s/^../$curdir/;
+		}
+
+		if(($basedir ne ".") || ($datadir !~ /^\.\//))
+		{
+			$datadir = glob("$basedir/$datadir");
+		}
+	}
+
+	#
+	# Set up our signal handlers.
+	#
+	$SIG{HUP}  = \&cleanup;
+	$SIG{INT}  = \&cleanup;
+	$SIG{QUIT} = \&cleanup;
+	$SIG{TERM} = \&cleanup;
+	$SIG{USR1} = 'IGNORE';
+	$SIG{USR2} = 'IGNORE';
+
+	#
+	# If the user wants to shutdown any other owl-transfers, we'll
+	# send them SIGHUP and exit.
+	#
+	if($stopper)
+	{
+		owl_halt('owl-transfer');
+		exit(0);
+	}
+
+	#
+	# Make sure we're the only owl-transfer running.  We'll also allow a
+	# user to signal the other owl-transfer to shut down.
+	#
+	if(owl_singleton(0) == 0)
+	{
+		print STDERR "$NAME already running\n";
+		exit(2);
+	}
+
+	#
+	# Ensure several directories are absolute paths.
+	#
+	$datadir = "$curdir/$datadir" if($datadir !~ /^\//);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	setparam()
+#
+# Purpose:	Figure out the value of a particular parameter, depending on
+#		whether it was given as a command-line option or a config file
+#		value.  It may be a default if none of the others was given.
+#		The precedence (greatest to least) is:
+#			command-line argument
+#			configuration-file value
+#			default
+#
+sub setparam
+{
+	my $str  = shift;			# Descriptive string.
+	my $arg  = shift;			# Command line argument.
+	my $cval = shift;			# Configuration file value.
+	my $dval = shift;			# Default value.
+	my $val;				# Value to use.
+
+	$val = $dval;
+	$val = $cval if(defined($cval));
+	$val = $arg  if(defined($arg));
+
+	#
+	# Ensure positive values for our numeric throttlers.
+	#
+	if(($val =~ /^[0-9\-]+$/) && ($val < 1))
+	{
+		print STDERR "$str value ($val) must be positive\n";
+		exit(1);
+	}
+
+	return($val);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	teleporter()
+#
+# Purpose:	This routine periodically transfers files from the sensor
+#		to the Owl manager.
+#
+sub teleporter
+{
+	my $args;					# Arguments for rsync.
+
+	#
+	# Set up our immutable command-line arguments.
+	#
+	$args = "--timeout=60 --partial --append --stats";
+
+	print STDERR "$NAME starting\n";
+
+	#
+	# Forevermore we shall transfer files betwixt hither and yons.
+	#
+	while(42)
+	{
+		#
+		# Go through the list of file destinations, and do an
+		# rsync for each one.
+		#
+		foreach my $sshuser (@sshusers)
+		{
+			my @args;			# Separated arguments.
+			my $user;			# User portion.
+			my $rshargs;			# rsh-arguments portion.
+			my $cmd;			# Command for rsync.
+			my $out;			# Output from rsync.
+
+			#
+			# Set up our command line and arguments.  The sshuser
+			# line has this format:
+			#	user@host;ssh arguments
+			# The ssh arguments are whatever is needed for
+			# owl-transfer to ssh to this particular user.
+			#
+			@args = split /;/, $sshuser;
+			$user = $args[0];
+			$rshargs = "--rsh=\"ssh $args[1]\"";
+			$cmd = "rsync -ar $rshargs $args $datadir";
+
+			#
+			# Do the transfer for this user.
+			#
+			$out = `$cmd $user:`;
+
+			#
+			# Give info on this transfer, if it is desired.
+			#
+			if($verbose)
+			{
+				my $chronos;		# Timestamp.
+				my $numstr;		# Files transferred.
+
+				$chronos = gmtime;
+				chomp $chronos;
+
+				$out =~ /(Number of files transferred:\s+\d+)\n/g;
+				$numstr = $1;
+				print "$chronos:  $1\t$user\n" if($numstr ne '');
+			}
+		}
+
+		#
+		# Wait for a bit.
+		#
+		sleep($xferint);
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	cleanup()
+#
+# Purpose:	Close up shop.
+#
+sub cleanup
+{
+	print STDERR "$NAME shutting down\n";
+
+	#
+	# Remove the process-id file.
+	#
+	print STDERR "$NAME:  unlinking pidfile \"$pidfile\"\n" if($verbose);
+	unlink($pidfile);
+
+	exit(0);
+}
+
+
+#--------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;
+
+	print "$str" if($verbose);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "owl-transfer [options]\n";
+	print "\toptions:\n";
+	print "\t\t-config file\n";
+	print "\t\t-datadir directory\n";
+
+	print "\n";
+	print "\t\t-foreground\n";
+	print "\t\t-fg\n";
+	print "\t\t-stop\n";
+
+	print "\n";
+	print "\t\t-verbose\n";
+	print "\t\t-Version\n";
+	print "\t\t-help\n";
+	exit(0);
+}
+
+###########################################################################
+
+=pod
+
+=head1 NAME
+
+owl-transfer - Transfers Owl sensor data to Owl manager
+
+=head1 SYNOPSIS
+
+  owl-transfer [options]
+
+=head1 DESCRIPTION
+
+B<owl-transfer> transfers Owl sensor data from an Owl sensor host to its
+manager host.  B<owl-transfer> sets itself up as a daemon and periodically
+transfers new files to the Owl manager.  The manager will display the data
+so that nameserver response times may be monitored.
+
+The data-transfer operations are performed by B<rsync> over an B<ssh>
+connection.  The efficiency of B<rsync> will minimize the impact on network
+resources.  B<ssh> will protect the sensor data while it is in transit,
+and it will also protect the Owl manager from unauthorized access.
+
+The B<owl.conf> configuration file defines the data that will be transferred,
+the transfer destination, and the transfer frequency.  The following
+fields are used:
+
+	Configuration Field	    owl-transfer Use
+	data dir		    location of data to transfer
+	data interval		    number of seconds between transfers
+	manager ssh-user	    user@host for ssh/rsync use
+
+The default configuration file is B<owl.conf> in the execution
+directory.  If that file is not found, then B<conf/owl.conf> will be
+used.  A configuration file may also be specified on the command line.
+
+The default data directory is B<data> in the execution directory.
+
+It is expected that B<owl-transfer> will be used in conjunction with
+B<owl-dataarch>.  B<owl-transfer> will provide the data files to the Owl
+manager, while B<owl-dataarch> will (in time) move the data files from
+the sensor's data directory into an archive directory.
+
+=head1 OPTIONS
+
+B<owl-transfer> takes the following options:
+
+=over 4
+
+=item B<-config>
+
+This option specifies the configuration file to use.
+
+=item B<-datadir>
+
+This option specifies the directory from which sensor data will be
+transferred to the Owl manager.
+
+=item B<-fg>
+
+=item B<-foreground>
+
+This option causes B<owl-transfer> to run in the foreground, rather than
+as a daemon.
+
+=item B<-logdir>
+
+This option specifies the directory for logging.  It is not currently used by
+B<owl-transfer>, but is included for symmetry with the other Owl daemons.
+
+=item B<-stop>
+
+Stops the execution of an existing B<owl-transfer> process.
+
+=item B<-verbose>
+
+This option provides verbose output.
+
+=item B<-Version>
+
+This option provides the version of B<owl-transfer>.
+
+=item B<-help>
+
+This option displays a help message and exits.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-archold(1)>,
+B<owl-dataarch(1)>,
+B<owl-dnstimer(1)>,
+B<rsync(1)>,
+B<ssh(1)>
+
+B<owl-config(5)>
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, Wayne.Morrison@sparta.com
+
+=cut
+

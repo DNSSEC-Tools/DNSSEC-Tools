@@ -1,0 +1,505 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-archold						Owl Monitoring System
+#
+#	This script archives archives of old sensor data.
+#
+# Revision History:
+#	1.0	121201	Initial version.
+#
+
+use strict;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-archold";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS   = "DNSSEC-Tools version: 1.14";
+
+###################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'archdir=s',			# Archive directory for old archives.
+	'delete',			# Delete flag.
+
+	"verbose",			# Verbose output.
+	"Version",			# Version output.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $delflag	= 0;				# Delete-archives flag.
+my $verbose	= 0;				# Display verbose output.
+
+###################################################
+
+my $MV = "/bin/mv";
+my $RM = "/bin/rm -fr";
+my $TAR = "tar -cjf";
+
+my $yy;						# Partial GMT year.
+my $yyyy;					# Full GMT year.
+my $now;					# YYMM for GMT now.
+
+my $errs = 0;					# Error count.
+
+#######################################################################
+
+main();
+exit(0);
+
+#--------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my @datadirs = ();			# Directories to archive.
+
+	$| = 0;
+
+	#
+	# Get the YYMM for right now.
+	#
+	getnow();
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the data directories to archive.
+	#
+	@datadirs = getdirs();
+
+	#
+	# Archive the archive directories given on the command line.
+	#
+	foreach my $arc (@datadirs)
+	{
+		archer($arc);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	my $dir;					# Archive directory.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	usage(1)  if(defined($options{'help'}));
+	version() if(defined($options{'Version'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$verbose  = $options{'verbose'};
+	$delflag  = $options{'delete'};
+
+	#
+	# Ensure we were given a directory.
+	#
+	usage() if(@ARGV == 0);
+
+	#
+	# Go to the directory of archives and remove the directory from
+	# our argument list.
+	#
+	$dir = shift @ARGV;
+	if(chdir($dir) == 0)
+	{
+		print STDERR "unable to go to directory of archives \"$dir\":  $!\n";
+		exit(1);
+	}
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	getnow()
+#
+# Purpose:	This routine gets the YYMM for the GMT now.
+#
+sub getnow
+{
+	my @tempus;				# Time fields.
+	my $mm;					# Full GMT month.
+
+	#
+	# Get the time fields for right now.
+	#
+	@tempus = gmtime(time());
+
+	#
+	# Set the base fields.
+	#
+	$mm   = $tempus[4] + 1;
+	$yy   = $tempus[5] - 100;
+	$yyyy = 2000 + $yy;
+
+	#
+	# Build the time blob we're looking for.
+	#
+	$now = sprintf("%02d%02d", $yy,$mm);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	getdirs()
+#
+# Purpose:	This routine gets the data directories we'll archive.
+#		If directories were given on the command line, they'll be
+#		returned to the caller.  Otherwise, getdirs() will look
+#		in the current directory for directories in our standard
+#		naming format.  Anything prior to the current month will
+#		be returned for archiving.
+#
+sub getdirs
+{
+	my @dirs;				# Directories to archive.
+	my $curarch;				# Archive of current month.
+	my $ind;				# Loop index.
+
+	#
+	# If the user specified some data directories, we'll use those.
+	#
+	return(@ARGV) if(@ARGV > 0);
+
+	#
+	# Get all the data archive directories that are in our expected
+	# name format.  We'll sort that list and get the name for the
+	# current month's directory.
+	#
+	@dirs = sort(glob("data-*"));
+	$curarch = "data-$now";
+
+	#
+	# Find the current month in the directory list.
+	#
+	for($ind=0; $ind < @dirs; $ind++)
+	{
+		last if($dirs[$ind] eq $curarch);
+	}
+
+	#
+	# Get rid of anything in the list from this month into the future,
+	# leaving only past months.
+	#
+	splice @dirs, $ind;
+	if(@dirs == 0)
+	{
+		print "no directories were found for archiving\n";
+		exit(0);
+	}
+
+	#
+	# Return the list of remaining directories.  
+	#
+	return(@dirs);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	archer()
+#
+# Purpose:	Archive the specified directory.  A compressed tarball will
+#		be created and moved into the archive of archived directories.
+#		If the archive of archived directories doesn't exist, it'll be
+#		created.
+#
+sub archer
+{
+	my $arch = shift;			# Archive to archive.
+	my $archfile;				# Archive file.
+	my $archdir;				# Archive directory.
+	my $cmd;				# Archiving command to execute.
+
+	if(! -e $arch)
+	{
+		if($arch =~ /^\d{4}$/)
+		{
+			$arch = "data-$arch";
+			vprint("\t$arch:  not found, trying data-$arch\n");
+			return(archer($arch));
+		}
+		else
+		{
+			print STDERR "$arch not found\n";
+			return(0);
+		}
+	}
+
+	print "archiving $arch\n" if($verbose);
+
+	#
+	# Get the name of our directory of archives.
+	#
+	$archfile = "$arch.tbz2";
+	$cmd = "$TAR $archfile $arch";
+	vprint("\trunning \"$cmd\"\n");
+
+
+	#
+	# Archive the archive.
+	#
+	if(system($cmd) != 0)
+	{
+		my $ret = $? >> 8;
+		print STDERR "unable to archive $archfile\n";
+		return(0);
+	}
+	
+	#
+	# Get the name of our directory of archives.
+	#
+	if(defined($options{'archdir'}))
+	{
+		$archdir = $options{'archdir'}
+	}
+	else
+	{
+		$yy =~ /^data-(\d{2})\d{2}$/;
+		$yy += 2000;
+		$archdir = "$yyyy-data";
+	}
+
+	#
+	# Make the archive directory.  If we can't make it, we'll assume
+	# it already exists.
+	#
+	mkdir $archdir;
+
+	#
+	# Move the new archive file into the archive directory.
+	#
+	vprint("\tmoving $archfile to $archdir/$archfile\n");
+	if(system("$MV $archfile $archdir/$archfile") != 0)
+	{
+		my $ret = $? >> 8;
+		print STDERR "unable to move $archfile into $archdir\n";
+		return(0);
+	}
+
+	#
+	# Delete the archive directory.
+	#
+	if($delflag)
+	{
+		vprint("\tdeleting $arch\n");
+		if(system("$RM $arch") != 0)
+		{
+			my $ret = $? >> 8;
+			print STDERR "unable to delete $arch\n";
+			return(0);
+		}
+	}
+
+	return(1);
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;
+
+	print "$str" if($verbose);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "owl-archold <year-archive> [archive1 ... archiveN]\n";
+	print "\toptions:\n";
+	print "\t\t-archdir directory\n";
+	print "\t\t-delete\n";
+
+	print "\n";
+	print "\t\t-verbose\n";
+	print "\t\t-Version\n";
+	print "\t\t-help\n";
+	exit(0);
+}
+
+###########################################################################
+
+=pod
+
+=head1 NAME
+
+owl-archold - Archives archived Owl sensor data
+
+=head1 SYNOPSIS
+
+  owl-archold [options] <year-archive-dir> [year-month-archives]
+
+=head1 DESCRIPTION
+
+The Owl sensors generate a very large number of data files.  The number of
+data file created will negatively impact the Owl system response time if
+these files are not periodically archived.  The B<owl-dataarch> program runs
+periodically and moves Owl data files from the "active" data directory into
+year/month-based archive directories.  Once a particular month is complete,
+the B<owl-archold> script will archive the year/month archives themselves.
+
+B<owl-archold> creates a compressed B<tar> file of the year/month archive
+directory.  This compressed B<tar> file is then moved into a year-based
+archive directory.  The year/month archive directory is left intact, unless
+the I<-delete> option is specified.
+
+For example, B<owl-dataarch> may create the following files:
+
+    archive directory		contains
+    data-1112			Owl sensor data from December, 2011
+    data-1203			Owl sensor data from March, 2012
+    data-1209			Owl sensor data from September, 2012
+
+With these three year/month archive directories, B<owl-archold> will create the
+following compressed B<tar> files and place them in the given year archives.
+
+    archive directory		tar file		year archive
+    data-1112			data-1112.tbz2		2011-data
+    data-1203			data-1203.tbz2		2012-data
+    data-1209			data-1209.tbz2		2012-data
+
+The year archive directory on the command line is assumed to contain the
+year/month archive directories and the directory into which the compressed
+B<tar> files will be moved.  This is not a requirement.  B<owl-archold> will
+change directory into the year archive directory and operate from there.
+B<owl-archold> will assume the year/month archives are relative to that
+directory, unless absolute paths are given.
+
+The year/month archives are assumed to have the "data-YYMM" format as given
+in the examples above.  However, the directory names may be anything the
+user wishes; they will be turned into compressed B<tar> files and moved
+into the year archive directory.
+
+If the year/month archive directories are given as "YYMM", then B<owl-archold>
+will convert this into the "data-YYMM" format and attempt to archive that
+file.
+
+B<owl-archold> should only be run for year/month archives that the user knows
+are complete.  If used in conjunction with B<owl-dataarch>, then it should be
+safe to run B<owl-archold> on the 4th or 5th of a month in order to archive
+the previous month's data.
+
+If no year/month archives are specified on the command line, then the
+year-archive directory will be searched for names that start with "I<data->".
+Any file or directory with that format will be assumed to be a year/month
+archive.  All the names whose year and month precede the current year and
+month will be archived.
+
+Assume the current directory contains directories with the names
+I<data-1112>, I<data-1203>, and I<data-1209>. If B<owl-archold> is run in
+September, 2012, with this command line:
+
+    $ owl-archold . 
+
+Only the I<data-1112> and I<data-1203> will be archived.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-archdir>
+
+This option specifies the directory to which data archives will be moved.
+
+=item B<-delete>
+
+This option specifies that the original, uncompressed, untarred data archive
+will be deleted.  This will only be done if the new tarred and compressed
+archive is successfully created and moved into the archive directory.
+
+=item B<-verbose>
+
+This option provides verbose output.
+
+=item B<-Version>
+
+This option provides the version of B<owl-archold>.
+
+=item B<-help>
+
+This option displays a help message and exits.
+
+=back
+
+=head1 WARNINGS
+
+=over 4
+
+=item Current Month Not Archived
+
+B<owl-archold> will I<not> archive the current month's data.  There is
+an assumption that more sensor data will be gathered for the current month,
+so archiving the current month's data will provide an incomplete archive.
+
+=item Two-Day Archival Lag
+
+The current archive timing used by B<owl-archdata> means that there
+will be a two-day lag between the day a data file arrives in a sensor's
+data directory and the day it is moved to the sensor's archive directory.
+Consequently, B<owl-archold> should not be run on the first or second days
+of a month.  More data may still be awaiting archiving, and an early run
+could result in unarchived data.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-dataarch(1)>,
+B<owl-monthly(1)>
+
+B<bzip2(1)>,
+B<tar(1)>
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, Wayne.Morrison@sparta.com
+
+=cut
+
