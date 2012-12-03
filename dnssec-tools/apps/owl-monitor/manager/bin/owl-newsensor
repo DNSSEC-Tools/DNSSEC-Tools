@@ -1,0 +1,660 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-newsensor						Owl Monitoring System
+#
+#	This script builds a set of Nagios objects from a list of Owl data
+#	files.  This is used when adding a new Owl sensor to a manager.
+#
+# Revision History
+#	1.0	121201	Initial version.
+#			This was adapted from the owl-archdata script.
+#
+
+use strict;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#
+# Version information.
+#
+my $NAME   = "owl-newsensor";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"host=s",				# Host field.
+	"domain=s",				# Sensor's domain.
+	"out=s",				# Output file.
+	"heartbeat",				# Heartbeat flag.
+
+	"help",					# Give help message.
+	"Version",				# Give version info.
+	"verbose",				# Give verbose output.
+);
+
+my $verbose = 0;				# Verbose flag.
+my $outfile = '';				# Output file.
+my $domain = '';				# Domain field.
+my $host = '';					# Host field.
+my $heartbeat = 0;				# Heartbeat flag.
+
+#------------------------------------------------------------------------
+
+my $datadir = '';				# Directory of data files.
+my @files = ();					# List of files to examine.
+
+my %nagobjs = ();				# Data for Nagios objects.
+my $contents = '';				# New objects.
+
+my @sensors = ();				# Names of sensors.
+my %services = ();				# Hash of sensors' services.
+
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Do everything.
+#
+sub main
+{
+	doopts();
+
+	getfiles();
+
+	parsefiles();
+
+	topheader();
+
+	buildobjects();
+
+	writecontents();
+
+}
+
+#------------------------------------------------------------------------
+# Routine:      doopts()
+#
+# Purpose:	Handle our options and arguments.
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(1) if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$verbose = $options{'verbose'};
+	$outfile = $options{'out'};
+	$domain	 = $options{'domain'};
+	$host	 = $options{'host'};
+	$heartbeat = 1 if(defined($options{'heartbeat'}));
+
+	usage(2) if(@ARGV == 0);
+
+	$datadir = $ARGV[0];
+}
+
+#------------------------------------------------------------------------
+# Routine:      getfiles()
+#
+# Purpose:	Get the files from the data directory.
+#
+sub getfiles
+{
+	my $cur;					# Current directory.
+
+	#
+	# Run some validity checks on the user's data directory.
+	#
+	if(! -e $datadir)
+	{
+		print "$datadir does not exist\n";
+		exit(1);
+	}
+	if(! -d $datadir)
+	{
+		print "$datadir is not a directory\n";
+		exit(2);
+	}
+	if((! -r $datadir) || (! -x $datadir))
+	{
+		print "unable to access $datadir\n";
+		exit(3);
+	}
+
+	#
+	# Go to the data directory.
+	#
+	$cur = getcwd();
+	chdir($datadir);
+
+	#
+	# Get a list of the sensor data files.
+	#
+	@files = sort(glob("*.dns"));
+
+	#
+	# Make sure we found some files.
+	#
+	if(@files == 0)
+	{
+		print "no Owl data files found in $datadir\n";
+		exit(10);
+	}
+
+	print "files to examine:  " . @files . "\n" if($verbose);
+
+	#
+	# And return from whence we came.
+	#
+	chdir($cur);
+}
+
+#------------------------------------------------------------------------
+# Routine:      parsefiles()
+#
+# Purpose:	Parse the data filenames into a hash-of-hash-of-hash-of-hash.
+#
+sub parsefiles
+{
+	foreach my $fn (@files)
+	{
+		my @atoms;			# Pieces of the filename.
+		my $sensor;			# Sensor from filename.
+		my $target;			# Target from filename.
+		my $server;			# Server from filename.
+		my $query;			# Query type from filename.
+
+		#
+		# Ensure we're looking at one of our data files, then
+		# get rid of the suffix.
+		#
+		next if($fn !~ /\.dns$/);
+		$fn =~ s/\.dns$//;
+
+		#
+		# Break the name into its pieces.
+		#
+		@atoms	= split /,/, $fn;
+		$sensor	= $atoms[1];
+		$target	= $atoms[2];
+		$server	= $atoms[3];
+		$query	= $atoms[4];
+
+		$nagobjs{$sensor}{$server}{$target}{$query}++;
+	}
+
+	#
+	# Make sure we found some files.
+	# (This shouldn't happen, given a similar check in getfiles().)
+	#
+	if(keys(%nagobjs) == 0)
+	{
+		print "no Owl data files found in $datadir\n";
+		exit(11);
+	}
+
+	#
+	# If the user didn't specify a name for the host object, we'll
+	# make one from the sensors we found.
+	#
+	if($host eq '')
+	{
+		$host = join(', ', sort(keys(%nagobjs)));
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:      buildobjects()
+#
+# Purpose:	Build all our Nagios objects.  We'll deal with these
+#		by sensor, server, target, and finally query type.
+#
+sub buildobjects
+{
+	#
+	# Build our host objects.
+	#
+	foreach my $sensor (sort(keys(%nagobjs)))
+	{
+		newhost($sensor);
+	}
+
+	separator();
+
+	#
+	# Build our service objects.
+	#
+	@sensors = sort(keys(%nagobjs));
+	foreach my $sensor (@sensors)
+	{
+		my %servers;
+		my $servers;
+
+		$servers = $nagobjs{$sensor};
+		%servers = %$servers;
+
+# print "sensor $sensor\n";
+
+		foreach my $server (sort(keys(%servers)))
+		{
+			my %targets;
+			my $targets;
+
+# print "\tserver $server\n";
+
+			$targets = $nagobjs{$sensor}{$server};
+			%targets = %$targets;
+
+			foreach my $target (sort(keys(%targets)))
+			{
+				my %queries;
+				my $queries;
+
+# print "\ttarget $target\n";
+
+				$queries = $nagobjs{$sensor}{$server}{$target};
+				%queries = %$queries;
+
+				foreach my $query (sort(keys(%queries)))
+				{
+					newservice($sensor,$server,$target,$query);
+				}
+
+			}
+
+			separator(20);
+
+		}
+
+		separator(40);
+
+		#
+		# Create a heartbeat service if asked.
+		#
+		if($heartbeat)
+		{
+			newservice($sensor,'heartbeat');
+		}
+
+	}
+
+	separator();
+
+	#
+	# Build our servicegroup objects.
+	#
+	foreach my $sensor (sort(keys(%nagobjs)))
+	{
+		newsvcgrp($sensor);
+	}
+
+}
+
+#------------------------------------------------------------------------------
+# Routine:	topheader()
+#
+# Purpose:	Write the file header.
+#
+sub topheader
+{
+	my $kronos = gmtime(time());
+
+	$contents =
+"###############################################################################
+#
+# Hosts and services required for monitoring DNS data for Owl Monitor.
+#
+#	      Built $kronos by $NAME.
+#
+
+";
+
+}
+
+#------------------------------------------------------------------------
+# Routine:      separator()
+#
+# Purpose:	Add a separator of varying lengths.
+#
+sub separator
+{
+	my $cnt = shift;			# Number of characters in line.
+
+	$cnt = 79 if($cnt <= 0);
+
+	$contents .= "\n" . ('#' x $cnt) . "\n";
+}
+
+#------------------------------------------------------------------------
+# Routine:      newhost()
+#
+# Purpose:	Add a new Nagios host object.
+#
+sub newhost
+{
+	my $sensor = shift;			# Sensor name.
+	my $addr;				# Sensor's domain name.
+
+	$addr = ($domain eq '') ? $sensor : "$sensor.$domain";
+
+	$contents .= "
+define host {
+	host_name		$host
+	alias			$sensor
+	address			$addr
+	use			owl-sensor
+}\n";
+
+}
+
+#------------------------------------------------------------------------
+# Routine:      newservice()
+#
+# Purpose:	Add a new Nagios service object.  If $server is 'heartbeat'
+#		then we'll make a special heartbeat service for the sensor.
+#		Otherwise, we'll build a service for handling DNS response
+#		data normally gathered by Owl.
+#
+sub newservice
+{
+	my $sensor = shift;			# Sensor name.
+	my $server = shift;			# Nameserver name.
+	my $target = shift;			# Target name.
+	my $query  = shift;			# Query type.
+	#
+	# Handle a heartbeat service specially.
+	#
+	if($server eq 'heartbeat')
+	{
+		$contents .= "
+define service {
+	service_description	$sensor
+	host_name		Owl Sensor Heartbeats
+	check_command		owl-stethoscope!$sensor
+	active_checks_enabled	1
+	use			owl-service
+}\n";
+		return;
+	}
+
+	#
+	# Now we'll create a regular ol' service.
+	#
+	$services{$sensor} .= "$server $target $query, ";
+
+# print "$sensor\t$target\t$server\t$query\t$nagobjs{$sensor}{$server}{$target}{$query}\n";
+# printf("%-15s\t%-15s\t%-15s\t%-10s\t%d\n",$sensor,$server,$target,$query,$nagobjs{$sensor}{$server}{$target}{$query});
+
+
+	$contents .= "
+define service {
+	service_description	$server $target $query
+	host_name		$sensor
+	check_command		owl-dnswatch!$sensor!$target!$server!$query
+	active_checks_enabled	1
+	use			owl-service
+}\n";
+
+}
+
+#------------------------------------------------------------------------------
+# Routine:	servicegroups()
+#
+# Purpose:	Create the servicegroup objects.
+#
+sub servicegroups
+{
+	separator(40);
+
+	$contents .= "
+#
+# Collected servicegroup objects.
+#
+###############################################################################
+#
+# Objects for Owl servicegroups.
+#
+";
+
+	#
+	# Add the servicegroups.
+	#
+
+	foreach my $sensor (@sensors)
+	{
+
+		newsvcgrp($sensor);
+
+	}
+}
+
+#------------------------------------------------------------------------------
+# Routine:	newsvcgrp()
+#
+# Purpose:	Create a new servicegroups object.
+#
+sub newsvcgrp
+{
+	my $sensor = shift;		# Host for entry.
+	my $services;			# Sensor's collection of services.
+	my @services;			# Split-up collection of services.
+	my $svcgrp = '';		# Constructed service group.
+
+	#
+	# Massage the list of this sensor's services into a usable form.
+	#
+	$services = $services{$sensor};
+	$services =~ s/, $//;
+	@services = split /, /, $services;
+
+	#
+	# Build the members value for the service group.
+	#
+	foreach my $svc (@services)
+	{
+		$svcgrp .= "$sensor, $svc, ";
+	}
+	$svcgrp =~ s/, $//;
+
+	my $members = '';
+
+	#
+	# Add the servicegroup.
+	#
+	$contents .=
+"
+define servicegroup {
+	servicegroup_name	$sensor services
+	alias			Services for sensor $sensor
+	members			$svcgrp
+}
+";
+
+}
+
+#------------------------------------------------------------------------------
+# Routine:	writecontents()
+#
+# Purpose:	Write the created service objects.
+#
+sub writecontents
+{
+	if($outfile ne '')
+	{
+		open(OUTFILE,">$outfile") || die "unable to open $outfile";
+		print OUTFILE "$contents\n";
+		close(OUTFILE);
+	}
+	else
+	{
+		print "$contents\n";
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#------------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:	Write a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  owl-newsensor [options] <datadir>\n";
+	print STDERR "\toptions are:\n";
+	print STDERR "\t\t-domain <domainname>\n";
+	print STDERR "\t\t-host <hostname>\n";
+	print STDERR "\t\t-heartbeat\n";
+	print STDERR "\t\t-out <filename>\n";
+	print STDERR "\t\t-quiet\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-help\n";
+	exit(0);
+}
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-newsensor - builds Nagios objects for a new Owl sensor
+
+=head1 SYNOPSIS
+
+  owl-newsensor [options] <data-directory>
+
+=head1 DESCRIPTION
+
+B<owl-newsensor> builds the required Nagios objects for a new Owl sensor.
+It builds a I<host> object for the sensor and a set of I<service> objects
+for the nameserver/target-host/query-type sensor queries.  It also builds a
+I<hostgroup> object that associates the I<service> objects with the I<host>
+object.  Only one sensor's objects will be created per execution.
+
+The sensor name will be used for several fields in the I<host> object, unless
+either the I<-domain> or I<-host> option are given.
+
+If the I<-heartbeat> flag is given, then a "heartbeat" object will be created.
+This object will be used in conjunction with B<owl-sensor-heartbeat.cgi> for
+keeping track of the availability of the sensor host.
+
+The newly created objects are written to the terminal, unless the I<-out>
+option is used.
+
+After running B<owl-newsensor>, you should check the objects to ensure they
+look reasonable.  Look for the following:
+
+=over 4
+
+=item *
+
+Check the objects for accuracy.  (This nebulous statement will become clearer
+with exposure to Nagios objects.  The Nagios distribution contains examples,
+which may help.)
+
+=item *
+
+Adjust the address fields in I<host> objects, if necessary.
+
+=item *
+
+Set the I<servicegroup_name> fields in I<servicegroup> objects as desired.
+
+=item *
+
+Set I<name> fields in I<host> objects as desired, but any changes
+must also be reflected in the I<service> and I<servicegroup> objects.
+
+=item *
+
+Add a "I<cfgfile=>" entry for this file to the B<nagios.cfg> file.
+
+=back 4
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-domain domainname>
+
+If this option is given, then the I<address> field of the I<host> object
+will have this domain name appended to the sensor's name.  Otherwise,
+the I<address> field will only contain the sensor's name.
+
+=item B<-heartbeat>
+
+Specifying this option indicates that B<owl-newsensor> should create a
+"heartbeat" object along with the other objects.
+
+=item B<-host hostname>
+
+If this option is given, then the I<host> field of the I<host> object
+will have this host name.  Otherwise, the I<host> field will contain the
+sensor's name.
+
+=item B<-out filename>
+
+The name of a file to which the Nagios objects will be written.
+
+=item B<-help>
+
+Display a help message.
+
+=item B<-verbose>
+
+Give verbose output.
+
+=item B<-Version>
+
+Display the tool version.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-dnswatch(1)>,
+B<owl-sensor-heartbeat.cgi(1)>
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
