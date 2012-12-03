@@ -1,0 +1,329 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-archdata						Owl Monitoring System
+#
+#	This script retrieves the DNS response data gathered by an Owl sensor.
+#	It runs on the Owl manager and provides data for use by a Nagios
+#	monitoring environment.
+#
+# Revision History
+#	1.0	121201	Initial version.
+#			This was adapted from the uemarch script from
+#			the original UEM system.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+use File::Path;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-archdata";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'verbose',			# Display verbose information.
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+my $verbose = 0;			# Verbose output flag.
+my $datadir = '';			# Directory for Owl sensor data.
+my $archdir = '';			# Archive directory for sensor data.
+
+#######################################################################
+
+my $err = 0;
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $cron1 = time;
+	my $cron2;
+	my $cdiff;
+
+	#
+	# Get our arguments.
+	#
+	argulator();
+
+	print "Owl archive started: " . localtime() . "\n";
+
+	#
+	# Archive the sensor data.
+	#
+	archsensors();
+
+	#
+	# Get elapsed time.
+	#
+	$cron2 = time;
+	$cdiff = ($cron2 - $cron1) / 60;
+	print "\nOwl archive ended:   " . localtime() . "\n";
+	printf("elapsed time:         %5.2f minutes\n",$cdiff);
+}
+
+#------------------------------------------------------------------------
+# Routine:	argulator()
+#
+# Purpose:	Get our options and arguments from the command line.
+#
+sub argulator
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()    if(defined($options{'Version'}));
+	usage()	     if(defined($options{'help'}));
+
+	$verbose = $options{'verbose'};
+
+	usage() if(@ARGV != 2);
+
+	#
+	# Get the paths from the arguments.
+	#
+	$datadir = $ARGV[0];
+	$archdir = $ARGV[1];
+
+	#
+	# Ensure the directories are reasonable.
+	#
+	checkdir($datadir,'data',0);
+	checkdir($archdir,'archive',1);
+
+	if($verbose)
+	{
+		print "data directory		$datadir\n";
+		print "archive directory	$archdir\n";
+		print "\n";
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	checkdir()
+#
+# Purpose:	Ensure the named directory is valid.  Checks for:
+#			- directory exists
+#			- directory is a directory
+#			- directory is executable
+#			- directory is readable 
+#
+sub checkdir
+{
+	my $dir = shift;				# Directory name.
+	my $dtype = shift;				# Directory type.
+	my $mkflag  = shift;				# Make-directory flag.
+
+	if(! -e $dir)
+	{
+		#
+		# Make the directory and run the checks again.
+		#
+		if($mkflag)
+		{
+			print "creating $dtype directory $dir\n" if($verbose);
+			mkdir($dir);
+			return(checkdir($dir,$dtype,0));
+		}
+
+		print STDERR "$dtype directory \"$dir\" does not exist\n";
+		exit(10);
+	}
+
+	if(! -d $dir)
+	{
+		print STDERR "$dtype directory \"$dir\" is not a directory\n";
+		exit(11);
+	}
+
+	if(! -x $dir)
+	{
+		print STDERR "$dtype directory \"$dir\" is not searchable\n";
+		exit(12);
+	}
+
+	if(! -r $dir)
+	{
+		print STDERR "$dtype directory \"$dir\" is not readable\n";
+		exit(13);
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	archsensors()
+#
+# Purpose:	Archive the data for each sensor in the data directory.
+#
+sub archsensors
+{
+	#
+	# Go through the list of sensors and archive each one's data.
+	#
+	foreach my $sdir (sort(glob("$datadir/*")))
+	{
+		my $sensor;			# Name of this sensor.
+		my $ddir;			# Sensor's data directory.
+		my @files;			# Sensor's data files.
+
+		#
+		# Get the actual name of this sensor.
+		#
+		$sensor = $sdir;
+		$sensor =~ s/^$datadir\///;
+
+		#
+		# Go to next sensor if it has no data files.
+		#
+		@files = glob("$sdir/data/*");
+		next if(@files == 0);
+
+		print "archiving sensor $sensor\n";
+# print "\t\tfiles to check:  " . @files . "\n";
+
+		#
+		# Archive this sensor's data.
+		#
+		system("du -skh $ddir") if($verbose);
+		print "running \"./owl-dataarch-mgr $sensor $sdir/data $archdir\"\n" if($verbose);
+
+		system("owl-dataarch-mgr $sensor $sdir/data $archdir");
+
+		system("du -skh $ddir") if($verbose);
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage: owl-archdata [options] <data-directory> <archive-directory>\n";
+	exit(0);
+}
+
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-archdata - Archive DNS response data from Owl sensors
+
+=head1 SYNOPSIS
+
+  owl-archdata [options] <data-directory> <archive-directory>
+
+=head1 DESCRIPTION
+
+B<owl-archdata> archives DNS response-time data from an Owl sensor node that
+is stored on the Owl manager.  The Owl sensors generate a very large number
+of data files and transfer them to the manager.  Owl system response time
+can be negatively impacted if these files are not periodically archived.
+
+B<owl-archdata> runs standalone, and should likely be set as a daily B<cron>
+job.  Data from a set of sensors will be archived by a single execution of
+B<owl-archdata>, with B<owl-dataarch-mgr> performing the actual archive
+operations.
+
+The I<data-directory> is assumed to be organized as for the Owl manager.
+Therefore, this directory will be a high-level directory that contains
+subdirectories for each sensor.  The sensor directories will contain a
+directory (cunningly named "B<data>") that will contain the data gathered
+by that sensor.
+
+For example, if the I<data-directory> is B</owl/data> and the sensors are
+named B<dresden> and B<kvothe>, then data in the following directories will
+be archived:
+
+    /owl/data/dresden/data
+    /owl/data/kvothe/data
+
+Data from these directories will be move to I<archive-directory>.
+
+See the documentation for B<owl-dataarch-mgr> for a discussion of how the
+archived data are organized in I<archive-directory>.
+
+The path of the executing process B<must> contain the path in which
+B<owl-dataarch-mgr> lives, or B<owl-archdata> will not be able to execute it.
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-archdata>:
+
+=over 4
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=item I<-verbose>
+
+Display the verbose information.
+
+=back
+
+=head1 CAVEATS
+
+B<owl-archdata> is not a general-purpose archiver.  While there are
+somewhat generalized aspects to it, B<owl-archdata> is very strongly
+biased to the hierarchical structure laid out for the Owl sensor data.
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<owl-dataarch-mgr(1)>
+
+B<bzip2(1)>, B<tar(1)>
+
+=cut
