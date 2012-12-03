@@ -1,0 +1,233 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-config.pod					Owl Monitoring System
+#
+#       This module contains contains the pod describing the configuration
+#	file used by the Owl sensor scripts.
+#
+# Revision History:
+#	1.0	121201	Initial version.
+#
+
+1;
+
+=pod
+
+=head1 NAME
+
+owl-config - Configuration file for Owl sensor programs
+
+=head1 DESCRIPTION
+
+The Owl sensor configuration file contains values that control the various
+Owl sensor programs.  These values include such things as the details of DNS
+queries to perform, where data files are to be stored, and the location of
+the log file.  Some of the entries are intended for specific programs, while
+others are more widely used.
+
+If a particular line is not included, then its values will be taken from the
+command-line options or the defaults.  These configuration values may be
+overridden by the command-line options.  Precedence, from highest to lowest,
+is command-line options, configuration file values, default values.
+
+Each non-comment line in the configuration file has (roughly) the same format:
+
+	<type> <specifier> <arguments> 
+
+where:
+
+	type - the type of the line; e.g., query, data, sensor
+
+	specifier - a specific instance of the type (optional)
+
+	arguments - data specific to the the type/specifier pair
+
+=head1 CONFIGURATION TYPES
+
+There are five types of configuration I<type> lines.  These are:
+
+    data           query
+    log            sensor
+    manager
+
+The format and purpose of these lines are defined below.
+
+=head2 Data Configuration Lines
+
+The B<data> line defines the specifics on how the Owl sensor stores data
+files.
+
+The B<data> lines have the following format:
+
+    data <keyword> <value>
+
+The I<keyword> may be one of the following:
+
+    archive
+    dir
+    interval
+
+The I<archive> field specifies the archive directory that contains old
+Owl sensor data.
+
+The I<dir> field specifies the data directory that contains Owl sensor data.
+
+The I<interval> field specifies the frequency with which B<owl-transfer>
+sends sensor data to the Owl manager.  This is given in seconds.
+
+=head2 Log Configuration Lines
+
+The B<log> line defines the specifics on how the Owl sensor handles logging.
+
+The B<log> line has the following format:
+
+    log <keyword> <value>
+
+Currently, the only I<keyword> is "dir", which defines where the log files
+will be stored.
+
+=head2 Manager Configuration Line
+
+The B<manager> line defines several ways the sensor will communicate with
+the Owl manager.
+
+The B<manager> lines have the following format:
+
+    manager <keyword> <value>
+
+The I<keyword> may be one of the following:
+
+    ssh-user
+    heartbeat
+
+The I<ssh-user> field specifies the user on the manager host that
+B<owl-transfer> will use when moving data onto the manager host.
+This user must have B<ssh> access from the sensor to the manager.
+B<ssh> on both hosts must be configured so B<owl-transfer> will not
+be required to enter a password.  The data will be transferred to
+each I<ssh-user> field specified in the B<owl.conf> file.  Optional
+parameters for <b>ssh</b> may be given on this line by placing them
+after a semicolon.  This will allow disparate Owl managers to require
+different connection characteristics.
+
+The I<heartbeat> field specifies the URLs which B<owl-heartbeat>
+will use to contact the Owl manager.  Multiple managers may be
+contacted by specifying multiple instances of this line.
+
+=head2 Query Configuration Lines
+
+The B<query> configuration lines define the DNS queries that will be performed.
+These are used by the B<owl-dnstimer> program to determine the target host,
+nameserver, and query type groupings that will have timing data collected.
+The configuration file must contain at least one B<query> line.
+
+The B<query> lines have the following format:
+
+        query <target> <server> <query> <interval> <timeout> <rollover>
+
+The I<target> field specifies the target host for which a nameserver will
+be queried.
+
+The I<server> field specifies the nameserver that will be queried.  If
+this is a single letter from 'a' to 'm', then it will be appended with
+'.root-servers.net'.
+
+The I<query> field specifies the DNS resource record that the nameserver will
+be queried for.  If this is not included or is given as '-', then an 'A'
+query will be performed.
+
+The I<interval> field specifies the interval between nameserver queries, in
+seconds.  If this is not included or is given as '-', then the interval will
+be 60 seconds.
+
+The I<timeout> field specifies the maximum length of time for each nameserver
+query, in seconds.  If this is not included or is given as '-', then half the
+I<interval> value will be used.
+
+The I<query> field specifies the interval between data file rollovers, in
+minutes.  If this is not included or is given as '-', then the data file
+rollover time will be 30 minutes.
+
+=head2 Sensor Configuration Line
+
+The B<sensor> line defines the name of the Owl sensor and how the sensor's
+programs will be run.
+
+The B<sensor> lines have the following format:
+
+    sensor <keyword> <value>
+
+The I<keyword> may be one of the following:
+
+    admin           email addresses of administrative contacts
+    name            name of the sensor
+
+    dnstimerargs    arguments to pass to owl-dnstimer
+    transferargs    arguments to pass to owl-transfer
+
+    hesitation      sleep time in seconds between executions of
+		    owl-dnstimer or owl-transfer
+    hibernation     sleep time if owl-dnstimer or owl-transfer is
+		    executing too frequently
+    quickcount      number of consecutive fast executions of owl-dnstimer
+		    or owl-transfer before a hibernation occurs
+    quickseconds    number of seconds that define a fast execution
+
+The I<name> is intended to be used in communications with the Owl manager.
+
+The last six keywords are used by B<owl-sensord> when starting the
+B<owl-dnstimer> and B<owl-transfer> programs.  I<dnstimerargs> and
+I<transferargs> may contain spaces, but the other four all must be
+positive numbers.
+
+=head1 EXAMPLE CONFIGURATION
+
+The following is an example configuration file:
+
+    #
+    # Owl sensor configuration file.
+    #
+
+    sensor    name       svalbard-owl
+    sensor    admin      bob@example.com
+    sensor    dnstimerargs  -config /owl/conf/owl.conf
+    sensor    transferargs  -config /owl/conf/owl.conf
+
+    query    .                d
+    query    example.com      d   AAAA  -  42
+    query    www.example.com  d   -  -  -  60
+
+    query    .                ns1.local
+    query    example.com      ns1.local   AAAA  -  42
+
+    data   archive    /owl/archived-data
+    data   dir        /owl/data-files
+
+    log    dir    /owl/log-files
+
+    manager    ssh-user    sensor1@xyzzy.example.com;-p 6543
+    manager    ssh-user    svalbard@owl.dnssec-tools.org
+
+    manager    heartbeat   http://owl-mgr.local/cgi-bin/owl-sensor-heartbeat.cgi
+
+=head1 SEE ALSO
+
+B<owl-dnstimer(1)>,
+B<owl-heartbeat(1)>,
+B<owl-sensord(1)>,
+B<owl-status(1)>,
+B<owl-transfer(1)>
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
