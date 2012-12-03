@@ -1,0 +1,25 @@
+
+#########################################################################
+#
+# Owl values:
+#	
+# heartbeat = 120
+heartbeat = 2400
+stepsize = 60
+step = 1 10 60 1440
+resolution = 525600 105120 43824 3650
+
+xff = 0.9
+
+#
+# Owl values should result in these data being used to create the RRDs:
+#	
+#	step=60
+#	heartbeat=120
+#	RRA:AVERAGE:0.9:1:525600                # raw data for a year
+#	RRA:AVERAGE:0.9:10:105120               # 10-minute chunks for 2 years
+#	RRA:AVERAGE:0.9:60:43800                # 1-hour chunks for 5 years
+#	RRA:AVERAGE:0.9:1440:3650               # daily chunks for 10 years
+# 
+#########################################################################
+
