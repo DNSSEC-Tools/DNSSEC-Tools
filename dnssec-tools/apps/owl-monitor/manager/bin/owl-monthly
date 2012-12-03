@@ -1,0 +1,372 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-monthly						Owl Monitoring System
+#
+#	This script archives previously archived Owl sensor data.
+#	It runs on the Owl manager.
+#
+# Revision History
+#	1.0	121201	Initial version.
+#			This was adapted from the owl-archdata script.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+use File::Path;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-monthly";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'archdir=s',			# Archive directory.
+	'delete',			# Delete archive.
+
+	'verbose',			# Display verbose information.
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+my $adflag = '';			# Directory for archived archives.
+my $delflag = '';			# Delete-archive flag.
+
+my $verbose = 0;			# Verbose output flag.
+
+#######################################################################
+
+my $archdir = '';			# Directory for archived archives.
+my $err = 0;
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $cron1 = time;
+	my $cron2;
+	my $cdiff;
+
+	#
+	# Get our arguments.
+	#
+	argulator();
+
+	print "Owl monthly archive started: " . localtime() . "\n";
+
+	#
+	# Archive the sensor-data archives.
+	#
+	archarch();
+
+	#
+	# Get elapsed time.
+	#
+	$cron2 = time;
+	$cdiff = ($cron2 - $cron1) / 60;
+	print "\nOwl monthly archive ended:   " . localtime() . "\n";
+	printf("elapsed time:         %5.2f minutes\n",$cdiff);
+}
+
+#------------------------------------------------------------------------
+# Routine:	argulator()
+#
+# Purpose:	Get our options and arguments from the command line.
+#
+sub argulator
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()    if(defined($options{'Version'}));
+	usage()	     if(defined($options{'help'}));
+
+	#
+	# Pick up some options.
+	#
+	$adflag  = "-archdir $options{'archdir'}" if(defined($options{'archdir'}));
+	$delflag = "-delete" if(defined($options{'delete'}));
+	$verbose = $options{'verbose'};
+
+	usage() if(@ARGV != 1);
+
+	#
+	# Get the paths from the arguments.
+	#
+	$archdir = $ARGV[0];
+
+	#
+	# Ensure the directories are reasonable.
+	#
+	checkdir($archdir,'archive');
+
+	if($verbose)
+	{
+		print "archive directory	$archdir\n";
+		print "\n";
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	checkdir()
+#
+# Purpose:	Ensure the named directory is valid.  Checks for:
+#			- directory exists
+#			- directory is a directory
+#			- directory is executable
+#			- directory is readable 
+#
+sub checkdir
+{
+	my $dir = shift;				# Directory name.
+	my $dtype = shift;				# Directory type.
+
+	if(! -e $dir)
+	{
+		print STDERR "$dtype directory \"$dir\" does not exist\n";
+		exit(10);
+	}
+
+	if(! -d $dir)
+	{
+		print STDERR "$dtype directory \"$dir\" is not a directory\n";
+		exit(11);
+	}
+
+	if(! -x $dir)
+	{
+		print STDERR "$dtype directory \"$dir\" is not searchable\n";
+		exit(12);
+	}
+
+	if(! -r $dir)
+	{
+		print STDERR "$dtype directory \"$dir\" is not readable\n";
+		exit(13);
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	archarch()
+#
+# Purpose:	Archive previous months' data for each sensor in the
+#		archive directory.
+#
+sub archarch
+{
+	#
+	# Go through the list of sensors and archive each one's old data.
+	#
+	foreach my $sdir (sort(glob("$archdir/*")))
+	{
+		my $sensor;			# Name of this sensor.
+		my @files;			# Sensor's data files.
+
+		#
+		# Get the actual name of this sensor.
+		#
+		$sensor = $sdir;
+		$sensor =~ s/^$archdir\///;
+
+		#
+		# Go to next sensor if this one has no archived files.
+		#
+		@files = glob("$sdir/*");
+		next if(@files == 0);
+
+		print "archiving sensor $sensor\n";
+
+		#
+		# Archive this sensor's data.
+		#
+		system("owl-archold $adflag $delflag $sdir");
+
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage: owl-monthly [options] <archive-directory>\n";
+	exit(0);
+}
+
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-monthly - Make monthly archives of previously archived Owl Monitor data
+
+=head1 SYNOPSIS
+
+  owl-monthly [options] <archive-directory>
+
+=head1 DESCRIPTION
+
+The Owl sensors generate a very large number of data files and transfer them
+to the Owl manager.  After the data have been used by Nagios and added to the 
+graphing databases, B<owl-archdata> archives the data files to the Owl
+archive directory.  To conserve space in the long run, B<owl-monthly> will
+archive those previously archived data files by creating a compressed tarfile
+of the data from a particular month.
+
+B<owl-monthly> runs standalone, and should likely be set as a monthly B<cron>
+job.  Data from a set of sensors will be archived by a single execution of
+B<owl-monthly>, with B<owl-archold> performing the actual archive operation
+for each sensor.
+
+The I<data-directory> is assumed to be organized as expected by the Owl
+manager.  Therefore, this directory will be a high-level directory that
+contains subdirectories for each sensor.  The sensor directories will contain
+a set of subdirectories  that contain the data gathered by that sensor for
+a particular month and year.  The general format for these subdirectory
+names is "data-YYMM".  When B<owl-monthly> runs, it creates an additional
+subdirectory that collects all the compressed tarfiles for a given year.
+
+For example, if the I<archive-directory> is B</owl/archive>, the sensors are
+named B<dresden> and B<kvothe>, and the sensors have been running for two
+months in 2012, the B<owl-archdata> will have copied data into the following
+directory:
+
+    /owl/archive/dresden/data-1209
+    /owl/archive/dresden/data-1210
+
+    /owl/archive/kvothe/data-1209
+    /owl/archive/kvothe/data-1210
+
+Running B<owl-monthly> on the B</owl/archive> directory will result in
+the following directories and files being created:
+
+    /owl/archive/dresden/2012-data
+    /owl/archive/dresden/2012-data/data-1209.tbz2
+    /owl/archive/dresden/2012-data/data-1210.tbz2
+
+    /owl/archive/kvothe/2012-data
+    /owl/archive/kvothe/2012-data/data-1209.tbz2
+    /owl/archive/kvothe/2012-data/data-1210.tbz2
+
+The B<.tbz2> files are the tarfiles creating by B<owl-monthly> running
+B<tar -cjf> on the B<data-YYMM> directories.  It also copies the resulting
+tarfiles into the two B<2012-data> directories.  If it had been given the
+I<-delete> option, then the original B<data-YYMM> directories would have
+been deleted.
+
+See the documentation for B<owl-archold> for complete information on how
+files and subdirectories are named during this archival process.
+
+The path of the executing process B<must> contain the path in which
+B<owl-archold> lives or B<owl-archdata> will not be able to execute it.
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-monthly>:
+
+=over 4
+
+=item I<-archdir archive-directory>
+
+Directory to hold archived archives.  Pass-through option to B<owl-archold>.
+
+=item I<-delete>
+
+Archive-delete flag.  Pass-through option to B<owl-archold>.
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=item I<-verbose>
+
+Display the verbose information.
+
+=back
+
+=head1 WARNINGS
+
+=over 4
+
+=item Current Month Not Archived
+
+B<owl-monthly> will I<not> archive the current month's data.  There is
+an assumption that more sensor data will be gathered for the current month,
+so archiving the current month's data will provide an incomplete archive.
+
+=item Two-Day Archival Lag
+
+The current archive timing used by B<owl-archdata> means that there
+will be a two-day lag between the day a data file arrives in a sensor's
+data directory and the day it is moved to the sensor's archive directory.
+Consequently, B<owl-monthly> should not be run on the first or second days
+of a month.  More data may still be awaiting archiving, and an early run
+could result in unarchived data.
+
+=back
+
+=head1 CAVEATS
+
+B<owl-monthly> is not a general-purpose archiver.  While there are
+somewhat generalized aspects to it, B<owl-monthly> is very strongly
+biased to the hierarchical structure laid out for the Owl sensor data.
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+owl-archdata(1),
+owl-archold(1),
+owl-dataarch-mgr(1)
+
+bzip2(1), tar(1)
+
+=cut
