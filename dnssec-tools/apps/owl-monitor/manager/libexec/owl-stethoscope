@@ -1,0 +1,408 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# owl-stethoscope
+#
+#	This script retrieves the sensor heartbeat data collected from
+#	Owl sensors.  It runs on the Owl manager and provides data for
+#	use by a Nagios monitoring environment.
+#
+#
+# Revision History
+#	1.0	Initial version.				11/9/2012
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+use File::Path;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-stethoscope";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#######################################################################
+#
+# Paths.
+#
+#	The installer must set the value of $OWLDIR to reflect the
+#	desired file hierarchy.
+#	The $sub_data and $subhist values may be set, but the values
+#	given below are sufficient.
+#
+
+my $OWLDIR	 = '/uem/caida';	# Owl directory.
+my $OWLDATA	 = "$OWLDIR/data";	# Owl DNS data directory.
+
+my $hbfile = 'heartbeat';		# File containing heartbeat data.
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+#######################################################################
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'warning=i',			# Warning time.
+	'critical=i',			# Critical time.
+
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+#######################################################################
+#
+# Data from command line.
+
+my $sensor = '';				# Owl sensor host.
+
+#
+# Default time limits.  These are in minutes, but will be adjusted to
+# seconds when the actual variables are set in doopts().
+#
+my $DEF_WARNLIMIT = 60;		# Sensor-missing minutes before warning.
+my $DEF_CRITLIMIT = (24 * 60);	# Sensor-missing minutes before critical.
+
+my $warnlimit = $DEF_WARNLIMIT;			# Warning limit variable.
+my $critlimit = $DEF_CRITLIMIT;			# Critical limit variable.
+
+#######################################################################
+
+my $rc = $RC_NORMAL;			# Command's return code.
+
+################################################################################
+
+#
+# Run shtuff.
+#
+main();
+exit($rc);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for owl-stethoscope.
+#
+sub main
+{
+	my $lastbeat;				# Sensor's last heartbeat.
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the name of our heartbeat file.
+	#
+	gethbfile();
+
+	#
+	# Get the last time the sensor thub-thupped.
+	#
+	$lastbeat = getbeat();
+
+	#
+	# Write a line of data to Nagios.
+	#
+	nagiout($lastbeat);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage($RC_UNKNOWN);
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()   		if(defined($options{'Version'}));
+	usage($RC_NORMAL)	if(defined($options{'help'}));
+
+	#
+	# Get our time-limit options.
+	#
+	$warnlimit = $options{'warning'}  if(defined($options{'warning'}));
+	$critlimit = $options{'critical'} if(defined($options{'critical'}));
+
+	#
+	# Ensure valid limits.
+	#
+	if($warnlimit >= $critlimit)
+	{
+		print "$NAME: warning limit ($warnlimit) must be LESS than critical limit ($critlimit)\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Adjust the minutes counts into usable seconds.
+	#
+	$warnlimit *= 60;
+	$critlimit *= 60;
+
+	#
+	# Ensure we were given a sensor name and then save it.
+	#
+	usage($RC_UNKNOWN) if(@ARGV != 1);
+	$sensor	= $ARGV[0];
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	gethbfile()
+#
+# Purpose:	Build the heartbeat filename.
+#
+sub gethbfile
+{
+	#
+	# Ensure the data directory exists.
+	#
+	if(! -e "$OWLDATA/$sensor")
+	{
+		print "invalid sensor:  \"$sensor\"\n";
+		exit($RC_CRITICAL);
+	}
+
+	#
+	# Build the directory names we'll need.
+	#
+	$hbfile = "$OWLDATA/$sensor/$hbfile";
+
+	#
+	# Ensure the data directory exists.
+	#
+	if(! -e $hbfile)
+	{
+		print "heartbeat file \"$hbfile\" does not exist\n";
+		exit($RC_CRITICAL);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getbeat()
+#
+# Purpose:	Get the last time the sensor's heart beat.
+#
+sub getbeat
+{
+	my $hbline;				# Data from heartbeat file.
+	my $tstmp;				# Timestamp of last heartbeat.
+	my $tempus;				# Local time of last heartbeat.
+	my $now;				# Current time.
+	my $tdiff;				# Time difference.
+
+	#
+	# Get the contents of the heartbeat file.
+	#
+	open(HBF,"< $hbfile");
+	$hbline = <HBF>;
+	chomp($hbline);
+	close(HBF);
+
+	#
+	# Get the time of the last heartbeat and convert it to the local time.
+	#
+	$hbline =~ /^(\d+)\s/;
+	$tstmp = $1;
+	$tempus = localtime($tstmp);
+
+	#
+	# Calculate how long it's been since the sensor last contacted us.
+	#
+	$now = time();
+	$tdiff = $now - $tstmp;
+
+	#
+	# See if we fall into any of the exceptional time limits.
+	#
+	if($tdiff > $critlimit)
+	{
+		$rc = $RC_CRITICAL;
+	}
+	elsif($tdiff > $warnlimit)
+	{
+		$rc = $RC_WARNING;
+	}
+
+	#
+	# Return the converted timestamp.
+	#
+	return($tempus);
+}
+
+
+#-----------------------------------------------------------------------------
+# Routine:	nagiout()
+#
+# Purpose:	Generate a line of heartbeat output for Nagios.
+#
+sub nagiout
+{
+	my $tempus = shift;		# Timestamp of sensor's last heartbeat.
+
+	print "last heartbeat - $tempus\n";
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	out()
+#
+# Purpose:	Debugging output routine.
+#
+sub out
+{
+	my $str = shift;
+
+	open(OUT,">>/tmp/z.stethoscope");
+	print OUT "$str\n";
+	close(OUT);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	my $rc = shift;					# Exit code.
+
+	print STDERR "$VERS
+$DTVERS
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+This script retrieves the heartbeat of an Owl sensor.
+
+
+usage:  owl-stethoscope [options] <sensor>
+	options:
+		-warning	set threshold for warning outages
+		-critical	set threshold for critical outages
+		-Version        display program version
+		-help           display this message
+
+";
+
+	exit($rc);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-stethoscope - Nagios plugin to retrieve Owl sensor's heartbeat data
+
+=head1 SYNOPSIS
+
+  owl-stethoscope [options] <sensor-name>
+
+=head1 DESCRIPTION
+
+B<owl-stethoscope> retrieves heartbeat data from a Owl sensor node.
+The data are stored on the Owl manager, after the sensor touches an
+installation-specific webpage.
+
+The heartbeat data file contains the time of the most recent time the
+named sensor contacted web-based heartbeat script available via the Owl
+manager's web server.  The time is given in seconds since epoch.
+For display in Nagios, the seconds count is converted to local time.
+
+The data locations are mostly hard-coded in B<owl-stethoscope>.  The actual
+path to the heartbeat data file is installation-specific, but it will look
+something like B</owl/data/E<lt>sensorE<gt>/heartbeat>.  E<lt>sensorE<gt>
+is the name of the sensor whose heartbeat is being checked.
+
+B<owl-stethoscope> is assumed to only be run by the Nagios monitoring system.
+
+=head1 NAGIOS USE
+
+This is run from a Nagios I<command> object.  These are examples of how
+the objects should be defined:
+
+    define command {
+         command_name    heartbeat
+	 command_line    owl-stethoscope $ARG1$
+    }
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-stethoscope>:
+
+=over 4
+
+=item I<-critical>
+
+The time that has elapsed since the last heartbeat from this sensor after
+which the sensor will be considered to be in a critical state.  This value
+must be greater than the warning value.  This is measured in minutes.
+The default value is one day.
+
+=item I<-warning>
+
+The time that has elapsed since the last heartbeat from this sensor after
+which the sensor will be considered to be in a warning state.  This value
+must be less than the critical value.  This is measured in minutes.
+The default value is one hour.
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<owl-sensor-heartbeat.cgi(1)>
+
+=cut
+
