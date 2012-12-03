@@ -1,0 +1,37 @@
+
+###############################################################################
+
+#
+# Service type: Owl Monitor - DNS response data from owl-dnswatch
+#	template:  /perfdata:owl-dnswatch=t:n ms/
+#
+# 	example:   owl-dnswatch=1350339723:26 ms
+#
+
+/perfdata:.*owl-dnswatch=(\d+):(\d+) ms;/
+and push @s, [ 'dnswatch',
+	      [ 'dnswatch', GAUGE, $2 ] ];
+
+/perfdata:.*owl-dnswatch=(\d+):(\d+) ms$/
+and push @s, [ 'dnswatch',
+	      [ 'dnswatch', GAUGE, $2 ] ];
+
+#
+# Service type: Owl Monitor - DNS anycast response data
+#	template:  /perfdata:owl-anycaster=t:n ip h/
+#
+#	example:   owl-anycaster=1350491407:112 ms 128.63.2.53 H2
+#
+
+/perfdata:.*owl-anycaster=(\d+):(\d+) ms (\S+) (\S+);/
+and push @s, [ "anycast_$4",
+	      [ 'anycast', GAUGE, $2 ] ];
+
+/perfdata:.*owl-anycaster=(\d+):(\d+) ms (\S+) (\S+)$/
+and push @s, [ "anycast_$4",
+	      [ 'anycast', GAUGE, $2 ] ];
+
+
+
+###############################################################################
+
